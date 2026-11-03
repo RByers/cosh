@@ -1,6 +1,6 @@
 {
  "meta": {
-  "generated_at": "2026-11-03T14:51:24Z",
+  "generated_at": "2026-11-03T14:54:21Z",
   "weeks": [
    "2026-W44"
   ],
@@ -15,16 +15,16 @@
   {
    "iso_week": "2026-W44",
    "org": "google.com",
-   "share": 0.9591,
+   "share": 0.9597,
    "reviewed_cls": 4446,
    "reviewers": 851,
    "comments": 9998,
    "review_chars": 1849689,
    "ai_comments": 1092,
    "post_merge_comments": 69,
-   "share_cls": 0.969,
-   "share_comments": 0.9591,
-   "share_chars": 0.9689
+   "share_cls": 0.9707,
+   "share_comments": 0.9597,
+   "share_chars": 0.9692
   },
   {
    "iso_week": "2026-W44",
@@ -43,16 +43,16 @@
   {
    "iso_week": "2026-W44",
    "org": "Other",
-   "share": 0.0045,
-   "reviewed_cls": 43,
-   "reviewers": 13,
-   "comments": 47,
-   "review_chars": 8387,
-   "ai_comments": 40,
+   "share": 0.0039,
+   "reviewed_cls": 35,
+   "reviewers": 9,
+   "comments": 41,
+   "review_chars": 7925,
+   "ai_comments": 0,
    "post_merge_comments": 1,
-   "share_cls": 0.0094,
-   "share_comments": 0.0045,
-   "share_chars": 0.0044
+   "share_cls": 0.0076,
+   "share_comments": 0.0039,
+   "share_chars": 0.0042
   },
   {
    "iso_week": "2026-W44",
@@ -91,7 +91,7 @@
    "abandoned_cls": 1825,
    "human_cls": 5437,
    "bot_cls": 2211,
-   "human_cls_with_review": 4495
+   "human_cls_with_review": 4494
   }
  ]
 }

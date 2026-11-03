@@ -2,7 +2,7 @@ import os
 import tempfile
 import unittest
 
-from cosh.derive import derive_change, human_text
+from cosh.derive import account_name, derive_change, human_text, mark_emailless_bots
 from cosh import store
 from cosh.orgs import OrgResolver, load_affiliations, parse_json5
 from cosh.summarize import summarize
@@ -93,6 +93,26 @@ class DeriveTest(unittest.TestCase):
         aff = load_affiliations()
         self.assertGreater(len(aff), 20)
         self.assertTrue(all("@" in e for e in aff))
+
+
+class AccountTest(unittest.TestCase):
+    def test_name_falls_back_to_display_name(self):
+        self.assertEqual(account_name({"name": "A B", "display_name": "AB"}), "A B")
+        self.assertEqual(account_name({"display_name": "Jetski (agent)"}), "Jetski (agent)")
+        self.assertIsNone(account_name({"_account_id": 7}))
+
+    def test_accounts_without_email_are_bots(self):
+        with tempfile.TemporaryDirectory() as d:
+            db = store.open_cosh(d)
+            h = "chromium-review.googlesource.com"
+            with db:
+                db.execute("INSERT INTO accounts VALUES (?,1,'a@igalia.com','A',0)", (h,))
+                db.execute("INSERT INTO accounts VALUES (?,2,NULL,'Jetski (agent)',0)", (h,))
+                db.execute("INSERT INTO accounts VALUES (?,3,NULL,NULL,0)", (h,))
+                self.assertEqual(mark_emailless_bots(db), 2)
+            self.assertEqual(db.execute("SELECT account_id, is_bot FROM accounts ORDER BY 1").fetchall(),
+                             [(1, 0), (2, 1), (3, 1)])
+            db.close()
 
 
 class SummarizeTest(unittest.TestCase):
