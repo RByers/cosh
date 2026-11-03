@@ -1,0 +1,24 @@
+{
+  "name": "cosh-web",
+  "private": true,
+  "type": "module",
+  "description": "cosh static web UI (GitHub Pages)",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -p . && vite build",
+    "preview": "vite preview",
+    "test:unit": "vitest run test/unit.test.ts",
+    "test:browser": "vitest run test/browser.test.ts",
+    "test": "npm run build && npm run test:unit && npm run test:browser"
+  },
+  "dependencies": {
+    "chart.js": "^4.6.1"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.6",
+    "puppeteer-core": "^25.16.0",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.5",
+    "vitest": "^5.1.0"
+  }
+}

@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light dark" />
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M1 8h14' stroke='%23898781' stroke-width='1.5'/%3E%3Cpath d='M1 13 L6 10 L10 4 L15 2' fill='none' stroke='%232a78d6' stroke-width='2'/%3E%3C/svg%3E" />
+    <title>Chromium Open Source Health</title>
+    <meta name="description" content="How organizations that ship Chromium-based browsers contribute code review back to Chromium, relative to their browser usage." />
+  </head>
+  <body>
+    <header>
+      <h1>Chromium Open Source Health</h1>
+      <p class="lede">
+        Each organization's share of Chromium code review, divided by its browsers' share of
+        Chromium-based browser usage. Above 1×, an organization contributes more review than its usage
+        share; below 1×, less.
+      </p>
+    </header>
+
+    <main>
+      <form class="filters" aria-label="Filters" onsubmit="return false">
+        <fieldset id="metric" class="segmented">
+          <legend>Contribution metric</legend>
+        </fieldset>
+        <label class="week-picker">Week <select id="week"></select></label>
+      </form>
+
+      <p id="error" class="error" role="alert" hidden></p>
+
+      <section class="card" aria-labelledby="ratio-title">
+        <h2 id="ratio-title">Value ratio</h2>
+        <p id="ratio-sub" class="sub"></p>
+        <div class="chart chart-tall">
+          <canvas id="ratio-chart" role="img" aria-label="Value ratio per organization over time; the table below lists the values."></canvas>
+        </div>
+        <p class="note">
+          Organizations whose browsers have under 0.1% of Chromium usage (Brave, Yandex, Amazon, Coc Coc) get no
+          ratio. Organizations with fewer than 5 reviewers in a week are folded into “Other”, so they show 0.
+        </p>
+      </section>
+
+      <section class="card" aria-labelledby="review-title">
+        <h2 id="review-title">Review by organization</h2>
+        <p id="review-sub" class="sub"></p>
+        <div class="chart">
+          <canvas id="review-chart" role="img" aria-label="Review count per organization for the selected week; the table below lists the values."></canvas>
+        </div>
+      </section>
+
+      <section class="card" aria-labelledby="usage-title">
+        <h2 id="usage-title">Chromium browser usage (Cloudflare Radar)</h2>
+        <p class="sub">
+          The ratio's denominator: each browser's share of Chromium-based browser usage. Human traffic, complete
+          ISO weeks; WebViews and in-app browsers excluded.
+        </p>
+        <div class="chart">
+          <canvas id="usage-chart" role="img" aria-label="Weekly share of Chromium browser usage per browser."></canvas>
+        </div>
+        <p class="note" id="derivative-note">
+          <strong>Note on ChromeDerivative.</strong> Radar's bucket for Chromium-based browsers it can't name jumped
+          from about 0.3% to about 11% of Chromium usage starting in 2026-W37 (week of 7 September 2026), taking share
+          mostly from Chrome. This looks like a Radar classification change rather than a real shift in usage. The
+          bucket stays in the denominator but is credited to no organization, so from W37 every organization's usage
+          share is about 10% lower and its value ratio about 11% higher. Whether to exclude it is an open question.
+        </p>
+      </section>
+
+      <section aria-label="Week totals">
+        <div id="tiles" class="tiles"></div>
+      </section>
+
+      <section class="card" aria-labelledby="table-title">
+        <h2 id="table-title">By organization</h2>
+        <div class="table-wrap">
+          <table id="org-table">
+            <caption id="table-caption"></caption>
+            <thead>
+              <tr>
+                <th scope="col">Org</th>
+                <th scope="col">Review share</th>
+                <th scope="col">Usage share</th>
+                <th scope="col">Ratio</th>
+                <th scope="col">Reviewers</th>
+                <th scope="col">Comments</th>
+                <th scope="col">AI comments</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </section>
+
+    </main>
+
+    <footer>
+      <p id="coverage"></p>
+      <p>
+        Review data from Chromium Gerrit (<code>chromium/src</code>, branch <code>main</code>); usage data from
+        <a href="https://radar.cloudflare.com/">Cloudflare Radar</a> (CC BY-NC 4.0).
+      </p>
+    </footer>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

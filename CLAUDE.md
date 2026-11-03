@@ -26,6 +26,10 @@ implementation and metric definitions.
 - Tests: `python3 -m unittest tests.test_derive tests.test_radar`. These run
   in a single process, which complies with the global limit of 4 test
   workers.
+- Web UI: `web/` (Vite + TypeScript, Chart.js). `cd web && npm test` builds
+  it and runs Vitest unit tests and headless-Chrome tests (puppeteer-core with
+  `/usr/bin/google-chrome`). Vitest is capped at `maxWorkers: 4`, with test
+  files run serially.
 - `data/private/cosh.sqlite` can always be rebuilt with
   `rm data/private/cosh.sqlite && python3 -m cosh derive`.
 - Never delete `data/private/raw.sqlite` or `data/private/notedb/`. Those

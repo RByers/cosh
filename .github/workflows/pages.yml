@@ -1,0 +1,52 @@
+# Build web/ and publish it to GitHub Pages.
+# One-time setup: repo Settings → Pages → Source: "GitHub Actions".
+name: Pages
+
+on:
+  push:
+    branches: [main]
+    paths: ['web/**', 'summaries/**', 'data/public/radar_browser_share.csv', 'config/org_browsers.csv', '.github/workflows/pages.yml']
+  pull_request:
+    paths: ['web/**', 'summaries/**', 'data/public/radar_browser_share.csv', 'config/org_browsers.csv', '.github/workflows/pages.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - run: npm ci
+      # Builds, then runs unit tests and headless-Chrome tests against the
+      # build (ubuntu-latest ships Google Chrome at /usr/bin/google-chrome).
+      - run: npm test
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: web/dist
+
+  deploy:
+    if: github.event_name != 'pull_request'
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

@@ -1,0 +1,155 @@
+// Browser tests: serve the production build with `vite preview` and drive it
+// with headless Chrome through puppeteer-core (uses an installed Chrome; no
+// browser download). Run `npm run build` first; `npm test` does both.
+//
+// CHROME_PATH overrides the Chrome binary. SCREENSHOT_DIR, if set, saves
+// full-page screenshots in light and dark mode for eyeballing.
+import assert from 'node:assert/strict';
+import { existsSync } from 'node:fs';
+import { join } from 'node:path';
+import { afterAll as after, beforeAll as before, test } from 'vitest';
+import { fileURLToPath } from 'node:url';
+import puppeteer, { type Browser, type Page } from 'puppeteer-core';
+import { preview, type PreviewServer } from 'vite';
+
+const webDir = fileURLToPath(new URL('..', import.meta.url));
+const chromePath = process.env.CHROME_PATH ?? '/usr/bin/google-chrome';
+
+let server: PreviewServer;
+let browser: Browser;
+let baseUrl: string;
+
+before(async () => {
+  assert.ok(existsSync(join(webDir, 'dist/index.html')), 'run `npm run build` first');
+  server = await preview({ root: webDir, logLevel: 'silent', preview: { host: '127.0.0.1', port: 0 } });
+  baseUrl = server.resolvedUrls!.local[0];
+  browser = await puppeteer.launch({
+    executablePath: chromePath,
+    headless: true,
+    args: ['--no-sandbox', '--disable-gpu', '--disable-dev-shm-usage'],
+  });
+});
+
+after(async () => {
+  await browser?.close();
+  await server?.close();
+});
+
+async function open(hash = '', width = 1100): Promise<{ page: Page; errors: string[] }> {
+  const page = await browser.newPage();
+  await page.setViewport({ width, height: 900 });
+  const errors: string[] = [];
+  page.on('console', (m) => m.type() === 'error' && errors.push(m.text()));
+  page.on('pageerror', (e) => errors.push(String(e)));
+  await page.goto(baseUrl + hash);
+  await page.waitForSelector('body[data-ready]');
+  const ready = await page.$eval('body', (b) => b.dataset.ready);
+  const shown = await page.$eval('#error', (e) => e.textContent);
+  assert.equal(ready, 'true', `page failed to load: ${shown} ${errors.join('; ')}`);
+  return { page, errors };
+}
+
+test('page loads data and renders all three charts without errors', async () => {
+  const { page, errors } = await open();
+  assert.equal(await page.$eval('body', (b) => b.dataset.ready), 'true');
+  assert.deepEqual(errors, []);
+  const charts = await page.evaluate(() =>
+    ['ratioChart', 'reviewChart', 'usageChart'].map((k) => {
+      const c = (window.__cosh as unknown as Record<string, { width: number; height: number; data: { datasets: unknown[] } }>)[k];
+      return { k, w: c.width, h: c.height, n: c.data.datasets.length };
+    }),
+  );
+  for (const c of charts) {
+    assert.ok(c.w > 200 && c.h > 200, `${c.k} has size ${c.w}x${c.h}`);
+    assert.ok(c.n >= 1, `${c.k} has datasets`);
+  }
+  // Charts come in order: ratio, review, usage, before the table.
+  const order = await page.$$eval('main > section', (s) => s.map((e) => e.querySelector('canvas, table')?.id));
+  assert.deepEqual(order.filter(Boolean).slice(0, 4), ['ratio-chart', 'review-chart', 'usage-chart', 'org-table']);
+  await page.close();
+});
+
+test('ratio axis puts 1.0 halfway between 0 and the maximum', async () => {
+  const { page } = await open();
+  const axis = await page.evaluate(() => {
+    const c = window.__cosh!.ratioChart!;
+    const y = c.scales.y;
+    const labels = y.ticks.map((t) => String(t.label));
+    return { top: y.top, bottom: y.bottom, one: y.getPixelForValue(1), labels };
+  });
+  assert.ok(Math.abs(axis.one - (axis.top + axis.bottom) / 2) < 1, JSON.stringify(axis));
+  assert.equal(axis.labels[0], '0×');
+  assert.ok(axis.labels.includes('1.0×'));
+  await page.close();
+});
+
+test('W44 ratios: Google above parity, Microsoft below', async () => {
+  const { page } = await open();
+  const ratios = await page.$$eval('#org-table tbody tr', (rows) =>
+    Object.fromEntries(rows.map((r) => [(r as HTMLElement).dataset.org, r.querySelector('td.ratio')!.textContent])),
+  );
+  assert.ok(parseFloat(ratios['google.com']!) > 1, ratios['google.com']!);
+  assert.ok(parseFloat(ratios['microsoft.com']!) < 1, ratios['microsoft.com']!);
+  assert.equal(ratios['igalia.com'], 'no browser');
+  await page.close();
+});
+
+test('switching the metric updates the table, review chart and URL', async () => {
+  const { page } = await open();
+  const cell = () => page.$eval('tr[data-org="microsoft.com"] td', (td) => td.textContent);
+  const before = await cell();
+  await page.click('#metric input[value="cls"]');
+  assert.notEqual(await cell(), before);
+  assert.match(page.url(), /metric=cls/);
+  const label = await page.evaluate(() => window.__cosh!.reviewChart!.data.datasets[0].label);
+  assert.equal(label, 'Reviewed CLs');
+  // State survives a reload via the URL hash.
+  await page.reload();
+  await page.waitForSelector('body[data-ready]');
+  assert.equal(await page.$eval('#metric input[value="cls"]', (i) => (i as HTMLInputElement).checked), true);
+  await page.close();
+});
+
+test('review chart lists top orgs with Other last', async () => {
+  const { page } = await open();
+  const labels = await page.evaluate(() => window.__cosh!.reviewChart!.data.labels as string[]);
+  assert.equal(labels[0], 'google.com');
+  assert.equal(labels[labels.length - 1], 'Other');
+  assert.ok(labels.length <= 8);
+  await page.close();
+});
+
+test('usage chart shows ChromeDerivative with the jump note', async () => {
+  const { page } = await open();
+  const names = await page.evaluate(() =>
+    window.__cosh!.usageChart!.data.datasets.map((d: { label?: string }) => d.label),
+  );
+  assert.ok(names.includes('ChromeDerivative'), names.join());
+  assert.ok(names.includes('Chrome'));
+  const note = await page.$eval('#derivative-note', (n) => n.textContent ?? '');
+  assert.match(note, /ChromeDerivative/);
+  assert.match(note, /2026-W37/);
+  await page.close();
+});
+
+test('dark mode and phone width render without horizontal scroll', async () => {
+  const { page } = await open('', 375);
+  await page.emulateMediaFeatures([{ name: 'prefers-color-scheme', value: 'dark' }]);
+  const bg = await page.$eval('body', (b) => getComputedStyle(b).backgroundColor);
+  assert.equal(bg, 'rgb(13, 13, 13)');
+  const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+  assert.ok(overflow <= 0, `horizontal overflow ${overflow}px`);
+  await page.close();
+});
+
+test.skipIf(!process.env.SCREENSHOT_DIR)('screenshots (only when SCREENSHOT_DIR is set)', async () => {
+  for (const scheme of ['light', 'dark'] as const) {
+    const page = await browser.newPage();
+    await page.emulateMediaFeatures([{ name: 'prefers-color-scheme', value: scheme }]);
+    await page.setViewport({ width: 1100, height: 900 });
+    await page.goto(baseUrl);
+    await page.waitForSelector('body[data-ready]');
+    await page.screenshot({ path: join(process.env.SCREENSHOT_DIR!, `cosh-${scheme}.png`) as `${string}.png`, fullPage: true });
+    await page.close();
+  }
+});

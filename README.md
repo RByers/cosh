@@ -60,6 +60,7 @@ python3 -m cosh radar                     # Cloudflare Radar browser share (sour
 python3 -m cosh backfill --weeks 52       # plan only; --go fetches (not until the UI is validated)
 python3 -m unittest tests.test_derive
 python3 -m unittest tests.test_radar
+cd web && npm ci && npm run dev           # web UI (see web/README.md); npm test for tests
 ```
 
 ## Docs
