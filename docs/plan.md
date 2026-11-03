@@ -55,6 +55,7 @@ value_ratio(O, t) = O's share of Chromium review comments
 | 2026-11-03 | Web UI: Vite + TypeScript, Chart.js only at runtime; the summary/Radar join runs in the browser (`web/src/data.ts`); tests use Vitest + puppeteer-core with the installed Chrome | Few dependencies, static GitHub Pages hosting, no generated files to commit |
 | 2026-11-03 | Ratio axis: 1× in the vertical middle, linear 0–1 below and 1–max above | User's instruction; under- and over-contribution get equal visual weight |
 | 2026-11-03 | Radar: `timeseries_groups/BROWSER`, human traffic, daily data aggregated to ISO weeks; WebViews and in-app browsers excluded from the main share | See `radar-research.md` |
+| 2026-11-03 | Keep Radar's `ChromeDerivative` in the Chromium denominator despite its 2026-09-09 jump | It may be real Chromium usage; the jump looks like Radar labeling previously unlabeled traffic, not taking share from Chrome (`radar-research.md`) |
 
 ## Status
 
@@ -75,14 +76,13 @@ value_ratio(O, t) = O's share of Chromium review comments
 
 **Next steps, in order**
 1. Have the user validate the UI (`cd web && npm run dev`).
-2. Investigate the jump in Radar's `ChromeDerivative` bucket in September
-   2026 (see Open questions), and try to get Radar history before 2023-07,
-   whose requests returned HTTP 500.
+2. Try to get Radar history before 2023-07, whose requests returned HTTP 500.
+   (The September 2026 `ChromeDerivative` jump has been investigated; see
+   Decisions and `radar-research.md`.)
 3. Push to GitHub and enable Pages (Settings → Pages → Source: GitHub
    Actions).
 4. UI follow-ups: monthly granularity; an AI-comments-over-time view once
-   there are more weeks; an option to exclude ChromeDerivative from the
-   denominator.
+   there are more weeks.
 5. Only then, with explicit approval, run
    `python3 -m cosh backfill --weeks 52 --go`. Expect about 51 hours at duty
    cycle 0.5, newest week first, resumable.
@@ -98,9 +98,9 @@ value_ratio(O, t) = O's share of Chromium review comments
 
 ## Open questions
 
-- Radar's unnamed-Chromium bucket, `ChromeDerivative`, jumped from about 0.3%
-  to about 11% of Chromium usage in September 2026. Is that a Radar
-  classification change? Should it be excluded from the denominator?
+- Why exactly did Radar's `ChromeDerivative` bucket jump on 2026-09-09?
+  Cloudflare hasn't said; the evidence points to a browser-labeling change
+  (see `radar-research.md`). Could ask the Radar team.
 - Radar history starts at 2023-07, but the review backfill could cover 5
   years. Can older Radar data be fetched another way, or should the ratio
   start at 2023-07?
