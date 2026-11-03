@@ -1,0 +1,10 @@
+# Per-person data and raw Gerrit cache: never commit (docs/storage-design.md §4)
+data/private/
+.research/gerrit/responses/
+__pycache__/
+
+# credentials
+secrets.sh
+# one-off research downloads (re-fetchable; may contain personal data)
+.research/affiliations/
+*.pyc

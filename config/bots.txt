@@ -1,0 +1,10 @@
+# Regexes matched against account email (case-insensitive). Backstop for
+# Gerrit's SERVICE_USER tag, which is the primary bot signal.
+gserviceaccount\.com$
+@luci-project-accounts\.
+-autoroll(er)?@
+^autoroll
+rubber-stamper@
+^chrome-cherry-picker@
+^chromium-internal-autoroll@
+^mdb\.chrome-pki-metadata-release-jobs@
