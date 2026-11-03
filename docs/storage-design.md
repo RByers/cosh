@@ -11,6 +11,10 @@ only touches the API where it affects storage.
   - `data/private/raw.sqlite`: an append-only cache of every Gerrit response,
     stored as zlib-compressed JSON blobs keyed by request. It is the source of
     truth, so metrics can be re-derived without touching Gerrit again.
+  - `data/private/notedb/*.git`: bare repos holding the fetched NoteDb meta
+    refs, with their full history.
+  - **Everything downloaded is retained, losslessly and permanently** (§3.8).
+    Reduction to counts and lengths happens only in derived data.
   - `data/private/cosh.sqlite`: derived tables (`changes`, `reviews`,
     `accounts`, ...) that can be rebuilt from `raw.sqlite` at any time.
   - `summaries/*.csv` + `summaries/*.json`: per-org per-week and per-month
@@ -406,6 +410,81 @@ in one fetch with no backend.
 - Radar source
 - the minimum-group-size threshold
 
+### 3.8 Retention: keep everything downloaded
+
+**This is the user's intended design.** Every byte fetched from Gerrit is kept,
+in a form that can be re-read later, even when no current metric uses it.
+Reasons:
+- New analyses, such as resolution rates, comment threads, vote timing or
+  attention-set churn, become possible without fetching again.
+- We can see what the fetched data contains and decide whether the fetching
+  itself should change.
+- Re-fetching costs Gerrit and googlesource server load, which we want to avoid.
+
+What this means in practice:
+
+| Raw store | Contents kept |
+|---|---|
+| `raw.sqlite` `responses` | The full response body (zlib), URL, HTTP status, fetch time and sha256 for every listing, REST `/comments` and `/accounts` response, including 404s |
+| `notedb/<project>.git` | Every object of each fetched `refs/changes/NN/N/meta` ref, i.e. the change's whole NoteDb history, not only the tip comments |
+| `data/public/radar/raw/` | Raw Radar JSON |
+
+- Code only ever *reads* the raw stores to reduce them. `read_comments()` and
+  `derive` drop fields (`unresolved`, ranges, `parentUuid`,
+  `submitRequirementResults`, change messages, votes) in memory, and
+  `cosh.sqlite` holds counts and lengths. Nothing ever strips or rewrites the
+  raw stores.
+- Never delete `raw.sqlite` or `notedb/`. Never run `gc --prune=now` or `prune`
+  in a NoteDb repo. Auto-gc and maintenance are disabled there. `repack -a -d`
+  is safe, because every object is reachable from a `refs/meta/*` ref.
+- Known small gaps to close: a re-fetch overwrites the previous `responses` row
+  and the local meta ref, so there's no version history. Response headers, the
+  bodies of retried 429/5xx responses and the list of missing (deleted) meta
+  refs are not stored. Invalid UTF-8 in a body is replaced on decode.
+
+#### What the NoteDb data contains (measured on W44, 2026-11-03)
+
+W44 has 3,429 meta refs, which is every human-owned CL with comments.
+
+There is **no source code and there are no diffs**:
+- A meta ref's commits are NoteDb metadata commits. They name patch-set
+  commits by SHA in `Commit:` footers but don't link to them as parents.
+- A fetch therefore downloads only the metadata commits, their small trees,
+  and the notes blobs (one JSON blob per commented patch set).
+
+| Object type | Count | Uncompressed | On disk (as fetched, 19 packs) | What it is | Used by `derive` today? |
+|---|---|---|---|---|---|
+| commits | 98,963 (about 29 per CL) | 73 MB | 42.5 MB | One per review event: patch-set upload, vote, change message, reviewer or CC change, attention-set update, status. The message bodies (46 MB) are change messages and footers (`Attention:` 15%, `Label:` 8%, `Submitted-with:` 5.5%, ...) | No (votes come from the REST listing instead) |
+| tip-tree blobs | 7,314 | 74 MB | 10.8 MB | The current comment notes. Uncompressed, they break down as `submitRequirementResults` 48 MB (65%), whitespace 15 MB, comment `message` text 4.2 MB (6%) and other comment fields 6 MB | **Yes, only the comment fields** |
+| older blobs | 9,571 | 26 MB | 3.3 MB | Earlier versions of the notes blobs | No |
+| trees | 15,733 | 2 MB | 1.6 MB | Notes trees | Only to find the tip blobs |
+| **total** | 131,581 | 175 MB | **60 MB** (32 MB after `repack -a -d -f`) | | |
+
+**So the part `derive` actually uses is about 10 MB of 175 MB uncompressed,
+about 6%. Of that, comment text is 4 MB, about 2.4%.**
+
+The bulk is review-event history (commits) plus the stored submit-requirement
+results. Both compress well, and both are fetched only because fetching a ref
+downloads its whole history.
+- A shallow fetch (`--depth=1`) would cut the download to roughly the tip blobs,
+  about 11 MB/week instead of 60 MB.
+- That would drop the commit history, which is exactly the data the retention
+  goal wants. We don't do it.
+
+#### Size projection for one year (52 weeks)
+
+| Store | Per week (W44) | Per year |
+|---|---|---|
+| NoteDb repo, as fetched | 60 MB | about 3.1 GB (about 1.7 GB if repacked once) |
+| `raw.sqlite` listings | 9.7 MB | about 0.5 GB |
+| **Total raw** | about 70 MB | **about 2.2–3.6 GB** |
+
+The download volume from googlesource is about the same as the as-fetched pack
+size, about 3 GB/year. Older weeks may be somewhat smaller: there were fewer
+CLs in earlier years, and `submitRequirementResults` notes only exist for
+changes closed after submit requirements were introduced. Five years is
+therefore under about 15 GB. That is not a storage concern on this machine.
+
 ## 4. Privacy
 
 The private DBs hold individual email addresses, names, the full text of review
@@ -431,10 +510,9 @@ What to commit and what to keep local:
 - `account_orgs.csv` is the most sensitive file. It holds manual employer guesses
   for chromium.org accounts. Keep it local, record a source per line, and prefer
   coarse rules over per-person curation where possible.
-- Retention: the raw cache contains comment text that the metrics only need as
-  lengths. That is acceptable for a local research cache. If the dataset ever
-  moves to shared infrastructure, consider a derived-only mode that drops message
-  bodies after computing lengths.
+- Retention: the raw stores keep full comment text and review history, although
+  today's metrics need only counts and lengths. This is deliberate (§3.8). The
+  data stays local in `data/private/` and is never committed or shared.
 
 ## 5. Open questions (do not block the first week)
 

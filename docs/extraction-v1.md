@@ -30,8 +30,12 @@ NoteDb `git fetch`  ─► data/private/notedb/*.git ┼─ derive ─► data/p
 Cloudflare Radar    ─► data/public/radar/raw/ ──── radar ──► data/public/radar_browser_share.csv
 ```
 
-- `data/private/` (gitignored) holds per-person data. Everything in it can be
-  rebuilt by re-running `extract` and `derive`.
+- `data/private/` (gitignored) holds per-person data.
+  - `raw.sqlite` and `notedb/` keep **everything downloaded, losslessly and
+    permanently**, even data no metric uses yet. This is the intended design;
+    see `storage-design.md` §3.8, which also covers what NoteDb contains and
+    the size per year.
+  - `cosh.sqlite` is derived, holds only counts and lengths, and can be rebuilt.
 - `data/public/`, `summaries/`, `config/`, code and docs are committed.
 
 ## What we fetch from Gerrit, and how gently

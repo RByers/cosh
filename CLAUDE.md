@@ -34,3 +34,7 @@ implementation and metric definitions.
   `rm data/private/cosh.sqlite && python3 -m cosh derive`.
 - Never delete `data/private/raw.sqlite` or `data/private/notedb/`. Those
   hold the fetched data, and re-fetching costs server load.
+- **Keep everything downloaded.** The raw stores are lossless on purpose
+  (`docs/storage-design.md` §3.8). Never strip, truncate or "slim" them, and
+  never prune a NoteDb repo (`gc --prune`, `prune`). Reduce data only in
+  `cosh.sqlite`.
