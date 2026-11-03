@@ -11,6 +11,7 @@ import { afterAll as after, beforeAll as before, test } from 'vitest';
 import { fileURLToPath } from 'node:url';
 import puppeteer, { type Browser, type Page } from 'puppeteer-core';
 import { preview, type PreviewServer } from 'vite';
+import { randomPort } from '../vite.config.ts';
 
 const webDir = fileURLToPath(new URL('..', import.meta.url));
 const chromePath = process.env.CHROME_PATH ?? '/usr/bin/google-chrome';
@@ -21,7 +22,12 @@ let baseUrl: string;
 
 before(async () => {
   assert.ok(existsSync(join(webDir, 'dist/index.html')), 'run `npm run build` first');
-  server = await preview({ root: webDir, logLevel: 'silent', preview: { host: '127.0.0.1', port: 0 } });
+  // Always a random unforwarded port (argus-config/ports.md), even when the user runs the tests.
+  server = await preview({
+    root: webDir,
+    logLevel: 'silent',
+    preview: { host: 'localhost', port: randomPort(), strictPort: false },
+  });
   baseUrl = server.resolvedUrls!.local[0];
   browser = await puppeteer.launch({
     executablePath: chromePath,

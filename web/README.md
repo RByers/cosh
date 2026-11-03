@@ -32,10 +32,20 @@ The metric and week are kept in the URL hash (`#metric=cls&week=2026-W44`).
 ```
 cd web
 npm ci
-npm run dev        # http://localhost:5173
+npm run dev        # http://localhost:5190
 npm run build      # -> web/dist
+npm run preview    # serves web/dist at http://localhost:5191
 npm test           # build + unit tests + headless Chrome tests
 ```
+
+### Dev server ports
+
+Ports follow `~/projects/argus-config/ports.md`. 5190 (dev) and 5191 (preview)
+are cosh's user ports, forwarded to the laptop over SSH, with `strictPort` so
+a clash fails loudly. Servers started under Claude Code (`CLAUDECODE=1`) get a
+random port in 20000–39999 unless `DEV_PORT=user` is set. Use
+`DEV_PORT=user npm run preview` to hand a server to the user. The browser
+tests always use a random port in that range.
 
 The browser tests use `puppeteer-core` with an installed Chrome
 (`/usr/bin/google-chrome`, override with `CHROME_PATH`); they download no
