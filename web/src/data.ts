@@ -24,6 +24,7 @@ export interface SummaryRow {
   comments: number;
   review_chars: number;
   ai_comments: number;
+  post_merge_comments: number;
   share_cls: number;
   share_comments: number;
   share_chars: number;

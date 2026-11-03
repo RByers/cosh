@@ -1,7 +1,11 @@
+import os
+import tempfile
 import unittest
 
 from cosh.derive import derive_change, human_text
+from cosh import store
 from cosh.orgs import OrgResolver, load_affiliations, parse_json5
+from cosh.summarize import summarize
 
 OWNER = {"_account_id": 1, "email": "author@chromium.org"}
 REV = {"_account_id": 2, "email": "rev@microsoft.com"}
@@ -89,6 +93,31 @@ class DeriveTest(unittest.TestCase):
         aff = load_affiliations()
         self.assertGreater(len(aff), 20)
         self.assertTrue(all("@" in e for e in aff))
+
+
+class SummarizeTest(unittest.TestCase):
+    def test_post_merge_comments_reported_separately(self):
+        with tempfile.TemporaryDirectory() as d:
+            db = store.open_cosh(d)
+            h = "chromium-review.googlesource.com"
+            with db:
+                db.execute("INSERT INTO accounts VALUES (?,1,'owner@igalia.com',NULL,0)", (h,))
+                for aid in range(2, 7):   # 5 reviewers, so igalia.com isn't folded into Other
+                    db.execute("INSERT INTO accounts VALUES (?,?,?,NULL,0)", (h, aid, f"r{aid}@igalia.com"))
+                db.execute("""INSERT INTO changes(host, change_number, project, branch, owner_account,
+                              status, created_at, closed_at, iso_week)
+                              VALUES (?,100,'chromium/src','main',1,'MERGED','2026-10-26 00:00:00',
+                              '2026-10-27 12:00:00','2026-W44')""", (h,))
+                # (account, review_comments, ai_comments, post_merge_comments)
+                for aid, rc, ai, pm in [(2, 3, 1, 2), (3, 0, 0, 1), (4, 1, 0, 0), (5, 1, 0, 0), (6, 1, 0, 0)]:
+                    db.execute("""INSERT INTO reviews(host, change_number, account_id, review_comments,
+                                  review_chars, ai_comments, post_merge_comments)
+                                  VALUES (?,100,?,?,?,?,?)""", (h, aid, rc, rc * 10, ai, pm))
+            db.close()
+            out = os.path.join(d, "summaries")
+            rows = summarize(data_dir=d, out_dir=out)
+        self.assertEqual([(r["org"], r["comments"], r["ai_comments"], r["post_merge_comments"])
+                          for r in rows], [("igalia.com", 6, 1, 3)])
 
 if __name__ == "__main__":
     unittest.main()

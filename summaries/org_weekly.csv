@@ -1,6 +1,6 @@
-iso_week,org,share,reviewed_cls,reviewers,comments,review_chars,ai_comments,share_cls,share_comments,share_chars
-2026-W44,google.com,0.9591,4446,851,9998,1849689,1092,0.969,0.9591,0.9689
-2026-W44,microsoft.com,0.0304,55,33,317,41807,0,0.012,0.0304,0.0219
-2026-W44,Other,0.0045,43,13,47,8387,40,0.0094,0.0045,0.0044
-2026-W44,igalia.com,0.0037,27,11,39,5612,0,0.0059,0.0037,0.0029
-2026-W44,gmail.com,0.0022,17,13,23,3479,0,0.0037,0.0022,0.0018
+iso_week,org,share,reviewed_cls,reviewers,comments,review_chars,ai_comments,post_merge_comments,share_cls,share_comments,share_chars
+2026-W44,google.com,0.9591,4446,851,9998,1849689,1092,69,0.969,0.9591,0.9689
+2026-W44,microsoft.com,0.0304,55,33,317,41807,0,1,0.012,0.0304,0.0219
+2026-W44,Other,0.0045,43,13,47,8387,40,1,0.0094,0.0045,0.0044
+2026-W44,igalia.com,0.0037,27,11,39,5612,0,0,0.0059,0.0037,0.0029
+2026-W44,gmail.com,0.0022,17,13,23,3479,0,7,0.0037,0.0022,0.0018

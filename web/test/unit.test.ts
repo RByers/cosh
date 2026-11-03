@@ -42,6 +42,7 @@ const row = (org: string, share: number, comments: number) => ({
   comments,
   review_chars: comments * 100,
   ai_comments: 0,
+  post_merge_comments: 0,
   share_cls: share,
   share_comments: share,
   share_chars: share,

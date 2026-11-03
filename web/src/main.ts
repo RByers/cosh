@@ -118,11 +118,13 @@ function renderTiles(data: Data, state: State) {
   const rows = data.summary.rows.filter((r) => r.iso_week === state.week);
   const human = rows.reduce((s, r) => s + r.comments, 0);
   const ai = rows.reduce((s, r) => s + r.ai_comments, 0);
+  const postMerge = rows.reduce((s, r) => s + (r.post_merge_comments ?? 0), 0);
   const tiles: [string, string, string][] = [
     ['CLs on main', t ? int(t.main_cls) : '—', t ? `${int(t.merged_cls)} merged, ${int(t.abandoned_cls)} abandoned` : ''],
     ['Human-owned CLs', t ? int(t.human_cls) : '—', t ? `${int(t.human_cls_with_review)} reviewed; ${int(t.bot_cls)} bot CLs` : ''],
     ['Review comments', int(human), `by ${int(rows.reduce((s, r) => s + r.reviewers, 0))} reviewers`],
     ['Self-declared AI comments', int(ai), human + ai ? `${pct(ai / (human + ai))} of all; at least` : ''],
+    ['Post-merge comments', int(postMerge), 'written after the CL landed; not in the headline'],
   ];
   $('#tiles').replaceChildren(
     ...tiles.map(([k, v, sub]) => {
@@ -175,6 +177,7 @@ function renderTable(data: Data, state: State, colors: Map<string, string>) {
         it.row ? int(it.row.reviewers) : '<5',
         it.row ? int(it.row.comments) : '—',
         it.row ? int(it.row.ai_comments) : '—',
+        it.row && it.row.post_merge_comments !== undefined ? int(it.row.post_merge_comments) : '—',
       ];
       tr.append(orgCell, ...cells.map((c, i) => el('td', c, i === 2 ? 'ratio' : undefined)));
       return tr;
