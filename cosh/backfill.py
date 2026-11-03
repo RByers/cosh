@@ -3,8 +3,8 @@
   python3 -m cosh backfill --weeks 52            # print the plan only
   python3 -m cosh backfill --weeks 52 --go       # actually fetch
 
-POLICY (see CLAUDE.md): do not run with --go beyond the already-fetched week
-until the web UI is built and the user has validated the design.
+POLICY (see CLAUDE.md): the one-year backfill (52 weeks) is approved; going
+further back still needs explicit approval.
 
 Per week: REST listing (~56 requests) + NoteDb git fetches (~18 x 200 refs),
 serial, one connection. duty_cycle=0.5 idles after every git fetch for as long
