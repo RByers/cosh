@@ -154,18 +154,21 @@ def derive(data_dir=store.DATA_DIR, weeks=None, source="auto"):
                         int(is_bot_account(a))))
     repos = {}
     sources = {}
-    q = "SELECT host, project, iso_week, change_number, window_key FROM week_changes"
+    # Ordered by window so only one parsed listing window is held in memory at
+    # a time; caching every window ran a 31-week derive out of memory.
+    q = ("SELECT host, project, iso_week, change_number, window_key FROM week_changes "
+         "ORDER BY host, window_key, change_number")
     rows = raw.execute(q).fetchall()
     if weeks:
         rows = [r for r in rows if r[2] in weeks]
 
-    window_cache = {}
+    window_key = window = None
     n_changes = n_reviews = 0
     for host, project, iso_week, number, wkey in rows:
-        if (host, wkey) not in window_cache:
+        if (host, wkey) != window_key:
             _, body = store.get_response(raw, host, "list_window", wkey)
-            window_cache[(host, wkey)] = {c["_number"]: c for c in json.loads(body)}
-        change = window_cache[(host, wkey)][number]
+            window_key, window = (host, wkey), {c["_number"]: c for c in json.loads(body)}
+        change = window[number]
         comments, used = load_comments(raw, repos, host, project, number, source)
         sources[used] = sources.get(used, 0) + 1
 
