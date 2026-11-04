@@ -292,7 +292,8 @@ class PathScopeTest(unittest.TestCase):
         s = self.SCOPE
         self.assertEqual(s.area("third_party/blink/renderer/core/a.cc"), "third_party/blink/")
         self.assertEqual(s.area("third_party/skia/a.cc"), "third_party/")
-        self.assertEqual(s.area("chrome/browser/web_applications/x/a.cc"), "chrome/browser/web_applications/")
+        # Re-included directories stay inside their parent's area.
+        self.assertEqual(s.area("chrome/browser/web_applications/x/a.cc"), "chrome/")
         self.assertEqual(s.area("chrome/browser/ui/a.cc"), "chrome/")
         self.assertEqual(s.area("DEPS"), ROOT_FILES)
         self.assertEqual(s.area(None), UNPLACED)
@@ -316,10 +317,11 @@ class PathScopeTest(unittest.TestCase):
         from cosh.paths import dir_tree
         totals = {"a/b/c/": 5, "a/b/d/": 1, "a/x/": 3, "a/b/web/": 0, UNPLACED: 2}
         nodes, bucket = dir_tree(totals, parse_rules("exclude a/\ninclude a/b/web/\n"), limit=1)
-        # a/b/c/ is kept with its ancestor a/b/; a/ and a/b/web/ are roots (area,
-        # include rule); the rest roll up into their nearest kept ancestor.
+        # a/b/c/ is kept with its ancestor a/b/, and every rule directory is kept
+        # (a/b/web/ inside a/b/, not a root); the rest roll up into their nearest
+        # kept ancestor.
         self.assertEqual(nodes, [(UNPLACED, None), ("a/", None), ("a/b/", "a/"), ("a/b/c/", "a/b/"),
-                                 ("a/b/web/", None)])
+                                 ("a/b/web/", "a/b/")])
         self.assertEqual([bucket(d) for d in ["a/b/c/", "a/b/d/", "a/x/", "a/b/web/x/", UNPLACED]],
                          ["a/b/c/", "a/b/", "a/", "a/b/web/", UNPLACED])
 
@@ -403,15 +405,21 @@ class SummarizeTest(unittest.TestCase):
             return label if parent < 0 else full(parent) + label
         paths = [full(i) for i in range(len(nodes))]
         roots = {paths[i] for i, n in enumerate(nodes) if n[0] < 0}
-        self.assertEqual(roots, {UNPLACED, "chrome/", "third_party/blink/", "chrome/browser/web_applications/",
-                                 "chrome/browser/webnn/", "components/services/storage/", "components/viz/"})
-        self.assertEqual(set(paths) - roots, {"chrome/browser/", "chrome/browser/ui/", "third_party/blink/renderer/",
-                                              "third_party/blink/renderer/core/"})
+        # Roots: top-level directories and `area` prefixes. Every rule directory
+        # is a node, so re-included ones sit inside their (excluded) parents.
+        self.assertEqual(roots, {UNPLACED, "chrome/", "ios/", "android_webview/", "ash/", "chromeos/", "components/",
+                                 "third_party/blink/"})
+        self.assertEqual(set(paths) - roots, {
+            "chrome/browser/", "chrome/browser/ui/", "chrome/browser/web_applications/", "chrome/browser/webnn/",
+            "components/viz/", "components/services/", "components/services/storage/",
+            "third_party/blink/renderer/", "third_party/blink/renderer/core/"})
         # Children store only their own segment; parents come first.
         self.assertEqual(nodes[paths.index("chrome/browser/ui/")][1], "ui/")
         self.assertTrue(all(n[0] < i for i, n in enumerate(nodes)))
-        self.assertEqual({p for i, p in enumerate(paths) if nodes[i][2]},
-                         roots - {UNPLACED, "chrome/"} | {"third_party/blink/renderer/", "third_party/blink/renderer/core/"})
+        self.assertEqual({p for i, p in enumerate(paths) if nodes[i][2]}, {
+            "chrome/browser/web_applications/", "chrome/browser/webnn/", "components/viz/",
+            "components/services/storage/", "third_party/blink/", "third_party/blink/renderer/",
+            "third_party/blink/renderer/core/"})
         # [comments, reviewed CLs, chars] per (bucket, org).
         got = {(paths[n], areas["orgs"][o]): v for n, o, *v in areas["weeks"]["2026-W44"]}
         self.assertEqual(got, {("chrome/browser/ui/", "microsoft.com"): [2, 1, 20],

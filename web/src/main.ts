@@ -446,9 +446,8 @@ function renderAreas(data: Data, state: State, colors: Map<string, string>, them
   $('#areas-sub').textContent = total
     ? `${what} in ${rangeLabel(state.range)}, by the directory of the file each comment is on: the ${unit} per ` +
       `directory, and how they split across organizations. ${pct(inScope / total)} of them ` +
-      `(${int(inScope)} of ${int(total)}) are on the paths the rest of the page counts; hatched bars marked ` +
-      '“excluded” are left out. Use ▸ to open a directory, or a “more” row for the next ' +
-      'entries; ▾ closes it again.' +
+      `(${int(inScope)} of ${int(total)}) are on the paths the rest of the page counts; the hatched part of a ` +
+      'bar is left out. Use ▸ to open a directory, or a “more” row for the next entries; ▾ closes it again.' +
       (state.metric === 'cls' ? ' A CL with comments in two directories counts in each.' : '')
     : `No review data for ${rangeLabel(state.range)}.`;
   const legend = [...orgs.map((org) => ({ org, color: segColors.get(org) ?? '' })), { org: OTHER, color: '' }];

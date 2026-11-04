@@ -52,15 +52,13 @@ export function buildAreaChart(
   const list = node('ol', 'ar-rows');
   list.append(
     ...rows.map((r) => {
-      const cls = ['ar-row', `ar-${r.kind}`];
-      if (r.included === false) cls.push('ar-excluded');
-      if (r.included === null) cls.push('ar-mixed');
-      const li = node('li', cls.join(' '));
+      const li = node('li', `ar-row ar-${r.kind}`);
       li.dataset.key = r.key;
       li.dataset.depth = String(r.depth);
       const shareOf = (org: string) => (r.value ? (r.byOrg.get(org) ?? 0) / r.value : 0);
       const others = 1 - shareOf(MAJORITY_ORG);
-      const status = r.included === null ? 'partly included' : r.included ? 'included' : 'excluded';
+      const status = r.included >= 1 ? 'included' : r.included <= 0 ? 'excluded' : `${pct(r.included)} included`;
+      li.dataset.included = String(r.included);
       const lines = segOrder
         .filter((o) => r.byOrg.get(o))
         .map((o) => `  ${o}: ${int(r.byOrg.get(o)!)} (${pct(shareOf(o))})`);
@@ -79,7 +77,6 @@ export function buildAreaChart(
         label.append(node('span', 'ar-toggle-space'));
       }
       label.append(node('span', 'ar-name', r.label));
-      if (r.depth === 0 && r.kind === 'dir') label.append(node('span', 'ar-tag', status));
 
       const vol = node('span', 'ar-vol');
       const torn = r.value > max;
@@ -88,6 +85,13 @@ export function buildAreaChart(
       // the label never runs into the next column.
       bar.style.width = `calc((100% - var(--ar-label-room)) * ${max ? Math.min(r.value, max) / max : 0})`;
       if (torn) bar.title = `Bar truncated: ${int(r.value)} is off the scale`;
+      // Solid for the part in scope, hatched for the part left out.
+      for (const [part, share] of [['ar-bar-in', r.included], ['ar-bar-out', 1 - r.included]] as const) {
+        if (share <= 0) continue;
+        const seg = node('span', part);
+        seg.style.flexGrow = String(share);
+        bar.append(seg);
+      }
       vol.append(bar, node('span', 'ar-value', int(r.value)));
 
       const dist = node('span', 'ar-dist');

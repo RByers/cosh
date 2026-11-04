@@ -163,10 +163,10 @@ test('directory rows drill down, and "more" rows open 20 at a time and close aga
   const start = await read();
   assert.equal(await page.$('#area-count'), null);
   assert.ok(start.every((r) => r.depth === 0));
-  // The top level: 20 largest, re-included directories, then one "more" row.
+  // The top level: the 20 largest, then one "more" row.
   const others = start.filter((r) => r.kind === 'other');
   assert.equal(others.length, 1);
-  assert.ok(start.length >= 21 && start.length <= 26, String(start.length));
+  assert.equal(start.length, 21);
   // Open third_party/blink/: its children appear one level down and add up to it.
   const blink = start.find((r) => r.name === 'third_party/blink/')!;
   await page.click(`li[data-key="${blink.key}"] .ar-toggle`);
@@ -186,6 +186,16 @@ test('directory rows drill down, and "more" rows open 20 at a time and close aga
   const revealed = rows.slice(k + 1).filter((r) => r.depth === 1);
   assert.ok(revealed.length >= 1 && revealed.length <= 21, String(revealed.length));
   assert.equal(revealed.reduce((s, r) => s + r.value, 0), others[0].value);
+  // components/ is excluded except viz/ (and services/storage/): opening it shows viz/ fully in scope.
+  const components = start.find((r) => r.name === 'components/')!;
+  await page.click(`li[data-key="${components.key}"] .ar-toggle`);
+  const inComponents = await page.evaluate(() =>
+    Object.fromEntries([...document.querySelectorAll<HTMLElement>('#area-chart .ar-row[data-depth="1"]')]
+      .map((r) => [r.querySelector('.ar-name')!.textContent!, Number(r.dataset.included)])));
+  assert.equal(inComponents['viz/'], 1);
+  assert.equal(inComponents['autofill/'], 0);
+  assert.ok(inComponents['services/'] > 0, String(inComponents['services/']));
+  await page.click(`li[data-key="${components.key}"] .ar-toggle`);
   // Close both again: back to the start.
   await page.click(`li[data-key="${others[0].key}"] .ar-toggle`);
   await page.click(`li[data-key="${blink.key}"] .ar-toggle`);
@@ -235,9 +245,10 @@ test('review by directory shows volume and org split per directory, and the path
     return {
       rows: rows.map((r) => ({
         name: r.querySelector('.ar-name')!.textContent!,
-        tag: r.querySelector('.ar-tag')?.textContent ?? null,
         other: r.classList.contains('ar-other'),
-        excluded: r.classList.contains('ar-excluded'),
+        included: Number(r.dataset.included),
+        solid: r.querySelector('.ar-bar-in')?.getBoundingClientRect().width ?? 0,
+        hatched: r.querySelector('.ar-bar-out')?.getBoundingClientRect().width ?? 0,
         value: Number(r.querySelector('.ar-value')!.textContent!.replace(/,/g, '')),
         bar: r.querySelector('.ar-bar')!.getBoundingClientRect().width,
         torn: r.querySelector('.ar-bar')!.classList.contains('ar-torn'),
@@ -254,15 +265,20 @@ test('review by directory shows volume and org split per directory, and the path
   });
   const by = Object.fromEntries(d.rows.map((r) => [r.name, r]));
   for (const name of ['chrome/', 'third_party/blink/', 'content/', '(no file)']) assert.ok(by[name], name);
-  // Directories an include rule brings back always get their own row.
-  for (const name of ['chrome/browser/web_applications/', 'chrome/browser/webnn/', 'components/viz/',
-    'components/services/storage/']) {
-    assert.ok(by[name], name);
-    assert.equal(by[name].tag, 'included');
+  // Re-included directories stay inside their parents, which are partly
+  // included: their bars are solid for that part and hatched for the rest.
+  for (const name of ['chrome/browser/web_applications/', 'components/viz/', 'components/services/storage/']) {
+    assert.equal(by[name], undefined, name);
   }
-  assert.equal(by['chrome/'].tag, 'excluded');
-  assert.ok(by['chrome/'].excluded && by['(no file)'].excluded);
-  assert.equal(by['third_party/blink/'].tag, 'included');
+  for (const name of ['chrome/', 'components/']) {
+    assert.ok(by[name].included > 0 && by[name].included < 0.2, `${name} ${by[name].included}`);
+    assert.ok(by[name].solid > 0 && by[name].hatched > 0, name);
+  }
+  assert.equal(by['(no file)'].included, 0);
+  assert.equal(by['(no file)'].solid, 0);
+  assert.equal(by['third_party/blink/'].included, 1);
+  assert.equal(by['third_party/blink/'].hatched, 0);
+  assert.equal(await page.$('#area-chart .ar-tag'), null);
   // Bars share one scale: the largest directory has the longest bar. chrome/
   // dwarfs the rest, so its bar is torn and the others are scaled up.
   const top = [...d.rows].filter((r) => !r.other).sort((a, b) => b.value - a.value)[0];

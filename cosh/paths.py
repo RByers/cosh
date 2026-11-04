@@ -31,9 +31,10 @@ def is_file(path):
 
 class PathScope:
     def __init__(self, rules, areas=()):
-        """rules: [(prefix, included)]; areas: extra chart-only prefixes."""
+        """rules: [(prefix, included)]; areas: chart-only prefixes that are
+        top-level rows of the web UI's directory tree (e.g. third_party/blink/)."""
         self.rules = sorted(rules, key=lambda r: -len(r[0]))
-        self.areas = sorted({p for p, _ in rules} | set(areas), key=len, reverse=True)
+        self.areas = sorted(set(areas), key=len, reverse=True)
 
     def includes(self, path):
         """Whether a placed file path is in scope. None (unplaced) never is."""
@@ -45,7 +46,11 @@ class PathScope:
         return True
 
     def area(self, path):
-        """The chart directory for a placed path (None -> UNPLACED)."""
+        """The top-level row of the directory tree a placed path is under:
+        the longest matching `area` prefix, else its top-level directory
+        (None -> UNPLACED, a file at the top -> ROOT_FILES). Include and exclude
+        rules don't make areas: a re-included directory stays inside its
+        parent, which is then partly included."""
         if path is None:
             return UNPLACED
         for prefix in self.areas:
@@ -114,11 +119,12 @@ def dir_tree(totals, scope, limit=DIR_LIMIT):
     """The directory tree the web UI drills into.
 
     totals: {directory: comments} (directories as from directory()).
-    Roots are the areas (scope.area: rule and `area` prefixes, else top-level
+    Roots are the areas (scope.area: `area` prefixes, else top-level
     directories, plus UNPLACED and ROOT_FILES). Below a root, the `limit`
     directories with the most comments are kept, with their ancestors up to
-    the root, so the tree is connected; every include-rule directory is a root
-    even with no comments. A directory that isn't kept is counted in its
+    the root, so the tree is connected. Every include/exclude rule directory
+    is kept too, so each node's own bucket is wholly in or out of scope. A
+    directory that isn't kept is counted in its
     nearest kept ancestor (its "rest" bucket), so children always sum to their
     parent. Over 2025-W45..2026-W44, 10,312 directories had comments, so a
     limit of 10,000 keeps 99.9% of comments in their own directory.
@@ -135,7 +141,7 @@ def dir_tree(totals, scope, limit=DIR_LIMIT):
     kept = set(sorted(real, key=lambda d: (-totals[d], d))[:limit])
     kept |= {d for d in totals if d in pseudo}
     kept |= {root(d) for d in real}
-    kept |= {p for p, inc in scope.rules if inc}
+    kept |= {p for p, _ in scope.rules}
     for d in list(kept):
         r = root(d)
         while d != r and d not in pseudo:

@@ -403,50 +403,54 @@ const DIRS: DirBoard = {
     [-1, 'content/', 1], // 4
     [4, 'browser/', 1], // 5
     [4, 'renderer/', 1], // 6
-    [-1, 'chrome/browser/webnn/', 1], // 7: re-included, no comments
+    [2, 'webnn/', 1], // 7: re-included inside an excluded parent
   ],
   weeks: {
     '2026-W43': [[3, 0, 20, 1, 200]],
     '2026-W44': [[2, 0, 10, 1, 100], [3, 0, 10, 1, 100], [5, 0, 6, 1, 60], [5, 1, 4, 1, 40], [6, 0, 3, 1, 30],
-      [4, 0, 2, 1, 20], [0, 0, 5, 1, 50]],
+      [4, 0, 2, 1, 20], [0, 0, 5, 1, 50], [7, 1, 4, 1, 40]],
   },
 };
 const W = ['2026-W43', '2026-W44'];
 
-test('dirTotals sums each bucket into its ancestors', () => {
+test('dirTotals sums each bucket into its ancestors, and what is in scope', () => {
   const t = dirTotals(DIRS, W, ['google.com'], 'comments');
-  assert.deepEqual([t.total[1], t.total[2], t.own[2], t.total[3], t.total[4], t.own[4]], [40, 40, 10, 30, 15, 2]);
+  assert.deepEqual([t.total[1], t.total[2], t.own[2], t.total[3], t.total[4], t.own[4]], [44, 44, 10, 30, 15, 2]);
+  // chrome/ is excluded but holds the re-included webnn/.
+  assert.deepEqual([t.inc[1], t.inc[2], t.inc[7], t.inc[4], t.inc[0]], [4, 4, 4, 15, 0]);
   // Orgs outside the list count as Other.
   assert.deepEqual(Object.fromEntries(t.byOrg[4]!), { 'google.com': 11, [OTHER]: 4 });
-  assert.equal(dirTotals(DIRS, W, ['google.com'], 'chars').total[1], 400);
+  assert.equal(dirTotals(DIRS, W, ['google.com'], 'chars').total[1], 440);
   assert.equal(dirTotals(DIRS, ['2026-W44'], ['google.com'], 'cls').total[4], 4);
   assert.deepEqual(topDirOrgs(DIRS, W, 'comments'), ['google.com', 'microsoft.com']);
 });
 
-test('dirRows lists a page per level, pins re-included roots, and expands and collapses', () => {
+test('dirRows lists a page per level, and expands and collapses', () => {
   const t = dirTotals(DIRS, W, ['google.com', 'microsoft.com'], 'comments');
   const show = (open: string[], page = 2) =>
     dirRows(DIRS, t, new Set(open), page).map((r) => `${'  '.repeat(r.depth)}${r.label} ${r.value}${r.expandable ? (r.expanded ? ' -' : ' +') : ''}`);
-  // Top level: 2 largest, the re-included root (even at 0), then "other".
-  assert.deepEqual(show([]), ['chrome/ 40 +', 'content/ 15 +', 'chrome/browser/webnn/ 0', '1 more 5 +']);
+  // Top level: the 2 largest, then "other". Re-included directories stay inside their parents.
+  assert.deepEqual(show([]), ['chrome/ 44 +', 'content/ 15 +', '1 more 5 +']);
   // A directory opens into its subdirectories plus "rest of" its own files; children add up.
-  assert.deepEqual(show(['d1', 'd2']), ['chrome/ 40 -', '  browser/ 40 -', '    ui/ 30', '    rest of browser/ 10',
-    'content/ 15 +', 'chrome/browser/webnn/ 0', '1 more 5 +']);
+  assert.deepEqual(show(['d1', 'd2']), ['chrome/ 44 -', '  browser/ 44 -', '    ui/ 30', '    rest of browser/ 10',
+    '    1 more 4 +', 'content/ 15 +', '1 more 5 +']);
   assert.deepEqual(show(['o:root:2']).slice(-2), ['1 more 5 -', '  (no file) 5']);
   // Page size 1: each "other" reveals one more entry, one level deeper, and
   // keeps an "other" for the rest.
   assert.deepEqual(show(['o:root:1', 'd4', 'o:d4:1', 'o:o:d4:1:2'], 1), [
-    'chrome/ 40 +', 'chrome/browser/webnn/ 0', '2 more 20 -',
+    'chrome/ 44 +', '2 more 20 -',
     '  content/ 15 -', '    browser/ 10', '    2 more 5 -', '      renderer/ 3', '      1 more 2 -',
     '        rest of content/ 2',
     '  1 more 5 +',
   ]);
   // Collapsing a parent hides everything below it, whatever else is open.
-  assert.deepEqual(show(['d4', 'o:d4:1', 'o:o:d4:1:2'], 1), ['chrome/ 40 +', 'chrome/browser/webnn/ 0', '2 more 20 +']);
-  // Rows carry inclusion, and "other" groups mixing both say so.
-  const rows = dirRows(DIRS, t, new Set(), 1);
-  assert.deepEqual(rows.map((r) => r.included), [false, true, null]);
-  assert.equal(rows[2].count, 2);
+  assert.deepEqual(show(['d4', 'o:d4:1', 'o:o:d4:1:2'], 1), ['chrome/ 44 +', '2 more 20 +']);
+  // Each row carries the share of its value that is in scope.
+  const top = dirRows(DIRS, t, new Set(), 1);
+  assert.deepEqual(top.map((r) => r.included), [4 / 44, 0.75]);
+  assert.equal(top[1].count, 2);
+  const inBrowser = dirRows(DIRS, t, new Set(['d1', 'd2']), 5).slice(2, 5);
+  assert.deepEqual(inBrowser.map((r) => [r.label, r.included]), [['ui/', 0], ['rest of browser/', 0], ['webnn/', 1]]);
 });
 
 test('barScale breaks the axis only when a few bars dwarf the rest', () => {

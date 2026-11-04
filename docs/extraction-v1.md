@@ -257,9 +257,14 @@ counts.
 - **Directory tree** (`area_weekly.json`, the web UI's "Review by
   directory" chart; `dir_tree` in `cosh/paths.py`): every comment, in scope
   or not, so the page can show what the scope leaves out.
-  - Roots are the areas: the longest matching rule or `area` prefix in
+  - Roots are the areas: the longest matching `area` prefix in
     `config/paths.txt` (`third_party/blink/` is listed as one), else the
     top-level directory, plus `(no file)` and `(top-level files)`.
+    Re-included directories stay inside their parents.
+  - Every include/exclude rule directory is a node, so each node's own
+    bucket is wholly in or out of scope, and the UI can show how much of a
+    partly included directory (e.g. `components/`, with `viz/` and
+    `services/storage/` back in) is in scope.
   - Below a root, the 10,000 directories with the most comments
     (`DIR_LIMIT`) are kept, with their ancestors. A comment in any other
     directory counts in its nearest kept ancestor's own bucket. Over

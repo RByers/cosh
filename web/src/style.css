@@ -620,25 +620,7 @@ a.lb-row:hover .lb-bar {
   color: var(--text-muted);
 }
 
-/* An "other" group mixing included and excluded directories: a lighter bar. */
-.ar-mixed .ar-bar {
-  background: var(--text-muted);
-}
 
-.ar-tag {
-  flex: none;
-  padding: 0 4px;
-  border: 1px solid var(--border);
-  border-radius: 3px;
-  font-size: 10px;
-  line-height: 14px;
-  color: var(--text-muted);
-}
-
-.ar-excluded .ar-tag {
-  color: var(--text-primary);
-  border-color: var(--baseline);
-}
 
 .ar-head .ar-label,
 .ar-head .ar-vol,
@@ -652,13 +634,33 @@ a.lb-row:hover .lb-bar {
   min-width: 0;
 }
 
+/* A volume bar: solid for the part in scope, hatched for the part the path
+ * scope leaves out (a partly included directory has both). */
 .ar-bar {
   position: relative;
+  display: flex;
   flex: none;
   min-width: 2px;
   height: 12px;
-  border-radius: 0 3px 3px 0;
+}
+
+.ar-bar-in,
+.ar-bar-out {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.ar-bar-in {
   background: var(--text-secondary);
+}
+
+.ar-bar-out {
+  background: repeating-linear-gradient(135deg, var(--text-muted) 0 2px, transparent 2px 5px);
+  box-shadow: inset 0 0 0 1px var(--text-muted);
+}
+
+.ar-bar > :last-child {
+  border-radius: 0 3px 3px 0;
 }
 
 /* A bar longer than the scale (see barScale): a slanted break near its end,
@@ -681,11 +683,6 @@ a.lb-row:hover .lb-bar {
   background: color-mix(in srgb, var(--grid) 60%, var(--surface-1));
 }
 
-/* Excluded directories: a hatched, muted bar (texture, not just colour). */
-.ar-excluded .ar-bar {
-  background: repeating-linear-gradient(135deg, var(--text-muted) 0 2px, transparent 2px 5px);
-  box-shadow: inset 0 0 0 1px var(--text-muted);
-}
 
 .ar-value {
   flex: none;

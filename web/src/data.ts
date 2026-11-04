@@ -698,8 +698,8 @@ export function barScale(
 // Review by directory (summaries/area_weekly.json): a tree to drill into.
 
 /** Every review comment, in scope or not, as a directory tree. Roots are the
- * areas (top-level directories, plus the prefixes config/paths.txt names, plus
- * "(no file)" and "(top-level files)"); below them, the directories with the
+ * top-level directories, plus `area` prefixes from config/paths.txt (e.g.
+ * third_party/blink/), "(no file)" and "(top-level files)"; below them, the directories with the
  * most comments (meta.dir_limit) and their ancestors. Each week's rows are
  * [node, org, comments, cls, chars] for a node's own bucket: files directly in
  * it, or in a directory below it that isn't in the tree. A node's total is
@@ -744,6 +744,8 @@ export interface DirTotals {
   /** Per node: its own bucket's total and per-org split. */
   own: number[];
   ownByOrg: (Map<string, number> | undefined)[];
+  /** Per node: the part of its subtree's total that is in scope. */
+  inc: number[];
 }
 
 const addTo = (maps: (Map<string, number> | undefined)[], i: number, org: string, v: number) => {
@@ -758,7 +760,10 @@ export function dirTotals(board: DirBoard, weeks: string[], orgs: readonly strin
   const col = METRIC_INDEX[metric];
   const keep = new Set(orgs);
   const n = board.nodes.length;
-  const t: DirTotals = { total: new Array(n).fill(0), byOrg: new Array(n), own: new Array(n).fill(0), ownByOrg: new Array(n) };
+  const t: DirTotals = {
+    total: new Array(n).fill(0), byOrg: new Array(n), own: new Array(n).fill(0), ownByOrg: new Array(n),
+    inc: new Array(n).fill(0),
+  };
   for (const w of weeks) {
     for (const row of board.weeks[w] ?? []) {
       const v = row[col];
@@ -766,8 +771,11 @@ export function dirTotals(board: DirBoard, weeks: string[], orgs: readonly strin
       const org = keep.has(board.orgs[row[1]]) ? board.orgs[row[1]] : OTHER;
       t.own[row[0]] += v;
       addTo(t.ownByOrg, row[0], org, v);
+      // A node's own bucket is wholly in or out of scope (every rule directory is a node).
+      const inScope = board.nodes[row[0]][2] === 1;
       for (let i = row[0]; i >= 0; i = board.nodes[i][0]) {
         t.total[i] += v;
+        if (inScope) t.inc[i] += v;
         addTo(t.byOrg, i, org, v);
       }
     }
@@ -806,8 +814,9 @@ export interface DirRow {
   label: string;
   /** Full path, or a description for rest and other rows. */
   title: string;
-  /** true or false; null for an "other" group mixing both. */
-  included: boolean | null;
+  /** The share of `value` that is in scope: 1, 0, or in between for a
+   * directory (or "other" group) that is partly included. */
+  included: number;
   value: number;
   byOrg: Map<string, number>;
   expandable: boolean;
@@ -820,6 +829,7 @@ interface Item {
   kind: 'dir' | 'rest';
   node: number;
   value: number;
+  inc: number;
   byOrg: Map<string, number>;
 }
 
@@ -828,18 +838,17 @@ interface Item {
  * rest; expanding "other" lists its next DIR_PAGE entries (and a further
  * "other" if any are left), one level deeper. A directory with subdirectories
  * expands into them, plus a "rest of" row for its own bucket, so its children
- * add up to it. At the top level, directories an include rule brings back
- * are always listed, even at 0. */
+ * add up to it. Each row carries the share of its value that is in scope. */
 export function dirRows(board: DirBoard, t: DirTotals, expanded: ReadonlySet<string>, page = DIR_PAGE): DirRow[] {
   const { paths, children, roots } = dirTree(board);
-  const pinned = new Set(
-    (board.meta.path_rules ?? []).filter((r) => r.included).map((r) => paths.indexOf(r.prefix)).filter((i) => i >= 0),
-  );
   const out: DirRow[] = [];
   const byValue = (a: Item, b: Item) =>
     b.value - a.value || (a.kind === b.kind ? (paths[a.node] < paths[b.node] ? -1 : 1) : a.kind === 'dir' ? -1 : 1);
   const hasKids = (i: number) => children[i].some((c) => t.total[c] > 0);
   const empty = new Map<string, number>();
+  const share = (it: Item) => (it.value ? it.inc / it.value : board.nodes[it.node][2]);
+  const dirItem = (c: number): Item =>
+    ({ kind: 'dir', node: c, value: t.total[c], inc: t.inc[c], byOrg: t.byOrg[c] ?? empty });
 
   const emit = (item: Item, depth: number) => {
     const i = item.node;
@@ -847,7 +856,7 @@ export function dirRows(board: DirBoard, t: DirTotals, expanded: ReadonlySet<str
       out.push({
         key: `r${i}`, kind: 'rest', depth, label: `rest of ${board.nodes[i][1]}`,
         title: `${paths[i]}: files directly in this directory, and subdirectories too small to list`,
-        included: !!board.nodes[i][2], value: item.value, byOrg: item.byOrg, expandable: false, expanded: false,
+        included: share(item), value: item.value, byOrg: item.byOrg, expandable: false, expanded: false,
       });
       return;
     }
@@ -855,40 +864,42 @@ export function dirRows(board: DirBoard, t: DirTotals, expanded: ReadonlySet<str
     const expandable = hasKids(i);
     const open = expandable && expanded.has(key);
     out.push({
-      key, kind: 'dir', depth, label: board.nodes[i][1], title: paths[i], included: !!board.nodes[i][2],
+      key, kind: 'dir', depth, label: board.nodes[i][1], title: paths[i], included: share(item),
       value: item.value, byOrg: item.byOrg, expandable, expanded: open,
     });
     if (open) {
       const items: Item[] = children[i]
         .filter((c) => t.total[c] > 0)
-        .map((c) => ({ kind: 'dir' as const, node: c, value: t.total[c], byOrg: t.byOrg[c] ?? empty }));
-      if (t.own[i] > 0) items.push({ kind: 'rest', node: i, value: t.own[i], byOrg: t.ownByOrg[i] ?? empty });
-      group(items.sort(byValue), depth + 1, key, 0, new Set());
+        .map((c) => dirItem(c));
+      if (t.own[i] > 0) {
+        items.push({ kind: 'rest', node: i, value: t.own[i], inc: board.nodes[i][2] ? t.own[i] : 0,
+          byOrg: t.ownByOrg[i] ?? empty });
+      }
+      group(items.sort(byValue), depth + 1, key, 0);
     }
   };
 
   // Lists `items` (sorted) from `offset`: a page of them, then "other".
-  const group = (items: Item[], depth: number, parentKey: string, offset: number, keep: Set<number>) => {
-    const head = items.slice(0, page).concat(items.slice(page).filter((it) => it.kind === 'dir' && keep.has(it.node)));
-    const tail = items.slice(page).filter((it) => !(it.kind === 'dir' && keep.has(it.node)));
+  const group = (items: Item[], depth: number, parentKey: string, offset: number) => {
+    const head = items.slice(0, page);
+    const tail = items.slice(page);
     for (const it of head) emit(it, depth);
     if (!tail.length) return;
     const key = `o:${parentKey}:${offset + page}`;
     const byOrg = new Map<string, number>();
     for (const it of tail) for (const [o, v] of it.byOrg) byOrg.set(o, (byOrg.get(o) ?? 0) + v);
-    const inc = tail.map((it) => !!board.nodes[it.node][2]);
+    const value = tail.reduce((s, it) => s + it.value, 0);
+    const inc = tail.reduce((s, it) => s + it.inc, 0);
     const open = expanded.has(key);
     out.push({
       key, kind: 'other', depth, label: `${tail.length} more`, title: `${tail.length} more, smaller entries`,
-      included: inc.every(Boolean) ? true : inc.some(Boolean) ? null : false,
-      value: tail.reduce((s, it) => s + it.value, 0), byOrg, expandable: true, expanded: open, count: tail.length,
+      included: value ? inc / value : 0,
+      value, byOrg, expandable: true, expanded: open, count: tail.length,
     });
-    if (open) group(tail, depth + 1, key, offset + page, new Set());
+    if (open) group(tail, depth + 1, key, offset + page);
   };
 
-  const top: Item[] = roots
-    .filter((r) => t.total[r] > 0 || pinned.has(r))
-    .map((r) => ({ kind: 'dir' as const, node: r, value: t.total[r], byOrg: t.byOrg[r] ?? empty }));
-  group(top.sort(byValue), 0, 'root', 0, pinned);
+  const top: Item[] = roots.filter((r) => t.total[r] > 0).map(dirItem);
+  group(top.sort(byValue), 0, 'root', 0);
   return out;
 }

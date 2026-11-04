@@ -65,16 +65,17 @@ Over a range:
 4. Totals for the range, plus a table with every value shown in the charts.
 5. **Review by directory** (`src/areas.ts`, `dirRows` in `src/data.ts`):
    every comment in the range, in scope or not, as a tree for the selected
-   metric. The top level lists the 20 largest areas (top-level directories,
-   plus the prefixes `config/paths.txt` names, so re-included directories
-   such as `chrome/browser/webnn/` are always listed, even at 0), then an
-   "N more" row. ▸ opens a directory into its subdirectories, plus a "rest of"
+   metric. The top level lists the 20 largest top-level directories (plus
+   `area` prefixes from `config/paths.txt`, such as `third_party/blink/`),
+   then an "N more" row. Re-included directories such as `components/viz/`
+   stay inside their parents. ▸ opens a directory into its subdirectories, plus a "rest of"
    row for files directly in it and subdirectories too small to keep, so
    children add up to their parent. Each level lists 20 entries, then
    "N more"; opening that lists the next 20 one level deeper (and another
    "more" if any are left). ▾ closes anything again; what is open isn't kept
    in the URL. Each row has a bar for its volume on a shared scale set by the
-   top level (hatched and tagged "excluded" when the scope leaves it out), a
+   top level, solid for the part in scope and hatched for the part the scope
+   leaves out (a partly included directory, like `components/`, has both), a
    100% bar of its split across the top 7 orgs plus "Other", and the share
    not from google.com. For reviewed CLs, a CL with comments in two
    directories counts in each. A note lists the path rules (from the

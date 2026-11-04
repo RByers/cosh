@@ -2,12 +2,13 @@
 #
 #   exclude <prefix>   comments on files under <prefix> leave the headline
 #   include <prefix>   ... unless a longer `include` prefix brings them back
-#   area <prefix>      a directory shown as its own bar in the web UI's
-#                      "Review by directory" chart (no effect on scope)
+#   area <prefix>      a directory listed at the top level of the web UI's
+#                      "Review by directory" tree (no effect on scope)
 #
 # The longest matching include/exclude prefix wins; a path matching neither is
-# included. Prefixes are directories and end in "/". A comment's area is the
-# longest matching area/include/exclude prefix, else its top-level directory.
+# included. Prefixes are directories and end in "/". The tree's top level is
+# the `area` prefixes plus the top-level directories; re-included directories
+# stay inside their parents.
 #
 # Why: chrome/, ios/, android_webview/, ash/ and chromeos/ are Google's own
 # products built on Chromium (Chrome, Chrome for iOS, Android WebView and
