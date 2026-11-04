@@ -1,6 +1,6 @@
 {
  "meta": {
-  "generated_at": "2026-11-04T14:51:41Z",
+  "generated_at": "2026-11-04T14:56:57Z",
   "weeks": [
    "2026-W41",
    "2026-W42",
@@ -16,6 +16,10 @@
   "path_rules": [
    {
     "prefix": "chrome/browser/web_applications/",
+    "included": true
+   },
+   {
+    "prefix": "components/services/storage/",
     "included": true
    },
    {
@@ -63,30 +67,30 @@
   {
    "iso_week": "2026-W41",
    "org": "google.com",
-   "share": 0.9407,
+   "share": 0.9408,
    "reviewers": 392,
-   "reviewed_cls": 588,
-   "comments": 2759,
-   "review_chars": 577710,
+   "reviewed_cls": 589,
+   "comments": 2764,
+   "review_chars": 579563,
    "ai_comments": 103,
    "post_merge_comments": 15,
-   "share_cls": 0.9102,
-   "share_comments": 0.9407,
-   "share_chars": 0.949
+   "share_cls": 0.909,
+   "share_comments": 0.9408,
+   "share_chars": 0.9491
   },
   {
    "iso_week": "2026-W41",
    "org": "microsoft.com",
-   "share": 0.0443,
-   "reviewers": 19,
-   "reviewed_cls": 34,
+   "share": 0.0442,
+   "reviewers": 20,
+   "reviewed_cls": 35,
    "comments": 130,
    "review_chars": 26438,
    "ai_comments": 0,
    "post_merge_comments": 1,
-   "share_cls": 0.0526,
-   "share_comments": 0.0443,
-   "share_chars": 0.0434
+   "share_cls": 0.054,
+   "share_comments": 0.0442,
+   "share_chars": 0.0433
   },
   {
    "iso_week": "2026-W41",
@@ -203,30 +207,30 @@
   {
    "iso_week": "2026-W42",
    "org": "google.com",
-   "share": 0.9358,
+   "share": 0.9342,
    "reviewers": 376,
    "reviewed_cls": 529,
    "comments": 2669,
    "review_chars": 604481,
    "ai_comments": 167,
    "post_merge_comments": 5,
-   "share_cls": 0.9184,
-   "share_comments": 0.9358,
-   "share_chars": 0.9623
+   "share_cls": 0.9152,
+   "share_comments": 0.9342,
+   "share_chars": 0.9617
   },
   {
    "iso_week": "2026-W42",
    "org": "microsoft.com",
-   "share": 0.0491,
+   "share": 0.0508,
    "reviewers": 23,
-   "reviewed_cls": 29,
-   "comments": 140,
-   "review_chars": 17975,
+   "reviewed_cls": 31,
+   "comments": 145,
+   "review_chars": 18387,
    "ai_comments": 0,
    "post_merge_comments": 1,
-   "share_cls": 0.0503,
-   "share_comments": 0.0491,
-   "share_chars": 0.0286
+   "share_cls": 0.0536,
+   "share_comments": 0.0508,
+   "share_chars": 0.0293
   },
   {
    "iso_week": "2026-W42",
@@ -238,7 +242,7 @@
    "review_chars": 2458,
    "ai_comments": 0,
    "post_merge_comments": 4,
-   "share_cls": 0.0139,
+   "share_cls": 0.0138,
    "share_comments": 0.0074,
    "share_chars": 0.0039
   },
@@ -315,30 +319,30 @@
   {
    "iso_week": "2026-W43",
    "org": "google.com",
-   "share": 0.9374,
+   "share": 0.9353,
    "reviewers": 371,
-   "reviewed_cls": 607,
-   "comments": 2787,
-   "review_chars": 574089,
+   "reviewed_cls": 608,
+   "comments": 2788,
+   "review_chars": 574096,
    "ai_comments": 206,
    "post_merge_comments": 30,
-   "share_cls": 0.931,
-   "share_comments": 0.9374,
-   "share_chars": 0.9419
+   "share_cls": 0.9268,
+   "share_comments": 0.9353,
+   "share_chars": 0.9409
   },
   {
    "iso_week": "2026-W43",
    "org": "microsoft.com",
-   "share": 0.0478,
-   "reviewers": 23,
-   "reviewed_cls": 26,
-   "comments": 142,
-   "review_chars": 29453,
+   "share": 0.05,
+   "reviewers": 24,
+   "reviewed_cls": 29,
+   "comments": 149,
+   "review_chars": 30082,
    "ai_comments": 1,
    "post_merge_comments": 0,
-   "share_cls": 0.0399,
-   "share_comments": 0.0478,
-   "share_chars": 0.0483
+   "share_cls": 0.0442,
+   "share_comments": 0.05,
+   "share_chars": 0.0493
   },
   {
    "iso_week": "2026-W43",
@@ -392,7 +396,7 @@
    "review_chars": 900,
    "ai_comments": 0,
    "post_merge_comments": 1,
-   "share_cls": 0.0092,
+   "share_cls": 0.0091,
    "share_comments": 0.0017,
    "share_chars": 0.0015
   },
@@ -427,21 +431,21 @@
   {
    "iso_week": "2026-W44",
    "org": "google.com",
-   "share": 0.9579,
+   "share": 0.958,
    "reviewers": 348,
-   "reviewed_cls": 622,
-   "comments": 1822,
-   "review_chars": 382732,
+   "reviewed_cls": 623,
+   "comments": 1825,
+   "review_chars": 382933,
    "ai_comments": 137,
    "post_merge_comments": 18,
-   "share_cls": 0.9284,
-   "share_comments": 0.9579,
+   "share_cls": 0.9285,
+   "share_comments": 0.958,
    "share_chars": 0.9636
   },
   {
    "iso_week": "2026-W44",
    "org": "microsoft.com",
-   "share": 0.0242,
+   "share": 0.0241,
    "reviewers": 18,
    "reviewed_cls": 25,
    "comments": 46,
@@ -449,7 +453,7 @@
    "ai_comments": 0,
    "post_merge_comments": 0,
    "share_cls": 0.0373,
-   "share_comments": 0.0242,
+   "share_comments": 0.0241,
    "share_chars": 0.0256
   },
   {
@@ -469,7 +473,7 @@
   {
    "iso_week": "2026-W44",
    "org": "Other",
-   "share": 0.0053,
+   "share": 0.0052,
    "reviewers": 5,
    "reviewed_cls": 3,
    "comments": 10,
@@ -477,13 +481,13 @@
    "ai_comments": 0,
    "post_merge_comments": 9,
    "share_cls": 0.0045,
-   "share_comments": 0.0053,
+   "share_comments": 0.0052,
    "share_chars": 0.0041
   },
   {
    "iso_week": "2026-W44",
    "org": "opera.com",
-   "share": 0.0032,
+   "share": 0.0031,
    "reviewers": 1,
    "reviewed_cls": 5,
    "comments": 6,
@@ -491,7 +495,7 @@
    "ai_comments": 0,
    "post_merge_comments": 1,
    "share_cls": 0.0075,
-   "share_comments": 0.0032,
+   "share_comments": 0.0031,
    "share_chars": 0.0032
   },
   {
