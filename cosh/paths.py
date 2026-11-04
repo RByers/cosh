@@ -5,14 +5,15 @@ comment is placed on one file:
 
 - An inline comment is on its own file.
 - A patchset-level or commit-message comment (Gerrit paths starting with "/")
-  goes to the CL's *anchor*: the file with the most inline comments on the CL,
-  from anyone, owner replies included (ties: the alphabetically first path).
-- A comment on a CL with no inline comments at all can't be placed. It is
-  outside the scope and shows as its own area, UNPLACED. In a 20k-CL sample
-  that was about 10% of human review comments (68% inline, 22% placed via the
-  anchor).
+  goes to its author's *anchor* on that CL: the file the same reviewer left the
+  most inline comments on (ties: the alphabetically first path). Summarize
+  computes it (summarize.reviewer_anchors).
+- A patchset-level comment whose author left no inline comment on the CL can't
+  be placed. It is outside the scope and shows as its own area, UNPLACED
+  (metric_version 6; before that, any reviewer's inline comment anchored it).
 
-We don't fetch CL file lists, so the anchor stands in for "what the CL touches".
+We don't fetch CL file lists, so a reviewer's own inline comments stand in
+for "what this reviewer reviewed". anchor() picks the file from counts.
 """
 
 import os
@@ -87,7 +88,7 @@ def load_scope(path=PATHS_FILE):
 
 
 def anchor(inline_counts):
-    """The CL's anchor file from {file: inline comment count}, or None."""
+    """The anchor file from {file: inline comment count}, or None."""
     files = [(-n, p) for p, n in inline_counts.items() if is_file(p) and n > 0]
     return min(files)[1] if files else None
 

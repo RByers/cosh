@@ -1,7 +1,8 @@
 """Derive derived.sqlite (accounts, changes, comments) from cached raw
 responses and NoteDb. Each comment is keyed by the week it was written and
-keeps its file path; each CL records its anchor file (cosh/paths.py), where
-its patchset-level comments are placed.
+keeps its file path; each CL records its anchor file (cosh/paths.py). Since
+metric_version 6 summarize places patchset-level comments on each reviewer's
+own anchor instead, so changes.anchor_path is informational.
 
 Pure function of raw.sqlite + NoteDb, which it opens read-only: safe to re-run
 any time, even while an extractor is running; never hits the network."""
@@ -19,8 +20,10 @@ from .paths import anchor, is_file
 
 # 1-2 = CL-keyed (cosh.sqlite); 3 = activity-time keyed; 4 = AI comments in the
 # headline (summarize only); 5 = comments only (no vote-only reviews), each
-# placed on a file and filtered by config/paths.txt.
-METRIC_VERSION = "5"
+# placed on a file and filtered by config/paths.txt; 6 = a patchset-level comment
+# is placed on its author's own most-commented file on the CL, else unplaced,
+# and accounts that never commented inline are dropped (summarize only).
+METRIC_VERSION = "6"
 
 def human_text(message):
     """Comment text minus quoted reply lines ('> ...')."""

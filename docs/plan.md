@@ -67,6 +67,7 @@ value_ratio(O, t) = O's share of Chromium review comments
 | 2026-11-04 | **Path scope** (`config/paths.txt`): exclude `chrome/`, `ios/`, `android_webview/`, `ash/`, `chromeos/` and `components/`, but include `chrome/browser/web_applications/`, `chrome/browser/webnn/`, `components/viz/` and `components/services/storage/`. Longest prefix wins. The value ratio, org chart, table and leaderboard count only in-scope comments; `area_weekly.json` and the "Review by directory" chart show every comment by directory, with a row for each re-included directory even when small | User's instruction (ash/, chromeos/, and components/ with components/viz/ and components/services/storage/, added the same day): those trees are Google-specific products (Chrome, Chrome for iOS, Android WebView, ChromeOS), where review is mostly Google reviewing Google. The two exceptions are shared platform work with heavy Microsoft and Intel review. In a 60k-CL sample, `chrome/` held 41% of reviewer comments but only 7% of non-Google ones. Over a year, `components/` was 15.8% of comments and 1.85% non-Google; of its top ten subdirectories only `viz/` (11.6%) had real outside review (`extraction-v1.md`, Path scope) |
 | 2026-11-04 | Place each comment on a file without fetching CL file lists: inline comments on their file, patchset-level comments on the CL's most-inline-commented file (owner replies included); comments on CLs with no inline comments are excluded as `(no file)` | No new fetching. Covers about 90% of comments (68% inline, 22% via the anchor). Exact file lists would need a blob-less git fetch of `main`, which isn't approved |
 | 2026-11-04 | Keep `(no file)` comments excluded; don't seek approval to fetch file lists just to place them. The UI says why: the measure is review attached to source files | Sampled 30 unplaced CLs: half were only LGTM/thanks, 4 of 30 showed real review. In a 6,000-CL sample, 43% of unplaced comments were approval-only against 4% of inline ones, and their non-Google share (3.3%) is close to the rest. Analysis and fetch options in `extraction-v1.md`, Placement |
+| 2026-11-04 | **metric_version 6** (summarize only): a patchset-level comment goes to its author's own most-inline-commented file on the CL. If the author left no inline comment there, it is `(no file)`. Accounts that never commented inline are dropped everywhere. Keeping patchset-level cover notes was chosen over dropping all patchset-level comments | User's approval of the analysis in `extraction-v1.md`, "Why reviewer-only patchset comments are unplaced". Those comments (6% of in-scope comments) were approval, routing and OWNERS stamps placed on the wrong directory, plus most of the spam. Cover notes alongside one's own inline review are a third substantive. Over 2025-W45..2026-W44 non-Google: comments 10.65% → 10.80%, chars 10.50% → 10.29%, reviewed CLs 9.92% → 8.55%; reviewers 1,854 → 1,541 |
 | 2026-11-04 | Web UI "Review by directory" is a drill-down tree: top-level areas, each opening into its subdirectories (plus a "rest of" row so children add up), 20 entries per level and an "N more" row that opens 20 at a time and closes again. `area_weekly.json` holds the 10,000 directories with the most comments (`DIR_LIMIT`) and their ancestors; rarer ones roll up into their nearest kept ancestor. Replaces the "Top N" selector | User's request. Over 2025-W45..2026-W44 only 10,312 directories had comments, so 10,000 keeps 99.9% in place; the year's file is 1.76 MB (0.52 MB gzipped), about as heavy as `reviewer_weekly.json` |
 | 2026-11-04 | "Review by directory" no longer lists re-included directories at the top level: they stay inside their parents, and each volume bar is solid for the part in scope and hatched for the part left out (the included/excluded tags are gone). Every rule directory is a tree node, so the split is exact | User's request: simpler; the bar conveys partial inclusion |
 | 2026-11-04 | **Directory filter and heatmap.** "Review by organization" takes a Directory field (`&dir=`): with one set, the chart counts every comment in that subtree from `area_weekly.json`, in scope or not, and says what share the scope leaves out; the value ratio is unaffected (usage isn't per directory). New "Review by directory over time": the directory tree against 1/4/13-week bins, for every org, all but google.com, or one org. Mix cells are small stacked columns, not pies; one-org cells are shaded in the org's colour (square-root volume, or share of the directory). Cells link to Gerrit like the directory chart, and their hover text names the top 3 reviewers from `area_reviewers.json`. No new summary data | User's request, after Microsoft's post-W36 drop (277 → 198 comments a week, W29–W36 vs W37–W44, with reviewed CLs steady) turned out to be a few of its own projects winding down in a few directories: `components/services/storage`, `chrome/browser/web_applications`, `gpu/command_buffer/service`, `third_party/blink/renderer`. Stacked columns follow the dataviz guidance for "a split changing over time"; pies can't show volume and are unreadable at cell size |
@@ -102,9 +103,10 @@ value_ratio(O, t) = O's share of Chromium review comments
 - W44 extracted, validated and summarized (`summaries/`).
 - `extract`, `extract-open`, `derive`, `summarize`, `radar` and `backfill`
   commands.
-- metric_version 5 (review comments only, in the week written, open CLs
-  included, path scope from `config/paths.txt`): see `extraction-v1.md`,
-  "Metric definitions".
+- metric_version 6 (review comments only, in the week written, open CLs
+  included, path scope from `config/paths.txt`, patchset-level comments
+  placed on their author's own inline-commented file): see
+  `extraction-v1.md`, "Metric definitions".
 - One-year backfill done 2026-11-04: 2025-W45 .. 2026-W44, batch size 200,
   duty cycle 0.5, 18.8 h. Its log is `data/private/backfill-52w-*.log`. The
   open-CL snapshot followed (28,117 CLs, 6,967 NoteDb refs).
@@ -165,15 +167,20 @@ value_ratio(O, t) = O's share of Chromium review comments
      `gerrit-api-research.md` §6);
    - exact CL file lists for the path scope, from a blob-less fetch of
      `main`'s commits and trees, mapped to CLs by their `Reviewed-on:`
-     footers (needs approval; would place the ~10% of comments that are
-     now `(no file)`, and patchset-level comments on the CL's real files).
+     footers (needs approval; would place the comments that are now
+     `(no file)`, and patchset-level comments on the CL's real files).
      Low priority: those comments are mostly approvals (`extraction-v1.md`,
      "Why `(no file)` stays excluded"), and a batched `CURRENT_FILES`
      query would be far cheaper than a git fetch if it's ever wanted.
 
 ## Open questions
 
-- **Comment spam (open, deliberately untackled).** Some human comments are
+- **Comment spam (partly handled by metric_version 6).** Accounts that
+  never commented inline are now dropped, and patchset-level comments count
+  only alongside the author's own inline review, which removed most
+  drive-by spam (`extraction-v1.md`, "Why reviewer-only patchset comments
+  are unplaced"). Still open: spam from accounts that also commented
+  inline, and post-merge noise. Some human comments are
   spam or noise, not review: people posting their own names, pasted LLM
   prompts, bare thank-yous. It shows most in post-merge comments, which now
   count in the headline (since metric_version 2) with no time window. Over 36 weeks,

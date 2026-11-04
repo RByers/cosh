@@ -228,16 +228,20 @@
           </div>
           <p>
             <strong>Placing comments on a file.</strong> Gerrit doesn't give us each CL's file list, so an inline
-            comment counts for its own file, and a patchset-level comment counts for the file on the same CL with the
-            most inline comments (from anyone, including the CL's owner). A CL whose comments are all patchset-level
-            can't be placed; its comments show as <code>(no file)</code> above and are left out of the other charts.
+            comment counts for its own file. A patchset-level comment (the summary a reviewer writes when replying)
+            counts for the file that the same reviewer commented on most in that CL. If that reviewer left no inline
+            comment on the CL, the comment can't be placed: it shows as <code>(no file)</code> above and is left out
+            of the other charts. Accounts that have never left an inline comment are left out entirely.
           </p>
           <p id="unplaced-note">
             <strong>Why only review tied to source files.</strong> Comments that can't be placed are mostly sign-offs,
-            not review that can be weighed: in a sample, 43% were just “LGTM”, “thanks” or similar, against 4% of
-            inline comments, and reading 30 such CLs at random found real review discussion on only 4. A reviewer who
+            not review that can be weighed: in a sample, 39% of those on CLs with no inline comments were just
+            “LGTM”, “thanks” or similar, against 2% of inline comments. Reading a sample of patchset-level comments
+            from reviewers with no inline comment on the CL found mostly approvals, OWNERS sign-offs for one directory
+            (“mojom lgtm”) and requests to route the CL elsewhere, and much of the spam posted to Gerrit. A reviewer who
             digs into the code usually comments on a line of it, so review attached to source files is the better
-            measure of real investment. Leaving these comments out barely changes any organization's share.
+            measure of real investment. Leaving these comments out barely changes any organization's share of
+            comments.
           </p>
         </div>
       </section>

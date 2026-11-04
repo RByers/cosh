@@ -6,10 +6,11 @@ extracted and validated first. The approved one-year backfill (2025-W45 ..
 it. A backfill to 2023-07-01 was approved on 2026-11-04. Fetching beyond that
 needs approval (see `docs/plan.md`).
 
-**metric_version 5** (2026-11-04): the metric is review comments (self-declared
+**metric_version 6** (2026-11-04): the metric is review comments (self-declared
 AI comments from reviewers' own accounts included), each counted in the week
 it was written, only on the paths `config/paths.txt` includes. Reviews without
-a comment don't count. See "Metric definitions" below.
+a comment don't count, and neither do patchset-level comments from a reviewer
+who left no inline comment on the CL. See "Metric definitions" below.
 
 This follows `gerrit-api-research.md` and `storage-design.md`. Below are the
 decisions made while implementing it; where they differ from those docs, this
@@ -121,7 +122,7 @@ week, plus a snapshot of **open** CLs (step 3).
      `agent=` field) and `http.extraHeader`.
    - All of this lives in `cosh/contact.py`; override with `COSH_CONTACT`.
 
-## Metric definitions (metric_version 5)
+## Metric definitions (metric_version 6)
 
 Versions:
 1. Counted everything in the week the CL closed and left post-merge comments
@@ -132,8 +133,7 @@ Versions:
 4. Counted self-declared AI comments from a reviewer's own account in the
    headline (summarize only). Over 53 weeks this added 1.1% to comments and
    moved no org's share by more than 0.04 points.
-5. The current version. It keeps 3's weeks and 4's AI rule, and makes two
-   changes:
+5. Kept 3's weeks and 4's AI rule, and made two changes:
    - **Comments only.** Vote-only reviews no longer count, so there is no
      vote floor and no `votes` table. Review characters and reviewed CLs
      stay as selectable metrics, both counted from comments.
@@ -145,6 +145,21 @@ Versions:
      reviews were bare approvals.
    - **Path scope.** Only comments on the paths that `config/paths.txt`
      includes count (see "Path scope" below).
+6. The current version (summarize only; `derived.sqlite` is unchanged). It
+   changes how comments are placed on files:
+   - A patchset-level comment is placed on its author's own anchor on the
+     CL, the file that reviewer left the most inline comments on, not on
+     the CL's anchor.
+   - A patchset-level comment from a reviewer who left no inline comment on
+     the CL is unplaced, like a comment on a CL with no inline comments.
+   - Accounts that never left an inline comment anywhere are dropped,
+     `area_weekly.json` included.
+   The reasons are under "Path scope", "Why reviewer-only patchset comments
+   are unplaced". Over 2025-W45..2026-W44 this took comments from 150,197 to
+   140,984, reviewed-CL credits from 24,506 to 23,506 and reviewers from
+   1,854 to 1,541. The non-Google share went from 10.65% to 10.80% of
+   comments, from 10.50% to 10.29% of characters and from 9.92% to 8.55% of
+   reviewed CLs. About half of that CL drop is spam leaving "Other".
 
 Review activity counts in the ISO week (UTC) in which it happened. Under
 metric_versions 1–2, everything counted in the week the CL closed. That week
@@ -243,15 +258,25 @@ counts.
   for `localStorage`/`sessionStorage`) was 88% Microsoft (791 comments).
   `components/surface_embed/` (35% Microsoft, 308 comments) also had outside
   review and is out of scope.
-- **Placement.** We don't fetch CL file lists, so:
+- **Placement** (metric_version 6; `summarize.reviewer_anchors`). We don't
+  fetch CL file lists, so:
   - an inline comment is on its own file;
-  - a patchset-level or commit-message comment goes to the CL's anchor, the
-    file with the most inline comments on the CL from anyone, the owner's
-    replies included (ties: the alphabetically first path);
-  - a comment on a CL with no inline comments at all can't be placed. It is
-    excluded, and shown as the area `(no file)` in `area_weekly.json`.
-  In a 20k-CL sample of human review comments, 68% were inline, 22% were
-  placed through the anchor and 10% couldn't be placed. Exact file lists
+  - a patchset-level or commit-message comment goes to its author's anchor
+    on that CL: the file the same reviewer left the most inline comments on
+    (ties: the alphabetically first path);
+  - a patchset-level comment whose author left no inline comment on the CL
+    can't be placed. It is excluded, and shown as the area `(no file)` in
+    `area_weekly.json`;
+  - comments from accounts that never left an inline comment anywhere are
+    dropped entirely, `(no file)` included.
+  Until metric_version 5, patchset-level comments went to the CL's anchor
+  (`changes.anchor_path`, the file with the most inline comments from
+  anyone, owner replies included), so only CLs with no inline comments at
+  all were unplaced. `derive` still records that column, but nothing uses
+  it. In-scope comments over 2025-W45..2026-W44 under the old rule: 110,488
+  inline, 30,504 patchset-level from reviewers who also commented inline on
+  the CL, and 9,215 from reviewers who didn't. Version 6 keeps the first two
+  and drops the third. Exact file lists
   would need a blob-less git fetch of `main`'s history (not approved; see
   `plan.md`, Open questions).
 - **Why `(no file)` stays excluded** (checked 2026-11-04 over 2025-W28 ..
@@ -293,6 +318,44 @@ counts.
     needs approval.
   - *Blob-less git fetch of patchset commits:* file names only, no line
     counts without blobs; large first tree fetch.
+- **Why reviewer-only patchset comments are unplaced** (checked
+  2026-11-04 over 2025-W45..2026-W44; the case for dropping *all*
+  patchset-level comments was weighed and rejected). Split the anchored
+  patchset-level comments into *A*, written by a reviewer who also
+  commented inline on the CL (a cover note), and *B*, written by one who
+  didn't, so that only someone else's inline comments anchored it. For B's
+  author the CL has no file, as for `(no file)`.
+  - *Crude approval-only filter on 4,000 random comments of each kind:*
+    inline 1.6%, A 20%, B 19%, `(no file)` 39%. At least 80 characters:
+    63%, 37%, 37%, 29%.
+  - *35 of each, read:* A had 12 substantive comments (design and
+    direction: "I'd recommend against adding it to the base/test API",
+    "Why is a fencedframe able to call this IPC in the first place?"), 17
+    approvals, 3 routing, 3 minor or noise. B had 7 substantive, 13
+    approvals (7 of them scoped OWNERS stamps such as "mojom lgtm" or "net/
+    LGTM"), 6 routing or declining, 5 minor notes, 4 spam or noise.
+  - *B was misplaced.* The CL's anchor is the main reviewer's file, not the
+    files an OWNERS stamp covers: "mojom lgtm" landed on
+    `content/browser/devtools/`, and "devtools_instrumentation LGTM" on
+    `third_party/chromium-bidi/`. About 12% of B looked like such stamps.
+  - *B is where spam lands.* In B, gmail.com ("Other") had 276 comments
+    from 163 accounts, and most of them were spam or drive-by comments
+    (ads, names, e-mail addresses, "Comment removed by …; Reason: spam",
+    requests to merge into a release branch). One account's 10 HTML
+    comments were 3.7% of all B characters. Gmail's inline comments (367
+    from 42 accounts) were all real review in a sample of 30. B gave "Other"
+    55% of its reviewed-CL credits, Igalia 30%, Intel 23%, Google 18%
+    (OWNERS stamps) and Microsoft 11%.
+  - So B is like `(no file)`: approval and routing heavy, placed on the
+    wrong directory, and noisy. It goes. A is a reviewer's summary of their
+    own line-level review, a third of it substantive, so it stays, placed
+    on that reviewer's own file. Dropping all patchset-level comments as
+    well would have moved the non-Google comment share from 10.80% to
+    11.30%, by throwing away cover notes.
+  - Spam outside B (in `(no file)` and the directory chart) is caught by
+    dropping accounts that never commented inline. In-scope metrics can't
+    contain such accounts anyway, since every placed comment's author
+    commented inline on that CL.
 - **Directory tree** (`area_weekly.json`, the web UI's "Review by
   directory" chart; `dir_tree` in `cosh/paths.py`): every comment, in scope
   or not, so the page can show what the scope leaves out.
@@ -394,9 +457,12 @@ a CL; the UI takes an org's `reviewed_cls` from `org_weekly`.)
   only in `weekly_totals`, not in review metrics.
 - Reviews with no comment (a bare vote) aren't counted at all, by design
   (metric_version 5).
-- Patchset-level comments are placed on the CL's most-commented file, not on
-  the files the CL actually touches; about 10% of comments can't be placed
-  (see "Path scope").
+- Patchset-level comments are placed on their author's most-commented file
+  on the CL, not on the files the CL actually touches. Those from reviewers
+  with no inline comment on the CL, and all comments on CLs with no inline
+  comments, can't be placed (see "Path scope").
+- Spam from accounts that also commented inline somewhere is still
+  counted.
 - An abandoned CL that is touched again after abandonment can appear in two
   weekly listings. Derive uses the newer listing, and comments are keyed by
   their own id and time, so nothing is double counted.

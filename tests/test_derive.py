@@ -374,17 +374,24 @@ class SummarizeTest(unittest.TestCase):
                           [6, 0, 1, 1, 10]])
 
     def test_path_scope(self):
-        # CL 100 is anchored in chrome/ (excluded), CL 101 in blink, CL 102 has
-        # no inline comments, so its patchset-level comments can't be placed.
-        accounts = [(1, "owner@igalia.com"), (2, "a@microsoft.com"), (3, "b@google.com")]
+        # A patchset-level comment goes to its author's own most-commented file
+        # on the CL (metric_version 6), not to the CL's; if the author left no
+        # inline comment on the CL it can't be placed. Accounts that never
+        # commented inline (spam, drive-bys) are left out everywhere.
+        accounts = [(1, "owner@igalia.com"), (2, "a@microsoft.com"), (3, "b@google.com"),
+                    (4, "spam@gmail.com"), (5, "c@intel.com")]
         with tempfile.TemporaryDirectory() as d:
             summary_db(d, accounts, [
                 (2, 1, 0, 0, 100, "chrome/browser/web_applications/x.cc"),   # included again
-                (2, 2, 0, 0, 100, "/PATCHSET_LEVEL"),                       # -> chrome/ui: out
+                (2, 2, 0, 0, 100, "/PATCHSET_LEVEL"),                       # -> 2's x.cc: in
                 (3, 4, 0, 0, 100, "chrome/browser/ui/v.cc"),                 # out
-                (3, 1, 1, 0, 101, "/PATCHSET_LEVEL"),                       # -> blink: in
+                (5, 1, 0, 0, 100, "chrome/browser/ui/w.cc"),                 # out
                 (2, 3, 0, 0, 101, "third_party/blink/renderer/core/a.cc"),  # in
-                (3, 5, 0, 0, 102, "/PATCHSET_LEVEL"),                       # unplaced: out
+                (3, 1, 0, 0, 101, "third_party/blink/renderer/platform/b.cc"),  # in
+                (3, 1, 1, 0, 101, "/PATCHSET_LEVEL"),                       # -> 3's b.cc, not a.cc: in
+                (5, 2, 0, 0, 101, "/PATCHSET_LEVEL"),                       # 5 has no inline on 101: unplaced
+                (4, 3, 0, 0, 101, "/PATCHSET_LEVEL"),                       # never inline: dropped
+                (3, 5, 0, 0, 102, "/PATCHSET_LEVEL"),                       # no inline on 102: unplaced
             ], cls={100: "chrome/browser/ui/v.cc", 101: "third_party/blink/renderer/core/a.cc", 102: None})
             out = os.path.join(d, "s")
             rows = summarize(data_dir=d, out_dir=out)
@@ -396,8 +403,8 @@ class SummarizeTest(unittest.TestCase):
                 meta = json.load(fh)["meta"]
         self.assertEqual([(r["org"], r["comments"], r["ai_comments"], r["reviewers"], r["share"],
                            r["reviewed_cls"], r["share_cls"]) for r in rows],
-                         [("microsoft.com", 4, 0, 1, 0.6667, 2, 0.6667),
-                          ("google.com", 2, 1, 1, 0.3333, 1, 0.3333)])
+                         [("microsoft.com", 6, 0, 1, 0.6667, 2, 0.6667),
+                          ("google.com", 3, 1, 1, 0.3333, 1, 0.3333)])
         self.assertEqual(meta["path_rules"][0], {"prefix": "chrome/browser/web_applications/", "included": True})
         # Every comment appears in the directory tree, in scope or not.
         nodes = areas["nodes"]
@@ -414,31 +421,35 @@ class SummarizeTest(unittest.TestCase):
         self.assertEqual(set(paths) - roots, {
             "chrome/browser/", "chrome/browser/ui/", "chrome/browser/web_applications/", "chrome/browser/webnn/",
             "components/viz/", "components/services/", "components/services/storage/",
-            "third_party/blink/renderer/", "third_party/blink/renderer/core/"})
+            "third_party/blink/renderer/", "third_party/blink/renderer/core/",
+            "third_party/blink/renderer/platform/"})
         # Children store only their own segment; parents come first.
         self.assertEqual(nodes[paths.index("chrome/browser/ui/")][1], "ui/")
         self.assertTrue(all(n[0] < i for i, n in enumerate(nodes)))
         self.assertEqual({p for i, p in enumerate(paths) if nodes[i][2]}, {
             "chrome/browser/web_applications/", "chrome/browser/webnn/", "components/viz/",
             "components/services/storage/", "third_party/blink/", "third_party/blink/renderer/",
-            "third_party/blink/renderer/core/"})
+            "third_party/blink/renderer/core/", "third_party/blink/renderer/platform/"})
         # [comments, reviewed CLs, chars] per (bucket, org).
         got = {(paths[n], areas["orgs"][o]): v for n, o, *v in areas["weeks"]["2026-W44"]}
-        self.assertEqual(got, {("chrome/browser/ui/", "microsoft.com"): [2, 1, 20],
-                               ("chrome/browser/ui/", "google.com"): [4, 1, 40],
+        self.assertEqual(got, {("chrome/browser/ui/", "google.com"): [4, 1, 40],
+                               ("chrome/browser/ui/", "intel.com"): [1, 1, 10],
                                (UNPLACED, "google.com"): [5, 1, 50],
+                               (UNPLACED, "intel.com"): [2, 1, 20],
                                ("third_party/blink/renderer/core/", "microsoft.com"): [3, 1, 30],
-                               ("third_party/blink/renderer/core/", "google.com"): [2, 1, 20],
-                               ("chrome/browser/web_applications/", "microsoft.com"): [1, 1, 10]})
+                               ("third_party/blink/renderer/platform/", "google.com"): [3, 1, 30],
+                               ("chrome/browser/web_applications/", "microsoft.com"): [3, 1, 30]})
         # The same buckets' comments by reviewer, indexed like area_weekly.json.
         self.assertEqual(area_reviewers["meta"]["areas_generated_at"], areas["meta"]["generated_at"])
         got = {(paths[n], areas["orgs"][o]): pairs for n, o, *pairs in area_reviewers["weeks"]["2026-W44"]}
-        self.assertEqual(got, {("chrome/browser/ui/", "microsoft.com"): [2, 2],
-                               ("chrome/browser/ui/", "google.com"): [3, 4],
+        self.assertEqual(got, {("chrome/browser/ui/", "google.com"): [3, 4],
+                               ("chrome/browser/ui/", "intel.com"): [5, 1],
                                (UNPLACED, "google.com"): [3, 5],
+                               (UNPLACED, "intel.com"): [5, 2],
                                ("third_party/blink/renderer/core/", "microsoft.com"): [2, 3],
-                               ("third_party/blink/renderer/core/", "google.com"): [3, 2],
-                               ("chrome/browser/web_applications/", "microsoft.com"): [2, 1]})
+                               ("third_party/blink/renderer/platform/", "google.com"): [3, 3],
+                               ("chrome/browser/web_applications/", "microsoft.com"): [2, 3]})
+        self.assertNotIn("Other", areas["orgs"])   # the never-inline account left no trace
 
     def test_summarize_refuses_a_missing_db(self):
         with tempfile.TemporaryDirectory() as d:

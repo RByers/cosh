@@ -934,6 +934,9 @@ a.ar-seg:focus-visible {
 
 /* The scrolling region: focusable (tabindex) so keyboard users can scroll it. */
 .hm-wrap {
+  /* Contain the cells' absolutely positioned .visually-hidden labels, so a
+     wide heatmap scrolls inside this box instead of widening the page. */
+  position: relative;
   overflow-x: auto;
   max-width: 100%;
   font-size: 11.5px;

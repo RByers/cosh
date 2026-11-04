@@ -1,6 +1,6 @@
 """Aggregate derived.sqlite into small summaries for the front end.
 
-Review is measured from comments only (metric_version 5): published comments
+Review is measured from comments only (metric_version 5+): published comments
 by non-owner, non-bot accounts on human-owned CLs on main. Reviews with no
 comment (a bare Code-Review vote) don't count: their value can't be judged.
 Three metrics, all from those comments:
@@ -16,8 +16,11 @@ Reviewers in a week: accounts credited with any of these that week.
 
 Path scope: each comment is placed on a file (cosh/paths.py) and counts only
 if config/paths.txt includes that file; a CL counts as reviewed only through
-in-scope comments. Comments that can't be placed (CLs with no inline
-comments) are outside the scope. org_weekly and reviewer_weekly cover the
+in-scope comments. A patchset-level comment is placed on its author's own
+most-commented file on that CL; if the author left no inline comment there it
+can't be placed and is outside the scope (metric_version 6). Accounts that
+never left an inline comment are dropped everywhere, area_weekly included:
+they are almost all spam and drive-by comments. org_weekly and reviewer_weekly cover the
 scope; area_weekly covers every comment, so the web UI can show what the
 scope leaves out.
 
@@ -56,7 +59,7 @@ from collections import defaultdict
 from . import store
 from .derive import METRIC_VERSION
 from .orgs import OrgResolver
-from .paths import DIR_LIMIT, ROOT_FILES, UNPLACED, dir_tree, directory, load_scope, place
+from .paths import DIR_LIMIT, ROOT_FILES, UNPLACED, anchor, dir_tree, directory, load_scope, place
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # Domains always folded into Other, whatever their size: personal webmail
@@ -97,6 +100,19 @@ def _atomic_open(path, **kw):
             os.remove(tmp)
 
 
+def reviewer_anchors(db):
+    """{(host, change_number, account_id): anchor}: the file each reviewer left
+    the most inline comments on, per CL (ties: the alphabetically first path).
+    Covers every CL and reviewer with at least one inline comment."""
+    counts = defaultdict(dict)
+    for host, cl, aid, path, n in db.execute("""
+            SELECT host, change_number, account_id, path, count(*) FROM comments
+            WHERE path != '' AND substr(path, 1, 1) != '/'
+            GROUP BY 1, 2, 3, 4"""):
+        counts[(host, cl, aid)][path] = n
+    return {k: anchor(v) for k, v in counts.items()}
+
+
 def comment_facts(db, resolve, scope, weeks=None):
     """Returns (facts, areas).
 
@@ -106,16 +122,23 @@ def comment_facts(db, resolve, scope, weeks=None):
     areas: {(week, directory, folded org): dict(comments, chars, cls, reviewers)},
     every comment, in scope or not (directory as from paths.directory);
     reviewers maps account id to comments.
-    `weeks`: the weeks to keep, or None for all."""
+    `weeks`: the weeks to keep, or None for all.
+
+    A patchset-level comment is placed on its author's own anchor on that CL
+    (reviewer_anchors); one whose author left no inline comment there is
+    unplaced. Accounts that never commented inline anywhere are skipped
+    entirely (mostly spam and drive-by comments)."""
+    own = reviewer_anchors(db)
+    inline_authors = {(host, aid) for host, _, aid in own}
     facts = {}
     areas = defaultdict(lambda: dict(comments=0, chars=0, cls=set(), reviewers=defaultdict(int)))
     keep = (lambda w: True) if weeks is None else weeks.__contains__
     cache = {}
 
-    def where(path, anchor_path):
-        key = (path, anchor_path)
+    def where(path, own_anchor):
+        key = (path, own_anchor)
         if key not in cache:
-            p = place(path, anchor_path)
+            p = place(path, own_anchor)
             cache[key] = (scope.includes(p), directory(p))
         return cache[key]
 
@@ -129,15 +152,16 @@ def comment_facts(db, resolve, scope, weeks=None):
 
     # Comments and chars: grouped per day, so the org is resolved as of the day
     # written, and per path and anchor, so each group lands on one file.
-    for week, aid, email, name, day, path, anchor_path, n, chars, ai, pm in db.execute(f"""
-            SELECT x.iso_week, x.account_id, a.email, a.name, substr(x.written_at, 1, 10),
-                   x.path, c.anchor_path, count(*), sum(x.chars), sum(x.is_ai), sum(x.after_close)
+    for week, host, cl, aid, email, name, day, path, n, chars, ai, pm in db.execute(f"""
+            SELECT x.iso_week, x.host, x.change_number, x.account_id, a.email, a.name,
+                   substr(x.written_at, 1, 10), x.path,
+                   count(*), sum(x.chars), sum(x.is_ai), sum(x.after_close)
             FROM comments x {SCOPE}
-            GROUP BY 1, 2, 5, 6, 7"""):
-        if not keep(week):
+            GROUP BY 1, 2, 3, 4, 7, 8"""):
+        if not keep(week) or (host, aid) not in inline_authors:
             continue
         org = resolve(email, day)
-        included, area = where(path, anchor_path)
+        included, area = where(path, own.get((host, cl, aid)))
         g = areas[(week, area, fold(org))]
         g["comments"] += n
         g["chars"] += chars
@@ -149,15 +173,15 @@ def comment_facts(db, resolve, scope, weeks=None):
             f["ai"] += ai
             f["post_merge"] += pm
     # Reviewed CLs: per CL, in the week it closed, with the org as of the close.
-    for week, closed, cl, aid, email, name, path, anchor_path in db.execute(f"""
-            SELECT c.close_week, c.closed_at, x.change_number, x.account_id, a.email, a.name,
-                   x.path, c.anchor_path
+    for week, closed, host, cl, aid, email, name, path in db.execute(f"""
+            SELECT c.close_week, c.closed_at, x.host, x.change_number, x.account_id, a.email, a.name,
+                   x.path
             FROM comments x {SCOPE} AND c.close_week IS NOT NULL
-            GROUP BY x.change_number, x.account_id, x.path"""):
-        if not keep(week):
+            GROUP BY x.host, x.change_number, x.account_id, x.path"""):
+        if not keep(week) or (host, aid) not in inline_authors:
             continue
         org = resolve(email, closed)
-        included, area = where(path, anchor_path)
+        included, area = where(path, own.get((host, cl, aid)))
         areas[(week, area, fold(org))]["cls"].add(cl)
         if included:
             fact(week, aid, email, name, org)["cls"].add(cl)
@@ -245,10 +269,12 @@ def summarize(data_dir=store.DATA_DIR, out_dir=os.path.join(ROOT, "summaries"), 
                       "non-owner, non-bot accounts on human-owned CLs (bot-owned CLs are counted only in "
                       "weekly_totals.csv)",
                 path_rules=scope.describe(),
-                path_rule="a comment is placed on its file; a patchset-level comment on its CL's "
-                          "anchor (the file with the most inline comments); the longest matching "
+                path_rule="a comment is placed on its file; a patchset-level comment on the file its "
+                          "author left the most inline comments on, on that CL; the longest matching "
                           "path_rules prefix decides, and paths matching none are included; "
-                          "comments that can't be placed are excluded (see area_weekly.json)",
+                          "comments that can't be placed (the author left no inline comment on the "
+                          "CL) are excluded (see area_weekly.json), and accounts that never "
+                          "commented inline are left out everywhere",
                 weeks_rule="comments and review_chars count in the ISO week the comment was written; "
                            "reviewed_cls in the week the CL closed; reviewers = accounts credited with "
                            "any of these that week; weekly_totals is by close week",

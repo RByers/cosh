@@ -112,7 +112,8 @@ CREATE TABLE IF NOT EXISTS changes (
   total_comment_count INTEGER,
   is_bot_owned        INTEGER NOT NULL DEFAULT 0,
   subject             TEXT,
-  anchor_path         TEXT,               -- file with the most inline comments, from anyone
+  anchor_path         TEXT,               -- file with the most inline comments, from anyone;
+                                          -- informational since metric_version 6
                                           -- (cosh/paths.py); NULL if none
   PRIMARY KEY (host, change_number)
 ) STRICT;
