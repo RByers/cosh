@@ -61,7 +61,7 @@ import {
   type WeekRange,
   type WeeklyTotals,
 } from './data.ts';
-import { formatRatio, pivotScale } from './scale.ts';
+import { formatRatio } from './scale.ts';
 
 interface Data {
   summary: Summary;
@@ -472,10 +472,9 @@ function main(data: Data) {
     ).filter(
       (p) => orgs.includes(p.org) && weeks.includes(p.week),
     );
-    const scale = pivotScale(Math.max(0, ...points.map((p) => p.ratio ?? 0)));
 
     ratioChart?.destroy();
-    ratioChart = renderRatioChart($<HTMLCanvasElement>('#ratio-chart'), weeks, orgs, colors, points, scale, theme, state.smoothing);
+    ratioChart = renderRatioChart($<HTMLCanvasElement>('#ratio-chart'), weeks, orgs, colors, points, theme, state.smoothing);
     const metricName = METRICS.find((m) => m.id === state.metric)!.label;
     const metricLabel = metricName.toLowerCase();
     reviewChart?.destroy();
@@ -526,7 +525,7 @@ function main(data: Data) {
         (state.smoothing > 1
           ? `, as a ${state.smoothing}-week running average (mean share of ${metricLabel} ÷ mean usage share over the ${state.smoothing} weeks ending each week). `
           : '. ') +
-        `The axis is linear 0–1× in its lower half and 1–${formatRatio(scale.upper)}× in its upper half.`
+        'The 1.0× line is parity: review in proportion to usage.'
       : `No review data for ${label}.`;
     renderTiles(data, weeks);
     renderTable(data, state, weeks, colors);

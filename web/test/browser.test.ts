@@ -75,17 +75,31 @@ test('page loads data and renders all three charts without errors', async () => 
   await page.close();
 });
 
-test('ratio axis puts 1.0 halfway between 0 and the maximum', async () => {
+test('ratio axis is linear from 0 with a highlighted 1.0 gridline', async () => {
   const { page } = await open();
   const axis = await page.evaluate(() => {
     const c = window.__cosh!.ratioChart!;
     const y = c.scales.y;
-    const labels = y.ticks.map((t) => String(t.label));
-    return { top: y.top, bottom: y.bottom, one: y.getPixelForValue(1), labels };
+    const px = (v: number) => y.getPixelForValue(v);
+    const width = (c.config.options!.scales!.y as unknown as { grid: { lineWidth: (ctx: unknown) => number } }).grid.lineWidth;
+    const other = y.ticks.find((t) => t.value !== 1)!.value;
+    return {
+      min: y.min,
+      max: y.max,
+      labels: y.ticks.map((t) => String(t.label)),
+      // Linear: equal ratio steps get equal pixel steps on both sides of 1.
+      below: px(0.5) - px(1),
+      above: px(1) - px(1.5),
+      oneWidth: width({ tick: { value: 1 } }),
+      otherWidth: width({ tick: { value: other } }),
+    };
   });
-  assert.ok(Math.abs(axis.one - (axis.top + axis.bottom) / 2) < 1, JSON.stringify(axis));
+  assert.equal(axis.min, 0);
+  assert.ok(axis.max > 1, JSON.stringify(axis));
   assert.equal(axis.labels[0], '0×');
-  assert.ok(axis.labels.includes('1.0×'));
+  assert.ok(axis.labels.includes('1.0×'), axis.labels.join());
+  assert.ok(Math.abs(axis.below - axis.above) < 0.5, JSON.stringify(axis));
+  assert.ok(axis.oneWidth > axis.otherWidth, JSON.stringify(axis));
   await page.close();
 });
 

@@ -35,7 +35,7 @@ import {
   type ReviewerRow,
   type Summary,
 } from '../src/data.ts';
-import { pivotScale } from '../src/scale.ts';
+import { formatRatio } from '../src/scale.ts';
 
 const RADAR = `period,period_start,period_end,granularity,device,browser,is_chromium,kind,days,raw_share,chromium_share
 2026-W44,2026-10-26,2026-11-01,week,all,Chrome,1,browser,7,0.4,0.5
@@ -283,25 +283,12 @@ test('topBrowsers ranks by peak share', () => {
   assert.deepEqual(topBrowsers(parseRadarWeekly(RADAR), 2), ['Chrome', 'ChromeMobile']);
 });
 
-test('pivotScale puts 1.0 in the middle and keeps both halves linear', () => {
-  const s = pivotScale(1.24);
-  assert.equal(s.toAxis(0), 0);
-  assert.equal(s.toAxis(0.5), 0.5);
-  assert.equal(s.toAxis(1), 1);
-  assert.equal(s.toAxis(s.upper), 2);
-  assert.ok(s.upper >= 1.24 * 1.05);
-  assert.deepEqual(s.ticks.slice(0, 5), [0, 0.25, 0.5, 0.75, 1]);
-  for (const r of [0, 0.3, 1, 1.2, s.upper]) assert.ok(Math.abs(s.fromAxis(s.toAxis(r)) - r) < 1e-12);
-});
-
-test('pivotScale picks a nice step for large maxima', () => {
-  const s = pivotScale(7.3);
-  assert.equal(s.upper, 9);
-  assert.equal(s.upperStep, 2);
-  assert.ok(s.ticks.length <= 9);
-  // Ratios at or below 1 never get a scale smaller than 1.25.
-  assert.equal(pivotScale(0.4).upper, 1.25);
-  assert.equal(pivotScale(0).upper, 1.25);
+test('formatRatio trims to two places and drops decimals from 10 up', () => {
+  assert.equal(formatRatio(0), '0');
+  assert.equal(formatRatio(0.25), '0.25');
+  assert.equal(formatRatio(1), '1.0');
+  assert.equal(formatRatio(1.5), '1.5');
+  assert.equal(formatRatio(12.4), '12');
 });
 
 test('trimRanked keeps the top n plus later items that match', () => {

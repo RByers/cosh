@@ -16,7 +16,7 @@ import {
 } from 'chart.js';
 import type { LeaderboardRow, RadarWeekly, RatioPoint } from './data.ts';
 import { browserShare, monthTicks, OTHER, weekTitle } from './data.ts';
-import { AXIS_MAX, AXIS_MIN, formatRatio, type PivotScale } from './scale.ts';
+import { formatRatio } from './scale.ts';
 
 Chart.register(
   BarController,
@@ -143,7 +143,6 @@ export function renderRatioChart(
   orgs: string[],
   colors: Map<string, string>,
   points: RatioPoint[],
-  scale: PivotScale,
   theme: Theme,
   /** Running-average window in weeks (1 = none); named in the tooltip. */
   smoothing = 1,
@@ -155,7 +154,7 @@ export function renderRatioChart(
       const ratio = p?.ratio ?? null;
       return {
         x: week,
-        y: ratio === null ? null : scale.toAxis(ratio),
+        y: ratio,
         ratio,
         contribution: p?.contribution ?? 0,
         derived: p?.derived ?? null,
@@ -189,17 +188,24 @@ export function renderRatioChart(
         x: weekAxis(theme, weeks, true),
         y: {
           type: 'linear',
-          min: AXIS_MIN,
-          max: AXIS_MAX,
+          // Linear from 0; always reach a little past parity so the 1.0 line
+          // shows even when every ratio is below it.
+          min: 0,
+          suggestedMax: 1.1,
           title: { display: true, text: 'value ratio', color: theme.muted },
           border: { display: false },
           afterBuildTicks: (axis) => {
-            axis.ticks = scale.ticks.map((r) => ({ value: scale.toAxis(r) }));
+            // Coarse steps (e.g. 0, 2, 4) can skip 1; add it so parity
+            // always gets its highlighted gridline.
+            if (!axis.ticks.some((t) => isParity(t.value))) {
+              axis.ticks.push({ value: 1 });
+              axis.ticks.sort((x, y) => x.value - y.value);
+            }
           },
           ticks: {
             color: (ctx) => (isParity(ctx.tick?.value ?? NaN) ? theme.parity : theme.muted),
             font: (ctx) => ({ weight: isParity(ctx.tick?.value ?? NaN) ? 'bold' : 'normal' }),
-            callback: (v) => `${formatRatio(scale.fromAxis(Number(v)))}×`,
+            callback: (v) => `${formatRatio(Number(v))}×`,
           },
           grid: {
             color: (ctx) => (isParity(ctx.tick?.value ?? NaN) ? theme.parity : theme.grid),
