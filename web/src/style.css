@@ -282,6 +282,13 @@ input[type='date']:focus-visible,
   margin-bottom: 12px;
 }
 
+/* Several segmented toggles side by side, wrapping on narrow screens. */
+.toggles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 24px;
+}
+
 .chart-tall {
   height: 420px;
 }
@@ -461,6 +468,10 @@ a.lb-row:focus-visible {
 .lb-rank {
   color: var(--text-muted);
   font-variant-numeric: tabular-nums;
+}
+
+.lb-org {
+  color: var(--text-muted);
 }
 
 /* The bar cell sits above the gridline layer (later in the same grid area). */

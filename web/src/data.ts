@@ -395,7 +395,10 @@ export interface LeaderboardRow {
   value: number;
 }
 
-export const LEADERBOARD_SIZE = 50;
+/** Leaderboard lengths the page offers; the first is the default. */
+export const LEADERBOARD_SIZES = [25, 50, 100, 200] as const;
+export type LeaderboardSize = (typeof LEADERBOARD_SIZES)[number];
+export const LEADERBOARD_SIZE: LeaderboardSize = LEADERBOARD_SIZES[0];
 
 /** Axis ticks from 0 up to a round number at or above `max`: about six steps
  * of 1, 2 or 5 × 10ⁿ, as Chart.js picks them. The last tick is the axis end. */
@@ -450,12 +453,15 @@ const asList = (weeks: string | string[]) => (typeof weeks === 'string' ? [weeks
  * exact totals, since the board holds every reviewer. Ties are broken by
  * account id so the order is stable; reviewers with 0 for the metric are left
  * out. A reviewer's org is the one most of their comments in those weeks
- * resolve to (ties: alphabetical). */
+ * resolve to (ties: alphabetical). With `excludeOrg`, reviewers whose org
+ * that is are left out before the top `n` are taken, so the board still
+ * holds `n` reviewers from the other orgs. */
 export function topReviewers(
   board: ReviewerBoard,
   weeks: string | string[],
   metric: Metric,
-  n = LEADERBOARD_SIZE,
+  n: number = LEADERBOARD_SIZE,
+  excludeOrg?: string,
 ): LeaderboardRow[] {
   const col = METRIC_INDEX[metric];
   const by = new Map<number, { value: number; orgCount: Map<number, number> }>();
@@ -477,14 +483,24 @@ export function topReviewers(
   };
   return [...by]
     .filter(([, t]) => t.value > 0)
-    .sort(([a, x], [b, y]) => y.value - x.value || a - b)
+    .map(([id, t]) => ({ id, value: t.value, org: orgOf(t.orgCount) }))
+    .filter((r) => r.org !== excludeOrg)
+    .sort((x, y) => y.value - x.value || x.id - y.id)
     .slice(0, n)
-    .map(([id, t]) => ({
+    .map(({ id, value, org }) => ({
       name: board.accounts[id] ?? `Account ${id}`,
       email: board.emails?.[id] ?? null,
-      org: orgOf(t.orgCount),
-      value: t.value,
+      org,
+      value,
     }));
+}
+
+/** The orgs on a leaderboard, most reviewers first (ties: the org whose
+ * first reviewer ranks higher), with how many reviewers each has. */
+export function leaderboardOrgs(rows: LeaderboardRow[]): { org: string; reviewers: number }[] {
+  const count = new Map<string, number>();
+  for (const r of rows) count.set(r.org, (count.get(r.org) ?? 0) + 1);
+  return [...count].map(([org, reviewers]) => ({ org, reviewers })).sort((a, b) => b.reviewers - a.reviewers);
 }
 
 /** Distinct reviewers over the given week(s): in total, and per org as

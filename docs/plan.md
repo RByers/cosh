@@ -93,6 +93,7 @@ value_ratio(O, t) = O's share of Chromium review comments
 | 2026-11-03 | `fb.com` reviewers count as `meta.com` (`DOMAIN_ALIASES` in `cosh/orgs.py`), applied when `summarize` resolves orgs; fetched and derived data keep raw emails and need no re-run | User's instruction: Meta employees used fb.com addresses |
 | 2026-11-04 | Keep the date filter and its per-week leaderboard data (`summaries/reviewer_weekly.json`); revisit client weight later (Open questions) | User's decision: the client is too small to worry about yet. On 2026-11-04 (38 weeks loaded) the page fetched about 400 KB gzipped (1.9 MB raw). `reviewer_weekly.json` was 257 KB of that, and one all-time total per reviewer would cut it to about 81 KB |
 | 2026-11-04 | Gerrit links: the leaderboard links to `commentby:X -owner:X` plus the range's dates, not `reviewedby:X`. Each org segment in "Review by directory" (any tree level) links to `dir:D` + dates + `(commentby:A -owner:A) OR …` for that org's reviewers in the directory's subtree (top 100 by comments), from a new `summaries/area_reviewers.json` that the page fetches when the chart scrolls into view | `reviewedby:` isn't "reviewed by". Gerrit's `ChangeData.reviewedBy()` walks the messages newest-first and stops at the owner's latest message, so a CL drops out once its owner replies. Domain queries don't work for drill-down: `commentby:*@microsoft.com` matches nothing (no wildcards), and `commentby:microsoft.com` expands to every matching account and fails (906 terms, max 800). Regex `dir:^…`/`path:^…` is off on Chromium Gerrit, so `dir:` also matches the segments anywhere (`dir:content` hits `components/x/content/`), and dates can only bound when a CL last changed. The links are therefore supersets of the counted CLs |
+| 2026-11-04 | Leaderboard: no "other organizations"; every org on it gets its own legend entry (with its reviewer count). Size selector (top 25 default, 50, 100, 200) and a "without google.com" toggle that fills the board from the other orgs; both in the URL (`lbn`, `lbg=0`) | User's request. Without google.com one view can hold about 30 orgs, more than the 8-colour palette, so the 8 orgs with the most reviewers get colours and the rest are named on their rows |
 
 ## Status
 
@@ -123,8 +124,10 @@ value_ratio(O, t) = O's share of Chromium review comments
   comments, and a per-org table. The summary/Radar join runs client-side.
   Not yet deployed:
   the repo has no GitHub remote, so `.github/workflows/pages.yml` is untested.
-- Reviewer leaderboard in the web UI: the top 50 reviewers over the selected
-  date range. `summarize` writes every reviewer's weekly counts
+- Reviewer leaderboard in the web UI: the top 25, 50, 100 or 200 reviewers
+  (default 25) over the selected date range, optionally without google.com's
+  reviewers. Every org on it is named in the legend (no "other"); orgs beyond
+  the 8 palette colours are also named on their rows. `summarize` writes every reviewer's weekly counts
   to `summaries/reviewer_weekly.json`; the UI totals any range from it.
 - Web UI date range: From/To dates (whole ISO weeks) plus presets, applied to
   every chart, the tiles and the table (see `web/README.md`).

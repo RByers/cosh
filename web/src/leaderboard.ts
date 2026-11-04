@@ -15,7 +15,8 @@ function node<K extends keyof HTMLElementTagNameMap>(tag: K, cls?: string, text?
 const pct = (v: number, max: number) => `${(v / max) * 100}%`;
 
 /** Fills `box` with the leaderboard. Bars take the org's colour (`colorOf`);
- * orgs without one get the muted neutral. Each row links to the CLs the
+ * orgs without one get the muted neutral and their name after the
+ * reviewer's, so every row's org can be read off. Each row links to the CLs the
  * reviewer commented on, limited to `range` when given. */
 export function buildLeaderboard(
   box: HTMLElement,
@@ -62,15 +63,16 @@ export function buildLeaderboard(
       }
       row.title = `${i + 1}. ${r.name} (${r.org})\n${fmt(r.value)} ${unit}` +
         (r.email ? `\n${r.email}\nOpens the CLs they commented on in the range on Gerrit, in a new tab` : '');
+      const color = colorOf(r.org);
       const label = node('span', 'lb-label');
       label.append(
         node('span', 'lb-rank', `${i + 1}. `),
         node('span', 'lb-name', r.name),
       );
+      if (!color) label.append(node('span', 'lb-org', ` · ${r.org}`));
       const plot = node('span', 'lb-plot');
       const bar = node('span', 'lb-bar');
       bar.style.width = pct(r.value, max);
-      const color = colorOf(r.org);
       if (color) bar.style.background = color;
       plot.append(bar, node('span', 'lb-value', fmt(r.value)));
       row.append(label, plot);

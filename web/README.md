@@ -81,12 +81,15 @@ Over a range:
    not from google.com. For reviewed CLs, a CL with comments in two
    directories counts in each. A note lists the path rules (from the
    summary's metadata) and how comments are placed on files.
-6. **Reviewer leaderboard**: the top 50 reviewers by review comments over the
-   range, one compact bar each, coloured by org.
+6. **Reviewer leaderboard**: the top 25 (or 50, 100, 200) reviewers by review
+   comments over the range, with or without google.com's reviewers, one
+   compact bar each, coloured by org. Every org gets its own legend entry;
+   orgs beyond the palette's 8 colours are named on their rows.
 
 The metric, range, smoothing and review-chart scale are kept in the URL hash
 (`#metric=cls&from=2026-W14&to=2026-W44&smooth=4`, plus `&rscale=linear` for
-the linear review chart). Old `#week=2026-W44` links open that one week, and
+the linear review chart, `&lbn=100` for a longer leaderboard and `&lbg=0` for
+one without google.com). Old `#week=2026-W44` links open that one week, and
 an old `dirs=` parameter is ignored.
 
 ## Commands

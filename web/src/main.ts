@@ -63,6 +63,9 @@ import {
   topReviewers,
   trimRanked,
   LEADERBOARD_SIZE,
+  LEADERBOARD_SIZES,
+  leaderboardOrgs,
+  type LeaderboardSize,
   TABLE_TOP_ORGS,
   weekMonday,
   weeksIn,
@@ -97,11 +100,16 @@ interface State {
   smoothing: Smoothing;
   /** Review chart axis: log with every org, or linear without google.com. */
   reviewScale: ReviewScale;
+  /** How many reviewers the leaderboard shows. */
+  lbSize: LeaderboardSize;
+  /** Whether the leaderboard includes google.com's reviewers. */
+  lbGoogle: boolean;
   /** Directory chart rows the reader expanded (DirRow keys); not in the URL. */
   expandedDirs: Set<string>;
 }
 
-/** The org the linear review chart leaves out, so the rest are legible. */
+/** The org the linear review chart leaves out, so the rest are legible, and
+ * the one the leaderboard can leave out. */
 const LINEAR_EXCLUDED_ORG = 'google.com';
 
 declare global {
@@ -173,12 +181,25 @@ function readStateFromUrl(data: Data): State {
   const sm = Number(q.get('smooth'));
   const smoothing = SMOOTHING_WEEKS.find((w) => w === sm) ?? DEFAULT_SMOOTHING;
   const reviewScale: ReviewScale = q.get('rscale') === 'linear' ? 'linear' : 'log';
-  return { metric, range: clampRange({ from, to }, full), smoothing, reviewScale, expandedDirs: new Set() };
+  const lbn = Number(q.get('lbn'));
+  const lbSize = LEADERBOARD_SIZES.find((n) => n === lbn) ?? LEADERBOARD_SIZE;
+  const lbGoogle = q.get('lbg') !== '0';
+  return {
+    metric,
+    range: clampRange({ from, to }, full),
+    smoothing,
+    reviewScale,
+    lbSize,
+    lbGoogle,
+    expandedDirs: new Set(),
+  };
 }
 
 function writeStateToUrl(s: State) {
   history.replaceState(null, '', `#metric=${s.metric}&from=${s.range.from}&to=${s.range.to}&smooth=${s.smoothing}` +
-    (s.reviewScale === 'linear' ? '&rscale=linear' : ''));
+    (s.reviewScale === 'linear' ? '&rscale=linear' : '') +
+    (s.lbSize !== LEADERBOARD_SIZE ? `&lbn=${s.lbSize}` : '') +
+    (s.lbGoogle ? '' : '&lbg=0'));
 }
 
 const PRESETS: { id: string; label: string; weeks: number | null }[] = [
@@ -192,6 +213,29 @@ function presetRange(data: Data, weeks: number | null): WeekRange {
   const { full, common } = data.ranges;
   if (weeks === null) return common;
   return clampRange({ from: addWeeks(common.to, 1 - weeks), to: common.to }, full);
+}
+
+/** Fills a segmented fieldset with one radio per option, keeping its static
+ * <legend>. */
+function segmented<T>(
+  box: HTMLElement,
+  name: string,
+  options: { id: T; label: string }[],
+  current: T,
+  pick: (id: T) => void,
+) {
+  box.querySelectorAll('label').forEach((l) => l.remove());
+  for (const o of options) {
+    const label = el('label');
+    const input = el('input');
+    input.type = 'radio';
+    input.name = name;
+    input.value = String(o.id);
+    input.checked = o.id === current;
+    input.addEventListener('change', () => pick(o.id));
+    label.append(input, document.createTextNode(o.label));
+    box.append(label);
+  }
 }
 
 function buildControls(data: Data, state: State, render: () => void) {
@@ -250,6 +294,30 @@ function buildControls(data: Data, state: State, render: () => void) {
     label.append(input, document.createTextNode(sc.label));
     scaleBox.append(label);
   }
+
+  segmented(
+    $('#leaderboard-size'),
+    'leaderboard-size',
+    LEADERBOARD_SIZES.map((n) => ({ id: n, label: `Top ${n}` })),
+    state.lbSize,
+    (n) => {
+      state.lbSize = n;
+      render();
+    },
+  );
+  segmented(
+    $('#leaderboard-google'),
+    'leaderboard-google',
+    [
+      { id: true, label: 'All organizations' },
+      { id: false, label: `Without ${LINEAR_EXCLUDED_ORG}` },
+    ],
+    state.lbGoogle,
+    (g) => {
+      state.lbGoogle = g;
+      render();
+    },
+  );
 
   const { full } = data.ranges;
   const fromInput = $<HTMLInputElement>('#from');
@@ -410,29 +478,47 @@ function renderLeaderboard(
   data: Data,
   state: State,
   colors: Map<string, string>,
+  theme: Theme,
 ): void {
   const name = metricName(state.metric);
   const weeks = weeksIn(Object.keys(data.reviewers.weeks), state.range);
-  const rows = topReviewers(data.reviewers, weeks, state.metric, LEADERBOARD_SIZE);
+  const excluded = state.lbGoogle ? undefined : LINEAR_EXCLUDED_ORG;
+  const rows = topReviewers(data.reviewers, weeks, state.metric, state.lbSize, excluded);
+  const outside = excluded ? ` outside ${excluded}` : '';
   $('#leaderboard-sub').textContent = !rows.length
-    ? `No reviewer data for ${rangeLabel(state.range)}.`
-    : `${name}${weeks.length > 1 ? ' in total' : ''}, ${rangeLabel(state.range)}, top ${rows.length} reviewers. ` +
+    ? `No reviewer data${outside} for ${rangeLabel(state.range)}.`
+    : `${name}${weeks.length > 1 ? ' in total' : ''}, ${rangeLabel(state.range)}, ` +
+      `top ${rows.length} reviewers${outside}. ` +
       'Same scope as the organization chart: human reviewers on human-owned CLs, on the selected paths.';
 
-  // Legend: the coloured orgs that appear, in colour order, then the rest.
-  const present = new Set(rows.map((r) => r.org));
-  const legend = [...colors].filter(([org]) => present.has(org)).map(([org, color]) => ({ org, color }));
-  if (rows.some((r) => !colors.has(r.org))) legend.push({ org: 'other organizations', color: '' });
-  $('#leaderboard-legend').replaceChildren(
-    ...legend.map(({ org, color }) => {
+  // Every org on the board gets its own legend entry, most reviewers first.
+  // The palette has room for the first theme.series.length of them (keeping
+  // ratio-chart colours where they can); any beyond that get the muted bar
+  // and are named on their rows instead.
+  const orgs = leaderboardOrgs(rows);
+  const lbColors = reviewColors(orgs.slice(0, theme.series.length).map((o) => o.org), colors, theme);
+  const legend = orgs
+    .filter((o) => lbColors.has(o.org))
+    .map(({ org, reviewers }) => {
       const li = el('li');
-      const sw = el('span', undefined, color ? 'swatch' : 'swatch swatch-muted');
-      if (color) sw.style.background = color;
-      li.append(sw, document.createTextNode(org));
+      const sw = el('span', undefined, 'swatch');
+      sw.style.background = lbColors.get(org)!;
+      li.append(sw, document.createTextNode(`${org} (${reviewers})`));
       return li;
-    }),
-  );
-  buildLeaderboard($('#leaderboard-chart'), rows, name, (org) => colors.get(org), state.range);
+    });
+  const unnamed = orgs.filter((o) => !lbColors.has(o.org));
+  if (unnamed.length) {
+    const li = el('li');
+    li.append(
+      el('span', undefined, 'swatch swatch-muted'),
+      document.createTextNode(
+        `named on each row: ${unnamed.map(({ org, reviewers }) => `${org} (${reviewers})`).join(', ')}`,
+      ),
+    );
+    legend.push(li);
+  }
+  $('#leaderboard-legend').replaceChildren(...legend);
+  buildLeaderboard($('#leaderboard-chart'), rows, name, (org) => lbColors.get(org), state.range);
 }
 
 /** Review by directory: every comment in the range, by directory and org, with
@@ -605,7 +691,7 @@ function main(data: Data) {
           : 'The axis is logarithmic, since Google does most of the review.')
       : `No review data for ${label}.`;
     renderAreas(data, state, colors, theme);
-    renderLeaderboard(data, state, colors);
+    renderLeaderboard(data, state, colors, theme);
     usageChart?.destroy();
     usageChart = renderUsageChart(
       $<HTMLCanvasElement>('#usage-chart'),

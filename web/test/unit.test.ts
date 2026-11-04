@@ -43,6 +43,7 @@ import {
   MAX_LINK_REVIEWERS,
   niceTicks,
   topReviewers,
+  leaderboardOrgs,
   trimRanked,
   type ReviewerBoard,
   type ReviewerRow,
@@ -192,6 +193,24 @@ test('topReviewers totals a range exactly; org is where most of their comments w
   // The org doesn't change with the metric.
   assert.equal(topReviewers(b, ['2026-W44', '2026-W43'], 'cls')[0].org, 'y.com');
   assert.deepEqual(topReviewers(b, [], 'comments'), []);
+});
+
+test('topReviewers can leave an org out and still fill the board from the rest', () => {
+  const b = board({ '2026-W44': [[1, 0, 9, 1, 0], [2, 1, 5, 1, 0], [3, 0, 1, 1, 0], [3, 1, 7, 3, 0]] });
+  // n1 is x.com; most of n3's comments are y.com, so only n1 is left out.
+  assert.deepEqual(topReviewers(b, '2026-W44', 'comments', 2).map((x) => x.name), ['n1', 'n3']);
+  assert.deepEqual(topReviewers(b, '2026-W44', 'comments', 2, 'x.com').map((x) => x.name), ['n3', 'n2']);
+  assert.equal(topReviewers(b, '2026-W44', 'comments', 5, 'nobody.com').length, 3);
+});
+
+test('leaderboardOrgs counts reviewers per org, most first, ties by rank', () => {
+  const row = (org: string) => ({ name: org, email: null, org, value: 1 });
+  assert.deepEqual(leaderboardOrgs(['b', 'a', 'a', 'c', 'b', 'a'].map(row)), [
+    { org: 'a', reviewers: 3 },
+    { org: 'b', reviewers: 2 },
+    { org: 'c', reviewers: 1 },
+  ]);
+  assert.deepEqual(leaderboardOrgs([]), []);
 });
 
 test('distinctReviewers counts people once over a range, per folded org', () => {

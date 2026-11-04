@@ -574,7 +574,7 @@ test('review chart toggles to a linear axis without google.com', async () => {
   await page.close();
 });
 
-test('leaderboard shows up to 50 reviewers compactly', async () => {
+test('leaderboard shows up to 25 reviewers compactly', async () => {
   const { page } = await open();
   const read = () =>
     page.evaluate(() => {
@@ -591,7 +591,7 @@ test('leaderboard shows up to 50 reviewers compactly', async () => {
       };
     });
   const comments = await read();
-  assert.ok(comments.n > 10 && comments.n <= 50, `n=${comments.n}`);
+  assert.ok(comments.n > 10 && comments.n <= 25, `n=${comments.n}`);
   assert.deepEqual(comments.values, [...comments.values].sort((a, b) => b - a));
   assert.match(comments.top, /^1\. [^·]+$/); // rank and name only; the org is the bar colour
   // The hover text gives the count with the metric, then the email.
@@ -632,6 +632,53 @@ test('leaderboard shows up to 50 reviewers compactly', async () => {
   const cls = await read();
   assert.match(cls.title, /\n[\d,]+ reviewed cls\n/i);
   assert.notDeepEqual(cls.values, comments.values);
+  await page.close();
+});
+
+test('leaderboard size and Google toggles; every org is named, none as "other"', async () => {
+  const { page, errors } = await open();
+  const read = () =>
+    page.evaluate(() => {
+      const rows = [...document.querySelectorAll<HTMLElement>('#leaderboard-chart .lb-row')];
+      return {
+        n: rows.length,
+        orgs: rows.map((r) => r.title.split('\n')[0].match(/\(([^()]+)\)$/)![1]),
+        inline: rows.map((r) => r.querySelector('.lb-org')?.textContent ?? null),
+        colored: rows.map((r) => (r.querySelector<HTMLElement>('.lb-bar')!.style.background ? 1 : 0)),
+        legend: document.querySelector('#leaderboard-legend')!.textContent!,
+        sub: document.querySelector('#leaderboard-sub')!.textContent!,
+      };
+    });
+  const check = (v: Awaited<ReturnType<typeof read>>) => {
+    assert.doesNotMatch(v.legend, /other/i);
+    // Every org on the board is in the legend; uncoloured rows name their org.
+    for (const org of new Set(v.orgs)) assert.ok(v.legend.includes(org), `${org} in legend`);
+    v.orgs.forEach((org, i) => assert.equal(v.inline[i], v.colored[i] ? null : ` · ${org}`));
+  };
+  const top25 = await read();
+  check(top25);
+  assert.ok(top25.orgs.includes('google.com'));
+  await page.click('#leaderboard-size input[value="100"]');
+  assert.match(page.url(), /lbn=100/);
+  const top100 = await read();
+  check(top100);
+  assert.ok(top100.n > 50 && top100.n <= 100, `n=${top100.n}`);
+  await page.click('#leaderboard-google input[value="false"]');
+  assert.match(page.url(), /lbg=0/);
+  const noGoogle = await read();
+  check(noGoogle);
+  assert.ok(!noGoogle.orgs.includes('google.com'));
+  assert.ok(noGoogle.n > 50, `n=${noGoogle.n}`);
+  assert.match(noGoogle.sub, /outside google\.com/);
+  // The state survives a reload from the URL.
+  const { page: again } = await open(new URL(page.url()).hash);
+  assert.equal(await again.$eval('#leaderboard-google input[value="false"]', (e) => (e as HTMLInputElement).checked), true);
+  assert.equal(await again.$eval('#leaderboard-size input[value="100"]', (e) => (e as HTMLInputElement).checked), true);
+  await again.close();
+  await page.click('#leaderboard-size input[value="25"]');
+  await page.click('#leaderboard-google input[value="true"]');
+  assert.doesNotMatch(page.url(), /lbn|lbg/);
+  assert.deepEqual(errors, []);
   await page.close();
 });
 
@@ -707,6 +754,13 @@ test.skipIf(!process.env.SCREENSHOT_DIR)('screenshots (only when SCREENSHOT_DIR 
       const card = await page.$('#leaderboard');
       await card!.screenshot({ path: join(process.env.SCREENSHOT_DIR!, `leaderboard-${width}-${scheme}.png`) as `${string}.png` });
     }
+    // Without google.com: more orgs than palette colours, so some are named on their rows.
+    await page.setViewport({ width: 1100, height: 3200 });
+    await page.click('#leaderboard-size input[value="100"]');
+    await page.click('#leaderboard-google input[value="false"]');
+    await page.mouse.move(0, 0);
+    const card = await page.$('#leaderboard');
+    await card!.screenshot({ path: join(process.env.SCREENSHOT_DIR!, `leaderboard-nogoogle-${scheme}.png`) as `${string}.png` });
     await page.close();
   }
 });
