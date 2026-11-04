@@ -35,6 +35,11 @@ implementation and metric definitions.
   it and runs Vitest unit tests and headless-Chrome tests (puppeteer-core with
   `/usr/bin/google-chrome`). Vitest is capped at `maxWorkers: 4`, with test
   files run serially.
+- In a worktree, give `web/` its dependencies by symlinking the main
+  checkout's: `ln -s /home/rbagent/projects/cosh/web/node_modules
+  web/node_modules`. Don't run `npm ci` or `npm install` there. Git ignores
+  the link, so leave it in place: `git worktree remove` cleans it up, and
+  removing it yourself triggers a permission prompt.
 - `data/private/cosh.sqlite` can always be rebuilt with
   `rm data/private/cosh.sqlite && python3 -m cosh derive`.
 - Never delete `data/private/raw.sqlite` or `data/private/notedb/`. Those
