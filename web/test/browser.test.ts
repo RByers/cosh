@@ -138,8 +138,8 @@ test('switching the metric updates the table, review chart and URL', async () =>
   await page.click('#metric input[value="cls"]');
   assert.notEqual(await cell(), before);
   assert.match(page.url(), /metric=cls/);
-  const label = await page.evaluate(() => window.__cosh!.reviewChart!.data.datasets[0].label);
-  assert.equal(label, 'Reviewed CLs');
+  const label = await page.evaluate(() => window.__cosh!.reviewChart!.options.scales.y.title.text);
+  assert.match(label, /^reviewed cls per week/);
   // State survives a reload via the URL hash.
   await page.reload();
   await page.waitForSelector('body[data-ready]');
@@ -199,7 +199,10 @@ test('date range defaults to where review and usage data overlap, and drives eve
         to: (document.querySelector('#to') as HTMLInputElement).value,
         ratioWeeks: c.ratioChart!.data.labels as string[],
         usageWeeks: c.usageChart!.data.labels as string[],
-        reviewTotal: (c.reviewChart!.data.datasets[0].data as number[]).reduce((s, v) => s + v, 0),
+        reviewWeeks: c.reviewChart!.data.labels as string[],
+        reviewTotal: c.reviewChart!.data.datasets
+          .flatMap((ds: { data: unknown[] }) => ds.data as (number | null)[])
+          .reduce((s: number, v: number | null) => s + (v ?? 0), 0),
         summary: document.querySelector('#range-summary')!.textContent,
         pressed: document.querySelector('#range-presets [aria-pressed="true"]')?.textContent,
       };
@@ -213,6 +216,7 @@ test('date range defaults to where review and usage data overlap, and drives eve
   assert.equal(d.usageWeeks[0], d.range.from);
   assert.equal(d.usageWeeks[d.usageWeeks.length - 1], d.range.to);
   assert.ok(d.ratioWeeks.every((w) => w >= d.range.from && w <= d.range.to));
+  assert.deepEqual(d.reviewWeeks, d.ratioWeeks);
   assert.match(page.url(), new RegExp(`from=${d.range.from}&to=${d.range.to}`));
 
   // Pick an earlier start date: the usage chart widens to the week of that date.
@@ -254,12 +258,29 @@ test('old #week= links open a one-week range', async () => {
   await page.close();
 });
 
-test('review chart lists top orgs with Other last', async () => {
+test('review chart is a weekly line per top org, Other last, on a log axis', async () => {
   const { page } = await open();
-  const labels = await page.evaluate(() => window.__cosh!.reviewChart!.data.labels as string[]);
-  assert.equal(labels[0], 'google.com');
-  assert.equal(labels[labels.length - 1], 'Other');
-  assert.ok(labels.length <= 8);
+  const chart = await page.evaluate(() => {
+    const c = window.__cosh!.reviewChart!;
+    const ratio = window.__cosh!.ratioChart!;
+    const color = (ch: typeof c, org: string) =>
+      ch.data.datasets.find((d: { label?: string }) => d.label === org)?.borderColor;
+    return {
+      type: (c.config as { type?: string }).type,
+      yType: c.options.scales.y.type,
+      orgs: c.data.datasets.map((d: { label?: string }) => d.label),
+      sameColor: color(c, 'microsoft.com') === color(ratio, 'microsoft.com'),
+      colors: c.data.datasets.map((d: { borderColor?: string }) => d.borderColor),
+    };
+  });
+  assert.equal(chart.type, 'line');
+  assert.equal(chart.yType, 'logarithmic');
+  assert.equal(chart.orgs[0], 'google.com');
+  assert.equal(chart.orgs[chart.orgs.length - 1], 'Other');
+  assert.ok(chart.orgs.length <= 8);
+  assert.ok(chart.sameColor, 'orgs keep their ratio-chart colour');
+  // Every named org gets its own colour.
+  assert.equal(new Set(chart.colors.slice(0, -1)).size, chart.orgs.length - 1, JSON.stringify(chart.colors));
   await page.close();
 });
 

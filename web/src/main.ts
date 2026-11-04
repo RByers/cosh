@@ -15,6 +15,7 @@ import {
   renderRatioChart,
   renderReviewChart,
   renderUsageChart,
+  type Theme,
 } from './charts.ts';
 import {
   addWeeks,
@@ -44,7 +45,7 @@ import {
   SHARE_COLUMN,
   sumWeeklyTotals,
   topBrowsers,
-  topOrgCounts,
+  orgWeeklyCounts,
   topReviewers,
   trimRanked,
   LEADERBOARD_SIZE,
@@ -390,6 +391,18 @@ function renderLeaderboard(
   return renderLeaderboardChart($<HTMLCanvasElement>('#leaderboard-chart'), rows, metricName, colors, readTheme());
 }
 
+/** Colours for the review chart: an org keeps its ratio-chart colour; orgs
+ * without one take, in rank order, the series colours that no org in this
+ * chart uses (all eight may be assigned to browser owners), then the muted
+ * neutral. */
+function reviewColors(orgs: string[], colors: Map<string, string>, theme: Theme): Map<string, string> {
+  const out = new Map(orgs.filter((o) => colors.has(o)).map((o) => [o, colors.get(o)!]));
+  const used = new Set(out.values());
+  const spare = theme.series.filter((c) => !used.has(c));
+  for (const org of orgs) if (!out.has(org) && spare.length) out.set(org, spare.shift()!);
+  return out;
+}
+
 /** First week where Radar's unnamed-Chromium bucket more than triples week
  * over week (2026-W37 in the current data); see docs/plan.md, Open questions. */
 function derivativeJumpWeek(radar: RadarWeekly): string | null {
@@ -437,14 +450,18 @@ function main(data: Data) {
     const metricName = METRICS.find((m) => m.id === state.metric)!.label;
     const metricLabel = metricName.toLowerCase();
     reviewChart?.destroy();
+    const reviewSeries = orgWeeklyCounts(data.summary, weeks, state.metric);
     reviewChart = renderReviewChart(
       $<HTMLCanvasElement>('#review-chart'),
-      topOrgCounts(data.summary, weeks, state.metric),
+      weeks,
+      reviewSeries,
       metricName,
+      reviewColors(reviewSeries.map((s) => s.org), colors, theme),
       theme,
     );
     $('#review-sub').textContent = weeks.length
-      ? `${metricName}${weeks.length > 1 ? ' in total' : ''}, ${label}, top organizations; the rest are combined as “Other”.`
+      ? `${metricName} per ISO week, ${label}, for the organizations with the most over the range; the rest are combined as “Other”. ` +
+        'The axis is logarithmic, since Google does most of the review.'
       : `No review data for ${label}.`;
     leaderboardChart = renderLeaderboard(data, state, colors, leaderboardChart);
     usageChart?.destroy();

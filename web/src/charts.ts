@@ -5,6 +5,7 @@ import {
   Chart,
   Legend,
   LinearScale,
+  LogarithmicScale,
   LineController,
   LineElement,
   PointElement,
@@ -22,6 +23,7 @@ Chart.register(
   LineElement,
   PointElement,
   LinearScale,
+  LogarithmicScale,
   CategoryScale,
   Tooltip,
   Legend,
@@ -202,58 +204,61 @@ const barLabelsPlugin = (theme: Theme, format: (v: number) => string, size = 12)
   },
 });
 
-/** Raw review counts per org for one week: top orgs plus "Other". */
+/** Weekly review counts per org: top orgs plus "Other", one line each, on a
+ * log axis (Google is ~97% of review, so a linear axis flattens everyone
+ * else). Weeks with no review are gaps, since log(0) has no position. */
 export function renderReviewChart(
   canvas: HTMLCanvasElement,
-  rows: { org: string; value: number }[],
+  weeks: string[],
+  series: { org: string; values: number[] }[],
   metricLabel: string,
+  colors: Map<string, string>,
   theme: Theme,
-): Chart<'bar'> {
+): Chart<'line'> {
   const fmt = (v: number) => v.toLocaleString('en-US');
+  const datasets = series.map((s) => {
+    const color = s.org === OTHER ? theme.muted : colors.get(s.org) ?? theme.muted;
+    const data = s.values.map((v) => (v > 0 ? v : null));
+    // Points on short ranges; on long ones only for weeks between two gaps,
+    // which would otherwise draw nothing.
+    const short = weeks.length <= 13;
+    const pointRadius = data.map((v, i) =>
+      short ? 3 : v !== null && data[i - 1] == null && data[i + 1] == null ? 2 : 0,
+    );
+    return { ...lineDataset(s.org, color, theme, data), pointRadius, pointHoverRadius: 4 };
+  });
   const base = baseOptions(theme);
   return new Chart(canvas, {
-    type: 'bar',
-    data: {
-      labels: rows.map((r) => r.org),
-      datasets: [
-        {
-          label: metricLabel,
-          data: rows.map((r) => r.value),
-          backgroundColor: rows.map((r) => (r.org === OTHER ? theme.muted : theme.series[0])),
-          borderRadius: { topRight: 4, bottomRight: 4 },
-          borderSkipped: 'start',
-          barPercentage: 0.7,
-          categoryPercentage: 1,
-          minBarLength: 2,
-        },
-      ],
-    },
-    plugins: [barLabelsPlugin(theme, fmt)],
+    type: 'line',
+    data: { labels: weeks, datasets },
     options: {
       ...base,
-      indexAxis: 'y',
-      interaction: { mode: 'nearest', axis: 'y', intersect: false },
-      layout: { padding: { right: 64 } },
       plugins: {
         ...base.plugins,
-        legend: { display: false },
         tooltip: {
           ...base.plugins.tooltip,
-          itemSort: undefined,
-          callbacks: { label: (ctx) => `${fmt(ctx.raw as number)} ${metricLabel.toLowerCase()}` },
+          itemSort: (a, b) => ((b.raw as number | null) ?? 0) - ((a.raw as number | null) ?? 0),
+          callbacks: {
+            label: (ctx) => `${ctx.raw === null ? 0 : fmt(ctx.raw as number)}  ${ctx.dataset.label}`,
+          },
         },
       },
       scales: {
         x: {
-          min: 0,
-          border: { display: false },
-          grid: { color: theme.grid },
-          ticks: { color: theme.muted, callback: (v) => fmt(Number(v)) },
-        },
-        y: {
           grid: { display: false },
           border: { color: theme.baseline },
-          ticks: { color: theme.text },
+          ticks: { color: theme.muted, maxRotation: 0, autoSkip: true, autoSkipPadding: 24 },
+        },
+        y: {
+          type: 'logarithmic',
+          title: { display: true, text: `${metricLabel.toLowerCase()} per week (log scale)`, color: theme.muted },
+          border: { display: false },
+          grid: { color: theme.grid },
+          afterBuildTicks: (axis) => {
+            // Powers of ten only; Chart.js's default log ticks crowd the axis.
+            axis.ticks = axis.ticks.filter((t) => Math.abs(Math.log10(t.value) % 1) < 1e-9);
+          },
+          ticks: { color: theme.muted, callback: (v) => fmt(Number(v)) },
         },
       },
     },

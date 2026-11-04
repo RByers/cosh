@@ -25,6 +25,7 @@ import {
   parseRadarWeekly,
   topBrowsers,
   topOrgCounts,
+  orgWeeklyCounts,
   topReviewers,
   trimRanked,
   type ReviewerBoard,
@@ -225,6 +226,13 @@ test('orgTotals sums counts over weeks and recomputes shares from the sums', () 
   const one = Object.fromEntries(orgTotals(two, ['2026-W44']).map((x) => [x.org, x]));
   assert.ok(Math.abs(one['google.com'].share_comments - 0.9) < 1e-12);
   assert.equal(topOrgCounts(two, ['2026-W43', '2026-W44'], 'comments', 1)[0].value, 1000);
+});
+
+test('orgWeeklyCounts gives one series per top org, with the rest as Other', () => {
+  const series = orgWeeklyCounts(SUMMARY, ['2026-W43', '2026-W44'], 'comments', 2);
+  assert.deepEqual(series.map((s) => s.org), ['google.com', 'microsoft.com', OTHER]);
+  assert.deepEqual(series[0].values, [0, 900]);
+  assert.deepEqual(series[2].values, [0, 50]);
 });
 
 test('meanDerivedShare averages the weeks that have usage data', () => {
