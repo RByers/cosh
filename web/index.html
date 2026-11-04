@@ -81,15 +81,28 @@
       <section class="card" aria-labelledby="usage-title">
         <h2 id="usage-title">Chromium browser usage (Cloudflare Radar)</h2>
         <p class="sub">
-          The ratio's denominator: each browser's share of Chromium-based browser usage. Human traffic, complete
-          ISO weeks; WebViews and in-app browsers excluded.
+          The ratio's denominator: each browser's share of Chromium-based browser usage, including Android WebView and
+          in-app browsers. Human traffic, complete ISO weeks, iOS excluded.
         </p>
         <div class="chart">
           <canvas id="usage-chart" role="img" aria-label="Weekly share of Chromium browser usage per browser."></canvas>
         </div>
+        <p class="note" id="webview-note">
+          <strong>WebViews and in-app browsers.</strong> Pages opened inside apps count as Chromium usage. Android
+          System WebView (ChromeMobileWebview), the Chromium engine Google ships for apps, is credited to Google along
+          with Chrome. The Facebook and Instagram in-app browsers are credited to Meta, and Microsoft 365's to
+          Microsoft. Other in-app browsers (Snapchat, Pinterest and others) stay in the denominator but are credited to no
+          organization.
+        </p>
+        <p class="note" id="ios-note">
+          <strong>iOS is excluded.</strong> Every iOS browser, Chrome included, must use Apple's WebKit engine, and in-app
+          browsers there use WKWebView, so Chromium is barely used on iOS. Radar can't filter iOS out directly, so
+          each day's iOS traffic is subtracted from the all-platform figures using Radar's iOS-only browser breakdown and
+          iOS share of requests.
+        </p>
         <p class="note" id="derivative-note">
           <strong>Note on ChromeDerivative.</strong> Radar's bucket for Chromium-based browsers it can't name jumped
-          from about 0.3% to about 11% of Chromium usage starting in 2026-W37 (on 9 September 2026). It came from every
+          from about 0.3% to about 10% of Chromium usage starting in 2026-W37 (on 9 September 2026). It came from every
           browser in proportion, Safari and Firefox included, not mostly from Chrome. It looks like Radar started labeling
           traffic it previously couldn't identify, possibly real Chromium-based browsers; Cloudflare hasn't explained it.
           The bucket stays in the denominator but is credited to no organization, so from W37 every organization's usage

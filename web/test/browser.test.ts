@@ -226,6 +226,24 @@ test('usage chart shows ChromeDerivative with the jump note', async () => {
   await page.close();
 });
 
+test('Meta gets a ratio line; WebView counts as usage; fine print covers WebView and iOS', async () => {
+  const { page } = await open();
+  const ratioOrgs = await page.evaluate(() =>
+    window.__cosh!.ratioChart!.data.datasets.map((d: { label?: string }) => d.label),
+  );
+  assert.ok(ratioOrgs.includes('meta.com'), ratioOrgs.join());
+  const usage = await page.evaluate(() =>
+    window.__cosh!.usageChart!.data.datasets.map((d: { label?: string }) => d.label),
+  );
+  assert.ok(usage.includes('ChromeMobileWebview'), usage.join());
+  const webview = await page.$eval('#webview-note', (n) => n.textContent ?? '');
+  assert.match(webview, /credited to Google/);
+  assert.match(webview, /credited to Meta/);
+  assert.match(webview, /Microsoft 365's to\s+Microsoft/);
+  assert.match(await page.$eval('#ios-note', (n) => n.textContent ?? ''), /iOS is excluded/);
+  await page.close();
+});
+
 test('dark mode and phone width render without horizontal scroll', async () => {
   const { page } = await open('', 375);
   await page.emulateMediaFeatures([{ name: 'prefers-color-scheme', value: 'dark' }]);

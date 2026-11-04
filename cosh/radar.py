@@ -2,10 +2,20 @@
 
   python3 -m cosh radar [--start 2020-09-01] [--agg 1d|1w] [--offline]
 
-Fetches /radar/http/timeseries_groups/BROWSER (human traffic only) per
-calendar-quarter chunk and device type, caches every raw response under
-data/public/radar/raw/, then writes data/public/radar_browser_share.csv with
-shares renormalised among Chromium-based browsers (config/browsers.csv).
+Fetches three Radar series per calendar-quarter chunk (human traffic only):
+  browser      /http/timeseries_groups/BROWSER            all operating systems
+  browser_ios  /http/timeseries_groups/BROWSER?os=IOS     iOS only
+  os           /http/timeseries_groups/OS                 share of requests per OS
+caches every raw response under data/public/radar/raw/, then writes
+data/public/radar_browser_share.csv with iOS removed and shares renormalised
+among Chromium-based browsers, WebViews and in-app browsers (config/browsers.csv).
+
+iOS is excluded because every iOS browser is WebKit (Chrome iOS included), so
+Chromium usage there is negligible. Radar can't exclude an OS in one query
+(`os` takes a single value, no `-` prefix), so per day and browser b:
+  non_ios(b) = (all(b) - w_ios * ios(b)) / (1 - w_ios)
+with w_ios the iOS share of requests. Checked against `os=ANDROID` on
+2026-10-26: Android-only browsers matched to 4 decimal places.
 
 Rules (same spirit as gerrit.py): serial requests, >= 1 s apart, gzip,
 backoff on 429/5xx. Needs CLOUDFLARE_API_TOKEN (custom token with
@@ -15,6 +25,7 @@ Account > Radar > Read); see docs/radar-research.md.
 import csv
 import datetime as dt
 import gzip
+import itertools
 import json
 import os
 import sys
@@ -32,8 +43,17 @@ BROWSERS_CSV = ROOT / "config" / "browsers.csv"
 
 API = "https://api.cloudflare.com/client/v4"
 ENDPOINT = "/radar/http/timeseries_groups/BROWSER"
+OS_ENDPOINT = "/radar/http/timeseries_groups/OS"
 from .contact import HTTP_HEADERS
-DEVICES = ("ALL", "DESKTOP", "MOBILE")   # ALL = no deviceType filter
+# name -> (endpoint, extra params). "browser" keeps the original cache file names.
+SERIES = {
+    "browser": (ENDPOINT, {}),
+    "browser_ios": (ENDPOINT, {"os": "IOS"}),
+    "os": (OS_ENDPOINT, {}),
+}
+DEVICES = ("ALL",)                       # ALL = no deviceType filter; the UI uses only ALL
+# Kinds counted in the Chromium denominator (bots, TVs and "other" never are).
+COUNTED_KINDS = frozenset({"browser", "webview", "in_app"})
 DEFAULT_START = dt.date(2020, 9, 1)      # Radar launched Sept 2020; earlier chunks are probed
 DEFAULT_LIMIT_PER_GROUP = 50
 # Cloudflare API auth failures (missing/invalid headers, invalid token, no permission);
@@ -41,7 +61,7 @@ DEFAULT_LIMIT_PER_GROUP = 50
 AUTH_ERROR_CODES = {6003, 6111, 9106, 9109, 10000}
 
 CSV_FIELDS = ["period", "period_start", "period_end", "granularity", "device", "browser",
-              "is_chromium", "kind", "days", "raw_share", "chromium_share", "chromium_share_all"]
+              "is_chromium", "kind", "days", "raw_share", "chromium_share"]
 
 
 # ---------------------------------------------------------------- config
@@ -121,22 +141,34 @@ def quarter_chunks(start, end):
         q = qe
 
 
-def cache_path(device, agg, cs, ce):
-    return RAW_DIR / f"browser_{device.lower()}_{agg}_{cs.isoformat()}_{ce.isoformat()}.json"
+def cache_path(device, agg, cs, ce, series="browser"):
+    return RAW_DIR / f"{series}_{device.lower()}_{agg}_{cs.isoformat()}_{ce.isoformat()}.json"
 
 
-def request_params(device, agg, cs, ce, limit_per_group):
+def request_params(device, agg, cs, ce, limit_per_group, series="browser"):
     p = {"aggInterval": agg, "botClass": "LIKELY_HUMAN", "limitPerGroup": limit_per_group,
          "normalization": "PERCENTAGE", "format": "JSON",
          "dateStart": f"{cs.isoformat()}T00:00:00Z", "dateEnd": f"{ce.isoformat()}T00:00:00Z"}
+    if series == "os":
+        del p["limitPerGroup"]                  # Radar rejects it for the OS dimension
+    p.update(SERIES[series][1])
     if device != "ALL":
         p["deviceType"] = device
     return p
 
 
+def series_of(request):
+    """Which SERIES a cached request belongs to."""
+    if request.get("endpoint") == OS_ENDPOINT:
+        return "os"
+    return "browser_ios" if request.get("os") == "IOS" else "browser"
+
+
 def fetch(start=DEFAULT_START, agg="1d", devices=DEVICES, limit_per_group=DEFAULT_LIMIT_PER_GROUP,
-          token=None, min_interval=1.0, today=None, retry_errors=False, log=sys.stderr):
-    """Fetch every missing/incomplete chunk. Complete chunks are never re-fetched."""
+          token=None, min_interval=1.0, today=None, retry_errors=False, series=tuple(SERIES),
+          log=sys.stderr):
+    """Fetch every missing/incomplete chunk of each series. Complete chunks are
+    never re-fetched."""
     token = token or os.environ.get("CLOUDFLARE_API_TOKEN")
     if not token:
         raise SystemExit("CLOUDFLARE_API_TOKEN is not set. Create a Cloudflare API token "
@@ -144,13 +176,14 @@ def fetch(start=DEFAULT_START, agg="1d", devices=DEVICES, limit_per_group=DEFAUL
     today = today or dt.datetime.now(dt.timezone.utc).date()
     RAW_DIR.mkdir(parents=True, exist_ok=True)
     client = RadarClient(token, min_interval=min_interval, log=log)
-    for device in devices:
+    for name, device in itertools.product(series, devices):
+        endpoint = SERIES[name][0]
         # newest first: a bad token / bad parameter fails on data that surely exists,
         # before any old chunk could be cached as a "no history" 4xx.
         for cs, qe in reversed(list(quarter_chunks(start, today))):
             ce = min(qe, today)                     # only whole UTC days that have ended
-            path = cache_path(device, agg, cs, qe)
-            params = request_params(device, agg, cs, ce, limit_per_group)
+            path = cache_path(device, agg, cs, qe, name)
+            params = request_params(device, agg, cs, ce, limit_per_group, name)
             if path.exists():
                 old = json.loads(path.read_text())
                 if old.get("status") == 200 and (old.get("complete")
@@ -160,7 +193,7 @@ def fetch(start=DEFAULT_START, agg="1d", devices=DEVICES, limit_per_group=DEFAUL
                     continue                        # cached 4xx, e.g. before history start
             if ce <= cs:
                 continue
-            status, parsed, body, url = client.get(ENDPOINT, params)
+            status, parsed, body, url = client.get(endpoint, params)
             codes = {e.get("code") for e in (parsed or {}).get("errors") or [] if isinstance(e, dict)}
             if status in (401, 403, 429) or status >= 500 or codes & AUTH_ERROR_CODES:
                 hint = " (bad token or missing 'Radar Read'?)" if status != 429 else ""
@@ -169,13 +202,13 @@ def fetch(start=DEFAULT_START, agg="1d", devices=DEVICES, limit_per_group=DEFAUL
                 # Recent data surely exists, so this is a bad request, not "before history
                 # starts": don't cache it, stop and show the error.
                 raise SystemExit(f"HTTP {status} for {url}: {body[:500]}")
-            rec = {"request": dict(params, endpoint=ENDPOINT), "status": status,
+            rec = {"request": dict(params, endpoint=endpoint), "status": status,
                    "complete": status == 200 and ce == qe,
                    "fetched_at": dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds"),
                    "response": parsed if parsed is not None else body}
             path.write_text(json.dumps(rec, indent=1, sort_keys=True) + "\n")
             n = len(((parsed or {}).get("result") or {}).get("serie_0", {}).get("timestamps", []))
-            print(f"  {device:<7} {cs}..{ce} -> HTTP {status}, {n} points", file=log)
+            print(f"  {name:<11} {device:<7} {cs}..{ce} -> HTTP {status}, {n} points", file=log)
     return client.request_count
 
 
@@ -206,10 +239,10 @@ def parse_serie(resp, lo=None, hi=None):
     return out
 
 
-def load_cached(agg="1d"):
-    """All cached 200 responses -> {device: {date: {browser: fraction}}}."""
-    data = defaultdict(dict)
-    for path in sorted(RAW_DIR.glob(f"browser_*_{agg}_*.json")):
+def load_raw(agg="1d"):
+    """All cached 200 responses -> {series: {device: {date: {name: fraction}}}}."""
+    data = defaultdict(lambda: defaultdict(dict))
+    for path in sorted(RAW_DIR.glob(f"*_{agg}_*.json")):
         rec = json.loads(path.read_text())
         if rec.get("status") != 200 or not isinstance(rec.get("response"), dict):
             continue
@@ -217,7 +250,38 @@ def load_cached(agg="1d"):
         device = r.get("deviceType", "ALL")
         lo = dt.date.fromisoformat(r["dateStart"][:10])
         hi = dt.date.fromisoformat(r["dateEnd"][:10])
-        data[device].update(parse_serie(rec["response"], lo, hi))
+        data[series_of(r)][device].update(parse_serie(rec["response"], lo, hi))
+    return data
+
+
+def exclude_ios(all_os, ios, os_shares):
+    """{browser: share of all requests} -> {browser: share of non-iOS requests}.
+
+    Clamped at 0: limitPerGroup can leave a browser in the iOS top N but not in
+    the all-OS one, and Radar rounds its percentages."""
+    w = os_shares.get("IOS", 0.0)
+    if w >= 1:
+        return {}
+    out = {}
+    for b in set(all_os) | set(ios):
+        v = (all_os.get(b, 0.0) - w * ios.get(b, 0.0)) / (1 - w)
+        if v > 0 or b in all_os:
+            out[b] = max(v, 0.0)
+    return out
+
+
+def load_cached(agg="1d"):
+    """{device: {date: {browser: share of non-iOS human requests}}}.
+
+    A day is kept only if the OS series and (unless iOS was 0%) the iOS series
+    have it too; otherwise iOS couldn't be removed."""
+    raw = load_raw(agg)
+    data = defaultdict(dict)
+    for device, days in raw["browser"].items():
+        ios, osw = raw["browser_ios"].get(device, {}), raw["os"].get(device, {})
+        for d, row in days.items():
+            if d in osw and (d in ios or osw[d].get("IOS", 0.0) == 0):
+                data[device][d] = exclude_ios(row, ios.get(d, {}), osw[d])
     return data
 
 
@@ -237,24 +301,15 @@ def period_of(d, granularity):
 
 
 def renormalize(shares, browsers):
-    """{browser: raw_share} -> {browser: (chromium_share, chromium_share_all)}.
+    """{browser: raw_share} -> {browser: chromium_share or None}.
 
-    chromium_share: among is_chromium standalone browsers (kind == "browser").
-    chromium_share_all: among all is_chromium entries (adds WebView / in-app).
-    Non-Chromium and unknown names get None."""
-    def cls(b):
-        return browsers.get(b, {"is_chromium": False, "kind": "unknown"})
-    tot = sum(v for b, v in shares.items() if cls(b)["is_chromium"] and cls(b)["kind"] == "browser")
-    tot_all = sum(v for b, v in shares.items() if cls(b)["is_chromium"])
-    out = {}
-    for b, v in shares.items():
-        c = cls(b)
-        if not c["is_chromium"]:
-            out[b] = (None, None)
-            continue
-        a = v / tot if (c["kind"] == "browser" and tot > 0) else None
-        out[b] = (a, v / tot_all if tot_all > 0 else None)
-    return out
+    chromium_share: among is_chromium browsers, WebViews and in-app browsers
+    (COUNTED_KINDS). Non-Chromium, bots, TVs and unknown names get None."""
+    def counted(b):
+        c = browsers.get(b)
+        return bool(c) and c["is_chromium"] and c["kind"] in COUNTED_KINDS
+    tot = sum(v for b, v in shares.items() if counted(b))
+    return {b: (v / tot if counted(b) and tot > 0 else None) for b, v in shares.items()}
 
 
 def aggregate(daily, granularity):
@@ -279,15 +334,14 @@ def build_rows(data, browsers, granularities=("week", "month")):
                 norm = renormalize(shares, browsers)
                 for b in sorted(shares, key=lambda b: -shares[b]):
                     c = browsers.get(b)
-                    cs, ca = norm[b]
+                    cs = norm[b]
                     rows.append({
                         "period": label, "period_start": s.isoformat(), "period_end": e.isoformat(),
                         "granularity": gran, "device": device.lower(), "browser": b,
                         "is_chromium": "" if c is None else int(c["is_chromium"]),
                         "kind": "" if c is None else c["kind"], "days": days,
                         "raw_share": f"{shares[b]:.6f}",
-                        "chromium_share": "" if cs is None else f"{cs:.6f}",
-                        "chromium_share_all": "" if ca is None else f"{ca:.6f}"})
+                        "chromium_share": "" if cs is None else f"{cs:.6f}"})
     return rows
 
 

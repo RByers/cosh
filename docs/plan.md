@@ -68,8 +68,11 @@ value_ratio(O, t) = O's share of Chromium review comments
 | 2026-11-03 | Web UI: Vite + TypeScript, Chart.js only at runtime; the summary/Radar join runs in the browser (`web/src/data.ts`); tests use Vitest + puppeteer-core with the installed Chrome | Few dependencies, static GitHub Pages hosting, no generated files to commit |
 | 2026-11-03 | Ratio axis: 1× in the vertical middle, linear 0–1 below and 1–max above | User's instruction; under- and over-contribution get equal visual weight |
 | 2026-11-03 | Keep the 1× gridline highlighted but don't label or describe values above/below it as more/less than a fair share | User's instruction: the ratio is too rough an estimate, with too many other factors, for 1× to be a meaningful threshold |
-| 2026-11-03 | Radar: `timeseries_groups/BROWSER`, human traffic, daily data aggregated to ISO weeks; WebViews and in-app browsers excluded from the main share | See `radar-research.md` |
+| 2026-11-03 | Radar: `timeseries_groups/BROWSER`, human traffic, daily data aggregated to ISO weeks | See `radar-research.md` |
 | 2026-11-03 | Keep Radar's `ChromeDerivative` in the Chromium denominator despite its 2026-09-09 jump | It may be real Chromium usage; the jump looks like Radar labeling previously unlabeled traffic, not taking share from Chrome (`radar-research.md`) |
+| 2026-11-03 | The Chromium denominator includes Android WebView and all in-app browsers. `ChromeMobileWebview` → google.com, Facebook and Instagram → meta.com, Microsoft365 → microsoft.com, other in-app browsers → no org | User's instruction (replaces "WebViews and in-app browsers excluded") |
+| 2026-11-03 | Exclude iOS from all Radar shares: subtract Radar's `os=IOS` browser series, weighted by iOS's share from `timeseries_groups/OS` | User's instruction: iOS browsers are all WebKit, so Chromium is barely used there. Radar can't exclude an OS directly (`radar-research.md` §2) |
+| 2026-11-03 | `fb.com` reviewers count as `meta.com` (`DOMAIN_ALIASES` in `cosh/orgs.py`), applied when `summarize` resolves orgs; fetched and derived data keep raw emails and need no re-run | User's instruction: Meta employees used fb.com addresses |
 
 ## Status
 
@@ -129,6 +132,5 @@ value_ratio(O, t) = O's share of Chromium review comments
 
 - Brave is about 0.00% in Radar and Vivaldi has no label at all; both count as
   Chrome. Estimate them somehow, or show "no data"?
-- Should WebView and in-app traffic be credited to `google.com`? Currently not.
 - Should the UI show monthly as well as weekly data? Weekly Radar data may be
   noisy.

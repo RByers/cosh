@@ -119,7 +119,7 @@ export function parseRadarWeekly(text: string): RadarWeekly {
   const out: RadarWeekly = new Map();
   for (const r of parseCsv(text)) {
     if (r.granularity !== 'week' || r.device !== 'all' || r.days !== '7') continue;
-    if (r.chromium_share === '') continue; // webview, in-app, non-Chromium
+    if (r.chromium_share === '') continue; // non-Chromium, bots, TVs
     let m = out.get(r.period);
     if (!m) out.set(r.period, (m = new Map()));
     m.set(r.browser, Number(r.chromium_share));

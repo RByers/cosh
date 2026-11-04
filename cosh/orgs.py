@@ -7,6 +7,8 @@ Rules (in order), evaluated at the CL's submit date:
      fall through to the rules below.
   2. Any other @chromium.org account -> google.com.
   3. Otherwise the email's domain.
+  4. Finally, a domain an org used to use is renamed to its current one
+     (DOMAIN_ALIASES: fb.com, Facebook's old corporate domain -> meta.com).
 The "org" is therefore a domain name (or "Individual"/"Undisclosed" when the
 affiliations file says so).
 """
@@ -23,6 +25,8 @@ AFFILIATIONS_PATH = os.path.join(ROOT, "config", "affiliations.json5")
 AFFILIATIONS_URL = ("https://chromium.googlesource.com/chromium/src/+/main/"
                     "third_party/blink/tools/commit_stats/affiliations.json5")
 NO_EMAIL = "(no email)"
+# Former domain -> the org's current one. Meta employees used @fb.com addresses.
+DOMAIN_ALIASES = {"fb.com": "meta.com"}
 
 
 def parse_json5(text):
@@ -70,11 +74,11 @@ class OrgResolver:
             return NO_EMAIL
         for start, domain in self.aff.get(email, ()):
             if date is None or date[:10] >= start:
-                return domain
+                return DOMAIN_ALIASES.get(domain, domain)
         domain = email.rpartition("@")[2]
         if domain == "chromium.org":
             return "google.com"
-        return domain
+        return DOMAIN_ALIASES.get(domain, domain)
 
 
 def update_affiliations(path=AFFILIATIONS_PATH):
