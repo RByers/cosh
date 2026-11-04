@@ -218,6 +218,15 @@ def derive(data_dir=store.DATA_DIR, weeks=None, source="auto", out_path=None):
             a = json.loads(zlib.decompress(body))
             db.execute(ACCOUNT_UPSERT, (host, a["_account_id"], a.get("email"),
                                         account_name(a), int(is_bot_account(a))))
+    # Read which weeks are complete *before* reading the CL index: a backfill
+    # may finish more weeks while this runs, and claiming a week whose CLs
+    # weren't derived would make summaries report it as complete but empty.
+    fetched_weeks = sorted(w for (w,) in raw.execute(
+        "SELECT DISTINCT iso_week FROM week_progress WHERE fetched_at IS NOT NULL"))
+    snapshot = None
+    if store.has_table(raw, "open_listings"):
+        snapshot = raw.execute("SELECT max(listed_at) FROM open_listings "
+                               "WHERE fetched_at IS NOT NULL").fetchone()[0]
     idx = listing_index(raw)
     if weeks:
         wanted = {(h, p, n) for h, p, w, n in raw.execute(
@@ -266,12 +275,6 @@ def derive(data_dir=store.DATA_DIR, weeks=None, source="auto", out_path=None):
                 n_comments += len(rows)
                 n_votes += len(votes)
 
-    fetched_weeks = sorted(w for (w,) in raw.execute(
-        "SELECT DISTINCT iso_week FROM week_progress WHERE fetched_at IS NOT NULL"))
-    snapshot = None
-    if store.has_table(raw, "open_listings"):
-        snapshot = raw.execute("SELECT max(listed_at) FROM open_listings "
-                               "WHERE fetched_at IS NOT NULL").fetchone()[0]
     with db:
         n_emailless = mark_emailless_bots(db)
         for k, v in [("metric_version", METRIC_VERSION), ("derived_at", store.now_iso()),
