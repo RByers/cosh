@@ -196,8 +196,9 @@
             <code>components/</code> is mostly browser features built for Chrome, such as autofill, sign-in and
             enterprise reporting; over a year, 98% of its review comments came from Google.
             <code>chrome/browser/web_applications/</code> and <code>chrome/browser/webnn/</code> are shared platform
-            work that other Chromium browsers build on, and <code>components/viz/</code> is the compositor, part of
-            the engine, so those stay in. Everything else counts.
+            work that other Chromium browsers build on; <code>components/viz/</code> (the compositor) and
+            <code>components/services/storage/</code> (the storage backend for <code>localStorage</code> and
+            <code>sessionStorage</code>) are part of the engine. Those stay in. Everything else counts.
           </p>
           <p>
             <strong>Placing comments on a file.</strong> Gerrit doesn't give us each CL's file list, so an inline

@@ -18,8 +18,10 @@
 #
 # components/ is mostly browser features built for Chrome (autofill, signin,
 # optimization_guide, enterprise...): over a year it held 16% of review
-# comments, 98% of them from Google. components/viz/ (the compositor) is
-# engine code with real outside review (12% non-Google), so it stays in.
+# comments, 98% of them from Google. components/viz/ (the compositor, 12%
+# non-Google) and components/services/storage/ (DOM storage, the backend for
+# localStorage and sessionStorage, 88% Microsoft) are engine code with real
+# outside review, so they stay in.
 
 exclude chrome/
 exclude ios/
@@ -31,5 +33,6 @@ exclude components/
 include chrome/browser/web_applications/
 include chrome/browser/webnn/
 include components/viz/
+include components/services/storage/
 
 area third_party/blink/

@@ -323,6 +323,8 @@ class PathScopeTest(unittest.TestCase):
         self.assertTrue(s.includes("third_party/blink/renderer/core/a.cc"))
         self.assertFalse(s.includes("components/autofill/core/a.cc"))
         self.assertTrue(s.includes("components/viz/service/display/a.cc"))
+        self.assertTrue(s.includes("components/services/storage/dom_storage/a.cc"))
+        self.assertFalse(s.includes("components/services/print_compositor/a.cc"))
         self.assertTrue(s.includes("content/browser/a.cc"))
 
 
@@ -380,6 +382,7 @@ class SummarizeTest(unittest.TestCase):
             {"area": "third_party/blink/", "included": True},
             {"area": "chrome/browser/web_applications/", "included": True},
             {"area": "chrome/browser/webnn/", "included": True},     # listed with no comments
+            {"area": "components/services/storage/", "included": True},
             {"area": "components/viz/", "included": True}])
         # [comments, reviewed CLs, chars] per (area, org).
         got = {(areas["areas"][a]["area"], areas["orgs"][o]): v for a, o, *v in areas["weeks"]["2026-W44"]}

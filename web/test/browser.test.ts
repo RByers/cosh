@@ -159,13 +159,17 @@ test('the directory chart shows the top 20 by default and expands to 50 or 100',
         plain: names.filter((n) => !/^other /.test(n)).length,
         options: [...document.querySelectorAll('#area-count label')].map((l) => l.textContent),
         checked: (document.querySelector('#area-count input:checked') as HTMLInputElement).value,
+        // Directories an include rule brings back (always listed).
+        pinned: [...document.querySelectorAll('#scope-rules li')].filter((li) =>
+          /^Included: \S+\/$/.test(li.textContent ?? '')).length,
       };
     });
   const d = await read();
-  assert.deepEqual(d.options, ['Top 20', 'Top 50', 'Top 100']);
+  assert.deepEqual(d.options, ['Top 20', 'Top 50', 'Top 100', 'Top 500']);
   assert.equal(d.checked, '20');
   // 20 largest, plus re-included directories outside them.
-  assert.ok(d.plain >= 20 && d.plain <= 23, `${d.plain} rows`);
+  assert.ok(d.pinned >= 4, `${d.pinned} include rules`);
+  assert.ok(d.plain >= 20 && d.plain <= 20 + d.pinned, `${d.plain} rows`);
   assert.doesNotMatch(page.url(), /dirs=/);
   await page.click('#area-count input[value="50"]');
   const more = await read();
@@ -239,7 +243,8 @@ test('review by directory shows volume and org split per directory, and the path
   const by = Object.fromEntries(d.rows.map((r) => [r.name, r]));
   for (const name of ['chrome/', 'third_party/blink/', 'content/', '(no file)']) assert.ok(by[name], name);
   // Directories an include rule brings back always get their own row.
-  for (const name of ['chrome/browser/web_applications/', 'chrome/browser/webnn/', 'components/viz/']) {
+  for (const name of ['chrome/browser/web_applications/', 'chrome/browser/webnn/', 'components/viz/',
+    'components/services/storage/']) {
     assert.ok(by[name], name);
     assert.equal(by[name].tag, 'included');
   }
@@ -272,6 +277,7 @@ test('review by directory shows volume and org split per directory, and the path
     'Included: chrome/browser/webnn/',
     'Excluded: chromeos/',
     'Excluded: components/',
+    'Included: components/services/storage/',
     'Included: components/viz/',
     'Excluded: ios/',
     'Included: every other path.',

@@ -228,7 +228,7 @@ counts.
   - excluded: `chrome/`, `ios/`, `android_webview/`, `ash/`, `chromeos/`,
     `components/`;
   - included again: `chrome/browser/web_applications/`, `chrome/browser/webnn/`,
-    `components/viz/`.
+    `components/viz/`, `components/services/storage/`.
   The excluded trees are Google's own products built on Chromium (Chrome,
   Chrome for iOS, Android WebView, ChromeOS), where review is mostly Google
   reviewing Google's product code, and `components/`, which is mostly browser
@@ -239,10 +239,11 @@ counts.
   held 49%, and all but viz were under 1% non-Google. The exceptions are
   shared platform work that other Chromium browsers build on: Microsoft
   writes much of the `web_applications` review, Intel and Microsoft much of
-  the WebNN review, and `components/viz/` (the compositor) was 11.6%
-  non-Google. Two other `components/` directories had heavy outside review
-  and are now out of scope: `services/storage/` (DOM storage, 88% Microsoft,
-  791 comments) and `surface_embed/` (35% Microsoft, 308 comments).
+  the WebNN review, `components/viz/` (the compositor) was 11.6%
+  non-Google, and `components/services/storage/` (DOM storage, the backend
+  for `localStorage`/`sessionStorage`) was 88% Microsoft (791 comments).
+  `components/surface_embed/` (35% Microsoft, 308 comments) also had outside
+  review and is out of scope.
 - **Placement.** We don't fetch CL file lists, so:
   - an inline comment is on its own file;
   - a patchset-level or commit-message comment goes to the CL's anchor, the
