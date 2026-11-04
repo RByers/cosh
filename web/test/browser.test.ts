@@ -125,20 +125,8 @@ test('review chart lists top orgs with Other last', async () => {
   await page.close();
 });
 
-// The leaderboard needs data/private/reviewer_weekly.json (local only). In a
-// checkout without it (CI, Pages) the section must stay hidden.
-const hasReviewers = existsSync(join(webDir, '../data/private/reviewer_weekly.json'));
-
-test.skipIf(hasReviewers)('without private reviewer data the leaderboard is hidden', async () => {
+test('leaderboard shows up to 50 reviewers compactly and follows the metric', async () => {
   const { page } = await open();
-  assert.equal(await page.$eval('#leaderboard', (s) => (s as HTMLElement).hidden), true);
-  assert.equal(await page.evaluate(() => window.__cosh!.leaderboardChart), undefined);
-  await page.close();
-});
-
-test.skipIf(!hasReviewers)('leaderboard shows up to 50 reviewers compactly and follows the metric', async () => {
-  const { page } = await open();
-  assert.equal(await page.$eval('#leaderboard', (s) => (s as HTMLElement).hidden), false);
   const read = () =>
     page.evaluate(() => {
       const c = window.__cosh!.leaderboardChart!;

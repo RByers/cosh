@@ -50,7 +50,8 @@ collected, and a first web UI is in `web/`. A one-year review backfill
 ## Usage
 
 The code uses the Python standard library only. Data goes in
-`data/private/`, which is not committed.
+`data/private/`, which is not committed because of its size. Summaries,
+per-org and per-reviewer, go in `summaries/` and are committed.
 
 ```
 python3 -m cosh extract --week 2026-W44   # throttled Gerrit fetch, cached and resumable

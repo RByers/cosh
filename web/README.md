@@ -7,15 +7,9 @@ It reads only committed, public files, which Vite emits as hashed assets at
 build time:
 
 - `summaries/org_weekly.json` and `summaries/weekly_totals.csv`
+- `summaries/reviewer_weekly.json` (the leaderboard)
 - `data/public/radar_browser_share.csv`
 - `config/org_browsers.csv`
-
-One optional, **local-only** input: `data/private/reviewer_weekly.json`
-(per-person, gitignored, written by `python3 -m cosh summarize`). When it
-exists at dev/build time the page gets a reviewer leaderboard; without it (CI,
-GitHub Pages) the section stays hidden and nothing per-person is bundled. A
-local `npm run build` does copy it into `web/dist`, so never publish a locally
-built `dist`.
 
 The join (value ratio = review share ÷ usage share) happens in the browser, in
 `src/data.ts`. Radar rows used: `granularity=week`, `device=all`, `days=7`,
@@ -28,7 +22,7 @@ ratio.
    lower half is linear 0–1×, the upper half linear 1×–max (`src/scale.ts`).
 2. **Review by organization**: raw counts for the selected week and metric, with
    the top 7 orgs and then "Other".
-3. **Reviewer leaderboard** (local only, see above): the top 50 reviewers for
+3. **Reviewer leaderboard**: the top 50 reviewers for
    the selected week and metric, one compact bar each, coloured by org.
 4. **Chromium browser usage** from Cloudflare Radar, per browser, with a marker
    and a note on the 2026-W37 ChromeDerivative jump.

@@ -15,8 +15,13 @@ implementation and metric definitions.
   - Never lower `--interval` below 1 s.
   - Never run two extractors at once.
   - Use NoteDb batches, not REST requests per CL.
-- **Personal data stays out of git.** `data/private/` holds emails. Commit
-  only aggregates, public data, config, code and docs.
+- **Per-person data may be committed and published** (in git and on the
+  public site) when it is derived from already-public data, such as
+  Chromium Gerrit reviews. This is the user's policy as of 2026-11-03
+  (`docs/plan.md`, ground rule 3). `data/private/` is still gitignored, but
+  because it holds multi-GB raw caches and rebuildable DBs, not because the
+  data is personal. Anything not from a public source still needs the user's
+  approval before it's committed.
 - **The Radar token** is loaded with `source secrets.sh`. Never print or
   commit it.
 

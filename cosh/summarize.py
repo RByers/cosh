@@ -1,7 +1,7 @@
-"""Aggregate cosh.sqlite into small per-org summaries for the front end.
+"""Aggregate cosh.sqlite into small summaries for the front end.
 Org attribution: see cosh/orgs.py.
-summaries/ contains no per-person data. Orgs with fewer than MIN_REVIEWERS distinct
-reviewers in a period are folded into 'Other'.
+In org_weekly, orgs with fewer than MIN_REVIEWERS distinct reviewers in a
+period are folded into 'Other'.
 
 Headline metric (column `share`): comment count by default; reviewed CLs or
 review characters selectable. All three shares are always present too.
@@ -12,9 +12,9 @@ Outputs:
   summaries/org_weekly.{csv,json}     one row per (week, org)
   summaries/weekly_totals.csv         one row per week: human vs bot commits on
                                       main, so bot-only stretches don't look like gaps
-  data/private/reviewer_weekly.json   PER-PERSON, never committed: each week's top
-                                      reviewers for each metric (the web UI's
-                                      leaderboard, shown only when this file exists)
+  summaries/reviewer_weekly.json      per reviewer: each week's top 50 by each
+                                      metric (the web UI's leaderboard); names and
+                                      orgs only, no emails
 """
 
 import csv
@@ -35,7 +35,7 @@ REVIEWERS_FILE = "reviewer_weekly.json"
 
 
 def summarize(data_dir=store.DATA_DIR, out_dir=os.path.join(ROOT, "summaries"),
-              min_reviewers=MIN_REVIEWERS, metric="comments", private_dir=None):
+              min_reviewers=MIN_REVIEWERS, metric="comments"):
     if metric not in METRICS:
         raise ValueError(f"metric must be one of {sorted(METRICS)}")
     db = store.open_cosh(data_dir)
@@ -130,7 +130,7 @@ def summarize(data_dir=store.DATA_DIR, out_dir=os.path.join(ROOT, "summaries"),
                        weekly_totals=[dict(zip(TOTALS_COLS, r)) for r in weekly]),
                   fh, indent=1)
     db.close()
-    write_reviewers(rows, resolve, os.path.join(private_dir or data_dir, REVIEWERS_FILE))
+    write_reviewers(rows, resolve, os.path.join(out_dir, REVIEWERS_FILE))
     return out
 
 
@@ -164,9 +164,16 @@ def reviewer_leaderboard(rows, resolve, n=LEADERBOARD_SIZE):
 
 
 def write_reviewers(rows, resolve, path):
-    """Per-person output: goes to data/private/ (gitignored), never summaries/."""
-    os.makedirs(os.path.dirname(path), exist_ok=True)
+    """Committed and published (derived from public Gerrit data, docs/plan.md
+    ground rule 3). One reviewer per line, so weekly regenerations diff well."""
+    weeks = reviewer_leaderboard(rows, resolve)
+    meta = dict(generated_at=store.now_iso(), top_n=LEADERBOARD_SIZE,
+                scope="union of each week's top_n reviewers by comments, reviewed CLs and review chars; "
+                      "same scope as org_weekly.json (human reviewers on human-owned CLs on main)")
     with open(path, "w") as fh:
-        json.dump(dict(meta=dict(generated_at=store.now_iso(), top_n=LEADERBOARD_SIZE,
-                                 note="PER-PERSON DATA: keep in data/private/, never commit"),
-                       weeks=reviewer_leaderboard(rows, resolve)), fh, indent=1)
+        fh.write('{"meta": %s,\n "weeks": {' % json.dumps(meta))
+        for i, (week, people) in enumerate(weeks.items()):
+            fh.write('%s\n  %s: [' % ("," if i else "", json.dumps(week)))
+            fh.write(",".join("\n   " + json.dumps(p, ensure_ascii=False) for p in people))
+            fh.write("\n  ]")
+        fh.write("\n }\n}\n")

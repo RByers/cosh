@@ -155,12 +155,11 @@ class SummarizeTest(unittest.TestCase):
             db.close()
             out = os.path.join(d, "summaries")
             rows = summarize(data_dir=d, out_dir=out)
-            self.assertFalse(os.path.exists(os.path.join(out, "reviewer_weekly.json")))
-            with open(os.path.join(d, "reviewer_weekly.json")) as fh:
+            with open(os.path.join(out, "reviewer_weekly.json")) as fh:
                 board = json.load(fh)["weeks"]["2026-W44"]
         self.assertEqual([(r["org"], r["comments"], r["ai_comments"], r["post_merge_comments"])
                           for r in rows], [("igalia.com", 6, 1, 3)])
-        # Per-person leaderboard lands in the private dir, AI/post-merge excluded;
+        # Leaderboard (valid JSON despite the hand-rolled layout), AI/post-merge excluded;
         # account 3 (post-merge only) still reviewed the CL so counts for CLs.
         self.assertEqual([(r["account_id"], r["name"], r["org"], r["comments"], r["cls"], r["chars"])
                           for r in board],

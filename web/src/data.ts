@@ -247,8 +247,7 @@ export function compareWeeks(a: string, b: string): number {
   return a < b ? -1 : a > b ? 1 : 0;
 }
 
-/** One reviewer in one week (data/private/reviewer_weekly.json: per-person,
- * local only, never committed or deployed). */
+/** One reviewer in one week (summaries/reviewer_weekly.json). */
 export interface ReviewerRow {
   account_id: number;
   name: string;

@@ -5,13 +5,7 @@ import summaryUrl from '../../summaries/org_weekly.json?url';
 import totalsUrl from '../../summaries/weekly_totals.csv?url';
 import radarUrl from '../../data/public/radar_browser_share.csv?url';
 import orgBrowsersUrl from '../../config/org_browsers.csv?url';
-// Per-person data, local only: data/private/ is gitignored, so a checkout
-// without it (CI, GitHub Pages) matches nothing here and the site has no
-// leaderboard. A local `npm run build` does include it in web/dist; don't
-// publish a locally built dist.
-const reviewerUrl: string | undefined = Object.values(
-  import.meta.glob<string>('../../data/private/reviewer_weekly.json', { query: '?url', import: 'default', eager: true }),
-)[0];
+import reviewerUrl from '../../summaries/reviewer_weekly.json?url';
 
 import {
   type AnyChart,
@@ -50,7 +44,7 @@ interface Data {
   totals: WeeklyTotals[];
   radar: RadarWeekly;
   orgBrowsers: Map<string, string[]>;
-  reviewers: ReviewerBoard | null;
+  reviewers: ReviewerBoard;
 }
 
 interface State {
@@ -86,7 +80,7 @@ async function load(): Promise<Data> {
     fetchText(totalsUrl).then(parseWeeklyTotals),
     fetchText(radarUrl).then(parseRadarWeekly),
     fetchText(orgBrowsersUrl).then(parseOrgBrowsers),
-    reviewerUrl ? fetchText(reviewerUrl).then((t) => JSON.parse(t) as ReviewerBoard) : Promise.resolve(null),
+    fetchText(reviewerUrl).then((t) => JSON.parse(t) as ReviewerBoard),
   ]);
   summary.meta.weeks.sort(compareWeeks);
   return { summary, totals, radar, orgBrowsers, reviewers };
@@ -218,14 +212,8 @@ function renderLeaderboard(
   state: State,
   colors: Map<string, string>,
   prev: AnyChart | undefined,
-): AnyChart | undefined {
+): AnyChart {
   prev?.destroy();
-  const section = $('#leaderboard');
-  if (!data.reviewers) {
-    section.hidden = true;
-    return undefined;
-  }
-  section.hidden = false;
   const metricName = METRICS.find((m) => m.id === state.metric)!.label;
   const rows = topReviewers(data.reviewers, state.week, state.metric, LEADERBOARD_SIZE);
   $('#leaderboard-sub').textContent =
