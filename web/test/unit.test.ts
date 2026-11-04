@@ -134,6 +134,7 @@ const board = (weeks: Record<string, ReviewerRow[]>): ReviewerBoard => ({
   meta: { fold_into_other: ['gmail.com'] },
   orgs: ['x.com', 'y.com', 'gmail.com'],
   accounts: { 1: 'n1', 2: 'n2', 3: 'n3' },
+  emails: { 1: 'n1@x.com', 3: 'n3@x.com' },
   weeks,
 });
 
@@ -141,7 +142,10 @@ test('topReviewers ranks one week by the chosen metric and drops zeros', () => {
   const b = board({ '2026-W44': [[1, 0, 9, 1, 50], [2, 0, 0, 4, 0], [3, 0, 9, 2, 80]] });
   assert.deepEqual(topReviewers(b, '2026-W44', 'comments').map((x) => [x.name, x.value]), [['n1', 9], ['n3', 9]]);
   assert.deepEqual(topReviewers(b, '2026-W44', 'cls', 2).map((x) => x.name), ['n2', 'n3']);
-  assert.deepEqual(topReviewers(b, '2026-W44', 'chars')[0], { name: 'n3', org: 'x.com', value: 80 });
+  assert.deepEqual(topReviewers(b, '2026-W44', 'chars')[0], { name: 'n3', email: 'n3@x.com', org: 'x.com', value: 80 });
+  // No email listed (or a file from before emails existed): null.
+  assert.equal(topReviewers(b, '2026-W44', 'cls', 1)[0].email, null);
+  assert.equal(topReviewers({ ...b, emails: undefined }, '2026-W44', 'chars')[0].email, null);
   assert.deepEqual(topReviewers(b, '2026-W01', 'comments'), []);
   // Input order is not mutated.
   assert.deepEqual(b.weeks['2026-W44'].map((x) => x[0]), [1, 2, 3]);
@@ -153,8 +157,8 @@ test('topReviewers totals a range exactly; org is where most of their CLs were',
     '2026-W44': [[1, 0, 6, 2, 1], [1, 1, 1, 1, 1]],
   });
   assert.deepEqual(topReviewers(b, ['2026-W44', '2026-W43'], 'comments'), [
-    { name: 'n1', org: 'y.com', value: 12 },
-    { name: 'n2', org: 'x.com', value: 9 },
+    { name: 'n1', email: 'n1@x.com', org: 'y.com', value: 12 },
+    { name: 'n2', email: null, org: 'x.com', value: 9 },
   ]);
   assert.deepEqual(topReviewers(b, [], 'comments'), []);
 });

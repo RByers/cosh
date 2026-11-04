@@ -11,7 +11,7 @@ import {
   Tooltip,
   type Plugin,
 } from 'chart.js';
-import type { RadarWeekly, RatioPoint } from './data.ts';
+import type { LeaderboardRow, RadarWeekly, RatioPoint } from './data.ts';
 import { browserShare, OTHER } from './data.ts';
 import { AXIS_MAX, AXIS_MIN, formatRatio, type PivotScale } from './scale.ts';
 
@@ -270,7 +270,7 @@ const truncate = (s: string, n: number) => (s.length > n ? `${s.slice(0, n - 1)}
  * one are drawn in the muted neutral. */
 export function renderLeaderboardChart(
   canvas: HTMLCanvasElement,
-  rows: { name: string; org: string; value: number }[],
+  rows: LeaderboardRow[],
   metricLabel: string,
   colors: Map<string, string>,
   theme: Theme,
@@ -318,6 +318,7 @@ export function renderLeaderboardChart(
               return `${items[0].dataIndex + 1}. ${r.name} (${r.org})`;
             },
             label: (ctx) => `${fmt(ctx.raw as number)} ${metricLabel.toLowerCase()}`,
+            afterLabel: (ctx) => rows[ctx.dataIndex].email ?? '',
           },
         },
       },

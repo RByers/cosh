@@ -19,7 +19,8 @@ Outputs:
   summaries/reviewer_weekly.json      one row per (week, reviewer, org) for every
                                       reviewer in scope, so the web UI can total
                                       any date range exactly (leaderboard, distinct
-                                      reviewers per org); names and orgs only, no emails
+                                      reviewers per org); names, emails (public on
+                                      Gerrit; the leaderboard's hover card) and orgs
 """
 
 import contextlib
@@ -196,10 +197,14 @@ def reviewer_weeks(rows, resolve):
 
 def write_reviewers(rows, resolve, path):
     """Committed and published (derived from public Gerrit data, docs/plan.md
-    ground rule 3). Compact: names are listed once per account and orgs once,
+    ground rule 3). Compact: names and emails are listed once per account
+    (`accounts`, `emails`: account id -> string) and orgs once,
     and each week is a list of [account_id, org index, comments, cls, chars]
     rows, one per line so weekly regenerations diff well."""
     names, weeks = reviewer_weeks(rows, resolve)
+    # Gerrit account emails (public); accounts without one are bots and never
+    # reach this table, but skip a missing email rather than write null.
+    emails = {aid: email for _, _, _, email, aid, *_ in rows if email}
     orgs = sorted({r["org"] for people in weeks.values() for r in people})
     org_index = {o: i for i, o in enumerate(orgs)}
     meta = dict(generated_at=store.now_iso(), columns=REVIEWER_COLUMNS,
@@ -211,6 +216,9 @@ def write_reviewers(rows, resolve, path):
         fh.write('{"meta": %s,\n "orgs": %s,\n "accounts": {' % (json.dumps(meta), json.dumps(orgs)))
         fh.write(",".join('\n  "%d": %s' % (aid, json.dumps(names[aid], ensure_ascii=False))
                           for aid in sorted(names)))
+        fh.write('\n },\n "emails": {')
+        fh.write(",".join('\n  "%d": %s' % (aid, json.dumps(emails[aid], ensure_ascii=False))
+                          for aid in sorted(names) if aid in emails))
         fh.write('\n },\n "weeks": {')
         for i, (week, people) in enumerate(weeks.items()):
             fh.write('%s\n  %s: [' % ("," if i else "", json.dumps(week)))

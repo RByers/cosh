@@ -275,6 +275,12 @@ test('leaderboard shows up to 50 reviewers compactly and follows the metric', as
   assert.ok(comments.n > 10 && comments.n <= 50, `n=${comments.n}`);
   assert.deepEqual(comments.values, [...comments.values].sort((a, b) => b - a));
   assert.match(comments.top, /^1\. /);
+  // The hover card shows the reviewer's email under the count.
+  const email = await page.evaluate(() => {
+    const cb = window.__cosh!.leaderboardChart!.options.plugins!.tooltip!.callbacks!.afterLabel as (c: unknown) => string;
+    return cb({ dataIndex: 0 });
+  });
+  assert.match(email, /^[^@\s]+@[^@\s]+\.[a-z]+$/i);
   // Compact: 50 rows fit in well under a 900px-tall viewport's worth plus axes.
   assert.ok(comments.h <= comments.n * 15 + 40, `height ${comments.h}`);
   await page.click('#metric input[value="cls"]');

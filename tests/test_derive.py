@@ -170,6 +170,7 @@ class SummarizeTest(unittest.TestCase):
         self.assertEqual(data["meta"]["columns"], ["account_id", "org", "comments", "cls", "chars"])
         self.assertEqual(data["orgs"], ["igalia.com"])
         self.assertEqual(data["accounts"], {str(a): f"r{a}" for a in range(2, 7)})
+        self.assertEqual(data["emails"], {str(a): f"r{a}@igalia.com" for a in range(2, 7)})
         self.assertEqual(data["weeks"]["2026-W44"],
                          [[2, 0, 3, 1, 30], [4, 0, 1, 1, 10], [5, 0, 1, 1, 10], [6, 0, 1, 1, 10],
                           [3, 0, 0, 1, 0]])

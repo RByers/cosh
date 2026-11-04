@@ -298,7 +298,17 @@ export interface ReviewerBoard {
   meta: { fold_into_other: string[]; [k: string]: unknown };
   orgs: string[];
   accounts: Record<string, string>;
+  /** Account id -> Gerrit email (public). Absent in files written before
+   * emails were added. */
+  emails?: Record<string, string>;
   weeks: Record<string, ReviewerRow[]>;
+}
+
+export interface LeaderboardRow {
+  name: string;
+  email: string | null;
+  org: string;
+  value: number;
 }
 
 const METRIC_INDEX: Record<Metric, 2 | 3 | 4> = { comments: 2, cls: 3, chars: 4 };
@@ -317,7 +327,7 @@ export function topReviewers(
   weeks: string | string[],
   metric: Metric,
   n = LEADERBOARD_SIZE,
-): { name: string; org: string; value: number }[] {
+): LeaderboardRow[] {
   const col = METRIC_INDEX[metric];
   const by = new Map<number, { value: number; orgCls: Map<number, number> }>();
   for (const w of asList(weeks)) {
@@ -340,7 +350,12 @@ export function topReviewers(
     .filter(([, t]) => t.value > 0)
     .sort(([a, x], [b, y]) => y.value - x.value || a - b)
     .slice(0, n)
-    .map(([id, t]) => ({ name: board.accounts[id] ?? `Account ${id}`, org: orgOf(t.orgCls), value: t.value }));
+    .map(([id, t]) => ({
+      name: board.accounts[id] ?? `Account ${id}`,
+      email: board.emails?.[id] ?? null,
+      org: orgOf(t.orgCls),
+      value: t.value,
+    }));
 }
 
 /** Distinct reviewers over the given week(s): in total, and per org as
