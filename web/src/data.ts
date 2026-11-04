@@ -133,12 +133,23 @@ export function parseRadarWeekly(text: string): RadarWeekly {
   return out;
 }
 
-/** Sum of an org's browsers' Chromium usage share in one week, or null if
- * Radar has no complete data for that week. */
+/** Radar browser buckets left out of the ratio's usage denominator. Radar's
+ * unnamed-Chromium bucket, ChromeDerivative, jumped from about 0.3% to about
+ * 10% of Chromium usage in 2026-W37. That looks like a reporting change Radar
+ * hasn't explained, so for now the ratio uses each org's share of the rest.
+ * The usage chart still shows the bucket. */
+export const RATIO_EXCLUDED_BROWSERS: readonly string[] = ['ChromeDerivative'];
+
+/** Sum of an org's browsers' Chromium usage share in one week, renormalized
+ * to leave out RATIO_EXCLUDED_BROWSERS, or null if Radar has no complete data
+ * for that week. */
 export function derivedShare(radar: RadarWeekly, week: string, browsers: string[]): number | null {
   const m = radar.get(week);
   if (!m) return null;
-  return browsers.reduce((sum, b) => sum + (m.get(b) ?? 0), 0);
+  const sum = (bs: readonly string[]) => bs.reduce((s, b) => s + (m.get(b) ?? 0), 0);
+  const rest = 1 - sum(RATIO_EXCLUDED_BROWSERS);
+  if (rest <= 0) return null;
+  return sum(browsers.filter((b) => !RATIO_EXCLUDED_BROWSERS.includes(b))) / rest;
 }
 
 export interface RatioPoint {

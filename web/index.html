@@ -105,7 +105,8 @@
         <h2 id="usage-title">Chromium browser usage (Cloudflare Radar)</h2>
         <p class="sub">
           The ratio's denominator: each browser's share of Chromium-based browser usage, including Android WebView and
-          in-app browsers. Human traffic, complete ISO weeks, iOS excluded.
+          in-app browsers. Human traffic, complete ISO weeks, iOS excluded. The ratio leaves out ChromeDerivative (see
+          the note below).
         </p>
         <div class="chart">
           <canvas id="usage-chart" role="img" aria-label="Weekly share of Chromium browser usage per browser."></canvas>
@@ -135,8 +136,8 @@
           from about 0.3% to about 10% of Chromium usage starting in 2026-W37 (on 9 September 2026). It came from every
           browser in proportion, Safari and Firefox included, not mostly from Chrome. It looks like Radar started labeling
           traffic it previously couldn't identify, possibly real Chromium-based browsers; Cloudflare hasn't explained it.
-          The bucket stays in the denominator but is credited to no organization, so from W37 every organization's usage
-          share is about 10% lower and its value ratio about 11% higher.
+          Until that is explained, the value ratio and the table's usage shares leave the bucket out: each organization's
+          usage share is its share of the other Chromium usage. This chart still shows the bucket.
         </p>
       </section>
 

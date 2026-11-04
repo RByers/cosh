@@ -10,6 +10,7 @@ import {
   distinctReviewers,
   isoDate,
   isoWeekOf,
+  derivedShare,
   meanDerivedShare,
   monthTicks,
   weekTitle,
@@ -115,6 +116,18 @@ test('computeRatios divides contribution share by summed browser share', () => {
   assert.equal(by['samsung.com'].ratio, 0);
   // Usage share below the threshold: no ratio.
   assert.equal(by['tiny.example'].ratio, null);
+});
+
+test('derivedShare leaves ChromeDerivative out of the usage denominator', () => {
+  const radar = parseRadarWeekly(`period,period_start,period_end,granularity,device,browser,is_chromium,kind,days,raw_share,chromium_share
+2026-W40,2026-09-28,2026-10-04,week,all,Chrome,1,browser,7,0.5,0.6
+2026-W40,2026-09-28,2026-10-04,week,all,Edge,1,browser,7,0.2,0.2
+2026-W40,2026-09-28,2026-10-04,week,all,ChromeDerivative,1,browser,7,0.2,0.2
+`);
+  assert.ok(Math.abs(derivedShare(radar, '2026-W40', ['Chrome'])! - 0.75) < 1e-12);
+  assert.ok(Math.abs(derivedShare(radar, '2026-W40', ['Edge'])! - 0.25) < 1e-12);
+  // The bucket itself is credited to nobody, even if mapped.
+  assert.equal(derivedShare(radar, '2026-W40', ['ChromeDerivative']), 0);
 });
 
 test('chartedOrgs skips orgs whose browsers never reach the threshold', () => {

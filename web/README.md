@@ -46,6 +46,8 @@ Over a range:
    Smoothing (default 4 weeks; also off or 12 weeks) plots a trailing running
    average: mean review share ÷ mean usage share over the weeks ending each
    week, using weeks before the range too (`smoothRatios` in `src/data.ts`).
+   The usage denominator leaves out Radar's ChromeDerivative bucket
+   (`RATIO_EXCLUDED_BROWSERS`), whose 2026-W37 jump is not yet explained.
 2. **Review by organization**: weekly counts for the metric over the range
    (smoothed like the ratio), one line each for the top 7 orgs and then
    "Other". A toggle switches from the default log axis to a linear axis with
