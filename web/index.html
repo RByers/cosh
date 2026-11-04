@@ -36,7 +36,15 @@
         <fieldset id="metric" class="segmented">
           <legend>Contribution metric</legend>
         </fieldset>
-        <label class="week-picker">Week <select id="week"></select></label>
+        <fieldset id="range" class="range-picker">
+          <legend>Date range <span class="legend-note">(applies to everything below)</span></legend>
+          <div class="range-row">
+            <label>From <input type="date" id="from" required /></label>
+            <label>To <input type="date" id="to" required /></label>
+            <div id="range-presets" class="range-presets" role="group" aria-label="Quick ranges"></div>
+          </div>
+          <p id="range-summary" class="range-summary" aria-live="polite"></p>
+        </fieldset>
       </form>
 
       <p id="error" class="error" role="alert" hidden></p>
@@ -57,7 +65,7 @@
         <h2 id="review-title">Review by organization</h2>
         <p id="review-sub" class="sub"></p>
         <div class="chart">
-          <canvas id="review-chart" role="img" aria-label="Review count per organization for the selected week; the table below lists the values."></canvas>
+          <canvas id="review-chart" role="img" aria-label="Review count per organization over the selected date range; the table below lists the values."></canvas>
         </div>
       </section>
 
@@ -66,7 +74,7 @@
         <p id="leaderboard-sub" class="sub"></p>
         <ul id="leaderboard-legend" class="legend" aria-label="Bar colour by organization"></ul>
         <div id="leaderboard-chart-box" class="chart chart-leaderboard">
-          <canvas id="leaderboard-chart" role="img" aria-label="Top reviewers for the selected week and metric, one bar each."></canvas>
+          <canvas id="leaderboard-chart" role="img" aria-label="Top reviewers for the selected date range and metric, one bar each."></canvas>
         </div>
       </section>
 
@@ -89,15 +97,15 @@
         </p>
       </section>
 
-      <section aria-label="Week totals">
+      <section aria-label="Totals for the date range">
         <div id="tiles" class="tiles"></div>
       </section>
 
       <section class="card" aria-labelledby="table-title">
         <h2 id="table-title">By organization</h2>
+        <p id="table-caption" class="sub"></p>
         <div class="table-wrap">
-          <table id="org-table">
-            <caption id="table-caption"></caption>
+          <table id="org-table" aria-labelledby="table-title" aria-describedby="table-caption">
             <thead>
               <tr>
                 <th scope="col">Org</th>
@@ -105,7 +113,9 @@
                 <th scope="col">Usage share</th>
                 <th scope="col">Ratio</th>
                 <th scope="col">Reviewers</th>
+                <th scope="col">Reviewed CLs</th>
                 <th scope="col">Comments</th>
+                <th scope="col">Review chars</th>
                 <th scope="col">AI comments</th>
                 <th scope="col">Post-merge comments</th>
               </tr>

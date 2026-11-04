@@ -16,9 +16,10 @@ Outputs:
   summaries/org_weekly.{csv,json}     one row per (week, org)
   summaries/weekly_totals.csv         one row per week: human vs bot commits on
                                       main, so bot-only stretches don't look like gaps
-  summaries/reviewer_weekly.json      per reviewer: each week's top 50 by each
-                                      metric (the web UI's leaderboard); names and
-                                      orgs only, no emails
+  summaries/reviewer_weekly.json      one row per (week, reviewer, org) for every
+                                      reviewer in scope, so the web UI can total
+                                      any date range exactly (leaderboard, distinct
+                                      reviewers per org); names and orgs only, no emails
 """
 
 import csv
@@ -36,7 +37,6 @@ FOLD_INTO_OTHER = frozenset({"gmail.com"})
 TOTALS_COLS = ["iso_week", "main_cls", "merged_cls", "abandoned_cls", "human_cls",
                "bot_cls", "human_cls_with_review"]
 METRICS = {"comments": "share_comments", "cls": "share_cls", "chars": "share_chars"}
-LEADERBOARD_SIZE = 50
 REVIEWERS_FILE = "reviewer_weekly.json"
 
 
@@ -150,47 +150,56 @@ def summarize(data_dir=store.DATA_DIR, out_dir=os.path.join(ROOT, "summaries"),
     return out
 
 
-def reviewer_leaderboard(rows, resolve, n=LEADERBOARD_SIZE):
-    """Per week, the top `n` reviewers by each metric (the union, so the UI can
-    re-rank by any metric). Same scope as the org summary: human reviewers on
-    human-owned CLs on main; comments exclude AI and post-merge comments, and
-    a vote-only review counts as one comment.
-    `org` is the reviewer's org on most of their reviewed CLs that week."""
-    per = defaultdict(lambda: dict(name=None, cls=set(), comments=0, chars=0, orgs=defaultdict(int)))
+REVIEWER_COLUMNS = ["account_id", "org", "comments", "cls", "chars"]
+
+
+def reviewer_weeks(rows, resolve):
+    """Every reviewer's counts, per (week, account, org). Same scope and rules
+    as the org summary: human reviewers on human-owned CLs on main; comments
+    exclude AI and post-merge comments, and a vote-only review counts as one
+    comment. `org` is resolved per review as in org_weekly, but before the
+    FOLD_INTO_OTHER fold (so the leaderboard can show gmail.com); a reviewer
+    whose reviews resolve to two orgs in one week gets one row per org.
+    Returns (names: account_id -> display name, weeks: week -> [row dict]),
+    each week's rows sorted by comments, then CLs, descending."""
+    names = {}
+    per = defaultdict(lambda: dict(cls=set(), comments=0, chars=0))
     for week, submitted, cl, email, aid, ncom, nchars, _, _, name, *_ in rows:
-        p = per[(week, aid)]
-        p["name"] = name or (email or "").split("@")[0] or f"Account {aid}"
+        names[aid] = name or (email or "").split("@")[0] or f"Account {aid}"
+        p = per[(week, aid, resolve(email, submitted))]
         p["cls"].add(cl)
         p["comments"] += ncom
         p["chars"] += nchars
-        p["orgs"][resolve(email, submitted)] += 1
-    by_week = defaultdict(list)
-    for (week, aid), p in per.items():
-        org = max(p["orgs"].items(), key=lambda kv: (kv[1], kv[0]))[0]
-        by_week[week].append(dict(account_id=aid, name=p["name"], org=org, comments=p["comments"],
-                                  cls=len(p["cls"]), chars=p["chars"]))
-    out = {}
-    for week, people in sorted(by_week.items()):
-        keep = {}
-        for m in ("comments", "cls", "chars"):
-            ranked = sorted((r for r in people if r[m] > 0), key=lambda r: (-r[m], r["account_id"]))
-            for r in ranked[:n]:
-                keep[r["account_id"]] = r
-        out[week] = sorted(keep.values(), key=lambda r: (-r["comments"], -r["cls"], r["account_id"]))
-    return out
+    weeks = defaultdict(list)
+    for (week, aid, org), p in per.items():
+        weeks[week].append(dict(account_id=aid, org=org, comments=p["comments"],
+                                cls=len(p["cls"]), chars=p["chars"]))
+    for people in weeks.values():
+        people.sort(key=lambda r: (-r["comments"], -r["cls"], r["account_id"], r["org"]))
+    return names, dict(sorted(weeks.items()))
 
 
 def write_reviewers(rows, resolve, path):
     """Committed and published (derived from public Gerrit data, docs/plan.md
-    ground rule 3). One reviewer per line, so weekly regenerations diff well."""
-    weeks = reviewer_leaderboard(rows, resolve)
-    meta = dict(generated_at=store.now_iso(), top_n=LEADERBOARD_SIZE,
-                scope="union of each week's top_n reviewers by comments, reviewed CLs and review chars; "
-                      "same scope as org_weekly.json (human reviewers on human-owned CLs on main)")
+    ground rule 3). Compact: names are listed once per account and orgs once,
+    and each week is a list of [account_id, org index, comments, cls, chars]
+    rows, one per line so weekly regenerations diff well."""
+    names, weeks = reviewer_weeks(rows, resolve)
+    orgs = sorted({r["org"] for people in weeks.values() for r in people})
+    org_index = {o: i for i, o in enumerate(orgs)}
+    meta = dict(generated_at=store.now_iso(), columns=REVIEWER_COLUMNS,
+                fold_into_other=sorted(FOLD_INTO_OTHER),
+                scope="every reviewer, one row per (week, account, org); same scope as org_weekly.json "
+                      "(human reviewers on human-owned CLs on main). org is an index into orgs, "
+                      "resolved before the fold_into_other fold.")
     with open(path, "w") as fh:
-        fh.write('{"meta": %s,\n "weeks": {' % json.dumps(meta))
+        fh.write('{"meta": %s,\n "orgs": %s,\n "accounts": {' % (json.dumps(meta), json.dumps(orgs)))
+        fh.write(",".join('\n  "%d": %s' % (aid, json.dumps(names[aid], ensure_ascii=False))
+                          for aid in sorted(names)))
+        fh.write('\n },\n "weeks": {')
         for i, (week, people) in enumerate(weeks.items()):
             fh.write('%s\n  %s: [' % ("," if i else "", json.dumps(week)))
-            fh.write(",".join("\n   " + json.dumps(p, ensure_ascii=False) for p in people))
+            fh.write(",".join("\n   [%d,%d,%d,%d,%d]" % (r["account_id"], org_index[r["org"]], r["comments"],
+                                                          r["cls"], r["chars"]) for r in people))
             fh.write("\n  ]")
         fh.write("\n }\n}\n")

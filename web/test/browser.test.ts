@@ -116,6 +116,73 @@ test('switching the metric updates the table, review chart and URL', async () =>
   await page.close();
 });
 
+test('date range defaults to where review and usage data overlap, and drives every chart', async () => {
+  const { page, errors } = await open();
+  const read = () =>
+    page.evaluate(() => {
+      const c = window.__cosh!;
+      return {
+        range: c.state.range,
+        common: c.data.ranges.common,
+        from: (document.querySelector('#from') as HTMLInputElement).value,
+        to: (document.querySelector('#to') as HTMLInputElement).value,
+        ratioWeeks: c.ratioChart!.data.labels as string[],
+        usageWeeks: c.usageChart!.data.labels as string[],
+        reviewTotal: (c.reviewChart!.data.datasets[0].data as number[]).reduce((s, v) => s + v, 0),
+        summary: document.querySelector('#range-summary')!.textContent,
+        pressed: document.querySelector('#range-presets [aria-pressed="true"]')?.textContent,
+      };
+    });
+  const d = await read();
+  assert.deepEqual(d.range, d.common);
+  assert.equal(d.pressed, 'All data');
+  // The inputs show the Monday and Sunday of the range's end weeks.
+  assert.equal(new Date(`${d.from}T00:00:00Z`).getUTCDay(), 1);
+  assert.equal(new Date(`${d.to}T00:00:00Z`).getUTCDay(), 0);
+  assert.equal(d.usageWeeks[0], d.range.from);
+  assert.equal(d.usageWeeks[d.usageWeeks.length - 1], d.range.to);
+  assert.ok(d.ratioWeeks.every((w) => w >= d.range.from && w <= d.range.to));
+  assert.match(page.url(), new RegExp(`from=${d.range.from}&to=${d.range.to}`));
+
+  // Pick an earlier start date: the usage chart widens to the week of that date.
+  await page.$eval('#from', (i) => {
+    const input = i as HTMLInputElement;
+    input.value = '2026-01-07'; // a Wednesday in 2026-W02
+    input.dispatchEvent(new Event('change', { bubbles: true }));
+  });
+  const wide = await read();
+  assert.equal(wide.range.from, '2026-W02');
+  assert.equal(wide.usageWeeks[0], '2026-W02');
+  assert.equal(wide.pressed, undefined);
+  assert.match(page.url(), /from=2026-W02/);
+  assert.ok(wide.reviewTotal >= d.reviewTotal);
+
+  // A "from" after "to" pulls "to" along.
+  await page.$eval('#from', (i) => {
+    const input = i as HTMLInputElement;
+    input.value = '2030-01-01';
+    input.dispatchEvent(new Event('change', { bubbles: true }));
+  });
+  const late = await read();
+  assert.ok(late.range.from <= late.range.to, JSON.stringify(late.range));
+
+  // Presets: the latest week only.
+  await page.click('#range-presets [data-preset="1"]');
+  const one = await read();
+  assert.equal(one.range.from, one.range.to);
+  assert.equal(one.range.to, d.common.to);
+  assert.equal(await page.$eval('[data-preset="1"]', (b) => b.getAttribute('aria-pressed')), 'true');
+  assert.deepEqual(errors, []);
+  await page.close();
+});
+
+test('old #week= links open a one-week range', async () => {
+  const { page } = await open('#metric=cls&week=2026-W44');
+  const range = await page.evaluate(() => window.__cosh!.state.range);
+  assert.deepEqual(range, { from: '2026-W44', to: '2026-W44' });
+  await page.close();
+});
+
 test('review chart lists top orgs with Other last', async () => {
   const { page } = await open();
   const labels = await page.evaluate(() => window.__cosh!.reviewChart!.data.labels as string[]);

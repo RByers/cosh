@@ -189,7 +189,32 @@ a {
   z-index: 1;
 }
 
-.week-picker {
+.range-picker {
+  border: none;
+  margin: 0;
+  padding: 0;
+  min-width: 0;
+}
+
+.range-picker legend {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  padding: 0;
+  margin-bottom: 4px;
+}
+
+.legend-note {
+  color: var(--text-muted);
+}
+
+.range-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 8px 12px;
+}
+
+.range-row > label {
   display: flex;
   flex-direction: column;
   font-size: 0.8rem;
@@ -197,7 +222,14 @@ a {
   gap: 4px;
 }
 
-select {
+.range-presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+input[type='date'],
+.range-presets button {
   font: inherit;
   font-size: 0.9rem;
   color: var(--text-primary);
@@ -205,6 +237,33 @@ select {
   border: 1px solid var(--border);
   border-radius: 6px;
   padding: 5px 8px;
+}
+
+input[type='date'] {
+  color-scheme: light dark;
+}
+
+.range-presets button {
+  cursor: pointer;
+  padding: 6px 10px;
+}
+
+.range-presets button[aria-pressed='true'] {
+  background: var(--text-primary);
+  color: var(--surface-1);
+  border-color: var(--text-primary);
+}
+
+input[type='date']:focus-visible,
+.range-presets button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.range-summary {
+  margin: 6px 0 0;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
 }
 
 .card {
