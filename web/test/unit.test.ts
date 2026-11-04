@@ -11,6 +11,8 @@ import {
   isoDate,
   isoWeekOf,
   meanDerivedShare,
+  monthTicks,
+  weekTitle,
   orgTotals,
   parseIsoDate,
   rangeLength,
@@ -327,4 +329,29 @@ test('smoothRatios: trailing mean share ÷ mean usage, skipping weeks without us
   assert.ok(Math.abs(smoothRatios(points, 2)[3].ratio! - 3) < 1e-12);
   // Mean usage below the threshold: no ratio.
   assert.equal(smoothRatios([pt('2026-W02', 0.1, 0.0005)], 4)[0].ratio, null);
+});
+
+test('monthTicks labels month starts, with the year on the first tick and January', () => {
+  const weeks = Array.from({ length: 52 }, (_, i) => addWeeks('2025-W45', i));
+  const t = monthTicks(weeks, 12);
+  // Months go by each week's Thursday: 2025-W45 (Thu Nov 6) starts November.
+  assert.deepEqual(t.slice(0, 3).map((x) => [weeks[x.index], x.label]), [
+    ['2025-W45', 'Nov 2025'],
+    ['2025-W49', 'Dec'],
+    ['2026-W01', 'Jan 2026'],
+  ]);
+  assert.equal(t.length, 12);
+  // Starting mid-month: no tick until the next month starts.
+  assert.deepEqual(monthTicks(weeks.slice(1), 12)[0], { index: 3, label: 'Dec 2025' });
+  // Narrow axis: quarters or half-years, aligned to the calendar.
+  assert.deepEqual(monthTicks(weeks, 4).map((x) => x.label), ['Jan 2026', 'Apr', 'Jul', 'Oct']);
+  assert.deepEqual(monthTicks(weeks, 2).map((x) => x.label), ['Jan 2026', 'Jul']);
+  // A range inside one month still gets a label.
+  assert.deepEqual(monthTicks(['2026-W42', '2026-W43']), [{ index: 0, label: 'Oct 2026' }]);
+  assert.deepEqual(monthTicks(['2026-W44']), [{ index: 0, label: 'Oct 2026' }]);
+  assert.deepEqual(monthTicks([]), []);
+});
+
+test('weekTitle names the week and its dates', () => {
+  assert.equal(weekTitle('2026-W44'), '2026-W44 (Oct 26 – Nov 1)');
 });

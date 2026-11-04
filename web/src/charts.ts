@@ -11,9 +11,11 @@ import {
   PointElement,
   Tooltip,
   type Plugin,
+  type Scale,
+  type Tick,
 } from 'chart.js';
 import type { LeaderboardRow, RadarWeekly, RatioPoint } from './data.ts';
-import { browserShare, OTHER } from './data.ts';
+import { browserShare, monthTicks, OTHER, weekTitle } from './data.ts';
 import { AXIS_MAX, AXIS_MIN, formatRatio, type PivotScale } from './scale.ts';
 
 Chart.register(
@@ -84,6 +86,33 @@ function baseOptions(theme: Theme) {
   };
 }
 
+/** X axis for a weekly series: categories stay ISO weeks (tooltips name the
+ * week), but ticks sit on month starts, labelled "Nov 2025", "Dec", …, and are
+ * thinned to fit the axis width. */
+function weekAxis(theme: Theme, weeks: string[], offset = false) {
+  return {
+    offset,
+    grid: { display: false },
+    border: { color: theme.baseline },
+    afterBuildTicks: (axis: Scale) => {
+      // ~64px per "Mmm yyyy" label; the width is known here on a horizontal axis.
+      const maxTicks = Math.max(2, Math.floor((axis.width || 600) / 64));
+      axis.ticks = monthTicks(weeks, maxTicks).map((t) => ({ value: t.index, label: t.label }));
+    },
+    ticks: {
+      color: theme.muted,
+      maxRotation: 0,
+      autoSkip: false,
+      // Chart.js would label a category tick with its week; keep the month
+      // label set above (it's still on the tick when this runs).
+      callback: (_v: unknown, i: number, ticks: Tick[]) => ticks[i]?.label ?? '',
+    },
+  };
+}
+
+/** Tooltip title: the week and its dates. */
+const weekTooltipTitle = (items: { label: string }[]) => (items.length ? weekTitle(items[0].label) : '');
+
 function lineDataset<T>(label: string, color: string, theme: Theme, data: T[]) {
   return {
     label,
@@ -147,6 +176,7 @@ export function renderRatioChart(
         tooltip: {
           ...base.plugins.tooltip,
           callbacks: {
+            title: weekTooltipTitle,
             label: (ctx) => {
               const d = ctx.raw as RatioDatum;
               if (d.ratio === null) return `${ctx.dataset.label}: no ratio`;
@@ -156,12 +186,7 @@ export function renderRatioChart(
         },
       },
       scales: {
-        x: {
-          offset: true,
-          grid: { display: false },
-          border: { color: theme.baseline },
-          ticks: { color: theme.muted },
-        },
+        x: weekAxis(theme, weeks, true),
         y: {
           type: 'linear',
           min: AXIS_MIN,
@@ -249,16 +274,13 @@ export function renderReviewChart(
           ...base.plugins.tooltip,
           itemSort: (a, b) => ((b.raw as number | null) ?? 0) - ((a.raw as number | null) ?? 0),
           callbacks: {
+            title: weekTooltipTitle,
             label: (ctx) => `${ctx.raw === null ? 0 : fmt(ctx.raw as number)}  ${ctx.dataset.label}${avg}`,
           },
         },
       },
       scales: {
-        x: {
-          grid: { display: false },
-          border: { color: theme.baseline },
-          ticks: { color: theme.muted, maxRotation: 0, autoSkip: true, autoSkipPadding: 24 },
-        },
+        x: weekAxis(theme, weeks),
         y: log
           ? {
               type: 'logarithmic',
@@ -418,15 +440,11 @@ export function renderUsageChart(
         tooltip: {
           ...base.plugins.tooltip,
           itemSort: (a, b) => (b.raw as number) - (a.raw as number),
-          callbacks: { label: (ctx) => `${pct(ctx.raw as number)}  ${ctx.dataset.label}` },
+          callbacks: { title: weekTooltipTitle, label: (ctx) => `${pct(ctx.raw as number)}  ${ctx.dataset.label}` },
         },
       },
       scales: {
-        x: {
-          grid: { display: false },
-          border: { color: theme.baseline },
-          ticks: { color: theme.muted, maxRotation: 0, autoSkip: true, autoSkipPadding: 24 },
-        },
+        x: weekAxis(theme, weeks),
         y: {
           min: 0,
           title: { display: true, text: 'share of Chromium browser usage', color: theme.muted },

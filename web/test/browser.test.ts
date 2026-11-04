@@ -426,3 +426,33 @@ test.skipIf(!process.env.SCREENSHOT_DIR)('screenshots (only when SCREENSHOT_DIR 
     await page.close();
   }
 });
+
+test('time axes are labelled by month; tooltips still name the week', async () => {
+  const { page, errors } = await open();
+  const read = () =>
+    page.evaluate(() =>
+      (['ratioChart', 'reviewChart', 'usageChart'] as const).map((k) => {
+        const c = window.__cosh![k]!;
+        const title = c.options.plugins.tooltip.callbacks.title as (items: { label: string }[]) => string;
+        const weeks = c.data.labels as string[];
+        return {
+          k,
+          ticks: c.scales.x.ticks.map((t) => String(t.label)),
+          title: title([{ label: weeks[weeks.length - 1] }]),
+        };
+      }),
+    );
+  for (const c of await read()) {
+    assert.ok(c.ticks.length >= 2, `${c.k}: ${c.ticks}`);
+    for (const t of c.ticks) assert.match(t, /^[A-Z][a-z]{2}( \d{4})?$/, `${c.k} tick ${t}`);
+    assert.match(c.ticks[0], / \d{4}$/, `${c.k}: first tick names the year`);
+    assert.match(c.title, /^\d{4}-W\d{2} \([A-Z][a-z]{2} \d+ – [A-Z][a-z]{2} \d+\)$/);
+  }
+  assert.deepEqual(errors, []);
+  await page.close();
+  // Phone width: fewer, still month-aligned ticks.
+  const narrow = await open('', 390);
+  const phone = await narrow.page.evaluate(() => window.__cosh!.reviewChart!.scales.x.ticks.length);
+  assert.ok(phone >= 2 && phone <= 6, `phone ticks: ${phone}`);
+  await narrow.page.close();
+});
