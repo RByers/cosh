@@ -33,9 +33,6 @@
 
     <main>
       <form class="filters" aria-label="Filters" onsubmit="return false">
-        <fieldset id="metric" class="segmented">
-          <legend>Contribution metric</legend>
-        </fieldset>
         <fieldset id="range" class="range-picker">
           <legend>Date range <span class="legend-note">(applies to everything below)</span></legend>
           <div class="range-row">
@@ -44,6 +41,9 @@
             <div id="range-presets" class="range-presets" role="group" aria-label="Quick ranges"></div>
           </div>
           <p id="range-summary" class="range-summary" aria-live="polite"></p>
+        </fieldset>
+        <fieldset id="metric" class="segmented">
+          <legend>Contribution metric</legend>
         </fieldset>
       </form>
 
