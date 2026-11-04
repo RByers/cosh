@@ -84,6 +84,7 @@ value_ratio(O, t) = O's share of Chromium review comments
 | 2026-11-03 | Exclude iOS from all Radar shares: subtract Radar's `os=IOS` browser series, weighted by iOS's share from `timeseries_groups/OS` | User's instruction: iOS browsers are all WebKit, so Chromium is barely used there. Radar can't exclude an OS directly (`radar-research.md` §2) |
 | 2026-11-03 | Exclude brave.com from the ratio: no browser mapping in `config/org_browsers.csv`; the web UI lists it with usage "unknown" (`UNKNOWN_USAGE_ORGS` in `web/src/data.ts`) and explains why in a note | User's instruction. Radar has a `Brave` label but puts it at about 0.002% of Chromium usage (2025-W45..2026-W44 mean), roughly 1000× below Brave's real size (~100M MAU against ~3.5B Chrome users). Brave identifies itself only in `Sec-CH-UA`, so Radar evidently counts it as Chrome (`radar-research.md` §6) |
 | 2026-11-03 | `fb.com` reviewers count as `meta.com` (`DOMAIN_ALIASES` in `cosh/orgs.py`), applied when `summarize` resolves orgs; fetched and derived data keep raw emails and need no re-run | User's instruction: Meta employees used fb.com addresses |
+| 2026-11-04 | Keep the date filter and its per-week leaderboard data (`summaries/reviewer_weekly.json`); revisit client weight later (Open questions) | User's decision: the client is too small to worry about yet. On 2026-11-04 (38 weeks loaded) the page fetched about 400 KB gzipped (1.9 MB raw). `reviewer_weekly.json` was 257 KB of that, and one all-time total per reviewer would cut it to about 81 KB |
 
 ## Status
 
@@ -163,6 +164,16 @@ value_ratio(O, t) = O's share of Chromium review comments
 - Radar history starts at 2023-07, but the review backfill could cover 5
   years. Can older Radar data be fetched another way, or should the ratio
   start at 2023-07?
+
+- **Client weight (deferred 2026-11-04).** `reviewer_weekly.json` grows by
+  about 5 KB gzipped per week, because it keeps a row per (week, reviewer, org)
+  so the leaderboard can total any date range. The rest of the page is about
+  145 KB gzipped (JS bundle 67 KB, Radar CSV 63 KB, `org_weekly.json` 11 KB).
+  Estimates, assuming growth stays linear: about 330 KB for that file at 52
+  weeks and about 900 KB at the approved 175 weeks (back to 2023-W26). If it
+  gets too heavy, don't drop the date filter. Ship precomputed totals for the
+  presets instead (about 80 KB for all four), and lazy-load the per-week file,
+  or split it by year, only when someone picks a custom range.
 
 - Vivaldi has no Radar label at all and counts as Chrome, like Brave (which is
   now excluded with a note). Estimate them somehow, e.g. re-split Chrome's
