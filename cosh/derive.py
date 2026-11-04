@@ -1,7 +1,7 @@
-"""Derive derived.sqlite (accounts, changes, comments, votes) from cached raw
-responses and NoteDb. Review activity is keyed by when it happened: each
-comment by the week it was written, each vote by the week it was cast. Only
-the reviewed-CLs metric is per CL (by close week; see the cl_reviewers view).
+"""Derive derived.sqlite (accounts, changes, comments) from cached raw
+responses and NoteDb. Each comment is keyed by the week it was written and
+keeps its file path; each CL records its anchor file (cosh/paths.py), where
+its patchset-level comments are placed.
 
 Pure function of raw.sqlite + NoteDb, which it opens read-only: safe to re-run
 any time, even while an extractor is running; never hits the network."""
@@ -12,21 +12,15 @@ import os
 import sys
 import zlib
 from collections import defaultdict
-from datetime import datetime, timezone
-
 from . import store
 from .bots import is_bot_account
-from .extract import GERRIT_TS, closed_ts, iso_week_of, parse_gerrit_ts
+from .extract import closed_ts, iso_week_of, parse_gerrit_ts
+from .paths import anchor, is_file
 
-METRIC_VERSION = "4"   # 1-2 = CL-keyed (cosh.sqlite); 3 = activity-time keyed;
-                       # 4 = AI comments in the headline (summarize only; same schema as 3)
-
-
-def human_text(message):
-    """Comment text minus quoted reply lines ('> ...')."""
-    lines = [l for l in (message or "").splitlines() if not l.lstrip().startswith(">")]
-    return "\n".join(lines).strip()
-
+# 1-2 = CL-keyed (cosh.sqlite); 3 = activity-time keyed; 4 = AI comments in the
+# headline (summarize only); 5 = comments only (no vote-only reviews), each
+# placed on a file and filtered by config/paths.txt.
+METRIC_VERSION = "5"
 
 DELETED_USER = "Deleted User"   # what Gerrit's UI shows for a deleted account
 
@@ -66,15 +60,13 @@ def _ts(gerrit_ts):
     return gerrit_ts[:19]
 
 
-def derive_change(change, comments, vote_times=None):
-    """Return (accounts{id: acct}, change_row, [comment_row], [vote_row]).
+def derive_change(change, comments):
+    """Return (accounts{id: acct}, change_row, [comment_row]).
 
     comments: parsed /comments map (path -> [comment]) or None if not fetched.
-    vote_times: {account_id: unix time} of real vote times from NoteDb. The
-    listing's vote `date` is restamped at submit, so it is only a fallback (for
-    CLs without a NoteDb fetch, i.e. CLs with no comments).
-    Rows cover non-owner activity on human-owned CLs only; a bot-owned CL
-    (autoroll etc.) gets its change row and nothing else.
+    Rows cover non-owner comments on human-owned CLs only; a bot-owned CL
+    (autoroll etc.) gets its change row and nothing else. The change row's
+    anchor_path counts every author's inline comments, the owner's included.
     """
     accounts = {}
 
@@ -103,19 +95,6 @@ def derive_change(change, comments, vote_times=None):
     closed = close_time(change)
     closed_dt = parse_gerrit_ts(closed) if closed else None
 
-    votes = []
-    labels = [] if bot_owned else (
-        change.get("labels", {}).get("Code-Review", {}).get("all", []) or [])
-    for v in labels:
-        aid = v.get("_account_id")
-        if aid is None or aid == owner_id or not v.get("value"):
-            continue
-        t = (vote_times or {}).get(aid)
-        when = (datetime.fromtimestamp(t, timezone.utc).strftime(GERRIT_TS) if t
-                else v.get("date") or change["updated"])
-        votes.append(dict(account_id=aid, value=v["value"], voted_at=_ts(when),
-                          iso_week=iso_week_of(when)))
-
     rows = []
     for path, clist in ({} if bot_owned else (comments or {})).items():
         for c in clist:
@@ -129,8 +108,7 @@ def derive_change(change, comments, vote_times=None):
             rows.append(dict(
                 comment_id=cid, account_id=aid, written_at=_ts(c["updated"]),
                 iso_week=iso_week_of(c["updated"]),
-                chars=len(human_text(c.get("message"))),
-                is_inline=int(path != "/PATCHSET_LEVEL"), is_ai=int(is_ai_comment(c)),
+                path=path, is_ai=int(is_ai_comment(c)),
                 after_close=int(closed_dt is not None and parse_gerrit_ts(c["updated"]) > closed_dt)))
 
     ch = dict(
@@ -144,8 +122,10 @@ def derive_change(change, comments, vote_times=None):
         insertions=change.get("insertions"), deletions=change.get("deletions"),
         patchsets=change.get("current_revision_number"),
         total_comment_count=change.get("total_comment_count"),
-        is_bot_owned=int(bot_owned), subject=change.get("subject"))
-    return accounts, ch, rows, votes
+        is_bot_owned=int(bot_owned), subject=change.get("subject"),
+        anchor_path=None if bot_owned else anchor(
+            {p: len(cs) for p, cs in (comments or {}).items() if is_file(p)}))
+    return accounts, ch, rows
 
 
 def load_comments(raw, repos, host, project, number, source):
@@ -241,7 +221,7 @@ def derive(data_dir=store.DATA_DIR, weeks=None, source="auto", out_path=None):
         by_window[(cl[0], k)].append(cl)
 
     repos, sources = {}, defaultdict(int)
-    n_changes = n_comments = n_votes = 0
+    n_changes = n_comments = 0
     for (host, k), cls in sorted(by_window.items()):
         win = _window(raw, host, k)    # one window in memory at a time
         with db:
@@ -249,39 +229,29 @@ def derive(data_dir=store.DATA_DIR, weeks=None, source="auto", out_path=None):
                 change = win[number]
                 comments, used = load_comments(raw, repos, host, project, number, source)
                 sources[used] += 1
-                vote_times = None
-                if used == "notedb" and change.get("labels", {}).get("Code-Review", {}).get("all"):
-                    from . import notedb
-                    vote_times = notedb.read_vote_times(repos[project][0], number)
-                accounts, ch, rows, votes = derive_change(change, comments, vote_times)
+                accounts, ch, rows = derive_change(change, comments)
                 for aid, a in accounts.items():
                     db.execute(ACCOUNT_UPSERT, (host, aid, a.get("email"), account_name(a),
                                                 int(is_bot_account(a))))
                 cols = list(ch)
                 db.execute(f"INSERT OR REPLACE INTO changes(host,{','.join(cols)}) "
                            f"VALUES (?,{','.join('?' * len(cols))})", [host] + [ch[c] for c in cols])
-                for t in ("comments", "votes"):
-                    db.execute(f"DELETE FROM {t} WHERE host=? AND change_number=?", (host, number))
+                db.execute("DELETE FROM comments WHERE host=? AND change_number=?", (host, number))
                 db.executemany(
                     """INSERT INTO comments(host, change_number, comment_id, account_id, written_at,
-                       iso_week, chars, is_inline, is_ai, after_close) VALUES (?,?,?,?,?,?,?,?,?,?)
+                       iso_week, path, is_ai, after_close) VALUES (?,?,?,?,?,?,?,?,?)
                        ON CONFLICT DO NOTHING""",
                     [(host, number, r["comment_id"], r["account_id"], r["written_at"], r["iso_week"],
-                      r["chars"], r["is_inline"], r["is_ai"], r["after_close"]) for r in rows])
-                db.executemany(
-                    "INSERT INTO votes VALUES (?,?,?,?,?,?)",
-                    [(host, number, v["account_id"], v["value"], v["voted_at"], v["iso_week"])
-                     for v in votes])
+                      r["path"], r["is_ai"], r["after_close"]) for r in rows])
                 n_changes += 1
                 n_comments += len(rows)
-                n_votes += len(votes)
 
     with db:
         n_emailless = mark_emailless_bots(db)
         for k, v in [("metric_version", METRIC_VERSION), ("derived_at", store.now_iso()),
                      ("fetched_weeks", json.dumps(fetched_weeks)), ("open_snapshot_at", snapshot)]:
             db.execute("INSERT OR REPLACE INTO meta VALUES (?, ?)", (k, v))
-    print(f"derived {n_changes} changes, {n_comments} comments, {n_votes} votes; "
+    print(f"derived {n_changes} changes, {n_comments} comments; "
           f"comment source per CL: {dict(sources)}; {n_emailless} accounts without email "
           f"marked as bots", file=sys.stderr)
     raw.close()

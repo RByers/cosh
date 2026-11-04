@@ -3,10 +3,13 @@
 Status (2026-11-03): **2026-W44** (Mon 2026-10-26 to Sun 2026-11-01 UTC) was
 extracted and validated first. The approved one-year backfill (2025-W45 ..
 2026-W44) and an open-CL snapshot for the same year (`extract-open`) follow
-it. Fetching beyond that needs approval (see `docs/plan.md`).
+it. A backfill to 2023-07-01 was approved on 2026-11-04. Fetching beyond that
+needs approval (see `docs/plan.md`).
 
-**metric_version 2** (2026-11-03): review activity counts in the week it
-happened, not in the week the CL closed. See "Metric definitions" below.
+**metric_version 5** (2026-11-04): the metric is review comments (self-declared
+AI comments from reviewers' own accounts included), each counted in the week
+it was written, only on the paths `config/paths.txt` includes. Reviews without
+a comment don't count. See "Metric definitions" below.
 
 This follows `gerrit-api-research.md` and `storage-design.md`. Below are the
 decisions made while implementing it; where they differ from those docs, this
@@ -18,7 +21,7 @@ file wins.
 python3 -m cosh extract --week 2026-W44     # network; cached and resumable (NoteDb by default)
 python3 -m cosh extract-open                # network; open-CL snapshot + its NoteDb refs (after the backfill)
 python3 -m cosh derive [--out PATH]         # offline: raw cache -> data/private/derived.sqlite
-python3 -m cosh summarize [--metric comments|cls|chars] [--db PATH]   # offline: -> summaries/
+python3 -m cosh summarize [--db PATH] [--out DIR]   # offline: -> summaries/ (path scope: config/paths.txt)
 python3 -m cosh radar [--offline]           # Cloudflare Radar; needs `source secrets.sh`
 python3 -m cosh backfill --weeks 52 [--go]  # plan only unless --go (the 52 weeks are approved)
 python3 -m cosh update-affiliations         # refresh config/affiliations.json5
@@ -41,8 +44,8 @@ Cloudflare Radar    ─► data/public/radar/raw/ ──── radar ──► d
     twice. That doesn't mean downloading everything: a leaner fetch is fine
     if it still gets what we need. See `storage-design.md` §3.8, which also
     covers what NoteDb contains and the size per year.
-  - `derived.sqlite` is derived (one row per comment and per vote, with
-    lengths but no text) and can be rebuilt. `derive` opens `raw.sqlite`
+  - `derived.sqlite` is derived (one row per comment, with its file path but
+    no text) and can be rebuilt. `derive` opens `raw.sqlite`
     read-only. The older `cosh.sqlite` (metric_version 1, one row per CL and
     reviewer) is obsolete.
 - `data/public/`, `summaries/`, `config/`, code and docs are committed.
@@ -114,12 +117,29 @@ week, plus a snapshot of **open** CLs (step 3).
      `agent=` field) and `http.extraHeader`.
    - All of this lives in `cosh/contact.py`; override with `COSH_CONTACT`.
 
-## Metric definitions (metric_version 3)
+## Metric definitions (metric_version 5)
 
-Versions: 1 counted everything in the week the CL closed and left post-merge
-comments out of the headline. 2 put post-merge comments in the headline,
-together with the vote floor (below). 3, the current version, counts review
-activity in the week it happened and keeps 2's rules.
+Versions:
+1. Counted everything in the week the CL closed and left post-merge comments
+   out of the headline.
+2. Put post-merge comments in the headline, plus a vote floor: a Code-Review
+   vote with no comment counted as one comment.
+3. Counted review activity in the week it happened.
+4. Counted self-declared AI comments from a reviewer's own account in the
+   headline (summarize only). Over 53 weeks this added 1.1% to comments and
+   moved no org's share by more than 0.04 points.
+5. The current version. It keeps 3's weeks and 4's AI rule, and makes two
+   changes:
+   - **Comments only.** Vote-only reviews no longer count, so there is no
+     vote floor, no `votes` table and no reviewed-CLs or characters metric.
+     A review without a comment can't be valued: a bare +1 may stand for a
+     careful read or a rubber stamp. The vote floor had added about 18% to
+     the headline. It lowered the non-Google share from 4.08% to 3.77% over a
+     year, because Google's reviews are vote-only more often (38% of review
+     rows, against 28% for Microsoft). Opera is the exception: 64% of its
+     reviews were bare approvals.
+   - **Path scope.** Only comments on the paths that `config/paths.txt`
+     includes count (see "Path scope" below).
 
 Review activity counts in the ISO week (UTC) in which it happened. Under
 metric_versions 1–2, everything counted in the week the CL closed. That week
@@ -130,42 +150,30 @@ were counted in W44 but written earlier.
 
 - **Tables** (`cosh/store.py`, `DERIVED_SCHEMA`):
   - `comments`: one row per published comment by a non-owner on a
-    human-owned CL, with its `written_at` and `iso_week`.
-  - `votes`: one row per standing non-zero Code-Review vote by a non-owner,
-    with `voted_at` and `iso_week`.
+    human-owned CL, with its `written_at`, `iso_week` and `path` (a file, or
+    a Gerrit pseudo-path such as `/PATCHSET_LEVEL` or `/COMMIT_MSG`).
   - `changes`: one row per CL, from its newest listing. `close_week` is NULL
-    for open CLs.
-  - `cl_reviewers` (a view): every (CL, account) with a comment or vote on a
-    closed CL. It is used only for reviewed CLs.
+    for open CLs. `anchor_path` is the file with the most inline comments
+    on the CL (see "Path scope").
+  - `open_derived` refuses a `derived.sqlite` from before metric_version 5
+    and says how to rebuild it.
 - **Week of a comment:** the week of its `writtenOn` time in NoteDb (REST:
   `updated`).
-- **Week of a vote:** the voter's own latest non-zero `Label: Code-Review=…`
-  line in the CL's NoteDb history.
-  - The listing's vote `date` can't be used: Gerrit restamps it at submit
-    (11,003 of 11,036 merged-CL votes in W43–W44 carried the submit time).
-  - A label line that names another user (`… Gerrit User N <…>`) inside
-    someone else's update records a copied vote, not a new one, and is
-    skipped.
-  - CLs without comments have no NoteDb fetch, so their votes fall back to
-    the listing date, which is usually the submit time.
-- **Reviewed CLs** stay per CL: they count in the week the CL closed (merged,
-  or abandoned at its last update), with the org as of the close. Open CLs
-  don't count yet.
-- **Reviewers** in a week: non-bot accounts credited with anything that
-  week: a comment written, a vote cast, or a reviewed CL that closed that
-  week. This is the same set as the rows of `reviewer_weekly.json`, so the
-  web UI's distinct-reviewer counts match `org_weekly`.
+- **Reviewers** in a week: non-bot accounts with an in-scope comment that
+  week (an AI-only reviewer counts too). This is the same set as the rows
+  of `reviewer_weekly.json`, so the web UI's distinct-reviewer counts match
+  `org_weekly`.
 - **Weeks reported:** only fully fetched weeks (`meta.fetched_weeks`).
   Activity before the oldest week, or in the current partial week, is
   stored but not summarized. Recent weeks are complete only as of the last
   open-CL snapshot (`meta.open_snapshot_at` in `org_weekly.json`); comments
   written after it appear on the next snapshot or once their CL closes.
-- **Abandoned CLs count.** Review that points out flaws so that a CL never
-  lands is valuable work.
+- **Abandoned and open CLs count.** Review that points out flaws so that a
+  CL never lands is valuable work.
 - **Bot commits.** A CL is bot-owned if its owner has Gerrit's
   `SERVICE_USER` tag or matches a regex in `config/bots.txt`. W44 had 2,211.
   - Each gets one `changes` row with `is_bot_owned=1`.
-  - It gets no comment or vote rows and no comment fetch.
+  - It gets no comment rows and no comment fetch.
   - It is counted in `summaries/weekly_totals.csv` (by close week), so
     bot-only stretches don't look like gaps.
 - Being listed only as a reviewer or CC creates no row. Bot reviewers get
@@ -178,9 +186,10 @@ were counted in W44 but written earlier.
   - `accounts.name` falls back to Gerrit's `display_name` when an account has
     no full name, then to "Deleted User" (as Gerrit's UI shows it) for an
     account the listing marks `deleted`.
-- **`comments` (the headline metric)** counts comments by human (non-bot)
-  accounts written in the week, including those written after the CL
-  closed and, since metric_version 4, self-declared AI comments.
+- **`comments` (the metric)** counts comments by human (non-bot) accounts
+  written in the week on in-scope paths, including those written after the
+  CL closed and, since metric_version 4, self-declared AI comments. `share`
+  is an org's comments ÷ everyone's.
   - `ai_comments`: the subset with the `is_ai` flag or an `autogenerated:*`
     tag. Before metric_version 4 they were excluded from the headline.
   - `post_merge_comments`: the subset written after `closed_at`, however
@@ -188,47 +197,48 @@ were counted in W44 but written earlier.
     because post-merge review that leads to a follow-up CL is real value.
     Summaries also report them per org and week. (58% arrive within a day of
     the close, 89% within 14 days.)
-  - metric_version 1 excluded them from the headline.
   - Spam among them (names, pasted prompts) is an open issue; see
     `plan.md`, Open questions.
-- **Vote floor (applied in `summarize`, not stored):** a Code-Review vote on
-  a CL where the voter wrote no comment (AI comments included), typically a bare
-  +1, counts as **one** comment, in the week of the vote. Without this, a
-  review that needed no changes would not appear in the comments chart at
-  all.
-  - A vote never adds to a review that has comments, so "LGTM" plus +1 is 1,
-    not 2, even when the comment and the vote fall in different weeks.
-  - Summaries report the number per org and week as `vote_only_reviews`.
-  - Under metric_version 2 (W44): 2,792 of 6,526 review rows (43%) were
-    vote-only. The floor raised the week's comments by 27% and moved
-    google.com from 95.9% to 96.4%.
-- **`votes` rows** hold the reviewer's Code-Review vote *as it stands in the
-  CL's newest listing* (`labels.Code-Review.all`), timed from NoteDb. They
-  are used for reviewer credit, reviewed CLs and the vote floor.
-  - In principle a vote cleared by a later patchset is lost. In practice,
-    Chromium's copy condition carries Code-Review votes across trivial
-    rebases, no-code changes and committer uploads that leave files
-    unchanged, so this almost never happens.
-  - **Checked on W44 (2026-11-03):** the NoteDb vote history of all 3,429
-    human-owned CLs with comments has 4,496 human non-owner Code-Review
-    voters. Every one has a review row and a final vote, so none are missed.
-  - The 2,008 CLs without comments have no NoteDb history. Their listing
-    `reviewers.REVIEWER` holds 277 human accounts without a row, mostly on
-    abandoned CLs. On CLs with history, 0 of 402 such accounts had ever
-    voted, so these are reviewers who were added and never acted.
-  - All 30 merged human-owned CLs with no human review row were approved by
-    Rubber Stamper (`Bot-Commit+1`): clean reverts and relands, gardener
-    suppressions and translation dumps. The translation-dump account is now
-    in `config/bots.txt`.
-- **`review_chars`:** characters in those comments after removing quoted `>`
-  lines.
-- **Validation:** for CLs that closed in W44, the `comments` and `votes`
-  tables reproduce the CL-keyed tables exactly: 10,426 pre-close comments,
-  1,910,448 chars, 1,142 AI comments, 78 post-merge comments and 6,526
-  (CL, reviewer) pairs.
-- **`is_owner`:** NULL for now (deferred). The code-owners API answers against
+- **Validation (metric_version 3):** for CLs that closed in W44, the
+  activity-keyed `comments` table reproduced the CL-keyed tables exactly:
+  10,426 pre-close comments, 1,142 AI comments and 78 post-merge comments.
+- **`is_owner`:** not stored (deferred). The code-owners API answers against
   the *current* OWNERS files, so it is wrong for history. Plan: evaluate the
   OWNERS files at the merge commit's parent in a local checkout.
+
+### Path scope (`config/paths.txt`, `cosh/paths.py`)
+
+Every comment is placed on one file, and the scope decides whether that file
+counts.
+
+- **Rules:** `exclude <dir>/` and `include <dir>/` lines. The longest matching
+  prefix wins, and a path matching no rule is included. Now:
+  - excluded: `chrome/`, `ios/`, `android_webview/`;
+  - included again: `chrome/browser/web_applications/`, `chrome/browser/webnn/`.
+  The excluded trees are Google's own products built on Chromium (Chrome,
+  Chrome for iOS, Android WebView), where review is mostly Google reviewing
+  Google's product code. The two exceptions are shared platform work that
+  other Chromium browsers build on: Microsoft writes much of the
+  `web_applications` review, and Intel and Microsoft much of the WebNN
+  review.
+- **Placement.** We don't fetch CL file lists, so:
+  - an inline comment is on its own file;
+  - a patchset-level or commit-message comment goes to the CL's anchor, the
+    file with the most inline comments on the CL from anyone, the owner's
+    replies included (ties: the alphabetically first path);
+  - a comment on a CL with no inline comments at all can't be placed. It is
+    excluded, and shown as the area `(no file)` in `area_weekly.json`.
+  In a 20k-CL sample of human review comments, 68% were inline, 22% were
+  placed through the anchor and 10% couldn't be placed. Exact file lists
+  would need a blob-less git fetch of `main`'s history (not approved; see
+  `plan.md`, Open questions).
+- **Areas** (the web UI's "Review by directory" chart): a comment's area is
+  the longest matching rule or `area` prefix in `config/paths.txt`
+  (`third_party/blink/` is listed as one), else its top-level directory.
+  `area_weekly.json` covers every comment, in scope or not, so the page can
+  show what the scope leaves out.
+- **Changing the scope** needs only `summarize`, not a new `derive`: paths
+  are stored per comment.
 
 ### AI comments: what we can and can't tell
 
@@ -243,13 +253,13 @@ were counted in W44 but written earlier.
 - **Missed:** pasted LLM output and tools that don't set the flag.
 - **Overcounted:** heavily edited AI drafts, and some non-AI automation tags.
 - **Use:** treat `ai_comments` as a lower bound. It is a subset of the
-  headline (metric_version 4), reported per org so AI-assisted review can
-  still be told apart.
+  headline (since metric_version 4), reported per org so AI-assisted review
+  can still be told apart.
+
 
 ## Org attribution (`cosh/orgs.py`)
 
-The org is a domain name. It is evaluated as of the day of the comment or
-vote, or, for reviewed CLs, as of the CL's `closed_at`:
+The org is a domain name, evaluated as of the day of the comment:
 
 1. **Affiliations file.** If the email is in `config/affiliations.json5`, use
    its most recent affiliation whose `start` is on or before that date.
@@ -262,17 +272,13 @@ vote, or, for reviewed CLs, as of the CL's `closed_at`:
 
 `org_weekly` reports every org, however few reviewers it has; only
 `gmail.com` is folded into `Other`. `summaries/reviewer_weekly.json` holds
-every reviewer's comments, reviewed CLs and review characters per week, with
-the same scope and weeks as `org_weekly`: one row per (week, account, org),
-with orgs resolved per comment or vote (or per CL, for reviewed CLs) as in
-`org_weekly`, but before the `gmail.com` fold. Summed
-per (week, folded org), the rows reproduce `org_weekly`'s `reviewers`,
-`comments` and `review_chars` exactly, so the web UI can count distinct
-reviewers and rank reviewers over any range of weeks. (An org's
-`reviewed_cls` can't be rebuilt from it, since two reviewers can share a CL;
-the UI sums that from `org_weekly`, which is exact because each CL closes in
-one week.) The format is compact: names once per account, orgs once, and
-rows of `[account_id, org index, comments, cls, chars]`.
+every reviewer's in-scope comments per week, with the same scope and weeks
+as `org_weekly`: one row per (week, account, org), with orgs resolved per
+comment as in `org_weekly`, but before the `gmail.com` fold. Summed per
+(week, folded org), the rows reproduce `org_weekly`'s `reviewers` and
+`comments` exactly, so the web UI can count distinct reviewers and rank
+reviewers over any range of weeks. The format is compact: names once per
+account, orgs once, and rows of `[account_id, org index, comments]`.
 
 ## W44 results (first look, metric_version 1)
 
@@ -293,15 +299,14 @@ rows of `[account_id, org index, comments, cls, chars]`.
 
 - Comments on bot-owned CLs are never fetched. Reviewers of autorolls appear
   only in `weekly_totals`, not in review metrics.
+- Reviews with no comment (a bare vote) aren't counted at all, by design
+  (metric_version 5).
+- Patchset-level comments are placed on the CL's most-commented file, not on
+  the files the CL actually touches; about 10% of comments can't be placed
+  (see "Path scope").
 - An abandoned CL that is touched again after abandonment can appear in two
   weekly listings. Derive uses the newer listing, and comments are keyed by
-  their own id and time, so nothing is double counted. Only that CL's
-  reviewed-CLs week moves.
-- Vote times on CLs without comments come from the listing, which restamps
-  them at submit (see "Week of a vote").
-- Votes that were changed or removed count once, at the voter's latest own
-  non-zero vote. Earlier votes on the same CL aren't counted as separate
-  activity.
+  their own id and time, so nothing is double counted.
 - Comments on CLs that are still open and were last updated before the
   snapshot's `since` (2025-11-03) are out of scope. They predate the year.
 - Extraction resolves only account IDs that are absent from the listing. IDs

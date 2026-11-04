@@ -43,9 +43,6 @@
           </div>
           <p id="range-summary" class="range-summary" aria-live="polite"></p>
         </fieldset>
-        <fieldset id="metric" class="segmented">
-          <legend>Contribution metric</legend>
-        </fieldset>
         <fieldset id="smoothing" class="segmented">
           <legend>Smoothing <span class="legend-note">(running average of the value ratio and review charts)</span></legend>
         </fieldset>
@@ -75,19 +72,19 @@
           <canvas id="review-chart" role="img" aria-label="Weekly review count per organization over the selected date range; the table below lists the totals."></canvas>
         </div>
         <p class="note" id="review-scope-note">
-          <strong>What's counted.</strong> Code review on <code>chromium/src</code> CLs targeting <code>main</code>,
-          grouped by the ISO week each CL closed (merged or abandoned; review that stops a CL from landing still
-          counts). Only CLs owned by humans are included, so autorolls and other bot commits are left out. Reviews by
-          bot and AI-agent accounts are dropped too, as are owners' comments on their own CLs. Comments that a
-          reviewer posts with AI help count like any other comment from that reviewer.
+          <strong>What's counted.</strong> Review comments on <code>chromium/src</code> CLs targeting
+          <code>main</code>, each in the ISO week it was written, on merged, abandoned and still-open CLs (review that
+          stops a CL from landing still counts). Only CLs owned by humans are included, so autorolls and other bot
+          commits are left out. Comments by bot and AI-agent accounts are dropped too, as are owners' comments on their
+          own CLs. Comments that a reviewer posts with AI help count like any other comment from that reviewer. Only
+          comments on the paths listed under <a href="#areas">Review by directory</a> count.
         </p>
         <p class="note" id="review-metric-note">
-          <strong>Metrics.</strong> <em>Review comments</em> are published comments, inline or patchset-level, including
-          those written after the CL landed (the table below also shows how many of those there are). Comments that
-          declare themselves AI-generated are included (the table below also shows how many there are). A Code-Review vote with no comment, such as a bare +1,
-          counts as one comment, so reviews that needed no changes still show up. <em>Reviewed CLs</em> counts the CLs
-          where someone from the organization voted or commented. <em>Review characters</em> is the length of those
-          comments with quoted (<code>&gt;</code>) lines removed.
+          <strong>Metric.</strong> Contribution is measured in <em>review comments</em>: published comments, inline or
+          patchset-level, including those written after the CL landed (the table below also shows how many of those
+          there are). Comments that declare themselves AI-generated are included (the table also shows how many there
+          are). Reviews with no comment, such as a bare +1 vote, don't count: there is no way to tell how much review
+          went into them.
         </p>
         <p class="note" id="affiliation-note">
           <strong>Organization.</strong> Each reviewer is assigned to an organization as of the date the CL closed,
@@ -101,6 +98,34 @@
           <code>meta.com</code>. The chart shows the organizations with the most review; the rest, including
           <code>gmail.com</code> addresses, are combined as “Other”.
         </p>
+      </section>
+
+      <section id="areas" class="card" aria-labelledby="areas-title">
+        <h2 id="areas-title">Review by directory</h2>
+        <p id="areas-sub" class="sub"></p>
+        <ul id="areas-legend" class="legend" aria-label="Segment colour by organization"></ul>
+        <div id="area-chart" class="ar"></div>
+        <div class="note" id="scope-note">
+          <p>
+            <strong>Which paths count.</strong> The value ratio, the organization chart, the table and the leaderboard
+            count only review comments on these <code>chromium/src</code> paths (the longest matching rule wins):
+          </p>
+          <ul id="scope-rules" class="scope-list"></ul>
+          <p>
+            <code>chrome/</code>, <code>ios/</code> and <code>android_webview/</code> hold Google's own products built
+            on Chromium: the Chrome browser, Chrome for iOS and Android WebView. Review there is mostly Google reviewing
+            Google's product code, so it says little about who maintains the engine other browsers share.
+            <code>chrome/browser/web_applications/</code> and <code>chrome/browser/webnn/</code> are shared platform
+            work that other Chromium browsers build on, so they stay in. Everything else counts, including
+            <code>components/</code>, which mixes shared and Chrome-only code.
+          </p>
+          <p>
+            <strong>Placing comments on a file.</strong> Gerrit doesn't give us each CL's file list, so an inline
+            comment counts for its own file, and a patchset-level comment counts for the file on the same CL with the
+            most inline comments (from anyone, including the CL's owner). A CL whose comments are all patchset-level
+            can't be placed; its comments show as <code>(no file)</code> above and are left out of the other charts.
+          </p>
+        </div>
       </section>
 
       <section class="card" aria-labelledby="usage-title">
@@ -160,9 +185,7 @@
                 <th scope="col">Usage share</th>
                 <th scope="col">Ratio</th>
                 <th scope="col">Reviewers</th>
-                <th scope="col">Reviewed CLs</th>
                 <th scope="col">Comments</th>
-                <th scope="col">Review chars</th>
                 <th scope="col">AI comments</th>
                 <th scope="col">Post-merge comments</th>
               </tr>

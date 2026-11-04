@@ -14,7 +14,6 @@ listing (DETAILED_ACCOUNTS).
 
 import json
 import os
-import re
 import subprocess
 import sys
 import time
@@ -164,44 +163,6 @@ def read_comments(git_dir, n):
                 rc["real_author"] = c["realAuthor"].get("id")
             out.setdefault(c.get("key", {}).get("filename", ""), []).append(rc)
     return out
-
-
-_LABEL = re.compile(r"^Label: (-?)([\w-]+)(?:=([+-]?\d+))?(?:, \S+)?(?: Gerrit User (\d+) <)?")
-_AUTHOR_ID = re.compile(r"^(\d+)@")
-
-
-def parse_vote_times(log, label="Code-Review"):
-    """{account_id: unix time of their own latest non-zero `label` vote} from
-    `git log --format=%x01%ae %at%n%B` of a meta ref.
-
-    The REST listing's vote `date` is restamped when a CL is submitted (11,003
-    of 11,036 merged-CL votes in W43-W44 carried the submit time), so real vote
-    times come from NoteDb. A line naming another user ('... Gerrit User N <..>')
-    records N's vote inside someone else's update, e.g. a vote copied to a new
-    patch set; it is not N voting then, so it is skipped unless N is the author."""
-    out = {}
-    for rec in log.split("\x01")[1:]:
-        head, _, body = rec.partition("\n")
-        email, _, when = head.partition(" ")
-        m = _AUTHOR_ID.match(email)
-        if not m or not when.strip().isdigit():
-            continue
-        author, t = int(m.group(1)), int(when)
-        for line in body.splitlines():
-            lm = _LABEL.match(line)
-            if not lm or lm.group(2) != label or lm.group(1) or not lm.group(3):
-                continue
-            voter = int(lm.group(4)) if lm.group(4) else author
-            if voter != author or int(lm.group(3)) == 0:
-                continue
-            out[voter] = max(out.get(voter, 0), t)
-    return out
-
-
-def read_vote_times(git_dir, n, label="Code-Review"):
-    """parse_vote_times for change n, or {} if its meta ref isn't local."""
-    p = git(git_dir, "log", "--format=%x01%ae %at%n%B", LOCAL_REF.format(n=n), check=False)
-    return parse_vote_times(p.stdout, label) if p.returncode == 0 else {}
 
 
 def default_repo(project):

@@ -9,6 +9,8 @@ build time:
 - `summaries/org_weekly.json` and `summaries/weekly_totals.csv`
 - `summaries/reviewer_weekly.json` (every reviewer's weekly counts: the
   leaderboard and distinct reviewer counts)
+- `summaries/area_weekly.json` (every comment by directory and org, in scope
+  or not, plus the path rules: the "Review by directory" section)
 - `data/public/radar_browser_share.csv`
 - `config/org_browsers.csv`
 
@@ -18,6 +20,10 @@ The join (value ratio = review share ÷ usage share) happens in the browser, in
 and in-app browsers (Facebook and Instagram credited to Meta, Microsoft 365 to Microsoft), and excludes
 iOS; the usage card's fine print says so. Orgs whose browsers have under 0.1%
 of Chromium usage get no ratio.
+
+The contribution metric is review comments on the paths `config/paths.txt`
+includes (Python applies the scope in `summarize`; the page only reads the
+result). There is no metric selector.
 
 ## Date range
 
@@ -29,7 +35,7 @@ usage data both exist.
 
 Over a range:
 
-- Counts (CLs, comments, characters, AI and post-merge comments) are summed.
+- Counts (comments, AI and post-merge comments, CLs) are summed.
 - Review share = the org's summed count ÷ everyone's summed count.
 - Usage share = the mean of the org's weekly usage shares, over the range's
   review weeks that have Radar data. Ratio = review share ÷ usage share.
@@ -37,7 +43,7 @@ Over a range:
   `reviewer_weekly.json` (every reviewer, per week and org); a reviewer who
   reviewed for two orgs counts once in each org's row.
 - Leaderboard totals are exact sums from the same file. A reviewer's org is
-  the one most of their reviewed CLs in the range resolve to.
+  the one most of their comments in the range resolve to.
 
 ## Layout
 
@@ -48,20 +54,27 @@ Over a range:
    week, using weeks before the range too (`smoothRatios` in `src/data.ts`).
    The usage denominator leaves out Radar's ChromeDerivative bucket
    (`RATIO_EXCLUDED_BROWSERS`), whose 2026-W37 jump is not yet explained.
-2. **Review by organization**: weekly counts for the metric over the range
+2. **Review by organization**: weekly review comments over the range
    (smoothed like the ratio), one line each for the top 7 orgs and then
    "Other". A toggle switches from the default log axis to a linear axis with
    google.com left out entirely (the next-ranked org takes its slot).
-3. **Chromium browser usage** from Cloudflare Radar, per browser, over the range,
+3. **Review by directory** (`src/areas.ts`): every comment in the range, in
+   scope or not, one row per directory (the 14 largest, then the rest combined
+   into an included and an excluded row). Each row has a bar for its comment
+   volume on a shared scale (hatched and tagged "excluded" when the scope
+   leaves it out), a 100% bar of its split across the top 7 orgs plus
+   "Other", and the share not from google.com. A note lists the path rules
+   (from the summary's metadata) and how comments are placed on files.
+4. **Chromium browser usage** from Cloudflare Radar, per browser, over the range,
    with a marker and a note on the 2026-W37 ChromeDerivative jump.
-4. Totals for the range, plus a table with every value shown in the charts.
-5. **Reviewer leaderboard**: the top 50 reviewers over the range for the metric,
-   one compact bar each, coloured by org.
+5. Totals for the range, plus a table with every value shown in the charts.
+6. **Reviewer leaderboard**: the top 50 reviewers by review comments over the
+   range, one compact bar each, coloured by org.
 
-The metric, range, smoothing and review-chart scale are kept in the URL hash
-(`#metric=cls&from=2026-W14&to=2026-W44&smooth=4`, plus `&rscale=linear` for the
-linear review chart). Old `#week=2026-W44` links open
-that one week.
+The range, smoothing and review-chart scale are kept in the URL hash
+(`#from=2026-W14&to=2026-W44&smooth=4`, plus `&rscale=linear` for the
+linear review chart). Old `#week=2026-W44` links open that one week, and an
+old `metric=` parameter is ignored.
 
 ## Commands
 

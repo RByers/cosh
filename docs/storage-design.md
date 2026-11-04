@@ -17,7 +17,7 @@ only touches the API where it affects storage.
     so it never has to be fetched twice. Reduction to counts and lengths
     happens only in derived data.
   - `data/private/derived.sqlite` (originally `cosh.sqlite`; see §3.3):
-    derived tables (`changes`, `comments`, `votes`, `accounts`, ...) that can
+    derived tables (`changes`, `comments`, `accounts`, `meta`) that can
     be rebuilt from `raw.sqlite` and NoteDb at any time.
   - `summaries/*.csv` + `summaries/*.json`: per-org per-week and per-month
     aggregates, under about 1 MB in total. **These are the only data committed to git.**
@@ -176,11 +176,12 @@ How the cache behaves:
 
 ### 3.3 `cosh.sqlite`: derived tables
 
-> **Superseded (2026-11-03, metric_version 3).** The derived DB is now
-> `data/private/derived.sqlite`, keyed by *when review happened*. It has one
-> `comments` row per comment and one `votes` row per vote, each with its own
-> ISO week; `changes` has one row per CL (open CLs included); and the
-> `cl_reviewers` view serves the per-CL reviewed-CLs metric. The schema lives
+> **Superseded (2026-11-03, metric_version 3; simplified in metric_version 4,
+> 2026-11-04).** The derived DB is now `data/private/derived.sqlite`, keyed by
+> *when review happened*. It has one `comments` row per comment, with its own
+> ISO week and file path, and `changes` has one row per CL (open CLs
+> included, with the CL's anchor file). Votes aren't derived any more (the
+> raw stores still hold them). The schema lives
 > in `cosh/store.py` (`DERIVED_SCHEMA`), and the definitions are in
 > `extraction-v1.md`. The original design below is kept for its reasoning
 > (keying on `account_id`, idempotency, bots).

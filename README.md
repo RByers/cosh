@@ -11,11 +11,14 @@ For each stakeholder organization *O* and time period *t*:
 value_ratio(O, t) = contribution_share(O, t) / derived_value_share(O, t)
 ```
 
-- **Contribution share** is approximated by code review activity in Chromium:
-  *O*'s share of review comments, reviewed CLs, or review characters written,
-  across all reviews in the period. Each reviewer is attributed to an
-  organization by email domain, plus a mapping table for exceptions such as
-  `@chromium.org` accounts.
+- **Contribution share** is approximated by code review in Chromium: *O*'s
+  share of the review comments written in the period. Reviews without a
+  comment (a bare +1) don't count, since their value can't be judged. Only
+  comments on the shared engine count: `chrome/`, `ios/` and
+  `android_webview/`, Google's own products, are left out, apart from two
+  shared directories in `chrome/` (`config/paths.txt`). Each reviewer is
+  attributed to an organization by email domain, plus a mapping table for
+  exceptions such as `@chromium.org` accounts.
 - **Derived value share** is approximated by browser usage from
   [Cloudflare Radar](https://radar.cloudflare.com/): *O*'s browser's share of
   all Chromium-based browser usage (Chrome for Google, Edge for Microsoft,
@@ -36,12 +39,12 @@ The main visualization plots each organization's value ratio over time.
 1. **Extract** review data from Chromium Gerrit
    (`chromium-review.googlesource.com`). This is throttled and cached so we
    put as little load on the server as possible.
-2. **Store** one row per review comment and per Code-Review vote, each in
-   the week it happened (not the week the CL landed). Reviewed CLs are
-   counted per CL, in the week the CL closed. Open CLs are included, so
-   recent weeks aren't missing review on CLs that haven't landed yet. Raw
+2. **Store** one row per review comment, with its file and the week it was
+   written (not the week the CL landed). Open CLs are included, so recent
+   weeks aren't missing review on CLs that haven't landed yet. Raw
    responses and derived tables stay local.
-3. **Aggregate** the rows into small per-org, per-period summaries.
+3. **Aggregate** the in-scope comments into small per-org, per-period
+   summaries, plus every comment by directory.
 4. **Join** the summaries with Cloudflare Radar browser share.
 5. **Visualize** the result in a web front end that reads only the summaries.
 

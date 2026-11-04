@@ -1,14 +1,10 @@
 // Pure data handling: parse the committed summaries and Radar CSV, and join
 // them into value ratios. No DOM or Chart.js here so it can be unit-tested
 // in Node.
-
-export type Metric = 'comments' | 'cls' | 'chars';
-
-export const METRICS: { id: Metric; label: string; column: keyof SummaryRow }[] = [
-  { id: 'comments', label: 'Review comments', column: 'share_comments' },
-  { id: 'cls', label: 'Reviewed CLs', column: 'share_cls' },
-  { id: 'chars', label: 'Review characters', column: 'share_chars' },
-];
+//
+// The contribution metric is review comments: summaries/org_weekly.json holds
+// each org's comments and share per week, already filtered to the paths in
+// config/paths.txt. summaries/area_weekly.json has every comment by directory.
 
 /** Orgs whose browsers have less Chromium usage share than this get no ratio:
  * dividing by ~0 makes the ratio meaningless. */
@@ -24,20 +20,21 @@ export const UNKNOWN_USAGE_ORGS: ReadonlyMap<string, string> = new Map([['brave.
 export interface SummaryRow {
   iso_week: string;
   org: string;
+  /** The org's share of the week's in-scope review comments. */
   share: number;
-  reviewed_cls: number;
   reviewers: number;
   comments: number;
-  review_chars: number;
   ai_comments: number;
   post_merge_comments: number;
-  share_cls: number;
-  share_comments: number;
-  share_chars: number;
+}
+
+export interface PathRule {
+  prefix: string;
+  included: boolean;
 }
 
 export interface Summary {
-  meta: { weeks: string[]; headline_metric: string; [k: string]: unknown };
+  meta: { weeks: string[]; path_rules?: PathRule[]; [k: string]: unknown };
   rows: SummaryRow[];
 }
 
@@ -48,7 +45,8 @@ export interface WeeklyTotals {
   abandoned_cls: number;
   human_cls: number;
   bot_cls: number;
-  human_cls_with_review: number;
+  /** Human-owned CLs with at least one human review comment (any path). */
+  human_cls_with_comments: number;
 }
 
 /** Minimal RFC 4180 CSV parser: quoted fields, doubled quotes, CRLF. */
@@ -113,7 +111,7 @@ export function parseWeeklyTotals(text: string): WeeklyTotals[] {
     abandoned_cls: Number(r.abandoned_cls),
     human_cls: Number(r.human_cls),
     bot_cls: Number(r.bot_cls),
-    human_cls_with_review: Number(r.human_cls_with_review),
+    human_cls_with_comments: Number(r.human_cls_with_comments),
   }));
 }
 
@@ -155,7 +153,7 @@ export function derivedShare(radar: RadarWeekly, week: string, browsers: string[
 export interface RatioPoint {
   week: string;
   org: string;
-  /** Org's share of the chosen review metric (0 if absent from the summary). */
+  /** Org's share of review comments (0 if absent from the summary). */
   contribution: number;
   /** Org's browsers' share of Chromium browser usage; null if no Radar week. */
   derived: number | null;
@@ -164,24 +162,18 @@ export interface RatioPoint {
   ratio: number | null;
 }
 
-export function metricColumn(metric: Metric): keyof SummaryRow {
-  return METRICS.find((m) => m.id === metric)!.column;
-}
-
 /** Value ratios for every (summary week, browser-owning org). */
 export function computeRatios(
   summary: Summary,
   radar: RadarWeekly,
   orgBrowsers: Map<string, string[]>,
-  metric: Metric,
   minDerived = MIN_DERIVED_SHARE,
 ): RatioPoint[] {
-  const col = metricColumn(metric);
   const points: RatioPoint[] = [];
   for (const week of summary.meta.weeks) {
     for (const [org, browsers] of orgBrowsers) {
       const row = summary.rows.find((r) => r.iso_week === week && r.org === org);
-      const contribution = row ? Number(row[col]) : 0;
+      const contribution = row ? Number(row.share) : 0;
       const derived = derivedShare(radar, week, browsers);
       const ratio = derived !== null && derived >= minDerived ? contribution / derived : null;
       points.push({ week, org, contribution, derived, ratio });
@@ -242,28 +234,20 @@ export function chartedOrgs(
   return out;
 }
 
-const COUNT_COLUMN: Record<Metric, keyof SummaryRow> = {
-  comments: 'comments',
-  cls: 'reviewed_cls',
-  chars: 'review_chars',
-};
-
 export const OTHER = 'Other';
 
-/** Raw review counts summed over the given week(s): the top `n` orgs by the metric, then
+/** Review comments summed over the given week(s): the top `n` orgs, then
  * everything else (including the summary's own "Other" row, e.g. gmail.com)
  * as a final "Other" entry. */
 export function topOrgCounts(
   summary: Summary,
   weeks: string | string[],
-  metric: Metric,
   n = 7,
 ): { org: string; value: number }[] {
-  const col = COUNT_COLUMN[metric];
   const set = new Set(typeof weeks === 'string' ? [weeks] : weeks);
   const sums = new Map<string, number>();
   for (const r of summary.rows) {
-    if (set.has(r.iso_week)) sums.set(r.org, (sums.get(r.org) ?? 0) + Number(r[col]));
+    if (set.has(r.iso_week)) sums.set(r.org, (sums.get(r.org) ?? 0) + Number(r.comments));
   }
   const rows = [...sums].map(([org, value]) => ({ org, value }));
   const named = rows.filter((r) => r.org !== OTHER).sort((a, b) => b.value - a.value);
@@ -273,7 +257,7 @@ export function topOrgCounts(
   return rest > 0 || rows.some((r) => r.org === OTHER) ? [...top, { org: OTHER, value: rest }] : top;
 }
 
-/** Weekly review counts for the top `n` orgs over the given weeks (ranked by
+/** Weekly review comments for the top `n` orgs over the given weeks (ranked by
  * their total, as in topOrgCounts), then everything else as a final "Other"
  * series. `values[i]` is the count in `weeks[i]`. With `smoothing` > 1, each
  * value is the trailing mean over that many calendar weeks ending at
@@ -284,14 +268,12 @@ export function topOrgCounts(
 export function orgWeeklyCounts(
   all: Summary,
   weeks: string[],
-  metric: Metric,
   n = 7,
   smoothing = 1,
   exclude: readonly string[] = [],
 ): { org: string; values: number[] }[] {
-  const col = COUNT_COLUMN[metric];
   const summary = exclude.length ? { ...all, rows: all.rows.filter((r) => !exclude.includes(r.org)) } : all;
-  const named = new Set(topOrgCounts(summary, weeks, metric, n).map((r) => r.org).filter((o) => o !== OTHER));
+  const named = new Set(topOrgCounts(summary, weeks, n).map((r) => r.org).filter((o) => o !== OTHER));
   // Raw counts per (org, week) over every summary week.
   const raw = new Map<string, Map<string, number>>();
   let hasOther = false;
@@ -300,7 +282,7 @@ export function orgWeeklyCounts(
     if (key === OTHER && weeks.includes(r.iso_week)) hasOther = true;
     if (!raw.has(key)) raw.set(key, new Map());
     const m = raw.get(key)!;
-    m.set(r.iso_week, (m.get(r.iso_week) ?? 0) + Number(r[col]));
+    m.set(r.iso_week, (m.get(r.iso_week) ?? 0) + Number(r.comments));
   }
   const known = new Set([...summary.meta.weeks, ...summary.rows.map((r) => r.iso_week)]);
   const window = Math.max(1, smoothing);
@@ -353,11 +335,11 @@ export function compareWeeks(a: string, b: string): number {
   return a < b ? -1 : a > b ? 1 : 0;
 }
 
-/** summaries/reviewer_weekly.json: every reviewer's counts per week, one row
- * per (week, account, org). Compact: each row is
- * [account_id, index into `orgs`, comments, cls, chars]. Orgs are resolved
- * before org_weekly's fold of `meta.fold_into_other` into "Other". */
-export type ReviewerRow = [account: number, org: number, comments: number, cls: number, chars: number];
+/** summaries/reviewer_weekly.json: every reviewer's in-scope comments per
+ * week, one row per (week, account, org). Compact: each row is
+ * [account_id, index into `orgs`, comments]. Orgs are resolved before
+ * org_weekly's fold of `meta.fold_into_other` into "Other". */
+export type ReviewerRow = [account: number, org: number, comments: number];
 
 export interface ReviewerBoard {
   meta: { fold_into_other: string[]; [k: string]: unknown };
@@ -375,8 +357,6 @@ export interface LeaderboardRow {
   org: string;
   value: number;
 }
-
-const METRIC_INDEX: Record<Metric, 2 | 3 | 4> = { comments: 2, cls: 3, chars: 4 };
 
 export const LEADERBOARD_SIZE = 50;
 
@@ -398,32 +378,30 @@ export const gerritReviewsUrl = (email: string | null): string | null =>
 
 const asList = (weeks: string | string[]) => (typeof weeks === 'string' ? [weeks] : weeks);
 
-/** The top `n` reviewers by the metric, summed over the given week(s): exact
- * totals, since the board holds every reviewer. Ties are broken by account id
- * so the order is stable; reviewers with 0 for the metric are left out. A
- * reviewer's org is the one most of their reviewed CLs in those weeks
+/** The top `n` reviewers by review comments, summed over the given week(s):
+ * exact totals, since the board holds every reviewer. Ties are broken by
+ * account id so the order is stable; reviewers with no comments are left
+ * out. A reviewer's org is the one most of their comments in those weeks
  * resolve to (ties: alphabetical). */
 export function topReviewers(
   board: ReviewerBoard,
   weeks: string | string[],
-  metric: Metric,
   n = LEADERBOARD_SIZE,
 ): LeaderboardRow[] {
-  const col = METRIC_INDEX[metric];
-  const by = new Map<number, { value: number; orgCls: Map<number, number> }>();
+  const by = new Map<number, { value: number; orgCount: Map<number, number> }>();
   for (const w of asList(weeks)) {
     for (const r of board.weeks[w] ?? []) {
       let t = by.get(r[0]);
-      if (!t) by.set(r[0], (t = { value: 0, orgCls: new Map() }));
-      t.value += r[col];
-      t.orgCls.set(r[1], (t.orgCls.get(r[1]) ?? 0) + r[3]);
+      if (!t) by.set(r[0], (t = { value: 0, orgCount: new Map() }));
+      t.value += r[2];
+      t.orgCount.set(r[1], (t.orgCount.get(r[1]) ?? 0) + r[2]);
     }
   }
-  const orgOf = (orgCls: Map<number, number>) => {
+  const orgOf = (orgCount: Map<number, number>) => {
     let best = -1;
-    let bestCls = -1;
-    for (const [o, c] of orgCls) {
-      if (c > bestCls || (c === bestCls && board.orgs[o] < board.orgs[best])) [best, bestCls] = [o, c];
+    let bestN = -1;
+    for (const [o, c] of orgCount) {
+      if (c > bestN || (c === bestN && board.orgs[o] < board.orgs[best])) [best, bestN] = [o, c];
     }
     return board.orgs[best];
   };
@@ -434,7 +412,7 @@ export function topReviewers(
     .map(([id, t]) => ({
       name: board.accounts[id] ?? `Account ${id}`,
       email: board.emails?.[id] ?? null,
-      org: orgOf(t.orgCls),
+      org: orgOf(t.orgCount),
       value: t.value,
     }));
 }
@@ -580,24 +558,19 @@ export function clampRange(r: WeekRange, bounds: WeekRange): WeekRange {
   return a <= b ? { from: a, to: b } : { from: b, to: a };
 }
 
-/** One org's review counts summed over some weeks, with shares recomputed
- * from the sums (as summarize.py does per week: org count ÷ the sum over all
- * orgs). Each CL closes in exactly one week, so summing CL counts over weeks
- * is exact. Reviewer counts are distinct per week and can't be summed (the
+/** One org's review comments summed over some weeks, with the share
+ * recomputed from the sums (as summarize.py does per week: org comments ÷ all
+ * comments). Reviewer counts are distinct per week and can't be summed (the
  * same person reviews in many weeks): pass `reviewers`, the distinct count per
  * org from distinctReviewers(). Without it, `reviewers` is the sum of the
  * weekly counts, which is exact only for a single week. */
 export interface OrgTotals {
   org: string;
   reviewers: number;
-  reviewed_cls: number;
   comments: number;
-  review_chars: number;
   ai_comments: number;
   post_merge_comments: number;
-  share_cls: number;
-  share_comments: number;
-  share_chars: number;
+  share: number;
 }
 
 export function orgTotals(summary: Summary, weeks: string[], reviewers?: Map<string, number>): OrgTotals[] {
@@ -607,36 +580,22 @@ export function orgTotals(summary: Summary, weeks: string[], reviewers?: Map<str
     if (!set.has(r.iso_week)) continue;
     let t = by.get(r.org);
     if (!t) {
-      t = {
-        org: r.org, reviewers: 0, reviewed_cls: 0, comments: 0, review_chars: 0,
-        ai_comments: 0, post_merge_comments: 0, share_cls: 0, share_comments: 0, share_chars: 0,
-      };
+      t = { org: r.org, reviewers: 0, comments: 0, ai_comments: 0, post_merge_comments: 0, share: 0 };
       by.set(r.org, t);
     }
     t.reviewers += r.reviewers;
-    t.reviewed_cls += r.reviewed_cls;
     t.comments += r.comments;
-    t.review_chars += r.review_chars;
     t.ai_comments += r.ai_comments;
     t.post_merge_comments += r.post_merge_comments ?? 0;
   }
   const out = [...by.values()];
-  const sum = (k: 'reviewed_cls' | 'comments' | 'review_chars') => out.reduce((s, t) => s + t[k], 0);
-  const [cls, comments, chars] = [sum('reviewed_cls'), sum('comments'), sum('review_chars')];
+  const comments = out.reduce((s, t) => s + t.comments, 0);
   for (const t of out) {
     if (reviewers) t.reviewers = reviewers.get(t.org) ?? 0;
-    t.share_cls = cls ? t.reviewed_cls / cls : 0;
-    t.share_comments = comments ? t.comments / comments : 0;
-    t.share_chars = chars ? t.review_chars / chars : 0;
+    t.share = comments ? t.comments / comments : 0;
   }
   return out;
 }
-
-export const SHARE_COLUMN: Record<Metric, 'share_cls' | 'share_comments' | 'share_chars'> = {
-  comments: 'share_comments',
-  cls: 'share_cls',
-  chars: 'share_chars',
-};
 
 /** Mean of an org's weekly usage share over the weeks with Radar data; null
  * if none have any. */
@@ -652,7 +611,7 @@ export function sumWeeklyTotals(totals: WeeklyTotals[], weeks: string[]): TotalC
   const set = new Set(weeks);
   const rows = totals.filter((t) => set.has(t.iso_week));
   if (!rows.length) return null;
-  const keys = ['main_cls', 'merged_cls', 'abandoned_cls', 'human_cls', 'bot_cls', 'human_cls_with_review'] as const;
+  const keys = ['main_cls', 'merged_cls', 'abandoned_cls', 'human_cls', 'bot_cls', 'human_cls_with_comments'] as const;
   return Object.fromEntries(keys.map((k) => [k, rows.reduce((s, r) => s + r[k], 0)])) as TotalCounts;
 }
 
@@ -664,4 +623,81 @@ export const TABLE_TOP_ORGS = 20;
  * later item for which `keep` is true. Order is preserved. */
 export function trimRanked<T>(items: T[], n: number, keep: (item: T) => boolean): T[] {
   return items.filter((it, i) => i < n || keep(it));
+}
+
+// ---------------------------------------------------------------------------
+// Review by directory (summaries/area_weekly.json).
+
+/** Every human review comment, in scope or not, per (week, directory, org).
+ * Rows are [index into `areas`, index into `orgs`, comments]. Orgs are folded
+ * like org_weekly (gmail.com into "Other"). */
+export interface AreaBoard {
+  meta: { path_rules: PathRule[]; unplaced: string; [k: string]: unknown };
+  /** Largest first over all weeks; `included` says whether the scope covers it. */
+  areas: { area: string; included: boolean }[];
+  orgs: string[];
+  weeks: Record<string, [area: number, org: number, comments: number][]>;
+}
+
+export interface AreaRow {
+  /** A directory such as "content/", "(no file)", or a combined row. */
+  area: string;
+  included: boolean;
+  /** Set on the combined rows: how many directories they hold. */
+  combined?: number;
+  comments: number;
+  /** Comments per org: the orgs passed to areaRows, then OTHER. */
+  byOrg: Map<string, number>;
+}
+
+/** Labels of the two combined rows. */
+export const OTHER_INCLUDED = 'other included directories';
+export const OTHER_EXCLUDED = 'other excluded directories';
+
+/** Comments per directory over the given weeks: the `n` largest directories,
+ * then the rest combined into one included and one excluded row (when
+ * non-empty). Orgs outside `orgs` are counted as OTHER. */
+export function areaRows(board: AreaBoard, weeks: string[], orgs: readonly string[], n = 14): AreaRow[] {
+  const keep = new Set(orgs);
+  const per = new Map<number, Map<string, number>>();
+  for (const w of weeks) {
+    for (const [a, o, c] of board.weeks[w] ?? []) {
+      let m = per.get(a);
+      if (!m) per.set(a, (m = new Map()));
+      const org = keep.has(board.orgs[o]) ? board.orgs[o] : OTHER;
+      m.set(org, (m.get(org) ?? 0) + c);
+    }
+  }
+  const sum = (m: Map<string, number>) => [...m.values()].reduce((s, v) => s + v, 0);
+  const rows: AreaRow[] = [...per].map(([a, byOrg]) => ({
+    area: board.areas[a].area,
+    included: board.areas[a].included,
+    comments: sum(byOrg),
+    byOrg,
+  }));
+  rows.sort((x, y) => y.comments - x.comments || (x.area < y.area ? -1 : 1));
+  const top = rows.slice(0, n);
+  for (const included of [true, false]) {
+    const rest = rows.slice(n).filter((r) => r.included === included);
+    if (!rest.length) continue;
+    const byOrg = new Map<string, number>();
+    for (const r of rest) for (const [o, c] of r.byOrg) byOrg.set(o, (byOrg.get(o) ?? 0) + c);
+    top.push({ area: included ? OTHER_INCLUDED : OTHER_EXCLUDED, included, combined: rest.length,
+      comments: sum(byOrg), byOrg });
+  }
+  return top;
+}
+
+/** The `n` orgs with the most comments over the given weeks across every
+ * directory, in scope or not, largest first ("Other" left out). */
+export function topAreaOrgs(board: AreaBoard, weeks: string[], n = 7): string[] {
+  const sums = new Map<string, number>();
+  for (const w of weeks) {
+    for (const [, o, c] of board.weeks[w] ?? []) sums.set(board.orgs[o], (sums.get(board.orgs[o]) ?? 0) + c);
+  }
+  return [...sums]
+    .filter(([org]) => org !== OTHER)
+    .sort((a, b) => b[1] - a[1] || (a[0] < b[0] ? -1 : 1))
+    .slice(0, n)
+    .map(([org]) => org);
 }
