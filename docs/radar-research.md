@@ -180,7 +180,9 @@ Judgement calls:
 - meta.com → the Facebook and Instagram in-app browsers (fb.com reviewers are
   counted as meta.com; `DOMAIN_ALIASES` in `cosh/orgs.py`)
 - opera.com → Opera, Opera Mobile, Opera GX
-- brave.com → Brave
+- brave.com → *none.* Excluded (2026-11-03): Radar's Brave label is about 0%
+  and the real usage is counted as Chrome (§6). The web UI lists brave.com
+  with usage "unknown" (`UNKNOWN_USAGE_ORGS` in `web/src/data.ts`).
 - yandex-team.ru → Yandex Browser
 - vivaldi.com → Vivaldi
 - navercorp.com and naver.com → Whale
@@ -257,8 +259,8 @@ What this means for us:
 - **Smoothing.** Weekly review shares are noisy. A smoother option is
   month-to-month: aggregate the review data to calendar months and join
   `granularity='month'`.
-- **Missing values.** An org with no mapped browser, or a share of 0 (Brave,
-  Vivaldi), has an undefined or infinite ratio. Report its contribution share
+- **Missing values.** An org with no mapped browser, or a share of ~0 (Vivaldi;
+  Brave is excluded outright), has an undefined or infinite ratio. Report its contribution share
   only.
 - **Device split.** `desktop` and `mobile` rows can feed a sensitivity
   analysis; Edge's share, for example, is far higher on desktop.
@@ -281,6 +283,17 @@ classified.
 
 **Brave** has its own label but rounds to 0.00%. It is invisible in practice,
 as predicted.
+- Checked 2026-11-03: over 2025-W45..2026-W44 the `Brave` row averages
+  0.0022% of Chromium usage (range 0.0007%–0.0084%); in 2023–2024 it is
+  0.0001%. Brave's own figure of about 100M monthly users against Chrome's
+  ~3.5B puts it at roughly 2–3% of Chromium, about 1000 times more.
+- Brave sends an unmodified Chrome `User-Agent` and identifies itself only
+  in `Sec-CH-UA` (`"Brave";v="…"`). Radar uses Client Hints since 2024 Q1,
+  but the share did not move, so whatever traffic it does label Brave is a
+  sliver. Cloudflare documents nothing about this.
+- So brave.com is **excluded** from the ratio. Its usage is unknown and
+  most likely counted as Chrome, which overstates Google's usage share by a
+  few points and so slightly understates Google's ratio.
 
 **`ChromeDerivative`** is Radar's bucket for Chromium-based browsers it can't
 name.

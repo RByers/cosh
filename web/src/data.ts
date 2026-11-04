@@ -11,9 +11,15 @@ export const METRICS: { id: Metric; label: string; column: keyof SummaryRow }[] 
 ];
 
 /** Orgs whose browsers have less Chromium usage share than this get no ratio:
- * dividing by ~0 makes the ratio meaningless (e.g. Brave, which Radar counts
- * as Chrome). */
+ * dividing by ~0 makes the ratio meaningless. */
 export const MIN_DERIVED_SHARE = 0.001;
+
+/** Orgs whose browser usage Radar can't measure, so they are left out of the
+ * ratio rather than shown with a misleading ~0% share. Brave sends Chrome's
+ * User-Agent and names itself only in the Sec-CH-UA client hint, and Radar
+ * reports it at about 0.002% of Chromium usage, roughly 1000x below Brave's
+ * real size; its usage is almost certainly counted as Chrome. */
+export const UNKNOWN_USAGE_ORGS: ReadonlyMap<string, string> = new Map([['brave.com', 'Brave']]);
 
 export interface SummaryRow {
   iso_week: string;

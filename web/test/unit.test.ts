@@ -51,7 +51,7 @@ google.com,ChromeMobileWebview,""
 meta.com,Instagram,""
 microsoft.com,Edge,""
 samsung.com,SamsungInternet,""
-brave.com,Brave,"About 0%"
+tiny.example,Brave,"About 0%"
 `;
 
 const row = (org: string, share: number, comments: number) => ({
@@ -109,7 +109,7 @@ test('computeRatios divides contribution share by summed browser share', () => {
   // Absent from the summary: contribution 0, ratio 0.
   assert.equal(by['samsung.com'].ratio, 0);
   // Usage share below the threshold: no ratio.
-  assert.equal(by['brave.com'].ratio, null);
+  assert.equal(by['tiny.example'].ratio, null);
 });
 
 test('chartedOrgs skips orgs whose browsers never reach the threshold', () => {

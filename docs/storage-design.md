@@ -352,10 +352,11 @@ remapping only requires re-running aggregation.
 | Microsoft | Edge |
 | Opera | Opera |
 | Samsung | Samsung Internet |
-| Brave | Brave |
 | Yandex | Yandex Browser |
 
 Orgs without a browser, such as Igalia or Intel, get an activity share but no ratio.
+Brave has no row either: Radar counts Brave as Chrome, so its usage is unknown
+(`radar-research.md` §6).
 
 `data/public/radar_browser_share.csv`: `month,browser,share_of_chromium_based`.
 Normalize Radar's all-browser shares to Chromium-based only at import time, and

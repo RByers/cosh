@@ -72,6 +72,7 @@ value_ratio(O, t) = O's share of Chromium review comments
 | 2026-11-03 | Keep Radar's `ChromeDerivative` in the Chromium denominator despite its 2026-09-09 jump | It may be real Chromium usage; the jump looks like Radar labeling previously unlabeled traffic, not taking share from Chrome (`radar-research.md`) |
 | 2026-11-03 | The Chromium denominator includes Android WebView and all in-app browsers. `ChromeMobileWebview` → google.com, Facebook and Instagram → meta.com, Microsoft365 → microsoft.com, other in-app browsers → no org | User's instruction (replaces "WebViews and in-app browsers excluded") |
 | 2026-11-03 | Exclude iOS from all Radar shares: subtract Radar's `os=IOS` browser series, weighted by iOS's share from `timeseries_groups/OS` | User's instruction: iOS browsers are all WebKit, so Chromium is barely used there. Radar can't exclude an OS directly (`radar-research.md` §2) |
+| 2026-11-03 | Exclude brave.com from the ratio: no browser mapping in `config/org_browsers.csv`; the web UI lists it with usage "unknown" (`UNKNOWN_USAGE_ORGS` in `web/src/data.ts`) and explains why in a note | User's instruction. Radar has a `Brave` label but puts it at about 0.002% of Chromium usage (2025-W45..2026-W44 mean), roughly 1000× below Brave's real size (~100M MAU against ~3.5B Chrome users). Brave identifies itself only in `Sec-CH-UA`, so Radar evidently counts it as Chrome (`radar-research.md` §6) |
 | 2026-11-03 | `fb.com` reviewers count as `meta.com` (`DOMAIN_ALIASES` in `cosh/orgs.py`), applied when `summarize` resolves orgs; fetched and derived data keep raw emails and need no re-run | User's instruction: Meta employees used fb.com addresses |
 
 ## Status
@@ -130,7 +131,8 @@ value_ratio(O, t) = O's share of Chromium review comments
   years. Can older Radar data be fetched another way, or should the ratio
   start at 2023-07?
 
-- Brave is about 0.00% in Radar and Vivaldi has no label at all; both count as
-  Chrome. Estimate them somehow, or show "no data"?
+- Vivaldi has no Radar label at all and counts as Chrome, like Brave (which is
+  now excluded with a note). Estimate them somehow, e.g. re-split Chrome's
+  share with published MAU?
 - Should the UI show monthly as well as weekly data? Weekly Radar data may be
   noisy.

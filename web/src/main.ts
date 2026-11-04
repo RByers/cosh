@@ -30,6 +30,7 @@ import {
   meanDerivedShare,
   METRICS,
   MIN_DERIVED_SHARE,
+  UNKNOWN_USAGE_ORGS,
   orgTotals,
   parseIsoDate,
   parseOrgBrowsers,
@@ -266,17 +267,18 @@ function renderTiles(data: Data, weeks: string[]) {
 function renderTable(data: Data, state: State, weeks: string[], colors: Map<string, string>) {
   const col = SHARE_COLUMN[state.metric];
   const totals = orgTotals(data.summary, weeks, distinctReviewers(data.reviewers, weeks).byOrg);
-  const orgs = new Set([...totals.map((r) => r.org), ...data.orgBrowsers.keys()]);
+  const orgs = new Set([...totals.map((r) => r.org), ...data.orgBrowsers.keys(), ...UNKNOWN_USAGE_ORGS.keys()]);
   const items = [...orgs].map((org) => {
     const row = totals.find((r) => r.org === org);
     const browsers = data.orgBrowsers.get(org);
     const contribution = row ? row[col] : 0;
     const derived = browsers && weeks.length ? meanDerivedShare(data.radar, weeks, browsers) : null;
     const ratio = derived !== null && derived >= MIN_DERIVED_SHARE ? contribution / derived : null;
-    return { org, row, browsers, contribution, derived, ratio };
+    const unknownUsage = UNKNOWN_USAGE_ORGS.has(org);
+    return { org, row, browsers, unknownUsage, contribution, derived, ratio };
   });
   items.sort((a, b) => b.contribution - a.contribution || (b.derived ?? 0) - (a.derived ?? 0));
-  const shown = trimRanked(items, TABLE_TOP_ORGS, (it) => !!it.browsers);
+  const shown = trimRanked(items, TABLE_TOP_ORGS, (it) => !!it.browsers || it.unknownUsage);
   const hidden = items.length - shown.length;
   const trimNote = hidden
     ? ` Showing the top ${TABLE_TOP_ORGS} organizations by review share, plus those with a browser; ` +
@@ -306,15 +308,17 @@ function renderTable(data: Data, state: State, weeks: string[], colors: Map<stri
       const ratioText =
         it.ratio !== null
           ? `${formatRatio(it.ratio)}×`
-          : !it.browsers
-            ? 'no browser'
-            : it.derived === null
-              ? 'no usage data'
-              : 'usage too small';
+          : it.unknownUsage
+            ? 'usage unknown'
+            : !it.browsers
+              ? 'no browser'
+              : it.derived === null
+                ? 'no usage data'
+                : 'usage too small';
       const r = it.row;
       const cells = [
         pct(it.contribution),
-        it.browsers ? (it.derived === null ? '—' : pct(it.derived)) : '—',
+        it.unknownUsage ? 'unknown' : it.browsers ? (it.derived === null ? '—' : pct(it.derived)) : '—',
         ratioText,
         r ? int(r.reviewers) : '0',
         r ? int(r.reviewed_cls) : '—',
