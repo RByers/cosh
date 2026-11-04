@@ -148,37 +148,48 @@ test('brave.com is listed with unknown usage and the Brave note explains why', a
   await page.close();
 });
 
-test('the directory chart shows the top 20 by default and expands to 50 or 100', async () => {
+test('directory rows drill down, and "more" rows open 20 at a time and close again', async () => {
   const { page, errors } = await open();
   const read = () =>
-    page.evaluate(() => {
-      const names = [...document.querySelectorAll('#area-chart .ar-name')].map((n) => n.textContent!);
-      return {
-        names,
-        // The largest directories, before re-included and combined rows.
-        plain: names.filter((n) => !/^other /.test(n)).length,
-        options: [...document.querySelectorAll('#area-count label')].map((l) => l.textContent),
-        checked: (document.querySelector('#area-count input:checked') as HTMLInputElement).value,
-        // Directories an include rule brings back (always listed).
-        pinned: [...document.querySelectorAll('#scope-rules li')].filter((li) =>
-          /^Included: \S+\/$/.test(li.textContent ?? '')).length,
-      };
-    });
-  const d = await read();
-  assert.deepEqual(d.options, ['Top 20', 'Top 50', 'Top 100', 'Top 500']);
-  assert.equal(d.checked, '20');
-  // 20 largest, plus re-included directories outside them.
-  assert.ok(d.pinned >= 4, `${d.pinned} include rules`);
-  assert.ok(d.plain >= 20 && d.plain <= 20 + d.pinned, `${d.plain} rows`);
-  assert.doesNotMatch(page.url(), /dirs=/);
-  await page.click('#area-count input[value="50"]');
-  const more = await read();
-  assert.ok(more.plain > d.plain, `${more.plain} vs ${d.plain}`);
-  assert.deepEqual(more.names.slice(0, 20), d.names.slice(0, 20));
-  assert.match(page.url(), /dirs=50/);
-  await page.reload();
-  await page.waitForSelector('body[data-ready]');
-  assert.equal((await read()).checked, '50');
+    page.evaluate(() =>
+      [...document.querySelectorAll<HTMLElement>('#area-chart .ar-row')].map((r) => ({
+        key: r.dataset.key!,
+        depth: Number(r.dataset.depth),
+        name: r.querySelector('.ar-name')!.textContent!,
+        value: Number(r.querySelector('.ar-value')!.textContent!.replace(/,/g, '')),
+        kind: ['dir', 'rest', 'other'].find((k) => r.classList.contains(`ar-${k}`)),
+      })),
+    );
+  const start = await read();
+  assert.equal(await page.$('#area-count'), null);
+  assert.ok(start.every((r) => r.depth === 0));
+  // The top level: 20 largest, re-included directories, then one "more" row.
+  const others = start.filter((r) => r.kind === 'other');
+  assert.equal(others.length, 1);
+  assert.ok(start.length >= 21 && start.length <= 26, String(start.length));
+  // Open third_party/blink/: its children appear one level down and add up to it.
+  const blink = start.find((r) => r.name === 'third_party/blink/')!;
+  await page.click(`li[data-key="${blink.key}"] .ar-toggle`);
+  let rows = await read();
+  const i = rows.findIndex((r) => r.key === blink.key);
+  const kids = [];
+  for (let j = i + 1; j < rows.length && rows[j].depth > 0; j++) if (rows[j].depth === 1) kids.push(rows[j]);
+  assert.ok(kids.length > 1 && kids.length <= 21, String(kids.length));
+  assert.equal(kids.reduce((s, r) => s + r.value, 0), blink.value);
+  assert.equal(await page.$eval(`li[data-key="${blink.key}"] .ar-toggle`, (b) => b.getAttribute('aria-expanded')), 'true');
+  // Focus stays on the toggle that was pressed.
+  assert.equal(await page.evaluate(() => (document.activeElement as HTMLElement).closest('li')?.dataset.key), blink.key);
+  // Open the top-level "more" row: up to 20 more entries, one level down.
+  await page.click(`li[data-key="${others[0].key}"] .ar-toggle`);
+  rows = await read();
+  const k = rows.findIndex((r) => r.key === others[0].key);
+  const revealed = rows.slice(k + 1).filter((r) => r.depth === 1);
+  assert.ok(revealed.length >= 1 && revealed.length <= 21, String(revealed.length));
+  assert.equal(revealed.reduce((s, r) => s + r.value, 0), others[0].value);
+  // Close both again: back to the start.
+  await page.click(`li[data-key="${others[0].key}"] .ar-toggle`);
+  await page.click(`li[data-key="${blink.key}"] .ar-toggle`);
+  assert.deepEqual(await read(), start);
   assert.deepEqual(errors, []);
   await page.close();
 });
@@ -224,7 +235,8 @@ test('review by directory shows volume and org split per directory, and the path
     return {
       rows: rows.map((r) => ({
         name: r.querySelector('.ar-name')!.textContent!,
-        tag: r.querySelector('.ar-tag')!.textContent!,
+        tag: r.querySelector('.ar-tag')?.textContent ?? null,
+        other: r.classList.contains('ar-other'),
         excluded: r.classList.contains('ar-excluded'),
         value: Number(r.querySelector('.ar-value')!.textContent!.replace(/,/g, '')),
         bar: r.querySelector('.ar-bar')!.getBoundingClientRect().width,
@@ -253,7 +265,7 @@ test('review by directory shows volume and org split per directory, and the path
   assert.equal(by['third_party/blink/'].tag, 'included');
   // Bars share one scale: the largest directory has the longest bar. chrome/
   // dwarfs the rest, so its bar is torn and the others are scaled up.
-  const top = [...d.rows].filter((r) => !/^other /.test(r.name)).sort((a, b) => b.value - a.value)[0];
+  const top = [...d.rows].filter((r) => !r.other).sort((a, b) => b.value - a.value)[0];
   assert.ok(d.rows.every((r) => r.bar <= top.bar + 0.5));
   assert.equal(top.name, 'chrome/');
   assert.ok(top.torn, 'chrome/ bar is torn');

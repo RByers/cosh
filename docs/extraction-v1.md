@@ -255,11 +255,23 @@ counts.
   placed through the anchor and 10% couldn't be placed. Exact file lists
   would need a blob-less git fetch of `main`'s history (not approved; see
   `plan.md`, Open questions).
-- **Areas** (the web UI's "Review by directory" chart): a comment's area is
-  the longest matching rule or `area` prefix in `config/paths.txt`
-  (`third_party/blink/` is listed as one), else its top-level directory.
-  `area_weekly.json` covers every comment, in scope or not, so the page can
-  show what the scope leaves out.
+- **Directory tree** (`area_weekly.json`, the web UI's "Review by
+  directory" chart; `dir_tree` in `cosh/paths.py`): every comment, in scope
+  or not, so the page can show what the scope leaves out.
+  - Roots are the areas: the longest matching rule or `area` prefix in
+    `config/paths.txt` (`third_party/blink/` is listed as one), else the
+    top-level directory, plus `(no file)` and `(top-level files)`.
+  - Below a root, the 10,000 directories with the most comments
+    (`DIR_LIMIT`) are kept, with their ancestors. A comment in any other
+    directory counts in its nearest kept ancestor's own bucket. Over
+    2025-W45..2026-W44 only 10,312 directories had comments, so 99.9% of
+    comments stay in their own directory.
+  - Rows are per (week, node, org) for each node's own bucket: comments and
+    chars by week written, reviewed CLs by week closed, counting (CL, bucket)
+    pairs. The client sums buckets up the tree, so children add up to their
+    parent.
+  - Size: for those 52 weeks, 14,500 nodes and 1.76 MB of JSON (0.52 MB
+    gzipped); the weekly rows grow with the weeks covered.
 - **Changing the scope** needs only `summarize`, not a new `derive`: paths
   are stored per comment.
 

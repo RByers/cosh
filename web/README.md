@@ -10,7 +10,8 @@ build time:
 - `summaries/reviewer_weekly.json` (every reviewer's weekly counts: the
   leaderboard and distinct reviewer counts)
 - `summaries/area_weekly.json` (every comment by directory and org, in scope
-  or not, plus the path rules: the "Review by directory" section)
+  or not, as a directory tree, plus the path rules: the "Review by directory"
+  section)
 - `data/public/radar_browser_share.csv`
 - `config/org_browsers.csv`
 
@@ -62,23 +63,29 @@ Over a range:
 3. **Chromium browser usage** from Cloudflare Radar, per browser, over the range,
    with a marker and a note on the 2026-W37 ChromeDerivative jump.
 4. Totals for the range, plus a table with every value shown in the charts.
-5. **Review by directory** (`src/areas.ts`): every comment in the range, in
-   scope or not, one row per directory for the selected metric: the 20 largest
-   (a toggle shows 50, 100 or 500), plus every directory an `include` rule brings back (e.g.
-   `chrome/browser/webnn/`, shown even at 0), then the rest combined into an
-   included and an excluded row. Each row has a bar for its volume on a
-   shared scale (hatched and tagged "excluded" when the scope leaves it out),
-   a 100% bar of its split across the top 7 orgs plus "Other", and the share
+5. **Review by directory** (`src/areas.ts`, `dirRows` in `src/data.ts`):
+   every comment in the range, in scope or not, as a tree for the selected
+   metric. The top level lists the 20 largest areas (top-level directories,
+   plus the prefixes `config/paths.txt` names, so re-included directories
+   such as `chrome/browser/webnn/` are always listed, even at 0), then an
+   "N more" row. ▸ opens a directory into its subdirectories, plus a "rest of"
+   row for files directly in it and subdirectories too small to keep, so
+   children add up to their parent. Each level lists 20 entries, then
+   "N more"; opening that lists the next 20 one level deeper (and another
+   "more" if any are left). ▾ closes anything again; what is open isn't kept
+   in the URL. Each row has a bar for its volume on a shared scale set by the
+   top level (hatched and tagged "excluded" when the scope leaves it out), a
+   100% bar of its split across the top 7 orgs plus "Other", and the share
    not from google.com. For reviewed CLs, a CL with comments in two
-   directories counts in both. A note lists the path rules
-   (from the summary's metadata) and how comments are placed on files.
+   directories counts in each. A note lists the path rules (from the
+   summary's metadata) and how comments are placed on files.
 6. **Reviewer leaderboard**: the top 50 reviewers by review comments over the
    range, one compact bar each, coloured by org.
 
-The metric, range, smoothing, review-chart scale and directory count are kept
-in the URL hash (`#metric=cls&from=2026-W14&to=2026-W44&smooth=4`, plus
-`&rscale=linear` for the linear review chart and `&dirs=50`, `&dirs=100` or `&dirs=500`
-for more directories). Old `#week=2026-W44` links open that one week.
+The metric, range, smoothing and review-chart scale are kept in the URL hash
+(`#metric=cls&from=2026-W14&to=2026-W44&smooth=4`, plus `&rscale=linear` for
+the linear review chart). Old `#week=2026-W44` links open that one week, and
+an old `dirs=` parameter is ignored.
 
 ## Commands
 

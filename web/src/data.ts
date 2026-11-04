@@ -677,40 +677,6 @@ export function trimRanked<T>(items: T[], n: number, keep: (item: T) => boolean)
   return items.filter((it, i) => i < n || keep(it));
 }
 
-// ---------------------------------------------------------------------------
-// Review by directory (summaries/area_weekly.json).
-
-/** Every review comment, in scope or not, per (week, directory, org). Rows
- * are [index into `areas`, index into `orgs`, comments, cls, chars]; comments
- * and chars by week written, reviewed CLs by week closed (a CL with comments
- * in two directories counts in both). Orgs are folded like org_weekly
- * (gmail.com into "Other"). */
-export interface AreaBoard {
-  meta: { path_rules: PathRule[]; unplaced: string; [k: string]: unknown };
-  /** Largest first over all weeks; `included` says whether the scope covers it. */
-  areas: { area: string; included: boolean }[];
-  orgs: string[];
-  weeks: Record<string, [area: number, org: number, comments: number, cls: number, chars: number][]>;
-}
-
-export interface AreaRow {
-  /** A directory such as "content/", "(no file)", or a combined row. */
-  area: string;
-  included: boolean;
-  /** Set on the combined rows: how many directories they hold. */
-  combined?: number;
-  /** The metric's total for the directory. */
-  value: number;
-  /** The metric per org: the orgs passed to areaRows, then OTHER. */
-  byOrg: Map<string, number>;
-}
-
-/** How many of the largest directories the directory chart can list before
- * combining the rest (re-included directories are listed on top of these). */
-export const AREA_ROW_CHOICES = [20, 50, 100, 500] as const;
-export type AreaRowCount = (typeof AREA_ROW_CHOICES)[number];
-export const DEFAULT_AREA_ROWS: AreaRowCount = 20;
-
 /** Scale for the directory chart's volume bars, with a broken axis when a
  * few bars dwarf the rest. Looking at the largest values in descending order,
  * if one of the top `maxBroken` is more than `gap` times the next, the scale
@@ -728,64 +694,90 @@ export function barScale(
   return { max: v[0] ?? 0, broken: 0 };
 }
 
-/** Labels of the two combined rows. */
-export const OTHER_INCLUDED = 'other included directories';
-export const OTHER_EXCLUDED = 'other excluded directories';
+// ---------------------------------------------------------------------------
+// Review by directory (summaries/area_weekly.json): a tree to drill into.
 
-/** The metric per directory over the given weeks: the `n` largest
- * directories, plus every directory an `include` rule brings back into scope
- * (e.g. chrome/browser/webnn/), shown even when small or at 0, all in
- * descending order; then the rest combined into one included and one excluded
- * row (when non-empty). Orgs outside `orgs` are counted as OTHER. */
-export function areaRows(
-  board: AreaBoard,
-  weeks: string[],
-  orgs: readonly string[],
-  metric: Metric = 'comments',
-  n: number = DEFAULT_AREA_ROWS,
-): AreaRow[] {
-  const col = METRIC_INDEX[metric];
-  const keep = new Set(orgs);
-  const per = new Map<number, Map<string, number>>();
-  for (const w of weeks) {
-    for (const row of board.weeks[w] ?? []) {
-      const [a, o] = row;
-      const c = row[col];
-      if (!c) continue;
-      let m = per.get(a);
-      if (!m) per.set(a, (m = new Map()));
-      const org = keep.has(board.orgs[o]) ? board.orgs[o] : OTHER;
-      m.set(org, (m.get(org) ?? 0) + c);
-    }
-  }
-  const sum = (m: Map<string, number>) => [...m.values()].reduce((s, v) => s + v, 0);
-  const pinned = new Set((board.meta.path_rules ?? []).filter((r) => r.included).map((r) => r.prefix));
-  board.areas.forEach((a, i) => {
-    if (pinned.has(a.area) && !per.has(i)) per.set(i, new Map());
-  });
-  const rows: AreaRow[] = [...per].map(([a, byOrg]) => ({
-    area: board.areas[a].area,
-    included: board.areas[a].included,
-    value: sum(byOrg),
-    byOrg,
-  }));
-  rows.sort((x, y) => y.value - x.value || (x.area < y.area ? -1 : 1));
-  const shown = new Set([...rows.filter((r) => r.value > 0).slice(0, n), ...rows.filter((r) => pinned.has(r.area))]);
-  const top = rows.filter((r) => shown.has(r));
-  for (const included of [true, false]) {
-    const rest = rows.filter((r) => !shown.has(r) && r.included === included && r.value > 0);
-    if (!rest.length) continue;
-    const byOrg = new Map<string, number>();
-    for (const r of rest) for (const [o, c] of r.byOrg) byOrg.set(o, (byOrg.get(o) ?? 0) + c);
-    top.push({ area: included ? OTHER_INCLUDED : OTHER_EXCLUDED, included, combined: rest.length,
-      value: sum(byOrg), byOrg });
-  }
-  return top;
+/** Every review comment, in scope or not, as a directory tree. Roots are the
+ * areas (top-level directories, plus the prefixes config/paths.txt names, plus
+ * "(no file)" and "(top-level files)"); below them, the directories with the
+ * most comments (meta.dir_limit) and their ancestors. Each week's rows are
+ * [node, org, comments, cls, chars] for a node's own bucket: files directly in
+ * it, or in a directory below it that isn't in the tree. A node's total is
+ * the sum over its subtree, so children add up to their parent; reviewed CLs
+ * count (CL, bucket) pairs. Orgs are folded like org_weekly. */
+export interface DirBoard {
+  meta: { path_rules: PathRule[]; unplaced: string; root_files: string; dir_limit: number; [k: string]: unknown };
+  orgs: string[];
+  /** [parent index or -1, label (a root's path, else the segment below its parent), included]. */
+  nodes: [parent: number, label: string, included: 0 | 1][];
+  weeks: Record<string, [node: number, org: number, comments: number, cls: number, chars: number][]>;
 }
 
-/** The `n` orgs with the most of the metric over the given weeks across
- * every directory, in scope or not, largest first ("Other" left out). */
-export function topAreaOrgs(board: AreaBoard, weeks: string[], metric: Metric = 'comments', n = 7): string[] {
+/** Rows each tree level shows before an "other" row, and how many more each
+ * expansion of "other" reveals. */
+export const DIR_PAGE = 20;
+
+/** The board's full paths and child lists, computed once per board. */
+const treeCache = new WeakMap<DirBoard, { paths: string[]; children: number[][]; roots: number[] }>();
+
+export function dirTree(board: DirBoard) {
+  let t = treeCache.get(board);
+  if (!t) {
+    const paths: string[] = [];
+    const children: number[][] = board.nodes.map(() => []);
+    const roots: number[] = [];
+    board.nodes.forEach(([parent, label], i) => {
+      paths.push(parent < 0 ? label : paths[parent] + label);
+      if (parent < 0) roots.push(i);
+      else children[parent].push(i);
+    });
+    t = { paths, children, roots };
+    treeCache.set(board, t);
+  }
+  return t;
+}
+
+export interface DirTotals {
+  /** Per node: its subtree's total and per-org split. */
+  total: number[];
+  byOrg: (Map<string, number> | undefined)[];
+  /** Per node: its own bucket's total and per-org split. */
+  own: number[];
+  ownByOrg: (Map<string, number> | undefined)[];
+}
+
+const addTo = (maps: (Map<string, number> | undefined)[], i: number, org: string, v: number) => {
+  let m = maps[i];
+  if (!m) maps[i] = m = new Map();
+  m.set(org, (m.get(org) ?? 0) + v);
+};
+
+/** Sum the metric over the given weeks into every node's subtree. Orgs outside
+ * `orgs` count as OTHER. */
+export function dirTotals(board: DirBoard, weeks: string[], orgs: readonly string[], metric: Metric): DirTotals {
+  const col = METRIC_INDEX[metric];
+  const keep = new Set(orgs);
+  const n = board.nodes.length;
+  const t: DirTotals = { total: new Array(n).fill(0), byOrg: new Array(n), own: new Array(n).fill(0), ownByOrg: new Array(n) };
+  for (const w of weeks) {
+    for (const row of board.weeks[w] ?? []) {
+      const v = row[col];
+      if (!v) continue;
+      const org = keep.has(board.orgs[row[1]]) ? board.orgs[row[1]] : OTHER;
+      t.own[row[0]] += v;
+      addTo(t.ownByOrg, row[0], org, v);
+      for (let i = row[0]; i >= 0; i = board.nodes[i][0]) {
+        t.total[i] += v;
+        addTo(t.byOrg, i, org, v);
+      }
+    }
+  }
+  return t;
+}
+
+/** The `n` orgs with the most of the metric over the given weeks across every
+ * directory, in scope or not, largest first ("Other" left out). */
+export function topDirOrgs(board: DirBoard, weeks: string[], metric: Metric = 'comments', n = 7): string[] {
   const col = METRIC_INDEX[metric];
   const sums = new Map<string, number>();
   for (const w of weeks) {
@@ -799,4 +791,104 @@ export function topAreaOrgs(board: AreaBoard, weeks: string[], metric: Metric = 
     .sort((a, b) => b[1] - a[1] || (a[0] < b[0] ? -1 : 1))
     .slice(0, n)
     .map(([org]) => org);
+}
+
+/** One visible row of the directory chart. */
+export interface DirRow {
+  /** Stable id, used to expand and collapse: "d<node>" for a directory,
+   * "r<node>" for a directory's own bucket, "o:<parent key>:<offset>" for an
+   * "other" group. */
+  key: string;
+  kind: 'dir' | 'rest' | 'other';
+  depth: number;
+  /** What the row shows: a root's path, a subdirectory's name, "rest of …"
+   * or "N more". */
+  label: string;
+  /** Full path, or a description for rest and other rows. */
+  title: string;
+  /** true or false; null for an "other" group mixing both. */
+  included: boolean | null;
+  value: number;
+  byOrg: Map<string, number>;
+  expandable: boolean;
+  expanded: boolean;
+  /** For "other": how many entries it holds. */
+  count?: number;
+}
+
+interface Item {
+  kind: 'dir' | 'rest';
+  node: number;
+  value: number;
+  byOrg: Map<string, number>;
+}
+
+/** The rows to show, given which keys are expanded. Each level lists its
+ * entries largest first: DIR_PAGE of them, then an "other" row holding the
+ * rest; expanding "other" lists its next DIR_PAGE entries (and a further
+ * "other" if any are left), one level deeper. A directory with subdirectories
+ * expands into them, plus a "rest of" row for its own bucket, so its children
+ * add up to it. At the top level, directories an include rule brings back
+ * are always listed, even at 0. */
+export function dirRows(board: DirBoard, t: DirTotals, expanded: ReadonlySet<string>, page = DIR_PAGE): DirRow[] {
+  const { paths, children, roots } = dirTree(board);
+  const pinned = new Set(
+    (board.meta.path_rules ?? []).filter((r) => r.included).map((r) => paths.indexOf(r.prefix)).filter((i) => i >= 0),
+  );
+  const out: DirRow[] = [];
+  const byValue = (a: Item, b: Item) =>
+    b.value - a.value || (a.kind === b.kind ? (paths[a.node] < paths[b.node] ? -1 : 1) : a.kind === 'dir' ? -1 : 1);
+  const hasKids = (i: number) => children[i].some((c) => t.total[c] > 0);
+  const empty = new Map<string, number>();
+
+  const emit = (item: Item, depth: number) => {
+    const i = item.node;
+    if (item.kind === 'rest') {
+      out.push({
+        key: `r${i}`, kind: 'rest', depth, label: `rest of ${board.nodes[i][1]}`,
+        title: `${paths[i]}: files directly in this directory, and subdirectories too small to list`,
+        included: !!board.nodes[i][2], value: item.value, byOrg: item.byOrg, expandable: false, expanded: false,
+      });
+      return;
+    }
+    const key = `d${i}`;
+    const expandable = hasKids(i);
+    const open = expandable && expanded.has(key);
+    out.push({
+      key, kind: 'dir', depth, label: board.nodes[i][1], title: paths[i], included: !!board.nodes[i][2],
+      value: item.value, byOrg: item.byOrg, expandable, expanded: open,
+    });
+    if (open) {
+      const items: Item[] = children[i]
+        .filter((c) => t.total[c] > 0)
+        .map((c) => ({ kind: 'dir' as const, node: c, value: t.total[c], byOrg: t.byOrg[c] ?? empty }));
+      if (t.own[i] > 0) items.push({ kind: 'rest', node: i, value: t.own[i], byOrg: t.ownByOrg[i] ?? empty });
+      group(items.sort(byValue), depth + 1, key, 0, new Set());
+    }
+  };
+
+  // Lists `items` (sorted) from `offset`: a page of them, then "other".
+  const group = (items: Item[], depth: number, parentKey: string, offset: number, keep: Set<number>) => {
+    const head = items.slice(0, page).concat(items.slice(page).filter((it) => it.kind === 'dir' && keep.has(it.node)));
+    const tail = items.slice(page).filter((it) => !(it.kind === 'dir' && keep.has(it.node)));
+    for (const it of head) emit(it, depth);
+    if (!tail.length) return;
+    const key = `o:${parentKey}:${offset + page}`;
+    const byOrg = new Map<string, number>();
+    for (const it of tail) for (const [o, v] of it.byOrg) byOrg.set(o, (byOrg.get(o) ?? 0) + v);
+    const inc = tail.map((it) => !!board.nodes[it.node][2]);
+    const open = expanded.has(key);
+    out.push({
+      key, kind: 'other', depth, label: `${tail.length} more`, title: `${tail.length} more, smaller entries`,
+      included: inc.every(Boolean) ? true : inc.some(Boolean) ? null : false,
+      value: tail.reduce((s, it) => s + it.value, 0), byOrg, expandable: true, expanded: open, count: tail.length,
+    });
+    if (open) group(tail, depth + 1, key, offset + page, new Set());
+  };
+
+  const top: Item[] = roots
+    .filter((r) => t.total[r] > 0 || pinned.has(r))
+    .map((r) => ({ kind: 'dir' as const, node: r, value: t.total[r], byOrg: t.byOrg[r] ?? empty }));
+  group(top.sort(byValue), 0, 'root', 0, pinned);
+  return out;
 }

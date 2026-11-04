@@ -304,6 +304,25 @@ class PathScopeTest(unittest.TestCase):
         self.assertEqual(place("/COMMIT_MSG", None), None)
         self.assertEqual(place("x/b.cc", "a.cc"), "x/b.cc")
 
+    def test_directory_and_parent(self):
+        from cosh.paths import directory, parent_dir
+        self.assertEqual(directory("a/b/c.cc"), "a/b/")
+        self.assertEqual(directory("DEPS"), ROOT_FILES)
+        self.assertEqual(directory(None), UNPLACED)
+        self.assertEqual(parent_dir("a/b/c/"), "a/b/")
+        self.assertIsNone(parent_dir("a/"))
+
+    def test_dir_tree_keeps_the_largest_and_rolls_the_rest_up(self):
+        from cosh.paths import dir_tree
+        totals = {"a/b/c/": 5, "a/b/d/": 1, "a/x/": 3, "a/b/web/": 0, UNPLACED: 2}
+        nodes, bucket = dir_tree(totals, parse_rules("exclude a/\ninclude a/b/web/\n"), limit=1)
+        # a/b/c/ is kept with its ancestor a/b/; a/ and a/b/web/ are roots (area,
+        # include rule); the rest roll up into their nearest kept ancestor.
+        self.assertEqual(nodes, [(UNPLACED, None), ("a/", None), ("a/b/", "a/"), ("a/b/c/", "a/b/"),
+                                 ("a/b/web/", None)])
+        self.assertEqual([bucket(d) for d in ["a/b/c/", "a/b/d/", "a/x/", "a/b/web/x/", UNPLACED]],
+                         ["a/b/c/", "a/b/", "a/", "a/b/web/", UNPLACED])
+
     def test_bad_rule_is_rejected(self):
         with self.assertRaises(ValueError):
             parse_rules("exclude chrome")                         # not a directory
@@ -376,20 +395,30 @@ class SummarizeTest(unittest.TestCase):
                          [("microsoft.com", 4, 0, 1, 0.6667, 2, 0.6667),
                           ("google.com", 2, 1, 1, 0.3333, 1, 0.3333)])
         self.assertEqual(meta["path_rules"][0], {"prefix": "chrome/browser/web_applications/", "included": True})
-        # Every comment appears by area, largest first, each marked in or out.
-        self.assertEqual(areas["areas"], [
-            {"area": "chrome/", "included": False}, {"area": UNPLACED, "included": False},
-            {"area": "third_party/blink/", "included": True},
-            {"area": "chrome/browser/web_applications/", "included": True},
-            {"area": "chrome/browser/webnn/", "included": True},     # listed with no comments
-            {"area": "components/services/storage/", "included": True},
-            {"area": "components/viz/", "included": True}])
-        # [comments, reviewed CLs, chars] per (area, org).
-        got = {(areas["areas"][a]["area"], areas["orgs"][o]): v for a, o, *v in areas["weeks"]["2026-W44"]}
-        self.assertEqual(got, {("chrome/", "microsoft.com"): [2, 1, 20], ("chrome/", "google.com"): [4, 1, 40],
+        # Every comment appears in the directory tree, in scope or not.
+        nodes = areas["nodes"]
+
+        def full(i):
+            parent, label, _ = nodes[i]
+            return label if parent < 0 else full(parent) + label
+        paths = [full(i) for i in range(len(nodes))]
+        roots = {paths[i] for i, n in enumerate(nodes) if n[0] < 0}
+        self.assertEqual(roots, {UNPLACED, "chrome/", "third_party/blink/", "chrome/browser/web_applications/",
+                                 "chrome/browser/webnn/", "components/services/storage/", "components/viz/"})
+        self.assertEqual(set(paths) - roots, {"chrome/browser/", "chrome/browser/ui/", "third_party/blink/renderer/",
+                                              "third_party/blink/renderer/core/"})
+        # Children store only their own segment; parents come first.
+        self.assertEqual(nodes[paths.index("chrome/browser/ui/")][1], "ui/")
+        self.assertTrue(all(n[0] < i for i, n in enumerate(nodes)))
+        self.assertEqual({p for i, p in enumerate(paths) if nodes[i][2]},
+                         roots - {UNPLACED, "chrome/"} | {"third_party/blink/renderer/", "third_party/blink/renderer/core/"})
+        # [comments, reviewed CLs, chars] per (bucket, org).
+        got = {(paths[n], areas["orgs"][o]): v for n, o, *v in areas["weeks"]["2026-W44"]}
+        self.assertEqual(got, {("chrome/browser/ui/", "microsoft.com"): [2, 1, 20],
+                               ("chrome/browser/ui/", "google.com"): [4, 1, 40],
                                (UNPLACED, "google.com"): [5, 1, 50],
-                               ("third_party/blink/", "microsoft.com"): [3, 1, 30],
-                               ("third_party/blink/", "google.com"): [2, 1, 20],
+                               ("third_party/blink/renderer/core/", "microsoft.com"): [3, 1, 30],
+                               ("third_party/blink/renderer/core/", "google.com"): [2, 1, 20],
                                ("chrome/browser/web_applications/", "microsoft.com"): [1, 1, 10]})
 
     def test_metric_picks_the_share_column(self):

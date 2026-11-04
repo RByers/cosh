@@ -39,8 +39,9 @@ Outputs:
                                       reviewers per org); names, emails (public on
                                       Gerrit; the leaderboard's hover card) and orgs
   summaries/area_weekly.json          all three metrics per (week, directory, org),
-                                      every comment, each directory marked in or out
-                                      of scope
+                                      every comment, as a directory tree (the top
+                                      paths.DIR_LIMIT directories) the web UI drills into,
+                                      each node marked in or out of scope
 """
 
 import contextlib
@@ -52,7 +53,7 @@ from collections import defaultdict
 from . import store
 from .derive import METRIC_VERSION
 from .orgs import OrgResolver
-from .paths import UNPLACED, load_scope, place
+from .paths import DIR_LIMIT, ROOT_FILES, UNPLACED, dir_tree, directory, load_scope, place
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # Domains always folded into Other, whatever their size: personal webmail
@@ -98,8 +99,8 @@ def comment_facts(db, resolve, scope, weeks=None):
     facts: per-(week, reviewer, org) dicts with in-scope comments (and their
     ai and post_merge subsets), chars, and cls (the set of CLs closed that
     week that the reviewer commented on in scope).
-    areas: {(week, area, folded org): dict(comments, chars, cls)}, every
-    comment, in scope or not.
+    areas: {(week, directory, folded org): dict(comments, chars, cls)},
+    every comment, in scope or not (directory as from paths.directory).
     `weeks`: the weeks to keep, or None for all."""
     facts = {}
     areas = defaultdict(lambda: dict(comments=0, chars=0, cls=set()))
@@ -110,7 +111,7 @@ def comment_facts(db, resolve, scope, weeks=None):
         key = (path, anchor_path)
         if key not in cache:
             p = place(path, anchor_path)
-            cache[key] = (scope.includes(p), scope.area(p))
+            cache[key] = (scope.includes(p), directory(p))
         return cache[key]
 
     def fact(week, aid, email, name, org):
@@ -313,39 +314,54 @@ def write_reviewers(facts, path):
         fh.write("\n }\n}\n")
 
 
-def write_areas(areas, scope, path):
+def write_areas(areas, scope, path, limit=DIR_LIMIT):
     """area_weekly.json: comments, reviewed CLs and chars per (week, directory,
-    org) over every comment, in scope or not. `areas` lists each directory
-    (largest by comments first) with whether the scope includes it; rows are
-    [area index, org index, comments, cls, chars]. A CL with comments in two
-    directories counts as reviewed in both. Orgs are folded like org_weekly."""
-    by_area = defaultdict(int)
-    for (_, area, _), g in areas.items():
-        by_area[area] += g["comments"]
-    # Directories an include rule brings back are always listed (the web UI
-    # gives each its own row), even with no comments.
-    for prefix, included in scope.rules:
-        if included:
-            by_area[prefix] += 0
-    names = sorted(by_area, key=lambda a: (-by_area[a], a))
-    area_index = {a: i for i, a in enumerate(names)}
+    org) over every comment, in scope or not, as a tree the web UI drills into
+    (paths.dir_tree: the areas as roots, then the `limit` directories with the
+    most comments and their ancestors).
+
+    `nodes` lists [parent index or -1, label, included]: a root's label is its
+    path ("chrome/", "third_party/blink/", "(no file)"), a child's is the part
+    after its parent's path ("browser/"). Each week's rows are [node, org,
+    comments, cls, chars] for the node's own bucket: comments on files directly
+    in that directory, or in a directory below it that isn't kept. A node's
+    total is the sum of its subtree's buckets, so children add up to their
+    parent. cls counts (CL, bucket) pairs: a CL with comments in two directories
+    counts in both. Orgs are folded like org_weekly."""
+    totals = defaultdict(int)
+    for (_, d, _), g in areas.items():
+        totals[d] += g["comments"]
+    nodes, bucket = dir_tree(totals, scope, limit)
+    index = {d: i for i, (d, _) in enumerate(nodes)}
+    buckets = defaultdict(lambda: dict(comments=0, chars=0, cls=set()))
+    for (week, d, org), g in areas.items():
+        b = buckets[(week, index[bucket(d)], org)]
+        b["comments"] += g["comments"]
+        b["chars"] += g["chars"]
+        b["cls"] |= g["cls"]
     orgs = sorted({o for _, _, o in areas})
     org_index = {o: i for i, o in enumerate(orgs)}
     weeks = defaultdict(list)
-    for (week, area, org), g in sorted(areas.items()):
-        weeks[week].append([area_index[area], org_index[org], g["comments"], len(g["cls"]), g["chars"]])
-    meta = dict(generated_at=store.now_iso(), columns=["area", "org", "comments", "cls", "chars"],
-                path_rules=scope.describe(), unplaced=UNPLACED,
+    for (week, n, org), b in sorted(buckets.items(), key=lambda kv: (kv[0][0], kv[0][1], kv[0][2])):
+        weeks[week].append([n, org_index[org], b["comments"], len(b["cls"]), b["chars"]])
+
+    def included(d):
+        return d != UNPLACED and (d == ROOT_FILES or scope.includes(d))
+    out_nodes = [[-1 if p is None else index[p], d if p is None else d[len(p):], int(included(d))]
+                 for d, p in nodes]
+    meta = dict(generated_at=store.now_iso(), columns=["node", "org", "comments", "cls", "chars"],
+                node_columns=["parent", "label", "included"], dir_limit=limit,
+                path_rules=scope.describe(), unplaced=UNPLACED, root_files=ROOT_FILES,
                 scope="non-owner, non-bot review comments on human-owned CLs on main, in scope or not: "
-                      "comments and chars by week written, reviewed CLs by week closed. A comment's "
-                      "area is the longest matching path_rules or config/paths.txt area prefix, else its "
+                      "comments and chars by week written, reviewed CLs by week closed. Roots are the "
+                      "areas: the longest matching path_rules or config/paths.txt area prefix, else the "
                       "top-level directory; unplaced comments (no inline comment anywhere on their CL) "
-                      "are their own area.")
-    doc = dict(meta=meta,
-               areas=[dict(area=a, included=a != UNPLACED and scope.includes(a)) for a in names],
-               orgs=orgs, weeks=dict(sorted(weeks.items())))
+                      "are their own root. Below a root, the dir_limit directories with the most "
+                      "comments are kept; rows are each node's own bucket.")
     with _atomic_open(path) as fh:
-        fh.write('{"meta": %s,\n "areas": %s,\n "orgs": %s,\n "weeks": {' % (
-            json.dumps(meta), json.dumps(doc["areas"]), json.dumps(orgs)))
-        fh.write(",".join('\n  %s: %s' % (json.dumps(w), json.dumps(rows)) for w, rows in doc["weeks"].items()))
+        fh.write('{"meta": %s,\n "orgs": %s,\n "nodes": [' % (json.dumps(meta), json.dumps(orgs)))
+        fh.write(",".join("\n  " + json.dumps(n, separators=(",", ":")) for n in out_nodes))
+        fh.write('\n ],\n "weeks": {')
+        fh.write(",".join('\n  %s: %s' % (json.dumps(w), json.dumps(rows, separators=(",", ":")))
+                          for w, rows in sorted(weeks.items())))
         fh.write("\n }\n}\n")

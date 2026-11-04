@@ -1,8 +1,10 @@
 // "Review by directory": one row per directory with its volume for the chosen
 // metric (a bar on a shared scale) and how that splits across organizations
-// (a 100% stacked bar), plus the non-Google share as text. HTML, like the
-// leaderboard, so the numbers are real text and every row has a hover title.
-import { barScale, OTHER, type AreaRow } from './data.ts';
+// (a 100% stacked bar), plus the non-Google share as text. Rows expand into
+// subdirectories, and "other" rows into the next entries (dirRows in data.ts).
+// HTML, like the leaderboard, so the numbers are real text, every row has a
+// hover title, and the toggles are real buttons.
+import { barScale, OTHER, type DirRow } from './data.ts';
 
 function node<K extends keyof HTMLElementTagNameMap>(tag: K, cls?: string, text?: string) {
   const e = document.createElement(tag);
@@ -19,21 +21,24 @@ export const MAJORITY_ORG = 'google.com';
 
 /** Fills `box` with the directory chart. `orgs` are the named segments in
  * order (then OTHER); `colorOf` gives each its colour (OTHER: muted).
- * `metricLabel` names the volume column, e.g. "Review comments". */
+ * `metricLabel` names the volume column, e.g. "Review comments". `onToggle`
+ * is called with a row's key when its expand/collapse button is pressed. */
 export function buildAreaChart(
   box: HTMLElement,
-  rows: AreaRow[],
+  rows: DirRow[],
   orgs: readonly string[],
   colorOf: (org: string) => string | undefined,
-  metricLabel = 'Review comments',
+  metricLabel: string,
+  onToggle: (key: string) => void,
 ): void {
   if (!rows.length) {
     box.replaceChildren();
     return;
   }
-  // A few huge directories (e.g. chrome/) would flatten every other bar, so
-  // the scale may stop short of them; those bars are drawn torn (barScale).
-  const { max } = barScale(rows.map((r) => r.value));
+  // The scale comes from the top level, so expanding a row never rescales the
+  // chart. A few huge directories (e.g. chrome/) would flatten every other bar,
+  // so the scale may stop short of them; those bars are drawn torn (barScale).
+  const { max } = barScale(rows.filter((r) => r.depth === 0).map((r) => r.value));
   const unit = metricLabel.toLowerCase();
   const head = node('div', 'ar-head');
   head.setAttribute('aria-hidden', 'true');
@@ -47,26 +52,41 @@ export function buildAreaChart(
   const list = node('ol', 'ar-rows');
   list.append(
     ...rows.map((r) => {
-      const li = node('li', r.included ? 'ar-row' : 'ar-row ar-excluded');
+      const cls = ['ar-row', `ar-${r.kind}`];
+      if (r.included === false) cls.push('ar-excluded');
+      if (r.included === null) cls.push('ar-mixed');
+      const li = node('li', cls.join(' '));
+      li.dataset.key = r.key;
+      li.dataset.depth = String(r.depth);
       const shareOf = (org: string) => (r.value ? (r.byOrg.get(org) ?? 0) / r.value : 0);
       const others = 1 - shareOf(MAJORITY_ORG);
-      const status = r.included ? 'included' : 'excluded';
+      const status = r.included === null ? 'partly included' : r.included ? 'included' : 'excluded';
       const lines = segOrder
         .filter((o) => r.byOrg.get(o))
         .map((o) => `  ${o}: ${int(r.byOrg.get(o)!)} (${pct(shareOf(o))})`);
-      li.title = `${r.area}${r.combined ? ` (${r.combined} directories)` : ''}: ${int(r.value)} ${unit}, ` +
-        `${status}\n${lines.join('\n')}`;
+      li.title = `${r.title}: ${int(r.value)} ${unit}, ${status}\n${lines.join('\n')}`;
 
       const label = node('span', 'ar-label');
-      label.append(node('span', 'ar-name', r.area));
-      label.append(node('span', 'ar-tag', status));
+      label.style.paddingLeft = `${r.depth * 14}px`;
+      if (r.expandable) {
+        const button = node('button', 'ar-toggle', r.expanded ? '▾' : '▸');
+        button.type = 'button';
+        button.setAttribute('aria-expanded', String(r.expanded));
+        button.setAttribute('aria-label', `${r.expanded ? 'Collapse' : 'Expand'} ${r.kind === 'other' ? r.label : r.title}`);
+        button.addEventListener('click', () => onToggle(r.key));
+        label.append(button);
+      } else {
+        label.append(node('span', 'ar-toggle-space'));
+      }
+      label.append(node('span', 'ar-name', r.label));
+      if (r.depth === 0 && r.kind === 'dir') label.append(node('span', 'ar-tag', status));
 
       const vol = node('span', 'ar-vol');
       const torn = r.value > max;
       const bar = node('span', torn ? 'ar-bar ar-torn' : 'ar-bar');
       // Widths are a share of the column minus room for the value label, so
       // the label never runs into the next column.
-      bar.style.width = `calc((100% - var(--ar-label-room)) * ${Math.min(r.value, max) / max})`;
+      bar.style.width = `calc((100% - var(--ar-label-room)) * ${max ? Math.min(r.value, max) / max : 0})`;
       if (torn) bar.title = `Bar truncated: ${int(r.value)} is off the scale`;
       vol.append(bar, node('span', 'ar-value', int(r.value)));
 

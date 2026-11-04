@@ -580,6 +580,51 @@ a.lb-row:hover .lb-bar {
   font-size: 11px;
 }
 
+/* Expand/collapse: a real button; rows without one get the same width of
+ * space, so names line up. */
+.ar-toggle,
+.ar-toggle-space {
+  flex: none;
+  width: 16px;
+}
+
+.ar-toggle {
+  align-self: center;
+  height: 16px;
+  margin: 0;
+  padding: 0;
+  border: none;
+  border-radius: 3px;
+  background: none;
+  color: var(--text-secondary);
+  font-size: 15px;
+  line-height: 16px;
+  cursor: pointer;
+}
+
+.ar-toggle:hover {
+  background: color-mix(in srgb, var(--grid) 80%, transparent);
+  color: var(--text-primary);
+}
+
+.ar-toggle:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 0;
+}
+
+/* "rest of …" and "N more" rows are groupings, not directories. */
+.ar-rest .ar-name,
+.ar-other .ar-name {
+  font-family: inherit;
+  font-style: italic;
+  color: var(--text-muted);
+}
+
+/* An "other" group mixing included and excluded directories: a lighter bar. */
+.ar-mixed .ar-bar {
+  background: var(--text-muted);
+}
+
 .ar-tag {
   flex: none;
   padding: 0 4px;

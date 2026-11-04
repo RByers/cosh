@@ -4,11 +4,10 @@ import { test } from 'vitest';
 import {
   addWeeks,
   barScale,
-  areaRows,
-  OTHER_EXCLUDED,
-  OTHER_INCLUDED,
-  topAreaOrgs,
-  type AreaBoard,
+  dirRows,
+  dirTotals,
+  topDirOrgs,
+  type DirBoard,
   chartedOrgs,
   clampRange,
   computeRatios,
@@ -388,166 +387,66 @@ test('gerritReviewsUrl links to the reviewer query, keeping @ readable', () => {
   assert.equal(gerritReviewsUrl(null), null);
 });
 
-// areas: 0 = chrome/ (excluded), 1 = content/, 2 = (no file) (excluded), 3 = base/, 4 = ui/.
-const AREAS: AreaBoard = {
-  meta: { path_rules: [{ prefix: 'chrome/', included: false }], unplaced: '(no file)' },
-  areas: [
-    { area: 'chrome/', included: false },
-    { area: 'content/', included: true },
-    { area: '(no file)', included: false },
-    { area: 'base/', included: true },
-    { area: 'ui/', included: true },
+// A small directory tree. Rows are [node, org, comments, cls, chars] for each
+// node's own bucket.
+const DIRS: DirBoard = {
+  meta: {
+    path_rules: [{ prefix: 'chrome/', included: false }, { prefix: 'chrome/browser/webnn/', included: true }],
+    unplaced: '(no file)', root_files: '(top-level files)', dir_limit: 10000,
+  },
+  orgs: ['google.com', 'microsoft.com'],
+  nodes: [
+    [-1, '(no file)', 0], // 0
+    [-1, 'chrome/', 0], // 1
+    [1, 'browser/', 0], // 2
+    [2, 'ui/', 0], // 3
+    [-1, 'content/', 1], // 4
+    [4, 'browser/', 1], // 5
+    [4, 'renderer/', 1], // 6
+    [-1, 'chrome/browser/webnn/', 1], // 7: re-included, no comments
   ],
-  orgs: ['google.com', 'microsoft.com', 'opera.com', OTHER],
   weeks: {
-    // [area, org, comments, cls, chars]
-    '2026-W43': [[0, 0, 50, 5, 500], [1, 1, 5, 2, 50]],
-    '2026-W44': [[0, 0, 40, 4, 400], [0, 1, 2, 1, 20], [1, 0, 20, 3, 200], [1, 2, 3, 1, 30], [2, 0, 9, 2, 90],
-      [3, 0, 4, 1, 40], [4, 3, 1, 0, 10]],
+    '2026-W43': [[3, 0, 20, 1, 200]],
+    '2026-W44': [[2, 0, 10, 1, 100], [3, 0, 10, 1, 100], [5, 0, 6, 1, 60], [5, 1, 4, 1, 40], [6, 0, 3, 1, 30],
+      [4, 0, 2, 1, 20], [0, 0, 5, 1, 50]],
   },
 };
+const W = ['2026-W43', '2026-W44'];
 
-test('areaRows totals each directory over the range, then combines the rest', () => {
-  const orgs = topAreaOrgs(AREAS, ['2026-W43', '2026-W44'], 'comments', 1);
-  assert.deepEqual(orgs, ['google.com']);
-  const rows = areaRows(AREAS, ['2026-W43', '2026-W44'], orgs, 'comments', 3);
-  assert.deepEqual(rows.map((r) => [r.area, r.included, r.value, r.combined]), [
-    ['chrome/', false, 92, undefined],
-    ['content/', true, 28, undefined],
-    ['(no file)', false, 9, undefined],
-    [OTHER_INCLUDED, true, 5, 2],
+test('dirTotals sums each bucket into its ancestors', () => {
+  const t = dirTotals(DIRS, W, ['google.com'], 'comments');
+  assert.deepEqual([t.total[1], t.total[2], t.own[2], t.total[3], t.total[4], t.own[4]], [40, 40, 10, 30, 15, 2]);
+  // Orgs outside the list count as Other.
+  assert.deepEqual(Object.fromEntries(t.byOrg[4]!), { 'google.com': 11, [OTHER]: 4 });
+  assert.equal(dirTotals(DIRS, W, ['google.com'], 'chars').total[1], 400);
+  assert.equal(dirTotals(DIRS, ['2026-W44'], ['google.com'], 'cls').total[4], 4);
+  assert.deepEqual(topDirOrgs(DIRS, W, 'comments'), ['google.com', 'microsoft.com']);
+});
+
+test('dirRows lists a page per level, pins re-included roots, and expands and collapses', () => {
+  const t = dirTotals(DIRS, W, ['google.com', 'microsoft.com'], 'comments');
+  const show = (open: string[], page = 2) =>
+    dirRows(DIRS, t, new Set(open), page).map((r) => `${'  '.repeat(r.depth)}${r.label} ${r.value}${r.expandable ? (r.expanded ? ' -' : ' +') : ''}`);
+  // Top level: 2 largest, the re-included root (even at 0), then "other".
+  assert.deepEqual(show([]), ['chrome/ 40 +', 'content/ 15 +', 'chrome/browser/webnn/ 0', '1 more 5 +']);
+  // A directory opens into its subdirectories plus "rest of" its own files; children add up.
+  assert.deepEqual(show(['d1', 'd2']), ['chrome/ 40 -', '  browser/ 40 -', '    ui/ 30', '    rest of browser/ 10',
+    'content/ 15 +', 'chrome/browser/webnn/ 0', '1 more 5 +']);
+  assert.deepEqual(show(['o:root:2']).slice(-2), ['1 more 5 -', '  (no file) 5']);
+  // Page size 1: each "other" reveals one more entry, one level deeper, and
+  // keeps an "other" for the rest.
+  assert.deepEqual(show(['o:root:1', 'd4', 'o:d4:1', 'o:o:d4:1:2'], 1), [
+    'chrome/ 40 +', 'chrome/browser/webnn/ 0', '2 more 20 -',
+    '  content/ 15 -', '    browser/ 10', '    2 more 5 -', '      renderer/ 3', '      1 more 2 -',
+    '        rest of content/ 2',
+    '  1 more 5 +',
   ]);
-  // Orgs beyond the named ones count as Other.
-  assert.deepEqual(Object.fromEntries(rows[1].byOrg), { 'google.com': 20, [OTHER]: 8 });
-  assert.deepEqual(areaRows(AREAS, ['2026-W01'], orgs), []);
-  // Other metrics: reviewed CLs and characters.
-  const cls = areaRows(AREAS, ['2026-W43', '2026-W44'], orgs, 'cls', 3);
-  assert.deepEqual(cls.map((r) => [r.area, r.value]), [
-    ['chrome/', 10], ['content/', 6], ['(no file)', 2], [OTHER_INCLUDED, 1],
-  ]);
-  assert.equal(areaRows(AREAS, ['2026-W44'], orgs, 'chars', 1)[0].value, 420);
-  // A directory with 0 for the metric (ui/ has no closed CLs) is left out.
-  assert.ok(!cls.some((r) => r.area === 'ui/'));
-});
-
-test('areaRows always shows directories an include rule brings back, even at 0', () => {
-  const board: AreaBoard = {
-    ...AREAS,
-    meta: { ...AREAS.meta, path_rules: [{ prefix: 'chrome/', included: false }, { prefix: 'ui/', included: true },
-      { prefix: 'chrome/webnn/', included: true }] },
-    areas: [...AREAS.areas, { area: 'chrome/webnn/', included: true }],
-  };
-  // ui/ (1 comment) is beyond the top 2 but has its own row; chrome/webnn/ has no data and shows at 0.
-  const rows = areaRows(board, ['2026-W43', '2026-W44'], ['google.com'], 'comments', 2);
-  assert.deepEqual(rows.map((r) => [r.area, r.value, r.combined]), [
-    ['chrome/', 92, undefined], ['content/', 28, undefined], ['ui/', 1, undefined], ['chrome/webnn/', 0, undefined],
-    [OTHER_INCLUDED, 4, 1], [OTHER_EXCLUDED, 9, 1],
-  ]);
-});
-
-test('meanDerivedShare averages the weeks that have usage data', () => {
-  const radar = parseRadarWeekly(RADAR);
-  assert.equal(meanDerivedShare(radar, ['2026-W44', '2026-W43'], ['Edge']), 0.2);
-  assert.equal(meanDerivedShare(radar, ['2026-W43'], ['Edge']), null);
-});
-
-test('topBrowsers ranks by peak share', () => {
-  assert.deepEqual(topBrowsers(parseRadarWeekly(RADAR), 2, []), ['Chrome', 'ChromeMobile']);
-});
-
-test('topBrowsers always includes the given browsers, in peak order', () => {
-  const top = topBrowsers(parseRadarWeekly(RADAR), 1, ['Instagram']);
-  assert.deepEqual(top, ['Chrome', 'Instagram']);
-});
-
-test('formatRatio trims to two places and drops decimals from 10 up', () => {
-  assert.equal(formatRatio(0), '0');
-  assert.equal(formatRatio(0.25), '0.25');
-  assert.equal(formatRatio(1), '1.0');
-  assert.equal(formatRatio(1.5), '1.5');
-  assert.equal(formatRatio(12.4), '12');
-});
-
-test('trimRanked keeps the top n plus later items that match', () => {
-  const items = [1, 2, 3, 4, 5, 6];
-  assert.deepEqual(trimRanked(items, 2, (x) => x % 2 === 0), [1, 2, 4, 6]);
-  assert.deepEqual(trimRanked(items, 10, () => false), items);
-  assert.deepEqual(trimRanked(items, 0, (x) => x === 5), [5]);
-});
-
-test('smoothRatios: trailing mean share ÷ mean usage, skipping weeks without usage data', () => {
-  const pt = (week: string, contribution: number, derived: number | null): RatioPoint => ({
-    week,
-    org: 'a.com',
-    contribution,
-    derived,
-    ratio: derived === null ? null : contribution / derived,
-  });
-  const points = [
-    pt('2025-W51', 0.2, 0.1),
-    pt('2025-W52', 0.4, 0.3),
-    pt('2026-W01', 0.6, null), // no Radar week: left out of every window
-    pt('2026-W02', 0.6, 0.2),
-    { ...pt('2026-W02', 0.5, 0.5), org: 'b.com' }, // other org: not mixed in
-  ];
-  assert.equal(smoothRatios(points, 1), points);
-  const s = smoothRatios(points, 4);
-  // First week: a window of one.
-  assert.ok(Math.abs(s[0].ratio! - 2) < 1e-12);
-  // Across the year boundary: (0.2 + 0.4) / (0.1 + 0.3).
-  assert.ok(Math.abs(s[1].ratio! - 1.5) < 1e-12);
-  // A week with no usage data still gets a ratio from the weeks before it.
-  assert.ok(Math.abs(s[2].ratio! - 1.5) < 1e-12);
-  // W02 averages W51, W52 and W02: (0.2 + 0.4 + 0.6) / (0.1 + 0.3 + 0.2).
-  assert.ok(Math.abs(s[3].ratio! - 2) < 1e-12);
-  assert.ok(Math.abs(s[3].contribution - 0.4) < 1e-12);
-  assert.ok(Math.abs(s[4].ratio! - 1) < 1e-12);
-  // A window of 2 at W02 holds only W01 (no data) and W02.
-  assert.ok(Math.abs(smoothRatios(points, 2)[3].ratio! - 3) < 1e-12);
-  // Mean usage below the threshold: no ratio.
-  assert.equal(smoothRatios([pt('2026-W02', 0.1, 0.0005)], 4)[0].ratio, null);
-});
-
-test('monthTicks labels month starts, with the year on the first tick and January', () => {
-  const weeks = Array.from({ length: 52 }, (_, i) => addWeeks('2025-W45', i));
-  const t = monthTicks(weeks, 12);
-  // Months go by each week's Thursday: 2025-W45 (Thu Nov 6) starts November.
-  assert.deepEqual(t.slice(0, 3).map((x) => [weeks[x.index], x.label]), [
-    ['2025-W45', 'Nov 2025'],
-    ['2025-W49', 'Dec'],
-    ['2026-W01', 'Jan 2026'],
-  ]);
-  assert.equal(t.length, 12);
-  // Starting mid-month: no tick until the next month starts.
-  assert.deepEqual(monthTicks(weeks.slice(1), 12)[0], { index: 3, label: 'Dec 2025' });
-  // Narrow axis: quarters or half-years, aligned to the calendar.
-  assert.deepEqual(monthTicks(weeks, 4).map((x) => x.label), ['Jan 2026', 'Apr', 'Jul', 'Oct']);
-  assert.deepEqual(monthTicks(weeks, 2).map((x) => x.label), ['Jan 2026', 'Jul']);
-  // A range inside one month still gets a label.
-  assert.deepEqual(monthTicks(['2026-W42', '2026-W43']), [{ index: 0, label: 'Oct 2026' }]);
-  assert.deepEqual(monthTicks(['2026-W44']), [{ index: 0, label: 'Oct 2026' }]);
-  assert.deepEqual(monthTicks([]), []);
-});
-
-test('weekTitle names the week and its dates', () => {
-  assert.equal(weekTitle('2026-W44'), '2026-W44 (Oct 26 – Nov 1)');
-});
-
-test('niceTicks steps by 1, 2 or 5 × 10ⁿ up to a round axis end', () => {
-  assert.deepEqual(niceTicks(5321), [0, 1000, 2000, 3000, 4000, 5000, 6000]);
-  assert.deepEqual(niceTicks(6000), [0, 1000, 2000, 3000, 4000, 5000, 6000]);
-  assert.deepEqual(niceTicks(130), [0, 50, 100, 150]);
-  assert.deepEqual(niceTicks(0.7), [0, 0.2, 0.4, 0.6, 0.8]);
-  assert.deepEqual(niceTicks(0), [0, 1]);
-});
-
-test('gerritReviewsUrl links to the reviewer query, keeping @ readable', () => {
-  assert.equal(
-    gerritReviewsUrl('jkeitel@google.com'),
-    'https://chromium-review.googlesource.com/q/reviewedby:jkeitel@google.com',
-  );
-  assert.equal(gerritReviewsUrl('a+b@x.org'), 'https://chromium-review.googlesource.com/q/reviewedby:a%2Bb@x.org');
-  assert.equal(gerritReviewsUrl(null), null);
+  // Collapsing a parent hides everything below it, whatever else is open.
+  assert.deepEqual(show(['d4', 'o:d4:1', 'o:o:d4:1:2'], 1), ['chrome/ 40 +', 'chrome/browser/webnn/ 0', '2 more 20 +']);
+  // Rows carry inclusion, and "other" groups mixing both say so.
+  const rows = dirRows(DIRS, t, new Set(), 1);
+  assert.deepEqual(rows.map((r) => r.included), [false, true, null]);
+  assert.equal(rows[2].count, 2);
 });
 
 test('barScale breaks the axis only when a few bars dwarf the rest', () => {

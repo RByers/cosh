@@ -90,3 +90,66 @@ def anchor(inline_counts):
 def place(path, cl_anchor):
     """The file a comment is credited to (None if it can't be placed)."""
     return path if is_file(path) else cl_anchor
+
+
+def directory(placed):
+    """The directory ("a/b/") of a placed file; UNPLACED for None and
+    ROOT_FILES for a file at the top of the tree."""
+    if placed is None:
+        return UNPLACED
+    head, sep, _ = placed.rpartition("/")
+    return head + "/" if sep else ROOT_FILES
+
+
+def parent_dir(d):
+    """'a/b/c/' -> 'a/b/'; a top-level directory has no parent (None)."""
+    head, sep, _ = d.rstrip("/").rpartition("/")
+    return head + "/" if sep else None
+
+
+DIR_LIMIT = 10_000   # directories kept in area_weekly.json (see dir_tree)
+
+
+def dir_tree(totals, scope, limit=DIR_LIMIT):
+    """The directory tree the web UI drills into.
+
+    totals: {directory: comments} (directories as from directory()).
+    Roots are the areas (scope.area: rule and `area` prefixes, else top-level
+    directories, plus UNPLACED and ROOT_FILES). Below a root, the `limit`
+    directories with the most comments are kept, with their ancestors up to
+    the root, so the tree is connected; every include-rule directory is a root
+    even with no comments. A directory that isn't kept is counted in its
+    nearest kept ancestor (its "rest" bucket), so children always sum to their
+    parent. Over 2025-W45..2026-W44, 10,312 directories had comments, so a
+    limit of 10,000 keeps 99.9% of comments in their own directory.
+
+    Returns (nodes, bucket): nodes is [(path, parent path or None)], parents
+    before children; bucket(directory) gives the kept node a directory's
+    comments count in."""
+    pseudo = {UNPLACED, ROOT_FILES}
+
+    def root(d):
+        return d if d in pseudo else scope.area(d)
+
+    real = [d for d in totals if d not in pseudo]
+    kept = set(sorted(real, key=lambda d: (-totals[d], d))[:limit])
+    kept |= {d for d in totals if d in pseudo}
+    kept |= {root(d) for d in real}
+    kept |= {p for p, inc in scope.rules if inc}
+    for d in list(kept):
+        r = root(d)
+        while d != r and d not in pseudo:
+            d = parent_dir(d)
+            kept.add(d)
+
+    def bucket(d):
+        r = root(d)
+        while d not in kept and d != r:
+            d = parent_dir(d)
+        return d
+
+    def parent(d):
+        return None if d in pseudo or d == root(d) else parent_dir(d)
+
+    nodes = sorted(((d, parent(d)) for d in kept), key=lambda n: (n[0].count("/"), n[0]))
+    return nodes, bucket

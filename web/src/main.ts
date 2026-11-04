@@ -21,13 +21,12 @@ import { buildAreaChart } from './areas.ts';
 import { buildLeaderboard } from './leaderboard.ts';
 import {
   addWeeks,
-  AREA_ROW_CHOICES,
-  areaRows,
-  DEFAULT_AREA_ROWS,
-  type AreaRowCount,
+  dirRows,
+  dirTotals,
+  dirTree,
+  topDirOrgs,
+  type DirBoard,
   OTHER,
-  topAreaOrgs,
-  type AreaBoard,
   chartedOrgs,
   clampRange,
   compareWeeks,
@@ -78,7 +77,7 @@ interface Data {
   radar: RadarWeekly;
   orgBrowsers: Map<string, string[]>;
   reviewers: ReviewerBoard;
-  areas: AreaBoard;
+  areas: DirBoard;
   /** full: the pickers' limits; common: where review and usage data overlap (the default). */
   ranges: { full: WeekRange; common: WeekRange };
 }
@@ -90,8 +89,8 @@ interface State {
   smoothing: Smoothing;
   /** Review chart axis: log with every org, or linear without google.com. */
   reviewScale: ReviewScale;
-  /** How many of the largest directories the directory chart lists. */
-  areaRows: AreaRowCount;
+  /** Directory chart rows the reader expanded (DirRow keys); not in the URL. */
+  expandedDirs: Set<string>;
 }
 
 /** The org the linear review chart leaves out, so the rest are legible. */
@@ -125,7 +124,7 @@ async function load(): Promise<Data> {
     fetchText(radarUrl).then(parseRadarWeekly),
     fetchText(orgBrowsersUrl).then(parseOrgBrowsers),
     fetchText(reviewerUrl).then((t) => JSON.parse(t) as ReviewerBoard),
-    fetchText(areaUrl).then((t) => JSON.parse(t) as AreaBoard),
+    fetchText(areaUrl).then((t) => JSON.parse(t) as DirBoard),
   ]);
   summary.meta.weeks.sort(compareWeeks);
   const ranges = dataRanges(summary.meta.weeks, [...radar.keys()]);
@@ -166,15 +165,12 @@ function readStateFromUrl(data: Data): State {
   const sm = Number(q.get('smooth'));
   const smoothing = SMOOTHING_WEEKS.find((w) => w === sm) ?? DEFAULT_SMOOTHING;
   const reviewScale: ReviewScale = q.get('rscale') === 'linear' ? 'linear' : 'log';
-  const dirs = Number(q.get('dirs'));
-  const areaRows = AREA_ROW_CHOICES.find((n) => n === dirs) ?? DEFAULT_AREA_ROWS;
-  return { metric, range: clampRange({ from, to }, full), smoothing, reviewScale, areaRows };
+  return { metric, range: clampRange({ from, to }, full), smoothing, reviewScale, expandedDirs: new Set() };
 }
 
 function writeStateToUrl(s: State) {
   history.replaceState(null, '', `#metric=${s.metric}&from=${s.range.from}&to=${s.range.to}&smooth=${s.smoothing}` +
-    (s.reviewScale === 'linear' ? '&rscale=linear' : '') +
-    (s.areaRows !== DEFAULT_AREA_ROWS ? `&dirs=${s.areaRows}` : ''));
+    (s.reviewScale === 'linear' ? '&rscale=linear' : ''));
 }
 
 const PRESETS: { id: string; label: string; weeks: number | null }[] = [
@@ -245,23 +241,6 @@ function buildControls(data: Data, state: State, render: () => void) {
     });
     label.append(input, document.createTextNode(sc.label));
     scaleBox.append(label);
-  }
-
-  const countBox = $('#area-count');
-  countBox.querySelectorAll('label').forEach((l) => l.remove());
-  for (const n of AREA_ROW_CHOICES) {
-    const label = el('label');
-    const input = el('input');
-    input.type = 'radio';
-    input.name = 'area-count';
-    input.value = String(n);
-    input.checked = n === state.areaRows;
-    input.addEventListener('change', () => {
-      state.areaRows = n;
-      render();
-    });
-    label.append(input, document.createTextNode(`Top ${n}`));
-    countBox.append(label);
   }
 
   const { full } = data.ranges;
@@ -452,23 +431,25 @@ function renderLeaderboard(
  * the path rules that decide what the other sections count. */
 function renderAreas(data: Data, state: State, colors: Map<string, string>, theme: Theme) {
   const weeks = weeksIn(Object.keys(data.areas.weeks), state.range);
-  const orgs = topAreaOrgs(data.areas, weeks, state.metric, 7);
-  const rows = areaRows(data.areas, weeks, orgs, state.metric, state.areaRows);
+  const orgs = topDirOrgs(data.areas, weeks, state.metric, 7);
+  const totals = dirTotals(data.areas, weeks, orgs, state.metric);
   const unit = metricName(state.metric).toLowerCase();
   const segColors = reviewColors(orgs, colors, theme);
-  const total = rows.reduce((s, r) => s + r.value, 0);
-  const inScope = rows.filter((r) => r.included).reduce((s, r) => s + r.value, 0);
+  const { roots } = dirTree(data.areas);
+  const total = roots.reduce((s, r) => s + totals.total[r], 0);
+  const inScope = roots.filter((r) => data.areas.nodes[r][2]).reduce((s, r) => s + totals.total[r], 0);
   const what = {
     comments: 'Every review comment',
     chars: 'Review characters, from every comment',
     cls: 'CLs closed with review comments',
   }[state.metric];
-  $('#areas-sub').textContent = rows.length
+  $('#areas-sub').textContent = total
     ? `${what} in ${rangeLabel(state.range)}, by the directory of the file each comment is on: the ${unit} per ` +
-      `directory, and how they split across organizations. ${pct(total ? inScope / total : 0)} of them ` +
+      `directory, and how they split across organizations. ${pct(inScope / total)} of them ` +
       `(${int(inScope)} of ${int(total)}) are on the paths the rest of the page counts; hatched bars marked ` +
-      '“excluded” are left out.' +
-      (state.metric === 'cls' ? ' A CL with comments in two directories counts in both.' : '')
+      '“excluded” are left out. Use ▸ to open a directory, or a “more” row for the next ' +
+      'entries; ▾ closes it again.' +
+      (state.metric === 'cls' ? ' A CL with comments in two directories counts in each.' : '')
     : `No review data for ${rangeLabel(state.range)}.`;
   const legend = [...orgs.map((org) => ({ org, color: segColors.get(org) ?? '' })), { org: OTHER, color: '' }];
   $('#areas-legend').replaceChildren(
@@ -480,7 +461,18 @@ function renderAreas(data: Data, state: State, colors: Map<string, string>, them
       return li;
     }),
   );
-  buildAreaChart($('#area-chart'), rows, orgs, (org) => segColors.get(org), metricName(state.metric));
+  const box = $('#area-chart');
+  const draw = (focusKey?: string) => {
+    const rows = dirRows(data.areas, totals, state.expandedDirs);
+    buildAreaChart(box, rows, orgs, (org) => segColors.get(org), metricName(state.metric), (key) => {
+      if (state.expandedDirs.has(key)) state.expandedDirs.delete(key);
+      else state.expandedDirs.add(key);
+      draw(key);
+    });
+    // Rebuilding the rows drops focus; give it back to the toggle just used.
+    if (focusKey) box.querySelector<HTMLButtonElement>(`li[data-key="${CSS.escape(focusKey)}"] .ar-toggle`)?.focus();
+  };
+  draw();
   const rules = data.areas.meta.path_rules ?? data.summary.meta.path_rules ?? [];
   $('#scope-rules').replaceChildren(
     ...[...rules]
