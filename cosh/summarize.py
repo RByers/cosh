@@ -1,6 +1,6 @@
 """Aggregate cosh.sqlite into small per-org summaries for the front end.
 Org attribution: see cosh/orgs.py.
-Output contains no per-person data. Orgs with fewer than MIN_REVIEWERS distinct
+summaries/ contains no per-person data. Orgs with fewer than MIN_REVIEWERS distinct
 reviewers in a period are folded into 'Other'.
 
 Headline metric (column `share`): comment count by default; reviewed CLs or
@@ -12,6 +12,9 @@ Outputs:
   summaries/org_weekly.{csv,json}     one row per (week, org)
   summaries/weekly_totals.csv         one row per week: human vs bot commits on
                                       main, so bot-only stretches don't look like gaps
+  data/private/reviewer_weekly.json   PER-PERSON, never committed: each week's top
+                                      reviewers for each metric (the web UI's
+                                      leaderboard, shown only when this file exists)
 """
 
 import csv
@@ -27,10 +30,12 @@ MIN_REVIEWERS = 5
 TOTALS_COLS = ["iso_week", "main_cls", "merged_cls", "abandoned_cls", "human_cls",
                "bot_cls", "human_cls_with_review"]
 METRICS = {"comments": "share_comments", "cls": "share_cls", "chars": "share_chars"}
+LEADERBOARD_SIZE = 50
+REVIEWERS_FILE = "reviewer_weekly.json"
 
 
 def summarize(data_dir=store.DATA_DIR, out_dir=os.path.join(ROOT, "summaries"),
-              min_reviewers=MIN_REVIEWERS, metric="comments"):
+              min_reviewers=MIN_REVIEWERS, metric="comments", private_dir=None):
     if metric not in METRICS:
         raise ValueError(f"metric must be one of {sorted(METRICS)}")
     db = store.open_cosh(data_dir)
@@ -38,7 +43,7 @@ def summarize(data_dir=store.DATA_DIR, out_dir=os.path.join(ROOT, "summaries"),
     rows = db.execute(f"""
         SELECT c.iso_week, c.closed_at, r.change_number, a.email, r.account_id,
                r.review_comments, r.review_chars, r.ai_comments,
-               r.post_merge_comments
+               r.post_merge_comments, a.name
         FROM reviews r
         JOIN changes c ON c.host = r.host AND c.change_number = r.change_number
         JOIN accounts a ON a.host = r.host AND a.account_id = r.account_id
@@ -46,7 +51,7 @@ def summarize(data_dir=store.DATA_DIR, out_dir=os.path.join(ROOT, "summaries"),
     """).fetchall()
 
     agg = defaultdict(lambda: dict(cls=set(), reviewers=set(), comments=0, chars=0, ai=0, post_merge=0))
-    for week, submitted, cl, email, aid, ncom, nchars, nai, npm in rows:
+    for week, submitted, cl, email, aid, ncom, nchars, nai, npm, _ in rows:
         g = agg[(week, resolve(email, submitted))]
         g["cls"].add(cl)
         g["reviewers"].add(aid)
@@ -125,4 +130,43 @@ def summarize(data_dir=store.DATA_DIR, out_dir=os.path.join(ROOT, "summaries"),
                        weekly_totals=[dict(zip(TOTALS_COLS, r)) for r in weekly]),
                   fh, indent=1)
     db.close()
+    write_reviewers(rows, resolve, os.path.join(private_dir or data_dir, REVIEWERS_FILE))
     return out
+
+
+def reviewer_leaderboard(rows, resolve, n=LEADERBOARD_SIZE):
+    """Per week, the top `n` reviewers by each metric (the union, so the UI can
+    re-rank by any metric). Same scope as the org summary: human reviewers on
+    human-owned CLs on main; comments exclude AI and post-merge comments.
+    `org` is the reviewer's org on most of their reviewed CLs that week."""
+    per = defaultdict(lambda: dict(name=None, cls=set(), comments=0, chars=0, orgs=defaultdict(int)))
+    for week, submitted, cl, email, aid, ncom, nchars, _, _, name in rows:
+        p = per[(week, aid)]
+        p["name"] = name or (email or "").split("@")[0] or f"Account {aid}"
+        p["cls"].add(cl)
+        p["comments"] += ncom
+        p["chars"] += nchars
+        p["orgs"][resolve(email, submitted)] += 1
+    by_week = defaultdict(list)
+    for (week, aid), p in per.items():
+        org = max(p["orgs"].items(), key=lambda kv: (kv[1], kv[0]))[0]
+        by_week[week].append(dict(account_id=aid, name=p["name"], org=org, comments=p["comments"],
+                                  cls=len(p["cls"]), chars=p["chars"]))
+    out = {}
+    for week, people in sorted(by_week.items()):
+        keep = {}
+        for m in ("comments", "cls", "chars"):
+            ranked = sorted((r for r in people if r[m] > 0), key=lambda r: (-r[m], r["account_id"]))
+            for r in ranked[:n]:
+                keep[r["account_id"]] = r
+        out[week] = sorted(keep.values(), key=lambda r: (-r["comments"], -r["cls"], r["account_id"]))
+    return out
+
+
+def write_reviewers(rows, resolve, path):
+    """Per-person output: goes to data/private/ (gitignored), never summaries/."""
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path, "w") as fh:
+        json.dump(dict(meta=dict(generated_at=store.now_iso(), top_n=LEADERBOARD_SIZE,
+                                 note="PER-PERSON DATA: keep in data/private/, never commit"),
+                       weeks=reviewer_leaderboard(rows, resolve)), fh, indent=1)

@@ -48,6 +48,17 @@
         </div>
       </section>
 
+      <!-- Per-person data: only present in local builds that have data/private/reviewer_weekly.json. -->
+      <section id="leaderboard" class="card" aria-labelledby="leaderboard-title" hidden>
+        <h2 id="leaderboard-title">Reviewer leaderboard</h2>
+        <p id="leaderboard-sub" class="sub"></p>
+        <ul id="leaderboard-legend" class="legend" aria-label="Bar colour by organization"></ul>
+        <div id="leaderboard-chart-box" class="chart chart-leaderboard">
+          <canvas id="leaderboard-chart" role="img" aria-label="Top reviewers for the selected week and metric, one bar each."></canvas>
+        </div>
+        <p class="note">Local view only: built from per-person data in <code>data/private/</code>, which is never committed or deployed.</p>
+      </section>
+
       <section class="card" aria-labelledby="usage-title">
         <h2 id="usage-title">Chromium browser usage (Cloudflare Radar)</h2>
         <p class="sub">

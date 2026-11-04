@@ -287,6 +287,34 @@ td.ratio {
   border-radius: 1px;
 }
 
+/* Height is set from the row count in main.ts (renderLeaderboard). */
+.chart-leaderboard {
+  height: auto;
+}
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  margin: 0 0 8px;
+  padding: 0;
+  list-style: none;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+/* Bar-chart legend keys are squares, not the line swatches used elsewhere. */
+.legend .swatch {
+  width: 10px;
+  height: 10px;
+  margin-right: 6px;
+  border-radius: 2px;
+}
+
+.swatch-muted {
+  background: var(--text-muted);
+}
+
 .error {
   color: var(--critical);
   font-weight: 600;

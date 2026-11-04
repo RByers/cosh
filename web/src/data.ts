@@ -246,3 +246,36 @@ export function browserShare(radar: RadarWeekly, week: string, browser: string, 
 export function compareWeeks(a: string, b: string): number {
   return a < b ? -1 : a > b ? 1 : 0;
 }
+
+/** One reviewer in one week (data/private/reviewer_weekly.json: per-person,
+ * local only, never committed or deployed). */
+export interface ReviewerRow {
+  account_id: number;
+  name: string;
+  org: string;
+  comments: number;
+  cls: number;
+  chars: number;
+}
+
+export interface ReviewerBoard {
+  meta: { top_n: number; [k: string]: unknown };
+  weeks: Record<string, ReviewerRow[]>;
+}
+
+export const LEADERBOARD_SIZE = 50;
+
+/** The week's top `n` reviewers by the metric. Ties are broken by account id
+ * so the order is stable; reviewers with 0 for the metric are left out. */
+export function topReviewers(
+  board: ReviewerBoard,
+  week: string,
+  metric: Metric,
+  n = LEADERBOARD_SIZE,
+): { name: string; org: string; value: number }[] {
+  return [...(board.weeks[week] ?? [])]
+    .filter((r) => r[metric] > 0)
+    .sort((a, b) => b[metric] - a[metric] || a.account_id - b.account_id)
+    .slice(0, n)
+    .map((r) => ({ name: r.name, org: r.org, value: r[metric] }));
+}
