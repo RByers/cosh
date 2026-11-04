@@ -29,6 +29,7 @@ import {
   topBrowsers,
   topOrgCounts,
   orgWeeklyCounts,
+  gerritReviewsUrl,
   topReviewers,
   trimRanked,
   type ReviewerBoard,
@@ -359,4 +360,13 @@ test('monthTicks labels month starts, with the year on the first tick and Januar
 
 test('weekTitle names the week and its dates', () => {
   assert.equal(weekTitle('2026-W44'), '2026-W44 (Oct 26 – Nov 1)');
+});
+
+test('gerritReviewsUrl links to the reviewer query, keeping @ readable', () => {
+  assert.equal(
+    gerritReviewsUrl('jkeitel@google.com'),
+    'https://chromium-review.googlesource.com/q/reviewedby:jkeitel@google.com',
+  );
+  assert.equal(gerritReviewsUrl('a+b@x.org'), 'https://chromium-review.googlesource.com/q/reviewedby:a%2Bb@x.org');
+  assert.equal(gerritReviewsUrl(null), null);
 });

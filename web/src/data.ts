@@ -380,6 +380,10 @@ const METRIC_INDEX: Record<Metric, 2 | 3 | 4> = { comments: 2, cls: 3, chars: 4 
 
 export const LEADERBOARD_SIZE = 50;
 
+/** The reviewer's reviews on Chromium Gerrit, or null without an email. */
+export const gerritReviewsUrl = (email: string | null): string | null =>
+  email ? `https://chromium-review.googlesource.com/q/reviewedby:${encodeURIComponent(email).replace('%40', '@')}` : null;
+
 const asList = (weeks: string | string[]) => (typeof weeks === 'string' ? [weeks] : weeks);
 
 /** The top `n` reviewers by the metric, summed over the given week(s): exact

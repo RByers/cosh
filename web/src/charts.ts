@@ -10,12 +10,13 @@ import {
   LineElement,
   PointElement,
   Tooltip,
+  type ChartEvent,
   type Plugin,
   type Scale,
   type Tick,
 } from 'chart.js';
 import type { LeaderboardRow, RadarWeekly, RatioPoint } from './data.ts';
-import { browserShare, monthTicks, OTHER, weekTitle } from './data.ts';
+import { browserShare, gerritReviewsUrl, monthTicks, OTHER, weekTitle } from './data.ts';
 import { formatRatio } from './scale.ts';
 
 Chart.register(
@@ -333,6 +334,14 @@ export function renderLeaderboardChart(
   // Phones: rank and a short name only (org stays in the colour and tooltip),
   // or Chart.js clips the labels on the left.
   const narrow = (canvas.parentElement?.clientWidth ?? 1000) < 560;
+  // A row's name label or bar links to the reviewer's reviews on Gerrit.
+  const rowAt = (e: ChartEvent, chart: Chart): number | null => {
+    const { x, y } = e;
+    const a = chart.chartArea;
+    if (x == null || y == null || y < a.top || y > a.bottom || x > a.right) return null;
+    const i = Math.round(chart.scales.y.getValueForPixel(y) ?? -1);
+    return i >= 0 && i < rows.length && gerritReviewsUrl(rows[i].email) ? i : null;
+  };
   const label = (r: { name: string; org: string }, i: number) =>
     narrow ? `${i + 1}. ${truncate(r.name, 15)}` : `${i + 1}. ${truncate(r.name, 26)} · ${truncate(r.org, 22)}`;
   return new Chart(canvas, {
@@ -358,6 +367,14 @@ export function renderLeaderboardChart(
       indexAxis: 'y',
       interaction: { mode: 'nearest', axis: 'y', intersect: false },
       layout: { padding: { right: 56 } },
+      onHover: (e, _els, chart) => {
+        const t = e.native?.target as HTMLElement | undefined;
+        if (t) t.style.cursor = rowAt(e, chart) == null ? '' : 'pointer';
+      },
+      onClick: (e, _els, chart) => {
+        const i = rowAt(e, chart);
+        if (i != null) window.open(gerritReviewsUrl(rows[i].email)!, '_blank', 'noopener');
+      },
       plugins: {
         ...base.plugins,
         legend: { display: false },
@@ -371,6 +388,7 @@ export function renderLeaderboardChart(
             },
             label: (ctx) => `${fmt(ctx.raw as number)} ${metricLabel.toLowerCase()}`,
             afterLabel: (ctx) => rows[ctx.dataIndex].email ?? '',
+            footer: (items) => (rows[items[0].dataIndex].email ? 'Click to see their reviews on Gerrit' : ''),
           },
         },
       },

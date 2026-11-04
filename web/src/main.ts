@@ -47,6 +47,7 @@ import {
   sumWeeklyTotals,
   topBrowsers,
   orgWeeklyCounts,
+  gerritReviewsUrl,
   topReviewers,
   trimRanked,
   LEADERBOARD_SIZE,
@@ -417,7 +418,23 @@ function renderLeaderboard(
       return li;
     }),
   );
-  return renderLeaderboardChart($<HTMLCanvasElement>('#leaderboard-chart'), rows, metricName, colors, readTheme());
+  // Canvas fallback content: the same ranking as real links, for keyboard and
+  // screen-reader users (the chart's own name labels are click targets only).
+  const canvas = $<HTMLCanvasElement>('#leaderboard-chart');
+  const list = el('ol');
+  list.id = 'leaderboard-links';
+  list.append(
+    ...rows.map((r) => {
+      const li = el('li');
+      const url = gerritReviewsUrl(r.email);
+      const name = el(url ? 'a' : 'span', r.name);
+      if (url) name.setAttribute('href', url);
+      li.append(name, document.createTextNode(` (${r.org}): ${r.value.toLocaleString('en-US')}`));
+      return li;
+    }),
+  );
+  canvas.replaceChildren(list);
+  return renderLeaderboardChart(canvas, rows, metricName, colors, readTheme());
 }
 
 /** Colours for the review chart: an org keeps its ratio-chart colour; orgs

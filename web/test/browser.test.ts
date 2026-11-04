@@ -367,6 +367,24 @@ test('leaderboard shows up to 50 reviewers compactly and follows the metric', as
     return cb({ dataIndex: 0 });
   });
   assert.match(email, /^[^@\s]+@[^@\s]+\.[a-z]+$/i);
+  // Names link to the reviewer's reviews on Gerrit: clicking a name label
+  // opens the query, and the canvas holds the same links for keyboard users.
+  const links = await page.$$eval('#leaderboard-chart a', (as) => as.map((a) => (a as HTMLAnchorElement).href));
+  assert.equal(links.length, comments.n);
+  assert.match(links[0], /^https:\/\/chromium-review\.googlesource\.com\/q\/reviewedby:[^@\s/]+@[^@\s/]+$/);
+  const opened = await page.evaluate(() => {
+    const c = window.__cosh!.leaderboardChart!;
+    const urls: string[] = [];
+    const orig = window.open;
+    window.open = ((u: string) => (urls.push(u), null)) as typeof window.open;
+    const y = c.scales.y.getPixelForValue(0);
+    const x = c.chartArea.left / 2; // over the name label, left of the bars
+    const native = new MouseEvent('click', { clientX: 0, clientY: 0 });
+    (c.options.onClick as (e: unknown, els: unknown[], ch: unknown) => void)({ x, y, native, type: 'click' }, [], c);
+    window.open = orig;
+    return urls;
+  });
+  assert.deepEqual(opened, [links[0]]);
   // Compact: 50 rows fit in well under a 900px-tall viewport's worth plus axes.
   assert.ok(comments.h <= comments.n * 15 + 40, `height ${comments.h}`);
   await page.click('#metric input[value="cls"]');
