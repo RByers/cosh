@@ -534,6 +534,7 @@ a.lb-row:hover .lb-bar {
 /* Review by directory (areas.ts): label | volume bar | 100% org bar | share.
  * Rows use subgrid so every row's columns line up. */
 .ar {
+  /* Room for the value label after each bar; areas.ts sizes it to the labels. */
   --ar-label-room: 52px;
   container-type: inline-size;
   font-size: 11.5px;

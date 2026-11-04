@@ -3,7 +3,8 @@
 // browser download). Run `npm run build` first; `npm test` does both.
 //
 // CHROME_PATH overrides the Chrome binary. SCREENSHOT_DIR, if set, saves
-// full-page screenshots in light and dark mode for eyeballing.
+// full-page screenshots in light and dark mode for eyeballing. CPU_THROTTLE=6
+// slows each page down 6x, like a CI runner, to shake out timing races.
 import assert from 'node:assert/strict';
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
@@ -45,6 +46,7 @@ after(async () => {
 async function open(hash = '', width = 1100): Promise<{ page: Page; errors: string[] }> {
   const page = await browser.newPage();
   await page.setViewport({ width, height: 900 });
+  if (process.env.CPU_THROTTLE) await page.emulateCPUThrottling(Number(process.env.CPU_THROTTLE));
   const errors: string[] = [];
   page.on('console', (m) => m.type() === 'error' && errors.push(m.text()));
   page.on('pageerror', (e) => errors.push(String(e)));
@@ -150,6 +152,11 @@ test('brave.com is listed with unknown usage and the Brave note explains why', a
 
 test('directory rows drill down, and "more" rows open 20 at a time and close again', async () => {
   const { page, errors } = await open();
+  // Pressing a toggle scrolls the chart into view, which starts loading its
+  // Gerrit links; their arrival rebuilds the rows. Load them first, so a
+  // rebuild can't replace a toggle between finding it and clicking it.
+  await page.$eval('#area-chart', (e) => e.scrollIntoView());
+  await page.waitForSelector('body[data-area-links]');
   const read = () =>
     page.evaluate(() =>
       [...document.querySelectorAll<HTMLElement>('#area-chart .ar-row')].map((r) => ({
@@ -200,6 +207,21 @@ test('directory rows drill down, and "more" rows open 20 at a time and close aga
   await page.click(`li[data-key="${others[0].key}"] .ar-toggle`);
   await page.click(`li[data-key="${blink.key}"] .ar-toggle`);
   assert.deepEqual(await read(), start);
+  assert.deepEqual(errors, []);
+  await page.close();
+});
+
+test('a directory toggle keeps focus when the Gerrit links arrive and rebuild the rows', async () => {
+  const { page, errors } = await open();
+  assert.equal(await page.$('body[data-area-links]'), null);
+  // Pressing the toggle scrolls the chart into view, which starts the load.
+  const key = await page.evaluate(() =>
+    [...document.querySelectorAll<HTMLElement>('#area-chart .ar-row')]
+      .find((r) => r.querySelector('.ar-name')?.textContent === 'third_party/blink/')!.dataset.key!);
+  await page.click(`li[data-key="${key}"] .ar-toggle`);
+  await page.waitForSelector('body[data-area-links]');
+  assert.ok(await page.$('#area-chart a.ar-seg'), 'rows were rebuilt with links');
+  assert.equal(await page.evaluate(() => (document.activeElement as HTMLElement).closest('li')?.dataset.key), key);
   assert.deepEqual(errors, []);
   await page.close();
 });

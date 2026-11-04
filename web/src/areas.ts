@@ -131,6 +131,10 @@ export function buildAreaChart(
     }),
   );
   const grid = node('div', 'ar-grid');
+  // Room for the longest value label (its 6px padding plus one ch per
+  // character; commas are narrower than a digit), so it fits in any font.
+  const longest = Math.max(...rows.map((r) => int(r.value).length));
+  grid.style.setProperty('--ar-label-room', `calc(6px + ${longest}ch)`);
   grid.append(head, list);
   box.replaceChildren(grid);
 }

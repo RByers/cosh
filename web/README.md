@@ -142,5 +142,7 @@ tests always use a random port in that range.
 The browser tests use `puppeteer-core` with an installed Chrome
 (`/usr/bin/google-chrome`, override with `CHROME_PATH`); they download no
 browser. Run them with `SCREENSHOT_DIR=/some/dir` to also save light and dark
-full-page screenshots. Vitest is capped at 4 workers, with test files run
+full-page screenshots, or with `CPU_THROTTLE=6` to slow each page down 6x,
+like a GitHub Actions runner, to catch timing races that only show up there.
+Vitest is capped at 4 workers, with test files run
 serially.

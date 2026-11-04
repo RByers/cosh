@@ -965,9 +965,16 @@ function main(data: Data) {
     fetchText(areaReviewersUrl)
       .then((t) => {
         data.areaReviewers = JSON.parse(t) as DirReviewers;
+        // The file often arrives just after a toggle in one of these charts
+        // was pressed (pressing it scrolls the chart into view). Rebuilding
+        // the rows drops focus, so give it back to that toggle.
+        const active = document.activeElement;
+        const box = active?.closest<HTMLElement>('#area-chart, #heat-chart');
+        const key = active?.classList.contains('ar-toggle') ? active.closest<HTMLElement>('[data-key]')?.dataset.key : undefined;
         const theme = readTheme();
         renderAreas(data, state, colorsFor(theme), theme);
         renderHeat(data, state, colorsFor(theme), theme, render);
+        if (box && key) box.querySelector<HTMLButtonElement>(`[data-key="${CSS.escape(key)}"] .ar-toggle`)?.focus({ preventScroll: true });
         document.body.dataset.areaLinks = 'true';
       })
       .catch((err: unknown) => console.error(err));
