@@ -117,6 +117,22 @@ class ExtractOpenTest(unittest.TestCase):
         self.assertEqual(rows, [("2026-11-01T00:00:00Z", "2026-11-04T12:00:00Z")])
 
 
+class NoteDbRepoTest(unittest.TestCase):
+    def test_init_repo_applies_config_and_maintain_is_lossless(self):
+        from cosh import notedb
+        with tempfile.TemporaryDirectory() as d:
+            repo = notedb.init_repo(f"{d}/x.git")
+            for k, v in notedb.REPO_CONFIG.items():
+                self.assertEqual(notedb.git(repo, "config", k).stdout.strip(), v)
+            # A local "meta ref" with one commit; maintain must keep it.
+            tree = notedb.git(repo, "mktree", input="").stdout.strip()
+            c = notedb.git(repo, "commit-tree", tree, "-m", "x").stdout.strip()
+            notedb.git(repo, "update-ref", "refs/meta/42", c)
+            notedb.maintain(repo)
+            self.assertEqual(notedb.fetched_numbers(repo), {42})
+            self.assertEqual(notedb.git(repo, "rev-parse", "refs/meta/42").stdout.strip(), c)
+
+
 class StaleRefsTest(unittest.TestCase):
     def test_missing_or_older_than_listing(self):
         t = lambda s: datetime.strptime(s, "%Y-%m-%d %H:%M:%S").replace(tzinfo=timezone.utc).timestamp()

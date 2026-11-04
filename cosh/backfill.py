@@ -3,12 +3,13 @@
   python3 -m cosh backfill --weeks 52            # print the plan only
   python3 -m cosh backfill --weeks 52 --go       # actually fetch
 
-POLICY (see CLAUDE.md): the one-year backfill (52 weeks) is approved; going
-further back still needs explicit approval.
+POLICY (see CLAUDE.md): the backfill back to 2023-W26 (2023-07-01, Radar's
+first data) is approved; going further back still needs explicit approval.
 
-Per week: REST listing (~56 requests) + NoteDb git fetches (~18 x 200 refs),
-serial, one connection. duty_cycle=0.5 idles after every git fetch for as long
-as the fetch took, so the server sees us at most half the time. Weeks whose
+Per week: REST listing (~56 requests) + NoteDb git fetches (~10-18 x 200 refs),
+serial, one connection, at least 5 s between fetches. The default duty_cycle
+1.0 (approved 2026-11-04) runs fetches back to back; 0.5 idles after every
+fetch for as long as it took, so the server sees us at most half the time. Weeks whose
 fetch already completed are skipped, so it's resumable at any point; each
 completed week is derived immediately (into derived.sqlite). Afterwards, run
 `extract-open` so comments on CLs that are still open are counted too.
@@ -21,9 +22,11 @@ from . import store
 from .derive import derive
 from .extract import extract_week
 
-# Measured on 2026-W44: ~7,650 CLs, ~3,400 NoteDb refs at ~0.46 s server time
-# each, plus ~2 min of listing.
-EST_MINUTES_PER_WEEK = 30
+# Measured over the 52-week backfill (2025-W45 .. 2026-W44, duty cycle 0.5):
+# 21.7 min per week = ~7 min of NoteDb fetching (559 fetches of 200 refs,
+# ~38 s each) + as much again idle + ~8 min of listing and local work.
+EST_FETCH_MIN = 7
+EST_OTHER_MIN = 8
 
 
 def last_complete_week(now=None):
@@ -43,14 +46,14 @@ def week_list(newest, n):
     return out
 
 
-def backfill(host, project, weeks, go=False, duty_cycle=0.5, batch_size=200, argv=""):
+def backfill(host, project, weeks, go=False, duty_cycle=1.0, batch_size=200, argv=""):
     raw = store.open_raw()
     done = {w for (w,) in raw.execute(
         "SELECT iso_week FROM week_progress WHERE host=? AND project=? AND fetched_at IS NOT NULL",
         (host, project))}
     raw.close()
     todo = [w for w in weeks if w not in done]
-    est_h = len(todo) * EST_MINUTES_PER_WEEK / 60 / duty_cycle
+    est_h = len(todo) * (EST_OTHER_MIN + EST_FETCH_MIN / duty_cycle) / 60
     print(f"backfill {project}: {len(weeks)} weeks requested ({weeks[-1]} .. {weeks[0]}), "
           f"{len(weeks) - len(todo)} already done, {len(todo)} to fetch; "
           f"estimated {est_h:.0f} h wall-clock at duty cycle {duty_cycle}", file=sys.stderr)

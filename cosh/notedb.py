@@ -36,14 +36,44 @@ def git(git_dir, *args, input=None, check=True):
                           text=isinstance(input, str) or input is None)
 
 
+# Local git settings for a repo of many small, unrelated histories (one per CL).
+# Applied on every run; they change only local work and what we send.
+REPO_CONFIG = {
+    # Never let a background gc / auto-maintenance kick in mid-run (and never
+    # prune: everything fetched is kept, storage-design.md §3.8).
+    "gc.auto": "0",
+    "maintenance.auto": "false",
+    # After each fetch git checks the new objects are complete with
+    # `rev-list --objects --stdin --not --exclude-hidden=fetch --all`. With
+    # 119k local refs that walk dominated each fetch (63 of 90 s sampled, and
+    # it grows with every week). CL histories are disjoint, so hiding our own
+    # refs leaves a check of the new objects themselves, which is still complete.
+    "fetch.hideRefs": "refs/meta/",
+    # Our refs share no history with what we fetch, so "have" lines are wasted
+    # work for the server as well as for us.
+    "fetch.negotiationAlgorithm": "noop",
+}
+
+
 def init_repo(git_dir):
     if not os.path.isdir(git_dir):
         os.makedirs(git_dir)
         git(git_dir, "init", "--bare", "-q")
-        # never let a background gc / auto-maintenance kick in mid-run
-        git(git_dir, "config", "gc.auto", "0")
-        git(git_dir, "config", "maintenance.auto", "false")
+    for k, v in REPO_CONFIG.items():
+        git(git_dir, "config", k, v)
     return git_dir
+
+
+def maintain(git_dir):
+    """Lossless housekeeping for a large NoteDb repo, run when no fetch is in
+    flight: pack the (100k+) loose refs into packed-refs, and write a
+    multi-pack index over the many fetched packs. Neither deletes an object."""
+    init_repo(git_dir)
+    t0 = time.monotonic()
+    git(git_dir, "pack-refs", "--all")
+    if any(f.endswith(".pack") for f in os.listdir(os.path.join(git_dir, "objects", "pack"))):
+        git(git_dir, "multi-pack-index", "write")
+    return time.monotonic() - t0
 
 
 def fetched_numbers(git_dir):

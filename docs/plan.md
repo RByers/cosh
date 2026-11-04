@@ -25,8 +25,9 @@ value_ratio(O, t) = O's share of Chromium review comments
    - `backfill` prints a plan unless it is given `--go`.
 2. **Be gentle with Google's servers.**
    - Serial requests.
-   - REST: at least 1 s between requests. Git: one connection, duty cycle at
-     most 0.5.
+   - REST: at least 1 s between requests. Git: one connection, one fetch at a
+     time, at least 5 s apart; duty cycle up to 1.0 (back to back) approved by
+     the user on 2026-11-04, replacing "at most 0.5". Never parallel fetches.
    - Back off on 429.
    - Identify ourselves with the contact address, `rick@rbyers.net`.
 3. **Per-person data derived from public data may be committed and
@@ -90,9 +91,15 @@ value_ratio(O, t) = O's share of Chromium review comments
   commands.
 - metric_version 3 (activity-time weeks, open CLs): see
   `extraction-v1.md`, "Metric definitions".
-- One-year backfill started 2026-11-03 (`backfill --weeks 52 --go`, default
-  batch size 200, duty cycle 0.5, about 51 h). Log in
-  `data/private/backfill-52w-*.log`; rerun the same command to resume.
+- One-year backfill done 2026-11-04: 2025-W45 .. 2026-W44, batch size 200,
+  duty cycle 0.5, 18.8 h. Its log is `data/private/backfill-52w-*.log`. The
+  open-CL snapshot followed (28,117 CLs, 6,967 NoteDb refs).
+- Backfill to 2023-07-01 (2023-W26 .. 2025-W44, 123 more weeks) started
+  2026-11-04 with `backfill --weeks 175 --newest 2026-W44 --go`. It was
+  restarted at duty cycle 1.0 after week 1; about 15 min/week, so ~31 h. Log
+  in `data/private/backfill-3y-*.log`; rerun the same command to resume. When
+  it's done, rerun `extract-open` (its `since` becomes 2023-06-26), `derive`
+  and `summarize`.
 - Cloudflare Radar: daily data from 2023-07-01 to now, aggregated to weeks
   and months in `data/public/radar_browser_share.csv`. Browser names are
   verified against the real data (`radar-research.md`, "Findings").

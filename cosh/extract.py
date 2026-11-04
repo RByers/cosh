@@ -219,7 +219,7 @@ def _list_span(client, raw, project, start, end, step, out, status, snap):
 
 def extract_open(host, project, since=None, closed_since=None, min_interval=1.0,
                  data_dir=store.DATA_DIR, argv="", batch_size=200, batch_gap=5.0,
-                 duty_cycle=0.5, max_comment_fetches=None):
+                 duty_cycle=1.0, max_comment_fetches=None):
     """Snapshot the CLs whose comments the weekly (closed-CL) listings can't see
     yet, and fetch their NoteDb refs:
       - open CLs on main updated at/after `since` (default: start of the oldest
@@ -356,7 +356,7 @@ def fetch_notedb(client, raw, project, todo, in_week, batch_size, batch_gap, max
     dt = 0.0
     for i in range(0, len(pending), batch_size):
         if i:
-            # duty_cycle 0.5 => idle as long as the last fetch took
+            # duty_cycle 0.5 => idle as long as the last fetch took; 1.0 => batch_gap only
             time.sleep(max(batch_gap, dt * (1 - duty_cycle) / duty_cycle))
         chunk = pending[i:i + batch_size]
         dt = notedb.fetch_batch(repo, project, chunk)

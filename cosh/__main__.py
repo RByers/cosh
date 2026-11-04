@@ -4,7 +4,7 @@
   python3 -m cosh extract-open [--since ...] [--closed-since ...]
   python3 -m cosh derive [--week 2026-W44] [--out PATH]
   python3 -m cosh summarize [--metric comments|cls|chars] [--db PATH]
-  python3 -m cosh backfill --weeks 52 [--go] [--duty-cycle 0.5]
+  python3 -m cosh backfill --weeks 52 [--go] [--duty-cycle 1.0]
   python3 -m cosh status
   python3 -m cosh update-affiliations
   python3 -m cosh radar [--start 2020-09-01] [--agg 1d|1w] [--offline]
@@ -52,8 +52,8 @@ def main(argv=None):
     o.add_argument("--project", default=PROJECT)
     o.add_argument("--interval", type=float, default=1.0,
                    help="min seconds between requests (default 1.0; never lower)")
-    o.add_argument("--duty-cycle", type=float, default=0.5,
-                   help="fraction of time a git fetch may be in flight (default 0.5)")
+    o.add_argument("--duty-cycle", type=float, default=1.0,
+                   help="fraction of time a git fetch may be in flight (default 1.0: one fetch at a time, back to back)")
     o.add_argument("--batch-size", type=int, default=200, help="NoteDb refs per git fetch")
     o.add_argument("--max-comment-fetches", type=int, default=None,
                    help="only fetch NoteDb refs for N CLs (for smoke tests)")
@@ -70,12 +70,16 @@ def main(argv=None):
     b = sub.add_parser("backfill", help="extract many weeks newest-first (plan only without --go)")
     b.add_argument("--weeks", type=int, required=True, help="number of weeks to cover")
     b.add_argument("--newest", help="newest ISO week (default: last complete week)")
-    b.add_argument("--duty-cycle", type=float, default=0.5,
-                   help="fraction of time a git fetch may be in flight (default 0.5)")
+    b.add_argument("--duty-cycle", type=float, default=1.0,
+                   help="fraction of time a git fetch may be in flight (default 1.0: one fetch at a time, back to back)")
     b.add_argument("--batch-size", type=int, default=200)
     b.add_argument("--go", action="store_true", help="actually fetch (otherwise print the plan)")
     b.add_argument("--host", default=HOST)
     b.add_argument("--project", default=PROJECT)
+    m = sub.add_parser("notedb-maintain",
+                       help="lossless local housekeeping of the NoteDb repo (pack refs, "
+                            "multi-pack index); takes the extract lock, no network")
+    m.add_argument("--project", default=PROJECT)
     sub.add_parser("status", help="show extraction progress")
     sub.add_parser("update-affiliations", help="refresh config/affiliations.json5 from chromium/src")
     r = sub.add_parser("radar", help="fetch Cloudflare Radar browser share (needs CLOUDFLARE_API_TOKEN) "
@@ -131,6 +135,11 @@ def main(argv=None):
                 backfill(a.host, a.project, weeks, **kw)
         else:
             backfill(a.host, a.project, weeks, **kw)
+    elif a.cmd == "notedb-maintain":
+        from . import notedb
+        with store.extract_lock():
+            print(f"maintained in {notedb.maintain(notedb.default_repo(a.project)):.0f}s",
+                  file=sys.stderr)
     elif a.cmd == "update-affiliations":
         from .orgs import update_affiliations, load_affiliations
         update_affiliations()

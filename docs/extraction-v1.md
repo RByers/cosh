@@ -99,7 +99,9 @@ week, plus a snapshot of **open** CLs (step 3).
    - Strictly serial.
    - REST: at least 1.0 s between requests, gzip, exponential backoff on
      429/5xx that honours `Retry-After`.
-   - Git: one connection, at least 5 s between fetches. `backfill` defaults to
+   - Git: one connection, at least 5 s between fetches. `backfill` and
+     `extract-open` default to duty cycle 1.0 (fetches back to back, one at a
+     time; approved 2026-11-04). Until then the default was
      duty cycle 0.5: after each fetch it idles as long as the fetch took.
    - Every response is cached, so a re-run fetches nothing twice.
    - One 429 was seen at about 0.78 REST requests/s (during the abandoned
