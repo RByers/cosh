@@ -36,9 +36,11 @@ The main visualization plots each organization's value ratio over time.
 1. **Extract** review data from Chromium Gerrit
    (`chromium-review.googlesource.com`). This is throttled and cached so we
    put as little load on the server as possible.
-2. **Store** one row per (CL, reviewer): review comments, review characters
-   written, and whether the reviewer was a code OWNER for the CL. Changes,
-   reviewers and raw responses stay local.
+2. **Store** one row per review comment and per Code-Review vote, each in
+   the week it happened (not the week the CL landed). Reviewed CLs are
+   counted per CL, in the week the CL closed. Open CLs are included, so
+   recent weeks aren't missing review on CLs that haven't landed yet. Raw
+   responses and derived tables stay local.
 3. **Aggregate** the rows into small per-org, per-period summaries.
 4. **Join** the summaries with Cloudflare Radar browser share.
 5. **Visualize** the result in a web front end that reads only the summaries.
@@ -57,12 +59,12 @@ per-org and per-reviewer, go in `summaries/` and are committed.
 
 ```
 python3 -m cosh extract --week 2026-W44   # throttled Gerrit fetch, cached and resumable
-python3 -m cosh derive                    # build cosh.sqlite from the cache (offline)
+python3 -m cosh extract-open              # snapshot open CLs and fetch their comments
+python3 -m cosh derive                    # build derived.sqlite from the cache (offline)
 python3 -m cosh summarize                 # write summaries/org_weekly.{csv,json}
 python3 -m cosh radar                     # Cloudflare Radar browser share (source secrets.sh first)
 python3 -m cosh backfill --weeks 52       # plan only; --go fetches (resumable)
-python3 -m unittest tests.test_derive
-python3 -m unittest tests.test_radar
+python3 -m unittest tests.test_derive tests.test_extract tests.test_radar
 cd web && npm ci && npm run dev           # web UI (see web/README.md); npm test for tests
 ```
 

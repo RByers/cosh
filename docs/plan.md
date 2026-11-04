@@ -47,7 +47,11 @@ value_ratio(O, t) = O's share of Chromium review comments
 | Date | Decision | Why |
 |---|---|---|
 | 2026-11-03 | Two SQLite files (raw cache plus derived tables) with CSV/JSON summaries, not flat CSV | Resumable, idempotent re-runs; the front end needs only small summaries (`storage-design.md`) |
-| 2026-11-03 | Weeks are ISO weeks (UTC) of merge time, listed with `mergedafter:`/`mergedbefore:` | `after:` filters on last-updated time and would double count |
+| 2026-11-03 | Weeks are ISO weeks (UTC) of merge time, listed with `mergedafter:`/`mergedbefore:` | `after:` filters on last-updated time and would double count. (Still how CLs are *listed*; superseded for *counting* by metric_version 2 below) |
+| 2026-11-03 | **metric_version 3:** count each comment in the week it was written and each vote in the week it was cast; only reviewed CLs stay per CL, by close week. Keeps metric_version 2's rules: post-merge comments count, in the week they were written, and the vote floor applies in the week of the vote. New schema `derived.sqlite` (`comments`, `votes`, `changes`, view `cl_reviewers`) replaces the CL-keyed `cosh.sqlite` | User's instruction. Under close-week counting, 37% of W44's comments were written in earlier weeks, and long-running CLs made spikes for small orgs (Microsoft: 81% of its W44 comments, mostly from two CLs) |
+| 2026-11-03 | Fetch open CLs too (`extract-open`): open CLs on main updated during the backfill year, plus CLs closed after the newest fetched week, with their NoteDb refs. Approved for that year | User's instruction. Without them, a comment stays invisible until its CL closes, so recent weeks are undercounted, most of all for orgs with long review cycles |
+| 2026-11-03 | Vote times come from NoteDb `Label:` lines, not the listing's `date` | Gerrit restamps listing vote dates at submit (11,003 of 11,036 merged-CL votes in W43–W44) |
+| 2026-11-03 | Refetch a NoteDb ref when the listing's `updated` is newer than the local tip | The tip time equals `updated` exactly (3,429 of 3,429 W44 CLs), so this refetches only CLs that changed, and only incrementally |
 | 2026-11-03 | Org = email domain, with dated overrides from Chromium's `affiliations.json5`; other `@chromium.org` accounts → `google.com` | User's instruction; this is how Chromium itself attributes contributors |
 | 2026-11-03 | `gmail.com` is always folded into `Other`, whatever its size (`FOLD_INTO_OTHER` in `cosh/summarize.py`) | User's instruction: a webmail domain is not an organization |
 | 2026-11-03 | Headline metric is the review **comment count**; reviewed CLs and characters are options (`--metric`) | Balances verbose commenters against complex reviews |
@@ -82,7 +86,10 @@ value_ratio(O, t) = O's share of Chromium review comments
 
 **Done**
 - W44 extracted, validated and summarized (`summaries/`).
-- `extract`, `derive`, `summarize`, `radar` and `backfill` commands.
+- `extract`, `extract-open`, `derive`, `summarize`, `radar` and `backfill`
+  commands.
+- metric_version 3 (activity-time weeks, open CLs): see
+  `extraction-v1.md`, "Metric definitions".
 - One-year backfill started 2026-11-03 (`backfill --weeks 52 --go`, default
   batch size 200, duty cycle 0.5, about 51 h). Log in
   `data/private/backfill-52w-*.log`; rerun the same command to resume.
@@ -111,8 +118,14 @@ value_ratio(O, t) = O's share of Chromium review comments
    Actions).
 4. UI follow-ups: monthly granularity; an AI-comments-over-time view once
    there are more weeks.
-5. When the one-year backfill finishes, run `python3 -m cosh summarize` and
-   check the UI across the full year.
+5. When the one-year backfill finishes:
+   - run `python3 -m cosh extract-open` (open-CL snapshot, approved);
+   - then `rm -f data/private/derived.sqlite && python3 -m cosh derive &&
+     python3 -m cosh summarize`;
+   - check the UI across the full year.
+   - Re-run `extract-open` before each later summary refresh, so recent
+     weeks stay complete.
+   - Delete the obsolete `data/private/cosh.sqlite`.
    - Consider telling Chromium infra (infra-dev@chromium.org) before any
      further backfill.
    - Try `--batch-size 500` on a later run to see whether the per-CL cost

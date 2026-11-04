@@ -10,7 +10,8 @@ Per week: REST listing (~56 requests) + NoteDb git fetches (~18 x 200 refs),
 serial, one connection. duty_cycle=0.5 idles after every git fetch for as long
 as the fetch took, so the server sees us at most half the time. Weeks whose
 fetch already completed are skipped, so it's resumable at any point; each
-completed week is derived immediately.
+completed week is derived immediately (into derived.sqlite). Afterwards, run
+`extract-open` so comments on CLs that are still open are counted too.
 """
 
 import sys
@@ -61,3 +62,5 @@ def backfill(host, project, weeks, go=False, duty_cycle=0.5, batch_size=200, arg
         extract_week(host, project, w, via="notedb", batch_size=batch_size,
                      duty_cycle=duty_cycle, argv=argv)
         derive(weeks=[w])
+    print("backfill done. Comments on still-open CLs are not fetched yet: run "
+          "`python3 -m cosh extract-open`, then `derive` and `summarize`.", file=sys.stderr)

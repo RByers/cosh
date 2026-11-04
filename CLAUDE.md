@@ -10,10 +10,17 @@ implementation and metric definitions.
   on 2026-11-03. It is resumable: rerun `python3 -m cosh backfill --weeks 52
   --go` from the main checkout if it stops. Fetching beyond that year (years
   2–5, other repos or hosts) still needs explicit approval.
+- **The open-CL snapshot for that year is approved** (2026-11-03):
+  `python3 -m cosh extract-open` lists open CLs updated since the oldest
+  fetched week, plus CLs closed after the newest one, and fetches their NoteDb
+  refs. Run it only after the backfill has finished, never alongside it.
+  Rerunning it to refresh is fine.
 - **Keep load on Gerrit and googlesource low.**
   - Requests are serial.
   - Never lower `--interval` below 1 s.
-  - Never run two extractors at once.
+  - Never run two extractors at once. `extract`, `extract-open` and
+    `backfill --go` take `data/private/extract.lock`. (Backfills started
+    before 2026-11-03 don't take it.)
   - Use NoteDb batches, not REST requests per CL.
 - **Per-person data may be committed and published** (in git and on the
   public site) when it is derived from already-public data, such as
@@ -28,9 +35,15 @@ implementation and metric definitions.
 ## Conventions
 
 - Python standard library only. Run with `python3 -m cosh <cmd>`.
-- Tests: `python3 -m unittest tests.test_derive tests.test_radar`. These run
-  in a single process, which complies with the global limit of 4 test
-  workers.
+- Tests: `python3 -m unittest tests.test_derive tests.test_extract tests.test_radar`.
+  These run in a single process, which complies with the global limit of 4
+  test workers. `tests.test_extract` uses a fake Gerrit and never touches the
+  network.
+- Data lives in `data/private/` next to the code, or in `$COSH_DATA_DIR`. From
+  a worktree, point `COSH_DATA_DIR` at the main checkout's `data/private` and
+  pass `derive --out` / `summarize --db` a scratch path. `derive` and
+  `summarize` open `raw.sqlite` read-only, so they're safe while an extractor
+  runs.
 - Web UI: `web/` (Vite + TypeScript, Chart.js). `cd web && npm test` builds
   it and runs Vitest unit tests and headless-Chrome tests (puppeteer-core with
   `/usr/bin/google-chrome`). Vitest is capped at `maxWorkers: 4`, with test
@@ -40,14 +53,16 @@ implementation and metric definitions.
   web/node_modules`. Don't run `npm ci` or `npm install` there. Git ignores
   the link, so leave it in place: `git worktree remove` cleans it up, and
   removing it yourself triggers a permission prompt.
-- `data/private/cosh.sqlite` can always be rebuilt with
-  `rm data/private/cosh.sqlite && python3 -m cosh derive`.
+- `data/private/derived.sqlite` can always be rebuilt with
+  `rm data/private/derived.sqlite && python3 -m cosh derive` (about 15 ms per
+  CL with NoteDb comments). `data/private/cosh.sqlite` is the old CL-keyed DB
+  (metric_versions 1–2). Nothing reads it any more, and it can be deleted.
 - Never delete `data/private/raw.sqlite` or `data/private/notedb/`. Those
   hold the fetched data, and re-fetching costs server load.
 - **Keep everything downloaded.** The raw stores are lossless on purpose
   (`docs/storage-design.md` §3.8). Never strip, truncate or "slim" them, and
   never prune a NoteDb repo (`gc --prune`, `prune`). Reduce data only in
-  `cosh.sqlite`.
+  `derived.sqlite`.
 
 ## Finishing work
 

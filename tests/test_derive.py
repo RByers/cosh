@@ -1,13 +1,15 @@
+import hashlib
 import json
 import os
 import tempfile
 import unittest
 
-from cosh.derive import account_name, derive_change, human_text, mark_emailless_bots
+from cosh.derive import account_name, derive, derive_change, human_text, mark_emailless_bots
 from cosh import store
 from cosh.orgs import OrgResolver, load_affiliations, parse_json5
 from cosh.summarize import summarize
 
+H = "chromium-review.googlesource.com"
 OWNER = {"_account_id": 1, "email": "author@chromium.org"}
 REV = {"_account_id": 2, "email": "rev@microsoft.com"}
 BOT = {"_account_id": 3, "email": "chromium-scoped@luci-project-accounts.iam.gserviceaccount.com",
@@ -16,54 +18,78 @@ CC = {"_account_id": 4, "email": "cc@google.com"}
 
 CHANGE = {
     "_number": 100, "status": "MERGED", "project": "chromium/src", "branch": "main", "owner": OWNER,
-    "created": "2026-10-20 10:00:00.000000000", "submitted": "2026-10-27 12:00:00.000000000",
-    "total_comment_count": 5,
-    "labels": {"Code-Review": {"all": [dict(REV, value=1), dict(BOT, value=0),
-                                       dict(OWNER, value=0)]}},
+    "created": "2026-10-10 10:00:00.000000000", "updated": "2026-10-28 00:00:00.000000000",
+    "submitted": "2026-10-27 12:00:00.000000000", "total_comment_count": 5,
+    "labels": {"Code-Review": {"all": [dict(REV, value=1, date="2026-10-26 09:00:00.000000000"),
+                                       dict(BOT, value=0), dict(OWNER, value=0)]}},
 }
 COMMENTS = {
     "/PATCHSET_LEVEL": [
-        {"author": REV, "message": "lgtm", "updated": "2026-10-26 00:00:00.000000000"},
-        {"author": OWNER, "message": "thanks", "updated": "2026-10-26 01:00:00.000000000"},
+        {"id": "c1", "author": REV, "message": "lgtm", "updated": "2026-10-26 00:00:00.000000000"},
+        {"id": "c2", "author": OWNER, "message": "thanks", "updated": "2026-10-26 01:00:00.000000000"},
     ],
     "a.cc": [
-        {"author": REV, "message": "> quoted\nnit: rename", "updated": "2026-10-25 00:00:00.000000000"},
-        {"author": REV, "message": "AI says x", "is_ai": True, "updated": "2026-10-25 00:00:00.000000000"},
-        {"author": CC, "message": "late", "updated": "2026-10-28 00:00:00.000000000"},
+        # written in W43 on a CL that closed in W44
+        {"id": "c3", "author": REV, "message": "> quoted\nnit: rename", "updated": "2026-10-20 00:00:00.000000000"},
+        {"id": "c4", "author": REV, "message": "AI says x", "is_ai": True, "updated": "2026-10-26 12:00:00.000000000"},
+        {"id": "c5", "author": CC, "message": "late", "updated": "2026-10-28 00:00:00.000000000"},
     ],
 }
 
 
-class DeriveTest(unittest.TestCase):
-    def test_rows(self):
-        accounts, ch, reviews = derive_change(CHANGE, COMMENTS)
-        self.assertEqual(set(reviews), {2, 4})          # owner + zero-vote bot excluded
-        r = reviews[2]
-        self.assertEqual((r["review_comments"], r["review_chars"], r["ai_comments"], r["voted_cr"]),
-                         (2, len("lgtm") + len("nit: rename"), 1, 1))
-        # A post-merge comment counts in the headline and is also tallied separately.
-        self.assertEqual((reviews[4]["review_comments"], reviews[4]["review_chars"],
-                          reviews[4]["post_merge_comments"]), (1, len("late"), 1))
-        self.assertEqual(ch["iso_week"], "2026-W44")
-        self.assertEqual(ch["is_bot_owned"], 0)
+class DeriveChangeTest(unittest.TestCase):
+    def test_comment_rows_keyed_by_time_written(self):
+        _, ch, rows, votes = derive_change(CHANGE, COMMENTS)
+        got = {r["comment_id"]: (r["account_id"], r["iso_week"], r["chars"], r["is_inline"],
+                                 r["is_ai"], r["after_close"]) for r in rows}
+        self.assertEqual(got, {
+            "c1": (2, "2026-W44", 4, 0, 0, 0),
+            "c3": (2, "2026-W43", len("nit: rename"), 1, 0, 0),
+            "c4": (2, "2026-W44", len("AI says x"), 1, 1, 0),
+            "c5": (4, "2026-W44", 4, 1, 0, 1),          # after the CL merged
+        })                                               # owner's c2 excluded
+        self.assertEqual(votes, [dict(account_id=2, value=1, voted_at="2026-10-26 09:00:00",
+                                      iso_week="2026-W44")])   # zero votes excluded
+        self.assertEqual((ch["close_week"], ch["closed_at"], ch["is_bot_owned"]),
+                         ("2026-W44", "2026-10-27 12:00:00", 0))
 
-    def test_vote_only_when_comments_not_fetched(self):
-        _, _, reviews = derive_change(CHANGE, None)
-        self.assertEqual(reviews[2]["voted_cr"], 1)
-        self.assertEqual(reviews[2]["review_comments"], 0)
+    def test_vote_time_from_notedb_wins_over_listing(self):
+        t = 1761210000   # 2025-10-23 09:00:00 UTC (W43)
+        _, _, _, votes = derive_change(CHANGE, COMMENTS, {2: t})
+        self.assertEqual((votes[0]["voted_at"], votes[0]["iso_week"]), ("2025-10-23 09:00:00", "2025-W43"))
 
-    def test_bot_owned_cl_has_change_row_but_no_reviews(self):
-        bot_cl = dict(CHANGE, owner=BOT)
-        _, ch, reviews = derive_change(bot_cl, COMMENTS)
-        self.assertEqual(ch["is_bot_owned"], 1)
-        self.assertEqual(reviews, {})
+    def test_parse_vote_times(self):
+        from cosh.notedb import parse_vote_times
+        log = ("\x015@srv 100\nUpdate patch set 1\n\nPatch-set: 1\nLabel: Code-Review=+1, abc\n"
+               "\x016@srv 200\nUpdate patch set 2\n\nPatch-set: 2\n"
+               "Label: Code-Review=+1, def Gerrit User 5 <5@srv>\n"        # copy of 5's vote by 6
+               "Label: Code-Review=+1, ghi Gerrit User 6 <6@srv>\n"        # 6's own, on-behalf form
+               "Label: Commit-Queue=+2, jkl\n"
+               "\x017@srv 300\nx\n\nLabel: Code-Review=0, mno\nLabel: -Code-Review\n"
+               "\x015@srv 50\nx\n\nLabel: Code-Review=-1, pqr\n")
+        self.assertEqual(parse_vote_times(log), {5: 100, 6: 200})
 
-    def test_abandoned_cl_bucketed_by_updated(self):
+    def test_votes_only_when_comments_not_fetched(self):
+        _, _, rows, votes = derive_change(CHANGE, None)
+        self.assertEqual((rows, [v["account_id"] for v in votes]), ([], [2]))
+
+    def test_bot_owned_cl_has_change_row_only(self):
+        _, ch, rows, votes = derive_change(dict(CHANGE, owner=BOT), COMMENTS)
+        self.assertEqual((ch["is_bot_owned"], rows, votes), (1, [], []))
+
+    def test_open_cl_has_no_close(self):
+        op = dict(CHANGE, status="NEW")
+        del op["submitted"]
+        _, ch, rows, _ = derive_change(op, COMMENTS)
+        self.assertEqual((ch["status"], ch["closed_at"], ch["close_week"]), ("NEW", None, None))
+        self.assertFalse(any(r["after_close"] for r in rows))
+
+    def test_abandoned_cl_closes_at_updated(self):
         ab = dict(CHANGE, status="ABANDONED", updated="2026-10-27 12:00:00.000000000")
         del ab["submitted"]
-        _, ch, reviews = derive_change(ab, COMMENTS)
-        self.assertEqual((ch["status"], ch["submitted_at"], ch["iso_week"]), ("ABANDONED", None, "2026-W44"))
-        self.assertEqual(reviews[2]["review_comments"], 2)
+        _, ch, rows, _ = derive_change(ab, COMMENTS)
+        self.assertEqual((ch["submitted_at"], ch["close_week"]), (None, "2026-W44"))
+        self.assertEqual(sum(r["after_close"] for r in rows), 1)
 
     def test_account_details_from_anywhere_in_listing(self):
         cl = dict(CHANGE, attention_set={"9": {"account": {"_account_id": 9, "email": "x@igalia.com"}}},
@@ -71,9 +97,10 @@ class DeriveTest(unittest.TestCase):
                                                                 "email": "ai@system.gserviceaccount.com"}}})
         comments = {"a.cc": [{"author": {"_account_id": 9}, "message": "hi", "updated": "2026-10-25 00:00:00"},
                              {"author": {"_account_id": 7}, "message": "bot", "updated": "2026-10-25 00:00:00"}]}
-        accounts, _, _ = derive_change(cl, comments)
+        accounts, _, rows, _ = derive_change(cl, comments)
         self.assertEqual(accounts[9]["email"], "x@igalia.com")
         self.assertIn("SERVICE_USER", accounts[7]["tags"])
+        self.assertEqual(len({r["comment_id"] for r in rows}), 2)   # ids synthesized when missing
 
     def test_human_text(self):
         self.assertEqual(human_text("> a\n  > b\nok"), "ok")
@@ -115,7 +142,7 @@ class AccountTest(unittest.TestCase):
     def test_real_name_wins_over_deleted_placeholder(self):
         from cosh.derive import NAME_UPSERT
         with tempfile.TemporaryDirectory() as d:
-            db = store.open_cosh(d)
+            db = store.open_derived(d)
             up = ("INSERT INTO accounts VALUES ('h',1,NULL,?,0) ON CONFLICT(host, account_id) "
                   "DO UPDATE SET " + NAME_UPSERT)
             name = lambda: db.execute("SELECT name FROM accounts").fetchone()[0]
@@ -130,44 +157,145 @@ class AccountTest(unittest.TestCase):
 
     def test_accounts_without_email_are_bots(self):
         with tempfile.TemporaryDirectory() as d:
-            db = store.open_cosh(d)
-            h = "chromium-review.googlesource.com"
+            db = store.open_derived(d)
             with db:
-                db.execute("INSERT INTO accounts VALUES (?,1,'a@igalia.com','A',0)", (h,))
-                db.execute("INSERT INTO accounts VALUES (?,2,NULL,'Jetski (agent)',0)", (h,))
-                db.execute("INSERT INTO accounts VALUES (?,3,NULL,NULL,0)", (h,))
+                db.execute("INSERT INTO accounts VALUES (?,1,'a@igalia.com','A',0)", (H,))
+                db.execute("INSERT INTO accounts VALUES (?,2,NULL,'Jetski (agent)',0)", (H,))
+                db.execute("INSERT INTO accounts VALUES (?,3,NULL,NULL,0)", (H,))
                 self.assertEqual(mark_emailless_bots(db), 2)
             self.assertEqual(db.execute("SELECT account_id, is_bot FROM accounts ORDER BY 1").fetchall(),
                              [(1, 0), (2, 1), (3, 1)])
             db.close()
 
 
+def put_window(raw, key, changes):
+    store.put_response(raw, H, "list_window", key, "u", 200, json.dumps(changes))
+
+
+class DeriveEndToEndTest(unittest.TestCase):
+    """raw.sqlite with a weekly listing and an open-CL snapshot -> derived.sqlite."""
+
+    def build(self, d):
+        raw = store.open_raw(d)
+        with raw:
+            # CL 100 closed in W44 (listed weekly). CL 200 was open in the
+            # snapshot and later merged: its weekly listing is the newer one.
+            put_window(raw, "wk", [CHANGE, dict(CHANGE, _number=200, submitted="2026-10-29 00:00:00",
+                                                updated="2026-10-29 00:00:00")])
+            put_window(raw, "snap", [dict(CHANGE, _number=200, status="NEW", submitted=None,
+                                          updated="2026-10-21 00:00:00"),
+                                     dict(CHANGE, _number=300, status="NEW", submitted=None,
+                                          updated="2026-10-30 00:00:00")])
+            raw.executemany("INSERT INTO week_changes VALUES (?,?,?,?,?)",
+                            [(H, "chromium/src", "2026-W44", 100, "wk"),
+                             (H, "chromium/src", "2026-W44", 200, "wk")])
+            raw.execute("INSERT INTO open_listings(host, project, listed_at, since, closed_since, "
+                        "fetched_at) VALUES (?,?,?,?,?,?)",
+                        (H, "chromium/src", "2026-10-31T00:00:00Z", "x", "y", "2026-10-31T01:00:00Z"))
+            raw.executemany("INSERT INTO open_changes VALUES (?,?,?,?,?)",
+                            [(H, "chromium/src", "2026-10-31T00:00:00Z", 200, "snap"),
+                             (H, "chromium/src", "2026-10-31T00:00:00Z", 300, "snap")])
+            raw.executemany("INSERT INTO week_progress(host, project, iso_week, fetched_at) VALUES (?,?,?,?)",
+                            [(H, "chromium/src", "2026-W43", "t"), (H, "chromium/src", "2026-W44", "t")])
+            for n in (100, 200, 300):
+                store.put_response(raw, H, "comments", str(n), "u", 200, json.dumps(COMMENTS))
+        raw.close()
+
+    def test_derive_and_summarize(self):
+        with tempfile.TemporaryDirectory() as d:
+            self.build(d)
+            with open(os.path.join(d, "raw.sqlite"), "rb") as fh:
+                before = hashlib.sha256(fh.read()).hexdigest()
+            derive(data_dir=d)
+            with open(os.path.join(d, "raw.sqlite"), "rb") as fh:
+                self.assertEqual(hashlib.sha256(fh.read()).hexdigest(), before)   # read-only
+            db = store.open_derived(d)
+            self.assertEqual(db.execute("SELECT change_number, status, close_week FROM changes "
+                                        "ORDER BY 1").fetchall(),
+                             [(100, "MERGED", "2026-W44"), (200, "MERGED", "2026-W44"),
+                              (300, "NEW", None)])
+            self.assertEqual(db.execute("SELECT iso_week, count(*) FROM comments GROUP BY 1").fetchall(),
+                             [("2026-W43", 3), ("2026-W44", 9)])
+            self.assertEqual(db.execute("SELECT count(*) FROM cl_reviewers").fetchone()[0], 4)
+            db.close()
+
+            rows = summarize(data_dir=d, out_dir=os.path.join(d, "s"))
+        got = {(r["iso_week"], r["org"]): (r["comments"], r["review_chars"], r["ai_comments"],
+                                           r["post_merge_comments"], r["reviewers"], r["reviewed_cls"])
+               for r in rows}
+        n = len("nit: rename")
+        self.assertEqual(got, {
+            # One W43 comment per CL, on 3 CLs, two of which closed only in W44
+            # and one that is still open.
+            ("2026-W43", "microsoft.com"): (3, 3 * n, 0, 0, 1, 0),
+            # W44: lgtm x3, AI x3; REV's votes add nothing (REV commented).
+            # c5 (10-28) x3 all count; it is post-merge only on CL 100 (merged
+            # 10-27); CL 200 merged 10-29 and CL 300 is open. Reviewed CLs
+            # (by close week): 100 and 200.
+            ("2026-W44", "microsoft.com"): (3, 12, 3, 0, 1, 2),
+            ("2026-W44", "google.com"): (3, 12, 0, 1, 1, 2),
+        })
+
+    def test_summary_drops_unfetched_weeks(self):
+        with tempfile.TemporaryDirectory() as d:
+            self.build(d)
+            raw = store.open_raw(d)
+            with raw:
+                raw.execute("DELETE FROM week_progress WHERE iso_week = '2026-W43'")
+            raw.close()
+            derive(data_dir=d)
+            rows = summarize(data_dir=d, out_dir=os.path.join(d, "s"))
+        self.assertEqual({r["iso_week"] for r in rows}, {"2026-W44"})
+
+    def test_incremental_week_derive_matches_full(self):
+        with tempfile.TemporaryDirectory() as d:
+            self.build(d)
+            full, part = os.path.join(d, "full.sqlite"), os.path.join(d, "part.sqlite")
+            derive(data_dir=d, out_path=full)
+            derive(data_dir=d, weeks=["2026-W44"], out_path=part)
+            q = "SELECT * FROM comments ORDER BY 1, 2, 3"
+            a, b = store.open_derived(path=full), store.open_derived(path=part)
+            # The week derive covers CLs 100 and 200 (200 via its newest listing).
+            self.assertEqual([r for r in a.execute(q) if r[1] != 300], b.execute(q).fetchall())
+            a.close()
+            b.close()
+
+
+def summary_db(d, accounts, comments, close_week="2026-W44", votes=()):
+    """A derived.sqlite with one merged CL 100, the given comments
+    [(account, n_human, n_ai, n_post_merge)] written in W44, and votes
+    [(account, value, voted_at, iso_week)]."""
+    db = store.open_derived(d)
+    with db:
+        for aid, email in accounts:
+            db.execute("INSERT INTO accounts VALUES (?,?,?,NULL,0)", (H, aid, email))
+        db.execute("""INSERT INTO changes(host, change_number, project, branch, owner_account, status,
+                      created_at, updated_at, closed_at, close_week)
+                      VALUES (?,100,'chromium/src','main',1,'MERGED','2026-10-26 00:00:00',
+                      '2026-10-27 12:00:00','2026-10-27 12:00:00',?)""", (H, close_week))
+        i = 0
+        for aid, n, ai, pm in comments:
+            for kind in [(0, 0)] * n + [(1, 0)] * ai + [(0, 1)] * pm:
+                i += 1
+                db.execute("INSERT INTO comments VALUES (?,100,?,?,'2026-10-27 00:00:00','2026-W44',10,1,?,?)",
+                           (H, f"c{i}", aid) + kind)
+        db.executemany("INSERT INTO votes VALUES (?,100,?,?,?,?)", [(H,) + v for v in votes])
+    db.close()
+
+
 class SummarizeTest(unittest.TestCase):
     def test_post_merge_comments_counted_and_reported(self):
         with tempfile.TemporaryDirectory() as d:
-            db = store.open_cosh(d)
-            h = "chromium-review.googlesource.com"
-            with db:
-                db.execute("INSERT INTO accounts VALUES (?,1,'owner@igalia.com',NULL,0)", (h,))
-                for aid in range(2, 7):   # 5 igalia.com reviewers
-                    db.execute("INSERT INTO accounts VALUES (?,?,?,NULL,0)", (h, aid, f"r{aid}@igalia.com"))
-                db.execute("""INSERT INTO changes(host, change_number, project, branch, owner_account,
-                              status, created_at, closed_at, iso_week)
-                              VALUES (?,100,'chromium/src','main',1,'MERGED','2026-10-26 00:00:00',
-                              '2026-10-27 12:00:00','2026-W44')""", (h,))
-                # (account, review_comments, ai_comments, post_merge_comments);
-                # post_merge_comments is a subset of review_comments.
-                for aid, rc, ai, pm in [(2, 5, 1, 2), (3, 1, 0, 1), (4, 1, 0, 0), (5, 1, 0, 0), (6, 1, 0, 0)]:
-                    db.execute("""INSERT INTO reviews(host, change_number, account_id, review_comments,
-                                  review_chars, ai_comments, post_merge_comments)
-                                  VALUES (?,100,?,?,?,?,?)""", (h, aid, rc, rc * 10, ai, pm))
-            db.close()
+            summary_db(d, [(1, "owner@igalia.com")] + [(a, f"r{a}@igalia.com") for a in range(2, 7)],
+                       [(2, 3, 1, 2), (3, 0, 0, 1), (4, 1, 0, 0), (5, 1, 0, 0), (6, 1, 0, 0)])
             out = os.path.join(d, "summaries")
             rows = summarize(data_dir=d, out_dir=out)
             with open(os.path.join(out, "reviewer_weekly.json")) as fh:
                 data = json.load(fh)
+        # Post-merge comments are in the headline, and also reported as a subset.
         self.assertEqual([(r["org"], r["comments"], r["ai_comments"], r["post_merge_comments"],
-                           r["reviewers"]) for r in rows], [("igalia.com", 9, 1, 3, 5)])
+                           r["reviewers"], r["reviewed_cls"]) for r in rows],
+                         [("igalia.com", 9, 1, 3, 5, 1)])
         # Every reviewer (valid JSON despite the hand-rolled layout), AI excluded;
         # account 3 (post-merge only) is credited like any other reviewer.
         self.assertEqual(data["meta"]["columns"], ["account_id", "org", "comments", "cls", "chars"])
@@ -178,72 +306,51 @@ class SummarizeTest(unittest.TestCase):
                          [[2, 0, 5, 1, 50], [3, 0, 1, 1, 10], [4, 0, 1, 1, 10], [5, 0, 1, 1, 10],
                           [6, 0, 1, 1, 10]])
 
+    def test_vote_without_comment_counts_as_one_in_vote_week(self):
+        with tempfile.TemporaryDirectory() as d:
+            summary_db(d, [(1, "owner@igalia.com")] + [(a, f"r{a}@igalia.com") for a in range(2, 7)],
+                       [(3, 2, 0, 0),      # LGTM + nit + vote: stays 2, not 3
+                        (4, 0, 1, 0)],     # only an AI comment, plus a vote: 1
+                       votes=[(2, 1, "2026-10-20 10:00:00", "2026-W43"),   # bare +1 in W43
+                              (3, 1, "2026-10-27 10:00:00", "2026-W44"),
+                              (4, -1, "2026-10-27 10:00:00", "2026-W44")])
+            out = os.path.join(d, "summaries")
+            rows = summarize(data_dir=d, out_dir=out)
+            with open(os.path.join(out, "reviewer_weekly.json")) as fh:
+                weeks = json.load(fh)["weeks"]
+        self.assertEqual([(r["iso_week"], r["comments"], r["vote_only_reviews"], r["review_chars"],
+                           r["reviewers"], r["reviewed_cls"]) for r in rows],
+                         [("2026-W43", 1, 1, 0, 1, 0), ("2026-W44", 3, 1, 20, 3, 1)])
+        # The reviewer rows sum to org_weekly, including the CL-only credit:
+        # account 2 reviewed CL 100 (closed W44) though its vote was in W43.
+        self.assertEqual(weeks["2026-W43"], [[2, 0, 1, 0, 0]])
+        self.assertEqual(weeks["2026-W44"], [[3, 0, 2, 1, 20], [4, 0, 1, 1, 0], [2, 0, 0, 1, 0]])
+
     def test_reviewer_weeks_keeps_everyone_split_by_org(self):
         from cosh.summarize import reviewer_weeks
-        # (week, closed, cl, email, aid, comments, chars, ai, post_merge, name)
-        rows = [("W", "2026-10-27", 1, "a@x.com", 1, 10, 1, 0, 0, "A"),
-                ("W", "2026-10-27", 1, "b@x.com", 2, 1, 900, 0, 0, None),
-                ("W", "2026-10-27", 2, "c@x.com", 3, 5, 5, 0, 0, "C"),
-                ("W", "2026-10-27", 3, "c@x.com", 3, 0, 0, 0, 0, "C"),
-                ("W", "2026-10-28", 4, "c@y.com", 3, 2, 2, 0, 0, "C"),
-                ("V", "2026-10-20", 5, "a@x.com", 1, 1, 1, 0, 0, "A")]
-        names, weeks = reviewer_weeks(rows, lambda email, when: email.split("@")[1])
+
+        def f(week, aid, name, email, org, comments, chars, cls):
+            return dict(week=week, account_id=aid, name=name, email=email, org=org,
+                        comments=comments, chars=chars, cls=set(cls))
+        facts = [f("W", 1, "A", "a@x.com", "x.com", 10, 1, [1]), f("W", 2, None, "b@x.com", "x.com", 1, 900, [1]),
+                 f("W", 3, "C", "c@x.com", "x.com", 5, 5, [2, 3]), f("W", 3, "C", "c@y.com", "y.com", 2, 2, [4]),
+                 f("V", 1, "A", "a@x.com", "x.com", 1, 1, [5])]
+        names, weeks = reviewer_weeks(facts)
         self.assertEqual(names, {1: "A", 2: "b", 3: "C"})
         self.assertEqual(list(weeks), ["V", "W"])
-        # Nobody is dropped; C's reviews under y.com get their own row.
+        # Nobody is dropped; C's activity under y.com gets its own row.
         self.assertEqual([(r["account_id"], r["org"], r["comments"], r["cls"], r["chars"]) for r in weeks["W"]],
                          [(1, "x.com", 10, 1, 1), (3, "x.com", 5, 2, 5), (3, "y.com", 2, 1, 2),
                           (2, "x.com", 1, 1, 900)])
 
     def test_gmail_folded_into_other(self):
         with tempfile.TemporaryDirectory() as d:
-            db = store.open_cosh(d)
-            h = "chromium-review.googlesource.com"
-            with db:
-                db.execute("INSERT INTO accounts VALUES (?,1,'owner@igalia.com',NULL,0)", (h,))
-                for aid in range(2, 8):   # 6 gmail.com reviewers
-                    db.execute("INSERT INTO accounts VALUES (?,?,?,NULL,0)", (h, aid, f"r{aid}@gmail.com"))
-                db.execute("INSERT INTO accounts VALUES (?,8,'solo@opera.com',NULL,0)", (h,))
-                db.execute("""INSERT INTO changes(host, change_number, project, branch, owner_account,
-                              status, created_at, closed_at, iso_week)
-                              VALUES (?,100,'chromium/src','main',1,'MERGED','2026-10-26 00:00:00',
-                              '2026-10-27 12:00:00','2026-W44')""", (h,))
-                for aid in range(2, 9):
-                    db.execute("""INSERT INTO reviews(host, change_number, account_id, review_comments,
-                                  review_chars, ai_comments, post_merge_comments)
-                                  VALUES (?,100,?,2,20,0,0)""", (h, aid))
-            db.close()
+            summary_db(d, [(1, "owner@igalia.com")] + [(a, f"r{a}@gmail.com") for a in range(2, 8)]
+                       + [(8, "solo@opera.com")], [(a, 2, 0, 0) for a in range(2, 9)])
             rows = summarize(data_dir=d, out_dir=os.path.join(d, "summaries"))
         # gmail.com folds into Other; a one-reviewer org is reported on its own.
         self.assertEqual([(r["org"], r["reviewers"], r["comments"]) for r in rows],
                          [("Other", 6, 12), ("opera.com", 1, 2)])
-
-    def test_vote_without_comment_counts_as_one(self):
-        with tempfile.TemporaryDirectory() as d:
-            db = store.open_cosh(d)
-            h = "chromium-review.googlesource.com"
-            with db:
-                db.execute("INSERT INTO accounts VALUES (?,1,'owner@igalia.com',NULL,0)", (h,))
-                for aid in range(2, 7):
-                    db.execute("INSERT INTO accounts VALUES (?,?,?,NULL,0)", (h, aid, f"r{aid}@igalia.com"))
-                db.execute("""INSERT INTO changes(host, change_number, project, branch, owner_account,
-                              status, created_at, closed_at, iso_week)
-                              VALUES (?,100,'chromium/src','main',1,'MERGED','2026-10-26 00:00:00',
-                              '2026-10-27 12:00:00','2026-W44')""", (h,))
-                # (account, review_comments, ai_comments, voted_cr)
-                for aid, rc, ai, vote in [(2, 0, 0, 1),     # bare +1: counts as 1
-                                          (3, 2, 0, 1),     # LGTM + nit + vote: stays 2, not 3
-                                          (4, 0, 1, -1),    # only an AI comment, plus a vote: 1
-                                          (5, 1, 0, None),  # post-merge comment only, no vote: 1
-                                          (6, 1, 0, None)]:
-                    db.execute("""INSERT INTO reviews(host, change_number, account_id, review_comments,
-                                  review_chars, ai_comments, post_merge_comments, voted_cr)
-                                  VALUES (?,100,?,?,?,?,?,?)""",
-                               (h, aid, rc, rc * 10, ai, 1 if aid == 5 else 0, vote))
-            db.close()
-            rows = summarize(data_dir=d, out_dir=os.path.join(d, "summaries"))
-        self.assertEqual([(r["comments"], r["vote_only_reviews"], r["review_chars"]) for r in rows],
-                         [(6, 2, 40)])
 
 
 if __name__ == "__main__":

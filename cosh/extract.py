@@ -59,14 +59,17 @@ def closed_ts(change):
     return change["submitted"]
 
 
-def window_key(project, start, end, offset=0, status="merged"):
+def window_key(project, start, end, offset=0, status="merged", snap=None):
     k = f"{project}@{BRANCH}|{status}|{start:%Y-%m-%dT%H:%M:%S}|{end:%Y-%m-%dT%H:%M:%S}"
-    return k + (f"|S={offset}" if offset else "")
+    # Open-CL listings change over time; `snap` (the snapshot's listed_at)
+    # keeps each snapshot's windows apart, while a resumed snapshot reuses them.
+    return k + (f"|S={offset}" if offset else "") + (f"|snap={snap}" if snap else "")
 
 
-def list_window(client, raw, project, start, end, offset=0, status="merged"):
-    """Return the list of change dicts for one window page (cached)."""
-    key = window_key(project, start, end, offset, status)
+def list_window(client, raw, project, start, end, offset=0, status="merged", snap=None):
+    """Return the list of change dicts for one window page (cached).
+    status 'merged' filters on merge time; 'abandoned' and 'open' on `updated`."""
+    key = window_key(project, start, end, offset, status, snap)
     cached = store.get_response(raw, client.host, "list_window", key)
     if cached is not None and cached[0] == 200:
         return json.loads(cached[1]), key
@@ -84,26 +87,34 @@ def list_window(client, raw, project, start, end, offset=0, status="merged"):
     return json.loads(body), key
 
 
-def list_range(client, raw, project, start, end, out, status="merged"):
-    """Collect {change_number: (window_key, change)} for CLs closed in [start, end]."""
-    changes, key = list_window(client, raw, project, start, end, status=status)
+def _keep(out, key, c):
+    """Record a listed CL; if it was listed twice, keep the newer listing."""
+    cur = out.get(c["_number"])
+    if cur is None or c.get("updated", "") > cur[1].get("updated", ""):
+        out[c["_number"]] = (key, c)
+
+
+def list_range(client, raw, project, start, end, out, status="merged", snap=None):
+    """Collect {change_number: (window_key, change)} for CLs in [start, end]
+    (by merge time for 'merged', by `updated` otherwise)."""
+    changes, key = list_window(client, raw, project, start, end, status=status, snap=snap)
     if changes and changes[-1].get("_more_changes"):
         if end - start > MIN_WINDOW:
             mid = start + (end - start) / 2
             mid = mid.replace(microsecond=0)
-            list_range(client, raw, project, start, mid, out, status)
-            list_range(client, raw, project, mid, end, out, status)
+            list_range(client, raw, project, start, mid, out, status, snap)
+            list_range(client, raw, project, mid, end, out, status, snap)
             return
         # Tiny window still overflowing (should not happen): fall back to paging.
         offset = 0
         while changes and changes[-1].get("_more_changes"):
             offset += len(changes)
             for c in changes:
-                out.setdefault(c["_number"], (key, c))
-            changes, key = list_window(client, raw, project, start, end, offset, status)
+                _keep(out, key, c)
+            changes, key = list_window(client, raw, project, start, end, offset, status, snap)
     for c in changes:
-        out.setdefault(c["_number"], (key, c))
-    print(f"  listed {status} {start:%m-%d %H:%M}..{end:%H:%M}: {len(changes)} CLs "
+        _keep(out, key, c)
+    print(f"  listed {status} {start:%Y-%m-%d %H:%M}..{end:%Y-%m-%d %H:%M}: {len(changes)} CLs "
           f"(requests so far: {client.request_count})", file=sys.stderr)
 
 
@@ -180,6 +191,122 @@ def extract_week(host, project, iso_week, min_interval=1.0, max_comment_fetches=
         raw.close()
 
 
+OPEN_WINDOW = timedelta(days=7)      # initial window for open CLs; bisected on overflow
+CLOSED_WINDOW = timedelta(days=1)
+
+
+def fetched_week_span(raw, host, project):
+    """(start of the oldest, end of the newest) fully fetched ISO week, or None."""
+    weeks = [w for (w,) in raw.execute(
+        "SELECT iso_week FROM week_progress WHERE host=? AND project=? AND fetched_at IS NOT NULL",
+        (host, project))]
+    if not weeks:
+        return None
+    return iso_week_bounds(min(weeks))[0], iso_week_bounds(max(weeks))[1]
+
+
+def _parse_iso(s):
+    return datetime.strptime(s, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=timezone.utc)
+
+
+def _list_span(client, raw, project, start, end, step, out, status, snap):
+    w = start
+    while w < end:
+        w_end = min(w + step, end)
+        list_range(client, raw, project, w, w_end, out, status, snap)
+        w = w_end
+
+
+def extract_open(host, project, since=None, closed_since=None, min_interval=1.0,
+                 data_dir=store.DATA_DIR, argv="", batch_size=200, batch_gap=5.0,
+                 duty_cycle=0.5, max_comment_fetches=None):
+    """Snapshot the CLs whose comments the weekly (closed-CL) listings can't see
+    yet, and fetch their NoteDb refs:
+      - open CLs on main updated at/after `since` (default: start of the oldest
+        fetched week), and
+      - merged/abandoned CLs closed at/after `closed_since` (default: end of the
+        newest fetched week), which no weekly listing covers yet.
+    Comments are later bucketed by the week they were written, so this is what
+    makes recent weeks complete. An unfinished snapshot is resumed (its cached
+    windows are reused); a finished one is never reused: rerun to refresh."""
+    raw = store.open_raw(data_dir)
+    client = GerritClient(host, min_interval=min_interval)
+    run_id = raw.execute(
+        "INSERT INTO extract_runs(started_at, command, status) VALUES (?,?,?)",
+        (store.now_iso(), argv, "running")).lastrowid
+    raw.commit()
+    status = "failed"
+    try:
+        resume = raw.execute(
+            """SELECT listed_at, since, closed_since FROM open_listings WHERE host=? AND project=?
+               AND fetched_at IS NULL ORDER BY listed_at DESC LIMIT 1""", (host, project)).fetchone()
+        if resume and since is None and closed_since is None:
+            snap, since_s, closed_s = resume
+            print(f"[open] resuming snapshot {snap}", file=sys.stderr)
+        else:
+            span = fetched_week_span(raw, host, project)
+            if span is None and (since is None or closed_since is None):
+                raise SystemExit("no fetched weeks yet: pass --since and --closed-since")
+            snap = store.now_iso()
+            since_s = since or f"{span[0]:%Y-%m-%dT%H:%M:%SZ}"
+            closed_s = closed_since or f"{span[1]:%Y-%m-%dT%H:%M:%SZ}"
+            raw.execute("""INSERT INTO open_listings(host, project, listed_at, since, closed_since,
+                           last_run_id) VALUES (?,?,?,?,?,?)""",
+                        (host, project, snap, since_s, closed_s, run_id))
+            raw.commit()
+        t_snap, t_since, t_closed = _parse_iso(snap), _parse_iso(since_s), _parse_iso(closed_s)
+
+        found = {}
+        print(f"[open] listing open CLs updated {since_s} .. {snap}, and CLs closed since "
+              f"{closed_s}", file=sys.stderr)
+        # Oldest windows first. A CL updated during the listing moves to a later
+        # `updated`, never an earlier one, so the catch-up window below
+        # (snapshot start .. now) still sees it.
+        _list_span(client, raw, project, t_since, t_snap, OPEN_WINDOW, found, "open", snap)
+        for st in STATUSES:
+            _list_span(client, raw, project, t_closed, t_snap, CLOSED_WINDOW, found, st, snap)
+        t_now = datetime.now(timezone.utc).replace(microsecond=0)
+        for st in ("open",) + STATUSES:
+            list_range(client, raw, project, t_snap, t_now, found, st, snap)
+
+        keep = {}
+        for n, (k, c) in found.items():
+            if c.get("status") == "NEW":
+                keep[n] = (k, c)
+            elif (c.get("status") in ("MERGED", "ABANDONED")
+                  and parse_gerrit_ts(closed_ts(c)) >= t_closed):
+                keep[n] = (k, c)
+        with raw:
+            raw.execute("DELETE FROM open_changes WHERE host=? AND project=? AND listed_at=?",
+                        (host, project, snap))
+            raw.executemany("INSERT INTO open_changes VALUES (?,?,?,?,?)",
+                            [(host, project, snap, n, k) for n, (k, _) in keep.items()])
+            raw.execute("""UPDATE open_listings SET cl_count=?, last_run_id=? WHERE host=? AND
+                           project=? AND listed_at=?""", (len(keep), run_id, host, project, snap))
+        n_open = sum(1 for _, c in keep.values() if c.get("status") == "NEW")
+        print(f"[open] {len(keep)} CLs: {n_open} open, {len(keep) - n_open} closed since "
+              f"{closed_s}; {client.request_count} listing requests", file=sys.stderr)
+
+        todo = [n for n, (_, c) in sorted(keep.items()) if needs_comments(c)]
+        remaining = fetch_notedb(client, raw, project, todo, keep, batch_size, batch_gap,
+                                 max_comment_fetches, duty_cycle)
+        if not remaining:
+            with raw:
+                raw.execute("""UPDATE open_listings SET fetched_at=? WHERE host=? AND project=?
+                               AND listed_at=?""", (store.now_iso(), host, project, snap))
+        status = "ok" if not remaining else "partial"
+        print(f"[open] done: {client.request_count} REST requests this run; "
+              f"{len(remaining)} CLs still pending", file=sys.stderr)
+    except KeyboardInterrupt:
+        status = "interrupted"
+        raise
+    finally:
+        raw.execute("UPDATE extract_runs SET finished_at=?, requests=?, status=? WHERE run_id=?",
+                    (store.now_iso(), client.request_count, status, run_id))
+        raw.commit()
+        raw.close()
+
+
 def fetch_rest_comments(client, raw, host, project, todo, max_fetches):
     """One REST /comments request per CL. Returns CLs still missing."""
     have = {int(k) for (k,) in raw.execute(
@@ -199,6 +326,13 @@ def fetch_rest_comments(client, raw, host, project, todo, max_fetches):
     return pending[len(batch):]
 
 
+def stale_refs(todo, listed, tips):
+    """CLs in `todo` whose meta ref is missing locally or older than the
+    listing's `updated`. listed: {n: (window_key, change)}; tips: {n: unix}."""
+    return [n for n in todo if n not in tips
+            or tips[n] < parse_gerrit_ts(listed[n][1]["updated"]).timestamp()]
+
+
 def fetch_notedb(client, raw, project, todo, in_week, batch_size, batch_gap, max_cls,
                  duty_cycle=1.0):
     """Batched `git fetch` of NoteDb meta refs, then resolve any comment
@@ -206,7 +340,15 @@ def fetch_notedb(client, raw, project, todo, in_week, batch_size, batch_gap, max
     import time
     from . import notedb
     repo = notedb.init_repo(notedb.default_repo(project))
-    pending = [n for n in todo if n not in notedb.fetched_numbers(repo)]
+    # Fetch refs we lack, and refetch refs whose listing is newer than the local
+    # tip (e.g. a CL fetched while open that has since gained comments). A
+    # refetch is incremental: only the new NoteDb commits are downloaded.
+    tips = notedb.tip_times(repo)
+    pending = stale_refs(todo, in_week, tips)
+    n_stale = sum(1 for n in pending if n in tips)
+    if n_stale:
+        print(f"  NoteDb: {n_stale} local meta refs are older than their listing; refetching",
+              file=sys.stderr)
     if max_cls is not None:
         pending = pending[:max_cls]
     nb = (len(pending) + batch_size - 1) // batch_size
