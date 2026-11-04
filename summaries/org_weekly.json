@@ -1,7 +1,9 @@
 {
  "meta": {
-  "generated_at": "2026-11-04T15:08:41Z",
+  "generated_at": "2026-11-04T15:22:03Z",
   "weeks": [
+   "2025-W29",
+   "2025-W30",
    "2025-W31",
    "2025-W32",
    "2025-W33",
@@ -127,23 +129,219 @@
  },
  "rows": [
   {
+   "iso_week": "2025-W29",
+   "org": "google.com",
+   "share": 0.9027,
+   "reviewers": 295,
+   "reviewed_cls": 348,
+   "comments": 2142,
+   "review_chars": 332527,
+   "ai_comments": 0,
+   "post_merge_comments": 14,
+   "share_cls": 0.8744,
+   "share_comments": 0.9027,
+   "share_chars": 0.9116
+  },
+  {
+   "iso_week": "2025-W29",
+   "org": "microsoft.com",
+   "share": 0.0649,
+   "reviewers": 26,
+   "reviewed_cls": 28,
+   "comments": 154,
+   "review_chars": 23044,
+   "ai_comments": 0,
+   "post_merge_comments": 2,
+   "share_cls": 0.0704,
+   "share_comments": 0.0649,
+   "share_chars": 0.0632
+  },
+  {
+   "iso_week": "2025-W29",
+   "org": "intel.com",
+   "share": 0.0198,
+   "reviewers": 3,
+   "reviewed_cls": 9,
+   "comments": 47,
+   "review_chars": 5269,
+   "ai_comments": 0,
+   "post_merge_comments": 0,
+   "share_cls": 0.0226,
+   "share_comments": 0.0198,
+   "share_chars": 0.0144
+  },
+  {
+   "iso_week": "2025-W29",
+   "org": "igalia.com",
+   "share": 0.0055,
+   "reviewers": 4,
+   "reviewed_cls": 4,
+   "comments": 13,
+   "review_chars": 1938,
+   "ai_comments": 0,
+   "post_merge_comments": 0,
+   "share_cls": 0.0101,
+   "share_comments": 0.0055,
+   "share_chars": 0.0053
+  },
+  {
+   "iso_week": "2025-W29",
+   "org": "Other",
+   "share": 0.0042,
+   "reviewers": 9,
+   "reviewed_cls": 8,
+   "comments": 10,
+   "review_chars": 1371,
+   "ai_comments": 0,
+   "post_merge_comments": 4,
+   "share_cls": 0.0201,
+   "share_comments": 0.0042,
+   "share_chars": 0.0038
+  },
+  {
+   "iso_week": "2025-W29",
+   "org": "tencent.com",
+   "share": 0.0029,
+   "reviewers": 1,
+   "reviewed_cls": 0,
+   "comments": 7,
+   "review_chars": 608,
+   "ai_comments": 0,
+   "post_merge_comments": 0,
+   "share_cls": 0.0,
+   "share_comments": 0.0029,
+   "share_chars": 0.0017
+  },
+  {
+   "iso_week": "2025-W29",
+   "org": "shopify.com",
+   "share": 0.0,
+   "reviewers": 1,
+   "reviewed_cls": 1,
+   "comments": 0,
+   "review_chars": 0,
+   "ai_comments": 0,
+   "post_merge_comments": 0,
+   "share_cls": 0.0025,
+   "share_comments": 0.0,
+   "share_chars": 0.0
+  },
+  {
+   "iso_week": "2025-W30",
+   "org": "google.com",
+   "share": 0.8714,
+   "reviewers": 311,
+   "reviewed_cls": 357,
+   "comments": 2548,
+   "review_chars": 410088,
+   "ai_comments": 0,
+   "post_merge_comments": 23,
+   "share_cls": 0.838,
+   "share_comments": 0.8714,
+   "share_chars": 0.8813
+  },
+  {
+   "iso_week": "2025-W30",
+   "org": "microsoft.com",
+   "share": 0.0817,
+   "reviewers": 30,
+   "reviewed_cls": 44,
+   "comments": 239,
+   "review_chars": 35853,
+   "ai_comments": 0,
+   "post_merge_comments": 1,
+   "share_cls": 0.1033,
+   "share_comments": 0.0817,
+   "share_chars": 0.0771
+  },
+  {
+   "iso_week": "2025-W30",
+   "org": "intel.com",
+   "share": 0.0298,
+   "reviewers": 7,
+   "reviewed_cls": 11,
+   "comments": 87,
+   "review_chars": 9552,
+   "ai_comments": 0,
+   "post_merge_comments": 1,
+   "share_cls": 0.0258,
+   "share_comments": 0.0298,
+   "share_chars": 0.0205
+  },
+  {
+   "iso_week": "2025-W30",
+   "org": "igalia.com",
+   "share": 0.0154,
+   "reviewers": 7,
+   "reviewed_cls": 7,
+   "comments": 45,
+   "review_chars": 7864,
+   "ai_comments": 0,
+   "post_merge_comments": 2,
+   "share_cls": 0.0164,
+   "share_comments": 0.0154,
+   "share_chars": 0.0169
+  },
+  {
+   "iso_week": "2025-W30",
+   "org": "Other",
+   "share": 0.0014,
+   "reviewers": 6,
+   "reviewed_cls": 6,
+   "comments": 4,
+   "review_chars": 101,
+   "ai_comments": 0,
+   "post_merge_comments": 3,
+   "share_cls": 0.0141,
+   "share_comments": 0.0014,
+   "share_chars": 0.0002
+  },
+  {
+   "iso_week": "2025-W30",
+   "org": "qtmlabs.xyz",
+   "share": 0.0003,
+   "reviewers": 1,
+   "reviewed_cls": 0,
+   "comments": 1,
+   "review_chars": 1854,
+   "ai_comments": 0,
+   "post_merge_comments": 0,
+   "share_cls": 0.0,
+   "share_comments": 0.0003,
+   "share_chars": 0.004
+  },
+  {
+   "iso_week": "2025-W30",
+   "org": "tencent.com",
+   "share": 0.0,
+   "reviewers": 1,
+   "reviewed_cls": 1,
+   "comments": 0,
+   "review_chars": 0,
+   "ai_comments": 0,
+   "post_merge_comments": 0,
+   "share_cls": 0.0023,
+   "share_comments": 0.0,
+   "share_chars": 0.0
+  },
+  {
    "iso_week": "2025-W31",
    "org": "google.com",
-   "share": 0.8744,
-   "reviewers": 314,
+   "share": 0.8748,
+   "reviewers": 318,
    "reviewed_cls": 385,
-   "comments": 2395,
-   "review_chars": 367028,
+   "comments": 2411,
+   "review_chars": 370645,
    "ai_comments": 0,
-   "post_merge_comments": 30,
+   "post_merge_comments": 46,
    "share_cls": 0.877,
-   "share_comments": 0.8744,
-   "share_chars": 0.8445
+   "share_comments": 0.8748,
+   "share_chars": 0.8453
   },
   {
    "iso_week": "2025-W31",
    "org": "microsoft.com",
-   "share": 0.0803,
+   "share": 0.0798,
    "reviewers": 27,
    "reviewed_cls": 32,
    "comments": 220,
@@ -151,13 +349,13 @@
    "ai_comments": 0,
    "post_merge_comments": 1,
    "share_cls": 0.0729,
-   "share_comments": 0.0803,
-   "share_chars": 0.1003
+   "share_comments": 0.0798,
+   "share_chars": 0.0994
   },
   {
    "iso_week": "2025-W31",
    "org": "igalia.com",
-   "share": 0.0215,
+   "share": 0.0214,
    "reviewers": 4,
    "reviewed_cls": 4,
    "comments": 59,
@@ -165,13 +363,13 @@
    "ai_comments": 0,
    "post_merge_comments": 0,
    "share_cls": 0.0091,
-   "share_comments": 0.0215,
-   "share_chars": 0.0301
+   "share_comments": 0.0214,
+   "share_chars": 0.0298
   },
   {
    "iso_week": "2025-W31",
    "org": "intel.com",
-   "share": 0.0128,
+   "share": 0.0127,
    "reviewers": 6,
    "reviewed_cls": 14,
    "comments": 35,
@@ -179,13 +377,13 @@
    "ai_comments": 0,
    "post_merge_comments": 1,
    "share_cls": 0.0319,
-   "share_comments": 0.0128,
-   "share_chars": 0.0088
+   "share_comments": 0.0127,
+   "share_chars": 0.0087
   },
   {
    "iso_week": "2025-W31",
    "org": "opera.com",
-   "share": 0.0088,
+   "share": 0.0087,
    "reviewers": 1,
    "reviewed_cls": 0,
    "comments": 24,
@@ -193,22 +391,22 @@
    "ai_comments": 0,
    "post_merge_comments": 0,
    "share_cls": 0.0,
-   "share_comments": 0.0088,
-   "share_chars": 0.0124
+   "share_comments": 0.0087,
+   "share_chars": 0.0123
   },
   {
    "iso_week": "2025-W31",
    "org": "Other",
-   "share": 0.0015,
-   "reviewers": 6,
+   "share": 0.0018,
+   "reviewers": 7,
    "reviewed_cls": 4,
-   "comments": 4,
-   "review_chars": 923,
+   "comments": 5,
+   "review_chars": 1190,
    "ai_comments": 0,
-   "post_merge_comments": 1,
+   "post_merge_comments": 2,
    "share_cls": 0.0091,
-   "share_comments": 0.0015,
-   "share_chars": 0.0021
+   "share_comments": 0.0018,
+   "share_chars": 0.0027
   },
   {
    "iso_week": "2025-W31",
@@ -885,7 +1083,7 @@
   {
    "iso_week": "2025-W37",
    "org": "google.com",
-   "share": 0.8368,
+   "share": 0.8365,
    "reviewers": 329,
    "reviewed_cls": 419,
    "comments": 2620,
@@ -893,8 +1091,8 @@
    "ai_comments": 0,
    "post_merge_comments": 15,
    "share_cls": 0.9089,
-   "share_comments": 0.8368,
-   "share_chars": 0.835
+   "share_comments": 0.8365,
+   "share_chars": 0.8347
   },
   {
    "iso_week": "2025-W37",
@@ -908,7 +1106,7 @@
    "post_merge_comments": 1,
    "share_cls": 0.0521,
    "share_comments": 0.1127,
-   "share_chars": 0.1265
+   "share_chars": 0.1264
   },
   {
    "iso_week": "2025-W37",
@@ -954,6 +1152,20 @@
   },
   {
    "iso_week": "2025-W37",
+   "org": "Other",
+   "share": 0.0016,
+   "reviewers": 6,
+   "reviewed_cls": 2,
+   "comments": 5,
+   "review_chars": 363,
+   "ai_comments": 0,
+   "post_merge_comments": 2,
+   "share_cls": 0.0043,
+   "share_comments": 0.0016,
+   "share_chars": 0.0008
+  },
+  {
+   "iso_week": "2025-W37",
    "org": "googlemail.com",
    "share": 0.0016,
    "reviewers": 1,
@@ -965,20 +1177,6 @@
    "share_cls": 0.0,
    "share_comments": 0.0016,
    "share_chars": 0.001
-  },
-  {
-   "iso_week": "2025-W37",
-   "org": "Other",
-   "share": 0.0013,
-   "reviewers": 5,
-   "reviewed_cls": 2,
-   "comments": 4,
-   "review_chars": 190,
-   "ai_comments": 0,
-   "post_merge_comments": 1,
-   "share_cls": 0.0043,
-   "share_comments": 0.0013,
-   "share_chars": 0.0004
   },
   {
    "iso_week": "2025-W37",
@@ -1515,16 +1713,16 @@
   {
    "iso_week": "2025-W42",
    "org": "google.com",
-   "share": 0.8831,
-   "reviewers": 320,
+   "share": 0.8832,
+   "reviewers": 321,
    "reviewed_cls": 362,
-   "comments": 2161,
-   "review_chars": 334643,
+   "comments": 2162,
+   "review_chars": 335251,
    "ai_comments": 0,
-   "post_merge_comments": 23,
+   "post_merge_comments": 24,
    "share_cls": 0.896,
-   "share_comments": 0.8831,
-   "share_chars": 0.8763
+   "share_comments": 0.8832,
+   "share_chars": 0.8765
   },
   {
    "iso_week": "2025-W42",
@@ -1538,7 +1736,7 @@
    "post_merge_comments": 0,
    "share_cls": 0.0644,
    "share_comments": 0.0895,
-   "share_chars": 0.0931
+   "share_chars": 0.0929
   },
   {
    "iso_week": "2025-W42",
@@ -1739,7 +1937,7 @@
   {
    "iso_week": "2025-W44",
    "org": "google.com",
-   "share": 0.9126,
+   "share": 0.9123,
    "reviewers": 331,
    "reviewed_cls": 375,
    "comments": 2601,
@@ -1747,8 +1945,8 @@
    "ai_comments": 0,
    "post_merge_comments": 49,
    "share_cls": 0.8971,
-   "share_comments": 0.9126,
-   "share_chars": 0.9156
+   "share_comments": 0.9123,
+   "share_chars": 0.9153
   },
   {
    "iso_week": "2025-W44",
@@ -1781,16 +1979,16 @@
   {
    "iso_week": "2025-W44",
    "org": "opera.com",
-   "share": 0.0032,
-   "reviewers": 1,
+   "share": 0.0035,
+   "reviewers": 2,
    "reviewed_cls": 2,
-   "comments": 9,
-   "review_chars": 885,
+   "comments": 10,
+   "review_chars": 1031,
    "ai_comments": 0,
-   "post_merge_comments": 0,
+   "post_merge_comments": 1,
    "share_cls": 0.0048,
-   "share_comments": 0.0032,
-   "share_chars": 0.0018
+   "share_comments": 0.0035,
+   "share_chars": 0.0022
   },
   {
    "iso_week": "2025-W44",
@@ -2201,7 +2399,7 @@
   {
    "iso_week": "2025-W48",
    "org": "google.com",
-   "share": 0.8736,
+   "share": 0.8732,
    "reviewers": 290,
    "reviewed_cls": 243,
    "comments": 1535,
@@ -2209,13 +2407,13 @@
    "ai_comments": 0,
    "post_merge_comments": 20,
    "share_cls": 0.9275,
-   "share_comments": 0.8736,
+   "share_comments": 0.8732,
    "share_chars": 0.8925
   },
   {
    "iso_week": "2025-W48",
    "org": "microsoft.com",
-   "share": 0.0763,
+   "share": 0.0762,
    "reviewers": 16,
    "reviewed_cls": 13,
    "comments": 134,
@@ -2223,7 +2421,7 @@
    "ai_comments": 0,
    "post_merge_comments": 1,
    "share_cls": 0.0496,
-   "share_comments": 0.0763,
+   "share_comments": 0.0762,
    "share_chars": 0.075
   },
   {
@@ -2271,15 +2469,15 @@
   {
    "iso_week": "2025-W48",
    "org": "Other",
-   "share": 0.0006,
-   "reviewers": 1,
+   "share": 0.0011,
+   "reviewers": 2,
    "reviewed_cls": 0,
-   "comments": 1,
-   "review_chars": 300,
+   "comments": 2,
+   "review_chars": 301,
    "ai_comments": 0,
-   "post_merge_comments": 0,
+   "post_merge_comments": 1,
    "share_cls": 0.0,
-   "share_comments": 0.0006,
+   "share_comments": 0.0011,
    "share_chars": 0.0011
   },
   {
@@ -2985,15 +3183,15 @@
   {
    "iso_week": "2026-W03",
    "org": "google.com",
-   "share": 0.9089,
+   "share": 0.909,
    "reviewers": 349,
    "reviewed_cls": 357,
-   "comments": 2126,
-   "review_chars": 343217,
+   "comments": 2127,
+   "review_chars": 343293,
    "ai_comments": 0,
-   "post_merge_comments": 31,
+   "post_merge_comments": 32,
    "share_cls": 0.9154,
-   "share_comments": 0.9089,
+   "share_comments": 0.909,
    "share_chars": 0.9057
   },
   {
@@ -8402,6 +8600,24 @@
   }
  ],
  "weekly_totals": [
+  {
+   "iso_week": "2025-W29",
+   "main_cls": 4149,
+   "merged_cls": 3207,
+   "abandoned_cls": 942,
+   "human_cls": 2418,
+   "bot_cls": 1731,
+   "human_cls_with_comments": 1459
+  },
+  {
+   "iso_week": "2025-W30",
+   "main_cls": 4051,
+   "merged_cls": 3216,
+   "abandoned_cls": 835,
+   "human_cls": 2476,
+   "bot_cls": 1575,
+   "human_cls_with_comments": 1509
+  },
   {
    "iso_week": "2025-W31",
    "main_cls": 4205,
