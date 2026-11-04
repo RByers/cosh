@@ -156,6 +156,26 @@ class SummarizeTest(unittest.TestCase):
             rows = summarize(data_dir=d, out_dir=out)
         self.assertEqual([(r["org"], r["comments"], r["ai_comments"], r["post_merge_comments"])
                           for r in rows], [("igalia.com", 6, 1, 3)])
+    def test_gmail_folded_into_other(self):
+        with tempfile.TemporaryDirectory() as d:
+            db = store.open_cosh(d)
+            h = "chromium-review.googlesource.com"
+            with db:
+                db.execute("INSERT INTO accounts VALUES (?,1,'owner@igalia.com',NULL,0)", (h,))
+                for aid in range(2, 8):   # 6 gmail.com reviewers: above MIN_REVIEWERS
+                    db.execute("INSERT INTO accounts VALUES (?,?,?,NULL,0)", (h, aid, f"r{aid}@gmail.com"))
+                db.execute("""INSERT INTO changes(host, change_number, project, branch, owner_account,
+                              status, created_at, closed_at, iso_week)
+                              VALUES (?,100,'chromium/src','main',1,'MERGED','2026-10-26 00:00:00',
+                              '2026-10-27 12:00:00','2026-W44')""", (h,))
+                for aid in range(2, 8):
+                    db.execute("""INSERT INTO reviews(host, change_number, account_id, review_comments,
+                                  review_chars, ai_comments, post_merge_comments)
+                                  VALUES (?,100,?,2,20,0,0)""", (h, aid))
+            db.close()
+            rows = summarize(data_dir=d, out_dir=os.path.join(d, "summaries"))
+        self.assertEqual([(r["org"], r["reviewers"], r["comments"]) for r in rows], [("Other", 6, 12)])
+
 
 if __name__ == "__main__":
     unittest.main()

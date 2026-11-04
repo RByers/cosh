@@ -507,6 +507,8 @@ What to commit and what to keep local:
   - Apply a minimum group size: an org with fewer than ~5 distinct reviewers in a
     period gets folded into `Other` for that period. This avoids publishing what is
     effectively one named person's activity, e.g. "Org X" with one contributor.
+  - `gmail.com` is always folded into `Other`, since a webmail domain is not an
+    organization.
 - `account_orgs.csv` is the most sensitive file. It holds manual employer guesses
   for chromium.org accounts. Keep it local, record a source per line, and prefer
   coarse rules over per-person curation where possible.
