@@ -48,11 +48,11 @@ Over a range:
    week, using weeks before the range too (`smoothRatios` in `src/data.ts`).
 2. **Review by organization**: raw counts summed over the range for the metric,
    with the top 7 orgs and then "Other".
-3. **Reviewer leaderboard**: the top 50 reviewers over the range for the metric,
-   one compact bar each, coloured by org.
-4. **Chromium browser usage** from Cloudflare Radar, per browser, over the range,
+3. **Chromium browser usage** from Cloudflare Radar, per browser, over the range,
    with a marker and a note on the 2026-W37 ChromeDerivative jump.
-5. Totals for the range, plus a table with every value shown in the charts.
+4. Totals for the range, plus a table with every value shown in the charts.
+5. **Reviewer leaderboard**: the top 50 reviewers over the range for the metric,
+   one compact bar each, coloured by org.
 
 The metric, range and smoothing are kept in the URL hash
 (`#metric=cls&from=2026-W14&to=2026-W44&smooth=4`). Old `#week=2026-W44` links open
