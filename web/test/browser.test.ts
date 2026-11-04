@@ -69,9 +69,9 @@ test('page loads data and renders all three charts without errors', async () => 
     assert.ok(c.w > 200 && c.h > 200, `${c.k} has size ${c.w}x${c.h}`);
     assert.ok(c.n >= 1, `${c.k} has datasets`);
   }
-  // Charts come in order: ratio, review, (leaderboard,) usage, before the table.
+  // Charts come in order: ratio, review, usage, then the leaderboard, before the table.
   const order = await page.$$eval('main > section', (s) => s.map((e) => e.querySelector('canvas, table')?.id));
-  assert.deepEqual(order.filter(Boolean), ['ratio-chart', 'review-chart', 'leaderboard-chart', 'usage-chart', 'org-table']);
+  assert.deepEqual(order.filter(Boolean), ['ratio-chart', 'review-chart', 'usage-chart', 'leaderboard-chart', 'org-table']);
   await page.close();
 });
 
