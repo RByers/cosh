@@ -1,7 +1,8 @@
-"""Aggregate cosh.sqlite into small per-org summaries for the front end.
+"""Aggregate cosh.sqlite into small summaries for the front end.
 Org attribution: see cosh/orgs.py.
-Output contains no per-person data. Orgs with fewer than MIN_REVIEWERS distinct
-reviewers in a period are folded into 'Other'.
+In org_weekly, every org is reported however few reviewers it has; only the
+domains in FOLD_INTO_OTHER (webmail domains that say nothing about an
+organization) are folded into 'Other'.
 
 Headline metric (column `share`): comment count by default; reviewed CLs or
 review characters selectable. All three shares are always present too.
@@ -15,6 +16,9 @@ Outputs:
   summaries/org_weekly.{csv,json}     one row per (week, org)
   summaries/weekly_totals.csv         one row per week: human vs bot commits on
                                       main, so bot-only stretches don't look like gaps
+  summaries/reviewer_weekly.json      per reviewer: each week's top 50 by each
+                                      metric (the web UI's leaderboard); names and
+                                      orgs only, no emails
 """
 
 import csv
@@ -26,22 +30,29 @@ from . import store
 from .orgs import OrgResolver
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-MIN_REVIEWERS = 5
+# Domains always folded into Other, whatever their size: personal webmail
+# addresses are not an organization.
+FOLD_INTO_OTHER = frozenset({"gmail.com"})
 TOTALS_COLS = ["iso_week", "main_cls", "merged_cls", "abandoned_cls", "human_cls",
                "bot_cls", "human_cls_with_review"]
 METRICS = {"comments": "share_comments", "cls": "share_cls", "chars": "share_chars"}
+LEADERBOARD_SIZE = 50
+REVIEWERS_FILE = "reviewer_weekly.json"
 
 
 def summarize(data_dir=store.DATA_DIR, out_dir=os.path.join(ROOT, "summaries"),
-              min_reviewers=MIN_REVIEWERS, metric="comments"):
+              metric="comments"):
     if metric not in METRICS:
         raise ValueError(f"metric must be one of {sorted(METRICS)}")
     db = store.open_cosh(data_dir)
     resolve = OrgResolver()
     rows = db.execute(f"""
         SELECT c.iso_week, c.closed_at, r.change_number, a.email, r.account_id,
-               r.review_comments, r.review_chars, r.ai_comments,
-               r.post_merge_comments, r.voted_cr
+               -- Floor of 1: a vote with no counted comment (e.g. a bare +1) is a
+               -- review, so it counts as one comment here and in the leaderboard.
+               max(r.review_comments, coalesce(r.voted_cr, 0) != 0), r.review_chars, r.ai_comments,
+               r.post_merge_comments, a.name,
+               r.review_comments = 0 AND coalesce(r.voted_cr, 0) != 0 AS vote_only
         FROM reviews r
         JOIN changes c ON c.host = r.host AND c.change_number = r.change_number
         JOIN accounts a ON a.host = r.host AND a.account_id = r.account_id
@@ -49,13 +60,10 @@ def summarize(data_dir=store.DATA_DIR, out_dir=os.path.join(ROOT, "summaries"),
     """).fetchall()
 
     agg = defaultdict(lambda: dict(cls=set(), reviewers=set(), comments=0, chars=0, ai=0, post_merge=0,
-                                      vote_only=0))
-    for week, submitted, cl, email, aid, ncom, nchars, nai, npm, vote in rows:
+                                   vote_only=0))
+    for week, submitted, cl, email, aid, ncom, nchars, nai, npm, _, vote_only in rows:
         g = agg[(week, resolve(email, submitted))]
-        if vote and ncom == 0:
-            # Floor of 1: a vote with no comment (e.g. a bare +1) is a review.
-            ncom = 1
-            g["vote_only"] += 1
+        g["vote_only"] += vote_only
         g["cls"].add(cl)
         g["reviewers"].add(aid)
         g["comments"] += ncom
@@ -63,11 +71,12 @@ def summarize(data_dir=store.DATA_DIR, out_dir=os.path.join(ROOT, "summaries"),
         g["ai"] += nai
         g["post_merge"] += npm
 
-    # Privacy: fold small orgs into Other (per week).
+    # Fold FOLD_INTO_OTHER domains into Other. Every other org is reported,
+    # however few reviewers it has (the user dropped the <5-reviewer fold).
     folded = defaultdict(lambda: dict(cls=set(), reviewers=set(), comments=0, chars=0, ai=0, post_merge=0,
-                                         vote_only=0))
+                                      vote_only=0))
     for (week, org), g in agg.items():
-        key = (week, org if len(g["reviewers"]) >= min_reviewers else "Other")
+        key = (week, "Other" if org in FOLD_INTO_OTHER else org)
         f = folded[key]
         f["cls"] |= g["cls"]
         f["reviewers"] |= g["reviewers"]
@@ -125,7 +134,7 @@ def summarize(data_dir=store.DATA_DIR, out_dir=os.path.join(ROOT, "summaries"),
                 headline_metric=metric, headline_column="share",
                 scope="chromium/src branch main, merged + abandoned CLs; bot-owned CLs excluded from review metrics "
                       "(counted in weekly_totals.csv)",
-                min_reviewers_per_org=min_reviewers,
+                folded_into_other=sorted(FOLD_INTO_OTHER),
                 org_rule="affiliations.json5 (dated) > other @chromium.org -> google.com > email domain",
                 metric_notes="reviews = non-owner, non-bot accounts that voted Code-Review "
                              "or wrote a comment; a review with a vote but no counted comment counts as "
@@ -137,4 +146,51 @@ def summarize(data_dir=store.DATA_DIR, out_dir=os.path.join(ROOT, "summaries"),
                        weekly_totals=[dict(zip(TOTALS_COLS, r)) for r in weekly]),
                   fh, indent=1)
     db.close()
+    write_reviewers(rows, resolve, os.path.join(out_dir, REVIEWERS_FILE))
     return out
+
+
+def reviewer_leaderboard(rows, resolve, n=LEADERBOARD_SIZE):
+    """Per week, the top `n` reviewers by each metric (the union, so the UI can
+    re-rank by any metric). Same scope as the org summary: human reviewers on
+    human-owned CLs on main; comments exclude AI and post-merge comments, and
+    a vote-only review counts as one comment.
+    `org` is the reviewer's org on most of their reviewed CLs that week."""
+    per = defaultdict(lambda: dict(name=None, cls=set(), comments=0, chars=0, orgs=defaultdict(int)))
+    for week, submitted, cl, email, aid, ncom, nchars, _, _, name, *_ in rows:
+        p = per[(week, aid)]
+        p["name"] = name or (email or "").split("@")[0] or f"Account {aid}"
+        p["cls"].add(cl)
+        p["comments"] += ncom
+        p["chars"] += nchars
+        p["orgs"][resolve(email, submitted)] += 1
+    by_week = defaultdict(list)
+    for (week, aid), p in per.items():
+        org = max(p["orgs"].items(), key=lambda kv: (kv[1], kv[0]))[0]
+        by_week[week].append(dict(account_id=aid, name=p["name"], org=org, comments=p["comments"],
+                                  cls=len(p["cls"]), chars=p["chars"]))
+    out = {}
+    for week, people in sorted(by_week.items()):
+        keep = {}
+        for m in ("comments", "cls", "chars"):
+            ranked = sorted((r for r in people if r[m] > 0), key=lambda r: (-r[m], r["account_id"]))
+            for r in ranked[:n]:
+                keep[r["account_id"]] = r
+        out[week] = sorted(keep.values(), key=lambda r: (-r["comments"], -r["cls"], r["account_id"]))
+    return out
+
+
+def write_reviewers(rows, resolve, path):
+    """Committed and published (derived from public Gerrit data, docs/plan.md
+    ground rule 3). One reviewer per line, so weekly regenerations diff well."""
+    weeks = reviewer_leaderboard(rows, resolve)
+    meta = dict(generated_at=store.now_iso(), top_n=LEADERBOARD_SIZE,
+                scope="union of each week's top_n reviewers by comments, reviewed CLs and review chars; "
+                      "same scope as org_weekly.json (human reviewers on human-owned CLs on main)")
+    with open(path, "w") as fh:
+        fh.write('{"meta": %s,\n "weeks": {' % json.dumps(meta))
+        for i, (week, people) in enumerate(weeks.items()):
+            fh.write('%s\n  %s: [' % ("," if i else "", json.dumps(week)))
+            fh.write(",".join("\n   " + json.dumps(p, ensure_ascii=False) for p in people))
+            fh.write("\n  ]")
+        fh.write("\n }\n}\n")

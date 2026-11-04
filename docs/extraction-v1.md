@@ -30,7 +30,8 @@ NoteDb `git fetch`  ─► data/private/notedb/*.git ┼─ derive ─► data/p
 Cloudflare Radar    ─► data/public/radar/raw/ ──── radar ──► data/public/radar_browser_share.csv
 ```
 
-- `data/private/` (gitignored) holds per-person data.
+- `data/private/` (gitignored for size; see `storage-design.md` §4) holds the
+  raw stores and the derived DB.
   - `raw.sqlite` and `notedb/` keep **everything downloaded, losslessly and
     permanently**, even data no metric uses yet. This is the intended design;
     see `storage-design.md` §3.8, which also covers what NoteDb contains and
@@ -176,8 +177,11 @@ The org is a domain name, evaluated as of the CL's `closed_at`:
 2. **Other `@chromium.org` accounts** are attributed to `google.com`.
 3. **Everyone else** is attributed to the domain of their email address.
 
-In summaries, orgs with fewer than 5 distinct reviewers in a week are folded
-into `Other` for privacy.
+`org_weekly` reports every org, however few reviewers it has; only
+`gmail.com` is folded into `Other`. `summaries/reviewer_weekly.json` holds each
+week's top 50 reviewers by comments, by reviewed CLs and by review
+characters, with the same scope as `org_weekly`. Each reviewer's org is the
+one on most of their reviewed CLs that week.
 
 ## W44 results (first look)
 

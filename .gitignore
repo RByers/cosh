@@ -1,10 +1,13 @@
-# Per-person data and raw Gerrit cache: never commit (docs/storage-design.md §4)
+# Raw Gerrit caches and rebuildable DBs: too big to commit (docs/storage-design.md §4)
 data/private/
 .research/gerrit/responses/
 __pycache__/
 
 # credentials
 secrets.sh
-# one-off research downloads (re-fetchable; may contain personal data)
+# one-off research downloads (re-fetchable)
 .research/affiliations/
 *.pyc
+
+# Claude Code local state (worktrees, settings)
+.claude/

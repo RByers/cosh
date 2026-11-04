@@ -106,24 +106,6 @@ interface RatioDatum {
   derived: number | null;
 }
 
-/** Labels the two halves of the ratio chart. */
-const halvesPlugin = (theme: Theme): Plugin<'line'> => ({
-  id: 'coshHalves',
-  beforeDatasetsDraw(chart) {
-    const { ctx, chartArea: a, scales } = chart;
-    const mid = scales.y.getPixelForValue(1);
-    ctx.save();
-    ctx.font = '12px system-ui, -apple-system, "Segoe UI", sans-serif';
-    ctx.fillStyle = theme.muted;
-    ctx.textAlign = 'right';
-    ctx.textBaseline = 'bottom';
-    ctx.fillText('contributes more than its usage share ↑', a.right - 6, mid - 4);
-    ctx.textBaseline = 'top';
-    ctx.fillText('↓ contributes less than its usage share', a.right - 6, mid + 4);
-    ctx.restore();
-  },
-});
-
 export function renderRatioChart(
   canvas: HTMLCanvasElement,
   weeks: string[],
@@ -153,7 +135,6 @@ export function renderRatioChart(
   return new Chart<'line', RatioDatum[]>(canvas, {
     type: 'line',
     data: { labels: weeks, datasets },
-    plugins: [halvesPlugin(theme)],
     options: {
       ...base,
       plugins: {
@@ -201,14 +182,14 @@ export function renderRatioChart(
 }
 
 /** Draws a value label at the end of each horizontal bar. */
-const barLabelsPlugin = (theme: Theme, format: (v: number) => string): Plugin<'bar'> => ({
+const barLabelsPlugin = (theme: Theme, format: (v: number) => string, size = 12): Plugin<'bar'> => ({
   id: 'coshBarLabels',
   afterDatasetsDraw(chart) {
     const { ctx } = chart;
     const meta = chart.getDatasetMeta(0);
     const data = chart.data.datasets[0].data as number[];
     ctx.save();
-    ctx.font = '12px system-ui, -apple-system, "Segoe UI", sans-serif';
+    ctx.font = `${size}px system-ui, -apple-system, "Segoe UI", sans-serif`;
     ctx.fillStyle = theme.text;
     ctx.textBaseline = 'middle';
     meta.data.forEach((bar, i) => {
@@ -270,6 +251,85 @@ export function renderReviewChart(
           grid: { display: false },
           border: { color: theme.baseline },
           ticks: { color: theme.text },
+        },
+      },
+    },
+  });
+}
+
+/** Pixels per leaderboard row; the canvas height is rows × this plus axes. */
+export const LEADERBOARD_ROW_PX = 15;
+
+const truncate = (s: string, n: number) => (s.length > n ? `${s.slice(0, n - 1)}…` : s);
+
+/** Top reviewers for one week, one compact horizontal bar each. Bars take the
+ * org's series colour (the same as the ratio chart and table); orgs without
+ * one are drawn in the muted neutral. */
+export function renderLeaderboardChart(
+  canvas: HTMLCanvasElement,
+  rows: { name: string; org: string; value: number }[],
+  metricLabel: string,
+  colors: Map<string, string>,
+  theme: Theme,
+): Chart<'bar'> {
+  const fmt = (v: number) => v.toLocaleString('en-US');
+  const base = baseOptions(theme);
+  const small = { size: 11 };
+  // Phones: rank and a short name only (org stays in the colour and tooltip),
+  // or Chart.js clips the labels on the left.
+  const narrow = (canvas.parentElement?.clientWidth ?? 1000) < 560;
+  const label = (r: { name: string; org: string }, i: number) =>
+    narrow ? `${i + 1}. ${truncate(r.name, 15)}` : `${i + 1}. ${truncate(r.name, 26)} · ${truncate(r.org, 22)}`;
+  return new Chart(canvas, {
+    type: 'bar',
+    data: {
+      labels: rows.map(label),
+      datasets: [
+        {
+          label: metricLabel,
+          data: rows.map((r) => r.value),
+          backgroundColor: rows.map((r) => colors.get(r.org) ?? theme.muted),
+          borderRadius: { topRight: 3, bottomRight: 3 },
+          borderSkipped: 'start',
+          barPercentage: 0.8,
+          categoryPercentage: 1,
+          minBarLength: 2,
+        },
+      ],
+    },
+    plugins: [barLabelsPlugin(theme, fmt, 11)],
+    options: {
+      ...base,
+      indexAxis: 'y',
+      interaction: { mode: 'nearest', axis: 'y', intersect: false },
+      layout: { padding: { right: 56 } },
+      plugins: {
+        ...base.plugins,
+        legend: { display: false },
+        tooltip: {
+          ...base.plugins.tooltip,
+          itemSort: undefined,
+          callbacks: {
+            title: (items) => {
+              const r = rows[items[0].dataIndex];
+              return `${items[0].dataIndex + 1}. ${r.name} (${r.org})`;
+            },
+            label: (ctx) => `${fmt(ctx.raw as number)} ${metricLabel.toLowerCase()}`,
+          },
+        },
+      },
+      scales: {
+        x: {
+          min: 0,
+          position: 'top',
+          border: { display: false },
+          grid: { color: theme.grid },
+          ticks: { color: theme.muted, font: small, callback: (v) => fmt(Number(v)) },
+        },
+        y: {
+          grid: { display: false },
+          border: { color: theme.baseline },
+          ticks: { color: theme.text, font: small, autoSkip: false, padding: 4 },
         },
       },
     },

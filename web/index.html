@@ -13,8 +13,7 @@
       <h1>Chromium Open Source Health</h1>
       <p class="lede">
         Each organization's share of Chromium code review, divided by its browsers' share of
-        Chromium-based browser usage. Above 1×, an organization contributes more review than its usage
-        share; below 1×, less.
+        Chromium-based browser usage.
       </p>
     </header>
 
@@ -36,7 +35,7 @@
         </div>
         <p class="note">
           Organizations whose browsers have under 0.1% of Chromium usage (Brave, Yandex, Amazon, Coc Coc) get no
-          ratio. Organizations with fewer than 5 reviewers in a week are folded into “Other”, so they show 0.
+          ratio.
         </p>
       </section>
 
@@ -45,6 +44,15 @@
         <p id="review-sub" class="sub"></p>
         <div class="chart">
           <canvas id="review-chart" role="img" aria-label="Review count per organization for the selected week; the table below lists the values."></canvas>
+        </div>
+      </section>
+
+      <section id="leaderboard" class="card" aria-labelledby="leaderboard-title">
+        <h2 id="leaderboard-title">Reviewer leaderboard</h2>
+        <p id="leaderboard-sub" class="sub"></p>
+        <ul id="leaderboard-legend" class="legend" aria-label="Bar colour by organization"></ul>
+        <div id="leaderboard-chart-box" class="chart chart-leaderboard">
+          <canvas id="leaderboard-chart" role="img" aria-label="Top reviewers for the selected week and metric, one bar each."></canvas>
         </div>
       </section>
 

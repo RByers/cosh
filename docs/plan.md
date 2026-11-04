@@ -29,11 +29,15 @@ value_ratio(O, t) = O's share of Chromium review comments
      most 0.5.
    - Back off on 429.
    - Identify ourselves with the contact address, `rick@rbyers.net`.
-3. **Per-person data stays local.**
-   - Keep it in `data/private/` (gitignored).
-   - Commit only org-level summaries, public Radar data, config, code and
-     docs.
-   - Don't quote individuals' emails or names in docs.
+3. **Per-person data derived from public data may be committed and
+   published** (user's policy, 2026-11-03). Gerrit reviews, names, emails
+   and affiliations are already public, so per-reviewer summaries can go in
+   `summaries/` and on the site.
+   - `data/private/` stays gitignored because of its size (raw caches, NoteDb
+     repos, rebuildable DBs), not for privacy.
+   - Data that is *not* from a public source, such as manual employer
+     guesses that aren't backed by a public record, still needs the user's
+     approval before it's committed.
 4. **Credentials:** `secrets.sh` (gitignored, mode 600) exports
    `CLOUDFLARE_API_TOKEN`. Load it with `source secrets.sh`, and never print
    or commit the token.
@@ -45,6 +49,7 @@ value_ratio(O, t) = O's share of Chromium review comments
 | 2026-11-03 | Two SQLite files (raw cache plus derived tables) with CSV/JSON summaries, not flat CSV | Resumable, idempotent re-runs; the front end needs only small summaries (`storage-design.md`) |
 | 2026-11-03 | Weeks are ISO weeks (UTC) of merge time, listed with `mergedafter:`/`mergedbefore:` | `after:` filters on last-updated time and would double count |
 | 2026-11-03 | Org = email domain, with dated overrides from Chromium's `affiliations.json5`; other `@chromium.org` accounts → `google.com` | User's instruction; this is how Chromium itself attributes contributors |
+| 2026-11-03 | `gmail.com` is always folded into `Other`, whatever its size (`FOLD_INTO_OTHER` in `cosh/summarize.py`) | User's instruction: a webmail domain is not an organization |
 | 2026-11-03 | Headline metric is the review **comment count**; reviewed CLs and characters are options (`--metric`) | Balances verbose commenters against complex reviews |
 | 2026-11-03 | Only branch `main`; release branches ignored | User's instruction |
 | 2026-11-03 | Bot-owned CLs get one row flagged as a bot commit and no review rows; counted in `weekly_totals.csv` | Avoids apparent gaps without crediting autoroll rubber-stamps |
@@ -53,11 +58,15 @@ value_ratio(O, t) = O's share of Chromium review comments
 | 2026-11-03 | Treat accounts with no email as bots / AI agents; store `display_name` when there is no `name` | User's instruction: in W44 these were an AI agent (Jetski), a deleted account and two accounts `/accounts` 404s on |
 | 2026-11-03 | A review with a Code-Review vote but no counted comment counts as one comment (applied in `summarize`; reported as `vote_only_reviews`) | User's instruction: a review that needed no changes should still count in the comments chart. A floor, not +1 per vote, so "LGTM" + vote isn't counted twice |
 | 2026-11-03 | Report post-merge comments per org in summaries (`post_merge_comments`), excluded from the headline | User's instruction: post-merge review is still valuable; the headline measures review before landing |
+| 2026-11-03 | Per-person data derived from public data may be committed and published; replaces "per-person data stays local" | User's policy: all of it is already public on Gerrit |
+| 2026-11-03 | Drop the fold of orgs with fewer than 5 reviewers per week into `Other`; every org is reported (only `gmail.com` still folds) | User's instruction; the fold existed for privacy, which the policy change made moot |
+| 2026-11-03 | Reviewer leaderboard: `summaries/reviewer_weekly.json` (each week's top 50 per metric; names and orgs, no emails), shown on the public site | User asked for a top-50 reviewer view |
 | 2026-11-03 | Keep every downloaded byte losslessly (`raw.sqlite` bodies, full NoteDb meta-ref history); reduce only in derived data | User's intention: allow richer analysis later and an informed review of the fetching, without re-fetching. Costs about 3 GB/year (`storage-design.md` §3.8) |
 | 2026-11-03 | Fetch comments via NoteDb `git fetch` in batches of 200, not REST `/comments` | Matches REST exactly on 856 of 856 CLs, with about 200 times fewer requests |
 | 2026-11-03 | Defer the OWNER bit; plan to compute it from OWNERS files at the merge parent | The code-owners API uses the current OWNERS files, not those at review time |
 | 2026-11-03 | Web UI: Vite + TypeScript, Chart.js only at runtime; the summary/Radar join runs in the browser (`web/src/data.ts`); tests use Vitest + puppeteer-core with the installed Chrome | Few dependencies, static GitHub Pages hosting, no generated files to commit |
 | 2026-11-03 | Ratio axis: 1× in the vertical middle, linear 0–1 below and 1–max above | User's instruction; under- and over-contribution get equal visual weight |
+| 2026-11-03 | Keep the 1× gridline highlighted but don't label or describe values above/below it as more/less than a fair share | User's instruction: the ratio is too rough an estimate, with too many other factors, for 1× to be a meaningful threshold |
 | 2026-11-03 | Radar: `timeseries_groups/BROWSER`, human traffic, daily data aggregated to ISO weeks; WebViews and in-app browsers excluded from the main share | See `radar-research.md` |
 | 2026-11-03 | Keep Radar's `ChromeDerivative` in the Chromium denominator despite its 2026-09-09 jump | It may be real Chromium usage; the jump looks like Radar labeling previously unlabeled traffic, not taking share from Chrome (`radar-research.md`) |
 
@@ -74,11 +83,13 @@ value_ratio(O, t) = O's share of Chromium review comments
   verified against the real data (`radar-research.md`, "Findings").
 
 - First web UI in `web/` (see `web/README.md`). It has the value-ratio chart
-  (parity in the middle), review counts by org (top 7 plus Other), Radar usage
+  (1× in the middle), review counts by org (top 7 plus Other), Radar usage
   per browser with the ChromeDerivative note, week totals including AI
   comments, a per-org table, and a metric selector (comments, CLs,
   characters). The summary/Radar join runs client-side. Not yet deployed:
   the repo has no GitHub remote, so `.github/workflows/pages.yml` is untested.
+- Reviewer leaderboard in the web UI: the top 50 reviewers for the selected
+  week and metric. `summarize` writes it to `summaries/reviewer_weekly.json`.
 
 **Next steps, in order**
 1. Have the user validate the UI (`cd web && npm run dev`).
@@ -103,6 +114,7 @@ value_ratio(O, t) = O's share of Chromium review comments
    - review chars net of analyzer boilerplate.
 
 ## Open questions
+
 
 - Why exactly did Radar's `ChromeDerivative` bucket jump on 2026-09-09?
   Cloudflare hasn't said; the evidence points to a browser-labeling change

@@ -133,13 +133,14 @@ cosh/
   data/
     public/
       radar_browser_share.csv  # committed: Cloudflare Radar input, public data
-    private/                 # .gitignored, never committed
+    private/                 # .gitignored (size and rebuildability, not privacy; §4)
       raw.sqlite             # Gerrit response cache (source of truth)
       cosh.sqlite            # derived tables, rebuildable
-      account_orgs.csv       # per-person org overrides (personal data)
+      account_orgs.csv       # per-person org overrides (manual guesses; §4)
       archive/*.jsonl.gz     # optional frozen weekly exports of raw
   summaries/                 # committed: what the front end fetches
     org_weekly.csv  org_weekly.json
+    reviewer_weekly.json     # each week's top 50 reviewers per metric
     org_monthly.csv org_monthly.json
     meta.json
 ```
@@ -487,32 +488,33 @@ therefore under about 15 GB. That is not a storage concern on this machine.
 
 ## 4. Privacy
 
-The private DBs hold individual email addresses, names, the full text of review
-comments (in `raw.sqlite`), and inferred employer per person. The data is public
-on Gerrit, but compiling it into per-person activity metrics plus employer
-attribution creates new personal data. GDPR applies to EU contributors.
+**Policy (user, 2026-11-03):** per-person data that is derived from
+already-public data may be committed and published. Everything cosh fetches
+from Gerrit is public: names, emails, reviews and comment text. Chromium's
+`affiliations.json5` is public too. This replaces the earlier "summaries are
+org-level only" rule, so per-reviewer summaries such as
+`summaries/reviewer_weekly.json` (the leaderboard) are allowed.
 
 What to commit and what to keep local:
 - **Commit:**
   - code
   - `config/*.csv` (domain → org, org → browser, bot patterns)
   - Radar inputs
-  - `summaries/*`
-- **Never commit:** anything under `data/private/`.
-  - `.gitignore` it on day one.
-  - Also add a pre-commit check that rejects files containing `@` email patterns
-    outside `config/`.
-- **Summaries are org-level only.** No per-person rows, and no top-N reviewer
-  lists.
-  - Apply a minimum group size: an org with fewer than ~5 distinct reviewers in a
-    period gets folded into `Other` for that period. This avoids publishing what is
-    effectively one named person's activity, e.g. "Org X" with one contributor.
-- `account_orgs.csv` is the most sensitive file. It holds manual employer guesses
-  for chromium.org accounts. Keep it local, record a source per line, and prefer
-  coarse rules over per-person curation where possible.
+  - `summaries/*`, per-org and per-reviewer alike
+- **Keep out of git:** `data/private/`. The reason is size and churn, not
+  privacy: `raw.sqlite` and the NoteDb repos are several GB per year, and
+  `cosh.sqlite` can be rebuilt.
+- No minimum group size: `org_weekly` reports every org, however few
+  reviewers it has. (An earlier rule folded orgs with fewer than 5 reviewers
+  into `Other` for privacy; it was dropped with the policy change.)
+  `gmail.com` is still always folded into `Other`, since a webmail domain is
+  not an organization.
+- `account_orgs.csv`, if it is ever created, holds manual employer guesses.
+  Commit a line only when its source is a public record, and record the source
+  on each line. Ask the user before committing guesses that have no public
+  source.
 - Retention: the raw stores keep full comment text and review history, although
-  today's metrics need only counts and lengths. This is deliberate (§3.8). The
-  data stays local in `data/private/` and is never committed or shared.
+  today's metrics need only counts and lengths. This is deliberate (§3.8).
 
 ## 5. Open questions (do not block the first week)
 

@@ -1,3 +1,4 @@
+import json
 import os
 import tempfile
 import unittest
@@ -140,7 +141,7 @@ class SummarizeTest(unittest.TestCase):
             h = "chromium-review.googlesource.com"
             with db:
                 db.execute("INSERT INTO accounts VALUES (?,1,'owner@igalia.com',NULL,0)", (h,))
-                for aid in range(2, 7):   # 5 reviewers, so igalia.com isn't folded into Other
+                for aid in range(2, 7):   # 5 igalia.com reviewers
                     db.execute("INSERT INTO accounts VALUES (?,?,?,NULL,0)", (h, aid, f"r{aid}@igalia.com"))
                 db.execute("""INSERT INTO changes(host, change_number, project, branch, owner_account,
                               status, created_at, closed_at, iso_week)
@@ -154,8 +155,52 @@ class SummarizeTest(unittest.TestCase):
             db.close()
             out = os.path.join(d, "summaries")
             rows = summarize(data_dir=d, out_dir=out)
+            with open(os.path.join(out, "reviewer_weekly.json")) as fh:
+                board = json.load(fh)["weeks"]["2026-W44"]
         self.assertEqual([(r["org"], r["comments"], r["ai_comments"], r["post_merge_comments"])
                           for r in rows], [("igalia.com", 6, 1, 3)])
+        # Leaderboard (valid JSON despite the hand-rolled layout), AI/post-merge excluded;
+        # account 3 (post-merge only) still reviewed the CL so counts for CLs.
+        self.assertEqual([(r["account_id"], r["name"], r["org"], r["comments"], r["cls"], r["chars"])
+                          for r in board],
+                         [(2, "r2", "igalia.com", 3, 1, 30), (4, "r4", "igalia.com", 1, 1, 10),
+                          (5, "r5", "igalia.com", 1, 1, 10), (6, "r6", "igalia.com", 1, 1, 10),
+                          (3, "r3", "igalia.com", 0, 1, 0)])
+
+    def test_leaderboard_keeps_top_n_per_metric(self):
+        from cosh.summarize import reviewer_leaderboard
+        # (week, closed, cl, email, aid, comments, chars, ai, post_merge, name)
+        rows = [("W", "2026-10-27", 1, "a@x.com", 1, 10, 1, 0, 0, "A"),
+                ("W", "2026-10-27", 1, "b@x.com", 2, 1, 900, 0, 0, None),
+                ("W", "2026-10-27", 2, "c@x.com", 3, 5, 5, 0, 0, "C"),
+                ("W", "2026-10-27", 3, "c@x.com", 3, 0, 0, 0, 0, "C")]
+        board = reviewer_leaderboard(rows, lambda email, when: email.split("@")[1], n=1)["W"]
+        # Top 1 by comments (A), by chars (b), by CLs (C, 2 CLs).
+        self.assertEqual([(r["name"], r["comments"], r["cls"], r["chars"]) for r in board],
+                         [("A", 10, 1, 1), ("C", 5, 2, 5), ("b", 1, 1, 900)])
+
+    def test_gmail_folded_into_other(self):
+        with tempfile.TemporaryDirectory() as d:
+            db = store.open_cosh(d)
+            h = "chromium-review.googlesource.com"
+            with db:
+                db.execute("INSERT INTO accounts VALUES (?,1,'owner@igalia.com',NULL,0)", (h,))
+                for aid in range(2, 8):   # 6 gmail.com reviewers
+                    db.execute("INSERT INTO accounts VALUES (?,?,?,NULL,0)", (h, aid, f"r{aid}@gmail.com"))
+                db.execute("INSERT INTO accounts VALUES (?,8,'solo@opera.com',NULL,0)", (h,))
+                db.execute("""INSERT INTO changes(host, change_number, project, branch, owner_account,
+                              status, created_at, closed_at, iso_week)
+                              VALUES (?,100,'chromium/src','main',1,'MERGED','2026-10-26 00:00:00',
+                              '2026-10-27 12:00:00','2026-W44')""", (h,))
+                for aid in range(2, 9):
+                    db.execute("""INSERT INTO reviews(host, change_number, account_id, review_comments,
+                                  review_chars, ai_comments, post_merge_comments)
+                                  VALUES (?,100,?,2,20,0,0)""", (h, aid))
+            db.close()
+            rows = summarize(data_dir=d, out_dir=os.path.join(d, "summaries"))
+        # gmail.com folds into Other; a one-reviewer org is reported on its own.
+        self.assertEqual([(r["org"], r["reviewers"], r["comments"]) for r in rows],
+                         [("Other", 6, 12), ("opera.com", 1, 2)])
 
     def test_vote_without_comment_counts_as_one(self):
         with tempfile.TemporaryDirectory() as d:

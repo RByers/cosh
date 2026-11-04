@@ -5,8 +5,17 @@ import summaryUrl from '../../summaries/org_weekly.json?url';
 import totalsUrl from '../../summaries/weekly_totals.csv?url';
 import radarUrl from '../../data/public/radar_browser_share.csv?url';
 import orgBrowsersUrl from '../../config/org_browsers.csv?url';
+import reviewerUrl from '../../summaries/reviewer_weekly.json?url';
 
-import { type AnyChart, readTheme, renderRatioChart, renderReviewChart, renderUsageChart } from './charts.ts';
+import {
+  type AnyChart,
+  LEADERBOARD_ROW_PX,
+  readTheme,
+  renderLeaderboardChart,
+  renderRatioChart,
+  renderReviewChart,
+  renderUsageChart,
+} from './charts.ts';
 import {
   chartedOrgs,
   compareWeeks,
@@ -20,8 +29,11 @@ import {
   parseWeeklyTotals,
   topBrowsers,
   topOrgCounts,
+  topReviewers,
+  LEADERBOARD_SIZE,
   type Metric,
   type RadarWeekly,
+  type ReviewerBoard,
   type Summary,
   type WeeklyTotals,
 } from './data.ts';
@@ -32,6 +44,7 @@ interface Data {
   totals: WeeklyTotals[];
   radar: RadarWeekly;
   orgBrowsers: Map<string, string[]>;
+  reviewers: ReviewerBoard;
 }
 
 interface State {
@@ -41,7 +54,15 @@ interface State {
 
 declare global {
   interface Window {
-    __cosh?: { data: Data; state: State; ratioChart?: AnyChart; reviewChart?: AnyChart; usageChart?: AnyChart; render: () => void };
+    __cosh?: {
+      data: Data;
+      state: State;
+      ratioChart?: AnyChart;
+      reviewChart?: AnyChart;
+      leaderboardChart?: AnyChart;
+      usageChart?: AnyChart;
+      render: () => void;
+    };
   }
 }
 
@@ -54,14 +75,15 @@ async function fetchText(url: string): Promise<string> {
 }
 
 async function load(): Promise<Data> {
-  const [summary, totals, radar, orgBrowsers] = await Promise.all([
+  const [summary, totals, radar, orgBrowsers, reviewers] = await Promise.all([
     fetchText(summaryUrl).then((t) => JSON.parse(t) as Summary),
     fetchText(totalsUrl).then(parseWeeklyTotals),
     fetchText(radarUrl).then(parseRadarWeekly),
     fetchText(orgBrowsersUrl).then(parseOrgBrowsers),
+    fetchText(reviewerUrl).then((t) => JSON.parse(t) as ReviewerBoard),
   ]);
   summary.meta.weeks.sort(compareWeeks);
-  return { summary, totals, radar, orgBrowsers };
+  return { summary, totals, radar, orgBrowsers, reviewers };
 }
 
 const pct = (x: number) => `${(x * 100).toFixed(x !== 0 && x < 0.01 ? 2 : 1)}%`;
@@ -174,7 +196,7 @@ function renderTable(data: Data, state: State, colors: Map<string, string>) {
         pct(it.contribution),
         it.browsers ? (it.derived === null ? '—' : pct(it.derived)) : '—',
         ratioText,
-        it.row ? int(it.row.reviewers) : '<5',
+        it.row ? int(it.row.reviewers) : '0',
         it.row ? int(it.row.comments) : '—',
         it.row ? int(it.row.ai_comments) : '—',
         it.row && it.row.post_merge_comments !== undefined ? int(it.row.post_merge_comments) : '—',
@@ -183,6 +205,36 @@ function renderTable(data: Data, state: State, colors: Map<string, string>) {
       return tr;
     }),
   );
+}
+
+function renderLeaderboard(
+  data: Data,
+  state: State,
+  colors: Map<string, string>,
+  prev: AnyChart | undefined,
+): AnyChart {
+  prev?.destroy();
+  const metricName = METRICS.find((m) => m.id === state.metric)!.label;
+  const rows = topReviewers(data.reviewers, state.week, state.metric, LEADERBOARD_SIZE);
+  $('#leaderboard-sub').textContent =
+    `${metricName} in ${state.week}, top ${rows.length} reviewers. ` +
+    'Same scope as the organization chart: human reviewers on human-owned CLs.';
+  $('#leaderboard-chart-box').style.height = `${rows.length * LEADERBOARD_ROW_PX + 36}px`;
+
+  // Legend: the coloured orgs that appear, in colour order, then the rest.
+  const present = new Set(rows.map((r) => r.org));
+  const legend = [...colors].filter(([org]) => present.has(org)).map(([org, color]) => ({ org, color }));
+  if (rows.some((r) => !colors.has(r.org))) legend.push({ org: 'other organizations', color: '' });
+  $('#leaderboard-legend').replaceChildren(
+    ...legend.map(({ org, color }) => {
+      const li = el('li');
+      const sw = el('span', undefined, color ? 'swatch' : 'swatch swatch-muted');
+      if (color) sw.style.background = color;
+      li.append(sw, document.createTextNode(org));
+      return li;
+    }),
+  );
+  return renderLeaderboardChart($<HTMLCanvasElement>('#leaderboard-chart'), rows, metricName, colors, readTheme());
 }
 
 /** First week where Radar's unnamed-Chromium bucket more than triples week
@@ -202,6 +254,7 @@ function main(data: Data) {
   const orgs = chartedOrgs(data.radar, data.orgBrowsers).slice(0, 8);
   let ratioChart: AnyChart | undefined;
   let reviewChart: AnyChart | undefined;
+  let leaderboardChart: AnyChart | undefined;
   let usageChart: AnyChart | undefined;
   const browsers = topBrowsers(data.radar);
   const jumpWeek = derivativeJumpWeek(data.radar);
@@ -228,6 +281,7 @@ function main(data: Data) {
       theme,
     );
     $('#review-sub').textContent = `${metricName} in ${state.week}, top organizations; the rest are combined as “Other”.`;
+    leaderboardChart = renderLeaderboard(data, state, colors, leaderboardChart);
     usageChart?.destroy();
     usageChart = renderUsageChart(
       $<HTMLCanvasElement>('#usage-chart'),
@@ -239,10 +293,10 @@ function main(data: Data) {
 
     $('#ratio-sub').textContent =
       `Share of ${metricLabel} ÷ share of Chromium browser usage, per ISO week. ` +
-      `Parity (1×) is the middle line: the lower half runs linearly 0–1×, the upper half 1–${formatRatio(scale.upper)}×.`;
+      `The axis is linear 0–1× in its lower half and 1–${formatRatio(scale.upper)}× in its upper half.`;
     renderTiles(data, state);
     renderTable(data, state, colors);
-    window.__cosh = { data, state, ratioChart, reviewChart, usageChart, render };
+    window.__cosh = { data, state, ratioChart, reviewChart, leaderboardChart, usageChart, render };
   };
 
   buildControls(data, state, render);

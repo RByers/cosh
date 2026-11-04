@@ -10,6 +10,7 @@ import {
   parseRadarWeekly,
   topBrowsers,
   topOrgCounts,
+  topReviewers,
   type Summary,
 } from '../src/data.ts';
 import { pivotScale } from '../src/scale.ts';
@@ -49,7 +50,7 @@ const row = (org: string, share: number, comments: number) => ({
 });
 
 const SUMMARY: Summary = {
-  meta: { weeks: ['2026-W44'], headline_metric: 'comments', min_reviewers_per_org: 5 },
+  meta: { weeks: ['2026-W44'], headline_metric: 'comments' },
   rows: [
     row('google.com', 0.9, 900),
     row('microsoft.com', 0.05, 50),
@@ -99,6 +100,19 @@ test('topOrgCounts folds the tail and the summary Other row together', () => {
     { org: OTHER, value: 50 },
   ]);
   assert.equal(topOrgCounts(SUMMARY, '2026-W44', 'chars', 7)[0].value, 90000);
+});
+
+test('topReviewers ranks one week by the chosen metric and drops zeros', () => {
+  const r = (account_id: number, comments: number, cls: number, chars: number) => ({
+    account_id, name: `n${account_id}`, org: 'x.com', comments, cls, chars,
+  });
+  const board = { meta: { top_n: 50 }, weeks: { '2026-W44': [r(1, 9, 1, 50), r(2, 0, 4, 0), r(3, 9, 2, 80)] } };
+  assert.deepEqual(topReviewers(board, '2026-W44', 'comments').map((x) => [x.name, x.value]), [['n1', 9], ['n3', 9]]);
+  assert.deepEqual(topReviewers(board, '2026-W44', 'cls', 2).map((x) => x.name), ['n2', 'n3']);
+  assert.deepEqual(topReviewers(board, '2026-W44', 'chars')[0], { name: 'n3', org: 'x.com', value: 80 });
+  assert.deepEqual(topReviewers(board, '2026-W01', 'comments'), []);
+  // Input order is not mutated.
+  assert.deepEqual(board.weeks['2026-W44'].map((x) => x.account_id), [1, 2, 3]);
 });
 
 test('topBrowsers ranks by peak share', () => {

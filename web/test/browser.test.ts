@@ -69,9 +69,9 @@ test('page loads data and renders all three charts without errors', async () => 
     assert.ok(c.w > 200 && c.h > 200, `${c.k} has size ${c.w}x${c.h}`);
     assert.ok(c.n >= 1, `${c.k} has datasets`);
   }
-  // Charts come in order: ratio, review, usage, before the table.
+  // Charts come in order: ratio, review, (leaderboard,) usage, before the table.
   const order = await page.$$eval('main > section', (s) => s.map((e) => e.querySelector('canvas, table')?.id));
-  assert.deepEqual(order.filter(Boolean).slice(0, 4), ['ratio-chart', 'review-chart', 'usage-chart', 'org-table']);
+  assert.deepEqual(order.filter(Boolean), ['ratio-chart', 'review-chart', 'leaderboard-chart', 'usage-chart', 'org-table']);
   await page.close();
 });
 
@@ -122,6 +122,27 @@ test('review chart lists top orgs with Other last', async () => {
   assert.equal(labels[0], 'google.com');
   assert.equal(labels[labels.length - 1], 'Other');
   assert.ok(labels.length <= 8);
+  await page.close();
+});
+
+test('leaderboard shows up to 50 reviewers compactly and follows the metric', async () => {
+  const { page } = await open();
+  const read = () =>
+    page.evaluate(() => {
+      const c = window.__cosh!.leaderboardChart!;
+      const values = c.data.datasets[0].data as number[];
+      return { n: values.length, values, label: c.data.datasets[0].label, h: c.height, top: (c.data.labels as string[])[0] };
+    });
+  const comments = await read();
+  assert.ok(comments.n > 10 && comments.n <= 50, `n=${comments.n}`);
+  assert.deepEqual(comments.values, [...comments.values].sort((a, b) => b - a));
+  assert.match(comments.top, /^1\. /);
+  // Compact: 50 rows fit in well under a 900px-tall viewport's worth plus axes.
+  assert.ok(comments.h <= comments.n * 15 + 40, `height ${comments.h}`);
+  await page.click('#metric input[value="cls"]');
+  const cls = await read();
+  assert.equal(cls.label, 'Reviewed CLs');
+  assert.notDeepEqual(cls.values, comments.values);
   await page.close();
 });
 

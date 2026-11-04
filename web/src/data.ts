@@ -31,7 +31,7 @@ export interface SummaryRow {
 }
 
 export interface Summary {
-  meta: { weeks: string[]; headline_metric: string; min_reviewers_per_org: number; [k: string]: unknown };
+  meta: { weeks: string[]; headline_metric: string; [k: string]: unknown };
   rows: SummaryRow[];
 }
 
@@ -202,7 +202,7 @@ const COUNT_COLUMN: Record<Metric, keyof SummaryRow> = {
 export const OTHER = 'Other';
 
 /** Raw review counts for one week: the top `n` orgs by the metric, then
- * everything else (including the summary's own privacy-folded "Other" row)
+ * everything else (including the summary's own "Other" row, e.g. gmail.com)
  * as a final "Other" entry. */
 export function topOrgCounts(
   summary: Summary,
@@ -245,4 +245,36 @@ export function browserShare(radar: RadarWeekly, week: string, browser: string, 
 /** Compare ISO week labels like 2026-W44. */
 export function compareWeeks(a: string, b: string): number {
   return a < b ? -1 : a > b ? 1 : 0;
+}
+
+/** One reviewer in one week (summaries/reviewer_weekly.json). */
+export interface ReviewerRow {
+  account_id: number;
+  name: string;
+  org: string;
+  comments: number;
+  cls: number;
+  chars: number;
+}
+
+export interface ReviewerBoard {
+  meta: { top_n: number; [k: string]: unknown };
+  weeks: Record<string, ReviewerRow[]>;
+}
+
+export const LEADERBOARD_SIZE = 50;
+
+/** The week's top `n` reviewers by the metric. Ties are broken by account id
+ * so the order is stable; reviewers with 0 for the metric are left out. */
+export function topReviewers(
+  board: ReviewerBoard,
+  week: string,
+  metric: Metric,
+  n = LEADERBOARD_SIZE,
+): { name: string; org: string; value: number }[] {
+  return [...(board.weeks[week] ?? [])]
+    .filter((r) => r[metric] > 0)
+    .sort((a, b) => b[metric] - a[metric] || a.account_id - b.account_id)
+    .slice(0, n)
+    .map((r) => ({ name: r.name, org: r.org, value: r[metric] }));
 }
