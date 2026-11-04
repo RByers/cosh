@@ -253,6 +253,18 @@ test('Meta gets a ratio line; WebView counts as usage; fine print covers WebView
   await page.close();
 });
 
+test('review chart explains its scope, metrics and org attribution', async () => {
+  const { page } = await open();
+  assert.match(await page.$eval('#review-scope-note', (n) => n.textContent ?? ''), /owned by humans/);
+  assert.match(await page.$eval('#review-metric-note', (n) => n.textContent ?? ''), /bare \+1/);
+  const href = await page.$eval('#affiliation-note a', (a) => (a as HTMLAnchorElement).href);
+  assert.equal(
+    href,
+    'https://chromium.googlesource.com/chromium/src/+/main/third_party/blink/tools/commit_stats/affiliations.json5',
+  );
+  await page.close();
+});
+
 test('dark mode and phone width render without horizontal scroll', async () => {
   const { page } = await open('', 375);
   await page.emulateMediaFeatures([{ name: 'prefers-color-scheme', value: 'dark' }]);
