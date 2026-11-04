@@ -707,7 +707,7 @@ export interface AreaRow {
 
 /** How many of the largest directories the directory chart can list before
  * combining the rest (re-included directories are listed on top of these). */
-export const AREA_ROW_CHOICES = [20, 50, 100] as const;
+export const AREA_ROW_CHOICES = [20, 50, 100, 500] as const;
 export type AreaRowCount = (typeof AREA_ROW_CHOICES)[number];
 export const DEFAULT_AREA_ROWS: AreaRowCount = 20;
 

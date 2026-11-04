@@ -64,7 +64,7 @@ Over a range:
 4. Totals for the range, plus a table with every value shown in the charts.
 5. **Review by directory** (`src/areas.ts`): every comment in the range, in
    scope or not, one row per directory for the selected metric: the 20 largest
-   (a toggle shows 50 or 100), plus every directory an `include` rule brings back (e.g.
+   (a toggle shows 50, 100 or 500), plus every directory an `include` rule brings back (e.g.
    `chrome/browser/webnn/`, shown even at 0), then the rest combined into an
    included and an excluded row. Each row has a bar for its volume on a
    shared scale (hatched and tagged "excluded" when the scope leaves it out),
@@ -77,7 +77,7 @@ Over a range:
 
 The metric, range, smoothing, review-chart scale and directory count are kept
 in the URL hash (`#metric=cls&from=2026-W14&to=2026-W44&smooth=4`, plus
-`&rscale=linear` for the linear review chart and `&dirs=50` or `&dirs=100`
+`&rscale=linear` for the linear review chart and `&dirs=50`, `&dirs=100` or `&dirs=500`
 for more directories). Old `#week=2026-W44` links open that one week.
 
 ## Commands
