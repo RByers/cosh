@@ -8,3 +8,6 @@ secrets.sh
 # one-off research downloads (re-fetchable; may contain personal data)
 .research/affiliations/
 *.pyc
+
+# Claude Code local state (worktrees, settings)
+.claude/
