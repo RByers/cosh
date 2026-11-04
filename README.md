@@ -43,9 +43,9 @@ The main visualization plots each organization's value ratio over time.
 
 ## Status
 
-Design phase. One week (2026-W44) of review data and Radar data from
-2023-07 onward are collected. Next: join them into value ratios and build the
-web UI, then backfill. See [`docs/plan.md`](docs/plan.md).
+One week (2026-W44) of review data and Radar data from 2023-07 onward are
+collected, and a first web UI is in `web/`. A one-year review backfill
+(2025-W45 .. 2026-W44) started on 2026-11-03. See [`docs/plan.md`](docs/plan.md).
 
 ## Usage
 
@@ -57,7 +57,7 @@ python3 -m cosh extract --week 2026-W44   # throttled Gerrit fetch, cached and r
 python3 -m cosh derive                    # build cosh.sqlite from the cache (offline)
 python3 -m cosh summarize                 # write summaries/org_weekly.{csv,json}
 python3 -m cosh radar                     # Cloudflare Radar browser share (source secrets.sh first)
-python3 -m cosh backfill --weeks 52       # plan only; --go fetches (not until the UI is validated)
+python3 -m cosh backfill --weeks 52       # plan only; --go fetches (resumable)
 python3 -m unittest tests.test_derive
 python3 -m unittest tests.test_radar
 cd web && npm ci && npm run dev           # web UI (see web/README.md); npm test for tests

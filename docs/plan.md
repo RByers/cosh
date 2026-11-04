@@ -19,10 +19,10 @@ value_ratio(O, t) = O's share of Chromium review comments
 
 ## Ground rules
 
-1. **Do not fetch more than one week of Gerrit data** (W44 is already
-   fetched) until the web UI is built and the user has validated the design.
-   - `backfill` prints a plan unless it is given `--go`. Don't pass `--go`
-     without explicit approval.
+1. **Fetch only what has been approved.** The user approved the one-year
+   backfill (52 weeks, 2025-W45 .. 2026-W44) on 2026-11-03, before validating
+   the UI. Going beyond that year still needs explicit approval.
+   - `backfill` prints a plan unless it is given `--go`.
 2. **Be gentle with Google's servers.**
    - Serial requests.
    - REST: at least 1 s between requests. Git: one connection, duty cycle at
@@ -57,13 +57,16 @@ value_ratio(O, t) = O's share of Chromium review comments
 | 2026-11-03 | Web UI: Vite + TypeScript, Chart.js only at runtime; the summary/Radar join runs in the browser (`web/src/data.ts`); tests use Vitest + puppeteer-core with the installed Chrome | Few dependencies, static GitHub Pages hosting, no generated files to commit |
 | 2026-11-03 | Ratio axis: 1× in the vertical middle, linear 0–1 below and 1–max above | User's instruction; under- and over-contribution get equal visual weight |
 | 2026-11-03 | Radar: `timeseries_groups/BROWSER`, human traffic, daily data aggregated to ISO weeks; WebViews and in-app browsers excluded from the main share | See `radar-research.md` |
+| 2026-11-03 | Keep Radar's `ChromeDerivative` in the Chromium denominator despite its 2026-09-09 jump | It may be real Chromium usage; the jump looks like Radar labeling previously unlabeled traffic, not taking share from Chrome (`radar-research.md`) |
 
 ## Status
 
 **Done**
 - W44 extracted, validated and summarized (`summaries/`).
-- `extract`, `derive`, `summarize`, `radar` and `backfill` (plan-only)
-  commands.
+- `extract`, `derive`, `summarize`, `radar` and `backfill` commands.
+- One-year backfill started 2026-11-03 (`backfill --weeks 52 --go`, default
+  batch size 200, duty cycle 0.5, about 51 h). Log in
+  `data/private/backfill-52w-*.log`; rerun the same command to resume.
 - Cloudflare Radar: daily data from 2023-07-01 to now, aggregated to weeks
   and months in `data/public/radar_browser_share.csv`. Browser names are
   verified against the real data (`radar-research.md`, "Findings").
@@ -77,19 +80,18 @@ value_ratio(O, t) = O's share of Chromium review comments
 
 **Next steps, in order**
 1. Have the user validate the UI (`cd web && npm run dev`).
-2. Investigate the jump in Radar's `ChromeDerivative` bucket in September
-   2026 (see Open questions), and try to get Radar history before 2023-07,
-   whose requests returned HTTP 500.
+2. Try to get Radar history before 2023-07, whose requests returned HTTP 500.
+   (The September 2026 `ChromeDerivative` jump has been investigated; see
+   Decisions and `radar-research.md`.)
 3. Push to GitHub and enable Pages (Settings → Pages → Source: GitHub
    Actions).
 4. UI follow-ups: monthly granularity; an AI-comments-over-time view once
-   there are more weeks; an option to exclude ChromeDerivative from the
-   denominator.
-5. Only then, with explicit approval, run
-   `python3 -m cosh backfill --weeks 52 --go`. Expect about 51 hours at duty
-   cycle 0.5, newest week first, resumable.
-   - Consider telling Chromium infra (infra-dev@chromium.org) first.
-   - Try `--batch-size 500` on the first week to see whether the per-CL cost
+   there are more weeks.
+5. When the one-year backfill finishes, run `python3 -m cosh summarize` and
+   check the UI across the full year.
+   - Consider telling Chromium infra (infra-dev@chromium.org) before any
+     further backfill.
+   - Try `--batch-size 500` on a later run to see whether the per-CL cost
      drops.
 6. Later:
    - the OWNER bit;
@@ -100,9 +102,9 @@ value_ratio(O, t) = O's share of Chromium review comments
 
 ## Open questions
 
-- Radar's unnamed-Chromium bucket, `ChromeDerivative`, jumped from about 0.3%
-  to about 11% of Chromium usage in September 2026. Is that a Radar
-  classification change? Should it be excluded from the denominator?
+- Why exactly did Radar's `ChromeDerivative` bucket jump on 2026-09-09?
+  Cloudflare hasn't said; the evidence points to a browser-labeling change
+  (see `radar-research.md`). Could ask the Radar team.
 - Radar history starts at 2023-07, but the review backfill could cover 5
   years. Can older Radar data be fetched another way, or should the ratio
   start at 2023-07?

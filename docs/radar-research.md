@@ -256,12 +256,48 @@ as predicted.
 name.
 - It was 0.2–0.7% of Chromium usage from 2023-07 to 2026-08, then jumped to
   7.3% in 2026-09, 10.8% in 2026-10 and 11.3% in 2026-11.
-- The cause is unknown: either a Radar classification change or real growth,
-  for example agentic Chromium-based browsers.
 - It sits in the denominator with no org, so from September 2026 it lowers
   Chrome's share, and raises Google's ratio, by about 10%.
-- **Open question:** investigate the cause, and decide whether to exclude it
-  from the denominator.
+- **Decision (2026-11-03): keep it in the denominator.** It may be real
+  Chromium-based browser usage, and the denominator should include all
+  Chromium usage. The UI explains the jump instead of hiding it.
+
+**Investigation of the September 2026 `ChromeDerivative` jump** (2026-11-03).
+Shares below are of all `LIKELY_HUMAN` requests (Radar's raw percentage), not
+Chromium-only shares.
+- **Step change on 2026-09-09.** It was 0.20% on Sept 8, 3.6% on Sept 9, 6.3%
+  on Sept 10, and 7–8% since then with no further growth. A partial first
+  day looks like a deploy rollout, not organic adoption.
+- **Taken from every browser in proportion, not from Chrome.** Comparing
+  2026-08-25..09-07 with 2026-09-14..09-27, after removing ChromeDerivative
+  and renormalizing, other browsers barely move: Chrome +2%, ChromeMobile −2%,
+  Edge 0%, MobileSafari +3%, Safari +7%, Firefox −4%. The exception is
+  SamsungInternet, at −15%. The new ~7% looks like traffic that previously had
+  no browser label (and so was outside the normalized top 50), not Chrome
+  traffic that was relabeled.
+- **Not a bot-to-human reclassification.** Radar's overall human/bot split
+  (`BOT_CLASS`) stayed at about 66/34 through 09-09. Within `LIKELY_AUTOMATED`,
+  ChromeDerivative jumped on the same day too, from 0.2% to about 2.5%. So the
+  change is in how browsers are labeled, not in bot scoring.
+- **Device mix is like human browsing.** `DEVICE_TYPE` for ChromeDerivative
+  (human) stayed at about 52/48 mobile/desktop on weekdays and 58/42 on
+  weekends, before and after the jump. Unlike desktop Chrome or Edge, the
+  bucket doesn't dip on weekends.
+- **No public explanation from Cloudflare.**
+  - Radar annotations for 2026-08-25..09-25 list only outages.
+  - The Radar changelog for Aug–Oct 2026 has nothing on browser or bot
+    classification.
+  - The nearest related item is Bot Management "Adaptive Intelligence"
+    (blog, 2026-08-31): continuously retrained models, with new detections
+    rolled out gradually. It mentions catching clients that claim to be one
+    browser but show another's signals, but says nothing about Radar's
+    browser labels.
+- **Best guess (unconfirmed):** Radar changed browser detection on 2026-09-09,
+  perhaps to use TLS or JS fingerprints rather than the UA string. That
+  started labeling previously unlabeled, mostly human-like Chromium traffic.
+  Agentic browsers may be part of it; the data can't tell.
+- **To confirm:** ask Cloudflare's Radar team (radar@cloudflare.com or the
+  community forum).
 
 **Chromium shares** (main share, standalone browsers only):
 

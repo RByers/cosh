@@ -6,10 +6,10 @@ implementation and metric definitions.
 
 ## Hard rules
 
-- **Don't fetch more than the one Gerrit week already fetched (2026-W44)**
-  until the user has validated the web UI. Never run `cosh backfill ... --go`
-  or `extract` for another week without explicit approval in the current
-  conversation.
+- **The 52-week backfill (2025-W45 .. 2026-W44) is approved** and was started
+  on 2026-11-03. It is resumable: rerun `python3 -m cosh backfill --weeks 52
+  --go` from the main checkout if it stops. Fetching beyond that year (years
+  2–5, other repos or hosts) still needs explicit approval.
 - **Keep load on Gerrit and googlesource low.**
   - Requests are serial.
   - Never lower `--interval` below 1 s.
