@@ -100,6 +100,24 @@ class AccountTest(unittest.TestCase):
         self.assertEqual(account_name({"name": "A B", "display_name": "AB"}), "A B")
         self.assertEqual(account_name({"display_name": "Jetski (agent)"}), "Jetski (agent)")
         self.assertIsNone(account_name({"_account_id": 7}))
+        self.assertEqual(account_name({"_account_id": 7, "deleted": True}), "Deleted User")
+        self.assertEqual(account_name({"name": "A B", "deleted": True}), "A B")
+
+    def test_real_name_wins_over_deleted_placeholder(self):
+        from cosh.derive import NAME_UPSERT
+        with tempfile.TemporaryDirectory() as d:
+            db = store.open_cosh(d)
+            up = ("INSERT INTO accounts VALUES ('h',1,NULL,?,0) ON CONFLICT(host, account_id) "
+                  "DO UPDATE SET " + NAME_UPSERT)
+            name = lambda: db.execute("SELECT name FROM accounts").fetchone()[0]
+            db.execute(up, ("Deleted User",))
+            self.assertEqual(name(), "Deleted User")
+            db.execute(up, ("A B",))
+            self.assertEqual(name(), "A B")
+            db.execute(up, ("Deleted User",))
+            db.execute(up, (None,))
+            self.assertEqual(name(), "A B")
+            db.close()
 
     def test_accounts_without_email_are_bots(self):
         with tempfile.TemporaryDirectory() as d:

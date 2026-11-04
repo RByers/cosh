@@ -19,10 +19,18 @@ def human_text(message):
     return "\n".join(lines).strip()
 
 
+DELETED_USER = "Deleted User"   # what Gerrit's UI shows for a deleted account
+
+# Upsert for accounts.name: a real name wins over the Deleted User placeholder.
+NAME_UPSERT = (f"name = CASE WHEN excluded.name IS NULL OR excluded.name = '{DELETED_USER}' "
+               f"THEN coalesce(name, excluded.name) ELSE excluded.name END")
+
+
 def account_name(a):
     """Full name, or Gerrit's display_name when there is none (some service and
-    AI-agent accounts have only a display_name)."""
-    return a.get("name") or a.get("display_name")
+    AI-agent accounts have only a display_name), or "Deleted User" for a
+    deleted account with neither, matching Gerrit's UI."""
+    return a.get("name") or a.get("display_name") or (DELETED_USER if a.get("deleted") else None)
 
 
 def mark_emailless_bots(db):
@@ -141,7 +149,7 @@ def derive(data_dir=store.DATA_DIR, weeks=None, source="auto"):
             a = json.loads(zlib.decompress(body))
             db.execute("""INSERT INTO accounts VALUES (?,?,?,?,?) ON CONFLICT(host, account_id)
                           DO UPDATE SET email=coalesce(excluded.email, email),
-                          name=coalesce(excluded.name, name)""",
+                          """ + NAME_UPSERT,
                        (host, a["_account_id"], a.get("email"), account_name(a),
                         int(is_bot_account(a))))
     repos = {}
@@ -167,7 +175,7 @@ def derive(data_dir=store.DATA_DIR, weeks=None, source="auto"):
                 db.execute(
                     """INSERT INTO accounts VALUES (?,?,?,?,?) ON CONFLICT(host, account_id)
                        DO UPDATE SET email=coalesce(excluded.email, email),
-                       name=coalesce(excluded.name, name), is_bot=max(is_bot, excluded.is_bot)""",
+                       is_bot=max(is_bot, excluded.is_bot), """ + NAME_UPSERT,
                     (host, aid, a.get("email"), account_name(a), int(is_bot_account(a))))
             cols = list(ch)
             db.execute(
