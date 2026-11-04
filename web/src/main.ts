@@ -308,7 +308,7 @@ function renderTiles(data: Data, weeks: string[]) {
     ['Human-owned CLs', t ? int(t.human_cls) : '—', t ? `${int(t.human_cls_with_review)} reviewed; ${int(t.bot_cls)} bot CLs` : ''],
     ['Review comments', int(human), `by ${int(reviewers)} reviewers`],
     ['Self-declared AI comments', int(ai), human + ai ? `${pct(ai / (human + ai))} of all; at least` : ''],
-    ['Post-merge comments', int(postMerge), 'written after the CL landed; not in the headline'],
+    ['Post-merge comments', int(postMerge), human ? `${pct(postMerge / human)} of review comments; written after the CL landed` : ''],
   ];
   $('#tiles').replaceChildren(
     ...tiles.map(([k, v, sub]) => {

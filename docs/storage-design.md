@@ -249,9 +249,9 @@ Design notes:
     weight review *count* separately from review *verbosity*.
   - The CL owner never gets a `reviews` row. Owner replies are not review activity.
   - Bot accounts are kept but flagged, and are filtered at aggregation time.
-- **Post-merge comments:** decide in derivation whether to count only comments
-  dated `<= submitted_at`. Recommendation: count only those, so a re-fetch of an
-  old week is stable.
+- **Post-merge comments:** decided (metric_version 2): they count, however
+  late, so a re-fetch of an old week can raise its numbers slightly
+  (`extraction-v1.md`, metric definitions).
 - **Idempotency:** derivation of a CL happens in one transaction:
   `INSERT … ON CONFLICT DO UPDATE` into `changes`, then
   `DELETE FROM reviews WHERE host=? AND change_number=?`, then insert the reviews.

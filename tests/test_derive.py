@@ -41,7 +41,9 @@ class DeriveTest(unittest.TestCase):
         r = reviews[2]
         self.assertEqual((r["review_comments"], r["review_chars"], r["ai_comments"], r["voted_cr"]),
                          (2, len("lgtm") + len("nit: rename"), 1, 1))
-        self.assertEqual((reviews[4]["review_comments"], reviews[4]["post_merge_comments"]), (0, 1))
+        # A post-merge comment counts in the headline and is also tallied separately.
+        self.assertEqual((reviews[4]["review_comments"], reviews[4]["review_chars"],
+                          reviews[4]["post_merge_comments"]), (1, len("late"), 1))
         self.assertEqual(ch["iso_week"], "2026-W44")
         self.assertEqual(ch["is_bot_owned"], 0)
 
@@ -141,7 +143,7 @@ class AccountTest(unittest.TestCase):
 
 
 class SummarizeTest(unittest.TestCase):
-    def test_post_merge_comments_reported_separately(self):
+    def test_post_merge_comments_counted_and_reported(self):
         with tempfile.TemporaryDirectory() as d:
             db = store.open_cosh(d)
             h = "chromium-review.googlesource.com"
@@ -153,8 +155,9 @@ class SummarizeTest(unittest.TestCase):
                               status, created_at, closed_at, iso_week)
                               VALUES (?,100,'chromium/src','main',1,'MERGED','2026-10-26 00:00:00',
                               '2026-10-27 12:00:00','2026-W44')""", (h,))
-                # (account, review_comments, ai_comments, post_merge_comments)
-                for aid, rc, ai, pm in [(2, 3, 1, 2), (3, 0, 0, 1), (4, 1, 0, 0), (5, 1, 0, 0), (6, 1, 0, 0)]:
+                # (account, review_comments, ai_comments, post_merge_comments);
+                # post_merge_comments is a subset of review_comments.
+                for aid, rc, ai, pm in [(2, 5, 1, 2), (3, 1, 0, 1), (4, 1, 0, 0), (5, 1, 0, 0), (6, 1, 0, 0)]:
                     db.execute("""INSERT INTO reviews(host, change_number, account_id, review_comments,
                                   review_chars, ai_comments, post_merge_comments)
                                   VALUES (?,100,?,?,?,?,?)""", (h, aid, rc, rc * 10, ai, pm))
@@ -164,16 +167,16 @@ class SummarizeTest(unittest.TestCase):
             with open(os.path.join(out, "reviewer_weekly.json")) as fh:
                 data = json.load(fh)
         self.assertEqual([(r["org"], r["comments"], r["ai_comments"], r["post_merge_comments"],
-                           r["reviewers"]) for r in rows], [("igalia.com", 6, 1, 3, 5)])
-        # Every reviewer (valid JSON despite the hand-rolled layout), AI/post-merge excluded;
-        # account 3 (post-merge only) still reviewed the CL so counts for CLs.
+                           r["reviewers"]) for r in rows], [("igalia.com", 9, 1, 3, 5)])
+        # Every reviewer (valid JSON despite the hand-rolled layout), AI excluded;
+        # account 3 (post-merge only) is credited like any other reviewer.
         self.assertEqual(data["meta"]["columns"], ["account_id", "org", "comments", "cls", "chars"])
         self.assertEqual(data["orgs"], ["igalia.com"])
         self.assertEqual(data["accounts"], {str(a): f"r{a}" for a in range(2, 7)})
         self.assertEqual(data["emails"], {str(a): f"r{a}@igalia.com" for a in range(2, 7)})
         self.assertEqual(data["weeks"]["2026-W44"],
-                         [[2, 0, 3, 1, 30], [4, 0, 1, 1, 10], [5, 0, 1, 1, 10], [6, 0, 1, 1, 10],
-                          [3, 0, 0, 1, 0]])
+                         [[2, 0, 5, 1, 50], [3, 0, 1, 1, 10], [4, 0, 1, 1, 10], [5, 0, 1, 1, 10],
+                          [6, 0, 1, 1, 10]])
 
     def test_reviewer_weeks_keeps_everyone_split_by_org(self):
         from cosh.summarize import reviewer_weeks
@@ -231,7 +234,7 @@ class SummarizeTest(unittest.TestCase):
                 for aid, rc, ai, vote in [(2, 0, 0, 1),     # bare +1: counts as 1
                                           (3, 2, 0, 1),     # LGTM + nit + vote: stays 2, not 3
                                           (4, 0, 1, -1),    # only an AI comment, plus a vote: 1
-                                          (5, 0, 0, None),  # post-merge comment only, no vote: 0
+                                          (5, 1, 0, None),  # post-merge comment only, no vote: 1
                                           (6, 1, 0, None)]:
                     db.execute("""INSERT INTO reviews(host, change_number, account_id, review_comments,
                                   review_chars, ai_comments, post_merge_comments, voted_cr)
@@ -240,7 +243,7 @@ class SummarizeTest(unittest.TestCase):
             db.close()
             rows = summarize(data_dir=d, out_dir=os.path.join(d, "summaries"))
         self.assertEqual([(r["comments"], r["vote_only_reviews"], r["review_chars"]) for r in rows],
-                         [(5, 2, 30)])
+                         [(6, 2, 40)])
 
 
 if __name__ == "__main__":

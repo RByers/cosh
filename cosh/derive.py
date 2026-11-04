@@ -10,7 +10,7 @@ from . import store
 from .bots import is_bot_account
 from .extract import closed_ts, iso_week_of, parse_gerrit_ts
 
-METRIC_VERSION = "1"
+METRIC_VERSION = "2"   # 2: post-merge comments count in the headline
 
 
 def human_text(message):
@@ -103,11 +103,13 @@ def derive_change(change, comments):
             r = row(aid)
             if is_ai_comment(c):
                 r["ai_comments"] += 1
-            elif c.get("updated") and parse_gerrit_ts(c["updated"]) > closed:
+                continue
+            # Post-merge comments count like any other (metric_version 2);
+            # post_merge_comments is the subset written after closed_at.
+            if c.get("updated") and parse_gerrit_ts(c["updated"]) > closed:
                 r["post_merge_comments"] += 1
-            else:
-                r["review_comments"] += 1
-                r["review_chars"] += len(human_text(c.get("message")))
+            r["review_comments"] += 1
+            r["review_chars"] += len(human_text(c.get("message")))
 
     ch = dict(
         change_number=change["_number"], project=change["project"],
