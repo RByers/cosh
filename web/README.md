@@ -60,8 +60,7 @@ Over a range:
    "Other". A toggle switches from the default log axis to a linear axis with
    google.com left out entirely (the next-ranked org takes its slot).
 3. **Review by directory** (`src/areas.ts`): every comment in the range, in
-   scope or not, one row per directory for the selected metric: the 14
-   largest, plus every directory an `include` rule brings back (e.g.
+   scope or not, one row per directory for the selected metric: the 25 largest, plus every directory an `include` rule brings back (e.g.
    `chrome/browser/webnn/`, shown even at 0), then the rest combined into an
    included and an excluded row. Each row has a bar for its volume on a
    shared scale (hatched and tagged "excluded" when the scope leaves it out),

@@ -705,6 +705,10 @@ export interface AreaRow {
   byOrg: Map<string, number>;
 }
 
+/** How many of the largest directories the directory chart lists before
+ * combining the rest (re-included directories are listed on top of these). */
+export const AREA_ROWS = 25;
+
 /** Labels of the two combined rows. */
 export const OTHER_INCLUDED = 'other included directories';
 export const OTHER_EXCLUDED = 'other excluded directories';
@@ -719,7 +723,7 @@ export function areaRows(
   weeks: string[],
   orgs: readonly string[],
   metric: Metric = 'comments',
-  n = 14,
+  n = AREA_ROWS,
 ): AreaRow[] {
   const col = METRIC_INDEX[metric];
   const keep = new Set(orgs);
