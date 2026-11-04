@@ -74,7 +74,7 @@ AREAS_FILE = "area_weekly.json"
 AREA_REVIEWERS_FILE = "area_reviewers.json"
 REVIEWER_COLUMNS = ["account_id", "org", "comments", "cls", "chars"]
 
-# Human reviewers on human-owned CLs on main. CROSS JOIN pins the join order
+# Non-bot accounts on human-owned CLs on main. CROSS JOIN pins the join order
 # (SQLite never reorders it): scan the comments, then look up the CL and the
 # account by primary key.
 SCOPE = """CROSS JOIN changes c ON c.host = x.host AND c.change_number = x.change_number

@@ -588,7 +588,7 @@ function renderLeaderboard(
     ? `No reviewer data${outside} for ${rangeLabel(state.range)}.`
     : `${name}${weeks.length > 1 ? ' in total' : ''}, ${rangeLabel(state.range)}, ` +
       `top ${rows.length} reviewers${outside}. ` +
-      'Same scope as the organization chart: human reviewers on human-owned CLs, on the selected paths.';
+      'Same scope as the organization chart: reviewers\' own (non-bot) accounts on human-owned CLs, on the selected paths.';
 
   // Every org on the board gets its own legend entry, most reviewers first.
   // The palette has room for the first theme.series.length of them (keeping

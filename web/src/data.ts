@@ -73,7 +73,7 @@ export interface WeeklyTotals {
   abandoned_cls: number;
   human_cls: number;
   bot_cls: number;
-  /** Human-owned CLs with at least one human review comment (any path). */
+  /** Human-owned CLs with at least one review comment from a non-owner, non-bot account (any path). */
   human_cls_with_comments: number;
 }
 
