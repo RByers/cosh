@@ -196,6 +196,19 @@ value_ratio(O, t) = O's share of Chromium review comments
   options are to split it by year, keep reviewers only for the tree's upper
   levels, or fetch one subtree's slice when a row is expanded.
 
+- **Self-review vs other-review view (idea, 2026-11-04; unsure it's
+  meaningful).** Split each org's review into comments on its own orgs' CLs
+  (owner in the same org) and on other orgs' CLs, perhaps as a toggle or a
+  paired series on the org chart. Prompted by Microsoft's drop after
+  2026-W36: comments on Microsoft-owned CLs fell from 228 to 146 a week
+  (W29–W36 vs W37–W44) while its review of Google, Intel and other CLs held
+  flat, so the headline change was almost all self-review winding down with
+  a few projects. Before building it, decide whether the split says anything
+  about value: reviewing a colleague's CL in a shared codebase is still real
+  review, and the ratio as defined credits both alike. It may be more useful
+  as an explanatory breakdown than as a metric. Would need the CL owner's
+  org (`changes.owner_account`, resolved as of the comment's day) in the
+  summaries; no new fetching.
 - Vivaldi has no Radar label at all and counts as Chrome, like Brave (which is
   now excluded with a note). Estimate them somehow, e.g. re-split Chrome's
   share with published MAU?
