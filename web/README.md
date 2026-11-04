@@ -16,19 +16,41 @@ The join (value ratio = review share ÷ usage share) happens in the browser, in
 `chromium_share`. Orgs whose browsers have under 0.1% of Chromium usage get no
 ratio.
 
+## Date range
+
+One date range (From / To, plus presets) applies to every section. Each date
+selects the ISO week it falls in, so a range is always whole weeks; the inputs
+snap to that week's Monday and Sunday. The pickers span every week any data
+covers (Radar goes back to 2023), and the default is the range where review and
+usage data both exist.
+
+Over a range:
+
+- Counts (CLs, comments, characters, AI and post-merge comments) are summed.
+- Review share = the org's summed count ÷ everyone's summed count.
+- Usage share = the mean of the org's weekly usage shares, over the range's
+  review weeks that have Radar data. Ratio = review share ÷ usage share.
+- Reviewers can't be summed (the same people review every week), so the table
+  and tiles show the mean weekly count.
+- Leaderboard totals sum `reviewer_weekly.json`, which holds only each week's
+  top reviewers, so a reviewer's total misses weeks they weren't in that
+  week's top 50: a lower bound, loosest near the bottom of the board.
+
 ## Layout
 
-1. **Value ratio** per org per week. 1× is the vertical middle: the
+1. **Value ratio** per org per week in the range. 1× is the vertical middle: the
    lower half is linear 0–1×, the upper half linear 1×–max (`src/scale.ts`).
-2. **Review by organization**: raw counts for the selected week and metric, with
-   the top 7 orgs and then "Other".
-3. **Reviewer leaderboard**: the top 50 reviewers for
-   the selected week and metric, one compact bar each, coloured by org.
-4. **Chromium browser usage** from Cloudflare Radar, per browser, with a marker
-   and a note on the 2026-W37 ChromeDerivative jump.
-5. Week totals, plus a table with every value shown in the charts.
+2. **Review by organization**: raw counts summed over the range for the metric,
+   with the top 7 orgs and then "Other".
+3. **Reviewer leaderboard**: the top 50 reviewers over the range for the metric,
+   one compact bar each, coloured by org.
+4. **Chromium browser usage** from Cloudflare Radar, per browser, over the range,
+   with a marker and a note on the 2026-W37 ChromeDerivative jump.
+5. Totals for the range, plus a table with every value shown in the charts.
 
-The metric and week are kept in the URL hash (`#metric=cls&week=2026-W44`).
+The metric and range are kept in the URL hash
+(`#metric=cls&from=2026-W14&to=2026-W44`). Old `#week=2026-W44` links open
+that one week.
 
 ## Commands
 

@@ -2,8 +2,20 @@
 import assert from 'node:assert/strict';
 import { test } from 'vitest';
 import {
+  addWeeks,
   chartedOrgs,
+  clampRange,
   computeRatios,
+  dataRanges,
+  isoDate,
+  isoWeekOf,
+  meanDerivedShare,
+  orgTotals,
+  parseIsoDate,
+  rangeLength,
+  weekMonday,
+  weeksIn,
+  weekSunday,
   OTHER,
   parseCsv,
   parseOrgBrowsers,
@@ -113,6 +125,77 @@ test('topReviewers ranks one week by the chosen metric and drops zeros', () => {
   assert.deepEqual(topReviewers(board, '2026-W01', 'comments'), []);
   // Input order is not mutated.
   assert.deepEqual(board.weeks['2026-W44'].map((x) => x.account_id), [1, 2, 3]);
+});
+
+test('topReviewers sums a range of weeks, taking name and org from the latest', () => {
+  const r = (account_id: number, org: string, comments: number) => ({
+    account_id, name: `n${account_id}@${org}`, org, comments, cls: 1, chars: 1,
+  });
+  const board = {
+    meta: { top_n: 50 },
+    weeks: { '2026-W43': [r(1, 'a.com', 5), r(2, 'b.com', 9)], '2026-W44': [r(1, 'c.com', 6)] },
+  };
+  assert.deepEqual(topReviewers(board, ['2026-W44', '2026-W43'], 'comments'), [
+    { name: 'n1@c.com', org: 'c.com', value: 11 },
+    { name: 'n2@b.com', org: 'b.com', value: 9 },
+  ]);
+  assert.deepEqual(topReviewers(board, [], 'comments'), []);
+});
+
+test('ISO weeks round-trip through dates, across year boundaries', () => {
+  assert.equal(isoWeekOf(new Date('2026-10-26T00:00:00Z')), '2026-W44'); // Monday
+  assert.equal(isoWeekOf(new Date('2026-11-01T00:00:00Z')), '2026-W44'); // Sunday
+  assert.equal(isoWeekOf(new Date('2026-11-02T00:00:00Z')), '2026-W45');
+  assert.equal(isoWeekOf(new Date('2021-01-03T00:00:00Z')), '2020-W53');
+  assert.equal(isoWeekOf(new Date('2024-12-30T00:00:00Z')), '2025-W01');
+  assert.equal(isoDate(weekMonday('2026-W44')), '2026-10-26');
+  assert.equal(isoDate(weekSunday('2026-W44')), '2026-11-01');
+  assert.equal(isoDate(weekMonday('2025-W01')), '2024-12-30');
+  assert.equal(isoDate(weekMonday('2020-W53')), '2020-12-28');
+  for (let t = Date.UTC(2019, 0, 1); t < Date.UTC(2028, 0, 1); t += 86_400_000) {
+    const w = isoWeekOf(new Date(t));
+    assert.ok(weekMonday(w).getTime() <= t && t <= weekSunday(w).getTime(), `${new Date(t).toISOString()} ${w}`);
+  }
+  assert.equal(addWeeks('2026-W02', -3), '2025-W51');
+  assert.equal(rangeLength({ from: '2025-W45', to: '2026-W44' }), 52);
+  assert.equal(rangeLength({ from: '2026-W44', to: '2026-W44' }), 1);
+  assert.equal(parseIsoDate(''), null);
+});
+
+test('dataRanges: limits are the union, the default the overlap', () => {
+  const r = dataRanges(['2026-W14', '2026-W44'], ['2023-W27', '2026-W40']);
+  assert.deepEqual(r.full, { from: '2023-W27', to: '2026-W44' });
+  assert.deepEqual(r.common, { from: '2026-W14', to: '2026-W40' });
+  // No overlap: fall back to the review weeks.
+  assert.deepEqual(dataRanges(['2026-W44'], ['2023-W27']).common, { from: '2026-W44', to: '2026-W44' });
+  assert.deepEqual(clampRange({ from: '2027-W01', to: '2020-W01' }, r.full), { from: '2023-W27', to: '2026-W44' });
+  assert.deepEqual(weeksIn(['2026-W44', '2026-W13', '2026-W20'], { from: '2026-W14', to: '2026-W44' }), ['2026-W20', '2026-W44']);
+});
+
+test('orgTotals sums counts over weeks and recomputes shares from the sums', () => {
+  const two: Summary = {
+    meta: { weeks: ['2026-W43', '2026-W44'], headline_metric: 'comments' },
+    rows: [
+      ...SUMMARY.rows,
+      { ...row('google.com', 0.5, 100), iso_week: '2026-W43', reviewers: 30 },
+      { ...row('microsoft.com', 0.5, 100), iso_week: '2026-W43' },
+    ],
+  };
+  const t = Object.fromEntries(orgTotals(two, ['2026-W43', '2026-W44']).map((x) => [x.org, x]));
+  assert.equal(t['google.com'].comments, 1000);
+  assert.equal(t['microsoft.com'].comments, 150);
+  assert.ok(Math.abs(t['google.com'].share_comments - 1000 / 1200) < 1e-12);
+  assert.equal(t['google.com'].reviewers, 20); // mean of 30 and 10
+  assert.equal(t['igalia.com'].reviewers, 5); // absent in W43 counts as 0
+  const one = Object.fromEntries(orgTotals(two, ['2026-W44']).map((x) => [x.org, x]));
+  assert.ok(Math.abs(one['google.com'].share_comments - 0.9) < 1e-12);
+  assert.equal(topOrgCounts(two, ['2026-W43', '2026-W44'], 'comments', 1)[0].value, 1000);
+});
+
+test('meanDerivedShare averages the weeks that have usage data', () => {
+  const radar = parseRadarWeekly(RADAR);
+  assert.equal(meanDerivedShare(radar, ['2026-W44', '2026-W43'], ['Edge']), 0.2);
+  assert.equal(meanDerivedShare(radar, ['2026-W43'], ['Edge']), null);
 });
 
 test('topBrowsers ranks by peak share', () => {

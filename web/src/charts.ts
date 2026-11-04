@@ -360,20 +360,23 @@ const weekMarkerPlugin = (theme: Theme, week: string, text: string): Plugin<'lin
   },
 });
 
-/** Radar share of Chromium browser usage per browser, every complete week. */
+/** Radar share of Chromium browser usage per browser over the given
+ * complete weeks. */
 export function renderUsageChart(
   canvas: HTMLCanvasElement,
   radar: RadarWeekly,
+  weeks: string[],
   browsers: string[],
   marker: { week: string; text: string } | null,
   theme: Theme,
 ): Chart<'line'> {
-  const weeks = [...radar.keys()].sort();
   const series = [...browsers, OTHER];
   const datasets = series.map((b, i) => {
     const color = b === OTHER ? theme.muted : theme.series[i];
     const data = weeks.map((w) => browserShare(radar, w, b, browsers));
-    return { ...lineDataset(b, color, theme, data), pointRadius: 0, pointHoverRadius: 4 };
+    // Points only on short ranges, where a single week would otherwise be invisible.
+    const pointRadius = weeks.length <= 13 ? 3 : 0;
+    return { ...lineDataset(b, color, theme, data), pointRadius, pointHoverRadius: 4 };
   });
   const base = baseOptions(theme);
   return new Chart(canvas, {
