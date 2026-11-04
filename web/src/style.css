@@ -622,6 +622,28 @@ a.lb-row:hover .lb-bar {
 
 
 
+/* Whether the path scope counts a row: included, excluded or mixed. */
+.ar-tag {
+  flex: none;
+  padding: 0 4px;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  font-size: 10px;
+  line-height: 14px;
+  color: var(--text-muted);
+}
+
+.ar-tag-excluded {
+  color: var(--text-primary);
+  border-color: var(--baseline);
+}
+
+.ar-tag-mixed {
+  color: var(--text-secondary);
+  border-style: dashed;
+  border-color: var(--baseline);
+}
+
 .ar-head .ar-label,
 .ar-head .ar-vol,
 .ar-head .ar-dist {

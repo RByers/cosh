@@ -278,7 +278,16 @@ test('review by directory shows volume and org split per directory, and the path
   assert.equal(by['(no file)'].solid, 0);
   assert.equal(by['third_party/blink/'].included, 1);
   assert.equal(by['third_party/blink/'].hatched, 0);
-  assert.equal(await page.$('#area-chart .ar-tag'), null);
+  // Every row's name carries a basic indicator.
+  const tag = (name: string) =>
+    page.$$eval('#area-chart .ar-row', (rows, n) =>
+      rows.find((r) => r.querySelector('.ar-name')?.textContent === n)?.querySelector('.ar-tag')?.textContent, name);
+  assert.equal(await tag('chrome/'), 'mixed');
+  assert.equal(await tag('components/'), 'mixed');
+  assert.equal(await tag('ios/'), 'excluded');
+  assert.equal(await tag('(no file)'), 'excluded');
+  assert.equal(await tag('third_party/blink/'), 'included');
+  assert.equal(await page.$$eval('#area-chart .ar-row', (rs) => rs.every((r) => r.querySelector('.ar-tag'))), true);
   // Bars share one scale: the largest directory has the longest bar. chrome/
   // dwarfs the rest, so its bar is torn and the others are scaled up.
   const top = [...d.rows].filter((r) => !r.other).sort((a, b) => b.value - a.value)[0];

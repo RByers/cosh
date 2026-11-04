@@ -75,7 +75,8 @@ Over a range:
    "more" if any are left). ▾ closes anything again; what is open isn't kept
    in the URL. Each row has a bar for its volume on a shared scale set by the
    top level, solid for the part in scope and hatched for the part the scope
-   leaves out (a partly included directory, like `components/`, has both), a
+   leaves out (a partly included directory, like `components/`, has both;
+   each name is tagged "included", "excluded" or "mixed"), a
    100% bar of its split across the top 7 orgs plus "Other", and the share
    not from google.com. For reviewed CLs, a CL with comments in two
    directories counts in each. A note lists the path rules (from the

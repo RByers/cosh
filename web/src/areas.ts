@@ -77,6 +77,11 @@ export function buildAreaChart(
         label.append(node('span', 'ar-toggle-space'));
       }
       label.append(node('span', 'ar-name', r.label));
+      // Whether the path scope counts this row: wholly, not at all, or in part.
+      const tag = r.included >= 1 ? 'included' : r.included <= 0 ? 'excluded' : 'mixed';
+      const tagEl = node('span', `ar-tag ar-tag-${tag}`, tag);
+      if (tag === 'mixed') tagEl.title = `${pct(r.included)} included`;
+      label.append(tagEl);
 
       const vol = node('span', 'ar-vol');
       const torn = r.value > max;
