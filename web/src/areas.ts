@@ -2,7 +2,7 @@
 // metric (a bar on a shared scale) and how that splits across organizations
 // (a 100% stacked bar), plus the non-Google share as text. HTML, like the
 // leaderboard, so the numbers are real text and every row has a hover title.
-import { OTHER, type AreaRow } from './data.ts';
+import { barScale, OTHER, type AreaRow } from './data.ts';
 
 function node<K extends keyof HTMLElementTagNameMap>(tag: K, cls?: string, text?: string) {
   const e = document.createElement(tag);
@@ -31,7 +31,9 @@ export function buildAreaChart(
     box.replaceChildren();
     return;
   }
-  const max = Math.max(...rows.map((r) => r.value));
+  // A few huge directories (e.g. chrome/) would flatten every other bar, so
+  // the scale may stop short of them; those bars are drawn torn (barScale).
+  const { max } = barScale(rows.map((r) => r.value));
   const unit = metricLabel.toLowerCase();
   const head = node('div', 'ar-head');
   head.setAttribute('aria-hidden', 'true');
@@ -60,8 +62,12 @@ export function buildAreaChart(
       label.append(node('span', 'ar-tag', status));
 
       const vol = node('span', 'ar-vol');
-      const bar = node('span', 'ar-bar');
-      bar.style.width = `${(r.value / max) * 100}%`;
+      const torn = r.value > max;
+      const bar = node('span', torn ? 'ar-bar ar-torn' : 'ar-bar');
+      // Widths are a share of the column minus room for the value label, so
+      // the label never runs into the next column.
+      bar.style.width = `calc((100% - var(--ar-label-room)) * ${Math.min(r.value, max) / max})`;
+      if (torn) bar.title = `Bar truncated: ${int(r.value)} is off the scale`;
       vol.append(bar, node('span', 'ar-value', int(r.value)));
 
       const dist = node('span', 'ar-dist');
@@ -75,7 +81,7 @@ export function buildAreaChart(
         seg.title = `${o}: ${int(r.byOrg.get(o)!)} (${pct(s)})`;
         dist.append(seg);
       }
-      li.append(label, vol, dist, node('span', 'ar-ng', pct(others)));
+      li.append(label, vol, dist, node('span', 'ar-ng', r.value ? pct(others) : '—'));
       return li;
     }),
   );

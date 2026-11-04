@@ -523,6 +523,7 @@ a.lb-row:hover .lb-bar {
 /* Review by directory (areas.ts): label | volume bar | 100% org bar | share.
  * Rows use subgrid so every row's columns line up. */
 .ar {
+  --ar-label-room: 52px;
   container-type: inline-size;
   font-size: 11.5px;
   line-height: 16px;
@@ -607,11 +608,32 @@ a.lb-row:hover .lb-bar {
 }
 
 .ar-bar {
+  position: relative;
   flex: none;
   min-width: 2px;
   height: 12px;
   border-radius: 0 3px 3px 0;
   background: var(--text-secondary);
+}
+
+/* A bar longer than the scale (see barScale): a slanted break near its end,
+ * a gap in the card's colour edged by two lines, like a broken axis. It reads
+ * on hatched (excluded) bars too. */
+.ar-torn::after {
+  content: '';
+  position: absolute;
+  top: -3px;
+  bottom: -3px;
+  right: 12px;
+  width: 4px;
+  background: var(--surface-1);
+  border-left: 1.5px solid var(--text-primary);
+  border-right: 1.5px solid var(--text-primary);
+  transform: skewX(-25deg);
+}
+
+.ar-row:hover .ar-torn::after {
+  background: color-mix(in srgb, var(--grid) 60%, var(--surface-1));
 }
 
 /* Excluded directories: a hatched, muted bar (texture, not just colour). */

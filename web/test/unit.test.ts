@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { test } from 'vitest';
 import {
   addWeeks,
+  barScale,
   areaRows,
   OTHER_EXCLUDED,
   OTHER_INCLUDED,
@@ -547,4 +548,18 @@ test('gerritReviewsUrl links to the reviewer query, keeping @ readable', () => {
   );
   assert.equal(gerritReviewsUrl('a+b@x.org'), 'https://chromium-review.googlesource.com/q/reviewedby:a%2Bb@x.org');
   assert.equal(gerritReviewsUrl(null), null);
+});
+
+test('barScale breaks the axis only when a few bars dwarf the rest', () => {
+  // chrome/ is over 2x the next: the scale ends at 1.25x the second bar.
+  assert.deepEqual(barScale([15425, 4925, 4566, 2665]), { max: 4925 * 1.25, broken: 1 });
+  // Two huge bars, then a gap.
+  assert.deepEqual(barScale([900, 800, 100, 90]), { max: 125, broken: 2 });
+  // No big gap among the top bars: a plain scale.
+  assert.deepEqual(barScale([100, 60, 40, 30]), { max: 100, broken: 0 });
+  // A gap below the 3rd bar still counts; below the 4th it doesn't (maxBroken = 3).
+  assert.deepEqual(barScale([100, 90, 80, 10]), { max: 12.5, broken: 3 });
+  assert.deepEqual(barScale([100, 90, 80, 70, 1]), { max: 100, broken: 0 });
+  assert.deepEqual(barScale([]), { max: 0, broken: 0 });
+  assert.deepEqual(barScale([5, 0]), { max: 5, broken: 0 });
 });

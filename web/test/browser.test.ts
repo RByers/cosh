@@ -193,6 +193,9 @@ test('review by directory shows volume and org split per directory, and the path
         excluded: r.classList.contains('ar-excluded'),
         value: Number(r.querySelector('.ar-value')!.textContent!.replace(/,/g, '')),
         bar: r.querySelector('.ar-bar')!.getBoundingClientRect().width,
+        torn: r.querySelector('.ar-bar')!.classList.contains('ar-torn'),
+        labelRight: r.querySelector('.ar-value')!.getBoundingClientRect().right,
+        volRight: r.querySelector('.ar-vol')!.getBoundingClientRect().right,
         segs: [...r.querySelectorAll<HTMLElement>('.ar-seg')].map((s) => s.getBoundingClientRect().width),
         dist: r.querySelector('.ar-dist')!.getBoundingClientRect().width,
         title: r.title,
@@ -212,9 +215,17 @@ test('review by directory shows volume and org split per directory, and the path
   assert.equal(by['chrome/'].tag, 'excluded');
   assert.ok(by['chrome/'].excluded && by['(no file)'].excluded);
   assert.equal(by['third_party/blink/'].tag, 'included');
-  // Bars share one scale: the largest directory has the longest bar.
+  // Bars share one scale: the largest directory has the longest bar. chrome/
+  // dwarfs the rest, so its bar is torn and the others are scaled up.
   const top = [...d.rows].filter((r) => !/^other /.test(r.name)).sort((a, b) => b.value - a.value)[0];
   assert.ok(d.rows.every((r) => r.bar <= top.bar + 0.5));
+  assert.equal(top.name, 'chrome/');
+  assert.ok(top.torn, 'chrome/ bar is torn');
+  assert.equal(d.rows.filter((r) => r.torn).length, 1);
+  const second = [...d.rows].sort((a, b) => b.value - a.value)[1];
+  assert.ok(second.bar > top.bar * 0.7, `second bar ${second.bar} vs ${top.bar}`);
+  // Value labels stay inside their column.
+  for (const r of d.rows) assert.ok(r.labelRight <= r.volRight + 0.5, `${r.name} label overflows`);
   // The org split fills the column, with no gaps between segments.
   const blink = by['third_party/blink/'];
   const filled = blink.segs.reduce((s, w) => s + w, 0);

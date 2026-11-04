@@ -709,6 +709,23 @@ export interface AreaRow {
  * combining the rest (re-included directories are listed on top of these). */
 export const AREA_ROWS = 25;
 
+/** Scale for the directory chart's volume bars, with a broken axis when a
+ * few bars dwarf the rest. Looking at the largest values in descending order,
+ * if one of the top `maxBroken` is more than `gap` times the next, the scale
+ * ends at `headroom` times that next value and the bars above it are drawn
+ * truncated (torn). Returns the scale's maximum and how many of the largest
+ * values exceed it (0: a plain scale ending at the largest value). */
+export function barScale(
+  values: number[],
+  { gap = 2, maxBroken = 3, headroom = 1.25 } = {},
+): { max: number; broken: number } {
+  const v = [...values].sort((a, b) => b - a);
+  for (let j = 1; j <= Math.min(maxBroken, v.length - 1); j++) {
+    if (v[j] > 0 && v[j - 1] > gap * v[j]) return { max: v[j] * headroom, broken: j };
+  }
+  return { max: v[0] ?? 0, broken: 0 };
+}
+
 /** Labels of the two combined rows. */
 export const OTHER_INCLUDED = 'other included directories';
 export const OTHER_EXCLUDED = 'other excluded directories';
