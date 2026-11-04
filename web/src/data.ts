@@ -179,6 +179,38 @@ export function computeRatios(
   return points;
 }
 
+/** Running-average choices for the value ratio chart, in weeks (1 = off). */
+export const SMOOTHING_WEEKS = [1, 4, 12] as const;
+export type Smoothing = (typeof SMOOTHING_WEEKS)[number];
+export const DEFAULT_SMOOTHING: Smoothing = 4;
+
+/** Trailing running average of ratios over `window` calendar weeks, ending at
+ * each point's week. Averages the two shares separately and divides (mean
+ * contribution ÷ mean usage), so a week with near-zero usage can't dominate
+ * the way it would when averaging weekly ratios. Weeks with no Radar data, or
+ * absent from `points`, are left out of the window. Pass every week, not just
+ * the displayed range, so the first displayed weeks get a full window. */
+export function smoothRatios(points: RatioPoint[], window: number, minDerived = MIN_DERIVED_SHARE): RatioPoint[] {
+  if (window <= 1) return points;
+  const byKey = new Map(points.map((p) => [`${p.org}|${p.week}`, p]));
+  return points.map((p) => {
+    let contribution = 0;
+    let derived = 0;
+    let n = 0;
+    for (let i = 0; i < window; i++) {
+      const q = byKey.get(`${p.org}|${addWeeks(p.week, -i)}`);
+      if (!q || q.derived === null) continue;
+      contribution += q.contribution;
+      derived += q.derived;
+      n++;
+    }
+    if (n === 0) return { ...p, derived: null, ratio: null };
+    const c = contribution / n;
+    const d = derived / n;
+    return { ...p, contribution: c, derived: d, ratio: d >= minDerived ? c / d : null };
+  });
+}
+
 /** Orgs that get a series (and therefore a colour): their browsers reach
  * minDerived in at least one Radar week. Order follows org_browsers.csv, so
  * colours never depend on the selected metric or week. */

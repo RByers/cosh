@@ -22,6 +22,10 @@ import {
   clampRange,
   compareWeeks,
   computeRatios,
+  DEFAULT_SMOOTHING,
+  smoothRatios,
+  SMOOTHING_WEEKS,
+  type Smoothing,
   dataRanges,
   distinctReviewers,
   isoDate,
@@ -70,6 +74,8 @@ interface Data {
 interface State {
   metric: Metric;
   range: WeekRange;
+  /** Value ratio running average, in weeks (1 = off). */
+  smoothing: Smoothing;
 }
 
 declare global {
@@ -138,11 +144,13 @@ function readStateFromUrl(data: Data): State {
   const week = q.get('week'); // links from before the range picker
   const from = isWeek(q.get('from')) ? q.get('from')! : isWeek(week) ? week : common.from;
   const to = isWeek(q.get('to')) ? q.get('to')! : isWeek(week) ? week : common.to;
-  return { metric, range: clampRange({ from, to }, full) };
+  const sm = Number(q.get('smooth'));
+  const smoothing = SMOOTHING_WEEKS.find((w) => w === sm) ?? DEFAULT_SMOOTHING;
+  return { metric, range: clampRange({ from, to }, full), smoothing };
 }
 
 function writeStateToUrl(s: State) {
-  history.replaceState(null, '', `#metric=${s.metric}&from=${s.range.from}&to=${s.range.to}`);
+  history.replaceState(null, '', `#metric=${s.metric}&from=${s.range.from}&to=${s.range.to}&smooth=${s.smoothing}`);
 }
 
 const PRESETS: { id: string; label: string; weeks: number | null }[] = [
@@ -175,6 +183,23 @@ function buildControls(data: Data, state: State, render: () => void) {
     });
     label.append(input, document.createTextNode(m.label));
     metricBox.append(label);
+  }
+
+  const smoothBox = $('#smoothing');
+  smoothBox.querySelectorAll('label').forEach((l) => l.remove());
+  for (const w of SMOOTHING_WEEKS) {
+    const label = el('label');
+    const input = el('input');
+    input.type = 'radio';
+    input.name = 'smoothing';
+    input.value = String(w);
+    input.checked = w === state.smoothing;
+    input.addEventListener('change', () => {
+      state.smoothing = w;
+      render();
+    });
+    label.append(input, document.createTextNode(w === 1 ? 'Off' : `${w} weeks`));
+    smoothBox.append(label);
   }
 
   const { full } = data.ranges;
@@ -397,13 +422,18 @@ function main(data: Data) {
     // Every section covers the selected range only.
     const weeks = weeksIn(data.summary.meta.weeks, state.range);
     const label = rangeLabel(state.range);
-    const points = computeRatios(data.summary, data.radar, data.orgBrowsers, state.metric).filter(
+    // Smooth over every week before filtering, so the range's first weeks
+    // average over earlier data too.
+    const points = smoothRatios(
+      computeRatios(data.summary, data.radar, data.orgBrowsers, state.metric),
+      state.smoothing,
+    ).filter(
       (p) => orgs.includes(p.org) && weeks.includes(p.week),
     );
     const scale = pivotScale(Math.max(0, ...points.map((p) => p.ratio ?? 0)));
 
     ratioChart?.destroy();
-    ratioChart = renderRatioChart($<HTMLCanvasElement>('#ratio-chart'), weeks, orgs, colors, points, scale, theme);
+    ratioChart = renderRatioChart($<HTMLCanvasElement>('#ratio-chart'), weeks, orgs, colors, points, scale, theme, state.smoothing);
     const metricName = METRICS.find((m) => m.id === state.metric)!.label;
     const metricLabel = metricName.toLowerCase();
     reviewChart?.destroy();
@@ -428,7 +458,10 @@ function main(data: Data) {
     );
 
     $('#ratio-sub').textContent = weeks.length
-      ? `Share of ${metricLabel} ÷ share of Chromium browser usage, per ISO week, ${label}. ` +
+      ? `Share of ${metricLabel} ÷ share of Chromium browser usage, per ISO week, ${label}` +
+        (state.smoothing > 1
+          ? `, as a ${state.smoothing}-week running average (mean share of ${metricLabel} ÷ mean usage share over the ${state.smoothing} weeks ending each week). `
+          : '. ') +
         `The axis is linear 0–1× in its lower half and 1–${formatRatio(scale.upper)}× in its upper half.`
       : `No review data for ${label}.`;
     renderTiles(data, weeks);

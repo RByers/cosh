@@ -147,6 +147,46 @@ test('switching the metric updates the table, review chart and URL', async () =>
   await page.close();
 });
 
+test('value ratio smoothing defaults to 4 weeks and is selectable', async () => {
+  const { page, errors } = await open('#metric=comments&from=2026-W30&to=2026-W44');
+  const read = () =>
+    page.evaluate(() => {
+      const c = window.__cosh!;
+      const ds = c.ratioChart!.data.datasets.find((d: { label?: string }) => d.label === 'google.com')!;
+      return {
+        smoothing: c.state.smoothing,
+        checked: (document.querySelector('#smoothing input:checked') as HTMLInputElement).value,
+        labels: [...document.querySelectorAll('#smoothing label')].map((l) => l.textContent),
+        ratios: (ds.data as unknown as { ratio: number | null }[]).map((p) => p.ratio),
+        sub: document.querySelector('#ratio-sub')!.textContent!,
+      };
+    });
+  const four = await read();
+  assert.equal(four.smoothing, 4);
+  assert.equal(four.checked, '4');
+  assert.deepEqual(four.labels, ['Off', '4 weeks', '12 weeks']);
+  assert.match(four.sub, /4-week running average/);
+  assert.ok(four.ratios[0] !== null, 'first week averages over weeks before the range');
+
+  await page.click('#smoothing input[value="1"]');
+  const off = await read();
+  assert.match(page.url(), /smooth=1/);
+  assert.doesNotMatch(off.sub, /running average/);
+  assert.notDeepEqual(off.ratios, four.ratios);
+  // Smoothing steadies the line: smaller week-to-week moves.
+  const jitter = (r: (number | null)[]) =>
+    r.slice(1).reduce<number>((s, v, i) => s + Math.abs((v ?? 0) - (r[i] ?? 0)), 0);
+  assert.ok(jitter(four.ratios) < jitter(off.ratios), `${jitter(four.ratios)} vs ${jitter(off.ratios)}`);
+
+  await page.click('#smoothing input[value="12"]');
+  assert.match(page.url(), /smooth=12/);
+  await page.reload();
+  await page.waitForSelector('body[data-ready]');
+  assert.equal((await read()).smoothing, 12);
+  assert.deepEqual(errors, []);
+  await page.close();
+});
+
 test('date range defaults to where review and usage data overlap, and drives every chart', async () => {
   const { page, errors } = await open();
   const read = () =>

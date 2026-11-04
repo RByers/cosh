@@ -43,6 +43,9 @@ Over a range:
 
 1. **Value ratio** per org per week in the range. 1× is the vertical middle: the
    lower half is linear 0–1×, the upper half linear 1×–max (`src/scale.ts`).
+   Smoothing (default 4 weeks; also off or 12 weeks) plots a trailing running
+   average: mean review share ÷ mean usage share over the weeks ending each
+   week, using weeks before the range too (`smoothRatios` in `src/data.ts`).
 2. **Review by organization**: raw counts summed over the range for the metric,
    with the top 7 orgs and then "Other".
 3. **Reviewer leaderboard**: the top 50 reviewers over the range for the metric,
@@ -51,8 +54,8 @@ Over a range:
    with a marker and a note on the 2026-W37 ChromeDerivative jump.
 5. Totals for the range, plus a table with every value shown in the charts.
 
-The metric and range are kept in the URL hash
-(`#metric=cls&from=2026-W14&to=2026-W44`). Old `#week=2026-W44` links open
+The metric, range and smoothing are kept in the URL hash
+(`#metric=cls&from=2026-W14&to=2026-W44&smooth=4`). Old `#week=2026-W44` links open
 that one week.
 
 ## Commands

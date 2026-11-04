@@ -114,7 +114,10 @@ export function renderRatioChart(
   points: RatioPoint[],
   scale: PivotScale,
   theme: Theme,
+  /** Running-average window in weeks (1 = none); named in the tooltip. */
+  smoothing = 1,
 ): Chart<'line', RatioDatum[]> {
+  const avg = smoothing > 1 ? `, ${smoothing}-week avg` : '';
   const datasets = orgs.map((org) => {
     const data: RatioDatum[] = weeks.map((week) => {
       const p = points.find((q) => q.week === week && q.org === org);
@@ -145,7 +148,7 @@ export function renderRatioChart(
             label: (ctx) => {
               const d = ctx.raw as RatioDatum;
               if (d.ratio === null) return `${ctx.dataset.label}: no ratio`;
-              return `${formatRatio(d.ratio)}  ${ctx.dataset.label}  (${pct(d.contribution)} of review ÷ ${pct(d.derived ?? 0)} of usage)`;
+              return `${formatRatio(d.ratio)}  ${ctx.dataset.label}  (${pct(d.contribution)} of review ÷ ${pct(d.derived ?? 0)} of usage${avg})`;
             },
           },
         },
