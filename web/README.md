@@ -17,7 +17,7 @@ ratio.
 
 ## Layout
 
-1. **Value ratio** per org per week. Parity (1×) is the vertical middle: the
+1. **Value ratio** per org per week. 1× is the vertical middle: the
    lower half is linear 0–1×, the upper half linear 1×–max (`src/scale.ts`).
 2. **Review by organization**: raw counts for the selected week and metric, with
    the top 7 orgs and then "Other".
