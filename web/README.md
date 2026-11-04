@@ -59,8 +59,12 @@ Over a range:
    (smoothed like the ratio), one line each for the top 7 orgs and then
    "Other". A toggle switches from the default log axis to a linear axis with
    google.com left out entirely (the next-ranked org takes its slot).
-3. **Review by directory** (`src/areas.ts`): every comment in the range, in
-   scope or not, one row per directory for the selected metric: the 25 largest, plus every directory an `include` rule brings back (e.g.
+3. **Chromium browser usage** from Cloudflare Radar, per browser, over the range,
+   with a marker and a note on the 2026-W37 ChromeDerivative jump.
+4. Totals for the range, plus a table with every value shown in the charts.
+5. **Review by directory** (`src/areas.ts`): every comment in the range, in
+   scope or not, one row per directory for the selected metric: the 20 largest
+   (a toggle shows 50 or 100), plus every directory an `include` rule brings back (e.g.
    `chrome/browser/webnn/`, shown even at 0), then the rest combined into an
    included and an excluded row. Each row has a bar for its volume on a
    shared scale (hatched and tagged "excluded" when the scope leaves it out),
@@ -68,16 +72,13 @@ Over a range:
    not from google.com. For reviewed CLs, a CL with comments in two
    directories counts in both. A note lists the path rules
    (from the summary's metadata) and how comments are placed on files.
-4. **Chromium browser usage** from Cloudflare Radar, per browser, over the range,
-   with a marker and a note on the 2026-W37 ChromeDerivative jump.
-5. Totals for the range, plus a table with every value shown in the charts.
 6. **Reviewer leaderboard**: the top 50 reviewers by review comments over the
    range, one compact bar each, coloured by org.
 
-The range, smoothing and review-chart scale are kept in the URL hash
-(`#from=2026-W14&to=2026-W44&smooth=4`, plus `&rscale=linear` for the
-linear review chart). Old `#week=2026-W44` links open that one week, and an
-old `metric=` parameter is ignored.
+The metric, range, smoothing, review-chart scale and directory count are kept
+in the URL hash (`#metric=cls&from=2026-W14&to=2026-W44&smooth=4`, plus
+`&rscale=linear` for the linear review chart and `&dirs=50` or `&dirs=100`
+for more directories). Old `#week=2026-W44` links open that one week.
 
 ## Commands
 

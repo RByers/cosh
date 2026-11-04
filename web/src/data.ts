@@ -705,9 +705,11 @@ export interface AreaRow {
   byOrg: Map<string, number>;
 }
 
-/** How many of the largest directories the directory chart lists before
+/** How many of the largest directories the directory chart can list before
  * combining the rest (re-included directories are listed on top of these). */
-export const AREA_ROWS = 25;
+export const AREA_ROW_CHOICES = [20, 50, 100] as const;
+export type AreaRowCount = (typeof AREA_ROW_CHOICES)[number];
+export const DEFAULT_AREA_ROWS: AreaRowCount = 20;
 
 /** Scale for the directory chart's volume bars, with a broken axis when a
  * few bars dwarf the rest. Looking at the largest values in descending order,
@@ -740,7 +742,7 @@ export function areaRows(
   weeks: string[],
   orgs: readonly string[],
   metric: Metric = 'comments',
-  n = AREA_ROWS,
+  n: number = DEFAULT_AREA_ROWS,
 ): AreaRow[] {
   const col = METRIC_INDEX[metric];
   const keep = new Set(orgs);

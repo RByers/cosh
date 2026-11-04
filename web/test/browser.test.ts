@@ -70,10 +70,10 @@ test('page loads data and renders all three charts without errors', async () => 
     assert.ok(c.w > 200 && c.h > 200, `${c.k} has size ${c.w}x${c.h}`);
     assert.ok(c.n >= 1, `${c.k} has datasets`);
   }
-  // Charts come in order: ratio, review, directories, usage, then the table, then the leaderboard.
+  // Charts come in order: ratio, review, usage, the table, directories, then the leaderboard.
   const order = await page.$$eval('main > section', (s) => s.map((e) => e.querySelector('canvas, table, .lb, .ar')?.id));
   assert.deepEqual(order.filter(Boolean),
-    ['ratio-chart', 'review-chart', 'area-chart', 'usage-chart', 'org-table', 'leaderboard-chart']);
+    ['ratio-chart', 'review-chart', 'usage-chart', 'org-table', 'area-chart', 'leaderboard-chart']);
   await page.close();
 });
 
@@ -145,6 +145,37 @@ test('brave.com is listed with unknown usage and the Brave note explains why', a
   const note = await page.$eval('#brave-note', (n) => n.textContent ?? '');
   assert.match(note, /Brave is excluded/);
   assert.match(note, /Sec-CH-UA/);
+  await page.close();
+});
+
+test('the directory chart shows the top 20 by default and expands to 50 or 100', async () => {
+  const { page, errors } = await open();
+  const read = () =>
+    page.evaluate(() => {
+      const names = [...document.querySelectorAll('#area-chart .ar-name')].map((n) => n.textContent!);
+      return {
+        names,
+        // The largest directories, before re-included and combined rows.
+        plain: names.filter((n) => !/^other /.test(n)).length,
+        options: [...document.querySelectorAll('#area-count label')].map((l) => l.textContent),
+        checked: (document.querySelector('#area-count input:checked') as HTMLInputElement).value,
+      };
+    });
+  const d = await read();
+  assert.deepEqual(d.options, ['Top 20', 'Top 50', 'Top 100']);
+  assert.equal(d.checked, '20');
+  // 20 largest, plus re-included directories outside them.
+  assert.ok(d.plain >= 20 && d.plain <= 23, `${d.plain} rows`);
+  assert.doesNotMatch(page.url(), /dirs=/);
+  await page.click('#area-count input[value="50"]');
+  const more = await read();
+  assert.ok(more.plain > d.plain, `${more.plain} vs ${d.plain}`);
+  assert.deepEqual(more.names.slice(0, 20), d.names.slice(0, 20));
+  assert.match(page.url(), /dirs=50/);
+  await page.reload();
+  await page.waitForSelector('body[data-ready]');
+  assert.equal((await read()).checked, '50');
+  assert.deepEqual(errors, []);
   await page.close();
 });
 

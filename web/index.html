@@ -105,37 +105,6 @@
         </p>
       </section>
 
-      <section id="areas" class="card" aria-labelledby="areas-title">
-        <h2 id="areas-title">Review by directory</h2>
-        <p id="areas-sub" class="sub"></p>
-        <ul id="areas-legend" class="legend" aria-label="Segment colour by organization"></ul>
-        <div id="area-chart" class="ar"></div>
-        <div class="note" id="scope-note">
-          <p>
-            <strong>Which paths count.</strong> The value ratio, the organization chart, the table and the leaderboard
-            count only review comments on these <code>chromium/src</code> paths (the longest matching rule wins):
-          </p>
-          <ul id="scope-rules" class="scope-list"></ul>
-          <p>
-            <code>chrome/</code>, <code>ios/</code>, <code>android_webview/</code>, <code>ash/</code> and
-            <code>chromeos/</code> hold Google's own products built on Chromium: the Chrome browser, Chrome for iOS,
-            Android WebView and ChromeOS. Review there is mostly Google reviewing
-            Google's product code, so it says little about who maintains the engine other browsers share.
-            <code>components/</code> is mostly browser features built for Chrome, such as autofill, sign-in and
-            enterprise reporting; over a year, 98% of its review comments came from Google.
-            <code>chrome/browser/web_applications/</code> and <code>chrome/browser/webnn/</code> are shared platform
-            work that other Chromium browsers build on, and <code>components/viz/</code> is the compositor, part of
-            the engine, so those stay in. Everything else counts.
-          </p>
-          <p>
-            <strong>Placing comments on a file.</strong> Gerrit doesn't give us each CL's file list, so an inline
-            comment counts for its own file, and a patchset-level comment counts for the file on the same CL with the
-            most inline comments (from anyone, including the CL's owner). A CL whose comments are all patchset-level
-            can't be placed; its comments show as <code>(no file)</code> above and are left out of the other charts.
-          </p>
-        </div>
-      </section>
-
       <section class="card" aria-labelledby="usage-title">
         <h2 id="usage-title">Chromium browser usage (Cloudflare Radar)</h2>
         <p class="sub">
@@ -202,6 +171,40 @@
             </thead>
             <tbody></tbody>
           </table>
+        </div>
+      </section>
+
+      <section id="areas" class="card" aria-labelledby="areas-title">
+        <h2 id="areas-title">Review by directory</h2>
+        <p id="areas-sub" class="sub"></p>
+        <fieldset id="area-count" class="segmented chart-toggle">
+          <legend>Directories</legend>
+        </fieldset>
+        <ul id="areas-legend" class="legend" aria-label="Segment colour by organization"></ul>
+        <div id="area-chart" class="ar"></div>
+        <div class="note" id="scope-note">
+          <p>
+            <strong>Which paths count.</strong> The value ratio, the organization chart, the table and the leaderboard
+            count only review comments on these <code>chromium/src</code> paths (the longest matching rule wins):
+          </p>
+          <ul id="scope-rules" class="scope-list"></ul>
+          <p>
+            <code>chrome/</code>, <code>ios/</code>, <code>android_webview/</code>, <code>ash/</code> and
+            <code>chromeos/</code> hold Google's own products built on Chromium: the Chrome browser, Chrome for iOS,
+            Android WebView and ChromeOS. Review there is mostly Google reviewing
+            Google's product code, so it says little about who maintains the engine other browsers share.
+            <code>components/</code> is mostly browser features built for Chrome, such as autofill, sign-in and
+            enterprise reporting; over a year, 98% of its review comments came from Google.
+            <code>chrome/browser/web_applications/</code> and <code>chrome/browser/webnn/</code> are shared platform
+            work that other Chromium browsers build on, and <code>components/viz/</code> is the compositor, part of
+            the engine, so those stay in. Everything else counts.
+          </p>
+          <p>
+            <strong>Placing comments on a file.</strong> Gerrit doesn't give us each CL's file list, so an inline
+            comment counts for its own file, and a patchset-level comment counts for the file on the same CL with the
+            most inline comments (from anyone, including the CL's owner). A CL whose comments are all patchset-level
+            can't be placed; its comments show as <code>(no file)</code> above and are left out of the other charts.
+          </p>
         </div>
       </section>
 

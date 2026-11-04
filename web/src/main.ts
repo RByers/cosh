@@ -21,7 +21,10 @@ import { buildAreaChart } from './areas.ts';
 import { buildLeaderboard } from './leaderboard.ts';
 import {
   addWeeks,
+  AREA_ROW_CHOICES,
   areaRows,
+  DEFAULT_AREA_ROWS,
+  type AreaRowCount,
   OTHER,
   topAreaOrgs,
   type AreaBoard,
@@ -87,6 +90,8 @@ interface State {
   smoothing: Smoothing;
   /** Review chart axis: log with every org, or linear without google.com. */
   reviewScale: ReviewScale;
+  /** How many of the largest directories the directory chart lists. */
+  areaRows: AreaRowCount;
 }
 
 /** The org the linear review chart leaves out, so the rest are legible. */
@@ -161,12 +166,15 @@ function readStateFromUrl(data: Data): State {
   const sm = Number(q.get('smooth'));
   const smoothing = SMOOTHING_WEEKS.find((w) => w === sm) ?? DEFAULT_SMOOTHING;
   const reviewScale: ReviewScale = q.get('rscale') === 'linear' ? 'linear' : 'log';
-  return { metric, range: clampRange({ from, to }, full), smoothing, reviewScale };
+  const dirs = Number(q.get('dirs'));
+  const areaRows = AREA_ROW_CHOICES.find((n) => n === dirs) ?? DEFAULT_AREA_ROWS;
+  return { metric, range: clampRange({ from, to }, full), smoothing, reviewScale, areaRows };
 }
 
 function writeStateToUrl(s: State) {
   history.replaceState(null, '', `#metric=${s.metric}&from=${s.range.from}&to=${s.range.to}&smooth=${s.smoothing}` +
-    (s.reviewScale === 'linear' ? '&rscale=linear' : ''));
+    (s.reviewScale === 'linear' ? '&rscale=linear' : '') +
+    (s.areaRows !== DEFAULT_AREA_ROWS ? `&dirs=${s.areaRows}` : ''));
 }
 
 const PRESETS: { id: string; label: string; weeks: number | null }[] = [
@@ -237,6 +245,23 @@ function buildControls(data: Data, state: State, render: () => void) {
     });
     label.append(input, document.createTextNode(sc.label));
     scaleBox.append(label);
+  }
+
+  const countBox = $('#area-count');
+  countBox.querySelectorAll('label').forEach((l) => l.remove());
+  for (const n of AREA_ROW_CHOICES) {
+    const label = el('label');
+    const input = el('input');
+    input.type = 'radio';
+    input.name = 'area-count';
+    input.value = String(n);
+    input.checked = n === state.areaRows;
+    input.addEventListener('change', () => {
+      state.areaRows = n;
+      render();
+    });
+    label.append(input, document.createTextNode(`Top ${n}`));
+    countBox.append(label);
   }
 
   const { full } = data.ranges;
@@ -428,7 +453,7 @@ function renderLeaderboard(
 function renderAreas(data: Data, state: State, colors: Map<string, string>, theme: Theme) {
   const weeks = weeksIn(Object.keys(data.areas.weeks), state.range);
   const orgs = topAreaOrgs(data.areas, weeks, state.metric, 7);
-  const rows = areaRows(data.areas, weeks, orgs, state.metric);
+  const rows = areaRows(data.areas, weeks, orgs, state.metric, state.areaRows);
   const unit = metricName(state.metric).toLowerCase();
   const segColors = reviewColors(orgs, colors, theme);
   const total = rows.reduce((s, r) => s + r.value, 0);
