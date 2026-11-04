@@ -154,6 +154,11 @@ value_ratio(O, t) = O's share of Chromium review comments
    - Try `--batch-size 500` on a later run to see whether the per-CL cost
      drops.
 6. Later:
+   - a "review that led to a change" metric: researched in
+     `docs/review-impact.md` (2026-11-04, offline only). The recommendation
+     is an "addressed threads" metric built from the owners' "Done" replies,
+     then an LLM pass over free-text replies, and no lines-changed metric.
+     Awaiting the user's decision;
    - the OWNER bit;
    - years 2–5 of backfill;
    - other repos and hosts (v8, devtools-frontend and skia are listed in
