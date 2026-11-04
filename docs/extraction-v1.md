@@ -254,6 +254,45 @@ counts.
   placed through the anchor and 10% couldn't be placed. Exact file lists
   would need a blob-less git fetch of `main`'s history (not approved; see
   `plan.md`, Open questions).
+- **Why `(no file)` stays excluded** (checked 2026-11-04 over 2025-W28 ..
+  2026-W45). Unplaced comments were 29,008 of 274,346 human review comments
+  (10.6%), spread over 19,902 of 52,835 reviewed CLs (38%), about 200 CLs a
+  week. They are mostly approvals and routing, not review that can be judged:
+  - *30 random unplaced CLs, every reviewer comment read:* 15 had only
+    "LGTM"/"thanks", 3 only routed or declined ("adding X", "X is better
+    suited"), 8 added a minor note, question or commit-message nit to an
+    approval, and 4 showed real review, all about direction rather than code
+    (a narrower test list, which the owner adopted; a better competing CL,
+    and this one was abandoned; "keep those metrics", abandoned; "answer the
+    design doc first"). A reviewer with line-level feedback leaves an inline
+    comment, which gives the CL an anchor.
+  - *Comments in a 6,000-CL sample, by kind,* with a crude approval-only
+    filter ("lgtm", "thanks", "ptal", "+1" and similar, or empty; it misses
+    variants like "LGTM, thank you!", so it undercounts):
+
+    | Kind | Approval-only | ≥ 80 chars | Not google.com/chromium.org |
+    |---|---|---|---|
+    | inline | 3.9% | 60.9% | 3.6% |
+    | patchset-level, anchored | 22.7% | 35.2% | 4.3% |
+    | unplaced | 43.2% | 27.7% | 3.3% |
+
+  So placing them would add mostly approval-shaped counts, like the
+  vote-only reviews metric_version 5 dropped, and would barely move org
+  shares (their non-Google share is close to the rest). Options weighed for
+  placing them anyway, none adopted:
+  - *Guess from the owner's other placed CLs* (no fetch): tested on 41k
+    anchored CLs, it picked the right area 65% of the time, the right
+    in/out-of-scope side 86%, the right 3-level directory 41%. Too weak.
+  - *`/revisions/current/files` per CL:* exact, ~20k requests a year;
+    breaks the batches-not-per-CL rule.
+  - *Batched query* `q=change:N1 OR … change:N100` with
+    `o=CURRENT_REVISION&o=CURRENT_FILES`, anchoring on the file with the
+    most inserted + deleted lines: exact, ~200 requests a year (~700 for
+    the 3-year range), though `CURRENT_FILES` is heavy server-side
+    (`gerrit-api-research.md`). The cheapest real fix if it's ever needed;
+    needs approval.
+  - *Blob-less git fetch of patchset commits:* file names only, no line
+    counts without blobs; large first tree fetch.
 - **Directory tree** (`area_weekly.json`, the web UI's "Review by
   directory" chart; `dir_tree` in `cosh/paths.py`): every comment, in scope
   or not, so the page can show what the scope leaves out.

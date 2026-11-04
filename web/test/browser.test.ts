@@ -320,6 +320,7 @@ test('review by directory shows volume and org split per directory, and the path
     'Included: every other path.',
   ]);
   assert.match(await page.$eval('#scope-note', (n) => n.textContent ?? ''), /Google's own products/);
+  assert.match(await page.$eval('#unplaced-note', (n) => n.textContent ?? ''), /real investment/);
   assert.deepEqual(errors, []);
   await page.close();
 });
