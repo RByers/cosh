@@ -106,24 +106,6 @@ interface RatioDatum {
   derived: number | null;
 }
 
-/** Labels the two halves of the ratio chart. */
-const halvesPlugin = (theme: Theme): Plugin<'line'> => ({
-  id: 'coshHalves',
-  beforeDatasetsDraw(chart) {
-    const { ctx, chartArea: a, scales } = chart;
-    const mid = scales.y.getPixelForValue(1);
-    ctx.save();
-    ctx.font = '12px system-ui, -apple-system, "Segoe UI", sans-serif';
-    ctx.fillStyle = theme.muted;
-    ctx.textAlign = 'right';
-    ctx.textBaseline = 'bottom';
-    ctx.fillText('contributes more than its usage share ↑', a.right - 6, mid - 4);
-    ctx.textBaseline = 'top';
-    ctx.fillText('↓ contributes less than its usage share', a.right - 6, mid + 4);
-    ctx.restore();
-  },
-});
-
 export function renderRatioChart(
   canvas: HTMLCanvasElement,
   weeks: string[],
@@ -153,7 +135,6 @@ export function renderRatioChart(
   return new Chart<'line', RatioDatum[]>(canvas, {
     type: 'line',
     data: { labels: weeks, datasets },
-    plugins: [halvesPlugin(theme)],
     options: {
       ...base,
       plugins: {

@@ -508,6 +508,8 @@ What to commit and what to keep local:
   folded into `Other` in `org_weekly`. The rule began as a privacy measure; the
   policy above removes that reason, so whether to keep it is an open question
   in `plan.md`.
+  - `gmail.com` is always folded into `Other` in `org_weekly`, since a webmail
+    domain is not an organization.
 - `account_orgs.csv`, if it is ever created, holds manual employer guesses.
   Commit a line only when its source is a public record, and record the source
   on each line. Ask the user before committing guesses that have no public

@@ -49,6 +49,7 @@ value_ratio(O, t) = O's share of Chromium review comments
 | 2026-11-03 | Two SQLite files (raw cache plus derived tables) with CSV/JSON summaries, not flat CSV | Resumable, idempotent re-runs; the front end needs only small summaries (`storage-design.md`) |
 | 2026-11-03 | Weeks are ISO weeks (UTC) of merge time, listed with `mergedafter:`/`mergedbefore:` | `after:` filters on last-updated time and would double count |
 | 2026-11-03 | Org = email domain, with dated overrides from Chromium's `affiliations.json5`; other `@chromium.org` accounts → `google.com` | User's instruction; this is how Chromium itself attributes contributors |
+| 2026-11-03 | `gmail.com` is always folded into `Other`, whatever its size (`FOLD_INTO_OTHER` in `cosh/summarize.py`) | User's instruction: a webmail domain is not an organization |
 | 2026-11-03 | Headline metric is the review **comment count**; reviewed CLs and characters are options (`--metric`) | Balances verbose commenters against complex reviews |
 | 2026-11-03 | Only branch `main`; release branches ignored | User's instruction |
 | 2026-11-03 | Bot-owned CLs get one row flagged as a bot commit and no review rows; counted in `weekly_totals.csv` | Avoids apparent gaps without crediting autoroll rubber-stamps |
@@ -63,6 +64,7 @@ value_ratio(O, t) = O's share of Chromium review comments
 | 2026-11-03 | Defer the OWNER bit; plan to compute it from OWNERS files at the merge parent | The code-owners API uses the current OWNERS files, not those at review time |
 | 2026-11-03 | Web UI: Vite + TypeScript, Chart.js only at runtime; the summary/Radar join runs in the browser (`web/src/data.ts`); tests use Vitest + puppeteer-core with the installed Chrome | Few dependencies, static GitHub Pages hosting, no generated files to commit |
 | 2026-11-03 | Ratio axis: 1× in the vertical middle, linear 0–1 below and 1–max above | User's instruction; under- and over-contribution get equal visual weight |
+| 2026-11-03 | Keep the 1× gridline highlighted but don't label or describe values above/below it as more/less than a fair share | User's instruction: the ratio is too rough an estimate, with too many other factors, for 1× to be a meaningful threshold |
 | 2026-11-03 | Radar: `timeseries_groups/BROWSER`, human traffic, daily data aggregated to ISO weeks; WebViews and in-app browsers excluded from the main share | See `radar-research.md` |
 | 2026-11-03 | Keep Radar's `ChromeDerivative` in the Chromium denominator despite its 2026-09-09 jump | It may be real Chromium usage; the jump looks like Radar labeling previously unlabeled traffic, not taking share from Chrome (`radar-research.md`) |
 
@@ -79,7 +81,7 @@ value_ratio(O, t) = O's share of Chromium review comments
   verified against the real data (`radar-research.md`, "Findings").
 
 - First web UI in `web/` (see `web/README.md`). It has the value-ratio chart
-  (parity in the middle), review counts by org (top 7 plus Other), Radar usage
+  (1× in the middle), review counts by org (top 7 plus Other), Radar usage
   per browser with the ChromeDerivative note, week totals including AI
   comments, a per-org table, and a metric selector (comments, CLs,
   characters). The summary/Radar join runs client-side. Not yet deployed:

@@ -293,7 +293,7 @@ function main(data: Data) {
 
     $('#ratio-sub').textContent =
       `Share of ${metricLabel} ÷ share of Chromium browser usage, per ISO week. ` +
-      `Parity (1×) is the middle line: the lower half runs linearly 0–1×, the upper half 1–${formatRatio(scale.upper)}×.`;
+      `The axis is linear 0–1× in its lower half and 1–${formatRatio(scale.upper)}× in its upper half.`;
     renderTiles(data, state);
     renderTable(data, state, colors);
     window.__cosh = { data, state, ratioChart, reviewChart, leaderboardChart, usageChart, render };
