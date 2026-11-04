@@ -10,13 +10,12 @@ import {
   LineElement,
   PointElement,
   Tooltip,
-  type ChartEvent,
   type Plugin,
   type Scale,
   type Tick,
 } from 'chart.js';
-import type { LeaderboardRow, RadarWeekly, RatioPoint } from './data.ts';
-import { browserShare, gerritReviewsUrl, monthTicks, OTHER, weekTitle } from './data.ts';
+import type { RadarWeekly, RatioPoint } from './data.ts';
+import { browserShare, monthTicks, OTHER, weekTitle } from './data.ts';
 import { formatRatio } from './scale.ts';
 
 Chart.register(
@@ -218,24 +217,6 @@ export function renderRatioChart(
   });
 }
 
-/** Draws a value label at the end of each horizontal bar. */
-const barLabelsPlugin = (theme: Theme, format: (v: number) => string, size = 12): Plugin<'bar'> => ({
-  id: 'coshBarLabels',
-  afterDatasetsDraw(chart) {
-    const { ctx } = chart;
-    const meta = chart.getDatasetMeta(0);
-    const data = chart.data.datasets[0].data as number[];
-    ctx.save();
-    ctx.font = `${size}px system-ui, -apple-system, "Segoe UI", sans-serif`;
-    ctx.fillStyle = theme.text;
-    ctx.textBaseline = 'middle';
-    meta.data.forEach((bar, i) => {
-      ctx.fillText(format(data[i]), bar.x + 6, bar.y);
-    });
-    ctx.restore();
-  },
-});
-
 /** Review chart y axis: log with every org, or linear without google.com. */
 export type ReviewScale = 'log' | 'linear';
 
@@ -308,103 +289,6 @@ export function renderReviewChart(
               grid: { color: theme.grid },
               ticks: { color: theme.muted, callback: (v) => fmt(Number(v)) },
             },
-      },
-    },
-  });
-}
-
-/** Pixels per leaderboard row; the canvas height is rows × this plus axes. */
-export const LEADERBOARD_ROW_PX = 15;
-
-const truncate = (s: string, n: number) => (s.length > n ? `${s.slice(0, n - 1)}…` : s);
-
-/** Top reviewers for one week, one compact horizontal bar each. Bars take the
- * org's series colour (the same as the ratio chart and table); orgs without
- * one are drawn in the muted neutral. */
-export function renderLeaderboardChart(
-  canvas: HTMLCanvasElement,
-  rows: LeaderboardRow[],
-  metricLabel: string,
-  colors: Map<string, string>,
-  theme: Theme,
-): Chart<'bar'> {
-  const fmt = (v: number) => v.toLocaleString('en-US');
-  const base = baseOptions(theme);
-  const small = { size: 11 };
-  // Phones: rank and a short name only (org stays in the colour and tooltip),
-  // or Chart.js clips the labels on the left.
-  const narrow = (canvas.parentElement?.clientWidth ?? 1000) < 560;
-  // A row's name label or bar links to the reviewer's reviews on Gerrit.
-  const rowAt = (e: ChartEvent, chart: Chart): number | null => {
-    const { x, y } = e;
-    const a = chart.chartArea;
-    if (x == null || y == null || y < a.top || y > a.bottom || x > a.right) return null;
-    const i = Math.round(chart.scales.y.getValueForPixel(y) ?? -1);
-    return i >= 0 && i < rows.length && gerritReviewsUrl(rows[i].email) ? i : null;
-  };
-  const label = (r: { name: string; org: string }, i: number) =>
-    narrow ? `${i + 1}. ${truncate(r.name, 15)}` : `${i + 1}. ${truncate(r.name, 26)} · ${truncate(r.org, 22)}`;
-  return new Chart(canvas, {
-    type: 'bar',
-    data: {
-      labels: rows.map(label),
-      datasets: [
-        {
-          label: metricLabel,
-          data: rows.map((r) => r.value),
-          backgroundColor: rows.map((r) => colors.get(r.org) ?? theme.muted),
-          borderRadius: { topRight: 3, bottomRight: 3 },
-          borderSkipped: 'start',
-          barPercentage: 0.8,
-          categoryPercentage: 1,
-          minBarLength: 2,
-        },
-      ],
-    },
-    plugins: [barLabelsPlugin(theme, fmt, 11)],
-    options: {
-      ...base,
-      indexAxis: 'y',
-      interaction: { mode: 'nearest', axis: 'y', intersect: false },
-      layout: { padding: { right: 56 } },
-      onHover: (e, _els, chart) => {
-        const t = e.native?.target as HTMLElement | undefined;
-        if (t) t.style.cursor = rowAt(e, chart) == null ? '' : 'pointer';
-      },
-      onClick: (e, _els, chart) => {
-        const i = rowAt(e, chart);
-        if (i != null) window.open(gerritReviewsUrl(rows[i].email)!, '_blank', 'noopener');
-      },
-      plugins: {
-        ...base.plugins,
-        legend: { display: false },
-        tooltip: {
-          ...base.plugins.tooltip,
-          itemSort: undefined,
-          callbacks: {
-            title: (items) => {
-              const r = rows[items[0].dataIndex];
-              return `${items[0].dataIndex + 1}. ${r.name} (${r.org})`;
-            },
-            label: (ctx) => `${fmt(ctx.raw as number)} ${metricLabel.toLowerCase()}`,
-            afterLabel: (ctx) => rows[ctx.dataIndex].email ?? '',
-            footer: (items) => (rows[items[0].dataIndex].email ? 'Click to see their reviews on Gerrit' : ''),
-          },
-        },
-      },
-      scales: {
-        x: {
-          min: 0,
-          position: 'top',
-          border: { display: false },
-          grid: { color: theme.grid },
-          ticks: { color: theme.muted, font: small, callback: (v) => fmt(Number(v)) },
-        },
-        y: {
-          grid: { display: false },
-          border: { color: theme.baseline },
-          ticks: { color: theme.text, font: small, autoSkip: false, padding: 4 },
-        },
       },
     },
   });

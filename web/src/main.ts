@@ -9,15 +9,14 @@ import reviewerUrl from '../../summaries/reviewer_weekly.json?url';
 
 import {
   type AnyChart,
-  LEADERBOARD_ROW_PX,
   readTheme,
-  renderLeaderboardChart,
   renderRatioChart,
   renderReviewChart,
   type ReviewScale,
   renderUsageChart,
   type Theme,
 } from './charts.ts';
+import { buildLeaderboard } from './leaderboard.ts';
 import {
   addWeeks,
   chartedOrgs,
@@ -47,7 +46,6 @@ import {
   sumWeeklyTotals,
   topBrowsers,
   orgWeeklyCounts,
-  gerritReviewsUrl,
   topReviewers,
   trimRanked,
   LEADERBOARD_SIZE,
@@ -93,7 +91,6 @@ declare global {
       state: State;
       ratioChart?: AnyChart;
       reviewChart?: AnyChart;
-      leaderboardChart?: AnyChart;
       usageChart?: AnyChart;
       render: () => void;
     };
@@ -393,9 +390,7 @@ function renderLeaderboard(
   data: Data,
   state: State,
   colors: Map<string, string>,
-  prev: AnyChart | undefined,
-): AnyChart {
-  prev?.destroy();
+): void {
   const metricName = METRICS.find((m) => m.id === state.metric)!.label;
   const weeks = weeksIn(Object.keys(data.reviewers.weeks), state.range);
   const rows = topReviewers(data.reviewers, weeks, state.metric, LEADERBOARD_SIZE);
@@ -403,7 +398,6 @@ function renderLeaderboard(
     ? `No reviewer data for ${rangeLabel(state.range)}.`
     : `${metricName}${weeks.length > 1 ? ' in total' : ''}, ${rangeLabel(state.range)}, top ${rows.length} reviewers. ` +
       'Same scope as the organization chart: human reviewers on human-owned CLs.';
-  $('#leaderboard-chart-box').style.height = `${rows.length * LEADERBOARD_ROW_PX + 36}px`;
 
   // Legend: the coloured orgs that appear, in colour order, then the rest.
   const present = new Set(rows.map((r) => r.org));
@@ -418,23 +412,7 @@ function renderLeaderboard(
       return li;
     }),
   );
-  // Canvas fallback content: the same ranking as real links, for keyboard and
-  // screen-reader users (the chart's own name labels are click targets only).
-  const canvas = $<HTMLCanvasElement>('#leaderboard-chart');
-  const list = el('ol');
-  list.id = 'leaderboard-links';
-  list.append(
-    ...rows.map((r) => {
-      const li = el('li');
-      const url = gerritReviewsUrl(r.email);
-      const name = el(url ? 'a' : 'span', r.name);
-      if (url) name.setAttribute('href', url);
-      li.append(name, document.createTextNode(` (${r.org}): ${r.value.toLocaleString('en-US')}`));
-      return li;
-    }),
-  );
-  canvas.replaceChildren(list);
-  return renderLeaderboardChart(canvas, rows, metricName, colors, readTheme());
+  buildLeaderboard($('#leaderboard-chart'), rows, metricName, (org) => colors.get(org));
 }
 
 /** Colours for the review chart: an org keeps its ratio-chart colour; orgs
@@ -466,7 +444,6 @@ function main(data: Data) {
   const orgs = chartedOrgs(data.radar, data.orgBrowsers).slice(0, 8);
   let ratioChart: AnyChart | undefined;
   let reviewChart: AnyChart | undefined;
-  let leaderboardChart: AnyChart | undefined;
   let usageChart: AnyChart | undefined;
   const browsers = topBrowsers(data.radar);
   const jumpWeek = derivativeJumpWeek(data.radar);
@@ -526,7 +503,7 @@ function main(data: Data) {
           ? `${LINEAR_EXCLUDED_ORG} is left out and the axis is linear, so the other organizations can be compared directly.`
           : 'The axis is logarithmic, since Google does most of the review.')
       : `No review data for ${label}.`;
-    leaderboardChart = renderLeaderboard(data, state, colors, leaderboardChart);
+    renderLeaderboard(data, state, colors);
     usageChart?.destroy();
     usageChart = renderUsageChart(
       $<HTMLCanvasElement>('#usage-chart'),
@@ -546,7 +523,7 @@ function main(data: Data) {
       : `No review data for ${label}.`;
     renderTiles(data, weeks);
     renderTable(data, state, weeks, colors);
-    window.__cosh = { data, state, ratioChart, reviewChart, leaderboardChart, usageChart, render };
+    window.__cosh = { data, state, ratioChart, reviewChart, usageChart, render };
   };
 
   syncInputs = buildControls(data, state, render);

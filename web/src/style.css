@@ -361,9 +361,146 @@ td.ratio {
   border-radius: 1px;
 }
 
-/* Height is set from the row count in main.ts (renderLeaderboard). */
-.chart-leaderboard {
-  height: auto;
+/* Reviewer leaderboard (leaderboard.ts): a grid of label | plot. The axis
+ * labels, the gridline layer and every row's bar share the plot column (rows
+ * use subgrid), so bars and gridlines line up at any width. The right padding
+ * leaves room for the value label after the longest bar. */
+.lb {
+  container-type: inline-size;
+  display: grid;
+  grid-template-columns: fit-content(40%) minmax(0, 1fr);
+  grid-template-rows: auto auto;
+  column-gap: 8px;
+  padding-right: 48px;
+  font-size: 11.5px;
+  line-height: 16px;
+}
+
+.lb-axis {
+  grid-area: 1 / 2;
+  position: relative;
+  height: 20px;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.lb-tick {
+  position: absolute;
+  top: 0;
+  transform: translateX(-50%);
+  white-space: nowrap;
+}
+
+.lb-grid {
+  grid-area: 2 / 2;
+  position: relative;
+  pointer-events: none;
+}
+
+.lb-line {
+  position: absolute;
+  top: -4px;
+  bottom: 0;
+  width: 1px;
+  margin-left: -0.5px;
+  background: var(--grid);
+}
+
+.lb-zero {
+  background: var(--baseline);
+}
+
+.lb-rows {
+  grid-area: 2 / 1 / 3 / 3;
+  display: grid;
+  grid-template-columns: subgrid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.lb-rows li {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: subgrid;
+}
+
+.lb-row {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: subgrid;
+  align-items: center;
+  color: var(--text-secondary);
+  text-decoration: none;
+  border-radius: 3px;
+}
+
+a.lb-row:hover {
+  background: color-mix(in srgb, var(--grid) 60%, transparent);
+}
+
+a.lb-row:hover .lb-name,
+a.lb-row:focus-visible .lb-name {
+  color: var(--text-primary);
+  text-decoration: underline;
+}
+
+a.lb-row:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.lb-label {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  text-align: right;
+}
+
+.lb-rank {
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.lb-org {
+  color: var(--text-muted);
+}
+
+/* The bar cell sits above the gridline layer (later in the same grid area). */
+.lb-plot {
+  position: relative;
+  display: flex;
+  align-items: center;
+  height: 16px;
+}
+
+.lb-bar {
+  flex: none;
+  min-width: 2px;
+  height: 12px;
+  border-radius: 0 3px 3px 0;
+  background: var(--text-muted);
+}
+
+a.lb-row:hover .lb-bar {
+  filter: brightness(1.1);
+}
+
+.lb-value {
+  flex: none;
+  padding-left: 6px;
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Phones: drop the org (it stays in the bar colour and hover text), allow a
+ * wider label share and label every other tick. */
+@container (max-width: 559px) {
+  .lb-org,
+  .lb-minor {
+    display: none;
+  }
 }
 
 .legend {

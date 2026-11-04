@@ -380,6 +380,18 @@ const METRIC_INDEX: Record<Metric, 2 | 3 | 4> = { comments: 2, cls: 3, chars: 4 
 
 export const LEADERBOARD_SIZE = 50;
 
+/** Axis ticks from 0 up to a round number at or above `max`: about six steps
+ * of 1, 2 or 5 × 10ⁿ, as Chart.js picks them. The last tick is the axis end. */
+export function niceTicks(max: number, target = 6): number[] {
+  if (!(max > 0)) return [0, 1];
+  const rough = max / target;
+  const mag = 10 ** Math.floor(Math.log10(rough));
+  const r = rough / mag;
+  const step = (r <= 1 ? 1 : r <= 2 ? 2 : r <= 5 ? 5 : 10) * mag;
+  const n = Math.ceil(max / step - 1e-9);
+  return Array.from({ length: n + 1 }, (_, i) => Number((i * step).toPrecision(12)));
+}
+
 /** The reviewer's reviews on Chromium Gerrit, or null without an email. */
 export const gerritReviewsUrl = (email: string | null): string | null =>
   email ? `https://chromium-review.googlesource.com/q/reviewedby:${encodeURIComponent(email).replace('%40', '@')}` : null;

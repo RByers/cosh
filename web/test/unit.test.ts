@@ -30,6 +30,7 @@ import {
   topOrgCounts,
   orgWeeklyCounts,
   gerritReviewsUrl,
+  niceTicks,
   topReviewers,
   trimRanked,
   type ReviewerBoard,
@@ -360,6 +361,14 @@ test('monthTicks labels month starts, with the year on the first tick and Januar
 
 test('weekTitle names the week and its dates', () => {
   assert.equal(weekTitle('2026-W44'), '2026-W44 (Oct 26 – Nov 1)');
+});
+
+test('niceTicks steps by 1, 2 or 5 × 10ⁿ up to a round axis end', () => {
+  assert.deepEqual(niceTicks(5321), [0, 1000, 2000, 3000, 4000, 5000, 6000]);
+  assert.deepEqual(niceTicks(6000), [0, 1000, 2000, 3000, 4000, 5000, 6000]);
+  assert.deepEqual(niceTicks(130), [0, 50, 100, 150]);
+  assert.deepEqual(niceTicks(0.7), [0, 0.2, 0.4, 0.6, 0.8]);
+  assert.deepEqual(niceTicks(0), [0, 1]);
 });
 
 test('gerritReviewsUrl links to the reviewer query, keeping @ readable', () => {

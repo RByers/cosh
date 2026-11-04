@@ -70,7 +70,7 @@ test('page loads data and renders all three charts without errors', async () => 
     assert.ok(c.n >= 1, `${c.k} has datasets`);
   }
   // Charts come in order: ratio, review, usage, then the table, then the leaderboard.
-  const order = await page.$$eval('main > section', (s) => s.map((e) => e.querySelector('canvas, table')?.id));
+  const order = await page.$$eval('main > section', (s) => s.map((e) => e.querySelector('canvas, table, .lb')?.id));
   assert.deepEqual(order.filter(Boolean), ['ratio-chart', 'review-chart', 'usage-chart', 'org-table', 'leaderboard-chart']);
   await page.close();
 });
@@ -353,45 +353,61 @@ test('leaderboard shows up to 50 reviewers compactly and follows the metric', as
   const { page } = await open();
   const read = () =>
     page.evaluate(() => {
-      const c = window.__cosh!.leaderboardChart!;
-      const values = c.data.datasets[0].data as number[];
-      return { n: values.length, values, label: c.data.datasets[0].label, h: c.height, top: (c.data.labels as string[])[0] };
+      const box = document.querySelector('#leaderboard-chart')!;
+      const rows = [...box.querySelectorAll<HTMLElement>('.lb-row')];
+      return {
+        n: rows.length,
+        values: rows.map((r) => Number(r.querySelector('.lb-value')!.textContent!.replace(/,/g, ''))),
+        top: rows[0].querySelector('.lb-label')!.textContent!,
+        title: rows[0].title,
+        links: rows.map((r) => (r as HTMLAnchorElement).href),
+        h: box.getBoundingClientRect().height,
+      };
     });
   const comments = await read();
   assert.ok(comments.n > 10 && comments.n <= 50, `n=${comments.n}`);
   assert.deepEqual(comments.values, [...comments.values].sort((a, b) => b - a));
-  assert.match(comments.top, /^1\. /);
-  // The hover card shows the reviewer's email under the count.
-  const email = await page.evaluate(() => {
-    const cb = window.__cosh!.leaderboardChart!.options.plugins!.tooltip!.callbacks!.afterLabel as (c: unknown) => string;
-    return cb({ dataIndex: 0 });
+  assert.match(comments.top, /^1\. .+ · \S+$/);
+  // The hover text gives the count with the metric, then the email.
+  assert.match(comments.title, /^1\. .+\n[\d,]+ review comments\n[^@\s]+@[^@\s]+\.[a-z]+\n/i);
+  // Each row is a real link to the reviewer's reviews on Gerrit.
+  assert.match(comments.links[0], /^https:\/\/chromium-review\.googlesource\.com\/q\/reviewedby:[^@\s/]+@[^@\s/]+$/);
+  // Bars and gridlines share the plot column: a bar's length is its share of
+  // the axis, measured against the gridline layer, which spans the axis.
+  const geo = await page.evaluate(() => {
+    const box = (s: string) => {
+      const { left, right, width } = document.querySelector(s)!.getBoundingClientRect();
+      return { left, right, width };
+    };
+    const grid = box('#leaderboard-chart .lb-grid');
+    const lines = [...document.querySelectorAll('#leaderboard-chart .lb-line')].map((l) => l.getBoundingClientRect());
+    const ticks = [...document.querySelectorAll('#leaderboard-chart .lb-tick')].map((t) => {
+      const r = t.getBoundingClientRect();
+      return { x: (r.left + r.right) / 2, v: Number(t.textContent!.replace(/,/g, '')) };
+    });
+    const plot = box('#leaderboard-chart .lb-plot');
+    const bar = box('#leaderboard-chart .lb-bar');
+    return { grid, lines: lines.map((l) => l.left + l.width / 2), ticks, plot, bar };
   });
-  assert.match(email, /^[^@\s]+@[^@\s]+\.[a-z]+$/i);
-  // Names link to the reviewer's reviews on Gerrit: clicking a name label
-  // opens the query, and the canvas holds the same links for keyboard users.
-  const links = await page.$$eval('#leaderboard-chart a', (as) => as.map((a) => (a as HTMLAnchorElement).href));
-  assert.equal(links.length, comments.n);
-  assert.match(links[0], /^https:\/\/chromium-review\.googlesource\.com\/q\/reviewedby:[^@\s/]+@[^@\s/]+$/);
-  const opened = await page.evaluate(() => {
-    const c = window.__cosh!.leaderboardChart!;
-    const urls: string[] = [];
-    const orig = window.open;
-    window.open = ((u: string) => (urls.push(u), null)) as typeof window.open;
-    const y = c.scales.y.getPixelForValue(0);
-    const x = c.chartArea.left / 2; // over the name label, left of the bars
-    const native = new MouseEvent('click', { clientX: 0, clientY: 0 });
-    (c.options.onClick as (e: unknown, els: unknown[], ch: unknown) => void)({ x, y, native, type: 'click' }, [], c);
-    window.open = orig;
-    return urls;
-  });
-  assert.deepEqual(opened, [links[0]]);
-  // Compact: 50 rows fit in well under a 900px-tall viewport's worth plus axes.
-  assert.ok(comments.h <= comments.n * 15 + 40, `height ${comments.h}`);
+  const max = geo.ticks[geo.ticks.length - 1].v;
+  assert.ok(max >= comments.values[0] && max < comments.values[0] * 2, `axis max ${max}`);
+  assert.ok(Math.abs(geo.plot.left - geo.grid.left) < 0.5 && Math.abs(geo.plot.right - geo.grid.right) < 0.5, JSON.stringify(geo));
+  assert.ok(Math.abs(geo.lines[0] - geo.grid.left) < 1 && Math.abs(geo.lines[geo.lines.length - 1] - geo.grid.right) < 1);
+  for (const [i, t] of geo.ticks.entries()) assert.ok(Math.abs(t.x - geo.lines[i]) < 1, `tick ${t.v} over its line`);
+  const expected = (comments.values[0] / max) * geo.grid.width;
+  assert.ok(Math.abs(geo.bar.width - expected) < 1, `bar ${geo.bar.width} vs ${expected}`);
+  // Compact: one 16px line per reviewer plus the axis.
+  assert.ok(comments.h <= comments.n * 16 + 24, `height ${comments.h}`);
   await page.click('#metric input[value="cls"]');
   const cls = await read();
-  assert.equal(cls.label, 'Reviewed CLs');
+  assert.match(cls.title, /\n[\d,]+ reviewed cls\n/i);
   assert.notDeepEqual(cls.values, comments.values);
   await page.close();
+  // Phones: the org is dropped from the label (it stays in the colour and hover text).
+  const narrow = await open('', 390);
+  const org = await narrow.page.$eval('#leaderboard-chart .lb-org', (o) => getComputedStyle(o).display);
+  assert.equal(org, 'none');
+  await narrow.page.close();
 });
 
 test('usage chart shows ChromeDerivative with the jump note', async () => {
@@ -455,6 +471,17 @@ test.skipIf(!process.env.SCREENSHOT_DIR)('screenshots (only when SCREENSHOT_DIR 
     await page.goto(baseUrl);
     await page.waitForSelector('body[data-ready]');
     await page.screenshot({ path: join(process.env.SCREENSHOT_DIR!, `cosh-${scheme}.png`) as `${string}.png`, fullPage: true });
+    // The leaderboard alone, at desktop and phone width.
+    for (const width of [1100, 390]) {
+      // Tall enough for the whole card, so the screenshot needn't scroll (which
+      // would move the hover off the row).
+      await page.setViewport({ width, height: 1400 });
+      await page.evaluate(() => window.__cosh!.render());
+      await page.$eval('#leaderboard', (e) => e.scrollIntoView());
+      await page.hover('#leaderboard-chart li:nth-child(3) .lb-row'); // show the hover state
+      const card = await page.$('#leaderboard');
+      await card!.screenshot({ path: join(process.env.SCREENSHOT_DIR!, `leaderboard-${width}-${scheme}.png`) as `${string}.png` });
+    }
     await page.close();
   }
 });
