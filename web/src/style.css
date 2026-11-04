@@ -463,10 +463,6 @@ a.lb-row:focus-visible {
   font-variant-numeric: tabular-nums;
 }
 
-.lb-org {
-  color: var(--text-muted);
-}
-
 /* The bar cell sits above the gridline layer (later in the same grid area). */
 .lb-plot {
   position: relative;
@@ -494,10 +490,8 @@ a.lb-row:hover .lb-bar {
   font-variant-numeric: tabular-nums;
 }
 
-/* Phones: drop the org (it stays in the bar colour and hover text), allow a
- * wider label share and label every other tick. */
+/* Phones: label every other tick. */
 @container (max-width: 559px) {
-  .lb-org,
   .lb-minor {
     display: none;
   }

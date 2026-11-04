@@ -60,7 +60,6 @@ export function buildLeaderboard(
       label.append(
         node('span', 'lb-rank', `${i + 1}. `),
         node('span', 'lb-name', r.name),
-        node('span', 'lb-org', ` · ${r.org}`),
       );
       const plot = node('span', 'lb-plot');
       const bar = node('span', 'lb-bar');

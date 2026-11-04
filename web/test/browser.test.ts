@@ -367,7 +367,7 @@ test('leaderboard shows up to 50 reviewers compactly and follows the metric', as
   const comments = await read();
   assert.ok(comments.n > 10 && comments.n <= 50, `n=${comments.n}`);
   assert.deepEqual(comments.values, [...comments.values].sort((a, b) => b - a));
-  assert.match(comments.top, /^1\. .+ · \S+$/);
+  assert.match(comments.top, /^1\. [^·]+$/); // rank and name only; the org is the bar colour
   // The hover text gives the count with the metric, then the email.
   assert.match(comments.title, /^1\. .+\n[\d,]+ review comments\n[^@\s]+@[^@\s]+\.[a-z]+\n/i);
   // Each row is a real link to the reviewer's reviews on Gerrit.
@@ -403,11 +403,6 @@ test('leaderboard shows up to 50 reviewers compactly and follows the metric', as
   assert.match(cls.title, /\n[\d,]+ reviewed cls\n/i);
   assert.notDeepEqual(cls.values, comments.values);
   await page.close();
-  // Phones: the org is dropped from the label (it stays in the colour and hover text).
-  const narrow = await open('', 390);
-  const org = await narrow.page.$eval('#leaderboard-chart .lb-org', (o) => getComputedStyle(o).display);
-  assert.equal(org, 'none');
-  await narrow.page.close();
 });
 
 test('usage chart shows ChromeDerivative with the jump note', async () => {
