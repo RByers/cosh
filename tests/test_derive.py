@@ -157,5 +157,33 @@ class SummarizeTest(unittest.TestCase):
         self.assertEqual([(r["org"], r["comments"], r["ai_comments"], r["post_merge_comments"])
                           for r in rows], [("igalia.com", 6, 1, 3)])
 
+    def test_vote_without_comment_counts_as_one(self):
+        with tempfile.TemporaryDirectory() as d:
+            db = store.open_cosh(d)
+            h = "chromium-review.googlesource.com"
+            with db:
+                db.execute("INSERT INTO accounts VALUES (?,1,'owner@igalia.com',NULL,0)", (h,))
+                for aid in range(2, 7):
+                    db.execute("INSERT INTO accounts VALUES (?,?,?,NULL,0)", (h, aid, f"r{aid}@igalia.com"))
+                db.execute("""INSERT INTO changes(host, change_number, project, branch, owner_account,
+                              status, created_at, closed_at, iso_week)
+                              VALUES (?,100,'chromium/src','main',1,'MERGED','2026-10-26 00:00:00',
+                              '2026-10-27 12:00:00','2026-W44')""", (h,))
+                # (account, review_comments, ai_comments, voted_cr)
+                for aid, rc, ai, vote in [(2, 0, 0, 1),     # bare +1: counts as 1
+                                          (3, 2, 0, 1),     # LGTM + nit + vote: stays 2, not 3
+                                          (4, 0, 1, -1),    # only an AI comment, plus a vote: 1
+                                          (5, 0, 0, None),  # post-merge comment only, no vote: 0
+                                          (6, 1, 0, None)]:
+                    db.execute("""INSERT INTO reviews(host, change_number, account_id, review_comments,
+                                  review_chars, ai_comments, post_merge_comments, voted_cr)
+                                  VALUES (?,100,?,?,?,?,?,?)""",
+                               (h, aid, rc, rc * 10, ai, 1 if aid == 5 else 0, vote))
+            db.close()
+            rows = summarize(data_dir=d, out_dir=os.path.join(d, "summaries"))
+        self.assertEqual([(r["comments"], r["vote_only_reviews"], r["review_chars"]) for r in rows],
+                         [(5, 2, 30)])
+
+
 if __name__ == "__main__":
     unittest.main()

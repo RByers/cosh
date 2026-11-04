@@ -217,7 +217,7 @@ CREATE TABLE reviews (
   inline_chars    INTEGER NOT NULL DEFAULT 0,   -- sum(len(message)) of those
   messages        INTEGER NOT NULL DEFAULT 0,   -- top-level change messages (minus auto-generated text)
   message_chars   INTEGER NOT NULL DEFAULT 0,
-  voted_cr        INTEGER,                      -- max Code-Review vote given (NULL = none)
+  voted_cr        INTEGER,                      -- final Code-Review vote, at close (NULL = none)
   is_owner        INTEGER,                      -- 1/0/NULL = OWNER for >=1 file / not / unknown
   owner_source    TEXT,                         -- NULL | 'code-owners-api' | 'owners-file@rev' ...
   PRIMARY KEY (host, change_number, account_id),

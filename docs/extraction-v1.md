@@ -114,6 +114,23 @@ Scope: `chromium/src`, **branch `main` only**, **merged and abandoned** CLs.
   - `post_merge_comments`: comments written after `closed_at`. They are
     still valuable review, so summaries report them per org and week as
     `post_merge_comments`, separate from the headline.
+- **Vote floor (applied in `summarize`, not stored):** a review with a
+  Code-Review vote but no counted comment, typically a bare +1, counts as
+  **one** comment in the headline. Without this, a review that needed no
+  changes would not appear in the comments chart at all.
+  - A vote never adds to a review that has comments, so "LGTM" plus +1 is 1,
+    not 2.
+  - Summaries report the number per org and week as `vote_only_reviews`.
+  - `reviews.review_comments` in `cosh.sqlite` stays the raw comment count.
+  - W44: 2,792 of 6,526 review rows (43%) were vote-only. The floor raises
+    the week's comments by 27% and moves google.com from 95.9% to 96.4%.
+- **`voted_cr`:** the reviewer's Code-Review vote *as it stands when the CL
+  closes* (`labels.Code-Review.all` in the listing). Its value is accurate,
+  but its coverage is incomplete. A vote cleared by a later patchset is
+  missing, so a reviewer whose only act was a cleared +1 gets no row. Getting
+  those would mean reading vote history from the NoteDb meta refs (fetched
+  only for CLs that have comments). It is used only to create review rows and
+  to apply the vote floor.
 - **`review_chars`:** characters in those comments after removing quoted `>`
   lines.
 - **`is_owner`:** NULL for now (deferred). The code-owners API answers against
