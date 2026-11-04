@@ -225,14 +225,24 @@ counts.
 
 - **Rules:** `exclude <dir>/` and `include <dir>/` lines. The longest matching
   prefix wins, and a path matching no rule is included. Now:
-  - excluded: `chrome/`, `ios/`, `android_webview/`, `ash/`, `chromeos/`;
-  - included again: `chrome/browser/web_applications/`, `chrome/browser/webnn/`.
+  - excluded: `chrome/`, `ios/`, `android_webview/`, `ash/`, `chromeos/`,
+    `components/`;
+  - included again: `chrome/browser/web_applications/`, `chrome/browser/webnn/`,
+    `components/viz/`.
   The excluded trees are Google's own products built on Chromium (Chrome,
-  Chrome for iOS, Android WebView, ChromeOS), where review is mostly Google reviewing
-  Google's product code. The two exceptions are shared platform work that
-  other Chromium browsers build on: Microsoft writes much of the
-  `web_applications` review, and Intel and Microsoft much of the WebNN
-  review.
+  Chrome for iOS, Android WebView, ChromeOS), where review is mostly Google
+  reviewing Google's product code, and `components/`, which is mostly browser
+  features built for Chrome. Over 2025-W45..2026-W44, `components/` held
+  15.8% of placed review comments, 1.85% of them non-Google; its top ten
+  subdirectories (autofill, accessibility_annotator, policy, signin,
+  browser_ui, viz, enterprise, omnibox, optimization_guide, password_manager)
+  held 49%, and all but viz were under 1% non-Google. The exceptions are
+  shared platform work that other Chromium browsers build on: Microsoft
+  writes much of the `web_applications` review, Intel and Microsoft much of
+  the WebNN review, and `components/viz/` (the compositor) was 11.6%
+  non-Google. Two other `components/` directories had heavy outside review
+  and are now out of scope: `services/storage/` (DOM storage, 88% Microsoft,
+  791 comments) and `surface_embed/` (35% Microsoft, 308 comments).
 - **Placement.** We don't fetch CL file lists, so:
   - an inline comment is on its own file;
   - a patchset-level or commit-message comment goes to the CL's anchor, the

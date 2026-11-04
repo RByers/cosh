@@ -121,9 +121,11 @@
             <code>chromeos/</code> hold Google's own products built on Chromium: the Chrome browser, Chrome for iOS,
             Android WebView and ChromeOS. Review there is mostly Google reviewing
             Google's product code, so it says little about who maintains the engine other browsers share.
+            <code>components/</code> is mostly browser features built for Chrome, such as autofill, sign-in and
+            enterprise reporting; over a year, 98% of its review comments came from Google.
             <code>chrome/browser/web_applications/</code> and <code>chrome/browser/webnn/</code> are shared platform
-            work that other Chromium browsers build on, so they stay in. Everything else counts, including
-            <code>components/</code>, which mixes shared and Chrome-only code.
+            work that other Chromium browsers build on, and <code>components/viz/</code> is the compositor, part of
+            the engine, so those stay in. Everything else counts.
           </p>
           <p>
             <strong>Placing comments on a file.</strong> Gerrit doesn't give us each CL's file list, so an inline

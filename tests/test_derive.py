@@ -321,6 +321,9 @@ class PathScopeTest(unittest.TestCase):
         self.assertTrue(s.includes("chrome/browser/webnn/a.cc"))
         self.assertTrue(s.includes("chrome/browser/web_applications/a.cc"))
         self.assertTrue(s.includes("third_party/blink/renderer/core/a.cc"))
+        self.assertFalse(s.includes("components/autofill/core/a.cc"))
+        self.assertTrue(s.includes("components/viz/service/display/a.cc"))
+        self.assertTrue(s.includes("content/browser/a.cc"))
 
 
 class SummarizeTest(unittest.TestCase):
@@ -376,7 +379,8 @@ class SummarizeTest(unittest.TestCase):
             {"area": "chrome/", "included": False}, {"area": UNPLACED, "included": False},
             {"area": "third_party/blink/", "included": True},
             {"area": "chrome/browser/web_applications/", "included": True},
-            {"area": "chrome/browser/webnn/", "included": True}])   # listed with no comments
+            {"area": "chrome/browser/webnn/", "included": True},     # listed with no comments
+            {"area": "components/viz/", "included": True}])
         # [comments, reviewed CLs, chars] per (area, org).
         got = {(areas["areas"][a]["area"], areas["orgs"][o]): v for a, o, *v in areas["weeks"]["2026-W44"]}
         self.assertEqual(got, {("chrome/", "microsoft.com"): [2, 1, 20], ("chrome/", "google.com"): [4, 1, 40],

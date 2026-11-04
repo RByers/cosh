@@ -208,7 +208,7 @@ test('review by directory shows volume and org split per directory, and the path
   const by = Object.fromEntries(d.rows.map((r) => [r.name, r]));
   for (const name of ['chrome/', 'third_party/blink/', 'content/', '(no file)']) assert.ok(by[name], name);
   // Directories an include rule brings back always get their own row.
-  for (const name of ['chrome/browser/web_applications/', 'chrome/browser/webnn/']) {
+  for (const name of ['chrome/browser/web_applications/', 'chrome/browser/webnn/', 'components/viz/']) {
     assert.ok(by[name], name);
     assert.equal(by[name].tag, 'included');
   }
@@ -240,6 +240,8 @@ test('review by directory shows volume and org split per directory, and the path
     'Included: chrome/browser/web_applications/',
     'Included: chrome/browser/webnn/',
     'Excluded: chromeos/',
+    'Excluded: components/',
+    'Included: components/viz/',
     'Excluded: ios/',
     'Included: every other path.',
   ]);
