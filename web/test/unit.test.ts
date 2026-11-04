@@ -1,5 +1,7 @@
 // Unit tests for the pure data/scale modules (no browser).
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { test } from 'vitest';
 import {
   addWeeks,
@@ -45,6 +47,7 @@ import {
   topReviewers,
   leaderboardOrgs,
   trimRanked,
+  type PathRule,
   type ReviewerBoard,
   type ReviewerRow,
   type Summary,
@@ -563,4 +566,38 @@ test('barScale breaks the axis only when a few bars dwarf the rest', () => {
   assert.deepEqual(barScale([100, 90, 80, 70, 1]), { max: 100, broken: 0 });
   assert.deepEqual(barScale([]), { max: 0, broken: 0 });
   assert.deepEqual(barScale([5, 0]), { max: 5, broken: 0 });
+});
+
+// The "Which paths count" list in index.html is written by hand; it must name
+// exactly the include/exclude rules in config/paths.txt, each in its group,
+// with Excluded first.
+test('scope list in index.html matches config/paths.txt', () => {
+  const read = (p: string) => readFileSync(fileURLToPath(new URL(p, import.meta.url)), 'utf8');
+  const config = { included: [] as string[], excluded: [] as string[] };
+  for (const raw of read('../../config/paths.txt').split('\n')) {
+    const [kind, prefix] = raw.split('#')[0].trim().split(/\s+/);
+    if (kind === 'include') config.included.push(prefix);
+    if (kind === 'exclude') config.excluded.push(prefix);
+  }
+  assert.ok(config.included.length && config.excluded.length, 'no rules read from config/paths.txt');
+  const html = read('../index.html');
+  const group = (included: boolean) => {
+    const m = html.match(new RegExp(`<dl class="scope-list" data-included="${included}">([\\s\\S]*?)</dl>`));
+    assert.ok(m, `no ${included ? 'Included' : 'Excluded'} list`);
+    const dts = [...m[1].matchAll(/<dt>([\s\S]*?)<\/dt>\s*<dd>[^<\s]/g)].map((d) => d[1]);
+    // Every <dt> is followed by a non-empty reason.
+    assert.equal(dts.length, (m[1].match(/<dt>/g) ?? []).length, 'a path has no reason');
+    return dts.map((d) => d.match(/^<code>([^<]+)<\/code>$/)?.[1] ?? d);
+  };
+  const sorted = (xs: string[]) => [...xs].sort();
+  assert.deepEqual(group(false), sorted(config.excluded));
+  assert.deepEqual(group(true), [...sorted(config.included), 'Everything else']);
+  assert.ok(html.indexOf('data-included="false"') < html.indexOf('data-included="true"'), 'Excluded comes first');
+  // The committed summaries were built with the same rules.
+  for (const f of ['org_weekly.json', 'area_weekly.json']) {
+    const rules = (JSON.parse(read(`../../summaries/${f}`)) as { meta: { path_rules: PathRule[] } }).meta.path_rules;
+    const pick = (inc: boolean) => sorted(rules.filter((r) => r.included === inc).map((r) => r.prefix));
+    assert.deepEqual(pick(false), sorted(config.excluded), f);
+    assert.deepEqual(pick(true), sorted(config.included), f);
+  }
 });

@@ -786,13 +786,54 @@ a.ar-seg:focus-visible {
   }
 }
 
+.scope-rules {
+  margin: 8px 0 12px;
+}
+
+.scope-head {
+  margin: 0 0 4px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+/* The Included group sits below a rule, apart from the Excluded one. */
+.scope-head ~ .scope-head {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--grid);
+}
+
+/* Path on the left, why on the right; paths line up in one column. */
 .scope-list {
-  margin: 4px 0 0;
-  padding-left: 20px;
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 3px 16px;
+  margin: 0;
+  padding-left: 12px;
+}
+
+.scope-list dt {
+  color: var(--text-primary);
+}
+
+.scope-list dd {
+  margin: 0;
 }
 
 .scope-list code {
   font-size: 0.85em;
+}
+
+@media (max-width: 600px) {
+  .scope-list {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+
+  .scope-list dd {
+    margin: 0 0 6px 12px;
+  }
 }
 
 .error {

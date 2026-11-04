@@ -187,21 +187,34 @@
         <div class="note" id="scope-note">
           <p>
             <strong>Which paths count.</strong> The value ratio, the organization chart, the table and the leaderboard
-            count only review comments on these <code>chromium/src</code> paths (the longest matching rule wins):
+            count only review comments on the <code>chromium/src</code> paths below (the longest matching rule wins).
+            Google's own products built on Chromium are left out: review there is mostly Google reviewing Google's
+            product code, so it says little about who maintains the engine other browsers share.
           </p>
-          <ul id="scope-rules" class="scope-list"></ul>
-          <p>
-            <code>chrome/</code>, <code>ios/</code>, <code>android_webview/</code>, <code>ash/</code> and
-            <code>chromeos/</code> hold Google's own products built on Chromium: the Chrome browser, Chrome for iOS,
-            Android WebView and ChromeOS. Review there is mostly Google reviewing
-            Google's product code, so it says little about who maintains the engine other browsers share.
-            <code>components/</code> is mostly browser features built for Chrome, such as autofill, sign-in and
-            enterprise reporting; over a year, 98% of its review comments came from Google.
-            <code>chrome/browser/web_applications/</code> and <code>chrome/browser/webnn/</code> are shared platform
-            work that other Chromium browsers build on; <code>components/viz/</code> (the compositor) and
-            <code>components/services/storage/</code> (the storage backend for <code>localStorage</code> and
-            <code>sessionStorage</code>) are part of the engine. Those stay in. Everything else counts.
-          </p>
+          <div id="scope-rules" class="scope-rules">
+            <h3 class="scope-head">Excluded</h3>
+            <dl class="scope-list" data-included="false">
+              <dt><code>android_webview/</code></dt><dd>Android WebView, Google's web view for Android apps</dd>
+              <dt><code>ash/</code></dt><dd>the ChromeOS system UI</dd>
+              <dt><code>chrome/</code></dt><dd>the Chrome browser</dd>
+              <dt><code>chromeos/</code></dt><dd>ChromeOS</dd>
+              <dt><code>components/</code></dt><dd>mostly features built for Chrome, such as autofill, sign-in and
+                enterprise reporting; 98% of its review comments over a year came from Google</dd>
+              <dt><code>ios/</code></dt><dd>Chrome for iOS</dd>
+            </dl>
+            <h3 class="scope-head">Included</h3>
+            <dl class="scope-list" data-included="true">
+              <dt><code>chrome/browser/web_applications/</code></dt><dd>shared web app platform work that other
+                Chromium browsers build on</dd>
+              <dt><code>chrome/browser/webnn/</code></dt><dd>WebNN, shared platform work that other Chromium browsers
+                build on</dd>
+              <dt><code>components/services/storage/</code></dt><dd>engine: the storage backend for
+                <code>localStorage</code> and <code>sessionStorage</code></dd>
+              <dt><code>components/viz/</code></dt><dd>engine: the compositor</dd>
+              <dt>Everything else</dt><dd>the engine and code shared by all Chromium browsers, such as
+                <code>third_party/blink/</code>, <code>content/</code> and <code>net/</code></dd>
+            </dl>
+          </div>
           <p>
             <strong>Placing comments on a file.</strong> Gerrit doesn't give us each CL's file list, so an inline
             comment counts for its own file, and a patchset-level comment counts for the file on the same CL with the

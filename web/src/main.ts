@@ -568,21 +568,6 @@ function renderAreas(data: Data, state: State, colors: Map<string, string>, them
     if (focusKey) box.querySelector<HTMLButtonElement>(`li[data-key="${CSS.escape(focusKey)}"] .ar-toggle`)?.focus();
   };
   draw();
-  const rules = data.areas.meta.path_rules ?? data.summary.meta.path_rules ?? [];
-  $('#scope-rules').replaceChildren(
-    ...[...rules]
-      .sort((a, b) => (a.prefix < b.prefix ? -1 : 1))
-      .map((r) => {
-        const li = el('li');
-        li.append(el('strong', r.included ? 'Included: ' : 'Excluded: '), el('code', r.prefix));
-        return li;
-      }),
-    (() => {
-      const li = el('li');
-      li.append(el('strong', 'Included: '), document.createTextNode('every other path.'));
-      return li;
-    })(),
-  );
 }
 
 /** Colours for the review chart: an org keeps its ratio-chart colour; orgs

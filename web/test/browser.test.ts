@@ -258,7 +258,22 @@ test('review by directory shows volume and org split per directory, and the path
         dist: r.querySelector('.ar-dist')!.getBoundingClientRect().width,
         title: r.title,
       })),
-      rules: [...document.querySelectorAll('#scope-rules li')].map((li) => li.textContent),
+      heads: [...document.querySelectorAll('#scope-rules .scope-head')].map((h) => h.textContent),
+      rules: [...document.querySelectorAll('#scope-rules dt')].map((dt) => {
+        const dd = dt.nextElementSibling!;
+        const a = dt.getBoundingClientRect();
+        const b = dd.getBoundingClientRect();
+        return {
+          path: dt.textContent!,
+          group: (dt.parentElement as HTMLElement).dataset.included,
+          beside: b.left > a.right && Math.abs(b.top - a.top) < 2,
+          left: a.left,
+        };
+      }),
+      groupGap: (() => {
+        const [ex, inc] = document.querySelectorAll('#scope-rules dl');
+        return inc.getBoundingClientRect().top - ex.getBoundingClientRect().bottom;
+      })(),
       sub: document.querySelector('#areas-sub')!.textContent!,
       legend: [...document.querySelectorAll('#areas-legend li')].map((li) => li.textContent),
     };
@@ -306,19 +321,15 @@ test('review by directory shows volume and org split per directory, and the path
   assert.match(blink.title, /google\.com: [\d,]+ \(\d/);
   assert.match(d.sub, /are on the paths the rest of the page counts/);
   assert.equal(d.legend[d.legend.length - 1], 'Other');
-  assert.deepEqual(d.rules, [
-    'Excluded: android_webview/',
-    'Excluded: ash/',
-    'Excluded: chrome/',
-    'Included: chrome/browser/web_applications/',
-    'Included: chrome/browser/webnn/',
-    'Excluded: chromeos/',
-    'Excluded: components/',
-    'Included: components/services/storage/',
-    'Included: components/viz/',
-    'Excluded: ios/',
-    'Included: every other path.',
-  ]);
+  // Which paths count: Excluded, then Included below a rule; each path's
+  // reason sits to its right, and the paths line up in one column. (The
+  // list itself is checked against config/paths.txt in unit.test.ts.)
+  assert.deepEqual(d.heads, ['Excluded', 'Included']);
+  const firstIncluded = d.rules.findIndex((r) => r.group === 'true');
+  assert.ok(firstIncluded > 0 && d.rules.slice(firstIncluded).every((r) => r.group === 'true'));
+  assert.ok(d.groupGap > 15, `groups ${d.groupGap}px apart`);
+  for (const r of d.rules) assert.ok(r.beside, `${r.path}: reason not beside it`);
+  assert.equal(new Set(d.rules.map((r) => Math.round(r.left))).size, 1);
   assert.match(await page.$eval('#scope-note', (n) => n.textContent ?? ''), /Google's own products/);
   assert.match(await page.$eval('#unplaced-note', (n) => n.textContent ?? ''), /real investment/);
   assert.deepEqual(errors, []);
