@@ -36,10 +36,11 @@ Cloudflare Radar    ─► data/public/radar/raw/ ──── radar ──► d
 
 - `data/private/` (gitignored for size; see `storage-design.md` §4) holds the
   raw stores and the derived DB.
-  - `raw.sqlite` and `notedb/` keep **everything downloaded, losslessly and
-    permanently**, even data no metric uses yet. This is the intended design;
-    see `storage-design.md` §3.8, which also covers what NoteDb contains and
-    the size per year.
+  - `raw.sqlite` and `notedb/` keep **whatever we download, losslessly and
+    permanently**, even data no metric uses yet, so nothing is ever fetched
+    twice. That doesn't mean downloading everything: a leaner fetch is fine
+    if it still gets what we need. See `storage-design.md` §3.8, which also
+    covers what NoteDb contains and the size per year.
   - `derived.sqlite` is derived (one row per comment and per vote, with
     lengths but no text) and can be rebuilt. `derive` opens `raw.sqlite`
     read-only. The older `cosh.sqlite` (metric_version 1, one row per CL and

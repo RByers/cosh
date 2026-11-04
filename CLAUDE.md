@@ -63,10 +63,15 @@ implementation and metric definitions.
   (metric_versions 1–2). Nothing reads it any more, and it can be deleted.
 - Never delete `data/private/raw.sqlite` or `data/private/notedb/`. Those
   hold the fetched data, and re-fetching costs server load.
-- **Keep everything downloaded.** The raw stores are lossless on purpose
-  (`docs/storage-design.md` §3.8). Never strip, truncate or "slim" them, and
-  never prune a NoteDb repo (`gc --prune`, `prune`). Reduce data only in
-  `derived.sqlite`.
+- **Keep whatever we download; download only what we need.** Anything we
+  put server load on to fetch is kept, losslessly, so it never has to be
+  fetched again if we later want it (`docs/storage-design.md` §3.8). This is
+  not a rule to download everything: fetching less, e.g. a narrower query or
+  a leaner fetch, is welcome when it still gets what we need. But what does
+  come over the wire stays. Never strip, truncate or "slim" the raw stores,
+  and never prune a NoteDb repo (`gc --prune`, `prune`). Reduce data only in
+  `derived.sqlite`. Lossless housekeeping (`cosh notedb-maintain`,
+  `repack -a -d` without pruning) is fine.
 
 ## Finishing work
 

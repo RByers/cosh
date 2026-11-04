@@ -13,8 +13,9 @@ only touches the API where it affects storage.
     truth, so metrics can be re-derived without touching Gerrit again.
   - `data/private/notedb/*.git`: bare repos holding the fetched NoteDb meta
     refs, with their full history.
-  - **Everything downloaded is retained, losslessly and permanently** (§3.8).
-    Reduction to counts and lengths happens only in derived data.
+  - **Whatever we download is retained, losslessly and permanently** (§3.8),
+    so it never has to be fetched twice. Reduction to counts and lengths
+    happens only in derived data.
   - `data/private/derived.sqlite` (originally `cosh.sqlite`; see §3.3):
     derived tables (`changes`, `comments`, `votes`, `accounts`, ...) that can
     be rebuilt from `raw.sqlite` and NoteDb at any time.
@@ -422,11 +423,19 @@ in one fetch with no backend.
 - Radar source
 - the minimum-group-size threshold
 
-### 3.8 Retention: keep everything downloaded
+### 3.8 Retention: keep whatever we download
 
-**This is the user's intended design.** Every byte fetched from Gerrit is kept,
-in a form that can be re-read later, even when no current metric uses it.
-Reasons:
+**This is the user's intended design.** Anything we put server load on to
+fetch from Gerrit is kept, in a form that can be re-read later, even when no
+current metric uses it. Then we never have to download it again if we decide
+we want it.
+
+This is **not** a goal to download everything. Fetching less is welcome
+whenever it still gets the data we need: a narrower query, or a leaner kind of
+fetch. The rule only says that what does come over the wire is not thrown
+away. (User's clarification, 2026-11-04.)
+
+Reasons for keeping it:
 - New analyses, such as resolution rates, comment threads, vote timing or
   attention-set churn, become possible without fetching again.
 - We can see what the fetched data contains and decide whether the fetching
