@@ -156,7 +156,8 @@ Judgement calls:
 - **In-app browsers** (Facebook, Instagram, Snapchat, Pinterest, Microsoft
   365, …; `kind=in_app`): **counted in `chromium_share`** (user, 2026-11-03).
   On Android they are WebView (Chromium); on iOS they are WKWebView, and iOS
-  is excluded (§2). Facebook and Instagram are credited to meta.com. The rest
+  is excluded (§2). Facebook and Instagram are credited to meta.com and Microsoft365
+  to microsoft.com (user, 2026-11-03). The rest
   are credited to no org, which dilutes every org slightly.
 - **UC Browser, QQ Browser, Sogou, 360 Browser:** Chromium-derived kernels
   (U4, X5/XWeb) or dual Chromium+Trident engines. Classified `1`.
@@ -174,7 +175,7 @@ Judgement calls:
 `config/org_browsers.csv` has the columns `org_domain,browser,notes`.
 
 - google.com → Chrome, Chrome Mobile, Android System WebView (`ChromeMobileWebview`)
-- microsoft.com → Edge, Edge Mobile
+- microsoft.com → Edge, Edge Mobile, Microsoft 365's in-app browser (`Microsoft365`)
 - samsung.com → Samsung Internet
 - meta.com → the Facebook and Instagram in-app browsers (fb.com reviewers are
   counted as meta.com; `DOMAIN_ALIASES` in `cosh/orgs.py`)

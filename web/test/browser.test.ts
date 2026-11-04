@@ -172,6 +172,7 @@ test('Meta gets a ratio line; WebView counts as usage; fine print covers WebView
   const webview = await page.$eval('#webview-note', (n) => n.textContent ?? '');
   assert.match(webview, /credited to Google/);
   assert.match(webview, /credited to Meta/);
+  assert.match(webview, /Microsoft 365's to\s+Microsoft/);
   assert.match(await page.$eval('#ios-note', (n) => n.textContent ?? ''), /iOS is excluded/);
   await page.close();
 });
