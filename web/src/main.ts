@@ -569,9 +569,24 @@ function main(data: Data) {
       weeks,
       reviewSeries,
       name,
-      // Keep the excluded org's colour reserved, so the rest keep theirs
-      // when the scale toggles.
-      reviewColors([...reviewSeries.map((s) => s.org), ...(linear ? [LINEAR_EXCLUDED_ORG] : [])], colors, theme),
+      // Colour the union of both scales' orgs (log ranking first), whichever
+      // scale is shown, so an org keeps its colour when the scale toggles:
+      // the org taking google.com's place in the linear view can rank above
+      // others, or hold a fixed colour that would shrink the spare pool.
+      reviewColors(
+        [
+          ...new Set(
+            [false, true].flatMap((lin) =>
+              (lin === linear
+                ? reviewSeries
+                : orgWeeklyCounts(data.summary, weeks, state.metric, 7, state.smoothing, lin ? [LINEAR_EXCLUDED_ORG] : [])
+              ).map((s) => s.org),
+            ),
+          ),
+        ],
+        colors,
+        theme,
+      ),
       theme,
       state.smoothing,
       state.reviewScale,
