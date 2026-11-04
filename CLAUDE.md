@@ -43,3 +43,19 @@ implementation and metric definitions.
   (`docs/storage-design.md` §3.8). Never strip, truncate or "slim" them, and
   never prune a NoteDb repo (`gc --prune`, `prune`). Reduce data only in
   `cosh.sqlite`.
+
+## Finishing work
+
+When a piece of work is complete (tests pass, changes committed on the
+worktree branch), land it on `main` automatically, without asking:
+
+1. Rebase the branch onto the current `main` from the worktree:
+   `git rebase main`. Resolve any conflicts and rerun the relevant tests if
+   the rebase changed anything.
+2. Leave the worktree (ExitWorktree with `keep`), then fast-forward `main`
+   from the main checkout (`/home/rbagent/projects/cosh`):
+   `git merge --ff-only <branch>`. A worktree session can't run git against
+   the main checkout, so this step has to happen after exiting.
+3. Only fast-forward. Never create a merge commit. If the fast-forward fails
+   because `main` moved, rebase again and retry. If uncommitted changes in
+   the main checkout block it, stop and report instead of touching them.
