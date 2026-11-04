@@ -463,7 +463,7 @@ function main(data: Data) {
     $('#review-sub').textContent = weeks.length
       ? `${metricName} per ISO week, ${label}` +
         (state.smoothing > 1
-          ? `, as a ${state.smoothing}-week running average (the smoothing setting under Value ratio)`
+          ? `, as a ${state.smoothing}-week running average`
           : '') +
         ', for the organizations with the most over the range; the rest are combined as “Other”. ' +
         'The axis is logarithmic, since Google does most of the review.'

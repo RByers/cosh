@@ -168,6 +168,8 @@ test('value ratio smoothing defaults to 4 weeks and is selectable', async () => 
   assert.equal(four.smoothing, 4);
   assert.equal(four.checked, '4');
   assert.deepEqual(four.labels, ['Off', '4 weeks', '12 weeks']);
+  // A page-wide filter, not a value-ratio-only control.
+  assert.ok(await page.$('form.filters #smoothing'), 'smoothing toggle sits with the page filters');
   assert.match(four.sub, /4-week running average/);
   assert.ok(four.ratios[0] !== null, 'first week averages over weeks before the range');
 

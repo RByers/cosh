@@ -45,6 +45,9 @@
         <fieldset id="metric" class="segmented">
           <legend>Contribution metric</legend>
         </fieldset>
+        <fieldset id="smoothing" class="segmented">
+          <legend>Smoothing <span class="legend-note">(running average of the value ratio and review charts)</span></legend>
+        </fieldset>
       </form>
 
       <p id="error" class="error" role="alert" hidden></p>
@@ -52,11 +55,6 @@
       <section class="card" aria-labelledby="ratio-title">
         <h2 id="ratio-title">Value ratio</h2>
         <p id="ratio-sub" class="sub"></p>
-        <form class="chart-controls" aria-label="Value ratio options" onsubmit="return false">
-          <fieldset id="smoothing" class="segmented">
-            <legend>Smoothing <span class="legend-note">(running average)</span></legend>
-          </fieldset>
-        </form>
         <div class="chart chart-tall">
           <canvas id="ratio-chart" role="img" aria-label="Value ratio per organization over time; the table below lists the values."></canvas>
         </div>
