@@ -186,6 +186,28 @@ value_ratio(O, t) = O's share of Chromium review comments
      classification works (example threads, what counts as addressed) and
      the acceptance-rate patterns (addressed ÷ comments) across
      organizations, reviewers and directories.
+   - **Explore: value of a comment.** Enrich the classifier to say roughly
+     how much each addressed thread was worth: small for nits (style,
+     naming, typos), larger for tests, docs and correctness fixes, and
+     largest for major design or architectural shifts. Points could then be
+     weighted, or shown as a size breakdown, rather than one per comment.
+     - **Why:** a plain count rewards easy asks. Nits are 13% of threads
+       but 23% of "Done" threads. A hand-read sample of 50 Done threads was
+       about 34% style or cleanup, 20% docs or commit message, 14% tests,
+       14% design or structure, and 18% correctness or bugs
+       (`review-impact.md`, §5).
+     - **To explore:**
+       - a small size scale (e.g. nit / minor / substantive / major), or
+         categories (style, docs, test, correctness, design) mapped to
+         weights;
+       - asking the same Haiku call for it, at a few more output tokens per
+         thread;
+       - the free `nit:` / `optional:` prefix signal;
+       - how consistently models and people agree on size, on a labelled
+         sample like the 400-thread set, before any weighting goes into
+         the headline. Size is more subjective than "addressed or not".
+     - **Storage:** store it as a small integer column in
+       `labels.sqlite`, with its own definition version.
 7. Later:
    - the OWNER bit;
    - years 2–5 of backfill;
