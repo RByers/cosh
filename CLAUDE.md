@@ -10,6 +10,10 @@ implementation and metric definitions.
   on 2026-11-03. It is resumable: rerun `python3 -m cosh backfill --weeks 52
   --go` from the main checkout if it stops. Fetching beyond that year (years
   2–5, other repos or hosts) still needs explicit approval.
+- **Backfill back to 2023-07-01 (Radar's first data) is approved**
+  (2026-11-04). That is `backfill --weeks 175 --newest 2026-W44`, 2023-W26 ..
+  2026-W44, started 2026-11-04 with log `data/private/backfill-3y-*.log`. It is
+  resumable with the same command. Nothing earlier is approved.
 - **The open-CL snapshot for that year is approved** (2026-11-03):
   `python3 -m cosh extract-open` lists open CLs updated since the oldest
   fetched week, plus CLs closed after the newest one, and fetches their NoteDb
