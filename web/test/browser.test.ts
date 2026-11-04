@@ -111,6 +111,12 @@ test('org table shows the top 20 plus orgs with a browser', async () => {
 
 test('switching the metric updates the table, review chart and URL', async () => {
   const { page } = await open();
+  const legend = await page.$eval('#metric legend', (l) => ({
+    text: l.textContent,
+    height: l.getBoundingClientRect().height,
+  }));
+  assert.equal(legend.text, 'Contribution metric');
+  assert.ok(legend.height > 0, 'metric legend should be visible');
   const cell = () => page.$eval('tr[data-org="microsoft.com"] td', (td) => td.textContent);
   const before = await cell();
   await page.click('#metric input[value="cls"]');

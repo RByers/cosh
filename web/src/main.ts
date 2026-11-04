@@ -159,7 +159,8 @@ function presetRange(data: Data, weeks: number | null): WeekRange {
 
 function buildControls(data: Data, state: State, render: () => void) {
   const metricBox = $('#metric');
-  metricBox.replaceChildren();
+  // Replace only the buttons: the fieldset's <legend> is static markup.
+  metricBox.querySelectorAll('label').forEach((l) => l.remove());
   for (const m of METRICS) {
     const label = el('label');
     const input = el('input');
