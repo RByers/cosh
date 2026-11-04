@@ -160,7 +160,16 @@ export function renderRatioChart(
         derived: p?.derived ?? null,
       };
     });
-    return lineDataset(org, colors.get(org)!, theme, data);
+    const ds = lineDataset(org, colors.get(org)!, theme, data);
+    if (smoothing <= 1) return ds;
+    // A running average is a trend, not weekly measurements: draw it as a
+    // smooth curve without dots. Monotone interpolation can't overshoot a
+    // point, so the curve never dips below 0 or invents peaks. A week between
+    // two gaps keeps a small dot, since it would otherwise draw nothing.
+    const pointRadius = data.map((p, i) =>
+      p.y !== null && data[i - 1]?.y == null && data[i + 1]?.y == null ? 2 : 0,
+    );
+    return { ...ds, pointRadius, pointHoverRadius: 4, cubicInterpolationMode: 'monotone' as const };
   }).filter((d) => d.data.some((p) => p.ratio !== null));
   const isParity = (v: number) => Math.abs(v - 1) < 1e-9;
   const base = baseOptions(theme);

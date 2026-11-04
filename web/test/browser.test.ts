@@ -422,6 +422,8 @@ test('value ratio smoothing defaults to 4 weeks and is selectable', async () => 
         checked: (document.querySelector('#smoothing input:checked') as HTMLInputElement).value,
         labels: [...document.querySelectorAll('#smoothing label')].map((l) => l.textContent),
         ratios: (ds.data as unknown as { ratio: number | null }[]).map((p) => p.ratio),
+        pointRadius: (ds as { pointRadius?: number | number[] }).pointRadius,
+        curve: (ds as { cubicInterpolationMode?: string }).cubicInterpolationMode ?? 'default',
         sub: document.querySelector('#ratio-sub')!.textContent!,
         review: c.reviewChart!.data.datasets.find((d: { label?: string }) => d.label === 'microsoft.com')!
           .data as (number | null)[],
@@ -436,11 +438,17 @@ test('value ratio smoothing defaults to 4 weeks and is selectable', async () => 
   assert.ok(await page.$('form.filters #smoothing'), 'smoothing toggle sits with the page filters');
   assert.match(four.sub, /4-week running average/);
   assert.ok(four.ratios[0] !== null, 'first week averages over weeks before the range');
+  // Smoothed: a curve without dots (google.com has no gaps here).
+  assert.equal(four.curve, 'monotone');
+  assert.ok(Array.isArray(four.pointRadius) && four.pointRadius.every((r) => r === 0), String(four.pointRadius));
 
   await page.click('#smoothing input[value="1"]');
   const off = await read();
   assert.match(page.url(), /smooth=1/);
   assert.doesNotMatch(off.sub, /running average/);
+  // Unsmoothed: sharp segments with a dot per week.
+  assert.equal(off.curve, 'default');
+  assert.equal(off.pointRadius, 4);
   assert.notDeepEqual(off.ratios, four.ratios);
   // Smoothing steadies the line: smaller week-to-week moves.
   const jitter = (r: (number | null)[]) =>
