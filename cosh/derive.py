@@ -18,7 +18,8 @@ from . import store
 from .bots import is_bot_account
 from .extract import GERRIT_TS, closed_ts, iso_week_of, parse_gerrit_ts
 
-METRIC_VERSION = "3"   # 1-2 = CL-keyed (cosh.sqlite); 3 = activity-time keyed
+METRIC_VERSION = "4"   # 1-2 = CL-keyed (cosh.sqlite); 3 = activity-time keyed;
+                       # 4 = AI comments in the headline (summarize only; same schema as 3)
 
 
 def human_text(message):

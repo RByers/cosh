@@ -298,15 +298,15 @@ function renderTiles(data: Data, weeks: string[]) {
   const t = sumWeeklyTotals(data.totals, weeks);
   const rows = orgTotals(data.summary, weeks);
   const reviewers = distinctReviewers(data.reviewers, weeks).total;
-  const human = rows.reduce((s, r) => s + r.comments, 0);
+  const comments = rows.reduce((s, r) => s + r.comments, 0);
   const ai = rows.reduce((s, r) => s + r.ai_comments, 0);
   const postMerge = rows.reduce((s, r) => s + r.post_merge_comments, 0);
   const tiles: [string, string, string][] = [
     ['CLs on main', t ? int(t.main_cls) : '—', t ? `${int(t.merged_cls)} merged, ${int(t.abandoned_cls)} abandoned` : ''],
     ['Human-owned CLs', t ? int(t.human_cls) : '—', t ? `${int(t.human_cls_with_review)} reviewed; ${int(t.bot_cls)} bot CLs` : ''],
-    ['Review comments', int(human), `by ${int(reviewers)} reviewers`],
-    ['Self-declared AI comments', int(ai), human + ai ? `${pct(ai / (human + ai))} of all; at least` : ''],
-    ['Post-merge comments', int(postMerge), human ? `${pct(postMerge / human)} of review comments; written after the CL landed` : ''],
+    ['Review comments', int(comments), `by ${int(reviewers)} reviewers`],
+    ['Self-declared AI comments', int(ai), comments ? `${pct(ai / comments)} of review comments; at least` : ''],
+    ['Post-merge comments', int(postMerge), comments ? `${pct(postMerge / comments)} of review comments; written after the CL landed` : ''],
   ];
   $('#tiles').replaceChildren(
     ...tiles.map(([k, v, sub]) => {

@@ -20,10 +20,10 @@
           to a rupture in the project community</a>. Quantifying this value exchange is generally very difficult, but Chromium makes
           an approximation possible. The value a browser gets from its engine is roughly proportional to that browser's
           usage. Evaluating investment level is more difficult. Today, a primary cost of maintaining a large open source
-          project is the human effort of directing
+          project is the effort of directing
           how the codebase evolves. AI coding agents have made code cheap to write, which makes
-          deciding what should and shouldn't land in the project even more valuable. Code review, and especially human code review
-          comments, is therefore a reasonable proxy for an organization's investment in a large open source project.
+          deciding what should and shouldn't land in the project even more valuable. Code review is therefore a
+          reasonable proxy for an organization's investment in a large open source project.
         </p>
         <p>
           This page approximates that value exchange by comparing each organization's share of Chromium-based browser
@@ -78,12 +78,13 @@
           <strong>What's counted.</strong> Code review on <code>chromium/src</code> CLs targeting <code>main</code>,
           grouped by the ISO week each CL closed (merged or abandoned; review that stops a CL from landing still
           counts). Only CLs owned by humans are included, so autorolls and other bot commits are left out. Reviews by
-          bots and AI agents are dropped too, as are owners' comments on their own CLs.
+          bot and AI-agent accounts are dropped too, as are owners' comments on their own CLs. Comments that a
+          reviewer posts with AI help count like any other comment from that reviewer.
         </p>
         <p class="note" id="review-metric-note">
           <strong>Metrics.</strong> <em>Review comments</em> are published comments, inline or patchset-level, including
           those written after the CL landed (the table below also shows how many of those there are). Comments that
-          declare themselves AI-generated are counted separately. A Code-Review vote with no comment, such as a bare +1,
+          declare themselves AI-generated are included (the table below also shows how many there are). A Code-Review vote with no comment, such as a bare +1,
           counts as one comment, so reviews that needed no changes still show up. <em>Reviewed CLs</em> counts the CLs
           where someone from the organization voted or commented. <em>Review characters</em> is the length of those
           comments with quoted (<code>&gt;</code>) lines removed.

@@ -228,11 +228,12 @@ class DeriveEndToEndTest(unittest.TestCase):
             # One W43 comment per CL, on 3 CLs, two of which closed only in W44
             # and one that is still open.
             ("2026-W43", "microsoft.com"): (3, 3 * n, 0, 0, 1, 0),
-            # W44: lgtm x3, AI x3; REV's votes add nothing (REV commented).
+            # W44: lgtm x3, AI x3 (in the headline); REV's votes add nothing
+            # (REV commented).
             # c5 (10-28) x3 all count; it is post-merge only on CL 100 (merged
             # 10-27); CL 200 merged 10-29 and CL 300 is open. Reviewed CLs
             # (by close week): 100 and 200.
-            ("2026-W44", "microsoft.com"): (3, 12, 3, 0, 1, 2),
+            ("2026-W44", "microsoft.com"): (6, 12 + 3 * len("AI says x"), 3, 0, 1, 2),
             ("2026-W44", "google.com"): (3, 12, 0, 1, 1, 2),
         })
 
@@ -292,25 +293,25 @@ class SummarizeTest(unittest.TestCase):
             rows = summarize(data_dir=d, out_dir=out)
             with open(os.path.join(out, "reviewer_weekly.json")) as fh:
                 data = json.load(fh)
-        # Post-merge comments are in the headline, and also reported as a subset.
+        # Post-merge and AI comments are in the headline, and also reported as subsets.
         self.assertEqual([(r["org"], r["comments"], r["ai_comments"], r["post_merge_comments"],
                            r["reviewers"], r["reviewed_cls"]) for r in rows],
-                         [("igalia.com", 9, 1, 3, 5, 1)])
-        # Every reviewer (valid JSON despite the hand-rolled layout), AI excluded;
+                         [("igalia.com", 10, 1, 3, 5, 1)])
+        # Every reviewer (valid JSON despite the hand-rolled layout), AI included;
         # account 3 (post-merge only) is credited like any other reviewer.
         self.assertEqual(data["meta"]["columns"], ["account_id", "org", "comments", "cls", "chars"])
         self.assertEqual(data["orgs"], ["igalia.com"])
         self.assertEqual(data["accounts"], {str(a): f"r{a}" for a in range(2, 7)})
         self.assertEqual(data["emails"], {str(a): f"r{a}@igalia.com" for a in range(2, 7)})
         self.assertEqual(data["weeks"]["2026-W44"],
-                         [[2, 0, 5, 1, 50], [3, 0, 1, 1, 10], [4, 0, 1, 1, 10], [5, 0, 1, 1, 10],
+                         [[2, 0, 6, 1, 60], [3, 0, 1, 1, 10], [4, 0, 1, 1, 10], [5, 0, 1, 1, 10],
                           [6, 0, 1, 1, 10]])
 
     def test_vote_without_comment_counts_as_one_in_vote_week(self):
         with tempfile.TemporaryDirectory() as d:
             summary_db(d, [(1, "owner@igalia.com")] + [(a, f"r{a}@igalia.com") for a in range(2, 7)],
                        [(3, 2, 0, 0),      # LGTM + nit + vote: stays 2, not 3
-                        (4, 0, 1, 0)],     # only an AI comment, plus a vote: 1
+                        (4, 0, 1, 0)],     # only an AI comment, plus a vote: 1 (the comment)
                        votes=[(2, 1, "2026-10-20 10:00:00", "2026-W43"),   # bare +1 in W43
                               (3, 1, "2026-10-27 10:00:00", "2026-W44"),
                               (4, -1, "2026-10-27 10:00:00", "2026-W44")])
@@ -320,11 +321,11 @@ class SummarizeTest(unittest.TestCase):
                 weeks = json.load(fh)["weeks"]
         self.assertEqual([(r["iso_week"], r["comments"], r["vote_only_reviews"], r["review_chars"],
                            r["reviewers"], r["reviewed_cls"]) for r in rows],
-                         [("2026-W43", 1, 1, 0, 1, 0), ("2026-W44", 3, 1, 20, 3, 1)])
+                         [("2026-W43", 1, 1, 0, 1, 0), ("2026-W44", 3, 0, 30, 3, 1)])
         # The reviewer rows sum to org_weekly, including the CL-only credit:
         # account 2 reviewed CL 100 (closed W44) though its vote was in W43.
         self.assertEqual(weeks["2026-W43"], [[2, 0, 1, 0, 0]])
-        self.assertEqual(weeks["2026-W44"], [[3, 0, 2, 1, 20], [4, 0, 1, 1, 0], [2, 0, 0, 1, 0]])
+        self.assertEqual(weeks["2026-W44"], [[3, 0, 2, 1, 20], [4, 0, 1, 1, 10], [2, 0, 0, 1, 0]])
 
     def test_reviewer_weeks_keeps_everyone_split_by_org(self):
         from cosh.summarize import reviewer_weeks
