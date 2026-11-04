@@ -196,7 +196,7 @@ function renderTable(data: Data, state: State, colors: Map<string, string>) {
         pct(it.contribution),
         it.browsers ? (it.derived === null ? '—' : pct(it.derived)) : '—',
         ratioText,
-        it.row ? int(it.row.reviewers) : '<5',
+        it.row ? int(it.row.reviewers) : '0',
         it.row ? int(it.row.comments) : '—',
         it.row ? int(it.row.ai_comments) : '—',
         it.row && it.row.post_merge_comments !== undefined ? int(it.row.post_merge_comments) : '—',

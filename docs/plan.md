@@ -58,6 +58,7 @@ value_ratio(O, t) = O's share of Chromium review comments
 | 2026-11-03 | Treat accounts with no email as bots / AI agents; store `display_name` when there is no `name` | User's instruction: in W44 these were an AI agent (Jetski), a deleted account and two accounts `/accounts` 404s on |
 | 2026-11-03 | Report post-merge comments per org in summaries (`post_merge_comments`), excluded from the headline | User's instruction: post-merge review is still valuable; the headline measures review before landing |
 | 2026-11-03 | Per-person data derived from public data may be committed and published; replaces "per-person data stays local" | User's policy: all of it is already public on Gerrit |
+| 2026-11-03 | Drop the fold of orgs with fewer than 5 reviewers per week into `Other`; every org is reported (only `gmail.com` still folds) | User's instruction; the fold existed for privacy, which the policy change made moot |
 | 2026-11-03 | Reviewer leaderboard: `summaries/reviewer_weekly.json` (each week's top 50 per metric; names and orgs, no emails), shown on the public site | User asked for a top-50 reviewer view |
 | 2026-11-03 | Keep every downloaded byte losslessly (`raw.sqlite` bodies, full NoteDb meta-ref history); reduce only in derived data | User's intention: allow richer analysis later and an informed review of the fetching, without re-fetching. Costs about 3 GB/year (`storage-design.md` §3.8) |
 | 2026-11-03 | Fetch comments via NoteDb `git fetch` in batches of 200, not REST `/comments` | Matches REST exactly on 856 of 856 CLs, with about 200 times fewer requests |
@@ -113,10 +114,6 @@ value_ratio(O, t) = O's share of Chromium review comments
 
 ## Open questions
 
-- Orgs with fewer than 5 reviewers in a week are still folded into "Other" in
-  `org_weekly`. That rule was a privacy measure, and the 2026-11-03 policy
-  change removes the reason for it. Keep it as noise control, lower it, or drop
-  it? Dropping it changes the per-org numbers and the table.
 
 - Why exactly did Radar's `ChromeDerivative` bucket jump on 2026-09-09?
   Cloudflare hasn't said; the evidence points to a browser-labeling change

@@ -149,9 +149,8 @@ The org is a domain name, evaluated as of the CL's `closed_at`:
 2. **Other `@chromium.org` accounts** are attributed to `google.com`.
 3. **Everyone else** is attributed to the domain of their email address.
 
-In `org_weekly`, orgs with fewer than 5 distinct reviewers in a week are
-folded into `Other`. This began as a privacy rule; whether to keep it is an
-open question in `plan.md`. `summaries/reviewer_weekly.json` holds each
+`org_weekly` reports every org, however few reviewers it has; only
+`gmail.com` is folded into `Other`. `summaries/reviewer_weekly.json` holds each
 week's top 50 reviewers by comments, by reviewed CLs and by review
 characters, with the same scope as `org_weekly`. Each reviewer's org is the
 one on most of their reviewed CLs that week.

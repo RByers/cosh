@@ -141,7 +141,7 @@ class SummarizeTest(unittest.TestCase):
             h = "chromium-review.googlesource.com"
             with db:
                 db.execute("INSERT INTO accounts VALUES (?,1,'owner@igalia.com',NULL,0)", (h,))
-                for aid in range(2, 7):   # 5 reviewers, so igalia.com isn't folded into Other
+                for aid in range(2, 7):   # 5 igalia.com reviewers
                     db.execute("INSERT INTO accounts VALUES (?,?,?,NULL,0)", (h, aid, f"r{aid}@igalia.com"))
                 db.execute("""INSERT INTO changes(host, change_number, project, branch, owner_account,
                               status, created_at, closed_at, iso_week)
@@ -185,19 +185,22 @@ class SummarizeTest(unittest.TestCase):
             h = "chromium-review.googlesource.com"
             with db:
                 db.execute("INSERT INTO accounts VALUES (?,1,'owner@igalia.com',NULL,0)", (h,))
-                for aid in range(2, 8):   # 6 gmail.com reviewers: above MIN_REVIEWERS
+                for aid in range(2, 8):   # 6 gmail.com reviewers
                     db.execute("INSERT INTO accounts VALUES (?,?,?,NULL,0)", (h, aid, f"r{aid}@gmail.com"))
+                db.execute("INSERT INTO accounts VALUES (?,8,'solo@opera.com',NULL,0)", (h,))
                 db.execute("""INSERT INTO changes(host, change_number, project, branch, owner_account,
                               status, created_at, closed_at, iso_week)
                               VALUES (?,100,'chromium/src','main',1,'MERGED','2026-10-26 00:00:00',
                               '2026-10-27 12:00:00','2026-W44')""", (h,))
-                for aid in range(2, 8):
+                for aid in range(2, 9):
                     db.execute("""INSERT INTO reviews(host, change_number, account_id, review_comments,
                                   review_chars, ai_comments, post_merge_comments)
                                   VALUES (?,100,?,2,20,0,0)""", (h, aid))
             db.close()
             rows = summarize(data_dir=d, out_dir=os.path.join(d, "summaries"))
-        self.assertEqual([(r["org"], r["reviewers"], r["comments"]) for r in rows], [("Other", 6, 12)])
+        # gmail.com folds into Other; a one-reviewer org is reported on its own.
+        self.assertEqual([(r["org"], r["reviewers"], r["comments"]) for r in rows],
+                         [("Other", 6, 12), ("opera.com", 1, 2)])
 
 if __name__ == "__main__":
     unittest.main()

@@ -50,7 +50,7 @@ const row = (org: string, share: number, comments: number) => ({
 });
 
 const SUMMARY: Summary = {
-  meta: { weeks: ['2026-W44'], headline_metric: 'comments', min_reviewers_per_org: 5 },
+  meta: { weeks: ['2026-W44'], headline_metric: 'comments' },
   rows: [
     row('google.com', 0.9, 900),
     row('microsoft.com', 0.05, 50),

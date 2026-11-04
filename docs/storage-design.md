@@ -504,12 +504,11 @@ What to commit and what to keep local:
 - **Keep out of git:** `data/private/`. The reason is size and churn, not
   privacy: `raw.sqlite` and the NoteDb repos are several GB per year, and
   `cosh.sqlite` can be rebuilt.
-- Org folding: an org with fewer than 5 distinct reviewers in a week is still
-  folded into `Other` in `org_weekly`. The rule began as a privacy measure; the
-  policy above removes that reason, so whether to keep it is an open question
-  in `plan.md`.
-  - `gmail.com` is always folded into `Other` in `org_weekly`, since a webmail
-    domain is not an organization.
+- No minimum group size: `org_weekly` reports every org, however few
+  reviewers it has. (An earlier rule folded orgs with fewer than 5 reviewers
+  into `Other` for privacy; it was dropped with the policy change.)
+  `gmail.com` is still always folded into `Other`, since a webmail domain is
+  not an organization.
 - `account_orgs.csv`, if it is ever created, holds manual employer guesses.
   Commit a line only when its source is a public record, and record the source
   on each line. Ask the user before committing guesses that have no public

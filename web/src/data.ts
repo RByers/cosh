@@ -31,7 +31,7 @@ export interface SummaryRow {
 }
 
 export interface Summary {
-  meta: { weeks: string[]; headline_metric: string; min_reviewers_per_org: number; [k: string]: unknown };
+  meta: { weeks: string[]; headline_metric: string; [k: string]: unknown };
   rows: SummaryRow[];
 }
 
@@ -202,7 +202,7 @@ const COUNT_COLUMN: Record<Metric, keyof SummaryRow> = {
 export const OTHER = 'Other';
 
 /** Raw review counts for one week: the top `n` orgs by the metric, then
- * everything else (including the summary's own privacy-folded "Other" row)
+ * everything else (including the summary's own "Other" row, e.g. gmail.com)
  * as a final "Other" entry. */
 export function topOrgCounts(
   summary: Summary,
