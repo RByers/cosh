@@ -12,6 +12,7 @@ import { fileURLToPath } from 'node:url';
 import puppeteer, { type Browser, type Page } from 'puppeteer-core';
 import { preview, type PreviewServer } from 'vite';
 import { randomPort } from '../vite.config.ts';
+import { isoWeekOf } from '../src/data.ts';
 
 const webDir = fileURLToPath(new URL('..', import.meta.url));
 const chromePath = process.env.CHROME_PATH ?? '/usr/bin/google-chrome';
@@ -244,16 +245,24 @@ test('date range defaults to where review and usage data overlap, and drives eve
   assert.match(page.url(), new RegExp(`from=${d.range.from}&to=${d.range.to}`));
 
   // Pick an earlier start date: the usage chart widens to the week of that date.
-  await page.$eval('#from', (i) => {
-    const input = i as HTMLInputElement;
-    input.value = '2026-01-07'; // a Wednesday in 2026-W02
-    input.dispatchEvent(new Event('change', { bubbles: true }));
-  });
+  // Four weeks before the default start, so this holds however much review
+  // data there is (Radar usage goes back to 2023-W26).
+  const earlier = new Date(Date.parse(`${d.from}T00:00:00Z`) - 26 * 86_400_000); // a Wednesday
+  const earlierWeek = isoWeekOf(earlier);
+  await page.$eval(
+    '#from',
+    (i, v) => {
+      const input = i as HTMLInputElement;
+      input.value = v;
+      input.dispatchEvent(new Event('change', { bubbles: true }));
+    },
+    earlier.toISOString().slice(0, 10),
+  );
   const wide = await read();
-  assert.equal(wide.range.from, '2026-W02');
-  assert.equal(wide.usageWeeks[0], '2026-W02');
+  assert.equal(wide.range.from, earlierWeek);
+  assert.equal(wide.usageWeeks[0], earlierWeek);
   assert.equal(wide.pressed, undefined);
-  assert.match(page.url(), /from=2026-W02/);
+  assert.match(page.url(), new RegExp(`from=${earlierWeek}`));
   assert.ok(wide.reviewTotal >= d.reviewTotal);
 
   // A "from" after "to" pulls "to" along.
