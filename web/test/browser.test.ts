@@ -215,9 +215,9 @@ test('review by directory shows volume and org split per directory, and the path
   // Bars share one scale: the largest directory has the longest bar.
   const top = [...d.rows].filter((r) => !/^other /.test(r.name)).sort((a, b) => b.value - a.value)[0];
   assert.ok(d.rows.every((r) => r.bar <= top.bar + 0.5));
-  // The org split fills the column (segments plus their 2px gaps).
+  // The org split fills the column, with no gaps between segments.
   const blink = by['third_party/blink/'];
-  const filled = blink.segs.reduce((s, w) => s + w, 0) + 2 * (blink.segs.length - 1);
+  const filled = blink.segs.reduce((s, w) => s + w, 0);
   assert.ok(Math.abs(filled - blink.dist) < 1.5, `${filled} vs ${blink.dist}`);
   assert.match(blink.title, /google\.com: [\d,]+ \(\d/);
   assert.match(d.sub, /are on the paths the rest of the page counts/);

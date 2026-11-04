@@ -626,10 +626,10 @@ a.lb-row:hover .lb-bar {
   font-variant-numeric: tabular-nums;
 }
 
-/* Segments are separated by a 2px surface-coloured gap. */
+/* Segments touch, with no gap, so slivers of a few tenths of a percent
+ * stay visible next to google.com's large segment. */
 .ar-dist {
   display: flex;
-  gap: 2px;
   height: 12px;
 }
 
