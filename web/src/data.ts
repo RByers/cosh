@@ -264,30 +264,44 @@ export function topOrgCounts(
 
 /** Weekly review counts for the top `n` orgs over the given weeks (ranked by
  * their total, as in topOrgCounts), then everything else as a final "Other"
- * series. `values[i]` is the count in `weeks[i]`. */
+ * series. `values[i]` is the count in `weeks[i]`. With `smoothing` > 1, each
+ * value is the trailing mean over that many calendar weeks ending at
+ * `weeks[i]`, including weeks before the range; weeks outside the summary's
+ * data are left out of the window, as in smoothRatios. */
 export function orgWeeklyCounts(
   summary: Summary,
   weeks: string[],
   metric: Metric,
   n = 7,
+  smoothing = 1,
 ): { org: string; values: number[] }[] {
   const col = COUNT_COLUMN[metric];
   const named = new Set(topOrgCounts(summary, weeks, metric, n).map((r) => r.org).filter((o) => o !== OTHER));
-  const index = new Map(weeks.map((w, i) => [w, i]));
-  const series = new Map<string, number[]>();
-  for (const org of named) series.set(org, weeks.map(() => 0));
+  // Raw counts per (org, week) over every summary week.
+  const raw = new Map<string, Map<string, number>>();
   let hasOther = false;
   for (const r of summary.rows) {
-    const i = index.get(r.iso_week);
-    if (i === undefined) continue;
     const key = named.has(r.org) ? r.org : OTHER;
-    if (key === OTHER) hasOther = true;
-    if (!series.has(key)) series.set(key, weeks.map(() => 0));
-    series.get(key)![i] += Number(r[col]);
+    if (key === OTHER && weeks.includes(r.iso_week)) hasOther = true;
+    if (!raw.has(key)) raw.set(key, new Map());
+    const m = raw.get(key)!;
+    m.set(r.iso_week, (m.get(r.iso_week) ?? 0) + Number(r[col]));
   }
-  const out = [...series].map(([org, values]) => ({ org, values }));
-  const other = out.filter((s) => s.org === OTHER);
-  return [...out.filter((s) => s.org !== OTHER), ...(hasOther ? other : [])];
+  const known = new Set([...summary.meta.weeks, ...summary.rows.map((r) => r.iso_week)]);
+  const window = Math.max(1, smoothing);
+  const valueAt = (counts: Map<string, number> | undefined, week: string) => {
+    let sum = 0;
+    let k = 0;
+    for (let i = 0; i < window; i++) {
+      const w = addWeeks(week, -i);
+      if (!known.has(w)) continue;
+      sum += counts?.get(w) ?? 0;
+      k++;
+    }
+    return k ? sum / k : 0;
+  };
+  const orgs = [...named, ...(hasOther ? [OTHER] : [])];
+  return orgs.map((org) => ({ org, values: weeks.map((w) => valueAt(raw.get(org), w)) }));
 }
 
 /** Radar browsers to chart individually: the `n` with the highest peak

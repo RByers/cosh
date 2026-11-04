@@ -214,8 +214,11 @@ export function renderReviewChart(
   metricLabel: string,
   colors: Map<string, string>,
   theme: Theme,
+  /** Running-average window in weeks (1 = none); named in the tooltip. */
+  smoothing = 1,
 ): Chart<'line'> {
-  const fmt = (v: number) => v.toLocaleString('en-US');
+  const fmt = (v: number) => v.toLocaleString('en-US', { maximumFractionDigits: v < 10 ? 1 : 0 });
+  const avg = smoothing > 1 ? `  (${smoothing}-week avg)` : '';
   const datasets = series.map((s) => {
     const color = s.org === OTHER ? theme.muted : colors.get(s.org) ?? theme.muted;
     const data = s.values.map((v) => (v > 0 ? v : null));
@@ -239,7 +242,7 @@ export function renderReviewChart(
           ...base.plugins.tooltip,
           itemSort: (a, b) => ((b.raw as number | null) ?? 0) - ((a.raw as number | null) ?? 0),
           callbacks: {
-            label: (ctx) => `${ctx.raw === null ? 0 : fmt(ctx.raw as number)}  ${ctx.dataset.label}`,
+            label: (ctx) => `${ctx.raw === null ? 0 : fmt(ctx.raw as number)}  ${ctx.dataset.label}${avg}`,
           },
         },
       },

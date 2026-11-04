@@ -159,6 +159,9 @@ test('value ratio smoothing defaults to 4 weeks and is selectable', async () => 
         labels: [...document.querySelectorAll('#smoothing label')].map((l) => l.textContent),
         ratios: (ds.data as unknown as { ratio: number | null }[]).map((p) => p.ratio),
         sub: document.querySelector('#ratio-sub')!.textContent!,
+        review: c.reviewChart!.data.datasets.find((d: { label?: string }) => d.label === 'microsoft.com')!
+          .data as (number | null)[],
+        reviewSub: document.querySelector('#review-sub')!.textContent!,
       };
     });
   const four = await read();
@@ -177,6 +180,11 @@ test('value ratio smoothing defaults to 4 weeks and is selectable', async () => 
   const jitter = (r: (number | null)[]) =>
     r.slice(1).reduce<number>((s, v, i) => s + Math.abs((v ?? 0) - (r[i] ?? 0)), 0);
   assert.ok(jitter(four.ratios) < jitter(off.ratios), `${jitter(four.ratios)} vs ${jitter(off.ratios)}`);
+  // The review chart follows the same setting.
+  assert.match(four.reviewSub, /4-week running average/);
+  assert.doesNotMatch(off.reviewSub, /running average/);
+  assert.ok(off.review.every((v) => v === null || Number.isInteger(v)), 'unsmoothed counts are whole');
+  assert.ok(jitter(four.review) < jitter(off.review), `${jitter(four.review)} vs ${jitter(off.review)}`);
 
   await page.click('#smoothing input[value="12"]');
   assert.match(page.url(), /smooth=12/);

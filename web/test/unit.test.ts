@@ -235,6 +235,22 @@ test('orgWeeklyCounts gives one series per top org, with the rest as Other', () 
   assert.deepEqual(series[2].values, [0, 50]);
 });
 
+test('orgWeeklyCounts smoothing averages weeks before the range, skipping weeks without data', () => {
+  const three: Summary = {
+    meta: { weeks: ['2026-W42', '2026-W43', '2026-W44'], headline_metric: 'comments' },
+    rows: [
+      { ...SUMMARY.rows[0], iso_week: '2026-W42', comments: 300 },
+      { ...SUMMARY.rows[0], iso_week: '2026-W43', comments: 600 },
+      { ...SUMMARY.rows[0], iso_week: '2026-W44', comments: 900 },
+    ],
+  };
+  // W44's 4-week window holds W41 (no data, skipped), W42, W43 and W44.
+  const [google] = orgWeeklyCounts(three, ['2026-W44'], 'comments', 7, 4);
+  assert.equal(google.org, 'google.com');
+  assert.deepEqual(google.values, [600]);
+  assert.deepEqual(orgWeeklyCounts(three, ['2026-W43', '2026-W44'], 'comments', 7, 1)[0].values, [600, 900]);
+});
+
 test('meanDerivedShare averages the weeks that have usage data', () => {
   const radar = parseRadarWeekly(RADAR);
   assert.equal(meanDerivedShare(radar, ['2026-W44', '2026-W43'], ['Edge']), 0.2);

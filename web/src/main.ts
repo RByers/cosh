@@ -450,7 +450,7 @@ function main(data: Data) {
     const metricName = METRICS.find((m) => m.id === state.metric)!.label;
     const metricLabel = metricName.toLowerCase();
     reviewChart?.destroy();
-    const reviewSeries = orgWeeklyCounts(data.summary, weeks, state.metric);
+    const reviewSeries = orgWeeklyCounts(data.summary, weeks, state.metric, 7, state.smoothing);
     reviewChart = renderReviewChart(
       $<HTMLCanvasElement>('#review-chart'),
       weeks,
@@ -458,9 +458,14 @@ function main(data: Data) {
       metricName,
       reviewColors(reviewSeries.map((s) => s.org), colors, theme),
       theme,
+      state.smoothing,
     );
     $('#review-sub').textContent = weeks.length
-      ? `${metricName} per ISO week, ${label}, for the organizations with the most over the range; the rest are combined as “Other”. ` +
+      ? `${metricName} per ISO week, ${label}` +
+        (state.smoothing > 1
+          ? `, as a ${state.smoothing}-week running average (the smoothing setting under Value ratio)`
+          : '') +
+        ', for the organizations with the most over the range; the rest are combined as “Other”. ' +
         'The axis is logarithmic, since Google does most of the review.'
       : `No review data for ${label}.`;
     leaderboardChart = renderLeaderboard(data, state, colors, leaderboardChart);
