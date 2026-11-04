@@ -363,6 +363,9 @@ don't match the headline, which is by comment week.)
    - `derive` needs `parent_uuid` and `unresolved` on `comments`, an
      owner-side flag, and a reply class. The thread logic is in
      `scripts/review_impact.py`.
+   (Evaluated in `docs/comment-classifier.md`: on 400 labelled threads the
+   regex scores precision 0.98 and recall 0.78, and adding Haiku for the
+   rest brings recall to 0.99.)
 2. **Phase 2: an LLM pass over free-text replies (offline, compute
    only).**
    - Classify the discussion and ack threads (~25%) into changed in this

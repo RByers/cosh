@@ -197,6 +197,9 @@ def main():
                     owner_reply_ps=fr["ps"] if fr else None,
                     owner_replies=[c["msg"][:300] for c in owner_replies[:3]],
                     others=[(c["author"] in owner_side, c["msg"][:300]) for c in th[1:6]],
+                    # the whole thread with roles: O owner side, R the root's reviewer, X anyone else
+                    thread=[("O" if c["author"] in owner_side else "R" if c["author"] == r["author"] else "X",
+                             c["msg"][:1000]) for c in th[1:10]],
                     rework_after=len(rework_after),
                     next_rework_dt=(rework_after[0][1] - r["t"]) if rework_after else None,
                     next_rework_desc=rework_after[0][4] if rework_after else None,

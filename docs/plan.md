@@ -160,7 +160,10 @@ value_ratio(O, t) = O's share of Chromium review comments
      `docs/review-impact.md` (2026-11-04, offline only). The recommendation
      is an "addressed threads" metric built from the owners' "Done" replies,
      then an LLM pass over free-text replies, and no lines-changed metric.
-     Awaiting the user's decision;
+     The classifier is evaluated in `docs/comment-classifier.md` (400 labelled
+     threads). The recommendation there is the regex first, then Haiku via
+     headless `claude -p` for the rest: accuracy about 0.97 and about 28M
+     Haiku tokens a year. Awaiting the user's decision;
    - the OWNER bit;
    - years 2–5 of backfill;
    - other repos and hosts (v8, devtools-frontend and skia are listed in
