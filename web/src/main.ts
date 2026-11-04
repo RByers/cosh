@@ -23,6 +23,7 @@ import {
   compareWeeks,
   computeRatios,
   dataRanges,
+  distinctReviewers,
   isoDate,
   isoWeekOf,
   isWeek,
@@ -105,8 +106,6 @@ async function load(): Promise<Data> {
 
 const pct = (x: number) => `${(x * 100).toFixed(x !== 0 && x < 0.01 ? 2 : 1)}%`;
 const int = (x: number) => x.toLocaleString('en-US');
-/** Mean weekly counts: whole numbers once they're big enough to read that way. */
-const avg = (x: number) => (x >= 10 || Number.isInteger(x) ? int(Math.round(x)) : x.toFixed(1));
 const day = (d: Date, year = true) =>
   d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', ...(year ? { year: 'numeric' } : {}), timeZone: 'UTC' });
 
@@ -241,18 +240,14 @@ function renderRangeSummary(data: Data, state: State) {
 function renderTiles(data: Data, weeks: string[]) {
   const t = sumWeeklyTotals(data.totals, weeks);
   const rows = orgTotals(data.summary, weeks);
+  const reviewers = distinctReviewers(data.reviewers, weeks).total;
   const human = rows.reduce((s, r) => s + r.comments, 0);
   const ai = rows.reduce((s, r) => s + r.ai_comments, 0);
   const postMerge = rows.reduce((s, r) => s + r.post_merge_comments, 0);
-  const reviewers = rows.reduce((s, r) => s + r.reviewers, 0);
   const tiles: [string, string, string][] = [
     ['CLs on main', t ? int(t.main_cls) : '—', t ? `${int(t.merged_cls)} merged, ${int(t.abandoned_cls)} abandoned` : ''],
     ['Human-owned CLs', t ? int(t.human_cls) : '—', t ? `${int(t.human_cls_with_review)} reviewed; ${int(t.bot_cls)} bot CLs` : ''],
-    [
-      'Review comments',
-      int(human),
-      weeks.length > 1 ? `about ${avg(reviewers)} reviewers a week` : `by ${int(reviewers)} reviewers`,
-    ],
+    ['Review comments', int(human), `by ${int(reviewers)} reviewers`],
     ['Self-declared AI comments', int(ai), human + ai ? `${pct(ai / (human + ai))} of all; at least` : ''],
     ['Post-merge comments', int(postMerge), 'written after the CL landed; not in the headline'],
   ];
@@ -267,7 +262,7 @@ function renderTiles(data: Data, weeks: string[]) {
 
 function renderTable(data: Data, state: State, weeks: string[], colors: Map<string, string>) {
   const col = SHARE_COLUMN[state.metric];
-  const totals = orgTotals(data.summary, weeks);
+  const totals = orgTotals(data.summary, weeks, distinctReviewers(data.reviewers, weeks).byOrg);
   const orgs = new Set([...totals.map((r) => r.org), ...data.orgBrowsers.keys()]);
   const items = [...orgs].map((org) => {
     const row = totals.find((r) => r.org === org);
@@ -284,10 +279,9 @@ function renderTable(data: Data, state: State, weeks: string[], colors: Map<stri
   $('#table-caption').textContent = !weeks.length
     ? `${rangeLabel(state.range)}: no review data in this range.`
     : multi
-      ? `${rangeLabel(state.range)}: counts are totals over the range; review share is the share of all ${metricLabel} ` +
+      ? `${rangeLabel(state.range)}: counts are totals over the range (reviewers: distinct people); review share is the share of all ${metricLabel} ` +
         'in the range, usage share the mean weekly share of Chromium browser usage.'
       : `${rangeLabel(state.range)}: share of ${metricLabel} and of Chromium browser usage.`;
-  $('#reviewers-col').textContent = multi ? 'Reviewers / week' : 'Reviewers';
   const tbody = $('#org-table tbody');
   tbody.replaceChildren(
     ...items.map((it) => {
@@ -312,7 +306,7 @@ function renderTable(data: Data, state: State, weeks: string[], colors: Map<stri
         pct(it.contribution),
         it.browsers ? (it.derived === null ? '—' : pct(it.derived)) : '—',
         ratioText,
-        r ? avg(r.reviewers) : '0',
+        r ? int(r.reviewers) : '0',
         r ? int(r.reviewed_cls) : '—',
         r ? int(r.comments) : '—',
         r ? int(r.review_chars) : '—',
@@ -335,14 +329,10 @@ function renderLeaderboard(
   const metricName = METRICS.find((m) => m.id === state.metric)!.label;
   const weeks = weeksIn(Object.keys(data.reviewers.weeks), state.range);
   const rows = topReviewers(data.reviewers, weeks, state.metric, LEADERBOARD_SIZE);
-  const top = data.reviewers.meta.top_n;
   $('#leaderboard-sub').textContent = !rows.length
     ? `No reviewer data for ${rangeLabel(state.range)}.`
     : `${metricName}${weeks.length > 1 ? ' in total' : ''}, ${rangeLabel(state.range)}, top ${rows.length} reviewers. ` +
-      'Same scope as the organization chart: human reviewers on human-owned CLs.' +
-      (weeks.length > 1
-        ? ` Totals count only the weeks a reviewer was in that week's top ${top}, so they can be slightly low.`
-        : '');
+      'Same scope as the organization chart: human reviewers on human-owned CLs.';
   $('#leaderboard-chart-box').style.height = `${rows.length * LEADERBOARD_ROW_PX + 36}px`;
 
   // Legend: the coloured orgs that appear, in colour order, then the rest.

@@ -7,6 +7,7 @@ import {
   clampRange,
   computeRatios,
   dataRanges,
+  distinctReviewers,
   isoDate,
   isoWeekOf,
   meanDerivedShare,
@@ -23,6 +24,8 @@ import {
   topBrowsers,
   topOrgCounts,
   topReviewers,
+  type ReviewerBoard,
+  type ReviewerRow,
   type Summary,
 } from '../src/data.ts';
 import { pivotScale } from '../src/scale.ts';
@@ -114,32 +117,45 @@ test('topOrgCounts folds the tail and the summary Other row together', () => {
   assert.equal(topOrgCounts(SUMMARY, '2026-W44', 'chars', 7)[0].value, 90000);
 });
 
-test('topReviewers ranks one week by the chosen metric and drops zeros', () => {
-  const r = (account_id: number, comments: number, cls: number, chars: number) => ({
-    account_id, name: `n${account_id}`, org: 'x.com', comments, cls, chars,
-  });
-  const board = { meta: { top_n: 50 }, weeks: { '2026-W44': [r(1, 9, 1, 50), r(2, 0, 4, 0), r(3, 9, 2, 80)] } };
-  assert.deepEqual(topReviewers(board, '2026-W44', 'comments').map((x) => [x.name, x.value]), [['n1', 9], ['n3', 9]]);
-  assert.deepEqual(topReviewers(board, '2026-W44', 'cls', 2).map((x) => x.name), ['n2', 'n3']);
-  assert.deepEqual(topReviewers(board, '2026-W44', 'chars')[0], { name: 'n3', org: 'x.com', value: 80 });
-  assert.deepEqual(topReviewers(board, '2026-W01', 'comments'), []);
-  // Input order is not mutated.
-  assert.deepEqual(board.weeks['2026-W44'].map((x) => x.account_id), [1, 2, 3]);
+// orgs: 0 = x.com, 1 = y.com, 2 = gmail.com (folded into Other in org totals).
+const board = (weeks: Record<string, ReviewerRow[]>): ReviewerBoard => ({
+  meta: { fold_into_other: ['gmail.com'] },
+  orgs: ['x.com', 'y.com', 'gmail.com'],
+  accounts: { 1: 'n1', 2: 'n2', 3: 'n3' },
+  weeks,
 });
 
-test('topReviewers sums a range of weeks, taking name and org from the latest', () => {
-  const r = (account_id: number, org: string, comments: number) => ({
-    account_id, name: `n${account_id}@${org}`, org, comments, cls: 1, chars: 1,
+test('topReviewers ranks one week by the chosen metric and drops zeros', () => {
+  const b = board({ '2026-W44': [[1, 0, 9, 1, 50], [2, 0, 0, 4, 0], [3, 0, 9, 2, 80]] });
+  assert.deepEqual(topReviewers(b, '2026-W44', 'comments').map((x) => [x.name, x.value]), [['n1', 9], ['n3', 9]]);
+  assert.deepEqual(topReviewers(b, '2026-W44', 'cls', 2).map((x) => x.name), ['n2', 'n3']);
+  assert.deepEqual(topReviewers(b, '2026-W44', 'chars')[0], { name: 'n3', org: 'x.com', value: 80 });
+  assert.deepEqual(topReviewers(b, '2026-W01', 'comments'), []);
+  // Input order is not mutated.
+  assert.deepEqual(b.weeks['2026-W44'].map((x) => x[0]), [1, 2, 3]);
+});
+
+test('topReviewers totals a range exactly; org is where most of their CLs were', () => {
+  const b = board({
+    '2026-W43': [[1, 1, 5, 3, 1], [2, 0, 9, 1, 1]],
+    '2026-W44': [[1, 0, 6, 2, 1], [1, 1, 1, 1, 1]],
   });
-  const board = {
-    meta: { top_n: 50 },
-    weeks: { '2026-W43': [r(1, 'a.com', 5), r(2, 'b.com', 9)], '2026-W44': [r(1, 'c.com', 6)] },
-  };
-  assert.deepEqual(topReviewers(board, ['2026-W44', '2026-W43'], 'comments'), [
-    { name: 'n1@c.com', org: 'c.com', value: 11 },
-    { name: 'n2@b.com', org: 'b.com', value: 9 },
+  assert.deepEqual(topReviewers(b, ['2026-W44', '2026-W43'], 'comments'), [
+    { name: 'n1', org: 'y.com', value: 12 },
+    { name: 'n2', org: 'x.com', value: 9 },
   ]);
-  assert.deepEqual(topReviewers(board, [], 'comments'), []);
+  assert.deepEqual(topReviewers(b, [], 'comments'), []);
+});
+
+test('distinctReviewers counts people once over a range, per folded org', () => {
+  const b = board({
+    '2026-W43': [[1, 0, 5, 1, 1], [2, 2, 1, 1, 1]],
+    '2026-W44': [[1, 0, 6, 1, 1], [1, 1, 1, 1, 1], [3, 2, 1, 1, 1]],
+  });
+  const d = distinctReviewers(b, ['2026-W43', '2026-W44']);
+  assert.equal(d.total, 3);
+  assert.deepEqual(Object.fromEntries(d.byOrg), { 'x.com': 1, 'y.com': 1, [OTHER]: 2 });
+  assert.equal(distinctReviewers(b, '2026-W43').total, 2);
 });
 
 test('ISO weeks round-trip through dates, across year boundaries', () => {
@@ -185,8 +201,11 @@ test('orgTotals sums counts over weeks and recomputes shares from the sums', () 
   assert.equal(t['google.com'].comments, 1000);
   assert.equal(t['microsoft.com'].comments, 150);
   assert.ok(Math.abs(t['google.com'].share_comments - 1000 / 1200) < 1e-12);
-  assert.equal(t['google.com'].reviewers, 20); // mean of 30 and 10
-  assert.equal(t['igalia.com'].reviewers, 5); // absent in W43 counts as 0
+  // Without distinct counts, weekly reviewer counts are summed; with them, they're used as given.
+  assert.equal(t['google.com'].reviewers, 40);
+  const exact = orgTotals(two, ['2026-W43', '2026-W44'], new Map([['google.com', 35]]));
+  assert.equal(exact.find((x) => x.org === 'google.com')!.reviewers, 35);
+  assert.equal(exact.find((x) => x.org === 'igalia.com')!.reviewers, 0);
   const one = Object.fromEntries(orgTotals(two, ['2026-W44']).map((x) => [x.org, x]));
   assert.ok(Math.abs(one['google.com'].share_comments - 0.9) < 1e-12);
   assert.equal(topOrgCounts(two, ['2026-W43', '2026-W44'], 'comments', 1)[0].value, 1000);

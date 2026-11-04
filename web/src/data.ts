@@ -250,56 +250,82 @@ export function compareWeeks(a: string, b: string): number {
   return a < b ? -1 : a > b ? 1 : 0;
 }
 
-/** One reviewer in one week (summaries/reviewer_weekly.json). */
-export interface ReviewerRow {
-  account_id: number;
-  name: string;
-  org: string;
-  comments: number;
-  cls: number;
-  chars: number;
-}
+/** summaries/reviewer_weekly.json: every reviewer's counts per week, one row
+ * per (week, account, org). Compact: each row is
+ * [account_id, index into `orgs`, comments, cls, chars]. Orgs are resolved
+ * before org_weekly's fold of `meta.fold_into_other` into "Other". */
+export type ReviewerRow = [account: number, org: number, comments: number, cls: number, chars: number];
 
 export interface ReviewerBoard {
-  meta: { top_n: number; [k: string]: unknown };
+  meta: { fold_into_other: string[]; [k: string]: unknown };
+  orgs: string[];
+  accounts: Record<string, string>;
   weeks: Record<string, ReviewerRow[]>;
 }
 
+const METRIC_INDEX: Record<Metric, 2 | 3 | 4> = { comments: 2, cls: 3, chars: 4 };
+
 export const LEADERBOARD_SIZE = 50;
 
-/** The top `n` reviewers by the metric, summed over the given week(s). Ties
- * are broken by account id so the order is stable; reviewers with 0 for the
- * metric are left out. A reviewer's name and org are from their latest week
- * in the list.
- *
- * The board only holds each week's top reviewers, so over several weeks a
- * reviewer's total misses the weeks they weren't in that week's top: totals
- * are lower bounds, most loosely for those near the bottom of the board. */
+const asList = (weeks: string | string[]) => (typeof weeks === 'string' ? [weeks] : weeks);
+
+/** The top `n` reviewers by the metric, summed over the given week(s): exact
+ * totals, since the board holds every reviewer. Ties are broken by account id
+ * so the order is stable; reviewers with 0 for the metric are left out. A
+ * reviewer's org is the one most of their reviewed CLs in those weeks
+ * resolve to (ties: alphabetical). */
 export function topReviewers(
   board: ReviewerBoard,
   weeks: string | string[],
   metric: Metric,
   n = LEADERBOARD_SIZE,
 ): { name: string; org: string; value: number }[] {
-  const list = (typeof weeks === 'string' ? [weeks] : [...weeks]).sort(compareWeeks);
-  const by = new Map<number, { account_id: number; name: string; org: string; value: number }>();
-  for (const w of list) {
+  const col = METRIC_INDEX[metric];
+  const by = new Map<number, { value: number; orgCls: Map<number, number> }>();
+  for (const w of asList(weeks)) {
     for (const r of board.weeks[w] ?? []) {
-      const t = by.get(r.account_id);
-      if (t) {
-        t.value += r[metric];
-        t.name = r.name;
-        t.org = r.org;
-      } else {
-        by.set(r.account_id, { account_id: r.account_id, name: r.name, org: r.org, value: r[metric] });
-      }
+      let t = by.get(r[0]);
+      if (!t) by.set(r[0], (t = { value: 0, orgCls: new Map() }));
+      t.value += r[col];
+      t.orgCls.set(r[1], (t.orgCls.get(r[1]) ?? 0) + r[3]);
     }
   }
-  return [...by.values()]
-    .filter((r) => r.value > 0)
-    .sort((a, b) => b.value - a.value || a.account_id - b.account_id)
+  const orgOf = (orgCls: Map<number, number>) => {
+    let best = -1;
+    let bestCls = -1;
+    for (const [o, c] of orgCls) {
+      if (c > bestCls || (c === bestCls && board.orgs[o] < board.orgs[best])) [best, bestCls] = [o, c];
+    }
+    return board.orgs[best];
+  };
+  return [...by]
+    .filter(([, t]) => t.value > 0)
+    .sort(([a, x], [b, y]) => y.value - x.value || a - b)
     .slice(0, n)
-    .map(({ name, org, value }) => ({ name, org, value }));
+    .map(([id, t]) => ({ name: board.accounts[id] ?? `Account ${id}`, org: orgOf(t.orgCls), value: t.value }));
+}
+
+/** Distinct reviewers over the given week(s): in total, and per org as
+ * org_weekly.json reports orgs (fold_into_other folded into "Other"). A
+ * reviewer who reviewed for two orgs counts once in each. */
+export function distinctReviewers(
+  board: ReviewerBoard,
+  weeks: string | string[],
+): { total: number; byOrg: Map<string, number> } {
+  const fold = new Set(board.meta.fold_into_other ?? []);
+  const orgName = board.orgs.map((o) => (fold.has(o) ? OTHER : o));
+  const all = new Set<number>();
+  const sets = new Map<string, Set<number>>();
+  for (const w of asList(weeks)) {
+    for (const r of board.weeks[w] ?? []) {
+      all.add(r[0]);
+      const org = orgName[r[1]];
+      let s = sets.get(org);
+      if (!s) sets.set(org, (s = new Set()));
+      s.add(r[0]);
+    }
+  }
+  return { total: all.size, byOrg: new Map([...sets].map(([o, s]) => [o, s.size])) };
 }
 
 // ---------------------------------------------------------------------------
@@ -383,8 +409,11 @@ export function clampRange(r: WeekRange, bounds: WeekRange): WeekRange {
 
 /** One org's review counts summed over some weeks, with shares recomputed
  * from the sums (as summarize.py does per week: org count ÷ the sum over all
- * orgs). Reviewer counts are distinct per week and can't be summed (the same
- * person reviews in many weeks), so `reviewers` is the mean weekly count. */
+ * orgs). Each CL closes in exactly one week, so summing CL counts over weeks
+ * is exact. Reviewer counts are distinct per week and can't be summed (the
+ * same person reviews in many weeks): pass `reviewers`, the distinct count per
+ * org from distinctReviewers(). Without it, `reviewers` is the sum of the
+ * weekly counts, which is exact only for a single week. */
 export interface OrgTotals {
   org: string;
   reviewers: number;
@@ -398,7 +427,7 @@ export interface OrgTotals {
   share_chars: number;
 }
 
-export function orgTotals(summary: Summary, weeks: string[]): OrgTotals[] {
+export function orgTotals(summary: Summary, weeks: string[], reviewers?: Map<string, number>): OrgTotals[] {
   const set = new Set(weeks);
   const by = new Map<string, OrgTotals>();
   for (const r of summary.rows) {
@@ -422,7 +451,7 @@ export function orgTotals(summary: Summary, weeks: string[]): OrgTotals[] {
   const sum = (k: 'reviewed_cls' | 'comments' | 'review_chars') => out.reduce((s, t) => s + t[k], 0);
   const [cls, comments, chars] = [sum('reviewed_cls'), sum('comments'), sum('review_chars')];
   for (const t of out) {
-    t.reviewers = set.size ? t.reviewers / set.size : 0;
+    if (reviewers) t.reviewers = reviewers.get(t.org) ?? 0;
     t.share_cls = cls ? t.reviewed_cls / cls : 0;
     t.share_comments = comments ? t.comments / comments : 0;
     t.share_chars = chars ? t.review_chars / chars : 0;

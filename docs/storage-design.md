@@ -140,7 +140,7 @@ cosh/
       archive/*.jsonl.gz     # optional frozen weekly exports of raw
   summaries/                 # committed: what the front end fetches
     org_weekly.csv  org_weekly.json
-    reviewer_weekly.json     # each week's top 50 reviewers per metric
+    reviewer_weekly.json     # every reviewer's weekly counts, per (week, org)
     org_monthly.csv org_monthly.json
     meta.json
 ```

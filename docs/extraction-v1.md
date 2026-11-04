@@ -178,10 +178,17 @@ The org is a domain name, evaluated as of the CL's `closed_at`:
 3. **Everyone else** is attributed to the domain of their email address.
 
 `org_weekly` reports every org, however few reviewers it has; only
-`gmail.com` is folded into `Other`. `summaries/reviewer_weekly.json` holds each
-week's top 50 reviewers by comments, by reviewed CLs and by review
-characters, with the same scope as `org_weekly`. Each reviewer's org is the
-one on most of their reviewed CLs that week.
+`gmail.com` is folded into `Other`. `summaries/reviewer_weekly.json` holds
+every reviewer's comments, reviewed CLs and review characters per week, with
+the same scope as `org_weekly`: one row per (week, account, org), with orgs
+resolved per review as in `org_weekly` but before the `gmail.com` fold. Summed
+per (week, folded org), the rows reproduce `org_weekly`'s `reviewers`,
+`comments` and `review_chars` exactly, so the web UI can count distinct
+reviewers and rank reviewers over any range of weeks. (An org's
+`reviewed_cls` can't be rebuilt from it, since two reviewers can share a CL;
+the UI sums that from `org_weekly`, which is exact because each CL closes in
+one week.) The format is compact: names once per account, orgs once, and
+rows of `[account_id, org index, comments, cls, chars]`.
 
 ## W44 results (first look)
 

@@ -7,7 +7,8 @@ It reads only committed, public files, which Vite emits as hashed assets at
 build time:
 
 - `summaries/org_weekly.json` and `summaries/weekly_totals.csv`
-- `summaries/reviewer_weekly.json` (the leaderboard)
+- `summaries/reviewer_weekly.json` (every reviewer's weekly counts: the
+  leaderboard and distinct reviewer counts)
 - `data/public/radar_browser_share.csv`
 - `config/org_browsers.csv`
 
@@ -30,11 +31,11 @@ Over a range:
 - Review share = the org's summed count ÷ everyone's summed count.
 - Usage share = the mean of the org's weekly usage shares, over the range's
   review weeks that have Radar data. Ratio = review share ÷ usage share.
-- Reviewers can't be summed (the same people review every week), so the table
-  and tiles show the mean weekly count.
-- Leaderboard totals sum `reviewer_weekly.json`, which holds only each week's
-  top reviewers, so a reviewer's total misses weeks they weren't in that
-  week's top 50: a lower bound, loosest near the bottom of the board.
+- Reviewers are distinct people over the range, counted from
+  `reviewer_weekly.json` (every reviewer, per week and org); a reviewer who
+  reviewed for two orgs counts once in each org's row.
+- Leaderboard totals are exact sums from the same file. A reviewer's org is
+  the one most of their reviewed CLs in the range resolve to.
 
 ## Layout
 

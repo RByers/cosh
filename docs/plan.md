@@ -61,6 +61,7 @@ value_ratio(O, t) = O's share of Chromium review comments
 | 2026-11-03 | Per-person data derived from public data may be committed and published; replaces "per-person data stays local" | User's policy: all of it is already public on Gerrit |
 | 2026-11-03 | Drop the fold of orgs with fewer than 5 reviewers per week into `Other`; every org is reported (only `gmail.com` still folds) | User's instruction; the fold existed for privacy, which the policy change made moot |
 | 2026-11-03 | Reviewer leaderboard: `summaries/reviewer_weekly.json` (each week's top 50 per metric; names and orgs, no emails), shown on the public site | User asked for a top-50 reviewer view |
+| 2026-11-03 | Web UI: a date range (default: where review and usage data overlap) replaces the week selector and applies to every section; `reviewer_weekly.json` holds every reviewer per (week, org), not just each week's top 50, so range totals (leaderboard, distinct reviewers per org) are exact | User found the week selector confusing and asked for accurate range totals within a few MB compressed (a year is about 1.2 MB, 0.35 MB gzipped) |
 | 2026-11-03 | Keep every downloaded byte losslessly (`raw.sqlite` bodies, full NoteDb meta-ref history); reduce only in derived data | User's intention: allow richer analysis later and an informed review of the fetching, without re-fetching. Costs about 3 GB/year (`storage-design.md` §3.8) |
 | 2026-11-03 | Fetch comments via NoteDb `git fetch` in batches of 200, not REST `/comments` | Matches REST exactly on 856 of 856 CLs, with about 200 times fewer requests |
 | 2026-11-03 | Defer the OWNER bit; plan to compute it from OWNERS files at the merge parent | The code-owners API uses the current OWNERS files, not those at review time |
@@ -88,8 +89,11 @@ value_ratio(O, t) = O's share of Chromium review comments
   comments, a per-org table, and a metric selector (comments, CLs,
   characters). The summary/Radar join runs client-side. Not yet deployed:
   the repo has no GitHub remote, so `.github/workflows/pages.yml` is untested.
-- Reviewer leaderboard in the web UI: the top 50 reviewers for the selected
-  week and metric. `summarize` writes it to `summaries/reviewer_weekly.json`.
+- Reviewer leaderboard in the web UI: the top 50 reviewers over the selected
+  date range for the metric. `summarize` writes every reviewer's weekly counts
+  to `summaries/reviewer_weekly.json`; the UI totals any range from it.
+- Web UI date range: From/To dates (whole ISO weeks) plus presets, applied to
+  every chart, the tiles and the table (see `web/README.md`).
 
 **Next steps, in order**
 1. Have the user validate the UI (`cd web && npm run dev`).

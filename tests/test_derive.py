@@ -156,28 +156,34 @@ class SummarizeTest(unittest.TestCase):
             out = os.path.join(d, "summaries")
             rows = summarize(data_dir=d, out_dir=out)
             with open(os.path.join(out, "reviewer_weekly.json")) as fh:
-                board = json.load(fh)["weeks"]["2026-W44"]
-        self.assertEqual([(r["org"], r["comments"], r["ai_comments"], r["post_merge_comments"])
-                          for r in rows], [("igalia.com", 6, 1, 3)])
-        # Leaderboard (valid JSON despite the hand-rolled layout), AI/post-merge excluded;
+                data = json.load(fh)
+        self.assertEqual([(r["org"], r["comments"], r["ai_comments"], r["post_merge_comments"],
+                           r["reviewers"]) for r in rows], [("igalia.com", 6, 1, 3, 5)])
+        # Every reviewer (valid JSON despite the hand-rolled layout), AI/post-merge excluded;
         # account 3 (post-merge only) still reviewed the CL so counts for CLs.
-        self.assertEqual([(r["account_id"], r["name"], r["org"], r["comments"], r["cls"], r["chars"])
-                          for r in board],
-                         [(2, "r2", "igalia.com", 3, 1, 30), (4, "r4", "igalia.com", 1, 1, 10),
-                          (5, "r5", "igalia.com", 1, 1, 10), (6, "r6", "igalia.com", 1, 1, 10),
-                          (3, "r3", "igalia.com", 0, 1, 0)])
+        self.assertEqual(data["meta"]["columns"], ["account_id", "org", "comments", "cls", "chars"])
+        self.assertEqual(data["orgs"], ["igalia.com"])
+        self.assertEqual(data["accounts"], {str(a): f"r{a}" for a in range(2, 7)})
+        self.assertEqual(data["weeks"]["2026-W44"],
+                         [[2, 0, 3, 1, 30], [4, 0, 1, 1, 10], [5, 0, 1, 1, 10], [6, 0, 1, 1, 10],
+                          [3, 0, 0, 1, 0]])
 
-    def test_leaderboard_keeps_top_n_per_metric(self):
-        from cosh.summarize import reviewer_leaderboard
+    def test_reviewer_weeks_keeps_everyone_split_by_org(self):
+        from cosh.summarize import reviewer_weeks
         # (week, closed, cl, email, aid, comments, chars, ai, post_merge, name)
         rows = [("W", "2026-10-27", 1, "a@x.com", 1, 10, 1, 0, 0, "A"),
                 ("W", "2026-10-27", 1, "b@x.com", 2, 1, 900, 0, 0, None),
                 ("W", "2026-10-27", 2, "c@x.com", 3, 5, 5, 0, 0, "C"),
-                ("W", "2026-10-27", 3, "c@x.com", 3, 0, 0, 0, 0, "C")]
-        board = reviewer_leaderboard(rows, lambda email, when: email.split("@")[1], n=1)["W"]
-        # Top 1 by comments (A), by chars (b), by CLs (C, 2 CLs).
-        self.assertEqual([(r["name"], r["comments"], r["cls"], r["chars"]) for r in board],
-                         [("A", 10, 1, 1), ("C", 5, 2, 5), ("b", 1, 1, 900)])
+                ("W", "2026-10-27", 3, "c@x.com", 3, 0, 0, 0, 0, "C"),
+                ("W", "2026-10-28", 4, "c@y.com", 3, 2, 2, 0, 0, "C"),
+                ("V", "2026-10-20", 5, "a@x.com", 1, 1, 1, 0, 0, "A")]
+        names, weeks = reviewer_weeks(rows, lambda email, when: email.split("@")[1])
+        self.assertEqual(names, {1: "A", 2: "b", 3: "C"})
+        self.assertEqual(list(weeks), ["V", "W"])
+        # Nobody is dropped; C's reviews under y.com get their own row.
+        self.assertEqual([(r["account_id"], r["org"], r["comments"], r["cls"], r["chars"]) for r in weeks["W"]],
+                         [(1, "x.com", 10, 1, 1), (3, "x.com", 5, 2, 5), (3, "y.com", 2, 1, 2),
+                          (2, "x.com", 1, 1, 900)])
 
     def test_gmail_folded_into_other(self):
         with tempfile.TemporaryDirectory() as d:
