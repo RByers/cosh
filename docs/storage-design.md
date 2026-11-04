@@ -16,7 +16,7 @@ only touches the API where it affects storage.
   - **Whatever we download is retained, losslessly and permanently** (§3.8),
     so it never has to be fetched twice. Reduction to counts and lengths
     happens only in derived data.
-  - `data/private/derived.sqlite` (originally `cosh.sqlite`; see §3.3):
+  - `data/private/derived.sqlite` (§3.3):
     derived tables (`changes`, `comments`, `accounts`, `meta`) that can
     be rebuilt from `raw.sqlite` and NoteDb at any time.
   - `summaries/*.csv` + `summaries/*.json`: per-org per-week and per-month
@@ -68,7 +68,7 @@ Derived volume:
 | `reviews` as Parquet (dictionary-encoded emails, zstd) | 3M | — | ~15–25 MB |
 | `changes` as CSV/SQLite (~110 B without subject, ~170 B with subject) | 1.5M | 160–250 MB | ~50–70 MB gzip |
 | `accounts` | ~30–50k | ~3 MB | <1 MB |
-| **`cosh.sqlite` total** (incl. indexes) | | **~350–500 MB** | ~120 MB gzip |
+| **Derived DB total** (incl. indexes) | | **~350–500 MB** | ~120 MB gzip |
 | **`raw.sqlite` cache** (change detail with messages, labels, and detailed accounts at about 20–40 KB JSON, plus `/comments` for the ~47% of CLs that have comments, compressed about 6:1 with zlib) | ~2.3M blobs | ~45–60 GB as JSON | **~6–10 GB on disk** |
 | Front-end summaries (see §3.7) | ~10k | ~1 MB | ~150 KB gzip |
 
@@ -104,7 +104,7 @@ the level of individual CLs, not just weeks.
   aggregates.
 - Keep raw and derived storage in **separate files**:
   - The 6–10 GB raw cache is precious, expensive to rebuild, and backed up rarely.
-  - `cosh.sqlite` is disposable and gets dropped and rebuilt whenever the metric
+  - `derived.sqlite` is disposable and gets dropped and rebuilt whenever the metric
     definitions change.
   - With separate files, `VACUUM` and schema migrations on the derived DB never touch
     the cache.
@@ -137,7 +137,7 @@ cosh/
       radar_browser_share.csv  # committed: Cloudflare Radar input, public data
     private/                 # .gitignored (size and rebuildability, not privacy; §4)
       raw.sqlite             # Gerrit response cache (source of truth)
-      cosh.sqlite            # derived tables, rebuildable
+      derived.sqlite         # derived tables, rebuildable
       account_orgs.csv       # per-person org overrides (manual guesses; §4)
       archive/*.jsonl.gz     # optional frozen weekly exports of raw
   summaries/                 # committed: what the front end fetches
@@ -174,109 +174,42 @@ How the cache behaves:
 - To re-fetch on purpose (for example, to pick up post-merge comments), pass a
   `--refresh-older-than` flag that compares against `fetched_at`.
 
-### 3.3 `cosh.sqlite`: derived tables
+### 3.3 `derived.sqlite`: derived tables
 
-> **Superseded (2026-11-03, metric_version 3; simplified in metric_version 4,
-> 2026-11-04).** The derived DB is now `data/private/derived.sqlite`, keyed by
-> *when review happened*. It has one `comments` row per comment, with its own
-> ISO week and file path, and `changes` has one row per CL (open CLs
-> included, with the CL's anchor file). Votes aren't derived any more (the
-> raw stores still hold them). The schema lives
-> in `cosh/store.py` (`DERIVED_SCHEMA`), and the definitions are in
-> `extraction-v1.md`. The original design below is kept for its reasoning
-> (keying on `account_id`, idempotency, bots).
+The schema lives in `cosh/store.py` (`DERIVED_SCHEMA`), and the metric
+definitions are in `extraction-v1.md`. Since metric_version 5 (2026-11-04)
+it holds:
 
-```sql
-CREATE TABLE meta (k TEXT PRIMARY KEY, v TEXT) STRICT;   -- schema_version, derived_at, metric_version
+- `changes`: one row per CL, from its newest listing (open CLs included),
+  with the CL's anchor file for placing patchset-level comments
+  (`cosh/paths.py`).
+- `comments`: one row per published comment by a non-owner on a human-owned
+  CL, with the ISO week it was written and its file path, but not its text.
+- `accounts`: id, email, name and a bot flag.
+- `meta`: `metric_version`, `derived_at`, the fetched weeks and the open-CL
+  snapshot time.
 
-CREATE TABLE changes (
-  host            TEXT    NOT NULL,
-  change_number   INTEGER NOT NULL,      -- Gerrit _number
-  project         TEXT    NOT NULL,      -- 'chromium/src'
-  branch          TEXT    NOT NULL,      -- 'main', 'refs/branch-heads/8103'
-  change_id       TEXT,                  -- I… id
-  owner_account   INTEGER NOT NULL REFERENCES accounts(account_id),
-  created_at      TEXT    NOT NULL,      -- UTC ISO-8601
-  submitted_at    TEXT    NOT NULL,      -- UTC, the bucketing timestamp
-  iso_week        TEXT    NOT NULL,      -- '2026-W43', precomputed from submitted_at
-  files_changed   INTEGER,               -- NULL if not fetched (needs current revision files)
-  insertions      INTEGER,
-  deletions       INTEGER,
-  patchsets       INTEGER,
-  total_comment_count INTEGER,
-  is_bot_owned    INTEGER NOT NULL DEFAULT 0,   -- owner matched bots.csv
-  subject         TEXT,                  -- optional; useful for filtering rolls/reverts
-  PRIMARY KEY (host, change_number)
-) STRICT;
-CREATE INDEX changes_week ON changes(iso_week);
-CREATE INDEX changes_submitted ON changes(submitted_at);
+Votes aren't derived (the raw stores still hold them). `open_derived` refuses
+a file from before metric_version 5. The first design (`cosh.sqlite`: one
+`reviews` row per CL and reviewer, counted in the week the CL closed;
+metric_versions 1-2) and metric_versions 3-4 (`comments` plus `votes`) are
+recorded in the decisions log in `plan.md`; their files were deleted on
+2026-11-04.
 
-CREATE TABLE accounts (
-  host        TEXT    NOT NULL,
-  account_id  INTEGER NOT NULL,          -- stable key; emails can change
-  email       TEXT,                      -- may be NULL if not visible anonymously
-  name        TEXT,
-  is_bot      INTEGER NOT NULL DEFAULT 0,
-  PRIMARY KEY (host, account_id)
-) STRICT;
-CREATE INDEX accounts_email ON accounts(email);
+Design notes that still hold:
+- **Key on `account_id`, not email.** Account ids are stable and small, and
+  emails live in `accounts`.
+- **The CL owner's comments are not review activity** and get no `comments`
+  rows. Bot accounts are kept but flagged, and are filtered at aggregation
+  time.
+- **Idempotency:** for each CL, `derive` upserts `changes`,
+  then `DELETE FROM comments WHERE host=? AND change_number=?`, then inserts
+  its comments, one transaction per listing window. Re-running any week, or rebuilding everything, produces
+  identical rows and never duplicates.
+- **Multiple hosts and repos** are covered by `host` + `project`, so adding
+  e.g. a v8 host needs no migration.
 
--- The core fact table: one row per (CL, reviewer).
-CREATE TABLE reviews (
-  host            TEXT    NOT NULL,
-  change_number   INTEGER NOT NULL,
-  account_id      INTEGER NOT NULL,
-  inline_comments INTEGER NOT NULL DEFAULT 0,   -- file/line comments authored
-  inline_chars    INTEGER NOT NULL DEFAULT 0,   -- sum(len(message)) of those
-  messages        INTEGER NOT NULL DEFAULT 0,   -- top-level change messages (minus auto-generated text)
-  message_chars   INTEGER NOT NULL DEFAULT 0,
-  voted_cr        INTEGER,                      -- final Code-Review vote, at close (NULL = none)
-  is_owner        INTEGER,                      -- 1/0/NULL = OWNER for >=1 file / not / unknown
-  owner_source    TEXT,                         -- NULL | 'code-owners-api' | 'owners-file@rev' ...
-  PRIMARY KEY (host, change_number, account_id),
-  FOREIGN KEY (host, change_number) REFERENCES changes(host, change_number)
-) STRICT, WITHOUT ROWID;
-CREATE INDEX reviews_account ON reviews(host, account_id);
-
-CREATE VIEW reviews_v AS     -- the user-facing "(CL, reviewer email)" shape
-SELECT r.change_number, a.email AS reviewer_email,
-       r.inline_comments + r.messages      AS review_comment_count,
-       r.inline_chars    + r.message_chars AS review_chars,
-       r.is_owner, c.submitted_at, c.iso_week, c.project
-FROM reviews r JOIN changes c USING (host, change_number)
-JOIN accounts a ON a.host = r.host AND a.account_id = r.account_id;
-```
-
-Design notes:
-- **Key on `account_id`, not email.** Account ids are stable and small. Emails
-  live in `accounts`, and `reviews_v` gives the requested email-keyed shape.
-- **Inline comments and change messages are stored in separate columns.** The
-  definition of "review comment" (inline only? include "LGTM, thanks!"?) can then
-  change in aggregation without re-deriving.
-  Strip Gerrit's auto-generated text such as `Patch Set 3: Code-Review+1` before
-  counting chars.
-- **Who gets a row:** every non-owner account that commented, posted a message, or
-  voted Code-Review on the CL.
-  - Rows for vote-only accounts (0 comments, `voted_cr` set) make it possible to
-    weight review *count* separately from review *verbosity*.
-  - The CL owner never gets a `reviews` row. Owner replies are not review activity.
-  - Bot accounts are kept but flagged, and are filtered at aggregation time.
-- **Post-merge comments:** decided (metric_version 2): they count, however
-  late, so a re-fetch of an old week can raise its numbers slightly
-  (`extraction-v1.md`, metric definitions).
-- **Idempotency:** derivation of a CL happens in one transaction:
-  `INSERT … ON CONFLICT DO UPDATE` into `changes`, then
-  `DELETE FROM reviews WHERE host=? AND change_number=?`, then insert the reviews.
-  Re-running any week, or rebuilding everything, produces identical rows and
-  never duplicates.
-- **`is_owner`** stays NULL until a separate pass fills it. It can be filled from the
-  code-owners plugin endpoint (if enabled on the host), or by evaluating OWNERS files
-  at the CL's base revision. `owner_source` records the method. That pass also caches
-  its responses in `raw.sqlite` (`kind='owners'`).
-- **Multiple hosts and repos** are covered by `host` + `project` from day one. No
-  migration is needed to add e.g. `chromium/tools/depot_tools` or a v8 host.
-
-### 3.4 Progress and resumability (in `cosh.sqlite`)
+### 3.4 Progress and resumability (in `raw.sqlite`)
 
 ```sql
 CREATE TABLE extract_runs (
@@ -313,10 +246,8 @@ How a backfill resumes:
   2. Fetch each listed CL that `raw.sqlite` doesn't have yet.
   3. Derive the week.
 - Killing the process at any point loses at most one in-flight request.
-- Put `week_progress` in `cosh.sqlite` but make it reconstructible from
-  `raw.sqlite`. Alternatively, put it in `raw.sqlite` if `cosh.sqlite` should be
-  freely deletable. Recommendation: **put these three tables in `raw.sqlite`**, so
-  `rm cosh.sqlite && cosh derive --all` is always safe.
+- These tables live in `raw.sqlite`, so the derived DB is freely deletable:
+  `rm data/private/derived.sqlite && python3 -m cosh derive` is always safe.
 
 ### 3.5 Org mapping
 
@@ -352,9 +283,9 @@ Resolution order:
 3. Otherwise `Other`.
 
 `valid_from`/`valid_to` handle people who change employer but keep their
-chromium.org address. In `cosh.sqlite`, both files are loaded into an
-`org_map` table at derive time. Nothing from them is stored per row, so
-remapping only requires re-running aggregation.
+chromium.org address. `summarize` reads both files (`cosh/orgs.py`). Nothing
+from them is stored in `derived.sqlite`, so remapping only requires re-running
+`summarize`.
 
 `config/org_browsers.csv` maps orgs to Radar browsers:
 
@@ -454,7 +385,7 @@ What this means in practice:
 - Code only ever *reads* the raw stores to reduce them. `read_comments()` and
   `derive` drop fields (`unresolved`, ranges, `parentUuid`,
   `submitRequirementResults`, change messages, votes) in memory, and
-  `cosh.sqlite` holds counts and lengths. Nothing ever strips or rewrites the
+  `derived.sqlite` holds one row per comment, without its text. Nothing ever strips or rewrites the
   raw stores.
 - Never delete `raw.sqlite` or `notedb/`. Never run `gc --prune=now` or `prune`
   in a NoteDb repo. Auto-gc and maintenance are disabled there. `repack -a -d`
@@ -524,7 +455,7 @@ What to commit and what to keep local:
   - `summaries/*`, per-org and per-reviewer alike
 - **Keep out of git:** `data/private/`. The reason is size and churn, not
   privacy: `raw.sqlite` and the NoteDb repos are several GB per year, and
-  `cosh.sqlite` can be rebuilt.
+  `derived.sqlite` can be rebuilt.
 - No minimum group size: `org_weekly` reports every org, however few
   reviewers it has. (An earlier rule folded orgs with fewer than 5 reviewers
   into `Other` for privacy; it was dropped with the policy change.)

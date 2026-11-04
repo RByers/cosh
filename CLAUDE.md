@@ -59,8 +59,9 @@ implementation and metric definitions.
   removing it yourself triggers a permission prompt.
 - `data/private/derived.sqlite` can always be rebuilt with
   `rm data/private/derived.sqlite && python3 -m cosh derive` (about 3.5 min
-  for 332k CLs). `data/private/cosh.sqlite` is the old CL-keyed DB
-  (metric_versions 1–2). Nothing reads it any more, and it can be deleted.
+  for 332k CLs). It is the only derived DB: older versions (`cosh.sqlite`,
+  metric_versions 1–2; `derived.sqlite` before metric_version 5) were
+  deleted on 2026-11-04, and `open_derived` refuses a pre-v5 file.
 - Never delete `data/private/raw.sqlite` or `data/private/notedb/`. Those
   hold the fetched data, and re-fetching costs server load.
 - **Keep whatever we download; download only what we need.** Anything we

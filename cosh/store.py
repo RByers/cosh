@@ -75,7 +75,7 @@ CREATE TABLE IF NOT EXISTS open_changes (
 ) STRICT, WITHOUT ROWID;
 """
 
-DERIVED_FILE = "derived.sqlite"   # replaces the CL-keyed cosh.sqlite (metric_versions 1-2)
+DERIVED_FILE = "derived.sqlite"
 
 # Review activity is keyed by *when it happened*, not by when the CL closed.
 # Rebuildable: `rm data/private/derived.sqlite && python3 -m cosh derive`.

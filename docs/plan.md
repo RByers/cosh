@@ -142,7 +142,6 @@ value_ratio(O, t) = O's share of Chromium review comments
    - check the UI across the full year.
    - Re-run `extract-open` before each later summary refresh, so recent
      weeks stay complete.
-   - Delete the obsolete `data/private/cosh.sqlite`.
    - Consider telling Chromium infra (infra-dev@chromium.org) before any
      further backfill.
    - Try `--batch-size 500` on a later run to see whether the per-CL cost

@@ -51,8 +51,7 @@ Cloudflare Radar    ─► data/public/radar/raw/ ──── radar ──► d
     window (`notedb.read_comments_many`). Starting git costs 2.5–10 ms per
     process in a repo of hundreds of packs, so the earlier two processes per
     CL took most of the run time: a full rebuild of 332k CLs fell from about
-    20 min to 3.5 min (2026-11-04). The older `cosh.sqlite` (metric_version 1, one row per CL and
-    reviewer) is obsolete.
+    20 min to 3.5 min (2026-11-04).
 - `data/public/`, `summaries/`, `config/`, code and docs are committed.
 
 ## What we fetch from Gerrit, and how gently
