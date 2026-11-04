@@ -88,3 +88,7 @@ Design documents are in [`docs/`](docs/). Start with
   share: API, auth, Chromium classification, licensing, and joining with the review data.
 - [`docs/storage-design.md`](docs/storage-design.md): schema, size estimates,
   and storage format.
+
+## License
+
+BSD 3-Clause; see [`LICENSE`](LICENSE).

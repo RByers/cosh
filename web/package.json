@@ -1,6 +1,7 @@
 {
   "name": "cosh-web",
   "private": true,
+  "license": "BSD-3-Clause",
   "type": "module",
   "description": "cosh static web UI (GitHub Pages)",
   "scripts": {
