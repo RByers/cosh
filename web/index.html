@@ -73,9 +73,19 @@
       <section class="card" aria-labelledby="review-title">
         <h2 id="review-title">Review by organization</h2>
         <p id="review-sub" class="sub"></p>
-        <fieldset id="review-scale" class="segmented chart-toggle">
-          <legend>Scale</legend>
-        </fieldset>
+        <div class="toggles">
+          <fieldset id="review-scale" class="segmented chart-toggle">
+            <legend>Scale</legend>
+          </fieldset>
+          <div class="dir-filter chart-toggle">
+            <label for="review-dir">Directory</label>
+            <input id="review-dir" type="text" list="dir-options" placeholder="All, on the selected paths"
+              autocomplete="off" spellcheck="false" aria-describedby="review-dir-status" />
+            <button type="button" id="review-dir-clear" hidden>Clear</button>
+            <span id="review-dir-status" class="dir-status" aria-live="polite"></span>
+            <datalist id="dir-options"></datalist>
+          </div>
+        </div>
         <div class="chart">
           <canvas id="review-chart" role="img" aria-label="Weekly review count per organization over the selected date range; the table below lists the totals."></canvas>
         </div>
@@ -229,6 +239,25 @@
             measure of real investment. Leaving these comments out barely changes any organization's share.
           </p>
         </div>
+      </section>
+
+      <section id="heatmap" class="card" aria-labelledby="heat-title">
+        <h2 id="heat-title">Review by directory over time</h2>
+        <p id="heat-sub" class="sub"></p>
+        <div class="toggles">
+          <div class="select-toggle chart-toggle">
+            <label for="heat-org">Organization</label>
+            <select id="heat-org"></select>
+          </div>
+          <fieldset id="heat-bin" class="segmented chart-toggle">
+            <legend>Columns</legend>
+          </fieldset>
+          <fieldset id="heat-value" class="segmented chart-toggle">
+            <legend>Show</legend>
+          </fieldset>
+        </div>
+        <ul id="heat-legend" class="legend" aria-label="Cell colours"></ul>
+        <div id="heat-chart" class="hm-wrap" role="region" tabindex="0" aria-labelledby="heat-title"></div>
       </section>
 
       <section id="leaderboard" class="card" aria-labelledby="leaderboard-title">

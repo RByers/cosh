@@ -846,3 +846,291 @@ a.ar-seg:focus-visible {
     height: 340px;
   }
 }
+
+/* Text for screen readers only. */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* A labelled text field or select beside the segmented toggles: the label
+ * sits above, like a fieldset's legend. */
+.dir-filter,
+.select-toggle {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-rows: auto auto auto;
+  align-items: center;
+  column-gap: 6px;
+  min-width: min(100%, 18rem);
+}
+
+.dir-filter {
+  flex: 1 1 22rem;
+  max-width: 34rem;
+}
+
+.dir-filter label,
+.select-toggle label {
+  grid-column: 1 / -1;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  margin-bottom: 4px;
+}
+
+.dir-filter input,
+.dir-filter button,
+.select-toggle select {
+  font: inherit;
+  font-size: 0.9rem;
+  color: var(--text-primary);
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 5px 8px;
+  min-width: 0;
+}
+
+.dir-filter input {
+  font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+  font-size: 0.85rem;
+}
+
+.select-toggle select {
+  grid-column: 1 / -1;
+  color-scheme: light dark;
+}
+
+.dir-filter button {
+  cursor: pointer;
+}
+
+.dir-filter input:focus-visible,
+.dir-filter button:focus-visible,
+.select-toggle select:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.dir-status {
+  grid-column: 1 / -1;
+  font-size: 0.8rem;
+  color: var(--critical);
+}
+
+.dir-status:empty {
+  display: none;
+}
+
+/* ---- Review by directory over time ---- */
+
+/* The scrolling region: focusable (tabindex) so keyboard users can scroll it. */
+.hm-wrap {
+  overflow-x: auto;
+  max-width: 100%;
+  font-size: 11.5px;
+  line-height: 16px;
+  container-type: inline-size;
+}
+
+.hm-wrap:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.hm {
+  --hm-label: 17rem;
+  table-layout: fixed;
+  border-collapse: separate;
+  border-spacing: 2px;
+  width: 100%;
+  /* At least 6px a bin; past that the region scrolls. */
+  min-width: calc(var(--hm-label) + var(--hm-bins) * 8px);
+}
+
+@container (width < 560px) {
+  .hm {
+    --hm-label: 10rem;
+  }
+
+  .hm-minor,
+  .hm-year,
+  .hm-total {
+    display: none;
+  }
+}
+
+.hm th {
+  font-weight: normal;
+  text-align: left;
+}
+
+.hm-corner {
+  width: var(--hm-label);
+  color: var(--text-muted);
+}
+
+.hm-corner,
+.hm-label {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  background: var(--surface-1);
+}
+
+/* Month ticks overflow their narrow column to the right, like an axis. */
+.hm-bin {
+  position: relative;
+  height: 18px;
+  overflow: visible;
+  white-space: nowrap;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.hm-tick {
+  position: absolute;
+  left: 0;
+  bottom: 2px;
+  padding-left: 3px;
+  border-left: 1px solid var(--baseline);
+}
+
+.hm-label {
+  padding: 0;
+  color: var(--text-secondary);
+}
+
+/* The row header's contents; the <th> itself stays a table cell. */
+.hm-lab {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  height: 22px;
+  padding-left: calc(var(--depth, 0) * 12px);
+  padding-right: 4px;
+  white-space: nowrap;
+}
+
+.hm-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+  font-size: 11px;
+}
+
+.hm-rest .hm-name,
+.hm-other .hm-name {
+  font-family: inherit;
+  font-style: italic;
+  color: var(--text-muted);
+}
+
+.hm-total {
+  margin-left: auto;
+  padding-left: 4px;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* "chart": shows the directory in the organization chart. Quiet until the
+ * row is hovered or focused; always shown where there's no hover. */
+.hm-chart {
+  flex: none;
+  margin: 0;
+  padding: 0 4px;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  background: none;
+  color: var(--text-muted);
+  font: inherit;
+  font-size: 10px;
+  line-height: 14px;
+  cursor: pointer;
+  opacity: 0;
+}
+
+.hm-row:hover .hm-chart,
+.hm-chart:focus-visible {
+  opacity: 1;
+}
+
+@media (hover: none) {
+  .hm-chart {
+    opacity: 1;
+  }
+}
+
+.hm-chart:hover {
+  color: var(--text-primary);
+  border-color: var(--baseline);
+}
+
+.hm-chart:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 0;
+}
+
+.hm-row:hover .hm-label,
+.hm-row:hover {
+  background: color-mix(in srgb, var(--grid) 60%, var(--surface-1));
+}
+
+.hm-cell {
+  padding: 0;
+  height: 22px;
+}
+
+/* A cell: in mix mode a stacked column on the cell's baseline; in org mode
+ * shaded as a whole. */
+.hm-box {
+  display: flex;
+  align-items: flex-end;
+  height: 22px;
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--grid) 35%, transparent);
+  overflow: hidden;
+}
+
+.hm-zero {
+  background: color-mix(in srgb, var(--grid) 35%, transparent);
+}
+
+a.hm-box:hover,
+a.hm-box:focus-visible {
+  outline: 2px solid var(--text-primary);
+  outline-offset: 0;
+}
+
+.hm-col {
+  display: flex;
+  flex-direction: column-reverse;
+  width: 100%;
+  border-radius: 3px 3px 0 0;
+  overflow: hidden;
+}
+
+.hm-seg {
+  flex: 0 1 0;
+  min-height: 0;
+  background: var(--text-muted);
+}
+
+/* Single-org legend: the shading ramp with its two ends labelled. */
+.hm-ramp {
+  display: inline-block;
+  width: 120px;
+  height: 10px;
+  margin: 0 6px;
+  vertical-align: middle;
+  border-radius: 2px;
+  border: 1px solid var(--border);
+}

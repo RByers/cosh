@@ -11,7 +11,11 @@ build time:
   leaderboard and distinct reviewer counts)
 - `summaries/area_weekly.json` (every comment by directory and org, in scope
   or not, as a directory tree, plus the path rules: the "Review by directory"
-  section)
+  and "Review by directory over time" sections, and the organization chart
+  when it shows one directory)
+- `summaries/area_reviewers.json` (who wrote each directory bucket's comments:
+  the Gerrit links and "most active" lines of both directory sections; fetched
+  only when one of them nears the viewport)
 - `data/public/radar_browser_share.csv`
 - `config/org_browsers.csv`
 
@@ -59,7 +63,13 @@ Over a range:
 2. **Review by organization**: weekly review comments over the range
    (smoothed like the ratio), one line each for the top 7 orgs and then
    "Other". A toggle switches from the default log axis to a linear axis with
-   google.com left out entirely (the next-ranked org takes its slot).
+   google.com left out entirely (the next-ranked org takes its slot). The
+   Directory field limits the chart to one directory and everything below it
+   (`dirWeeklyCounts`): typed with or without the trailing slash, or picked
+   from the 3,000 busiest. It then counts every comment there from
+   `area_weekly.json`, in scope or not, and the subtitle says how much of it
+   the rest of the page leaves out. For reviewed CLs, a CL with comments in
+   two of its subdirectories counts in each.
 3. **Chromium browser usage** from Cloudflare Radar, per browser, over the range,
    with a marker and a note on the 2026-W37 ChromeDerivative jump.
 4. Totals for the range, plus a table with every value shown in the charts.
@@ -81,15 +91,32 @@ Over a range:
    not from google.com. For reviewed CLs, a CL with comments in two
    directories counts in each. A note lists the path rules (from the
    summary's metadata) and how comments are placed on files.
-6. **Reviewer leaderboard**: the top 25 (or 50, 100, 200) reviewers by review
+6. **Review by directory over time** (`src/heatmap.ts`, `heatGrid` in
+   `src/data.ts`): the same drill-down rows against time bins of 1, 4
+   (default) or 13 weeks, lined up with the range's end. The Organization
+   selector picks every org, every org but google.com, or one org (the 25
+   busiest in the range); rows are ranked by what it selects. With several
+   orgs each cell is a small stacked column of the org mix, its height the
+   cell's volume against the row's busiest bin ("Volume") or full height
+   ("Share"). With one org each cell is shaded in that org's colour by its
+   volume against the busiest cell, on a square-root scale, or by its share of
+   the directory's review. A cell's hover text gives the numbers and its three
+   most active reviewers; clicking it opens those reviewers' CLs in the
+   directory and weeks on Gerrit (`gerritDirUrl`). Each directory row's
+   "chart" button shows it in the organization chart. A table, so cells have
+   row and column headers; the directory column stays put while the bins
+   scroll sideways on narrow screens.
+7. **Reviewer leaderboard**: the top 25 (or 50, 100, 200) reviewers by review
    comments over the range, with or without google.com's reviewers, one
    compact bar each, coloured by org. Every org gets its own legend entry;
    orgs beyond the palette's 8 colours are named on their rows.
 
 The metric, range, smoothing and review-chart scale are kept in the URL hash
 (`#metric=cls&from=2026-W14&to=2026-W44&smooth=4`, plus `&rscale=linear` for
-the linear review chart, `&lbn=100` for a longer leaderboard and `&lbg=0` for
-one without google.com). Old `#week=2026-W44` links open that one week, and
+the linear review chart, `&lbn=100` for a longer leaderboard, `&lbg=0` for
+one without google.com, `&dir=<path>` for the organization chart's directory,
+and `&hm=<org>` (`*-google.com` for all but google.com), `&hmb=1|13` and
+`&hmv=share` for the heatmap). Old `#week=2026-W44` links open that one week, and
 an old `dirs=` parameter is ignored.
 
 ## Commands

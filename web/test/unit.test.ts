@@ -41,6 +41,12 @@ import {
   gerritDirUrl,
   dirReviewerIndex,
   dirRowLink,
+  dirNodeByPath,
+  dirWeeklyCounts,
+  heatBins,
+  heatGrid,
+  rowReviewers,
+  topAccounts,
   type DirReviewers,
   MAX_LINK_REVIEWERS,
   niceTicks,
@@ -600,4 +606,96 @@ test('scope list in index.html matches config/paths.txt', () => {
     assert.deepEqual(pick(false), sorted(config.excluded), f);
     assert.deepEqual(pick(true), sorted(config.included), f);
   }
+});
+
+test('dirNodeByPath finds a directory with or without its trailing slash', () => {
+  assert.equal(dirNodeByPath(DIRS, 'chrome/browser/'), 2);
+  assert.equal(dirNodeByPath(DIRS, 'chrome/browser'), 2);
+  assert.equal(dirNodeByPath(DIRS, ' content/renderer/ '), 6);
+  assert.equal(dirNodeByPath(DIRS, '(no file)'), 0);
+  assert.equal(dirNodeByPath(DIRS, 'chrome/brow'), null);
+  assert.equal(dirNodeByPath(DIRS, ''), null);
+});
+
+test('dirWeeklyCounts: a series per top org in one subtree, the rest as Other', () => {
+  // chrome/ holds chrome/browser/, its ui/ and the re-included webnn/: every comment counts.
+  assert.deepEqual(dirWeeklyCounts(DIRS, 1, W, 'comments'), [
+    { org: 'google.com', values: [20, 20] },
+    { org: 'microsoft.com', values: [0, 4] },
+  ]);
+  assert.deepEqual(dirWeeklyCounts(DIRS, 1, W, 'comments', 1).map((s) => s.org), ['google.com', OTHER]);
+  // Leaving google.com out drops it entirely: no Other made of it.
+  assert.deepEqual(dirWeeklyCounts(DIRS, 1, W, 'comments', 7, 1, ['google.com']),
+    [{ org: 'microsoft.com', values: [0, 4] }]);
+  assert.deepEqual(dirWeeklyCounts(DIRS, 4, ['2026-W44'], 'chars'), [
+    { org: 'google.com', values: [110] },
+    { org: 'microsoft.com', values: [40] },
+  ]);
+  // Smoothing averages the weeks before the range too.
+  assert.deepEqual(dirWeeklyCounts(DIRS, 1, ['2026-W44'], 'comments', 7, 2).map((s) => s.values), [[20], [2]]);
+  // An org with nothing in the range isn't named, though it has data elsewhere.
+  assert.deepEqual(dirWeeklyCounts(DIRS, 1, ['2026-W43'], 'comments').map((s) => s.org), ['google.com']);
+});
+
+test('heatBins line up with the range end; only the first may be short', () => {
+  assert.deepEqual(heatBins({ from: '2026-W30', to: '2026-W44' }, 4), [
+    { from: '2026-W30', to: '2026-W32' },
+    { from: '2026-W33', to: '2026-W36' },
+    { from: '2026-W37', to: '2026-W40' },
+    { from: '2026-W41', to: '2026-W44' },
+  ]);
+  assert.deepEqual(heatBins({ from: '2026-W43', to: '2026-W44' }, 1),
+    [{ from: '2026-W43', to: '2026-W43' }, { from: '2026-W44', to: '2026-W44' }]);
+  assert.deepEqual(heatBins({ from: '2025-W51', to: '2026-W02' }, 2),
+    [{ from: '2025-W51', to: '2025-W52' }, { from: '2026-W01', to: '2026-W02' }]);
+  assert.deepEqual(heatBins({ from: '2026-W44', to: '2026-W44' }, 13), [{ from: '2026-W44', to: '2026-W44' }]);
+});
+
+test('dirTotals can count only some orgs', () => {
+  const t = dirTotals(DIRS, W, ['google.com'], 'comments', (o) => o === 'microsoft.com');
+  assert.deepEqual([t.total[1], t.total[4], t.total[0]], [4, 4, 0]);
+  assert.deepEqual(Object.fromEntries(t.byOrg[4]!), { [OTHER]: 4 });
+});
+
+test('heatGrid: directory rows against time bins, "N more" rows summing their entries', () => {
+  const orgs = ['google.com', 'microsoft.com'];
+  const range = { from: '2026-W43', to: '2026-W44' };
+  const g = heatGrid(DIRS, range, 1, 'comments', orgs, new Set(), { page: 2 });
+  assert.deepEqual(g.binWeeks, [['2026-W43'], ['2026-W44']]);
+  assert.deepEqual(g.rows.map((r) => r.label), ['chrome/', 'content/', '1 more']);
+  assert.deepEqual(g.cells.map((row) => row.map((c) => c.value)), [[20, 24], [0, 15], [0, 5]]);
+  assert.deepEqual(Object.fromEntries(g.cells[0][1].byOrg), { 'google.com': 20, 'microsoft.com': 4 });
+  // A "rest of" row is its directory's own bucket.
+  const open = heatGrid(DIRS, range, 1, 'comments', orgs, new Set(['d1', 'd2']));
+  const rest = open.rows.findIndex((r) => r.key === 'r2');
+  assert.deepEqual(open.cells[rest].map((c) => c.value), [0, 10]);
+  // Ranked by one org, counted for all: only directories that org reviewed, ties by path.
+  const ms = heatGrid(DIRS, range, 2, 'comments', ['microsoft.com'], new Set(), {
+    rankOnly: (o) => o === 'microsoft.com',
+  });
+  assert.deepEqual(ms.rows.map((r) => [r.label, r.value]), [['chrome/', 4], ['content/', 4]]);
+  assert.deepEqual(ms.cells.map((row) => row.map((c) => [c.value, c.byOrg.get('microsoft.com') ?? 0])),
+    [[[44, 4]], [[15, 4]]]);
+  // Counting only some orgs leaves the rest out of the cells too.
+  const noG = heatGrid(DIRS, range, 2, 'comments', ['microsoft.com'], new Set(), { only: (o) => o !== 'google.com' });
+  assert.deepEqual(noG.cells.map((row) => row[0].value), [4, 4]);
+});
+
+test('rowReviewers merges the kept segments; topAccounts ranks them', () => {
+  const who: DirReviewers = {
+    meta: { areas_generated_at: 'T' },
+    weeks: { '2026-W44': [[3, 0, 7, 6, 9, 4], [2, 0, 8, 10], [7, 1, 7, 2, 11, 4]] },
+  };
+  const board: DirBoard = { ...DIRS, meta: { ...DIRS.meta, generated_at: 'T' } };
+  const idx = dirReviewerIndex(board, who, W, ['google.com', 'microsoft.com'])!;
+  const rows = dirRows(board, dirTotals(board, W, [], 'comments'), new Set(['d1']), 1);
+  const chrome = rows.find((r) => r.key === 'd1')!;
+  const all = rowReviewers(idx, chrome)!;
+  // Account 7 reviewed for both orgs here; it's listed under the one with more of its comments.
+  assert.deepEqual(Object.fromEntries(all.comments), { 7: 8, 8: 10, 9: 4, 11: 4 });
+  assert.equal(all.org.get(7), 'google.com');
+  assert.deepEqual(topAccounts(all.comments, 2), [[8, 10], [7, 8]]);
+  const ms = rowReviewers(idx, chrome, (o) => o === 'microsoft.com')!;
+  assert.deepEqual(Object.fromEntries(ms.comments), { 7: 2, 11: 4 });
+  assert.equal(rowReviewers(idx, rows.find((r) => r.kind === 'other')!), undefined);
 });

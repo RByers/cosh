@@ -319,20 +319,23 @@ export function orgWeeklyCounts(
     m.set(r.iso_week, (m.get(r.iso_week) ?? 0) + Number(r[col]));
   }
   const known = new Set([...summary.meta.weeks, ...summary.rows.map((r) => r.iso_week)]);
-  const window = Math.max(1, smoothing);
-  const valueAt = (counts: Map<string, number> | undefined, week: string) => {
-    let sum = 0;
-    let k = 0;
-    for (let i = 0; i < window; i++) {
-      const w = addWeeks(week, -i);
-      if (!known.has(w)) continue;
-      sum += counts?.get(w) ?? 0;
-      k++;
-    }
-    return k ? sum / k : 0;
-  };
   const orgs = [...named, ...(hasOther ? [OTHER] : [])];
-  return orgs.map((org) => ({ org, values: weeks.map((w) => valueAt(raw.get(org), w)) }));
+  return orgs.map((org) => ({ org, values: weeks.map((w) => trailingMean(raw.get(org), w, smoothing, known)) }));
+}
+
+/** The mean of `counts` over the `window` weeks ending with `week`, skipping
+ * weeks without data (not in `known`); a missing count in a known week is 0. */
+function trailingMean(counts: Map<string, number> | undefined, week: string, window: number,
+  known: ReadonlySet<string>): number {
+  let sum = 0;
+  let k = 0;
+  for (let i = 0; i < Math.max(1, window); i++) {
+    const w = addWeeks(week, -i);
+    if (!known.has(w)) continue;
+    sum += counts?.get(w) ?? 0;
+    k++;
+  }
+  return k ? sum / k : 0;
 }
 
 /** Browsers the usage chart always plots: Meta's in-app browsers are small
@@ -809,8 +812,15 @@ const addTo = (maps: (Map<string, number> | undefined)[], i: number, org: string
 };
 
 /** Sum the metric over the given weeks into every node's subtree. Orgs outside
- * `orgs` count as OTHER. */
-export function dirTotals(board: DirBoard, weeks: string[], orgs: readonly string[], metric: Metric): DirTotals {
+ * `orgs` count as OTHER. `only`, if given, keeps just the orgs it accepts
+ * (others aren't counted at all). */
+export function dirTotals(
+  board: DirBoard,
+  weeks: string[],
+  orgs: readonly string[],
+  metric: Metric,
+  only?: (org: string) => boolean,
+): DirTotals {
   const col = METRIC_INDEX[metric];
   const keep = new Set(orgs);
   const n = board.nodes.length;
@@ -821,7 +831,7 @@ export function dirTotals(board: DirBoard, weeks: string[], orgs: readonly strin
   for (const w of weeks) {
     for (const row of board.weeks[w] ?? []) {
       const v = row[col];
-      if (!v) continue;
+      if (!v || (only && !only(board.orgs[row[1]]))) continue;
       const org = keep.has(board.orgs[row[1]]) ? board.orgs[row[1]] : OTHER;
       t.own[row[0]] += v;
       addTo(t.ownByOrg, row[0], org, v);
@@ -877,8 +887,9 @@ export interface DirRow {
   byOrg: Map<string, number>;
   expandable: boolean;
   expanded: boolean;
-  /** For "other": how many entries it holds. */
+  /** For "other": how many entries it holds, and which. */
   count?: number;
+  members?: { kind: 'dir' | 'rest'; node: number }[];
 }
 
 interface Item {
@@ -951,6 +962,7 @@ export function dirRows(board: DirBoard, t: DirTotals, expanded: ReadonlySet<str
       key, kind: 'other', depth, label: `${tail.length} more`, title: `${tail.length} more, smaller entries`,
       included: value ? inc / value : 0,
       value, byOrg, expandable: true, expanded: open, count: tail.length,
+      members: tail.map((it) => ({ kind: it.kind, node: it.node })),
     });
     if (open) group(tail, depth + 1, key, offset + page);
   };
@@ -1070,4 +1082,199 @@ export function dirRowLink(
   if (row.node === undefined || row.kind === 'other') return null;
   const reviewers = (row.kind === 'dir' ? idx.total : idx.own)[row.node]?.get(org);
   return gerritDirUrl(dirTree(board).paths[row.node], reviewers, range, now);
+}
+
+// ---------------------------------------------------------------------------
+// One directory in the organization chart, and the directory heatmap. Both
+// read the DirBoard, so they count every comment in a directory, in scope or
+// not, like the directory chart.
+
+const pathIndex = new WeakMap<DirBoard, Map<string, number>>();
+
+/** The tree node for a directory path, with or without its trailing slash;
+ * null if the tree has no such node. */
+export function dirNodeByPath(board: DirBoard, path: string): number | null {
+  let m = pathIndex.get(board);
+  if (!m) {
+    m = new Map(dirTree(board).paths.map((p, i) => [p, i]));
+    pathIndex.set(board, m);
+  }
+  const p = path.trim();
+  if (!p) return null;
+  return m.get(p) ?? m.get(`${p}/`) ?? null;
+}
+
+/** Marks `node` and every node below it. */
+function subtree(board: DirBoard, node: number): Uint8Array {
+  const { children } = dirTree(board);
+  const mark = new Uint8Array(board.nodes.length);
+  const stack = [node];
+  while (stack.length) {
+    const i = stack.pop()!;
+    mark[i] = 1;
+    stack.push(...children[i]);
+  }
+  return mark;
+}
+
+/** Like orgWeeklyCounts, for one directory and everything below it: a series
+ * per org with the most of the metric there over `weeks` (the rest as
+ * OTHER), each a trailing mean over `smoothing` weeks. `exclude` leaves orgs
+ * out entirely. Reviewed CLs count (CL, directory) pairs, so a CL with
+ * comments in two subdirectories counts in each. */
+export function dirWeeklyCounts(
+  board: DirBoard,
+  node: number,
+  weeks: string[],
+  metric: Metric,
+  n = 7,
+  smoothing = 1,
+  exclude: readonly string[] = [],
+): { org: string; values: number[] }[] {
+  const col = METRIC_INDEX[metric];
+  const inside = subtree(board, node);
+  const skip = new Set(exclude);
+  const shown = new Set(weeks);
+  const raw = new Map<string, Map<string, number>>();
+  const sums = new Map<string, number>();
+  for (const [w, rows] of Object.entries(board.weeks)) {
+    for (const row of rows) {
+      const v = row[col];
+      const org = board.orgs[row[1]];
+      if (!v || !inside[row[0]] || skip.has(org)) continue;
+      let m = raw.get(org);
+      if (!m) raw.set(org, (m = new Map()));
+      m.set(w, (m.get(w) ?? 0) + v);
+      if (shown.has(w)) sums.set(org, (sums.get(org) ?? 0) + v);
+    }
+  }
+  const named = [...sums]
+    .filter(([org, v]) => org !== OTHER && v > 0)
+    .sort((a, b) => b[1] - a[1] || (a[0] < b[0] ? -1 : 1))
+    .slice(0, n)
+    .map(([org]) => org);
+  const keep = new Set(named);
+  const other = new Map<string, number>();
+  let hasOther = false;
+  for (const [org, m] of raw) {
+    if (keep.has(org)) continue;
+    if (sums.get(org)) hasOther = true;
+    for (const [w, v] of m) other.set(w, (other.get(w) ?? 0) + v);
+  }
+  const known = new Set(Object.keys(board.weeks));
+  const series = named.map((org) => ({ org, counts: raw.get(org) }));
+  if (hasOther) series.push({ org: OTHER, counts: other });
+  return series.map(({ org, counts }) => ({
+    org,
+    values: weeks.map((w) => trailingMean(counts, w, smoothing, known)),
+  }));
+}
+
+/** Heatmap column widths, in weeks. */
+export const HEAT_BIN_SIZES = [1, 4, 13] as const;
+export type HeatBinSize = (typeof HEAT_BIN_SIZES)[number];
+export const DEFAULT_HEAT_BIN: HeatBinSize = 4;
+
+/** Splits a range into consecutive bins of `size` weeks, oldest first. They
+ * line up with the range's end, so the latest bin is whole and only the first
+ * may be short. */
+export function heatBins(range: WeekRange, size: number): WeekRange[] {
+  const out: WeekRange[] = [];
+  for (let to = range.to; to >= range.from; to = addWeeks(to, -size)) {
+    const from = addWeeks(to, 1 - size);
+    out.push({ from: from < range.from ? range.from : from, to });
+  }
+  return out.reverse();
+}
+
+/** What one heatmap cell holds: the metric in total and per org. */
+export interface HeatCell {
+  value: number;
+  byOrg: Map<string, number>;
+}
+
+/** A row's value in `t`: a directory's subtree, a "rest of" row's own bucket,
+ * or the sum of an "other" row's entries. */
+export function rowAmount(t: DirTotals, row: DirRow): HeatCell {
+  const parts =
+    row.kind === 'other' ? row.members ?? [] : row.node === undefined ? [] : [{ kind: row.kind, node: row.node }];
+  if (parts.length === 1) {
+    const { kind, node } = parts[0];
+    return kind === 'dir'
+      ? { value: t.total[node], byOrg: t.byOrg[node] ?? new Map() }
+      : { value: t.own[node], byOrg: t.ownByOrg[node] ?? new Map() };
+  }
+  const byOrg = new Map<string, number>();
+  let value = 0;
+  for (const p of parts) {
+    const c = rowAmount(t, { ...row, kind: p.kind, node: p.node, members: undefined });
+    value += c.value;
+    for (const [o, v] of c.byOrg) byOrg.set(o, (byOrg.get(o) ?? 0) + v);
+  }
+  return { value, byOrg };
+}
+
+export interface HeatGrid {
+  bins: WeekRange[];
+  /** The board's weeks in each bin. */
+  binWeeks: string[][];
+  rows: DirRow[];
+  /** cells[row][bin]. */
+  cells: HeatCell[][];
+}
+
+/** The heatmap: the directory rows (dirRows, ranked by what `rankOnly`
+ * accepts over the whole range) against time bins, each cell the metric for
+ * the orgs `only` accepts (all, if not given), split into `orgs` and OTHER. */
+export function heatGrid(
+  board: DirBoard,
+  range: WeekRange,
+  binSize: number,
+  metric: Metric,
+  orgs: readonly string[],
+  expanded: ReadonlySet<string>,
+  { only, rankOnly = only, page = DIR_PAGE }: {
+    only?: (org: string) => boolean;
+    rankOnly?: (org: string) => boolean;
+    page?: number;
+  } = {},
+): HeatGrid {
+  const all = Object.keys(board.weeks);
+  const rows = dirRows(board, dirTotals(board, weeksIn(all, range), orgs, metric, rankOnly), expanded, page);
+  const bins = heatBins(range, binSize);
+  const binWeeks = bins.map((b) => weeksIn(all, b));
+  const perBin = binWeeks.map((w) => dirTotals(board, w, orgs, metric, only));
+  return { bins, binWeeks, rows, cells: rows.map((r) => perBin.map((t) => rowAmount(t, r))) };
+}
+
+/** A row's reviewers in a DirReviewerIndex, summed over the segment orgs
+ * `keep` accepts: account id → comments, and each account's segment org.
+ * Undefined for "other" rows, which aren't one directory. */
+export function rowReviewers(
+  idx: DirReviewerIndex,
+  row: DirRow,
+  keep: (org: string) => boolean = () => true,
+): { comments: Map<number, number>; org: Map<number, string> } | undefined {
+  if (row.node === undefined || row.kind === 'other') return undefined;
+  const seg = (row.kind === 'dir' ? idx.total : idx.own)[row.node];
+  const comments = new Map<number, number>();
+  const org = new Map<number, string>();
+  const most = new Map<number, number>();
+  for (const [o, people] of seg ?? []) {
+    if (!keep(o)) continue;
+    for (const [id, n] of people) {
+      comments.set(id, (comments.get(id) ?? 0) + n);
+      // Someone who changed org within the range goes under the org with most of their comments.
+      if (n > (most.get(id) ?? 0)) {
+        most.set(id, n);
+        org.set(id, o);
+      }
+    }
+  }
+  return { comments, org };
+}
+
+/** The `n` accounts with the most comments, most first (ties by id). */
+export function topAccounts(comments: Map<number, number>, n: number): [id: number, comments: number][] {
+  return [...comments].sort((a, b) => b[1] - a[1] || a[0] - b[0]).slice(0, n);
 }

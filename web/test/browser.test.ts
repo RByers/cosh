@@ -70,10 +70,10 @@ test('page loads data and renders all three charts without errors', async () => 
     assert.ok(c.w > 200 && c.h > 200, `${c.k} has size ${c.w}x${c.h}`);
     assert.ok(c.n >= 1, `${c.k} has datasets`);
   }
-  // Charts come in order: ratio, review, usage, the table, directories, then the leaderboard.
+  // Charts come in order: ratio, review, usage, the table, directories, directories over time, then the leaderboard.
   const order = await page.$$eval('main > section', (s) => s.map((e) => e.querySelector('canvas, table, .lb, .ar')?.id));
   assert.deepEqual(order.filter(Boolean),
-    ['ratio-chart', 'review-chart', 'usage-chart', 'org-table', 'area-chart', 'leaderboard-chart']);
+    ['ratio-chart', 'review-chart', 'usage-chart', 'org-table', 'area-chart', 'heat-table', 'leaderboard-chart']);
   await page.close();
 });
 
@@ -807,4 +807,128 @@ test('time axes are labelled by month; tooltips still name the week', async () =
   const phone = await narrow.page.evaluate(() => window.__cosh!.usageChart!.scales.x.ticks.length);
   assert.ok(phone >= 2 && phone <= 6, `phone ticks: ${phone}`);
   await narrow.page.close();
+});
+
+test('heatmap: directories by time bins, per org or as a mix, with Gerrit links', async () => {
+  const { page, errors } = await open('#from=2025-W45&to=2026-W44');
+  const read = () =>
+    page.evaluate(() => ({
+      bins: document.querySelectorAll('#heat-table thead th.hm-bin').length,
+      rows: [...document.querySelectorAll<HTMLElement>('#heat-table tbody tr')].map((r) => ({
+        key: r.dataset.key!,
+        name: r.querySelector('.hm-name')!.textContent!,
+        cells: [...r.querySelectorAll<HTMLElement>('.hm-box')].map((b) => ({
+          link: b instanceof HTMLAnchorElement ? b.href : null,
+          title: b.title,
+          shaded: !!b.style.background,
+          segs: b.querySelectorAll('.hm-seg').length,
+        })),
+      })),
+      org: (document.querySelector('#heat-org') as HTMLSelectElement).value,
+      options: [...document.querySelectorAll<HTMLOptionElement>('#heat-org option')].map((o) => o.value),
+      legend: document.querySelector('#heat-legend')!.textContent!,
+      sub: document.querySelector('#heat-sub')!.textContent!,
+    }));
+  // Default: every org as a mix, 4-week columns over the 52 weeks.
+  const mix = await read();
+  assert.equal(mix.bins, 13);
+  assert.equal(mix.org, '*');
+  for (const o of ['google.com', 'microsoft.com', '*-google.com']) assert.ok(mix.options.includes(o), o);
+  assert.ok(mix.rows.length >= 10 && mix.rows.every((r) => r.cells.length === 13));
+  assert.ok(mix.rows[0].cells.some((c) => c.segs > 0), 'mix cells are stacked columns');
+  assert.match(mix.legend, /google\.com/);
+
+  // The links and "most active" lines arrive with the reviewer data.
+  await page.$eval('#heat-chart', (e) => e.scrollIntoView());
+  await page.waitForSelector('#heat-chart a.hm-box');
+
+  // One org: shaded cells, ranked by that org's review.
+  await page.select('#heat-org', 'microsoft.com');
+  assert.match(page.url(), /hm=microsoft\.com/);
+  const ms = await read();
+  assert.equal(ms.org, 'microsoft.com');
+  assert.match(ms.sub, /from microsoft\.com/);
+  assert.match(ms.legend, /review comments$/);
+  const blink = ms.rows.find((r) => r.name === 'third_party/blink/')!;
+  assert.ok(blink, 'third_party/blink/ row');
+  const cell = blink.cells.find((c) => c.link)!;
+  assert.ok(cell.shaded);
+  assert.match(cell.title, /^third_party\/blink\/, \d{4}-W\d\d to \d{4}-W\d\d \(/);
+  assert.match(cell.title, /\nmicrosoft\.com: [\d,]+ review comments \([\d.]+% of [\d,]+ there\)/);
+  assert.match(cell.title, /\nMost active: [^\n]+\(\d+\)/);
+  assert.match(cell.link!, /^https:\/\/chromium-review\.googlesource\.com\/q\/dir:third_party\/blink\+after:\d{4}-\d\d-\d\d\+/);
+
+  // Share, and weekly columns.
+  await page.click('#heat-value input[value="share"]');
+  await page.click('#heat-bin input[value="1"]');
+  const weekly = await read();
+  assert.match(page.url(), /hmb=1/);
+  assert.match(page.url(), /hmv=share/);
+  assert.equal(weekly.bins, 52);
+  assert.match(weekly.legend, /^0%.*100% of the directory/);
+
+  // Expanding a row opens its subdirectories; "chart" shows one in the organization chart.
+  await page.click(`#heat-table tr[data-key="${blink.key}"] .ar-toggle`);
+  const renderer = (await read()).rows.find((r) => r.name === 'renderer/')!;
+  assert.ok(renderer, 'third_party/blink/renderer/ row');
+  await page.click(`#heat-table tr[data-key="${renderer.key}"] .hm-chart`);
+  assert.match(page.url(), /dir=third_party%2Fblink%2Frenderer%2F/);
+  assert.equal(await page.$eval('#review-dir', (e) => (e as HTMLInputElement).value), 'third_party/blink/renderer/');
+  assert.match(await page.$eval('#review-sub', (e) => e.textContent!), / in third_party\/blink\/renderer\//);
+
+  // All but google.com: google.com's comments are in no cell.
+  await page.select('#heat-org', '*-google.com');
+  const nog = await read();
+  assert.ok(nog.rows.flatMap((r) => r.cells).every((c) => !/google\.com/.test(c.title)), 'no google.com in any cell');
+  assert.doesNotMatch(nog.legend, /google\.com/);
+  assert.deepEqual(errors, []);
+  await page.close();
+});
+
+test('organization chart can show one directory, kept in the URL', async () => {
+  const { page, errors } = await open('#from=2025-W45&to=2026-W44&rscale=linear');
+  const series = () =>
+    page.evaluate(() => window.__cosh!.reviewChart!.data.datasets.map((d) => ({
+      org: d.label!,
+      total: (d.data as (number | null)[]).reduce<number>((s, v) => s + (v ?? 0), 0),
+    })));
+  const before = await series();
+  assert.equal(await page.$eval('#review-dir-clear', (e) => (e as HTMLButtonElement).hidden), true);
+  // Suggestions are directories the chart can show.
+  const options = await page.$$eval('#dir-options option', (o) => o.map((x) => (x as HTMLOptionElement).value));
+  assert.ok(options.length > 100 && options.includes('components/services/storage/'));
+
+  // Typing a path without its slash works; the subtitle says what's counted.
+  await page.type('#review-dir', 'components/services/storage');
+  await page.keyboard.press('Enter');
+  await page.waitForFunction(() => /dir=/.test(location.hash));
+  assert.match(page.url(), /dir=components%2Fservices%2Fstorage%2F/);
+  const storage = await series();
+  assert.notDeepEqual(storage, before);
+  assert.equal(storage[0].org, 'microsoft.com', 'Microsoft leads components/services/storage/ once google.com is left out');
+  assert.match(await page.$eval('#review-sub', (e) => e.textContent!),
+    / in components\/services\/storage\/.*It counts every comment in this directory and below\./);
+  assert.equal(await page.$eval('#review-dir-clear', (e) => (e as HTMLButtonElement).hidden), false);
+
+  // From the URL: a partly excluded directory says how much the rest of the page leaves out.
+  const reloaded = await open(`#from=2025-W45&to=2026-W44&dir=${encodeURIComponent('chrome/')}`);
+  assert.equal(await reloaded.page.$eval('#review-dir', (e) => (e as HTMLInputElement).value), 'chrome/');
+  assert.match(await reloaded.page.$eval('#review-sub', (e) => e.textContent!),
+    /including the [\d.]+% on paths the rest of the page leaves out/);
+  await reloaded.page.close();
+
+  // An unknown directory leaves the chart alone and says why.
+  await page.click('#review-dir', { count: 3 });
+  await page.type('#review-dir', 'no/such/dir');
+  await page.keyboard.press('Enter');
+  assert.match(await page.$eval('#review-dir-status', (e) => e.textContent!), /No directory “no\/such\/dir”/);
+  assert.match(page.url(), /dir=components%2Fservices%2Fstorage%2F/);
+
+  // Clear goes back to the path scope.
+  await page.click('#review-dir-clear');
+  assert.doesNotMatch(page.url(), /dir=/);
+  assert.deepEqual(await series(), before);
+  assert.equal(await page.$eval('#review-dir-status', (e) => e.textContent!), '');
+  assert.deepEqual(errors, []);
+  await page.close();
 });

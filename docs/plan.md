@@ -69,6 +69,7 @@ value_ratio(O, t) = O's share of Chromium review comments
 | 2026-11-04 | Keep `(no file)` comments excluded; don't seek approval to fetch file lists just to place them. The UI says why: the measure is review attached to source files | Sampled 30 unplaced CLs: half were only LGTM/thanks, 4 of 30 showed real review. In a 6,000-CL sample, 43% of unplaced comments were approval-only against 4% of inline ones, and their non-Google share (3.3%) is close to the rest. Analysis and fetch options in `extraction-v1.md`, Placement |
 | 2026-11-04 | Web UI "Review by directory" is a drill-down tree: top-level areas, each opening into its subdirectories (plus a "rest of" row so children add up), 20 entries per level and an "N more" row that opens 20 at a time and closes again. `area_weekly.json` holds the 10,000 directories with the most comments (`DIR_LIMIT`) and their ancestors; rarer ones roll up into their nearest kept ancestor. Replaces the "Top N" selector | User's request. Over 2025-W45..2026-W44 only 10,312 directories had comments, so 10,000 keeps 99.9% in place; the year's file is 1.76 MB (0.52 MB gzipped), about as heavy as `reviewer_weekly.json` |
 | 2026-11-04 | "Review by directory" no longer lists re-included directories at the top level: they stay inside their parents, and each volume bar is solid for the part in scope and hatched for the part left out (the included/excluded tags are gone). Every rule directory is a tree node, so the split is exact | User's request: simpler; the bar conveys partial inclusion |
+| 2026-11-04 | **Directory filter and heatmap.** "Review by organization" takes a Directory field (`&dir=`): with one set, the chart counts every comment in that subtree from `area_weekly.json`, in scope or not, and says what share the scope leaves out; the value ratio is unaffected (usage isn't per directory). New "Review by directory over time": the directory tree against 1/4/13-week bins, for every org, all but google.com, or one org. Mix cells are small stacked columns, not pies; one-org cells are shaded in the org's colour (square-root volume, or share of the directory). Cells link to Gerrit like the directory chart, and their hover text names the top 3 reviewers from `area_reviewers.json`. No new summary data | User's request, after Microsoft's post-W36 drop (277 → 198 comments a week, W29–W36 vs W37–W44, with reviewed CLs steady) turned out to be a few of its own projects winding down in a few directories: `components/services/storage`, `chrome/browser/web_applications`, `gpu/command_buffer/service`, `third_party/blink/renderer`. Stacked columns follow the dataviz guidance for "a split changing over time"; pies can't show volume and are unreadable at cell size |
 | 2026-11-03 | Report post-merge comments per org in summaries (`post_merge_comments`), excluded from the headline | User's instruction: post-merge review is still valuable; the headline measures review before landing. **Superseded by the next row** |
 | 2026-11-03 | Post-merge comments count in the headline, however late (metric_version 2); `post_merge_comments` stays as the subset written after `closed_at` | User's instruction: post-merge comments that lead to changes in a later CL are real value; no time window, for simplicity. Over 36 weeks they were ~1% of comments (3,507 vs 340,823) and moved no large org's share; 1,472 reviewer–CL pairs were post-merge only. Recent weeks keep rising slightly as late comments arrive (58% within 1 day, 89% within 14 days). Spam is left open (see Open questions) |
 | 2026-11-03 | Per-person data derived from public data may be committed and published; replaces "per-person data stays local" | User's policy: all of it is already public on Gerrit |
@@ -199,6 +200,16 @@ value_ratio(O, t) = O's share of Chromium review comments
   options are to split it by year, keep reviewers only for the tree's upper
   levels, or fetch one subtree's slice when a row is expanded.
 
+- **Top CLs in the heatmap's hover text (deferred 2026-11-04).** A cell's
+  hover text names its most active reviewers, but the single biggest CL is
+  often the real story (one abandoned CL, 7858502, was 126 of Microsoft's
+  summer comments in `components/services/storage/`). Naming CLs needs new
+  derived data: every (week, directory bucket, org, CL, comments) entry is
+  about 200k rows for 68 weeks, roughly 2.4 MB (0.8 MB gzipped), the size of
+  `area_reviewers.json`, and would be lazy-loaded the same way. Exact
+  per-cell top CLs need every entry, not a per-bucket top 3, because cells
+  sum many buckets. CL subjects for its ~119k CLs would add about 7 MB, so
+  show CL numbers linked to Gerrit, not subjects. No new fetching.
 - **Self-review vs other-review view (idea, 2026-11-04; unsure it's
   meaningful).** Split each org's review into comments on its own orgs' CLs
   (owner in the same org) and on other orgs' CLs, perhaps as a toggle or a

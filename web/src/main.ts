@@ -19,9 +19,19 @@ import {
   type Theme,
 } from './charts.ts';
 import { buildAreaChart } from './areas.ts';
+import { buildHeatmap, heatMax, heatShade, type HeatCellInfo, type HeatValue } from './heatmap.ts';
 import { buildLeaderboard } from './leaderboard.ts';
 import {
   addWeeks,
+  DEFAULT_HEAT_BIN,
+  dirNodeByPath,
+  dirWeeklyCounts,
+  gerritDirUrl,
+  HEAT_BIN_SIZES,
+  type HeatBinSize,
+  heatGrid,
+  rowReviewers,
+  topAccounts,
   dirRows,
   dirTotals,
   dirTree,
@@ -106,7 +116,19 @@ interface State {
   lbGoogle: boolean;
   /** Directory chart rows the reader expanded (DirRow keys); not in the URL. */
   expandedDirs: Set<string>;
+  /** The directory the organization chart is limited to (a tree path), or null for the path scope. */
+  reviewDir: string | null;
+  /** Heatmap organization: ALL_ORGS, ALL_BUT_GOOGLE, or one org. */
+  heatOrg: string;
+  heatBin: HeatBinSize;
+  heatValue: HeatValue;
+  /** Heatmap rows the reader expanded; not in the URL. */
+  heatExpanded: Set<string>;
 }
+
+/** Heatmap organization choices besides a single org. */
+const ALL_ORGS = '*';
+const ALL_BUT_GOOGLE = '*-google.com';
 
 /** The org the linear review chart leaves out, so the rest are legible, and
  * the one the leaderboard can leave out. */
@@ -184,6 +206,9 @@ function readStateFromUrl(data: Data): State {
   const lbn = Number(q.get('lbn'));
   const lbSize = LEADERBOARD_SIZES.find((n) => n === lbn) ?? LEADERBOARD_SIZE;
   const lbGoogle = q.get('lbg') !== '0';
+  const dir = q.get('dir');
+  const dirNode = dir ? dirNodeByPath(data.areas, dir) : null;
+  const hmb = Number(q.get('hmb'));
   return {
     metric,
     range: clampRange({ from, to }, full),
@@ -192,6 +217,11 @@ function readStateFromUrl(data: Data): State {
     lbSize,
     lbGoogle,
     expandedDirs: new Set(),
+    reviewDir: dirNode === null ? null : dirTree(data.areas).paths[dirNode],
+    heatOrg: q.get('hm') || ALL_ORGS,
+    heatBin: HEAT_BIN_SIZES.find((n) => n === hmb) ?? DEFAULT_HEAT_BIN,
+    heatValue: q.get('hmv') === 'share' ? 'share' : 'volume',
+    heatExpanded: new Set(),
   };
 }
 
@@ -199,8 +229,15 @@ function writeStateToUrl(s: State) {
   history.replaceState(null, '', `#metric=${s.metric}&from=${s.range.from}&to=${s.range.to}&smooth=${s.smoothing}` +
     (s.reviewScale === 'linear' ? '&rscale=linear' : '') +
     (s.lbSize !== LEADERBOARD_SIZE ? `&lbn=${s.lbSize}` : '') +
-    (s.lbGoogle ? '' : '&lbg=0'));
+    (s.lbGoogle ? '' : '&lbg=0') +
+    (s.reviewDir ? `&dir=${encodeURIComponent(s.reviewDir)}` : '') +
+    (s.heatOrg !== ALL_ORGS ? `&hm=${encodeURIComponent(s.heatOrg)}` : '') +
+    (s.heatBin !== DEFAULT_HEAT_BIN ? `&hmb=${s.heatBin}` : '') +
+    (s.heatValue !== 'volume' ? '&hmv=share' : ''));
 }
+
+/** How many directories the directory field suggests; any other one can be typed. */
+const DIR_OPTIONS = 3000;
 
 const PRESETS: { id: string; label: string; weeks: number | null }[] = [
   { id: 'all', label: 'All data', weeks: null },
@@ -318,6 +355,68 @@ function buildControls(data: Data, state: State, render: () => void) {
       render();
     },
   );
+
+  segmented(
+    $('#heat-bin'),
+    'heat-bin',
+    HEAT_BIN_SIZES.map((n) => ({ id: n, label: n === 1 ? 'Weeks' : `${n} weeks` })),
+    state.heatBin,
+    (n) => {
+      state.heatBin = n;
+      render();
+    },
+  );
+  segmented(
+    $('#heat-value'),
+    'heat-value',
+    [
+      { id: 'volume' as HeatValue, label: 'Volume' },
+      { id: 'share' as HeatValue, label: 'Share' },
+    ],
+    state.heatValue,
+    (v) => {
+      state.heatValue = v;
+      render();
+    },
+  );
+  $<HTMLSelectElement>('#heat-org').addEventListener('change', (e) => {
+    state.heatOrg = (e.target as HTMLSelectElement).value;
+    state.heatExpanded.clear();
+    render();
+  });
+
+  // The organization chart's directory: any directory in the tree, typed or
+  // picked from the busiest few thousand.
+  const dirInput = $<HTMLInputElement>('#review-dir');
+  const { paths } = dirTree(data.areas);
+  const busy = dirTotals(data.areas, Object.keys(data.areas.weeks), [], 'comments');
+  $('#dir-options').replaceChildren(
+    ...paths
+      .map((p, i) => ({ p, v: busy.total[i] }))
+      .filter((x) => x.v > 0)
+      .sort((a, b) => b.v - a.v || (a.p < b.p ? -1 : 1))
+      .slice(0, DIR_OPTIONS)
+      .map(({ p }) => {
+        const o = el('option');
+        o.value = p;
+        return o;
+      }),
+  );
+  dirInput.value = state.reviewDir ?? '';
+  const pickDir = () => {
+    const text = dirInput.value.trim();
+    const n = text ? dirNodeByPath(data.areas, text) : null;
+    $('#review-dir-status').textContent = text && n === null ? `No directory “${text}” has review comments.` : '';
+    if (text && n === null) return;
+    state.reviewDir = n === null ? null : paths[n];
+    render();
+  };
+  dirInput.addEventListener('change', pickDir);
+  $('#review-dir-clear').addEventListener('click', () => {
+    dirInput.value = '';
+    pickDir();
+    dirInput.focus();
+  });
 
   const { full } = data.ranges;
   const fromInput = $<HTMLInputElement>('#from');
@@ -570,6 +669,156 @@ function renderAreas(data: Data, state: State, colors: Map<string, string>, them
   draw();
 }
 
+/** What the organization chart counts when it shows one directory. */
+function dirScopeNote(board: DirBoard, node: number, weeks: string[], metric: Metric): string {
+  const t = dirTotals(board, weeks, [], metric);
+  const inc = t.total[node] ? t.inc[node] / t.total[node] : board.nodes[node][2];
+  const scope =
+    inc >= 1
+      ? 'It counts every comment in this directory and below.'
+      : inc <= 0
+        ? 'This directory is outside the paths the rest of the page counts; the chart shows every comment in it anyway.'
+        : `It counts every comment in this directory and below, including the ${pct(1 - inc)} on paths the rest of the page leaves out.`;
+  return scope + (metric === 'cls' ? ' A CL with comments in two of its subdirectories counts in each.' : '');
+}
+
+/** Organizations the heatmap's selector lists, busiest first. */
+const HEAT_ORG_CHOICES = 25;
+/** Reviewers a heatmap cell's hover text names. */
+const HEAT_TOP_REVIEWERS = 3;
+
+/** Review by directory over time: the heatmap, its organization choices and legend. */
+function renderHeat(data: Data, state: State, colors: Map<string, string>, theme: Theme, render: () => void) {
+  const board = data.areas;
+  const rangeWeeks = weeksIn(Object.keys(board.weeks), state.range);
+  const unit = metricName(state.metric).toLowerCase();
+
+  // The selector: the busiest orgs over the range, plus the current choice.
+  const single = state.heatOrg.startsWith('*') ? null : state.heatOrg;
+  const ranked = topDirOrgs(board, rangeWeeks, state.metric, HEAT_ORG_CHOICES);
+  if (single && !ranked.includes(single)) ranked.push(single);
+  const select = $<HTMLSelectElement>('#heat-org');
+  select.replaceChildren(
+    ...[
+      { v: ALL_ORGS, t: 'All organizations' },
+      { v: ALL_BUT_GOOGLE, t: `All except ${LINEAR_EXCLUDED_ORG}` },
+      ...ranked.map((o) => ({ v: o, t: o })),
+    ].map(({ v, t }) => {
+      const o = el('option', t);
+      o.value = v;
+      return o;
+    }),
+  );
+  const noGoogle = state.heatOrg === ALL_BUT_GOOGLE;
+  select.value = noGoogle || single ? state.heatOrg : ALL_ORGS;
+
+  const keep = noGoogle ? (o: string) => o !== LINEAR_EXCLUDED_ORG : undefined;
+  const segOrgs = single
+    ? [single]
+    : topDirOrgs(board, rangeWeeks, state.metric, 8).filter((o) => !keep || keep(o)).slice(0, 7);
+  const segColors = reviewColors(segOrgs, colors, theme);
+  const grid = heatGrid(board, state.range, state.heatBin, state.metric, segOrgs, state.heatExpanded, {
+    only: keep,
+    rankOnly: single ? (o) => o === single : keep,
+  });
+  const { paths } = dirTree(board);
+  const binTitle = (b: WeekRange) => (b.from === b.to ? b.from : `${b.from} to ${b.to}`) + ` (${rangeDates(b)})`;
+  const rowTitle = (r: DirRow) => (r.node !== undefined && r.kind === 'dir' ? paths[r.node] : r.title);
+
+  // Links and the "most active" line come from the reviewer file, once loaded.
+  let cellInfo: ((row: number, bin: number) => HeatCellInfo | null) | undefined;
+  if (data.areaReviewers) {
+    // An excluded org gets its own segment, so it can be dropped rather than hide in Other.
+    const idxOrgs = noGoogle ? [...segOrgs, LINEAR_EXCLUDED_ORG] : segOrgs;
+    const perBin = grid.binWeeks.map((w) => dirReviewerIndex(board, data.areaReviewers!, w, idxOrgs));
+    const keepSeg = single ? (o: string) => o === single : keep;
+    const nameOf = (id: number) => data.reviewers.accounts[String(id)] ?? `account ${id}`;
+    cellInfo = (ri, bi) => {
+      const idx = perBin[bi];
+      const row = grid.rows[ri];
+      const who = idx ? rowReviewers(idx, row, keepSeg) : undefined;
+      if (!who?.comments.size || row.node === undefined) return null;
+      const top = topAccounts(who.comments, HEAT_TOP_REVIEWERS).map(([id, n]) => {
+        const org = who.org.get(id);
+        return { name: single || !org || org === OTHER ? nameOf(id) : `${nameOf(id)}, ${org}`, comments: n };
+      });
+      return { link: gerritDirUrl(paths[row.node], who.comments, grid.bins[bi]), top };
+    };
+  }
+
+  const orgColor = single ? segColors.get(single) ?? theme.series[0] : undefined;
+  buildHeatmap($('#heat-chart'), {
+    grid,
+    org: single,
+    value: state.heatValue,
+    orgs: segOrgs,
+    colorOf: (o) => segColors.get(o),
+    orgColor,
+    metricLabel: metricName(state.metric),
+    rowTitle,
+    binTitle,
+    cellInfo,
+    onToggle: (key) => {
+      if (state.heatExpanded.has(key)) state.heatExpanded.delete(key);
+      else state.heatExpanded.add(key);
+      render();
+      // Rebuilding the rows drops focus; give it back to the toggle just used.
+      $('#heat-chart').querySelector<HTMLButtonElement>(`tr[data-key="${CSS.escape(key)}"] .ar-toggle`)?.focus();
+    },
+    onChart: (row) => {
+      state.reviewDir = rowTitle(row);
+      render();
+      $('#review-title').scrollIntoView({ block: 'start' });
+      $<HTMLInputElement>('#review-dir').focus({ preventScroll: true });
+    },
+  });
+
+  const bins = grid.bins.length;
+  const width = state.heatBin === 1 ? 'a week' : `${state.heatBin} weeks`;
+  const who = single ?? (noGoogle ? `every organization but ${LINEAR_EXCLUDED_ORG}` : 'every organization');
+  const how = single
+    ? state.heatValue === 'share'
+      ? `Each cell is shaded by ${single}'s share of the ${unit} in that directory in those weeks.`
+      : `Each cell is shaded by ${single}'s ${unit} there, against the busiest cell, on a square-root scale so smaller directories still show.`
+    : state.heatValue === 'share'
+      ? `Each cell splits the directory's ${unit} in those weeks across organizations.`
+      : `Each cell is a column of the directory's ${unit} in those weeks, split across organizations; its height is against the row's busiest column.`;
+  $('#heat-sub').textContent = grid.rows.length
+    ? `${metricName(state.metric)} from ${who}, ${rangeLabel(state.range)}: one row per directory, ranked over the range, ` +
+      `and ${bins} column${bins === 1 ? '' : 's'} of ${width}, the last ending with the range. ${how} ` +
+      'Every comment counts, on the selected paths or not, as in Review by directory. Use ▸ to open a directory and ' +
+      '“chart” to show it in the organization chart. Hover a cell for its numbers and most active reviewers, or click ' +
+      'it to open those CLs on Gerrit.' +
+      (state.metric === 'cls' ? ' A CL with comments in two directories counts in each.' : '')
+    : `No review data${single ? ` from ${single}` : ''} for ${rangeLabel(state.range)}.`;
+
+  const legend = $('#heat-legend');
+  if (single) {
+    const share = state.heatValue === 'share';
+    const li = el('li');
+    const ramp = el('span', undefined, 'hm-ramp');
+    ramp.style.background = `linear-gradient(to right, ${heatShade(orgColor!, 0)}, ${heatShade(orgColor!, 1)})`;
+    li.append(
+      document.createTextNode(share ? '0%' : '1'),
+      ramp,
+      document.createTextNode(share ? `100% of the directory's ${unit}` : `${int(heatMax(grid, single))} ${unit}`),
+    );
+    legend.replaceChildren(li);
+  } else {
+    legend.replaceChildren(
+      ...[...segOrgs.map((org) => ({ org, color: segColors.get(org) ?? '' })), { org: OTHER, color: '' }].map(
+        ({ org, color }) => {
+          const li = el('li');
+          const sw = el('span', undefined, color ? 'swatch' : 'swatch swatch-muted');
+          if (color) sw.style.background = color;
+          li.append(sw, document.createTextNode(org));
+          return li;
+        },
+      ),
+    );
+  }
+}
+
 /** Colours for the review chart: an org keeps its ratio-chart colour; orgs
  * without one take, in rank order, the series colours that no org in this
  * chart uses (all eight may be assigned to browser owners), then the muted
@@ -630,14 +879,15 @@ function main(data: Data) {
     const metricLabel = name.toLowerCase();
     reviewChart?.destroy();
     const linear = state.reviewScale === 'linear';
-    const reviewSeries = orgWeeklyCounts(
-      data.summary,
-      weeks,
-      state.metric,
-      7,
-      state.smoothing,
-      linear ? [LINEAR_EXCLUDED_ORG] : [],
-    );
+    // One directory (every comment in it, from the directory data), or the path scope (org_weekly).
+    const dirNode = state.reviewDir === null ? null : dirNodeByPath(data.areas, state.reviewDir);
+    const seriesFor = (lin: boolean) => {
+      const exclude = lin ? [LINEAR_EXCLUDED_ORG] : [];
+      return dirNode === null
+        ? orgWeeklyCounts(data.summary, weeks, state.metric, 7, state.smoothing, exclude)
+        : dirWeeklyCounts(data.areas, dirNode, weeks, state.metric, 7, state.smoothing, exclude);
+    };
+    const reviewSeries = seriesFor(linear);
     reviewChart = renderReviewChart(
       $<HTMLCanvasElement>('#review-chart'),
       weeks,
@@ -650,12 +900,7 @@ function main(data: Data) {
       reviewColors(
         [
           ...new Set(
-            [false, true].flatMap((lin) =>
-              (lin === linear
-                ? reviewSeries
-                : orgWeeklyCounts(data.summary, weeks, state.metric, 7, state.smoothing, lin ? [LINEAR_EXCLUDED_ORG] : [])
-              ).map((s) => s.org),
-            ),
+            [false, true].flatMap((lin) => (lin === linear ? reviewSeries : seriesFor(lin)).map((s) => s.org)),
           ),
         ],
         colors,
@@ -670,11 +915,17 @@ function main(data: Data) {
         (state.smoothing > 1
           ? `, as a ${state.smoothing}-week running average`
           : '') +
+        (dirNode === null ? '' : ` in ${state.reviewDir}`) +
         ', for the organizations with the most over the range; the rest are combined as “Other”. ' +
         (linear
           ? `${LINEAR_EXCLUDED_ORG} is left out and the axis is linear, so the other organizations can be compared directly.`
-          : 'The axis is logarithmic, since Google does most of the review.')
+          : 'The axis is logarithmic, since Google does most of the review.') +
+        (dirNode === null ? '' : ' ' + dirScopeNote(data.areas, dirNode, weeks, state.metric))
       : `No review data for ${label}.`;
+    const dirInput = $<HTMLInputElement>('#review-dir');
+    if (document.activeElement !== dirInput) dirInput.value = state.reviewDir ?? '';
+    $('#review-dir-clear').hidden = state.reviewDir === null;
+    renderHeat(data, state, colors, theme, render);
     renderAreas(data, state, colors, theme);
     renderLeaderboard(data, state, colors, theme);
     usageChart?.destroy();
@@ -716,6 +967,7 @@ function main(data: Data) {
         data.areaReviewers = JSON.parse(t) as DirReviewers;
         const theme = readTheme();
         renderAreas(data, state, colorsFor(theme), theme);
+        renderHeat(data, state, colorsFor(theme), theme, render);
         document.body.dataset.areaLinks = 'true';
       })
       .catch((err: unknown) => console.error(err));
@@ -730,6 +982,7 @@ function main(data: Data) {
       { rootMargin: '400px' },
     );
     seen.observe($('#area-chart'));
+    seen.observe($('#heat-chart'));
   }
 }
 
