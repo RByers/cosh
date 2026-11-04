@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "additionalDirectories": ["/home/rbagent/projects/cosh/web/node_modules"],
+    "allow": [
+      "Read(//home/rbagent/projects/cosh/web/node_modules/**)",
+      "Edit(//home/rbagent/projects/cosh/web/node_modules/**)",
+      "Bash(git worktree remove:*)"
+    ]
+  }
+}

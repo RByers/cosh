@@ -9,5 +9,4 @@ secrets.sh
 .research/affiliations/
 *.pyc
 
-# Claude Code local state (worktrees, settings)
-.claude/
+.claude/worktrees
