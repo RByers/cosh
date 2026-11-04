@@ -59,3 +59,8 @@ worktree branch), land it on `main` automatically, without asking:
 3. Only fast-forward. Never create a merge commit. If the fast-forward fails
    because `main` moved, rebase again and retry. If uncommitted changes in
    the main checkout block it, stop and report instead of touching them.
+4. Once `main` contains the branch, delete the worktree and the branch from
+   the main checkout:
+   `git worktree remove .claude/worktrees/<name> && git branch -d <branch>`.
+   Use `-d`, not `-D`, so git refuses if the branch isn't fully merged.
+   Don't delete worktrees or branches that belong to other sessions.
