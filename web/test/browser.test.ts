@@ -148,15 +148,36 @@ test('brave.com is listed with unknown usage and the Brave note explains why', a
   await page.close();
 });
 
-test('the metric is review comments, with no selector; old metric= links still open', async () => {
-  const { page, errors } = await open('#metric=cls&from=2026-W40&to=2026-W44');
-  assert.equal(await page.$('#metric'), null);
-  const label = await page.evaluate(() => window.__cosh!.reviewChart!.options.scales.y.title.text);
-  assert.match(label, /^review comments per week/);
-  assert.doesNotMatch(page.url(), /metric=/);
+test('switching the metric updates the table, review chart, directory chart and URL', async () => {
+  const { page, errors } = await open();
+  const legend = await page.$eval('#metric legend', (l) => ({
+    text: l.textContent,
+    height: l.getBoundingClientRect().height,
+  }));
+  assert.equal(legend.text, 'Contribution metric');
+  assert.ok(legend.height > 0, 'metric legend should be visible');
+  const options = await page.$$eval('#metric label', (ls) => ls.map((l) => l.textContent));
+  assert.deepEqual(options, ['Review comments', 'Review characters', 'Reviewed CLs']);
   const headers = await page.$$eval('#org-table th[scope="col"]', (ths) => ths.map((t) => t.textContent));
-  assert.deepEqual(headers, ['Org', 'Review share', 'Usage share', 'Ratio', 'Reviewers', 'Comments',
-    'AI comments', 'Post-merge comments']);
+  assert.deepEqual(headers, ['Org', 'Review share', 'Usage share', 'Ratio', 'Reviewers', 'Reviewed CLs',
+    'Comments', 'Review chars', 'AI comments', 'Post-merge comments']);
+  const cell = () => page.$eval('tr[data-org="microsoft.com"] td', (td) => td.textContent);
+  const areaHead = () => page.$eval('#area-chart .ar-head .ar-vol', (e) => e.textContent);
+  const before = await cell();
+  assert.equal(await areaHead(), 'Review comments');
+  for (const [id, axis, head] of [['cls', /^reviewed cls per week/, 'Reviewed CLs'],
+    ['chars', /^review characters per week/, 'Review characters']] as const) {
+    await page.click(`#metric input[value="${id}"]`);
+    assert.notEqual(await cell(), before);
+    assert.match(page.url(), new RegExp(`metric=${id}`));
+    const label = await page.evaluate(() => window.__cosh!.reviewChart!.options.scales.y.title.text);
+    assert.match(label, axis);
+    assert.equal(await areaHead(), head);
+  }
+  // State survives a reload via the URL hash.
+  await page.reload();
+  await page.waitForSelector('body[data-ready]');
+  assert.equal(await page.$eval('#metric input[value="chars"]', (i) => (i as HTMLInputElement).checked), true);
   assert.deepEqual(errors, []);
   await page.close();
 });
@@ -183,6 +204,11 @@ test('review by directory shows volume and org split per directory, and the path
   });
   const by = Object.fromEntries(d.rows.map((r) => [r.name, r]));
   for (const name of ['chrome/', 'third_party/blink/', 'content/', '(no file)']) assert.ok(by[name], name);
+  // Directories an include rule brings back always get their own row.
+  for (const name of ['chrome/browser/web_applications/', 'chrome/browser/webnn/']) {
+    assert.ok(by[name], name);
+    assert.equal(by[name].tag, 'included');
+  }
   assert.equal(by['chrome/'].tag, 'excluded');
   assert.ok(by['chrome/'].excluded && by['(no file)'].excluded);
   assert.equal(by['third_party/blink/'].tag, 'included');
@@ -198,9 +224,11 @@ test('review by directory shows volume and org split per directory, and the path
   assert.equal(d.legend[d.legend.length - 1], 'Other');
   assert.deepEqual(d.rules, [
     'Excluded: android_webview/',
+    'Excluded: ash/',
     'Excluded: chrome/',
     'Included: chrome/browser/web_applications/',
     'Included: chrome/browser/webnn/',
+    'Excluded: chromeos/',
     'Excluded: ios/',
     'Included: every other path.',
   ]);
@@ -457,6 +485,10 @@ test('leaderboard shows up to 50 reviewers compactly', async () => {
   assert.ok(Math.abs(geo.bar.width - expected) < 1, `bar ${geo.bar.width} vs ${expected}`);
   // Compact: one 16px line per reviewer plus the axis.
   assert.ok(comments.h <= comments.n * 16 + 24, `height ${comments.h}`);
+  await page.click('#metric input[value="cls"]');
+  const cls = await read();
+  assert.match(cls.title, /\n[\d,]+ reviewed cls\n/i);
+  assert.notDeepEqual(cls.values, comments.values);
   await page.close();
 });
 
@@ -494,7 +526,7 @@ test('Meta gets a ratio line; WebView counts as usage; fine print covers WebView
 test('review chart explains its scope, metrics and org attribution', async () => {
   const { page } = await open();
   assert.match(await page.$eval('#review-scope-note', (n) => n.textContent ?? ''), /owned by humans/);
-  assert.match(await page.$eval('#review-metric-note', (n) => n.textContent ?? ''), /bare \+1 vote, don.t count/);
+  assert.match(await page.$eval('#review-metric-note', (n) => n.textContent ?? ''), /bare \+1\s+vote, don.t count/);
   const href = await page.$eval('#affiliation-note a', (a) => (a as HTMLAnchorElement).href);
   assert.equal(
     href,

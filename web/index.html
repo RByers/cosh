@@ -43,6 +43,9 @@
           </div>
           <p id="range-summary" class="range-summary" aria-live="polite"></p>
         </fieldset>
+        <fieldset id="metric" class="segmented">
+          <legend>Contribution metric</legend>
+        </fieldset>
         <fieldset id="smoothing" class="segmented">
           <legend>Smoothing <span class="legend-note">(running average of the value ratio and review charts)</span></legend>
         </fieldset>
@@ -80,15 +83,17 @@
           comments on the paths listed under <a href="#areas">Review by directory</a> count.
         </p>
         <p class="note" id="review-metric-note">
-          <strong>Metric.</strong> Contribution is measured in <em>review comments</em>: published comments, inline or
-          patchset-level, including those written after the CL landed (the table below also shows how many of those
-          there are). Comments that declare themselves AI-generated are included (the table also shows how many there
-          are). Reviews with no comment, such as a bare +1 vote, don't count: there is no way to tell how much review
-          went into them.
+          <strong>Metrics.</strong> All three come from review comments. Reviews with no comment, such as a bare +1
+          vote, don't count: there is no way to tell how much review went into them. <em>Review comments</em> are
+          published comments, inline or patchset-level, including those written after the CL landed (the table below
+          also shows how many of those there are). Comments that declare themselves AI-generated are included (the
+          table also shows how many there are). <em>Review characters</em> is the length of those comments with quoted
+          (<code>&gt;</code>) lines removed. <em>Reviewed CLs</em> counts, in the week each CL closed, the CLs where
+          someone from the organization commented; open CLs count once they close.
         </p>
         <p class="note" id="affiliation-note">
-          <strong>Organization.</strong> Each reviewer is assigned to an organization as of the date the CL closed,
-          using the first rule that applies:
+          <strong>Organization.</strong> Each reviewer is assigned to an organization as of the date of the comment
+          (for reviewed CLs, the date the CL closed), using the first rule that applies:
           (1) if the reviewer is listed in Chromium's own
           <a href="https://chromium.googlesource.com/chromium/src/+/main/third_party/blink/tools/commit_stats/affiliations.json5"><code>affiliations.json5</code></a>,
           the affiliation in effect on that date is used. This lets an <code>@chromium.org</code> or personal address
@@ -112,8 +117,9 @@
           </p>
           <ul id="scope-rules" class="scope-list"></ul>
           <p>
-            <code>chrome/</code>, <code>ios/</code> and <code>android_webview/</code> hold Google's own products built
-            on Chromium: the Chrome browser, Chrome for iOS and Android WebView. Review there is mostly Google reviewing
+            <code>chrome/</code>, <code>ios/</code>, <code>android_webview/</code>, <code>ash/</code> and
+            <code>chromeos/</code> hold Google's own products built on Chromium: the Chrome browser, Chrome for iOS,
+            Android WebView and ChromeOS. Review there is mostly Google reviewing
             Google's product code, so it says little about who maintains the engine other browsers share.
             <code>chrome/browser/web_applications/</code> and <code>chrome/browser/webnn/</code> are shared platform
             work that other Chromium browsers build on, so they stay in. Everything else counts, including
@@ -185,7 +191,9 @@
                 <th scope="col">Usage share</th>
                 <th scope="col">Ratio</th>
                 <th scope="col">Reviewers</th>
+                <th scope="col">Reviewed CLs</th>
                 <th scope="col">Comments</th>
+                <th scope="col">Review chars</th>
                 <th scope="col">AI comments</th>
                 <th scope="col">Post-merge comments</th>
               </tr>

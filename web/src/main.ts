@@ -39,6 +39,8 @@ import {
   isoWeekOf,
   isWeek,
   meanDerivedShare,
+  metricLabel as metricName,
+  METRICS,
   MIN_DERIVED_SHARE,
   UNKNOWN_USAGE_ORGS,
   orgTotals,
@@ -47,6 +49,7 @@ import {
   parseRadarWeekly,
   parseWeeklyTotals,
   rangeLength,
+  SHARE_COLUMN,
   sumWeeklyTotals,
   topBrowsers,
   orgWeeklyCounts,
@@ -57,6 +60,7 @@ import {
   weekMonday,
   weeksIn,
   weekSunday,
+  type Metric,
   type RadarWeekly,
   type ReviewerBoard,
   type Summary,
@@ -76,10 +80,8 @@ interface Data {
   ranges: { full: WeekRange; common: WeekRange };
 }
 
-/** The contribution metric, as the charts and captions name it. */
-const METRIC_NAME = 'Review comments';
-
 interface State {
+  metric: Metric;
   range: WeekRange;
   /** Value ratio running average, in weeks (1 = off). */
   smoothing: Smoothing;
@@ -150,8 +152,8 @@ function rangeLabel(r: WeekRange): string {
 }
 
 function readStateFromUrl(data: Data): State {
-  // Old links may carry `metric=`; it's ignored (the metric is always comments).
   const q = new URLSearchParams(location.hash.slice(1));
+  const metric = METRICS.some((m) => m.id === q.get('metric')) ? (q.get('metric') as Metric) : 'comments';
   const { full, common } = data.ranges;
   const week = q.get('week'); // links from before the range picker
   const from = isWeek(q.get('from')) ? q.get('from')! : isWeek(week) ? week : common.from;
@@ -159,11 +161,11 @@ function readStateFromUrl(data: Data): State {
   const sm = Number(q.get('smooth'));
   const smoothing = SMOOTHING_WEEKS.find((w) => w === sm) ?? DEFAULT_SMOOTHING;
   const reviewScale: ReviewScale = q.get('rscale') === 'linear' ? 'linear' : 'log';
-  return { range: clampRange({ from, to }, full), smoothing, reviewScale };
+  return { metric, range: clampRange({ from, to }, full), smoothing, reviewScale };
 }
 
 function writeStateToUrl(s: State) {
-  history.replaceState(null, '', `#from=${s.range.from}&to=${s.range.to}&smooth=${s.smoothing}` +
+  history.replaceState(null, '', `#metric=${s.metric}&from=${s.range.from}&to=${s.range.to}&smooth=${s.smoothing}` +
     (s.reviewScale === 'linear' ? '&rscale=linear' : ''));
 }
 
@@ -182,6 +184,23 @@ function presetRange(data: Data, weeks: number | null): WeekRange {
 
 function buildControls(data: Data, state: State, render: () => void) {
   // Replace only the buttons: each fieldset's <legend> is static markup.
+  const metricBox = $('#metric');
+  metricBox.querySelectorAll('label').forEach((l) => l.remove());
+  for (const m of METRICS) {
+    const label = el('label');
+    const input = el('input');
+    input.type = 'radio';
+    input.name = 'metric';
+    input.value = m.id;
+    input.checked = m.id === state.metric;
+    input.addEventListener('change', () => {
+      state.metric = m.id;
+      render();
+    });
+    label.append(input, document.createTextNode(m.label));
+    metricBox.append(label);
+  }
+
   const smoothBox = $('#smoothing');
   smoothBox.querySelectorAll('label').forEach((l) => l.remove());
   for (const w of SMOOTHING_WEEKS) {
@@ -313,7 +332,7 @@ function renderTable(data: Data, state: State, weeks: string[], colors: Map<stri
   const items = [...orgs].map((org) => {
     const row = totals.find((r) => r.org === org);
     const browsers = data.orgBrowsers.get(org);
-    const contribution = row ? row.share : 0;
+    const contribution = row ? row[SHARE_COLUMN[state.metric]] : 0;
     const derived = browsers && weeks.length ? meanDerivedShare(data.radar, weeks, browsers) : null;
     const ratio = derived !== null && derived >= MIN_DERIVED_SHARE ? contribution / derived : null;
     const unknownUsage = UNKNOWN_USAGE_ORGS.has(org);
@@ -328,7 +347,7 @@ function renderTable(data: Data, state: State, weeks: string[], colors: Map<stri
     : '';
 
   const multi = weeks.length > 1;
-  const metricLabel = METRIC_NAME.toLowerCase();
+  const metricLabel = metricName(state.metric).toLowerCase();
   $('#table-caption').textContent = !weeks.length
     ? `${rangeLabel(state.range)}: no review data in this range.`
     : multi
@@ -363,7 +382,9 @@ function renderTable(data: Data, state: State, weeks: string[], colors: Map<stri
         it.unknownUsage ? 'unknown' : it.browsers ? (it.derived === null ? '—' : pct(it.derived)) : '—',
         ratioText,
         r ? int(r.reviewers) : '0',
+        r ? int(r.reviewed_cls) : '—',
         r ? int(r.comments) : '—',
+        r ? int(r.review_chars) : '—',
         r ? int(r.ai_comments) : '—',
         r ? int(r.post_merge_comments) : '—',
       ];
@@ -378,12 +399,12 @@ function renderLeaderboard(
   state: State,
   colors: Map<string, string>,
 ): void {
-  const metricName = METRIC_NAME;
+  const name = metricName(state.metric);
   const weeks = weeksIn(Object.keys(data.reviewers.weeks), state.range);
-  const rows = topReviewers(data.reviewers, weeks, LEADERBOARD_SIZE);
+  const rows = topReviewers(data.reviewers, weeks, state.metric, LEADERBOARD_SIZE);
   $('#leaderboard-sub').textContent = !rows.length
     ? `No reviewer data for ${rangeLabel(state.range)}.`
-    : `${metricName}${weeks.length > 1 ? ' in total' : ''}, ${rangeLabel(state.range)}, top ${rows.length} reviewers. ` +
+    : `${name}${weeks.length > 1 ? ' in total' : ''}, ${rangeLabel(state.range)}, top ${rows.length} reviewers. ` +
       'Same scope as the organization chart: human reviewers on human-owned CLs, on the selected paths.';
 
   // Legend: the coloured orgs that appear, in colour order, then the rest.
@@ -399,22 +420,30 @@ function renderLeaderboard(
       return li;
     }),
   );
-  buildLeaderboard($('#leaderboard-chart'), rows, metricName, (org) => colors.get(org));
+  buildLeaderboard($('#leaderboard-chart'), rows, name, (org) => colors.get(org));
 }
 
 /** Review by directory: every comment in the range, by directory and org, with
  * the path rules that decide what the other sections count. */
 function renderAreas(data: Data, state: State, colors: Map<string, string>, theme: Theme) {
   const weeks = weeksIn(Object.keys(data.areas.weeks), state.range);
-  const orgs = topAreaOrgs(data.areas, weeks, 7);
-  const rows = areaRows(data.areas, weeks, orgs);
+  const orgs = topAreaOrgs(data.areas, weeks, state.metric, 7);
+  const rows = areaRows(data.areas, weeks, orgs, state.metric);
+  const unit = metricName(state.metric).toLowerCase();
   const segColors = reviewColors(orgs, colors, theme);
-  const total = rows.reduce((s, r) => s + r.comments, 0);
-  const inScope = rows.filter((r) => r.included).reduce((s, r) => s + r.comments, 0);
+  const total = rows.reduce((s, r) => s + r.value, 0);
+  const inScope = rows.filter((r) => r.included).reduce((s, r) => s + r.value, 0);
+  const what = {
+    comments: 'Every review comment',
+    chars: 'Review characters, from every comment',
+    cls: 'CLs closed with review comments',
+  }[state.metric];
   $('#areas-sub').textContent = rows.length
-    ? `Every review comment in ${rangeLabel(state.range)}, by the directory of the file it's on: how many there are, ` +
-      `and how they split across organizations. ${pct(total ? inScope / total : 0)} of them (${int(inScope)} of ` +
-      `${int(total)}) are on the paths the rest of the page counts; hatched bars marked “excluded” are left out.`
+    ? `${what} in ${rangeLabel(state.range)}, by the directory of the file each comment is on: the ${unit} per ` +
+      `directory, and how they split across organizations. ${pct(total ? inScope / total : 0)} of them ` +
+      `(${int(inScope)} of ${int(total)}) are on the paths the rest of the page counts; hatched bars marked ` +
+      '“excluded” are left out.' +
+      (state.metric === 'cls' ? ' A CL with comments in two directories counts in both.' : '')
     : `No review data for ${rangeLabel(state.range)}.`;
   const legend = [...orgs.map((org) => ({ org, color: segColors.get(org) ?? '' })), { org: OTHER, color: '' }];
   $('#areas-legend').replaceChildren(
@@ -426,7 +455,7 @@ function renderAreas(data: Data, state: State, colors: Map<string, string>, them
       return li;
     }),
   );
-  buildAreaChart($('#area-chart'), rows, orgs, (org) => segColors.get(org));
+  buildAreaChart($('#area-chart'), rows, orgs, (org) => segColors.get(org), metricName(state.metric));
   const rules = data.areas.meta.path_rules ?? data.summary.meta.path_rules ?? [];
   $('#scope-rules').replaceChildren(
     ...[...rules]
@@ -490,7 +519,7 @@ function main(data: Data) {
     // Smooth over every week before filtering, so the range's first weeks
     // average over earlier data too.
     const points = smoothRatios(
-      computeRatios(data.summary, data.radar, data.orgBrowsers),
+      computeRatios(data.summary, data.radar, data.orgBrowsers, state.metric),
       state.smoothing,
     ).filter(
       (p) => orgs.includes(p.org) && weeks.includes(p.week),
@@ -498,13 +527,14 @@ function main(data: Data) {
 
     ratioChart?.destroy();
     ratioChart = renderRatioChart($<HTMLCanvasElement>('#ratio-chart'), weeks, orgs, colors, points, theme, state.smoothing);
-    const metricName = METRIC_NAME;
-    const metricLabel = metricName.toLowerCase();
+    const name = metricName(state.metric);
+    const metricLabel = name.toLowerCase();
     reviewChart?.destroy();
     const linear = state.reviewScale === 'linear';
     const reviewSeries = orgWeeklyCounts(
       data.summary,
       weeks,
+      state.metric,
       7,
       state.smoothing,
       linear ? [LINEAR_EXCLUDED_ORG] : [],
@@ -513,7 +543,7 @@ function main(data: Data) {
       $<HTMLCanvasElement>('#review-chart'),
       weeks,
       reviewSeries,
-      metricName,
+      name,
       // Keep the excluded org's colour reserved, so the rest keep theirs
       // when the scale toggles.
       reviewColors([...reviewSeries.map((s) => s.org), ...(linear ? [LINEAR_EXCLUDED_ORG] : [])], colors, theme),
@@ -522,7 +552,7 @@ function main(data: Data) {
       state.reviewScale,
     );
     $('#review-sub').textContent = weeks.length
-      ? `${metricName} per ISO week, ${label}` +
+      ? `${name} per ISO week, ${label}` +
         (state.smoothing > 1
           ? `, as a ${state.smoothing}-week running average`
           : '') +

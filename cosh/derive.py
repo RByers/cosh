@@ -22,6 +22,12 @@ from .paths import anchor, is_file
 # placed on a file and filtered by config/paths.txt.
 METRIC_VERSION = "5"
 
+def human_text(message):
+    """Comment text minus quoted reply lines ('> ...')."""
+    lines = [l for l in (message or "").splitlines() if not l.lstrip().startswith(">")]
+    return "\n".join(lines).strip()
+
+
 DELETED_USER = "Deleted User"   # what Gerrit's UI shows for a deleted account
 
 # Upsert for accounts.name: a real name wins over the Deleted User placeholder.
@@ -108,7 +114,7 @@ def derive_change(change, comments):
             rows.append(dict(
                 comment_id=cid, account_id=aid, written_at=_ts(c["updated"]),
                 iso_week=iso_week_of(c["updated"]),
-                path=path, is_ai=int(is_ai_comment(c)),
+                path=path, chars=len(human_text(c.get("message"))), is_ai=int(is_ai_comment(c)),
                 after_close=int(closed_dt is not None and parse_gerrit_ts(c["updated"]) > closed_dt)))
 
     ch = dict(
@@ -267,10 +273,10 @@ def derive(data_dir=store.DATA_DIR, weeks=None, source="auto", out_path=None):
                 db.execute("DELETE FROM comments WHERE host=? AND change_number=?", (host, number))
                 db.executemany(
                     """INSERT INTO comments(host, change_number, comment_id, account_id, written_at,
-                       iso_week, path, is_ai, after_close) VALUES (?,?,?,?,?,?,?,?,?)
+                       iso_week, path, chars, is_ai, after_close) VALUES (?,?,?,?,?,?,?,?,?,?)
                        ON CONFLICT DO NOTHING""",
                     [(host, number, r["comment_id"], r["account_id"], r["written_at"], r["iso_week"],
-                      r["path"], r["is_ai"], r["after_close"]) for r in rows])
+                      r["path"], r["chars"], r["is_ai"], r["after_close"]) for r in rows])
                 n_changes += 1
                 n_comments += len(rows)
 

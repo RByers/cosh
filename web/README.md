@@ -21,9 +21,10 @@ and in-app browsers (Facebook and Instagram credited to Meta, Microsoft 365 to M
 iOS; the usage card's fine print says so. Orgs whose browsers have under 0.1%
 of Chromium usage get no ratio.
 
-The contribution metric is review comments on the paths `config/paths.txt`
-includes (Python applies the scope in `summarize`; the page only reads the
-result). There is no metric selector.
+The contribution metric (review comments by default, or review characters or
+reviewed CLs, all counted from comments) covers only the paths
+`config/paths.txt` includes. Python applies the scope in `summarize`; the page
+only reads the result.
 
 ## Date range
 
@@ -59,11 +60,14 @@ Over a range:
    "Other". A toggle switches from the default log axis to a linear axis with
    google.com left out entirely (the next-ranked org takes its slot).
 3. **Review by directory** (`src/areas.ts`): every comment in the range, in
-   scope or not, one row per directory (the 14 largest, then the rest combined
-   into an included and an excluded row). Each row has a bar for its comment
-   volume on a shared scale (hatched and tagged "excluded" when the scope
-   leaves it out), a 100% bar of its split across the top 7 orgs plus
-   "Other", and the share not from google.com. A note lists the path rules
+   scope or not, one row per directory for the selected metric: the 14
+   largest, plus every directory an `include` rule brings back (e.g.
+   `chrome/browser/webnn/`, shown even at 0), then the rest combined into an
+   included and an excluded row. Each row has a bar for its volume on a
+   shared scale (hatched and tagged "excluded" when the scope leaves it out),
+   a 100% bar of its split across the top 7 orgs plus "Other", and the share
+   not from google.com. For reviewed CLs, a CL with comments in two
+   directories counts in both. A note lists the path rules
    (from the summary's metadata) and how comments are placed on files.
 4. **Chromium browser usage** from Cloudflare Radar, per browser, over the range,
    with a marker and a note on the 2026-W37 ChromeDerivative jump.

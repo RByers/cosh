@@ -9,14 +9,18 @@
 # included. Prefixes are directories and end in "/". A comment's area is the
 # longest matching area/include/exclude prefix, else its top-level directory.
 #
-# Why: chrome/, ios/ and android_webview/ are Google's own products built on
-# Chromium. Review there is mostly Google reviewing Google's product code, so it
-# says little about who maintains the shared engine. Two chrome/ directories
-# hold shared platform work that other browsers build on, so they stay in.
+# Why: chrome/, ios/, android_webview/, ash/ and chromeos/ are Google's own
+# products built on Chromium (Chrome, Chrome for iOS, Android WebView and
+# ChromeOS). Review there is mostly Google reviewing Google's product code, so
+# it says little about who maintains the shared engine. Two chrome/
+# directories hold shared platform work that other browsers build on, so they
+# stay in.
 
 exclude chrome/
 exclude ios/
 exclude android_webview/
+exclude ash/
+exclude chromeos/
 
 include chrome/browser/web_applications/
 include chrome/browser/webnn/

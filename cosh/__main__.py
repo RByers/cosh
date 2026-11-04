@@ -3,7 +3,7 @@
   python3 -m cosh extract --week 2026-W44 [--via notedb|rest] [--max-comment-fetches N]
   python3 -m cosh extract-open [--since ...] [--closed-since ...]
   python3 -m cosh derive [--week 2026-W44] [--out PATH]
-  python3 -m cosh summarize [--db PATH] [--out DIR]
+  python3 -m cosh summarize [--metric comments|cls|chars] [--db PATH] [--out DIR]
   python3 -m cosh backfill --weeks 52 [--go] [--duty-cycle 1.0]
   python3 -m cosh status
   python3 -m cosh update-affiliations
@@ -64,6 +64,8 @@ def main(argv=None):
                    help="comment source (auto = NoteDb if fetched, else REST cache)")
     d.add_argument("--out", help="derived DB path (default: data/private/derived.sqlite)")
     s = sub.add_parser("summarize", help="write summaries/ (path scope: config/paths.txt)")
+    s.add_argument("--metric", choices=["comments", "cls", "chars"], default="comments",
+                   help="headline share: review comments (default), reviewed CLs, or characters")
     s.add_argument("--db", help="derived DB path (default: data/private/derived.sqlite)")
     s.add_argument("--out", help="summaries directory (default: summaries/)")
     b = sub.add_parser("backfill", help="extract many weeks newest-first (plan only without --go)")
@@ -118,9 +120,10 @@ def main(argv=None):
     elif a.cmd == "summarize":
         from .summarize import summarize
         kw = dict(out_dir=a.out) if a.out else {}
-        for r in summarize(db_path=a.db, **kw):
+        for r in summarize(db_path=a.db, metric=a.metric, **kw):
             print(f"{r['iso_week']}  {r['org']:<24} share={r['share']:<7} "
                   f"reviewers={r['reviewers']:>4} comments={r['comments']:>6} "
+                  f"cls={r['reviewed_cls']:>5} chars={r['review_chars']:>8} "
                   f"ai={r['ai_comments']:>5} post_merge={r['post_merge_comments']:>4}")
     elif a.cmd == "backfill":
         from .backfill import backfill, last_complete_week, week_list

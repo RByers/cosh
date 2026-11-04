@@ -12,11 +12,12 @@ value_ratio(O, t) = contribution_share(O, t) / derived_value_share(O, t)
 ```
 
 - **Contribution share** is approximated by code review in Chromium: *O*'s
-  share of the review comments written in the period. Reviews without a
-  comment (a bare +1) don't count, since their value can't be judged. Only
-  comments on the shared engine count: `chrome/`, `ios/` and
-  `android_webview/`, Google's own products, are left out, apart from two
-  shared directories in `chrome/` (`config/paths.txt`). Each reviewer is
+  share of the review comments written in the period (or, selectably, of
+  review characters or of reviewed CLs, both also counted from comments).
+  Reviews without a comment (a bare +1) don't count, since their value can't
+  be judged. Only comments on the shared engine count: `chrome/`, `ios/`,
+  `android_webview/`, `ash/` and `chromeos/`, Google's own products, are left
+  out, apart from two shared directories in `chrome/` (`config/paths.txt`). Each reviewer is
   attributed to an organization by email domain, plus a mapping table for
   exceptions such as `@chromium.org` accounts.
 - **Derived value share** is approximated by browser usage from

@@ -209,18 +209,20 @@ class DeriveEndToEndTest(unittest.TestCase):
             db.close()
 
             rows = summarize(data_dir=d, out_dir=os.path.join(d, "s"))
-        got = {(r["iso_week"], r["org"]): (r["comments"], r["ai_comments"], r["post_merge_comments"],
-                                           r["reviewers"], r["share"]) for r in rows}
+        got = {(r["iso_week"], r["org"]): (r["comments"], r["review_chars"], r["ai_comments"],
+                                           r["post_merge_comments"], r["reviewers"], r["reviewed_cls"],
+                                           r["share"]) for r in rows}
+        n = len("nit: rename")
         self.assertEqual(got, {
             # One W43 comment per CL, on 3 CLs, two of which closed only in W44
-            # and one that is still open.
-            ("2026-W43", "microsoft.com"): (3, 0, 0, 1, 1.0),
+            # and one that is still open. No CL closed in W43.
+            ("2026-W43", "microsoft.com"): (3, 3 * n, 0, 0, 1, 0, 1.0),
             # W44: lgtm x3 (placed on each CL's anchor, content/a.cc) and AI x3,
             # both in the metric. c5 (10-28) x3 all count; it is post-merge only
             # on CL 100 (merged 10-27); CL 200 merged 10-29 and CL 300 is open.
-            # REV's vote adds nothing.
-            ("2026-W44", "microsoft.com"): (6, 3, 0, 1, 0.6667),
-            ("2026-W44", "google.com"): (3, 0, 1, 1, 0.3333),
+            # REV's vote adds nothing. Reviewed CLs (by close week): 100 and 200.
+            ("2026-W44", "microsoft.com"): (6, 12 + 3 * len("AI says x"), 3, 0, 1, 2, 0.6667),
+            ("2026-W44", "google.com"): (3, 12, 0, 1, 1, 2, 0.3333),
         })
 
     def test_summary_drops_unfetched_weeks(self):
@@ -252,7 +254,7 @@ def summary_db(d, accounts, comments, close_week="2026-W44", cls=None):
     """A derived.sqlite with merged CLs (default: CL 100, anchored on
     content/a.cc) and the given comments [(account, n_human, n_ai,
     n_post_merge)] or [(account, n_human, n_ai, n_post_merge, cl, path)],
-    all written in W44. cls: {cl: anchor_path}."""
+    all written in W44 and 10 chars long. cls: {cl: anchor_path}."""
     db = store.open_derived(d)
     with db:
         for aid, email in accounts:
@@ -268,7 +270,7 @@ def summary_db(d, accounts, comments, close_week="2026-W44", cls=None):
             cl, path = where or (100, "content/a.cc")
             for kind in [(0, 0)] * n + [(1, 0)] * ai + [(0, 1)] * pm:
                 i += 1
-                db.execute("INSERT INTO comments VALUES (?,?,?,?,'2026-10-27 00:00:00','2026-W44',?,?,?)",
+                db.execute("INSERT INTO comments VALUES (?,?,?,?,'2026-10-27 00:00:00','2026-W44',?,10,?,?)",
                            (H, cl, f"c{i}", aid, path) + kind)
     db.close()
 
@@ -314,6 +316,8 @@ class PathScopeTest(unittest.TestCase):
         self.assertFalse(s.includes("chrome/browser/ui/a.cc"))
         self.assertFalse(s.includes("ios/chrome/a.mm"))
         self.assertFalse(s.includes("android_webview/a.cc"))
+        self.assertFalse(s.includes("ash/shell.cc"))
+        self.assertFalse(s.includes("chromeos/ash/components/a.cc"))
         self.assertTrue(s.includes("chrome/browser/webnn/a.cc"))
         self.assertTrue(s.includes("chrome/browser/web_applications/a.cc"))
         self.assertTrue(s.includes("third_party/blink/renderer/core/a.cc"))
@@ -329,17 +333,19 @@ class SummarizeTest(unittest.TestCase):
             with open(os.path.join(out, "reviewer_weekly.json")) as fh:
                 data = json.load(fh)
         # Post-merge and AI comments are in the metric, and also reported as subsets.
-        self.assertEqual([(r["org"], r["comments"], r["ai_comments"], r["post_merge_comments"],
-                           r["reviewers"], r["share"]) for r in rows],
-                         [("igalia.com", 10, 1, 3, 5, 1.0)])
+        self.assertEqual([(r["org"], r["comments"], r["review_chars"], r["ai_comments"],
+                           r["post_merge_comments"], r["reviewers"], r["reviewed_cls"], r["share"])
+                          for r in rows],
+                         [("igalia.com", 10, 100, 1, 3, 5, 1, 1.0)])
         # Every reviewer (valid JSON despite the hand-rolled layout), AI included;
         # account 3 (post-merge only) is credited like any other reviewer.
-        self.assertEqual(data["meta"]["columns"], ["account_id", "org", "comments"])
+        self.assertEqual(data["meta"]["columns"], ["account_id", "org", "comments", "cls", "chars"])
         self.assertEqual(data["orgs"], ["igalia.com"])
         self.assertEqual(data["accounts"], {str(a): f"r{a}" for a in range(2, 7)})
         self.assertEqual(data["emails"], {str(a): f"r{a}@igalia.com" for a in range(2, 7)})
         self.assertEqual(data["weeks"]["2026-W44"],
-                         [[2, 0, 6], [3, 0, 1], [4, 0, 1], [5, 0, 1], [6, 0, 1]])
+                         [[2, 0, 6, 1, 60], [3, 0, 1, 1, 10], [4, 0, 1, 1, 10], [5, 0, 1, 1, 10],
+                          [6, 0, 1, 1, 10]])
 
     def test_path_scope(self):
         # CL 100 is anchored in chrome/ (excluded), CL 101 in blink, CL 102 has
@@ -360,34 +366,58 @@ class SummarizeTest(unittest.TestCase):
                 areas = json.load(fh)
             with open(os.path.join(out, "org_weekly.json")) as fh:
                 meta = json.load(fh)["meta"]
-        self.assertEqual([(r["org"], r["comments"], r["ai_comments"], r["reviewers"], r["share"]) for r in rows],
-                         [("microsoft.com", 4, 0, 1, 0.6667), ("google.com", 2, 1, 1, 0.3333)])
+        self.assertEqual([(r["org"], r["comments"], r["ai_comments"], r["reviewers"], r["share"],
+                           r["reviewed_cls"], r["share_cls"]) for r in rows],
+                         [("microsoft.com", 4, 0, 1, 0.6667, 2, 0.6667),
+                          ("google.com", 2, 1, 1, 0.3333, 1, 0.3333)])
         self.assertEqual(meta["path_rules"][0], {"prefix": "chrome/browser/web_applications/", "included": True})
         # Every comment appears by area, largest first, each marked in or out.
         self.assertEqual(areas["areas"], [
             {"area": "chrome/", "included": False}, {"area": UNPLACED, "included": False},
             {"area": "third_party/blink/", "included": True},
-            {"area": "chrome/browser/web_applications/", "included": True}])
-        got = {(areas["areas"][a]["area"], areas["orgs"][o]): n for a, o, n in areas["weeks"]["2026-W44"]}
-        self.assertEqual(got, {("chrome/", "microsoft.com"): 2, ("chrome/", "google.com"): 4,
-                               (UNPLACED, "google.com"): 5, ("third_party/blink/", "microsoft.com"): 3,
-                               ("third_party/blink/", "google.com"): 2,
-                               ("chrome/browser/web_applications/", "microsoft.com"): 1})
+            {"area": "chrome/browser/web_applications/", "included": True},
+            {"area": "chrome/browser/webnn/", "included": True}])   # listed with no comments
+        # [comments, reviewed CLs, chars] per (area, org).
+        got = {(areas["areas"][a]["area"], areas["orgs"][o]): v for a, o, *v in areas["weeks"]["2026-W44"]}
+        self.assertEqual(got, {("chrome/", "microsoft.com"): [2, 1, 20], ("chrome/", "google.com"): [4, 1, 40],
+                               (UNPLACED, "google.com"): [5, 1, 50],
+                               ("third_party/blink/", "microsoft.com"): [3, 1, 30],
+                               ("third_party/blink/", "google.com"): [2, 1, 20],
+                               ("chrome/browser/web_applications/", "microsoft.com"): [1, 1, 10]})
+
+    def test_metric_picks_the_share_column(self):
+        accounts = [(1, "owner@igalia.com"), (2, "a@microsoft.com"), (3, "b@google.com")]
+        with tempfile.TemporaryDirectory() as d:
+            # Microsoft: 1 comment on each of CLs 100 and 101; Google: 5 on CL 100.
+            summary_db(d, accounts, [(2, 1, 0, 0, 100, "content/a.cc"), (2, 1, 0, 0, 101, "content/b.cc"),
+                                     (3, 5, 0, 0, 100, "content/a.cc")],
+                       cls={100: "content/a.cc", 101: "content/b.cc"})
+            by_comments = summarize(data_dir=d, out_dir=os.path.join(d, "a"))
+            by_cls = summarize(data_dir=d, out_dir=os.path.join(d, "b"), metric="cls")
+            with self.assertRaises(ValueError):
+                summarize(data_dir=d, out_dir=os.path.join(d, "c"), metric="votes")
+        self.assertEqual([(r["org"], r["share"]) for r in by_comments],
+                         [("google.com", 0.7143), ("microsoft.com", 0.2857)])
+        # CLs: Microsoft reviewed 2, Google 1; rows are sorted by the metric.
+        self.assertEqual([(r["org"], r["share"], r["share_comments"]) for r in by_cls],
+                         [("microsoft.com", 0.6667, 0.2857), ("google.com", 0.3333, 0.7143)])
 
     def test_reviewer_weeks_keeps_everyone_split_by_org(self):
         from cosh.summarize import reviewer_weeks
 
-        def f(week, aid, name, email, org, comments):
-            return dict(week=week, account_id=aid, name=name, email=email, org=org, comments=comments)
-        facts = [f("W", 1, "A", "a@x.com", "x.com", 10), f("W", 2, None, "b@x.com", "x.com", 1),
-                 f("W", 3, "C", "c@x.com", "x.com", 5), f("W", 3, "C", "c@y.com", "y.com", 2),
+        def f(week, aid, name, email, org, comments, chars=1, cls=(1,)):
+            return dict(week=week, account_id=aid, name=name, email=email, org=org, comments=comments,
+                        chars=chars, cls=set(cls))
+        facts = [f("W", 1, "A", "a@x.com", "x.com", 10), f("W", 2, None, "b@x.com", "x.com", 1, 900),
+                 f("W", 3, "C", "c@x.com", "x.com", 5, 5, [2, 3]), f("W", 3, "C", "c@y.com", "y.com", 2, 2, [4]),
                  f("V", 1, "A", "a@x.com", "x.com", 1)]
         names, weeks = reviewer_weeks(facts)
         self.assertEqual(names, {1: "A", 2: "b", 3: "C"})
         self.assertEqual(list(weeks), ["V", "W"])
         # Nobody is dropped; C's activity under y.com gets its own row.
-        self.assertEqual([(r["account_id"], r["org"], r["comments"]) for r in weeks["W"]],
-                         [(1, "x.com", 10), (3, "x.com", 5), (3, "y.com", 2), (2, "x.com", 1)])
+        self.assertEqual([(r["account_id"], r["org"], r["comments"], r["cls"], r["chars"]) for r in weeks["W"]],
+                         [(1, "x.com", 10, 1, 1), (3, "x.com", 5, 2, 5), (3, "y.com", 2, 1, 2),
+                          (2, "x.com", 1, 1, 900)])
 
     def test_gmail_folded_into_other(self):
         with tempfile.TemporaryDirectory() as d:
