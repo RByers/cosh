@@ -15,20 +15,24 @@ import {
 } from '../src/data.ts';
 import { pivotScale } from '../src/scale.ts';
 
-const RADAR = `period,period_start,period_end,granularity,device,browser,is_chromium,kind,days,raw_share,chromium_share,chromium_share_all
-2026-W44,2026-10-26,2026-11-01,week,all,Chrome,1,browser,7,0.4,0.5,0.4
-2026-W44,2026-10-26,2026-11-01,week,all,ChromeMobile,1,browser,7,0.2,0.25,0.2
-2026-W44,2026-10-26,2026-11-01,week,all,Edge,1,browser,7,0.1,0.2,0.1
-2026-W44,2026-10-26,2026-11-01,week,all,Brave,1,browser,7,0.0001,0.0002,0.0001
-2026-W44,2026-10-26,2026-11-01,week,all,SamsungInternet,1,browser,7,0.03,0.05,0.03
-2026-W44,2026-10-26,2026-11-01,week,all,ChromeMobileWebview,1,webview,7,0.08,,0.09
-2026-W45,2026-11-02,2026-11-08,week,all,Chrome,1,browser,2,0.4,0.9,0.4
-2026-10,2026-10-01,2026-10-31,month,all,Chrome,1,browser,31,0.4,0.6,0.4
+const RADAR = `period,period_start,period_end,granularity,device,browser,is_chromium,kind,days,raw_share,chromium_share
+2026-W44,2026-10-26,2026-11-01,week,all,Chrome,1,browser,7,0.4,0.5
+2026-W44,2026-10-26,2026-11-01,week,all,ChromeMobile,1,browser,7,0.2,0.25
+2026-W44,2026-10-26,2026-11-01,week,all,Edge,1,browser,7,0.1,0.2
+2026-W44,2026-10-26,2026-11-01,week,all,Brave,1,browser,7,0.0001,0.0002
+2026-W44,2026-10-26,2026-11-01,week,all,SamsungInternet,1,browser,7,0.03,0.05
+2026-W44,2026-10-26,2026-11-01,week,all,ChromeMobileWebview,1,webview,7,0.08,0.1
+2026-W44,2026-10-26,2026-11-01,week,all,Instagram,1,in_app,7,0.004,0.005
+2026-W44,2026-10-26,2026-11-01,week,all,Firefox,0,browser,7,0.03,
+2026-W45,2026-11-02,2026-11-08,week,all,Chrome,1,browser,2,0.4,0.9
+2026-10,2026-10-01,2026-10-31,month,all,Chrome,1,browser,31,0.4,0.6
 `;
 
 const ORG_BROWSERS = `org_domain,browser,notes
 google.com,Chrome,"Desktop Chrome, mostly."
 google.com,ChromeMobile,""
+google.com,ChromeMobileWebview,""
+meta.com,Instagram,""
 microsoft.com,Edge,""
 samsung.com,SamsungInternet,""
 brave.com,Brave,"About 0%"
@@ -68,10 +72,12 @@ test('parseCsv handles quoted commas and doubled quotes', () => {
   ]);
 });
 
-test('radar keeps only complete weeks with a chromium_share', () => {
+test('radar keeps complete weeks of Chromium browsers, WebViews and in-app browsers', () => {
   const radar = parseRadarWeekly(RADAR);
   assert.deepEqual([...radar.keys()], ['2026-W44']);
-  assert.equal(radar.get('2026-W44')!.has('ChromeMobileWebview'), false);
+  assert.equal(radar.get('2026-W44')!.get('ChromeMobileWebview'), 0.1);
+  assert.equal(radar.get('2026-W44')!.get('Instagram'), 0.005);
+  assert.equal(radar.get('2026-W44')!.has('Firefox'), false);
   assert.equal(radar.get('2026-W44')!.get('Edge'), 0.2);
 });
 
@@ -79,7 +85,10 @@ test('computeRatios divides contribution share by summed browser share', () => {
   const radar = parseRadarWeekly(RADAR);
   const ratios = computeRatios(SUMMARY, radar, parseOrgBrowsers(ORG_BROWSERS), 'comments');
   const by = Object.fromEntries(ratios.map((p) => [p.org, p]));
-  assert.ok(Math.abs(by['google.com'].ratio! - 0.9 / 0.75) < 1e-12);
+  // Google: Chrome + Chrome Android + Android WebView.
+  assert.ok(Math.abs(by['google.com'].ratio! - 0.9 / 0.85) < 1e-12);
+  // Meta: its in-app browser share, here 0.5%.
+  assert.equal(by['meta.com'].derived, 0.005);
   assert.ok(Math.abs(by['microsoft.com'].ratio! - 0.25) < 1e-12);
   // Absent from the summary: contribution 0, ratio 0.
   assert.equal(by['samsung.com'].ratio, 0);
@@ -89,7 +98,7 @@ test('computeRatios divides contribution share by summed browser share', () => {
 
 test('chartedOrgs skips orgs whose browsers never reach the threshold', () => {
   const radar = parseRadarWeekly(RADAR);
-  assert.deepEqual(chartedOrgs(radar, parseOrgBrowsers(ORG_BROWSERS)), ['google.com', 'microsoft.com', 'samsung.com']);
+  assert.deepEqual(chartedOrgs(radar, parseOrgBrowsers(ORG_BROWSERS)), ['google.com', 'meta.com', 'microsoft.com', 'samsung.com']);
 });
 
 test('topOrgCounts folds the tail and the summary Other row together', () => {

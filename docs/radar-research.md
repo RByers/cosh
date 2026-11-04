@@ -45,7 +45,8 @@ switching `ENDPOINT` in `cosh/radar.py` should be enough.
 | `aggInterval` | `1d` (`--agg 1w` optional) | Allowed values are `15m`, `1h`, `1d`, `1w`. The API rejects an interval that is too fine for the range. Daily buckets have exact UTC-day boundaries, so we build ISO weeks (Mon–Sun, UTC) and calendar months locally. Radar's own week alignment is not documented. |
 | `dateStart` / `dateEnd` | one calendar quarter per request, `YYYY-MM-DDT00:00:00Z` | `dateRange` is capped at 52 weeks or 364 days and is relative to now, so explicit dates are used instead. `dateEnd` is *inclusive* (floored to 15 min), so the parser drops any bucket at or after the chunk end. |
 | `botClass` | `LIKELY_HUMAN` | Human traffic only: bot score ≥ 30. Scores 1–29 are "likely automated". |
-| `deviceType` | none, then `DESKTOP`, then `MOBILE` | The `device` column holds `all` / `desktop` / `mobile`. `OTHER` (TVs, consoles) is not fetched separately. |
+| `deviceType` | none (`DEVICES = ("ALL",)`) | The `device` column holds `all`. The code can also fetch `DESKTOP` / `MOBILE`, but the UI uses only `all`, so they aren't fetched by default. |
+| `os` | none, and `IOS` for the `browser_ios` series | Used to **exclude iOS** (below). Radar takes a single `os` value: `-IOS` and comma lists are rejected (HTTP 400), and a repeated parameter makes separate series. |
 | `limitPerGroup` | `50` | Top N browsers per range. The rest is summed into an `other` series. The minimum is 2 and the maximum is undocumented; change it with `--limit-per-group`. |
 | `normalization` | `PERCENTAGE` | Values are percentage *strings* of human HTTP requests. We store fractions (0–1). |
 | `format` | `JSON` | `CSV` exists, but JSON keeps the `meta` block (lastUpdated, confidence annotations). |
@@ -65,12 +66,35 @@ code requests from `--start 2020-09-01`, **newest quarter first**:
 
 After the first real run, record the actual start date here.
 
+**Excluding iOS (2026-11-03).** iOS is left out entirely. Every iOS browser
+must use WebKit (Chrome iOS, which Radar files under `ChromeMobile`, included),
+and iOS in-app browsers use WKWebView, so Chromium usage there is negligible.
+Because Radar can't exclude an OS in one query, three series are fetched per
+quarter:
+
+| series | endpoint | extra parameters |
+|---|---|---|
+| `browser` | `timeseries_groups/BROWSER` | none (all OSes) |
+| `browser_ios` | `timeseries_groups/BROWSER` | `os=IOS` |
+| `os` | `timeseries_groups/OS` | no `limitPerGroup` (Radar rejects it for OS) |
+
+For each day and browser *b*, with *w* the iOS share of human requests:
+`non_ios(b) = (all(b) − w·ios(b)) / (1 − w)`, clamped at 0
+(`radar.exclude_ios`). A day missing either iOS series is dropped rather than
+left with iOS in it. Check on 2026-10-26: for Android-only browsers the
+result matched a direct `os=ANDROID` query to 4 decimals (ChromeMobileWebview
+0.09968 vs 0.09965, Instagram 0.00682 vs 0.00682, ChromeMobile 0.23708 vs
+0.23707). iOS was 18% of human requests that day. On iOS, ChromeMobile
+(Chrome iOS) was 24% and Facebook 0.22%, so Facebook's non-iOS share is
+*lower* than its all-OS share. Instagram's iOS traffic is mostly labelled as
+`MobileSafariWebview` instead.
+
 ## 3. Files
 
-- `data/public/radar/raw/browser_<device>_<agg>_<quarterStart>_<quarterEnd>.json`:
-  the request parameters, HTTP status, `fetched_at`, a `complete` flag and the
-  unmodified response. Radar data is public (CC BY-NC 4.0, §6), so this is
-  committed.
+- `data/public/radar/raw/<series>_<device>_<agg>_<quarterStart>_<quarterEnd>.json`
+  (`series` is `browser`, `browser_ios` or `os`): the request parameters, HTTP
+  status, `fetched_at`, a `complete` flag and the unmodified response. Radar
+  data is public (CC BY-NC 4.0, §6), so this is committed.
 - **Re-runs are incremental:**
   - A complete past quarter is never fetched again.
   - The current quarter is fetched again only when a new UTC day has ended
@@ -88,9 +112,12 @@ After the first real run, record the actual start date here.
   | `browser` | name exactly as Radar reports it; `Other` = Radar's `other` bucket |
   | `is_chromium`, `kind` | from `config/browsers.csv`; empty means not in the config (a warning is printed) |
   | `days` | number of daily points in the period. Partial weeks and months (the first and the current one) have fewer than 7 or 28–31 days, so filter on this column. |
-  | `raw_share` | mean of the daily shares of *all* human requests (0–1). A browser that is missing on a day counts as 0. |
-  | `chromium_share` | `raw_share` / sum of `raw_share` over `is_chromium=1` **and** `kind=browser`. These shares sum to 1 per period and device. This is the denominator of the value ratio. |
-  | `chromium_share_all` | the same, but the denominator also includes Chromium WebViews and in-app browsers. |
+  | `raw_share` | mean of the daily shares of human requests from **non-iOS** devices (0–1). A browser that is missing on a day counts as 0. |
+  | `chromium_share` | `raw_share` / sum of `raw_share` over `is_chromium=1` with `kind` `browser`, `webview` or `in_app` (bots and TVs excluded). These shares sum to 1 per period and device. This is the denominator of the value ratio. |
+
+  Until 2026-11-03 `chromium_share` covered standalone browsers only, and a
+  `chromium_share_all` column added WebViews and in-app browsers. Both
+  included iOS.
 
 - The weekly value is the *unweighted* mean of the daily shares. A true
   request-weighted weekly share would weight days by traffic volume, but
@@ -122,15 +149,15 @@ Judgement calls:
 
 - **Android WebView** (`Chrome Mobile WebView`): `is_chromium=1`,
   `kind=webview`.
-  - It is Chromium code shipped by Google, but the user picked an *app*, not a
-    browser.
-  - Radar's own browser report drops WebViews, so we exclude it from
-    `chromium_share` and include it in `chromium_share_all`.
-  - It is not mapped to google.com.
-- **In-app browsers** (Facebook, Instagram, Google Search app): treated the
-  same way (`kind=in_app`). On Android they are WebView (Chromium); on iOS
-  they are WKWebView. Radar cannot split them by OS unless we also filter by
-  OS.
+  - It is Chromium code shipped by Google, though the user picked an *app*,
+    not a browser. Radar's own browser report drops WebViews.
+  - **Decision (2026-11-03, user): counted in `chromium_share` and credited to
+    google.com.** It is about 12% of Chromium usage.
+- **In-app browsers** (Facebook, Instagram, Snapchat, Pinterest, Microsoft
+  365, …; `kind=in_app`): **counted in `chromium_share`** (user, 2026-11-03).
+  On Android they are WebView (Chromium); on iOS they are WKWebView, and iOS
+  is excluded (§2). Facebook and Instagram are credited to meta.com. The rest
+  are credited to no org, which dilutes every org slightly.
 - **UC Browser, QQ Browser, Sogou, 360 Browser:** Chromium-derived kernels
   (U4, X5/XWeb) or dual Chromium+Trident engines. Classified `1`.
 - **DuckDuckGo:** WebView2 on Windows (Chromium), WebKit on macOS and iOS,
@@ -146,9 +173,11 @@ Judgement calls:
 
 `config/org_browsers.csv` has the columns `org_domain,browser,notes`.
 
-- google.com → Chrome, Chrome Mobile
+- google.com → Chrome, Chrome Mobile, Android System WebView (`ChromeMobileWebview`)
 - microsoft.com → Edge, Edge Mobile
 - samsung.com → Samsung Internet
+- meta.com → the Facebook and Instagram in-app browsers (fb.com reviewers are
+  counted as meta.com; `DOMAIN_ALIASES` in `cosh/orgs.py`)
 - opera.com → Opera, Opera Mobile, Opera GX
 - brave.com → Brave
 - yandex-team.ru → Yandex Browser
@@ -299,7 +328,16 @@ Chromium-only shares.
 - **To confirm:** ask Cloudflare's Radar team (radar@cloudflare.com or the
   community forum).
 
-**Chromium shares** (main share, standalone browsers only):
+**Chromium shares**, as of 2026-11-03: non-iOS traffic, with WebView and
+in-app browsers in the denominator (the current `chromium_share`):
+
+| week | Chrome (desktop + Android) | Android WebView | Edge | Samsung Internet | Opera (+ mobile) | Meta (Facebook + Instagram) | ChromeDerivative |
+|---|---|---|---|---|---|---|---|
+| 2023-W27 | 73.6% | 9.0% | 5.9% | 3.3% | 2.5% | 3.8% | 0.5% |
+| 2026-W44 | 66.1% | 11.6% | 7.8% | 1.5% | 1.4% | 1.0% | 10.3% |
+
+Under the earlier definition (all OSes, standalone browsers only), which the
+ChromeDerivative percentages above also use:
 
 | week | Chrome (desktop + Android) | Edge | Samsung Internet | Opera (+ mobile) | Yandex | ChromeDerivative |
 |---|---|---|---|---|---|---|

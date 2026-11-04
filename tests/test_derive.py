@@ -86,6 +86,12 @@ class DeriveTest(unittest.TestCase):
         self.assertEqual(r("x@igalia.com"), "igalia.com")
         self.assertEqual(r(None), "(no email)")
 
+    def test_org_resolver_maps_fb_com_to_meta(self):
+        r = OrgResolver({"old@chromium.org": [("2020-01-01", "fb.com")]})
+        self.assertEqual(r("someone@fb.com", "2022-01-01"), "meta.com")
+        self.assertEqual(r("someone@meta.com", "2026-01-01"), "meta.com")
+        self.assertEqual(r("old@chromium.org", "2021-01-01"), "meta.com")   # via affiliations
+
     def test_json5(self):
         self.assertEqual(parse_json5('/* c */ {"a@b.org": { k: [ {start: "x",}, ], }, // t\n}'),
                          {"a@b.org": {"k": [{"start": "x"}]}})

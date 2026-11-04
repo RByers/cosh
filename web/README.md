@@ -13,8 +13,10 @@ build time:
 
 The join (value ratio = review share ÷ usage share) happens in the browser, in
 `src/data.ts`. Radar rows used: `granularity=week`, `device=all`, `days=7`,
-`chromium_share`. Orgs whose browsers have under 0.1% of Chromium usage get no
-ratio.
+`chromium_share`. That share includes Android WebView (credited to Google)
+and in-app browsers (Facebook and Instagram credited to Meta), and excludes
+iOS; the usage card's fine print says so. Orgs whose browsers have under 0.1%
+of Chromium usage get no ratio.
 
 ## Layout
 
