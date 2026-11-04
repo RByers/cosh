@@ -164,7 +164,9 @@ def now_iso():
 
 def connect(path, schema):
     os.makedirs(os.path.dirname(path), exist_ok=True)
-    db = sqlite3.connect(path)
+    # A backfill derives each week into derived.sqlite while a full `derive`
+    # may be writing it too; wait for the other writer instead of failing.
+    db = sqlite3.connect(path, timeout=60)
     db.execute("PRAGMA journal_mode=WAL")
     db.executescript(schema)
     return db
