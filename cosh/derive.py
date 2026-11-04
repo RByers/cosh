@@ -128,17 +128,44 @@ def derive_change(change, comments):
     return accounts, ch, rows
 
 
-def load_comments(raw, repos, host, project, number, source):
+def notedb_repo(repos, project):
+    """(repo path, set of change numbers fetched) for a project, cached in `repos`."""
+    from . import notedb
+    if project not in repos:
+        path = notedb.default_repo(project)
+        repos[project] = (path, notedb.fetched_numbers(path)) if os.path.isdir(path) else (None, set())
+    return repos[project]
+
+
+def prefetch_notedb(repos, cls, source):
+    """{change number: comments} from NoteDb for the CLs in `cls` ((host,
+    project, number) tuples), read in one batch per project."""
+    from . import notedb
+    if source not in ("auto", "notedb"):
+        return {}
+    by_project = defaultdict(list)
+    for _, project, number in cls:
+        if number in notedb_repo(repos, project)[1]:
+            by_project[project].append(number)
+    out = {}
+    for project, numbers in by_project.items():
+        out.update(notedb.read_comments_many(repos[project][0], numbers))
+    return out
+
+
+def load_comments(raw, repos, host, project, number, source, prefetched=None):
     """Comments for a CL from NoteDb (preferred) or the REST cache.
-    source: 'auto' | 'notedb' | 'rest'. Returns (comments_or_None, source_used)."""
+    source: 'auto' | 'notedb' | 'rest'. prefetched: prefetch_notedb's result
+    for a batch holding this CL. Returns (comments_or_None, source_used)."""
     from . import notedb
     if source in ("auto", "notedb"):
-        if project not in repos:
-            path = notedb.default_repo(project)
-            repos[project] = (path, notedb.fetched_numbers(path)) if os.path.isdir(path) else (None, set())
-        path, have = repos[project]
-        if number in have:
-            return notedb.read_comments(path, number), "notedb"
+        if prefetched is not None and number in prefetched:
+            return prefetched[number], "notedb"
+        path, have = notedb_repo(repos, project)
+        if prefetched is None and number in have:
+            comments = notedb.read_comments(path, number)
+            if comments is not None:
+                return comments, "notedb"
     if source in ("auto", "rest"):
         cm = store.get_response(raw, host, "comments", str(number))
         if cm and cm[0] == 200:
@@ -224,10 +251,11 @@ def derive(data_dir=store.DATA_DIR, weeks=None, source="auto", out_path=None):
     n_changes = n_comments = 0
     for (host, k), cls in sorted(by_window.items()):
         win = _window(raw, host, k)    # one window in memory at a time
+        notes = prefetch_notedb(repos, cls, source)
         with db:
             for _, project, number in cls:
                 change = win[number]
-                comments, used = load_comments(raw, repos, host, project, number, source)
+                comments, used = load_comments(raw, repos, host, project, number, source, notes)
                 sources[used] += 1
                 accounts, ch, rows = derive_change(change, comments)
                 for aid, a in accounts.items():

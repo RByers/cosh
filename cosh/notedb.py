@@ -125,26 +125,72 @@ def _gerrit_ts(iso):
     return iso.replace("T", " ").rstrip("Z")[:19] + ".000000000"
 
 
+def cat_objects(git_dir, specs):
+    """{spec: object bytes} for each object name in `specs`, read by one
+    `git cat-file --batch` (names it can't resolve are left out).
+
+    One process per batch, not per CL: in a repo of hundreds of packs each git
+    process costs 2.5-10 ms to start and open, which made per-CL reads most
+    of derive's run time."""
+    specs = sorted(set(specs))
+    if not specs:
+        return {}
+    out = git(git_dir, "cat-file", "--batch",
+              input=("\n".join(specs) + "\n").encode()).stdout   # bytes
+    # records: `<sha> <type> <size>\n<content>\n`, or `<spec> missing\n`
+    res, pos = {}, 0
+    for spec in specs:
+        nl = out.index(b"\n", pos)
+        hdr = out[pos:nl].split()
+        if hdr[-1] == b"missing":
+            pos = nl + 1
+            continue
+        size = int(hdr[2])
+        res[spec] = out[nl + 1:nl + 1 + size]
+        pos = nl + 1 + size + 1
+    return res
+
+
+def _tree_entries(data):
+    """(is_tree, sha hex) per entry of a raw (binary) git tree object, in order."""
+    i = 0
+    while i < len(data):
+        sp = data.index(b" ", i)
+        nul = data.index(b"\0", sp)
+        yield data[i:sp] == b"40000", data[nul + 1:nul + 21].hex()
+        i = nul + 21
+
+
+def read_comments_many(git_dir, numbers):
+    """{n: comments} as read_comments gives them, for every change in `numbers`
+    whose meta ref is present locally, with a few git processes in all."""
+    tips = {f"{LOCAL_REF.format(n=n)}^{{tree}}": n for n in numbers}
+    trees = cat_objects(git_dir, tips)
+    # Each change's note blobs in `ls-tree -r` order; subtrees (notes fanout)
+    # are expanded in place, one batched read per level.
+    entries = {tips[s]: list(_tree_entries(d)) for s, d in trees.items()}
+    while True:
+        sub = [sha for es in entries.values() for is_tree, sha in es if is_tree]
+        if not sub:
+            break
+        got = cat_objects(git_dir, sub)
+        entries = {n: [e for is_tree, sha in es
+                       for e in (_tree_entries(got.get(sha, b"")) if is_tree else [(False, sha)])]
+                   for n, es in entries.items()}
+    blobs = cat_objects(git_dir, [sha for es in entries.values() for _, sha in es])
+    return {n: _comments_from_notes(blobs[sha] for _, sha in es if sha in blobs)
+            for n, es in entries.items()}
+
+
 def read_comments(git_dir, n):
     """Published comments of change n in REST /comments shape ({path: [comment]}),
     or None if the meta ref isn't present locally."""
-    ref = LOCAL_REF.format(n=n)
-    p = git(git_dir, "ls-tree", "-r", ref, check=False)
-    if p.returncode != 0:
-        return None
-    blobs = [line.split()[2] for line in p.stdout.splitlines() if " blob " in line]
+    return read_comments_many(git_dir, [n]).get(n)
+
+
+def _comments_from_notes(contents):
     out = {}
-    if not blobs:
-        return out
-    batch = git(git_dir, "cat-file", "--batch",
-                input=("\n".join(blobs) + "\n").encode()).stdout   # bytes
-    # parse `<sha> blob <size>\n<content>\n` records (size in bytes)
-    pos = 0
-    while pos < len(batch):
-        hdr_end = batch.index(b"\n", pos)
-        size = int(batch[pos:hdr_end].split()[2])
-        content = batch[hdr_end + 1:hdr_end + 1 + size]
-        pos = hdr_end + 1 + size + 1
+    for content in contents:
         try:
             doc = json.loads(content)
         except ValueError:

@@ -58,8 +58,8 @@ implementation and metric definitions.
   the link, so leave it in place: `git worktree remove` cleans it up, and
   removing it yourself triggers a permission prompt.
 - `data/private/derived.sqlite` can always be rebuilt with
-  `rm data/private/derived.sqlite && python3 -m cosh derive` (about 15 ms per
-  CL with NoteDb comments). `data/private/cosh.sqlite` is the old CL-keyed DB
+  `rm data/private/derived.sqlite && python3 -m cosh derive` (about 3.5 min
+  for 332k CLs). `data/private/cosh.sqlite` is the old CL-keyed DB
   (metric_versions 1–2). Nothing reads it any more, and it can be deleted.
 - Never delete `data/private/raw.sqlite` or `data/private/notedb/`. Those
   hold the fetched data, and re-fetching costs server load.

@@ -132,6 +132,48 @@ class NoteDbRepoTest(unittest.TestCase):
             self.assertEqual(notedb.fetched_numbers(repo), {42})
             self.assertEqual(notedb.git(repo, "rev-parse", "refs/meta/42").stdout.strip(), c)
 
+    def test_batched_read_matches_tree_order_with_fanout_and_missing_refs(self):
+        from cosh import notedb
+        with tempfile.TemporaryDirectory() as d:
+            repo = notedb.init_repo(f"{d}/x.git")
+
+            def blob(*uuids, path="a.cc"):
+                doc = {"comments": [{"key": {"uuid": u, "filename": path, "patchSetId": 1},
+                                     "author": {"id": 7}, "writtenOn": "2026-10-22T00:15:10Z",
+                                     "message": u} for u in uuids]}
+                return notedb.git(repo, "hash-object", "-w", "--stdin",
+                                  input=json.dumps(doc)).stdout.strip()
+
+            def tree(entries):   # [(name, "blob"|"tree", sha)]
+                spec = "".join(f"{'040000' if t == 'tree' else '100644'} {t} {s}\t{n}\n"
+                               for n, t, s in entries)
+                return notedb.git(repo, "mktree", input=spec).stdout.strip()
+
+            def ref(n, t):
+                c = notedb.git(repo, "commit-tree", t, "-m", "x").stdout.strip()
+                notedb.git(repo, "update-ref", f"refs/meta/{n}", c)
+
+            ref(1, tree([("aa", "blob", blob("c1", "c2")), ("bb", "blob", blob("c3", path="b.cc"))]))
+            # Notes fanout: a subtree between two blobs; also a non-JSON blob.
+            junk = notedb.git(repo, "hash-object", "-w", "--stdin", input="not json").stdout.strip()
+            ref(2, tree([("00", "blob", blob("f1")),
+                         ("ab", "tree", tree([("cd", "blob", blob("f2")), ("ef", "blob", junk)])),
+                         ("zz", "blob", blob("f3"))]))
+            ref(3, tree([]))
+
+            got = notedb.read_comments_many(repo, [1, 2, 3, 99])
+            self.assertEqual(set(got), {1, 2, 3})
+            ids = lambda cs: {p: [c["id"] for c in v] for p, v in cs.items()}
+            self.assertEqual(ids(got[1]), {"a.cc": ["c1", "c2"], "b.cc": ["c3"]})
+            self.assertEqual(ids(got[2]), {"a.cc": ["f1", "f2", "f3"]})   # ls-tree -r order
+            self.assertEqual(got[3], {})
+            self.assertEqual(got[1]["a.cc"][0], {"author": {"_account_id": 7}, "id": "c1", "patch_set": 1,
+                                                 "updated": "2026-10-22 00:15:10.000000000",
+                                                 "message": "c1"})
+            self.assertEqual(notedb.read_comments(repo, 2), got[2])
+            self.assertIsNone(notedb.read_comments(repo, 99))
+            self.assertEqual(notedb.read_comments_many(repo, []), {})
+
 
 class StaleRefsTest(unittest.TestCase):
     def test_missing_or_older_than_listing(self):
