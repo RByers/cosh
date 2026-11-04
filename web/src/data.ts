@@ -482,3 +482,13 @@ export function sumWeeklyTotals(totals: WeeklyTotals[], weeks: string[]): TotalC
   const keys = ['main_cls', 'merged_cls', 'abandoned_cls', 'human_cls', 'bot_cls', 'human_cls_with_review'] as const;
   return Object.fromEntries(keys.map((k) => [k, rows.reduce((s, r) => s + r[k], 0)])) as TotalCounts;
 }
+
+/** The "by organization" table shows the top TABLE_TOP_ORGS orgs plus every
+ * org with a browser line in config/org_browsers.csv, wherever it ranks. */
+export const TABLE_TOP_ORGS = 20;
+
+/** Keep the first `n` of `items` (already in rank order) and, after them, any
+ * later item for which `keep` is true. Order is preserved. */
+export function trimRanked<T>(items: T[], n: number, keep: (item: T) => boolean): T[] {
+  return items.filter((it, i) => i < n || keep(it));
+}

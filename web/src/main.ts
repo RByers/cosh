@@ -41,7 +41,9 @@ import {
   topBrowsers,
   topOrgCounts,
   topReviewers,
+  trimRanked,
   LEADERBOARD_SIZE,
+  TABLE_TOP_ORGS,
   weekMonday,
   weeksIn,
   weekSunday,
@@ -273,6 +275,12 @@ function renderTable(data: Data, state: State, weeks: string[], colors: Map<stri
     return { org, row, browsers, contribution, derived, ratio };
   });
   items.sort((a, b) => b.contribution - a.contribution || (b.derived ?? 0) - (a.derived ?? 0));
+  const shown = trimRanked(items, TABLE_TOP_ORGS, (it) => !!it.browsers);
+  const hidden = items.length - shown.length;
+  const trimNote = hidden
+    ? ` Showing the top ${TABLE_TOP_ORGS} organizations by review share, plus those with a browser; ` +
+      `${int(hidden)} smaller ${hidden === 1 ? 'organization is' : 'organizations are'} omitted.`
+    : '';
 
   const multi = weeks.length > 1;
   const metricLabel = METRICS.find((m) => m.id === state.metric)!.label.toLowerCase();
@@ -282,9 +290,10 @@ function renderTable(data: Data, state: State, weeks: string[], colors: Map<stri
       ? `${rangeLabel(state.range)}: counts are totals over the range (reviewers: distinct people); review share is the share of all ${metricLabel} ` +
         'in the range, usage share the mean weekly share of Chromium browser usage.'
       : `${rangeLabel(state.range)}: share of ${metricLabel} and of Chromium browser usage.`;
+  if (weeks.length) $('#table-caption').textContent += trimNote;
   const tbody = $('#org-table tbody');
   tbody.replaceChildren(
-    ...items.map((it) => {
+    ...shown.map((it) => {
       const tr = el('tr');
       tr.dataset.org = it.org;
       const orgCell = el('th');

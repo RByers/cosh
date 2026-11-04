@@ -24,6 +24,7 @@ import {
   topBrowsers,
   topOrgCounts,
   topReviewers,
+  trimRanked,
   type ReviewerBoard,
   type ReviewerRow,
   type Summary,
@@ -249,4 +250,11 @@ test('pivotScale picks a nice step for large maxima', () => {
   // Ratios at or below 1 never get a scale smaller than 1.25.
   assert.equal(pivotScale(0.4).upper, 1.25);
   assert.equal(pivotScale(0).upper, 1.25);
+});
+
+test('trimRanked keeps the top n plus later items that match', () => {
+  const items = [1, 2, 3, 4, 5, 6];
+  assert.deepEqual(trimRanked(items, 2, (x) => x % 2 === 0), [1, 2, 4, 6]);
+  assert.deepEqual(trimRanked(items, 10, () => false), items);
+  assert.deepEqual(trimRanked(items, 0, (x) => x === 5), [5]);
 });

@@ -100,6 +100,15 @@ test('W44 ratios: Google above parity, Microsoft below', async () => {
   await page.close();
 });
 
+test('org table shows the top 20 plus orgs with a browser', async () => {
+  const { page } = await open();
+  const rows = await page.$$eval('#org-table tbody tr', (trs) => trs.map((r) => r.querySelector('td.ratio')!.textContent));
+  assert.ok(rows.length >= 20, String(rows.length));
+  assert.ok(rows.slice(20).every((t) => t !== 'no browser'), JSON.stringify(rows.slice(20)));
+  assert.match(await page.$eval('#table-caption', (p) => p.textContent!), /top 20 organizations/);
+  await page.close();
+});
+
 test('switching the metric updates the table, review chart and URL', async () => {
   const { page } = await open();
   const cell = () => page.$eval('tr[data-org="microsoft.com"] td', (td) => td.textContent);
