@@ -1,2 +1,3 @@
-node_modules/
+# No trailing slash: also ignores a worktree's symlink to the main checkout's node_modules.
+node_modules
 dist/
