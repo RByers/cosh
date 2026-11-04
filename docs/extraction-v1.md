@@ -125,12 +125,23 @@ Scope: `chromium/src`, **branch `main` only**, **merged and abandoned** CLs.
   - W44: 2,792 of 6,526 review rows (43%) were vote-only. The floor raises
     the week's comments by 27% and moves google.com from 95.9% to 96.4%.
 - **`voted_cr`:** the reviewer's Code-Review vote *as it stands when the CL
-  closes* (`labels.Code-Review.all` in the listing). Its value is accurate,
-  but its coverage is incomplete. A vote cleared by a later patchset is
-  missing, so a reviewer whose only act was a cleared +1 gets no row. Getting
-  those would mean reading vote history from the NoteDb meta refs (fetched
-  only for CLs that have comments). It is used only to create review rows and
-  to apply the vote floor.
+  closes* (`labels.Code-Review.all` in the listing). It is used only to create
+  review rows and to apply the vote floor.
+  - In principle a vote cleared by a later patchset is lost. In practice,
+    Chromium's copy condition carries Code-Review votes across trivial
+    rebases, no-code changes and committer uploads that leave files
+    unchanged, so this almost never happens.
+  - **Checked on W44 (2026-11-03):** the NoteDb vote history of all 3,429
+    human-owned CLs with comments has 4,496 human non-owner Code-Review
+    voters. Every one has a review row and a final vote, so none are missed.
+  - The 2,008 CLs without comments have no NoteDb history. Their listing
+    `reviewers.REVIEWER` holds 277 human accounts without a row, mostly on
+    abandoned CLs. On CLs with history, 0 of 402 such accounts had ever
+    voted, so these are reviewers who were added and never acted.
+  - All 30 merged human-owned CLs with no human review row were approved by
+    Rubber Stamper (`Bot-Commit+1`): clean reverts and relands, gardener
+    suppressions and translation dumps. The translation-dump account is now
+    in `config/bots.txt`.
 - **`review_chars`:** characters in those comments after removing quoted `>`
   lines.
 - **`is_owner`:** NULL for now (deferred). The code-owners API answers against

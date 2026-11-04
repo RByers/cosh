@@ -8,3 +8,4 @@ rubber-stamper@
 ^chrome-cherry-picker@
 ^chromium-internal-autoroll@
 ^mdb\.chrome-pki-metadata-release-jobs@
+^mdb\.chrome-release-translation-dump@
