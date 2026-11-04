@@ -68,6 +68,7 @@ value_ratio(O, t) = O's share of Chromium review comments
 | 2026-11-04 | Place each comment on a file without fetching CL file lists: inline comments on their file, patchset-level comments on the CL's most-inline-commented file (owner replies included); comments on CLs with no inline comments are excluded as `(no file)` | No new fetching. Covers about 90% of comments (68% inline, 22% via the anchor). Exact file lists would need a blob-less git fetch of `main`, which isn't approved |
 | 2026-11-04 | Keep `(no file)` comments excluded; don't seek approval to fetch file lists just to place them. The UI says why: the measure is review attached to source files | Sampled 30 unplaced CLs: half were only LGTM/thanks, 4 of 30 showed real review. In a 6,000-CL sample, 43% of unplaced comments were approval-only against 4% of inline ones, and their non-Google share (3.3%) is close to the rest. Analysis and fetch options in `extraction-v1.md`, Placement |
 | 2026-11-04 | **metric_version 6** (summarize only): a patchset-level comment goes to its author's own most-inline-commented file on the CL. If the author left no inline comment there, it is `(no file)`. Accounts that never commented inline are dropped everywhere. Keeping patchset-level cover notes was chosen over dropping all patchset-level comments | User's approval of the analysis in `extraction-v1.md`, "Why reviewer-only patchset comments are unplaced". Those comments (6% of in-scope comments) were approval, routing and OWNERS stamps placed on the wrong directory, plus most of the spam. Cover notes alongside one's own inline review are a third substantive. Over 2025-W45..2026-W44 non-Google: comments 10.65% → 10.80%, chars 10.50% → 10.29%, reviewed CLs 9.92% → 8.55%; reviewers 1,854 → 1,541 |
+| 2026-11-04 | **Planned headline: addressed comments.** One point per non-author comment in a thread that led to a change, credited to the comment's author (multi-party threads credit each participant per comment); no points if the thread ended without a change, none to the CL author side. Classification is its own step (`cosh classify`), labels in a new, never-deleted `data/private/labels.sqlite`, and the UI must work with no labels or only some. Not built yet (Next steps 6) | User's instruction, after `review-impact.md` (a comment isn't valuable in itself) and `comment-classifier.md` (regex + Haiku ≈ 0.97 accuracy on 400 labelled threads) |
 | 2026-11-04 | Web UI "Review by directory" is a drill-down tree: top-level areas, each opening into its subdirectories (plus a "rest of" row so children add up), 20 entries per level and an "N more" row that opens 20 at a time and closes again. `area_weekly.json` holds the 10,000 directories with the most comments (`DIR_LIMIT`) and their ancestors; rarer ones roll up into their nearest kept ancestor. Replaces the "Top N" selector | User's request. Over 2025-W45..2026-W44 only 10,312 directories had comments, so 10,000 keeps 99.9% in place; the year's file is 1.76 MB (0.52 MB gzipped), about as heavy as `reviewer_weekly.json` |
 | 2026-11-04 | "Review by directory" no longer lists re-included directories at the top level: they stay inside their parents, and each volume bar is solid for the part in scope and hatched for the part left out (the included/excluded tags are gone). Every rule directory is a tree node, so the split is exact | User's request: simpler; the bar conveys partial inclusion |
 | 2026-11-04 | **Directory filter and heatmap.** "Review by organization" takes a Directory field (`&dir=`): with one set, the chart counts every comment in that subtree from `area_weekly.json`, in scope or not, and says what share the scope leaves out; the value ratio is unaffected (usage isn't per directory). New "Review by directory over time": the directory tree against 1/4/13-week bins, for every org, all but google.com, or one org. Mix cells are small stacked columns, not pies; one-org cells are shaded in the org's colour (square-root volume, or share of the directory). Cells link to Gerrit like the directory chart, and their hover text names the top 3 reviewers from `area_reviewers.json`. No new summary data | User's request, after Microsoft's post-W36 drop (277 → 198 comments a week, W29–W36 vs W37–W44, with reviewed CLs steady) turned out to be a few of its own projects winding down in a few directories: `components/services/storage`, `chrome/browser/web_applications`, `gpu/command_buffer/service`, `third_party/blink/renderer`. Stacked columns follow the dataviz guidance for "a split changing over time"; pies can't show volume and are unreadable at cell size |
@@ -155,15 +156,37 @@ value_ratio(O, t) = O's share of Chromium review comments
      further backfill.
    - Try `--batch-size 500` on a later run to see whether the per-CL cost
      drops.
-6. Later:
-   - a "review that led to a change" metric: researched in
-     `docs/review-impact.md` (2026-11-04, offline only). The recommendation
-     is an "addressed threads" metric built from the owners' "Done" replies,
-     then an LLM pass over free-text replies, and no lines-changed metric.
-     The classifier is evaluated in `docs/comment-classifier.md` (400 labelled
-     threads). The recommendation there is the regex first, then Haiku via
-     headless `claude -p` for the rest: accuracy about 0.97 and about 28M
-     Haiku tokens a year. Awaiting the user's decision;
+6. **Addressed comments, the planned headline metric.** Design: see
+   `docs/comment-classifier.md`, "Planned design"; research in
+   `review-impact.md`.
+   - **Scoring:** one point per non-author comment in a review thread that
+     led to a change, credited to that comment's author and their org. No
+     points in threads that ended without a change, and none to the CL
+     author side.
+   - **Build:**
+     - `derive`: add `parent_uuid`/`root_uuid` to comments, a `threads`
+       table and the regex result;
+     - a separate `cosh classify` step (regex first, then Haiku via
+       headless `claude -p` for the ~39% left, about 0.97 accuracy and
+       ~28M Haiku tokens a year), writing to a new, never-deleted
+       `data/private/labels.sqlite` (compact layout: under 20 MB for 3
+       years);
+     - `summarize` reads the labels if they're present.
+   - **UI:** it must work without labels or with only some. The addressed
+     metric shows only fully classified weeks; the other metrics are
+     unaffected; the headline falls back to comments for ranges not yet
+     classified.
+   - **First run:** one week, with `/usage` checked before and after, then
+     backfill a few weeks at a time.
+   - **Defaults to confirm:**
+     - co-authors who uploaded patchsets count as the author side;
+     - comments after the author's last reply in a thread score nothing;
+     - labels aren't committed.
+   - **Visualizations:** we will add UI views that show how the comment
+     classification works (example threads, what counts as addressed) and
+     the acceptance-rate patterns (addressed ÷ comments) across
+     organizations, reviewers and directories.
+7. Later:
    - the OWNER bit;
    - years 2–5 of backfill;
    - other repos and hosts (v8, devtools-frontend and skia are listed in

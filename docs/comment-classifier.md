@@ -283,6 +283,160 @@ Sources for the plan structure:
 
    These caused most of the disagreements between models.
 
+## Planned design: addressed comments as the headline metric
+
+Status: planned (2026-11-04), not built. Decided by the user: this becomes
+the headline metric, classification is its own pipeline step, and the UI
+must work with no labels or only some. Defaults still to confirm are
+marked *(default)*.
+
+### Scoring
+
+- **Unit and credit.** A thread is a reviewer's top-level comment plus all
+  its replies (Gerrit `parentUuid` chains). If the thread led to a change
+  in the CL, **every comment in it by a non-author account earns one
+  point**. The point goes to that comment's account, and to the account's
+  org as of the comment's date.
+  - A reviewer who goes back and forth earns a point per comment.
+  - A third reviewer who joins earns points for their own comments.
+- **No points:**
+  - in a thread that ended without a change;
+  - in a thread the author side never answered, since there is nothing to
+    classify;
+  - to the CL author side. That is the owner plus anyone who uploaded a
+    patchset *(default)*, so co-authors don't score on their own CLs;
+  - to bots, as today.
+- **Trailing comments.** Non-author comments written after the author
+  side's last reply ("Thanks", "LGTM") earn no point, since they came after
+  the change *(default)*.
+- **Same rules as today otherwise:** each point counts in the week its
+  comment was written; the path scope (`config/paths.txt`) and the
+  metric_version 6 placement apply; self-declared AI comments from a
+  person's own account count.
+- **Model input.** The classifier sees the whole thread, capped at a few
+  thousand tokens, not the prototype's 9 replies of 800 characters each.
+  Per-comment credit needs the model to see every comment.
+
+### Pipeline
+
+```
+derive    (rebuildable)  raw + NoteDb -> derived.sqlite: comments + threads (+ regex result)
+classify  (new, costs Pro usage)  pending threads -> claude -p (Haiku, batches of 100) -> labels.sqlite
+summarize (rebuildable)  derived.sqlite + labels.sqlite (read-only ATTACH) -> summaries/
+```
+
+- **`cosh classify` is a separate command.** It never runs inside `derive`.
+  - **Pending threads:** those with an author reply, where the regex
+    doesn't say done, and with no label yet for their current input hash
+    and the active classifier.
+  - **Rendering:** it renders the pending threads from NoteDb (comment text
+    isn't stored in `derived.sqlite`) and sends them in batches.
+  - **Writes:** labels are written per batch, so an interrupted run loses
+    at most one batch, and a rerun continues where it stopped.
+  - **Lock:** it takes its own `data/private/classify.lock`. It puts no load
+    on Gerrit, so it may run while an extractor runs, as `derive` can.
+  - **Limits:** a `--max-threads` cap lets a run be sized to the Pro
+    limits.
+- **`summarize` without labels is fine:**
+  - with no `labels.sqlite`, or an empty one, it still writes every other
+    metric, and the addressed metric is just incomplete;
+  - it never calls a model.
+
+### `derived.sqlite` additions (rebuildable)
+
+- **`comments`:** add `parent_uuid TEXT` and `root_uuid TEXT`. The NoteDb
+  reader currently drops the reply link.
+- **New `threads` table,** one row per reviewer-started thread:
+
+  ```sql
+  CREATE TABLE threads (
+    host TEXT, change_number INTEGER, root_uuid TEXT,
+    root_account INTEGER,
+    n_comments INTEGER,
+    last_author_reply_at TEXT,   -- NULL: the author side never replied (no points)
+    input_hash INTEGER,          -- first 8 bytes of sha256(definition version + rendered thread), signed
+    regex_addressed INTEGER,     -- free classifier, computed in derive
+    PRIMARY KEY (host, change_number, root_uuid)) STRICT, WITHOUT ROWID;
+  ```
+
+### `data/private/labels.sqlite` (new; never delete, never rebuild)
+
+LLM labels cost Pro usage to make, so this file gets the same protection
+as `raw.sqlite`. It only gains rows.
+
+```sql
+CREATE TABLE classifiers (classifier_id INTEGER PRIMARY KEY,  -- 1-byte ids in label rows
+  model TEXT, definition_version INTEGER, prompt_sha256 TEXT, created_at TEXT);
+CREATE TABLE runs (run_id INTEGER PRIMARY KEY, classifier_id INTEGER, started_at TEXT,
+  finished_at TEXT, threads INTEGER, calls INTEGER, tokens INTEGER, usd_equiv REAL);
+CREATE TABLE labels (
+  change_number INTEGER, root_uuid TEXT, classifier_id INTEGER, input_hash INTEGER,
+  addressed INTEGER, run_id INTEGER,
+  PRIMARY KEY (change_number, root_uuid, classifier_id, input_hash)) STRICT, WITHOUT ROWID;
+```
+
+- **Mapping back.** A thread's current label is the row matching its
+  `(change_number, root_uuid)`, the active `classifier_id` and the
+  thread's current `input_hash`.
+  - **A new reply** changes the hash, so the thread is pending until it is
+    relabelled (this happens on open CLs). Older labels stay as history.
+  - **A new model or definition** is a new `classifier_id`. The two can be
+    compared, or swapped, with nothing lost.
+- **Only model labels are stored.** Regex decisions and "never answered"
+  are computed free in `derive`.
+- **No `host` column yet** (only Chromium Gerrit). If other hosts are
+  added, add `host_id INTEGER` in front of the key.
+
+### Size and speed
+
+Measured with 450k rows, the 3-year volume of model labels (about 39% of
+1.16M threads with an author reply), in SQLite 3:
+
+| Layout | Size | Bytes/row | Insert all | Full scan |
+|---|---:|---:|---:|---:|
+| Text everywhere (host, 64-hex hash, classifier name, timestamp; rowid table) | 151 MB | 336 | 2.2 s | 31 ms |
+| **Planned:** integer ids, 8-byte integer hash, text `root_uuid`, `WITHOUT ROWID` | **18 MB** | **40** | 1.1 s | 17 ms |
+| Same, with `root_uuid` packed into an 8-byte integer | 14 MB | 31 | 0.8 s | 16 ms |
+
+- **SQLite does not deduplicate strings.** Every row stores its own copy of
+  a TEXT value, so a repeated classifier name like `claude-haiku-5-5/def-1`
+  costs 22 bytes on every row. Integers are stored in 1–8 bytes by size,
+  so `classifier_id = 1` costs one byte. Hence the lookup tables.
+- **`WITHOUT ROWID`** stores rows in the primary-key B-tree itself, with no
+  separate index. Most of the 8× saving comes from that and from the
+  integer columns. They weren't measured separately.
+- **Packing the uuid** would save another 4 MB, but it assumes every Gerrit
+  uuid is `8hex_8hex`. Not worth the risk.
+- **So 3 years of labels are under 20 MB**, and relabelling history adds
+  little. One year is about 6 MB.
+- **Speed.** Writing labels and joining them in `summarize` take about a
+  second. The cost of the metric is the model calls, not the storage.
+
+### Summaries and the UI with partial data
+
+- **Summaries:**
+  - `org_weekly` rows gain `addressed_comments` and `share_addressed`;
+  - `reviewer_weekly.json` and `area_weekly.json` gain an addressed
+    column;
+  - `meta.addressed_coverage[week]` = decided threads ÷ threads with an
+    author reply, where "decided" means the regex says done or there is a
+    current label.
+- **UI:**
+  - The addressed metric joins the metric selector, and the selector hides
+    it if the summaries don't have the column.
+  - Weeks under 99% coverage are left out of the addressed charts and range
+    totals, and shown as a hatched gap with "classified through week N".
+    Comments, characters and reviewed CLs are unaffected, so everything
+    else works on complete data from day one.
+- **Headline:**
+  - The headline default is the addressed metric when the selected date
+    range is fully covered.
+  - Otherwise it falls back to comments, with a note saying how much of the
+    range is classified.
+
+  The value ratio uses the same rule. This lets classification proceed a
+  few weeks at a time.
+
 ## Reproducing
 
 ```
