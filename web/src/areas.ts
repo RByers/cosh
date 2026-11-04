@@ -3,8 +3,9 @@
 // (a 100% stacked bar), plus the non-Google share as text. Rows expand into
 // subdirectories, and "other" rows into the next entries (dirRows in data.ts).
 // HTML, like the leaderboard, so the numbers are real text, every row has a
-// hover title, and the toggles are real buttons.
-import { barScale, OTHER, type DirRow } from './data.ts';
+// hover title, and the toggles are real buttons. An org's segment can link to
+// its reviewers' CLs in the directory on Gerrit.
+import { barScale, OTHER, type DirLink, type DirRow } from './data.ts';
 
 function node<K extends keyof HTMLElementTagNameMap>(tag: K, cls?: string, text?: string) {
   const e = document.createElement(tag);
@@ -22,7 +23,9 @@ export const MAJORITY_ORG = 'google.com';
 /** Fills `box` with the directory chart. `orgs` are the named segments in
  * order (then OTHER); `colorOf` gives each its colour (OTHER: muted).
  * `metricLabel` names the volume column, e.g. "Review comments". `onToggle`
- * is called with a row's key when its expand/collapse button is pressed. */
+ * is called with a row's key when its expand/collapse button is pressed.
+ * `linkOf`, when it gives a link, makes that org's segment of the row open
+ * its reviewers' CLs in the directory on Gerrit. */
 export function buildAreaChart(
   box: HTMLElement,
   rows: DirRow[],
@@ -30,6 +33,7 @@ export function buildAreaChart(
   colorOf: (org: string) => string | undefined,
   metricLabel: string,
   onToggle: (key: string) => void,
+  linkOf: (row: DirRow, org: string) => DirLink | null = () => null,
 ): void {
   if (!rows.length) {
     box.replaceChildren();
@@ -103,11 +107,23 @@ export function buildAreaChart(
       for (const o of segOrder) {
         const s = shareOf(o);
         if (!s) continue;
-        const seg = node('span', 'ar-seg');
+        const link = linkOf(r, o);
+        const seg = node(link ? 'a' : 'span', 'ar-seg');
         seg.style.flexGrow = String(s);
         const c = o === OTHER ? undefined : colorOf(o);
         if (c) seg.style.background = c;
         seg.title = `${o}: ${int(r.byOrg.get(o)!)} (${pct(s)})`;
+        if (link) {
+          seg.setAttribute('href', link.url);
+          seg.setAttribute('target', '_blank');
+          seg.setAttribute('rel', 'noopener');
+          const who = link.shown < link.total
+            ? `its ${link.shown} most active reviewers (of ${int(link.total)})`
+            : link.total === 1 ? 'its reviewer' : `its ${link.total} reviewers`;
+          seg.title += `\nOpens the CLs in ${link.path} that ${who} commented on, on Gerrit in a new tab. ` +
+            'Gerrit can only match CLs that touch the directory and changed around the range, so it lists more than are counted here.';
+          seg.setAttribute('aria-label', `${o} in ${r.title}: ${int(r.byOrg.get(o)!)} ${unit}; open on Gerrit`);
+        }
         dist.append(seg);
       }
       li.append(label, vol, dist, node('span', 'ar-ng', r.value ? pct(others) : '—'));

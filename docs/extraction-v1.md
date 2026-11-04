@@ -276,6 +276,19 @@ counts.
     parent.
   - Size: for those 52 weeks, 14,500 nodes and 1.76 MB of JSON (0.52 MB
     gzipped); the weekly rows grow with the weeks covered.
+  - **Gerrit links.** `area_reviewers.json` splits each (week, node, org)
+    bucket by reviewer. Each org segment on the chart then links to Gerrit:
+    `dir:<path>` plus `after:`/`before:` dates plus
+    `(commentby:A -owner:A) OR …`, for the 100 reviewers in that row's
+    subtree (or, for a "rest of" row, its own bucket) with the most comments
+    in the range. That's a superset of the counted CLs. `dir:` can't be
+    anchored (Chromium Gerrit has regex search off), it includes
+    subdirectories and looks at the current patch set only, and Gerrit dates
+    bound when a CL last changed, not when a comment was written. The
+    `before:` bound is 28 days after the range ends. Gerrit has no domain or
+    wildcard account search (`*@microsoft.com` matches nothing, and a bare
+    `microsoft.com` expands past the 800-term limit), hence the explicit
+    account ids.
 - **Changing the scope** needs only `summarize`, not a new `derive`: paths
   are stored per comment.
 

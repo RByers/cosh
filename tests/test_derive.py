@@ -390,6 +390,8 @@ class SummarizeTest(unittest.TestCase):
             rows = summarize(data_dir=d, out_dir=out)
             with open(os.path.join(out, "area_weekly.json")) as fh:
                 areas = json.load(fh)
+            with open(os.path.join(out, "area_reviewers.json")) as fh:
+                area_reviewers = json.load(fh)
             with open(os.path.join(out, "org_weekly.json")) as fh:
                 meta = json.load(fh)["meta"]
         self.assertEqual([(r["org"], r["comments"], r["ai_comments"], r["reviewers"], r["share"],
@@ -428,6 +430,22 @@ class SummarizeTest(unittest.TestCase):
                                ("third_party/blink/renderer/core/", "microsoft.com"): [3, 1, 30],
                                ("third_party/blink/renderer/core/", "google.com"): [2, 1, 20],
                                ("chrome/browser/web_applications/", "microsoft.com"): [1, 1, 10]})
+        # The same buckets' comments by reviewer, indexed like area_weekly.json.
+        self.assertEqual(area_reviewers["meta"]["areas_generated_at"], areas["meta"]["generated_at"])
+        got = {(paths[n], areas["orgs"][o]): pairs for n, o, *pairs in area_reviewers["weeks"]["2026-W44"]}
+        self.assertEqual(got, {("chrome/browser/ui/", "microsoft.com"): [2, 2],
+                               ("chrome/browser/ui/", "google.com"): [3, 4],
+                               (UNPLACED, "google.com"): [3, 5],
+                               ("third_party/blink/renderer/core/", "microsoft.com"): [2, 3],
+                               ("third_party/blink/renderer/core/", "google.com"): [3, 2],
+                               ("chrome/browser/web_applications/", "microsoft.com"): [2, 1]})
+
+    def test_summarize_refuses_a_missing_db(self):
+        with tempfile.TemporaryDirectory() as d:
+            missing = os.path.join(d, "nope.sqlite")
+            with self.assertRaises(SystemExit):
+                summarize(data_dir=d, out_dir=os.path.join(d, "s"), db_path=missing)
+            self.assertFalse(os.path.exists(missing))
 
     def test_metric_picks_the_share_column(self):
         accounts = [(1, "owner@igalia.com"), (2, "a@microsoft.com"), (3, "b@google.com")]

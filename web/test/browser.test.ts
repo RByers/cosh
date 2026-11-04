@@ -324,6 +324,59 @@ test('review by directory shows volume and org split per directory, and the path
   await page.close();
 });
 
+test('each org segment of a directory links to its reviewers’ CLs there on Gerrit', async () => {
+  const { page, errors } = await open();
+  // The links' data loads only once the chart nears the viewport.
+  assert.equal(await page.$$eval('#area-chart a.ar-seg', (a) => a.length), 0);
+  await page.$eval('#area-chart', (e) => e.scrollIntoView());
+  await page.waitForSelector('body[data-area-links]');
+  const read = () =>
+    page.evaluate(() =>
+      [...document.querySelectorAll<HTMLElement>('#area-chart .ar-row')].map((r) => ({
+        key: r.dataset.key!,
+        depth: Number(r.dataset.depth),
+        kind: r.classList.contains('ar-other') ? 'other' : 'dir-or-rest',
+        name: r.querySelector('.ar-name')!.textContent!,
+        segs: [...r.querySelectorAll<HTMLElement>('.ar-seg')].map((s) => ({
+          link: s instanceof HTMLAnchorElement ? s.href : null,
+          target: s.getAttribute('target'),
+          title: s.title,
+        })),
+      })),
+    );
+  // A top-level directory links to its whole subtree.
+  const top = await read();
+  const blink = top.find((r) => r.name === 'third_party/blink/')!;
+  assert.match(blink.segs.find((s) => s.title.startsWith('google.com:'))!.link!,
+    /^https:\/\/chromium-review\.googlesource\.com\/q\/dir:third_party\/blink\+after:/);
+  // Drill down to components/services/storage/, where Microsoft does most of the review.
+  const open1 = async (depth: number, name: string) => {
+    const row = (await read()).find((r) => r.depth === depth && r.name === name)!;
+    assert.ok(row, name);
+    await page.click(`li[data-key="${row.key}"] .ar-toggle`);
+  };
+  await open1(0, 'components/');
+  await open1(1, 'services/');
+  const d = await read();
+  const storage = d.find((r) => r.depth === 2 && r.name === 'storage/')!;
+  assert.ok(storage, 'components/services/storage/ row');
+  const ms = storage.segs.find((s) => s.title.startsWith('microsoft.com:'))!;
+  assert.ok(ms, 'microsoft.com segment in components/services/storage/');
+  assert.match(ms.link!, /^https:\/\/chromium-review\.googlesource\.com\/q\/dir:components\/services\/storage\+after:\d{4}-\d\d-\d\d\+/);
+  assert.match(ms.link!, /commentby:(\d+)\+-owner:\1/);
+  assert.equal(ms.target, '_blank');
+  assert.match(ms.title, /Opens the CLs in components\/services\/storage\/ that .* commented on/);
+  // Every segment of a real directory is a link; "(no file)", "(top-level
+  // files)" and the "N more" groups can't be.
+  assert.ok(d.some((r) => r.kind === 'other'), 'an "N more" row');
+  for (const r of d) {
+    const linkable = r.kind !== 'other' && r.name.endsWith('/');
+    assert.ok(r.segs.every((s) => !!s.link === linkable), `${r.name}: ${r.segs.map((s) => s.link).join(' ')}`);
+  }
+  assert.deepEqual(errors, []);
+  await page.close();
+});
+
 test('value ratio smoothing defaults to 4 weeks and is selectable', async () => {
   const { page, errors } = await open('#metric=comments&from=2026-W30&to=2026-W44');
   const read = () =>
@@ -542,8 +595,10 @@ test('leaderboard shows up to 50 reviewers compactly', async () => {
   assert.match(comments.top, /^1\. [^·]+$/); // rank and name only; the org is the bar colour
   // The hover text gives the count with the metric, then the email.
   assert.match(comments.title, /^1\. .+\n[\d,]+ review comments\n[^@\s]+@[^@\s]+\.[a-z]+\n/i);
-  // Each row is a real link to the reviewer's reviews on Gerrit.
-  assert.match(comments.links[0], /^https:\/\/chromium-review\.googlesource\.com\/q\/reviewedby:[^@\s/]+@[^@\s/]+$/);
+  // Each row is a real link to the CLs the reviewer commented on (and doesn't
+  // own) in the range, on Gerrit.
+  assert.match(comments.links[0],
+    /^https:\/\/chromium-review\.googlesource\.com\/q\/commentby:([^@\s/+]+@[^@\s/+]+)\+-owner:\1\+after:\d{4}-\d\d-\d\d(\+before:\d{4}-\d\d-\d\d)?$/);
   // Links open in a new tab, so the dashboard stays put.
   assert.ok(comments.targets.every((t) => t === '_blank'), `targets=${comments.targets}`);
   // Bars and gridlines share the plot column: a bar's length is its share of

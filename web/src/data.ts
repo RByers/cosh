@@ -409,9 +409,40 @@ export function niceTicks(max: number, target = 6): number[] {
   return Array.from({ length: n + 1 }, (_, i) => Number((i * step).toPrecision(12)));
 }
 
-/** The reviewer's reviews on Chromium Gerrit, or null without an email. */
-export const gerritReviewsUrl = (email: string | null): string | null =>
-  email ? `https://chromium-review.googlesource.com/q/reviewedby:${encodeURIComponent(email).replace('%40', '@')}` : null;
+export const GERRIT = 'https://chromium-review.googlesource.com';
+
+/** A Gerrit search page for the terms (ANDed). Each term is URL-encoded,
+ * keeping `@ : / ( )` readable (Gerrit's UI takes them as is); spaces become
+ * `+`, as in Gerrit's own links. */
+export const gerritQueryUrl = (terms: string[]): string =>
+  `${GERRIT}/q/` +
+  terms
+    .map((t) =>
+      encodeURIComponent(t).replace(/%40/g, '@').replace(/%3A/g, ':').replace(/%2F/g, '/').replace(/%20/g, '+'),
+    )
+    .join('+');
+
+/** Days after a range's end that its Gerrit links still look at. Gerrit can
+ * only filter by when a CL last changed (`after:`/`before:`), not by when a
+ * comment was written, and a CL reviewed in a range usually closes, its last
+ * update, within a few weeks. */
+export const LINK_SLACK_DAYS = 28;
+
+/** Gerrit terms for CLs that changed during the range: from the day before
+ * its Monday (time-zone leeway) to LINK_SLACK_DAYS after its Sunday, with no
+ * end when that's still to come. None without a range. */
+export function gerritDateTerms(range?: WeekRange, now = new Date()): string[] {
+  if (!range) return [];
+  const after = new Date(weekMonday(range.from).getTime() - DAY_MS);
+  const before = new Date(weekSunday(range.to).getTime() + (1 + LINK_SLACK_DAYS) * DAY_MS);
+  return [`after:${isoDate(after)}`, ...(before < now ? [`before:${isoDate(before)}`] : [])];
+}
+
+/** The CLs the reviewer commented on (votes count too) and doesn't own, on
+ * Chromium Gerrit, or null without an email. Not `reviewedby:`, which only
+ * matches CLs where the reviewer posted after the owner's latest message. */
+export const gerritReviewsUrl = (email: string | null, range?: WeekRange, now?: Date): string | null =>
+  email ? gerritQueryUrl([`commentby:${email}`, `-owner:${email}`, ...gerritDateTerms(range, now)]) : null;
 
 const asList = (weeks: string | string[]) => (typeof weeks === 'string' ? [weeks] : weeks);
 
@@ -706,7 +737,14 @@ export function barScale(
  * the sum over its subtree, so children add up to their parent; reviewed CLs
  * count (CL, bucket) pairs. Orgs are folded like org_weekly. */
 export interface DirBoard {
-  meta: { path_rules: PathRule[]; unplaced: string; root_files: string; dir_limit: number; [k: string]: unknown };
+  meta: {
+    path_rules: PathRule[];
+    unplaced: string;
+    root_files: string;
+    dir_limit: number;
+    generated_at?: string;
+    [k: string]: unknown;
+  };
   orgs: string[];
   /** [parent index or -1, label (a root's path, else the segment below its parent), included]. */
   nodes: [parent: number, label: string, included: 0 | 1][];
@@ -808,6 +846,8 @@ export interface DirRow {
    * "other" group. */
   key: string;
   kind: 'dir' | 'rest' | 'other';
+  /** The tree node a dir or rest row shows (none for "other"). */
+  node?: number;
   depth: number;
   /** What the row shows: a root's path, a subdirectory's name, "rest of …"
    * or "N more". */
@@ -854,7 +894,7 @@ export function dirRows(board: DirBoard, t: DirTotals, expanded: ReadonlySet<str
     const i = item.node;
     if (item.kind === 'rest') {
       out.push({
-        key: `r${i}`, kind: 'rest', depth, label: `rest of ${board.nodes[i][1]}`,
+        key: `r${i}`, kind: 'rest', node: i, depth, label: `rest of ${board.nodes[i][1]}`,
         title: `${paths[i]}: files directly in this directory, and subdirectories too small to list`,
         included: share(item), value: item.value, byOrg: item.byOrg, expandable: false, expanded: false,
       });
@@ -864,7 +904,7 @@ export function dirRows(board: DirBoard, t: DirTotals, expanded: ReadonlySet<str
     const expandable = hasKids(i);
     const open = expandable && expanded.has(key);
     out.push({
-      key, kind: 'dir', depth, label: board.nodes[i][1], title: paths[i], included: share(item),
+      key, kind: 'dir', node: i, depth, label: board.nodes[i][1], title: paths[i], included: share(item),
       value: item.value, byOrg: item.byOrg, expandable, expanded: open,
     });
     if (open) {
@@ -902,4 +942,116 @@ export function dirRows(board: DirBoard, t: DirTotals, expanded: ReadonlySet<str
   const top: Item[] = roots.filter((r) => t.total[r] > 0).map(dirItem);
   group(top.sort(byValue), 0, 'root', 0);
   return out;
+}
+
+// ---------------------------------------------------------------------------
+// Gerrit links for the directory chart (summaries/area_reviewers.json).
+
+/** Who wrote each (week, node, org) bucket's comments in a DirBoard. Rows are
+ * [node, org, account, comments, account, comments, ...], indexed like the
+ * DirBoard whose generated_at is `areas_generated_at`. */
+export interface DirReviewers {
+  meta: { areas_generated_at: string; [k: string]: unknown };
+  weeks: Record<string, number[][]>;
+}
+
+/** Account id → comments, per segment org (an org in `orgs`, else OTHER). */
+export type SegmentReviewers = Map<string, Map<number, number>>;
+
+export interface DirReviewerIndex {
+  /** Per node: the reviewers of its subtree (a dir row) and of its own bucket (its rest row). */
+  total: (SegmentReviewers | undefined)[];
+  own: (SegmentReviewers | undefined)[];
+}
+
+const addReviewers = (maps: (SegmentReviewers | undefined)[], i: number, org: string, row: number[]) => {
+  let m = maps[i];
+  if (!m) maps[i] = m = new Map();
+  let people = m.get(org);
+  if (!people) m.set(org, (people = new Map()));
+  for (let k = 2; k + 1 < row.length; k += 2) people.set(row[k], (people.get(row[k]) ?? 0) + row[k + 1]);
+};
+
+/** Sums the reviewers over the weeks into every node's subtree, like
+ * dirTotals. Null if `who` was built with a different DirBoard, whose node
+ * and org indexes may not match. */
+export function dirReviewerIndex(
+  board: DirBoard,
+  who: DirReviewers,
+  weeks: string[],
+  orgs: readonly string[],
+): DirReviewerIndex | null {
+  if (!board.meta.generated_at || who.meta.areas_generated_at !== board.meta.generated_at) return null;
+  const keep = new Set(orgs);
+  const n = board.nodes.length;
+  const idx: DirReviewerIndex = { total: new Array(n), own: new Array(n) };
+  for (const w of weeks) {
+    for (const row of who.weeks[w] ?? []) {
+      const org = board.orgs[row[1]];
+      if (row[0] >= n || org === undefined) continue;
+      const seg = keep.has(org) ? org : OTHER;
+      addReviewers(idx.own, row[0], seg, row);
+      for (let i = row[0]; i >= 0; i = board.nodes[i][0]) addReviewers(idx.total, i, seg, row);
+    }
+  }
+  return idx;
+}
+
+/** Most reviewers one directory link names, by most comments: each costs
+ * two of Gerrit's 800 query terms, and the URL grows with each. */
+export const MAX_LINK_REVIEWERS = 100;
+
+export interface DirLink {
+  url: string;
+  /** The directory searched. */
+  path: string;
+  /** Reviewers the search names, and how many there were in all. */
+  shown: number;
+  total: number;
+}
+
+/** A Gerrit search for the CLs in a directory that the reviewers commented
+ * on, other than their own, in the range (gerritDateTerms): the
+ * MAX_LINK_REVIEWERS with the most comments. `dir:` matches CLs whose current
+ * patch set touches the directory, subdirectories included (or any path with
+ * those segments: Chromium Gerrit has no regex search to anchor it), so the
+ * list is a superset of the CLs behind the count. Null for paths `dir:` can't
+ * name: "(no file)" and "(top-level files)". */
+export function gerritDirUrl(
+  path: string,
+  reviewers: Map<number, number> | undefined,
+  range?: WeekRange,
+  now?: Date,
+): DirLink | null {
+  if (!reviewers?.size || !path.endsWith('/') || path.startsWith('(')) return null;
+  const ids = [...reviewers]
+    .sort((a, b) => b[1] - a[1] || a[0] - b[0])
+    .slice(0, MAX_LINK_REVIEWERS)
+    .map(([id]) => id);
+  const who =
+    ids.length === 1
+      ? [`commentby:${ids[0]}`, `-owner:${ids[0]}`]
+      : [`(${ids.map((id) => `(commentby:${id} -owner:${id})`).join(' OR ')})`];
+  return {
+    url: gerritQueryUrl([`dir:${path.slice(0, -1)}`, ...gerritDateTerms(range, now), ...who]),
+    path,
+    shown: ids.length,
+    total: reviewers.size,
+  };
+}
+
+/** The link for one org's segment of a chart row: a directory row searches
+ * its subtree's reviewers, a "rest of" row its own bucket's; "other" groups
+ * get none. */
+export function dirRowLink(
+  board: DirBoard,
+  idx: DirReviewerIndex,
+  row: DirRow,
+  org: string,
+  range?: WeekRange,
+  now?: Date,
+): DirLink | null {
+  if (row.node === undefined || row.kind === 'other') return null;
+  const reviewers = (row.kind === 'dir' ? idx.total : idx.own)[row.node]?.get(org);
+  return gerritDirUrl(dirTree(board).paths[row.node], reviewers, range, now);
 }

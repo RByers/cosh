@@ -91,6 +91,7 @@ value_ratio(O, t) = O's share of Chromium review comments
 | 2026-11-03 | Exclude brave.com from the ratio: no browser mapping in `config/org_browsers.csv`; the web UI lists it with usage "unknown" (`UNKNOWN_USAGE_ORGS` in `web/src/data.ts`) and explains why in a note | User's instruction. Radar has a `Brave` label but puts it at about 0.002% of Chromium usage (2025-W45..2026-W44 mean), roughly 1000× below Brave's real size (~100M MAU against ~3.5B Chrome users). Brave identifies itself only in `Sec-CH-UA`, so Radar evidently counts it as Chrome (`radar-research.md` §6) |
 | 2026-11-03 | `fb.com` reviewers count as `meta.com` (`DOMAIN_ALIASES` in `cosh/orgs.py`), applied when `summarize` resolves orgs; fetched and derived data keep raw emails and need no re-run | User's instruction: Meta employees used fb.com addresses |
 | 2026-11-04 | Keep the date filter and its per-week leaderboard data (`summaries/reviewer_weekly.json`); revisit client weight later (Open questions) | User's decision: the client is too small to worry about yet. On 2026-11-04 (38 weeks loaded) the page fetched about 400 KB gzipped (1.9 MB raw). `reviewer_weekly.json` was 257 KB of that, and one all-time total per reviewer would cut it to about 81 KB |
+| 2026-11-04 | Gerrit links: the leaderboard links to `commentby:X -owner:X` plus the range's dates, not `reviewedby:X`. Each org segment in "Review by directory" (any tree level) links to `dir:D` + dates + `(commentby:A -owner:A) OR …` for that org's reviewers in the directory's subtree (top 100 by comments), from a new `summaries/area_reviewers.json` that the page fetches when the chart scrolls into view | `reviewedby:` isn't "reviewed by". Gerrit's `ChangeData.reviewedBy()` walks the messages newest-first and stops at the owner's latest message, so a CL drops out once its owner replies. Domain queries don't work for drill-down: `commentby:*@microsoft.com` matches nothing (no wildcards), and `commentby:microsoft.com` expands to every matching account and fails (906 terms, max 800). Regex `dir:^…`/`path:^…` is off on Chromium Gerrit, so `dir:` also matches the segments anywhere (`dir:content` hits `components/x/content/`), and dates can only bound when a CL last changed. The links are therefore supersets of the counted CLs |
 
 ## Status
 
@@ -184,6 +185,12 @@ value_ratio(O, t) = O's share of Chromium review comments
   gets too heavy, don't drop the date filter. Ship precomputed totals for the
   presets instead (about 80 KB for all four), and lazy-load the per-week file,
   or split it by year, only when someone picks a custom range.
+  `area_reviewers.json` (the directory chart's Gerrit links) is bigger still:
+  2.7 MB, 807 KB gzipped at 68 weeks over the 10,000-directory tree, against
+  2.1 MB and 644 KB for `area_weekly.json`. It's fetched only when the chart
+  scrolls near the viewport, so it holds nothing up. If it grows too heavy,
+  options are to split it by year, keep reviewers only for the tree's upper
+  levels, or fetch one subtree's slice when a row is expanded.
 
 - Vivaldi has no Radar label at all and counts as Chrome, like Brave (which is
   now excluded with a note). Estimate them somehow, e.g. re-split Chrome's

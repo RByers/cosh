@@ -35,6 +35,12 @@ import {
   topOrgCounts,
   orgWeeklyCounts,
   gerritReviewsUrl,
+  gerritDateTerms,
+  gerritDirUrl,
+  dirReviewerIndex,
+  dirRowLink,
+  type DirReviewers,
+  MAX_LINK_REVIEWERS,
   niceTicks,
   topReviewers,
   trimRanked,
@@ -378,13 +384,86 @@ test('niceTicks steps by 1, 2 or 5 × 10ⁿ up to a round axis end', () => {
   assert.deepEqual(niceTicks(0), [0, 1]);
 });
 
-test('gerritReviewsUrl links to the reviewer query, keeping @ readable', () => {
-  assert.equal(
-    gerritReviewsUrl('jkeitel@google.com'),
-    'https://chromium-review.googlesource.com/q/reviewedby:jkeitel@google.com',
-  );
-  assert.equal(gerritReviewsUrl('a+b@x.org'), 'https://chromium-review.googlesource.com/q/reviewedby:a%2Bb@x.org');
+const Q = 'https://chromium-review.googlesource.com/q/';
+const NOW = new Date('2026-11-04T12:00:00Z');
+
+test('gerritReviewsUrl links to the CLs the reviewer commented on and does not own', () => {
+  // Not reviewedby:, which drops a CL once its owner replies after the review.
+  assert.equal(gerritReviewsUrl('jkeitel@google.com'), `${Q}commentby:jkeitel@google.com+-owner:jkeitel@google.com`);
+  assert.equal(gerritReviewsUrl('a+b@x.org'), `${Q}commentby:a%2Bb@x.org+-owner:a%2Bb@x.org`);
   assert.equal(gerritReviewsUrl(null), null);
+  // With a range: CLs changed from the day before its Monday on; no end bound
+  // while the range's end plus the slack is still to come...
+  assert.equal(gerritReviewsUrl('r@x.org', { from: '2026-W41', to: '2026-W44' }, NOW),
+    `${Q}commentby:r@x.org+-owner:r@x.org+after:2026-10-04`);
+  // ...and 28 days after its Sunday once that has passed.
+  assert.equal(gerritReviewsUrl('r@x.org', { from: '2025-W40', to: '2025-W41' }, NOW),
+    `${Q}commentby:r@x.org+-owner:r@x.org+after:2025-09-28+before:2025-11-10`);
+});
+
+test('gerritDateTerms bounds a range by when CLs changed', () => {
+  assert.deepEqual(gerritDateTerms(undefined, NOW), []);
+  assert.deepEqual(gerritDateTerms({ from: '2026-W01', to: '2026-W01' }, NOW), ['after:2025-12-28', 'before:2026-02-02']);
+});
+
+test('gerritDirUrl searches the directory for the reviewers’ CLs, most comments first', () => {
+  const range = { from: '2026-W41', to: '2026-W44' };
+  const link = gerritDirUrl('components/services/storage/', new Map([[11, 2], [22, 9], [33, 2]]), range, NOW)!;
+  assert.equal(link.url, `${Q}dir:components/services/storage+after:2026-10-04+` +
+    '((commentby:22+-owner:22)+OR+(commentby:11+-owner:11)+OR+(commentby:33+-owner:33))');
+  assert.deepEqual([link.path, link.shown, link.total], ['components/services/storage/', 3, 3]);
+  // One reviewer: no grouping needed.
+  assert.equal(gerritDirUrl('base/', new Map([[5, 1]]), range, NOW)!.url,
+    `${Q}dir:base+after:2026-10-04+commentby:5+-owner:5`);
+  // At most MAX_LINK_REVIEWERS, keeping those with the most comments.
+  const many = new Map(Array.from({ length: MAX_LINK_REVIEWERS + 5 }, (_, i) => [1000 + i, i] as [number, number]));
+  const capped = gerritDirUrl('ui/', many, range, NOW)!;
+  assert.deepEqual([capped.shown, capped.total], [MAX_LINK_REVIEWERS, MAX_LINK_REVIEWERS + 5]);
+  assert.ok(capped.url.includes('commentby:1104+') && !capped.url.includes('commentby:1004+'));
+  // Paths dir: can't name, and segments with nobody behind them.
+  assert.equal(gerritDirUrl('(no file)', new Map([[5, 1]]), range, NOW), null);
+  assert.equal(gerritDirUrl('(top-level files)', new Map([[5, 1]]), range, NOW), null);
+  assert.equal(gerritDirUrl('base/', new Map(), range, NOW), null);
+  assert.equal(gerritDirUrl('base/', undefined, range, NOW), null);
+});
+
+test('dirReviewerIndex sums reviewers up the tree; dirRowLink picks subtree or own bucket', () => {
+  // Nodes as in DIRS: 1 chrome/, 2 chrome/browser/, 3 chrome/browser/ui/, 4 content/, 5 content/browser/.
+  const who: DirReviewers = {
+    meta: { areas_generated_at: 'T' },
+    weeks: {
+      '2026-W43': [[3, 0, 7, 20]],
+      '2026-W44': [[2, 0, 8, 10], [3, 0, 7, 6, 9, 4], [5, 1, 11, 4], [4, 0, 12, 2], [0, 0, 13, 5]],
+    },
+  };
+  const board: DirBoard = { ...DIRS, meta: { ...DIRS.meta, generated_at: 'T' } };
+  const idx = dirReviewerIndex(board, who, W, ['google.com'])!;
+  assert.deepEqual(Object.fromEntries(idx.total[1]!.get('google.com')!), { 7: 26, 8: 10, 9: 4 });
+  assert.deepEqual(Object.fromEntries(idx.own[2]!.get('google.com')!), { 8: 10 });
+  // microsoft.com isn't named, so it's in Other.
+  assert.deepEqual(Object.fromEntries(idx.total[4]!.get(OTHER)!), { 11: 4 });
+  // Only the weeks asked for.
+  assert.deepEqual(Object.fromEntries(dirReviewerIndex(board, who, ['2026-W43'], ['google.com'])!.total[1]!.get('google.com')!),
+    { 7: 20 });
+  // A file from another summarize run is not used: its indexes may not match.
+  assert.equal(dirReviewerIndex({ ...DIRS, meta: { ...DIRS.meta, generated_at: 'U' } }, who, W, []), null);
+  assert.equal(dirReviewerIndex(DIRS, who, W, []), null);
+
+  const t = dirTotals(board, W, ['google.com'], 'comments');
+  const rows = dirRows(board, t, new Set(['d1', 'd2']), 20);
+  const row = (key: string) => rows.find((r) => r.key === key)!;
+  const range = { from: '2026-W43', to: '2026-W44' };
+  // A directory row: its subtree's reviewers, most comments first.
+  assert.equal(dirRowLink(board, idx, row('d1'), 'google.com', range, NOW)!.url,
+    `${Q}dir:chrome+after:2026-10-18+((commentby:7+-owner:7)+OR+(commentby:8+-owner:8)+OR+(commentby:9+-owner:9))`);
+  // "rest of chrome/browser/": only its own bucket's reviewers.
+  assert.equal(dirRowLink(board, idx, row('r2'), 'google.com', range, NOW)!.url,
+    `${Q}dir:chrome/browser+after:2026-10-18+commentby:8+-owner:8`);
+  // Nothing for an org with no reviewers there, for "(no file)", or for "other" groups.
+  assert.equal(dirRowLink(board, idx, row('d1'), OTHER, range, NOW), null);
+  assert.equal(dirRowLink(board, idx, row('d0'), 'google.com', range, NOW), null);
+  const other = dirRows(board, t, new Set(), 1).find((r) => r.kind === 'other')!;
+  assert.equal(dirRowLink(board, idx, other, 'google.com', range, NOW), null);
 });
 
 // A small directory tree. Rows are [node, org, comments, cls, chars] for each

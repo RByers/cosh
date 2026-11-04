@@ -3,7 +3,7 @@
 // plot column (the rows use subgrid), so bar ends and gridlines line up at any
 // width without measuring anything. Real links and text mean middle-click,
 // copy-link and find-in-page all work, and screen readers get an ordered list.
-import { gerritReviewsUrl, niceTicks, type LeaderboardRow } from './data.ts';
+import { gerritReviewsUrl, niceTicks, type LeaderboardRow, type WeekRange } from './data.ts';
 
 function node<K extends keyof HTMLElementTagNameMap>(tag: K, cls?: string, text?: string) {
   const e = document.createElement(tag);
@@ -15,12 +15,14 @@ function node<K extends keyof HTMLElementTagNameMap>(tag: K, cls?: string, text?
 const pct = (v: number, max: number) => `${(v / max) * 100}%`;
 
 /** Fills `box` with the leaderboard. Bars take the org's colour (`colorOf`);
- * orgs without one get the muted neutral. */
+ * orgs without one get the muted neutral. Each row links to the CLs the
+ * reviewer commented on, limited to `range` when given. */
 export function buildLeaderboard(
   box: HTMLElement,
   rows: LeaderboardRow[],
   metricLabel: string,
   colorOf: (org: string) => string | undefined,
+  range?: WeekRange,
 ): void {
   const fmt = (v: number) => v.toLocaleString('en-US');
   if (!rows.length) {
@@ -51,7 +53,7 @@ export function buildLeaderboard(
   list.append(
     ...rows.map((r, i) => {
       const li = node('li');
-      const url = gerritReviewsUrl(r.email);
+      const url = gerritReviewsUrl(r.email, range);
       const row = node(url ? 'a' : 'span', 'lb-row');
       if (url) {
         row.setAttribute('href', url);
@@ -59,7 +61,7 @@ export function buildLeaderboard(
         row.setAttribute('rel', 'noopener');
       }
       row.title = `${i + 1}. ${r.name} (${r.org})\n${fmt(r.value)} ${unit}` +
-        (r.email ? `\n${r.email}\nOpens their reviews on Gerrit in a new tab` : '');
+        (r.email ? `\n${r.email}\nOpens the CLs they commented on in the range on Gerrit, in a new tab` : '');
       const label = node('span', 'lb-label');
       label.append(
         node('span', 'lb-rank', `${i + 1}. `),

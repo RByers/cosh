@@ -7,6 +7,7 @@ import radarUrl from '../../data/public/radar_browser_share.csv?url';
 import orgBrowsersUrl from '../../config/org_browsers.csv?url';
 import reviewerUrl from '../../summaries/reviewer_weekly.json?url';
 import areaUrl from '../../summaries/area_weekly.json?url';
+import areaReviewersUrl from '../../summaries/area_reviewers.json?url';
 
 import {
   type AnyChart,
@@ -26,6 +27,10 @@ import {
   dirTree,
   topDirOrgs,
   type DirBoard,
+  type DirRow,
+  dirReviewerIndex,
+  type DirReviewers,
+  dirRowLink,
   OTHER,
   chartedOrgs,
   clampRange,
@@ -78,6 +83,9 @@ interface Data {
   orgBrowsers: Map<string, string[]>;
   reviewers: ReviewerBoard;
   areas: DirBoard;
+  /** Who wrote each directory's comments: only the directory chart's links
+   * need it, so it's fetched after the first render. */
+  areaReviewers?: DirReviewers;
   /** full: the pickers' limits; common: where review and usage data overlap (the default). */
   ranges: { full: WeekRange; common: WeekRange };
 }
@@ -424,7 +432,7 @@ function renderLeaderboard(
       return li;
     }),
   );
-  buildLeaderboard($('#leaderboard-chart'), rows, name, (org) => colors.get(org));
+  buildLeaderboard($('#leaderboard-chart'), rows, name, (org) => colors.get(org), state.range);
 }
 
 /** Review by directory: every comment in the range, by directory and org, with
@@ -461,13 +469,15 @@ function renderAreas(data: Data, state: State, colors: Map<string, string>, them
     }),
   );
   const box = $('#area-chart');
+  const who = data.areaReviewers && dirReviewerIndex(data.areas, data.areaReviewers, weeks, orgs);
+  const linkOf = (row: DirRow, org: string) => (who ? dirRowLink(data.areas, who, row, org, state.range) : null);
   const draw = (focusKey?: string) => {
     const rows = dirRows(data.areas, totals, state.expandedDirs);
     buildAreaChart(box, rows, orgs, (org) => segColors.get(org), metricName(state.metric), (key) => {
       if (state.expandedDirs.has(key)) state.expandedDirs.delete(key);
       else state.expandedDirs.add(key);
       draw(key);
-    });
+    }, linkOf);
     // Rebuilding the rows drops focus; give it back to the toggle just used.
     if (focusKey) box.querySelector<HTMLButtonElement>(`li[data-key="${CSS.escape(focusKey)}"] .ar-toggle`)?.focus();
   };
@@ -523,12 +533,14 @@ function main(data: Data) {
   const jumpWeek = derivativeJumpWeek(data.radar);
   let syncInputs = () => {};
 
+  const colorsFor = (theme: Theme) => new Map(orgs.map((o, i) => [o, theme.series[i]]));
+
   const render = () => {
     writeStateToUrl(state);
     syncInputs();
     renderRangeSummary(data, state);
     const theme = readTheme();
-    const colors = new Map(orgs.map((o, i) => [o, theme.series[i]]));
+    const colors = colorsFor(theme);
     // Every section covers the selected range only.
     const weeks = weeksIn(data.summary.meta.weeks, state.range);
     const label = rangeLabel(state.range);
@@ -624,6 +636,30 @@ function main(data: Data) {
     `Review data: ${weeks.length} week${weeks.length === 1 ? '' : 's'} (${weeks[0]}${weeks.length > 1 ? `–${weeks[weeks.length - 1]}` : ''}). ` +
     `Usage data: Cloudflare Radar, ${[...data.radar.keys()].sort()[0]} onward.`;
   document.body.dataset.ready = 'true';
+  // The directory chart's Gerrit links need a file larger than the chart's
+  // own data, so it's fetched only when the chart comes near the viewport.
+  // Until it arrives (or if it fails) the segments aren't links.
+  const loadLinks = () =>
+    fetchText(areaReviewersUrl)
+      .then((t) => {
+        data.areaReviewers = JSON.parse(t) as DirReviewers;
+        const theme = readTheme();
+        renderAreas(data, state, colorsFor(theme), theme);
+        document.body.dataset.areaLinks = 'true';
+      })
+      .catch((err: unknown) => console.error(err));
+  if (!('IntersectionObserver' in window)) loadLinks();
+  else {
+    const seen = new IntersectionObserver(
+      (entries) => {
+        if (!entries.some((e) => e.isIntersecting)) return;
+        seen.disconnect();
+        loadLinks();
+      },
+      { rootMargin: '400px' },
+    );
+    seen.observe($('#area-chart'));
+  }
 }
 
 load()

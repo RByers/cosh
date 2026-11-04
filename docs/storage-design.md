@@ -143,6 +143,8 @@ cosh/
   summaries/                 # committed: what the front end fetches
     org_weekly.csv  org_weekly.json
     reviewer_weekly.json     # every reviewer's weekly counts, per (week, org)
+    area_weekly.json         # every comment per (week, directory, org)
+    area_reviewers.json      # those comments by reviewer (directory chart's Gerrit links)
     org_monthly.csv org_monthly.json
     meta.json
 ```

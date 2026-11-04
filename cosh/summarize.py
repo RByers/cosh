@@ -42,6 +42,9 @@ Outputs:
                                       every comment, as a directory tree (the top
                                       paths.DIR_LIMIT directories) the web UI drills into,
                                       each node marked in or out of scope
+  summaries/area_reviewers.json       comments per (week, tree node, org, reviewer),
+                                      so the web UI can link each org's share of a
+                                      directory to those reviewers' CLs on Gerrit
 """
 
 import contextlib
@@ -65,6 +68,7 @@ TOTALS_COLS = ["iso_week", "main_cls", "merged_cls", "abandoned_cls", "human_cls
 METRICS = {"comments": "share_comments", "cls": "share_cls", "chars": "share_chars"}
 REVIEWERS_FILE = "reviewer_weekly.json"
 AREAS_FILE = "area_weekly.json"
+AREA_REVIEWERS_FILE = "area_reviewers.json"
 REVIEWER_COLUMNS = ["account_id", "org", "comments", "cls", "chars"]
 
 # Human reviewers on human-owned CLs on main. CROSS JOIN pins the join order
@@ -99,11 +103,12 @@ def comment_facts(db, resolve, scope, weeks=None):
     facts: per-(week, reviewer, org) dicts with in-scope comments (and their
     ai and post_merge subsets), chars, and cls (the set of CLs closed that
     week that the reviewer commented on in scope).
-    areas: {(week, directory, folded org): dict(comments, chars, cls)},
-    every comment, in scope or not (directory as from paths.directory).
+    areas: {(week, directory, folded org): dict(comments, chars, cls, reviewers)},
+    every comment, in scope or not (directory as from paths.directory);
+    reviewers maps account id to comments.
     `weeks`: the weeks to keep, or None for all."""
     facts = {}
-    areas = defaultdict(lambda: dict(comments=0, chars=0, cls=set()))
+    areas = defaultdict(lambda: dict(comments=0, chars=0, cls=set(), reviewers=defaultdict(int)))
     keep = (lambda w: True) if weeks is None else weeks.__contains__
     cache = {}
 
@@ -136,6 +141,7 @@ def comment_facts(db, resolve, scope, weeks=None):
         g = areas[(week, area, fold(org))]
         g["comments"] += n
         g["chars"] += chars
+        g["reviewers"][aid] += n
         if included:
             f = fact(week, aid, email, name, org)
             f["comments"] += n
@@ -162,6 +168,11 @@ def summarize(data_dir=store.DATA_DIR, out_dir=os.path.join(ROOT, "summaries"), 
               scope=None, metric="comments"):
     if metric not in METRICS:
         raise ValueError(f"metric must be one of {sorted(METRICS)}")
+    # open_derived creates a missing DB; summarizing one would write empty
+    # summaries (and leave a stray empty file at a mistyped or moved path).
+    path = db_path or os.path.join(data_dir, store.DERIVED_FILE)
+    if not os.path.exists(path):
+        raise SystemExit(f"no derived DB at {path}; build it with python3 -m cosh derive")
     db = store.open_derived(data_dir, db_path)
     scope = scope or load_scope()
     resolve = OrgResolver()
@@ -255,7 +266,8 @@ def summarize(data_dir=store.DATA_DIR, out_dir=os.path.join(ROOT, "summaries"), 
                   fh, indent=1)
     db.close()
     write_reviewers(facts, os.path.join(out_dir, REVIEWERS_FILE))
-    write_areas(areas, scope, os.path.join(out_dir, AREAS_FILE))
+    area_meta = write_areas(areas, scope, os.path.join(out_dir, AREAS_FILE))
+    write_area_reviewers(area_meta, os.path.join(out_dir, AREA_REVIEWERS_FILE))
     return out
 
 
@@ -333,12 +345,14 @@ def write_areas(areas, scope, path, limit=DIR_LIMIT):
         totals[d] += g["comments"]
     nodes, bucket = dir_tree(totals, scope, limit)
     index = {d: i for i, (d, _) in enumerate(nodes)}
-    buckets = defaultdict(lambda: dict(comments=0, chars=0, cls=set()))
+    buckets = defaultdict(lambda: dict(comments=0, chars=0, cls=set(), reviewers=defaultdict(int)))
     for (week, d, org), g in areas.items():
         b = buckets[(week, index[bucket(d)], org)]
         b["comments"] += g["comments"]
         b["chars"] += g["chars"]
         b["cls"] |= g["cls"]
+        for aid, n in g["reviewers"].items():
+            b["reviewers"][aid] += n
     orgs = sorted({o for _, _, o in areas})
     org_index = {o: i for i, o in enumerate(orgs)}
     weeks = defaultdict(list)
@@ -363,5 +377,36 @@ def write_areas(areas, scope, path, limit=DIR_LIMIT):
         fh.write(",".join("\n  " + json.dumps(n, separators=(",", ":")) for n in out_nodes))
         fh.write('\n ],\n "weeks": {')
         fh.write(",".join('\n  %s: %s' % (json.dumps(w), json.dumps(rows, separators=(",", ":")))
+                          for w, rows in sorted(weeks.items())))
+        fh.write("\n }\n}\n")
+    return dict(buckets=buckets, org_index=org_index, generated_at=meta["generated_at"])
+
+
+def write_area_reviewers(area_meta, path):
+    """area_reviewers.json: who wrote the comments of each (week, node, org)
+    bucket of area_weekly.json (`area_meta`, from write_areas), with that
+    file's node and org indexes; `areas_generated_at` names the
+    area_weekly.json it goes with. Rows are [node, org, account id, comments,
+    account id, comments, ...], most comments first, so the web UI can link an
+    org's share of a directory (its subtree's buckets) to those reviewers'
+    CLs on Gerrit. A separate file because it's several times the size of
+    area_weekly.json and only the links need it."""
+    org_index = area_meta["org_index"]
+    weeks = defaultdict(list)
+    for (week, node, org), b in sorted(area_meta["buckets"].items()):
+        if not b["reviewers"]:
+            continue
+        row = [node, org_index[org]]
+        for aid, n in sorted(b["reviewers"].items(), key=lambda kv: (-kv[1], kv[0])):
+            row += [aid, n]
+        weeks[week].append(row)
+    meta = dict(generated_at=store.now_iso(), areas_generated_at=area_meta["generated_at"],
+                columns="[node, org, account_id, comments, account_id, comments, ...]",
+                scope="area_weekly.json's comment buckets (by week written) split by reviewer; node "
+                      "and org are indexes into area_weekly.json's nodes and orgs")
+    compact = dict(separators=(",", ":"))
+    with _atomic_open(path) as fh:
+        fh.write('{"meta": %s,\n "weeks": {' % json.dumps(meta))
+        fh.write(",".join('\n  %s: [%s]' % (json.dumps(w), ",".join(json.dumps(r, **compact) for r in rows))
                           for w, rows in sorted(weeks.items())))
         fh.write("\n }\n}\n")
