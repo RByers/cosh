@@ -319,15 +319,23 @@ export function orgWeeklyCounts(
   return orgs.map((org) => ({ org, values: weeks.map((w) => valueAt(raw.get(org), w)) }));
 }
 
-/** Radar browsers to chart individually: the `n` with the highest peak
- * weekly share (peak, not mean, so a recent riser like ChromeDerivative
- * shows up), in descending order of peak. Everything else is "Other". */
-export function topBrowsers(radar: RadarWeekly, n = 7): string[] {
+/** Browsers the usage chart always plots: Meta's in-app browsers are small
+ * next to Chrome but are its whole usage credit, so they never fold into
+ * "Other". */
+export const ALWAYS_CHARTED_BROWSERS = ['Facebook', 'Instagram'];
+
+/** Radar browsers to chart individually: `always` plus the `n` others with
+ * the highest peak weekly share (peak, not mean, so a recent riser like
+ * ChromeDerivative shows up), in descending order of peak. Everything else
+ * is "Other". */
+export function topBrowsers(radar: RadarWeekly, n = 6, always: string[] = ALWAYS_CHARTED_BROWSERS): string[] {
   const peak = new Map<string, number>();
   for (const m of radar.values()) {
     for (const [b, s] of m) peak.set(b, Math.max(peak.get(b) ?? 0, s));
   }
-  return [...peak].sort((a, b) => b[1] - a[1]).slice(0, n).map(([b]) => b);
+  const ranked = [...peak].sort((a, b) => b[1] - a[1]).map(([b]) => b);
+  const top = ranked.filter((b) => !always.includes(b)).slice(0, n);
+  return ranked.filter((b) => top.includes(b) || always.includes(b));
 }
 
 /** One browser's weekly share, or the remainder for OTHER. */

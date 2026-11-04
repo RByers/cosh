@@ -280,7 +280,12 @@ test('meanDerivedShare averages the weeks that have usage data', () => {
 });
 
 test('topBrowsers ranks by peak share', () => {
-  assert.deepEqual(topBrowsers(parseRadarWeekly(RADAR), 2), ['Chrome', 'ChromeMobile']);
+  assert.deepEqual(topBrowsers(parseRadarWeekly(RADAR), 2, []), ['Chrome', 'ChromeMobile']);
+});
+
+test('topBrowsers always includes the given browsers, in peak order', () => {
+  const top = topBrowsers(parseRadarWeekly(RADAR), 1, ['Instagram']);
+  assert.deepEqual(top, ['Chrome', 'Instagram']);
 });
 
 test('formatRatio trims to two places and drops decimals from 10 up', () => {

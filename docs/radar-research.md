@@ -357,3 +357,30 @@ ChromeDerivative percentages above also use:
 |---|---|---|---|---|---|---|
 | 2023-W27 | 85.3% | 6.4% | 3.6% | 2.7% | 0.7% | 0.5% |
 | 2026-W44 | 77.3% | 8.3% | 1.6% | 1.5% | <0.1% | 11.0% |
+
+## Facebook's 2024-W39 drop (investigated 2026-11-03)
+
+Radar's `Facebook` label (non-iOS, share of all human requests) fell from about
+2.1% to 0.35% over 2024-W38..W41 and has stayed there (0.15% in 2026-W43,
+0.17% of Chromium). Instagram has held steady at about 0.7% (0.8% of
+Chromium). All-OS Facebook partly recovered from 2024-W47, but the recovery
+was iOS-only, and iOS is excluded.
+
+- A user-behaviour change this abrupt (−85% in three weeks) is implausible.
+  It looks like a user-agent or classifier change, for example the Android
+  Facebook app's in-app browser no longer being recognised as Facebook.
+- No single label gained the lost share. Chrome rose 1.9pp across those weeks,
+  but its autumn swing is seasonal (+3.4pp in 2023, −1.3pp in 2025).
+  ChromeMobile, which fell 2.7pp over the same weeks in 2023, fell only 0.15pp
+  in 2024. That points to the traffic being relabelled as Chrome Mobile (or
+  WebView), which would credit it to google.com. This is unconfirmed.
+- Effect: since 2024-W40, meta.com's usage share (and so the denominator of its
+  value ratio) is probably understated by about 2pp of Chromium usage. Its
+  ratio is therefore overstated by up to roughly 3×, and Google's usage is
+  overstated by the same 2pp. No correction is applied.
+- For scale: the widely quoted 8.8% for Facebook's in-app browser (Mixpanel,
+  2018) is US-only, includes iOS and counts page views. Radar is global,
+  excludes iOS here and counts all HTTP requests, so it should be far lower
+  even without the drop.
+- The usage chart always plots Facebook and Instagram
+  (`ALWAYS_CHARTED_BROWSERS` in `web/src/data.ts`).
