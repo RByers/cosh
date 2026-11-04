@@ -11,10 +11,24 @@
   <body>
     <header>
       <h1>Chromium Open Source Health</h1>
-      <p class="lede">
-        Each organization's share of Chromium code review, divided by its browsers' share of
-        Chromium-based browser usage.
-      </p>
+      <div class="lede">
+        <p>
+          One way to reason about the health and stability of an open source project is to explore the extent a
+          stakeholder's investment into the project is proportionate to the value it derives. When this value-exchange
+          is far out of alignment, it may
+          <a href="https://www.theverge.com/2024/9/27/24256361/wordpress-wp-engine-drama-explained-matt-mullenweg">lead
+          to a rupture in the project community</a>. Quantifying this value exchange is generally impossible, but the
+          Chromium open source project enables some interesting analyses. The value a Web Browser derives from its
+          browser engine is generally proportionate to the usage of that browser (eg. through search engine ad
+          revenue). These days the biggest cost of maintaining a large open source project is in the human cost of
+          directing the evolution of the codebase and reviewing changes. Agentic development has made code nearly
+          free, while increasing the value of determining what code should and shouldn't be added to the project.
+        </p>
+        <p>
+          This page attempts to approximate this value exchange in the Chromium Open Source project by comparing the
+          usage of an organization's browser by the code reviews that organization contributes to the project.
+        </p>
+      </div>
     </header>
 
     <main>
@@ -108,6 +122,10 @@
       <p>
         Review data from Chromium Gerrit (<code>chromium/src</code>, branch <code>main</code>); usage data from
         <a href="https://radar.cloudflare.com/">Cloudflare Radar</a> (CC BY-NC 4.0).
+      </p>
+      <p class="fine-print">
+        This page represents the personal opinions of <a href="https://bsky.app/profile/rbyers.net">Rick Byers</a>,
+        not the opinions of my employer.
       </p>
     </footer>
     <script type="module" src="/src/main.ts"></script>
