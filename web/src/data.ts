@@ -267,15 +267,19 @@ export function topOrgCounts(
  * series. `values[i]` is the count in `weeks[i]`. With `smoothing` > 1, each
  * value is the trailing mean over that many calendar weeks ending at
  * `weeks[i]`, including weeks before the range; weeks outside the summary's
- * data are left out of the window, as in smoothRatios. */
+ * data are left out of the window, as in smoothRatios. Orgs in `exclude` are
+ * dropped entirely (not folded into "Other"), so the next-ranked org takes
+ * their place among the top `n`. */
 export function orgWeeklyCounts(
-  summary: Summary,
+  all: Summary,
   weeks: string[],
   metric: Metric,
   n = 7,
   smoothing = 1,
+  exclude: readonly string[] = [],
 ): { org: string; values: number[] }[] {
   const col = COUNT_COLUMN[metric];
+  const summary = exclude.length ? { ...all, rows: all.rows.filter((r) => !exclude.includes(r.org)) } : all;
   const named = new Set(topOrgCounts(summary, weeks, metric, n).map((r) => r.org).filter((o) => o !== OTHER));
   // Raw counts per (org, week) over every summary week.
   const raw = new Map<string, Map<string, number>>();

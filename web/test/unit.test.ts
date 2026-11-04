@@ -235,6 +235,13 @@ test('orgWeeklyCounts gives one series per top org, with the rest as Other', () 
   assert.deepEqual(series[2].values, [0, 50]);
 });
 
+test('orgWeeklyCounts can exclude an org entirely, letting the next one in', () => {
+  const series = orgWeeklyCounts(SUMMARY, ['2026-W43', '2026-W44'], 'comments', 2, 1, ['google.com']);
+  assert.deepEqual(series.map((s) => s.org), ['microsoft.com', 'igalia.com', OTHER]);
+  // Other is gmail.com + Other; google.com isn't folded into it.
+  assert.deepEqual(series[2].values, [0, 20]);
+});
+
 test('orgWeeklyCounts smoothing averages weeks before the range, skipping weeks without data', () => {
   const three: Summary = {
     meta: { weeks: ['2026-W42', '2026-W43', '2026-W44'], headline_metric: 'comments' },

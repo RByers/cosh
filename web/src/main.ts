@@ -14,6 +14,7 @@ import {
   renderLeaderboardChart,
   renderRatioChart,
   renderReviewChart,
+  type ReviewScale,
   renderUsageChart,
   type Theme,
 } from './charts.ts';
@@ -77,7 +78,12 @@ interface State {
   range: WeekRange;
   /** Value ratio running average, in weeks (1 = off). */
   smoothing: Smoothing;
+  /** Review chart axis: log with every org, or linear without google.com. */
+  reviewScale: ReviewScale;
 }
+
+/** The org the linear review chart leaves out, so the rest are legible. */
+const LINEAR_EXCLUDED_ORG = 'google.com';
 
 declare global {
   interface Window {
@@ -147,11 +153,13 @@ function readStateFromUrl(data: Data): State {
   const to = isWeek(q.get('to')) ? q.get('to')! : isWeek(week) ? week : common.to;
   const sm = Number(q.get('smooth'));
   const smoothing = SMOOTHING_WEEKS.find((w) => w === sm) ?? DEFAULT_SMOOTHING;
-  return { metric, range: clampRange({ from, to }, full), smoothing };
+  const reviewScale: ReviewScale = q.get('rscale') === 'linear' ? 'linear' : 'log';
+  return { metric, range: clampRange({ from, to }, full), smoothing, reviewScale };
 }
 
 function writeStateToUrl(s: State) {
-  history.replaceState(null, '', `#metric=${s.metric}&from=${s.range.from}&to=${s.range.to}&smooth=${s.smoothing}`);
+  history.replaceState(null, '', `#metric=${s.metric}&from=${s.range.from}&to=${s.range.to}&smooth=${s.smoothing}` +
+    (s.reviewScale === 'linear' ? '&rscale=linear' : ''));
 }
 
 const PRESETS: { id: string; label: string; weeks: number | null }[] = [
@@ -201,6 +209,27 @@ function buildControls(data: Data, state: State, render: () => void) {
     });
     label.append(input, document.createTextNode(w === 1 ? 'Off' : `${w} weeks`));
     smoothBox.append(label);
+  }
+
+  const scaleBox = $('#review-scale');
+  scaleBox.querySelectorAll('label').forEach((l) => l.remove());
+  const scales: { id: ReviewScale; label: string }[] = [
+    { id: 'log', label: 'Log, all organizations' },
+    { id: 'linear', label: `Linear, without ${LINEAR_EXCLUDED_ORG}` },
+  ];
+  for (const sc of scales) {
+    const label = el('label');
+    const input = el('input');
+    input.type = 'radio';
+    input.name = 'review-scale';
+    input.value = sc.id;
+    input.checked = sc.id === state.reviewScale;
+    input.addEventListener('change', () => {
+      state.reviewScale = sc.id;
+      render();
+    });
+    label.append(input, document.createTextNode(sc.label));
+    scaleBox.append(label);
   }
 
   const { full } = data.ranges;
@@ -450,15 +479,26 @@ function main(data: Data) {
     const metricName = METRICS.find((m) => m.id === state.metric)!.label;
     const metricLabel = metricName.toLowerCase();
     reviewChart?.destroy();
-    const reviewSeries = orgWeeklyCounts(data.summary, weeks, state.metric, 7, state.smoothing);
+    const linear = state.reviewScale === 'linear';
+    const reviewSeries = orgWeeklyCounts(
+      data.summary,
+      weeks,
+      state.metric,
+      7,
+      state.smoothing,
+      linear ? [LINEAR_EXCLUDED_ORG] : [],
+    );
     reviewChart = renderReviewChart(
       $<HTMLCanvasElement>('#review-chart'),
       weeks,
       reviewSeries,
       metricName,
-      reviewColors(reviewSeries.map((s) => s.org), colors, theme),
+      // Keep the excluded org's colour reserved, so the rest keep theirs
+      // when the scale toggles.
+      reviewColors([...reviewSeries.map((s) => s.org), ...(linear ? [LINEAR_EXCLUDED_ORG] : [])], colors, theme),
       theme,
       state.smoothing,
+      state.reviewScale,
     );
     $('#review-sub').textContent = weeks.length
       ? `${metricName} per ISO week, ${label}` +
@@ -466,7 +506,9 @@ function main(data: Data) {
           ? `, as a ${state.smoothing}-week running average`
           : '') +
         ', for the organizations with the most over the range; the rest are combined as “Other”. ' +
-        'The axis is logarithmic, since Google does most of the review.'
+        (linear
+          ? `${LINEAR_EXCLUDED_ORG} is left out and the axis is linear, so the other organizations can be compared directly.`
+          : 'The axis is logarithmic, since Google does most of the review.')
       : `No review data for ${label}.`;
     leaderboardChart = renderLeaderboard(data, state, colors, leaderboardChart);
     usageChart?.destroy();

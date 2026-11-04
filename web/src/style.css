@@ -278,6 +278,10 @@ input[type='date']:focus-visible,
   height: 280px;
 }
 
+.chart-toggle {
+  margin-bottom: 12px;
+}
+
 .chart-tall {
   height: 420px;
 }

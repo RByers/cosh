@@ -204,9 +204,14 @@ const barLabelsPlugin = (theme: Theme, format: (v: number) => string, size = 12)
   },
 });
 
-/** Weekly review counts per org: top orgs plus "Other", one line each, on a
- * log axis (Google is ~97% of review, so a linear axis flattens everyone
- * else). Weeks with no review are gaps, since log(0) has no position. */
+/** Review chart y axis: log with every org, or linear without google.com. */
+export type ReviewScale = 'log' | 'linear';
+
+/** Weekly review counts per org: top orgs plus "Other", one line each. On the
+ * default log axis (Google is ~97% of review, so a linear axis with Google
+ * flattens everyone else) weeks with no review are gaps, since log(0) has no
+ * position; on the linear axis (meant for the series without Google) they
+ * sit at zero. */
 export function renderReviewChart(
   canvas: HTMLCanvasElement,
   weeks: string[],
@@ -216,12 +221,14 @@ export function renderReviewChart(
   theme: Theme,
   /** Running-average window in weeks (1 = none); named in the tooltip. */
   smoothing = 1,
+  scale: ReviewScale = 'log',
 ): Chart<'line'> {
+  const log = scale === 'log';
   const fmt = (v: number) => v.toLocaleString('en-US', { maximumFractionDigits: v < 10 ? 1 : 0 });
   const avg = smoothing > 1 ? `  (${smoothing}-week avg)` : '';
   const datasets = series.map((s) => {
     const color = s.org === OTHER ? theme.muted : colors.get(s.org) ?? theme.muted;
-    const data = s.values.map((v) => (v > 0 ? v : null));
+    const data = s.values.map((v) => (v > 0 || !log ? v : null));
     // Points on short ranges; on long ones only for weeks between two gaps,
     // which would otherwise draw nothing.
     const short = weeks.length <= 13;
@@ -252,17 +259,26 @@ export function renderReviewChart(
           border: { color: theme.baseline },
           ticks: { color: theme.muted, maxRotation: 0, autoSkip: true, autoSkipPadding: 24 },
         },
-        y: {
-          type: 'logarithmic',
-          title: { display: true, text: `${metricLabel.toLowerCase()} per week (log scale)`, color: theme.muted },
-          border: { display: false },
-          grid: { color: theme.grid },
-          afterBuildTicks: (axis) => {
-            // Powers of ten only; Chart.js's default log ticks crowd the axis.
-            axis.ticks = axis.ticks.filter((t) => Math.abs(Math.log10(t.value) % 1) < 1e-9);
-          },
-          ticks: { color: theme.muted, callback: (v) => fmt(Number(v)) },
-        },
+        y: log
+          ? {
+              type: 'logarithmic',
+              title: { display: true, text: `${metricLabel.toLowerCase()} per week (log scale)`, color: theme.muted },
+              border: { display: false },
+              grid: { color: theme.grid },
+              afterBuildTicks: (axis) => {
+                // Powers of ten only; Chart.js's default log ticks crowd the axis.
+                axis.ticks = axis.ticks.filter((t) => Math.abs(Math.log10(t.value) % 1) < 1e-9);
+              },
+              ticks: { color: theme.muted, callback: (v) => fmt(Number(v)) },
+            }
+          : {
+              type: 'linear',
+              beginAtZero: true,
+              title: { display: true, text: `${metricLabel.toLowerCase()} per week`, color: theme.muted },
+              border: { display: false },
+              grid: { color: theme.grid },
+              ticks: { color: theme.muted, callback: (v) => fmt(Number(v)) },
+            },
       },
     },
   });

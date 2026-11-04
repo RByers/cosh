@@ -294,6 +294,47 @@ test('review chart is a weekly line per top org, Other last, on a log axis', asy
   await page.close();
 });
 
+test('review chart toggles to a linear axis without google.com', async () => {
+  const { page, errors } = await open();
+  const read = () =>
+    page.evaluate(() => {
+      const c = window.__cosh!.reviewChart!;
+      return {
+        yType: c.options.scales.y.type,
+        orgs: c.data.datasets.map((d: { label?: string }) => d.label),
+        colors: Object.fromEntries(
+          c.data.datasets.map((d: { label?: string; borderColor?: string }) => [d.label, d.borderColor]),
+        ),
+        title: c.options.scales.y.title.text as string,
+        sub: document.querySelector('#review-sub')!.textContent!,
+        labels: [...document.querySelectorAll('#review-scale label')].map((l) => l.textContent),
+      };
+    });
+  const log = await read();
+  assert.deepEqual(log.labels, ['Log, all organizations', 'Linear, without google.com']);
+  assert.equal(log.yType, 'logarithmic');
+  await page.click('#review-scale input[value="linear"]');
+  const lin = await read();
+  assert.equal(lin.yType, 'linear');
+  assert.ok(!lin.orgs.includes('google.com'), lin.orgs.join());
+  assert.equal(lin.orgs[lin.orgs.length - 1], 'Other');
+  assert.equal(lin.orgs.length, log.orgs.length, 'the next-ranked org takes google.com\'s place');
+  // Orgs in both views keep their colour.
+  for (const org of lin.orgs.filter((o): o is string => !!o && log.orgs.includes(o))) {
+    assert.equal(lin.colors[org], log.colors[org], org);
+  }
+  assert.doesNotMatch(lin.title, /log scale/);
+  assert.match(lin.sub, /google\.com is left out/);
+  assert.match(page.url(), /rscale=linear/);
+  await page.reload();
+  await page.waitForSelector('body[data-ready]');
+  assert.equal((await read()).yType, 'linear');
+  await page.click('#review-scale input[value="log"]');
+  assert.doesNotMatch(page.url(), /rscale/);
+  assert.deepEqual(errors, []);
+  await page.close();
+});
+
 test('leaderboard shows up to 50 reviewers compactly and follows the metric', async () => {
   const { page } = await open();
   const read = () =>
