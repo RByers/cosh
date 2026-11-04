@@ -53,9 +53,13 @@ export function buildLeaderboard(
       const li = node('li');
       const url = gerritReviewsUrl(r.email);
       const row = node(url ? 'a' : 'span', 'lb-row');
-      if (url) row.setAttribute('href', url);
+      if (url) {
+        row.setAttribute('href', url);
+        row.setAttribute('target', '_blank');
+        row.setAttribute('rel', 'noopener');
+      }
       row.title = `${i + 1}. ${r.name} (${r.org})\n${fmt(r.value)} ${unit}` +
-        (r.email ? `\n${r.email}\nOpens their reviews on Gerrit` : '');
+        (r.email ? `\n${r.email}\nOpens their reviews on Gerrit in a new tab` : '');
       const label = node('span', 'lb-label');
       label.append(
         node('span', 'lb-rank', `${i + 1}. `),

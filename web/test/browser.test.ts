@@ -370,6 +370,7 @@ test('leaderboard shows up to 50 reviewers compactly and follows the metric', as
         top: rows[0].querySelector('.lb-label')!.textContent!,
         title: rows[0].title,
         links: rows.map((r) => (r as HTMLAnchorElement).href),
+        targets: rows.map((r) => r.getAttribute('target')),
         h: box.getBoundingClientRect().height,
       };
     });
@@ -381,6 +382,8 @@ test('leaderboard shows up to 50 reviewers compactly and follows the metric', as
   assert.match(comments.title, /^1\. .+\n[\d,]+ review comments\n[^@\s]+@[^@\s]+\.[a-z]+\n/i);
   // Each row is a real link to the reviewer's reviews on Gerrit.
   assert.match(comments.links[0], /^https:\/\/chromium-review\.googlesource\.com\/q\/reviewedby:[^@\s/]+@[^@\s/]+$/);
+  // Links open in a new tab, so the dashboard stays put.
+  assert.ok(comments.targets.every((t) => t === '_blank'), `targets=${comments.targets}`);
   // Bars and gridlines share the plot column: a bar's length is its share of
   // the axis, measured against the gridline layer, which spans the axis.
   const geo = await page.evaluate(() => {
