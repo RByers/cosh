@@ -1635,6 +1635,31 @@ test('chart tooltips sit beside the hovered week, not over its points', async ()
   await page.close();
 });
 
+test('heatmap: column ticks carry the year wherever it changes, wide or narrow', async () => {
+  const ticks = (page: Page) =>
+    page.$$eval('#heat-table thead .hm-tick', (ts) =>
+      ts.filter((t) => getComputedStyle(t).display !== 'none').map((t) => (t as HTMLElement).innerText.trim()));
+  // 4-week columns over a year: the year is on January, not the first tick (the subtitle has it).
+  const { page, errors } = await open('#metric=comments&from=2025-W45&to=2026-W44');
+  const wide = await ticks(page);
+  assert.ok(wide.includes('Jan 2026'), wide.join());
+  assert.ok(!/\d/.test(wide[0]), wide.join());
+  // 3-month columns that start mid-quarter: no tick is in January, yet each new year is named.
+  await page.click('#heat-bin input[value="13"]');
+  const quarters = await ticks(page);
+  assert.ok(quarters.every((t) => !t.startsWith('Jan')), quarters.join());
+  assert.ok(quarters.some((t) => / 2026$/.test(t)), quarters.join());
+  // On a phone only coarse ticks show, and they carry the year where it changes between them.
+  assert.deepEqual(errors, []);
+  await page.close();
+  const phone = await open('#metric=comments&from=2025-W45&to=2026-W44', 400);
+  const narrow = await ticks(phone.page);
+  assert.ok(narrow.length <= 4, narrow.join());
+  assert.equal(narrow[0], 'Jan 2026', narrow.join());
+  assert.deepEqual(phone.errors, []);
+  await phone.page.close();
+});
+
 test('heatmap: directories by time bins, per org or as a mix, with Gerrit links', async () => {
   const { page, errors } = await open('#metric=comments&from=2025-W45&to=2026-W44');
   const read = () =>

@@ -1142,17 +1142,29 @@ a.ar-seg:focus-visible {
   min-width: calc(var(--hm-label) + var(--hm-bins) * 8px);
 }
 
+/* Years show where they change at the tick density in use (heatmap.ts). */
+.hm-year:not(.hm-year-wide),
+.hm-coarse-only {
+  display: none;
+}
+
 @container (width < 560px) {
   .hm {
     --hm-label: 10rem;
   }
 
   .hm-minor,
-  .hm-year,
+  .hm-year:not(.hm-year-narrow),
   .hm-total {
     display: none;
   }
+
+  .hm-year.hm-year-narrow,
+  .hm-tick.hm-coarse-only {
+    display: inline;
+  }
 }
+
 
 .hm th {
   font-weight: normal;

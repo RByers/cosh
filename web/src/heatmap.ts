@@ -10,7 +10,7 @@
 // cell in the grid (square-root scale, so small directories still show) or by
 // its share of the directory's review.
 import { fmtInt as int } from './format.ts';
-import { monthTicks, OTHER, type DirLink, type HeatGrid, type DirRow, type WeekRange } from './data.ts';
+import { monthTicks, OTHER, weekMonth, type DirLink, type HeatGrid, type DirRow, type WeekRange } from './data.ts';
 import { msg } from './text.ts';
 
 function node<K extends keyof HTMLElementTagNameMap>(tag: K, cls?: string, text?: string) {
@@ -80,20 +80,37 @@ export function buildHeatmap(box: HTMLElement, o: HeatOptions): void {
   corner.scope = 'col';
   hr.append(corner);
   // Month ticks; on narrow screens CSS keeps only the coarse ones (at most 4).
-  // The subtitle names the range, so only January carries its year.
+  // A tick carries its year where it changes from the tick before; the first
+  // tick, where it changes from the first column (the subtitle names the range).
+  // Fine and coarse ticks each have their own "before", so a year can show at
+  // one density only (style.css: .hm-year-wide, .hm-year-narrow).
   const starts = grid.bins.map((b) => b.from);
   // Once per bin: every cell's hover text repeats its bin's title.
   const binTitles = grid.bins.map((b) => o.binTitle(b));
   // Coarse ticks near the right edge would run off it.
-  const coarse = new Set(monthTicks(starts, 4).map((t) => t.index).filter((i) => i < starts.length - 2));
-  const ticks = new Map(monthTicks(starts, 12).map((t) => [t.index, t.label.split(' ')]));
+  const coarseTicks = monthTicks(starts, 4);
+  const coarse = new Set(coarseTicks.map((t) => t.index).filter((i) => i < starts.length - 2));
+  const yearOf = (i: number) => weekMonth(starts[i]).year;
+  const yearAt = (ts: { index: number }[]) =>
+    new Set(ts.filter((t, k) => yearOf(t.index) !== yearOf(k ? ts[k - 1].index : 0)).map((t) => t.index));
+  const fineTicks = monthTicks(starts, 12);
+  const wideYear = yearAt(fineTicks);
+  const narrowYear = yearAt(coarseTicks);
+  // A tick wherever either density has one: when months are thinned evenly the
+  // two can pick different weeks.
+  const ticks = new Map([...coarseTicks.filter((t) => coarse.has(t.index)), ...fineTicks].map((t) => [t.index, t.label.split(' ')[0]]));
+  const fine = new Set(fineTicks.map((t) => t.index));
   grid.bins.forEach((b, i) => {
     const th = node('th', 'hm-bin');
     th.scope = 'col';
     const tick = ticks.get(i);
     if (tick) {
-      const t = node('span', coarse.has(i) ? 'hm-tick' : 'hm-tick hm-minor', tick[0]);
-      if (tick[0] === 'Jan' && tick[1]) t.append(node('span', 'hm-year', ` ${tick[1]}`));
+      const cls = ['hm-tick', !coarse.has(i) && 'hm-minor', !fine.has(i) && 'hm-coarse-only'];
+      const t = node('span', cls.filter(Boolean).join(' '), tick);
+      if (wideYear.has(i) || narrowYear.has(i)) {
+        const cls = ['hm-year', wideYear.has(i) && 'hm-year-wide', narrowYear.has(i) && 'hm-year-narrow'];
+        t.append(node('span', cls.filter(Boolean).join(' '), ` ${yearOf(i)}`));
+      }
       t.setAttribute('aria-hidden', 'true');
       th.append(t);
     }

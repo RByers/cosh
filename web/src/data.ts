@@ -1032,16 +1032,17 @@ export const weekTitle = (week: string) =>
   `${week} (${shortDate(weekMonday(week))} – ${shortDate(weekSunday(week))})`;
 
 /** Year and month a week belongs to, by its Thursday (as for ISO years). */
-function weekMonth(week: string): { year: number; month: number } {
+export function weekMonth(week: string): { year: number; month: number } {
   const t = new Date(weekMonday(week).getTime() + 3 * DAY_MS);
   return { year: t.getUTCFullYear(), month: t.getUTCMonth() };
 }
 
 /** Month labels for a weekly time axis: the indices of `weeks` that start a
  * month (by Thursday), with labels like "Nov 2025", "Dec", "Jan 2026". The
- * year is shown on the first tick and on each January. Months are thinned to
- * every 2, 3, 6 or 12 (aligned to the calendar, so quarters start in Jan, Apr,
- * …) to keep at most `maxTicks`. A range inside one month gets one tick on
+ * year is shown on the first tick and wherever it changes. Months are thinned
+ * to every 2, 3, 6 or 12 (aligned to the calendar, so quarters start in Jan,
+ * Apr, …) to keep at most `maxTicks`, or evenly when no tick would land on
+ * such a month. A range inside one month gets one tick on
  * its first week. */
 export function monthTicks(weeks: string[], maxTicks = 12): { index: number; label: string }[] {
   const starts: { index: number; year: number; month: number }[] = [];
@@ -1056,10 +1057,16 @@ export function monthTicks(weeks: string[], maxTicks = 12): { index: number; lab
   }
   const step = [1, 2, 3, 6, 12].find((s) => starts.filter((x) => x.month % s === 0).length <= maxTicks) ?? 12;
   let kept = step === 1 ? starts : starts.filter((x) => x.month % step === 0);
-  if (!kept.length) kept = starts.slice(0, 1);
+  // Ticks that never land on a calendar-aligned month (e.g. quarters starting in
+  // November): thin them evenly instead.
+  if (!kept.length) {
+    const every = Math.ceil(starts.length / Math.max(1, maxTicks));
+    kept = starts.filter((_, i) => i % every === 0);
+  }
+  // The year goes on the first tick and wherever it changes.
   return kept.map((x, i) => ({
     index: x.index,
-    label: i === 0 || x.month === 0 ? `${MONTHS[x.month]} ${x.year}` : MONTHS[x.month],
+    label: i === 0 || x.year !== kept[i - 1].year ? `${MONTHS[x.month]} ${x.year}` : MONTHS[x.month],
   }));
 }
 

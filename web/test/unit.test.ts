@@ -609,7 +609,7 @@ test('smoothRatios gives no ratio until the window is full of data', () => {
   assert.equal(smoothRatios(points, 1), points);
 });
 
-test('monthTicks labels month starts, with the year on the first tick and January', () => {
+test('monthTicks labels month starts, with the year on the first tick and wherever it changes', () => {
   const weeks = Array.from({ length: 52 }, (_, i) => addWeeks('2025-W45', i));
   const t = monthTicks(weeks, 12);
   // Months go by each week's Thursday: 2025-W45 (Thu Nov 6) starts November.
@@ -628,6 +628,18 @@ test('monthTicks labels month starts, with the year on the first tick and Januar
   assert.deepEqual(monthTicks(['2026-W42', '2026-W43']), [{ index: 0, label: 'Oct 2026' }]);
   assert.deepEqual(monthTicks(['2026-W44']), [{ index: 0, label: 'Oct 2026' }]);
   assert.deepEqual(monthTicks([]), []);
+  // Quarterly starts off the calendar's quarters (3-month heatmap columns): the
+  // year shows where it changes, even when no tick is in January. (2023-W45 is
+  // mid-November, so it gets no tick.)
+  const quarters = Array.from({ length: 12 }, (_, i) => addWeeks('2023-W45', 13 * i));
+  assert.deepEqual(monthTicks(quarters, 12).map((x) => x.label), [
+    'Feb 2024', 'May', 'Aug', 'Nov', 'Feb 2025', 'May', 'Aug', 'Nov', 'Feb 2026', 'May', 'Aug',
+  ]);
+  // Too many for 4 ticks and none on Jan/Apr/Jul/Oct: thinned evenly instead.
+  assert.deepEqual(monthTicks(quarters, 4).map((x) => x.label), ['Feb 2024', 'Nov', 'Aug 2025', 'May 2026']);
+  // Yearly starts: every tick is a new year.
+  const years = Array.from({ length: 3 }, (_, i) => addWeeks('2023-W44', 52 * i));
+  assert.deepEqual(monthTicks(years, 12).map((x) => x.label), ['Nov 2023', 'Oct 2024', 'Oct 2025']);
 });
 
 test('weekTitle names the week and its dates', () => {
