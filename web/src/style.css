@@ -908,6 +908,11 @@ a.ar-seg:focus-visible {
   min-width: min(100%, 18rem);
 }
 
+/* A select with short options, such as "Top 25". */
+.select-toggle.select-short {
+  min-width: 0;
+}
+
 .dir-filter {
   flex: 1 1 22rem;
   max-width: 34rem;

@@ -558,18 +558,16 @@ const asList = (weeks: string | string[]) => (typeof weeks === 'string' ? [weeks
  * exact totals, since the board holds every reviewer. Ties are broken by
  * account id so the order is stable; reviewers with 0 for the metric are left
  * out. A reviewer's org is the one most of their comments in those weeks
- * resolve to (ties: alphabetical). With `excludeOrg`, reviewers whose org
- * that is are left out before the top `n` are taken, so the board still
- * holds `n` reviewers from the other orgs. */
+ * resolve to (ties: alphabetical). Pass `n = Infinity` for every reviewer,
+ * e.g. to filter by org before taking the top few. */
 export function topReviewers(
   board: ReviewerBoard,
   weeks: string | string[],
   metric: Metric,
   n: number = LEADERBOARD_SIZE,
-  excludeOrg?: string,
 ): LeaderboardRow[] {
   return reviewerTotals(board, weeks, metric)
-    .filter((r) => r.value > 0 && r.org !== excludeOrg)
+    .filter((r) => r.value > 0)
     .sort((x, y) => y.value - x.value || x.id - y.id)
     .slice(0, n)
     .map(({ id, value, org }) => ({
@@ -579,6 +577,14 @@ export function topReviewers(
       org,
       value,
     }));
+}
+
+/** The orgs of leaderboard rows by their reviewers' summed value, largest
+ * first (ties: alphabetical): the leaderboard's organization choices. */
+export function orgsByValue(rows: { org: string; value: number }[]): string[] {
+  const sum = new Map<string, number>();
+  for (const r of rows) sum.set(r.org, (sum.get(r.org) ?? 0) + r.value);
+  return [...sum].sort((a, b) => b[1] - a[1] || (a[0] < b[0] ? -1 : 1)).map(([org]) => org);
 }
 
 /** Every reviewer with a row in the given week(s), with their total for the

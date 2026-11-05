@@ -125,7 +125,8 @@ Over a range:
    wrote a review comment counts and those with none addressed sit at 0.
    From `reviewer_weekly.json`; no extra data.
 8. **Reviewer leaderboard**: the top 25 (or 50, 100, 200) reviewers by review
-   comments over the range, with or without google.com's reviewers, one
+   comments over the range, for every organization, all but google.com, or
+   one organization (the 25 with the most review in the range), one
    compact bar each, coloured by org. Every org gets its own legend entry;
    orgs beyond the palette's 8 colours are named on their rows. Clicking a
    reviewer opens their weekly chart over the picked range: review comments,
@@ -143,8 +144,9 @@ Over a range:
 
 The metric, range, smoothing and review-chart scale are kept in the URL hash
 (`#metric=cls&from=2026-W14&to=2026-W44&smooth=4`, plus `&rscale=linear` for
-the linear review chart, `&lbn=100` for a longer leaderboard, `&lbg=0` for
-one without google.com, `&dir=<path>` for the organization chart's directory,
+the linear review chart, `&lbn=100` for a longer leaderboard, `&lbo=<org>` for
+its organization (`*-google.com` for all but google.com; old `&lbg=0` links
+still work), `&dir=<path>` for the organization chart's directory,
 and `&hm=<org>` (`*-google.com` for all but google.com), `&hmb=1|13` and
 `&hmv=share` for the heatmap, and
 `&lbr=<account id>` for the reviewer chart). Old `#week=2026-W44` links open that one week, and

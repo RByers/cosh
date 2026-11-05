@@ -345,12 +345,14 @@
         <h2 id="leaderboard-title">Reviewer leaderboard</h2>
         <p id="leaderboard-sub" class="sub"></p>
         <div class="toggles">
-          <fieldset id="leaderboard-size" class="segmented chart-toggle">
-            <legend>Show</legend>
-          </fieldset>
-          <fieldset id="leaderboard-google" class="segmented chart-toggle">
-            <legend>Reviewers</legend>
-          </fieldset>
+          <div class="select-toggle chart-toggle">
+            <label for="leaderboard-org">Organization</label>
+            <select id="leaderboard-org"></select>
+          </div>
+          <div class="select-toggle select-short chart-toggle">
+            <label for="leaderboard-size">Show</label>
+            <select id="leaderboard-size"></select>
+          </div>
         </div>
         <ul id="leaderboard-legend" class="legend" aria-label="Bar colour by organization"></ul>
         <div id="leaderboard-chart" class="lb"></div>

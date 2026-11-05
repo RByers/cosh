@@ -905,7 +905,7 @@ test('per-reviewer spread: a row of dots per org, a figures table, and clicking 
   await page.close();
 });
 
-test('leaderboard size and Google toggles; every org is named, none as "other"', async () => {
+test('leaderboard size and organization selects; every org is named, none as "other"', async () => {
   const { page, errors } = await open();
   const read = () =>
     page.evaluate(() => {
@@ -928,13 +928,13 @@ test('leaderboard size and Google toggles; every org is named, none as "other"',
   const top25 = await read();
   check(top25);
   assert.ok(top25.orgs.includes('google.com'));
-  await page.click('#leaderboard-size input[value="100"]');
+  await page.select('#leaderboard-size', '100');
   assert.match(page.url(), /lbn=100/);
   const top100 = await read();
   check(top100);
   assert.ok(top100.n > 50 && top100.n <= 100, `n=${top100.n}`);
-  await page.click('#leaderboard-google input[value="false"]');
-  assert.match(page.url(), /lbg=0/);
+  await page.select('#leaderboard-org', '*-google.com');
+  assert.match(page.url(), /lbo=\*-google\.com/);
   const noGoogle = await read();
   check(noGoogle);
   assert.ok(!noGoogle.orgs.includes('google.com'));
@@ -943,12 +943,27 @@ test('leaderboard size and Google toggles; every org is named, none as "other"',
   assert.match(noGoogle.sub, /outside google\.com/);
   // The state survives a reload from the URL.
   const { page: again } = await open(new URL(page.url()).hash);
-  assert.equal(await again.$eval('#leaderboard-google input[value="false"]', (e) => (e as HTMLInputElement).checked), true);
-  assert.equal(await again.$eval('#leaderboard-size input[value="100"]', (e) => (e as HTMLInputElement).checked), true);
+  assert.equal(await again.$eval('#leaderboard-org', (e) => (e as HTMLSelectElement).value), '*-google.com');
+  assert.equal(await again.$eval('#leaderboard-size', (e) => (e as HTMLSelectElement).value), '100');
   await again.close();
-  await page.click('#leaderboard-size input[value="25"]');
-  await page.click('#leaderboard-google input[value="true"]');
-  assert.doesNotMatch(page.url(), /lbn|lbg/);
+  // Old lbg=0 links still leave google.com out.
+  const { page: old } = await open('#lbg=0');
+  assert.equal(await old.$eval('#leaderboard-org', (e) => (e as HTMLSelectElement).value), '*-google.com');
+  await old.close();
+  // One org: every row is that org's, and the choices are the busiest orgs.
+  const options = await page.$$eval('#leaderboard-org option', (os) => os.map((o) => (o as HTMLOptionElement).value));
+  assert.deepEqual(options.slice(0, 3), ['*', '*-google.com', 'google.com']);
+  const one = options[3];
+  await page.select('#leaderboard-org', one);
+  assert.ok(page.url().includes(`lbo=${encodeURIComponent(one)}`), page.url());
+  const single = await read();
+  check(single);
+  assert.ok(single.n > 0);
+  assert.deepEqual([...new Set(single.orgs)], [one]);
+  assert.equal(single.sub, top25.sub, 'the selects leave the description alone');
+  await page.select('#leaderboard-size', '25');
+  await page.select('#leaderboard-org', '*');
+  assert.doesNotMatch(page.url(), /lbn|lbo/);
   assert.deepEqual(errors, []);
   await page.close();
 });
@@ -1027,8 +1042,8 @@ test.skipIf(!process.env.SCREENSHOT_DIR)('screenshots (only when SCREENSHOT_DIR 
     }
     // Without google.com: more orgs than palette colours, so some are named on their rows.
     await page.setViewport({ width: 1100, height: 3200 });
-    await page.click('#leaderboard-size input[value="100"]');
-    await page.click('#leaderboard-google input[value="false"]');
+    await page.select('#leaderboard-size', '100');
+    await page.select('#leaderboard-org', '*-google.com');
     await page.mouse.move(0, 0);
     const card = await page.$('#leaderboard');
     await card!.screenshot({ path: join(process.env.SCREENSHOT_DIR!, `leaderboard-nogoogle-${scheme}.png`) as `${string}.png` });

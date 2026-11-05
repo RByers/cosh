@@ -58,6 +58,7 @@ import {
   MAX_LINK_REVIEWERS,
   niceTicks,
   topReviewers,
+  orgsByValue,
   reviewerTotals,
   reviewerHandle,
   quantile,
@@ -266,12 +267,14 @@ test('orgSpreads: top orgs by total, folded orgs and the rest as Other, reviewer
   assert.deepEqual(orgSpreads([], []), []);
 });
 
-test('topReviewers can leave an org out and still fill the board from the rest', () => {
+test('orgsByValue ranks orgs by their reviewers\' totals, each reviewer under their main org', () => {
   const b = board({ '2026-W44': [[1, 0, 9, 1, 0], [2, 1, 5, 1, 0], [3, 0, 1, 1, 0], [3, 1, 7, 3, 0]] });
-  // n1 is x.com; most of n3's comments are y.com, so only n1 is left out.
-  assert.deepEqual(topReviewers(b, '2026-W44', 'comments', 2).map((x) => x.name), ['n1', 'n3']);
-  assert.deepEqual(topReviewers(b, '2026-W44', 'comments', 2, 'x.com').map((x) => x.name), ['n3', 'n2']);
-  assert.equal(topReviewers(b, '2026-W44', 'comments', 5, 'nobody.com').length, 3);
+  // n1 is x.com (9); most of n3's comments are y.com, so y.com has 5 + 8.
+  const all = topReviewers(b, '2026-W44', 'comments', Infinity);
+  assert.equal(all.length, 3);
+  assert.deepEqual(orgsByValue(all), ['y.com', 'x.com']);
+  assert.deepEqual(orgsByValue([]), []);
+  assert.deepEqual(orgsByValue([{ org: 'b.com', value: 1 }, { org: 'a.com', value: 1 }]), ['a.com', 'b.com']);
 });
 
 test('leaderboardOrgs counts reviewers per org, most first, ties by rank', () => {

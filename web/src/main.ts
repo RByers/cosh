@@ -77,6 +77,7 @@ import {
   topBrowsers,
   orgWeeklyCounts,
   topReviewers,
+  orgsByValue,
   reviewerTotals,
   reviewerHandle,
   orgSpreads,
@@ -128,8 +129,8 @@ interface State {
   reviewScale: ReviewScale;
   /** How many reviewers the leaderboard shows. */
   lbSize: LeaderboardSize;
-  /** Whether the leaderboard includes google.com's reviewers. */
-  lbGoogle: boolean;
+  /** Leaderboard organization: ALL_ORGS, ALL_BUT_GOOGLE, or one org. */
+  lbOrg: string;
   /** Directory chart rows the reader expanded (DirRow keys); not in the URL. */
   expandedDirs: Set<string>;
   /** The directory the organization chart is limited to (a tree path), or null for the path scope. */
@@ -151,7 +152,7 @@ let reviewerChart: AnyChart | undefined;
 let distChart: AnyChart | undefined;
 let examples: Promise<ThreadExamples> | null = null;
 
-/** Heatmap organization choices besides a single org. */
+/** Organization choices (heatmap and leaderboard) besides a single org. */
 const ALL_ORGS = '*';
 const ALL_BUT_GOOGLE = '*-google.com';
 
@@ -289,7 +290,8 @@ function readStateFromUrl(data: Data): State {
   const reviewScale: ReviewScale = q.get('rscale') === 'linear' ? 'linear' : 'log';
   const lbn = Number(q.get('lbn'));
   const lbSize = LEADERBOARD_SIZES.find((n) => n === lbn) ?? LEADERBOARD_SIZE;
-  const lbGoogle = q.get('lbg') !== '0';
+  // lbg=0: links from before the organization select.
+  const lbOrg = q.get('lbo') || (q.get('lbg') === '0' ? ALL_BUT_GOOGLE : ALL_ORGS);
   const dir = q.get('dir');
   const dirNode = dir ? dirNodeByPath(data.areas, dir) : null;
   const hmb = Number(q.get('hmb'));
@@ -302,7 +304,7 @@ function readStateFromUrl(data: Data): State {
     smoothing,
     reviewScale,
     lbSize,
-    lbGoogle,
+    lbOrg,
     expandedDirs: new Set(),
     reviewDir: dirNode === null ? null : dirTree(data.areas).paths[dirNode],
     heatOrg: q.get('hm') || ALL_ORGS,
@@ -317,7 +319,7 @@ function writeStateToUrl(s: State) {
   history.replaceState(null, '', `#metric=${s.metric}&from=${s.range.from}&to=${s.range.to}&smooth=${s.smoothing}` +
     (s.reviewScale === 'linear' ? '&rscale=linear' : '') +
     (s.lbSize !== LEADERBOARD_SIZE ? `&lbn=${s.lbSize}` : '') +
-    (s.lbGoogle ? '' : '&lbg=0') +
+    (s.lbOrg !== ALL_ORGS ? `&lbo=${encodeURIComponent(s.lbOrg)}` : '') +
     (s.reviewDir ? `&dir=${encodeURIComponent(s.reviewDir)}` : '') +
     (s.heatOrg !== ALL_ORGS ? `&hm=${encodeURIComponent(s.heatOrg)}` : '') +
     (s.heatBin !== DEFAULT_HEAT_BIN ? `&hmb=${s.heatBin}` : '') +
@@ -421,29 +423,23 @@ function buildControls(data: Data, state: State, render: () => void) {
     scaleBox.append(label);
   }
 
-  segmented(
-    $('#leaderboard-size'),
-    'leaderboard-size',
-    LEADERBOARD_SIZES.map((n) => ({ id: n, label: `Top ${n}` })),
-    state.lbSize,
-    (n) => {
-      state.lbSize = n;
-      render();
-    },
+  const sizeSelect = $<HTMLSelectElement>('#leaderboard-size');
+  sizeSelect.replaceChildren(
+    ...LEADERBOARD_SIZES.map((n) => {
+      const o = el('option', `Top ${n}`);
+      o.value = String(n);
+      return o;
+    }),
   );
-  segmented(
-    $('#leaderboard-google'),
-    'leaderboard-google',
-    [
-      { id: true, label: 'All organizations' },
-      { id: false, label: `Without ${LINEAR_EXCLUDED_ORG}` },
-    ],
-    state.lbGoogle,
-    (g) => {
-      state.lbGoogle = g;
-      render();
-    },
-  );
+  sizeSelect.value = String(state.lbSize);
+  sizeSelect.addEventListener('change', () => {
+    state.lbSize = LEADERBOARD_SIZES.find((n) => String(n) === sizeSelect.value) ?? LEADERBOARD_SIZE;
+    render();
+  });
+  $<HTMLSelectElement>('#leaderboard-org').addEventListener('change', (e) => {
+    state.lbOrg = (e.target as HTMLSelectElement).value;
+    render();
+  });
 
   segmented(
     $('#heat-bin'),
@@ -665,6 +661,28 @@ function renderTable(data: Data, state: State, weeks: string[], colors: Map<stri
   );
 }
 
+/** Organizations the leaderboard's selector offers, besides the current one. */
+const LB_ORG_CHOICES = 25;
+
+/** Fills an organization select: everyone, everyone but google.com, then the
+ * ranked orgs, with the current choice added if it isn't among them. */
+function fillOrgSelect(select: HTMLSelectElement, ranked: string[], current: string) {
+  const single = current.startsWith('*') ? null : current;
+  if (single && !ranked.includes(single)) ranked = [...ranked, single];
+  select.replaceChildren(
+    ...[
+      { v: ALL_ORGS, t: 'All organizations' },
+      { v: ALL_BUT_GOOGLE, t: `All except ${LINEAR_EXCLUDED_ORG}` },
+      ...ranked.map((o) => ({ v: o, t: o })),
+    ].map(({ v, t }) => {
+      const o = el('option', t);
+      o.value = v;
+      return o;
+    }),
+  );
+  select.value = single || current === ALL_BUT_GOOGLE ? current : ALL_ORGS;
+}
+
 function renderLeaderboard(
   data: Data,
   state: State,
@@ -674,13 +692,19 @@ function renderLeaderboard(
 ): void {
   const name = metricName(state.metric);
   const weeks = weeksIn(Object.keys(data.reviewers.weeks), state.range);
-  const excluded = state.lbGoogle ? undefined : LINEAR_EXCLUDED_ORG;
-  const rows = topReviewers(data.reviewers, weeks, state.metric, state.lbSize, excluded);
+  const all = topReviewers(data.reviewers, weeks, state.metric, Infinity);
+
+  // The selector: the orgs with the most review over the range, plus the current choice.
+  const single = state.lbOrg.startsWith('*') ? null : state.lbOrg;
+  const noGoogle = state.lbOrg === ALL_BUT_GOOGLE;
+  fillOrgSelect($<HTMLSelectElement>('#leaderboard-org'), orgsByValue(all).slice(0, LB_ORG_CHOICES), state.lbOrg);
+  const keep = single ? (o: string) => o === single : noGoogle ? (o: string) => o !== LINEAR_EXCLUDED_ORG : null;
+  const rows = (keep ? all.filter((r) => keep(r.org)) : all).slice(0, state.lbSize);
   // Fixed for a given range and metric: the toggles below it mustn't move.
   $('#leaderboard-sub').textContent = !weeks.length
     ? `No reviewer data for ${rangeLabel(state.range)}.`
     : `${name}${weeks.length > 1 ? ' in total' : ''}, ${rangeLabel(state.range)}, for the top reviewers: ` +
-      `from every organization, or only those outside ${LINEAR_EXCLUDED_ORG}. ` +
+      `from every organization, only those outside ${LINEAR_EXCLUDED_ORG}, or one organization. ` +
       'Same scope as the organization chart: reviewers\' own (non-bot) accounts on human-owned CLs, on the selected paths.';
 
   // Every org on the board gets its own legend entry, most reviewers first.
@@ -994,22 +1018,8 @@ function renderHeat(data: Data, state: State, colors: Map<string, string>, theme
 
   // The selector: the busiest orgs over the range, plus the current choice.
   const single = state.heatOrg.startsWith('*') ? null : state.heatOrg;
-  const ranked = topDirOrgs(board, rangeWeeks, state.metric, HEAT_ORG_CHOICES);
-  if (single && !ranked.includes(single)) ranked.push(single);
-  const select = $<HTMLSelectElement>('#heat-org');
-  select.replaceChildren(
-    ...[
-      { v: ALL_ORGS, t: 'All organizations' },
-      { v: ALL_BUT_GOOGLE, t: `All except ${LINEAR_EXCLUDED_ORG}` },
-      ...ranked.map((o) => ({ v: o, t: o })),
-    ].map(({ v, t }) => {
-      const o = el('option', t);
-      o.value = v;
-      return o;
-    }),
-  );
+  fillOrgSelect($<HTMLSelectElement>('#heat-org'), topDirOrgs(board, rangeWeeks, state.metric, HEAT_ORG_CHOICES), state.heatOrg);
   const noGoogle = state.heatOrg === ALL_BUT_GOOGLE;
-  select.value = noGoogle || single ? state.heatOrg : ALL_ORGS;
 
   const keep = noGoogle ? (o: string) => o !== LINEAR_EXCLUDED_ORG : undefined;
   const segOrgs = single
