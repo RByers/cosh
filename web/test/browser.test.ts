@@ -1085,6 +1085,38 @@ test('time axes are labelled by month; tooltips still name the week', async () =
   await narrow.page.close();
 });
 
+test('chart tooltips sit beside the hovered week, not over its points', async () => {
+  const { page, errors } = await open();
+  const cards = await page.evaluate(() =>
+    (['ratioChart', 'reviewChart', 'usageChart'] as const).flatMap((k) => {
+      const c = window.__cosh![k]!;
+      const n = (c.data.labels as string[]).length;
+      return [Math.floor(n / 4), n - 2].filter((i) => i >= 0).map((index) => {
+        const active = c.data.datasets
+          .map((d, datasetIndex) => ({ datasetIndex, index, v: d.data[index] }))
+          .filter((a) => a.v != null && (a.v as { y?: unknown }).y !== null)
+          .map(({ datasetIndex, index }) => ({ datasetIndex, index }));
+        const x = c.scales.x.getPixelForValue(index);
+        c.tooltip!.setActiveElements(active, { x, y: c.chartArea.top });
+        c.update();
+        const t = c.tooltip!;
+        const out = { k, index, yAlign: t.yAlign, xAlign: t.xAlign, left: t.x, right: t.x + t.width, x };
+        c.tooltip!.setActiveElements([], { x: 0, y: 0 });
+        c.update();
+        return out;
+      });
+    }),
+  );
+  for (const t of cards) {
+    assert.equal(t.yAlign, 'center', `${t.k}@${t.index}`);
+    // Beside the week unless the card is too wide to fit on either side.
+    if (t.xAlign !== 'center') assert.ok(t.left > t.x || t.right < t.x, `${t.k}@${t.index}: ${JSON.stringify(t)}`);
+  }
+  assert.ok(cards.some((t) => t.k === 'usageChart' && t.xAlign !== 'center'), JSON.stringify(cards));
+  assert.deepEqual(errors, []);
+  await page.close();
+});
+
 test('heatmap: directories by time bins, per org or as a mix, with Gerrit links', async () => {
   const { page, errors } = await open('#from=2025-W45&to=2026-W44');
   const read = () =>

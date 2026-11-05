@@ -74,6 +74,11 @@ function baseOptions(theme: Theme) {
         labels: { boxWidth: 16, boxHeight: 2, color: theme.text },
       },
       tooltip: {
+        // Always beside the hovered week, never above or below it. Chart.js
+        // otherwise picks top/bottom when the points' mean y is near an edge
+        // (as on the usage chart, where most shares are small), centring the
+        // card over the lines. It still keeps the card inside the canvas.
+        yAlign: 'center' as const,
         backgroundColor: theme.surface,
         titleColor: theme.parity,
         bodyColor: theme.parity,
