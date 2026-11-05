@@ -477,7 +477,7 @@ test('value ratio smoothing defaults to 4 weeks and is selectable', async () => 
   const four = await read();
   assert.equal(four.smoothing, 4);
   assert.equal(four.checked, '4');
-  assert.deepEqual(four.labels, ['Off', '4 weeks', '12 weeks']);
+  assert.deepEqual(four.labels, ['Off', '4 weeks', '13 weeks']);
   // A page-wide filter, not a value-ratio-only control.
   assert.ok(await page.$('form.filters #smoothing'), 'smoothing toggle sits with the page filters');
   assert.match(four.sub, /4-week running average/);
@@ -504,11 +504,11 @@ test('value ratio smoothing defaults to 4 weeks and is selectable', async () => 
   assert.ok(off.review.every((v) => v === null || Number.isInteger(v)), 'unsmoothed counts are whole');
   assert.ok(jitter(four.review) < jitter(off.review), `${jitter(four.review)} vs ${jitter(off.review)}`);
 
-  await page.click('#smoothing input[value="12"]');
-  assert.match(page.url(), /smooth=12/);
+  await page.click('#smoothing input[value="13"]');
+  assert.match(page.url(), /smooth=13/);
   await page.reload();
   await page.waitForSelector('body[data-ready]');
-  assert.equal((await read()).smoothing, 12);
+  assert.equal((await read()).smoothing, 13);
   assert.deepEqual(errors, []);
   await page.close();
 });

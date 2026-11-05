@@ -61,7 +61,7 @@ Over a range:
 
 1. **Value ratio** per org per week in the range. 1× is the vertical middle: the
    lower half is linear 0–1×, the upper half linear 1×–max (`src/scale.ts`).
-   Smoothing (default 4 weeks; also off or 12 weeks) plots a trailing running
+   Smoothing (default 4 weeks; also off or 13 weeks, about 3 months) plots a trailing running
    average: mean review share ÷ mean usage share over the weeks ending each
    week, using weeks before the range too (`smoothRatios` in `src/data.ts`).
    The usage denominator leaves out Radar's ChromeDerivative bucket

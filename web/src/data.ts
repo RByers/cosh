@@ -259,7 +259,7 @@ export function computeRatios(
 }
 
 /** Running-average choices for the value ratio chart, in weeks (1 = off). */
-export const SMOOTHING_WEEKS = [1, 4, 12] as const;
+export const SMOOTHING_WEEKS = [1, 4, 13] as const;
 export type Smoothing = (typeof SMOOTHING_WEEKS)[number];
 export const DEFAULT_SMOOTHING: Smoothing = 4;
 
