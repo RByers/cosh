@@ -180,6 +180,30 @@ test('parity chart keeps orgs with none of the metric, on a 0 row below the log 
   }
 });
 
+test('value charts show the orgs with enough mean usage over the range', async () => {
+  // Amazon's Silk averages over 0.1% of Chromium usage since 2023 but not over
+  // the last year; Alibaba's UC Browser is over it every week.
+  const charted = async (hash: string) => {
+    const { page, errors } = await open(hash);
+    const d = await page.evaluate(() => {
+      const c = window.__cosh!;
+      const labels = (ch: { data: { datasets: { label?: string }[] } }) => ch.data.datasets.map((ds) => ds.label!);
+      return { parity: labels(c.parityChart!), ratio: labels(c.ratioChart!) };
+    });
+    assert.deepEqual(errors, []);
+    await page.close();
+    return d;
+  };
+  // The last year leaves Amazon out; every week (back to 2023) brings it back.
+  const year = await charted('#metric=comments&from=2025-W45&to=2026-W44');
+  const all = await charted('#metric=comments&from=2023-W26&to=2026-W44');
+  for (const d of [year, all]) {
+    assert.ok(d.ratio.includes('alibaba-inc.com') && d.parity.includes('alibaba-inc.com'), String(d.ratio));
+  }
+  assert.ok(!year.ratio.includes('amazon.com') && !year.parity.includes('amazon.com'), String(year.ratio));
+  assert.ok(all.ratio.includes('amazon.com') && all.parity.includes('amazon.com'), String(all.ratio));
+});
+
 test('ratio axis is linear from 0 with a highlighted 1.0 gridline', async () => {
   const { page } = await open();
   const axis = await page.evaluate(() => {

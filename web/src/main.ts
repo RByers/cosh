@@ -48,6 +48,7 @@ import {
   dirRowLink,
   OTHER,
   chartedOrgs,
+  rangeChartedOrgs,
   clampRange,
   compareWeeks,
   computeRatios,
@@ -1317,17 +1318,19 @@ function main(data: Data) {
     // averages skip the others instead of reading them as zero.
     const dataWeeks = state.metric === 'addressed' ? addressedWeeks(data.summary) : undefined;
     const shownWeeks = new Set(weeks);
+    // The value charts show the orgs with enough mean usage over the range.
+    const shown = rangeChartedOrgs(data.radar, data.orgBrowsers, orgs, weeks);
     const points = smoothRatios(
       computeRatios(data.summary, data.radar, data.orgBrowsers, state.metric, undefined, dataWeeks),
       state.smoothing,
     ).filter(
-      (p) => orgs.includes(p.org) && shownWeeks.has(p.week),
+      (p) => shown.includes(p.org) && shownWeeks.has(p.week),
     );
 
-    renderParity(data, state, weeks, orgs, colors, theme);
+    renderParity(data, state, weeks, shown, colors, theme);
     drawChart(() => {
       ratioChart?.destroy();
-      ratioChart = renderRatioChart($<HTMLCanvasElement>('#ratio-chart'), weeks, orgs, colors, points, theme, state.smoothing);
+      ratioChart = renderRatioChart($<HTMLCanvasElement>('#ratio-chart'), weeks, shown, colors, points, theme, state.smoothing);
     });
     const name = metricName(state.metric);
     const metricLabel = name.toLowerCase();

@@ -19,7 +19,7 @@ import {
   topDirOrgs,
   type DirBoard,
   chartedOrgs,
-  VALUE_CHART_EXCLUDED_ORGS,
+  rangeChartedOrgs,
   clampRange,
   computeRatios,
   dataRanges,
@@ -194,11 +194,18 @@ test('chartedOrgs skips orgs whose browsers never reach the threshold', () => {
   assert.deepEqual(chartedOrgs(radar, parseOrgBrowsers(ORG_BROWSERS)), ['google.com', 'meta.com', 'microsoft.com', 'samsung.com']);
 });
 
-test('chartedOrgs leaves out excluded orgs, by default amazon.com and alibaba-inc.com', () => {
+test('rangeChartedOrgs keeps candidates whose mean usage over the range reaches the threshold', () => {
   const radar = parseRadarWeekly(RADAR);
   const ob = parseOrgBrowsers(ORG_BROWSERS);
-  assert.deepEqual(chartedOrgs(radar, ob, undefined, ['meta.com']), ['google.com', 'microsoft.com', 'samsung.com']);
-  assert.deepEqual([...VALUE_CHART_EXCLUDED_ORGS].sort(), ['alibaba-inc.com', 'amazon.com']);
+  const weeks = [...radar.keys()];
+  const all = chartedOrgs(radar, ob);
+  assert.deepEqual(rangeChartedOrgs(radar, ob, all, weeks), all);
+  // A threshold above meta.com's mean drops it but keeps the larger orgs.
+  const meta = meanDerivedShare(radar, weeks, ob.get('meta.com')!)!;
+  const kept = rangeChartedOrgs(radar, ob, all, weeks, meta * 1.01);
+  assert.ok(!kept.includes('meta.com') && kept.includes('google.com'));
+  // No usage data for the range: nothing to chart.
+  assert.deepEqual(rangeChartedOrgs(radar, ob, all, ['1999-W01']), []);
 });
 
 test('topOrgCounts folds the tail and the summary Other row together', () => {
