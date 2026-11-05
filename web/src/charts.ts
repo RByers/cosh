@@ -479,9 +479,11 @@ export function renderSpreadChart(
   const values = spreads.flatMap((s) => s.reviewers.map((r) => r.value));
   const zeros = values.some((v) => v <= 0);
   const max = Math.max(1, ...values);
-  // The axis starts at the power of ten at or below the smallest value (1 at most).
-  const lowExp = Math.min(0, Math.floor(Math.log10(Math.min(1, ...values.filter((v) => v > 0)))));
-  const low = 10 ** lowExp;
+  // The axis starts just below the smallest value above 0.
+  const positive = values.filter((v) => v > 0);
+  const low = positive.length ? Math.min(...positive) : 1;
+  const lowExp = Math.floor(Math.log10(low));
+  const axisMin = (zeros ? 0.38 : 0.7) * low;
   const fmt = (v: number) =>
     v.toLocaleString('en-US', { maximumFractionDigits: v > 0 && v < 1 ? 2 : 1 });
   const ZERO = 0.5 * low;
@@ -574,7 +576,7 @@ export function renderSpreadChart(
       scales: {
         x: {
           type: 'logarithmic',
-          min: (zeros ? 0.38 : 0.7) * low,
+          min: axisMin,
           max: max * 1.4,
           title: {
             display: true,
@@ -589,8 +591,9 @@ export function renderSpreadChart(
             const threes = (axis.width || 600) >= 480;
             for (let e = lowExp; 10 ** e <= axis.max; e++) {
               const p = 10 ** e;
-              ticks.push({ value: p });
-              if (threes && 3 * p <= axis.max) ticks.push({ value: Number((3 * p).toPrecision(6)) });
+              if (p >= axisMin) ticks.push({ value: p });
+              const p3 = Number((3 * p).toPrecision(6));
+              if (threes && p3 >= axisMin && p3 <= axis.max) ticks.push({ value: p3 });
             }
             axis.ticks = ticks;
           },

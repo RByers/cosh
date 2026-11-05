@@ -112,7 +112,18 @@ Over a range:
    "chart" button shows it in the organization chart. A table, so cells have
    row and column headers; the directory column stays put while the bins
    scroll sideways on narrow screens.
-7. **Review per reviewer** (`orgSpreads` in `src/data.ts`,
+7. **Per review** (`orgPerReviewSpreads` in `src/data.ts`, the same
+   `renderSpreadChart`): just above the per-reviewer spread and on the same
+   org rows, each reviewer's metric over the range divided by their reviewed
+   CLs (CLs they commented on), or review comments per review under the
+   Reviewed CLs metric; the title follows (“Review comments per review”).
+   Only reviewers with at least 3 reviewed CLs (`PER_REVIEW_MIN`) and a
+   review comment count; under addressed comments those with none addressed
+   sit at 0. The table gives each row's reviewers, quartiles and “All
+   reviews”, the row's pooled total ÷ its reviews. Comments count in the
+   week written and CLs in the week closed, so a range's edges are
+   approximate. From `reviewer_weekly.json`; no extra data.
+8. **Review per reviewer** (`orgSpreads` in `src/data.ts`,
    `renderSpreadChart` in `src/charts.ts`): a strip plot of each reviewer's
    total for the metric over the range, one dot per reviewer on a log axis,
    one row per org: the 10 orgs with the largest total, then everyone else
@@ -124,7 +135,7 @@ Over a range:
    metric are left out, except under addressed comments, where everyone who
    wrote a review comment counts and those with none addressed sit at 0.
    From `reviewer_weekly.json`; no extra data.
-8. **Reviewer leaderboard**: the top 25 (or 50, 100, 200) reviewers by review
+9. **Reviewer leaderboard**: the top 25 (or 50, 100, 200) reviewers by review
    comments over the range, for every organization, all but google.com, or
    one organization (the 25 with the most review in the range), one
    compact bar each, coloured by org. Orgs with a colour get a legend
@@ -133,7 +144,7 @@ Over a range:
    with addressed comments filled in for classified weeks. The chart comes
    from `reviewer_weekly.json` (no extra data) and has the link to the CLs
    they commented on, on Gerrit.
-9. **How review threads are classified** (once some week is classified):
+10. **How review threads are classified** (once some week is classified):
    one bar splitting the range's classified reviewer-started threads by how
    each was decided (owner's "Done", Haiku addressed, Haiku no change, no
    owner reply), and example threads per outcome with Gerrit links. The
@@ -144,7 +155,7 @@ Over a range:
 
 **Org colours are fixed for the page.** The ratio chart and the table give
 each browser owner its own colour. Every review section (the organization
-chart, both directory charts, the per-reviewer spread, the leaderboard and
+chart, both directory charts, the per-review and per-reviewer spreads, the leaderboard and
 the reviewer chart) uses one more map (`reviewColorSlots`): the 8 orgs with
 the most review comments over all the data get the 8 colours, keeping their
 ratio-chart colour if they have one; the others take the colours left over,

@@ -159,6 +159,15 @@ value_ratio(O, t) = O's share of Chromium addressed review comments
   selector, then grouped bars per org) that hid the differences: Google's and
   Microsoft's distributions are nearly the same, and what differs is the
   smaller orgs, best seen reviewer by reviewer. From `reviewer_weekly.json`.
+- Per review in the web UI (just above Review per reviewer, same org rows):
+  each reviewer's metric ÷ their reviewed CLs over the range, as a strip plot
+  with quartile boxes, and a table with each org's quartiles and pooled
+  figure. Under the Reviewed CLs metric it shows review comments per review.
+  Reviewers need 3+ reviewed CLs. Under addressed comments it is addressed
+  comments per reviewed CL, how much change a review drove, not an
+  acceptance rate (addressed ÷ comments). From `reviewer_weekly.json`, so a
+  dot is a reviewer's average, not a single review: the data has no
+  per-(reviewer, CL) rows.
 - Web UI date range: From/To dates (whole ISO weeks) plus presets, applied to
   every chart, the tiles and the table (see `web/README.md`).
 
