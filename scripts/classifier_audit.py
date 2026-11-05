@@ -17,8 +17,18 @@ docs/comment-classifier.md, "Production audit". Three steps:
           low-confidence label was reviewed. Ambiguous threads are reported
           both ways.
 
-The sample holds Gerrit comment text (public data); keep it in a scratch
-directory, not in git.
+Rechecking with another judge (e.g. Gemini) on the same threads: the
+2026-11-04 sample, as the judges saw it, is committed as
+docs/audits/classifier-2026-11-04-threads.jsonl (Gerrit comment text,
+public data), and its final labels as docs/audits/classifier-2026-11-04.jsonl.
+
+  S=docs/audits/classifier-2026-11-04-threads.jsonl
+  python3 scripts/classifier_audit.py prompts $T --sample $S   # writes prompt_NN.txt to paste
+  # save each reply as $T/response_NN.txt, then:
+  python3 scripts/classifier_audit.py collect $T --sample $S --model gemini-<version>
+  # or, with a CLI that reads the prompt on stdin and prints the JSON:
+  python3 scripts/classifier_audit.py judge $T --sample $S --cmd '<gemini cli>' --model gemini-<version>
+  python3 scripts/classifier_audit.py compare $T --sample $S
 
   COSH_DATA_DIR=<main>/data/private python3 scripts/classifier_audit.py sample $T --n 800 \
       --weeks 2026-W33:2026-W44
@@ -32,7 +42,9 @@ import json
 import math
 import os
 import random
+import re
 import sqlite3
+import subprocess
 import sys
 from collections import Counter
 from concurrent.futures import ThreadPoolExecutor
@@ -152,53 +164,151 @@ def load_jsonl(path):
     return [json.loads(line) for line in open(path) if line.strip()]
 
 
-def judge_call(model, items, cwd):
-    import re
-    import subprocess
+def judge_prompt(items):
+    """The whole prompt for one batch of [(id, rendered thread)]: the
+    production definition, the audit instructions, then the threads."""
     text = "\n\n".join(f"### {i}\n{t}" for i, t in items)
-    prompt = classify.DEFINITION + "\n\n" + JUDGE_INSTRUCTIONS + "\n\n" + text
-    cmd = ["claude", "-p", "--model", model, "--output-format", "json", "--tools", "",
-           "--system-prompt", "You are a careful expert reviewer of code-review threads.",
-           "--strict-mcp-config", "--mcp-config", '{"mcpServers":{}}', "--disable-slash-commands",
-           "--exclude-dynamic-system-prompt-sections", "--no-session-persistence",
-           "--json-schema", json.dumps(JUDGE_SCHEMA)]
-    p = subprocess.run(cmd, input=prompt, capture_output=True, text=True, cwd=cwd)
+    return classify.DEFINITION + "\n\n" + JUDGE_INSTRUCTIONS + "\n\n" + text
+
+
+def parse_labels(text):
+    """The labels list from a model's reply: a {"labels": [...]} object,
+    possibly inside a ``` fence or surrounded by prose."""
+    m = re.search(r"\{.*\}", text or "", re.S)
+    return (json.loads(m.group(0)) if m else {}).get("labels", [])
+
+
+def judge_call(model, items, cwd, cmd=None):
+    """Labels one batch. Returns (labels, usd, [model ids]). With `cmd` (a
+    shell command, e.g. a Gemini CLI), the prompt goes to its stdin and its
+    stdout must hold the {"labels": [...]} JSON."""
+    prompt = judge_prompt(items)
+    if cmd:
+        p = subprocess.run(cmd, shell=True, input=prompt, capture_output=True, text=True, cwd=cwd)
+        if p.returncode:
+            raise RuntimeError(f"{cmd!r} failed (exit {p.returncode}): {(p.stderr or p.stdout)[:500]}")
+        return parse_labels(p.stdout), 0.0, [model]
+    argv = ["claude", "-p", "--model", model, "--output-format", "json", "--tools", "",
+            "--system-prompt", "You are a careful expert reviewer of code-review threads.",
+            "--strict-mcp-config", "--mcp-config", '{"mcpServers":{}}', "--disable-slash-commands",
+            "--exclude-dynamic-system-prompt-sections", "--no-session-persistence",
+            "--json-schema", json.dumps(JUDGE_SCHEMA)]
+    p = subprocess.run(argv, input=prompt, capture_output=True, text=True, cwd=cwd)
     d = json.loads(p.stdout)
     if d.get("is_error"):
         raise RuntimeError(str(d.get("result"))[:500])
-    out = d.get("structured_output") or {}
-    if not out:
-        m = re.search(r"\{.*\}", d.get("result") or "", re.S)
-        out = json.loads(m.group(0)) if m else {}
-    return out.get("labels", []), d.get("total_cost_usd") or 0, sorted(d.get("modelUsage", {}))
+    labels = (d.get("structured_output") or {}).get("labels") or parse_labels(d.get("result"))
+    return labels, d.get("total_cost_usd") or 0, sorted(d.get("modelUsage", {}))
+
+
+def sample_path(a):
+    return a.sample or os.path.join(a.dir, "sample.jsonl")
+
+
+def batches_of(a, todo):
+    return [todo[i:i + a.batch] for i in range(0, len(todo), a.batch)]
+
+
+def save_labels(fh, batch, labels, model):
+    """Appends a batch's labels to judge.jsonl; returns how many matched."""
+    ids = {s["id"] for s in batch}
+    for x in labels:
+        if isinstance(x, dict) and x.get("id") in ids and "done" in x:
+            fh.write(json.dumps(dict(x, model=model)) + "\n")
+            ids.discard(x["id"])
+    fh.flush()
+    return len(batch) - len(ids)
 
 
 def cmd_judge(a):
-    sample = load_jsonl(os.path.join(a.dir, "sample.jsonl"))
+    sample = load_jsonl(sample_path(a))
+    os.makedirs(a.dir, exist_ok=True)
     path = os.path.join(a.dir, "judge.jsonl")
     have = {r["id"] for r in load_jsonl(path)}
     todo = [s for s in sample if s["id"] not in have]
-    batches = [todo[i:i + a.batch] for i in range(0, len(todo), a.batch)]
+    batches = batches_of(a, todo)
     print(f"{len(todo)} threads to judge in {len(batches)} calls", file=sys.stderr)
     cwd = os.environ.get("TMPDIR") or "/tmp"
     usd = 0.0
     with ThreadPoolExecutor(max_workers=a.jobs) as pool, open(path, "a") as fh:
-        futs = [pool.submit(judge_call, a.model, [(s["id"], s["text"]) for s in b], cwd) for b in batches]
+        futs = [pool.submit(judge_call, a.model, [(s["id"], s["text"]) for s in b], cwd, a.cmd)
+                for b in batches]
         for b, f in zip(batches, futs):
             labels, cost, models = f.result()
             usd += cost
-            ids = {s["id"] for s in b}
-            for x in labels:
-                if x.get("id") in ids:
-                    fh.write(json.dumps(dict(x, model=models[0] if models else a.model)) + "\n")
-                    ids.discard(x["id"])
-            fh.flush()
-            print(f"  batch of {len(b)}: {len(b) - len(ids)} labelled, ${cost:.2f}", file=sys.stderr)
+            n = save_labels(fh, b, labels, models[0] if models else a.model)
+            print(f"  batch of {len(b)}: {n} labelled, ${cost:.2f}", file=sys.stderr)
     print(f"done, ${usd:.2f} API-equivalent", file=sys.stderr)
 
 
+def cmd_prompts(a):
+    """Writes prompt_NN.txt per batch, for a model run by hand (e.g. pasted
+    into the Gemini app); save each reply as response_NN.txt, then collect."""
+    sample = load_jsonl(sample_path(a))
+    os.makedirs(a.dir, exist_ok=True)
+    batches = batches_of(a, sample)
+    for k, b in enumerate(batches):
+        with open(os.path.join(a.dir, f"prompt_{k:02d}.txt"), "w") as fh:
+            fh.write(judge_prompt([(s["id"], s["text"]) for s in b]) + "\n")
+    print(f"wrote {len(batches)} prompts of up to {a.batch} threads to {a.dir}/prompt_NN.txt; "
+          f"save each reply as response_NN.txt and run collect", file=sys.stderr)
+
+
+def cmd_collect(a):
+    """Reads response_NN.txt (the replies to prompt_NN.txt) into judge.jsonl."""
+    sample = load_jsonl(sample_path(a))
+    path = os.path.join(a.dir, "judge.jsonl")
+    have = {r["id"] for r in load_jsonl(path)}
+    total, missing = 0, []
+    with open(path, "a") as fh:
+        for k, b in enumerate(batches_of(a, sample)):
+            resp = os.path.join(a.dir, f"response_{k:02d}.txt")
+            b = [s for s in b if s["id"] not in have]
+            if not b:
+                continue
+            if not os.path.exists(resp):
+                missing.append(os.path.basename(resp))
+                continue
+            n = save_labels(fh, b, parse_labels(open(resp).read()), a.model)
+            total += n
+            if n < len(b):
+                print(f"  {os.path.basename(resp)}: {n}/{len(b)} labelled", file=sys.stderr)
+    print(f"collected {total} labels into {path}" + (f"; missing {', '.join(missing)}" if missing else ""),
+          file=sys.stderr)
+
+
+def cmd_compare(a):
+    """A new judge (DIR/judge.jsonl) against the committed final labels
+    (--record): its agreement with them, production scored against it, and
+    every thread where the new judge and the final label differ."""
+    sample = {s["id"]: s for s in load_jsonl(sample_path(a))}
+    record = {r["id"]: r for r in load_jsonl(a.record) if "id" in r}
+    judge = {r["id"]: r for r in load_jsonl(os.path.join(a.dir, "judge.jsonl"))}
+    ids = [i for i in record if i in judge]
+    decided = [i for i in ids if record[i]["gold"] is not None]
+    agree = sum(judge[i]["done"] == record[i]["gold"] for i in decided)
+    print(f"{len(ids)} of {len(record)} audited threads have a label from the new judge")
+    print(f"agreement with the final labels: {agree}/{len(decided)} ({agree / max(1, len(decided)):.3f}); "
+          f"with the first Opus labels: {sum(judge[i]['done'] == record[i]['opus'] for i in ids)}/{len(ids)}")
+    print("production against the final labels: " +
+          fmt(metrics([(record[i]["prod"], record[i]["gold"]) for i in decided])))
+    print("production against the new judge:    " +
+          fmt(metrics([(record[i]["prod"], judge[i]["done"]) for i in ids])))
+
+    def yn(v):
+        return "done" if v else "not"
+    for i in decided:
+        r, j = record[i], judge[i]
+        if j["done"] == r["gold"]:
+            continue
+        print(f"\n==== {i} final={yn(r['gold'])} new judge={yn(j['done'])}"
+              f"{'' if j.get('confident', True) else ' (unsure)'} prod={yn(r['prod'])} ({r['decided_by']}) "
+              f"opus={yn(r['opus'])}\nnew judge: {j.get('reason', '')}\nnote: {r.get('note') or ''}\n"
+              f"https://chromium-review.googlesource.com/c/{r['cl']}\n{sample[i]['text'] if i in sample else ''}")
+
+
 def gold(a):
-    sample = {s["id"]: s for s in load_jsonl(os.path.join(a.dir, "sample.jsonl"))}
+    sample = {s["id"]: s for s in load_jsonl(sample_path(a))}
     judge = {}
     for r in load_jsonl(os.path.join(a.dir, "judge.jsonl")):
         judge[r["id"]] = r
@@ -301,31 +411,52 @@ def cmd_score(a):
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    sp = ap.add_subparsers(dest="cmd", required=True)
+    sp = ap.add_subparsers(dest="command", required=True)
     p = sp.add_parser("sample")
     p.add_argument("dir")
     p.add_argument("--n", type=int, default=800)
     p.add_argument("--weeks", default="2026-W33:2026-W44")
     p.add_argument("--seed", type=int, default=20261104)
+    sample_help = ("the sampled threads (default DIR/sample.jsonl), e.g. "
+                   "docs/audits/classifier-2026-11-04-threads.jsonl")
     p = sp.add_parser("judge")
     p.add_argument("dir")
-    p.add_argument("--model", default="opus")
+    p.add_argument("--sample", help=sample_help)
+    p.add_argument("--model", default="opus", help="claude model; with --cmd, the name to record")
+    p.add_argument("--cmd", help="shell command for another model: prompt on stdin, JSON labels on stdout")
     p.add_argument("--batch", type=int, default=25)
     p.add_argument("--jobs", type=int, default=4)
+    p = sp.add_parser("prompts", help="batch prompts to run by hand in another model")
+    p.add_argument("dir")
+    p.add_argument("--sample", help=sample_help)
+    p.add_argument("--batch", type=int, default=25)
+    p = sp.add_parser("collect", help="read hand-run replies (response_NN.txt) into judge.jsonl")
+    p.add_argument("dir")
+    p.add_argument("--sample", help=sample_help)
+    p.add_argument("--batch", type=int, default=25, help="as given to prompts")
+    p.add_argument("--model", default="gemini", help="the name to record for these labels")
+    p = sp.add_parser("compare", help="a new judge against the audit's final labels")
+    p.add_argument("dir")
+    p.add_argument("--sample", help=sample_help)
+    p.add_argument("--record", default="docs/audits/classifier-2026-11-04.jsonl",
+                   help="the audit's per-thread record, with the final labels")
     p = sp.add_parser("disagreements")
     p.add_argument("dir")
+    p.add_argument("--sample", help=sample_help)
     p.add_argument("--only", choices=["disagree", "unsure", "all"],
                    help="only disagreements, only unsure agreements, or every thread")
     p.add_argument("--spot", type=int, help="instead, N random confident agreements")
     p.add_argument("--seed", type=int, default=7)
     p = sp.add_parser("score")
     p.add_argument("dir")
+    p.add_argument("--sample", help=sample_help)
     p.add_argument("--as", dest="as_", action="append", metavar="CLASS=done|not|lean",
                    help="decide an adjudicated ambiguity class (promise, resolved, one-off) one way, "
                         "or by the adjudicator's lean per thread")
     p.add_argument("--write", metavar="PATH", help="also write the per-thread record (JSON lines, no text)")
     a = ap.parse_args()
-    dict(sample=cmd_sample, judge=cmd_judge, disagreements=cmd_disagreements, score=cmd_score)[a.cmd](a)
+    dict(sample=cmd_sample, judge=cmd_judge, prompts=cmd_prompts, collect=cmd_collect, compare=cmd_compare,
+         disagreements=cmd_disagreements, score=cmd_score)[a.command](a)
 
 
 if __name__ == "__main__":

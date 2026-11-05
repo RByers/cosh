@@ -196,16 +196,14 @@ value_ratio(O, t) = O's share of Chromium addressed review comments
        recall 0.99; `comment-classifier.md`, "Production audit"), Opus both
        judged the 800 threads and adjudicated the disagreements, so errors
        that Claude models share were checked only by a 60-thread read.
-       - **Run:** give Gemini the same 800 threads with the production
-         definition (`DEFINITION` in `cosh/classify.py`). Then read where
-         it disagrees with the final labels.
-       - **Where the threads are:** listed by CL and root comment in
-         `docs/audits/classifier-2026-11-04.jsonl`. A fresh `sample` with
-         the same seed draws different threads once more weeks are
-         labelled.
-       - **Script work needed:** `classifier_audit.py` can't do this yet.
-         It needs a way to re-render a sample from that file, and a judge
-         that calls Gemini instead of `claude -p`;
+       - **Run:** the same 800 threads are committed as
+         `docs/audits/classifier-2026-11-04-threads.jsonl`.
+         `classifier_audit.py prompts` writes 32 ready-to-paste prompts
+         (production definition included); `collect` reads the saved
+         replies, or `judge --cmd` runs a Gemini CLI. Then `compare` shows
+         the agreement with the final labels and lists every disagreement
+         to read. Commands are in `comment-classifier.md`, "Production
+         audit";
      - after the next full `derive` on the main DB, rerun `summarize`.
    - **The original plan, for reference:**
    - **Scoring:** one point per non-author comment in a review thread that

@@ -134,11 +134,30 @@ that were counted.
     "we can even enforce it with CHECKs and drop the skill", "there really
     is no reason to clamp"), plus a partial adoption ("I've used 'else'
     instead of 'else if'").
-- **Record.** `docs/audits/classifier-2026-11-04.jsonl` has one row per
-  sampled thread: CL, root comment id, the production and Opus labels,
-  Opus's reason, the final label and the adjudication note. It holds no
-  comment text; the text can be re-rendered from CL and root comment id.
-  Reproduce or repeat with `scripts/classifier_audit.py`:
+- **Record.** Two files in `docs/audits/`, one row per sampled thread:
+  - `classifier-2026-11-04.jsonl`: the labels. CL, root comment id, the
+    production and Opus labels, Opus's reason, the final label (`gold`;
+    null for the 4 left out) and the adjudication note.
+  - `classifier-2026-11-04-threads.jsonl`: the threads exactly as Haiku and
+    Opus saw them (`text`, 0.5 MB; public Gerrit comments, ground rule 3),
+    so any classifier can be rerun on the same set.
+- **Rechecking with another model** (Gemini is planned; `plan.md`, Next
+  steps 6), on the same 800 threads:
+
+  ```
+  S=docs/audits/classifier-2026-11-04-threads.jsonl
+  python3 scripts/classifier_audit.py prompts $T --sample $S    # 32 prompt_NN.txt to paste into the model
+  # save each reply as $T/response_NN.txt (prose or a ``` fence around the JSON is fine), then
+  python3 scripts/classifier_audit.py collect $T --sample $S --model gemini-<version>
+  # or, given a CLI that reads the prompt on stdin and prints the JSON:
+  python3 scripts/classifier_audit.py judge $T --sample $S --cmd '<cli>' --model gemini-<version>
+  python3 scripts/classifier_audit.py compare $T --sample $S    # agreement, production vs it, and each disagreement
+  ```
+
+  As a baseline, Opus's first labels agree with the final labels on 790
+  of 796 threads.
+- **A new audit** of fresh threads repeats the whole procedure with
+  `scripts/classifier_audit.py`:
 
   ```
   COSH_DATA_DIR=<main>/data/private python3 scripts/classifier_audit.py sample $T --n 800 --weeks 2026-W33:2026-W44
