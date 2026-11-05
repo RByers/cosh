@@ -153,7 +153,7 @@ value_ratio(O, t) = O's share of Chromium addressed review comments
   reviewers. Every org on it is named in the legend (no "other"); orgs beyond
   the 8 palette colours are also named on their rows. `summarize` writes every reviewer's weekly counts
   to `summaries/reviewer_weekly.json`; the UI totals any range from it.
-- Review per reviewer in the web UI (above the leaderboard): a strip plot,
+- Reviews per reviewer in the web UI (above Per review and the leaderboard): a strip plot,
   one dot per reviewer on a log axis and one row per org (top 10 by total,
   then Other), with a box over each row's middle half and a median line;
   clicking a dot opens the reviewer's weekly chart. A table gives each org's
@@ -161,7 +161,8 @@ value_ratio(O, t) = O's share of Chromium addressed review comments
   selector, then grouped bars per org) that hid the differences: Google's and
   Microsoft's distributions are nearly the same, and what differs is the
   smaller orgs, best seen reviewer by reviewer. From `reviewer_weekly.json`.
-- Per review in the web UI (just above Review per reviewer, same org rows):
+- Per review in the web UI (just below Reviews per reviewer, above the
+  leaderboard, same org rows):
   each reviewer's metric ÷ their reviewed CLs over the range, as a strip plot
   with quartile boxes, and a table with each org's quartiles and pooled
   figure. Under the Reviewed CLs metric it shows review comments per review.

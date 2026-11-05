@@ -615,7 +615,7 @@ td.ratio {
   background: var(--text-muted);
 }
 
-/* Review per reviewer: the strip plot's figures, under the chart. */
+/* Reviews per reviewer: the strip plot's figures, under the chart. */
 .dist-table {
   margin-top: 12px;
   font-size: 0.85rem;

@@ -79,10 +79,10 @@ test('page loads data and renders all three charts without errors', async () => 
     assert.ok(c.n >= 1, `${c.k} has datasets`);
   }
   // Charts come in order: parity, ratio over time, review, usage, the table, directories, directories over time,
-  // per review, the per-reviewer distribution, then the leaderboard.
+  // the per-reviewer distribution, per review, then the leaderboard.
   const order = await page.$$eval('main > section', (s) => s.map((e) => e.querySelector('canvas, table, .lb, .ar')?.id));
   assert.deepEqual(order.filter(Boolean),
-    ['parity-chart', 'ratio-chart', 'review-chart', 'usage-chart', 'org-table', 'area-chart', 'heat-table', 'pr-chart', 'dist-chart', 'leaderboard-chart']);
+    ['parity-chart', 'ratio-chart', 'review-chart', 'usage-chart', 'org-table', 'area-chart', 'heat-table', 'dist-chart', 'pr-chart', 'leaderboard-chart']);
   const titles = await page.$$eval('#parity-title, #ratio-title', (h) => h.map((e) => e.textContent));
   assert.deepEqual(titles, ['Value ratio', 'Value ratio over time']);
   await page.close();
@@ -1133,7 +1133,7 @@ test('per-review spread: the metric per reviewed CL, on the per-reviewer rows; r
   // A linear axis from 0 here; the per-reviewer spread keeps its log axis.
   assert.deepEqual(await page.evaluate(() => [window.__cosh!.perReviewChart!.scales.x.type,
     window.__cosh!.perReviewChart!.scales.x.min, window.__cosh!.distChart!.scales.x.type]), ['linear', 0, 'logarithmic']);
-  // Same rows, in the same order, as the per-reviewer spread below it.
+  // Same rows, in the same order, as the per-reviewer spread above it.
   assert.deepEqual(v.orgs, v.distOrgs.filter((o) => v.orgs.includes(o)));
   assert.equal(v.orgs[0], 'google.com');
   assert.equal(v.orgs[v.orgs.length - 1], 'Other');
@@ -1153,8 +1153,8 @@ test('per-review spread: the metric per reviewed CL, on the per-reviewer rows; r
     window.__cosh!.render();
   });
   assert.equal(await page.$eval('#pr-title', (e) => e.textContent), 'Review characters per review');
-  // The section sits just above the per-reviewer spread.
-  assert.equal(await page.$eval('#per-review', (e) => e.nextElementSibling!.id), 'distribution');
+  // The section sits just below the per-reviewer spread.
+  assert.equal(await page.$eval('#distribution', (e) => e.nextElementSibling!.id), 'per-review');
   assert.deepEqual(errors, []);
   await page.close();
 });

@@ -1055,7 +1055,8 @@ function renderPerReview(
   $('#pr-title').textContent = name;
   $('#pr-sub').textContent = weeks.length
     ? `Each reviewer's ${metricName(num).toLowerCase()} over ${rangeLabel(state.range)} divided by the CLs they ` +
-      'reviewed (commented on): one dot per reviewer, on the same organization rows as the chart below. ' +
+      'reviewed (commented on): one dot per reviewer, on the same organization rows as the chart above. ' +
+      'This likely correlates with the thoroughness of the reviewer, or complexity of the CLs they tend to review. ' +
       "Each box spans the middle half of its row's reviewers, with a thick line at the median; " +
       `rows with under five reviewers get none. Only reviewers with at least ${PER_REVIEW_MIN} reviewed CLs ` +
       "count, so that one CL doesn't decide a dot" +
