@@ -741,7 +741,12 @@ test('date range defaults to where review and usage data overlap, and drives eve
   assert.equal(d.usageWeeks[d.usageWeeks.length - 1], d.range.to);
   assert.ok(d.ratioWeeks.every((w) => w >= d.range.from && w <= d.range.to));
   assert.deepEqual(d.reviewWeeks, d.ratioWeeks);
-  assert.match(page.url(), new RegExp(`from=${d.range.from}&to=${d.range.to}`));
+  // "All data" stays out of the URL, so a reload follows new data and keeps it picked.
+  assert.doesNotMatch(page.url(), /from=|to=/);
+  const pinned = await open(`#metric=comments&from=${d.range.from}&to=${d.range.to}`);
+  assert.equal(await pinned.page.$eval('#range-presets [aria-pressed="true"]', (b) => b.textContent), 'All data');
+  assert.doesNotMatch(pinned.page.url(), /from=|to=/);
+  await pinned.page.close();
 
   // Pick an earlier start date: the usage chart widens to the week of that date.
   // Four weeks before the default start, so this holds however much review

@@ -311,8 +311,11 @@ function readStateFromUrl(data: Data): State {
   };
 }
 
-function writeStateToUrl(s: State) {
-  history.replaceState(null, '', `#metric=${s.metric}&from=${s.range.from}&to=${s.range.to}&smooth=${s.smoothing}` +
+/** `allData` is the "All data" range: a range equal to it is left out of the
+ * URL, so a reload or shared link keeps "All data" as new weeks arrive. */
+function writeStateToUrl(s: State, allData: WeekRange) {
+  const all = s.range.from === allData.from && s.range.to === allData.to;
+  history.replaceState(null, '', `#metric=${s.metric}${all ? '' : `&from=${s.range.from}&to=${s.range.to}`}&smooth=${s.smoothing}` +
     (s.reviewScale === 'linear' ? '&rscale=linear' : '') +
     (s.lbSize !== LEADERBOARD_SIZE ? `&lbn=${s.lbSize}` : '') +
     (s.lbOrg !== ALL_ORGS ? `&lbo=${encodeURIComponent(s.lbOrg)}` : '') +
@@ -1269,7 +1272,7 @@ function main(data: Data) {
   const nameable = (org: string) => reviewSlots.has(org);
 
   const render = () => {
-    writeStateToUrl(state);
+    writeStateToUrl(state, data.ranges.common);
     syncInputs();
     renderRangeSummary(data, state);
     renderMetricNote(data, state);
