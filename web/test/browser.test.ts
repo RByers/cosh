@@ -313,18 +313,21 @@ test.skipIf(!hasAddressedWeeks())('addressed comments show only classified weeks
   assert.ok(smoothed.ratio !== null && Math.abs(smoothed.ratio - raw.ratio!) < 1e-9, `${smoothed.ratio} vs ${raw.ratio}`);
   assert.ok(Math.abs(smoothed.review - raw.review) < 1e-9, `${smoothed.review} vs ${raw.review}`);
   await page.click('#smoothing input[value="4"]');
-  // The intro links to the explainer: it opens it without losing the URL state.
+  // The intro links to the explainer in the thread box: it scrolls there without losing the URL state.
   const intro = await page.$eval('header', (h) => h.textContent ?? '');
   assert.match(intro, /share of\s+addressed\s+review comments/);
   await page.click('#addressed-link');
-  assert.equal(await page.$eval('#addressed-details', (d) => (d as HTMLDetailsElement).open), true);
+  await page.waitForFunction(() => {
+    const top = document.querySelector('#addressed-details')!.getBoundingClientRect().top;
+    return Math.abs(top) < 2;
+  });
   assert.match(page.url(), /metric=addressed/);
-  await page.$eval('#addressed-details', (d) => { (d as HTMLDetailsElement).open = false; });
-  // The classification explainer starts collapsed and gives the measured accuracy.
+  // The classification explainer is always shown in the visible thread box and gives the measured accuracy.
   const details = await page.$eval('#addressed-details', (d) => ({
-    hidden: (d as HTMLElement).hidden, open: (d as HTMLDetailsElement).open, text: d.textContent ?? '' }));
-  assert.equal(details.hidden, false);
-  assert.equal(details.open, false);
+    boxHidden: document.querySelector<HTMLElement>('#threads')!.hidden,
+    tag: d.tagName, text: d.textContent ?? '' }));
+  assert.equal(details.boxHidden, false);
+  assert.equal(details.tag, 'DIV');
   assert.match(details.text, /precision of 0\.98 .*recall of 0\.99/s);
   // Other metrics are unaffected and hide the note.
   await page.click('#metric input[value="comments"]');

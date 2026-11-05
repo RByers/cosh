@@ -1269,16 +1269,13 @@ function main(data: Data) {
     window.__cosh = { data, state, ratioChart, reviewChart, usageChart, distChart, render };
   };
 
-  // The classifier explainer matters only once some week is classified.
-  $('#addressed-details').hidden = !availableMetrics(data).some((m) => m.id === 'addressed');
-  // The intro's link opens the explainer in place. The URL hash holds the
+  // The intro's link scrolls to the classifier explainer, which is in the
+  // thread box (shown once some week is classified). The URL hash holds the
   // page state, so the link must not replace it.
   $('#addressed-link').addEventListener('click', (e) => {
-    const details = $<HTMLDetailsElement>('#addressed-details');
-    if (details.hidden) return;
+    if ($('#threads').hidden) return;
     e.preventDefault();
-    details.open = true;
-    details.scrollIntoView({ block: 'start' });
+    $('#addressed-details').scrollIntoView({ block: 'start' });
   });
   syncInputs = buildControls(data, state, render);
   render();

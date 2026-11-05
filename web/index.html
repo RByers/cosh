@@ -206,20 +206,16 @@
         <p id="threads-sub" class="sub"></p>
         <div id="threads-bar" class="tb-bar" role="img"></div>
         <ul id="threads-legend" class="tb-legend"></ul>
-        <p class="note">
-          A thread is a reviewer's comment and the replies to it. Threads that led to no change are not bad review:
-          asking how a CL works, or checking an assumption, is part of good review. They just don't score in the
-          addressed metric, which counts only review that changed the code.
-        </p>
-        <details class="note details-note" id="addressed-details" hidden>
-          <summary><strong>How addressed comments are classified, and how accurate it is</strong></summary>
+        <div class="note" id="addressed-details">
           <p>
             A <em>thread</em> is a reviewer's comment plus every reply to it. A thread is <em>addressed</em> if the
             feedback led the CL's owner to change the CL itself: code, tests, code comments, build files or the commit
             message. Adopting part of a suggestion, making a different or better change because of it, adding a TODO,
             or moving code out of the CL all count. It is not addressed if the owner answered a question, explained or
             pushed back; if the comment was an approval, thanks or FYI; if the work went to another CL or a bug; or if
-            the reply was a bare “Acknowledged”.
+            the reply was a bare “Acknowledged”. Threads that led to no change are not bad review: asking how a CL
+            works, or checking an assumption, is part of good review. They just don't score in the addressed metric,
+            which counts only review that changed the code.
           </p>
           <p>
             Each thread is decided in this order. (1) If the owner never replied, or started the thread, it scores
@@ -239,7 +235,7 @@
             were too unclear to call and are left out. These figures are per thread. Points are per comment, so long
             threads weigh more. Details are in <code>docs/comment-classifier.md</code>.
           </p>
-        </details>
+        </div>
         <div id="threads-examples" class="tb-examples"></div>
       </section>
 
