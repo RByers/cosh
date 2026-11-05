@@ -115,16 +115,23 @@ function weekAxis(theme: Theme, weeks: string[], offset = false) {
 /** Tooltip title: the week and its dates. */
 const weekTooltipTitle = (items: { label: string }[]) => (items.length ? weekTitle(items[0].label) : '');
 
-function lineDataset<T>(label: string, color: string, data: T[]) {
+/** A datum's plotted value: the number itself, or an object's `y`. */
+const yOf = (d: unknown) => (d !== null && typeof d === 'object' ? (d as { y?: number | null }).y ?? null : d ?? null);
+
+export function lineDataset<T>(label: string, color: string, data: T[]) {
+  // Lines without dots, except a week with gaps on both sides (it would
+  // otherwise draw nothing) and the hovered week.
+  const pointRadius = data.map((d, i) =>
+    yOf(d) !== null && yOf(data[i - 1]) === null && yOf(data[i + 1]) === null ? 2 : 0,
+  );
   return {
     label,
     data,
     borderColor: color,
     backgroundColor: color,
     borderWidth: 2,
-    // Lines only, never dots: not on short ranges, isolated weeks or hover.
-    pointRadius: 0,
-    pointHoverRadius: 0,
+    pointRadius,
+    pointHoverRadius: 4,
     spanGaps: false,
     tension: 0,
   };

@@ -1,4 +1,5 @@
 // Unit tests for the pure data/scale modules (no browser).
+import { lineDataset } from '../src/charts.ts';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -846,4 +847,11 @@ test('logAxisFloor: a power of ten below every positive value, where zeros are d
   assert.equal(logAxisFloor([1 / 13, 2]), 0.01);
   assert.equal(logAxisFloor([0, 0]), 1);
   assert.equal(logAxisFloor([]), 1);
+});
+
+test('lineDataset draws no dots except for a week with gaps on both sides', () => {
+  assert.deepEqual(lineDataset('a', '#000', [1, 2, 3]).pointRadius, [0, 0, 0]);
+  assert.deepEqual(lineDataset('a', '#000', [1, null, 3, 4, null]).pointRadius, [2, 0, 0, 0, 0]);
+  assert.deepEqual(lineDataset('a', '#000', [{ y: null }, { y: 5 }, { y: null }]).pointRadius, [0, 2, 0]);
+  assert.equal(lineDataset('a', '#000', [1]).pointHoverRadius, 4);
 });
