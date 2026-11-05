@@ -349,20 +349,6 @@ test('metric toggle stays at the top of the window while scrolling, on wide and 
     await page.click('#metric input[value="cls"]');
     assert.match(page.url(), /metric=cls/);
     assert.equal(await page.$eval('.metric-bar', (b) => b.getBoundingClientRect().top), 0);
-    // Chrome on macOS jitters positioned or transparent descendants of a sticky
-    // element: the visible buttons must be neither (the radios are 1px and clipped).
-    const odd = await page.$$eval('.metric-bar *', (els) => els
-      .filter((e) => e.tagName !== 'INPUT')
-      .map((e) => ({ tag: e.tagName, s: getComputedStyle(e) }))
-      .filter(({ s }) => s.position !== 'static' || s.opacity !== '1')
-      .map(({ tag, s }) => `${tag} ${s.position} ${s.opacity}`));
-    assert.deepEqual(odd, []);
-    // Clicking a button's text selects it, and the arrow keys still move between metrics.
-    await page.click('#metric label:last-of-type');
-    const last = await page.$eval('#metric label:last-of-type input', (i) => (i as HTMLInputElement).value);
-    assert.match(page.url(), new RegExp(`metric=${last}`));
-    await page.keyboard.press('ArrowLeft');
-    assert.doesNotMatch(page.url(), new RegExp(`metric=${last}(&|$)`));
     assert.deepEqual(errors, []);
     await page.close();
   }

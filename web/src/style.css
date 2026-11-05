@@ -159,30 +159,6 @@ html {
   border-bottom: 1px solid var(--border);
 }
 
-/* Chrome on macOS draws positioned or transparent descendants of a sticky
-   element out of step with it while scrolling, so the buttons jittered while
-   the legend held still. Inside the bar, the labels aren't positioned (except
-   to lift the focus ring over a neighbour) and the radios are visually hidden
-   with a clip instead of an opacity: 0 overlay. The wrapping label still
-   selects its radio on click. */
-.metric-bar .segmented label {
-  position: static;
-}
-
-.metric-bar .segmented label:has(input:focus-visible) {
-  position: relative;
-}
-
-.metric-bar .segmented input {
-  inset: auto;
-  width: 1px;
-  height: 1px;
-  opacity: 1;
-  clip-path: inset(50%);
-  overflow: hidden;
-  pointer-events: none;
-}
-
 /* Smaller buttons on phones, so the bar takes less of the screen. */
 @media (max-width: 480px) {
   .metric-bar .segmented label {
