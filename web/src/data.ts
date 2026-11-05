@@ -439,7 +439,7 @@ export function topOrgCounts(
 }
 
 /** Orgs by review comments over every week the summary holds, largest first
- * ("Other" left out): the order fixed review colours are handed out in, so
+ * ("Other" left out): the order fixed org colours are handed out in, so
  * they never depend on the range, metric or a filter. */
 export function orgsByAllTimeReview(summary: Summary): string[] {
   return topOrgCounts(summary, summary.meta.weeks, 'comments', Infinity)
@@ -447,26 +447,25 @@ export function orgsByAllTimeReview(summary: Summary): string[] {
     .filter((o) => o !== OTHER);
 }
 
-/** The page's one org → colour assignment for the review sections, as
- * indexes into the theme's `slots` series colours: the `slots` orgs ranked
- * first get one each. An org that has a ratio-chart colour (its index in
- * `ratioOrgs`) keeps it; the others take the remaining colours in order.
- * Every other org has no colour: charts fold it into "Other" or show it
- * muted and named. */
-export function reviewColorSlots(
+/** The page's one org → colour assignment, shared by every chart, as indexes
+ * into the theme's org colours: `bright` vivid hues, then the same hues
+ * muted. The `bright` orgs ranked first by review (`ranked`) get the vivid
+ * ones, so the dominant orgs look unlike the rest. The muted ones go first to
+ * the value charts' orgs (`ratioOrgs`) that have no vivid colour, so each of
+ * those charts' lines has one, then to the next orgs by review. At most
+ * `2 * bright` orgs get a colour, each a different one; any other org has
+ * none: charts fold it into "Other" or show it muted and named. */
+export function orgColorSlots(
   ranked: readonly string[],
   ratioOrgs: readonly string[],
-  slots: number,
+  bright: number,
 ): Map<string, number> {
-  const top = ranked.slice(0, slots);
   const out = new Map<string, number>();
-  for (const org of top) {
-    const i = ratioOrgs.indexOf(org);
-    if (i >= 0 && i < slots) out.set(org, i);
+  for (const org of ranked.slice(0, bright)) out.set(org, out.size);
+  for (const org of [...ratioOrgs, ...ranked]) {
+    if (out.size >= 2 * bright) break;
+    if (!out.has(org)) out.set(org, out.size);
   }
-  const used = new Set(out.values());
-  const spare = [...Array(slots).keys()].filter((i) => !used.has(i));
-  for (const org of top) if (!out.has(org)) out.set(org, spare.shift()!);
   return out;
 }
 

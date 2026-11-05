@@ -13,6 +13,7 @@ import threadExamplesUrl from '../../summaries/thread_examples.json?url';
 
 import {
   type AnyChart,
+  ORG_BRIGHT,
   readTheme,
   renderParityChart,
   renderRatioChart,
@@ -79,7 +80,7 @@ import {
   topBrowsers,
   orgWeeklyCounts,
   orgsByAllTimeReview,
-  reviewColorSlots,
+  orgColorSlots,
   topReviewers,
   orgsByValue,
   reviewerTotals,
@@ -1177,12 +1178,12 @@ function main(data: Data) {
   const jumpWeek = derivativeJumpWeek(data.radar);
   let syncInputs = () => {};
 
-  const colorsFor = (theme: Theme) => new Map(orgs.map((o, i) => [o, theme.series[i]]));
-  // Every review section colours orgs from this one map, fixed for the page:
-  // the range, metric and filters never repaint an org.
-  const reviewSlots = reviewColorSlots(orgsByAllTimeReview(data.summary), orgs, readTheme().series.length);
-  const reviewColorsFor = (theme: Theme) => new Map([...reviewSlots].map(([o, i]) => [o, theme.series[i]]));
-  const nameable = (org: string) => reviewSlots.has(org);
+  // Every chart colours orgs from this one map, fixed for the page: the
+  // range, metric and filters never repaint an org, and no two orgs share a
+  // colour.
+  const slots = orgColorSlots(orgsByAllTimeReview(data.summary), orgs, ORG_BRIGHT);
+  const colorsFor = (theme: Theme) => new Map([...slots].map(([o, i]) => [o, theme.orgs[i]]));
+  const nameable = (org: string) => slots.has(org);
 
   // A render waiting for the next paint (renderSoon). Any render meanwhile
   // covers it, so it's dropped; several renderSoon calls share one render.
@@ -1216,7 +1217,6 @@ function main(data: Data) {
   const renderViews = () => {
     const theme = readTheme();
     const colors = colorsFor(theme);
-    const rColors = reviewColorsFor(theme);
     // Every section covers the selected range only.
     const weeks = weeksIn(data.summary.meta.weeks, state.range);
     const label = rangeLabel(state.range);
@@ -1267,7 +1267,7 @@ function main(data: Data) {
         weeks,
         reviewSeries,
         metricLabel,
-        rColors,
+        colors,
         theme,
         state.smoothing,
         state.reviewScale,
@@ -1288,10 +1288,10 @@ function main(data: Data) {
     const dirInput = $<HTMLInputElement>('#review-dir');
     if (document.activeElement !== dirInput) dirInput.value = state.reviewDir ?? '';
     $('#review-dir-clear').hidden = state.reviewDir === null;
-    renderHeat(data, state, rColors, theme, render);
-    renderAreas(data, state, rColors, theme);
-    renderDistribution(data, state, rColors, theme, render);
-    renderLeaderboard(data, state, rColors, theme, render);
+    renderHeat(data, state, colors, theme, render);
+    renderAreas(data, state, colors, theme);
+    renderDistribution(data, state, colors, theme, render);
+    renderLeaderboard(data, state, colors, theme, render);
     renderThreads(data, state);
     // Usage doesn't depend on the metric (or the review filters): rebuild
     // only when its range or the theme changes.
@@ -1371,8 +1371,8 @@ function main(data: Data) {
         const key = active?.classList.contains('ar-toggle') ? active.closest<HTMLElement>('[data-key]')?.dataset.key : undefined;
         const theme = readTheme();
         withView(data, state, () => {
-          renderAreas(data, state, reviewColorsFor(theme), theme);
-          renderHeat(data, state, reviewColorsFor(theme), theme, render);
+          renderAreas(data, state, colorsFor(theme), theme);
+          renderHeat(data, state, colorsFor(theme), theme, render);
         });
         if (box && key) box.querySelector<HTMLButtonElement>(`[data-key="${CSS.escape(key)}"] .ar-toggle`)?.focus({ preventScroll: true });
         document.body.dataset.areaLinks = 'true';

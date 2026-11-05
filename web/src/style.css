@@ -17,6 +17,20 @@
   --series-6: #008300;
   --series-7: #6250d6;
   --series-8: #e34948;
+  /* Org colours (orgColorSlots): six vivid hues for the dominant orgs, then
+     the same hues muted for the rest, so every coloured org has its own. */
+  --org-1: #2a78d6;
+  --org-2: #eb6834;
+  --org-3: #1baf7a;
+  --org-4: #eda100;
+  --org-5: #e87ba4;
+  --org-6: #6250d6;
+  --org-7: #799bc3;
+  --org-8: #c38e79;
+  --org-9: #79c3a9;
+  --org-10: #c3ab79;
+  --org-11: #c37995;
+  --org-12: #8379c3;
   --critical: #d03b3b;
 }
 
@@ -40,6 +54,20 @@
     --series-6: #008300;
     --series-7: #9085e9;
     --series-8: #e66767;
+    /* Org colours (orgColorSlots): six vivid hues for the dominant orgs, then
+       the same hues muted for the rest, so every coloured org has its own. */
+    --org-1: #3987e5;
+    --org-2: #d95926;
+    --org-3: #199e70;
+    --org-4: #c98500;
+    --org-5: #d55181;
+    --org-6: #9085e9;
+    --org-7: #6489b4;
+    --org-8: #b47b64;
+    --org-9: #64b499;
+    --org-10: #b49964;
+    --org-11: #b46481;
+    --org-12: #6d64b4;
   }
 }
 
@@ -62,6 +90,20 @@
   --series-6: #008300;
   --series-7: #9085e9;
   --series-8: #e66767;
+  /* Org colours (orgColorSlots): six vivid hues for the dominant orgs, then
+     the same hues muted for the rest, so every coloured org has its own. */
+  --org-1: #3987e5;
+  --org-2: #d95926;
+  --org-3: #199e70;
+  --org-4: #c98500;
+  --org-5: #d55181;
+  --org-6: #9085e9;
+  --org-7: #6489b4;
+  --org-8: #b47b64;
+  --org-9: #64b499;
+  --org-10: #b49964;
+  --org-11: #b46481;
+  --org-12: #6d64b4;
 }
 
 * {

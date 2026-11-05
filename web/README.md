@@ -221,16 +221,17 @@ there alone; presentation lives in `src/style.css`.
    threads without a change aren't bad review (`docs/comment-classifier.md`,
    "UI principle").
 
-**Org colours are fixed for the page.** The ratio chart and the table give
-each browser owner its own colour. Every review section (the organization
-chart, both directory charts, the per-review and per-reviewer spreads, the leaderboard and
-the reviewer chart) uses one more map (`reviewColorSlots`): the 8 orgs with
-the most review comments over all the data get the 8 colours, keeping their
-ratio-chart colour if they have one; the others take the colours left over,
-in palette order (so a colour can mean a browser owner in the ratio chart
-and a reviewing org below it). The range, metric and filters never repaint an org. Charts that name
-the top orgs name only those 8 and fold the rest into "Other"; the
-leaderboard and spread show the rest muted and named.
+**Org colours are fixed for the page, and the same in every chart.** One
+map (`orgColorSlots`) colours orgs everywhere: the value charts and table,
+and every review section (the organization chart, both directory charts,
+the per-review and per-reviewer spreads, the leaderboard and the reviewer
+chart). It has 12 colours, `--org-1..12` in `style.css`: six vivid hues for
+the 6 orgs with the most review comments over all the data, then the same
+six hues muted. The muted ones go first to the value charts' orgs without a
+vivid colour, then to the next orgs by review comments. No two orgs share a
+colour, and the range, metric and filters never repaint an org. Charts that
+name the top orgs name only coloured ones and fold the rest into "Other";
+the leaderboard and spread show the rest muted and named.
 
 The metric, range, smoothing and review-chart scale are kept in the URL hash
 (`#metric=cls&from=2026-W14&to=2026-W44&smooth=4`; `from`/`to` are left out

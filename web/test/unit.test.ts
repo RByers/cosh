@@ -47,7 +47,7 @@ import {
   topOrgCounts,
   orgWeeklyCounts,
   orgsByAllTimeReview,
-  reviewColorSlots,
+  orgColorSlots,
   gerritReviewsUrl,
   gerritDateTerms,
   gerritDirUrl,
@@ -745,14 +745,15 @@ test('orgsByAllTimeReview ranks orgs over every summary week, Other left out', (
   assert.deepEqual(orgsByAllTimeReview(SUMMARY), ['google.com', 'microsoft.com', 'igalia.com', 'gmail.com']);
 });
 
-test('reviewColorSlots: ratio colours kept, the rest in order, only the top few coloured', () => {
-  const ranked = ['g.com', 'i.com', 'm.com', 'b.com', 'x.com'];
-  const slots = reviewColorSlots(ranked, ['g.com', 's.com', 'm.com', 'y.com'], 4);
-  // g.com and m.com keep slots 0 and 2; i.com and b.com take 1 and 3; x.com has none.
-  assert.deepEqual(Object.fromEntries(slots), { 'g.com': 0, 'm.com': 2, 'i.com': 1, 'b.com': 3 });
-  // A ratio org ranked outside the top keeps no colour here: its slot is lent out.
-  assert.equal(slots.has('s.com'), false);
-  assert.deepEqual(Object.fromEntries(reviewColorSlots(['a.com'], [], 8)), { 'a.com': 0 });
+test('orgColorSlots: vivid colours for the top orgs, muted ones for value-chart orgs, then the next', () => {
+  const ranked = ['g.com', 'i.com', 'm.com', 'b.com', 'x.com', 'z.com'];
+  const slots = orgColorSlots(ranked, ['g.com', 's.com', 'm.com', 'y.com'], 2);
+  // g.com and i.com take the vivid 0 and 1; s.com, m.com (not in the top 2)
+  // take the muted 2 and 3; y.com and the rest have none.
+  assert.deepEqual(Object.fromEntries(slots), { 'g.com': 0, 'i.com': 1, 's.com': 2, 'm.com': 3 });
+  // Spare muted colours go to the next orgs by review.
+  assert.deepEqual(Object.fromEntries(orgColorSlots(ranked, ['g.com'], 2)), { 'g.com': 0, 'i.com': 1, 'm.com': 2, 'b.com': 3 });
+  assert.deepEqual(Object.fromEntries(orgColorSlots(['a.com'], [], 6)), { 'a.com': 0 });
 });
 
 test('dirTotals sums each bucket into its ancestors, and what is in scope', () => {

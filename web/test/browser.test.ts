@@ -1189,7 +1189,7 @@ test('per-reviewer spread: a row of dots per org, a figures table, and clicking 
   await page.close();
 });
 
-test('an org keeps one colour in every review section, whatever the filters', async () => {
+test('an org keeps one colour in every section, value charts included, whatever the filters', async () => {
   const colorsOn = async (hash: string) => {
     const { page, errors } = await open(hash);
     const out = await page.evaluate(() => {
@@ -1204,6 +1204,9 @@ test('an org keeps one colour in every review section, whatever the filters', as
       const seen: [string, string, string][] = [];
       for (const d of window.__cosh!.reviewChart!.data.datasets as { label: string; borderColor: string }[]) {
         if (d.label !== 'Other') seen.push(['review', d.label, norm(d.borderColor)]);
+      }
+      for (const d of window.__cosh!.ratioChart!.data.datasets as { label: string; borderColor: string }[]) {
+        seen.push(['ratio', d.label, norm(d.borderColor)]);
       }
       for (const sel of ['#leaderboard-legend', '#heat-legend']) {
         for (const li of document.querySelectorAll(`${sel} li`)) {
@@ -1226,7 +1229,7 @@ test('an org keeps one colour in every review section, whatever the filters', as
   ];
   const byOrg = new Map<string, Set<string>>();
   for (const [, org, c] of all) byOrg.set(org, (byOrg.get(org) ?? new Set()).add(c));
-  assert.ok(byOrg.has('igalia.com') && byOrg.size >= 5, [...byOrg.keys()].join());
+  assert.ok(byOrg.has('igalia.com') && byOrg.has('samsung.com') && byOrg.size >= 8, [...byOrg.keys()].join());
   for (const [org, cs] of byOrg) assert.equal(cs.size, 1, `${org}: ${[...cs].join(' / ')}`);
   // And no two orgs share one.
   const owner = new Map<string, string>();

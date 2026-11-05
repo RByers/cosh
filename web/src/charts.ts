@@ -42,9 +42,15 @@ export interface Theme {
   parity: string;
   surface: string;
   series: string[];
+  /** Org colours: ORG_BRIGHT vivid hues, then the same hues muted. */
+  orgs: string[];
   /** The page's font (style.css), for every chart's text. */
   font: string;
 }
+
+/** How many vivid org colours style.css defines (--org-1..6); --org-7..12
+ * are the same hues muted. */
+export const ORG_BRIGHT = 6;
 
 export function readTheme(el: Element = document.documentElement): Theme {
   const cs = getComputedStyle(el);
@@ -57,6 +63,7 @@ export function readTheme(el: Element = document.documentElement): Theme {
     parity: v('--text-primary'),
     surface: v('--surface-1'),
     series: [1, 2, 3, 4, 5, 6, 7, 8].map((i) => v(`--series-${i}`)),
+    orgs: Array.from({ length: 2 * ORG_BRIGHT }, (_, i) => v(`--org-${i + 1}`)),
     font: getComputedStyle(document.body).fontFamily,
   };
 }
@@ -178,7 +185,7 @@ export function renderRatioChart(
         derived: p?.derived ?? null,
       };
     });
-    const lineOnly = lineDataset(org, colors.get(org)!, data);
+    const lineOnly = lineDataset(org, colors.get(org) ?? theme.muted, data);
     if (smoothing <= 1) return lineOnly;
     // A running average is a trend, not weekly measurements: draw it as a
     // smooth curve. Monotone interpolation can't overshoot a point, so the
