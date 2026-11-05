@@ -210,7 +210,11 @@ there alone; presentation lives in `src/style.css`.
    narrow band well above 0. Cells with under 10 reviews (`COMPLEXITY_MIN`)
    stay grey. Rows are ordered by reviews over the range, and each shows its
    figure over the whole range. Columns default to 3 months (`cxb` in the
-   URL), as weekly figures rest on few reviews. It covers every directory,
+   URL), as weekly figures rest on few reviews. Show: Complexity (the
+   default) or Volume (`cxv=volume`), which shades each cell by its reviews
+   against the busiest cell on a square-root scale, like the org heatmap's
+   Volume, and totals rows in reviews: what the figures rest on. The legend
+   is only the ramp; the grey cells are explained in the caption. It covers every directory,
    in scope or not, but leaves out `(no file)`: those comments are mostly
    sign-offs and a third of all reviews. Comments count in the week written,
    CLs in the week closed. From `area_weekly.json`; no extra data.

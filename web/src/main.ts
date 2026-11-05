@@ -24,7 +24,7 @@ import {
   type Theme,
 } from './charts.ts';
 import { buildAreaChart } from './areas.ts';
-import { buildComplexity, fmtRatio } from './complexity.ts';
+import { buildComplexity, complexityVolumeMax, fmtRatio, type ComplexityValue } from './complexity.ts';
 import { buildHeatmap, heatMax, type HeatCellInfo, type HeatValue } from './heatmap.ts';
 import { buildLeaderboard } from './leaderboard.ts';
 import {
@@ -153,6 +153,8 @@ interface State {
    * expanded (its own set: it orders rows by reviews, so its "more" rows
    * hold other entries; not in the URL). */
   cxBin: HeatBinSize;
+  /** What its cells show: the metric per review, or reviews. */
+  cxValue: ComplexityValue;
   cxExpanded: Set<string>;
   /** The directory the organization chart is limited to (a tree path), or null for the path scope. */
   reviewDir: string | null;
@@ -340,6 +342,7 @@ function readStateFromUrl(data: Data): State {
     lbOrg,
     expandedDirs: new Set(),
     cxBin: HEAT_BIN_SIZES.find((n) => n === Number(q.get('cxb'))) ?? DEFAULT_CX_BIN,
+    cxValue: q.get('cxv') === 'volume' ? 'volume' : 'complexity',
     cxExpanded: new Set(),
     reviewDir: dirNode === null ? null : dirTree(data.areas).paths[dirNode],
     heatOrg: q.get('hm') || ALL_ORGS,
@@ -363,6 +366,7 @@ function writeStateToUrl(s: State, allData: WeekRange) {
     (s.heatBin !== DEFAULT_HEAT_BIN ? `&hmb=${s.heatBin}` : '') +
     (s.heatValue !== 'volume' ? '&hmv=share' : '') +
     (s.cxBin !== DEFAULT_CX_BIN ? `&cxb=${s.cxBin}` : '') +
+    (s.cxValue !== 'complexity' ? '&cxv=volume' : '') +
     (s.lbReviewer !== null ? `&lbr=${s.lbReviewer}` : ''));
 }
 
@@ -428,6 +432,10 @@ function buildControls(data: Data, state: State, render: () => void, renderSoon:
   });
   radios($('#cx-bin'), state.cxBin, (v) => {
     state.cxBin = Number(v) as HeatBinSize;
+    render();
+  });
+  radios($('#cx-value'), state.cxValue, (v) => {
+    state.cxValue = v as ComplexityValue;
     render();
   });
   radios($('#heat-value'), state.heatValue, (v) => {
@@ -924,9 +932,16 @@ function renderComplexity(data: Data, state: State, render: () => void) {
     reviews: int(grid.overall.reviews),
     min: COMPLEXITY_MIN,
   });
-  fill($('#cx-legend'), { lo: fmtRatio(lo), hi: fmtRatio(hi), metric: unit, min: COMPLEXITY_MIN });
+  fill($('#cx-legend'), {
+    v: state.cxValue,
+    lo: fmtRatio(lo),
+    hi: fmtRatio(hi),
+    max: int(complexityVolumeMax(grid)),
+    metric: unit,
+  });
   buildComplexity($('#cx-chart'), {
     grid,
+    value: state.cxValue,
     lo,
     hi,
     unit,

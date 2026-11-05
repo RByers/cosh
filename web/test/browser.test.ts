@@ -1238,7 +1238,9 @@ test('review complexity over time: directories by reviews, cells shaded by the m
   assert.equal(v.title, 'Review complexity by directory over time');
   assert.match(v.sub, /^This aims to highlight how review complexity varies across the codebase: each cell is a directory's addressed comments per review/);
   assert.match(v.sub, /every directory together has \d+\.\d\d per review over [\d,]+ reviews/);
-  assert.match(v.legend, /^\d+\.\d\d or less\s*\d+\.\d\d or more addressed comments per review\s*under 10 reviews$/);
+  // The legend is the ramp only: no swatch that looks like a checkbox.
+  assert.match(v.legend, /^\d+\.\d\d or less\s*\d+\.\d\d or more addressed comments per review$/);
+  assert.equal(await page.$$eval('#cx-legend .swatch', (s) => s.length), 0);
   // Rows: most reviews first, each with its own figure; (no file) is left out.
   const top = v.rows.filter((r) => r.key.startsWith('d'));
   assert.ok(top.length >= 10, `${top.length} top-level directories`);
@@ -1266,6 +1268,23 @@ test('review complexity over time: directories by reviews, cells shaded by the m
   await page.click('#cx-bin input[value="52"]');
   assert.ok((await read()).bins < v.bins);
   assert.match(await page.evaluate(() => location.hash), /&cxb=52/);
+  // Volume: cells shaded by reviews (every cell with one), rows totalled in
+  // reviews, the legend up to the busiest cell; it goes in the URL.
+  await page.click('#cx-value input[value="volume"]');
+  const vol = await read();
+  assert.match(vol.legend, /^1\s*[\d,]+ reviews$/);
+  assert.match(await page.evaluate(() => location.hash), /&cxv=volume/);
+  for (const r of vol.rows) {
+    assert.equal(Number(r.total.replace(/,/g, '')), r.reviews, r.name);
+    for (const c of r.cells) assert.equal(c.shaded, !/No reviews$/.test(c.title), `${r.name}: ${c.title}`);
+  }
+  // Busier directories are shaded more strongly, as a rule.
+  const mean = (r: (typeof vol.rows)[number]) => r.cells.reduce((s, c) => s + (c.t || 0), 0) / r.cells.length;
+  const vtop = vol.rows.filter((r) => r.depth === 0);
+  assert.ok(mean(vtop[0]) > mean(vtop[vtop.length - 2]));
+  await page.click('#cx-value input[value="complexity"]');
+  assert.match((await read()).legend, /or more addressed comments per review$/);
+  assert.doesNotMatch(await page.evaluate(() => location.hash), /cxv=/);
   // Reviewed CLs as the metric: review comments per review.
   await page.click('#metric input[value="cls"]');
   await page.waitForFunction(() => /review comments per review/.test(document.querySelector('#cx-legend')!.textContent!));

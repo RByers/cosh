@@ -1351,16 +1351,6 @@ a.hm-box:focus-visible {
   --color: var(--accent);
 }
 
-/* The legend's "under N reviews" swatch: a grey cell, like .hm-zero. */
-.swatch-few {
-  width: 14px;
-  height: 10px;
-  margin: 0 6px 0 16px;
-  border-radius: 2px;
-  background: color-mix(in srgb, var(--grid) 35%, transparent);
-  box-shadow: inset 0 0 0 1px var(--border);
-}
-
 /* Reviewer detail: one reviewer's weekly comments, opened from the leaderboard. */
 .reviewer-detail {
   margin-top: 16px;

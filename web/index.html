@@ -574,8 +574,9 @@
             Directories are listed by reviews over the range, most first. Every directory counts, on the selected paths
             or not, but comments that can't be placed on a file (“(no file)” in Review by directory) are left out:
             mostly sign-offs, they say little about the code. Comments count in the week written and CLs in the week
-            they closed, so each column's edges are approximate. Use ▸ to open a directory, or a “more” row for the
-            next entries.</span>
+            they closed, so each column's edges are approximate. Volume shows what those figures rest on instead: each
+            cell shaded by its reviews, against the busiest cell on a square-root scale so smaller directories still
+            show. Use ▸ to open a directory, or a “more” row for the next entries.</span>
         </template>
         <div class="toggles">
           <fieldset id="cx-bin" class="segmented chart-toggle">
@@ -585,10 +586,16 @@
             <label><input type="radio" name="cx-bin" value="13" />3 months</label>
             <label><input type="radio" name="cx-bin" value="52" />1 year</label>
           </fieldset>
+          <fieldset id="cx-value" class="segmented chart-toggle">
+            <legend>Show</legend>
+            <label><input type="radio" name="cx-value" value="complexity" />Complexity</label>
+            <label><input type="radio" name="cx-value" value="volume" />Volume</label>
+          </fieldset>
         </div>
-        <!-- The ends of the shading ramp are the 5th and 95th percentiles of the shaded cells. -->
+        <!-- Complexity: the ramp's ends are the 5th and 95th percentiles of the shaded cells.
+             Volume: from 1 review to the busiest cell. -->
         <ul class="legend" aria-label="Cell colours"><li id="cx-legend"></li></ul>
-        <template data-msg="cx-legend"><slot name="lo"></slot> or less<span class="hm-ramp"></span><slot name="hi"></slot> or more <slot name="metric"></slot> per review<span class="swatch swatch-few"></span>under <slot name="min"></slot> reviews</template>
+        <template data-msg="cx-legend"><span data-if="v=complexity"><slot name="lo"></slot> or less<span class="hm-ramp"></span><slot name="hi"></slot> or more <slot name="metric"></slot> per review</span><span data-if="v=volume">1<span class="hm-ramp"></span><slot name="max"></slot> reviews</span></template>
         <div id="cx-chart" class="hm-wrap" role="region" tabindex="0" aria-labelledby="cx-title"></div>
       </section>
 
