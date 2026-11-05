@@ -15,7 +15,9 @@ import {
   readTheme,
   renderRatioChart,
   renderReviewChart,
+  renderDistributionChart,
   renderReviewerChart,
+  type DistributionY,
   type ReviewScale,
   renderUsageChart,
   type Theme,
@@ -76,6 +78,9 @@ import {
   topBrowsers,
   orgWeeklyCounts,
   topReviewers,
+  reviewerTotals,
+  reviewerDistribution,
+  distributionStats,
   trimRanked,
   LEADERBOARD_SIZE,
   LEADERBOARD_SIZES,
@@ -138,12 +143,17 @@ interface State {
   heatExpanded: Set<string>;
   /** The reviewer whose weekly chart is open (Gerrit account id), or null. */
   lbReviewer: number | null;
+  /** Per-reviewer distribution organization: ALL_ORGS, ALL_BUT_GOOGLE, or one org. */
+  distOrg: string;
+  /** What the distribution's bars measure. */
+  distY: DistributionY;
 }
 
 /** The range the user picked. While the addressed metric narrows the views'
  * range (withView), the reviewer chart and thread box still use this one. */
 let userRange: WeekRange | null = null;
 let reviewerChart: AnyChart | undefined;
+let distChart: AnyChart | undefined;
 let examples: Promise<ThreadExamples> | null = null;
 
 /** Heatmap organization choices besides a single org. */
@@ -162,6 +172,7 @@ declare global {
       ratioChart?: AnyChart;
       reviewChart?: AnyChart;
       usageChart?: AnyChart;
+      distChart?: AnyChart;
       render: () => void;
     };
   }
@@ -304,6 +315,8 @@ function readStateFromUrl(data: Data): State {
     heatValue: q.get('hmv') === 'share' ? 'share' : 'volume',
     heatExpanded: new Set(),
     lbReviewer: /^\d+$/.test(q.get('lbr') ?? '') ? Number(q.get('lbr')) : null,
+    distOrg: q.get('rdo') || ALL_ORGS,
+    distY: q.get('rdy') === 'volume' ? 'volume' : 'reviewers',
   };
 }
 
@@ -316,7 +329,9 @@ function writeStateToUrl(s: State) {
     (s.heatOrg !== ALL_ORGS ? `&hm=${encodeURIComponent(s.heatOrg)}` : '') +
     (s.heatBin !== DEFAULT_HEAT_BIN ? `&hmb=${s.heatBin}` : '') +
     (s.heatValue !== 'volume' ? '&hmv=share' : '') +
-    (s.lbReviewer !== null ? `&lbr=${s.lbReviewer}` : ''));
+    (s.lbReviewer !== null ? `&lbr=${s.lbReviewer}` : '') +
+    (s.distOrg !== ALL_ORGS ? `&rdo=${encodeURIComponent(s.distOrg)}` : '') +
+    (s.distY !== 'reviewers' ? '&rdy=volume' : ''));
 }
 
 /** How many directories the directory field suggests; any other one can be typed. */
@@ -462,6 +477,23 @@ function buildControls(data: Data, state: State, render: () => void) {
       render();
     },
   );
+  segmented(
+    $('#dist-y'),
+    'dist-y',
+    [
+      { id: 'reviewers' as DistributionY, label: 'Reviewers' },
+      { id: 'volume' as DistributionY, label: 'Their total' },
+    ],
+    state.distY,
+    (y) => {
+      state.distY = y;
+      render();
+    },
+  );
+  $<HTMLSelectElement>('#dist-org').addEventListener('change', (e) => {
+    state.distOrg = (e.target as HTMLSelectElement).value;
+    render();
+  });
   $<HTMLSelectElement>('#heat-org').addEventListener('change', (e) => {
     state.heatOrg = (e.target as HTMLSelectElement).value;
     state.heatExpanded.clear();
@@ -904,6 +936,71 @@ function dirScopeNote(board: DirBoard, node: number, weeks: string[], metric: Me
   return scope + (metric === 'cls' ? ' A CL with comments in two of its subdirectories counts in each.' : '');
 }
 
+/** Organizations the per-reviewer distribution's selector lists, most reviewers first. */
+const DIST_ORG_CHOICES = 25;
+
+/** How the metric is spread across reviewers: a histogram of each reviewer's
+ * total over the range, for every org, every org but Google, or one org. */
+function renderDistribution(data: Data, state: State, colors: Map<string, string>, theme: Theme) {
+  const name = metricName(state.metric);
+  const unit = name.toLowerCase();
+  const weeks = weeksIn(Object.keys(data.reviewers.weeks), state.range);
+  // Who counts: for addressed comments, everyone who wrote a review comment
+  // (0 addressed is telling); for the other metrics, those with some of it.
+  const all = reviewerTotals(data.reviewers, weeks, state.metric).filter((r) =>
+    state.metric === 'addressed' ? r.comments > 0 : r.value > 0,
+  );
+
+  // The selector: orgs with the most reviewers over the range, plus the current choice.
+  const single = state.distOrg.startsWith('*') ? null : state.distOrg;
+  const count = new Map<string, number>();
+  for (const r of all) count.set(r.org, (count.get(r.org) ?? 0) + 1);
+  const ranked = [...count].sort((a, b) => b[1] - a[1] || (a[0] < b[0] ? -1 : 1)).slice(0, DIST_ORG_CHOICES);
+  if (single && !count.has(single)) ranked.push([single, 0]);
+  const select = $<HTMLSelectElement>('#dist-org');
+  select.replaceChildren(
+    ...[
+      { v: ALL_ORGS, t: 'All organizations' },
+      { v: ALL_BUT_GOOGLE, t: `All except ${LINEAR_EXCLUDED_ORG}` },
+      ...ranked.map(([o, n]) => ({ v: o, t: `${o} (${int(n)})` })),
+    ].map(({ v, t }) => {
+      const o = el('option', t);
+      o.value = v;
+      return o;
+    }),
+  );
+  const noGoogle = state.distOrg === ALL_BUT_GOOGLE;
+  select.value = noGoogle || single ? state.distOrg : ALL_ORGS;
+
+  const rows = all.filter((r) => (single ? r.org === single : !noGoogle || r.org !== LINEAR_EXCLUDED_ORG));
+  const values = rows.map((r) => r.value);
+  const bins = reviewerDistribution(values);
+  const stats = distributionStats(values);
+
+  // Fixed for a given range and metric, so the toggles below it don't move.
+  $('#dist-sub').textContent = weeks.length
+    ? `How ${unit} in ${rangeLabel(state.range)} are spread across reviewers: each reviewer's total over the range, ` +
+      'in bins that double in width (1, 2–3, 4–7, …). Bars show either how many reviewers fall in each bin or how ' +
+      `much of the ${unit} those reviewers account for. ` +
+      (state.metric === 'addressed'
+        ? 'Every reviewer with a review comment in the range counts, so those with none addressed make up the 0 bin. '
+        : `Reviewers with no ${unit} in the range are left out. `) +
+      'A reviewer counts for the organization most of their comments in the range were for. Same scope as the ' +
+      'leaderboard below.'
+    : `No reviewer data for ${rangeLabel(state.range)}.`;
+  const fmt = (v: number) => v.toLocaleString('en-US', { maximumFractionDigits: 1 });
+  const scope = single ? `from ${single}` : noGoogle ? `outside ${LINEAR_EXCLUDED_ORG}` : 'from all organizations';
+  $('#dist-stats').textContent = !stats.n
+    ? `No reviewers ${scope} in this range.`
+    : `${int(stats.n)} reviewers ${scope}; median ${fmt(stats.median)} ${unit}` +
+      ` per reviewer. The top 10% (${int(stats.top10)} ${stats.top10 === 1 ? 'reviewer' : 'reviewers'}) account for ` +
+      `${pct(stats.top10Share)} of their ${int(stats.total)} ${unit}.`;
+
+  const color = single ? reviewColors([single], colors, theme).get(single) ?? theme.series[0] : theme.text;
+  distChart?.destroy();
+  distChart = renderDistributionChart($<HTMLCanvasElement>('#dist-chart'), bins, name, state.distY, color, theme);
+}
+
 /** Organizations the heatmap's selector lists, busiest first. */
 const HEAT_ORG_CHOICES = 25;
 /** Reviewers a heatmap cell's hover text names. */
@@ -1161,6 +1258,7 @@ function main(data: Data) {
     $('#review-dir-clear').hidden = state.reviewDir === null;
     renderHeat(data, state, colors, theme, render);
     renderAreas(data, state, colors, theme);
+    renderDistribution(data, state, colors, theme);
     renderLeaderboard(data, state, colors, theme, render);
     renderThreads(data, state);
     usageChart?.destroy();
@@ -1182,7 +1280,7 @@ function main(data: Data) {
       : `No review data for ${label}.`;
     renderTiles(data, weeks);
     renderTable(data, state, weeks, colors);
-    window.__cosh = { data, state, ratioChart, reviewChart, usageChart, render };
+    window.__cosh = { data, state, ratioChart, reviewChart, usageChart, distChart, render };
   };
 
   // The classifier explainer matters only once some week is classified.

@@ -14,7 +14,7 @@ import {
   type Scale,
   type Tick,
 } from 'chart.js';
-import type { RadarWeekly, RatioPoint } from './data.ts';
+import type { DistributionBin, RadarWeekly, RatioPoint } from './data.ts';
 import { browserShare, monthTicks, OTHER, weekTitle } from './data.ts';
 import { formatRatio } from './scale.ts';
 
@@ -432,6 +432,93 @@ export function renderReviewerChart(
           border: { display: false },
           grid: { color: theme.grid },
           ticks: { color: theme.muted, precision: 0 },
+        },
+      },
+    },
+  });
+}
+
+/** Label for a distribution bin: "0", "1", "2–3", "512–1K", "1K–2K". */
+export function binLabel(b: { lo: number; hi: number }): string {
+  const f = (v: number) =>
+    v < 1000 ? String(v) : v.toLocaleString('en-US', { notation: 'compact', maximumFractionDigits: v < 10_000 ? 1 : 0 });
+  return b.lo === b.hi ? f(b.lo) : `${f(b.lo)}–${f(b.hi)}`;
+}
+
+/** What the distribution chart's bars measure: reviewers per bin, or the
+ * metric those reviewers account for. */
+export type DistributionY = 'reviewers' | 'volume';
+
+/** Histogram of reviewers by their total for the metric over the range, on
+ * power-of-two bins. One colour: the org's when one is chosen. */
+export function renderDistributionChart(
+  canvas: HTMLCanvasElement,
+  bins: DistributionBin[],
+  metricLabel: string,
+  y: DistributionY,
+  color: string,
+  theme: Theme,
+): Chart<'bar'> {
+  const unit = metricLabel.toLowerCase();
+  const fmt = (v: number) => v.toLocaleString('en-US');
+  const reviewers = bins.reduce((s, b) => s + b.reviewers, 0);
+  const total = bins.reduce((s, b) => s + b.total, 0);
+  const base = baseOptions(theme);
+  return new Chart(canvas, {
+    type: 'bar',
+    data: {
+      labels: bins.map(binLabel),
+      datasets: [
+        {
+          label: y === 'reviewers' ? 'Reviewers' : metricLabel,
+          data: bins.map((b) => (y === 'reviewers' ? b.reviewers : b.total)),
+          backgroundColor: color,
+          borderWidth: 0,
+          borderRadius: { topLeft: 4, topRight: 4 },
+          borderSkipped: 'bottom',
+          categoryPercentage: 0.9,
+          barPercentage: 0.95,
+        },
+      ],
+    },
+    options: {
+      ...base,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        ...base.plugins,
+        legend: { display: false },
+        tooltip: {
+          ...base.plugins.tooltip,
+          displayColors: false,
+          callbacks: {
+            title: (items) => {
+              const b = bins[items[0]?.dataIndex ?? 0];
+              if (!b) return '';
+              return b.lo === b.hi ? `${fmt(b.lo)} ${unit}` : `${fmt(b.lo)} to ${fmt(b.hi)} ${unit}`;
+            },
+            label: (ctx) => {
+              const b = bins[ctx.dataIndex];
+              return [
+                `${fmt(b.reviewers)} reviewers (${reviewers ? pct(b.reviewers / reviewers) : '—'} of them)`,
+                `${fmt(b.total)} ${unit} (${total ? pct(b.total / total) : '—'} of the total)`,
+              ];
+            },
+          },
+        },
+      },
+      scales: {
+        x: {
+          grid: { display: false },
+          border: { color: theme.baseline },
+          title: { display: true, text: `${unit} per reviewer over the range`, color: theme.muted },
+          ticks: { color: theme.muted, maxRotation: 0, autoSkip: true },
+        },
+        y: {
+          beginAtZero: true,
+          title: { display: true, text: y === 'reviewers' ? 'reviewers' : unit, color: theme.muted },
+          border: { display: false },
+          grid: { color: theme.grid },
+          ticks: { color: theme.muted, precision: 0, callback: (v) => fmt(Number(v)) },
         },
       },
     },

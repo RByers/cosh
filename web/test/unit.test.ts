@@ -57,6 +57,9 @@ import {
   MAX_LINK_REVIEWERS,
   niceTicks,
   topReviewers,
+  reviewerTotals,
+  reviewerDistribution,
+  distributionStats,
   leaderboardOrgs,
   trimRanked,
   type PathRule,
@@ -65,7 +68,7 @@ import {
   type Summary,
 } from '../src/data.ts';
 import { formatRatio } from '../src/scale.ts';
-import { logAxisFloor } from '../src/charts.ts';
+import { binLabel, logAxisFloor } from '../src/charts.ts';
 
 const RADAR = `period,period_start,period_end,granularity,device,browser,is_chromium,kind,days,raw_share,chromium_share
 2026-W44,2026-10-26,2026-11-01,week,all,Chrome,1,browser,7,0.4,0.5
@@ -209,6 +212,41 @@ test('topReviewers totals a range exactly; org is where most of their comments w
   // The org doesn't change with the metric.
   assert.equal(topReviewers(b, ['2026-W44', '2026-W43'], 'cls')[0].org, 'y.com');
   assert.deepEqual(topReviewers(b, [], 'comments'), []);
+});
+
+test('reviewerTotals keeps reviewers with 0 of the metric, with their comments and main org', () => {
+  const b = board({
+    '2026-W43': [[1, 1, 5, 3, 1, 2], [2, 0, 9, 0, 1]],
+    '2026-W44': [[1, 0, 4, 2, 1, 1]],
+  });
+  const t = reviewerTotals(b, ['2026-W43', '2026-W44'], 'addressed').sort((x, y) => x.id - y.id);
+  assert.deepEqual(t, [{ id: 1, value: 3, comments: 9, org: 'y.com' }, { id: 2, value: 0, comments: 9, org: 'x.com' }]);
+});
+
+test('reviewerDistribution bins by powers of two, with a 0 bin only when needed', () => {
+  const bins = reviewerDistribution([1, 2, 3, 4, 9, 9, 0]);
+  assert.deepEqual(bins.map((b) => [b.lo, b.hi, b.reviewers, b.total]), [
+    [0, 0, 1, 0],
+    [1, 1, 1, 1],
+    [2, 3, 2, 5],
+    [4, 7, 1, 4],
+    [8, 15, 2, 18],
+  ]);
+  assert.deepEqual(reviewerDistribution([8]).map((b) => [b.lo, b.reviewers]), [[1, 0], [2, 0], [4, 0], [8, 1]]);
+  // Exact powers of two land in their own bin, even large ones.
+  assert.equal(reviewerDistribution([1024]).at(-1)!.lo, 1024);
+  assert.equal(reviewerDistribution([1023]).at(-1)!.lo, 512);
+  assert.deepEqual(reviewerDistribution([]), []);
+  assert.deepEqual(binLabel({ lo: 0, hi: 0 }), '0');
+  assert.deepEqual(binLabel({ lo: 4, hi: 7 }), '4–7');
+  assert.deepEqual(binLabel({ lo: 2048, hi: 4095 }), '2K–4.1K');
+});
+
+test('distributionStats: median and the top 10% share', () => {
+  const v = [100, 1, 1, 1, 1, 1, 1, 1, 1, 2];
+  assert.deepEqual(distributionStats(v), { n: 10, total: 110, median: 1, top10: 1, top10Share: 100 / 110 });
+  assert.equal(distributionStats([1, 2, 3, 4]).median, 2.5);
+  assert.deepEqual(distributionStats([]), { n: 0, total: 0, median: 0, top10: 0, top10Share: 0 });
 });
 
 test('topReviewers can leave an org out and still fill the board from the rest', () => {

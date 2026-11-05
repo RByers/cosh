@@ -8,7 +8,7 @@ build time:
 
 - `summaries/org_weekly.json` and `summaries/weekly_totals.csv`
 - `summaries/reviewer_weekly.json` (every reviewer's weekly counts: the
-  leaderboard and distinct reviewer counts)
+  per-reviewer distribution, the leaderboard and distinct reviewer counts)
 - `summaries/area_weekly.json` (every comment by directory and org, in scope
   or not, as a directory tree, plus the path rules: the "Review by directory"
   and "Review by directory over time" sections, and the organization chart
@@ -112,7 +112,17 @@ Over a range:
    "chart" button shows it in the organization chart. A table, so cells have
    row and column headers; the directory column stays put while the bins
    scroll sideways on narrow screens.
-7. **Reviewer leaderboard**: the top 25 (or 50, 100, 200) reviewers by review
+7. **Review per reviewer** (`reviewerDistribution` in `src/data.ts`,
+   `renderDistributionChart` in `src/charts.ts`): a histogram of each
+   reviewer's total for the metric over the range, in power-of-two bins (1,
+   2–3, 4–7, …), for every org, every org but google.com, or one org (the 25
+   with the most reviewers in the range). Bars show the number of reviewers
+   in each bin, or the bin's total for the metric ("Their total"). A line
+   above the chart gives the reviewer count, the median and the top 10%'s
+   share. Reviewers with 0 of the metric are left out, except under addressed
+   comments, where everyone who wrote a review comment counts and those with
+   none addressed form a 0 bin. From `reviewer_weekly.json`; no extra data.
+8. **Reviewer leaderboard**: the top 25 (or 50, 100, 200) reviewers by review
    comments over the range, with or without google.com's reviewers, one
    compact bar each, coloured by org. Every org gets its own legend entry;
    orgs beyond the palette's 8 colours are named on their rows. Clicking a
@@ -120,7 +130,7 @@ Over a range:
    with addressed comments filled in for classified weeks. The chart comes
    from `reviewer_weekly.json` (no extra data) and has the link to the CLs
    they commented on, on Gerrit.
-8. **How review threads are classified** (once some week is classified):
+9. **How review threads are classified** (once some week is classified):
    one bar splitting the range's classified reviewer-started threads by how
    each was decided (owner's "Done", Haiku addressed, Haiku no change, no
    owner reply), and example threads per outcome with Gerrit links. The
@@ -134,7 +144,9 @@ The metric, range, smoothing and review-chart scale are kept in the URL hash
 the linear review chart, `&lbn=100` for a longer leaderboard, `&lbg=0` for
 one without google.com, `&dir=<path>` for the organization chart's directory,
 and `&hm=<org>` (`*-google.com` for all but google.com), `&hmb=1|13` and
-`&hmv=share` for the heatmap, and `&lbr=<account id>` for the reviewer chart). Old `#week=2026-W44` links open that one week, and
+`&hmv=share` for the heatmap, `&rdo=<org>` (`*-google.com` for all but
+google.com) and `&rdy=volume` for the per-reviewer distribution, and
+`&lbr=<account id>` for the reviewer chart). Old `#week=2026-W44` links open that one week, and
 an old `dirs=` parameter is ignored.
 
 ## Commands

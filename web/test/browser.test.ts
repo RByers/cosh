@@ -78,10 +78,11 @@ test('page loads data and renders all three charts without errors', async () => 
     assert.ok(c.w > 200 && c.h > 200, `${c.k} has size ${c.w}x${c.h}`);
     assert.ok(c.n >= 1, `${c.k} has datasets`);
   }
-  // Charts come in order: ratio, review, usage, the table, directories, directories over time, then the leaderboard.
+  // Charts come in order: ratio, review, usage, the table, directories, directories over time, the per-reviewer
+  // distribution, then the leaderboard.
   const order = await page.$$eval('main > section', (s) => s.map((e) => e.querySelector('canvas, table, .lb, .ar')?.id));
   assert.deepEqual(order.filter(Boolean),
-    ['ratio-chart', 'review-chart', 'usage-chart', 'org-table', 'area-chart', 'heat-table', 'leaderboard-chart']);
+    ['ratio-chart', 'review-chart', 'usage-chart', 'org-table', 'area-chart', 'heat-table', 'dist-chart', 'leaderboard-chart']);
   await page.close();
 });
 
@@ -787,6 +788,64 @@ test.skipIf(!hasAddressedWeeks())('thread box: outcome breakdown and example thr
   }));
   assert.match(ex.link, /^https:\/\/chromium-review\.googlesource\.com\/c\/chromium\/src\/\+\/\d+\/comment\/[^/]+\/$/);
   assert.equal(ex.roles[0], 'reviewer');
+  assert.deepEqual(errors, []);
+  await page.close();
+});
+
+test('per-reviewer distribution: bins sum to the reviewers, org filter and bar toggle', async () => {
+  const { page, errors } = await open('#metric=comments');
+  const read = () =>
+    page.evaluate(() => {
+      const c = window.__cosh!.distChart!;
+      const data = c.data.datasets[0].data as number[];
+      return {
+        labels: c.data.labels as string[],
+        sum: data.reduce((a, b) => a + b, 0),
+        stats: document.querySelector('#dist-stats')!.textContent!,
+        sub: document.querySelector('#dist-sub')!.textContent!,
+        options: [...document.querySelectorAll<HTMLOptionElement>('#dist-org option')].map((o) => o.value),
+        h: c.height,
+      };
+    });
+  const all = await read();
+  assert.ok(all.h > 200, `height ${all.h}`);
+  assert.deepEqual(all.labels.slice(0, 3), ['1', '2–3', '4–7']);
+  const n = Number(all.stats.match(/^([\d,]+) reviewers from all organizations/)![1].replace(/,/g, ''));
+  assert.equal(all.sum, n, 'every reviewer is in one bin');
+  assert.match(all.stats, /median [\d.]+ review comments per reviewer\. The top 10% \([\d,]+ reviewers\) account for [\d.]+%/);
+  assert.ok(all.options.includes('google.com'));
+
+  await page.select('#dist-org', '*-google.com');
+  assert.match(page.url(), /rdo=\*-google\.com/);
+  const noGoogle = await read();
+  assert.match(noGoogle.stats, /reviewers outside google\.com/);
+  assert.ok(noGoogle.sum < all.sum && noGoogle.sum > 0);
+  assert.equal(noGoogle.sub, all.sub, 'the filter leaves the description alone');
+
+  await page.select('#dist-org', 'google.com');
+  const google = await read();
+  assert.match(google.stats, /reviewers from google\.com/);
+  assert.equal(google.sum + noGoogle.sum, all.sum);
+
+  // Bars can show the comments each bin accounts for instead.
+  await page.click('#dist-y input[value="volume"]');
+  assert.match(page.url(), /rdy=volume/);
+  const volume = await read();
+  const total = Number(volume.stats.match(/of their ([\d,]+) review comments/)![1].replace(/,/g, ''));
+  assert.equal(volume.sum, total);
+  // The state survives a reload from the URL.
+  const { page: again } = await open(new URL(page.url()).hash);
+  assert.equal(await again.$eval('#dist-org', (e) => (e as HTMLSelectElement).value), 'google.com');
+  assert.equal(await again.$eval('#dist-y input[value="volume"]', (e) => (e as HTMLInputElement).checked), true);
+  await again.close();
+  // Under addressed comments, reviewers whose comments led to no change form a 0 bin.
+  const { page: addr } = await open('#metric=addressed');
+  if ((await addr.evaluate(() => window.__cosh!.state.metric)) === 'addressed') {
+    const first = await addr.evaluate(() => (window.__cosh!.distChart!.data.labels as string[])[0]);
+    assert.equal(first, '0');
+    assert.match(await addr.$eval('#dist-sub', (e) => e.textContent!), /none addressed make up the 0 bin/);
+  }
+  await addr.close();
   assert.deepEqual(errors, []);
   await page.close();
 });

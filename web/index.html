@@ -248,8 +248,8 @@
         <div id="area-chart" class="ar"></div>
         <div class="note" id="scope-note">
           <p>
-            <strong>Which paths count.</strong> The value ratio, the organization chart, the table and the leaderboard
-            count only review comments on the <code>chromium/src</code> paths below (the longest matching rule wins).
+            <strong>Which paths count.</strong> The value ratio, the organization chart, the table, the per-reviewer
+            chart and the leaderboard count only review comments on the <code>chromium/src</code> paths below (the longest matching rule wins).
             Google's own products built on Chromium are left out: review there is mostly Google reviewing Google's
             product code, so it says little about who maintains the engine other browsers share.
           </p>
@@ -314,6 +314,24 @@
         </div>
         <ul id="heat-legend" class="legend" aria-label="Cell colours"></ul>
         <div id="heat-chart" class="hm-wrap" role="region" tabindex="0" aria-labelledby="heat-title"></div>
+      </section>
+
+      <section id="distribution" class="card" aria-labelledby="dist-title">
+        <h2 id="dist-title">Review per reviewer</h2>
+        <p id="dist-sub" class="sub"></p>
+        <div class="toggles">
+          <div class="select-toggle chart-toggle">
+            <label for="dist-org">Organization</label>
+            <select id="dist-org"></select>
+          </div>
+          <fieldset id="dist-y" class="segmented chart-toggle">
+            <legend>Bars show</legend>
+          </fieldset>
+        </div>
+        <p id="dist-stats" class="sub dist-stats" aria-live="polite"></p>
+        <div class="chart">
+          <canvas id="dist-chart" role="img" aria-label="Histogram of reviewers by their total for the metric over the selected range"></canvas>
+        </div>
       </section>
 
       <section id="leaderboard" class="card" aria-labelledby="leaderboard-title">

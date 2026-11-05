@@ -561,13 +561,36 @@ export function topReviewers(
   n: number = LEADERBOARD_SIZE,
   excludeOrg?: string,
 ): LeaderboardRow[] {
+  return reviewerTotals(board, weeks, metric)
+    .filter((r) => r.value > 0 && r.org !== excludeOrg)
+    .sort((x, y) => y.value - x.value || x.id - y.id)
+    .slice(0, n)
+    .map(({ id, value, org }) => ({
+      id,
+      name: board.accounts[id] ?? `Account ${id}`,
+      email: board.emails?.[id] ?? null,
+      org,
+      value,
+    }));
+}
+
+/** Every reviewer with a row in the given week(s), with their total for the
+ * metric (possibly 0), their review comments, and their org: the one most of
+ * their comments in those weeks resolve to (ties: alphabetical). Unordered.
+ * A row can have 0 comments: reviewed CLs count in the week the CL closed. */
+export function reviewerTotals(
+  board: ReviewerBoard,
+  weeks: string | string[],
+  metric: Metric,
+): { id: number; value: number; comments: number; org: string }[] {
   const col = METRIC_INDEX[metric];
-  const by = new Map<number, { value: number; orgCount: Map<number, number> }>();
+  const by = new Map<number, { value: number; comments: number; orgCount: Map<number, number> }>();
   for (const w of asList(weeks)) {
     for (const r of board.weeks[w] ?? []) {
       let t = by.get(r[0]);
-      if (!t) by.set(r[0], (t = { value: 0, orgCount: new Map() }));
+      if (!t) by.set(r[0], (t = { value: 0, comments: 0, orgCount: new Map() }));
       t.value += r[col] ?? 0;
+      t.comments += r[2];
       t.orgCount.set(r[1], (t.orgCount.get(r[1]) ?? 0) + r[2]);
     }
   }
@@ -579,19 +602,53 @@ export function topReviewers(
     }
     return board.orgs[best];
   };
-  return [...by]
-    .filter(([, t]) => t.value > 0)
-    .map(([id, t]) => ({ id, value: t.value, org: orgOf(t.orgCount) }))
-    .filter((r) => r.org !== excludeOrg)
-    .sort((x, y) => y.value - x.value || x.id - y.id)
-    .slice(0, n)
-    .map(({ id, value, org }) => ({
-      id,
-      name: board.accounts[id] ?? `Account ${id}`,
-      email: board.emails?.[id] ?? null,
-      org,
-      value,
-    }));
+  return [...by].map(([id, t]) => ({ id, value: t.value, comments: t.comments, org: orgOf(t.orgCount) }));
+}
+
+export interface DistributionBin {
+  /** Inclusive bounds of the per-reviewer value. */
+  lo: number;
+  hi: number;
+  reviewers: number;
+  /** The bin's reviewers' values, summed. */
+  total: number;
+}
+
+/** Per-reviewer values binned by powers of two: 0 (only if some reviewer has
+ * 0), 1, 2–3, 4–7, … up to the bin holding the largest value. Every bin in
+ * between is kept, empty or not, so the axis is evenly spaced. Values are
+ * whole numbers. */
+export function reviewerDistribution(values: readonly number[]): DistributionBin[] {
+  const bins: DistributionBin[] = [];
+  if (!values.length) return bins;
+  const max = Math.max(...values);
+  if (values.some((v) => v <= 0)) bins.push({ lo: 0, hi: 0, reviewers: 0, total: 0 });
+  for (let lo = 1; lo <= max; lo *= 2) bins.push({ lo, hi: lo * 2 - 1, reviewers: 0, total: 0 });
+  const zero = bins[0]?.lo === 0 ? 1 : 0;
+  for (const v of values) {
+    const i = v <= 0 ? 0 : zero + Math.floor(Math.log2(v) + 1e-9);
+    bins[i].reviewers++;
+    bins[i].total += Math.max(0, v);
+  }
+  return bins;
+}
+
+/** Summary of per-reviewer values: how many, the median, and how much of
+ * the total the top 10% of reviewers (at least one) account for. */
+export function distributionStats(values: readonly number[]): {
+  n: number;
+  total: number;
+  median: number;
+  top10: number;
+  top10Share: number;
+} {
+  const sorted = [...values].sort((a, b) => b - a);
+  const n = sorted.length;
+  const total = sorted.reduce((s, v) => s + v, 0);
+  const median = !n ? 0 : n % 2 ? sorted[(n - 1) / 2] : (sorted[n / 2 - 1] + sorted[n / 2]) / 2;
+  const top10 = n ? Math.max(1, Math.round(n / 10)) : 0;
+  const topSum = sorted.slice(0, top10).reduce((s, v) => s + v, 0);
+  return { n, total, median, top10, top10Share: total ? topSum / total : 0 };
 }
 
 /** One reviewer's weekly review comments and addressed comments over `weeks`
