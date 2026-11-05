@@ -250,6 +250,10 @@ test('switching the metric updates the table, review chart, directory chart and 
     'Comments', 'Addressed comments', 'Review chars', 'AI comments', 'Post-merge comments']);
   const cell = () => page.$eval('tr[data-org="microsoft.com"] td', (td) => td.textContent);
   const areaHead = () => page.$eval('#area-chart .ar-head .ar-vol', (e) => e.textContent);
+  // Addressed comments is the default whenever some week is classified.
+  assert.equal(await page.$eval(`#metric input[value="${hasAddressedWeeks() ? 'addressed' : 'comments'}"]`,
+    (i) => (i as HTMLInputElement).checked), true);
+  await page.click('#metric input[value="comments"]');
   const before = await cell();
   assert.equal(await areaHead(), 'Review comments');
   for (const [id, axis, head] of [['cls', /^reviewed cls per week/, 'Reviewed CLs'],
@@ -553,7 +557,7 @@ test('value ratio smoothing defaults to 4 weeks and is selectable', async () => 
 });
 
 test('date range defaults to where review and usage data overlap, and drives every chart', async () => {
-  const { page, errors } = await open();
+  const { page, errors } = await open('#metric=comments'); // addressed narrows to classified weeks
   const read = () =>
     page.evaluate(() => {
       const c = window.__cosh!;
@@ -709,7 +713,7 @@ test('review chart toggles to a linear axis without google.com', async () => {
 });
 
 test('leaderboard shows up to 25 reviewers compactly', async () => {
-  const { page } = await open();
+  const { page } = await open('#metric=comments');
   const read = () =>
     page.evaluate(() => {
       const box = document.querySelector('#leaderboard-chart')!;

@@ -228,11 +228,10 @@ function availableMetrics(data: Data) {
   return METRICS.filter((m) => m.id !== 'addressed' || addressed);
 }
 
-/** Addressed comments when every review week of the range is classified, else comments. */
-function defaultMetric(data: Data, range: WeekRange): Metric {
-  const review = weeksIn(data.summary.meta.weeks, range).length;
-  const classified = addressedRange(data.summary, range).weeks.length;
-  return review > 0 && classified === review ? 'addressed' : 'comments';
+/** Addressed comments whenever any week is classified (the views then show
+ * the range's classified part, with a note), else review comments. */
+function defaultMetric(data: Data): Metric {
+  return addressedWeeks(data.summary).length > 0 ? 'addressed' : 'comments';
 }
 
 /** The range the views show: the user's, or for the addressed metric only
@@ -299,7 +298,7 @@ function readStateFromUrl(data: Data): State {
   const hmb = Number(q.get('hmb'));
   const range = clampRange({ from, to }, full);
   const asked = q.get('metric');
-  const metric = availableMetrics(data).some((m) => m.id === asked) ? (asked as Metric) : defaultMetric(data, range);
+  const metric = availableMetrics(data).some((m) => m.id === asked) ? (asked as Metric) : defaultMetric(data);
   return {
     metric,
     range,

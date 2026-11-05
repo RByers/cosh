@@ -413,9 +413,10 @@ Defaults still to confirm are marked *(default)*.
   suggested edit is applied.
 - **The model sees whole threads:** the root up to 2,000 characters, then
   up to 30 replies of up to 1,200 characters each.
-- **Headline default:** the UI defaults to addressed comments only when
-  every review week of the default range is classified. Until then it opens
-  on review comments, and addressed comments is one click away.
+- **Headline default:** the UI always opens on addressed comments once any
+  week is classified (2026-11-05, the user's instruction). If the range is
+  only partly classified, the views show its classified part, with a note.
+  With no labels at all, it opens on review comments.
 
 ### First run: 2026-W44
 
@@ -632,10 +633,10 @@ decisions log.)
     Comments, characters and reviewed CLs are unaffected, so everything
     else works on complete data from day one.
 - **Headline:**
-  - The headline default is the addressed metric when the selected date
-    range is fully covered.
-  - Otherwise it falls back to comments, with a note saying how much of the
-    range is classified.
+  - The headline default is the addressed metric whenever any week is
+    classified (changed 2026-11-05 from "when the range is fully covered").
+  - On a partly classified range, a note says how much of the range is
+    classified.
 
   The value ratio uses the same rule. This lets classification proceed a
   few weeks at a time.

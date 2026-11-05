@@ -109,6 +109,7 @@ value_ratio(O, t) = O's share of Chromium addressed review comments
 | 2026-11-04 | Leaderboard: no "other organizations"; every org on it gets its own legend entry (with its reviewer count). Size selector (top 25 default, 50, 100, 200) and a "without google.com" toggle that fills the board from the other orgs; both in the URL (`lbn`, `lbg=0`) | User's request. Without google.com one view can hold about 30 orgs, more than the 8-colour palette, so the 8 orgs with the most reviewers get colours and the rest are named on their rows |
 | 2026-11-04 | Addressed comments: an owner's stated agreement or intent to change the CL ("I'll rephrase this", "agree these are redundant") counts as addressed; a bare "Marked as resolved" after discussion is ambiguous. Production audit of 800 labels against Opus: precision 0.98, recall 0.99 (`comment-classifier.md`, "Production audit"), which the UI quotes | User's decision while adjudicating the audit; the other way would put precision at 0.94 |
 | 2026-11-04 | Leave Android WebView (`ChromeMobileWebview`) out of the value ratio's usage denominator, like ChromeDerivative (`RATIO_EXCLUDED_BROWSERS` in `web/src/data.ts`), and credit it to no org (removed from google.com in `config/org_browsers.csv`); the usage chart and `chromium_share` still include it. Replaces crediting it to google.com | User's instruction: WebView is embedded by many different browsers and apps, so its usage can't be credited to any one org |
+| 2026-11-05 | The UI always opens on addressed comments when any week is classified; before, it did so only when the whole default range was classified. A partly classified range shows its classified part with a note; no labels means review comments | User's instruction ("make addressed comments always the default"). The backfill had stretched the default range past the classified year, so it opened on review comments |
 
 ## Status
 
@@ -194,7 +195,8 @@ value_ratio(O, t) = O's share of Chromium addressed review comments
      - classify older backfilled weeks the same way when wanted, about
        0.5M tokens and under a minute a week: `python3 -m cosh classify
        --week W ...`, `--dry-run` first;
-     - make it the default headline once the default range is classified;
+     - done 2026-11-05: it is always the default headline (once any week
+       is classified);
      - let the regex skip "[AI]" / "Maestro AI:" prefixes on owner replies;
      - **reminder for the user: recheck the classifier with Gemini** as a
        second, non-Claude judge. In the 2026-11-04 audit (precision 0.98,
