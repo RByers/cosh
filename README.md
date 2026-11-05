@@ -33,9 +33,10 @@ value_ratio(O, t) = contribution_share(O, t) / derived_value_share(O, t)
 - **Derived value share** is approximated by browser usage from
   [Cloudflare Radar](https://radar.cloudflare.com/): *O*'s browser's share of
   all Chromium-based browser usage (Chrome for Google, Edge for Microsoft,
-  Opera, Samsung Internet, Yandex, …). Brave is excluded: it identifies itself
-  only in the `Sec-CH-UA` header, Radar counts it as Chrome, and so its usage is
-  unknown.
+  Opera, Samsung Internet, Yandex, Brave, …). Brave's share is largely understated:
+  it identifies itself only in the `Sec-CH-UA` header, so Radar counts most of
+  it as Chrome. That doesn't matter here, since brave.com has essentially no
+  reviews.
 
 **Example:** Google writes 90% of the addressed review comments, and
 Google Chrome has 70% of Chromium-based browser usage on Cloudflare Radar.

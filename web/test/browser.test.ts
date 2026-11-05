@@ -235,18 +235,16 @@ test('org table shows the top 20 plus orgs with a browser', async () => {
   await page.close();
 });
 
-test('brave.com is listed with unknown usage and the Brave note explains why', async () => {
+test('brave.com maps to Brave and the Brave note says its usage is understated', async () => {
   const { page } = await open();
   const cells = await page.$eval('#org-table tbody tr[data-org="brave.com"]', (r) =>
     [...r.querySelectorAll('td')].slice(1, 3).map((c) => c.textContent),
   );
-  assert.deepEqual(cells, ['unknown', 'usage unknown']);
-  const ratioOrgs = await page.evaluate(() =>
-    window.__cosh!.ratioChart!.data.datasets.map((d: { label?: string }) => d.label),
-  );
-  assert.ok(!ratioOrgs.includes('brave.com'), ratioOrgs.join());
+  assert.notEqual(cells[0], 'unknown');
+  assert.notEqual(cells[1], 'no browser');
   const note = await page.$eval('#brave-note', (n) => n.textContent ?? '');
-  assert.match(note, /Brave is excluded/);
+  assert.match(note, /largely understated/);
+  assert.match(note, /no reviews/);
   assert.match(note, /Sec-CH-UA/);
   await page.close();
 });

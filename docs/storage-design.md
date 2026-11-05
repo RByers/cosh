@@ -314,8 +314,9 @@ from them is stored in `derived.sqlite`, so remapping only requires re-running
 | Yandex | Yandex Browser |
 
 Orgs without a browser, such as Igalia or Intel, get an activity share but no ratio.
-Brave has no row either: Radar counts Brave as Chrome, so its usage is unknown
-(`radar-research.md` §6).
+Brave maps to Radar's Brave label, which is largely understated because Radar
+counts most Brave traffic as Chrome (`radar-research.md` §6); brave.com has
+essentially no reviews, so it doesn't matter.
 
 `data/public/radar_browser_share.csv`: `month,browser,share_of_chromium_based`.
 Normalize Radar's all-browser shares to Chromium-based only at import time, and
