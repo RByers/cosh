@@ -78,6 +78,7 @@ import {
   orgWeeklyCounts,
   topReviewers,
   reviewerTotals,
+  reviewerHandle,
   orgSpreads,
   trimRanked,
   LEADERBOARD_SIZE,
@@ -963,13 +964,12 @@ function renderDistribution(
 
   // One row of dots per org: the chart grows with the rows.
   $('#dist-box').style.height = `${Math.max(1, spreads.length) * 34 + 64}px`;
-  const nameOf = (id: number) => data.reviewers.accounts[String(id)] ?? `Account ${id}`;
   distChart?.destroy();
   distChart = renderSpreadChart(
     $<HTMLCanvasElement>('#dist-chart'),
     spreads,
     colorOf,
-    nameOf,
+    (id) => reviewerHandle(data.reviewers, id),
     name,
     theme,
     state.lbReviewer,
@@ -1031,16 +1031,16 @@ function renderHeat(data: Data, state: State, colors: Map<string, string>, theme
     const idxOrgs = noGoogle ? [...segOrgs, LINEAR_EXCLUDED_ORG] : segOrgs;
     const perBin = grid.binWeeks.map((w) => dirReviewerIndex(board, data.areaReviewers!, w, idxOrgs));
     const keepSeg = single ? (o: string) => o === single : keep;
-    const nameOf = (id: number) => data.reviewers.accounts[String(id)] ?? `account ${id}`;
     cellInfo = (ri, bi) => {
       const idx = perBin[bi];
       const row = grid.rows[ri];
       const who = idx ? rowReviewers(idx, row, keepSeg) : undefined;
       if (!who?.comments.size || row.node === undefined) return null;
-      const top = topAccounts(who.comments, HEAT_TOP_REVIEWERS).map(([id, n]) => {
-        const org = who.org.get(id);
-        return { name: single || !org || org === OTHER ? nameOf(id) : `${nameOf(id)}, ${org}`, comments: n };
-      });
+      // Emails, which stand for name and org.
+      const top = topAccounts(who.comments, HEAT_TOP_REVIEWERS).map(([id, n]) => ({
+        who: reviewerHandle(data.reviewers, id),
+        comments: n,
+      }));
       return { link: gerritDirUrl(paths[row.node], who.comments, grid.bins[bi]), top };
     };
   }

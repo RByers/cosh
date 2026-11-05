@@ -106,8 +106,8 @@ Over a range:
    cell's volume against the row's busiest bin ("Volume") or full height
    ("Share"). With one org each cell is shaded in that org's colour by its
    volume against the busiest cell, on a square-root scale, or by its share of
-   the directory's review. A cell's hover text gives the numbers and its three
-   most active reviewers; clicking it opens those reviewers' CLs in the
+   the directory's review. A cell's hover text gives the numbers and the
+   emails of its three most active reviewers; clicking it opens those reviewers' CLs in the
    directory and weeks on Gerrit (`gerritDirUrl`). Each directory row's
    "chart" button shows it in the organization chart. A table, so cells have
    row and column headers; the directory column stays put while the bins
@@ -118,7 +118,7 @@ Over a range:
    one row per org: the 10 orgs with the largest total, then everyone else
    (gmail.com included) as Other. Each row with at least 5 reviewers has a
    box over its middle half (25th to 75th percentile) and a line at the
-   median. Hovering a dot names the reviewer; clicking it opens their weekly
+   median. Hovering a dot gives the reviewer's email; clicking it opens their weekly
    chart, as on the leaderboard. A table under the chart gives each org's
    reviewers, quartiles, top 10%'s share and total. Reviewers with 0 of the
    metric are left out, except under addressed comments, where everyone who

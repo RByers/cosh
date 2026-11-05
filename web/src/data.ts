@@ -687,6 +687,13 @@ export function orgSpreads(
   });
 }
 
+/** How hover cards name a reviewer: their Gerrit email, which is shorter
+ * than a name plus affiliation and can be searched for directly; their name
+ * if no email is known (files from before emails were added). */
+export function reviewerHandle(board: ReviewerBoard, account: number): string {
+  return board.emails?.[account] ?? board.accounts[account] ?? `Account ${account}`;
+}
+
 /** One reviewer's weekly review comments and addressed comments over `weeks`
  * (addressed is null for weeks not in `classified`), and their org: the one
  * most of their comments in those weeks resolve to. */

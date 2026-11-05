@@ -715,8 +715,8 @@ test('leaderboard shows up to 25 reviewers compactly', async () => {
   assert.ok(comments.n > 10 && comments.n <= 25, `n=${comments.n}`);
   assert.deepEqual(comments.values, [...comments.values].sort((a, b) => b - a));
   assert.match(comments.top, /^1\. [^·]+$/); // rank and name only; the org is the bar colour
-  // The hover text gives the count with the metric, then the email.
-  assert.match(comments.title, /^1\. .+\n[\d,]+ review comments\n[^@\s]+@[^@\s]+\.[a-z]+\n/i);
+  // The hover text gives the email (not the name or org), then the count with the metric.
+  assert.match(comments.title, /^1\. [^@\s]+@[^@\s]+\.[a-z]+\n[\d,]+ review comments\n/i);
   // Each row is a button that opens the reviewer's weekly chart.
   assert.ok(comments.tags.every((t) => t === 'BUTTON'), `tags=${comments.tags}`);
   // Bars and gridlines share the plot column: a bar's length is its share of
@@ -878,6 +878,15 @@ test('per-reviewer spread: a row of dots per org, a figures table, and clicking 
     const r = c.canvas.getBoundingClientRect();
     return { x: r.left + el.x, y: r.top + el.y };
   });
+  // The tooltip names the reviewer by email, not name and org.
+  const label = await page.evaluate(() => {
+    const c = window.__cosh!.distChart!;
+    const meta = c.getDatasetMeta(1);
+    const i = meta.data.length - 1;
+    const cb = c.options.plugins!.tooltip!.callbacks!.label as unknown as (ctx: unknown) => string;
+    return cb({ raw: c.data.datasets[1].data[i], dataset: c.data.datasets[1] });
+  });
+  assert.match(label, /^[^@\s]+@[^@\s]+\.[a-z]+: [\d,]+ review comments$/);
   await page.mouse.click(pt2.x, pt2.y);
   await page.waitForFunction(() => !document.querySelector<HTMLElement>('#reviewer-detail')!.hidden);
   assert.match(page.url(), new RegExp(`lbr=${pt.id}`));
@@ -900,7 +909,7 @@ test('leaderboard size and Google toggles; every org is named, none as "other"',
       const rows = [...document.querySelectorAll<HTMLElement>('#leaderboard-chart .lb-row')];
       return {
         n: rows.length,
-        orgs: rows.map((r) => r.title.split('\n')[0].match(/\(([^()]+)\)$/)![1]),
+        orgs: rows.map((r) => r.dataset.org!),
         inline: rows.map((r) => r.querySelector('.lb-org')?.textContent ?? null),
         colored: rows.map((r) => (r.querySelector<HTMLElement>('.lb-bar')!.style.background ? 1 : 0)),
         legend: document.querySelector('#leaderboard-legend')!.textContent!,
@@ -1103,7 +1112,7 @@ test('heatmap: directories by time bins, per org or as a mix, with Gerrit links'
   assert.ok(cell.shaded);
   assert.match(cell.title, /^third_party\/blink\/, \d{4}-W\d\d to \d{4}-W\d\d \(/);
   assert.match(cell.title, /\nmicrosoft\.com: [\d,]+ review comments \([\d.]+% of [\d,]+ there\)/);
-  assert.match(cell.title, /\nMost active: [^\n]+\(\d+\)/);
+  assert.match(cell.title, /\nMost active: [^@\s]+@[^@\s]+ \(\d+\)/);
   assert.match(cell.link!, /^https:\/\/chromium-review\.googlesource\.com\/q\/dir:third_party\/blink\+after:\d{4}-\d\d-\d\d\+/);
 
   // Share, and weekly columns.
@@ -1128,7 +1137,8 @@ test('heatmap: directories by time bins, per org or as a mix, with Gerrit links'
   // All but google.com: google.com's comments are in no cell.
   await page.select('#heat-org', '*-google.com');
   const nog = await read();
-  assert.ok(nog.rows.flatMap((r) => r.cells).every((c) => !/google\.com/.test(c.title)), 'no google.com in any cell');
+  // (Org lines only: a reviewer's email may still be at google.com.)
+  assert.ok(nog.rows.flatMap((r) => r.cells).every((c) => !/(^|\n)google\.com:/.test(c.title)), 'no google.com in any cell');
   assert.doesNotMatch(nog.legend, /google\.com/);
   assert.deepEqual(errors, []);
   await page.close();

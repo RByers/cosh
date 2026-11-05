@@ -26,8 +26,8 @@ export type HeatValue = 'volume' | 'share';
 /** The extras a cell gets once the reviewer data has loaded. */
 export interface HeatCellInfo {
   link: DirLink | null;
-  /** Most active reviewers: display name and comments. */
-  top: { name: string; comments: number }[];
+  /** Most active reviewers: email (or name, without one) and comments. */
+  top: { who: string; comments: number }[];
 }
 
 export interface HeatOptions {
@@ -175,7 +175,7 @@ export function buildHeatmap(box: HTMLElement, o: HeatOptions): void {
         }
       }
       if (info?.top.length) {
-        lines.push(`Most active: ${info.top.map((p) => `${p.name} (${int(p.comments)})`).join(', ')}`);
+        lines.push(`Most active: ${info.top.map((p) => `${p.who} (${int(p.comments)})`).join(', ')}`);
       }
       if (link) {
         box2.setAttribute('href', link.url);

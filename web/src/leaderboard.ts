@@ -59,10 +59,12 @@ export function buildLeaderboard(
       const row = node('button', 'lb-row');
       row.type = 'button';
       row.dataset.account = String(r.id);
+      row.dataset.org = r.org;
       row.setAttribute('aria-pressed', String(r.id === selected));
       row.addEventListener('click', () => onSelect(r.id));
-      row.title = `${i + 1}. ${r.name} (${r.org})\n${fmt(r.value)} ${unit}` +
-        (r.email ? `\n${r.email}` : '') + '\nShows their comments week by week, with a link to them on Gerrit';
+      // Hover card: the email stands for name and org (a name only without one).
+      row.title = `${i + 1}. ${r.email ?? `${r.name} (${r.org})`}\n${fmt(r.value)} ${unit}` +
+        '\nShows their comments week by week, with a link to them on Gerrit';
       const color = colorOf(r.org);
       const label = node('span', 'lb-label');
       label.append(

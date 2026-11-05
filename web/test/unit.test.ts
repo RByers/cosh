@@ -58,6 +58,7 @@ import {
   niceTicks,
   topReviewers,
   reviewerTotals,
+  reviewerHandle,
   quantile,
   orgSpreads,
   distributionStats,
@@ -222,6 +223,14 @@ test('reviewerTotals keeps reviewers with 0 of the metric, with their comments a
   });
   const t = reviewerTotals(b, ['2026-W43', '2026-W44'], 'addressed').sort((x, y) => x.id - y.id);
   assert.deepEqual(t, [{ id: 1, value: 3, comments: 9, org: 'y.com' }, { id: 2, value: 0, comments: 9, org: 'x.com' }]);
+});
+
+test('reviewerHandle: the email, else the name, else the account id', () => {
+  const b = board({});
+  assert.equal(reviewerHandle(b, 1), 'n1@x.com');
+  assert.equal(reviewerHandle(b, 2), 'n2');
+  assert.equal(reviewerHandle({ ...b, emails: undefined }, 3), 'n3');
+  assert.equal(reviewerHandle(b, 9), 'Account 9');
 });
 
 test('quantile interpolates between ranks', () => {

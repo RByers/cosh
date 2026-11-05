@@ -448,12 +448,13 @@ export const SPREAD_BOX_MIN = 5;
 /** Strip plot of reviewers by their total for the metric over the range: one
  * row per org, one dot per reviewer on a log axis (0 gets its own slot at
  * the left), with a box over the middle half of the row and a line at its
- * median. Hovering a dot names the reviewer; clicking it calls `onPick`. */
+ * median. Hovering a dot gives the reviewer's email; clicking it calls `onPick`. */
 export function renderSpreadChart(
   canvas: HTMLCanvasElement,
   spreads: OrgSpread[],
   colorOf: (org: string) => string,
-  nameOf: (id: number) => string,
+  /** How the tooltip names a reviewer (their email). */
+  handleOf: (id: number) => string,
   metricLabel: string,
   theme: Theme,
   selected: number | null,
@@ -542,7 +543,7 @@ export function renderSpreadChart(
             title: () => '',
             label: (ctx) => {
               const p = ctx.raw as P;
-              return `${nameOf(p.id)} (${ctx.dataset.label}): ${fmt(p.value)} ${unit}`;
+              return `${handleOf(p.id)}: ${fmt(p.value)} ${unit}`;
             },
             footer: () => 'Click for their weekly chart',
           },
