@@ -262,8 +262,9 @@ export function parityBounds(points: ParityPoint[]): { min: number; max: number 
 /** Review share against usage share over the range, one point per org, both
  * on log axes with the same bounds. The diagonal y = x is a 1.0× value ratio:
  * orgs above it review more than their usage share, those below less. Orgs
- * with no review in the range have no place on a log axis; the caller leaves
- * them out. */
+ * with no review in the range have no place on a log scale, so, as on the
+ * review chart, the axes then start one power of ten lower and that bottom
+ * tick, labelled 0 on the y axis, is where they sit (their tooltips say 0). */
 export function renderParityChart(
   canvas: HTMLCanvasElement,
   points: ParityPoint[],
@@ -272,9 +273,12 @@ export function renderParityChart(
   theme: Theme,
 ): Chart<'scatter'> {
   const { min, max } = parityBounds(points);
+  // Both axes extend alike, so the diagonal stays at 45°.
+  const zero = points.some((p) => p.contribution <= 0) ? min / 10 : null;
+  const lo = zero ?? min;
   const datasets = points.map((p) => ({
     label: p.org,
-    data: [{ x: p.derived, y: p.contribution }],
+    data: [{ x: p.derived, y: p.contribution > 0 ? p.contribution : lo, share: p.contribution }],
     backgroundColor: colors.get(p.org) ?? theme.muted,
     borderColor: theme.surface,
     borderWidth: 2,
@@ -315,30 +319,48 @@ export function renderParityChart(
       ctx.restore();
     },
     // Org names beside their points, so the chart reads without the legend.
+    // Each takes the first of right, left, above or below that stays in the
+    // chart and clear of the dots and the labels placed so far (orgs on the
+    // 0 row can sit close together).
     afterDatasetsDraw(chart) {
       const { ctx, chartArea: a } = chart;
       ctx.save();
       ctx.font = `12px ${Chart.defaults.font.family}`;
       ctx.fillStyle = theme.text;
       ctx.textBaseline = 'middle';
-      chart.data.datasets.forEach((ds, i) => {
-        const meta = chart.getDatasetMeta(i);
-        const pt = meta.data[0];
-        if (!pt || meta.hidden) return;
-        const label = ds.label ?? '';
-        const right = pt.x + 12 + ctx.measureText(label).width <= a.right;
-        ctx.textAlign = right ? 'left' : 'right';
-        ctx.fillText(label, right ? pt.x + 12 : pt.x - 12, pt.y);
+      ctx.textAlign = 'left';
+      type Box = { l: number; r: number; t: number; b: number };
+      const hit = (p: Box, q: Box) => p.l < q.r && q.l < p.r && p.t < q.b && q.t < p.b;
+      const pts = chart.data.datasets.map((_, i) => chart.getDatasetMeta(i)).filter((m) => !m.hidden && m.data[0]);
+      const dots: Box[] = pts.map((m) => {
+        const { x, y } = m.data[0];
+        return { l: x - 8, r: x + 8, t: y - 8, b: y + 8 };
+      });
+      const placed: Box[] = [];
+      pts.forEach((m, i) => {
+        const { x, y } = m.data[0];
+        const label = chart.data.datasets[m.index].label ?? '';
+        const w = ctx.measureText(label).width;
+        const h = 14;
+        const at = (l: number, cy: number): Box => ({ l, r: l + w, t: cy - h / 2, b: cy + h / 2 });
+        const options = [at(x + 12, y), at(x - 12 - w, y), at(x - w / 2, y - 16), at(x - w / 2, y + 16)];
+        const fits = (o: Box) => o.l >= a.left && o.r <= a.right + 8 && o.t >= a.top - 8 && o.b <= a.bottom + 8;
+        const clear = (o: Box) =>
+          fits(o) && !placed.some((p) => hit(o, p)) && !dots.some((d, j) => j !== i && hit(o, d));
+        const box = options.find(clear) ?? options.find(fits) ?? options[0];
+        placed.push(box);
+        ctx.fillText(label, box.l, (box.t + box.b) / 2);
       });
       ctx.restore();
     },
   };
   // Ticks, labels and gridlines on whole decades only: 0.01%, 0.1%, 1%, …
   const decades: number[] = [];
-  for (let e = Math.round(Math.log10(min)); e <= Math.round(Math.log10(max)); e++) decades.push(10 ** e);
-  const axis = (title: string) => ({
+  for (let e = Math.round(Math.log10(lo)); e <= Math.round(Math.log10(max)); e++) decades.push(10 ** e);
+  const isZeroTick = (v: number) => zero !== null && Math.abs(v / zero - 1) < 1e-6;
+  const axis = (title: string, zeroLabel: boolean) => ({
     type: 'logarithmic' as const,
-    min,
+    min: lo,
     max,
     title: { display: true, text: title, color: theme.muted },
     border: { color: theme.baseline },
@@ -350,7 +372,7 @@ export function renderParityChart(
       color: theme.muted,
       autoSkip: false,
       maxRotation: 0,
-      callback: (v: number | string) => formatShare(Number(v)),
+      callback: (v: number | string) => (zeroLabel && isZeroTick(Number(v)) ? '0' : formatShare(Number(v))),
     },
   });
   const base = baseOptions(theme);
@@ -369,15 +391,15 @@ export function renderParityChart(
           ...base.plugins.tooltip,
           callbacks: {
             label: (ctx) => {
-              const p = ctx.raw as { x: number; y: number };
-              return `${ctx.dataset.label}: ${formatRatio(p.y / p.x)}×  (${pct(p.y)} of ${metricLabel} ÷ ${pct(p.x)} of usage)`;
+              const p = ctx.raw as { x: number; share: number };
+              return `${ctx.dataset.label}: ${formatRatio(p.share / p.x)}×  (${pct(p.share)} of ${metricLabel} ÷ ${pct(p.x)} of usage)`;
             },
           },
         },
       },
       scales: {
-        x: axis('share of Chromium browser usage (log scale)'),
-        y: axis(`share of ${metricLabel} (log scale)`),
+        x: axis('share of Chromium browser usage (log scale)', false),
+        y: axis(`share of ${metricLabel} (log scale)`, true),
       },
     },
   });

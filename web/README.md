@@ -63,8 +63,11 @@ Over a range:
    selected metric (addressed comments by default) over the range against its
    mean usage share, both on log axes over the same decades in a square plot
    (`renderParityChart`). The diagonal y = x is a 1.0× ratio: above it, more
-   review than usage share. Orgs with none of the metric in the range can't sit
-   on a log axis and are named in the subtitle instead. Same numbers as the
+   review than usage share. Orgs with none of the metric in the range (e.g.
+   samsung.com's addressed comments in some short ranges) still get a dot: as
+   on the review chart, both axes then start a power of ten lower and that
+   bottom y tick, labelled 0, holds them. Labels dodge each other and the
+   dots. Same numbers as the
    table (`orgRangeShares` in `src/main.ts`); smoothing doesn't apply.
 2. **Value ratio over time** per org per week in the range. 1× is the vertical middle: the
    lower half is linear 0–1×, the upper half linear 1×–max (`src/scale.ts`).

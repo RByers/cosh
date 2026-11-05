@@ -93,8 +93,9 @@ test('parity chart: review share against usage share on equal log axes, matching
   const d = await page.evaluate(() => {
     const c = window.__cosh!.parityChart!;
     const { x, y } = c.scales;
-    const pts: Record<string, { x: number; y: number }> = Object.fromEntries(
-      c.data.datasets.map((ds: { label?: string; data: unknown[] }) => [ds.label, ds.data[0] as { x: number; y: number }]),
+    type P = { x: number; y: number; share: number };
+    const pts: Record<string, P> = Object.fromEntries(
+      c.data.datasets.map((ds: { label?: string; data: unknown[] }) => [ds.label, ds.data[0] as P]),
     );
     const table = Object.fromEntries(
       [...document.querySelectorAll<HTMLElement>('#org-table tbody tr')].map((r) => [r.dataset.org, r.querySelector('td.ratio')!.textContent]),
@@ -128,8 +129,10 @@ test('parity chart: review share against usage share on equal log axes, matching
   assert.ok(!('brave.com' in d.pts));
   for (const [org, p] of Object.entries(d.pts)) {
     assert.ok(p.x >= d.bounds[0] && p.x <= d.bounds[1] && p.y >= d.bounds[0] && p.y <= d.bounds[1], org);
+    // Plotted at its share, or at the bottom (0) tick when it has none.
+    assert.equal(p.y, p.share > 0 ? p.share : d.bounds[2], org);
     // The table rounds (0.0005× shows as 0.0×).
-    const r = p.y / p.x;
+    const r = p.share / p.x;
     assert.ok(Math.abs(parseFloat(d.table[org]!) - r) <= 0.05 * r + 0.05, `${org}: ${d.table[org]} vs ${r}`);
   }
   // Roughly square plot area.
@@ -137,6 +140,44 @@ test('parity chart: review share against usage share on equal log axes, matching
   const h = d.area.bottom - d.area.top;
   assert.ok(Math.abs(w - h) / w < 0.15, `${w}x${h}`);
   await page.close();
+});
+
+test('parity chart keeps orgs with none of the metric, on a 0 row below the log scale', async () => {
+  // The big browser owners get a dot in any range (samsung.com has no
+  // addressed comments in some short ones).
+  for (const preset of ['all', '13', '4', '1']) {
+    const { page, errors } = await open();
+    await page.click(`#range-presets button[data-preset="${preset}"]`);
+    const d = await page.evaluate(() => {
+      const c = window.__cosh!;
+      const p = c.parityChart!;
+      const y = p.scales.y;
+      return {
+        parity: p.data.datasets.map((ds: { label?: string }) => ds.label!),
+        zeros: p.data.datasets
+          .filter((ds: { data: unknown[] }) => (ds.data[0] as { share: number }).share === 0)
+          .map((ds: { label?: string; data: unknown[] }) => ({ org: ds.label!, y: (ds.data[0] as { y: number }).y })),
+        yMin: y.min,
+        bottomLabel: String(y.ticks[0]?.label),
+        xMin: p.scales.x.min,
+        sub: document.querySelector('#parity-sub')!.textContent!,
+      };
+    });
+    assert.deepEqual(errors, []);
+    for (const org of ['google.com', 'microsoft.com', 'samsung.com', 'opera.com', 'meta.com']) {
+      assert.ok(d.parity.includes(org), `${preset}: ${org} missing from ${d.parity}`);
+    }
+    if (d.zeros.length) {
+      assert.equal(d.bottomLabel, '0', preset);
+      assert.equal(d.xMin, d.yMin, preset);
+      for (const z of d.zeros) {
+        assert.equal(z.y, d.yMin, `${preset}: ${z.org}`);
+        assert.ok(d.sub.includes(z.org), `${preset}: ${z.org} named in the subtitle`);
+      }
+      assert.match(d.sub, /0 row/);
+    }
+    await page.close();
+  }
 });
 
 test('ratio axis is linear from 0 with a highlighted 1.0 gridline', async () => {

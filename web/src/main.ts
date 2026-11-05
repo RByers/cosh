@@ -622,12 +622,11 @@ function renderParity(data: Data, state: State, weeks: string[], orgs: string[],
   const label = rangeLabel(state.range);
   const metricLabel = metricName(state.metric).toLowerCase();
   const items = orgRangeShares(data, state, weeks).filter((it) => orgs.includes(it.org) && it.ratio !== null);
-  const plotted = items.filter((it) => it.contribution > 0);
   const none = items.filter((it) => it.contribution <= 0).map((it) => it.org);
   parityChart?.destroy();
   parityChart = renderParityChart(
     $<HTMLCanvasElement>('#parity-chart'),
-    plotted.map((it) => ({ org: it.org, contribution: it.contribution, derived: it.derived! })),
+    items.map((it) => ({ org: it.org, contribution: it.contribution, derived: it.derived! })),
     metricLabel,
     colors,
     theme,
@@ -638,7 +637,8 @@ function renderParity(data: Data, state: State, weeks: string[], orgs: string[],
       '. Both axes are logarithmic. On the diagonal the value ratio is 1.0×, review in proportion to usage; ' +
       'organizations above it review more than their usage share, those below less.' +
       (none.length
-        ? ` ${none.join(', ')} ${none.length === 1 ? 'has' : 'have'} no ${metricLabel} in the range, so can't be placed on a log axis.`
+        ? ` ${none.join(', ')} ${none.length === 1 ? 'has' : 'have'} no ${metricLabel} in the range, so ` +
+          `${none.length === 1 ? 'sits' : 'sit'} on the 0 row below the log scale.`
         : '')
     : `No review data for ${label}.`;
 }
