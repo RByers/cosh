@@ -490,9 +490,9 @@ test('value ratio smoothing defaults to 4 weeks and is selectable', async () => 
   const off = await read();
   assert.match(page.url(), /smooth=1/);
   assert.doesNotMatch(off.sub, /running average/);
-  // Unsmoothed: sharp segments with a dot per week.
+  // Unsmoothed: sharp segments, also without dots.
   assert.equal(off.curve, 'default');
-  assert.equal(off.pointRadius, 4);
+  assert.ok(Array.isArray(off.pointRadius) && off.pointRadius.every((r) => r === 0), String(off.pointRadius));
   assert.notDeepEqual(off.ratios, four.ratios);
   // Smoothing steadies the line: smaller week-to-week moves.
   const jitter = (r: (number | null)[]) =>
