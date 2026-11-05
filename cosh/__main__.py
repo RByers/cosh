@@ -66,7 +66,7 @@ def main(argv=None):
     d.add_argument("--out", help="derived DB path (default: data/private/derived.sqlite)")
     c = sub.add_parser("classify",
                        help="label review threads as addressed with Claude Haiku via `claude -p` "
-                            "(uses Pro usage; writes data/private/labels.sqlite; optional step)")
+                            "(uses Max usage; writes data/private/labels.sqlite; optional step)")
     c.add_argument("--week", action="append",
                    help="only threads with a comment written in this ISO week (repeatable; default: all)")
     c.add_argument("--max-threads", type=int, help="label at most N threads this run")

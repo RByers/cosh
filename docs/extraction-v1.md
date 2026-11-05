@@ -49,7 +49,7 @@ Cloudflare Radar    ─► data/public/radar/raw/ ──── radar ──► d
 
 - **`classify` is optional.** It reads `derived.sqlite` (which threads
   need a label) and the comment text from NoteDb or the REST cache. It
-  writes only `labels.sqlite`, which is never deleted: the labels cost Pro
+  writes only `labels.sqlite`, which is never deleted: the labels cost Max
   usage to make.
 - **`summarize` without labels:** it attaches `labels.sqlite` read-only
   if it exists. Without it, weeks just show as unclassified.

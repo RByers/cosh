@@ -11,7 +11,7 @@ Two classifiers decide threads:
     reply starts with a Done-type word ("Done", "Fixed", "Fix applied." ...);
   - Claude Haiku via headless `claude -p`, run by `cosh classify` for the
     threads the regex doesn't settle. Its labels go to labels.sqlite, which
-    is never deleted (they cost Pro usage to make) and keyed by each
+    is never deleted (they cost Max usage to make) and keyed by each
     thread's input hash, so a thread that grows is relabelled.
 
 Threads the owner never replied to, or started by the owner, score nothing

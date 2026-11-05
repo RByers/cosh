@@ -24,7 +24,7 @@ review comments are cosh's primary contribution measure.
 
 Scores are against the 400-thread gold set (310 done, 90 not). Time is
 wall-clock for serial calls. "API-equivalent $" is the `total_cost_usd`
-that Claude Code reports; on Pro, the usage counts against the plan's
+that Claude Code reports; on Max, the usage counts against the plan's
 limits instead of being billed.
 
 1. **The regex is a fine lower bound but misses a fifth of the changes.**
@@ -59,8 +59,8 @@ limits instead of being billed.
      - one year: 31M tokens and ~7 h serial;
      - the approved 3-year range: about 100M tokens and ~23 h serial.
 
-   This is well within reach on Pro if it's spread over a few days and run
-   weekly after that (see "Cost against Pro limits").
+   This is well within reach on Max if it's spread over a few days and run
+   weekly after that (see "Cost against Max limits").
    - **Upgrades:** use Haiku on everything (0.973) if the regex's
      false "Done"s matter. Use Opus (0.990 overall) only for a small
      audit sample, since it costs about 30× Haiku.
@@ -175,7 +175,7 @@ tuned on the even half only.
 
 ### How the models were run
 
-The models run through Claude Code's headless mode, which uses the Pro
+The models run through Claude Code's headless mode, which uses the Max
 login (no API key on this machine):
 
 ```
@@ -192,7 +192,7 @@ claude -p --model haiku --output-format json --tools "" \
   servers and slash commands cut it to **about 0.7k**. That matters more
   than the model choice when threads are classified one at a time.
 - **`--bare`** would be leaner still, but it accepts only
-  `ANTHROPIC_API_KEY`, not the Pro login.
+  `ANTHROPIC_API_KEY`, not the Max login.
 - **Run directory.** Run from a scratch directory: the classifier
   needs no project context.
 - **Structured output.** `--json-schema` makes the reply a validated
@@ -218,21 +218,23 @@ There are about 6,600 threads with an owner reply each week.
 | Opus on everything | 1.4M tokens, ~24 min, $12.70 | 75M tokens, 20 h, $660 | 252M tokens, 68 h, $2,222 |
 
 Hours are serial. Two to four `claude -p` processes in parallel divide them
-accordingly, but they also use the Pro limits faster. The $ figures are
-API-equivalent list prices; on Pro they translate to limit usage, not
+accordingly, but they also use the Max limits faster. The $ figures are
+API-equivalent list prices; on Max they translate to limit usage, not
 charges.
 
-### Cost against Pro limits
+### Cost against Max limits
 
 - **What Anthropic publishes:**
-  - Pro has a rolling 5-hour session limit and a weekly limit.
+  - The user's plan is Max (corrected 2026-11-05; this section first
+    assumed Pro). Max, like Pro, has a rolling 5-hour session limit and a
+    weekly limit, and comes in tiers at 5× or 20× Pro's usage.
   - Both are shared between claude.ai and Claude Code.
   - The size is given only as multiples of the Free plan, not as token
     counts.
   - Usage depends on the model and on message length.
   - Third-party guides estimate about 45 Claude Code prompts per 5 hours
-    on Pro. These figures are unofficial and varied during 2026's
-    promotions.
+    on Pro, so several times that on Max. These figures are unofficial
+    and varied during 2026's promotions.
 - **So the honest unit is measured relative use.**
   - **This session.** The part of this session after entering the
     worktree used 12.7M Opus tokens over 81 calls (12.4M of them cache
@@ -383,7 +385,7 @@ It puts no load on Gerrit.
 
 ```
 derive    (rebuildable)  raw + NoteDb -> derived.sqlite: comments + threads (+ regex result)
-classify  (new, costs Pro usage)  pending threads -> claude -p (Haiku, batches of 100, 8 at once) -> labels.sqlite
+classify  (new, costs Max usage)  pending threads -> claude -p (Haiku, batches of 100, 8 at once) -> labels.sqlite
 summarize (rebuildable)  derived.sqlite + labels.sqlite (read-only ATTACH) -> summaries/
 ```
 
@@ -397,14 +399,14 @@ summarize (rebuildable)  derived.sqlite + labels.sqlite (read-only ATTACH) -> su
     `claude -p` calls at once. Only the calls run in worker threads; the
     main thread reads NoteDb, prepares at most N batches ahead and writes
     every label. If a call fails, no new ones start, the others in flight
-    are saved, then the error is raised. Parallel calls use the Pro limits
+    are saved, then the error is raised. Parallel calls use the Max limits
     N times faster per hour, not more in total.
   - **Writes:** labels are written per batch, so an interrupted run loses
     at most the batches in flight (up to `--jobs`), and a rerun continues
     where it stopped.
   - **Lock:** it takes its own `data/private/classify.lock`. It puts no load
     on Gerrit, so it may run while an extractor runs, as `derive` can.
-  - **Limits:** a `--max-threads` cap lets a run be sized to the Pro
+  - **Limits:** a `--max-threads` cap lets a run be sized to the Max
     limits.
 - **`summarize` without labels is fine:**
   - with no `labels.sqlite`, or an empty one, it still writes every other
@@ -430,7 +432,7 @@ summarize (rebuildable)  derived.sqlite + labels.sqlite (read-only ATTACH) -> su
 
 ### `data/private/labels.sqlite` (new; never delete, never rebuild)
 
-LLM labels cost Pro usage to make, so this file gets the same protection
+LLM labels cost Max usage to make, so this file gets the same protection
 as `raw.sqlite`. It only gains rows.
 
 ```sql

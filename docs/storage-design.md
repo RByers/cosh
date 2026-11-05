@@ -6,7 +6,7 @@
 >   7), not the measures weighed in §3.6.
 > - There is a **third local store**, `data/private/labels.sqlite`. It holds
 >   the addressed-comment labels from `cosh classify`. Like `raw.sqlite`, it
->   is never deleted, because remaking it costs Claude Pro usage.
+>   is never deleted, because remaking it costs Claude Max usage.
 >   `comment-classifier.md`, "Design", has its schema, sizes and pipeline.
 > - **`extraction-v1.md` is the authority** on what is implemented.
 

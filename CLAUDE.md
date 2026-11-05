@@ -68,7 +68,7 @@ Claude Haiku (`cosh classify`).
   hold the fetched data, and re-fetching costs server load.
 - Never delete `data/private/labels.sqlite` either. It holds the
   addressed-comment labels from `python3 -m cosh classify`, and remaking them
-  costs the user's Claude Pro usage. Unlike `derived.sqlite`, it is not
+  costs the user's Claude Max usage. Unlike `derived.sqlite`, it is not
   rebuildable. `classify` is an optional step after `derive`. It runs
   headless `claude -p` (Haiku), `--jobs` calls at once (default 8; this
   talks only to the Claude API, not Gerrit, so the serial-request rule
