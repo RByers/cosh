@@ -59,7 +59,9 @@ Claude Haiku (`cosh classify`).
   `<template data-msg>` elements there (rendered by `web/src/text.ts`), not
   strings in the scripts. Only short formats such as tooltips and hover titles
   stay in the TypeScript. Scripts set CSS custom properties, not inline
-  styles. Details: `web/README.md`, "Text and styling".
+  styles. The UI names weeks by their dates, never as `2026-W44` or "ISO
+  week", and captions don't repeat the selected range. Details:
+  `web/README.md`, "Text and styling".
 - In a worktree, give `web/` its dependencies by symlinking the main
   checkout's: `ln -s /home/rbagent/projects/cosh/web/node_modules
   web/node_modules`. Don't run `npm ci` or `npm install` there. Git ignores

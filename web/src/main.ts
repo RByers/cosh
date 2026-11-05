@@ -516,7 +516,7 @@ function renderRangeSummary(data: Data, state: State) {
   const r = state.range;
   const reviewWeeks = weeksIn(data.summary.meta.weeks, r).length;
   const n = rangeLength(r);
-  fill($('#range-summary'), { dates: rangeDates(r), n, from: r.from, to: r.to, review: reviewWeeks, gaps: reviewWeeks < n });
+  fill($('#range-summary'), { dates: rangeDates(r), n, review: reviewWeeks, gaps: reviewWeeks < n });
   for (const b of document.querySelectorAll<HTMLButtonElement>('#range-presets button')) {
     const pr = presetRange(data, presetWeeks(b));
     b.setAttribute('aria-pressed', String(pr.from === r.from && pr.to === r.to));

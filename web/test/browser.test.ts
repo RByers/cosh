@@ -173,6 +173,28 @@ test('page loads data and renders all three charts without errors', async () => 
   await page.close();
 });
 
+test('the page names weeks by their dates, never as ISO week labels', async () => {
+  // Labels like 2026-W44 stay in the URL and the data; text, hover titles and
+  // accessible names show dates (web/README.md, "Text and styling").
+  const weeks = summary.meta.weeks;
+  for (const hash of ['', `#from=${weeks[weeks.length - 1]}&to=${weeks[weeks.length - 1]}`]) {
+    const { page, errors } = await open(hash);
+    await page.waitForSelector('#heat-chart a.hm-box');
+    const text = await page.evaluate(() => {
+      const parts = [document.body.innerText];
+      for (const e of document.body.querySelectorAll('[title], [aria-label]')) {
+        parts.push(e.getAttribute('title') ?? '', e.getAttribute('aria-label') ?? '');
+      }
+      for (const e of document.body.querySelectorAll('.visually-hidden')) parts.push(e.textContent ?? '');
+      return parts.join('\n');
+    });
+    assert.doesNotMatch(text, /\b\d{4}-W\d{2}\b/, `week label shown (${hash || 'default range'})`);
+    assert.doesNotMatch(text, /ISO week/i, `"ISO week" shown (${hash || 'default range'})`);
+    assert.deepEqual(errors, []);
+    await page.close();
+  }
+});
+
 test('parity chart: review share against usage share on equal log axes, matching the table', async () => {
   const { page, errors } = await open();
   const d = await page.evaluate(() => {

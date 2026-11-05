@@ -86,7 +86,9 @@ crbug with the reduction if it still reproduces.
 
 One date range (From / To, plus presets) applies to every section. Each date
 selects the ISO week it falls in, so a range is always whole weeks; the inputs
-snap to that week's Monday and Sunday. The pickers span every week any data
+snap to that week's Monday and Sunday. Week labels such as `2026-W44` are only
+for the URL and the data: the page itself names weeks by their dates (see
+"Text and styling"). The pickers span every week any data
 covers (Radar goes back to 2023), and the default is the range where review and
 usage data both exist.
 
@@ -117,6 +119,14 @@ there alone; presentation lives in `src/style.css`.
 - Short formats stay in the scripts: hover titles, chart tooltips and axis
   titles, legend counts such as `google.com (12)`, directory row names such
   as `3 more`.
+- Name weeks and ranges by their dates, never by ISO week labels
+  (`2026-W44`, `2026-W14 to 2026-W44`) or as "ISO weeks": `rangeDates` in
+  `src/main.ts` gives `26 Oct – 1 Nov 2026`, `weekTitle` in `src/data.ts`
+  gives tooltip titles, and a single week mid-sentence is `week of 26 Oct
+  2026`. Labels stay in the URL, the data and the code. A browser test fails
+  if one shows in the page's text, hover titles or accessible names.
+- Captions don't repeat the selected range: the date picker shows it, and
+  the axes and legends make it plain. Say "in the range" or "in this range".
 - Scripts don't set inline styles. They set custom properties (`--color`,
   `--share`, `--fill`, `--at`, `--depth`, `--rows`, `--t`) that `style.css`
   turns into colours, widths and heights. Chart.js drawing options are the

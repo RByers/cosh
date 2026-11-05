@@ -111,7 +111,7 @@
           </div>
           <p id="range-summary" class="range-summary" aria-live="polite"></p>
           <template data-msg="range-summary">
-            <slot name="dates"></slot> (<span data-if="n=1"><slot name="from"></slot></span><span data-if="n!=1"><slot name="from"></slot> to <slot name="to"></slot>, <slot name="n"></slot> weeks</span>).<span data-if="gaps">
+            <slot name="dates"></slot><span data-if="n!=1"> (<slot name="n"></slot> weeks)</span>.<span data-if="gaps">
             Review data covers <slot name="review"></slot> of <span data-if="n=1">it</span><span data-if="n!=1">them</span>.</span>
           </template>
         </fieldset>

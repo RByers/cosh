@@ -119,6 +119,7 @@ value_ratio(O, t) = O's share of Chromium addressed review comments
 | 2026-11-05 | **A named org without a colour is shown in grey, never folded into Other.** The review charts no longer require a colour to name an org: one over the 0.25% bar but outside the 12-colour map gets its own grey series (dashed in the organization chart), legend entry and row. A unit test on the committed summaries fails if any org named over 13+ weeks, or any value-chart org, lacks a colour, as the prompt to re-evaluate the palette after a data update | User's request: a new org contributing a lot must at least show up, and the fixed palette should be re-checked after major data updates. Before this, januschka.com, huawei.com and kernel.org were named in some 4-week ranges but hidden in Other |
 | 2026-11-05 | **Org colours stay computed from the data, with no palette check.** The 12-colour map is worked out when the page loads (all-time review rank, then value-chart orgs), so a growing org takes a colour on its own and colours may shift when the data is updated. The real-data test that flagged orgs named in grey over 13+ weeks, and the CLAUDE.md step to act on it, are removed; a named org without a colour still shows in grey, never in Other | User's choice between a fixed org → colour list in config (kept stable by hand, with the test flagging when it needs updating) and a fully runtime map: runtime, accepting that colours may shift on data updates |
 | 2026-11-05 | Exclude brave.com again (reverts the 2026-11-04 re-inclusion): no brave.com → Brave mapping, and the org table shows its usage as "unknown" and its ratio as "usage unknown" (`UNKNOWN_USAGE_ORGS` in `web/src/data.ts`), not "usage too small" | User's instruction: Radar's Brave label is ~1000× below Brave's real size, so its usage is unknown rather than small |
+| 2026-11-05 | **The web UI names weeks by their dates, never by ISO week labels** (`2026-W44`) or as "ISO weeks", and captions don't repeat the selected range. Labels stay in URLs, data files and code. A browser test checks the page's text, hover titles and accessible names | User's instruction; a `2026-W14 to 2026-W44` label had crept back into the date picker's summary after the wording moved into `index.html` |
 
 ## Status
 
@@ -180,7 +181,7 @@ value_ratio(O, t) = O's share of Chromium addressed review comments
   acceptance rate (addressed ÷ comments). From `reviewer_weekly.json`, so a
   dot is a reviewer's average, not a single review: the data has no
   per-(reviewer, CL) rows.
-- Web UI date range: From/To dates (whole ISO weeks) plus presets, applied to
+- Web UI date range: From/To dates (whole weeks, Monday to Sunday) plus presets, applied to
   every chart, the tiles and the table (see `web/README.md`).
 
 **Next steps, in order**
