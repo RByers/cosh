@@ -300,14 +300,15 @@ export function renderParityChart(
       ctx.clip();
       ctx.strokeStyle = theme.parity;
       ctx.lineWidth = 2;
+      // Corner to corner, through the 0 row's extra decade too when there is one.
       ctx.beginPath();
-      ctx.moveTo(x.getPixelForValue(min), y.getPixelForValue(min));
+      ctx.moveTo(x.getPixelForValue(lo), y.getPixelForValue(lo));
       ctx.lineTo(x.getPixelForValue(max), y.getPixelForValue(max));
       ctx.stroke();
       // Its label runs along the line, above it near the low end: high review
       // on tiny usage, a corner no org is near.
-      const x0 = x.getPixelForValue(min);
-      const y0 = y.getPixelForValue(min);
+      const x0 = x.getPixelForValue(lo);
+      const y0 = y.getPixelForValue(lo);
       const angle = Math.atan2(y.getPixelForValue(max) - y0, x.getPixelForValue(max) - x0);
       ctx.translate(x0, y0);
       ctx.rotate(angle);
