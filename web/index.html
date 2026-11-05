@@ -46,7 +46,14 @@
     </header>
 
     <main>
+      <!-- Outside the form so it can stay stuck to the top of the window the whole way down the page. -->
+      <div class="metric-bar">
+        <fieldset id="metric" class="segmented">
+          <legend>Contribution metric</legend>
+        </fieldset>
+      </div>
       <form class="filters" aria-label="Filters" onsubmit="return false">
+        <p id="metric-note" class="range-summary metric-note" aria-live="polite" hidden></p>
         <fieldset id="range" class="range-picker">
           <legend>Date range <span class="legend-note">(applies to everything below)</span></legend>
           <div class="range-row">
@@ -56,10 +63,6 @@
           </div>
           <p id="range-summary" class="range-summary" aria-live="polite"></p>
         </fieldset>
-        <fieldset id="metric" class="segmented">
-          <legend>Contribution metric</legend>
-        </fieldset>
-        <p id="metric-note" class="range-summary metric-note" aria-live="polite" hidden></p>
         <fieldset id="smoothing" class="segmented">
           <legend>Smoothing <span class="legend-note">(running average of the value ratio over time and review charts)</span></legend>
         </fieldset>

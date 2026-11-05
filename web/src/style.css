@@ -143,6 +143,30 @@ a {
   margin-bottom: 16px;
 }
 
+/* The metric toggle stays at the top of the window while scrolling. The bar
+   bleeds into the body's side padding so charts don't show through beside it. */
+html {
+  scroll-padding-top: calc(var(--metric-bar-h, 76px) + 8px);
+}
+
+.metric-bar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  margin: 0 -16px 12px;
+  padding: 8px 16px;
+  background: var(--page);
+  border-bottom: 1px solid var(--border);
+}
+
+/* Smaller buttons on phones, so the bar takes less of the screen. */
+@media (max-width: 480px) {
+  .metric-bar .segmented label {
+    padding: 6px;
+    font-size: 0.75rem;
+  }
+}
+
 .segmented {
   display: flex;
   flex-wrap: wrap;
@@ -278,7 +302,7 @@ input[type='date']:focus-visible,
 
 /* Under the metric picker: what addressed comments are, and which weeks have them. */
 .metric-note {
-  margin: -4px 0 0;
+  margin: 0;
   max-width: 75ch;
 }
 

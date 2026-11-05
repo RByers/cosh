@@ -1358,6 +1358,12 @@ function main(data: Data) {
     $('#addressed-details').scrollIntoView({ block: 'start' });
   });
   syncInputs = buildControls(data, state, render);
+  // The metric bar is sticky; scroll-padding-top (in style.css) keeps anchor
+  // jumps clear of it, at whatever height it wraps to.
+  const metricBar = $('.metric-bar');
+  new ResizeObserver(() =>
+    document.documentElement.style.setProperty('--metric-bar-h', `${metricBar.offsetHeight}px`),
+  ).observe(metricBar);
   render();
   matchMedia('(prefers-color-scheme: dark)').addEventListener('change', render);
   const weeks = data.summary.meta.weeks;

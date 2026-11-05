@@ -325,6 +325,35 @@ test('a directory toggle keeps focus when the Gerrit links arrive and rebuild th
   await page.close();
 });
 
+test('metric toggle stays at the top of the window while scrolling, on wide and phone widths', async () => {
+  for (const width of [1100, 375]) {
+    const { page, errors } = await open('', width);
+    const startTop = await page.$eval('.metric-bar', (b) => b.getBoundingClientRect().top);
+    assert.ok(startTop > 0, 'metric bar starts in the page flow, below the intro');
+    // Scroll far down, to the org table, and the toggle is still pinned and clickable.
+    await page.evaluate(() => document.querySelector('#org-table')!.scrollIntoView());
+    const bar = await page.$eval('.metric-bar', (b) => {
+      const r = b.getBoundingClientRect();
+      const btn = b.querySelector('label:last-of-type')!.getBoundingClientRect();
+      const hit = document.elementFromPoint(btn.left + btn.width / 2, btn.top + btn.height / 2);
+      return { top: r.top, bottom: r.bottom, hit: !!hit && b.contains(hit), scrollY: window.scrollY };
+    });
+    assert.ok(bar.scrollY > 1000, 'page scrolled');
+    assert.equal(bar.top, 0);
+    assert.ok(bar.bottom < 150, `bar stays compact (${bar.bottom}px)`);
+    // Anchor jumps land below the bar, not under it.
+    await page.evaluate(() => document.querySelector('#areas')!.scrollIntoView());
+    const areasTop = await page.$eval('#areas', (e) => e.getBoundingClientRect().top);
+    assert.ok(areasTop >= bar.bottom, `#areas top ${areasTop} is below the bar ${bar.bottom}`);
+    assert.ok(bar.hit, 'nothing covers the stuck toggle');
+    await page.click('#metric input[value="cls"]');
+    assert.match(page.url(), /metric=cls/);
+    assert.equal(await page.$eval('.metric-bar', (b) => b.getBoundingClientRect().top), 0);
+    assert.deepEqual(errors, []);
+    await page.close();
+  }
+});
+
 test('switching the metric updates the table, review chart, directory chart and URL', async () => {
   const { page, errors } = await open();
   const legend = await page.$eval('#metric legend', (l) => ({
@@ -413,9 +442,11 @@ test.skipIf(!hasAddressedWeeks())('addressed comments show only classified weeks
   const intro = await page.$eval('header', (h) => h.textContent ?? '');
   assert.match(intro, /share of\s+addressed\s+review comments/);
   await page.click('#addressed-link');
+  // It lands just below the sticky metric bar.
   await page.waitForFunction(() => {
     const top = document.querySelector('#addressed-details')!.getBoundingClientRect().top;
-    return Math.abs(top) < 2;
+    const bar = document.querySelector('.metric-bar')!.getBoundingClientRect().bottom;
+    return top >= bar && top < bar + 12;
   });
   assert.match(page.url(), /metric=addressed/);
   // The classification explainer is always shown in the visible thread box and gives the measured accuracy.
@@ -1392,7 +1423,8 @@ test('heatmap: directories by time bins, per org or as a mix, with Gerrit links'
   assert.match(mix.legend, /google\.com/);
 
   // The links and "most active" lines arrive with the reviewer data.
-  await page.$eval('#heat-chart', (e) => e.scrollIntoView());
+  // Scroll the whole card in, so its toggles sit below the sticky metric bar.
+  await page.$eval('#heatmap', (e) => e.scrollIntoView());
   await page.waitForSelector('#heat-chart a.hm-box');
 
   // One org: shaded cells, ranked by that org's review.
