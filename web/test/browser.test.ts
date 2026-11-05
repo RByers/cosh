@@ -841,6 +841,9 @@ test('clicking a reviewer opens their weekly chart with a Gerrit link; Close and
   assert.match(detail.link,
     /^https:\/\/chromium-review\.googlesource\.com\/q\/commentby:([^@\s/+]+@[^@\s/+]+)\+-owner:\1\+after:\d{4}-\d\d-\d\d(\+before:\d{4}-\d\d-\d\d)?$/);
   assert.equal(detail.target, '_blank');
+  // The title gives the account's email, not its org.
+  const email = decodeURIComponent(detail.link.match(/commentby:([^+]+)/)![1]);
+  assert.equal(detail.title, `${detail.name} (${email})`);
   assert.match(detail.sub, /review comments in/);
   const chart = await page.evaluate(() => {
     const c = (window as unknown as { Chart?: unknown }).Chart;

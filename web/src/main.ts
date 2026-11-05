@@ -801,7 +801,10 @@ function renderReviewerDetail(data: Data, state: State, colors: Map<string, stri
   const addressed = r.addressed.reduce<number>((a, b) => a + (b ?? 0), 0);
   const nClassified = weeks.filter((w) => classified.has(w)).length;
   box.hidden = false;
-  $('#rd-title').textContent = `${r.name}${r.org ? ` (${r.org})` : ''}`;
+  // The email identifies the account (the bar colour and legend already give
+  // the org); the org only when there's no email.
+  const who = r.email ?? r.org;
+  $('#rd-title').textContent = `${r.name}${who ? ` (${who})` : ''}`;
   $('#rd-sub').textContent =
     `${int(total)} review comments in ${rangeLabel(range)}` +
     (nClassified
