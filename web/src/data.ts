@@ -356,6 +356,11 @@ export function chartedOrgs(
 
 export const OTHER = 'Other';
 
+/** How many organizations the review charts name, largest first: their
+ * legends, the per-reviewer rows and the organization selectors. The rest are
+ * combined as OTHER (the selectors' "Other" choice). */
+export const TOP_ORGS = 6;
+
 /** The metric summed over the given week(s): the top `n` orgs, then
  * everything else (including the summary's own "Other" row, e.g. gmail.com)
  * as a final "Other" entry. */
@@ -363,7 +368,7 @@ export function topOrgCounts(
   summary: Summary,
   weeks: string | string[],
   metric: Metric,
-  n = 7,
+  n = TOP_ORGS,
 ): { org: string; value: number }[] {
   const col = COUNT_COLUMN[metric];
   const set = new Set(typeof weeks === 'string' ? [weeks] : weeks);
@@ -427,7 +432,7 @@ export function orgWeeklyCounts(
   all: Summary,
   weeks: string[],
   metric: Metric,
-  n = 7,
+  n = TOP_ORGS,
   smoothing = 1,
   exclude: readonly string[] = [],
   dataWeeks?: readonly string[],
@@ -700,9 +705,6 @@ export function distributionStats(values: readonly number[]): {
   };
 }
 
-/** Organizations the per-reviewer spread shows on their own rows. */
-export const SPREAD_TOP_ORGS = 10;
-
 export interface OrgSpread {
   org: string;
   /** The org's reviewers, by value ascending. */
@@ -718,7 +720,7 @@ export interface OrgSpread {
 export function orgSpreads(
   rows: readonly { id: number; value: number; org: string }[],
   fold: readonly string[] = [],
-  n = SPREAD_TOP_ORGS,
+  n = TOP_ORGS,
   order?: readonly string[],
 ): OrgSpread[] {
   const folded = new Set(fold);
@@ -779,7 +781,7 @@ export function orgPerReviewSpreads(
   const spreads = orgSpreads(
     rows.map((r) => ({ id: r.id, value: r.value / r.reviews, org: r.org })),
     board.meta.fold_into_other ?? [],
-    SPREAD_TOP_ORGS,
+    TOP_ORGS,
     order,
   );
   return spreads.map((s) => {
@@ -1199,7 +1201,7 @@ export function topDirOrgs(
   board: DirBoard,
   weeks: string[],
   metric: Metric = 'comments',
-  n = 7,
+  n = TOP_ORGS,
   nameable?: (org: string) => boolean,
 ): string[] {
   const col = METRIC_INDEX[metric];
@@ -1480,7 +1482,7 @@ export function dirWeeklyCounts(
   node: number,
   weeks: string[],
   metric: Metric,
-  n = 7,
+  n = TOP_ORGS,
   smoothing = 1,
   exclude: readonly string[] = [],
   dataWeeks?: readonly string[],

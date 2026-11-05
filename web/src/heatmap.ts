@@ -9,7 +9,7 @@
 // each cell is shaded in that org's colour, by its volume against the busiest
 // cell in the grid (square-root scale, so small directories still show) or by
 // its share of the directory's review.
-import { monthTicks, OTHER, type DirLink, type HeatGrid, type DirRow, type WeekRange } from './data.ts';
+import { monthTicks, OTHER, TOP_ORGS, type DirLink, type HeatGrid, type DirRow, type WeekRange } from './data.ts';
 
 function node<K extends keyof HTMLElementTagNameMap>(tag: K, cls?: string, text?: string) {
   const e = document.createElement(tag);
@@ -157,7 +157,7 @@ export function buildHeatmap(box: HTMLElement, o: HeatOptions): void {
         lines.push(`${int(c.value)} ${unit}`);
         const shown = segOrder.filter((g) => c.byOrg.get(g));
         const bySize = shown.filter((g) => g !== OTHER).sort((x, y) => c.byOrg.get(y)! - c.byOrg.get(x)!);
-        for (const g of [...bySize.slice(0, 6), ...(c.byOrg.get(OTHER) ? [OTHER] : [])]) lines.push(`  ${g}: ${int(c.byOrg.get(g)!)} (${pct(c.byOrg.get(g)! / c.value)})`);
+        for (const g of [...bySize.slice(0, TOP_ORGS), ...(c.byOrg.get(OTHER) ? [OTHER] : [])]) lines.push(`  ${g}: ${int(c.byOrg.get(g)!)} (${pct(c.byOrg.get(g)! / c.value)})`);
         if (c.value > 0) {
           const col = node('span', 'hm-col');
           col.style.height = o.value === 'share' ? '100%' : `${rowMax ? Math.max(8, (100 * c.value) / rowMax) : 0}%`;

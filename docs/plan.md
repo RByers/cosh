@@ -112,6 +112,7 @@ value_ratio(O, t) = O's share of Chromium addressed review comments
 | 2026-11-05 | The UI always opens on addressed comments when any week is classified; before, it did so only when the whole default range was classified. A partly classified range shows its classified part with a note; no labels means review comments | User's instruction ("make addressed comments always the default"). The backfill had stretched the default range past the classified year, so it opened on review comments |
 | 2026-11-04 | Leaderboard size selector gets "All" (`lbn=all`): every reviewer with a nonzero value in the range and org choice. The axis is sticky so the long board keeps its scale | User's request. `reviewer_weekly.json` (1.7 MB, already fetched at load for the leaderboard) holds every reviewer, so "All" needs no new data and no on-demand fetch |
 | 2026-11-04 | Include brave.com again (brave.com → Brave in `config/org_browsers.csv`), reverting its 2026-11-03 exclusion; the usage card's note says Brave's usage is likely largely understated | User's instruction. Radar's Brave label is ~1000× below Brave's real size, but brave.com has essentially no reviews (no addressed comments, 2 comments and 2 reviewed CLs in 2023-W26..2026-W44), so the understatement doesn't affect the analysis |
+| 2026-11-04 | One constant, `TOP_ORGS` (6, in `web/src/data.ts`), sets how many orgs the review charts name: the organization chart's series, the directory and heatmap legends, the per-reviewer rows, and the leaderboard and heatmap organization selectors. The selectors list those orgs, then "Other" (`lbo=*other`, `hm=*other`), which combines every org outside them. The value-ratio chart (orgs with a browser) and the per-org table (`TABLE_TOP_ORGS`) are unchanged | User's request: fewer named orgs, and a way to look at everyone else together |
 
 ## Status
 
@@ -142,7 +143,7 @@ value_ratio(O, t) = O's share of Chromium addressed review comments
   verified against the real data (`radar-research.md`, "Findings").
 
 - First web UI in `web/` (see `web/README.md`). It has the value-ratio chart
-  (1× in the middle), review counts by org (top 7 plus Other), Radar usage
+  (1× in the middle), review counts by org (top `TOP_ORGS` plus Other), Radar usage
   per browser with the ChromeDerivative note, review by directory (volume
   and org split, with the path scope described), week totals including AI
   comments, and a per-org table. The summary/Radar join runs client-side.

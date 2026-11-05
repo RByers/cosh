@@ -93,6 +93,7 @@ import {
   leaderboardOrgs,
   type LeaderboardSize,
   TABLE_TOP_ORGS,
+  TOP_ORGS,
   weekMonday,
   weeksIn,
   weekSunday,
@@ -135,13 +136,13 @@ interface State {
   reviewScale: ReviewScale;
   /** How many reviewers the leaderboard shows. */
   lbSize: LeaderboardSize;
-  /** Leaderboard organization: ALL_ORGS, ALL_BUT_GOOGLE, or one org. */
+  /** Leaderboard organization: ALL_ORGS, ALL_BUT_GOOGLE, OTHER_ORGS, or one org. */
   lbOrg: string;
   /** Directory chart rows the reader expanded (DirRow keys); not in the URL. */
   expandedDirs: Set<string>;
   /** The directory the organization chart is limited to (a tree path), or null for the path scope. */
   reviewDir: string | null;
-  /** Heatmap organization: ALL_ORGS, ALL_BUT_GOOGLE, or one org. */
+  /** Heatmap organization: ALL_ORGS, ALL_BUT_GOOGLE, OTHER_ORGS, or one org. */
   heatOrg: string;
   heatBin: HeatBinSize;
   heatValue: HeatValue;
@@ -163,6 +164,8 @@ let examples: Promise<ThreadExamples> | null = null;
 /** Organization choices (heatmap and leaderboard) besides a single org. */
 const ALL_ORGS = '*';
 const ALL_BUT_GOOGLE = '*-google.com';
+/** Every org but the selector's top TOP_ORGS, combined. */
+const OTHER_ORGS = '*other';
 
 /** The org the linear review chart leaves out, so the rest are legible, and
  * the one the leaderboard can leave out. */
@@ -700,26 +703,26 @@ function renderTable(data: Data, state: State, weeks: string[], colors: Map<stri
   );
 }
 
-/** Organizations the leaderboard's selector offers, besides the current one. */
-const LB_ORG_CHOICES = 25;
-
 /** Fills an organization select: everyone, everyone but google.com, then the
- * ranked orgs, with the current choice added if it isn't among them. */
-function fillOrgSelect(select: HTMLSelectElement, ranked: string[], current: string) {
+ * top orgs, then "Other" (everyone else), with the current choice added if it
+ * isn't among them. */
+function fillOrgSelect(select: HTMLSelectElement, top: string[], current: string) {
   const single = current.startsWith('*') ? null : current;
-  if (single && !ranked.includes(single)) ranked = [...ranked, single];
+  const extra = single && !top.includes(single) ? [single] : [];
   select.replaceChildren(
     ...[
       { v: ALL_ORGS, t: 'All organizations' },
       { v: ALL_BUT_GOOGLE, t: `All except ${LINEAR_EXCLUDED_ORG}` },
-      ...ranked.map((o) => ({ v: o, t: o })),
+      ...top.map((o) => ({ v: o, t: o })),
+      { v: OTHER_ORGS, t: OTHER },
+      ...extra.map((o) => ({ v: o, t: o })),
     ].map(({ v, t }) => {
       const o = el('option', t);
       o.value = v;
       return o;
     }),
   );
-  select.value = single || current === ALL_BUT_GOOGLE ? current : ALL_ORGS;
+  select.value = single || current === ALL_BUT_GOOGLE || current === OTHER_ORGS ? current : ALL_ORGS;
 }
 
 function renderLeaderboard(
@@ -733,17 +736,26 @@ function renderLeaderboard(
   const weeks = weeksIn(Object.keys(data.reviewers.weeks), state.range);
   const all = topReviewers(data.reviewers, weeks, state.metric, Infinity);
 
-  // The selector: the orgs with the most review over the range, plus the current choice.
+  // The selector: the orgs with the most review over the range, "Other", plus the current choice.
   const single = state.lbOrg.startsWith('*') ? null : state.lbOrg;
   const noGoogle = state.lbOrg === ALL_BUT_GOOGLE;
-  fillOrgSelect($<HTMLSelectElement>('#leaderboard-org'), orgsByValue(all).slice(0, LB_ORG_CHOICES), state.lbOrg);
-  const keep = single ? (o: string) => o === single : noGoogle ? (o: string) => o !== LINEAR_EXCLUDED_ORG : null;
+  const folded = new Set(data.reviewers.meta.fold_into_other ?? []);
+  const top = orgsByValue(all).filter((o) => o !== OTHER && !folded.has(o)).slice(0, TOP_ORGS);
+  fillOrgSelect($<HTMLSelectElement>('#leaderboard-org'), top, state.lbOrg);
+  const keep = single
+    ? (o: string) => o === single
+    : noGoogle
+      ? (o: string) => o !== LINEAR_EXCLUDED_ORG
+      : state.lbOrg === OTHER_ORGS
+        ? (o: string) => !top.includes(o)
+        : null;
   const rows = (keep ? all.filter((r) => keep(r.org)) : all).slice(0, leaderboardLimit(state.lbSize));
   // Fixed for a given range and metric: the toggles below it mustn't move.
   $('#leaderboard-sub').textContent = !weeks.length
     ? `No reviewer data for ${rangeLabel(state.range)}.`
     : `${name}${weeks.length > 1 ? ' in total' : ''}, ${rangeLabel(state.range)}, for the top reviewers: ` +
-      `from every organization, only those outside ${LINEAR_EXCLUDED_ORG}, or one organization. ` +
+      `from every organization, only those outside ${LINEAR_EXCLUDED_ORG}, one organization, or every organization ` +
+      `outside the top ${TOP_ORGS} (Other). ` +
       'Same scope as the organization chart: reviewers\' own (non-bot) accounts on human-owned CLs, on the selected paths.';
 
   // Orgs with a fixed review colour get a legend entry, most reviewers first;
@@ -905,7 +917,7 @@ function exampleThread(t: ThreadExamples['threads'][number]): HTMLElement {
  * the path rules that decide what the other sections count. */
 function renderAreas(data: Data, state: State, colors: Map<string, string>, theme: Theme) {
   const weeks = weeksIn(Object.keys(data.areas.weeks), state.range);
-  const orgs = topDirOrgs(data.areas, weeks, state.metric, 7, (o) => colors.has(o));
+  const orgs = topDirOrgs(data.areas, weeks, state.metric, TOP_ORGS, (o) => colors.has(o));
   const totals = dirTotals(data.areas, weeks, orgs, state.metric);
   const unit = metricName(state.metric).toLowerCase();
   const segColors = colors;
@@ -986,7 +998,7 @@ function renderDistribution(
 
   $('#dist-sub').textContent = weeks.length
     ? `Each reviewer's ${unit} over ${rangeLabel(state.range)}: one dot per reviewer, one row per organization ` +
-      '(the ten with the most, then everyone else, including personal addresses, as “Other”), on a log scale. ' +
+      `(the ${TOP_ORGS} with the most, then everyone else, including personal addresses, as “Other”), on a log scale. ` +
       "Each box spans the middle half of its row's reviewers, with a thick line at the median; rows with under five " +
       'reviewers get none. ' +
       (state.metric === 'addressed'
@@ -1103,8 +1115,6 @@ function renderPerReview(
   );
 }
 
-/** Organizations the heatmap's selector lists, busiest first. */
-const HEAT_ORG_CHOICES = 25;
 /** Reviewers a heatmap cell's hover text names. */
 const HEAT_TOP_REVIEWERS = 3;
 
@@ -1114,15 +1124,24 @@ function renderHeat(data: Data, state: State, colors: Map<string, string>, theme
   const rangeWeeks = weeksIn(Object.keys(board.weeks), state.range);
   const unit = metricName(state.metric).toLowerCase();
 
-  // The selector: the busiest orgs over the range, plus the current choice.
+  // The selector: the busiest orgs over the range, "Other", plus the current choice.
   const single = state.heatOrg.startsWith('*') ? null : state.heatOrg;
-  fillOrgSelect($<HTMLSelectElement>('#heat-org'), topDirOrgs(board, rangeWeeks, state.metric, HEAT_ORG_CHOICES), state.heatOrg);
+  const top = topDirOrgs(board, rangeWeeks, state.metric, TOP_ORGS);
+  fillOrgSelect($<HTMLSelectElement>('#heat-org'), top, state.heatOrg);
   const noGoogle = state.heatOrg === ALL_BUT_GOOGLE;
+  const others = state.heatOrg === OTHER_ORGS;
 
-  const keep = noGoogle ? (o: string) => o !== LINEAR_EXCLUDED_ORG : undefined;
+  // "Other" is the rest combined: one segment, with the top orgs left out.
+  const keep = noGoogle
+    ? (o: string) => o !== LINEAR_EXCLUDED_ORG
+    : others
+      ? (o: string) => !top.includes(o)
+      : undefined;
   const segOrgs = single
     ? [single]
-    : topDirOrgs(board, rangeWeeks, state.metric, 7, (o) => colors.has(o) && (!keep || keep(o)));
+    : others
+      ? []
+      : topDirOrgs(board, rangeWeeks, state.metric, TOP_ORGS, (o) => colors.has(o) && (!keep || keep(o)));
   const segColors = colors;
   const grid = heatGrid(board, state.range, state.heatBin, state.metric, segOrgs, state.heatExpanded, {
     only: keep,
@@ -1136,9 +1155,9 @@ function renderHeat(data: Data, state: State, colors: Map<string, string>, theme
   let cellInfo: ((row: number, bin: number) => HeatCellInfo | null) | undefined;
   if (data.areaReviewers) {
     // An excluded org gets its own segment, so it can be dropped rather than hide in Other.
-    const idxOrgs = noGoogle ? [...segOrgs, LINEAR_EXCLUDED_ORG] : segOrgs;
+    const idxOrgs = noGoogle ? [...segOrgs, LINEAR_EXCLUDED_ORG] : others ? top : segOrgs;
     const perBin = grid.binWeeks.map((w) => dirReviewerIndex(board, data.areaReviewers!, w, idxOrgs));
-    const keepSeg = single ? (o: string) => o === single : keep;
+    const keepSeg = single ? (o: string) => o === single : others ? (o: string) => o === OTHER : keep;
     cellInfo = (ri, bi) => {
       const idx = perBin[bi];
       const row = grid.rows[ri];
@@ -1291,8 +1310,8 @@ function main(data: Data) {
     const seriesFor = (lin: boolean) => {
       const exclude = lin ? [LINEAR_EXCLUDED_ORG] : [];
       return dirNode === null
-        ? orgWeeklyCounts(data.summary, weeks, state.metric, 7, state.smoothing, exclude, dataWeeks, nameable)
-        : dirWeeklyCounts(data.areas, dirNode, weeks, state.metric, 7, state.smoothing, exclude, dataWeeks, nameable);
+        ? orgWeeklyCounts(data.summary, weeks, state.metric, TOP_ORGS, state.smoothing, exclude, dataWeeks, nameable)
+        : dirWeeklyCounts(data.areas, dirNode, weeks, state.metric, TOP_ORGS, state.smoothing, exclude, dataWeeks, nameable);
     };
     const reviewSeries = seriesFor(linear);
     reviewChart = renderReviewChart(

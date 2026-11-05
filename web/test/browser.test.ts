@@ -13,7 +13,7 @@ import { fileURLToPath } from 'node:url';
 import puppeteer, { type Browser, type Page } from 'puppeteer-core';
 import { preview, type PreviewServer } from 'vite';
 import { randomPort } from '../vite.config.ts';
-import { addWeeks, addressedWeeks, isoWeekOf, type Summary } from '../src/data.ts';
+import { addWeeks, addressedWeeks, isoWeekOf, TOP_ORGS, type Summary } from '../src/data.ts';
 
 /** The committed summary the build bundles. */
 const summary = JSON.parse(
@@ -1217,6 +1217,16 @@ test('leaderboard size and organization selects; every org is named, none as "ot
   assert.ok(single.n > 0);
   assert.deepEqual([...new Set(single.orgs)], [one]);
   assert.equal(single.sub, top25.sub, 'the selects leave the description alone');
+  // The top TOP_ORGS orgs, then "Other": everyone else, combined.
+  const at = options.indexOf('*other');
+  assert.equal(at, 2 + TOP_ORGS, options.join());
+  const named = options.slice(2, at);
+  await page.select('#leaderboard-org', '*other');
+  assert.match(page.url(), /lbo=\*other/);
+  const rest = await read();
+  check(rest);
+  assert.ok(rest.n > 0);
+  assert.ok(rest.orgs.every((o) => !named.includes(o)), rest.orgs.join());
   // Show: All lists every reviewer, from the data already loaded.
   await page.select('#leaderboard-org', '*');
   const requests: string[] = [];
@@ -1468,6 +1478,17 @@ test('heatmap: directories by time bins, per org or as a mix, with Gerrit links'
   // (Org lines only: a reviewer's email may still be at google.com.)
   assert.ok(nog.rows.flatMap((r) => r.cells).every((c) => !/(^|\n)google\.com:/.test(c.title)), 'no google.com in any cell');
   assert.doesNotMatch(nog.legend, /google\.com/);
+
+  // Other: after the top TOP_ORGS orgs, the rest as one segment.
+  const at = nog.options.indexOf('*other');
+  assert.equal(at, 2 + TOP_ORGS, nog.options.join());
+  const named = nog.options.slice(2, at);
+  await page.select('#heat-org', '*other');
+  const rest = await read();
+  assert.equal(rest.legend, 'Other');
+  const titles = rest.rows.flatMap((r) => r.cells).map((c) => c.title);
+  assert.ok(titles.some((t) => /\n\s*Other: [\d,]+ \(100(\.0)?%\)/.test(t)), 'cells count the rest');
+  for (const o of named) assert.ok(titles.every((t) => !t.includes(` ${o}:`)), o);
   assert.deepEqual(errors, []);
   await page.close();
 });
