@@ -1,6 +1,7 @@
 import json
 import os
 import tempfile
+import time
 import unittest
 from unittest import mock
 
@@ -209,6 +210,53 @@ class PendingTest(unittest.TestCase):
         cmd = run.call_args[0][0]
         self.assertIn("--json-schema", cmd)
         self.assertIn("--strict-mcp-config", cmd)
+
+
+class RunBatchesTest(unittest.TestCase):
+    def test_parallel_and_bounded(self):
+        import threading
+        lock, state = threading.Lock(), dict(now=0, peak=0)
+        drawn, saved = [], []
+
+        def batches():
+            for i in range(10):
+                drawn.append(i)
+                # Never more than `jobs` batches prepared but not yet saved.
+                self.assertLessEqual(len(drawn) - len(saved), 3)
+                yield [i], f"ctx{i}"
+
+        def call(items):
+            with lock:
+                state["now"] += 1
+                state["peak"] = max(state["peak"], state["now"])
+            time.sleep(0.02)
+            with lock:
+                state["now"] -= 1
+            return {"T0": items[0] % 2 == 0}, {"wall": 0}
+
+        main = threading.get_ident()
+
+        def save(ctx, got, cost):
+            self.assertEqual(threading.get_ident(), main)
+            saved.append(ctx)
+
+        classify.run_batches(batches(), call, 3, save)
+        self.assertEqual(sorted(saved), sorted(f"ctx{i}" for i in range(10)))
+        self.assertEqual(state["peak"], 3)
+
+    def test_failure_saves_in_flight_then_raises(self):
+        saved = []
+
+        def call(items):
+            if items[0] == 1:
+                raise RuntimeError("boom")
+            time.sleep(0.05)
+            return {}, {}
+
+        with self.assertRaisesRegex(RuntimeError, "boom"):
+            classify.run_batches((([i], i) for i in range(20)), call, 4, lambda ctx, g, c: saved.append(ctx))
+        # 0, 2, 3 were in flight with 1 and still saved; nothing after them started.
+        self.assertEqual(sorted(saved), [0, 2, 3])
 
 
 if __name__ == "__main__":

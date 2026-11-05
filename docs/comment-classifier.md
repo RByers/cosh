@@ -383,7 +383,7 @@ It puts no load on Gerrit.
 
 ```
 derive    (rebuildable)  raw + NoteDb -> derived.sqlite: comments + threads (+ regex result)
-classify  (new, costs Pro usage)  pending threads -> claude -p (Haiku, batches of 100) -> labels.sqlite
+classify  (new, costs Pro usage)  pending threads -> claude -p (Haiku, batches of 100, 8 at once) -> labels.sqlite
 summarize (rebuildable)  derived.sqlite + labels.sqlite (read-only ATTACH) -> summaries/
 ```
 
@@ -393,8 +393,15 @@ summarize (rebuildable)  derived.sqlite + labels.sqlite (read-only ATTACH) -> su
     and the active classifier.
   - **Rendering:** it renders the pending threads from NoteDb (comment text
     isn't stored in `derived.sqlite`) and sends them in batches.
+  - **Parallel calls:** `--jobs N` (default 8, at most 16) runs N
+    `claude -p` calls at once. Only the calls run in worker threads; the
+    main thread reads NoteDb, prepares at most N batches ahead and writes
+    every label. If a call fails, no new ones start, the others in flight
+    are saved, then the error is raised. Parallel calls use the Pro limits
+    N times faster per hour, not more in total.
   - **Writes:** labels are written per batch, so an interrupted run loses
-    at most one batch, and a rerun continues where it stopped.
+    at most the batches in flight (up to `--jobs`), and a rerun continues
+    where it stopped.
   - **Lock:** it takes its own `data/private/classify.lock`. It puts no load
     on Gerrit, so it may run while an extractor runs, as `derive` can.
   - **Limits:** a `--max-threads` cap lets a run be sized to the Pro

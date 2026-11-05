@@ -27,6 +27,7 @@ import subprocess
 import sys
 import time
 from collections import defaultdict
+from concurrent.futures import FIRST_COMPLETED, ThreadPoolExecutor, wait
 
 from . import store
 
@@ -228,6 +229,38 @@ def claude_batch(model, items, cwd):
                                                            "cache_read_input_tokens", "output_tokens")))
 
 
+def run_batches(batches, call, jobs, save):
+    """Runs call(items) for each (items, ctx) from the `batches` iterator, up to
+    `jobs` at once, and save(ctx, got, cost) for each in completion order. Only
+    `call` runs off the calling thread: `batches` is drawn and `save` called on
+    it, so neither needs to be thread-safe, and at most `jobs` batches are
+    prepared ahead. If a call fails, no more are started; the ones in flight
+    finish and are saved, then the first error is raised."""
+    batches = iter(batches)
+    error = None
+    with ThreadPoolExecutor(max_workers=jobs) as pool:
+        running = {}
+        while True:
+            while error is None and len(running) < jobs:
+                nxt = next(batches, None)
+                if nxt is None:
+                    break
+                running[pool.submit(call, nxt[0])] = nxt[1]
+            if not running:
+                break
+            finished, _ = wait(running, return_when=FIRST_COMPLETED)
+            for f in finished:
+                ctx = running.pop(f)
+                try:
+                    got, cost = f.result()
+                except Exception as e:      # keep the others' labels, then fail
+                    error = error or e
+                    continue
+                save(ctx, got, cost)
+    if error is not None:
+        raise error
+
+
 # ---------------------------------------------------------------- the classify step
 
 def pending_threads(db, labels_db, weeks):
@@ -257,7 +290,7 @@ def pending_threads(db, labels_db, weeks):
 
 
 def classify(data_dir=store.DATA_DIR, db_path=None, weeks=None, model="haiku", batch=100,
-             max_threads=None, dry_run=False, labels_db_path=None):
+             max_threads=None, dry_run=False, labels_db_path=None, jobs=8):
     from .derive import load_comments, prefetch_notedb
     path = db_path or os.path.join(data_dir, store.DERIVED_FILE)
     db = sqlite3.connect(f"file:{path}?mode=ro", uri=True)
@@ -268,7 +301,7 @@ def classify(data_dir=store.DATA_DIR, db_path=None, weeks=None, model="haiku", b
     if max_threads is not None:
         todo = todo[:max_threads]
     calls = -(-len(todo) // batch)
-    print(f"{len(todo)} threads need a model label ({calls} calls of up to {batch}; "
+    print(f"{len(todo)} threads need a model label ({calls} calls of up to {batch}, {jobs} at a time; "
           f"roughly {len(todo) * 230 / 1e6:.1f}M tokens)", file=sys.stderr)
     if dry_run or not todo:
         return len(todo)
@@ -285,57 +318,63 @@ def classify(data_dir=store.DATA_DIR, db_path=None, weeks=None, model="haiku", b
     with labels_db:
         run_id = labels_db.execute("INSERT INTO runs(started_at, weeks) VALUES (?, ?)",
                                    (started, json.dumps(sorted(weeks)) if weeks else None)).lastrowid
-    done_threads = tokens = n_calls = stale = missing = 0
-    usd = seconds = 0.0
-    classifier_id = None
-    for b in range(0, len(todo), batch):
-        chunk = todo[b:b + batch]
-        cls = sorted({(host, project, n) for n, _, _, _, host, project in chunk})
-        notes = prefetch_notedb(repos, cls, "auto")
-        items, keys = [], {}
-        threads_by_cl = {}
-        for n, root, h, owner, host, project in chunk:
-            if n not in threads_by_cl:
-                comments, _ = load_comments(raw, repos, host, project, n, "auto", notes)
-                threads_by_cl[n] = {t["root_id"]: t for t in build_threads(comments, owner)}
-            t = threads_by_cl[n].get(root)
-            if t is None:
-                missing += 1
-                continue
-            text = render(t, owner)
-            if input_hash(text) != h:        # NoteDb changed since derive: rerun derive first
-                stale += 1
-                continue
-            key = f"T{len(items)}"
-            items.append((key, text))
-            keys[key] = (n, root, h)
-        if not items:
-            continue
-        got, cost = claude_batch(model, items, cwd)
-        n_calls += 1
-        tokens += cost["tokens"]
-        usd += cost["usd"]
-        seconds += cost["wall"]
+    st = dict(done=0, tokens=0, calls=0, stale=0, missing=0, usd=0.0, seconds=0.0, classifier_id=None)
+    t_run = time.time()
+
+    def prepare():
+        """(items, keys) per batch of `todo`, with comments read from NoteDb."""
+        for b in range(0, len(todo), batch):
+            chunk = todo[b:b + batch]
+            cls = sorted({(host, project, n) for n, _, _, _, host, project in chunk})
+            notes = prefetch_notedb(repos, cls, "auto")
+            items, keys = [], {}
+            threads_by_cl = {}
+            for n, root, h, owner, host, project in chunk:
+                if n not in threads_by_cl:
+                    comments, _ = load_comments(raw, repos, host, project, n, "auto", notes)
+                    threads_by_cl[n] = {t["root_id"]: t for t in build_threads(comments, owner)}
+                t = threads_by_cl[n].get(root)
+                if t is None:
+                    st["missing"] += 1
+                    continue
+                text = render(t, owner)
+                if input_hash(text) != h:        # NoteDb changed since derive: rerun derive first
+                    st["stale"] += 1
+                    continue
+                key = f"T{len(items)}"
+                items.append((key, text))
+                keys[key] = (n, root, h)
+            if items:
+                yield items, keys
+
+    def save(keys, got, cost):
+        st["calls"] += 1
+        st["tokens"] += cost["tokens"]
+        st["usd"] += cost["usd"]
+        st["seconds"] += cost["wall"]
         with labels_db:
-            if classifier_id is None:
+            if st["classifier_id"] is None:
                 labels_db.execute("INSERT OR IGNORE INTO classifiers(model, definition_version, prompt_sha256, "
                                   "created_at) VALUES (?,?,?,?)", (cost["model"], DEF_VERSION, PROMPT_SHA,
                                                                    store.now_iso()))
-                classifier_id = labels_db.execute(
+                st["classifier_id"] = labels_db.execute(
                     "SELECT classifier_id FROM classifiers WHERE model=? AND definition_version=? AND "
                     "prompt_sha256=?", (cost["model"], DEF_VERSION, PROMPT_SHA)).fetchone()[0]
-            rows = [(keys[k][0], keys[k][1], classifier_id, keys[k][2], int(v), run_id)
+            rows = [(keys[k][0], keys[k][1], st["classifier_id"], keys[k][2], int(v), run_id)
                     for k, v in got.items() if k in keys]
             labels_db.executemany("INSERT OR REPLACE INTO labels VALUES (?,?,?,?,?,?)", rows)
+            st["done"] += len(rows)
             labels_db.execute("UPDATE runs SET classifier_id=?, threads=?, calls=?, tokens=?, usd_equiv=?, "
                               "seconds=?, finished_at=? WHERE run_id=?",
-                              (classifier_id, done_threads + len(rows), n_calls, tokens, usd, seconds,
-                               store.now_iso(), run_id))
-        done_threads += len(rows)
-        print(f"  batch {n_calls}/{calls}: {len(rows)}/{len(items)} labelled, {cost['wall']:.0f}s, "
-              f"{cost['tokens']} tokens ({done_threads}/{len(todo)} done)", file=sys.stderr)
-    print(f"labelled {done_threads} threads in {n_calls} calls: {tokens} tokens, {seconds:.0f}s, "
-          f"${usd:.2f} API-equivalent; {stale} stale (rerun derive), {missing} not found in NoteDb",
-          file=sys.stderr)
+                              (st["classifier_id"], st["done"], st["calls"], st["tokens"], st["usd"],
+                               st["seconds"], store.now_iso(), run_id))
+        print(f"  batch {st['calls']}/{calls}: {len(rows)}/{len(keys)} labelled, {cost['wall']:.0f}s, "
+              f"{cost['tokens']} tokens ({st['done']}/{len(todo)} done)", file=sys.stderr)
+
+    run_batches(prepare(), lambda items: claude_batch(model, items, cwd), jobs, save)
+    print(f"labelled {st['done']} threads in {st['calls']} calls: {st['tokens']} tokens, "
+          f"{time.time() - t_run:.0f}s wall ({st['seconds']:.0f}s of calls, {jobs} at a time), "
+          f"${st['usd']:.2f} API-equivalent; {st['stale']} stale (rerun derive), "
+          f"{st['missing']} not found in NoteDb", file=sys.stderr)
     lock.close()
-    return done_threads
+    return st["done"]

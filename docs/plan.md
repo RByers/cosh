@@ -175,8 +175,9 @@ value_ratio(O, t) = O's share of Chromium addressed review comments
    `docs/comment-classifier.md`, "Design"; research in `review-impact.md`.
    - **Next:**
      - classify more weeks, a few at a time:
-       `python3 -m cosh classify --week W`, about 11 min and 1M Haiku
-       tokens per week; check `/usage`;
+       `python3 -m cosh classify --week W`, about 1M Haiku tokens per
+       week, ~10 min serial and much less with the default `--jobs 8`
+       (2026-11-05); check `/usage`;
      - make it the default headline once the default range is classified;
      - let the regex skip "[AI]" / "Maestro AI:" prefixes on owner replies;
      - after the next full `derive` on the main DB, rerun `summarize`.

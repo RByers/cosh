@@ -70,7 +70,9 @@ Claude Haiku (`cosh classify`).
   addressed-comment labels from `python3 -m cosh classify`, and remaking them
   costs the user's Claude Pro usage. Unlike `derived.sqlite`, it is not
   rebuildable. `classify` is an optional step after `derive`. It runs
-  headless `claude -p` (Haiku) serially, so size each run with `--week` or
+  headless `claude -p` (Haiku), `--jobs` calls at once (default 8; this
+  talks only to the Claude API, not Gerrit, so the serial-request rule
+  doesn't apply), so size each run with `--week` or
   `--max-threads` and check `--dry-run` first. Without labels, `summarize`
   and the UI still work; the addressed metric is then shown only for weeks
   that are classified.

@@ -72,6 +72,8 @@ def main(argv=None):
     c.add_argument("--max-threads", type=int, help="label at most N threads this run")
     c.add_argument("--batch", type=int, default=100, help="threads per claude -p call (default 100)")
     c.add_argument("--model", default="haiku", help="claude -p model alias (default haiku)")
+    c.add_argument("--jobs", type=int, default=8,
+                   help="claude -p calls run at once (default 8, at most 16)")
     c.add_argument("--dry-run", action="store_true", help="count pending threads, call nothing")
     c.add_argument("--db", help="derived DB path (default: data/private/derived.sqlite)")
     s = sub.add_parser("summarize", help="write summaries/ (path scope: config/paths.txt)")
@@ -132,7 +134,7 @@ def main(argv=None):
     elif a.cmd == "classify":
         from .classify import classify
         classify(db_path=a.db, weeks=a.week, model=a.model, batch=max(1, min(a.batch, 200)),
-                 max_threads=a.max_threads, dry_run=a.dry_run)
+                 max_threads=a.max_threads, dry_run=a.dry_run, jobs=max(1, min(a.jobs, 16)))
     elif a.cmd == "summarize":
         from .summarize import summarize
         kw = dict(out_dir=a.out) if a.out else {}
