@@ -460,7 +460,9 @@ export const SPREAD_BOX_MIN = 5;
 /** Strip plot of reviewers by their total for the metric over the range: one
  * row per org, one dot per reviewer on a log axis (0 gets its own slot at
  * the left), with a box over the middle half of the row and a line at its
- * median. Hovering a dot gives the reviewer's email; clicking it calls `onPick`. */
+ * median. Hovering a dot gives the reviewer's email; clicking it calls `onPick`.
+ * `opts` relabels it for other per-reviewer values, such as a ratio; the axis
+ * reaches below 1 when some value does. */
 export function renderSpreadChart(
   canvas: HTMLCanvasElement,
   spreads: OrgSpread[],
@@ -471,12 +473,18 @@ export function renderSpreadChart(
   theme: Theme,
   selected: number | null,
   onPick: (id: number) => void,
+  opts: { unit?: string; axisTitle?: string } = {},
 ): Chart<'scatter'> {
-  const unit = metricLabel.toLowerCase();
-  const fmt = (v: number) => v.toLocaleString('en-US', { maximumFractionDigits: 1 });
-  const zeros = spreads.some((s) => s.reviewers.some((r) => r.value <= 0));
-  const max = Math.max(1, ...spreads.flatMap((s) => s.reviewers.map((r) => r.value)));
-  const ZERO = 0.5;
+  const unit = opts.unit ?? metricLabel.toLowerCase();
+  const values = spreads.flatMap((s) => s.reviewers.map((r) => r.value));
+  const zeros = values.some((v) => v <= 0);
+  const max = Math.max(1, ...values);
+  // The axis starts at the power of ten at or below the smallest value (1 at most).
+  const lowExp = Math.min(0, Math.floor(Math.log10(Math.min(1, ...values.filter((v) => v > 0)))));
+  const low = 10 ** lowExp;
+  const fmt = (v: number) =>
+    v.toLocaleString('en-US', { maximumFractionDigits: v > 0 && v < 1 ? 2 : 1 });
+  const ZERO = 0.5 * low;
   const xOf = (v: number) => (v > 0 ? v : ZERO);
   type P = { x: number; y: number; id: number; value: number };
   const datasets = spreads.map((s, row) => {
@@ -566,18 +574,23 @@ export function renderSpreadChart(
       scales: {
         x: {
           type: 'logarithmic',
-          min: zeros ? 0.38 : 0.7,
+          min: (zeros ? 0.38 : 0.7) * low,
           max: max * 1.4,
-          title: { display: true, text: `${unit} per reviewer over the range (log scale)`, color: theme.muted },
+          title: {
+            display: true,
+            text: opts.axisTitle ?? `${unit} per reviewer over the range (log scale)`,
+            color: theme.muted,
+          },
           border: { color: theme.baseline },
           grid: { color: theme.grid },
           afterBuildTicks: (axis) => {
             const ticks = zeros ? [{ value: ZERO }] : [];
             // 1, 3, 10, 30, …; powers of ten only on narrow screens.
             const threes = (axis.width || 600) >= 480;
-            for (let p = 1; p <= axis.max; p *= 10) {
+            for (let e = lowExp; 10 ** e <= axis.max; e++) {
+              const p = 10 ** e;
               ticks.push({ value: p });
-              if (threes && 3 * p <= axis.max) ticks.push({ value: 3 * p });
+              if (threes && 3 * p <= axis.max) ticks.push({ value: Number((3 * p).toPrecision(6)) });
             }
             axis.ticks = ticks;
           },

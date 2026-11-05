@@ -629,20 +629,23 @@ export function orgsByValue(rows: { org: string; value: number }[]): string[] {
 /** Every reviewer with a row in the given week(s), with their total for the
  * metric (possibly 0), their review comments, and their org: the one most of
  * their comments in those weeks resolve to (ties: alphabetical). Unordered.
- * A row can have 0 comments: reviewed CLs count in the week the CL closed. */
+ * `reviews` is their reviewed CLs (CLs they commented on, in the week each
+ * closed). A row can have 0 comments: reviewed CLs count in the week the CL
+ * closed. */
 export function reviewerTotals(
   board: ReviewerBoard,
   weeks: string | string[],
   metric: Metric,
-): { id: number; value: number; comments: number; org: string }[] {
+): { id: number; value: number; comments: number; reviews: number; org: string }[] {
   const col = METRIC_INDEX[metric];
-  const by = new Map<number, { value: number; comments: number; orgCount: Map<number, number> }>();
+  const by = new Map<number, { value: number; comments: number; reviews: number; orgCount: Map<number, number> }>();
   for (const w of asList(weeks)) {
     for (const r of board.weeks[w] ?? []) {
       let t = by.get(r[0]);
-      if (!t) by.set(r[0], (t = { value: 0, comments: 0, orgCount: new Map() }));
+      if (!t) by.set(r[0], (t = { value: 0, comments: 0, reviews: 0, orgCount: new Map() }));
       t.value += r[col] ?? 0;
       t.comments += r[2];
+      t.reviews += r[3];
       t.orgCount.set(r[1], (t.orgCount.get(r[1]) ?? 0) + r[2]);
     }
   }
@@ -654,7 +657,13 @@ export function reviewerTotals(
     }
     return board.orgs[best];
   };
-  return [...by].map(([id, t]) => ({ id, value: t.value, comments: t.comments, org: orgOf(t.orgCount) }));
+  return [...by].map(([id, t]) => ({
+    id,
+    value: t.value,
+    comments: t.comments,
+    reviews: t.reviews,
+    org: orgOf(t.orgCount),
+  }));
 }
 
 /** Quantile `p` (0–1) of ascending `sorted`, interpolated between ranks. */
@@ -705,11 +714,14 @@ export interface OrgSpread {
 
 /** Reviewers grouped by org for the per-reviewer spread: the `n` orgs with
  * the largest total (ties: more reviewers, then name), never one folded into
- * Other, largest first; then OTHER for everyone else if anyone is left. */
+ * Other, largest first; then OTHER for everyone else if anyone is left.
+ * With `order`, its orgs that have reviewers get rows instead, in that order
+ * (so two spreads can share rows), and everyone else is OTHER. */
 export function orgSpreads(
   rows: readonly { id: number; value: number; org: string }[],
   fold: readonly string[] = [],
   n = SPREAD_TOP_ORGS,
+  order?: readonly string[],
 ): OrgSpread[] {
   const folded = new Set(fold);
   const by = new Map<string, { id: number; value: number }[]>();
@@ -723,12 +735,64 @@ export function orgSpreads(
   const ranked = [...by]
     .filter(([org]) => org !== OTHER)
     .sort((a, b) => sum(b[1]) - sum(a[1]) || b[1].length - a[1].length || (a[0] < b[0] ? -1 : 1));
-  const top = ranked.slice(0, n);
-  const rest = [...(by.get(OTHER) ?? []), ...ranked.slice(n).flatMap(([, l]) => l)];
+  const top = order
+    ? order.filter((o) => o !== OTHER && by.has(o)).map((o) => [o, by.get(o)!] as [string, { id: number; value: number }[]])
+    : ranked.slice(0, n);
+  const shown = new Set(top.map(([o]) => o));
+  const rest = [...(by.get(OTHER) ?? []), ...ranked.filter(([o]) => !shown.has(o)).flatMap(([, l]) => l)];
   const groups = [...top, ...(rest.length ? [[OTHER, rest] as [string, typeof rest]] : [])];
   return groups.map(([org, list]) => {
     const reviewers = [...list].sort((a, b) => a.value - b.value || a.id - b.id);
     return { org, reviewers, stats: distributionStats(reviewers.map((r) => r.value)) };
+  });
+}
+
+/** Reviewers need at least this many reviewed CLs over the range to get a
+ * per-review figure: with fewer, one CL's thread decides it. */
+export const PER_REVIEW_MIN = 3;
+
+/** What the per-review spread divides by reviewed CLs: the metric itself,
+ * or review comments when the metric is reviewed CLs. */
+export const perReviewMetric = (metric: Metric): Metric => (metric === 'cls' ? 'comments' : metric);
+
+export interface OrgPerReviewSpread extends OrgSpread {
+  /** The row's pooled figure: its reviewers' summed metric ÷ their summed
+   * reviewed CLs, i.e. per review rather than per reviewer. */
+  pooled: number;
+}
+
+/** Each reviewer's metric per review over the weeks (see perReviewMetric),
+ * grouped into the given org rows (see orgSpreads `order`). A review is one
+ * reviewer's comments on one CL, so a CL two reviewers commented on is two
+ * reviews. Reviewers with under `minReviews` reviewed CLs, or with no review
+ * comments in the weeks, are left out. Comments count in the week written
+ * and reviewed CLs in the week closed, so a range's edges are approximate. */
+export function orgPerReviewSpreads(
+  board: ReviewerBoard,
+  weeks: string | string[],
+  metric: Metric,
+  order: readonly string[],
+  minReviews = PER_REVIEW_MIN,
+): OrgPerReviewSpread[] {
+  const rows = reviewerTotals(board, weeks, perReviewMetric(metric)).filter(
+    (r) => r.reviews >= minReviews && r.comments > 0,
+  );
+  const byId = new Map(rows.map((r) => [r.id, r]));
+  const spreads = orgSpreads(
+    rows.map((r) => ({ id: r.id, value: r.value / r.reviews, org: r.org })),
+    board.meta.fold_into_other ?? [],
+    SPREAD_TOP_ORGS,
+    order,
+  );
+  return spreads.map((s) => {
+    let num = 0;
+    let den = 0;
+    for (const { id } of s.reviewers) {
+      const r = byId.get(id)!;
+      num += r.value;
+      den += r.reviews;
+    }
+    return { ...s, pooled: den ? num / den : 0 };
   });
 }
 

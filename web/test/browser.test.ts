@@ -78,11 +78,11 @@ test('page loads data and renders all three charts without errors', async () => 
     assert.ok(c.w > 200 && c.h > 200, `${c.k} has size ${c.w}x${c.h}`);
     assert.ok(c.n >= 1, `${c.k} has datasets`);
   }
-  // Charts come in order: ratio, review, usage, the table, directories, directories over time, the per-reviewer
+  // Charts come in order: ratio, review, usage, the table, directories, directories over time, per review, the per-reviewer
   // distribution, then the leaderboard.
   const order = await page.$$eval('main > section', (s) => s.map((e) => e.querySelector('canvas, table, .lb, .ar')?.id));
   assert.deepEqual(order.filter(Boolean),
-    ['ratio-chart', 'review-chart', 'usage-chart', 'org-table', 'area-chart', 'heat-table', 'dist-chart', 'leaderboard-chart']);
+    ['ratio-chart', 'review-chart', 'usage-chart', 'org-table', 'area-chart', 'heat-table', 'pr-chart', 'dist-chart', 'leaderboard-chart']);
   await page.close();
 });
 
@@ -963,6 +963,71 @@ test('an org keeps one colour in every review section, whatever the filters', as
     assert.ok(!owner.has(c) || owner.get(c) === org, `${org} and ${owner.get(c)} share ${c}`);
     owner.set(c, org);
   }
+});
+
+test('per-review spread: the metric per reviewed CL, on the per-reviewer rows; review comments under reviewed CLs', async () => {
+  const { page, errors } = await open('#metric=cls');
+  const read = () =>
+    page.evaluate(() => {
+      const { data, state, perReviewChart: c, distChart: d } = window.__cosh!;
+      // Each reviewer's comments and reviewed CLs in the range, straight from the data.
+      const sums = new Map<number, [number, number]>();
+      for (const [w, rows] of Object.entries(data.reviewers.weeks)) {
+        if (w < state.range.from || w > state.range.to) continue;
+        for (const r of rows) {
+          const s = sums.get(r[0]) ?? [0, 0];
+          s[0] += r[2];
+          s[1] += r[3];
+          sums.set(r[0], s);
+        }
+      }
+      const pts = c!.data.datasets.flatMap((ds) => ds.data as unknown as { id: number; value: number }[]);
+      return {
+        title: document.querySelector('#pr-title')!.textContent,
+        orgs: c!.data.datasets.map((ds) => ds.label!),
+        distOrgs: d!.data.datasets.map((ds) => ds.label!),
+        bad: pts.filter((p) => {
+          const [cm, cl] = sums.get(p.id)!;
+          return cl < 3 || Math.abs(p.value - cm / cl) > 1e-9;
+        }).length,
+        n: pts.length,
+        eligible: [...sums.values()].filter(([cm, cl]) => cm > 0 && cl >= 3).length,
+        table: [...document.querySelectorAll<HTMLTableRowElement>('#pr-table tbody tr')].map((tr) => ({
+          org: tr.dataset.org!,
+          cells: [...tr.querySelectorAll('td')].map((td) => Number(td.textContent!.replace(/,/g, ''))),
+        })),
+        label: (() => {
+          const cb = c!.options.plugins!.tooltip!.callbacks!.label as unknown as (ctx: unknown) => string;
+          return cb({ raw: c!.data.datasets[0].data[0], dataset: c!.data.datasets[0] });
+        })(),
+      };
+    });
+  const v = await read();
+  assert.equal(v.title, 'Review comments per review');
+  // Same rows, in the same order, as the per-reviewer spread below it.
+  assert.deepEqual(v.orgs, v.distOrgs.filter((o) => v.orgs.includes(o)));
+  assert.equal(v.orgs[0], 'google.com');
+  assert.equal(v.orgs[v.orgs.length - 1], 'Other');
+  // Every reviewer with a comment and 3+ reviewed CLs is one dot, at comments ÷ CLs.
+  assert.ok(v.n > 0);
+  assert.equal(v.n, v.eligible);
+  assert.equal(v.bad, 0);
+  assert.deepEqual(v.table.map((r) => r.org), v.orgs);
+  for (const r of v.table) {
+    const [n, q1, med, q3, pooled] = r.cells;
+    assert.ok(n > 0 && q1 <= med && med <= q3 && pooled > 0, `${r.org}: ${r.cells}`);
+  }
+  assert.match(v.label, /^[^@\s]+@[^@\s]+\.[a-z]+: [\d.,]+ review comments per review$/);
+  // Another metric: that metric per review.
+  await page.evaluate(() => {
+    window.__cosh!.state.metric = 'chars';
+    window.__cosh!.render();
+  });
+  assert.equal(await page.$eval('#pr-title', (e) => e.textContent), 'Review characters per review');
+  // The section sits just above the per-reviewer spread.
+  assert.equal(await page.$eval('#per-review', (e) => e.nextElementSibling!.id), 'distribution');
+  assert.deepEqual(errors, []);
+  await page.close();
 });
 
 test('leaderboard size and organization selects; every org is named, none as "other"', async () => {

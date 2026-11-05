@@ -83,6 +83,9 @@ import {
   reviewerTotals,
   reviewerHandle,
   orgSpreads,
+  orgPerReviewSpreads,
+  perReviewMetric,
+  PER_REVIEW_MIN,
   trimRanked,
   LEADERBOARD_SIZE,
   LEADERBOARD_SIZES,
@@ -152,6 +155,7 @@ interface State {
 let userRange: WeekRange | null = null;
 let reviewerChart: AnyChart | undefined;
 let distChart: AnyChart | undefined;
+let perReviewChart: AnyChart | undefined;
 let examples: Promise<ThreadExamples> | null = null;
 
 /** Organization choices (heatmap and leaderboard) besides a single org. */
@@ -171,6 +175,7 @@ declare global {
       reviewChart?: AnyChart;
       usageChart?: AnyChart;
       distChart?: AnyChart;
+      perReviewChart?: AnyChart;
       render: () => void;
     };
   }
@@ -1001,6 +1006,74 @@ function renderDistribution(
       $('#reviewer-detail').scrollIntoView({ block: 'nearest' });
     },
   );
+  renderPerReview(data, state, weeks, spreads.map((s) => s.org), colorOf, theme, render);
+}
+
+/** How deep each review goes, org by org: a strip plot of each reviewer's
+ * metric per reviewed CL over the range (review comments per review when the
+ * metric is reviewed CLs), on the same org rows as the per-reviewer spread. */
+function renderPerReview(
+  data: Data,
+  state: State,
+  weeks: string[],
+  orgOrder: string[],
+  colorOf: (org: string) => string,
+  theme: Theme,
+  render: () => void,
+) {
+  const num = perReviewMetric(state.metric);
+  const name = `${metricName(num)} per review`;
+  const unit = name.toLowerCase();
+  const spreads = orgPerReviewSpreads(data.reviewers, weeks, state.metric, orgOrder);
+
+  $('#pr-title').textContent = name;
+  $('#pr-sub').textContent = weeks.length
+    ? `Each reviewer's ${metricName(num).toLowerCase()} over ${rangeLabel(state.range)} divided by the CLs they ` +
+      'reviewed (commented on): one dot per reviewer, on the same organization rows as the chart below, on a log ' +
+      "scale. Each box spans the middle half of its row's reviewers, with a thick line at the median; " +
+      `rows with under five reviewers get none. Only reviewers with at least ${PER_REVIEW_MIN} reviewed CLs ` +
+      "count, so that one CL doesn't decide a dot" +
+      (num === 'addressed' ? '; those with none addressed sit at 0. ' : '. ') +
+      '“All reviews” pools the whole row: its total divided by its reviews, so busy reviewers weigh more. ' +
+      'Comments count in the week written and CLs in the week they closed, so the edges of a range are ' +
+      'approximate. Hover a dot for the reviewer; click it for their weekly chart.'
+    : `No reviewer data for ${rangeLabel(state.range)}.`;
+
+  const fmt = (v: number) => v.toLocaleString('en-US', { maximumFractionDigits: v < 10 ? 2 : 0 });
+  $('#pr-table tbody').replaceChildren(
+    ...spreads.map((s) => {
+      const tr = el('tr');
+      tr.dataset.org = s.org;
+      const th = el('th');
+      th.scope = 'row';
+      const color = s.org === OTHER ? undefined : colorOf(s.org);
+      const named = color !== undefined && color !== theme.muted;
+      const sw = el('span', undefined, named ? 'swatch' : 'swatch swatch-muted');
+      if (named) sw.style.background = color;
+      th.append(sw, document.createTextNode(s.org));
+      const st = s.stats;
+      tr.append(th, ...[int(st.n), fmt(st.q1), fmt(st.median), fmt(st.q3), fmt(s.pooled)].map((c) => el('td', c)));
+      return tr;
+    }),
+  );
+
+  $('#pr-box').style.height = `${Math.max(1, spreads.length) * 34 + 64}px`;
+  perReviewChart?.destroy();
+  perReviewChart = renderSpreadChart(
+    $<HTMLCanvasElement>('#pr-chart'),
+    spreads,
+    colorOf,
+    (id) => reviewerHandle(data.reviewers, id),
+    name,
+    theme,
+    state.lbReviewer,
+    (id) => {
+      state.lbReviewer = id;
+      render();
+      $('#reviewer-detail').scrollIntoView({ block: 'nearest' });
+    },
+    { unit, axisTitle: `${unit}, per reviewer over the range (log scale)` },
+  );
 }
 
 /** Organizations the heatmap's selector lists, busiest first. */
@@ -1246,7 +1319,7 @@ function main(data: Data) {
       : `No review data for ${label}.`;
     renderTiles(data, weeks);
     renderTable(data, state, weeks, colors);
-    window.__cosh = { data, state, ratioChart, reviewChart, usageChart, distChart, render };
+    window.__cosh = { data, state, ratioChart, reviewChart, usageChart, distChart, perReviewChart, render };
   };
 
   // The intro's link scrolls to the classifier explainer, which is in the

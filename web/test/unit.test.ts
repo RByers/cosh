@@ -65,6 +65,8 @@ import {
   reviewerHandle,
   quantile,
   orgSpreads,
+  orgPerReviewSpreads,
+  perReviewMetric,
   distributionStats,
   leaderboardOrgs,
   trimRanked,
@@ -241,7 +243,10 @@ test('reviewerTotals keeps reviewers with 0 of the metric, with their comments a
     '2026-W44': [[1, 0, 4, 2, 1, 1]],
   });
   const t = reviewerTotals(b, ['2026-W43', '2026-W44'], 'addressed').sort((x, y) => x.id - y.id);
-  assert.deepEqual(t, [{ id: 1, value: 3, comments: 9, org: 'y.com' }, { id: 2, value: 0, comments: 9, org: 'x.com' }]);
+  assert.deepEqual(t, [
+    { id: 1, value: 3, comments: 9, reviews: 5, org: 'y.com' },
+    { id: 2, value: 0, comments: 9, reviews: 0, org: 'x.com' },
+  ]);
 });
 
 test('reviewerHandle: the email, else the name, else the account id', () => {
@@ -282,6 +287,46 @@ test('orgSpreads: top orgs by total, folded orgs and the rest as Other, reviewer
   // Nothing left over: no Other row.
   assert.deepEqual(orgSpreads(rows.slice(0, 4), []).map((x) => x.org), ['b.com', 'a.com']);
   assert.deepEqual(orgSpreads([], []), []);
+});
+
+test('orgSpreads with an order: those orgs that have reviewers, in that order, then Other', () => {
+  const rows = [
+    { id: 1, value: 1, org: 'a.com' },
+    { id: 2, value: 9, org: 'b.com' },
+    { id: 3, value: 4, org: 'c.com' },
+    { id: 4, value: 2, org: 'gmail.com' },
+  ];
+  const s = orgSpreads(rows, ['gmail.com'], 10, ['a.com', 'z.com', 'c.com', OTHER]);
+  assert.deepEqual(s.map((x) => [x.org, x.reviewers.map((r) => r.id)]), [['a.com', [1]], ['c.com', [3]], [OTHER, [4, 2]]]);
+});
+
+test('orgPerReviewSpreads: each reviewer\'s metric per reviewed CL, pooled per row', () => {
+  const b = board({
+    '2026-W43': [[1, 0, 8, 2, 300, 2], [3, 1, 10, 2, 50, 1]],
+    '2026-W44': [[1, 0, 4, 2, 100, 0], [2, 0, 6, 3, 90, 0], [4, 2, 9, 3, 10]],
+  });
+  const weeks = ['2026-W43', '2026-W44'];
+  const order = ['y.com', 'x.com'];
+  // n3 (y.com) has only 2 reviewed CLs: left out, so y.com gets no row.
+  const c = orgPerReviewSpreads(b, weeks, 'comments', order);
+  assert.deepEqual(c.map((s) => [s.org, s.reviewers]), [
+    ['x.com', [{ id: 2, value: 2 }, { id: 1, value: 3 }]],
+    [OTHER, [{ id: 4, value: 3 }]],
+  ]);
+  assert.equal(c[0].stats.median, 2.5);
+  assert.equal(c[0].pooled, 18 / 7);
+  // Reviewed CLs as the metric: review comments per review.
+  assert.deepEqual(orgPerReviewSpreads(b, weeks, 'cls', order), c);
+  assert.equal(perReviewMetric('cls'), 'comments');
+  assert.equal(perReviewMetric('chars'), 'chars');
+  // Addressed: reviewers with none addressed stay, at 0.
+  const a = orgPerReviewSpreads(b, weeks, 'addressed', order);
+  assert.deepEqual(a[0].reviewers, [{ id: 2, value: 0 }, { id: 1, value: 0.5 }]);
+  assert.equal(a[0].pooled, 2 / 7);
+  assert.deepEqual(orgPerReviewSpreads(b, weeks, 'chars', order)[0].reviewers.map((r) => r.value), [30, 100]);
+  // A lower minimum lets n3 in.
+  assert.deepEqual(orgPerReviewSpreads(b, weeks, 'comments', order, 2).map((s) => s.org), ['y.com', 'x.com', OTHER]);
+  assert.deepEqual(orgPerReviewSpreads(b, [], 'comments', order), []);
 });
 
 test('orgsByValue ranks orgs by their reviewers\' totals, each reviewer under their main org', () => {

@@ -315,6 +315,29 @@
         <div id="heat-chart" class="hm-wrap" role="region" tabindex="0" aria-labelledby="heat-title"></div>
       </section>
 
+      <section id="per-review" class="card" aria-labelledby="pr-title">
+        <h2 id="pr-title">Review comments per review</h2>
+        <p id="pr-sub" class="sub"></p>
+        <div id="pr-box" class="chart">
+          <canvas id="pr-chart" role="img" aria-label="Each reviewer's metric per reviewed CL over the selected range, one row of dots per organization, with each row's middle half boxed and its median marked; the table below lists the figures"></canvas>
+        </div>
+        <div class="table-wrap">
+          <table id="pr-table" class="dist-table" aria-labelledby="pr-title">
+            <thead>
+              <tr>
+                <th scope="col">Org</th>
+                <th scope="col">Reviewers</th>
+                <th scope="col">25th percentile</th>
+                <th scope="col">Median</th>
+                <th scope="col">75th percentile</th>
+                <th scope="col">All reviews</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </section>
+
       <section id="distribution" class="card" aria-labelledby="dist-title">
         <h2 id="dist-title">Review per reviewer</h2>
         <p id="dist-sub" class="sub"></p>
