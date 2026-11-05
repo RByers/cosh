@@ -322,10 +322,10 @@ Chromium-only shares.
   (`BOT_CLASS`) stayed at about 66/34 through 09-09. Within `LIKELY_AUTOMATED`,
   ChromeDerivative jumped on the same day too, from 0.2% to about 2.5%. So the
   change is in how browsers are labeled, not in bot scoring.
-- **Device mix is like human browsing.** `DEVICE_TYPE` for ChromeDerivative
-  (human) stayed at about 52/48 mobile/desktop on weekdays and 58/42 on
-  weekends, before and after the jump. Unlike desktop Chrome or Edge, the
-  bucket doesn't dip on weekends.
+- ~~**Device mix is like human browsing.**~~ **Wrong (2026-11-04):** Radar
+  silently ignores a `browser=` filter, so this was the device mix of *all*
+  human traffic. Per-OS queries show the new traffic is desktop only. See
+  [the follow-up below](#chromederivative-follow-up-firefox-safari-countries-2026-11-04).
 - **No public explanation from Cloudflare.**
   - Radar annotations for 2026-08-25..09-25 list only outages.
   - The Radar changelog for Aug–Oct 2026 has nothing on browser or bot
@@ -357,6 +357,96 @@ ChromeDerivative percentages above also use:
 |---|---|---|---|---|---|---|
 | 2023-W27 | 85.3% | 6.4% | 3.6% | 2.7% | 0.7% | 0.5% |
 | 2026-W44 | 77.3% | 8.3% | 1.6% | 1.5% | <0.1% | 11.0% |
+
+## ChromeDerivative follow-up: Firefox, Safari, countries (2026-11-04)
+
+The raw responses (about 70 requests, serial, ≥ 1 s apart) and the scripts are
+in `data/public/radar/adhoc/2026-11-04-chromederivative/`. Responses under
+`ignored/` used the `browser=` filter. Radar accepts that filter but ignores
+it and returns all-traffic data, so they are kept only as a record.
+Filters that do work: `location`, `os`, `asn`, `deviceType`,
+`browserFamily`. `OS`, `DEVICE_TYPE`, `TLS_VERSION`, `HTTP_VERSION` and
+`POST_QUANTUM` reject `limitPerGroup`. `/http/timeseries` at `1d` rejects a
+3-month range. Every endpoint caps a range at 374 days.
+
+**Firefox and Safari did not drop at the jump.** Their falls in `BROWSER`
+share are dilution: a new ~7% enters the denominator.
+- `BROWSER` share, weekdays Sep 1–4 vs Sep 14–17: Chrome −7%, Edge −7%,
+  Firefox −10%, Safari −2%, MobileSafari −5%, SamsungInternet −18%.
+- `BROWSER_FAMILY` daily share has **no step** on 09-09: Firefox was 3.66%
+  on 09-08 and 3.63% on 09-10, and the Chrome family stayed at about 69%.
+  So the family series already counted this traffic (as `chrome`).
+  `BROWSER` had dropped it.
+- Volume (`browserFamily`, `MIN0_MAX`), Sep 1–7 vs Sep 15–21: all human
+  traffic −1.3%, Firefox −5.3%, Chrome −2.1%, Safari +1.1%, Edge −0.7%. No step.
+- Over a year (weekly, family volume / total volume, Nov 2025 = 1.00), Firefox
+  falls steadily: 0.94 in Aug, 0.89 on Sep 14, 0.87 at the end of Oct. Chrome
+  falls 0.95 → 0.91 and Safari stays at 0.92–0.95. Firefox's decline is real
+  but gradual, not tied to 09-09.
+- The year-ago window (Sep 2025) can't serve as a seasonal baseline: the
+  family volumes rise 30–50% there while total traffic rises 5%, which looks
+  like a Radar change in Sept 2025.
+
+**Desktop only.** `ChromeDerivative` share, Sep 1–7 → Sep 15–21: Windows
+0.15 → 16.3%, macOS 0.0 → 10.8%, Linux 0.2 → 3.9%, ChromeOS 0.0 → 0.15%,
+**Android 0.42 → 0.44% (no jump)**. The same holds within countries. On
+Android: KR 0.0 → 0.1%, and the RU and US Android top 8 doesn't include it.
+On Windows: RU 39%, KR 34%, US 15%. On US macOS: 8.7%.
+
+**Same day everywhere, very different levels by country** (share of all
+human requests, Sep 15–21; the step falls on 09-09 or 09-10 UTC in every
+country):
+
+| | ChromeDerivative | | ChromeDerivative |
+|---|---|---|---|
+| RU | 27.7% | US | 7.1% |
+| KR | 19.9% | GB | 7.0% |
+| TW | 14.5% | TR | 6.4% |
+| PL | 12.5% | BR | 6.2% |
+| CN | 11.4% (6.1% before) | JP | 5.8% |
+| AR, FR | 9.7% | MX | 5.3% |
+| SA | 9.4% | IN | 2.5% |
+| DE | 9.0% | NG | 1.5% |
+| CA | 8.9% | BD | 1.6% |
+
+- Mobile-heavy countries (IN, NG, BD, PK, ID) are low because the new label
+  is desktop only.
+- Within each country, every other browser falls in proportion. On RU
+  Windows: Chrome −38%, Edge −41%, Opera −43%, Firefox −39%. So the traffic
+  was newly counted, not taken from Chrome.
+- **Russia fits Yandex Browser.** Statcounter puts Yandex at about 27–29% of
+  Russian desktop use (Jun–Aug 2026). Before the jump, Radar's `Yandex`
+  label was 0.1% of RU Windows traffic.
+- **Korea fits Naver Whale only in part.** Whale has about 4% of Korean
+  desktop use, while `ChromeDerivative` is 34% of KR Windows traffic.
+- **Weekend skew points to home or leisure use.** On Windows (Sep 14–20),
+  weekend share over weekday share is 1.38× for ChromeDerivative (US 1.47×,
+  KR 1.22×, RU 1.05×). Chrome is 0.95× and Edge 0.76×.
+
+**News correlation.** Nothing launched on 2026-09-09.
+- **ChatGPT Atlas** (macOS, Oct 2025) never shipped on Windows and was
+  switched off on 2026-08-09.
+- **The ChatGPT desktop app** with a built-in browser launched on 2026-07-09
+  (macOS, Windows), and gained Chrome extension support around 09-18. Neither
+  date matches.
+- **Meta Muse** (09-08) is a cloud agent, not a desktop client.
+- **Strawberry 1.0** launched on 10-26.
+- A launch also wouldn't step up on the same UTC day in 30 countries, and
+  wouldn't peak in Russia, where OpenAI doesn't serve users.
+
+**Conclusion (still unconfirmed by Cloudflare):** on 2026-09-09 Radar's
+`BROWSER` classifier started labeling desktop Chromium clients it had
+previously left unlabeled. These are not Chrome, and they were already
+counted in the `chrome` family. The country pattern fits Chromium forks
+that identify themselves only in Client Hints or other non-UA signals:
+Yandex (RU), Whale (KR) and likely Brave, Vivaldi, Arc and others. It may
+also include desktop apps that embed Chromium (Electron/CEF), which would
+fit the weekend skew. It is not an adoption event.
+
+Implication for the UI: excluding `ChromeDerivative` from the ratio
+denominator (`RATIO_EXCLUDED_BROWSERS`) is consistent with this. The traffic
+was absent from `BROWSER` shares before 09-09, so excluding it keeps the
+series comparable over time.
 
 ## Facebook's 2024-W39 drop (investigated 2026-11-03)
 
