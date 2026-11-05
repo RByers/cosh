@@ -5,6 +5,7 @@
 // HTML, like the leaderboard, so the numbers are real text, every row has a
 // hover title, and the toggles are real buttons. An org's segment can link to
 // its reviewers' CLs in the directory on Gerrit.
+import { fmtInt as int } from './format.ts';
 import { barScale, OTHER, type DirLink, type DirRow } from './data.ts';
 
 function node<K extends keyof HTMLElementTagNameMap>(tag: K, cls?: string, text?: string) {
@@ -14,7 +15,6 @@ function node<K extends keyof HTMLElementTagNameMap>(tag: K, cls?: string, text?
   return e;
 }
 
-const int = (v: number) => v.toLocaleString('en-US');
 const pct = (v: number) => `${(v * 100).toFixed(v > 0 && v < 0.01 ? 2 : 1)}%`;
 
 /** The org whose share the last column reports the complement of. */

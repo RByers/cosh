@@ -15,6 +15,7 @@ import {
   barScale,
   dirRows,
   dirTotals,
+  rowAmount,
   topDirOrgs,
   type DirBoard,
   chartedOrgs,
@@ -720,7 +721,7 @@ test('dirTotals sums each bucket into its ancestors, and what is in scope', () =
   // chrome/ is excluded but holds the re-included webnn/.
   assert.deepEqual([t.inc[1], t.inc[2], t.inc[7], t.inc[4], t.inc[0]], [4, 4, 4, 15, 0]);
   // Orgs outside the list count as Other.
-  assert.deepEqual(Object.fromEntries(t.byOrg[4]!), { 'google.com': 11, [OTHER]: 4 });
+  assert.deepEqual(Object.fromEntries(t.byOrg(4)!), { 'google.com': 11, [OTHER]: 4 });
   assert.equal(dirTotals(DIRS, W, ['google.com'], 'chars').total[1], 440);
   assert.equal(dirTotals(DIRS, ['2026-W44'], ['google.com'], 'cls').total[4], 4);
   assert.deepEqual(topDirOrgs(DIRS, W, 'comments'), ['google.com', 'microsoft.com']);
@@ -854,7 +855,7 @@ test('heatBins line up with the range end; only the first may be short', () => {
 test('dirTotals can count only some orgs', () => {
   const t = dirTotals(DIRS, W, ['google.com'], 'comments', (o) => o === 'microsoft.com');
   assert.deepEqual([t.total[1], t.total[4], t.total[0]], [4, 4, 0]);
-  assert.deepEqual(Object.fromEntries(t.byOrg[4]!), { [OTHER]: 4 });
+  assert.deepEqual(Object.fromEntries(t.byOrg(4)!), { [OTHER]: 4 });
 });
 
 test('heatGrid: directory rows against time bins, "N more" rows summing their entries', () => {
@@ -879,6 +880,29 @@ test('heatGrid: directory rows against time bins, "N more" rows summing their en
   // Counting only some orgs leaves the rest out of the cells too.
   const noG = heatGrid(DIRS, range, 2, 'comments', ['microsoft.com'], new Set(), { only: (o) => o !== 'google.com' });
   assert.deepEqual(noG.cells.map((row) => row[0].value), [4, 4]);
+});
+
+test('heatGrid cells equal each row\'s rowAmount in a full dirTotals of its bin', () => {
+  // heatGrid sums only the nodes its rows show; dirTotals sums the whole tree.
+  const range = { from: '2026-W43', to: '2026-W44' };
+  const filters = [undefined, (o: string) => o !== 'google.com', (o: string) => o === 'microsoft.com'];
+  for (const metric of ['comments', 'chars', 'cls'] as const) {
+    for (const only of filters) {
+      for (const expanded of [new Set<string>(), new Set(['d1', 'd2', 'd3']), new Set(['d1', 'o::1'])]) {
+        for (const orgs of [['google.com'], ['google.com', 'microsoft.com'], []]) {
+          const g = heatGrid(DIRS, range, 1, metric, orgs, expanded, { only, page: 1 });
+          g.rows.forEach((r, ri) =>
+            g.binWeeks.forEach((w, bi) => {
+              const want = rowAmount(dirTotals(DIRS, w, orgs, metric, only), r);
+              const got = g.cells[ri][bi];
+              assert.deepEqual([got.value, Object.fromEntries(got.byOrg)], [want.value, Object.fromEntries(want.byOrg)],
+                `${metric} ${r.key} bin ${bi}`);
+            }),
+          );
+        }
+      }
+    }
+  }
 });
 
 test('rowReviewers merges the kept segments; topAccounts ranks them', () => {

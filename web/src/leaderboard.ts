@@ -3,6 +3,7 @@
 // plot column (the rows use subgrid), so bar ends and gridlines line up at any
 // width without measuring anything. Real links and text mean middle-click,
 // copy-link and find-in-page all work, and screen readers get an ordered list.
+import { fmtInt } from './format.ts';
 import { niceTicks, type LeaderboardRow } from './data.ts';
 
 function node<K extends keyof HTMLElementTagNameMap>(tag: K, cls?: string, text?: string) {
@@ -27,7 +28,7 @@ export function buildLeaderboard(
   selected: number | null,
   onSelect: (id: number) => void,
 ): void {
-  const fmt = (v: number) => v.toLocaleString('en-US');
+  const fmt = (v: number) => fmtInt(v);
   if (!rows.length) {
     box.replaceChildren();
     return;

@@ -290,9 +290,10 @@ export function computeRatios(
 ): RatioPoint[] {
   const col = SHARE_COLUMN[metric];
   const points: RatioPoint[] = [];
+  const index = summaryRowIndex(summary);
   for (const week of weeks) {
     for (const [org, browsers] of orgBrowsers) {
-      const row = summary.rows.find((r) => r.iso_week === week && r.org === org);
+      const row = index.get(week)?.get(org);
       const contribution = row ? Number(row[col]) : 0;
       const derived = derivedShare(radar, week, browsers);
       const ratio = derived !== null && derived >= minDerived ? contribution / derived : null;
@@ -300,6 +301,22 @@ export function computeRatios(
     }
   }
   return points;
+}
+
+/** A summary's rows by week and org (the first row for each pair). */
+const rowIndexes = new WeakMap<Summary, Map<string, Map<string, Summary['rows'][number]>>>();
+function summaryRowIndex(summary: Summary) {
+  let index = rowIndexes.get(summary);
+  if (!index) {
+    index = new Map();
+    for (const r of summary.rows) {
+      let byOrg = index.get(r.iso_week);
+      if (!byOrg) index.set(r.iso_week, (byOrg = new Map()));
+      if (!byOrg.has(r.org)) byOrg.set(r.org, r);
+    }
+    rowIndexes.set(summary, index);
+  }
+  return index;
 }
 
 /** Running-average choices for the value ratio chart, in weeks (1 = off). */
@@ -454,9 +471,10 @@ export function orgWeeklyCounts(
   // Raw counts per (org, week) over every summary week.
   const raw = new Map<string, Map<string, number>>();
   let hasOther = false;
+  const inWeeks = new Set(weeks);
   for (const r of summary.rows) {
     const key = named.has(r.org) ? r.org : OTHER;
-    if (key === OTHER && weeks.includes(r.iso_week)) hasOther = true;
+    if (key === OTHER && inWeeks.has(r.iso_week)) hasOther = true;
     if (!raw.has(key)) raw.set(key, new Map());
     const m = raw.get(key)!;
     m.set(r.iso_week, (m.get(r.iso_week) ?? 0) + Number(r[col]));
@@ -637,6 +655,29 @@ export function orgsByValue(rows: { org: string; value: number }[]): string[] {
   return [...sum].sort((a, b) => b[1] - a[1] || (a[0] < b[0] ? -1 : 1)).map(([org]) => org);
 }
 
+/** Results of a pure function of a (never mutated) board, keyed by `key`;
+ * the last few per board and function are kept. A render asks for the same
+ * sums several times (e.g. reviewer totals for the spread, per-review and
+ * leaderboard sections), and switching back to a metric asks for them again.
+ * Callers must not mutate what they get. */
+const memoStore = new WeakMap<object, Map<string, unknown>>();
+const MEMO_SIZE = 24;
+function memo<R>(board: object, fn: string, key: string, make: () => R): R {
+  let m = memoStore.get(board);
+  if (!m) memoStore.set(board, (m = new Map()));
+  const k = `${fn}|${key}`;
+  if (m.has(k)) {
+    const v = m.get(k) as R;
+    m.delete(k);
+    m.set(k, v);
+    return v;
+  }
+  const v = make();
+  m.set(k, v);
+  if (m.size > MEMO_SIZE) m.delete(m.keys().next().value!);
+  return v;
+}
+
 /** Every reviewer with a row in the given week(s), with their total for the
  * metric (possibly 0), their review comments, and their org: the one most of
  * their comments in those weeks resolve to (ties: alphabetical). Unordered.
@@ -648,9 +689,18 @@ export function reviewerTotals(
   weeks: string | string[],
   metric: Metric,
 ): { id: number; value: number; comments: number; reviews: number; org: string }[] {
+  const list = asList(weeks);
+  return memo(board, 'reviewerTotals', `${metric}|${list.join()}`, () => computeReviewerTotals(board, list, metric)).slice();
+}
+
+function computeReviewerTotals(
+  board: ReviewerBoard,
+  weeks: string[],
+  metric: Metric,
+): { id: number; value: number; comments: number; reviews: number; org: string }[] {
   const col = METRIC_INDEX[metric];
   const by = new Map<number, { value: number; comments: number; reviews: number; orgCount: Map<number, number> }>();
-  for (const w of asList(weeks)) {
+  for (const w of weeks) {
     for (const r of board.weeks[w] ?? []) {
       let t = by.get(r[0]);
       if (!t) by.set(r[0], (t = { value: 0, comments: 0, reviews: 0, orgCount: new Map() }));
@@ -859,11 +909,17 @@ export function distinctReviewers(
   board: ReviewerBoard,
   weeks: string | string[],
 ): { total: number; byOrg: Map<string, number> } {
+  const list = asList(weeks);
+  const r = memo(board, 'distinctReviewers', list.join(), () => computeDistinctReviewers(board, list));
+  return { total: r.total, byOrg: new Map(r.byOrg) };
+}
+
+function computeDistinctReviewers(board: ReviewerBoard, weeks: string[]): { total: number; byOrg: Map<string, number> } {
   const fold = new Set(board.meta.fold_into_other ?? []);
   const orgName = board.orgs.map((o) => (fold.has(o) ? OTHER : o));
   const all = new Set<number>();
   const sets = new Map<string, Set<number>>();
-  for (const w of asList(weeks)) {
+  for (const w of weeks) {
     for (const r of board.weeks[w] ?? []) {
       all.add(r[0]);
       const org = orgName[r[1]];
@@ -894,13 +950,21 @@ export function isoWeekOf(d: Date): string {
   return `${year}-W${String(week).padStart(2, '0')}`;
 }
 
+/** weekMonday's results (ms): it's called many times per render, for a few hundred weeks. */
+const mondayCache = new Map<string, number>();
+
 /** Monday (UTC midnight) of an ISO week label. */
 export function weekMonday(week: string): Date {
-  const m = /^(\d{4})-W(\d{2})$/.exec(week);
-  if (!m) throw new Error(`not an ISO week: ${week}`);
-  const jan4 = Date.UTC(Number(m[1]), 0, 4);
-  const jan4Day = (new Date(jan4).getUTCDay() + 6) % 7;
-  return new Date(jan4 + (Number(m[2]) * 7 - 7 - jan4Day) * DAY_MS);
+  let t = mondayCache.get(week);
+  if (t === undefined) {
+    const m = /^(\d{4})-W(\d{2})$/.exec(week);
+    if (!m) throw new Error(`not an ISO week: ${week}`);
+    const jan4 = Date.UTC(Number(m[1]), 0, 4);
+    const jan4Day = (new Date(jan4).getUTCDay() + 6) % 7;
+    t = jan4 + (Number(m[2]) * 7 - 7 - jan4Day) * DAY_MS;
+    mondayCache.set(week, t);
+  }
+  return new Date(t);
 }
 
 /** Sunday (UTC midnight) of an ISO week label. */
@@ -1151,24 +1215,23 @@ export function dirTree(board: DirBoard) {
 
 export interface DirTotals {
   /** Per node: its subtree's total and per-org split. */
-  total: number[];
-  byOrg: (Map<string, number> | undefined)[];
+  total: Float64Array;
+  byOrg: (node: number) => Map<string, number> | undefined;
   /** Per node: its own bucket's total and per-org split. */
-  own: number[];
-  ownByOrg: (Map<string, number> | undefined)[];
+  own: Float64Array;
+  ownByOrg: (node: number) => Map<string, number> | undefined;
   /** Per node: the part of its subtree's total that is in scope. */
-  inc: number[];
+  inc: Float64Array;
 }
-
-const addTo = (maps: (Map<string, number> | undefined)[], i: number, org: string, v: number) => {
-  let m = maps[i];
-  if (!m) maps[i] = m = new Map();
-  m.set(org, (m.get(org) ?? 0) + v);
-};
 
 /** Sum the metric over the given weeks into every node's subtree. Orgs outside
  * `orgs` count as OTHER. `only`, if given, keeps just the orgs it accepts
- * (others aren't counted at all). */
+ * (others aren't counted at all).
+ *
+ * Fast path (this runs many times per render, over ~70k rows a year): each
+ * row goes into its node's own bucket only, per output org in a flat array;
+ * subtree sums are then one bottom-up pass, since a parent always precedes
+ * its children in `board.nodes`. The per-org maps are built on demand. */
 export function dirTotals(
   board: DirBoard,
   weeks: string[],
@@ -1177,29 +1240,57 @@ export function dirTotals(
   only?: (org: string) => boolean,
 ): DirTotals {
   const col = METRIC_INDEX[metric];
-  const keep = new Set(orgs);
-  const n = board.nodes.length;
-  const t: DirTotals = {
-    total: new Array(n).fill(0), byOrg: new Array(n), own: new Array(n).fill(0), ownByOrg: new Array(n),
-    inc: new Array(n).fill(0),
-  };
+  // Output orgs: the named ones, then OTHER. slotOf maps a board org index to
+  // its output slot, or -1 when `only` drops it.
+  const names = [...new Set(orgs)].filter((o) => o !== OTHER);
+  names.push(OTHER);
+  const S = names.length;
+  const named = new Map(names.map((o, i) => [o, i]));
+  const slotOf = board.orgs.map((o) => (only && !only(o) ? -1 : named.get(o) ?? S - 1));
+  const nodes = board.nodes;
+  const n = nodes.length;
+  const own = new Float64Array(n);
+  const ownSlots = new Float64Array(n * S);
   for (const w of weeks) {
-    for (const row of board.weeks[w] ?? []) {
+    const rows = board.weeks[w];
+    if (!rows) continue;
+    for (let r = 0; r < rows.length; r++) {
+      const row = rows[r];
       const v = row[col];
-      if (!v || (only && !only(board.orgs[row[1]]))) continue;
-      const org = keep.has(board.orgs[row[1]]) ? board.orgs[row[1]] : OTHER;
-      t.own[row[0]] += v;
-      addTo(t.ownByOrg, row[0], org, v);
-      // A node's own bucket is wholly in or out of scope (every rule directory is a node).
-      const inScope = board.nodes[row[0]][2] === 1;
-      for (let i = row[0]; i >= 0; i = board.nodes[i][0]) {
-        t.total[i] += v;
-        if (inScope) t.inc[i] += v;
-        addTo(t.byOrg, i, org, v);
-      }
+      if (!v) continue;
+      const slot = slotOf[row[1]];
+      if (slot < 0) continue;
+      const i = row[0];
+      own[i] += v;
+      ownSlots[i * S + slot] += v;
     }
   }
-  return t;
+  const total = own.slice();
+  const slots = ownSlots.slice();
+  // A node's own bucket is wholly in or out of scope (every rule directory is a node).
+  const inc = new Float64Array(n);
+  for (let i = 0; i < n; i++) if (nodes[i][2] === 1) inc[i] = own[i];
+  for (let i = n - 1; i >= 0; i--) {
+    const p = nodes[i][0];
+    if (p < 0 || !total[i]) continue;
+    total[p] += total[i];
+    inc[p] += inc[i];
+    for (let k = 0; k < S; k++) slots[p * S + k] += slots[i * S + k];
+  }
+  const mapper = (arr: Float64Array, sums: Float64Array) => {
+    const cache = new Map<number, Map<string, number> | undefined>();
+    return (i: number) => {
+      if (cache.has(i)) return cache.get(i);
+      let m: Map<string, number> | undefined;
+      if (sums[i]) {
+        m = new Map();
+        for (let k = 0; k < S; k++) if (arr[i * S + k]) m.set(names[k], arr[i * S + k]);
+      }
+      cache.set(i, m);
+      return m;
+    };
+  };
+  return { total, byOrg: mapper(slots, total), own, ownByOrg: mapper(ownSlots, own), inc };
 }
 
 /** The `n` orgs with the most of the metric over the given weeks across every
@@ -1212,15 +1303,23 @@ export function topDirOrgs(
   n = TOP_ORGS,
   nameable?: (org: string) => boolean,
 ): string[] {
-  const col = METRIC_INDEX[metric];
-  const sums = new Map<string, number>();
-  for (const w of weeks) {
-    for (const row of board.weeks[w] ?? []) {
-      const org = board.orgs[row[1]];
-      sums.set(org, (sums.get(org) ?? 0) + (row[col] ?? 0));
+  // Per board org index; the same sums serve every `n` and `nameable`.
+  const sums = memo(board, 'dirOrgSums', `${metric}|${weeks.join()}`, () => {
+    const col = METRIC_INDEX[metric];
+    const out = new Float64Array(board.orgs.length);
+    const seen = new Uint8Array(board.orgs.length);
+    for (const w of weeks) {
+      const rows = board.weeks[w];
+      if (!rows) continue;
+      for (let r = 0; r < rows.length; r++) {
+        const row = rows[r];
+        out[row[1]] += row[col] ?? 0;
+        seen[row[1]] = 1;
+      }
     }
-  }
-  return [...sums]
+    return board.orgs.map((o, i) => [o, out[i], seen[i]] as const).filter(([, , s]) => s).map(([o, v]) => [o, v] as [string, number]);
+  });
+  return sums
     .filter(([org]) => org !== OTHER && (!nameable || nameable(org)))
     .sort((a, b) => b[1] - a[1] || (a[0] < b[0] ? -1 : 1))
     .slice(0, n)
@@ -1277,7 +1376,7 @@ export function dirRows(board: DirBoard, t: DirTotals, expanded: ReadonlySet<str
   const empty = new Map<string, number>();
   const share = (it: Item) => (it.value ? it.inc / it.value : board.nodes[it.node][2]);
   const dirItem = (c: number): Item =>
-    ({ kind: 'dir', node: c, value: t.total[c], inc: t.inc[c], byOrg: t.byOrg[c] ?? empty });
+    ({ kind: 'dir', node: c, value: t.total[c], inc: t.inc[c], byOrg: t.byOrg(c) ?? empty });
 
   const emit = (item: Item, depth: number) => {
     const i = item.node;
@@ -1302,7 +1401,7 @@ export function dirRows(board: DirBoard, t: DirTotals, expanded: ReadonlySet<str
         .map((c) => dirItem(c));
       if (t.own[i] > 0) {
         items.push({ kind: 'rest', node: i, value: t.own[i], inc: board.nodes[i][2] ? t.own[i] : 0,
-          byOrg: t.ownByOrg[i] ?? empty });
+          byOrg: t.ownByOrg(i) ?? empty });
       }
       group(items.sort(byValue), depth + 1, key, 0);
     }
@@ -1566,8 +1665,8 @@ export function rowAmount(t: DirTotals, row: DirRow): HeatCell {
   if (parts.length === 1) {
     const { kind, node } = parts[0];
     return kind === 'dir'
-      ? { value: t.total[node], byOrg: t.byOrg[node] ?? new Map() }
-      : { value: t.own[node], byOrg: t.ownByOrg[node] ?? new Map() };
+      ? { value: t.total[node], byOrg: t.byOrg(node) ?? new Map() }
+      : { value: t.own[node], byOrg: t.ownByOrg(node) ?? new Map() };
   }
   const byOrg = new Map<string, number>();
   let value = 0;
@@ -1608,8 +1707,90 @@ export function heatGrid(
   const rows = dirRows(board, dirTotals(board, weeksIn(all, range), orgs, metric, rankOnly), expanded, page);
   const bins = heatBins(range, binSize);
   const binWeeks = bins.map((b) => weeksIn(all, b));
-  const perBin = binWeeks.map((w) => dirTotals(board, w, orgs, metric, only));
-  return { bins, binWeeks, rows, cells: rows.map((r) => perBin.map((t) => rowAmount(t, r))) };
+  return { bins, binWeeks, rows, cells: rowCells(board, rows, binWeeks, orgs, metric, only) };
+}
+
+/** Each row's HeatCell in each group of weeks: what rowAmount would give on
+ * dirTotals(board, weeks, orgs, metric, only), but summing only the nodes the
+ * rows show. dirTotals sums every node of the tree (~14k) for every org, which
+ * is most of the cost when it runs once per bin; the rows need a few dozen. */
+export function rowCells(
+  board: DirBoard,
+  rows: readonly DirRow[],
+  groups: readonly string[][],
+  orgs: readonly string[],
+  metric: Metric,
+  only?: (org: string) => boolean,
+): HeatCell[][] {
+  const col = METRIC_INDEX[metric];
+  const names = [...new Set(orgs)].filter((o) => o !== OTHER);
+  names.push(OTHER);
+  const S = names.length;
+  const named = new Map(names.map((o, i) => [o, i]));
+  const slotOf = board.orgs.map((o) => (only && !only(o) ? -1 : named.get(o) ?? S - 1));
+  const nodes = board.nodes;
+  const n = nodes.length;
+  // The nodes whose subtree (dir) or own bucket (rest) some row needs.
+  const parts = rows.map((r) =>
+    r.kind === 'other' ? r.members ?? [] : r.node === undefined ? [] : [{ kind: r.kind, node: r.node }],
+  );
+  const dirIdx = new Int32Array(n).fill(-1);
+  const ownIdx = new Int32Array(n).fill(-1);
+  let D = 0;
+  let O = 0;
+  for (const ps of parts) {
+    for (const p of ps) {
+      if (p.kind === 'dir') {
+        if (dirIdx[p.node] < 0) dirIdx[p.node] = D++;
+      } else if (ownIdx[p.node] < 0) ownIdx[p.node] = O++;
+    }
+  }
+  // up[i]: the nearest wanted dir node at or above i (-1 if none); a parent
+  // precedes its children, so one pass top-down fills it.
+  const up = new Int32Array(n);
+  for (let i = 0; i < n; i++) {
+    const p = nodes[i][0];
+    up[i] = dirIdx[i] >= 0 ? i : p >= 0 ? up[p] : -1;
+  }
+  const nextUp = (i: number) => (nodes[i][0] >= 0 ? up[nodes[i][0]] : -1);
+
+  const perGroup = groups.map((weeks) => {
+    const dirSum = new Float64Array(D * S);
+    const ownSum = new Float64Array(O * S);
+    for (const w of weeks) {
+      const data = board.weeks[w];
+      if (!data) continue;
+      for (let r = 0; r < data.length; r++) {
+        const row = data[r];
+        const v = row[col];
+        if (!v) continue;
+        const slot = slotOf[row[1]];
+        if (slot < 0) continue;
+        const node = row[0];
+        if (ownIdx[node] >= 0) ownSum[ownIdx[node] * S + slot] += v;
+        for (let a = up[node]; a >= 0; a = nextUp(a)) dirSum[dirIdx[a] * S + slot] += v;
+      }
+    }
+    return { dirSum, ownSum };
+  });
+
+  return parts.map((ps) =>
+    perGroup.map(({ dirSum, ownSum }) => {
+      const sums = new Float64Array(S);
+      for (const p of ps) {
+        const [arr, at] = p.kind === 'dir' ? [dirSum, dirIdx[p.node] * S] : [ownSum, ownIdx[p.node] * S];
+        for (let k = 0; k < S; k++) sums[k] += arr[at + k];
+      }
+      const byOrg = new Map<string, number>();
+      let value = 0;
+      for (let k = 0; k < S; k++) {
+        if (!sums[k]) continue;
+        byOrg.set(names[k], sums[k]);
+        value += sums[k];
+      }
+      return { value, byOrg };
+    }),
+  );
 }
 
 /** A row's reviewers in a DirReviewerIndex, summed over the segment orgs

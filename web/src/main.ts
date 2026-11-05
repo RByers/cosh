@@ -1,6 +1,7 @@
 import './style.css';
 // Data files are referenced from the repo, not copied: Vite emits them as
 // hashed assets at build time, so the site always reads the committed data.
+import { fmtDay, fmtInt, fmtNum } from './format.ts';
 import summaryUrl from '../../summaries/org_weekly.json?url';
 import totalsUrl from '../../summaries/weekly_totals.csv?url';
 import radarUrl from '../../data/public/radar_browser_share.csv?url';
@@ -157,6 +158,8 @@ let userRange: WeekRange | null = null;
 let reviewerChart: AnyChart | undefined;
 let distChart: AnyChart | undefined;
 let perReviewChart: AnyChart | undefined;
+/** What the usage chart was last built for (see renderViews). */
+let usageChartKey = '';
 let parityChart: AnyChart | undefined;
 let examples: Promise<ThreadExamples> | null = null;
 
@@ -209,9 +212,8 @@ async function load(): Promise<Data> {
 }
 
 const pct = (x: number) => `${(x * 100).toFixed(x !== 0 && x < 0.01 ? 2 : 1)}%`;
-const int = (x: number) => x.toLocaleString('en-US');
-const day = (d: Date, year = true) =>
-  d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', ...(year ? { year: 'numeric' } : {}), timeZone: 'UTC' });
+const int = fmtInt;
+const day = fmtDay;
 
 function el<K extends keyof HTMLElementTagNameMap>(tag: K, text?: string, cls?: string) {
   const e = document.createElement(tag);
@@ -256,11 +258,27 @@ function viewRange(data: Data, state: State): WeekRange {
 function withView(data: Data, state: State, fn: () => void) {
   const chosen = state.range;
   state.range = viewRange(data, state);
+  const outer = chartQueue === null;
+  if (outer) chartQueue = [];
   try {
     fn();
+    if (outer) for (const draw of chartQueue!) draw();
   } finally {
+    if (outer) chartQueue = null;
     state.range = chosen;
   }
+}
+
+/** Chart builds waiting for the end of the current render (withView). A
+ * Chart.js chart reads its container's size when built, which forces a
+ * layout; built amid the render's DOM changes, every chart forced a full one.
+ * Built together after them, only the first does. */
+let chartQueue: (() => void)[] | null = null;
+
+/** Runs `draw` at the end of the current render, or now outside one. */
+function drawChart(draw: () => void) {
+  if (chartQueue) chartQueue.push(draw);
+  else draw();
 }
 
 function renderMetricNote(data: Data, state: State) {
@@ -625,14 +643,16 @@ function renderParity(data: Data, state: State, weeks: string[], orgs: string[],
   const metricLabel = metricName(state.metric).toLowerCase();
   const items = orgRangeShares(data, state, weeks).filter((it) => orgs.includes(it.org) && it.ratio !== null);
   const none = items.filter((it) => it.contribution <= 0).map((it) => it.org);
-  parityChart?.destroy();
-  parityChart = renderParityChart(
-    $<HTMLCanvasElement>('#parity-chart'),
-    items.map((it) => ({ org: it.org, contribution: it.contribution, derived: it.derived! })),
-    metricLabel,
-    colors,
-    theme,
-  );
+  drawChart(() => {
+    parityChart?.destroy();
+    parityChart = renderParityChart(
+      $<HTMLCanvasElement>('#parity-chart'),
+      items.map((it) => ({ org: it.org, contribution: it.contribution, derived: it.derived! })),
+      metricLabel,
+      colors,
+      theme,
+    );
+  });
   $('#parity-sub').textContent = weeks.length
     ? `Each organization's share of ${metricLabel} against its browsers' share of Chromium browser usage, ${label}` +
       (weeks.length > 1 ? ' (totals over the range; usage is the mean weekly share)' : '') +
@@ -1009,7 +1029,7 @@ function renderDistribution(
       'click it for their weekly chart.'
     : `No reviewer data for ${rangeLabel(state.range)}.`;
 
-  const fmt = (v: number) => v.toLocaleString('en-US', { maximumFractionDigits: 1 });
+  const fmt = (v: number) => fmtNum(v, { maximumFractionDigits: 1 });
   $('#dist-table tbody').replaceChildren(
     ...spreads.map((s) => {
       const tr = el('tr');
@@ -1030,21 +1050,23 @@ function renderDistribution(
 
   // One row of dots per org: the chart grows with the rows.
   $('#dist-box').style.height = `${Math.max(1, spreads.length) * 34 + 64}px`;
-  distChart?.destroy();
-  distChart = renderSpreadChart(
-    $<HTMLCanvasElement>('#dist-chart'),
-    spreads,
-    colorOf,
-    (id) => reviewerHandle(data.reviewers, id),
-    name,
-    theme,
-    state.lbReviewer,
-    (id) => {
-      state.lbReviewer = id;
-      render();
-      $('#reviewer-detail').scrollIntoView({ block: 'nearest' });
-    },
-  );
+  drawChart(() => {
+    distChart?.destroy();
+    distChart = renderSpreadChart(
+      $<HTMLCanvasElement>('#dist-chart'),
+      spreads,
+      colorOf,
+      (id) => reviewerHandle(data.reviewers, id),
+      name,
+      theme,
+      state.lbReviewer,
+      (id) => {
+        state.lbReviewer = id;
+        render();
+        $('#reviewer-detail').scrollIntoView({ block: 'nearest' });
+      },
+    );
+  });
   renderPerReview(data, state, weeks, spreads.map((s) => s.org), colorOf, theme, render);
 }
 
@@ -1079,7 +1101,7 @@ function renderPerReview(
       'approximate. Hover a dot for the reviewer; click it for their weekly chart.'
     : `No reviewer data for ${rangeLabel(state.range)}.`;
 
-  const fmt = (v: number) => v.toLocaleString('en-US', { maximumFractionDigits: v < 10 ? 2 : 0 });
+  const fmt = (v: number) => fmtNum(v, { maximumFractionDigits: v < 10 ? 2 : 0 });
   $('#pr-table tbody').replaceChildren(
     ...spreads.map((s) => {
       const tr = el('tr');
@@ -1098,22 +1120,24 @@ function renderPerReview(
   );
 
   $('#pr-box').style.height = `${Math.max(1, spreads.length) * 34 + 64}px`;
-  perReviewChart?.destroy();
-  perReviewChart = renderSpreadChart(
-    $<HTMLCanvasElement>('#pr-chart'),
-    spreads,
-    colorOf,
-    (id) => reviewerHandle(data.reviewers, id),
-    name,
-    theme,
-    state.lbReviewer,
-    (id) => {
-      state.lbReviewer = id;
-      render();
-      $('#reviewer-detail').scrollIntoView({ block: 'nearest' });
-    },
-    { unit, axisTitle: `${unit}, per reviewer over the range`, linear: true },
-  );
+  drawChart(() => {
+    perReviewChart?.destroy();
+    perReviewChart = renderSpreadChart(
+      $<HTMLCanvasElement>('#pr-chart'),
+      spreads,
+      colorOf,
+      (id) => reviewerHandle(data.reviewers, id),
+      name,
+      theme,
+      state.lbReviewer,
+      (id) => {
+        state.lbReviewer = id;
+        render();
+        $('#reviewer-detail').scrollIntoView({ block: 'nearest' });
+      },
+      { unit, axisTitle: `${unit}, per reviewer over the range`, linear: true },
+    );
+  });
 }
 
 /** Reviewers a heatmap cell's hover text names. */
@@ -1292,19 +1316,21 @@ function main(data: Data) {
     // Addressed comments exist only for classified weeks; the running
     // averages skip the others instead of reading them as zero.
     const dataWeeks = state.metric === 'addressed' ? addressedWeeks(data.summary) : undefined;
+    const shownWeeks = new Set(weeks);
     const points = smoothRatios(
       computeRatios(data.summary, data.radar, data.orgBrowsers, state.metric, undefined, dataWeeks),
       state.smoothing,
     ).filter(
-      (p) => orgs.includes(p.org) && weeks.includes(p.week),
+      (p) => orgs.includes(p.org) && shownWeeks.has(p.week),
     );
 
     renderParity(data, state, weeks, orgs, colors, theme);
-    ratioChart?.destroy();
-    ratioChart = renderRatioChart($<HTMLCanvasElement>('#ratio-chart'), weeks, orgs, colors, points, theme, state.smoothing);
+    drawChart(() => {
+      ratioChart?.destroy();
+      ratioChart = renderRatioChart($<HTMLCanvasElement>('#ratio-chart'), weeks, orgs, colors, points, theme, state.smoothing);
+    });
     const name = metricName(state.metric);
     const metricLabel = name.toLowerCase();
-    reviewChart?.destroy();
     const linear = state.reviewScale === 'linear';
     // One directory (every comment in it, from the directory data), or the path scope (org_weekly).
     const dirNode = state.reviewDir === null ? null : dirNodeByPath(data.areas, state.reviewDir);
@@ -1315,16 +1341,19 @@ function main(data: Data) {
         : dirWeeklyCounts(data.areas, dirNode, weeks, state.metric, TOP_ORGS, state.smoothing, exclude, dataWeeks, nameable);
     };
     const reviewSeries = seriesFor(linear);
-    reviewChart = renderReviewChart(
-      $<HTMLCanvasElement>('#review-chart'),
-      weeks,
-      reviewSeries,
-      name,
-      rColors,
-      theme,
-      state.smoothing,
-      state.reviewScale,
-    );
+    drawChart(() => {
+      reviewChart?.destroy();
+      reviewChart = renderReviewChart(
+        $<HTMLCanvasElement>('#review-chart'),
+        weeks,
+        reviewSeries,
+        name,
+        rColors,
+        theme,
+        state.smoothing,
+        state.reviewScale,
+      );
+    });
     $('#review-sub').textContent = weeks.length
       ? `${name} per ISO week, ${label}` +
         (state.smoothing > 1
@@ -1348,15 +1377,24 @@ function main(data: Data) {
     renderDistribution(data, state, rColors, theme, render);
     renderLeaderboard(data, state, rColors, theme, render);
     renderThreads(data, state);
-    usageChart?.destroy();
-    usageChart = renderUsageChart(
-      $<HTMLCanvasElement>('#usage-chart'),
-      data.radar,
-      weeksIn(data.radar.keys(), state.range),
-      browsers,
-      jumpWeek ? { week: jumpWeek, text: 'ChromeDerivative jump' } : null,
-      theme,
-    );
+    // Usage doesn't depend on the metric (or the review filters): rebuild
+    // only when its range or the theme changes.
+    const usageWeeks = weeksIn(data.radar.keys(), state.range);
+    const usageKey = JSON.stringify([usageWeeks[0], usageWeeks[usageWeeks.length - 1], usageWeeks.length, theme]);
+    if (!usageChart || usageKey !== usageChartKey) {
+      usageChartKey = usageKey;
+      drawChart(() => {
+        usageChart?.destroy();
+        usageChart = renderUsageChart(
+          $<HTMLCanvasElement>('#usage-chart'),
+          data.radar,
+          usageWeeks,
+          browsers,
+          jumpWeek ? { week: jumpWeek, text: 'ChromeDerivative jump' } : null,
+          theme,
+        );
+      });
+    }
 
     $('#ratio-sub').textContent = weeks.length
       ? `Share of ${metricLabel} ÷ share of Chromium browser usage, per ISO week, ${label}` +
@@ -1367,7 +1405,10 @@ function main(data: Data) {
       : `No review data for ${label}.`;
     renderTiles(data, weeks);
     renderTable(data, state, weeks, colors);
-    window.__cosh = { data, state, parityChart, ratioChart, reviewChart, usageChart, distChart, perReviewChart, render };
+    // Queued after the charts, so it holds the new ones.
+    drawChart(() => {
+      window.__cosh = { data, state, parityChart, ratioChart, reviewChart, usageChart, distChart, perReviewChart, render };
+    });
   };
 
   // The intro's link scrolls to the classifier explainer, which is in the

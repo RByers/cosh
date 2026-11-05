@@ -591,7 +591,11 @@ test('review by directory: on a phone a toggle picks one bar, beside the name', 
   assert.deepEqual(await shown(page), { toggle: true, vol: true, dist: false, oneLine: true, overflow: 0 });
   await page.click('#area-show input[value="orgs"]');
   assert.deepEqual(await shown(page), { toggle: true, vol: false, dist: true, oneLine: true, overflow: 0 });
-  // Expanding a directory rebuilds the rows; the choice holds.
+  // Expanding a directory rebuilds the rows; the choice holds. The click
+  // above scrolled the chart into view, starting the lazy load of its
+  // links, whose arrival also rebuilds the rows: let it land first, or the
+  // toggle found below may be detached by the time it's clicked.
+  await page.waitForSelector('body[data-area-links]');
   await page.click('#area-chart .ar-toggle');
   assert.deepEqual(await shown(page), { toggle: true, vol: false, dist: true, oneLine: true, overflow: 0 });
   await page.click('#area-show input[value="volume"]');

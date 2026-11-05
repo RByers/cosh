@@ -9,6 +9,7 @@
 // each cell is shaded in that org's colour, by its volume against the busiest
 // cell in the grid (square-root scale, so small directories still show) or by
 // its share of the directory's review.
+import { fmtInt as int } from './format.ts';
 import { monthTicks, OTHER, TOP_ORGS, type DirLink, type HeatGrid, type DirRow, type WeekRange } from './data.ts';
 
 function node<K extends keyof HTMLElementTagNameMap>(tag: K, cls?: string, text?: string) {
@@ -18,7 +19,6 @@ function node<K extends keyof HTMLElementTagNameMap>(tag: K, cls?: string, text?
   return e;
 }
 
-const int = (v: number) => v.toLocaleString('en-US');
 const pct = (v: number) => `${(v * 100).toFixed(v > 0 && v < 0.01 ? 2 : 1)}%`;
 
 export type HeatValue = 'volume' | 'share';
@@ -84,6 +84,8 @@ export function buildHeatmap(box: HTMLElement, o: HeatOptions): void {
   // Month ticks; on narrow screens CSS keeps only the coarse ones (at most 4).
   // The subtitle names the range, so only January carries its year.
   const starts = grid.bins.map((b) => b.from);
+  // Once per bin: every cell's hover text repeats its bin's title.
+  const binTitles = grid.bins.map((b) => o.binTitle(b));
   // Coarse ticks near the right edge would run off it.
   const coarse = new Set(monthTicks(starts, 4).map((t) => t.index).filter((i) => i < starts.length - 2));
   const ticks = new Map(monthTicks(starts, 12).map((t) => [t.index, t.label.split(' ')]));
@@ -97,8 +99,8 @@ export function buildHeatmap(box: HTMLElement, o: HeatOptions): void {
       t.setAttribute('aria-hidden', 'true');
       th.append(t);
     }
-    th.append(node('span', 'visually-hidden', o.binTitle(b)));
-    th.title = o.binTitle(b);
+    th.append(node('span', 'visually-hidden', binTitles[i]));
+    th.title = binTitles[i];
     hr.append(th);
   });
   head.append(hr);
@@ -146,7 +148,7 @@ export function buildHeatmap(box: HTMLElement, o: HeatOptions): void {
       const link = info?.link ?? null;
       const mine = single ? c.byOrg.get(single) ?? 0 : c.value;
       const box2 = node(link ? 'a' : 'span', 'hm-box');
-      const lines = [`${o.rowTitle(r)}, ${o.binTitle(grid.bins[bi])}`];
+      const lines = [`${o.rowTitle(r)}, ${binTitles[bi]}`];
       if (single) {
         const share = c.value ? mine / c.value : 0;
         lines.push(`${single}: ${int(mine)} ${unit}` + (c.value ? ` (${pct(share)} of ${int(c.value)} there)` : ''));

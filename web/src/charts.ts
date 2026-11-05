@@ -15,6 +15,7 @@ import {
   type Scale,
   type Tick,
 } from 'chart.js';
+import { fmtInt, fmtNum } from './format.ts';
 import type { OrgSpread, RadarWeekly, RatioPoint } from './data.ts';
 import { browserShare, monthTicks, OTHER, weekTitle } from './data.ts';
 import { formatRatio } from './scale.ts';
@@ -160,9 +161,11 @@ export function renderRatioChart(
   /** Running-average window in weeks (1 = none); smooths the curves. */
   smoothing = 1,
 ): Chart<'line', RatioDatum[]> {
+  const byKey = new Map<string, RatioPoint>();
+  for (const q of points) if (!byKey.has(`${q.org}|${q.week}`)) byKey.set(`${q.org}|${q.week}`, q);
   const datasets = orgs.map((org) => {
     const data: RatioDatum[] = weeks.map((week) => {
-      const p = points.find((q) => q.week === week && q.org === org);
+      const p = byKey.get(`${org}|${week}`);
       const ratio = p?.ratio ?? null;
       return {
         x: week,
@@ -245,7 +248,7 @@ export interface ParityPoint {
 
 /** Log-axis tick label as a percentage: 0.001 → "0.1%", 0.5 → "50%". */
 export function formatShare(v: number): string {
-  return `${(v * 100).toLocaleString('en-US', { maximumSignificantDigits: 2 })}%`;
+  return `${fmtNum(v * 100, { maximumSignificantDigits: 2 })}%`;
 }
 
 /** Shared bounds for both log axes: whole decades around every value, so the
@@ -428,7 +431,7 @@ export function renderReviewChart(
   scale: ReviewScale = 'log',
 ): Chart<'line'> {
   const log = scale === 'log';
-  const fmt = (v: number) => v.toLocaleString('en-US', { maximumFractionDigits: v < 10 ? 1 : 0 });
+  const fmt = (v: number) => fmtNum(v, { maximumFractionDigits: v < 10 ? 1 : 0 });
   const avg = smoothing > 1 ? `  (${smoothing}-week avg)` : '';
   const logFloor = logAxisFloor(series.flatMap((s) => s.values));
   const datasets = series.map((s) => {
@@ -656,7 +659,7 @@ export function renderSpreadChart(
   const lowExp = Math.floor(Math.log10(low));
   const axisMin = (zeros ? 0.38 : 0.7) * low;
   const fmt = (v: number) =>
-    v.toLocaleString('en-US', { maximumFractionDigits: v > 0 && v < 1 ? 2 : 1 });
+    fmtNum(v, { maximumFractionDigits: v > 0 && v < 1 ? 2 : 1 });
   const ZERO = 0.5 * low;
   const xOf = (v: number) => (v > 0 || opts.linear ? v : ZERO);
   type P = { x: number; y: number; id: number; value: number };
@@ -664,13 +667,16 @@ export function renderSpreadChart(
     const color = colorOf(s.org);
     const alpha = s.reviewers.length > 300 ? 0.3 : s.reviewers.length > 50 ? 0.5 : 0.8;
     const data: P[] = s.reviewers.map((r) => ({ x: xOf(r.value), y: row + 0.3 * jitter(r.id), id: r.id, value: r.value }));
+    // Static (not scriptable) point options: Chart.js then resolves them once
+    // per dataset instead of once per dot, which matters with thousands of
+    // dots. The selected reviewer's ring is drawn by the plugin below.
     return {
       label: s.org,
       data,
       backgroundColor: withAlpha(color, alpha),
-      borderColor: (ctx: { raw?: unknown }) => ((ctx.raw as P | undefined)?.id === selected ? theme.parity : 'transparent'),
+      borderColor: 'transparent',
       borderWidth: 2,
-      pointRadius: (ctx: { raw?: unknown }) => ((ctx.raw as P | undefined)?.id === selected ? 6 : 3),
+      pointRadius: 3,
       pointHoverRadius: 6,
       pointHoverBackgroundColor: color,
       pointHoverBorderColor: theme.parity,
@@ -705,6 +711,22 @@ export function renderSpreadChart(
           ctx.stroke();
         }
       });
+      // The selected reviewer: a larger dot ringed in the text colour.
+      if (selected !== null) {
+        chart.data.datasets.forEach((ds, di) => {
+          const i = (ds.data as P[]).findIndex((p) => p.id === selected);
+          if (i < 0) return;
+          const pt = chart.getDatasetMeta(di).data[i];
+          if (!pt) return;
+          ctx.beginPath();
+          ctx.arc(pt.x, pt.y, 6, 0, 2 * Math.PI);
+          ctx.fillStyle = ds.backgroundColor as string;
+          ctx.fill();
+          ctx.strokeStyle = theme.parity;
+          ctx.lineWidth = 2;
+          ctx.stroke();
+        });
+      }
       ctx.restore();
     },
   };
@@ -760,7 +782,7 @@ export function renderSpreadChart(
             maxRotation: 0,
             callback: (v) => {
               const n = Number(v);
-              return n < 1000 ? String(n) : n.toLocaleString('en-US', { notation: 'compact' });
+              return n < 1000 ? String(n) : fmtNum(n, { notation: 'compact' });
             },
           },
         } : {
@@ -792,7 +814,7 @@ export function renderSpreadChart(
             callback: (v) => {
               const n = Number(v);
               if (n === ZERO) return '0';
-              return n < 1000 ? String(n) : n.toLocaleString('en-US', { notation: 'compact' });
+              return n < 1000 ? String(n) : fmtNum(n, { notation: 'compact' });
             },
           },
         },
@@ -811,7 +833,7 @@ export function renderSpreadChart(
             autoSkip: false,
             callback: (v) => {
               const s = spreads[Number(v)];
-              return s ? `${s.org} (${s.stats.n.toLocaleString('en-US')})` : '';
+              return s ? `${s.org} (${fmtInt(s.stats.n)})` : '';
             },
           },
         },
