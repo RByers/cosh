@@ -190,16 +190,21 @@ value_ratio(O, t) = O's share of Chromium addressed review comments
        (2026-11-05); check `/usage`;
      - make it the default headline once the default range is classified;
      - let the regex skip "[AI]" / "Maestro AI:" prefixes on owner replies;
-     - **reminder for the user: recheck the classifier with a second
-       model.** In the 2026-11-04 audit (precision 0.98, recall 0.99;
-       `comment-classifier.md`, "Production audit"), Opus both judged the
-       800 threads and adjudicated the disagreements. Errors Haiku and Opus
-       share were checked only by a 60-thread read. Run a second judge
-       (e.g. `classifier_audit.py judge --model sonnet`, or a non-Claude
-       model) on the same 800 threads, and read where it disagrees with the
-       final labels. The threads are listed by CL and root comment in
-       `docs/audits/classifier-2026-11-04.jsonl`; a fresh `sample` with the
-       same seed draws different threads once more labels exist;
+     - **reminder for the user: recheck the classifier with Gemini** as a
+       second, non-Claude judge. In the 2026-11-04 audit (precision 0.98,
+       recall 0.99; `comment-classifier.md`, "Production audit"), Opus both
+       judged the 800 threads and adjudicated the disagreements, so errors
+       that Claude models share were checked only by a 60-thread read.
+       - **Run:** give Gemini the same 800 threads with the production
+         definition (`DEFINITION` in `cosh/classify.py`). Then read where
+         it disagrees with the final labels.
+       - **Where the threads are:** listed by CL and root comment in
+         `docs/audits/classifier-2026-11-04.jsonl`. A fresh `sample` with
+         the same seed draws different threads once more weeks are
+         labelled.
+       - **Script work needed:** `classifier_audit.py` can't do this yet.
+         It needs a way to re-render a sample from that file, and a judge
+         that calls Gemini instead of `claude -p`;
      - after the next full `derive` on the main DB, rerun `summarize`.
    - **The original plan, for reference:**
    - **Scoring:** one point per non-author comment in a review thread that
