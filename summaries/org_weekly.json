@@ -1,7 +1,10 @@
 {
  "meta": {
-  "generated_at": "2026-11-05T01:36:08Z",
+  "generated_at": "2026-11-05T01:56:10Z",
   "weeks": [
+   "2023-W40",
+   "2023-W41",
+   "2023-W42",
    "2023-W43",
    "2023-W44",
    "2023-W45",
@@ -217,23 +220,26 @@
   "addressed": {
    "classifier": "claude-haiku-5-5",
    "coverage": {
-    "2023-W43": 0.6567,
+    "2023-W40": 0.6396,
+    "2023-W41": 0.6489,
+    "2023-W42": 0.6734,
+    "2023-W43": 0.6569,
     "2023-W44": 0.6759,
-    "2023-W45": 0.6347,
+    "2023-W45": 0.6344,
     "2023-W46": 0.6647,
-    "2023-W47": 0.6288,
-    "2023-W48": 0.6677,
+    "2023-W47": 0.629,
+    "2023-W48": 0.6676,
     "2023-W49": 0.6508,
     "2023-W50": 0.6818,
-    "2023-W51": 0.6843,
+    "2023-W51": 0.6845,
     "2023-W52": 0.716,
     "2024-W01": 0.67,
-    "2024-W02": 0.6641,
+    "2024-W02": 0.6638,
     "2024-W03": 0.6374,
     "2024-W04": 0.6561,
     "2024-W05": 0.6631,
     "2024-W06": 0.6581,
-    "2024-W07": 0.6824,
+    "2024-W07": 0.6825,
     "2024-W08": 0.6379,
     "2024-W09": 0.6402,
     "2024-W10": 0.6493,
@@ -241,7 +247,7 @@
     "2024-W12": 0.6437,
     "2024-W13": 0.6501,
     "2024-W14": 0.6396,
-    "2024-W15": 0.654,
+    "2024-W15": 0.6541,
     "2024-W16": 0.6491,
     "2024-W17": 0.6489,
     "2024-W18": 0.6827,
@@ -261,7 +267,7 @@
     "2024-W32": 0.6711,
     "2024-W33": 0.6909,
     "2024-W34": 0.6402,
-    "2024-W35": 0.6819,
+    "2024-W35": 0.6816,
     "2024-W36": 0.647,
     "2024-W37": 0.6448,
     "2024-W38": 0.6526,
@@ -286,13 +292,13 @@
     "2025-W05": 0.6455,
     "2025-W06": 0.6652,
     "2025-W07": 0.626,
-    "2025-W08": 0.6293,
+    "2025-W08": 0.6296,
     "2025-W09": 0.6268,
     "2025-W10": 0.6326,
     "2025-W11": 0.651,
     "2025-W12": 0.6631,
     "2025-W13": 0.6721,
-    "2025-W14": 0.6673,
+    "2025-W14": 0.6677,
     "2025-W15": 0.6373,
     "2025-W16": 0.6864,
     "2025-W17": 0.6547,
@@ -318,7 +324,7 @@
     "2025-W37": 0.6468,
     "2025-W38": 0.6339,
     "2025-W39": 0.6363,
-    "2025-W40": 0.6619,
+    "2025-W40": 0.6638,
     "2025-W41": 0.6266,
     "2025-W42": 0.6515,
     "2025-W43": 0.633,
@@ -334,14 +340,14 @@
     "2026-W01": 0.6925,
     "2026-W02": 0.6642,
     "2026-W03": 0.6368,
-    "2026-W04": 0.6423,
+    "2026-W04": 0.6431,
     "2026-W05": 0.6663,
     "2026-W06": 0.6273,
-    "2026-W07": 0.6761,
+    "2026-W07": 0.6768,
     "2026-W08": 0.6419,
     "2026-W09": 0.6678,
     "2026-W10": 0.6591,
-    "2026-W11": 0.6491,
+    "2026-W11": 0.6495,
     "2026-W12": 0.6017,
     "2026-W13": 0.6405,
     "2026-W14": 0.6542,
@@ -351,25 +357,25 @@
     "2026-W18": 0.6306,
     "2026-W19": 0.6602,
     "2026-W20": 0.6395,
-    "2026-W21": 0.6429,
-    "2026-W22": 0.6737,
-    "2026-W23": 0.6354,
-    "2026-W24": 0.6726,
-    "2026-W25": 0.6383,
-    "2026-W26": 0.6519,
-    "2026-W27": 0.7021,
-    "2026-W28": 0.6724,
-    "2026-W29": 0.6451,
-    "2026-W30": 0.6711,
-    "2026-W31": 0.6744,
-    "2026-W32": 0.6726,
-    "2026-W33": 0.6635,
-    "2026-W34": 0.6839,
-    "2026-W35": 0.672,
-    "2026-W36": 0.6901,
-    "2026-W37": 0.6622,
-    "2026-W38": 0.7037,
-    "2026-W39": 0.9528,
+    "2026-W21": 0.644,
+    "2026-W22": 0.674,
+    "2026-W23": 0.6357,
+    "2026-W24": 0.6736,
+    "2026-W25": 0.6389,
+    "2026-W26": 0.6528,
+    "2026-W27": 0.7034,
+    "2026-W28": 0.6732,
+    "2026-W29": 0.6476,
+    "2026-W30": 0.6747,
+    "2026-W31": 0.6805,
+    "2026-W32": 0.7115,
+    "2026-W33": 1.0,
+    "2026-W34": 1.0,
+    "2026-W35": 1.0,
+    "2026-W36": 1.0,
+    "2026-W37": 1.0,
+    "2026-W38": 1.0,
+    "2026-W39": 1.0,
     "2026-W40": 1.0,
     "2026-W41": 1.0,
     "2026-W42": 1.0,
@@ -385,12 +391,33 @@
     "pending"
    ],
    "threads": {
+    "2023-W40": [
+     976,
+     0,
+     0,
+     416,
+     719
+    ],
+    "2023-W41": [
+     878,
+     0,
+     0,
+     451,
+     678
+    ],
+    "2023-W42": [
+     1051,
+     0,
+     0,
+     507,
+     712
+    ],
     "2023-W43": [
      1342,
      0,
      0,
-     590,
-     890
+     592,
+     891
     ],
     "2023-W44": [
      1239,
@@ -404,7 +431,7 @@
      0,
      0,
      486,
-     759
+     760
     ],
     "2023-W46": [
      1249,
@@ -417,7 +444,7 @@
      748,
      0,
      0,
-     368,
+     369,
      592
     ],
     "2023-W48": [
@@ -445,7 +472,7 @@
      686,
      0,
      0,
-     327,
+     328,
      441
     ],
     "2023-W52": [
@@ -501,7 +528,7 @@
      1320,
      0,
      0,
-     549,
+     550,
      787
     ],
     "2024-W08": [
@@ -557,7 +584,7 @@
      1082,
      0,
      0,
-     530,
+     531,
      779
     ],
     "2024-W16": [
@@ -698,7 +725,7 @@
      0,
      0,
      474,
-     643
+     645
     ],
     "2024-W36": [
      795,
@@ -869,7 +896,7 @@
      721
     ],
     "2025-W08": [
-     783,
+     784,
      0,
      0,
      318,
@@ -912,10 +939,10 @@
     ],
     "2025-W14": [
      963,
-     0,
+     1,
      0,
      482,
-     651
+     650
     ],
     "2025-W15": [
      740,
@@ -1094,10 +1121,10 @@
     ],
     "2025-W40": [
      778,
-     0,
-     0,
+     1,
+     1,
      389,
-     558
+     556
     ],
     "2025-W41": [
      848,
@@ -1206,10 +1233,10 @@
     ],
     "2026-W04": [
      813,
-     0,
+     1,
      0,
      413,
-     596
+     595
     ],
     "2026-W05": [
      1104,
@@ -1228,9 +1255,9 @@
     "2026-W07": [
      1210,
      0,
-     0,
+     2,
      471,
-     731
+     729
     ],
     "2026-W08": [
      953,
@@ -1255,10 +1282,10 @@
     ],
     "2026-W11": [
      1003,
-     0,
+     1,
      0,
      434,
-     724
+     723
     ],
     "2026-W12": [
      1005,
@@ -1325,24 +1352,24 @@
     ],
     "2026-W21": [
      980,
-     1,
+     3,
      0,
      521,
-     757
+     755
     ],
     "2026-W22": [
      1212,
      0,
-     0,
+     1,
      536,
-     794
+     793
     ],
     "2026-W23": [
      1212,
-     0,
+     1,
      0,
      578,
-     1021
+     1020
     ],
     "2026-W24": [
      1140,
@@ -1353,108 +1380,108 @@
     ],
     "2026-W25": [
      1152,
-     2,
+     3,
      1,
      490,
-     874
+     873
     ],
     "2026-W26": [
      1200,
      0,
-     0,
+     2,
      576,
-     880
+     878
     ],
     "2026-W27": [
      993,
-     0,
-     0,
+     2,
+     1,
      421,
-     549
+     546
     ],
     "2026-W28": [
      1029,
-     0,
-     0,
+     1,
+     1,
      478,
-     706
+     704
     ],
     "2026-W29": [
      864,
-     2,
-     0,
+     3,
+     3,
      418,
-     672
+     668
     ],
     "2026-W30": [
      1045,
-     0,
-     0,
+     2,
+     1,
      493,
-     708
+     705
     ],
     "2026-W31": [
      1106,
-     2,
-     2,
+     9,
+     10,
      530,
-     760
+     745
     ],
     "2026-W32": [
      1033,
-     2,
-     0,
+     44,
+     23,
      514,
-     694
+     629
     ],
     "2026-W33": [
      1108,
-     1,
-     3,
+     436,
+     359,
      544,
-     791
+     0
     ],
     "2026-W34": [
      1043,
-     2,
-     0,
+     412,
+     302,
      575,
-     712
+     0
     ],
     "2026-W35": [
      1245,
-     8,
-     2,
+     482,
+     363,
      564,
-     835
+     0
     ],
     "2026-W36": [
      1047,
-     4,
-     1,
+     390,
+     317,
      556,
-     702
+     0
     ],
     "2026-W37": [
      972,
-     2,
-     3,
+     394,
+     321,
      489,
-     710
+     0
     ],
     "2026-W38": [
      1323,
-     42,
-     37,
+     510,
+     382,
      585,
-     813
+     0
     ],
     "2026-W39": [
      1075,
-     381,
-     284,
+     424,
+     359,
      517,
-     118
+     0
     ],
     "2026-W40": [
      1308,
@@ -1499,26 +1526,451 @@
  },
  "rows": [
   {
+   "iso_week": "2023-W40",
+   "org": "google.com",
+   "share": 0.9626,
+   "reviewers": 304,
+   "reviewed_cls": 378,
+   "comments": 2599,
+   "review_chars": 407732,
+   "ai_comments": 0,
+   "post_merge_comments": 20,
+   "addressed_comments": 984,
+   "pending_comments": 936,
+   "share_cls": 0.9717,
+   "share_comments": 0.9626,
+   "share_chars": 0.9677,
+   "share_addressed": 0.9553
+  },
+  {
+   "iso_week": "2023-W40",
+   "org": "microsoft.com",
+   "share": 0.0233,
+   "reviewers": 7,
+   "reviewed_cls": 4,
+   "comments": 63,
+   "review_chars": 8921,
+   "ai_comments": 0,
+   "post_merge_comments": 0,
+   "addressed_comments": 32,
+   "pending_comments": 18,
+   "share_cls": 0.0103,
+   "share_comments": 0.0233,
+   "share_chars": 0.0212,
+   "share_addressed": 0.0311
+  },
+  {
+   "iso_week": "2023-W40",
+   "org": "intel.com",
+   "share": 0.0078,
+   "reviewers": 3,
+   "reviewed_cls": 1,
+   "comments": 21,
+   "review_chars": 2865,
+   "ai_comments": 0,
+   "post_merge_comments": 0,
+   "addressed_comments": 11,
+   "pending_comments": 8,
+   "share_cls": 0.0026,
+   "share_comments": 0.0078,
+   "share_chars": 0.0068,
+   "share_addressed": 0.0107
+  },
+  {
+   "iso_week": "2023-W40",
+   "org": "igalia.com",
+   "share": 0.0052,
+   "reviewers": 3,
+   "reviewed_cls": 4,
+   "comments": 14,
+   "review_chars": 1479,
+   "ai_comments": 0,
+   "post_merge_comments": 0,
+   "addressed_comments": 2,
+   "pending_comments": 10,
+   "share_cls": 0.0103,
+   "share_comments": 0.0052,
+   "share_chars": 0.0035,
+   "share_addressed": 0.0019
+  },
+  {
+   "iso_week": "2023-W40",
+   "org": "meta.com",
+   "share": 0.0011,
+   "reviewers": 1,
+   "reviewed_cls": 1,
+   "comments": 3,
+   "review_chars": 362,
+   "ai_comments": 0,
+   "post_merge_comments": 0,
+   "addressed_comments": 1,
+   "pending_comments": 1,
+   "share_cls": 0.0026,
+   "share_comments": 0.0011,
+   "share_chars": 0.0009,
+   "share_addressed": 0.001
+  },
+  {
+   "iso_week": "2023-W40",
+   "org": "googlemail.com",
+   "share": 0.0,
+   "reviewers": 1,
+   "reviewed_cls": 1,
+   "comments": 0,
+   "review_chars": 0,
+   "ai_comments": 0,
+   "post_merge_comments": 0,
+   "addressed_comments": 0,
+   "pending_comments": 0,
+   "share_cls": 0.0026,
+   "share_comments": 0.0,
+   "share_chars": 0.0,
+   "share_addressed": 0.0
+  },
+  {
+   "iso_week": "2023-W41",
+   "org": "google.com",
+   "share": 0.913,
+   "reviewers": 313,
+   "reviewed_cls": 383,
+   "comments": 2403,
+   "review_chars": 376473,
+   "ai_comments": 0,
+   "post_merge_comments": 30,
+   "addressed_comments": 843,
+   "pending_comments": 843,
+   "share_cls": 0.9296,
+   "share_comments": 0.913,
+   "share_chars": 0.9091,
+   "share_addressed": 0.9094
+  },
+  {
+   "iso_week": "2023-W41",
+   "org": "intel.com",
+   "share": 0.0388,
+   "reviewers": 4,
+   "reviewed_cls": 7,
+   "comments": 102,
+   "review_chars": 18693,
+   "ai_comments": 0,
+   "post_merge_comments": 1,
+   "addressed_comments": 47,
+   "pending_comments": 33,
+   "share_cls": 0.017,
+   "share_comments": 0.0388,
+   "share_chars": 0.0451,
+   "share_addressed": 0.0507
+  },
+  {
+   "iso_week": "2023-W41",
+   "org": "microsoft.com",
+   "share": 0.0384,
+   "reviewers": 10,
+   "reviewed_cls": 14,
+   "comments": 101,
+   "review_chars": 14473,
+   "ai_comments": 0,
+   "post_merge_comments": 0,
+   "addressed_comments": 29,
+   "pending_comments": 39,
+   "share_cls": 0.034,
+   "share_comments": 0.0384,
+   "share_chars": 0.0349,
+   "share_addressed": 0.0313
+  },
+  {
+   "iso_week": "2023-W41",
+   "org": "opera.com",
+   "share": 0.0038,
+   "reviewers": 1,
+   "reviewed_cls": 2,
+   "comments": 10,
+   "review_chars": 2543,
+   "ai_comments": 0,
+   "post_merge_comments": 0,
+   "addressed_comments": 4,
+   "pending_comments": 2,
+   "share_cls": 0.0049,
+   "share_comments": 0.0038,
+   "share_chars": 0.0061,
+   "share_addressed": 0.0043
+  },
+  {
+   "iso_week": "2023-W41",
+   "org": "Other",
+   "share": 0.003,
+   "reviewers": 3,
+   "reviewed_cls": 2,
+   "comments": 8,
+   "review_chars": 1646,
+   "ai_comments": 0,
+   "post_merge_comments": 2,
+   "addressed_comments": 1,
+   "pending_comments": 5,
+   "share_cls": 0.0049,
+   "share_comments": 0.003,
+   "share_chars": 0.004,
+   "share_addressed": 0.0011
+  },
+  {
+   "iso_week": "2023-W41",
+   "org": "meta.com",
+   "share": 0.0015,
+   "reviewers": 1,
+   "reviewed_cls": 1,
+   "comments": 4,
+   "review_chars": 231,
+   "ai_comments": 0,
+   "post_merge_comments": 0,
+   "addressed_comments": 2,
+   "pending_comments": 1,
+   "share_cls": 0.0024,
+   "share_comments": 0.0015,
+   "share_chars": 0.0006,
+   "share_addressed": 0.0022
+  },
+  {
+   "iso_week": "2023-W41",
+   "org": "sberdevices.ru",
+   "share": 0.0008,
+   "reviewers": 1,
+   "reviewed_cls": 0,
+   "comments": 2,
+   "review_chars": 11,
+   "ai_comments": 0,
+   "post_merge_comments": 0,
+   "addressed_comments": 0,
+   "pending_comments": 0,
+   "share_cls": 0.0,
+   "share_comments": 0.0008,
+   "share_chars": 0.0,
+   "share_addressed": 0.0
+  },
+  {
+   "iso_week": "2023-W41",
+   "org": "googlemail.com",
+   "share": 0.0004,
+   "reviewers": 1,
+   "reviewed_cls": 0,
+   "comments": 1,
+   "review_chars": 34,
+   "ai_comments": 0,
+   "post_merge_comments": 1,
+   "addressed_comments": 0,
+   "pending_comments": 1,
+   "share_cls": 0.0,
+   "share_comments": 0.0004,
+   "share_chars": 0.0001,
+   "share_addressed": 0.0
+  },
+  {
+   "iso_week": "2023-W41",
+   "org": "webrtc.org",
+   "share": 0.0004,
+   "reviewers": 1,
+   "reviewed_cls": 0,
+   "comments": 1,
+   "review_chars": 31,
+   "ai_comments": 0,
+   "post_merge_comments": 0,
+   "addressed_comments": 1,
+   "pending_comments": 0,
+   "share_cls": 0.0,
+   "share_comments": 0.0004,
+   "share_chars": 0.0001,
+   "share_addressed": 0.0011
+  },
+  {
+   "iso_week": "2023-W41",
+   "org": "bytedance.com",
+   "share": 0.0,
+   "reviewers": 1,
+   "reviewed_cls": 1,
+   "comments": 0,
+   "review_chars": 0,
+   "ai_comments": 0,
+   "post_merge_comments": 0,
+   "addressed_comments": 0,
+   "pending_comments": 0,
+   "share_cls": 0.0024,
+   "share_comments": 0.0,
+   "share_chars": 0.0,
+   "share_addressed": 0.0
+  },
+  {
+   "iso_week": "2023-W41",
+   "org": "igalia.com",
+   "share": 0.0,
+   "reviewers": 2,
+   "reviewed_cls": 2,
+   "comments": 0,
+   "review_chars": 0,
+   "ai_comments": 0,
+   "post_merge_comments": 0,
+   "addressed_comments": 0,
+   "pending_comments": 0,
+   "share_cls": 0.0049,
+   "share_comments": 0.0,
+   "share_chars": 0.0,
+   "share_addressed": 0.0
+  },
+  {
+   "iso_week": "2023-W42",
+   "org": "google.com",
+   "share": 0.9282,
+   "reviewers": 345,
+   "reviewed_cls": 388,
+   "comments": 2700,
+   "review_chars": 399623,
+   "ai_comments": 0,
+   "post_merge_comments": 23,
+   "addressed_comments": 1012,
+   "pending_comments": 882,
+   "share_cls": 0.9194,
+   "share_comments": 0.9282,
+   "share_chars": 0.9298,
+   "share_addressed": 0.9259
+  },
+  {
+   "iso_week": "2023-W42",
+   "org": "intel.com",
+   "share": 0.0371,
+   "reviewers": 5,
+   "reviewed_cls": 12,
+   "comments": 108,
+   "review_chars": 12823,
+   "ai_comments": 0,
+   "post_merge_comments": 1,
+   "addressed_comments": 48,
+   "pending_comments": 29,
+   "share_cls": 0.0284,
+   "share_comments": 0.0371,
+   "share_chars": 0.0298,
+   "share_addressed": 0.0439
+  },
+  {
+   "iso_week": "2023-W42",
+   "org": "microsoft.com",
+   "share": 0.0206,
+   "reviewers": 9,
+   "reviewed_cls": 15,
+   "comments": 60,
+   "review_chars": 10330,
+   "ai_comments": 0,
+   "post_merge_comments": 1,
+   "addressed_comments": 18,
+   "pending_comments": 20,
+   "share_cls": 0.0355,
+   "share_comments": 0.0206,
+   "share_chars": 0.024,
+   "share_addressed": 0.0165
+  },
+  {
+   "iso_week": "2023-W42",
+   "org": "opera.com",
+   "share": 0.0072,
+   "reviewers": 1,
+   "reviewed_cls": 2,
+   "comments": 21,
+   "review_chars": 4051,
+   "ai_comments": 0,
+   "post_merge_comments": 0,
+   "addressed_comments": 9,
+   "pending_comments": 8,
+   "share_cls": 0.0047,
+   "share_comments": 0.0072,
+   "share_chars": 0.0094,
+   "share_addressed": 0.0082
+  },
+  {
+   "iso_week": "2023-W42",
+   "org": "bytedance.com",
+   "share": 0.0031,
+   "reviewers": 1,
+   "reviewed_cls": 1,
+   "comments": 9,
+   "review_chars": 1183,
+   "ai_comments": 0,
+   "post_merge_comments": 0,
+   "addressed_comments": 0,
+   "pending_comments": 7,
+   "share_cls": 0.0024,
+   "share_comments": 0.0031,
+   "share_chars": 0.0028,
+   "share_addressed": 0.0
+  },
+  {
+   "iso_week": "2023-W42",
+   "org": "webrtc.org",
+   "share": 0.0021,
+   "reviewers": 1,
+   "reviewed_cls": 0,
+   "comments": 6,
+   "review_chars": 444,
+   "ai_comments": 0,
+   "post_merge_comments": 0,
+   "addressed_comments": 3,
+   "pending_comments": 3,
+   "share_cls": 0.0,
+   "share_comments": 0.0021,
+   "share_chars": 0.001,
+   "share_addressed": 0.0027
+  },
+  {
+   "iso_week": "2023-W42",
+   "org": "meta.com",
+   "share": 0.001,
+   "reviewers": 1,
+   "reviewed_cls": 2,
+   "comments": 3,
+   "review_chars": 302,
+   "ai_comments": 0,
+   "post_merge_comments": 0,
+   "addressed_comments": 2,
+   "pending_comments": 0,
+   "share_cls": 0.0047,
+   "share_comments": 0.001,
+   "share_chars": 0.0007,
+   "share_addressed": 0.0018
+  },
+  {
+   "iso_week": "2023-W42",
+   "org": "Other",
+   "share": 0.0007,
+   "reviewers": 3,
+   "reviewed_cls": 2,
+   "comments": 2,
+   "review_chars": 1040,
+   "ai_comments": 0,
+   "post_merge_comments": 0,
+   "addressed_comments": 1,
+   "pending_comments": 1,
+   "share_cls": 0.0047,
+   "share_comments": 0.0007,
+   "share_chars": 0.0024,
+   "share_addressed": 0.0009
+  },
+  {
    "iso_week": "2023-W43",
    "org": "google.com",
-   "share": 0.9245,
+   "share": 0.9246,
    "reviewers": 369,
    "reviewed_cls": 458,
-   "comments": 3353,
-   "review_chars": 488401,
+   "comments": 3360,
+   "review_chars": 491047,
    "ai_comments": 0,
-   "post_merge_comments": 14,
+   "post_merge_comments": 21,
    "addressed_comments": 1300,
-   "pending_comments": 1163,
+   "pending_comments": 1165,
    "share_cls": 0.9347,
-   "share_comments": 0.9245,
-   "share_chars": 0.9101,
+   "share_comments": 0.9246,
+   "share_chars": 0.9106,
    "share_addressed": 0.9346
   },
   {
    "iso_week": "2023-W43",
    "org": "intel.com",
-   "share": 0.04,
+   "share": 0.0399,
    "reviewers": 8,
    "reviewed_cls": 12,
    "comments": 145,
@@ -1528,14 +1980,14 @@
    "addressed_comments": 56,
    "pending_comments": 31,
    "share_cls": 0.0245,
-   "share_comments": 0.04,
-   "share_chars": 0.0347,
+   "share_comments": 0.0399,
+   "share_chars": 0.0346,
    "share_addressed": 0.0403
   },
   {
    "iso_week": "2023-W43",
    "org": "microsoft.com",
-   "share": 0.0199,
+   "share": 0.0198,
    "reviewers": 10,
    "reviewed_cls": 10,
    "comments": 72,
@@ -1545,8 +1997,8 @@
    "addressed_comments": 22,
    "pending_comments": 28,
    "share_cls": 0.0204,
-   "share_comments": 0.0199,
-   "share_chars": 0.0337,
+   "share_comments": 0.0198,
+   "share_chars": 0.0335,
    "share_addressed": 0.0158
   },
   {
@@ -1563,7 +2015,7 @@
    "pending_comments": 12,
    "share_cls": 0.0061,
    "share_comments": 0.0061,
-   "share_chars": 0.0091,
+   "share_chars": 0.009,
    "share_addressed": 0.005
   },
   {
@@ -1790,17 +2242,17 @@
   {
    "iso_week": "2023-W45",
    "org": "google.com",
-   "share": 0.921,
+   "share": 0.9211,
    "reviewers": 343,
    "reviewed_cls": 431,
-   "comments": 2683,
-   "review_chars": 451345,
+   "comments": 2686,
+   "review_chars": 451477,
    "ai_comments": 0,
-   "post_merge_comments": 25,
+   "post_merge_comments": 28,
    "addressed_comments": 950,
-   "pending_comments": 981,
+   "pending_comments": 983,
    "share_cls": 0.9329,
-   "share_comments": 0.921,
+   "share_comments": 0.9211,
    "share_chars": 0.9346,
    "share_addressed": 0.9406
   },
@@ -2080,23 +2532,23 @@
    "iso_week": "2023-W47",
    "org": "google.com",
    "share": 0.9364,
-   "reviewers": 306,
+   "reviewers": 307,
    "reviewed_cls": 281,
-   "comments": 2061,
-   "review_chars": 315688,
+   "comments": 2062,
+   "review_chars": 316176,
    "ai_comments": 0,
-   "post_merge_comments": 9,
+   "post_merge_comments": 10,
    "addressed_comments": 729,
    "pending_comments": 768,
    "share_cls": 0.9525,
    "share_comments": 0.9364,
-   "share_chars": 0.9323,
+   "share_chars": 0.9324,
    "share_addressed": 0.9346
   },
   {
    "iso_week": "2023-W47",
    "org": "intel.com",
-   "share": 0.0382,
+   "share": 0.0381,
    "reviewers": 6,
    "reviewed_cls": 5,
    "comments": 84,
@@ -2106,8 +2558,8 @@
    "addressed_comments": 30,
    "pending_comments": 19,
    "share_cls": 0.0169,
-   "share_comments": 0.0382,
-   "share_chars": 0.0318,
+   "share_comments": 0.0381,
+   "share_chars": 0.0317,
    "share_addressed": 0.0385
   },
   {
@@ -2130,7 +2582,7 @@
   {
    "iso_week": "2023-W47",
    "org": "bytedance.com",
-   "share": 0.0055,
+   "share": 0.0054,
    "reviewers": 1,
    "reviewed_cls": 0,
    "comments": 12,
@@ -2140,7 +2592,7 @@
    "addressed_comments": 2,
    "pending_comments": 10,
    "share_cls": 0.0,
-   "share_comments": 0.0055,
+   "share_comments": 0.0054,
    "share_chars": 0.0187,
    "share_addressed": 0.0026
   },
@@ -2184,15 +2636,15 @@
    "share": 0.9216,
    "reviewers": 371,
    "reviewed_cls": 494,
-   "comments": 3162,
-   "review_chars": 519956,
+   "comments": 3164,
+   "review_chars": 520453,
    "ai_comments": 0,
-   "post_merge_comments": 30,
+   "post_merge_comments": 32,
    "addressed_comments": 1203,
-   "pending_comments": 1072,
+   "pending_comments": 1073,
    "share_cls": 0.9446,
    "share_comments": 0.9216,
-   "share_chars": 0.9326,
+   "share_chars": 0.9327,
    "share_addressed": 0.9052
   },
   {
@@ -2609,10 +3061,10 @@
    "share": 0.9454,
    "reviewers": 279,
    "reviewed_cls": 261,
-   "comments": 1731,
-   "review_chars": 272084,
+   "comments": 1732,
+   "review_chars": 272341,
    "ai_comments": 0,
-   "post_merge_comments": 45,
+   "post_merge_comments": 46,
    "addressed_comments": 665,
    "pending_comments": 566,
    "share_cls": 0.9355,
@@ -2634,7 +3086,7 @@
    "pending_comments": 7,
    "share_cls": 0.0251,
    "share_comments": 0.0322,
-   "share_chars": 0.0374,
+   "share_chars": 0.0373,
    "share_addressed": 0.038
   },
   {
@@ -2651,7 +3103,7 @@
    "pending_comments": 4,
    "share_cls": 0.0251,
    "share_comments": 0.018,
-   "share_chars": 0.0153,
+   "share_chars": 0.0152,
    "share_addressed": 0.0183
   },
   {
@@ -2895,17 +3347,17 @@
   {
    "iso_week": "2024-W02",
    "org": "google.com",
-   "share": 0.9583,
+   "share": 0.9584,
    "reviewers": 330,
    "reviewed_cls": 424,
-   "comments": 2830,
-   "review_chars": 422221,
+   "comments": 2831,
+   "review_chars": 422251,
    "ai_comments": 0,
-   "post_merge_comments": 33,
+   "post_merge_comments": 34,
    "addressed_comments": 1033,
-   "pending_comments": 942,
+   "pending_comments": 943,
    "share_cls": 0.9507,
-   "share_comments": 0.9583,
+   "share_comments": 0.9584,
    "share_chars": 0.9512,
    "share_addressed": 0.9538
   },
@@ -3524,17 +3976,17 @@
   {
    "iso_week": "2024-W07",
    "org": "google.com",
-   "share": 0.9568,
+   "share": 0.9569,
    "reviewers": 353,
    "reviewed_cls": 449,
-   "comments": 3215,
-   "review_chars": 508029,
+   "comments": 3216,
+   "review_chars": 508502,
    "ai_comments": 0,
-   "post_merge_comments": 41,
+   "post_merge_comments": 42,
    "addressed_comments": 1296,
    "pending_comments": 1041,
    "share_cls": 0.9354,
-   "share_comments": 0.9568,
+   "share_comments": 0.9569,
    "share_chars": 0.9603,
    "share_addressed": 0.9446
   },
@@ -3552,13 +4004,13 @@
    "pending_comments": 16,
    "share_cls": 0.0312,
    "share_comments": 0.0289,
-   "share_chars": 0.0269,
+   "share_chars": 0.0268,
    "share_addressed": 0.0401
   },
   {
    "iso_week": "2024-W07",
    "org": "intel.com",
-   "share": 0.0063,
+   "share": 0.0062,
    "reviewers": 4,
    "reviewed_cls": 3,
    "comments": 21,
@@ -3568,7 +4020,7 @@
    "addressed_comments": 9,
    "pending_comments": 1,
    "share_cls": 0.0063,
-   "share_comments": 0.0063,
+   "share_comments": 0.0062,
    "share_chars": 0.0062,
    "share_addressed": 0.0066
   },
@@ -4870,10 +5322,10 @@
    "share": 0.9359,
    "reviewers": 327,
    "reviewed_cls": 433,
-   "comments": 2875,
-   "review_chars": 397388,
+   "comments": 2876,
+   "review_chars": 397509,
    "ai_comments": 0,
-   "post_merge_comments": 36,
+   "post_merge_comments": 37,
    "addressed_comments": 1071,
    "pending_comments": 986,
    "share_cls": 0.9292,
@@ -4912,7 +5364,7 @@
    "pending_comments": 19,
    "share_cls": 0.0258,
    "share_comments": 0.0215,
-   "share_chars": 0.0228,
+   "share_chars": 0.0227,
    "share_addressed": 0.0205
   },
   {
@@ -7910,24 +8362,24 @@
   {
    "iso_week": "2024-W35",
    "org": "google.com",
-   "share": 0.8704,
-   "reviewers": 302,
+   "share": 0.8706,
+   "reviewers": 303,
    "reviewed_cls": 389,
-   "comments": 2438,
-   "review_chars": 374002,
+   "comments": 2442,
+   "review_chars": 376285,
    "ai_comments": 0,
-   "post_merge_comments": 39,
+   "post_merge_comments": 43,
    "addressed_comments": 1019,
-   "pending_comments": 749,
+   "pending_comments": 751,
    "share_cls": 0.9047,
-   "share_comments": 0.8704,
-   "share_chars": 0.8395,
+   "share_comments": 0.8706,
+   "share_chars": 0.8403,
    "share_addressed": 0.8892
   },
   {
    "iso_week": "2024-W35",
    "org": "microsoft.com",
-   "share": 0.0796,
+   "share": 0.0795,
    "reviewers": 30,
    "reviewed_cls": 26,
    "comments": 223,
@@ -7937,14 +8389,14 @@
    "addressed_comments": 69,
    "pending_comments": 91,
    "share_cls": 0.0605,
-   "share_comments": 0.0796,
-   "share_chars": 0.1104,
+   "share_comments": 0.0795,
+   "share_chars": 0.1099,
    "share_addressed": 0.0602
   },
   {
    "iso_week": "2024-W35",
    "org": "intel.com",
-   "share": 0.0286,
+   "share": 0.0285,
    "reviewers": 7,
    "reviewed_cls": 5,
    "comments": 80,
@@ -7954,8 +8406,8 @@
    "addressed_comments": 44,
    "pending_comments": 21,
    "share_cls": 0.0116,
-   "share_comments": 0.0286,
-   "share_chars": 0.0203,
+   "share_comments": 0.0285,
+   "share_chars": 0.0202,
    "share_addressed": 0.0384
   },
   {
@@ -7989,7 +8441,7 @@
    "pending_comments": 13,
    "share_cls": 0.0023,
    "share_comments": 0.0075,
-   "share_chars": 0.0127,
+   "share_chars": 0.0126,
    "share_addressed": 0.0035
   },
   {
@@ -8006,7 +8458,7 @@
    "pending_comments": 6,
    "share_cls": 0.0,
    "share_comments": 0.0029,
-   "share_chars": 0.0089,
+   "share_chars": 0.0088,
    "share_addressed": 0.0017
   },
   {
@@ -11616,24 +12068,24 @@
   {
    "iso_week": "2025-W08",
    "org": "google.com",
-   "share": 0.8469,
+   "share": 0.8471,
    "reviewers": 273,
    "reviewed_cls": 303,
-   "comments": 1798,
-   "review_chars": 300741,
+   "comments": 1800,
+   "review_chars": 301747,
    "ai_comments": 0,
-   "post_merge_comments": 43,
-   "addressed_comments": 650,
+   "post_merge_comments": 45,
+   "addressed_comments": 652,
    "pending_comments": 674,
    "share_cls": 0.886,
-   "share_comments": 0.8469,
-   "share_chars": 0.8733,
-   "share_addressed": 0.7985
+   "share_comments": 0.8471,
+   "share_chars": 0.8736,
+   "share_addressed": 0.799
   },
   {
    "iso_week": "2025-W08",
    "org": "microsoft.com",
-   "share": 0.1008,
+   "share": 0.1007,
    "reviewers": 28,
    "reviewed_cls": 20,
    "comments": 214,
@@ -11643,14 +12095,14 @@
    "addressed_comments": 118,
    "pending_comments": 72,
    "share_cls": 0.0585,
-   "share_comments": 0.1008,
-   "share_chars": 0.0811,
-   "share_addressed": 0.145
+   "share_comments": 0.1007,
+   "share_chars": 0.0809,
+   "share_addressed": 0.1446
   },
   {
    "iso_week": "2025-W08",
    "org": "opera.com",
-   "share": 0.0297,
+   "share": 0.0296,
    "reviewers": 1,
    "reviewed_cls": 7,
    "comments": 63,
@@ -11660,9 +12112,9 @@
    "addressed_comments": 35,
    "pending_comments": 19,
    "share_cls": 0.0205,
-   "share_comments": 0.0297,
-   "share_chars": 0.0268,
-   "share_addressed": 0.043
+   "share_comments": 0.0296,
+   "share_chars": 0.0267,
+   "share_addressed": 0.0429
   },
   {
    "iso_week": "2025-W08",
@@ -12473,12 +12925,12 @@
    "review_chars": 400485,
    "ai_comments": 0,
    "post_merge_comments": 52,
-   "addressed_comments": 885,
-   "pending_comments": 844,
+   "addressed_comments": 886,
+   "pending_comments": 843,
    "share_cls": 0.9186,
    "share_comments": 0.9114,
    "share_chars": 0.9227,
-   "share_addressed": 0.8886
+   "share_addressed": 0.8887
   },
   {
    "iso_week": "2025-W14",
@@ -12495,7 +12947,7 @@
    "share_cls": 0.0475,
    "share_comments": 0.0521,
    "share_chars": 0.0435,
-   "share_addressed": 0.0723
+   "share_addressed": 0.0722
   },
   {
    "iso_week": "2025-W14",
@@ -15907,12 +16359,12 @@
    "review_chars": 352544,
    "ai_comments": 0,
    "post_merge_comments": 26,
-   "addressed_comments": 751,
-   "pending_comments": 660,
+   "addressed_comments": 753,
+   "pending_comments": 656,
    "share_cls": 0.9111,
    "share_comments": 0.9099,
    "share_chars": 0.9341,
-   "share_addressed": 0.9237
+   "share_addressed": 0.9239
   },
   {
    "iso_week": "2025-W40",
@@ -15929,7 +16381,7 @@
    "share_cls": 0.062,
    "share_comments": 0.0755,
    "share_chars": 0.0577,
-   "share_addressed": 0.0677
+   "share_addressed": 0.0675
   },
   {
    "iso_week": "2025-W40",
@@ -17811,12 +18263,12 @@
    "review_chars": 367375,
    "ai_comments": 0,
    "post_merge_comments": 44,
-   "addressed_comments": 798,
-   "pending_comments": 765,
+   "addressed_comments": 799,
+   "pending_comments": 764,
    "share_cls": 0.9468,
    "share_comments": 0.9328,
    "share_chars": 0.9203,
-   "share_addressed": 0.941
+   "share_addressed": 0.94
   },
   {
    "iso_week": "2026-W04",
@@ -17828,12 +18280,12 @@
    "review_chars": 24996,
    "ai_comments": 0,
    "post_merge_comments": 1,
-   "addressed_comments": 36,
-   "pending_comments": 51,
+   "addressed_comments": 37,
+   "pending_comments": 50,
    "share_cls": 0.0372,
    "share_comments": 0.0438,
    "share_chars": 0.0626,
-   "share_addressed": 0.0425
+   "share_addressed": 0.0435
   },
   {
    "iso_week": "2026-W04",
@@ -18271,7 +18723,7 @@
    "ai_comments": 0,
    "post_merge_comments": 24,
    "addressed_comments": 1059,
-   "pending_comments": 851,
+   "pending_comments": 849,
    "share_cls": 0.887,
    "share_comments": 0.8746,
    "share_chars": 0.8884,
@@ -18870,7 +19322,7 @@
    "share_cls": 0.9345,
    "share_comments": 0.9386,
    "share_chars": 0.9485,
-   "share_addressed": 0.9274
+   "share_addressed": 0.9265
   },
   {
    "iso_week": "2026-W11",
@@ -18887,7 +19339,7 @@
    "share_cls": 0.0485,
    "share_comments": 0.0494,
    "share_chars": 0.0442,
-   "share_addressed": 0.0591
+   "share_addressed": 0.059
   },
   {
    "iso_week": "2026-W11",
@@ -18899,12 +19351,12 @@
    "review_chars": 1681,
    "ai_comments": 0,
    "post_merge_comments": 0,
-   "addressed_comments": 7,
-   "pending_comments": 5,
+   "addressed_comments": 8,
+   "pending_comments": 4,
    "share_cls": 0.0,
    "share_comments": 0.0064,
    "share_chars": 0.004,
-   "share_addressed": 0.0068
+   "share_addressed": 0.0077
   },
   {
    "iso_week": "2026-W11",
@@ -20344,12 +20796,12 @@
    "review_chars": 456260,
    "ai_comments": 0,
    "post_merge_comments": 11,
-   "addressed_comments": 854,
-   "pending_comments": 889,
+   "addressed_comments": 857,
+   "pending_comments": 886,
    "share_cls": 0.877,
    "share_comments": 0.8713,
    "share_chars": 0.871,
-   "share_addressed": 0.8291
+   "share_addressed": 0.8296
   },
   {
    "iso_week": "2026-W21",
@@ -20366,7 +20818,7 @@
    "share_cls": 0.0559,
    "share_comments": 0.0746,
    "share_chars": 0.0894,
-   "share_addressed": 0.0971
+   "share_addressed": 0.0968
   },
   {
    "iso_week": "2026-W21",
@@ -20383,7 +20835,7 @@
    "share_cls": 0.0313,
    "share_comments": 0.0233,
    "share_chars": 0.0159,
-   "share_addressed": 0.033
+   "share_addressed": 0.0329
   },
   {
    "iso_week": "2026-W21",
@@ -20400,7 +20852,7 @@
    "share_cls": 0.0157,
    "share_comments": 0.0229,
    "share_chars": 0.0158,
-   "share_addressed": 0.0408
+   "share_addressed": 0.0407
   },
   {
    "iso_week": "2026-W21",
@@ -20515,7 +20967,7 @@
    "ai_comments": 0,
    "post_merge_comments": 12,
    "addressed_comments": 1119,
-   "pending_comments": 926,
+   "pending_comments": 925,
    "share_cls": 0.9058,
    "share_comments": 0.9046,
    "share_chars": 0.9157,
@@ -20633,12 +21085,12 @@
    "review_chars": 488294,
    "ai_comments": 3,
    "post_merge_comments": 14,
-   "addressed_comments": 1074,
-   "pending_comments": 1107,
+   "addressed_comments": 1075,
+   "pending_comments": 1106,
    "share_cls": 0.9304,
    "share_comments": 0.8867,
    "share_chars": 0.8892,
-   "share_addressed": 0.8544
+   "share_addressed": 0.8545
   },
   {
    "iso_week": "2026-W23",
@@ -20655,7 +21107,7 @@
    "share_cls": 0.0378,
    "share_comments": 0.0784,
    "share_chars": 0.0793,
-   "share_addressed": 0.1082
+   "share_addressed": 0.1081
   },
   {
    "iso_week": "2026-W23",
@@ -20774,7 +21226,7 @@
    "share_cls": 0.9022,
    "share_comments": 0.8607,
    "share_chars": 0.8847,
-   "share_addressed": 0.8394
+   "share_addressed": 0.8372
   },
   {
    "iso_week": "2026-W24",
@@ -20786,12 +21238,12 @@
    "review_chars": 36244,
    "ai_comments": 0,
    "post_merge_comments": 0,
-   "addressed_comments": 84,
-   "pending_comments": 68,
+   "addressed_comments": 85,
+   "pending_comments": 67,
    "share_cls": 0.0609,
    "share_comments": 0.0707,
    "share_chars": 0.0693,
-   "share_addressed": 0.0706
+   "share_addressed": 0.0713
   },
   {
    "iso_week": "2026-W24",
@@ -20808,7 +21260,7 @@
    "share_cls": 0.0152,
    "share_comments": 0.0289,
    "share_chars": 0.0162,
-   "share_addressed": 0.0437
+   "share_addressed": 0.0436
   },
   {
    "iso_week": "2026-W24",
@@ -20820,12 +21272,12 @@
    "review_chars": 6505,
    "ai_comments": 0,
    "post_merge_comments": 0,
-   "addressed_comments": 35,
-   "pending_comments": 10,
+   "addressed_comments": 37,
+   "pending_comments": 8,
    "share_cls": 0.0087,
    "share_comments": 0.0188,
    "share_chars": 0.0124,
-   "share_addressed": 0.0294
+   "share_addressed": 0.031
   },
   {
    "iso_week": "2026-W24",
@@ -20905,12 +21357,12 @@
    "review_chars": 496307,
    "ai_comments": 12,
    "post_merge_comments": 19,
-   "addressed_comments": 1006,
-   "pending_comments": 978,
+   "addressed_comments": 1008,
+   "pending_comments": 976,
    "share_cls": 0.8959,
    "share_comments": 0.872,
    "share_chars": 0.8984,
-   "share_addressed": 0.8369
+   "share_addressed": 0.8372
   },
   {
    "iso_week": "2026-W25",
@@ -20927,7 +21379,7 @@
    "share_cls": 0.0656,
    "share_comments": 0.0911,
    "share_chars": 0.0789,
-   "share_addressed": 0.1215
+   "share_addressed": 0.1213
   },
   {
    "iso_week": "2026-W25",
@@ -20961,7 +21413,7 @@
    "share_cls": 0.0136,
    "share_comments": 0.0082,
    "share_chars": 0.005,
-   "share_addressed": 0.0092
+   "share_addressed": 0.0091
   },
   {
    "iso_week": "2026-W25",
@@ -21025,7 +21477,7 @@
    "ai_comments": 20,
    "post_merge_comments": 13,
    "addressed_comments": 1144,
-   "pending_comments": 1058,
+   "pending_comments": 1055,
    "share_cls": 0.9052,
    "share_comments": 0.9173,
    "share_chars": 0.9114,
@@ -21143,12 +21595,12 @@
    "review_chars": 334395,
    "ai_comments": 12,
    "post_merge_comments": 9,
-   "addressed_comments": 798,
-   "pending_comments": 589,
+   "addressed_comments": 799,
+   "pending_comments": 587,
    "share_cls": 0.8962,
    "share_comments": 0.8098,
    "share_chars": 0.8483,
-   "share_addressed": 0.7816
+   "share_addressed": 0.781
   },
   {
    "iso_week": "2026-W27",
@@ -21165,7 +21617,7 @@
    "share_cls": 0.0656,
    "share_comments": 0.1218,
    "share_chars": 0.0985,
-   "share_addressed": 0.1479
+   "share_addressed": 0.1476
   },
   {
    "iso_week": "2026-W27",
@@ -21182,7 +21634,7 @@
    "share_cls": 0.0219,
    "share_comments": 0.0325,
    "share_chars": 0.0184,
-   "share_addressed": 0.0392
+   "share_addressed": 0.0391
   },
   {
    "iso_week": "2026-W27",
@@ -21245,12 +21697,12 @@
    "review_chars": 306,
    "ai_comments": 0,
    "post_merge_comments": 0,
-   "addressed_comments": 0,
-   "pending_comments": 2,
+   "addressed_comments": 1,
+   "pending_comments": 1,
    "share_cls": 0.0,
    "share_comments": 0.0021,
    "share_chars": 0.0008,
-   "share_addressed": 0.0
+   "share_addressed": 0.001
   },
   {
    "iso_week": "2026-W27",
@@ -21280,11 +21732,11 @@
    "ai_comments": 10,
    "post_merge_comments": 20,
    "addressed_comments": 977,
-   "pending_comments": 806,
+   "pending_comments": 805,
    "share_cls": 0.9242,
    "share_comments": 0.9209,
    "share_chars": 0.9244,
-   "share_addressed": 0.9131
+   "share_addressed": 0.9122
   },
   {
    "iso_week": "2026-W28",
@@ -21330,12 +21782,12 @@
    "review_chars": 2501,
    "ai_comments": 0,
    "post_merge_comments": 0,
-   "addressed_comments": 2,
-   "pending_comments": 4,
+   "addressed_comments": 3,
+   "pending_comments": 3,
    "share_cls": 0.0043,
    "share_comments": 0.0045,
    "share_chars": 0.0058,
-   "share_addressed": 0.0019
+   "share_addressed": 0.0028
   },
   {
    "iso_week": "2026-W28",
@@ -21415,12 +21867,12 @@
    "review_chars": 353422,
    "ai_comments": 2,
    "post_merge_comments": 28,
-   "addressed_comments": 790,
-   "pending_comments": 788,
+   "addressed_comments": 791,
+   "pending_comments": 782,
    "share_cls": 0.9171,
    "share_comments": 0.8909,
    "share_chars": 0.8836,
-   "share_addressed": 0.871
+   "share_addressed": 0.8711
   },
   {
    "iso_week": "2026-W29",
@@ -21437,7 +21889,7 @@
    "share_cls": 0.0553,
    "share_comments": 0.0918,
    "share_chars": 0.1015,
-   "share_addressed": 0.1136
+   "share_addressed": 0.1134
   },
   {
    "iso_week": "2026-W29",
@@ -21551,12 +22003,12 @@
    "review_chars": 427231,
    "ai_comments": 20,
    "post_merge_comments": 6,
-   "addressed_comments": 931,
-   "pending_comments": 825,
+   "addressed_comments": 934,
+   "pending_comments": 815,
    "share_cls": 0.9111,
    "share_comments": 0.8705,
    "share_chars": 0.8813,
-   "share_addressed": 0.8541
+   "share_addressed": 0.8545
   },
   {
    "iso_week": "2026-W30",
@@ -21573,7 +22025,7 @@
    "share_cls": 0.0607,
    "share_comments": 0.1026,
    "share_chars": 0.0941,
-   "share_addressed": 0.1266
+   "share_addressed": 0.1263
   },
   {
    "iso_week": "2026-W30",
@@ -21607,7 +22059,7 @@
    "share_cls": 0.0065,
    "share_comments": 0.0072,
    "share_chars": 0.0084,
-   "share_addressed": 0.0092
+   "share_addressed": 0.0091
   },
   {
    "iso_week": "2026-W30",
@@ -21687,12 +22139,12 @@
    "review_chars": 451718,
    "ai_comments": 4,
    "post_merge_comments": 21,
-   "addressed_comments": 1001,
-   "pending_comments": 873,
+   "addressed_comments": 1008,
+   "pending_comments": 858,
    "share_cls": 0.9409,
    "share_comments": 0.8886,
    "share_chars": 0.8672,
-   "share_addressed": 0.8637
+   "share_addressed": 0.8645
   },
   {
    "iso_week": "2026-W31",
@@ -21705,11 +22157,11 @@
    "ai_comments": 0,
    "post_merge_comments": 0,
    "addressed_comments": 118,
-   "pending_comments": 80,
+   "pending_comments": 77,
    "share_cls": 0.0443,
    "share_comments": 0.0862,
    "share_chars": 0.1053,
-   "share_addressed": 0.1018
+   "share_addressed": 0.1012
   },
   {
    "iso_week": "2026-W31",
@@ -21726,7 +22178,7 @@
    "share_cls": 0.0,
    "share_comments": 0.0141,
    "share_chars": 0.0168,
-   "share_addressed": 0.0259
+   "share_addressed": 0.0257
   },
   {
    "iso_week": "2026-W31",
@@ -21823,12 +22275,12 @@
    "review_chars": 412536,
    "ai_comments": 7,
    "post_merge_comments": 18,
-   "addressed_comments": 903,
-   "pending_comments": 839,
+   "addressed_comments": 969,
+   "pending_comments": 738,
    "share_cls": 0.903,
    "share_comments": 0.8613,
    "share_chars": 0.8594,
-   "share_addressed": 0.8369
+   "share_addressed": 0.8426
   },
   {
    "iso_week": "2026-W32",
@@ -21840,12 +22292,12 @@
    "review_chars": 52421,
    "ai_comments": 0,
    "post_merge_comments": 0,
-   "addressed_comments": 132,
-   "pending_comments": 44,
+   "addressed_comments": 135,
+   "pending_comments": 40,
    "share_cls": 0.0577,
    "share_comments": 0.1016,
    "share_chars": 0.1092,
-   "share_addressed": 0.1223
+   "share_addressed": 0.1174
   },
   {
    "iso_week": "2026-W32",
@@ -21857,12 +22309,12 @@
    "review_chars": 4197,
    "ai_comments": 0,
    "post_merge_comments": 0,
-   "addressed_comments": 16,
-   "pending_comments": 13,
+   "addressed_comments": 18,
+   "pending_comments": 9,
    "share_cls": 0.0139,
    "share_comments": 0.0143,
    "share_chars": 0.0087,
-   "share_addressed": 0.0148
+   "share_addressed": 0.0157
   },
   {
    "iso_week": "2026-W32",
@@ -21879,7 +22331,7 @@
    "share_cls": 0.0139,
    "share_comments": 0.0111,
    "share_chars": 0.0059,
-   "share_addressed": 0.0148
+   "share_addressed": 0.0139
   },
   {
    "iso_week": "2026-W32",
@@ -21896,7 +22348,7 @@
    "share_cls": 0.0092,
    "share_comments": 0.0071,
    "share_chars": 0.0083,
-   "share_addressed": 0.0102
+   "share_addressed": 0.0096
   },
   {
    "iso_week": "2026-W32",
@@ -21959,12 +22411,12 @@
    "review_chars": 423873,
    "ai_comments": 2,
    "post_merge_comments": 12,
-   "addressed_comments": 984,
-   "pending_comments": 899,
+   "addressed_comments": 1487,
+   "pending_comments": 0,
    "share_cls": 0.9332,
    "share_comments": 0.8951,
    "share_chars": 0.8743,
-   "share_addressed": 0.8632
+   "share_addressed": 0.8706
   },
   {
    "iso_week": "2026-W33",
@@ -21976,12 +22428,12 @@
    "review_chars": 57074,
    "ai_comments": 0,
    "post_merge_comments": 6,
-   "addressed_comments": 140,
-   "pending_comments": 86,
+   "addressed_comments": 199,
+   "pending_comments": 0,
    "share_cls": 0.0547,
    "share_comments": 0.0954,
    "share_chars": 0.1177,
-   "share_addressed": 0.1228
+   "share_addressed": 0.1165
   },
   {
    "iso_week": "2026-W33",
@@ -21993,12 +22445,12 @@
    "review_chars": 1936,
    "ai_comments": 0,
    "post_merge_comments": 0,
-   "addressed_comments": 15,
-   "pending_comments": 1,
+   "addressed_comments": 16,
+   "pending_comments": 0,
    "share_cls": 0.0061,
    "share_comments": 0.0068,
    "share_chars": 0.004,
-   "share_addressed": 0.0132
+   "share_addressed": 0.0094
   },
   {
    "iso_week": "2026-W33",
@@ -22010,12 +22462,12 @@
    "review_chars": 1217,
    "ai_comments": 0,
    "post_merge_comments": 0,
-   "addressed_comments": 0,
-   "pending_comments": 2,
+   "addressed_comments": 2,
+   "pending_comments": 0,
    "share_cls": 0.004,
    "share_comments": 0.0014,
    "share_chars": 0.0025,
-   "share_addressed": 0.0
+   "share_addressed": 0.0012
   },
   {
    "iso_week": "2026-W33",
@@ -22027,12 +22479,12 @@
    "review_chars": 725,
    "ai_comments": 0,
    "post_merge_comments": 0,
-   "addressed_comments": 1,
-   "pending_comments": 3,
+   "addressed_comments": 4,
+   "pending_comments": 0,
    "share_cls": 0.0,
    "share_comments": 0.0014,
    "share_chars": 0.0015,
-   "share_addressed": 0.0009
+   "share_addressed": 0.0023
   },
   {
    "iso_week": "2026-W33",
@@ -22061,12 +22513,12 @@
    "review_chars": 421293,
    "ai_comments": 31,
    "post_merge_comments": 14,
-   "addressed_comments": 946,
-   "pending_comments": 801,
+   "addressed_comments": 1413,
+   "pending_comments": 0,
    "share_cls": 0.9172,
    "share_comments": 0.8776,
    "share_chars": 0.8624,
-   "share_addressed": 0.8655
+   "share_addressed": 0.859
   },
   {
    "iso_week": "2026-W34",
@@ -22078,12 +22530,12 @@
    "review_chars": 54288,
    "ai_comments": 0,
    "post_merge_comments": 2,
-   "addressed_comments": 129,
-   "pending_comments": 94,
+   "addressed_comments": 197,
+   "pending_comments": 0,
    "share_cls": 0.0626,
    "share_comments": 0.0962,
    "share_chars": 0.1111,
-   "share_addressed": 0.118
+   "share_addressed": 0.1198
   },
   {
    "iso_week": "2026-W34",
@@ -22095,12 +22547,12 @@
    "review_chars": 2518,
    "ai_comments": 0,
    "post_merge_comments": 0,
-   "addressed_comments": 13,
-   "pending_comments": 8,
+   "addressed_comments": 16,
+   "pending_comments": 0,
    "share_cls": 0.0101,
    "share_comments": 0.0121,
    "share_chars": 0.0052,
-   "share_addressed": 0.0119
+   "share_addressed": 0.0097
   },
   {
    "iso_week": "2026-W34",
@@ -22112,12 +22564,12 @@
    "review_chars": 3311,
    "ai_comments": 0,
    "post_merge_comments": 0,
-   "addressed_comments": 3,
-   "pending_comments": 6,
+   "addressed_comments": 9,
+   "pending_comments": 0,
    "share_cls": 0.0061,
    "share_comments": 0.0055,
    "share_chars": 0.0068,
-   "share_addressed": 0.0027
+   "share_addressed": 0.0055
   },
   {
    "iso_week": "2026-W34",
@@ -22129,12 +22581,12 @@
    "review_chars": 2936,
    "ai_comments": 0,
    "post_merge_comments": 1,
-   "addressed_comments": 2,
-   "pending_comments": 4,
+   "addressed_comments": 6,
+   "pending_comments": 0,
    "share_cls": 0.0,
    "share_comments": 0.0038,
    "share_chars": 0.006,
-   "share_addressed": 0.0018
+   "share_addressed": 0.0036
   },
   {
    "iso_week": "2026-W34",
@@ -22146,12 +22598,12 @@
    "review_chars": 3904,
    "ai_comments": 0,
    "post_merge_comments": 0,
-   "addressed_comments": 0,
-   "pending_comments": 4,
+   "addressed_comments": 4,
+   "pending_comments": 0,
    "share_cls": 0.0,
    "share_comments": 0.0034,
    "share_chars": 0.008,
-   "share_addressed": 0.0
+   "share_addressed": 0.0024
   },
   {
    "iso_week": "2026-W34",
@@ -22197,12 +22649,12 @@
    "review_chars": 499269,
    "ai_comments": 13,
    "post_merge_comments": 25,
-   "addressed_comments": 1174,
-   "pending_comments": 910,
+   "addressed_comments": 1701,
+   "pending_comments": 0,
    "share_cls": 0.9125,
    "share_comments": 0.8917,
    "share_chars": 0.8866,
-   "share_addressed": 0.9031
+   "share_addressed": 0.8948
   },
   {
    "iso_week": "2026-W35",
@@ -22214,12 +22666,12 @@
    "review_chars": 60325,
    "ai_comments": 0,
    "post_merge_comments": 18,
-   "addressed_comments": 115,
-   "pending_comments": 114,
+   "addressed_comments": 183,
+   "pending_comments": 0,
    "share_cls": 0.0584,
    "share_comments": 0.0959,
    "share_chars": 0.1071,
-   "share_addressed": 0.0885
+   "share_addressed": 0.0963
   },
   {
    "iso_week": "2026-W35",
@@ -22231,12 +22683,12 @@
    "review_chars": 1635,
    "ai_comments": 0,
    "post_merge_comments": 0,
-   "addressed_comments": 1,
-   "pending_comments": 6,
+   "addressed_comments": 4,
+   "pending_comments": 0,
    "share_cls": 0.0156,
    "share_comments": 0.0051,
    "share_chars": 0.0029,
-   "share_addressed": 0.0008
+   "share_addressed": 0.0021
   },
   {
    "iso_week": "2026-W35",
@@ -22253,7 +22705,7 @@
    "share_cls": 0.0,
    "share_comments": 0.0029,
    "share_chars": 0.0003,
-   "share_addressed": 0.0046
+   "share_addressed": 0.0032
   },
   {
    "iso_week": "2026-W35",
@@ -22265,12 +22717,12 @@
    "review_chars": 606,
    "ai_comments": 0,
    "post_merge_comments": 0,
-   "addressed_comments": 4,
-   "pending_comments": 1,
+   "addressed_comments": 5,
+   "pending_comments": 0,
    "share_cls": 0.0039,
    "share_comments": 0.0016,
    "share_chars": 0.0011,
-   "share_addressed": 0.0031
+   "share_addressed": 0.0026
   },
   {
    "iso_week": "2026-W35",
@@ -22282,12 +22734,12 @@
    "review_chars": 256,
    "ai_comments": 0,
    "post_merge_comments": 0,
-   "addressed_comments": 0,
-   "pending_comments": 1,
+   "addressed_comments": 1,
+   "pending_comments": 0,
    "share_cls": 0.0019,
    "share_comments": 0.0016,
    "share_chars": 0.0005,
-   "share_addressed": 0.0
+   "share_addressed": 0.0005
   },
   {
    "iso_week": "2026-W35",
@@ -22299,12 +22751,12 @@
    "review_chars": 682,
    "ai_comments": 0,
    "post_merge_comments": 0,
-   "addressed_comments": 0,
-   "pending_comments": 1,
+   "addressed_comments": 1,
+   "pending_comments": 0,
    "share_cls": 0.0039,
    "share_comments": 0.001,
    "share_chars": 0.0012,
-   "share_addressed": 0.0
+   "share_addressed": 0.0005
   },
   {
    "iso_week": "2026-W35",
@@ -22350,12 +22802,12 @@
    "review_chars": 494302,
    "ai_comments": 15,
    "post_merge_comments": 37,
-   "addressed_comments": 973,
-   "pending_comments": 793,
+   "addressed_comments": 1436,
+   "pending_comments": 0,
    "share_cls": 0.8988,
    "share_comments": 0.881,
    "share_chars": 0.8897,
-   "share_addressed": 0.8726
+   "share_addressed": 0.8767
   },
   {
    "iso_week": "2026-W36",
@@ -22367,12 +22819,12 @@
    "review_chars": 47078,
    "ai_comments": 0,
    "post_merge_comments": 8,
-   "addressed_comments": 104,
-   "pending_comments": 79,
+   "addressed_comments": 151,
+   "pending_comments": 0,
    "share_cls": 0.0642,
    "share_comments": 0.0906,
    "share_chars": 0.0847,
-   "share_addressed": 0.0933
+   "share_addressed": 0.0922
   },
   {
    "iso_week": "2026-W36",
@@ -22384,12 +22836,12 @@
    "review_chars": 3737,
    "ai_comments": 0,
    "post_merge_comments": 2,
-   "addressed_comments": 19,
-   "pending_comments": 9,
+   "addressed_comments": 24,
+   "pending_comments": 0,
    "share_cls": 0.0097,
    "share_comments": 0.0104,
    "share_chars": 0.0067,
-   "share_addressed": 0.017
+   "share_addressed": 0.0147
   },
   {
    "iso_week": "2026-W36",
@@ -22401,12 +22853,12 @@
    "review_chars": 3488,
    "ai_comments": 0,
    "post_merge_comments": 0,
-   "addressed_comments": 2,
-   "pending_comments": 6,
+   "addressed_comments": 5,
+   "pending_comments": 0,
    "share_cls": 0.0078,
    "share_comments": 0.0059,
    "share_chars": 0.0063,
-   "share_addressed": 0.0018
+   "share_addressed": 0.0031
   },
   {
    "iso_week": "2026-W36",
@@ -22423,7 +22875,7 @@
    "share_cls": 0.0097,
    "share_comments": 0.0056,
    "share_chars": 0.0034,
-   "share_addressed": 0.0099
+   "share_addressed": 0.0067
   },
   {
    "iso_week": "2026-W36",
@@ -22435,12 +22887,12 @@
    "review_chars": 4326,
    "ai_comments": 0,
    "post_merge_comments": 0,
-   "addressed_comments": 6,
-   "pending_comments": 2,
+   "addressed_comments": 8,
+   "pending_comments": 0,
    "share_cls": 0.0039,
    "share_comments": 0.0049,
    "share_chars": 0.0078,
-   "share_addressed": 0.0054
+   "share_addressed": 0.0049
   },
   {
    "iso_week": "2026-W36",
@@ -22452,12 +22904,12 @@
    "review_chars": 301,
    "ai_comments": 0,
    "post_merge_comments": 0,
-   "addressed_comments": 0,
-   "pending_comments": 2,
+   "addressed_comments": 2,
+   "pending_comments": 0,
    "share_cls": 0.0058,
    "share_comments": 0.0007,
    "share_chars": 0.0005,
-   "share_addressed": 0.0
+   "share_addressed": 0.0012
   },
   {
    "iso_week": "2026-W36",
@@ -22469,12 +22921,12 @@
    "review_chars": 190,
    "ai_comments": 0,
    "post_merge_comments": 0,
-   "addressed_comments": 0,
-   "pending_comments": 1,
+   "addressed_comments": 1,
+   "pending_comments": 0,
    "share_cls": 0.0,
    "share_comments": 0.0007,
    "share_chars": 0.0003,
-   "share_addressed": 0.0
+   "share_addressed": 0.0006
   },
   {
    "iso_week": "2026-W36",
@@ -22487,7 +22939,7 @@
    "ai_comments": 0,
    "post_merge_comments": 1,
    "addressed_comments": 0,
-   "pending_comments": 1,
+   "pending_comments": 0,
    "share_cls": 0.0,
    "share_comments": 0.0003,
    "share_chars": 0.0005,
@@ -22503,12 +22955,12 @@
    "review_chars": 454771,
    "ai_comments": 59,
    "post_merge_comments": 18,
-   "addressed_comments": 897,
-   "pending_comments": 826,
+   "addressed_comments": 1387,
+   "pending_comments": 0,
    "share_cls": 0.9231,
    "share_comments": 0.9036,
    "share_chars": 0.9224,
-   "share_addressed": 0.8786
+   "share_addressed": 0.8891
   },
   {
    "iso_week": "2026-W37",
@@ -22520,12 +22972,12 @@
    "review_chars": 29082,
    "ai_comments": 0,
    "post_merge_comments": 1,
-   "addressed_comments": 106,
-   "pending_comments": 60,
+   "addressed_comments": 140,
+   "pending_comments": 0,
    "share_cls": 0.047,
    "share_comments": 0.073,
    "share_chars": 0.059,
-   "share_addressed": 0.1038
+   "share_addressed": 0.0897
   },
   {
    "iso_week": "2026-W37",
@@ -22537,12 +22989,12 @@
    "review_chars": 3653,
    "ai_comments": 0,
    "post_merge_comments": 0,
-   "addressed_comments": 10,
-   "pending_comments": 8,
+   "addressed_comments": 15,
+   "pending_comments": 0,
    "share_cls": 0.0064,
    "share_comments": 0.0104,
    "share_chars": 0.0074,
-   "share_addressed": 0.0098
+   "share_addressed": 0.0096
   },
   {
    "iso_week": "2026-W37",
@@ -22554,12 +23006,12 @@
    "review_chars": 2075,
    "ai_comments": 0,
    "post_merge_comments": 1,
-   "addressed_comments": 3,
-   "pending_comments": 6,
+   "addressed_comments": 6,
+   "pending_comments": 0,
    "share_cls": 0.0085,
    "share_comments": 0.0044,
    "share_chars": 0.0042,
-   "share_addressed": 0.0029
+   "share_addressed": 0.0038
   },
   {
    "iso_week": "2026-W37",
@@ -22571,12 +23023,12 @@
    "review_chars": 1882,
    "ai_comments": 0,
    "post_merge_comments": 0,
-   "addressed_comments": 4,
-   "pending_comments": 6,
+   "addressed_comments": 7,
+   "pending_comments": 0,
    "share_cls": 0.0107,
    "share_comments": 0.0044,
    "share_chars": 0.0038,
-   "share_addressed": 0.0039
+   "share_addressed": 0.0045
   },
   {
    "iso_week": "2026-W37",
@@ -22588,12 +23040,12 @@
    "review_chars": 581,
    "ai_comments": 0,
    "post_merge_comments": 1,
-   "addressed_comments": 1,
-   "pending_comments": 2,
+   "addressed_comments": 2,
+   "pending_comments": 0,
    "share_cls": 0.0043,
    "share_comments": 0.0015,
    "share_chars": 0.0012,
-   "share_addressed": 0.001
+   "share_addressed": 0.0013
   },
   {
    "iso_week": "2026-W37",
@@ -22605,12 +23057,12 @@
    "review_chars": 814,
    "ai_comments": 0,
    "post_merge_comments": 0,
-   "addressed_comments": 0,
-   "pending_comments": 3,
+   "addressed_comments": 3,
+   "pending_comments": 0,
    "share_cls": 0.0,
    "share_comments": 0.0015,
    "share_chars": 0.0017,
-   "share_addressed": 0.0
+   "share_addressed": 0.0019
   },
   {
    "iso_week": "2026-W37",
@@ -22639,12 +23091,12 @@
    "review_chars": 648756,
    "ai_comments": 78,
    "post_merge_comments": 12,
-   "addressed_comments": 1306,
-   "pending_comments": 898,
+   "addressed_comments": 1841,
+   "pending_comments": 0,
    "share_cls": 0.9332,
    "share_comments": 0.9144,
    "share_chars": 0.9152,
-   "share_addressed": 0.9076
+   "share_addressed": 0.9016
   },
   {
    "iso_week": "2026-W38",
@@ -22656,12 +23108,12 @@
    "review_chars": 48573,
    "ai_comments": 1,
    "post_merge_comments": 0,
-   "addressed_comments": 119,
-   "pending_comments": 67,
+   "addressed_comments": 169,
+   "pending_comments": 0,
    "share_cls": 0.0408,
    "share_comments": 0.0679,
    "share_chars": 0.0685,
-   "share_addressed": 0.0827
+   "share_addressed": 0.0828
   },
   {
    "iso_week": "2026-W38",
@@ -22673,12 +23125,12 @@
    "review_chars": 4003,
    "ai_comments": 0,
    "post_merge_comments": 0,
-   "addressed_comments": 9,
-   "pending_comments": 7,
+   "addressed_comments": 13,
+   "pending_comments": 0,
    "share_cls": 0.0037,
    "share_comments": 0.0081,
    "share_chars": 0.0056,
-   "share_addressed": 0.0063
+   "share_addressed": 0.0064
   },
   {
    "iso_week": "2026-W38",
@@ -22690,12 +23142,12 @@
    "review_chars": 5277,
    "ai_comments": 0,
    "post_merge_comments": 4,
-   "addressed_comments": 3,
-   "pending_comments": 6,
+   "addressed_comments": 8,
+   "pending_comments": 0,
    "share_cls": 0.0093,
    "share_comments": 0.0051,
    "share_chars": 0.0074,
-   "share_addressed": 0.0021
+   "share_addressed": 0.0039
   },
   {
    "iso_week": "2026-W38",
@@ -22707,12 +23159,12 @@
    "review_chars": 1904,
    "ai_comments": 0,
    "post_merge_comments": 0,
-   "addressed_comments": 2,
-   "pending_comments": 7,
+   "addressed_comments": 6,
+   "pending_comments": 0,
    "share_cls": 0.0074,
    "share_comments": 0.003,
    "share_chars": 0.0027,
-   "share_addressed": 0.0014
+   "share_addressed": 0.0029
   },
   {
    "iso_week": "2026-W38",
@@ -22724,12 +23176,12 @@
    "review_chars": 365,
    "ai_comments": 0,
    "post_merge_comments": 0,
-   "addressed_comments": 0,
-   "pending_comments": 5,
+   "addressed_comments": 5,
+   "pending_comments": 0,
    "share_cls": 0.0037,
    "share_comments": 0.0015,
    "share_chars": 0.0005,
-   "share_addressed": 0.0
+   "share_addressed": 0.0024
   },
   {
    "iso_week": "2026-W38",
@@ -22758,12 +23210,12 @@
    "review_chars": 577642,
    "ai_comments": 100,
    "post_merge_comments": 23,
-   "addressed_comments": 1496,
-   "pending_comments": 134,
+   "addressed_comments": 1547,
+   "pending_comments": 0,
    "share_cls": 0.9368,
    "share_comments": 0.9367,
    "share_chars": 0.9404,
-   "share_addressed": 0.9195
+   "share_addressed": 0.9219
   },
   {
    "iso_week": "2026-W39",
@@ -22776,11 +23228,11 @@
    "ai_comments": 0,
    "post_merge_comments": 0,
    "addressed_comments": 87,
-   "pending_comments": 3,
+   "pending_comments": 0,
    "share_cls": 0.0402,
    "share_comments": 0.043,
    "share_chars": 0.0412,
-   "share_addressed": 0.0535
+   "share_addressed": 0.0518
   },
   {
    "iso_week": "2026-W39",
@@ -22797,7 +23249,7 @@
    "share_cls": 0.0,
    "share_comments": 0.0083,
    "share_chars": 0.0119,
-   "share_addressed": 0.0135
+   "share_addressed": 0.0131
   },
   {
    "iso_week": "2026-W39",
@@ -22814,7 +23266,7 @@
    "share_cls": 0.0115,
    "share_comments": 0.0079,
    "share_chars": 0.0033,
-   "share_addressed": 0.0086
+   "share_addressed": 0.0083
   },
   {
    "iso_week": "2026-W39",
@@ -22831,7 +23283,7 @@
    "share_cls": 0.0038,
    "share_comments": 0.0028,
    "share_chars": 0.0024,
-   "share_addressed": 0.0031
+   "share_addressed": 0.003
   },
   {
    "iso_week": "2026-W39",
@@ -23549,6 +24001,33 @@
   }
  ],
  "weekly_totals": [
+  {
+   "iso_week": "2023-W40",
+   "main_cls": 3749,
+   "merged_cls": 3118,
+   "abandoned_cls": 631,
+   "human_cls": 2523,
+   "bot_cls": 1226,
+   "human_cls_with_comments": 1551
+  },
+  {
+   "iso_week": "2023-W41",
+   "main_cls": 3629,
+   "merged_cls": 3016,
+   "abandoned_cls": 613,
+   "human_cls": 2428,
+   "bot_cls": 1201,
+   "human_cls_with_comments": 1459
+  },
+  {
+   "iso_week": "2023-W42",
+   "main_cls": 4037,
+   "merged_cls": 3328,
+   "abandoned_cls": 709,
+   "human_cls": 2756,
+   "bot_cls": 1281,
+   "human_cls_with_comments": 1688
+  },
   {
    "iso_week": "2023-W43",
    "main_cls": 4124,
