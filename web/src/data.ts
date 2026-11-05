@@ -334,16 +334,24 @@ export function smoothRatios(points: RatioPoint[], window: number, minDerived = 
   });
 }
 
+/** Orgs left out of the value charts (parity and ratio over time) even when
+ * their browsers reach MIN_DERIVED_SHARE in some week. The table still lists
+ * their ratio. User's instruction (2026-11-05). */
+export const VALUE_CHART_EXCLUDED_ORGS: readonly string[] = ['amazon.com', 'alibaba-inc.com'];
+
 /** Orgs that get a series (and therefore a colour): their browsers reach
- * minDerived in at least one Radar week. Order follows org_browsers.csv, so
- * colours never depend on the selected metric or week. */
+ * minDerived in at least one Radar week, and they aren't in `excluded`.
+ * Order follows org_browsers.csv, so colours never depend on the selected
+ * metric or week. */
 export function chartedOrgs(
   radar: RadarWeekly,
   orgBrowsers: Map<string, string[]>,
   minDerived = MIN_DERIVED_SHARE,
+  excluded: readonly string[] = VALUE_CHART_EXCLUDED_ORGS,
 ): string[] {
   const out: string[] = [];
   for (const [org, browsers] of orgBrowsers) {
+    if (excluded.includes(org)) continue;
     for (const week of radar.keys()) {
       if ((derivedShare(radar, week, browsers) ?? 0) >= minDerived) {
         out.push(org);

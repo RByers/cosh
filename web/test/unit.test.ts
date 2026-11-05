@@ -18,6 +18,7 @@ import {
   topDirOrgs,
   type DirBoard,
   chartedOrgs,
+  VALUE_CHART_EXCLUDED_ORGS,
   clampRange,
   computeRatios,
   dataRanges,
@@ -190,6 +191,13 @@ test('derivedShare leaves Android WebView out of the usage denominator', () => {
 test('chartedOrgs skips orgs whose browsers never reach the threshold', () => {
   const radar = parseRadarWeekly(RADAR);
   assert.deepEqual(chartedOrgs(radar, parseOrgBrowsers(ORG_BROWSERS)), ['google.com', 'meta.com', 'microsoft.com', 'samsung.com']);
+});
+
+test('chartedOrgs leaves out excluded orgs, by default amazon.com and alibaba-inc.com', () => {
+  const radar = parseRadarWeekly(RADAR);
+  const ob = parseOrgBrowsers(ORG_BROWSERS);
+  assert.deepEqual(chartedOrgs(radar, ob, undefined, ['meta.com']), ['google.com', 'microsoft.com', 'samsung.com']);
+  assert.deepEqual([...VALUE_CHART_EXCLUDED_ORGS].sort(), ['alibaba-inc.com', 'amazon.com']);
 });
 
 test('topOrgCounts folds the tail and the summary Other row together', () => {
