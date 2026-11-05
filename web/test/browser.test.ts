@@ -1417,8 +1417,8 @@ test('per-review spread: the metric per reviewed CL, on the per-reviewer rows; r
     const vals = c.data.datasets.flatMap((ds) => (ds.data as unknown as { value: number }[]).map((p) => p.value));
     return c.scales.x.max >= Math.max(...vals);
   }));
-  // Addressed comments per review: the axis ends just past 10, and reviewers
-  // above it sit in a margin slot labelled ">10", their tooltips giving the value.
+  // Addressed comments per review: the axis ends just past 9, and reviewers
+  // above it sit in a margin slot labelled ">9", their tooltips giving the value.
   await page.evaluate(() => {
     window.__cosh!.state.metric = 'addressed';
     window.__cosh!.render();
@@ -1426,28 +1426,28 @@ test('per-review spread: the metric per reviewed CL, on the per-reviewer rows; r
   const capped = await page.evaluate(() => {
     const c = window.__cosh!.perReviewChart!;
     const pts = c.data.datasets.flatMap((ds) => ds.data as unknown as { x: number; value: number }[]);
-    const over = pts.filter((p) => p.value > 10);
+    const over = pts.filter((p) => p.value > 9);
     const cb = c.options.plugins!.tooltip!.callbacks!.label as unknown as (ctx: unknown) => string;
     return {
       max: c.scales.x.max,
       labels: c.scales.x.ticks.map((t) => t.label),
       over: over.length,
       overX: [...new Set(over.map((p) => p.x))],
-      inside: pts.every((p) => p.value > 10 || p.x === p.value),
+      inside: pts.every((p) => p.value > 9 || p.x === p.value),
       overLabel: over.length ? cb({ raw: over[0] }) : '',
       overValue: over.length ? over[0].value : 0,
       sub: document.querySelector('#pr-sub')!.textContent!,
     };
   });
-  assert.ok(capped.over > 0, 'the real data has addressed-per-review outliers above 10');
-  assert.ok(capped.max > 10 && capped.max <= 11, `max ${capped.max}`);
-  assert.equal(capped.labels[capped.labels.length - 1], '>10');
-  assert.ok(capped.labels.includes('10'));
+  assert.ok(capped.over > 0, 'the real data has addressed-per-review outliers above 9');
+  assert.ok(capped.max > 9 && capped.max < 10, `max ${capped.max}`);
+  assert.equal(capped.labels[capped.labels.length - 1], '>9');
+  assert.ok(Number(capped.labels[capped.labels.length - 2]) <= 9);
   assert.equal(capped.overX.length, 1);
-  assert.ok(capped.overX[0] > 10 && capped.overX[0] < capped.max);
+  assert.ok(capped.overX[0] > 9 && capped.overX[0] < capped.max);
   assert.ok(capped.inside);
   assert.ok(capped.overLabel.includes(capped.overValue.toLocaleString('en-US', { maximumFractionDigits: 1 })), capped.overLabel);
-  assert.match(capped.sub, /above 10 sit in the right margin/);
+  assert.match(capped.sub, /above 9 sit in the right margin/);
   // The section sits just below the per-reviewer spread.
   assert.equal(await page.$eval('#distribution', (e) => e.nextElementSibling!.id), 'per-review');
   assert.deepEqual(errors, []);

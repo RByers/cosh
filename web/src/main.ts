@@ -983,7 +983,7 @@ function renderDistribution(
 
 /** Where the addressed-comments-per-review axis ends: a few reviewers far
  * above it would otherwise squash everyone else to the left. */
-const PER_REVIEW_CAP = 10;
+const PER_REVIEW_CAP = 9;
 
 /** How deep each review goes, org by org: a strip plot of each reviewer's
  * metric per reviewed CL over the range (review comments per review when the
