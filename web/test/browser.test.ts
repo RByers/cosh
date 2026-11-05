@@ -1637,6 +1637,18 @@ test('heatmap: directories by time bins, per org or as a mix, with Gerrit links'
   assert.match(weekly.legend, /^0%.*100% of the directory/);
   assert.equal(weekly.sub, mix.sub, 'the column and value toggles leave the description alone');
 
+  // Longer columns are named in months: 13 weeks is "3 months", 52 weeks "12 months".
+  assert.deepEqual(
+    await page.$$eval('#heat-bin label', (ls) => ls.map((l) => l.textContent!.trim())),
+    ['Weeks', '4 weeks', '3 months', '12 months'],
+  );
+  await page.click('#heat-bin input[value="13"]');
+  assert.equal((await read()).bins, 4);
+  await page.click('#heat-bin input[value="52"]');
+  assert.equal((await read()).bins, 1);
+  assert.match(page.url(), /hmb=52/);
+  await page.click('#heat-bin input[value="1"]');
+
   // Expanding a row opens its subdirectories; "chart" shows one in the organization chart.
   await page.click(`#heat-table tr[data-key="${blink.key}"] .ar-toggle`);
   const renderer = (await read()).rows.find((r) => r.name === 'renderer/')!;

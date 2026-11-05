@@ -1687,7 +1687,7 @@ export function dirWeeklyCounts(
 }
 
 /** Heatmap column widths, in weeks. */
-export const HEAT_BIN_SIZES = [1, 4, 13] as const;
+export const HEAT_BIN_SIZES = [1, 4, 13, 52] as const;
 export type HeatBinSize = (typeof HEAT_BIN_SIZES)[number];
 export const DEFAULT_HEAT_BIN: HeatBinSize = 4;
 

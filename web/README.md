@@ -166,9 +166,9 @@ there alone; presentation lives in `src/style.css`.
    directories counts in each. A note lists the path rules (from the
    summary's metadata) and how comments are placed on files.
 7. **Review by directory over time** (`src/heatmap.ts`, `heatGrid` in
-   `src/data.ts`): the same drill-down rows against time bins of 1, 4
-   (default) or 13 weeks, lined up with the range's end. The Organization
-   selector picks every org, every org but google.com, or one org (the 25
+   `src/data.ts`): the same drill-down rows against time bins of 1 week, 4
+   weeks (default), 3 months (13 weeks) or 12 months (52 weeks), lined up
+   with the range's end. The Organization selector picks every org, every org but google.com, or one org (the 25
    busiest in the range); rows are ranked by what it selects. With several
    orgs each cell is a small stacked column of the org mix, its height the
    cell's volume against the row's busiest bin ("Volume") or full height
@@ -239,7 +239,7 @@ while "All data" is picked, so that link follows new data, plus `&rscale=linear`
 the linear review chart, `&lbn=100` (or `&lbn=all`) for a longer leaderboard, `&lbo=<org>` for
 its organization (`*-google.com` for all but google.com; old `&lbg=0` links
 still work), `&dir=<path>` for the organization chart's directory,
-and `&hm=<org>` (`*-google.com` for all but google.com), `&hmb=1|13` and
+and `&hm=<org>` (`*-google.com` for all but google.com), `&hmb=1|13|52` and
 `&hmv=share` for the heatmap, and
 `&lbr=<account id>` for the reviewer chart). Old `#week=2026-W44` links open that one week, and
 an old `dirs=` parameter is ignored.
