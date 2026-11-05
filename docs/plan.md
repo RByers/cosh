@@ -133,12 +133,14 @@ value_ratio(O, t) = O's share of Chromium addressed review comments
 - One-year backfill done 2026-11-04: 2025-W45 .. 2026-W44, batch size 200,
   duty cycle 0.5, 18.8 h. Its log is `data/private/backfill-52w-*.log`. The
   open-CL snapshot followed (28,117 CLs, 6,967 NoteDb refs).
-- Backfill to 2023-07-01 (2023-W26 .. 2025-W44, 123 more weeks) started
-  2026-11-04 with `backfill --weeks 175 --newest 2026-W44 --go`. It was
-  restarted at duty cycle 1.0 after week 1; about 15 min/week, so ~31 h. Log
-  in `data/private/backfill-3y-*.log`; rerun the same command to resume. When
-  it's done, rerun `extract-open` (its `since` becomes 2023-06-26), `derive`
-  and `summarize`.
+- Backfill to 2023-07-01 (2023-W26 .. 2025-W44, 123 more weeks) done
+  2026-11-05 about 03:16 UTC, after starting 2026-11-04 with `backfill
+  --weeks 175 --newest 2026-W44 --go` (duty cycle 1.0 after week 1; two
+  restarts, one after a crash on a merged CL listed without `submitted`).
+  Logs: `data/private/backfill-3y-*.log`. The open-CL snapshot followed
+  (2026-11-05 04:21 UTC, since 2023-06-26: 47,329 CLs, 5,383 NoteDb refs),
+  then a full `derive` (774,616 CLs, 1,538,620 comments, 11.5 min) and
+  `summarize`: the summaries cover all 175 weeks, 2023-W26 .. 2026-W44.
 - Cloudflare Radar: daily data from 2023-07-01 to now, aggregated to weeks
   and months in `data/public/radar_browser_share.csv`. Browser names are
   verified against the real data (`radar-research.md`, "Findings").
@@ -187,11 +189,10 @@ value_ratio(O, t) = O's share of Chromium addressed review comments
    there are more weeks; reduce and file the Chrome-on-macOS bug where the
    sticky metric bar's buttons jitter while scrolling ("Known browser bugs"
    in `web/README.md`).
-5. When the one-year backfill finishes:
-   - run `python3 -m cosh extract-open` (open-CL snapshot, approved);
-   - then `rm -f data/private/derived.sqlite && python3 -m cosh derive &&
-     python3 -m cosh summarize`;
-   - check the UI across the full year.
+5. After the backfill (done for 2023-W26 .. 2026-W44, 2026-11-05):
+   - done: `extract-open`, then `rm -f data/private/derived.sqlite &&
+     python3 -m cosh derive && python3 -m cosh summarize`;
+   - check the UI across the full 175 weeks.
    - Re-run `extract-open` before each later summary refresh, so recent
      weeks stay complete.
    - Consider telling Chromium infra (infra-dev@chromium.org) before any
@@ -208,9 +209,11 @@ value_ratio(O, t) = O's share of Chromium addressed review comments
        $6.01 API-equivalent, 41 min with `--jobs 8`), so 0 comments are
        pending. 54–61% of in-scope comments are addressed each week (58.6%
        for the year);
-     - classify older backfilled weeks the same way when wanted, about
-       0.5M tokens and under a minute a week: `python3 -m cosh classify
-       --week W ...`, `--dry-run` first;
+     - done 2026-11-05: all 175 weeks (2023-W26 .. 2026-W44) are
+       classified. The main run labelled 243,747 threads in 2,440 calls
+       (74.8M Haiku tokens, $17.64 API-equivalent, about 2 h with
+       `--jobs 8`); after the full rebuild, 1 thread was left and is
+       labelled, so `classify --dry-run` reports 0 pending;
      - done 2026-11-05: it is always the default headline (once any week
        is classified);
      - let the regex skip "[AI]" / "Maestro AI:" prefixes on owner replies;

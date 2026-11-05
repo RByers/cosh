@@ -397,7 +397,9 @@ test('switching the metric updates the table, review chart, directory chart and 
 test.skipIf(!hasAddressedWeeks())('addressed comments show only classified weeks, without a note', async () => {
   const classified = addressedWeeks(summary);
   const last = classified[classified.length - 1];
-  const from = addWeeks(classified[0], -8);
+  // Start 8 weeks before the first classified week, unless that is the first
+  // review week too (then nothing earlier exists, and the range would be clamped).
+  const from = classified[0] === summary.meta.weeks[0] ? classified[0] : addWeeks(classified[0], -8);
   const { page, errors } = await open(`#metric=addressed&from=${from}&to=${last}`);
   assert.equal(await page.$eval('#metric input[value="addressed"]', (i) => (i as HTMLInputElement).checked), true);
   assert.equal(await page.$eval('#metric-note', (n) => (n as HTMLElement).hidden), true);
@@ -432,7 +434,14 @@ test.skipIf(!hasAddressedWeeks())('addressed comments show only classified weeks
   const smoothed = await firstWeek();
   await page.click('#smoothing input[value="1"]');
   const raw = await firstWeek();
-  assert.ok(smoothed.ratio !== null && Math.abs(smoothed.ratio - raw.ratio!) < 1e-9, `${smoothed.ratio} vs ${raw.ratio}`);
+  // The ratio is null in both when the first week has no usage data (review
+  // data starts 2023-W26, Radar's the week after).
+  assert.ok(
+    raw.ratio === null
+      ? smoothed.ratio === null
+      : smoothed.ratio !== null && Math.abs(smoothed.ratio - raw.ratio) < 1e-9,
+    `${smoothed.ratio} vs ${raw.ratio}`,
+  );
   assert.ok(Math.abs(smoothed.review - raw.review) < 1e-9, `${smoothed.review} vs ${raw.review}`);
   await page.click('#smoothing input[value="4"]');
   // The intro links to the explainer in the thread box: it scrolls there without losing the URL state.
@@ -462,7 +471,10 @@ test.skipIf(!hasAddressedWeeks())('addressed comments show only classified weeks
   // Other metrics are unaffected and keep the note hidden.
   await page.click('#metric input[value="comments"]');
   assert.equal(await page.$eval('#metric-note', (n) => (n as HTMLElement).hidden), true);
-  assert.equal(await page.$eval('tr[data-org="google.com"] td:nth-child(8)', (td) => td.textContent), '—');
+  // The addressed column totals the range only when every week in it is classified.
+  const addressedCell = await page.$eval('tr[data-org="google.com"] td:nth-child(8)', (td) => td.textContent ?? '');
+  if (from === classified[0]) assert.match(addressedCell, /^[\d,]+$/);
+  else assert.equal(addressedCell, '—');
   assert.deepEqual(errors, []);
   await page.close();
 });
@@ -723,6 +735,8 @@ test('date range defaults to where review and usage data overlap, and drives eve
       return {
         range: c.state.range,
         common: c.data.ranges.common,
+        full: c.data.ranges.full,
+        radarFirst: [...c.data.radar.keys()].sort()[0],
         from: (document.querySelector('#from') as HTMLInputElement).value,
         to: (document.querySelector('#to') as HTMLInputElement).value,
         ratioWeeks: c.ratioChart!.data.labels as string[],
@@ -752,11 +766,12 @@ test('date range defaults to where review and usage data overlap, and drives eve
   assert.doesNotMatch(pinned.page.url(), /from=|to=/);
   await pinned.page.close();
 
-  // Pick an earlier start date: the usage chart widens to the week of that date.
-  // Four weeks before the default start, so this holds however much review
-  // data there is (Radar usage goes back to 2023-W26).
+  // Pick an earlier start date, four weeks before the default start: the
+  // usage chart widens to the week of that date, or to the earliest week with
+  // any data when that is later (review data now starts with Radar's, so the
+  // default start may already be the earliest).
   const earlier = new Date(Date.parse(`${d.from}T00:00:00Z`) - 26 * 86_400_000); // a Wednesday
-  const earlierWeek = isoWeekOf(earlier);
+  const earlierWeek = isoWeekOf(earlier) < d.full.from ? d.full.from : isoWeekOf(earlier);
   await page.$eval(
     '#from',
     (i, v) => {
@@ -768,7 +783,9 @@ test('date range defaults to where review and usage data overlap, and drives eve
   );
   const wide = await read();
   assert.equal(wide.range.from, earlierWeek);
-  assert.equal(wide.usageWeeks[0], earlierWeek);
+  // Radar's first week (2023-W27; its data starts Saturday 2023-07-01) can be
+  // later than the earliest review week the pickers allow.
+  assert.equal(wide.usageWeeks[0], earlierWeek < d.radarFirst ? d.radarFirst : earlierWeek);
   assert.equal(wide.pressed, undefined);
   assert.match(page.url(), new RegExp(`from=${earlierWeek}`));
   assert.ok(wide.reviewTotal >= d.reviewTotal);
