@@ -118,6 +118,7 @@ value_ratio(O, t) = O's share of Chromium addressed review comments
 | 2026-11-05 | The review charts name an org when it wrote at least `NAMED_ORG_MIN_SHARE` (0.25%) of review comments over the selected range, at most 8, so a legend never grows long (`namedOrgs` in `web/src/data.ts`), replacing the 2026-11-04 fixed `TOP_ORGS` (6). The set is decided by review comments whatever metric is selected, so switching metric doesn't reshuffle it; the same places use it (organization chart, directory and heatmap legends, per-reviewer rows, leaderboard and heatmap selectors and their "Other"). On the linear scale google.com is simply left out; no smaller org is promoted into its place | User's choice among options (share threshold, decided on review comments). Five orgs (Google, Microsoft, Intel, Opera, Igalia) have ≥0.4% in every range from 4 weeks to all 175; the next has ≤0.1% and changes with the range (ByteDance, Shopify, Datadog with 60 comments on 1 CL, a one-person domain), so a fixed 6th slot always showed a trivial org. A largest-gap rule fails (Google's dominance cuts after Microsoft), a per-metric activity rule fails on sparse metrics, and a minimum reviewer count would drop Opera (2 reviewers, ~1% of comments) |
 | 2026-11-05 | **A named org without a colour is shown in grey, never folded into Other.** The review charts no longer require a colour to name an org: one over the 0.25% bar but outside the 12-colour map gets its own grey series (dashed in the organization chart), legend entry and row. A unit test on the committed summaries fails if any org named over 13+ weeks, or any value-chart org, lacks a colour, as the prompt to re-evaluate the palette after a data update | User's request: a new org contributing a lot must at least show up, and the fixed palette should be re-checked after major data updates. Before this, januschka.com, huawei.com and kernel.org were named in some 4-week ranges but hidden in Other |
 | 2026-11-05 | **Org colours stay computed from the data, with no palette check.** The 12-colour map is worked out when the page loads (all-time review rank, then value-chart orgs), so a growing org takes a colour on its own and colours may shift when the data is updated. The real-data test that flagged orgs named in grey over 13+ weeks, and the CLAUDE.md step to act on it, are removed; a named org without a colour still shows in grey, never in Other | User's choice between a fixed org → colour list in config (kept stable by hand, with the test flagging when it needs updating) and a fully runtime map: runtime, accepting that colours may shift on data updates |
+| 2026-11-05 | Exclude brave.com again (reverts the 2026-11-04 re-inclusion): no brave.com → Brave mapping, and the org table shows its usage as "unknown" and its ratio as "usage unknown" (`UNKNOWN_USAGE_ORGS` in `web/src/data.ts`), not "usage too small" | User's instruction: Radar's Brave label is ~1000× below Brave's real size, so its usage is unknown rather than small |
 
 ## Status
 
@@ -370,8 +371,8 @@ value_ratio(O, t) = O's share of Chromium addressed review comments
   as an explanatory breakdown than as a metric. Would need the CL owner's
   org (`changes.owner_account`, resolved as of the comment's day) in the
   summaries; no new fetching.
-- Vivaldi has no Radar label at all and counts as Chrome, like most of Brave
-  (whose own label is largely understated; noted in the UI). Estimate them somehow, e.g. re-split Chrome's
+- Vivaldi has no Radar label at all and counts as Chrome, like Brave (which is
+  now excluded with a note). Estimate them somehow, e.g. re-split Chrome's
   share with published MAU?
 - Should the UI show monthly as well as weekly data? Weekly Radar data may be
   noisy.

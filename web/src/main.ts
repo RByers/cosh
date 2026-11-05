@@ -68,6 +68,7 @@ import {
   addressedRange,
   addressedWeeks,
   MIN_DERIVED_SHARE,
+  UNKNOWN_USAGE_ORGS,
   orgTotals,
   parseIsoDate,
   parseOrgBrowsers,
@@ -555,7 +556,7 @@ function orgRangeShares(data: Data, state: State, weeks: string[], vWeeks: strin
   const totals = orgTotals(data.summary, weeks, distinctReviewers(data.reviewers, weeks).byOrg);
   // Review share and usage share over the same weeks: those with both.
   const vTotals = vWeeks === weeks ? totals : orgTotals(data.summary, vWeeks);
-  const orgs = new Set([...totals.map((r) => r.org), ...data.orgBrowsers.keys()]);
+  const orgs = new Set([...totals.map((r) => r.org), ...data.orgBrowsers.keys(), ...UNKNOWN_USAGE_ORGS.keys()]);
   return [...orgs].map((org) => {
     const row = totals.find((r) => r.org === org);
     const vRow = vTotals.find((r) => r.org === org);
@@ -563,7 +564,8 @@ function orgRangeShares(data: Data, state: State, weeks: string[], vWeeks: strin
     const contribution = vRow ? vRow[SHARE_COLUMN[state.metric]] : 0;
     const derived = browsers && vWeeks.length ? meanDerivedShare(data.radar, vWeeks, browsers) : null;
     const ratio = derived !== null && derived >= MIN_DERIVED_SHARE ? contribution / derived : null;
-    return { org, row, browsers, contribution, derived, ratio };
+    const unknownUsage = UNKNOWN_USAGE_ORGS.has(org);
+    return { org, row, browsers, unknownUsage, contribution, derived, ratio };
   });
 }
 
@@ -599,7 +601,7 @@ function renderTable(data: Data, state: State, weeks: string[], vWeeks: string[]
   const addressedShown = weeks.length > 0 && weeks.every((w) => classified.has(w));
   const items = orgRangeShares(data, state, weeks, vWeeks);
   items.sort((a, b) => b.contribution - a.contribution || (b.derived ?? 0) - (a.derived ?? 0));
-  const shown = trimRanked(items, TABLE_TOP_ORGS, (it) => !!it.browsers);
+  const shown = trimRanked(items, TABLE_TOP_ORGS, (it) => !!it.browsers || it.unknownUsage);
   const hidden = items.length - shown.length;
   fill($('#table-caption'), {
     weeks: weeks.length,
@@ -622,13 +624,13 @@ function renderTable(data: Data, state: State, weeks: string[], vWeeks: string[]
       if (color) swatch.style.setProperty('--color', color);
       orgCell.append(swatch, document.createTextNode(it.org));
       const ratioText = msg('ratio-cell', {
-        is: it.ratio !== null ? 'value' : !it.browsers ? 'no-browser' : it.derived === null ? 'no-usage' : 'small',
+        is: it.ratio !== null ? 'value' : it.unknownUsage ? 'unknown' : !it.browsers ? 'no-browser' : it.derived === null ? 'no-usage' : 'small',
         ratio: it.ratio !== null ? formatRatio(it.ratio) : '',
       });
       const r = it.row;
       const cells = [
         pct(it.contribution),
-        it.browsers ? (it.derived === null ? '—' : pct(it.derived)) : '—',
+        it.unknownUsage ? 'unknown' : it.browsers ? (it.derived === null ? '—' : pct(it.derived)) : '—',
         ratioText,
         r ? int(r.reviewers) : '0',
         r ? int(r.reviewed_cls) : '—',
