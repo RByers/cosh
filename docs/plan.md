@@ -189,6 +189,16 @@ value_ratio(O, t) = O's share of Chromium addressed review comments
        (2026-11-05); check `/usage`;
      - make it the default headline once the default range is classified;
      - let the regex skip "[AI]" / "Maestro AI:" prefixes on owner replies;
+     - **reminder for the user: recheck the classifier with a second
+       model.** In the 2026-11-04 audit (precision 0.98, recall 0.99;
+       `comment-classifier.md`, "Production audit"), Opus both judged the
+       800 threads and adjudicated the disagreements. Errors Haiku and Opus
+       share were checked only by a 60-thread read. Run a second judge
+       (e.g. `classifier_audit.py judge --model sonnet`, or a non-Claude
+       model) on the same 800 threads, and read where it disagrees with the
+       final labels. The threads are listed by CL and root comment in
+       `docs/audits/classifier-2026-11-04.jsonl`; a fresh `sample` with the
+       same seed draws different threads once more labels exist;
      - after the next full `derive` on the main DB, rerun `summarize`.
    - **The original plan, for reference:**
    - **Scoring:** one point per non-author comment in a review thread that
