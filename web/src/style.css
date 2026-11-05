@@ -149,6 +149,8 @@ html {
   scroll-padding-top: calc(var(--metric-bar-h, 76px) + 8px);
 }
 
+/* Known Chrome bug (macOS, 2x): the stuck bar's buttons jitter while
+   scrolling. See "Known browser bugs" in web/README.md before changing this. */
 .metric-bar {
   position: sticky;
   top: 0;

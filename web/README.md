@@ -37,6 +37,44 @@ reviewed CLs, all counted from comments) covers only the paths
 `config/paths.txt` includes. Python applies the scope in `summarize`; the page
 only reads the result.
 
+The metric picker sits in a bar (`.metric-bar`) that sticks to the top of
+the window (`position: sticky`), so the metric can be switched from anywhere
+on the page. `scroll-padding-top` is set from the bar's measured height
+(`--metric-bar-h`, kept current by a `ResizeObserver` in `src/main.ts`), so
+anchor jumps land just below it.
+
+### Known browser bugs
+
+**Chrome on macOS: the stuck metric bar's buttons jitter while scrolling**
+(found 2026-11-04, not yet reported or reduced; to follow up). On a Mac at
+device scale factor 2, scrolling with the trackpad makes the toggle buttons
+(Addressed comments, Review comments, …) jitter up and down a little, while
+the "Contribution metric" legend in the same bar holds steady. Safari on the
+same Mac is smooth. Nothing on the page moves the bar: it is plain
+`position: sticky; top: 0`, and there are no scroll listeners.
+
+What we know so far:
+
+- Not reproducible in headless Chrome on Linux at 1x, 2x or 200% zoom, using
+  wheel scrolling, `scrollTo` in ¼px steps (including with the bar's resting
+  position forced to fractional offsets), or compositor-thread scroll
+  gestures (`Input.synthesizeScrollGesture`) captured frame by frame. Every
+  frame has the bar's text and border on the same device-pixel row. There,
+  the bar gets its own composited layer, with a sticky position constraint.
+- In the buttons, each `<label>` has `position: relative` and holds an
+  `opacity: 0`, absolutely positioned radio stretched over it. Making the labels
+  static and hiding the radios with a 1px clip instead (commit 0094ff6,
+  reverted in f19167d) did not stop the jitter on the Mac.
+- `will-change: transform` on the bar did not help on the Mac either. In
+  headless Chrome it made things worse: during compositor scrolling the bar
+  was drawn a device pixel low, with page content showing above it in about
+  a third of frames, and its layer no longer reported a sticky constraint.
+  So the bar has no `will-change`.
+
+Next steps: reduce it to a minimal sticky bar with segmented radio labels,
+check it in Chrome on macOS at 2x (trackpad, then mouse wheel), and file a
+crbug with the reduction if it still reproduces.
+
 ## Date range
 
 One date range (From / To, plus presets) applies to every section. Each date

@@ -183,7 +183,9 @@ value_ratio(O, t) = O's share of Chromium addressed review comments
 3. Push to GitHub and enable Pages (Settings → Pages → Source: GitHub
    Actions).
 4. UI follow-ups: monthly granularity; an AI-comments-over-time view once
-   there are more weeks.
+   there are more weeks; reduce and file the Chrome-on-macOS bug where the
+   sticky metric bar's buttons jitter while scrolling ("Known browser bugs"
+   in `web/README.md`).
 5. When the one-year backfill finishes:
    - run `python3 -m cosh extract-open` (open-CL snapshot, approved);
    - then `rm -f data/private/derived.sqlite && python3 -m cosh derive &&
