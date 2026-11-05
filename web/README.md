@@ -114,7 +114,7 @@ Over a range:
    week, using weeks before the range too (`smoothRatios` in `src/data.ts`).
    The usage denominator leaves out Radar's ChromeDerivative bucket
    (`RATIO_EXCLUDED_BROWSERS`), whose 2026-W37 jump is not yet explained.
-3. **Reviews by organization**: weekly review comments over the range
+3. **Review by organization**: weekly review comments over the range
    (smoothed like the ratio), one line each for the top 7 orgs and then
    "Other". A toggle switches from the default log axis to a linear axis with
    google.com left out entirely (the next-ranked org takes its slot). The
