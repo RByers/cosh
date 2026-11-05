@@ -1057,6 +1057,9 @@ test('per-review spread: the metric per reviewed CL, on the per-reviewer rows; r
     });
   const v = await read();
   assert.equal(v.title, 'Review comments per review');
+  // A linear axis from 0 here; the per-reviewer spread keeps its log axis.
+  assert.deepEqual(await page.evaluate(() => [window.__cosh!.perReviewChart!.scales.x.type,
+    window.__cosh!.perReviewChart!.scales.x.min, window.__cosh!.distChart!.scales.x.type]), ['linear', 0, 'logarithmic']);
   // Same rows, in the same order, as the per-reviewer spread below it.
   assert.deepEqual(v.orgs, v.distOrgs.filter((o) => v.orgs.includes(o)));
   assert.equal(v.orgs[0], 'google.com');

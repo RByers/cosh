@@ -120,8 +120,8 @@ Over a range:
    row and column headers; the directory column stays put while the bins
    scroll sideways on narrow screens.
 8. **Per review** (`orgPerReviewSpreads` in `src/data.ts`, the same
-   `renderSpreadChart`): just above the per-reviewer spread and on the same
-   org rows, each reviewer's metric over the range divided by their reviewed
+   `renderSpreadChart`, on a linear axis from 0): just above the per-reviewer
+   spread and on the same org rows, each reviewer's metric over the range divided by their reviewed
    CLs (CLs they commented on), or review comments per review under the
    Reviewed CLs metric; the title follows (“Review comments per review”).
    Only reviewers with at least 3 reviewed CLs (`PER_REVIEW_MIN`) and a

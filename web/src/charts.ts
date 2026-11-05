@@ -609,8 +609,9 @@ export const SPREAD_BOX_MIN = 5;
  * row per org, one dot per reviewer on a log axis (0 gets its own slot at
  * the left), with a box over the middle half of the row and a line at its
  * median. Hovering a dot gives the reviewer's email; clicking it calls `onPick`.
- * `opts` relabels it for other per-reviewer values, such as a ratio; the axis
- * reaches below 1 when some value does. */
+ * `opts` relabels it for other per-reviewer values, such as a ratio; the log
+ * axis starts just below the smallest value. `opts.linear` uses a linear axis
+ * from 0 instead (0 is then an ordinary value, with no slot of its own). */
 export function renderSpreadChart(
   canvas: HTMLCanvasElement,
   spreads: OrgSpread[],
@@ -621,7 +622,7 @@ export function renderSpreadChart(
   theme: Theme,
   selected: number | null,
   onPick: (id: number) => void,
-  opts: { unit?: string; axisTitle?: string } = {},
+  opts: { unit?: string; axisTitle?: string; linear?: boolean } = {},
 ): Chart<'scatter'> {
   const unit = opts.unit ?? metricLabel.toLowerCase();
   const values = spreads.flatMap((s) => s.reviewers.map((r) => r.value));
@@ -635,7 +636,7 @@ export function renderSpreadChart(
   const fmt = (v: number) =>
     v.toLocaleString('en-US', { maximumFractionDigits: v > 0 && v < 1 ? 2 : 1 });
   const ZERO = 0.5 * low;
-  const xOf = (v: number) => (v > 0 ? v : ZERO);
+  const xOf = (v: number) => (v > 0 || opts.linear ? v : ZERO);
   type P = { x: number; y: number; id: number; value: number };
   const datasets = spreads.map((s, row) => {
     const color = colorOf(s.org);
@@ -722,7 +723,25 @@ export function renderSpreadChart(
         },
       },
       scales: {
-        x: {
+        x: opts.linear ? {
+          type: 'linear',
+          min: 0,
+          title: {
+            display: true,
+            text: opts.axisTitle ?? `${unit} per reviewer over the range`,
+            color: theme.muted,
+          },
+          border: { color: theme.baseline },
+          grid: { color: theme.grid },
+          ticks: {
+            color: theme.muted,
+            maxRotation: 0,
+            callback: (v) => {
+              const n = Number(v);
+              return n < 1000 ? String(n) : n.toLocaleString('en-US', { notation: 'compact' });
+            },
+          },
+        } : {
           type: 'logarithmic',
           min: axisMin,
           max: max * 1.4,

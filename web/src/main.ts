@@ -1065,8 +1065,8 @@ function renderPerReview(
   $('#pr-title').textContent = name;
   $('#pr-sub').textContent = weeks.length
     ? `Each reviewer's ${metricName(num).toLowerCase()} over ${rangeLabel(state.range)} divided by the CLs they ` +
-      'reviewed (commented on): one dot per reviewer, on the same organization rows as the chart below, on a log ' +
-      "scale. Each box spans the middle half of its row's reviewers, with a thick line at the median; " +
+      'reviewed (commented on): one dot per reviewer, on the same organization rows as the chart below. ' +
+      "Each box spans the middle half of its row's reviewers, with a thick line at the median; " +
       `rows with under five reviewers get none. Only reviewers with at least ${PER_REVIEW_MIN} reviewed CLs ` +
       "count, so that one CL doesn't decide a dot" +
       (num === 'addressed' ? '; those with none addressed sit at 0. ' : '. ') +
@@ -1108,7 +1108,7 @@ function renderPerReview(
       render();
       $('#reviewer-detail').scrollIntoView({ block: 'nearest' });
     },
-    { unit, axisTitle: `${unit}, per reviewer over the range (log scale)` },
+    { unit, axisTitle: `${unit}, per reviewer over the range`, linear: true },
   );
 }
 
