@@ -58,14 +58,22 @@
         </fieldset>
         <p id="metric-note" class="range-summary metric-note" aria-live="polite" hidden></p>
         <fieldset id="smoothing" class="segmented">
-          <legend>Smoothing <span class="legend-note">(running average of the value ratio and review charts)</span></legend>
+          <legend>Smoothing <span class="legend-note">(running average of the value ratio over time and review charts)</span></legend>
         </fieldset>
       </form>
 
       <p id="error" class="error" role="alert" hidden></p>
 
+      <section class="card" aria-labelledby="parity-title">
+        <h2 id="parity-title">Value ratio</h2>
+        <p id="parity-sub" class="sub"></p>
+        <div class="chart chart-square">
+          <canvas id="parity-chart" role="img" aria-label="Share of review against share of browser usage per organization, on log axes, with a diagonal line at a 1.0 value ratio; the table below lists the values."></canvas>
+        </div>
+      </section>
+
       <section class="card" aria-labelledby="ratio-title">
-        <h2 id="ratio-title">Value ratio</h2>
+        <h2 id="ratio-title">Value ratio over time</h2>
         <p id="ratio-sub" class="sub"></p>
         <div class="chart chart-tall">
           <canvas id="ratio-chart" role="img" aria-label="Value ratio per organization over time; the table below lists the values."></canvas>

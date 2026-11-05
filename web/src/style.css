@@ -299,6 +299,14 @@ input[type='date']:focus-visible,
   height: 420px;
 }
 
+/* Equal axes: both are log over the same decades, so the parity diagonal
+ * sits at 45°. */
+.chart-square {
+  height: auto;
+  aspect-ratio: 1;
+  max-width: 560px;
+}
+
 .tiles {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));

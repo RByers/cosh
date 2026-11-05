@@ -13,6 +13,7 @@ import threadExamplesUrl from '../../summaries/thread_examples.json?url';
 import {
   type AnyChart,
   readTheme,
+  renderParityChart,
   renderRatioChart,
   renderReviewChart,
   renderSpreadChart,
@@ -156,6 +157,7 @@ let userRange: WeekRange | null = null;
 let reviewerChart: AnyChart | undefined;
 let distChart: AnyChart | undefined;
 let perReviewChart: AnyChart | undefined;
+let parityChart: AnyChart | undefined;
 let examples: Promise<ThreadExamples> | null = null;
 
 /** Organization choices (heatmap and leaderboard) besides a single org. */
@@ -171,6 +173,7 @@ declare global {
     __cosh?: {
       data: Data;
       state: State;
+      parityChart?: AnyChart;
       ratioChart?: AnyChart;
       reviewChart?: AnyChart;
       usageChart?: AnyChart;
@@ -596,12 +599,12 @@ function renderTiles(data: Data, weeks: string[]) {
   );
 }
 
-function renderTable(data: Data, state: State, weeks: string[], colors: Map<string, string>) {
+/** Each org's share of the metric and of usage over the range, and their
+ * ratio: what the table lists and the parity chart plots. */
+function orgRangeShares(data: Data, state: State, weeks: string[]) {
   const totals = orgTotals(data.summary, weeks, distinctReviewers(data.reviewers, weeks).byOrg);
-  const classified = new Set(addressedWeeks(data.summary));
-  const addressedShown = weeks.length > 0 && weeks.every((w) => classified.has(w));
   const orgs = new Set([...totals.map((r) => r.org), ...data.orgBrowsers.keys(), ...UNKNOWN_USAGE_ORGS.keys()]);
-  const items = [...orgs].map((org) => {
+  return [...orgs].map((org) => {
     const row = totals.find((r) => r.org === org);
     const browsers = data.orgBrowsers.get(org);
     const contribution = row ? row[SHARE_COLUMN[state.metric]] : 0;
@@ -610,6 +613,39 @@ function renderTable(data: Data, state: State, weeks: string[], colors: Map<stri
     const unknownUsage = UNKNOWN_USAGE_ORGS.has(org);
     return { org, row, browsers, unknownUsage, contribution, derived, ratio };
   });
+}
+
+/** The parity chart: review share against usage share over the range, for
+ * the orgs the ratio-over-time chart shows. */
+function renderParity(data: Data, state: State, weeks: string[], orgs: string[], colors: Map<string, string>, theme: Theme) {
+  const label = rangeLabel(state.range);
+  const metricLabel = metricName(state.metric).toLowerCase();
+  const items = orgRangeShares(data, state, weeks).filter((it) => orgs.includes(it.org) && it.ratio !== null);
+  const plotted = items.filter((it) => it.contribution > 0);
+  const none = items.filter((it) => it.contribution <= 0).map((it) => it.org);
+  parityChart?.destroy();
+  parityChart = renderParityChart(
+    $<HTMLCanvasElement>('#parity-chart'),
+    plotted.map((it) => ({ org: it.org, contribution: it.contribution, derived: it.derived! })),
+    metricLabel,
+    colors,
+    theme,
+  );
+  $('#parity-sub').textContent = weeks.length
+    ? `Each organization's share of ${metricLabel} against its browsers' share of Chromium browser usage, ${label}` +
+      (weeks.length > 1 ? ' (totals over the range; usage is the mean weekly share)' : '') +
+      '. Both axes are logarithmic. On the diagonal the value ratio is 1.0×, review in proportion to usage; ' +
+      'organizations above it review more than their usage share, those below less.' +
+      (none.length
+        ? ` ${none.join(', ')} ${none.length === 1 ? 'has' : 'have'} no ${metricLabel} in the range, so can't be placed on a log axis.`
+        : '')
+    : `No review data for ${label}.`;
+}
+
+function renderTable(data: Data, state: State, weeks: string[], colors: Map<string, string>) {
+  const classified = new Set(addressedWeeks(data.summary));
+  const addressedShown = weeks.length > 0 && weeks.every((w) => classified.has(w));
+  const items = orgRangeShares(data, state, weeks);
   items.sort((a, b) => b.contribution - a.contribution || (b.derived ?? 0) - (a.derived ?? 0));
   const shown = trimRanked(items, TABLE_TOP_ORGS, (it) => !!it.browsers || it.unknownUsage);
   const hidden = items.length - shown.length;
@@ -1252,6 +1288,7 @@ function main(data: Data) {
       (p) => orgs.includes(p.org) && weeks.includes(p.week),
     );
 
+    renderParity(data, state, weeks, orgs, colors, theme);
     ratioChart?.destroy();
     ratioChart = renderRatioChart($<HTMLCanvasElement>('#ratio-chart'), weeks, orgs, colors, points, theme, state.smoothing);
     const name = metricName(state.metric);
@@ -1319,7 +1356,7 @@ function main(data: Data) {
       : `No review data for ${label}.`;
     renderTiles(data, weeks);
     renderTable(data, state, weeks, colors);
-    window.__cosh = { data, state, ratioChart, reviewChart, usageChart, distChart, perReviewChart, render };
+    window.__cosh = { data, state, parityChart, ratioChart, reviewChart, usageChart, distChart, perReviewChart, render };
   };
 
   // The intro's link scrolls to the classifier explainer, which is in the

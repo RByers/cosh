@@ -235,6 +235,154 @@ export function renderRatioChart(
   });
 }
 
+/** One org's range totals for the parity chart. */
+export interface ParityPoint {
+  org: string;
+  /** Share of the chosen review metric over the range. */
+  contribution: number;
+  /** Mean weekly share of Chromium browser usage over the range. */
+  derived: number;
+}
+
+/** Log-axis tick label as a percentage: 0.001 → "0.1%", 0.5 → "50%". */
+export function formatShare(v: number): string {
+  return `${(v * 100).toLocaleString('en-US', { maximumSignificantDigits: 2 })}%`;
+}
+
+/** Shared bounds for both log axes: whole decades around every value, so the
+ * y = x parity line runs corner to corner. */
+export function parityBounds(points: ParityPoint[]): { min: number; max: number } {
+  const vals = points.flatMap((p) => [p.contribution, p.derived]).filter((v) => v > 0);
+  if (!vals.length) return { min: 0.001, max: 1 };
+  const min = 10 ** Math.floor(Math.log10(Math.min(...vals)) + 1e-9);
+  const max = Math.min(1, 10 ** Math.ceil(Math.log10(Math.max(...vals)) - 1e-9));
+  return { min, max: max > min ? max : min * 10 };
+}
+
+/** Review share against usage share over the range, one point per org, both
+ * on log axes with the same bounds. The diagonal y = x is a 1.0× value ratio:
+ * orgs above it review more than their usage share, those below less. Orgs
+ * with no review in the range have no place on a log axis; the caller leaves
+ * them out. */
+export function renderParityChart(
+  canvas: HTMLCanvasElement,
+  points: ParityPoint[],
+  metricLabel: string,
+  colors: Map<string, string>,
+  theme: Theme,
+): Chart<'scatter'> {
+  const { min, max } = parityBounds(points);
+  const datasets = points.map((p) => ({
+    label: p.org,
+    data: [{ x: p.derived, y: p.contribution }],
+    backgroundColor: colors.get(p.org) ?? theme.muted,
+    borderColor: theme.surface,
+    borderWidth: 2,
+    pointRadius: 7,
+    pointHoverRadius: 9,
+    // An org near 100% sits on the edge; draw its whole dot.
+    clip: false as const,
+  }));
+  const plugin: Plugin<'scatter'> = {
+    id: 'parityLine',
+    // The parity diagonal, under the points.
+    beforeDatasetsDraw(chart) {
+      const { ctx, chartArea: a, scales } = chart;
+      const x = scales.x;
+      const y = scales.y;
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(a.left, a.top, a.right - a.left, a.bottom - a.top);
+      ctx.clip();
+      ctx.strokeStyle = theme.parity;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(x.getPixelForValue(min), y.getPixelForValue(min));
+      ctx.lineTo(x.getPixelForValue(max), y.getPixelForValue(max));
+      ctx.stroke();
+      // Its label runs along the line, above it near the low end: high review
+      // on tiny usage, a corner no org is near.
+      const x0 = x.getPixelForValue(min);
+      const y0 = y.getPixelForValue(min);
+      const angle = Math.atan2(y.getPixelForValue(max) - y0, x.getPixelForValue(max) - x0);
+      ctx.translate(x0, y0);
+      ctx.rotate(angle);
+      ctx.fillStyle = theme.parity;
+      ctx.font = `bold 12px ${Chart.defaults.font.family}`;
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'bottom';
+      ctx.fillText('1.0× value ratio (parity)', 24, -4);
+      ctx.restore();
+    },
+    // Org names beside their points, so the chart reads without the legend.
+    afterDatasetsDraw(chart) {
+      const { ctx, chartArea: a } = chart;
+      ctx.save();
+      ctx.font = `12px ${Chart.defaults.font.family}`;
+      ctx.fillStyle = theme.text;
+      ctx.textBaseline = 'middle';
+      chart.data.datasets.forEach((ds, i) => {
+        const meta = chart.getDatasetMeta(i);
+        const pt = meta.data[0];
+        if (!pt || meta.hidden) return;
+        const label = ds.label ?? '';
+        const right = pt.x + 12 + ctx.measureText(label).width <= a.right;
+        ctx.textAlign = right ? 'left' : 'right';
+        ctx.fillText(label, right ? pt.x + 12 : pt.x - 12, pt.y);
+      });
+      ctx.restore();
+    },
+  };
+  // Ticks, labels and gridlines on whole decades only: 0.01%, 0.1%, 1%, …
+  const decades: number[] = [];
+  for (let e = Math.round(Math.log10(min)); e <= Math.round(Math.log10(max)); e++) decades.push(10 ** e);
+  const axis = (title: string) => ({
+    type: 'logarithmic' as const,
+    min,
+    max,
+    title: { display: true, text: title, color: theme.muted },
+    border: { color: theme.baseline },
+    grid: { color: theme.grid },
+    afterBuildTicks: (scale: Scale) => {
+      scale.ticks = decades.map((value) => ({ value }));
+    },
+    ticks: {
+      color: theme.muted,
+      autoSkip: false,
+      maxRotation: 0,
+      callback: (v: number | string) => formatShare(Number(v)),
+    },
+  });
+  const base = baseOptions(theme);
+  return new Chart<'scatter'>(canvas, {
+    type: 'scatter',
+    data: { datasets },
+    plugins: [plugin],
+    options: {
+      ...base,
+      interaction: { mode: 'nearest', intersect: true },
+      plugins: {
+        ...base.plugins,
+        // Each point is labelled with its org instead.
+        legend: { display: false },
+        tooltip: {
+          ...base.plugins.tooltip,
+          callbacks: {
+            label: (ctx) => {
+              const p = ctx.raw as { x: number; y: number };
+              return `${ctx.dataset.label}: ${formatRatio(p.y / p.x)}×  (${pct(p.y)} of ${metricLabel} ÷ ${pct(p.x)} of usage)`;
+            },
+          },
+        },
+      },
+      scales: {
+        x: axis('share of Chromium browser usage (log scale)'),
+        y: axis(`share of ${metricLabel} (log scale)`),
+      },
+    },
+  });
+}
+
 /** Review chart y axis: log with every org, or linear without google.com. */
 export type ReviewScale = 'log' | 'linear';
 

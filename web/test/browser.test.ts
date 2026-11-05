@@ -78,11 +78,64 @@ test('page loads data and renders all three charts without errors', async () => 
     assert.ok(c.w > 200 && c.h > 200, `${c.k} has size ${c.w}x${c.h}`);
     assert.ok(c.n >= 1, `${c.k} has datasets`);
   }
-  // Charts come in order: ratio, review, usage, the table, directories, directories over time, per review, the per-reviewer
-  // distribution, then the leaderboard.
+  // Charts come in order: parity, ratio over time, review, usage, the table, directories, directories over time,
+  // per review, the per-reviewer distribution, then the leaderboard.
   const order = await page.$$eval('main > section', (s) => s.map((e) => e.querySelector('canvas, table, .lb, .ar')?.id));
   assert.deepEqual(order.filter(Boolean),
-    ['ratio-chart', 'review-chart', 'usage-chart', 'org-table', 'area-chart', 'heat-table', 'pr-chart', 'dist-chart', 'leaderboard-chart']);
+    ['parity-chart', 'ratio-chart', 'review-chart', 'usage-chart', 'org-table', 'area-chart', 'heat-table', 'pr-chart', 'dist-chart', 'leaderboard-chart']);
+  const titles = await page.$$eval('#parity-title, #ratio-title', (h) => h.map((e) => e.textContent));
+  assert.deepEqual(titles, ['Value ratio', 'Value ratio over time']);
+  await page.close();
+});
+
+test('parity chart: review share against usage share on equal log axes, matching the table', async () => {
+  const { page, errors } = await open();
+  const d = await page.evaluate(() => {
+    const c = window.__cosh!.parityChart!;
+    const { x, y } = c.scales;
+    const pts: Record<string, { x: number; y: number }> = Object.fromEntries(
+      c.data.datasets.map((ds: { label?: string; data: unknown[] }) => [ds.label, ds.data[0] as { x: number; y: number }]),
+    );
+    const table = Object.fromEntries(
+      [...document.querySelectorAll<HTMLElement>('#org-table tbody tr')].map((r) => [r.dataset.org, r.querySelector('td.ratio')!.textContent]),
+    );
+    return {
+      types: [x.type, y.type],
+      bounds: [x.min, x.max, y.min, y.max],
+      area: c.chartArea,
+      pts,
+      table,
+      xTitle: (c.options.scales.x as { title: { text: string } }).title.text,
+      yTitle: (c.options.scales.y as { title: { text: string } }).title.text,
+      sub: document.querySelector('#parity-sub')!.textContent!,
+      plugins: (c.config.plugins ?? []).map((p: { id: string }) => p.id),
+    };
+  });
+  assert.deepEqual(errors, []);
+  assert.deepEqual(d.types, ['logarithmic', 'logarithmic']);
+  // Same bounds on both axes, so the diagonal is y = x.
+  assert.equal(d.bounds[0], d.bounds[2]);
+  assert.equal(d.bounds[1], d.bounds[3]);
+  assert.ok(d.plugins.includes('parityLine'));
+  assert.match(d.yTitle, /^share of addressed comments/);
+  assert.match(d.xTitle, /^share of Chromium browser usage/);
+  assert.match(d.sub, /1\.0×/);
+  // Google above the diagonal, Microsoft below, as in the table.
+  const g = d.pts['google.com']!;
+  const m = d.pts['microsoft.com']!;
+  assert.ok(g.y > g.x, JSON.stringify(g));
+  assert.ok(m.y < m.x, JSON.stringify(m));
+  assert.ok(!('brave.com' in d.pts));
+  for (const [org, p] of Object.entries(d.pts)) {
+    assert.ok(p.x >= d.bounds[0] && p.x <= d.bounds[1] && p.y >= d.bounds[0] && p.y <= d.bounds[1], org);
+    // The table rounds (0.0005× shows as 0.0×).
+    const r = p.y / p.x;
+    assert.ok(Math.abs(parseFloat(d.table[org]!) - r) <= 0.05 * r + 0.05, `${org}: ${d.table[org]} vs ${r}`);
+  }
+  // Roughly square plot area.
+  const w = d.area.right - d.area.left;
+  const h = d.area.bottom - d.area.top;
+  assert.ok(Math.abs(w - h) / w < 0.15, `${w}x${h}`);
   await page.close();
 });
 

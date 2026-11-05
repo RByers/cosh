@@ -59,14 +59,21 @@ Over a range:
 
 ## Layout
 
-1. **Value ratio** per org per week in the range. 1× is the vertical middle: the
+1. **Value ratio**: one dot per browser-owning org, its share of the
+   selected metric (addressed comments by default) over the range against its
+   mean usage share, both on log axes over the same decades in a square plot
+   (`renderParityChart`). The diagonal y = x is a 1.0× ratio: above it, more
+   review than usage share. Orgs with none of the metric in the range can't sit
+   on a log axis and are named in the subtitle instead. Same numbers as the
+   table (`orgRangeShares` in `src/main.ts`); smoothing doesn't apply.
+2. **Value ratio over time** per org per week in the range. 1× is the vertical middle: the
    lower half is linear 0–1×, the upper half linear 1×–max (`src/scale.ts`).
    Smoothing (default 4 weeks; also off or 3 months, i.e. 13 weeks) plots a trailing running
    average: mean review share ÷ mean usage share over the weeks ending each
    week, using weeks before the range too (`smoothRatios` in `src/data.ts`).
    The usage denominator leaves out Radar's ChromeDerivative bucket
    (`RATIO_EXCLUDED_BROWSERS`), whose 2026-W37 jump is not yet explained.
-2. **Review by organization**: weekly review comments over the range
+3. **Review by organization**: weekly review comments over the range
    (smoothed like the ratio), one line each for the top 7 orgs and then
    "Other". A toggle switches from the default log axis to a linear axis with
    google.com left out entirely (the next-ranked org takes its slot). The
@@ -76,10 +83,10 @@ Over a range:
    `area_weekly.json`, in scope or not, and the subtitle says how much of it
    the rest of the page leaves out. For reviewed CLs, a CL with comments in
    two of its subdirectories counts in each.
-3. **Chromium browser usage** from Cloudflare Radar, per browser, over the range,
+4. **Chromium browser usage** from Cloudflare Radar, per browser, over the range,
    with a marker and a note on the 2026-W37 ChromeDerivative jump.
-4. Totals for the range, plus a table with every value shown in the charts.
-5. **Review by directory** (`src/areas.ts`, `dirRows` in `src/data.ts`):
+5. Totals for the range, plus a table with every value shown in the charts.
+6. **Review by directory** (`src/areas.ts`, `dirRows` in `src/data.ts`):
    every comment in the range, in scope or not, as a tree for the selected
    metric. The top level lists the 20 largest top-level directories (plus
    `area` prefixes from `config/paths.txt`, such as `third_party/blink/`),
@@ -97,7 +104,7 @@ Over a range:
    not from google.com. For reviewed CLs, a CL with comments in two
    directories counts in each. A note lists the path rules (from the
    summary's metadata) and how comments are placed on files.
-6. **Review by directory over time** (`src/heatmap.ts`, `heatGrid` in
+7. **Review by directory over time** (`src/heatmap.ts`, `heatGrid` in
    `src/data.ts`): the same drill-down rows against time bins of 1, 4
    (default) or 13 weeks, lined up with the range's end. The Organization
    selector picks every org, every org but google.com, or one org (the 25
@@ -112,7 +119,7 @@ Over a range:
    "chart" button shows it in the organization chart. A table, so cells have
    row and column headers; the directory column stays put while the bins
    scroll sideways on narrow screens.
-7. **Per review** (`orgPerReviewSpreads` in `src/data.ts`, the same
+8. **Per review** (`orgPerReviewSpreads` in `src/data.ts`, the same
    `renderSpreadChart`): just above the per-reviewer spread and on the same
    org rows, each reviewer's metric over the range divided by their reviewed
    CLs (CLs they commented on), or review comments per review under the
@@ -123,7 +130,7 @@ Over a range:
    reviews”, the row's pooled total ÷ its reviews. Comments count in the
    week written and CLs in the week closed, so a range's edges are
    approximate. From `reviewer_weekly.json`; no extra data.
-8. **Review per reviewer** (`orgSpreads` in `src/data.ts`,
+9. **Review per reviewer** (`orgSpreads` in `src/data.ts`,
    `renderSpreadChart` in `src/charts.ts`): a strip plot of each reviewer's
    total for the metric over the range, one dot per reviewer on a log axis,
    one row per org: the 10 orgs with the largest total, then everyone else
@@ -135,7 +142,7 @@ Over a range:
    metric are left out, except under addressed comments, where everyone who
    wrote a review comment counts and those with none addressed sit at 0.
    From `reviewer_weekly.json`; no extra data.
-9. **Reviewer leaderboard**: the top 25 (or 50, 100, 200) reviewers by review
+10. **Reviewer leaderboard**: the top 25 (or 50, 100, 200) reviewers by review
    comments over the range, for every organization, all but google.com, or
    one organization (the 25 with the most review in the range), one
    compact bar each, coloured by org. Orgs with a colour get a legend
@@ -144,7 +151,7 @@ Over a range:
    with addressed comments filled in for classified weeks. The chart comes
    from `reviewer_weekly.json` (no extra data) and has the link to the CLs
    they commented on, on Gerrit.
-10. **How review threads are classified** (once some week is classified):
+11. **How review threads are classified** (once some week is classified):
    one bar splitting the range's classified reviewer-started threads by how
    each was decided (owner's "Done", Haiku addressed, Haiku no change, no
    owner reply), and example threads per outcome with Gerrit links. The
