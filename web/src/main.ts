@@ -1241,7 +1241,7 @@ function main(data: Data) {
     $('#ratio-sub').textContent = weeks.length
       ? `Share of ${metricLabel} ÷ share of Chromium browser usage, per ISO week, ${label}` +
         (state.smoothing > 1
-          ? `, as a ${state.smoothing}-week running average (mean share of ${metricLabel} ÷ mean usage share over the ${state.smoothing} weeks ending each week). `
+          ? `, as a ${state.smoothing}-week running average. `
           : '. ') +
         'The 1.0× line is parity: review in proportion to usage.'
       : `No review data for ${label}.`;
