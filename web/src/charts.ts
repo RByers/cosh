@@ -9,12 +9,13 @@ import {
   LineController,
   LineElement,
   PointElement,
+  ScatterController,
   Tooltip,
   type Plugin,
   type Scale,
   type Tick,
 } from 'chart.js';
-import type { DistributionBin, RadarWeekly, RatioPoint } from './data.ts';
+import type { OrgSpread, RadarWeekly, RatioPoint } from './data.ts';
 import { browserShare, monthTicks, OTHER, weekTitle } from './data.ts';
 import { formatRatio } from './scale.ts';
 
@@ -24,6 +25,7 @@ Chart.register(
   LineController,
   LineElement,
   PointElement,
+  ScatterController,
   LinearScale,
   LogarithmicScale,
   CategoryScale,
@@ -438,95 +440,173 @@ export function renderReviewerChart(
   });
 }
 
-/** Label for a distribution bin: "0", "1", "2–3", "512–1K", "1K–2K". */
-export function binLabel(b: { lo: number; hi: number }): string {
-  const f = (v: number) =>
-    v < 1000 ? String(v) : v.toLocaleString('en-US', { notation: 'compact', maximumFractionDigits: v < 10_000 ? 1 : 0 });
-  return b.lo === b.hi ? f(b.lo) : `${f(b.lo)}–${f(b.hi)}`;
+/** `#rrggbb` with an alpha; other colour formats are returned unchanged. */
+function withAlpha(color: string, alpha: number): string {
+  const m = /^#([0-9a-f]{6})$/i.exec(color.trim());
+  if (!m) return color;
+  const n = parseInt(m[1], 16);
+  return `rgba(${n >> 16}, ${(n >> 8) & 255}, ${n & 255}, ${alpha})`;
 }
 
-/** What the distribution chart's bars measure: each org's reviewers per bin,
- * or the metric they account for, as a share of that org's whole. */
-export type DistributionY = 'reviewers' | 'volume';
+/** A stable offset in [-1, 1) for an account id, so dots keep their place. */
+function jitter(id: number): number {
+  return ((Math.imul(id, 2654435761) >>> 0) / 2 ** 32) * 2 - 1;
+}
 
-/** Grouped histogram of reviewers by their total for the metric over the
- * range, on power-of-two bins: one bar per org in each bin. Bars are shares
- * of the org's own reviewers (or total), so orgs of any size compare; the
- * tooltip gives the counts. Every org's `bins` share one layout. */
-export function renderDistributionChart(
+/** Rows with fewer reviewers than this get no box: their dots say it all. */
+export const SPREAD_BOX_MIN = 5;
+
+/** Strip plot of reviewers by their total for the metric over the range: one
+ * row per org, one dot per reviewer on a log axis (0 gets its own slot at
+ * the left), with a box over the middle half of the row and a line at its
+ * median. Hovering a dot names the reviewer; clicking it calls `onPick`. */
+export function renderSpreadChart(
   canvas: HTMLCanvasElement,
-  series: { org: string; color: string; bins: DistributionBin[] }[],
+  spreads: OrgSpread[],
+  colorOf: (org: string) => string,
+  nameOf: (id: number) => string,
   metricLabel: string,
-  y: DistributionY,
   theme: Theme,
-): Chart<'bar'> {
+  selected: number | null,
+  onPick: (id: number) => void,
+): Chart<'scatter'> {
   const unit = metricLabel.toLowerCase();
-  const fmt = (v: number) => v.toLocaleString('en-US');
-  const layout = series[0]?.bins ?? [];
-  const sums = series.map((s) => ({
-    reviewers: s.bins.reduce((a, b) => a + b.reviewers, 0),
-    total: s.bins.reduce((a, b) => a + b.total, 0),
-  }));
-  const share = (i: number, b: DistributionBin) => {
-    const whole = y === 'reviewers' ? sums[i].reviewers : sums[i].total;
-    return whole ? (y === 'reviewers' ? b.reviewers : b.total) / whole : 0;
+  const fmt = (v: number) => v.toLocaleString('en-US', { maximumFractionDigits: 1 });
+  const zeros = spreads.some((s) => s.reviewers.some((r) => r.value <= 0));
+  const max = Math.max(1, ...spreads.flatMap((s) => s.reviewers.map((r) => r.value)));
+  const ZERO = 0.5;
+  const xOf = (v: number) => (v > 0 ? v : ZERO);
+  type P = { x: number; y: number; id: number; value: number };
+  const datasets = spreads.map((s, row) => {
+    const color = colorOf(s.org);
+    const alpha = s.reviewers.length > 300 ? 0.3 : s.reviewers.length > 50 ? 0.5 : 0.8;
+    const data: P[] = s.reviewers.map((r) => ({ x: xOf(r.value), y: row + 0.3 * jitter(r.id), id: r.id, value: r.value }));
+    return {
+      label: s.org,
+      data,
+      backgroundColor: withAlpha(color, alpha),
+      borderColor: (ctx: { raw?: unknown }) => ((ctx.raw as P | undefined)?.id === selected ? theme.parity : 'transparent'),
+      borderWidth: 2,
+      pointRadius: (ctx: { raw?: unknown }) => ((ctx.raw as P | undefined)?.id === selected ? 6 : 3),
+      pointHoverRadius: 6,
+      pointHoverBackgroundColor: color,
+      pointHoverBorderColor: theme.parity,
+    };
+  });
+
+  // Box over the middle half and a median line, drawn over the dots.
+  const boxes: Plugin<'scatter'> = {
+    id: 'spreadBoxes',
+    afterDatasetsDraw(chart) {
+      const { ctx, scales } = chart;
+      const x = scales.x;
+      const y = scales.y;
+      const half = Math.abs(y.getPixelForValue(0.42) - y.getPixelForValue(0));
+      ctx.save();
+      spreads.forEach((s, row) => {
+        if (s.stats.n < SPREAD_BOX_MIN) return;
+        const cy = y.getPixelForValue(row);
+        const x1 = x.getPixelForValue(xOf(s.stats.q1));
+        const x3 = x.getPixelForValue(xOf(s.stats.q3));
+        const xm = x.getPixelForValue(xOf(s.stats.median));
+        ctx.strokeStyle = theme.parity;
+        ctx.lineWidth = 1.5;
+        ctx.strokeRect(x1, cy - half, Math.max(1, x3 - x1), 2 * half);
+        // A surface halo keeps the median legible over dense dots.
+        for (const [color, width] of [[theme.surface, 6], [theme.parity, 3]] as const) {
+          ctx.strokeStyle = color;
+          ctx.lineWidth = width;
+          ctx.beginPath();
+          ctx.moveTo(xm, cy - half - 2);
+          ctx.lineTo(xm, cy + half + 2);
+          ctx.stroke();
+        }
+      });
+      ctx.restore();
+    },
   };
+
   const base = baseOptions(theme);
   return new Chart(canvas, {
-    type: 'bar',
-    data: {
-      labels: layout.map(binLabel),
-      datasets: series.map((s, i) => ({
-        label: s.org,
-        data: s.bins.map((b) => share(i, b)),
-        backgroundColor: s.color,
-        borderWidth: 0,
-        borderRadius: { topLeft: 2, topRight: 2 },
-        borderSkipped: 'bottom' as const,
-        categoryPercentage: 0.85,
-        barPercentage: 0.9,
-      })),
-    },
+    type: 'scatter',
+    data: { datasets },
+    plugins: [boxes],
     options: {
       ...base,
+      interaction: { mode: 'nearest', intersect: true },
+      onClick: (_e, elements) => {
+        const el = elements[0];
+        if (!el) return;
+        onPick((datasets[el.datasetIndex].data[el.index] as P).id);
+      },
+      onHover: (e, elements) => {
+        const target = e.native?.target as HTMLElement | undefined;
+        if (target) target.style.cursor = elements.length ? 'pointer' : 'default';
+      },
       plugins: {
         ...base.plugins,
         legend: { display: false },
         tooltip: {
           ...base.plugins.tooltip,
-          boxHeight: 10,
-          itemSort: (a, b) => a.datasetIndex - b.datasetIndex,
+          displayColors: false,
           callbacks: {
-            title: (items) => {
-              const b = layout[items[0]?.dataIndex ?? 0];
-              if (!b) return '';
-              return b.lo === b.hi ? `${fmt(b.lo)} ${unit}` : `${fmt(b.lo)} to ${fmt(b.hi)} ${unit}`;
-            },
+            title: () => '',
             label: (ctx) => {
-              const b = series[ctx.datasetIndex].bins[ctx.dataIndex];
-              return `${ctx.dataset.label}: ${pct(Number(ctx.raw))}  (${fmt(b.reviewers)} ` +
-                `${b.reviewers === 1 ? 'reviewer' : 'reviewers'}, ${fmt(b.total)} ${unit})`;
+              const p = ctx.raw as P;
+              return `${nameOf(p.id)} (${ctx.dataset.label}): ${fmt(p.value)} ${unit}`;
             },
+            footer: () => 'Click for their weekly chart',
           },
+          footerColor: theme.muted,
+          footerFont: { weight: 'normal' as const },
         },
       },
       scales: {
         x: {
-          grid: { display: false },
+          type: 'logarithmic',
+          min: zeros ? 0.38 : 0.7,
+          max: max * 1.4,
+          title: { display: true, text: `${unit} per reviewer over the range (log scale)`, color: theme.muted },
           border: { color: theme.baseline },
-          title: { display: true, text: `${unit} per reviewer over the range`, color: theme.muted },
-          ticks: { color: theme.muted, maxRotation: 0, autoSkip: true },
+          grid: { color: theme.grid },
+          afterBuildTicks: (axis) => {
+            const ticks = zeros ? [{ value: ZERO }] : [];
+            // 1, 3, 10, 30, …; powers of ten only on narrow screens.
+            const threes = (axis.width || 600) >= 480;
+            for (let p = 1; p <= axis.max; p *= 10) {
+              ticks.push({ value: p });
+              if (threes && 3 * p <= axis.max) ticks.push({ value: 3 * p });
+            }
+            axis.ticks = ticks;
+          },
+          ticks: {
+            color: theme.muted,
+            maxRotation: 0,
+            callback: (v) => {
+              const n = Number(v);
+              if (n === ZERO) return '0';
+              return n < 1000 ? String(n) : n.toLocaleString('en-US', { notation: 'compact' });
+            },
+          },
         },
         y: {
-          beginAtZero: true,
-          title: {
-            display: true,
-            text: y === 'reviewers' ? "share of org's reviewers" : `share of org's ${unit}`,
-            color: theme.muted,
-          },
+          type: 'linear',
+          reverse: true,
+          min: -0.5,
+          max: spreads.length - 0.5,
           border: { display: false },
-          grid: { color: theme.grid },
-          ticks: { color: theme.muted, callback: (v) => `${Math.round(Number(v) * 100)}%` },
+          grid: { display: false },
+          afterBuildTicks: (axis) => {
+            axis.ticks = spreads.map((_, i) => ({ value: i }));
+          },
+          ticks: {
+            color: theme.text,
+            autoSkip: false,
+            callback: (v) => {
+              const s = spreads[Number(v)];
+              return s ? `${s.org} (${s.stats.n.toLocaleString('en-US')})` : '';
+            },
+          },
         },
       },
     },

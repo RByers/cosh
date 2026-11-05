@@ -792,54 +792,75 @@ test.skipIf(!hasAddressedWeeks())('thread box: outcome breakdown and example thr
   await page.close();
 });
 
-test('per-reviewer distribution: one bar per top org, shares of each org, legend figures', async () => {
+test('per-reviewer spread: a row of dots per org, a figures table, and clicking a dot opens the reviewer', async () => {
   const { page, errors } = await open('#metric=comments');
   const read = () =>
     page.evaluate(() => {
       const c = window.__cosh!.distChart!;
       return {
-        labels: c.data.labels as string[],
-        sets: c.data.datasets.map((d) => ({ org: d.label!, sum: (d.data as number[]).reduce((a, b) => a + b, 0) })),
-        legend: [...document.querySelectorAll<HTMLElement>('#dist-legend li')].map((li) => ({
-          org: li.dataset.org!,
-          text: li.textContent!,
+        sets: c.data.datasets.map((d) => ({ org: d.label!, n: d.data.length })),
+        table: [...document.querySelectorAll<HTMLTableRowElement>('#dist-table tbody tr')].map((tr) => ({
+          org: tr.dataset.org!,
+          cells: [...tr.querySelectorAll('td')].map((td) => td.textContent!),
         })),
-        sub: document.querySelector('#dist-sub')!.textContent!,
-        select: !!document.querySelector('#dist-org'),
+        // Reviewers with a review comment in the range, straight from the data.
+        reviewers: (() => {
+          const { data, state } = window.__cosh!;
+          const sum = new Map<number, number>();
+          for (const [w, rows] of Object.entries(data.reviewers.weeks)) {
+            if (w < state.range.from || w > state.range.to) continue;
+            for (const r of rows) sum.set(r[0], (sum.get(r[0]) ?? 0) + r[2]);
+          }
+          return [...sum.values()].filter((c) => c > 0).length;
+        })(),
         h: c.height,
+        yLabels: c.scales.y.ticks.map((t) => String(t.label)),
       };
     });
   const v = await read();
-  assert.ok(v.h > 200, `height ${v.h}`);
-  assert.equal(v.select, false, 'no organization selector');
-  assert.deepEqual(v.labels.slice(0, 3), ['1', '2–3', '4–7']);
   const orgs = v.sets.map((x) => x.org);
   assert.equal(orgs[0], 'google.com');
   assert.ok(orgs.includes('microsoft.com'));
   assert.equal(orgs[orgs.length - 1], 'Other');
-  assert.ok(orgs.length >= 3 && orgs.length <= 5, orgs.join());
   assert.ok(!orgs.includes('gmail.com'), 'personal addresses are in Other');
-  // Each org's bars are shares of its own reviewers: they sum to 100%.
-  for (const x of v.sets) assert.ok(Math.abs(x.sum - 1) < 1e-9, `${x.org} sums to ${x.sum}`);
-  // The legend names each org, in the chart's order, with its figures.
-  assert.deepEqual(v.legend.map((l) => l.org), orgs);
-  for (const l of v.legend) assert.match(l.text, /^\S+ [\d,]+ reviewers?, median [\d.,]+, top 10% have [\d.]+% of [\d,]+$/);
-
-  // Bars can show shares of each org's comments instead.
-  await page.click('#dist-y input[value="volume"]');
-  assert.match(page.url(), /rdy=volume/);
-  const vol = await read();
-  for (const x of vol.sets) assert.ok(Math.abs(x.sum - 1) < 1e-9, `${x.org} sums to ${x.sum}`);
-  assert.equal(vol.sub, v.sub, 'the toggle leaves the description alone');
-  const { page: again } = await open(new URL(page.url()).hash);
-  assert.equal(await again.$eval('#dist-y input[value="volume"]', (e) => (e as HTMLInputElement).checked), true);
-  await again.close();
-  // Under addressed comments, reviewers whose comments led to no change form a 0 bin.
+  assert.ok(orgs.length > 5 && orgs.length <= 11, orgs.join());
+  // Every reviewer with a review comment is one dot.
+  assert.equal(v.sets.reduce((a, x) => a + x.n, 0), v.reviewers);
+  // The chart grows with its rows; rows are labelled with their reviewer counts.
+  assert.ok(v.h >= orgs.length * 30, `height ${v.h} for ${orgs.length} rows`);
+  assert.match(v.yLabels[0], /^google\.com \([\d,]+\)$/);
+  // The table lists the same orgs with ascending quartiles.
+  assert.deepEqual(v.table.map((r) => r.org), orgs);
+  for (const r of v.table) {
+    const [n, q1, med, q3] = r.cells.slice(0, 4).map((c) => Number(c.replace(/,/g, '')));
+    assert.ok(n > 0 && q1 <= med && med <= q3, `${r.org}: ${r.cells}`);
+    assert.match(r.cells[4], /^[\d.]+%$/);
+  }
+  // Clicking a dot opens that reviewer's weekly chart.
+  const pt = await page.evaluate(() => {
+    const c = window.__cosh!.distChart!;
+    const meta = c.getDatasetMeta(1);
+    const el = meta.data[meta.data.length - 1];
+    const r = c.canvas.getBoundingClientRect();
+    return { x: r.left + el.x, y: r.top + el.y, id: (c.data.datasets[1].data[meta.data.length - 1] as unknown as { id: number }).id };
+  });
+  await page.$eval('#distribution', (e) => e.scrollIntoView());
+  const pt2 = await page.evaluate(() => {
+    const c = window.__cosh!.distChart!;
+    const meta = c.getDatasetMeta(1);
+    const el = meta.data[meta.data.length - 1];
+    const r = c.canvas.getBoundingClientRect();
+    return { x: r.left + el.x, y: r.top + el.y };
+  });
+  await page.mouse.click(pt2.x, pt2.y);
+  await page.waitForFunction(() => !document.querySelector<HTMLElement>('#reviewer-detail')!.hidden);
+  assert.match(page.url(), new RegExp(`lbr=${pt.id}`));
+  // Under addressed comments, reviewers whose comments led to no change sit at 0.
   const { page: addr } = await open('#metric=addressed');
   if ((await addr.evaluate(() => window.__cosh!.state.metric)) === 'addressed') {
-    const first = await addr.evaluate(() => (window.__cosh!.distChart!.data.labels as string[])[0]);
+    const first = await addr.evaluate(() => String(window.__cosh!.distChart!.scales.x.ticks[0].label));
     assert.equal(first, '0');
-    assert.match(await addr.$eval('#dist-sub', (e) => e.textContent!), /none addressed make up the 0 bin/);
+    assert.match(await addr.$eval('#dist-sub', (e) => e.textContent!), /none addressed sit at 0/);
   }
   await addr.close();
   assert.deepEqual(errors, []);

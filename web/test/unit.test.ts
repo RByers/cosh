@@ -58,8 +58,8 @@ import {
   niceTicks,
   topReviewers,
   reviewerTotals,
-  reviewerDistribution,
-  distributionGroups,
+  quantile,
+  orgSpreads,
   distributionStats,
   leaderboardOrgs,
   trimRanked,
@@ -69,7 +69,7 @@ import {
   type Summary,
 } from '../src/data.ts';
 import { formatRatio } from '../src/scale.ts';
-import { binLabel, logAxisFloor } from '../src/charts.ts';
+import { logAxisFloor } from '../src/charts.ts';
 
 const RADAR = `period,period_start,period_end,granularity,device,browser,is_chromium,kind,days,raw_share,chromium_share
 2026-W44,2026-10-26,2026-11-01,week,all,Chrome,1,browser,7,0.4,0.5
@@ -224,51 +224,36 @@ test('reviewerTotals keeps reviewers with 0 of the metric, with their comments a
   assert.deepEqual(t, [{ id: 1, value: 3, comments: 9, org: 'y.com' }, { id: 2, value: 0, comments: 9, org: 'x.com' }]);
 });
 
-test('reviewerDistribution bins by powers of two, with a 0 bin only when needed', () => {
-  const bins = reviewerDistribution([1, 2, 3, 4, 9, 9, 0]);
-  assert.deepEqual(bins.map((b) => [b.lo, b.hi, b.reviewers, b.total]), [
-    [0, 0, 1, 0],
-    [1, 1, 1, 1],
-    [2, 3, 2, 5],
-    [4, 7, 1, 4],
-    [8, 15, 2, 18],
-  ]);
-  assert.deepEqual(reviewerDistribution([8]).map((b) => [b.lo, b.reviewers]), [[1, 0], [2, 0], [4, 0], [8, 1]]);
-  // Exact powers of two land in their own bin, even large ones.
-  assert.equal(reviewerDistribution([1024]).at(-1)!.lo, 1024);
-  assert.equal(reviewerDistribution([1023]).at(-1)!.lo, 512);
-  assert.deepEqual(reviewerDistribution([]), []);
-  assert.deepEqual(binLabel({ lo: 0, hi: 0 }), '0');
-  assert.deepEqual(binLabel({ lo: 4, hi: 7 }), '4–7');
-  assert.deepEqual(binLabel({ lo: 2048, hi: 4095 }), '2K–4.1K');
+test('quantile interpolates between ranks', () => {
+  assert.equal(quantile([1, 2, 3, 4], 0.5), 2.5);
+  assert.equal(quantile([1, 2, 3, 4, 5], 0.25), 2);
+  assert.equal(quantile([10, 20], 0.25), 12.5);
+  assert.equal(quantile([7], 0.75), 7);
+  assert.equal(quantile([], 0.5), 0);
 });
 
-test('reviewerDistribution can bin against a shared layout', () => {
-  const bins = reviewerDistribution([1, 5], [0, 1, 20]);
-  assert.deepEqual(bins.map((b) => [b.lo, b.reviewers]), [[0, 0], [1, 1], [2, 0], [4, 1], [8, 0], [16, 0]]);
-  assert.deepEqual(reviewerDistribution([], [3]).map((b) => b.reviewers), [0, 0]);
-});
-
-test('distributionGroups: top orgs by reviewers, big enough and not folded; the rest are Other', () => {
-  const rows = [
-    ...Array.from({ length: 12 }, (_, i) => ({ value: i + 1, org: 'a.com' })),
-    ...Array.from({ length: 10 }, () => ({ value: 2, org: 'b.com' })),
-    ...Array.from({ length: 30 }, () => ({ value: 1, org: 'gmail.com' })),
-    ...Array.from({ length: 9 }, () => ({ value: 3, org: 'c.com' })),
-  ];
-  const g = distributionGroups(rows, ['gmail.com']);
-  assert.deepEqual(g.map((x) => [x.org, x.values.length]), [['a.com', 12], ['b.com', 10], [OTHER, 39]]);
-  assert.deepEqual(distributionGroups(rows, ['gmail.com'], 1).map((x) => x.org), ['a.com', OTHER]);
-  // Nobody left over: no Other.
-  assert.deepEqual(distributionGroups(rows.slice(0, 12), []).map((x) => x.org), ['a.com']);
-  assert.deepEqual(distributionGroups([], []), []);
-});
-
-test('distributionStats: median and the top 10% share', () => {
+test('distributionStats: quartiles and the top 10% share', () => {
   const v = [100, 1, 1, 1, 1, 1, 1, 1, 1, 2];
-  assert.deepEqual(distributionStats(v), { n: 10, total: 110, median: 1, top10: 1, top10Share: 100 / 110 });
+  assert.deepEqual(distributionStats(v), { n: 10, total: 110, q1: 1, median: 1, q3: 1, top10: 1, top10Share: 100 / 110 });
   assert.equal(distributionStats([1, 2, 3, 4]).median, 2.5);
-  assert.deepEqual(distributionStats([]), { n: 0, total: 0, median: 0, top10: 0, top10Share: 0 });
+  assert.deepEqual(distributionStats([]), { n: 0, total: 0, q1: 0, median: 0, q3: 0, top10: 0, top10Share: 0 });
+});
+
+test('orgSpreads: top orgs by total, folded orgs and the rest as Other, reviewers ascending', () => {
+  let id = 0;
+  const rows = [
+    ...[5, 1, 3].map((value) => ({ id: ++id, value, org: 'a.com' })), // total 9
+    ...[20].map((value) => ({ id: ++id, value, org: 'b.com' })), // total 20: one big reviewer ranks first
+    ...[1, 1, 1, 1].map((value) => ({ id: ++id, value, org: 'gmail.com' })),
+    ...[2].map((value) => ({ id: ++id, value, org: 'c.com' })),
+  ];
+  const s = orgSpreads(rows, ['gmail.com'], 2);
+  assert.deepEqual(s.map((x) => [x.org, x.stats.n]), [['b.com', 1], ['a.com', 3], [OTHER, 5]]);
+  assert.deepEqual(s[1].reviewers.map((r) => r.value), [1, 3, 5]);
+  assert.equal(s[1].stats.median, 3);
+  // Nothing left over: no Other row.
+  assert.deepEqual(orgSpreads(rows.slice(0, 4), []).map((x) => x.org), ['b.com', 'a.com']);
+  assert.deepEqual(orgSpreads([], []), []);
 });
 
 test('topReviewers can leave an org out and still fill the board from the rest', () => {

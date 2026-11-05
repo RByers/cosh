@@ -15,9 +15,8 @@ import {
   readTheme,
   renderRatioChart,
   renderReviewChart,
-  renderDistributionChart,
+  renderSpreadChart,
   renderReviewerChart,
-  type DistributionY,
   type ReviewScale,
   renderUsageChart,
   type Theme,
@@ -79,10 +78,7 @@ import {
   orgWeeklyCounts,
   topReviewers,
   reviewerTotals,
-  reviewerDistribution,
-  distributionGroups,
-  distributionStats,
-  DIST_MIN_REVIEWERS,
+  orgSpreads,
   trimRanked,
   LEADERBOARD_SIZE,
   LEADERBOARD_SIZES,
@@ -145,8 +141,6 @@ interface State {
   heatExpanded: Set<string>;
   /** The reviewer whose weekly chart is open (Gerrit account id), or null. */
   lbReviewer: number | null;
-  /** What the distribution's bars measure. */
-  distY: DistributionY;
 }
 
 /** The range the user picked. While the addressed metric narrows the views'
@@ -315,7 +309,6 @@ function readStateFromUrl(data: Data): State {
     heatValue: q.get('hmv') === 'share' ? 'share' : 'volume',
     heatExpanded: new Set(),
     lbReviewer: /^\d+$/.test(q.get('lbr') ?? '') ? Number(q.get('lbr')) : null,
-    distY: q.get('rdy') === 'volume' ? 'volume' : 'reviewers',
   };
 }
 
@@ -328,8 +321,7 @@ function writeStateToUrl(s: State) {
     (s.heatOrg !== ALL_ORGS ? `&hm=${encodeURIComponent(s.heatOrg)}` : '') +
     (s.heatBin !== DEFAULT_HEAT_BIN ? `&hmb=${s.heatBin}` : '') +
     (s.heatValue !== 'volume' ? '&hmv=share' : '') +
-    (s.lbReviewer !== null ? `&lbr=${s.lbReviewer}` : '') +
-    (s.distY !== 'reviewers' ? '&rdy=volume' : ''));
+    (s.lbReviewer !== null ? `&lbr=${s.lbReviewer}` : ''));
 }
 
 /** How many directories the directory field suggests; any other one can be typed. */
@@ -472,19 +464,6 @@ function buildControls(data: Data, state: State, render: () => void) {
     state.heatValue,
     (v) => {
       state.heatValue = v;
-      render();
-    },
-  );
-  segmented(
-    $('#dist-y'),
-    'dist-y',
-    [
-      { id: 'reviewers' as DistributionY, label: 'Share of reviewers' },
-      { id: 'volume' as DistributionY, label: 'Share of the total' },
-    ],
-    state.distY,
-    (y) => {
-      state.distY = y;
       render();
     },
   );
@@ -930,9 +909,15 @@ function dirScopeNote(board: DirBoard, node: number, weeks: string[], metric: Me
   return scope + (metric === 'cls' ? ' A CL with comments in two of its subdirectories counts in each.' : '');
 }
 
-/** How the metric is spread across reviewers: a histogram of each reviewer's
- * total over the range, one bar per top organization (and Other) per bin. */
-function renderDistribution(data: Data, state: State, colors: Map<string, string>, theme: Theme) {
+/** How the metric is spread across reviewers, org by org: a strip plot of
+ * each reviewer's total over the range, and a table of each org's figures. */
+function renderDistribution(
+  data: Data,
+  state: State,
+  colors: Map<string, string>,
+  theme: Theme,
+  render: () => void,
+) {
   const name = metricName(state.metric);
   const unit = name.toLowerCase();
   const weeks = weeksIn(Object.keys(data.reviewers.weeks), state.range);
@@ -941,54 +926,59 @@ function renderDistribution(data: Data, state: State, colors: Map<string, string
   const all = reviewerTotals(data.reviewers, weeks, state.metric).filter((r) =>
     state.metric === 'addressed' ? r.comments > 0 : r.value > 0,
   );
-  const groups = distributionGroups(all, data.reviewers.meta.fold_into_other ?? []);
-  const layout = all.map((r) => r.value);
-  const orgColors = reviewColors(groups.map((g) => g.org).filter((o) => o !== OTHER), colors, theme);
-  const series = groups.map((g) => ({
-    org: g.org,
-    color: (g.org !== OTHER && orgColors.get(g.org)) || theme.muted,
-    bins: reviewerDistribution(g.values, layout),
-    stats: distributionStats(g.values),
-  }));
+  const spreads = orgSpreads(all, data.reviewers.meta.fold_into_other ?? []);
+  const orgColors = reviewColors(spreads.map((s) => s.org).filter((o) => o !== OTHER), colors, theme);
+  const colorOf = (org: string) => orgColors.get(org) ?? theme.muted;
 
-  // Fixed for a given range and metric, so the toggle below it doesn't move.
   $('#dist-sub').textContent = weeks.length
-    ? `How ${unit} in ${rangeLabel(state.range)} are spread across reviewers: each reviewer's total over the range, ` +
-      'in bins that double in width (1, 2–3, 4–7, …), with one bar per organization. A bar is the share of that ' +
-      `organization's reviewers in the bin, or the share of its ${unit} they account for, so organizations of any ` +
-      'size can be compared; hover for the counts. ' +
+    ? `Each reviewer's ${unit} over ${rangeLabel(state.range)}: one dot per reviewer, one row per organization ` +
+      '(the ten with the most, then everyone else, including personal addresses, as “Other”), on a log scale. ' +
+      "Each box spans the middle half of its row's reviewers, with a thick line at the median; rows with under five " +
+      'reviewers get none. ' +
       (state.metric === 'addressed'
-        ? 'Every reviewer with a review comment in the range counts, so those with none addressed make up the 0 bin. '
+        ? 'Everyone with a review comment in the range counts, so reviewers with none addressed sit at 0. '
         : `Reviewers with no ${unit} in the range are left out. `) +
-      'A reviewer counts for the organization most of their comments in the range were for. Organizations with ' +
-      `fewer than ${DIST_MIN_REVIEWERS} reviewers, and personal addresses, are combined as “Other”. Same scope as ` +
-      'the leaderboard below.'
+      'A reviewer counts for the organization most of their comments were for. Hover a dot for the reviewer; ' +
+      'click it for their weekly chart.'
     : `No reviewer data for ${rangeLabel(state.range)}.`;
 
   const fmt = (v: number) => v.toLocaleString('en-US', { maximumFractionDigits: 1 });
-  $('#dist-legend').replaceChildren(
-    ...series.map((s) => {
-      const li = el('li');
-      li.dataset.org = s.org;
-      const sw = el('span', undefined, s.org === OTHER ? 'swatch swatch-muted' : 'swatch');
-      if (s.org !== OTHER) sw.style.background = s.color;
+  $('#dist-table tbody').replaceChildren(
+    ...spreads.map((s) => {
+      const tr = el('tr');
+      tr.dataset.org = s.org;
+      const th = el('th');
+      th.scope = 'row';
+      const sw = el('span', undefined, s.org === OTHER || !orgColors.has(s.org) ? 'swatch swatch-muted' : 'swatch');
+      if (orgColors.has(s.org)) sw.style.background = orgColors.get(s.org)!;
+      th.append(sw, document.createTextNode(s.org));
       const st = s.stats;
-      li.append(
-        sw,
-        el('span', s.org, 'dist-org'),
-        el(
-          'span',
-          ` ${int(st.n)} ${st.n === 1 ? 'reviewer' : 'reviewers'}, median ${fmt(st.median)}, ` +
-            `top 10% have ${pct(st.top10Share)} of ${int(st.total)}`,
-          'dist-stat',
-        ),
+      tr.append(
+        th,
+        ...[int(st.n), fmt(st.q1), fmt(st.median), fmt(st.q3), pct(st.top10Share), int(st.total)].map((c) => el('td', c)),
       );
-      return li;
+      return tr;
     }),
   );
 
+  // One row of dots per org: the chart grows with the rows.
+  $('#dist-box').style.height = `${Math.max(1, spreads.length) * 34 + 64}px`;
+  const nameOf = (id: number) => data.reviewers.accounts[String(id)] ?? `Account ${id}`;
   distChart?.destroy();
-  distChart = renderDistributionChart($<HTMLCanvasElement>('#dist-chart'), series, name, state.distY, theme);
+  distChart = renderSpreadChart(
+    $<HTMLCanvasElement>('#dist-chart'),
+    spreads,
+    colorOf,
+    nameOf,
+    name,
+    theme,
+    state.lbReviewer,
+    (id) => {
+      state.lbReviewer = id;
+      render();
+      $('#reviewer-detail').scrollIntoView({ block: 'nearest' });
+    },
+  );
 }
 
 /** Organizations the heatmap's selector lists, busiest first. */
@@ -1248,7 +1238,7 @@ function main(data: Data) {
     $('#review-dir-clear').hidden = state.reviewDir === null;
     renderHeat(data, state, colors, theme, render);
     renderAreas(data, state, colors, theme);
-    renderDistribution(data, state, colors, theme);
+    renderDistribution(data, state, colors, theme, render);
     renderLeaderboard(data, state, colors, theme, render);
     renderThreads(data, state);
     usageChart?.destroy();

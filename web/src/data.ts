@@ -605,85 +605,79 @@ export function reviewerTotals(
   return [...by].map(([id, t]) => ({ id, value: t.value, comments: t.comments, org: orgOf(t.orgCount) }));
 }
 
-export interface DistributionBin {
-  /** Inclusive bounds of the per-reviewer value. */
-  lo: number;
-  hi: number;
-  reviewers: number;
-  /** The bin's reviewers' values, summed. */
-  total: number;
+/** Quantile `p` (0–1) of ascending `sorted`, interpolated between ranks. */
+export function quantile(sorted: readonly number[], p: number): number {
+  if (!sorted.length) return 0;
+  const i = (sorted.length - 1) * p;
+  const lo = Math.floor(i);
+  const hi = Math.ceil(i);
+  return sorted[lo] + (sorted[hi] - sorted[lo]) * (i - lo);
 }
 
-/** Per-reviewer values binned by powers of two: 0 (only if some reviewer has
- * 0), 1, 2–3, 4–7, … up to the bin holding the largest value. Every bin in
- * between is kept, empty or not, so the axis is evenly spaced. Values are
- * whole numbers. The bins are laid out from `layout` (default: `values`), so
- * groups binned against the same layout line up. */
-export function reviewerDistribution(
-  values: readonly number[],
-  layout: readonly number[] = values,
-): DistributionBin[] {
-  const bins: DistributionBin[] = [];
-  if (!layout.length) return bins;
-  const max = Math.max(...layout);
-  if (layout.some((v) => v <= 0)) bins.push({ lo: 0, hi: 0, reviewers: 0, total: 0 });
-  for (let lo = 1; lo <= max; lo *= 2) bins.push({ lo, hi: lo * 2 - 1, reviewers: 0, total: 0 });
-  const zero = bins[0]?.lo === 0 ? 1 : 0;
-  for (const v of values) {
-    const i = v <= 0 ? 0 : zero + Math.floor(Math.log2(v) + 1e-9);
-    bins[i].reviewers++;
-    bins[i].total += Math.max(0, v);
-  }
-  return bins;
-}
-
-/** Organizations the per-reviewer distribution shows on their own: at most
- * this many, each with at least DIST_MIN_REVIEWERS reviewers in the range
- * (fewer make too noisy a distribution); the rest are combined as Other. */
-export const DIST_TOP_ORGS = 4;
-export const DIST_MIN_REVIEWERS = 10;
-
-/** Reviewers grouped by org for the distribution chart: the orgs with the
- * most reviewers (up to `n`, each with at least `min`, never one folded into
- * Other), most first, then OTHER for everyone else if anyone is left. */
-export function distributionGroups(
-  rows: readonly { value: number; org: string }[],
-  fold: readonly string[] = [],
-  n = DIST_TOP_ORGS,
-  min = DIST_MIN_REVIEWERS,
-): { org: string; values: number[] }[] {
-  const by = new Map<string, number[]>();
-  for (const r of rows) {
-    const v = by.get(r.org);
-    if (v) v.push(r.value);
-    else by.set(r.org, [r.value]);
-  }
-  const folded = new Set(fold);
-  const top = [...by]
-    .filter(([org, v]) => !folded.has(org) && org !== OTHER && v.length >= min)
-    .sort((a, b) => b[1].length - a[1].length || (a[0] < b[0] ? -1 : 1))
-    .slice(0, n);
-  const shown = new Set(top.map(([org]) => org));
-  const rest = rows.filter((r) => !shown.has(r.org)).map((r) => r.value);
-  return [...top.map(([org, values]) => ({ org, values })), ...(rest.length ? [{ org: OTHER, values: rest }] : [])];
-}
-
-/** Summary of per-reviewer values: how many, the median, and how much of
+/** Summary of per-reviewer values: how many, the quartiles, and how much of
  * the total the top 10% of reviewers (at least one) account for. */
 export function distributionStats(values: readonly number[]): {
   n: number;
   total: number;
+  q1: number;
   median: number;
+  q3: number;
   top10: number;
   top10Share: number;
 } {
-  const sorted = [...values].sort((a, b) => b - a);
+  const sorted = [...values].sort((a, b) => a - b);
   const n = sorted.length;
   const total = sorted.reduce((s, v) => s + v, 0);
-  const median = !n ? 0 : n % 2 ? sorted[(n - 1) / 2] : (sorted[n / 2 - 1] + sorted[n / 2]) / 2;
   const top10 = n ? Math.max(1, Math.round(n / 10)) : 0;
-  const topSum = sorted.slice(0, top10).reduce((s, v) => s + v, 0);
-  return { n, total, median, top10, top10Share: total ? topSum / total : 0 };
+  const topSum = sorted.slice(n - top10).reduce((s, v) => s + v, 0);
+  return {
+    n,
+    total,
+    q1: quantile(sorted, 0.25),
+    median: quantile(sorted, 0.5),
+    q3: quantile(sorted, 0.75),
+    top10,
+    top10Share: total ? topSum / total : 0,
+  };
+}
+
+/** Organizations the per-reviewer spread shows on their own rows. */
+export const SPREAD_TOP_ORGS = 10;
+
+export interface OrgSpread {
+  org: string;
+  /** The org's reviewers, by value ascending. */
+  reviewers: { id: number; value: number }[];
+  stats: ReturnType<typeof distributionStats>;
+}
+
+/** Reviewers grouped by org for the per-reviewer spread: the `n` orgs with
+ * the largest total (ties: more reviewers, then name), never one folded into
+ * Other, largest first; then OTHER for everyone else if anyone is left. */
+export function orgSpreads(
+  rows: readonly { id: number; value: number; org: string }[],
+  fold: readonly string[] = [],
+  n = SPREAD_TOP_ORGS,
+): OrgSpread[] {
+  const folded = new Set(fold);
+  const by = new Map<string, { id: number; value: number }[]>();
+  for (const r of rows) {
+    const org = folded.has(r.org) ? OTHER : r.org;
+    const list = by.get(org);
+    if (list) list.push({ id: r.id, value: r.value });
+    else by.set(org, [{ id: r.id, value: r.value }]);
+  }
+  const sum = (l: { value: number }[]) => l.reduce((s, r) => s + r.value, 0);
+  const ranked = [...by]
+    .filter(([org]) => org !== OTHER)
+    .sort((a, b) => sum(b[1]) - sum(a[1]) || b[1].length - a[1].length || (a[0] < b[0] ? -1 : 1));
+  const top = ranked.slice(0, n);
+  const rest = [...(by.get(OTHER) ?? []), ...ranked.slice(n).flatMap(([, l]) => l)];
+  const groups = [...top, ...(rest.length ? [[OTHER, rest] as [string, typeof rest]] : [])];
+  return groups.map(([org, list]) => {
+    const reviewers = [...list].sort((a, b) => a.value - b.value || a.id - b.id);
+    return { org, reviewers, stats: distributionStats(reviewers.map((r) => r.value)) };
+  });
 }
 
 /** One reviewer's weekly review comments and addressed comments over `weeks`

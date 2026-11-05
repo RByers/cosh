@@ -560,14 +560,10 @@ td.ratio {
   background: var(--text-muted);
 }
 
-/* Review per reviewer: each org's name, then its figures in muted ink. */
-.dist-legend .dist-org {
-  color: var(--text-primary);
-  font-weight: 600;
-}
-
-.dist-legend .dist-stat {
-  color: var(--text-muted);
+/* Review per reviewer: the strip plot's figures, under the chart. */
+.dist-table {
+  margin-top: 12px;
+  font-size: 0.85rem;
 }
 
 /* Review by directory (areas.ts): label | volume bar | 100% org bar | share.

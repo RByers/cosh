@@ -319,14 +319,24 @@
       <section id="distribution" class="card" aria-labelledby="dist-title">
         <h2 id="dist-title">Review per reviewer</h2>
         <p id="dist-sub" class="sub"></p>
-        <div class="toggles">
-          <fieldset id="dist-y" class="segmented chart-toggle">
-            <legend>Bars show</legend>
-          </fieldset>
+        <div id="dist-box" class="chart">
+          <canvas id="dist-chart" role="img" aria-label="Each reviewer's total for the metric over the selected range, one row of dots per organization, with each row's middle half boxed and its median marked; the table below lists the figures"></canvas>
         </div>
-        <ul id="dist-legend" class="legend dist-legend" aria-label="Bar colour by organization, with each one's reviewers, median and top 10% share"></ul>
-        <div class="chart">
-          <canvas id="dist-chart" role="img" aria-label="Histogram of reviewers by their total for the metric over the selected range, one bar per organization; the legend gives each organization's figures"></canvas>
+        <div class="table-wrap">
+          <table id="dist-table" class="dist-table" aria-labelledby="dist-title">
+            <thead>
+              <tr>
+                <th scope="col">Org</th>
+                <th scope="col">Reviewers</th>
+                <th scope="col">25th percentile</th>
+                <th scope="col">Median</th>
+                <th scope="col">75th percentile</th>
+                <th scope="col">Top 10% of reviewers' share</th>
+                <th scope="col">Total</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
         </div>
       </section>
 
