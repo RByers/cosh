@@ -283,12 +283,70 @@ Sources for the plan structure:
 
    These caused most of the disagreements between models.
 
-## Planned design: addressed comments as the headline metric
+## Design: addressed comments as the headline metric
 
-Status: planned (2026-11-04), not built. Decided by the user: this becomes
-the headline metric, classification is its own pipeline step, and the UI
-must work with no labels or only some. Defaults still to confirm are
-marked *(default)*.
+Status: **v1 built (2026-11-04).** `derive` records threads,
+`cosh classify` labels them, `summarize` writes `addressed_comments`, and
+the UI has the metric. 2026-W44 is classified (see "First run" below).
+Decided by the user: this becomes the headline metric, classification is
+its own pipeline step, and the UI must work with no labels or only some.
+Defaults still to confirm are marked *(default)*.
+
+**v1 differs from the design below in these ways:**
+- **The author side is the CL owner only.** Treating co-authors who
+  uploaded patchsets as the author side would mean walking every CL's
+  NoteDb commit history in `derive`; they were 0.7% of threads in the
+  research sample.
+- **Comment ids are text and the hash is an 8-byte integer,** as designed.
+  `comments.root_uuid` is added in place to an older DB, as NULL, so its
+  comments read as pending until the next `derive`.
+- **The regex also matches "Fix applied."** That's Gerrit's own text when a
+  suggested edit is applied.
+- **The model sees whole threads:** the root up to 2,000 characters, then
+  up to 30 replies of up to 1,200 characters each.
+- **Headline default:** the UI defaults to addressed comments only when
+  every review week of the default range is classified. Until then it opens
+  on review comments, and addressed comments is one click away.
+
+### First run: 2026-W44
+
+`python3 -m cosh classify --week 2026-W44`:
+- **Labels:** 2,626 threads needed a model label (out of all threads with
+  a comment that week; the regex settled the rest). The run took 27 calls
+  of 100, about 11 minutes, and 949k Haiku tokens, about 360 per thread,
+  against 235 in the evaluation because the model now sees whole threads.
+  That is $0.22 API-equivalent. `labels.sqlite` is 136 KB.
+- **Result:** 1,423 threads (54%) were labelled addressed. Of W44's 3,405
+  in-scope comments, 1,905 (55.9%) are addressed, and none are pending.
+  Without labels, other weeks are 60–73% decided, so the UI hides the
+  metric for them.
+
+| W44, in scope | Comments | Addressed | Rate | Share of comments | Share of addressed |
+|---|---:|---:|---:|---:|---:|
+| google.com | 3,123 | 1,732 | 55% | 91.72% | 90.92% |
+| microsoft.com | 165 | 104 | 63% | 4.85% | 5.46% |
+| opera.com | 51 | 33 | 65% | 1.50% | 1.73% |
+| igalia.com | 33 | 19 | 58% | 0.97% | 1.00% |
+| intel.com | 16 | 10 | 62% | 0.47% | 0.52% |
+
+**Spot check.** I read 12 random W44 labels and agreed with 11; the
+remaining one was cut off in my printout. Owners increasingly reply through
+AI agents ("[AI] Done in Patchset 13", "**Maestro AI:** Done."), which the
+regex misses and Haiku catches. Letting the regex skip such prefixes would
+save model calls.
+
+### Running it
+
+```
+python3 -m cosh derive                               # threads + regex (no model)
+python3 -m cosh classify --week 2026-W43 --dry-run   # how many threads need Haiku
+python3 -m cosh classify --week 2026-W43             # ~11 min and ~1M Haiku tokens per week
+python3 -m cosh summarize
+```
+
+`classify` takes `data/private/classify.lock`, writes labels after every
+batch (an interrupted run resumes), and with `--max-threads N` caps a run.
+It puts no load on Gerrit.
 
 ### Scoring
 

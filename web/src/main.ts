@@ -58,6 +58,9 @@ import {
   meanDerivedShare,
   metricLabel as metricName,
   METRICS,
+  addressedMeta,
+  addressedRange,
+  addressedWeeks,
   MIN_DERIVED_SHARE,
   UNKNOWN_USAGE_ORGS,
   orgTotals,
@@ -193,9 +196,67 @@ function rangeLabel(r: WeekRange): string {
   return r.from === r.to ? r.from : `${r.from} to ${r.to} (${rangeLength(r)} weeks)`;
 }
 
+/** The metrics this data can show: addressed comments only once some week is classified. */
+function availableMetrics(data: Data) {
+  const addressed = addressedWeeks(data.summary).length > 0;
+  return METRICS.filter((m) => m.id !== 'addressed' || addressed);
+}
+
+/** Addressed comments when every review week of the range is classified, else comments. */
+function defaultMetric(data: Data, range: WeekRange): Metric {
+  const review = weeksIn(data.summary.meta.weeks, range).length;
+  const classified = addressedRange(data.summary, range).weeks.length;
+  return review > 0 && classified === review ? 'addressed' : 'comments';
+}
+
+/** The range the views show: the user's, or for the addressed metric only
+ * its classified part (first to last classified week in it). */
+function viewRange(data: Data, state: State): WeekRange {
+  if (state.metric !== 'addressed') return state.range;
+  return addressedRange(data.summary, state.range).range ?? state.range;
+}
+
+/** Runs `fn` with state.range narrowed to viewRange, then restores the
+ * user's range (which the URL, pickers and range summary keep showing). */
+function withView(data: Data, state: State, fn: () => void) {
+  const chosen = state.range;
+  state.range = viewRange(data, state);
+  try {
+    fn();
+  } finally {
+    state.range = chosen;
+  }
+}
+
+function renderMetricNote(data: Data, state: State) {
+  const note = $('#metric-note');
+  if (state.metric !== 'addressed') {
+    note.hidden = true;
+    return;
+  }
+  const meta = addressedMeta(data.summary);
+  const review = weeksIn(data.summary.meta.weeks, state.range);
+  const { weeks, range } = addressedRange(data.summary, state.range);
+  const all = addressedWeeks(data.summary);
+  const what =
+    'Addressed comments: review comments in a thread that led the CL owner to change the CL (the owner replied ' +
+    '“Done” or similar, or a Claude model read the thread as a change), one point per comment to its author; ' +
+    'threads the owner never answered score nothing.';
+  let cover: string;
+  if (!range) {
+    cover = ` No week in this range is classified yet${all.length ? ` (classified: ${all.length === 1 ? all[0] : `${all.length} weeks, ${all[0]}–${all[all.length - 1]}`})` : ''}, so there is nothing to show; the other metrics cover it.`;
+  } else if (weeks.length === review.length) {
+    cover = ` Every week in this range is classified${meta?.classifier ? ` (labels: ${meta.classifier})` : ''}.`;
+  } else {
+    cover = ` Only ${weeks.length} of the ${review.length} review weeks in this range ${weeks.length === 1 ? 'is' : 'are'} classified, so every ` +
+      `section below shows ${rangeLabel(range)} only; the other metrics cover the whole range.`;
+  }
+  note.textContent = what + cover;
+  note.hidden = false;
+}
+
 function readStateFromUrl(data: Data): State {
   const q = new URLSearchParams(location.hash.slice(1));
-  const metric = METRICS.some((m) => m.id === q.get('metric')) ? (q.get('metric') as Metric) : 'comments';
   const { full, common } = data.ranges;
   const week = q.get('week'); // links from before the range picker
   const from = isWeek(q.get('from')) ? q.get('from')! : isWeek(week) ? week : common.from;
@@ -209,9 +270,12 @@ function readStateFromUrl(data: Data): State {
   const dir = q.get('dir');
   const dirNode = dir ? dirNodeByPath(data.areas, dir) : null;
   const hmb = Number(q.get('hmb'));
+  const range = clampRange({ from, to }, full);
+  const asked = q.get('metric');
+  const metric = availableMetrics(data).some((m) => m.id === asked) ? (asked as Metric) : defaultMetric(data, range);
   return {
     metric,
-    range: clampRange({ from, to }, full),
+    range,
     smoothing,
     reviewScale,
     lbSize,
@@ -279,7 +343,7 @@ function buildControls(data: Data, state: State, render: () => void) {
   // Replace only the buttons: each fieldset's <legend> is static markup.
   const metricBox = $('#metric');
   metricBox.querySelectorAll('label').forEach((l) => l.remove());
-  for (const m of METRICS) {
+  for (const m of availableMetrics(data)) {
     const label = el('label');
     const input = el('input');
     input.type = 'radio';
@@ -507,6 +571,8 @@ function renderTiles(data: Data, weeks: string[]) {
 
 function renderTable(data: Data, state: State, weeks: string[], colors: Map<string, string>) {
   const totals = orgTotals(data.summary, weeks, distinctReviewers(data.reviewers, weeks).byOrg);
+  const classified = new Set(addressedWeeks(data.summary));
+  const addressedShown = weeks.length > 0 && weeks.every((w) => classified.has(w));
   const orgs = new Set([...totals.map((r) => r.org), ...data.orgBrowsers.keys(), ...UNKNOWN_USAGE_ORGS.keys()]);
   const items = [...orgs].map((org) => {
     const row = totals.find((r) => r.org === org);
@@ -563,6 +629,7 @@ function renderTable(data: Data, state: State, weeks: string[], colors: Map<stri
         r ? int(r.reviewers) : '0',
         r ? int(r.reviewed_cls) : '—',
         r ? int(r.comments) : '—',
+        r && addressedShown ? int(r.addressed_comments) : '—',
         r ? int(r.review_chars) : '—',
         r ? int(r.ai_comments) : '—',
         r ? int(r.post_merge_comments) : '—',
@@ -632,6 +699,7 @@ function renderAreas(data: Data, state: State, colors: Map<string, string>, them
   const total = roots.reduce((s, r) => s + totals.total[r], 0);
   const inScope = roots.filter((r) => data.areas.nodes[r][2]).reduce((s, r) => s + totals.total[r], 0);
   const what = {
+    addressed: 'Addressed review comments (in threads that led to a change)',
     comments: 'Every review comment',
     chars: 'Review characters, from every comment',
     cls: 'CLs closed with review comments',
@@ -855,6 +923,11 @@ function main(data: Data) {
     writeStateToUrl(state);
     syncInputs();
     renderRangeSummary(data, state);
+    renderMetricNote(data, state);
+    withView(data, state, renderViews);
+  };
+
+  const renderViews = () => {
     const theme = readTheme();
     const colors = colorsFor(theme);
     // Every section covers the selected range only.
@@ -862,8 +935,15 @@ function main(data: Data) {
     const label = rangeLabel(state.range);
     // Smooth over every week before filtering, so the range's first weeks
     // average over earlier data too.
+    // Addressed shares exist only for classified weeks; keep the running
+    // average from reaching into the others.
+    const classified = new Set(addressedWeeks(data.summary));
+    const ratioSummary =
+      state.metric === 'addressed'
+        ? { ...data.summary, rows: data.summary.rows.filter((r) => classified.has(r.iso_week)) }
+        : data.summary;
     const points = smoothRatios(
-      computeRatios(data.summary, data.radar, data.orgBrowsers, state.metric),
+      computeRatios(ratioSummary, data.radar, data.orgBrowsers, state.metric),
       state.smoothing,
     ).filter(
       (p) => orgs.includes(p.org) && weeks.includes(p.week),
@@ -971,8 +1051,10 @@ function main(data: Data) {
         const box = active?.closest<HTMLElement>('#area-chart, #heat-chart');
         const key = active?.classList.contains('ar-toggle') ? active.closest<HTMLElement>('[data-key]')?.dataset.key : undefined;
         const theme = readTheme();
-        renderAreas(data, state, colorsFor(theme), theme);
-        renderHeat(data, state, colorsFor(theme), theme, render);
+        withView(data, state, () => {
+          renderAreas(data, state, colorsFor(theme), theme);
+          renderHeat(data, state, colorsFor(theme), theme, render);
+        });
         if (box && key) box.querySelector<HTMLButtonElement>(`[data-key="${CSS.escape(key)}"] .ar-toggle`)?.focus({ preventScroll: true });
         document.body.dataset.areaLinks = 'true';
       })

@@ -6,14 +6,20 @@
 // full-page screenshots in light and dark mode for eyeballing. CPU_THROTTLE=6
 // slows each page down 6x, like a CI runner, to shake out timing races.
 import assert from 'node:assert/strict';
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { afterAll as after, beforeAll as before, test } from 'vitest';
 import { fileURLToPath } from 'node:url';
 import puppeteer, { type Browser, type Page } from 'puppeteer-core';
 import { preview, type PreviewServer } from 'vite';
 import { randomPort } from '../vite.config.ts';
-import { addWeeks, isoWeekOf } from '../src/data.ts';
+import { addWeeks, addressedWeeks, isoWeekOf, type Summary } from '../src/data.ts';
+
+/** The committed summary the build bundles. */
+const summary = JSON.parse(
+  readFileSync(fileURLToPath(new URL('../../summaries/org_weekly.json', import.meta.url)), 'utf8'),
+) as Summary;
+const hasAddressedWeeks = () => addressedWeeks(summary).length > 0;
 
 const webDir = fileURLToPath(new URL('..', import.meta.url));
 const chromePath = process.env.CHROME_PATH ?? '/usr/bin/google-chrome';
@@ -235,10 +241,12 @@ test('switching the metric updates the table, review chart, directory chart and 
   assert.equal(legend.text, 'Contribution metric');
   assert.ok(legend.height > 0, 'metric legend should be visible');
   const options = await page.$$eval('#metric label', (ls) => ls.map((l) => l.textContent));
-  assert.deepEqual(options, ['Review comments', 'Review characters', 'Reviewed CLs']);
+  // Addressed comments is offered only once some week is classified (cosh classify).
+  assert.deepEqual(options, [...(hasAddressedWeeks() ? ['Addressed comments'] : []),
+    'Review comments', 'Review characters', 'Reviewed CLs']);
   const headers = await page.$$eval('#org-table th[scope="col"]', (ths) => ths.map((t) => t.textContent));
   assert.deepEqual(headers, ['Org', 'Review share', 'Usage share', 'Ratio', 'Reviewers', 'Reviewed CLs',
-    'Comments', 'Review chars', 'AI comments', 'Post-merge comments']);
+    'Comments', 'Addressed comments', 'Review chars', 'AI comments', 'Post-merge comments']);
   const cell = () => page.$eval('tr[data-org="microsoft.com"] td', (td) => td.textContent);
   const areaHead = () => page.$eval('#area-chart .ar-head .ar-vol', (e) => e.textContent);
   const before = await cell();
@@ -256,6 +264,29 @@ test('switching the metric updates the table, review chart, directory chart and 
   await page.reload();
   await page.waitForSelector('body[data-ready]');
   assert.equal(await page.$eval('#metric input[value="chars"]', (i) => (i as HTMLInputElement).checked), true);
+  assert.deepEqual(errors, []);
+  await page.close();
+});
+
+test.skipIf(!hasAddressedWeeks())('addressed comments show only classified weeks, with a note', async () => {
+  const classified = addressedWeeks(summary);
+  const last = classified[classified.length - 1];
+  const from = addWeeks(classified[0], -8);
+  const { page, errors } = await open(`#metric=addressed&from=${from}&to=${last}`);
+  assert.equal(await page.$eval('#metric input[value="addressed"]', (i) => (i as HTMLInputElement).checked), true);
+  const note = await page.$eval('#metric-note', (n) => ({ hidden: (n as HTMLElement).hidden, text: n.textContent ?? '' }));
+  assert.equal(note.hidden, false);
+  assert.match(note.text, /led the CL owner to change the CL/);
+  assert.match(note.text, /Only \d+ of the \d+ review weeks in this range (is|are) classified/);
+  // The user's range stays in the URL; the sections show the classified part.
+  assert.match(page.url(), new RegExp(`from=${from}`));
+  assert.match(await page.$eval('#table-caption', (c) => c.textContent ?? ''), new RegExp(classified[0]));
+  const cell = await page.$eval('tr[data-org="google.com"] td:nth-child(8)', (td) => td.textContent ?? '');
+  assert.match(cell, /^[\d,]+$/);
+  // Other metrics are unaffected and hide the note.
+  await page.click('#metric input[value="comments"]');
+  assert.equal(await page.$eval('#metric-note', (n) => (n as HTMLElement).hidden), true);
+  assert.equal(await page.$eval('tr[data-org="google.com"] td:nth-child(8)', (td) => td.textContent), '—');
   assert.deepEqual(errors, []);
   await page.close();
 });

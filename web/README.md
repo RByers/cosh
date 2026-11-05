@@ -26,6 +26,12 @@ and in-app browsers (Facebook and Instagram credited to Meta, Microsoft 365 to M
 iOS; the usage card's fine print says so. Orgs whose browsers have under 0.1%
 of Chromium usage get no ratio.
 
+Addressed comments (comments in review threads that led the CL owner to
+change the CL; `docs/comment-classifier.md`) is offered once some week is
+classified with `cosh classify`. While it is selected, every section shows
+only the classified weeks of the range, and a note under the metric picker
+says so. It becomes the default once the whole default range is classified.
+
 The contribution metric (review comments by default, or review characters or
 reviewed CLs, all counted from comments) covers only the paths
 `config/paths.txt` includes. Python applies the scope in `summarize`; the page

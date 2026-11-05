@@ -27,7 +27,7 @@ python3 -m cosh radar [--offline]           # Cloudflare Radar; needs `source se
 python3 -m cosh backfill --weeks 52 [--go]  # plan only unless --go (the 52 weeks are approved)
 python3 -m cosh update-affiliations         # refresh config/affiliations.json5
 python3 -m cosh status
-python3 -m unittest tests.test_derive tests.test_extract tests.test_radar
+python3 -m unittest tests.test_derive tests.test_extract tests.test_radar tests.test_classify
 ```
 
 ## Pipeline and data flow
@@ -122,7 +122,20 @@ week, plus a snapshot of **open** CLs (step 3).
      `agent=` field) and `http.extraHeader`.
    - All of this lives in `cosh/contact.py`; override with `COSH_CONTACT`.
 
-## Metric definitions (metric_version 6)
+## Metric definitions (metric_version 7)
+
+**metric_version 7** (2026-11-04) adds **addressed comments**, the planned
+headline:
+- **What scores:** a non-owner comment scores one point if its thread was
+  started by a reviewer, led the CL owner to change the CL, and the comment
+  was written no later than the owner's last reply in the thread.
+- **How threads are decided:** by a regex on the owner's first reply in
+  `derive`, or by a Haiku label from the optional `cosh classify` step
+  (`labels.sqlite`).
+- **Coverage:** weeks whose threads aren't all decided report
+  `pending_comments`, and the UI hides the metric for them.
+
+Everything else is metric_version 6. See `comment-classifier.md`, "Design".
 
 Versions:
 1. Counted everything in the week the CL closed and left post-merge comments

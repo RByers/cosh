@@ -39,7 +39,7 @@ implementation and metric definitions.
 ## Conventions
 
 - Python standard library only. Run with `python3 -m cosh <cmd>`.
-- Tests: `python3 -m unittest tests.test_derive tests.test_extract tests.test_radar`.
+- Tests: `python3 -m unittest tests.test_derive tests.test_extract tests.test_radar tests.test_classify`.
   These run in a single process, which complies with the global limit of 4
   test workers. `tests.test_extract` uses a fake Gerrit and never touches the
   network.
@@ -64,6 +64,14 @@ implementation and metric definitions.
   deleted on 2026-11-04, and `open_derived` refuses a pre-v5 file.
 - Never delete `data/private/raw.sqlite` or `data/private/notedb/`. Those
   hold the fetched data, and re-fetching costs server load.
+- Never delete `data/private/labels.sqlite` either. It holds the
+  addressed-comment labels from `python3 -m cosh classify`, and remaking them
+  costs the user's Claude Pro usage. Unlike `derived.sqlite`, it is not
+  rebuildable. `classify` is an optional step after `derive`. It runs
+  headless `claude -p` (Haiku) serially, so size each run with `--week` or
+  `--max-threads` and check `--dry-run` first. Without labels, `summarize`
+  and the UI still work; the addressed metric is then shown only for weeks
+  that are classified.
 - **Keep whatever we download; download only what we need.** Anything we
   put server load on to fetch is kept, losslessly, so it never has to be
   fetched again if we later want it (`docs/storage-design.md` §3.8). This is

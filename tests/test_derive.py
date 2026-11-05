@@ -270,7 +270,7 @@ def summary_db(d, accounts, comments, close_week="2026-W44", cls=None):
             cl, path = where or (100, "content/a.cc")
             for kind in [(0, 0)] * n + [(1, 0)] * ai + [(0, 1)] * pm:
                 i += 1
-                db.execute("INSERT INTO comments VALUES (?,?,?,?,'2026-10-27 00:00:00','2026-W44',?,10,?,?)",
+                db.execute("INSERT INTO comments VALUES (?,?,?,?,'2026-10-27 00:00:00','2026-W44',?,10,?,?,NULL)",
                            (H, cl, f"c{i}", aid, path) + kind)
     db.close()
 
@@ -365,13 +365,13 @@ class SummarizeTest(unittest.TestCase):
                          [("igalia.com", 10, 100, 1, 3, 5, 1, 1.0)])
         # Every reviewer (valid JSON despite the hand-rolled layout), AI included;
         # account 3 (post-merge only) is credited like any other reviewer.
-        self.assertEqual(data["meta"]["columns"], ["account_id", "org", "comments", "cls", "chars"])
+        self.assertEqual(data["meta"]["columns"], ["account_id", "org", "comments", "cls", "chars", "addressed"])
         self.assertEqual(data["orgs"], ["igalia.com"])
         self.assertEqual(data["accounts"], {str(a): f"r{a}" for a in range(2, 7)})
         self.assertEqual(data["emails"], {str(a): f"r{a}@igalia.com" for a in range(2, 7)})
         self.assertEqual(data["weeks"]["2026-W44"],
-                         [[2, 0, 6, 1, 60], [3, 0, 1, 1, 10], [4, 0, 1, 1, 10], [5, 0, 1, 1, 10],
-                          [6, 0, 1, 1, 10]])
+                         [[2, 0, 6, 1, 60, 0], [3, 0, 1, 1, 10, 0], [4, 0, 1, 1, 10, 0], [5, 0, 1, 1, 10, 0],
+                          [6, 0, 1, 1, 10, 0]])
 
     def test_path_scope(self):
         # A patchset-level comment goes to its author's own most-commented file
@@ -431,7 +431,7 @@ class SummarizeTest(unittest.TestCase):
             "components/services/storage/", "third_party/blink/", "third_party/blink/renderer/",
             "third_party/blink/renderer/core/", "third_party/blink/renderer/platform/"})
         # [comments, reviewed CLs, chars] per (bucket, org).
-        got = {(paths[n], areas["orgs"][o]): v for n, o, *v in areas["weeks"]["2026-W44"]}
+        got = {(paths[n], areas["orgs"][o]): v[:3] for n, o, *v in areas["weeks"]["2026-W44"]}
         self.assertEqual(got, {("chrome/browser/ui/", "google.com"): [4, 1, 40],
                                ("chrome/browser/ui/", "intel.com"): [1, 1, 10],
                                (UNPLACED, "google.com"): [5, 1, 50],
@@ -480,7 +480,7 @@ class SummarizeTest(unittest.TestCase):
 
         def f(week, aid, name, email, org, comments, chars=1, cls=(1,)):
             return dict(week=week, account_id=aid, name=name, email=email, org=org, comments=comments,
-                        chars=chars, cls=set(cls))
+                        chars=chars, cls=set(cls), addressed=0)
         facts = [f("W", 1, "A", "a@x.com", "x.com", 10), f("W", 2, None, "b@x.com", "x.com", 1, 900),
                  f("W", 3, "C", "c@x.com", "x.com", 5, 5, [2, 3]), f("W", 3, "C", "c@y.com", "y.com", 2, 2, [4]),
                  f("V", 1, "A", "a@x.com", "x.com", 1)]

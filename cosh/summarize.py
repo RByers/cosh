@@ -54,6 +54,7 @@ import contextlib
 import csv
 import json
 import os
+import sqlite3
 from collections import defaultdict
 
 from . import store
@@ -68,18 +69,62 @@ FOLD_INTO_OTHER = frozenset({"gmail.com"})
 OTHER = "Other"
 TOTALS_COLS = ["iso_week", "main_cls", "merged_cls", "abandoned_cls", "human_cls",
                "bot_cls", "human_cls_with_comments"]
-METRICS = {"comments": "share_comments", "cls": "share_cls", "chars": "share_chars"}
+METRICS = {"comments": "share_comments", "cls": "share_cls", "chars": "share_chars",
+           "addressed": "share_addressed"}
 REVIEWERS_FILE = "reviewer_weekly.json"
 AREAS_FILE = "area_weekly.json"
 AREA_REVIEWERS_FILE = "area_reviewers.json"
-REVIEWER_COLUMNS = ["account_id", "org", "comments", "cls", "chars"]
+REVIEWER_COLUMNS = ["account_id", "org", "comments", "cls", "chars", "addressed"]
 
 # Non-bot accounts on human-owned CLs on main. CROSS JOIN pins the join order
 # (SQLite never reorders it): scan the comments, then look up the CL and the
 # account by primary key.
-SCOPE = """CROSS JOIN changes c ON c.host = x.host AND c.change_number = x.change_number
-           CROSS JOIN accounts a ON a.host = x.host AND a.account_id = x.account_id
-           WHERE a.is_bot = 0 AND c.is_bot_owned = 0 AND c.branch = 'main'"""
+SCOPE_JOINS = """CROSS JOIN changes c ON c.host = x.host AND c.change_number = x.change_number
+           CROSS JOIN accounts a ON a.host = x.host AND a.account_id = x.account_id"""
+SCOPE_WHERE = "WHERE a.is_bot = 0 AND c.is_bot_owned = 0 AND c.branch = 'main'"
+SCOPE = SCOPE_JOINS + "\n" + SCOPE_WHERE
+
+# Addressed points (cosh/classify.py): each comment's point, or NULL while it
+# can't be decided yet (its thread needs a model label it doesn't have, or the
+# DB predates threads). temp.lab holds the active classifier's labels.
+POINT_JOINS = """LEFT JOIN threads t ON t.host = x.host AND t.change_number = x.change_number
+                 AND t.root_uuid = x.root_uuid
+           LEFT JOIN accounts ra ON ra.host = t.host AND ra.account_id = t.root_account
+           LEFT JOIN temp.lab l ON l.change_number = t.change_number AND l.root_uuid = t.root_uuid
+                 AND l.input_hash = t.input_hash"""
+POINT = """CASE WHEN x.root_uuid IS NULL THEN NULL
+                WHEN t.root_uuid IS NULL THEN 0
+                WHEN t.last_owner_reply_at IS NULL OR x.written_at > t.last_owner_reply_at THEN 0
+                WHEN t.regex_addressed = 1 THEN 1
+                WHEN ra.is_bot = 1 THEN 0
+                ELSE l.addressed END"""
+# A week's addressed metric is shown only once this share of its comments is decided.
+COVERAGE_COMPLETE = 0.99
+
+
+def load_labels(db, data_dir):
+    """Fill temp.lab from labels.sqlite's active classifier (empty if there is
+    none). Returns the classifier's model id, or None."""
+    from . import classify
+    db.execute("CREATE TEMP TABLE IF NOT EXISTS lab (change_number INTEGER, root_uuid TEXT, input_hash INTEGER, "
+               "addressed INTEGER, PRIMARY KEY (change_number, root_uuid, input_hash)) WITHOUT ROWID")
+    db.execute("DELETE FROM temp.lab")
+    path = classify.labels_path(data_dir)
+    if not os.path.exists(path):
+        return None
+    ldb = sqlite3.connect(f"file:{path}?mode=ro", uri=True)
+    try:
+        if not store.has_table(ldb, "classifiers"):
+            return None
+        active = classify.active_classifier(ldb)
+        if not active:
+            return None
+        db.executemany("INSERT OR REPLACE INTO temp.lab VALUES (?,?,?,?)", ldb.execute(
+            "SELECT change_number, root_uuid, input_hash, addressed FROM labels WHERE classifier_id = ?",
+            (active[0],)))
+        return active[1]
+    finally:
+        ldb.close()
 
 
 def fold(org):
@@ -131,7 +176,8 @@ def comment_facts(db, resolve, scope, weeks=None):
     own = reviewer_anchors(db)
     inline_authors = {(host, aid) for host, _, aid in own}
     facts = {}
-    areas = defaultdict(lambda: dict(comments=0, chars=0, cls=set(), reviewers=defaultdict(int)))
+    areas = defaultdict(lambda: dict(comments=0, chars=0, cls=set(), reviewers=defaultdict(int),
+                                     addressed=0, pending=0))
     keep = (lambda w: True) if weeks is None else weeks.__contains__
     cache = {}
 
@@ -147,16 +193,17 @@ def comment_facts(db, resolve, scope, weeks=None):
         if f is None:
             f = facts[(week, aid, org)] = dict(week=week, account_id=aid, email=email, name=name,
                                                org=org, comments=0, chars=0, ai=0, post_merge=0,
-                                               cls=set())
+                                               cls=set(), addressed=0, pending=0)
         return f
 
     # Comments and chars: grouped per day, so the org is resolved as of the day
     # written, and per path and anchor, so each group lands on one file.
-    for week, host, cl, aid, email, name, day, path, n, chars, ai, pm in db.execute(f"""
+    for week, host, cl, aid, email, name, day, path, n, chars, ai, pm, addr, pend in db.execute(f"""
             SELECT x.iso_week, x.host, x.change_number, x.account_id, a.email, a.name,
                    substr(x.written_at, 1, 10), x.path,
-                   count(*), sum(x.chars), sum(x.is_ai), sum(x.after_close)
-            FROM comments x {SCOPE}
+                   count(*), sum(x.chars), sum(x.is_ai), sum(x.after_close),
+                   total({POINT}), sum(({POINT}) IS NULL)
+            FROM comments x {SCOPE_JOINS} {POINT_JOINS} {SCOPE_WHERE}
             GROUP BY 1, 2, 3, 4, 7, 8"""):
         if not keep(week) or (host, aid) not in inline_authors:
             continue
@@ -166,12 +213,16 @@ def comment_facts(db, resolve, scope, weeks=None):
         g["comments"] += n
         g["chars"] += chars
         g["reviewers"][aid] += n
+        g["addressed"] += int(addr)
+        g["pending"] += pend
         if included:
             f = fact(week, aid, email, name, org)
             f["comments"] += n
             f["chars"] += chars
             f["ai"] += ai
             f["post_merge"] += pm
+            f["addressed"] += int(addr)
+            f["pending"] += pend
     # Reviewed CLs: per CL, in the week it closed, with the org as of the close.
     for week, closed, host, cl, aid, email, name, path in db.execute(f"""
             SELECT c.close_week, c.closed_at, x.host, x.change_number, x.account_id, a.email, a.name,
@@ -203,39 +254,42 @@ def summarize(data_dir=store.DATA_DIR, out_dir=os.path.join(ROOT, "summaries"), 
     meta_kv = dict(db.execute("SELECT k, v FROM meta"))
     fetched = json.loads(meta_kv.get("fetched_weeks") or "[]")
     weeks = set(fetched) if fetched else None
+    classifier = load_labels(db, data_dir)
     facts, areas = comment_facts(db, resolve, scope, weeks)
 
     folded = defaultdict(lambda: dict(reviewers=set(), cls=set(), comments=0, chars=0, ai=0,
-                                      post_merge=0))
+                                      post_merge=0, addressed=0, pending=0))
     for f in facts:
         g = folded[(f["week"], fold(f["org"]))]
         g["reviewers"].add(f["account_id"])
         g["cls"] |= f["cls"]
-        for k in ("comments", "chars", "ai", "post_merge"):
+        for k in ("comments", "chars", "ai", "post_merge", "addressed", "pending"):
             g[k] += f[k]
     # Totals per week. The reviewed-CLs share uses the sum of per-org CL counts
     # as its denominator (a CL reviewed by two orgs credits both), so shares sum to 1.
-    totals = defaultdict(lambda: dict(cls=0, comments=0, chars=0))
+    totals = defaultdict(lambda: dict(cls=0, comments=0, chars=0, addressed=0, pending=0))
     for (week, _), g in folded.items():
         t = totals[week]
         t["cls"] += len(g["cls"])
-        t["comments"] += g["comments"]
-        t["chars"] += g["chars"]
+        for k in ("comments", "chars", "addressed", "pending"):
+            t[k] += g[k]
 
     def share(a, b):
         return round(a / b, 4) if b else None
 
     size = {"comments": lambda g: g["comments"], "cls": lambda g: len(g["cls"]),
-            "chars": lambda g: g["chars"]}[metric]
+            "chars": lambda g: g["chars"], "addressed": lambda g: g["addressed"]}[metric]
     out = []
     for (week, org), g in sorted(folded.items(), key=lambda kv: (kv[0][0], -size(kv[1]), kv[0][1])):
         t = totals[week]
         row = dict(iso_week=week, org=org, share=None, reviewers=len(g["reviewers"]),
                    reviewed_cls=len(g["cls"]), comments=g["comments"], review_chars=g["chars"],
                    ai_comments=g["ai"], post_merge_comments=g["post_merge"],
+                   addressed_comments=g["addressed"], pending_comments=g["pending"],
                    share_cls=share(len(g["cls"]), t["cls"]),
                    share_comments=share(g["comments"], t["comments"]),
-                   share_chars=share(g["chars"], t["chars"]))
+                   share_chars=share(g["chars"], t["chars"]),
+                   share_addressed=share(g["addressed"], t["addressed"]))
         row["share"] = row[METRICS[metric]]
         out.append(row)
 
@@ -260,6 +314,11 @@ def summarize(data_dir=store.DATA_DIR, out_dir=os.path.join(ROOT, "summaries"), 
         w.writerow(TOTALS_COLS)
         w.writerows(weekly)
     all_weeks = sorted(weeks) if weeks is not None else sorted({k[0] for k in areas} | set(totals))
+    # Share of each week's in-scope comments whose point is decided (regex,
+    # label, or scoring nothing by rule). The UI shows the addressed metric
+    # only for weeks at COVERAGE_COMPLETE or above.
+    coverage = {w: round(1 - totals[w]["pending"] / totals[w]["comments"], 4)
+                for w in all_weeks if totals[w]["comments"]}
     meta = dict(generated_at=store.now_iso(), weeks=all_weeks,
                 headline_metric=metric, headline_column="share",
                 metric_version=METRIC_VERSION,
@@ -279,6 +338,14 @@ def summarize(data_dir=store.DATA_DIR, out_dir=os.path.join(ROOT, "summaries"), 
                            "reviewed_cls in the week the CL closed; reviewers = accounts credited with "
                            "any of these that week; weekly_totals is by close week",
                 folded_into_other=sorted(FOLD_INTO_OTHER),
+                addressed=dict(
+                    classifier=classifier, coverage=coverage, complete_at=COVERAGE_COMPLETE,
+                    rule="addressed_comments: comments in a reviewer-started thread that led the CL owner to "
+                         "change the CL (the owner's first reply is Done-type, or a model label says so), "
+                         "written no later than the owner's last reply in it; one point each to the "
+                         "comment's author. Threads the owner never answered, or started, score nothing. "
+                         "pending_comments: comments whose thread isn't classified yet; coverage = 1 - "
+                         "pending / comments per week (docs/comment-classifier.md)"),
                 org_rule="affiliations.json5 (dated, as of the day written, or the CL's close for "
                          "reviewed_cls) > other @chromium.org -> google.com > email domain",
                 metric_notes="comments include self-declared AI comments from a reviewer's own account "
@@ -312,7 +379,7 @@ def reviewer_weeks(facts):
         aid = f["account_id"]
         names[aid] = f["name"] or (f["email"] or "").split("@")[0] or f"Account {aid}"
         weeks[f["week"]].append(dict(account_id=aid, org=f["org"], comments=f["comments"],
-                                     cls=len(f["cls"]), chars=f["chars"]))
+                                     cls=len(f["cls"]), chars=f["chars"], addressed=f["addressed"]))
     for people in weeks.values():
         people.sort(key=lambda r: (-r["comments"], -r["cls"], r["account_id"], r["org"]))
     return names, dict(sorted(weeks.items()))
@@ -322,7 +389,7 @@ def write_reviewers(facts, path):
     """Committed and published (derived from public Gerrit data, docs/plan.md
     ground rule 3). Compact: names and emails are listed once per account
     (`accounts`, `emails`: account id -> string) and orgs once, and each week
-    is a list of [account_id, org index, comments, cls, chars] rows, one per
+    is a list of [account_id, org index, comments, cls, chars, addressed] rows, one per
     line so weekly regenerations diff well."""
     names, weeks = reviewer_weeks(facts)
     # Gerrit account emails (public); accounts without one are bots and never
@@ -346,8 +413,9 @@ def write_reviewers(facts, path):
         fh.write('\n },\n "weeks": {')
         for i, (week, people) in enumerate(weeks.items()):
             fh.write('%s\n  %s: [' % ("," if i else "", json.dumps(week)))
-            fh.write(",".join("\n   [%d,%d,%d,%d,%d]" % (r["account_id"], org_index[r["org"]], r["comments"],
-                                                          r["cls"], r["chars"]) for r in people))
+            fh.write(",".join("\n   [%d,%d,%d,%d,%d,%d]" % (r["account_id"], org_index[r["org"]], r["comments"],
+                                                             r["cls"], r["chars"], r["addressed"])
+                              for r in people))
             fh.write("\n  ]")
         fh.write("\n }\n}\n")
 
@@ -371,11 +439,12 @@ def write_areas(areas, scope, path, limit=DIR_LIMIT):
         totals[d] += g["comments"]
     nodes, bucket = dir_tree(totals, scope, limit)
     index = {d: i for i, (d, _) in enumerate(nodes)}
-    buckets = defaultdict(lambda: dict(comments=0, chars=0, cls=set(), reviewers=defaultdict(int)))
+    buckets = defaultdict(lambda: dict(comments=0, chars=0, cls=set(), reviewers=defaultdict(int), addressed=0))
     for (week, d, org), g in areas.items():
         b = buckets[(week, index[bucket(d)], org)]
         b["comments"] += g["comments"]
         b["chars"] += g["chars"]
+        b["addressed"] += g["addressed"]
         b["cls"] |= g["cls"]
         for aid, n in g["reviewers"].items():
             b["reviewers"][aid] += n
@@ -383,13 +452,13 @@ def write_areas(areas, scope, path, limit=DIR_LIMIT):
     org_index = {o: i for i, o in enumerate(orgs)}
     weeks = defaultdict(list)
     for (week, n, org), b in sorted(buckets.items(), key=lambda kv: (kv[0][0], kv[0][1], kv[0][2])):
-        weeks[week].append([n, org_index[org], b["comments"], len(b["cls"]), b["chars"]])
+        weeks[week].append([n, org_index[org], b["comments"], len(b["cls"]), b["chars"], b["addressed"]])
 
     def included(d):
         return d != UNPLACED and (d == ROOT_FILES or scope.includes(d))
     out_nodes = [[-1 if p is None else index[p], d if p is None else d[len(p):], int(included(d))]
                  for d, p in nodes]
-    meta = dict(generated_at=store.now_iso(), columns=["node", "org", "comments", "cls", "chars"],
+    meta = dict(generated_at=store.now_iso(), columns=["node", "org", "comments", "cls", "chars", "addressed"],
                 node_columns=["parent", "label", "included"], dir_limit=limit,
                 path_rules=scope.describe(), unplaced=UNPLACED, root_files=ROOT_FILES,
                 scope="non-owner, non-bot review comments on human-owned CLs on main, in scope or not: "

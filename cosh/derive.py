@@ -16,14 +16,16 @@ from collections import defaultdict
 from . import store
 from .bots import is_bot_account
 from .extract import closed_ts, iso_week_of, parse_gerrit_ts
+from .classify import build_threads, thread_row
 from .paths import anchor, is_file
 
 # 1-2 = CL-keyed (cosh.sqlite); 3 = activity-time keyed; 4 = AI comments in the
 # headline (summarize only); 5 = comments only (no vote-only reviews), each
 # placed on a file and filtered by config/paths.txt; 6 = a patchset-level comment
 # is placed on its author's own most-commented file on the CL, else unplaced,
-# and accounts that never commented inline are dropped (summarize only).
-METRIC_VERSION = "6"
+# and accounts that never commented inline are dropped (summarize only); 7 =
+# threads (root_uuid, threads table) and the addressed_comments metric.
+METRIC_VERSION = "7"
 
 def human_text(message):
     """Comment text minus quoted reply lines ('> ...')."""
@@ -105,6 +107,8 @@ def derive_change(change, comments):
     closed_dt = parse_gerrit_ts(closed) if closed else None
 
     rows = []
+    root_of = {} if bot_owned else {cid: t["root_id"] for t in build_threads(comments, owner_id, True)
+                                    for cid, *_ in t["items"]}
     for path, clist in ({} if bot_owned else (comments or {})).items():
         for c in clist:
             a = c.get("author") or {}
@@ -118,7 +122,8 @@ def derive_change(change, comments):
                 comment_id=cid, account_id=aid, written_at=_ts(c["updated"]),
                 iso_week=iso_week_of(c["updated"]),
                 path=path, chars=len(human_text(c.get("message"))), is_ai=int(is_ai_comment(c)),
-                after_close=int(closed_dt is not None and parse_gerrit_ts(c["updated"]) > closed_dt)))
+                after_close=int(closed_dt is not None and parse_gerrit_ts(c["updated"]) > closed_dt),
+                root_uuid=root_of.get(cid)))
 
     ch = dict(
         change_number=change["_number"], project=change["project"],
@@ -135,6 +140,14 @@ def derive_change(change, comments):
         anchor_path=None if bot_owned else anchor(
             {p: len(cs) for p, cs in (comments or {}).items() if is_file(p)}))
     return accounts, ch, rows
+
+
+def derive_threads(change, comments):
+    """threads rows (cosh/classify.py, thread_row) for a human-owned CL."""
+    if is_bot_account(change["owner"]):
+        return []
+    owner_id = change["owner"]["_account_id"]
+    return [thread_row(t, owner_id) for t in build_threads(comments, owner_id)]
 
 
 def notedb_repo(repos, project):
@@ -276,10 +289,18 @@ def derive(data_dir=store.DATA_DIR, weeks=None, source="auto", out_path=None):
                 db.execute("DELETE FROM comments WHERE host=? AND change_number=?", (host, number))
                 db.executemany(
                     """INSERT INTO comments(host, change_number, comment_id, account_id, written_at,
-                       iso_week, path, chars, is_ai, after_close) VALUES (?,?,?,?,?,?,?,?,?,?)
-                       ON CONFLICT DO NOTHING""",
+                       iso_week, path, chars, is_ai, after_close, root_uuid)
+                       VALUES (?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT DO NOTHING""",
                     [(host, number, r["comment_id"], r["account_id"], r["written_at"], r["iso_week"],
-                      r["path"], r["chars"], r["is_ai"], r["after_close"]) for r in rows])
+                      r["path"], r["chars"], r["is_ai"], r["after_close"], r["root_uuid"]) for r in rows])
+                db.execute("DELETE FROM threads WHERE host=? AND change_number=?", (host, number))
+                db.executemany(
+                    """INSERT INTO threads(host, change_number, root_uuid, root_account, n_comments,
+                       last_owner_reply_at, input_hash, regex_addressed) VALUES (?,?,?,?,?,?,?,?)
+                       ON CONFLICT DO NOTHING""",
+                    [(host, number, t["root_uuid"], t["root_account"], t["n_comments"],
+                      t["last_owner_reply_at"], t["input_hash"], t["regex_addressed"])
+                     for t in derive_threads(change, comments)])
                 n_changes += 1
                 n_comments += len(rows)
 

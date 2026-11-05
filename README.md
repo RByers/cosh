@@ -70,7 +70,7 @@ python3 -m cosh derive                    # build derived.sqlite from the cache 
 python3 -m cosh summarize                 # write summaries/org_weekly.{csv,json}
 python3 -m cosh radar                     # Cloudflare Radar browser share (source secrets.sh first)
 python3 -m cosh backfill --weeks 52       # plan only; --go fetches (resumable)
-python3 -m unittest tests.test_derive tests.test_extract tests.test_radar
+python3 -m unittest tests.test_derive tests.test_extract tests.test_radar tests.test_classify
 cd web && npm ci && npm run dev           # web UI (see web/README.md); npm test for tests
 ```
 

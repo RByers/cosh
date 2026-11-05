@@ -265,6 +265,12 @@ input[type='date']:focus-visible,
   color: var(--text-secondary);
 }
 
+/* Under the metric picker: what addressed comments are, and which weeks have them. */
+.metric-note {
+  margin: -4px 0 0;
+  max-width: 75ch;
+}
+
 .card {
   background: var(--surface-1);
   border: 1px solid var(--border);

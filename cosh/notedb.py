@@ -201,6 +201,10 @@ def _comments_from_notes(contents):
                   "patch_set": c.get("key", {}).get("patchSetId"),
                   "updated": _gerrit_ts(c.get("writtenOn", "")),
                   "message": c.get("message", "")}
+            if c.get("parentUuid"):
+                rc["in_reply_to"] = c["parentUuid"]   # REST name for the reply link
+            if "unresolved" in c:
+                rc["unresolved"] = bool(c["unresolved"])
             if c.get("isAi"):
                 rc["is_ai"] = True
             if c.get("tag"):

@@ -4,6 +4,9 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { test } from 'vitest';
 import {
+  addressedMeta,
+  addressedRange,
+  addressedWeeks,
   addWeeks,
   barScale,
   dirRows,
@@ -698,4 +701,27 @@ test('rowReviewers merges the kept segments; topAccounts ranks them', () => {
   const ms = rowReviewers(idx, chrome, (o) => o === 'microsoft.com')!;
   assert.deepEqual(Object.fromEntries(ms.comments), { 7: 2, 11: 4 });
   assert.equal(rowReviewers(idx, rows.find((r) => r.kind === 'other')!), undefined);
+});
+
+test('addressed weeks: only weeks at the coverage threshold; ranges narrow to them', () => {
+  const rows = [
+    { iso_week: '2026-W43', org: 'a.com', comments: 10, addressed_comments: 2, pending_comments: 8 },
+    { iso_week: '2026-W44', org: 'a.com', comments: 10, addressed_comments: 6, pending_comments: 0 },
+    { iso_week: '2026-W44', org: 'b.com', comments: 10, addressed_comments: 2, pending_comments: 0 },
+  ].map((r) => ({ share: 0, reviewers: 1, reviewed_cls: 1, review_chars: 1, ai_comments: 0,
+    post_merge_comments: 0, share_cls: 0, share_comments: 0, share_chars: 0, ...r }));
+  const summary = {
+    meta: { weeks: ['2026-W42', '2026-W43', '2026-W44'],
+      addressed: { classifier: 'm', complete_at: 0.99, coverage: { '2026-W44': 1, '2026-W43': 0.2, '2026-W42': 0.995 } } },
+    rows,
+  } as unknown as Summary;
+  assert.deepEqual(addressedWeeks(summary), ['2026-W42', '2026-W44']);
+  assert.deepEqual(addressedRange(summary, { from: '2026-W43', to: '2026-W44' }),
+    { weeks: ['2026-W44'], range: { from: '2026-W44', to: '2026-W44' } });
+  assert.deepEqual(addressedRange(summary, { from: '2026-W43', to: '2026-W43' }), { weeks: [], range: null });
+  // Summaries from before the metric have no addressed meta at all.
+  assert.equal(addressedMeta({ meta: { weeks: [] }, rows: [] }), null);
+  assert.deepEqual(addressedWeeks({ meta: { weeks: [] }, rows: [] }), []);
+  const t = orgTotals(summary, ['2026-W44']);
+  assert.deepEqual(t.map((r) => [r.org, r.addressed_comments, r.share_addressed]), [['a.com', 6, 0.75], ['b.com', 2, 0.25]]);
 });

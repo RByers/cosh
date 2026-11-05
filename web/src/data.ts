@@ -6,10 +6,17 @@
 // summaries/org_weekly.json holds each org's comments, review characters and
 // reviewed CLs per week, already filtered to the paths in config/paths.txt.
 // summaries/area_weekly.json has every comment by directory.
+//
+// Addressed comments (docs/comment-classifier.md) are the comments in review
+// threads that led the CL owner to change the CL. They need an optional
+// classification step, so a week has them only once its threads are
+// classified: meta.addressed.coverage says how much of each week is decided,
+// and the UI shows the metric only for weeks at meta.addressed.complete_at.
 
-export type Metric = 'comments' | 'chars' | 'cls';
+export type Metric = 'addressed' | 'comments' | 'chars' | 'cls';
 
 export const METRICS: { id: Metric; label: string }[] = [
+  { id: 'addressed', label: 'Addressed comments' },
   { id: 'comments', label: 'Review comments' },
   { id: 'chars', label: 'Review characters' },
   { id: 'cls', label: 'Reviewed CLs' },
@@ -42,19 +49,58 @@ export interface SummaryRow {
   share_cls: number;
   share_comments: number;
   share_chars: number;
+  /** Absent in summaries written before the addressed metric. */
+  addressed_comments?: number;
+  pending_comments?: number;
+  share_addressed?: number | null;
 }
 
 /** Each metric's count and share columns in org_weekly. */
-export const COUNT_COLUMN: Record<Metric, 'comments' | 'review_chars' | 'reviewed_cls'> = {
+export const COUNT_COLUMN: Record<Metric, 'comments' | 'review_chars' | 'reviewed_cls' | 'addressed_comments'> = {
+  addressed: 'addressed_comments',
   comments: 'comments',
   chars: 'review_chars',
   cls: 'reviewed_cls',
 };
-export const SHARE_COLUMN: Record<Metric, 'share_comments' | 'share_chars' | 'share_cls'> = {
+export const SHARE_COLUMN: Record<Metric, 'share_comments' | 'share_chars' | 'share_cls' | 'share_addressed'> = {
+  addressed: 'share_addressed',
   comments: 'share_comments',
   chars: 'share_chars',
   cls: 'share_cls',
 };
+
+export interface AddressedMeta {
+  /** The model behind the labels, or null if no labels were used. */
+  classifier: string | null;
+  /** Week -> share of its in-scope comments whose point is decided. */
+  coverage: Record<string, number>;
+  /** Coverage at which a week counts as classified. */
+  complete_at: number;
+  rule?: string;
+}
+
+/** The addressed metric's metadata, or null in summaries written before it. */
+export function addressedMeta(summary: Summary): AddressedMeta | null {
+  const m = summary.meta.addressed as AddressedMeta | undefined;
+  return m && typeof m === 'object' && m.coverage ? m : null;
+}
+
+/** The weeks whose addressed metric is complete enough to show, sorted. */
+export function addressedWeeks(summary: Summary): string[] {
+  const m = addressedMeta(summary);
+  if (!m) return [];
+  return Object.entries(m.coverage)
+    .filter(([, c]) => c >= m.complete_at)
+    .map(([w]) => w)
+    .sort(compareWeeks);
+}
+
+/** The classified weeks within a range, and the range from the first to the
+ * last of them (null if the range has none). */
+export function addressedRange(summary: Summary, range: WeekRange): { weeks: string[]; range: WeekRange | null } {
+  const weeks = addressedWeeks(summary).filter((w) => compareWeeks(w, range.from) >= 0 && compareWeeks(w, range.to) <= 0);
+  return { weeks, range: weeks.length ? { from: weeks[0], to: weeks[weeks.length - 1] } : null };
+}
 
 export interface PathRule {
   prefix: string;
@@ -376,10 +422,12 @@ export function compareWeeks(a: string, b: string): number {
  * week, one row per (week, account, org). Compact: each row is
  * [account_id, index into `orgs`, comments, cls, chars]. Orgs are resolved
  * before org_weekly's fold of `meta.fold_into_other` into "Other". */
-export type ReviewerRow = [account: number, org: number, comments: number, cls: number, chars: number];
+export type ReviewerRow = [account: number, org: number, comments: number, cls: number, chars: number,
+  addressed?: number];
 
-/** Column of each metric in ReviewerRow and AreaBoard rows. */
-const METRIC_INDEX: Record<Metric, 2 | 3 | 4> = { comments: 2, cls: 3, chars: 4 };
+/** Column of each metric in ReviewerRow and AreaBoard rows. Files written
+ * before the addressed metric have no column 5; it reads as 0. */
+const METRIC_INDEX: Record<Metric, 2 | 3 | 4 | 5> = { comments: 2, cls: 3, chars: 4, addressed: 5 };
 
 export interface ReviewerBoard {
   meta: { fold_into_other: string[]; [k: string]: unknown };
@@ -472,7 +520,7 @@ export function topReviewers(
     for (const r of board.weeks[w] ?? []) {
       let t = by.get(r[0]);
       if (!t) by.set(r[0], (t = { value: 0, orgCount: new Map() }));
-      t.value += r[col];
+      t.value += r[col] ?? 0;
       t.orgCount.set(r[1], (t.orgCount.get(r[1]) ?? 0) + r[2]);
     }
   }
@@ -665,6 +713,9 @@ export interface OrgTotals {
   share_cls: number;
   share_comments: number;
   share_chars: number;
+  addressed_comments: number;
+  pending_comments: number;
+  share_addressed: number;
 }
 
 export function orgTotals(summary: Summary, weeks: string[], reviewers?: Map<string, number>): OrgTotals[] {
@@ -677,6 +728,7 @@ export function orgTotals(summary: Summary, weeks: string[], reviewers?: Map<str
       t = {
         org: r.org, reviewers: 0, reviewed_cls: 0, comments: 0, review_chars: 0, ai_comments: 0,
         post_merge_comments: 0, share_cls: 0, share_comments: 0, share_chars: 0,
+        addressed_comments: 0, pending_comments: 0, share_addressed: 0,
       };
       by.set(r.org, t);
     }
@@ -686,15 +738,20 @@ export function orgTotals(summary: Summary, weeks: string[], reviewers?: Map<str
     t.review_chars += r.review_chars;
     t.ai_comments += r.ai_comments;
     t.post_merge_comments += r.post_merge_comments ?? 0;
+    t.addressed_comments += r.addressed_comments ?? 0;
+    t.pending_comments += r.pending_comments ?? 0;
   }
   const out = [...by.values()];
-  const sum = (k: 'reviewed_cls' | 'comments' | 'review_chars') => out.reduce((s, t) => s + t[k], 0);
-  const [cls, comments, chars] = [sum('reviewed_cls'), sum('comments'), sum('review_chars')];
+  const sum = (k: 'reviewed_cls' | 'comments' | 'review_chars' | 'addressed_comments') =>
+    out.reduce((s, t) => s + t[k], 0);
+  const [cls, comments, chars, addressed] =
+    [sum('reviewed_cls'), sum('comments'), sum('review_chars'), sum('addressed_comments')];
   for (const t of out) {
     if (reviewers) t.reviewers = reviewers.get(t.org) ?? 0;
     t.share_cls = cls ? t.reviewed_cls / cls : 0;
     t.share_comments = comments ? t.comments / comments : 0;
     t.share_chars = chars ? t.review_chars / chars : 0;
+    t.share_addressed = addressed ? t.addressed_comments / addressed : 0;
   }
   return out;
 }
@@ -767,7 +824,7 @@ export interface DirBoard {
   orgs: string[];
   /** [parent index or -1, label (a root's path, else the segment below its parent), included]. */
   nodes: [parent: number, label: string, included: 0 | 1][];
-  weeks: Record<string, [node: number, org: number, comments: number, cls: number, chars: number][]>;
+  weeks: Record<string, [node: number, org: number, comments: number, cls: number, chars: number, addressed?: number][]>;
 }
 
 /** Rows each tree level shows before an "other" row, and how many more each
@@ -855,7 +912,7 @@ export function topDirOrgs(board: DirBoard, weeks: string[], metric: Metric = 'c
   for (const w of weeks) {
     for (const row of board.weeks[w] ?? []) {
       const org = board.orgs[row[1]];
-      sums.set(org, (sums.get(org) ?? 0) + row[col]);
+      sums.set(org, (sums.get(org) ?? 0) + (row[col] ?? 0));
     }
   }
   return [...sums]

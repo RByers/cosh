@@ -3,7 +3,8 @@
   python3 -m cosh extract --week 2026-W44 [--via notedb|rest] [--max-comment-fetches N]
   python3 -m cosh extract-open [--since ...] [--closed-since ...]
   python3 -m cosh derive [--week 2026-W44] [--out PATH]
-  python3 -m cosh summarize [--metric comments|cls|chars] [--db PATH] [--out DIR]
+  python3 -m cosh classify [--week 2026-W44] [--max-threads N] [--dry-run] [--db PATH]
+  python3 -m cosh summarize [--metric comments|cls|chars|addressed] [--db PATH] [--out DIR]
   python3 -m cosh backfill --weeks 52 [--go] [--duty-cycle 1.0]
   python3 -m cosh status
   python3 -m cosh update-affiliations
@@ -63,9 +64,20 @@ def main(argv=None):
     d.add_argument("--source", choices=["auto", "notedb", "rest"], default="auto",
                    help="comment source (auto = NoteDb if fetched, else REST cache)")
     d.add_argument("--out", help="derived DB path (default: data/private/derived.sqlite)")
+    c = sub.add_parser("classify",
+                       help="label review threads as addressed with Claude Haiku via `claude -p` "
+                            "(uses Pro usage; writes data/private/labels.sqlite; optional step)")
+    c.add_argument("--week", action="append",
+                   help="only threads with a comment written in this ISO week (repeatable; default: all)")
+    c.add_argument("--max-threads", type=int, help="label at most N threads this run")
+    c.add_argument("--batch", type=int, default=100, help="threads per claude -p call (default 100)")
+    c.add_argument("--model", default="haiku", help="claude -p model alias (default haiku)")
+    c.add_argument("--dry-run", action="store_true", help="count pending threads, call nothing")
+    c.add_argument("--db", help="derived DB path (default: data/private/derived.sqlite)")
     s = sub.add_parser("summarize", help="write summaries/ (path scope: config/paths.txt)")
-    s.add_argument("--metric", choices=["comments", "cls", "chars"], default="comments",
-                   help="headline share: review comments (default), reviewed CLs, or characters")
+    s.add_argument("--metric", choices=["comments", "cls", "chars", "addressed"], default="comments",
+                   help="headline share: review comments (default), reviewed CLs, characters, "
+                        "or addressed comments")
     s.add_argument("--db", help="derived DB path (default: data/private/derived.sqlite)")
     s.add_argument("--out", help="summaries directory (default: summaries/)")
     b = sub.add_parser("backfill", help="extract many weeks newest-first (plan only without --go)")
@@ -117,6 +129,10 @@ def main(argv=None):
     elif a.cmd == "derive":
         from .derive import derive
         derive(weeks=a.week, source=a.source, out_path=a.out)
+    elif a.cmd == "classify":
+        from .classify import classify
+        classify(db_path=a.db, weeks=a.week, model=a.model, batch=max(1, min(a.batch, 200)),
+                 max_threads=a.max_threads, dry_run=a.dry_run)
     elif a.cmd == "summarize":
         from .summarize import summarize
         kw = dict(out_dir=a.out) if a.out else {}
@@ -124,7 +140,8 @@ def main(argv=None):
             print(f"{r['iso_week']}  {r['org']:<24} share={r['share']:<7} "
                   f"reviewers={r['reviewers']:>4} comments={r['comments']:>6} "
                   f"cls={r['reviewed_cls']:>5} chars={r['review_chars']:>8} "
-                  f"ai={r['ai_comments']:>5} post_merge={r['post_merge_comments']:>4}")
+                  f"ai={r['ai_comments']:>5} post_merge={r['post_merge_comments']:>4} "
+                  f"addressed={r['addressed_comments']:>5} pending={r['pending_comments']:>5}")
     elif a.cmd == "backfill":
         from .backfill import backfill, last_complete_week, week_list
         if not 0.05 <= a.duty_cycle <= 1.0:
