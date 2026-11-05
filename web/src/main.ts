@@ -981,6 +981,10 @@ function renderDistribution(
   renderPerReview(data, state, weeks, spreads.map((s) => s.org), colorOf, theme, render);
 }
 
+/** Where the addressed-comments-per-review axis ends: a few reviewers far
+ * above it would otherwise squash everyone else to the left. */
+const PER_REVIEW_CAP = 10;
+
 /** How deep each review goes, org by org: a strip plot of each reviewer's
  * metric per reviewed CL over the range (review comments per review when the
  * metric is reviewed CLs), on the same org rows as the per-reviewer spread. */
@@ -1003,6 +1007,7 @@ function renderPerReview(
     metric: metricUnit(num),
     range: rangeLabel(state.range),
     min: PER_REVIEW_MIN,
+    cap: PER_REVIEW_CAP,
     m: num,
   });
 
@@ -1040,7 +1045,8 @@ function renderPerReview(
         render();
         $('#reviewer-detail').scrollIntoView({ block: 'nearest' });
       },
-      { axisTitle: `${unit}, per reviewer over the range`, linear: true },
+      { axisTitle: `${unit}, per reviewer over the range`, linear: true,
+        cap: num === 'addressed' ? PER_REVIEW_CAP : undefined },
     );
   });
 }

@@ -649,7 +649,10 @@ export const SPREAD_BOX_MIN = 5;
  * median. Hovering a dot gives the reviewer's email; clicking it calls `onPick`.
  * `opts` relabels it for other per-reviewer values, such as a ratio; the log
  * axis starts just below the smallest value. `opts.linear` uses a linear axis
- * from 0 instead (0 is then an ordinary value, with no slot of its own). */
+ * from 0 instead (0 is then an ordinary value, with no slot of its own).
+ * `opts.cap`, with `linear`, ends the axis at that value: reviewers above it
+ * sit in a narrow slot in the right margin, labelled ">cap", so a few
+ * outliers don't squash the rest. Their tooltips still give the value. */
 export function renderSpreadChart(
   canvas: HTMLCanvasElement,
   spreads: OrgSpread[],
@@ -661,7 +664,7 @@ export function renderSpreadChart(
   theme: Theme,
   selected: number | null,
   onPick: (id: number) => void,
-  opts: { axisTitle?: string; linear?: boolean } = {},
+  opts: { axisTitle?: string; linear?: boolean; cap?: number } = {},
 ): Chart<'scatter'> {
   const values = spreads.flatMap((s) => s.reviewers.map((r) => r.value));
   const zeros = values.some((v) => v <= 0);
@@ -674,7 +677,10 @@ export function renderSpreadChart(
   const fmt = (v: number) =>
     fmtNum(v, { maximumFractionDigits: v > 0 && v < 1 ? 2 : 1 });
   const ZERO = 0.5 * low;
-  const xOf = (v: number) => (v > 0 || opts.linear ? v : ZERO);
+  // The outlier slot, in the margin just past the cap (only when some value is over it).
+  const cap = opts.linear && opts.cap !== undefined && max > opts.cap ? opts.cap : null;
+  const OVER = cap === null ? 0 : cap * 1.07;
+  const xOf = (v: number) => (cap !== null && v > cap ? OVER : v > 0 || opts.linear ? v : ZERO);
   type P = { x: number; y: number; id: number; value: number };
   const datasets = spreads.map((s, row) => {
     const color = colorOf(s.org);
@@ -784,6 +790,12 @@ export function renderSpreadChart(
         x: opts.linear ? {
           type: 'linear',
           min: 0,
+          ...(cap === null ? {} : {
+            max: cap * 1.1,
+            afterBuildTicks: (axis: Scale) => {
+              axis.ticks = [...axis.ticks.filter((t) => t.value <= cap), { value: OVER }];
+            },
+          }),
           title: {
             display: true,
             text: opts.axisTitle ?? `${unit} per reviewer over the range`,
@@ -796,6 +808,7 @@ export function renderSpreadChart(
             maxRotation: 0,
             callback: (v) => {
               const n = Number(v);
+              if (cap !== null && n === OVER) return `>${cap}`;
               return n < 1000 ? String(n) : fmtNum(n, { notation: 'compact' });
             },
           },

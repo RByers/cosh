@@ -576,7 +576,8 @@
             above. This likely correlates with the thoroughness of the reviewer, or complexity of the CLs they tend to
             review. Each box spans the middle half of its row's reviewers, with a thick line at the median; rows with
             under five reviewers get none. Only reviewers with at least <slot name="min"></slot> reviewed CLs count, so
-            that one CL doesn't decide a dot<span data-if="m=addressed">; those with none addressed sit at 0</span>.
+            that one CL doesn't decide a dot<span data-if="m=addressed">; those with none addressed sit at 0, and the few
+            above <slot name="cap"></slot> sit in the right margin</span>.
             “All reviews” pools the whole row: its total divided by its reviews, so busy reviewers weigh more. Comments
             count in the week written and CLs in the week they closed, so the edges of a range are approximate. Hover a
             dot for the reviewer; click it for their weekly chart.</span>
