@@ -1283,7 +1283,6 @@ function main(data: Data) {
         metricLabel,
         colors,
         theme,
-        state.smoothing,
         state.reviewScale,
       );
     });

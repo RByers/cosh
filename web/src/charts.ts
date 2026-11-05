@@ -17,7 +17,7 @@ import {
 } from 'chart.js';
 import { fmtInt, fmtNum } from './format.ts';
 import type { OrgSpread, RadarWeekly, RatioPoint } from './data.ts';
-import { browserShare, monthTicks, OTHER, smoothingName, weekTitle } from './data.ts';
+import { browserShare, monthTicks, OTHER, weekTitle } from './data.ts';
 import { formatRatio } from './scale.ts';
 
 Chart.register(
@@ -437,13 +437,10 @@ export function renderReviewChart(
   unit: string,
   colors: Map<string, string>,
   theme: Theme,
-  /** Running-average window in weeks (1 = none); named in the tooltip. */
-  smoothing = 1,
   scale: ReviewScale = 'log',
 ): Chart<'line'> {
   const log = scale === 'log';
   const fmt = (v: number) => fmtNum(v, { maximumFractionDigits: v < 10 ? 1 : 0 });
-  const avg = smoothing > 1 ? `  (${smoothingName(smoothing)} avg)` : '';
   const logFloor = logAxisFloor(series.flatMap((s) => s.values));
   const datasets = series.map((s) => {
     const own = s.org === OTHER ? undefined : colors.get(s.org);
@@ -468,7 +465,7 @@ export function renderReviewChart(
           itemSort: (a, b) => count(b) - count(a),
           callbacks: {
             title: weekTooltipTitle,
-            label: (ctx) => `${fmt(count(ctx))}  ${ctx.dataset.label}${avg}`,
+            label: (ctx) => `${fmt(count(ctx))}  ${ctx.dataset.label}`,
           },
         },
       },
