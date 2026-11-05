@@ -6,6 +6,9 @@
     <meta name="color-scheme" content="light dark" />
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M1 8h14' stroke='%23898781' stroke-width='1.5'/%3E%3Cpath d='M1 13 L6 10 L10 4 L15 2' fill='none' stroke='%232a78d6' stroke-width='2'/%3E%3C/svg%3E" />
     <title>Chromium Open Source Health</title>
+    <!-- Linked here, not imported from main.ts, so it blocks the first paint in the dev
+         server too (a JS import is injected only once the script runs: unstyled flash). -->
+    <link rel="stylesheet" href="/src/style.css" />
     <meta name="description" content="How organizations that ship Chromium-based browsers contribute code review back to Chromium, relative to their browser usage." />
   </head>
   <body>

@@ -11,7 +11,7 @@ import { join } from 'node:path';
 import { afterAll as after, beforeAll as before, test } from 'vitest';
 import { fileURLToPath } from 'node:url';
 import puppeteer, { type Browser, type HTTPRequest, type Page } from 'puppeteer-core';
-import { preview, type PreviewServer } from 'vite';
+import { createServer, preview, type PreviewServer } from 'vite';
 import { randomPort } from '../vite.config.ts';
 import { addWeeks, addressedWeeks, isoWeekOf, namedOrgs, weeksIn, type Summary } from '../src/data.ts';
 
@@ -95,6 +95,33 @@ async function pickMetric(page: Page, id: string) {
   await page.click(`#metric input[value="${id}"]`);
   await page.waitForSelector('body:not([data-pending])');
 }
+
+test('the stylesheet is linked from the HTML, so the first paint is styled even in the dev server', async () => {
+  // The build always emits a <link>; the dev server injects a stylesheet that
+  // main.ts imports only once the script runs, so the page flashes unstyled.
+  // With the scripts blocked, the dev server's page must still be styled.
+  const dev = await createServer({
+    root: webDir,
+    logLevel: 'silent',
+    server: { host: 'localhost', port: randomPort(), strictPort: false },
+  });
+  await dev.listen();
+  try {
+    const page = await browser.newPage();
+    await page.setRequestInterception(true);
+    page.on('request', (r) => void (r.resourceType() === 'script' ? r.abort() : r.continue()));
+    await page.goto(dev.resolvedUrls!.local[0], { waitUntil: 'load' });
+    const styled = await page.evaluate(() => ({
+      sheets: document.styleSheets.length,
+      font: getComputedStyle(document.body).fontFamily,
+    }));
+    assert.ok(styled.sheets > 0, 'no stylesheet without scripts');
+    assert.match(styled.font, /system-ui/);
+    await page.close();
+  } finally {
+    await dev.close();
+  }
+});
 
 test('the intro shows while the data loads; the controls and charts appear once it has', async () => {
   const page = await browser.newPage();

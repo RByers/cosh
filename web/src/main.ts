@@ -1,4 +1,3 @@
-import './style.css';
 // Data files are referenced from the repo, not copied: Vite emits them as
 // hashed assets at build time, so the site always reads the committed data.
 import { fmtDay, fmtInt, fmtNum } from './format.ts';
