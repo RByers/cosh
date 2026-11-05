@@ -167,7 +167,7 @@ there alone; presentation lives in `src/style.css`.
    summary's metadata) and how comments are placed on files.
 7. **Review by directory over time** (`src/heatmap.ts`, `heatGrid` in
    `src/data.ts`): the same drill-down rows against time bins of 1 week, 4
-   weeks (default), 3 months (13 weeks) or 12 months (52 weeks), lined up
+   weeks (default), 3 months (13 weeks) or 1 year (52 weeks), lined up
    with the range's end. The Organization selector picks every org, every org but google.com, or one org (the 25
    busiest in the range); rows are ranked by what it selects. With several
    orgs each cell is a small stacked column of the org mix, its height the

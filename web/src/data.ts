@@ -322,9 +322,9 @@ export type Smoothing = (typeof SMOOTHING_WEEKS)[number];
 export const DEFAULT_SMOOTHING: Smoothing = 13;
 
 /** A smoothing window's name as an adjective, e.g. "4-week" or "3-month"
- * (13 weeks), "12-month" (52 weeks). */
+ * (13 weeks), "1-year" (52 weeks). */
 export function smoothingName(weeks: number): string {
-  return weeks === 13 ? '3-month' : weeks === 52 ? '12-month' : `${weeks}-week`;
+  return weeks === 13 ? '3-month' : weeks === 52 ? '1-year' : `${weeks}-week`;
 }
 
 /** Trailing running average of ratios over `window` calendar weeks, ending at

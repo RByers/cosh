@@ -787,7 +787,7 @@ test('value ratio smoothing defaults to 3 months and is selectable', async () =>
   const def = await read();
   assert.equal(def.smoothing, 13);
   assert.equal(def.checked, '13');
-  assert.deepEqual(def.labels, ['Off', '4 weeks', '3 months', '12 months']);
+  assert.deepEqual(def.labels, ['Off', '4 weeks', '3 months', '1 year']);
   assert.match(def.sub, /3-month running average/);
   assert.match(def.reviewSub, /3-month running average/);
 
@@ -824,8 +824,8 @@ test('value ratio smoothing defaults to 3 months and is selectable', async () =>
   await page.click('#smoothing input[value="52"]');
   assert.match(page.url(), /smooth=52/);
   const year = await read();
-  assert.match(year.sub, /12-month running average/);
-  assert.match(year.reviewSub, /12-month running average/);
+  assert.match(year.sub, /1-year running average/);
+  assert.match(year.reviewSub, /1-year running average/);
   assert.ok(year.ratios[0] !== null, 'first week averages over the year before the range');
   assert.ok(jitter(year.ratios) < jitter(four.ratios), `${jitter(year.ratios)} vs ${jitter(four.ratios)}`);
   await page.reload();
@@ -1637,10 +1637,10 @@ test('heatmap: directories by time bins, per org or as a mix, with Gerrit links'
   assert.match(weekly.legend, /^0%.*100% of the directory/);
   assert.equal(weekly.sub, mix.sub, 'the column and value toggles leave the description alone');
 
-  // Longer columns are named in months: 13 weeks is "3 months", 52 weeks "12 months".
+  // Longer columns are named in months or years: 13 weeks is "3 months", 52 weeks "1 year".
   assert.deepEqual(
     await page.$$eval('#heat-bin label', (ls) => ls.map((l) => l.textContent!.trim())),
-    ['Weeks', '4 weeks', '3 months', '12 months'],
+    ['Weeks', '4 weeks', '3 months', '1 year'],
   );
   await page.click('#heat-bin input[value="13"]');
   assert.equal((await read()).bins, 4);
