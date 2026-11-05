@@ -5,6 +5,7 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { test } from 'vitest';
 import {
+  dirPerReviewRows,
   gerritCommentUrl,
   reviewerSeries,
   threadBreakdown,
@@ -826,6 +827,28 @@ test('dirRows lists a page per level, and expands and collapses', () => {
   assert.equal(top[1].count, 2);
   const inBrowser = dirRows(DIRS, t, new Set(['d1', 'd2']), 5).slice(2, 5);
   assert.deepEqual(inBrowser.map((r) => [r.label, r.included]), [['ui/', 0], ['rest of browser/', 0], ['webnn/', 1]]);
+});
+
+test('dirPerReviewRows: rows laid out by reviews, each with the metric per review overall and per org', () => {
+  // Every fixture row is one reviewed CL, so a node's reviews are its row count.
+  const reviews = dirTotals(DIRS, W, DN, 'cls');
+  const nums = dirTotals(DIRS, W, DN, 'comments');
+  const show = (open: string[]) =>
+    dirPerReviewRows(DIRS, reviews, nums, new Set(open), 2).map(
+      ({ row, num, ratio }) => `${'  '.repeat(row.depth)}${row.label} ${num}/${row.value}=${ratio}`,
+    );
+  // chrome/ and content/ tie on 4 reviews (path order); (no file) is in "1 more".
+  assert.deepEqual(show([]), ['chrome/ 44/4=11', 'content/ 15/4=3.75', '1 more 5/1=5']);
+  // Expanded: ui/ has the most reviews; webnn/ ties with "rest of browser/" (a
+  // directory first), which lands in "1 more", whose figure is its members'.
+  assert.deepEqual(show(['d1', 'd2']).slice(0, 5),
+    ['chrome/ 44/4=11', '  browser/ 44/4=11', '    ui/ 30/2=15', '    webnn/ 4/1=4', '    1 more 10/1=10']);
+  // Per org: the org's metric over its own reviews.
+  const [chrome] = dirPerReviewRows(DIRS, reviews, nums, new Set(), 2);
+  assert.deepEqual(Object.fromEntries(chrome.orgs), {
+    'google.com': { num: 40, reviews: 3, ratio: 40 / 3 },
+    'microsoft.com': { num: 4, reviews: 1, ratio: 4 },
+  });
 });
 
 test('barScale breaks the axis only when a few bars dwarf the rest', () => {

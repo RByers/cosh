@@ -564,6 +564,33 @@
         </div>
       </section>
 
+      <section id="dir-per-review" class="card" aria-labelledby="dr-title">
+        <h2 id="dr-title">Review comments per review by directory</h2>
+        <!-- With Reviewed CLs chosen, this chart shows review comments per review, like the one below. -->
+        <template data-msg="dr-title"><slot name="name"></slot> per review by directory</template>
+        <p id="dr-sub" class="sub"></p>
+        <template data-msg="dr-sub">
+          <span data-if="!total">No review data for <slot name="range"></slot>.</span>
+          <span data-if="total">This aims to highlight how review complexity varies across the codebase: each
+            directory's <slot name="metric"></slot> over <slot name="range"></slot> divided by its reviews. A review
+            here is one organization's comments on one CL in the directory, so a CL that two organizations commented
+            on is two reviews, and a CL with comments in two directories counts in each. The bar is the directory's
+            figure; the dots are each organization's own figure there, for those with at least
+            <slot name="orgmin"></slot> reviews in it. The dashed line is every directory together:
+            <slot name="overall"></slot> per review over <slot name="reviews"></slot> reviews. Directories are listed
+            by reviews, most first; figures from fewer than <slot name="min"></slot>
+            reviews are faded, as one CL can sway them. Unlike the rest of the page, this covers every directory,
+            in scope or not, but leaves out comments that can't be placed on a file (“(no file)” above): mostly
+            sign-offs, they say little about the code. Comments count in the week written and CLs in the week they closed, so the edges of a
+            range are approximate. Use ▸ to open a directory, or a “more” row for the next entries.</span>
+        </template>
+        <ul id="dr-legend" class="legend" aria-label="Dot colour by organization"></ul>
+        <div class="ar-wrap">
+          <div id="dr-chart" class="ar dr"></div>
+        </div>
+        <template data-msg="dr-head"><span class="ar-label">Directory</span><span class="ar-vol"><slot name="metric"></slot> per review</span><span class="ar-dist">By organization</span><span class="ar-ng">Reviews</span></template>
+      </section>
+
       <section id="per-review" class="card" aria-labelledby="pr-title">
         <h2 id="pr-title">Review comments per review</h2>
         <!-- The heading, and the values' name mid-sentence. With Reviewed CLs chosen, this chart shows review comments per review. -->

@@ -9,14 +9,38 @@ import { fmtInt as int } from './format.ts';
 import { barScale, OTHER, type DirLink, type DirRow } from './data.ts';
 import { fragment } from './text.ts';
 
-function node<K extends keyof HTMLElementTagNameMap>(tag: K, cls?: string, text?: string) {
+export function node<K extends keyof HTMLElementTagNameMap>(tag: K, cls?: string, text?: string) {
   const e = document.createElement(tag);
   if (cls) e.className = cls;
   if (text !== undefined) e.textContent = text;
   return e;
 }
 
-const pct = (v: number) => `${(v * 100).toFixed(v > 0 && v < 0.01 ? 2 : 1)}%`;
+export const pct = (v: number) => `${(v * 100).toFixed(v > 0 && v < 0.01 ? 2 : 1)}%`;
+
+/** A row's first cell: its expand/collapse button (or the same width of
+ * space), its name, and whether the path scope counts it. Shared with the
+ * per-review directory chart (dirreview.ts). */
+export function rowLabel(r: DirRow, onToggle: (key: string) => void): HTMLElement {
+  const label = node('span', 'ar-label');
+  if (r.expandable) {
+    const button = node('button', 'ar-toggle', r.expanded ? '▾' : '▸');
+    button.type = 'button';
+    button.setAttribute('aria-expanded', String(r.expanded));
+    button.setAttribute('aria-label', `${r.expanded ? 'Collapse' : 'Expand'} ${r.kind === 'other' ? r.label : r.title}`);
+    button.addEventListener('click', () => onToggle(r.key));
+    label.append(button);
+  } else {
+    label.append(node('span', 'ar-toggle-space'));
+  }
+  label.append(node('span', 'ar-name', r.label));
+  // Whether the path scope counts this row: wholly, not at all, or in part.
+  const tag = r.included >= 1 ? 'included' : r.included <= 0 ? 'excluded' : 'mixed';
+  const tagEl = node('span', `ar-tag ar-tag-${tag}`, tag);
+  if (tag === 'mixed') tagEl.title = `${pct(r.included)} included`;
+  label.append(tagEl);
+  return label;
+}
 
 /** The org whose share the last column reports the complement of. */
 export const MAJORITY_ORG = 'google.com';
@@ -66,23 +90,7 @@ export function buildAreaChart(
         .map((o) => `  ${o}: ${int(r.byOrg.get(o)!)} (${pct(shareOf(o))})`);
       li.title = `${r.title}: ${int(r.value)} ${unit}, ${status}\n${lines.join('\n')}`;
 
-      const label = node('span', 'ar-label');
-      if (r.expandable) {
-        const button = node('button', 'ar-toggle', r.expanded ? '▾' : '▸');
-        button.type = 'button';
-        button.setAttribute('aria-expanded', String(r.expanded));
-        button.setAttribute('aria-label', `${r.expanded ? 'Collapse' : 'Expand'} ${r.kind === 'other' ? r.label : r.title}`);
-        button.addEventListener('click', () => onToggle(r.key));
-        label.append(button);
-      } else {
-        label.append(node('span', 'ar-toggle-space'));
-      }
-      label.append(node('span', 'ar-name', r.label));
-      // Whether the path scope counts this row: wholly, not at all, or in part.
-      const tag = r.included >= 1 ? 'included' : r.included <= 0 ? 'excluded' : 'mixed';
-      const tagEl = node('span', `ar-tag ar-tag-${tag}`, tag);
-      if (tag === 'mixed') tagEl.title = `${pct(r.included)} included`;
-      label.append(tagEl);
+      const label = rowLabel(r, onToggle);
 
       const vol = node('span', 'ar-vol');
       const torn = r.value > max;

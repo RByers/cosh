@@ -959,6 +959,107 @@ a.ar-seg:focus-visible {
   }
 }
 
+/* … per review by directory (dirreview.ts): label | per-review bar | org
+ * dots | reviews. Same grid and rows as Review by directory. */
+
+/* --avg: every directory's figure on the bar scale, 0..1; a dashed line
+ * down the bar column, at the same place on every row. */
+.dr-vol {
+  position: relative;
+  align-self: stretch;
+}
+
+.dr-vol::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: calc((100% - var(--ar-label-room)) * var(--avg, 0));
+  border-left: 1px dashed var(--baseline);
+  pointer-events: none;
+}
+
+.dr-vol .ar-bar {
+  align-self: center;
+}
+
+/* A track on the bar column's scale, with one dot per org. --at: the
+ * org's figure on that scale, 0..1. The track leaves the same room at its
+ * end as the bar column, so a dot and a bar of the same figure line up. */
+.dr-dots {
+  position: relative;
+  align-self: stretch;
+  min-height: 22px;
+  margin-right: var(--ar-label-room);
+}
+
+.dr-dots::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  border-top: 1px solid var(--grid);
+}
+
+.dr-dots::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: calc(100% * var(--avg, 0));
+  border-left: 1px dashed var(--baseline);
+}
+
+.dr-dot {
+  position: absolute;
+  top: 50%;
+  left: calc(100% * var(--at, 0));
+  width: 8px;
+  height: 8px;
+  margin: -4px 0 0 -4px;
+  border-radius: 50%;
+  background: var(--color, var(--text-muted));
+  box-shadow: 0 0 0 1px var(--surface-1);
+}
+
+/* An org whose figure is past the scale: drawn at the end, as a ring. */
+.dr-dot-over {
+  background: var(--surface-1);
+  box-shadow: inset 0 0 0 2px var(--color, var(--text-muted));
+}
+
+.dr-dot:hover {
+  z-index: 1;
+  box-shadow: 0 0 0 2px var(--text-primary);
+}
+
+/* Figures from too few reviews to trust. */
+.dr-few .ar-bar,
+.dr-few .ar-value,
+.dr-few .dr-dots {
+  opacity: 0.45;
+}
+
+/* The legend's swatches are dots, like the chart's. */
+.swatch-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+/* Narrow: label | bar | reviews; the dots don't fit. */
+@container (max-width: 559px) {
+  .dr .ar-grid {
+    grid-template-columns: fit-content(45%) minmax(0, 1fr) auto;
+  }
+
+  .dr .ar-dist,
+  .dr .dr-dots {
+    display: none;
+  }
+}
+
 .scope-rules {
   margin: 8px 0 12px;
 }

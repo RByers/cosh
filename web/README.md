@@ -187,7 +187,23 @@ there alone; presentation lives in `src/style.css`.
    "chart" button shows it in the organization chart. A table, so cells have
    row and column headers; the directory column stays put while the bins
    scroll sideways on narrow screens.
-8. **Per review** (`orgPerReviewSpreads` in `src/data.ts`, the same
+8. **Per review by directory** (`src/dirreview.ts`, `dirPerReviewRows` in
+   `src/data.ts`): just above Per review, to show how review complexity
+   varies across the codebase. The same directory tree and expand/collapse as
+   Review by directory, but each row's bar is the metric (review comments
+   under Reviewed CLs, as in Per review) divided by its reviews. A review here
+   is one org's comments on one CL in the directory: area_weekly's `cls`
+   column, summed over orgs. Rows are ordered by reviews. Dots give each
+   org's own figure there (with at least 10 of its reviews,
+   `DIR_PER_REVIEW_ORG_MIN`), and a dashed line marks all directories
+   together. Rows with under 30 reviews (`DIR_PER_REVIEW_MIN`) are faded.
+   The scale ends at the largest top-level figure with enough reviews; bars
+   past it are torn and dots past it are rings. It covers every directory,
+   in scope or not, but leaves out `(no file)`: those comments are mostly
+   sign-offs and a third of all reviews. Comments count in the week written,
+   CLs in the week closed. Below 560px the dots column is hidden. From
+   `area_weekly.json`; no extra data.
+9. **Per review** (`orgPerReviewSpreads` in `src/data.ts`, the same
    `renderSpreadChart`, on a linear axis from 0): just above the per-reviewer
    spread and on the same org rows, each reviewer's metric over the range divided by their reviewed
    CLs (CLs they commented on), or review comments per review under the
@@ -198,7 +214,7 @@ there alone; presentation lives in `src/style.css`.
    reviews”, the row's pooled total ÷ its reviews. Comments count in the
    week written and CLs in the week closed, so a range's edges are
    approximate. From `reviewer_weekly.json`; no extra data.
-9. **Review per reviewer** (`orgSpreads` in `src/data.ts`,
+10. **Review per reviewer** (`orgSpreads` in `src/data.ts`,
    `renderSpreadChart` in `src/charts.ts`): a strip plot of each reviewer's
    total for the metric over the range, one dot per reviewer on a log axis,
    one row per org: the 10 orgs with the largest total, then everyone else
@@ -210,7 +226,7 @@ there alone; presentation lives in `src/style.css`.
    metric are left out, except under addressed comments, where everyone who
    wrote a review comment counts and those with none addressed sit at 0.
    From `reviewer_weekly.json`; no extra data.
-10. **Reviewer leaderboard**: the top 25 (or 50, 100, 200, or all) reviewers by review
+11. **Reviewer leaderboard**: the top 25 (or 50, 100, 200, or all) reviewers by review
    comments over the range, for every organization, all but google.com, or
    one organization (the 25 with the most review in the range), one
    compact bar each, coloured by org. Orgs with a colour get a legend
@@ -219,7 +235,7 @@ there alone; presentation lives in `src/style.css`.
    with addressed comments filled in for classified weeks. The chart comes
    from `reviewer_weekly.json` (no extra data) and has the link to the CLs
    they commented on, on Gerrit.
-11. **How review threads are classified** (once some week is classified):
+12. **How review threads are classified** (once some week is classified):
    one bar splitting the range's classified reviewer-started threads by how
    each was decided (owner's "Done", Haiku addressed, Haiku no change, no
    owner reply), and example threads per outcome with Gerrit links. The

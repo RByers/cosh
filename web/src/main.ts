@@ -24,6 +24,7 @@ import {
   type Theme,
 } from './charts.ts';
 import { buildAreaChart } from './areas.ts';
+import { buildDirPerReviewChart, fmtRatio } from './dirreview.ts';
 import { buildHeatmap, heatMax, type HeatCellInfo, type HeatValue } from './heatmap.ts';
 import { buildLeaderboard } from './leaderboard.ts';
 import {
@@ -38,6 +39,9 @@ import {
   rowReviewers,
   topAccounts,
   dirRows,
+  dirPerReviewRows,
+  DIR_PER_REVIEW_MIN,
+  DIR_PER_REVIEW_ORG_MIN,
   dirTotals,
   dirTree,
   topDirOrgs,
@@ -144,6 +148,9 @@ interface State {
   lbOrg: string;
   /** Directory chart rows the reader expanded (DirRow keys); not in the URL. */
   expandedDirs: Set<string>;
+  /** Per-review directory chart rows the reader expanded; its own set, as it
+   * orders rows by reviews, so its "more" rows hold other entries. */
+  expandedPrDirs: Set<string>;
   /** The directory the organization chart is limited to (a tree path), or null for the path scope. */
   reviewDir: string | null;
   /** Heatmap organization: ALL_ORGS, ALL_BUT_GOOGLE, OTHER_ORGS, or one org. */
@@ -334,6 +341,7 @@ function readStateFromUrl(data: Data): State {
     lbSize,
     lbOrg,
     expandedDirs: new Set(),
+    expandedPrDirs: new Set(),
     reviewDir: dirNode === null ? null : dirTree(data.areas).paths[dirNode],
     heatOrg: q.get('hm') || ALL_ORGS,
     heatBin: HEAT_BIN_SIZES.find((n) => n === hmb) ?? DEFAULT_HEAT_BIN,
@@ -903,6 +911,56 @@ function renderAreas(data: Data, state: State, colors: Map<string, string>, them
   draw();
 }
 
+/** The metric per review by directory: how much review a CL gets in each
+ * part of the codebase, every comment in the range, in scope or not. */
+function renderDirPerReview(data: Data, state: State, colors: Map<string, string>) {
+  const weeks = weeksIn(Object.keys(data.areas.weeks), state.range);
+  const num = perReviewMetric(state.metric);
+  const orgs = topDirOrgs(data.areas, weeks, 'cls', rangeNamedOrgs(data, state));
+  const all = dirTotals(data.areas, weeks, orgs, 'cls');
+  const nums = dirTotals(data.areas, weeks, orgs, num);
+  // Comments that can't be placed on a file are left out: mostly sign-offs on
+  // CLs the reviewer didn't comment on line by line, they say nothing about
+  // the code, and they are a third of all reviews. A node with no total is
+  // not listed (dirRows).
+  const roots = dirTree(data.areas).roots.filter((r) => data.areas.nodes[r][1] !== data.areas.meta.unplaced);
+  const reviews = { ...all, total: all.total.map((v, i) => (roots.includes(i) || data.areas.nodes[i][0] >= 0 ? v : 0)) };
+  const total = roots.reduce((s, r) => s + reviews.total[r], 0);
+  const overall = total ? roots.reduce((s, r) => s + nums.total[r], 0) / total : 0;
+  const unit = metricUnit(num);
+  fill($('#dr-title'), { name: metricName(num) });
+  fill($('#dr-sub'), {
+    total,
+    range: rangeLabel(state.range),
+    metric: unit,
+    overall: fmtRatio(overall),
+    reviews: int(total),
+    min: DIR_PER_REVIEW_MIN,
+    orgmin: DIR_PER_REVIEW_ORG_MIN,
+  });
+  $('#dr-legend').replaceChildren(
+    ...[...orgs, OTHER].map((org) => {
+      const li = el('li');
+      const color = org === OTHER ? undefined : colors.get(org);
+      const sw = el('span', undefined, color ? 'swatch swatch-dot' : 'swatch swatch-dot swatch-muted');
+      if (color) sw.style.setProperty('--color', color);
+      li.append(sw, document.createTextNode(org));
+      return li;
+    }),
+  );
+  const box = $('#dr-chart');
+  const draw = (focusKey?: string) => {
+    const rows = dirPerReviewRows(data.areas, reviews, nums, state.expandedPrDirs);
+    buildDirPerReviewChart(box, rows, orgs, (org) => colors.get(org), metricName(num), unit, overall, (key) => {
+      if (state.expandedPrDirs.has(key)) state.expandedPrDirs.delete(key);
+      else state.expandedPrDirs.add(key);
+      draw(key);
+    });
+    if (focusKey) box.querySelector<HTMLButtonElement>(`li[data-key="${CSS.escape(focusKey)}"] .ar-toggle`)?.focus();
+  };
+  draw();
+}
+
 /** The organization chart's note when it shows one directory: which of its comments it counts. */
 function renderDirNote(board: DirBoard, dir: string, node: number, weeks: string[], metric: Metric) {
   const t = dirTotals(board, weeks, [], metric);
@@ -1306,6 +1364,7 @@ function main(data: Data) {
     $('#review-dir-clear').hidden = state.reviewDir === null;
     renderHeat(data, state, colors, theme, render);
     renderAreas(data, state, colors, theme);
+    renderDirPerReview(data, state, colors);
     renderDistribution(data, state, colors, theme, render);
     renderLeaderboard(data, state, colors, theme, render);
     renderThreads(data, state);

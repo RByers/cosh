@@ -1501,6 +1501,68 @@ export function dirRows(board: DirBoard, t: DirTotals, expanded: ReadonlySet<str
 }
 
 // ---------------------------------------------------------------------------
+// Per review by directory: a metric divided by reviewed CLs, per directory.
+
+/** Below this many reviews a directory's per-review figure is shown faded:
+ * a single long thread can sway it. */
+export const DIR_PER_REVIEW_MIN = 30;
+/** An organization's dot in a directory needs at least this many of its reviews there. */
+export const DIR_PER_REVIEW_ORG_MIN = 10;
+
+/** `t`'s total (and per-org split) for one directory chart row: a
+ * directory's subtree, a directory's own bucket ("rest of"), or the sum of
+ * an "other" row's members. Lets a second metric follow rows laid out by
+ * another (dirRows). */
+export function dirRowTotal(t: DirTotals, row: DirRow): { value: number; byOrg: Map<string, number> } {
+  const parts: { kind: 'dir' | 'rest'; node: number }[] =
+    row.kind === 'other' ? row.members ?? [] : [{ kind: row.kind, node: row.node! }];
+  let value = 0;
+  const byOrg = new Map<string, number>();
+  for (const p of parts) {
+    value += p.kind === 'dir' ? t.total[p.node] : t.own[p.node];
+    const m = p.kind === 'dir' ? t.byOrg(p.node) : t.ownByOrg(p.node);
+    if (m) for (const [o, v] of m) byOrg.set(o, (byOrg.get(o) ?? 0) + v);
+  }
+  return { value, byOrg };
+}
+
+/** One row of the per-review directory chart: the row (laid out and sized
+ * by reviews), the metric summed over it, and the metric per review, overall
+ * and per org. */
+export interface DirPerReviewRow {
+  row: DirRow;
+  /** The metric over the row (see perReviewMetric). */
+  num: number;
+  /** num ÷ reviews (row.value), or 0 with no reviews. */
+  ratio: number;
+  /** Per org: [metric, reviews, metric per review]. */
+  orgs: Map<string, { num: number; reviews: number; ratio: number }>;
+}
+
+/** The directory chart's rows for the metric per review: `reviews` holds
+ * reviewed CLs (the cls metric: one org's comments on one CL in one
+ * directory bucket), `nums` the metric, both from dirTotals over the same
+ * weeks and orgs. Rows are laid out by reviews, largest first, so the
+ * busiest directories lead and "other" rows hold the smallest. */
+export function dirPerReviewRows(
+  board: DirBoard,
+  reviews: DirTotals,
+  nums: DirTotals,
+  expanded: ReadonlySet<string>,
+  page = DIR_PAGE,
+): DirPerReviewRow[] {
+  return dirRows(board, reviews, expanded, page).map((row) => {
+    const n = dirRowTotal(nums, row);
+    const orgs = new Map<string, { num: number; reviews: number; ratio: number }>();
+    for (const [o, r] of row.byOrg) {
+      const v = n.byOrg.get(o) ?? 0;
+      orgs.set(o, { num: v, reviews: r, ratio: r ? v / r : 0 });
+    }
+    return { row, num: n.value, ratio: row.value ? n.value / row.value : 0, orgs };
+  });
+}
+
+// ---------------------------------------------------------------------------
 // Gerrit links for the directory chart (summaries/area_reviewers.json).
 
 /** Who wrote each (week, node, org) bucket's comments in a DirBoard. Rows are
