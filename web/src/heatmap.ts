@@ -9,11 +9,14 @@
 // each cell is shaded in that org's colour, by its volume against the busiest
 // cell in the grid (square-root scale, so small directories still show) or by
 // its share of the directory's review.
+//
+// The table, header and row labels are shared with "Review complexity by
+// directory over time" (complexity.ts).
 import { fmtInt as int } from './format.ts';
 import { monthTicks, OTHER, weekMonth, type DirLink, type HeatGrid, type DirRow, type WeekRange } from './data.ts';
 import { msg } from './text.ts';
 
-function node<K extends keyof HTMLElementTagNameMap>(tag: K, cls?: string, text?: string) {
+export function node<K extends keyof HTMLElementTagNameMap>(tag: K, cls?: string, text?: string) {
   const e = document.createElement(tag);
   if (cls) e.className = cls;
   if (text !== undefined) e.textContent = text;
@@ -56,24 +59,18 @@ export interface HeatOptions {
 export const heatMax = (grid: HeatGrid, org: string) =>
   Math.max(0, ...grid.cells.flat().map((c) => c.byOrg.get(org) ?? 0));
 
-export function buildHeatmap(box: HTMLElement, o: HeatOptions): void {
-  const { grid } = o;
-  if (!grid.rows.length || !grid.bins.length) {
-    box.replaceChildren();
-    return;
-  }
-  const unit = o.unit;
-  const segOrder = [...o.orgs, OTHER];
-  const single = o.org;
-  const gridMax = single ? heatMax(grid, single) : 0;
-
+/** An empty heat table: fixed layout, so the `bins` share the width evenly,
+ * but never get narrower than a few pixels; past that the region scrolls. */
+export function heatTable(id: string, bins: number): HTMLTableElement {
   const table = node('table', 'hm');
-  table.id = 'heat-table';
-  // Fixed layout: the bins share the width evenly, but never get narrower
-  // than a few pixels; past that the region scrolls.
-  table.style.setProperty('--hm-bins', String(grid.bins.length));
-  // A single org's cells are shaded from its colour (style.css: .hm-shade).
-  if (single && o.orgColor) table.style.setProperty('--color', o.orgColor);
+  table.id = id;
+  table.style.setProperty('--hm-bins', String(bins));
+  return table;
+}
+
+/** The header row: the corner, then one column per bin, with month ticks
+ * and `binTitles` for hover and screen readers. */
+export function heatHead(bins: readonly WeekRange[], binTitles: readonly string[]): HTMLTableSectionElement {
   const head = node('thead');
   const hr = node('tr');
   const corner = node('th', 'hm-corner', msg('hm-corner'));
@@ -84,9 +81,7 @@ export function buildHeatmap(box: HTMLElement, o: HeatOptions): void {
   // tick, where it changes from the first column (the subtitle names the range).
   // Fine and coarse ticks each have their own "before", so a year can show at
   // one density only (style.css: .hm-year-wide, .hm-year-narrow).
-  const starts = grid.bins.map((b) => b.from);
-  // Once per bin: every cell's hover text repeats its bin's title.
-  const binTitles = grid.bins.map((b) => o.binTitle(b));
+  const starts = bins.map((b) => b.from);
   // Coarse ticks near the right edge would run off it.
   const coarseTicks = monthTicks(starts, 4);
   const coarse = new Set(coarseTicks.map((t) => t.index).filter((i) => i < starts.length - 2));
@@ -100,7 +95,7 @@ export function buildHeatmap(box: HTMLElement, o: HeatOptions): void {
   // two can pick different weeks.
   const ticks = new Map([...coarseTicks.filter((t) => coarse.has(t.index)), ...fineTicks].map((t) => [t.index, t.label.split(' ')[0]]));
   const fine = new Set(fineTicks.map((t) => t.index));
-  grid.bins.forEach((b, i) => {
+  bins.forEach((_, i) => {
     const th = node('th', 'hm-bin');
     th.scope = 'col';
     const tick = ticks.get(i);
@@ -119,6 +114,57 @@ export function buildHeatmap(box: HTMLElement, o: HeatOptions): void {
     hr.append(th);
   });
   head.append(hr);
+  return head;
+}
+
+/** A row's header cell: its expand/collapse button (or the same width of
+ * space), name, an optional extra (the "chart" button), and its total.
+ * `title` is the row's full path or description. */
+export function heatRowLabel(
+  r: DirRow,
+  title: string,
+  total: string,
+  onToggle: (key: string) => void,
+  extra?: HTMLElement,
+): HTMLTableCellElement {
+  const th = node('th', 'hm-label');
+  th.scope = 'row';
+  const lab = node('span', 'hm-lab');
+  lab.style.setProperty('--depth', String(r.depth));
+  th.append(lab);
+  if (r.expandable) {
+    const b = node('button', 'ar-toggle', r.expanded ? '▾' : '▸');
+    b.type = 'button';
+    b.setAttribute('aria-expanded', String(r.expanded));
+    b.setAttribute('aria-label', `${r.expanded ? 'Collapse' : 'Expand'} ${r.kind === 'other' ? r.label : title}`);
+    b.addEventListener('click', () => onToggle(r.key));
+    lab.append(b);
+  } else {
+    lab.append(node('span', 'ar-toggle-space'));
+  }
+  lab.append(node('span', 'hm-name', r.label));
+  if (extra) lab.append(extra);
+  lab.append(node('span', 'hm-total', total));
+  return th;
+}
+
+export function buildHeatmap(box: HTMLElement, o: HeatOptions): void {
+  const { grid } = o;
+  if (!grid.rows.length || !grid.bins.length) {
+    box.replaceChildren();
+    return;
+  }
+  const unit = o.unit;
+  const segOrder = [...o.orgs, OTHER];
+  const single = o.org;
+  const gridMax = single ? heatMax(grid, single) : 0;
+
+  const table = heatTable('heat-table', grid.bins.length);
+  // A single org's cells are shaded from its colour (style.css: .hm-shade).
+  if (single && o.orgColor) table.style.setProperty('--color', o.orgColor);
+  // Once per bin: every cell's hover text repeats its bin's title.
+  const binTitles = grid.bins.map((b) => o.binTitle(b));
+  const head = heatHead(grid.bins, binTitles);
 
   const body = node('tbody');
   grid.rows.forEach((r, ri) => {
@@ -129,32 +175,16 @@ export function buildHeatmap(box: HTMLElement, o: HeatOptions): void {
     const rowTotal = cells.reduce((s, c) => s + (single ? c.byOrg.get(single) ?? 0 : c.value), 0);
     const rowMax = Math.max(0, ...cells.map((c) => c.value));
 
-    const th = node('th', 'hm-label');
-    th.scope = 'row';
-    const lab = node('span', 'hm-lab');
-    lab.style.setProperty('--depth', String(r.depth));
-    th.append(lab);
-    th.title = `${o.rowTitle(r)}: ${int(rowTotal)} ${unit}${single ? ` from ${single}` : ''} in the range`;
-    if (r.expandable) {
-      const b = node('button', 'ar-toggle', r.expanded ? '▾' : '▸');
-      b.type = 'button';
-      b.setAttribute('aria-expanded', String(r.expanded));
-      b.setAttribute('aria-label', `${r.expanded ? 'Collapse' : 'Expand'} ${r.kind === 'other' ? r.label : o.rowTitle(r)}`);
-      b.addEventListener('click', () => o.onToggle(r.key));
-      lab.append(b);
-    } else {
-      lab.append(node('span', 'ar-toggle-space'));
-    }
-    lab.append(node('span', 'hm-name', r.label));
+    let chart: HTMLElement | undefined;
     if (r.kind === 'dir') {
-      const c = node('button', 'hm-chart', msg('hm-chart'));
-      c.type = 'button';
-      c.title = `Show ${o.rowTitle(r)} in the organization chart`;
-      c.setAttribute('aria-label', c.title);
-      c.addEventListener('click', () => o.onChart(r));
-      lab.append(c);
+      chart = node('button', 'hm-chart', msg('hm-chart'));
+      chart.setAttribute('type', 'button');
+      chart.title = `Show ${o.rowTitle(r)} in the organization chart`;
+      chart.setAttribute('aria-label', chart.title);
+      chart.addEventListener('click', () => o.onChart(r));
     }
-    lab.append(node('span', 'hm-total', int(rowTotal)));
+    const th = heatRowLabel(r, o.rowTitle(r), int(rowTotal), o.onToggle, chart);
+    th.title = `${o.rowTitle(r)}: ${int(rowTotal)} ${unit}${single ? ` from ${single}` : ''} in the range`;
     tr.append(th);
 
     cells.forEach((c, bi) => {

@@ -5,7 +5,8 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { test } from 'vitest';
 import {
-  dirPerReviewRows,
+  complexityGrid,
+  complexityScale,
   gerritCommentUrl,
   reviewerSeries,
   threadBreakdown,
@@ -829,26 +830,34 @@ test('dirRows lists a page per level, and expands and collapses', () => {
   assert.deepEqual(inBrowser.map((r) => [r.label, r.included]), [['ui/', 0], ['rest of browser/', 0], ['webnn/', 1]]);
 });
 
-test('dirPerReviewRows: rows laid out by reviews, each with the metric per review overall and per org', () => {
+test('complexityGrid: comments over reviews per directory and week, rows by reviews, (no file) left out', () => {
   // Every fixture row is one reviewed CL, so a node's reviews are its row count.
-  const reviews = dirTotals(DIRS, W, DN, 'cls');
-  const nums = dirTotals(DIRS, W, DN, 'comments');
-  const show = (open: string[]) =>
-    dirPerReviewRows(DIRS, reviews, nums, new Set(open), 2).map(
-      ({ row, num, ratio }) => `${'  '.repeat(row.depth)}${row.label} ${num}/${row.value}=${ratio}`,
-    );
-  // chrome/ and content/ tie on 4 reviews (path order); (no file) is in "1 more".
-  assert.deepEqual(show([]), ['chrome/ 44/4=11', 'content/ 15/4=3.75', '1 more 5/1=5']);
+  const range = { from: '2026-W43', to: '2026-W44' };
+  const g = complexityGrid(DIRS, range, 1, 'comments', new Set(), 2);
+  assert.deepEqual(g.bins, [{ from: '2026-W43', to: '2026-W43' }, { from: '2026-W44', to: '2026-W44' }]);
+  // chrome/ and content/ tie on 4 reviews (path order); (no file) isn't listed, so no "more" row.
+  assert.deepEqual(g.rows.map((r) => r.label), ['chrome/', 'content/']);
+  assert.deepEqual(g.cells, [
+    [{ num: 20, reviews: 1 }, { num: 24, reviews: 3 }],
+    [{ num: 0, reviews: 0 }, { num: 15, reviews: 4 }],
+  ]);
+  assert.deepEqual(g.totals, [{ num: 44, reviews: 4 }, { num: 15, reviews: 4 }]);
+  assert.deepEqual(g.overall, { num: 59, reviews: 8 });
   // Expanded: ui/ has the most reviews; webnn/ ties with "rest of browser/" (a
-  // directory first), which lands in "1 more", whose figure is its members'.
-  assert.deepEqual(show(['d1', 'd2']).slice(0, 5),
-    ['chrome/ 44/4=11', '  browser/ 44/4=11', '    ui/ 30/2=15', '    webnn/ 4/1=4', '    1 more 10/1=10']);
-  // Per org: the org's metric over its own reviews.
-  const [chrome] = dirPerReviewRows(DIRS, reviews, nums, new Set(), 2);
-  assert.deepEqual(Object.fromEntries(chrome.orgs), {
-    'google.com': { num: 40, reviews: 3, ratio: 40 / 3 },
-    'microsoft.com': { num: 4, reviews: 1, ratio: 4 },
-  });
+  // directory first), which lands in "1 more".
+  const open = complexityGrid(DIRS, range, 2, 'comments', new Set(['d1', 'd2']), 2);
+  assert.deepEqual(open.rows.map((r) => r.label).slice(0, 5), ['chrome/', 'browser/', 'ui/', 'webnn/', '1 more']);
+  assert.deepEqual(open.totals.slice(2, 5), [{ num: 30, reviews: 2 }, { num: 4, reviews: 1 }, { num: 10, reviews: 1 }]);
+});
+
+test('complexityScale: 5th to 95th percentile of the cells with enough reviews', () => {
+  const cell = (v: number, reviews = 10) => ({ num: v * reviews, reviews });
+  const cells = [Array.from({ length: 20 }, (_, i) => cell(i + 1)), [cell(1000, 9), cell(0, 0)]];
+  const grid = { bins: [], rows: [], cells, totals: [], overall: cell(1) };
+  // 20 shaded cells, 1..20: the 5th percentile is the 2nd, the 95th the 20th;
+  // the cell with 9 reviews doesn't count.
+  assert.deepEqual(complexityScale(grid), { lo: 2, hi: 20 });
+  assert.deepEqual(complexityScale({ ...grid, cells: [[cell(3, 1)]] }), { lo: 0, hi: 0 });
 });
 
 test('barScale breaks the axis only when a few bars dwarf the rest', () => {

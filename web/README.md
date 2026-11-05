@@ -197,22 +197,23 @@ there alone; presentation lives in `src/style.css`.
    "chart" button shows it in the organization chart. A table, so cells have
    row and column headers; the directory column stays put while the bins
    scroll sideways on narrow screens.
-8. **Per review by directory** (`src/dirreview.ts`, `dirPerReviewRows` in
-   `src/data.ts`): just above Per review, to show how review complexity
-   varies across the codebase. The same directory tree and expand/collapse as
-   Review by directory, but each row's bar is the metric (review comments
-   under Reviewed CLs, as in Per review) divided by its reviews. A review here
-   is one org's comments on one CL in the directory: area_weekly's `cls`
-   column, summed over orgs. Rows are ordered by reviews. Dots give each
-   org's own figure there (with at least 10 of its reviews,
-   `DIR_PER_REVIEW_ORG_MIN`), and a dashed line marks all directories
-   together. Rows with under 30 reviews (`DIR_PER_REVIEW_MIN`) are faded.
-   The scale ends at the largest top-level figure with enough reviews; bars
-   past it are torn and dots past it are rings. It covers every directory,
+8. **Review complexity by directory over time** (`src/complexity.ts`,
+   `complexityGrid` in `src/data.ts`): just above Per review, to show how
+   review complexity varies across the codebase. The same table, month ticks
+   and expandable directory rows as Review by directory over time (shared
+   helpers in `src/heatmap.ts`). Each cell is the metric per review in that
+   directory and time bin; under Reviewed CLs the metric is review comments,
+   as in Per review. A review is one org's comments on one CL in the
+   directory: area_weekly's `cls` column, summed over orgs. Cells shade from
+   the surface to the accent colour, on a scale from the 5th to the 95th
+   percentile of the shaded cells (`complexityScale`): the figures sit in a
+   narrow band well above 0. Cells with under 10 reviews (`COMPLEXITY_MIN`)
+   stay grey. Rows are ordered by reviews over the range, and each shows its
+   figure over the whole range. Columns default to 3 months (`cxb` in the
+   URL), as weekly figures rest on few reviews. It covers every directory,
    in scope or not, but leaves out `(no file)`: those comments are mostly
    sign-offs and a third of all reviews. Comments count in the week written,
-   CLs in the week closed. Below 560px the dots column is hidden. From
-   `area_weekly.json`; no extra data.
+   CLs in the week closed. From `area_weekly.json`; no extra data.
 9. **Per review** (`orgPerReviewSpreads` in `src/data.ts`, the same
    `renderSpreadChart`, on a linear axis from 0): just above the per-reviewer
    spread and on the same org rows, each reviewer's metric over the range divided by their reviewed

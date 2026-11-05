@@ -19,8 +19,7 @@ export function node<K extends keyof HTMLElementTagNameMap>(tag: K, cls?: string
 export const pct = (v: number) => `${(v * 100).toFixed(v > 0 && v < 0.01 ? 2 : 1)}%`;
 
 /** A row's first cell: its expand/collapse button (or the same width of
- * space), its name, and whether the path scope counts it. Shared with the
- * per-review directory chart (dirreview.ts). */
+ * space), its name, and whether the path scope counts it. */
 export function rowLabel(r: DirRow, onToggle: (key: string) => void): HTMLElement {
   const label = node('span', 'ar-label');
   if (r.expandable) {

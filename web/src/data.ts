@@ -1501,68 +1501,6 @@ export function dirRows(board: DirBoard, t: DirTotals, expanded: ReadonlySet<str
 }
 
 // ---------------------------------------------------------------------------
-// Per review by directory: a metric divided by reviewed CLs, per directory.
-
-/** Below this many reviews a directory's per-review figure is shown faded:
- * a single long thread can sway it. */
-export const DIR_PER_REVIEW_MIN = 30;
-/** An organization's dot in a directory needs at least this many of its reviews there. */
-export const DIR_PER_REVIEW_ORG_MIN = 10;
-
-/** `t`'s total (and per-org split) for one directory chart row: a
- * directory's subtree, a directory's own bucket ("rest of"), or the sum of
- * an "other" row's members. Lets a second metric follow rows laid out by
- * another (dirRows). */
-export function dirRowTotal(t: DirTotals, row: DirRow): { value: number; byOrg: Map<string, number> } {
-  const parts: { kind: 'dir' | 'rest'; node: number }[] =
-    row.kind === 'other' ? row.members ?? [] : [{ kind: row.kind, node: row.node! }];
-  let value = 0;
-  const byOrg = new Map<string, number>();
-  for (const p of parts) {
-    value += p.kind === 'dir' ? t.total[p.node] : t.own[p.node];
-    const m = p.kind === 'dir' ? t.byOrg(p.node) : t.ownByOrg(p.node);
-    if (m) for (const [o, v] of m) byOrg.set(o, (byOrg.get(o) ?? 0) + v);
-  }
-  return { value, byOrg };
-}
-
-/** One row of the per-review directory chart: the row (laid out and sized
- * by reviews), the metric summed over it, and the metric per review, overall
- * and per org. */
-export interface DirPerReviewRow {
-  row: DirRow;
-  /** The metric over the row (see perReviewMetric). */
-  num: number;
-  /** num ÷ reviews (row.value), or 0 with no reviews. */
-  ratio: number;
-  /** Per org: [metric, reviews, metric per review]. */
-  orgs: Map<string, { num: number; reviews: number; ratio: number }>;
-}
-
-/** The directory chart's rows for the metric per review: `reviews` holds
- * reviewed CLs (the cls metric: one org's comments on one CL in one
- * directory bucket), `nums` the metric, both from dirTotals over the same
- * weeks and orgs. Rows are laid out by reviews, largest first, so the
- * busiest directories lead and "other" rows hold the smallest. */
-export function dirPerReviewRows(
-  board: DirBoard,
-  reviews: DirTotals,
-  nums: DirTotals,
-  expanded: ReadonlySet<string>,
-  page = DIR_PAGE,
-): DirPerReviewRow[] {
-  return dirRows(board, reviews, expanded, page).map((row) => {
-    const n = dirRowTotal(nums, row);
-    const orgs = new Map<string, { num: number; reviews: number; ratio: number }>();
-    for (const [o, r] of row.byOrg) {
-      const v = n.byOrg.get(o) ?? 0;
-      orgs.set(o, { num: v, reviews: r, ratio: r ? v / r : 0 });
-    }
-    return { row, num: n.value, ratio: row.value ? n.value / row.value : 0, orgs };
-  });
-}
-
-// ---------------------------------------------------------------------------
 // Gerrit links for the directory chart (summaries/area_reviewers.json).
 
 /** Who wrote each (week, node, org) bucket's comments in a DirBoard. Rows are
@@ -1836,6 +1774,87 @@ export function heatGrid(
   const bins = heatBins(range, binSize);
   const binWeeks = bins.map((b) => weeksIn(all, b));
   return { bins, binWeeks, rows, cells: rowCells(board, rows, binWeeks, orgs, metric, only) };
+}
+
+/** A complexity cell is shaded only with at least this many reviews: with
+ * fewer, one long thread decides it. */
+export const COMPLEXITY_MIN = 10;
+
+/** One figure: the metric over a number of reviews. */
+export interface PerReview {
+  num: number;
+  reviews: number;
+}
+
+export const perReview = (p: PerReview) => (p.reviews ? p.num / p.reviews : 0);
+
+export interface ComplexityGrid {
+  bins: WeekRange[];
+  rows: DirRow[];
+  /** cells[row][bin]. */
+  cells: PerReview[][];
+  /** Each row over the whole range. */
+  totals: PerReview[];
+  /** Every directory together over the range. */
+  overall: PerReview;
+}
+
+/** Review complexity by directory over time: the metric per review in each
+ * directory and time bin. A review is one org's comments on one CL in a
+ * directory bucket (the board's cls column, summed over orgs), so a CL two
+ * orgs commented on is two reviews and a CL in two directories counts in
+ * each. Rows are dirRows laid out by reviews over the range, so the busiest
+ * directories lead. "(no file)" is left out: comments that can't be placed
+ * are mostly sign-offs, and they would be a third of all reviews. */
+export function complexityGrid(
+  board: DirBoard,
+  range: WeekRange,
+  binSize: number,
+  metric: Metric,
+  expanded: ReadonlySet<string>,
+  page = DIR_PAGE,
+): ComplexityGrid {
+  const all = Object.keys(board.weeks);
+  const weeks = weeksIn(all, range);
+  const t = dirTotals(board, weeks, [], 'cls');
+  const unplaced = dirTree(board).roots.filter((r) => board.nodes[r][1] === board.meta.unplaced);
+  // A node with no total isn't listed (dirRows).
+  const listed = { ...t, total: t.total.map((v, i) => (unplaced.includes(i) ? 0 : v)) };
+  const rows = dirRows(board, listed, expanded, page);
+  const bins = heatBins(range, binSize);
+  const binWeeks = bins.map((b) => weeksIn(all, b));
+  const pair = (groups: string[][]) => {
+    const r = rowCells(board, rows, groups, [], 'cls');
+    const n = rowCells(board, rows, groups, [], metric);
+    return r.map((row, i) => row.map((c, j) => ({ num: n[i][j].value, reviews: c.value })));
+  };
+  const nums = dirTotals(board, weeks, [], metric);
+  const roots = dirTree(board).roots.filter((r) => !unplaced.includes(r));
+  return {
+    bins,
+    rows,
+    cells: pair(binWeeks),
+    totals: pair([weeks]).map((r) => r[0]),
+    overall: {
+      num: roots.reduce((s, r) => s + nums.total[r], 0),
+      reviews: roots.reduce((s, r) => s + t.total[r], 0),
+    },
+  };
+}
+
+/** The shading scale: from the 5th to the 95th percentile of the cells
+ * resting on enough reviews. Figures sit in a narrow band well above 0, so a
+ * scale from 0 would shade every cell alike; and a few outliers would wash
+ * out the rest. Cells past either end get that end's colour. */
+export function complexityScale(grid: ComplexityGrid): { lo: number; hi: number } {
+  const v = grid.cells
+    .flat()
+    .filter((c) => c.reviews >= COMPLEXITY_MIN)
+    .map(perReview)
+    .sort((a, b) => a - b);
+  if (!v.length) return { lo: 0, hi: 0 };
+  const at = (q: number) => v[Math.min(v.length - 1, Math.floor(v.length * q))];
+  return { lo: at(0.05), hi: at(0.95) };
 }
 
 /** Each row's HeatCell in each group of weeks: what rowAmount would give on

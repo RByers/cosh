@@ -164,10 +164,10 @@ test('page loads data and renders all three charts without errors', async () => 
     assert.ok(c.n >= 1, `${c.k} has datasets`);
   }
   // Charts come in order: parity, ratio over time, review, usage, the table, directories, directories over time,
-  // the per-reviewer distribution, per review by directory, per review, then the leaderboard.
+  // the per-reviewer distribution, review complexity over time, per review, then the leaderboard.
   const order = await page.$$eval('main > section', (s) => s.map((e) => e.querySelector('canvas, table, .lb, .ar')?.id));
   assert.deepEqual(order.filter(Boolean),
-    ['parity-chart', 'ratio-chart', 'review-chart', 'usage-chart', 'org-table', 'area-chart', 'heat-table', 'dist-chart', 'dr-chart', 'pr-chart', 'leaderboard-chart']);
+    ['parity-chart', 'ratio-chart', 'review-chart', 'usage-chart', 'org-table', 'area-chart', 'heat-table', 'dist-chart', 'cx-table', 'pr-chart', 'leaderboard-chart']);
   const titles = await page.$$eval('#parity-title, #ratio-title', (h) => h.map((e) => e.textContent));
   assert.deepEqual(titles, ['Value ratio', 'Value ratio over time']);
   await page.close();
@@ -1210,50 +1210,65 @@ test.skipIf(!hasAddressedWeeks())('thread box: outcome breakdown and example thr
   await page.close();
 });
 
-test('per review by directory: a figure per directory, laid out by reviews, with org dots, and it expands', async () => {
+test('review complexity over time: directories by reviews, cells shaded by the metric per review, and it expands', async () => {
   const { page, errors } = await open();
   const read = () =>
     page.evaluate(() => ({
-      title: document.querySelector('#dr-title')!.textContent!,
-      sub: document.querySelector('#dr-sub')!.textContent!,
-      head: document.querySelector('#dr-chart .ar-head .ar-vol')!.textContent!,
-      rows: [...document.querySelectorAll<HTMLElement>('#dr-chart .ar-row')].map((r) => ({
-        key: r.dataset.key!,
-        depth: Number(r.dataset.depth),
-        name: r.querySelector('.ar-name')!.textContent!,
-        value: r.querySelector('.ar-value')!.textContent!,
-        reviews: Number(r.querySelector('.ar-ng')!.textContent!.replace(/,/g, '')),
-        dots: [...r.querySelectorAll<HTMLElement>('.dr-dot')].map((d) => d.title),
-        few: r.classList.contains('dr-few'),
-      })),
+      title: document.querySelector('#cx-title')!.textContent!,
+      sub: document.querySelector('#cx-sub')!.textContent!,
+      legend: document.querySelector('#cx-legend')!.textContent!,
+      bins: document.querySelectorAll('#cx-table thead .hm-bin').length,
+      rows: [...document.querySelectorAll<HTMLElement>('#cx-table .hm-row')].map((r) => {
+        const th = r.querySelector<HTMLElement>('.hm-label')!;
+        return {
+          key: r.dataset.key!,
+          depth: Number(r.dataset.depth),
+          name: th.querySelector('.hm-name')!.textContent!,
+          total: th.querySelector('.hm-total')!.textContent!,
+          reviews: Number(/over ([\d,]+) reviews/.exec(th.title)![1].replace(/,/g, '')),
+          cells: [...r.querySelectorAll<HTMLElement>('.hm-box')].map((b) => ({
+            shaded: b.classList.contains('hm-shade'),
+            t: Number(b.style.getPropertyValue('--t') || NaN),
+            title: b.title,
+          })),
+        };
+      }),
     }));
   const v = await read();
-  assert.equal(v.title, 'Addressed comments per review by directory');
-  assert.equal(v.head, 'Addressed comments per review');
-  assert.match(v.sub, /^This aims to highlight how review complexity varies across the codebase: /);
-  assert.match(v.sub, /The dashed line is every directory together: \d+\.\d\d per review over [\d,]+ reviews\./);
-  // Top-level rows: most reviews first, each with a two-decimal figure.
+  assert.equal(v.title, 'Review complexity by directory over time');
+  assert.match(v.sub, /^This aims to highlight how review complexity varies across the codebase: each cell is a directory's addressed comments per review/);
+  assert.match(v.sub, /every directory together has \d+\.\d\d per review over [\d,]+ reviews/);
+  assert.match(v.legend, /^\d+\.\d\d or less\s*\d+\.\d\d or more addressed comments per review\s*under 10 reviews$/);
+  // Rows: most reviews first, each with its own figure; (no file) is left out.
   const top = v.rows.filter((r) => r.key.startsWith('d'));
   assert.ok(top.length >= 10, `${top.length} top-level directories`);
   for (let i = 1; i < top.length; i++) assert.ok(top[i - 1].reviews >= top[i].reviews, `${top[i - 1].name} >= ${top[i].name}`);
-  for (const r of top) assert.match(r.value, /^\d+\.\d{1,2}$/, r.name);
-  // Comments that can't be placed on a file are left out.
+  for (const r of top) assert.match(r.total, /^\d+\.\d\d$/, r.name);
   assert.ok(!v.rows.some((r) => r.name === '(no file)'));
-  // The busiest directories have google.com's dot, with its figure in the hover title.
+  // Every row has a cell per column; busy directories are shaded throughout, on 0..1.
+  for (const r of v.rows) assert.equal(r.cells.length, v.bins, r.name);
   const blink = v.rows.find((r) => r.name === 'third_party/blink/')!;
-  assert.ok(blink && !blink.few);
-  assert.ok(blink.dots.some((t) => /^google\.com: \d+\.\d\d addressed comments per review \([\d,]+ over [\d,]+ reviews\)$/.test(t)), blink.dots.join('\n'));
+  assert.ok(blink.cells.every((c) => c.shaded && c.t >= 0 && c.t <= 1), 'blink is shaded in every column');
+  assert.match(blink.cells.at(-1)!.title, /\n\d+\.\d\d addressed comments per review \([\d,]+ over [\d,]+ reviews\)$/);
+  // Cells with too few reviews stay grey and say so.
+  const few = v.rows.flatMap((r) => r.cells).filter((c) => !c.shaded);
+  assert.ok(few.every((c) => /too few reviews to shade$|No reviews$/.test(c.title)));
   // Expanding a directory lists its subdirectories, whose reviews add up to it.
-  await page.click(`#dr-chart li[data-key="${blink.key}"] .ar-toggle`);
+  await page.click(`#cx-table tr[data-key="${blink.key}"] .ar-toggle`);
   const after = (await read()).rows;
   const i = after.findIndex((r) => r.key === blink.key);
-  const kids = after.slice(i + 1).filter((r, j, a) => a.slice(0, j + 1).every((x) => x.depth > 0)).filter((r) => r.depth === 1);
+  const end = after.findIndex((r, j) => j > i && r.depth === 0);
+  const kids = after.slice(i + 1, end).filter((r) => r.depth === 1);
   assert.ok(kids.length > 1);
   assert.equal(kids.reduce((s, r) => s + r.reviews, 0), blink.reviews);
-  assert.equal(await page.evaluate(() => document.activeElement?.closest('li')?.dataset.key), blink.key);
+  assert.equal(await page.evaluate(() => document.activeElement?.closest('tr')?.dataset.key), blink.key);
+  // Columns: 3 months by default; a year gives fewer, and goes in the URL.
+  await page.click('#cx-bin input[value="52"]');
+  assert.ok((await read()).bins < v.bins);
+  assert.match(await page.evaluate(() => location.hash), /&cxb=52/);
   // Reviewed CLs as the metric: review comments per review.
   await page.click('#metric input[value="cls"]');
-  await page.waitForFunction(() => document.querySelector('#dr-title')!.textContent === 'Review comments per review by directory');
+  await page.waitForFunction(() => /review comments per review/.test(document.querySelector('#cx-legend')!.textContent!));
   assert.deepEqual(errors, []);
   await page.close();
 });
@@ -1520,9 +1535,9 @@ test('per-review spread: the metric per reviewed CL, on the per-reviewer rows; r
   assert.ok(capped.inside);
   assert.ok(capped.overLabel.includes(capped.overValue.toLocaleString('en-US', { maximumFractionDigits: 1 })), capped.overLabel);
   assert.match(capped.sub, /above 9 sit in the right margin/);
-  // The section sits below the per-reviewer spread, just after the per-review directory chart.
-  assert.equal(await page.$eval('#distribution', (e) => e.nextElementSibling!.id), 'dir-per-review');
-  assert.equal(await page.$eval('#dir-per-review', (e) => e.nextElementSibling!.id), 'per-review');
+  // The section sits below the per-reviewer spread, just after review complexity.
+  assert.equal(await page.$eval('#distribution', (e) => e.nextElementSibling!.id), 'complexity');
+  assert.equal(await page.$eval('#complexity', (e) => e.nextElementSibling!.id), 'per-review');
   assert.deepEqual(errors, []);
   await page.close();
 });

@@ -560,31 +560,36 @@
         </div>
       </section>
 
-      <section id="dir-per-review" class="card" aria-labelledby="dr-title">
-        <h2 id="dr-title">Review comments per review by directory</h2>
-        <!-- With Reviewed CLs chosen, this chart shows review comments per review, like the one below. -->
-        <template data-msg="dr-title"><slot name="name"></slot> per review by directory</template>
-        <p id="dr-sub" class="sub"></p>
-        <template data-msg="dr-sub">
-          <span data-if="!total">No review data in this range.</span>
-          <span data-if="total">This aims to highlight how review complexity varies across the codebase: each
-            directory's <slot name="metric"></slot> over the range divided by its reviews. A review
-            here is one organization's comments on one CL in the directory, so a CL that two organizations commented
-            on is two reviews, and a CL with comments in two directories counts in each. The bar is the directory's
-            figure; the dots are each organization's own figure there, for those with at least
-            <slot name="orgmin"></slot> reviews in it. The dashed line is every directory together:
-            <slot name="overall"></slot> per review over <slot name="reviews"></slot> reviews. Directories are listed
-            by reviews, most first; figures from fewer than <slot name="min"></slot>
-            reviews are faded, as one CL can sway them. Unlike the rest of the page, this covers every directory,
-            in scope or not, but leaves out comments that can't be placed on a file (“(no file)” above): mostly
-            sign-offs, they say little about the code. Comments count in the week written and CLs in the week they closed, so the edges of a
-            range are approximate. Use ▸ to open a directory, or a “more” row for the next entries.</span>
+      <section id="complexity" class="card" aria-labelledby="cx-title">
+        <h2 id="cx-title">Review complexity by directory over time</h2>
+        <p id="cx-sub" class="sub"></p>
+        <template data-msg="cx-sub">
+          <span data-if="!weeks">No review data in this range.</span>
+          <span data-if="weeks">This aims to highlight how review complexity varies across the codebase: each cell is
+            a directory's <slot name="metric"></slot> per review in those weeks, in a stronger colour for more. A review here is one
+            organization's comments on one CL in the directory, so a CL that two organizations commented on is two
+            reviews, and a CL with comments in two directories counts in each. Over the range, every directory together
+            has <slot name="overall"></slot> per review over <slot name="reviews"></slot> reviews; each row's own figure
+            is at its right. Cells with fewer than <slot name="min"></slot> reviews stay grey, as one CL can sway them.
+            Directories are listed by reviews over the range, most first. Every directory counts, on the selected paths
+            or not, but comments that can't be placed on a file (“(no file)” in Review by directory) are left out:
+            mostly sign-offs, they say little about the code. Comments count in the week written and CLs in the week
+            they closed, so each column's edges are approximate. Use ▸ to open a directory, or a “more” row for the
+            next entries.</span>
         </template>
-        <ul id="dr-legend" class="legend" aria-label="Dot colour by organization"></ul>
-        <div class="ar-wrap">
-          <div id="dr-chart" class="ar dr"></div>
+        <div class="toggles">
+          <fieldset id="cx-bin" class="segmented chart-toggle">
+            <legend>Columns</legend>
+            <label><input type="radio" name="cx-bin" value="1" />Weeks</label>
+            <label><input type="radio" name="cx-bin" value="4" />4 weeks</label>
+            <label><input type="radio" name="cx-bin" value="13" />3 months</label>
+            <label><input type="radio" name="cx-bin" value="52" />1 year</label>
+          </fieldset>
         </div>
-        <template data-msg="dr-head"><span class="ar-label">Directory</span><span class="ar-vol"><slot name="metric"></slot> per review</span><span class="ar-dist">By organization</span><span class="ar-ng">Reviews</span></template>
+        <!-- The ends of the shading ramp are the 5th and 95th percentiles of the shaded cells. -->
+        <ul class="legend" aria-label="Cell colours"><li id="cx-legend"></li></ul>
+        <template data-msg="cx-legend"><slot name="lo"></slot> or less<span class="hm-ramp"></span><slot name="hi"></slot> or more <slot name="metric"></slot> per review<span class="swatch swatch-few"></span>under <slot name="min"></slot> reviews</template>
+        <div id="cx-chart" class="hm-wrap" role="region" tabindex="0" aria-labelledby="cx-title"></div>
       </section>
 
       <section id="per-review" class="card" aria-labelledby="pr-title">
