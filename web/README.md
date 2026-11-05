@@ -236,9 +236,20 @@ chart). It has 12 colours, `--org-1..12` in `style.css`: six vivid hues for
 the 6 orgs with the most review comments over all the data, then the same
 six hues muted. The muted ones go first to the value charts' orgs without a
 vivid colour, then to the next orgs by review comments. No two orgs share a
-colour, and the range, metric and filters never repaint an org. Charts that
-name the top orgs name only coloured ones and fold the rest into "Other";
-the leaderboard and spread show the rest muted and named.
+colour, and the range, metric and filters never repaint an org. An org the
+review charts name (`namedOrgs`: at least 0.25% of review comments over the
+range) but that has no colour is never folded into "Other": it gets its own
+series, legend entry and row in grey, dashed in the organization chart so it
+reads apart from "Other". With today's data that happens only in short
+ranges (4 weeks or less), for small orgs such as januschka.com.
+
+**Re-evaluate the palette after a data update.** The colours are handed out
+from the data when the page loads, so a new org that grows enough takes a
+colour on its own, and that can move other orgs' colours. The unit test
+"real data: every org named over 13+ weeks, and every value-chart org, has a
+colour" checks the committed summaries: if it fails after `summarize`, a new
+org is named in grey in a 13-week-or-longer range, and the palette (the
+ranking in `orgColorSlots`, the 12 `--org-*` colours) needs a look.
 
 The metric, range, smoothing and review-chart scale are kept in the URL hash
 (`#metric=cls&from=2026-W14&to=2026-W44&smooth=4`; `from`/`to` are left out

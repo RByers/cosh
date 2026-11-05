@@ -446,11 +446,13 @@ export function renderReviewChart(
   const avg = smoothing > 1 ? `  (${smoothingName(smoothing)} avg)` : '';
   const logFloor = logAxisFloor(series.flatMap((s) => s.values));
   const datasets = series.map((s) => {
-    const color = s.org === OTHER ? theme.muted : colors.get(s.org) ?? theme.muted;
+    const own = s.org === OTHER ? undefined : colors.get(s.org);
     // Chart.js's log scale skips zeros, so they're plotted at the floor.
     const data = log ? s.values.map((v) => (v > 0 ? v : logFloor)) : s.values;
-    // `counts`: the true values, for the tooltip.
-    return { ...lineDataset(s.org, color, data), counts: s.values };
+    // `counts`: the true values, for the tooltip. A named org without a
+    // colour of its own is grey like Other, but dashed, so it reads apart.
+    const dash = s.org !== OTHER && !own ? { borderDash: [6, 3] } : {};
+    return { ...lineDataset(s.org, own ?? theme.muted, data), ...dash, counts: s.values };
   });
   const count = (item: { datasetIndex: number; dataIndex: number }) => datasets[item.datasetIndex].counts[item.dataIndex];
   const base = baseOptions(theme);

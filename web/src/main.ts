@@ -861,7 +861,7 @@ function exampleThread(t: ThreadExamples['threads'][number]): HTMLElement {
  * the path rules that decide what the other sections count. */
 function renderAreas(data: Data, state: State, colors: Map<string, string>, theme: Theme) {
   const weeks = weeksIn(Object.keys(data.areas.weeks), state.range);
-  const orgs = topDirOrgs(data.areas, weeks, state.metric, rangeNamedOrgs(data, state), (o) => colors.has(o));
+  const orgs = topDirOrgs(data.areas, weeks, state.metric, rangeNamedOrgs(data, state));
   const totals = dirTotals(data.areas, weeks, orgs, state.metric);
   const unit = metricUnit(state.metric);
   const segColors = colors;
@@ -1074,7 +1074,7 @@ function renderHeat(data: Data, state: State, colors: Map<string, string>, theme
     ? [single]
     : others
       ? []
-      : topDirOrgs(board, rangeWeeks, state.metric, named, (o) => colors.has(o) && (!keep || keep(o)));
+      : topDirOrgs(board, rangeWeeks, state.metric, named, keep);
   const segColors = colors;
   const grid = heatGrid(board, state.range, state.heatBin, state.metric, segOrgs, state.heatExpanded, {
     only: keep,
@@ -1188,10 +1188,10 @@ function main(data: Data) {
 
   // Every chart colours orgs from this one map, fixed for the page: the
   // range, metric and filters never repaint an org, and no two orgs share a
-  // colour.
+  // colour. A named org (namedOrgs) outside the map still gets its own
+  // series, row and legend entry, in grey: it is never folded into Other.
   const slots = orgColorSlots(orgsByAllTimeReview(data.summary), orgs, ORG_BRIGHT);
   const colorsFor = (theme: Theme) => new Map([...slots].map(([o, i]) => [o, theme.orgs[i]]));
-  const nameable = (org: string) => slots.has(org);
 
   // A render waiting for the next paint (renderSoon). Any render meanwhile
   // covers it, so it's dropped; several renderSoon calls share one render.
@@ -1265,8 +1265,8 @@ function main(data: Data) {
     const seriesFor = (lin: boolean) => {
       const exclude = lin ? [LINEAR_EXCLUDED_ORG] : [];
       return dirNode === null
-        ? orgWeeklyCounts(data.summary, weeks, state.metric, named, state.smoothing, exclude, dataWeeks, nameable)
-        : dirWeeklyCounts(data.areas, dirNode, weeks, state.metric, named, state.smoothing, exclude, dataWeeks, nameable);
+        ? orgWeeklyCounts(data.summary, weeks, state.metric, named, state.smoothing, exclude, dataWeeks)
+        : dirWeeklyCounts(data.areas, dirNode, weeks, state.metric, named, state.smoothing, exclude, dataWeeks);
     };
     const reviewSeries = seriesFor(linear);
     drawChart(() => {

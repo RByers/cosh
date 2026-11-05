@@ -1256,8 +1256,9 @@ test('an org keeps one colour in every section, value charts included, whatever 
         return v;
       };
       const seen: [string, string, string][] = [];
-      for (const d of window.__cosh!.reviewChart!.data.datasets as { label: string; borderColor: string }[]) {
-        if (d.label !== 'Other') seen.push(['review', d.label, norm(d.borderColor)]);
+      for (const d of window.__cosh!.reviewChart!.data.datasets as { label: string; borderColor: string; borderDash?: number[] }[]) {
+        // Dashed grey: a named org without a colour of its own.
+        if (d.label !== 'Other' && !d.borderDash) seen.push(['review', d.label, norm(d.borderColor)]);
       }
       for (const d of window.__cosh!.ratioChart!.data.datasets as { label: string; borderColor: string }[]) {
         seen.push(['ratio', d.label, norm(d.borderColor)]);
@@ -1292,6 +1293,33 @@ test('an org keeps one colour in every section, value charts included, whatever 
     assert.ok(!owner.has(c) || owner.get(c) === org, `${org} and ${owner.get(c)} share ${c}`);
     owner.set(c, org);
   }
+});
+
+test('a named org without a colour still gets its own series and legend entries, in grey', async () => {
+  // januschka.com wrote over 0.25% of review comments in 2024-W37..W40, but
+  // ranks too low over all the data for one of the 12 org colours.
+  const { page, errors } = await open('#metric=comments&from=2024-W37&to=2024-W40');
+  const v = await page.evaluate(() => {
+    const ds = window.__cosh!.reviewChart!.data.datasets as { label: string; borderColor: string; borderDash?: number[] }[];
+    const legend = (sel: string) =>
+      [...document.querySelectorAll(`${sel} li`)].map((li) => ({
+        org: li.textContent!.replace(/ \(\d+\)$/, '').trim(),
+        muted: !!li.querySelector('.swatch-muted'),
+      }));
+    const muted = getComputedStyle(document.documentElement).getPropertyValue('--text-muted').trim();
+    return {
+      review: ds.map((d) => ({ org: d.label, dashed: !!d.borderDash, grey: d.borderColor === muted })),
+      areas: legend('#areas-legend'),
+    };
+  });
+  assert.deepEqual(errors, []);
+  await page.close();
+  const j = v.review.find((d) => d.org === 'januschka.com');
+  assert.ok(j, JSON.stringify(v.review));
+  assert.ok(j.dashed && j.grey, JSON.stringify(j));
+  // Coloured orgs and Other stay solid.
+  assert.ok(v.review.filter((d) => d.org !== 'januschka.com').every((d) => !d.dashed), JSON.stringify(v.review));
+  assert.deepEqual(v.areas.find((l) => l.org === 'januschka.com'), { org: 'januschka.com', muted: true }, JSON.stringify(v.areas));
 });
 
 test('per-review spread: the metric per reviewed CL, on the per-reviewer rows; review comments under reviewed CLs', async () => {
