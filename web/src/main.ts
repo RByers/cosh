@@ -62,7 +62,6 @@ import {
   meanDerivedShare,
   metricLabel as metricName,
   METRICS,
-  addressedMeta,
   addressedRange,
   addressedWeeks,
   MIN_DERIVED_SHARE,
@@ -240,7 +239,7 @@ function availableMetrics(data: Data) {
 }
 
 /** Addressed comments whenever any week is classified (the views then show
- * the range's classified part, with a note), else review comments. */
+ * the range's classified part), else review comments. */
 function defaultMetric(data: Data): Metric {
   return addressedWeeks(data.summary).length > 0 ? 'addressed' : 'comments';
 }
@@ -266,28 +265,13 @@ function withView(data: Data, state: State, fn: () => void) {
 
 function renderMetricNote(data: Data, state: State) {
   const note = $('#metric-note');
-  if (state.metric !== 'addressed') {
+  // Only when there is nothing to show: the metric itself is described elsewhere.
+  if (state.metric !== 'addressed' || addressedRange(data.summary, state.range).range) {
     note.hidden = true;
     return;
   }
-  const meta = addressedMeta(data.summary);
-  const review = weeksIn(data.summary.meta.weeks, state.range);
-  const { weeks, range } = addressedRange(data.summary, state.range);
   const all = addressedWeeks(data.summary);
-  const what =
-    'Addressed comments: review comments in a thread that led the CL owner to change the CL (the owner replied ' +
-    '“Done” or similar, or a Claude model read the thread as a change), one point per comment to its author; ' +
-    'threads the owner never answered score nothing.';
-  let cover: string;
-  if (!range) {
-    cover = ` No week in this range is classified yet${all.length ? ` (classified: ${all.length === 1 ? all[0] : `${all.length} weeks, ${all[0]}–${all[all.length - 1]}`})` : ''}, so there is nothing to show; the other metrics cover it.`;
-  } else if (weeks.length === review.length) {
-    cover = ` Every week in this range is classified${meta?.classifier ? ` (labels: ${meta.classifier})` : ''}.`;
-  } else {
-    cover = ` Only ${weeks.length} of the ${review.length} review weeks in this range ${weeks.length === 1 ? 'is' : 'are'} classified, so every ` +
-      `section below shows ${rangeLabel(range)} only; the other metrics cover the whole range.`;
-  }
-  note.textContent = what + cover;
+  note.textContent = `No week in this range is classified yet${all.length ? ` (classified: ${all.length === 1 ? all[0] : `${all.length} weeks, ${all[0]}–${all[all.length - 1]}`})` : ''}, so there is nothing to show; the other metrics cover it.`;
   note.hidden = false;
 }
 

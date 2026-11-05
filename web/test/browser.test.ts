@@ -394,16 +394,13 @@ test('switching the metric updates the table, review chart, directory chart and 
   await page.close();
 });
 
-test.skipIf(!hasAddressedWeeks())('addressed comments show only classified weeks, with a note', async () => {
+test.skipIf(!hasAddressedWeeks())('addressed comments show only classified weeks, without a note', async () => {
   const classified = addressedWeeks(summary);
   const last = classified[classified.length - 1];
   const from = addWeeks(classified[0], -8);
   const { page, errors } = await open(`#metric=addressed&from=${from}&to=${last}`);
   assert.equal(await page.$eval('#metric input[value="addressed"]', (i) => (i as HTMLInputElement).checked), true);
-  const note = await page.$eval('#metric-note', (n) => ({ hidden: (n as HTMLElement).hidden, text: n.textContent ?? '' }));
-  assert.equal(note.hidden, false);
-  assert.match(note.text, /led the CL owner to change the CL/);
-  assert.match(note.text, /Only \d+ of the \d+ review weeks in this range (is|are) classified/);
+  assert.equal(await page.$eval('#metric-note', (n) => (n as HTMLElement).hidden), true);
   // The user's range stays in the URL; the sections show the classified part.
   assert.match(page.url(), new RegExp(`from=${from}`));
   assert.match(await page.$eval('#table-caption', (c) => c.textContent ?? ''), new RegExp(classified[0]));
@@ -462,7 +459,7 @@ test.skipIf(!hasAddressedWeeks())('addressed comments show only classified weeks
     .map((c) => ({ path: c.textContent, href: c.closest('a')?.getAttribute('href') ?? null })));
   assert.ok(repoRefs.length > 0);
   for (const r of repoRefs) assert.equal(r.href, `https://github.com/RByers/cosh/tree/main/${r.path}`);
-  // Other metrics are unaffected and hide the note.
+  // Other metrics are unaffected and keep the note hidden.
   await page.click('#metric input[value="comments"]');
   assert.equal(await page.$eval('#metric-note', (n) => (n as HTMLElement).hidden), true);
   assert.equal(await page.$eval('tr[data-org="google.com"] td:nth-child(8)', (td) => td.textContent), '—');
