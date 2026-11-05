@@ -1029,6 +1029,8 @@ function main(data: Data) {
     window.__cosh = { data, state, ratioChart, reviewChart, usageChart, render };
   };
 
+  // The classifier explainer matters only once some week is classified.
+  $('#addressed-details').hidden = !availableMetrics(data).some((m) => m.id === 'addressed');
   syncInputs = buildControls(data, state, render);
   render();
   matchMedia('(prefers-color-scheme: dark)').addEventListener('change', render);

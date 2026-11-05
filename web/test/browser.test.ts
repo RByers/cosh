@@ -283,6 +283,12 @@ test.skipIf(!hasAddressedWeeks())('addressed comments show only classified weeks
   assert.match(await page.$eval('#table-caption', (c) => c.textContent ?? ''), new RegExp(classified[0]));
   const cell = await page.$eval('tr[data-org="google.com"] td:nth-child(8)', (td) => td.textContent ?? '');
   assert.match(cell, /^[\d,]+$/);
+  // The classification explainer starts collapsed and gives the measured accuracy.
+  const details = await page.$eval('#addressed-details', (d) => ({
+    hidden: (d as HTMLElement).hidden, open: (d as HTMLDetailsElement).open, text: d.textContent ?? '' }));
+  assert.equal(details.hidden, false);
+  assert.equal(details.open, false);
+  assert.match(details.text, /precision of 0\.97 and a recall of 0\.99/);
   // Other metrics are unaffected and hide the note.
   await page.click('#metric input[value="comments"]');
   assert.equal(await page.$eval('#metric-note', (n) => (n as HTMLElement).hidden), true);

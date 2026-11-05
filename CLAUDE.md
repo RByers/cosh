@@ -2,7 +2,9 @@
 
 Start with `docs/plan.md`, which covers the goal, ground rules, the decisions
 log, status and next steps. Then read `docs/extraction-v1.md` for the
-implementation and metric definitions.
+implementation and metric definitions, and `docs/comment-classifier.md` for
+the primary metric: addressed review comments, classified by a regex plus
+Claude Haiku (`cosh classify`).
 
 ## Hard rules
 
@@ -58,8 +60,8 @@ implementation and metric definitions.
   the link, so leave it in place: `git worktree remove` cleans it up, and
   removing it yourself triggers a permission prompt.
 - `data/private/derived.sqlite` can always be rebuilt with
-  `rm data/private/derived.sqlite && python3 -m cosh derive` (about 3.5 min
-  for 332k CLs). It is the only derived DB: older versions (`cosh.sqlite`,
+  `rm data/private/derived.sqlite && python3 -m cosh derive` (about 9 min
+  for 666k CLs, 2026-11-04, threads included). It is the only derived DB: older versions (`cosh.sqlite`,
   metric_versions 1–2; `derived.sqlite` before metric_version 5) were
   deleted on 2026-11-04, and `open_derived` refuses a pre-v5 file.
 - Never delete `data/private/raw.sqlite` or `data/private/notedb/`. Those

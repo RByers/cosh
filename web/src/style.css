@@ -265,6 +265,14 @@ input[type='date']:focus-visible,
   color: var(--text-secondary);
 }
 
+.details-note summary {
+  cursor: pointer;
+}
+
+.details-note p {
+  margin: 8px 0 0;
+}
+
 /* Under the metric picker: what addressed comments are, and which weeks have them. */
 .metric-note {
   margin: -4px 0 0;

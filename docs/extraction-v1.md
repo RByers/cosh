@@ -6,11 +6,18 @@ extracted and validated first. The approved one-year backfill (2025-W45 ..
 it. A backfill to 2023-07-01 was approved on 2026-11-04. Fetching beyond that
 needs approval (see `docs/plan.md`).
 
-**metric_version 6** (2026-11-04): the metric is review comments (self-declared
-AI comments from reviewers' own accounts included), each counted in the week
-it was written, only on the paths `config/paths.txt` includes. Reviews without
-a comment don't count, and neither do patchset-level comments from a reviewer
-who left no inline comment on the CL. See "Metric definitions" below.
+**metric_version 7** (2026-11-04): the primary metric is **addressed review
+comments**. These are comments in a review thread that led the CL owner to
+change the CL, decided by a regex on the owner's reply or by a Claude Haiku
+label (`comment-classifier.md`). All review comments remain available, and
+are the fallback for weeks not yet classified.
+- Both are counted from metric_version 6's comments: self-declared AI
+  comments from reviewers' own accounts included, each counted in the week
+  it was written, and only on the paths `config/paths.txt` includes.
+- Reviews without a comment don't count, and neither do patchset-level
+  comments from a reviewer who left no inline comment on the CL.
+
+See "Metric definitions" below.
 
 This follows `gerrit-api-research.md` and `storage-design.md`. Below are the
 decisions made while implementing it; where they differ from those docs, this
@@ -34,9 +41,18 @@ python3 -m unittest tests.test_derive tests.test_extract tests.test_radar tests.
 
 ```
 Gerrit REST listing ─► data/private/raw.sqlite ─┐
-NoteDb `git fetch`  ─► data/private/notedb/*.git ┼─ derive ─► data/private/derived.sqlite ─ summarize ─► summaries/
+NoteDb `git fetch`  ─► data/private/notedb/*.git ┼─ derive ─► data/private/derived.sqlite ─┬─ summarize ─► summaries/
+                                                 │                                          │
+                                                 └─ classify (claude -p, Haiku) ─► data/private/labels.sqlite ─┘
 Cloudflare Radar    ─► data/public/radar/raw/ ──── radar ──► data/public/radar_browser_share.csv
 ```
+
+- **`classify` is optional.** It reads `derived.sqlite` (which threads
+  need a label) and the comment text from NoteDb or the REST cache. It
+  writes only `labels.sqlite`, which is never deleted: the labels cost Pro
+  usage to make.
+- **`summarize` without labels:** it attaches `labels.sqlite` read-only
+  if it exists. Without it, weeks just show as unclassified.
 
 - `data/private/` (gitignored for size; see `storage-design.md` §4) holds the
   raw stores and the derived DB.
@@ -124,8 +140,8 @@ week, plus a snapshot of **open** CLs (step 3).
 
 ## Metric definitions (metric_version 7)
 
-**metric_version 7** (2026-11-04) adds **addressed comments**, the planned
-headline:
+**metric_version 7** (2026-11-04) adds **addressed comments**, the primary
+metric:
 - **What scores:** a non-owner comment scores one point if its thread was
   started by a reviewer, led the CL owner to change the CL, and the comment
   was written no later than the owner's last reply in the thread.

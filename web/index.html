@@ -101,14 +101,44 @@
           comments on the paths listed under <a href="#areas">Review by directory</a> count.
         </p>
         <p class="note" id="review-metric-note">
-          <strong>Metrics.</strong> All three come from review comments. Reviews with no comment, such as a bare +1
-          vote, don't count: there is no way to tell how much review went into them. <em>Review comments</em> are
+          <strong>Metrics.</strong> All four come from review comments. Reviews with no comment, such as a bare +1
+          vote, don't count: there is no way to tell how much review went into them. <em>Addressed comments</em>, the
+          primary metric, are the review comments in a thread that led the CL's owner to change the CL (how that is
+          decided is below); weeks not yet classified show the other metrics only. <em>Review comments</em> are
           published comments, inline or patchset-level, including those written after the CL landed (the table below
           also shows how many of those there are). Comments that declare themselves AI-generated are included (the
           table also shows how many there are). <em>Review characters</em> is the length of those comments with quoted
           (<code>&gt;</code>) lines removed. <em>Reviewed CLs</em> counts, in the week each CL closed, the CLs where
           someone from the organization commented; open CLs count once they close.
         </p>
+        <details class="note details-note" id="addressed-details" hidden>
+          <summary><strong>How addressed comments are classified, and how accurate it is</strong></summary>
+          <p>
+            A <em>thread</em> is a reviewer's comment plus every reply to it. A thread is <em>addressed</em> if the
+            feedback led the CL's owner to change the CL itself: code, tests, code comments, build files or the commit
+            message. Adopting part of a suggestion, making a different or better change because of it, adding a TODO,
+            or moving code out of the CL all count. It is not addressed if the owner answered a question, explained or
+            pushed back; if the comment was an approval, thanks or FYI; if the work went to another CL or a bug; or if
+            the reply was a bare “Acknowledged”.
+          </p>
+          <p>
+            Each thread is decided in this order. (1) If the owner never replied, or started the thread, it scores
+            nothing. (2) If the owner's first reply starts with “Done”, “Fixed”, “Fix applied.” or similar, it is
+            addressed. (3) Otherwise Claude Haiku reads the whole thread and decides. Every comment in an addressed
+            thread that isn't the owner's, up to the owner's last reply, earns its author one point: a reviewer who
+            goes back and forth earns more, and so does a second reviewer who joins in.
+          </p>
+          <p>
+            <strong>Accuracy.</strong> Measured on 400 random threads with an owner reply (CLs closed 2026-W36 to
+            2026-W44), labelled by Claude Haiku and checked by Claude Opus: the regex plus Haiku, as used here, has a
+            precision of 0.97 and a recall of 0.99 (accuracy 0.97). The regex alone has a precision of 0.98 but a
+            recall of only 0.78: it misses changes described in free text. About 2% of threads are ambiguous even to
+            a careful reader. The production prompt shows the model whole threads (the evaluation showed the first
+            nine replies) and has not been re-measured; of 12 production labels checked by hand, 11 were right and 1
+            was unclear. These figures are per thread. Points are per comment, so long threads weigh more. Details
+            are in <code>docs/comment-classifier.md</code>.
+          </p>
+        </details>
         <p class="note" id="affiliation-note">
           <strong>Organization.</strong> Each reviewer is assigned to an organization as of the date of the comment
           (for reviewed CLs, the date the CL closed), using the first rule that applies:

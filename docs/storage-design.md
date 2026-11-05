@@ -1,5 +1,15 @@
 # cosh: storage design
 
+> **Current state (2026-11-04).** This is the original proposal, and it is
+> mostly as built. Three things changed:
+> - The **headline metric** is addressed review comments (metric_version
+>   7), not the measures weighed in §3.6.
+> - There is a **third local store**, `data/private/labels.sqlite`. It holds
+>   the addressed-comment labels from `cosh classify`. Like `raw.sqlite`, it
+>   is never deleted, because remaking it costs Claude Pro usage.
+>   `comment-classifier.md`, "Design", has its schema, sizes and pipeline.
+> - **`extraction-v1.md` is the authority** on what is implemented.
+
 Status: proposal, 2026-11-03. Scope: how extracted Gerrit review data is stored,
 kept idempotent and resumable, and reduced to the small summaries the web front
 end reads. Gerrit API details are in `gerrit-api-research.md`. This document
@@ -17,8 +27,12 @@ only touches the API where it affects storage.
     so it never has to be fetched twice. Reduction to counts and lengths
     happens only in derived data.
   - `data/private/derived.sqlite` (§3.3):
-    derived tables (`changes`, `comments`, `accounts`, `meta`) that can
-    be rebuilt from `raw.sqlite` and NoteDb at any time.
+    derived tables (`changes`, `comments`, `accounts`, `meta`, and since
+    metric_version 7 `threads`) that can be rebuilt from `raw.sqlite` and
+    NoteDb at any time.
+  - `data/private/labels.sqlite` (added with metric_version 7): the Haiku
+    labels behind addressed comments, keyed by thread and input hash. They
+    can't be rebuilt for free, so they are never deleted.
   - `summaries/*.csv` + `summaries/*.json`: per-org per-week and per-month
     aggregates, under about 1 MB in total. **These are the only data committed to git.**
 - Do not use flat CSV as the store, because it can't upsert, so idempotent
@@ -385,9 +399,10 @@ What this means in practice:
 | `data/public/radar/raw/` | Raw Radar JSON |
 
 - Code only ever *reads* the raw stores to reduce them. `read_comments()` and
-  `derive` drop fields (`unresolved`, ranges, `parentUuid`,
-  `submitRequirementResults`, change messages, votes) in memory, and
-  `derived.sqlite` holds one row per comment, without its text. Nothing ever strips or rewrites the
+  `derive` drop fields (ranges, `submitRequirementResults`, change messages,
+  votes) in memory. `parentUuid` and `unresolved` have been kept since
+  metric_version 7, for the review threads. `derived.sqlite` holds one row
+  per comment, without its text. Nothing ever strips or rewrites the
   raw stores.
 - Never delete `raw.sqlite` or `notedb/`. Never run `gc --prune=now` or `prune`
   in a NoteDb repo. Auto-gc and maintenance are disabled there. `repack -a -d`

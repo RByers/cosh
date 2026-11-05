@@ -1,7 +1,9 @@
 # Review that leads to a change: research notes
 
-Status: research only (2026-11-04). Nothing here is in the pipeline or the
-UI yet. Everything below comes from data already on disk (`derived.sqlite`
+Status: research (2026-11-04). Its recommendation was built: addressed
+review comments are now the primary metric (metric_version 7;
+`comment-classifier.md`), using the owner-reply regex plus a Haiku pass, as
+phases 1–2 below propose. Everything below comes from data already on disk (`derived.sqlite`
 and the stored NoteDb meta refs). No fetching was done.
 
 ## The question

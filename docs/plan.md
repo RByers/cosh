@@ -8,10 +8,17 @@ the project up. Read this, then `README.md`, then `docs/extraction-v1.md`.
 For each organization *O* and period *t*, plot over time:
 
 ```
-value_ratio(O, t) = O's share of Chromium review comments
+value_ratio(O, t) = O's share of Chromium addressed review comments
                     / O's browser's share of Chromium-based browser usage
 ```
 
+- **Addressed review comments are the primary contribution measure**
+  (metric_version 7, `comment-classifier.md`). They are review comments in
+  threads that led the CL owner to change the CL.
+  - **How threads are decided:** a regex on the owner's reply, then Claude
+    Haiku via headless `claude -p` for the rest.
+  - **Fallback:** for weeks not yet classified, the UI falls back to all
+    review comments.
 - Review data comes from Chromium Gerrit.
 - Usage data comes from Cloudflare Radar.
 - The result is a static web UI on GitHub Pages that reads only
@@ -102,6 +109,10 @@ value_ratio(O, t) = O's share of Chromium review comments
 ## Status
 
 **Done**
+- Addressed comments (metric_version 7), the primary metric: thread
+  structure in `derive`, the `cosh classify` step (Haiku via `claude -p`,
+  `labels.sqlite`), the summaries and the UI. 2026-W44 is classified. See
+  `comment-classifier.md`.
 - W44 extracted, validated and summarized (`summaries/`).
 - `extract`, `extract-open`, `derive`, `summarize`, `radar` and `backfill`
   commands.
@@ -157,7 +168,7 @@ value_ratio(O, t) = O's share of Chromium review comments
      further backfill.
    - Try `--batch-size 500` on a later run to see whether the per-CL cost
      drops.
-6. **Addressed comments, the planned headline metric.** v1 built
+6. **Addressed comments, the primary metric.** v1 built
    2026-11-04, and 2026-W44 is classified (2,626 Haiku labels; 55.9% of the
    week's in-scope comments are addressed). Design and first-run numbers:
    `docs/comment-classifier.md`, "Design"; research in `review-impact.md`.

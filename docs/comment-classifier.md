@@ -1,10 +1,14 @@
-# "Addressed comment" classifier: evaluation
+# Addressed comments: the primary classifier
 
-Status: research (2026-11-04). This follows `docs/review-impact.md`, which
-proposed counting review threads that led to a change. This note builds a
-labelled set, compares ways to classify a thread as **addressed**, and
-measures each one's precision, recall and cost. Nothing is in the pipeline
-yet.
+Status: **in production** since metric_version 7 (2026-11-04). Addressed
+review comments are cosh's primary contribution measure.
+- **The pipeline:** a regex on the owner's reply, then Claude Haiku via
+  headless `claude -p` for the threads the regex doesn't settle (`cosh
+  classify`, `labels.sqlite`). The section "Design" has the architecture,
+  storage, UI behaviour and first run.
+- **The rest of this note** is the evaluation that chose it, following
+  `review-impact.md`: a labelled set, the methods compared, and each one's
+  precision, recall and cost.
 
 ## Summary
 
