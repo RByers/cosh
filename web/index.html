@@ -18,24 +18,28 @@
           balance, it can
           <a href="https://www.theverge.com/2024/9/27/24256361/wordpress-wp-engine-drama-explained-matt-mullenweg">lead
           to a rupture in the project community</a>. Quantifying this value exchange is generally very difficult, but Chromium makes
-          an approximation possible. The value a browser gets from its engine is roughly proportional to that browser's
-          usage. Evaluating investment level is more difficult. Today, a primary cost of maintaining a large open source
+          an approximation possible:
+          <ul>
+            <li>The <b>value a browser gets</b> from its engine is roughly proportional to that browser's
+          usage.</li>
+            <li>Today, a <b>primary cost</b> of maintaining a large open source
           project is the effort of directing
           how the codebase evolves. AI coding agents have made code cheap to write, which makes
           deciding what should and shouldn't land in the project even more valuable. Code review that shapes what
-          lands is therefore a reasonable proxy for an organization's investment in a large open source project.
+          lands is therefore a reasonable proxy for an organization's investment in a large open source project.</li>
+          </ul> 
         </p>
         <p>
-          This page approximates that value exchange by comparing each organization's share of Chromium-based browser
-          usage (according to Cloudflare Radar) with its share of <em>addressed</em> review comments: comments in
-          review threads that led the change's author to modify the change. That is decided from the author's replies,
-          with an AI model reading the threads where the reply alone doesn't settle it
-          (<a href="#addressed-details" id="addressed-link">how, and how accurately</a>). Chromium is
-          <a href="#areas">roughly divided</a> into infrastructure/engine code (e.g. <code>content</code>,
-          <code>blink</code>) shared by every Chromium-based browser, and Google Chrome product code (e.g.
-          <code>chrome/browser/ui</code>), so we focus here on the former only. Chrome product code is reviewed almost
-          entirely by Google for Google's own product, so counting it would inflate Google's share of investment in the
-          shared engine. This analysis should be treated as a rough approximation only, with trends over time likely
+          This page approximates that value exchange in the Chromium project by comparing each organization's share of Chromium-based browser
+          usage (according to <a href="https://radar.cloudflare.com/reports/browser-market-share-2025-q4">Cloudflare Radar</a>) 
+          with its share of <a href="#addressed-details" id="addressed-link">addressed</a> review comments: comments in
+          review threads that led the change's author to modify the change. The Chromium repository is
+          <a href="#areas">roughly split</a> into infrastructure/engine code shared by every Chromium-based browser,
+          and Google Chrome product code (e.g. Chrome UI). Chrome product code is reviewed almost
+          entirely by Google for Google's own product, so we ignore it here to avoid inflating Google's share of investment.
+        </p>
+        <p>
+          This analysis should be treated as a rough approximation only, with trends over time likely
           more meaningful than absolute values at any point in time.
         </p>
       </div>
@@ -112,7 +116,7 @@
         </div>
         <p class="note" id="review-scope-note">
           <strong>What's counted.</strong> Review comments on <code>chromium/src</code> CLs targeting
-          <code>main</code>, each in the ISO week it was written, on merged, abandoned and still-open CLs (review that
+          <code>main</code>, each in the week it was written, on merged, abandoned and still-open CLs (review that
           stops a CL from landing still counts). Only CLs owned by humans are included, so autorolls and other bot
           commits are left out. Comments by bot and AI-agent accounts are dropped too, as are owners' comments on their
           own CLs. Comments that a reviewer posts with AI help count like any other comment from that reviewer. Only
