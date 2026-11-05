@@ -53,10 +53,16 @@ def parse_gerrit_ts(ts):
 def closed_ts(change):
     """Timestamp that buckets a CL into a week: submit time for merged CLs;
     for abandoned CLs `updated` (Gerrit has no abandoned-after operator, and an
-    abandoned CL's last update is almost always the abandon itself)."""
+    abandoned CL's last update is almost always the abandon itself).
+
+    A merged CL can lack `submitted` (seen once in 708k listings: 5039071,
+    merged 2023-12-04 by Gerrit's merged-time index but listed without a
+    submitter, probably merged outside Gerrit's submit); it falls back to
+    `updated` too. extract_week keeps such a CL in the week whose merged
+    query listed it (see `in_week`)."""
     if change.get("status") == "ABANDONED":
         return change["updated"]
-    return change["submitted"]
+    return change.get("submitted") or change["updated"]
 
 
 def window_key(project, start, end, offset=0, status="merged", snap=None):
@@ -153,9 +159,12 @@ def extract_week(host, project, iso_week, min_interval=1.0, max_comment_fetches=
                 day += timedelta(days=1)
 
         # Bounds are inclusive; keep only CLs whose closing time is in this week.
+        # A merged CL without `submitted` was listed by Gerrit's own merge time
+        # for this week, and no other week's merged query lists it, so keep it.
         in_week = {n: (k, c) for n, (k, c) in found.items()
                    if c.get("status") in ("MERGED", "ABANDONED")
-                   and week_start <= parse_gerrit_ts(closed_ts(c)) < week_end}
+                   and ((c["status"] == "MERGED" and not c.get("submitted"))
+                        or week_start <= parse_gerrit_ts(closed_ts(c)) < week_end)}
         raw.execute("DELETE FROM week_changes WHERE host=? AND project=? AND iso_week=?",
                     (host, project, iso_week))
         raw.executemany("INSERT INTO week_changes VALUES (?,?,?,?,?)",

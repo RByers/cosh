@@ -38,10 +38,12 @@ class FakeGerrit:
         lo, hi = re.findall(r'"([\d\- :]+) \+0000"', q)
         field = "submitted" if "mergedafter" in q else "updated"
         want = {"open": "NEW", "merged": "MERGED", "abandoned": "ABANDONED"}[status]
+        # `_merged_at` (test only): Gerrit's index merge time for a CL whose
+        # listing has no `submitted`, as seen for CL 5039071.
         hits = [c for c in self.changes if c["status"] == want
-                and lo <= c.get(field, "")[:19] <= hi]
+                and lo <= ((field == "submitted" and c.get("_merged_at")) or c.get(field, ""))[:19] <= hi]
         hits = sorted(hits, key=lambda c: c["updated"], reverse=True)
-        out = [dict(c) for c in hits[:self.page]]
+        out = [{k: v for k, v in c.items() if k != "_merged_at"} for c in hits[:self.page]]
         if len(hits) > self.page:
             out[-1]["_more_changes"] = True
         return 200, json.dumps(out), "https://" + H + path
@@ -115,6 +117,32 @@ class ExtractOpenTest(unittest.TestCase):
             rows = raw.execute("SELECT listed_at, fetched_at FROM open_listings").fetchall()
             raw.close()
         self.assertEqual(rows, [("2026-11-01T00:00:00Z", "2026-11-04T12:00:00Z")])
+
+
+class ExtractWeekTest(unittest.TestCase):
+    def test_merged_cl_without_submitted_stays_in_its_listed_week(self):
+        changes = [
+            cl(1, "MERGED", "2023-12-05 00:00:00", submitted="2023-12-04 10:00:00"),
+            # Listed by Gerrit's merge time in W49, but no `submitted`, and
+            # `updated` is in W50 (CL 5039071).
+            dict(cl(2, "MERGED", "2023-12-15 04:26:05"), _merged_at="2023-12-04 03:00:00"),
+            cl(3, "MERGED", "2023-12-12 00:00:00", submitted="2023-12-11 10:00:00"),  # W50
+        ]
+        fake = FakeGerrit(changes)
+        with tempfile.TemporaryDirectory() as d, \
+                mock.patch.object(extract, "GerritClient", lambda host, min_interval: fake), \
+                mock.patch.object(extract, "fetch_notedb", lambda *a, **k: []):
+            extract.extract_week(H, P, "2023-W49", data_dir=d)
+            raw = store.open_raw(d)
+            listed = sorted(n for (n,) in raw.execute(
+                "SELECT change_number FROM week_changes WHERE iso_week='2023-W49'"))
+            raw.close()
+        self.assertEqual(listed, [1, 2])
+
+    def test_closed_ts_falls_back_to_updated(self):
+        self.assertEqual(extract.closed_ts(cl(2, "MERGED", "2023-12-15 04:26:05")), "2023-12-15 04:26:05")
+        self.assertEqual(extract.closed_ts(cl(1, "MERGED", "x", submitted="2023-12-04 10:00:00")),
+                         "2023-12-04 10:00:00")
 
 
 class NoteDbRepoTest(unittest.TestCase):
