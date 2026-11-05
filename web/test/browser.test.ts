@@ -1145,6 +1145,26 @@ test('leaderboard size and organization selects; every org is named, none as "ot
   assert.ok(single.n > 0);
   assert.deepEqual([...new Set(single.orgs)], [one]);
   assert.equal(single.sub, top25.sub, 'the selects leave the description alone');
+  // Show: All lists every reviewer, from the data already loaded.
+  await page.select('#leaderboard-org', '*');
+  const requests: string[] = [];
+  page.on('request', (r) => requests.push(r.url()));
+  await page.select('#leaderboard-size', 'all');
+  assert.match(page.url(), /lbn=all/);
+  const all = await read();
+  check(all);
+  assert.ok(all.n > 200, `n=${all.n}`);
+  assert.deepEqual(requests.filter((u) => u.endsWith('.json')), []);
+  // The axis stays in view while scrolling down the long board.
+  const stuck = await page.evaluate(() => {
+    const rows = document.querySelectorAll('#leaderboard-chart .lb-row');
+    rows[rows.length - 1].scrollIntoView({ block: 'center' });
+    return document.querySelector('#leaderboard-chart .lb-axis')!.getBoundingClientRect().top;
+  });
+  assert.ok(Math.abs(stuck) < 1, `axis top ${stuck}`);
+  const { page: allAgain } = await open('#lbn=all');
+  assert.equal(await allAgain.$eval('#leaderboard-size', (e) => (e as HTMLSelectElement).value), 'all');
+  await allAgain.close();
   await page.select('#leaderboard-size', '25');
   await page.select('#leaderboard-org', '*');
   assert.doesNotMatch(page.url(), /lbn|lbo/);

@@ -539,10 +539,15 @@ export interface LeaderboardRow {
   value: number;
 }
 
-/** Leaderboard lengths the page offers; the first is the default. */
-export const LEADERBOARD_SIZES = [25, 50, 100, 200] as const;
+/** Leaderboard lengths the page offers; the first is the default. 'all' is
+ * every reviewer with a nonzero value: reviewer_weekly.json already holds
+ * them all, so it needs no further data. */
+export const LEADERBOARD_SIZES = [25, 50, 100, 200, 'all'] as const;
 export type LeaderboardSize = (typeof LEADERBOARD_SIZES)[number];
 export const LEADERBOARD_SIZE: LeaderboardSize = LEADERBOARD_SIZES[0];
+
+/** The row limit a leaderboard size stands for. */
+export const leaderboardLimit = (size: LeaderboardSize): number => (size === 'all' ? Infinity : size);
 
 /** Axis ticks from 0 up to a round number at or above `max`: about six steps
  * of 1, 2 or 5 × 10ⁿ, as Chart.js picks them. The last tick is the axis end. */
@@ -603,7 +608,7 @@ export function topReviewers(
   board: ReviewerBoard,
   weeks: string | string[],
   metric: Metric,
-  n: number = LEADERBOARD_SIZE,
+  n: number = leaderboardLimit(LEADERBOARD_SIZE),
 ): LeaderboardRow[] {
   return reviewerTotals(board, weeks, metric)
     .filter((r) => r.value > 0)

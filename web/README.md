@@ -173,7 +173,7 @@ leaderboard and spread show the rest muted and named.
 
 The metric, range, smoothing and review-chart scale are kept in the URL hash
 (`#metric=cls&from=2026-W14&to=2026-W44&smooth=4`, plus `&rscale=linear` for
-the linear review chart, `&lbn=100` for a longer leaderboard, `&lbo=<org>` for
+the linear review chart, `&lbn=100` (or `&lbn=all`) for a longer leaderboard, `&lbo=<org>` for
 its organization (`*-google.com` for all but google.com; old `&lbg=0` links
 still work), `&dir=<path>` for the organization chart's directory,
 and `&hm=<org>` (`*-google.com` for all but google.com), `&hmb=1|13` and

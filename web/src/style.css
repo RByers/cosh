@@ -397,9 +397,13 @@ td.ratio {
   line-height: 16px;
 }
 
+/* Sticky, so a long board (Show: All) keeps its scale in view. */
 .lb-axis {
   grid-area: 1 / 2;
-  position: relative;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--surface-1);
   height: 20px;
   color: var(--text-muted);
   font-variant-numeric: tabular-nums;
@@ -410,6 +414,22 @@ td.ratio {
   top: 0;
   transform: translateX(-50%);
   white-space: nowrap;
+}
+
+/* The axis covers the gridlines' top 4px, so it draws those tick marks itself. */
+.lb-tick::after {
+  content: '';
+  position: absolute;
+  top: 16px;
+  left: 50%;
+  width: 1px;
+  height: 4px;
+  margin-left: -0.5px;
+  background: var(--grid);
+}
+
+.lb-tick:first-child::after {
+  background: var(--baseline);
 }
 
 .lb-grid {

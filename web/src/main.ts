@@ -90,6 +90,7 @@ import {
   trimRanked,
   LEADERBOARD_SIZE,
   LEADERBOARD_SIZES,
+  leaderboardLimit,
   leaderboardOrgs,
   type LeaderboardSize,
   TABLE_TOP_ORGS,
@@ -297,8 +298,8 @@ function readStateFromUrl(data: Data): State {
   const sm = Number(q.get('smooth'));
   const smoothing = SMOOTHING_WEEKS.find((w) => w === sm) ?? DEFAULT_SMOOTHING;
   const reviewScale: ReviewScale = q.get('rscale') === 'linear' ? 'linear' : 'log';
-  const lbn = Number(q.get('lbn'));
-  const lbSize = LEADERBOARD_SIZES.find((n) => n === lbn) ?? LEADERBOARD_SIZE;
+  const lbn = q.get('lbn');
+  const lbSize = LEADERBOARD_SIZES.find((n) => String(n) === lbn) ?? LEADERBOARD_SIZE;
   // lbg=0: links from before the organization select.
   const lbOrg = q.get('lbo') || (q.get('lbg') === '0' ? ALL_BUT_GOOGLE : ALL_ORGS);
   const dir = q.get('dir');
@@ -435,7 +436,7 @@ function buildControls(data: Data, state: State, render: () => void) {
   const sizeSelect = $<HTMLSelectElement>('#leaderboard-size');
   sizeSelect.replaceChildren(
     ...LEADERBOARD_SIZES.map((n) => {
-      const o = el('option', `Top ${n}`);
+      const o = el('option', n === 'all' ? 'All' : `Top ${n}`);
       o.value = String(n);
       return o;
     }),
@@ -741,7 +742,7 @@ function renderLeaderboard(
   const noGoogle = state.lbOrg === ALL_BUT_GOOGLE;
   fillOrgSelect($<HTMLSelectElement>('#leaderboard-org'), orgsByValue(all).slice(0, LB_ORG_CHOICES), state.lbOrg);
   const keep = single ? (o: string) => o === single : noGoogle ? (o: string) => o !== LINEAR_EXCLUDED_ORG : null;
-  const rows = (keep ? all.filter((r) => keep(r.org)) : all).slice(0, state.lbSize);
+  const rows = (keep ? all.filter((r) => keep(r.org)) : all).slice(0, leaderboardLimit(state.lbSize));
   // Fixed for a given range and metric: the toggles below it mustn't move.
   $('#leaderboard-sub').textContent = !weeks.length
     ? `No reviewer data for ${rangeLabel(state.range)}.`

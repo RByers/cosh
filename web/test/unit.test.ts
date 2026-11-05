@@ -60,6 +60,7 @@ import {
   MAX_LINK_REVIEWERS,
   niceTicks,
   topReviewers,
+  leaderboardLimit,
   orgsByValue,
   reviewerTotals,
   reviewerHandle,
@@ -949,4 +950,11 @@ test('lineDataset draws no dots except for a week with gaps on both sides', () =
   assert.deepEqual(lineDataset('a', '#000', [1, null, 3, 4, null]).pointRadius, [2, 0, 0, 0, 0]);
   assert.deepEqual(lineDataset('a', '#000', [{ y: null }, { y: 5 }, { y: null }]).pointRadius, [0, 2, 0]);
   assert.equal(lineDataset('a', '#000', [1]).pointHoverRadius, 4);
+});
+
+test("leaderboard size 'all' takes every reviewer with a nonzero value", () => {
+  assert.equal(leaderboardLimit(50), 50);
+  assert.equal(leaderboardLimit('all'), Infinity);
+  const b = board({ '2026-W44': [[1, 0, 9, 1, 0], [2, 1, 5, 1, 0], [3, 0, 0, 1, 0], [4, 1, 7, 3, 0]] });
+  assert.deepEqual(topReviewers(b, '2026-W44', 'comments', leaderboardLimit('all')).map((x) => x.value), [9, 7, 5]);
 });
