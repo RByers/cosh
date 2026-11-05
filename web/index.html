@@ -22,12 +22,16 @@
           usage. Evaluating investment level is more difficult. Today, a primary cost of maintaining a large open source
           project is the effort of directing
           how the codebase evolves. AI coding agents have made code cheap to write, which makes
-          deciding what should and shouldn't land in the project even more valuable. Code review is therefore a
-          reasonable proxy for an organization's investment in a large open source project.
+          deciding what should and shouldn't land in the project even more valuable. Code review that shapes what
+          lands is therefore a reasonable proxy for an organization's investment in a large open source project. Not
+          every review comment is an investment, though: some cost the author time without changing anything.
         </p>
         <p>
           This page approximates that value exchange by comparing each organization's share of Chromium-based browser
-          usage (according to Cloudflare Radar) with its share of Chromium code reviews. Chromium is
+          usage (according to Cloudflare Radar) with its share of <em>addressed</em> review comments: comments in
+          review threads that led the change's author to modify the change. That is decided from the author's replies,
+          with an AI model reading the threads where the reply alone doesn't settle it
+          (<a href="#addressed-details" id="addressed-link">how, and how accurately</a>). Chromium is
           <a href="#areas">roughly divided</a> into infrastructure/engine code (e.g. <code>content</code>,
           <code>blink</code>) shared by every Chromium-based browser, and Google Chrome product code (e.g.
           <code>chrome/browser/ui</code>), so we focus here on the former only. Chrome product code is reviewed almost

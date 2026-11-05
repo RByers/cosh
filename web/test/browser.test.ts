@@ -283,6 +283,13 @@ test.skipIf(!hasAddressedWeeks())('addressed comments show only classified weeks
   assert.match(await page.$eval('#table-caption', (c) => c.textContent ?? ''), new RegExp(classified[0]));
   const cell = await page.$eval('tr[data-org="google.com"] td:nth-child(8)', (td) => td.textContent ?? '');
   assert.match(cell, /^[\d,]+$/);
+  // The intro links to the explainer: it opens it without losing the URL state.
+  const intro = await page.$eval('header', (h) => h.textContent ?? '');
+  assert.match(intro, /share of\s+addressed\s+review comments/);
+  await page.click('#addressed-link');
+  assert.equal(await page.$eval('#addressed-details', (d) => (d as HTMLDetailsElement).open), true);
+  assert.match(page.url(), /metric=addressed/);
+  await page.$eval('#addressed-details', (d) => { (d as HTMLDetailsElement).open = false; });
   // The classification explainer starts collapsed and gives the measured accuracy.
   const details = await page.$eval('#addressed-details', (d) => ({
     hidden: (d as HTMLElement).hidden, open: (d as HTMLDetailsElement).open, text: d.textContent ?? '' }));

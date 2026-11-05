@@ -1031,6 +1031,15 @@ function main(data: Data) {
 
   // The classifier explainer matters only once some week is classified.
   $('#addressed-details').hidden = !availableMetrics(data).some((m) => m.id === 'addressed');
+  // The intro's link opens the explainer in place. The URL hash holds the
+  // page state, so the link must not replace it.
+  $('#addressed-link').addEventListener('click', (e) => {
+    const details = $<HTMLDetailsElement>('#addressed-details');
+    if (details.hidden) return;
+    e.preventDefault();
+    details.open = true;
+    details.scrollIntoView({ block: 'start' });
+  });
   syncInputs = buildControls(data, state, render);
   render();
   matchMedia('(prefers-color-scheme: dark)').addEventListener('change', render);
