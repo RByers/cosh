@@ -469,8 +469,8 @@ test('value ratio smoothing defaults to 4 weeks and is selectable', async () => 
         pointRadius: (ds as { pointRadius?: number | number[] }).pointRadius,
         curve: (ds as { cubicInterpolationMode?: string }).cubicInterpolationMode ?? 'default',
         sub: document.querySelector('#ratio-sub')!.textContent!,
-        review: c.reviewChart!.data.datasets.find((d: { label?: string }) => d.label === 'microsoft.com')!
-          .data as (number | null)[],
+        review: (c.reviewChart!.data.datasets.find((d: { label?: string }) => d.label === 'microsoft.com')! as
+          unknown as { counts: number[] }).counts,
         reviewSub: document.querySelector('#review-sub')!.textContent!,
       };
     });
@@ -501,7 +501,7 @@ test('value ratio smoothing defaults to 4 weeks and is selectable', async () => 
   // The review chart follows the same setting.
   assert.match(four.reviewSub, /4-week running average/);
   assert.doesNotMatch(off.reviewSub, /running average/);
-  assert.ok(off.review.every((v) => v === null || Number.isInteger(v)), 'unsmoothed counts are whole');
+  assert.ok(off.review.every((v) => Number.isInteger(v)), 'unsmoothed counts are whole');
   assert.ok(jitter(four.review) < jitter(off.review), `${jitter(four.review)} vs ${jitter(off.review)}`);
 
   await page.click('#smoothing input[value="13"]');
@@ -527,8 +527,8 @@ test('date range defaults to where review and usage data overlap, and drives eve
         usageWeeks: c.usageChart!.data.labels as string[],
         reviewWeeks: c.reviewChart!.data.labels as string[],
         reviewTotal: c.reviewChart!.data.datasets
-          .flatMap((ds: { data: unknown[] }) => ds.data as (number | null)[])
-          .reduce((s: number, v: number | null) => s + (v ?? 0), 0),
+          .flatMap((ds) => (ds as unknown as { counts: number[] }).counts)
+          .reduce((s: number, v: number) => s + v, 0),
         summary: document.querySelector('#range-summary')!.textContent,
         pressed: document.querySelector('#range-presets [aria-pressed="true"]')?.textContent,
       };
@@ -605,9 +605,19 @@ test('review chart is a weekly line per top org, Other last, on a log axis', asy
       orgs: c.data.datasets.map((d: { label?: string }) => d.label),
       sameColor: color(c, 'microsoft.com') === color(ratio, 'microsoft.com'),
       colors: c.data.datasets.map((d: { borderColor?: string }) => d.borderColor),
+      values: c.data.datasets.flatMap((d) => d.data as (number | null)[]),
+      zeros: c.data.datasets.flatMap((d) => (d as unknown as { counts: number[] }).counts).filter((v) => v === 0).length,
+      yMin: c.scales.y.min,
+      bottomTick: c.scales.y.ticks[0]?.label,
     };
   });
   assert.equal(chart.type, 'line');
+  // Weeks without review are zeros, not gaps, drawn on a bottom "0" line
+  // below every positive value.
+  assert.ok(chart.values.every((v) => typeof v === 'number' && v > 0), 'no gaps');
+  assert.ok(chart.zeros > 0, 'the default range has weeks without review for some org');
+  assert.equal(chart.values.filter((v) => v === chart.yMin).length, chart.zeros, 'zeros sit on the axis floor');
+  assert.equal(chart.bottomTick, '0');
   assert.equal(chart.yType, 'logarithmic');
   assert.equal(chart.orgs[0], 'google.com');
   assert.equal(chart.orgs[chart.orgs.length - 1], 'Other');

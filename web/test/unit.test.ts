@@ -65,6 +65,7 @@ import {
   type Summary,
 } from '../src/data.ts';
 import { formatRatio } from '../src/scale.ts';
+import { logAxisFloor } from '../src/charts.ts';
 
 const RADAR = `period,period_start,period_end,granularity,device,browser,is_chromium,kind,days,raw_share,chromium_share
 2026-W44,2026-10-26,2026-11-01,week,all,Chrome,1,browser,7,0.4,0.5
@@ -748,4 +749,13 @@ test('threadBreakdown sums outcomes over weeks; null without the data', () => {
     ['model_not', 3], ['no_reply', 5], ['pending', 5]]);
   assert.equal(threadBreakdown({ meta: { weeks: [] }, rows: [] }, ['W1']), null);
   assert.match(gerritCommentUrl(5, 'ab_cd'), /\/c\/chromium\/src\/\+\/5\/comment\/ab_cd\/$/);
+});
+
+test('logAxisFloor: a power of ten below every positive value, where zeros are drawn', () => {
+  assert.equal(logAxisFloor([0, 3, 40]), 1);
+  assert.equal(logAxisFloor([0, 1, 5]), 0.1);
+  assert.equal(logAxisFloor([10, 0]), 1);
+  assert.equal(logAxisFloor([1 / 13, 2]), 0.01);
+  assert.equal(logAxisFloor([0, 0]), 1);
+  assert.equal(logAxisFloor([]), 1);
 });

@@ -231,11 +231,14 @@ export function renderRatioChart(
 /** Review chart y axis: log with every org, or linear without google.com. */
 export type ReviewScale = 'log' | 'linear';
 
-/** Weekly review counts per org: top orgs plus "Other", one line each. On the
- * default log axis (Google is ~97% of review, so a linear axis with Google
- * flattens everyone else) weeks with no review are gaps, since log(0) has no
- * position; on the linear axis (meant for the series without Google) they
- * sit at zero. */
+/** Weekly review counts per org: top orgs plus "Other", one line each. Weeks
+ * with no review are 0, drawn as such and averaged in when smoothing, so
+ * lines never break. On the default log axis (Google is ~97% of review, so a
+ * linear axis with Google flattens everyone else) log(0) has no position, so
+ * the axis starts one power of ten below the smallest positive value and that
+ * bottom tick, labelled 0, is where zeros are plotted (their tooltips still
+ * say 0). The linear axis (meant for the series without Google)
+ * starts at 0. */
 export function renderReviewChart(
   canvas: HTMLCanvasElement,
   weeks: string[],
@@ -250,17 +253,17 @@ export function renderReviewChart(
   const log = scale === 'log';
   const fmt = (v: number) => v.toLocaleString('en-US', { maximumFractionDigits: v < 10 ? 1 : 0 });
   const avg = smoothing > 1 ? `  (${smoothing}-week avg)` : '';
+  const logFloor = logAxisFloor(series.flatMap((s) => s.values));
   const datasets = series.map((s) => {
     const color = s.org === OTHER ? theme.muted : colors.get(s.org) ?? theme.muted;
-    const data = s.values.map((v) => (v > 0 || !log ? v : null));
-    // Points on short ranges; on long ones only for weeks between two gaps,
-    // which would otherwise draw nothing.
-    const short = weeks.length <= 13;
-    const pointRadius = data.map((v, i) =>
-      short ? 3 : v !== null && data[i - 1] == null && data[i + 1] == null ? 2 : 0,
-    );
-    return { ...lineDataset(s.org, color, theme, data), pointRadius, pointHoverRadius: 4 };
+    // Chart.js's log scale skips zeros, so they're plotted at the floor.
+    const data = log ? s.values.map((v) => (v > 0 ? v : logFloor)) : s.values;
+    // Points on short ranges only.
+    const pointRadius = weeks.length <= 13 ? 3 : 0;
+    // `counts`: the true values, for the tooltip.
+    return { ...lineDataset(s.org, color, theme, data), counts: s.values, pointRadius, pointHoverRadius: 4 };
   });
+  const count = (item: { datasetIndex: number; dataIndex: number }) => datasets[item.datasetIndex].counts[item.dataIndex];
   const base = baseOptions(theme);
   return new Chart(canvas, {
     type: 'line',
@@ -271,10 +274,10 @@ export function renderReviewChart(
         ...base.plugins,
         tooltip: {
           ...base.plugins.tooltip,
-          itemSort: (a, b) => ((b.raw as number | null) ?? 0) - ((a.raw as number | null) ?? 0),
+          itemSort: (a, b) => count(b) - count(a),
           callbacks: {
             title: weekTooltipTitle,
-            label: (ctx) => `${ctx.raw === null ? 0 : fmt(ctx.raw as number)}  ${ctx.dataset.label}${avg}`,
+            label: (ctx) => `${fmt(count(ctx))}  ${ctx.dataset.label}${avg}`,
           },
         },
       },
@@ -283,6 +286,7 @@ export function renderReviewChart(
         y: log
           ? {
               type: 'logarithmic',
+              min: logFloor,
               title: { display: true, text: `${metricLabel.toLowerCase()} per week (log scale)`, color: theme.muted },
               border: { display: false },
               grid: { color: theme.grid },
@@ -290,7 +294,7 @@ export function renderReviewChart(
                 // Powers of ten only; Chart.js's default log ticks crowd the axis.
                 axis.ticks = axis.ticks.filter((t) => Math.abs(Math.log10(t.value) % 1) < 1e-9);
               },
-              ticks: { color: theme.muted, callback: (v) => fmt(Number(v)) },
+              ticks: { color: theme.muted, callback: (v) => (Number(v) <= logFloor ? '0' : fmt(Number(v))) },
             }
           : {
               type: 'linear',
@@ -303,6 +307,14 @@ export function renderReviewChart(
       },
     },
   });
+}
+
+/** The bottom of a log axis showing `values`, where their zeros are drawn:
+ * the largest power of ten below the smallest positive value (1 if none), so
+ * no positive value shares the zero line. */
+export function logAxisFloor(values: readonly number[]): number {
+  const min = Math.min(...values.filter((v) => v > 0));
+  return Number.isFinite(min) ? 10 ** (Math.ceil(Math.log10(min) - 1e-9) - 1) : 1;
 }
 
 /** Vertical marker on a category week, e.g. the ChromeDerivative jump. */
