@@ -340,8 +340,8 @@ value_ratio(O, t) = O's share of Chromium addressed review comments
   or split it by year, only when someone picks a custom range.
   `area_reviewers.json` (the directory chart's Gerrit links) is bigger still:
   2.7 MB, 807 KB gzipped at 68 weeks over the 10,000-directory tree, against
-  2.1 MB and 644 KB for `area_weekly.json`. It's fetched only when the chart
-  scrolls near the viewport, so it holds nothing up. If it grows too heavy,
+  2.1 MB and 644 KB for `area_weekly.json`. It's fetched after the first render
+  (until 2026-11-05: when the chart neared the viewport), so it holds nothing up. If it grows too heavy,
   options are to split it by year, keep reviewers only for the tree's upper
   levels, or fetch one subtree's slice when a row is expanded.
 

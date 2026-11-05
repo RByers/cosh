@@ -1349,6 +1349,10 @@ function main(data: Data) {
     e.preventDefault();
     $('#addressed-details').scrollIntoView({ block: 'start' });
   });
+  // The data is in: swap the loading note for the page before anything is
+  // built, so the controls and charts lay out at their real size.
+  $('#loading').hidden = true;
+  $('main').hidden = false;
   syncInputs = buildControls(data, state, render, renderSoon);
   // The metric bar is sticky; scroll-padding-top (in style.css) keeps anchor
   // jumps clear of it, at whatever height it wraps to.
@@ -1366,47 +1370,34 @@ function main(data: Data) {
     usage: [...data.radar.keys()].sort()[0],
   });
   document.body.dataset.ready = 'true';
-  // The directory chart's Gerrit links need a file larger than the chart's
-  // own data, so it's fetched only when the chart comes near the viewport.
-  // Until it arrives (or if it fails) the segments aren't links.
-  const loadLinks = () =>
-    fetchText(areaReviewersUrl)
-      .then((t) => {
-        data.areaReviewers = JSON.parse(t) as DirReviewers;
-        // The file often arrives just after a toggle in one of these charts
-        // was pressed (pressing it scrolls the chart into view). Rebuilding
-        // the rows drops focus, so give it back to that toggle.
-        const active = document.activeElement;
-        const box = active?.closest<HTMLElement>('#area-chart, #heat-chart');
-        const key = active?.classList.contains('ar-toggle') ? active.closest<HTMLElement>('[data-key]')?.dataset.key : undefined;
-        const theme = readTheme();
-        withView(data, state, () => {
-          renderAreas(data, state, colorsFor(theme), theme);
-          renderHeat(data, state, colorsFor(theme), theme, render);
-        });
-        if (box && key) box.querySelector<HTMLButtonElement>(`[data-key="${CSS.escape(key)}"] .ar-toggle`)?.focus({ preventScroll: true });
-        document.body.dataset.areaLinks = 'true';
-      })
-      .catch((err: unknown) => console.error(err));
-  if (!('IntersectionObserver' in window)) loadLinks();
-  else {
-    const seen = new IntersectionObserver(
-      (entries) => {
-        if (!entries.some((e) => e.isIntersecting)) return;
-        seen.disconnect();
-        loadLinks();
-      },
-      { rootMargin: '400px' },
-    );
-    seen.observe($('#area-chart'));
-    seen.observe($('#heat-chart'));
-  }
+  // The directory sections' Gerrit links and "most active" lines need a file
+  // larger than the rest of the page's data. It's fetched only now, after the
+  // first render, so it holds nothing up. Until it arrives (or if it fails)
+  // the segments and cells aren't links.
+  fetchText(areaReviewersUrl)
+    .then((t) => {
+      data.areaReviewers = JSON.parse(t) as DirReviewers;
+      // Its arrival rebuilds both sections' rows. If the reader has just
+      // pressed a toggle in one, that drops focus: give it back.
+      const active = document.activeElement;
+      const box = active?.closest<HTMLElement>('#area-chart, #heat-chart');
+      const key = active?.classList.contains('ar-toggle') ? active.closest<HTMLElement>('[data-key]')?.dataset.key : undefined;
+      const theme = readTheme();
+      withView(data, state, () => {
+        renderAreas(data, state, colorsFor(theme), theme);
+        renderHeat(data, state, colorsFor(theme), theme, render);
+      });
+      if (box && key) box.querySelector<HTMLButtonElement>(`[data-key="${CSS.escape(key)}"] .ar-toggle`)?.focus({ preventScroll: true });
+      document.body.dataset.areaLinks = 'true';
+    })
+    .catch((err: unknown) => console.error(err));
 }
 
 load()
   .then(main)
   .catch((err: unknown) => {
     console.error(err);
+    $('#loading').hidden = true;
     $('#error').hidden = false;
     fill($('#error'), { error: err instanceof Error ? err.message : String(err) });
     document.body.dataset.ready = 'error';

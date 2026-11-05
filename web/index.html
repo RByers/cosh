@@ -67,7 +67,13 @@
       </aside>
     </header>
 
-    <main>
+    <!-- Shown until the review and usage data arrive; main is hidden until then, so its
+         controls and charts appear once, filled in, rather than as empty boxes. -->
+    <p id="loading" class="loading" role="status">Loading the review and usage data…</p>
+    <p id="error" class="error" role="alert" hidden></p>
+    <template data-msg="error">Couldn't load data: <slot name="error"></slot></template>
+
+    <main hidden>
       <!-- Outside the form so it can stay stuck to the top of the window the whole way down the page. -->
       <div class="metric-bar">
         <!-- These names are also the metric's name in headings, charts and
@@ -114,9 +120,6 @@
           <label><input type="radio" name="smoothing" value="52" />1 year</label>
         </fieldset>
       </form>
-
-      <p id="error" class="error" role="alert" hidden></p>
-      <template data-msg="error">Couldn't load data: <slot name="error"></slot></template>
 
       <section class="card" aria-labelledby="parity-title">
         <h2 id="parity-title">Value ratio</h2>

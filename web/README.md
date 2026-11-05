@@ -15,9 +15,16 @@ build time:
   when it shows one directory)
 - `summaries/area_reviewers.json` (who wrote each directory bucket's comments:
   the Gerrit links and "most active" lines of both directory sections; fetched
-  only when one of them nears the viewport)
+  after the first render, so it holds nothing up)
 - `data/public/radar_browser_share.csv`
 - `config/org_browsers.csv`
+
+Loading order: the header (title and intro) is static HTML, so it shows as
+soon as the page arrives, with a "Loading…" note under it. `<main>` (the
+controls and every section) stays hidden until all the files above except
+`area_reviewers.json` have arrived; it's then revealed and rendered in one go,
+so no empty chart boxes appear. `area_reviewers.json` is fetched after that
+first render, and its arrival rebuilds the two directory sections with links.
 
 The join (value ratio = review share ÷ usage share) happens in the browser, in
 `src/data.ts`. Radar rows used: `granularity=week`, `device=all`, `days=7`,

@@ -1014,6 +1014,12 @@ a.ar-seg:focus-visible {
   font-weight: 600;
 }
 
+/* Shown until the data arrives; main.ts then hides it and reveals main. */
+.loading {
+  margin: 0 0 20px;
+  color: var(--text-secondary);
+}
+
 @media (max-width: 600px) {
   .chart-tall {
     height: 340px;

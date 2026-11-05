@@ -10,7 +10,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { afterAll as after, beforeAll as before, test } from 'vitest';
 import { fileURLToPath } from 'node:url';
-import puppeteer, { type Browser, type Page } from 'puppeteer-core';
+import puppeteer, { type Browser, type HTTPRequest, type Page } from 'puppeteer-core';
 import { preview, type PreviewServer } from 'vite';
 import { randomPort } from '../vite.config.ts';
 import { addWeeks, addressedWeeks, isoWeekOf, namedOrgs, weeksIn, type Summary } from '../src/data.ts';
@@ -55,19 +55,39 @@ after(async () => {
   await server?.close();
 });
 
-async function open(hash = '', width = 1100): Promise<{ page: Page; errors: string[] }> {
+/** Opens the page and waits for its first render and then for the directory
+ * sections' Gerrit link data, whose arrival rebuilds their rows (so a test
+ * can't click a row that is about to be replaced). With `holdLinks`, that
+ * file's request is held instead until `releaseLinks()`. */
+async function open(
+  hash = '',
+  width = 1100,
+  { holdLinks = false } = {},
+): Promise<{ page: Page; errors: string[]; releaseLinks: () => void }> {
   const page = await browser.newPage();
   await page.setViewport({ width, height: 900 });
   if (process.env.CPU_THROTTLE) await page.emulateCPUThrottling(Number(process.env.CPU_THROTTLE));
   const errors: string[] = [];
   page.on('console', (m) => m.type() === 'error' && errors.push(m.text()));
   page.on('pageerror', (e) => errors.push(String(e)));
+  let releaseLinks = () => {};
+  if (holdLinks) {
+    let release: () => void;
+    const released = new Promise<void>((r) => (release = r));
+    releaseLinks = () => release();
+    await page.setRequestInterception(true);
+    page.on('request', (r) => {
+      if (/\/area_reviewers-[^/]*\.json$/.test(r.url())) void released.then(() => r.continue());
+      else void r.continue();
+    });
+  }
   await page.goto(baseUrl + hash);
   await page.waitForSelector('body[data-ready]');
   const ready = await page.$eval('body', (b) => b.dataset.ready);
   const shown = await page.$eval('#error', (e) => e.textContent);
   assert.equal(ready, 'true', `page failed to load: ${shown} ${errors.join('; ')}`);
-  return { page, errors };
+  if (!holdLinks) await page.waitForSelector('body[data-area-links]');
+  return { page, errors, releaseLinks };
 }
 
 /** Picks a metric and waits for the re-render it schedules (after a paint). */
@@ -75,6 +95,32 @@ async function pickMetric(page: Page, id: string) {
   await page.click(`#metric input[value="${id}"]`);
   await page.waitForSelector('body:not([data-pending])');
 }
+
+test('the intro shows while the data loads; the controls and charts appear once it has', async () => {
+  const page = await browser.newPage();
+  await page.setViewport({ width: 1100, height: 900 });
+  const held: HTTPRequest[] = [];
+  await page.setRequestInterception(true);
+  page.on('request', (r) => (/\.(json|csv)$/.test(r.url()) ? held.push(r) : void r.continue()));
+  await page.goto(baseUrl, { waitUntil: 'load' });
+  const before = await page.evaluate(() => ({
+    intro: (document.querySelector('header h1') as HTMLElement).offsetHeight > 0,
+    loading: (document.querySelector('#loading') as HTMLElement).offsetHeight > 0,
+    main: (document.querySelector('main') as HTMLElement).offsetHeight,
+    ready: document.body.dataset.ready ?? null,
+  }));
+  assert.deepEqual(before, { intro: true, loading: true, main: 0, ready: null });
+  // Only the page's own data is waited for; the directory links come later.
+  assert.ok(held.length > 0 && held.every((r) => !/area_reviewers/.test(r.url())));
+  page.removeAllListeners('request');
+  page.on('request', (r) => void r.continue());
+  for (const r of held) void r.continue();
+  await page.waitForSelector('body[data-ready="true"]');
+  assert.equal(await page.$eval('#loading', (e) => (e as HTMLElement).hidden), true);
+  assert.ok(await page.evaluate(() => window.__cosh!.ratioChart!.width > 100));
+  await page.waitForSelector('body[data-area-links]');
+  await page.close();
+});
 
 test('page loads data and renders all three charts without errors', async () => {
   const { page, errors } = await open();
@@ -304,11 +350,6 @@ test('brave.com maps to Brave and the Brave note says its usage is understated',
 
 test('directory rows drill down, and "more" rows open 20 at a time and close again', async () => {
   const { page, errors } = await open();
-  // Pressing a toggle scrolls the chart into view, which starts loading its
-  // Gerrit links; their arrival rebuilds the rows. Load them first, so a
-  // rebuild can't replace a toggle between finding it and clicking it.
-  await page.$eval('#area-chart', (e) => e.scrollIntoView());
-  await page.waitForSelector('body[data-area-links]');
   const read = () =>
     page.evaluate(() =>
       [...document.querySelectorAll<HTMLElement>('#area-chart .ar-row')].map((r) => ({
@@ -364,13 +405,13 @@ test('directory rows drill down, and "more" rows open 20 at a time and close aga
 });
 
 test('a directory toggle keeps focus when the Gerrit links arrive and rebuild the rows', async () => {
-  const { page, errors } = await open();
+  const { page, errors, releaseLinks } = await open('', 1100, { holdLinks: true });
   assert.equal(await page.$('body[data-area-links]'), null);
-  // Pressing the toggle scrolls the chart into view, which starts the load.
   const key = await page.evaluate(() =>
     [...document.querySelectorAll<HTMLElement>('#area-chart .ar-row')]
       .find((r) => r.querySelector('.ar-name')?.textContent === 'third_party/blink/')!.dataset.key!);
   await page.click(`li[data-key="${key}"] .ar-toggle`);
+  releaseLinks();
   await page.waitForSelector('body[data-area-links]');
   assert.ok(await page.$('#area-chart a.ar-seg'), 'rows were rebuilt with links');
   assert.equal(await page.evaluate(() => (document.activeElement as HTMLElement).closest('li')?.dataset.key), key);
@@ -689,21 +730,10 @@ test('review by directory: on a phone a toggle picks one bar, beside the name', 
   await wide.page.close();
 
   const { page, errors } = await open('', 390);
-  // Scrolling to the chart loads its link data, which rebuilds the rows; let
-  // that finish first, or a click can land on a row that was just replaced.
-  // Scroll to the toggle, not the chart: the chart at the top would leave the
-  // toggle above it under the sticky metric bar (scroll-padding-top keeps it
-  // clear), and clicks there would hit the bar's buttons instead.
-  await page.$eval('#area-show', (e) => e.scrollIntoView());
-  await page.waitForSelector('body[data-area-links]');
   assert.deepEqual(await shown(page), { toggle: true, vol: true, dist: false, oneLine: true, overflow: 0 });
   await page.click('#area-show input[value="orgs"]');
   assert.deepEqual(await shown(page), { toggle: true, vol: false, dist: true, oneLine: true, overflow: 0 });
-  // Expanding a directory rebuilds the rows; the choice holds. The click
-  // above scrolled the chart into view, starting the lazy load of its
-  // links, whose arrival also rebuilds the rows: let it land first, or the
-  // toggle found below may be detached by the time it's clicked.
-  await page.waitForSelector('body[data-area-links]');
+  // Expanding a directory rebuilds the rows; the choice holds.
   await page.click('#area-chart .ar-toggle');
   assert.deepEqual(await shown(page), { toggle: true, vol: false, dist: true, oneLine: true, overflow: 0 });
   await page.click('#area-show input[value="volume"]');
@@ -713,10 +743,10 @@ test('review by directory: on a phone a toggle picks one bar, beside the name', 
 });
 
 test('each org segment of a directory links to its reviewers’ CLs there on Gerrit', async () => {
-  const { page, errors } = await open();
-  // The links' data loads only once the chart nears the viewport.
+  const { page, errors, releaseLinks } = await open('', 1100, { holdLinks: true });
+  // The links' data is fetched after the first render; until it arrives the segments aren't links.
   assert.equal(await page.$$eval('#area-chart a.ar-seg', (a) => a.length), 0);
-  await page.$eval('#area-chart', (e) => e.scrollIntoView());
+  releaseLinks();
   await page.waitForSelector('body[data-area-links]');
   const read = () =>
     page.evaluate(() =>
@@ -1488,7 +1518,7 @@ test.skipIf(!process.env.SCREENSHOT_DIR)('screenshots (only when SCREENSHOT_DIR 
     await page.emulateMediaFeatures([{ name: 'prefers-color-scheme', value: scheme }]);
     await page.setViewport({ width: 1100, height: 900 });
     await page.goto(baseUrl);
-    await page.waitForSelector('body[data-ready]');
+    await page.waitForSelector('body[data-area-links]');
     await page.screenshot({ path: join(process.env.SCREENSHOT_DIR!, `cosh-${scheme}.png`) as `${string}.png`, fullPage: true });
     // The leaderboard alone, at desktop and phone width.
     for (const width of [1100, 390]) {
