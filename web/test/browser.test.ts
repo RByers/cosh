@@ -981,7 +981,7 @@ test('usage chart shows ChromeDerivative with the jump note', async () => {
   await page.close();
 });
 
-test('Meta gets a ratio line; WebView counts as usage; fine print covers WebView and iOS', async () => {
+test('Meta gets a ratio line; the usage chart shows WebView; fine print covers WebView and iOS', async () => {
   const { page } = await open();
   const ratioOrgs = await page.evaluate(() =>
     window.__cosh!.ratioChart!.data.datasets.map((d: { label?: string }) => d.label),
@@ -992,7 +992,8 @@ test('Meta gets a ratio line; WebView counts as usage; fine print covers WebView
   );
   assert.ok(usage.includes('ChromeMobileWebview'), usage.join());
   const webview = await page.$eval('#webview-note', (n) => n.textContent ?? '');
-  assert.match(webview, /credited to Google/);
+  assert.match(webview, /left out\s+of the value ratio/);
+  assert.match(webview, /many different browsers and apps/);
   assert.match(webview, /credited to Meta/);
   assert.match(webview, /Microsoft 365's to\s+Microsoft/);
   assert.match(await page.$eval('#ios-note', (n) => n.textContent ?? ''), /iOS is excluded/);

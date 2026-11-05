@@ -90,7 +90,6 @@ const RADAR = `period,period_start,period_end,granularity,device,browser,is_chro
 const ORG_BROWSERS = `org_domain,browser,notes
 google.com,Chrome,"Desktop Chrome, mostly."
 google.com,ChromeMobile,""
-google.com,ChromeMobileWebview,""
 meta.com,Instagram,""
 microsoft.com,Edge,""
 samsung.com,SamsungInternet,""
@@ -144,11 +143,13 @@ test('computeRatios divides contribution share by summed browser share', () => {
   const radar = parseRadarWeekly(RADAR);
   const ratios = computeRatios(SUMMARY, radar, parseOrgBrowsers(ORG_BROWSERS), 'comments');
   const by = Object.fromEntries(ratios.map((p) => [p.org, p]));
-  // Google: Chrome + Chrome Android + Android WebView.
-  assert.ok(Math.abs(by['google.com'].ratio! - 0.9 / 0.85) < 1e-12);
+  // Shares are renormalized to leave out Android WebView (10% here).
+  // Google: Chrome + Chrome Android.
+  assert.ok(Math.abs(by['google.com'].derived! - 0.75 / 0.9) < 1e-12);
+  assert.ok(Math.abs(by['google.com'].ratio! - 0.9 / (0.75 / 0.9)) < 1e-12);
   // Meta: its in-app browser share, here 0.5%.
-  assert.equal(by['meta.com'].derived, 0.005);
-  assert.ok(Math.abs(by['microsoft.com'].ratio! - 0.25) < 1e-12);
+  assert.ok(Math.abs(by['meta.com'].derived! - 0.005 / 0.9) < 1e-12);
+  assert.ok(Math.abs(by['microsoft.com'].ratio! - 0.05 / (0.2 / 0.9)) < 1e-12);
   // Absent from the summary: contribution 0, ratio 0.
   assert.equal(by['samsung.com'].ratio, 0);
   // Usage share below the threshold: no ratio.
@@ -165,6 +166,20 @@ test('derivedShare leaves ChromeDerivative out of the usage denominator', () => 
   assert.ok(Math.abs(derivedShare(radar, '2026-W40', ['Edge'])! - 0.25) < 1e-12);
   // The bucket itself is credited to nobody, even if mapped.
   assert.equal(derivedShare(radar, '2026-W40', ['ChromeDerivative']), 0);
+});
+
+test('derivedShare leaves Android WebView out of the usage denominator', () => {
+  const radar = parseRadarWeekly(`period,period_start,period_end,granularity,device,browser,is_chromium,kind,days,raw_share,chromium_share
+2026-W40,2026-09-28,2026-10-04,week,all,Chrome,1,browser,7,0.5,0.6
+2026-W40,2026-09-28,2026-10-04,week,all,ChromeDerivative,1,browser,7,0.1,0.1
+2026-W40,2026-09-28,2026-10-04,week,all,ChromeMobileWebview,1,webview,7,0.1,0.1
+2026-W40,2026-09-28,2026-10-04,week,all,Edge,1,browser,7,0.2,0.2
+`);
+  // Both excluded buckets come out: Chrome 0.6 of the remaining 0.8.
+  assert.ok(Math.abs(derivedShare(radar, '2026-W40', ['Chrome'])! - 0.75) < 1e-12);
+  assert.ok(Math.abs(derivedShare(radar, '2026-W40', ['Edge'])! - 0.25) < 1e-12);
+  // WebView is credited to nobody, even if mapped.
+  assert.ok(Math.abs(derivedShare(radar, '2026-W40', ['Chrome', 'ChromeMobileWebview'])! - 0.75) < 1e-12);
 });
 
 test('chartedOrgs skips orgs whose browsers never reach the threshold', () => {
@@ -410,14 +425,17 @@ test('computeRatios with weeks gives no points for other weeks, so smoothing ski
   assert.ok(only.every((p) => p.week === '2026-W44'));
   const g = (pts: ReturnType<typeof computeRatios>) =>
     smoothRatios(pts, 4).find((p) => p.org === 'google.com' && p.week === '2026-W44')!.ratio!;
-  assert.ok(Math.abs(g(only) - 0.9 / 0.85) < 1e-12);
+  // Google's usage share, renormalized without Android WebView: 0.75 / 0.9.
+  const google = 0.75 / 0.9;
+  assert.ok(Math.abs(g(only) - 0.9 / google) < 1e-12);
   // With W43 included its zero share halves the average.
-  assert.ok(Math.abs(g(computeRatios(two, radar, orgs, 'comments')) - 0.45 / 0.85) < 1e-12);
+  assert.ok(Math.abs(g(computeRatios(two, radar, orgs, 'comments')) - 0.45 / google) < 1e-12);
 });
 
 test('meanDerivedShare averages the weeks that have usage data', () => {
   const radar = parseRadarWeekly(RADAR);
-  assert.equal(meanDerivedShare(radar, ['2026-W44', '2026-W43'], ['Edge']), 0.2);
+  // Edge's 0.2, renormalized without Android WebView (0.1).
+  assert.ok(Math.abs(meanDerivedShare(radar, ['2026-W44', '2026-W43'], ['Edge'])! - 0.2 / 0.9) < 1e-12);
   assert.equal(meanDerivedShare(radar, ['2026-W43'], ['Edge']), null);
 });
 

@@ -250,12 +250,14 @@ export function parseRadarWeekly(text: string): RadarWeekly {
   return out;
 }
 
-/** Radar browser buckets left out of the ratio's usage denominator. Radar's
- * unnamed-Chromium bucket, ChromeDerivative, jumped from about 0.3% to about
- * 10% of Chromium usage in 2026-W37. That looks like a reporting change Radar
- * hasn't explained, so for now the ratio uses each org's share of the rest.
- * The usage chart still shows the bucket. */
-export const RATIO_EXCLUDED_BROWSERS: readonly string[] = ['ChromeDerivative'];
+/** Radar browser buckets left out of the ratio's usage denominator; the ratio
+ * uses each org's share of the rest, and the usage chart still shows them.
+ * - ChromeDerivative, Radar's unnamed-Chromium bucket, jumped from about 0.3%
+ *   to about 10% of Chromium usage in 2026-W37. That looks like a reporting
+ *   change Radar hasn't explained.
+ * - ChromeMobileWebview, Android System WebView, is embedded by many different
+ *   browsers and apps, so its usage can't be credited to any one org. */
+export const RATIO_EXCLUDED_BROWSERS: readonly string[] = ['ChromeDerivative', 'ChromeMobileWebview'];
 
 /** Sum of an org's browsers' Chromium usage share in one week, renormalized
  * to leave out RATIO_EXCLUDED_BROWSERS, or null if Radar has no complete data

@@ -136,17 +136,18 @@
           The ratio's denominator: each browser's share of Chromium-based browser usage, including Android WebView and
           in-app browsers. Human traffic, complete ISO weeks, iOS excluded. Facebook and Instagram (Meta's whole usage
           credit) are always shown; the rest of the small browsers are combined as “Other”. The ratio leaves out
-          ChromeDerivative (see the note below).
+          Android WebView and ChromeDerivative (see the notes below).
         </p>
         <div class="chart">
           <canvas id="usage-chart" role="img" aria-label="Weekly share of Chromium browser usage per browser."></canvas>
         </div>
         <p class="note" id="webview-note">
-          <strong>WebViews and in-app browsers.</strong> Pages opened inside apps count as Chromium usage. Android
-          System WebView (ChromeMobileWebview), the Chromium engine Google ships for apps, is credited to Google along
-          with Chrome. The Facebook and Instagram in-app browsers are credited to Meta, and Microsoft 365's to
-          Microsoft. Other in-app browsers (Snapchat, Pinterest and others) stay in the denominator but are credited to no
-          organization.
+          <strong>WebViews and in-app browsers.</strong> Android System WebView (ChromeMobileWebview) is left out
+          of the value ratio and the table's usage shares: many different browsers and apps embed it, so its usage
+          can't be credited to any one organization. Each organization's usage share is its share of the other Chromium
+          usage, and this chart still shows WebView. The Facebook and Instagram in-app browsers are credited to Meta, and
+          Microsoft 365's to Microsoft. Other in-app browsers (Snapchat, Pinterest and others) stay in the denominator but
+          are credited to no organization.
         </p>
         <p class="note" id="ios-note">
           <strong>iOS is excluded.</strong> Every iOS browser, Chrome included, must use Apple's WebKit engine, and in-app

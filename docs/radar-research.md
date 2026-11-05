@@ -153,6 +153,12 @@ Judgement calls:
     not a browser. Radar's own browser report drops WebViews.
   - **Decision (2026-11-03, user): counted in `chromium_share` and credited to
     google.com.** It is about 12% of Chromium usage.
+  - **Replaced (2026-11-04, user): left out of the value ratio's denominator
+    and credited to no org.** Many different browsers and apps embed Android
+    WebView, so its usage can't be attributed to Google or any other single
+    org. The web UI drops it like ChromeDerivative (`RATIO_EXCLUDED_BROWSERS`
+    in `web/src/data.ts`) and renormalizes each org's share to the rest. It
+    stays in `chromium_share` in the CSV and in the usage chart.
 - **In-app browsers** (Facebook, Instagram, Snapchat, Pinterest, Microsoft
   365, …; `kind=in_app`): **counted in `chromium_share`** (user, 2026-11-03).
   On Android they are WebView (Chromium); on iOS they are WKWebView, and iOS
@@ -174,7 +180,9 @@ Judgement calls:
 
 `config/org_browsers.csv` has the columns `org_domain,browser,notes`.
 
-- google.com → Chrome, Chrome Mobile, Android System WebView (`ChromeMobileWebview`)
+- google.com → Chrome, Chrome Mobile. Android System WebView
+  (`ChromeMobileWebview`) was credited to Google until 2026-11-04; it is now
+  credited to no org and left out of the ratio (§4).
 - microsoft.com → Edge, Edge Mobile, Microsoft 365's in-app browser (`Microsoft365`)
 - samsung.com → Samsung Internet
 - meta.com → the Facebook and Instagram in-app browsers (fb.com reviewers are
@@ -462,8 +470,9 @@ was iOS-only, and iOS is excluded.
 - No single label gained the lost share. Chrome rose 1.9pp across those weeks,
   but its autumn swing is seasonal (+3.4pp in 2023, −1.3pp in 2025).
   ChromeMobile, which fell 2.7pp over the same weeks in 2023, fell only 0.15pp
-  in 2024. That points to the traffic being relabelled as Chrome Mobile (or
-  WebView), which would credit it to google.com. This is unconfirmed.
+  in 2024. That points to the traffic being relabelled as Chrome Mobile (which
+  would credit it to google.com) or WebView (left out of the ratio since
+  2026-11-04). This is unconfirmed.
 - Effect: since 2024-W40, meta.com's usage share (and so the denominator of its
   value ratio) is probably understated by about 2pp of Chromium usage. Its
   ratio is therefore overstated by up to roughly 3×, and Google's usage is

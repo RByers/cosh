@@ -1,7 +1,7 @@
 browser,is_chromium,kind,notes
 Chrome,1,browser,"Chrome desktop. Absorbs Chromium forks that send Chrome's UA and Client Hints (Vivaldi, Arc, most Brave traffic)."
 ChromeMobile,1,browser,"Chrome for Android. Radar also files Chrome iOS (CriOS, WebKit) here; it goes with the rest of iOS."
-ChromeMobileWebview,1,webview,"Android System WebView inside apps. Chromium code shipped by Google; counted in chromium_share and credited to google.com."
+ChromeMobileWebview,1,webview,"Android System WebView inside apps. Counted in chromium_share, but embedded by many different browsers and apps, so credited to no org and left out of the ratio's denominator in the web UI (RATIO_EXCLUDED_BROWSERS)."
 ChromeDerivative,1,browser,"Radar's bucket for Chromium-based browsers it can't name. Credited to no org; the web UI leaves it out of the ratio's denominator (RATIO_EXCLUDED_BROWSERS) since its 2026-W37 jump."
 Chromium,1,browser,"Unbranded Chromium builds; no org."
 ChromeHeadless,1,bot,"Automation; excluded."

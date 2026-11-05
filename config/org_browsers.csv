@@ -1,7 +1,6 @@
 org_domain,browser,notes
 google.com,Chrome,"Desktop Chrome."
 google.com,ChromeMobile,"Chrome for Android (Chrome iOS is WebKit and excluded with the rest of iOS)."
-google.com,ChromeMobileWebview,"Android System WebView inside apps: Chromium shipped by Google."
 microsoft.com,Edge,""
 microsoft.com,Microsoft365,"Office apps' embedded web view (WebView2 on Windows; iOS excluded)."
 samsung.com,SamsungInternet,""
