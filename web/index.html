@@ -133,14 +133,15 @@
             goes back and forth earns more, and so does a second reviewer who joins in.
           </p>
           <p>
-            <strong>Accuracy.</strong> Measured on 400 random threads with an owner reply (CLs closed 2026-W36 to
-            2026-W44), labelled by Claude Haiku and checked by Claude Opus: the regex plus Haiku, as used here, has a
-            precision of 0.97 and a recall of 0.99 (accuracy 0.97). The regex alone has a precision of 0.98 but a
-            recall of only 0.78: it misses changes described in free text. About 2% of threads are ambiguous even to
-            a careful reader. The production prompt shows the model whole threads (the evaluation showed the first
-            nine replies) and has not been re-measured; of 12 production labels checked by hand, 11 were right and 1
-            was unclear. These figures are per thread. Points are per comment, so long threads weigh more. Details
-            are in <code>docs/comment-classifier.md</code>.
+            <strong>Accuracy.</strong> Audited on 800 random threads with an owner reply from the classified weeks
+            (2026-W33 to 2026-W44): Claude Opus labelled every thread without seeing the result, and each
+            disagreement or uncertain label was then reread and settled by hand. Against those labels, the regex plus
+            Haiku, as used here, has a <em>precision</em> of 0.98 (98% of the threads it counts as addressed were)
+            and a <em>recall</em> of 0.99 (it finds 99% of the addressed threads), each within about ±1 point. The
+            regex settles 60% of threads, with precision 0.98; Haiku decides the rest, with precision 0.97 and recall
+            0.96. An owner who agrees to make the change (“I'll rephrase this”) counts as addressed. 4 threads in 800
+            were too unclear to call and are left out. These figures are per thread. Points are per comment, so long
+            threads weigh more. Details are in <code>docs/comment-classifier.md</code>.
           </p>
         </details>
         <p class="note" id="affiliation-note">

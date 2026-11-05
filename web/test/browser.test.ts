@@ -296,7 +296,7 @@ test.skipIf(!hasAddressedWeeks())('addressed comments show only classified weeks
     hidden: (d as HTMLElement).hidden, open: (d as HTMLDetailsElement).open, text: d.textContent ?? '' }));
   assert.equal(details.hidden, false);
   assert.equal(details.open, false);
-  assert.match(details.text, /precision of 0\.97 and a recall of 0\.99/);
+  assert.match(details.text, /precision of 0\.98 .*recall of 0\.99/s);
   // Other metrics are unaffected and hide the note.
   await page.click('#metric input[value="comments"]');
   assert.equal(await page.$eval('#metric-note', (n) => (n as HTMLElement).hidden), true);

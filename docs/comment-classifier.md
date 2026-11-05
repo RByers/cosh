@@ -6,6 +6,9 @@ review comments are cosh's primary contribution measure.
   headless `claude -p` for the threads the regex doesn't settle (`cosh
   classify`, `labels.sqlite`). The section "Design" has the architecture,
   storage, UI behaviour and first run.
+- **How accurate it is in production:** precision 0.98, recall 0.99,
+  from an audit of 800 production labels against Opus (see "Production audit"
+  below). That is the figure the UI quotes.
 - **The rest of this note** is the evaluation that chose it, following
   `review-impact.md`: a labelled set, the methods compared, and each one's
   precision, recall and cost.
@@ -64,6 +67,86 @@ limits instead of being billed.
    - **Upgrades:** use Haiku on everything (0.973) if the regex's
      false "Done"s matter. Use Opus (0.990 overall) only for a small
      audit sample, since it costs about 30× Haiku.
+
+## Production audit (2026-11-04)
+
+This measures the pipeline as it actually runs. The evaluation below
+measured a prototype that showed the model only the first nine replies, and
+its gold labels started as Haiku's own.
+
+| Production, against audited labels | Threads | Precision | Recall | Accuracy |
+|---|---:|---:|---:|---:|
+| **Regex, then Haiku (what the UI uses)** | 796 | **0.980** [0.966, 0.988] | **0.989** [0.978, 0.995] | 0.975 |
+| Haiku alone, on the threads the regex left | 338 | 0.974 [0.941, 0.989] | 0.964 [0.928, 0.983] | 0.964 |
+| Regex alone, on the threads it settled | 458 | 0.983 [0.966, 0.991] | (1 by construction) | 0.983 |
+
+95% Wilson intervals in brackets. Precision is the share of threads
+counted as addressed that were; recall is the share of addressed threads
+that were counted.
+
+- **Sample.** A seeded simple random sample of 800 (seed 20261104) out of
+  23,881 production-decided threads: in scope (the UI's thread box), with
+  their root comment in 2026-W33..W44, reviewer-started, with an owner
+  reply, and decided either by the regex (14,417) or by a current Haiku
+  label (9,464). Each thread was rendered exactly as `cosh classify`
+  renders it (all 800 matched their stored input hash), so the judge saw
+  what Haiku saw.
+- **Judge.** Opus (`claude-opus-5-5`, headless `claude -p`, batches of 25)
+  labelled every thread blind to the production label, with the production
+  definition, a short reason and a confidence. That took 32 calls and cost
+  $2.50 API-equivalent.
+  - **Before review:** Opus agreed with production on 771 of 800 threads
+    (precision 0.966, recall 0.989).
+- **Adjudication.** I (Opus, in the main session) read all 107 threads
+  where Opus disagreed with production (29) or wasn't confident (78).
+  - **The 29 disagreements:** production was right on 1 and wrong on 13; 15
+    were ambiguous.
+  - **The 78 uncertain agreements:** production was right on all of them
+    except the ambiguous ones.
+  - **Shared errors:** 60 random confident agreements (seed 7) were all
+    right. Errors shared by Haiku and Opus are therefore probably under ~5%
+    of the 693 confident agreements, and likely far fewer.
+- **Ambiguity, decided by the user (2026-11-04):**
+  - **Agreement or stated intent counts as addressed.** In 28 threads the
+    owner agreed to, or said they would make, the change without
+    confirming it ("I'll rephrase this", "agree these are redundant",
+    "Right. Thank you."). This was the one decision that mattered:
+    counting them as not addressed would give precision 0.937 overall and
+    0.832 for Haiku alone. The definition already reads this way in
+    practice, since Haiku labels these done.
+  - **A bare "Marked as resolved" / "Resolving" after a discussion** (4
+    threads) is ambiguous and is left out.
+  - **Three one-offs** went by my reading:
+    - A372, pushback then "Done": addressed;
+    - A690, analysis added to the CL description: addressed;
+    - A234, kept the fixtures and explained why: not.
+- **What production gets wrong** (20 of 796):
+  - **Regex, 8 false "Done"s.** "Done" or "Good point" where the work went
+    to a bug or another CL ("Done! Filed new bug", "Added in a followup
+    CL"), to an external doc, or to a non-request ("branches today, good
+    luck!"). Also "Good catch! … leaving it lean here" and a "Done" after
+    the reviewer withdrew.
+  - **Haiku, 5 false positives.** Explanations or pull-outs read as changes:
+    "I'm going to pull these changes into their own CL", "practically it
+    doesn't differ… I used &&", and a root comment that was itself the LGTM
+    after a fix.
+  - **Haiku, 7 misses.** Mostly stated intent ("happy to punt on this",
+    "we can even enforce it with CHECKs and drop the skill", "there really
+    is no reason to clamp"), plus a partial adoption ("I've used 'else'
+    instead of 'else if'").
+- **Record.** `docs/audits/classifier-2026-11-04.jsonl` has one row per
+  sampled thread: CL, root comment id, the production and Opus labels,
+  Opus's reason, the final label and the adjudication note. It holds no
+  comment text; the text can be re-rendered from CL and root comment id.
+  Reproduce or repeat with `scripts/classifier_audit.py`:
+
+  ```
+  COSH_DATA_DIR=<main>/data/private python3 scripts/classifier_audit.py sample $T --n 800 --weeks 2026-W33:2026-W44
+  TMPDIR=$T python3 scripts/classifier_audit.py judge $T            # Opus, ~$2.50 per 800
+  python3 scripts/classifier_audit.py disagreements $T --only disagree   # also: --only unsure, --spot 60
+  # write $T/adjudicated.json: {id: {done, ambiguous, cls, note}}
+  python3 scripts/classifier_audit.py score $T --as promise=done --as one-off=lean --write docs/audits/<date>.jsonl
+  ```
 
 ## Task and labels
 
@@ -276,7 +359,8 @@ Sources for the plan structure:
      never inside `derive`.
 3. **Audit.** Each quarter, have Opus label about 200 threads chosen at
    random and compare. If Haiku's agreement drops below about 0.95, revisit
-   the prompt.
+   the prompt. `scripts/classifier_audit.py` does this; the first run, of
+   800 threads, is "Production audit" above.
 4. **Not worth it:**
    - more regex rules (they overfit at about 0.90);
    - a local model, unless several thousand labels are produced first, for
@@ -336,7 +420,8 @@ Defaults still to confirm are marked *(default)*.
 | intel.com | 16 | 10 | 62% | 0.47% | 0.52% |
 
 **Spot check.** I read 12 random W44 labels and agreed with 11; the
-remaining one was cut off in my printout. Owners increasingly reply through
+remaining one was cut off in my printout. (Superseded by the 800-thread
+"Production audit" above.) Owners increasingly reply through
 AI agents ("[AI] Done in Patchset 13", "**Maestro AI:** Done."), which the
 regex misses and Haiku catches. Letting the regex skip such prefixes would
 save model calls.
