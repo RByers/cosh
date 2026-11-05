@@ -115,17 +115,16 @@ function weekAxis(theme: Theme, weeks: string[], offset = false) {
 /** Tooltip title: the week and its dates. */
 const weekTooltipTitle = (items: { label: string }[]) => (items.length ? weekTitle(items[0].label) : '');
 
-function lineDataset<T>(label: string, color: string, theme: Theme, data: T[]) {
+function lineDataset<T>(label: string, color: string, data: T[]) {
   return {
     label,
     data,
     borderColor: color,
     backgroundColor: color,
     borderWidth: 2,
-    pointRadius: 4,
-    pointHoverRadius: 6,
-    pointBorderColor: theme.surface,
-    pointBorderWidth: 2,
+    // Lines only, never dots: not on short ranges, isolated weeks or hover.
+    pointRadius: 0,
+    pointHoverRadius: 0,
     spanGaps: false,
     tension: 0,
   };
@@ -162,13 +161,7 @@ export function renderRatioChart(
         derived: p?.derived ?? null,
       };
     });
-    const ds = lineDataset(org, colors.get(org)!, theme, data);
-    // Lines without dots, smoothed or not. A week between two gaps keeps a
-    // small dot, since it would otherwise draw nothing.
-    const pointRadius = data.map((p, i) =>
-      p.y !== null && data[i - 1]?.y == null && data[i + 1]?.y == null ? 2 : 0,
-    );
-    const lineOnly = { ...ds, pointRadius, pointHoverRadius: 4 };
+    const lineOnly = lineDataset(org, colors.get(org)!, data);
     if (smoothing <= 1) return lineOnly;
     // A running average is a trend, not weekly measurements: draw it as a
     // smooth curve. Monotone interpolation can't overshoot a point, so the
@@ -260,10 +253,8 @@ export function renderReviewChart(
     const color = s.org === OTHER ? theme.muted : colors.get(s.org) ?? theme.muted;
     // Chart.js's log scale skips zeros, so they're plotted at the floor.
     const data = log ? s.values.map((v) => (v > 0 ? v : logFloor)) : s.values;
-    // Points on short ranges only.
-    const pointRadius = weeks.length <= 13 ? 3 : 0;
     // `counts`: the true values, for the tooltip.
-    return { ...lineDataset(s.org, color, theme, data), counts: s.values, pointRadius, pointHoverRadius: 4 };
+    return { ...lineDataset(s.org, color, data), counts: s.values };
   });
   const count = (item: { datasetIndex: number; dataIndex: number }) => datasets[item.datasetIndex].counts[item.dataIndex];
   const base = baseOptions(theme);
@@ -357,9 +348,7 @@ export function renderUsageChart(
   const datasets = series.map((b, i) => {
     const color = b === OTHER ? theme.muted : theme.series[i];
     const data = weeks.map((w) => browserShare(radar, w, b, browsers));
-    // Points only on short ranges, where a single week would otherwise be invisible.
-    const pointRadius = weeks.length <= 13 ? 3 : 0;
-    return { ...lineDataset(b, color, theme, data), pointRadius, pointHoverRadius: 4 };
+    return lineDataset(b, color, data);
   });
   const base = baseOptions(theme);
   return new Chart(canvas, {

@@ -368,6 +368,40 @@ test('orgWeeklyCounts smoothing averages weeks before the range, skipping weeks 
   assert.deepEqual(orgWeeklyCounts(three, ['2026-W43', '2026-W44'], 'comments', 7, 1)[0].values, [600, 900]);
 });
 
+test('orgWeeklyCounts with dataWeeks skips weeks that have no data for the metric', () => {
+  const three: Summary = {
+    meta: { weeks: ['2026-W42', '2026-W43', '2026-W44'], headline_metric: 'comments' },
+    rows: [
+      { ...SUMMARY.rows[0], iso_week: '2026-W42', addressed_comments: 0 },
+      { ...SUMMARY.rows[0], iso_week: '2026-W43', addressed_comments: 60 },
+      { ...SUMMARY.rows[0], iso_week: '2026-W44', addressed_comments: 90 },
+    ],
+  };
+  // W42 is unclassified: its 0 is missing data, not a zero week.
+  const [google] = orgWeeklyCounts(three, ['2026-W43', '2026-W44'], 'addressed', 7, 4, [], ['2026-W43', '2026-W44']);
+  assert.deepEqual(google.values, [60, 75]);
+  // Without dataWeeks the 0 is averaged in.
+  assert.deepEqual(orgWeeklyCounts(three, ['2026-W43', '2026-W44'], 'addressed', 7, 4)[0].values, [30, 50]);
+});
+
+test('computeRatios with weeks gives no points for other weeks, so smoothing skips them', () => {
+  const radar = parseRadarWeekly(RADAR);
+  const orgs = parseOrgBrowsers(ORG_BROWSERS);
+  const two: Summary = {
+    meta: { weeks: ['2026-W43', '2026-W44'], headline_metric: 'comments' },
+    rows: [...SUMMARY.rows, ...SUMMARY.rows.map((r) => ({ ...r, iso_week: '2026-W43', share_comments: 0 }))],
+  };
+  // The radar fixture has W44 only; reuse it for W43.
+  radar.set('2026-W43', radar.get('2026-W44')!);
+  const only = computeRatios(two, radar, orgs, 'comments', undefined, ['2026-W44']);
+  assert.ok(only.every((p) => p.week === '2026-W44'));
+  const g = (pts: ReturnType<typeof computeRatios>) =>
+    smoothRatios(pts, 4).find((p) => p.org === 'google.com' && p.week === '2026-W44')!.ratio!;
+  assert.ok(Math.abs(g(only) - 0.9 / 0.85) < 1e-12);
+  // With W43 included its zero share halves the average.
+  assert.ok(Math.abs(g(computeRatios(two, radar, orgs, 'comments')) - 0.45 / 0.85) < 1e-12);
+});
+
 test('meanDerivedShare averages the weeks that have usage data', () => {
   const radar = parseRadarWeekly(RADAR);
   assert.equal(meanDerivedShare(radar, ['2026-W44', '2026-W43'], ['Edge']), 0.2);

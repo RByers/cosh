@@ -281,17 +281,21 @@ export interface RatioPoint {
   ratio: number | null;
 }
 
-/** Value ratios for every (summary week, browser-owning org). */
+/** Value ratios for every (summary week, browser-owning org). `weeks`
+ * narrows that to the weeks the metric has data for (the classified weeks,
+ * for addressed comments): other weeks get no point at all, so smoothRatios
+ * leaves them out of its window instead of averaging them in as zero. */
 export function computeRatios(
   summary: Summary,
   radar: RadarWeekly,
   orgBrowsers: Map<string, string[]>,
   metric: Metric = 'comments',
   minDerived = MIN_DERIVED_SHARE,
+  weeks: readonly string[] = summary.meta.weeks,
 ): RatioPoint[] {
   const col = SHARE_COLUMN[metric];
   const points: RatioPoint[] = [];
-  for (const week of summary.meta.weeks) {
+  for (const week of weeks) {
     for (const [org, browsers] of orgBrowsers) {
       const row = summary.rows.find((r) => r.iso_week === week && r.org === org);
       const contribution = row ? Number(row[col]) : 0;
@@ -387,7 +391,9 @@ export function topOrgCounts(
  * `weeks[i]`, including weeks before the range; weeks outside the summary's
  * data are left out of the window, as in smoothRatios. Orgs in `exclude` are
  * dropped entirely (not folded into "Other"), so the next-ranked org takes
- * their place among the top `n`. */
+ * their place among the top `n`. `dataWeeks`, if given, are the only weeks
+ * with data for the metric (the classified weeks, for addressed comments);
+ * the running average skips the rest rather than counting them as zero. */
 export function orgWeeklyCounts(
   all: Summary,
   weeks: string[],
@@ -395,6 +401,7 @@ export function orgWeeklyCounts(
   n = 7,
   smoothing = 1,
   exclude: readonly string[] = [],
+  dataWeeks?: readonly string[],
 ): { org: string; values: number[] }[] {
   const col = COUNT_COLUMN[metric];
   const summary = exclude.length ? { ...all, rows: all.rows.filter((r) => !exclude.includes(r.org)) } : all;
@@ -409,7 +416,7 @@ export function orgWeeklyCounts(
     const m = raw.get(key)!;
     m.set(r.iso_week, (m.get(r.iso_week) ?? 0) + Number(r[col]));
   }
-  const known = new Set([...summary.meta.weeks, ...summary.rows.map((r) => r.iso_week)]);
+  const known = new Set(dataWeeks ?? [...summary.meta.weeks, ...summary.rows.map((r) => r.iso_week)]);
   const orgs = [...named, ...(hasOther ? [OTHER] : [])];
   return orgs.map((org) => ({ org, values: weeks.map((w) => trailingMean(raw.get(org), w, smoothing, known)) }));
 }
@@ -1345,7 +1352,8 @@ function subtree(board: DirBoard, node: number): Uint8Array {
  * per org with the most of the metric there over `weeks` (the rest as
  * OTHER), each a trailing mean over `smoothing` weeks. `exclude` leaves orgs
  * out entirely. Reviewed CLs count (CL, directory) pairs, so a CL with
- * comments in two subdirectories counts in each. */
+ * comments in two subdirectories counts in each. `dataWeeks` is as in
+ * orgWeeklyCounts. */
 export function dirWeeklyCounts(
   board: DirBoard,
   node: number,
@@ -1354,6 +1362,7 @@ export function dirWeeklyCounts(
   n = 7,
   smoothing = 1,
   exclude: readonly string[] = [],
+  dataWeeks?: readonly string[],
 ): { org: string; values: number[] }[] {
   const col = METRIC_INDEX[metric];
   const inside = subtree(board, node);
@@ -1385,7 +1394,7 @@ export function dirWeeklyCounts(
     if (sums.get(org)) hasOther = true;
     for (const [w, v] of m) other.set(w, (other.get(w) ?? 0) + v);
   }
-  const known = new Set(Object.keys(board.weeks));
+  const known = new Set(dataWeeks ?? Object.keys(board.weeks));
   const series = named.map((org) => ({ org, counts: raw.get(org) }));
   if (hasOther) series.push({ org: OTHER, counts: other });
   return series.map(({ org, counts }) => ({

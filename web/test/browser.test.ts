@@ -284,6 +284,32 @@ test.skipIf(!hasAddressedWeeks())('addressed comments show only classified weeks
   assert.match(await page.$eval('#table-caption', (c) => c.textContent ?? ''), new RegExp(classified[0]));
   const cell = await page.$eval('tr[data-org="google.com"] td:nth-child(8)', (td) => td.textContent ?? '');
   assert.match(cell, /^[\d,]+$/);
+  // Short ranges still draw lines only: no chart has point dots.
+  const radii = await page.evaluate(() => {
+    const c = window.__cosh!;
+    return [c.ratioChart, c.reviewChart, c.usageChart].flatMap((ch) =>
+      ch!.data.datasets.map((d: { pointRadius?: unknown; pointHoverRadius?: unknown }) => [d.pointRadius, d.pointHoverRadius]));
+  });
+  assert.ok(radii.length > 0 && radii.every(([r, h]) => r === 0 && h === 0), JSON.stringify(radii));
+  // The weeks before the first classified one have no addressed data, so the
+  // 4-week averages start from that week alone instead of averaging in zeros.
+  const firstWeek = () =>
+    page.evaluate(() => {
+      const c = window.__cosh!;
+      const ratio = c.ratioChart!.data.datasets.find((d: { label?: string }) => d.label === 'google.com')!;
+      const review = c.reviewChart!.data.datasets.find((d: { label?: string }) => d.label === 'google.com')!;
+      return {
+        ratio: (ratio.data as unknown as { ratio: number | null }[])[0].ratio,
+        review: (review as unknown as { counts: number[] }).counts[0],
+      };
+    });
+  assert.equal(await page.evaluate(() => window.__cosh!.state.smoothing), 4);
+  const smoothed = await firstWeek();
+  await page.click('#smoothing input[value="1"]');
+  const raw = await firstWeek();
+  assert.ok(smoothed.ratio !== null && Math.abs(smoothed.ratio - raw.ratio!) < 1e-9, `${smoothed.ratio} vs ${raw.ratio}`);
+  assert.ok(Math.abs(smoothed.review - raw.review) < 1e-9, `${smoothed.review} vs ${raw.review}`);
+  await page.click('#smoothing input[value="4"]');
   // The intro links to the explainer: it opens it without losing the URL state.
   const intro = await page.$eval('header', (h) => h.textContent ?? '');
   assert.match(intro, /share of\s+addressed\s+review comments/);
@@ -485,7 +511,7 @@ test('value ratio smoothing defaults to 4 weeks and is selectable', async () => 
   assert.ok(four.ratios[0] !== null, 'first week averages over weeks before the range');
   // Smoothed: a curve without dots (google.com has no gaps here).
   assert.equal(four.curve, 'monotone');
-  assert.ok(Array.isArray(four.pointRadius) && four.pointRadius.every((r) => r === 0), String(four.pointRadius));
+  assert.equal(four.pointRadius, 0);
 
   await page.click('#smoothing input[value="1"]');
   const off = await read();
@@ -493,7 +519,7 @@ test('value ratio smoothing defaults to 4 weeks and is selectable', async () => 
   assert.doesNotMatch(off.sub, /running average/);
   // Unsmoothed: sharp segments, also without dots.
   assert.equal(off.curve, 'default');
-  assert.ok(Array.isArray(off.pointRadius) && off.pointRadius.every((r) => r === 0), String(off.pointRadius));
+  assert.equal(off.pointRadius, 0);
   assert.notDeepEqual(off.ratios, four.ratios);
   // Smoothing steadies the line: smaller week-to-week moves.
   const jitter = (r: (number | null)[]) =>

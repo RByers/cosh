@@ -1167,15 +1167,11 @@ function main(data: Data) {
     const label = rangeLabel(state.range);
     // Smooth over every week before filtering, so the range's first weeks
     // average over earlier data too.
-    // Addressed shares exist only for classified weeks; keep the running
-    // average from reaching into the others.
-    const classified = new Set(addressedWeeks(data.summary));
-    const ratioSummary =
-      state.metric === 'addressed'
-        ? { ...data.summary, rows: data.summary.rows.filter((r) => classified.has(r.iso_week)) }
-        : data.summary;
+    // Addressed comments exist only for classified weeks; the running
+    // averages skip the others instead of reading them as zero.
+    const dataWeeks = state.metric === 'addressed' ? addressedWeeks(data.summary) : undefined;
     const points = smoothRatios(
-      computeRatios(ratioSummary, data.radar, data.orgBrowsers, state.metric),
+      computeRatios(data.summary, data.radar, data.orgBrowsers, state.metric, undefined, dataWeeks),
       state.smoothing,
     ).filter(
       (p) => orgs.includes(p.org) && weeks.includes(p.week),
@@ -1192,8 +1188,8 @@ function main(data: Data) {
     const seriesFor = (lin: boolean) => {
       const exclude = lin ? [LINEAR_EXCLUDED_ORG] : [];
       return dirNode === null
-        ? orgWeeklyCounts(data.summary, weeks, state.metric, 7, state.smoothing, exclude)
-        : dirWeeklyCounts(data.areas, dirNode, weeks, state.metric, 7, state.smoothing, exclude);
+        ? orgWeeklyCounts(data.summary, weeks, state.metric, 7, state.smoothing, exclude, dataWeeks)
+        : dirWeeklyCounts(data.areas, dirNode, weeks, state.metric, 7, state.smoothing, exclude, dataWeeks);
     };
     const reviewSeries = seriesFor(linear);
     reviewChart = renderReviewChart(
