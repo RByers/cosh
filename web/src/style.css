@@ -106,6 +106,17 @@ footer {
   margin-bottom: 0;
 }
 
+.construction {
+  margin: 0 0 20px;
+  padding: 10px 14px;
+  border: 1px solid var(--series-4);
+  border-left-width: 4px;
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--series-4) 12%, var(--page));
+  color: var(--text-primary);
+  font-size: 0.9rem;
+}
+
 .fine-print {
   font-size: 0.75rem;
 }
