@@ -64,6 +64,12 @@ async function open(hash = '', width = 1100): Promise<{ page: Page; errors: stri
   return { page, errors };
 }
 
+/** Picks a metric and waits for the re-render it schedules (after a paint). */
+async function pickMetric(page: Page, id: string) {
+  await page.click(`#metric input[value="${id}"]`);
+  await page.waitForSelector('body:not([data-pending])');
+}
+
 test('page loads data and renders all three charts without errors', async () => {
   const { page, errors } = await open();
   assert.equal(await page.$eval('body', (b) => b.dataset.ready), 'true');
@@ -370,7 +376,7 @@ test('metric toggle stays at the top of the window while scrolling, on wide and 
     const areasTop = await page.$eval('#areas', (e) => e.getBoundingClientRect().top);
     assert.ok(areasTop >= bar.bottom, `#areas top ${areasTop} is below the bar ${bar.bottom}`);
     assert.ok(bar.hit, 'nothing covers the stuck toggle');
-    await page.click('#metric input[value="cls"]');
+    await pickMetric(page, 'cls');
     assert.match(page.url(), /metric=cls/);
     assert.equal(await page.$eval('.metric-bar', (b) => b.getBoundingClientRect().top), 0);
     assert.deepEqual(errors, []);
@@ -398,12 +404,12 @@ test('switching the metric updates the table, review chart, directory chart and 
   // Addressed comments is the default whenever some week is classified.
   assert.equal(await page.$eval(`#metric input[value="${hasAddressedWeeks() ? 'addressed' : 'comments'}"]`,
     (i) => (i as HTMLInputElement).checked), true);
-  await page.click('#metric input[value="comments"]');
+  await pickMetric(page, 'comments');
   const before = await cell();
   assert.equal(await areaHead(), 'Review comments');
   for (const [id, axis, head] of [['cls', /^reviewed cls per week/, 'Reviewed CLs'],
     ['chars', /^review characters per week/, 'Review characters']] as const) {
-    await page.click(`#metric input[value="${id}"]`);
+    await pickMetric(page, id);
     assert.notEqual(await cell(), before);
     assert.match(page.url(), new RegExp(`metric=${id}`));
     const label = await page.evaluate(() => window.__cosh!.reviewChart!.options.scales.y.title.text);
@@ -414,6 +420,42 @@ test('switching the metric updates the table, review chart, directory chart and 
   await page.reload();
   await page.waitForSelector('body[data-ready]');
   assert.equal(await page.$eval('#metric input[value="chars"]', (i) => (i as HTMLInputElement).checked), true);
+  assert.deepEqual(errors, []);
+  await page.close();
+});
+
+test('a metric toggle shows its choice before the slow re-render, and quick picks share one render', async () => {
+  const { page, errors } = await open('#metric=comments');
+  // All in one evaluate: a frame between two would let the render through.
+  const r = await page.evaluate(() => {
+    const axis = () => String(window.__cosh!.reviewChart!.options.scales!.y!.title!.text);
+    const before = axis();
+    let renders = 0;
+    new MutationObserver(() => renders++).observe(document.querySelector('#review-sub')!, {
+      childList: true, characterData: true, subtree: true,
+    });
+    document.querySelector<HTMLInputElement>('#metric input[value="cls"]')!.click();
+    document.querySelector<HTMLInputElement>('#metric input[value="chars"]')!.click();
+    // In the same task: the toggle and URL have changed, the views not yet.
+    const now = {
+      checked: document.querySelector<HTMLInputElement>('#metric input:checked')!.value,
+      url: location.hash,
+      pending: document.body.dataset.pending,
+      busy: document.querySelector('main')!.getAttribute('aria-busy'),
+      axisUnchanged: axis() === before,
+    };
+    return new Promise<{ now: typeof now; renders: number; axis: string; busy: boolean }>((resolve) => {
+      const done = () => resolve({ now, renders, axis: axis(), busy: document.querySelector('main')!.hasAttribute('aria-busy') });
+      const check = () => (document.body.dataset.pending ? requestAnimationFrame(check) : setTimeout(done, 50));
+      check();
+    });
+  });
+  assert.deepEqual({ ...r.now, url: '' }, { checked: 'chars', url: '', pending: 'true', busy: 'true', axisUnchanged: true });
+  assert.match(r.now.url, /metric=chars/);
+  // A paint later the views catch up, once, with the last pick.
+  assert.equal(r.renders, 1);
+  assert.match(r.axis, /^review characters per week/);
+  assert.equal(r.busy, false);
   assert.deepEqual(errors, []);
   await page.close();
 });
@@ -493,7 +535,7 @@ test.skipIf(!hasAddressedWeeks())('addressed comments show only classified weeks
   assert.ok(repoRefs.length > 0);
   for (const r of repoRefs) assert.equal(r.href, `https://github.com/RByers/cosh/tree/main/${r.path}`);
   // Other metrics are unaffected and keep the note hidden.
-  await page.click('#metric input[value="comments"]');
+  await pickMetric(page, 'comments');
   assert.equal(await page.$eval('#metric-note', (n) => (n as HTMLElement).hidden), true);
   // The addressed column totals the range only when every week in it is classified.
   const addressedCell = await page.$eval('tr[data-org="google.com"] td:nth-child(8)', (td) => td.textContent ?? '');
@@ -973,7 +1015,7 @@ test('leaderboard shows up to 25 reviewers compactly', async () => {
   assert.ok(Math.abs(geo.bar.width - expected) < 1, `bar ${geo.bar.width} vs ${expected}`);
   // Compact: one 16px line per reviewer plus the axis.
   assert.ok(comments.h <= comments.n * 16 + 24, `height ${comments.h}`);
-  await page.click('#metric input[value="cls"]');
+  await pickMetric(page, 'cls');
   const cls = await read();
   assert.match(cls.title, /\n[\d,]+ reviewed cls\n/i);
   assert.notDeepEqual(cls.values, comments.values);

@@ -1379,3 +1379,8 @@ a.hm-box:focus-visible {
   margin-right: 6px;
   text-transform: capitalize;
 }
+
+/* A re-render is waiting for the next paint (renderSoon in main.ts). */
+main[aria-busy='true'] {
+  cursor: progress;
+}

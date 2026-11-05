@@ -384,7 +384,9 @@ function segmented<T>(
   }
 }
 
-function buildControls(data: Data, state: State, render: () => void) {
+/** `renderSoon` re-renders after the browser has painted, so the control
+ * just used shows its new state at once (used where a render is slow). */
+function buildControls(data: Data, state: State, render: () => void, renderSoon: () => void) {
   // Replace only the buttons: each fieldset's <legend> is static markup.
   const metricBox = $('#metric');
   metricBox.querySelectorAll('label').forEach((l) => l.remove());
@@ -397,7 +399,8 @@ function buildControls(data: Data, state: State, render: () => void) {
     input.checked = m.id === state.metric;
     input.addEventListener('change', () => {
       state.metric = m.id;
-      render();
+      // Re-rendering every section takes a while; paint the toggle first.
+      renderSoon();
     });
     label.append(input, document.createTextNode(m.label));
     metricBox.append(label);
@@ -1296,7 +1299,27 @@ function main(data: Data) {
   const reviewColorsFor = (theme: Theme) => new Map([...reviewSlots].map(([o, i]) => [o, theme.series[i]]));
   const nameable = (org: string) => reviewSlots.has(org);
 
+  // A render waiting for the next paint (renderSoon). Any render meanwhile
+  // covers it, so it's dropped; several renderSoon calls share one render.
+  let pending = false;
+  const setPending = (on: boolean) => {
+    pending = on;
+    // For tests (body[data-pending]) and assistive tech (aria-busy).
+    if (on) document.body.dataset.pending = 'true';
+    else delete document.body.dataset.pending;
+    if (on) $('main').setAttribute('aria-busy', 'true');
+    else $('main').removeAttribute('aria-busy');
+  };
+  const renderSoon = () => {
+    writeStateToUrl(state, data.ranges.common);
+    if (pending) return;
+    setPending(true);
+    // rAF runs just before the next paint; the timeout after it.
+    requestAnimationFrame(() => setTimeout(() => pending && render(), 0));
+  };
+
   const render = () => {
+    if (pending) setPending(false);
     writeStateToUrl(state, data.ranges.common);
     syncInputs();
     renderRangeSummary(data, state);
@@ -1422,7 +1445,7 @@ function main(data: Data) {
     e.preventDefault();
     $('#addressed-details').scrollIntoView({ block: 'start' });
   });
-  syncInputs = buildControls(data, state, render);
+  syncInputs = buildControls(data, state, render, renderSoon);
   // The metric bar is sticky; scroll-padding-top (in style.css) keeps anchor
   // jumps clear of it, at whatever height it wraps to.
   const metricBar = $('.metric-bar');
