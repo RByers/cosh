@@ -1141,13 +1141,15 @@ test('leaderboard size and organization selects; every org is named, none as "ot
         inline: rows.map((r) => r.querySelector('.lb-org')?.textContent ?? null),
         colored: rows.map((r) => (r.querySelector<HTMLElement>('.lb-bar')!.style.background ? 1 : 0)),
         legend: document.querySelector('#leaderboard-legend')!.textContent!,
+        legendOrgs: [...document.querySelectorAll('#leaderboard-legend li')].map((li) => li.textContent!.replace(/ \(\d+\)$/, '')),
         sub: document.querySelector('#leaderboard-sub')!.textContent!,
       };
     });
   const check = (v: Awaited<ReturnType<typeof read>>) => {
     assert.doesNotMatch(v.legend, /other/i);
-    // Every org on the board is in the legend; uncoloured rows name their org.
-    for (const org of new Set(v.orgs)) assert.ok(v.legend.includes(org), `${org} in legend`);
+    // Coloured orgs are in the legend; uncoloured rows name their org instead
+    // and stay out of it (Show: All would make that entry very long).
+    v.orgs.forEach((org, i) => assert.equal(v.legendOrgs.includes(org), v.colored[i] === 1, `${org} in legend`));
     v.orgs.forEach((org, i) => assert.equal(v.inline[i], v.colored[i] ? null : ` · ${org}`));
   };
   const top25 = await read();

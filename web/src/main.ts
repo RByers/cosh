@@ -751,7 +751,8 @@ function renderLeaderboard(
       'Same scope as the organization chart: reviewers\' own (non-bot) accounts on human-owned CLs, on the selected paths.';
 
   // Orgs with a fixed review colour get a legend entry, most reviewers first;
-  // the rest get the muted bar and are named on their rows instead.
+  // the rest get the muted bar and are named on their rows instead, with no
+  // legend entry (with Show: All there can be dozens of them).
   const orgs = leaderboardOrgs(rows);
   const lbColors = colors;
   const legend = orgs
@@ -763,17 +764,6 @@ function renderLeaderboard(
       li.append(sw, document.createTextNode(`${org} (${reviewers})`));
       return li;
     });
-  const unnamed = orgs.filter((o) => !lbColors.has(o.org));
-  if (unnamed.length) {
-    const li = el('li');
-    li.append(
-      el('span', undefined, 'swatch swatch-muted'),
-      document.createTextNode(
-        `named on each row: ${unnamed.map(({ org, reviewers }) => `${org} (${reviewers})`).join(', ')}`,
-      ),
-    );
-    legend.push(li);
-  }
   $('#leaderboard-legend').replaceChildren(...legend);
   buildLeaderboard($('#leaderboard-chart'), rows, name, (org) => lbColors.get(org), state.lbReviewer, (id) => {
     state.lbReviewer = id;

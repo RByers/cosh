@@ -145,11 +145,11 @@ Over a range:
    metric are left out, except under addressed comments, where everyone who
    wrote a review comment counts and those with none addressed sit at 0.
    From `reviewer_weekly.json`; no extra data.
-10. **Reviewer leaderboard**: the top 25 (or 50, 100, 200) reviewers by review
+10. **Reviewer leaderboard**: the top 25 (or 50, 100, 200, or all) reviewers by review
    comments over the range, for every organization, all but google.com, or
    one organization (the 25 with the most review in the range), one
    compact bar each, coloured by org. Orgs with a colour get a legend
-   entry; the rest are muted and named on their rows. Clicking a
+   entry; the rest are muted and named on their rows, not in the legend. Clicking a
    reviewer opens their weekly chart over the picked range: review comments,
    with addressed comments filled in for classified weeks. The chart comes
    from `reviewer_weekly.json` (no extra data) and has the link to the CLs
