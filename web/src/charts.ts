@@ -11,11 +11,16 @@ import {
   PointElement,
   ScatterController,
   Tooltip,
+  type ChartType,
+  type FontSpec,
   type Plugin,
   type Scale,
   type Tick,
+  type TooltipModel,
+  type TooltipPositionerFunction,
 } from 'chart.js';
 import { fmtInt, fmtNum } from './format.ts';
+import { toFont, toPadding } from 'chart.js/helpers';
 import type { OrgSpread, RadarWeekly, RatioPoint } from './data.ts';
 import { browserShare, monthTicks, OTHER, weekTitle } from './data.ts';
 import { formatRatio } from './scale.ts';
@@ -67,6 +72,80 @@ export function readTheme(el: Element = document.documentElement): Theme {
     font: getComputedStyle(document.body).fontFamily,
   };
 }
+
+declare module 'chart.js' {
+  interface TooltipPositionerMap {
+    belowOrAbove: TooltipPositionerFunction<ChartType>;
+  }
+}
+
+/** The tooltip options the fraction card reads, as Chart.js has resolved
+ * them by the time a positioner or plugin hook runs (typed as scriptable). */
+interface CardOptions {
+  padding: Parameters<typeof toPadding>[0];
+  titleFont: Partial<FontSpec>;
+  bodyFont: Partial<FontSpec>;
+  titleMarginBottom: number;
+  bodySpacing: number;
+  caretSize: number;
+  caretPadding: number;
+  bodyColor: string;
+}
+const cardOptions = (t: TooltipModel<ChartType>) => t.options as unknown as CardOptions;
+
+/** Height of a hover card with one title line and two body lines (the
+ * fraction card below). Chart.js sizes the card only after positioning it. */
+function fractionCardHeight(o: CardOptions): number {
+  return (
+    toPadding(o.padding).height +
+    toFont(o.titleFont).lineHeight +
+    o.titleMarginBottom +
+    2 * toFont(o.bodyFont).lineHeight +
+    o.bodySpacing
+  );
+}
+
+/** Below the hovered point, or above it when the card would run off the
+ * bottom of the canvas (Chart.js would otherwise push it up over the point). */
+Tooltip.positioners.belowOrAbove = function (items, eventPosition) {
+  const p = Tooltip.positioners.average.call(this, items, eventPosition);
+  if (!p || p.y === null) return false;
+  const o = cardOptions(this);
+  const gap = o.caretSize + o.caretPadding;
+  return { ...p, yAlign: p.y + gap + fractionCardHeight(o) <= this.chart.height ? 'top' : 'bottom' };
+};
+
+/** Draws the rule between a fraction card's two body lines, numerator over
+ * denominator, as wide as the wider of them. */
+const fractionRule: Plugin = {
+  id: 'fractionRule',
+  afterTooltipDraw(chart, { tooltip: t }) {
+    const lines = t.body?.[0]?.lines ?? [];
+    if (!t.opacity || t.body.length !== 1 || lines.length !== 2) return;
+    const o = cardOptions(t);
+    const bodyFont = toFont(o.bodyFont);
+    const y =
+      t.y +
+      toPadding(o.padding).top +
+      toFont(o.titleFont).lineHeight +
+      o.titleMarginBottom +
+      bodyFont.lineHeight +
+      o.bodySpacing / 2;
+    const { ctx } = chart;
+    ctx.save();
+    ctx.font = bodyFont.string;
+    const w = Math.max(...lines.map((l) => ctx.measureText(l).width));
+    const cx = t.x + t.width / 2;
+    ctx.globalAlpha = t.opacity;
+    ctx.strokeStyle = o.bodyColor;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(cx - w / 2, Math.round(y) + 0.5);
+    ctx.lineTo(cx + w / 2, Math.round(y) + 0.5);
+    ctx.stroke();
+    ctx.restore();
+  },
+};
 
 const pct = (x: number) => `${(x * 100).toFixed(x < 0.01 ? 2 : 1)}%`;
 
@@ -392,7 +471,7 @@ export function renderParityChart(
   return new Chart<'scatter'>(canvas, {
     type: 'scatter',
     data: { datasets },
-    plugins: [plugin],
+    plugins: [plugin, fractionRule],
     options: {
       ...base,
       interaction: { mode: 'nearest', intersect: true },
@@ -400,12 +479,30 @@ export function renderParityChart(
         ...base.plugins,
         // Each point is labelled with its org instead.
         legend: { display: false },
+        // Three lines below the point (above near the bottom), clear of its
+        // neighbours: the org and its ratio, then the ratio as a fraction,
+        // review share over usage share with a rule between them.
         tooltip: {
           ...base.plugins.tooltip,
+          position: 'belowOrAbove',
+          yAlign: undefined,
+          // Clear of the hovered dot (radius 9).
+          caretPadding: 8,
+          titleAlign: 'center',
+          bodyAlign: 'center',
+          displayColors: false,
+          titleMarginBottom: 6,
+          bodySpacing: 7,
           callbacks: {
+            title: (items) => {
+              const it = items[0];
+              if (!it) return '';
+              const p = it.raw as { x: number; share: number };
+              return `${it.dataset.label}  ${formatRatio(p.share / p.x)}×`;
+            },
             label: (ctx) => {
               const p = ctx.raw as { x: number; share: number };
-              return `${ctx.dataset.label}: ${formatRatio(p.share / p.x)}×  (${pct(p.share)} of ${metricLabel} ÷ ${pct(p.x)} of usage)`;
+              return [`${pct(p.share)} of ${metricLabel}`, `${pct(p.x)} of usage`];
             },
           },
         },

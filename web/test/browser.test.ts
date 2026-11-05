@@ -1724,6 +1724,52 @@ test('heatmap: column ticks carry the year wherever it changes, wide or narrow',
   await phone.page.close();
 });
 
+test('parity chart hover cards sit below or above the point: org and ratio over a fraction', async () => {
+  const { page, errors } = await open();
+  const cards = await page.evaluate(() => {
+    const c = window.__cosh!.parityChart!;
+    return c.data.datasets.map((ds, datasetIndex) => {
+      const pt = c.getDatasetMeta(datasetIndex).data[0];
+      c.tooltip!.setActiveElements([{ datasetIndex, index: 0 }], { x: pt.x, y: pt.y });
+      c.update();
+      const t = c.tooltip!;
+      const out = {
+        org: ds.label!,
+        yAlign: t.yAlign,
+        top: t.y,
+        bottom: t.y + t.height,
+        canvas: c.height,
+        pointY: pt.y,
+        title: t.title,
+        lines: t.body.map((b) => b.lines),
+      };
+      c.tooltip!.setActiveElements([], { x: 0, y: 0 });
+      c.update();
+      return out;
+    });
+  });
+  assert.ok(cards.length > 3, JSON.stringify(cards));
+  for (const t of cards) {
+    const at = `${t.org}: ${JSON.stringify(t)}`;
+    assert.ok(t.yAlign === 'top' || t.yAlign === 'bottom', at);
+    // Clear of the point (radius 9 when hovered), and inside the canvas.
+    if (t.yAlign === 'top') assert.ok(t.top >= t.pointY + 9, at);
+    else assert.ok(t.bottom <= t.pointY - 9, at);
+    assert.ok(t.top >= 0 && t.bottom <= t.canvas, at);
+    // Three lines: "org  ratio×", then review share over usage share.
+    assert.equal(t.title.length, 1, at);
+    assert.match(t.title[0], new RegExp(`^${t.org.replace(/\./g, '\\.')}  [\\d.]+×$`), at);
+    assert.equal(t.lines.length, 1, at);
+    assert.equal(t.lines[0].length, 2, at);
+    assert.match(t.lines[0][0], /^[\d.]+% of addressed comments$/, at);
+    assert.match(t.lines[0][1], /^[\d.]+% of usage$/, at);
+  }
+  // Points high on the chart get the card below them.
+  assert.ok(cards.some((t) => t.yAlign === 'top'), JSON.stringify(cards));
+  assert.deepEqual(errors, []);
+  await page.close();
+});
+
 test('heatmap: directories by time bins, per org or as a mix, with Gerrit links', async () => {
   const { page, errors } = await open('#metric=comments&from=2025-W45&to=2026-W44');
   const read = () =>
