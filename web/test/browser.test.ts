@@ -582,6 +582,41 @@ test('review by directory shows volume and org split per directory, and the path
   await page.close();
 });
 
+test('review by directory: on a phone a toggle picks one bar, beside the name', async () => {
+  const shown = (page: Page) =>
+    page.evaluate(() => {
+      const vis = (e: Element | null) => !!e && getComputedStyle(e).display !== 'none';
+      const rows = [...document.querySelectorAll<HTMLElement>('#area-chart .ar-row')];
+      return {
+        toggle: vis(document.querySelector('.ar-toggles')),
+        vol: rows.every((r) => vis(r.querySelector('.ar-vol'))),
+        dist: rows.every((r) => vis(r.querySelector('.ar-dist'))),
+        // The name and the shown bar share a line.
+        oneLine: rows.every((r) => {
+          const bar = [...r.querySelectorAll('.ar-vol, .ar-dist')].find(vis)!.getBoundingClientRect();
+          const name = r.querySelector('.ar-label')!.getBoundingClientRect();
+          return Math.abs(bar.top + bar.height / 2 - (name.top + name.height / 2)) < 6 && name.right <= bar.left;
+        }),
+        overflow: document.documentElement.scrollWidth - window.innerWidth,
+      };
+    });
+  const wide = await open();
+  assert.deepEqual(await shown(wide.page), { toggle: false, vol: true, dist: true, oneLine: true, overflow: 0 });
+  await wide.page.close();
+
+  const { page, errors } = await open('', 390);
+  assert.deepEqual(await shown(page), { toggle: true, vol: true, dist: false, oneLine: true, overflow: 0 });
+  await page.click('#area-show input[value="orgs"]');
+  assert.deepEqual(await shown(page), { toggle: true, vol: false, dist: true, oneLine: true, overflow: 0 });
+  // Expanding a directory rebuilds the rows; the choice holds.
+  await page.click('#area-chart .ar-toggle');
+  assert.deepEqual(await shown(page), { toggle: true, vol: false, dist: true, oneLine: true, overflow: 0 });
+  await page.click('#area-show input[value="volume"]');
+  assert.deepEqual(await shown(page), { toggle: true, vol: true, dist: false, oneLine: true, overflow: 0 });
+  assert.deepEqual(errors, []);
+  await page.close();
+});
+
 test('each org segment of a directory links to its reviewers’ CLs there on Gerrit', async () => {
   const { page, errors } = await open();
   // The links' data loads only once the chart nears the viewport.

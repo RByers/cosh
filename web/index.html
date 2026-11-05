@@ -258,7 +258,14 @@
         <h2 id="areas-title">Review by directory</h2>
         <p id="areas-sub" class="sub"></p>
         <ul id="areas-legend" class="legend" aria-label="Segment colour by organization"></ul>
-        <div id="area-chart" class="ar"></div>
+        <div class="ar-wrap">
+          <div class="toggles ar-toggles">
+            <fieldset id="area-show" class="segmented chart-toggle">
+              <legend>Bar</legend>
+            </fieldset>
+          </div>
+          <div id="area-chart" class="ar" data-show="volume"></div>
+        </div>
         <div class="note" id="scope-note">
           <p>
             <strong>Which paths count.</strong> The value ratio, the organization chart, the table, the per-reviewer

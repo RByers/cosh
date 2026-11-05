@@ -476,6 +476,20 @@ function buildControls(data: Data, state: State, render: () => void) {
       render();
     },
   );
+  // Only shown when the directory chart is too narrow for both bars (CSS);
+  // it flips which one the rows show, so the chart needn't be rebuilt.
+  segmented(
+    $('#area-show'),
+    'area-show',
+    [
+      { id: 'volume', label: 'Volume' },
+      { id: 'orgs', label: 'By organization' },
+    ],
+    $('#area-chart').dataset.show,
+    (v) => {
+      $('#area-chart').dataset.show = v;
+    },
+  );
   $<HTMLSelectElement>('#heat-org').addEventListener('change', (e) => {
     state.heatOrg = (e.target as HTMLSelectElement).value;
     state.heatExpanded.clear();

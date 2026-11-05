@@ -650,7 +650,6 @@ td.ratio {
 .ar {
   /* Room for the value label after each bar; areas.ts sizes it to the labels. */
   --ar-label-room: 52px;
-  container-type: inline-size;
   font-size: 11.5px;
   line-height: 16px;
 }
@@ -885,18 +884,38 @@ a.ar-seg:focus-visible {
   font-variant-numeric: tabular-nums;
 }
 
-/* Phones: the directory name gets its own line above the two bars. */
+/* The chart and its narrow-width toggle: the toggle shows only when the
+ * chart is too narrow for both bars, and picks which one each row shows. */
+.ar-wrap {
+  container-type: inline-size;
+}
+
+.ar-toggles {
+  display: none;
+}
+
 @container (max-width: 559px) {
-  .ar-grid {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
+  .ar-toggles {
+    display: flex;
+    margin-bottom: 8px;
   }
 
-  .ar-label {
-    grid-column: 1 / -1;
-    padding-top: 4px;
+  /* Volume: label | volume bar. */
+  .ar[data-show='volume'] .ar-grid {
+    grid-template-columns: fit-content(45%) minmax(0, 1fr);
   }
 
-  .ar-head .ar-label {
+  .ar[data-show='volume'] .ar-dist,
+  .ar[data-show='volume'] .ar-ng {
+    display: none;
+  }
+
+  /* By organization: label | 100% org bar | share. */
+  .ar[data-show='orgs'] .ar-grid {
+    grid-template-columns: fit-content(45%) minmax(0, 1fr) auto;
+  }
+
+  .ar[data-show='orgs'] .ar-vol {
     display: none;
   }
 }
