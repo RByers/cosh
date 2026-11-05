@@ -583,11 +583,11 @@ function renderLeaderboard(
   const weeks = weeksIn(Object.keys(data.reviewers.weeks), state.range);
   const excluded = state.lbGoogle ? undefined : LINEAR_EXCLUDED_ORG;
   const rows = topReviewers(data.reviewers, weeks, state.metric, state.lbSize, excluded);
-  const outside = excluded ? ` outside ${excluded}` : '';
-  $('#leaderboard-sub').textContent = !rows.length
-    ? `No reviewer data${outside} for ${rangeLabel(state.range)}.`
-    : `${name}${weeks.length > 1 ? ' in total' : ''}, ${rangeLabel(state.range)}, ` +
-      `top ${rows.length} reviewers${outside}. ` +
+  // Fixed for a given range and metric: the toggles below it mustn't move.
+  $('#leaderboard-sub').textContent = !weeks.length
+    ? `No reviewer data for ${rangeLabel(state.range)}.`
+    : `${name}${weeks.length > 1 ? ' in total' : ''}, ${rangeLabel(state.range)}, for the top reviewers: ` +
+      `from every organization, or only those outside ${LINEAR_EXCLUDED_ORG}. ` +
       'Same scope as the organization chart: reviewers\' own (non-bot) accounts on human-owned CLs, on the selected paths.';
 
   // Every org on the board gets its own legend entry, most reviewers first.
@@ -773,24 +773,20 @@ function renderHeat(data: Data, state: State, colors: Map<string, string>, theme
     },
   });
 
-  const bins = grid.bins.length;
-  const width = state.heatBin === 1 ? 'a week' : `${state.heatBin} weeks`;
-  const who = single ?? (noGoogle ? `every organization but ${LINEAR_EXCLUDED_ORG}` : 'every organization');
-  const how = single
-    ? state.heatValue === 'share'
-      ? `Each cell is shaded by ${single}'s share of the ${unit} in that directory in those weeks.`
-      : `Each cell is shaded by ${single}'s ${unit} there, against the busiest cell, on a square-root scale so smaller directories still show.`
-    : state.heatValue === 'share'
-      ? `Each cell splits the directory's ${unit} in those weeks across organizations.`
-      : `Each cell is a column of the directory's ${unit} in those weeks, split across organizations; its height is against the row's busiest column.`;
-  $('#heat-sub').textContent = grid.rows.length
-    ? `${metricName(state.metric)} from ${who}, ${rangeLabel(state.range)}: one row per directory, ranked over the range, ` +
-      `and ${bins} column${bins === 1 ? '' : 's'} of ${width}, the last ending with the range. ${how} ` +
+  // Fixed for a given range and metric: it describes every choice of the
+  // toggles below it, so switching them doesn't move them.
+  $('#heat-sub').textContent = rangeWeeks.length
+    ? `${metricName(state.metric)} from the chosen organizations, ${rangeLabel(state.range)}: one row per directory, ` +
+      'ranked over the range, and one column per week or group of weeks, the last ending with the range. ' +
+      `With several organizations, each cell splits the directory's ${unit} in those weeks across them: ` +
+      "under Volume it is a column whose height is against the row's busiest column; under Share it fills the cell. " +
+      `With one organization, each cell is shaded by that organization's ${unit} there, against the busiest cell on a ` +
+      `square-root scale so smaller directories still show (Volume), or by its share of the directory's ${unit} (Share). ` +
       'Every comment counts, on the selected paths or not, as in Review by directory. Use ▸ to open a directory and ' +
       '“chart” to show it in the organization chart. Hover a cell for its numbers and most active reviewers, or click ' +
       'it to open those CLs on Gerrit.' +
       (state.metric === 'cls' ? ' A CL with comments in two directories counts in each.' : '')
-    : `No review data${single ? ` from ${single}` : ''} for ${rangeLabel(state.range)}.`;
+    : `No review data for ${rangeLabel(state.range)}.`;
 
   const legend = $('#heat-legend');
   if (single) {
@@ -915,13 +911,16 @@ function main(data: Data) {
         (state.smoothing > 1
           ? `, as a ${state.smoothing}-week running average`
           : '') +
-        (dirNode === null ? '' : ` in ${state.reviewDir}`) +
         ', for the organizations with the most over the range; the rest are combined as “Other”. ' +
-        (linear
-          ? `${LINEAR_EXCLUDED_ORG} is left out and the axis is linear, so the other organizations can be compared directly.`
-          : 'The axis is logarithmic, since Google does most of the review.') +
-        (dirNode === null ? '' : ' ' + dirScopeNote(data.areas, dirNode, weeks, state.metric))
+        'The log scale shows every organization, since Google does most of the review; the linear scale leaves out ' +
+        `${LINEAR_EXCLUDED_ORG}, so the other organizations can be compared directly. With no directory chosen it ` +
+        'counts comments on the selected paths; with one, every comment in that directory and below.'
       : `No review data for ${label}.`;
+    // The chosen directory's note sits below the controls, so it can't move them.
+    const dirNote = $('#review-dir-note');
+    dirNote.hidden = dirNode === null || !weeks.length;
+    dirNote.textContent =
+      dirNode === null ? '' : `Showing ${state.reviewDir}. ` + dirScopeNote(data.areas, dirNode, weeks, state.metric);
     const dirInput = $<HTMLInputElement>('#review-dir');
     if (document.activeElement !== dirInput) dirInput.value = state.reviewDir ?? '';
     $('#review-dir-clear').hidden = state.reviewDir === null;

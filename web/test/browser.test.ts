@@ -604,7 +604,7 @@ test('review chart toggles to a linear axis without google.com', async () => {
     assert.equal(lin.colors[org], log.colors[org], org);
   }
   assert.doesNotMatch(lin.title, /log scale/);
-  assert.match(lin.sub, /google\.com is left out/);
+  assert.equal(lin.sub, log.sub, 'the scale toggle leaves the description alone');
   assert.match(page.url(), /rscale=linear/);
   await page.reload();
   await page.waitForSelector('body[data-ready]');
@@ -710,6 +710,7 @@ test('leaderboard size and Google toggles; every org is named, none as "other"',
   check(noGoogle);
   assert.ok(!noGoogle.orgs.includes('google.com'));
   assert.ok(noGoogle.n > 50, `n=${noGoogle.n}`);
+  assert.equal(noGoogle.sub, top25.sub, 'the toggles leave the description alone');
   assert.match(noGoogle.sub, /outside google\.com/);
   // The state survives a reload from the URL.
   const { page: again } = await open(new URL(page.url()).hash);
@@ -877,7 +878,7 @@ test('heatmap: directories by time bins, per org or as a mix, with Gerrit links'
   assert.match(page.url(), /hm=microsoft\.com/);
   const ms = await read();
   assert.equal(ms.org, 'microsoft.com');
-  assert.match(ms.sub, /from microsoft\.com/);
+  assert.equal(ms.sub, mix.sub, 'the organization choice leaves the description alone');
   assert.match(ms.legend, /review comments$/);
   const blink = ms.rows.find((r) => r.name === 'third_party/blink/')!;
   assert.ok(blink, 'third_party/blink/ row');
@@ -896,6 +897,7 @@ test('heatmap: directories by time bins, per org or as a mix, with Gerrit links'
   assert.match(page.url(), /hmv=share/);
   assert.equal(weekly.bins, 52);
   assert.match(weekly.legend, /^0%.*100% of the directory/);
+  assert.equal(weekly.sub, mix.sub, 'the column and value toggles leave the description alone');
 
   // Expanding a row opens its subdirectories; "chart" shows one in the organization chart.
   await page.click(`#heat-table tr[data-key="${blink.key}"] .ar-toggle`);
@@ -904,7 +906,7 @@ test('heatmap: directories by time bins, per org or as a mix, with Gerrit links'
   await page.click(`#heat-table tr[data-key="${renderer.key}"] .hm-chart`);
   assert.match(page.url(), /dir=third_party%2Fblink%2Frenderer%2F/);
   assert.equal(await page.$eval('#review-dir', (e) => (e as HTMLInputElement).value), 'third_party/blink/renderer/');
-  assert.match(await page.$eval('#review-sub', (e) => e.textContent!), / in third_party\/blink\/renderer\//);
+  assert.match(await page.$eval('#review-dir-note', (e) => e.textContent!), /^Showing third_party\/blink\/renderer\/\./);
 
   // All but google.com: google.com's comments are in no cell.
   await page.select('#heat-org', '*-google.com');
@@ -936,14 +938,14 @@ test('organization chart can show one directory, kept in the URL', async () => {
   const storage = await series();
   assert.notDeepEqual(storage, before);
   assert.equal(storage[0].org, 'microsoft.com', 'Microsoft leads components/services/storage/ once google.com is left out');
-  assert.match(await page.$eval('#review-sub', (e) => e.textContent!),
-    / in components\/services\/storage\/.*It counts every comment in this directory and below\./);
+  assert.match(await page.$eval('#review-dir-note', (e) => e.textContent!),
+    /^Showing components\/services\/storage\/.*It counts every comment in this directory and below\./);
   assert.equal(await page.$eval('#review-dir-clear', (e) => (e as HTMLButtonElement).hidden), false);
 
   // From the URL: a partly excluded directory says how much the rest of the page leaves out.
   const reloaded = await open(`#from=2025-W45&to=2026-W44&dir=${encodeURIComponent('chrome/')}`);
   assert.equal(await reloaded.page.$eval('#review-dir', (e) => (e as HTMLInputElement).value), 'chrome/');
-  assert.match(await reloaded.page.$eval('#review-sub', (e) => e.textContent!),
+  assert.match(await reloaded.page.$eval('#review-dir-note', (e) => e.textContent!),
     /including the [\d.]+% on paths the rest of the page leaves out/);
   await reloaded.page.close();
 
@@ -959,6 +961,7 @@ test('organization chart can show one directory, kept in the URL', async () => {
   assert.doesNotMatch(page.url(), /dir=/);
   assert.deepEqual(await series(), before);
   assert.equal(await page.$eval('#review-dir-status', (e) => e.textContent!), '');
+  assert.equal(await page.$eval('#review-dir-note', (e) => (e as HTMLElement).hidden), true);
   assert.deepEqual(errors, []);
   await page.close();
 });
