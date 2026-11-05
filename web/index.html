@@ -167,7 +167,8 @@
         <template data-msg="review-sub">
           <span data-if="!weeks">No review data for <slot name="range"></slot>.</span>
           <span data-if="weeks"><slot name="metric"></slot> per ISO week, <slot name="range"></slot><span data-if="smoothed">, as a <slot name="smoothing"></slot> running average</span>,
-            for the organizations with the most over the range; the rest are combined as “Other”. The log scale shows
+            for each organization with at least <slot name="min"></slot> of the range's review comments; the rest are
+            combined as “Other”. The log scale shows
             every organization, since Google does most of the review; the linear scale leaves out google.com, so the
             other organizations can be compared directly. With no directory chosen it counts comments on the selected
             paths; with one, every comment in that directory and below.</span>
@@ -526,8 +527,8 @@
         <template data-msg="dist-sub">
           <span data-if="!weeks">No reviewer data for <slot name="range"></slot>.</span>
           <span data-if="weeks">Each reviewer's <slot name="metric"></slot> over <slot name="range"></slot>: one dot per
-            reviewer, one row per organization (the <slot name="top"></slot> with the most, then everyone else,
-            including personal addresses, as “Other”), on a log scale. Each box spans the middle half of its row's
+            reviewer, one row per organization (each with at least <slot name="min"></slot> of the range's review comments, then
+            everyone else, including personal addresses, as “Other”), on a log scale. Each box spans the middle half of its row's
             reviewers, with a thick line at the median; rows with under five reviewers get none.
             <span data-if="m=addressed">Everyone with a review comment in the range counts, so reviewers with none
               addressed sit at 0.</span>
@@ -600,7 +601,7 @@
           <span data-if="!weeks">No reviewer data for <slot name="range"></slot>.</span>
           <span data-if="weeks"><slot name="name"></slot><span data-if="multi"> in total</span>, <slot name="range"></slot>,
             for the top reviewers: from every organization, only those outside google.com, one organization, or every
-            organization outside the top <slot name="top"></slot> (Other). Same scope as the organization chart:
+            organization below <slot name="min"></slot> of the range's review comments (Other). Same scope as the organization chart:
             reviewers' own (non-bot) accounts on human-owned CLs, on the selected paths.</span>
         </template>
         <div class="toggles">

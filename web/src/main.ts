@@ -96,7 +96,8 @@ import {
   leaderboardOrgs,
   type LeaderboardSize,
   TABLE_TOP_ORGS,
-  TOP_ORGS,
+  namedOrgs,
+  NAMED_ORG_MIN_SHARE,
   weekMonday,
   weeksIn,
   weekSunday,
@@ -169,7 +170,7 @@ let examples: Promise<ThreadExamples> | null = null;
 /** Organization choices (heatmap and leaderboard) besides a single org. */
 const ALL_ORGS = '*';
 const ALL_BUT_GOOGLE = '*-google.com';
-/** Every org but the selector's top TOP_ORGS, combined. */
+/** Every org but the selector's named ones (namedOrgs), combined. */
 const OTHER_ORGS = '*other';
 
 /** The org the linear review chart leaves out, so the rest are legible, and
@@ -215,6 +216,10 @@ async function load(): Promise<Data> {
 }
 
 const pct = (x: number) => `${(x * 100).toFixed(x !== 0 && x < 0.01 ? 2 : 1)}%`;
+
+/** The orgs the review sections name over the selected range (namedOrgs):
+ * decided by review comments, so the same whatever the metric. */
+const rangeNamedOrgs = (data: Data, state: State) => namedOrgs(data.summary, weeksIn(data.summary.meta.weeks, state.range));
 const int = fmtInt;
 const day = fmtDay;
 
@@ -669,11 +674,12 @@ function renderLeaderboard(
   const weeks = weeksIn(Object.keys(data.reviewers.weeks), state.range);
   const all = topReviewers(data.reviewers, weeks, state.metric, Infinity);
 
-  // The selector: the orgs with the most review over the range, "Other", plus the current choice.
+  // The selector: the named orgs over the range, by the metric, "Other", plus the current choice.
   const single = state.lbOrg.startsWith('*') ? null : state.lbOrg;
   const noGoogle = state.lbOrg === ALL_BUT_GOOGLE;
-  const folded = new Set(data.reviewers.meta.fold_into_other ?? []);
-  const top = orgsByValue(all).filter((o) => o !== OTHER && !folded.has(o)).slice(0, TOP_ORGS);
+  const named = rangeNamedOrgs(data, state);
+  const ranked = orgsByValue(all).filter((o) => named.includes(o));
+  const top = [...ranked, ...named.filter((o) => !ranked.includes(o))];
   fillOrgSelect($<HTMLSelectElement>('#leaderboard-org'), top, state.lbOrg);
   const keep = single
     ? (o: string) => o === single
@@ -689,7 +695,7 @@ function renderLeaderboard(
     name,
     multi: weeks.length > 1,
     range: rangeLabel(state.range),
-    top: TOP_ORGS,
+    min: pct(NAMED_ORG_MIN_SHARE),
   });
 
   // Orgs with a fixed review colour get a legend entry, most reviewers first;
@@ -855,7 +861,7 @@ function exampleThread(t: ThreadExamples['threads'][number]): HTMLElement {
  * the path rules that decide what the other sections count. */
 function renderAreas(data: Data, state: State, colors: Map<string, string>, theme: Theme) {
   const weeks = weeksIn(Object.keys(data.areas.weeks), state.range);
-  const orgs = topDirOrgs(data.areas, weeks, state.metric, TOP_ORGS, (o) => colors.has(o));
+  const orgs = topDirOrgs(data.areas, weeks, state.metric, rangeNamedOrgs(data, state), (o) => colors.has(o));
   const totals = dirTotals(data.areas, weeks, orgs, state.metric);
   const unit = metricUnit(state.metric);
   const segColors = colors;
@@ -924,14 +930,14 @@ function renderDistribution(
   const all = reviewerTotals(data.reviewers, weeks, state.metric).filter((r) =>
     state.metric === 'addressed' ? r.comments > 0 : r.value > 0,
   );
-  const spreads = orgSpreads(all, data.reviewers.meta.fold_into_other ?? []);
+  const spreads = orgSpreads(all, data.reviewers.meta.fold_into_other ?? [], rangeNamedOrgs(data, state));
   const colorOf = (org: string) => colors.get(org) ?? theme.muted;
 
   fill($('#dist-sub'), {
     weeks: weeks.length,
     metric: unit,
     range: rangeLabel(state.range),
-    top: TOP_ORGS,
+    min: pct(NAMED_ORG_MIN_SHARE),
     m: state.metric,
   });
 
@@ -1049,9 +1055,11 @@ function renderHeat(data: Data, state: State, colors: Map<string, string>, theme
   const rangeWeeks = weeksIn(Object.keys(board.weeks), state.range);
   const unit = metricUnit(state.metric);
 
-  // The selector: the busiest orgs over the range, "Other", plus the current choice.
+  // The selector: the named orgs over the range, by the metric, "Other", plus the current choice.
   const single = state.heatOrg.startsWith('*') ? null : state.heatOrg;
-  const top = topDirOrgs(board, rangeWeeks, state.metric, TOP_ORGS);
+  const named = rangeNamedOrgs(data, state);
+  const ranked = topDirOrgs(board, rangeWeeks, state.metric, named);
+  const top = [...ranked, ...named.filter((o) => !ranked.includes(o))];
   fillOrgSelect($<HTMLSelectElement>('#heat-org'), top, state.heatOrg);
   const noGoogle = state.heatOrg === ALL_BUT_GOOGLE;
   const others = state.heatOrg === OTHER_ORGS;
@@ -1066,7 +1074,7 @@ function renderHeat(data: Data, state: State, colors: Map<string, string>, theme
     ? [single]
     : others
       ? []
-      : topDirOrgs(board, rangeWeeks, state.metric, TOP_ORGS, (o) => colors.has(o) && (!keep || keep(o)));
+      : topDirOrgs(board, rangeWeeks, state.metric, named, (o) => colors.has(o) && (!keep || keep(o)));
   const segColors = colors;
   const grid = heatGrid(board, state.range, state.heatBin, state.metric, segOrgs, state.heatExpanded, {
     only: keep,
@@ -1253,11 +1261,12 @@ function main(data: Data) {
     const linear = state.reviewScale === 'linear';
     // One directory (every comment in it, from the directory data), or the path scope (org_weekly).
     const dirNode = state.reviewDir === null ? null : dirNodeByPath(data.areas, state.reviewDir);
+    const named = rangeNamedOrgs(data, state);
     const seriesFor = (lin: boolean) => {
       const exclude = lin ? [LINEAR_EXCLUDED_ORG] : [];
       return dirNode === null
-        ? orgWeeklyCounts(data.summary, weeks, state.metric, TOP_ORGS, state.smoothing, exclude, dataWeeks, nameable)
-        : dirWeeklyCounts(data.areas, dirNode, weeks, state.metric, TOP_ORGS, state.smoothing, exclude, dataWeeks, nameable);
+        ? orgWeeklyCounts(data.summary, weeks, state.metric, named, state.smoothing, exclude, dataWeeks, nameable)
+        : dirWeeklyCounts(data.areas, dirNode, weeks, state.metric, named, state.smoothing, exclude, dataWeeks, nameable);
     };
     const reviewSeries = seriesFor(linear);
     drawChart(() => {
@@ -1279,6 +1288,7 @@ function main(data: Data) {
       range: label,
       smoothed: state.smoothing > 1,
       smoothing: smoothingName(state.smoothing),
+      min: pct(NAMED_ORG_MIN_SHARE),
     });
     // The chosen directory's note sits below the controls, so it can't move them.
     const dirNote = $('#review-dir-note');

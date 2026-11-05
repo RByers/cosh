@@ -13,13 +13,19 @@ import { fileURLToPath } from 'node:url';
 import puppeteer, { type Browser, type Page } from 'puppeteer-core';
 import { preview, type PreviewServer } from 'vite';
 import { randomPort } from '../vite.config.ts';
-import { addWeeks, addressedWeeks, isoWeekOf, TOP_ORGS, type Summary } from '../src/data.ts';
+import { addWeeks, addressedWeeks, isoWeekOf, namedOrgs, weeksIn, type Summary } from '../src/data.ts';
 
 /** The committed summary the build bundles. */
 const summary = JSON.parse(
   readFileSync(fileURLToPath(new URL('../../summaries/org_weekly.json', import.meta.url)), 'utf8'),
 ) as Summary;
 const hasAddressedWeeks = () => addressedWeeks(summary).length > 0;
+
+/** The orgs the review sections name for the page's current range. */
+const namedOn = async (page: Page) => {
+  const range = await page.evaluate(() => window.__cosh!.state.range);
+  return namedOrgs(summary, weeksIn(summary.meta.weeks, range));
+};
 
 const webDir = fileURLToPath(new URL('..', import.meta.url));
 const chromePath = process.env.CHROME_PATH ?? '/usr/bin/google-chrome';
@@ -184,6 +190,23 @@ test('parity chart keeps orgs with none of the metric, on a 0 row below the log 
     }
     await page.close();
   }
+});
+
+test('organization chart names the orgs with enough review comments, whatever the metric', async () => {
+  const labels = async (hash: string) => {
+    const { page, errors } = await open(hash);
+    const d = await page.evaluate(() => window.__cosh!.reviewChart!.data.datasets.map((ds) => ds.label!));
+    const named = await namedOn(page);
+    assert.deepEqual(errors, []);
+    await page.close();
+    return { orgs: d.filter((o) => o !== 'Other'), named };
+  };
+  const comments = await labels('#metric=comments&from=2025-W45&to=2026-W44');
+  const cls = await labels('#metric=cls&from=2025-W45&to=2026-W44');
+  // The same set for both metrics: the rule's orgs (each has a colour over this range).
+  assert.deepEqual([...comments.orgs].sort(), [...comments.named].sort());
+  assert.deepEqual([...cls.orgs].sort(), [...comments.orgs].sort());
+  for (const o of ['google.com', 'microsoft.com', 'intel.com', 'opera.com', 'igalia.com']) assert.ok(comments.orgs.includes(o), o);
 });
 
 test('value charts show the orgs with enough mean usage over the range', async () => {
@@ -963,7 +986,8 @@ test('review chart toggles to a linear axis without google.com', async () => {
   assert.equal(lin.yType, 'linear');
   assert.ok(!lin.orgs.includes('google.com'), lin.orgs.join());
   assert.equal(lin.orgs[lin.orgs.length - 1], 'Other');
-  assert.equal(lin.orgs.length, log.orgs.length, 'the next-ranked org takes google.com\'s place');
+  // The same named orgs less google.com: no small org is promoted into its place.
+  assert.deepEqual(lin.orgs, log.orgs.filter((o) => o !== 'google.com'));
   // Orgs in both views keep their colour.
   for (const org of lin.orgs.filter((o): o is string => !!o && log.orgs.includes(o))) {
     assert.equal(lin.colors[org], log.colors[org], org);
@@ -1366,10 +1390,11 @@ test('leaderboard size and organization selects; every org is named, none as "ot
   assert.ok(single.n > 0);
   assert.deepEqual([...new Set(single.orgs)], [one]);
   assert.equal(single.sub, top25.sub, 'the selects leave the description alone');
-  // The top TOP_ORGS orgs, then "Other": everyone else, combined.
+  // The named orgs (enough of the range's review comments), then "Other": everyone else, combined.
   const at = options.indexOf('*other');
-  assert.equal(at, 2 + TOP_ORGS, options.join());
   const named = options.slice(2, at);
+  assert.deepEqual([...named].sort(), (await namedOn(page)).sort(), options.join());
+  assert.ok(named.length >= 4, named.join());
   await page.select('#leaderboard-org', '*other');
   assert.match(page.url(), /lbo=\*other/);
   const rest = await read();
@@ -1628,10 +1653,10 @@ test('heatmap: directories by time bins, per org or as a mix, with Gerrit links'
   assert.ok(nog.rows.flatMap((r) => r.cells).every((c) => !/(^|\n)google\.com:/.test(c.title)), 'no google.com in any cell');
   assert.doesNotMatch(nog.legend, /google\.com/);
 
-  // Other: after the top TOP_ORGS orgs, the rest as one segment.
+  // Other: after the named orgs, the rest as one segment.
   const at = nog.options.indexOf('*other');
-  assert.equal(at, 2 + TOP_ORGS, nog.options.join());
   const named = nog.options.slice(2, at);
+  assert.deepEqual([...named].sort(), (await namedOn(page)).sort(), nog.options.join());
   await page.select('#heat-org', '*other');
   const rest = await read();
   assert.equal(rest.legend, 'Other');

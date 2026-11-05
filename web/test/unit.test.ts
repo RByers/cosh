@@ -45,6 +45,8 @@ import {
   parseRadarWeekly,
   topBrowsers,
   topOrgCounts,
+  namedOrgs,
+  NAMED_ORG_MIN_SHARE,
   orgWeeklyCounts,
   orgsByAllTimeReview,
   orgColorSlots,
@@ -209,6 +211,18 @@ test('rangeChartedOrgs keeps candidates whose mean usage over the range reaches 
   assert.deepEqual(rangeChartedOrgs(radar, ob, all, ['1999-W01']), []);
 });
 
+test('namedOrgs: orgs with enough of the review comments, largest first, capped', () => {
+  // 1000 comments: google.com 900, microsoft.com 50, igalia.com 30, gmail.com 10, Other 10.
+  assert.deepEqual(namedOrgs(SUMMARY, '2026-W44'), ['google.com', 'microsoft.com', 'igalia.com', 'gmail.com']);
+  assert.deepEqual(namedOrgs(SUMMARY, '2026-W44', 0.02), ['google.com', 'microsoft.com', 'igalia.com']);
+  // The summary's Other row counts toward the total: 50 of 1000 is under 5.01%.
+  assert.deepEqual(namedOrgs(SUMMARY, '2026-W44', 0.0501), ['google.com']);
+  assert.deepEqual(namedOrgs(SUMMARY, '2026-W44', 0.0025, 2), ['google.com', 'microsoft.com']);
+  // Decided by review comments whatever the metric; no weeks, no orgs.
+  assert.deepEqual(namedOrgs(SUMMARY, ['1999-W01']), []);
+  assert.equal(NAMED_ORG_MIN_SHARE, 0.0025);
+});
+
 test('topOrgCounts folds the tail and the summary Other row together', () => {
   const top = topOrgCounts(SUMMARY, '2026-W44', 'comments', 2);
   assert.deepEqual(top, [
@@ -290,7 +304,7 @@ test('distributionStats: quartiles and the top 10% share', () => {
   assert.deepEqual(distributionStats([]), { n: 0, total: 0, q1: 0, median: 0, q3: 0, top10: 0, top10Share: 0 });
 });
 
-test('orgSpreads: top orgs by total, folded orgs and the rest as Other, reviewers ascending', () => {
+test('orgSpreads: named orgs by total, folded orgs and the rest as Other, reviewers ascending', () => {
   let id = 0;
   const rows = [
     ...[5, 1, 3].map((value) => ({ id: ++id, value, org: 'a.com' })), // total 9
@@ -298,12 +312,14 @@ test('orgSpreads: top orgs by total, folded orgs and the rest as Other, reviewer
     ...[1, 1, 1, 1].map((value) => ({ id: ++id, value, org: 'gmail.com' })),
     ...[2].map((value) => ({ id: ++id, value, org: 'c.com' })),
   ];
-  const s = orgSpreads(rows, ['gmail.com'], 2);
+  const s = orgSpreads(rows, ['gmail.com'], ['a.com', 'b.com']);
   assert.deepEqual(s.map((x) => [x.org, x.stats.n]), [['b.com', 1], ['a.com', 3], [OTHER, 5]]);
   assert.deepEqual(s[1].reviewers.map((r) => r.value), [1, 3, 5]);
   assert.equal(s[1].stats.median, 3);
   // Nothing left over: no Other row.
-  assert.deepEqual(orgSpreads(rows.slice(0, 4), []).map((x) => x.org), ['b.com', 'a.com']);
+  assert.deepEqual(orgSpreads(rows.slice(0, 4), [], ['a.com', 'b.com']).map((x) => x.org), ['b.com', 'a.com']);
+  // No named orgs: everyone is Other.
+  assert.deepEqual(orgSpreads(rows.slice(0, 4), []).map((x) => x.org), [OTHER]);
   assert.deepEqual(orgSpreads([], []), []);
 });
 
@@ -314,7 +330,7 @@ test('orgSpreads with an order: those orgs that have reviewers, in that order, t
     { id: 3, value: 4, org: 'c.com' },
     { id: 4, value: 2, org: 'gmail.com' },
   ];
-  const s = orgSpreads(rows, ['gmail.com'], 10, ['a.com', 'z.com', 'c.com', OTHER]);
+  const s = orgSpreads(rows, ['gmail.com'], [], ['a.com', 'z.com', 'c.com', OTHER]);
   assert.deepEqual(s.map((x) => [x.org, x.reviewers.map((r) => r.id)]), [['a.com', [1]], ['c.com', [3]], [OTHER, [4, 2]]]);
 });
 
@@ -431,18 +447,18 @@ test('orgTotals sums counts over weeks and recomputes shares from the sums', () 
   assert.equal(topOrgCounts(two, ['2026-W43', '2026-W44'], 'comments', 1)[0].value, 1000);
 });
 
-test('orgWeeklyCounts gives one series per top org, with the rest as Other', () => {
-  const series = orgWeeklyCounts(SUMMARY, ['2026-W43', '2026-W44'], 'comments', 2);
+test('orgWeeklyCounts gives one series per named org, with the rest as Other', () => {
+  const series = orgWeeklyCounts(SUMMARY, ['2026-W43', '2026-W44'], 'comments', ['microsoft.com', 'google.com']);
   assert.deepEqual(series.map((s) => s.org), ['google.com', 'microsoft.com', OTHER]);
   assert.deepEqual(series[0].values, [0, 900]);
   assert.deepEqual(series[2].values, [0, 50]);
 });
 
-test('orgWeeklyCounts can exclude an org entirely, letting the next one in', () => {
-  const series = orgWeeklyCounts(SUMMARY, ['2026-W43', '2026-W44'], 'comments', 2, 1, ['google.com']);
-  assert.deepEqual(series.map((s) => s.org), ['microsoft.com', 'igalia.com', OTHER]);
-  // Other is gmail.com + Other; google.com isn't folded into it.
-  assert.deepEqual(series[2].values, [0, 20]);
+test('orgWeeklyCounts can exclude an org entirely, the other named orgs staying', () => {
+  const series = orgWeeklyCounts(SUMMARY, ['2026-W43', '2026-W44'], 'comments', ['google.com', 'microsoft.com'], 1, ['google.com']);
+  assert.deepEqual(series.map((s) => s.org), ['microsoft.com', OTHER]);
+  // Other is igalia.com + gmail.com + Other; google.com isn't folded into it.
+  assert.deepEqual(series[1].values, [0, 50]);
 });
 
 test('orgWeeklyCounts smoothing averages weeks before the range, skipping weeks without data', () => {
@@ -455,10 +471,10 @@ test('orgWeeklyCounts smoothing averages weeks before the range, skipping weeks 
     ],
   };
   // W44's 4-week window holds W41 (no data, skipped), W42, W43 and W44.
-  const [google] = orgWeeklyCounts(three, ['2026-W44'], 'comments', 7, 4);
+  const [google] = orgWeeklyCounts(three, ['2026-W44'], 'comments', ['google.com'], 4);
   assert.equal(google.org, 'google.com');
   assert.deepEqual(google.values, [600]);
-  assert.deepEqual(orgWeeklyCounts(three, ['2026-W43', '2026-W44'], 'comments', 7, 1)[0].values, [600, 900]);
+  assert.deepEqual(orgWeeklyCounts(three, ['2026-W43', '2026-W44'], 'comments', ['google.com'], 1)[0].values, [600, 900]);
 });
 
 test('orgWeeklyCounts with dataWeeks skips weeks that have no data for the metric', () => {
@@ -471,10 +487,10 @@ test('orgWeeklyCounts with dataWeeks skips weeks that have no data for the metri
     ],
   };
   // W42 is unclassified: its 0 is missing data, not a zero week.
-  const [google] = orgWeeklyCounts(three, ['2026-W43', '2026-W44'], 'addressed', 7, 4, [], ['2026-W43', '2026-W44']);
+  const [google] = orgWeeklyCounts(three, ['2026-W43', '2026-W44'], 'addressed', ['google.com'], 4, [], ['2026-W43', '2026-W44']);
   assert.deepEqual(google.values, [60, 75]);
   // Without dataWeeks the 0 is averaged in.
-  assert.deepEqual(orgWeeklyCounts(three, ['2026-W43', '2026-W44'], 'addressed', 7, 4)[0].values, [30, 50]);
+  assert.deepEqual(orgWeeklyCounts(three, ['2026-W43', '2026-W44'], 'addressed', ['google.com'], 4)[0].values, [30, 50]);
 });
 
 test('computeRatios with weeks gives no points for other weeks, so smoothing skips them', () => {
@@ -733,9 +749,11 @@ const DIRS: DirBoard = {
   },
 };
 const W = ['2026-W43', '2026-W44'];
+/** The named orgs in the directory fixtures. */
+const DN = ['google.com', 'microsoft.com'];
 
 test('orgWeeklyCounts with nameable folds the other orgs into Other', () => {
-  const series = orgWeeklyCounts(SUMMARY, ['2026-W44'], 'comments', 2, 1, [], undefined, (o) => o !== 'microsoft.com');
+  const series = orgWeeklyCounts(SUMMARY, ['2026-W44'], 'comments', ['google.com', 'microsoft.com', 'igalia.com'], 1, [], undefined, (o) => o !== 'microsoft.com');
   assert.deepEqual(series.map((s) => s.org), ['google.com', 'igalia.com', OTHER]);
   // Other is microsoft.com + gmail.com + Other.
   assert.deepEqual(series[2].values, [70]);
@@ -765,8 +783,9 @@ test('dirTotals sums each bucket into its ancestors, and what is in scope', () =
   assert.deepEqual(Object.fromEntries(t.byOrg(4)!), { 'google.com': 11, [OTHER]: 4 });
   assert.equal(dirTotals(DIRS, W, ['google.com'], 'chars').total[1], 440);
   assert.equal(dirTotals(DIRS, ['2026-W44'], ['google.com'], 'cls').total[4], 4);
-  assert.deepEqual(topDirOrgs(DIRS, W, 'comments'), ['google.com', 'microsoft.com']);
-  assert.deepEqual(topDirOrgs(DIRS, W, 'comments', 7, (o) => o !== 'google.com'), ['microsoft.com']);
+  assert.deepEqual(topDirOrgs(DIRS, W, 'comments', ['microsoft.com', 'google.com']), ['google.com', 'microsoft.com']);
+  assert.deepEqual(topDirOrgs(DIRS, W, 'comments', ['microsoft.com']), ['microsoft.com']);
+  assert.deepEqual(topDirOrgs(DIRS, W, 'comments', DN, (o) => o !== 'google.com'), ['microsoft.com']);
 });
 
 test('dirRows lists a page per level, and expands and collapses', () => {
@@ -854,26 +873,26 @@ test('dirNodeByPath finds a directory with or without its trailing slash', () =>
   assert.equal(dirNodeByPath(DIRS, ''), null);
 });
 
-test('dirWeeklyCounts: a series per top org in one subtree, the rest as Other', () => {
+test('dirWeeklyCounts: a series per named org in one subtree, the rest as Other', () => {
   // chrome/ holds chrome/browser/, its ui/ and the re-included webnn/: every comment counts.
-  assert.deepEqual(dirWeeklyCounts(DIRS, 1, W, 'comments'), [
+  assert.deepEqual(dirWeeklyCounts(DIRS, 1, W, 'comments', DN), [
     { org: 'google.com', values: [20, 20] },
     { org: 'microsoft.com', values: [0, 4] },
   ]);
-  assert.deepEqual(dirWeeklyCounts(DIRS, 1, W, 'comments', 1).map((s) => s.org), ['google.com', OTHER]);
+  assert.deepEqual(dirWeeklyCounts(DIRS, 1, W, 'comments', ['google.com']).map((s) => s.org), ['google.com', OTHER]);
   // Leaving google.com out drops it entirely: no Other made of it.
-  assert.deepEqual(dirWeeklyCounts(DIRS, 1, W, 'comments', 7, 1, ['google.com']),
+  assert.deepEqual(dirWeeklyCounts(DIRS, 1, W, 'comments', DN, 1, ['google.com']),
     [{ org: 'microsoft.com', values: [0, 4] }]);
-  assert.deepEqual(dirWeeklyCounts(DIRS, 4, ['2026-W44'], 'chars'), [
+  assert.deepEqual(dirWeeklyCounts(DIRS, 4, ['2026-W44'], 'chars', DN), [
     { org: 'google.com', values: [110] },
     { org: 'microsoft.com', values: [40] },
   ]);
   // Smoothing averages the weeks before the range too.
-  assert.deepEqual(dirWeeklyCounts(DIRS, 1, ['2026-W44'], 'comments', 7, 2).map((s) => s.values), [[20], [2]]);
+  assert.deepEqual(dirWeeklyCounts(DIRS, 1, ['2026-W44'], 'comments', DN, 2).map((s) => s.values), [[20], [2]]);
   // An org with nothing in the range isn't named, though it has data elsewhere.
-  assert.deepEqual(dirWeeklyCounts(DIRS, 1, ['2026-W43'], 'comments').map((s) => s.org), ['google.com']);
+  assert.deepEqual(dirWeeklyCounts(DIRS, 1, ['2026-W43'], 'comments', DN).map((s) => s.org), ['google.com']);
   // Orgs nameable rejects fold into Other.
-  assert.deepEqual(dirWeeklyCounts(DIRS, 1, W, 'comments', 7, 1, [], undefined, (o) => o === 'google.com'), [
+  assert.deepEqual(dirWeeklyCounts(DIRS, 1, W, 'comments', DN, 1, [], undefined, (o) => o === 'google.com'), [
     { org: 'google.com', values: [20, 20] },
     { org: OTHER, values: [0, 4] },
   ]);
