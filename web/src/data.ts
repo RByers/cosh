@@ -79,6 +79,51 @@ export interface AddressedMeta {
   rule?: string;
 }
 
+/** How a reviewer-started thread was decided (summaries' meta.addressed.thread_outcomes). */
+export type ThreadOutcome = 'done_reply' | 'model_addressed' | 'model_not' | 'no_reply' | 'pending';
+
+export const THREAD_OUTCOME_LABELS: Record<ThreadOutcome, string> = {
+  done_reply: 'Addressed: the owner replied “Done” or similar',
+  model_addressed: 'Addressed: Claude Haiku read the thread as a change',
+  model_not: 'No change: answered, explained or deferred (Claude Haiku)',
+  no_reply: 'No change: the owner never replied',
+  pending: 'Not classified yet',
+};
+
+/** Thread counts per outcome over some weeks, or null if the summary has none. */
+export function threadBreakdown(summary: Summary, weeks: string[]): Map<ThreadOutcome, number> | null {
+  const m = summary.meta.addressed as
+    | { thread_outcomes?: ThreadOutcome[]; threads?: Record<string, number[]> }
+    | undefined;
+  if (!m?.thread_outcomes || !m.threads) return null;
+  const out = new Map<ThreadOutcome, number>(m.thread_outcomes.map((o) => [o, 0]));
+  for (const w of weeks) {
+    const counts = m.threads[w];
+    if (counts) m.thread_outcomes.forEach((o, i) => out.set(o, out.get(o)! + (counts[i] ?? 0)));
+  }
+  return out;
+}
+
+/** summaries/thread_examples.json: a few example threads per classified week and outcome. */
+export interface ThreadExample {
+  week: string;
+  outcome: ThreadOutcome;
+  cl: number;
+  root: string;
+  path: string;
+  /** Replies beyond the ones shown. */
+  more: number;
+  messages: [role: 'reviewer' | 'owner' | 'other', text: string][];
+}
+export interface ThreadExamples {
+  meta: { [k: string]: unknown };
+  threads: ThreadExample[];
+}
+
+/** A thread on Gerrit, opened at its first comment. */
+export const gerritCommentUrl = (cl: number, root: string) =>
+  `https://chromium-review.googlesource.com/c/chromium/src/+/${cl}/comment/${encodeURIComponent(root)}/`;
+
 /** The addressed metric's metadata, or null in summaries written before it. */
 export function addressedMeta(summary: Summary): AddressedMeta | null {
   const m = summary.meta.addressed as AddressedMeta | undefined;
@@ -440,6 +485,8 @@ export interface ReviewerBoard {
 }
 
 export interface LeaderboardRow {
+  /** Gerrit account id. */
+  id: number;
   name: string;
   email: string | null;
   org: string;
@@ -539,11 +586,45 @@ export function topReviewers(
     .sort((x, y) => y.value - x.value || x.id - y.id)
     .slice(0, n)
     .map(({ id, value, org }) => ({
+      id,
       name: board.accounts[id] ?? `Account ${id}`,
       email: board.emails?.[id] ?? null,
       org,
       value,
     }));
+}
+
+/** One reviewer's weekly review comments and addressed comments over `weeks`
+ * (addressed is null for weeks not in `classified`), and their org: the one
+ * most of their comments in those weeks resolve to. */
+export function reviewerSeries(
+  board: ReviewerBoard,
+  account: number,
+  weeks: string[],
+  classified: ReadonlySet<string>,
+): { name: string; email: string | null; org: string | null; comments: number[]; addressed: (number | null)[] } {
+  const orgCount = new Map<number, number>();
+  const comments: number[] = [];
+  const addressed: (number | null)[] = [];
+  for (const w of weeks) {
+    let c = 0;
+    let a = 0;
+    for (const r of board.weeks[w] ?? []) {
+      if (r[0] !== account) continue;
+      c += r[2];
+      a += r[5] ?? 0;
+      orgCount.set(r[1], (orgCount.get(r[1]) ?? 0) + r[2]);
+    }
+    comments.push(c);
+    addressed.push(classified.has(w) ? a : null);
+  }
+  let org: string | null = null;
+  let best = -1;
+  for (const [o, c] of orgCount) {
+    if (c > best || (c === best && org !== null && board.orgs[o] < org)) [org, best] = [board.orgs[o], c];
+  }
+  return { name: board.accounts[account] ?? `Account ${account}`, email: board.emails?.[account] ?? null, org,
+    comments, addressed };
 }
 
 /** The orgs on a leaderboard, most reviewers first (ties: the org whose

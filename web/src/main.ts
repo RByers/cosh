@@ -8,12 +8,14 @@ import orgBrowsersUrl from '../../config/org_browsers.csv?url';
 import reviewerUrl from '../../summaries/reviewer_weekly.json?url';
 import areaUrl from '../../summaries/area_weekly.json?url';
 import areaReviewersUrl from '../../summaries/area_reviewers.json?url';
+import threadExamplesUrl from '../../summaries/thread_examples.json?url';
 
 import {
   type AnyChart,
   readTheme,
   renderRatioChart,
   renderReviewChart,
+  renderReviewerChart,
   type ReviewScale,
   renderUsageChart,
   type Theme,
@@ -89,6 +91,13 @@ import {
   type Summary,
   type WeekRange,
   type WeeklyTotals,
+  THREAD_OUTCOME_LABELS,
+  gerritCommentUrl,
+  gerritReviewsUrl,
+  reviewerSeries,
+  threadBreakdown,
+  type ThreadExamples,
+  type ThreadOutcome,
 } from './data.ts';
 import { formatRatio } from './scale.ts';
 
@@ -127,7 +136,15 @@ interface State {
   heatValue: HeatValue;
   /** Heatmap rows the reader expanded; not in the URL. */
   heatExpanded: Set<string>;
+  /** The reviewer whose weekly chart is open (Gerrit account id), or null. */
+  lbReviewer: number | null;
 }
+
+/** The range the user picked. While the addressed metric narrows the views'
+ * range (withView), the reviewer chart and thread box still use this one. */
+let userRange: WeekRange | null = null;
+let reviewerChart: AnyChart | undefined;
+let examples: Promise<ThreadExamples> | null = null;
 
 /** Heatmap organization choices besides a single org. */
 const ALL_ORGS = '*';
@@ -286,6 +303,7 @@ function readStateFromUrl(data: Data): State {
     heatBin: HEAT_BIN_SIZES.find((n) => n === hmb) ?? DEFAULT_HEAT_BIN,
     heatValue: q.get('hmv') === 'share' ? 'share' : 'volume',
     heatExpanded: new Set(),
+    lbReviewer: /^\d+$/.test(q.get('lbr') ?? '') ? Number(q.get('lbr')) : null,
   };
 }
 
@@ -297,7 +315,8 @@ function writeStateToUrl(s: State) {
     (s.reviewDir ? `&dir=${encodeURIComponent(s.reviewDir)}` : '') +
     (s.heatOrg !== ALL_ORGS ? `&hm=${encodeURIComponent(s.heatOrg)}` : '') +
     (s.heatBin !== DEFAULT_HEAT_BIN ? `&hmb=${s.heatBin}` : '') +
-    (s.heatValue !== 'volume' ? '&hmv=share' : ''));
+    (s.heatValue !== 'volume' ? '&hmv=share' : '') +
+    (s.lbReviewer !== null ? `&lbr=${s.lbReviewer}` : ''));
 }
 
 /** How many directories the directory field suggests; any other one can be typed. */
@@ -645,6 +664,7 @@ function renderLeaderboard(
   state: State,
   colors: Map<string, string>,
   theme: Theme,
+  render: () => void,
 ): void {
   const name = metricName(state.metric);
   const weeks = weeksIn(Object.keys(data.reviewers.weeks), state.range);
@@ -684,7 +704,141 @@ function renderLeaderboard(
     legend.push(li);
   }
   $('#leaderboard-legend').replaceChildren(...legend);
-  buildLeaderboard($('#leaderboard-chart'), rows, name, (org) => lbColors.get(org), state.range);
+  buildLeaderboard($('#leaderboard-chart'), rows, name, (org) => lbColors.get(org), state.lbReviewer, (id) => {
+    state.lbReviewer = id;
+    render();
+    $('#reviewer-detail').scrollIntoView({ block: 'nearest' });
+  });
+  renderReviewerDetail(data, state, colors, theme, render);
+}
+
+/** One reviewer's review comments and addressed comments per week over the
+ * picked range, with their reviews on Gerrit. All from reviewer_weekly.json,
+ * which the leaderboard already loads: no extra data. */
+function renderReviewerDetail(data: Data, state: State, colors: Map<string, string>, theme: Theme, render: () => void) {
+  const box = $('#reviewer-detail');
+  reviewerChart?.destroy();
+  reviewerChart = undefined;
+  if (state.lbReviewer === null) {
+    box.hidden = true;
+    return;
+  }
+  const range = userRange ?? state.range;
+  const weeks = weeksIn(Object.keys(data.reviewers.weeks), range);
+  const classified = new Set(addressedWeeks(data.summary));
+  const r = reviewerSeries(data.reviewers, state.lbReviewer, weeks, classified);
+  const total = r.comments.reduce((a, b) => a + b, 0);
+  const addressed = r.addressed.reduce<number>((a, b) => a + (b ?? 0), 0);
+  const nClassified = weeks.filter((w) => classified.has(w)).length;
+  box.hidden = false;
+  $('#rd-title').textContent = `${r.name}${r.org ? ` (${r.org})` : ''}`;
+  $('#rd-sub').textContent =
+    `${int(total)} review comments in ${rangeLabel(range)}` +
+    (nClassified
+      ? `; ${int(addressed)} addressed in the ${nClassified === weeks.length ? '' : `${nClassified} classified `}` +
+        `week${nClassified === 1 ? '' : 's'}${nClassified === weeks.length ? ' shown' : ''} (the filled bars). `
+      : '. No week in this range is classified yet, so only review comments are shown. ') +
+    'Comments that led to no change aren\'t a bad sign: questions are part of good review.';
+  const color = (r.org && colors.get(r.org)) || theme.series[0];
+  reviewerChart = renderReviewerChart($<HTMLCanvasElement>('#reviewer-chart'), weeks, r.comments, r.addressed, color, theme);
+  const link = $<HTMLAnchorElement>('#rd-gerrit');
+  const url = gerritReviewsUrl(r.email, range);
+  link.hidden = !url;
+  if (url) link.href = url;
+  $('#rd-close').onclick = () => {
+    state.lbReviewer = null;
+    render();
+  };
+}
+
+/** How the reviewer-started threads of the picked range's classified weeks
+ * were decided, with example threads per outcome (loaded on first open). */
+function renderThreads(data: Data, state: State) {
+  const box = $('#threads');
+  const available = addressedWeeks(data.summary).length > 0;
+  box.hidden = !available;
+  if (!available) return;
+  const range = userRange ?? state.range;
+  const { weeks } = addressedRange(data.summary, range);
+  const counts = threadBreakdown(data.summary, weeks);
+  const total = counts ? [...counts.values()].reduce((a, b) => a + b, 0) : 0;
+  const bar = $('#threads-bar');
+  const legend = $('#threads-legend');
+  if (!counts || !total) {
+    $('#threads-sub').textContent = `No week in ${rangeLabel(range)} is classified yet.`;
+    bar.replaceChildren();
+    legend.replaceChildren();
+    $('#threads-examples').replaceChildren();
+    return;
+  }
+  const span = weeks.length === 1 ? weeks[0] : `${weeks.length} classified weeks, ${weeks[0]} to ${weeks[weeks.length - 1]}`;
+  $('#threads-sub').textContent =
+    `The ${int(total)} review threads started by reviewers (not the CL owner) on the counted paths in ${span}, ` +
+    'by how each was decided. Addressed threads give a point to every comment in them that isn\'t the owner\'s; ' +
+    'the others give none.';
+  const outcomes = [...counts.keys()].filter((o) => counts.get(o)! > 0);
+  bar.replaceChildren(
+    ...outcomes.map((o) => {
+      const seg = el('span', undefined, `tb-seg tb-${o}`);
+      seg.style.width = `${(counts.get(o)! / total) * 100}%`;
+      seg.title = `${THREAD_OUTCOME_LABELS[o]}: ${int(counts.get(o)!)} (${pct(counts.get(o)! / total)})`;
+      return seg;
+    }),
+  );
+  bar.setAttribute('aria-label', outcomes.map((o) => `${THREAD_OUTCOME_LABELS[o]}: ${pct(counts.get(o)! / total)}`).join('; '));
+  legend.replaceChildren(
+    ...outcomes.map((o) => {
+      const li = el('li');
+      li.dataset.outcome = o;
+      li.append(el('span', undefined, `tb-swatch tb-${o}`), el('span', THREAD_OUTCOME_LABELS[o]),
+        el('span', `${int(counts.get(o)!)} · ${pct(counts.get(o)! / total)}`, 'tb-n'));
+      return li;
+    }),
+  );
+  // Example threads: one collapsed list per outcome; the file loads on the first open.
+  const shown = new Set(weeks);
+  const box2 = $('#threads-examples');
+  box2.replaceChildren(
+    ...(['done_reply', 'model_addressed', 'model_not', 'no_reply'] as ThreadOutcome[]).map((o) => {
+      const det = el('details');
+      det.dataset.outcome = o;
+      det.append(el('summary', `Example threads: ${THREAD_OUTCOME_LABELS[o]}`));
+      det.addEventListener('toggle', () => {
+        if (!det.open || det.dataset.loaded) return;
+        det.dataset.loaded = 'true';
+        examples ??= fetchText(threadExamplesUrl).then((t) => JSON.parse(t) as ThreadExamples);
+        examples
+          .then((ex) => {
+            const list = ex.threads
+              .filter((t) => t.outcome === o && shown.has(t.week))
+              .sort((a, b) => compareWeeks(b.week, a.week))
+              .slice(0, 6);
+            if (!list.length) det.append(el('p', 'No examples for these weeks.', 'tb-msg'));
+            for (const t of list) det.append(exampleThread(t));
+          })
+          .catch((err: unknown) => det.append(el('p', `Couldn't load examples: ${String(err)}`, 'tb-msg')));
+      });
+      return det;
+    }),
+  );
+}
+
+function exampleThread(t: ThreadExamples['threads'][number]): HTMLElement {
+  const box = el('div', undefined, 'tb-thread');
+  const head = el('div', undefined, 'tb-thread-head');
+  const a = el('a', `CL ${t.cl}`);
+  a.href = gerritCommentUrl(t.cl, t.root);
+  a.target = '_blank';
+  a.rel = 'noopener';
+  head.append(a, document.createTextNode(` · ${t.path === '/PATCHSET_LEVEL' ? 'patchset-level comment' : t.path} · ${t.week}`));
+  box.append(head);
+  for (const [role, text] of t.messages) {
+    const p = el('p', undefined, 'tb-msg');
+    p.append(el('span', role, 'tb-role'), document.createTextNode(text));
+    box.append(p);
+  }
+  if (t.more) box.append(el('p', `… ${t.more} more ${t.more === 1 ? 'reply' : 'replies'} on Gerrit`, 'tb-msg'));
+  return box;
 }
 
 /** Review by directory: every comment in the range, by directory and org, with
@@ -924,6 +1078,7 @@ function main(data: Data) {
     syncInputs();
     renderRangeSummary(data, state);
     renderMetricNote(data, state);
+    userRange = state.range;
     withView(data, state, renderViews);
   };
 
@@ -1006,7 +1161,8 @@ function main(data: Data) {
     $('#review-dir-clear').hidden = state.reviewDir === null;
     renderHeat(data, state, colors, theme, render);
     renderAreas(data, state, colors, theme);
-    renderLeaderboard(data, state, colors, theme);
+    renderLeaderboard(data, state, colors, theme, render);
+    renderThreads(data, state);
     usageChart?.destroy();
     usageChart = renderUsageChart(
       $<HTMLCanvasElement>('#usage-chart'),

@@ -374,6 +374,56 @@ export function renderUsageChart(
   });
 }
 
+/** One reviewer's weekly review comments, with their addressed comments in
+ * front (null, so no bar, for weeks not classified). */
+export function renderReviewerChart(
+  canvas: HTMLCanvasElement,
+  weeks: string[],
+  comments: number[],
+  addressed: (number | null)[],
+  color: string,
+  theme: Theme,
+): Chart<'bar'> {
+  const base = baseOptions(theme);
+  return new Chart(canvas, {
+    type: 'bar',
+    data: {
+      labels: weeks,
+      datasets: [
+        { label: 'Addressed comments', data: addressed, backgroundColor: color, borderWidth: 0, order: 0 },
+        { label: 'Review comments', data: comments, backgroundColor: theme.grid, borderColor: theme.muted,
+          borderWidth: 1, order: 1 },
+      ],
+    },
+    options: {
+      ...base,
+      plugins: {
+        ...base.plugins,
+        legend: { ...base.plugins.legend, labels: { ...base.plugins.legend.labels, boxHeight: 10 } },
+        tooltip: {
+          ...base.plugins.tooltip,
+          callbacks: {
+            title: weekTooltipTitle,
+            label: (ctx) => (ctx.raw === null ? `${ctx.dataset.label}: not classified` : `${ctx.raw}  ${ctx.dataset.label}`),
+          },
+        },
+      },
+      scales: {
+        // Both series share each week's slot, the addressed bar in front.
+        x: { ...weekAxis(theme, weeks, true), stacked: true },
+        y: {
+          stacked: false,
+          min: 0,
+          title: { display: true, text: 'comments per week', color: theme.muted },
+          border: { display: false },
+          grid: { color: theme.grid },
+          ticks: { color: theme.muted, precision: 0 },
+        },
+      },
+    },
+  });
+}
+
 export { Chart };
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type AnyChart = Chart<any, any, any>;

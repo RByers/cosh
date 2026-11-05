@@ -227,6 +227,20 @@
         </div>
       </section>
 
+      <section id="threads" class="card" aria-labelledby="threads-title" hidden>
+        <h2 id="threads-title">How review threads are classified</h2>
+        <p id="threads-sub" class="sub"></p>
+        <div id="threads-bar" class="tb-bar" role="img"></div>
+        <ul id="threads-legend" class="tb-legend"></ul>
+        <p class="note">
+          A thread is a reviewer's comment and the replies to it. Threads that led to no change are not bad review:
+          asking how a CL works, or checking an assumption, is part of good review. They just don't score in the
+          addressed metric, which counts only review that changed the code. The criteria and the measured accuracy
+          are under “How addressed comments are classified” in the review section.
+        </p>
+        <div id="threads-examples" class="tb-examples"></div>
+      </section>
+
       <section id="areas" class="card" aria-labelledby="areas-title">
         <h2 id="areas-title">Review by directory</h2>
         <p id="areas-sub" class="sub"></p>
@@ -315,6 +329,17 @@
         </div>
         <ul id="leaderboard-legend" class="legend" aria-label="Bar colour by organization"></ul>
         <div id="leaderboard-chart" class="lb"></div>
+        <div id="reviewer-detail" class="reviewer-detail" hidden>
+          <div class="rd-head">
+            <h3 id="rd-title"></h3>
+            <button id="rd-close" class="rd-close" type="button">Close</button>
+          </div>
+          <p id="rd-sub" class="sub"></p>
+          <div class="chart">
+            <canvas id="reviewer-chart" role="img" aria-label="The selected reviewer's review comments and addressed comments per week"></canvas>
+          </div>
+          <p class="rd-gerrit"><a id="rd-gerrit" target="_blank" rel="noopener">Open the CLs they commented on in this range on Gerrit</a></p>
+        </div>
       </section>
 
     </main>

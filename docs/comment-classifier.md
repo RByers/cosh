@@ -474,6 +474,34 @@ Measured with 450k rows, the 3-year volume of model labels (about 39% of
 - **Speed.** Writing labels and joining them in `summarize` take about a
   second. The cost of the metric is the model calls, not the storage.
 
+### UI principle: show what review drove, not a rate
+
+The addressed metric credits review that changed the code. It is **not** a
+judgement on comments that didn't. A question about how a CL works, or a
+check of an assumption, is good review even when the answer is "it's fine
+as is". So the UI shows addressed comments as a volume, per org, per
+reviewer over time and by directory. It never ranks or colours anyone by
+addressed ÷ comments, and it says so where unaddressed threads appear: the
+thread box and the reviewer chart. (User's decision, 2026-11-04; `plan.md`,
+decisions log.)
+
+- **The thread box** (`#threads`) shows how the range's classified
+  reviewer-started threads were decided:
+  - the owner's "Done" (the regex);
+  - addressed per Haiku;
+  - no change per Haiku;
+  - no owner reply;
+  - pending.
+
+  It has a few example threads per outcome from `thread_examples.json`
+  (3 per outcome per classified week, the latest 52 weeks; stable choice
+  by a hash of the root comment id; comment text cut at 700 characters).
+  The counts are in `org_weekly.json`, `meta.addressed.threads`, per week
+  by root-comment week.
+- **The reviewer chart** (`#reviewer-detail`, opened from the leaderboard,
+  `&lbr=` in the URL) uses `reviewer_weekly.json`'s addressed column. It
+  needs no new data.
+
 ### Summaries and the UI with partial data
 
 - **Summaries:**

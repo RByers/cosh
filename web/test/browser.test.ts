@@ -670,8 +670,7 @@ test('leaderboard shows up to 25 reviewers compactly', async () => {
         values: rows.map((r) => Number(r.querySelector('.lb-value')!.textContent!.replace(/,/g, ''))),
         top: rows[0].querySelector('.lb-label')!.textContent!,
         title: rows[0].title,
-        links: rows.map((r) => (r as HTMLAnchorElement).href),
-        targets: rows.map((r) => r.getAttribute('target')),
+        tags: rows.map((r) => r.tagName),
         h: box.getBoundingClientRect().height,
       };
     });
@@ -681,12 +680,8 @@ test('leaderboard shows up to 25 reviewers compactly', async () => {
   assert.match(comments.top, /^1\. [^·]+$/); // rank and name only; the org is the bar colour
   // The hover text gives the count with the metric, then the email.
   assert.match(comments.title, /^1\. .+\n[\d,]+ review comments\n[^@\s]+@[^@\s]+\.[a-z]+\n/i);
-  // Each row is a real link to the CLs the reviewer commented on (and doesn't
-  // own) in the range, on Gerrit.
-  assert.match(comments.links[0],
-    /^https:\/\/chromium-review\.googlesource\.com\/q\/commentby:([^@\s/+]+@[^@\s/+]+)\+-owner:\1\+after:\d{4}-\d\d-\d\d(\+before:\d{4}-\d\d-\d\d)?$/);
-  // Links open in a new tab, so the dashboard stays put.
-  assert.ok(comments.targets.every((t) => t === '_blank'), `targets=${comments.targets}`);
+  // Each row is a button that opens the reviewer's weekly chart.
+  assert.ok(comments.tags.every((t) => t === 'BUTTON'), `tags=${comments.tags}`);
   // Bars and gridlines share the plot column: a bar's length is its share of
   // the axis, measured against the gridline layer, which spans the axis.
   const geo = await page.evaluate(() => {
@@ -717,6 +712,72 @@ test('leaderboard shows up to 25 reviewers compactly', async () => {
   const cls = await read();
   assert.match(cls.title, /\n[\d,]+ reviewed cls\n/i);
   assert.notDeepEqual(cls.values, comments.values);
+  await page.close();
+});
+
+test('clicking a reviewer opens their weekly chart with a Gerrit link; Close and the URL', async () => {
+  const { page, errors } = await open();
+  assert.equal(await page.$eval('#reviewer-detail', (d) => (d as HTMLElement).hidden), true);
+  await page.click('#leaderboard-chart li:nth-child(2) .lb-row');
+  const detail = await page.evaluate(() => ({
+    hidden: document.querySelector<HTMLElement>('#reviewer-detail')!.hidden,
+    title: document.querySelector('#rd-title')!.textContent ?? '',
+    name: document.querySelector('#leaderboard-chart li:nth-child(2) .lb-name')!.textContent ?? '',
+    pressed: document.querySelector('#leaderboard-chart li:nth-child(2) .lb-row')!.getAttribute('aria-pressed'),
+    link: document.querySelector<HTMLAnchorElement>('#rd-gerrit')!.href,
+    target: document.querySelector('#rd-gerrit')!.getAttribute('target'),
+    sub: document.querySelector('#rd-sub')!.textContent ?? '',
+  }));
+  assert.equal(detail.hidden, false);
+  assert.ok(detail.title.startsWith(detail.name), `${detail.title} / ${detail.name}`);
+  assert.equal(detail.pressed, 'true');
+  // The CLs the reviewer commented on (and doesn't own) in the range, on Gerrit, in a new tab.
+  assert.match(detail.link,
+    /^https:\/\/chromium-review\.googlesource\.com\/q\/commentby:([^@\s/+]+@[^@\s/+]+)\+-owner:\1\+after:\d{4}-\d\d-\d\d(\+before:\d{4}-\d\d-\d\d)?$/);
+  assert.equal(detail.target, '_blank');
+  assert.match(detail.sub, /review comments in/);
+  const chart = await page.evaluate(() => {
+    const c = (window as unknown as { Chart?: unknown }).Chart;
+    const canvas = document.querySelector<HTMLCanvasElement>('#reviewer-chart')!;
+    return { c: !!c, w: canvas.getBoundingClientRect().width };
+  });
+  assert.ok(chart.w > 100);
+  assert.match(page.url(), /lbr=\d+/);
+  // The selection survives a reload.
+  await page.reload();
+  await page.waitForSelector('body[data-ready]');
+  assert.equal(await page.$eval('#reviewer-detail', (d) => (d as HTMLElement).hidden), false);
+  await page.click('#rd-close');
+  assert.equal(await page.$eval('#reviewer-detail', (d) => (d as HTMLElement).hidden), true);
+  assert.doesNotMatch(page.url(), /lbr=/);
+  assert.deepEqual(errors, []);
+  await page.close();
+});
+
+test.skipIf(!hasAddressedWeeks())('thread box: outcome breakdown and example threads loaded on open', async () => {
+  const classified = addressedWeeks(summary);
+  const last = classified[classified.length - 1];
+  const { page, errors } = await open(`#metric=comments&from=${last}&to=${last}`);
+  const box = await page.evaluate(() => ({
+    hidden: document.querySelector<HTMLElement>('#threads')!.hidden,
+    segs: [...document.querySelectorAll<HTMLElement>('#threads-bar .tb-seg')].map((s) => parseFloat(s.style.width)),
+    legend: [...document.querySelectorAll('#threads-legend li')].map((l) => l.textContent ?? ''),
+    sub: document.querySelector('#threads-sub')!.textContent ?? '',
+  }));
+  assert.equal(box.hidden, false);
+  assert.ok(Math.abs(box.segs.reduce((a, b) => a + b, 0) - 100) < 0.01, `segments ${box.segs}`);
+  assert.ok(box.legend.some((l) => /owner replied “Done”/.test(l)), box.legend.join(' | '));
+  assert.match(box.sub, new RegExp(last));
+  // Examples load only when a list is opened.
+  await page.click('#threads-examples details[data-outcome="model_addressed"] summary');
+  await page.waitForSelector('#threads-examples details[data-outcome="model_addressed"] .tb-thread');
+  const ex = await page.$eval('#threads-examples details[data-outcome="model_addressed"] .tb-thread', (t) => ({
+    link: t.querySelector('a')!.getAttribute('href') ?? '',
+    roles: [...t.querySelectorAll('.tb-role')].map((r) => r.textContent),
+  }));
+  assert.match(ex.link, /^https:\/\/chromium-review\.googlesource\.com\/c\/chromium\/src\/\+\/\d+\/comment\/[^/]+\/$/);
+  assert.equal(ex.roles[0], 'reviewer');
+  assert.deepEqual(errors, []);
   await page.close();
 });
 

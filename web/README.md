@@ -115,14 +115,26 @@ Over a range:
 7. **Reviewer leaderboard**: the top 25 (or 50, 100, 200) reviewers by review
    comments over the range, with or without google.com's reviewers, one
    compact bar each, coloured by org. Every org gets its own legend entry;
-   orgs beyond the palette's 8 colours are named on their rows.
+   orgs beyond the palette's 8 colours are named on their rows. Clicking a
+   reviewer opens their weekly chart over the picked range: review comments,
+   with addressed comments filled in for classified weeks. The chart comes
+   from `reviewer_weekly.json` (no extra data) and has the link to the CLs
+   they commented on, on Gerrit.
+8. **How review threads are classified** (once some week is classified):
+   one bar splitting the range's classified reviewer-started threads by how
+   each was decided (owner's "Done", Haiku addressed, Haiku no change, no
+   owner reply), and example threads per outcome with Gerrit links. The
+   examples come from `summaries/thread_examples.json`, which is fetched
+   the first time a list is opened. It never shows an acceptance rate:
+   threads without a change aren't bad review (`docs/comment-classifier.md`,
+   "UI principle").
 
 The metric, range, smoothing and review-chart scale are kept in the URL hash
 (`#metric=cls&from=2026-W14&to=2026-W44&smooth=4`, plus `&rscale=linear` for
 the linear review chart, `&lbn=100` for a longer leaderboard, `&lbg=0` for
 one without google.com, `&dir=<path>` for the organization chart's directory,
 and `&hm=<org>` (`*-google.com` for all but google.com), `&hmb=1|13` and
-`&hmv=share` for the heatmap). Old `#week=2026-W44` links open that one week, and
+`&hmv=share` for the heatmap, and `&lbr=<account id>` for the reviewer chart). Old `#week=2026-W44` links open that one week, and
 an old `dirs=` parameter is ignored.
 
 ## Commands

@@ -3,7 +3,7 @@
 // plot column (the rows use subgrid), so bar ends and gridlines line up at any
 // width without measuring anything. Real links and text mean middle-click,
 // copy-link and find-in-page all work, and screen readers get an ordered list.
-import { gerritReviewsUrl, niceTicks, type LeaderboardRow, type WeekRange } from './data.ts';
+import { niceTicks, type LeaderboardRow } from './data.ts';
 
 function node<K extends keyof HTMLElementTagNameMap>(tag: K, cls?: string, text?: string) {
   const e = document.createElement(tag);
@@ -16,14 +16,16 @@ const pct = (v: number, max: number) => `${(v / max) * 100}%`;
 
 /** Fills `box` with the leaderboard. Bars take the org's colour (`colorOf`);
  * orgs without one get the muted neutral and their name after the
- * reviewer's, so every row's org can be read off. Each row links to the CLs the
- * reviewer commented on, limited to `range` when given. */
+ * reviewer's, so every row's org can be read off. Each row is a button that
+ * selects the reviewer (`onSelect`): the page then shows their weekly chart,
+ * with the link to their reviews on Gerrit. `selected` is pressed. */
 export function buildLeaderboard(
   box: HTMLElement,
   rows: LeaderboardRow[],
   metricLabel: string,
   colorOf: (org: string) => string | undefined,
-  range?: WeekRange,
+  selected: number | null,
+  onSelect: (id: number) => void,
 ): void {
   const fmt = (v: number) => v.toLocaleString('en-US');
   if (!rows.length) {
@@ -54,15 +56,13 @@ export function buildLeaderboard(
   list.append(
     ...rows.map((r, i) => {
       const li = node('li');
-      const url = gerritReviewsUrl(r.email, range);
-      const row = node(url ? 'a' : 'span', 'lb-row');
-      if (url) {
-        row.setAttribute('href', url);
-        row.setAttribute('target', '_blank');
-        row.setAttribute('rel', 'noopener');
-      }
+      const row = node('button', 'lb-row');
+      row.type = 'button';
+      row.dataset.account = String(r.id);
+      row.setAttribute('aria-pressed', String(r.id === selected));
+      row.addEventListener('click', () => onSelect(r.id));
       row.title = `${i + 1}. ${r.name} (${r.org})\n${fmt(r.value)} ${unit}` +
-        (r.email ? `\n${r.email}\nOpens the CLs they commented on in the range on Gerrit, in a new tab` : '');
+        (r.email ? `\n${r.email}` : '') + '\nShows their comments week by week, with a link to them on Gerrit';
       const color = colorOf(r.org);
       const label = node('span', 'lb-label');
       label.append(

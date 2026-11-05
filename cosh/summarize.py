@@ -52,6 +52,7 @@ Outputs:
 
 import contextlib
 import csv
+import hashlib
 import json
 import os
 import sqlite3
@@ -74,6 +75,14 @@ METRICS = {"comments": "share_comments", "cls": "share_cls", "chars": "share_cha
 REVIEWERS_FILE = "reviewer_weekly.json"
 AREAS_FILE = "area_weekly.json"
 AREA_REVIEWERS_FILE = "area_reviewers.json"
+THREAD_EXAMPLES_FILE = "thread_examples.json"
+# How each reviewer-started thread was decided (the UI's thread-classification
+# box), in display order.
+THREAD_OUTCOMES = ["done_reply", "model_addressed", "model_not", "no_reply", "pending"]
+EXAMPLE_OUTCOMES = ["done_reply", "model_addressed", "model_not", "no_reply"]
+EXAMPLES_PER_OUTCOME = 3          # per classified week
+EXAMPLE_WEEKS = 52                # the most recent classified weeks only
+EXAMPLE_MESSAGES, EXAMPLE_CHARS = 8, 700
 REVIEWER_COLUMNS = ["account_id", "org", "comments", "cls", "chars", "addressed"]
 
 # Non-bot accounts on human-owned CLs on main. CROSS JOIN pins the join order
@@ -158,7 +167,7 @@ def reviewer_anchors(db):
     return {k: anchor(v) for k, v in counts.items()}
 
 
-def comment_facts(db, resolve, scope, weeks=None):
+def comment_facts(db, resolve, scope, weeks=None, own=None):
     """Returns (facts, areas).
 
     facts: per-(week, reviewer, org) dicts with in-scope comments (and their
@@ -173,7 +182,7 @@ def comment_facts(db, resolve, scope, weeks=None):
     (reviewer_anchors); one whose author left no inline comment there is
     unplaced. Accounts that never commented inline anywhere are skipped
     entirely (mostly spam and drive-by comments)."""
-    own = reviewer_anchors(db)
+    own = reviewer_anchors(db) if own is None else own
     inline_authors = {(host, aid) for host, _, aid in own}
     facts = {}
     areas = defaultdict(lambda: dict(comments=0, chars=0, cls=set(), reviewers=defaultdict(int),
@@ -239,6 +248,94 @@ def comment_facts(db, resolve, scope, weeks=None):
     return list(facts.values()), areas
 
 
+def thread_breakdown(db, scope, own, weeks=None):
+    """How the in-scope, reviewer-started threads of each week were decided.
+
+    A thread belongs to the week its root comment was written, and is in
+    scope if its root comment is (placed like comment_facts places
+    comments). Returns ({week: {outcome: threads}}, {week: {outcome:
+    [(sort key, host, cl, root_uuid, path)]}}): the second holds candidates
+    for example threads."""
+    inline_authors = {(host, aid) for host, _, aid in own}
+    counts = defaultdict(lambda: dict.fromkeys(THREAD_OUTCOMES, 0))
+    picks = defaultdict(lambda: defaultdict(list))
+    keep = (lambda w: True) if weeks is None else weeks.__contains__
+    cache = {}
+    for week, host, cl, aid, path, root, no_reply, regex, label in db.execute(f"""
+            SELECT x.iso_week, x.host, x.change_number, x.account_id, x.path, t.root_uuid,
+                   t.last_owner_reply_at IS NULL, t.regex_addressed, l.addressed
+            FROM threads t
+            CROSS JOIN comments x ON x.host = t.host AND x.change_number = t.change_number
+                 AND x.comment_id = t.root_uuid
+            {SCOPE_JOINS}
+            LEFT JOIN temp.lab l ON l.change_number = t.change_number AND l.root_uuid = t.root_uuid
+                 AND l.input_hash = t.input_hash
+            {SCOPE_WHERE}"""):
+        if not keep(week) or (host, aid) not in inline_authors:
+            continue
+        key = (path, own.get((host, cl, aid)))
+        if key not in cache:
+            cache[key] = scope.includes(place(*key))
+        if not cache[key]:
+            continue
+        outcome = ("no_reply" if no_reply else "done_reply" if regex else "pending" if label is None
+                   else "model_addressed" if label else "model_not")
+        counts[week][outcome] += 1
+        if outcome in EXAMPLE_OUTCOMES:
+            picks[week][outcome].append((hashlib.sha1(root.encode()).hexdigest(), host, cl, root, path))
+    return dict(counts), picks
+
+
+def write_thread_examples(data_dir, db, picks, weeks, path):
+    """thread_examples.json: a few example threads per outcome for each
+    classified week (lazily loaded by the UI's thread-classification box).
+    Comment text is public Gerrit data (docs/plan.md, ground rule 3)."""
+    from . import classify
+    from .derive import load_comments, prefetch_notedb
+    chosen = []
+    for week in sorted(weeks)[-EXAMPLE_WEEKS:]:
+        for outcome in EXAMPLE_OUTCOMES:
+            for _, host, cl, root, fpath in sorted(picks.get(week, {}).get(outcome, []))[:EXAMPLES_PER_OUTCOME]:
+                chosen.append((week, outcome, host, cl, root, fpath))
+    out = []
+    if chosen and os.path.exists(os.path.join(data_dir, "raw.sqlite")):
+        raw = store.open_raw_ro(data_dir)
+        repos = {}
+        info = {}
+        for host, cl in sorted({(c[2], c[3]) for c in chosen}):
+            row = db.execute("SELECT owner_account, project FROM changes WHERE host = ? AND change_number = ?",
+                             (host, cl)).fetchone()
+            if row:
+                info[(host, cl)] = row
+        cls = sorted({(h, info[(h, n)][1], n) for _, _, h, n, _, _ in chosen if (h, n) in info})
+        notes = prefetch_notedb(repos, cls, "auto")
+        for week, outcome, host, cl, root, fpath in chosen:
+            if (host, cl) not in info:
+                continue
+            owner, project = info[(host, cl)]
+            comments, _ = load_comments(raw, repos, host, project, cl, "auto", notes)
+            t = {x["root_id"]: x for x in classify.build_threads(comments, owner)}.get(root)
+            if t is None:
+                continue
+            msgs = []
+            for i, (_, aid, _, msg) in enumerate(t["items"][:EXAMPLE_MESSAGES]):
+                role = "reviewer" if i == 0 or aid == t["root_account"] else "owner" if aid == owner else "other"
+                text = msg.strip()
+                msgs.append([role, text[:EXAMPLE_CHARS] + ("…" if len(text) > EXAMPLE_CHARS else "")])
+            out.append(dict(week=week, outcome=outcome, cl=cl, root=root, path=fpath,
+                            more=max(0, len(t["items"]) - EXAMPLE_MESSAGES), messages=msgs))
+        raw.close()
+    meta = dict(generated_at=store.now_iso(), outcomes=EXAMPLE_OUTCOMES, per_outcome=EXAMPLES_PER_OUTCOME,
+                weeks=sorted(weeks)[-EXAMPLE_WEEKS:],
+                note="example reviewer-started threads per classified week and outcome, chosen by a hash of "
+                     "the root comment id (stable across runs); messages are [role, text], text cut at "
+                     f"{EXAMPLE_CHARS} characters, at most {EXAMPLE_MESSAGES} messages; public Gerrit data")
+    with _atomic_open(path) as fh:
+        fh.write('{"meta": %s,\n "threads": [' % json.dumps(meta))
+        fh.write(",".join("\n  " + json.dumps(t, ensure_ascii=False) for t in out))
+        fh.write("\n ]\n}\n")
+
+
 def summarize(data_dir=store.DATA_DIR, out_dir=os.path.join(ROOT, "summaries"), db_path=None,
               scope=None, metric="comments"):
     if metric not in METRICS:
@@ -255,7 +352,9 @@ def summarize(data_dir=store.DATA_DIR, out_dir=os.path.join(ROOT, "summaries"), 
     fetched = json.loads(meta_kv.get("fetched_weeks") or "[]")
     weeks = set(fetched) if fetched else None
     classifier = load_labels(db, data_dir)
-    facts, areas = comment_facts(db, resolve, scope, weeks)
+    own = reviewer_anchors(db)
+    facts, areas = comment_facts(db, resolve, scope, weeks, own)
+    threads, thread_picks = thread_breakdown(db, scope, own, weeks)
 
     folded = defaultdict(lambda: dict(reviewers=set(), cls=set(), comments=0, chars=0, ai=0,
                                       post_merge=0, addressed=0, pending=0))
@@ -340,6 +439,9 @@ def summarize(data_dir=store.DATA_DIR, out_dir=os.path.join(ROOT, "summaries"), 
                 folded_into_other=sorted(FOLD_INTO_OTHER),
                 addressed=dict(
                     classifier=classifier, coverage=coverage, complete_at=COVERAGE_COMPLETE,
+                    thread_outcomes=THREAD_OUTCOMES,
+                    threads={w: [threads.get(w, {}).get(o, 0) for o in THREAD_OUTCOMES] for w in all_weeks
+                             if w in threads},
                     rule="addressed_comments: comments in a reviewer-started thread that led the CL owner to "
                          "change the CL (the owner's first reply is Done-type, or a model label says so), "
                          "written no later than the owner's last reply in it; one point each to the "
@@ -357,6 +459,8 @@ def summarize(data_dir=store.DATA_DIR, out_dir=os.path.join(ROOT, "summaries"), 
         json.dump(dict(meta=meta, rows=out,
                        weekly_totals=[dict(zip(TOTALS_COLS, r)) for r in weekly]),
                   fh, indent=1)
+    classified = [w for w in all_weeks if coverage.get(w, 0) >= COVERAGE_COMPLETE]
+    write_thread_examples(data_dir, db, thread_picks, classified, os.path.join(out_dir, THREAD_EXAMPLES_FILE))
     db.close()
     write_reviewers(facts, os.path.join(out_dir, REVIEWERS_FILE))
     area_meta = write_areas(areas, scope, os.path.join(out_dir, AREAS_FILE))

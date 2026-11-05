@@ -4,6 +4,9 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { test } from 'vitest';
 import {
+  gerritCommentUrl,
+  reviewerSeries,
+  threadBreakdown,
   addressedMeta,
   addressedRange,
   addressedWeeks,
@@ -184,7 +187,7 @@ test('topReviewers ranks one week by the chosen metric and drops zeros', () => {
   const b = board({ '2026-W44': [[1, 0, 9, 1, 50], [2, 0, 0, 4, 0], [3, 0, 9, 2, 80]] });
   assert.deepEqual(topReviewers(b, '2026-W44', 'comments').map((x) => [x.name, x.value]), [['n1', 9], ['n3', 9]]);
   assert.deepEqual(topReviewers(b, '2026-W44', 'cls', 2).map((x) => x.name), ['n2', 'n3']);
-  assert.deepEqual(topReviewers(b, '2026-W44', 'chars')[0], { name: 'n3', email: 'n3@x.com', org: 'x.com', value: 80 });
+  assert.deepEqual(topReviewers(b, '2026-W44', 'chars')[0], { id: 3, name: 'n3', email: 'n3@x.com', org: 'x.com', value: 80 });
   // No email listed (or a file from before emails existed): null.
   assert.equal(topReviewers(b, '2026-W44', 'cls', 1)[0].email, null);
   assert.equal(topReviewers({ ...b, emails: undefined }, '2026-W44', 'chars')[0].email, null);
@@ -199,8 +202,8 @@ test('topReviewers totals a range exactly; org is where most of their comments w
     '2026-W44': [[1, 0, 4, 2, 1], [1, 1, 3, 1, 1]],
   });
   assert.deepEqual(topReviewers(b, ['2026-W44', '2026-W43'], 'comments'), [
-    { name: 'n1', email: 'n1@x.com', org: 'y.com', value: 12 },
-    { name: 'n2', email: null, org: 'x.com', value: 9 },
+    { id: 1, name: 'n1', email: 'n1@x.com', org: 'y.com', value: 12 },
+    { id: 2, name: 'n2', email: null, org: 'x.com', value: 9 },
   ]);
   // The org doesn't change with the metric.
   assert.equal(topReviewers(b, ['2026-W44', '2026-W43'], 'cls')[0].org, 'y.com');
@@ -216,7 +219,7 @@ test('topReviewers can leave an org out and still fill the board from the rest',
 });
 
 test('leaderboardOrgs counts reviewers per org, most first, ties by rank', () => {
-  const row = (org: string) => ({ name: org, email: null, org, value: 1 });
+  const row = (org: string) => ({ id: 1, name: org, email: null, org, value: 1 });
   assert.deepEqual(leaderboardOrgs(['b', 'a', 'a', 'c', 'b', 'a'].map(row)), [
     { org: 'a', reviewers: 3 },
     { org: 'b', reviewers: 2 },
@@ -724,4 +727,25 @@ test('addressed weeks: only weeks at the coverage threshold; ranges narrow to th
   assert.deepEqual(addressedWeeks({ meta: { weeks: [] }, rows: [] }), []);
   const t = orgTotals(summary, ['2026-W44']);
   assert.deepEqual(t.map((r) => [r.org, r.addressed_comments, r.share_addressed]), [['a.com', 6, 0.75], ['b.com', 2, 0.25]]);
+});
+
+test('reviewerSeries: one reviewer per week; addressed only for classified weeks', () => {
+  const b = board({
+    '2026-W43': [[1, 1, 5, 3, 1, 2], [2, 0, 9, 1, 1, 4]],
+    '2026-W44': [[1, 0, 4, 2, 1, 3], [1, 1, 3, 1, 1, 1]],
+  });
+  const s = reviewerSeries(b, 1, ['2026-W42', '2026-W43', '2026-W44'], new Set(['2026-W44']));
+  assert.deepEqual(s.comments, [0, 5, 7]);
+  assert.deepEqual(s.addressed, [null, null, 4]);
+  assert.equal(s.org, 'y.com');
+  assert.equal(s.email, 'n1@x.com');
+});
+
+test('threadBreakdown sums outcomes over weeks; null without the data', () => {
+  const summary = { meta: { weeks: [], addressed: { thread_outcomes: ['done_reply', 'model_addressed', 'model_not',
+    'no_reply', 'pending'], threads: { W1: [1, 2, 3, 4, 0], W2: [10, 0, 0, 1, 5] } } }, rows: [] } as unknown as Summary;
+  assert.deepEqual([...threadBreakdown(summary, ['W1', 'W2', 'W3'])!], [['done_reply', 11], ['model_addressed', 2],
+    ['model_not', 3], ['no_reply', 5], ['pending', 5]]);
+  assert.equal(threadBreakdown({ meta: { weeks: [] }, rows: [] }, ['W1']), null);
+  assert.match(gerritCommentUrl(5, 'ab_cd'), /\/c\/chromium\/src\/\+\/5\/comment\/ab_cd\/$/);
 });

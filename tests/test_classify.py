@@ -151,6 +151,16 @@ class AddressedSummaryTest(unittest.TestCase):
         self.assertEqual(meta["addressed"]["classifier"], "claude-haiku-test")
         self.assertEqual(reviewers["meta"]["columns"][-1], "addressed")
 
+    def test_thread_breakdown(self):
+        _, meta, _ = self.run_summary(label_r2=True)
+        a = meta["addressed"]
+        # r1: owner's "Done"; r2: Haiku says addressed; r4: no owner reply; r3 is the owner's own.
+        self.assertEqual(dict(zip(a["thread_outcomes"], a["threads"]["2026-W44"])),
+                         {"done_reply": 1, "model_addressed": 1, "model_not": 0, "no_reply": 1, "pending": 0})
+        _, meta, _ = self.run_summary()
+        self.assertEqual(dict(zip(meta["addressed"]["thread_outcomes"], meta["addressed"]["threads"]["2026-W44"]))
+                         ["pending"], 1)
+
     def test_label_not_addressed(self):
         rows, _, _ = self.run_summary(label_r2=False)
         self.assertEqual(rows["microsoft.com"]["addressed_comments"], 0)
