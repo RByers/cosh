@@ -60,11 +60,6 @@ Claude Haiku (`cosh classify`).
   strings in the scripts. Only short formats such as tooltips and hover titles
   stay in the TypeScript. Scripts set CSS custom properties, not inline
   styles. Details: `web/README.md`, "Text and styling".
-- **After refreshing `summaries/` (any `summarize` run that adds data), run
-  `cd web && npm test`.** The real-data org-colour unit test fails when a
-  new org is named in grey over 13+ weeks; then re-evaluate the 12-colour
-  org palette with the user ("Org colours" in `web/README.md`). After a
-  major data update, check the colours in the UI even if it passes.
 - In a worktree, give `web/` its dependencies by symlinking the main
   checkout's: `ln -s /home/rbagent/projects/cosh/web/node_modules
   web/node_modules`. Don't run `npm ci` or `npm install` there. Git ignores

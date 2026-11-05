@@ -228,7 +228,7 @@ there alone; presentation lives in `src/style.css`.
    threads without a change aren't bad review (`docs/comment-classifier.md`,
    "UI principle").
 
-**Org colours are fixed for the page, and the same in every chart.** One
+**Org colours are worked out from the data, and the same in every chart.** One
 map (`orgColorSlots`) colours orgs everywhere: the value charts and table,
 and every review section (the organization chart, both directory charts,
 the per-review and per-reviewer spreads, the leaderboard and the reviewer
@@ -243,13 +243,11 @@ series, legend entry and row in grey, dashed in the organization chart so it
 reads apart from "Other". With today's data that happens only in short
 ranges (4 weeks or less), for small orgs such as januschka.com.
 
-**Re-evaluate the palette after a data update.** The colours are handed out
-from the data when the page loads, so a new org that grows enough takes a
-colour on its own, and that can move other orgs' colours. The unit test
-"real data: every org named over 13+ weeks, and every value-chart org, has a
-colour" checks the committed summaries: if it fails after `summarize`, a new
-org is named in grey in a 13-week-or-longer range, and the palette (the
-ranking in `orgColorSlots`, the 12 `--org-*` colours) needs a look.
+The map is computed when the page loads, from the data the page ships with,
+so it is fixed for a given data build but not across builds: an org that
+grows enough over all the data takes a colour on its own, and that can move
+other orgs' colours. That is deliberate (user's choice, 2026-11-05) over a
+hand-kept org → colour list.
 
 The metric, range, smoothing and review-chart scale are kept in the URL hash
 (`#metric=cls&from=2026-W14&to=2026-W44&smooth=4`; `from`/`to` are left out

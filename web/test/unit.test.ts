@@ -82,7 +82,7 @@ import {
   type Summary,
 } from '../src/data.ts';
 import { formatRatio } from '../src/scale.ts';
-import { logAxisFloor, ORG_BRIGHT } from '../src/charts.ts';
+import { logAxisFloor } from '../src/charts.ts';
 
 const RADAR = `period,period_start,period_end,granularity,device,browser,is_chromium,kind,days,raw_share,chromium_share
 2026-W44,2026-10-26,2026-11-01,week,all,Chrome,1,browser,7,0.4,0.5
@@ -784,37 +784,6 @@ test('orgColorSlots: vivid colours for the top orgs, muted ones for value-chart 
   // Spare muted colours go to the next orgs by review.
   assert.deepEqual(Object.fromEntries(orgColorSlots(ranked, ['g.com'], 2)), { 'g.com': 0, 'i.com': 1, 'm.com': 2, 'b.com': 3 });
   assert.deepEqual(Object.fromEntries(orgColorSlots(['a.com'], [], 6)), { 'a.com': 0 });
-});
-
-// A reminder to re-evaluate the org palette after a data update. Every org the
-// review charts name over a range of 13 weeks or more (the shortest range
-// preset after "Latest week" and "Last 4 weeks"), or over all the data, should
-// have a colour of its own, as should every value-chart org. If this fails, a
-// new org is contributing enough to be named but shows in grey: decide
-// whether the palette (orgColorSlots, --org-* in style.css) needs to change;
-// see "Org colours" in web/README.md. Shorter ranges may name a few small
-// orgs in grey; that is expected.
-test('real data: every org named over 13+ weeks, and every value-chart org, has a colour', () => {
-  const read = (p: string) => readFileSync(fileURLToPath(new URL(p, import.meta.url)), 'utf8');
-  const summary = JSON.parse(read('../../summaries/org_weekly.json')) as Summary;
-  const ratioOrgs = chartedOrgs(
-    parseRadarWeekly(read('../../data/public/radar_browser_share.csv')),
-    parseOrgBrowsers(read('../../config/org_browsers.csv')),
-  ).slice(0, 8);
-  const slots = orgColorSlots(orgsByAllTimeReview(summary), ratioOrgs, ORG_BRIGHT);
-  const weeks = summary.meta.weeks;
-  const missing = new Map<string, string>();
-  for (const org of ratioOrgs) if (!slots.has(org)) missing.set(org, 'value charts');
-  for (const org of namedOrgs(summary, weeks)) if (!slots.has(org)) missing.set(org, 'all data');
-  for (let i = 13; i <= weeks.length; i++) {
-    const w = weeks.slice(i - 13, i);
-    for (const org of namedOrgs(summary, w)) if (!missing.has(org) && !slots.has(org)) missing.set(org, `${w[0]}..${w[12]}`);
-  }
-  assert.deepEqual(
-    Object.fromEntries(missing),
-    {},
-    'named orgs without a colour (first range where named); re-evaluate the org palette, see web/README.md "Org colours"',
-  );
 });
 
 test('dirTotals sums each bucket into its ancestors, and what is in scope', () => {
