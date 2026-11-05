@@ -643,8 +643,8 @@ test('monthTicks labels month starts, with the year on the first tick and wherev
   assert.deepEqual(monthTicks(years, 12).map((x) => x.label), ['Nov 2023', 'Oct 2024', 'Oct 2025']);
 });
 
-test('weekTitle names the week and its dates', () => {
-  assert.equal(weekTitle('2026-W44'), '2026-W44 (Oct 26 – Nov 1)');
+test('weekTitle names the week by its dates', () => {
+  assert.equal(weekTitle('2026-W44'), 'Oct 26 – Nov 1, 2026');
 });
 
 test('niceTicks steps by 1, 2 or 5 × 10ⁿ up to a round axis end', () => {

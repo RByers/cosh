@@ -244,11 +244,6 @@ function rangeDates(r: WeekRange): string {
   return `${day(a, a.getUTCFullYear() !== b.getUTCFullYear())} – ${day(b)}`;
 }
 
-/** Short label for captions: "2026-W44" or "2026-W14 to 2026-W44 (31 weeks)". */
-function rangeLabel(r: WeekRange): string {
-  return r.from === r.to ? r.from : `${r.from} to ${r.to} (${rangeLength(r)} weeks)`;
-}
-
 /** Each metric's name, from its button in index.html (read before any is
  * removed); metricUnit is the name mid-sentence. */
 const METRIC_NAMES = new Map<Metric, string>();
@@ -310,7 +305,7 @@ function renderMetricNote(data: Data, state: State) {
     return;
   }
   const all = addressedWeeks(data.summary);
-  fill(note, { classified: all.length, first: all[0] ?? '', last: all[all.length - 1] ?? '' });
+  fill(note, { classified: all.length, dates: all.length ? rangeDates({ from: all[0], to: all[all.length - 1] }) : '' });
   note.hidden = false;
 }
 
@@ -555,7 +550,7 @@ function renderTiles(data: Data, weeks: string[]) {
 function skippedVars(weeks: string[], vWeeks: string[]) {
   const kept = new Set(vWeeks);
   const out = weeks.filter((w) => !kept.has(w));
-  return { skippedN: out.length, skipped: out.length <= 3 ? out.join(', ') : '' };
+  return { skippedN: out.length, skipped: out.length <= 3 ? out.map((w) => rangeDates({ from: w, to: w })).join('; ') : '' };
 }
 
 /** Each org's share of the metric and of usage over the range, and their
@@ -580,7 +575,6 @@ function orgRangeShares(data: Data, state: State, weeks: string[], vWeeks: strin
 /** The parity chart: review share against usage share over the range, for
  * the orgs the ratio-over-time chart shows. */
 function renderParity(data: Data, state: State, weeks: string[], orgs: string[], colors: Map<string, string>, theme: Theme) {
-  const label = rangeLabel(state.range);
   const metricLabel = metricUnit(state.metric);
   const items = orgRangeShares(data, state, weeks).filter((it) => orgs.includes(it.org) && it.ratio !== null);
   const none = items.filter((it) => it.contribution <= 0).map((it) => it.org);
@@ -598,7 +592,6 @@ function renderParity(data: Data, state: State, weeks: string[], orgs: string[],
     weeks: weeks.length,
     multi: weeks.length > 1,
     metric: metricLabel,
-    range: label,
     none: none.join(', '),
     noneN: none.length,
   });
@@ -614,7 +607,6 @@ function renderTable(data: Data, state: State, weeks: string[], vWeeks: string[]
   fill($('#table-caption'), {
     weeks: weeks.length,
     multi: weeks.length > 1,
-    range: rangeLabel(state.range),
     metric: metricUnit(state.metric),
     top: TABLE_TOP_ORGS,
     omitted: int(hidden),
@@ -703,7 +695,6 @@ function renderLeaderboard(
     weeks: weeks.length,
     name,
     multi: weeks.length > 1,
-    range: rangeLabel(state.range),
     min: pct(NAMED_ORG_MIN_SHARE),
   });
 
@@ -755,7 +746,6 @@ function renderReviewerDetail(data: Data, state: State, colors: Map<string, stri
   $('#rd-title').textContent = `${r.name}${who ? ` (${who})` : ''}`;
   fill($('#rd-sub'), {
     total: int(total),
-    range: rangeLabel(range),
     classified: nClassified,
     all: nClassified === weeks.length,
     addressed: int(addressed),
@@ -790,10 +780,6 @@ function renderThreads(data: Data, state: State) {
   const legend = $('#threads-legend');
   fill($('#threads-sub'), {
     total: counts ? int(total) : '',
-    range: rangeLabel(range),
-    weeks: weeks.length,
-    first: weeks[0] ?? '',
-    last: weeks[weeks.length - 1] ?? '',
   });
   if (!counts || !total) {
     bar.replaceChildren();
@@ -855,7 +841,7 @@ function exampleThread(t: ThreadExamples['threads'][number]): HTMLElement {
   a.href = gerritCommentUrl(t.cl, t.root);
   a.target = '_blank';
   a.rel = 'noopener';
-  head.append(a, document.createTextNode(` · ${t.path === '/PATCHSET_LEVEL' ? 'patchset-level comment' : t.path} · ${t.week}`));
+  head.append(a, document.createTextNode(` · ${t.path === '/PATCHSET_LEVEL' ? 'patchset-level comment' : t.path} · week of ${day(weekMonday(t.week))}`));
   box.append(head);
   for (const [role, text] of t.messages) {
     const p = el('p', undefined, 'tb-msg');
@@ -880,7 +866,6 @@ function renderAreas(data: Data, state: State, colors: Map<string, string>, them
   fill($('#areas-sub'), {
     total: int(total),
     m: state.metric,
-    range: rangeLabel(state.range),
     metric: unit,
     share: total ? pct(inScope / total) : '',
     counted: int(inScope),
@@ -931,7 +916,6 @@ function renderDirPerReview(data: Data, state: State, colors: Map<string, string
   fill($('#dr-title'), { name: metricName(num) });
   fill($('#dr-sub'), {
     total,
-    range: rangeLabel(state.range),
     metric: unit,
     overall: fmtRatio(overall),
     reviews: int(total),
@@ -995,7 +979,6 @@ function renderDistribution(
   fill($('#dist-sub'), {
     weeks: weeks.length,
     metric: unit,
-    range: rangeLabel(state.range),
     min: pct(NAMED_ORG_MIN_SHARE),
     m: state.metric,
   });
@@ -1065,7 +1048,6 @@ function renderPerReview(
   fill($('#pr-sub'), {
     weeks: weeks.length,
     metric: metricUnit(num),
-    range: rangeLabel(state.range),
     min: PER_REVIEW_MIN,
     cap: PER_REVIEW_CAP,
     m: num,
@@ -1146,7 +1128,7 @@ function renderHeat(data: Data, state: State, colors: Map<string, string>, theme
     rankOnly: single ? (o) => o === single : keep,
   });
   const { paths } = dirTree(board);
-  const binTitle = (b: WeekRange) => (b.from === b.to ? b.from : `${b.from} to ${b.to}`) + ` (${rangeDates(b)})`;
+  const binTitle = (b: WeekRange) => rangeDates(b);
   const rowTitle = (r: DirRow) => (r.node !== undefined && r.kind === 'dir' ? paths[r.node] : r.title);
 
   // Links and the "most active" line come from the reviewer file, once loaded.
@@ -1202,7 +1184,6 @@ function renderHeat(data: Data, state: State, colors: Map<string, string>, theme
   fill($('#heat-sub'), {
     weeks: rangeWeeks.length,
     name: metricName(state.metric),
-    range: rangeLabel(state.range),
     metric: unit,
     m: state.metric,
   });
@@ -1292,7 +1273,6 @@ function main(data: Data) {
     const colors = colorsFor(theme);
     // Every section covers the selected range only.
     const weeks = weeksIn(data.summary.meta.weeks, state.range);
-    const label = rangeLabel(state.range);
     // Smooth over every week before filtering, so the range's first weeks
     // average over earlier data too.
     // Addressed comments exist only for classified weeks; the running
@@ -1349,8 +1329,7 @@ function main(data: Data) {
     fill($('#review-sub'), {
       weeks: weeks.length,
       metric: name,
-      range: label,
-      smoothed: state.smoothing > 1,
+        smoothed: state.smoothing > 1,
       smoothing: smoothingName(state.smoothing),
       min: pct(NAMED_ORG_MIN_SHARE),
     });
@@ -1391,11 +1370,10 @@ function main(data: Data) {
       weeks: weeks.length,
       shown: chartWeeks.length,
       metric: metricLabel,
-      range: label,
-      smoothed: state.smoothing > 1,
+        smoothed: state.smoothing > 1,
       smoothing: smoothingName(state.smoothing),
       // Set when the running average's warm-up moves the chart's start.
-      start: chartWeeks.length && chartWeeks[0] !== vWeeks[0] ? chartWeeks[0] : '',
+      start: chartWeeks.length && chartWeeks[0] !== vWeeks[0] ? day(weekMonday(chartWeeks[0])) : '',
       ...skippedVars(weeks, vWeeks),
     });
     renderTiles(data, weeks);
@@ -1430,9 +1408,8 @@ function main(data: Data) {
   const weeks = data.summary.meta.weeks;
   fill($('#coverage'), {
     weeks: weeks.length,
-    first: weeks[0],
-    last: weeks[weeks.length - 1],
-    usage: [...data.radar.keys()].sort()[0],
+    dates: rangeDates({ from: weeks[0], to: weeks[weeks.length - 1] }),
+    usage: day(weekMonday([...data.radar.keys()].sort()[0])),
   });
   document.body.dataset.ready = 'true';
   // The directory sections' Gerrit links and "most active" lines need a file

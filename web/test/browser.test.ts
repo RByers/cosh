@@ -564,7 +564,7 @@ test.skipIf(!hasAddressedWeeks())('addressed comments show only classified weeks
   assert.equal(await page.$eval('#metric-note', (n) => (n as HTMLElement).hidden), true);
   // The user's range stays in the URL; the sections show the classified part.
   assert.match(page.url(), new RegExp(`from=${from}`));
-  assert.match(await page.$eval('#table-caption', (c) => c.textContent ?? ''), new RegExp(classified[0]));
+  assert.equal(await page.evaluate(() => (window.__cosh!.reviewChart!.data.labels as string[])[0]), classified[0]);
   const cell = await page.$eval('tr[data-org="google.com"] td:nth-child(8)', (td) => td.textContent ?? '');
   assert.match(cell, /^[\d,]+$/);
   // Short ranges still draw lines only: no chart has point dots (google.com has no gaps), except on hover.
@@ -1174,7 +1174,7 @@ test.skipIf(!hasAddressedWeeks())('thread box: outcome breakdown and example thr
   assert.equal(box.hidden, false);
   assert.ok(Math.abs(box.segs.reduce((a, b) => a + b, 0) - 100) < 0.01, `segments ${box.segs}`);
   assert.ok(box.legend.some((l) => /owner replied “Done”/.test(l)), box.legend.join(' | '));
-  assert.match(box.sub, new RegExp(last));
+  assert.match(box.sub, /on the counted paths, by how each was decided/);
   // Examples load only when a list is opened.
   await page.click('#threads-examples details[data-outcome="model_addressed"] summary');
   await page.waitForSelector('#threads-examples details[data-outcome="model_addressed"] .tb-thread');
@@ -1610,7 +1610,7 @@ test('usage chart shows ChromeDerivative with the jump note', async () => {
   assert.ok(names.includes('Chrome'));
   const note = await page.$eval('#derivative-note', (n) => n.textContent ?? '');
   assert.match(note, /ChromeDerivative/);
-  assert.match(note, /2026-W37/);
+  assert.match(note, /starting on 9 September 2026/);
   await page.close();
 });
 
@@ -1706,7 +1706,7 @@ test('time axes are labelled by month; tooltips still name the week', async () =
     assert.ok(c.ticks.length >= (c.n > 6 ? 2 : 1), `${c.k}: ${c.ticks}`);
     for (const t of c.ticks) assert.match(t, /^[A-Z][a-z]{2}( \d{4})?$/, `${c.k} tick ${t}`);
     assert.match(c.ticks[0], / \d{4}$/, `${c.k}: first tick names the year`);
-    assert.match(c.title, /^\d{4}-W\d{2} \([A-Z][a-z]{2} \d+ – [A-Z][a-z]{2} \d+\)$/);
+    assert.match(c.title, /^[A-Z][a-z]{2} \d+ – [A-Z][a-z]{2} \d+, \d{4}$/);
   }
   assert.deepEqual(errors, []);
   await page.close();
@@ -1866,7 +1866,7 @@ test('heatmap: directories by time bins, per org or as a mix, with Gerrit links'
   assert.ok(blink, 'third_party/blink/ row');
   const cell = blink.cells.find((c) => c.link)!;
   assert.ok(cell.shaded);
-  assert.match(cell.title, /^third_party\/blink\/, \d{4}-W\d\d to \d{4}-W\d\d \(/);
+  assert.match(cell.title, /^third_party\/blink\/, \d+ [A-Z][a-z]{2}( \d{4})? – \d+ [A-Z][a-z]{2} \d{4}\n/);
   assert.match(cell.title, /\nmicrosoft\.com: [\d,]+ review comments \([\d.]+% of [\d,]+ there\)/);
   assert.match(cell.title, /\nMost active: [^@\s]+@[^@\s]+ \(\d+\)/);
   assert.match(cell.link!, /^https:\/\/chromium-review\.googlesource\.com\/q\/dir:third_party\/blink\+after:\d{4}-\d\d-\d\d\+/);

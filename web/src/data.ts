@@ -1034,9 +1034,9 @@ export const weekSunday = (week: string) => new Date(weekMonday(week).getTime() 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 const shortDate = (d: Date) => `${MONTHS[d.getUTCMonth()]} ${d.getUTCDate()}`;
 
-/** Tooltip title for a week, e.g. "2026-W44 (Oct 26 – Nov 1)". */
+/** Tooltip title for a week, e.g. "Oct 26 – Nov 1, 2026". */
 export const weekTitle = (week: string) =>
-  `${week} (${shortDate(weekMonday(week))} – ${shortDate(weekSunday(week))})`;
+  `${shortDate(weekMonday(week))} – ${shortDate(weekSunday(week))}, ${weekSunday(week).getUTCFullYear()}`;
 
 /** Year and month a week belongs to, by its Thursday (as for ISO years). */
 export function weekMonth(week: string): { year: number; month: number } {
