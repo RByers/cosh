@@ -13,7 +13,8 @@ function node<K extends keyof HTMLElementTagNameMap>(tag: K, cls?: string, text?
   return e;
 }
 
-const pct = (v: number, max: number) => `${(v / max) * 100}%`;
+/** `v` as a fraction of `max`, for the --at and --fill properties style.css places bars and ticks by. */
+const frac = (v: number, max: number) => String(v / max);
 
 /** Fills `box` with the leaderboard. Bars take the org's colour (`colorOf`);
  * orgs without one get the muted neutral and their name after the
@@ -23,7 +24,8 @@ const pct = (v: number, max: number) => `${(v / max) * 100}%`;
 export function buildLeaderboard(
   box: HTMLElement,
   rows: LeaderboardRow[],
-  metricLabel: string,
+  /** The metric mid-sentence, e.g. "review comments". */
+  unit: string,
   colorOf: (org: string) => string | undefined,
   selected: number | null,
   onSelect: (id: number) => void,
@@ -45,14 +47,13 @@ export function buildLeaderboard(
   grid.setAttribute('aria-hidden', 'true');
   ticks.forEach((t, i) => {
     const label = node('span', minor(i) ? 'lb-tick lb-minor' : 'lb-tick', fmt(t));
-    label.style.left = pct(t, max);
+    label.style.setProperty('--at', frac(t, max));
     axis.append(label);
     const line = node('span', i === 0 ? 'lb-line lb-zero' : 'lb-line');
-    line.style.left = pct(t, max);
+    line.style.setProperty('--at', frac(t, max));
     grid.append(line);
   });
 
-  const unit = metricLabel.toLowerCase();
   const list = node('ol', 'lb-rows');
   list.append(
     ...rows.map((r, i) => {
@@ -75,8 +76,8 @@ export function buildLeaderboard(
       if (!color) label.append(node('span', 'lb-org', ` · ${r.org}`));
       const plot = node('span', 'lb-plot');
       const bar = node('span', 'lb-bar');
-      bar.style.width = pct(r.value, max);
-      if (color) bar.style.background = color;
+      bar.style.setProperty('--fill', frac(r.value, max));
+      if (color) bar.style.setProperty('--color', color);
       plot.append(bar, node('span', 'lb-value', fmt(r.value)));
       row.append(label, plot);
       li.append(row);

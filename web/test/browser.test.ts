@@ -407,7 +407,7 @@ test('switching the metric updates the table, review chart, directory chart and 
   await pickMetric(page, 'comments');
   const before = await cell();
   assert.equal(await areaHead(), 'Review comments');
-  for (const [id, axis, head] of [['cls', /^reviewed cls per week/, 'Reviewed CLs'],
+  for (const [id, axis, head] of [['cls', /^reviewed CLs per week/, 'Reviewed CLs'],
     ['chars', /^review characters per week/, 'Review characters']] as const) {
     await pickMetric(page, id);
     assert.notEqual(await cell(), before);
@@ -1082,7 +1082,7 @@ test.skipIf(!hasAddressedWeeks())('thread box: outcome breakdown and example thr
   const { page, errors } = await open(`#metric=comments&from=${last}&to=${last}`);
   const box = await page.evaluate(() => ({
     hidden: document.querySelector<HTMLElement>('#threads')!.hidden,
-    segs: [...document.querySelectorAll<HTMLElement>('#threads-bar .tb-seg')].map((s) => parseFloat(s.style.width)),
+    segs: [...document.querySelectorAll<HTMLElement>('#threads-bar .tb-seg')].map((s) => Number(s.style.getPropertyValue('--share')) * 100),
     legend: [...document.querySelectorAll('#threads-legend li')].map((l) => l.textContent ?? ''),
     sub: document.querySelector('#threads-sub')!.textContent ?? '',
   }));
@@ -1207,7 +1207,8 @@ test('an org keeps one colour in every review section, whatever the filters', as
         for (const li of document.querySelectorAll(`${sel} li`)) {
           const sw = li.querySelector<HTMLElement>('.swatch:not(.swatch-muted)');
           const org = li.textContent!.replace(/ \(\d+\)$/, '').trim();
-          if (sw?.style.background && org !== 'Other') seen.push([sel, org, norm(sw.style.background)]);
+          const c = sw?.style.getPropertyValue('--color');
+          if (c && org !== 'Other') seen.push([sel, org, norm(c)]);
         }
       }
       return seen;
@@ -1311,7 +1312,7 @@ test('leaderboard size and organization selects; every org is named, none as "ot
         n: rows.length,
         orgs: rows.map((r) => r.dataset.org!),
         inline: rows.map((r) => r.querySelector('.lb-org')?.textContent ?? null),
-        colored: rows.map((r) => (r.querySelector<HTMLElement>('.lb-bar')!.style.background ? 1 : 0)),
+        colored: rows.map((r) => (r.querySelector<HTMLElement>('.lb-bar')!.style.getPropertyValue('--color') ? 1 : 0)),
         legend: document.querySelector('#leaderboard-legend')!.textContent!,
         legendOrgs: [...document.querySelectorAll('#leaderboard-legend li')].map((li) => li.textContent!.replace(/ \(\d+\)$/, '')),
         sub: document.querySelector('#leaderboard-sub')!.textContent!,
@@ -1557,7 +1558,7 @@ test('heatmap: directories by time bins, per org or as a mix, with Gerrit links'
         cells: [...r.querySelectorAll<HTMLElement>('.hm-box')].map((b) => ({
           link: b instanceof HTMLAnchorElement ? b.href : null,
           title: b.title,
-          shaded: !!b.style.background,
+          shaded: b.classList.contains('hm-shade'),
           segs: b.querySelectorAll('.hm-seg').length,
         })),
       })),

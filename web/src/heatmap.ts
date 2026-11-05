@@ -11,6 +11,7 @@
 // its share of the directory's review.
 import { fmtInt as int } from './format.ts';
 import { monthTicks, OTHER, TOP_ORGS, type DirLink, type HeatGrid, type DirRow, type WeekRange } from './data.ts';
+import { msg } from './text.ts';
 
 function node<K extends keyof HTMLElementTagNameMap>(tag: K, cls?: string, text?: string) {
   const e = document.createElement(tag);
@@ -40,8 +41,8 @@ export interface HeatOptions {
   colorOf: (org: string) => string | undefined;
   /** The single org's colour (org mode). */
   orgColor?: string;
-  /** e.g. "Review comments". */
-  metricLabel: string;
+  /** The metric mid-sentence, e.g. "review comments". */
+  unit: string;
   /** Full path or description of a row, for titles. */
   rowTitle: (row: DirRow) => string;
   binTitle: (bin: WeekRange) => string;
@@ -50,11 +51,6 @@ export interface HeatOptions {
   /** Shows a directory in the organization chart. */
   onChart: (row: DirRow) => void;
 }
-
-/** The colour of a single-org cell at intensity t (0..1): from the card's
- * surface to the org's full colour, one hue, light to dark. */
-export const heatShade = (color: string, t: number) =>
-  `color-mix(in oklab, ${color} ${Math.round(8 + 92 * Math.min(1, Math.max(0, t)))}%, var(--surface-1))`;
 
 /** The volume a single-org cell is scaled against: the busiest cell. */
 export const heatMax = (grid: HeatGrid, org: string) =>
@@ -66,7 +62,7 @@ export function buildHeatmap(box: HTMLElement, o: HeatOptions): void {
     box.replaceChildren();
     return;
   }
-  const unit = o.metricLabel.toLowerCase();
+  const unit = o.unit;
   const segOrder = [...o.orgs, OTHER];
   const single = o.org;
   const gridMax = single ? heatMax(grid, single) : 0;
@@ -76,9 +72,11 @@ export function buildHeatmap(box: HTMLElement, o: HeatOptions): void {
   // Fixed layout: the bins share the width evenly, but never get narrower
   // than a few pixels; past that the region scrolls.
   table.style.setProperty('--hm-bins', String(grid.bins.length));
+  // A single org's cells are shaded from its colour (style.css: .hm-shade).
+  if (single && o.orgColor) table.style.setProperty('--color', o.orgColor);
   const head = node('thead');
   const hr = node('tr');
-  const corner = node('th', 'hm-corner', 'Directory');
+  const corner = node('th', 'hm-corner', msg('hm-corner'));
   corner.scope = 'col';
   hr.append(corner);
   // Month ticks; on narrow screens CSS keeps only the coarse ones (at most 4).
@@ -132,7 +130,7 @@ export function buildHeatmap(box: HTMLElement, o: HeatOptions): void {
     }
     lab.append(node('span', 'hm-name', r.label));
     if (r.kind === 'dir') {
-      const c = node('button', 'hm-chart', 'chart');
+      const c = node('button', 'hm-chart', msg('hm-chart'));
       c.type = 'button';
       c.title = `Show ${o.rowTitle(r)} in the organization chart`;
       c.setAttribute('aria-label', c.title);
@@ -153,8 +151,10 @@ export function buildHeatmap(box: HTMLElement, o: HeatOptions): void {
         const share = c.value ? mine / c.value : 0;
         lines.push(`${single}: ${int(mine)} ${unit}` + (c.value ? ` (${pct(share)} of ${int(c.value)} there)` : ''));
         const t = o.value === 'share' ? share : gridMax ? Math.sqrt(mine / gridMax) : 0;
-        if (mine > 0 && o.orgColor) box2.style.background = heatShade(o.orgColor, t);
-        else box2.classList.add('hm-zero');
+        if (mine > 0 && o.orgColor) {
+          box2.classList.add('hm-shade');
+          box2.style.setProperty('--t', String(Math.min(1, Math.max(0, t))));
+        } else box2.classList.add('hm-zero');
       } else {
         lines.push(`${int(c.value)} ${unit}`);
         const shown = segOrder.filter((g) => c.byOrg.get(g));
@@ -162,13 +162,13 @@ export function buildHeatmap(box: HTMLElement, o: HeatOptions): void {
         for (const g of [...bySize.slice(0, TOP_ORGS), ...(c.byOrg.get(OTHER) ? [OTHER] : [])]) lines.push(`  ${g}: ${int(c.byOrg.get(g)!)} (${pct(c.byOrg.get(g)! / c.value)})`);
         if (c.value > 0) {
           const col = node('span', 'hm-col');
-          col.style.height = o.value === 'share' ? '100%' : `${rowMax ? Math.max(8, (100 * c.value) / rowMax) : 0}%`;
+          col.style.setProperty('--fill', String(o.value === 'share' ? 1 : rowMax ? Math.max(0.08, c.value / rowMax) : 0));
           // Bottom-up in legend order, so google.com's share sits on the baseline.
           for (const g of shown) {
             const seg = node('span', 'hm-seg');
-            seg.style.flexGrow = String(c.byOrg.get(g)! / c.value);
+            seg.style.setProperty('--share', String(c.byOrg.get(g)! / c.value));
             const color = g === OTHER ? undefined : o.colorOf(g);
-            if (color) seg.style.background = color;
+            if (color) seg.style.setProperty('--color', color);
             col.append(seg);
           }
           box2.append(col);

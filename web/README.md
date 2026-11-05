@@ -95,6 +95,26 @@ Over a range:
 - Leaderboard totals are exact sums from the same file. A reviewer's org is
   the one most of their comments in the range resolve to.
 
+## Text and styling
+
+The page's wording lives in `index.html`, so it can be reviewed and tweaked
+there alone; presentation lives in `src/style.css`.
+
+- Fixed controls (the metric, smoothing and chart toggles, the range presets,
+  the fixed select options, the tiles) are plain markup; the scripts only
+  wire them up. The metric buttons also give each metric's name.
+- Sentences that depend on the data (section subtitles, captions, notes) are
+  `<template data-msg="…">` elements next to the element they fill, with
+  `<slot name="…">` values and `data-if` conditions; `src/text.ts` renders
+  them (`fill`, `msg`). The opening comment in `index.html` has the syntax.
+- Short formats stay in the scripts: hover titles, chart tooltips and axis
+  titles, legend counts such as `google.com (12)`, directory row names such
+  as `3 more`.
+- Scripts don't set inline styles. They set custom properties (`--color`,
+  `--share`, `--fill`, `--at`, `--depth`, `--rows`, `--t`) that `style.css`
+  turns into colours, widths and heights. Chart.js drawing options are the
+  exception, though the charts take their colours and font from CSS.
+
 ## Layout
 
 1. **Value ratio**: one dot per browser-owning org, its share of the

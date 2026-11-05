@@ -15,14 +15,8 @@
 
 export type Metric = 'addressed' | 'comments' | 'chars' | 'cls';
 
-export const METRICS: { id: Metric; label: string }[] = [
-  { id: 'addressed', label: 'Addressed comments' },
-  { id: 'comments', label: 'Review comments' },
-  { id: 'chars', label: 'Review characters' },
-  { id: 'cls', label: 'Reviewed CLs' },
-];
-
-export const metricLabel = (m: Metric) => METRICS.find((x) => x.id === m)!.label;
+/** Their names are in index.html (the metric buttons). */
+export const METRICS: Metric[] = ['addressed', 'comments', 'chars', 'cls'];
 
 /** Orgs whose browsers have less Chromium usage share than this get no ratio:
  * dividing by ~0 makes the ratio meaningless. */
@@ -72,16 +66,9 @@ export interface AddressedMeta {
   rule?: string;
 }
 
-/** How a reviewer-started thread was decided (summaries' meta.addressed.thread_outcomes). */
+/** How a reviewer-started thread was decided (summaries' meta.addressed.thread_outcomes).
+ * Their names are in index.html ("thread-outcome"). */
 export type ThreadOutcome = 'done_reply' | 'model_addressed' | 'model_not' | 'no_reply' | 'pending';
-
-export const THREAD_OUTCOME_LABELS: Record<ThreadOutcome, string> = {
-  done_reply: 'Addressed: the owner replied “Done” or similar',
-  model_addressed: 'Addressed: Claude Haiku read the thread as a change',
-  model_not: 'No change: answered, explained or deferred (Claude Haiku)',
-  no_reply: 'No change: the owner never replied',
-  pending: 'Not classified yet',
-};
 
 /** Thread counts per outcome over some weeks, or null if the summary has none. */
 export function threadBreakdown(summary: Summary, weeks: string[]): Map<ThreadOutcome, number> | null {

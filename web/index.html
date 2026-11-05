@@ -9,6 +9,20 @@
     <meta name="description" content="How organizations that ship Chromium-based browsers contribute code review back to Chromium, relative to their browser usage." />
   </head>
   <body>
+    <!--
+      The page's wording is in this file: headings, notes, controls, and the
+      captions the scripts fill in. Those are <template data-msg="…">
+      elements next to where they're shown (src/text.ts renders them):
+        <slot name="x"></slot>  a value the script fills in (a count, a range, an org…)
+        data-if="x"             kept only when x is set (non-empty, non-zero);
+        data-if="!x"            …when it isn't;
+        data-if="x=v"           …when x is v;  data-if="x!=v": when it isn't.
+      Line breaks in a template collapse to a space, so wrap lines freely; but
+      don't break a line where no space belongs (before "." or ")", say).
+      Short formats stay in the scripts: hover titles, chart tooltips and
+      axis titles, legend counts like "google.com (12)", and directory row
+      names like "3 more".
+    -->
     <header>
       <h1>Chromium Open Source Health</h1>
       <div class="lede">
@@ -56,31 +70,67 @@
     <main>
       <!-- Outside the form so it can stay stuck to the top of the window the whole way down the page. -->
       <div class="metric-bar">
+        <!-- These names are also the metric's name in headings, charts and
+             captions; "metric-unit" below is its name mid-sentence. -->
         <fieldset id="metric" class="segmented">
           <legend>Contribution metric</legend>
+          <label><input type="radio" name="metric" value="addressed" />Addressed comments</label>
+          <label><input type="radio" name="metric" value="comments" />Review comments</label>
+          <label><input type="radio" name="metric" value="chars" />Review characters</label>
+          <label><input type="radio" name="metric" value="cls" />Reviewed CLs</label>
         </fieldset>
+        <template data-msg="metric-unit"><span data-if="m=addressed">addressed comments</span><span data-if="m=comments">review comments</span><span data-if="m=chars">review characters</span><span data-if="m=cls">reviewed CLs</span></template>
       </div>
       <form class="filters" aria-label="Filters" onsubmit="return false">
         <p id="metric-note" class="range-summary metric-note" aria-live="polite" hidden></p>
+        <!-- Shown only with Addressed comments chosen and no week in the range classified. -->
+        <template data-msg="metric-note">
+          No week in this range is classified yet<span data-if="classified"> (classified: <span data-if="classified=1"><slot name="first"></slot></span><span data-if="classified!=1"><slot name="classified"></slot> weeks, <slot name="first"></slot>–<slot name="last"></slot></span>)</span>,
+          so there is nothing to show; the other metrics cover it.
+        </template>
         <fieldset id="range" class="range-picker">
           <legend>Date range <span class="legend-note">(applies to everything below)</span></legend>
           <div class="range-row">
             <label>From <input type="date" id="from" required /></label>
             <label>To <input type="date" id="to" required /></label>
-            <div id="range-presets" class="range-presets" role="group" aria-label="Quick ranges"></div>
+            <div id="range-presets" class="range-presets" role="group" aria-label="Quick ranges">
+              <button type="button" data-preset="all">All data</button>
+              <button type="button" data-preset="13">Last 13 weeks</button>
+              <button type="button" data-preset="4">Last 4 weeks</button>
+              <button type="button" data-preset="1">Latest week</button>
+            </div>
           </div>
           <p id="range-summary" class="range-summary" aria-live="polite"></p>
+          <template data-msg="range-summary">
+            <slot name="dates"></slot> (<span data-if="n=1"><slot name="from"></slot></span><span data-if="n!=1"><slot name="from"></slot> to <slot name="to"></slot>, <slot name="n"></slot> weeks</span>).<span data-if="gaps">
+            Review data covers <slot name="review"></slot> of <span data-if="n=1">it</span><span data-if="n!=1">them</span>.</span>
+          </template>
         </fieldset>
         <fieldset id="smoothing" class="segmented">
           <legend>Smoothing <span class="legend-note">(running average of the value ratio over time and review charts)</span></legend>
+          <label><input type="radio" name="smoothing" value="1" />Off</label>
+          <label><input type="radio" name="smoothing" value="4" />4 weeks</label>
+          <label><input type="radio" name="smoothing" value="13" />3 months</label>
+          <label><input type="radio" name="smoothing" value="52" />12 months</label>
         </fieldset>
       </form>
 
       <p id="error" class="error" role="alert" hidden></p>
+      <template data-msg="error">Couldn't load data: <slot name="error"></slot></template>
 
       <section class="card" aria-labelledby="parity-title">
         <h2 id="parity-title">Value ratio</h2>
         <p id="parity-sub" class="sub"></p>
+        <template data-msg="parity-sub">
+          <span data-if="!weeks">No review data for <slot name="range"></slot>.</span>
+          <span data-if="weeks">Each organization's share of <slot name="metric"></slot> against its browsers' share of
+            Chromium browser usage, <slot name="range"></slot><span data-if="multi"> (totals over the range; usage is the mean weekly share)</span>.
+            Both axes are logarithmic. On the diagonal the value ratio is 1.0×, review in proportion to usage;
+            organizations above it review more than their usage share, those below less.<span data-if="none">
+            <slot name="none"></slot> <span data-if="noneN=1">has</span><span data-if="noneN!=1">have</span> no
+            <slot name="metric"></slot> in the range, so <span data-if="noneN=1">sits</span><span data-if="noneN!=1">sit</span>
+            on the 0 row below the log scale.</span></span>
+        </template>
         <div class="chart chart-square">
           <canvas id="parity-chart" role="img" aria-label="Share of review against share of browser usage per organization, on log axes, with a diagonal line at a 1.0 value ratio; the table below lists the values."></canvas>
         </div>
@@ -89,6 +139,12 @@
       <section class="card" aria-labelledby="ratio-title">
         <h2 id="ratio-title">Value ratio over time</h2>
         <p id="ratio-sub" class="sub"></p>
+        <template data-msg="ratio-sub">
+          <span data-if="!weeks">No review data for <slot name="range"></slot>.</span>
+          <span data-if="weeks">Share of <slot name="metric"></slot> ÷ share of Chromium browser usage, per ISO week,
+            <slot name="range"></slot><span data-if="smoothed">, as a <slot name="smoothing"></slot> running average</span>.
+            The 1.0× line is parity: review in proportion to usage.</span>
+        </template>
         <div class="chart chart-tall">
           <canvas id="ratio-chart" role="img" aria-label="Value ratio per organization over time; the table below lists the values."></canvas>
         </div>
@@ -101,9 +157,19 @@
       <section class="card" aria-labelledby="review-title">
         <h2 id="review-title">Review by organization</h2>
         <p id="review-sub" class="sub"></p>
+        <template data-msg="review-sub">
+          <span data-if="!weeks">No review data for <slot name="range"></slot>.</span>
+          <span data-if="weeks"><slot name="metric"></slot> per ISO week, <slot name="range"></slot><span data-if="smoothed">, as a <slot name="smoothing"></slot> running average</span>,
+            for the organizations with the most over the range; the rest are combined as “Other”. The log scale shows
+            every organization, since Google does most of the review; the linear scale leaves out google.com, so the
+            other organizations can be compared directly. With no directory chosen it counts comments on the selected
+            paths; with one, every comment in that directory and below.</span>
+        </template>
         <div class="toggles">
           <fieldset id="review-scale" class="segmented chart-toggle">
             <legend>Scale</legend>
+            <label><input type="radio" name="review-scale" value="log" />Log, all organizations</label>
+            <label><input type="radio" name="review-scale" value="linear" />Linear, without google.com</label>
           </fieldset>
           <div class="dir-filter chart-toggle">
             <label for="review-dir">Directory</label>
@@ -111,10 +177,20 @@
               autocomplete="off" spellcheck="false" aria-describedby="review-dir-status" />
             <button type="button" id="review-dir-clear" hidden>Clear</button>
             <span id="review-dir-status" class="dir-status" aria-live="polite"></span>
+            <template data-msg="review-dir-status">No directory “<slot name="dir"></slot>” has review comments.</template>
             <datalist id="dir-options"></datalist>
           </div>
         </div>
         <p id="review-dir-note" class="sub" hidden></p>
+        <template data-msg="review-dir-note">
+          Showing <slot name="dir"></slot>.
+          <span data-if="scope=all">It counts every comment in this directory and below.</span>
+          <span data-if="scope=none">This directory is outside the paths the rest of the page counts; the chart shows
+            every comment in it anyway.</span>
+          <span data-if="scope=part">It counts every comment in this directory and below, including the
+            <slot name="part"></slot> on paths the rest of the page leaves out.</span>
+          <span data-if="m=cls">A CL with comments in two of its subdirectories counts in each.</span>
+        </template>
         <div class="chart">
           <canvas id="review-chart" role="img" aria-label="Weekly review count per organization over the selected date range; the table below lists the totals."></canvas>
         </div>
@@ -195,12 +271,45 @@
       </section>
 
       <section aria-label="Totals for the date range">
-        <div id="tiles" class="tiles"></div>
+        <div id="tiles" class="tiles">
+          <div class="tile" id="tile-cls">
+            <div class="tile-label">CLs on main</div><div class="tile-value"></div><div class="tile-sub"></div>
+            <template data-msg="tile-cls"><slot name="merged"></slot> merged, <slot name="abandoned"></slot> abandoned</template>
+          </div>
+          <div class="tile" id="tile-human">
+            <div class="tile-label">Human-owned CLs</div><div class="tile-value"></div><div class="tile-sub"></div>
+            <template data-msg="tile-human"><slot name="commented"></slot> with review comments; <slot name="bots"></slot> bot CLs</template>
+          </div>
+          <div class="tile" id="tile-comments">
+            <div class="tile-label">Review comments</div><div class="tile-value"></div><div class="tile-sub"></div>
+            <template data-msg="tile-comments">by <slot name="reviewers"></slot> reviewers, on the selected paths</template>
+          </div>
+          <div class="tile" id="tile-ai">
+            <div class="tile-label">Self-declared AI comments</div><div class="tile-value"></div><div class="tile-sub"></div>
+            <template data-msg="tile-ai"><slot name="share"></slot> of review comments; at least</template>
+          </div>
+          <div class="tile" id="tile-post">
+            <div class="tile-label">Post-merge comments</div><div class="tile-value"></div><div class="tile-sub"></div>
+            <template data-msg="tile-post"><slot name="share"></slot> of review comments; written after the CL landed</template>
+          </div>
+        </div>
       </section>
 
       <section class="card" aria-labelledby="table-title">
         <h2 id="table-title">By organization</h2>
         <p id="table-caption" class="sub"></p>
+        <template data-msg="table-caption">
+          <span data-if="!weeks"><slot name="range"></slot>: no review data in this range.</span>
+          <span data-if="weeks"><slot name="range"></slot>:
+            <span data-if="multi">counts are totals over the range (reviewers: distinct people); review share is the
+              share of all <slot name="metric"></slot> in the range, usage share the mean weekly share of Chromium
+              browser usage.</span>
+            <span data-if="!multi">share of <slot name="metric"></slot> and of Chromium browser usage.</span><span data-if="omitted">
+            Showing the top <slot name="top"></slot> organizations by review share, plus those with a browser;
+            <slot name="omitted"></slot> smaller <span data-if="omitted=1">organization is</span><span data-if="omitted!=1">organizations are</span>
+            omitted.</span></span>
+        </template>
+        <template data-msg="ratio-cell"><span data-if="is=value"><slot name="ratio"></slot>×</span><span data-if="is=no-browser">no browser</span><span data-if="is=no-usage">no usage data</span><span data-if="is=small">usage too small</span></template>
         <div class="table-wrap">
           <table id="org-table" aria-labelledby="table-title" aria-describedby="table-caption">
             <thead>
@@ -226,8 +335,22 @@
       <section id="threads" class="card" aria-labelledby="threads-title" hidden>
         <h2 id="threads-title">How review threads are classified</h2>
         <p id="threads-sub" class="sub"></p>
+        <template data-msg="threads-sub">
+          <span data-if="!total">No week in <slot name="range"></slot> is classified yet.</span>
+          <span data-if="total">The <slot name="total"></slot> review threads started by reviewers (not the CL owner)
+            on the counted paths in <span data-if="weeks=1"><slot name="first"></slot></span><span data-if="weeks!=1"><slot name="weeks"></slot> classified weeks, <slot name="first"></slot> to <slot name="last"></slot></span>,
+            by how each was decided. Addressed threads give a point to every comment in them that isn't the owner's;
+            the others give none.</span>
+        </template>
         <div id="threads-bar" class="tb-bar" role="img"></div>
         <ul id="threads-legend" class="tb-legend"></ul>
+        <template data-msg="thread-outcome">
+          <span data-if="o=done_reply">Addressed: the owner replied “Done” or similar</span>
+          <span data-if="o=model_addressed">Addressed: Claude Haiku read the thread as a change</span>
+          <span data-if="o=model_not">No change: answered, explained or deferred (Claude Haiku)</span>
+          <span data-if="o=no_reply">No change: the owner never replied</span>
+          <span data-if="o=pending">Not classified yet</span>
+        </template>
         <div class="note" id="addressed-details">
           <p>
             A <em>thread</em> is a reviewer's comment plus every reply to it. A thread is <em>addressed</em> if the
@@ -260,20 +383,36 @@
           </p>
         </div>
         <div id="threads-examples" class="tb-examples"></div>
+        <template data-msg="thread-examples">Example threads: <slot name="outcome"></slot></template>
+        <template data-msg="thread-examples-none">No examples for these weeks.</template>
+        <template data-msg="thread-examples-error">Couldn't load examples: <slot name="error"></slot></template>
       </section>
 
       <section id="areas" class="card" aria-labelledby="areas-title">
         <h2 id="areas-title">Review by directory</h2>
         <p id="areas-sub" class="sub"></p>
+        <template data-msg="areas-sub">
+          <span data-if="!total">No review data for <slot name="range"></slot>.</span>
+          <span data-if="total"><span data-if="m=addressed">Addressed review comments (in threads that led to a change)</span><span data-if="m=comments">Every review comment</span><span data-if="m=chars">Review characters, from every comment</span><span data-if="m=cls">CLs closed with review comments</span>
+            in <slot name="range"></slot>, by the directory of the file each comment is on: the <slot name="metric"></slot>
+            per directory, and how they split across organizations. <slot name="share"></slot> of them
+            (<slot name="counted"></slot> of <slot name="total"></slot>) are on the paths the rest of the page counts;
+            the hatched part of a bar is left out. Use ▸ to open a directory, or a “more” row for the next entries;
+            ▾ closes it again.<span data-if="m=cls"> A CL with comments in two directories counts in each.</span></span>
+        </template>
         <ul id="areas-legend" class="legend" aria-label="Segment colour by organization"></ul>
         <div class="ar-wrap">
           <div class="toggles ar-toggles">
+            <!-- Only shown when the chart is too narrow for both bars. -->
             <fieldset id="area-show" class="segmented chart-toggle">
               <legend>Bar</legend>
+              <label><input type="radio" name="area-show" value="volume" />Volume</label>
+              <label><input type="radio" name="area-show" value="orgs" />By organization</label>
             </fieldset>
           </div>
           <div id="area-chart" class="ar" data-show="volume"></div>
         </div>
+        <template data-msg="ar-head"><span class="ar-label">Directory</span><span class="ar-vol"><slot name="metric"></slot></span><span class="ar-dist">By organization</span><span class="ar-ng">Not google.com</span></template>
         <div class="note" id="scope-note">
           <p>
             <strong>Which paths count.</strong> The value ratio, the organization chart, the table, the per-reviewer
@@ -328,25 +467,64 @@
       <section id="heatmap" class="card" aria-labelledby="heat-title">
         <h2 id="heat-title">Review by directory over time</h2>
         <p id="heat-sub" class="sub"></p>
+        <template data-msg="heat-sub">
+          <span data-if="!weeks">No review data for <slot name="range"></slot>.</span>
+          <span data-if="weeks"><slot name="name"></slot> from the chosen organizations, <slot name="range"></slot>: one
+            row per directory, ranked over the range, and one column per week or group of weeks, the last ending with
+            the range. With several organizations, each cell splits the directory's <slot name="metric"></slot> in
+            those weeks across them: under Volume it is a column whose height is against the row's busiest column;
+            under Share it fills the cell. With one organization, each cell is shaded by that organization's
+            <slot name="metric"></slot> there, against the busiest cell on a square-root scale so smaller directories
+            still show (Volume), or by its share of the directory's <slot name="metric"></slot> (Share). Every comment
+            counts, on the selected paths or not, as in Review by directory. Use ▸ to open a directory and “chart” to
+            show it in the organization chart. Hover a cell for its numbers and most active reviewers, or click it to
+            open those CLs on Gerrit.<span data-if="m=cls"> A CL with comments in two directories counts in each.</span></span>
+        </template>
         <div class="toggles">
           <div class="select-toggle chart-toggle">
             <label for="heat-org">Organization</label>
-            <select id="heat-org"></select>
+            <!-- The busiest organizations are added before "Other". -->
+            <select id="heat-org">
+              <option value="*">All organizations</option>
+              <option value="*-google.com">All except google.com</option>
+              <option value="*other">Other</option>
+            </select>
           </div>
           <fieldset id="heat-bin" class="segmented chart-toggle">
             <legend>Columns</legend>
+            <label><input type="radio" name="heat-bin" value="1" />Weeks</label>
+            <label><input type="radio" name="heat-bin" value="4" />4 weeks</label>
+            <label><input type="radio" name="heat-bin" value="13" />13 weeks</label>
           </fieldset>
           <fieldset id="heat-value" class="segmented chart-toggle">
             <legend>Show</legend>
+            <label><input type="radio" name="heat-value" value="volume" />Volume</label>
+            <label><input type="radio" name="heat-value" value="share" />Share</label>
           </fieldset>
         </div>
         <ul id="heat-legend" class="legend" aria-label="Cell colours"></ul>
+        <!-- The legend with one organization chosen: its shading ramp, by Volume or by Share. -->
+        <template data-msg="heat-legend"><span data-if="share">0%</span><span data-if="!share">1</span><span class="hm-ramp"></span><span data-if="share">100% of the directory's <slot name="metric"></slot></span><span data-if="!share"><slot name="max"></slot> <slot name="metric"></slot></span></template>
         <div id="heat-chart" class="hm-wrap" role="region" tabindex="0" aria-labelledby="heat-title"></div>
+        <template data-msg="hm-corner">Directory</template>
+        <template data-msg="hm-chart">chart</template>
       </section>
 
       <section id="distribution" class="card" aria-labelledby="dist-title">
         <h2 id="dist-title">Reviews per reviewer</h2>
         <p id="dist-sub" class="sub"></p>
+        <template data-msg="dist-sub">
+          <span data-if="!weeks">No reviewer data for <slot name="range"></slot>.</span>
+          <span data-if="weeks">Each reviewer's <slot name="metric"></slot> over <slot name="range"></slot>: one dot per
+            reviewer, one row per organization (the <slot name="top"></slot> with the most, then everyone else,
+            including personal addresses, as “Other”), on a log scale. Each box spans the middle half of its row's
+            reviewers, with a thick line at the median; rows with under five reviewers get none.
+            <span data-if="m=addressed">Everyone with a review comment in the range counts, so reviewers with none
+              addressed sit at 0.</span>
+            <span data-if="m!=addressed">Reviewers with no <slot name="metric"></slot> in the range are left out.</span>
+            A reviewer counts for the organization most of their comments were for. Hover a dot for the reviewer;
+            click it for their weekly chart.</span>
+        </template>
         <div id="dist-box" class="chart">
           <canvas id="dist-chart" role="img" aria-label="Each reviewer's total for the metric over the selected range, one row of dots per organization, with each row's middle half boxed and its median marked; the table below lists the figures"></canvas>
         </div>
@@ -370,7 +548,21 @@
 
       <section id="per-review" class="card" aria-labelledby="pr-title">
         <h2 id="pr-title">Review comments per review</h2>
+        <!-- The heading, and the values' name mid-sentence. With Reviewed CLs chosen, this chart shows review comments per review. -->
+        <template data-msg="pr-title"><slot name="name"></slot> per review</template>
         <p id="pr-sub" class="sub"></p>
+        <template data-msg="pr-sub">
+          <span data-if="!weeks">No reviewer data for <slot name="range"></slot>.</span>
+          <span data-if="weeks">Each reviewer's <slot name="metric"></slot> over <slot name="range"></slot> divided by
+            the CLs they reviewed (commented on): one dot per reviewer, on the same organization rows as the chart
+            above. This likely correlates with the thoroughness of the reviewer, or complexity of the CLs they tend to
+            review. Each box spans the middle half of its row's reviewers, with a thick line at the median; rows with
+            under five reviewers get none. Only reviewers with at least <slot name="min"></slot> reviewed CLs count, so
+            that one CL doesn't decide a dot<span data-if="m=addressed">; those with none addressed sit at 0</span>.
+            “All reviews” pools the whole row: its total divided by its reviews, so busy reviewers weigh more. Comments
+            count in the week written and CLs in the week they closed, so the edges of a range are approximate. Hover a
+            dot for the reviewer; click it for their weekly chart.</span>
+        </template>
         <div id="pr-box" class="chart">
           <canvas id="pr-chart" role="img" aria-label="Each reviewer's metric per reviewed CL over the selected range, one row of dots per organization, with each row's middle half boxed and its median marked; the table below lists the figures"></canvas>
         </div>
@@ -394,14 +586,32 @@
       <section id="leaderboard" class="card" aria-labelledby="leaderboard-title">
         <h2 id="leaderboard-title">Reviewer leaderboard</h2>
         <p id="leaderboard-sub" class="sub"></p>
+        <template data-msg="leaderboard-sub">
+          <span data-if="!weeks">No reviewer data for <slot name="range"></slot>.</span>
+          <span data-if="weeks"><slot name="name"></slot><span data-if="multi"> in total</span>, <slot name="range"></slot>,
+            for the top reviewers: from every organization, only those outside google.com, one organization, or every
+            organization outside the top <slot name="top"></slot> (Other). Same scope as the organization chart:
+            reviewers' own (non-bot) accounts on human-owned CLs, on the selected paths.</span>
+        </template>
         <div class="toggles">
           <div class="select-toggle chart-toggle">
             <label for="leaderboard-org">Organization</label>
-            <select id="leaderboard-org"></select>
+            <!-- The busiest organizations are added before "Other". -->
+            <select id="leaderboard-org">
+              <option value="*">All organizations</option>
+              <option value="*-google.com">All except google.com</option>
+              <option value="*other">Other</option>
+            </select>
           </div>
           <div class="select-toggle select-short chart-toggle">
             <label for="leaderboard-size">Show</label>
-            <select id="leaderboard-size"></select>
+            <select id="leaderboard-size">
+              <option value="25">Top 25</option>
+              <option value="50">Top 50</option>
+              <option value="100">Top 100</option>
+              <option value="200">Top 200</option>
+              <option value="all">All</option>
+            </select>
           </div>
         </div>
         <ul id="leaderboard-legend" class="legend" aria-label="Bar colour by organization"></ul>
@@ -412,6 +622,13 @@
             <button id="rd-close" class="rd-close" type="button">Close</button>
           </div>
           <p id="rd-sub" class="sub"></p>
+          <template data-msg="rd-sub">
+            <slot name="total"></slot> review comments in <slot name="range"></slot><span data-if="classified">;
+            <slot name="addressed"></slot> addressed in the <span data-if="!all"><slot name="classified"></slot> classified </span>week<span data-if="classified!=1">s</span><span data-if="all"> shown</span>
+            (the filled bars).</span><span data-if="!classified">. No week in this range is classified yet, so only
+            review comments are shown.</span>
+            Comments that led to no change aren't a bad sign: questions are part of good review.
+          </template>
           <div class="chart">
             <canvas id="reviewer-chart" role="img" aria-label="The selected reviewer's review comments and addressed comments per week"></canvas>
           </div>
@@ -423,6 +640,10 @@
 
     <footer>
       <p id="coverage"></p>
+      <template data-msg="coverage">
+        Review data: <slot name="weeks"></slot> week<span data-if="weeks!=1">s</span> (<slot name="first"></slot><span data-if="weeks!=1">–<slot name="last"></slot></span>).
+        Usage data: Cloudflare Radar, <slot name="usage"></slot> onward.
+      </template>
       <p>
         Review data from Chromium Gerrit (<code>chromium/src</code>, branch <code>main</code>); usage data from
         <a href="https://radar.cloudflare.com/">Cloudflare Radar</a> (CC BY-NC 4.0).
@@ -432,6 +653,7 @@
         not the opinions of my employer.
       </p>
     </footer>
+
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>

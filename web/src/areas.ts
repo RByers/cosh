@@ -7,6 +7,7 @@
 // its reviewers' CLs in the directory on Gerrit.
 import { fmtInt as int } from './format.ts';
 import { barScale, OTHER, type DirLink, type DirRow } from './data.ts';
+import { fragment } from './text.ts';
 
 function node<K extends keyof HTMLElementTagNameMap>(tag: K, cls?: string, text?: string) {
   const e = document.createElement(tag);
@@ -22,7 +23,8 @@ export const MAJORITY_ORG = 'google.com';
 
 /** Fills `box` with the directory chart. `orgs` are the named segments in
  * order (then OTHER); `colorOf` gives each its colour (OTHER: muted).
- * `metricLabel` names the volume column, e.g. "Review comments". `onToggle`
+ * `metricLabel` names the volume column, e.g. "Review comments", and `unit`
+ * is the same mid-sentence, e.g. "review comments". `onToggle`
  * is called with a row's key when its expand/collapse button is pressed.
  * `linkOf`, when it gives a link, makes that org's segment of the row open
  * its reviewers' CLs in the directory on Gerrit. */
@@ -32,6 +34,7 @@ export function buildAreaChart(
   orgs: readonly string[],
   colorOf: (org: string) => string | undefined,
   metricLabel: string,
+  unit: string,
   onToggle: (key: string) => void,
   linkOf: (row: DirRow, org: string) => DirLink | null = () => null,
 ): void {
@@ -43,15 +46,9 @@ export function buildAreaChart(
   // chart. A few huge directories (e.g. chrome/) would flatten every other bar,
   // so the scale may stop short of them; those bars are drawn torn (barScale).
   const { max } = barScale(rows.filter((r) => r.depth === 0).map((r) => r.value));
-  const unit = metricLabel.toLowerCase();
   const head = node('div', 'ar-head');
   head.setAttribute('aria-hidden', 'true');
-  head.append(
-    node('span', 'ar-label', 'Directory'),
-    node('span', 'ar-vol', metricLabel),
-    node('span', 'ar-dist', 'By organization'),
-    node('span', 'ar-ng', `Not ${MAJORITY_ORG}`),
-  );
+  head.append(fragment('ar-head', { metric: metricLabel }));
   const segOrder = [...orgs, OTHER];
   const list = node('ol', 'ar-rows');
   list.append(
@@ -59,6 +56,7 @@ export function buildAreaChart(
       const li = node('li', `ar-row ar-${r.kind}`);
       li.dataset.key = r.key;
       li.dataset.depth = String(r.depth);
+      li.style.setProperty('--depth', String(r.depth));
       const shareOf = (org: string) => (r.value ? (r.byOrg.get(org) ?? 0) / r.value : 0);
       const others = 1 - shareOf(MAJORITY_ORG);
       const status = r.included >= 1 ? 'included' : r.included <= 0 ? 'excluded' : `${pct(r.included)} included`;
@@ -69,7 +67,6 @@ export function buildAreaChart(
       li.title = `${r.title}: ${int(r.value)} ${unit}, ${status}\n${lines.join('\n')}`;
 
       const label = node('span', 'ar-label');
-      label.style.paddingLeft = `${r.depth * 14}px`;
       if (r.expandable) {
         const button = node('button', 'ar-toggle', r.expanded ? '▾' : '▸');
         button.type = 'button';
@@ -92,13 +89,13 @@ export function buildAreaChart(
       const bar = node('span', torn ? 'ar-bar ar-torn' : 'ar-bar');
       // Widths are a share of the column minus room for the value label, so
       // the label never runs into the next column.
-      bar.style.width = `calc((100% - var(--ar-label-room)) * ${max ? Math.min(r.value, max) / max : 0})`;
+      bar.style.setProperty('--fill', String(max ? Math.min(r.value, max) / max : 0));
       if (torn) bar.title = `Bar truncated: ${int(r.value)} is off the scale`;
       // Solid for the part in scope, hatched for the part left out.
       for (const [part, share] of [['ar-bar-in', r.included], ['ar-bar-out', 1 - r.included]] as const) {
         if (share <= 0) continue;
         const seg = node('span', part);
-        seg.style.flexGrow = String(share);
+        seg.style.setProperty('--share', String(share));
         bar.append(seg);
       }
       vol.append(bar, node('span', 'ar-value', int(r.value)));
@@ -109,9 +106,9 @@ export function buildAreaChart(
         if (!s) continue;
         const link = linkOf(r, o);
         const seg = node(link ? 'a' : 'span', 'ar-seg');
-        seg.style.flexGrow = String(s);
+        seg.style.setProperty('--share', String(s));
         const c = o === OTHER ? undefined : colorOf(o);
-        if (c) seg.style.background = c;
+        if (c) seg.style.setProperty('--color', c);
         seg.title = `${o}: ${int(r.byOrg.get(o)!)} (${pct(s)})`;
         if (link) {
           seg.setAttribute('href', link.url);
@@ -131,10 +128,8 @@ export function buildAreaChart(
     }),
   );
   const grid = node('div', 'ar-grid');
-  // Room for the longest value label (its 6px padding plus one ch per
-  // character; commas are narrower than a digit), so it fits in any font.
-  const longest = Math.max(...rows.map((r) => int(r.value).length));
-  grid.style.setProperty('--ar-label-room', `calc(6px + ${longest}ch)`);
+  // Room for the longest value label (style.css: --ar-label-room).
+  grid.style.setProperty('--ar-label-chars', String(Math.max(...rows.map((r) => int(r.value).length))));
   grid.append(head, list);
   box.replaceChildren(grid);
 }

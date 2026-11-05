@@ -410,6 +410,7 @@ td.ratio {
   font-weight: 600;
 }
 
+/* Scripts give each org's swatch, bar or segment its colour as --color. */
 .swatch {
   display: inline-block;
   width: 14px;
@@ -417,6 +418,7 @@ td.ratio {
   margin-right: 8px;
   vertical-align: middle;
   border-radius: 1px;
+  background: var(--color, transparent);
 }
 
 /* Reviewer leaderboard (leaderboard.ts): a grid of label | plot. The axis
@@ -446,9 +448,11 @@ td.ratio {
   font-variant-numeric: tabular-nums;
 }
 
+/* --at: a tick's place along the plot, 0..1 (leaderboard.ts). */
 .lb-tick {
   position: absolute;
   top: 0;
+  left: calc(var(--at) * 100%);
   transform: translateX(-50%);
   white-space: nowrap;
 }
@@ -477,6 +481,7 @@ td.ratio {
 
 .lb-line {
   position: absolute;
+  left: calc(var(--at) * 100%);
   top: -4px;
   bottom: 0;
   width: 1px;
@@ -568,12 +573,14 @@ td.ratio {
   height: 16px;
 }
 
+/* --fill: the bar's length as a fraction of the plot. */
 .lb-bar {
   flex: none;
+  width: calc(var(--fill) * 100%);
   min-width: 2px;
   height: 12px;
   border-radius: 0 3px 3px 0;
-  background: var(--text-muted);
+  background: var(--color, var(--text-muted));
 }
 
 .lb-row:hover .lb-bar {
@@ -632,7 +639,11 @@ td.ratio {
   line-height: 16px;
 }
 
+/* --ar-label-chars: the longest value label, in characters (areas.ts); its
+ * room is that many ch plus the label's 6px padding (commas are narrower
+ * than a digit, so it fits in any font). */
 .ar-grid {
+  --ar-label-room: calc(6px + var(--ar-label-chars, 6) * 1ch);
   display: grid;
   grid-template-columns: fit-content(32%) minmax(0, 1fr) minmax(0, 1fr) auto;
   column-gap: 12px;
@@ -668,7 +679,9 @@ td.ratio {
   background: color-mix(in srgb, var(--grid) 60%, transparent);
 }
 
+/* Rows indent by their depth in the tree (--depth, areas.ts). */
 .ar-label {
+  padding-left: calc(var(--depth, 0) * 14px);
   display: flex;
   gap: 6px;
   align-items: baseline;
@@ -761,17 +774,22 @@ td.ratio {
 
 /* A volume bar: solid for the part in scope, hatched for the part the path
  * scope leaves out (a partly included directory has both). */
+/* --fill: the bar's length on the chart's scale, 0..1. Widths are a share of
+ * the column minus room for the value label, so the label never runs into
+ * the next column. */
 .ar-bar {
   position: relative;
   display: flex;
   flex: none;
+  width: calc((100% - var(--ar-label-room)) * var(--fill, 0));
   min-width: 2px;
   height: 12px;
 }
 
+/* --share: each part's share of the bar. */
 .ar-bar-in,
 .ar-bar-out {
-  flex: 1 1 0;
+  flex: var(--share, 1) 1 0;
   min-width: 0;
 }
 
@@ -826,10 +844,11 @@ td.ratio {
   height: auto;
 }
 
+/* --share: the org's share of the row. */
 .ar-seg {
-  flex: 0 1 0;
+  flex: var(--share, 0) 1 0;
   min-width: 0;
-  background: var(--text-muted);
+  background: var(--color, var(--text-muted));
 }
 
 .ar-seg:first-child {
@@ -1224,24 +1243,32 @@ a.ar-seg:focus-visible {
   background: color-mix(in srgb, var(--grid) 35%, transparent);
 }
 
+/* A single org's cell, shaded by its intensity --t (0..1): from the card's
+ * surface to the org's full --color, one hue, light to dark. */
+.hm-shade {
+  background: color-mix(in oklab, var(--color) calc(8% + 92% * var(--t, 0)), var(--surface-1));
+}
+
 a.hm-box:hover,
 a.hm-box:focus-visible {
   outline: 2px solid var(--text-primary);
   outline-offset: 0;
 }
 
+/* --fill: the column's height in the cell, 0..1. */
 .hm-col {
   display: flex;
   flex-direction: column-reverse;
   width: 100%;
+  height: calc(var(--fill, 0) * 100%);
   border-radius: 3px 3px 0 0;
   overflow: hidden;
 }
 
 .hm-seg {
-  flex: 0 1 0;
+  flex: var(--share, 0) 1 0;
   min-height: 0;
-  background: var(--text-muted);
+  background: var(--color, var(--text-muted));
 }
 
 /* Single-org legend: the shading ramp with its two ends labelled. */
@@ -1253,6 +1280,7 @@ a.hm-box:focus-visible {
   vertical-align: middle;
   border-radius: 2px;
   border: 1px solid var(--border);
+  background: linear-gradient(to right, color-mix(in oklab, var(--color) 8%, var(--surface-1)), var(--color));
 }
 
 /* Reviewer detail: one reviewer's weekly comments, opened from the leaderboard. */
@@ -1300,7 +1328,9 @@ a.hm-box:focus-visible {
   background: var(--grid);
 }
 
+/* --share: the outcome's share of the threads. */
 .tb-seg {
+  width: calc(var(--share, 0) * 100%);
   height: 100%;
   min-width: 1px;
 }
@@ -1383,4 +1413,15 @@ a.hm-box:focus-visible {
 /* A re-render is waiting for the next paint (renderSoon in main.ts). */
 main[aria-busy='true'] {
   cursor: progress;
+}
+
+/* The per-reviewer charts grow with their rows, one per org (--rows, main.ts). */
+#dist-box,
+#pr-box {
+  height: calc(var(--rows, 1) * 34px + 64px);
+}
+
+/* A chart canvas over a clickable point (charts.ts). */
+canvas.pointing {
+  cursor: pointer;
 }

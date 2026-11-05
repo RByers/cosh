@@ -24,7 +24,7 @@ import {
   type Theme,
 } from './charts.ts';
 import { buildAreaChart } from './areas.ts';
-import { buildHeatmap, heatMax, heatShade, type HeatCellInfo, type HeatValue } from './heatmap.ts';
+import { buildHeatmap, heatMax, type HeatCellInfo, type HeatValue } from './heatmap.ts';
 import { buildLeaderboard } from './leaderboard.ts';
 import {
   addWeeks,
@@ -63,7 +63,6 @@ import {
   isoWeekOf,
   isWeek,
   meanDerivedShare,
-  metricLabel as metricName,
   METRICS,
   addressedRange,
   addressedWeeks,
@@ -105,7 +104,6 @@ import {
   type Summary,
   type WeekRange,
   type WeeklyTotals,
-  THREAD_OUTCOME_LABELS,
   gerritCommentUrl,
   gerritReviewsUrl,
   reviewerSeries,
@@ -114,6 +112,7 @@ import {
   type ThreadOutcome,
 } from './data.ts';
 import { formatRatio } from './scale.ts';
+import { fill, msg, type Vars } from './text.ts';
 
 interface Data {
   summary: Summary;
@@ -236,10 +235,16 @@ function rangeLabel(r: WeekRange): string {
   return r.from === r.to ? r.from : `${r.from} to ${r.to} (${rangeLength(r)} weeks)`;
 }
 
+/** Each metric's name, from its button in index.html (read before any is
+ * removed); metricUnit is the name mid-sentence. */
+const METRIC_NAMES = new Map<Metric, string>();
+const metricName = (m: Metric) => METRIC_NAMES.get(m) ?? m;
+const metricUnit = (m: Metric) => msg('metric-unit', { m });
+
 /** The metrics this data can show: addressed comments only once some week is classified. */
-function availableMetrics(data: Data) {
+function availableMetrics(data: Data): Metric[] {
   const addressed = addressedWeeks(data.summary).length > 0;
-  return METRICS.filter((m) => m.id !== 'addressed' || addressed);
+  return METRICS.filter((m) => m !== 'addressed' || addressed);
 }
 
 /** Addressed comments whenever any week is classified (the views then show
@@ -291,7 +296,7 @@ function renderMetricNote(data: Data, state: State) {
     return;
   }
   const all = addressedWeeks(data.summary);
-  note.textContent = `No week in this range is classified yet${all.length ? ` (classified: ${all.length === 1 ? all[0] : `${all.length} weeks, ${all[0]}–${all[all.length - 1]}`})` : ''}, so there is nothing to show; the other metrics cover it.`;
+  fill(note, { classified: all.length, first: all[0] ?? '', last: all[all.length - 1] ?? '' });
   note.hidden = false;
 }
 
@@ -313,7 +318,7 @@ function readStateFromUrl(data: Data): State {
   const hmb = Number(q.get('hmb'));
   const range = clampRange({ from, to }, full);
   const asked = q.get('metric');
-  const metric = availableMetrics(data).some((m) => m.id === asked) ? (asked as Metric) : defaultMetric(data);
+  const metric = availableMetrics(data).includes(asked as Metric) ? (asked as Metric) : defaultMetric(data);
   return {
     metric,
     range,
@@ -349,12 +354,8 @@ function writeStateToUrl(s: State, allData: WeekRange) {
 /** How many directories the directory field suggests; any other one can be typed. */
 const DIR_OPTIONS = 3000;
 
-const PRESETS: { id: string; label: string; weeks: number | null }[] = [
-  { id: 'all', label: 'All data', weeks: null },
-  { id: '13', label: 'Last 13 weeks', weeks: 13 },
-  { id: '4', label: 'Last 4 weeks', weeks: 4 },
-  { id: '1', label: 'Latest week', weeks: 1 },
-];
+/** A range preset button's length in weeks (index.html's data-preset), or null for all data. */
+const presetWeeks = (b: HTMLElement) => (b.dataset.preset === 'all' ? null : Number(b.dataset.preset));
 
 function presetRange(data: Data, weeks: number | null): WeekRange {
   const { full, common } = data.ranges;
@@ -362,97 +363,40 @@ function presetRange(data: Data, weeks: number | null): WeekRange {
   return clampRange({ from: addWeeks(common.to, 1 - weeks), to: common.to }, full);
 }
 
-/** Fills a segmented fieldset with one radio per option, keeping its static
- * <legend>. */
-function segmented<T>(
-  box: HTMLElement,
-  name: string,
-  options: { id: T; label: string }[],
-  current: T,
-  pick: (id: T) => void,
-) {
-  box.querySelectorAll('label').forEach((l) => l.remove());
-  for (const o of options) {
-    const label = el('label');
-    const input = el('input');
-    input.type = 'radio';
-    input.name = name;
-    input.value = String(o.id);
-    input.checked = o.id === current;
-    input.addEventListener('change', () => pick(o.id));
-    label.append(input, document.createTextNode(o.label));
-    box.append(label);
+/** Wires a fieldset of radios (written in index.html): checks `current`
+ * and calls `pick` with the value chosen. */
+function radios(box: HTMLElement, current: string | number, pick: (value: string) => void) {
+  for (const input of box.querySelectorAll<HTMLInputElement>('input[type="radio"]')) {
+    input.checked = input.value === String(current);
+    input.addEventListener('change', () => pick(input.value));
   }
 }
 
 /** `renderSoon` re-renders after the browser has painted, so the control
  * just used shows its new state at once (used where a render is slow). */
 function buildControls(data: Data, state: State, render: () => void, renderSoon: () => void) {
-  // Replace only the buttons: each fieldset's <legend> is static markup.
-  const metricBox = $('#metric');
-  metricBox.querySelectorAll('label').forEach((l) => l.remove());
-  for (const m of availableMetrics(data)) {
-    const label = el('label');
-    const input = el('input');
-    input.type = 'radio';
-    input.name = 'metric';
-    input.value = m.id;
-    input.checked = m.id === state.metric;
-    input.addEventListener('change', () => {
-      state.metric = m.id;
-      // Re-rendering every section takes a while; paint the toggle first.
-      renderSoon();
-    });
-    label.append(input, document.createTextNode(m.label));
-    metricBox.append(label);
+  // The metric buttons name the metrics; drop those this data can't show.
+  const available = availableMetrics(data);
+  for (const input of $('#metric').querySelectorAll<HTMLInputElement>('input')) {
+    const label = input.closest('label')!;
+    METRIC_NAMES.set(input.value as Metric, label.textContent!.trim());
+    if (!available.includes(input.value as Metric)) label.remove();
   }
-
-  const smoothBox = $('#smoothing');
-  smoothBox.querySelectorAll('label').forEach((l) => l.remove());
-  for (const w of SMOOTHING_WEEKS) {
-    const label = el('label');
-    const input = el('input');
-    input.type = 'radio';
-    input.name = 'smoothing';
-    input.value = String(w);
-    input.checked = w === state.smoothing;
-    input.addEventListener('change', () => {
-      state.smoothing = w;
-      render();
-    });
-    label.append(input, document.createTextNode(w === 1 ? 'Off' : w === 13 ? '3 months' : w === 52 ? '12 months' : `${w} weeks`));
-    smoothBox.append(label);
-  }
-
-  const scaleBox = $('#review-scale');
-  scaleBox.querySelectorAll('label').forEach((l) => l.remove());
-  const scales: { id: ReviewScale; label: string }[] = [
-    { id: 'log', label: 'Log, all organizations' },
-    { id: 'linear', label: `Linear, without ${LINEAR_EXCLUDED_ORG}` },
-  ];
-  for (const sc of scales) {
-    const label = el('label');
-    const input = el('input');
-    input.type = 'radio';
-    input.name = 'review-scale';
-    input.value = sc.id;
-    input.checked = sc.id === state.reviewScale;
-    input.addEventListener('change', () => {
-      state.reviewScale = sc.id;
-      render();
-    });
-    label.append(input, document.createTextNode(sc.label));
-    scaleBox.append(label);
-  }
+  radios($('#metric'), state.metric, (v) => {
+    state.metric = v as Metric;
+    // Re-rendering every section takes a while; paint the toggle first.
+    renderSoon();
+  });
+  radios($('#smoothing'), state.smoothing, (v) => {
+    state.smoothing = Number(v) as Smoothing;
+    render();
+  });
+  radios($('#review-scale'), state.reviewScale, (v) => {
+    state.reviewScale = v as ReviewScale;
+    render();
+  });
 
   const sizeSelect = $<HTMLSelectElement>('#leaderboard-size');
-  sizeSelect.replaceChildren(
-    ...LEADERBOARD_SIZES.map((n) => {
-      const o = el('option', n === 'all' ? 'All' : `Top ${n}`);
-      o.value = String(n);
-      return o;
-    }),
-  );
   sizeSelect.value = String(state.lbSize);
   sizeSelect.addEventListener('change', () => {
     state.lbSize = LEADERBOARD_SIZES.find((n) => String(n) === sizeSelect.value) ?? LEADERBOARD_SIZE;
@@ -463,43 +407,19 @@ function buildControls(data: Data, state: State, render: () => void, renderSoon:
     render();
   });
 
-  segmented(
-    $('#heat-bin'),
-    'heat-bin',
-    HEAT_BIN_SIZES.map((n) => ({ id: n, label: n === 1 ? 'Weeks' : `${n} weeks` })),
-    state.heatBin,
-    (n) => {
-      state.heatBin = n;
-      render();
-    },
-  );
-  segmented(
-    $('#heat-value'),
-    'heat-value',
-    [
-      { id: 'volume' as HeatValue, label: 'Volume' },
-      { id: 'share' as HeatValue, label: 'Share' },
-    ],
-    state.heatValue,
-    (v) => {
-      state.heatValue = v;
-      render();
-    },
-  );
+  radios($('#heat-bin'), state.heatBin, (v) => {
+    state.heatBin = Number(v) as HeatBinSize;
+    render();
+  });
+  radios($('#heat-value'), state.heatValue, (v) => {
+    state.heatValue = v as HeatValue;
+    render();
+  });
   // Only shown when the directory chart is too narrow for both bars (CSS);
   // it flips which one the rows show, so the chart needn't be rebuilt.
-  segmented(
-    $('#area-show'),
-    'area-show',
-    [
-      { id: 'volume', label: 'Volume' },
-      { id: 'orgs', label: 'By organization' },
-    ],
-    $('#area-chart').dataset.show,
-    (v) => {
-      $('#area-chart').dataset.show = v;
-    },
-  );
+  radios($('#area-show'), $('#area-chart').dataset.show!, (v) => {
+    $('#area-chart').dataset.show = v;
+  });
   $<HTMLSelectElement>('#heat-org').addEventListener('change', (e) => {
     state.heatOrg = (e.target as HTMLSelectElement).value;
     state.heatExpanded.clear();
@@ -527,7 +447,7 @@ function buildControls(data: Data, state: State, render: () => void, renderSoon:
   const pickDir = () => {
     const text = dirInput.value.trim();
     const n = text ? dirNodeByPath(data.areas, text) : null;
-    $('#review-dir-status').textContent = text && n === null ? `No directory “${text}” has review comments.` : '';
+    $('#review-dir-status').textContent = text && n === null ? msg('review-dir-status', { dir: text }) : '';
     if (text && n === null) return;
     state.reviewDir = n === null ? null : paths[n];
     render();
@@ -573,19 +493,12 @@ function buildControls(data: Data, state: State, render: () => void, renderSoon:
   fromInput.addEventListener('blur', sync);
   toInput.addEventListener('blur', sync);
 
-  const presets = $('#range-presets');
-  presets.replaceChildren(
-    ...PRESETS.map((p) => {
-      const b = el('button', p.label);
-      b.type = 'button';
-      b.dataset.preset = p.id;
-      b.addEventListener('click', () => {
-        state.range = presetRange(data, p.weeks);
-        render();
-      });
-      return b;
-    }),
-  );
+  for (const b of document.querySelectorAll<HTMLButtonElement>('#range-presets button')) {
+    b.addEventListener('click', () => {
+      state.range = presetRange(data, presetWeeks(b));
+      render();
+    });
+  }
   return sync;
 }
 
@@ -593,12 +506,9 @@ function renderRangeSummary(data: Data, state: State) {
   const r = state.range;
   const reviewWeeks = weeksIn(data.summary.meta.weeks, r).length;
   const n = rangeLength(r);
-  const weeks = r.from === r.to ? r.from : `${r.from} to ${r.to}, ${n} weeks`;
-  const gaps = reviewWeeks < n ? ` Review data covers ${reviewWeeks} of ${n === 1 ? 'it' : 'them'}.` : '';
-  $('#range-summary').textContent = `${rangeDates(r)} (${weeks}).${gaps}`;
+  fill($('#range-summary'), { dates: rangeDates(r), n, from: r.from, to: r.to, review: reviewWeeks, gaps: reviewWeeks < n });
   for (const b of document.querySelectorAll<HTMLButtonElement>('#range-presets button')) {
-    const p = PRESETS.find((x) => x.id === b.dataset.preset)!;
-    const pr = presetRange(data, p.weeks);
+    const pr = presetRange(data, presetWeeks(b));
     b.setAttribute('aria-pressed', String(pr.from === r.from && pr.to === r.to));
   }
 }
@@ -610,20 +520,19 @@ function renderTiles(data: Data, weeks: string[]) {
   const comments = rows.reduce((s, r) => s + r.comments, 0);
   const ai = rows.reduce((s, r) => s + r.ai_comments, 0);
   const postMerge = rows.reduce((s, r) => s + r.post_merge_comments, 0);
-  const tiles: [string, string, string][] = [
-    ['CLs on main', t ? int(t.main_cls) : '—', t ? `${int(t.merged_cls)} merged, ${int(t.abandoned_cls)} abandoned` : ''],
-    ['Human-owned CLs', t ? int(t.human_cls) : '—', t ? `${int(t.human_cls_with_comments)} with review comments; ${int(t.bot_cls)} bot CLs` : ''],
-    ['Review comments', int(comments), `by ${int(reviewers)} reviewers, on the selected paths`],
-    ['Self-declared AI comments', int(ai), comments ? `${pct(ai / comments)} of review comments; at least` : ''],
-    ['Post-merge comments', int(postMerge), comments ? `${pct(postMerge / comments)} of review comments; written after the CL landed` : ''],
-  ];
-  $('#tiles').replaceChildren(
-    ...tiles.map(([k, v, sub]) => {
-      const d = el('div', undefined, 'tile');
-      d.append(el('div', k, 'tile-label'), el('div', v, 'tile-value'), el('div', sub, 'tile-sub'));
-      return d;
-    }),
-  );
+  // The tiles and their wording are in index.html; each sub-line is the template named after its tile.
+  const tile = (id: string, value: string, sub: Vars | null) => {
+    const box = $(`#${id}`);
+    box.querySelector('.tile-value')!.textContent = value;
+    const line = box.querySelector('.tile-sub')!;
+    if (sub) fill(line, sub, id);
+    else line.replaceChildren();
+  };
+  tile('tile-cls', t ? int(t.main_cls) : '—', t && { merged: int(t.merged_cls), abandoned: int(t.abandoned_cls) });
+  tile('tile-human', t ? int(t.human_cls) : '—', t && { commented: int(t.human_cls_with_comments), bots: int(t.bot_cls) });
+  tile('tile-comments', int(comments), { reviewers: int(reviewers) });
+  tile('tile-ai', int(ai), comments ? { share: pct(ai / comments) } : null);
+  tile('tile-post', int(postMerge), comments ? { share: pct(postMerge / comments) } : null);
 }
 
 /** Each org's share of the metric and of usage over the range, and their
@@ -645,7 +554,7 @@ function orgRangeShares(data: Data, state: State, weeks: string[]) {
  * the orgs the ratio-over-time chart shows. */
 function renderParity(data: Data, state: State, weeks: string[], orgs: string[], colors: Map<string, string>, theme: Theme) {
   const label = rangeLabel(state.range);
-  const metricLabel = metricName(state.metric).toLowerCase();
+  const metricLabel = metricUnit(state.metric);
   const items = orgRangeShares(data, state, weeks).filter((it) => orgs.includes(it.org) && it.ratio !== null);
   const none = items.filter((it) => it.contribution <= 0).map((it) => it.org);
   drawChart(() => {
@@ -658,16 +567,14 @@ function renderParity(data: Data, state: State, weeks: string[], orgs: string[],
       theme,
     );
   });
-  $('#parity-sub').textContent = weeks.length
-    ? `Each organization's share of ${metricLabel} against its browsers' share of Chromium browser usage, ${label}` +
-      (weeks.length > 1 ? ' (totals over the range; usage is the mean weekly share)' : '') +
-      '. Both axes are logarithmic. On the diagonal the value ratio is 1.0×, review in proportion to usage; ' +
-      'organizations above it review more than their usage share, those below less.' +
-      (none.length
-        ? ` ${none.join(', ')} ${none.length === 1 ? 'has' : 'have'} no ${metricLabel} in the range, so ` +
-          `${none.length === 1 ? 'sits' : 'sit'} on the 0 row below the log scale.`
-        : '')
-    : `No review data for ${label}.`;
+  fill($('#parity-sub'), {
+    weeks: weeks.length,
+    multi: weeks.length > 1,
+    metric: metricLabel,
+    range: label,
+    none: none.join(', '),
+    noneN: none.length,
+  });
 }
 
 function renderTable(data: Data, state: State, weeks: string[], colors: Map<string, string>) {
@@ -677,20 +584,14 @@ function renderTable(data: Data, state: State, weeks: string[], colors: Map<stri
   items.sort((a, b) => b.contribution - a.contribution || (b.derived ?? 0) - (a.derived ?? 0));
   const shown = trimRanked(items, TABLE_TOP_ORGS, (it) => !!it.browsers);
   const hidden = items.length - shown.length;
-  const trimNote = hidden
-    ? ` Showing the top ${TABLE_TOP_ORGS} organizations by review share, plus those with a browser; ` +
-      `${int(hidden)} smaller ${hidden === 1 ? 'organization is' : 'organizations are'} omitted.`
-    : '';
-
-  const multi = weeks.length > 1;
-  const metricLabel = metricName(state.metric).toLowerCase();
-  $('#table-caption').textContent = !weeks.length
-    ? `${rangeLabel(state.range)}: no review data in this range.`
-    : multi
-      ? `${rangeLabel(state.range)}: counts are totals over the range (reviewers: distinct people); review share is the share of all ${metricLabel} ` +
-        'in the range, usage share the mean weekly share of Chromium browser usage.'
-      : `${rangeLabel(state.range)}: share of ${metricLabel} and of Chromium browser usage.`;
-  if (weeks.length) $('#table-caption').textContent += trimNote;
+  fill($('#table-caption'), {
+    weeks: weeks.length,
+    multi: weeks.length > 1,
+    range: rangeLabel(state.range),
+    metric: metricUnit(state.metric),
+    top: TABLE_TOP_ORGS,
+    omitted: int(hidden),
+  });
   const tbody = $('#org-table tbody');
   tbody.replaceChildren(
     ...shown.map((it) => {
@@ -700,16 +601,12 @@ function renderTable(data: Data, state: State, weeks: string[], colors: Map<stri
       orgCell.scope = 'row';
       const swatch = el('span', undefined, 'swatch');
       const color = colors.get(it.org);
-      if (color) swatch.style.background = color;
+      if (color) swatch.style.setProperty('--color', color);
       orgCell.append(swatch, document.createTextNode(it.org));
-      const ratioText =
-        it.ratio !== null
-          ? `${formatRatio(it.ratio)}×`
-          : !it.browsers
-            ? 'no browser'
-            : it.derived === null
-              ? 'no usage data'
-              : 'usage too small';
+      const ratioText = msg('ratio-cell', {
+        is: it.ratio !== null ? 'value' : !it.browsers ? 'no-browser' : it.derived === null ? 'no-usage' : 'small',
+        ratio: it.ratio !== null ? formatRatio(it.ratio) : '',
+      });
       const r = it.row;
       const cells = [
         pct(it.contribution),
@@ -729,25 +626,21 @@ function renderTable(data: Data, state: State, weeks: string[], colors: Map<stri
   );
 }
 
-/** Fills an organization select: everyone, everyone but google.com, then the
- * top orgs, then "Other" (everyone else), with the current choice added if it
- * isn't among them. */
+/** Fills an organization select: index.html gives everyone, everyone but
+ * google.com and "Other" (everyone else); the top orgs go before "Other",
+ * and the current choice after it if it isn't among them. */
 function fillOrgSelect(select: HTMLSelectElement, top: string[], current: string) {
   const single = current.startsWith('*') ? null : current;
   const extra = single && !top.includes(single) ? [single] : [];
-  select.replaceChildren(
-    ...[
-      { v: ALL_ORGS, t: 'All organizations' },
-      { v: ALL_BUT_GOOGLE, t: `All except ${LINEAR_EXCLUDED_ORG}` },
-      ...top.map((o) => ({ v: o, t: o })),
-      { v: OTHER_ORGS, t: OTHER },
-      ...extra.map((o) => ({ v: o, t: o })),
-    ].map(({ v, t }) => {
-      const o = el('option', t);
-      o.value = v;
-      return o;
-    }),
-  );
+  const option = (org: string) => {
+    const o = el('option', org);
+    o.value = org;
+    o.dataset.org = '';
+    return o;
+  };
+  select.querySelectorAll('option[data-org]').forEach((o) => o.remove());
+  select.querySelector(`option[value="${OTHER_ORGS}"]`)!.before(...top.map(option));
+  select.append(...extra.map(option));
   select.value = single || current === ALL_BUT_GOOGLE || current === OTHER_ORGS ? current : ALL_ORGS;
 }
 
@@ -777,12 +670,13 @@ function renderLeaderboard(
         : null;
   const rows = (keep ? all.filter((r) => keep(r.org)) : all).slice(0, leaderboardLimit(state.lbSize));
   // Fixed for a given range and metric: the toggles below it mustn't move.
-  $('#leaderboard-sub').textContent = !weeks.length
-    ? `No reviewer data for ${rangeLabel(state.range)}.`
-    : `${name}${weeks.length > 1 ? ' in total' : ''}, ${rangeLabel(state.range)}, for the top reviewers: ` +
-      `from every organization, only those outside ${LINEAR_EXCLUDED_ORG}, one organization, or every organization ` +
-      `outside the top ${TOP_ORGS} (Other). ` +
-      'Same scope as the organization chart: reviewers\' own (non-bot) accounts on human-owned CLs, on the selected paths.';
+  fill($('#leaderboard-sub'), {
+    weeks: weeks.length,
+    name,
+    multi: weeks.length > 1,
+    range: rangeLabel(state.range),
+    top: TOP_ORGS,
+  });
 
   // Orgs with a fixed review colour get a legend entry, most reviewers first;
   // the rest get the muted bar and are named on their rows instead, with no
@@ -794,12 +688,12 @@ function renderLeaderboard(
     .map(({ org, reviewers }) => {
       const li = el('li');
       const sw = el('span', undefined, 'swatch');
-      sw.style.background = lbColors.get(org)!;
+      sw.style.setProperty('--color', lbColors.get(org)!);
       li.append(sw, document.createTextNode(`${org} (${reviewers})`));
       return li;
     });
   $('#leaderboard-legend').replaceChildren(...legend);
-  buildLeaderboard($('#leaderboard-chart'), rows, name, (org) => lbColors.get(org), state.lbReviewer, (id) => {
+  buildLeaderboard($('#leaderboard-chart'), rows, metricUnit(state.metric), (org) => lbColors.get(org), state.lbReviewer, (id) => {
     state.lbReviewer = id;
     render();
     $('#reviewer-detail').scrollIntoView({ block: 'nearest' });
@@ -830,13 +724,13 @@ function renderReviewerDetail(data: Data, state: State, colors: Map<string, stri
   // the org); the org only when there's no email.
   const who = r.email ?? r.org;
   $('#rd-title').textContent = `${r.name}${who ? ` (${who})` : ''}`;
-  $('#rd-sub').textContent =
-    `${int(total)} review comments in ${rangeLabel(range)}` +
-    (nClassified
-      ? `; ${int(addressed)} addressed in the ${nClassified === weeks.length ? '' : `${nClassified} classified `}` +
-        `week${nClassified === 1 ? '' : 's'}${nClassified === weeks.length ? ' shown' : ''} (the filled bars). `
-      : '. No week in this range is classified yet, so only review comments are shown. ') +
-    'Comments that led to no change aren\'t a bad sign: questions are part of good review.';
+  fill($('#rd-sub'), {
+    total: int(total),
+    range: rangeLabel(range),
+    classified: nClassified,
+    all: nClassified === weeks.length,
+    addressed: int(addressed),
+  });
   const color = (r.org && colors.get(r.org)) || theme.muted;
   reviewerChart = renderReviewerChart($<HTMLCanvasElement>('#reviewer-chart'), weeks, r.comments, r.addressed, color, theme);
   const link = $<HTMLAnchorElement>('#rd-gerrit');
@@ -848,6 +742,9 @@ function renderReviewerDetail(data: Data, state: State, colors: Map<string, stri
     render();
   };
 }
+
+/** An outcome's name, from index.html. */
+const outcomeLabel = (o: ThreadOutcome) => msg('thread-outcome', { o });
 
 /** How the reviewer-started threads of the picked range's classified weeks
  * were decided, with example threads per outcome (loaded on first open). */
@@ -862,33 +759,34 @@ function renderThreads(data: Data, state: State) {
   const total = counts ? [...counts.values()].reduce((a, b) => a + b, 0) : 0;
   const bar = $('#threads-bar');
   const legend = $('#threads-legend');
+  fill($('#threads-sub'), {
+    total: counts ? int(total) : '',
+    range: rangeLabel(range),
+    weeks: weeks.length,
+    first: weeks[0] ?? '',
+    last: weeks[weeks.length - 1] ?? '',
+  });
   if (!counts || !total) {
-    $('#threads-sub').textContent = `No week in ${rangeLabel(range)} is classified yet.`;
     bar.replaceChildren();
     legend.replaceChildren();
     $('#threads-examples').replaceChildren();
     return;
   }
-  const span = weeks.length === 1 ? weeks[0] : `${weeks.length} classified weeks, ${weeks[0]} to ${weeks[weeks.length - 1]}`;
-  $('#threads-sub').textContent =
-    `The ${int(total)} review threads started by reviewers (not the CL owner) on the counted paths in ${span}, ` +
-    'by how each was decided. Addressed threads give a point to every comment in them that isn\'t the owner\'s; ' +
-    'the others give none.';
   const outcomes = [...counts.keys()].filter((o) => counts.get(o)! > 0);
   bar.replaceChildren(
     ...outcomes.map((o) => {
       const seg = el('span', undefined, `tb-seg tb-${o}`);
-      seg.style.width = `${(counts.get(o)! / total) * 100}%`;
-      seg.title = `${THREAD_OUTCOME_LABELS[o]}: ${int(counts.get(o)!)} (${pct(counts.get(o)! / total)})`;
+      seg.style.setProperty('--share', String(counts.get(o)! / total));
+      seg.title = `${outcomeLabel(o)}: ${int(counts.get(o)!)} (${pct(counts.get(o)! / total)})`;
       return seg;
     }),
   );
-  bar.setAttribute('aria-label', outcomes.map((o) => `${THREAD_OUTCOME_LABELS[o]}: ${pct(counts.get(o)! / total)}`).join('; '));
+  bar.setAttribute('aria-label', outcomes.map((o) => `${outcomeLabel(o)}: ${pct(counts.get(o)! / total)}`).join('; '));
   legend.replaceChildren(
     ...outcomes.map((o) => {
       const li = el('li');
       li.dataset.outcome = o;
-      li.append(el('span', undefined, `tb-swatch tb-${o}`), el('span', THREAD_OUTCOME_LABELS[o]),
+      li.append(el('span', undefined, `tb-swatch tb-${o}`), el('span', outcomeLabel(o)),
         el('span', `${int(counts.get(o)!)} · ${pct(counts.get(o)! / total)}`, 'tb-n'));
       return li;
     }),
@@ -900,7 +798,7 @@ function renderThreads(data: Data, state: State) {
     ...(['done_reply', 'model_addressed', 'model_not', 'no_reply'] as ThreadOutcome[]).map((o) => {
       const det = el('details');
       det.dataset.outcome = o;
-      det.append(el('summary', `Example threads: ${THREAD_OUTCOME_LABELS[o]}`));
+      det.append(el('summary', msg('thread-examples', { outcome: outcomeLabel(o) })));
       det.addEventListener('toggle', () => {
         if (!det.open || det.dataset.loaded) return;
         det.dataset.loaded = 'true';
@@ -911,10 +809,10 @@ function renderThreads(data: Data, state: State) {
               .filter((t) => t.outcome === o && shown.has(t.week))
               .sort((a, b) => compareWeeks(b.week, a.week))
               .slice(0, 6);
-            if (!list.length) det.append(el('p', 'No examples for these weeks.', 'tb-msg'));
+            if (!list.length) det.append(el('p', msg('thread-examples-none'), 'tb-msg'));
             for (const t of list) det.append(exampleThread(t));
           })
-          .catch((err: unknown) => det.append(el('p', `Couldn't load examples: ${String(err)}`, 'tb-msg')));
+          .catch((err: unknown) => det.append(el('p', msg('thread-examples-error', { error: String(err) }), 'tb-msg')));
       });
       return det;
     }),
@@ -945,30 +843,25 @@ function renderAreas(data: Data, state: State, colors: Map<string, string>, them
   const weeks = weeksIn(Object.keys(data.areas.weeks), state.range);
   const orgs = topDirOrgs(data.areas, weeks, state.metric, TOP_ORGS, (o) => colors.has(o));
   const totals = dirTotals(data.areas, weeks, orgs, state.metric);
-  const unit = metricName(state.metric).toLowerCase();
+  const unit = metricUnit(state.metric);
   const segColors = colors;
   const { roots } = dirTree(data.areas);
   const total = roots.reduce((s, r) => s + totals.total[r], 0);
   const inScope = roots.filter((r) => data.areas.nodes[r][2]).reduce((s, r) => s + totals.total[r], 0);
-  const what = {
-    addressed: 'Addressed review comments (in threads that led to a change)',
-    comments: 'Every review comment',
-    chars: 'Review characters, from every comment',
-    cls: 'CLs closed with review comments',
-  }[state.metric];
-  $('#areas-sub').textContent = total
-    ? `${what} in ${rangeLabel(state.range)}, by the directory of the file each comment is on: the ${unit} per ` +
-      `directory, and how they split across organizations. ${pct(inScope / total)} of them ` +
-      `(${int(inScope)} of ${int(total)}) are on the paths the rest of the page counts; the hatched part of a ` +
-      'bar is left out. Use ▸ to open a directory, or a “more” row for the next entries; ▾ closes it again.' +
-      (state.metric === 'cls' ? ' A CL with comments in two directories counts in each.' : '')
-    : `No review data for ${rangeLabel(state.range)}.`;
+  fill($('#areas-sub'), {
+    total: int(total),
+    m: state.metric,
+    range: rangeLabel(state.range),
+    metric: unit,
+    share: total ? pct(inScope / total) : '',
+    counted: int(inScope),
+  });
   const legend = [...orgs.map((org) => ({ org, color: segColors.get(org) ?? '' })), { org: OTHER, color: '' }];
   $('#areas-legend').replaceChildren(
     ...legend.map(({ org, color }) => {
       const li = el('li');
       const sw = el('span', undefined, color ? 'swatch' : 'swatch swatch-muted');
-      if (color) sw.style.background = color;
+      if (color) sw.style.setProperty('--color', color);
       li.append(sw, document.createTextNode(org));
       return li;
     }),
@@ -978,7 +871,7 @@ function renderAreas(data: Data, state: State, colors: Map<string, string>, them
   const linkOf = (row: DirRow, org: string) => (who ? dirRowLink(data.areas, who, row, org, state.range) : null);
   const draw = (focusKey?: string) => {
     const rows = dirRows(data.areas, totals, state.expandedDirs);
-    buildAreaChart(box, rows, orgs, (org) => segColors.get(org), metricName(state.metric), (key) => {
+    buildAreaChart(box, rows, orgs, (org) => segColors.get(org), metricName(state.metric), unit, (key) => {
       if (state.expandedDirs.has(key)) state.expandedDirs.delete(key);
       else state.expandedDirs.add(key);
       draw(key);
@@ -989,17 +882,16 @@ function renderAreas(data: Data, state: State, colors: Map<string, string>, them
   draw();
 }
 
-/** What the organization chart counts when it shows one directory. */
-function dirScopeNote(board: DirBoard, node: number, weeks: string[], metric: Metric): string {
+/** The organization chart's note when it shows one directory: which of its comments it counts. */
+function renderDirNote(board: DirBoard, dir: string, node: number, weeks: string[], metric: Metric) {
   const t = dirTotals(board, weeks, [], metric);
   const inc = t.total[node] ? t.inc[node] / t.total[node] : board.nodes[node][2];
-  const scope =
-    inc >= 1
-      ? 'It counts every comment in this directory and below.'
-      : inc <= 0
-        ? 'This directory is outside the paths the rest of the page counts; the chart shows every comment in it anyway.'
-        : `It counts every comment in this directory and below, including the ${pct(1 - inc)} on paths the rest of the page leaves out.`;
-  return scope + (metric === 'cls' ? ' A CL with comments in two of its subdirectories counts in each.' : '');
+  fill($('#review-dir-note'), {
+    dir,
+    scope: inc >= 1 ? 'all' : inc <= 0 ? 'none' : 'part',
+    part: pct(1 - inc),
+    m: metric,
+  });
 }
 
 /** How the metric is spread across reviewers, org by org: a strip plot of
@@ -1011,8 +903,7 @@ function renderDistribution(
   theme: Theme,
   render: () => void,
 ) {
-  const name = metricName(state.metric);
-  const unit = name.toLowerCase();
+  const unit = metricUnit(state.metric);
   const weeks = weeksIn(Object.keys(data.reviewers.weeks), state.range);
   // Who counts: for addressed comments, everyone who wrote a review comment
   // (0 addressed is telling); for the other metrics, those with some of it.
@@ -1022,17 +913,13 @@ function renderDistribution(
   const spreads = orgSpreads(all, data.reviewers.meta.fold_into_other ?? []);
   const colorOf = (org: string) => colors.get(org) ?? theme.muted;
 
-  $('#dist-sub').textContent = weeks.length
-    ? `Each reviewer's ${unit} over ${rangeLabel(state.range)}: one dot per reviewer, one row per organization ` +
-      `(the ${TOP_ORGS} with the most, then everyone else, including personal addresses, as “Other”), on a log scale. ` +
-      "Each box spans the middle half of its row's reviewers, with a thick line at the median; rows with under five " +
-      'reviewers get none. ' +
-      (state.metric === 'addressed'
-        ? 'Everyone with a review comment in the range counts, so reviewers with none addressed sit at 0. '
-        : `Reviewers with no ${unit} in the range are left out. `) +
-      'A reviewer counts for the organization most of their comments were for. Hover a dot for the reviewer; ' +
-      'click it for their weekly chart.'
-    : `No reviewer data for ${rangeLabel(state.range)}.`;
+  fill($('#dist-sub'), {
+    weeks: weeks.length,
+    metric: unit,
+    range: rangeLabel(state.range),
+    top: TOP_ORGS,
+    m: state.metric,
+  });
 
   const fmt = (v: number) => fmtNum(v, { maximumFractionDigits: 1 });
   $('#dist-table tbody').replaceChildren(
@@ -1042,7 +929,7 @@ function renderDistribution(
       const th = el('th');
       th.scope = 'row';
       const sw = el('span', undefined, s.org === OTHER || !colors.has(s.org) ? 'swatch swatch-muted' : 'swatch');
-      if (colors.has(s.org)) sw.style.background = colors.get(s.org)!;
+      if (colors.has(s.org)) sw.style.setProperty('--color', colors.get(s.org)!);
       th.append(sw, document.createTextNode(s.org));
       const st = s.stats;
       tr.append(
@@ -1054,7 +941,7 @@ function renderDistribution(
   );
 
   // One row of dots per org: the chart grows with the rows.
-  $('#dist-box').style.height = `${Math.max(1, spreads.length) * 34 + 64}px`;
+  $('#dist-box').style.setProperty('--rows', String(Math.max(1, spreads.length)));
   drawChart(() => {
     distChart?.destroy();
     distChart = renderSpreadChart(
@@ -1062,7 +949,7 @@ function renderDistribution(
       spreads,
       colorOf,
       (id) => reviewerHandle(data.reviewers, id),
-      name,
+      unit,
       theme,
       state.lbReviewer,
       (id) => {
@@ -1088,23 +975,17 @@ function renderPerReview(
   render: () => void,
 ) {
   const num = perReviewMetric(state.metric);
-  const name = `${metricName(num)} per review`;
-  const unit = name.toLowerCase();
+  const unit = `${metricUnit(num)} per review`;
   const spreads = orgPerReviewSpreads(data.reviewers, weeks, state.metric, orgOrder);
 
-  $('#pr-title').textContent = name;
-  $('#pr-sub').textContent = weeks.length
-    ? `Each reviewer's ${metricName(num).toLowerCase()} over ${rangeLabel(state.range)} divided by the CLs they ` +
-      'reviewed (commented on): one dot per reviewer, on the same organization rows as the chart above. ' +
-      'This likely correlates with the thoroughness of the reviewer, or complexity of the CLs they tend to review. ' +
-      "Each box spans the middle half of its row's reviewers, with a thick line at the median; " +
-      `rows with under five reviewers get none. Only reviewers with at least ${PER_REVIEW_MIN} reviewed CLs ` +
-      "count, so that one CL doesn't decide a dot" +
-      (num === 'addressed' ? '; those with none addressed sit at 0. ' : '. ') +
-      '“All reviews” pools the whole row: its total divided by its reviews, so busy reviewers weigh more. ' +
-      'Comments count in the week written and CLs in the week they closed, so the edges of a range are ' +
-      'approximate. Hover a dot for the reviewer; click it for their weekly chart.'
-    : `No reviewer data for ${rangeLabel(state.range)}.`;
+  fill($('#pr-title'), { name: metricName(num) });
+  fill($('#pr-sub'), {
+    weeks: weeks.length,
+    metric: metricUnit(num),
+    range: rangeLabel(state.range),
+    min: PER_REVIEW_MIN,
+    m: num,
+  });
 
   const fmt = (v: number) => fmtNum(v, { maximumFractionDigits: v < 10 ? 2 : 0 });
   $('#pr-table tbody').replaceChildren(
@@ -1116,7 +997,7 @@ function renderPerReview(
       const color = s.org === OTHER ? undefined : colorOf(s.org);
       const named = color !== undefined && color !== theme.muted;
       const sw = el('span', undefined, named ? 'swatch' : 'swatch swatch-muted');
-      if (named) sw.style.background = color;
+      if (named) sw.style.setProperty('--color', color);
       th.append(sw, document.createTextNode(s.org));
       const st = s.stats;
       tr.append(th, ...[int(st.n), fmt(st.q1), fmt(st.median), fmt(st.q3), fmt(s.pooled)].map((c) => el('td', c)));
@@ -1124,7 +1005,7 @@ function renderPerReview(
     }),
   );
 
-  $('#pr-box').style.height = `${Math.max(1, spreads.length) * 34 + 64}px`;
+  $('#pr-box').style.setProperty('--rows', String(Math.max(1, spreads.length)));
   drawChart(() => {
     perReviewChart?.destroy();
     perReviewChart = renderSpreadChart(
@@ -1132,7 +1013,7 @@ function renderPerReview(
       spreads,
       colorOf,
       (id) => reviewerHandle(data.reviewers, id),
-      name,
+      unit,
       theme,
       state.lbReviewer,
       (id) => {
@@ -1140,7 +1021,7 @@ function renderPerReview(
         render();
         $('#reviewer-detail').scrollIntoView({ block: 'nearest' });
       },
-      { unit, axisTitle: `${unit}, per reviewer over the range`, linear: true },
+      { axisTitle: `${unit}, per reviewer over the range`, linear: true },
     );
   });
 }
@@ -1152,7 +1033,7 @@ const HEAT_TOP_REVIEWERS = 3;
 function renderHeat(data: Data, state: State, colors: Map<string, string>, theme: Theme, render: () => void) {
   const board = data.areas;
   const rangeWeeks = weeksIn(Object.keys(board.weeks), state.range);
-  const unit = metricName(state.metric).toLowerCase();
+  const unit = metricUnit(state.metric);
 
   // The selector: the busiest orgs over the range, "Other", plus the current choice.
   const single = state.heatOrg.startsWith('*') ? null : state.heatOrg;
@@ -1210,7 +1091,7 @@ function renderHeat(data: Data, state: State, colors: Map<string, string>, theme
     orgs: segOrgs,
     colorOf: (o) => segColors.get(o),
     orgColor,
-    metricLabel: metricName(state.metric),
+    unit,
     rowTitle,
     binTitle,
     cellInfo,
@@ -1231,30 +1112,20 @@ function renderHeat(data: Data, state: State, colors: Map<string, string>, theme
 
   // Fixed for a given range and metric: it describes every choice of the
   // toggles below it, so switching them doesn't move them.
-  $('#heat-sub').textContent = rangeWeeks.length
-    ? `${metricName(state.metric)} from the chosen organizations, ${rangeLabel(state.range)}: one row per directory, ` +
-      'ranked over the range, and one column per week or group of weeks, the last ending with the range. ' +
-      `With several organizations, each cell splits the directory's ${unit} in those weeks across them: ` +
-      "under Volume it is a column whose height is against the row's busiest column; under Share it fills the cell. " +
-      `With one organization, each cell is shaded by that organization's ${unit} there, against the busiest cell on a ` +
-      `square-root scale so smaller directories still show (Volume), or by its share of the directory's ${unit} (Share). ` +
-      'Every comment counts, on the selected paths or not, as in Review by directory. Use ▸ to open a directory and ' +
-      '“chart” to show it in the organization chart. Hover a cell for its numbers and most active reviewers, or click ' +
-      'it to open those CLs on Gerrit.' +
-      (state.metric === 'cls' ? ' A CL with comments in two directories counts in each.' : '')
-    : `No review data for ${rangeLabel(state.range)}.`;
+  fill($('#heat-sub'), {
+    weeks: rangeWeeks.length,
+    name: metricName(state.metric),
+    range: rangeLabel(state.range),
+    metric: unit,
+    m: state.metric,
+  });
 
   const legend = $('#heat-legend');
   if (single) {
-    const share = state.heatValue === 'share';
     const li = el('li');
-    const ramp = el('span', undefined, 'hm-ramp');
-    ramp.style.background = `linear-gradient(to right, ${heatShade(orgColor!, 0)}, ${heatShade(orgColor!, 1)})`;
-    li.append(
-      document.createTextNode(share ? '0%' : '1'),
-      ramp,
-      document.createTextNode(share ? `100% of the directory's ${unit}` : `${int(heatMax(grid, single))} ${unit}`),
-    );
+    // The ramp's colours are in style.css (.hm-ramp), from the org's colour.
+    li.style.setProperty('--color', orgColor!);
+    fill(li, { share: state.heatValue === 'share', metric: unit, max: int(heatMax(grid, single)) }, 'heat-legend');
     legend.replaceChildren(li);
   } else {
     legend.replaceChildren(
@@ -1262,7 +1133,7 @@ function renderHeat(data: Data, state: State, colors: Map<string, string>, theme
         ({ org, color }) => {
           const li = el('li');
           const sw = el('span', undefined, color ? 'swatch' : 'swatch swatch-muted');
-          if (color) sw.style.background = color;
+          if (color) sw.style.setProperty('--color', color);
           li.append(sw, document.createTextNode(org));
           return li;
         },
@@ -1357,7 +1228,7 @@ function main(data: Data) {
       ratioChart = renderRatioChart($<HTMLCanvasElement>('#ratio-chart'), weeks, shown, colors, points, theme, state.smoothing);
     });
     const name = metricName(state.metric);
-    const metricLabel = name.toLowerCase();
+    const metricLabel = metricUnit(state.metric);
     const linear = state.reviewScale === 'linear';
     // One directory (every comment in it, from the directory data), or the path scope (org_weekly).
     const dirNode = state.reviewDir === null ? null : dirNodeByPath(data.areas, state.reviewDir);
@@ -1374,28 +1245,25 @@ function main(data: Data) {
         $<HTMLCanvasElement>('#review-chart'),
         weeks,
         reviewSeries,
-        name,
+        metricLabel,
         rColors,
         theme,
         state.smoothing,
         state.reviewScale,
       );
     });
-    $('#review-sub').textContent = weeks.length
-      ? `${name} per ISO week, ${label}` +
-        (state.smoothing > 1
-          ? `, as a ${smoothingName(state.smoothing)} running average`
-          : '') +
-        ', for the organizations with the most over the range; the rest are combined as “Other”. ' +
-        'The log scale shows every organization, since Google does most of the review; the linear scale leaves out ' +
-        `${LINEAR_EXCLUDED_ORG}, so the other organizations can be compared directly. With no directory chosen it ` +
-        'counts comments on the selected paths; with one, every comment in that directory and below.'
-      : `No review data for ${label}.`;
+    fill($('#review-sub'), {
+      weeks: weeks.length,
+      metric: name,
+      range: label,
+      smoothed: state.smoothing > 1,
+      smoothing: smoothingName(state.smoothing),
+    });
     // The chosen directory's note sits below the controls, so it can't move them.
     const dirNote = $('#review-dir-note');
     dirNote.hidden = dirNode === null || !weeks.length;
-    dirNote.textContent =
-      dirNode === null ? '' : `Showing ${state.reviewDir}. ` + dirScopeNote(data.areas, dirNode, weeks, state.metric);
+    if (dirNode === null) dirNote.replaceChildren();
+    else renderDirNote(data.areas, state.reviewDir!, dirNode, weeks, state.metric);
     const dirInput = $<HTMLInputElement>('#review-dir');
     if (document.activeElement !== dirInput) dirInput.value = state.reviewDir ?? '';
     $('#review-dir-clear').hidden = state.reviewDir === null;
@@ -1423,13 +1291,13 @@ function main(data: Data) {
       });
     }
 
-    $('#ratio-sub').textContent = weeks.length
-      ? `Share of ${metricLabel} ÷ share of Chromium browser usage, per ISO week, ${label}` +
-        (state.smoothing > 1
-          ? `, as a ${smoothingName(state.smoothing)} running average. `
-          : '. ') +
-        'The 1.0× line is parity: review in proportion to usage.'
-      : `No review data for ${label}.`;
+    fill($('#ratio-sub'), {
+      weeks: weeks.length,
+      metric: metricLabel,
+      range: label,
+      smoothed: state.smoothing > 1,
+      smoothing: smoothingName(state.smoothing),
+    });
     renderTiles(data, weeks);
     renderTable(data, state, weeks, colors);
     // Queued after the charts, so it holds the new ones.
@@ -1456,9 +1324,12 @@ function main(data: Data) {
   render();
   matchMedia('(prefers-color-scheme: dark)').addEventListener('change', render);
   const weeks = data.summary.meta.weeks;
-  $('#coverage').textContent =
-    `Review data: ${weeks.length} week${weeks.length === 1 ? '' : 's'} (${weeks[0]}${weeks.length > 1 ? `–${weeks[weeks.length - 1]}` : ''}). ` +
-    `Usage data: Cloudflare Radar, ${[...data.radar.keys()].sort()[0]} onward.`;
+  fill($('#coverage'), {
+    weeks: weeks.length,
+    first: weeks[0],
+    last: weeks[weeks.length - 1],
+    usage: [...data.radar.keys()].sort()[0],
+  });
   document.body.dataset.ready = 'true';
   // The directory chart's Gerrit links need a file larger than the chart's
   // own data, so it's fetched only when the chart comes near the viewport.
@@ -1502,6 +1373,6 @@ load()
   .catch((err: unknown) => {
     console.error(err);
     $('#error').hidden = false;
-    $('#error').textContent = `Couldn't load data: ${err instanceof Error ? err.message : String(err)}`;
+    fill($('#error'), { error: err instanceof Error ? err.message : String(err) });
     document.body.dataset.ready = 'error';
   });

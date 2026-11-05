@@ -42,6 +42,8 @@ export interface Theme {
   parity: string;
   surface: string;
   series: string[];
+  /** The page's font (style.css), for every chart's text. */
+  font: string;
 }
 
 export function readTheme(el: Element = document.documentElement): Theme {
@@ -55,13 +57,14 @@ export function readTheme(el: Element = document.documentElement): Theme {
     parity: v('--text-primary'),
     surface: v('--surface-1'),
     series: [1, 2, 3, 4, 5, 6, 7, 8].map((i) => v(`--series-${i}`)),
+    font: getComputedStyle(document.body).fontFamily,
   };
 }
 
 const pct = (x: number) => `${(x * 100).toFixed(x < 0.01 ? 2 : 1)}%`;
 
 function baseOptions(theme: Theme) {
-  Chart.defaults.font.family = 'system-ui, -apple-system, "Segoe UI", sans-serif';
+  Chart.defaults.font.family = theme.font;
   Chart.defaults.color = theme.text;
   return {
     responsive: true,
@@ -423,7 +426,8 @@ export function renderReviewChart(
   canvas: HTMLCanvasElement,
   weeks: string[],
   series: { org: string; values: number[] }[],
-  metricLabel: string,
+  /** The metric mid-sentence, e.g. "review comments". */
+  unit: string,
   colors: Map<string, string>,
   theme: Theme,
   /** Running-average window in weeks (1 = none); named in the tooltip. */
@@ -465,7 +469,7 @@ export function renderReviewChart(
           ? {
               type: 'logarithmic',
               min: logFloor,
-              title: { display: true, text: `${metricLabel.toLowerCase()} per week (log scale)`, color: theme.muted },
+              title: { display: true, text: `${unit} per week (log scale)`, color: theme.muted },
               border: { display: false },
               grid: { color: theme.grid },
               afterBuildTicks: (axis) => {
@@ -477,7 +481,7 @@ export function renderReviewChart(
           : {
               type: 'linear',
               beginAtZero: true,
-              title: { display: true, text: `${metricLabel.toLowerCase()} per week`, color: theme.muted },
+              title: { display: true, text: `${unit} per week`, color: theme.muted },
               border: { display: false },
               grid: { color: theme.grid },
               ticks: { color: theme.muted, callback: (v) => fmt(Number(v)) },
@@ -510,7 +514,7 @@ const weekMarkerPlugin = (theme: Theme, week: string, text: string): Plugin<'lin
     ctx.moveTo(x, a.top);
     ctx.lineTo(x, a.bottom);
     ctx.stroke();
-    ctx.font = '12px system-ui, -apple-system, "Segoe UI", sans-serif';
+    ctx.font = `12px ${theme.font}`;
     ctx.fillStyle = theme.muted;
     ctx.textAlign = 'right';
     ctx.textBaseline = 'top';
@@ -643,13 +647,13 @@ export function renderSpreadChart(
   colorOf: (org: string) => string,
   /** How the tooltip names a reviewer (their email). */
   handleOf: (id: number) => string,
-  metricLabel: string,
+  /** The metric mid-sentence, e.g. "review comments". */
+  unit: string,
   theme: Theme,
   selected: number | null,
   onPick: (id: number) => void,
-  opts: { unit?: string; axisTitle?: string; linear?: boolean } = {},
+  opts: { axisTitle?: string; linear?: boolean } = {},
 ): Chart<'scatter'> {
-  const unit = opts.unit ?? metricLabel.toLowerCase();
   const values = spreads.flatMap((s) => s.reviewers.map((r) => r.value));
   const zeros = values.some((v) => v <= 0);
   const max = Math.max(1, ...values);
@@ -745,8 +749,9 @@ export function renderSpreadChart(
         onPick((datasets[el.datasetIndex].data[el.index] as P).id);
       },
       onHover: (e, elements) => {
+        // style.css gives a .pointing canvas the pointer cursor.
         const target = e.native?.target as HTMLElement | undefined;
-        if (target) target.style.cursor = elements.length ? 'pointer' : 'default';
+        target?.classList.toggle('pointing', elements.length > 0);
       },
       plugins: {
         ...base.plugins,

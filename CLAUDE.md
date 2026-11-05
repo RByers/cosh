@@ -54,6 +54,12 @@ Claude Haiku (`cosh classify`).
   it and runs Vitest unit tests and headless-Chrome tests (puppeteer-core with
   `/usr/bin/google-chrome`). Vitest is capped at `maxWorkers: 4`, with test
   files run serially.
+- **Web UI wording goes in `web/index.html`, presentation in
+  `web/src/style.css`.** Captions, notes and controls are markup or
+  `<template data-msg>` elements there (rendered by `web/src/text.ts`), not
+  strings in the scripts. Only short formats such as tooltips and hover titles
+  stay in the TypeScript. Scripts set CSS custom properties, not inline
+  styles. Details: `web/README.md`, "Text and styling".
 - In a worktree, give `web/` its dependencies by symlinking the main
   checkout's: `ln -s /home/rbagent/projects/cosh/web/node_modules
   web/node_modules`. Don't run `npm ci` or `npm install` there. Git ignores
