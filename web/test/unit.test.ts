@@ -43,6 +43,8 @@ import {
   topBrowsers,
   topOrgCounts,
   orgWeeklyCounts,
+  orgsByAllTimeReview,
+  reviewColorSlots,
   gerritReviewsUrl,
   gerritDateTerms,
   gerritDirUrl,
@@ -637,6 +639,27 @@ const DIRS: DirBoard = {
 };
 const W = ['2026-W43', '2026-W44'];
 
+test('orgWeeklyCounts with nameable folds the other orgs into Other', () => {
+  const series = orgWeeklyCounts(SUMMARY, ['2026-W44'], 'comments', 2, 1, [], undefined, (o) => o !== 'microsoft.com');
+  assert.deepEqual(series.map((s) => s.org), ['google.com', 'igalia.com', OTHER]);
+  // Other is microsoft.com + gmail.com + Other.
+  assert.deepEqual(series[2].values, [70]);
+});
+
+test('orgsByAllTimeReview ranks orgs over every summary week, Other left out', () => {
+  assert.deepEqual(orgsByAllTimeReview(SUMMARY), ['google.com', 'microsoft.com', 'igalia.com', 'gmail.com']);
+});
+
+test('reviewColorSlots: ratio colours kept, the rest in order, only the top few coloured', () => {
+  const ranked = ['g.com', 'i.com', 'm.com', 'b.com', 'x.com'];
+  const slots = reviewColorSlots(ranked, ['g.com', 's.com', 'm.com', 'y.com'], 4);
+  // g.com and m.com keep slots 0 and 2; i.com and b.com take 1 and 3; x.com has none.
+  assert.deepEqual(Object.fromEntries(slots), { 'g.com': 0, 'm.com': 2, 'i.com': 1, 'b.com': 3 });
+  // A ratio org ranked outside the top keeps no colour here: its slot is lent out.
+  assert.equal(slots.has('s.com'), false);
+  assert.deepEqual(Object.fromEntries(reviewColorSlots(['a.com'], [], 8)), { 'a.com': 0 });
+});
+
 test('dirTotals sums each bucket into its ancestors, and what is in scope', () => {
   const t = dirTotals(DIRS, W, ['google.com'], 'comments');
   assert.deepEqual([t.total[1], t.total[2], t.own[2], t.total[3], t.total[4], t.own[4]], [44, 44, 10, 30, 15, 2]);
@@ -647,6 +670,7 @@ test('dirTotals sums each bucket into its ancestors, and what is in scope', () =
   assert.equal(dirTotals(DIRS, W, ['google.com'], 'chars').total[1], 440);
   assert.equal(dirTotals(DIRS, ['2026-W44'], ['google.com'], 'cls').total[4], 4);
   assert.deepEqual(topDirOrgs(DIRS, W, 'comments'), ['google.com', 'microsoft.com']);
+  assert.deepEqual(topDirOrgs(DIRS, W, 'comments', 7, (o) => o !== 'google.com'), ['microsoft.com']);
 });
 
 test('dirRows lists a page per level, and expands and collapses', () => {
@@ -752,6 +776,11 @@ test('dirWeeklyCounts: a series per top org in one subtree, the rest as Other', 
   assert.deepEqual(dirWeeklyCounts(DIRS, 1, ['2026-W44'], 'comments', 7, 2).map((s) => s.values), [[20], [2]]);
   // An org with nothing in the range isn't named, though it has data elsewhere.
   assert.deepEqual(dirWeeklyCounts(DIRS, 1, ['2026-W43'], 'comments').map((s) => s.org), ['google.com']);
+  // Orgs nameable rejects fold into Other.
+  assert.deepEqual(dirWeeklyCounts(DIRS, 1, W, 'comments', 7, 1, [], undefined, (o) => o === 'google.com'), [
+    { org: 'google.com', values: [20, 20] },
+    { org: OTHER, values: [0, 4] },
+  ]);
 });
 
 test('heatBins line up with the range end; only the first may be short', () => {

@@ -76,6 +76,8 @@ import {
   sumWeeklyTotals,
   topBrowsers,
   orgWeeklyCounts,
+  orgsByAllTimeReview,
+  reviewColorSlots,
   topReviewers,
   orgsByValue,
   reviewerTotals,
@@ -707,12 +709,10 @@ function renderLeaderboard(
       `from every organization, only those outside ${LINEAR_EXCLUDED_ORG}, or one organization. ` +
       'Same scope as the organization chart: reviewers\' own (non-bot) accounts on human-owned CLs, on the selected paths.';
 
-  // Every org on the board gets its own legend entry, most reviewers first.
-  // The palette has room for the first theme.series.length of them (keeping
-  // ratio-chart colours where they can); any beyond that get the muted bar
-  // and are named on their rows instead.
+  // Orgs with a fixed review colour get a legend entry, most reviewers first;
+  // the rest get the muted bar and are named on their rows instead.
   const orgs = leaderboardOrgs(rows);
-  const lbColors = reviewColors(orgs.slice(0, theme.series.length).map((o) => o.org), colors, theme);
+  const lbColors = colors;
   const legend = orgs
     .filter((o) => lbColors.has(o.org))
     .map(({ org, reviewers }) => {
@@ -769,7 +769,7 @@ function renderReviewerDetail(data: Data, state: State, colors: Map<string, stri
         `week${nClassified === 1 ? '' : 's'}${nClassified === weeks.length ? ' shown' : ''} (the filled bars). `
       : '. No week in this range is classified yet, so only review comments are shown. ') +
     'Comments that led to no change aren\'t a bad sign: questions are part of good review.';
-  const color = (r.org && colors.get(r.org)) || theme.series[0];
+  const color = (r.org && colors.get(r.org)) || theme.muted;
   reviewerChart = renderReviewerChart($<HTMLCanvasElement>('#reviewer-chart'), weeks, r.comments, r.addressed, color, theme);
   const link = $<HTMLAnchorElement>('#rd-gerrit');
   const url = gerritReviewsUrl(r.email, range);
@@ -875,10 +875,10 @@ function exampleThread(t: ThreadExamples['threads'][number]): HTMLElement {
  * the path rules that decide what the other sections count. */
 function renderAreas(data: Data, state: State, colors: Map<string, string>, theme: Theme) {
   const weeks = weeksIn(Object.keys(data.areas.weeks), state.range);
-  const orgs = topDirOrgs(data.areas, weeks, state.metric, 7);
+  const orgs = topDirOrgs(data.areas, weeks, state.metric, 7, (o) => colors.has(o));
   const totals = dirTotals(data.areas, weeks, orgs, state.metric);
   const unit = metricName(state.metric).toLowerCase();
-  const segColors = reviewColors(orgs, colors, theme);
+  const segColors = colors;
   const { roots } = dirTree(data.areas);
   const total = roots.reduce((s, r) => s + totals.total[r], 0);
   const inScope = roots.filter((r) => data.areas.nodes[r][2]).reduce((s, r) => s + totals.total[r], 0);
@@ -952,8 +952,7 @@ function renderDistribution(
     state.metric === 'addressed' ? r.comments > 0 : r.value > 0,
   );
   const spreads = orgSpreads(all, data.reviewers.meta.fold_into_other ?? []);
-  const orgColors = reviewColors(spreads.map((s) => s.org).filter((o) => o !== OTHER), colors, theme);
-  const colorOf = (org: string) => orgColors.get(org) ?? theme.muted;
+  const colorOf = (org: string) => colors.get(org) ?? theme.muted;
 
   $('#dist-sub').textContent = weeks.length
     ? `Each reviewer's ${unit} over ${rangeLabel(state.range)}: one dot per reviewer, one row per organization ` +
@@ -974,8 +973,8 @@ function renderDistribution(
       tr.dataset.org = s.org;
       const th = el('th');
       th.scope = 'row';
-      const sw = el('span', undefined, s.org === OTHER || !orgColors.has(s.org) ? 'swatch swatch-muted' : 'swatch');
-      if (orgColors.has(s.org)) sw.style.background = orgColors.get(s.org)!;
+      const sw = el('span', undefined, s.org === OTHER || !colors.has(s.org) ? 'swatch swatch-muted' : 'swatch');
+      if (colors.has(s.org)) sw.style.background = colors.get(s.org)!;
       th.append(sw, document.createTextNode(s.org));
       const st = s.stats;
       tr.append(
@@ -1024,8 +1023,8 @@ function renderHeat(data: Data, state: State, colors: Map<string, string>, theme
   const keep = noGoogle ? (o: string) => o !== LINEAR_EXCLUDED_ORG : undefined;
   const segOrgs = single
     ? [single]
-    : topDirOrgs(board, rangeWeeks, state.metric, 8).filter((o) => !keep || keep(o)).slice(0, 7);
-  const segColors = reviewColors(segOrgs, colors, theme);
+    : topDirOrgs(board, rangeWeeks, state.metric, 7, (o) => colors.has(o) && (!keep || keep(o)));
+  const segColors = colors;
   const grid = heatGrid(board, state.range, state.heatBin, state.metric, segOrgs, state.heatExpanded, {
     only: keep,
     rankOnly: single ? (o) => o === single : keep,
@@ -1055,7 +1054,7 @@ function renderHeat(data: Data, state: State, colors: Map<string, string>, theme
     };
   }
 
-  const orgColor = single ? segColors.get(single) ?? theme.series[0] : undefined;
+  const orgColor = single ? segColors.get(single) ?? theme.muted : undefined;
   buildHeatmap($('#heat-chart'), {
     grid,
     org: single,
@@ -1124,18 +1123,6 @@ function renderHeat(data: Data, state: State, colors: Map<string, string>, theme
   }
 }
 
-/** Colours for the review chart: an org keeps its ratio-chart colour; orgs
- * without one take, in rank order, the series colours that no org in this
- * chart uses (all eight may be assigned to browser owners), then the muted
- * neutral. */
-function reviewColors(orgs: string[], colors: Map<string, string>, theme: Theme): Map<string, string> {
-  const out = new Map(orgs.filter((o) => colors.has(o)).map((o) => [o, colors.get(o)!]));
-  const used = new Set(out.values());
-  const spare = theme.series.filter((c) => !used.has(c));
-  for (const org of orgs) if (!out.has(org) && spare.length) out.set(org, spare.shift()!);
-  return out;
-}
-
 /** First week where Radar's unnamed-Chromium bucket more than triples week
  * over week (2026-W37 in the current data); see docs/plan.md, Open questions. */
 function derivativeJumpWeek(radar: RadarWeekly): string | null {
@@ -1159,6 +1146,11 @@ function main(data: Data) {
   let syncInputs = () => {};
 
   const colorsFor = (theme: Theme) => new Map(orgs.map((o, i) => [o, theme.series[i]]));
+  // Every review section colours orgs from this one map, fixed for the page:
+  // the range, metric and filters never repaint an org.
+  const reviewSlots = reviewColorSlots(orgsByAllTimeReview(data.summary), orgs, readTheme().series.length);
+  const reviewColorsFor = (theme: Theme) => new Map([...reviewSlots].map(([o, i]) => [o, theme.series[i]]));
+  const nameable = (org: string) => reviewSlots.has(org);
 
   const render = () => {
     writeStateToUrl(state);
@@ -1172,6 +1164,7 @@ function main(data: Data) {
   const renderViews = () => {
     const theme = readTheme();
     const colors = colorsFor(theme);
+    const rColors = reviewColorsFor(theme);
     // Every section covers the selected range only.
     const weeks = weeksIn(data.summary.meta.weeks, state.range);
     const label = rangeLabel(state.range);
@@ -1198,8 +1191,8 @@ function main(data: Data) {
     const seriesFor = (lin: boolean) => {
       const exclude = lin ? [LINEAR_EXCLUDED_ORG] : [];
       return dirNode === null
-        ? orgWeeklyCounts(data.summary, weeks, state.metric, 7, state.smoothing, exclude, dataWeeks)
-        : dirWeeklyCounts(data.areas, dirNode, weeks, state.metric, 7, state.smoothing, exclude, dataWeeks);
+        ? orgWeeklyCounts(data.summary, weeks, state.metric, 7, state.smoothing, exclude, dataWeeks, nameable)
+        : dirWeeklyCounts(data.areas, dirNode, weeks, state.metric, 7, state.smoothing, exclude, dataWeeks, nameable);
     };
     const reviewSeries = seriesFor(linear);
     reviewChart = renderReviewChart(
@@ -1207,19 +1200,7 @@ function main(data: Data) {
       weeks,
       reviewSeries,
       name,
-      // Colour the union of both scales' orgs (log ranking first), whichever
-      // scale is shown, so an org keeps its colour when the scale toggles:
-      // the org taking google.com's place in the linear view can rank above
-      // others, or hold a fixed colour that would shrink the spare pool.
-      reviewColors(
-        [
-          ...new Set(
-            [false, true].flatMap((lin) => (lin === linear ? reviewSeries : seriesFor(lin)).map((s) => s.org)),
-          ),
-        ],
-        colors,
-        theme,
-      ),
+      rColors,
       theme,
       state.smoothing,
       state.reviewScale,
@@ -1242,10 +1223,10 @@ function main(data: Data) {
     const dirInput = $<HTMLInputElement>('#review-dir');
     if (document.activeElement !== dirInput) dirInput.value = state.reviewDir ?? '';
     $('#review-dir-clear').hidden = state.reviewDir === null;
-    renderHeat(data, state, colors, theme, render);
-    renderAreas(data, state, colors, theme);
-    renderDistribution(data, state, colors, theme, render);
-    renderLeaderboard(data, state, colors, theme, render);
+    renderHeat(data, state, rColors, theme, render);
+    renderAreas(data, state, rColors, theme);
+    renderDistribution(data, state, rColors, theme, render);
+    renderLeaderboard(data, state, rColors, theme, render);
     renderThreads(data, state);
     usageChart?.destroy();
     usageChart = renderUsageChart(
@@ -1300,8 +1281,8 @@ function main(data: Data) {
         const key = active?.classList.contains('ar-toggle') ? active.closest<HTMLElement>('[data-key]')?.dataset.key : undefined;
         const theme = readTheme();
         withView(data, state, () => {
-          renderAreas(data, state, colorsFor(theme), theme);
-          renderHeat(data, state, colorsFor(theme), theme, render);
+          renderAreas(data, state, reviewColorsFor(theme), theme);
+          renderHeat(data, state, reviewColorsFor(theme), theme, render);
         });
         if (box && key) box.querySelector<HTMLButtonElement>(`[data-key="${CSS.escape(key)}"] .ar-toggle`)?.focus({ preventScroll: true });
         document.body.dataset.areaLinks = 'true';

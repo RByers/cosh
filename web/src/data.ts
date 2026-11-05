@@ -386,6 +386,38 @@ export function topOrgCounts(
   return rest > 0 || rows.some((r) => r.org === OTHER) ? [...top, { org: OTHER, value: rest }] : top;
 }
 
+/** Orgs by review comments over every week the summary holds, largest first
+ * ("Other" left out): the order fixed review colours are handed out in, so
+ * they never depend on the range, metric or a filter. */
+export function orgsByAllTimeReview(summary: Summary): string[] {
+  return topOrgCounts(summary, summary.meta.weeks, 'comments', Infinity)
+    .map((r) => r.org)
+    .filter((o) => o !== OTHER);
+}
+
+/** The page's one org → colour assignment for the review sections, as
+ * indexes into the theme's `slots` series colours: the `slots` orgs ranked
+ * first get one each. An org that has a ratio-chart colour (its index in
+ * `ratioOrgs`) keeps it; the others take the remaining colours in order.
+ * Every other org has no colour: charts fold it into "Other" or show it
+ * muted and named. */
+export function reviewColorSlots(
+  ranked: readonly string[],
+  ratioOrgs: readonly string[],
+  slots: number,
+): Map<string, number> {
+  const top = ranked.slice(0, slots);
+  const out = new Map<string, number>();
+  for (const org of top) {
+    const i = ratioOrgs.indexOf(org);
+    if (i >= 0 && i < slots) out.set(org, i);
+  }
+  const used = new Set(out.values());
+  const spare = [...Array(slots).keys()].filter((i) => !used.has(i));
+  for (const org of top) if (!out.has(org)) out.set(org, spare.shift()!);
+  return out;
+}
+
 /** Weekly counts of the metric for the top `n` orgs over the given weeks (ranked by
  * their total, as in topOrgCounts), then everything else as a final "Other"
  * series. `values[i]` is the count in `weeks[i]`. With `smoothing` > 1, each
@@ -395,7 +427,9 @@ export function topOrgCounts(
  * dropped entirely (not folded into "Other"), so the next-ranked org takes
  * their place among the top `n`. `dataWeeks`, if given, are the only weeks
  * with data for the metric (the classified weeks, for addressed comments);
- * the running average skips the rest rather than counting them as zero. */
+ * the running average skips the rest rather than counting them as zero.
+ * With `nameable`, only orgs it accepts get a series of their own; the rest
+ * are folded into "Other" (orgs without a fixed colour). */
 export function orgWeeklyCounts(
   all: Summary,
   weeks: string[],
@@ -404,9 +438,12 @@ export function orgWeeklyCounts(
   smoothing = 1,
   exclude: readonly string[] = [],
   dataWeeks?: readonly string[],
+  nameable?: (org: string) => boolean,
 ): { org: string; values: number[] }[] {
   const col = COUNT_COLUMN[metric];
-  const summary = exclude.length ? { ...all, rows: all.rows.filter((r) => !exclude.includes(r.org)) } : all;
+  let rows = exclude.length ? all.rows.filter((r) => !exclude.includes(r.org)) : all.rows;
+  if (nameable) rows = rows.map((r) => (r.org === OTHER || nameable(r.org) ? r : { ...r, org: OTHER }));
+  const summary = rows === all.rows ? all : { ...all, rows };
   const named = new Set(topOrgCounts(summary, weeks, metric, n).map((r) => r.org).filter((o) => o !== OTHER));
   // Raw counts per (org, week) over every summary week.
   const raw = new Map<string, Map<string, number>>();
@@ -1094,8 +1131,15 @@ export function dirTotals(
 }
 
 /** The `n` orgs with the most of the metric over the given weeks across every
- * directory, in scope or not, largest first ("Other" left out). */
-export function topDirOrgs(board: DirBoard, weeks: string[], metric: Metric = 'comments', n = 7): string[] {
+ * directory, in scope or not, largest first ("Other" left out). With
+ * `nameable`, only orgs it accepts are ranked. */
+export function topDirOrgs(
+  board: DirBoard,
+  weeks: string[],
+  metric: Metric = 'comments',
+  n = 7,
+  nameable?: (org: string) => boolean,
+): string[] {
   const col = METRIC_INDEX[metric];
   const sums = new Map<string, number>();
   for (const w of weeks) {
@@ -1105,7 +1149,7 @@ export function topDirOrgs(board: DirBoard, weeks: string[], metric: Metric = 'c
     }
   }
   return [...sums]
-    .filter(([org]) => org !== OTHER)
+    .filter(([org]) => org !== OTHER && (!nameable || nameable(org)))
     .sort((a, b) => b[1] - a[1] || (a[0] < b[0] ? -1 : 1))
     .slice(0, n)
     .map(([org]) => org);
@@ -1368,7 +1412,7 @@ function subtree(board: DirBoard, node: number): Uint8Array {
  * OTHER), each a trailing mean over `smoothing` weeks. `exclude` leaves orgs
  * out entirely. Reviewed CLs count (CL, directory) pairs, so a CL with
  * comments in two subdirectories counts in each. `dataWeeks` is as in
- * orgWeeklyCounts. */
+ * orgWeeklyCounts, and so is `nameable`. */
 export function dirWeeklyCounts(
   board: DirBoard,
   node: number,
@@ -1378,6 +1422,7 @@ export function dirWeeklyCounts(
   smoothing = 1,
   exclude: readonly string[] = [],
   dataWeeks?: readonly string[],
+  nameable?: (org: string) => boolean,
 ): { org: string; values: number[] }[] {
   const col = METRIC_INDEX[metric];
   const inside = subtree(board, node);
@@ -1397,7 +1442,7 @@ export function dirWeeklyCounts(
     }
   }
   const named = [...sums]
-    .filter(([org, v]) => org !== OTHER && v > 0)
+    .filter(([org, v]) => org !== OTHER && v > 0 && (!nameable || nameable(org)))
     .sort((a, b) => b[1] - a[1] || (a[0] < b[0] ? -1 : 1))
     .slice(0, n)
     .map(([org]) => org);

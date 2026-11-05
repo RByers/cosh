@@ -914,6 +914,53 @@ test('per-reviewer spread: a row of dots per org, a figures table, and clicking 
   await page.close();
 });
 
+test('an org keeps one colour in every review section, whatever the filters', async () => {
+  const colorsOn = async (hash: string) => {
+    const { page, errors } = await open(hash);
+    const out = await page.evaluate(() => {
+      const norm = (c: string) => {
+        const d = document.createElement('div');
+        d.style.color = c;
+        document.body.append(d);
+        const v = getComputedStyle(d).color;
+        d.remove();
+        return v;
+      };
+      const seen: [string, string, string][] = [];
+      for (const d of window.__cosh!.reviewChart!.data.datasets as { label: string; borderColor: string }[]) {
+        if (d.label !== 'Other') seen.push(['review', d.label, norm(d.borderColor)]);
+      }
+      for (const sel of ['#leaderboard-legend', '#heat-legend']) {
+        for (const li of document.querySelectorAll(`${sel} li`)) {
+          const sw = li.querySelector<HTMLElement>('.swatch:not(.swatch-muted)');
+          const org = li.textContent!.replace(/ \(\d+\)$/, '').trim();
+          if (sw?.style.background && org !== 'Other') seen.push([sel, org, norm(sw.style.background)]);
+        }
+      }
+      return seen;
+    });
+    assert.deepEqual(errors, []);
+    await page.close();
+    return out;
+  };
+  const all = [
+    ...(await colorsOn('')),
+    ...(await colorsOn('#lbo=igalia.com&hm=*-google.com&rscale=linear')),
+    ...(await colorsOn('#lbo=*-google.com&lbn=100&hm=intel.com&from=2026-W40&to=2026-W44')),
+  ];
+  const byOrg = new Map<string, Set<string>>();
+  for (const [, org, c] of all) byOrg.set(org, (byOrg.get(org) ?? new Set()).add(c));
+  assert.ok(byOrg.has('igalia.com') && byOrg.size >= 5, [...byOrg.keys()].join());
+  for (const [org, cs] of byOrg) assert.equal(cs.size, 1, `${org}: ${[...cs].join(' / ')}`);
+  // And no two orgs share one.
+  const owner = new Map<string, string>();
+  for (const [org, cs] of byOrg) {
+    const c = [...cs][0];
+    assert.ok(!owner.has(c) || owner.get(c) === org, `${org} and ${owner.get(c)} share ${c}`);
+    owner.set(c, org);
+  }
+});
+
 test('leaderboard size and organization selects; every org is named, none as "other"', async () => {
   const { page, errors } = await open();
   const read = () =>

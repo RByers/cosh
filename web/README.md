@@ -93,7 +93,7 @@ Over a range:
    top level, solid for the part in scope and hatched for the part the scope
    leaves out (a partly included directory, like `components/`, has both;
    each name is tagged "included", "excluded" or "mixed"), a
-   100% bar of its split across the top 7 orgs plus "Other", and the share
+   100% bar of its split across the top 7 coloured orgs plus "Other", and the share
    not from google.com. For reviewed CLs, a CL with comments in two
    directories counts in each. A note lists the path rules (from the
    summary's metadata) and how comments are placed on files.
@@ -127,8 +127,8 @@ Over a range:
 8. **Reviewer leaderboard**: the top 25 (or 50, 100, 200) reviewers by review
    comments over the range, for every organization, all but google.com, or
    one organization (the 25 with the most review in the range), one
-   compact bar each, coloured by org. Every org gets its own legend entry;
-   orgs beyond the palette's 8 colours are named on their rows. Clicking a
+   compact bar each, coloured by org. Orgs with a colour get a legend
+   entry; the rest are muted and named on their rows. Clicking a
    reviewer opens their weekly chart over the picked range: review comments,
    with addressed comments filled in for classified weeks. The chart comes
    from `reviewer_weekly.json` (no extra data) and has the link to the CLs
@@ -141,6 +141,17 @@ Over a range:
    the first time a list is opened. It never shows an acceptance rate:
    threads without a change aren't bad review (`docs/comment-classifier.md`,
    "UI principle").
+
+**Org colours are fixed for the page.** The ratio chart and the table give
+each browser owner its own colour. Every review section (the organization
+chart, both directory charts, the per-reviewer spread, the leaderboard and
+the reviewer chart) uses one more map (`reviewColorSlots`): the 8 orgs with
+the most review comments over all the data get the 8 colours, keeping their
+ratio-chart colour if they have one; the others take the colours left over,
+in palette order (so a colour can mean a browser owner in the ratio chart
+and a reviewing org below it). The range, metric and filters never repaint an org. Charts that name
+the top orgs name only those 8 and fold the rest into "Other"; the
+leaderboard and spread show the rest muted and named.
 
 The metric, range, smoothing and review-chart scale are kept in the URL hash
 (`#metric=cls&from=2026-W14&to=2026-W44&smooth=4`, plus `&rscale=linear` for
