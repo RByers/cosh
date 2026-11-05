@@ -17,7 +17,7 @@ import {
 } from 'chart.js';
 import { fmtInt, fmtNum } from './format.ts';
 import type { OrgSpread, RadarWeekly, RatioPoint } from './data.ts';
-import { browserShare, monthTicks, OTHER, weekTitle } from './data.ts';
+import { browserShare, monthTicks, OTHER, smoothingName, weekTitle } from './data.ts';
 import { formatRatio } from './scale.ts';
 
 Chart.register(
@@ -432,7 +432,7 @@ export function renderReviewChart(
 ): Chart<'line'> {
   const log = scale === 'log';
   const fmt = (v: number) => fmtNum(v, { maximumFractionDigits: v < 10 ? 1 : 0 });
-  const avg = smoothing > 1 ? `  (${smoothing}-week avg)` : '';
+  const avg = smoothing > 1 ? `  (${smoothingName(smoothing)} avg)` : '';
   const logFloor = logAxisFloor(series.flatMap((s) => s.values));
   const datasets = series.map((s) => {
     const color = s.org === OTHER ? theme.muted : colors.get(s.org) ?? theme.muted;

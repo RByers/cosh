@@ -53,6 +53,7 @@ import {
   compareWeeks,
   computeRatios,
   DEFAULT_SMOOTHING,
+  smoothingName,
   smoothRatios,
   SMOOTHING_WEEKS,
   type Smoothing,
@@ -419,7 +420,7 @@ function buildControls(data: Data, state: State, render: () => void, renderSoon:
       state.smoothing = w;
       render();
     });
-    label.append(input, document.createTextNode(w === 1 ? 'Off' : w === 13 ? '3 months' : `${w} weeks`));
+    label.append(input, document.createTextNode(w === 1 ? 'Off' : w === 13 ? '3 months' : w === 52 ? '12 months' : `${w} weeks`));
     smoothBox.append(label);
   }
 
@@ -1383,7 +1384,7 @@ function main(data: Data) {
     $('#review-sub').textContent = weeks.length
       ? `${name} per ISO week, ${label}` +
         (state.smoothing > 1
-          ? `, as a ${state.smoothing}-week running average`
+          ? `, as a ${smoothingName(state.smoothing)} running average`
           : '') +
         ', for the organizations with the most over the range; the rest are combined as “Other”. ' +
         'The log scale shows every organization, since Google does most of the review; the linear scale leaves out ' +
@@ -1425,7 +1426,7 @@ function main(data: Data) {
     $('#ratio-sub').textContent = weeks.length
       ? `Share of ${metricLabel} ÷ share of Chromium browser usage, per ISO week, ${label}` +
         (state.smoothing > 1
-          ? `, as a ${state.smoothing}-week running average. `
+          ? `, as a ${smoothingName(state.smoothing)} running average. `
           : '. ') +
         'The 1.0× line is parity: review in proportion to usage.'
       : `No review data for ${label}.`;

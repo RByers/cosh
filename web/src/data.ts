@@ -320,9 +320,15 @@ function summaryRowIndex(summary: Summary) {
 }
 
 /** Running-average choices for the value ratio chart, in weeks (1 = off). */
-export const SMOOTHING_WEEKS = [1, 4, 13] as const;
+export const SMOOTHING_WEEKS = [1, 4, 13, 52] as const;
 export type Smoothing = (typeof SMOOTHING_WEEKS)[number];
-export const DEFAULT_SMOOTHING: Smoothing = 4;
+export const DEFAULT_SMOOTHING: Smoothing = 13;
+
+/** A smoothing window's name as an adjective, e.g. "4-week" or "3-month"
+ * (13 weeks), "12-month" (52 weeks). */
+export function smoothingName(weeks: number): string {
+  return weeks === 13 ? '3-month' : weeks === 52 ? '12-month' : `${weeks}-week`;
+}
 
 /** Trailing running average of ratios over `window` calendar weeks, ending at
  * each point's week. Averages the two shares separately and divides (mean

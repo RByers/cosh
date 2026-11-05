@@ -485,7 +485,7 @@ test.skipIf(!hasAddressedWeeks())('addressed comments show only classified weeks
   assert.ok(radii.length === 3 && radii.every(([r, h]) => Array.isArray(r) && r.every((x) => x === 0) && h === 4),
     JSON.stringify(radii));
   // The weeks before the first classified one have no addressed data, so the
-  // 4-week averages start from that week alone instead of averaging in zeros.
+  // 3-month averages start from that week alone instead of averaging in zeros.
   const firstWeek = () =>
     page.evaluate(() => {
       const c = window.__cosh!;
@@ -496,7 +496,7 @@ test.skipIf(!hasAddressedWeeks())('addressed comments show only classified weeks
         review: (review as unknown as { counts: number[] }).counts[0],
       };
     });
-  assert.equal(await page.evaluate(() => window.__cosh!.state.smoothing), 4);
+  assert.equal(await page.evaluate(() => window.__cosh!.state.smoothing), 13);
   const smoothed = await firstWeek();
   await page.click('#smoothing input[value="1"]');
   const raw = await firstWeek();
@@ -509,7 +509,7 @@ test.skipIf(!hasAddressedWeeks())('addressed comments show only classified weeks
     `${smoothed.ratio} vs ${raw.ratio}`,
   );
   assert.ok(Math.abs(smoothed.review - raw.review) < 1e-9, `${smoothed.review} vs ${raw.review}`);
-  await page.click('#smoothing input[value="4"]');
+  await page.click('#smoothing input[value="13"]');
   // The intro links to the explainer in the thread box: it scrolls there without losing the URL state.
   const intro = await page.$eval('header', (h) => h.textContent ?? '');
   assert.match(intro, /share of\s+addressed\s+review comments/);
@@ -742,7 +742,7 @@ test('each org segment of a directory links to its reviewers’ CLs there on Ger
   await page.close();
 });
 
-test('value ratio smoothing defaults to 4 weeks and is selectable', async () => {
+test('value ratio smoothing defaults to 3 months and is selectable', async () => {
   const { page, errors } = await open('#metric=comments&from=2026-W30&to=2026-W44');
   const read = () =>
     page.evaluate(() => {
@@ -761,10 +761,17 @@ test('value ratio smoothing defaults to 4 weeks and is selectable', async () => 
         reviewSub: document.querySelector('#review-sub')!.textContent!,
       };
     });
+  const def = await read();
+  assert.equal(def.smoothing, 13);
+  assert.equal(def.checked, '13');
+  assert.deepEqual(def.labels, ['Off', '4 weeks', '3 months', '12 months']);
+  assert.match(def.sub, /3-month running average/);
+  assert.match(def.reviewSub, /3-month running average/);
+
+  await page.click('#smoothing input[value="4"]');
   const four = await read();
   assert.equal(four.smoothing, 4);
-  assert.equal(four.checked, '4');
-  assert.deepEqual(four.labels, ['Off', '4 weeks', '3 months']);
+  assert.match(page.url(), /smooth=4/);
   // A page-wide filter, not a value-ratio-only control.
   assert.ok(await page.$('form.filters #smoothing'), 'smoothing toggle sits with the page filters');
   assert.match(four.sub, /4-week running average/);
@@ -791,11 +798,16 @@ test('value ratio smoothing defaults to 4 weeks and is selectable', async () => 
   assert.ok(off.review.every((v) => Number.isInteger(v)), 'unsmoothed counts are whole');
   assert.ok(jitter(four.review) < jitter(off.review), `${jitter(four.review)} vs ${jitter(off.review)}`);
 
-  await page.click('#smoothing input[value="13"]');
-  assert.match(page.url(), /smooth=13/);
+  await page.click('#smoothing input[value="52"]');
+  assert.match(page.url(), /smooth=52/);
+  const year = await read();
+  assert.match(year.sub, /12-month running average/);
+  assert.match(year.reviewSub, /12-month running average/);
+  assert.ok(year.ratios[0] !== null, 'first week averages over the year before the range');
+  assert.ok(jitter(year.ratios) < jitter(four.ratios), `${jitter(year.ratios)} vs ${jitter(four.ratios)}`);
   await page.reload();
   await page.waitForSelector('body[data-ready]');
-  assert.equal((await read()).smoothing, 13);
+  assert.equal((await read()).smoothing, 52);
   assert.deepEqual(errors, []);
   await page.close();
 });
