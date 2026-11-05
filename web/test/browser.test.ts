@@ -792,50 +792,46 @@ test.skipIf(!hasAddressedWeeks())('thread box: outcome breakdown and example thr
   await page.close();
 });
 
-test('per-reviewer distribution: bins sum to the reviewers, org filter and bar toggle', async () => {
+test('per-reviewer distribution: one bar per top org, shares of each org, legend figures', async () => {
   const { page, errors } = await open('#metric=comments');
   const read = () =>
     page.evaluate(() => {
       const c = window.__cosh!.distChart!;
-      const data = c.data.datasets[0].data as number[];
       return {
         labels: c.data.labels as string[],
-        sum: data.reduce((a, b) => a + b, 0),
-        stats: document.querySelector('#dist-stats')!.textContent!,
+        sets: c.data.datasets.map((d) => ({ org: d.label!, sum: (d.data as number[]).reduce((a, b) => a + b, 0) })),
+        legend: [...document.querySelectorAll<HTMLElement>('#dist-legend li')].map((li) => ({
+          org: li.dataset.org!,
+          text: li.textContent!,
+        })),
         sub: document.querySelector('#dist-sub')!.textContent!,
-        options: [...document.querySelectorAll<HTMLOptionElement>('#dist-org option')].map((o) => o.value),
+        select: !!document.querySelector('#dist-org'),
         h: c.height,
       };
     });
-  const all = await read();
-  assert.ok(all.h > 200, `height ${all.h}`);
-  assert.deepEqual(all.labels.slice(0, 3), ['1', '2–3', '4–7']);
-  const n = Number(all.stats.match(/^([\d,]+) reviewers from all organizations/)![1].replace(/,/g, ''));
-  assert.equal(all.sum, n, 'every reviewer is in one bin');
-  assert.match(all.stats, /median [\d.]+ review comments per reviewer\. The top 10% \([\d,]+ reviewers\) account for [\d.]+%/);
-  assert.ok(all.options.includes('google.com'));
+  const v = await read();
+  assert.ok(v.h > 200, `height ${v.h}`);
+  assert.equal(v.select, false, 'no organization selector');
+  assert.deepEqual(v.labels.slice(0, 3), ['1', '2–3', '4–7']);
+  const orgs = v.sets.map((x) => x.org);
+  assert.equal(orgs[0], 'google.com');
+  assert.ok(orgs.includes('microsoft.com'));
+  assert.equal(orgs[orgs.length - 1], 'Other');
+  assert.ok(orgs.length >= 3 && orgs.length <= 5, orgs.join());
+  assert.ok(!orgs.includes('gmail.com'), 'personal addresses are in Other');
+  // Each org's bars are shares of its own reviewers: they sum to 100%.
+  for (const x of v.sets) assert.ok(Math.abs(x.sum - 1) < 1e-9, `${x.org} sums to ${x.sum}`);
+  // The legend names each org, in the chart's order, with its figures.
+  assert.deepEqual(v.legend.map((l) => l.org), orgs);
+  for (const l of v.legend) assert.match(l.text, /^\S+ [\d,]+ reviewers?, median [\d.,]+, top 10% have [\d.]+% of [\d,]+$/);
 
-  await page.select('#dist-org', '*-google.com');
-  assert.match(page.url(), /rdo=\*-google\.com/);
-  const noGoogle = await read();
-  assert.match(noGoogle.stats, /reviewers outside google\.com/);
-  assert.ok(noGoogle.sum < all.sum && noGoogle.sum > 0);
-  assert.equal(noGoogle.sub, all.sub, 'the filter leaves the description alone');
-
-  await page.select('#dist-org', 'google.com');
-  const google = await read();
-  assert.match(google.stats, /reviewers from google\.com/);
-  assert.equal(google.sum + noGoogle.sum, all.sum);
-
-  // Bars can show the comments each bin accounts for instead.
+  // Bars can show shares of each org's comments instead.
   await page.click('#dist-y input[value="volume"]');
   assert.match(page.url(), /rdy=volume/);
-  const volume = await read();
-  const total = Number(volume.stats.match(/of their ([\d,]+) review comments/)![1].replace(/,/g, ''));
-  assert.equal(volume.sum, total);
-  // The state survives a reload from the URL.
+  const vol = await read();
+  for (const x of vol.sets) assert.ok(Math.abs(x.sum - 1) < 1e-9, `${x.org} sums to ${x.sum}`);
+  assert.equal(vol.sub, v.sub, 'the toggle leaves the description alone');
   const { page: again } = await open(new URL(page.url()).hash);
-  assert.equal(await again.$eval('#dist-org', (e) => (e as HTMLSelectElement).value), 'google.com');
   assert.equal(await again.$eval('#dist-y input[value="volume"]', (e) => (e as HTMLInputElement).checked), true);
   await again.close();
   // Under addressed comments, reviewers whose comments led to no change form a 0 bin.

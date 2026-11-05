@@ -112,16 +112,18 @@ Over a range:
    "chart" button shows it in the organization chart. A table, so cells have
    row and column headers; the directory column stays put while the bins
    scroll sideways on narrow screens.
-7. **Review per reviewer** (`reviewerDistribution` in `src/data.ts`,
-   `renderDistributionChart` in `src/charts.ts`): a histogram of each
-   reviewer's total for the metric over the range, in power-of-two bins (1,
-   2–3, 4–7, …), for every org, every org but google.com, or one org (the 25
-   with the most reviewers in the range). Bars show the number of reviewers
-   in each bin, or the bin's total for the metric ("Their total"). A line
-   above the chart gives the reviewer count, the median and the top 10%'s
-   share. Reviewers with 0 of the metric are left out, except under addressed
-   comments, where everyone who wrote a review comment counts and those with
-   none addressed form a 0 bin. From `reviewer_weekly.json`; no extra data.
+7. **Review per reviewer** (`reviewerDistribution` and `distributionGroups`
+   in `src/data.ts`, `renderDistributionChart` in `src/charts.ts`): a
+   grouped histogram of each reviewer's total for the metric over the range,
+   in power-of-two bins (1, 2–3, 4–7, …), with one bar per org in each bin:
+   the up to 4 orgs with the most reviewers (at least 10 each; gmail.com is
+   never one), then Other. Each bar is the share of that org's reviewers in
+   the bin, or the share of its total they account for, so orgs of any size
+   compare; the tooltip gives the counts. The legend gives each org's
+   reviewers, median and the top 10%'s share. Reviewers with 0 of the metric
+   are left out, except under addressed comments, where everyone who wrote a
+   review comment counts and those with none addressed form a 0 bin. From
+   `reviewer_weekly.json`; no extra data.
 8. **Reviewer leaderboard**: the top 25 (or 50, 100, 200) reviewers by review
    comments over the range, with or without google.com's reviewers, one
    compact bar each, coloured by org. Every org gets its own legend entry;
@@ -144,8 +146,8 @@ The metric, range, smoothing and review-chart scale are kept in the URL hash
 the linear review chart, `&lbn=100` for a longer leaderboard, `&lbg=0` for
 one without google.com, `&dir=<path>` for the organization chart's directory,
 and `&hm=<org>` (`*-google.com` for all but google.com), `&hmb=1|13` and
-`&hmv=share` for the heatmap, `&rdo=<org>` (`*-google.com` for all but
-google.com) and `&rdy=volume` for the per-reviewer distribution, and
+`&hmv=share` for the heatmap, `&rdy=volume` for the per-reviewer
+distribution's share of the total, and
 `&lbr=<account id>` for the reviewer chart). Old `#week=2026-W44` links open that one week, and
 an old `dirs=` parameter is ignored.
 

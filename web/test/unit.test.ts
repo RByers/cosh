@@ -59,6 +59,7 @@ import {
   topReviewers,
   reviewerTotals,
   reviewerDistribution,
+  distributionGroups,
   distributionStats,
   leaderboardOrgs,
   trimRanked,
@@ -240,6 +241,27 @@ test('reviewerDistribution bins by powers of two, with a 0 bin only when needed'
   assert.deepEqual(binLabel({ lo: 0, hi: 0 }), '0');
   assert.deepEqual(binLabel({ lo: 4, hi: 7 }), '4–7');
   assert.deepEqual(binLabel({ lo: 2048, hi: 4095 }), '2K–4.1K');
+});
+
+test('reviewerDistribution can bin against a shared layout', () => {
+  const bins = reviewerDistribution([1, 5], [0, 1, 20]);
+  assert.deepEqual(bins.map((b) => [b.lo, b.reviewers]), [[0, 0], [1, 1], [2, 0], [4, 1], [8, 0], [16, 0]]);
+  assert.deepEqual(reviewerDistribution([], [3]).map((b) => b.reviewers), [0, 0]);
+});
+
+test('distributionGroups: top orgs by reviewers, big enough and not folded; the rest are Other', () => {
+  const rows = [
+    ...Array.from({ length: 12 }, (_, i) => ({ value: i + 1, org: 'a.com' })),
+    ...Array.from({ length: 10 }, () => ({ value: 2, org: 'b.com' })),
+    ...Array.from({ length: 30 }, () => ({ value: 1, org: 'gmail.com' })),
+    ...Array.from({ length: 9 }, () => ({ value: 3, org: 'c.com' })),
+  ];
+  const g = distributionGroups(rows, ['gmail.com']);
+  assert.deepEqual(g.map((x) => [x.org, x.values.length]), [['a.com', 12], ['b.com', 10], [OTHER, 39]]);
+  assert.deepEqual(distributionGroups(rows, ['gmail.com'], 1).map((x) => x.org), ['a.com', OTHER]);
+  // Nobody left over: no Other.
+  assert.deepEqual(distributionGroups(rows.slice(0, 12), []).map((x) => x.org), ['a.com']);
+  assert.deepEqual(distributionGroups([], []), []);
 });
 
 test('distributionStats: median and the top 10% share', () => {

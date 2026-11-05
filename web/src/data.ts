@@ -617,12 +617,16 @@ export interface DistributionBin {
 /** Per-reviewer values binned by powers of two: 0 (only if some reviewer has
  * 0), 1, 2–3, 4–7, … up to the bin holding the largest value. Every bin in
  * between is kept, empty or not, so the axis is evenly spaced. Values are
- * whole numbers. */
-export function reviewerDistribution(values: readonly number[]): DistributionBin[] {
+ * whole numbers. The bins are laid out from `layout` (default: `values`), so
+ * groups binned against the same layout line up. */
+export function reviewerDistribution(
+  values: readonly number[],
+  layout: readonly number[] = values,
+): DistributionBin[] {
   const bins: DistributionBin[] = [];
-  if (!values.length) return bins;
-  const max = Math.max(...values);
-  if (values.some((v) => v <= 0)) bins.push({ lo: 0, hi: 0, reviewers: 0, total: 0 });
+  if (!layout.length) return bins;
+  const max = Math.max(...layout);
+  if (layout.some((v) => v <= 0)) bins.push({ lo: 0, hi: 0, reviewers: 0, total: 0 });
   for (let lo = 1; lo <= max; lo *= 2) bins.push({ lo, hi: lo * 2 - 1, reviewers: 0, total: 0 });
   const zero = bins[0]?.lo === 0 ? 1 : 0;
   for (const v of values) {
@@ -631,6 +635,37 @@ export function reviewerDistribution(values: readonly number[]): DistributionBin
     bins[i].total += Math.max(0, v);
   }
   return bins;
+}
+
+/** Organizations the per-reviewer distribution shows on their own: at most
+ * this many, each with at least DIST_MIN_REVIEWERS reviewers in the range
+ * (fewer make too noisy a distribution); the rest are combined as Other. */
+export const DIST_TOP_ORGS = 4;
+export const DIST_MIN_REVIEWERS = 10;
+
+/** Reviewers grouped by org for the distribution chart: the orgs with the
+ * most reviewers (up to `n`, each with at least `min`, never one folded into
+ * Other), most first, then OTHER for everyone else if anyone is left. */
+export function distributionGroups(
+  rows: readonly { value: number; org: string }[],
+  fold: readonly string[] = [],
+  n = DIST_TOP_ORGS,
+  min = DIST_MIN_REVIEWERS,
+): { org: string; values: number[] }[] {
+  const by = new Map<string, number[]>();
+  for (const r of rows) {
+    const v = by.get(r.org);
+    if (v) v.push(r.value);
+    else by.set(r.org, [r.value]);
+  }
+  const folded = new Set(fold);
+  const top = [...by]
+    .filter(([org, v]) => !folded.has(org) && org !== OTHER && v.length >= min)
+    .sort((a, b) => b[1].length - a[1].length || (a[0] < b[0] ? -1 : 1))
+    .slice(0, n);
+  const shown = new Set(top.map(([org]) => org));
+  const rest = rows.filter((r) => !shown.has(r.org)).map((r) => r.value);
+  return [...top.map(([org, values]) => ({ org, values })), ...(rest.length ? [{ org: OTHER, values: rest }] : [])];
 }
 
 /** Summary of per-reviewer values: how many, the median, and how much of

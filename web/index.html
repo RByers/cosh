@@ -320,17 +320,13 @@
         <h2 id="dist-title">Review per reviewer</h2>
         <p id="dist-sub" class="sub"></p>
         <div class="toggles">
-          <div class="select-toggle chart-toggle">
-            <label for="dist-org">Organization</label>
-            <select id="dist-org"></select>
-          </div>
           <fieldset id="dist-y" class="segmented chart-toggle">
             <legend>Bars show</legend>
           </fieldset>
         </div>
-        <p id="dist-stats" class="sub dist-stats" aria-live="polite"></p>
+        <ul id="dist-legend" class="legend dist-legend" aria-label="Bar colour by organization, with each one's reviewers, median and top 10% share"></ul>
         <div class="chart">
-          <canvas id="dist-chart" role="img" aria-label="Histogram of reviewers by their total for the metric over the selected range"></canvas>
+          <canvas id="dist-chart" role="img" aria-label="Histogram of reviewers by their total for the metric over the selected range, one bar per organization; the legend gives each organization's figures"></canvas>
         </div>
       </section>
 

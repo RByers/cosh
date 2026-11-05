@@ -146,11 +146,12 @@ value_ratio(O, t) = O's share of Chromium addressed review comments
   reviewers. Every org on it is named in the legend (no "other"); orgs beyond
   the 8 palette colours are also named on their rows. `summarize` writes every reviewer's weekly counts
   to `summaries/reviewer_weekly.json`; the UI totals any range from it.
-- Review per reviewer in the web UI (above the leaderboard): a histogram of
-  each reviewer's total for the metric over the range, in power-of-two bins,
-  with an organization filter (all, all but google.com, or one org) and a
-  toggle between reviewers per bin and the bin's total; plus the median and
-  the top 10%'s share. From `reviewer_weekly.json`.
+- Review per reviewer in the web UI (above the leaderboard): a grouped
+  histogram of each reviewer's total for the metric over the range, in
+  power-of-two bins, one bar per top org (up to 4 with at least 10
+  reviewers) plus Other. Bars are shares of each org's reviewers (or of its
+  total), so orgs of any size compare; the legend gives each org's median
+  and top 10% share. From `reviewer_weekly.json`.
 - Web UI date range: From/To dates (whole ISO weeks) plus presets, applied to
   every chart, the tiles and the table (see `web/README.md`).
 

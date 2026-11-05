@@ -80,7 +80,9 @@ import {
   topReviewers,
   reviewerTotals,
   reviewerDistribution,
+  distributionGroups,
   distributionStats,
+  DIST_MIN_REVIEWERS,
   trimRanked,
   LEADERBOARD_SIZE,
   LEADERBOARD_SIZES,
@@ -143,8 +145,6 @@ interface State {
   heatExpanded: Set<string>;
   /** The reviewer whose weekly chart is open (Gerrit account id), or null. */
   lbReviewer: number | null;
-  /** Per-reviewer distribution organization: ALL_ORGS, ALL_BUT_GOOGLE, or one org. */
-  distOrg: string;
   /** What the distribution's bars measure. */
   distY: DistributionY;
 }
@@ -315,7 +315,6 @@ function readStateFromUrl(data: Data): State {
     heatValue: q.get('hmv') === 'share' ? 'share' : 'volume',
     heatExpanded: new Set(),
     lbReviewer: /^\d+$/.test(q.get('lbr') ?? '') ? Number(q.get('lbr')) : null,
-    distOrg: q.get('rdo') || ALL_ORGS,
     distY: q.get('rdy') === 'volume' ? 'volume' : 'reviewers',
   };
 }
@@ -330,7 +329,6 @@ function writeStateToUrl(s: State) {
     (s.heatBin !== DEFAULT_HEAT_BIN ? `&hmb=${s.heatBin}` : '') +
     (s.heatValue !== 'volume' ? '&hmv=share' : '') +
     (s.lbReviewer !== null ? `&lbr=${s.lbReviewer}` : '') +
-    (s.distOrg !== ALL_ORGS ? `&rdo=${encodeURIComponent(s.distOrg)}` : '') +
     (s.distY !== 'reviewers' ? '&rdy=volume' : ''));
 }
 
@@ -481,8 +479,8 @@ function buildControls(data: Data, state: State, render: () => void) {
     $('#dist-y'),
     'dist-y',
     [
-      { id: 'reviewers' as DistributionY, label: 'Reviewers' },
-      { id: 'volume' as DistributionY, label: 'Their total' },
+      { id: 'reviewers' as DistributionY, label: 'Share of reviewers' },
+      { id: 'volume' as DistributionY, label: 'Share of the total' },
     ],
     state.distY,
     (y) => {
@@ -490,10 +488,6 @@ function buildControls(data: Data, state: State, render: () => void) {
       render();
     },
   );
-  $<HTMLSelectElement>('#dist-org').addEventListener('change', (e) => {
-    state.distOrg = (e.target as HTMLSelectElement).value;
-    render();
-  });
   $<HTMLSelectElement>('#heat-org').addEventListener('change', (e) => {
     state.heatOrg = (e.target as HTMLSelectElement).value;
     state.heatExpanded.clear();
@@ -936,11 +930,8 @@ function dirScopeNote(board: DirBoard, node: number, weeks: string[], metric: Me
   return scope + (metric === 'cls' ? ' A CL with comments in two of its subdirectories counts in each.' : '');
 }
 
-/** Organizations the per-reviewer distribution's selector lists, most reviewers first. */
-const DIST_ORG_CHOICES = 25;
-
 /** How the metric is spread across reviewers: a histogram of each reviewer's
- * total over the range, for every org, every org but Google, or one org. */
+ * total over the range, one bar per top organization (and Other) per bin. */
 function renderDistribution(data: Data, state: State, colors: Map<string, string>, theme: Theme) {
   const name = metricName(state.metric);
   const unit = name.toLowerCase();
@@ -950,55 +941,54 @@ function renderDistribution(data: Data, state: State, colors: Map<string, string
   const all = reviewerTotals(data.reviewers, weeks, state.metric).filter((r) =>
     state.metric === 'addressed' ? r.comments > 0 : r.value > 0,
   );
+  const groups = distributionGroups(all, data.reviewers.meta.fold_into_other ?? []);
+  const layout = all.map((r) => r.value);
+  const orgColors = reviewColors(groups.map((g) => g.org).filter((o) => o !== OTHER), colors, theme);
+  const series = groups.map((g) => ({
+    org: g.org,
+    color: (g.org !== OTHER && orgColors.get(g.org)) || theme.muted,
+    bins: reviewerDistribution(g.values, layout),
+    stats: distributionStats(g.values),
+  }));
 
-  // The selector: orgs with the most reviewers over the range, plus the current choice.
-  const single = state.distOrg.startsWith('*') ? null : state.distOrg;
-  const count = new Map<string, number>();
-  for (const r of all) count.set(r.org, (count.get(r.org) ?? 0) + 1);
-  const ranked = [...count].sort((a, b) => b[1] - a[1] || (a[0] < b[0] ? -1 : 1)).slice(0, DIST_ORG_CHOICES);
-  if (single && !count.has(single)) ranked.push([single, 0]);
-  const select = $<HTMLSelectElement>('#dist-org');
-  select.replaceChildren(
-    ...[
-      { v: ALL_ORGS, t: 'All organizations' },
-      { v: ALL_BUT_GOOGLE, t: `All except ${LINEAR_EXCLUDED_ORG}` },
-      ...ranked.map(([o, n]) => ({ v: o, t: `${o} (${int(n)})` })),
-    ].map(({ v, t }) => {
-      const o = el('option', t);
-      o.value = v;
-      return o;
-    }),
-  );
-  const noGoogle = state.distOrg === ALL_BUT_GOOGLE;
-  select.value = noGoogle || single ? state.distOrg : ALL_ORGS;
-
-  const rows = all.filter((r) => (single ? r.org === single : !noGoogle || r.org !== LINEAR_EXCLUDED_ORG));
-  const values = rows.map((r) => r.value);
-  const bins = reviewerDistribution(values);
-  const stats = distributionStats(values);
-
-  // Fixed for a given range and metric, so the toggles below it don't move.
+  // Fixed for a given range and metric, so the toggle below it doesn't move.
   $('#dist-sub').textContent = weeks.length
     ? `How ${unit} in ${rangeLabel(state.range)} are spread across reviewers: each reviewer's total over the range, ` +
-      'in bins that double in width (1, 2–3, 4–7, …). Bars show either how many reviewers fall in each bin or how ' +
-      `much of the ${unit} those reviewers account for. ` +
+      'in bins that double in width (1, 2–3, 4–7, …), with one bar per organization. A bar is the share of that ' +
+      `organization's reviewers in the bin, or the share of its ${unit} they account for, so organizations of any ` +
+      'size can be compared; hover for the counts. ' +
       (state.metric === 'addressed'
         ? 'Every reviewer with a review comment in the range counts, so those with none addressed make up the 0 bin. '
         : `Reviewers with no ${unit} in the range are left out. `) +
-      'A reviewer counts for the organization most of their comments in the range were for. Same scope as the ' +
-      'leaderboard below.'
+      'A reviewer counts for the organization most of their comments in the range were for. Organizations with ' +
+      `fewer than ${DIST_MIN_REVIEWERS} reviewers, and personal addresses, are combined as “Other”. Same scope as ` +
+      'the leaderboard below.'
     : `No reviewer data for ${rangeLabel(state.range)}.`;
-  const fmt = (v: number) => v.toLocaleString('en-US', { maximumFractionDigits: 1 });
-  const scope = single ? `from ${single}` : noGoogle ? `outside ${LINEAR_EXCLUDED_ORG}` : 'from all organizations';
-  $('#dist-stats').textContent = !stats.n
-    ? `No reviewers ${scope} in this range.`
-    : `${int(stats.n)} reviewers ${scope}; median ${fmt(stats.median)} ${unit}` +
-      ` per reviewer. The top 10% (${int(stats.top10)} ${stats.top10 === 1 ? 'reviewer' : 'reviewers'}) account for ` +
-      `${pct(stats.top10Share)} of their ${int(stats.total)} ${unit}.`;
 
-  const color = single ? reviewColors([single], colors, theme).get(single) ?? theme.series[0] : theme.text;
+  const fmt = (v: number) => v.toLocaleString('en-US', { maximumFractionDigits: 1 });
+  $('#dist-legend').replaceChildren(
+    ...series.map((s) => {
+      const li = el('li');
+      li.dataset.org = s.org;
+      const sw = el('span', undefined, s.org === OTHER ? 'swatch swatch-muted' : 'swatch');
+      if (s.org !== OTHER) sw.style.background = s.color;
+      const st = s.stats;
+      li.append(
+        sw,
+        el('span', s.org, 'dist-org'),
+        el(
+          'span',
+          ` ${int(st.n)} ${st.n === 1 ? 'reviewer' : 'reviewers'}, median ${fmt(st.median)}, ` +
+            `top 10% have ${pct(st.top10Share)} of ${int(st.total)}`,
+          'dist-stat',
+        ),
+      );
+      return li;
+    }),
+  );
+
   distChart?.destroy();
-  distChart = renderDistributionChart($<HTMLCanvasElement>('#dist-chart'), bins, name, state.distY, color, theme);
+  distChart = renderDistributionChart($<HTMLCanvasElement>('#dist-chart'), series, name, state.distY, theme);
 }
 
 /** Organizations the heatmap's selector lists, busiest first. */

@@ -445,63 +445,67 @@ export function binLabel(b: { lo: number; hi: number }): string {
   return b.lo === b.hi ? f(b.lo) : `${f(b.lo)}–${f(b.hi)}`;
 }
 
-/** What the distribution chart's bars measure: reviewers per bin, or the
- * metric those reviewers account for. */
+/** What the distribution chart's bars measure: each org's reviewers per bin,
+ * or the metric they account for, as a share of that org's whole. */
 export type DistributionY = 'reviewers' | 'volume';
 
-/** Histogram of reviewers by their total for the metric over the range, on
- * power-of-two bins. One colour: the org's when one is chosen. */
+/** Grouped histogram of reviewers by their total for the metric over the
+ * range, on power-of-two bins: one bar per org in each bin. Bars are shares
+ * of the org's own reviewers (or total), so orgs of any size compare; the
+ * tooltip gives the counts. Every org's `bins` share one layout. */
 export function renderDistributionChart(
   canvas: HTMLCanvasElement,
-  bins: DistributionBin[],
+  series: { org: string; color: string; bins: DistributionBin[] }[],
   metricLabel: string,
   y: DistributionY,
-  color: string,
   theme: Theme,
 ): Chart<'bar'> {
   const unit = metricLabel.toLowerCase();
   const fmt = (v: number) => v.toLocaleString('en-US');
-  const reviewers = bins.reduce((s, b) => s + b.reviewers, 0);
-  const total = bins.reduce((s, b) => s + b.total, 0);
+  const layout = series[0]?.bins ?? [];
+  const sums = series.map((s) => ({
+    reviewers: s.bins.reduce((a, b) => a + b.reviewers, 0),
+    total: s.bins.reduce((a, b) => a + b.total, 0),
+  }));
+  const share = (i: number, b: DistributionBin) => {
+    const whole = y === 'reviewers' ? sums[i].reviewers : sums[i].total;
+    return whole ? (y === 'reviewers' ? b.reviewers : b.total) / whole : 0;
+  };
   const base = baseOptions(theme);
   return new Chart(canvas, {
     type: 'bar',
     data: {
-      labels: bins.map(binLabel),
-      datasets: [
-        {
-          label: y === 'reviewers' ? 'Reviewers' : metricLabel,
-          data: bins.map((b) => (y === 'reviewers' ? b.reviewers : b.total)),
-          backgroundColor: color,
-          borderWidth: 0,
-          borderRadius: { topLeft: 4, topRight: 4 },
-          borderSkipped: 'bottom',
-          categoryPercentage: 0.9,
-          barPercentage: 0.95,
-        },
-      ],
+      labels: layout.map(binLabel),
+      datasets: series.map((s, i) => ({
+        label: s.org,
+        data: s.bins.map((b) => share(i, b)),
+        backgroundColor: s.color,
+        borderWidth: 0,
+        borderRadius: { topLeft: 2, topRight: 2 },
+        borderSkipped: 'bottom' as const,
+        categoryPercentage: 0.85,
+        barPercentage: 0.9,
+      })),
     },
     options: {
       ...base,
-      interaction: { mode: 'index', intersect: false },
       plugins: {
         ...base.plugins,
         legend: { display: false },
         tooltip: {
           ...base.plugins.tooltip,
-          displayColors: false,
+          boxHeight: 10,
+          itemSort: (a, b) => a.datasetIndex - b.datasetIndex,
           callbacks: {
             title: (items) => {
-              const b = bins[items[0]?.dataIndex ?? 0];
+              const b = layout[items[0]?.dataIndex ?? 0];
               if (!b) return '';
               return b.lo === b.hi ? `${fmt(b.lo)} ${unit}` : `${fmt(b.lo)} to ${fmt(b.hi)} ${unit}`;
             },
             label: (ctx) => {
-              const b = bins[ctx.dataIndex];
-              return [
-                `${fmt(b.reviewers)} reviewers (${reviewers ? pct(b.reviewers / reviewers) : '—'} of them)`,
-                `${fmt(b.total)} ${unit} (${total ? pct(b.total / total) : '—'} of the total)`,
-              ];
+              const b = series[ctx.datasetIndex].bins[ctx.dataIndex];
+              return `${ctx.dataset.label}: ${pct(Number(ctx.raw))}  (${fmt(b.reviewers)} ` +
+                `${b.reviewers === 1 ? 'reviewer' : 'reviewers'}, ${fmt(b.total)} ${unit})`;
             },
           },
         },
@@ -515,10 +519,14 @@ export function renderDistributionChart(
         },
         y: {
           beginAtZero: true,
-          title: { display: true, text: y === 'reviewers' ? 'reviewers' : unit, color: theme.muted },
+          title: {
+            display: true,
+            text: y === 'reviewers' ? "share of org's reviewers" : `share of org's ${unit}`,
+            color: theme.muted,
+          },
           border: { display: false },
           grid: { color: theme.grid },
-          ticks: { color: theme.muted, precision: 0, callback: (v) => fmt(Number(v)) },
+          ticks: { color: theme.muted, callback: (v) => `${Math.round(Number(v) * 100)}%` },
         },
       },
     },
