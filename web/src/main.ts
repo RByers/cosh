@@ -390,7 +390,7 @@ function buildControls(data: Data, state: State, render: () => void) {
       state.smoothing = w;
       render();
     });
-    label.append(input, document.createTextNode(w === 1 ? 'Off' : `${w} weeks`));
+    label.append(input, document.createTextNode(w === 1 ? 'Off' : w === 13 ? '3 months' : `${w} weeks`));
     smoothBox.append(label);
   }
 
