@@ -115,7 +115,8 @@ value_ratio(O, t) = O's share of Chromium addressed review comments
 **Done**
 - Addressed comments (metric_version 7), the primary metric: thread
   structure in `derive`, the `cosh classify` step (Haiku via `claude -p`,
-  `labels.sqlite`), the summaries and the UI. 2026-W44 is classified. See
+  `labels.sqlite`), the summaries and the UI. The whole year 2025-W45 ..
+  2026-W44 is classified (0 pending). See
   `comment-classifier.md`.
 - W44 extracted, validated and summarized (`summaries/`).
 - `extract`, `extract-open`, `derive`, `summarize`, `radar` and `backfill`
@@ -185,10 +186,14 @@ value_ratio(O, t) = O's share of Chromium addressed review comments
    week's in-scope comments are addressed). Design and first-run numbers:
    `docs/comment-classifier.md`, "Design"; research in `review-impact.md`.
    - **Next:**
-     - classify more weeks, a few at a time:
-       `python3 -m cosh classify --week W`, about 1M Haiku tokens per
-       week, ~10 min serial and much less with the default `--jobs 8`
-       (2026-11-05); check `/usage`;
+     - done 2026-11-05: the year 2025-W45 .. 2026-W44 is classified.
+       The run labelled 84,051 threads in 842 calls (25.6M Haiku tokens,
+       $6.01 API-equivalent, 41 min with `--jobs 8`), so 0 comments are
+       pending. 54–61% of in-scope comments are addressed each week (58.6%
+       for the year);
+     - classify older backfilled weeks the same way when wanted, about
+       0.5M tokens and under a minute a week: `python3 -m cosh classify
+       --week W ...`, `--dry-run` first;
      - make it the default headline once the default range is classified;
      - let the regex skip "[AI]" / "Maestro AI:" prefixes on owner replies;
      - **reminder for the user: recheck the classifier with Gemini** as a
