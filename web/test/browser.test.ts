@@ -600,6 +600,13 @@ test('review by directory: on a phone a toggle picks one bar, beside the name', 
   await wide.page.close();
 
   const { page, errors } = await open('', 390);
+  // Scrolling to the chart loads its link data, which rebuilds the rows; let
+  // that finish first, or a click can land on a row that was just replaced.
+  // Scroll to the toggle, not the chart: the chart at the top would leave the
+  // toggle above it under the sticky metric bar (scroll-padding-top keeps it
+  // clear), and clicks there would hit the bar's buttons instead.
+  await page.$eval('#area-show', (e) => e.scrollIntoView());
+  await page.waitForSelector('body[data-area-links]');
   assert.deepEqual(await shown(page), { toggle: true, vol: true, dist: false, oneLine: true, overflow: 0 });
   await page.click('#area-show input[value="orgs"]');
   assert.deepEqual(await shown(page), { toggle: true, vol: false, dist: true, oneLine: true, overflow: 0 });
