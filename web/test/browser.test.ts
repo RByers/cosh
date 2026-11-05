@@ -329,6 +329,12 @@ test.skipIf(!hasAddressedWeeks())('addressed comments show only classified weeks
   assert.equal(details.boxHidden, false);
   assert.equal(details.tag, 'DIV');
   assert.match(details.text, /precision of 0\.98 .*recall of 0\.99/s);
+  // Every mention of a file in this repo links to it on GitHub.
+  const repoRefs = await page.$$eval('code', (codes) => codes
+    .filter((c) => /^(docs|scripts|cosh|web|tests|summaries|config)\//.test(c.textContent ?? ''))
+    .map((c) => ({ path: c.textContent, href: c.closest('a')?.getAttribute('href') ?? null })));
+  assert.ok(repoRefs.length > 0);
+  for (const r of repoRefs) assert.equal(r.href, `https://github.com/RByers/cosh/tree/main/${r.path}`);
   // Other metrics are unaffected and hide the note.
   await page.click('#metric input[value="comments"]');
   assert.equal(await page.$eval('#metric-note', (n) => (n as HTMLElement).hidden), true);
@@ -1121,7 +1127,7 @@ test('chart tooltips sit beside the hovered week, not over its points', async ()
 });
 
 test('heatmap: directories by time bins, per org or as a mix, with Gerrit links', async () => {
-  const { page, errors } = await open('#from=2025-W45&to=2026-W44');
+  const { page, errors } = await open('#metric=comments&from=2025-W45&to=2026-W44');
   const read = () =>
     page.evaluate(() => ({
       bins: document.querySelectorAll('#heat-table thead th.hm-bin').length,
