@@ -141,9 +141,16 @@
         <p id="ratio-sub" class="sub"></p>
         <template data-msg="ratio-sub">
           <span data-if="!weeks">No review data for <slot name="range"></slot>.</span>
-          <span data-if="weeks">Share of <slot name="metric"></slot> ÷ share of Chromium browser usage, per ISO week,
+          <span data-if="weeks"><span data-if="!shown">No week of <slot name="range"></slot> has both
+            <slot name="metric"></slot> and Chromium browser usage data<span data-if="smoothed"> for a full
+            <slot name="smoothing"></slot> running average</span>.</span><span data-if="shown">Share of
+            <slot name="metric"></slot> ÷ share of Chromium browser usage, per ISO week,
             <slot name="range"></slot><span data-if="smoothed">, as a <slot name="smoothing"></slot> running average</span>.
-            The 1.0× line is parity: review in proportion to usage.</span>
+            The 1.0× line is parity: review in proportion to usage.<span data-if="start"> The running average starts
+            at <slot name="start"></slot>, the first week with a full window of data.</span>
+            <span data-if="skippedN">
+            Leaves out <slot name="skippedN"></slot> <span data-if="skippedN=1">week</span><span data-if="skippedN!=1">weeks</span>
+            without both review and usage data<span data-if="skipped">: <slot name="skipped"></slot></span>.</span></span></span>
         </template>
         <div class="chart chart-tall">
           <canvas id="ratio-chart" role="img" aria-label="Value ratio per organization over time; the table below lists the values."></canvas>
@@ -307,7 +314,10 @@
             <span data-if="!multi">share of <slot name="metric"></slot> and of Chromium browser usage.</span><span data-if="omitted">
             Showing the top <slot name="top"></slot> organizations by review share, plus those with a browser;
             <slot name="omitted"></slot> smaller <span data-if="omitted=1">organization is</span><span data-if="omitted!=1">organizations are</span>
-            omitted.</span></span>
+            omitted.</span>
+            <span data-if="skippedN">
+            Shares and ratios leave out <slot name="skippedN"></slot> <span data-if="skippedN=1">week</span><span data-if="skippedN!=1">weeks</span>
+            without both review and usage data<span data-if="skipped">: <slot name="skipped"></slot></span>.</span></span>
         </template>
         <template data-msg="ratio-cell"><span data-if="is=value"><slot name="ratio"></slot>×</span><span data-if="is=no-browser">no browser</span><span data-if="is=no-usage">no usage data</span><span data-if="is=small">usage too small</span></template>
         <div class="table-wrap">

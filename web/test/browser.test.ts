@@ -485,13 +485,15 @@ test.skipIf(!hasAddressedWeeks())('addressed comments show only classified weeks
   assert.ok(radii.length === 3 && radii.every(([r, h]) => Array.isArray(r) && r.every((x) => x === 0) && h === 4),
     JSON.stringify(radii));
   // The weeks before the first classified one have no addressed data, so the
-  // 3-month averages start from that week alone instead of averaging in zeros.
+  // 3-month review average starts from that week alone instead of averaging
+  // in zeros. The ratio chart starts once its average has a full window.
   const firstWeek = () =>
     page.evaluate(() => {
       const c = window.__cosh!;
       const ratio = c.ratioChart!.data.datasets.find((d: { label?: string }) => d.label === 'google.com')!;
       const review = c.reviewChart!.data.datasets.find((d: { label?: string }) => d.label === 'google.com')!;
       return {
+        ratioStart: (c.ratioChart!.data.labels as string[])[0],
         ratio: (ratio.data as unknown as { ratio: number | null }[])[0].ratio,
         review: (review as unknown as { counts: number[] }).counts[0],
       };
@@ -500,14 +502,12 @@ test.skipIf(!hasAddressedWeeks())('addressed comments show only classified weeks
   const smoothed = await firstWeek();
   await page.click('#smoothing input[value="1"]');
   const raw = await firstWeek();
-  // The ratio is null in both when the first week has no usage data (review
-  // data starts 2023-W26, Radar's the week after).
-  assert.ok(
-    raw.ratio === null
-      ? smoothed.ratio === null
-      : smoothed.ratio !== null && Math.abs(smoothed.ratio - raw.ratio) < 1e-9,
-    `${smoothed.ratio} vs ${raw.ratio}`,
-  );
+  // The ratio chart starts on its first week with both review and usage data
+  // (review data starts 2023-W26, Radar's the week after), and the 3-month
+  // average 12 weeks later; both start on a ratio, not an empty week.
+  assert.ok(raw.ratioStart >= classified[0], raw.ratioStart);
+  assert.equal(smoothed.ratioStart, addWeeks(raw.ratioStart, 12));
+  assert.ok(raw.ratio !== null && smoothed.ratio !== null, `${smoothed.ratio} vs ${raw.ratio}`);
   assert.ok(Math.abs(smoothed.review - raw.review) < 1e-9, `${smoothed.review} vs ${raw.review}`);
   await page.click('#smoothing input[value="13"]');
   // The intro links to the explainer in the thread box: it scrolls there without losing the URL state.
@@ -842,8 +842,10 @@ test('date range defaults to where review and usage data overlap, and drives eve
   assert.equal(new Date(`${d.to}T00:00:00Z`).getUTCDay(), 0);
   assert.equal(d.usageWeeks[0], d.range.from);
   assert.equal(d.usageWeeks[d.usageWeeks.length - 1], d.range.to);
-  assert.ok(d.ratioWeeks.every((w) => w >= d.range.from && w <= d.range.to));
-  assert.deepEqual(d.reviewWeeks, d.ratioWeeks);
+  // The ratio chart's 3-month average starts once its window is full of
+  // data, 12 weeks in; then it follows the review chart to the range's end.
+  assert.equal(d.ratioWeeks[0], addWeeks(d.range.from, 12));
+  assert.deepEqual(d.reviewWeeks.slice(d.reviewWeeks.length - d.ratioWeeks.length), d.ratioWeeks);
   // "All data" stays out of the URL, so a reload follows new data and keeps it picked.
   assert.doesNotMatch(page.url(), /from=|to=/);
   const pinned = await open(`#metric=comments&from=${d.range.from}&to=${d.range.to}`);

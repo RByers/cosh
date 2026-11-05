@@ -306,6 +306,16 @@ function summaryRowIndex(summary: Summary) {
   return index;
 }
 
+/** The weeks of `weeks` that have both halves of a value ratio: a complete
+ * Radar week (usage) and, if `dataWeeks` is given, review data for the
+ * metric (the classified weeks, for addressed comments). The ratio views keep
+ * only these, so a range never starts or ends on weeks with no ratio at all,
+ * and range totals compare review and usage over the same weeks. */
+export function ratioWeeks(weeks: readonly string[], radar: RadarWeekly, dataWeeks?: readonly string[]): string[] {
+  const has = dataWeeks ? new Set(dataWeeks) : null;
+  return weeks.filter((w) => radar.has(w) && (!has || has.has(w)));
+}
+
 /** Running-average choices for the value ratio chart, in weeks (1 = off). */
 export const SMOOTHING_WEEKS = [1, 4, 13, 52] as const;
 export type Smoothing = (typeof SMOOTHING_WEEKS)[number];
@@ -322,11 +332,27 @@ export function smoothingName(weeks: number): string {
  * contribution ÷ mean usage), so a week with near-zero usage can't dominate
  * the way it would when averaging weekly ratios. Weeks with no Radar data, or
  * absent from `points`, are left out of the window. Pass every week, not just
- * the displayed range, so the first displayed weeks get a full window. */
-export function smoothRatios(points: RatioPoint[], window: number, minDerived = MIN_DERIVED_SHARE): RatioPoint[] {
+ * the displayed range, so the first displayed weeks get a full window.
+ *
+ * With `fullWindows` (the default), a week whose window reaches back before
+ * the first week with usage data gets no ratio: its average would cover only
+ * the few weeks since the data starts, so one noisy week would swing it. */
+export function smoothRatios(
+  points: RatioPoint[],
+  window: number,
+  minDerived = MIN_DERIVED_SHARE,
+  fullWindows = true,
+): RatioPoint[] {
   if (window <= 1) return points;
   const byKey = new Map(points.map((p) => [`${p.org}|${p.week}`, p]));
+  const first = points.reduce<string | null>(
+    (m, p) => (p.derived !== null && (m === null || compareWeeks(p.week, m) < 0) ? p.week : m),
+    null,
+  );
   return points.map((p) => {
+    if (fullWindows && first !== null && compareWeeks(addWeeks(p.week, 1 - window), first) < 0) {
+      return { ...p, ratio: null };
+    }
     let contribution = 0;
     let derived = 0;
     let n = 0;

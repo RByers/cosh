@@ -55,6 +55,7 @@ import {
   DEFAULT_SMOOTHING,
   smoothingName,
   smoothRatios,
+  ratioWeeks,
   SMOOTHING_WEEKS,
   type Smoothing,
   dataRanges,
@@ -535,16 +536,27 @@ function renderTiles(data: Data, weeks: string[]) {
   tile('tile-post', int(postMerge), comments ? { share: pct(postMerge / comments) } : null);
 }
 
+/** Template values for the range's weeks the value views leave out for
+ * lacking review or usage data: their number, and a list if it's short. */
+function skippedVars(weeks: string[], vWeeks: string[]) {
+  const kept = new Set(vWeeks);
+  const out = weeks.filter((w) => !kept.has(w));
+  return { skippedN: out.length, skipped: out.length <= 3 ? out.join(', ') : '' };
+}
+
 /** Each org's share of the metric and of usage over the range, and their
  * ratio: what the table lists and the parity chart plots. */
-function orgRangeShares(data: Data, state: State, weeks: string[]) {
+function orgRangeShares(data: Data, state: State, weeks: string[], vWeeks: string[] = weeks) {
   const totals = orgTotals(data.summary, weeks, distinctReviewers(data.reviewers, weeks).byOrg);
+  // Review share and usage share over the same weeks: those with both.
+  const vTotals = vWeeks === weeks ? totals : orgTotals(data.summary, vWeeks);
   const orgs = new Set([...totals.map((r) => r.org), ...data.orgBrowsers.keys()]);
   return [...orgs].map((org) => {
     const row = totals.find((r) => r.org === org);
+    const vRow = vTotals.find((r) => r.org === org);
     const browsers = data.orgBrowsers.get(org);
-    const contribution = row ? row[SHARE_COLUMN[state.metric]] : 0;
-    const derived = browsers && weeks.length ? meanDerivedShare(data.radar, weeks, browsers) : null;
+    const contribution = vRow ? vRow[SHARE_COLUMN[state.metric]] : 0;
+    const derived = browsers && vWeeks.length ? meanDerivedShare(data.radar, vWeeks, browsers) : null;
     const ratio = derived !== null && derived >= MIN_DERIVED_SHARE ? contribution / derived : null;
     return { org, row, browsers, contribution, derived, ratio };
   });
@@ -577,10 +589,10 @@ function renderParity(data: Data, state: State, weeks: string[], orgs: string[],
   });
 }
 
-function renderTable(data: Data, state: State, weeks: string[], colors: Map<string, string>) {
+function renderTable(data: Data, state: State, weeks: string[], vWeeks: string[], colors: Map<string, string>) {
   const classified = new Set(addressedWeeks(data.summary));
   const addressedShown = weeks.length > 0 && weeks.every((w) => classified.has(w));
-  const items = orgRangeShares(data, state, weeks);
+  const items = orgRangeShares(data, state, weeks, vWeeks);
   items.sort((a, b) => b.contribution - a.contribution || (b.derived ?? 0) - (a.derived ?? 0));
   const shown = trimRanked(items, TABLE_TOP_ORGS, (it) => !!it.browsers);
   const hidden = items.length - shown.length;
@@ -591,6 +603,7 @@ function renderTable(data: Data, state: State, weeks: string[], colors: Map<stri
     metric: metricUnit(state.metric),
     top: TABLE_TOP_ORGS,
     omitted: int(hidden),
+    ...skippedVars(weeks, vWeeks),
   });
   const tbody = $('#org-table tbody');
   tbody.replaceChildren(
@@ -1212,9 +1225,12 @@ function main(data: Data) {
     // Addressed comments exist only for classified weeks; the running
     // averages skip the others instead of reading them as zero.
     const dataWeeks = state.metric === 'addressed' ? addressedWeeks(data.summary) : undefined;
-    const shownWeeks = new Set(weeks);
+    // The value views cover only weeks with both review data for the metric
+    // and Radar usage, e.g. not 2023-W26, which Radar has only 2 days of.
+    const vWeeks = ratioWeeks(weeks, data.radar, dataWeeks);
+    const shownWeeks = new Set(vWeeks);
     // The value charts show the orgs with enough mean usage over the range.
-    const shown = rangeChartedOrgs(data.radar, data.orgBrowsers, orgs, weeks);
+    const shown = rangeChartedOrgs(data.radar, data.orgBrowsers, orgs, vWeeks);
     const points = smoothRatios(
       computeRatios(data.summary, data.radar, data.orgBrowsers, state.metric, undefined, dataWeeks),
       state.smoothing,
@@ -1222,10 +1238,15 @@ function main(data: Data) {
       (p) => shown.includes(p.org) && shownWeeks.has(p.week),
     );
 
-    renderParity(data, state, weeks, shown, colors, theme);
+    // A running average shows no ratio until its window is full of data:
+    // start the chart at its first ratio instead of on empty weeks.
+    const firstRatio = vWeeks.findIndex((w) => points.some((p) => p.week === w && p.ratio !== null));
+    const chartWeeks = firstRatio < 0 ? [] : vWeeks.slice(firstRatio);
+
+    renderParity(data, state, vWeeks, shown, colors, theme);
     drawChart(() => {
       ratioChart?.destroy();
-      ratioChart = renderRatioChart($<HTMLCanvasElement>('#ratio-chart'), weeks, shown, colors, points, theme, state.smoothing);
+      ratioChart = renderRatioChart($<HTMLCanvasElement>('#ratio-chart'), chartWeeks, shown, colors, points, theme, state.smoothing);
     });
     const name = metricName(state.metric);
     const metricLabel = metricUnit(state.metric);
@@ -1293,13 +1314,17 @@ function main(data: Data) {
 
     fill($('#ratio-sub'), {
       weeks: weeks.length,
+      shown: chartWeeks.length,
       metric: metricLabel,
       range: label,
       smoothed: state.smoothing > 1,
       smoothing: smoothingName(state.smoothing),
+      // Set when the running average's warm-up moves the chart's start.
+      start: chartWeeks.length && chartWeeks[0] !== vWeeks[0] ? chartWeeks[0] : '',
+      ...skippedVars(weeks, vWeeks),
     });
     renderTiles(data, weeks);
-    renderTable(data, state, weeks, colors);
+    renderTable(data, state, weeks, vWeeks, colors);
     // Queued after the charts, so it holds the new ones.
     drawChart(() => {
       window.__cosh = { data, state, parityChart, ratioChart, reviewChart, usageChart, distChart, perReviewChart, render };

@@ -34,6 +34,7 @@ import {
   parseIsoDate,
   rangeLength,
   smoothRatios,
+  ratioWeeks,
   type RatioPoint,
   weekMonday,
   weeksIn,
@@ -488,12 +489,23 @@ test('computeRatios with weeks gives no points for other weeks, so smoothing ski
   const only = computeRatios(two, radar, orgs, 'comments', undefined, ['2026-W44']);
   assert.ok(only.every((p) => p.week === '2026-W44'));
   const g = (pts: ReturnType<typeof computeRatios>) =>
-    smoothRatios(pts, 4).find((p) => p.org === 'google.com' && p.week === '2026-W44')!.ratio!;
+    smoothRatios(pts, 4, undefined, false).find((p) => p.org === 'google.com' && p.week === '2026-W44')!.ratio!;
   // Google's usage share, renormalized without Android WebView: 0.75 / 0.9.
   const google = 0.75 / 0.9;
   assert.ok(Math.abs(g(only) - 0.9 / google) < 1e-12);
   // With W43 included its zero share halves the average.
   assert.ok(Math.abs(g(computeRatios(two, radar, orgs, 'comments')) - 0.45 / google) < 1e-12);
+});
+
+test('ratioWeeks keeps weeks with complete usage data and, if given, metric data', () => {
+  // The fixture has a complete Radar week for 2026-W44 only.
+  const radar = parseRadarWeekly(RADAR);
+  const weeks = ['2026-W42', '2026-W43', '2026-W44'];
+  assert.deepEqual(ratioWeeks(weeks, radar), ['2026-W44']);
+  radar.set('2026-W42', radar.get('2026-W44')!);
+  assert.deepEqual(ratioWeeks(weeks, radar), ['2026-W42', '2026-W44']);
+  assert.deepEqual(ratioWeeks(weeks, radar, ['2026-W43', '2026-W44']), ['2026-W44']);
+  assert.deepEqual(ratioWeeks([], radar), []);
 });
 
 test('meanDerivedShare averages the weeks that have usage data', () => {
@@ -543,7 +555,8 @@ test('smoothRatios: trailing mean share ÷ mean usage, skipping weeks without us
     { ...pt('2026-W02', 0.5, 0.5), org: 'b.com' }, // other org: not mixed in
   ];
   assert.equal(smoothRatios(points, 1), points);
-  const s = smoothRatios(points, 4);
+  // Without fullWindows, so the first weeks average what they have.
+  const s = smoothRatios(points, 4, undefined, false);
   // First week: a window of one.
   assert.ok(Math.abs(s[0].ratio! - 2) < 1e-12);
   // Across the year boundary: (0.2 + 0.4) / (0.1 + 0.3).
@@ -555,9 +568,29 @@ test('smoothRatios: trailing mean share ÷ mean usage, skipping weeks without us
   assert.ok(Math.abs(s[3].contribution - 0.4) < 1e-12);
   assert.ok(Math.abs(s[4].ratio! - 1) < 1e-12);
   // A window of 2 at W02 holds only W01 (no data) and W02.
-  assert.ok(Math.abs(smoothRatios(points, 2)[3].ratio! - 3) < 1e-12);
+  assert.ok(Math.abs(smoothRatios(points, 2, undefined, false)[3].ratio! - 3) < 1e-12);
   // Mean usage below the threshold: no ratio.
-  assert.equal(smoothRatios([pt('2026-W02', 0.1, 0.0005)], 4)[0].ratio, null);
+  assert.equal(smoothRatios([pt('2026-W02', 0.1, 0.0005)], 4, undefined, false)[0].ratio, null);
+});
+
+test('smoothRatios gives no ratio until the window is full of data', () => {
+  const pt = (week: string, org = 'a.com', derived: number | null = 0.1): RatioPoint => ({
+    week,
+    org,
+    contribution: 0.1,
+    derived,
+    ratio: derived === null ? null : 0.1 / derived,
+  });
+  // Usage data starts at W50 (W49 has none); W01 is the first week whose
+  // 4-week window (W50..W01) doesn't reach back before it, for every org.
+  const points = [pt('2025-W49', 'a.com', null), pt('2025-W50'), pt('2025-W51'), pt('2025-W52'), pt('2026-W01'), pt('2026-W02', 'b.com')];
+  const s = smoothRatios(points, 4);
+  assert.deepEqual(
+    s.map((p) => p.ratio !== null),
+    [false, false, false, false, true, true],
+  );
+  assert.ok(Math.abs(s[4].ratio! - 1) < 1e-12);
+  assert.equal(smoothRatios(points, 1), points);
 });
 
 test('monthTicks labels month starts, with the year on the first tick and January', () => {
