@@ -756,7 +756,9 @@ export function renderSpreadChart(
   /** The metric mid-sentence, e.g. "review comments". */
   unit: string,
   theme: Theme,
-  selected: number | null,
+  /** The selected reviewer, read on every draw: after a pick, `chart.draw()`
+   * moves the ring without rebuilding the chart. */
+  selected: () => number | null,
   onPick: (id: number) => void,
   opts: { axisTitle?: string; linear?: boolean; cap?: number } = {},
 ): Chart<'scatter'> {
@@ -825,9 +827,10 @@ export function renderSpreadChart(
         }
       });
       // The selected reviewer: a larger dot ringed in the text colour.
-      if (selected !== null) {
+      const picked = selected();
+      if (picked !== null) {
         chart.data.datasets.forEach((ds, di) => {
-          const i = (ds.data as P[]).findIndex((p) => p.id === selected);
+          const i = (ds.data as P[]).findIndex((p) => p.id === picked);
           if (i < 0) return;
           const pt = chart.getDatasetMeta(di).data[i];
           if (!pt) return;

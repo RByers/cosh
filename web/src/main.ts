@@ -237,8 +237,31 @@ async function load(): Promise<Data> {
 const pct = (x: number) => `${(x * 100).toFixed(x !== 0 && x < 0.01 ? 2 : 1)}%`;
 
 /** The orgs the review sections name over the selected range (namedOrgs):
- * decided by review comments, so the same whatever the metric. */
-const rangeNamedOrgs = (data: Data, state: State) => namedOrgs(data.summary, weeksIn(data.summary.meta.weeks, state.range));
+ * decided by review comments, so the same whatever the metric. Several
+ * sections ask for it in each render, so the last range's answer is kept. */
+let namedCache: { key: string; orgs: string[] } | null = null;
+const rangeNamedOrgs = (data: Data, state: State) => {
+  const key = `${state.range.from}/${state.range.to}`;
+  if (namedCache?.key !== key) namedCache = { key, orgs: namedOrgs(data.summary, weeksIn(data.summary.meta.weeks, state.range)) };
+  return namedCache.orgs;
+};
+
+/** The parts of the page a render can be limited to. The controls at the top
+ * (metric, date range) and the theme re-render all of them; every other
+ * control re-renders only the section it sits in (see buildControls). */
+type Section =
+  | 'value' // parity chart, tiles and the organization table
+  | 'ratio' // value ratio over time (smoothed)
+  | 'review' // review chart (smoothed), its scale and directory
+  | 'usage'
+  | 'threads'
+  | 'areas'
+  | 'heat'
+  | 'cx'
+  | 'dist' // per-reviewer and per-review spreads
+  | 'leaderboard'
+  | 'reviewer'; // the picked reviewer's weekly chart
+type Update = (...sections: Section[]) => void;
 const int = fmtInt;
 const day = fmtDay;
 
@@ -401,9 +424,11 @@ function radios(box: HTMLElement, current: string | number, pick: (value: string
   }
 }
 
-/** `renderSoon` re-renders after the browser has painted, so the control
- * just used shows its new state at once (used where a render is slow). */
-function buildControls(data: Data, state: State, render: () => void, renderSoon: () => void) {
+/** `render` re-renders the whole page; `renderSoon` does so after the browser
+ * has painted, so the control just used shows its new state at once. Only
+ * the top controls (metric, date range) use them: a control in a section
+ * changes only that section (`update`), so the rest isn't recomputed. */
+function buildControls(data: Data, state: State, render: () => void, renderSoon: () => void, update: Update) {
   // The metric buttons name the metrics; drop those this data can't show.
   const available = availableMetrics(data);
   for (const input of $('#metric').querySelectorAll<HTMLInputElement>('input')) {
@@ -418,39 +443,40 @@ function buildControls(data: Data, state: State, render: () => void, renderSoon:
   });
   radios($('#smoothing'), state.smoothing, (v) => {
     state.smoothing = Number(v) as Smoothing;
-    render();
+    // Only the two smoothed charts change.
+    update('ratio', 'review');
   });
   radios($('#review-scale'), state.reviewScale, (v) => {
     state.reviewScale = v as ReviewScale;
-    render();
+    update('review');
   });
 
   const sizeSelect = $<HTMLSelectElement>('#leaderboard-size');
   sizeSelect.value = String(state.lbSize);
   sizeSelect.addEventListener('change', () => {
     state.lbSize = LEADERBOARD_SIZES.find((n) => String(n) === sizeSelect.value) ?? LEADERBOARD_SIZE;
-    render();
+    update('leaderboard');
   });
   $<HTMLSelectElement>('#leaderboard-org').addEventListener('change', (e) => {
     state.lbOrg = (e.target as HTMLSelectElement).value;
-    render();
+    update('leaderboard');
   });
 
   radios($('#heat-bin'), state.heatBin, (v) => {
     state.heatBin = Number(v) as HeatBinSize;
-    render();
+    update('heat');
   });
   radios($('#cx-bin'), state.cxBin, (v) => {
     state.cxBin = Number(v) as HeatBinSize;
-    render();
+    update('cx');
   });
   radios($('#cx-value'), state.cxValue, (v) => {
     state.cxValue = v as ComplexityValue;
-    render();
+    update('cx');
   });
   radios($('#heat-value'), state.heatValue, (v) => {
     state.heatValue = v as HeatValue;
-    render();
+    update('heat');
   });
   // Only shown when the directory chart is too narrow for both bars (CSS);
   // it flips which one the rows show, so the chart needn't be rebuilt.
@@ -460,7 +486,7 @@ function buildControls(data: Data, state: State, render: () => void, renderSoon:
   $<HTMLSelectElement>('#heat-org').addEventListener('change', (e) => {
     state.heatOrg = (e.target as HTMLSelectElement).value;
     state.heatExpanded.clear();
-    render();
+    update('heat');
   });
 
   // The organization chart's directory: any directory in the tree, typed or
@@ -487,7 +513,7 @@ function buildControls(data: Data, state: State, render: () => void, renderSoon:
     $('#review-dir-status').textContent = text && n === null ? msg('review-dir-status', { dir: text }) : '';
     if (text && n === null) return;
     state.reviewDir = n === null ? null : paths[n];
-    render();
+    update('review');
   };
   dirInput.addEventListener('change', pickDir);
   $('#review-dir-clear').addEventListener('click', () => {
@@ -695,8 +721,7 @@ function renderLeaderboard(
   data: Data,
   state: State,
   colors: Map<string, string>,
-  theme: Theme,
-  render: () => void,
+  pick: (id: number) => void,
 ): void {
   const name = metricName(state.metric);
   const weeks = weeksIn(Object.keys(data.reviewers.weeks), state.range);
@@ -740,18 +765,13 @@ function renderLeaderboard(
       return li;
     });
   $('#leaderboard-legend').replaceChildren(...legend);
-  buildLeaderboard($('#leaderboard-chart'), rows, metricUnit(state.metric), (org) => lbColors.get(org), state.lbReviewer, (id) => {
-    state.lbReviewer = id;
-    render();
-    $('#reviewer-detail').scrollIntoView({ block: 'nearest' });
-  });
-  renderReviewerDetail(data, state, colors, theme, render);
+  buildLeaderboard($('#leaderboard-chart'), rows, metricUnit(state.metric), (org) => lbColors.get(org), state.lbReviewer, pick);
 }
 
 /** One reviewer's review comments and addressed comments per week over the
  * picked range, with their reviews on Gerrit. All from reviewer_weekly.json,
  * which the leaderboard already loads: no extra data. */
-function renderReviewerDetail(data: Data, state: State, colors: Map<string, string>, theme: Theme, render: () => void) {
+function renderReviewerDetail(data: Data, state: State, colors: Map<string, string>, theme: Theme, pick: (id: number | null) => void) {
   const box = $('#reviewer-detail');
   reviewerChart?.destroy();
   reviewerChart = undefined;
@@ -783,10 +803,7 @@ function renderReviewerDetail(data: Data, state: State, colors: Map<string, stri
   const url = gerritReviewsUrl(r.email, range);
   link.hidden = !url;
   if (url) link.href = url;
-  $('#rd-close').onclick = () => {
-    state.lbReviewer = null;
-    render();
-  };
+  $('#rd-close').onclick = () => pick(null);
 }
 
 /** An outcome's name, from value.html. */
@@ -926,7 +943,7 @@ function renderAreas(data: Data, state: State, colors: Map<string, string>, them
 /** Review complexity by directory over time: the metric per review (review
  * comments under Reviewed CLs) per directory and time bin, every comment in
  * the range, in scope or not. */
-function renderComplexity(data: Data, state: State, render: () => void) {
+function renderComplexity(data: Data, state: State, update: Update) {
   const board = data.areas;
   const weeks = weeksIn(Object.keys(board.weeks), state.range);
   const num = perReviewMetric(state.metric);
@@ -960,7 +977,7 @@ function renderComplexity(data: Data, state: State, render: () => void) {
     onToggle: (key) => {
       if (state.cxExpanded.has(key)) state.cxExpanded.delete(key);
       else state.cxExpanded.add(key);
-      render();
+      update('cx');
       // Rebuilding the rows drops focus; give it back to the toggle just used.
       $('#cx-chart').querySelector<HTMLButtonElement>(`tr[data-key="${CSS.escape(key)}"] .ar-toggle`)?.focus();
     },
@@ -986,7 +1003,7 @@ function renderDistribution(
   state: State,
   colors: Map<string, string>,
   theme: Theme,
-  render: () => void,
+  pick: (id: number) => void,
 ) {
   const unit = metricUnit(state.metric);
   const weeks = weeksIn(Object.keys(data.reviewers.weeks), state.range);
@@ -1035,15 +1052,11 @@ function renderDistribution(
       (id) => reviewerHandle(data.reviewers, id),
       unit,
       theme,
-      state.lbReviewer,
-      (id) => {
-        state.lbReviewer = id;
-        render();
-        $('#reviewer-detail').scrollIntoView({ block: 'nearest' });
-      },
+      () => state.lbReviewer,
+      pick,
     );
   });
-  renderPerReview(data, state, weeks, spreads.map((s) => s.org), colorOf, theme, render);
+  renderPerReview(data, state, weeks, spreads.map((s) => s.org), colorOf, theme, pick);
 }
 
 /** Where the addressed-comments-per-review axis ends: a few reviewers far
@@ -1060,7 +1073,7 @@ function renderPerReview(
   orgOrder: string[],
   colorOf: (org: string) => string,
   theme: Theme,
-  render: () => void,
+  pick: (id: number) => void,
 ) {
   const num = perReviewMetric(state.metric);
   const unit = `${metricUnit(num)} per review`;
@@ -1103,12 +1116,8 @@ function renderPerReview(
       (id) => reviewerHandle(data.reviewers, id),
       unit,
       theme,
-      state.lbReviewer,
-      (id) => {
-        state.lbReviewer = id;
-        render();
-        $('#reviewer-detail').scrollIntoView({ block: 'nearest' });
-      },
+      () => state.lbReviewer,
+      pick,
       { axisTitle: `${unit}, per reviewer over the range`, linear: true,
         cap: num === 'addressed' ? PER_REVIEW_CAP : undefined },
     );
@@ -1123,7 +1132,7 @@ const HEAT_TOP_REVIEWERS = 3;
 const DEFAULT_CX_BIN: HeatBinSize = 13;
 
 /** Review by directory over time: the heatmap, its organization choices and legend. */
-function renderHeat(data: Data, state: State, colors: Map<string, string>, theme: Theme, render: () => void) {
+function renderHeat(data: Data, state: State, colors: Map<string, string>, theme: Theme, update: Update) {
   const board = data.areas;
   const rangeWeeks = weeksIn(Object.keys(board.weeks), state.range);
   const unit = metricUnit(state.metric);
@@ -1193,13 +1202,13 @@ function renderHeat(data: Data, state: State, colors: Map<string, string>, theme
     onToggle: (key) => {
       if (state.heatExpanded.has(key)) state.heatExpanded.delete(key);
       else state.heatExpanded.add(key);
-      render();
+      update('heat');
       // Rebuilding the rows drops focus; give it back to the toggle just used.
       $('#heat-chart').querySelector<HTMLButtonElement>(`tr[data-key="${CSS.escape(key)}"] .ar-toggle`)?.focus();
     },
     onChart: (row) => {
       state.reviewDir = rowTitle(row);
-      render();
+      update('review');
       $('#review-title').scrollIntoView({ block: 'start' });
       $<HTMLInputElement>('#review-dir').focus({ preventScroll: true });
     },
@@ -1291,55 +1300,133 @@ function main(data: Data) {
     renderRangeSummary(data, state);
     renderMetricNote(data, state);
     userRange = state.range;
-    withView(data, state, renderViews);
+    withView(data, state, () => renderViews(null));
   };
 
-  const renderViews = () => {
+  // Re-renders only the given sections: what a control inside one of them
+  // changes. A full render waiting for the next paint covers it.
+  const update: Update = (...sections) => {
+    writeStateToUrl(state, data.ranges.common);
+    if (pending) return;
+    userRange = state.range;
+    withView(data, state, () => renderViews(new Set(sections)));
+  };
+
+  // Picking a reviewer (or closing their chart): the leaderboard's pressed
+  // row and the spread charts' ring change in place, and only the reviewer's
+  // own chart is built.
+  const pick = (id: number | null) => {
+    state.lbReviewer = id;
+    for (const row of document.querySelectorAll<HTMLElement>('#leaderboard-chart .lb-row'))
+      row.setAttribute('aria-pressed', String(row.dataset.account === String(id)));
+    distChart?.draw();
+    perReviewChart?.draw();
+    update('reviewer');
+    if (id !== null) $('#reviewer-detail').scrollIntoView({ block: 'nearest' });
+  };
+
+  /** Renders the sections in `only`, or all of them. */
+  const renderViews = (only: Set<Section> | null) => {
+    const want = (s: Section) => !only || only.has(s);
     const theme = readTheme();
     const colors = colorsFor(theme);
     // Every section covers the selected range only.
     const weeks = weeksIn(data.summary.meta.weeks, state.range);
-    // Smooth over every week before filtering, so the range's first weeks
-    // average over earlier data too.
     // Addressed comments exist only for classified weeks; the running
     // averages skip the others instead of reading them as zero.
     const dataWeeks = state.metric === 'addressed' ? addressedWeeks(data.summary) : undefined;
     // The value views cover only weeks with both review data for the metric
     // and Radar usage, e.g. not 2023-W26, which Radar has only 2 days of.
     const vWeeks = ratioWeeks(weeks, data.radar, dataWeeks);
-    const shownWeeks = new Set(vWeeks);
     // The value charts show the orgs with enough mean usage over the range.
     const shown = rangeChartedOrgs(data.radar, data.orgBrowsers, orgs, vWeeks);
+
+    if (want('value')) renderParity(data, state, vWeeks, shown, colors, theme);
+    if (want('ratio')) renderRatio(weeks, vWeeks, dataWeeks, shown, colors, theme);
+    if (want('review')) renderReview(weeks, dataWeeks, colors, theme);
+    if (want('heat')) renderHeat(data, state, colors, theme, update);
+    if (want('areas')) renderAreas(data, state, colors, theme);
+    if (want('cx')) renderComplexity(data, state, update);
+    if (want('dist')) renderDistribution(data, state, colors, theme, pick);
+    if (want('leaderboard')) renderLeaderboard(data, state, colors, pick);
+    if (want('reviewer')) renderReviewerDetail(data, state, colors, theme, pick);
+    if (want('threads')) renderThreads(data, state);
+    if (want('usage')) {
+      // Usage doesn't depend on the metric (or the review filters): rebuild
+      // only when its range or the theme changes.
+      const usageWeeks = weeksIn(data.radar.keys(), state.range);
+      const usageKey = JSON.stringify([usageWeeks[0], usageWeeks[usageWeeks.length - 1], usageWeeks.length, theme]);
+      if (!usageChart || usageKey !== usageChartKey) {
+        usageChartKey = usageKey;
+        drawChart(() => {
+          usageChart?.destroy();
+          usageChart = renderUsageChart(
+            $<HTMLCanvasElement>('#usage-chart'),
+            data.radar,
+            usageWeeks,
+            browsers,
+            jumpWeek ? { week: jumpWeek, text: 'ChromeDerivative jump' } : null,
+            theme,
+          );
+        });
+      }
+    }
+    if (want('value')) {
+      renderTiles(data, weeks);
+      renderTable(data, state, weeks, vWeeks, colors);
+    }
+    // Queued after the charts, so it holds the new ones.
+    drawChart(() => {
+      window.__cosh = { data, state, parityChart, ratioChart, reviewChart, usageChart, distChart, perReviewChart, render };
+    });
+  };
+
+  /** The value ratio over time, smoothed. */
+  const renderRatio = (
+    weeks: string[],
+    vWeeks: string[],
+    dataWeeks: string[] | undefined,
+    shown: string[],
+    colors: Map<string, string>,
+    theme: Theme,
+  ) => {
+    // Smooth over every week before filtering, so the range's first weeks
+    // average over earlier data too.
+    const shownWeeks = new Set(vWeeks);
     const points = smoothRatios(
       computeRatios(data.summary, data.radar, data.orgBrowsers, state.metric, undefined, dataWeeks),
       state.smoothing,
-    ).filter(
-      (p) => shown.includes(p.org) && shownWeeks.has(p.week),
-    );
-
+    ).filter((p) => shown.includes(p.org) && shownWeeks.has(p.week));
     // A running average shows no ratio until its window is full of data:
     // start the chart at its first ratio instead of on empty weeks.
     const firstRatio = vWeeks.findIndex((w) => points.some((p) => p.week === w && p.ratio !== null));
     const chartWeeks = firstRatio < 0 ? [] : vWeeks.slice(firstRatio);
-
-    renderParity(data, state, vWeeks, shown, colors, theme);
     drawChart(() => {
       ratioChart?.destroy();
       ratioChart = renderRatioChart($<HTMLCanvasElement>('#ratio-chart'), chartWeeks, shown, colors, points, theme, state.smoothing);
     });
-    const name = metricName(state.metric);
+    fill($('#ratio-sub'), {
+      weeks: weeks.length,
+      shown: chartWeeks.length,
+      metric: metricUnit(state.metric),
+      smoothed: state.smoothing > 1,
+      smoothing: smoothingName(state.smoothing),
+      // Set when the running average's warm-up moves the chart's start.
+      start: chartWeeks.length && chartWeeks[0] !== vWeeks[0] ? day(weekMonday(chartWeeks[0])) : '',
+      ...skippedVars(weeks, vWeeks),
+    });
+  };
+
+  /** The review chart: the metric by org, over the path scope or one directory. */
+  const renderReview = (weeks: string[], dataWeeks: string[] | undefined, colors: Map<string, string>, theme: Theme) => {
     const metricLabel = metricUnit(state.metric);
-    const linear = state.reviewScale === 'linear';
     // One directory (every comment in it, from the directory data), or the path scope (org_weekly).
     const dirNode = state.reviewDir === null ? null : dirNodeByPath(data.areas, state.reviewDir);
     const named = rangeNamedOrgs(data, state);
-    const seriesFor = (lin: boolean) => {
-      const exclude = lin ? [LINEAR_EXCLUDED_ORG] : [];
-      return dirNode === null
-        ? orgWeeklyCounts(data.summary, weeks, state.metric, named, state.smoothing, exclude, dataWeeks)
-        : dirWeeklyCounts(data.areas, dirNode, weeks, state.metric, named, state.smoothing, exclude, dataWeeks);
-    };
-    const reviewSeries = seriesFor(linear);
+    const exclude = state.reviewScale === 'linear' ? [LINEAR_EXCLUDED_ORG] : [];
+    const reviewSeries = dirNode === null
+      ? orgWeeklyCounts(data.summary, weeks, state.metric, named, state.smoothing, exclude, dataWeeks)
+      : dirWeeklyCounts(data.areas, dirNode, weeks, state.metric, named, state.smoothing, exclude, dataWeeks);
     drawChart(() => {
       reviewChart?.destroy();
       reviewChart = renderReviewChart(
@@ -1354,8 +1441,8 @@ function main(data: Data) {
     });
     fill($('#review-sub'), {
       weeks: weeks.length,
-      metric: name,
-        smoothed: state.smoothing > 1,
+      metric: metricName(state.metric),
+      smoothed: state.smoothing > 1,
       smoothing: smoothingName(state.smoothing),
       min: pct(NAMED_ORG_MIN_SHARE),
     });
@@ -1367,47 +1454,6 @@ function main(data: Data) {
     const dirInput = $<HTMLInputElement>('#review-dir');
     if (document.activeElement !== dirInput) dirInput.value = state.reviewDir ?? '';
     $('#review-dir-clear').hidden = state.reviewDir === null;
-    renderHeat(data, state, colors, theme, render);
-    renderAreas(data, state, colors, theme);
-    renderComplexity(data, state, render);
-    renderDistribution(data, state, colors, theme, render);
-    renderLeaderboard(data, state, colors, theme, render);
-    renderThreads(data, state);
-    // Usage doesn't depend on the metric (or the review filters): rebuild
-    // only when its range or the theme changes.
-    const usageWeeks = weeksIn(data.radar.keys(), state.range);
-    const usageKey = JSON.stringify([usageWeeks[0], usageWeeks[usageWeeks.length - 1], usageWeeks.length, theme]);
-    if (!usageChart || usageKey !== usageChartKey) {
-      usageChartKey = usageKey;
-      drawChart(() => {
-        usageChart?.destroy();
-        usageChart = renderUsageChart(
-          $<HTMLCanvasElement>('#usage-chart'),
-          data.radar,
-          usageWeeks,
-          browsers,
-          jumpWeek ? { week: jumpWeek, text: 'ChromeDerivative jump' } : null,
-          theme,
-        );
-      });
-    }
-
-    fill($('#ratio-sub'), {
-      weeks: weeks.length,
-      shown: chartWeeks.length,
-      metric: metricLabel,
-        smoothed: state.smoothing > 1,
-      smoothing: smoothingName(state.smoothing),
-      // Set when the running average's warm-up moves the chart's start.
-      start: chartWeeks.length && chartWeeks[0] !== vWeeks[0] ? day(weekMonday(chartWeeks[0])) : '',
-      ...skippedVars(weeks, vWeeks),
-    });
-    renderTiles(data, weeks);
-    renderTable(data, state, weeks, vWeeks, colors);
-    // Queued after the charts, so it holds the new ones.
-    drawChart(() => {
-      window.__cosh = { data, state, parityChart, ratioChart, reviewChart, usageChart, distChart, perReviewChart, render };
-    });
   };
 
   // The intro's link scrolls to the classifier explainer, which is in the
@@ -1434,7 +1480,7 @@ function main(data: Data) {
   // built, so the controls and charts lay out at their real size.
   $('#loading').hidden = true;
   $('main').hidden = false;
-  syncInputs = buildControls(data, state, render, renderSoon);
+  syncInputs = buildControls(data, state, render, renderSoon, update);
   // The metric bar is sticky; scroll-padding-top (in style.css) keeps anchor
   // jumps clear of it, at whatever height it wraps to.
   const metricBar = $('.metric-bar');
@@ -1476,11 +1522,7 @@ function main(data: Data) {
       const active = document.activeElement;
       const box = active?.closest<HTMLElement>('#area-chart, #heat-chart');
       const key = active?.classList.contains('ar-toggle') ? active.closest<HTMLElement>('[data-key]')?.dataset.key : undefined;
-      const theme = readTheme();
-      withView(data, state, () => {
-        renderAreas(data, state, colorsFor(theme), theme);
-        renderHeat(data, state, colorsFor(theme), theme, render);
-      });
+      update('areas', 'heat');
       if (box && key) box.querySelector<HTMLButtonElement>(`[data-key="${CSS.escape(key)}"] .ar-toggle`)?.focus({ preventScroll: true });
       document.body.dataset.areaLinks = 'true';
       scrollToCard();

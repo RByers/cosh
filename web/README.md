@@ -39,6 +39,16 @@ controls and every section) stays hidden until all the files above except
 so no empty chart boxes appear. `area_reviewers.json` is fetched after that
 first render, and its arrival rebuilds the two directory sections with links.
 
+Re-rendering: only the controls at the top (the metric, the date range) and
+a theme change re-render every section. Every other control re-renders only
+the section it sits in (`update(...)` with a `Section` in `src/main.ts`).
+Smoothing, for example, rebuilds just the two charts it smooths, and the
+heatmap's toggles rebuild just the heatmap. Picking a reviewer builds only
+their weekly chart: the leaderboard's pressed row and the spread charts'
+ring are updated in place. When adding a control, give it the narrowest
+sections it affects. A browser test checks which parts each control
+rebuilds.
+
 The join (value ratio = review share ÷ usage share) happens in the browser, in
 `src/data.ts`. Radar rows used: `granularity=week`, `device=all`, `days=7`,
 `chromium_share`. That share includes Android WebView (credited to Google)

@@ -1167,6 +1167,68 @@ test('leaderboard shows up to 25 reviewers compactly', async () => {
   await page.close();
 });
 
+test('a control in one section rebuilds only that section; the metric and range rebuild them all', async () => {
+  const { page, errors } = await open('#metric=comments');
+  // What each section builds: its Chart.js chart, or the root of its rows.
+  const parts = {
+    parity: 'parityChart', ratio: 'ratioChart', review: 'reviewChart', dist: 'distChart', perReview: 'perReviewChart',
+    table: '#org-table tbody', areas: '#area-chart', heat: '#heat-chart', cx: '#cx-chart', leaderboard: '#leaderboard-chart',
+  } as const;
+  type Part = keyof typeof parts;
+  // Tags every part, runs `act`, and lists the parts it replaced.
+  const rebuilt = async (act: () => Promise<unknown>) => {
+    await page.evaluate((parts) => {
+      for (const [k, v] of Object.entries(parts)) {
+        const o = (v.startsWith('#')
+          ? document.querySelector(v)!.firstElementChild
+          : (window.__cosh as unknown as Record<string, object>)[v]) as unknown as Record<string, string>;
+        o.__tag = k;
+      }
+    }, parts);
+    await act();
+    await page.waitForSelector('body:not([data-pending])');
+    return page.evaluate((parts) => Object.entries(parts).filter(([k, v]) => {
+      const o = (v.startsWith('#')
+        ? document.querySelector(v)!.firstElementChild
+        : (window.__cosh as unknown as Record<string, object>)[v]) as unknown as Record<string, string> | null;
+      return o?.__tag !== k;
+    }).map(([k]) => k), parts) as Promise<Part[]>;
+  };
+  const click = (sel: string) => () => page.click(sel);
+  const select = (sel: string, v: string) => () => page.select(sel, v);
+  assert.deepEqual(await rebuilt(click('#smoothing input[value="4"]')), ['ratio', 'review']);
+  assert.deepEqual(await rebuilt(click('#review-scale input[value="linear"]')), ['review']);
+  assert.deepEqual(await rebuilt(click('#heat-bin input[value="13"]')), ['heat']);
+  assert.deepEqual(await rebuilt(click('#heat-value input[value="share"]')), ['heat']);
+  assert.deepEqual(await rebuilt(select('#heat-org', '*-google.com')), ['heat']);
+  assert.deepEqual(await rebuilt(click('#cx-bin input[value="4"]')), ['cx']);
+  assert.deepEqual(await rebuilt(click('#cx-value input[value="volume"]')), ['cx']);
+  assert.deepEqual(await rebuilt(select('#leaderboard-size', '50')), ['leaderboard']);
+  assert.deepEqual(await rebuilt(select('#leaderboard-org', '*-google.com')), ['leaderboard']);
+  assert.deepEqual(await rebuilt(click('#heat-chart .ar-toggle')), ['heat']);
+  assert.deepEqual(await rebuilt(click('#cx-chart .ar-toggle')), ['cx']);
+  // Picking a reviewer only marks them in the leaderboard and the spreads.
+  assert.deepEqual(await rebuilt(click('#leaderboard-chart li:nth-child(3) .lb-row')), []);
+  const id = await page.$eval('#leaderboard-chart li:nth-child(3) .lb-row', (b) => Number((b as HTMLElement).dataset.account));
+  assert.equal(await page.evaluate(() => window.__cosh!.state.lbReviewer), id);
+  assert.deepEqual(
+    await page.$$eval('#leaderboard-chart .lb-row[aria-pressed="true"]', (bs) => bs.map((b) => Number((b as HTMLElement).dataset.account))),
+    [id],
+  );
+  assert.equal(await page.$eval('#reviewer-detail', (d) => (d as HTMLElement).hidden), false);
+  assert.deepEqual(await rebuilt(click('#rd-close')), []);
+  assert.equal(await page.$$eval('#leaderboard-chart .lb-row[aria-pressed="true"]', (bs) => bs.length), 0);
+  // The top controls change every section.
+  assert.deepEqual(await rebuilt(() => pickMetric(page, 'chars')), Object.keys(parts));
+  assert.deepEqual(await rebuilt(click('#range-presets button[data-preset="13"]')), Object.keys(parts));
+  // Each control's state still reaches the URL.
+  const hash = await page.evaluate(() => location.hash);
+  for (const p of ['smooth=4', 'rscale=linear', 'hmb=13', 'hmv=share', 'hm=*-google.com', 'cxb=4', 'cxv=volume', 'lbn=50', 'lbo=*-google.com', 'metric=chars'])
+    assert.ok(decodeURIComponent(hash).includes(p), `${p} in ${hash}`);
+  assert.deepEqual(errors, []);
+  await page.close();
+});
+
 test('clicking a reviewer opens their weekly chart with a Gerrit link; Close and the URL', async () => {
   const { page, errors } = await open();
   assert.equal(await page.$eval('#reviewer-detail', (d) => (d as HTMLElement).hidden), true);
