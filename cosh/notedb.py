@@ -19,7 +19,7 @@ import sys
 import time
 
 from . import store
-from .contact import GIT_CONFIG, GIT_ENV
+from .contact import git_config, git_env
 
 GIT_URL = "https://chromium.googlesource.com/{project}"
 LOCAL_REF = "refs/meta/{n}"
@@ -29,9 +29,11 @@ def meta_ref(n):
     return f"refs/changes/{n % 100:02d}/{n}/meta"
 
 
-def git(git_dir, *args, input=None, check=True):
-    return subprocess.run(["git", "-C", git_dir, *GIT_CONFIG, *args], input=input,
-                          capture_output=True, check=check, env={**os.environ, **GIT_ENV},
+def git(git_dir, *args, input=None, check=True, network=False):
+    """Run git in git_dir. network=True (fetches) adds our contact headers."""
+    extra, env = (git_config(), {**os.environ, **git_env()}) if network else ([], None)
+    return subprocess.run(["git", "-C", git_dir, *extra, *args], input=input,
+                          capture_output=True, check=check, env=env,
                           text=isinstance(input, str) or input is None)
 
 
@@ -99,7 +101,7 @@ def fetch_batch(git_dir, project, numbers, retries=5):
     for attempt in range(retries + 1):
         t0 = time.monotonic()
         p = git(git_dir, "-c", "protocol.version=2", "fetch", "--quiet", "--no-tags",
-                "--no-write-fetch-head", "--stdin", url, input=specs, check=False)
+                "--no-write-fetch-head", "--stdin", url, input=specs, check=False, network=True)
         dt = time.monotonic() - t0
         if p.returncode == 0:
             return dt

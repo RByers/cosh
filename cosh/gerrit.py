@@ -16,7 +16,7 @@ import urllib.error
 import urllib.parse
 import urllib.request
 
-from .contact import HTTP_HEADERS
+from .contact import http_headers
 XSSI_PREFIX = ")]}'"
 
 
@@ -52,7 +52,7 @@ class GerritClient:
             req = urllib.request.Request(url, headers={
                 "Accept": "application/json",
                 "Accept-Encoding": "gzip",
-                **HTTP_HEADERS,
+                **http_headers(),
             })
             status, raw, retry_after = None, b"", None
             try:

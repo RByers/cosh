@@ -18,7 +18,7 @@ import os
 import re
 import urllib.request
 
-from .contact import HTTP_HEADERS
+from .contact import http_headers
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 AFFILIATIONS_PATH = os.path.join(ROOT, "config", "affiliations.json5")
@@ -85,7 +85,7 @@ def update_affiliations(path=AFFILIATIONS_PATH):
     import base64
     from datetime import datetime, timezone
     req = urllib.request.Request(AFFILIATIONS_URL + "?format=TEXT",
-                                 headers=HTTP_HEADERS)
+                                 headers=http_headers())
     with urllib.request.urlopen(req, timeout=60) as r:
         text = base64.b64decode(r.read()).decode("utf-8")
     parse_json5(text)                       # validate before replacing

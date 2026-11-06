@@ -132,11 +132,17 @@ week, plus a snapshot of **open** CLs (step 3).
    - One 429 was seen at about 0.78 REST requests/s (during the abandoned
      all-REST approach); NoteDb saw none.
 6. **Identification.** Every request carries
-   `User-Agent: cosh/0.1 (...; contact: rick@rbyers.net)` and
-   `From: rick@rbyers.net`.
+   `User-Agent: cosh/0.1 (...; contact: <email>)` and `From: <email>`.
    - Git sends the same through `GIT_USER_AGENT` (which also sets the protocol
      `agent=` field) and `http.extraHeader`.
-   - All of this lives in `cosh/contact.py`; override with `COSH_CONTACT`.
+   - All of this lives in `cosh/contact.py`. The address is not in the repo:
+     it comes from `{"contact_email": "..."}` in the gitignored
+     `data/private/settings.json` (the data dir's, else the main checkout's,
+     so every worktree shares one file), or `COSH_CONTACT` overrides it.
+     Commands that fetch (`extract`, `extract-open`, `backfill --go`,
+     `radar` without `--offline`, `update-affiliations`) fail at once,
+     asking for an e-mail address, if none is set. Offline commands never
+     need one.
 
 ## Metric definitions (metric_version 7)
 

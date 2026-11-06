@@ -44,7 +44,7 @@ BROWSERS_CSV = ROOT / "config" / "browsers.csv"
 API = "https://api.cloudflare.com/client/v4"
 ENDPOINT = "/radar/http/timeseries_groups/BROWSER"
 OS_ENDPOINT = "/radar/http/timeseries_groups/OS"
-from .contact import HTTP_HEADERS
+from .contact import http_headers
 # name -> (endpoint, extra params). "browser" keeps the original cache file names.
 SERIES = {
     "browser": (ENDPOINT, {}),
@@ -95,7 +95,7 @@ class RadarClient:
                 time.sleep(self.min_interval - gap)
             req = urllib.request.Request(url, headers={
                 "Accept": "application/json", "Accept-Encoding": "gzip",
-                **HTTP_HEADERS, "Authorization": f"Bearer {self.token}"})
+                **http_headers(), "Authorization": f"Bearer {self.token}"})
             status, raw, retry_after = None, b"", None
             try:
                 with urllib.request.urlopen(req, timeout=120) as resp:

@@ -211,5 +211,68 @@ class StaleRefsTest(unittest.TestCase):
         self.assertEqual(extract.stale_refs([1, 2, 3], listed, tips), [2, 3])
 
 
+class ContactTest(unittest.TestCase):
+    """The contact e-mail comes from COSH_CONTACT or a gitignored settings.json."""
+
+    def setUp(self):
+        import os
+        from cosh import contact
+        self.contact = contact
+        self.dirs = [tempfile.mkdtemp(), tempfile.mkdtemp()]   # data dir, main checkout's
+        env = {k: v for k, v in os.environ.items() if k != "COSH_CONTACT"}
+        for p in (mock.patch.dict(os.environ, env, clear=True),
+                  mock.patch.object(store, "DATA_DIR", self.dirs[0]),
+                  mock.patch.object(contact, "_main_checkout_data_dir", lambda: self.dirs[1])):
+            p.start()
+            self.addCleanup(p.stop)
+        contact.contact.cache_clear()
+        self.addCleanup(contact.contact.cache_clear)
+
+    def write(self, i, settings):
+        with open(f"{self.dirs[i]}/settings.json", "w") as f:
+            json.dump(settings, f)
+
+    def test_missing_fails_naming_the_file(self):
+        with self.assertRaises(self.contact.ContactMissing) as cm:
+            self.contact.http_headers()
+        self.assertIn(f"{self.dirs[0]}/settings.json", str(cm.exception))
+        self.assertIn("e-mail", str(cm.exception))
+
+    def test_settings_in_data_dir(self):
+        self.write(0, {"contact_email": "a@example.com"})
+        self.write(1, {"contact_email": "b@example.com"})
+        self.assertEqual(self.contact.http_headers()["From"], "a@example.com")
+        self.assertIn("contact: a@example.com", self.contact.git_env()["GIT_USER_AGENT"])
+        self.assertEqual(self.contact.git_config(), ["-c", "http.extraHeader=From: a@example.com"])
+
+    def test_worktree_falls_back_to_main_checkout(self):
+        self.write(1, {"contact_email": "b@example.com"})
+        self.assertEqual(self.contact.contact(), "b@example.com")
+
+    def test_env_overrides(self):
+        import os
+        self.write(0, {"contact_email": "a@example.com"})
+        os.environ["COSH_CONTACT"] = "env@example.com"
+        self.assertEqual(self.contact.contact(), "env@example.com")
+
+    def test_network_commands_fail_fast_offline_ones_dont_check(self):
+        import io
+        from contextlib import redirect_stderr
+        from cosh.__main__ import main
+        err = io.StringIO()
+        with redirect_stderr(err), self.assertRaises(SystemExit) as cm:
+            main(["extract", "--week", "2026-W44"])
+        self.assertEqual(cm.exception.code, 2)
+        self.assertIn("contact e-mail", err.getvalue())
+        with mock.patch("cosh.backfill.backfill") as bf:
+            main(["backfill", "--weeks", "1", "--newest", "2026-W44"])   # plan only: no check
+        bf.assert_called_once()
+
+    def test_local_git_needs_no_contact(self):
+        from cosh import notedb
+        with tempfile.TemporaryDirectory() as d:
+            notedb.init_repo(f"{d}/x.git")          # raises if it wanted the contact
+
+
 if __name__ == "__main__":
     unittest.main()

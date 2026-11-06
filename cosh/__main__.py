@@ -110,6 +110,16 @@ def main(argv=None):
     r.add_argument("--offline", action="store_true", help="only rebuild the CSV from the raw cache")
     a = p.parse_args(argv)
 
+    # Commands that talk to a server need the contact e-mail (cosh/contact.py).
+    # Check before taking locks or starting work, so a missing one fails fast.
+    if (a.cmd in ("extract", "extract-open", "update-affiliations")
+            or (a.cmd == "backfill" and a.go) or (a.cmd == "radar" and not a.offline)):
+        from .contact import ContactMissing, contact
+        try:
+            contact()
+        except ContactMissing as e:
+            p.exit(2, f"cosh {a.cmd}: error: {e}\n")
+
     if a.cmd == "extract":
         if a.interval < 1.0:
             p.error("--interval below 1.0s is not allowed (be polite to Gerrit)")

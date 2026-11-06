@@ -49,7 +49,8 @@ value_ratio(O, t) = O's share of Chromium addressed review comments
      time, at least 5 s apart; duty cycle up to 1.0 (back to back) approved by
      the user on 2026-11-04, replacing "at most 0.5". Never parallel fetches.
    - Back off on 429.
-   - Identify ourselves with the contact address, `rick@rbyers.net`.
+   - Identify ourselves with the operator's contact address, set in the
+     gitignored `data/private/settings.json` (`extraction-v1.md`, "Identification").
 3. **Per-person data derived from public data may be committed and
    published** (user's policy, 2026-11-03). Gerrit reviews, names, emails
    and affiliations are already public, so per-reviewer summaries can go in
