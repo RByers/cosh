@@ -66,7 +66,19 @@ regex plus Claude Haiku (`cosh classify`).
   it and runs Vitest unit tests and headless-Chrome tests (puppeteer-core with
   `/usr/bin/google-chrome`). Vitest is capped at `maxWorkers: 4`, with test
   files run serially.
-- **Fetching from a new data source** (git history, the bug tracker, …)
+- **Chromium git history is approved** (2026-11-06): one bare, blob-less
+  clone of `chromium/src` `main` only (`--single-branch --no-tags
+  --filter=blob:none`, no dependencies, no working tree) in
+  `data/private/git/chromium-src.git`. It holds every commit and tree, but
+  no file contents. **Never let git fetch blobs on demand**: run every
+  command against it with `GIT_NO_LAZY_FETCH=1`. `--name-only` and
+  `--name-status` are fine; `-p`, `--stat`, `--numstat`, `blame` and
+  checkouts need blobs, which would be fetched one request at a time. So
+  does `.mailmap`, which is why the repo's config sets `log.mailmap false`.
+  Fetching blobs, other branches or other repos needs approval. Never delete
+  or prune it. An incremental `git fetch` of `main` takes the extract lock
+  (`flock data/private/extract.lock`) like any other extractor.
+- **Fetching from a new data source** (the bug tracker, …)
   needs the user's approval first, like any fetch beyond the approved
   backfills. The load rules above apply to it too.
 - **Web UI wording goes in the page's HTML (`web/value.html`,

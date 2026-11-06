@@ -23,7 +23,7 @@ committed summaries it needs.
 |---|---|---|
 | Chromium Gerrit (`chromium-review.googlesource.com`) | Code review: comments, threads, reviewers, CLs | In use (Value Exchange) |
 | [Cloudflare Radar](https://radar.cloudflare.com/) | Browser usage share | In use (Value Exchange) |
-| Chromium git history (`chromium.googlesource.com/chromium/src`) | Commits, authors, files touched, OWNERS | Planned |
+| Chromium git history (`chromium.googlesource.com/chromium/src`) | Commits, authors, dates, messages, files touched (`main` only, no file contents) | Fetched 2026-11-06 into `data/private/git/chromium-src.git`; no dashboard yet |
 | Chromium bug tracker (`issues.chromium.org`) | Bugs filed, triaged and fixed, and by whom | Planned |
 | Others (mailing lists, standards work, …) | To be decided | Ideas |
 
@@ -106,7 +106,8 @@ The main visualization plots each organization's value ratio over time.
 Review data from 2023-W50 to 2026-W44 has been collected so far; a
 backfill to 2023-07 is in progress. Radar data covers 2023-07 onward. The
 web UI is in `web/`: the landing page `index.html` and the Value Exchange
-dashboard `value.html`. Git history and bug data are not fetched yet.
+dashboard `value.html`. Chromium git history (`main`, commits and trees, no blobs) was fetched on
+2026-11-06; bug data is not fetched yet.
 Addressed comments (metric_version 7) are classified
 for 2026-W44 so far; more weeks are added with `cosh classify`. See
 [`docs/plan.md`](docs/plan.md).
