@@ -277,7 +277,8 @@ counts.
   - excluded: `chrome/`, `ios/`, `android_webview/`, `ash/`, `chromeos/`,
     `components/`;
   - included again: `chrome/browser/web_applications/`, `chrome/browser/webnn/`,
-    `chrome/browser/resources/webnn_internals/`, `components/viz/`,
+    `chrome/browser/resources/webnn_internals/`,
+    `chrome/browser/ui/webui/webnn_internals/`, `components/viz/`,
     `components/services/storage/`, `components/surface_embed/`, and the
     accessibility directories `chrome/renderer/accessibility/`,
     `chrome/browser/accessibility/`, `chrome/browser/ash/arc/accessibility/`,
@@ -301,11 +302,12 @@ counts.
   OWNERS files (with their `file:` includes) name owners outside google.com
   and chromium.org, and that have outside review or are shared platform
   work: `components/surface_embed/` (Microsoft owners, 36% non-Google of
-  320 comments), `chrome/browser/resources/webnn_internals/` (Intel and
-  Microsoft owners) and the `chrome/` accessibility directories, which
+  320 comments), `chrome/browser/resources/webnn_internals/` and
+  `chrome/browser/ui/webui/webnn_internals/` (Intel and Microsoft owners;
+  the second was added on the user's request the same day) and the `chrome/` accessibility directories, which
   include `ui/accessibility/OWNERS` and its Microsoft owners. Over
-  2025-W45..2026-W44 they added 1,140 in-scope comments (140,998 →
-  142,138), and the non-Google share moved from 10.80% to 10.82%
+  2025-W45..2026-W44 they added 1,160 in-scope comments (140,998 →
+  142,158), and the non-Google share moved from 10.80% to 10.82%
   (characters 10.29% → 10.32%, addressed 11.68% → 11.70%, reviewed CLs
   unchanged at 8.55%). Most other excluded directories with outside owners
   have them only on `per-file` lines (e.g. `chrome/browser/`) or see

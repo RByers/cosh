@@ -1,6 +1,6 @@
 {
  "meta": {
-  "generated_at": "2026-11-06T19:39:13Z",
+  "generated_at": "2026-11-06T19:51:22Z",
   "weeks": [
    "2023-W26",
    "2023-W27",
@@ -187,6 +187,10 @@
   "path_rules": [
    {
     "prefix": "chrome/browser/resources/webnn_internals/",
+    "included": true
+   },
+   {
+    "prefix": "chrome/browser/ui/webui/webnn_internals/",
     "included": true
    },
    {
@@ -1367,7 +1371,7 @@
      0
     ],
     "2025-W51": [
-     803,
+     804,
      352,
      278,
      392,
@@ -1381,7 +1385,7 @@
      0
     ],
     "2026-W01": [
-     136,
+     137,
      55,
      40,
      71,
@@ -1390,7 +1394,7 @@
     "2026-W02": [
      883,
      316,
-     278,
+     279,
      379,
      0
     ],
@@ -1451,22 +1455,22 @@
      0
     ],
     "2026-W11": [
-     1018,
+     1021,
      427,
      307,
      441,
      0
     ],
     "2026-W12": [
-     1041,
-     480,
-     444,
+     1045,
+     481,
+     446,
      491,
      0
     ],
     "2026-W13": [
-     1009,
-     403,
+     1010,
+     404,
      361,
      501,
      0
@@ -20112,11 +20116,11 @@
    "share": 0.8961,
    "reviewers": 274,
    "reviewed_cls": 360,
-   "comments": 2095,
-   "review_chars": 368482,
+   "comments": 2096,
+   "review_chars": 368695,
    "ai_comments": 0,
    "post_merge_comments": 27,
-   "addressed_comments": 1220,
+   "addressed_comments": 1221,
    "pending_comments": 0,
    "share_cls": 0.9231,
    "share_comments": 0.8961,
@@ -20126,7 +20130,7 @@
   {
    "iso_week": "2025-W51",
    "org": "microsoft.com",
-   "share": 0.0753,
+   "share": 0.0752,
    "reviewers": 23,
    "reviewed_cls": 23,
    "comments": 176,
@@ -20136,7 +20140,7 @@
    "addressed_comments": 128,
    "pending_comments": 0,
    "share_cls": 0.059,
-   "share_comments": 0.0753,
+   "share_comments": 0.0752,
    "share_chars": 0.0568,
    "share_addressed": 0.0922
   },
@@ -20245,7 +20249,7 @@
   {
    "iso_week": "2026-W01",
    "org": "google.com",
-   "share": 0.88,
+   "share": 0.8775,
    "reviewers": 84,
    "reviewed_cls": 56,
    "comments": 308,
@@ -20255,14 +20259,14 @@
    "addressed_comments": 195,
    "pending_comments": 0,
    "share_cls": 0.9333,
-   "share_comments": 0.88,
-   "share_chars": 0.9106,
-   "share_addressed": 0.942
+   "share_comments": 0.8775,
+   "share_chars": 0.9105,
+   "share_addressed": 0.9375
   },
   {
    "iso_week": "2026-W01",
    "org": "microsoft.com",
-   "share": 0.08,
+   "share": 0.0798,
    "reviewers": 7,
    "reviewed_cls": 2,
    "comments": 28,
@@ -20272,26 +20276,26 @@
    "addressed_comments": 6,
    "pending_comments": 0,
    "share_cls": 0.0333,
-   "share_comments": 0.08,
+   "share_comments": 0.0798,
    "share_chars": 0.0656,
-   "share_addressed": 0.029
+   "share_addressed": 0.0288
   },
   {
    "iso_week": "2026-W01",
    "org": "intel.com",
-   "share": 0.0343,
+   "share": 0.037,
    "reviewers": 1,
    "reviewed_cls": 0,
-   "comments": 12,
-   "review_chars": 1077,
+   "comments": 13,
+   "review_chars": 1086,
    "ai_comments": 0,
    "post_merge_comments": 0,
-   "addressed_comments": 5,
+   "addressed_comments": 6,
    "pending_comments": 0,
    "share_cls": 0.0,
-   "share_comments": 0.0343,
-   "share_chars": 0.0192,
-   "share_addressed": 0.0242
+   "share_comments": 0.037,
+   "share_chars": 0.0193,
+   "share_addressed": 0.0288
   },
   {
    "iso_week": "2026-W01",
@@ -20313,18 +20317,18 @@
   {
    "iso_week": "2026-W02",
    "org": "google.com",
-   "share": 0.8671,
+   "share": 0.8672,
    "reviewers": 469,
    "reviewed_cls": 796,
-   "comments": 2010,
-   "review_chars": 351902,
+   "comments": 2011,
+   "review_chars": 351994,
    "ai_comments": 0,
    "post_merge_comments": 21,
    "addressed_comments": 1154,
    "pending_comments": 0,
    "share_cls": 0.9118,
-   "share_comments": 0.8671,
-   "share_chars": 0.8779,
+   "share_comments": 0.8672,
+   "share_chars": 0.878,
    "share_addressed": 0.851
   },
   {
@@ -20347,7 +20351,7 @@
   {
    "iso_week": "2026-W02",
    "org": "intel.com",
-   "share": 0.0255,
+   "share": 0.0254,
    "reviewers": 5,
    "reviewed_cls": 12,
    "comments": 59,
@@ -20357,7 +20361,7 @@
    "addressed_comments": 34,
    "pending_comments": 0,
    "share_cls": 0.0137,
-   "share_comments": 0.0255,
+   "share_comments": 0.0254,
    "share_chars": 0.0151,
    "share_addressed": 0.0251
   },
@@ -20483,24 +20487,24 @@
   {
    "iso_week": "2026-W03",
    "org": "google.com",
-   "share": 0.9073,
+   "share": 0.9074,
    "reviewers": 305,
    "reviewed_cls": 353,
-   "comments": 1988,
-   "review_chars": 330641,
+   "comments": 1989,
+   "review_chars": 330653,
    "ai_comments": 0,
    "post_merge_comments": 23,
    "addressed_comments": 1092,
    "pending_comments": 0,
    "share_cls": 0.9339,
-   "share_comments": 0.9073,
+   "share_comments": 0.9074,
    "share_chars": 0.905,
    "share_addressed": 0.8922
   },
   {
    "iso_week": "2026-W03",
    "org": "microsoft.com",
-   "share": 0.0726,
+   "share": 0.0725,
    "reviewers": 20,
    "reviewed_cls": 16,
    "comments": 159,
@@ -20510,7 +20514,7 @@
    "addressed_comments": 112,
    "pending_comments": 0,
    "share_cls": 0.0423,
-   "share_comments": 0.0726,
+   "share_comments": 0.0725,
    "share_chars": 0.08,
    "share_addressed": 0.0915
   },
@@ -21639,19 +21643,19 @@
   {
    "iso_week": "2026-W11",
    "org": "google.com",
-   "share": 0.9388,
+   "share": 0.9389,
    "reviewers": 293,
    "reviewed_cls": 387,
-   "comments": 2548,
-   "review_chars": 407246,
+   "comments": 2551,
+   "review_chars": 407641,
    "ai_comments": 0,
    "post_merge_comments": 33,
-   "addressed_comments": 1522,
+   "addressed_comments": 1525,
    "pending_comments": 0,
    "share_cls": 0.9348,
-   "share_comments": 0.9388,
+   "share_comments": 0.9389,
    "share_chars": 0.9487,
-   "share_addressed": 0.9309
+   "share_addressed": 0.931
   },
   {
    "iso_week": "2026-W11",
@@ -21668,7 +21672,7 @@
    "share_cls": 0.0483,
    "share_comments": 0.0486,
    "share_chars": 0.0438,
-   "share_addressed": 0.0557
+   "share_addressed": 0.0556
   },
   {
    "iso_week": "2026-W11",
@@ -21685,7 +21689,7 @@
    "share_cls": 0.0,
    "share_comments": 0.007,
    "share_chars": 0.0042,
-   "share_addressed": 0.0086
+   "share_addressed": 0.0085
   },
   {
    "iso_week": "2026-W11",
@@ -21758,24 +21762,24 @@
   {
    "iso_week": "2026-W12",
    "org": "google.com",
-   "share": 0.8806,
+   "share": 0.881,
    "reviewers": 322,
    "reviewed_cls": 421,
-   "comments": 2693,
-   "review_chars": 434032,
+   "comments": 2701,
+   "review_chars": 434909,
    "ai_comments": 0,
    "post_merge_comments": 23,
-   "addressed_comments": 1547,
+   "addressed_comments": 1552,
    "pending_comments": 0,
    "share_cls": 0.8882,
-   "share_comments": 0.8806,
-   "share_chars": 0.8794,
-   "share_addressed": 0.874
+   "share_comments": 0.881,
+   "share_chars": 0.8796,
+   "share_addressed": 0.8744
   },
   {
    "iso_week": "2026-W12",
    "org": "microsoft.com",
-   "share": 0.0873,
+   "share": 0.0871,
    "reviewers": 28,
    "reviewed_cls": 25,
    "comments": 267,
@@ -21785,14 +21789,14 @@
    "addressed_comments": 165,
    "pending_comments": 0,
    "share_cls": 0.0527,
-   "share_comments": 0.0873,
-   "share_chars": 0.0946,
-   "share_addressed": 0.0932
+   "share_comments": 0.0871,
+   "share_chars": 0.0944,
+   "share_addressed": 0.093
   },
   {
    "iso_week": "2026-W12",
    "org": "opera.com",
-   "share": 0.018,
+   "share": 0.0179,
    "reviewers": 1,
    "reviewed_cls": 11,
    "comments": 55,
@@ -21802,9 +21806,9 @@
    "addressed_comments": 41,
    "pending_comments": 0,
    "share_cls": 0.0232,
-   "share_comments": 0.018,
+   "share_comments": 0.0179,
    "share_chars": 0.0147,
-   "share_addressed": 0.0232
+   "share_addressed": 0.0231
   },
   {
    "iso_week": "2026-W12",
@@ -21826,7 +21830,7 @@
   {
    "iso_week": "2026-W12",
    "org": "Other",
-   "share": 0.0043,
+   "share": 0.0042,
    "reviewers": 5,
    "reviewed_cls": 5,
    "comments": 13,
@@ -21836,7 +21840,7 @@
    "addressed_comments": 4,
    "pending_comments": 0,
    "share_cls": 0.0105,
-   "share_comments": 0.0043,
+   "share_comments": 0.0042,
    "share_chars": 0.0069,
    "share_addressed": 0.0023
   },
@@ -21894,24 +21898,24 @@
   {
    "iso_week": "2026-W13",
    "org": "google.com",
-   "share": 0.8794,
-   "reviewers": 339,
+   "share": 0.8793,
+   "reviewers": 340,
    "reviewed_cls": 433,
-   "comments": 2560,
-   "review_chars": 426233,
+   "comments": 2564,
+   "review_chars": 427179,
    "ai_comments": 0,
    "post_merge_comments": 40,
-   "addressed_comments": 1458,
+   "addressed_comments": 1460,
    "pending_comments": 0,
    "share_cls": 0.9193,
-   "share_comments": 0.8794,
-   "share_chars": 0.8816,
-   "share_addressed": 0.8762
+   "share_comments": 0.8793,
+   "share_chars": 0.8815,
+   "share_addressed": 0.8758
   },
   {
    "iso_week": "2026-W13",
    "org": "microsoft.com",
-   "share": 0.0804,
+   "share": 0.0802,
    "reviewers": 35,
    "reviewed_cls": 26,
    "comments": 234,
@@ -21921,14 +21925,14 @@
    "addressed_comments": 133,
    "pending_comments": 0,
    "share_cls": 0.0552,
-   "share_comments": 0.0804,
-   "share_chars": 0.0889,
-   "share_addressed": 0.0799
+   "share_comments": 0.0802,
+   "share_chars": 0.0887,
+   "share_addressed": 0.0798
   },
   {
    "iso_week": "2026-W13",
    "org": "opera.com",
-   "share": 0.0234,
+   "share": 0.0233,
    "reviewers": 1,
    "reviewed_cls": 6,
    "comments": 68,
@@ -21938,26 +21942,26 @@
    "addressed_comments": 43,
    "pending_comments": 0,
    "share_cls": 0.0127,
-   "share_comments": 0.0234,
+   "share_comments": 0.0233,
    "share_chars": 0.0177,
    "share_addressed": 0.0258
   },
   {
    "iso_week": "2026-W13",
    "org": "intel.com",
-   "share": 0.0048,
+   "share": 0.0051,
    "reviewers": 2,
    "reviewed_cls": 1,
-   "comments": 14,
-   "review_chars": 2211,
+   "comments": 15,
+   "review_chars": 2368,
    "ai_comments": 0,
    "post_merge_comments": 0,
-   "addressed_comments": 9,
+   "addressed_comments": 10,
    "pending_comments": 0,
    "share_cls": 0.0021,
-   "share_comments": 0.0048,
-   "share_chars": 0.0046,
-   "share_addressed": 0.0054
+   "share_comments": 0.0051,
+   "share_chars": 0.0049,
+   "share_addressed": 0.006
   },
   {
    "iso_week": "2026-W13",

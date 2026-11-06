@@ -26,7 +26,8 @@
 #
 # Directories with non-Google OWNERS (2026-11-06): components/surface_embed/
 # (Microsoft owners, 36% Microsoft review), chrome/browser/resources/
-# webnn_internals/ (Intel and Microsoft owners, the WebNN internals page) and
+# webnn_internals/ and chrome/browser/ui/webui/webnn_internals/ (Intel and
+# Microsoft owners, the WebNN internals page) and
 # the chrome/ accessibility directories, whose OWNERS include
 # ui/accessibility/OWNERS with its Microsoft owners. The browser accessibility
 # layer is shared platform work that other Chromium browsers contribute to.
@@ -44,6 +45,7 @@ include components/viz/
 include components/services/storage/
 include components/surface_embed/
 include chrome/browser/resources/webnn_internals/
+include chrome/browser/ui/webui/webnn_internals/
 
 include chrome/renderer/accessibility/
 include chrome/browser/accessibility/
