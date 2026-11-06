@@ -145,6 +145,28 @@ h2 {
   margin: 0 0 2px;
 }
 
+/* A card's "#" link, at the start of its heading: a shareable link that
+   scrolls to the card (main.ts keeps the page state in the link too). It
+   floats so the heading's text, which a script may rewrite, flows beside it. */
+.card-anchor {
+  float: left;
+  margin-right: 0.4em;
+  font-size: 1.1rem;
+  font-weight: bold;
+  line-height: 1.2;
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.card-anchor + h2 {
+  line-height: 1.2;
+}
+
+.card-anchor:hover,
+.card-anchor:focus-visible {
+  text-decoration: underline;
+}
+
 .lede,
 .sub,
 .note,

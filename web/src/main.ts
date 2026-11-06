@@ -166,6 +166,13 @@ interface State {
   heatExpanded: Set<string>;
   /** The reviewer whose weekly chart is open (Gerrit account id), or null. */
   lbReviewer: number | null;
+  /** The card a shared link points at (a section.card id; its "#" link), or null. */
+  card: string | null;
+}
+
+/** `id` if it names one of the page's cards (section.card), else null. */
+function cardId(id: string | null): string | null {
+  return id && /^[\w-]+$/.test(id) && document.querySelector(`section.card#${id}`) ? id : null;
 }
 
 /** The range the user picked. While the addressed metric narrows the views'
@@ -350,6 +357,8 @@ function readStateFromUrl(data: Data): State {
     heatValue: q.get('hmv') === 'share' ? 'share' : 'volume',
     heatExpanded: new Set(),
     lbReviewer: /^\d+$/.test(q.get('lbr') ?? '') ? Number(q.get('lbr')) : null,
+    // A bare #id (no state) also names a card.
+    card: cardId(q.get('card') ?? (location.hash.includes('=') ? null : location.hash.slice(1))),
   };
 }
 
@@ -367,7 +376,8 @@ function writeStateToUrl(s: State, allData: WeekRange) {
     (s.heatValue !== 'volume' ? '&hmv=share' : '') +
     (s.cxBin !== DEFAULT_CX_BIN ? `&cxb=${s.cxBin}` : '') +
     (s.cxValue !== 'complexity' ? '&cxv=volume' : '') +
-    (s.lbReviewer !== null ? `&lbr=${s.lbReviewer}` : ''));
+    (s.lbReviewer !== null ? `&lbr=${s.lbReviewer}` : '') +
+    (s.card ? `&card=${s.card}` : ''));
 }
 
 /** How many directories the directory field suggests; any other one can be typed. */
@@ -1408,6 +1418,18 @@ function main(data: Data) {
     e.preventDefault();
     $('#addressed-details').scrollIntoView({ block: 'start' });
   });
+  // Each card's "#" link: the URL hash holds the page state, so the link adds
+  // the card to it (card=…) rather than replacing it, then scrolls there.
+  for (const a of document.querySelectorAll<HTMLAnchorElement>('.card-anchor')) {
+    a.addEventListener('click', (e) => {
+      const card = a.closest('section.card');
+      if (!card || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+      e.preventDefault();
+      state.card = card.id;
+      writeStateToUrl(state, data.ranges.common);
+      card.scrollIntoView({ block: 'start' });
+    });
+  }
   // The data is in: swap the loading note for the page before anything is
   // built, so the controls and charts lay out at their real size.
   $('#loading').hidden = true;
@@ -1420,6 +1442,20 @@ function main(data: Data) {
     document.documentElement.style.setProperty('--metric-bar-h', `${metricBar.offsetHeight}px`),
   ).observe(metricBar);
   render();
+  // A shared link to a card: the browser can't jump there itself (the hash
+  // isn't an id, and the page was hidden while loading), so scroll once the
+  // first render has laid out. Rows that arrive later (areaReviewers) can
+  // shift it, so scroll again then, unless the reader has moved on.
+  let userScrolled = false;
+  const scrollToCard = () => {
+    const card = state.card ? document.getElementById(state.card) : null;
+    if (card && !card.hidden && !userScrolled) card.scrollIntoView({ block: 'start' });
+  };
+  if (state.card) {
+    for (const ev of ['wheel', 'touchstart', 'keydown', 'pointerdown'])
+      addEventListener(ev, () => (userScrolled = true), { once: true, passive: true });
+    requestAnimationFrame(scrollToCard);
+  }
   matchMedia('(prefers-color-scheme: dark)').addEventListener('change', render);
   const weeks = data.summary.meta.weeks;
   fill($('#coverage'), {
@@ -1447,6 +1483,7 @@ function main(data: Data) {
       });
       if (box && key) box.querySelector<HTMLButtonElement>(`[data-key="${CSS.escape(key)}"] .ar-toggle`)?.focus({ preventScroll: true });
       document.body.dataset.areaLinks = 'true';
+      scrollToCard();
     })
     .catch((err: unknown) => console.error(err));
 }

@@ -542,6 +542,38 @@ test('switching the metric updates the table, review chart, directory chart and 
   await page.close();
 });
 
+test('every card has a "#" link that keeps the state in the URL, and a shared link scrolls to its card', async () => {
+  const { page, errors } = await open('#metric=comments&smooth=1');
+  const cards = await page.$$eval('section.card', (ss) =>
+    ss.map((s) => ({ id: s.id, href: s.querySelector('.card-anchor')?.getAttribute('href') })));
+  assert.ok(cards.length >= 12);
+  for (const c of cards) assert.equal(c.href, `#${c.id}`, `card ${c.id} lacks its link`);
+  // The heading the script rewrites keeps its link.
+  assert.equal(await page.$$eval('#per-review > .card-anchor', (as) => as.length), 1);
+
+  await page.click('#leaderboard .card-anchor');
+  assert.match(page.url(), /#metric=comments&.*smooth=1.*&card=leaderboard$/);
+  const shared = page.url();
+  // A state change keeps the card.
+  await pickMetric(page, 'cls');
+  assert.match(page.url(), /metric=cls.*&card=leaderboard$/);
+  assert.deepEqual(errors, []);
+  await page.close();
+
+  // Opening the shared link scrolls the card to the top, just below the sticky bar.
+  for (const hash of [shared.slice(shared.indexOf('#')), '#leaderboard']) {
+    const { page: p, errors: e } = await open(hash);
+    await p.evaluate(() => new Promise((r) => requestAnimationFrame(r)));
+    const t = await p.evaluate(() => {
+      const bar = document.querySelector<HTMLElement>('.metric-bar')!.getBoundingClientRect().bottom;
+      return document.getElementById('leaderboard')!.getBoundingClientRect().top - bar;
+    });
+    assert.ok(t >= 0 && t < 30, `${hash}: card ${t}px below the bar`);
+    assert.deepEqual(e, []);
+    await p.close();
+  }
+});
+
 test('a metric toggle shows its choice before the slow re-render, and quick picks share one render', async () => {
   const { page, errors } = await open('#metric=comments');
   // All in one evaluate: a frame between two would let the render through.

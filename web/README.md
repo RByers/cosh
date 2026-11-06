@@ -304,6 +304,12 @@ and `&hm=<org>` (`*-google.com` for all but google.com), `&hmb=1|13|52` and
 `&lbr=<account id>` for the reviewer chart). Old `#week=2026-W44` links open that one week, and
 an old `dirs=` parameter is ignored.
 
+Each card (`section.card` in `value.html`, with an `id`) starts with a blue `#`
+link. Clicking it adds `&card=<id>` to the hash, keeping the rest of the state,
+so the URL can be shared; opening it scrolls to that card once the page has
+rendered. A bare `#<id>` (e.g. `#leaderboard`) works too, with the default state.
+A new card needs an `id` and its own `<a class="card-anchor">` before its `<h2>`.
+
 ## Commands
 
 ```

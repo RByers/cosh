@@ -125,7 +125,8 @@
         </fieldset>
       </form>
 
-      <section class="card" aria-labelledby="parity-title">
+      <section id="parity" class="card" aria-labelledby="parity-title">
+        <a class="card-anchor" href="#parity" aria-label="Link to this section" title="Link to this section">#</a>
         <h2 id="parity-title">Value ratio</h2>
         <p id="parity-sub" class="sub"></p>
         <template data-msg="parity-sub">
@@ -143,7 +144,8 @@
         </div>
       </section>
 
-      <section class="card" aria-labelledby="ratio-title">
+      <section id="ratio-time" class="card" aria-labelledby="ratio-title">
+        <a class="card-anchor" href="#ratio-time" aria-label="Link to this section" title="Link to this section">#</a>
         <h2 id="ratio-title">Value ratio over time</h2>
         <p id="ratio-sub" class="sub"></p>
         <template data-msg="ratio-sub">
@@ -167,7 +169,8 @@
         </p>
       </section>
 
-      <section class="card" aria-labelledby="review-title">
+      <section id="review" class="card" aria-labelledby="review-title">
+        <a class="card-anchor" href="#review" aria-label="Link to this section" title="Link to this section">#</a>
         <h2 id="review-title">Review by organization</h2>
         <p id="review-sub" class="sub"></p>
         <template data-msg="review-sub">
@@ -242,7 +245,8 @@
         </p>
       </section>
 
-      <section class="card" aria-labelledby="usage-title">
+      <section id="usage" class="card" aria-labelledby="usage-title">
+        <a class="card-anchor" href="#usage" aria-label="Link to this section" title="Link to this section">#</a>
         <h2 id="usage-title">Chromium browser usage (Cloudflare Radar)</h2>
         <p class="sub">
           The ratio's denominator: each browser's share of Chromium-based browser usage, including Android WebView and
@@ -307,7 +311,8 @@
         </div>
       </section>
 
-      <section class="card" aria-labelledby="table-title">
+      <section id="by-org" class="card" aria-labelledby="table-title">
+        <a class="card-anchor" href="#by-org" aria-label="Link to this section" title="Link to this section">#</a>
         <h2 id="table-title">By organization</h2>
         <p id="table-caption" class="sub"></p>
         <template data-msg="table-caption">
@@ -348,6 +353,7 @@
       </section>
 
       <section id="threads" class="card" aria-labelledby="threads-title" hidden>
+        <a class="card-anchor" href="#threads" aria-label="Link to this section" title="Link to this section">#</a>
         <h2 id="threads-title">How review threads are classified</h2>
         <p id="threads-sub" class="sub"></p>
         <template data-msg="threads-sub">
@@ -404,6 +410,7 @@
       </section>
 
       <section id="areas" class="card" aria-labelledby="areas-title">
+        <a class="card-anchor" href="#areas" aria-label="Link to this section" title="Link to this section">#</a>
         <h2 id="areas-title">Review by directory</h2>
         <p id="areas-sub" class="sub"></p>
         <template data-msg="areas-sub">
@@ -479,6 +486,7 @@
       </section>
 
       <section id="heatmap" class="card" aria-labelledby="heat-title">
+        <a class="card-anchor" href="#heatmap" aria-label="Link to this section" title="Link to this section">#</a>
         <h2 id="heat-title">Review by directory over time</h2>
         <p id="heat-sub" class="sub"></p>
         <template data-msg="heat-sub">
@@ -526,6 +534,7 @@
       </section>
 
       <section id="distribution" class="card" aria-labelledby="dist-title">
+        <a class="card-anchor" href="#distribution" aria-label="Link to this section" title="Link to this section">#</a>
         <h2 id="dist-title">Reviews per reviewer</h2>
         <p id="dist-sub" class="sub"></p>
         <template data-msg="dist-sub">
@@ -562,6 +571,7 @@
       </section>
 
       <section id="complexity" class="card" aria-labelledby="cx-title">
+        <a class="card-anchor" href="#complexity" aria-label="Link to this section" title="Link to this section">#</a>
         <h2 id="cx-title">Review complexity by directory over time</h2>
         <p id="cx-sub" class="sub"></p>
         <template data-msg="cx-sub">
@@ -601,6 +611,7 @@
       </section>
 
       <section id="per-review" class="card" aria-labelledby="pr-title">
+        <a class="card-anchor" href="#per-review" aria-label="Link to this section" title="Link to this section">#</a>
         <h2 id="pr-title">Review comments per review</h2>
         <!-- The heading, and the values' name mid-sentence. With Reviewed CLs chosen, this chart shows review comments per review. -->
         <template data-msg="pr-title"><slot name="name"></slot> per review</template>
@@ -639,6 +650,7 @@
       </section>
 
       <section id="leaderboard" class="card" aria-labelledby="leaderboard-title">
+        <a class="card-anchor" href="#leaderboard" aria-label="Link to this section" title="Link to this section">#</a>
         <h2 id="leaderboard-title">Reviewer leaderboard</h2>
         <p id="leaderboard-sub" class="sub"></p>
         <template data-msg="leaderboard-sub">
