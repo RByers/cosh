@@ -270,6 +270,16 @@ class SandboxTest(unittest.TestCase):
         self.assertEqual(cmd[cmd.index("--cap-drop") + 1], "ALL")
         self.assertEqual(cmd[-2:], ["/usr/bin/claude", "-p"])
 
+    def test_disable_userns_only_where_bwrap_supports_it(self):
+        for supported in (True, False):
+            with mock.patch("shutil.which", side_effect=lambda x: "/usr/bin/" + x), \
+                    mock.patch.object(sandbox, "bwrap_works", side_effect=lambda b, extra=(): supported or not extra):
+                box = sandbox.Sandbox("bwrap", credentials={"ANTHROPIC_API_KEY": "k"})
+            cmd = box.command(["-p"], "/tmp/x/h")
+            box.close()
+            self.assertEqual(box.mode, "bwrap")
+            self.assertEqual("--disable-userns" in cmd and "--unshare-user" in cmd, supported)
+
 
 class RunBatchesTest(unittest.TestCase):
     def test_parallel_and_bounded(self):

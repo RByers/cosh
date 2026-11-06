@@ -14,8 +14,10 @@ model or CLI misbehaving on injected text still finds nothing worth taking:
   - with bubblewrap (`bwrap`), its own mount, PID, IPC and UTS namespaces:
     a read-only root with /home, /root, /run/user (ssh-agent, gpg-agent,
     D-Bus and Claude daemon sockets), /tmp, /var/tmp and the cosh data and
-    code directories replaced by empty tmpfs, and no capabilities. The
-    network is shared, because claude has to reach the API.
+    code directories replaced by empty tmpfs, and no capabilities. Where
+    bwrap supports it (0.8+), the jail can't create further user namespaces,
+    which removes much of the kernel attack surface an escape would need.
+    The network is shared, because claude has to reach the API.
 """
 
 import json
@@ -30,6 +32,8 @@ HIDDEN = ("/home", "/root", "/run/user", "/tmp", "/var/tmp", "/mnt", "/media", "
 # The only variables carried over from the caller's environment.
 KEEP_ENV = ("PATH", "LANG", "LC_ALL", "TZ")
 CREDENTIALS = ("CLAUDE_CODE_OAUTH_TOKEN", "ANTHROPIC_API_KEY")
+# No nested user namespaces in the jail (bwrap 0.8+; needs an explicit --unshare-user).
+NO_USERNS = ("--unshare-user", "--disable-userns")
 
 
 def find_credentials(environ=None, settings_path=None):
@@ -49,9 +53,9 @@ def find_credentials(environ=None, settings_path=None):
     return {k: env[k] for k in CREDENTIALS if isinstance(env.get(k), str) and env[k]}
 
 
-def bwrap_works(bwrap):
+def bwrap_works(bwrap, extra=()):
     try:
-        return subprocess.run([bwrap, "--ro-bind", "/", "/", "--unshare-all", "--share-net",
+        return subprocess.run([bwrap, "--ro-bind", "/", "/", "--unshare-all", *extra, "--share-net",
                                "--die-with-parent", "true"], capture_output=True, timeout=30).returncode == 0
     except (OSError, subprocess.SubprocessError):
         return False
@@ -71,7 +75,8 @@ class Sandbox:
                              "environment or in ~/.claude/settings.json's env block) or ANTHROPIC_API_KEY. "
                              "It runs claude with a fresh HOME, not your ~/.claude (SECURITY.md).")
         self.bwrap = shutil.which("bwrap") if mode in ("auto", "bwrap") else None
-        if self.bwrap and not bwrap_works(self.bwrap):
+        self.no_userns = bool(self.bwrap) and bwrap_works(self.bwrap, NO_USERNS)
+        if self.bwrap and not self.no_userns and not bwrap_works(self.bwrap):
             self.bwrap = None
         if mode == "bwrap" and not self.bwrap:
             raise SystemExit("--sandbox bwrap: bubblewrap is missing or can't create namespaces here")
@@ -87,7 +92,8 @@ class Sandbox:
         return any(path == d or path.startswith(d.rstrip("/") + "/") for d in dirs)
 
     def describe(self):
-        return ("bwrap (fresh HOME, scrubbed env, /home /run/user /tmp and cosh data hidden)" if self.bwrap
+        return (f"bwrap (fresh HOME, scrubbed env, /home /run/user /tmp and cosh data hidden"
+                f"{', no nested user namespaces' if self.no_userns else ''})" if self.bwrap
                 else "none (fresh HOME and scrubbed env only; install bubblewrap for more)")
 
     def env(self, home):
@@ -109,7 +115,8 @@ class Sandbox:
         if self._under(self.claude, [*HIDDEN, *self.hide]):
             jail += ["--ro-bind", self.claude, self.claude]   # e.g. a native install under ~/.local
         jail += ["--bind", home, home, "--chdir", home,
-                 "--unshare-all", "--share-net", "--die-with-parent", "--new-session", "--cap-drop", "ALL"]
+                 "--unshare-all", *(NO_USERNS if self.no_userns else ()), "--share-net",
+                 "--die-with-parent", "--new-session", "--cap-drop", "ALL"]
         return jail + cmd
 
     def run(self, args, input):
