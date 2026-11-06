@@ -333,7 +333,26 @@ tests always use a random port in that range.
 The browser tests use `puppeteer-core` with an installed Chrome
 (`/usr/bin/google-chrome`, override with `CHROME_PATH`); they download no
 browser. Run them with `SCREENSHOT_DIR=/some/dir` to also save light and dark
-full-page screenshots, or with `CPU_THROTTLE=6` to slow each page down 6x,
-like a GitHub Actions runner, to catch timing races that only show up there.
+full-page screenshots, or with `CPU_THROTTLE=3` to slow each page down 3x and
+shake out timing races that a slower GitHub Actions runner could hit. (Run a
+few tests at a time at 6x; the longest exceed their 30 s timeout there.)
 Vitest is capped at 4 workers, with test files run
 serially.
+
+### Writing browser tests
+
+- **Never sleep.** Wait for something the page does: `body[data-ready]`,
+  `body[data-area-links]` (the late Gerrit-link data, which rebuilds the
+  directory rows), `body:not([data-pending])` (`pickMetric`), a selector, or a
+  `waitForFunction` condition. `open()` waits for the first two.
+- **Every page open costs a full data load and render** (about 1 s), and so
+  does every control change that re-renders the page (about 0.4 s). A test
+  that only reads the default page uses `defaultPage()`, one page shared by
+  all such tests; it fails a test that leaves it changed (URL, scroll or a
+  pending render). Change state through the page's controls rather than
+  opening it again with another URL.
+- URL state: each control's test checks what it writes to the URL, and one
+  test opens a URL with every setting and checks it is read back. Add a new
+  setting to that test rather than reloading in its own.
+- Don't assert the wording of static notes in `value.html`; the tests check
+  behaviour and data, not copy.

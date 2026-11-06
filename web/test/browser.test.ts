@@ -93,6 +93,19 @@ async function open(
   return { page, errors, releaseLinks };
 }
 
+/** One page at the default state and width, opened on first use and shared by
+ * the tests that only read it: every open costs a full data load and render.
+ * Tests that click, type, scroll, resize or reload open their own page. */
+let shared: Promise<{ page: Page; errors: string[]; hash: string }> | undefined;
+async function defaultPage(): Promise<{ page: Page; errors: string[] }> {
+  shared ??= open().then(async ({ page, errors }) => ({ page, errors, hash: await page.evaluate(() => location.hash) }));
+  const { page, errors, hash } = await shared;
+  // A test that changed it would leak into the next one.
+  const now = await page.evaluate(() => ({ hash: location.hash, y: window.scrollY, pending: !!document.body.dataset.pending }));
+  assert.deepEqual(now, { hash, y: 0, pending: false }, 'a test changed the shared default page');
+  return { page, errors };
+}
+
 /** Picks a metric and waits for the re-render it schedules (after a paint). */
 async function pickMetric(page: Page, id: string) {
   await page.click(`#metric input[value="${id}"]`);
@@ -153,7 +166,7 @@ test('the intro shows while the data loads; the controls and charts appear once 
 });
 
 test('page loads data and renders all three charts without errors', async () => {
-  const { page, errors } = await open();
+  const { page, errors } = await defaultPage();
   assert.equal(await page.$eval('body', (b) => b.dataset.ready), 'true');
   assert.deepEqual(errors, []);
   const charts = await page.evaluate(() =>
@@ -173,15 +186,15 @@ test('page loads data and renders all three charts without errors', async () => 
     ['parity-chart', 'ratio-chart', 'review-chart', 'usage-chart', 'org-table', 'area-chart', 'heat-table', 'dist-chart', 'cx-table', 'pr-chart', 'leaderboard-chart']);
   const titles = await page.$$eval('#parity-title, #ratio-title', (h) => h.map((e) => e.textContent));
   assert.deepEqual(titles, ['Value ratio', 'Value ratio over time']);
-  await page.close();
 });
 
 test('the page names weeks by their dates, never as ISO week labels', async () => {
   // Labels like 2026-W44 stay in the URL and the data; text, hover titles and
   // accessible names show dates (web/README.md, "Text and styling").
-  const weeks = summary.meta.weeks;
-  for (const hash of ['', `#from=${weeks[weeks.length - 1]}&to=${weeks[weeks.length - 1]}`]) {
-    const { page, errors } = await open(hash);
+  const { page, errors } = await open();
+  // All the data, then a one-week range.
+  for (const preset of ['all', '1']) {
+    await page.click(`#range-presets button[data-preset="${preset}"]`);
     await page.waitForSelector('#heat-chart a.hm-box');
     const text = await page.evaluate(() => {
       const parts = [document.body.innerText];
@@ -191,15 +204,15 @@ test('the page names weeks by their dates, never as ISO week labels', async () =
       for (const e of document.body.querySelectorAll('.visually-hidden')) parts.push(e.textContent ?? '');
       return parts.join('\n');
     });
-    assert.doesNotMatch(text, /\b\d{4}-W\d{2}\b/, `week label shown (${hash || 'default range'})`);
-    assert.doesNotMatch(text, /ISO week/i, `"ISO week" shown (${hash || 'default range'})`);
-    assert.deepEqual(errors, []);
-    await page.close();
+    assert.doesNotMatch(text, /\b\d{4}-W\d{2}\b/, `week label shown (preset ${preset})`);
+    assert.doesNotMatch(text, /ISO week/i, `"ISO week" shown (preset ${preset})`);
   }
+  assert.deepEqual(errors, []);
+  await page.close();
 });
 
 test('parity chart: review share against usage share on equal log axes, matching the table', async () => {
-  const { page, errors } = await open();
+  const { page, errors } = await defaultPage();
   const d = await page.evaluate(() => {
     const c = window.__cosh!.parityChart!;
     const { x, y } = c.scales;
@@ -249,14 +262,13 @@ test('parity chart: review share against usage share on equal log axes, matching
   const w = d.area.right - d.area.left;
   const h = d.area.bottom - d.area.top;
   assert.ok(Math.abs(w - h) / w < 0.15, `${w}x${h}`);
-  await page.close();
 });
 
 test('parity chart keeps orgs with none of the metric, on a 0 row below the log scale', async () => {
   // The big browser owners get a dot in any range (samsung.com has no
   // addressed comments in some short ones).
+  const { page, errors } = await open();
   for (const preset of ['all', '13', '4', '1']) {
-    const { page, errors } = await open();
     await page.click(`#range-presets button[data-preset="${preset}"]`);
     const d = await page.evaluate(() => {
       const c = window.__cosh!;
@@ -286,21 +298,21 @@ test('parity chart keeps orgs with none of the metric, on a 0 row below the log 
       }
       assert.match(d.sub, /0 row/);
     }
-    await page.close();
   }
+  await page.close();
 });
 
 test('organization chart names the orgs with enough review comments, whatever the metric', async () => {
-  const labels = async (hash: string) => {
-    const { page, errors } = await open(hash);
+  const { page, errors } = await open('#metric=comments&from=2025-W45&to=2026-W44');
+  const labels = async () => {
     const d = await page.evaluate(() => window.__cosh!.reviewChart!.data.datasets.map((ds) => ds.label!));
-    const named = await namedOn(page);
-    assert.deepEqual(errors, []);
-    await page.close();
-    return { orgs: d.filter((o) => o !== 'Other'), named };
+    return { orgs: d.filter((o) => o !== 'Other'), named: await namedOn(page) };
   };
-  const comments = await labels('#metric=comments&from=2025-W45&to=2026-W44');
-  const cls = await labels('#metric=cls&from=2025-W45&to=2026-W44');
+  const comments = await labels();
+  await pickMetric(page, 'cls');
+  const cls = await labels();
+  assert.deepEqual(errors, []);
+  await page.close();
   // The same set for both metrics: the rule's orgs (each has a colour over this range).
   assert.deepEqual([...comments.orgs].sort(), [...comments.named].sort());
   assert.deepEqual([...cls.orgs].sort(), [...comments.orgs].sort());
@@ -310,20 +322,19 @@ test('organization chart names the orgs with enough review comments, whatever th
 test('value charts show the orgs with enough mean usage over the range', async () => {
   // Amazon's Silk averages over 0.1% of Chromium usage since 2023 but not over
   // the last year; Alibaba's UC Browser is over it every week.
-  const charted = async (hash: string) => {
-    const { page, errors } = await open(hash);
-    const d = await page.evaluate(() => {
+  const { page, errors } = await open('#metric=comments&from=2025-W45&to=2026-W44');
+  const charted = () =>
+    page.evaluate(() => {
       const c = window.__cosh!;
       const labels = (ch: { data: { datasets: { label?: string }[] } }) => ch.data.datasets.map((ds) => ds.label!);
       return { parity: labels(c.parityChart!), ratio: labels(c.ratioChart!) };
     });
-    assert.deepEqual(errors, []);
-    await page.close();
-    return d;
-  };
-  // The last year leaves Amazon out; every week (back to 2023) brings it back.
-  const year = await charted('#metric=comments&from=2025-W45&to=2026-W44');
-  const all = await charted('#metric=comments&from=2023-W26&to=2026-W44');
+  // The last year leaves Amazon out; all the data (back to 2023) brings it back.
+  const year = await charted();
+  await page.click('#range-presets button[data-preset="all"]');
+  const all = await charted();
+  assert.deepEqual(errors, []);
+  await page.close();
   for (const d of [year, all]) {
     assert.ok(d.ratio.includes('alibaba-inc.com') && d.parity.includes('alibaba-inc.com'), String(d.ratio));
   }
@@ -332,7 +343,7 @@ test('value charts show the orgs with enough mean usage over the range', async (
 });
 
 test('ratio axis is linear from 0 with a highlighted 1.0 gridline', async () => {
-  const { page } = await open();
+  const { page } = await defaultPage();
   const axis = await page.evaluate(() => {
     const c = window.__cosh!.ratioChart!;
     const y = c.scales.y;
@@ -356,22 +367,12 @@ test('ratio axis is linear from 0 with a highlighted 1.0 gridline', async () => 
   assert.ok(axis.labels.includes('1.0×'), axis.labels.join());
   assert.ok(Math.abs(axis.below - axis.above) < 0.5, JSON.stringify(axis));
   assert.ok(axis.oneWidth > axis.otherWidth, JSON.stringify(axis));
-  await page.close();
-});
-
-test('W44 ratios: Google above parity, Microsoft below', async () => {
-  const { page } = await open();
-  const ratios = await page.$$eval('#org-table tbody tr', (rows) =>
-    Object.fromEntries(rows.map((r) => [(r as HTMLElement).dataset.org, r.querySelector('td.ratio')!.textContent])),
-  );
-  assert.ok(parseFloat(ratios['google.com']!) > 1, ratios['google.com']!);
-  assert.ok(parseFloat(ratios['microsoft.com']!) < 1, ratios['microsoft.com']!);
-  assert.equal(ratios['igalia.com'], 'no browser');
-  await page.close();
 });
 
 test('org table shows the top 20 plus orgs with a browser', async () => {
-  const { page } = await open();
+  const { page } = await defaultPage();
+  // (Its ratios are checked against the parity chart above.)
+  assert.equal(await page.$eval('#org-table tr[data-org="igalia.com"] td.ratio', (td) => td.textContent), 'no browser');
   const rows = await page.$$eval('#org-table tbody tr', (trs) => trs.map((r) => r.querySelector('td.ratio')!.textContent));
   const caption = await page.$eval('#table-caption', (p) => p.textContent!);
   if (/omitted/.test(caption)) {
@@ -383,11 +384,10 @@ test('org table shows the top 20 plus orgs with a browser', async () => {
     // Few enough orgs (e.g. a short range of data) that every one is listed.
     assert.ok(rows.length > 5, String(rows.length));
   }
-  await page.close();
 });
 
-test('brave.com is listed with unknown usage and the Brave note explains why', async () => {
-  const { page } = await open();
+test('brave.com is listed with unknown usage and kept out of the ratio chart', async () => {
+  const { page } = await defaultPage();
   const cells = await page.$eval('#org-table tbody tr[data-org="brave.com"]', (r) =>
     [...r.querySelectorAll('td')].slice(1, 3).map((c) => c.textContent),
   );
@@ -396,10 +396,6 @@ test('brave.com is listed with unknown usage and the Brave note explains why', a
     window.__cosh!.ratioChart!.data.datasets.map((d: { label?: string }) => d.label),
   );
   assert.ok(!ratioOrgs.includes('brave.com'), ratioOrgs.join());
-  const note = await page.$eval('#brave-note', (n) => n.textContent ?? '');
-  assert.match(note, /Brave is excluded/);
-  assert.match(note, /Sec-CH-UA/);
-  await page.close();
 });
 
 test('directory rows drill down, and "more" rows open 20 at a time and close again', async () => {
@@ -497,6 +493,13 @@ test('metric toggle stays at the top of the window while scrolling, on wide and 
     await pickMetric(page, 'cls');
     assert.match(page.url(), /metric=cls/);
     assert.equal(await page.$eval('.metric-bar', (b) => b.getBoundingClientRect().top), 0);
+    if (width < 1100) {
+      // Dark mode at phone width: dark, and still no horizontal scroll.
+      await page.emulateMediaFeatures([{ name: 'prefers-color-scheme', value: 'dark' }]);
+      assert.equal(await page.$eval('body', (b) => getComputedStyle(b).backgroundColor), 'rgb(13, 13, 13)');
+      const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+      assert.ok(overflow <= 0, `horizontal overflow ${overflow}px`);
+    }
     assert.deepEqual(errors, []);
     await page.close();
   }
@@ -534,10 +537,7 @@ test('switching the metric updates the table, review chart, directory chart and 
     assert.match(label, axis);
     assert.equal(await areaHead(), head);
   }
-  // State survives a reload via the URL hash.
-  await page.reload();
-  await page.waitForSelector('body[data-ready]');
-  assert.equal(await page.$eval('#metric input[value="chars"]', (i) => (i as HTMLInputElement).checked), true);
+  // (A reload keeping the state: "the page state survives a reload".)
   assert.deepEqual(errors, []);
   await page.close();
 });
@@ -596,7 +596,11 @@ test('a metric toggle shows its choice before the slow re-render, and quick pick
     };
     return new Promise<{ now: typeof now; renders: number; axis: string; busy: boolean }>((resolve) => {
       const done = () => resolve({ now, renders, axis: axis(), busy: document.querySelector('main')!.hasAttribute('aria-busy') });
-      const check = () => (document.body.dataset.pending ? requestAnimationFrame(check) : setTimeout(done, 50));
+      // Once the render has run, wait one more of renderSoon's cycles (a frame,
+      // then a task): any second render the picks had scheduled has run by then.
+      // (The observer's records are delivered as microtasks, before that.)
+      const check = () =>
+        document.body.dataset.pending ? requestAnimationFrame(check) : requestAnimationFrame(() => setTimeout(done, 0));
       check();
     });
   });
@@ -661,8 +665,6 @@ test.skipIf(!hasAddressedWeeks())('addressed comments show only classified weeks
   assert.ok(Math.abs(smoothed.review - raw.review) < 1e-9, `${smoothed.review} vs ${raw.review}`);
   await page.click('#smoothing input[value="13"]');
   // The intro links to the explainer in the thread box: it scrolls there without losing the URL state.
-  const intro = await page.$eval('header', (h) => h.textContent ?? '');
-  assert.match(intro, /share of\s+addressed\s+review comments/);
   await page.click('#addressed-link');
   // It lands just below the sticky metric bar.
   await page.waitForFunction(() => {
@@ -696,7 +698,7 @@ test.skipIf(!hasAddressedWeeks())('addressed comments show only classified weeks
 });
 
 test('review by directory shows volume and org split per directory, and the path rules', async () => {
-  const { page, errors } = await open();
+  const { page, errors } = await defaultPage();
   const d = await page.evaluate(() => {
     const rows = [...document.querySelectorAll<HTMLElement>('#area-chart .ar-row')];
     return {
@@ -787,10 +789,7 @@ test('review by directory shows volume and org split per directory, and the path
   assert.ok(d.groupGap > 15, `groups ${d.groupGap}px apart`);
   for (const r of d.rules) assert.ok(r.beside, `${r.path}: reason not beside it`);
   assert.equal(new Set(d.rules.map((r) => Math.round(r.left))).size, 1);
-  assert.match(await page.$eval('#scope-note', (n) => n.textContent ?? ''), /Google's own products/);
-  assert.match(await page.$eval('#unplaced-note', (n) => n.textContent ?? ''), /real investment/);
   assert.deepEqual(errors, []);
-  await page.close();
 });
 
 test('review by directory: on a phone a toggle picks one bar, beside the name', async () => {
@@ -811,9 +810,8 @@ test('review by directory: on a phone a toggle picks one bar, beside the name', 
         overflow: document.documentElement.scrollWidth - window.innerWidth,
       };
     });
-  const wide = await open();
+  const wide = await defaultPage();
   assert.deepEqual(await shown(wide.page), { toggle: false, vol: true, dist: true, oneLine: true, overflow: 0 });
-  await wide.page.close();
 
   const { page, errors } = await open('', 390);
   assert.deepEqual(await shown(page), { toggle: true, vol: true, dist: false, oneLine: true, overflow: 0 });
@@ -944,9 +942,6 @@ test('value ratio smoothing defaults to 3 months and is selectable', async () =>
   assert.match(year.reviewSub, /1-year running average/);
   assert.ok(year.ratios[0] !== null, 'first week averages over the year before the range');
   assert.ok(jitter(year.ratios) < jitter(four.ratios), `${jitter(year.ratios)} vs ${jitter(four.ratios)}`);
-  await page.reload();
-  await page.waitForSelector('body[data-ready]');
-  assert.equal((await read()).smoothing, 52);
   assert.deepEqual(errors, []);
   await page.close();
 });
@@ -1043,7 +1038,7 @@ test('old #week= links open a one-week range', async () => {
 });
 
 test('review chart is a weekly line per top org, Other last, on a log axis', async () => {
-  const { page } = await open();
+  const { page } = await defaultPage();
   const chart = await page.evaluate(() => {
     const c = window.__cosh!.reviewChart!;
     const ratio = window.__cosh!.ratioChart!;
@@ -1075,7 +1070,6 @@ test('review chart is a weekly line per top org, Other last, on a log axis', asy
   assert.ok(chart.sameColor, 'orgs keep their ratio-chart colour');
   // Every named org gets its own colour.
   assert.equal(new Set(chart.colors.slice(0, -1)).size, chart.orgs.length - 1, JSON.stringify(chart.colors));
-  await page.close();
 });
 
 test('review chart toggles to a linear axis without google.com', async () => {
@@ -1111,9 +1105,6 @@ test('review chart toggles to a linear axis without google.com', async () => {
   assert.doesNotMatch(lin.title, /log scale/);
   assert.equal(lin.sub, log.sub, 'the scale toggle leaves the description alone');
   assert.match(page.url(), /rscale=linear/);
-  await page.reload();
-  await page.waitForSelector('body[data-ready]');
-  assert.equal((await read()).yType, 'linear');
   await page.click('#review-scale input[value="log"]');
   assert.doesNotMatch(page.url(), /rscale/);
   assert.deepEqual(errors, []);
@@ -1207,10 +1198,6 @@ test('clicking a reviewer opens their weekly chart with a Gerrit link; Close and
   });
   assert.ok(chart.w > 100);
   assert.match(page.url(), /lbr=\d+/);
-  // The selection survives a reload.
-  await page.reload();
-  await page.waitForSelector('body[data-ready]');
-  assert.equal(await page.$eval('#reviewer-detail', (d) => (d as HTMLElement).hidden), false);
   await page.click('#rd-close');
   assert.equal(await page.$eval('#reviewer-detail', (d) => (d as HTMLElement).hidden), true);
   assert.doesNotMatch(page.url(), /lbr=/);
@@ -1400,20 +1387,19 @@ test('per-reviewer spread: a row of dots per org, a figures table, and clicking 
   await page.waitForFunction(() => !document.querySelector<HTMLElement>('#reviewer-detail')!.hidden);
   assert.match(page.url(), new RegExp(`lbr=${pt.id}`));
   // Under addressed comments, reviewers whose comments led to no change sit at 0.
-  const { page: addr } = await open('#metric=addressed');
-  if ((await addr.evaluate(() => window.__cosh!.state.metric)) === 'addressed') {
-    const first = await addr.evaluate(() => String(window.__cosh!.distChart!.scales.x.ticks[0].label));
+  if (hasAddressedWeeks()) {
+    await pickMetric(page, 'addressed');
+    const first = await page.evaluate(() => String(window.__cosh!.distChart!.scales.x.ticks[0].label));
     assert.equal(first, '0');
-    assert.match(await addr.$eval('#dist-sub', (e) => e.textContent!), /none addressed sit at 0/);
+    assert.match(await page.$eval('#dist-sub', (e) => e.textContent!), /none addressed sit at 0/);
   }
-  await addr.close();
   assert.deepEqual(errors, []);
   await page.close();
 });
 
 test('an org keeps one colour in every section, value charts included, whatever the filters', async () => {
   const colorsOn = async (hash: string) => {
-    const { page, errors } = await open(hash);
+    const { page, errors } = hash ? await open(hash) : await defaultPage();
     const out = await page.evaluate(() => {
       const norm = (c: string) => {
         const d = document.createElement('div');
@@ -1442,7 +1428,7 @@ test('an org keeps one colour in every section, value charts included, whatever 
       return seen;
     });
     assert.deepEqual(errors, []);
-    await page.close();
+    if (hash) await page.close();
     return out;
   };
   const all = [
@@ -1634,14 +1620,10 @@ test('leaderboard size and organization selects; every org is named, none as "ot
   assert.ok(noGoogle.n > 50, `n=${noGoogle.n}`);
   assert.equal(noGoogle.sub, top25.sub, 'the toggles leave the description alone');
   assert.match(noGoogle.sub, /outside google\.com/);
-  // The state survives a reload from the URL.
-  const { page: again } = await open(new URL(page.url()).hash);
-  assert.equal(await again.$eval('#leaderboard-org', (e) => (e as HTMLSelectElement).value), '*-google.com');
-  assert.equal(await again.$eval('#leaderboard-size', (e) => (e as HTMLSelectElement).value), '100');
-  await again.close();
-  // Old lbg=0 links still leave google.com out.
-  const { page: old } = await open('#lbg=0');
-  assert.equal(await old.$eval('#leaderboard-org', (e) => (e as HTMLSelectElement).value), '*-google.com');
+  // Old lbg=0 links still leave google.com out; a link can ask for every reviewer.
+  const { page: old } = await open('#lbg=0&lbn=all');
+  assert.deepEqual(await old.$$eval('#leaderboard-org, #leaderboard-size', (es) => es.map((e) => (e as HTMLSelectElement).value)),
+    ['*-google.com', 'all']);
   await old.close();
   // One org: every row is that org's, and the choices are the busiest orgs.
   const options = await page.$$eval('#leaderboard-org option', (os) => os.map((o) => (o as HTMLOptionElement).value));
@@ -1682,9 +1664,6 @@ test('leaderboard size and organization selects; every org is named, none as "ot
     return document.querySelector('#leaderboard-chart .lb-axis')!.getBoundingClientRect().top;
   });
   assert.ok(Math.abs(stuck) < 1, `axis top ${stuck}`);
-  const { page: allAgain } = await open('#lbn=all');
-  assert.equal(await allAgain.$eval('#leaderboard-size', (e) => (e as HTMLSelectElement).value), 'all');
-  await allAgain.close();
   await page.select('#leaderboard-size', '25');
   await page.select('#leaderboard-org', '*');
   assert.doesNotMatch(page.url(), /lbn|lbo/);
@@ -1692,21 +1671,46 @@ test('leaderboard size and organization selects; every org is named, none as "ot
   await page.close();
 });
 
-test('usage chart shows ChromeDerivative with the jump note', async () => {
-  const { page } = await open();
+test('a link (or a reload) restores the page state from the URL, and the page writes it back unchanged', async () => {
+  // Each control's own test checks what it writes to the URL; this reads every
+  // setting back, as a reload or a shared link does.
+  const reviewer = await (await defaultPage()).page.$eval('#leaderboard-chart .lb-row', (r) => (r as HTMLElement).dataset.account!);
+  const hash = '#metric=chars&from=2025-W45&to=2026-W44&smooth=52&rscale=linear&lbn=100&lbo=*-google.com' +
+    `&dir=${encodeURIComponent('chrome/')}&hm=microsoft.com&hmb=1&hmv=share&cxb=52&cxv=volume&lbr=${reviewer}`;
+  const { page, errors } = await open(hash);
+  const got = await page.evaluate(() => {
+    const value = (sel: string) => document.querySelector<HTMLInputElement | HTMLSelectElement>(sel)!.value;
+    return {
+      controls: ['#metric input:checked', '#smoothing input:checked', '#review-scale input:checked', '#review-dir',
+        '#leaderboard-size', '#leaderboard-org', '#heat-org', '#heat-bin input:checked', '#heat-value input:checked',
+        '#cx-bin input:checked', '#cx-value input:checked'].map(value),
+      yType: window.__cosh!.reviewChart!.options.scales.y.type,
+      detail: !document.querySelector<HTMLElement>('#reviewer-detail')!.hidden,
+      hash: location.hash,
+    };
+  });
+  assert.deepEqual(got.controls,
+    ['chars', '52', 'linear', 'chrome/', '100', '*-google.com', 'microsoft.com', '1', 'share', '52', 'volume']);
+  assert.equal(got.yType, 'linear');
+  assert.ok(got.detail, 'the reviewer chart is open');
+  // Written back in the page's own order: the same settings.
+  const params = (h: string) => [...new URLSearchParams(h.slice(1))].sort();
+  assert.deepEqual(params(got.hash), params(hash));
+  assert.deepEqual(errors, []);
+  await page.close();
+});
+
+test('usage chart shows ChromeDerivative', async () => {
+  const { page } = await defaultPage();
   const names = await page.evaluate(() =>
     window.__cosh!.usageChart!.data.datasets.map((d: { label?: string }) => d.label),
   );
   assert.ok(names.includes('ChromeDerivative'), names.join());
   assert.ok(names.includes('Chrome'));
-  const note = await page.$eval('#derivative-note', (n) => n.textContent ?? '');
-  assert.match(note, /ChromeDerivative/);
-  assert.match(note, /starting on 9 September 2026/);
-  await page.close();
 });
 
-test('Meta gets a ratio line; the usage chart shows WebView; fine print covers WebView and iOS', async () => {
-  const { page } = await open();
+test('Meta gets a ratio line; the usage chart shows WebView', async () => {
+  const { page } = await defaultPage();
   const ratioOrgs = await page.evaluate(() =>
     window.__cosh!.ratioChart!.data.datasets.map((d: { label?: string }) => d.label),
   );
@@ -1715,35 +1719,6 @@ test('Meta gets a ratio line; the usage chart shows WebView; fine print covers W
     window.__cosh!.usageChart!.data.datasets.map((d: { label?: string }) => d.label),
   );
   assert.ok(usage.includes('ChromeMobileWebview'), usage.join());
-  const webview = await page.$eval('#webview-note', (n) => n.textContent ?? '');
-  assert.match(webview, /left out\s+of the value ratio/);
-  assert.match(webview, /many different browsers and apps/);
-  assert.match(webview, /credited to Meta/);
-  assert.match(webview, /Microsoft 365's to\s+Microsoft/);
-  assert.match(await page.$eval('#ios-note', (n) => n.textContent ?? ''), /iOS is excluded/);
-  await page.close();
-});
-
-test('review chart explains its scope, metrics and org attribution', async () => {
-  const { page } = await open();
-  assert.match(await page.$eval('#review-scope-note', (n) => n.textContent ?? ''), /owned by humans/);
-  assert.match(await page.$eval('#review-metric-note', (n) => n.textContent ?? ''), /bare \+1\s+vote, don.t count/);
-  const href = await page.$eval('#affiliation-note a', (a) => (a as HTMLAnchorElement).href);
-  assert.equal(
-    href,
-    'https://chromium.googlesource.com/chromium/src/+/main/third_party/blink/tools/commit_stats/affiliations.json5',
-  );
-  await page.close();
-});
-
-test('dark mode and phone width render without horizontal scroll', async () => {
-  const { page } = await open('', 375);
-  await page.emulateMediaFeatures([{ name: 'prefers-color-scheme', value: 'dark' }]);
-  const bg = await page.$eval('body', (b) => getComputedStyle(b).backgroundColor);
-  assert.equal(bg, 'rgb(13, 13, 13)');
-  const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
-  assert.ok(overflow <= 0, `horizontal overflow ${overflow}px`);
-  await page.close();
 });
 
 test.skipIf(!process.env.SCREENSHOT_DIR)('screenshots (only when SCREENSHOT_DIR is set)', async () => {
@@ -1777,7 +1752,7 @@ test.skipIf(!process.env.SCREENSHOT_DIR)('screenshots (only when SCREENSHOT_DIR 
 });
 
 test('time axes are labelled by month; tooltips still name the week', async () => {
-  const { page, errors } = await open();
+  const { page, errors } = await defaultPage();
   const read = () =>
     page.evaluate(() =>
       (['ratioChart', 'reviewChart', 'usageChart'] as const).map((k) => {
@@ -1800,7 +1775,6 @@ test('time axes are labelled by month; tooltips still name the week', async () =
     assert.match(c.title, /^[A-Z][a-z]{2} \d+ – [A-Z][a-z]{2} \d+, \d{4}$/);
   }
   assert.deepEqual(errors, []);
-  await page.close();
   // Phone width: fewer, still month-aligned ticks.
   // The usage chart over a year, so this holds however few review weeks there are.
   const narrow = await open(`#from=${addWeeks(isoWeekOf(new Date()), -60)}&to=${addWeeks(isoWeekOf(new Date()), -8)}`, 390);
@@ -1810,7 +1784,8 @@ test('time axes are labelled by month; tooltips still name the week', async () =
 });
 
 test('chart tooltips sit beside the hovered week, not over its points', async () => {
-  const { page, errors } = await open();
+  // Shows each tooltip and hides it again, leaving the shared page as it was.
+  const { page, errors } = await defaultPage();
   const cards = await page.evaluate(() =>
     (['ratioChart', 'reviewChart', 'usageChart'] as const).flatMap((k) => {
       const c = window.__cosh![k]!;
@@ -1838,7 +1813,6 @@ test('chart tooltips sit beside the hovered week, not over its points', async ()
   }
   assert.ok(cards.some((t) => t.k === 'usageChart' && t.xAlign !== 'center'), JSON.stringify(cards));
   assert.deepEqual(errors, []);
-  await page.close();
 });
 
 test('heatmap: column ticks carry the year wherever it changes, wide or narrow', async () => {
@@ -1909,7 +1883,6 @@ test('parity chart hover cards sit below or above the point: org and ratio over 
   // Points high on the chart get the card below them.
   assert.ok(cards.some((t) => t.yAlign === 'top'), JSON.stringify(cards));
   assert.deepEqual(errors, []);
-  await page.close();
 });
 
 test('heatmap: directories by time bins, per org or as a mix, with Gerrit links', async () => {
@@ -2039,19 +2012,20 @@ test('organization chart can show one directory, kept in the URL', async () => {
     /^Showing components\/services\/storage\/.*It counts every comment in this directory and below\./);
   assert.equal(await page.$eval('#review-dir-clear', (e) => (e as HTMLButtonElement).hidden), false);
 
-  // From the URL: a partly excluded directory says how much the rest of the page leaves out.
-  const reloaded = await open(`#from=2025-W45&to=2026-W44&dir=${encodeURIComponent('chrome/')}`);
-  assert.equal(await reloaded.page.$eval('#review-dir', (e) => (e as HTMLInputElement).value), 'chrome/');
-  assert.match(await reloaded.page.$eval('#review-dir-note', (e) => e.textContent!),
+  // A partly excluded directory says how much the rest of the page leaves out.
+  await page.click('#review-dir', { count: 3 });
+  await page.type('#review-dir', 'chrome/');
+  await page.keyboard.press('Enter');
+  await page.waitForFunction(() => /dir=chrome%2F(&|$)/.test(location.hash));
+  assert.match(await page.$eval('#review-dir-note', (e) => e.textContent!),
     /including the [\d.]+% on paths the rest of the page leaves out/);
-  await reloaded.page.close();
 
   // An unknown directory leaves the chart alone and says why.
   await page.click('#review-dir', { count: 3 });
   await page.type('#review-dir', 'no/such/dir');
   await page.keyboard.press('Enter');
   assert.match(await page.$eval('#review-dir-status', (e) => e.textContent!), /No directory “no\/such\/dir”/);
-  assert.match(page.url(), /dir=components%2Fservices%2Fstorage%2F/);
+  assert.match(page.url(), /dir=chrome%2F/);
 
   // Clear goes back to the path scope.
   await page.click('#review-dir-clear');
