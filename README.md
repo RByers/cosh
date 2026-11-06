@@ -1,7 +1,40 @@
 # cosh — Chromium Open Source Health
 
-cosh measures how the organizations that depend on Chromium contribute back
-to it, relative to how much they get out of it.
+cosh builds a set of public dashboards about the health of the Chromium open
+source project: how it works, who sustains it, and how the organizations that
+depend on it give back. Each dashboard is a page of one static site
+(`web/`), and a landing page (`web/index.html`) links to them all.
+
+## Dashboards
+
+| Dashboard | Page | Question | Data sources |
+|---|---|---|---|
+| Value Exchange | `web/value.html` | Does each organization contribute back to Chromium in proportion to the value it gets out of it? | Gerrit code review, Cloudflare Radar |
+
+More dashboards are planned, each answering one question about the project.
+
+## Data sources
+
+cosh consumes several public data sources about Chromium. Each has its own
+extractor, raw cache and summaries, and a dashboard reads only the small
+committed summaries it needs.
+
+| Source | What it gives | Status |
+|---|---|---|
+| Chromium Gerrit (`chromium-review.googlesource.com`) | Code review: comments, threads, reviewers, CLs | In use (Value Exchange) |
+| [Cloudflare Radar](https://radar.cloudflare.com/) | Browser usage share | In use (Value Exchange) |
+| Chromium git history (`chromium.googlesource.com/chromium/src`) | Commits, authors, files touched, OWNERS | Planned |
+| Chromium bug tracker (`issues.chromium.org`) | Bugs filed, triaged and fixed, and by whom | Planned |
+| Others (mailing lists, standards work, …) | To be decided | Ideas |
+
+A new source, or more data from an existing one, needs the user's explicit
+approval before anything is fetched. The rules for keeping server load low
+apply to every source (`docs/plan.md`, Ground rules).
+
+# Value Exchange
+
+The first dashboard measures how the organizations that depend on Chromium
+contribute back to it, relative to how much they get out of it.
 
 ## The core metric: value ratio
 
@@ -45,7 +78,7 @@ contributes less.
 
 The main visualization plots each organization's value ratio over time.
 
-## Pipeline
+## Value Exchange pipeline
 
 1. **Extract** review data from Chromium Gerrit
    (`chromium-review.googlesource.com`). This is throttled and cached so we
@@ -64,13 +97,17 @@ The main visualization plots each organization's value ratio over time.
    summaries (all comments and addressed comments), plus every comment by
    directory.
 5. **Join** the summaries with Cloudflare Radar browser share.
-6. **Visualize** the result in a web front end that reads only the summaries.
+6. **Visualize** the result in `web/value.html`, which reads only the summaries.
+
+# Project
 
 ## Status
 
 Review data from 2023-W50 to 2026-W44 has been collected so far; a
 backfill to 2023-07 is in progress. Radar data covers 2023-07 onward. The
-web UI is in `web/`. Addressed comments (metric_version 7) are classified
+web UI is in `web/`: the landing page `index.html` and the Value Exchange
+dashboard `value.html`. Git history and bug data are not fetched yet.
+Addressed comments (metric_version 7) are classified
 for 2026-W44 so far; more weeks are added with `cosh classify`. See
 [`docs/plan.md`](docs/plan.md).
 
@@ -89,7 +126,7 @@ python3 -m cosh summarize                 # write summaries/org_weekly.{csv,json
 python3 -m cosh radar                     # Cloudflare Radar browser share (source secrets.sh first)
 python3 -m cosh backfill --weeks 52       # plan only; --go fetches (resumable)
 python3 -m unittest tests.test_derive tests.test_extract tests.test_radar tests.test_classify
-cd web && npm ci && npm run dev           # web UI (see web/README.md); npm test for tests
+cd web && npm ci && npm run dev           # web UI: / is the landing page, /value.html the dashboard (web/README.md)
 ```
 
 ## Docs

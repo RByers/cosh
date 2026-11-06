@@ -1,0 +1,348 @@
+/* The landing page (index.html). Neutrals match style.css; the accents are
+   a family of Chromium-ish blues and one teal, for the hero illustration. */
+:root {
+  color-scheme: light;
+  --page: #f9f9f7;
+  --surface-1: #ffffff;
+  --text-primary: #0b0b0b;
+  --text-secondary: #52514e;
+  --text-muted: #6f6d68;
+  --border: rgba(11, 11, 11, 0.1);
+  --accent: #1a5fd0;
+  --hero-1: #1a5fd0;
+  --hero-2: #4f8ff0;
+  --hero-3: #8ab4f8;
+  --hero-4: #0f9d8a;
+  --hero-5: #a8c7fa;
+  --hero-6: #174ea6;
+  --hero-glow: rgba(79, 143, 240, 0.16);
+  --hero-orbit: rgba(26, 95, 208, 0.22);
+  --hero-core-a: #4f8ff0;
+  --hero-core-b: #174ea6;
+  --icon-bg: #e8f0fe;
+  --card-shadow: 0 1px 2px rgba(11, 11, 11, 0.06), 0 4px 16px rgba(26, 95, 208, 0.08);
+  --card-shadow-hover: 0 2px 4px rgba(11, 11, 11, 0.08), 0 10px 28px rgba(26, 95, 208, 0.16);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    color-scheme: dark;
+    --page: #0d0d0d;
+    --surface-1: #1a1a19;
+    --text-primary: #f0efec;
+    --text-secondary: #c3c2b7;
+    --text-muted: #9b9991;
+    --border: rgba(255, 255, 255, 0.1);
+    --accent: #8ab4f8;
+    --hero-1: #4f8ff0;
+    --hero-2: #8ab4f8;
+    --hero-3: #3b6fc4;
+    --hero-4: #2bb5a0;
+    --hero-5: #c2d7fb;
+    --hero-6: #6ea2f5;
+    --hero-glow: rgba(79, 143, 240, 0.2);
+    --hero-orbit: rgba(138, 180, 248, 0.25);
+    --hero-core-a: #8ab4f8;
+    --hero-core-b: #1a5fd0;
+    --icon-bg: #1d2a40;
+    --card-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+    --card-shadow-hover: 0 4px 20px rgba(79, 143, 240, 0.25);
+  }
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --page: #0d0d0d;
+  --surface-1: #1a1a19;
+  --text-primary: #f0efec;
+  --text-secondary: #c3c2b7;
+  --text-muted: #9b9991;
+  --border: rgba(255, 255, 255, 0.1);
+  --accent: #8ab4f8;
+  --hero-1: #4f8ff0;
+  --hero-2: #8ab4f8;
+  --hero-3: #3b6fc4;
+  --hero-4: #2bb5a0;
+  --hero-5: #c2d7fb;
+  --hero-6: #6ea2f5;
+  --hero-glow: rgba(79, 143, 240, 0.2);
+  --hero-orbit: rgba(138, 180, 248, 0.25);
+  --hero-core-a: #8ab4f8;
+  --hero-core-b: #1a5fd0;
+  --icon-bg: #1d2a40;
+  --card-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --card-shadow-hover: 0 4px 20px rgba(79, 143, 240, 0.25);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0 auto;
+  max-width: 1100px;
+  padding: 24px 16px 48px;
+  background: var(--page);
+  color: var(--text-primary);
+  font: 15px/1.5 system-ui, -apple-system, 'Segoe UI', sans-serif;
+}
+
+a {
+  color: var(--accent);
+}
+
+/* Hero: text beside the illustration, stacked when narrow. */
+.hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+  align-items: center;
+  gap: 32px;
+  padding: 24px 0 40px;
+}
+
+.eyebrow {
+  margin: 0 0 6px;
+  color: var(--accent);
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+h1 {
+  margin: 0 0 12px;
+  font-size: clamp(2rem, 5vw, 3rem);
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+}
+
+.lede {
+  margin: 0;
+  max-width: 60ch;
+  color: var(--text-secondary);
+  font-size: 1.05rem;
+}
+
+.hero-art {
+  width: 100%;
+  max-width: 340px;
+  justify-self: center;
+  overflow: visible;
+}
+
+.glow-in {
+  stop-color: var(--hero-glow);
+}
+
+.glow-out {
+  stop-color: var(--page);
+  stop-opacity: 0;
+}
+
+.core-a {
+  stop-color: var(--hero-core-a);
+}
+
+.core-b {
+  stop-color: var(--hero-core-b);
+}
+
+.orbits circle {
+  fill: none;
+  stroke: var(--hero-orbit);
+  stroke-width: 1.5;
+  stroke-dasharray: 2 6;
+  stroke-linecap: round;
+}
+
+.spokes path {
+  fill: none;
+  stroke: var(--hero-orbit);
+  stroke-width: 1;
+}
+
+.node {
+  stroke: var(--page);
+  stroke-width: 2;
+}
+
+.n1 { fill: var(--hero-1); }
+.n2 { fill: var(--hero-2); }
+.n3 { fill: var(--hero-4); }
+.n4 { fill: var(--hero-3); }
+.n5 { fill: var(--hero-5); }
+.n6 { fill: var(--hero-6); }
+
+.glyph path {
+  fill: none;
+  stroke: #fff;
+  stroke-width: 3;
+  stroke-linecap: round;
+}
+
+.glyph circle {
+  fill: #fff;
+}
+
+/* The orbits turn slowly, each at its own pace; not at all for reduced motion. */
+.spin {
+  transform-origin: 160px 160px;
+  animation: orbit linear infinite;
+}
+
+.spin-slow {
+  animation-duration: 120s;
+}
+
+.spin-mid {
+  animation-duration: 80s;
+  animation-direction: reverse;
+}
+
+.spin-fast {
+  animation-duration: 50s;
+}
+
+@keyframes orbit {
+  to {
+    transform: rotate(1turn);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spin {
+    animation: none;
+  }
+}
+
+/* Dashboard cards. Each is one link wrapping an <article>. */
+h2 {
+  margin: 0 0 12px;
+  font-size: 1.1rem;
+}
+
+.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr));
+  gap: 16px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.card-link {
+  display: block;
+  height: 100%;
+  border-radius: 12px;
+  color: inherit;
+  text-decoration: none;
+}
+
+.card-link:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+.card {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  grid-template-rows: auto 1fr auto;
+  column-gap: 14px;
+  height: 100%;
+  padding: 18px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface-1);
+  box-shadow: var(--card-shadow);
+  transition: box-shadow 0.15s, border-color 0.15s, transform 0.15s;
+}
+
+.card-link:hover .card {
+  border-color: var(--accent);
+  box-shadow: var(--card-shadow-hover);
+  transform: translateY(-1px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card-link:hover .card {
+    transform: none;
+  }
+}
+
+.card-icon {
+  grid-row: 1 / span 3;
+  width: 48px;
+  height: 48px;
+  padding: 6px;
+  border-radius: 10px;
+  background: var(--icon-bg);
+}
+
+.card-icon .beam {
+  fill: none;
+  stroke: var(--hero-1);
+  stroke-width: 2.5;
+  stroke-linecap: round;
+}
+
+.card-icon .pan {
+  fill: none;
+  stroke: var(--hero-2);
+  stroke-width: 1.5;
+  stroke-linejoin: round;
+}
+
+.card-icon .bowl {
+  fill: var(--hero-4);
+}
+
+.card-icon .pivot {
+  fill: var(--hero-1);
+}
+
+.card h3 {
+  margin: 0 0 4px;
+  font-size: 1.15rem;
+  color: var(--accent);
+}
+
+.card p {
+  margin: 0;
+  color: var(--text-secondary);
+}
+
+.card .sources {
+  margin-top: 10px;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
+.more {
+  margin: 16px 0 0;
+  color: var(--text-muted);
+}
+
+footer {
+  margin-top: 48px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
+footer p {
+  margin: 0 0 4px;
+}
+
+@media (max-width: 640px) {
+  .hero {
+    grid-template-columns: 1fr;
+    gap: 16px;
+    padding-top: 8px;
+  }
+
+  .hero-art {
+    max-width: 220px;
+    grid-row: 1;
+  }
+}

@@ -119,6 +119,22 @@ body {
   font: 15px/1.5 system-ui, -apple-system, 'Segoe UI', sans-serif;
 }
 
+/* The link back to the landing page, above the title. */
+.crumb {
+  margin: 0 0 6px;
+  font-size: 0.85rem;
+}
+
+.crumb a {
+  color: var(--text-secondary);
+  text-decoration: none;
+}
+
+.crumb a:hover {
+  color: var(--accent);
+  text-decoration: underline;
+}
+
 h1 {
   font-size: 1.6rem;
   margin: 0 0 4px;

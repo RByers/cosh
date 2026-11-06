@@ -1,7 +1,20 @@
 # cosh web UI
 
 A static site (Vite + TypeScript, Chart.js as the only runtime dependency),
-served from GitHub Pages by `.github/workflows/pages.yml`.
+served from GitHub Pages by `.github/workflows/pages.yml`. It has one page
+per dashboard plus a landing page; each is an entry in
+`build.rolldownOptions.input` in `vite.config.ts`.
+
+| Page | What | Script | Styles |
+|---|---|---|---|
+| `index.html` | Landing page: an illustration and one card per dashboard | none | `src/home.css` |
+| `value.html` | Value Exchange dashboard (the rest of this file) | `src/main.ts` | `src/style.css` |
+
+To add a dashboard, add its page and an `input` entry in the Vite config,
+add a card in `index.html`, and add browser tests that open it. The landing
+page's illustration is original: don't use the Chromium or Chrome logos.
+
+## Value Exchange (`value.html`)
 
 It reads only committed, public files, which Vite emits as hashed assets at
 build time:
@@ -106,8 +119,8 @@ Over a range:
 
 ## Text and styling
 
-The page's wording lives in `index.html`, so it can be reviewed and tweaked
-there alone; presentation lives in `src/style.css`.
+The page's wording lives in each page's HTML (`value.html`, `index.html`), so it can be reviewed and tweaked
+there alone; presentation in `src/style.css` (`src/home.css` for the landing page).
 
 - Fixed controls (the metric, smoothing and chart toggles, the range presets,
   the fixed select options, the tiles) are plain markup; the scripts only
@@ -115,7 +128,7 @@ there alone; presentation lives in `src/style.css`.
 - Sentences that depend on the data (section subtitles, captions, notes) are
   `<template data-msg="…">` elements next to the element they fill, with
   `<slot name="…">` values and `data-if` conditions; `src/text.ts` renders
-  them (`fill`, `msg`). The opening comment in `index.html` has the syntax.
+  them (`fill`, `msg`). The opening comment in `value.html` has the syntax.
 - Short formats stay in the scripts: hover titles, chart tooltips and axis
   titles, legend counts such as `google.com (12)`, directory row names such
   as `3 more`.
@@ -296,7 +309,7 @@ an old `dirs=` parameter is ignored.
 ```
 cd web
 npm ci
-npm run dev        # http://localhost:5190
+npm run dev        # http://localhost:5190 (landing page), /value.html (Value Exchange)
 npm run build      # -> web/dist
 npm run preview    # serves web/dist at http://localhost:5191
 npm test           # build + unit tests + headless Chrome tests

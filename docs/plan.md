@@ -5,6 +5,19 @@ the project up. Read this, then `README.md`, then `docs/extraction-v1.md`.
 
 ## Goal
 
+cosh generates a set of dashboards about the health of the Chromium open
+source project, published as one static site: a landing page
+(`web/index.html`) with a card for each dashboard. Each dashboard answers one
+question from public data. The sources are Chromium Gerrit code review and
+Cloudflare Radar browser usage today. Chromium's git history and bug tracker
+are planned, and others may follow. Each new source (or more data from an
+existing one) is fetched only once the user has approved it (ground rule 1),
+under the same load rules (ground rule 2). It gets its own extractor, a raw
+cache in `data/private/` that is kept losslessly, and small committed
+summaries that the pages read.
+
+### First dashboard: Value Exchange (`web/value.html`)
+
 For each organization *O* and period *t*, plot over time:
 
 ```
@@ -21,8 +34,8 @@ value_ratio(O, t) = O's share of Chromium addressed review comments
     review comments.
 - Review data comes from Chromium Gerrit.
 - Usage data comes from Cloudflare Radar.
-- The result is a static web UI on GitHub Pages that reads only
-  `summaries/` and `data/public/radar_browser_share.csv`.
+- The result is the `value.html` page of the static site on GitHub Pages,
+  which reads only `summaries/` and `data/public/radar_browser_share.csv`.
 
 ## Ground rules
 
@@ -120,6 +133,7 @@ value_ratio(O, t) = O's share of Chromium addressed review comments
 | 2026-11-05 | **Org colours stay computed from the data, with no palette check.** The 12-colour map is worked out when the page loads (all-time review rank, then value-chart orgs), so a growing org takes a colour on its own and colours may shift when the data is updated. The real-data test that flagged orgs named in grey over 13+ weeks, and the CLAUDE.md step to act on it, are removed; a named org without a colour still shows in grey, never in Other | User's choice between a fixed org → colour list in config (kept stable by hand, with the test flagging when it needs updating) and a fully runtime map: runtime, accepting that colours may shift on data updates |
 | 2026-11-05 | Exclude brave.com again (reverts the 2026-11-04 re-inclusion): no brave.com → Brave mapping, and the org table shows its usage as "unknown" and its ratio as "usage unknown" (`UNKNOWN_USAGE_ORGS` in `web/src/data.ts`), not "usage too small" | User's instruction: Radar's Brave label is ~1000× below Brave's real size, so its usage is unknown rather than small |
 | 2026-11-05 | **The web UI names weeks by their dates, never by ISO week labels** (`2026-W44`) or as "ISO weeks", and captions don't repeat the selected range. Labels stay in URLs, data files and code. A browser test checks the page's text, hover titles and accessible names | User's instruction; a `2026-W14 to 2026-W44` label had crept back into the date picker's summary after the wording moved into `index.html` |
+| 2026-11-06 | **cosh becomes a set of Chromium dashboards.** The value-ratio UI moves from `web/index.html` to `web/value.html`, titled "Chromium Open Source - Value Exchange". A new landing page `web/index.html` (no script; own sheet `web/src/home.css`) has an original illustration (no Chromium logo) and one card per dashboard. Vite builds both pages. The docs now describe more data sources: git history and bugs are planned, and each still needs approval before anything is fetched | User's instruction: generalize the repo to generate several dashboards from different Chromium data sources |
 
 ## Status
 

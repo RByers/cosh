@@ -249,7 +249,7 @@ function rangeDates(r: WeekRange): string {
   return `${day(a, a.getUTCFullYear() !== b.getUTCFullYear())} – ${day(b)}`;
 }
 
-/** Each metric's name, from its button in index.html (read before any is
+/** Each metric's name, from its button in value.html (read before any is
  * removed); metricUnit is the name mid-sentence. */
 const METRIC_NAMES = new Map<Metric, string>();
 const metricName = (m: Metric) => METRIC_NAMES.get(m) ?? m;
@@ -373,7 +373,7 @@ function writeStateToUrl(s: State, allData: WeekRange) {
 /** How many directories the directory field suggests; any other one can be typed. */
 const DIR_OPTIONS = 3000;
 
-/** A range preset button's length in weeks (index.html's data-preset), or null for all data. */
+/** A range preset button's length in weeks (value.html's data-preset), or null for all data. */
 const presetWeeks = (b: HTMLElement) => (b.dataset.preset === 'all' ? null : Number(b.dataset.preset));
 
 function presetRange(data: Data, weeks: number | null): WeekRange {
@@ -382,7 +382,7 @@ function presetRange(data: Data, weeks: number | null): WeekRange {
   return clampRange({ from: addWeeks(common.to, 1 - weeks), to: common.to }, full);
 }
 
-/** Wires a fieldset of radios (written in index.html): checks `current`
+/** Wires a fieldset of radios (written in value.html): checks `current`
  * and calls `pick` with the value chosen. */
 function radios(box: HTMLElement, current: string | number, pick: (value: string) => void) {
   for (const input of box.querySelectorAll<HTMLInputElement>('input[type="radio"]')) {
@@ -547,7 +547,7 @@ function renderTiles(data: Data, weeks: string[]) {
   const comments = rows.reduce((s, r) => s + r.comments, 0);
   const ai = rows.reduce((s, r) => s + r.ai_comments, 0);
   const postMerge = rows.reduce((s, r) => s + r.post_merge_comments, 0);
-  // The tiles and their wording are in index.html; each sub-line is the template named after its tile.
+  // The tiles and their wording are in value.html; each sub-line is the template named after its tile.
   const tile = (id: string, value: string, sub: Vars | null) => {
     const box = $(`#${id}`);
     box.querySelector('.tile-value')!.textContent = value;
@@ -663,7 +663,7 @@ function renderTable(data: Data, state: State, weeks: string[], vWeeks: string[]
   );
 }
 
-/** Fills an organization select: index.html gives everyone, everyone but
+/** Fills an organization select: value.html gives everyone, everyone but
  * google.com and "Other" (everyone else); the top orgs go before "Other",
  * and the current choice after it if it isn't among them. */
 function fillOrgSelect(select: HTMLSelectElement, top: string[], current: string) {
@@ -779,7 +779,7 @@ function renderReviewerDetail(data: Data, state: State, colors: Map<string, stri
   };
 }
 
-/** An outcome's name, from index.html. */
+/** An outcome's name, from value.html. */
 const outcomeLabel = (o: ThreadOutcome) => msg('thread-outcome', { o });
 
 /** How the reviewer-started threads of the picked range's classified weeks

@@ -874,10 +874,10 @@ test('barScale breaks the axis only when a few bars dwarf the rest', () => {
   assert.deepEqual(barScale([5, 0]), { max: 5, broken: 0 });
 });
 
-// The "Which paths count" list in index.html is written by hand; it must name
+// The "Which paths count" list in value.html is written by hand; it must name
 // exactly the include/exclude rules in config/paths.txt, each in its group,
 // with Excluded first.
-test('scope list in index.html matches config/paths.txt', () => {
+test('scope list in value.html matches config/paths.txt', () => {
   const read = (p: string) => readFileSync(fileURLToPath(new URL(p, import.meta.url)), 'utf8');
   const config = { included: [] as string[], excluded: [] as string[] };
   for (const raw of read('../../config/paths.txt').split('\n')) {
@@ -886,7 +886,7 @@ test('scope list in index.html matches config/paths.txt', () => {
     if (kind === 'exclude') config.excluded.push(prefix);
   }
   assert.ok(config.included.length && config.excluded.length, 'no rules read from config/paths.txt');
-  const html = read('../index.html');
+  const html = read('../value.html');
   const group = (included: boolean) => {
     const m = html.match(new RegExp(`<dl class="scope-list" data-included="${included}">([\\s\\S]*?)</dl>`));
     assert.ok(m, `no ${included ? 'Included' : 'Excluded'} list`);

@@ -1,7 +1,7 @@
-// The page's wording lives in index.html, not in the scripts, so it can be
+// The page's wording lives in value.html, not in the scripts, so it can be
 // reviewed and changed in one file. Text that depends on the data is written
 // there as <template data-msg="key"> elements, next to where it's shown, and
-// rendered here (index.html's opening comment has the syntax):
+// rendered here (value.html's opening comment has the syntax):
 //
 //   <slot name="x"></slot>   the value `x` the script passes
 //   data-if="x" / "!x"       kept only when `x` is set (non-empty, non-zero) / isn't
@@ -20,7 +20,7 @@ function template(key: string): HTMLTemplateElement {
   let t = templates.get(key);
   if (!t) {
     t = document.querySelector<HTMLTemplateElement>(`template[data-msg="${CSS.escape(key)}"]`) ?? undefined;
-    if (!t) throw new Error(`No <template data-msg="${key}"> in index.html`);
+    if (!t) throw new Error(`No <template data-msg="${key}"> in value.html`);
     templates.set(key, t);
   }
   return t;

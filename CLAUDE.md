@@ -1,10 +1,14 @@
 # cosh: notes for Claude sessions
 
+cosh builds several dashboards about the Chromium open source project from
+public data sources: Gerrit code review and Cloudflare Radar today, with git
+history and bugs planned. The first dashboard is Value Exchange.
+
 Start with `docs/plan.md`, which covers the goal, ground rules, the decisions
 log, status and next steps. Then read `docs/extraction-v1.md` for the
 implementation and metric definitions, and `docs/comment-classifier.md` for
-the primary metric: addressed review comments, classified by a regex plus
-Claude Haiku (`cosh classify`).
+Value Exchange's primary metric: addressed review comments, classified by a
+regex plus Claude Haiku (`cosh classify`).
 
 ## Hard rules
 
@@ -50,12 +54,19 @@ Claude Haiku (`cosh classify`).
   pass `derive --out` / `summarize --db` a scratch path. `derive` and
   `summarize` open `raw.sqlite` read-only, so they're safe while an extractor
   runs.
-- Web UI: `web/` (Vite + TypeScript, Chart.js). `cd web && npm test` builds
+- Web UI: `web/` (Vite + TypeScript, Chart.js), one page per dashboard
+  (`web/value.html` is Value Exchange) plus the landing page
+  `web/index.html`, which has a card for each one. A new dashboard needs a
+  page, an `input` entry in `web/vite.config.ts` and a card. `cd web && npm test` builds
   it and runs Vitest unit tests and headless-Chrome tests (puppeteer-core with
   `/usr/bin/google-chrome`). Vitest is capped at `maxWorkers: 4`, with test
   files run serially.
-- **Web UI wording goes in `web/index.html`, presentation in
-  `web/src/style.css`.** Captions, notes and controls are markup or
+- **Fetching from a new data source** (git history, the bug tracker, …)
+  needs the user's approval first, like any fetch beyond the approved
+  backfills. The load rules above apply to it too.
+- **Web UI wording goes in the page's HTML (`web/value.html`,
+  `web/index.html`), presentation in `web/src/style.css`
+  (`web/src/home.css` for the landing page).** Captions, notes and controls are markup or
   `<template data-msg>` elements there (rendered by `web/src/text.ts`), not
   strings in the scripts. Only short formats such as tooltips and hover titles
   stay in the TypeScript. Scripts set CSS custom properties, not inline

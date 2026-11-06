@@ -33,9 +33,11 @@ const chromePath = process.env.CHROME_PATH ?? '/usr/bin/google-chrome';
 let server: PreviewServer;
 let browser: Browser;
 let baseUrl: string;
+/** The Value Exchange dashboard; baseUrl itself is the landing page. */
+let valueUrl: string;
 
 before(async () => {
-  assert.ok(existsSync(join(webDir, 'dist/index.html')), 'run `npm run build` first');
+  assert.ok(existsSync(join(webDir, 'dist/value.html')), 'run `npm run build` first');
   // Always a random unforwarded port (argus-config/ports.md), even when the user runs the tests.
   server = await preview({
     root: webDir,
@@ -43,6 +45,7 @@ before(async () => {
     preview: { host: 'localhost', port: randomPort(), strictPort: false },
   });
   baseUrl = server.resolvedUrls!.local[0];
+  valueUrl = baseUrl + 'value.html';
   browser = await puppeteer.launch({
     executablePath: chromePath,
     headless: true,
@@ -81,7 +84,7 @@ async function open(
       else void r.continue();
     });
   }
-  await page.goto(baseUrl + hash);
+  await page.goto(valueUrl + hash);
   await page.waitForSelector('body[data-ready]');
   const ready = await page.$eval('body', (b) => b.dataset.ready);
   const shown = await page.$eval('#error', (e) => e.textContent);
@@ -110,7 +113,7 @@ test('the stylesheet is linked from the HTML, so the first paint is styled even 
     const page = await browser.newPage();
     await page.setRequestInterception(true);
     page.on('request', (r) => void (r.resourceType() === 'script' ? r.abort() : r.continue()));
-    await page.goto(dev.resolvedUrls!.local[0], { waitUntil: 'load' });
+    await page.goto(dev.resolvedUrls!.local[0] + 'value.html', { waitUntil: 'load' });
     const styled = await page.evaluate(() => ({
       sheets: document.styleSheets.length,
       font: getComputedStyle(document.body).fontFamily,
@@ -129,7 +132,7 @@ test('the intro shows while the data loads; the controls and charts appear once 
   const held: HTTPRequest[] = [];
   await page.setRequestInterception(true);
   page.on('request', (r) => (/\.(json|csv)$/.test(r.url()) ? held.push(r) : void r.continue()));
-  await page.goto(baseUrl, { waitUntil: 'load' });
+  await page.goto(valueUrl, { waitUntil: 'load' });
   const before = await page.evaluate(() => ({
     intro: (document.querySelector('header h1') as HTMLElement).offsetHeight > 0,
     loading: (document.querySelector('#loading') as HTMLElement).offsetHeight > 0,
@@ -1716,7 +1719,7 @@ test.skipIf(!process.env.SCREENSHOT_DIR)('screenshots (only when SCREENSHOT_DIR 
     const page = await browser.newPage();
     await page.emulateMediaFeatures([{ name: 'prefers-color-scheme', value: scheme }]);
     await page.setViewport({ width: 1100, height: 900 });
-    await page.goto(baseUrl);
+    await page.goto(valueUrl);
     await page.waitForSelector('body[data-area-links]');
     await page.screenshot({ path: join(process.env.SCREENSHOT_DIR!, `cosh-${scheme}.png`) as `${string}.png`, fullPage: true });
     // The leaderboard alone, at desktop and phone width.
@@ -2025,5 +2028,44 @@ test('organization chart can show one directory, kept in the URL', async () => {
   assert.equal(await page.$eval('#review-dir-status', (e) => e.textContent!), '');
   assert.equal(await page.$eval('#review-dir-note', (e) => (e as HTMLElement).hidden), true);
   assert.deepEqual(errors, []);
+  await page.close();
+});
+
+test('the landing page links to the Value Exchange dashboard', async () => {
+  const page = await browser.newPage();
+  const errors: string[] = [];
+  page.on('console', (m) => m.type() === 'error' && errors.push(m.text()));
+  page.on('pageerror', (e) => errors.push(String(e)));
+  await page.setViewport({ width: 1100, height: 900 });
+  await page.goto(baseUrl, { waitUntil: 'load' });
+  assert.equal(await page.title(), 'Chromium Open Source');
+  const cards = await page.$$eval('.cards a', (as) =>
+    as.map((a) => ({ href: a.getAttribute('href'), title: a.querySelector('h3')!.textContent })));
+  assert.deepEqual(cards, [{ href: 'value.html', title: 'Value Exchange' }]);
+  // Styled by its own sheet.
+  assert.match(await page.$eval('body', (b) => getComputedStyle(b).fontFamily), /system-ui/);
+  await Promise.all([page.waitForNavigation(), page.click('.cards a')]);
+  assert.equal(await page.title(), 'Chromium Open Source - Value Exchange');
+  await page.waitForSelector('body[data-ready]');
+  // …and the dashboard links back.
+  assert.equal(await page.$eval('.crumb a', (a) => a.getAttribute('href')), './');
+  assert.deepEqual(errors, []);
+  await page.close();
+});
+
+test('the landing page fits a phone in dark mode', async () => {
+  const page = await browser.newPage();
+  await page.emulateMediaFeatures([{ name: 'prefers-color-scheme', value: 'dark' }]);
+  await page.setViewport({ width: 360, height: 800 });
+  await page.goto(baseUrl, { waitUntil: 'load' });
+  assert.equal(await page.$eval('body', (b) => getComputedStyle(b).backgroundColor), 'rgb(13, 13, 13)');
+  const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+  assert.ok(overflow <= 0, `horizontal overflow ${overflow}px`);
+  if (process.env.SCREENSHOT_DIR) {
+    await page.screenshot({ path: join(process.env.SCREENSHOT_DIR, 'home-phone-dark.png') as `${string}.png`, fullPage: true });
+    await page.emulateMediaFeatures([{ name: 'prefers-color-scheme', value: 'light' }]);
+    await page.setViewport({ width: 1100, height: 800 });
+    await page.screenshot({ path: join(process.env.SCREENSHOT_DIR, 'home-light.png') as `${string}.png`, fullPage: true });
+  }
   await page.close();
 });

@@ -15,7 +15,7 @@
 
 export type Metric = 'addressed' | 'comments' | 'chars' | 'cls';
 
-/** Their names are in index.html (the metric buttons). */
+/** Their names are in value.html (the metric buttons). */
 export const METRICS: Metric[] = ['addressed', 'comments', 'chars', 'cls'];
 
 /** Orgs whose browsers have less Chromium usage share than this get no ratio:
@@ -74,7 +74,7 @@ export interface AddressedMeta {
 }
 
 /** How a reviewer-started thread was decided (summaries' meta.addressed.thread_outcomes).
- * Their names are in index.html ("thread-outcome"). */
+ * Their names are in value.html ("thread-outcome"). */
 export type ThreadOutcome = 'done_reply' | 'model_addressed' | 'model_not' | 'no_reply' | 'pending';
 
 /** Thread counts per outcome over some weeks, or null if the summary has none. */

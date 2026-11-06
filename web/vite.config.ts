@@ -1,4 +1,7 @@
+import { fileURLToPath } from 'node:url';
 import { defineConfig } from 'vitest/config';
+
+const page = (name: string) => fileURLToPath(new URL(name, import.meta.url));
 
 // Ports: see argus-config/ports.md. USER_PORT is forwarded to the user's laptop over SSH.
 // Servers started by Claude Code (CLAUDECODE=1: tests, harnesses, an agent checking its work)
@@ -18,7 +21,13 @@ export default defineConfig({
     fs: { allow: ['..'] },
   },
   preview: { host: 'localhost', ...devPort(5191) },
-  build: { outDir: 'dist', emptyOutDir: true, assetsInlineLimit: 0 },
+  build: {
+    outDir: 'dist',
+    emptyOutDir: true,
+    assetsInlineLimit: 0,
+    // One page per dashboard, plus the landing page that links to them.
+    rolldownOptions: { input: { index: page('index.html'), value: page('value.html') } },
+  },
   test: {
     include: ['test/**/*.test.ts'],
     environment: 'node',
