@@ -178,13 +178,16 @@ def parse_labels(text):
     return (json.loads(m.group(0)) if m else {}).get("labels", [])
 
 
-def judge_call(model, items, cwd, cmd=None):
+def judge_call(model, items, box, cmd=None):
     """Labels one batch. Returns (labels, usd, [model ids]). With `cmd` (a
     shell command, e.g. a Gemini CLI), the prompt goes to its stdin and its
-    stdout must hold the {"labels": [...]} JSON."""
+    stdout must hold the {"labels": [...]} JSON; that command runs outside
+    the sandbox, with whatever tools its own flags allow (SECURITY.md).
+    Without it, `box` (a cosh.sandbox.Sandbox) runs claude -p."""
     prompt = judge_prompt(items)
     if cmd:
-        p = subprocess.run(cmd, shell=True, input=prompt, capture_output=True, text=True, cwd=cwd)
+        p = subprocess.run(cmd, shell=True, input=prompt, capture_output=True, text=True,
+                           cwd=os.environ.get("TMPDIR") or "/tmp")
         if p.returncode:
             raise RuntimeError(f"{cmd!r} failed (exit {p.returncode}): {(p.stderr or p.stdout)[:500]}")
         return parse_labels(p.stdout), 0.0, [model]
@@ -193,7 +196,7 @@ def judge_call(model, items, cwd, cmd=None):
             "--strict-mcp-config", "--mcp-config", '{"mcpServers":{}}', "--disable-slash-commands",
             "--exclude-dynamic-system-prompt-sections", "--no-session-persistence",
             "--json-schema", json.dumps(JUDGE_SCHEMA)]
-    p = subprocess.run(argv, input=prompt, capture_output=True, text=True, cwd=cwd)
+    p = box.run(argv[1:], prompt)
     d = json.loads(p.stdout)
     if d.get("is_error"):
         raise RuntimeError(str(d.get("result"))[:500])
@@ -228,16 +231,19 @@ def cmd_judge(a):
     todo = [s for s in sample if s["id"] not in have]
     batches = batches_of(a, todo)
     print(f"{len(todo)} threads to judge in {len(batches)} calls", file=sys.stderr)
-    cwd = os.environ.get("TMPDIR") or "/tmp"
+    from cosh.sandbox import Sandbox
+    box = None if a.cmd else Sandbox()
     usd = 0.0
     with ThreadPoolExecutor(max_workers=a.jobs) as pool, open(path, "a") as fh:
-        futs = [pool.submit(judge_call, a.model, [(s["id"], s["text"]) for s in b], cwd, a.cmd)
+        futs = [pool.submit(judge_call, a.model, [(s["id"], s["text"]) for s in b], box, a.cmd)
                 for b in batches]
         for b, f in zip(batches, futs):
             labels, cost, models = f.result()
             usd += cost
             n = save_labels(fh, b, labels, models[0] if models else a.model)
             print(f"  batch of {len(b)}: {n} labelled, ${cost:.2f}", file=sys.stderr)
+    if box:
+        box.close()
     print(f"done, ${usd:.2f} API-equivalent", file=sys.stderr)
 
 

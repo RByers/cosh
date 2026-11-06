@@ -23,7 +23,6 @@ import json
 import os
 import re
 import sqlite3
-import subprocess
 import sys
 import time
 from collections import defaultdict
@@ -197,18 +196,22 @@ SCHEMA = {"type": "object", "properties": {"labels": {"type": "array", "items": 
     "required": ["id", "done"]}}}, "required": ["labels"]}
 
 
-def claude_batch(model, items, cwd):
-    """Classify [(id, text)] in one headless call. Returns ({id: bool}, cost)."""
+def claude_batch(model, items, sandbox):
+    """Classify [(id, text)] in one headless call. Returns ({id: bool}, cost).
+
+    The thread text is untrusted (SECURITY.md): claude gets no tools, MCP
+    servers or slash commands, its reply must match SCHEMA, and `sandbox`
+    (cosh.sandbox.Sandbox) runs it with a fresh HOME and a scrubbed env."""
     text = "\n\n".join(f"### {i}\n{t}" for i, t in items)
     prompt = (DEFINITION + "\n\nClassify every item below. Return JSON only: "
               '{"labels": [{"id": "T0", "done": true}, ...]} with one entry per item.\n\n' + text)
-    cmd = ["claude", "-p", "--model", model, "--output-format", "json", "--tools", "",
+    args = ["-p", "--model", model, "--output-format", "json", "--tools", "",
            "--system-prompt", SYSTEM_PROMPT,
            "--strict-mcp-config", "--mcp-config", '{"mcpServers":{}}', "--disable-slash-commands",
            "--exclude-dynamic-system-prompt-sections", "--no-session-persistence",
            "--json-schema", json.dumps(SCHEMA)]
     t0 = time.time()
-    p = subprocess.run(cmd, input=prompt, capture_output=True, text=True, cwd=cwd)
+    p = sandbox.run(args, prompt)
     wall = time.time() - t0
     try:
         d = json.loads(p.stdout)
@@ -290,7 +293,7 @@ def pending_threads(db, labels_db, weeks):
 
 
 def classify(data_dir=store.DATA_DIR, db_path=None, weeks=None, model="haiku", batch=100,
-             max_threads=None, dry_run=False, labels_db_path=None, jobs=8):
+             max_threads=None, dry_run=False, labels_db_path=None, jobs=8, sandbox="auto"):
     from .derive import load_comments, prefetch_notedb
     path = db_path or os.path.join(data_dir, store.DERIVED_FILE)
     db = sqlite3.connect(f"file:{path}?mode=ro", uri=True)
@@ -313,7 +316,10 @@ def classify(data_dir=store.DATA_DIR, db_path=None, weeks=None, model="haiku", b
         raise SystemExit(f"another cosh classify holds {LOCK_FILE}")
     raw = store.open_raw_ro(data_dir)
     repos = {}
-    cwd = os.environ.get("TMPDIR") or "/tmp"
+    from .sandbox import Sandbox
+    repo = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    box = Sandbox(sandbox, hide=[data_dir, repo, os.path.dirname(os.path.abspath(path))])
+    print(f"sandbox: {box.describe()}", file=sys.stderr)
     started = store.now_iso()
     with labels_db:
         run_id = labels_db.execute("INSERT INTO runs(started_at, weeks) VALUES (?, ?)",
@@ -371,7 +377,10 @@ def classify(data_dir=store.DATA_DIR, db_path=None, weeks=None, model="haiku", b
         print(f"  batch {st['calls']}/{calls}: {len(rows)}/{len(keys)} labelled, {cost['wall']:.0f}s, "
               f"{cost['tokens']} tokens ({st['done']}/{len(todo)} done)", file=sys.stderr)
 
-    run_batches(prepare(), lambda items: claude_batch(model, items, cwd), jobs, save)
+    try:
+        run_batches(prepare(), lambda items: claude_batch(model, items, box), jobs, save)
+    finally:
+        box.close()
     print(f"labelled {st['done']} threads in {st['calls']} calls: {st['tokens']} tokens, "
           f"{time.time() - t_run:.0f}s wall ({st['seconds']:.0f}s of calls, {jobs} at a time), "
           f"${st['usd']:.2f} API-equivalent; {st['stale']} stale (rerun derive), "

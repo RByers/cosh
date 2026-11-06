@@ -20,12 +20,25 @@ import math
 import os
 import random
 import re
-import subprocess
 import sys
 import time
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from review_impact_stats import DONE  # noqa: E402
+
+_BOX = None
+
+
+def sandbox():
+    """claude -p runs on untrusted comment text: jail it (SECURITY.md)."""
+    global _BOX
+    if _BOX is None:
+        import atexit
+        sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
+        from cosh.sandbox import Sandbox
+        _BOX = Sandbox()
+        atexit.register(_BOX.close)
+    return _BOX
 
 ROLE = {"R": "REVIEWER", "O": "OWNER", "X": "OTHER"}
 
@@ -271,7 +284,7 @@ def claude_batch(model, text, effort):
     if effort:
         cmd += ["--effort", effort]
     t0 = time.time()
-    p = subprocess.run(cmd, input=prompt, capture_output=True, text=True, cwd=os.environ.get("TMPDIR", "/tmp"))
+    p = sandbox().run(cmd[1:], prompt)
     wall = time.time() - t0
     d = json.loads(p.stdout)
     out = d.get("structured_output") or {}

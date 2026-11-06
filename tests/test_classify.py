@@ -5,7 +5,7 @@ import time
 import unittest
 from unittest import mock
 
-from cosh import classify, store
+from cosh import classify, sandbox, store
 from cosh.derive import derive_change, derive_threads
 from cosh.summarize import summarize
 
@@ -203,13 +203,72 @@ class PendingTest(unittest.TestCase):
         out = json.dumps({"structured_output": {"labels": [{"id": "T0", "done": True}, {"id": "T1", "done": False}]},
                           "usage": {"input_tokens": 5, "output_tokens": 7, "cache_creation_input_tokens": 100},
                           "modelUsage": {"claude-haiku-x": {}}, "total_cost_usd": 0.01})
+        box = sandbox.Sandbox("none", claude="python3", credentials={"CLAUDE_CODE_OAUTH_TOKEN": "tok"})
         with mock.patch("subprocess.run", return_value=mock.Mock(stdout=out, stderr="", returncode=0)) as run:
-            got, cost = classify.claude_batch("haiku", [("T0", "a"), ("T1", "b")], "/tmp")
+            got, cost = classify.claude_batch("haiku", [("T0", "a"), ("T1", "b")], box)
+        box.close()
         self.assertEqual(got, {"T0": True, "T1": False})
         self.assertEqual((cost["model"], cost["tokens"]), ("claude-haiku-x", 112))
         cmd = run.call_args[0][0]
         self.assertIn("--json-schema", cmd)
         self.assertIn("--strict-mcp-config", cmd)
+        self.assertEqual(cmd[cmd.index("--tools") + 1], "")
+
+
+class SandboxTest(unittest.TestCase):
+    def test_credentials_from_env_else_settings(self):
+        self.assertEqual(sandbox.find_credentials({"CLAUDE_CODE_OAUTH_TOKEN": "a", "X": "y"}),
+                         {"CLAUDE_CODE_OAUTH_TOKEN": "a"})
+        with tempfile.TemporaryDirectory() as d:
+            p = os.path.join(d, "settings.json")
+            with open(p, "w") as f:
+                json.dump({"env": {"CLAUDE_CODE_OAUTH_TOKEN": "b", "OTHER": "z"}}, f)
+            self.assertEqual(sandbox.find_credentials({}, p), {"CLAUDE_CODE_OAUTH_TOKEN": "b"})
+            self.assertEqual(sandbox.find_credentials({}, os.path.join(d, "missing")), {})
+
+    def test_no_credentials_refuses(self):
+        with self.assertRaises(SystemExit):
+            sandbox.Sandbox("none", claude="python3", credentials={})
+
+    def test_scrubbed_env_and_private_home(self):
+        box = sandbox.Sandbox("none", claude="python3", credentials={"CLAUDE_CODE_OAUTH_TOKEN": "tok"})
+        seen = {}
+
+        def run(cmd, **kw):
+            seen.update(kw, cmd=cmd, mode=os.stat(kw["cwd"]).st_mode & 0o777)
+            return mock.Mock(stdout="{}", stderr="", returncode=0)
+
+        with mock.patch.dict(os.environ, {"RADAR_TOKEN": "secret", "GH_TOKEN": "secret"}), \
+                mock.patch("subprocess.run", side_effect=run):
+            box.run(["-p"], "hi")
+        env = seen["env"]
+        self.assertEqual(env["HOME"], seen["cwd"])
+        self.assertEqual(env["CLAUDE_CODE_OAUTH_TOKEN"], "tok")
+        self.assertNotIn("RADAR_TOKEN", env)
+        self.assertNotIn("GH_TOKEN", env)
+        self.assertLessEqual(set(env), {*sandbox.KEEP_ENV, "HOME", "TMPDIR", "CLAUDE_CODE_OAUTH_TOKEN",
+                                        "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC"})
+        self.assertNotEqual(seen["cwd"], os.path.expanduser("~"))
+        self.assertEqual(seen["mode"], 0o700)                       # mkdtemp under a 0700 root
+        self.assertFalse(os.path.exists(seen["cwd"]))               # removed after the call
+        box.close()
+        self.assertFalse(os.path.exists(box.root))
+
+    def test_bwrap_command_hides_home_and_data(self):
+        with mock.patch("shutil.which", side_effect=lambda x: "/usr/bin/" + x), \
+                mock.patch.object(sandbox, "bwrap_works", return_value=True):
+            box = sandbox.Sandbox("bwrap", hide=["/opt/cosh-data", "/home/u/cosh"],
+                                  credentials={"ANTHROPIC_API_KEY": "k"})
+        with mock.patch("os.path.isdir", return_value=True):
+            cmd = box.command(["-p"], "/tmp/x/h")
+        box.close()
+        hidden = {cmd[i + 1] for i, a in enumerate(cmd) if a == "--tmpfs"}
+        self.assertLessEqual({"/home", "/run/user", "/tmp", "/opt/cosh-data"}, hidden)
+        self.assertNotIn("/home/u/cosh", hidden)            # already under /home
+        self.assertEqual(cmd[0], "/usr/bin/bwrap")
+        self.assertIn("--unshare-all", cmd)
+        self.assertEqual(cmd[cmd.index("--cap-drop") + 1], "ALL")
+        self.assertEqual(cmd[-2:], ["/usr/bin/claude", "-p"])
 
 
 class RunBatchesTest(unittest.TestCase):

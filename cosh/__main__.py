@@ -75,6 +75,8 @@ def main(argv=None):
     c.add_argument("--jobs", type=int, default=8,
                    help="claude -p calls run at once (default 8, at most 16)")
     c.add_argument("--dry-run", action="store_true", help="count pending threads, call nothing")
+    c.add_argument("--sandbox", choices=["auto", "bwrap", "none"], default="auto",
+                   help="jail for claude -p (SECURITY.md): auto = bubblewrap if it works here")
     c.add_argument("--db", help="derived DB path (default: data/private/derived.sqlite)")
     s = sub.add_parser("summarize", help="write summaries/ (path scope: config/paths.txt)")
     s.add_argument("--metric", choices=["comments", "cls", "chars", "addressed"], default="comments",
@@ -134,7 +136,8 @@ def main(argv=None):
     elif a.cmd == "classify":
         from .classify import classify
         classify(db_path=a.db, weeks=a.week, model=a.model, batch=max(1, min(a.batch, 200)),
-                 max_threads=a.max_threads, dry_run=a.dry_run, jobs=max(1, min(a.jobs, 16)))
+                 max_threads=a.max_threads, dry_run=a.dry_run, jobs=max(1, min(a.jobs, 16)),
+                 sandbox=a.sandbox)
     elif a.cmd == "summarize":
         from .summarize import summarize
         kw = dict(out_dir=a.out) if a.out else {}

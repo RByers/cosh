@@ -296,7 +296,11 @@ claude -p --model haiku --output-format json --tools "" \
 - **`--bare`** would be leaner still, but it accepts only
   `ANTHROPIC_API_KEY`, not the Max login.
 - **Run directory.** Run from a scratch directory: the classifier
-  needs no project context.
+  needs no project context. Since 2026-11-06, `cosh classify` runs each
+  call through `cosh/sandbox.py`: a fresh private `HOME` and working
+  directory, a scrubbed environment carrying only the login token, and a
+  bubblewrap jail. `--sandbox none` skips the jail. See `SECURITY.md`
+  for the threat model.
 - **Structured output.** `--json-schema` makes the reply a validated
   `{"labels": [{"id", "done"}]}` object (`structured_output` in the JSON
   result). All 400 ids came back in every run.
