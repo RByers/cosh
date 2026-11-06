@@ -7,7 +7,7 @@ import unittest
 from cosh.derive import account_name, derive, derive_change, mark_emailless_bots
 from cosh import store
 from cosh.orgs import OrgResolver, load_affiliations, parse_json5
-from cosh.paths import ROOT_FILES, UNPLACED, anchor, parse_rules, place
+from cosh.paths import ROOT_FILES, UNPLACED, anchor, load_scope, parent_dir, parse_rules, place
 from cosh.summarize import summarize
 
 H = "chromium-review.googlesource.com"
@@ -405,7 +405,10 @@ class SummarizeTest(unittest.TestCase):
                            r["reviewed_cls"], r["share_cls"]) for r in rows],
                          [("microsoft.com", 6, 0, 1, 0.6667, 2, 0.6667),
                           ("google.com", 3, 1, 1, 0.3333, 1, 0.3333)])
-        self.assertEqual(meta["path_rules"][0], {"prefix": "chrome/browser/web_applications/", "included": True})
+        # Rules are listed longest prefix first.
+        lengths = [len(r["prefix"]) for r in meta["path_rules"]]
+        self.assertEqual(lengths, sorted(lengths, reverse=True))
+        self.assertIn({"prefix": "chrome/browser/web_applications/", "included": True}, meta["path_rules"])
         # Every comment appears in the directory tree, in scope or not.
         nodes = areas["nodes"]
 
@@ -418,17 +421,24 @@ class SummarizeTest(unittest.TestCase):
         # is a node, so re-included ones sit inside their (excluded) parents.
         self.assertEqual(roots, {UNPLACED, "chrome/", "ios/", "android_webview/", "ash/", "chromeos/", "components/",
                                  "third_party/blink/"})
-        self.assertEqual(set(paths) - roots, {
-            "chrome/browser/", "chrome/browser/ui/", "chrome/browser/web_applications/", "chrome/browser/webnn/",
-            "components/viz/", "components/services/", "components/services/storage/",
-            "third_party/blink/renderer/", "third_party/blink/renderer/core/",
-            "third_party/blink/renderer/platform/"})
+        # The other nodes: every rule directory of config/paths.txt with its
+        # ancestors, and the directories the fixture's comments are in.
+        rules = load_scope().rules
+        rule_nodes = set()
+        for prefix, _ in rules:
+            d = prefix
+            while d:
+                rule_nodes.add(d)
+                d = parent_dir(d)
+        self.assertEqual(set(paths) - roots, (rule_nodes | {
+            "chrome/browser/ui/", "third_party/blink/renderer/", "third_party/blink/renderer/core/",
+            "third_party/blink/renderer/platform/"}) - roots)
+        self.assertTrue({"chrome/browser/web_applications/", "components/services/storage/"} <= set(paths))
         # Children store only their own segment; parents come first.
         self.assertEqual(nodes[paths.index("chrome/browser/ui/")][1], "ui/")
         self.assertTrue(all(n[0] < i for i, n in enumerate(nodes)))
-        self.assertEqual({p for i, p in enumerate(paths) if nodes[i][2]}, {
-            "chrome/browser/web_applications/", "chrome/browser/webnn/", "components/viz/",
-            "components/services/storage/", "third_party/blink/", "third_party/blink/renderer/",
+        self.assertEqual({p for i, p in enumerate(paths) if nodes[i][2]}, {p for p, inc in rules if inc} | {
+            "third_party/blink/", "third_party/blink/renderer/",
             "third_party/blink/renderer/core/", "third_party/blink/renderer/platform/"})
         # [comments, reviewed CLs, chars] per (bucket, org).
         got = {(paths[n], areas["orgs"][o]): v[:3] for n, o, *v in areas["weeks"]["2026-W44"]}

@@ -277,7 +277,13 @@ counts.
   - excluded: `chrome/`, `ios/`, `android_webview/`, `ash/`, `chromeos/`,
     `components/`;
   - included again: `chrome/browser/web_applications/`, `chrome/browser/webnn/`,
-    `components/viz/`, `components/services/storage/`.
+    `chrome/browser/resources/webnn_internals/`, `components/viz/`,
+    `components/services/storage/`, `components/surface_embed/`, and the
+    accessibility directories `chrome/renderer/accessibility/`,
+    `chrome/browser/accessibility/`, `chrome/browser/ash/arc/accessibility/`,
+    `chrome/browser/resources/accessibility/`,
+    `chrome/browser/ui/{ash,aura,views,webui}/accessibility/` and
+    `chrome/test/accessibility/ax_client/`.
   The excluded trees are Google's own products built on Chromium (Chrome,
   Chrome for iOS, Android WebView, ChromeOS), where review is mostly Google
   reviewing Google's product code, and `components/`, which is mostly browser
@@ -291,8 +297,19 @@ counts.
   the WebNN review, `components/viz/` (the compositor) was 11.6%
   non-Google, and `components/services/storage/` (DOM storage, the backend
   for `localStorage`/`sessionStorage`) was 88% Microsoft (791 comments).
-  `components/surface_embed/` (35% Microsoft, 308 comments) also had outside
-  review and is out of scope.
+  On 2026-11-06 an OWNERS search added the excluded directories whose own
+  OWNERS files (with their `file:` includes) name owners outside google.com
+  and chromium.org, and that have outside review or are shared platform
+  work: `components/surface_embed/` (Microsoft owners, 36% non-Google of
+  320 comments), `chrome/browser/resources/webnn_internals/` (Intel and
+  Microsoft owners) and the `chrome/` accessibility directories, which
+  include `ui/accessibility/OWNERS` and its Microsoft owners. Over
+  2025-W45..2026-W44 they added 1,140 in-scope comments (140,998 →
+  142,138), and the non-Google share moved from 10.80% to 10.82%
+  (characters 10.29% → 10.32%, addressed 11.68% → 11.70%, reviewed CLs
+  unchanged at 8.55%). Most other excluded directories with outside owners
+  have them only on `per-file` lines (e.g. `chrome/browser/`) or see
+  almost no review.
 - **Placement** (metric_version 6; `summarize.reviewer_anchors`). We don't
   fetch CL file lists, so:
   - an inline comment is on its own file;

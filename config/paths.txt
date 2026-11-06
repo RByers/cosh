@@ -23,6 +23,13 @@
 # non-Google) and components/services/storage/ (DOM storage, the backend for
 # localStorage and sessionStorage, 88% Microsoft) are engine code with real
 # outside review, so they stay in.
+#
+# Directories with non-Google OWNERS (2026-11-06): components/surface_embed/
+# (Microsoft owners, 36% Microsoft review), chrome/browser/resources/
+# webnn_internals/ (Intel and Microsoft owners, the WebNN internals page) and
+# the chrome/ accessibility directories, whose OWNERS include
+# ui/accessibility/OWNERS with its Microsoft owners. The browser accessibility
+# layer is shared platform work that other Chromium browsers contribute to.
 
 exclude chrome/
 exclude ios/
@@ -35,5 +42,17 @@ include chrome/browser/web_applications/
 include chrome/browser/webnn/
 include components/viz/
 include components/services/storage/
+include components/surface_embed/
+include chrome/browser/resources/webnn_internals/
+
+include chrome/renderer/accessibility/
+include chrome/browser/accessibility/
+include chrome/browser/ash/arc/accessibility/
+include chrome/browser/resources/accessibility/
+include chrome/browser/ui/ash/accessibility/
+include chrome/browser/ui/aura/accessibility/
+include chrome/browser/ui/views/accessibility/
+include chrome/browser/ui/webui/accessibility/
+include chrome/test/accessibility/ax_client/
 
 area third_party/blink/

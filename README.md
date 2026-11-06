@@ -58,9 +58,10 @@ value_ratio(O, t) = contribution_share(O, t) / derived_value_share(O, t)
   - **Not counted:** reviews without a comment (a bare +1), since their value
     can't be judged. Only comments on the shared engine count: `chrome/`, `ios/`,
   `android_webview/`, `ash/` and `chromeos/` (Google's own products) and
-  `components/` (mostly Chrome browser features) are left out, apart from two
-  shared directories in `chrome/`, `components/viz/` and
-  `components/services/storage/` (`config/paths.txt`). Each reviewer is
+  `components/` (mostly Chrome browser features) are left out, apart from
+  shared platform directories inside them: web apps, WebNN, accessibility,
+  `components/viz/`, `components/services/storage/` and
+  `components/surface_embed/` (`config/paths.txt`). Each reviewer is
   attributed to an organization by email domain, plus a mapping table for
   exceptions such as `@chromium.org` accounts.
 - **Derived value share** is approximated by browser usage from
