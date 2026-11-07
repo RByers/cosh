@@ -211,6 +211,21 @@ footer {
   font-size: 0.82rem;
 }
 
+.note ul,
+.note ol {
+  margin: 4px 0 10px;
+  padding-left: 22px;
+}
+
+.note li + li {
+  margin-top: 2px;
+}
+
+/* A lead-in paragraph sits close to the list it introduces. */
+.note p:has(+ ul, + ol) {
+  margin-bottom: 4px;
+}
+
 a {
   color: var(--accent);
 }

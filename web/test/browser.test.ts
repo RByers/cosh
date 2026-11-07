@@ -1320,8 +1320,8 @@ test('review complexity over time: directories by reviews, cells shaded by the m
     }));
   const v = await read();
   assert.equal(v.title, 'Review complexity by directory over time');
-  assert.match(v.sub, /^This aims to highlight how review complexity varies across the codebase: each cell is a directory's addressed comments per review/);
-  assert.match(v.sub, /every directory together has \d+\.\d\d per review over [\d,]+ reviews/);
+  assert.match(v.sub, /^How review complexity varies across the codebase: each cell is a directory's addressed comments per review/);
+  assert.match(v.sub, /All directories together: \d+\.\d\d per review over [\d,]+ reviews/);
   // The legend is the ramp only: no swatch that looks like a checkbox.
   assert.match(v.legend, /^\d+\.\d\d or less\s*\d+\.\d\d or more addressed comments per review$/);
   assert.equal(await page.$$eval('#cx-legend .swatch', (s) => s.length), 0);
@@ -1681,7 +1681,7 @@ test('leaderboard size and organization selects; every org is named, none as "ot
   assert.ok(!noGoogle.orgs.includes('google.com'));
   assert.ok(noGoogle.n > 50, `n=${noGoogle.n}`);
   assert.equal(noGoogle.sub, top25.sub, 'the toggles leave the description alone');
-  assert.match(noGoogle.sub, /outside google\.com/);
+  assert.match(noGoogle.sub, /counted as in Review by organization/);
   // Old lbg=0 links still leave google.com out; a link can ask for every reviewer.
   const { page: old } = await open('#lbg=0&lbn=all');
   assert.deepEqual(await old.$$eval('#leaderboard-org, #leaderboard-size', (es) => es.map((e) => (e as HTMLSelectElement).value)),
