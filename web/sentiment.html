@@ -14,7 +14,8 @@
       The page's wording is in this file, like value.html (whose opening
       comment has the <template data-msg> syntax); src/sentiment.ts fills in
       the values. Ground rule 5 (docs/plan.md): this page names people only
-      for praise. Grumpy samples carry no names, links or exact dates.
+      for praise. Negative comments appear only anonymously: no names,
+      links or exact dates.
     -->
     <header>
       <nav class="crumb"><a href="./">← Chromium Open Source dashboards</a></nav>
@@ -67,6 +68,38 @@
         </template>
       </section>
 
+      <section id="recent" class="card" aria-labelledby="recent-title">
+        <a class="card-anchor" href="#recent" aria-label="Link to this section" title="Link to this section">#</a>
+        <h2 id="recent-title">The last two months in full</h2>
+        <p id="recent-sub" class="sub"></p>
+        <template data-msg="recent-sub">
+          Every human review comment written between <slot name="range"></slot>, not a sample.
+        </template>
+        <div class="tiles">
+          <div class="tile" id="tile-n"><div class="tile-label">Substantive comments scored</div><div class="tile-value"></div></div>
+          <div class="tile" id="tile-trivial"><div class="tile-label">Bare "Done" / "LGTM" / "PTAL", left out</div><div class="tile-value"></div></div>
+          <div class="tile" id="tile-mean"><div class="tile-label">Average score</div><div class="tile-value"></div></div>
+          <div class="tile" id="tile-glowing"><div class="tile-label">Glowing</div><div class="tile-value"></div></div>
+          <div class="tile" id="tile-angry"><div class="tile-label">Angry</div><div class="tile-value"></div></div>
+          <div class="tile" id="tile-ai"><div class="tile-label">AI friction</div><div class="tile-value"></div></div>
+        </div>
+        <h3>Week by week</h3>
+        <div class="table-wrap">
+          <table id="recent-weekly">
+            <thead><tr><th scope="col">Week of</th><th scope="col">Comments</th><th scope="col">Average</th><th scope="col">Glowing</th><th scope="col">Angry</th><th scope="col">AI friction</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <h3>How scores are spread</h3>
+        <div class="chart">
+          <canvas id="recent-dist" role="img" aria-label="Share of comments at each score from −1 to +1 in steps of 0.1, on a log scale."></canvas>
+        </div>
+        <p class="note">
+          The share of comments at each score, rounded to 0.1, on a log scale: nearly all comments are neutral,
+          so the tails would be invisible on a linear one.
+        </p>
+      </section>
+
       <section id="praise" class="card" aria-labelledby="praise-title">
         <a class="card-anchor" href="#praise" aria-label="Link to this section" title="Link to this section">#</a>
         <h2 id="praise-title">Praise leaderboard</h2>
@@ -76,6 +109,18 @@
           <slot name="n"></slot> comments of specific appreciation or stronger from one person to another, among
           <slot name="people"></slot> people. Praise for AI agents isn't counted.
         </template>
+        <div class="toggles">
+          <fieldset id="praise-period" class="segmented chart-toggle">
+            <legend>Period</legend>
+            <label><input type="radio" name="praise-period" value="all" checked />All scored weeks</label>
+            <label><input type="radio" name="praise-period" value="month" />Past month</label>
+          </fieldset>
+          <fieldset id="praise-size" class="segmented chart-toggle">
+            <legend>Show</legend>
+            <label><input type="radio" name="praise-size" value="15" checked />Top 15</label>
+            <label><input type="radio" name="praise-size" value="100" />Top 100</label>
+          </fieldset>
+        </div>
         <div class="tone-boards">
           <div>
             <h3>Most praise given</h3>
@@ -84,6 +129,40 @@
           <div>
             <h3>Most praise received</h3>
             <table id="praise-received" class="tone-board"><thead><tr><th scope="col">#</th><th scope="col">Person</th><th scope="col" class="num">Comments</th></tr></thead><tbody></tbody></table>
+          </div>
+        </div>
+        <p class="note">A board lists everyone with at least one praise comment, up to its size.</p>
+      </section>
+
+      <section id="happy" class="card" aria-labelledby="happy-title">
+        <a class="card-anchor" href="#happy" aria-label="Link to this section" title="Link to this section">#</a>
+        <h2 id="happy-title">Who makes whom happy</h2>
+        <p id="happy-sub" class="sub"></p>
+        <template data-msg="happy-sub">
+          People who draw glowing comments from many different people, between <slot name="range"></slot>.
+          "Happy" counts the distinct people who wrote them at least one glowing comment, out of everyone who
+          commented to them that way; only people with at least <slot name="min"></slot> such counterparts are listed.
+        </template>
+        <div class="toggles">
+          <fieldset id="happy-period" class="segmented chart-toggle">
+            <legend>Period</legend>
+            <label><input type="radio" name="happy-period" value="all" checked />All scored weeks</label>
+            <label><input type="radio" name="happy-period" value="month" />Past month</label>
+          </fieldset>
+          <fieldset id="happy-size" class="segmented chart-toggle">
+            <legend>Show</legend>
+            <label><input type="radio" name="happy-size" value="15" checked />Top 15</label>
+            <label><input type="radio" name="happy-size" value="100" />Top 100</label>
+          </fieldset>
+        </div>
+        <div class="tone-boards">
+          <div>
+            <h3>Change authors who make reviewers happy</h3>
+            <table id="happy-authors" class="tone-board"><thead><tr><th scope="col">#</th><th scope="col">Author</th><th scope="col" class="num">Happy reviewers</th></tr></thead><tbody></tbody></table>
+          </div>
+          <div>
+            <h3>Reviewers who make authors happy</h3>
+            <table id="happy-reviewers" class="tone-board"><thead><tr><th scope="col">#</th><th scope="col">Reviewer</th><th scope="col" class="num">Happy authors</th></tr></thead><tbody></tbody></table>
           </div>
         </div>
       </section>
@@ -111,6 +190,22 @@
         <template data-msg="grumpy-when"><slot name="month"></slot></template>
       </section>
 
+      <section id="ai" class="card" aria-labelledby="ai-title">
+        <a class="card-anchor" href="#ai" aria-label="Link to this section" title="Link to this section">#</a>
+        <h2 id="ai-title">Frustration with AI, in people's words</h2>
+        <p id="ai-sub" class="sub"></p>
+        <template data-msg="ai-sub">
+          Review comments between <slot name="range"></slot> that the model flagged as negative about AI in code
+          review: <slot name="shown"></slot> of <slot name="total"></slot>, shown anonymously with only the month
+          and whether the writer was the change's author or a reviewer. Comments that mention anyone, that
+          link anywhere or that run long are left out.
+        </template>
+        <ul id="ai-list" class="quotes quotes-compact"></ul>
+        <button type="button" id="ai-more" class="link-button" hidden></button>
+        <template data-msg="ai-more">Show all <slot name="n"></slot></template>
+        <template data-msg="ai-when"><slot name="month"></slot>, <span data-if="role=author">change author</span><span data-if="role=reviewer">reviewer</span></template>
+      </section>
+
       <section id="method" class="card" aria-labelledby="method-title">
         <a class="card-anchor" href="#method" aria-label="Link to this section" title="Link to this section">#</a>
         <h2 id="method-title">How it's measured</h2>
@@ -124,10 +219,19 @@
         <p class="note">
           The prompt was tuned against 261 hand-labelled comments. On those it agrees with the hand labels
           to within 0.05 on average (Pearson r 0.92–0.93), and puts 88–90% of comments in the same class of
-          negative, neutral or positive. The trend uses a deterministic 5% sample of comments; the praise
-          leaderboard and the sample comments use every comment in their weeks. Code and method:
+          negative, neutral or positive. The trend uses a deterministic 5% sample of comments; the last two
+          months, the leaderboards and the sample comments use every comment in their weeks. Code and method:
           <a href="https://github.com/RByers/cosh/blob/main/docs/sentiment.md">docs/sentiment.md</a>.
         </p>
+        <details class="prompt">
+          <summary>The prompt the model is given (v3)</summary>
+          <pre id="prompt-text"></pre>
+          <p class="note">
+            Earlier versions, with how each scored against the hand labels, are in the repository:
+            <a href="https://github.com/RByers/cosh/blob/main/scripts/sentiment_prompts/v1.txt">v1</a>,
+            <a href="https://github.com/RByers/cosh/blob/main/scripts/sentiment_prompts/v2.txt">v2</a>.
+          </p>
+        </details>
       </section>
     </main>
     <script type="module" src="/src/sentiment.ts"></script>

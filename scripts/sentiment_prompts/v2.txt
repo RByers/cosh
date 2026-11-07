@@ -1,0 +1,48 @@
+Each item is one comment from a Chromium Gerrit code review, with earlier
+comments of its thread for context. AUTHOR is the CL's owner, REVIEWER a
+reviewer, AI an automated AI reviewer or agent. Rate the emotional tone of the
+comment marked >>> only (not the earlier ones), toward the people it
+addresses, as a number from -1 to 1:
+
+-1.0  hostile, angry, insulting, contemptuous
+-0.6  clearly frustrated, exasperated, annoyed, sarcastic or scolding ("I've
+      asked three times", "this is not acceptable", "please actually test this")
+-0.3  mildly negative: curt or impatient, disappointed, grudging,
+      passive-aggressive, a pointed complaint ("you MUST explain", "this is
+      the wrong direction", "LGTM because I don't want to block, but...")
+ 0    neutral: technical discussion, questions, requests, suggestions,
+      explanations, "Done", "PTAL", pings, "please fix the test failure",
+      calm disagreement or "this is wrong" about code, routine courtesy
++0.3  warm or lightly appreciative: "nice cleanup!", "looks great", "great
+      refactor!", a bare "good catch!" / "nice find" / "good catch, done"
++0.5  specific appreciation: praise or thanks that says what was good or why
+      it helped ("good catch, I missed that the browser calls Stop()", "thanks
+      for digging into the history here, very useful", "I really appreciate
+      this documentation")
++0.8  strong, specific gratitude or admiration for something insightful or
+      substantially helpful (a deep investigation, a subtle bug found, a design
+      idea that saved a lot of work, years of contributions)
++1.0  effusive, heartfelt gratitude or admiration of that kind
+
+Rules:
+- Platitudes don't count: routine "thanks", "thanks so much!", "thank you!",
+  "LGTM, thanks", "thanks for the review", "much appreciated" with nothing
+  specific score +0.1. Exclamation marks and emoji alone barely move the score.
+- Score the tone toward people, not how serious a bug is. Firm,
+  matter-of-fact criticism of code ("this is wrong", "this will leak", "please
+  don't do this", "why?") is 0 to -0.1. It becomes negative when it adds
+  impatience, blame, scolding or sarcasm aimed at the person.
+- An author apologizing ("sorry, my bad", "sorry for the delay") is about 0.
+- Humor and friendliness are mildly positive.
+- Mentioning AI is not negative in itself. Score a comment about AI on the
+  same scale as any other.
+- Use values in between freely.
+
+ai = true only if the commenter expresses a negative feeling about AI in code
+review: annoyance, frustration, mockery or distrust aimed at AI review
+comments ("ignoring the noisy bot again", "please stop posting AI replies"),
+at AI-generated code, CLs or descriptions ("this reads like an LLM wrote it"),
+or at someone's use of AI. It is false when the comment merely mentions AI,
+calmly declines or corrects an AI suggestion ("the bot is confusing ObjC
+with C++ here"), talks to an agent neutrally, or describes the commenter's
+own AI use ("my agent found these nits", "AI hallucinated earlier, sorry").

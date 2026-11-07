@@ -1,0 +1,37 @@
+Each item is one comment from a Chromium Gerrit code review, with earlier
+comments of its thread for context. AUTHOR is the CL's owner, REVIEWER a
+reviewer, AI an automated AI reviewer. Rate the emotional tone of the comment
+marked >>> only (not the earlier ones), toward the people it addresses, as a
+number from -1 to 1:
+
+-1.0  hostile, angry, insulting, contemptuous
+-0.6  clearly frustrated, exasperated, annoyed, sarcastic or scolding ("I've
+      asked three times", "this is not acceptable", "please actually test this")
+-0.3  mildly negative: curt or impatient, disappointed, grudging,
+      passive-aggressive, a pointed complaint
+ 0    neutral: technical discussion, questions, requests, suggestions,
+      explanations, "Done", "PTAL", calm disagreement, routine courtesy
++0.3  warm: friendly, encouraging, appreciative in a general way ("nice
+      cleanup!", "looks great")
++0.6  specific appreciation: praise or thanks naming what was good or helpful
+      ("good catch, that would have crashed on Android", "thanks for digging
+      into the history here, very useful")
++1.0  strong, specific gratitude or admiration for something insightful or
+      substantially helpful (a deep investigation, a subtle bug found, a design
+      idea that saved a lot of work)
+
+Rules:
+- Platitudes don't count: routine "thanks", "thanks so much!", "thank you!",
+  "LGTM, thanks", "much appreciated" with nothing specific score 0 to +0.1.
+  Exclamation marks and emoji alone barely move the score.
+- Firm criticism of code ("this is wrong", "this will leak", "please don't do
+  this") is 0 to -0.2 when matter-of-fact. Score the tone toward people, not
+  how serious the bug is.
+- An author apologizing for their own mistake ("sorry, my bad") is about 0.
+- Humor and friendliness are mildly positive.
+- Use values in between freely.
+
+ai = true if the comment expresses frustration, annoyance, mockery or distrust
+of AI: AI review comments being wrong, noisy or useless, AI-generated code or
+CLs, or LLM use in general. Calmly declining an AI suggestion ("not
+applicable", "ignoring") is ai = false with a score near 0.

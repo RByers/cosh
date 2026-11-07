@@ -292,5 +292,52 @@ class SamplesTest(unittest.TestCase):
         self.assertEqual(p["url"], "https://chromium-review.googlesource.com/c/chromium/src/+/100/comment/b/")
 
 
+class IdentitiesTest(unittest.TestCase):
+    def test_identity_fields(self):
+        from cosh import sentiment_people as P
+        accts = {k: dict(v, name=v["email"].split("@")[0].title()) for k, v in ACCTS.items()}
+        ann = P.Identities(accounts=accts, resolve=lambda e, day=None: e.split("@")[1] if e else "(no email)")
+        out = {r["uuid"]: r for r in run(THREAD, annotate=ann)}
+        self.assertEqual((out["a"]["author_name"], out["a"]["target"], out["a"]["target_org"]),
+                         ("Rev", 1, "chromium.org"))
+        self.assertEqual((out["b"]["owner"], out["b"]["target_name"]), (1, "Rev"))
+        self.assertIsNone(out["c"]["target"])
+        self.assertEqual((out["g"]["target"], out["g"]["target_org"], out["g"]["target_is_ai"]), (-1, P.AI_TARGET, True))
+
+
+class RecentTest(unittest.TestCase):
+    def rows(self):
+        """CL owner 1 gets reviews from people 10..16; 12 and 13 write glowing ones."""
+        rows, scores = [], {}
+        for i, rev in enumerate(range(10, 17)):
+            cid = f"100/r{i}"
+            rows.append(dict(id=cid, week="2026-W44", written_at="2026-10-27 10:00:00", text="Looks good, thanks!",
+                             author=rev, author_name=f"P{rev}", author_email=f"p{rev}@x.org", author_role="REVIEWER",
+                             owner=1, target=1, target_name="Owner", target_email="owner@x.org", target_is_ai=False,
+                             target_kind="person"))
+            scores[cid] = (0.6 if rev in (12, 13) else -0.3 if rev == 14 else 0.0, rev == 15, None)
+        return rows, scores
+
+    def test_happy_counts_only(self):
+        from cosh import sentiment_recent as R
+        rows, scores = self.rows()
+        h = R.happy(rows, scores)
+        self.assertEqual(h["authors"], [dict(name="Owner", email="owner@x.org", counterparts=7, happy=2)])
+        self.assertEqual(h["reviewers"], [])
+        h = R.happy(rows[:5], scores)                      # 5 counterparts: below MIN_COUNTERPARTS
+        self.assertEqual(h["authors"], [])
+
+    def test_overview_and_anonymous_ai_list(self):
+        from cosh import sentiment_recent as R
+        rows, scores = self.rows()
+        o = R.overview(rows, scores, ["2026-W44"])
+        self.assertEqual((o["total"]["n"], o["total"]["ai"]), (7, 1))
+        self.assertEqual(o["weekly"][0]["week"], "2026-W44")
+        self.assertEqual(sum(n for _, n in o["dist"]), 7)
+        ai, screened, other = R.ai_comments(rows, scores, ScreenSandbox())
+        self.assertEqual(ai, [dict(text="Looks good, thanks!", month="2026-10", role="reviewer")])
+        self.assertEqual((screened, other), (0, 0))
+
+
 if __name__ == "__main__":
     unittest.main()

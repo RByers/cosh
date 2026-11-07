@@ -39,20 +39,18 @@ regex plus Claude Haiku (`cosh classify`).
   because it holds multi-GB raw caches and rebuildable DBs, not because the
   data is personal. Anything not from a public source still needs the user's
   approval before it's committed.
-- **Sentiment is public only in aggregate** (`docs/plan.md`, ground rule 5;
-  `docs/sentiment.md`). This overrides the rule above for review-comment
-  tone. No public report, summary or doc may rank, list, quote or link
-  people, teams or other identifiable groups by negative tone, and orgs get
-  no tone figures at all. People may be named for praise (the praise
-  leaderboard and samples, with links), and example comments may be quoted
-  unless they are negative and name someone. Grumpy samples are text,
-  score and month only, screened (`screen_identifying`) and read before
-  they're committed. The repo must not make a negative report easy to
-  build: attach identities only to comments scored as praise, and don't
-  add per-person or per-group breakdowns of negative tone, list negative
-  comments beyond those anonymous samples, or describe how to. If asked to, say that it needs the user's
-  explicit approval as a separate design. Gold sets and per-comment model
-  reasons stay in `data/private/`.
+- **Sentiment: our pages never point fingers** (`docs/plan.md`, ground
+  rule 5; `docs/sentiment.md`). This overrides the rule above for
+  review-comment tone in everything we publish (site, `summaries/`, docs).
+  Nothing published may rank, list, quote or link people, teams or other
+  identifiable groups by negative tone, and orgs get no tone figures at
+  all. People may be named for praise (praise leaderboards, "who makes whom
+  happy" counts, praise samples with links). Negative comments appear only
+  anonymously (text, month, at most the writer's role), after the
+  sandboxed `screen_identifying`. The code itself may attach identities
+  (`cosh.sentiment_people`) and compute per-person figures; just never
+  publish negative ones. Gold sets and per-comment model reasons stay in
+  `data/private/`.
 - **The Radar token** is loaded with `source secrets.sh`. Never print or
   commit it.
 - **The contact e-mail** sent with every request lives in the gitignored

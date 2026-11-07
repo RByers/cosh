@@ -1124,6 +1124,28 @@ test('Review Tone: praise boards, dates and Gerrit links', async () => {
   assert.equal(gerritLink('https://chromium-review.googlesource.com.evil.example/'), null);
 });
 
+test('Review Tone: periods and ranges', async () => {
+  const { periodWeeks, praiseBoard, praiseTotal, praisePeople } = await import('../src/tone.ts');
+  assert.deepEqual(periodWeeks(['2026-W37', '2026-W44'], 'all'), ['2026-W37', '2026-W44']);
+  assert.deepEqual(periodWeeks(['2026-W37', '2026-W44'], 'month'), ['2026-W41', '2026-W44']);
+  assert.deepEqual(periodWeeks(['2026-W43', '2026-W44'], 'month'), ['2026-W43', '2026-W44']);
+  assert.deepEqual(periodWeeks(['2025-W50', '2026-W02'], 'month'), ['2025-W51', '2026-W02']);
+  const d = {
+    weeks: ['2026-W37', '2026-W44'] as [string, string],
+    people: { 'a@x.org': 'Ann', 'b@x.org': 'Bo' },
+    weekly: [
+      { week: '2026-W37', email: 'a@x.org', given: 5, received: 0 },
+      { week: '2026-W44', email: 'b@x.org', given: 1, received: 0 },
+      { week: '2026-W44', email: 'a@x.org', given: 0, received: 1 },
+    ],
+  };
+  const month: [string, string] = ['2026-W41', '2026-W44'];
+  assert.deepEqual(praiseBoard(d, 'given', 100, month).map((r) => [r.name, r.count]), [['Bo', 1]]);
+  assert.deepEqual(praiseBoard(d, 'given', 100).map((r) => [r.name, r.count]), [['Ann', 5], ['Bo', 1]]);
+  assert.equal(praiseTotal(d, month), 1);
+  assert.equal(praisePeople(d, month), 2);
+});
+
 /** en-GB's short name for a month (0-based): "Sept" or "Sep" depending on ICU. */
 function fmtMonthShort(m: number): string {
   return new Intl.DateTimeFormat('en-GB', { month: 'short', timeZone: 'UTC' }).format(Date.UTC(2026, m, 1));

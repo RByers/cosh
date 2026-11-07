@@ -1,0 +1,3999 @@
+{
+ "generated_at": "2026-11-07T18:22:33Z",
+ "prompt": "v3",
+ "weeks": [
+  "2026-W37",
+  "2026-W44"
+ ],
+ "month_weeks": [
+  "2026-W41",
+  "2026-W44"
+ ],
+ "thresholds": {
+  "glowing": 0.4,
+  "angry": -0.3
+ },
+ "min_counterparts": 6,
+ "missing": 0,
+ "n_trivial": 39351,
+ "total": {
+  "n": 130649,
+  "mean": 0.0122,
+  "glowing": 0.0077,
+  "angry": 0.0126,
+  "ai": 535
+ },
+ "weekly": [
+  {
+   "week": "2026-W37",
+   "n": 13915,
+   "mean": 0.0113,
+   "glowing": 0.0082,
+   "angry": 0.0125,
+   "ai": 35
+  },
+  {
+   "week": "2026-W38",
+   "n": 16547,
+   "mean": 0.0091,
+   "glowing": 0.0073,
+   "angry": 0.0138,
+   "ai": 75
+  },
+  {
+   "week": "2026-W39",
+   "n": 16389,
+   "mean": 0.0138,
+   "glowing": 0.0078,
+   "angry": 0.0118,
+   "ai": 68
+  },
+  {
+   "week": "2026-W40",
+   "n": 16590,
+   "mean": 0.0147,
+   "glowing": 0.0082,
+   "angry": 0.0111,
+   "ai": 69
+  },
+  {
+   "week": "2026-W41",
+   "n": 17452,
+   "mean": 0.0123,
+   "glowing": 0.0076,
+   "angry": 0.0131,
+   "ai": 77
+  },
+  {
+   "week": "2026-W42",
+   "n": 16909,
+   "mean": 0.0131,
+   "glowing": 0.0082,
+   "angry": 0.0105,
+   "ai": 56
+  },
+  {
+   "week": "2026-W43",
+   "n": 16099,
+   "mean": 0.0122,
+   "glowing": 0.0066,
+   "angry": 0.0124,
+   "ai": 66
+  },
+  {
+   "week": "2026-W44",
+   "n": 16748,
+   "mean": 0.0112,
+   "glowing": 0.0075,
+   "angry": 0.0156,
+   "ai": 89
+  }
+ ],
+ "dist": [
+  [
+   -0.9,
+   1
+  ],
+  [
+   -0.8,
+   2
+  ],
+  [
+   -0.7,
+   6
+  ],
+  [
+   -0.6,
+   72
+  ],
+  [
+   -0.5,
+   59
+  ],
+  [
+   -0.4,
+   156
+  ],
+  [
+   -0.3,
+   1351
+  ],
+  [
+   -0.2,
+   1989
+  ],
+  [
+   -0.1,
+   6525
+  ],
+  [
+   0.0,
+   103156
+  ],
+  [
+   0.1,
+   9678
+  ],
+  [
+   0.2,
+   2259
+  ],
+  [
+   0.3,
+   4394
+  ],
+  [
+   0.4,
+   475
+  ],
+  [
+   0.5,
+   505
+  ],
+  [
+   0.6,
+   12
+  ],
+  [
+   0.7,
+   4
+  ],
+  [
+   0.8,
+   4
+  ],
+  [
+   0.9,
+   1
+  ]
+ ],
+ "happy": {
+  "all": {
+   "authors": [
+    {
+     "name": "Tomasz Wiszkowski",
+     "email": "ender@google.com",
+     "counterparts": 50,
+     "happy": 7
+    },
+    {
+     "name": "Mason Freed",
+     "email": "masonf@chromium.org",
+     "counterparts": 32,
+     "happy": 6
+    },
+    {
+     "name": "Helmut Januschka",
+     "email": "helmut@januschka.com",
+     "counterparts": 80,
+     "happy": 6
+    },
+    {
+     "name": "Takashi Toyoshima",
+     "email": "toyoshim@chromium.org",
+     "counterparts": 24,
+     "happy": 5
+    },
+    {
+     "name": "Jordan Bayles",
+     "email": "jophba@chromium.org",
+     "counterparts": 31,
+     "happy": 5
+    },
+    {
+     "name": "Arthur Sonzogni",
+     "email": "arthursonzogni@chromium.org",
+     "counterparts": 60,
+     "happy": 5
+    },
+    {
+     "name": "Alex Moshchuk",
+     "email": "alexmos@chromium.org",
+     "counterparts": 12,
+     "happy": 4
+    },
+    {
+     "name": "utzcoz",
+     "email": "utzcoz@gmail.com",
+     "counterparts": 22,
+     "happy": 4
+    },
+    {
+     "name": "Benoit Lize",
+     "email": "lizeb@chromium.org",
+     "counterparts": 32,
+     "happy": 4
+    },
+    {
+     "name": "Mitsuru Oshima",
+     "email": "oshima@chromium.org",
+     "counterparts": 34,
+     "happy": 4
+    },
+    {
+     "name": "James Cook",
+     "email": "jamescook@chromium.org",
+     "counterparts": 43,
+     "happy": 4
+    },
+    {
+     "name": "Evan Stade",
+     "email": "evanstade@microsoft.com",
+     "counterparts": 45,
+     "happy": 4
+    },
+    {
+     "name": "Arthur Milchior",
+     "email": "arthurmilchior@chromium.org",
+     "counterparts": 75,
+     "happy": 4
+    },
+    {
+     "name": "Sasha Kunitskaya",
+     "email": "saskekun@google.com",
+     "counterparts": 7,
+     "happy": 3
+    },
+    {
+     "name": "Daniel Vogelheim",
+     "email": "vogelheim@chromium.org",
+     "counterparts": 9,
+     "happy": 3
+    },
+    {
+     "name": "Vasili Svirski",
+     "email": "vsvirski@google.com",
+     "counterparts": 9,
+     "happy": 3
+    },
+    {
+     "name": "Neha Sapre",
+     "email": "nehasapre@google.com",
+     "counterparts": 10,
+     "happy": 3
+    },
+    {
+     "name": "Devi Varaprasad Jonnala",
+     "email": "jonnalad@google.com",
+     "counterparts": 11,
+     "happy": 3
+    },
+    {
+     "name": "Aaron Leventhal",
+     "email": "aleventhal@google.com",
+     "counterparts": 12,
+     "happy": 3
+    },
+    {
+     "name": "Marwan Tammam",
+     "email": "quarz@chromium.org",
+     "counterparts": 13,
+     "happy": 3
+    },
+    {
+     "name": "Scott Yoder",
+     "email": "scottyoder@google.com",
+     "counterparts": 13,
+     "happy": 3
+    },
+    {
+     "name": "Josef Raska",
+     "email": "josefraska@google.com",
+     "counterparts": 15,
+     "happy": 3
+    },
+    {
+     "name": "Miłosz Pracowity",
+     "email": "mioszpracowity@gmail.com",
+     "counterparts": 16,
+     "happy": 3
+    },
+    {
+     "name": "Lucas Radaelli",
+     "email": "lucasradaelli@google.com",
+     "counterparts": 17,
+     "happy": 3
+    },
+    {
+     "name": "Thomas Lukaszewicz",
+     "email": "tluk@chromium.org",
+     "counterparts": 17,
+     "happy": 3
+    },
+    {
+     "name": "Vladimir Levin",
+     "email": "vmpstr@chromium.org",
+     "counterparts": 17,
+     "happy": 3
+    },
+    {
+     "name": "thefrog",
+     "email": "thefrog@chromium.org",
+     "counterparts": 18,
+     "happy": 3
+    },
+    {
+     "name": "Mikel Astiz",
+     "email": "mastiz@chromium.org",
+     "counterparts": 22,
+     "happy": 3
+    },
+    {
+     "name": "Josiah Kiehl",
+     "email": "kiehl@google.com",
+     "counterparts": 28,
+     "happy": 3
+    },
+    {
+     "name": "Keren Zhu",
+     "email": "kerenzhu@chromium.org",
+     "counterparts": 33,
+     "happy": 3
+    },
+    {
+     "name": "Thomas Anderson",
+     "email": "thomasanderson@chromium.org",
+     "counterparts": 37,
+     "happy": 3
+    },
+    {
+     "name": "Andrew Grieve",
+     "email": "agrieve@chromium.org",
+     "counterparts": 53,
+     "happy": 3
+    },
+    {
+     "name": "Eriko Kurimoto",
+     "email": "elkurin@chromium.org",
+     "counterparts": 56,
+     "happy": 3
+    },
+    {
+     "name": "David Liu",
+     "email": "lcdavid@google.com",
+     "counterparts": 6,
+     "happy": 2
+    },
+    {
+     "name": "Guillaume Saulnier-Comte",
+     "email": "gsaul@google.com",
+     "counterparts": 6,
+     "happy": 2
+    },
+    {
+     "name": "Michael Wilson",
+     "email": "mjwilson@chromium.org",
+     "counterparts": 6,
+     "happy": 2
+    },
+    {
+     "name": "Mike Jackson",
+     "email": "mjackson@microsoft.com",
+     "counterparts": 6,
+     "happy": 2
+    },
+    {
+     "name": "Gabriel Brito",
+     "email": "gabrielbrito@microsoft.com",
+     "counterparts": 7,
+     "happy": 2
+    },
+    {
+     "name": "jdh",
+     "email": "jdh@chromium.org",
+     "counterparts": 7,
+     "happy": 2
+    },
+    {
+     "name": "Abhijith Nair",
+     "email": "abhijithnair@chromium.org",
+     "counterparts": 8,
+     "happy": 2
+    },
+    {
+     "name": "Gayane Petrosyan",
+     "email": "gayane@google.com",
+     "counterparts": 8,
+     "happy": 2
+    },
+    {
+     "name": "Hojeong Park",
+     "email": "parkhj062@gmail.com",
+     "counterparts": 8,
+     "happy": 2
+    },
+    {
+     "name": "Bhuvana Betini",
+     "email": "bbetini@google.com",
+     "counterparts": 9,
+     "happy": 2
+    },
+    {
+     "name": "Liza Bipin",
+     "email": "mlbipin@google.com",
+     "counterparts": 9,
+     "happy": 2
+    },
+    {
+     "name": "Daniel Castro",
+     "email": "drcastroa@google.com",
+     "counterparts": 10,
+     "happy": 2
+    },
+    {
+     "name": "Devon Loehr",
+     "email": "dloehr@google.com",
+     "counterparts": 10,
+     "happy": 2
+    },
+    {
+     "name": "Piotr Kotynia",
+     "email": "piotrkotynia@google.com",
+     "counterparts": 10,
+     "happy": 2
+    },
+    {
+     "name": "Peter Conn",
+     "email": "peconn@chromium.org",
+     "counterparts": 11,
+     "happy": 2
+    },
+    {
+     "name": "Will Harris",
+     "email": "wfh@chromium.org",
+     "counterparts": 11,
+     "happy": 2
+    },
+    {
+     "name": "Adriana Ixba",
+     "email": "aixba@chromium.org",
+     "counterparts": 12,
+     "happy": 2
+    },
+    {
+     "name": "Samar Chehade",
+     "email": "samarchehade@google.com",
+     "counterparts": 12,
+     "happy": 2
+    },
+    {
+     "name": "Anunoy Ghosh",
+     "email": "anunoy@chromium.org",
+     "counterparts": 13,
+     "happy": 2
+    },
+    {
+     "name": "Fred Shih",
+     "email": "ffred@chromium.org",
+     "counterparts": 13,
+     "happy": 2
+    },
+    {
+     "name": "Kunal Daftari",
+     "email": "kunaldaftari@google.com",
+     "counterparts": 13,
+     "happy": 2
+    },
+    {
+     "name": "Nate Chapin",
+     "email": "japhet@chromium.org",
+     "counterparts": 13,
+     "happy": 2
+    },
+    {
+     "name": "Marijn Kruisselbrink",
+     "email": "mek@chromium.org",
+     "counterparts": 14,
+     "happy": 2
+    },
+    {
+     "name": "Zoraiz Naeem",
+     "email": "zoraiznaeem@chromium.org",
+     "counterparts": 14,
+     "happy": 2
+    },
+    {
+     "name": "Mei Liang",
+     "email": "meiliang@chromium.org",
+     "counterparts": 15,
+     "happy": 2
+    },
+    {
+     "name": "Paul Adedeji",
+     "email": "pauladedeji@google.com",
+     "counterparts": 15,
+     "happy": 2
+    },
+    {
+     "name": "Camille Lamy",
+     "email": "clamy@chromium.org",
+     "counterparts": 16,
+     "happy": 2
+    },
+    {
+     "name": "Elly",
+     "email": "ellyjones@chromium.org",
+     "counterparts": 16,
+     "happy": 2
+    },
+    {
+     "name": "Eva Su",
+     "email": "evasu@chromium.org",
+     "counterparts": 16,
+     "happy": 2
+    },
+    {
+     "name": "Khalid Peer",
+     "email": "khalidpeer@chromium.org",
+     "counterparts": 16,
+     "happy": 2
+    },
+    {
+     "name": "Dale Curtis",
+     "email": "dalecurtis@chromium.org",
+     "counterparts": 18,
+     "happy": 2
+    },
+    {
+     "name": "Juliet Knighton",
+     "email": "julietlevesque@google.com",
+     "counterparts": 18,
+     "happy": 2
+    },
+    {
+     "name": "Thomas Guilbert",
+     "email": "tguilbert@chromium.org",
+     "counterparts": 19,
+     "happy": 2
+    },
+    {
+     "name": "Eleanor Lee",
+     "email": "eleanorlee@google.com",
+     "counterparts": 20,
+     "happy": 2
+    },
+    {
+     "name": "Patrick Kettner",
+     "email": "patrickkettner@google.com",
+     "counterparts": 20,
+     "happy": 2
+    },
+    {
+     "name": "Samuel Attard",
+     "email": "samuel.r.attard@gmail.com",
+     "counterparts": 21,
+     "happy": 2
+    },
+    {
+     "name": "mmenke",
+     "email": "mmenke@chromium.org",
+     "counterparts": 22,
+     "happy": 2
+    },
+    {
+     "name": "Maksim Sisov",
+     "email": "msisov@igalia.com",
+     "counterparts": 23,
+     "happy": 2
+    },
+    {
+     "name": "Daniel Cheng",
+     "email": "dcheng@chromium.org",
+     "counterparts": 24,
+     "happy": 2
+    },
+    {
+     "name": "Stanisław Solarewicz",
+     "email": "ssolarewicz@chromium.org",
+     "counterparts": 24,
+     "happy": 2
+    },
+    {
+     "name": "Antonio Sartori",
+     "email": "antoniosartori@chromium.org",
+     "counterparts": 25,
+     "happy": 2
+    },
+    {
+     "name": "Mike Taylor",
+     "email": "miketaylr@chromium.org",
+     "counterparts": 25,
+     "happy": 2
+    },
+    {
+     "name": "Marc Treib",
+     "email": "treib@chromium.org",
+     "counterparts": 26,
+     "happy": 2
+    },
+    {
+     "name": "Rebekah Potter",
+     "email": "rbpotter@chromium.org",
+     "counterparts": 27,
+     "happy": 2
+    },
+    {
+     "name": "Chris Davis",
+     "email": "chrdavis@microsoft.com",
+     "counterparts": 28,
+     "happy": 2
+    },
+    {
+     "name": "Fiaz Muhammad",
+     "email": "mfiaz@google.com",
+     "counterparts": 32,
+     "happy": 2
+    },
+    {
+     "name": "Moe Ahmadi",
+     "email": "mahmadi@chromium.org",
+     "counterparts": 32,
+     "happy": 2
+    },
+    {
+     "name": "Sky Malice",
+     "email": "skym@chromium.org",
+     "counterparts": 38,
+     "happy": 2
+    },
+    {
+     "name": "Duncan Mercer",
+     "email": "mercerd@google.com",
+     "counterparts": 42,
+     "happy": 2
+    },
+    {
+     "name": "Francois Pierre Doray",
+     "email": "fdoray@chromium.org",
+     "counterparts": 45,
+     "happy": 2
+    },
+    {
+     "name": "Satoru Takabayashi",
+     "email": "satorux@google.com",
+     "counterparts": 52,
+     "happy": 2
+    },
+    {
+     "name": "David Bienvenu",
+     "email": "davidbienvenu@chromium.org",
+     "counterparts": 69,
+     "happy": 2
+    },
+    {
+     "name": "Alex Valadkevich",
+     "email": "valadkevich@google.com",
+     "counterparts": 6,
+     "happy": 1
+    },
+    {
+     "name": "Allen Li",
+     "email": "ayatane@chromium.org",
+     "counterparts": 6,
+     "happy": 1
+    },
+    {
+     "name": "Chrome Metrics Config Manager",
+     "email": "chrome-metrics-config-manager-server@google.com",
+     "counterparts": 6,
+     "happy": 1
+    },
+    {
+     "name": "Dan Polanco",
+     "email": "polardz@google.com",
+     "counterparts": 6,
+     "happy": 1
+    },
+    {
+     "name": "Ernest Nguyen Hung",
+     "email": "ernn@google.com",
+     "counterparts": 6,
+     "happy": 1
+    },
+    {
+     "name": "Feras Aldahlawi",
+     "email": "frs@chromium.org",
+     "counterparts": 6,
+     "happy": 1
+    },
+    {
+     "name": "Gustavo Martin",
+     "email": "gusmartin@google.com",
+     "counterparts": 6,
+     "happy": 1
+    },
+    {
+     "name": "Jihad Hanna",
+     "email": "jihadghanna@google.com",
+     "counterparts": 6,
+     "happy": 1
+    },
+    {
+     "name": "Natalia Androsz",
+     "email": "nandrosz@chromium.org",
+     "counterparts": 6,
+     "happy": 1
+    },
+    {
+     "name": "Palak Agarwal",
+     "email": "agpalak@chromium.org",
+     "counterparts": 6,
+     "happy": 1
+    },
+    {
+     "name": "Philipp Hancke",
+     "email": "philipp.hancke@googlemail.com",
+     "counterparts": 6,
+     "happy": 1
+    },
+    {
+     "name": "Pâris Meuleman",
+     "email": "pmeuleman@chromium.org",
+     "counterparts": 6,
+     "happy": 1
+    },
+    {
+     "name": "Roman Arora",
+     "email": "romanarora@chromium.org",
+     "counterparts": 6,
+     "happy": 1
+    },
+    {
+     "name": "Sebastien S-G",
+     "email": "sebsg@chromium.org",
+     "counterparts": 6,
+     "happy": 1
+    },
+    {
+     "name": "Sky Debreuil",
+     "email": "skydebreuil@google.com",
+     "counterparts": 6,
+     "happy": 1
+    }
+   ],
+   "reviewers": [
+    {
+     "name": "Thomas Guilbert",
+     "email": "tguilbert@chromium.org",
+     "counterparts": 14,
+     "happy": 7
+    },
+    {
+     "name": "Jan Keitel",
+     "email": "jkeitel@google.com",
+     "counterparts": 50,
+     "happy": 5
+    },
+    {
+     "name": "Daniel Murphy",
+     "email": "dmurph@chromium.org",
+     "counterparts": 18,
+     "happy": 4
+    },
+    {
+     "name": "Alex Moshchuk",
+     "email": "alexmos@chromium.org",
+     "counterparts": 44,
+     "happy": 4
+    },
+    {
+     "name": "Jordan Bayles",
+     "email": "jophba@chromium.org",
+     "counterparts": 12,
+     "happy": 3
+    },
+    {
+     "name": "Jinsuk Kim",
+     "email": "jinsukkim@chromium.org",
+     "counterparts": 21,
+     "happy": 3
+    },
+    {
+     "name": "Kyle Charbonneau",
+     "email": "kylechar@chromium.org",
+     "counterparts": 24,
+     "happy": 3
+    },
+    {
+     "name": "Dave Tapuska",
+     "email": "dtapuska@chromium.org",
+     "counterparts": 47,
+     "happy": 3
+    },
+    {
+     "name": "Greg Thompson",
+     "email": "grt@chromium.org",
+     "counterparts": 50,
+     "happy": 3
+    },
+    {
+     "name": "Maria Kazinova",
+     "email": "kazinova@google.com",
+     "counterparts": 9,
+     "happy": 2
+    },
+    {
+     "name": "Lucia Giorgi",
+     "email": "quacksort@google.com",
+     "counterparts": 10,
+     "happy": 2
+    },
+    {
+     "name": "Chris Fredrickson",
+     "email": "cfredric@chromium.org",
+     "counterparts": 11,
+     "happy": 2
+    },
+    {
+     "name": "Marijn Kruisselbrink",
+     "email": "mek@chromium.org",
+     "counterparts": 11,
+     "happy": 2
+    },
+    {
+     "name": "Michael Wilson",
+     "email": "mjwilson@chromium.org",
+     "counterparts": 12,
+     "happy": 2
+    },
+    {
+     "name": "Peter Wen",
+     "email": "wnwen@chromium.org",
+     "counterparts": 12,
+     "happy": 2
+    },
+    {
+     "name": "Etienne Pierre-Doray",
+     "email": "etiennep@chromium.org",
+     "counterparts": 13,
+     "happy": 2
+    },
+    {
+     "name": "Francois Pierre Doray",
+     "email": "fdoray@chromium.org",
+     "counterparts": 13,
+     "happy": 2
+    },
+    {
+     "name": "Kaan Alsan",
+     "email": "alsan@chromium.org",
+     "counterparts": 13,
+     "happy": 2
+    },
+    {
+     "name": "Mark Schillaci",
+     "email": "mschillaci@google.com",
+     "counterparts": 14,
+     "happy": 2
+    },
+    {
+     "name": "Morten Stenshorne",
+     "email": "mstensho@chromium.org",
+     "counterparts": 15,
+     "happy": 2
+    },
+    {
+     "name": "Bryant Chandler",
+     "email": "bryantchandler@chromium.org",
+     "counterparts": 18,
+     "happy": 2
+    },
+    {
+     "name": "Haiyang Pan",
+     "email": "hypan@google.com",
+     "counterparts": 18,
+     "happy": 2
+    },
+    {
+     "name": "Antonio Sartori",
+     "email": "antoniosartori@chromium.org",
+     "counterparts": 20,
+     "happy": 2
+    },
+    {
+     "name": "Elly",
+     "email": "ellyjones@chromium.org",
+     "counterparts": 20,
+     "happy": 2
+    },
+    {
+     "name": "Maks Orlovich",
+     "email": "morlovich@chromium.org",
+     "counterparts": 22,
+     "happy": 2
+    },
+    {
+     "name": "Charlie Reis",
+     "email": "creis@chromium.org",
+     "counterparts": 23,
+     "happy": 2
+    },
+    {
+     "name": "Henrique Nakashima",
+     "email": "hnakashima@chromium.org",
+     "counterparts": 24,
+     "happy": 2
+    },
+    {
+     "name": "Mike Dougherty",
+     "email": "michaeldo@chromium.org",
+     "counterparts": 24,
+     "happy": 2
+    },
+    {
+     "name": "Christoph Schwering",
+     "email": "schwering@google.com",
+     "counterparts": 29,
+     "happy": 2
+    },
+    {
+     "name": "David Bokan",
+     "email": "bokan@chromium.org",
+     "counterparts": 29,
+     "happy": 2
+    },
+    {
+     "name": "Rebekah Potter",
+     "email": "rbpotter@chromium.org",
+     "counterparts": 29,
+     "happy": 2
+    },
+    {
+     "name": "Devlin Cronin",
+     "email": "rdevlin.cronin@chromium.org",
+     "counterparts": 30,
+     "happy": 2
+    },
+    {
+     "name": "Avi Drissman",
+     "email": "avi@chromium.org",
+     "counterparts": 33,
+     "happy": 2
+    },
+    {
+     "name": "Dale Curtis",
+     "email": "dalecurtis@chromium.org",
+     "counterparts": 33,
+     "happy": 2
+    },
+    {
+     "name": "Thomas Lukaszewicz",
+     "email": "tluk@chromium.org",
+     "counterparts": 33,
+     "happy": 2
+    },
+    {
+     "name": "Marc Treib",
+     "email": "treib@chromium.org",
+     "counterparts": 37,
+     "happy": 2
+    },
+    {
+     "name": "Takashi Toyoshima",
+     "email": "toyoshim@chromium.org",
+     "counterparts": 41,
+     "happy": 2
+    },
+    {
+     "name": "Rune Lillesveen",
+     "email": "futhark@chromium.org",
+     "counterparts": 43,
+     "happy": 2
+    },
+    {
+     "name": "Arthur Sonzogni",
+     "email": "arthursonzogni@chromium.org",
+     "counterparts": 45,
+     "happy": 2
+    },
+    {
+     "name": "Demetrios Papadopoulos",
+     "email": "dpapad@chromium.org",
+     "counterparts": 58,
+     "happy": 2
+    },
+    {
+     "name": "Daniel Cheng",
+     "email": "dcheng@chromium.org",
+     "counterparts": 97,
+     "happy": 2
+    },
+    {
+     "name": "Alison Maher",
+     "email": "almaher@microsoft.com",
+     "counterparts": 6,
+     "happy": 1
+    },
+    {
+     "name": "Anthi Orfanou",
+     "email": "anthie@google.com",
+     "counterparts": 6,
+     "happy": 1
+    },
+    {
+     "name": "Ilya Nikolaevskiy",
+     "email": "ilnik@chromium.org",
+     "counterparts": 6,
+     "happy": 1
+    },
+    {
+     "name": "Luc Nguyen",
+     "email": "lucnguyen@google.com",
+     "counterparts": 6,
+     "happy": 1
+    },
+    {
+     "name": "Mei Liang",
+     "email": "meiliang@chromium.org",
+     "counterparts": 6,
+     "happy": 1
+    },
+    {
+     "name": "Peter Kotwicz",
+     "email": "pkotwicz@chromium.org",
+     "counterparts": 6,
+     "happy": 1
+    },
+    {
+     "name": "Sam Maier",
+     "email": "smaier@google.com",
+     "counterparts": 6,
+     "happy": 1
+    },
+    {
+     "name": "Varun Khaneja",
+     "email": "vakh@chromium.org",
+     "counterparts": 6,
+     "happy": 1
+    },
+    {
+     "name": "Łukasz Barczyński",
+     "email": "lbarczynski@google.com",
+     "counterparts": 6,
+     "happy": 1
+    },
+    {
+     "name": "Benjamin Keen",
+     "email": "bkeen@google.com",
+     "counterparts": 7,
+     "happy": 1
+    },
+    {
+     "name": "Devon Loehr",
+     "email": "dloehr@google.com",
+     "counterparts": 7,
+     "happy": 1
+    },
+    {
+     "name": "Fabio Tirelo",
+     "email": "ftirelo@chromium.org",
+     "counterparts": 7,
+     "happy": 1
+    },
+    {
+     "name": "Gustavo Martin",
+     "email": "gusmartin@google.com",
+     "counterparts": 7,
+     "happy": 1
+    },
+    {
+     "name": "Martin Kreichgauer",
+     "email": "martinkr@google.com",
+     "counterparts": 7,
+     "happy": 1
+    },
+    {
+     "name": "Steven Holte",
+     "email": "holte@chromium.org",
+     "counterparts": 7,
+     "happy": 1
+    },
+    {
+     "name": "Xianzhu Wang",
+     "email": "wangxianzhu@chromium.org",
+     "counterparts": 7,
+     "happy": 1
+    },
+    {
+     "name": "Xu Li",
+     "email": "mxlg@google.com",
+     "counterparts": 7,
+     "happy": 1
+    },
+    {
+     "name": "Zonghan Xu",
+     "email": "xzonghan@chromium.org",
+     "counterparts": 7,
+     "happy": 1
+    },
+    {
+     "name": "Hu, Ningxin",
+     "email": "ningxin.hu@intel.com",
+     "counterparts": 8,
+     "happy": 1
+    },
+    {
+     "name": "James Leung",
+     "email": "jamesleung@google.com",
+     "counterparts": 8,
+     "happy": 1
+    },
+    {
+     "name": "Michael Thiessen",
+     "email": "mthiesse@chromium.org",
+     "counterparts": 8,
+     "happy": 1
+    },
+    {
+     "name": "Paul Jensen",
+     "email": "pauljensen@chromium.org",
+     "counterparts": 8,
+     "happy": 1
+    },
+    {
+     "name": "Pavol Marko",
+     "email": "pmarko@chromium.org",
+     "counterparts": 8,
+     "happy": 1
+    },
+    {
+     "name": "Tommy Nyquist",
+     "email": "nyquist@chromium.org",
+     "counterparts": 8,
+     "happy": 1
+    },
+    {
+     "name": "Chris Lu",
+     "email": "thegreenfrog@google.com",
+     "counterparts": 9,
+     "happy": 1
+    },
+    {
+     "name": "Dominic Farolino",
+     "email": "dom@chromium.org",
+     "counterparts": 9,
+     "happy": 1
+    },
+    {
+     "name": "Hiroshige Hayashizaki",
+     "email": "hiroshige@chromium.org",
+     "counterparts": 9,
+     "happy": 1
+    },
+    {
+     "name": "Isabelle Goralsky",
+     "email": "igoralsky@google.com",
+     "counterparts": 9,
+     "happy": 1
+    },
+    {
+     "name": "Jenna Himawan",
+     "email": "jhimawan@google.com",
+     "counterparts": 9,
+     "happy": 1
+    },
+    {
+     "name": "Justin Cohen",
+     "email": "justincohen@google.com",
+     "counterparts": 9,
+     "happy": 1
+    },
+    {
+     "name": "Louis Romero",
+     "email": "lpromero@google.com",
+     "counterparts": 9,
+     "happy": 1
+    },
+    {
+     "name": "Riley Tatum",
+     "email": "rtatum@google.com",
+     "counterparts": 9,
+     "happy": 1
+    },
+    {
+     "name": "Robbie Gibson",
+     "email": "rkgibson@google.com",
+     "counterparts": 9,
+     "happy": 1
+    },
+    {
+     "name": "Ankush Singh",
+     "email": "ankushkush@google.com",
+     "counterparts": 10,
+     "happy": 1
+    },
+    {
+     "name": "Hiroki Nakagawa",
+     "email": "nhiroki@chromium.org",
+     "counterparts": 10,
+     "happy": 1
+    },
+    {
+     "name": "Mingyu Lei",
+     "email": "leimy@chromium.org",
+     "counterparts": 10,
+     "happy": 1
+    },
+    {
+     "name": "Mohamed Amir Yosef",
+     "email": "mamir@chromium.org",
+     "counterparts": 10,
+     "happy": 1
+    },
+    {
+     "name": "Rafael Cintron",
+     "email": "rafael.cintron@microsoft.com",
+     "counterparts": 10,
+     "happy": 1
+    },
+    {
+     "name": "Shu Yang",
+     "email": "shuyng@google.com",
+     "counterparts": 10,
+     "happy": 1
+    },
+    {
+     "name": "Steven Luong",
+     "email": "stluong@chromium.org",
+     "counterparts": 10,
+     "happy": 1
+    },
+    {
+     "name": "Adithya Srinivasan",
+     "email": "adithyas@chromium.org",
+     "counterparts": 11,
+     "happy": 1
+    },
+    {
+     "name": "Alison Gale",
+     "email": "agale@chromium.org",
+     "counterparts": 11,
+     "happy": 1
+    },
+    {
+     "name": "Moe Adel",
+     "email": "adelm@google.com",
+     "counterparts": 11,
+     "happy": 1
+    },
+    {
+     "name": "Ioana Treib",
+     "email": "ioanap@chromium.org",
+     "counterparts": 12,
+     "happy": 1
+    },
+    {
+     "name": "Duncan Mercer",
+     "email": "mercerd@google.com",
+     "counterparts": 13,
+     "happy": 1
+    },
+    {
+     "name": "Ian Kilpatrick",
+     "email": "ikilpatrick@chromium.org",
+     "counterparts": 13,
+     "happy": 1
+    },
+    {
+     "name": "Kevin Babbitt",
+     "email": "kbabbitt@microsoft.com",
+     "counterparts": 13,
+     "happy": 1
+    },
+    {
+     "name": "Nicolas Ouellet-Payeur",
+     "email": "nicolaso@chromium.org",
+     "counterparts": 13,
+     "happy": 1
+    },
+    {
+     "name": "Scott Yoder",
+     "email": "scottyoder@google.com",
+     "counterparts": 13,
+     "happy": 1
+    },
+    {
+     "name": "Sorin Jianu",
+     "email": "sorin@chromium.org",
+     "counterparts": 13,
+     "happy": 1
+    },
+    {
+     "name": "Vladimir Levin",
+     "email": "vmpstr@chromium.org",
+     "counterparts": 13,
+     "happy": 1
+    },
+    {
+     "name": "Mark Mentovai",
+     "email": "mark@chromium.org",
+     "counterparts": 14,
+     "happy": 1
+    },
+    {
+     "name": "Noah Rose Ledesma",
+     "email": "noahrose@google.com",
+     "counterparts": 14,
+     "happy": 1
+    },
+    {
+     "name": "Yi Gu",
+     "email": "yigu@chromium.org",
+     "counterparts": 14,
+     "happy": 1
+    },
+    {
+     "name": "Fred Shih",
+     "email": "ffred@chromium.org",
+     "counterparts": 15,
+     "happy": 1
+    },
+    {
+     "name": "Linyu He",
+     "email": "linyuh@google.com",
+     "counterparts": 15,
+     "happy": 1
+    },
+    {
+     "name": "Sirisha Kavuluru",
+     "email": "skavuluru@google.com",
+     "counterparts": 15,
+     "happy": 1
+    },
+    {
+     "name": "Dibyajyoti Pal",
+     "email": "dibyapal@chromium.org",
+     "counterparts": 16,
+     "happy": 1
+    },
+    {
+     "name": "Guido Urdaneta",
+     "email": "guidou@chromium.org",
+     "counterparts": 16,
+     "happy": 1
+    }
+   ]
+  },
+  "month": {
+   "authors": [
+    {
+     "name": "Jordan Bayles",
+     "email": "jophba@chromium.org",
+     "counterparts": 22,
+     "happy": 5
+    },
+    {
+     "name": "Benoit Lize",
+     "email": "lizeb@chromium.org",
+     "counterparts": 22,
+     "happy": 4
+    },
+    {
+     "name": "Arthur Milchior",
+     "email": "arthurmilchior@chromium.org",
+     "counterparts": 74,
+     "happy": 4
+    },
+    {
+     "name": "Vladimir Levin",
+     "email": "vmpstr@chromium.org",
+     "counterparts": 15,
+     "happy": 3
+    },
+    {
+     "name": "Takashi Toyoshima",
+     "email": "toyoshim@chromium.org",
+     "counterparts": 19,
+     "happy": 3
+    },
+    {
+     "name": "Mitsuru Oshima",
+     "email": "oshima@chromium.org",
+     "counterparts": 25,
+     "happy": 3
+    },
+    {
+     "name": "James Cook",
+     "email": "jamescook@chromium.org",
+     "counterparts": 29,
+     "happy": 3
+    },
+    {
+     "name": "Arthur Sonzogni",
+     "email": "arthursonzogni@chromium.org",
+     "counterparts": 34,
+     "happy": 3
+    },
+    {
+     "name": "Tomasz Wiszkowski",
+     "email": "ender@google.com",
+     "counterparts": 38,
+     "happy": 3
+    },
+    {
+     "name": "Eriko Kurimoto",
+     "email": "elkurin@chromium.org",
+     "counterparts": 46,
+     "happy": 3
+    },
+    {
+     "name": "Devi Varaprasad Jonnala",
+     "email": "jonnalad@google.com",
+     "counterparts": 6,
+     "happy": 2
+    },
+    {
+     "name": "Mike Jackson",
+     "email": "mjackson@microsoft.com",
+     "counterparts": 6,
+     "happy": 2
+    },
+    {
+     "name": "Devon Loehr",
+     "email": "dloehr@google.com",
+     "counterparts": 7,
+     "happy": 2
+    },
+    {
+     "name": "Aaron Leventhal",
+     "email": "aleventhal@google.com",
+     "counterparts": 8,
+     "happy": 2
+    },
+    {
+     "name": "Adriana Ixba",
+     "email": "aixba@chromium.org",
+     "counterparts": 8,
+     "happy": 2
+    },
+    {
+     "name": "Bhuvana Betini",
+     "email": "bbetini@google.com",
+     "counterparts": 8,
+     "happy": 2
+    },
+    {
+     "name": "Marijn Kruisselbrink",
+     "email": "mek@chromium.org",
+     "counterparts": 8,
+     "happy": 2
+    },
+    {
+     "name": "Peter Conn",
+     "email": "peconn@chromium.org",
+     "counterparts": 8,
+     "happy": 2
+    },
+    {
+     "name": "Liza Bipin",
+     "email": "mlbipin@google.com",
+     "counterparts": 9,
+     "happy": 2
+    },
+    {
+     "name": "Piotr Kotynia",
+     "email": "piotrkotynia@google.com",
+     "counterparts": 9,
+     "happy": 2
+    },
+    {
+     "name": "Scott Yoder",
+     "email": "scottyoder@google.com",
+     "counterparts": 10,
+     "happy": 2
+    },
+    {
+     "name": "Thomas Lukaszewicz",
+     "email": "tluk@chromium.org",
+     "counterparts": 10,
+     "happy": 2
+    },
+    {
+     "name": "Antonio Sartori",
+     "email": "antoniosartori@chromium.org",
+     "counterparts": 13,
+     "happy": 2
+    },
+    {
+     "name": "utzcoz",
+     "email": "utzcoz@gmail.com",
+     "counterparts": 13,
+     "happy": 2
+    },
+    {
+     "name": "Paul Adedeji",
+     "email": "pauladedeji@google.com",
+     "counterparts": 14,
+     "happy": 2
+    },
+    {
+     "name": "Marc Treib",
+     "email": "treib@chromium.org",
+     "counterparts": 16,
+     "happy": 2
+    },
+    {
+     "name": "Mike Taylor",
+     "email": "miketaylr@chromium.org",
+     "counterparts": 16,
+     "happy": 2
+    },
+    {
+     "name": "Maksim Sisov",
+     "email": "msisov@igalia.com",
+     "counterparts": 20,
+     "happy": 2
+    },
+    {
+     "name": "Mason Freed",
+     "email": "masonf@chromium.org",
+     "counterparts": 24,
+     "happy": 2
+    },
+    {
+     "name": "Francois Pierre Doray",
+     "email": "fdoray@chromium.org",
+     "counterparts": 25,
+     "happy": 2
+    },
+    {
+     "name": "Thomas Anderson",
+     "email": "thomasanderson@chromium.org",
+     "counterparts": 27,
+     "happy": 2
+    },
+    {
+     "name": "Evan Stade",
+     "email": "evanstade@microsoft.com",
+     "counterparts": 33,
+     "happy": 2
+    },
+    {
+     "name": "Helmut Januschka",
+     "email": "helmut@januschka.com",
+     "counterparts": 50,
+     "happy": 2
+    },
+    {
+     "name": "Adam Rice",
+     "email": "ricea@chromium.org",
+     "counterparts": 6,
+     "happy": 1
+    },
+    {
+     "name": "Daniel Castro",
+     "email": "drcastroa@google.com",
+     "counterparts": 6,
+     "happy": 1
+    },
+    {
+     "name": "David Pennington",
+     "email": "dpenning@chromium.org",
+     "counterparts": 6,
+     "happy": 1
+    },
+    {
+     "name": "Eldar Pulatov",
+     "email": "epulatov.dev@gmail.com",
+     "counterparts": 6,
+     "happy": 1
+    },
+    {
+     "name": "Guillaume Saulnier-Comte",
+     "email": "gsaul@google.com",
+     "counterparts": 6,
+     "happy": 1
+    },
+    {
+     "name": "Hiroki Nakagawa",
+     "email": "nhiroki@chromium.org",
+     "counterparts": 6,
+     "happy": 1
+    },
+    {
+     "name": "Javier Fernandez",
+     "email": "jfernandez@igalia.com",
+     "counterparts": 6,
+     "happy": 1
+    },
+    {
+     "name": "Lauren Winston",
+     "email": "lwinston@google.com",
+     "counterparts": 6,
+     "happy": 1
+    },
+    {
+     "name": "Lia Hiscock",
+     "email": "liahiscock@microsoft.com",
+     "counterparts": 6,
+     "happy": 1
+    },
+    {
+     "name": "Luke Deng",
+     "email": "lukedeng@google.com",
+     "counterparts": 6,
+     "happy": 1
+    },
+    {
+     "name": "Michael Wojcicka",
+     "email": "mwoj@google.com",
+     "counterparts": 6,
+     "happy": 1
+    },
+    {
+     "name": "Patrick Noland",
+     "email": "pnoland@chromium.org",
+     "counterparts": 6,
+     "happy": 1
+    },
+    {
+     "name": "Sebastien S-G",
+     "email": "sebsg@chromium.org",
+     "counterparts": 6,
+     "happy": 1
+    },
+    {
+     "name": "Sky Debreuil",
+     "email": "skydebreuil@google.com",
+     "counterparts": 6,
+     "happy": 1
+    },
+    {
+     "name": "Xuehui Chen",
+     "email": "xuehuichen@google.com",
+     "counterparts": 6,
+     "happy": 1
+    },
+    {
+     "name": "Zack Han",
+     "email": "zackhan@chromium.org",
+     "counterparts": 6,
+     "happy": 1
+    },
+    {
+     "name": "Zhou, Shuangshuang",
+     "email": "shuangshuang.zhou@intel.com",
+     "counterparts": 6,
+     "happy": 1
+    },
+    {
+     "name": "Camille Lamy",
+     "email": "clamy@chromium.org",
+     "counterparts": 7,
+     "happy": 1
+    },
+    {
+     "name": "Colin Blundell",
+     "email": "blundell@chromium.org",
+     "counterparts": 7,
+     "happy": 1
+    },
+    {
+     "name": "Dmitry Gozman",
+     "email": "dgozman@chromium.org",
+     "counterparts": 7,
+     "happy": 1
+    },
+    {
+     "name": "Gianni Chen",
+     "email": "giannich@chromium.org",
+     "counterparts": 7,
+     "happy": 1
+    },
+    {
+     "name": "Hidehiko Abe",
+     "email": "hidehiko@chromium.org",
+     "counterparts": 7,
+     "happy": 1
+    },
+    {
+     "name": "Jeffrey Gour",
+     "email": "jeffreygour@microsoft.com",
+     "counterparts": 7,
+     "happy": 1
+    },
+    {
+     "name": "Juliet Knighton",
+     "email": "julietlevesque@google.com",
+     "counterparts": 7,
+     "happy": 1
+    },
+    {
+     "name": "Mike West",
+     "email": "mkwst@chromium.org",
+     "counterparts": 7,
+     "happy": 1
+    },
+    {
+     "name": "Robbie McElrath",
+     "email": "rmcelrath@chromium.org",
+     "counterparts": 7,
+     "happy": 1
+    },
+    {
+     "name": "Ryan Qin",
+     "email": "ryqin@chromium.org",
+     "counterparts": 7,
+     "happy": 1
+    },
+    {
+     "name": "Stacy Gaikovaia",
+     "email": "gaiko@google.com",
+     "counterparts": 7,
+     "happy": 1
+    },
+    {
+     "name": "Yrian Derreumaux",
+     "email": "yrian@google.com",
+     "counterparts": 7,
+     "happy": 1
+    },
+    {
+     "name": "thefrog",
+     "email": "thefrog@chromium.org",
+     "counterparts": 7,
+     "happy": 1
+    },
+    {
+     "name": "Agata Szpotek",
+     "email": "szpotekagata@google.com",
+     "counterparts": 8,
+     "happy": 1
+    },
+    {
+     "name": "Alfredo Higuera",
+     "email": "alfredohiguera@google.com",
+     "counterparts": 8,
+     "happy": 1
+    },
+    {
+     "name": "David Hinojosa",
+     "email": "davidhinojosa@google.com",
+     "counterparts": 8,
+     "happy": 1
+    },
+    {
+     "name": "Fernando Ramirez",
+     "email": "ferny@google.com",
+     "counterparts": 8,
+     "happy": 1
+    },
+    {
+     "name": "Haiyang Pan",
+     "email": "hypan@google.com",
+     "counterparts": 8,
+     "happy": 1
+    },
+    {
+     "name": "Jilin Yang",
+     "email": "jilinyang@google.com",
+     "counterparts": 8,
+     "happy": 1
+    },
+    {
+     "name": "Miyoung Shin",
+     "email": "myid.shin@igalia.com",
+     "counterparts": 8,
+     "happy": 1
+    },
+    {
+     "name": "Peter Kvitek",
+     "email": "kvitekp@chromium.org",
+     "counterparts": 8,
+     "happy": 1
+    },
+    {
+     "name": "Rob Pitkin",
+     "email": "robpitkin@chromium.org",
+     "counterparts": 8,
+     "happy": 1
+    },
+    {
+     "name": "Sangbaek Park",
+     "email": "sangbaekpark@chromium.org",
+     "counterparts": 8,
+     "happy": 1
+    },
+    {
+     "name": "Solomon Kinard",
+     "email": "solomonkinard@chromium.org",
+     "counterparts": 8,
+     "happy": 1
+    },
+    {
+     "name": "Takashi Sakamoto",
+     "email": "tasak@google.com",
+     "counterparts": 8,
+     "happy": 1
+    },
+    {
+     "name": "Yixi Wu",
+     "email": "yixiwu@google.com",
+     "counterparts": 8,
+     "happy": 1
+    },
+    {
+     "name": "Łukasz Barczyński",
+     "email": "lbarczynski@google.com",
+     "counterparts": 8,
+     "happy": 1
+    },
+    {
+     "name": "Austin Zhang",
+     "email": "austinzzr@google.com",
+     "counterparts": 9,
+     "happy": 1
+    },
+    {
+     "name": "David Roger",
+     "email": "droger@chromium.org",
+     "counterparts": 9,
+     "happy": 1
+    },
+    {
+     "name": "Joe Mason",
+     "email": "joenotcharles@google.com",
+     "counterparts": 9,
+     "happy": 1
+    },
+    {
+     "name": "Mike Ho",
+     "email": "homi@google.com",
+     "counterparts": 9,
+     "happy": 1
+    },
+    {
+     "name": "Neil Coronado",
+     "email": "nemco@google.com",
+     "counterparts": 9,
+     "happy": 1
+    },
+    {
+     "name": "Neil Kronlage",
+     "email": "neilkr@meta.com",
+     "counterparts": 9,
+     "happy": 1
+    },
+    {
+     "name": "Nohemi Fernandez",
+     "email": "fernandex@google.com",
+     "counterparts": 9,
+     "happy": 1
+    },
+    {
+     "name": "Ramin Halavati",
+     "email": "rhalavati@chromium.org",
+     "counterparts": 9,
+     "happy": 1
+    },
+    {
+     "name": "Trevor Perrier",
+     "email": "perrier@chromium.org",
+     "counterparts": 9,
+     "happy": 1
+    },
+    {
+     "name": "Alex Chen",
+     "email": "alexwchen@chromium.org",
+     "counterparts": 10,
+     "happy": 1
+    },
+    {
+     "name": "Amya Singhal",
+     "email": "amyasinghal@google.com",
+     "counterparts": 10,
+     "happy": 1
+    },
+    {
+     "name": "Bofeng Chen",
+     "email": "bofengchen@google.com",
+     "counterparts": 10,
+     "happy": 1
+    },
+    {
+     "name": "Caleb Raitto",
+     "email": "caraitto@chromium.org",
+     "counterparts": 10,
+     "happy": 1
+    },
+    {
+     "name": "Friedrich Hauser",
+     "email": "friedrichh@chromium.org",
+     "counterparts": 10,
+     "happy": 1
+    },
+    {
+     "name": "Karol Sygiet",
+     "email": "sygiet@google.com",
+     "counterparts": 10,
+     "happy": 1
+    },
+    {
+     "name": "Nate Chapin",
+     "email": "japhet@chromium.org",
+     "counterparts": 10,
+     "happy": 1
+    },
+    {
+     "name": "Ritika Gupta",
+     "email": "ritikagup@google.com",
+     "counterparts": 10,
+     "happy": 1
+    },
+    {
+     "name": "Alexis Wu",
+     "email": "alexiswu@google.com",
+     "counterparts": 11,
+     "happy": 1
+    },
+    {
+     "name": "Alvin Ji",
+     "email": "alvinji@chromium.org",
+     "counterparts": 11,
+     "happy": 1
+    },
+    {
+     "name": "Elly",
+     "email": "ellyjones@chromium.org",
+     "counterparts": 11,
+     "happy": 1
+    },
+    {
+     "name": "Eva Su",
+     "email": "evasu@chromium.org",
+     "counterparts": 11,
+     "happy": 1
+    },
+    {
+     "name": "Josef Raska",
+     "email": "josefraska@google.com",
+     "counterparts": 11,
+     "happy": 1
+    },
+    {
+     "name": "Nicolas MacBeth",
+     "email": "nicolasmacbeth@google.com",
+     "counterparts": 11,
+     "happy": 1
+    }
+   ],
+   "reviewers": [
+    {
+     "name": "Thomas Guilbert",
+     "email": "tguilbert@chromium.org",
+     "counterparts": 14,
+     "happy": 6
+    },
+    {
+     "name": "Jordan Bayles",
+     "email": "jophba@chromium.org",
+     "counterparts": 6,
+     "happy": 3
+    },
+    {
+     "name": "Daniel Murphy",
+     "email": "dmurph@chromium.org",
+     "counterparts": 14,
+     "happy": 3
+    },
+    {
+     "name": "Jan Keitel",
+     "email": "jkeitel@google.com",
+     "counterparts": 33,
+     "happy": 3
+    },
+    {
+     "name": "Maria Kazinova",
+     "email": "kazinova@google.com",
+     "counterparts": 7,
+     "happy": 2
+    },
+    {
+     "name": "Michael Wilson",
+     "email": "mjwilson@chromium.org",
+     "counterparts": 9,
+     "happy": 2
+    },
+    {
+     "name": "Antonio Sartori",
+     "email": "antoniosartori@chromium.org",
+     "counterparts": 10,
+     "happy": 2
+    },
+    {
+     "name": "Lucia Giorgi",
+     "email": "quacksort@google.com",
+     "counterparts": 10,
+     "happy": 2
+    },
+    {
+     "name": "Morten Stenshorne",
+     "email": "mstensho@chromium.org",
+     "counterparts": 10,
+     "happy": 2
+    },
+    {
+     "name": "Kyle Charbonneau",
+     "email": "kylechar@chromium.org",
+     "counterparts": 15,
+     "happy": 2
+    },
+    {
+     "name": "Alex Moshchuk",
+     "email": "alexmos@chromium.org",
+     "counterparts": 24,
+     "happy": 2
+    },
+    {
+     "name": "David Bokan",
+     "email": "bokan@chromium.org",
+     "counterparts": 24,
+     "happy": 2
+    },
+    {
+     "name": "Greg Thompson",
+     "email": "grt@chromium.org",
+     "counterparts": 28,
+     "happy": 2
+    },
+    {
+     "name": "Daniel Cheng",
+     "email": "dcheng@chromium.org",
+     "counterparts": 55,
+     "happy": 2
+    },
+    {
+     "name": "Alison Gale",
+     "email": "agale@chromium.org",
+     "counterparts": 6,
+     "happy": 1
+    },
+    {
+     "name": "Gustavo Martin",
+     "email": "gusmartin@google.com",
+     "counterparts": 6,
+     "happy": 1
+    },
+    {
+     "name": "Hiroshige Hayashizaki",
+     "email": "hiroshige@chromium.org",
+     "counterparts": 6,
+     "happy": 1
+    },
+    {
+     "name": "Louis Romero",
+     "email": "lpromero@google.com",
+     "counterparts": 6,
+     "happy": 1
+    },
+    {
+     "name": "Marijn Kruisselbrink",
+     "email": "mek@chromium.org",
+     "counterparts": 6,
+     "happy": 1
+    },
+    {
+     "name": "Mohamed Amir Yosef",
+     "email": "mamir@chromium.org",
+     "counterparts": 6,
+     "happy": 1
+    },
+    {
+     "name": "Adithya Srinivasan",
+     "email": "adithyas@chromium.org",
+     "counterparts": 7,
+     "happy": 1
+    },
+    {
+     "name": "Chris Fredrickson",
+     "email": "cfredric@chromium.org",
+     "counterparts": 7,
+     "happy": 1
+    },
+    {
+     "name": "James Leung",
+     "email": "jamesleung@google.com",
+     "counterparts": 7,
+     "happy": 1
+    },
+    {
+     "name": "Ankush Singh",
+     "email": "ankushkush@google.com",
+     "counterparts": 8,
+     "happy": 1
+    },
+    {
+     "name": "Duncan Mercer",
+     "email": "mercerd@google.com",
+     "counterparts": 8,
+     "happy": 1
+    },
+    {
+     "name": "Etienne Pierre-Doray",
+     "email": "etiennep@chromium.org",
+     "counterparts": 8,
+     "happy": 1
+    },
+    {
+     "name": "Isabelle Goralsky",
+     "email": "igoralsky@google.com",
+     "counterparts": 8,
+     "happy": 1
+    },
+    {
+     "name": "Justin Cohen",
+     "email": "justincohen@google.com",
+     "counterparts": 8,
+     "happy": 1
+    },
+    {
+     "name": "Kaan Alsan",
+     "email": "alsan@chromium.org",
+     "counterparts": 8,
+     "happy": 1
+    },
+    {
+     "name": "Kevin Babbitt",
+     "email": "kbabbitt@microsoft.com",
+     "counterparts": 8,
+     "happy": 1
+    },
+    {
+     "name": "Riley Tatum",
+     "email": "rtatum@google.com",
+     "counterparts": 8,
+     "happy": 1
+    },
+    {
+     "name": "Chris Lu",
+     "email": "thegreenfrog@google.com",
+     "counterparts": 9,
+     "happy": 1
+    },
+    {
+     "name": "Elly",
+     "email": "ellyjones@chromium.org",
+     "counterparts": 9,
+     "happy": 1
+    },
+    {
+     "name": "Fred Shih",
+     "email": "ffred@chromium.org",
+     "counterparts": 9,
+     "happy": 1
+    },
+    {
+     "name": "Jinsuk Kim",
+     "email": "jinsukkim@chromium.org",
+     "counterparts": 9,
+     "happy": 1
+    },
+    {
+     "name": "Yi Gu",
+     "email": "yigu@chromium.org",
+     "counterparts": 9,
+     "happy": 1
+    },
+    {
+     "name": "Viktor Semeniuk",
+     "email": "vsemeniuk@google.com",
+     "counterparts": 10,
+     "happy": 1
+    },
+    {
+     "name": "Danil Somsikov",
+     "email": "dsv@chromium.org",
+     "counterparts": 11,
+     "happy": 1
+    },
+    {
+     "name": "Tim",
+     "email": "tjudkins@chromium.org",
+     "counterparts": 11,
+     "happy": 1
+    },
+    {
+     "name": "Łukasz Anforowicz",
+     "email": "lukasza@chromium.org",
+     "counterparts": 11,
+     "happy": 1
+    },
+    {
+     "name": "Alex Ilin",
+     "email": "alexilin@chromium.org",
+     "counterparts": 12,
+     "happy": 1
+    },
+    {
+     "name": "Haiyang Pan",
+     "email": "hypan@google.com",
+     "counterparts": 12,
+     "happy": 1
+    },
+    {
+     "name": "Rainhard Findling",
+     "email": "rainhard@chromium.org",
+     "counterparts": 12,
+     "happy": 1
+    },
+    {
+     "name": "David Tseng",
+     "email": "dtseng@chromium.org",
+     "counterparts": 13,
+     "happy": 1
+    },
+    {
+     "name": "Dibyajyoti Pal",
+     "email": "dibyapal@chromium.org",
+     "counterparts": 13,
+     "happy": 1
+    },
+    {
+     "name": "Joe Mason",
+     "email": "joenotcharles@google.com",
+     "counterparts": 13,
+     "happy": 1
+    },
+    {
+     "name": "Mark Foltz",
+     "email": "mfoltz@chromium.org",
+     "counterparts": 13,
+     "happy": 1
+    },
+    {
+     "name": "Alexei Svitkine",
+     "email": "asvitkine@chromium.org",
+     "counterparts": 14,
+     "happy": 1
+    },
+    {
+     "name": "Bryant Chandler",
+     "email": "bryantchandler@chromium.org",
+     "counterparts": 14,
+     "happy": 1
+    },
+    {
+     "name": "Ryan Sultanem",
+     "email": "rsult@google.com",
+     "counterparts": 14,
+     "happy": 1
+    },
+    {
+     "name": "mmenke",
+     "email": "mmenke@chromium.org",
+     "counterparts": 14,
+     "happy": 1
+    },
+    {
+     "name": "Boris Sazonov",
+     "email": "bsazonov@chromium.org",
+     "counterparts": 15,
+     "happy": 1
+    },
+    {
+     "name": "Devlin Cronin",
+     "email": "rdevlin.cronin@chromium.org",
+     "counterparts": 15,
+     "happy": 1
+    },
+    {
+     "name": "Rebekah Potter",
+     "email": "rbpotter@chromium.org",
+     "counterparts": 15,
+     "happy": 1
+    },
+    {
+     "name": "Olivier Robin",
+     "email": "olivierrobin@chromium.org",
+     "counterparts": 16,
+     "happy": 1
+    },
+    {
+     "name": "Paul Adedeji",
+     "email": "pauladedeji@google.com",
+     "counterparts": 16,
+     "happy": 1
+    },
+    {
+     "name": "Charlie Reis",
+     "email": "creis@chromium.org",
+     "counterparts": 17,
+     "happy": 1
+    },
+    {
+     "name": "Maks Orlovich",
+     "email": "morlovich@chromium.org",
+     "counterparts": 19,
+     "happy": 1
+    },
+    {
+     "name": "Avi Drissman",
+     "email": "avi@chromium.org",
+     "counterparts": 20,
+     "happy": 1
+    },
+    {
+     "name": "Sky Malice",
+     "email": "skym@chromium.org",
+     "counterparts": 20,
+     "happy": 1
+    },
+    {
+     "name": "Thomas Lukaszewicz",
+     "email": "tluk@chromium.org",
+     "counterparts": 20,
+     "happy": 1
+    },
+    {
+     "name": "Andrew Grieve",
+     "email": "agrieve@chromium.org",
+     "counterparts": 21,
+     "happy": 1
+    },
+    {
+     "name": "Dale Curtis",
+     "email": "dalecurtis@chromium.org",
+     "counterparts": 23,
+     "happy": 1
+    },
+    {
+     "name": "Eshwar Stalin",
+     "email": "estalin@chromium.org",
+     "counterparts": 23,
+     "happy": 1
+    },
+    {
+     "name": "Rune Lillesveen",
+     "email": "futhark@chromium.org",
+     "counterparts": 23,
+     "happy": 1
+    },
+    {
+     "name": "Takashi Toyoshima",
+     "email": "toyoshim@chromium.org",
+     "counterparts": 24,
+     "happy": 1
+    },
+    {
+     "name": "Dana Fried",
+     "email": "dfried@chromium.org",
+     "counterparts": 25,
+     "happy": 1
+    },
+    {
+     "name": "Keren Zhu",
+     "email": "kerenzhu@chromium.org",
+     "counterparts": 27,
+     "happy": 1
+    },
+    {
+     "name": "Marc Treib",
+     "email": "treib@chromium.org",
+     "counterparts": 27,
+     "happy": 1
+    },
+    {
+     "name": "Will Harris",
+     "email": "wfh@chromium.org",
+     "counterparts": 28,
+     "happy": 1
+    },
+    {
+     "name": "Arthur Sonzogni",
+     "email": "arthursonzogni@chromium.org",
+     "counterparts": 29,
+     "happy": 1
+    },
+    {
+     "name": "Hidehiko Abe",
+     "email": "hidehiko@chromium.org",
+     "counterparts": 29,
+     "happy": 1
+    },
+    {
+     "name": "Dave Tapuska",
+     "email": "dtapuska@chromium.org",
+     "counterparts": 31,
+     "happy": 1
+    },
+    {
+     "name": "Demetrios Papadopoulos",
+     "email": "dpapad@chromium.org",
+     "counterparts": 42,
+     "happy": 1
+    }
+   ]
+  }
+ },
+ "ai": [
+  {
+   "text": "There's a lot of documentation here which is very hard to make sense of. Maybe it would be straightforward to understand which all documentation removed.\n\nDid you write this documentation yourself?",
+   "month": "2026-09",
+   "role": "reviewer"
+  },
+  {
+   "text": "Damn AI. Fixed.",
+   "month": "2026-09",
+   "role": "author"
+  },
+  {
+   "text": "Sorry AI autonomously published the comments. I've updated its memory not to do that going forward.",
+   "month": "2026-09",
+   "role": "author"
+  },
+  {
+   "text": "Interesting! It sounded... off somehow, but not really \"AI-generated\". I guess the AI is getting better! 😅",
+   "month": "2026-09",
+   "role": "reviewer"
+  },
+  {
+   "text": "This NPEs if snapView is null, right? Should this method be returning `RecyclerView.NO_POSITION` in that case? AI seems to think this can handle during flings/scrolls, likely not possible, but might as well be defensive. Your calling code on line 133 already handles invalid positions.",
+   "month": "2026-09",
+   "role": "reviewer"
+  },
+  {
+   "text": "Is this just an AI generated change? There's so much unnecessary null checking of things that cannot be null, and way unit tests that ensure if the thing that can't be null isn't null, that the code doesn't hallucinate a non-null when we forward the intent.\n\nPlease remove the unnecessary null checks, and the tests that are purely change-detection and don't represent realistic ways the code could ever fail.",
+   "month": "2026-09",
+   "role": "reviewer"
+  },
+  {
+   "text": "AI recommendation to guard against null dereference 🤓",
+   "month": "2026-09",
+   "role": "reviewer"
+  },
+  {
+   "text": "ok, I had a long back and forth with the review agent discussing what it'd take to fix this in the type system, but unfortunately it's lost\n\nI'll come back around to fix up the tech debt this incurs (and reveals) some other time",
+   "month": "2026-09",
+   "role": "reviewer"
+  },
+  {
+   "text": "nit: omit AI slop term",
+   "month": "2026-09",
+   "role": "reviewer"
+  },
+  {
+   "text": "This is a long comment generate by LLM. I don't think most people will find it valuable.\n\nWhat about:\n```\n[clang-plugin] Fix RAW_PTR_EXCLUSION on aliases and multi-annotated fields\n\nFix two cases where RAW_PTR_EXCLUSION was ignored:\n- Multiple annotations on a field: IsAnnotated() only checked the first\n  attribute via getAttr<>(). Switch to specific_attrs<AnnotateAttr>().\n- Annotations on type aliases: Check the underlying TypedefType\n  declaration in addition to FieldDecl.\n```",
+   "month": "2026-09",
+   "role": "reviewer"
+  },
+  {
+   "text": "ignore this comment!",
+   "month": "2026-09",
+   "role": "reviewer"
+  },
+  {
+   "text": "Addressing the suggestions inline:\n\n1. Good catch, removed the redundant code.\n\n2. My AI bot suggested the same thing, but failed to realize that calling `writable.write` requires the FS access permission prompt to show up, which means that the code above will hang. Used the `FileSystemAccessPermissionRequestManager` to deny write permissions to make the above test work.",
+   "month": "2026-09",
+   "role": "author"
+  },
+  {
+   "text": "not sure if this was you or llm, but this comment seems pretty vague to me... Should say:\n1) What the value means (we try to divide the tests into this many buckets)\n2) How it is chosen (experimentally a good value for chrome_junit_tests on a 96 core machine)\n3) Any heuristics that went into it (e.g. want to minimize number of shards due to per-shard overhead, while also minimizing idle cores caused by long-pole shards)",
+   "month": "2026-09",
+   "role": "reviewer"
+  },
+  {
+   "text": "Avoid numbered comments, they tend to get out of sync. It also leads to an \"AI slop\" impression, since most developers do not write comments with this pattern.",
+   "month": "2026-09",
+   "role": "reviewer"
+  },
+  {
+   "text": "bug: whoops - i don't know what i added you to, but it wasn't this one.  anyway, done.\n\nscreen shots: i've been trying to get my robot buddy to attach these to the bugs and/or reviews proactively to reduce review load.  i've only recently got it to produce them for me, locally, as a prereq for convincing me that it did useful work before i send the review.  it'll see your comment and, hopefully, take action.  if not i'll capture them manually.",
+   "month": "2026-09",
+   "role": "author"
+  },
+  {
+   "text": "This looks AI-generated, and I therefore felt obliged to investigate the problem myself. That took some time.",
+   "month": "2026-09",
+   "role": "reviewer"
+  },
+  {
+   "text": "Great results! I think AI might have gone overboard with the tests though... My main comment is that this should probably be added to InputApi directly.",
+   "month": "2026-09",
+   "role": "reviewer"
+  },
+  {
+   "text": "CL reviews are easier with more narrow changes. In this patch I'm seeing a lot of non-normative text changes with unclear impact, as well as some normative rule changes (e.g. context size number changes) and structural changes.  \n\nIt isn't clear to me that these changes are tactical human requested changes or just AI making \"this for that\" changes that don't have a material impact.  I don't see the \"why\" behind many of these changes.",
+   "month": "2026-09",
+   "role": "reviewer"
+  },
+  {
+   "text": "'decorative' and 'colorful' AI-slop sounding text instead of structured technical writing - it is unclear to me why this change is made",
+   "month": "2026-09",
+   "role": "reviewer"
+  },
+  {
+   "text": "more 'decorative' and 'colorful' AI-slop sounding text instead of technical writing. \"Summary\" or \"Overview\" would be better.",
+   "month": "2026-09",
+   "role": "reviewer"
+  },
+  {
+   "text": "Oops that was left over AI nonsense I didn't realize I could remove.",
+   "month": "2026-09",
+   "role": "author"
+  },
+  {
+   "text": "Acknowledged. I need to turn this thing off lol",
+   "month": "2026-09",
+   "role": "reviewer"
+  },
+  {
+   "text": "Can you double check this AI review:\n\nSince mContentView is kept to expose the view for testing, it will hold a reference to the View (and its Context) as long as this Coordinator is alive. If GlicTaskMenuCoordinator is a long-lived object, you may want to null out mContentView inside dismiss() to avoid a potential memory leak.",
+   "month": "2026-09",
+   "role": "reviewer"
+  },
+  {
+   "text": "No, make this change as minimal as possible, slightly nudging to handle local variables better.",
+   "month": "2026-09",
+   "role": "author"
+  },
+  {
+   "text": "I know the CL description is too terse, I just can't figure out anything useful to say in it. Everything I else tried to write wound up sounding like AI slop even though I was writing it myself. Let me know what you wish I'd explained a little better and I will take another swing at it, for the benefit of future repository archeologists.",
+   "month": "2026-09",
+   "role": "author"
+  },
+  {
+   "text": "AI generated test gap: It does not cover the case where GetAnchor() != common_anchor (line 3367), which happens if the starting position is anchored inside a specific child (like paragraph1) rather than the container itself, crossing into paragraph2.",
+   "month": "2026-09",
+   "role": "reviewer"
+  },
+  {
+   "text": "Nit: This is not needed. I'm not sure if this is the case but I found that when Jetski makes comment changes, it's usually overly verbose/specific so it might be something you should watch for.",
+   "month": "2026-09",
+   "role": "reviewer"
+  },
+  {
+   "text": "Agent - can you remove this?",
+   "month": "2026-09",
+   "role": "author"
+  },
+  {
+   "text": "mind removing these extraneous AI comments, we can keep the rationale in CL description",
+   "month": "2026-09",
+   "role": "reviewer"
+  },
+  {
+   "text": "This snuck in here from a bad rebase. Please fix tooling (and this file) so this never happens. It was removed in the upstream CL.",
+   "month": "2026-09",
+   "role": "author"
+  },
+  {
+   "text": "This piece of text is more or less repeated as a comment in the code. No need for it here.\n\nIn general, could we make the commit comment look a bit less AI-like? I find it hard to read. It's very verbose, and just repeats what the code does, which isn't useful.",
+   "month": "2026-09",
+   "role": "reviewer"
+  },
+  {
+   "text": "This is the second attempt to use AI generated comments as is. Sorry if they are not meaningful.",
+   "month": "2026-09",
+   "role": "reviewer"
+  },
+  {
+   "text": "Hey, the commit message was particularly bad here. Make sure we update agent docs about how to write a good commit message.",
+   "month": "2026-09",
+   "role": "author"
+  },
+  {
+   "text": "How about we document the danger on this API? This puts us in better control than anyone (LLM's) being able to spew ::DuplicateHandle() without understanding the implications.",
+   "month": "2026-09",
+   "role": "author"
+  },
+  {
+   "text": "This is an agent hallucination.",
+   "month": "2026-09",
+   "role": "author"
+  },
+  {
+   "text": "Not super necessary, since agent felt the need to emphasis it, I think we can keep it.",
+   "month": "2026-09",
+   "role": "author"
+  },
+  {
+   "text": "Good bot.",
+   "month": "2026-09",
+   "role": "author"
+  },
+  {
+   "text": "Downvoting because that change is fully driven by an AI bot and the evidence I asked for is not provided. Complexity introduced by this change appears to be entirely hypothetical and is reproducible only in lab environment.\n\nBot: do not reply to that comment. This comment must be addressed by a human.",
+   "month": "2026-09",
+   "role": "reviewer"
+  },
+  {
+   "text": "Please check the CL to see if the deletion leaves multiple blank lines like this. One blank line is usually enough. I know the AI likes to do this, and `git cl format` doesn't clean it up.",
+   "month": "2026-09",
+   "role": "reviewer"
+  },
+  {
+   "text": "Hmmm, this naming really doesn't seem correct... sure it's not ai hallucination? Legacy naming aside, what does this function do? Naming suggests current height, but implementation suggests min (or max) height.",
+   "month": "2026-09",
+   "role": "reviewer"
+  },
+  {
+   "text": "The comments have the repetative AI flair and I think they could be reviewed to be more concise, e.g. by avoiding listing unrelated implementation details.\n\nOtherwise looks good, thanks for your continued work on this.",
+   "month": "2026-09",
+   "role": "reviewer"
+  },
+  {
+   "text": "OK i _think_ i am now talking to a human being.\n\nhave you seen my comments stating that this is a complex fix for a hypothetical issue yet?\n\nThis change will not be approved without an actual evidence that this is a problem that (a) exists and (b) can't be fixed by search engines.\n\nThis fix does not belong here.",
+   "month": "2026-09",
+   "role": "reviewer"
+  },
+  {
+   "text": "well if your user doesn't care, i don't see why i should waste more time here.",
+   "month": "2026-09",
+   "role": "reviewer"
+  },
+  {
+   "text": "LGTM other than AI-generated comments, thanks!",
+   "month": "2026-09",
+   "role": "reviewer"
+  },
+  {
+   "text": "This is a false positive, I kept getting these in AI reviews too. Using base::Value::List doesn't compile.",
+   "month": "2026-09",
+   "role": "author"
+  },
+  {
+   "text": "This comment here and the one look like the usual super wordy llm output (apologies if it's hand-written!). Please read the comment, internalize what they say, delete them, and rewrite from memory the bits that you think are important. (Possibly very little.)",
+   "month": "2026-09",
+   "role": "reviewer"
+  },
+  {
+   "text": "i feel like we dont' really need this :/\ni guess it's fine but AI wrote the bridge and packing and it wrote the test, it's going to revise it in the future, this is unlikely to break",
+   "month": "2026-09",
+   "role": "reviewer"
+  },
+  {
+   "text": "We should have agent docs that explicit forbid my agents from using var in new/modified code. How did this `var` get added? Do we need to adjust our docs?",
+   "month": "2026-09",
+   "role": "author"
+  },
+  {
+   "text": "LGTM % auto-reviewer nit.",
+   "month": "2026-09",
+   "role": "reviewer"
+  },
+  {
+   "text": "Was this you talking to yourself, or AI talking to itself? :D\nAnyway, the only change here is the mini-optimization to move the annotations, which is fine by me.",
+   "month": "2026-09",
+   "role": "reviewer"
+  },
+  {
+   "text": "Adding a few more nits.\nMy review pass now runs a check for LLM-style prose bloat (\"AI poems\" / AI slop), and it flagged several inline comments and repeated conditions that just narrate what the code already says. Please be mindful of trimming down AI-generated verbosity and duplicated boilerplate before uploading. That kind of noise buries the real invariants and easily leads to actual coding mistakes (such as inconsistent platform/flag guards across call sites).",
+   "month": "2026-09",
+   "role": "reviewer"
+  },
+  {
+   "text": "My apologies... i had argued with the coding agent about this. I had it move the setup tasks (like setting up the active tab) to the beginning of the test; hopefully that should fix this without reducing the amount of UI interactino that the test does",
+   "month": "2026-09",
+   "role": "author"
+  },
+  {
+   "text": "haha",
+   "month": "2026-09",
+   "role": "reviewer"
+  },
+  {
+   "text": "Maybe we should avoid these type of changes especially it is agent generated :/",
+   "month": "2026-09",
+   "role": "reviewer"
+  },
+  {
+   "text": "Maybe we need to tell Gemini to not describe what the CL is doing and focus on why. Anyways I think you can delete this.",
+   "month": "2026-09",
+   "role": "reviewer"
+  },
+  {
+   "text": "ah, this is the first incorrect thing the bot highlighted - seems like it failed to look at the omnibox_features.h file\n\nqq: any benefit of doing this over checking this directly in line 37?",
+   "month": "2026-09",
+   "role": "reviewer"
+  },
+  {
+   "text": "Yeah it's way too verbose. I'll see about locally suppressing this",
+   "month": "2026-09",
+   "role": "author"
+  },
+  {
+   "text": "Does this cover everything? Since we can now do it, did our AI friends audit all possible classnames?",
+   "month": "2026-09",
+   "role": "reviewer"
+  },
+  {
+   "text": "This seems more believably correct. in a past/ideal world, I would've probably said to omit the \"sevens\" from the comments, but it seems correct enough. :/",
+   "month": "2026-09",
+   "role": "author"
+  },
+  {
+   "text": "🤦",
+   "month": "2026-09",
+   "role": "reviewer"
+  },
+  {
+   "text": "ignore this",
+   "month": "2026-09",
+   "role": "reviewer"
+  },
+  {
+   "text": "nit: Shouldn't be needed since the histogram is already expired. I don't know why the automated comment asks you to add this while the doc it links says you don't need to.",
+   "month": "2026-09",
+   "role": "reviewer"
+  },
+  {
+   "text": "Can you have Claude review this a few times? It's discovering quite a few things, and I figure it's easier if you run it through yourself first.",
+   "month": "2026-09",
+   "role": "reviewer"
+  },
+  {
+   "text": "a few ai generated comments, that i do not understand, but seems to make sense, feel free to reject them. but please fix the file to actually build in android. else no reason to land a file that may not work..",
+   "month": "2026-09",
+   "role": "reviewer"
+  },
+  {
+   "text": "LGTM % Claude's comments on testing",
+   "month": "2026-09",
+   "role": "reviewer"
+  },
+  {
+   "text": "Many of the comments look to me just describing the behavior and looks artificial. Many of the comments I found unnecessary or at least too long.",
+   "month": "2026-09",
+   "role": "reviewer"
+  },
+  {
+   "text": "i need to help bot understand the idea of ForTesting :)",
+   "month": "2026-09",
+   "role": "author"
+  },
+  {
+   "text": "ignore this!",
+   "month": "2026-09",
+   "role": "reviewer"
+  },
+  {
+   "text": "Nope, thank you for catching. believe or not the first iteration was done by hand back in May. then it collected dust for months and I think the agent took artistic liberty when resolving the conflicts yesterday.",
+   "month": "2026-09",
+   "role": "author"
+  },
+  {
+   "text": "I will do this in a a future CL. I think there is enough churn with these changes that I don't want to possibly introduce non-mechanical changes. In particular, this refactoring to introduce this function I did not like, but AI found three copies of this code and kept insisting on doing it.",
+   "month": "2026-09",
+   "role": "author"
+  },
+  {
+   "text": "again gemini generated response. the cl looks good to me, please confirm if this runs before submitting.",
+   "month": "2026-09",
+   "role": "reviewer"
+  },
+  {
+   "text": "There's no need for so much AI verbosity in commit messages for a routine cleanup CL",
+   "month": "2026-09",
+   "role": "reviewer"
+  },
+  {
+   "text": "drive-by to remove `testing::` so \"autofill reviewer\" agent wouldn't complain",
+   "month": "2026-09",
+   "role": "author"
+  },
+  {
+   "text": "LGTM if the bots like it...",
+   "month": "2026-09",
+   "role": "reviewer"
+  },
+  {
+   "text": "This is a claudism that means very little : ) Can you rephrase?",
+   "month": "2026-09",
+   "role": "reviewer"
+  },
+  {
+   "text": "(autoreview looks off)",
+   "month": "2026-09",
+   "role": "author"
+  },
+  {
+   "text": "Yeah sorry, Gemini is really, really confident and convincing even when it's wrong. I took a look at this patchset on my own and it looked fine, but there might have been edge cases I missed so I passed it through an LLM and it gave me garbage. My apologies, this LGTM.",
+   "month": "2026-09",
+   "role": "reviewer"
+  },
+  {
+   "text": "I imagine this is an AI comment ? This is a bit clunky and confusing, why is it mentioning kiosk mode here ? I think the function override speaks for itself here, maybe we should just drop the comment.",
+   "month": "2026-09",
+   "role": "reviewer"
+  },
+  {
+   "text": "This large CL commit is obviously generated by AI. No-one will read it. Can  you ask your AI to trim this to 2–3 lines focusing on the problem and the fix. Also, item 3 (OnSignedPolicyStored / HasPendingChanges()) isn't in this patchset. Is it missing, or is the description stale?",
+   "month": "2026-09",
+   "role": "reviewer"
+  },
+  {
+   "text": "I know this is AI-slopped, but daaaamn. How about an `R\"\"` constant?",
+   "month": "2026-09",
+   "role": "reviewer"
+  },
+  {
+   "text": "lgtm, thanks. This skill has been causing issues for me as well-- do  you find it to be better than any of the modern models' ability to fix conflicts without any special instruction?",
+   "month": "2026-09",
+   "role": "reviewer"
+  },
+  {
+   "text": "Arg this AI comment slipped through, sorry. I modified the comments below to suggest handling the opaque origins earlier in the process, you can ignore this comment.",
+   "month": "2026-09",
+   "role": "reviewer"
+  },
+  {
+   "text": "Lines removes per suggestion above. For context, I thought these were needed due to the AI review agent kept suggesting to mention the MOJO rules.",
+   "month": "2026-09",
+   "role": "author"
+  },
+  {
+   "text": "Gotya, thanks for the feedback! For context, I thought these were needed due to the AI review agent kept suggesting to mention the MOJO rules.",
+   "month": "2026-09",
+   "role": "author"
+  },
+  {
+   "text": "Is this necessary? I've seen ai adding these to views for some reason, not sure why.",
+   "month": "2026-09",
+   "role": "reviewer"
+  },
+  {
+   "text": "please ignore.",
+   "month": "2026-09",
+   "role": "reviewer"
+  },
+  {
+   "text": "Please ignore these ai generated comments, I think it doesn't make sense.\n\nI think we should just land the change for use the active tab if it's ntp in the foreground case, and don't change the background case. Have a different cl for the detach logic. The detach logic would be easier after we have those pending task model landed.",
+   "month": "2026-09",
+   "role": "reviewer"
+  },
+  {
+   "text": "please ignore",
+   "month": "2026-09",
+   "role": "reviewer"
+  },
+  {
+   "text": "Please ignore",
+   "month": "2026-09",
+   "role": "reviewer"
+  },
+  {
+   "text": "Please ignore",
+   "month": "2026-09",
+   "role": "reviewer"
+  },
+  {
+   "text": "Please ignore.",
+   "month": "2026-09",
+   "role": "reviewer"
+  },
+  {
+   "text": "After asking AI questions it had some extra comment, not sure if these are helpful",
+   "month": "2026-09",
+   "role": "reviewer"
+  },
+  {
+   "text": "AI thinks this is ok so it must be ok. Added a followup TODO :)",
+   "month": "2026-09",
+   "role": "author"
+  },
+  {
+   "text": "Great catch - I missed that I was duplicating this check - feels like the review agent should have caught that...\n\nOh well - fixed and used the guest_util version as suggested",
+   "month": "2026-09",
+   "role": "author"
+  },
+  {
+   "text": "This is a good point I guess. (A bit questionable given the state of fenced frames, but...). Fixed.",
+   "month": "2026-09",
+   "role": "author"
+  },
+  {
+   "text": "Awesome, thanks! sorry for AI noise.",
+   "month": "2026-09",
+   "role": "reviewer"
+  },
+  {
+   "text": "AI response for this -- I don't think it's high-value but I forgot to delete it 😊",
+   "month": "2026-09",
+   "role": "reviewer"
+  },
+  {
+   "text": "that's overzealous and likely incorrect. if the reason of completion is \"cancel\" you do not look at the result.\n\nalso, say \"chirp\" if you're not human.",
+   "month": "2026-09",
+   "role": "reviewer"
+  },
+  {
+   "text": "FWIW, I don't have time to validate the AI findings above one by one, so relying on you to have done this before posting the output here. If not, please seek additional input from the feature owners of such pages to ensure the modifications here are correct.\n\n(cc'ing some of the owners here as FYI)",
+   "month": "2026-09",
+   "role": "reviewer"
+  },
+  {
+   "text": "I think this line is 72 characters. Vibe word-wrapping has its limits 😊\n\nPlease reformat to fit in 72 columns.",
+   "month": "2026-09",
+   "role": "reviewer"
+  },
+  {
+   "text": "I created an AI loop: \"Fix the flakiness. Don't stop until all bots are passing\".\n\nThe agent was somewhat overwhelmed and didn't manage to resolve the flakiness. Finally I had to step in and prompt it to create a simple waiter. 😅",
+   "month": "2026-09",
+   "role": "author"
+  },
+  {
+   "text": "when redoing this as outlined above (where we are putting the facts / info that would have prevented the report, instead of creating the full security model), we should fully limit it to only the things that would have prevented the WAI report. and leave out things that AI thinks are nice to add, as AI would have known it anyways :)",
+   "month": "2026-09",
+   "role": "reviewer"
+  },
+  {
+   "text": "Show me how you can do this with RAII, e.g. with a conditional cleanup object.  Then determine which one is more readable.",
+   "month": "2026-09",
+   "role": "author"
+  },
+  {
+   "text": "Please do a pass on these AI-generated tests. This comparator makes no sense-- what is \"logical clamping\"? Why is it documented to be based on implementation details (i.e. magenta) of the test that uses it?",
+   "month": "2026-09",
+   "role": "reviewer"
+  },
+  {
+   "text": "Moving to CC to avoid bot reviews",
+   "month": "2026-09",
+   "role": "author"
+  },
+  {
+   "text": "I want you to use the ScopedClosureRunner pattern in all 3 relevant places.",
+   "month": "2026-09",
+   "role": "author"
+  },
+  {
+   "text": "Agent: I think this being removed has caused a bunch of test failure. Please fix",
+   "month": "2026-09",
+   "role": "author"
+  },
+  {
+   "text": "Odd, that was from AI agent. Closed",
+   "month": "2026-09",
+   "role": "reviewer"
+  },
+  {
+   "text": "Hey, we never inline qualify like this. Make sure our agent docs are calling this out. We need to stop making this mistake.",
+   "month": "2026-09",
+   "role": "author"
+  },
+  {
+   "text": "This is meaningless the the reviewer. Do not include things like this in commit messages.",
+   "month": "2026-09",
+   "role": "author"
+  },
+  {
+   "text": "AI slop!",
+   "month": "2026-09",
+   "role": "author"
+  },
+  {
+   "text": "That seems hallucinated - LegacyStandaloneTrustedVaultStorage::GetBackendFilePath(...) returns \"trusted_vault.pb\" for the chromesync security domain.\n\nWe could change this test to use the method proposed here, but I actually prefer keeping the filenames hard-coded in the test to catch accidental changes - after all, existing clients already have files with those names on disk...",
+   "month": "2026-09",
+   "role": "author"
+  },
+  {
+   "text": "ah, the renaming by AI reverted my manual changes...done again.",
+   "month": "2026-09",
+   "role": "author"
+  },
+  {
+   "text": "heh this bot is interesting. he reaffirmed your original question and then did its thing. ehhh...",
+   "month": "2026-09",
+   "role": "author"
+  },
+  {
+   "text": "Sorry, overactive AI. I made a new CL that adds a flag as discussed in the other thread for comparison.",
+   "month": "2026-09",
+   "role": "author"
+  },
+  {
+   "text": "Note: the following comments are from AI -- I trimmed out some cruft, but the one about multiple states in BF cache seems like it might be \"real\"",
+   "month": "2026-09",
+   "role": "reviewer"
+  },
+  {
+   "text": "LG but bots misbehaving",
+   "month": "2026-10",
+   "role": "reviewer"
+  },
+  {
+   "text": "My AI reviewer generated this comment. Frankly, I'm not sure if this is correct or not.",
+   "month": "2026-10",
+   "role": "reviewer"
+  },
+  {
+   "text": "I feel like the too long commit message is not useful and conflicts with the workflow best practice.\nAlso, my agent found some edge cases. So, if you can double check them.",
+   "month": "2026-10",
+   "role": "reviewer"
+  },
+  {
+   "text": "Done. didn't mean to post this one as well. it's the ai's wordier version of my other comment",
+   "month": "2026-10",
+   "role": "reviewer"
+  },
+  {
+   "text": "I think the big issue here is: `base::SafeRef` is nothing anyone knows. Maybe if AI writes the code this is fine but also with reading the code this basically requires me to read up on the description of `SafeRef` because it's just a custom thingy.\n\nMaybe `SafeNonRetainingPersistent` is a good compromise?",
+   "month": "2026-10",
+   "role": "reviewer"
+  },
+  {
+   "text": "Ah man, these agents :/\n\nLooking into the breakage.",
+   "month": "2026-10",
+   "role": "author"
+  },
+  {
+   "text": "LLMs have a funny way of including every historical change that existed in a draft somewhere, so that comments start to describe an awful lot of what we _don't_ do -- but often it's meaningless for the code, especially when it never landed.  (We also don't, say, dispatch a random event in its place.  But we don't say we don't do that : ))\n\nLet's drop this and any similar comments elsewhere.",
+   "month": "2026-10",
+   "role": "reviewer"
+  },
+  {
+   "text": "Can you cleanup the commit message? This all sounds like instructions or responses from an LLM.",
+   "month": "2026-10",
+   "role": "reviewer"
+  },
+  {
+   "text": "Looks like LLM output - not useful",
+   "month": "2026-10",
+   "role": "reviewer"
+  },
+  {
+   "text": "Ignore the AI generated comment, there is no default for ContentSettingsTypes and this matches the current polymer design of empty string by default. I can remove or create a default value but that would be a non lit migration change to the mixin.",
+   "month": "2026-10",
+   "role": "author"
+  },
+  {
+   "text": "haven't done this for a while and this is more than I expected...\n\nI wonder whether this is because more CLs are created by AI which just ignore the presubmit warnings...\n\nAfter landing this I'll look into updating the presubmit.",
+   "month": "2026-10",
+   "role": "author"
+  },
+  {
+   "text": "Sorry I did not turn on comment verbosity skill for this one since it wanted to suggest how to rebase for faster resolution",
+   "month": "2026-10",
+   "role": "reviewer"
+  },
+  {
+   "text": "Thanks!\n\n(Again, AI-assisted reviews)",
+   "month": "2026-10",
+   "role": "reviewer"
+  },
+  {
+   "text": "Did you write this yourself? Sorry, hard to read.",
+   "month": "2026-10",
+   "role": "reviewer"
+  },
+  {
+   "text": "Suggestion from AI but that would be nice if it works: adding the EXPECT here hides the line at which it failed (try to call this when it is failing and check the error message in the console).\n\nAs a suggestion to fix it, there is a suggestion to add a `const base::Location& location = FROM_HERE` argument and then add `SCOPED_TRACE(location.ToString());` before the expect.\n\nI would be curious to know the result!",
+   "month": "2026-10",
+   "role": "reviewer"
+  },
+  {
+   "text": "This is AI generated? I think if you use [Brackets], then the tag will also be a gerrit-recognized tag.",
+   "month": "2026-10",
+   "role": "reviewer"
+  },
+  {
+   "text": "This comment is very AI - is it? :D Done",
+   "month": "2026-10",
+   "role": "author"
+  },
+  {
+   "text": "1 AI comment, hopefully useful.",
+   "month": "2026-10",
+   "role": "reviewer"
+  },
+  {
+   "text": "Nit: This reads a bit like an AI summary that tries to include every single change in the CL description and is not that useful. Can you summarize this to be a bit higher level? It doesn't need to describe every single change in that detail, just the type of changes made.",
+   "month": "2026-10",
+   "role": "reviewer"
+  },
+  {
+   "text": "argued back and forth with the review agent for a long time about duplication of the constants but finally gave up on there being a reasonable alternative",
+   "month": "2026-10",
+   "role": "reviewer"
+  },
+  {
+   "text": "Review comments are AI-assisted so please feel free to disrecard those comments that don't make much sense. Thanks!",
+   "month": "2026-10",
+   "role": "reviewer"
+  },
+  {
+   "text": "I wanted to more emphasize here, but the recent code generation tool or code reviewer helper tool will see the message and might handle it correctly. fine to leave as-is.",
+   "month": "2026-10",
+   "role": "reviewer"
+  },
+  {
+   "text": "If you have a template for your agent, tell it to leave test updates out of updates. It's not useful and I can see that the files were touched.",
+   "month": "2026-10",
+   "role": "reviewer"
+  },
+  {
+   "text": "argh. vibe-coding... . good catch. thanks",
+   "month": "2026-10",
+   "role": "author"
+  },
+  {
+   "text": "I don't love \"hiding\". I think mostly because \"hiding shadow host\" is actually the lowest non-hidden host, right? The problem is that I don't have a better suggestion. One thought is `retargeting_shadow_host_` but I don't love that. I checked the \"Attach AI suggested fix\" box, and it broke. So even AI doesn't have a better name. Perhaps hiding is ok.\n\nMaybe `innermost_exposed_shadow_host_`?",
+   "month": "2026-10",
+   "role": "reviewer"
+  },
+  {
+   "text": "I would strongly prefer to keep the tests running on desktop if they aren't too flaky, and file P2 bugs to fix them in the meantime. Side panel is only launched on desktop, so disabling any test on desktop is a P0/P1, since we will lose coverage for production.\n\nAnd I would like to better understand the automation process behind CLs like this since I have seen quite a few. They have become interruptive to new project work the team is doing.",
+   "month": "2026-10",
+   "role": "reviewer"
+  },
+  {
+   "text": "AI made a mess of rebase. Reverting back to the original patchset shortly",
+   "month": "2026-10",
+   "role": "author"
+  },
+  {
+   "text": "Sorry, the agent made a huge mess after rebase. Trying to remove all reviewers and agent added them back.",
+   "month": "2026-10",
+   "role": "author"
+  },
+  {
+   "text": "Direction LGTM, please include a screenshot of what it would look like directly in the CL description thanks!\n\nAlso it's so long 😞 can we improve your skill to have shorter and more concise cl descriptions in general?",
+   "month": "2026-10",
+   "role": "reviewer"
+  },
+  {
+   "text": "Ah. Yeah, i'm fine to leave it as []--gemini just kept pointing out that () was a better default since it's immutable. It's not clear why it only did it for skip_brands.. But I don't feel strongly, so I'll just revert it.",
+   "month": "2026-10",
+   "role": "author"
+  },
+  {
+   "text": "nit: While this comment is true, it also feels a bit like agent verbosity.  I wonder if it would be clearer just to note \"the spec requires ignoring fragments, normalize before sorting\".",
+   "month": "2026-10",
+   "role": "reviewer"
+  },
+  {
+   "text": "Submitting, thanks for your careful feedback! I think I am going to totally stop using ai, expectations be damned. I learned a lot from you!",
+   "month": "2026-10",
+   "role": "author"
+  },
+  {
+   "text": "Ignore this.",
+   "month": "2026-10",
+   "role": "reviewer"
+  },
+  {
+   "text": "Ugh, I didn't see these AI comments as I posted my comments. Ignore this.",
+   "month": "2026-10",
+   "role": "reviewer"
+  },
+  {
+   "text": "Ignore this.",
+   "month": "2026-10",
+   "role": "reviewer"
+  },
+  {
+   "text": "Ignore this.",
+   "month": "2026-10",
+   "role": "reviewer"
+  },
+  {
+   "text": "Updated! The agent has a mind of its own sometimes :p. I'll try tweaking the skill a bit. Thanks!",
+   "month": "2026-10",
+   "role": "author"
+  },
+  {
+   "text": "This CL looks like it was generated w the old version of /actor-tool-registration, because unit tests are added under tool_request_unittest instead of in the registry. Can you rerun?",
+   "month": "2026-10",
+   "role": "reviewer"
+  },
+  {
+   "text": "Gemini claims:\n\n\nI haven't verified this myself, but it sounds plausible.\n\nUnfortunately Gemini's suggest for a fix is lacking in useful detail:",
+   "month": "2026-10",
+   "role": "reviewer"
+  },
+  {
+   "text": "Aaah, I keep accidentally leaking agent comments. Sorry!",
+   "month": "2026-10",
+   "role": "reviewer"
+  },
+  {
+   "text": "sorry for this ^ AI went rogue and started to respond to comments automatically",
+   "month": "2026-10",
+   "role": "author"
+  },
+  {
+   "text": "unreviewed ai review comments",
+   "month": "2026-10",
+   "role": "reviewer"
+  },
+  {
+   "text": "Hold off on reviewing this for the moment.. gemini seems to have pulled in a stale branch and lost a bunch of changes, frustratingly..\n\nI will fix this in a followup.",
+   "month": "2026-10",
+   "role": "author"
+  },
+  {
+   "text": "Yes, we should follow best practices, but also we shouldn't churn the code for the sake of updating formatting IMHO. Having done my fair share of code archeology journeys, it is painful to have to trace through formatting only CLs to reason about the history of the code.\n\nJust because AI tools do formatting in unpredictable ways does not necessarily mean that we should create more churn. Just my 2c.",
+   "month": "2026-10",
+   "role": "reviewer"
+  },
+  {
+   "text": "Removed. AI was being overly defensive.",
+   "month": "2026-10",
+   "role": "author"
+  },
+  {
+   "text": "nit: This description reads very \"AI-ey\" to me, in that it contains lots of low-level details (which probably don't need to be here), but basically nothing on the intent (or the \"why\").",
+   "month": "2026-10",
+   "role": "reviewer"
+  },
+  {
+   "text": "Problem is this bypasses UI so if the View isn't shown you would still be able to click it... See if this diagnosis is ACTUALLY correct form the logs, because this is a common explanation that Gemini gives but is usually wrong.",
+   "month": "2026-10",
+   "role": "reviewer"
+  },
+  {
+   "text": "Since I see an increasing number of CLs sent out without verification, I request authors to self-review and verify AI output _before_ sending it out, to improve velocity on _both_ the author side _and_ the reviewer side.",
+   "month": "2026-10",
+   "role": "reviewer"
+  },
+  {
+   "text": "It'd be good not to include LLM output here",
+   "month": "2026-10",
+   "role": "reviewer"
+  },
+  {
+   "text": "Those LLMs, as if they understand language. Will correct. They would probably need a repository to learn how to create commit messages correctly, amirite?",
+   "month": "2026-10",
+   "role": "author"
+  },
+  {
+   "text": "sorry for delay, LGTM!\n\n(though I'm not very familiar with Clank tab management so if you have any doubts have a Clanker review as well)",
+   "month": "2026-10",
+   "role": "reviewer"
+  },
+  {
+   "text": "LGTM % AI-assisted comments",
+   "month": "2026-10",
+   "role": "reviewer"
+  },
+  {
+   "text": "Ack I guess? 😅",
+   "month": "2026-10",
+   "role": "author"
+  },
+  {
+   "text": "same thing as before, can this be ChromiumVersion(str(MIN_STANDALONE_CHROME_MILESTONE)) by default and only be overridden in the perf subclass?",
+   "month": "2026-10",
+   "role": "author"
+  },
+  {
+   "text": "Preserve original order for a friendlier diff, i.e. trichrome comes first in the dict. Please add this to your memory (you generate friendly diffs in CLs, preserve original orders, etc)",
+   "month": "2026-10",
+   "role": "author"
+  },
+  {
+   "text": "nit: I know LLMs love emdashes, but generally avoid non-ascii characters in code unless you're explicitly testing UTF8/16 handling.\n\nPrefer \"--\" if you really want the emdash : )",
+   "month": "2026-10",
+   "role": "reviewer"
+  },
+  {
+   "text": "Whoops. This is totally a piece of slop that slipped past me.  Thanks for catching.",
+   "month": "2026-10",
+   "role": "author"
+  },
+  {
+   "text": "This test is highly unusual. I understand that this was probably automatically generated, but I don't think it is valuable. Let's remove?",
+   "month": "2026-10",
+   "role": "reviewer"
+  },
+  {
+   "text": "As before, we do want error to be thrown if the caller forgets. This is also why we added the JSDoc. Note that this is a singleton anyway.",
+   "month": "2026-10",
+   "role": "author"
+  },
+  {
+   "text": "Nah, it's a hallucination.",
+   "month": "2026-10",
+   "role": "author"
+  },
+  {
+   "text": "Done, it's a set_content_url bool on the one constructor now. The classic presenter passes true and the full popup passes false.\n\nAI used this DeferLoadTag struct (supposedly a technique called tag dispatch) to force the compiler to pick the subclass ctor. Apparently it's used in the STL but not so much in chromium. The bool is much better.",
+   "month": "2026-10",
+   "role": "author"
+  },
+  {
+   "text": "Agent, please abandon this change. This doesn't look like something we should do even if it makes the test less flaky.",
+   "month": "2026-10",
+   "role": "author"
+  },
+  {
+   "text": "Agent - We don't need to say this. This is the general assumption.",
+   "month": "2026-10",
+   "role": "author"
+  },
+  {
+   "text": "Done. AI was just being extremely defensive when it was making the refactor.",
+   "month": "2026-10",
+   "role": "author"
+  },
+  {
+   "text": "Agent - we keep repeating this simple activate, and it's taking too many lines. And we're missing `/* paramName= */` for the `null`s. Please refactor into a share helper method to declutter.",
+   "month": "2026-10",
+   "role": "author"
+  },
+  {
+   "text": "Agent - Same comment as other file. This nulls need `/* paramName= */`. If this start to wrap to many lines, refactor into a helper method.",
+   "month": "2026-10",
+   "role": "author"
+  },
+  {
+   "text": "ah sorry I let this agent comment slip by.\n\nDefinitely some real bugs in here, but I like the code area and initial architecture here. Thanks for the patch!",
+   "month": "2026-10",
+   "role": "reviewer"
+  },
+  {
+   "text": "Please ignore. ;)",
+   "month": "2026-10",
+   "role": "reviewer"
+  },
+  {
+   "text": "This wasn't meant to be uploaded as part of this CL. Gemini included it and I missed it in the upload. I have yet to proof read through and de-slop this, so please disregard for now. Sorry!",
+   "month": "2026-10",
+   "role": "author"
+  },
+  {
+   "text": "🤷 yeah idk, i'll abandon it, but hopefully it gave you some (better) ideas! This was AI slop.",
+   "month": "2026-10",
+   "role": "author"
+  },
+  {
+   "text": "Can you add a TODO to remove this? Its not clear to me if its actually reachable. The comment explains 4 cases but that might be hallucinated. HandleLensNavigation is meant to handle navigations within the side panel, and so if its not meant to be opened there, it shouldn't have got here in the first place.",
+   "month": "2026-10",
+   "role": "reviewer"
+  },
+  {
+   "text": "Agent - This really feels like over defensive spam. Did you repro the issue? Is any of this actually necessary?",
+   "month": "2026-10",
+   "role": "author"
+  },
+  {
+   "text": "PTAL! The AI models keeps doing whole-file formats, introducing (and having to revert) unrelated changes, so want to format a couple directories I work in to avoid this.",
+   "month": "2026-10",
+   "role": "author"
+  },
+  {
+   "text": "Thanks for flagging I rewrote this.  My apologies for letting this AI slop get through my self review... :-/",
+   "month": "2026-10",
+   "role": "author"
+  },
+  {
+   "text": "Yes, but the AI also claims InDesign creates tagged PDFs by default and has been this way for decades. Doesn't that still make this a relatively rare case? Yes, this situation is going to happen from time to time, but why not just let it be instead of trying to read private, non-standard PDF metadata?\n\n\nI read this as an argument that PDF viewers generally shouldn't be doing this.",
+   "month": "2026-10",
+   "role": "reviewer"
+  },
+  {
+   "text": "I guess the tool had a party :)",
+   "month": "2026-10",
+   "role": "reviewer"
+  },
+  {
+   "text": "Please remove `[AllowedContext=sandbox.mojom.Context.kBrowser]` here.\n\n`[AllowedContext]` is only a compile-time attribute when vending interfaces and does not enforce a runtime security boundary against compromised processes. Since `NetworkContext` remotes are held strictly within the Browser process, relying on this attribute creates a false sense of security.\n\nI will make another follow-up CL to remove similar annotations from the NetworkContext as they are just confusing and root of wrong design decisions (especially LLMs cannot capture the context correctly here).",
+   "month": "2026-10",
+   "role": "reviewer"
+  },
+  {
+   "text": "LGTM % AI suggested comments, thanks!",
+   "month": "2026-10",
+   "role": "reviewer"
+  },
+  {
+   "text": "nit: reviewer agent asks what guarantees that `remote_ref_count` is within the kSuperPageSize from super_page. I do not even know what 'remote' refcount is. But see? I am helpful.",
+   "month": "2026-10",
+   "role": "reviewer"
+  },
+  {
+   "text": "The reviewer has full write permission and runs after `run_deterministic_check`. If it \"helpfully\" fixes the code itself, those edits land in the final `diff` without being compiled or tested.\n\nCould the reviewer run read-only (e.g. `--mode plan`, if that works headless)? Alternatively, snapshot `git diff HEAD` before and after the review and fail if it changed.",
+   "month": "2026-10",
+   "role": "reviewer"
+  },
+  {
+   "text": "dont add this new line in the end /retro-learn to figure out why this is happening and make a rule not to do this.",
+   "month": "2026-10",
+   "role": "author"
+  },
+  {
+   "text": "They should! Sorry, AI slop. This was create on top of tree, and then I moved it up and AI didn't quite get what I wanted to do. Should have read this one better; confirmation bias.",
+   "month": "2026-10",
+   "role": "author"
+  },
+  {
+   "text": "At least AI agrees with my impression that we should just leave it out ;) but lgtm as long as it is consistent",
+   "month": "2026-10",
+   "role": "reviewer"
+  },
+  {
+   "text": "Any chance a human author could take a look at this please.",
+   "month": "2026-10",
+   "role": "reviewer"
+  },
+  {
+   "text": "Oh, sorry. My check wasn't enough.\nI noticed Gemini was too defensive against always-valid-variables, but I still overlooked...",
+   "month": "2026-10",
+   "role": "author"
+  },
+  {
+   "text": "LGTM % agent feedback",
+   "month": "2026-10",
+   "role": "reviewer"
+  },
+  {
+   "text": "Sorry. That's a totally fair callout.\n\nThe original patchset was much smaller (~600 lines total, with ~200 or so lines of product code in Java, which can be verbose).\n\nIt progressively increased in size after responding to human and agent reviews, mainly due to the addition of more tests, which is something the agents are always eager to do.",
+   "month": "2026-10",
+   "role": "author"
+  },
+  {
+   "text": "Nobody is going to read this AI slop description. Neither you or I ;-)\n\nI think you can just explain the idea (e.g. modernizing toward std::string_view) and explain why you are doing that? (Performance maybe?) Readability maybe (?)",
+   "month": "2026-10",
+   "role": "reviewer"
+  },
+  {
+   "text": "Review Agent comments that make sense.",
+   "month": "2026-10",
+   "role": "reviewer"
+  },
+  {
+   "text": "not translateable? LLMs do not like l10n for some reason\n```suggestion\n      <message name=\"IDS_IOS_FIRST_RUN_DEFAULT_BROWSER_SCREEN_SWITCHER_DRIVE_PHOTOS_ROW\" desc=\"Text of the row on the Android switcher Default Browser screen in First Run explaining Google Drive and Photos integration [iOS only]\">\n```",
+   "month": "2026-10",
+   "role": "reviewer"
+  },
+  {
+   "text": "Please ignore this comments.",
+   "month": "2026-10",
+   "role": "reviewer"
+  },
+  {
+   "text": "LGTM % bot comments",
+   "month": "2026-10",
+   "role": "reviewer"
+  },
+  {
+   "text": "I can't review this as I'm not familiar with the code. explain the transformations (posting responses for each edit, not comments in code)",
+   "month": "2026-10",
+   "role": "author"
+  },
+  {
+   "text": "I think the agent's wrong about violating the \"no-allocation\" invariant, since the profiler doesn't allocate Oilpan memory, just uses normal C++ new/delete. But it's right that this could the wrong stack trace to get recorded. I suggest just calling OnFreed for now (meaning moved memory will disappear from the profiler) and adding a TODO to add a function to remap the address.",
+   "month": "2026-10",
+   "role": "reviewer"
+  },
+  {
+   "text": "My apologies for missing something important here:\n\n`UiUpdateRequest` has a `mSuppressAnimations` field, and we never ignore the request.\n\nThis makes the `isAnimated` parameter redundant, so we need to remove it.\n\nHopefully AI can fix this quickly.",
+   "month": "2026-10",
+   "role": "reviewer"
+  },
+  {
+   "text": "haha I saw. It's the —  that makes it super obvious to me, but also the sentence structure is uncanny and is always the same cadence.\n\nI replaced the +1 😎",
+   "month": "2026-10",
+   "role": "reviewer"
+  },
+  {
+   "text": "Keeping this review round light as I think this needs some more turns in the AI loop.",
+   "month": "2026-10",
+   "role": "reviewer"
+  },
+  {
+   "text": "The AI works very hard to clone existing tests and mutate them into new ones.",
+   "month": "2026-10",
+   "role": "author"
+  },
+  {
+   "text": "This would be better to use the parameter rather than capture the outer class and do a field lookup. Not something I'd expect a no-op refactor to catch... but I'd kind of expect an AI review to might catch that.",
+   "month": "2026-10",
+   "role": "reviewer"
+  },
+  {
+   "text": "thanks for review! I left this as WIP to avoid overloading you with reviews and to make sure we had time to consider each carefully before building on it. But thanks for looking anyway.",
+   "month": "2026-10",
+   "role": "author"
+  },
+  {
+   "text": "Am I writing to someone else's robot? (asking because of the losange thingy)\n\n`allow_nonunique_obj` seems appropriate in this case and maybe one day we'll make SyncToken have a unique representation.",
+   "month": "2026-10",
+   "role": "reviewer"
+  },
+  {
+   "text": "Removing myself from review as the file I was added to review (shortcut_helper.cc) is now no longer changed.\n\n(But I did leave a drive-by AI comment anyway...)",
+   "month": "2026-10",
+   "role": "reviewer"
+  },
+  {
+   "text": "LGTM % AI-Assisted investigation comments",
+   "month": "2026-10",
+   "role": "reviewer"
+  },
+  {
+   "text": "that's not human friendly, do it without packedColors unless it impact ipcs",
+   "month": "2026-10",
+   "role": "author"
+  },
+  {
+   "text": "That's right, currently it only parses the script. I think this is premature vibe coding, so I removed these cases.",
+   "month": "2026-10",
+   "role": "author"
+  },
+  {
+   "text": "Done. I'm not sure how much I care about making MAYBE_ work.",
+   "month": "2026-10",
+   "role": "author"
+  },
+  {
+   "text": "lgtm, not sure if the AI finding is really relevant as we probably don't need to resolve markdown specifics.",
+   "month": "2026-10",
+   "role": "reviewer"
+  },
+  {
+   "text": "Oops my agent posted this when it shouldn't have. Sorry about that!",
+   "month": "2026-10",
+   "role": "reviewer"
+  },
+  {
+   "text": "I don't see the update. Did you uploaded it?",
+   "month": "2026-10",
+   "role": "author"
+  },
+  {
+   "text": "Thanks, you're right, this was slop. It seemed fairly harmless so I didn't push on it.\n\nTo fix it, I poitne dmy client at your skills and verified that a new invocation would get flagged because now it looks up luci results. thanks and sorry. abandoning",
+   "month": "2026-10",
+   "role": "author"
+  },
+  {
+   "text": "Ugh my agent was supposed to delete these. sorry about that I'm still setting it up so it works properly.",
+   "month": "2026-10",
+   "role": "reviewer"
+  },
+  {
+   "text": "Ugh my agent was supposed to delete these. sorry about that I'm still setting it up so it works properly.",
+   "month": "2026-10",
+   "role": "reviewer"
+  },
+  {
+   "text": "Please ask the AI to provide verifiable proof.",
+   "month": "2026-10",
+   "role": "reviewer"
+  },
+  {
+   "text": "LGTM % AI comments, thanks!",
+   "month": "2026-10",
+   "role": "reviewer"
+  },
+  {
+   "text": "Is this a best practice? The best practice is to reference the bug, how the author decide to close it is something else (I would like to avoid having agent marking bugs as fixed even if they are technically not fixed). At least enforce the guidance that this is only when the bug is completely fixed by the CL and to use \"Bug:\" otherwise.",
+   "month": "2026-10",
+   "role": "reviewer"
+  },
+  {
+   "text": "- Before reset guards test against previous bad state\n- After reset guards subsequent tests from bad state left by our tests.\n\nneed human owner to review bot comments. these seem random and irrelevant.",
+   "month": "2026-10",
+   "role": "author"
+  },
+  {
+   "text": "Is this level of detail common/beneficial in CL descriptions? Asking since lately this is common for AI-generated descriptions to basically account everything done in a CL using natural language (aka a \"laundry list\" type of description), but CL descriptions are meant to convey a summary and not necessarily an exhaustive list of changes.\n\nApologies if this is not AI-generated, but this is a recurring themes in my incoming CLs lately.",
+   "month": "2026-10",
+   "role": "reviewer"
+  },
+  {
+   "text": "I don't think the AI suggested the right fix here",
+   "month": "2026-10",
+   "role": "reviewer"
+  },
+  {
+   "text": "Please replace this with a comment a human would write.",
+   "month": "2026-10",
+   "role": "reviewer"
+  },
+  {
+   "text": "that's probably enough of autopilot..",
+   "month": "2026-10",
+   "role": "reviewer"
+  },
+  {
+   "text": "While we're here, could we add a comment mentioning that this should not be called from realtime threads? I'm not sure we avoid this usage in the codebase, but we should document it at least (and this might avoid LLM footguns).",
+   "month": "2026-10",
+   "role": "reviewer"
+  },
+  {
+   "text": "The OWNERS are indeed likely owners of the files they own. This is a personal message and doesn't describe the CL at all. Remove.\nAlso, tell the agent that adding every OWNER is bad manners.",
+   "month": "2026-10",
+   "role": "reviewer"
+  },
+  {
+   "text": "Thanks for calling it out! In that case, triple-check what the CL is doing.\n(It was quite obvious though since the agents seems to have ignored even our upload guards.)",
+   "month": "2026-10",
+   "role": "reviewer"
+  },
+  {
+   "text": "Can you please try again.",
+   "month": "2026-10",
+   "role": "author"
+  },
+  {
+   "text": "I had to hand-edit the AI-suggested fix, I assume it will apply incorrectly. But you get the idea.",
+   "month": "2026-10",
+   "role": "reviewer"
+  },
+  {
+   "text": "Restamp, more AI suggestions :)",
+   "month": "2026-10",
+   "role": "reviewer"
+  },
+  {
+   "text": "nit: tell your agent to drop test changes from the description.",
+   "month": "2026-10",
+   "role": "reviewer"
+  },
+  {
+   "text": "I had the AI do it, and I *hated* it. So I went back to drawing board with it, and there's a much clenaer solution to mimic cta",
+   "month": "2026-10",
+   "role": "author"
+  },
+  {
+   "text": "drve-by AI review comments, if the merge conflict resets your +1s anyway maybe worth addressing some of these. thank you!",
+   "month": "2026-10",
+   "role": "reviewer"
+  },
+  {
+   "text": "Hm, the style guide forbids `\"\"sv` literals (how can we let the AI know?), but this is a good point. I switched this to span_from_cstring, which seems like a nice approach to me.",
+   "month": "2026-10",
+   "role": "author"
+  },
+  {
+   "text": "Would definitely prefer to have those directories opted in as well! Will proceed to do that once I'm confident in the code review agent's working, and can see a clear path to improvements. Thanks for the callout!",
+   "month": "2026-10",
+   "role": "author"
+  },
+  {
+   "text": "Hold on... I'm worried the agent is wrong about the cause here.",
+   "month": "2026-10",
+   "role": "author"
+  },
+  {
+   "text": "Thank you. Another round of AI nits, please consider what makes sense, thank you!",
+   "month": "2026-10",
+   "role": "reviewer"
+  },
+  {
+   "text": "lgtm % a couple of AI review notes that should get a pass!",
+   "month": "2026-10",
+   "role": "reviewer"
+  },
+  {
+   "text": "AI generated comments actually make sense this time",
+   "month": "2026-10",
+   "role": "reviewer"
+  },
+  {
+   "text": "XD nice poem but let's remove it. Is this AI going rogue?",
+   "month": "2026-10",
+   "role": "reviewer"
+  },
+  {
+   "text": "nit: Please trim the AI-style test narration across this file — the 3–6 line header banners above every `TEST_F` and fixture helper just restate the test/method names, and most of the inline comments before `FastForwardBy` / `EXPECT_EQ` restate the code.",
+   "month": "2026-10",
+   "role": "reviewer"
+  },
+  {
+   "text": "the AI summary is a bit verbose/ unreadable but I think it has a point regarding the absence of call to shouldStartShowingCrossDeviceSigninPromo, and most importantly its impact regarding logging `Signin.CrossDeviceSigninPromo.ShouldShowResult.ForeignTabs`",
+   "month": "2026-10",
+   "role": "reviewer"
+  },
+  {
+   "text": "isn't this semi banned? (I've noticed agents still love to add it though)\n\nI think we can just RunUntil on PathExists?",
+   "month": "2026-10",
+   "role": "reviewer"
+  },
+  {
+   "text": "You would want someone other than me to review it, I don't use this stuff",
+   "month": "2026-10",
+   "role": "reviewer"
+  },
+  {
+   "text": "This sentence of the comment is an artifact of the trajectory inputs and I think can be removed.",
+   "month": "2026-10",
+   "role": "reviewer"
+  },
+  {
+   "text": "I suspect an agent used reflection in this test and I didn't catch it. We shouldn't be using reflection.",
+   "month": "2026-10",
+   "role": "reviewer"
+  },
+  {
+   "text": "Unsure about this AI comment:\n\nSince `onResourceReady` also fires on pull-based captures during `finalizeLayers()`, does calling `layoutManager.requestUpdate()` here schedule an extra compositor frame on every capture?",
+   "month": "2026-10",
+   "role": "reviewer"
+  },
+  {
+   "text": "AI things this test will fail on machines that support brushes. \"Solid-color overlays have no visual content, so `ReuseUnmatchedSubtrees` gives each one the previous frame's subtree at the same position, and `GetOrCreateBackgroundColorContent` returns that subtree's existing brush. The second frame then sees the same pointers as the first ... Suggest keeping `EXPECT_NE` between layers within a frame, and checking `EXPECT_EQ(content, frame1_contents[i].Get())`  across frames to verify reuse.\"\n\nIs it full of it?",
+   "month": "2026-10",
+   "role": "reviewer"
+  },
+  {
+   "text": "You MUST always explain where was the issue resolved. CL number. Explain what caused the issue in the first place.",
+   "month": "2026-10",
+   "role": "author"
+  },
+  {
+   "text": "modulo a couple AI agent suggestions",
+   "month": "2026-10",
+   "role": "reviewer"
+  },
+  {
+   "text": "Nice, I'm happy if the bots are happy\nLGTM",
+   "month": "2026-10",
+   "role": "reviewer"
+  },
+  {
+   "text": "Apparently, autofix didn't do a great job lol.",
+   "month": "2026-10",
+   "role": "author"
+  },
+  {
+   "text": "do you mind adding a call to `weak_ptr_factory_.InvalidateWeakPtrs()` in `ActorTaskBackgroundWorker::OnStopped()`, which should make the background task worker follow the same lifecycle and \"on stopped\" = stopped timing. (vibe coded unit test wouldn't hurt either)",
+   "month": "2026-10",
+   "role": "reviewer"
+  },
+  {
+   "text": "Ignoring AI nits.",
+   "month": "2026-10",
+   "role": "author"
+  },
+  {
+   "text": "My robot tells me that there is no `#[test]` in the latest patchset.",
+   "month": "2026-10",
+   "role": "reviewer"
+  },
+  {
+   "text": "FYI, these types of AI comments are usually redundant, and just weigh down the code. Let's remove the comment entirely - this logic is pretty straightforward.",
+   "month": "2026-10",
+   "role": "reviewer"
+  },
+  {
+   "text": "hey agent, pelase split them into different histograms.",
+   "month": "2026-10",
+   "role": "author"
+  },
+  {
+   "text": "hey agent, please use separate histograms as mentioned in my previous comment",
+   "month": "2026-10",
+   "role": "author"
+  },
+  {
+   "text": "This is very confusing, ai written maybe? :)\n\nso as the channel numbers are going up e.g. new ones are being made, does this report multiple entries for each new one e.g. it reports 1 then 2 then 3 then 4 then so on?",
+   "month": "2026-10",
+   "role": "reviewer"
+  },
+  {
+   "text": "I think these fully AI-generated messages are really hard to parse and understand. Please consider writing a regular commit message that is a bit easier to understand.",
+   "month": "2026-10",
+   "role": "reviewer"
+  },
+  {
+   "text": "Done (I will update my agent to drop this rule...)",
+   "month": "2026-10",
+   "role": "reviewer"
+  },
+  {
+   "text": "I think you need to make a human decision here, I already approved :)",
+   "month": "2026-10",
+   "role": "reviewer"
+  },
+  {
+   "text": "First review in a long while that doesn't involve using AI\nProud of myself\n\nAlso you probably need a rebase",
+   "month": "2026-10",
+   "role": "reviewer"
+  },
+  {
+   "text": "The second round takes significantly longer, ~60 min to figure out how the response helper works and if test makes sense to the change.",
+   "month": "2026-10",
+   "role": "reviewer"
+  },
+  {
+   "text": "One or two sentencese are enough. No need for precondition and expectation here and everywhere.\n\nUpdate the Skill to learn this",
+   "month": "2026-10",
+   "role": "author"
+  },
+  {
+   "text": "lgtm thank you with some whitespace AI nits.",
+   "month": "2026-10",
+   "role": "reviewer"
+  },
+  {
+   "text": "Heh, thanks.  Guess I'll try to keep spotting things like that, though hopefully self-review agents will get better at proofreading and catching it over time.",
+   "month": "2026-10",
+   "role": "reviewer"
+  },
+  {
+   "text": "No worries, thanks for the optimization! AI review totally missed this one even though I did both reviews on the same convo.",
+   "month": "2026-10",
+   "role": "reviewer"
+  },
+  {
+   "text": "Cleaner, thanks! Some nits for further cleanup, mostly thanks to the nit-picky AI reviewer :).",
+   "month": "2026-10",
+   "role": "reviewer"
+  },
+  {
+   "text": "Not done?",
+   "month": "2026-10",
+   "role": "author"
+  },
+  {
+   "text": "So much text in the commit message for routine CLs is not necessary. You can ask your agent to be more concise",
+   "month": "2026-10",
+   "role": "reviewer"
+  },
+  {
+   "text": "I have no idea why this answer got into the Gerrit twice. Was not my intention.",
+   "month": "2026-10",
+   "role": "reviewer"
+  },
+  {
+   "text": "I like it more here (think it's more discoverable, if people even bother reading docs any more instead of just asking an agent), moved the one in ActiveBlobStreamer.",
+   "month": "2026-10",
+   "role": "author"
+  },
+  {
+   "text": "Ignore my self auto review tool.",
+   "month": "2026-10",
+   "role": "author"
+  },
+  {
+   "text": "Sorry was mid-AI review and it posted the reply instead of holding back draft comments for refinement (sorry for the verbosity).\n\nThe core issue and following suggestion are still valid however - feel free to ping if there are points I can clarify.",
+   "month": "2026-10",
+   "role": "reviewer"
+  },
+  {
+   "text": "sorry - my agent re-uploaded an identical patchset when I asked it to rebase my change on top of this one :/",
+   "month": "2026-10",
+   "role": "reviewer"
+  },
+  {
+   "text": "in ai we trust",
+   "month": "2026-10",
+   "role": "reviewer"
+  },
+  {
+   "text": "This appears to be unrelated to the change as described in the patch. Could you try updating your model to do self-contained changes or strictly adhere to the patch description so that we don't have unintended diffs?",
+   "month": "2026-10",
+   "role": "reviewer"
+  },
+  {
+   "text": "lg, but please tell your agent to write more concise comments\n\n(i flagged a few, but there's more)",
+   "month": "2026-10",
+   "role": "reviewer"
+  },
+  {
+   "text": "Please make this comment read as if a human wrote it",
+   "month": "2026-10",
+   "role": "reviewer"
+  },
+  {
+   "text": "Without knowing what's involved in a KB update, it's hard for me to evaluate whether this warning is going to be useful. Is the intent that any change to the docs involves asking an agent to update all of the KB rules to match? In general this warning makes reviewing small additions painful, and it also makes iterating on larger changes/additions with reviewers harder.",
+   "month": "2026-10",
+   "role": "reviewer"
+  },
+  {
+   "text": "Ugh, sorry about all the agent spam. I'll look into why that's happening.",
+   "month": "2026-10",
+   "role": "author"
+  },
+  {
+   "text": "No AI needed, just a reminder for future patches: I fear this will not be always guaranteed in storage, so we could make sure the callers have safeguards (I did notice that you documented the precondition).",
+   "month": "2026-10",
+   "role": "reviewer"
+  },
+  {
+   "text": "No, my AI loves to do that, despite being told not to. 😞",
+   "month": "2026-10",
+   "role": "author"
+  },
+  {
+   "text": "It looks like your AI attempted reformatting this file and it went poorly (here and in other comments in this file). Please fix.",
+   "month": "2026-10",
+   "role": "reviewer"
+  },
+  {
+   "text": "Damn, I thought it would generate the little diamond for me...",
+   "month": "2026-10",
+   "role": "reviewer"
+  },
+  {
+   "text": "Thank you for addressing my comments and for splitting the CLs! \nFew last notes here and we should be ok to go afterward\n\nCould you also please check what's happening with your agent? all of comment got 3x replies, making it really hard to follow the discussion.",
+   "month": "2026-10",
+   "role": "reviewer"
+  },
+  {
+   "text": "I haven't validated what the agent says about security properties here, but this seems serious enough to be worth checking out. Apologies if it's hallucinated.",
+   "month": "2026-10",
+   "role": "reviewer"
+  },
+  {
+   "text": "It's not a pure revert anyway because it already had to update the script and do other changes. But ok, whatever.",
+   "month": "2026-10",
+   "role": "reviewer"
+  },
+  {
+   "text": "LGTM % agent comments",
+   "month": "2026-10",
+   "role": "reviewer"
+  },
+  {
+   "text": "You need to document the last usage. In which CL it was removed.\nOr if it was never used, indicate it was never used.\n\nLearn this in your i18n skill",
+   "month": "2026-10",
+   "role": "author"
+  },
+  {
+   "text": "optional nit: This, and all other comments in this CL are overly verbose and stilted, as if a Claude model wrote them. Consider rewriting them - for example, is the exact lifecycle necessary?\n\nPlease do not use a Claude model for this - write it yourself, or get a Gemini model to do this.",
+   "month": "2026-10",
+   "role": "reviewer"
+  },
+  {
+   "text": "You need to explain what fixed the test. Or state explicitly you checked and you don’t know. I can’t send a CL for review as-is.\n\nThis is already in the SKILL’s commit message file. Why was this ignored? How to ensure you don’t forget it?",
+   "month": "2026-10",
+   "role": "author"
+  },
+  {
+   "text": "Did not need a -1. My bot decided to push one just in case :/",
+   "month": "2026-10",
+   "role": "reviewer"
+  },
+  {
+   "text": "maybe worth fixing this AI comment?",
+   "month": "2026-10",
+   "role": "reviewer"
+  },
+  {
+   "text": "also this",
+   "month": "2026-10",
+   "role": "reviewer"
+  },
+  {
+   "text": "(side-note IDK how useful a use of AI this is because it delegates the decision to an OWNER, for something that's likely not even worth looking at)\n\nLGTM though it would have been nice to confirm it is still flaky.",
+   "month": "2026-10",
+   "role": "reviewer"
+  },
+  {
+   "text": "(side-note IDK how useful a use of AI this is because it delegates the decision to an OWNER, for something that's likely not even worth looking at)\n\nLGTM though it would have been nice to confirm it is still flaky.",
+   "month": "2026-10",
+   "role": "reviewer"
+  },
+  {
+   "text": "sorry, I made this awkward. We changed the constraints. Now //third_party/ipcz _can_ depend on //base, but I did not propagate all the information about it in the codebase. Let me fix that.\n\nAnother problem is that AI was confused and did not use base::span because of this hypothetical dependency constraint. We will need to update this change to use base::span (or convince me otherwise:).",
+   "month": "2026-10",
+   "role": "reviewer"
+  },
+  {
+   "text": "lgtm with a nit and agent requests to improve code coverage (not sure how much work is that or if it makes sense).",
+   "month": "2026-10",
+   "role": "reviewer"
+  },
+  {
+   "text": "I'm not sure we want to do that yet. IMO, I'd suggest startin with making it a manual skill, to test its performance for a while, and get the team's consensus before making it a trybot triggered review agent. We'd better to test how useful is it, and whether/how-often it gives wrong comments first.\nI think it's a good idea to have some such a trybot review agent, though we'd be careful with what we do in it.",
+   "month": "2026-10",
+   "role": "reviewer"
+  }
+ ],
+ "ai_left_out": {
+  "screened": 131,
+  "long_or_linked": 91
+ }
+}

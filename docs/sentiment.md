@@ -1,42 +1,48 @@
 # Review-comment sentiment
 
 `cosh.sentiment` scores the tone of human review comments on Chromium's
-Gerrit. It publishes a monthly trend of the whole project's review tone
-(`summaries/sentiment_monthly.json`), a leaderboard of who gives and
-receives the most praise (`summaries/sentiment_praise.json`) and a few
-sample comments (`summaries/sentiment_samples.json`). The Review Tone
-dashboard (`web/sentiment.html`) shows all three.
+Gerrit. The Review Tone dashboard (`web/sentiment.html`) shows:
 
-## The principle: no finger-pointing
+- a monthly trend of the whole project's review tone
+  (`summaries/sentiment_monthly.json`, from a 5% sample);
+- the last two months in full, "who makes whom happy" and an anonymous
+  list of AI-friction comments (`summaries/sentiment_recent.json`,
+  `cosh.sentiment_recent`);
+- leaderboards of who gives and receives the most praise
+  (`summaries/sentiment_praise.json`);
+- a few sample comments (`summaries/sentiment_samples.json`).
 
-This is `docs/plan.md` ground rule 5 (user's policy, 2026-11-06). In short:
+## The principle: our pages never point fingers
 
-- **No public report singles anyone out for negative behaviour.** Nothing
-  published ranks, lists, quotes or links people, teams or other small,
-  identifiable groups by negative tone. Project-wide figures, and splits by
-  role (reviewer vs CL owner) or by recipient kind (human vs AI), are fine.
+This is `docs/plan.md` ground rule 5 (user's policy, 2026-11-06, relaxed
+2026-11-07). It governs what we publish, not what the code can do:
+
+- **Nothing we publish singles anyone out for negative behaviour.** No
+  ranking, list, quote or link ties negative tone to a person, team or other
+  small, identifiable group. Project-wide figures, and splits by role
+  (reviewer vs CL owner) or by recipient kind (human vs AI), are fine.
 - **Organizations get no tone figures at all**, positive or negative.
-- **People may be named for praise.** The code attaches identities only to
-  comments already scored as praise (`praise`). `collect` rows otherwise
-  say what *role* a comment plays, not whose it is.
+- **People may be named for praise:** the praise leaderboards, "who makes
+  whom happy" (counts of happy counterparts only) and sample praise with
+  Gerrit links.
+- **Negative comments appear only anonymously**: text, month and at most
+  the writer's role. Grumpy samples and the AI-friction list both pass a
+  sandboxed screen (`screen_identifying`) for anything that identifies
+  anyone, accuses anyone of misconduct or points at a specific ticket. Read
+  the 20 samples before committing them; spot-check the AI-friction list.
+  Known limit: quoted text can still be found with Gerrit's comment search.
 - **Example comments may be quoted** unless they are negative and name
   someone.
-- **Sample praise names people; sample grumpiness doesn't.** Praise samples
-  come with writer, recipient, date and a Gerrit link. Grumpy samples come
-  as text, score and month only, and only after a sandboxed screen
-  (`screen_identifying`) finds nothing that identifies anyone, accuses
-  anyone of misconduct or points at a specific ticket. Read each one before
-  committing it. Known limit: quoted text can still be found with Gerrit's
-  comment search.
-- **The repo doesn't ship the means to name people for negative tone**, and
-  these docs don't explain how to. That would be a deliberate design job
-  that needs the user's explicit approval.
-- **Labelled data that would identify the targets of negative labels stays
-  private.** That covers the hand-labelled gold set and the model's short
+- **The code may name people.** `cosh.sentiment_people` attaches writer
+  and recipient (account, name, email, org) to every collected comment,
+  and anyone can build per-person views on it. Our pages just never publish
+  negative ones.
+- **Labelled data that ties negative labels to specific comments stays out
+  of the repo:** the hand-labelled gold set and the model's short
   per-comment reasons, which stay in `data/private/`.
-- **Otherwise as much as possible is public:** the method, the prompt, the
-  code, the security design, the accuracy figures, the aggregate data and
-  the praise leaderboard.
+- **Otherwise as much as possible is public:** the method, every prompt
+  version, the code, the security design, the accuracy figures, the
+  aggregate data and the praise views.
 
 Why it matters: the scores are one model's reading of tone, with errors, and
 a negative label on a named person or a company is a public accusation.
@@ -67,7 +73,16 @@ python3 -m cosh.sentiment praise --week 2026-W37:2026-W44
 # Sample comments from fully scored weeks -> summaries/sentiment_samples.json
 # (one sandboxed screening call per 30 grumpy candidates; read the result before committing)
 python3 -m cosh.sentiment samples --week 2026-W37:2026-W44
+# Identities on the weeks' rows (same files, plus writer and recipient), then the
+# last two months, "who makes whom happy" and the AI-friction list -> summaries/sentiment_recent.json
+python3 -m cosh.sentiment_people collect --week 2026-W37:2026-W44
+python3 -m cosh.sentiment_recent --week 2026-W37:2026-W44   # ~3 min: one screening call per 30 AI comments
 ```
+
+`cosh.sentiment_people collect` writes the same `comments-<week>.jsonl`
+files as `cosh.sentiment collect`, with identity fields added; the text the
+model sees, and so every score, is the same. `sentiment_recent` refuses
+files without them.
 
 **Measured cost.** The 5% sample (2023-W26 .. 2026-W44) has 145,468
 comments. 26,933 are bare acknowledgements, scored 0 without a call. Scoring
@@ -224,6 +239,28 @@ drawn.
 - **Before committing, read the 20 texts** (a small sample, read as data).
   On 2026-11-07 the first screen let through an accusation of fraud and a
   dig at a specific ticket, which is why the prompt now covers both.
+
+## Fully scored weeks in detail (`cosh.sentiment_recent`)
+
+`summaries/sentiment_recent.json` covers weeks where every comment is
+scored (2026-W37..W44 so far):
+
+- **Overview:** substantive comments, bare acknowledgements left out, the
+  average, the glowing and angry shares and the AI-friction count; the same
+  per week; and the number of comments at each score, rounded to 0.1.
+- **Who makes whom happy**, over all the weeks and over the last four:
+  - *authors*: CL owners, counting the distinct reviewers who commented on
+    their CLs and how many of them wrote at least one glowing comment;
+  - *reviewers*: the same for CL owners' replies to reviewers.
+  Only people with at least 6 such counterparts and one happy one are
+  listed, top 100, ranked by happy counterparts. Each row has only the
+  name, the email and the two counts: no per-person mean, which could be
+  negative.
+- **AI friction:** every comment the model flagged, at most 600 characters
+  and without URLs or handles, that passes `screen_identifying`, as text,
+  month and the writer's role (CL author or reviewer). On 2026-W37..W44: 313
+  shown of 535 flagged, 131 dropped by the screen and 91 too long or
+  linked. A random 25 were read before committing.
 
 ## Security
 

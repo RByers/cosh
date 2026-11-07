@@ -9,7 +9,7 @@ per dashboard plus a landing page; each is an entry in
 |---|---|---|---|
 | `index.html` | Landing page: an illustration and one card per dashboard | none | `src/home.css` |
 | `value.html` | Value Exchange dashboard (the rest of this file) | `src/main.ts` | `src/style.css` |
-| `sentiment.html` | Review Tone: the tone trend, praise leaderboards and sample comments, from `summaries/sentiment_*.json` (`docs/sentiment.md`). Names appear only for praise (`docs/plan.md`, ground rule 5) | `src/sentiment.ts`, `src/tone.ts` | `src/style.css` |
+| `sentiment.html` | Review Tone: the tone trend, the last two months in full, praise and "who makes whom happy" boards, sample comments and an anonymous AI-friction list, from `summaries/sentiment_*.json` (`docs/sentiment.md`). Names appear only for praise (`docs/plan.md`, ground rule 5) | `src/sentiment.ts`, `src/tone.ts` | `src/style.css` |
 
 To add a dashboard, add its page and an `input` entry in the Vite config,
 add a card in `index.html`, and add browser tests that open it. The landing

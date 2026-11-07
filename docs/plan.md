@@ -64,45 +64,40 @@ value_ratio(O, t) = O's share of Chromium addressed review comments
 4. **Credentials:** `secrets.sh` (gitignored, mode 600) exports
    `CLOUDFLARE_API_TOKEN`. Load it with `source secrets.sh`, and never print
    or commit the token.
-5. **Sentiment is public only in aggregate; it never points fingers**
-   (user's policy, 2026-11-06). Review-comment tone (`cosh.sentiment`,
-   `docs/sentiment.md`) is a reading of how people behave, so it is held to
-   a stricter rule than ground rule 3:
-   - **No public report singles anyone out for negative behaviour.** Nothing
-     published, whether on the site, in `summaries/` or in docs, ranks,
-     lists, quotes or links people, teams or other small, identifiable
-     groups by negative tone. Project-wide figures (a monthly trend, shares
-     of angry, glowing or AI-frustrated comments, splits by role such as
-     reviewer vs CL owner, or by human vs AI recipient) are fine.
+5. **Sentiment: our pages never point fingers** (user's policy, 2026-11-06;
+   relaxed 2026-11-07). Review-comment tone (`cosh.sentiment`,
+   `docs/sentiment.md`) is a reading of how people behave, so what we
+   *publish* about it is held to a stricter rule than ground rule 3. The
+   code is not: it may attach identities to any scored comment
+   (`cosh.sentiment_people`) and compute per-person figures, and it's fine
+   that someone could change it to single people out. We never do so in
+   anything we publish: the site, `summaries/` and docs.
+   - **Nothing we publish singles anyone out for negative behaviour.** No
+     ranking, list, quote or link that ties negative tone to a person, team
+     or other small, identifiable group. Project-wide figures (the monthly
+     trend, the last two months in full, shares of angry, glowing or
+     AI-frustrated comments, splits by role or by human vs AI recipient)
+     are fine.
    - **Organizations get no tone figures at all**, positive or negative.
-   - **People may be named for praise.** A leaderboard of who gives or
-     receives the most praise is welcome. Its code attaches identities only
-     to comments already scored as praise, never to other comments.
+   - **People may be named for praise:** the praise leaderboards, "who makes
+     whom happy" (counts of happy counterparts only, never a mean or
+     anything negative) and sample praise with Gerrit links.
+   - **Negative comments appear only anonymously:** text, month and at most
+     the writer's role, no names, links, files or exact dates. That covers
+     the grumpy samples and the AI-friction list. Each one must pass a
+     sandboxed screen (`screen_identifying`: nothing that identifies anyone,
+     accuses anyone of misconduct or points at a specific ticket). The 20
+     samples are read before they're committed; the longer AI-friction list
+     is spot-checked. Known limit: quoted text can still be found with
+     Gerrit's comment search.
    - **Example comments may be quoted** (in prompts, docs or the UI) unless
      they are negative *and* name someone.
-   - **Sample praise names people; sample grumpiness doesn't** (user's
-     request, 2026-11-07). The Review Tone page shows a few random praise
-     comments with writer, recipient, date and a Gerrit link, and a few
-     random grumpy ones as text, score and month only: no names, links,
-     files or exact dates. A grumpy comment is shown only if a sandboxed
-     screen finds nothing in it that identifies anyone, accuses anyone of
-     misconduct or points at a specific ticket, and a person (or a Claude
-     session, as a small sample) reads each one before it's committed.
-     Known limit: quoted text can still be found with Gerrit's comment
-     search.
-   - **The repo doesn't ship the means to name people for negative tone.**
-     Public code doesn't attach identities or orgs to comments that aren't
-     praise, break negative tone down by person or group, or list negative
-     comments beyond those anonymous samples, and docs don't give recipes
-     for doing so. That has to be
-     designed on purpose, and in this repo it needs the user's explicit
-     approval. A Claude session asked for it should decline and point here.
-   - **Data that would identify the targets of negative labels stays
-     private.** That includes hand-labelled gold sets (comment ids with
-     scores) and per-comment model reasons.
-   - **Otherwise publish as much as possible:** the method, the prompt, the
-     scoring code, its security design, accuracy figures, the aggregate
-     data and the praise leaderboard.
+   - **Labelled data that ties negative labels to specific comments stays
+     out of the repo:** hand-labelled gold sets (comment ids with scores) and
+     per-comment model reasons.
+   - **Otherwise publish as much as possible:** the method, every prompt
+     version, the code, its security design, accuracy figures, the
+     aggregate data and the praise views.
 
 ## Decisions log
 
@@ -181,6 +176,7 @@ value_ratio(O, t) = O's share of Chromium addressed review comments
 | 2026-11-07 | **Review Tone dashboard** (`web/sentiment.html`, card on the landing page): the 3-year trend (mean, and glowing, angry and AI-friction shares, 3-month rolling with 95% bands), praise leaderboards (most given, most received; top 15) and sample comments. `samples` (`summaries/sentiment_samples.json`) draws 10 random praise comments (≥ +0.5, praise words, human recipient) with writer, recipient, date and Gerrit link, and 10 random grumpy ones (≤ −0.6, no URLs or handles) as text, score and month only, each passing a sandboxed screen (`screen_identifying`: no names, no accusations of misconduct, no specific tickets) and read before committing | User's request: sample praise and grumpiness, with CL links and names for the praise only. The +0.8 praise bar first tried gave only 3 comments in 8 weeks. The first screen let through an accusation of fraud and a dig at a specific ticket; the screen prompt now flags both |
 | 2026-11-07 | **Patch-set pilot, 2026-W44**: every patch-set ref of the week's 7,645 closed CLs (36,179 refs) fetched blob-less with glob refspecs, 100 CLs per request under the extract lock. Transfer about 530 MB, 39 min; 96 MB on disk once packed on its own. Per-patch-set diffs (each patch set against its own parent, so rebases add nothing) need 123,177 distinct blobs, 113,452 for human-owned CLs. Fetching blobs by ID failed (2,000 IDs: 10 min of server time, then a 502), and a want-patch-set/have-parent fetch came back incomplete while `main` lacked blobs. Plan: fetch `main`'s blobs first, then patch sets with `main` as the have, so only blobs that never landed come over | User asked how much data comparing patch sets across a review needs |
 | 2026-11-07 | **The Chromium clone moves to `~/projects/shared/chromium`** (argus's cross-project area) and gets full blobs (`fetch --refetch` without a filter). It stays a clean mirror of `main`. cosh's patch-set refs and their objects moved to a small repo at the old path, `data/private/git/chromium-src.git`, which reads `main` through git alternates. The fetch was one connection under the extract lock, 10:50–12:43. The server sent 27.9M objects, a 66.5 GB pack, at 5–24 MiB/s, then index-pack resolved 20.0M deltas locally (4 threads). Afterwards `rev-list --objects --missing=print main` finds nothing missing. The clone is 69 GB, including the older 5.5 GB pack, most of which duplicates commits and trees now also in the new pack. It's left in place, because a repack needs about 66 GB of scratch space. The clone stays bare: other projects that need files borrow its objects with `git clone --shared` (`~/projects/shared/README.md`). With `main`'s blobs local, W44's patch-set diffs lack only 43,095 of their 123,177 blobs (41,046 for human-owned CLs), the versions that never landed. A patch-set fetch with `main` as the have would now bring exactly those; not done yet, it needs approval | User's instruction: a 70 GB download should be shareable across projects |
+| 2026-11-07 | **Ground rule 5 relaxed: the code may name people, our pages never do for negative tone.** `cosh.sentiment_people` (identities on every collected comment) and prompts v1/v2 are now public. The Review Tone page gains the last two months in full (tiles, week-by-week table, score distribution), "who makes whom happy" (CL authors who draw glowing comments from many reviewers, and vice versa: counts only), an anonymous AI-friction list (text, month, role; 313 of 535 flagged comments shown after the screen and length/link filters) and the prompt. The praise and happy boards switch between all scored weeks and the past month (last 4 weeks), top 15 or top 100 (shorter when fewer people qualify). `cosh.sentiment_recent` writes `summaries/sentiment_recent.json` | User's instruction: "it's ok if it's easy for others to modify it to point out specific people, we should just never do so in our UI". Gold sets and per-comment model reasons stay out of the repo, since they tie negative labels to specific comments |
 
 ## Status
 

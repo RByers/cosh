@@ -2188,6 +2188,65 @@ test('the Review Tone page: trend, praise leaderboard and samples; names only fo
   await page.close();
 });
 
+test('the Review Tone page: last two months, board controls, happy tables, AI list and prompt', async () => {
+  const page = await browser.newPage();
+  const errors: string[] = [];
+  page.on('console', (m) => m.type() === 'error' && errors.push(m.text()));
+  page.on('pageerror', (e) => errors.push(String(e)));
+  await page.setViewport({ width: 1100, height: 900 });
+  await page.goto(baseUrl + 'sentiment.html', { waitUntil: 'load' });
+  await page.waitForSelector('body[data-ready]');
+  // Tiles and the weekly table are filled; weeks are named by their dates.
+  for (const id of ['tile-n', 'tile-trivial', 'tile-mean', 'tile-glowing', 'tile-angry', 'tile-ai']) {
+    assert.notEqual(await page.$eval(`#${id} .tile-value`, (e) => e.textContent!.trim()), '', id);
+  }
+  const weeks = await page.$$eval('#recent-weekly tbody th', (ths) => ths.map((t) => t.textContent!));
+  assert.ok(weeks.length >= 4);
+  for (const w of weeks) assert.match(w, /^\d{1,2} \w{3,4} \d{4}$/);
+  assert.ok((await page.$eval('#recent-dist', (c) => (c as HTMLCanvasElement).width)) > 0);
+
+  // The praise boards: Top 100 shows more rows (up to 100); the past month changes the caption.
+  const rows = (id: string) => page.$$eval(`${id} tbody tr`, (trs) => trs.length);
+  const given15 = await rows('#praise-given');
+  assert.ok(given15 > 0 && given15 <= 15);
+  await page.click('#praise-size input[value="100"]');
+  const given100 = await rows('#praise-given');
+  assert.ok(given100 >= given15 && given100 <= 100);
+  const allSub = await page.$eval('#praise-sub', (e) => e.textContent!);
+  await page.click('#praise-period input[value="month"]');
+  assert.notEqual(await page.$eval('#praise-sub', (e) => e.textContent!), allSub);
+  assert.ok((await rows('#praise-given')) > 0);
+
+  // Happy tables: names with "N of M" counts, expandable too.
+  const happy = await page.$$eval('#happy-authors tbody tr td:last-child', (tds) => tds.map((t) => t.textContent!));
+  assert.ok(happy.length > 0 && happy.length <= 15);
+  for (const h of happy) assert.match(h, /^\d+ of \d+$/);
+  await page.click('#happy-size input[value="100"]');
+  assert.ok((await rows('#happy-authors')) >= happy.length);
+  await page.click('#happy-period input[value="month"]');
+  assert.ok((await rows('#happy-reviewers')) > 0);
+
+  // The AI-friction list: anonymous (no links), month and role only; "Show all" expands it.
+  const first = await page.$$eval('#ai-list li', (lis) =>
+    lis.map((li) => ({ links: li.querySelectorAll('a').length, by: li.querySelector('.quote-by')!.textContent!.trim() })));
+  assert.ok(first.length > 0 && first.length <= 20);
+  for (const c of first) {
+    assert.equal(c.links, 0);
+    assert.match(c.by, /^[A-Z][a-z]{2,3} \d{4}, (change author|reviewer)$/);
+  }
+  if (!(await page.$eval('#ai-more', (b) => (b as HTMLElement).hidden))) {
+    await page.click('#ai-more');
+    assert.ok((await page.$$eval('#ai-list li', (lis) => lis.length)) > first.length);
+  }
+
+  // The prompt, as text.
+  assert.match(await page.$eval('#prompt-text', (e) => e.textContent!), /Rate the emotional tone/);
+  const text = await page.$eval('body', (b) => (b as HTMLElement).innerText);
+  assert.doesNotMatch(text, /\b\d{4}-W\d{2}\b/);
+  assert.deepEqual(errors, []);
+  await page.close();
+});
+
 test('the Review Tone page fits a phone in dark mode', async () => {
   const page = await browser.newPage();
   await page.emulateMediaFeatures([{ name: 'prefers-color-scheme', value: 'dark' }]);
