@@ -126,6 +126,11 @@ regex plus Claude Haiku (`cosh classify`).
   styles. The UI names weeks by their dates, never as `2026-W44` or "ISO
   week", and captions don't repeat the selected range. Details:
   `web/README.md`, "Text and styling".
+- **Every link off the site opens in a new tab** (Gerrit, GitHub, Radar,
+  sample-comment links …): `target="_blank" rel="noopener"` on static links
+  in the HTML, and `a.target = '_blank'` on links the scripts build (SVG
+  links too). Links within the site (the crumb, `#` anchors, the landing
+  page's cards) stay in the same tab. A browser test checks every page.
 - In a worktree, give `web/` its dependencies by symlinking the main
   checkout's: `ln -s /home/rbagent/projects/cosh/web/node_modules
   web/node_modules`. Don't run `npm ci` or `npm install` there. Git ignores

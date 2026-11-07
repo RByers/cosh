@@ -2380,3 +2380,26 @@ test('the Review Tone page fits a phone in dark mode', async () => {
   }
   await page.close();
 });
+
+test('every link off the site opens in a new tab', async () => {
+  // HTML and SVG links whose URL leaves this origin.
+  const offsite = (p: Page) => p.$$eval('a', (as) => as.flatMap((a) => {
+    const raw = a.getAttribute('href');
+    if (!raw) return [];
+    const url = new URL(raw, location.href);
+    return url.origin === location.origin ? [] : [{ href: url.href, target: a.getAttribute('target') }];
+  }));
+  const { page } = await defaultPage();
+  const value = await offsite(page);
+  // The intro, footers, method notes and Gerrit links in the directory chart.
+  assert.ok(value.length > 10 && value.some((l) => /review\.googlesource\.com/.test(l.href)), JSON.stringify(value.slice(0, 5)));
+  const other = await browser.newPage();
+  await other.goto(baseUrl, { waitUntil: 'load' });
+  const home = await offsite(other);
+  await other.goto(baseUrl + 'sentiment.html', { waitUntil: 'load' });
+  await other.waitForSelector('body[data-ready]');
+  const tone = await offsite(other);
+  assert.ok(tone.some((l) => /review\.googlesource\.com/.test(l.href)), 'a praise sample links to its review');
+  await other.close();
+  for (const l of [...value, ...home, ...tone]) assert.equal(l.target, '_blank', l.href);
+});

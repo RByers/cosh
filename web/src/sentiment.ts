@@ -364,6 +364,7 @@ function renderSamples(s: ToneSamples) {
     if (url) {
       const a = el('a', 'View review');
       a.href = url;
+      a.target = '_blank';
       a.rel = 'noopener';
       by.append(' · ', a);
     }
