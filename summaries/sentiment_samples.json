@@ -1,10 +1,11 @@
 {
- "generated_at": "2026-11-07T17:07:55Z",
+ "generated_at": "2026-11-07T19:58:14Z",
  "prompt": "v3",
  "weeks": [
   "2026-W37",
   "2026-W44"
  ],
+ "authors": "committers",
  "praise_min": 0.5,
  "grumpy_max": -0.6,
  "praise": [
@@ -136,7 +137,7 @@
    "month": "2026-09"
   },
   {
-   "text": "I need you to please stop joking like this ...\n\ni can't tell if this is a joke or serious remark.",
+   "text": "You need to explain what fixed the test. Or state explicitly you checked and you don’t know. I can’t send a CL for review as-is.\n\nThis is already in the SKILL’s commit message file. Why was this ignored? How to ensure you don’t forget it?",
    "score": -0.6,
    "month": "2026-10"
   }

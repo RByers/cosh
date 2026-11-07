@@ -1,0 +1,94 @@
+{
+ "generated_at": "2026-11-07T20:01:21Z",
+ "prompt": "v3",
+ "weeks": [
+  "2026-W37",
+  "2026-W44"
+ ],
+ "authors": "noncommitters",
+ "praise_min": 0.5,
+ "grumpy_max": -0.6,
+ "praise": [
+  {
+   "text": "I independently tested this change on Steam Frame - works great here, solving the issue SteamVR was having setting up Vulkan for the client! \nThanks.",
+   "score": 0.5,
+   "date": "2026-10-02",
+   "writer": "Matthieu Bucchianeri",
+   "recipient": "utzcoz",
+   "url": "https://chromium-review.googlesource.com/c/chromium/src/+/8498995/comment/87b6f370_181cb36e/"
+  },
+  {
+   "text": "thanks to all  support  guys  and may God blessed   all to be true  to Athens and to your shelf and God     blessings will be there",
+   "score": 0.5,
+   "date": "2026-10-20",
+   "writer": "Paul stephanus Levey1 (Leveys)",
+   "recipient": "Vladimir Levin",
+   "url": "https://chromium-review.googlesource.com/c/chromium/src/+/8550803/comment/777eac2d_bcf922a2/"
+  },
+  {
+   "text": "Thanks! Understood, and good luck with the rest; I'll keep an eye on 8467082 and re-measure the restore with it when it is up for review.",
+   "score": 0.5,
+   "date": "2026-09-28",
+   "writer": "Miłosz Pracowity",
+   "recipient": "Mitsuru Oshima",
+   "url": "https://chromium-review.googlesource.com/c/chromium/src/+/8432167/comment/8a11b879_e34cb708/"
+  },
+  {
+   "text": "Thank you so much for the detailed explanation and example. I wasn't familiar with virtual test suites, so this was really helpful.\n\nI've removed the separate test file and added a virtual suite for `text-emphasis-position.html` with the flag disabled and its own expectation file, following your example.\n\nI don't have permission to run CQ. Could you run a CQ Dry Run on PS6 when you have a chance?",
+   "score": 0.5,
+   "date": "2026-10-04",
+   "writer": "injun choi",
+   "recipient": "Kevin Babbitt",
+   "url": "https://chromium-review.googlesource.com/c/chromium/src/+/8405025/comment/72a50686_bf8e65be/"
+  },
+  {
+   "text": "Verified that it addresses the linked issue. This is a much better fix. Thank you!",
+   "score": 0.5,
+   "date": "2026-10-05",
+   "writer": "Deepak Mohan (Robo)",
+   "recipient": "Mitsuru Oshima",
+   "url": "https://chromium-review.googlesource.com/c/chromium/src/+/8501043/comment/7635e069_e7c7e1a7/"
+  },
+  {
+   "text": "added it, thanks for the exact repro shape",
+   "score": 0.5,
+   "date": "2026-09-29",
+   "writer": "Patrick Kettner",
+   "recipient": "Andrea Orru",
+   "url": "https://chromium-review.googlesource.com/c/chromium/src/+/7996757/comment/21bf0fa6_3f023759/"
+  },
+  {
+   "text": "👍 Thanks for improving our robustness Bruce.",
+   "score": 0.5,
+   "date": "2026-09-23",
+   "writer": "Dwayne Robinson",
+   "recipient": "Dai, Feng",
+   "url": "https://chromium-review.googlesource.com/c/chromium/src/+/8423780/comment/e07c8090_ef5af674/"
+  },
+  {
+   "text": "Thanks a lot for the great work that brings the shared C++ version summarize solution config where Android can reuse with little changes. I rebased on your work and made some changes to let Android work with the built-in C++ config. Pls take a review, thanks.",
+   "score": 0.5,
+   "date": "2026-09-27",
+   "writer": "Fei Chen",
+   "recipient": "Steven Holte",
+   "url": "https://chromium-review.googlesource.com/c/chromium/src/+/8399148/comment/6cd0b94a_657c1826/"
+  },
+  {
+   "text": "Thanks Steven for the work bringing the substitution builders into production which benefits the builtin solution config.",
+   "score": 0.5,
+   "date": "2026-09-27",
+   "writer": "Fei Chen",
+   "recipient": "Steven Holte",
+   "url": "https://chromium-review.googlesource.com/c/chromium/src/+/8399148/comment/79794430_56ace391/"
+  },
+  {
+   "text": "Thanks, Neil! Ported your browser tests, the sorted rates and the re-read after xrBeginSession, and added you as co-author.",
+   "score": 0.5,
+   "date": "2026-10-23",
+   "writer": "utzcoz",
+   "recipient": "Neil Kronlage",
+   "url": "https://chromium-review.googlesource.com/c/chromium/src/+/8473130/comment/ab932ab2_ac666cc5/"
+  }
+ ],
+ "grumpy": []
+}

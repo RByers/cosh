@@ -2244,6 +2244,50 @@ test('the Review Tone page: last two months, board controls, happy tables, AI li
   await page.close();
 });
 
+test('the Review Tone page: the "Comments by" switch redraws every section and is kept in the URL', async () => {
+  const page = await browser.newPage();
+  const errors: string[] = [];
+  page.on('console', (m) => m.type() === 'error' && errors.push(m.text()));
+  page.on('pageerror', (e) => errors.push(String(e)));
+  await page.setViewport({ width: 1100, height: 900 });
+  await page.goto(baseUrl + 'sentiment.html', { waitUntil: 'load' });
+  await page.waitForSelector('body[data-ready="committers"]');
+  const n = async () => Number((await page.$eval('#tile-n .tile-value', (e) => e.textContent!)).replace(/\D/g, ''));
+  const note = () => page.$eval('#authors-note', (e) => e.textContent!);
+  assert.match(await note(), /from Chromium committers/);
+  const committers = await n();
+
+  await page.click('#authors input[value="everyone"]');
+  await page.waitForSelector('body[data-ready="everyone"]');
+  const everyone = await n();
+  assert.match(page.url(), /[?&]authors=everyone\b/);
+  assert.match(await note(), /anyone with a Gerrit account/);
+
+  await page.click('#authors input[value="noncommitters"]');
+  await page.waitForSelector('body[data-ready="noncommitters"]');
+  const others = await n();
+  assert.match(await note(), /noisy/);
+  assert.ok(others > 0 && others < committers && committers < everyone, `${others} < ${committers} < ${everyone}`);
+  assert.equal(committers + others, everyone);
+  // Every chart redrew, and the board toggles still work after a switch.
+  for (const id of ['#trend-mean', '#trend-shares', '#recent-dist']) {
+    assert.ok((await page.$eval(id, (c) => (c as HTMLCanvasElement).width)) > 0, id);
+  }
+  await page.click('#praise-size input[value="100"]');
+  assert.ok((await page.$$eval('#praise-given tbody tr', (trs) => trs.length)) > 0);
+
+  // A link with ?authors= opens on that choice; back to committers drops it.
+  await page.goto(baseUrl + 'sentiment.html?authors=everyone', { waitUntil: 'load' });
+  await page.waitForSelector('body[data-ready="everyone"]');
+  assert.equal(await page.$eval('#authors input[value="everyone"]', (i) => (i as HTMLInputElement).checked), true);
+  assert.equal(await n(), everyone);
+  await page.click('#authors input[value="committers"]');
+  await page.waitForSelector('body[data-ready="committers"]');
+  assert.doesNotMatch(page.url(), /authors=/);
+  assert.deepEqual(errors, []);
+  await page.close();
+});
+
 test('the Review Tone page fits a phone in dark mode', async () => {
   const page = await browser.newPage();
   await page.emulateMediaFeatures([{ name: 'prefers-color-scheme', value: 'dark' }]);

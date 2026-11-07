@@ -1,4 +1,5 @@
-"""Detail for fully scored weeks on the Review Tone page: summaries/sentiment_recent.json.
+"""Detail for fully scored weeks on the Review Tone page: summaries/sentiment_recent.json
+(comments by committers), plus .everyone.json and .noncommitters.json.
 
   python3 -m cosh.sentiment_people collect --week 2026-W37:2026-W44   # rows with identities
   python3 -m cosh.sentiment score --week 2026-W37:2026-W44            # every comment
@@ -132,11 +133,13 @@ def ai_comments(rows, scores, sandbox):
     return out, len(pool) - len(kept), sum(1 for r in rows if scores[r["id"]][1]) - len(pool)
 
 
-def build(weeks, data_dir=store.DATA_DIR, version=None, sandbox="auto"):
+def build(weeks, data_dir=store.DATA_DIR, version=None, sandbox="auto", authors=S.DEFAULT_AUTHORS):
+    """The page's detail for comments written by `authors` (S.AUTHORS)."""
     rows, scores, missing, n_trivial = load(weeks, data_dir, version)
     if rows and "author" not in rows[0]:
         raise SystemExit("these comment files have no identities: collect them with "
                          "`python3 -m cosh.sentiment_people collect`")
+    rows = S.by_authors(rows, authors, data_dir)
     month = weeks[-MONTH_WEEKS:]
     box = S.make_sandbox(sandbox, data_dir) if isinstance(sandbox, str) else sandbox
     try:
@@ -145,7 +148,7 @@ def build(weeks, data_dir=store.DATA_DIR, version=None, sandbox="auto"):
         if box is not sandbox:
             box.close()
     return dict(generated_at=store.now_iso(), prompt=version or S.PROMPT_VERSION, weeks=[weeks[0], weeks[-1]],
-                month_weeks=[month[0], month[-1]], thresholds=dict(glowing=S.GLOWING, angry=S.ANGRY),
+                authors=authors, month_weeks=[month[0], month[-1]], thresholds=dict(glowing=S.GLOWING, angry=S.ANGRY),
                 min_counterparts=MIN_COUNTERPARTS, missing=missing, n_trivial=n_trivial,
                 **overview(rows, scores, weeks),
                 happy=dict(all=happy(rows, scores), month=happy([r for r in rows if r["week"] in month], scores)),
@@ -159,16 +162,21 @@ def main(argv):
     ap.add_argument("--week", required=True, help="fully scored weeks, e.g. 2026-W37:2026-W44")
     ap.add_argument("--prompt", default=None)
     ap.add_argument("--sandbox", choices=["auto", "bwrap", "none"], default="auto")
+    ap.add_argument("--authors", choices=S.AUTHORS + ("all",), default="all",
+                    help="whose comments count; 'all' writes one file for each")
     ap.add_argument("--out", default=None)
     a = ap.parse_args(argv)
-    t0 = time.time()
-    doc = build(S.weeks_in(a.week), version=a.prompt, sandbox=a.sandbox)
-    out = a.out or OUT
-    with open(out, "w") as f:
-        json.dump(doc, f, indent=1, ensure_ascii=False)
-        f.write("\n")
-    print(f"{doc['total']['n']} comments, {len(doc['ai'])} AI-friction comments shown "
-          f"({doc['ai_left_out']}), {doc['missing']} unscored -> {out} ({time.time() - t0:.0f}s)", file=sys.stderr)
+    if a.out and a.authors == "all":
+        ap.error("--out needs one --authors group")
+    for g in (S.AUTHORS if a.authors == "all" else (a.authors,)):
+        t0 = time.time()
+        doc = build(S.weeks_in(a.week), version=a.prompt, sandbox=a.sandbox, authors=g)
+        out = a.out or S.authors_path(OUT, g)
+        with open(out, "w") as f:
+            json.dump(doc, f, indent=1, ensure_ascii=False)
+            f.write("\n")
+        print(f"{g}: {doc['total']['n']} comments, {len(doc['ai'])} AI-friction comments shown "
+              f"({doc['ai_left_out']}), {doc['missing']} unscored -> {out} ({time.time() - t0:.0f}s)", file=sys.stderr)
 
 
 if __name__ == "__main__":

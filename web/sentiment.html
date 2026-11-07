@@ -38,6 +38,26 @@
     </header>
 
     <main aria-busy="true">
+      <!-- Whose comments every section below counts. Outside any card so it
+           stays stuck to the top of the window, like value.html's metric bar. -->
+      <div class="metric-bar">
+        <fieldset id="authors" class="segmented">
+          <legend>Comments by</legend>
+          <label><input type="radio" name="authors" value="committers" checked />Committers</label>
+          <label><input type="radio" name="authors" value="everyone" />Everyone</label>
+          <label><input type="radio" name="authors" value="noncommitters" />Non-committers</label>
+        </fieldset>
+      </div>
+      <p id="authors-note" class="note" aria-live="polite"></p>
+      <template data-msg="authors-note">
+        <span data-if="a=committers">Every figure and comment below is from Chromium committers: the people Gerrit
+        lets approve changes, as of November 2026.</span>
+        <span data-if="a=everyone">Every figure and comment below is from anyone with a Gerrit account, committers
+        or not.</span>
+        <span data-if="a=noncommitters">Every figure and comment below is from people who aren't Chromium
+        committers (as of November 2026), including drive-by and spam accounts. There are far fewer of
+        these comments, so the figures are noisy.</span>
+      </template>
       <p id="error" class="note" hidden></p>
       <template data-msg="error">Couldn't load data: <slot name="error"></slot></template>
 
@@ -188,6 +208,7 @@
         </div>
         <template data-msg="praise-by"><slot name="writer"></slot> to <slot name="recipient"></slot>, <slot name="date"></slot></template>
         <template data-msg="grumpy-when"><slot name="month"></slot></template>
+        <template data-msg="quotes-none">None in these weeks.</template>
       </section>
 
       <section id="ai" class="card" aria-labelledby="ai-title">
@@ -212,7 +233,9 @@
         <p class="note">
           Comments come from Chromium's public Gerrit code review: every comment by a human account on a
           change owned by a human, including the change owner's replies. Bots, AI reviewers and text an
-          agent posted under a person's account are left out. The model sees the comment, its file and up
+          agent posted under a person's account are left out. A committer is anyone Gerrit lets vote
+          Code-Review on Chromium changes, which only committers may. That status is as of November 2026,
+          when the data was fetched, and is used for comments of every date. The model sees the comment, its file and up
           to four earlier comments in its thread, labelled only as from the change's author, a reviewer or
           an AI, never by name.
         </p>

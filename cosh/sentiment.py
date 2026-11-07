@@ -428,6 +428,79 @@ def out_dir(data_dir=store.DATA_DIR):
     return os.path.join(data_dir, OUT_DIR)
 
 
+# ---------------------------------------------------------------- whose comments
+
+# Every public output comes in three versions, by the writer of each comment:
+# Chromium committers (the default, which the page shows first), everyone, or
+# everyone else. Spam and drive-by comments come from non-committers.
+AUTHORS = ("committers", "everyone", "noncommitters")
+DEFAULT_AUTHORS = "committers"
+
+
+def authors_path(path, authors):
+    """x.json for the default writers (committers), else x.<authors>.json."""
+    if authors == DEFAULT_AUTHORS:
+        return path
+    base, ext = os.path.splitext(path)
+    return f"{base}.{authors}{ext}"
+
+
+def committer_accounts(data_dir=store.DATA_DIR):
+    """{(host, account id)} of committers: accounts Gerrit let vote Code-Review
+    when the listings were fetched (derived.sqlite `committers`,
+    docs/committers.md). Today's status stands in for the status when a
+    comment was written."""
+    db = sqlite3.connect(f"file:{os.path.join(data_dir, store.DERIVED_FILE)}?mode=ro", uri=True)
+    try:
+        if not store.has_table(db, "committers"):
+            raise SystemExit("derived.sqlite has no committers table: rerun `python3 -m cosh derive`")
+        return {(h, a) for h, a in db.execute("SELECT host, account_id FROM committers WHERE is_committer = 1")}
+    finally:
+        db.close()
+
+
+def committer_rows(rows, data_dir=store.DATA_DIR, committers=None):
+    """The ids of the rows written by a committer. The writer is the row's
+    `author` (rows collected with identities) or is looked up in
+    derived.sqlite: the CL owner for the owner's comments, else the
+    comment's own account. A writer we can't place isn't a committer."""
+    committers = committer_accounts(data_dir) if committers is None else committers
+    out, need = set(), []
+    for r in rows:
+        if r.get("author") is not None:
+            if (r["host"], r["author"]) in committers:
+                out.add(r["id"])
+        else:
+            need.append(r)
+    if need:
+        db = sqlite3.connect(f"file:{os.path.join(data_dir, store.DERIVED_FILE)}?mode=ro", uri=True)
+        cls = {(r["host"], r["cl"]) for r in need}
+        owners = {(h, n): o for h, n, o in db.execute("SELECT host, change_number, owner_account FROM changes")
+                  if (h, n) in cls}
+        lo, hi = min(r["written_at"] for r in need), max(r["written_at"] for r in need)
+        writers = {(h, n, c): a for h, n, c, a in db.execute(
+            "SELECT host, change_number, comment_id, account_id FROM comments WHERE written_at BETWEEN ? AND ?",
+            (lo, hi)) if (h, n) in cls}
+        db.close()
+        for r in need:
+            a = owners.get((r["host"], r["cl"])) if r["author_role"] == "AUTHOR" else \
+                writers.get((r["host"], r["cl"], r["uuid"]))
+            if a is not None and (r["host"], a) in committers:
+                out.add(r["id"])
+    return out
+
+
+def by_authors(rows, authors, data_dir=store.DATA_DIR, committers=None):
+    """The rows written by `authors` (one of AUTHORS)."""
+    if authors == "everyone":
+        return list(rows)
+    if authors not in AUTHORS:
+        raise ValueError(f"authors must be one of {AUTHORS}, not {authors!r}")
+    ids = committer_rows(rows, data_dir, committers)
+    want = authors == "committers"
+    return [r for r in rows if (r["id"] in ids) == want]
+
+
 # ---------------------------------------------------------------- the public aggregate
 
 GLOWING, ANGRY = 0.4, -0.3   # thresholds for "glowing" / "angry" comments
@@ -488,14 +561,16 @@ def trend(rows, scores, window=ROLL):
                 missing=sum(1 for r in rows if r["id"] not in scores))
 
 
-def write_summary(name, data_dir=store.DATA_DIR, version=None, out=None):
-    """summaries/sentiment_monthly.json from a scored sample set."""
-    rows = read_jsonl(os.path.join(out_dir(data_dir), f"comments-{name}.jsonl"))
+def write_summary(name, data_dir=store.DATA_DIR, version=None, out=None, authors=DEFAULT_AUTHORS):
+    """summaries/sentiment_monthly.json (or its .<authors> version) from a
+    scored sample set, counting only comments written by `authors`."""
+    rows = by_authors(read_jsonl(os.path.join(out_dir(data_dir), f"comments-{name}.jsonl")), authors, data_dir)
     t = trend(rows, load_scores(None, data_dir, version))
     m = re.search(r"(\d+(?:\.\d+)?)pct", name)
     doc = dict(generated_at=store.now_iso(), prompt=version or PROMPT_VERSION, model="haiku", sample=name,
-               rate=float(m.group(1)) / 100 if m else None, thresholds=dict(glowing=GLOWING, angry=ANGRY), **t)
-    out = out or SUMMARY
+               rate=float(m.group(1)) / 100 if m else None, authors=authors,
+               thresholds=dict(glowing=GLOWING, angry=ANGRY), **t)
+    out = out or authors_path(SUMMARY, authors)
     os.makedirs(os.path.dirname(out), exist_ok=True)
     with open(out, "w") as f:
         json.dump(doc, f, indent=1)
@@ -515,8 +590,9 @@ def is_praise(row, scores):
     return s is not None and s[0] >= GLOWING and bool(PRAISE.search(row["text"]))
 
 
-def praise(weeks, data_dir=store.DATA_DIR, version=None):
-    """Praise given and received per person and week, from human to human.
+def praise(weeks, data_dir=store.DATA_DIR, version=None, authors=DEFAULT_AUTHORS):
+    """Praise given and received per person and week, from human to human,
+    counting only praise written by `authors`.
 
     Ground rule 5 allows naming people for praise, never for negative tone,
     so identities are attached here only to comments already scored glowing:
@@ -525,6 +601,7 @@ def praise(weeks, data_dir=store.DATA_DIR, version=None):
     db = sqlite3.connect(f"file:{os.path.join(data_dir, store.DERIVED_FILE)}?mode=ro", uri=True)
     names = {(h, a): (e, n) for h, a, e, n in db.execute("SELECT host, account_id, email, name FROM accounts")}
     glowing = {i for i, s in scores.items() if s[0] >= GLOWING}
+    committers = None if authors == "everyone" else committer_accounts(data_dir)
     rows, people, coverage = defaultdict(lambda: [0, 0]), {}, []
     for w in weeks:
         p = os.path.join(out_dir(data_dir), f"comments-{w}.jsonl")
@@ -539,6 +616,8 @@ def praise(weeks, data_dir=store.DATA_DIR, version=None):
         for row, ids in got:
             if row["target_kind"] != "person":
                 continue                     # praise for an AI, or an owner's own note
+            if committers is not None and ((ids["host"], ids["author"]) in committers) != (authors == "committers"):
+                continue
             for aid, k in ((ids["author"], 0), (ids["target"], 1)):
                 email, name = names.get((ids["host"], aid), (None, None))
                 if not email:
@@ -546,7 +625,7 @@ def praise(weeks, data_dir=store.DATA_DIR, version=None):
                 people[email] = name or email
                 rows[(w, email)][k] += 1
     return dict(generated_at=store.now_iso(), prompt=version or PROMPT_VERSION, model="haiku",
-                weeks=[weeks[0], weeks[-1]], threshold=GLOWING, coverage=coverage, people=people,
+                weeks=[weeks[0], weeks[-1]], authors=authors, threshold=GLOWING, coverage=coverage, people=people,
                 weekly=[dict(week=w, email=e, given=g, received=r) for (w, e), (g, r) in sorted(rows.items())])
 
 
@@ -606,8 +685,10 @@ def _draw(ids, seed):
     return sorted(ids, key=lambda i: hashlib.sha256(f"{seed}/{i}".encode()).hexdigest())
 
 
-def samples(weeks, data_dir=store.DATA_DIR, version=None, n=10, seed="2026-11", sandbox="auto"):
-    """A random sample of praise and of grumpy comments from fully scored weeks.
+def samples(weeks, data_dir=store.DATA_DIR, version=None, n=10, seed="2026-11", sandbox="auto",
+            authors=DEFAULT_AUTHORS):
+    """A random sample of praise and of grumpy comments written by `authors`
+    in fully scored weeks.
 
     Ground rule 5: praise comes with names and a Gerrit link; grumpy comments
     come with their text, score and month only, and only when a sandboxed
@@ -618,6 +699,7 @@ def samples(weeks, data_dir=store.DATA_DIR, version=None, n=10, seed="2026-11", 
         for r in read_jsonl(os.path.join(out_dir(data_dir), f"comments-{w}.jsonl")):
             if r["id"] in scores and len(r["text"]) <= SAMPLE_CHARS:
                 rows[r["id"]] = r
+    rows = {r["id"]: r for r in by_authors(rows.values(), authors, data_dir)}
     praise_ids = _draw([i for i, r in rows.items() if scores[i][0] >= PRAISE_SAMPLE and is_praise(r, scores)
                         and _target_kind(r) == "person"], seed)[:n]
     grumpy_pool = _draw([i for i, r in rows.items() if scores[i][0] <= GRUMPY_SAMPLE and not _LINKY.search(r["text"])],
@@ -659,7 +741,7 @@ def samples(weeks, data_dir=store.DATA_DIR, version=None, n=10, seed="2026-11", 
                                url=comment_url(r["project"], r["cl"], r["uuid"])))
     grumpy_out = [dict(text=rows[i]["text"], score=scores[i][0], month=rows[i]["written_at"][:7]) for i in grumpy]
     return dict(generated_at=store.now_iso(), prompt=version or PROMPT_VERSION, weeks=[weeks[0], weeks[-1]],
-                praise_min=PRAISE_SAMPLE, grumpy_max=GRUMPY_SAMPLE, praise=praise_out, grumpy=grumpy_out)
+                authors=authors, praise_min=PRAISE_SAMPLE, grumpy_max=GRUMPY_SAMPLE, praise=praise_out, grumpy=grumpy_out)
 
 
 def main(argv):
@@ -679,8 +761,13 @@ def main(argv):
                     help="jail for claude -p (SECURITY.md): auto = bubblewrap if it works here")
     ap.add_argument("--batch", type=int, default=50)
     ap.add_argument("--limit", type=int, default=None)
+    ap.add_argument("--authors", choices=AUTHORS + ("all",), default="all",
+                    help="summary, praise, samples: whose comments count; 'all' writes one file for each")
     ap.add_argument("--out", default=None)
     a = ap.parse_args(argv)
+    if a.out and a.authors == "all":
+        ap.error("--out needs one --authors group")
+    groups = AUTHORS if a.authors == "all" else (a.authors,)
     t0 = time.time()
     weeks = weeks_in(a.week)
     if a.step == "collect":
@@ -701,27 +788,30 @@ def main(argv):
             print(f"{name}: scored {st['n']} in {st['calls']} calls, {st['tokens']} tokens, ${st['usd']:.2f} "
                   f"API-equivalent, {time.time() - t0:.0f}s", file=sys.stderr)
     elif a.step == "samples":
-        doc = samples(weeks, version=a.prompt, sandbox=a.sandbox)
-        out = a.out or SAMPLES_SUMMARY
-        with open(out, "w") as f:
-            json.dump(doc, f, indent=1, ensure_ascii=False)
-            f.write("\n")
-        print(f"{len(doc['praise'])} praise, {len(doc['grumpy'])} grumpy samples -> {out}", file=sys.stderr)
+        for g in groups:
+            doc = samples(weeks, version=a.prompt, sandbox=a.sandbox, authors=g)
+            out = a.out or authors_path(SAMPLES_SUMMARY, g)
+            with open(out, "w") as f:
+                json.dump(doc, f, indent=1, ensure_ascii=False)
+                f.write("\n")
+            print(f"{g}: {len(doc['praise'])} praise, {len(doc['grumpy'])} grumpy samples -> {out}", file=sys.stderr)
     elif a.step == "praise":
-        doc = praise(weeks, version=a.prompt)
-        out = a.out or PRAISE_SUMMARY
-        with open(out, "w") as f:
-            json.dump(doc, f, indent=1, ensure_ascii=False)
-            f.write("\n")
-        gaps = [c for c in doc["coverage"] if c["unscored"]]
-        print(f"{len(doc['people'])} people, {sum(r['given'] for r in doc['weekly'])} praise comments -> {out}"
-              + (f"; NOT fully scored: {gaps}" if gaps else ""), file=sys.stderr)
+        for g in groups:
+            doc = praise(weeks, version=a.prompt, authors=g)
+            out = a.out or authors_path(PRAISE_SUMMARY, g)
+            with open(out, "w") as f:
+                json.dump(doc, f, indent=1, ensure_ascii=False)
+                f.write("\n")
+            gaps = [c for c in doc["coverage"] if c["unscored"]]
+            print(f"{g}: {len(doc['people'])} people, {sum(r['given'] for r in doc['weekly'])} praise comments "
+                  f"-> {out}" + (f"; NOT fully scored: {gaps}" if gaps else ""), file=sys.stderr)
     else:
         if not a.name:
             ap.error("summary needs --name (a scored sample set)")
-        p, doc = write_summary(a.name, version=a.prompt, out=a.out)
-        print(f"{len(doc['months'])} months, {doc['n']} substantive comments, {doc['missing']} unscored -> {p}",
-              file=sys.stderr)
+        for g in groups:
+            p, doc = write_summary(a.name, version=a.prompt, out=a.out, authors=g)
+            print(f"{g}: {len(doc['months'])} months, {doc['n']} substantive comments, {doc['missing']} unscored "
+                  f"-> {p}", file=sys.stderr)
 
 
 if __name__ == "__main__":

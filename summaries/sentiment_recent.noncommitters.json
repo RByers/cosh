@@ -1,0 +1,242 @@
+{
+ "generated_at": "2026-11-07T20:01:26Z",
+ "prompt": "v3",
+ "weeks": [
+  "2026-W37",
+  "2026-W44"
+ ],
+ "authors": "noncommitters",
+ "month_weeks": [
+  "2026-W41",
+  "2026-W44"
+ ],
+ "thresholds": {
+  "glowing": 0.4,
+  "angry": -0.3
+ },
+ "min_counterparts": 6,
+ "missing": 0,
+ "n_trivial": 39351,
+ "total": {
+  "n": 6128,
+  "mean": 0.0223,
+  "glowing": 0.0095,
+  "angry": 0.0055,
+  "ai": 10
+ },
+ "weekly": [
+  {
+   "week": "2026-W37",
+   "n": 648,
+   "mean": 0.0191,
+   "glowing": 0.0108,
+   "angry": 0.0062,
+   "ai": 0
+  },
+  {
+   "week": "2026-W38",
+   "n": 673,
+   "mean": 0.0189,
+   "glowing": 0.0089,
+   "angry": 0.0089,
+   "ai": 1
+  },
+  {
+   "week": "2026-W39",
+   "n": 715,
+   "mean": 0.035,
+   "glowing": 0.014,
+   "angry": 0.0014,
+   "ai": 2
+  },
+  {
+   "week": "2026-W40",
+   "n": 771,
+   "mean": 0.0244,
+   "glowing": 0.0091,
+   "angry": 0.0065,
+   "ai": 1
+  },
+  {
+   "week": "2026-W41",
+   "n": 765,
+   "mean": 0.0188,
+   "glowing": 0.0131,
+   "angry": 0.0144,
+   "ai": 3
+  },
+  {
+   "week": "2026-W42",
+   "n": 661,
+   "mean": 0.0148,
+   "glowing": 0.0015,
+   "angry": 0.003,
+   "ai": 0
+  },
+  {
+   "week": "2026-W43",
+   "n": 1031,
+   "mean": 0.0235,
+   "glowing": 0.0116,
+   "angry": 0.0019,
+   "ai": 2
+  },
+  {
+   "week": "2026-W44",
+   "n": 864,
+   "mean": 0.0227,
+   "glowing": 0.0058,
+   "angry": 0.0035,
+   "ai": 1
+  }
+ ],
+ "dist": [
+  [
+   -0.7,
+   2
+  ],
+  [
+   -0.6,
+   3
+  ],
+  [
+   -0.5,
+   2
+  ],
+  [
+   -0.4,
+   3
+  ],
+  [
+   -0.3,
+   24
+  ],
+  [
+   -0.2,
+   47
+  ],
+  [
+   -0.1,
+   97
+  ],
+  [
+   0.0,
+   4971
+  ],
+  [
+   0.1,
+   615
+  ],
+  [
+   0.2,
+   109
+  ],
+  [
+   0.3,
+   197
+  ],
+  [
+   0.4,
+   28
+  ],
+  [
+   0.5,
+   30
+  ]
+ ],
+ "happy": {
+  "all": {
+   "authors": [],
+   "reviewers": [
+    {
+     "name": "Sorin Jianu",
+     "email": "sorin@chromium.org",
+     "counterparts": 6,
+     "happy": 1
+    },
+    {
+     "name": "Hidehiko Abe",
+     "email": "hidehiko@chromium.org",
+     "counterparts": 7,
+     "happy": 1
+    },
+    {
+     "name": "Mitsuru Oshima",
+     "email": "oshima@chromium.org",
+     "counterparts": 7,
+     "happy": 1
+    },
+    {
+     "name": "Dale Curtis",
+     "email": "dalecurtis@chromium.org",
+     "counterparts": 8,
+     "happy": 1
+    },
+    {
+     "name": "Takashi Toyoshima",
+     "email": "toyoshim@chromium.org",
+     "counterparts": 8,
+     "happy": 1
+    }
+   ]
+  },
+  "month": {
+   "authors": [],
+   "reviewers": [
+    {
+     "name": "Hidehiko Abe",
+     "email": "hidehiko@chromium.org",
+     "counterparts": 6,
+     "happy": 1
+    },
+    {
+     "name": "Dale Curtis",
+     "email": "dalecurtis@chromium.org",
+     "counterparts": 7,
+     "happy": 1
+    }
+   ]
+  }
+ },
+ "ai": [
+  {
+   "text": "Lines removes per suggestion above. For context, I thought these were needed due to the AI review agent kept suggesting to mention the MOJO rules.",
+   "month": "2026-09",
+   "role": "author"
+  },
+  {
+   "text": "Gotya, thanks for the feedback! For context, I thought these were needed due to the AI review agent kept suggesting to mention the MOJO rules.",
+   "month": "2026-09",
+   "role": "author"
+  },
+  {
+   "text": "Ah. Yeah, i'm fine to leave it as []--gemini just kept pointing out that () was a better default since it's immutable. It's not clear why it only did it for skip_brands.. But I don't feel strongly, so I'll just revert it.",
+   "month": "2026-10",
+   "role": "author"
+  },
+  {
+   "text": "Hold off on reviewing this for the moment.. gemini seems to have pulled in a stale branch and lost a bunch of changes, frustratingly..\n\nI will fix this in a followup.",
+   "month": "2026-10",
+   "role": "author"
+  },
+  {
+   "text": "Those LLMs, as if they understand language. Will correct. They would probably need a repository to learn how to create commit messages correctly, amirite?",
+   "month": "2026-10",
+   "role": "author"
+  },
+  {
+   "text": "yeah i'm also unsure these particular \"for the agent\" comments actually were helpful.  they were merely proscriptive of things that jetski already knew if it read the 'for the human' part.  it wasn't like the human version was the softer and lighter version and the agent one was info-dense.",
+   "month": "2026-10",
+   "role": "reviewer"
+  },
+  {
+   "text": "AI generated comments actually make sense this time",
+   "month": "2026-10",
+   "role": "reviewer"
+  }
+ ],
+ "ai_left_out": {
+  "screened": 2,
+  "long_or_linked": 1
+ }
+}

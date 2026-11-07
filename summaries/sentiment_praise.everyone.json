@@ -1,0 +1,8166 @@
+{
+ "generated_at": "2026-11-07T19:57:04Z",
+ "prompt": "v3",
+ "model": "haiku",
+ "weeks": [
+  "2026-W37",
+  "2026-W44"
+ ],
+ "authors": "everyone",
+ "threshold": 0.4,
+ "coverage": [
+  {
+   "week": "2026-W37",
+   "unscored": 0
+  },
+  {
+   "week": "2026-W38",
+   "unscored": 0
+  },
+  {
+   "week": "2026-W39",
+   "unscored": 0
+  },
+  {
+   "week": "2026-W40",
+   "unscored": 0
+  },
+  {
+   "week": "2026-W41",
+   "unscored": 0
+  },
+  {
+   "week": "2026-W42",
+   "unscored": 0
+  },
+  {
+   "week": "2026-W43",
+   "unscored": 0
+  },
+  {
+   "week": "2026-W44",
+   "unscored": 0
+  }
+ ],
+ "people": {
+  "tvignatti@igalia.com": "Tiago Vignatti",
+  "fqj@chromium.org": "Qijiang Fan",
+  "blundell@chromium.org": "Colin Blundell",
+  "vasilyt@chromium.org": "Vasiliy Telezhnikov",
+  "creis@chromium.org": "Charlie Reis",
+  "kylechar@chromium.org": "Kyle Charbonneau",
+  "spectranaut@igalia.com": "Valerie Young",
+  "gmarcoesau@google.com": "Marco Esau Garcia Martinez",
+  "vakh@chromium.org": "Varun Khaneja",
+  "wnwen@chromium.org": "Peter Wen",
+  "hnakashima@chromium.org": "Henrique Nakashima",
+  "ender@google.com": "Tomasz Wiszkowski",
+  "jiawei.chen@dolby.com": "Jiawei Chen",
+  "zhusida@chromium.org": "Sida Zhu",
+  "derinel@google.com": "Adem Derinel",
+  "arthursonzogni@chromium.org": "Arthur Sonzogni",
+  "jinsukkim@chromium.org": "Jinsuk Kim",
+  "josefraska@google.com": "Josef Raska",
+  "olka@chromium.org": "Olga Sharonova",
+  "agpalak@chromium.org": "Palak Agarwal",
+  "nidhijaju@chromium.org": "Nidhi Jaju",
+  "thesalsa@google.com": "Martin Pan-Verde",
+  "wtc@google.com": "Wan-Teh Chang",
+  "helmut@januschka.com": "Helmut Januschka",
+  "bashi@chromium.org": "Kenichi Ishibashi",
+  "toyoshim@chromium.org": "Takashi Toyoshima",
+  "ricea@chromium.org": "Adam Rice",
+  "christopher.staite@menlosecurity.com": "Christopher Staite",
+  "dloehr@google.com": "Devon Loehr",
+  "cdesouza@chromium.org": "Claudio DeSouza",
+  "cheickcisse@google.com": "Cheick Cisse",
+  "mschillaci@google.com": "Mark Schillaci",
+  "thakis@chromium.org": "Nico Weber",
+  "jhawkins@chromium.org": "James Hawkins",
+  "skym@chromium.org": "Sky Malice",
+  "japhet@chromium.org": "Nate Chapin",
+  "twellington@chromium.org": "Theresa Wellington",
+  "skavuluru@google.com": "Sirisha Kavuluru",
+  "wfh@chromium.org": "Will Harris",
+  "monicach@microsoft.com": "Monica Chintala",
+  "ssolarewicz@chromium.org": "Stanisław Solarewicz",
+  "nicolaso@chromium.org": "Nicolas Ouellet-Payeur",
+  "tomasl@google.com": "Tomas Lundqvist",
+  "tjudkins@chromium.org": "Tim",
+  "riosvk@yandex-team.ru": "Vitaly Kalchenko",
+  "toddreif@microsoft.com": "Todd Reifsteck",
+  "engedy@chromium.org": "Balazs Engedy",
+  "battre@chromium.org": "Dominic Battré",
+  "smcgruer@chromium.org": "Stephen McGruer",
+  "luisantunes@google.com": "Luis Antunes",
+  "alphonsea@google.com": "Antonio Alphonse",
+  "ortuno@chromium.org": "Giovanni Ortuno Urquidi",
+  "huangs@chromium.org": "Samuel Huang",
+  "lukasza@chromium.org": "Łukasz Anforowicz",
+  "jamescook@chromium.org": "James Cook",
+  "lindaywang@google.com": "Linda Wang",
+  "agrieve@chromium.org": "Andrew Grieve",
+  "utzcoz@gmail.com": "utzcoz",
+  "aishwaryarj@google.com": "Aishwarya Rajesh",
+  "spdonghao@google.com": "Hao Dong",
+  "peterkang@google.com": "Peter Kang",
+  "songhaoli@chromium.org": "Travis Li",
+  "grt@chromium.org": "Greg Thompson",
+  "friedrichh@chromium.org": "Friedrich Hauser",
+  "lkuba@google.com": "Kuba Lewandowski",
+  "kyraseevers@chromium.org": "Kyra Seevers",
+  "lucasradaelli@google.com": "Lucas Radaelli",
+  "haileywang@google.com": "Hailey Wang",
+  "meiliang@chromium.org": "Mei Liang",
+  "ritikagup@google.com": "Ritika Gupta",
+  "christianjaime@google.com": "Christian Jaime",
+  "rrodriguezh@google.com": "Roberto Rodriguez",
+  "wangxianzhu@chromium.org": "Xianzhu Wang",
+  "kerenzhu@chromium.org": "Keren Zhu",
+  "mahmadi@chromium.org": "Moe Ahmadi",
+  "noahrose@google.com": "Noah Rose Ledesma",
+  "alexmos@chromium.org": "Alex Moshchuk",
+  "clamy@chromium.org": "Camille Lamy",
+  "samarchehade@google.com": "Samar Chehade",
+  "rainhard@chromium.org": "Rainhard Findling",
+  "hkamila@google.com": "Kamila Hasanbega",
+  "julietlevesque@google.com": "Juliet Knighton",
+  "alsan@chromium.org": "Kaan Alsan",
+  "rsult@google.com": "Ryan Sultanem",
+  "anthie@google.com": "Anthi Orfanou",
+  "jkoblinsky@google.com": "Jakob Koblinsky",
+  "etiennenoel@chromium.org": "Etienne Noël",
+  "eic@google.com": "Ernesto Izquierdo Clua",
+  "michaeldo@chromium.org": "Mike Dougherty",
+  "wenyufu@chromium.org": "Wenyu Fu",
+  "andylky@google.com": "Andy Li",
+  "rhalavati@chromium.org": "Ramin Halavati",
+  "kyungjunlee@google.com": "Kyungjun Lee",
+  "nicolasmacbeth@google.com": "Nicolas MacBeth",
+  "gsaul@google.com": "Guillaume Saulnier-Comte",
+  "jacastro@chromium.org": "Javier Castro",
+  "pauljensen@chromium.org": "Paul Jensen",
+  "diwux@google.com": "Di Wu",
+  "neis@chromium.org": "Georg Neis",
+  "kavyamehta@google.com": "Kavya Mehta",
+  "ksukh@chromium.org": "Kunjan Patel",
+  "dmurph@chromium.org": "Daniel Murphy",
+  "jophba@chromium.org": "Jordan Bayles",
+  "tguilbert@chromium.org": "Thomas Guilbert",
+  "dljames@chromium.org": "Darryl James",
+  "hbecky@google.com": "Becky Hu",
+  "rdevlin.cronin@chromium.org": "Devlin Cronin",
+  "anunoy@chromium.org": "Anunoy Ghosh",
+  "wintermelons@google.com": "David Song",
+  "trangm@google.com": "Trang Mai",
+  "schwering@google.com": "Christoph Schwering",
+  "futhark@chromium.org": "Rune Lillesveen",
+  "thefrog@chromium.org": "thefrog",
+  "philyan@chromium.org": "Phil Yan",
+  "estalin@chromium.org": "Eshwar Stalin",
+  "kunaldaftari@google.com": "Kunal Daftari",
+  "svend@chromium.org": "Svend L",
+  "jdh@chromium.org": "jdh",
+  "yungyichen@google.com": "Cathy Chen",
+  "brunobraga@google.com": "Bruno Braga",
+  "orinj@chromium.org": "Orin Jaworski",
+  "khalidpeer@chromium.org": "Khalid Peer",
+  "sashmitha.atigala@codimite.com": "Sashmitha Atigala",
+  "rahsin@microsoft.com": "Rahul Singh",
+  "masonf@chromium.org": "Mason Freed",
+  "lwarlow@igalia.com": "Luke",
+  "pkotwicz@chromium.org": "Peter Kotwicz",
+  "hiramahmood@google.com": "Hira Mahmood",
+  "scottyoder@google.com": "Scott Yoder",
+  "evasu@chromium.org": "Eva Su",
+  "hans@chromium.org": "Hans Wennborg",
+  "hoisie@google.com": "Michael Hoisie",
+  "daniec@microsoft.com": "Dan Clark",
+  "dom@chromium.org": "Dominic Farolino",
+  "avi@chromium.org": "Avi Drissman",
+  "samuel.r.attard@gmail.com": "Samuel Attard",
+  "anthonyvd@chromium.org": "Anthony Vallee-Dubois",
+  "brianwang1984@bytedance.com": "Brian Wang",
+  "victorvianna@google.com": "Victor Vianna",
+  "danft@google.com": "Danilo Tedeschi",
+  "ryohiy.dev@gmail.com": "Ryo Hiyoshi",
+  "feich@microsoft.com": "Fei Chen",
+  "sorin@chromium.org": "Sorin Jianu",
+  "ellyjones@chromium.org": "Elly",
+  "dbaron@chromium.org": "David Baron",
+  "yoshiki@chromium.org": "Yoshiki IGUCHI",
+  "antrim@chromium.org": "Denis Kuznetsov",
+  "dpapad@chromium.org": "Demetrios Papadopoulos",
+  "sdrab@google.com": "Stephan Drab",
+  "wusirui@google.com": "Sirui Wu",
+  "dtapuska@chromium.org": "Dave Tapuska",
+  "annasato@chromium.org": "Anna Sato",
+  "bkeen@google.com": "Benjamin Keen",
+  "stevebe@microsoft.com": "Steve Becker",
+  "ccameron@chromium.org": "ccameron chromium",
+  "dalecurtis@chromium.org": "Dale Curtis",
+  "fleimgruber@google.com": "Florian Leimgruber",
+  "vidhanj@google.com": "Vidhan Jain",
+  "shuyng@google.com": "Shu Yang",
+  "aadishgoel@google.com": "Aadish Goel",
+  "jludwy@gmail.com": "戴汪洋",
+  "adamyao@google.com": "Adam Yao",
+  "hanxi@chromium.org": "Xi Han",
+  "treib@chromium.org": "Marc Treib",
+  "mek@chromium.org": "Marijn Kruisselbrink",
+  "yixiwu@google.com": "Yixi Wu",
+  "mxlg@google.com": "Xu Li",
+  "jeffreygour@microsoft.com": "Jeffrey Gour",
+  "dcheng@chromium.org": "Daniel Cheng",
+  "mklw@google.com": "Michael Wu",
+  "msw@chromium.org": "Mike Wasserman",
+  "iahouma@google.com": "Isaac Ahouma",
+  "xtlsheep@google.com": "Tianyang Xu",
+  "morlovich@chromium.org": "Maks Orlovich",
+  "elkurin@chromium.org": "Eriko Kurimoto",
+  "hongchan@google.com": "Hongchan Choi",
+  "guidou@chromium.org": "Guido Urdaneta",
+  "zoraiznaeem@chromium.org": "Zoraiz Naeem",
+  "mercerd@google.com": "Duncan Mercer",
+  "huanwu@google.com": "Huan Wu",
+  "mfoltz@chromium.org": "Mark Foltz",
+  "ndestin@google.com": "Destin Niyomufasha",
+  "schickin@google.com": "Thomas Schickinger",
+  "yvonneshi@google.com": "Yvonne Shi",
+  "bofengchen@google.com": "Bofeng Chen",
+  "mustaq@chromium.org": "Mustaq Ahmed",
+  "sushin@nvidia.com": "Sun Shin US",
+  "kiehl@google.com": "Josiah Kiehl",
+  "rbpotter@chromium.org": "Rebekah Potter",
+  "jihadghanna@google.com": "Jihad Hanna",
+  "pawelstus@google.com": "Paweł Stus",
+  "henrika@chromium.org": "Henrik Andreasson",
+  "fhernqvist@google.com": "Fredrik Hernqvist",
+  "nasko@chromium.org": "Nasko Oskov",
+  "frs@chromium.org": "Feras Aldahlawi",
+  "shawnq@google.com": "Shawn Quereshi",
+  "apaseltiner@chromium.org": "Andrew Paseltiner",
+  "dfried@chromium.org": "Dana Fried",
+  "cjgrant@chromium.org": "Christopher Grant",
+  "tikuta@chromium.org": "Takuto Ikuta",
+  "beaufort.francois@gmail.com": "Fr",
+  "wry@chromium.org": "Marke Hallowell",
+  "bryantchandler@chromium.org": "Bryant Chandler",
+  "birnie@google.com": "Nick Birnie",
+  "dewittj@chromium.org": "Justin DeWitt",
+  "linyuh@google.com": "Linyu He",
+  "mlippautz@chromium.org": "Michael Lippautz",
+  "keishi@chromium.org": "Keishi Hattori",
+  "ckitagawa@chromium.org": "Calder Kitagawa",
+  "xzonghan@chromium.org": "Zonghan Xu",
+  "vogelheim@chromium.org": "Daniel Vogelheim",
+  "mwoj@google.com": "Michael Wojcicka",
+  "adelm@google.com": "Moe Adel",
+  "ssid@chromium.org": "Siddhartha S",
+  "harringtond@chromium.org": "Dan H",
+  "eleanorlee@google.com": "Eleanor Lee",
+  "behery@chromium.org": "Hamzah Behery",
+  "atharvmaan@chromium.org": "Atharv Maan",
+  "dmytriievd@google.com": "Dmytro Dmytriiev",
+  "achuith@chromium.org": "Achuith Bhandarkar",
+  "ioanap@chromium.org": "Ioana Treib",
+  "smaier@google.com": "Sam Maier",
+  "landry@google.com": "Mike Landry",
+  "ssalbiz@google.com": "Syed Albiz",
+  "martinkong@google.com": "Martin Kong",
+  "saskekun@google.com": "Sasha Kunitskaya",
+  "ernn@google.com": "Ernest Nguyen Hung",
+  "kbajkiewicz@google.com": "Kacper Bajkiewicz",
+  "nyquist@chromium.org": "Tommy Nyquist",
+  "ogallant@google.com": "Olivier Gallant",
+  "bpastene@chromium.org": "Ben Pastene",
+  "kron@chromium.org": "Johannes Kron",
+  "ilnik@chromium.org": "Ilya Nikolaevskiy",
+  "nehasapre@google.com": "Neha Sapre",
+  "hugobenichi@google.com": "Hugo Benichi",
+  "akahuang@chromium.org": "Chih-Yu Huang",
+  "lcdavid@google.com": "David Liu",
+  "tarekmakkouk@google.com": "Tarek Makkouk",
+  "gayane@google.com": "Gayane Petrosyan",
+  "mcczarny@gmail.com": "Maciej Czarnecki",
+  "mthiesse@chromium.org": "Michael Thiessen",
+  "arichiv@chromium.org": "Ari Chivukula",
+  "jamalmo@microsoft.com": "Mofidul Jamal",
+  "andresmolina@google.com": "Andres Molina",
+  "rakina@chromium.org": "Rakina Zata Amni",
+  "suzukikeita@chromium.org": "Keita Suzuki",
+  "dylancutler@google.com": "Dylan Cutler",
+  "cfredric@chromium.org": "Chris Fredrickson",
+  "hthadicherla@nvidia.com": "Hrishith Thadicherla IN",
+  "rafael.cintron@microsoft.com": "Rafael Cintron",
+  "velikapati@google.com": "Velikapati Dinesh (xWF)",
+  "leimy@chromium.org": "Mingyu Lei",
+  "ikilpatrick@chromium.org": "Ian Kilpatrick",
+  "nikifork@google.com": "Jayden Nikifork",
+  "bryanoltman@google.com": "Bryan Oltman",
+  "novakovica@google.com": "Angela Novakovic",
+  "gambard@chromium.org": "Gauthier Ambard",
+  "clhager@google.com": "Charles Hager",
+  "mjwilson@chromium.org": "Michael Wilson",
+  "moonki.choi@samsung.com": "Moonki choi (IKnoom)",
+  "vercaemer@google.com": "Kenny Vercaemer",
+  "mkwst@chromium.org": "Mike West",
+  "kbr@chromium.org": "Kenneth Russell",
+  "zmo@chromium.org": "Zhenyao Mo",
+  "brpeters@microsoft.com": "Brad Peters",
+  "piotrkotynia@google.com": "Piotr Kotynia",
+  "tluk@chromium.org": "Thomas Lukaszewicz",
+  "gildekel@chromium.org": "Gil Dekel",
+  "oshima@chromium.org": "Mitsuru Oshima",
+  "rtatum@google.com": "Riley Tatum",
+  "dhruvkathpalia@google.com": "Dhruv Kathpalia",
+  "austinzzr@google.com": "Austin Zhang",
+  "deepakr@google.com": "Deepak Ravichandran",
+  "quarz@chromium.org": "Marwan Tammam",
+  "etiennep@chromium.org": "Etienne Pierre-Doray",
+  "mmocny@chromium.org": "Michal Mocny",
+  "shaseley@chromium.org": "Scott Haseley",
+  "skrakowi@chromium.org": "Sarah Krakowiak",
+  "andresrperez@chromium.org": "Andres Ricardo Perez Rojas",
+  "jpgravel@chromium.org": "Jean-Philippe Gravel",
+  "lambroslambrou@chromium.org": "Lambros Lambrou",
+  "yuweih@chromium.org": "Yuwei Huang",
+  "osaul@google.com": "Olivia Saul",
+  "junhuihe@google.com": "Junhui He",
+  "yyanting@google.com": "Yanting Yu",
+  "ruoxih@google.com": "Ruoxi He",
+  "tiborg@chromium.org": "Tibor Goldschwendt",
+  "kschmi@microsoft.com": "Kurt Catti-Schmidt",
+  "dwayner@microsoft.com": "Dwayne Robinson",
+  "feng.dai@intel.com": "Dai, Feng",
+  "mioszpracowity@gmail.com": "Miłosz Pracowity",
+  "bkassenov@google.com": "Bekzhan Kassenov",
+  "jkeitel@google.com": "Jan Keitel",
+  "jonnalad@google.com": "Devi Varaprasad Jonnala",
+  "mmenke@chromium.org": "mmenke",
+  "patrickkettner@google.com": "Patrick Kettner",
+  "xinyiji@chromium.org": "Xinyi Ji",
+  "jhimawan@google.com": "Jenna Himawan",
+  "zijingl@google.com": "Zijing Liu",
+  "rkgibson@google.com": "Robbie Gibson",
+  "mpearson@chromium.org": "Mark Pearson",
+  "davidbienvenu@chromium.org": "David Bienvenu",
+  "lbrady@google.com": "Liam Brady",
+  "mfiaz@google.com": "Fiaz Muhammad",
+  "tchudakov@google.com": "Timofey Chudakov",
+  "tommasin@chromium.org": "Nicola Tommasi",
+  "adunaev@igalia.com": "Alexander Dunaev",
+  "himesha.baddage@codimite.com": "Himesha Baddage",
+  "ferny@google.com": "Fernando Ramirez",
+  "aostrovskii@google.com": "Anton Ostrovskii",
+  "qingxinwu@google.com": "Qingxin Wu",
+  "lbarczynski@google.com": "Łukasz Barczyński",
+  "joonehur@microsoft.com": "Joone Hur",
+  "msalama@chromium.org": "Monica Salama",
+  "jkarlin@chromium.org": "Josh Karlin",
+  "johannes@chromium.org": "Johannes Henkel",
+  "vsvirski@google.com": "Vasili Svirski",
+  "reillyg@chromium.org": "Reilly Grant",
+  "mingming1.xu@intel.com": "Xu, Mingming1",
+  "ffred@chromium.org": "Fred Shih",
+  "ricardofda@google.com": "Ricardo Fernandez de Arellano",
+  "andreaorru@chromium.org": "Andrea Orru",
+  "hartmanng@chromium.org": "Glenn Hartmann",
+  "anhmac@chromium.org": "Anh Mac",
+  "fdoray@chromium.org": "Francois Pierre Doray",
+  "ydago@chromium.org": "Yann Dago",
+  "kaklilu@chromium.org": "Kirubel",
+  "blee@igalia.com": "Byungwoo Lee",
+  "nhiroki@chromium.org": "Hiroki Nakagawa",
+  "junov@chromium.org": "Justin Novosad",
+  "mark@chromium.org": "Mark Mentovai",
+  "robpitkin@chromium.org": "Rob Pitkin",
+  "alvinji@chromium.org": "Alvin Ji",
+  "myuu@google.com": "Menghan Yang",
+  "quacksort@google.com": "Lucia Giorgi",
+  "holte@chromium.org": "Steven Holte",
+  "jaeone@google.com": "Jaewon Lee",
+  "sangbaekpark@chromium.org": "Sangbaek Park",
+  "Piet.Schouten@microsoft.com": "Piet Schouten",
+  "tangm@microsoft.com": "Michael Tang",
+  "gabrielbrito@microsoft.com": "Gabriel Brito",
+  "alaric.baraou@gmail.com": "Alaric Baraou",
+  "nsatragno@chromium.org": "Nina Satragno",
+  "wei4.wang@intel.com": "Wang, Wei4",
+  "ningxin.hu@intel.com": "Hu, Ningxin",
+  "aopalinska@google.com": "Alicja Opalinska",
+  "lucnguyen@google.com": "Luc Nguyen",
+  "sanfin@chromium.org": "Simeon Anfinrud",
+  "felipeerias@igalia.com": "Felipe Erias",
+  "lalday@google.com": "Laura Lucas Alday (xWF)",
+  "krkurapati@google.com": "Krishna Kurapati",
+  "drott@chromium.org": "Dominik Röttsches",
+  "thomasanderson@chromium.org": "Thomas Anderson",
+  "jlulejian@chromium.org": "Justin Lulejian",
+  "pmonette@chromium.org": "Patrick Monette",
+  "renewitt@google.com": "Rachael Newitt",
+  "qjw@chromium.org": "Jiewei Qian",
+  "fikus@google.com": "Eric Fikus",
+  "valadkevich@google.com": "Alex Valadkevich",
+  "thestig@chromium.org": "Lei Zhang",
+  "stluong@chromium.org": "Steven Luong",
+  "bjoyce@google.com": "Benjamin Joyce (Ben)",
+  "hypan@google.com": "Haiyang Pan",
+  "siyua@chromium.org": "Siyu An",
+  "agazal@google.com": "Gazal Agarwal",
+  "musalmaan@chromium.org": "Muhammad Salmaan",
+  "jonathanjlee@google.com": "Jonathan Lee",
+  "sadym@chromium.org": "Maksim Sadym",
+  "tonikitoo@igalia.com": "Antonio Gomes Netto",
+  "jonross@chromium.org": "Jonathan Ross",
+  "parkhj062@gmail.com": "Hojeong Park",
+  "misha@nasledov.com": "misha@nasledov.com",
+  "oka@chromium.org": "Keigo Oka",
+  "raghurai@google.com": "Raghu Rai",
+  "vmpstr@chromium.org": "Vladimir Levin",
+  "xanth@google.com": "Shanthanu Bhardwaj",
+  "poromov@chromium.org": "Sergey Poromov",
+  "alexrudenko@chromium.org": "Alex Rudenko",
+  "leese@chromium.org": "Eric Leese",
+  "vincb@google.com": "Vincent Boisselle",
+  "fikremengistu@chromium.org": "Fikre Mengistu",
+  "adamta@google.com": "Adam Arcaro",
+  "boliu@chromium.org": "Bo Liu",
+  "dibyapal@chromium.org": "Dibyajyoti Pal",
+  "charlesyc@google.com": "Charles Cai",
+  "caitc@google.com": "Caitlin Chen",
+  "niharm@google.com": "Nihar Majmudar",
+  "zork@chromium.org": "Tzarial",
+  "xiaobincui@microsoft.com": "Xiaobin Cui",
+  "alexilin@chromium.org": "Alex Ilin",
+  "chrdavis@microsoft.com": "Chris Davis",
+  "mbucchia@valvesoftware.com": "Matthieu Bucchianeri",
+  "gab@chromium.org": "Gabriel Charette",
+  "mastiz@chromium.org": "Mikel Astiz",
+  "hujasonx@google.com": "Jason Hu",
+  "kejiah@google.com": "Kejia Hu",
+  "viplavkadam@google.com": "Viplav Kadam",
+  "alexmt@chromium.org": "Alex Turner",
+  "aleventhal@google.com": "Aaron Leventhal",
+  "myid.shin@igalia.com": "Miyoung Shin",
+  "jhorwich@chromium.org": "Josh Horwich",
+  "satorux@google.com": "Satoru Takabayashi",
+  "asvitkine@chromium.org": "Alexei Svitkine",
+  "lburchard@google.com": "Łukasz Burchard",
+  "taminob@chromium.org": "Tamino Bauknecht",
+  "esalma@google.com": "Salma Elmahallawy",
+  "saeideid@google.com": "Saeid Eid",
+  "hempjudith@google.com": "Judith Hemp",
+  "ericchao@google.com": "Eric Chao",
+  "richche@google.com": "Richard Chen",
+  "evanstade@microsoft.com": "Evan Stade",
+  "peconn@chromium.org": "Peter Conn",
+  "drcastroa@google.com": "Daniel Castro",
+  "bewise@chromium.org": "Rupert Wiser",
+  "abhijithnair@chromium.org": "Abhijith Nair",
+  "fuhsinliao@google.com": "Fuhsin Liao",
+  "dtseng@chromium.org": "David Tseng",
+  "iclelland@chromium.org": "Ian Clelland",
+  "hiroshige@chromium.org": "Hiroshige Hayashizaki",
+  "yinguang@google.com": "Ian Zhao",
+  "ajgo@chromium.org": "Alex Gough",
+  "hchao@chromium.org": "Hubert Chao",
+  "nuskos@chromium.org": "Stephen Nusko",
+  "ainozaki@google.com": "Ai Nozaki",
+  "akyereboah@microsoft.com": "Alexander Kyereboah",
+  "almaher@microsoft.com": "Alison Maher",
+  "samfort@microsoft.com": "Sam Fortiner",
+  "mych@chromium.org": "Ming-Ying Chung",
+  "tsepez@chromium.org": "Tom Sepez",
+  "mlbipin@google.com": "Liza Bipin",
+  "tkfydtls464@gmail.com": "injun choi",
+  "kbabbitt@microsoft.com": "Kevin Babbitt",
+  "erikchen@chromium.org": "Erik Chen",
+  "lukedeng@google.com": "Luke Deng",
+  "eledgar@google.com": "Edgar Aguilar",
+  "tasak@google.com": "Takashi Sakamoto",
+  "miketaylr@chromium.org": "Mike Taylor",
+  "tedchoc@chromium.org": "Ted Choc",
+  "arthurmilchior@chromium.org": "Arthur Milchior",
+  "kristislee@google.com": "Kristi Saney",
+  "gusmartin@google.com": "Gustavo Martin",
+  "gaiko@google.com": "Stacy Gaikovaia",
+  "gklassen@chromium.org": "Gary Klassen",
+  "yigu@chromium.org": "Yi Gu",
+  "pmeuleman@chromium.org": "Pâris Meuleman",
+  "choiwonik91@gmail.com": "Wonik Choi",
+  "yrian@google.com": "Yrian Derreumaux",
+  "xhwang@chromium.org": "Xiaohan Wang",
+  "olesiamarukhno@google.com": "Olesia Marukhno",
+  "antoniosartori@chromium.org": "Antonio Sartori",
+  "hidehiko@chromium.org": "Hidehiko Abe",
+  "msramek@chromium.org": "Martin Šrámek",
+  "alfredohiguera@google.com": "Alfredo Higuera",
+  "polardz@google.com": "Dan Polanco",
+  "aykutb@chromium.org": "Aykut Bulut",
+  "acondor@chromium.org": "Aldo Culquicondor",
+  "jmsmg1@me.com": "Seonggon Cho",
+  "jtoohill@google.com": "Jon Toohill",
+  "doland@google.com": "Piotr Domaradzki",
+  "michael@herrmann.io": "Michael Herrmann",
+  "jacktfranklin@chromium.org": "Jack Franklin",
+  "dsv@chromium.org": "Danil Somsikov",
+  "evliu@google.com": "Evan Liu",
+  "hop2deep@gmail.com": "Deepak Mohan (Robo)",
+  "janewman@microsoft.com": "Jacques Newman",
+  "ffiori@microsoft.com": "Fernando Fiori",
+  "hamdi.gaied.si@gmail.com": "hamdi gaied",
+  "mstensho@chromium.org": "Morten Stenshorne",
+  "nrosenthal@google.com": "Noam Rosenthal",
+  "mtatarski@google.com": "Michael Tatarski",
+  "ankushkush@google.com": "Ankush Singh",
+  "christianxu@chromium.org": "Christian Xu",
+  "lpromero@google.com": "Louis Romero",
+  "ftirelo@chromium.org": "Fabio Tirelo",
+  "chromium@jordin.dev": "Jordin McEachern",
+  "lowkey@google.com": "Syed AbuTalib",
+  "marq@chromium.org": "Mark Cogan",
+  "yaoxia@chromium.org": "Yao Xiao",
+  "zhouzj@google.com": "Jay Zhou",
+  "oussamajb@google.com": "Oussama Jaballah",
+  "caseq@chromium.org": "Andrey Kosyakov",
+  "rcanoaparicio@google.com": "Ramon Cano Aparicio",
+  "neilkr@meta.com": "Neil Kronlage",
+  "martinkr@google.com": "Martin Kreichgauer",
+  "caraitto@chromium.org": "Caleb Raitto",
+  "vsemeniuk@google.com": "Viktor Semeniuk",
+  "cammie@chromium.org": "Cammie Smith Barnes",
+  "bmyersmorgan@google.com": "Bailey Myers-Morgan",
+  "justincohen@google.com": "Justin Cohen",
+  "bokan@chromium.org": "David Bokan",
+  "bbetini@google.com": "Bhuvana Betini",
+  "tnak@chromium.org": "Takashi Nakayama",
+  "ganesh@chromium.org": "S Ganesh",
+  "davidhinojosa@google.com": "David Hinojosa",
+  "norberg@google.com": "Adam Norberg",
+  "deckerjames@google.com": "James Decker",
+  "sergiog@microsoft.com": "Sergio Gonzalez Martin",
+  "flowerhack@google.com": "Julia Hansbrough",
+  "perrier@chromium.org": "Trevor Perrier",
+  "wojciech.bielawski@gmail.com": "Wojciech Bielawski",
+  "flackr@chromium.org": "Robert Flack",
+  "kevers@chromium.org": "Kevin Ellis",
+  "dullweber@chromium.org": "Christian Dullweber",
+  "alexiswu@google.com": "Alexis Wu",
+  "ybourouphael@google.com": "Youseff Bourouphel",
+  "behamilton@google.com": "Russ Hamilton",
+  "jianlin.qiu@intel.com": "Qiu, Jianlin",
+  "jamesleung@google.com": "James Leung",
+  "igoralsky@google.com": "Isabelle Goralsky",
+  "mamir@chromium.org": "Mohamed Amir Yosef",
+  "talshalti1@gmail.com": "טל שלטי",
+  "pauladedeji@google.com": "Paul Adedeji",
+  "pbirk@chromium.org": "Peter Pakkenberg",
+  "lingqi@chromium.org": "Lingqi Chi",
+  "amraboelkher@chromium.org": "Amr Aboelkher",
+  "jfernandez@igalia.com": "Javier Fernandez",
+  "torne@chromium.org": "Richard Coles",
+  "ziadyoussef@chromium.org": "Ziad Youssef",
+  "atsvirchkova@google.com": "Anna Tsvirchkova",
+  "kvitekp@chromium.org": "Peter Kvitek",
+  "solomonkinard@chromium.org": "Solomon Kinard",
+  "baranerf@google.com": "Baran Erfani",
+  "jbroman@chromium.org": "Jeremy Roman",
+  "jthiesen@chromium.org": "Jack Thiesen",
+  "chrome-metrics-config-manager-server@google.com": "Chrome Metrics Config Manager",
+  "natiahlyi@google.com": "Andrii Natiahlyi",
+  "mjackson@microsoft.com": "Mike Jackson",
+  "bajones@chromium.org": "Brandon Jones",
+  "davili@google.com": "David Li",
+  "sdefresne@chromium.org": "Sylvain Defresne",
+  "jamiewalch@chromium.org": "Jamie Walch",
+  "lwinston@google.com": "Lauren Winston",
+  "atalyk@google.com": "Atalyk Akash",
+  "skydebreuil@google.com": "Sky Debreuil",
+  "freedebreuil@google.com": "Free Debreuil",
+  "junhaohuang@microsoft.com": "Junhao Huang",
+  "aisulu@google.com": "Aisulu Rakhmetullina",
+  "xuehuichen@google.com": "Xuehui Chen",
+  "camargomau@google.com": "Mau Camargo",
+  "fernandex@google.com": "Nohemi Fernandez",
+  "thegreenfrog@google.com": "Chris Lu",
+  "olivierrobin@chromium.org": "Olivier Robin",
+  "yulunz@chromium.org": "Yulun Zeng",
+  "bsazonov@chromium.org": "Boris Sazonov",
+  "joenotcharles@google.com": "Joe Mason",
+  "dgn@chromium.org": "Nicolas Dossou-Gbété",
+  "jdiggs@igalia.com": "Joanmarie Diggs",
+  "msisov@igalia.com": "Maksim Sisov",
+  "dgozman@chromium.org": "Dmitry Gozman",
+  "giannich@chromium.org": "Gianni Chen",
+  "kimjae@chromium.org": "Jae Hoon Kim",
+  "gastonr@microsoft.com": "Gaston Rodriguez",
+  "johna@microsoft.com": "John An",
+  "stefanoduo@google.com": "Stefano Duo",
+  "ethansmith@google.com": "Ethan Smith",
+  "sygiet@google.com": "Karol Sygiet",
+  "koerber@google.com": "Matthias Körber",
+  "kazinova@google.com": "Maria Kazinova",
+  "alejandro9r@gmail.com": "Alejandro Romano",
+  "alwabel@google.com": "Abdulla Alwabel",
+  "vincentchiang@chromium.org": "Vincent Chiang",
+  "luhua@microsoft.com": "Lu Huang",
+  "ryqin@chromium.org": "Ryan Qin",
+  "ggj@google.com": "German Garcia",
+  "davidsegovia@google.com": "David Segovia",
+  "leveyp2@gmail.com": "Paul stephanus Levey1 (Leveys)",
+  "droger@chromium.org": "David Roger",
+  "dominicaustria@google.com": "Dominic Austria",
+  "dpenning@chromium.org": "David Pennington",
+  "thaol@microsoft.com": "Eve Le",
+  "yrw@chromium.org": "Yiren Wang",
+  "lizeb@chromium.org": "Benoit Lize",
+  "liahiscock@microsoft.com": "Lia Hiscock",
+  "aixba@chromium.org": "Adriana Ixba",
+  "agale@chromium.org": "Alison Gale",
+  "joelhockey@chromium.org": "Joel Hockey",
+  "kmaheshb@google.com": "Mahesh Kannan",
+  "yfriedman@chromium.org": "Yaron Friedman",
+  "nemco@google.com": "Neil Coronado",
+  "vbryhider@microsoft.com": "Viktoriya Bryhider",
+  "pleblanc@google.com": "Philippe Leblanc",
+  "antoli@google.com": "Anatoli Hancharou",
+  "yueshe@google.com": "Yue She",
+  "peter@chromium.org": "Peter Beverloo",
+  "mreichhoff@chromium.org": "Matt Reichhoff",
+  "jilinyang@google.com": "Jilin Yang",
+  "terryparks@google.com": "Terry Parks",
+  "yuqigong@google.com": "Yuqi Gong",
+  "alexwchen@chromium.org": "Alex Chen",
+  "shuangshuang.zhou@intel.com": "Zhou, Shuangshuang",
+  "corising@chromium.org": "Caroline Rising",
+  "kristof@lanth.me": "Kristof Imeri",
+  "hitawala@chromium.org": "Saifuddin Hitawala",
+  "krakhotin@google.com": "Viacheslav Krakhotin",
+  "szpotekagata@google.com": "Agata Szpotek",
+  "ynovikov@chromium.org": "Yuly Novikov",
+  "lehoangquyen@google.com": "Quyen Le",
+  "mtan@igalia.com": "tannal",
+  "rezvan@chromium.org": "Rezvan Mahdavi Hezaveh",
+  "pmeenan@chromium.org": "Patrick Meenan",
+  "kojii@chromium.org": "Koji Ishii",
+  "sisidovski@chromium.org": "Shunya Shishido",
+  "amyasinghal@google.com": "Amya Singhal",
+  "simon@zappar.com": "Simon Taylor",
+  "caitlinfischer@google.com": "Caitlin Fischer",
+  "vanshparikh@microsoft.com": "Vansh Parikh",
+  "djacobo@chromium.org": "David Jacobo",
+  "stkhapugin@chromium.org": "Stepan Khapugin",
+  "charlesmeng@chromium.org": "Charles Meng",
+  "lugli@google.com": "Vince Lugli",
+  "leolee@microsoft.com": "Leo Lee",
+  "hongyulong@chromium.org": "Hongyu Long",
+  "katie@chromium.org": "Katie D",
+  "haraken@chromium.org": "Kentaro Hara",
+  "yukishiino@chromium.org": "Yuki Shiino",
+  "jani@google.com": "Jani Patokallio",
+  "markusheintz@google.com": "Markus Heintz",
+  "liuwilliam@chromium.org": "William Liu",
+  "sebsg@chromium.org": "Sebastien S-G",
+  "ayatane@chromium.org": "Allen Li",
+  "xinghuilu@chromium.org": "Xinghui Lu",
+  "ssmole@microsoft.com": "Stefan Smolen",
+  "xdai@chromium.org": "Xiaoqian Dai",
+  "toshikikikuchi@chromium.org": "Toshiki Kikuchi",
+  "epulatov.dev@gmail.com": "Eldar Pulatov",
+  "ulas@google.com": "Ulas Kirazci",
+  "thomasth@google.com": "Thomas Thrainer",
+  "aerynm@google.com": "Aeryn Moss",
+  "avivkiss@google.com": "Aviv Kiss",
+  "pnoland@chromium.org": "Patrick Noland",
+  "adithyas@chromium.org": "Adithya Srinivasan",
+  "mickaczmarczyk@google.com": "Michał Kaczmarczyk",
+  "jlavrova@google.com": "Julia Lavrova",
+  "fmalita@chromium.org": "Florin Malita",
+  "yuje@chromium.org": "Jeffrey Yu",
+  "tsteiner@google.com": "Thomas Steiner",
+  "rbock@google.com": "Roland Bock",
+  "rushans@google.com": "Rushan Suleymanov",
+  "yanlingwang@microsoft.com": "Yanling Wang",
+  "massan@google.com": "Masa Fujita",
+  "alanding@chromium.org": "Alan Ding",
+  "yi01.imagination@gmail.com": "Yusuke Iwaki",
+  "aidazolic@chromium.org": "Aida Zolic",
+  "pmarko@chromium.org": "Pavol Marko",
+  "kyouhei.horizumi@gmail.com": "Kyouhei Horizumi",
+  "mfacey@chromium.org": "Marlon Facey",
+  "rmcelrath@chromium.org": "Robbie McElrath"
+ },
+ "weekly": [
+  {
+   "week": "2026-W37",
+   "email": "agpalak@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W37",
+   "email": "agrieve@chromium.org",
+   "given": 1,
+   "received": 3
+  },
+  {
+   "week": "2026-W37",
+   "email": "aishwaryarj@google.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W37",
+   "email": "alexmos@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W37",
+   "email": "alphonsea@google.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W37",
+   "email": "alsan@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W37",
+   "email": "andylky@google.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W37",
+   "email": "anthie@google.com",
+   "given": 0,
+   "received": 2
+  },
+  {
+   "week": "2026-W37",
+   "email": "anthonyvd@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W37",
+   "email": "anunoy@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W37",
+   "email": "arthursonzogni@chromium.org",
+   "given": 0,
+   "received": 2
+  },
+  {
+   "week": "2026-W37",
+   "email": "avi@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W37",
+   "email": "bashi@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W37",
+   "email": "battre@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W37",
+   "email": "blundell@chromium.org",
+   "given": 4,
+   "received": 0
+  },
+  {
+   "week": "2026-W37",
+   "email": "brianwang1984@bytedance.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W37",
+   "email": "brunobraga@google.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W37",
+   "email": "cdesouza@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W37",
+   "email": "cheickcisse@google.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W37",
+   "email": "christianjaime@google.com",
+   "given": 1,
+   "received": 1
+  },
+  {
+   "week": "2026-W37",
+   "email": "christopher.staite@menlosecurity.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W37",
+   "email": "clamy@chromium.org",
+   "given": 0,
+   "received": 2
+  },
+  {
+   "week": "2026-W37",
+   "email": "creis@chromium.org",
+   "given": 2,
+   "received": 0
+  },
+  {
+   "week": "2026-W37",
+   "email": "danft@google.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W37",
+   "email": "daniec@microsoft.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W37",
+   "email": "derinel@google.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W37",
+   "email": "diwux@google.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W37",
+   "email": "dljames@chromium.org",
+   "given": 2,
+   "received": 1
+  },
+  {
+   "week": "2026-W37",
+   "email": "dloehr@google.com",
+   "given": 1,
+   "received": 1
+  },
+  {
+   "week": "2026-W37",
+   "email": "dmurph@chromium.org",
+   "given": 0,
+   "received": 2
+  },
+  {
+   "week": "2026-W37",
+   "email": "dom@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W37",
+   "email": "eic@google.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W37",
+   "email": "ender@google.com",
+   "given": 1,
+   "received": 2
+  },
+  {
+   "week": "2026-W37",
+   "email": "engedy@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W37",
+   "email": "estalin@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W37",
+   "email": "etiennenoel@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W37",
+   "email": "evasu@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W37",
+   "email": "feich@microsoft.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W37",
+   "email": "fqj@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W37",
+   "email": "friedrichh@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W37",
+   "email": "futhark@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W37",
+   "email": "gmarcoesau@google.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W37",
+   "email": "grt@chromium.org",
+   "given": 3,
+   "received": 1
+  },
+  {
+   "week": "2026-W37",
+   "email": "gsaul@google.com",
+   "given": 0,
+   "received": 2
+  },
+  {
+   "week": "2026-W37",
+   "email": "haileywang@google.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W37",
+   "email": "hans@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W37",
+   "email": "hbecky@google.com",
+   "given": 1,
+   "received": 1
+  },
+  {
+   "week": "2026-W37",
+   "email": "helmut@januschka.com",
+   "given": 3,
+   "received": 1
+  },
+  {
+   "week": "2026-W37",
+   "email": "hiramahmood@google.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W37",
+   "email": "hkamila@google.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W37",
+   "email": "hnakashima@chromium.org",
+   "given": 2,
+   "received": 1
+  },
+  {
+   "week": "2026-W37",
+   "email": "hoisie@google.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W37",
+   "email": "huangs@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W37",
+   "email": "jacastro@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W37",
+   "email": "jamescook@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W37",
+   "email": "japhet@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W37",
+   "email": "jdh@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W37",
+   "email": "jhawkins@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W37",
+   "email": "jiawei.chen@dolby.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W37",
+   "email": "jinsukkim@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W37",
+   "email": "jkoblinsky@google.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W37",
+   "email": "jophba@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W37",
+   "email": "josefraska@google.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W37",
+   "email": "julietlevesque@google.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W37",
+   "email": "kavyamehta@google.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W37",
+   "email": "kerenzhu@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W37",
+   "email": "khalidpeer@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W37",
+   "email": "ksukh@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W37",
+   "email": "kunaldaftari@google.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W37",
+   "email": "kylechar@chromium.org",
+   "given": 1,
+   "received": 2
+  },
+  {
+   "week": "2026-W37",
+   "email": "kyraseevers@chromium.org",
+   "given": 3,
+   "received": 0
+  },
+  {
+   "week": "2026-W37",
+   "email": "kyungjunlee@google.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W37",
+   "email": "lindaywang@google.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W37",
+   "email": "lkuba@google.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W37",
+   "email": "lucasradaelli@google.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W37",
+   "email": "luisantunes@google.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W37",
+   "email": "lukasza@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W37",
+   "email": "lwarlow@igalia.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W37",
+   "email": "mahmadi@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W37",
+   "email": "masonf@chromium.org",
+   "given": 2,
+   "received": 2
+  },
+  {
+   "week": "2026-W37",
+   "email": "meiliang@chromium.org",
+   "given": 0,
+   "received": 2
+  },
+  {
+   "week": "2026-W37",
+   "email": "michaeldo@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W37",
+   "email": "monicach@microsoft.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W37",
+   "email": "mschillaci@google.com",
+   "given": 1,
+   "received": 1
+  },
+  {
+   "week": "2026-W37",
+   "email": "neis@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W37",
+   "email": "nicolasmacbeth@google.com",
+   "given": 2,
+   "received": 0
+  },
+  {
+   "week": "2026-W37",
+   "email": "nicolaso@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W37",
+   "email": "nidhijaju@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W37",
+   "email": "noahrose@google.com",
+   "given": 1,
+   "received": 1
+  },
+  {
+   "week": "2026-W37",
+   "email": "olka@chromium.org",
+   "given": 1,
+   "received": 1
+  },
+  {
+   "week": "2026-W37",
+   "email": "orinj@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W37",
+   "email": "ortuno@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W37",
+   "email": "pauljensen@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W37",
+   "email": "peterkang@google.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W37",
+   "email": "philyan@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W37",
+   "email": "pkotwicz@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W37",
+   "email": "rahsin@microsoft.com",
+   "given": 0,
+   "received": 2
+  },
+  {
+   "week": "2026-W37",
+   "email": "rainhard@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W37",
+   "email": "rdevlin.cronin@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W37",
+   "email": "rhalavati@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W37",
+   "email": "ricea@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W37",
+   "email": "riosvk@yandex-team.ru",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W37",
+   "email": "ritikagup@google.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W37",
+   "email": "rrodriguezh@google.com",
+   "given": 1,
+   "received": 1
+  },
+  {
+   "week": "2026-W37",
+   "email": "rsult@google.com",
+   "given": 2,
+   "received": 0
+  },
+  {
+   "week": "2026-W37",
+   "email": "ryohiy.dev@gmail.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W37",
+   "email": "samarchehade@google.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W37",
+   "email": "samuel.r.attard@gmail.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W37",
+   "email": "sashmitha.atigala@codimite.com",
+   "given": 2,
+   "received": 0
+  },
+  {
+   "week": "2026-W37",
+   "email": "schwering@google.com",
+   "given": 0,
+   "received": 2
+  },
+  {
+   "week": "2026-W37",
+   "email": "scottyoder@google.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W37",
+   "email": "skavuluru@google.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W37",
+   "email": "skym@chromium.org",
+   "given": 2,
+   "received": 1
+  },
+  {
+   "week": "2026-W37",
+   "email": "smcgruer@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W37",
+   "email": "songhaoli@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W37",
+   "email": "sorin@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W37",
+   "email": "spdonghao@google.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W37",
+   "email": "spectranaut@igalia.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W37",
+   "email": "ssolarewicz@chromium.org",
+   "given": 1,
+   "received": 1
+  },
+  {
+   "week": "2026-W37",
+   "email": "svend@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W37",
+   "email": "tguilbert@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W37",
+   "email": "thakis@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W37",
+   "email": "thefrog@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W37",
+   "email": "thesalsa@google.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W37",
+   "email": "tjudkins@chromium.org",
+   "given": 4,
+   "received": 0
+  },
+  {
+   "week": "2026-W37",
+   "email": "toddreif@microsoft.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W37",
+   "email": "tomasl@google.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W37",
+   "email": "toyoshim@chromium.org",
+   "given": 0,
+   "received": 2
+  },
+  {
+   "week": "2026-W37",
+   "email": "trangm@google.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W37",
+   "email": "tvignatti@igalia.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W37",
+   "email": "twellington@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W37",
+   "email": "utzcoz@gmail.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W37",
+   "email": "vakh@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W37",
+   "email": "vasilyt@chromium.org",
+   "given": 0,
+   "received": 4
+  },
+  {
+   "week": "2026-W37",
+   "email": "victorvianna@google.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W37",
+   "email": "wangxianzhu@chromium.org",
+   "given": 0,
+   "received": 2
+  },
+  {
+   "week": "2026-W37",
+   "email": "wenyufu@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W37",
+   "email": "wfh@chromium.org",
+   "given": 1,
+   "received": 3
+  },
+  {
+   "week": "2026-W37",
+   "email": "wintermelons@google.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W37",
+   "email": "wnwen@chromium.org",
+   "given": 3,
+   "received": 1
+  },
+  {
+   "week": "2026-W37",
+   "email": "wtc@google.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W37",
+   "email": "yungyichen@google.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W37",
+   "email": "zhusida@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W38",
+   "email": "aadishgoel@google.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W38",
+   "email": "achuith@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W38",
+   "email": "adamyao@google.com",
+   "given": 0,
+   "received": 2
+  },
+  {
+   "week": "2026-W38",
+   "email": "adelm@google.com",
+   "given": 0,
+   "received": 2
+  },
+  {
+   "week": "2026-W38",
+   "email": "agrieve@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W38",
+   "email": "akahuang@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W38",
+   "email": "alexmos@chromium.org",
+   "given": 1,
+   "received": 2
+  },
+  {
+   "week": "2026-W38",
+   "email": "alsan@chromium.org",
+   "given": 1,
+   "received": 2
+  },
+  {
+   "week": "2026-W38",
+   "email": "andresmolina@google.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W38",
+   "email": "annasato@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W38",
+   "email": "antrim@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W38",
+   "email": "apaseltiner@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W38",
+   "email": "arichiv@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W38",
+   "email": "atharvmaan@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W38",
+   "email": "battre@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W38",
+   "email": "beaufort.francois@gmail.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W38",
+   "email": "behery@chromium.org",
+   "given": 0,
+   "received": 2
+  },
+  {
+   "week": "2026-W38",
+   "email": "birnie@google.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W38",
+   "email": "bkeen@google.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W38",
+   "email": "bofengchen@google.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W38",
+   "email": "bpastene@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W38",
+   "email": "brianwang1984@bytedance.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W38",
+   "email": "bryantchandler@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W38",
+   "email": "ccameron@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W38",
+   "email": "cfredric@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W38",
+   "email": "cjgrant@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W38",
+   "email": "ckitagawa@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W38",
+   "email": "dalecurtis@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W38",
+   "email": "dbaron@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W38",
+   "email": "dcheng@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W38",
+   "email": "derinel@google.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W38",
+   "email": "dewittj@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W38",
+   "email": "dfried@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W38",
+   "email": "dljames@chromium.org",
+   "given": 2,
+   "received": 0
+  },
+  {
+   "week": "2026-W38",
+   "email": "dmurph@chromium.org",
+   "given": 2,
+   "received": 0
+  },
+  {
+   "week": "2026-W38",
+   "email": "dmytriievd@google.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W38",
+   "email": "dom@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W38",
+   "email": "dpapad@chromium.org",
+   "given": 2,
+   "received": 1
+  },
+  {
+   "week": "2026-W38",
+   "email": "dtapuska@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W38",
+   "email": "dylancutler@google.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W38",
+   "email": "eic@google.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W38",
+   "email": "eleanorlee@google.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W38",
+   "email": "elkurin@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W38",
+   "email": "ellyjones@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W38",
+   "email": "ender@google.com",
+   "given": 1,
+   "received": 2
+  },
+  {
+   "week": "2026-W38",
+   "email": "engedy@chromium.org",
+   "given": 2,
+   "received": 0
+  },
+  {
+   "week": "2026-W38",
+   "email": "ernn@google.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W38",
+   "email": "fhernqvist@google.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W38",
+   "email": "fleimgruber@google.com",
+   "given": 2,
+   "received": 0
+  },
+  {
+   "week": "2026-W38",
+   "email": "frs@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W38",
+   "email": "gayane@google.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W38",
+   "email": "grt@chromium.org",
+   "given": 1,
+   "received": 1
+  },
+  {
+   "week": "2026-W38",
+   "email": "guidou@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W38",
+   "email": "hanxi@chromium.org",
+   "given": 1,
+   "received": 1
+  },
+  {
+   "week": "2026-W38",
+   "email": "harringtond@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W38",
+   "email": "helmut@januschka.com",
+   "given": 3,
+   "received": 2
+  },
+  {
+   "week": "2026-W38",
+   "email": "henrika@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W38",
+   "email": "hnakashima@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W38",
+   "email": "hongchan@google.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W38",
+   "email": "hthadicherla@nvidia.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W38",
+   "email": "huanwu@google.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W38",
+   "email": "hugobenichi@google.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W38",
+   "email": "iahouma@google.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W38",
+   "email": "ikilpatrick@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W38",
+   "email": "ilnik@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W38",
+   "email": "ioanap@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W38",
+   "email": "jacastro@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W38",
+   "email": "jamalmo@microsoft.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W38",
+   "email": "jamescook@chromium.org",
+   "given": 2,
+   "received": 0
+  },
+  {
+   "week": "2026-W38",
+   "email": "jdh@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W38",
+   "email": "jeffreygour@microsoft.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W38",
+   "email": "jihadghanna@google.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W38",
+   "email": "jludwy@gmail.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W38",
+   "email": "julietlevesque@google.com",
+   "given": 5,
+   "received": 1
+  },
+  {
+   "week": "2026-W38",
+   "email": "kbajkiewicz@google.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W38",
+   "email": "keishi@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W38",
+   "email": "kerenzhu@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W38",
+   "email": "kiehl@google.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W38",
+   "email": "kron@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W38",
+   "email": "kunaldaftari@google.com",
+   "given": 0,
+   "received": 2
+  },
+  {
+   "week": "2026-W38",
+   "email": "kyraseevers@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W38",
+   "email": "landry@google.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W38",
+   "email": "lcdavid@google.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W38",
+   "email": "leimy@chromium.org",
+   "given": 0,
+   "received": 2
+  },
+  {
+   "week": "2026-W38",
+   "email": "lindaywang@google.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W38",
+   "email": "linyuh@google.com",
+   "given": 2,
+   "received": 1
+  },
+  {
+   "week": "2026-W38",
+   "email": "martinkong@google.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W38",
+   "email": "masonf@chromium.org",
+   "given": 3,
+   "received": 2
+  },
+  {
+   "week": "2026-W38",
+   "email": "mcczarny@gmail.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W38",
+   "email": "meiliang@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W38",
+   "email": "mek@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W38",
+   "email": "mercerd@google.com",
+   "given": 1,
+   "received": 1
+  },
+  {
+   "week": "2026-W38",
+   "email": "mfoltz@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W38",
+   "email": "mklw@google.com",
+   "given": 1,
+   "received": 1
+  },
+  {
+   "week": "2026-W38",
+   "email": "mlippautz@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W38",
+   "email": "morlovich@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W38",
+   "email": "mschillaci@google.com",
+   "given": 2,
+   "received": 1
+  },
+  {
+   "week": "2026-W38",
+   "email": "msw@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W38",
+   "email": "mthiesse@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W38",
+   "email": "mustaq@chromium.org",
+   "given": 2,
+   "received": 0
+  },
+  {
+   "week": "2026-W38",
+   "email": "mwoj@google.com",
+   "given": 2,
+   "received": 0
+  },
+  {
+   "week": "2026-W38",
+   "email": "mxlg@google.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W38",
+   "email": "nasko@chromium.org",
+   "given": 1,
+   "received": 1
+  },
+  {
+   "week": "2026-W38",
+   "email": "ndestin@google.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W38",
+   "email": "nehasapre@google.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W38",
+   "email": "nyquist@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W38",
+   "email": "ogallant@google.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W38",
+   "email": "orinj@chromium.org",
+   "given": 2,
+   "received": 0
+  },
+  {
+   "week": "2026-W38",
+   "email": "pawelstus@google.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W38",
+   "email": "pkotwicz@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W38",
+   "email": "rafael.cintron@microsoft.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W38",
+   "email": "rahsin@microsoft.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W38",
+   "email": "rainhard@chromium.org",
+   "given": 2,
+   "received": 0
+  },
+  {
+   "week": "2026-W38",
+   "email": "rakina@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W38",
+   "email": "rbpotter@chromium.org",
+   "given": 0,
+   "received": 2
+  },
+  {
+   "week": "2026-W38",
+   "email": "rrodriguezh@google.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W38",
+   "email": "saskekun@google.com",
+   "given": 2,
+   "received": 0
+  },
+  {
+   "week": "2026-W38",
+   "email": "schickin@google.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W38",
+   "email": "sdrab@google.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W38",
+   "email": "shawnq@google.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W38",
+   "email": "shuyng@google.com",
+   "given": 1,
+   "received": 1
+  },
+  {
+   "week": "2026-W38",
+   "email": "skavuluru@google.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W38",
+   "email": "skym@chromium.org",
+   "given": 2,
+   "received": 1
+  },
+  {
+   "week": "2026-W38",
+   "email": "smaier@google.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W38",
+   "email": "spdonghao@google.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W38",
+   "email": "ssalbiz@google.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W38",
+   "email": "ssid@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W38",
+   "email": "ssolarewicz@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W38",
+   "email": "stevebe@microsoft.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W38",
+   "email": "sushin@nvidia.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W38",
+   "email": "suzukikeita@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W38",
+   "email": "tarekmakkouk@google.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W38",
+   "email": "thefrog@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W38",
+   "email": "tikuta@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W38",
+   "email": "tjudkins@chromium.org",
+   "given": 2,
+   "received": 0
+  },
+  {
+   "week": "2026-W38",
+   "email": "toyoshim@chromium.org",
+   "given": 1,
+   "received": 1
+  },
+  {
+   "week": "2026-W38",
+   "email": "treib@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W38",
+   "email": "vakh@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W38",
+   "email": "velikapati@google.com",
+   "given": 2,
+   "received": 0
+  },
+  {
+   "week": "2026-W38",
+   "email": "vidhanj@google.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W38",
+   "email": "vogelheim@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W38",
+   "email": "wenyufu@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W38",
+   "email": "wfh@chromium.org",
+   "given": 1,
+   "received": 1
+  },
+  {
+   "week": "2026-W38",
+   "email": "wnwen@chromium.org",
+   "given": 1,
+   "received": 1
+  },
+  {
+   "week": "2026-W38",
+   "email": "wry@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W38",
+   "email": "wusirui@google.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W38",
+   "email": "xtlsheep@google.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W38",
+   "email": "xzonghan@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W38",
+   "email": "yixiwu@google.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W38",
+   "email": "yoshiki@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W38",
+   "email": "yvonneshi@google.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W38",
+   "email": "zoraiznaeem@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W39",
+   "email": "Piet.Schouten@microsoft.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W39",
+   "email": "adunaev@igalia.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W39",
+   "email": "agrieve@chromium.org",
+   "given": 1,
+   "received": 1
+  },
+  {
+   "week": "2026-W39",
+   "email": "alaric.baraou@gmail.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W39",
+   "email": "alexmos@chromium.org",
+   "given": 1,
+   "received": 1
+  },
+  {
+   "week": "2026-W39",
+   "email": "alsan@chromium.org",
+   "given": 0,
+   "received": 2
+  },
+  {
+   "week": "2026-W39",
+   "email": "alvinji@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W39",
+   "email": "andreaorru@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W39",
+   "email": "andresrperez@chromium.org",
+   "given": 2,
+   "received": 0
+  },
+  {
+   "week": "2026-W39",
+   "email": "anhmac@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W39",
+   "email": "anthie@google.com",
+   "given": 1,
+   "received": 1
+  },
+  {
+   "week": "2026-W39",
+   "email": "anunoy@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W39",
+   "email": "aopalinska@google.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W39",
+   "email": "aostrovskii@google.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W39",
+   "email": "arichiv@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W39",
+   "email": "atharvmaan@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W39",
+   "email": "austinzzr@google.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W39",
+   "email": "avi@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W39",
+   "email": "beaufort.francois@gmail.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W39",
+   "email": "bkassenov@google.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W39",
+   "email": "blee@igalia.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W39",
+   "email": "brpeters@microsoft.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W39",
+   "email": "bryanoltman@google.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W39",
+   "email": "clhager@google.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W39",
+   "email": "dalecurtis@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W39",
+   "email": "davidbienvenu@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W39",
+   "email": "deepakr@google.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W39",
+   "email": "derinel@google.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W39",
+   "email": "dhruvkathpalia@google.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W39",
+   "email": "diwux@google.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W39",
+   "email": "dljames@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W39",
+   "email": "dmurph@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W39",
+   "email": "dom@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W39",
+   "email": "dpapad@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W39",
+   "email": "dtapuska@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W39",
+   "email": "dwayner@microsoft.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W39",
+   "email": "ellyjones@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W39",
+   "email": "ender@google.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W39",
+   "email": "ernn@google.com",
+   "given": 1,
+   "received": 1
+  },
+  {
+   "week": "2026-W39",
+   "email": "etiennep@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W39",
+   "email": "fdoray@chromium.org",
+   "given": 1,
+   "received": 1
+  },
+  {
+   "week": "2026-W39",
+   "email": "feich@microsoft.com",
+   "given": 3,
+   "received": 0
+  },
+  {
+   "week": "2026-W39",
+   "email": "feng.dai@intel.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W39",
+   "email": "ferny@google.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W39",
+   "email": "ffred@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W39",
+   "email": "friedrichh@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W39",
+   "email": "gabrielbrito@microsoft.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W39",
+   "email": "gambard@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W39",
+   "email": "gildekel@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W39",
+   "email": "grt@chromium.org",
+   "given": 1,
+   "received": 2
+  },
+  {
+   "week": "2026-W39",
+   "email": "hanxi@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W39",
+   "email": "hartmanng@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W39",
+   "email": "helmut@januschka.com",
+   "given": 0,
+   "received": 3
+  },
+  {
+   "week": "2026-W39",
+   "email": "himesha.baddage@codimite.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W39",
+   "email": "holte@chromium.org",
+   "given": 0,
+   "received": 2
+  },
+  {
+   "week": "2026-W39",
+   "email": "ioanap@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W39",
+   "email": "jacastro@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W39",
+   "email": "jaeone@google.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W39",
+   "email": "jdh@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W39",
+   "email": "jhimawan@google.com",
+   "given": 2,
+   "received": 1
+  },
+  {
+   "week": "2026-W39",
+   "email": "jinsukkim@chromium.org",
+   "given": 0,
+   "received": 2
+  },
+  {
+   "week": "2026-W39",
+   "email": "jkarlin@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W39",
+   "email": "jkeitel@google.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W39",
+   "email": "johannes@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W39",
+   "email": "jonnalad@google.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W39",
+   "email": "joonehur@microsoft.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W39",
+   "email": "jophba@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W39",
+   "email": "jpgravel@chromium.org",
+   "given": 0,
+   "received": 2
+  },
+  {
+   "week": "2026-W39",
+   "email": "julietlevesque@google.com",
+   "given": 2,
+   "received": 0
+  },
+  {
+   "week": "2026-W39",
+   "email": "junhuihe@google.com",
+   "given": 0,
+   "received": 3
+  },
+  {
+   "week": "2026-W39",
+   "email": "junov@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W39",
+   "email": "kaklilu@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W39",
+   "email": "kbajkiewicz@google.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W39",
+   "email": "kbr@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W39",
+   "email": "khalidpeer@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W39",
+   "email": "kschmi@microsoft.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W39",
+   "email": "kyraseevers@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W39",
+   "email": "lambroslambrou@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W39",
+   "email": "lbarczynski@google.com",
+   "given": 0,
+   "received": 2
+  },
+  {
+   "week": "2026-W39",
+   "email": "lbrady@google.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W39",
+   "email": "linyuh@google.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W39",
+   "email": "lucnguyen@google.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W39",
+   "email": "mark@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W39",
+   "email": "martinkong@google.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W39",
+   "email": "masonf@chromium.org",
+   "given": 5,
+   "received": 0
+  },
+  {
+   "week": "2026-W39",
+   "email": "mfiaz@google.com",
+   "given": 1,
+   "received": 1
+  },
+  {
+   "week": "2026-W39",
+   "email": "michaeldo@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W39",
+   "email": "mingming1.xu@intel.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W39",
+   "email": "mioszpracowity@gmail.com",
+   "given": 1,
+   "received": 2
+  },
+  {
+   "week": "2026-W39",
+   "email": "mjwilson@chromium.org",
+   "given": 2,
+   "received": 0
+  },
+  {
+   "week": "2026-W39",
+   "email": "mkwst@chromium.org",
+   "given": 2,
+   "received": 0
+  },
+  {
+   "week": "2026-W39",
+   "email": "mmenke@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W39",
+   "email": "mmocny@chromium.org",
+   "given": 2,
+   "received": 0
+  },
+  {
+   "week": "2026-W39",
+   "email": "moonki.choi@samsung.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W39",
+   "email": "mpearson@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W39",
+   "email": "msalama@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W39",
+   "email": "mschillaci@google.com",
+   "given": 1,
+   "received": 1
+  },
+  {
+   "week": "2026-W39",
+   "email": "mwoj@google.com",
+   "given": 2,
+   "received": 0
+  },
+  {
+   "week": "2026-W39",
+   "email": "mxlg@google.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W39",
+   "email": "myuu@google.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W39",
+   "email": "nasko@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W39",
+   "email": "nehasapre@google.com",
+   "given": 1,
+   "received": 1
+  },
+  {
+   "week": "2026-W39",
+   "email": "neis@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W39",
+   "email": "nhiroki@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W39",
+   "email": "nicolaso@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W39",
+   "email": "nikifork@google.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W39",
+   "email": "ningxin.hu@intel.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W39",
+   "email": "novakovica@google.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W39",
+   "email": "nsatragno@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W39",
+   "email": "nyquist@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W39",
+   "email": "orinj@chromium.org",
+   "given": 1,
+   "received": 1
+  },
+  {
+   "week": "2026-W39",
+   "email": "osaul@google.com",
+   "given": 4,
+   "received": 0
+  },
+  {
+   "week": "2026-W39",
+   "email": "oshima@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W39",
+   "email": "patrickkettner@google.com",
+   "given": 1,
+   "received": 1
+  },
+  {
+   "week": "2026-W39",
+   "email": "pauljensen@chromium.org",
+   "given": 1,
+   "received": 1
+  },
+  {
+   "week": "2026-W39",
+   "email": "piotrkotynia@google.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W39",
+   "email": "pkotwicz@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W39",
+   "email": "qingxinwu@google.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W39",
+   "email": "quacksort@google.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W39",
+   "email": "quarz@chromium.org",
+   "given": 0,
+   "received": 2
+  },
+  {
+   "week": "2026-W39",
+   "email": "rahsin@microsoft.com",
+   "given": 3,
+   "received": 0
+  },
+  {
+   "week": "2026-W39",
+   "email": "rakina@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W39",
+   "email": "rdevlin.cronin@chromium.org",
+   "given": 1,
+   "received": 2
+  },
+  {
+   "week": "2026-W39",
+   "email": "reillyg@chromium.org",
+   "given": 0,
+   "received": 2
+  },
+  {
+   "week": "2026-W39",
+   "email": "ricardofda@google.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W39",
+   "email": "rkgibson@google.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W39",
+   "email": "robpitkin@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W39",
+   "email": "rsult@google.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W39",
+   "email": "rtatum@google.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W39",
+   "email": "ruoxih@google.com",
+   "given": 1,
+   "received": 1
+  },
+  {
+   "week": "2026-W39",
+   "email": "samuel.r.attard@gmail.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W39",
+   "email": "sangbaekpark@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W39",
+   "email": "saskekun@google.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W39",
+   "email": "scottyoder@google.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W39",
+   "email": "shaseley@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W39",
+   "email": "skrakowi@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W39",
+   "email": "skym@chromium.org",
+   "given": 1,
+   "received": 2
+  },
+  {
+   "week": "2026-W39",
+   "email": "smcgruer@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W39",
+   "email": "songhaoli@chromium.org",
+   "given": 2,
+   "received": 0
+  },
+  {
+   "week": "2026-W39",
+   "email": "ssalbiz@google.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W39",
+   "email": "stevebe@microsoft.com",
+   "given": 0,
+   "received": 3
+  },
+  {
+   "week": "2026-W39",
+   "email": "tangm@microsoft.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W39",
+   "email": "tchudakov@google.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W39",
+   "email": "thefrog@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W39",
+   "email": "tiborg@chromium.org",
+   "given": 1,
+   "received": 1
+  },
+  {
+   "week": "2026-W39",
+   "email": "tjudkins@chromium.org",
+   "given": 2,
+   "received": 0
+  },
+  {
+   "week": "2026-W39",
+   "email": "tluk@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W39",
+   "email": "tommasin@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W39",
+   "email": "trangm@google.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W39",
+   "email": "twellington@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W39",
+   "email": "vakh@chromium.org",
+   "given": 0,
+   "received": 2
+  },
+  {
+   "week": "2026-W39",
+   "email": "vercaemer@google.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W39",
+   "email": "vsvirski@google.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W39",
+   "email": "wangxianzhu@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W39",
+   "email": "wei4.wang@intel.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W39",
+   "email": "xinyiji@chromium.org",
+   "given": 1,
+   "received": 2
+  },
+  {
+   "week": "2026-W39",
+   "email": "ydago@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W39",
+   "email": "yuweih@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W39",
+   "email": "yyanting@google.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W39",
+   "email": "zijingl@google.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W39",
+   "email": "zmo@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W39",
+   "email": "zoraiznaeem@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W40",
+   "email": "Piet.Schouten@microsoft.com",
+   "given": 1,
+   "received": 1
+  },
+  {
+   "week": "2026-W40",
+   "email": "abhijithnair@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W40",
+   "email": "adamta@google.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W40",
+   "email": "agazal@google.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W40",
+   "email": "ainozaki@google.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W40",
+   "email": "ajgo@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W40",
+   "email": "akyereboah@microsoft.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W40",
+   "email": "alaric.baraou@gmail.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W40",
+   "email": "aleventhal@google.com",
+   "given": 0,
+   "received": 3
+  },
+  {
+   "week": "2026-W40",
+   "email": "alexilin@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W40",
+   "email": "alexmos@chromium.org",
+   "given": 3,
+   "received": 1
+  },
+  {
+   "week": "2026-W40",
+   "email": "alexmt@chromium.org",
+   "given": 3,
+   "received": 0
+  },
+  {
+   "week": "2026-W40",
+   "email": "alexrudenko@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W40",
+   "email": "almaher@microsoft.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W40",
+   "email": "andreaorru@chromium.org",
+   "given": 1,
+   "received": 1
+  },
+  {
+   "week": "2026-W40",
+   "email": "annasato@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W40",
+   "email": "anthonyvd@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W40",
+   "email": "anunoy@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W40",
+   "email": "arichiv@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W40",
+   "email": "arthursonzogni@chromium.org",
+   "given": 1,
+   "received": 2
+  },
+  {
+   "week": "2026-W40",
+   "email": "asvitkine@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W40",
+   "email": "battre@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W40",
+   "email": "beaufort.francois@gmail.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W40",
+   "email": "bewise@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W40",
+   "email": "birnie@google.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W40",
+   "email": "bjoyce@google.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W40",
+   "email": "boliu@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W40",
+   "email": "caitc@google.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W40",
+   "email": "charlesyc@google.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W40",
+   "email": "chrdavis@microsoft.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W40",
+   "email": "christianjaime@google.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W40",
+   "email": "ckitagawa@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W40",
+   "email": "clamy@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W40",
+   "email": "creis@chromium.org",
+   "given": 0,
+   "received": 2
+  },
+  {
+   "week": "2026-W40",
+   "email": "dalecurtis@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W40",
+   "email": "davidbienvenu@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W40",
+   "email": "dbaron@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W40",
+   "email": "dcheng@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W40",
+   "email": "dfried@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W40",
+   "email": "dibyapal@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W40",
+   "email": "drcastroa@google.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W40",
+   "email": "drott@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W40",
+   "email": "dtseng@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W40",
+   "email": "eic@google.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W40",
+   "email": "elkurin@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W40",
+   "email": "ender@google.com",
+   "given": 0,
+   "received": 2
+  },
+  {
+   "week": "2026-W40",
+   "email": "ericchao@google.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W40",
+   "email": "erikchen@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W40",
+   "email": "ernn@google.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W40",
+   "email": "esalma@google.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W40",
+   "email": "evanstade@microsoft.com",
+   "given": 0,
+   "received": 2
+  },
+  {
+   "week": "2026-W40",
+   "email": "fdoray@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W40",
+   "email": "felipeerias@igalia.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W40",
+   "email": "ffred@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W40",
+   "email": "fikremengistu@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W40",
+   "email": "fikus@google.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W40",
+   "email": "fuhsinliao@google.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W40",
+   "email": "futhark@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W40",
+   "email": "gab@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W40",
+   "email": "gayane@google.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W40",
+   "email": "hartmanng@chromium.org",
+   "given": 2,
+   "received": 0
+  },
+  {
+   "week": "2026-W40",
+   "email": "hchao@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W40",
+   "email": "helmut@januschka.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W40",
+   "email": "hempjudith@google.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W40",
+   "email": "hiroshige@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W40",
+   "email": "hnakashima@chromium.org",
+   "given": 0,
+   "received": 2
+  },
+  {
+   "week": "2026-W40",
+   "email": "hujasonx@google.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W40",
+   "email": "hypan@google.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W40",
+   "email": "iclelland@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W40",
+   "email": "jaeone@google.com",
+   "given": 2,
+   "received": 0
+  },
+  {
+   "week": "2026-W40",
+   "email": "jamescook@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W40",
+   "email": "jhimawan@google.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W40",
+   "email": "jhorwich@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W40",
+   "email": "jihadghanna@google.com",
+   "given": 1,
+   "received": 1
+  },
+  {
+   "week": "2026-W40",
+   "email": "jkeitel@google.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W40",
+   "email": "jlulejian@chromium.org",
+   "given": 1,
+   "received": 1
+  },
+  {
+   "week": "2026-W40",
+   "email": "johannes@chromium.org",
+   "given": 1,
+   "received": 1
+  },
+  {
+   "week": "2026-W40",
+   "email": "jonathanjlee@google.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W40",
+   "email": "jonross@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W40",
+   "email": "josefraska@google.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W40",
+   "email": "junov@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W40",
+   "email": "kaklilu@chromium.org",
+   "given": 2,
+   "received": 1
+  },
+  {
+   "week": "2026-W40",
+   "email": "kavyamehta@google.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W40",
+   "email": "kbabbitt@microsoft.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W40",
+   "email": "kbr@chromium.org",
+   "given": 3,
+   "received": 0
+  },
+  {
+   "week": "2026-W40",
+   "email": "kejiah@google.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W40",
+   "email": "kerenzhu@chromium.org",
+   "given": 1,
+   "received": 1
+  },
+  {
+   "week": "2026-W40",
+   "email": "kiehl@google.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W40",
+   "email": "krkurapati@google.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W40",
+   "email": "lalday@google.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W40",
+   "email": "landry@google.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W40",
+   "email": "lbrady@google.com",
+   "given": 1,
+   "received": 2
+  },
+  {
+   "week": "2026-W40",
+   "email": "lburchard@google.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W40",
+   "email": "leese@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W40",
+   "email": "lucasradaelli@google.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W40",
+   "email": "luisantunes@google.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W40",
+   "email": "lukedeng@google.com",
+   "given": 0,
+   "received": 2
+  },
+  {
+   "week": "2026-W40",
+   "email": "mahmadi@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W40",
+   "email": "masonf@chromium.org",
+   "given": 4,
+   "received": 1
+  },
+  {
+   "week": "2026-W40",
+   "email": "mastiz@chromium.org",
+   "given": 0,
+   "received": 2
+  },
+  {
+   "week": "2026-W40",
+   "email": "mbucchia@valvesoftware.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W40",
+   "email": "mek@chromium.org",
+   "given": 1,
+   "received": 1
+  },
+  {
+   "week": "2026-W40",
+   "email": "michaeldo@chromium.org",
+   "given": 1,
+   "received": 1
+  },
+  {
+   "week": "2026-W40",
+   "email": "mioszpracowity@gmail.com",
+   "given": 2,
+   "received": 0
+  },
+  {
+   "week": "2026-W40",
+   "email": "misha@nasledov.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W40",
+   "email": "mlbipin@google.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W40",
+   "email": "mmocny@chromium.org",
+   "given": 1,
+   "received": 1
+  },
+  {
+   "week": "2026-W40",
+   "email": "msw@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W40",
+   "email": "musalmaan@chromium.org",
+   "given": 1,
+   "received": 1
+  },
+  {
+   "week": "2026-W40",
+   "email": "mustaq@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W40",
+   "email": "mych@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W40",
+   "email": "myid.shin@igalia.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W40",
+   "email": "myuu@google.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W40",
+   "email": "nehasapre@google.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W40",
+   "email": "nicolasmacbeth@google.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W40",
+   "email": "niharm@google.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W40",
+   "email": "nuskos@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W40",
+   "email": "oka@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W40",
+   "email": "osaul@google.com",
+   "given": 3,
+   "received": 0
+  },
+  {
+   "week": "2026-W40",
+   "email": "oshima@chromium.org",
+   "given": 0,
+   "received": 2
+  },
+  {
+   "week": "2026-W40",
+   "email": "parkhj062@gmail.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W40",
+   "email": "patrickkettner@google.com",
+   "given": 1,
+   "received": 1
+  },
+  {
+   "week": "2026-W40",
+   "email": "peconn@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W40",
+   "email": "pmonette@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W40",
+   "email": "poromov@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W40",
+   "email": "qjw@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W40",
+   "email": "raghurai@google.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W40",
+   "email": "rahsin@microsoft.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W40",
+   "email": "rbpotter@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W40",
+   "email": "rdevlin.cronin@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W40",
+   "email": "renewitt@google.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W40",
+   "email": "richche@google.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W40",
+   "email": "rrodriguezh@google.com",
+   "given": 0,
+   "received": 2
+  },
+  {
+   "week": "2026-W40",
+   "email": "rsult@google.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W40",
+   "email": "ruoxih@google.com",
+   "given": 1,
+   "received": 1
+  },
+  {
+   "week": "2026-W40",
+   "email": "sadym@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W40",
+   "email": "saeideid@google.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W40",
+   "email": "samarchehade@google.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W40",
+   "email": "samfort@microsoft.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W40",
+   "email": "sanfin@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W40",
+   "email": "sangbaekpark@chromium.org",
+   "given": 1,
+   "received": 1
+  },
+  {
+   "week": "2026-W40",
+   "email": "saskekun@google.com",
+   "given": 1,
+   "received": 3
+  },
+  {
+   "week": "2026-W40",
+   "email": "satorux@google.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W40",
+   "email": "shawnq@google.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W40",
+   "email": "siyua@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W40",
+   "email": "spdonghao@google.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W40",
+   "email": "ssolarewicz@chromium.org",
+   "given": 1,
+   "received": 1
+  },
+  {
+   "week": "2026-W40",
+   "email": "stluong@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W40",
+   "email": "sushin@nvidia.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W40",
+   "email": "taminob@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W40",
+   "email": "thestig@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W40",
+   "email": "thomasanderson@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W40",
+   "email": "tiborg@chromium.org",
+   "given": 1,
+   "received": 1
+  },
+  {
+   "week": "2026-W40",
+   "email": "tjudkins@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W40",
+   "email": "tkfydtls464@gmail.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W40",
+   "email": "tluk@chromium.org",
+   "given": 2,
+   "received": 0
+  },
+  {
+   "week": "2026-W40",
+   "email": "tonikitoo@igalia.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W40",
+   "email": "treib@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W40",
+   "email": "tsepez@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W40",
+   "email": "utzcoz@gmail.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W40",
+   "email": "vakh@chromium.org",
+   "given": 2,
+   "received": 0
+  },
+  {
+   "week": "2026-W40",
+   "email": "valadkevich@google.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W40",
+   "email": "vincb@google.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W40",
+   "email": "viplavkadam@google.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W40",
+   "email": "vmpstr@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W40",
+   "email": "vsvirski@google.com",
+   "given": 0,
+   "received": 2
+  },
+  {
+   "week": "2026-W40",
+   "email": "xanth@google.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W40",
+   "email": "xiaobincui@microsoft.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W40",
+   "email": "yinguang@google.com",
+   "given": 0,
+   "received": 2
+  },
+  {
+   "week": "2026-W40",
+   "email": "zork@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W41",
+   "email": "Piet.Schouten@microsoft.com",
+   "given": 1,
+   "received": 1
+  },
+  {
+   "week": "2026-W41",
+   "email": "acondor@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W41",
+   "email": "aleventhal@google.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W41",
+   "email": "alexilin@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W41",
+   "email": "alexmos@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W41",
+   "email": "alfredohiguera@google.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W41",
+   "email": "alvinji@chromium.org",
+   "given": 1,
+   "received": 1
+  },
+  {
+   "week": "2026-W41",
+   "email": "andreaorru@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W41",
+   "email": "ankushkush@google.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W41",
+   "email": "annasato@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W41",
+   "email": "antoniosartori@chromium.org",
+   "given": 0,
+   "received": 3
+  },
+  {
+   "week": "2026-W41",
+   "email": "arthurmilchior@chromium.org",
+   "given": 0,
+   "received": 2
+  },
+  {
+   "week": "2026-W41",
+   "email": "arthursonzogni@chromium.org",
+   "given": 1,
+   "received": 1
+  },
+  {
+   "week": "2026-W41",
+   "email": "asvitkine@chromium.org",
+   "given": 1,
+   "received": 1
+  },
+  {
+   "week": "2026-W41",
+   "email": "austinzzr@google.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W41",
+   "email": "aykutb@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W41",
+   "email": "bbetini@google.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W41",
+   "email": "bmyersmorgan@google.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W41",
+   "email": "bofengchen@google.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W41",
+   "email": "bokan@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W41",
+   "email": "boliu@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W41",
+   "email": "brianwang1984@bytedance.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W41",
+   "email": "brpeters@microsoft.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W41",
+   "email": "bryantchandler@chromium.org",
+   "given": 1,
+   "received": 1
+  },
+  {
+   "week": "2026-W41",
+   "email": "cammie@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W41",
+   "email": "caraitto@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W41",
+   "email": "caseq@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W41",
+   "email": "choiwonik91@gmail.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W41",
+   "email": "christianjaime@google.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W41",
+   "email": "christianxu@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W41",
+   "email": "chromium@jordin.dev",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W41",
+   "email": "creis@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W41",
+   "email": "dalecurtis@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W41",
+   "email": "davidhinojosa@google.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W41",
+   "email": "deckerjames@google.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W41",
+   "email": "derinel@google.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W41",
+   "email": "dloehr@google.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W41",
+   "email": "dmurph@chromium.org",
+   "given": 1,
+   "received": 1
+  },
+  {
+   "week": "2026-W41",
+   "email": "doland@google.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W41",
+   "email": "dpapad@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W41",
+   "email": "dsv@chromium.org",
+   "given": 0,
+   "received": 2
+  },
+  {
+   "week": "2026-W41",
+   "email": "dullweber@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W41",
+   "email": "eleanorlee@google.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W41",
+   "email": "eledgar@google.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W41",
+   "email": "elkurin@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W41",
+   "email": "ender@google.com",
+   "given": 1,
+   "received": 2
+  },
+  {
+   "week": "2026-W41",
+   "email": "ernn@google.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W41",
+   "email": "evanstade@microsoft.com",
+   "given": 2,
+   "received": 1
+  },
+  {
+   "week": "2026-W41",
+   "email": "evliu@google.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W41",
+   "email": "fdoray@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W41",
+   "email": "ffiori@microsoft.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W41",
+   "email": "flackr@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W41",
+   "email": "flowerhack@google.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W41",
+   "email": "ftirelo@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W41",
+   "email": "futhark@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W41",
+   "email": "gabrielbrito@microsoft.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W41",
+   "email": "gaiko@google.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W41",
+   "email": "gambard@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W41",
+   "email": "ganesh@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W41",
+   "email": "gklassen@chromium.org",
+   "given": 3,
+   "received": 0
+  },
+  {
+   "week": "2026-W41",
+   "email": "grt@chromium.org",
+   "given": 2,
+   "received": 0
+  },
+  {
+   "week": "2026-W41",
+   "email": "gsaul@google.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W41",
+   "email": "gusmartin@google.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W41",
+   "email": "hamdi.gaied.si@gmail.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W41",
+   "email": "hartmanng@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W41",
+   "email": "hempjudith@google.com",
+   "given": 2,
+   "received": 0
+  },
+  {
+   "week": "2026-W41",
+   "email": "hidehiko@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W41",
+   "email": "hnakashima@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W41",
+   "email": "hongchan@google.com",
+   "given": 4,
+   "received": 0
+  },
+  {
+   "week": "2026-W41",
+   "email": "hop2deep@gmail.com",
+   "given": 1,
+   "received": 1
+  },
+  {
+   "week": "2026-W41",
+   "email": "hujasonx@google.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W41",
+   "email": "ioanap@chromium.org",
+   "given": 2,
+   "received": 0
+  },
+  {
+   "week": "2026-W41",
+   "email": "jacktfranklin@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W41",
+   "email": "janewman@microsoft.com",
+   "given": 2,
+   "received": 0
+  },
+  {
+   "week": "2026-W41",
+   "email": "jkeitel@google.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W41",
+   "email": "jmsmg1@me.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W41",
+   "email": "jonross@chromium.org",
+   "given": 2,
+   "received": 0
+  },
+  {
+   "week": "2026-W41",
+   "email": "jophba@chromium.org",
+   "given": 1,
+   "received": 2
+  },
+  {
+   "week": "2026-W41",
+   "email": "josefraska@google.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W41",
+   "email": "jtoohill@google.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W41",
+   "email": "junov@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W41",
+   "email": "justincohen@google.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W41",
+   "email": "kaklilu@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W41",
+   "email": "kbabbitt@microsoft.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W41",
+   "email": "kerenzhu@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W41",
+   "email": "kevers@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W41",
+   "email": "kiehl@google.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W41",
+   "email": "kristislee@google.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W41",
+   "email": "kschmi@microsoft.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W41",
+   "email": "lowkey@google.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W41",
+   "email": "lpromero@google.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W41",
+   "email": "lucnguyen@google.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W41",
+   "email": "lukasza@chromium.org",
+   "given": 3,
+   "received": 0
+  },
+  {
+   "week": "2026-W41",
+   "email": "mark@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W41",
+   "email": "marq@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W41",
+   "email": "martinkr@google.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W41",
+   "email": "masonf@chromium.org",
+   "given": 2,
+   "received": 1
+  },
+  {
+   "week": "2026-W41",
+   "email": "mek@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W41",
+   "email": "mercerd@google.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W41",
+   "email": "mfiaz@google.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W41",
+   "email": "michael@herrmann.io",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W41",
+   "email": "miketaylr@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W41",
+   "email": "mkwst@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W41",
+   "email": "mmenke@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W41",
+   "email": "morlovich@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W41",
+   "email": "msramek@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W41",
+   "email": "mstensho@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W41",
+   "email": "mtatarski@google.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W41",
+   "email": "mwoj@google.com",
+   "given": 1,
+   "received": 1
+  },
+  {
+   "week": "2026-W41",
+   "email": "myid.shin@igalia.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W41",
+   "email": "myuu@google.com",
+   "given": 2,
+   "received": 0
+  },
+  {
+   "week": "2026-W41",
+   "email": "neilkr@meta.com",
+   "given": 1,
+   "received": 1
+  },
+  {
+   "week": "2026-W41",
+   "email": "nicolasmacbeth@google.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W41",
+   "email": "noahrose@google.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W41",
+   "email": "norberg@google.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W41",
+   "email": "nrosenthal@google.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W41",
+   "email": "nuskos@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W41",
+   "email": "olesiamarukhno@google.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W41",
+   "email": "oshima@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W41",
+   "email": "oussamajb@google.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W41",
+   "email": "perrier@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W41",
+   "email": "peterkang@google.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W41",
+   "email": "pmeuleman@chromium.org",
+   "given": 0,
+   "received": 4
+  },
+  {
+   "week": "2026-W41",
+   "email": "polardz@google.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W41",
+   "email": "quacksort@google.com",
+   "given": 0,
+   "received": 3
+  },
+  {
+   "week": "2026-W41",
+   "email": "rainhard@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W41",
+   "email": "rcanoaparicio@google.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W41",
+   "email": "rdevlin.cronin@chromium.org",
+   "given": 2,
+   "received": 1
+  },
+  {
+   "week": "2026-W41",
+   "email": "ricea@chromium.org",
+   "given": 2,
+   "received": 0
+  },
+  {
+   "week": "2026-W41",
+   "email": "ritikagup@google.com",
+   "given": 1,
+   "received": 1
+  },
+  {
+   "week": "2026-W41",
+   "email": "robpitkin@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W41",
+   "email": "rrodriguezh@google.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W41",
+   "email": "rsult@google.com",
+   "given": 5,
+   "received": 1
+  },
+  {
+   "week": "2026-W41",
+   "email": "ruoxih@google.com",
+   "given": 2,
+   "received": 0
+  },
+  {
+   "week": "2026-W41",
+   "email": "samarchehade@google.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W41",
+   "email": "sangbaekpark@chromium.org",
+   "given": 1,
+   "received": 1
+  },
+  {
+   "week": "2026-W41",
+   "email": "saskekun@google.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W41",
+   "email": "scottyoder@google.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W41",
+   "email": "sergiog@microsoft.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W41",
+   "email": "skym@chromium.org",
+   "given": 1,
+   "received": 2
+  },
+  {
+   "week": "2026-W41",
+   "email": "ssolarewicz@chromium.org",
+   "given": 2,
+   "received": 0
+  },
+  {
+   "week": "2026-W41",
+   "email": "taminob@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W41",
+   "email": "tasak@google.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W41",
+   "email": "tedchoc@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W41",
+   "email": "tguilbert@chromium.org",
+   "given": 0,
+   "received": 4
+  },
+  {
+   "week": "2026-W41",
+   "email": "thestig@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W41",
+   "email": "thomasanderson@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W41",
+   "email": "tjudkins@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W41",
+   "email": "tkfydtls464@gmail.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W41",
+   "email": "tluk@chromium.org",
+   "given": 1,
+   "received": 2
+  },
+  {
+   "week": "2026-W41",
+   "email": "tnak@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W41",
+   "email": "tommasin@chromium.org",
+   "given": 2,
+   "received": 0
+  },
+  {
+   "week": "2026-W41",
+   "email": "toyoshim@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W41",
+   "email": "treib@chromium.org",
+   "given": 0,
+   "received": 2
+  },
+  {
+   "week": "2026-W41",
+   "email": "vmpstr@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W41",
+   "email": "vogelheim@chromium.org",
+   "given": 1,
+   "received": 1
+  },
+  {
+   "week": "2026-W41",
+   "email": "vsemeniuk@google.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W41",
+   "email": "wenyufu@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W41",
+   "email": "wojciech.bielawski@gmail.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W41",
+   "email": "xhwang@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W41",
+   "email": "yaoxia@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W41",
+   "email": "yigu@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W41",
+   "email": "yrian@google.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W41",
+   "email": "yvonneshi@google.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W41",
+   "email": "zhouzj@google.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W42",
+   "email": "agrieve@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W42",
+   "email": "aisulu@google.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W42",
+   "email": "alexilin@chromium.org",
+   "given": 2,
+   "received": 1
+  },
+  {
+   "week": "2026-W42",
+   "email": "alexiswu@google.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W42",
+   "email": "alexmos@chromium.org",
+   "given": 0,
+   "received": 2
+  },
+  {
+   "week": "2026-W42",
+   "email": "alvinji@chromium.org",
+   "given": 2,
+   "received": 0
+  },
+  {
+   "week": "2026-W42",
+   "email": "amraboelkher@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W42",
+   "email": "ankushkush@google.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W42",
+   "email": "anthie@google.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W42",
+   "email": "antoniosartori@chromium.org",
+   "given": 0,
+   "received": 2
+  },
+  {
+   "week": "2026-W42",
+   "email": "arthurmilchior@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W42",
+   "email": "arthursonzogni@chromium.org",
+   "given": 2,
+   "received": 3
+  },
+  {
+   "week": "2026-W42",
+   "email": "atalyk@google.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W42",
+   "email": "atsvirchkova@google.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W42",
+   "email": "avi@chromium.org",
+   "given": 1,
+   "received": 1
+  },
+  {
+   "week": "2026-W42",
+   "email": "bajones@chromium.org",
+   "given": 2,
+   "received": 0
+  },
+  {
+   "week": "2026-W42",
+   "email": "baranerf@google.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W42",
+   "email": "behamilton@google.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W42",
+   "email": "birnie@google.com",
+   "given": 2,
+   "received": 0
+  },
+  {
+   "week": "2026-W42",
+   "email": "blee@igalia.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W42",
+   "email": "bofengchen@google.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W42",
+   "email": "bsazonov@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W42",
+   "email": "camargomau@google.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W42",
+   "email": "chrdavis@microsoft.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W42",
+   "email": "christianjaime@google.com",
+   "given": 1,
+   "received": 1
+  },
+  {
+   "week": "2026-W42",
+   "email": "chrome-metrics-config-manager-server@google.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W42",
+   "email": "creis@chromium.org",
+   "given": 3,
+   "received": 0
+  },
+  {
+   "week": "2026-W42",
+   "email": "dalecurtis@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W42",
+   "email": "daniec@microsoft.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W42",
+   "email": "davidbienvenu@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W42",
+   "email": "davili@google.com",
+   "given": 0,
+   "received": 2
+  },
+  {
+   "week": "2026-W42",
+   "email": "dgn@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W42",
+   "email": "dgozman@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W42",
+   "email": "dibyapal@chromium.org",
+   "given": 1,
+   "received": 1
+  },
+  {
+   "week": "2026-W42",
+   "email": "dmurph@chromium.org",
+   "given": 0,
+   "received": 2
+  },
+  {
+   "week": "2026-W42",
+   "email": "dom@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W42",
+   "email": "drcastroa@google.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W42",
+   "email": "dtseng@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W42",
+   "email": "ellyjones@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W42",
+   "email": "ender@google.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W42",
+   "email": "engedy@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W42",
+   "email": "estalin@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W42",
+   "email": "ethansmith@google.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W42",
+   "email": "evanstade@microsoft.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W42",
+   "email": "evasu@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W42",
+   "email": "fernandex@google.com",
+   "given": 2,
+   "received": 0
+  },
+  {
+   "week": "2026-W42",
+   "email": "ferny@google.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W42",
+   "email": "flackr@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W42",
+   "email": "freedebreuil@google.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W42",
+   "email": "gastonr@microsoft.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W42",
+   "email": "giannich@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W42",
+   "email": "grt@chromium.org",
+   "given": 0,
+   "received": 2
+  },
+  {
+   "week": "2026-W42",
+   "email": "gusmartin@google.com",
+   "given": 1,
+   "received": 1
+  },
+  {
+   "week": "2026-W42",
+   "email": "hartmanng@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W42",
+   "email": "hbecky@google.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W42",
+   "email": "helmut@januschka.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W42",
+   "email": "hempjudith@google.com",
+   "given": 1,
+   "received": 1
+  },
+  {
+   "week": "2026-W42",
+   "email": "hkamila@google.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W42",
+   "email": "hnakashima@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W42",
+   "email": "hongchan@google.com",
+   "given": 3,
+   "received": 0
+  },
+  {
+   "week": "2026-W42",
+   "email": "hujasonx@google.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W42",
+   "email": "hypan@google.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W42",
+   "email": "igoralsky@google.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W42",
+   "email": "ioanap@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W42",
+   "email": "jacastro@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W42",
+   "email": "jaeone@google.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W42",
+   "email": "jamescook@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W42",
+   "email": "jamesleung@google.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W42",
+   "email": "jamiewalch@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W42",
+   "email": "jbroman@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W42",
+   "email": "jdiggs@igalia.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W42",
+   "email": "jfernandez@igalia.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W42",
+   "email": "jianlin.qiu@intel.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W42",
+   "email": "jinsukkim@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W42",
+   "email": "jkeitel@google.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W42",
+   "email": "jlulejian@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W42",
+   "email": "joenotcharles@google.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W42",
+   "email": "johna@microsoft.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W42",
+   "email": "jonnalad@google.com",
+   "given": 0,
+   "received": 2
+  },
+  {
+   "week": "2026-W42",
+   "email": "jonross@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W42",
+   "email": "jophba@chromium.org",
+   "given": 1,
+   "received": 2
+  },
+  {
+   "week": "2026-W42",
+   "email": "jthiesen@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W42",
+   "email": "julietlevesque@google.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W42",
+   "email": "junhaohuang@microsoft.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W42",
+   "email": "junhuihe@google.com",
+   "given": 0,
+   "received": 2
+  },
+  {
+   "week": "2026-W42",
+   "email": "kerenzhu@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W42",
+   "email": "khalidpeer@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W42",
+   "email": "kimjae@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W42",
+   "email": "kron@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W42",
+   "email": "kvitekp@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W42",
+   "email": "kylechar@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W42",
+   "email": "lingqi@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W42",
+   "email": "lowkey@google.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W42",
+   "email": "lukasza@chromium.org",
+   "given": 1,
+   "received": 1
+  },
+  {
+   "week": "2026-W42",
+   "email": "lukedeng@google.com",
+   "given": 1,
+   "received": 1
+  },
+  {
+   "week": "2026-W42",
+   "email": "lwinston@google.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W42",
+   "email": "mamir@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W42",
+   "email": "masonf@chromium.org",
+   "given": 4,
+   "received": 0
+  },
+  {
+   "week": "2026-W42",
+   "email": "mek@chromium.org",
+   "given": 1,
+   "received": 1
+  },
+  {
+   "week": "2026-W42",
+   "email": "mercerd@google.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W42",
+   "email": "mfoltz@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W42",
+   "email": "michaeldo@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W42",
+   "email": "mjackson@microsoft.com",
+   "given": 0,
+   "received": 2
+  },
+  {
+   "week": "2026-W42",
+   "email": "mjwilson@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W42",
+   "email": "mkwst@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W42",
+   "email": "msisov@igalia.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W42",
+   "email": "msw@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W42",
+   "email": "mtatarski@google.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W42",
+   "email": "mustaq@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W42",
+   "email": "mwoj@google.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W42",
+   "email": "natiahlyi@google.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W42",
+   "email": "nhiroki@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W42",
+   "email": "nidhijaju@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W42",
+   "email": "niharm@google.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W42",
+   "email": "nuskos@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W42",
+   "email": "olivierrobin@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W42",
+   "email": "osaul@google.com",
+   "given": 5,
+   "received": 0
+  },
+  {
+   "week": "2026-W42",
+   "email": "oussamajb@google.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W42",
+   "email": "pauladedeji@google.com",
+   "given": 1,
+   "received": 1
+  },
+  {
+   "week": "2026-W42",
+   "email": "pbirk@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W42",
+   "email": "peconn@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W42",
+   "email": "perrier@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W42",
+   "email": "piotrkotynia@google.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W42",
+   "email": "pmonette@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W42",
+   "email": "quacksort@google.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W42",
+   "email": "rahsin@microsoft.com",
+   "given": 4,
+   "received": 0
+  },
+  {
+   "week": "2026-W42",
+   "email": "rainhard@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W42",
+   "email": "rakina@chromium.org",
+   "given": 2,
+   "received": 0
+  },
+  {
+   "week": "2026-W42",
+   "email": "rbpotter@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W42",
+   "email": "rhalavati@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W42",
+   "email": "ricea@chromium.org",
+   "given": 1,
+   "received": 1
+  },
+  {
+   "week": "2026-W42",
+   "email": "ritikagup@google.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W42",
+   "email": "rrodriguezh@google.com",
+   "given": 1,
+   "received": 1
+  },
+  {
+   "week": "2026-W42",
+   "email": "rsult@google.com",
+   "given": 2,
+   "received": 0
+  },
+  {
+   "week": "2026-W42",
+   "email": "rtatum@google.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W42",
+   "email": "saeideid@google.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W42",
+   "email": "samarchehade@google.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W42",
+   "email": "satorux@google.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W42",
+   "email": "sdefresne@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W42",
+   "email": "skydebreuil@google.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W42",
+   "email": "smcgruer@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W42",
+   "email": "solomonkinard@chromium.org",
+   "given": 1,
+   "received": 1
+  },
+  {
+   "week": "2026-W42",
+   "email": "spdonghao@google.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W42",
+   "email": "ssolarewicz@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W42",
+   "email": "stefanoduo@google.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W42",
+   "email": "stevebe@microsoft.com",
+   "given": 0,
+   "received": 3
+  },
+  {
+   "week": "2026-W42",
+   "email": "sygiet@google.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W42",
+   "email": "talshalti1@gmail.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W42",
+   "email": "tguilbert@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W42",
+   "email": "thegreenfrog@google.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W42",
+   "email": "thestig@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W42",
+   "email": "tiborg@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W42",
+   "email": "tjudkins@chromium.org",
+   "given": 3,
+   "received": 1
+  },
+  {
+   "week": "2026-W42",
+   "email": "torne@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W42",
+   "email": "toyoshim@chromium.org",
+   "given": 2,
+   "received": 2
+  },
+  {
+   "week": "2026-W42",
+   "email": "treib@chromium.org",
+   "given": 1,
+   "received": 1
+  },
+  {
+   "week": "2026-W42",
+   "email": "vmpstr@chromium.org",
+   "given": 0,
+   "received": 2
+  },
+  {
+   "week": "2026-W42",
+   "email": "vogelheim@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W42",
+   "email": "wfh@chromium.org",
+   "given": 3,
+   "received": 0
+  },
+  {
+   "week": "2026-W42",
+   "email": "xhwang@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W42",
+   "email": "xuehuichen@google.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W42",
+   "email": "ybourouphael@google.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W42",
+   "email": "yixiwu@google.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W42",
+   "email": "yulunz@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W42",
+   "email": "ziadyoussef@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W42",
+   "email": "zoraiznaeem@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W43",
+   "email": "agale@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W43",
+   "email": "aixba@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W43",
+   "email": "alejandro9r@gmail.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W43",
+   "email": "aleventhal@google.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W43",
+   "email": "alexmos@chromium.org",
+   "given": 3,
+   "received": 1
+  },
+  {
+   "week": "2026-W43",
+   "email": "alexwchen@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W43",
+   "email": "alvinji@chromium.org",
+   "given": 1,
+   "received": 1
+  },
+  {
+   "week": "2026-W43",
+   "email": "alwabel@google.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W43",
+   "email": "antoli@google.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W43",
+   "email": "arthurmilchior@chromium.org",
+   "given": 0,
+   "received": 2
+  },
+  {
+   "week": "2026-W43",
+   "email": "atharvmaan@chromium.org",
+   "given": 2,
+   "received": 1
+  },
+  {
+   "week": "2026-W43",
+   "email": "bajones@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W43",
+   "email": "bbetini@google.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W43",
+   "email": "birnie@google.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W43",
+   "email": "blundell@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W43",
+   "email": "bofengchen@google.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W43",
+   "email": "bokan@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W43",
+   "email": "cfredric@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W43",
+   "email": "chrdavis@microsoft.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W43",
+   "email": "corising@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W43",
+   "email": "creis@chromium.org",
+   "given": 2,
+   "received": 1
+  },
+  {
+   "week": "2026-W43",
+   "email": "daniec@microsoft.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W43",
+   "email": "davidsegovia@google.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W43",
+   "email": "davili@google.com",
+   "given": 0,
+   "received": 2
+  },
+  {
+   "week": "2026-W43",
+   "email": "dcheng@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W43",
+   "email": "derinel@google.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W43",
+   "email": "dfried@chromium.org",
+   "given": 0,
+   "received": 2
+  },
+  {
+   "week": "2026-W43",
+   "email": "dibyapal@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W43",
+   "email": "dljames@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W43",
+   "email": "dloehr@google.com",
+   "given": 0,
+   "received": 2
+  },
+  {
+   "week": "2026-W43",
+   "email": "dmurph@chromium.org",
+   "given": 3,
+   "received": 0
+  },
+  {
+   "week": "2026-W43",
+   "email": "dominicaustria@google.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W43",
+   "email": "dpenning@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W43",
+   "email": "droger@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W43",
+   "email": "dtseng@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W43",
+   "email": "elkurin@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W43",
+   "email": "ellyjones@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W43",
+   "email": "ender@google.com",
+   "given": 1,
+   "received": 1
+  },
+  {
+   "week": "2026-W43",
+   "email": "esalma@google.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W43",
+   "email": "friedrichh@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W43",
+   "email": "ggj@google.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W43",
+   "email": "gklassen@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W43",
+   "email": "grt@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W43",
+   "email": "gusmartin@google.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W43",
+   "email": "hans@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W43",
+   "email": "helmut@januschka.com",
+   "given": 2,
+   "received": 3
+  },
+  {
+   "week": "2026-W43",
+   "email": "hitawala@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W43",
+   "email": "jamescook@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W43",
+   "email": "janewman@microsoft.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W43",
+   "email": "japhet@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W43",
+   "email": "jilinyang@google.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W43",
+   "email": "joelhockey@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W43",
+   "email": "joenotcharles@google.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W43",
+   "email": "jophba@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W43",
+   "email": "kazinova@google.com",
+   "given": 0,
+   "received": 2
+  },
+  {
+   "week": "2026-W43",
+   "email": "khalidpeer@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W43",
+   "email": "kmaheshb@google.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W43",
+   "email": "koerber@google.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W43",
+   "email": "kojii@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W43",
+   "email": "krakhotin@google.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W43",
+   "email": "kristof@lanth.me",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W43",
+   "email": "kron@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W43",
+   "email": "ksukh@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W43",
+   "email": "kyungjunlee@google.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W43",
+   "email": "landry@google.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W43",
+   "email": "lehoangquyen@google.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W43",
+   "email": "leveyp2@gmail.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W43",
+   "email": "liahiscock@microsoft.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W43",
+   "email": "lizeb@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W43",
+   "email": "luhua@microsoft.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W43",
+   "email": "lukasza@chromium.org",
+   "given": 3,
+   "received": 0
+  },
+  {
+   "week": "2026-W43",
+   "email": "lwinston@google.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W43",
+   "email": "mamir@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W43",
+   "email": "masonf@chromium.org",
+   "given": 3,
+   "received": 0
+  },
+  {
+   "week": "2026-W43",
+   "email": "mfiaz@google.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W43",
+   "email": "mfoltz@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W43",
+   "email": "mjwilson@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W43",
+   "email": "mmenke@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W43",
+   "email": "mreichhoff@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W43",
+   "email": "msw@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W43",
+   "email": "mtan@igalia.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W43",
+   "email": "mtatarski@google.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W43",
+   "email": "musalmaan@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W43",
+   "email": "mwoj@google.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W43",
+   "email": "myuu@google.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W43",
+   "email": "neilkr@meta.com",
+   "given": 1,
+   "received": 1
+  },
+  {
+   "week": "2026-W43",
+   "email": "nemco@google.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W43",
+   "email": "nidhijaju@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W43",
+   "email": "oka@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W43",
+   "email": "orinj@chromium.org",
+   "given": 1,
+   "received": 1
+  },
+  {
+   "week": "2026-W43",
+   "email": "oshima@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W43",
+   "email": "pauladedeji@google.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W43",
+   "email": "peconn@chromium.org",
+   "given": 0,
+   "received": 5
+  },
+  {
+   "week": "2026-W43",
+   "email": "perrier@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W43",
+   "email": "peter@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W43",
+   "email": "piotrkotynia@google.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W43",
+   "email": "pkotwicz@chromium.org",
+   "given": 1,
+   "received": 1
+  },
+  {
+   "week": "2026-W43",
+   "email": "pleblanc@google.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W43",
+   "email": "pmeenan@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W43",
+   "email": "quarz@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W43",
+   "email": "rainhard@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W43",
+   "email": "rakina@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W43",
+   "email": "reillyg@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W43",
+   "email": "rezvan@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W43",
+   "email": "robpitkin@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W43",
+   "email": "ryqin@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W43",
+   "email": "sanfin@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W43",
+   "email": "satorux@google.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W43",
+   "email": "shuangshuang.zhou@intel.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W43",
+   "email": "sisidovski@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W43",
+   "email": "ssalbiz@google.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W43",
+   "email": "szpotekagata@google.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W43",
+   "email": "tasak@google.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W43",
+   "email": "terryparks@google.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W43",
+   "email": "tguilbert@chromium.org",
+   "given": 1,
+   "received": 2
+  },
+  {
+   "week": "2026-W43",
+   "email": "thaol@microsoft.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W43",
+   "email": "thestig@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W43",
+   "email": "thomasanderson@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W43",
+   "email": "tluk@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W43",
+   "email": "torne@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W43",
+   "email": "toyoshim@chromium.org",
+   "given": 1,
+   "received": 1
+  },
+  {
+   "week": "2026-W43",
+   "email": "treib@chromium.org",
+   "given": 0,
+   "received": 2
+  },
+  {
+   "week": "2026-W43",
+   "email": "utzcoz@gmail.com",
+   "given": 1,
+   "received": 1
+  },
+  {
+   "week": "2026-W43",
+   "email": "vbryhider@microsoft.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W43",
+   "email": "vincentchiang@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W43",
+   "email": "vmpstr@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W43",
+   "email": "vogelheim@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W43",
+   "email": "wangxianzhu@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W43",
+   "email": "wfh@chromium.org",
+   "given": 2,
+   "received": 2
+  },
+  {
+   "week": "2026-W43",
+   "email": "wnwen@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W43",
+   "email": "yfriedman@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W43",
+   "email": "ynovikov@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W43",
+   "email": "yrian@google.com",
+   "given": 2,
+   "received": 0
+  },
+  {
+   "week": "2026-W43",
+   "email": "yrw@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W43",
+   "email": "yueshe@google.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W43",
+   "email": "yuqigong@google.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W43",
+   "email": "yvonneshi@google.com",
+   "given": 2,
+   "received": 0
+  },
+  {
+   "week": "2026-W44",
+   "email": "adithyas@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W44",
+   "email": "aerynm@google.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W44",
+   "email": "agrieve@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W44",
+   "email": "aidazolic@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W44",
+   "email": "aixba@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W44",
+   "email": "alanding@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W44",
+   "email": "alexmos@chromium.org",
+   "given": 1,
+   "received": 2
+  },
+  {
+   "week": "2026-W44",
+   "email": "alsan@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W44",
+   "email": "amraboelkher@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W44",
+   "email": "amyasinghal@google.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W44",
+   "email": "andreaorru@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W44",
+   "email": "anthie@google.com",
+   "given": 0,
+   "received": 3
+  },
+  {
+   "week": "2026-W44",
+   "email": "arthurmilchior@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W44",
+   "email": "arthursonzogni@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W44",
+   "email": "asvitkine@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W44",
+   "email": "avivkiss@google.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W44",
+   "email": "ayatane@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W44",
+   "email": "bajones@chromium.org",
+   "given": 2,
+   "received": 0
+  },
+  {
+   "week": "2026-W44",
+   "email": "behery@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W44",
+   "email": "blundell@chromium.org",
+   "given": 3,
+   "received": 3
+  },
+  {
+   "week": "2026-W44",
+   "email": "bokan@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W44",
+   "email": "brpeters@microsoft.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W44",
+   "email": "caitlinfischer@google.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W44",
+   "email": "cfredric@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W44",
+   "email": "charlesmeng@chromium.org",
+   "given": 2,
+   "received": 0
+  },
+  {
+   "week": "2026-W44",
+   "email": "christianjaime@google.com",
+   "given": 1,
+   "received": 1
+  },
+  {
+   "week": "2026-W44",
+   "email": "clamy@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W44",
+   "email": "corising@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W44",
+   "email": "creis@chromium.org",
+   "given": 5,
+   "received": 3
+  },
+  {
+   "week": "2026-W44",
+   "email": "davidbienvenu@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W44",
+   "email": "derinel@google.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W44",
+   "email": "dfried@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W44",
+   "email": "dhruvkathpalia@google.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W44",
+   "email": "djacobo@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W44",
+   "email": "dljames@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W44",
+   "email": "dmurph@chromium.org",
+   "given": 2,
+   "received": 0
+  },
+  {
+   "week": "2026-W44",
+   "email": "dominicaustria@google.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W44",
+   "email": "dpapad@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W44",
+   "email": "droger@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W44",
+   "email": "dtapuska@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W44",
+   "email": "elkurin@chromium.org",
+   "given": 1,
+   "received": 1
+  },
+  {
+   "week": "2026-W44",
+   "email": "epulatov.dev@gmail.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W44",
+   "email": "ericchao@google.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W44",
+   "email": "etiennep@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W44",
+   "email": "fdoray@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W44",
+   "email": "ffred@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W44",
+   "email": "fmalita@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W44",
+   "email": "friedrichh@chromium.org",
+   "given": 1,
+   "received": 1
+  },
+  {
+   "week": "2026-W44",
+   "email": "ftirelo@chromium.org",
+   "given": 1,
+   "received": 1
+  },
+  {
+   "week": "2026-W44",
+   "email": "gayane@google.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W44",
+   "email": "gusmartin@google.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W44",
+   "email": "haraken@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W44",
+   "email": "henrika@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W44",
+   "email": "hidehiko@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W44",
+   "email": "hiroshige@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W44",
+   "email": "hnakashima@chromium.org",
+   "given": 2,
+   "received": 0
+  },
+  {
+   "week": "2026-W44",
+   "email": "hongyulong@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W44",
+   "email": "hujasonx@google.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W44",
+   "email": "hypan@google.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W44",
+   "email": "jamescook@chromium.org",
+   "given": 0,
+   "received": 3
+  },
+  {
+   "week": "2026-W44",
+   "email": "jamesleung@google.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W44",
+   "email": "janewman@microsoft.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W44",
+   "email": "jani@google.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W44",
+   "email": "jeffreygour@microsoft.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W44",
+   "email": "jkeitel@google.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W44",
+   "email": "jlavrova@google.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W44",
+   "email": "jlulejian@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W44",
+   "email": "joenotcharles@google.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W44",
+   "email": "johna@microsoft.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W44",
+   "email": "jonross@chromium.org",
+   "given": 2,
+   "received": 0
+  },
+  {
+   "week": "2026-W44",
+   "email": "jophba@chromium.org",
+   "given": 1,
+   "received": 4
+  },
+  {
+   "week": "2026-W44",
+   "email": "josefraska@google.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W44",
+   "email": "katie@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W44",
+   "email": "kerenzhu@chromium.org",
+   "given": 2,
+   "received": 1
+  },
+  {
+   "week": "2026-W44",
+   "email": "khalidpeer@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W44",
+   "email": "kimjae@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W44",
+   "email": "kojii@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W44",
+   "email": "kschmi@microsoft.com",
+   "given": 2,
+   "received": 0
+  },
+  {
+   "week": "2026-W44",
+   "email": "kylechar@chromium.org",
+   "given": 1,
+   "received": 1
+  },
+  {
+   "week": "2026-W44",
+   "email": "kyouhei.horizumi@gmail.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W44",
+   "email": "lbarczynski@google.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W44",
+   "email": "leolee@microsoft.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W44",
+   "email": "liuwilliam@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W44",
+   "email": "lizeb@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W44",
+   "email": "lucasradaelli@google.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W44",
+   "email": "lugli@google.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W44",
+   "email": "lwinston@google.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W44",
+   "email": "mahmadi@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W44",
+   "email": "markusheintz@google.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W44",
+   "email": "masonf@chromium.org",
+   "given": 2,
+   "received": 1
+  },
+  {
+   "week": "2026-W44",
+   "email": "massan@google.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W44",
+   "email": "mastiz@chromium.org",
+   "given": 1,
+   "received": 1
+  },
+  {
+   "week": "2026-W44",
+   "email": "mek@chromium.org",
+   "given": 0,
+   "received": 2
+  },
+  {
+   "week": "2026-W44",
+   "email": "mercerd@google.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W44",
+   "email": "mfacey@chromium.org",
+   "given": 2,
+   "received": 0
+  },
+  {
+   "week": "2026-W44",
+   "email": "mfoltz@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W44",
+   "email": "mickaczmarczyk@google.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W44",
+   "email": "miketaylr@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W44",
+   "email": "mjwilson@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W44",
+   "email": "mkwst@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W44",
+   "email": "mlbipin@google.com",
+   "given": 0,
+   "received": 2
+  },
+  {
+   "week": "2026-W44",
+   "email": "mpearson@chromium.org",
+   "given": 2,
+   "received": 0
+  },
+  {
+   "week": "2026-W44",
+   "email": "msisov@igalia.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W44",
+   "email": "mstensho@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W44",
+   "email": "msw@chromium.org",
+   "given": 6,
+   "received": 0
+  },
+  {
+   "week": "2026-W44",
+   "email": "mwoj@google.com",
+   "given": 2,
+   "received": 0
+  },
+  {
+   "week": "2026-W44",
+   "email": "myuu@google.com",
+   "given": 3,
+   "received": 0
+  },
+  {
+   "week": "2026-W44",
+   "email": "oshima@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W44",
+   "email": "pauladedeji@google.com",
+   "given": 2,
+   "received": 2
+  },
+  {
+   "week": "2026-W44",
+   "email": "pmarko@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W44",
+   "email": "pnoland@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W44",
+   "email": "quacksort@google.com",
+   "given": 2,
+   "received": 1
+  },
+  {
+   "week": "2026-W44",
+   "email": "rahsin@microsoft.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W44",
+   "email": "rbock@google.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W44",
+   "email": "rbpotter@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W44",
+   "email": "rezvan@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W44",
+   "email": "rmcelrath@chromium.org",
+   "given": 0,
+   "received": 2
+  },
+  {
+   "week": "2026-W44",
+   "email": "rrodriguezh@google.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W44",
+   "email": "rsult@google.com",
+   "given": 3,
+   "received": 1
+  },
+  {
+   "week": "2026-W44",
+   "email": "rushans@google.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W44",
+   "email": "samarchehade@google.com",
+   "given": 2,
+   "received": 0
+  },
+  {
+   "week": "2026-W44",
+   "email": "sanfin@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W44",
+   "email": "satorux@google.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W44",
+   "email": "schwering@google.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W44",
+   "email": "scottyoder@google.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W44",
+   "email": "sebsg@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W44",
+   "email": "simon@zappar.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W44",
+   "email": "skydebreuil@google.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W44",
+   "email": "skym@chromium.org",
+   "given": 2,
+   "received": 0
+  },
+  {
+   "week": "2026-W44",
+   "email": "ssmole@microsoft.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W44",
+   "email": "stevebe@microsoft.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W44",
+   "email": "stkhapugin@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W44",
+   "email": "tguilbert@chromium.org",
+   "given": 1,
+   "received": 1
+  },
+  {
+   "week": "2026-W44",
+   "email": "thakis@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W44",
+   "email": "thefrog@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W44",
+   "email": "thomasth@google.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W44",
+   "email": "toshikikikuchi@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W44",
+   "email": "tsteiner@google.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W44",
+   "email": "ulas@google.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W44",
+   "email": "utzcoz@gmail.com",
+   "given": 0,
+   "received": 2
+  },
+  {
+   "week": "2026-W44",
+   "email": "vanshparikh@microsoft.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W44",
+   "email": "wfh@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W44",
+   "email": "wusirui@google.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W44",
+   "email": "xdai@chromium.org",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W44",
+   "email": "xinghuilu@chromium.org",
+   "given": 2,
+   "received": 0
+  },
+  {
+   "week": "2026-W44",
+   "email": "yanlingwang@microsoft.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W44",
+   "email": "yi01.imagination@gmail.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W44",
+   "email": "yrian@google.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W44",
+   "email": "yuje@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W44",
+   "email": "yukishiino@chromium.org",
+   "given": 0,
+   "received": 1
+  }
+ ]
+}

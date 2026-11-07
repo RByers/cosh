@@ -1603,6 +1603,12 @@ canvas.pointing {
   border-radius: 0 6px 6px 0;
 }
 
+/* Shown in place of an empty quote list. */
+.quote-none {
+  color: var(--text-muted);
+  font-size: 0.875rem;
+}
+
 .quote-praise {
   --quote: var(--series-3);
 }

@@ -1,18 +1,28 @@
 // The Review Tone page (sentiment.html). Wording is in the HTML; this fills
 // in values and draws the charts. Comment text is untrusted and goes into
 // the DOM only as text (SECURITY.md). Ground rule 5: names and links only
-// for praise.
+// for praise. The "Comments by" switch picks whose comments every section
+// counts; each choice has its own set of summary files.
 import { Chart, Filler, type ChartDataset } from 'chart.js';
 import monthlyUrl from '../../summaries/sentiment_monthly.json?url';
 import praiseUrl from '../../summaries/sentiment_praise.json?url';
 import samplesUrl from '../../summaries/sentiment_samples.json?url';
 import recentUrl from '../../summaries/sentiment_recent.json?url';
+import monthlyEveryoneUrl from '../../summaries/sentiment_monthly.everyone.json?url';
+import praiseEveryoneUrl from '../../summaries/sentiment_praise.everyone.json?url';
+import samplesEveryoneUrl from '../../summaries/sentiment_samples.everyone.json?url';
+import recentEveryoneUrl from '../../summaries/sentiment_recent.everyone.json?url';
+import monthlyOthersUrl from '../../summaries/sentiment_monthly.noncommitters.json?url';
+import praiseOthersUrl from '../../summaries/sentiment_praise.noncommitters.json?url';
+import samplesOthersUrl from '../../summaries/sentiment_samples.noncommitters.json?url';
+import recentOthersUrl from '../../summaries/sentiment_recent.noncommitters.json?url';
 import promptText from '../../scripts/sentiment_prompts/v3.txt?raw';
 import { readTheme, type Theme } from './charts.ts';
 import { weekMonday } from './data.ts';
 import { fmtDay, fmtInt, fmtNum } from './format.ts';
 import { fill, fragment, msg } from './text.ts';
 import {
+  AUTHORS,
   dayLabel,
   gerritLink,
   monthLabel,
@@ -21,6 +31,7 @@ import {
   praisePeople,
   praiseTotal,
   weeksBetween,
+  type Authors,
   type HappyRow,
   type Period,
   type PraiseData,
@@ -31,6 +42,15 @@ import {
 } from './tone.ts';
 
 Chart.register(Filler);
+
+const URLS: Record<Authors, { monthly: string; praise: string; samples: string; recent: string }> = {
+  committers: { monthly: monthlyUrl, praise: praiseUrl, samples: samplesUrl, recent: recentUrl },
+  everyone: { monthly: monthlyEveryoneUrl, praise: praiseEveryoneUrl, samples: samplesEveryoneUrl, recent: recentEveryoneUrl },
+  noncommitters: { monthly: monthlyOthersUrl, praise: praiseOthersUrl, samples: samplesOthersUrl, recent: recentOthersUrl },
+};
+
+/** The charts drawn for the current choice, destroyed before redrawing. */
+let charts: Chart[] = [];
 
 const $ = <T extends Element = HTMLElement>(sel: string) => document.querySelector<T>(sel)!;
 
@@ -83,7 +103,7 @@ function bandedLine(canvas: HTMLCanvasElement, trend: ToneTrend, series: Series[
         fill: false },
     );
   }
-  return new Chart(canvas, {
+  charts.push(new Chart(canvas, {
     type: 'line',
     data: { labels: months.map((m) => monthLabel(m.m)), datasets },
     options: {
@@ -118,7 +138,7 @@ function bandedLine(canvas: HTMLCanvasElement, trend: ToneTrend, series: Series[
         },
       },
     },
-  });
+  }));
 }
 
 function renderTrend(trend: ToneTrend, theme: Theme) {
@@ -173,7 +193,7 @@ function renderRecent(r: ToneRecent, theme: Theme) {
   for (let i = -10; i <= 10; i++) bins.push(i / 10);
   const share = new Map(r.dist.map(([b, n]) => [Math.round(b * 10) / 10, n / total]));
   const colors = bins.map((b) => (b <= r.thresholds.angry ? theme.series[7] : b >= r.thresholds.glowing ? theme.series[2] : theme.baseline));
-  new Chart($<HTMLCanvasElement>('#recent-dist'), {
+  charts.push(new Chart($<HTMLCanvasElement>('#recent-dist'), {
     type: 'bar',
     data: {
       labels: bins.map((b) => (b > 0 ? '+' : b < 0 ? '−' : '') + Math.abs(b).toFixed(1)),
@@ -196,7 +216,7 @@ function renderRecent(r: ToneRecent, theme: Theme) {
         tooltip: { callbacks: { label: (item) => `${pct2(Number(item.raw))} of comments` } },
       },
     },
-  });
+  }));
 }
 
 // ---- leaderboards
@@ -211,42 +231,49 @@ function boardRows(table: HTMLTableElement, rows: { name: string; email: string;
   }));
 }
 
-function renderPraise(d: PraiseData) {
-  const draw = () => {
-    const range = periodWeeks(d.weeks, period());
-    const n = Number(size());
-    fill($('#praise-sub'), { range: weeksBetween(range), n: fmtInt(praiseTotal(d, range)), people: fmtInt(praisePeople(d, range)) });
-    for (const key of ['given', 'received'] as const) {
-      boardRows($<HTMLTableElement>(`#praise-${key}`),
-        praiseBoard(d, key, n, range).map((r) => ({ name: r.name, email: r.email, count: fmtInt(r.count) })));
-    }
-  };
-  const period = radio<Period>('praise-period', () => draw());
-  const size = radio<string>('praise-size', () => draw());
-  draw();
+// The boards' own toggles are wired once; each draw reads the current data.
+let praiseData: PraiseData | undefined;
+let recentData: ToneRecent | undefined;
+const praisePeriod = radio<Period>('praise-period', () => drawPraise());
+const praiseSize = radio<string>('praise-size', () => drawPraise());
+const happyPeriod = radio<Period>('happy-period', () => drawHappy());
+const happySize = radio<string>('happy-size', () => drawHappy());
+
+function drawPraise() {
+  const d = praiseData;
+  if (!d) return;
+  const range = periodWeeks(d.weeks, praisePeriod());
+  const n = Number(praiseSize());
+  fill($('#praise-sub'), { range: weeksBetween(range), n: fmtInt(praiseTotal(d, range)), people: fmtInt(praisePeople(d, range)) });
+  for (const key of ['given', 'received'] as const) {
+    boardRows($<HTMLTableElement>(`#praise-${key}`),
+      praiseBoard(d, key, n, range).map((r) => ({ name: r.name, email: r.email, count: fmtInt(r.count) })));
+  }
 }
 
-function renderHappy(r: ToneRecent) {
+function drawHappy() {
+  const r = recentData;
+  if (!r) return;
   const fmtRow = (x: HappyRow) => ({ name: x.name, email: x.email, count: `${fmtInt(x.happy)} of ${fmtInt(x.counterparts)}` });
-  const draw = () => {
-    const p = period();
-    const n = Number(size());
-    fill($('#happy-sub'), { range: weeksBetween(p === 'all' ? r.weeks : r.month_weeks), min: r.min_counterparts });
-    boardRows($<HTMLTableElement>('#happy-authors'), r.happy[p].authors.slice(0, n).map(fmtRow));
-    boardRows($<HTMLTableElement>('#happy-reviewers'), r.happy[p].reviewers.slice(0, n).map(fmtRow));
-  };
-  const period = radio<Period>('happy-period', () => draw());
-  const size = radio<string>('happy-size', () => draw());
-  draw();
+  const p = happyPeriod();
+  const n = Number(happySize());
+  fill($('#happy-sub'), { range: weeksBetween(p === 'all' ? r.weeks : r.month_weeks), min: r.min_counterparts });
+  boardRows($<HTMLTableElement>('#happy-authors'), r.happy[p].authors.slice(0, n).map(fmtRow));
+  boardRows($<HTMLTableElement>('#happy-reviewers'), r.happy[p].reviewers.slice(0, n).map(fmtRow));
 }
 
 // ---- comments
+
+/** A list's items, or one "none" line when there are none. */
+function orNone(items: HTMLElement[]): HTMLElement[] {
+  return items.length ? items : [el('li', msg('quotes-none'), 'quote-none')];
+}
 
 function renderSamples(s: ToneSamples) {
   fill($('#samples-sub'), { range: weeksBetween(s.weeks) });
   $('#praise-min').textContent = String(s.praise_min);
   $('#grumpy-max').textContent = String(Math.abs(s.grumpy_max));
-  $('#praise-samples').replaceChildren(...s.praise.map((p) => {
+  $('#praise-samples').replaceChildren(...orNone(s.praise.map((p) => {
     const li = el('li', undefined, 'quote quote-praise');
     li.append(el('blockquote', p.text));
     const by = el('p', undefined, 'quote-by');
@@ -260,15 +287,15 @@ function renderSamples(s: ToneSamples) {
     }
     li.append(by);
     return li;
-  }));
-  $('#grumpy-samples').replaceChildren(...s.grumpy.map((g) => {
+  })));
+  $('#grumpy-samples').replaceChildren(...orNone(s.grumpy.map((g) => {
     const li = el('li', undefined, 'quote quote-grumpy');
     li.append(el('blockquote', g.text));
     const when = el('p', undefined, 'quote-by');
     when.append(fragment('grumpy-when', { month: monthLabel(g.month) }));
     li.append(when);
     return li;
-  }));
+  })));
 }
 
 const AI_FIRST = 20;
@@ -280,50 +307,91 @@ function renderAi(r: ToneRecent) {
   const items = [...r.ai].reverse();
   const list = $('#ai-list');
   const draw = (n: number) =>
-    list.replaceChildren(...items.slice(0, n).map((c) => {
+    list.replaceChildren(...orNone(items.slice(0, n).map((c) => {
       const li = el('li', undefined, 'quote quote-ai');
       li.append(el('blockquote', c.text));
       const when = el('p', undefined, 'quote-by');
       when.append(fragment('ai-when', { month: monthLabel(c.month), role: c.role }));
       li.append(when);
       return li;
-    }));
+    })));
   draw(AI_FIRST);
   const more = $<HTMLButtonElement>('#ai-more');
-  if (items.length > AI_FIRST) {
-    more.textContent = msg('ai-more', { n: fmtInt(items.length) });
-    more.hidden = false;
-    more.addEventListener('click', () => {
-      draw(items.length);
-      more.hidden = true;
-    });
-  }
+  more.hidden = items.length <= AI_FIRST;
+  more.textContent = msg('ai-more', { n: fmtInt(items.length) });
+  more.onclick = () => {
+    draw(items.length);
+    more.hidden = true;
+  };
 }
 
-async function main() {
+/** Bumped on every switch, so a slower earlier load doesn't draw over a later one. */
+let current = 0;
+
+/** Loads and draws every section for one choice of writers. */
+async function show(authors: Authors, token: number) {
+  const u = URLS[authors];
+  const [trend, praise, samples, recent] = await Promise.all([
+    getJson<ToneTrend>(u.monthly),
+    getJson<PraiseData>(u.praise),
+    getJson<ToneSamples>(u.samples),
+    getJson<ToneRecent>(u.recent),
+  ]);
+  if (token !== current) return;
+  for (const c of charts) c.destroy();
+  charts = [];
+  const theme = readTheme();
+  renderTrend(trend, theme);
+  renderRecent(recent, theme);
+  praiseData = praise;
+  recentData = recent;
+  drawPraise();
+  drawHappy();
+  renderSamples(samples);
+  renderAi(recent);
+  fill($('#authors-note'), { a: authors });
+}
+
+/** The writers in the URL (?authors=…), else committers. */
+function initialAuthors(): Authors {
+  const v = new URLSearchParams(location.search).get('authors');
+  return (AUTHORS as readonly string[]).includes(v ?? '') ? (v as Authors) : 'committers';
+}
+
+async function run(authors: Authors) {
+  const token = ++current;
+  const main = $('main');
+  main.setAttribute('aria-busy', 'true');
+  delete document.body.dataset.ready;
   try {
-    $('#prompt-text').textContent = promptText.trim();
-    const [trend, praise, samples, recent] = await Promise.all([
-      getJson<ToneTrend>(monthlyUrl),
-      getJson<PraiseData>(praiseUrl),
-      getJson<ToneSamples>(samplesUrl),
-      getJson<ToneRecent>(recentUrl),
-    ]);
-    const theme = readTheme();
-    renderTrend(trend, theme);
-    renderRecent(recent, theme);
-    renderPraise(praise);
-    renderHappy(recent);
-    renderSamples(samples);
-    renderAi(recent);
+    await show(authors, token);
+    if (token === current) $('#error').hidden = true;
   } catch (e) {
+    if (token !== current) return;
     const err = $('#error');
     fill(err, { error: String(e) });
     err.hidden = false;
   } finally {
-    $('main').removeAttribute('aria-busy');
-    document.body.dataset.ready = '';
+    if (token === current) {
+      main.removeAttribute('aria-busy');
+      document.body.dataset.ready = authors;
+    }
   }
 }
 
-void main();
+function main() {
+  $('#prompt-text').textContent = promptText.trim();
+  const start = initialAuthors();
+  $<HTMLInputElement>(`input[name="authors"][value="${start}"]`).checked = true;
+  const authors = radio<Authors>('authors', () => {
+    const a = authors();
+    const url = new URL(location.href);
+    if (a === 'committers') url.searchParams.delete('authors');
+    else url.searchParams.set('authors', a);
+    history.replaceState(null, '', url);
+    void run(a);
+  });
+  void run(start);
+}
+
+main();

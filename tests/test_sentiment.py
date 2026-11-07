@@ -111,7 +111,7 @@ class TrendTest(unittest.TestCase):
                            ("v", S.prompt_sha(definition), "haiku", definition, "now"))
                 db.executemany("INSERT INTO scores VALUES (?,1,0,?,?,?)",
                                [(i, s, int(ai), why) for i, (s, ai, why) in scores.items()])
-            out, doc = S.write_summary("sample-5pct", d, out=os.path.join(d, "s.json"))
+            out, doc = S.write_summary("sample-5pct", d, out=os.path.join(d, "s.json"), authors="everyone")
             with open(out) as f:
                 self.assertEqual(json.load(f)["rate"], 0.05)
             self.assertEqual(len(doc["months"]), 3)
@@ -155,7 +155,7 @@ class PraiseTest(unittest.TestCase):
             real = S.collect
             S.collect = fake_collect
             try:
-                doc = S.praise(["2026-W44"], d)
+                doc = S.praise(["2026-W44"], d, authors="everyone")
             finally:
                 S.collect = real
         self.assertNotIn("a", seen)                                  # never built, never annotated
@@ -281,7 +281,7 @@ class SamplesTest(unittest.TestCase):
                 HOST, "chromium/src", 100, 1, "subj", "NEW", {"f.cc": comments}, ACCTS,
                 "2026-10-26 00:00:00", "2026-11-02 00:00:00", keep=keep, annotate=annotate)
             try:
-                doc = S.samples(["2026-W44"], d, sandbox=ScreenSandbox())
+                doc = S.samples(["2026-W44"], d, sandbox=ScreenSandbox(), authors="everyone")
             finally:
                 S.collect = real
         self.assertEqual([g["text"] for g in doc["grumpy"]], ["This is sloppy, again!!"])
@@ -341,3 +341,84 @@ class RecentTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class AuthorsTest(unittest.TestCase):
+    """Whose comments count: committers (default), everyone or non-committers."""
+
+    def derived(self, d, committers):
+        import sqlite3
+        db = sqlite3.connect(os.path.join(d, "derived.sqlite"))
+        db.execute("CREATE TABLE changes (host, change_number, owner_account)")
+        db.execute("CREATE TABLE comments (host, change_number, comment_id, account_id, written_at)")
+        db.execute("CREATE TABLE committers (host, account_id, is_committer, seen_at)")
+        db.execute("INSERT INTO changes VALUES (?, 100, 1)", (HOST,))
+        db.executemany("INSERT INTO comments VALUES (?, 100, ?, ?, '2026-10-27 10:00:00')",
+                       [(HOST, "a", 2), (HOST, "x", 5)])
+        db.executemany("INSERT INTO committers VALUES (?, ?, ?, 't')", [(HOST, a, v) for a, v in committers])
+        db.commit()
+        db.close()
+
+    def test_paths(self):
+        self.assertEqual(S.authors_path("s/sentiment_recent.json", "committers"), "s/sentiment_recent.json")
+        self.assertEqual(S.authors_path("s/sentiment_recent.json", "everyone"), "s/sentiment_recent.everyone.json")
+        self.assertEqual(S.authors_path("s/x.json", "noncommitters"), "s/x.noncommitters.json")
+
+    def test_rows_split_by_writer(self):
+        # Rows without identities: the owner's comments are the owner's, the rest
+        # are looked up. Rows with an `author` use it. Unknown writers aren't committers.
+        rows = [dict(id="100/a", host=HOST, cl=100, uuid="a", author_role="REVIEWER", written_at="2026-10-27 10:00:00"),
+                dict(id="100/b", host=HOST, cl=100, uuid="b", author_role="AUTHOR", written_at="2026-10-27 10:00:00"),
+                dict(id="100/x", host=HOST, cl=100, uuid="x", author_role="REVIEWER", written_at="2026-10-27 10:00:00"),
+                dict(id="100/y", host=HOST, cl=100, uuid="y", author_role="REVIEWER", written_at="2026-10-27 10:00:00"),
+                dict(id="100/z", host=HOST, cl=100, uuid="z", author_role="REVIEWER", written_at="2026-10-27 10:00:00",
+                     author=2)]
+        with tempfile.TemporaryDirectory() as d:
+            self.derived(d, [(1, 1), (2, 0), (5, 1)])
+            ids = lambda g: [r["id"] for r in S.by_authors(rows, g, d)]
+            self.assertEqual(ids("committers"), ["100/b", "100/x"])
+            self.assertEqual(ids("noncommitters"), ["100/a", "100/y", "100/z"])
+            self.assertEqual(ids("everyone"), [r["id"] for r in rows])
+            with self.assertRaises(ValueError):
+                S.by_authors(rows, "googlers", d)
+
+    def test_missing_table_says_to_derive(self):
+        with tempfile.TemporaryDirectory() as d:
+            import sqlite3
+            sqlite3.connect(os.path.join(d, "derived.sqlite")).close()
+            with self.assertRaises(SystemExit):
+                S.by_authors([], "committers", d)
+
+    def test_praise_counts_only_the_chosen_writers(self):
+        comments = [c("a", 2, "Why?"),
+                    c("b", 1, "Great catch, thank you so much!", parent="a"),       # owner (committer) -> reviewer
+                    c("p", 2, "Wonderful cleanup, I learned a lot", parent="b")]    # reviewer (not) -> owner
+        scores = {"100/b": (0.5, False, None), "100/p": (0.6, False, None)}
+        with tempfile.TemporaryDirectory() as d:
+            S.write_jsonl(os.path.join(d, "sentiment", "comments-2026-W44.jsonl"), run(comments))
+            self.derived(d, [(1, 1), (2, 0)])
+            import sqlite3
+            db = sqlite3.connect(os.path.join(d, "derived.sqlite"))
+            db.execute("CREATE TABLE accounts (host, account_id, email, name)")
+            db.executemany("INSERT INTO accounts VALUES (?,?,?,?)",
+                           [(h, a, v["email"], v["email"].split("@")[0]) for (h, a), v in ACCTS.items()])
+            db.commit()
+            sdb = S.open_scores(d)
+            definition = S.load_prompt()
+            with sdb:
+                sdb.execute("INSERT INTO prompts(version, sha256, model, text, created_at) VALUES (?,?,?,?,?)",
+                            ("v", S.prompt_sha(definition), "haiku", definition, "now"))
+                sdb.executemany("INSERT INTO scores VALUES (?,1,0,?,?,?)",
+                                [(i, s, int(ai), why) for i, (s, ai, why) in scores.items()])
+            real = S.collect
+            S.collect = lambda week, data_dir, keep=None, annotate=None: S._cl_comments(
+                HOST, "chromium/src", 100, 1, "subj", "NEW", {"f.cc": comments}, ACCTS,
+                "2026-10-26 00:00:00", "2026-11-02 00:00:00", keep=keep, annotate=annotate)
+            try:
+                got = {g: {(r["email"], r["given"], r["received"]) for r in S.praise(["2026-W44"], d, authors=g)["weekly"]}
+                       for g in S.AUTHORS}
+            finally:
+                S.collect = real
+        self.assertEqual(got["committers"], {("owner@chromium.org", 1, 0), ("rev@microsoft.com", 0, 1)})
+        self.assertEqual(got["noncommitters"], {("rev@microsoft.com", 1, 0), ("owner@chromium.org", 0, 1)})
+        self.assertEqual(got["everyone"], {("owner@chromium.org", 1, 1), ("rev@microsoft.com", 1, 1)})

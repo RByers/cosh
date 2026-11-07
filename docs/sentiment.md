@@ -62,7 +62,8 @@ don't share it. From a worktree, set `COSH_DATA_DIR` to the main checkout's
 python3 -m cosh.sentiment collect --week 2023-W26:2026-W44 --sample 0.05 --name sample-5pct
 # Haiku via sandboxed claude -p, resumable -> data/private/sentiment.sqlite
 python3 -m cosh.sentiment score --name sample-5pct
-# The public monthly trend -> summaries/sentiment_monthly.json
+# The public monthly trend -> summaries/sentiment_monthly.json (committers) and its
+# .everyone / .noncommitters versions, as for praise, samples and sentiment_recent below
 python3 -m cosh.sentiment summary --name sample-5pct
 # Whole weeks can be collected and scored too (comments-<week>.jsonl, ~25 s a week to collect)
 python3 -m cosh.sentiment collect --week 2026-W44
@@ -76,7 +77,7 @@ python3 -m cosh.sentiment samples --week 2026-W37:2026-W44
 # Identities on the weeks' rows (same files, plus writer and recipient), then the
 # last two months, "who makes whom happy" and the AI-friction list -> summaries/sentiment_recent.json
 python3 -m cosh.sentiment_people collect --week 2026-W37:2026-W44
-python3 -m cosh.sentiment_recent --week 2026-W37:2026-W44   # ~3 min: one screening call per 30 AI comments
+python3 -m cosh.sentiment_recent --week 2026-W37:2026-W44   # ~3 min per group: one screening call per 30 AI comments
 ```
 
 `cosh.sentiment_people collect` writes the same `comments-<week>.jsonl`
@@ -308,28 +309,34 @@ prompt injections.
   different prompt or model would shift the level; the trend is more robust
   than the level.
 
-## To do: split by committer and non-committer
+## Committers, everyone, non-committers
 
-Every figure today mixes Chromium committers with everyone else who can
-comment on Gerrit. That hides a real difference: on 2026-11-07 a comment
-drawn as a grumpy sample (the screen kept it off the page) turned out to be
-spam, an outside account posting an accusation on a merged CL, not a
-reviewer being harsh.
-Drive-by and spam accounts can move the angry share and the AI-friction
-list without saying anything about how Chromium's own reviewers behave.
+Every public output comes in three versions, by who wrote the comment, and
+the Review Tone page has a "Comments by" switch between them:
 
-- **Split every view** (trend, last two months, samples, AI friction) into
-  comments by committers and by non-committers, and draw the grumpy and
-  AI-friction samples from committers, or label which group each comes from.
-- **Who counts as a committer:** `docs/committers.md` (2026-11-07) answers
-  this from data already fetched: Gerrit's permitted Code-Review range in
-  every listing gives each account's status when fetched. `derive` stores
-  it in the `committers` table; today's status stands in for the status at
-  comment time. Earlier notes on the options, from data we
-  already hold: an account that has landed CLs as owner (git history or
-  merged changes in `derived.sqlite`), or one that has cast Code-Review +2
-  (the raw NoteDb data has votes, though `derived.sqlite` dropped them in
-  metric_version 5). Chromium's own committer list would be exact, but
-  fetching it is a new data source and needs approval (ground rule 1).
-- **Spam** could also be filtered on its own: accounts with no landed CLs
-  and no votes, or comments the model flags as off-topic, are candidates.
+| Writers | Files | |
+|---|---|---|
+| Committers (default) | `summaries/sentiment_<x>.json` | what the page shows first |
+| Everyone | `summaries/sentiment_<x>.everyone.json` | every human comment, as before 2026-11-07 |
+| Non-committers | `summaries/sentiment_<x>.noncommitters.json` | everyone else; noisy |
+
+`summary`, `praise`, `samples` and `cosh.sentiment_recent` write all three
+by default (`--authors all`), or one with `--authors committers|everyone|
+noncommitters`. A committer is an account Gerrit lets vote Code-Review, as
+recorded in `derived.sqlite`'s `committers` table (`docs/committers.md`).
+That is today's status, used for comments of every date: about 1% of last
+year's comments, and 2.5% over three years, may be on the wrong side
+(mostly former committers counted as non-committers). A writer we can't
+place counts as a non-committer. The filter applies to the comment's
+writer, so praise counts on the committers boards are praise *written* by
+committers (its recipient may be anyone).
+
+Why: every figure used to mix Chromium committers with everyone else who
+can comment on Gerrit. On 2026-11-07 a comment drawn as a grumpy sample
+(the screen kept it off the page) turned out to be spam, an outside account
+posting an accusation on a merged CL, not a reviewer being harsh. Drive-by
+and spam accounts can move the angry share and the AI-friction list without
+saying anything about how Chromium's own reviewers behave.
+
+**Not done:** spam could also be filtered on its own: accounts with no landed CLs
+and no votes, or comments the model flags as off-topic, are candidates.

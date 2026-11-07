@@ -20,6 +20,10 @@ export interface TonePoint {
   ai_ci: Interval;
 }
 
+/** Whose comments a set of summaries counts: the page's "Comments by" switch. */
+export const AUTHORS = ['committers', 'everyone', 'noncommitters'] as const;
+export type Authors = (typeof AUTHORS)[number];
+
 /** summaries/sentiment_monthly.json */
 export interface ToneTrend {
   rate: number | null;
