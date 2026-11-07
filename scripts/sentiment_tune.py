@@ -1,4 +1,4 @@
-"""Score a sentiment prompt against the hand-labelled gold set (docs/sentiment.md).
+"""Score a sentiment prompt against the gold set (docs/sentiment.md).
 
   COSH_DATA_DIR=<main>/data/private python3 scripts/sentiment_tune.py v3 [--runs 2] [--gold PATH]
 

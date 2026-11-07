@@ -93,7 +93,7 @@ value_ratio(O, t) = O's share of Chromium addressed review comments
    - **Example comments may be quoted** (in prompts, docs or the UI) unless
      they are negative *and* name someone.
    - **Labelled data that ties negative labels to specific comments stays
-     out of the repo:** hand-labelled gold sets (comment ids with scores) and
+     out of the repo:** gold sets (comment ids with scores) and
      per-comment model reasons.
    - **Otherwise publish as much as possible:** the method, every prompt
      version, the code, its security design, accuracy figures, the

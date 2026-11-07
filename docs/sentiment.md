@@ -38,7 +38,7 @@ This is `docs/plan.md` ground rule 5 (user's policy, 2026-11-06, relaxed
   and anyone can build per-person views on it. Our pages just never publish
   negative ones.
 - **Labelled data that ties negative labels to specific comments stays out
-  of the repo:** the hand-labelled gold set and the model's short
+  of the repo:** the gold set (Opus labels) and the model's short
   per-comment reasons, which stay in `data/private/`.
 - **Otherwise as much as possible is public:** the method, every prompt
   version, the code, the security design, the accuracy figures, the
@@ -140,8 +140,9 @@ telling off an agent, or frustration with one's own AI tool.
 
 ## Accuracy (tuned 2026-11-05 on week 2026-W44)
 
-The prompt was tuned against 261 hand-labelled comments from 2026-W44:
-candidates picked across buckets (strong and mild negative, AI frustration,
+The prompt was tuned against a gold set of 261 comments from 2026-W44,
+labelled by Claude Opus and spot-checked by hand. They were candidates
+picked across buckets (strong and mild negative, AI frustration,
 neutral, platitudes, specific praise, tricky cases) plus 40 random ones.
 The labels (comment id, score, AI flag) are kept private
 (`data/private/sentiment/gold.jsonl`, ground rule 5).

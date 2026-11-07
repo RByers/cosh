@@ -4,7 +4,7 @@ Every human comment written in a week, or a deterministic sample of them,
 gets a score from -1 (very angry or upset) through 0 (neutral) to +1 (very
 positive or grateful), plus a flag for anger or frustration about AI in code
 review. Scores come from Claude Haiku via headless `claude -p` (prompt tuned
-against a hand-labelled sample, docs/sentiment.md) and are stored in
+against a sample labelled by Claude Opus, docs/sentiment.md) and are stored in
 data/private/sentiment.sqlite, which, like labels.sqlite, costs Max usage to
 remake.
 

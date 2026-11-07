@@ -240,8 +240,8 @@
           an AI, never by name.
         </p>
         <p class="note">
-          The prompt was tuned against 261 hand-labelled comments. On those it agrees with the hand labels
-          to within 0.05 on average (Pearson r 0.92–0.93), and puts 88–90% of comments in the same class of
+          The prompt was tuned against 261 comments labelled by Claude Opus and spot-checked by hand. On
+          those it agrees with Opus's labels to within 0.05 on average (Pearson r 0.92–0.93), and puts 88–90% of comments in the same class of
           negative, neutral or positive. The trend uses a deterministic 5% sample of comments; the last two
           months, the leaderboards and the sample comments use every comment in their weeks. Code and method:
           <a href="https://github.com/RByers/cosh/blob/main/docs/sentiment.md">docs/sentiment.md</a>.
@@ -250,7 +250,7 @@
           <summary>The prompt the model is given (v3)</summary>
           <pre id="prompt-text"></pre>
           <p class="note">
-            Earlier versions, with how each scored against the hand labels, are in the repository:
+            Earlier versions, with how each scored against those labels, are in the repository:
             <a href="https://github.com/RByers/cosh/blob/main/scripts/sentiment_prompts/v1.txt">v1</a>,
             <a href="https://github.com/RByers/cosh/blob/main/scripts/sentiment_prompts/v2.txt">v2</a>.
           </p>
