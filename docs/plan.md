@@ -360,7 +360,13 @@ value_ratio(O, t) = O's share of Chromium addressed review comments
    review difficulty and rework, each against what is typical for the
    directories it touches. Waiting on the user's decisions listed there
    (per-person views, patch-set fetches beyond W44, mechanical CLs).
-8. Later:
+8. **Explore: commits as an author-side metric** (`docs/commits.md`,
+   2026-11-07). Landed human commits per org from local `main` history,
+   path-scoped, in 95 s for all 175 weeks. Last year non-Google is 12.8% of
+   commits against 11.9% of addressed comments, but per org it differs:
+   Igalia 2.0% vs 0.4%, Microsoft 5.1% vs 8.5%. Not built; waiting on the
+   user's choices listed there.
+9. Later:
    - the OWNER bit;
    - years 2–5 of backfill;
    - other repos and hosts (v8, devtools-frontend and skia are listed in
