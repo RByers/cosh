@@ -9,6 +9,8 @@ import reviewerUrl from '../../summaries/reviewer_weekly.json?url';
 import areaUrl from '../../summaries/area_weekly.json?url';
 import areaReviewersUrl from '../../summaries/area_reviewers.json?url';
 import threadExamplesUrl from '../../summaries/thread_examples.json?url';
+// The exact classifier prompt (cosh.classify.prompt_doc), shown as text.
+import classifierPromptJson from '../../summaries/classifier_prompt.json?raw';
 
 import {
   type AnyChart,
@@ -1256,6 +1258,9 @@ function derivativeJumpWeek(radar: RadarWeekly): string | null {
 
 function main(data: Data) {
   const state = readStateFromUrl(data);
+  const classifierPrompt = JSON.parse(classifierPromptJson) as { system: string; prompt: string };
+  $('#classifier-system').textContent = classifierPrompt.system;
+  $('#classifier-prompt').textContent = classifierPrompt.prompt.trimEnd();
   const orgs = chartedOrgs(data.radar, data.orgBrowsers).slice(0, 8);
   let ratioChart: AnyChart | undefined;
   let reviewChart: AnyChart | undefined;

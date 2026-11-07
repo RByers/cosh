@@ -539,6 +539,28 @@ test('switching the metric updates the table, review chart, directory chart and 
   await page.close();
 });
 
+test('the threads card shows the exact classifier prompt, collapsed, above the examples', async () => {
+  const { page, errors } = await open();
+  const file = JSON.parse(readFileSync(fileURLToPath(new URL('../../summaries/classifier_prompt.json', import.meta.url)), 'utf8'));
+  const got = await page.$eval('#threads', (card) => {
+    const d = card.querySelector('details.prompt') as HTMLDetailsElement;
+    const examples = card.querySelector('#threads-examples')!;
+    return {
+      open: d.open,
+      summary: d.querySelector('summary')!.textContent!.trim(),
+      before: !!(d.compareDocumentPosition(examples) & Node.DOCUMENT_POSITION_FOLLOWING),
+      system: card.querySelector('#classifier-system')!.textContent,
+      prompt: card.querySelector('#classifier-prompt')!.textContent,
+    };
+  });
+  assert.deepEqual([got.open, got.summary, got.before], [false, 'Prompt', true]);
+  assert.equal(got.system, file.system);
+  assert.equal(got.prompt, file.prompt.trimEnd());
+  assert.match(got.prompt!, /^Each item is a Gerrit code-review thread/);
+  assert.deepEqual(errors, []);
+  await page.close();
+});
+
 test('every card has a "#" link that keeps the state in the URL, and a shared link scrolls to its card', async () => {
   const { page, errors } = await open('#metric=comments&smooth=1');
   const cards = await page.$$eval('section.card', (ss) =>

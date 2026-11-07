@@ -390,6 +390,15 @@
             <a href="https://github.com/RByers/cosh/tree/main/docs/comment-classifier.md"><code>docs/comment-classifier.md</code></a>.
           </p>
         </div>
+        <details class="prompt">
+          <summary>Prompt</summary>
+          <p class="note">The exact prompt Claude Haiku is given. The system prompt:</p>
+          <pre id="classifier-system"></pre>
+          <p class="note">The message, followed by a batch of threads, each headed <code>### T0</code>,
+            <code>### T1</code>, … and written one comment per line as <code>REVIEWER:</code>, <code>OWNER:</code>
+            or <code>OTHER:</code> and its text:</p>
+          <pre id="classifier-prompt"></pre>
+        </details>
         <div id="threads-examples" class="tb-examples"></div>
         <template data-msg="thread-examples">Example threads: <slot name="outcome"></slot></template>
         <template data-msg="thread-examples-none">No examples for these weeks.</template>
