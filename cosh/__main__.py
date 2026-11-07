@@ -6,6 +6,7 @@
   python3 -m cosh classify [--week 2026-W44] [--max-threads N] [--dry-run] [--db PATH]
   python3 -m cosh summarize [--metric comments|cls|chars|addressed] [--db PATH] [--out DIR]
   python3 -m cosh backfill --weeks 52 [--go] [--duty-cycle 1.0]
+  python3 -m cosh patchsets [--go]
   python3 -m cosh status
   python3 -m cosh update-affiliations
   python3 -m cosh radar [--start 2020-09-01] [--agg 1d|1w] [--offline]
@@ -97,6 +98,18 @@ def main(argv=None):
                        help="lossless local housekeeping of the NoteDb repo (pack refs, "
                             "multi-pack index); takes the extract lock, no network")
     m.add_argument("--project", default=PROJECT)
+    ps = sub.add_parser("patchsets",
+                        help="fetch every patch set (with blobs) of CLs that have human review "
+                             "comments into data/private/git/chromium-patchsets.git "
+                             "(plan only without --go; resumable)")
+    ps.add_argument("--go", action="store_true", help="actually fetch (otherwise print the plan)")
+    ps.add_argument("--interval", type=float, default=2.0,
+                    help="seconds between fetches (default 2.0; never below 1.0)")
+    ps.add_argument("--max-cls", type=int, default=1000, help="CLs per fetch (default 1000)")
+    ps.add_argument("--max-patchsets", type=int, default=5000,
+                    help="patch sets per fetch (default 5000)")
+    ps.add_argument("--max-batches", type=int, help="stop after N fetches (for smoke tests)")
+    ps.add_argument("--db", help="derived DB path (default: data/private/derived.sqlite)")
     sub.add_parser("status", help="show extraction progress")
     sub.add_parser("update-affiliations", help="refresh config/affiliations.json5 from chromium/src")
     r = sub.add_parser("radar", help="fetch Cloudflare Radar browser share (needs CLOUDFLARE_API_TOKEN) "
@@ -113,7 +126,8 @@ def main(argv=None):
     # Commands that talk to a server need the contact e-mail (cosh/contact.py).
     # Check before taking locks or starting work, so a missing one fails fast.
     if (a.cmd in ("extract", "extract-open", "update-affiliations")
-            or (a.cmd == "backfill" and a.go) or (a.cmd == "radar" and not a.offline)):
+            or (a.cmd in ("backfill", "patchsets") and a.go)
+            or (a.cmd == "radar" and not a.offline)):
         from .contact import ContactMissing, contact
         try:
             contact()
@@ -169,6 +183,17 @@ def main(argv=None):
                 backfill(a.host, a.project, weeks, **kw)
         else:
             backfill(a.host, a.project, weeks, **kw)
+    elif a.cmd == "patchsets":
+        if a.interval < 1.0:
+            p.error("--interval below 1.0s is not allowed (be polite to googlesource)")
+        from . import patchsets
+        kw = dict(derived_path=a.db, interval=a.interval, max_cls=a.max_cls,
+                  max_ps=a.max_patchsets, max_batches=a.max_batches)
+        if a.go:
+            with store.extract_lock():
+                patchsets.run(go=True, **kw)
+        else:
+            patchsets.run(**kw)
     elif a.cmd == "notedb-maintain":
         from . import notedb
         with store.extract_lock():

@@ -67,7 +67,7 @@ regex plus Claude Haiku (`cosh classify`).
 ## Conventions
 
 - Python standard library only. Run with `python3 -m cosh <cmd>`.
-- Tests: `python3 -m unittest tests.test_derive tests.test_extract tests.test_radar tests.test_classify tests.test_sentiment`.
+- Tests: `python3 -m unittest tests.test_derive tests.test_extract tests.test_radar tests.test_classify tests.test_sentiment tests.test_patchsets`.
   These run in a single process, which complies with the global limit of 4
   test workers. `tests.test_extract` uses a fake Gerrit and never touches the
   network.
@@ -96,10 +96,19 @@ regex plus Claude Haiku (`cosh classify`).
     `refs/patchsets/<CL>/<ps>`, the patch-set commits of 2026-W44, fetched
     blob-less. Their 43k blobs that never landed on `main` aren't fetched
     yet, and fetching them needs approval (`docs/plan.md`, 2026-11-07).
-  - `data/private/git/chromium-patchsets.git` (same alternates) holds the
-    full patch-set fetch timing test: 1,500 random W44 CLs fetched with
-    blobs (`docs/plan.md`, 2026-11-07). Use it, not the pilot repo, for
-    any further approved patch-set fetches.
+  - **Every patch set of every reviewed CL is approved** (2026-11-07),
+    with blobs: CLs in `derived.sqlite` with a comment from a human other
+    than the owner, about 282k CLs and 2.0M patch sets, all weeks fetched.
+    `python3 -m cosh patchsets --go` (`cosh/patchsets.py`) fetches them
+    into `data/private/git/chromium-patchsets.git` (same alternates,
+    reftable refs), newest first, 1,000 CLs or 5,000 patch sets per fetch,
+    under the extract lock. Started 2026-11-07, log
+    `data/private/patchsets-reviewed-*.log`. It is resumable: rerun the
+    same command from the main checkout. It repacks with `repack
+    --geometric=2 -d -l` as it goes, which is lossless because the
+    objects it drops are in the shared clone. Patch sets of CLs without
+    human review still need approval. Use this repo, not the pilot repo,
+    for patch sets.
   - Still run every command with `GIT_NO_LAZY_FETCH=1`. Lazy fetches
     request one object at a time, and fetching blobs by ID that are
     reachable only from `refs/changes/*` is expensive for the server (one
