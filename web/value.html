@@ -92,6 +92,19 @@
         </fieldset>
         <template data-msg="metric-unit"><span data-if="m=addressed">addressed comments</span><span data-if="m=comments">review comments</span><span data-if="m=chars">review characters</span><span data-if="m=cls">reviewed CLs</span></template>
       </div>
+      <!-- What each metric counts. After the bar, not in it, so it scrolls away. -->
+      <aside class="note metric-defs" aria-label="What each contribution metric counts">
+        <ul>
+          <li><em>Addressed comments</em> (the primary metric): comments in a thread that led the owner to change the
+            CL, as explained under <a href="#threads">How review threads are classified</a>. Weeks not yet classified show only the other
+            metrics.</li>
+          <li><em>Review comments</em>: every published comment, inline or patchset-level, including self-declared
+            AI and post-merge ones (the table under <a href="#review">Review by organization</a> counts both).</li>
+          <li><em>Review characters</em>: the length of those comments, without quoted (<code>&gt;</code>) lines.</li>
+          <li><em>Reviewed CLs</em>: CLs someone from the organization commented on, counted in the week the CL
+            closed.</li>
+        </ul>
+      </aside>
       <form class="filters" aria-label="Filters" onsubmit="return false">
         <p id="metric-note" class="range-summary metric-note" aria-live="polite" hidden></p>
         <!-- Shown only with Addressed comments chosen and no week in the range classified. -->
@@ -212,20 +225,9 @@
             <li>only on human-owned CLs, so autorolls and other bot CLs are left out;</li>
             <li>not from bot or AI-agent accounts, nor owners on their own CLs (a reviewer's AI-assisted comments
               count as theirs);</li>
-            <li>only on the paths listed under Review by directory.</li>
+            <li>only on the paths listed under <a href="#areas">Review by directory</a>.</li>
           </ul>
           <p>Votes with no comment, such as a bare +1, don't count: they don't show how much review went into them.</p>
-          <p><strong>Metrics.</strong></p>
-          <ul>
-            <li><em>Addressed comments</em> (the primary metric): comments in a thread that led the owner to change the
-              CL, as explained under How review threads are classified. Weeks not yet classified show only the other
-              metrics.</li>
-            <li><em>Review comments</em>: every published comment, inline or patchset-level, including self-declared
-              AI and post-merge ones (the table counts both).</li>
-            <li><em>Review characters</em>: the length of those comments, without quoted (<code>&gt;</code>) lines.</li>
-            <li><em>Reviewed CLs</em>: CLs someone from the organization commented on, counted in the week the CL
-              closed.</li>
-          </ul>
           <p><strong>Organization.</strong> Each reviewer's organization as of the comment's date (for reviewed CLs,
             the close date), by the first rule that applies:</p>
           <ol>

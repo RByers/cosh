@@ -407,6 +407,19 @@ input[type='date']:focus-visible,
   color: var(--text-secondary);
 }
 
+/* Under the sticky metric bar: what each metric counts. */
+.metric-defs {
+  margin: 0 0 12px;
+  padding: 8px 14px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-1);
+}
+
+.metric-defs ul {
+  margin: 0;
+}
+
 /* Under the metric picker: what addressed comments are, and which weeks have them. */
 .metric-note {
   margin: 0;
