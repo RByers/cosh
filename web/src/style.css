@@ -1035,6 +1035,19 @@ a.ar-seg:focus-visible {
   }
 }
 
+/* "Which paths count", collapsed by default in the Review by directory notes. */
+.scope-paths {
+  margin: 0 0 10px;
+}
+
+.scope-paths summary {
+  cursor: pointer;
+}
+
+.scope-paths[open] summary {
+  margin-bottom: 6px;
+}
+
 .scope-rules {
   margin: 8px 0 12px;
 }

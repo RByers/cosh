@@ -412,9 +412,8 @@
         <template data-msg="areas-sub">
           <span data-if="!total">No review data in this range.</span>
           <span data-if="total"><span data-if="m=addressed">Addressed review comments</span><span data-if="m=comments">Every review comment</span><span data-if="m=chars">Review characters, from every comment</span><span data-if="m=cls">CLs closed with review comments</span> by the directory of the file each comment is on, split by organization.
-            <slot name="share"></slot> of them (<slot name="counted"></slot> of <slot name="total"></slot>) are on the
-            paths the rest of the page counts; hatched bars are left out. ▸ opens a directory and ▾ closes it; a “more”
-            row shows the next entries.<span data-if="m=cls"> A CL with comments in two directories counts in each.</span></span>
+            <slot name="share"></slot> of them (<slot name="counted"></slot> of <slot name="total"></slot>) are included
+            in the value analysis.<span data-if="m=cls"> A CL with comments in two directories counts in each.</span></span>
         </template>
         <ul id="areas-legend" class="legend" aria-label="Segment colour by organization"></ul>
         <div class="ar-wrap">
@@ -430,8 +429,10 @@
         </div>
         <template data-msg="ar-head"><span class="ar-label">Directory</span><span class="ar-vol"><slot name="metric"></slot></span><span class="ar-dist">By organization</span><span class="ar-ng">Not google.com</span></template>
         <div class="note" id="scope-note">
+          <details id="scope-paths" class="scope-paths">
+          <summary><strong>Which paths count</strong></summary>
           <p>
-            <strong>Which paths count.</strong> The value ratio, organization chart, table, per-reviewer charts and
+            The value ratio, organization chart, table, per-reviewer charts and
             leaderboard count only comments on the paths below (the longest matching rule wins). Google's own products
             are left out, except a few directories inside them that hold shared platform work, often with owners from
             other companies.
@@ -475,6 +476,7 @@
                 <code>third_party/blink/</code>, <code>content/</code> and <code>net/</code></dd>
             </dl>
           </div>
+          </details>
           <p><strong>Placing comments on a file.</strong> Gerrit doesn't give us each CL's file list, so:</p>
           <ul>
             <li>an inline comment counts for its own file;</li>
@@ -503,8 +505,7 @@
             With several organizations, each cell splits the directory's <slot name="metric"></slot> across them,
             as a column scaled to the row's busiest (Volume) or filling the cell (Share). With one organization, each
             cell is shaded by its <slot name="metric"></slot> (Volume, on a square-root scale so small directories
-            still show) or its share of the directory's (Share). Every comment counts, on the selected paths or not.
-            ▸ opens a directory and “chart” shows it in the organization chart. Hover a cell for its numbers and top
+            still show) or its share of the directory's (Share). Hover a cell for its numbers and top
             reviewers; click it to open those CLs on Gerrit.<span data-if="m=cls"> A CL with comments in two directories counts in each.</span></span>
         </template>
         <div class="toggles">

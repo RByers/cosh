@@ -747,6 +747,13 @@ test('review by directory shows volume and org split per directory, and the path
         dist: r.querySelector('.ar-dist')!.getBoundingClientRect().width,
         title: r.title,
       })),
+      // "Which paths count" is collapsed by default; open it to measure the list.
+      scopeOpen: (() => {
+        const d = document.querySelector<HTMLDetailsElement>('#scope-paths')!;
+        const was = d.open;
+        d.open = true;
+        return was;
+      })(),
       heads: [...document.querySelectorAll('#scope-rules .scope-head')].map((h) => h.textContent),
       rules: [...document.querySelectorAll('#scope-rules dt')].map((dt) => {
         const dd = dt.nextElementSibling!;
@@ -808,7 +815,8 @@ test('review by directory shows volume and org split per directory, and the path
   const filled = blink.segs.reduce((s, w) => s + w, 0);
   assert.ok(Math.abs(filled - blink.dist) < 1.5, `${filled} vs ${blink.dist}`);
   assert.match(blink.title, /google\.com: [\d,]+ \(\d/);
-  assert.match(d.sub, /are on the paths the rest of the page counts/);
+  assert.match(d.sub, /are included in the value analysis\./);
+  assert.equal(d.scopeOpen, false);
   assert.equal(d.legend[d.legend.length - 1], 'Other');
   // Which paths count: Excluded, then Included below a rule; each path's
   // reason sits to its right, and the paths line up in one column. (The
