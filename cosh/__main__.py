@@ -115,6 +115,9 @@ def main(argv=None):
     ps.add_argument("--max-patchsets", type=int, default=5000,
                     help="patch sets per fetch (default 5000)")
     ps.add_argument("--max-batches", type=int, help="stop after N fetches (for smoke tests)")
+    ps.add_argument("--repack-gb", type=float, default=8.0,
+                    help="repack after this many GB of new packs (default 8; it also repacks "
+                         "when under 25 GB is free, and always at the end)")
     ps.add_argument("--db", help="derived DB path (default: data/private/derived.sqlite)")
     sub.add_parser("status", help="show extraction progress")
     sub.add_parser("update-affiliations", help="refresh config/affiliations.json5 from chromium/src")
@@ -209,7 +212,8 @@ def main(argv=None):
             p.error("--interval below 1.0s is not allowed (be polite to googlesource)")
         from . import patchsets
         kw = dict(derived_path=a.db, interval=a.interval, max_cls=a.max_cls,
-                  max_ps=a.max_patchsets, max_batches=a.max_batches)
+                  max_ps=a.max_patchsets, max_batches=a.max_batches,
+                  repack_bytes=a.repack_gb * 1e9)
         if a.go:
             with store.extract_lock():
                 patchsets.run(go=True, **kw)
