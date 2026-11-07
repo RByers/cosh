@@ -96,8 +96,8 @@ regex plus Claude Haiku (`cosh classify`).
     That repo reads `main`'s objects from the shared one (git alternates)
     and holds only cosh refs. Today those are
     `refs/patchsets/<CL>/<ps>`, the patch-set commits of 2026-W44, fetched
-    blob-less. Patch-set blobs aren't fetched yet (`docs/plan.md`,
-    2026-11-07).
+    blob-less. Their 43k blobs that never landed on `main` aren't fetched
+    yet, and fetching them needs approval (`docs/plan.md`, 2026-11-07).
   - Still run every command with `GIT_NO_LAZY_FETCH=1`. Lazy fetches
     request one object at a time, and fetching blobs by ID that are
     reachable only from `refs/changes/*` is expensive for the server (one
