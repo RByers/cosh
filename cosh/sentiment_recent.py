@@ -137,7 +137,7 @@ def happy(rows, scores, top=TOP, ids=None):
 def ai_comments(rows, scores, sandbox, n=AI_SHOWN, seed="2026-11"):
     """The `n` most negative AI-friction comments (lowest score first; ties
     by a deterministic shuffle) that a sandboxed screen finds nothing
-    identifying in, as text, month and the writer's role only. Returns them,
+    identifying in, as text, score, month and the writer's role only. Returns them,
     how many the screen dropped, and how many were too long or linked."""
     pool = [r for r in rows if scores[r["id"]][1] and len(r["text"]) <= AI_CHARS
             and not S._LINKY.search(r["text"])]
@@ -152,8 +152,8 @@ def ai_comments(rows, scores, sandbox, n=AI_SHOWN, seed="2026-11"):
         flagged = S.screen_identifying([(k, r["text"]) for k, r in keys.items()], sandbox)
         dropped += len(flagged)
         kept += [r for k, r in keys.items() if k not in flagged]
-    out = [dict(text=r["text"], month=r["written_at"][:7], role="author" if r["author_role"] == "AUTHOR" else "reviewer")
-           for r in kept[:n]]
+    out = [dict(text=r["text"], score=scores[r["id"]][0], month=r["written_at"][:7],
+                role="author" if r["author_role"] == "AUTHOR" else "reviewer") for r in kept[:n]]
     return out, dropped, sum(1 for r in rows if scores[r["id"]][1]) - len(pool)
 
 

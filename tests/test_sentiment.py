@@ -336,7 +336,7 @@ class RecentTest(unittest.TestCase):
         self.assertEqual(o["weekly"][0]["week"], "2026-W44")
         self.assertEqual(sum(n for _, n in o["dist"]), 7)
         ai, screened, other = R.ai_comments(rows, scores, ScreenSandbox())
-        self.assertEqual(ai, [dict(text="Looks good, thanks!", month="2026-10", role="reviewer")])
+        self.assertEqual(ai, [dict(text="Looks good, thanks!", score=0.0, month="2026-10", role="reviewer")])
         self.assertEqual((screened, other), (0, 0))
 
     def test_ai_list_is_the_most_negative(self):

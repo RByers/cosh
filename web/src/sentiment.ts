@@ -404,7 +404,7 @@ function renderAi(r: ToneRecent) {
     const li = el('li', undefined, 'quote quote-ai');
     li.append(el('blockquote', c.text));
     const when = el('p', undefined, 'quote-by');
-    when.append(fragment('ai-when', { month: monthLabel(c.month), role: c.role }));
+    when.append(scoreBadge(c.score), ' ', fragment('ai-when', { month: monthLabel(c.month), role: c.role }));
     li.append(when);
     return li;
   })));

@@ -1,5 +1,5 @@
 {
- "generated_at": "2026-11-07T20:42:11Z",
+ "generated_at": "2026-11-07T21:19:31Z",
  "prompt": "v3",
  "weeks": [
   "2026-W37",
@@ -201,21 +201,25 @@
  "ai": [
   {
    "text": "AI generated comments actually make sense this time",
+   "score": -0.3,
    "month": "2026-10",
    "role": "reviewer"
   },
   {
    "text": "Those LLMs, as if they understand language. Will correct. They would probably need a repository to learn how to create commit messages correctly, amirite?",
+   "score": -0.3,
    "month": "2026-10",
    "role": "author"
   },
   {
    "text": "Lines removes per suggestion above. For context, I thought these were needed due to the AI review agent kept suggesting to mention the MOJO rules.",
+   "score": 0.0,
    "month": "2026-09",
    "role": "author"
   },
   {
    "text": "Gotya, thanks for the feedback! For context, I thought these were needed due to the AI review agent kept suggesting to mention the MOJO rules.",
+   "score": 0.1,
    "month": "2026-09",
    "role": "author"
   }

@@ -269,8 +269,8 @@ scored (2026-W37..W44 so far):
   rule 5). Per-person counts match the boards exactly.
 - **AI friction:** the 20 most negative comments the model flagged (lowest
   score first, ties by a fixed hash), at most 600 characters and without
-  URLs or handles, that pass `screen_identifying`, as text, month and the
-  writer's role (CL author or reviewer). Candidates are screened in score
+  URLs or handles, that pass `screen_identifying`, as text, score, month and
+  the writer's role (CL author or reviewer). Candidates are screened in score
   order until 20 pass, so it takes one or two screening calls. The page
   shows them two across. Until 2026-11-07 it listed every one that passed
   (313 of 535 flagged on 2026-W37..W44).

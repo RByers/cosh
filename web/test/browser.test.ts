@@ -2279,13 +2279,22 @@ test('the Review Tone page: last two months, board controls, happy tables, AI li
   // The AI-friction list: the most negative 20 at most, two cards across,
   // anonymous (no links), month and role only.
   const first = await page.$$eval('#ai-list li', (lis) =>
-    lis.map((li) => ({ links: li.querySelectorAll('a').length, by: li.querySelector('.quote-by')!.textContent!.trim(),
-      left: Math.round(li.getBoundingClientRect().left) })));
+    lis.map((li) => {
+      const by = li.querySelector('.quote-by')!.cloneNode(true) as HTMLElement;
+      const badge = by.querySelector('.score-badge');
+      badge?.remove();
+      return { links: li.querySelectorAll('a').length, by: by.textContent!.trim(), badge: badge?.textContent ?? '',
+        left: Math.round(li.getBoundingClientRect().left) };
+    }));
+  // Most negative first, each with its score pill.
+  const aiScores = first.map((c) => Number(c.badge.replace('−', '-').replace('+', '')));
+  assert.deepEqual(aiScores, [...aiScores].sort((a, b) => a - b));
   assert.ok(first.length > 0 && first.length <= 20);
   assert.equal(new Set(first.map((c) => c.left)).size, 2);
   for (const c of first) {
     assert.equal(c.links, 0);
     assert.match(c.by, /^[A-Z][a-z]{2,3} \d{4}, (change author|reviewer)$/);
+    assert.match(c.badge, /^[+−]?\d\.\d$/);
   }
 
   // The prompt, as text.

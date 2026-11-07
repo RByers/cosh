@@ -76,7 +76,7 @@ export interface ToneRecent {
   weekly: (ToneStat & { week: string })[];
   dist: [number, number][];
   happy: Record<Period, { authors: HappyRow[]; reviewers: HappyRow[] }>;
-  ai: { text: string; month: string; role: 'author' | 'reviewer' }[];
+  ai: { text: string; score: number; month: string; role: 'author' | 'reviewer' }[];
 }
 
 /** One praise or glowing comment behind a board, for a name popup. */
