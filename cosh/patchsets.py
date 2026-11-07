@@ -7,7 +7,8 @@ clone (~/projects/shared/chromium) through git alternates, so `main`'s tip goes
 out as the "have" and the server sends commits, trees and the blobs that never
 landed. Measured 2026-11-07 (docs/plan.md): 72 s per 1,000 CLs.
 
-Load rules (CLAUDE.md): one fetch at a time under the extract lock, at least
+Load rules (CLAUDE.md): one fetch at a time (or the user-approved --jobs)
+under the extract lock, backing off together on HTTP 429, at least
 1 s between fetches, glob refspecs per CL (never ls-remote), no blob fetches
 by id, GIT_NO_LAZY_FETCH=1.
 
@@ -134,32 +135,106 @@ def _pack_bytes(git_dir):
     return total
 
 
-def fetch_batch(git_dir, cls, retries=4):
-    """One git fetch for the batch. On failure, back off and retry; after two
-    failures split the batch in half. Returns seconds taken."""
+def is_rate_limited(stderr):
+    """googlesource's quota answer: HTTP 429, or RESOURCE_EXHAUSTED in-band."""
+    return "HTTP 429" in stderr or "RESOURCE_EXHAUSTED" in stderr
+
+
+class Throttle:
+    """Shared by all workers, so the run as a whole backs off when
+    googlesource rate-limits us, not just the worker that was refused.
+
+    At most `limit` fetches run at once. A 429 drops `limit` by one and
+    pauses every new fetch for `backoff` s (doubling while 429s keep coming,
+    up to `max_backoff`). After `grow_after` s with no 429, `limit` grows by
+    one again, up to `max_jobs`. So the run settles just under the server's
+    limit."""
+
+    def __init__(self, max_jobs, backoff=60.0, max_backoff=900.0, grow_after=600.0,
+                 clock=time.monotonic):
+        self.max_jobs = self.limit = max(1, max_jobs)
+        self.backoff, self.max_backoff, self.grow_after = backoff, max_backoff, grow_after
+        self.clock = clock
+        self.active = 0
+        self.pause_until = 0.0
+        self.strikes = 0  # 429s since the last success
+        self.last_change = clock()
+        self.cond = threading.Condition()
+
+    def acquire(self):
+        with self.cond:
+            while True:
+                wait = self.pause_until - self.clock()
+                if wait <= 0 and self.active < self.limit:
+                    self.active += 1
+                    return
+                self.cond.wait(timeout=wait if wait > 0 else None)
+
+    def release(self, rate_limited):
+        with self.cond:
+            self.active -= 1
+            now = self.clock()
+            if rate_limited:
+                delay = min(self.max_backoff, self.backoff * 2 ** self.strikes)
+                self.strikes += 1
+                # One 429 often arrives for several fetches at once; drop the
+                # limit once per pause, not once per refused fetch.
+                if now >= self.pause_until:
+                    self.limit = max(1, self.limit - 1)
+                    self.last_change = now
+                self.pause_until = max(self.pause_until, now + delay)
+                print(f"  rate-limited; all workers pause {delay:.0f}s, "
+                      f"now {self.limit} at once", file=sys.stderr, flush=True)
+            else:
+                self.strikes = 0
+                if self.limit < self.max_jobs and now - self.last_change >= self.grow_after:
+                    self.limit += 1
+                    self.last_change = now
+                    print(f"  no rate limits for {self.grow_after / 60:.0f} min; "
+                          f"now {self.limit} at once", file=sys.stderr, flush=True)
+            self.cond.notify_all()
+
+
+def fetch_batch(git_dir, cls, retries=4, throttle=None, max_rate_limited=20):
+    """One git fetch for the batch. A rate-limited fetch goes back through
+    the throttle (shared pause) and is retried as is. Other failures back
+    off and retry; after two of those the batch is split in half. Returns
+    seconds taken."""
+    throttle = throttle or Throttle(1, backoff=60.0)
     t0 = time.time()
-    for attempt in range(retries + 1):
-        p = git(git_dir, "-c", "protocol.version=2", "fetch", "--quiet", "--no-tags",
-                "--no-write-fetch-head", "--stdin", GIT_URL,
-                input="".join(refspecs(n) for n, _ in cls), check=False, network=True)
+    attempt = limited = 0
+    while True:
+        throttle.acquire()
+        p = None
+        try:
+            p = git(git_dir, "-c", "protocol.version=2", "fetch", "--quiet", "--no-tags",
+                    "--no-write-fetch-head", "--stdin", GIT_URL,
+                    input="".join(refspecs(n) for n, _ in cls), check=False, network=True)
+        finally:
+            throttle.release(p is not None and p.returncode != 0 and is_rate_limited(p.stderr))
         if p.returncode == 0:
             with _done_lock, open(os.path.join(git_dir, DONE_FILE), "a") as f:
                 f.write("".join(f"{n}\n" for n, _ in cls))
             return time.time() - t0
         err = p.stderr.strip().replace("\n", " | ")[:300]
+        if is_rate_limited(p.stderr):
+            limited += 1
+            if limited > max_rate_limited:
+                raise RuntimeError(f"git fetch rate-limited {limited} times: {err}")
+            continue
         if attempt == retries:
             raise RuntimeError(f"git fetch failed: {err}")
         if attempt >= 1 and len(cls) > 1:
             print(f"  fetch failed twice ({err}); splitting the batch", file=sys.stderr, flush=True)
             h = len(cls) // 2
-            fetch_batch(git_dir, cls[:h], retries)
+            fetch_batch(git_dir, cls[:h], retries, throttle, max_rate_limited)
             time.sleep(2)
-            fetch_batch(git_dir, cls[h:], retries)
+            fetch_batch(git_dir, cls[h:], retries, throttle, max_rate_limited)
             return time.time() - t0
         delay = 60 * 2 ** attempt
         print(f"  fetch failed ({err}); backing off {delay}s", file=sys.stderr, flush=True)
         time.sleep(delay)
-    raise AssertionError("unreachable")
+        attempt += 1
 
 
 def repack(git_dir):
@@ -172,8 +247,9 @@ def repack(git_dir):
 
 def run(go=False, derived_path=None, git_dir=None, interval=2.0, max_cls=1000, max_ps=5000,
         repack_bytes=8e9, min_free=25e9, max_batches=None, jobs=1):
-    """Fetch the plan with `jobs` workers sharing the repo (each waits
-    `interval` between its own fetches). When new packs pass `repack_bytes`
+    """Fetch the plan with up to `jobs` workers sharing the repo (each waits
+    `interval` between its own fetches; a shared Throttle lowers how many
+    run at once when the server rate-limits us). When new packs pass `repack_bytes`
     or free space drops under `min_free`, workers finish their fetch and
     stop, the repo is repacked, and fetching continues."""
     derived_path = derived_path or os.path.join(store.DATA_DIR, "derived.sqlite")
@@ -193,6 +269,7 @@ def run(go=False, derived_path=None, git_dir=None, interval=2.0, max_cls=1000, m
     ps_total = sum(p for b in work for _, p in b)
     lock = threading.Lock()
     st = dict(next=0, ps=0, stop=None, error=None, base=_pack_bytes(git_dir))
+    throttle = Throttle(jobs)
     t_start = time.time()
 
     def worker():
@@ -208,7 +285,7 @@ def run(go=False, derived_path=None, git_dir=None, interval=2.0, max_cls=1000, m
             first = False
             b = work[i]
             try:
-                secs = fetch_batch(git_dir, b)
+                secs = fetch_batch(git_dir, b, throttle=throttle)
             except Exception as e:  # leave the batch unfetched; a rerun retries it
                 with lock:
                     st["error"] = st["error"] or f"fetch {i + 1} failed: {e}"

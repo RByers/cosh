@@ -75,7 +75,7 @@ class PatchsetsTest(unittest.TestCase):
             seen = []
             orig = patchsets.fetch_batch, patchsets.repack
 
-            def fake_fetch(git_dir, cls, retries=4):
+            def fake_fetch(git_dir, cls, retries=4, throttle=None):
                 if fail_on in [n for n, _ in cls]:
                     raise RuntimeError("boom")
                 seen.append([n for n, _ in cls])
@@ -96,6 +96,53 @@ class PatchsetsTest(unittest.TestCase):
     def test_failure_stops_run(self):
         with self.assertRaises(SystemExit):
             self._run_fake(jobs=2, fail_on=100)
+
+    def test_throttle_shrinks_on_429_and_grows_back(self):
+        now = [0.0]
+        t = patchsets.Throttle(3, backoff=60, max_backoff=200, grow_after=600, clock=lambda: now[0])
+        for _ in range(3):
+            t.acquire()
+        t.release(True)            # first 429: limit 3 -> 2, pause 60 s
+        t.release(True)            # same burst: pause doubles, limit stays
+        self.assertEqual((t.limit, t.pause_until), (2, 120))
+        now[0] = 130
+        t.release(False)           # success resets the doubling but too soon to grow
+        self.assertEqual((t.limit, t.strikes), (2, 0))
+        t.acquire()                # pause is over and 0 < 2 active
+        now[0] = 800
+        t.release(False)           # 670 s since the drop: grow to 3
+        self.assertEqual(t.limit, 3)
+        for _ in range(9):
+            now[0] += 1000  # past any pause, so acquire doesn't block
+            t.acquire()
+            t.release(True)
+        self.assertEqual(t.limit, 1)  # never below one
+        self.assertEqual(t.pause_until - now[0], 200)  # capped backoff
+
+    def test_rate_limited_fetch_retries_without_splitting(self):
+        calls = []
+        replies = iter([(128, "error: RPC failed; HTTP 429 curl 22"),
+                        (128, "remote: RESOURCE_EXHAUSTED: Resource has been exhausted"),
+                        (128, "fatal: expected 'acknowledgments' HTTP 429"),
+                        (0, "")])
+        orig = patchsets.git
+
+        def fake_git(git_dir, *args, input=None, **kw):
+            calls.append(input)
+            rc, err = next(replies)
+            return subprocess.CompletedProcess(args, rc, "", err)
+
+        with tempfile.TemporaryDirectory() as d:
+            patchsets.git = fake_git
+            try:
+                t = patchsets.Throttle(2, backoff=0)
+                patchsets.fetch_batch(d, [(1, 1), (2, 1)], throttle=t)
+            finally:
+                patchsets.git = orig
+            self.assertEqual(len(calls), 4)
+            self.assertEqual(len(set(calls)), 1)   # same whole batch each time
+            self.assertEqual(t.limit, 1)
+            self.assertEqual(open(os.path.join(d, patchsets.DONE_FILE)).read(), "1\n2\n")
 
 
 if __name__ == "__main__":

@@ -116,7 +116,8 @@ def main(argv=None):
                     help="patch sets per fetch (default 5000)")
     ps.add_argument("--max-batches", type=int, help="stop after N fetches (for smoke tests)")
     ps.add_argument("--jobs", type=int, default=1,
-                    help="fetches in flight at once (default 1, at most 8; above 1 needs "
+                    help="fetches in flight at most (default 1, at most 8; fewer while "
+                         "googlesource rate-limits us; above 1 needs "
                          "the user's approval, CLAUDE.md)")
     ps.add_argument("--repack-gb", type=float, default=8.0,
                     help="repack after this many GB of new packs (default 8; it also repacks "
