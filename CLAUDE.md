@@ -96,6 +96,10 @@ regex plus Claude Haiku (`cosh classify`).
     `refs/patchsets/<CL>/<ps>`, the patch-set commits of 2026-W44, fetched
     blob-less. Their 43k blobs that never landed on `main` aren't fetched
     yet, and fetching them needs approval (`docs/plan.md`, 2026-11-07).
+  - `data/private/git/chromium-patchsets.git` (same alternates) holds the
+    full patch-set fetch timing test: 1,500 random W44 CLs fetched with
+    blobs (`docs/plan.md`, 2026-11-07). Use it, not the pilot repo, for
+    any further approved patch-set fetches.
   - Still run every command with `GIT_NO_LAZY_FETCH=1`. Lazy fetches
     request one object at a time, and fetching blobs by ID that are
     reachable only from `refs/changes/*` is expensive for the server (one

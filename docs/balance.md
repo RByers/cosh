@@ -254,7 +254,10 @@ people avoid asking questions.
    rework, after the full `main` blob fetch finishes. The pilot measured
    123k distinct blobs for W44 (113k for human-owned CLs); fetching by
    blob id loads the server badly, so it needs the "truthful haves" fetch
-   the pilot describes.
+   the pilot describes. A timing test (`plan.md`, 2026-11-07) did that
+   for 1,500 W44 CLs: commits, trees and unlanded blobs in one fetch,
+   72 s per 1,000 CLs, about 9.5 KB on disk per patch set after a
+   repack. All weeks would be about 15 h and 33 GB.
 4. **Mechanical CLs:** exclude by rule (e.g. ≥ 50 files with no reviewer
    thread, vendored `third_party/` imports, generated-only diffs), or keep
    them and show them separately.
