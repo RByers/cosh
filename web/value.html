@@ -402,7 +402,7 @@
         <p id="areas-sub" class="sub"></p>
         <template data-msg="areas-sub">
           <span data-if="!total">No review data in this range.</span>
-          <span data-if="total"><span data-if="m=addressed">Addressed review comments (in threads that led to a change)</span><span data-if="m=comments">Every review comment</span><span data-if="m=chars">Review characters, from every comment</span><span data-if="m=cls">CLs closed with review comments</span> by the directory of the file each comment is on, split by organization.
+          <span data-if="total"><span data-if="m=addressed">Addressed review comments</span><span data-if="m=comments">Every review comment</span><span data-if="m=chars">Review characters, from every comment</span><span data-if="m=cls">CLs closed with review comments</span> by the directory of the file each comment is on, split by organization.
             <slot name="share"></slot> of them (<slot name="counted"></slot> of <slot name="total"></slot>) are on the
             paths the rest of the page counts; hatched bars are left out. ▸ opens a directory and ▾ closes it; a “more”
             row shows the next entries.<span data-if="m=cls"> A CL with comments in two directories counts in each.</span></span>
