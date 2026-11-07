@@ -232,8 +232,8 @@ characters are considered.
   3 in 8 weeks), a praise word and a human recipient. Each comes with
   writer, recipient, date and a Gerrit link (`comment_url`). Names are
   attached as in `praise`: `collect` builds only the sampled comments.
-- **Grumpiness:** a score of −0.6 or less, with no URLs, emails or
-  @-handles. Each candidate batch goes through `screen_identifying`, a
+- **Grumpiness:** a score of −0.6 or less, not flagged as AI friction
+  (those have their own section), with no URLs, emails or @-handles. Each candidate batch goes through `screen_identifying`, a
   sandboxed, tool-less Haiku call whose reply is only a list of the ids it
   flags (a reply that doesn't parse flags them all). It flags names,
   handles, teams, companies, CL and bug numbers, accusations of misconduct

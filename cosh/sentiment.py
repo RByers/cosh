@@ -688,7 +688,7 @@ def _draw(ids, seed):
 def samples(weeks, data_dir=store.DATA_DIR, version=None, n=10, seed="2026-11", sandbox="auto",
             authors=DEFAULT_AUTHORS):
     """The most extreme praise (highest scores) and grumpy comments (lowest
-    scores) written by `authors` in fully scored weeks. Ties are broken by a
+    scores, not flagged as AI friction) written by `authors` in fully scored weeks. Ties are broken by a
     deterministic shuffle (`seed`), so reruns pick the same comments.
 
     Ground rule 5: praise comes with names and a Gerrit link; grumpy comments
@@ -703,7 +703,9 @@ def samples(weeks, data_dir=store.DATA_DIR, version=None, n=10, seed="2026-11", 
     rows = {r["id"]: r for r in by_authors(rows.values(), authors, data_dir)}
     praise_ids = sorted(_draw([i for i, r in rows.items() if scores[i][0] >= PRAISE_SAMPLE and is_praise(r, scores)
                                and _target_kind(r) == "person"], seed), key=lambda i: -scores[i][0])[:n]
-    grumpy_pool = sorted(_draw([i for i, r in rows.items() if scores[i][0] <= GRUMPY_SAMPLE
+    # AI-friction comments have their own section (cosh.sentiment_recent), so
+    # the grumpy samples are the rest.
+    grumpy_pool = sorted(_draw([i for i, r in rows.items() if scores[i][0] <= GRUMPY_SAMPLE and not scores[i][1]
                                 and not _LINKY.search(r["text"])], seed), key=lambda i: scores[i][0])
     box = make_sandbox(sandbox, data_dir) if isinstance(sandbox, str) else sandbox
     grumpy = []

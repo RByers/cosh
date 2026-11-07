@@ -2206,19 +2206,30 @@ test('the Review Tone page: trend, praise leaderboard and samples; names only fo
   }
   // Praise samples link to Gerrit and name writer and recipient…
   const praise = await page.$$eval('#praise-samples li', (lis) =>
-    lis.map((li) => ({ by: li.querySelector('.quote-by')!.textContent!, href: li.querySelector('a')?.getAttribute('href') })));
+    lis.map((li) => ({ by: li.querySelector('.quote-by')!.textContent!, href: li.querySelector('a')?.getAttribute('href'),
+      badge: li.querySelector('.score-badge')?.textContent ?? '' })));
   assert.ok(praise.length > 0);
+  // The most glowing first: each has a score pill, highest first.
+  const ps = praise.map((p) => Number(p.badge.replace('+', '')));
+  assert.deepEqual(ps, [...ps].sort((a, b) => b - a));
   for (const p of praise) {
+    assert.match(p.badge, /^\+\d\.\d$/);
     assert.match(p.href ?? '', /^https:\/\/chromium-review\.googlesource\.com\/c\//);
     assert.match(p.by, / to .+, \d{1,2} \w{3,4} \d{4}/);
   }
   // …grumpy ones have no link, no name and only a month.
   const grumpy = await page.$$eval('#grumpy-samples li', (lis) =>
-    lis.map((li) => ({ links: li.querySelectorAll('a').length, by: li.querySelector('.quote-by')!.textContent!.trim() })));
+    lis.map((li) => {
+      const by = li.querySelector('.quote-by')!.cloneNode(true) as HTMLElement;
+      const badge = by.querySelector('.score-badge');
+      badge?.remove();
+      return { links: li.querySelectorAll('a').length, by: by.textContent!.trim(), badge: badge?.textContent ?? '' };
+    }));
   assert.ok(grumpy.length > 0);
   for (const g of grumpy) {
     assert.equal(g.links, 0);
     assert.match(g.by, /^[A-Z][a-z]{2,3} \d{4}$/);
+    assert.match(g.badge, /^−\d\.\d$/);
   }
   const text = await page.$eval('body', (b) => (b as HTMLElement).innerText);
   assert.doesNotMatch(text, /\b\d{4}-W\d{2}\b/);
@@ -2346,10 +2357,15 @@ test('the Review Tone page: a name on a board opens a popup with its praise, lin
   await page.waitForFunction(() => document.querySelectorAll('#person-list li.quote').length > 0);
   assert.equal(await dialog(), true);
   assert.equal(await page.$eval('#person-title', (e) => e.textContent), `Praise given by ${top.name}`);
-  const items = await page.$$eval('#person-list li', (lis) => lis.map((li) => ({
-    by: li.querySelector('.quote-by')!.textContent!, href: li.querySelector('a')?.getAttribute('href') })));
+  const items = await page.$$eval('#person-list li', (lis) => lis.map((li) => {
+    const by = li.querySelector('.quote-by')!.cloneNode(true) as HTMLElement;
+    const badge = by.querySelector('.score-badge');
+    badge?.remove();
+    return { by: by.textContent!.trim(), href: li.querySelector('a')?.getAttribute('href'), badge: badge?.textContent ?? '' };
+  }));
   assert.equal(items.length, top.count);
   for (const it of items) {
+    assert.match(it.badge, /^\+\d\.\d$/);
     assert.ok(it.by.startsWith(`${top.name} to `), it.by);
     assert.match(it.href ?? '', /^https:\/\/chromium-review\.googlesource\.com\/c\//);
   }

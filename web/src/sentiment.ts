@@ -275,7 +275,7 @@ function commentItem(c: PersonComment): HTMLElement {
   const li = el('li', undefined, 'quote quote-praise');
   li.append(el('blockquote', c.text));
   const by = el('p', undefined, 'quote-by');
-  by.append(fragment('praise-by', { writer: c.writer, recipient: c.recipient, date: dayLabel(c.date) }));
+  by.append(scoreBadge(c.score), ' ', fragment('praise-by', { writer: c.writer, recipient: c.recipient, date: dayLabel(c.date) }));
   const url = gerritLink(c.url);
   if (url) {
     const a = el('a', 'View review');
@@ -346,6 +346,21 @@ function drawHappy() {
 
 // ---- comments
 
+/** A comment's score as a small pill: "+0.6" or "−0.8", tinted from neutral
+ * toward the glowing or the angry colour as the score grows. */
+function scoreBadge(score: number): HTMLElement {
+  const b = el('span', signed1(score), 'score-badge');
+  const m = Math.min(1, Math.abs(score));
+  b.dataset.pole = score < 0 ? 'neg' : 'pos';
+  b.style.setProperty('--mix', `${Math.round(m * 100)}%`);
+  if (m > 0.6) b.classList.add('score-strong');
+  b.title = `Score ${signed1(score)} on a scale from −1 to +1`;
+  return b;
+}
+
+const signed1 = (v: number) =>
+  (v > 0 ? '+' : v < 0 ? '−' : '') + fmtNum(Math.abs(v), { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+
 /** A list's items, or one "none" line when there are none. */
 function orNone(items: HTMLElement[]): HTMLElement[] {
   return items.length ? items : [el('li', msg('quotes-none'), 'quote-none')];
@@ -359,7 +374,7 @@ function renderSamples(s: ToneSamples) {
     const li = el('li', undefined, 'quote quote-praise');
     li.append(el('blockquote', p.text));
     const by = el('p', undefined, 'quote-by');
-    by.append(fragment('praise-by', { writer: p.writer, recipient: p.recipient, date: dayLabel(p.date) }));
+    by.append(scoreBadge(p.score), ' ', fragment('praise-by', { writer: p.writer, recipient: p.recipient, date: dayLabel(p.date) }));
     const url = gerritLink(p.url);
     if (url) {
       const a = el('a', 'View review');
@@ -375,7 +390,7 @@ function renderSamples(s: ToneSamples) {
     const li = el('li', undefined, 'quote quote-grumpy');
     li.append(el('blockquote', g.text));
     const when = el('p', undefined, 'quote-by');
-    when.append(fragment('grumpy-when', { month: monthLabel(g.month) }));
+    when.append(scoreBadge(g.score), ' ', fragment('grumpy-when', { month: monthLabel(g.month) }));
     li.append(when);
     return li;
   })));

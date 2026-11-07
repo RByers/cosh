@@ -258,9 +258,10 @@ class SamplesTest(unittest.TestCase):
                     c("b", 1, "Thanks, great catch, I missed that entirely!", parent="a"),  # praise
                     c("g", 2, "Alice, this is sloppy again!!"),                        # names someone
                     c("u", 2, "Sloppy, see https://example.com/x"),                   # has a link
-                    c("m", 2, "Just a remark")]                                       # neutral
+                    c("m", 2, "Just a remark"),                                       # neutral
+                    c("x", 2, "This AI slop is sloppy again!!")]                      # AI friction: its own section
         scores = {"100/a": (-0.6, False, None), "100/b": (0.5, False, None), "100/g": (-0.8, False, None),
-                  "100/u": (-0.6, False, None), "100/m": (0.0, False, None)}
+                  "100/u": (-0.6, False, None), "100/m": (0.0, False, None), "100/x": (-0.9, True, None)}
         with tempfile.TemporaryDirectory() as d:
             S.write_jsonl(os.path.join(d, "sentiment", "comments-2026-W44.jsonl"), run(comments))
             import sqlite3

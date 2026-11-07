@@ -1674,6 +1674,34 @@ canvas.pointing {
   }
 }
 
+/* A comment's score: a pill tinted from neutral toward the glowing (green)
+   or angry (red) colour by --mix, which the script sets from the score. */
+.score-badge {
+  --score-mid: color-mix(in srgb, var(--text-primary) 8%, var(--surface-1));
+  display: inline-block;
+  min-width: 3.2em;
+  padding: 0 5px;
+  border-radius: 4px;
+  text-align: center;
+  font-weight: 600;
+  font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-primary);
+  background: color-mix(in oklab, var(--score-pole) var(--mix, 0%), var(--score-mid));
+}
+
+.score-badge[data-pole="pos"] {
+  --score-pole: var(--series-3);
+}
+
+.score-badge[data-pole="neg"] {
+  --score-pole: var(--series-8);
+}
+
+.score-badge.score-strong {
+  color: #fff;
+}
+
 /* A name on a praise board or happy table: opens its comments. */
 .person-link {
   font: inherit;

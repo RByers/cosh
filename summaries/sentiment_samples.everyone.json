@@ -1,5 +1,5 @@
 {
- "generated_at": "2026-11-07T20:40:58Z",
+ "generated_at": "2026-11-07T21:04:11Z",
  "prompt": "v3",
  "weeks": [
   "2026-W37",
@@ -97,27 +97,12 @@
    "month": "2026-10"
   },
   {
-   "text": "OK i _think_ i am now talking to a human being.\n\nhave you seen my comments stating that this is a complex fix for a hypothetical issue yet?\n\nThis change will not be approved without an actual evidence that this is a problem that (a) exists and (b) can't be fixed by search engines.\n\nThis fix does not belong here.",
-   "score": -0.7,
-   "month": "2026-09"
-  },
-  {
    "text": "(Posting basically the same thing again most likely does not unclog any pipes... Just a thought.)",
    "score": -0.6,
    "month": "2026-10"
   },
   {
    "text": "same comment as previous CLs.  (And please make sure to apply it to any future CLs)",
-   "score": -0.6,
-   "month": "2026-10"
-  },
-  {
-   "text": "Since I see an increasing number of CLs sent out without verification, I request authors to self-review and verify AI output _before_ sending it out, to improve velocity on _both_ the author side _and_ the reviewer side.",
-   "score": -0.6,
-   "month": "2026-10"
-  },
-  {
-   "text": "Nobody is going to read this AI slop description. Neither you or I ;-)\n\nI think you can just explain the idea (e.g. modernizing toward std::string_view) and explain why you are doing that? (Performance maybe?) Readability maybe (?)",
    "score": -0.6,
    "month": "2026-10"
   },
@@ -138,6 +123,21 @@
   },
   {
    "text": "This does not make sense. You can ask me for help if you're not sure how to fix this.",
+   "score": -0.6,
+   "month": "2026-10"
+  },
+  {
+   "text": "I need you to please stop joking like this ...\n\ni can't tell if this is a joke or serious remark.",
+   "score": -0.6,
+   "month": "2026-10"
+  },
+  {
+   "text": "I sure hope we're done with all these shadow root problems.",
+   "score": -0.6,
+   "month": "2026-10"
+  },
+  {
+   "text": "again, why are we so obsessed with the overlay_token in this CL??? This CL really should only be making changes to UpdateImplicitTabContext() OnPageChanged. I don't understand why any of these logical differences in this CL are necessary?",
    "score": -0.6,
    "month": "2026-10"
   }
