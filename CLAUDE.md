@@ -103,10 +103,12 @@ regex plus Claude Haiku (`cosh classify`).
     into `data/private/git/chromium-patchsets.git` (same alternates,
     reftable refs), newest first, 1,000 CLs or 5,000 patch sets per fetch,
     under the extract lock. Started 2026-11-07, log
-    `data/private/patchsets-reviewed-*.log`. It is resumable: rerun the
-    same command from the main checkout. It repacks with `repack
-    --geometric=2 -d -l` as it goes, which is lossless because the
-    objects it drops are in the shared clone. Patch sets of CLs without
+    `data/private/patchsets-reviewed-*.log`, PID in
+    `data/private/patchsets.pid`. It is resumable: rerun
+    `python3 -m cosh patchsets --go --repack-gb 1000` from the main
+    checkout. It repacks with `repack --geometric=2 -d -l` at the end (or
+    when under 25 GB is free), which is lossless because the objects it
+    drops are in the shared clone. Patch sets of CLs without
     human review still need approval. Use this repo, not the pilot repo,
     for patch sets.
   - Still run every command with `GIT_NO_LAZY_FETCH=1`. Lazy fetches
