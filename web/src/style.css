@@ -197,6 +197,16 @@ footer {
   font-size: 0.9rem;
 }
 
+/* The caveats list under the construction notice. */
+.construction .caveats-head {
+  margin: 8px 0 2px;
+}
+
+.construction ul {
+  margin: 0;
+  padding-left: 22px;
+}
+
 .fine-print {
   font-size: 0.75rem;
 }
