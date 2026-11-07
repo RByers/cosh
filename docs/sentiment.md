@@ -307,3 +307,25 @@ prompt injections.
 - **One model.** Scores are Haiku's reading of tone with prompt v3. A
   different prompt or model would shift the level; the trend is more robust
   than the level.
+
+## To do: split by committer and non-committer
+
+Every figure today mixes Chromium committers with everyone else who can
+comment on Gerrit. That hides a real difference: on 2026-11-07 a comment
+drawn as a grumpy sample (the screen kept it off the page) turned out to be
+spam, an outside account posting an accusation on a merged CL, not a
+reviewer being harsh.
+Drive-by and spam accounts can move the angry share and the AI-friction
+list without saying anything about how Chromium's own reviewers behave.
+
+- **Split every view** (trend, last two months, samples, AI friction) into
+  comments by committers and by non-committers, and draw the grumpy and
+  AI-friction samples from committers, or label which group each comes from.
+- **Who counts as a committer** needs a definition. Options, from data we
+  already hold: an account that has landed CLs as owner (git history or
+  merged changes in `derived.sqlite`), or one that has cast Code-Review +2
+  (the raw NoteDb data has votes, though `derived.sqlite` dropped them in
+  metric_version 5). Chromium's own committer list would be exact, but
+  fetching it is a new data source and needs approval (ground rule 1).
+- **Spam** could also be filtered on its own: accounts with no landed CLs
+  and no votes, or comments the model flags as off-topic, are candidates.
