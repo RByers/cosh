@@ -85,18 +85,33 @@ regex plus Claude Haiku (`cosh classify`).
   it and runs Vitest unit tests and headless-Chrome tests (puppeteer-core with
   `/usr/bin/google-chrome`). Vitest is capped at `maxWorkers: 4`, with test
   files run serially.
-- **Chromium git history is approved** (2026-11-06): one bare, blob-less
-  clone of `chromium/src` `main` only (`--single-branch --no-tags
-  --filter=blob:none`, no dependencies, no working tree) in
-  `data/private/git/chromium-src.git`. It holds every commit and tree, but
-  no file contents. **Never let git fetch blobs on demand**: run every
-  command against it with `GIT_NO_LAZY_FETCH=1`. `--name-only` and
-  `--name-status` are fine; `-p`, `--stat`, `--numstat`, `blame` and
-  checkouts need blobs, which would be fetched one request at a time. So
-  does `.mailmap`, which is why the repo's config sets `log.mailmap false`.
-  Fetching blobs, other branches or other repos needs approval. Never delete
-  or prune it. An incremental `git fetch` of `main` takes the extract lock
-  (`flock data/private/extract.lock`) like any other extractor.
+- **Chromium git history is approved** (2026-11-06), **including file
+  contents** (2026-11-07): one bare clone of `chromium/src` `main` only, with
+  no dependencies and no working tree. It lives in
+  `~/projects/shared/chromium`, argus's cross-project area (rules in its
+  README.md), so it must stay a clean mirror of `main`: no cosh refs, no
+  local edits. Its full blobs were fetched on 2026-11-07 (`fetch --refetch`
+  without a filter), so `-p`, `--numstat` and `blame` work there.
+  - cosh's own Chromium git data is `data/private/git/chromium-src.git`.
+    That repo reads `main`'s objects from the shared one (git alternates)
+    and holds only cosh refs. Today those are
+    `refs/patchsets/<CL>/<ps>`, the patch-set commits of 2026-W44, fetched
+    blob-less. Patch-set blobs aren't fetched yet (`docs/plan.md`,
+    2026-11-07).
+  - Still run every command with `GIT_NO_LAZY_FETCH=1`. Lazy fetches
+    request one object at a time, and fetching blobs by ID that are
+    reachable only from `refs/changes/*` is expensive for the server (one
+    request of 2,000 ran for 10 min and then returned a 502). For
+    patch-set refs use glob refspecs
+    (`+refs/changes/NN/N/*:refs/patchsets/N/*` with
+    `^refs/changes/NN/N/meta`), never `git ls-remote` with patterns: that
+    sends no ref prefix and streams every ref in chromium/src.
+  - Both repos set `log.mailmap false`, `gc.auto 0` and `maintenance.auto
+    false`. Never delete or prune either one. Fetching other branches,
+    other repos, or patch sets beyond 2026-W44 needs approval.
+  - Every fetch into either repo takes the extract lock
+    (`flock data/private/extract.lock` in the main checkout), like any
+    other extractor.
 - **Fetching from a new data source** (the bug tracker, …)
   needs the user's approval first, like any fetch beyond the approved
   backfills. The load rules above apply to it too.

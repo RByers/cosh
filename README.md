@@ -23,7 +23,7 @@ committed summaries it needs.
 |---|---|---|
 | Chromium Gerrit (`chromium-review.googlesource.com`) | Code review: comments, threads, reviewers, CLs | In use (Value Exchange) |
 | [Cloudflare Radar](https://radar.cloudflare.com/) | Browser usage share | In use (Value Exchange) |
-| Chromium git history (`chromium.googlesource.com/chromium/src`) | Commits, authors, dates, messages, files touched (`main` only, no file contents) | Fetched 2026-11-06 into `data/private/git/chromium-src.git`; no dashboard yet |
+| Chromium git history (`chromium.googlesource.com/chromium/src`) | Commits, authors, dates, messages and file contents (`main` only), plus the patch-set commits of 2026-W44 | `main` in the shared clone `~/projects/shared/chromium` (fetched 2026-11-06, blobs 2026-11-07); patch sets in `data/private/git/chromium-src.git`; no dashboard yet |
 | Chromium bug tracker (`issues.chromium.org`) | Bugs filed, triaged and fixed, and by whom | Planned |
 | Others (mailing lists, standards work, …) | To be decided | Ideas |
 
