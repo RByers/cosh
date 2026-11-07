@@ -2109,7 +2109,10 @@ test('the landing page links to the Value Exchange dashboard', async () => {
   assert.equal(await page.title(), 'Chromium Open Source');
   const cards = await page.$$eval('.cards a', (as) =>
     as.map((a) => ({ href: a.getAttribute('href'), title: a.querySelector('h3')!.textContent })));
-  assert.deepEqual(cards, [{ href: 'value.html', title: 'Value Exchange' }]);
+  assert.deepEqual(cards, [
+    { href: 'value.html', title: 'Value Exchange' },
+    { href: 'sentiment.html', title: 'Review Tone' },
+  ]);
   // Styled by its own sheet.
   assert.match(await page.$eval('body', (b) => getComputedStyle(b).fontFamily), /system-ui/);
   await Promise.all([page.waitForNavigation(), page.click('.cards a')]);
@@ -2134,6 +2137,70 @@ test('the landing page fits a phone in dark mode', async () => {
     await page.emulateMediaFeatures([{ name: 'prefers-color-scheme', value: 'light' }]);
     await page.setViewport({ width: 1100, height: 800 });
     await page.screenshot({ path: join(process.env.SCREENSHOT_DIR, 'home-light.png') as `${string}.png`, fullPage: true });
+  }
+  await page.close();
+});
+
+test('the Review Tone page: trend, praise leaderboard and samples; names only for praise', async () => {
+  const page = await browser.newPage();
+  const errors: string[] = [];
+  page.on('console', (m) => m.type() === 'error' && errors.push(m.text()));
+  page.on('pageerror', (e) => errors.push(String(e)));
+  await page.setViewport({ width: 1100, height: 900 });
+  await page.goto(baseUrl + 'sentiment.html', { waitUntil: 'load' });
+  await page.waitForSelector('body[data-ready]');
+  assert.equal(await page.title(), 'Chromium Open Source - Review Tone');
+  assert.equal(await page.$eval('#error', (e) => (e as HTMLElement).hidden), true);
+  assert.equal(await page.$eval('.crumb a', (a) => a.getAttribute('href')), './');
+  // Both charts drew.
+  for (const id of ['#trend-mean', '#trend-shares']) {
+    const w = await page.$eval(id, (c) => (c as HTMLCanvasElement).width);
+    assert.ok(w > 0, id);
+  }
+  assert.match(await page.$eval('#trend-sub', (e) => e.textContent!), /random sample/);
+  // Leaderboards, highest first.
+  for (const id of ['#praise-given', '#praise-received']) {
+    const counts = await page.$$eval(`${id} tbody tr td:last-child`, (tds) =>
+      tds.map((t) => Number(t.textContent!.replace(/,/g, ''))));
+    assert.ok(counts.length > 0, id);
+    assert.deepEqual(counts, [...counts].sort((a, b) => b - a), id);
+  }
+  // Praise samples link to Gerrit and name writer and recipient…
+  const praise = await page.$$eval('#praise-samples li', (lis) =>
+    lis.map((li) => ({ by: li.querySelector('.quote-by')!.textContent!, href: li.querySelector('a')?.getAttribute('href') })));
+  assert.ok(praise.length > 0);
+  for (const p of praise) {
+    assert.match(p.href ?? '', /^https:\/\/chromium-review\.googlesource\.com\/c\//);
+    assert.match(p.by, / to .+, \d{1,2} \w{3,4} \d{4}/);
+  }
+  // …grumpy ones have no link, no name and only a month.
+  const grumpy = await page.$$eval('#grumpy-samples li', (lis) =>
+    lis.map((li) => ({ links: li.querySelectorAll('a').length, by: li.querySelector('.quote-by')!.textContent!.trim() })));
+  assert.ok(grumpy.length > 0);
+  for (const g of grumpy) {
+    assert.equal(g.links, 0);
+    assert.match(g.by, /^[A-Z][a-z]{2,3} \d{4}$/);
+  }
+  const text = await page.$eval('body', (b) => (b as HTMLElement).innerText);
+  assert.doesNotMatch(text, /\b\d{4}-W\d{2}\b/);
+  assert.doesNotMatch(text, /ISO week/i);
+  assert.deepEqual(errors, []);
+  await page.close();
+});
+
+test('the Review Tone page fits a phone in dark mode', async () => {
+  const page = await browser.newPage();
+  await page.emulateMediaFeatures([{ name: 'prefers-color-scheme', value: 'dark' }]);
+  await page.setViewport({ width: 360, height: 800 });
+  await page.goto(baseUrl + 'sentiment.html', { waitUntil: 'load' });
+  await page.waitForSelector('body[data-ready]');
+  const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+  assert.ok(overflow <= 0, `horizontal overflow ${overflow}px`);
+  if (process.env.SCREENSHOT_DIR) {
+    await page.screenshot({ path: join(process.env.SCREENSHOT_DIR, 'tone-phone-dark.png') as `${string}.png`, fullPage: true });
+    await page.emulateMediaFeatures([{ name: 'prefers-color-scheme', value: 'light' }]);
+    await page.setViewport({ width: 1100, height: 800 });
+    await page.screenshot({ path: join(process.env.SCREENSHOT_DIR, 'tone-light.png') as `${string}.png`, fullPage: true });
   }
   await page.close();
 });

@@ -1531,3 +1531,70 @@ main[aria-busy='true'] {
 canvas.pointing {
   cursor: pointer;
 }
+
+/* ---- Review Tone page (sentiment.html) ---- */
+
+.card h3 {
+  margin: 16px 0 8px;
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.muted {
+  color: var(--text-muted);
+  font-weight: normal;
+}
+
+/* Praise leaderboards and sample comments side by side, stacked on phones. */
+.tone-boards,
+.tone-samples {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr));
+  gap: 0 32px;
+}
+
+.tone-board td:nth-child(2),
+.tone-board th:nth-child(2) {
+  text-align: left;
+  white-space: normal;
+  width: 100%;
+}
+
+.tone-board td:first-child {
+  color: var(--text-muted);
+}
+
+.quotes {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.quote {
+  margin: 0 0 12px;
+  padding: 8px 12px;
+  border-left: 3px solid var(--quote, var(--baseline));
+  background: color-mix(in srgb, var(--quote, var(--baseline)) 7%, var(--surface-1));
+  border-radius: 0 6px 6px 0;
+}
+
+.quote-praise {
+  --quote: var(--series-3);
+}
+
+.quote-grumpy {
+  --quote: var(--series-8);
+}
+
+.quote blockquote {
+  margin: 0;
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+  font-size: 0.9rem;
+}
+
+.quote-by {
+  margin: 6px 0 0;
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+}

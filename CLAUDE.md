@@ -44,11 +44,13 @@ regex plus Claude Haiku (`cosh classify`).
   tone. No public report, summary or doc may rank, list, quote or link
   people, teams or other identifiable groups by negative tone, and orgs get
   no tone figures at all. People may be named for praise (the praise
-  leaderboard), and example comments may be quoted unless they are
-  negative and name someone. The repo must not make a negative report easy
-  to build: attach identities only to comments scored as praise, and don't
+  leaderboard and samples, with links), and example comments may be quoted
+  unless they are negative and name someone. Grumpy samples are text,
+  score and month only, screened (`screen_identifying`) and read before
+  they're committed. The repo must not make a negative report easy to
+  build: attach identities only to comments scored as praise, and don't
   add per-person or per-group breakdowns of negative tone, list negative
-  comments, or describe how to. If asked to, say that it needs the user's
+  comments beyond those anonymous samples, or describe how to. If asked to, say that it needs the user's
   explicit approval as a separate design. Gold sets and per-comment model
   reasons stay in `data/private/`.
 - **The Radar token** is loaded with `source secrets.sh`. Never print or

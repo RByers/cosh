@@ -26,7 +26,9 @@ export default defineConfig({
     emptyOutDir: true,
     assetsInlineLimit: 0,
     // One page per dashboard, plus the landing page that links to them.
-    rolldownOptions: { input: { index: page('index.html'), value: page('value.html') } },
+    rolldownOptions: {
+      input: { index: page('index.html'), value: page('value.html'), sentiment: page('sentiment.html') },
+    },
   },
   test: {
     include: ['test/**/*.test.ts'],

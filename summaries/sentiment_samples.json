@@ -1,0 +1,144 @@
+{
+ "generated_at": "2026-11-07T17:07:55Z",
+ "prompt": "v3",
+ "weeks": [
+  "2026-W37",
+  "2026-W44"
+ ],
+ "praise_min": 0.5,
+ "grumpy_max": -0.6,
+ "praise": [
+  {
+   "text": "nice! have not seen this before, super elegant",
+   "score": 0.5,
+   "date": "2026-09-21",
+   "writer": "Juliet Knighton",
+   "recipient": "Kaan Alsan",
+   "url": "https://chromium-review.googlesource.com/c/chromium/src/+/8426267/comment/7cfc0618_2f755581/"
+  },
+  {
+   "text": "fancy. You made me look up a java function! But it's nice, I'll steal it.",
+   "score": 0.5,
+   "date": "2026-09-10",
+   "writer": "Friedrich Hauser",
+   "recipient": "Kuba Lewandowski",
+   "url": "https://chromium-review.googlesource.com/c/chromium/src/+/8351228/comment/f166bffe_4cea9f4c/"
+  },
+  {
+   "text": "Thanks for the detailed assessment of why this is safe to remove!",
+   "score": 0.5,
+   "date": "2026-09-08",
+   "writer": "Theresa Wellington",
+   "recipient": "Sirisha Kavuluru",
+   "url": "https://chromium-review.googlesource.com/c/chromium/src/+/8372583/comment/a9f01a31_98c6c01c/"
+  },
+  {
+   "text": "Thanks - the fix LGTM - it's quite smart and I can't think of anything better.  But, I do have one question below (as I said the CL LGTM, but maybe addressing the question will result in bigger savings on non-Fuchsia targets?).",
+   "score": 0.5,
+   "date": "2026-10-21",
+   "writer": "Łukasz Anforowicz",
+   "recipient": "Devon Loehr",
+   "url": "https://chromium-review.googlesource.com/c/chromium/src/+/8614038/comment/653c6004_a139241e/"
+  },
+  {
+   "text": "Sorry; a fair bit of context switching these days, so lmk if I can explain or missed context (the longer writeup below does help!).\n\n\nYeah. Otherwise, who would we parent the inactive documents to? I thought we were returning no parent.\n\n\nYeah. This is something VoiceOver has to handle e.g. an orphaned cocoa object.\n\n\nSg and thanks for the longer writeup; it helped!",
+   "score": 0.5,
+   "date": "2026-10-13",
+   "writer": "David Tseng",
+   "recipient": "Joanmarie Diggs",
+   "url": "https://chromium-review.googlesource.com/c/chromium/src/+/8395908/comment/34963c99_7d233582/"
+  },
+  {
+   "text": "Great catch, thank you! Restored the exact `||` checks from the original comparator so that two filtered-out accounts or two newly logged-in accounts immediately return `false` and preserve their original relative IDP order in `std::stable_sort`.",
+   "score": 0.5,
+   "date": "2026-10-05",
+   "writer": "Gary Klassen",
+   "recipient": "Yi Gu",
+   "url": "https://chromium-review.googlesource.com/c/chromium/src/+/8499923/comment/8972b4c7_9b580c5d/"
+  },
+  {
+   "text": "The main issue was that (with data: URLs at least) because they had an opaque origin, we didn't have the precursor available to us at the point we were trying to do the checks. However, your suggestion of putting the partition ID in the SiteInfo fixed that.\n\nI rejigged everything with that, and it seems quite nice actually.\n\n\nResponded in a top level comment.",
+   "score": 0.5,
+   "date": "2026-10-16",
+   "writer": "Peter Conn",
+   "recipient": "Alex Moshchuk",
+   "url": "https://chromium-review.googlesource.com/c/chromium/src/+/8529809/comment/80902fec_fe7821fb/"
+  },
+  {
+   "text": "Thanks Maciej! I like how much more focused this got with bringing it just down to objects for now. Left a few comments for you.",
+   "score": 0.5,
+   "date": "2026-09-17",
+   "writer": "Tim",
+   "recipient": "Maciej Czarnecki",
+   "url": "https://chromium-review.googlesource.com/c/chromium/src/+/8317468/comment/b7282096_abaab01f/"
+  },
+  {
+   "text": "Thanks for the context, helps me better understand why this existed in the first place : )",
+   "score": 0.5,
+   "date": "2026-10-14",
+   "writer": "Syed AbuTalib",
+   "recipient": "Jordan Bayles",
+   "url": "https://chromium-review.googlesource.com/c/chromium/src/+/8576707/comment/30ede3fc_7227e2d7/"
+  },
+  {
+   "text": "Good catch!  I didn't realize that one was skippable by the renderer.  If there isn't an easy way for the browser to override that in the compositor process for frame sinks it cares about, I'll go ahead and abandon this CL in favor of the other one.",
+   "score": 0.5,
+   "date": "2026-09-11",
+   "writer": "Charlie Reis",
+   "recipient": "Kyle Charbonneau",
+   "url": "https://chromium-review.googlesource.com/c/chromium/src/+/8385222/comment/93059d19_9c97bd88/"
+  }
+ ],
+ "grumpy": [
+  {
+   "text": "(Posting basically the same thing again most likely does not unclog any pipes... Just a thought.)",
+   "score": -0.6,
+   "month": "2026-10"
+  },
+  {
+   "text": "same comment as previous CLs.  (And please make sure to apply it to any future CLs)",
+   "score": -0.6,
+   "month": "2026-10"
+  },
+  {
+   "text": "Since I see an increasing number of CLs sent out without verification, I request authors to self-review and verify AI output _before_ sending it out, to improve velocity on _both_ the author side _and_ the reviewer side.",
+   "score": -0.6,
+   "month": "2026-10"
+  },
+  {
+   "text": "Nobody is going to read this AI slop description. Neither you or I ;-)\n\nI think you can just explain the idea (e.g. modernizing toward std::string_view) and explain why you are doing that? (Performance maybe?) Readability maybe (?)",
+   "score": -0.6,
+   "month": "2026-10"
+  },
+  {
+   "text": "I told you to move it to a different file so that the helper can be reused!",
+   "score": -0.6,
+   "month": "2026-10"
+  },
+  {
+   "text": "This CL doesn't even begin to implement the semantics that would be needed to approach what the spec says, so it seems quite unfinished.",
+   "score": -0.6,
+   "month": "2026-10"
+  },
+  {
+   "text": "Sorry, this is too sloppy for consideration.",
+   "score": -0.6,
+   "month": "2026-10"
+  },
+  {
+   "text": "This does not make sense. You can ask me for help if you're not sure how to fix this.",
+   "score": -0.6,
+   "month": "2026-10"
+  },
+  {
+   "text": "This is meaningless the the reviewer. Do not include things like this in commit messages.",
+   "score": -0.6,
+   "month": "2026-09"
+  },
+  {
+   "text": "I need you to please stop joking like this ...\n\ni can't tell if this is a joke or serious remark.",
+   "score": -0.6,
+   "month": "2026-10"
+  }
+ ]
+}

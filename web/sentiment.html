@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light dark" />
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M1 10c2.5-5 5-5 7-2s4.5 3 7-2' stroke='%232a78d6' stroke-width='2' fill='none'/%3E%3C/svg%3E" />
+    <title>Chromium Open Source - Review Tone</title>
+    <link rel="stylesheet" href="/src/style.css" />
+    <meta name="description" content="How the tone of Chromium's code review changes over time, and who gives and receives the most praise." />
+  </head>
+  <body>
+    <!--
+      The page's wording is in this file, like value.html (whose opening
+      comment has the <template data-msg> syntax); src/sentiment.ts fills in
+      the values. Ground rule 5 (docs/plan.md): this page names people only
+      for praise. Grumpy samples carry no names, links or exact dates.
+    -->
+    <header>
+      <nav class="crumb"><a href="./">← Chromium Open Source dashboards</a></nav>
+      <h1>Chromium Open Source - Review Tone</h1>
+      <div class="lede">
+        <p>
+          Code review is where most of Chromium's collaboration happens, and its tone shapes how welcome
+          contributors feel. This page tracks that tone across the whole project: how warm or harsh
+          review comments are, and how often people express frustration with AI in review. It also
+          recognises the people who give and receive the most praise.
+        </p>
+        <p>
+          Each human review comment is scored by an AI model (Claude Haiku) from −1 (hostile) through
+          0 (neutral, including firm technical criticism) to +1 (heartfelt gratitude). Almost all review
+          is neutral, so averages sit just above zero; the shares of glowing and angry comments move more.
+          The scores are one model's reading of tone and make mistakes, so this page never names anyone
+          for negative tone.
+        </p>
+      </div>
+    </header>
+
+    <main aria-busy="true">
+      <p id="error" class="note" hidden></p>
+      <template data-msg="error">Couldn't load data: <slot name="error"></slot></template>
+
+      <section id="trend" class="card" aria-labelledby="trend-title">
+        <a class="card-anchor" href="#trend" aria-label="Link to this section" title="Link to this section">#</a>
+        <h2 id="trend-title">Review tone over time</h2>
+        <p id="trend-sub" class="sub"></p>
+        <template data-msg="trend-sub">
+          A <slot name="rate"></slot> random sample of human review comments: <slot name="n"></slot>
+          substantive comments over <slot name="months"></slot> months, about <slot name="perMonth"></slot> a
+          month. Each point is a <slot name="window"></slot>-month rolling average centred on its month, and the
+          shaded band is its 95% interval. Wiggles inside the band are mostly noise.
+        </template>
+        <h3>Average score</h3>
+        <div class="chart">
+          <canvas id="trend-mean" role="img" aria-label="Average review comment score per month, a 3-month rolling average with a 95% band."></canvas>
+        </div>
+        <h3>Glowing, angry and AI-frustrated comments</h3>
+        <div class="chart">
+          <canvas id="trend-shares" role="img" aria-label="Share of glowing comments, angry comments and comments expressing frustration with AI, per month, each a 3-month rolling average with a 95% band."></canvas>
+        </div>
+        <p id="trend-note" class="note"></p>
+        <template data-msg="trend-note">
+          Glowing: a score of +<slot name="glowing"></slot> or more (specific appreciation or stronger). Angry: −<slot name="angry"></slot>
+          or less (curt, impatient or worse). AI friction: any negative feeling about AI in code review, such as
+          annoyance at AI review comments, AI-written changes or an agent repeating a mistake. Bare
+          acknowledgements ("Done", "LGTM", "PTAL") are left out.
+        </template>
+      </section>
+
+      <section id="praise" class="card" aria-labelledby="praise-title">
+        <a class="card-anchor" href="#praise" aria-label="Link to this section" title="Link to this section">#</a>
+        <h2 id="praise-title">Praise leaderboard</h2>
+        <p id="praise-sub" class="sub"></p>
+        <template data-msg="praise-sub">
+          Who wrote, and who received, the most praise in review comments between <slot name="range"></slot>:
+          <slot name="n"></slot> comments of specific appreciation or stronger from one person to another, among
+          <slot name="people"></slot> people. Praise for AI agents isn't counted.
+        </template>
+        <div class="tone-boards">
+          <div>
+            <h3>Most praise given</h3>
+            <table id="praise-given" class="tone-board"><thead><tr><th scope="col">#</th><th scope="col">Person</th><th scope="col" class="num">Comments</th></tr></thead><tbody></tbody></table>
+          </div>
+          <div>
+            <h3>Most praise received</h3>
+            <table id="praise-received" class="tone-board"><thead><tr><th scope="col">#</th><th scope="col">Person</th><th scope="col" class="num">Comments</th></tr></thead><tbody></tbody></table>
+          </div>
+        </div>
+      </section>
+
+      <section id="samples" class="card" aria-labelledby="samples-title">
+        <a class="card-anchor" href="#samples" aria-label="Link to this section" title="Link to this section">#</a>
+        <h2 id="samples-title">Sample comments</h2>
+        <p id="samples-sub" class="sub"></p>
+        <template data-msg="samples-sub">
+          A random handful of review comments from between <slot name="range"></slot>, to show what the scores
+          mean. Praise is shown with its writer, its recipient and a link to the review. Grumpy comments are
+          shown on their own, without names, links or exact dates, and only when they don't mention anyone.
+        </template>
+        <div class="tone-samples">
+          <div>
+            <h3>Praise <span class="muted">(+<span id="praise-min"></span> or more)</span></h3>
+            <ul id="praise-samples" class="quotes"></ul>
+          </div>
+          <div>
+            <h3>Grumpiness <span class="muted">(−<span id="grumpy-max"></span> or less)</span></h3>
+            <ul id="grumpy-samples" class="quotes"></ul>
+          </div>
+        </div>
+        <template data-msg="praise-by"><slot name="writer"></slot> to <slot name="recipient"></slot>, <slot name="date"></slot></template>
+        <template data-msg="grumpy-when"><slot name="month"></slot></template>
+      </section>
+
+      <section id="method" class="card" aria-labelledby="method-title">
+        <a class="card-anchor" href="#method" aria-label="Link to this section" title="Link to this section">#</a>
+        <h2 id="method-title">How it's measured</h2>
+        <p class="note">
+          Comments come from Chromium's public Gerrit code review: every comment by a human account on a
+          change owned by a human, including the change owner's replies. Bots, AI reviewers and text an
+          agent posted under a person's account are left out. The model sees the comment, its file and up
+          to four earlier comments in its thread, labelled only as from the change's author, a reviewer or
+          an AI, never by name.
+        </p>
+        <p class="note">
+          The prompt was tuned against 261 hand-labelled comments. On those it agrees with the hand labels
+          to within 0.05 on average (Pearson r 0.92–0.93), and puts 88–90% of comments in the same class of
+          negative, neutral or positive. The trend uses a deterministic 5% sample of comments; the praise
+          leaderboard and the sample comments use every comment in their weeks. Code and method:
+          <a href="https://github.com/RByers/cosh/blob/main/docs/sentiment.md">docs/sentiment.md</a>.
+        </p>
+      </section>
+    </main>
+    <script type="module" src="/src/sentiment.ts"></script>
+  </body>
+</html>

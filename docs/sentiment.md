@@ -1,9 +1,11 @@
 # Review-comment sentiment
 
 `cosh.sentiment` scores the tone of human review comments on Chromium's
-Gerrit. It publishes two things: a monthly trend of the whole project's
-review tone (`summaries/sentiment_monthly.json`) and a leaderboard of who
-gives and receives the most praise (`summaries/sentiment_praise.json`).
+Gerrit. It publishes a monthly trend of the whole project's review tone
+(`summaries/sentiment_monthly.json`), a leaderboard of who gives and
+receives the most praise (`summaries/sentiment_praise.json`) and a few
+sample comments (`summaries/sentiment_samples.json`). The Review Tone
+dashboard (`web/sentiment.html`) shows all three.
 
 ## The principle: no finger-pointing
 
@@ -19,6 +21,13 @@ This is `docs/plan.md` ground rule 5 (user's policy, 2026-11-06). In short:
   say what *role* a comment plays, not whose it is.
 - **Example comments may be quoted** unless they are negative and name
   someone.
+- **Sample praise names people; sample grumpiness doesn't.** Praise samples
+  come with writer, recipient, date and a Gerrit link. Grumpy samples come
+  as text, score and month only, and only after a sandboxed screen
+  (`screen_identifying`) finds nothing that identifies anyone, accuses
+  anyone of misconduct or points at a specific ticket. Read each one before
+  committing it. Known limit: quoted text can still be found with Gerrit's
+  comment search.
 - **The repo doesn't ship the means to name people for negative tone**, and
   these docs don't explain how to. That would be a deliberate design job
   that needs the user's explicit approval.
@@ -55,6 +64,9 @@ python3 -m cosh.sentiment score --week 2026-W44                # every comment
 python3 -m cosh.sentiment score --week 2026-W44 --praise-only  # only comments with praise words (~17%)
 # The praise leaderboard over scored weeks -> summaries/sentiment_praise.json
 python3 -m cosh.sentiment praise --week 2026-W37:2026-W44
+# Sample comments from fully scored weeks -> summaries/sentiment_samples.json
+# (one sandboxed screening call per 30 grumpy candidates; read the result before committing)
+python3 -m cosh.sentiment samples --week 2026-W37:2026-W44
 ```
 
 **Measured cost.** The 5% sample (2023-W26 .. 2026-W44) has 145,468
@@ -190,6 +202,28 @@ is left out.
   `--praise-only` costs about a fifth of full scoring: about $0.25 and 2
   minutes a week, or $10–15 for a year. Those 8 weeks gave 849 praise
   comments among 647 people; the most generous person gave 25.
+
+## Sample comments (`samples`)
+
+`summaries/sentiment_samples.json` holds 10 praise and 10 grumpy comments,
+drawn at random (a fixed hash of the comment id, so reruns pick the same
+ones) from fully scored weeks. Only comments of at most 400 characters are
+drawn.
+
+- **Praise:** a score of +0.5 or more (+0.8 was tried first; it is rare,
+  3 in 8 weeks), a praise word and a human recipient. Each comes with
+  writer, recipient, date and a Gerrit link (`comment_url`). Names are
+  attached as in `praise`: `collect` builds only the sampled comments.
+- **Grumpiness:** a score of −0.6 or less, with no URLs, emails or
+  @-handles. Each candidate batch goes through `screen_identifying`, a
+  sandboxed, tool-less Haiku call whose reply is only a list of the ids it
+  flags (a reply that doesn't parse flags them all). It flags names,
+  handles, teams, companies, CL and bug numbers, accusations of misconduct
+  and references to specific tickets. Survivors keep text, score and month
+  only.
+- **Before committing, read the 20 texts** (a small sample, read as data).
+  On 2026-11-07 the first screen let through an accusation of fraud and a
+  dig at a specific ticket, which is why the prompt now covers both.
 
 ## Security
 

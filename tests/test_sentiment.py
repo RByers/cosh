@@ -220,6 +220,77 @@ class SecurityTest(unittest.TestCase):
         self.assertLessEqual(len(S.clean_why("word " * 100)), S.WHY_CHARS)
         self.assertEqual(S.clean_why("a`b<c>d{e}\x00f"), "abcdef")
 
+    def test_screen_keeps_only_sent_ids_and_fails_closed(self):
+        box = FakeSandbox({"structured_output": {"flagged": ["C1", "C9", 3]}})
+        self.assertEqual(S.screen_identifying([("C0", "a"), ("C1", "b")], box), {"C1"})
+        args, _ = box.calls[0]
+        self.assertEqual(args[args.index("--tools") + 1], "")
+        self.assertIn('"flagged"', args[args.index("--json-schema") + 1])
+        bad = FakeSandbox("not json")
+        self.assertEqual(S.screen_identifying([("C0", "a"), ("C1", "b")], bad), {"C0", "C1"})
+
+    def test_comment_url(self):
+        self.assertEqual(S.comment_url("chromium/src", 5, "ab_cd"),
+                         "https://chromium-review.googlesource.com/c/chromium/src/+/5/comment/ab_cd/")
+        u = S.comment_url("chromium/src", "5", "x\"/../javascript:alert(1)")
+        self.assertTrue(u.startswith("https://chromium-review.googlesource.com/c/chromium/src/+/5/comment/"))
+        self.assertNotIn('"', u)
+        self.assertNotIn("/../", u)
+
+
+class ScreenSandbox:
+    """Flags the items whose text mentions Alice, like the real screen should."""
+
+    def run(self, args, prompt):
+        import re as _re
+        flagged = [k for k, t in _re.findall(r"### (C\d+)\n([^#]*)", prompt) if "Alice" in t]
+
+        class P:
+            returncode, stderr = 0, ""
+        P.stdout = json.dumps({"structured_output": {"flagged": flagged}})
+        return P
+
+
+class SamplesTest(unittest.TestCase):
+    def test_names_and_links_only_for_praise(self):
+        """Ground rule 5: grumpy samples carry text, score and month only."""
+        comments = [c("a", 2, "This is sloppy, again!!"),                              # grumpy, kept
+                    c("b", 1, "Thanks, great catch, I missed that entirely!", parent="a"),  # praise
+                    c("g", 2, "Alice, this is sloppy again!!"),                        # names someone
+                    c("u", 2, "Sloppy, see https://example.com/x"),                   # has a link
+                    c("m", 2, "Just a remark")]                                       # neutral
+        scores = {"100/a": (-0.6, False, None), "100/b": (0.5, False, None), "100/g": (-0.8, False, None),
+                  "100/u": (-0.6, False, None), "100/m": (0.0, False, None)}
+        with tempfile.TemporaryDirectory() as d:
+            S.write_jsonl(os.path.join(d, "sentiment", "comments-2026-W44.jsonl"), run(comments))
+            import sqlite3
+            db = sqlite3.connect(os.path.join(d, "derived.sqlite"))
+            db.execute("CREATE TABLE accounts (host, account_id, email, name)")
+            db.executemany("INSERT INTO accounts VALUES (?,?,?,?)",
+                           [(h, a, v["email"], v["email"].split("@")[0].title()) for (h, a), v in ACCTS.items()])
+            db.commit()
+            sdb = S.open_scores(d)
+            definition = S.load_prompt()
+            with sdb:
+                sdb.execute("INSERT INTO prompts(version, sha256, model, text, created_at) VALUES (?,?,?,?,?)",
+                            ("v", S.prompt_sha(definition), "haiku", definition, "now"))
+                sdb.executemany("INSERT INTO scores VALUES (?,1,0,?,?,?)",
+                                [(i, s, int(ai), why) for i, (s, ai, why) in scores.items()])
+            real = S.collect
+            S.collect = lambda week, data_dir, keep=None, annotate=None: S._cl_comments(
+                HOST, "chromium/src", 100, 1, "subj", "NEW", {"f.cc": comments}, ACCTS,
+                "2026-10-26 00:00:00", "2026-11-02 00:00:00", keep=keep, annotate=annotate)
+            try:
+                doc = S.samples(["2026-W44"], d, sandbox=ScreenSandbox())
+            finally:
+                S.collect = real
+        self.assertEqual([g["text"] for g in doc["grumpy"]], ["This is sloppy, again!!"])
+        self.assertEqual(set(doc["grumpy"][0]), {"text", "score", "month"})
+        self.assertEqual(doc["grumpy"][0]["month"], "2026-10")
+        [p] = doc["praise"]
+        self.assertEqual((p["writer"], p["recipient"]), ("Owner", "Rev"))
+        self.assertEqual(p["url"], "https://chromium-review.googlesource.com/c/chromium/src/+/100/comment/b/")
+
 
 if __name__ == "__main__":
     unittest.main()

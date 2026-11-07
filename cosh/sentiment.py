@@ -245,14 +245,14 @@ def input_hash(text):
     return int.from_bytes(d, "big", signed=True)
 
 
-def claude_args(model):
+def claude_args(model, schema=None, system=None):
     """claude -p flags: no tools, MCP servers or slash commands, no transcript,
     one-line system prompt, reply constrained to SCHEMA (SECURITY.md, layer 1)."""
     return ["-p", "--model", model, "--output-format", "json", "--tools", "",
-            "--system-prompt", SYSTEM_PROMPT,
+            "--system-prompt", system or SYSTEM_PROMPT,
             "--strict-mcp-config", "--mcp-config", '{"mcpServers":{}}', "--disable-slash-commands",
             "--exclude-dynamic-system-prompt-sections", "--no-session-persistence",
-            "--json-schema", json.dumps(SCHEMA)]
+            "--json-schema", json.dumps(schema or SCHEMA)]
 
 
 def claude_scores(model, definition, items, sandbox):
@@ -550,10 +550,122 @@ def praise(weeks, data_dir=store.DATA_DIR, version=None):
                 weekly=[dict(week=w, email=e, given=g, received=r) for (w, e), (g, r) in sorted(rows.items())])
 
 
+# ---------------------------------------------------------------- sample comments
+
+SAMPLES_SUMMARY = os.path.join(os.path.dirname(SUMMARY), "sentiment_samples.json")
+GERRIT = "https://chromium-review.googlesource.com"
+PRAISE_SAMPLE, GRUMPY_SAMPLE = 0.5, -0.6   # score bounds for sample comments (+0.8 is rare: 3 in 8 weeks)
+SAMPLE_CHARS = 400                          # longer comments aren't sampled
+_LINKY = re.compile(r"https?://|www\.|@\w|\b\w+@\w")
+
+
+def comment_url(project, number, uuid):
+    """Gerrit link to a praise comment. Always https on GERRIT; the parts are
+    percent-encoded, since the uuid comes from NoteDb (SECURITY.md)."""
+    from urllib.parse import quote
+    return f"{GERRIT}/c/{quote(project, safe='/')}/+/{int(number)}/comment/{quote(uuid, safe='')}/"
+
+
+SCREEN_SYSTEM = "You check code-review comments for anything that identifies a person."
+SCREEN_PROMPT = """Each item below is a code-review comment. List the ids of the items that
+identify a person: a name or first name, a username, handle or email, or a
+detail that points to who wrote or received the comment (a team, a company, a
+named product owned by one person, a CL or bug number). Also list items that
+accuse anyone of misconduct, dishonesty, fraud or bad faith, or that point at
+a specific ticket, bug or report. Code identifiers (function, class, file and
+flag names) don't count. When unsure, list it.
+Return JSON only: {"flagged": ["C0", ...]}."""
+SCREEN_SCHEMA = {"type": "object", "properties": {"flagged": {"type": "array", "items": {"type": "string"}}},
+                 "required": ["flagged"]}
+
+
+def screen_identifying(items, sandbox, model="haiku"):
+    """The keys of [(key, text)] that identify a person, from one sandboxed,
+    tool-less call (SECURITY.md). Only keys that were sent count; a reply that
+    doesn't parse flags everything."""
+    sent = {k for k, _ in items}
+    prompt = SCREEN_PROMPT + "\n\n" + "\n\n".join(f"### {k}\n{t}" for k, t in items)
+    p = sandbox.run(claude_args(model, SCREEN_SCHEMA, SCREEN_SYSTEM), prompt)
+    try:
+        d = json.loads(p.stdout)
+        out = d.get("structured_output") or json.loads(re.search(r"\{.*\}", d.get("result") or "", re.S).group(0))
+        return {k for k in out.get("flagged", []) if k in sent}
+    except (ValueError, AttributeError, TypeError):
+        return set(sent)
+
+
+def _target_kind(r):
+    """Rows written before target_kind existed (2026-11-05) have target_is_ai."""
+    if "target_kind" in r:
+        return r["target_kind"]
+    return "ai" if r.get("target_is_ai") else "person" if r.get("target") else None
+
+
+def _draw(ids, seed):
+    """Deterministic shuffle of comment ids."""
+    return sorted(ids, key=lambda i: hashlib.sha256(f"{seed}/{i}".encode()).hexdigest())
+
+
+def samples(weeks, data_dir=store.DATA_DIR, version=None, n=10, seed="2026-11", sandbox="auto"):
+    """A random sample of praise and of grumpy comments from fully scored weeks.
+
+    Ground rule 5: praise comes with names and a Gerrit link; grumpy comments
+    come with their text, score and month only, and only when a sandboxed
+    screen finds nothing in them that identifies anyone."""
+    scores = load_scores(None, data_dir, version)
+    rows = {}
+    for w in weeks:
+        for r in read_jsonl(os.path.join(out_dir(data_dir), f"comments-{w}.jsonl")):
+            if r["id"] in scores and len(r["text"]) <= SAMPLE_CHARS:
+                rows[r["id"]] = r
+    praise_ids = _draw([i for i, r in rows.items() if scores[i][0] >= PRAISE_SAMPLE and is_praise(r, scores)
+                        and _target_kind(r) == "person"], seed)[:n]
+    grumpy_pool = _draw([i for i, r in rows.items() if scores[i][0] <= GRUMPY_SAMPLE and not _LINKY.search(r["text"])],
+                        seed)
+    box = make_sandbox(sandbox, data_dir) if isinstance(sandbox, str) else sandbox
+    grumpy = []
+    try:
+        for b in range(0, len(grumpy_pool), 3 * n):
+            if len(grumpy) >= n:
+                break
+            chunk = grumpy_pool[b:b + 3 * n]
+            keys = {f"C{j}": i for j, i in enumerate(chunk)}
+            flagged = screen_identifying([(k, rows[i]["text"]) for k, i in keys.items()], box)
+            grumpy += [keys[k] for k in keys if k not in flagged]
+    finally:
+        if box is not sandbox:
+            box.close()
+    grumpy = grumpy[:n]
+
+    db = sqlite3.connect(f"file:{os.path.join(data_dir, store.DERIVED_FILE)}?mode=ro", uri=True)
+    names = {(h, a): (e, nm) for h, a, e, nm in db.execute("SELECT host, account_id, email, name FROM accounts")}
+    who = {}
+    want = set(praise_ids)
+    def week_of(ts):
+        y, wk, _ = date.fromisoformat(ts[:10]).isocalendar()
+        return f"{y}-W{wk:02d}"
+    for w in sorted({week_of(rows[i]["written_at"]) for i in praise_ids}):
+        collect(w, data_dir, keep=want.__contains__,
+                annotate=lambda row, ids: who.__setitem__(row["id"], ids))
+    praise_out = []
+    for i in praise_ids:
+        r, ids = rows[i], who.get(i)
+        if not ids:
+            continue
+        a = names.get((ids["host"], ids["author"]), (None, None))
+        t = names.get((ids["host"], ids["target"]), (None, None))
+        praise_out.append(dict(text=r["text"], score=scores[i][0], date=r["written_at"][:10],
+                               writer=a[1] or a[0], recipient=t[1] or t[0],
+                               url=comment_url(r["project"], r["cl"], r["uuid"])))
+    grumpy_out = [dict(text=rows[i]["text"], score=scores[i][0], month=rows[i]["written_at"][:7]) for i in grumpy]
+    return dict(generated_at=store.now_iso(), prompt=version or PROMPT_VERSION, weeks=[weeks[0], weeks[-1]],
+                praise_min=PRAISE_SAMPLE, grumpy_max=GRUMPY_SAMPLE, praise=praise_out, grumpy=grumpy_out)
+
+
 def main(argv):
     import argparse
     ap = argparse.ArgumentParser(prog="python3 -m cosh.sentiment")
-    ap.add_argument("step", choices=["collect", "score", "summary", "praise"])
+    ap.add_argument("step", choices=["collect", "score", "summary", "praise", "samples"])
     ap.add_argument("--praise-only", action="store_true",
                     help="score: only comments with praise words (enough for `praise`, not for aggregates)")
     ap.add_argument("--week", default="2026-W44", help="a week or a range, e.g. 2026-W37:2026-W44")
@@ -588,6 +700,13 @@ def main(argv):
                             praise_only=a.praise_only)
             print(f"{name}: scored {st['n']} in {st['calls']} calls, {st['tokens']} tokens, ${st['usd']:.2f} "
                   f"API-equivalent, {time.time() - t0:.0f}s", file=sys.stderr)
+    elif a.step == "samples":
+        doc = samples(weeks, version=a.prompt, sandbox=a.sandbox)
+        out = a.out or SAMPLES_SUMMARY
+        with open(out, "w") as f:
+            json.dump(doc, f, indent=1, ensure_ascii=False)
+            f.write("\n")
+        print(f"{len(doc['praise'])} praise, {len(doc['grumpy'])} grumpy samples -> {out}", file=sys.stderr)
     elif a.step == "praise":
         doc = praise(weeks, version=a.prompt)
         out = a.out or PRAISE_SUMMARY

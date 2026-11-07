@@ -1094,3 +1094,37 @@ test("leaderboard size 'all' takes every reviewer with a nonzero value", () => {
   const b = board({ '2026-W44': [[1, 0, 9, 1, 0], [2, 1, 5, 1, 0], [3, 0, 0, 1, 0], [4, 1, 7, 3, 0]] });
   assert.deepEqual(topReviewers(b, '2026-W44', 'comments', leaderboardLimit('all')).map((x) => x.value), [9, 7, 5]);
 });
+
+test('Review Tone: praise boards, dates and Gerrit links', async () => {
+  const { praiseBoard, praiseTotal, praisePeople, weeksBetween, monthLabel, dayLabel, gerritLink } = await import(
+    '../src/tone.ts'
+  );
+  const d = {
+    weeks: ['2026-W37', '2026-W44'] as [string, string],
+    people: { 'a@x.org': 'Ann', 'b@x.org': 'Bo', 'c@x.org': 'Cy' },
+    weekly: [
+      { week: '2026-W37', email: 'a@x.org', given: 2, received: 0 },
+      { week: '2026-W38', email: 'a@x.org', given: 1, received: 1 },
+      { week: '2026-W37', email: 'b@x.org', given: 0, received: 2 },
+      { week: '2026-W38', email: 'c@x.org', given: 1, received: 1 },
+    ],
+  };
+  assert.deepEqual(praiseBoard(d, 'given').map((r) => [r.name, r.count]), [['Ann', 3], ['Cy', 1]]);
+  assert.deepEqual(praiseBoard(d, 'received').map((r) => [r.name, r.count]), [['Bo', 2], ['Ann', 1], ['Cy', 1]]);
+  assert.deepEqual(praiseBoard(d, 'received', 1).map((r) => r.name), ['Bo']);
+  assert.equal(praiseTotal(d), 4);
+  assert.equal(praisePeople(d), 3);
+  assert.equal(weeksBetween(['2026-W37', '2026-W44']), '7 Sept and 1 Nov 2026'.replace('Sept', fmtMonthShort(8)));
+  assert.equal(weeksBetween(['2025-W52', '2026-W02']), `22 Dec 2025 and 11 Jan 2026`);
+  assert.equal(monthLabel('2026-10'), 'Oct 2026');
+  assert.equal(dayLabel('2026-10-02'), '2 Oct 2026');
+  assert.equal(gerritLink('https://chromium-review.googlesource.com/c/chromium/src/+/1/comment/x/'),
+    'https://chromium-review.googlesource.com/c/chromium/src/+/1/comment/x/');
+  assert.equal(gerritLink('javascript:alert(1)'), null);
+  assert.equal(gerritLink('https://chromium-review.googlesource.com.evil.example/'), null);
+});
+
+/** en-GB's short name for a month (0-based): "Sept" or "Sep" depending on ICU. */
+function fmtMonthShort(m: number): string {
+  return new Intl.DateTimeFormat('en-GB', { month: 'short', timeZone: 'UTC' }).format(Date.UTC(2026, m, 1));
+}
