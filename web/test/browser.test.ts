@@ -557,15 +557,26 @@ test('every card has a "#" link that keeps the state in the URL, and a shared li
   assert.deepEqual(errors, []);
   await page.close();
 
-  // Opening the shared link scrolls the card to the top, just below the sticky bar.
-  for (const hash of [shared.slice(shared.indexOf('#')), '#leaderboard']) {
+  // Opening the shared link scrolls the card to the top, just below the sticky
+  // bar. The leaderboard is the last card, and what follows it is shorter than
+  // the window, so the page can stop at its bottom first: then the card only
+  // has to be clear of the bar. A card further up must reach the bar.
+  for (const [hash, id] of [
+    [shared.slice(shared.indexOf('#')), 'leaderboard'],
+    ['#leaderboard', 'leaderboard'],
+    ['#metric=comments&card=per-review', 'per-review'],
+  ]) {
     const { page: p, errors: e } = await open(hash);
     await p.evaluate(() => new Promise((r) => requestAnimationFrame(r)));
-    const t = await p.evaluate(() => {
+    const { t, atBottom } = await p.evaluate((id) => {
       const bar = document.querySelector<HTMLElement>('.metric-bar')!.getBoundingClientRect().bottom;
-      return document.getElementById('leaderboard')!.getBoundingClientRect().top - bar;
-    });
-    assert.ok(t >= 0 && t < 30, `${hash}: card ${t}px below the bar`);
+      const root = document.documentElement;
+      return {
+        t: document.getElementById(id)!.getBoundingClientRect().top - bar,
+        atBottom: Math.ceil(scrollY) >= root.scrollHeight - innerHeight - 1,
+      };
+    }, id);
+    assert.ok(t >= 0 && (t < 30 || (id === 'leaderboard' && atBottom && t < 200)), `${hash}: card ${t}px below the bar`);
     assert.deepEqual(e, []);
     await p.close();
   }
