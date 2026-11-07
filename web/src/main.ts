@@ -630,7 +630,6 @@ function orgRangeShares(data: Data, state: State, weeks: string[], vWeeks: strin
 function renderParity(data: Data, state: State, weeks: string[], orgs: string[], colors: Map<string, string>, theme: Theme) {
   const metricLabel = metricUnit(state.metric);
   const items = orgRangeShares(data, state, weeks).filter((it) => orgs.includes(it.org) && it.ratio !== null);
-  const none = items.filter((it) => it.contribution <= 0).map((it) => it.org);
   drawChart(() => {
     parityChart?.destroy();
     parityChart = renderParityChart(
@@ -645,8 +644,6 @@ function renderParity(data: Data, state: State, weeks: string[], orgs: string[],
     weeks: weeks.length,
     multi: weeks.length > 1,
     metric: metricLabel,
-    none: none.join(', '),
-    noneN: none.length,
   });
 }
 
@@ -1411,8 +1408,6 @@ function main(data: Data) {
       metric: metricUnit(state.metric),
       smoothed: state.smoothing > 1,
       smoothing: smoothingName(state.smoothing),
-      // Set when the running average's warm-up moves the chart's start.
-      start: chartWeeks.length && chartWeeks[0] !== vWeeks[0] ? day(weekMonday(chartWeeks[0])) : '',
       ...skippedVars(weeks, vWeeks),
     });
   };

@@ -134,10 +134,7 @@
           <span data-if="weeks">Each organization's share of <slot name="metric"></slot> against its browsers' share of
             Chromium browser usage<span data-if="multi"> (review: totals over the range; usage: mean weekly share)</span>,
             on log axes. The diagonal is a 1.0× value ratio, review in proportion to usage: organizations above it
-            review more than their usage share, those below less.<span data-if="none">
-            <slot name="none"></slot> <span data-if="noneN=1">has</span><span data-if="noneN!=1">have</span> no
-            <slot name="metric"></slot> in the range and <span data-if="noneN=1">sits</span><span data-if="noneN!=1">sit</span>
-            on the 0 row.</span></span>
+            review more than their usage share, those below less.</span>
         </template>
         <div class="chart chart-square">
           <canvas id="parity-chart" role="img" aria-label="Share of review against share of browser usage per organization, on log axes, with a diagonal line at a 1.0 value ratio; the table below lists the values."></canvas>
@@ -154,8 +151,6 @@
             <slot name="metric"></slot> and Chromium browser usage data<span data-if="smoothed"> for a full
             <slot name="smoothing"></slot> running average</span>.</span><span data-if="shown">Share of
             <slot name="metric"></slot> ÷ share of Chromium browser usage, per week<span data-if="smoothed">, as a <slot name="smoothing"></slot> running average</span>.
-            1.0× is review in proportion to usage.<span data-if="start"> The average starts the week of
-            <slot name="start"></slot>, the first with a full window of data.</span>
             <span data-if="skippedN">
             Leaves out <slot name="skippedN"></slot> <span data-if="skippedN=1">week</span><span data-if="skippedN!=1">weeks</span>
             without both review and usage data<span data-if="skipped">: <slot name="skipped"></slot></span>.</span></span></span>

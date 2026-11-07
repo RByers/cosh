@@ -282,7 +282,6 @@ test('parity chart keeps orgs with none of the metric, on a 0 row below the log 
         yMin: y.min,
         bottomLabel: String(y.ticks[0]?.label),
         xMin: p.scales.x.min,
-        sub: document.querySelector('#parity-sub')!.textContent!,
       };
     });
     assert.deepEqual(errors, []);
@@ -294,9 +293,7 @@ test('parity chart keeps orgs with none of the metric, on a 0 row below the log 
       assert.equal(d.xMin, d.yMin, preset);
       for (const z of d.zeros) {
         assert.equal(z.y, d.yMin, `${preset}: ${z.org}`);
-        assert.ok(d.sub.includes(z.org), `${preset}: ${z.org} named in the subtitle`);
       }
-      assert.match(d.sub, /0 row/);
     }
   }
   await page.close();
