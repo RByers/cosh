@@ -67,6 +67,36 @@ class PatchsetsTest(unittest.TestCase):
                 f.write("7\n")
             self.assertEqual(patchsets.fetched(g), {7, 42})
 
+    def _run_fake(self, jobs, fail_on=None):
+        with tempfile.TemporaryDirectory() as d:
+            db = os.path.join(d, "derived.sqlite")
+            make_derived(db)
+            g = patchsets.init_repo(os.path.join(d, "ps.git"))
+            seen = []
+            orig = patchsets.fetch_batch, patchsets.repack
+
+            def fake_fetch(git_dir, cls, retries=4):
+                if fail_on in [n for n, _ in cls]:
+                    raise RuntimeError("boom")
+                seen.append([n for n, _ in cls])
+                return 0.0
+
+            patchsets.fetch_batch, patchsets.repack = fake_fetch, lambda g: 0.0
+            try:
+                patchsets.run(go=True, derived_path=db, git_dir=g, interval=0, max_cls=1, min_free=0,
+                              jobs=jobs)
+            finally:
+                patchsets.fetch_batch, patchsets.repack = orig
+            return sorted(seen)
+
+    def test_parallel_fetches_each_batch_once(self):
+        self.assertEqual(self._run_fake(jobs=3), [[100], [101], [105]])
+        self.assertEqual(self._run_fake(jobs=1), [[100], [101], [105]])
+
+    def test_failure_stops_run(self):
+        with self.assertRaises(SystemExit):
+            self._run_fake(jobs=2, fail_on=100)
+
 
 if __name__ == "__main__":
     unittest.main()

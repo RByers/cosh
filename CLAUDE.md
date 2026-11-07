@@ -26,7 +26,10 @@ regex plus Claude Haiku (`cosh classify`).
   refs. Run it only after the backfill has finished, never alongside it.
   Rerunning it to refresh is fine.
 - **Keep load on Gerrit and googlesource low.**
-  - Requests are serial.
+  - Requests are serial. One exception, approved by the user on
+    2026-11-07 (a weekend): the reviewed-CL patch-set fetch runs with
+    `cosh patchsets --go --jobs 8`, 8 git fetches in flight at once.
+    Anything else parallel needs approval again.
   - Never lower `--interval` below 1 s.
   - Never run two extractors at once. `extract`, `extract-open` and
     `backfill --go` take `data/private/extract.lock`. (Backfills started
@@ -105,7 +108,7 @@ regex plus Claude Haiku (`cosh classify`).
     under the extract lock. Started 2026-11-07, log
     `data/private/patchsets-reviewed-*.log`, PID in
     `data/private/patchsets.pid`. It is resumable: rerun
-    `python3 -m cosh patchsets --go --repack-gb 1000` from the main
+    `python3 -m cosh patchsets --go --repack-gb 1000 --jobs 8` from the main
     checkout. It repacks with `repack --geometric=2 -d -l` at the end (or
     when under 25 GB is free), which is lossless because the objects it
     drops are in the shared clone. Patch sets of CLs without

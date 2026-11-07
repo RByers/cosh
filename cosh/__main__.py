@@ -115,6 +115,9 @@ def main(argv=None):
     ps.add_argument("--max-patchsets", type=int, default=5000,
                     help="patch sets per fetch (default 5000)")
     ps.add_argument("--max-batches", type=int, help="stop after N fetches (for smoke tests)")
+    ps.add_argument("--jobs", type=int, default=1,
+                    help="fetches in flight at once (default 1, at most 8; above 1 needs "
+                         "the user's approval, CLAUDE.md)")
     ps.add_argument("--repack-gb", type=float, default=8.0,
                     help="repack after this many GB of new packs (default 8; it also repacks "
                          "when under 25 GB is free, and always at the end)")
@@ -213,7 +216,7 @@ def main(argv=None):
         from . import patchsets
         kw = dict(derived_path=a.db, interval=a.interval, max_cls=a.max_cls,
                   max_ps=a.max_patchsets, max_batches=a.max_batches,
-                  repack_bytes=a.repack_gb * 1e9)
+                  repack_bytes=a.repack_gb * 1e9, jobs=max(1, min(a.jobs, 8)))
         if a.go:
             with store.extract_lock():
                 patchsets.run(go=True, **kw)

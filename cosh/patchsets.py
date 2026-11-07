@@ -22,6 +22,7 @@ import shutil
 import sqlite3
 import subprocess
 import sys
+import threading
 import time
 
 from . import store
@@ -40,6 +41,12 @@ REPO_CONFIG = {
     # with millions of them the post-fetch connectivity walk would dominate.
     # Hidden, the check still walks every new object down to main.
     "fetch.hideRefs": "refs/patchsets/",
+    # Parallel fetches (--jobs) take turns appending to the reftable stack;
+    # wait for the lock rather than fail the fetch.
+    "reftable.lockTimeout": "60000",
+    # Local unpacking threads per fetch, so 8 parallel fetches stay polite on
+    # a shared machine. `repack` sets its own.
+    "pack.threads": "2",
 }
 
 
@@ -112,9 +119,19 @@ def fetched(git_dir):
     return done
 
 
+_done_lock = threading.Lock()
+
+
 def _pack_bytes(git_dir):
     d = os.path.join(git_dir, "objects", "pack")
-    return sum(os.path.getsize(os.path.join(d, f)) for f in os.listdir(d) if f.endswith(".pack"))
+    total = 0
+    for f in os.listdir(d):
+        if f.endswith(".pack"):
+            try:
+                total += os.path.getsize(os.path.join(d, f))
+            except FileNotFoundError:  # renamed or removed meanwhile
+                pass
+    return total
 
 
 def fetch_batch(git_dir, cls, retries=4):
@@ -126,7 +143,7 @@ def fetch_batch(git_dir, cls, retries=4):
                 "--no-write-fetch-head", "--stdin", GIT_URL,
                 input="".join(refspecs(n) for n, _ in cls), check=False, network=True)
         if p.returncode == 0:
-            with open(os.path.join(git_dir, DONE_FILE), "a") as f:
+            with _done_lock, open(os.path.join(git_dir, DONE_FILE), "a") as f:
                 f.write("".join(f"{n}\n" for n, _ in cls))
             return time.time() - t0
         err = p.stderr.strip().replace("\n", " | ")[:300]
@@ -154,7 +171,11 @@ def repack(git_dir):
 
 
 def run(go=False, derived_path=None, git_dir=None, interval=2.0, max_cls=1000, max_ps=5000,
-        repack_bytes=8e9, min_free=25e9, max_batches=None):
+        repack_bytes=8e9, min_free=25e9, max_batches=None, jobs=1):
+    """Fetch the plan with `jobs` workers sharing the repo (each waits
+    `interval` between its own fetches). When new packs pass `repack_bytes`
+    or free space drops under `min_free`, workers finish their fetch and
+    stop, the repo is repacked, and fetching continues."""
     derived_path = derived_path or os.path.join(store.DATA_DIR, "derived.sqlite")
     git_dir = git_dir or default_repo()
     cls = reviewed_cls(derived_path)
@@ -163,34 +184,64 @@ def run(go=False, derived_path=None, git_dir=None, interval=2.0, max_cls=1000, m
     plan = batches(todo, max_cls, max_ps)
     print(f"reviewed CLs {len(cls):,} ({sum(p for _, p in cls):,} patch sets); "
           f"already fetched {len(cls) - len(todo):,}; to fetch {len(todo):,} CLs "
-          f"({sum(p for _, p in todo):,} patch sets) in {len(plan):,} fetches", flush=True)
+          f"({sum(p for _, p in todo):,} patch sets) in {len(plan):,} fetches"
+          f"{f', {jobs} at a time' if jobs > 1 else ''}", flush=True)
     if not go:
         return
     init_repo(git_dir)
-    since_repack, t_start, ps_done = 0, time.time(), 0
-    for i, b in enumerate(plan[:max_batches] if max_batches else plan):
-        if i:
-            time.sleep(interval)
-        before = _pack_bytes(git_dir)
-        secs = fetch_batch(git_dir, b)
-        got = _pack_bytes(git_dir) - before
-        since_repack += got
-        ps_done += sum(p for _, p in b)
-        rate = ps_done / (time.time() - t_start)
-        left = sum(p for bb in plan[i + 1:] for _, p in bb) / rate / 3600 if rate else 0
-        print(f"{time.strftime('%H:%M:%S')} fetch {i + 1}/{len(plan)}: {len(b)} CLs, "
-              f"{sum(p for _, p in b)} patch sets, {secs:.0f}s, {got / 1e6:.0f} MB "
-              f"(CLs {b[0][0]}..{b[-1][0]}); ~{left:.1f} h left", flush=True)
-        free = shutil.disk_usage(git_dir).free
-        if since_repack >= repack_bytes or free < min_free:
-            print(f"  repacking ({since_repack / 1e9:.1f} GB since last, "
-                  f"{free / 1e9:.0f} GB free) ...", flush=True)
+    work = plan[:max_batches] if max_batches else plan
+    ps_total = sum(p for b in work for _, p in b)
+    lock = threading.Lock()
+    st = dict(next=0, ps=0, stop=None, error=None, base=_pack_bytes(git_dir))
+    t_start = time.time()
+
+    def worker():
+        first = True
+        while True:
+            with lock:
+                if st["stop"] or st["next"] >= len(work):
+                    return
+                i = st["next"]
+                st["next"] += 1
+            if not first:
+                time.sleep(interval)
+            first = False
+            b = work[i]
+            try:
+                secs = fetch_batch(git_dir, b)
+            except Exception as e:  # leave the batch unfetched; a rerun retries it
+                with lock:
+                    st["error"] = st["error"] or f"fetch {i + 1} failed: {e}"
+                    st["stop"] = "error"
+                return
+            with lock:
+                st["ps"] += sum(p for _, p in b)
+                rate = st["ps"] / (time.time() - t_start)
+                grown = _pack_bytes(git_dir) - st["base"]
+                free = shutil.disk_usage(git_dir).free
+                print(f"{time.strftime('%H:%M:%S')} fetch {i + 1}/{len(work)}: {len(b)} CLs, "
+                      f"{sum(p for _, p in b)} patch sets, {secs:.0f}s (CLs {b[0][0]}..{b[-1][0]}); "
+                      f"{grown / 1e9:.1f} GB new, {free / 1e9:.0f} GB free; "
+                      f"~{(ps_total - st['ps']) / rate / 3600:.1f} h left", flush=True)
+                if (grown >= repack_bytes or free < min_free) and not st["stop"]:
+                    st["stop"] = "repack"
+
+    while st["next"] < len(work):
+        threads = [threading.Thread(target=worker) for _ in range(max(1, jobs))]
+        for t in threads:
+            t.start()
+        for t in threads:
+            t.join()
+        if st["error"]:
+            raise SystemExit(st["error"])
+        if st["stop"] == "repack":
+            print("  repacking ...", flush=True)
             s = repack(git_dir)
-            since_repack = 0
             free = shutil.disk_usage(git_dir).free
             print(f"  repacked in {s:.0f}s; packs {_pack_bytes(git_dir) / 1e9:.2f} GB, "
                   f"{free / 1e9:.0f} GB free", flush=True)
             if free < min_free:
                 raise SystemExit(f"stopping: only {free / 1e9:.0f} GB free")
+            st["stop"], st["base"] = None, _pack_bytes(git_dir)
     s = repack(git_dir)
     print(f"done; final repack {s:.0f}s, packs {_pack_bytes(git_dir) / 1e9:.2f} GB", flush=True)
