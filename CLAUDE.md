@@ -42,12 +42,15 @@ regex plus Claude Haiku (`cosh classify`).
 - **Sentiment is public only in aggregate** (`docs/plan.md`, ground rule 5;
   `docs/sentiment.md`). This overrides the rule above for review-comment
   tone. No public report, summary or doc may rank, list, quote or link
-  people, orgs, teams or other identifiable groups by tone. The repo must
-  not make such a report easy to build: don't attach identities or orgs to
-  scored comments, add per-person or per-group breakdowns, list individual
-  scored comments, or describe how to. If asked to, say that it needs the
-  user's explicit approval as a separate design. Gold sets and per-comment
-  model reasons stay in `data/private/`.
+  people, teams or other identifiable groups by negative tone, and orgs get
+  no tone figures at all. People may be named for praise (the praise
+  leaderboard), and example comments may be quoted unless they are
+  negative and name someone. The repo must not make a negative report easy
+  to build: attach identities only to comments scored as praise, and don't
+  add per-person or per-group breakdowns of negative tone, list negative
+  comments, or describe how to. If asked to, say that it needs the user's
+  explicit approval as a separate design. Gold sets and per-comment model
+  reasons stay in `data/private/`.
 - **The Radar token** is loaded with `source secrets.sh`. Never print or
   commit it.
 - **The contact e-mail** sent with every request lives in the gitignored

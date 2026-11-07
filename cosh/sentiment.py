@@ -8,10 +8,10 @@ against a hand-labelled sample, docs/sentiment.md) and are stored in
 data/private/sentiment.sqlite, which, like labels.sqlite, costs Max usage to
 remake.
 
-Sentiment is published only in aggregate: nothing here ranks, lists or
-groups people or organizations by tone, and comment rows carry no
-identities (docs/plan.md, ground rule 5). `summary` writes the public
-monthly trend.
+Nothing here names people for negative tone or gives orgs tone figures
+(docs/plan.md, ground rule 5). Comment rows carry no identities; `praise`
+attaches them only to comments scored as praise. `summary` writes the
+public monthly trend and `praise` the praise leaderboard.
 
 Each comment has a role (the CL owner's or a reviewer's) and a target kind:
   - "person": a reply to a human, or a reviewer's thread-starting comment
@@ -195,6 +195,14 @@ def render(c):
 TRIVIAL = re.compile(r"^\W*(done|ack(nowledged)?|lgtm|ptal|fixed|resolved|marked as resolved|thanks?( you)?|"
                      r"ok(ay)?|sgtm|nit|\+1|will do|updated|lgtm,? thanks?( you)?|done,? thanks?( you)?|"
                      r"thanks?( you)?,? done)\W*$", re.I)
+# Words that most praise uses. `score --praise-only` scores just the comments
+# that match: on 2026-W37..W44 that was 17% of substantive comments and 92%
+# of the glowing ones (docs/sentiment.md, "Praise leaderboard").
+PRAISE = re.compile(r"thank|thx|great|nice|awesome|excellent|amazing|appreciat|"
+                    r"good (catch|find|point|idea|call|work|job|question)|kudos|brilliant|fantastic|wonderful|"
+                    r"impressive|love|cool|neat|helpful|clever|elegant|beautiful|well done|bravo|wow|woah|whoa|"
+                    r"perfect|superb|lovely|glad|happy|congrat|hero|stellar|🎉|🙏|❤|👍|💯|🚀|😍|🥳|\bty\b|\btyvm\b",
+                    re.I)
 
 PROMPT_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
                           "scripts", "sentiment_prompts")
@@ -353,10 +361,14 @@ def open_scores(data_dir=store.DATA_DIR):
 
 
 def score_week(week, data_dir=store.DATA_DIR, version=None, model="haiku", batch=50, jobs=8, limit=None,
-               sandbox="auto"):
+               sandbox="auto", praise_only=False):
     """Score every comment of `week` not yet scored with the current prompt,
-    saving each batch as it lands (so a stopped run resumes)."""
+    saving each batch as it lands (so a stopped run resumes). praise_only:
+    just the comments PRAISE matches (enough for the praise leaderboard,
+    not for aggregates over the week)."""
     rows = read_jsonl(os.path.join(out_dir(data_dir), f"comments-{week}.jsonl"))
+    if praise_only:
+        rows = [r for r in rows if PRAISE.search(r["text"])]
     definition = load_prompt(version)
     sha = prompt_sha(definition)
     db = open_scores(data_dir)
@@ -491,10 +503,59 @@ def write_summary(name, data_dir=store.DATA_DIR, version=None, out=None):
     return out, doc
 
 
+# ---------------------------------------------------------------- the praise leaderboard
+
+PRAISE_SUMMARY = os.path.join(os.path.dirname(SUMMARY), "sentiment_praise.json")
+
+
+def is_praise(row, scores):
+    """A glowing comment that PRAISE matches. Requiring the match keeps weeks
+    scored with --praise-only comparable with fully scored ones."""
+    s = scores.get(row["id"])
+    return s is not None and s[0] >= GLOWING and bool(PRAISE.search(row["text"]))
+
+
+def praise(weeks, data_dir=store.DATA_DIR, version=None):
+    """Praise given and received per person and week, from human to human.
+
+    Ground rule 5 allows naming people for praise, never for negative tone,
+    so identities are attached here only to comments already scored glowing:
+    collect's `keep` drops every other comment before its row is built."""
+    scores = load_scores(None, data_dir, version)
+    db = sqlite3.connect(f"file:{os.path.join(data_dir, store.DERIVED_FILE)}?mode=ro", uri=True)
+    names = {(h, a): (e, n) for h, a, e, n in db.execute("SELECT host, account_id, email, name FROM accounts")}
+    glowing = {i for i, s in scores.items() if s[0] >= GLOWING}
+    rows, people, coverage = defaultdict(lambda: [0, 0]), {}, []
+    for w in weeks:
+        p = os.path.join(out_dir(data_dir), f"comments-{w}.jsonl")
+        if not os.path.exists(p):
+            raise SystemExit(f"{w}: collect and score the week first ({p} is missing)")
+        unscored = sum(1 for r in read_jsonl(p) if r["id"] not in scores and PRAISE.search(r["text"])
+                       and not TRIVIAL.match(r["text"]))
+        coverage.append(dict(week=w, unscored=unscored))
+        got = []
+        collect(w, data_dir, keep=glowing.__contains__,
+                annotate=lambda row, ids: got.append((row, ids)) if is_praise(row, scores) else None)
+        for row, ids in got:
+            if row["target_kind"] != "person":
+                continue                     # praise for an AI, or an owner's own note
+            for aid, k in ((ids["author"], 0), (ids["target"], 1)):
+                email, name = names.get((ids["host"], aid), (None, None))
+                if not email:
+                    continue
+                people[email] = name or email
+                rows[(w, email)][k] += 1
+    return dict(generated_at=store.now_iso(), prompt=version or PROMPT_VERSION, model="haiku",
+                weeks=[weeks[0], weeks[-1]], threshold=GLOWING, coverage=coverage, people=people,
+                weekly=[dict(week=w, email=e, given=g, received=r) for (w, e), (g, r) in sorted(rows.items())])
+
+
 def main(argv):
     import argparse
     ap = argparse.ArgumentParser(prog="python3 -m cosh.sentiment")
-    ap.add_argument("step", choices=["collect", "score", "summary"])
+    ap.add_argument("step", choices=["collect", "score", "summary", "praise"])
+    ap.add_argument("--praise-only", action="store_true",
+                    help="score: only comments with praise words (enough for `praise`, not for aggregates)")
     ap.add_argument("--week", default="2026-W44", help="a week or a range, e.g. 2026-W37:2026-W44")
     ap.add_argument("--sample", type=float, default=None,
                     help="collect: a deterministic sample at this rate over --week's range, written as "
@@ -523,9 +584,19 @@ def main(argv):
             print(f"{len(rows)} comments -> {p} ({time.time() - t0:.0f}s)", file=sys.stderr)
     elif a.step == "score":
         for name in ([a.name] if a.name else weeks):
-            st = score_week(name, version=a.prompt, jobs=a.jobs, batch=a.batch, limit=a.limit, sandbox=a.sandbox)
+            st = score_week(name, version=a.prompt, jobs=a.jobs, batch=a.batch, limit=a.limit, sandbox=a.sandbox,
+                            praise_only=a.praise_only)
             print(f"{name}: scored {st['n']} in {st['calls']} calls, {st['tokens']} tokens, ${st['usd']:.2f} "
                   f"API-equivalent, {time.time() - t0:.0f}s", file=sys.stderr)
+    elif a.step == "praise":
+        doc = praise(weeks, version=a.prompt)
+        out = a.out or PRAISE_SUMMARY
+        with open(out, "w") as f:
+            json.dump(doc, f, indent=1, ensure_ascii=False)
+            f.write("\n")
+        gaps = [c for c in doc["coverage"] if c["unscored"]]
+        print(f"{len(doc['people'])} people, {sum(r['given'] for r in doc['weekly'])} praise comments -> {out}"
+              + (f"; NOT fully scored: {gaps}" if gaps else ""), file=sys.stderr)
     else:
         if not a.name:
             ap.error("summary needs --name (a scored sample set)")

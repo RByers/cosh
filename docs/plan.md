@@ -70,23 +70,28 @@ value_ratio(O, t) = O's share of Chromium addressed review comments
    a stricter rule than ground rule 3:
    - **No public report singles anyone out for negative behaviour.** Nothing
      published, whether on the site, in `summaries/` or in docs, ranks,
-     lists, quotes or links people, organizations, teams or other small,
-     identifiable groups by tone. Project-wide figures (a monthly trend,
-     shares of angry, glowing or AI-frustrated comments, splits by role such
-     as reviewer vs CL owner, or by human vs AI recipient) are fine.
-   - **The repo doesn't ship the means to build such a report.** Public code
-     scores and aggregates. It doesn't attach identities or orgs to scored
-     comments, break scores down by person or group, or list individual
-     scored comments. Docs don't give recipes for doing so. Someone who
-     wants that has to design it on purpose, and in this repo that needs
-     the user's explicit approval. A Claude session asked for it should
-     refuse on `main` and point here.
+     lists, quotes or links people, teams or other small, identifiable
+     groups by negative tone. Project-wide figures (a monthly trend, shares
+     of angry, glowing or AI-frustrated comments, splits by role such as
+     reviewer vs CL owner, or by human vs AI recipient) are fine.
+   - **Organizations get no tone figures at all**, positive or negative.
+   - **People may be named for praise.** A leaderboard of who gives or
+     receives the most praise is welcome. Its code attaches identities only
+     to comments already scored as praise, never to other comments.
+   - **Example comments may be quoted** (in prompts, docs or the UI) unless
+     they are negative *and* name someone.
+   - **The repo doesn't ship the means to name people for negative tone.**
+     Public code doesn't attach identities or orgs to comments that aren't
+     praise, break negative tone down by person or group, or list negative
+     comments, and docs don't give recipes for doing so. That has to be
+     designed on purpose, and in this repo it needs the user's explicit
+     approval. A Claude session asked for it should decline and point here.
    - **Data that would identify the targets of negative labels stays
      private.** That includes hand-labelled gold sets (comment ids with
      scores) and per-comment model reasons.
    - **Otherwise publish as much as possible:** the method, the prompt, the
-     scoring code, its security design, accuracy figures and the aggregate
-     data.
+     scoring code, its security design, accuracy figures, the aggregate
+     data and the praise leaderboard.
 
 ## Decisions log
 
@@ -161,7 +166,7 @@ value_ratio(O, t) = O's share of Chromium addressed review comments
 | 2026-11-06 | **cosh becomes a set of Chromium dashboards.** The value-ratio UI moves from `web/index.html` to `web/value.html`, titled "Chromium Open Source - Value Exchange". A new landing page `web/index.html` (no script; own sheet `web/src/home.css`) has an original illustration (no Chromium logo) and one card per dashboard. Vite builds both pages. The docs now describe more data sources: git history and bugs are planned, and each still needs approval before anything is fetched | User's instruction: generalize the repo to generate several dashboards from different Chromium data sources |
 | 2026-11-06 | **Chromium git history fetched**: one bare clone of `chromium/src`, `main` only (`--single-branch --no-tags`), no dependencies, no working tree, **blob-less** (`--filter=blob:none`): every commit and tree, no file contents. In `data/private/git/chromium-src.git`: 1,861,715 commits (2001-08-24 .. 2026-11-06), 16.2M objects, 5.57 GiB packed. One connection under the extract lock, with cosh's `User-Agent` and `From` header. The server took about 6 min to prepare the pack and about 2 min to send it (~55 MiB/s), then 2 min of local delta resolution. Use it with `GIT_NO_LAZY_FETCH=1`, and with `log.mailmap false` set in its config, so no command fetches blobs one at a time (CLAUDE.md) | User's approval to fetch Chromium's git history (main only, chromium/src only). Blob-less because only the history is wanted: authors, dates, messages and files touched need commits and trees only. The server's pack estimate for the full repo was ~74 GiB, more than the 69 GB free on this shared disk; blob-less left 63 GB free |
 | 2026-11-06 | **Path scope widened by OWNERS**: include `components/surface_embed/`, `chrome/browser/resources/webnn_internals/`, `chrome/browser/ui/webui/webnn_internals/` (added the same day on the user's request) and the `chrome/` accessibility directories (`chrome/renderer/accessibility/`, `chrome/browser/accessibility/`, `chrome/browser/ash/arc/accessibility/`, `chrome/browser/resources/accessibility/`, `chrome/browser/ui/{ash,aura,views,webui}/accessibility/`, `chrome/test/accessibility/ax_client/`) | User's instruction, after a search of OWNERS files at `main` for excluded directories with owners outside google.com and chromium.org (OWNERS blobs fetched for it; `extraction-v1.md`, Path scope). The accessibility directories include `ui/accessibility/OWNERS` (Microsoft owners); `surface_embed/` had 36% Microsoft review. Over 2025-W45..2026-W44: +1,160 in-scope comments, non-Google share 10.80% → 10.82% |
-| 2026-11-06 | **Review-comment sentiment, aggregate only (ground rule 5).** `cosh.sentiment` collects human review comments with thread context but no identities, scores them with sandboxed Haiku (prompt `scripts/sentiment_prompts/v3.txt`) into `data/private/sentiment.sqlite`, and writes a monthly trend from a deterministic 5% sample to `summaries/sentiment_monthly.json` (3-month rolling points with 95% intervals). Per-person, per-org and per-comment views are not in the repo | User's policy: publish as much as possible, but no public report points fingers at negative behaviour, and the repo shouldn't make one trivial to build. The 5% sample (109k substantive comments, 2023-07 .. 2026-10) and the 3-month window cut the month-to-month wiggle in the mean about sixfold relative to a 1% monthly series |
+| 2026-11-06 | **Review-comment sentiment, aggregate only (ground rule 5).** `cosh.sentiment` collects human review comments with thread context but no identities, scores them with sandboxed Haiku (prompt `scripts/sentiment_prompts/v3.txt`) into `data/private/sentiment.sqlite`, and writes a monthly trend from a deterministic 5% sample to `summaries/sentiment_monthly.json` (3-month rolling points with 95% intervals). `praise` writes weekly per-person counts of praise given and received to `summaries/sentiment_praise.json`, attaching names only to comments scored as praise; `score --praise-only` scores just the comments with praise words, so a leaderboard can cover weeks that aren't fully scored. No tone figures by org | User's policy: publish as much as possible, but no public report points fingers at negative behaviour, the repo shouldn't make one trivial to build, and orgs get no tone figures. Praise may name people. The 5% sample (109k substantive comments, 2023-07 .. 2026-10) and the 3-month window cut the month-to-month wiggle in the mean about sixfold relative to a 1% monthly series |
 
 ## Status
 

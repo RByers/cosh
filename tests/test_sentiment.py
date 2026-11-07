@@ -117,6 +117,59 @@ class TrendTest(unittest.TestCase):
             self.assertEqual(len(doc["months"]), 3)
 
 
+class PraiseTest(unittest.TestCase):
+    def test_only_praise_gets_names(self):
+        """Ground rule 5: people may be named for praise, never for negative tone."""
+        comments = [c("a", 2, "This is wrong, again!!"),                            # angry: no names
+                    c("b", 1, "Great catch, thank you so much!", parent="a"),       # praise, owner -> reviewer
+                    c("p", 2, "Wonderful cleanup, I learned a lot", parent="b"),    # praise, reviewer -> owner
+                    c("q", 2, "Lovely, thanks!", parent="f"),                       # praise for an agent: skipped
+                    c("f", 1, "[Claude] Done.")]
+        scores = {"100/a": (-0.6, False, None), "100/b": (0.5, False, None), "100/p": (0.6, False, None),
+                  "100/q": (0.5, False, None)}
+        seen = []
+
+        def fake_collect(week, data_dir, keep=None, annotate=None):
+            def spy(row, ids):
+                seen.append(row["uuid"])
+                annotate(row, ids)
+            return run(comments, annotate=spy) if keep is None else S._cl_comments(
+                HOST, "chromium/src", 100, 1, "subj", "NEW", {"f.cc": comments}, ACCTS,
+                "2026-10-26 00:00:00", "2026-11-02 00:00:00", keep=keep, annotate=spy)
+
+        with tempfile.TemporaryDirectory() as d:
+            S.write_jsonl(os.path.join(d, "sentiment", "comments-2026-W44.jsonl"), run(comments))
+            import sqlite3
+            db = sqlite3.connect(os.path.join(d, "derived.sqlite"))
+            db.execute("CREATE TABLE accounts (host, account_id, email, name)")
+            db.executemany("INSERT INTO accounts VALUES (?,?,?,?)",
+                           [(h, a, v["email"], v["email"].split("@")[0]) for (h, a), v in ACCTS.items()])
+            db.commit()
+            sdb = S.open_scores(d)
+            definition = S.load_prompt()
+            with sdb:
+                sdb.execute("INSERT INTO prompts(version, sha256, model, text, created_at) VALUES (?,?,?,?,?)",
+                            ("v", S.prompt_sha(definition), "haiku", definition, "now"))
+                sdb.executemany("INSERT INTO scores VALUES (?,1,0,?,?,?)",
+                                [(i, s, int(ai), why) for i, (s, ai, why) in scores.items()])
+            real = S.collect
+            S.collect = fake_collect
+            try:
+                doc = S.praise(["2026-W44"], d)
+            finally:
+                S.collect = real
+        self.assertNotIn("a", seen)                                  # never built, never annotated
+        self.assertEqual(sorted(seen), ["b", "p", "q"])
+        self.assertEqual({(r["email"], r["given"], r["received"]) for r in doc["weekly"]},
+                         {("owner@chromium.org", 1, 1), ("rev@microsoft.com", 1, 1)})
+        self.assertEqual(doc["coverage"], [{"week": "2026-W44", "unscored": 0}])
+
+    def test_is_praise_needs_the_words(self):
+        self.assertTrue(S.is_praise({"id": "x", "text": "Thanks, great find"}, {"x": (0.5, False, None)}))
+        self.assertFalse(S.is_praise({"id": "x", "text": "Sure, will land it"}, {"x": (0.5, False, None)}))
+        self.assertFalse(S.is_praise({"id": "x", "text": "Thanks"}, {"x": (0.1, False, None)}))
+
+
 class FakeSandbox:
     """Stands in for cosh.sandbox.Sandbox: records the call, returns a canned reply."""
 

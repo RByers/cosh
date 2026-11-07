@@ -1,32 +1,37 @@
 # Review-comment sentiment
 
 `cosh.sentiment` scores the tone of human review comments on Chromium's
-Gerrit, and publishes the result **in aggregate only**: a monthly trend of
-the whole project's review tone, in `summaries/sentiment_monthly.json`.
+Gerrit. It publishes two things: a monthly trend of the whole project's
+review tone (`summaries/sentiment_monthly.json`) and a leaderboard of who
+gives and receives the most praise (`summaries/sentiment_praise.json`).
 
-## The principle: aggregate only, no finger-pointing
+## The principle: no finger-pointing
 
 This is `docs/plan.md` ground rule 5 (user's policy, 2026-11-06). In short:
 
 - **No public report singles anyone out for negative behaviour.** Nothing
-  published ranks, lists, quotes or links people, organizations, teams or
-  other small, identifiable groups by tone. Project-wide figures, and splits
-  by role (reviewer vs CL owner) or by recipient kind (human vs AI), are
-  fine.
-- **The repo doesn't ship the means to build such a report.** The code here
-  scores and aggregates. It doesn't attach identities or orgs to scored
-  comments (`collect` rows say what *role* a comment plays, not whose it
-  is), break scores down by person or group, or list individual scored
-  comments, and these docs don't explain how to. Building that is a
-  deliberate design job that needs the user's explicit approval.
+  published ranks, lists, quotes or links people, teams or other small,
+  identifiable groups by negative tone. Project-wide figures, and splits by
+  role (reviewer vs CL owner) or by recipient kind (human vs AI), are fine.
+- **Organizations get no tone figures at all**, positive or negative.
+- **People may be named for praise.** The code attaches identities only to
+  comments already scored as praise (`praise`). `collect` rows otherwise
+  say what *role* a comment plays, not whose it is.
+- **Example comments may be quoted** unless they are negative and name
+  someone.
+- **The repo doesn't ship the means to name people for negative tone**, and
+  these docs don't explain how to. That would be a deliberate design job
+  that needs the user's explicit approval.
 - **Labelled data that would identify the targets of negative labels stays
   private.** That covers the hand-labelled gold set and the model's short
   per-comment reasons, which stay in `data/private/`.
 - **Otherwise as much as possible is public:** the method, the prompt, the
-  code, the security design, the accuracy figures and the aggregate data.
+  code, the security design, the accuracy figures, the aggregate data and
+  the praise leaderboard.
 
 Why it matters: the scores are one model's reading of tone, with errors, and
-a negative label on a named person or a company is a public accusation. The
+a negative label on a named person or a company is a public accusation.
+Praise carries no such risk, and recognising it is worth doing. The
 project-wide trend answers the questions worth asking in public: is review
 getting harsher or kinder, and how do people feel about AI in review?
 
@@ -44,9 +49,12 @@ python3 -m cosh.sentiment collect --week 2023-W26:2026-W44 --sample 0.05 --name 
 python3 -m cosh.sentiment score --name sample-5pct
 # The public monthly trend -> summaries/sentiment_monthly.json
 python3 -m cosh.sentiment summary --name sample-5pct
-# Whole weeks can be collected and scored too (comments-<week>.jsonl)
+# Whole weeks can be collected and scored too (comments-<week>.jsonl, ~25 s a week to collect)
 python3 -m cosh.sentiment collect --week 2026-W44
-python3 -m cosh.sentiment score --week 2026-W44
+python3 -m cosh.sentiment score --week 2026-W44                # every comment
+python3 -m cosh.sentiment score --week 2026-W44 --praise-only  # only comments with praise words (~17%)
+# The praise leaderboard over scored weeks -> summaries/sentiment_praise.json
+python3 -m cosh.sentiment praise --week 2026-W37:2026-W44
 ```
 
 **Measured cost.** The 5% sample (2023-W26 .. 2026-W44) has 145,468
@@ -156,6 +164,32 @@ and recovered to about +0.012 by September–October. Angry comments rose
 from about 1.0–1.3% (2023–2024) to about 1.5–1.6% from late 2025. AI
 friction was near zero until late 2025 and stepped up to about 0.3% in
 early 2026. Glowing comments stayed at about 0.7–0.9%.
+
+## Praise leaderboard (`praise`)
+
+`summaries/sentiment_praise.json` counts, for each person and week, the
+praise comments they wrote (`given`) and were the recipient of
+(`received`), with a `people` map from email to name. Only human-to-human
+praise counts: praise for an AI agent, or an owner's own top-level note,
+is left out.
+
+- **Praise** is a comment scored glowing (≥ +0.4: specific appreciation or
+  stronger) that also contains a praise word (`PRAISE`: thanks, great,
+  nice, good catch, appreciate, …). The word test keeps weeks scored with
+  `--praise-only` comparable with fully scored ones.
+- **Names are attached only to praise.** `praise` reruns `collect` for each
+  week with `keep` set to the glowing comment ids, so no other comment's
+  row is even built, and an `annotate` hook adds the writer and recipient.
+  `tests/test_sentiment.py` (`PraiseTest`) checks that a negative comment
+  never reaches the hook.
+- **Coverage.** Every week needs its `comments-<week>.jsonl` and scores for
+  every comment with a praise word. `praise` reports any unscored ones per
+  week in `coverage`.
+- **Cost.** On 2026-W37..W44 (fully scored), `PRAISE` matched 17% of
+  substantive comments and 92% of glowing ones (925 of 1,001), so
+  `--praise-only` costs about a fifth of full scoring: about $0.25 and 2
+  minutes a week, or $10–15 for a year. Those 8 weeks gave 849 praise
+  comments among 647 people; the most generous person gave 25.
 
 ## Security
 
