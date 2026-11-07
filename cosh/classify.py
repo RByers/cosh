@@ -57,6 +57,20 @@ Judge the whole thread, including later replies. Judge only from the text."""
 
 SYSTEM_PROMPT = "You are a precise classifier of code-review threads."
 PROMPT_SHA = hashlib.sha256((SYSTEM_PROMPT + "\n" + DEFINITION).encode()).hexdigest()
+ASK = ('\n\nClassify every item below. Return JSON only: '
+       '{"labels": [{"id": "T0", "done": true}, ...]} with one entry per item.\n\n')
+
+
+def user_prompt(items):
+    """The message sent with SYSTEM_PROMPT: the definition, the request and
+    the threads [(id, text)], each as "### <id>" then the rendered thread."""
+    return DEFINITION + ASK + "\n\n".join(f"### {i}\n{t}" for i, t in items)
+
+
+def prompt_doc():
+    """summaries/classifier_prompt.json, for the Value page: the exact system
+    prompt and message, up to where the threads start."""
+    return dict(model="haiku", system=SYSTEM_PROMPT, prompt=user_prompt([]))
 
 # The owner's first reply starts with one of these: the thread is addressed,
 # no model needed (precision 0.98 on the labelled set).
@@ -202,9 +216,7 @@ def claude_batch(model, items, sandbox):
     The thread text is untrusted (SECURITY.md): claude gets no tools, MCP
     servers or slash commands, its reply must match SCHEMA, and `sandbox`
     (cosh.sandbox.Sandbox) runs it with a fresh HOME and a scrubbed env."""
-    text = "\n\n".join(f"### {i}\n{t}" for i, t in items)
-    prompt = (DEFINITION + "\n\nClassify every item below. Return JSON only: "
-              '{"labels": [{"id": "T0", "done": true}, ...]} with one entry per item.\n\n' + text)
+    prompt = user_prompt(items)
     args = ["-p", "--model", model, "--output-format", "json", "--tools", "",
            "--system-prompt", SYSTEM_PROMPT,
            "--strict-mcp-config", "--mcp-config", '{"mcpServers":{}}', "--disable-slash-commands",

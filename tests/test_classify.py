@@ -330,3 +330,17 @@ class RunBatchesTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class PromptFileTest(unittest.TestCase):
+    def test_committed_prompt_matches_the_classifier(self):
+        """summaries/classifier_prompt.json is what the Value page shows as the prompt; it must be
+        exactly what claude_batch sends (rerun `python3 -m cosh summarize` after changing it)."""
+        path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                            "summaries", "classifier_prompt.json")
+        with open(path) as fh:
+            self.assertEqual(json.load(fh), classify.prompt_doc())
+
+    def test_batch_prompt_is_the_shown_prompt_then_the_threads(self):
+        sent = classify.user_prompt([("T0", "REVIEWER: a"), ("T1", "REVIEWER: b")])
+        self.assertEqual(sent, classify.prompt_doc()["prompt"] + "### T0\nREVIEWER: a\n\n### T1\nREVIEWER: b")

@@ -76,6 +76,7 @@ REVIEWERS_FILE = "reviewer_weekly.json"
 AREAS_FILE = "area_weekly.json"
 AREA_REVIEWERS_FILE = "area_reviewers.json"
 THREAD_EXAMPLES_FILE = "thread_examples.json"
+CLASSIFIER_PROMPT_FILE = "classifier_prompt.json"   # the exact Haiku prompt, shown on the Value page
 # How each reviewer-started thread was decided (the UI's thread-classification
 # box), in display order.
 THREAD_OUTCOMES = ["done_reply", "model_addressed", "model_not", "no_reply", "pending"]
@@ -461,6 +462,10 @@ def summarize(data_dir=store.DATA_DIR, out_dir=os.path.join(ROOT, "summaries"), 
                   fh, indent=1)
     classified = [w for w in all_weeks if coverage.get(w, 0) >= COVERAGE_COMPLETE]
     write_thread_examples(data_dir, db, thread_picks, classified, os.path.join(out_dir, THREAD_EXAMPLES_FILE))
+    from .classify import prompt_doc
+    with _atomic_open(os.path.join(out_dir, CLASSIFIER_PROMPT_FILE)) as fh:
+        json.dump(prompt_doc(), fh, indent=1)
+        fh.write("\n")
     db.close()
     write_reviewers(facts, os.path.join(out_dir, REVIEWERS_FILE))
     area_meta = write_areas(areas, scope, os.path.join(out_dir, AREAS_FILE))
