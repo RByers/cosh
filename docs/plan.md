@@ -356,7 +356,12 @@ value_ratio(O, t) = O's share of Chromium addressed review comments
          the headline. Size is more subjective than "addressed or not".
      - **Storage:** store it as a small integer column in
        `labels.sqlite`, with its own definition version.
-7. Later:
+7. **Author/reviewer balance page** (`web/balance.html`; design and first
+   2026-W44 measurements in `docs/balance.md`). Per CL: change complexity,
+   review difficulty and rework, each against what is typical for the
+   directories it touches. Waiting on the user's decisions listed there
+   (per-person views, patch-set fetches beyond W44, mechanical CLs).
+8. Later:
    - the OWNER bit;
    - years 2–5 of backfill;
    - other repos and hosts (v8, devtools-frontend and skia are listed in
