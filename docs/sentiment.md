@@ -222,10 +222,11 @@ is left out.
 
 ## Sample comments (`samples`)
 
-`summaries/sentiment_samples.json` holds 10 praise and 10 grumpy comments,
-drawn at random (a fixed hash of the comment id, so reruns pick the same
-ones) from fully scored weeks. Only comments of at most 400 characters are
-drawn.
+`summaries/sentiment_samples.json` holds the 10 highest-scoring praise and
+the 10 lowest-scoring grumpy comments from fully scored weeks (since
+2026-11-07; before, a random draw). Ties are broken by a fixed hash of the
+comment id, so reruns pick the same ones. Only comments of at most 400
+characters are considered.
 
 - **Praise:** a score of +0.5 or more (+0.8 was tried first; it is rare,
   3 in 8 weeks), a praise word and a human recipient. Each comes with
@@ -238,7 +239,7 @@ drawn.
   handles, teams, companies, CL and bug numbers, accusations of misconduct
   and references to specific tickets. Survivors keep text, score and month
   only.
-- **Before committing, read the 20 texts** (a small sample, read as data).
+- **Before committing, read the grumpy and AI-friction texts** (a small sample, read as data).
   On 2026-11-07 the first screen let through an accusation of fraud and a
   dig at a specific ticket, which is why the prompt now covers both.
 
@@ -258,11 +259,21 @@ scored (2026-W37..W44 so far):
   listed, top 100, ranked by happy counterparts. Each row has only the
   name, the email and the two counts: no per-person mean, which could be
   negative.
-- **AI friction:** every comment the model flagged, at most 600 characters
-  and without URLs or handles, that passes `screen_identifying`, as text,
-  month and the writer's role (CL author or reviewer). On 2026-W37..W44: 313
-  shown of 535 flagged, 131 dropped by the screen and 91 too long or
-  linked. A random 25 were read before committing.
+- **Name popups:** `summaries/sentiment_comments.json` (and its .everyone
+  and .noncommitters versions, about 0.5 MB each, loaded on the first
+  popup) holds the comments behind the praise boards and the happy tables:
+  every praise comment, and each listed person's glowing comments, with
+  text, date, writer, recipient and a Gerrit link. Selecting a name on the
+  page lists them for the board's period. Only praise and glowing comments
+  go in it (`person_comments` asserts this), so naming is allowed (ground
+  rule 5). Per-person counts match the boards exactly.
+- **AI friction:** the 20 most negative comments the model flagged (lowest
+  score first, ties by a fixed hash), at most 600 characters and without
+  URLs or handles, that pass `screen_identifying`, as text, month and the
+  writer's role (CL author or reviewer). Candidates are screened in score
+  order until 20 pass, so it takes one or two screening calls. The page
+  shows them two across. Until 2026-11-07 it listed every one that passed
+  (313 of 535 flagged on 2026-W37..W44).
 
 ## Security
 

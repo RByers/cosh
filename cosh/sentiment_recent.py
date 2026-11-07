@@ -7,11 +7,17 @@
 
 It writes, for those weeks:
   - an overview, a week-by-week table and the score distribution;
-  - every comment flagged as AI friction, anonymously (text, month and the
-    writer's role), after a sandboxed screen drops any that identify anyone;
+  - the most negative comments flagged as AI friction, anonymously (text,
+    month and the writer's role), after a sandboxed screen drops any that
+    identify anyone;
   - "who makes whom happy": the CL authors who draw glowing comments from
     many different reviewers, and the reviewers who draw them from many
     different authors, over all the weeks and over the last four.
+
+Next to it, summaries/sentiment_comments.json (and its .everyone and
+.noncommitters versions) holds the comments behind the praise and happy
+boards, with names and Gerrit links, for the page's name popups. Only
+praise and glowing comments go in it (ground rule 5).
 
 Ground rule 5 (docs/plan.md): the page names people only for praise. The
 happy tables give each person's counts of counterparts and of happy
@@ -27,10 +33,12 @@ from . import sentiment as S
 from . import store
 
 OUT = os.path.join(os.path.dirname(S.SUMMARY), "sentiment_recent.json")
+COMMENTS_OUT = os.path.join(os.path.dirname(S.SUMMARY), "sentiment_comments.json")
 MIN_COUNTERPARTS = 6        # distinct counterparts to appear in a happy table
 TOP = 100                   # rows kept per happy table
 MONTH_WEEKS = 4             # "past month": the last four weeks
 AI_CHARS = 600              # longer AI-friction comments are left out
+AI_SHOWN = 20               # the most negative AI-friction comments shown
 SCREEN_BATCH = 30
 
 
@@ -77,25 +85,29 @@ def _kind(r):
     return S._target_kind(r)
 
 
-def happy(rows, scores, top=TOP):
+def happy(rows, scores, top=TOP, ids=None):
     """Who draws glowing comments from many different counterparts.
     authors: CL owners, from reviewers' comments aimed at them; reviewers:
     reviewers, from CL owners' replies to them. Each row: name, email,
     counterparts (distinct people who wrote to them that way) and happy (how
-    many of those wrote at least one glowing comment)."""
+    many of those wrote at least one glowing comment). If `ids` is a dict,
+    ids[table][email] gets the ids of each listed person's glowing comments."""
     names = {}
     for r in rows:
         names[r["author"]] = (r.get("author_name"), r.get("author_email"))
         if _kind(r) == "person" and r.get("target") not in (None, -1):
             names[r["target"]] = (r.get("target_name"), r.get("target_email"))
 
-    def table(pick):
+    def table(pick, key):
         to = defaultdict(lambda: defaultdict(float))
+        glowing = defaultdict(list)
         for r in rows:
             if pick(r):
                 s = scores[r["id"]][0]
                 prev = to[r["target"]].get(r["author"])
                 to[r["target"]][r["author"]] = s if prev is None else max(prev, s)
+                if s >= S.GLOWING:
+                    glowing[r["target"]].append(r["id"])
         out = []
         for p, by in to.items():
             if len(by) < MIN_COUNTERPARTS:
@@ -108,33 +120,73 @@ def happy(rows, scores, top=TOP):
                 continue
             out.append(dict(name=name or email, email=email, counterparts=len(by), happy=hits))
         out.sort(key=lambda x: (-x["happy"], -x["happy"] / x["counterparts"], x["name"]))
-        return out[:top]
+        out = out[:top]
+        if ids is not None:
+            by_email = {names[p][1]: p for p in to if names.get(p, (None, None))[1]}
+            ids[key] = {x["email"]: glowing[by_email[x["email"]]] for x in out}
+        return out
 
     person = lambda r: _kind(r) == "person" and r.get("target") not in (None, -1)
     return dict(
-        authors=table(lambda r: person(r) and r["author_role"] == "REVIEWER" and r["target"] == r.get("owner")),
-        reviewers=table(lambda r: person(r) and r["author_role"] == "AUTHOR" and r["target"] != r.get("owner")))
+        authors=table(lambda r: person(r) and r["author_role"] == "REVIEWER" and r["target"] == r.get("owner"),
+                      "authors"),
+        reviewers=table(lambda r: person(r) and r["author_role"] == "AUTHOR" and r["target"] != r.get("owner"),
+                        "reviewers"))
 
 
-def ai_comments(rows, scores, sandbox):
-    """Every AI-friction comment that a sandboxed screen finds nothing
-    identifying in, as text, month and the writer's role only."""
+def ai_comments(rows, scores, sandbox, n=AI_SHOWN, seed="2026-11"):
+    """The `n` most negative AI-friction comments (lowest score first; ties
+    by a deterministic shuffle) that a sandboxed screen finds nothing
+    identifying in, as text, month and the writer's role only. Returns them,
+    how many the screen dropped, and how many were too long or linked."""
     pool = [r for r in rows if scores[r["id"]][1] and len(r["text"]) <= AI_CHARS
             and not S._LINKY.search(r["text"])]
-    pool.sort(key=lambda r: r["written_at"])
-    kept = []
+    order = {i: k for k, i in enumerate(S._draw([r["id"] for r in pool], seed))}
+    pool.sort(key=lambda r: (scores[r["id"]][0], order[r["id"]]))
+    kept, dropped = [], 0
     for b in range(0, len(pool), SCREEN_BATCH):
+        if len(kept) >= n:
+            break
         chunk = pool[b:b + SCREEN_BATCH]
         keys = {f"C{j}": r for j, r in enumerate(chunk)}
         flagged = S.screen_identifying([(k, r["text"]) for k, r in keys.items()], sandbox)
+        dropped += len(flagged)
         kept += [r for k, r in keys.items() if k not in flagged]
     out = [dict(text=r["text"], month=r["written_at"][:7], role="author" if r["author_role"] == "AUTHOR" else "reviewer")
-           for r in kept]
-    return out, len(pool) - len(kept), sum(1 for r in rows if scores[r["id"]][1]) - len(pool)
+           for r in kept[:n]]
+    return out, dropped, sum(1 for r in rows if scores[r["id"]][1]) - len(pool)
+
+
+def _record(r, scores):
+    """One praise or glowing comment for a name popup: text, date, writer,
+    recipient and a Gerrit link."""
+    return dict(text=r["text"], date=r["written_at"][:10], week=r["week"], score=scores[r["id"]][0],
+                writer=r.get("author_name") or r.get("author_email"), writer_email=r.get("author_email"),
+                recipient=r.get("target_name") or r.get("target_email"), recipient_email=r.get("target_email"),
+                url=S.comment_url(r["project"], r["cl"], r["uuid"]))
+
+
+def person_comments(rows, scores, weeks, month):
+    """The comments behind the praise boards (`praise`: every praise comment
+    from one person to another, as on summaries/sentiment_praise.json) and
+    the happy tables (`happy[period][table][email]`: each listed person's
+    glowing comments). Only praise and glowing comments: never negative ones."""
+    praise = [r for r in rows if S.is_praise(r, scores) and S._target_kind(r) == "person"
+              and r.get("author_email") and r.get("target_email")]
+    happy_ids = {}
+    for period, rs in (("all", rows), ("month", [r for r in rows if r["week"] in month])):
+        happy_ids[period] = {}
+        happy(rs, scores, ids=happy_ids[period])
+    wanted = {r["id"] for r in praise} | {i for p in happy_ids.values() for t in p.values() for v in t.values() for i in v}
+    comments = {r["id"]: _record(r, scores) for r in rows if r["id"] in wanted}
+    assert all(scores[i][0] >= S.GLOWING for i in comments), "only praise and glowing comments"
+    return dict(weeks=[weeks[0], weeks[-1]], comments=comments, praise=sorted(r["id"] for r in praise),
+                happy=happy_ids)
 
 
 def build(weeks, data_dir=store.DATA_DIR, version=None, sandbox="auto", authors=S.DEFAULT_AUTHORS):
-    """The page's detail for comments written by `authors` (S.AUTHORS)."""
+    """The page's detail for comments written by `authors` (S.AUTHORS), and
+    the comments behind its name popups: (detail, comments)."""
     rows, scores, missing, n_trivial = load(weeks, data_dir, version)
     if rows and "author" not in rows[0]:
         raise SystemExit("these comment files have no identities: collect them with "
@@ -152,7 +204,8 @@ def build(weeks, data_dir=store.DATA_DIR, version=None, sandbox="auto", authors=
                 min_counterparts=MIN_COUNTERPARTS, missing=missing, n_trivial=n_trivial,
                 **overview(rows, scores, weeks),
                 happy=dict(all=happy(rows, scores), month=happy([r for r in rows if r["week"] in month], scores)),
-                ai=ai, ai_left_out=dict(screened=screened_out, long_or_linked=too_long))
+                ai=ai, ai_left_out=dict(screened=screened_out, long_or_linked=too_long)), \
+        dict(generated_at=store.now_iso(), authors=authors, **person_comments(rows, scores, weeks, month))
 
 
 def main(argv):
@@ -170,10 +223,14 @@ def main(argv):
         ap.error("--out needs one --authors group")
     for g in (S.AUTHORS if a.authors == "all" else (a.authors,)):
         t0 = time.time()
-        doc = build(S.weeks_in(a.week), version=a.prompt, sandbox=a.sandbox, authors=g)
+        doc, comments = build(S.weeks_in(a.week), version=a.prompt, sandbox=a.sandbox, authors=g)
         out = a.out or S.authors_path(OUT, g)
         with open(out, "w") as f:
             json.dump(doc, f, indent=1, ensure_ascii=False)
+            f.write("\n")
+        cout = S.authors_path(COMMENTS_OUT, g) if not a.out else os.path.splitext(a.out)[0] + ".comments.json"
+        with open(cout, "w") as f:
+            json.dump(comments, f, ensure_ascii=False, separators=(",", ":"))
             f.write("\n")
         print(f"{g}: {doc['total']['n']} comments, {len(doc['ai'])} AI-friction comments shown "
               f"({doc['ai_left_out']}), {doc['missing']} unscored -> {out} ({time.time() - t0:.0f}s)", file=sys.stderr)

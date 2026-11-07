@@ -338,6 +338,33 @@ class RecentTest(unittest.TestCase):
         self.assertEqual(ai, [dict(text="Looks good, thanks!", month="2026-10", role="reviewer")])
         self.assertEqual((screened, other), (0, 0))
 
+    def test_ai_list_is_the_most_negative(self):
+        from cosh import sentiment_recent as R
+        rows, scores = [], {}
+        for i, sc in enumerate([-0.2, -0.9, -0.5, 0.1, -0.7]):
+            cid = f"100/a{i}"
+            rows.append(dict(id=cid, written_at="2026-10-27 10:00:00", text=f"AI comment {i}", author_role="REVIEWER"))
+            scores[cid] = (sc, True, None)
+        ai, _, _ = R.ai_comments(rows, scores, ScreenSandbox(), n=3)
+        self.assertEqual([c["text"] for c in ai], ["AI comment 1", "AI comment 4", "AI comment 2"])
+
+    def test_popup_comments_are_praise_and_glowing_only(self):
+        """Ground rule 5: the name popups carry names and links, so only praise and glowing comments."""
+        from cosh import sentiment_recent as R
+        rows, scores = self.rows()
+        for r in rows:
+            r.update(project="chromium/src", cl=100, uuid=r["id"].split("/")[1])
+        rows[3]["text"] = "Makes sense, landing it"                  # P13: glowing, but no praise words
+        d = R.person_comments(rows, scores, ["2026-W44"], ["2026-W44"])
+        self.assertEqual(d["praise"], ["100/r2"])                     # P12: "thanks" and glowing
+        self.assertEqual(d["happy"]["all"]["authors"], {"owner@x.org": ["100/r2", "100/r3"]})
+        self.assertEqual(d["happy"]["all"]["reviewers"], {})
+        self.assertEqual(set(d["comments"]), {"100/r2", "100/r3"})
+        c = d["comments"]["100/r2"]
+        self.assertEqual((c["writer"], c["recipient"], c["date"], c["week"]), ("P12", "Owner", "2026-10-27", "2026-W44"))
+        self.assertEqual(c["url"], "https://chromium-review.googlesource.com/c/chromium/src/+/100/comment/r2/")
+        self.assertTrue(all(scores[i][0] >= S.GLOWING for i in d["comments"]))
+
 
 if __name__ == "__main__":
     unittest.main()

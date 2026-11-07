@@ -1661,10 +1661,63 @@ canvas.pointing {
 }
 
 /* The AI-friction list: two columns of shorter cards where there's room. */
-.quotes-compact {
+/* The AI-friction list: two cards across, one on narrow screens. */
+.ai-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0 16px;
+}
+
+@media (max-width: 640px) {
+  .ai-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* A name on a praise board or happy table: opens its comments. */
+.person-link {
+  font: inherit;
+  text-align: left;
+}
+
+/* The name popup: the page's colours, scrolling inside when long. */
+.person-dialog {
+  width: min(720px, calc(100vw - 32px));
+  max-height: min(80vh, 900px);
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface-1);
+  color: var(--text-primary);
+}
+
+.person-dialog::backdrop {
+  background: rgb(0 0 0 / 0.45);
+}
+
+.person-head {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.person-head h2 {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.person-close {
+  flex: none;
+  min-width: 32px;
+  min-height: 32px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--page);
+  color: var(--text-primary);
+  font-size: 1.2rem;
+  line-height: 1;
+  cursor: pointer;
 }
 
 .link-button {

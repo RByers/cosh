@@ -79,6 +79,46 @@ export interface ToneRecent {
   ai: { text: string; month: string; role: 'author' | 'reviewer' }[];
 }
 
+/** One praise or glowing comment behind a board, for a name popup. */
+export interface PersonComment {
+  text: string;
+  date: string;
+  week: string;
+  score: number;
+  writer: string;
+  writer_email: string;
+  recipient: string;
+  recipient_email: string;
+  url: string;
+}
+
+/** summaries/sentiment_comments.json (cosh/sentiment_recent.py): the
+ * comments behind the praise boards and the happy tables, loaded on the
+ * first popup. Only praise and glowing comments. */
+export interface PersonComments {
+  weeks: [string, string];
+  comments: Record<string, PersonComment>;
+  /** Every praise comment, as counted on the praise boards. */
+  praise: string[];
+  /** Each listed person's glowing comments, by period and table. */
+  happy: Record<Period, Record<'authors' | 'reviewers', Record<string, string[]>>>;
+}
+
+const newestFirst = (a: PersonComment, b: PersonComment) => b.date.localeCompare(a.date) || b.score - a.score;
+
+/** The praise comments `email` gave or received in `range`, newest first. */
+export function praiseComments(d: PersonComments, email: string, key: 'given' | 'received', range: [string, string]): PersonComment[] {
+  return d.praise
+    .map((id) => d.comments[id])
+    .filter((c) => c && within(c.week, range) && (key === 'given' ? c.writer_email : c.recipient_email) === email)
+    .sort(newestFirst);
+}
+
+/** The glowing comments behind `email`'s row in a happy table, newest first. */
+export function happyComments(d: PersonComments, email: string, table: 'authors' | 'reviewers', period: Period): PersonComment[] {
+  return (d.happy[period]?.[table]?.[email] ?? []).map((id) => d.comments[id]).filter(Boolean).sort(newestFirst);
+}
+
 /** The leaderboards' periods: every scored week, or the last four. */
 export type Period = 'all' | 'month';
 export const MONTH_WEEKS = 4;

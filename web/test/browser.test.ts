@@ -2264,17 +2264,16 @@ test('the Review Tone page: last two months, board controls, happy tables, AI li
   await page.click('#happy-period input[value="month"]');
   assert.ok((await rows('#happy-reviewers')) > 0);
 
-  // The AI-friction list: anonymous (no links), month and role only; "Show all" expands it.
+  // The AI-friction list: the most negative 20 at most, two cards across,
+  // anonymous (no links), month and role only.
   const first = await page.$$eval('#ai-list li', (lis) =>
-    lis.map((li) => ({ links: li.querySelectorAll('a').length, by: li.querySelector('.quote-by')!.textContent!.trim() })));
+    lis.map((li) => ({ links: li.querySelectorAll('a').length, by: li.querySelector('.quote-by')!.textContent!.trim(),
+      left: Math.round(li.getBoundingClientRect().left) })));
   assert.ok(first.length > 0 && first.length <= 20);
+  assert.equal(new Set(first.map((c) => c.left)).size, 2);
   for (const c of first) {
     assert.equal(c.links, 0);
     assert.match(c.by, /^[A-Z][a-z]{2,3} \d{4}, (change author|reviewer)$/);
-  }
-  if (!(await page.$eval('#ai-more', (b) => (b as HTMLElement).hidden))) {
-    await page.click('#ai-more');
-    assert.ok((await page.$$eval('#ai-list li', (lis) => lis.length)) > first.length);
   }
 
   // The prompt, as text.
@@ -2325,6 +2324,42 @@ test('the Review Tone page: the "Comments by" switch redraws every section and i
   await page.click('#authors input[value="committers"]');
   await page.waitForSelector('body[data-ready="committers"]');
   assert.doesNotMatch(page.url(), /authors=/);
+  assert.deepEqual(errors, []);
+  await page.close();
+});
+
+test('the Review Tone page: a name on a board opens a popup with its praise, linked to Gerrit', async () => {
+  const page = await browser.newPage();
+  const errors: string[] = [];
+  page.on('console', (m) => m.type() === 'error' && errors.push(m.text()));
+  page.on('pageerror', (e) => errors.push(String(e)));
+  await page.setViewport({ width: 1100, height: 900 });
+  await page.goto(baseUrl + 'sentiment.html', { waitUntil: 'load' });
+  await page.waitForSelector('body[data-ready="committers"]');
+  const dialog = async () => page.$eval('#person-dialog', (d) => (d as HTMLDialogElement).open);
+
+  // The top praise giver: the popup lists as many comments as the board counts.
+  const top = await page.$eval('#praise-given tbody tr', (tr) => ({
+    name: tr.querySelector('button')!.textContent!, count: Number(tr.lastElementChild!.textContent!.replace(/,/g, '')) }));
+  await page.click('#praise-given tbody tr button');
+  await page.waitForFunction(() => document.querySelectorAll('#person-list li.quote').length > 0);
+  assert.equal(await dialog(), true);
+  assert.equal(await page.$eval('#person-title', (e) => e.textContent), `Praise given by ${top.name}`);
+  const items = await page.$$eval('#person-list li', (lis) => lis.map((li) => ({
+    by: li.querySelector('.quote-by')!.textContent!, href: li.querySelector('a')?.getAttribute('href') })));
+  assert.equal(items.length, top.count);
+  for (const it of items) {
+    assert.ok(it.by.startsWith(`${top.name} to `), it.by);
+    assert.match(it.href ?? '', /^https:\/\/chromium-review\.googlesource\.com\/c\//);
+  }
+  // Escape closes it; so does a click on the backdrop.
+  await page.keyboard.press('Escape');
+  assert.equal(await dialog(), false);
+  await page.click('#happy-authors tbody tr button');
+  await page.waitForFunction(() => document.querySelectorAll('#person-list li.quote').length > 0);
+  assert.match(await page.$eval('#person-title', (e) => e.textContent!), /^Glowing comments from reviewers to /);
+  await page.mouse.click(5, 5);
+  assert.equal(await dialog(), false);
   assert.deepEqual(errors, []);
   await page.close();
 });

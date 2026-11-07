@@ -16,6 +16,9 @@ import monthlyOthersUrl from '../../summaries/sentiment_monthly.noncommitters.js
 import praiseOthersUrl from '../../summaries/sentiment_praise.noncommitters.json?url';
 import samplesOthersUrl from '../../summaries/sentiment_samples.noncommitters.json?url';
 import recentOthersUrl from '../../summaries/sentiment_recent.noncommitters.json?url';
+import commentsUrl from '../../summaries/sentiment_comments.json?url';
+import commentsEveryoneUrl from '../../summaries/sentiment_comments.everyone.json?url';
+import commentsOthersUrl from '../../summaries/sentiment_comments.noncommitters.json?url';
 import promptText from '../../scripts/sentiment_prompts/v3.txt?raw';
 import { readTheme, type Theme } from './charts.ts';
 import { weekMonday } from './data.ts';
@@ -32,7 +35,11 @@ import {
   praiseTotal,
   weeksBetween,
   type Authors,
+  happyComments,
+  praiseComments,
   type HappyRow,
+  type PersonComment,
+  type PersonComments,
   type Period,
   type PraiseData,
   type TonePoint,
@@ -43,10 +50,25 @@ import {
 
 Chart.register(Filler);
 
-const URLS: Record<Authors, { monthly: string; praise: string; samples: string; recent: string }> = {
-  committers: { monthly: monthlyUrl, praise: praiseUrl, samples: samplesUrl, recent: recentUrl },
-  everyone: { monthly: monthlyEveryoneUrl, praise: praiseEveryoneUrl, samples: samplesEveryoneUrl, recent: recentEveryoneUrl },
-  noncommitters: { monthly: monthlyOthersUrl, praise: praiseOthersUrl, samples: samplesOthersUrl, recent: recentOthersUrl },
+const URLS: Record<Authors, { monthly: string; praise: string; samples: string; recent: string; comments: string }> = {
+  committers: { monthly: monthlyUrl, praise: praiseUrl, samples: samplesUrl, recent: recentUrl, comments: commentsUrl },
+  everyone: { monthly: monthlyEveryoneUrl, praise: praiseEveryoneUrl, samples: samplesEveryoneUrl, recent: recentEveryoneUrl,
+    comments: commentsEveryoneUrl },
+  noncommitters: { monthly: monthlyOthersUrl, praise: praiseOthersUrl, samples: samplesOthersUrl, recent: recentOthersUrl,
+    comments: commentsOthersUrl },
+};
+
+/** The writers chosen now, and their popup comments once loaded. */
+let shown: Authors = 'committers';
+const commentCache = new Map<Authors, Promise<PersonComments>>();
+const personComments = (a: Authors) => {
+  let p = commentCache.get(a);
+  if (!p) {
+    p = getJson<PersonComments>(URLS[a].comments);
+    p.catch(() => commentCache.delete(a));
+    commentCache.set(a, p);
+  }
+  return p;
 };
 
 /** The charts drawn for the current choice, destroyed before redrawing. */
@@ -221,14 +243,71 @@ function renderRecent(r: ToneRecent, theme: Theme) {
 
 // ---- leaderboards
 
-function boardRows(table: HTMLTableElement, rows: { name: string; email: string; count: string }[]) {
+/** A board's rows. Each name is a button that opens its comments (`open`). */
+function boardRows(table: HTMLTableElement, rows: { name: string; email: string; count: string }[],
+  open: (r: { name: string; email: string }) => void) {
   table.tBodies[0].replaceChildren(...rows.map((r, i) => {
     const tr = el('tr');
-    const who = el('td', r.name);
-    who.title = r.email;
+    const who = el('td');
+    const b = el('button', r.name, 'link-button person-link');
+    b.type = 'button';
+    b.title = r.email;
+    b.addEventListener('click', () => open(r));
+    who.append(b);
     tr.append(el('td', String(i + 1)), who, el('td', r.count, 'num'));
     return tr;
   }));
+}
+
+// ---- the name popup
+
+const dialog = $<HTMLDialogElement>('#person-dialog');
+// Escape closes a modal dialog by itself; a click on the backdrop (outside
+// the dialog's box) closes it too.
+dialog.addEventListener('click', (e) => {
+  const r = dialog.getBoundingClientRect();
+  const inside = e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom;
+  if (e.target === dialog && !inside) dialog.close();
+});
+$('#person-close').addEventListener('click', () => dialog.close());
+
+function commentItem(c: PersonComment): HTMLElement {
+  const li = el('li', undefined, 'quote quote-praise');
+  li.append(el('blockquote', c.text));
+  const by = el('p', undefined, 'quote-by');
+  by.append(fragment('praise-by', { writer: c.writer, recipient: c.recipient, date: dayLabel(c.date) }));
+  const url = gerritLink(c.url);
+  if (url) {
+    const a = el('a', 'View review');
+    a.href = url;
+    a.rel = 'noopener';
+    a.target = '_blank';
+    by.append(' · ', a);
+  }
+  li.append(by);
+  return li;
+}
+
+/** Opens the popup: `title` at once, then the comments `pick` chooses. */
+function openPerson(title: string, pick: (d: PersonComments) => PersonComment[]) {
+  $('#person-title').textContent = title;
+  const list = $('#person-list');
+  const note = $('#person-note');
+  list.replaceChildren();
+  note.textContent = msg('person-loading');
+  if (!dialog.open) dialog.showModal();
+  const want = shown;
+  personComments(want).then(
+    (d) => {
+      if (want !== shown || !dialog.open) return;
+      const items = pick(d);
+      note.textContent = msg('person-count', { n: fmtInt(items.length) });
+      list.replaceChildren(...orNone(items.map(commentItem)));
+    },
+    (e) => {
+      if (want === shown) note.textContent = msg('error', { error: String(e) });
+    },
+  );
 }
 
 // The boards' own toggles are wired once; each draw reads the current data.
@@ -247,7 +326,8 @@ function drawPraise() {
   fill($('#praise-sub'), { range: weeksBetween(range), n: fmtInt(praiseTotal(d, range)), people: fmtInt(praisePeople(d, range)) });
   for (const key of ['given', 'received'] as const) {
     boardRows($<HTMLTableElement>(`#praise-${key}`),
-      praiseBoard(d, key, n, range).map((r) => ({ name: r.name, email: r.email, count: fmtInt(r.count) })));
+      praiseBoard(d, key, n, range).map((r) => ({ name: r.name, email: r.email, count: fmtInt(r.count) })),
+      (r) => openPerson(msg(`person-praise-${key}`, { name: r.name }), (c) => praiseComments(c, r.email, key, range)));
   }
 }
 
@@ -258,8 +338,10 @@ function drawHappy() {
   const p = happyPeriod();
   const n = Number(happySize());
   fill($('#happy-sub'), { range: weeksBetween(p === 'all' ? r.weeks : r.month_weeks), min: r.min_counterparts });
-  boardRows($<HTMLTableElement>('#happy-authors'), r.happy[p].authors.slice(0, n).map(fmtRow));
-  boardRows($<HTMLTableElement>('#happy-reviewers'), r.happy[p].reviewers.slice(0, n).map(fmtRow));
+  for (const table of ['authors', 'reviewers'] as const) {
+    boardRows($<HTMLTableElement>(`#happy-${table}`), r.happy[p][table].slice(0, n).map(fmtRow),
+      (x) => openPerson(msg(`person-happy-${table}`, { name: x.name }), (c) => happyComments(c, x.email, table, p)));
+  }
 }
 
 // ---- comments
@@ -298,31 +380,18 @@ function renderSamples(s: ToneSamples) {
   })));
 }
 
-const AI_FIRST = 20;
-
 function renderAi(r: ToneRecent) {
   const total = r.total.ai;
   fill($('#ai-sub'), { range: weeksBetween(r.weeks), shown: fmtInt(r.ai.length), total: fmtInt(total) });
-  // Newest first.
-  const items = [...r.ai].reverse();
-  const list = $('#ai-list');
-  const draw = (n: number) =>
-    list.replaceChildren(...orNone(items.slice(0, n).map((c) => {
-      const li = el('li', undefined, 'quote quote-ai');
-      li.append(el('blockquote', c.text));
-      const when = el('p', undefined, 'quote-by');
-      when.append(fragment('ai-when', { month: monthLabel(c.month), role: c.role }));
-      li.append(when);
-      return li;
-    })));
-  draw(AI_FIRST);
-  const more = $<HTMLButtonElement>('#ai-more');
-  more.hidden = items.length <= AI_FIRST;
-  more.textContent = msg('ai-more', { n: fmtInt(items.length) });
-  more.onclick = () => {
-    draw(items.length);
-    more.hidden = true;
-  };
+  // Most negative first, as the data lists them.
+  $('#ai-list').replaceChildren(...orNone(r.ai.map((c) => {
+    const li = el('li', undefined, 'quote quote-ai');
+    li.append(el('blockquote', c.text));
+    const when = el('p', undefined, 'quote-by');
+    when.append(fragment('ai-when', { month: monthLabel(c.month), role: c.role }));
+    li.append(when);
+    return li;
+  })));
 }
 
 /** Bumped on every switch, so a slower earlier load doesn't draw over a later one. */
@@ -338,6 +407,8 @@ async function show(authors: Authors, token: number) {
     getJson<ToneRecent>(u.recent),
   ]);
   if (token !== current) return;
+  shown = authors;
+  if (dialog.open) dialog.close();
   for (const c of charts) c.destroy();
   charts = [];
   const theme = readTheme();

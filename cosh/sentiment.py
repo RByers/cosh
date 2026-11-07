@@ -687,8 +687,9 @@ def _draw(ids, seed):
 
 def samples(weeks, data_dir=store.DATA_DIR, version=None, n=10, seed="2026-11", sandbox="auto",
             authors=DEFAULT_AUTHORS):
-    """A random sample of praise and of grumpy comments written by `authors`
-    in fully scored weeks.
+    """The most extreme praise (highest scores) and grumpy comments (lowest
+    scores) written by `authors` in fully scored weeks. Ties are broken by a
+    deterministic shuffle (`seed`), so reruns pick the same comments.
 
     Ground rule 5: praise comes with names and a Gerrit link; grumpy comments
     come with their text, score and month only, and only when a sandboxed
@@ -700,10 +701,10 @@ def samples(weeks, data_dir=store.DATA_DIR, version=None, n=10, seed="2026-11", 
             if r["id"] in scores and len(r["text"]) <= SAMPLE_CHARS:
                 rows[r["id"]] = r
     rows = {r["id"]: r for r in by_authors(rows.values(), authors, data_dir)}
-    praise_ids = _draw([i for i, r in rows.items() if scores[i][0] >= PRAISE_SAMPLE and is_praise(r, scores)
-                        and _target_kind(r) == "person"], seed)[:n]
-    grumpy_pool = _draw([i for i, r in rows.items() if scores[i][0] <= GRUMPY_SAMPLE and not _LINKY.search(r["text"])],
-                        seed)
+    praise_ids = sorted(_draw([i for i, r in rows.items() if scores[i][0] >= PRAISE_SAMPLE and is_praise(r, scores)
+                               and _target_kind(r) == "person"], seed), key=lambda i: -scores[i][0])[:n]
+    grumpy_pool = sorted(_draw([i for i, r in rows.items() if scores[i][0] <= GRUMPY_SAMPLE
+                                and not _LINKY.search(r["text"])], seed), key=lambda i: scores[i][0])
     box = make_sandbox(sandbox, data_dir) if isinstance(sandbox, str) else sandbox
     grumpy = []
     try:

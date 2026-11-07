@@ -151,7 +151,8 @@
             <table id="praise-received" class="tone-board"><thead><tr><th scope="col">#</th><th scope="col">Person</th><th scope="col" class="num">Comments</th></tr></thead><tbody></tbody></table>
           </div>
         </div>
-        <p class="note">A board lists everyone with at least one praise comment, up to its size.</p>
+        <p class="note">A board lists everyone with at least one praise comment, up to its size. Select a name to
+          read their praise comments.</p>
       </section>
 
       <section id="happy" class="card" aria-labelledby="happy-title">
@@ -162,6 +163,7 @@
           People who draw glowing comments from many different people, between <slot name="range"></slot>.
           "Happy" counts the distinct people who wrote them at least one glowing comment, out of everyone who
           commented to them that way; only people with at least <slot name="min"></slot> such counterparts are listed.
+          Select a name to read the glowing comments.
         </template>
         <div class="toggles">
           <fieldset id="happy-period" class="segmented chart-toggle">
@@ -187,14 +189,32 @@
         </div>
       </section>
 
+      <!-- The name popup for the praise boards and happy tables (src/sentiment.ts).
+           Praise and glowing comments only, with names and links (ground rule 5). -->
+      <dialog id="person-dialog" class="person-dialog" aria-labelledby="person-title">
+        <div class="person-head">
+          <h2 id="person-title"></h2>
+          <button type="button" id="person-close" class="person-close" aria-label="Close">×</button>
+        </div>
+        <p id="person-note" class="sub" aria-live="polite"></p>
+        <ul id="person-list" class="quotes"></ul>
+      </dialog>
+      <template data-msg="person-praise-given">Praise given by <slot name="name"></slot></template>
+      <template data-msg="person-praise-received">Praise received by <slot name="name"></slot></template>
+      <template data-msg="person-happy-authors">Glowing comments from reviewers to <slot name="name"></slot></template>
+      <template data-msg="person-happy-reviewers">Glowing comments from change authors to <slot name="name"></slot></template>
+      <template data-msg="person-loading">Loading comments…</template>
+      <template data-msg="person-count"><slot name="n"></slot> comments in this period, newest first, each linked to its review.</template>
+
       <section id="samples" class="card" aria-labelledby="samples-title">
         <a class="card-anchor" href="#samples" aria-label="Link to this section" title="Link to this section">#</a>
-        <h2 id="samples-title">Sample comments</h2>
+        <h2 id="samples-title">The warmest and the grumpiest comments</h2>
         <p id="samples-sub" class="sub"></p>
         <template data-msg="samples-sub">
-          A random handful of review comments from between <slot name="range"></slot>, to show what the scores
-          mean. Praise is shown with its writer, its recipient and a link to the review. Grumpy comments are
-          shown on their own, without names, links or exact dates, and only when they don't mention anyone.
+          The highest- and lowest-scoring review comments from between <slot name="range"></slot>, to show what
+          the ends of the scale look like. Praise is shown with its writer, its recipient and a link to the review.
+          Grumpy comments are shown on their own, without names, links or exact dates, and only when they don't
+          mention anyone.
         </template>
         <div class="tone-samples">
           <div>
@@ -216,14 +236,12 @@
         <h2 id="ai-title">Frustration with AI, in people's words</h2>
         <p id="ai-sub" class="sub"></p>
         <template data-msg="ai-sub">
-          Review comments between <slot name="range"></slot> that the model flagged as negative about AI in code
-          review: <slot name="shown"></slot> of <slot name="total"></slot>, shown anonymously with only the month
-          and whether the writer was the change's author or a reviewer. Comments that mention anyone, that
-          link anywhere or that run long are left out.
+          The <slot name="shown"></slot> most negative of the <slot name="total"></slot> review comments between
+          <slot name="range"></slot> that the model flagged as negative about AI in code review, shown anonymously
+          with only the month and whether the writer was the change's author or a reviewer. Comments that mention
+          anyone, that link anywhere or that run long are left out.
         </template>
-        <ul id="ai-list" class="quotes quotes-compact"></ul>
-        <button type="button" id="ai-more" class="link-button" hidden></button>
-        <template data-msg="ai-more">Show all <slot name="n"></slot></template>
+        <ul id="ai-list" class="quotes ai-grid"></ul>
         <template data-msg="ai-when"><slot name="month"></slot>, <span data-if="role=author">change author</span><span data-if="role=reviewer">reviewer</span></template>
       </section>
 

@@ -1,5 +1,5 @@
 {
- "generated_at": "2026-11-07T20:01:26Z",
+ "generated_at": "2026-11-07T20:42:11Z",
  "prompt": "v3",
  "weeks": [
   "2026-W37",
@@ -200,6 +200,16 @@
  },
  "ai": [
   {
+   "text": "AI generated comments actually make sense this time",
+   "month": "2026-10",
+   "role": "reviewer"
+  },
+  {
+   "text": "Those LLMs, as if they understand language. Will correct. They would probably need a repository to learn how to create commit messages correctly, amirite?",
+   "month": "2026-10",
+   "role": "author"
+  },
+  {
    "text": "Lines removes per suggestion above. For context, I thought these were needed due to the AI review agent kept suggesting to mention the MOJO rules.",
    "month": "2026-09",
    "role": "author"
@@ -208,35 +218,10 @@
    "text": "Gotya, thanks for the feedback! For context, I thought these were needed due to the AI review agent kept suggesting to mention the MOJO rules.",
    "month": "2026-09",
    "role": "author"
-  },
-  {
-   "text": "Ah. Yeah, i'm fine to leave it as []--gemini just kept pointing out that () was a better default since it's immutable. It's not clear why it only did it for skip_brands.. But I don't feel strongly, so I'll just revert it.",
-   "month": "2026-10",
-   "role": "author"
-  },
-  {
-   "text": "Hold off on reviewing this for the moment.. gemini seems to have pulled in a stale branch and lost a bunch of changes, frustratingly..\n\nI will fix this in a followup.",
-   "month": "2026-10",
-   "role": "author"
-  },
-  {
-   "text": "Those LLMs, as if they understand language. Will correct. They would probably need a repository to learn how to create commit messages correctly, amirite?",
-   "month": "2026-10",
-   "role": "author"
-  },
-  {
-   "text": "yeah i'm also unsure these particular \"for the agent\" comments actually were helpful.  they were merely proscriptive of things that jetski already knew if it read the 'for the human' part.  it wasn't like the human version was the softer and lighter version and the agent one was info-dense.",
-   "month": "2026-10",
-   "role": "reviewer"
-  },
-  {
-   "text": "AI generated comments actually make sense this time",
-   "month": "2026-10",
-   "role": "reviewer"
   }
  ],
  "ai_left_out": {
-  "screened": 2,
+  "screened": 5,
   "long_or_linked": 1
  }
 }
