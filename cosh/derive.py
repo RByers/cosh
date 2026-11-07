@@ -1,4 +1,4 @@
-"""Derive derived.sqlite (accounts, changes, comments) from cached raw
+"""Derive derived.sqlite (accounts, committers, changes, comments) from cached raw
 responses and NoteDb. Each comment is keyed by the week it was written and
 keeps its file path; each CL records its anchor file (cosh/paths.py). Since
 metric_version 6 summarize places patchset-level comments on each reviewer's
@@ -54,6 +54,33 @@ def mark_emailless_bots(db):
     """Treat every account that still has no email as a bot or AI agent.
     Run after all accounts are loaded: a later sighting may supply the email."""
     return db.execute("UPDATE accounts SET is_bot = 1 WHERE email IS NULL AND is_bot = 0").rowcount
+
+
+# Newest listing wins; within one listing time, "may vote" wins.
+COMMITTER_UPSERT = """INSERT INTO committers VALUES (?,?,?,?) ON CONFLICT(host, account_id)
+    DO UPDATE SET is_committer = CASE WHEN excluded.seen_at > seen_at THEN excluded.is_committer
+                                      WHEN excluded.seen_at = seen_at THEN max(is_committer, excluded.is_committer)
+                                      ELSE is_committer END,
+                  seen_at = max(seen_at, excluded.seen_at)"""
+
+
+def committer_evidence(change):
+    """{account id: 1 or 0}: whether each account listed on the CL's
+    Code-Review label may vote it (only committers may; docs/committers.md).
+    A permitted range means yes. No range means no only on an open or
+    abandoned CL: on a merged one Gerrit clips the range to the vote already
+    cast, so a committer who didn't vote shows none either."""
+    out = {}
+    can_say_no = change.get("status") in ("NEW", "ABANDONED")
+    for a in ((change.get("labels") or {}).get("Code-Review") or {}).get("all") or []:
+        aid = a.get("_account_id")
+        if aid is None:
+            continue
+        if a.get("permitted_voting_range"):
+            out[aid] = 1
+        elif can_say_no:
+            out.setdefault(aid, 0)
+    return out
 
 
 def is_ai_comment(c):
@@ -273,6 +300,8 @@ def derive(data_dir=store.DATA_DIR, weeks=None, source="auto", out_path=None):
     n_changes = n_comments = 0
     for (host, k), cls in sorted(by_window.items()):
         win = _window(raw, host, k)    # one window in memory at a time
+        listed_at = raw.execute("SELECT fetched_at FROM responses WHERE host=? AND "
+                                "kind='list_window' AND key=?", (host, k)).fetchone()[0]
         notes = prefetch_notedb(repos, cls, source)
         with db:
             for _, project, number in cls:
@@ -283,6 +312,8 @@ def derive(data_dir=store.DATA_DIR, weeks=None, source="auto", out_path=None):
                 for aid, a in accounts.items():
                     db.execute(ACCOUNT_UPSERT, (host, aid, a.get("email"), account_name(a),
                                                 int(is_bot_account(a))))
+                db.executemany(COMMITTER_UPSERT, [(host, aid, v, listed_at)
+                                                  for aid, v in committer_evidence(change).items()])
                 cols = list(ch)
                 db.execute(f"INSERT OR REPLACE INTO changes(host,{','.join(cols)}) "
                            f"VALUES (?,{','.join('?' * len(cols))})", [host] + [ch[c] for c in cols])

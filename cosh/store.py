@@ -92,6 +92,19 @@ CREATE TABLE IF NOT EXISTS accounts (
 ) STRICT;
 CREATE INDEX IF NOT EXISTS accounts_email ON accounts(email);
 
+-- Committer status: whether Gerrit lets the account vote Code-Review in
+-- chromium/src, which only committers may (docs/committers.md). Gerrit
+-- computes this when the listing is fetched, so it is the status at
+-- seen_at, not when the CL was reviewed. The newest listing wins. Accounts
+-- never seen on a listing that tells us are absent.
+CREATE TABLE IF NOT EXISTS committers (
+  host          TEXT    NOT NULL,
+  account_id    INTEGER NOT NULL,
+  is_committer  INTEGER NOT NULL,       -- 1 may vote Code-Review, 0 may not
+  seen_at       TEXT    NOT NULL,       -- fetched_at of the listing that said so
+  PRIMARY KEY (host, account_id)
+) STRICT;
+
 -- One row per CL, from its most recent listing (largest `updated`).
 CREATE TABLE IF NOT EXISTS changes (
   host                TEXT    NOT NULL,

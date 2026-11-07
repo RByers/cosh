@@ -1,108 +1,82 @@
 # Committers: telling them apart in data we already hold
 
-Status: exploration, 2026-11-07. Nothing here is implemented yet.
-
 Chromium committers are the members of `committers@chromium.org`. Spam and
 drive-by comments come from everyone else, so several analyses
 (`docs/sentiment.md`, "To do: split by committer and non-committer") want
-each review comment tagged as written by a committer or not. This note shows
-that the data we have already fetched answers that, with no new fetch.
+each review comment tagged as written by a committer or not. The listings we
+already fetched answer that, with no new fetch. `derive` writes the answer to
+the `committers` table in `derived.sqlite` (since 2026-11-07).
 
-## Signal 1: Gerrit's permitted voting range (status when fetched)
+## The signal: Gerrit's permitted voting range
 
 In chromium/src only committers may vote Code-Review. A reviewer on CL
 7678490 told its owner "you aren't a chromium committer yet … you can't +1
 changes" (`summaries/thread_examples.json`). Every listing we store
 (`responses`, kind `list_window`, fetched with `DETAILED_LABELS`) gives, for
 each account in `labels.Code-Review.all[]`, a `permitted_voting_range`.
-Gerrit computes it from that account's permissions **at fetch time**.
-
-Over all 10,274 listings (fetched 2026-11-03 13:14 to 2026-11-05 04:29 UTC,
-856k CLs):
+Gerrit computes it from that account's permissions **when the listing is
+fetched**.
 
 | CL status | Range | Meaning |
 |---|---|---|
 | `NEW`, `ABANDONED` | `{min:-1, max:1}` | may vote: committer |
 | `NEW`, `ABANDONED` | absent | may not vote: not a committer |
 | `MERGED` | `{1,1}` or `{0,1}` | may vote (the range is clipped to the vote already cast) |
-| `MERGED` | absent | unclear: a committer with vote 0 also shows no range |
+| `MERGED` | absent | tells us nothing: a committer with vote 0 also shows no range |
 
-On open CLs the split is clean: of the 2,905 accounts seen there, 1,663 always
-had `{-1,1}` and 1,242 never had a range; none had both. Over the whole
-store, 1,918 accounts show a range somewhere and 2,468 lack one on an open or
-abandoned CL. One account is in both sets (its status changed during the
-fetch).
+On open CLs the split is clean. Of the 2,905 accounts seen there, 1,663
+always had `{-1,1}` and 1,242 never had a range; none had both.
 
-This needs no extra fetch, and each `extract-open` rerun refreshes it.
-Coverage is limited to accounts listed as reviewer or CC, which nearly every
-commenter is. Of last year's (2025-W45 .. 2026-W44) 483k non-bot comments in
-`derived.sqlite`:
+## The table
+
+`committers(host, account_id, is_committer, seen_at)`, built by
+`cosh.derive.committer_evidence` from each CL's newest listing:
+
+- `is_committer` is 1 if the account has a range on any listing, 0 if it
+  lacks one on an open or abandoned CL. If listings disagree, the newest
+  (`seen_at`, the listing's fetch time) wins.
+- Accounts never listed on the Code-Review label of a listing that tells us
+  have no row. Treat them as unknown, not as committers.
+- Each `extract-open` rerun plus `derive` refreshes it.
+
+Measured over all 10,274 listings (fetched 2026-11-03 13:14 to 2026-11-05
+04:29 UTC), for last year's (2025-W45 .. 2026-W44) 483k non-bot comments:
 
 | Author | Comments | Accounts |
 |---|---|---|
 | committer | 476,877 (98.7%) | 1,559 |
 | not a committer | 4,282 (0.9%) | 342 |
-| unknown (never listed with a range) | 2,039 (0.4%) | 835 |
+| unknown | 2,039 (0.4%) | 835 |
 
 Most unknown accounts (621 of 835) are outside google.com and chromium.org.
 Of the non-committers, 210 are google.com accounts: being a Googler does not
 grant the vote.
 
-## Signal 2: Code-Review votes in NoteDb (status at a point in time)
+## Limit: it is today's status, not the status at comment time
 
-Signal 1 is today's status. To approximate status *when the comment was
-written*, use votes: an account that cast a Code-Review vote at time T was a
-committer at T. Votes outlive permission (70 `+1` votes on open CLs come from
-accounts that can no longer vote), so a vote is evidence about the moment it
-was cast, not about now.
+Every listing was fetched within the same 40 hours, so the table is one
+snapshot of early November 2026, even for a 2023 CL. Someone who was a
+committer in 2023 and has since lost the status counts as a non-committer,
+and someone who became one later counts as a committer for their earlier
+comments.
 
-A local scan of every NoteDb meta ref (`git log --all --grep='^Label:
-Code-Review='`, about 2.5 min, no network) finds `Label: Code-Review=…` lines
-from 2,212 accounts. "On behalf" lines (`Label: Code-Review=+1, Gerrit User N
-<…>`) name the voter; they are mostly copies written at submit time, so they
-can only make a first-vote time later, never earlier.
+The stored listings show this: 15,497 Code-Review votes on merged CLs (and 87
+on open ones) come from accounts that have no range now. They could vote then
+and can't today.
 
-1,814 of the 1,918 current committers have voted, and so have 354 of the 2,468
-current non-committers: those are former committers. Splitting reviewer
-comments by the author's first and last vote:
+How much this matters was measured with NoteDb votes (a vote at time T shows
+the voter was a committer at T). For last year's comments, about 1% may be
+misplaced. Over three years (from 2023-W26), 2.5% of reviewer comments came
+from 354 former committers, who voted then but can't now. The user chose the
+snapshot as good enough (2026-11-07). If a long-range view needs more, the
+fix is to count an account with no range now as a committer up to its last
+Code-Review vote in NoteDb (`git log --all --grep='^Label: Code-Review='`
+over the local meta refs, about 2.5 min, no network).
 
-| Author at comment time | 3 years (2023-W26 ..) | Last year |
-|---|---|---|
-| current committer, after first vote | 94.93% | 98.11% |
-| current committer, before first vote | 1.24% | 0.52% |
-| current committer, never voted | 0.04% | 0.06% |
-| former committer (voted, can't now), after first vote | 2.48% | 0.36% |
-| non-committer, never voted | 0.80% | 0.53% |
-| unknown | 0.51% | 0.42% |
+## Not used
 
-So today's list alone is a fine approximation for the last year (about 1% of
-comments might be misplaced), but over three years it would call 2.5% of
-comments non-committer that came from people who were committers then.
-
-## Proposed rule
-
-A comment by account A at time T is by a committer if
-
-- A has a permitted Code-Review range now (signal 1) and T is at or after
-  A's first vote, or A has never voted; or
-- A has no range now but voted at some time at or before T, and T is no
-  later than A's last vote plus a grace period (say 1 year; committer
-  status lapses some time after the last vote).
-
-Everything else is non-committer. Comments by a current committer written
-before their first vote (0.5% last year) are the uncertain case. They could
-be split by how long before the first vote they were written.
-
-## Implementation sketch
-
-- `derive`: add an `accounts.can_review` column (1, 0 or NULL) from the
-  listings' ranges, taking the most recent listing per account. Add a
-  `cr_votes(account_id, first_at, last_at)` table from the NoteDb scan. Both
-  are rebuildable, so they belong in `derived.sqlite`, not the raw stores.
-- Consumers (`cosh.sentiment`, `summarize`) apply the rule above and get a
-  committer flag per comment.
-- Optional, needs approval: `GET /projects/chromium%2Fsrc/access` (one
-  request) would show which group the Code-Review grant goes to, confirming
-  that it is the committers group. Gerrit doesn't expose the group's
-  members anonymously, and fetching `committers@chromium.org` itself would be
-  a new data source.
+- `GET /projects/chromium%2Fsrc/access` (one request; would need approval)
+  would show which group the Code-Review grant goes to, confirming that it
+  is the committers group.
+- Gerrit doesn't expose the group's members anonymously, and fetching
+  `committers@chromium.org` itself would be a new data source.

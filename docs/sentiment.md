@@ -323,8 +323,9 @@ list without saying anything about how Chromium's own reviewers behave.
   AI-friction samples from committers, or label which group each comes from.
 - **Who counts as a committer:** `docs/committers.md` (2026-11-07) answers
   this from data already fetched: Gerrit's permitted Code-Review range in
-  every listing gives each account's status when fetched, and NoteDb votes
-  date it. Earlier notes on the options, from data we
+  every listing gives each account's status when fetched. `derive` stores
+  it in the `committers` table; today's status stands in for the status at
+  comment time. Earlier notes on the options, from data we
   already hold: an account that has landed CLs as owner (git history or
   merged changes in `derived.sqlite`), or one that has cast Code-Review +2
   (the raw NoteDb data has votes, though `derived.sqlite` dropped them in

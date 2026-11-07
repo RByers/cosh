@@ -4,7 +4,8 @@ import os
 import tempfile
 import unittest
 
-from cosh.derive import account_name, derive, derive_change, mark_emailless_bots
+from cosh.derive import (COMMITTER_UPSERT, account_name, committer_evidence, derive,
+                         derive_change, mark_emailless_bots)
 from cosh import store
 from cosh.orgs import OrgResolver, load_affiliations, parse_json5
 from cosh.paths import ROOT_FILES, UNPLACED, anchor, load_scope, parent_dir, parse_rules, place
@@ -157,6 +158,41 @@ class AccountTest(unittest.TestCase):
             db.close()
 
 
+class CommitterTest(unittest.TestCase):
+    R = {"min": -1, "max": 1}
+
+    def cl(self, status, *voters):
+        return {"status": status, "labels": {"Code-Review": {"all": list(voters)}}}
+
+    def test_range_means_committer_and_no_range_means_not_on_open_cls(self):
+        for status in ("NEW", "ABANDONED"):
+            got = committer_evidence(self.cl(status, dict(REV, permitted_voting_range=self.R), dict(CC)))
+            self.assertEqual(got, {2: 1, 4: 0})
+
+    def test_merged_cl_says_yes_only(self):
+        # Gerrit clips a merged CL's range to the vote cast: {1,1} after +1, nothing after 0.
+        got = committer_evidence(self.cl("MERGED", dict(REV, value=1, permitted_voting_range={"min": 1, "max": 1}),
+                                         dict(CC, value=0)))
+        self.assertEqual(got, {2: 1})
+
+    def test_no_code_review_label(self):
+        self.assertEqual(committer_evidence({"status": "NEW", "labels": {}}), {})
+        self.assertEqual(committer_evidence({"status": "NEW"}), {})
+
+    def test_newest_listing_wins(self):
+        with tempfile.TemporaryDirectory() as d:
+            db = store.open_derived(d)
+            with db:
+                for aid, v, at in [(1, 1, "2026-11-04"), (1, 0, "2026-11-03"),   # older "no" ignored
+                                   (2, 1, "2026-11-03"), (2, 0, "2026-11-04"),   # newer "no" wins
+                                   (3, 0, "2026-11-04"), (3, 1, "2026-11-04")]:  # tie: yes
+                    db.execute(COMMITTER_UPSERT, (H, aid, v, at))
+            self.assertEqual(db.execute("SELECT account_id, is_committer, seen_at FROM committers "
+                                        "ORDER BY 1").fetchall(),
+                             [(1, 1, "2026-11-04"), (2, 0, "2026-11-04"), (3, 1, "2026-11-04")])
+            db.close()
+
+
 def put_window(raw, key, changes):
     store.put_response(raw, H, "list_window", key, "u", 200, json.dumps(changes))
 
@@ -206,6 +242,9 @@ class DeriveEndToEndTest(unittest.TestCase):
             self.assertEqual(db.execute("SELECT iso_week, count(*) FROM comments GROUP BY 1").fetchall(),
                              [("2026-W43", 3), ("2026-W44", 9)])
             self.assertEqual({r[0] for r in db.execute("SELECT anchor_path FROM changes")}, {"content/a.cc"})
+            # Only open CL 300 says anything: nobody there has a voting range.
+            self.assertEqual(db.execute("SELECT account_id, is_committer FROM committers ORDER BY 1").fetchall(),
+                             [(1, 0), (2, 0), (3, 0)])
             db.close()
 
             rows = summarize(data_dir=d, out_dir=os.path.join(d, "s"))

@@ -28,7 +28,7 @@ only touches the API where it affects storage.
     happens only in derived data.
   - `data/private/derived.sqlite` (§3.3):
     derived tables (`changes`, `comments`, `accounts`, `meta`, and since
-    metric_version 7 `threads`) that can be rebuilt from `raw.sqlite` and
+    metric_version 7 `threads`; `committers`) that can be rebuilt from `raw.sqlite` and
     NoteDb at any time.
   - `data/private/labels.sqlite` (added with metric_version 7): the Haiku
     labels behind addressed comments, keyed by thread and input hash. They
@@ -202,6 +202,9 @@ it holds:
 - `comments`: one row per published comment by a non-owner on a human-owned
   CL, with the ISO week it was written and its file path, but not its text.
 - `accounts`: id, email, name and a bot flag.
+- `committers`: whether each account may vote Code-Review (only committers
+  may), as of the newest listing that shows it, with that listing's fetch
+  time (`docs/committers.md`).
 - `meta`: `metric_version`, `derived_at`, the fetched weeks and the open-CL
   snapshot time.
 
