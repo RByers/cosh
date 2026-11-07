@@ -539,7 +539,7 @@ td.ratio {
   background: var(--color, transparent);
 }
 
-/* Reviewer leaderboard (leaderboard.ts): a grid of label | plot. The axis
+/* Leaderboard (leaderboard.ts): a grid of label | plot. The axis
  * labels, the gridline layer and every row's bar share the plot column (rows
  * use subgrid), so bars and gridlines line up at any width. The right padding
  * leaves room for the value label after the longest bar. */
@@ -742,13 +742,13 @@ td.ratio {
   background: var(--text-muted);
 }
 
-/* Reviews per reviewer: the strip plot's figures, under the chart. */
+/* Contribution per person: the strip plot's figures, under the chart. */
 .dist-table {
   margin-top: 12px;
   font-size: 0.85rem;
 }
 
-/* Review by directory (areas.ts): label | volume bar | 100% org bar | share.
+/* Contribution by directory (areas.ts): label | volume bar | 100% org bar | share.
  * Rows use subgrid so every row's columns line up. */
 .ar {
   /* Room for the value label after each bar; areas.ts sizes it to the labels. */
@@ -1035,7 +1035,7 @@ a.ar-seg:focus-visible {
   }
 }
 
-/* "Which paths count", collapsed by default in the Review by directory notes. */
+/* "Which paths count", collapsed by default in the Contribution by directory notes. */
 .scope-paths {
   margin: 0 0 10px;
 }
@@ -1202,7 +1202,7 @@ a.ar-seg:focus-visible {
   display: none;
 }
 
-/* ---- Review by directory over time ---- */
+/* ---- Contribution by directory over time ---- */
 
 /* The scrolling region: focusable (tabindex) so keyboard users can scroll it. */
 .hm-wrap {

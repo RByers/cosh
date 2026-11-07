@@ -8,6 +8,9 @@ import orgBrowsersUrl from '../../config/org_browsers.csv?url';
 import reviewerUrl from '../../summaries/reviewer_weekly.json?url';
 import areaUrl from '../../summaries/area_weekly.json?url';
 import areaReviewersUrl from '../../summaries/area_reviewers.json?url';
+import authorUrl from '../../summaries/author_weekly.json?url';
+import areaCommitsUrl from '../../summaries/area_commits.json?url';
+import areaAuthorsUrl from '../../summaries/area_authors.json?url';
 import threadExamplesUrl from '../../summaries/thread_examples.json?url';
 // The exact classifier prompt (cosh.classify.prompt_doc), shown as text.
 import classifierPromptJson from '../../summaries/classifier_prompt.json?raw';
@@ -120,6 +123,15 @@ import {
   threadBreakdown,
   type ThreadExamples,
   type ThreadOutcome,
+  hasCommits,
+  authorBoard,
+  type AuthorFile,
+  commitBoard,
+  type AreaCommitsFile,
+  ratioNumerator,
+  ratioOrgs,
+  ratioSeries,
+  gerritAuthoredUrl,
 } from './data.ts';
 import { formatRatio } from './scale.ts';
 import { fill, msg, type Vars } from './text.ts';
@@ -134,6 +146,13 @@ interface Data {
   /** Who wrote each directory's comments: only the directory chart's links
    * need it, so it's fetched after the first render. */
   areaReviewers?: DirReviewers;
+  /** Commits per person and per directory (loadCommits): only the Commits
+   * metric and the review chart's ratio need them, so they're fetched when
+   * first chosen. */
+  authors?: ReviewerBoard;
+  areaCommits?: DirBoard;
+  /** Who made each directory's commits, for its Gerrit links: fetched after them. */
+  areaAuthors?: DirReviewers;
   /** full: the pickers' limits; common: where review and usage data overlap (the default). */
   ranges: { full: WeekRange; common: WeekRange };
 }
@@ -145,6 +164,8 @@ interface State {
   smoothing: Smoothing;
   /** Review chart axis: log with every org, or linear without google.com. */
   reviewScale: ReviewScale;
+  /** The review chart plots the review metric over commits (ratioNumerator). */
+  reviewRatio: boolean;
   /** How many reviewers the leaderboard shows. */
   lbSize: LeaderboardSize;
   /** Leaderboard organization: ALL_ORGS, ALL_BUT_GOOGLE, OTHER_ORGS, or one org. */
@@ -236,6 +257,40 @@ async function load(): Promise<Data> {
   return { summary, totals, radar, orgBrowsers, reviewers, areas, ranges };
 }
 
+/** Fetches the commit files once (see Data): resolves when the per-person and
+ * per-directory commits are in; their Gerrit links follow later. */
+let commitsLoad: Promise<void> | null = null;
+function loadCommits(data: Data, onLinks: () => void): Promise<void> {
+  commitsLoad ??= Promise.all([
+    fetchText(authorUrl).then((t) => JSON.parse(t) as AuthorFile),
+    fetchText(areaCommitsUrl).then((t) => JSON.parse(t) as AreaCommitsFile),
+  ]).then(([authors, areaCommits]) => {
+    data.authors = authorBoard(authors);
+    data.areaCommits = commitBoard(data.areas, areaCommits) ?? undefined;
+    fetchText(areaAuthorsUrl)
+      .then((t) => {
+        data.areaAuthors = JSON.parse(t) as DirReviewers;
+        onLinks();
+      })
+      .catch((err: unknown) => console.error(err));
+  });
+  return commitsLoad;
+}
+
+/** Whether the current choices need the commit files. */
+const needsCommits = (s: State) => s.metric === 'commits' || s.reviewRatio;
+
+/** The per-person board for a metric: the authors' for commits. */
+const peopleBoard = (data: Data, m: Metric) => (m === 'commits' && data.authors ? data.authors : data.reviewers);
+/** The directory board for a metric: the commits' for commits. */
+const dirBoard = (data: Data, m: Metric) => (m === 'commits' && data.areaCommits ? data.areaCommits : data.areas);
+/** Who wrote a directory's comments, or made its commits, for its links. */
+const dirPeople = (data: Data, m: Metric) => (m === 'commits' ? data.areaAuthors : data.areaReviewers);
+/** How hover text names a person: their email, from whichever board has it. */
+const personHandle = (data: Data, id: number) =>
+  data.reviewers.emails?.[id] || data.reviewers.accounts[id] ? reviewerHandle(data.reviewers, id)
+    : data.authors ? reviewerHandle(data.authors, id) : reviewerHandle(data.reviewers, id);
+
 const pct = (x: number) => `${(x * 100).toFixed(x !== 0 && x < 0.01 ? 2 : 1)}%`;
 
 /** The orgs the review sections name over the selected range (namedOrgs):
@@ -290,7 +345,8 @@ const metricUnit = (m: Metric) => msg('metric-unit', { m });
 /** The metrics this data can show: addressed comments only once some week is classified. */
 function availableMetrics(data: Data): Metric[] {
   const addressed = addressedWeeks(data.summary).length > 0;
-  return METRICS.filter((m) => m !== 'addressed' || addressed);
+  const commits = hasCommits(data.summary);
+  return METRICS.filter((m) => (m !== 'addressed' || addressed) && (m !== 'commits' || commits));
 }
 
 /** Addressed comments whenever any week is classified (the views then show
@@ -355,6 +411,7 @@ function readStateFromUrl(data: Data): State {
   const sm = Number(q.get('smooth'));
   const smoothing = SMOOTHING_WEEKS.find((w) => w === sm) ?? DEFAULT_SMOOTHING;
   const reviewScale: ReviewScale = q.get('rscale') === 'linear' ? 'linear' : 'log';
+  const reviewRatio = q.get('ratio') === '1' && hasCommits(data.summary);
   const lbn = q.get('lbn');
   const lbSize = LEADERBOARD_SIZES.find((n) => String(n) === lbn) ?? LEADERBOARD_SIZE;
   // lbg=0: links from before the organization select.
@@ -370,6 +427,7 @@ function readStateFromUrl(data: Data): State {
     range,
     smoothing,
     reviewScale,
+    reviewRatio,
     lbSize,
     lbOrg,
     expandedDirs: new Set(),
@@ -393,6 +451,7 @@ function writeStateToUrl(s: State, allData: WeekRange) {
   const all = s.range.from === allData.from && s.range.to === allData.to;
   history.replaceState(null, '', `#metric=${s.metric}${all ? '' : `&from=${s.range.from}&to=${s.range.to}`}&smooth=${s.smoothing}` +
     (s.reviewScale === 'linear' ? '&rscale=linear' : '') +
+    (s.reviewRatio ? '&ratio=1' : '') +
     (s.lbSize !== LEADERBOARD_SIZE ? `&lbn=${s.lbSize}` : '') +
     (s.lbOrg !== ALL_ORGS ? `&lbo=${encodeURIComponent(s.lbOrg)}` : '') +
     (s.reviewDir ? `&dir=${encodeURIComponent(s.reviewDir)}` : '') +
@@ -430,7 +489,8 @@ function radios(box: HTMLElement, current: string | number, pick: (value: string
  * has painted, so the control just used shows its new state at once. Only
  * the top controls (metric, date range) use them: a control in a section
  * changes only that section (`update`), so the rest isn't recomputed. */
-function buildControls(data: Data, state: State, render: () => void, renderSoon: () => void, update: Update) {
+function buildControls(data: Data, state: State, render: () => void, renderSoon: () => void, update: Update,
+  withCommits: (then: () => void) => void) {
   // The metric buttons name the metrics; drop those this data can't show.
   const available = availableMetrics(data);
   for (const input of $('#metric').querySelectorAll<HTMLInputElement>('input')) {
@@ -441,7 +501,13 @@ function buildControls(data: Data, state: State, render: () => void, renderSoon:
   radios($('#metric'), state.metric, (v) => {
     state.metric = v as Metric;
     // Re-rendering every section takes a while; paint the toggle first.
-    renderSoon();
+    withCommits(renderSoon);
+  });
+  // Ratio: the review metric over commits (hidden without commits).
+  $('#review-ratio').hidden = !hasCommits(data.summary);
+  radios($('#review-ratio'), state.reviewRatio ? 'on' : 'off', (v) => {
+    state.reviewRatio = v === 'on';
+    withCommits(() => update('review'));
   });
   radios($('#smoothing'), state.smoothing, (v) => {
     state.smoothing = Number(v) as Smoothing;
@@ -584,6 +650,7 @@ function renderTiles(data: Data, weeks: string[]) {
   const reviewers = distinctReviewers(data.reviewers, weeks).total;
   const comments = rows.reduce((s, r) => s + r.comments, 0);
   const ai = rows.reduce((s, r) => s + r.ai_comments, 0);
+  const commits = rows.reduce((s, r) => s + r.commits, 0);
   const postMerge = rows.reduce((s, r) => s + r.post_merge_comments, 0);
   // The tiles and their wording are in value.html; each sub-line is the template named after its tile.
   const tile = (id: string, value: string, sub: Vars | null) => {
@@ -598,6 +665,9 @@ function renderTiles(data: Data, weeks: string[]) {
   tile('tile-comments', int(comments), { reviewers: int(reviewers) });
   tile('tile-ai', int(ai), comments ? { share: pct(ai / comments) } : null);
   tile('tile-post', int(postMerge), comments ? { share: pct(postMerge / comments) } : null);
+  const commitTile = $('#tile-commits');
+  commitTile.hidden = !hasCommits(data.summary);
+  if (!commitTile.hidden) tile('tile-commits', int(commits), {});
 }
 
 /** Template values for the range's weeks the value views leave out for
@@ -612,7 +682,7 @@ function skippedVars(weeks: string[], vWeeks: string[]) {
  * ratio: what the table lists and the parity chart plots. */
 function orgRangeShares(data: Data, state: State, weeks: string[], vWeeks: string[] = weeks) {
   const totals = orgTotals(data.summary, weeks, distinctReviewers(data.reviewers, weeks).byOrg);
-  // Review share and usage share over the same weeks: those with both.
+  // Contribution share and usage share over the same weeks: those with both.
   const vTotals = vWeeks === weeks ? totals : orgTotals(data.summary, vWeeks);
   const orgs = new Set([...totals.map((r) => r.org), ...data.orgBrowsers.keys(), ...UNKNOWN_USAGE_ORGS.keys()]);
   return [...orgs].map((org) => {
@@ -691,6 +761,7 @@ function renderTable(data: Data, state: State, weeks: string[], vWeeks: string[]
         r ? int(r.review_chars) : '—',
         r ? int(r.ai_comments) : '—',
         r ? int(r.post_merge_comments) : '—',
+        r ? int(r.commits) : '—',
       ];
       tr.append(orgCell, ...cells.map((c, i) => el('td', c, i === 2 ? 'ratio' : undefined)));
       return tr;
@@ -723,8 +794,9 @@ function renderLeaderboard(
   pick: (id: number) => void,
 ): void {
   const name = metricName(state.metric);
-  const weeks = weeksIn(Object.keys(data.reviewers.weeks), state.range);
-  const all = topReviewers(data.reviewers, weeks, state.metric, Infinity);
+  const board = peopleBoard(data, state.metric);
+  const weeks = weeksIn(Object.keys(board.weeks), state.range);
+  const all = topReviewers(board, weeks, state.metric, Infinity);
 
   // The selector: the named orgs over the range, by the metric, "Other", plus the current choice.
   const single = state.lbOrg.startsWith('*') ? null : state.lbOrg;
@@ -764,7 +836,8 @@ function renderLeaderboard(
       return li;
     });
   $('#leaderboard-legend').replaceChildren(...legend);
-  buildLeaderboard($('#leaderboard-chart'), rows, metricUnit(state.metric), (org) => lbColors.get(org), state.lbReviewer, pick);
+  buildLeaderboard($('#leaderboard-chart'), rows, metricUnit(state.metric), (org) => lbColors.get(org), state.lbReviewer, pick,
+    state.metric === 'commits');
 }
 
 /** One reviewer's review comments and addressed comments per week over the
@@ -781,8 +854,9 @@ function renderReviewerDetail(data: Data, state: State, colors: Map<string, stri
   const range = userRange ?? state.range;
   const weeks = weeksIn(Object.keys(data.reviewers.weeks), range);
   const classified = new Set(addressedWeeks(data.summary));
-  const r = reviewerSeries(data.reviewers, state.lbReviewer, weeks, classified);
+  const r = reviewerSeries(data.reviewers, state.lbReviewer, weeks, classified, data.authors);
   const total = r.comments.reduce((a, b) => a + b, 0);
+  const commits = r.commits?.reduce((a, b) => a + b, 0) ?? 0;
   const addressed = r.addressed.reduce<number>((a, b) => a + (b ?? 0), 0);
   const nClassified = weeks.filter((w) => classified.has(w)).length;
   box.hidden = false;
@@ -795,13 +869,19 @@ function renderReviewerDetail(data: Data, state: State, colors: Map<string, stri
     classified: nClassified,
     all: nClassified === weeks.length,
     addressed: int(addressed),
+    commits: r.commits ? int(commits) : '',
   });
   const color = (r.org && colors.get(r.org)) || theme.muted;
-  reviewerChart = renderReviewerChart($<HTMLCanvasElement>('#reviewer-chart'), weeks, r.comments, r.addressed, color, theme);
+  reviewerChart = renderReviewerChart($<HTMLCanvasElement>('#reviewer-chart'), weeks, r.comments, r.addressed, color, theme,
+    r.commits);
   const link = $<HTMLAnchorElement>('#rd-gerrit');
-  const url = gerritReviewsUrl(r.email, range);
-  link.hidden = !url;
+  const url = total ? gerritReviewsUrl(r.email, range) : null;
+  link.closest('p')!.hidden = !url;
   if (url) link.href = url;
+  const own = $<HTMLAnchorElement>('#rd-gerrit-own');
+  const ownUrl = commits ? gerritAuthoredUrl(r.email, range) : null;
+  own.closest('p')!.hidden = !ownUrl;
+  if (ownUrl) own.href = ownUrl;
   $('#rd-close').onclick = () => pick(null);
 }
 
@@ -895,17 +975,18 @@ function exampleThread(t: ThreadExamples['threads'][number]): HTMLElement {
   return box;
 }
 
-/** Review by directory: every comment in the range, by directory and org, with
+/** Contribution by directory: every comment or commit in the range, by directory and org, with
  * the path rules that decide what the other sections count. */
 function renderAreas(data: Data, state: State, colors: Map<string, string>, theme: Theme) {
-  const weeks = weeksIn(Object.keys(data.areas.weeks), state.range);
-  const orgs = topDirOrgs(data.areas, weeks, state.metric, rangeNamedOrgs(data, state));
-  const totals = dirTotals(data.areas, weeks, orgs, state.metric);
+  const board = dirBoard(data, state.metric);
+  const weeks = weeksIn(Object.keys(board.weeks), state.range);
+  const orgs = topDirOrgs(board, weeks, state.metric, rangeNamedOrgs(data, state));
+  const totals = dirTotals(board, weeks, orgs, state.metric);
   const unit = metricUnit(state.metric);
   const segColors = colors;
-  const { roots } = dirTree(data.areas);
+  const { roots } = dirTree(board);
   const total = roots.reduce((s, r) => s + totals.total[r], 0);
-  const inScope = roots.filter((r) => data.areas.nodes[r][2]).reduce((s, r) => s + totals.total[r], 0);
+  const inScope = roots.filter((r) => board.nodes[r][2]).reduce((s, r) => s + totals.total[r], 0);
   fill($('#areas-sub'), {
     total: int(total),
     m: state.metric,
@@ -924,10 +1005,12 @@ function renderAreas(data: Data, state: State, colors: Map<string, string>, them
     }),
   );
   const box = $('#area-chart');
-  const who = data.areaReviewers && dirReviewerIndex(data.areas, data.areaReviewers, weeks, orgs);
-  const linkOf = (row: DirRow, org: string) => (who ? dirRowLink(data.areas, who, row, org, state.range) : null);
+  const people = dirPeople(data, state.metric);
+  const authors = state.metric === 'commits';
+  const who = people && dirReviewerIndex(board, people, weeks, orgs);
+  const linkOf = (row: DirRow, org: string) => (who ? dirRowLink(board, who, row, org, state.range, undefined, authors) : null);
   const draw = (focusKey?: string) => {
-    const rows = dirRows(data.areas, totals, state.expandedDirs);
+    const rows = dirRows(board, totals, state.expandedDirs);
     buildAreaChart(box, rows, orgs, (org) => segColors.get(org), metricName(state.metric), unit, (key) => {
       if (state.expandedDirs.has(key)) state.expandedDirs.delete(key);
       else state.expandedDirs.add(key);
@@ -984,7 +1067,7 @@ function renderComplexity(data: Data, state: State, update: Update) {
 }
 
 /** The organization chart's note when it shows one directory: which of its comments it counts. */
-function renderDirNote(board: DirBoard, dir: string, node: number, weeks: string[], metric: Metric) {
+function renderDirNote(board: DirBoard, dir: string, node: number, weeks: string[], metric: Metric, ratio = false) {
   const t = dirTotals(board, weeks, [], metric);
   const inc = t.total[node] ? t.inc[node] / t.total[node] : board.nodes[node][2];
   fill($('#review-dir-note'), {
@@ -992,6 +1075,7 @@ function renderDirNote(board: DirBoard, dir: string, node: number, weeks: string
     scope: inc >= 1 ? 'all' : inc <= 0 ? 'none' : 'part',
     part: pct(1 - inc),
     m: metric,
+    ratio,
   });
 }
 
@@ -1005,13 +1089,14 @@ function renderDistribution(
   pick: (id: number) => void,
 ) {
   const unit = metricUnit(state.metric);
-  const weeks = weeksIn(Object.keys(data.reviewers.weeks), state.range);
+  const board = peopleBoard(data, state.metric);
+  const weeks = weeksIn(Object.keys(board.weeks), state.range);
   // Who counts: for addressed comments, everyone who wrote a review comment
   // (0 addressed is telling); for the other metrics, those with some of it.
-  const all = reviewerTotals(data.reviewers, weeks, state.metric).filter((r) =>
+  const all = reviewerTotals(board, weeks, state.metric).filter((r) =>
     state.metric === 'addressed' ? r.comments > 0 : r.value > 0,
   );
-  const spreads = orgSpreads(all, data.reviewers.meta.fold_into_other ?? [], rangeNamedOrgs(data, state));
+  const spreads = orgSpreads(all, board.meta.fold_into_other ?? [], rangeNamedOrgs(data, state));
   const colorOf = (org: string) => colors.get(org) ?? theme.muted;
 
   fill($('#dist-sub'), {
@@ -1048,14 +1133,15 @@ function renderDistribution(
       $<HTMLCanvasElement>('#dist-chart'),
       spreads,
       colorOf,
-      (id) => reviewerHandle(data.reviewers, id),
+      (id) => personHandle(data, id),
       unit,
       theme,
       () => state.lbReviewer,
       pick,
     );
   });
-  renderPerReview(data, state, weeks, spreads.map((s) => s.org), colorOf, theme, pick);
+  renderPerReview(data, state, weeksIn(Object.keys(data.reviewers.weeks), state.range), spreads.map((s) => s.org),
+    colorOf, theme, pick);
 }
 
 /** Where the addressed-comments-per-review axis ends: a few reviewers far
@@ -1078,7 +1164,6 @@ function renderPerReview(
   const unit = `${metricUnit(num)} per review`;
   const spreads = orgPerReviewSpreads(data.reviewers, weeks, state.metric, orgOrder);
 
-  fill($('#pr-title'), { name: metricName(num) });
   fill($('#pr-sub'), {
     weeks: weeks.length,
     metric: metricUnit(num),
@@ -1130,9 +1215,11 @@ const HEAT_TOP_REVIEWERS = 3;
  * directory's figure over a few weeks rests on few reviews. */
 const DEFAULT_CX_BIN: HeatBinSize = 13;
 
-/** Review by directory over time: the heatmap, its organization choices and legend. */
+/** Contribution by directory over time: the heatmap, its organization choices and legend. */
 function renderHeat(data: Data, state: State, colors: Map<string, string>, theme: Theme, update: Update) {
-  const board = data.areas;
+  const board = dirBoard(data, state.metric);
+  const people = dirPeople(data, state.metric);
+  const authors = state.metric === 'commits';
   const rangeWeeks = weeksIn(Object.keys(board.weeks), state.range);
   const unit = metricUnit(state.metric);
 
@@ -1167,10 +1254,10 @@ function renderHeat(data: Data, state: State, colors: Map<string, string>, theme
 
   // Links and the "most active" line come from the reviewer file, once loaded.
   let cellInfo: ((row: number, bin: number) => HeatCellInfo | null) | undefined;
-  if (data.areaReviewers) {
+  if (people) {
     // An excluded org gets its own segment, so it can be dropped rather than hide in Other.
     const idxOrgs = noGoogle ? [...segOrgs, LINEAR_EXCLUDED_ORG] : others ? top : segOrgs;
-    const perBin = grid.binWeeks.map((w) => dirReviewerIndex(board, data.areaReviewers!, w, idxOrgs));
+    const perBin = grid.binWeeks.map((w) => dirReviewerIndex(board, people, w, idxOrgs));
     const keepSeg = single ? (o: string) => o === single : others ? (o: string) => o === OTHER : keep;
     cellInfo = (ri, bi) => {
       const idx = perBin[bi];
@@ -1179,10 +1266,10 @@ function renderHeat(data: Data, state: State, colors: Map<string, string>, theme
       if (!who?.comments.size || row.node === undefined) return null;
       // Emails, which stand for name and org.
       const top = topAccounts(who.comments, HEAT_TOP_REVIEWERS).map(([id, n]) => ({
-        who: reviewerHandle(data.reviewers, id),
+        who: personHandle(data, id),
         comments: n,
       }));
-      return { link: gerritDirUrl(paths[row.node], who.comments, grid.bins[bi]), top };
+      return { link: gerritDirUrl(paths[row.node], who.comments, grid.bins[bi], undefined, authors), top };
     };
   }
 
@@ -1256,7 +1343,7 @@ function derivativeJumpWeek(radar: RadarWeekly): string | null {
   return null;
 }
 
-function main(data: Data) {
+async function main(data: Data) {
   const state = readStateFromUrl(data);
   const classifierPrompt = JSON.parse(classifierPromptJson) as { system: string; prompt: string };
   $('#classifier-system').textContent = classifierPrompt.system;
@@ -1419,14 +1506,30 @@ function main(data: Data) {
 
   /** The review chart: the metric by org, over the path scope or one directory. */
   const renderReview = (weeks: string[], dataWeeks: string[] | undefined, colors: Map<string, string>, theme: Theme) => {
-    const metricLabel = metricUnit(state.metric);
     // One directory (every comment in it, from the directory data), or the path scope (org_weekly).
     const dirNode = state.reviewDir === null ? null : dirNodeByPath(data.areas, state.reviewDir);
     const named = rangeNamedOrgs(data, state);
     const exclude = state.reviewScale === 'linear' ? [LINEAR_EXCLUDED_ORG] : [];
-    const reviewSeries = dirNode === null
-      ? orgWeeklyCounts(data.summary, weeks, state.metric, named, state.smoothing, exclude, dataWeeks)
-      : dirWeeklyCounts(data.areas, dirNode, weeks, state.metric, named, state.smoothing, exclude, dataWeeks);
+    const classified = addressedWeeks(data.summary);
+    // With the ratio on: the review metric (addressed comments for Commits) over commits.
+    const ratio = state.reviewRatio && !!data.authors;
+    const num = ratio ? ratioNumerator(state.metric, classified.length > 0) : state.metric;
+    const numWeeks = num === 'addressed' ? classified : undefined;
+    const series = (m: Metric, known: readonly string[] | undefined, nameable?: (org: string) => boolean) =>
+      dirNode === null
+        ? orgWeeklyCounts(data.summary, weeks, m, named, state.smoothing, exclude, known, nameable)
+        : dirWeeklyCounts(dirBoard(data, m), dirNode, weeks, m, named, state.smoothing, exclude, known, nameable);
+    let reviewSeries: { org: string; values: (number | null)[] }[];
+    if (ratio) {
+      // Both halves fold the same orgs into Other, so its ratio is like for like.
+      const keep = ratioOrgs(series(num, numWeeks), series('commits', undefined));
+      const nameable = (o: string) => keep.has(o);
+      reviewSeries = ratioSeries(series(num, numWeeks, nameable), series('commits', undefined, nameable), weeks,
+        state.smoothing, numWeeks && new Set(numWeeks));
+    } else {
+      reviewSeries = series(state.metric, dataWeeks);
+    }
+    const metricLabel = ratio ? `${metricUnit(num)} per commit` : metricUnit(state.metric);
     drawChart(() => {
       reviewChart?.destroy();
       reviewChart = renderReviewChart(
@@ -1437,6 +1540,7 @@ function main(data: Data) {
         colors,
         theme,
         state.reviewScale,
+        !ratio,
       );
     });
     fill($('#review-sub'), {
@@ -1446,11 +1550,14 @@ function main(data: Data) {
       smoothing: smoothingName(state.smoothing),
       min: pct(NAMED_ORG_MIN_SHARE),
     });
+    const ratioNote = $('#review-ratio-note');
+    ratioNote.hidden = !ratio;
+    if (ratio) fill(ratioNote, { metric: metricUnit(num) });
     // The chosen directory's note sits below the controls, so it can't move them.
     const dirNote = $('#review-dir-note');
     dirNote.hidden = dirNode === null || !weeks.length;
     if (dirNode === null) dirNote.replaceChildren();
-    else renderDirNote(data.areas, state.reviewDir!, dirNode, weeks, state.metric);
+    else renderDirNote(dirBoard(data, state.metric), state.reviewDir!, dirNode, weeks, state.metric, ratio);
     const dirInput = $<HTMLInputElement>('#review-dir');
     if (document.activeElement !== dirInput) dirInput.value = state.reviewDir ?? '';
     $('#review-dir-clear').hidden = state.reviewDir === null;
@@ -1480,13 +1587,32 @@ function main(data: Data) {
   // built, so the controls and charts lay out at their real size.
   $('#loading').hidden = true;
   $('main').hidden = false;
-  syncInputs = buildControls(data, state, render, renderSoon, update);
+  // The commit files, fetched when a choice first needs them; the render waits for them.
+  const onCommitLinks = () => {
+    if (state.metric === 'commits') update('areas', 'heat');
+  };
+  const withCommits = (then: () => void) => {
+    if (!needsCommits(state) || data.authors) return then();
+    setPending(true);
+    loadCommits(data, onCommitLinks)
+      .then(() => {
+        setPending(false);
+        then();
+      })
+      .catch((err: unknown) => {
+        setPending(false);
+        console.error(err);
+      });
+  };
+  syncInputs = buildControls(data, state, render, renderSoon, update, withCommits);
   // The metric bar is sticky; scroll-padding-top (in style.css) keeps anchor
   // jumps clear of it, at whatever height it wraps to.
   const metricBar = $('.metric-bar');
   new ResizeObserver(() =>
     document.documentElement.style.setProperty('--metric-bar-h', `${metricBar.offsetHeight}px`),
   ).observe(metricBar);
+  // A shared link may ask for commits: draw once they're in.
+  if (needsCommits(state)) await loadCommits(data, onCommitLinks).catch((err: unknown) => console.error(err));
   render();
   // A shared link to a card: the browser can't jump there itself (the hash
   // isn't an id, and the page was hidden while loading), so scroll once the

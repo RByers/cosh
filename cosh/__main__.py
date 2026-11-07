@@ -3,8 +3,9 @@
   python3 -m cosh extract --week 2026-W44 [--via notedb|rest] [--max-comment-fetches N]
   python3 -m cosh extract-open [--since ...] [--closed-since ...]
   python3 -m cosh derive [--week 2026-W44] [--out PATH]
+  python3 -m cosh commits [--db PATH]
   python3 -m cosh classify [--week 2026-W44] [--max-threads N] [--dry-run] [--db PATH]
-  python3 -m cosh summarize [--metric comments|cls|chars|addressed] [--db PATH] [--out DIR]
+  python3 -m cosh summarize [--metric comments|cls|chars|addressed|commits] [--db PATH] [--out DIR]
   python3 -m cosh backfill --weeks 52 [--go] [--duty-cycle 1.0]
   python3 -m cosh patchsets [--go]
   python3 -m cosh status
@@ -65,6 +66,11 @@ def main(argv=None):
     d.add_argument("--source", choices=["auto", "notedb", "rest"], default="auto",
                    help="comment source (auto = NoteDb if fetched, else REST cache)")
     d.add_argument("--out", help="derived DB path (default: data/private/derived.sqlite)")
+    d.add_argument("--no-commits", action="store_true",
+                   help="skip rebuilding the commits tables from the local Chromium git clone")
+    g = sub.add_parser("commits", help="rebuild derived.sqlite's commits from the local Chromium "
+                                        "git clone (offline; $COSH_CHROMIUM_GIT)")
+    g.add_argument("--db", help="derived DB path (default: data/private/derived.sqlite)")
     c = sub.add_parser("classify",
                        help="label review threads as addressed with Claude Haiku via `claude -p` "
                             "(uses Max usage; writes data/private/labels.sqlite; optional step)")
@@ -80,7 +86,7 @@ def main(argv=None):
                    help="jail for claude -p (SECURITY.md): auto = bubblewrap if it works here")
     c.add_argument("--db", help="derived DB path (default: data/private/derived.sqlite)")
     s = sub.add_parser("summarize", help="write summaries/ (path scope: config/paths.txt)")
-    s.add_argument("--metric", choices=["comments", "cls", "chars", "addressed"], default="comments",
+    s.add_argument("--metric", choices=["comments", "cls", "chars", "addressed", "commits"], default="comments",
                    help="headline share: review comments (default), reviewed CLs, characters, "
                         "or addressed comments")
     s.add_argument("--db", help="derived DB path (default: data/private/derived.sqlite)")
@@ -157,6 +163,21 @@ def main(argv=None):
     elif a.cmd == "derive":
         from .derive import derive
         derive(weeks=a.week, source=a.source, out_path=a.out)
+        # A per-week derive (backfill) leaves the commits alone; a full one rebuilds them.
+        if not a.week and not a.no_commits:
+            from .commits import build_commits, repo_path
+            import os
+            if os.path.isdir(repo_path()):
+                db = store.open_derived(path=a.out)
+                build_commits(db)
+                db.close()
+            else:
+                print(f"no Chromium git repo at {repo_path()}: commits not rebuilt", file=sys.stderr)
+    elif a.cmd == "commits":
+        from .commits import build_commits
+        db = store.open_derived(path=a.db)
+        build_commits(db)
+        db.close()
     elif a.cmd == "classify":
         from .classify import classify
         classify(db_path=a.db, weeks=a.week, model=a.model, batch=max(1, min(a.batch, 200)),

@@ -24,14 +24,25 @@ build time:
 - `summaries/reviewer_weekly.json` (every reviewer's weekly counts: the
   per-reviewer distribution, the leaderboard and distinct reviewer counts)
 - `summaries/area_weekly.json` (every comment by directory and org, in scope
-  or not, as a directory tree, plus the path rules: the "Review by directory"
-  and "Review by directory over time" sections, and the organization chart
-  when it shows one directory)
+  or not, as a directory tree, plus the path rules: the "Contribution by
+  directory" and "Contribution by directory over time" sections, and the
+  organization chart when it shows one directory)
 - `summaries/area_reviewers.json` (who wrote each directory bucket's comments:
   the Gerrit links and "most active" lines of both directory sections; fetched
   after the first render, so it holds nothing up)
 - `data/public/radar_browser_share.csv`
 - `config/org_browsers.csv`
+- For the Commits metric and the organization chart's Ratio only, fetched
+  the first time either is chosen (or on load, if the URL asks for one):
+  `summaries/author_weekly.json` (every commit author's weekly commits, like
+  `reviewer_weekly.json`) and `summaries/area_commits.json` (commits by
+  directory, in `area_weekly.json`'s node and org indexes), then
+  `summaries/area_authors.json` (who made them, for the directory links).
+  `authorBoard` and `commitBoard` in `src/data.ts` turn them into boards
+  shaped like the review ones, with commits in column 6, so the per-person
+  and directory code reads either. They're separate because commits touch
+  many more directories than comments do: folded into the review files they
+  would double what every visit loads.
 
 Loading order: the header (title and intro) is static HTML, so it shows as
 soon as the page arrives, with a "Loading…" note under it. `<main>` (the
@@ -119,7 +130,7 @@ usage data both exist.
 Over a range:
 
 - Counts (comments, AI and post-merge comments, CLs) are summed.
-- Review share = the org's summed count ÷ everyone's summed count.
+- Share = the org's summed count ÷ everyone's summed count.
 - Usage share = the mean of the org's weekly usage shares, over the range's
   review weeks that have Radar data. Ratio = review share ÷ usage share.
 - Reviewers are distinct people over the range, counted from
@@ -175,7 +186,7 @@ there alone; presentation in `src/style.css` (`src/home.css` for the landing pag
    week, using weeks before the range too (`smoothRatios` in `src/data.ts`).
    The usage denominator leaves out Radar's ChromeDerivative bucket
    (`RATIO_EXCLUDED_BROWSERS`), whose 2026-W37 jump is not yet explained.
-3. **Review by organization**: weekly review comments over the range
+3. **Contribution by organization**: weekly review comments over the range
    (smoothed like the ratio), one line each for the top 7 orgs and then
    "Other". A toggle switches from the default log axis to a linear axis with
    google.com left out entirely (the next-ranked org takes its slot). The
@@ -184,11 +195,18 @@ there alone; presentation in `src/style.css` (`src/home.css` for the landing pag
    from the 3,000 busiest. It then counts every comment there from
    `area_weekly.json`, in scope or not, and the subtitle says how much of it
    the rest of the page leaves out. For reviewed CLs, a CL with comments in
-   two of its subdirectories counts in each.
+   two of its subdirectories counts in each; likewise for commits.
+   **Ratio** (Off by default, `ratio=1` in the URL) plots the chosen review
+   metric over commits instead, org by org and week by week (a ratio of the
+   running means; `ratioSeries`). With Commits chosen, it plots addressed
+   comments over commits. Both halves fold the same orgs into Other
+   (`ratioOrgs`); weeks with no commits, or (for addressed comments) no
+   classified week in the window, are gaps. A note under the toggles says
+   "Ratio shows … over commits".
 4. **Chromium browser usage** from Cloudflare Radar, per browser, over the range,
    with a marker and a note on the 2026-W37 ChromeDerivative jump.
 5. Totals for the range, plus a table with every value shown in the charts.
-6. **Review by directory** (`src/areas.ts`, `dirRows` in `src/data.ts`):
+6. **Contribution by directory** (`src/areas.ts`, `dirRows` in `src/data.ts`):
    every comment in the range, in scope or not, as a tree for the selected
    metric. The top level lists the 20 largest top-level directories (plus
    `area` prefixes from `config/paths.txt`, such as `third_party/blink/`),
@@ -206,7 +224,7 @@ there alone; presentation in `src/style.css` (`src/home.css` for the landing pag
    not from google.com. For reviewed CLs, a CL with comments in two
    directories counts in each. A note lists the path rules (from the
    summary's metadata) and how comments are placed on files.
-7. **Review by directory over time** (`src/heatmap.ts`, `heatGrid` in
+7. **Contribution by directory over time** (`src/heatmap.ts`, `heatGrid` in
    `src/data.ts`): the same drill-down rows against time bins of 1 week, 4
    weeks (default), 3 months (13 weeks) or 1 year (52 weeks), lined up
    with the range's end. The Organization selector picks every org, every org but google.com, or one org (the 25
@@ -224,7 +242,7 @@ there alone; presentation in `src/style.css` (`src/home.css` for the landing pag
 8. **Review complexity by directory over time** (`src/complexity.ts`,
    `complexityGrid` in `src/data.ts`): just above Per review, to show how
    review complexity varies across the codebase. The same table, month ticks
-   and expandable directory rows as Review by directory over time (shared
+   and expandable directory rows as Contribution by directory over time (shared
    helpers in `src/heatmap.ts`). Each cell is the metric per review in that
    directory and time bin; under Reviewed CLs the metric is review comments,
    as in Per review. A review is one org's comments on one CL in the
@@ -242,18 +260,19 @@ there alone; presentation in `src/style.css` (`src/home.css` for the landing pag
    in scope or not, but leaves out `(no file)`: those comments are mostly
    sign-offs and a third of all reviews. Comments count in the week written,
    CLs in the week closed. From `area_weekly.json`; no extra data.
-9. **Per review** (`orgPerReviewSpreads` in `src/data.ts`, the same
+9. **Review depth** (`orgPerReviewSpreads` in `src/data.ts`, the same
    `renderSpreadChart`, on a linear axis from 0): just above the per-reviewer
    spread and on the same org rows, each reviewer's metric over the range divided by their reviewed
    CLs (CLs they commented on), or review comments per review under the
-   Reviewed CLs metric; the title follows (“Review comments per review”).
+   Reviewed CLs and Commits metrics. Its heading, “Review depth”, stays the
+   same whatever the metric, like every section's.
    Only reviewers with at least 3 reviewed CLs (`PER_REVIEW_MIN`) and a
    review comment count; under addressed comments those with none addressed
    sit at 0. The table gives each row's reviewers, quartiles and “All
    reviews”, the row's pooled total ÷ its reviews. Comments count in the
    week written and CLs in the week closed, so a range's edges are
    approximate. From `reviewer_weekly.json`; no extra data.
-10. **Review per reviewer** (`orgSpreads` in `src/data.ts`,
+10. **Contribution per person** (`orgSpreads` in `src/data.ts`,
    `renderSpreadChart` in `src/charts.ts`): a strip plot of each reviewer's
    total for the metric over the range, one dot per reviewer on a log axis,
    one row per org: the 10 orgs with the largest total, then everyone else
@@ -265,7 +284,7 @@ there alone; presentation in `src/style.css` (`src/home.css` for the landing pag
    metric are left out, except under addressed comments, where everyone who
    wrote a review comment counts and those with none addressed sit at 0.
    From `reviewer_weekly.json`; no extra data.
-11. **Reviewer leaderboard**: the top 25 (or 50, 100, 200, or all) reviewers by review
+11. **Leaderboard**: the top 25 (or 50, 100, 200, or all) reviewers by review
    comments over the range, for every organization, all but google.com, or
    one organization (the 25 with the most review in the range), one
    compact bar each, coloured by org. Orgs with a colour get a legend
@@ -273,7 +292,10 @@ there alone; presentation in `src/style.css` (`src/home.css` for the landing pag
    reviewer opens their weekly chart over the picked range: review comments,
    with addressed comments filled in for classified weeks. The chart comes
    from `reviewer_weekly.json` (no extra data) and has the link to the CLs
-   they commented on, on Gerrit.
+   they commented on, on Gerrit. Under Commits, the leaderboard and the
+   per-person spread rank commit authors (`author_weekly.json`), and the
+   weekly chart adds their commits as a dashed line, with a link to their
+   merged CLs.
 12. **How review threads are classified** (once some week is classified):
    one bar splitting the range's classified reviewer-started threads by how
    each was decided (owner's "Done", Haiku addressed, Haiku no change, no

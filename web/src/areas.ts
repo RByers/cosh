@@ -1,4 +1,4 @@
-// "Review by directory": one row per directory with its volume for the chosen
+// "Contribution by directory": one row per directory with its volume for the chosen
 // metric (a bar on a shared scale) and how that splits across organizations
 // (a 100% stacked bar), plus the non-Google share as text. Rows expand into
 // subdirectories, and "other" rows into the next entries (dirRows in data.ts).
@@ -121,10 +121,11 @@ export function buildAreaChart(
           seg.setAttribute('href', link.url);
           seg.setAttribute('target', '_blank');
           seg.setAttribute('rel', 'noopener');
+          const people = link.authors ? 'authors' : 'reviewers';
           const who = link.shown < link.total
-            ? `its ${link.shown} most active reviewers (of ${int(link.total)})`
-            : link.total === 1 ? 'its reviewer' : `its ${link.total} reviewers`;
-          seg.title += `\nOpens the CLs in ${link.path} that ${who} commented on, on Gerrit in a new tab. ` +
+            ? `its ${link.shown} most active ${people} (of ${int(link.total)})`
+            : link.total === 1 ? `its ${people.slice(0, -1)}` : `its ${link.total} ${people}`;
+          seg.title += `\nOpens the CLs in ${link.path} that ${who} ${link.authors ? 'landed' : 'commented on'}, on Gerrit in a new tab. ` +
             'Gerrit can only match CLs that touch the directory and changed around the range, so it lists more than are counted here.';
           seg.setAttribute('aria-label', `${o} in ${r.title}: ${int(r.byOrg.get(o)!)} ${unit}; open on Gerrit`);
         }

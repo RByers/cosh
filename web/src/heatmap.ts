@@ -1,4 +1,4 @@
-// "Review by directory over time": directories (the same drill-down rows as
+// "Contribution by directory over time": directories (the same drill-down rows as
 // the directory chart) against time bins. A table, so every cell has a row
 // and column header for screen readers; the directory column stays put while
 // the bins scroll sideways on narrow screens.
@@ -230,10 +230,11 @@ export function buildHeatmap(box: HTMLElement, o: HeatOptions): void {
         box2.setAttribute('href', link.url);
         box2.setAttribute('target', '_blank');
         box2.setAttribute('rel', 'noopener');
+        const people = link.authors ? 'authors' : 'reviewers';
         const who = link.shown < link.total
-          ? `its ${link.shown} most active reviewers (of ${int(link.total)})`
-          : link.total === 1 ? 'its reviewer' : `its ${link.total} reviewers`;
-        lines.push(`Opens the CLs in ${link.path} that ${who} commented on in these weeks, on Gerrit in a new tab.`);
+          ? `its ${link.shown} most active ${people} (of ${int(link.total)})`
+          : link.total === 1 ? `its ${people.slice(0, -1)}` : `its ${link.total} ${people}`;
+        lines.push(`Opens the CLs in ${link.path} that ${who} ${link.authors ? 'landed' : 'commented on'} in these weeks, on Gerrit in a new tab.`);
       }
       box2.title = lines.join('\n');
       // The number, for screen readers; the colour and height carry it visually.

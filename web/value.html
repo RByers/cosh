@@ -9,7 +9,7 @@
     <!-- Linked here, not imported from main.ts, so it blocks the first paint in the dev
          server too (a JS import is injected only once the script runs: unstyled flash). -->
     <link rel="stylesheet" href="/src/style.css" />
-    <meta name="description" content="How organizations that ship Chromium-based browsers contribute code review back to Chromium, relative to their browser usage." />
+    <meta name="description" content="How organizations that ship Chromium-based browsers contribute code review and code back to Chromium, relative to their browser usage." />
   </head>
   <body>
     <!--
@@ -51,7 +51,7 @@
           This page approximates that value exchange in the Chromium project by comparing each organization's share of Chromium-based browser
           usage (according to <a target="_blank" rel="noopener" href="https://radar.cloudflare.com/reports/browser-market-share-2025-q4">Cloudflare Radar</a>) 
           with its share of <a href="#addressed-details" id="addressed-link">addressed</a> review comments: comments in
-          review threads that led the change's author to modify the change. Other review stats are provided, but we focus on reviews which cause
+          review threads that led the change's author to modify the change. Other review stats, and commits, are provided, but we focus on reviews which cause
           change as the subset which are most likely to be valuable to the project.
         </p>
         <p>
@@ -89,8 +89,9 @@
           <label><input type="radio" name="metric" value="comments" />Review comments</label>
           <label><input type="radio" name="metric" value="chars" />Review characters</label>
           <label><input type="radio" name="metric" value="cls" />Reviewed CLs</label>
+          <label><input type="radio" name="metric" value="commits" />Commits</label>
         </fieldset>
-        <template data-msg="metric-unit"><span data-if="m=addressed">addressed comments</span><span data-if="m=comments">review comments</span><span data-if="m=chars">review characters</span><span data-if="m=cls">reviewed CLs</span></template>
+        <template data-msg="metric-unit"><span data-if="m=addressed">addressed comments</span><span data-if="m=comments">review comments</span><span data-if="m=chars">review characters</span><span data-if="m=cls">reviewed CLs</span><span data-if="m=commits">commits</span></template>
       </div>
       <!-- What each metric counts. After the bar, not in it, so it scrolls away. -->
       <aside class="note metric-defs" aria-label="What each contribution metric counts">
@@ -99,10 +100,13 @@
             CL, as explained under <a href="#threads">How review threads are classified</a>. Weeks not yet classified show only the other
             metrics.</li>
           <li><em>Review comments</em>: every published comment, inline or patchset-level, including self-declared
-            AI and post-merge ones (the table under <a href="#review">Review by organization</a> counts both).</li>
+            AI and post-merge ones (the table under <a href="#review">Contribution by organization</a> counts both).</li>
           <li><em>Review characters</em>: the length of those comments, without quoted (<code>&gt;</code>) lines.</li>
           <li><em>Reviewed CLs</em>: CLs someone from the organization commented on, counted in the week the CL
             closed.</li>
+          <li><em>Commits</em>: commits on <code>main</code> by the organization's authors, as explained under
+            <a href="#review">Contribution by organization</a>. Its <em>Ratio</em> toggle divides the chosen review
+            metric (addressed comments, with Commits chosen) by commits.</li>
         </ul>
       </aside>
       <form class="filters" aria-label="Filters" onsubmit="return false">
@@ -146,12 +150,12 @@
         <template data-msg="parity-sub">
           <span data-if="!weeks">No review data in this range.</span>
           <span data-if="weeks">Each organization's share of <slot name="metric"></slot> against its browsers' share of
-            Chromium browser usage<span data-if="multi"> (review: totals over the range; usage: mean weekly share)</span>,
-            on log axes. The diagonal is a 1.0× value ratio, review in proportion to usage: organizations above it
-            review more than their usage share, those below less.</span>
+            Chromium browser usage<span data-if="multi"> (contribution: totals over the range; usage: mean weekly share)</span>,
+            on log axes. The diagonal is a 1.0× value ratio, contribution in proportion to usage: organizations above it
+            contribute more than their usage share, those below less.</span>
         </template>
         <div class="chart chart-square">
-          <canvas id="parity-chart" role="img" aria-label="Share of review against share of browser usage per organization, on log axes, with a diagonal line at a 1.0 value ratio; the table below lists the values."></canvas>
+          <canvas id="parity-chart" role="img" aria-label="Share of contribution against share of browser usage per organization, on log axes, with a diagonal line at a 1.0 value ratio; the table below lists the values."></canvas>
         </div>
       </section>
 
@@ -180,19 +184,24 @@
 
       <section id="review" class="card" aria-labelledby="review-title">
         <a class="card-anchor" href="#review" aria-label="Link to this section" title="Link to this section">#</a>
-        <h2 id="review-title">Review by organization</h2>
+        <h2 id="review-title">Contribution by organization</h2>
         <p id="review-sub" class="sub"></p>
         <template data-msg="review-sub">
           <span data-if="!weeks">No review data in this range.</span>
           <span data-if="weeks"><slot name="metric"></slot> per week<span data-if="smoothed">, as a <slot name="smoothing"></slot> running average</span>,
-            for each organization with at least <slot name="min"></slot> of the range's review comments; the rest are
-            “Other”.</span>
+            for each organization with at least <slot name="min"></slot> of the range's review comments or commits; the
+            rest are “Other”.</span>
         </template>
         <div class="toggles">
           <fieldset id="review-scale" class="segmented chart-toggle">
             <legend>Scale</legend>
             <label><input type="radio" name="review-scale" value="log" />Log, all organizations</label>
             <label><input type="radio" name="review-scale" value="linear" />Linear, without google.com</label>
+          </fieldset>
+          <fieldset id="review-ratio" class="segmented chart-toggle">
+            <legend>Ratio</legend>
+            <label><input type="radio" name="review-ratio" value="off" />Off</label>
+            <label><input type="radio" name="review-ratio" value="on" />On</label>
           </fieldset>
           <div class="dir-filter chart-toggle">
             <label for="review-dir">Directory</label>
@@ -204,6 +213,9 @@
             <datalist id="dir-options"></datalist>
           </div>
         </div>
+        <p id="review-ratio-note" class="sub" hidden></p>
+        <!-- With Commits chosen, the ratio is addressed comments over commits. -->
+        <template data-msg="review-ratio-note">Ratio shows <slot name="metric"></slot> over commits.</template>
         <p id="review-dir-note" class="sub" hidden></p>
         <template data-msg="review-dir-note">
           Showing <slot name="dir"></slot>.
@@ -213,6 +225,8 @@
           <span data-if="scope=part">It counts every comment in this directory and below, including the
             <slot name="part"></slot> on paths the rest of the page leaves out.</span>
           <span data-if="m=cls">A CL with comments in two of its subdirectories counts in each.</span>
+          <span data-if="m=commits">A commit touching two of its subdirectories counts in each.</span>
+          <span data-if="ratio">Commits count every commit touching it too.</span>
         </template>
         <div class="chart">
           <canvas id="review-chart" role="img" aria-label="Weekly review count per organization over the selected date range; the table below lists the totals."></canvas>
@@ -225,11 +239,15 @@
             <li>only on human-owned CLs, so autorolls and other bot CLs are left out;</li>
             <li>not from bot or AI-agent accounts, nor owners on their own CLs (a reviewer's AI-assisted comments
               count as theirs);</li>
-            <li>only on the paths listed under <a href="#areas">Review by directory</a>.</li>
+            <li>only on the paths listed under <a href="#areas">Contribution by directory</a>.</li>
           </ul>
           <p>Votes with no comment, such as a bare +1, don't count: they don't show how much review went into them.</p>
+          <p><strong>Commits</strong> are the other side: commits on <code>main</code> (from Chromium's git history)
+            that touch at least one of those paths, each in the week it landed and credited to its git author.
+            Commits of bot-owned CLs, such as autorolls, are left out.</p>
           <p><strong>Organization.</strong> Each reviewer's organization as of the comment's date (for reviewed CLs,
-            the close date), by the first rule that applies:</p>
+            the close date), and each commit author's as of the day the commit landed, by the first rule that
+            applies:</p>
           <ol>
             <li>their affiliation in Chromium's
               <a target="_blank" rel="noopener" href="https://chromium.googlesource.com/chromium/src/+/main/third_party/blink/tools/commit_stats/affiliations.json5"><code>affiliations.json5</code></a>,
@@ -296,6 +314,10 @@
             <div class="tile-label">Post-merge comments</div><div class="tile-value"></div><div class="tile-sub"></div>
             <template data-msg="tile-post"><slot name="share"></slot> of review comments; written after the CL landed</template>
           </div>
+          <div class="tile" id="tile-commits" hidden>
+            <div class="tile-label">Commits</div><div class="tile-value"></div><div class="tile-sub"></div>
+            <template data-msg="tile-commits">landed on the selected paths, by human authors</template>
+          </div>
         </div>
       </section>
 
@@ -306,11 +328,11 @@
         <template data-msg="table-caption">
           <span data-if="!weeks">No review data in this range.</span>
           <span data-if="weeks">
-            <span data-if="multi">Totals over the range (reviewers: distinct people). Review share is of all
+            <span data-if="multi">Totals over the range (reviewers: distinct people). Share is of all
               <slot name="metric"></slot> in the range; usage share is the mean weekly share of Chromium browser
               usage.</span>
             <span data-if="!multi">Share of <slot name="metric"></slot> and of Chromium browser usage.</span><span data-if="omitted">
-            Showing the top <slot name="top"></slot> organizations by review share, plus those with a browser;
+            Showing the top <slot name="top"></slot> organizations by share, plus those with a browser;
             <slot name="omitted"></slot> smaller <span data-if="omitted=1">one is</span><span data-if="omitted!=1">ones are</span>
             omitted.</span>
             <span data-if="skippedN">
@@ -323,7 +345,7 @@
             <thead>
               <tr>
                 <th scope="col">Org</th>
-                <th scope="col">Review share</th>
+                <th scope="col">Share</th>
                 <th scope="col">Usage share</th>
                 <th scope="col">Ratio</th>
                 <th scope="col">Reviewers</th>
@@ -333,6 +355,7 @@
                 <th scope="col">Review chars</th>
                 <th scope="col">AI comments</th>
                 <th scope="col">Post-merge comments</th>
+                <th scope="col">Commits</th>
               </tr>
             </thead>
             <tbody></tbody>
@@ -407,13 +430,13 @@
 
       <section id="areas" class="card" aria-labelledby="areas-title">
         <a class="card-anchor" href="#areas" aria-label="Link to this section" title="Link to this section">#</a>
-        <h2 id="areas-title">Review by directory</h2>
+        <h2 id="areas-title">Contribution by directory</h2>
         <p id="areas-sub" class="sub"></p>
         <template data-msg="areas-sub">
           <span data-if="!total">No review data in this range.</span>
-          <span data-if="total"><span data-if="m=addressed">Addressed review comments</span><span data-if="m=comments">Every review comment</span><span data-if="m=chars">Review characters, from every comment</span><span data-if="m=cls">CLs closed with review comments</span> by the directory of the file each comment is on, split by organization.
+          <span data-if="total"><span data-if="m=addressed">Addressed review comments</span><span data-if="m=comments">Every review comment</span><span data-if="m=chars">Review characters, from every comment</span><span data-if="m=cls">CLs closed with review comments</span><span data-if="m!=commits"> by the directory of the file each comment is on</span><span data-if="m=commits">Every commit, by the directories of the files it touches</span>, split by organization.
             <slot name="share"></slot> of them (<slot name="counted"></slot> of <slot name="total"></slot>) are included
-            in the value analysis.<span data-if="m=cls"> A CL with comments in two directories counts in each.</span></span>
+            in the value analysis.<span data-if="m=cls"> A CL with comments in two directories counts in each.</span><span data-if="m=commits"> A commit touching two directories counts in each.</span></span>
         </template>
         <ul id="areas-legend" class="legend" aria-label="Segment colour by organization"></ul>
         <div class="ar-wrap">
@@ -432,8 +455,9 @@
           <details id="scope-paths" class="scope-paths">
           <summary><strong>Which paths count</strong></summary>
           <p>
-            The value ratio, organization chart, table, per-reviewer charts and
-            leaderboard count only comments on the paths below (the longest matching rule wins). Google's own products
+            The value ratio, organization chart, table, per-person charts and
+            leaderboard count only comments on the paths below, and commits touching them (the longest matching rule
+            wins). Google's own products
             are left out, except a few directories inside them that hold shared platform work, often with owners from
             other companies.
           </p>
@@ -496,7 +520,7 @@
 
       <section id="heatmap" class="card" aria-labelledby="heat-title">
         <a class="card-anchor" href="#heatmap" aria-label="Link to this section" title="Link to this section">#</a>
-        <h2 id="heat-title">Review by directory over time</h2>
+        <h2 id="heat-title">Contribution by directory over time</h2>
         <p id="heat-sub" class="sub"></p>
         <template data-msg="heat-sub">
           <span data-if="!weeks">No review data in this range.</span>
@@ -505,8 +529,9 @@
             With several organizations, each cell splits the directory's <slot name="metric"></slot> across them,
             as a column scaled to the row's busiest (Volume) or filling the cell (Share). With one organization, each
             cell is shaded by its <slot name="metric"></slot> (Volume, on a square-root scale so small directories
-            still show) or its share of the directory's (Share). Hover a cell for its numbers and top
-            reviewers; click it to open those CLs on Gerrit.<span data-if="m=cls"> A CL with comments in two directories counts in each.</span></span>
+            still show) or its share of the directory's (Share). Hover a cell for its numbers and most active
+            <span data-if="m!=commits">reviewers</span><span data-if="m=commits">authors</span>; click it to open those
+            CLs on Gerrit.<span data-if="m=cls"> A CL with comments in two directories counts in each.</span><span data-if="m=commits"> A commit touching two directories counts in each.</span></span>
         </template>
         <div class="toggles">
           <div class="select-toggle chart-toggle">
@@ -541,33 +566,33 @@
 
       <section id="distribution" class="card" aria-labelledby="dist-title">
         <a class="card-anchor" href="#distribution" aria-label="Link to this section" title="Link to this section">#</a>
-        <h2 id="dist-title">Reviews per reviewer</h2>
+        <h2 id="dist-title">Contribution per person</h2>
         <p id="dist-sub" class="sub"></p>
         <template data-msg="dist-sub">
           <span data-if="!weeks">No reviewer data in this range.</span>
-          <span data-if="weeks">Each reviewer's <slot name="metric"></slot> over the range, on a log scale: one dot
-            per reviewer, in the row of the organization most of their comments were for (organizations with at least
-            <slot name="min"></slot> of the range's review comments; the rest, including personal addresses, are
-            “Other”). Boxes span the middle half of a row's reviewers, with a thick line at the median (rows of five
-            or more reviewers).
+          <span data-if="weeks">Each person's <slot name="metric"></slot> over the range, on a log scale: one dot
+            per person, in the row of the organization most of their <span data-if="m!=commits">comments</span><span data-if="m=commits">commits</span>
+            were for (organizations with at least <slot name="min"></slot> of the range's review comments or commits;
+            the rest, including personal addresses, are “Other”). Boxes span the middle half of a row's people, with a
+            thick line at the median (rows of five or more people).
             <span data-if="m=addressed">Everyone with a review comment counts, so those with none addressed sit at
               0.</span>
-            <span data-if="m!=addressed">Reviewers with no <slot name="metric"></slot> are left out.</span>
-            Hover a dot for the reviewer; click it for their weekly chart.</span>
+            <span data-if="m!=addressed">People with no <slot name="metric"></slot> are left out.</span>
+            Hover a dot for the person; click it for their weekly chart.</span>
         </template>
         <div id="dist-box" class="chart">
-          <canvas id="dist-chart" role="img" aria-label="Each reviewer's total for the metric over the selected range, one row of dots per organization, with each row's middle half boxed and its median marked; the table below lists the figures"></canvas>
+          <canvas id="dist-chart" role="img" aria-label="Each person's total for the metric over the selected range, one row of dots per organization, with each row's middle half boxed and its median marked; the table below lists the figures"></canvas>
         </div>
         <div class="table-wrap">
           <table id="dist-table" class="dist-table" aria-labelledby="dist-title">
             <thead>
               <tr>
                 <th scope="col">Org</th>
-                <th scope="col">Reviewers</th>
+                <th scope="col">People</th>
                 <th scope="col">25th percentile</th>
                 <th scope="col">Median</th>
                 <th scope="col">75th percentile</th>
-                <th scope="col">Top 10% of reviewers' share</th>
+                <th scope="col">Top 10%'s share</th>
                 <th scope="col">Total</th>
               </tr>
             </thead>
@@ -616,15 +641,14 @@
 
       <section id="per-review" class="card" aria-labelledby="pr-title">
         <a class="card-anchor" href="#per-review" aria-label="Link to this section" title="Link to this section">#</a>
-        <h2 id="pr-title">Review comments per review</h2>
-        <!-- The heading, and the values' name mid-sentence. With Reviewed CLs chosen, this chart shows review comments per review. -->
-        <template data-msg="pr-title"><slot name="name"></slot> per review</template>
+        <!-- With Reviewed CLs or Commits chosen, this chart shows review comments per review. -->
+        <h2 id="pr-title">Review depth</h2>
         <p id="pr-sub" class="sub"></p>
         <template data-msg="pr-sub">
           <span data-if="!weeks">No reviewer data in this range.</span>
           <span data-if="weeks">Each reviewer's <slot name="metric"></slot> over the range divided by
             the CLs they commented on, which likely reflects how thorough they are or how complex their CLs are. Dots,
-            rows and boxes are as in Reviews per reviewer. Only reviewers with at least <slot name="min"></slot>
+            rows and boxes are as in Contribution per person. Only reviewers with at least <slot name="min"></slot>
             reviewed CLs count, so one CL doesn't decide a dot<span data-if="m=addressed">; those with none addressed
             sit at 0, and the few above <slot name="cap"></slot> sit in the right margin</span>.
             “All reviews” pools the whole row (its total over its reviews), so busy reviewers weigh more. The range's
@@ -653,13 +677,14 @@
 
       <section id="leaderboard" class="card" aria-labelledby="leaderboard-title">
         <a class="card-anchor" href="#leaderboard" aria-label="Link to this section" title="Link to this section">#</a>
-        <h2 id="leaderboard-title">Reviewer leaderboard</h2>
+        <h2 id="leaderboard-title">Leaderboard</h2>
         <p id="leaderboard-sub" class="sub"></p>
         <template data-msg="leaderboard-sub">
           <span data-if="!weeks">No reviewer data in this range.</span>
           <span data-if="weeks"><slot name="name"></slot><span data-if="multi"> in total</span>
-            for the top reviewers in the chosen organizations (“Other” is every organization below
-            <slot name="min"></slot> of the range's review comments), counted as in Review by organization.</span>
+            for the top people in the chosen organizations (“Other” is every organization below
+            <slot name="min"></slot> of the range's review comments and commits), counted as in Contribution by
+            organization.</span>
         </template>
         <div class="toggles">
           <div class="select-toggle chart-toggle">
@@ -691,16 +716,18 @@
           </div>
           <p id="rd-sub" class="sub"></p>
           <template data-msg="rd-sub">
-            <slot name="total"></slot> review comments in the range<span data-if="classified">;
+            <span data-if="commits"><slot name="commits"></slot> commits (the dashed line) and </span><slot name="total"></slot>
+            review comments in the range<span data-if="classified">;
             <slot name="addressed"></slot> addressed in the <span data-if="!all"><slot name="classified"></slot> classified </span>week<span data-if="classified!=1">s</span><span data-if="all"> shown</span>
             (the filled bars).</span><span data-if="!classified">. No week in this range is classified yet, so only
             review comments are shown.</span>
             Comments that led to no change aren't a bad sign: questions are part of good review.
           </template>
           <div class="chart">
-            <canvas id="reviewer-chart" role="img" aria-label="The selected reviewer's review comments and addressed comments per week"></canvas>
+            <canvas id="reviewer-chart" role="img" aria-label="The selected person's review comments, addressed comments and commits per week"></canvas>
           </div>
           <p class="rd-gerrit"><a id="rd-gerrit" target="_blank" rel="noopener">Open the CLs they commented on in this range on Gerrit</a></p>
+          <p class="rd-gerrit" hidden><a id="rd-gerrit-own" target="_blank" rel="noopener">Open their merged CLs in this range on Gerrit</a></p>
         </div>
       </section>
 
@@ -713,7 +740,8 @@
         Usage data: Cloudflare Radar, <slot name="usage"></slot> onward.
       </template>
       <p>
-        Review data from Chromium Gerrit (<code>chromium/src</code>, branch <code>main</code>); usage data from
+        Review data from Chromium Gerrit (<code>chromium/src</code>, branch <code>main</code>), commits from its git
+        history; usage data from
         <a target="_blank" rel="noopener" href="https://radar.cloudflare.com/">Cloudflare Radar</a> (CC BY-NC 4.0).
       </p>
       <p class="fine-print">

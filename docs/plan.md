@@ -179,10 +179,14 @@ value_ratio(O, t) = O's share of Chromium addressed review comments
 | 2026-11-07 | **Ground rule 5 relaxed: the code may name people, our pages never do for negative tone.** `cosh.sentiment_people` (identities on every collected comment) and prompts v1/v2 are now public. The Review Tone page gains the last two months in full (tiles, week-by-week table, score distribution), "who makes whom happy" (CL authors who draw glowing comments from many reviewers, and vice versa: counts only), an anonymous AI-friction list (text, month, role; 313 of 535 flagged comments shown after the screen and length/link filters) and the prompt. The praise and happy boards switch between all scored weeks and the past month (last 4 weeks), top 15 or top 100 (shorter when fewer people qualify). `cosh.sentiment_recent` writes `summaries/sentiment_recent.json` | User's instruction: "it's ok if it's easy for others to modify it to point out specific people, we should just never do so in our UI". Gold sets and per-comment model reasons stay out of the repo, since they tie negative labels to specific comments |
 | 2026-11-07 | **Patch-set fetch timing test**: 4 full (no filter) fetches of random W44 CLs into a new repo, `data/private/git/chromium-patchsets.git` (borrows `main` from the shared clone; the pilot repo already holds W44's commits, so git would skip them there). Glob refspecs, extract lock, 15 s apart, `scripts/patchset_fetch_timing.py`, logs in `data/private/patchset-timing-20261107*`. 100 CLs: 25 s and 29 s; 300: 92 s; 1,000 CLs (4,608 patch sets): **72 s**, 155 MiB. Of the 72 s, about 23 s is listing refs and negotiation (11 s of `ls-refs` alone for 100 CLs), 17 s the server counting objects, 21 s transfer at 5–7 MiB/s. The time per request is mostly fixed, so 1,000 CLs per request is about 4× faster per CL than 100. Nothing reachable from the 7,016 new refs is missing: every unlanded blob came over. Git sent `main`'s tip as the have, but the server excludes only what's in each patch set's parent tree, so it re-sent blobs and trees that landed later: `repack -a -d -l` shrank 245 MB (69k objects) to 67 MB (12k objects), about 9.5 KB per patch set. That repack took 4.6 min of local CPU. Extrapolated by patch-set count, untested on old weeks: all 3.45M patch sets ≈ 15 h of fetching, ≈ 120 GB over the wire, ≈ 33 GB on disk after repacking; CLs with human review (2.0M patch sets) ≈ 9 h, ≈ 70 GB, ≈ 19 GB. Arrival is ~3.7× the final size, so it needs a repack every ~30 GB. Untested idea for less wire: also send each merged CL's landed `main` commit as a have | User approved a timing test of 3–4 fetches after asking why this isn't as fast as a clone |
 | 2026-11-07 | **Committer status from the listings we hold.** `derive` fills a new `committers` table: an account is a committer if Gerrit lets it vote Code-Review (`permitted_voting_range` on any listing), and not one if it lacks a range on an open or abandoned CL. Newest listing wins. It is the status when the listings were fetched (Nov 3–5), used for comments of every date. Last year: 98.7% of non-bot comments by committers, 0.9% by non-committers, 0.4% unknown. Details in `docs/committers.md` | User's choice of the snapshot over vote-dated status: about 1% of last year's comments may be misplaced (2.5% over 3 years, former committers). Spam comes from non-committers |
+| 2026-11-07 | **Commits: a fifth Value Exchange metric, credited to the git author** (`docs/commits.md`). `cosh commits` (and the end of a full `derive`) reads `main`'s first-parent history from the local shared clone, offline, into derived.sqlite's `commits` and `commit_dirs` (about 1 min). A commit is a bot's if its CL is bot-owned or its git author matches `config/bots.txt` (a WebLayer builder authored 739 commits on human-owned CLs). `summarize` adds `commits`, `authors` and `share_commits` to `org_weekly` and writes `author_weekly.json`, `area_commits.json` and `area_authors.json`, which the page fetches only for Commits or Ratio (+31 KB gzipped on every visit; 1.8 MB, then 3.4 MB for links, on demand). Sections are renamed to fit either side and no heading changes with the metric: Contribution by organization / by directory / by directory over time / per person, Leaderboard, Review depth (was "<metric> per review"). The organization chart gets a **Ratio** toggle (Off by default): the review metric over commits, addressed comments over commits under Commits. Named orgs now need 0.25% of review comments *or* commits | User's instruction: "use commit author, count commits, show it as a 5th button", rename sections so they suit either, keep section names stable, add the Ratio toggle |
 
 ## Status
 
 **Done**
+- Commits, the author-side metric (2026-11-07): `cosh commits`, the
+  summaries and the Commits button and Ratio toggle on the Value Exchange
+  page. See `commits.md`.
 - Addressed comments (metric_version 7), the primary metric: thread
   structure in `derive`, the `cosh classify` step (Haiku via `claude -p`,
   `labels.sqlite`), the summaries and the UI. The whole year 2025-W45 ..
@@ -361,12 +365,10 @@ value_ratio(O, t) = O's share of Chromium addressed review comments
    review difficulty and rework, each against what is typical for the
    directories it touches. Waiting on the user's decisions listed there
    (per-person views, patch-set fetches beyond W44, mechanical CLs).
-8. **Explore: commits as an author-side metric** (`docs/commits.md`,
-   2026-11-07). Landed human commits per org from local `main` history,
-   path-scoped, in 95 s for all 175 weeks. Last year non-Google is 12.8% of
-   commits against 11.9% of addressed comments, but per org it differs:
-   Igalia 2.0% vs 0.4%, Microsoft 5.1% vs 8.5%. Not built; waiting on the
-   user's choices listed there.
+8. **Commits** (`docs/commits.md`): built 2026-11-07 as the fifth metric,
+   with the Ratio toggle. Open: lines changed as a size-weighted variant
+   (about an hour of local `--numstat`), and whether authorship also belongs
+   on the balance page.
 9. Later:
    - the OWNER bit;
    - years 2–5 of backfill;

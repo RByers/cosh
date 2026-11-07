@@ -147,7 +147,10 @@ regex plus Claude Haiku (`cosh classify`).
   removing it yourself triggers a permission prompt.
 - `data/private/derived.sqlite` can always be rebuilt with
   `rm data/private/derived.sqlite && python3 -m cosh derive` (about 9 min
-  for 666k CLs, 2026-11-04, threads included). It is the only derived DB: older versions (`cosh.sqlite`,
+  for 666k CLs, 2026-11-04, threads included). A full `derive` ends by
+  rebuilding the commits tables from the shared Chromium clone (`python3 -m
+  cosh commits` on its own, about 1 min, offline: it never fetches;
+  `docs/commits.md`). It is the only derived DB: older versions (`cosh.sqlite`,
   metric_versions 1–2; `derived.sqlite` before metric_version 5) were
   deleted on 2026-11-04, and `open_derived` refuses a pre-v5 file.
 - Never delete `data/private/raw.sqlite` or `data/private/notedb/`. Those

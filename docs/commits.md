@@ -1,7 +1,8 @@
 # Commits: an author-side metric for Value Exchange
 
-Status: exploration, 2026-11-07. Nothing here is in `summarize` or the UI
-yet.
+Status: built 2026-11-07 as the Value Exchange page's fifth metric
+("Commits"), with a Ratio toggle on the organization chart. "If we build it"
+below was the plan; "As built" says what shipped.
 
 Every Value Exchange metric today credits the **reviewer**. This note tries
 the classic other side: commits landed on `main`, credited to their
@@ -96,7 +97,45 @@ the gap between them is steady.
   Gerrit records the sponsor, so an author metric can only credit the
   author's employer, as the review metrics do.
 
-## If we build it
+## As built (2026-11-07)
+
+The user chose: credit the git author, count commits (not lines), and add a
+fifth metric button.
+
+- **`python3 -m cosh commits`** (`cosh/commits.py`) rebuilds two tables of
+  `derived.sqlite` from the local clone, offline: `commits` (sha, CL from
+  the `Reviewed-on:` footer, git author, landing time, week, bot flag, file
+  count) and `commit_dirs` (each directory a commit touches). About 1 min
+  for 2023-W26 onward. A full `derive` runs it at its end; a per-week
+  derive (backfill) doesn't.
+- **Bots:** a commit is a bot's if its CL is bot-owned *or* its git author
+  matches `config/bots.txt`. The second rule was added after the page named
+  `chops-service-accounts.iam.gserviceaccount.com` as an org: a WebLayer
+  builder authored 739 commits on CLs that people own.
+- **`summarize`** adds `commits`, `authors` (distinct git emails) and
+  `share_commits` to `org_weekly`, and writes three files the page loads
+  only when Commits or Ratio is chosen: `author_weekly.json` (per author
+  and week; the account is the Gerrit account with the git author's email,
+  else the CL owner's), `area_commits.json` (per directory bucket, every
+  commit, in scope or not, once in each bucket it touches) and
+  `area_authors.json` (who made them, for the directory links, which search
+  `owner:` and `status:merged`). Folded into the review files they would
+  have doubled what every visit loads (commits touch far more directories
+  than comments do); kept apart, every visit loads 31 KB more (gzipped).
+- **The page:** a "Commits" button, a Commits tile and table column. Every
+  section works under Commits; Review complexity and Review depth show
+  review comments, as they do for Reviewed CLs. Sections were renamed so
+  they fit either side, and no heading changes with the metric anymore:
+  Contribution by organization, Contribution by directory (and over time),
+  Contribution per person, Leaderboard, Review depth. Orgs are named in the
+  charts if they have 0.25% of review comments *or* of commits.
+- **Ratio** (organization chart, Off by default): the chosen review metric
+  ÷ commits per org and week (addressed comments ÷ commits under Commits),
+  "Ratio shows … over commits". Last year (2025-W45 .. 2026-W44),
+  addressed comments per commit: opera.com 2.74, microsoft.com 2.18,
+  intel.com 1.56, google.com 1.31, igalia.com 0.26, Other 0.16.
+
+## The plan before building
 
 1. `cosh commits` (or a step in `derive`): one row per `main` commit into
    `derived.sqlite`: sha, CL, author email, landed week, bot flag, in-scope

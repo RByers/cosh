@@ -1,5 +1,5 @@
 // "Review complexity by directory over time": the same directory rows and
-// time columns as "Review by directory over time" (heatmap.ts), each cell
+// time columns as "Contribution by directory over time" (heatmap.ts), each cell
 // shaded by the metric per review there (complexityGrid in data.ts). Cells
 // with too few reviews to trust stay grey. Under Volume, cells are shaded by
 // their reviews instead, to show what the figures rest on.

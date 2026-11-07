@@ -1,4 +1,4 @@
-// The reviewer leaderboard as HTML: one link per reviewer over a gridline
+// The leaderboard as HTML: one link per reviewer over a gridline
 // layer. A CSS grid gives the axis labels, the gridlines and the bars the same
 // plot column (the rows use subgrid), so bar ends and gridlines line up at any
 // width without measuring anything. Real links and text mean middle-click,
@@ -29,6 +29,8 @@ export function buildLeaderboard(
   colorOf: (org: string) => string | undefined,
   selected: number | null,
   onSelect: (id: number) => void,
+  /** The rows are commit authors. */
+  commits = false,
 ): void {
   const fmt = (v: number) => fmtInt(v);
   if (!rows.length) {
@@ -66,7 +68,8 @@ export function buildLeaderboard(
       row.addEventListener('click', () => onSelect(r.id));
       // Hover card: the email stands for name and org (a name only without one).
       row.title = `${i + 1}. ${r.email ?? `${r.name} (${r.org})`}\n${fmt(r.value)} ${unit}` +
-        '\nShows their comments week by week, with a link to them on Gerrit';
+        (commits ? '\nShows their commits and comments week by week, with links to them on Gerrit'
+          : '\nShows their comments week by week, with a link to them on Gerrit');
       const color = colorOf(r.org);
       const label = node('span', 'lb-label');
       label.append(

@@ -350,7 +350,7 @@ export function parityBounds(points: ParityPoint[]): { min: number; max: number 
   return { min, max: max > min ? max : min * 10 };
 }
 
-/** Review share against usage share over the range, one point per org, both
+/** Contribution share against usage share over the range, one point per org, both
  * on log axes with the same bounds. The diagonal y = x is a 1.0× value ratio:
  * orgs above it review more than their usage share, those below less. Orgs
  * with no review in the range have no place on a log scale, so, as on the
@@ -529,20 +529,24 @@ export type ReviewScale = 'log' | 'linear';
 export function renderReviewChart(
   canvas: HTMLCanvasElement,
   weeks: string[],
-  series: { org: string; values: number[] }[],
+  /** Null values are gaps (a ratio's weeks with nothing to divide by). */
+  series: { org: string; values: (number | null)[] }[],
   /** The metric mid-sentence, e.g. "review comments". */
   unit: string,
   colors: Map<string, string>,
   theme: Theme,
   scale: ReviewScale = 'log',
+  /** The values are weekly counts ("per week" on the axis), not ratios. */
+  perWeek = true,
 ): Chart<'line'> {
   const log = scale === 'log';
-  const fmt = (v: number) => fmtNum(v, { maximumFractionDigits: v < 10 ? 1 : 0 });
-  const logFloor = logAxisFloor(series.flatMap((s) => s.values));
+  const fmt = (v: number) => fmtNum(v, { maximumFractionDigits: v < 10 ? (perWeek ? 1 : 2) : 0 });
+  const logFloor = logAxisFloor(series.flatMap((s) => s.values.filter((v): v is number => v !== null)));
+  const axisTitle = perWeek ? `${unit} per week` : unit;
   const datasets = series.map((s) => {
     const own = s.org === OTHER ? undefined : colors.get(s.org);
     // Chart.js's log scale skips zeros, so they're plotted at the floor.
-    const data = log ? s.values.map((v) => (v > 0 ? v : logFloor)) : s.values;
+    const data = log ? s.values.map((v) => (v === null ? null : v > 0 ? v : logFloor)) : s.values;
     // `counts`: the true values, for the tooltip. A named org without a
     // colour of its own is grey like Other, but dashed, so it reads apart.
     const dash = s.org !== OTHER && !own ? { borderDash: [6, 3] } : {};
@@ -559,10 +563,11 @@ export function renderReviewChart(
         ...base.plugins,
         tooltip: {
           ...base.plugins.tooltip,
-          itemSort: (a, b) => count(b) - count(a),
+          itemSort: (a, b) => (count(b) ?? -1) - (count(a) ?? -1),
+          filter: (item) => count(item) !== null,
           callbacks: {
             title: weekTooltipTitle,
-            label: (ctx) => `${fmt(count(ctx))}  ${ctx.dataset.label}`,
+            label: (ctx) => `${fmt(count(ctx) ?? 0)}  ${ctx.dataset.label}`,
           },
         },
       },
@@ -572,7 +577,7 @@ export function renderReviewChart(
           ? {
               type: 'logarithmic',
               min: logFloor,
-              title: { display: true, text: `${unit} per week (log scale)`, color: theme.muted },
+              title: { display: true, text: `${axisTitle} (log scale)`, color: theme.muted },
               border: { display: false },
               grid: { color: theme.grid },
               afterBuildTicks: (axis) => {
@@ -584,7 +589,7 @@ export function renderReviewChart(
           : {
               type: 'linear',
               beginAtZero: true,
-              title: { display: true, text: `${unit} per week`, color: theme.muted },
+              title: { display: true, text: axisTitle, color: theme.muted },
               border: { display: false },
               grid: { color: theme.grid },
               ticks: { color: theme.muted, callback: (v) => fmt(Number(v)) },
@@ -680,8 +685,14 @@ export function renderReviewerChart(
   addressed: (number | null)[],
   color: string,
   theme: Theme,
+  /** Their commits per week, drawn as a line; null if not loaded. */
+  commits: number[] | null = null,
 ): Chart<'bar'> {
   const base = baseOptions(theme);
+  const commitLine = commits && commits.some((v) => v > 0)
+    ? [{ type: 'line' as const, label: 'Commits', data: commits, borderColor: theme.text, backgroundColor: theme.text,
+        borderWidth: 1.5, borderDash: [4, 3], pointRadius: 0, order: -1 }]
+    : [];
   return new Chart(canvas, {
     type: 'bar',
     data: {
@@ -690,6 +701,8 @@ export function renderReviewerChart(
         { label: 'Addressed comments', data: addressed, backgroundColor: color, borderWidth: 0, order: 0 },
         { label: 'Review comments', data: comments, backgroundColor: theme.grid, borderColor: theme.muted,
           borderWidth: 1, order: 1 },
+        // A line on the bar chart; Chart.js types a mixed chart's datasets loosely.
+        ...(commitLine as unknown as { label: string; data: number[] }[]),
       ],
     },
     options: {
@@ -711,7 +724,7 @@ export function renderReviewerChart(
         y: {
           stacked: false,
           min: 0,
-          title: { display: true, text: 'comments per week', color: theme.muted },
+          title: { display: true, text: commitLine.length ? 'per week' : 'comments per week', color: theme.muted },
           border: { display: false },
           grid: { color: theme.grid },
           ticks: { color: theme.muted, precision: 0 },

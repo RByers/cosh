@@ -562,3 +562,96 @@ class SummarizeTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class CommitsTest(unittest.TestCase):
+    """cosh commits (a local git repo, no network) and the commits metric in summarize."""
+
+    def make_repo(self, d):
+        import subprocess
+        repo = os.path.join(d, "repo")
+        os.makedirs(repo)
+        env = dict(os.environ, GIT_CONFIG_GLOBAL=os.devnull, GIT_CONFIG_NOSYSTEM="1")
+
+        def git(*args, **extra):
+            subprocess.run(["git", "-C", repo, *args], check=True, capture_output=True, env=dict(env, **extra))
+        git("init", "-q", "-b", "main")
+        for i, (email, date, files, cl) in enumerate([
+                ("old@intel.com", "2023-01-02T12:00:00Z", ["content/old.cc"], 99),   # before the fetched weeks
+                ("A@igalia.com", "2026-10-27T10:00:00Z", ["content/a.cc", "chrome/browser/ui/x.cc"], 100),
+                ("chromium-autoroll@skia-public.iam.gserviceaccount.com", "2026-10-27T11:00:00Z", ["DEPS"], 101),
+                ("b@google.com", "2026-10-27T12:00:00Z", ["chrome/browser/ui/y.cc"], 102),
+                ("c@intel.com", "2026-10-28T12:00:00Z", ["content/b.cc", "content/c.cc"], 103)]):
+            for f in files:
+                os.makedirs(os.path.dirname(os.path.join(repo, f)) or repo, exist_ok=True)
+                with open(os.path.join(repo, f), "a") as fh:
+                    fh.write(f"{i}\n")
+            git("add", "-A")
+            git("commit", "-q", "-m", f"Change {i}\n\nReviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/{cl}",
+                GIT_AUTHOR_NAME=f"Author {i}", GIT_AUTHOR_EMAIL=email, GIT_COMMITTER_NAME="CQ",
+                GIT_COMMITTER_EMAIL="cq@luci", GIT_AUTHOR_DATE=date, GIT_COMMITTER_DATE=date)
+        return repo
+
+    def test_commits_table_and_summaries(self):
+        from cosh.commits import build_commits
+        with tempfile.TemporaryDirectory() as d:
+            repo = self.make_repo(d)
+            summary_db(d, [(1, "owner@igalia.com"), (2, "rev@microsoft.com"), (5, "a@igalia.com"),
+                           (6, "c-gerrit@intel.com")],
+                       [(2, 1, 0, 0)], cls={100: "content/a.cc", 102: None, 103: None})
+            db = store.open_derived(d)
+            with db:
+                db.execute("UPDATE changes SET is_bot_owned = 1 WHERE change_number = 102")
+                db.execute("UPDATE changes SET owner_account = 6 WHERE change_number = 103")
+                db.execute("INSERT INTO meta VALUES ('fetched_weeks', '[\"2026-W44\"]')")
+            build_commits(db, repo)
+            commits = db.execute("SELECT change_number, author_email, iso_week, is_bot, n_files FROM commits "
+                                 "ORDER BY commit_id").fetchall()
+            dirs = db.execute("SELECT commit_id, dir, n_files FROM commit_dirs ORDER BY 1, 2").fetchall()
+            db.close()
+            out = os.path.join(d, "s")
+            rows = summarize(data_dir=d, out_dir=out)
+            files = {}
+            for name in ("author_weekly", "area_commits", "area_authors", "area_weekly", "reviewer_weekly"):
+                with open(os.path.join(out, f"{name}.json")) as fh:
+                    files[name] = json.load(fh)
+        # Newest first; only since the oldest fetched week's Monday; emails lowercased.
+        # The autoroller's CL isn't in derived.sqlite: its email marks it a bot.
+        self.assertEqual(commits, [(103, "c@intel.com", "2026-W44", 0, 2),
+                                   (102, "b@google.com", "2026-W44", 1, 1),
+                                   (101, "chromium-autoroll@skia-public.iam.gserviceaccount.com", "2026-W44", 1, 1),
+                                   (100, "a@igalia.com", "2026-W44", 0, 2)])
+        self.assertEqual(dirs, [(1, "content/", 2), (2, "chrome/browser/ui/", 1), (3, ROOT_FILES, 1),
+                                (4, "chrome/browser/ui/", 1), (4, "content/", 1)])
+        # Commits touching an in-scope file count for the git author's org;
+        # orgs with commits but no review get rows too.
+        by_org = {r["org"]: (r["comments"], r["commits"], r["authors"], r["share_commits"]) for r in rows}
+        self.assertEqual(by_org, {"microsoft.com": (1, 0, 0, 0.0), "intel.com": (0, 1, 1, 0.5),
+                                  "igalia.com": (0, 1, 1, 0.5)})
+        # Authors: the Gerrit account with the git author's email, else the CL owner.
+        a = files["author_weekly"]
+        self.assertEqual(a["meta"]["columns"], ["account_id", "org", "commits"])
+        self.assertEqual(sorted((r[0], a["orgs"][r[1]], r[2]) for r in a["weeks"]["2026-W44"]),
+                         [(5, "igalia.com", 1), (6, "intel.com", 1)])
+        self.assertEqual(a["emails"], {"5": "a@igalia.com", "6": "c-gerrit@intel.com"})
+        # The reviewers' file is unchanged by commits.
+        self.assertEqual([r[0] for r in files["reviewer_weekly"]["weeks"]["2026-W44"]], [2])
+        # By directory: every human commit, in scope or not, once per bucket it touches.
+        areas = files["area_weekly"]
+        paths = []
+        for parent, label, _ in areas["nodes"]:
+            paths.append(label if parent < 0 else paths[parent] + label)
+        self.assertEqual(files["area_commits"]["meta"]["areas_generated_at"], areas["meta"]["generated_at"])
+        got = sorted((paths[n], areas["orgs"][o], c) for n, o, c in files["area_commits"]["weeks"]["2026-W44"])
+        # chrome/browser/ui/ is a node: rule directories and their parents always are.
+        self.assertEqual(got, [("chrome/browser/ui/", "igalia.com", 1), ("content/", "igalia.com", 1),
+                               ("content/", "intel.com", 1)])
+        self.assertEqual(sorted((paths[r[0]], r[2:]) for r in files["area_authors"]["weeks"]["2026-W44"]),
+                         [("chrome/browser/ui/", [5, 1]), ("content/", [5, 1]), ("content/", [6, 1])])
+
+    def test_summarize_metric_commits(self):
+        with tempfile.TemporaryDirectory() as d:
+            summary_db(d, [(1, "owner@igalia.com"), (2, "rev@microsoft.com")], [(2, 1, 0, 0)])
+            rows = summarize(data_dir=d, out_dir=os.path.join(d, "s"), metric="commits")
+        # No commits table filled: zero commits, no share.
+        self.assertEqual([(r["org"], r["commits"], r["share"]) for r in rows], [("microsoft.com", 0, None)])

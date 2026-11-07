@@ -165,6 +165,27 @@ CREATE TABLE IF NOT EXISTS threads (
   regex_addressed     INTEGER NOT NULL,   -- the owner's first reply is Done-type
   PRIMARY KEY (host, change_number, root_uuid)
 ) STRICT, WITHOUT ROWID;
+
+-- First-parent commits on chromium/src main, from the local git clone
+-- (cosh/commits.py), since the oldest fetched week. Rebuilt whole each run.
+CREATE TABLE IF NOT EXISTS commits (
+  commit_id     INTEGER PRIMARY KEY,    -- local id, for commit_dirs
+  sha           TEXT    NOT NULL UNIQUE,
+  change_number INTEGER,                -- Reviewed-on footer; NULL if none
+  author_email  TEXT    NOT NULL,       -- git author, lowercased
+  author_name   TEXT,
+  landed_at     TEXT    NOT NULL,       -- committer date, UTC 'YYYY-MM-DD HH:MM:SS'
+  iso_week      TEXT    NOT NULL,       -- ISO week of landed_at
+  is_bot        INTEGER NOT NULL,       -- bot-owned CL, or a bot git author (config/bots.txt)
+  n_files       INTEGER NOT NULL
+) STRICT;
+-- The directories a commit touches (paths.directory of each file).
+CREATE TABLE IF NOT EXISTS commit_dirs (
+  commit_id INTEGER NOT NULL,
+  dir       TEXT    NOT NULL,
+  n_files   INTEGER NOT NULL,
+  PRIMARY KEY (commit_id, dir)
+) STRICT, WITHOUT ROWID;
 """
 
 

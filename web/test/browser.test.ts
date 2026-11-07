@@ -513,10 +513,10 @@ test('switching the metric updates the table, review chart, directory chart and 
   const options = await page.$$eval('#metric label', (ls) => ls.map((l) => l.textContent));
   // Addressed comments is offered only once some week is classified (cosh classify).
   assert.deepEqual(options, [...(hasAddressedWeeks() ? ['Addressed comments'] : []),
-    'Review comments', 'Review characters', 'Reviewed CLs']);
+    'Review comments', 'Review characters', 'Reviewed CLs', 'Commits']);
   const headers = await page.$$eval('#org-table th[scope="col"]', (ths) => ths.map((t) => t.textContent));
-  assert.deepEqual(headers, ['Org', 'Review share', 'Usage share', 'Ratio', 'Reviewers', 'Reviewed CLs',
-    'Comments', 'Addressed comments', 'Review chars', 'AI comments', 'Post-merge comments']);
+  assert.deepEqual(headers, ['Org', 'Share', 'Usage share', 'Ratio', 'Reviewers', 'Reviewed CLs',
+    'Comments', 'Addressed comments', 'Review chars', 'AI comments', 'Post-merge comments', 'Commits']);
   const cell = () => page.$eval('tr[data-org="microsoft.com"] td', (td) => td.textContent);
   const areaHead = () => page.$eval('#area-chart .ar-head .ar-vol', (e) => e.textContent);
   // Addressed comments is the default whenever some week is classified.
@@ -1614,7 +1614,7 @@ test('per-review spread: the metric per reviewed CL, on the per-reviewer rows; r
       };
     });
   const v = await read();
-  assert.equal(v.title, 'Review comments per review');
+  assert.equal(v.title, 'Review depth');
   // A linear axis from 0 here; the per-reviewer spread keeps its log axis.
   assert.deepEqual(await page.evaluate(() => [window.__cosh!.perReviewChart!.scales.x.type,
     window.__cosh!.perReviewChart!.scales.x.min, window.__cosh!.distChart!.scales.x.type]), ['linear', 0, 'logarithmic']);
@@ -1637,7 +1637,8 @@ test('per-review spread: the metric per reviewed CL, on the per-reviewer rows; r
     window.__cosh!.state.metric = 'chars';
     window.__cosh!.render();
   });
-  assert.equal(await page.$eval('#pr-title', (e) => e.textContent), 'Review characters per review');
+  // The heading stays put whatever the metric.
+  assert.equal(await page.$eval('#pr-title', (e) => e.textContent), 'Review depth');
   // Other metrics have no cap: the axis reaches the largest value.
   assert.ok(await page.evaluate(() => {
     const c = window.__cosh!.perReviewChart!;
@@ -1719,7 +1720,7 @@ test('leaderboard size and organization selects; every org is named, none as "ot
   assert.ok(!noGoogle.orgs.includes('google.com'));
   assert.ok(noGoogle.n > 50, `n=${noGoogle.n}`);
   assert.equal(noGoogle.sub, top25.sub, 'the toggles leave the description alone');
-  assert.match(noGoogle.sub, /counted as in Review by organization/);
+  assert.match(noGoogle.sub, /counted as in Contribution by organization/);
   // Old lbg=0 links still leave google.com out; a link can ask for every reviewer.
   const { page: old } = await open('#lbg=0&lbn=all');
   assert.deepEqual(await old.$$eval('#leaderboard-org, #leaderboard-size', (es) => es.map((e) => (e as HTMLSelectElement).value)),
@@ -2402,4 +2403,83 @@ test('every link off the site opens in a new tab', async () => {
   assert.ok(tone.some((l) => /review\.googlesource\.com/.test(l.href)), 'a praise sample links to its review');
   await other.close();
   for (const l of [...value, ...home, ...tone]) assert.equal(l.target, '_blank', l.href);
+});
+
+test('Commits: a fifth metric, loaded on demand, with the same section headings', async () => {
+  const { page, errors } = await open('#metric=comments&smooth=1');
+  const headings = () => page.$$eval('section.card h2', (hs) => hs.map((h) => h.textContent));
+  const before = await headings();
+  assert.ok(before.includes('Contribution by organization') && before.includes('Contribution by directory') &&
+    before.includes('Contribution by directory over time') && before.includes('Contribution per person') &&
+    before.includes('Leaderboard'), before.join(' | '));
+  // The commit files wait until Commits is chosen.
+  assert.equal(await page.evaluate(() => window.__cosh!.data.authors), undefined);
+  await pickMetric(page, 'commits');
+  assert.match(page.url(), /metric=commits/);
+  assert.deepEqual(await headings(), before, 'headings stay put whatever the metric');
+  assert.match(await page.evaluate(() => window.__cosh!.reviewChart!.options.scales.y.title.text), /^commits per week/);
+  assert.equal(await page.$eval('#area-chart .ar-head .ar-vol', (e) => e.textContent), 'Commits');
+  // The tile totals the summary's commits over the range.
+  const range = await page.evaluate(() => window.__cosh!.state.range);
+  const weeks = new Set(weeksIn(summary.meta.weeks, range));
+  const total = summary.rows.filter((r) => weeks.has(r.iso_week)).reduce((s, r) => s + (r.commits ?? 0), 0);
+  assert.ok(total > 0);
+  assert.equal(await page.$eval('#tile-commits .tile-value', (e) => e.textContent!.replace(/,/g, '')), String(total));
+  // The leaderboard ranks authors by commits.
+  const lb = await page.$$eval('#leaderboard-chart .lb-row', (rs) => rs.slice(0, 2).map((r) => r.getAttribute('title')!));
+  assert.equal(lb.length, 2);
+  assert.match(lb[0], /commits\nShows their commits/);
+  // Directory links search the authors' merged CLs once their file is in.
+  await page.waitForFunction(() => !!window.__cosh!.data.areaAuthors);
+  await page.waitForFunction(() => !!document.querySelector('#area-chart a.ar-seg'));
+  const href = await page.$eval('#area-chart a.ar-seg', (a) => a.getAttribute('href')!);
+  assert.match(href, /status:merged/);
+  assert.match(href, /owner:\d+/);
+  assert.deepEqual(errors, []);
+  await page.close();
+
+  // A shared link to Commits draws them on first load.
+  const { page: p, errors: e } = await open('#metric=commits');
+  assert.equal(await p.$eval('#metric input[value="commits"]', (i) => (i as HTMLInputElement).checked), true);
+  assert.match(await p.evaluate(() => window.__cosh!.reviewChart!.options.scales.y.title.text), /^commits per week/);
+  assert.deepEqual(e, []);
+  await p.close();
+});
+
+test('Ratio: off by default; plots the review metric over commits', async () => {
+  const { page, errors } = await open('#metric=comments&smooth=1');
+  const note = () => page.$eval('#review-ratio-note', (n) => ((n as HTMLElement).hidden ? null : n.textContent!.trim()));
+  assert.equal(await page.$eval('#review-ratio input[value="off"]', (i) => (i as HTMLInputElement).checked), true);
+  assert.equal(await note(), null);
+  const ratioOn = async (on: boolean) => {
+    await page.click(`#review-ratio input[value="${on ? 'on' : 'off'}"]`);
+    await page.waitForFunction((want) => window.__cosh!.state.reviewRatio === want &&
+      document.querySelector<HTMLElement>('#review-ratio-note')!.hidden === !want &&
+      !document.body.dataset.pending, {}, on);
+  };
+  await ratioOn(true);
+  assert.match(page.url(), /ratio=1/);
+  assert.equal(await note(), 'Ratio shows review comments over commits.');
+  assert.match(await page.evaluate(() => window.__cosh!.reviewChart!.options.scales.y.title.text),
+    /^review comments per commit/);
+  // Each point is the org's review comments ÷ its commits that week.
+  const range = await page.evaluate(() => window.__cosh!.state.range);
+  const week = weeksIn(summary.meta.weeks, range).at(-1)!;
+  const ms = summary.rows.find((r) => r.iso_week === week && r.org === 'microsoft.com')!;
+  const plotted = await page.evaluate(() => {
+    const c = window.__cosh!.reviewChart!;
+    const d = c.data.datasets.find((x) => x.label === 'microsoft.com') as unknown as { counts: (number | null)[] };
+    return d.counts.at(-1);
+  });
+  assert.ok(Math.abs(plotted! - ms.comments / ms.commits!) < 1e-9, `${plotted} vs ${ms.comments}/${ms.commits}`);
+  // With Commits chosen, the ratio is addressed comments over commits.
+  if (hasAddressedWeeks()) {
+    await pickMetric(page, 'commits');
+    await page.waitForFunction(() => document.querySelector('#review-ratio-note')!.textContent!.includes('addressed'));
+    assert.equal(await note(), 'Ratio shows addressed comments over commits.');
+  }
+  await ratioOn(false);
+  assert.doesNotMatch(page.url(), /ratio=1/);
+  assert.deepEqual(errors, []);
+  await page.close();
 });

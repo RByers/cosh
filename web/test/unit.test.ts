@@ -5,6 +5,12 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { test } from 'vitest';
 import {
+  authorBoard,
+  commitBoard,
+  ratioNumerator,
+  ratioOrgs,
+  ratioSeries,
+  gerritAuthoredUrl,
   complexityGrid,
   complexityScale,
   gerritCommentUrl,
@@ -1150,3 +1156,87 @@ test('Review Tone: periods and ranges', async () => {
 function fmtMonthShort(m: number): string {
   return new Intl.DateTimeFormat('en-GB', { month: 'short', timeZone: 'UTC' }).format(Date.UTC(2026, m, 1));
 }
+
+// ---------------------------------------------------------------------------
+// Commits (docs/commits.md): the author-side metric.
+
+test('namedOrgs also names orgs with enough of the commits, by the larger share', () => {
+  const withCommits: Summary = {
+    ...SUMMARY,
+    rows: SUMMARY.rows.map((r) => ({ ...r, commits: r.org === 'google.com' ? 80 : r.org === 'igalia.com' ? 2 : 0 })),
+  };
+  withCommits.rows.push({ ...row('solo.dev', 0, 0), commits: 18 });
+  // solo.dev reviews nothing but wrote 18% of the commits.
+  assert.deepEqual(namedOrgs(withCommits, '2026-W44'), ['google.com', 'solo.dev', 'microsoft.com', 'igalia.com', 'gmail.com']);
+  // Without commits in the summary, review comments alone decide.
+  assert.deepEqual(namedOrgs(SUMMARY, '2026-W44'), ['google.com', 'microsoft.com', 'igalia.com', 'gmail.com']);
+});
+
+test('orgTotals sums commits and their shares', () => {
+  const s: Summary = { ...SUMMARY, rows: SUMMARY.rows.map((r, i) => ({ ...r, commits: [6, 3, 1, 0, 0][i] })) };
+  const t = orgTotals(s, ['2026-W44']);
+  assert.deepEqual(t.filter((r) => r.commits).map((r) => [r.org, r.commits, r.share_commits]),
+    [['google.com', 6, 0.6], ['microsoft.com', 3, 0.3], ['igalia.com', 1, 0.1]]);
+});
+
+test('ratioNumerator and perReviewMetric for commits', () => {
+  assert.equal(ratioNumerator('comments'), 'comments');
+  assert.equal(ratioNumerator('commits'), 'addressed');
+  assert.equal(ratioNumerator('commits', false), 'comments');
+  assert.equal(perReviewMetric('commits'), 'comments');
+});
+
+test('ratioSeries divides week by week; gaps for no commits or no review data', () => {
+  const weeks = ['2026-W42', '2026-W43', '2026-W44'];
+  const num = [{ org: 'a.com', values: [4, 6, 9] }, { org: 'b.com', values: [1, 1, 1] }, { org: OTHER, values: [2, 2, 2] }];
+  const den = [{ org: 'a.com', values: [2, 0, 3] }, { org: OTHER, values: [1, 1, 4] }];
+  assert.deepEqual(ratioSeries(num, den, weeks), [
+    { org: 'a.com', values: [2, null, 3] },
+    { org: OTHER, values: [2, 2, 0.5] },
+  ]);
+  // Unclassified weeks (no addressed data in the window) are gaps too.
+  assert.deepEqual(ratioSeries(num, den, weeks, 1, new Set(['2026-W44']))[0].values, [null, null, 3]);
+  assert.deepEqual(ratioSeries(num, den, weeks, 2, new Set(['2026-W42']))[0].values, [2, null, null]);
+  assert.deepEqual([...ratioOrgs(num, den)], ['a.com']);
+});
+
+test('authorBoard reads like a reviewer board, commits in column 6', () => {
+  const b = authorBoard({
+    meta: { fold_into_other: ['gmail.com'] },
+    orgs: ['x.com', 'gmail.com'],
+    accounts: { 7: 'n7', 8: 'n8' },
+    emails: { 7: 'n7@x.com' },
+    weeks: { '2026-W44': [[7, 0, 5], [8, 1, 2]], '2026-W43': [[7, 0, 1]] },
+  });
+  assert.deepEqual(topReviewers(b, ['2026-W43', '2026-W44'], 'commits').map((r) => [r.name, r.org, r.value]),
+    [['n7', 'x.com', 6], ['n8', 'gmail.com', 2]]);
+  assert.deepEqual(topReviewers(b, '2026-W44', 'comments'), []);
+  // A person's weekly chart adds their commits.
+  const r = board({ '2026-W44': [[1, 0, 3, 1, 10, 1]] });
+  const s = reviewerSeries(r, 7, ['2026-W43', '2026-W44'], new Set(), b);
+  assert.deepEqual([s.name, s.email, s.org, s.comments, s.commits], ['n7', 'n7@x.com', 'x.com', [0, 0], [1, 5]]);
+  assert.equal(reviewerSeries(r, 1, ['2026-W44'], new Set()).commits, null);
+});
+
+test('commitBoard shares the directory tree; null for another area file', () => {
+  const areas: DirBoard = { ...DIRS, meta: { ...DIRS.meta, generated_at: 'T' } };
+  const file = { meta: { areas_generated_at: 'T' }, weeks: { '2026-W44': [[3, 0, 2], [5, 1, 1], [7, 1, 4]] as [number, number, number][] } };
+  const b = commitBoard(areas, file)!;
+  assert.equal(b.nodes, areas.nodes);
+  const t = dirTotals(b, W, DN, 'commits');
+  // chrome/ holds ui/ (2) and webnn/ (4); content/ holds browser/ (1).
+  assert.deepEqual([t.total[1], t.total[4], t.inc[1]], [6, 1, 4]);
+  assert.equal(dirTotals(areas, W, DN, 'commits').total[1], 0);
+  assert.equal(commitBoard(areas, { ...file, meta: { areas_generated_at: 'other' } }), null);
+});
+
+test('gerritDirUrl for authors searches their merged CLs; gerritAuthoredUrl a person\'s', () => {
+  const range = { from: '2026-W41', to: '2026-W44' };
+  const link = gerritDirUrl('base/', new Map([[11, 2], [22, 9]]), range, NOW, true)!;
+  assert.equal(link.url, `${Q}dir:base+after:2026-10-04+status:merged+(owner:22+OR+owner:11)`);
+  assert.equal(link.authors, true);
+  assert.equal(gerritDirUrl('base/', new Map([[5, 1]]), range, NOW, true)!.url,
+    `${Q}dir:base+after:2026-10-04+status:merged+owner:5`);
+  assert.equal(gerritAuthoredUrl('a@x.com', range, NOW), `${Q}owner:a@x.com+status:merged+after:2026-10-04`);
+  assert.equal(gerritAuthoredUrl(null, range, NOW), null);
+});

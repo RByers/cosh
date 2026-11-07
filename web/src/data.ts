@@ -2,10 +2,17 @@
 // them into value ratios. No DOM or Chart.js here so it can be unit-tested
 // in Node.
 //
-// Every metric comes from review comments (bare votes don't count):
+// The review metrics come from review comments (bare votes don't count):
 // summaries/org_weekly.json holds each org's comments, review characters and
 // reviewed CLs per week, already filtered to the paths in config/paths.txt.
 // summaries/area_weekly.json has every comment by directory.
+//
+// Commits are the author side (docs/commits.md): human commits on main that
+// touch a counted path, by the git author's org, in org_weekly.json too. Per
+// person and per directory they're in files of their own (author_weekly.json,
+// area_commits.json, area_authors.json), loaded only when the Commits metric
+// or the review chart's ratio needs them; authorBoard and commitBoard turn
+// them into boards shaped like the review ones, so the same code reads both.
 //
 // Addressed comments (docs/comment-classifier.md) are the comments in review
 // threads that led the CL owner to change the CL. They need an optional
@@ -13,10 +20,16 @@
 // classified: meta.addressed.coverage says how much of each week is decided,
 // and the UI shows the metric only for weeks at meta.addressed.complete_at.
 
-export type Metric = 'addressed' | 'comments' | 'chars' | 'cls';
+export type Metric = 'addressed' | 'comments' | 'chars' | 'cls' | 'commits';
 
 /** Their names are in value.html (the metric buttons). */
-export const METRICS: Metric[] = ['addressed', 'comments', 'chars', 'cls'];
+export const METRICS: Metric[] = ['addressed', 'comments', 'chars', 'cls', 'commits'];
+
+/** The metric the review chart's ratio divides by commits: the chosen one,
+ * or addressed comments when commits are chosen (review comments if no week
+ * is classified). */
+export const ratioNumerator = (metric: Metric, addressed = true): Metric =>
+  metric !== 'commits' ? metric : addressed ? 'addressed' : 'comments';
 
 /** Orgs whose browsers have less Chromium usage share than this get no ratio:
  * dividing by ~0 makes the ratio meaningless. */
@@ -47,21 +60,30 @@ export interface SummaryRow {
   addressed_comments?: number;
   pending_comments?: number;
   share_addressed?: number | null;
+  /** Absent in summaries written before commits. */
+  commits?: number;
+  authors?: number;
+  share_commits?: number | null;
 }
 
 /** Each metric's count and share columns in org_weekly. */
-export const COUNT_COLUMN: Record<Metric, 'comments' | 'review_chars' | 'reviewed_cls' | 'addressed_comments'> = {
+export const COUNT_COLUMN: Record<Metric, 'comments' | 'review_chars' | 'reviewed_cls' | 'addressed_comments' | 'commits'> = {
   addressed: 'addressed_comments',
   comments: 'comments',
   chars: 'review_chars',
   cls: 'reviewed_cls',
+  commits: 'commits',
 };
-export const SHARE_COLUMN: Record<Metric, 'share_comments' | 'share_chars' | 'share_cls' | 'share_addressed'> = {
+export const SHARE_COLUMN: Record<Metric, 'share_comments' | 'share_chars' | 'share_cls' | 'share_addressed' | 'share_commits'> = {
   addressed: 'share_addressed',
   comments: 'share_comments',
   chars: 'share_chars',
   cls: 'share_cls',
+  commits: 'share_commits',
 };
+
+/** Whether the summary has commits (summaries written before them don't). */
+export const hasCommits = (summary: Summary): boolean => !!summary.meta.commits;
 
 export interface AddressedMeta {
   /** The model behind the labels, or null if no labels were used. */
@@ -288,7 +310,7 @@ export function computeRatios(
   for (const week of weeks) {
     for (const [org, browsers] of orgBrowsers) {
       const row = index.get(week)?.get(org);
-      const contribution = row ? Number(row[col]) : 0;
+      const contribution = row ? Number(row[col] ?? 0) : 0;
       const derived = derivedShare(radar, week, browsers);
       const ratio = derived !== null && derived >= minDerived ? contribution / derived : null;
       points.push({ week, org, contribution, derived, ratio });
@@ -417,10 +439,10 @@ export function rangeChartedOrgs(
 
 export const OTHER = 'Other';
 
-/** The review charts name an organization (a series, legend entry,
- * per-reviewer row and organization-selector choice) when it wrote at least
- * this share of review comments over the selected range; the rest are
- * combined as OTHER (the selectors' "Other" choice). User's decision
+/** The contribution charts name an organization (a series, legend entry,
+ * per-person row and organization-selector choice) when it wrote at least
+ * this share of review comments, or of commits, over the selected range; the
+ * rest are combined as OTHER (the selectors' "Other" choice). User's decision
  * (2026-11-05), replacing a fixed top 6: five orgs are at 0.4% or more in
  * every range, and the next is under 0.1% and changes with the range. */
 export const NAMED_ORG_MIN_SHARE = 0.0025;
@@ -428,23 +450,29 @@ export const NAMED_ORG_MIN_SHARE = 0.0025;
 /** At most this many named organizations, so a legend never grows long. */
 export const MAX_NAMED_ORGS = 8;
 
-/** The organizations the review charts name over the given weeks: those with
- * at least `minShare` of all review comments (the summary's "Other" row
- * included in the total), largest first, at most `max`. The same whatever
- * metric is selected, so switching metric never reshuffles the rows. */
+/** The organizations the charts name over the given weeks: those with at
+ * least `minShare` of all review comments or of all commits (the summary's
+ * "Other" row included in each total), by the larger of the two shares,
+ * largest first, at most `max`. The same whatever metric is selected, so
+ * switching metric never reshuffles the rows. */
 export function namedOrgs(
   summary: Summary,
   weeks: string | string[],
   minShare = NAMED_ORG_MIN_SHARE,
   max = MAX_NAMED_ORGS,
 ): string[] {
-  const rows = topOrgCounts(summary, weeks, 'comments');
-  const total = rows.reduce((s, r) => s + r.value, 0);
-  if (!total) return [];
-  return rows
-    .filter((r) => r.org !== OTHER && r.value >= minShare * total)
+  const share = new Map<string, number>();
+  for (const metric of ['comments', 'commits'] as const) {
+    const rows = topOrgCounts(summary, weeks, metric);
+    const total = rows.reduce((s, r) => s + r.value, 0);
+    if (!total) continue;
+    for (const r of rows) share.set(r.org, Math.max(share.get(r.org) ?? 0, r.value / total));
+  }
+  return [...share]
+    .filter(([org, s]) => org !== OTHER && s >= minShare)
+    .sort((a, b) => b[1] - a[1] || (a[0] < b[0] ? -1 : 1))
     .slice(0, max)
-    .map((r) => r.org);
+    .map(([org]) => org);
 }
 
 /** The metric summed over the given week(s): the top `n` orgs, then
@@ -460,7 +488,7 @@ export function topOrgCounts(
   const set = new Set(typeof weeks === 'string' ? [weeks] : weeks);
   const sums = new Map<string, number>();
   for (const r of summary.rows) {
-    if (set.has(r.iso_week)) sums.set(r.org, (sums.get(r.org) ?? 0) + Number(r[col]));
+    if (set.has(r.iso_week)) sums.set(r.org, (sums.get(r.org) ?? 0) + Number(r[col] ?? 0));
   }
   const rows = [...sums].map(([org, value]) => ({ org, value }));
   const named = rows.filter((r) => r.org !== OTHER).sort((a, b) => b.value - a.value);
@@ -537,7 +565,7 @@ export function orgWeeklyCounts(
     if (key === OTHER && inWeeks.has(r.iso_week)) hasOther = true;
     if (!raw.has(key)) raw.set(key, new Map());
     const m = raw.get(key)!;
-    m.set(r.iso_week, (m.get(r.iso_week) ?? 0) + Number(r[col]));
+    m.set(r.iso_week, (m.get(r.iso_week) ?? 0) + Number(r[col] ?? 0));
   }
   const known = new Set(dataWeeks ?? [...summary.meta.weeks, ...summary.rows.map((r) => r.iso_week)]);
   const orgs = [...named, ...(hasOther ? [OTHER] : [])];
@@ -557,6 +585,47 @@ function trailingMean(counts: Map<string, number> | undefined, week: string, win
     k++;
   }
   return k ? sum / k : 0;
+}
+
+/** A weekly series per org.  */
+export type OrgSeries = { org: string; values: (number | null)[] }[];
+
+/** The review chart's ratio: for each org, `num` ÷ `den` week by week (each
+ * already a running mean, so this is the ratio of the means). The two must
+ * come from the same weeks and org choices (see ratioOrgs); an org missing
+ * from either is left out. A week is null (a gap) where the denominator is 0,
+ * or, given `numKnown`, where the numerator has no data in its window of
+ * `smoothing` weeks (unclassified weeks, for addressed comments). */
+export function ratioSeries(
+  num: OrgSeries,
+  den: OrgSeries,
+  weeks: readonly string[],
+  smoothing = 1,
+  numKnown?: ReadonlySet<string>,
+): OrgSeries {
+  const byOrg = new Map(den.map((s) => [s.org, s.values]));
+  const known = weeks.map((w) => {
+    if (!numKnown) return true;
+    for (let i = 0; i < Math.max(1, smoothing); i++) if (numKnown.has(addWeeks(w, -i))) return true;
+    return false;
+  });
+  return num
+    .filter((s) => byOrg.has(s.org))
+    .map((s) => {
+      const d = byOrg.get(s.org)!;
+      return {
+        org: s.org,
+        values: s.values.map((v, i) => (known[i] && v !== null && d[i] ? v / d[i]! : null)),
+      };
+    });
+}
+
+/** The orgs two series lists both name (OTHER aside): with only these
+ * nameable, both lists fold the same orgs into OTHER, so their OTHER series
+ * can be divided too. */
+export function ratioOrgs(a: OrgSeries, b: OrgSeries): Set<string> {
+  const inB = new Set(b.map((s) => s.org));
+  return new Set(a.map((s) => s.org).filter((o) => o !== OTHER && inB.has(o)));
 }
 
 /** Browsers the usage chart always plots: Meta's in-app browsers are small
@@ -598,11 +667,53 @@ export function compareWeeks(a: string, b: string): number {
  * [account_id, index into `orgs`, comments, cls, chars]. Orgs are resolved
  * before org_weekly's fold of `meta.fold_into_other` into "Other". */
 export type ReviewerRow = [account: number, org: number, comments: number, cls: number, chars: number,
-  addressed?: number];
+  addressed?: number, commits?: number];
 
 /** Column of each metric in ReviewerRow and AreaBoard rows. Files written
- * before the addressed metric have no column 5; it reads as 0. */
-const METRIC_INDEX: Record<Metric, 2 | 3 | 4 | 5> = { comments: 2, cls: 3, chars: 4, addressed: 5 };
+ * before the addressed metric have no column 5; it reads as 0. Commits
+ * (column 6) are only in the boards authorBoard and commitBoard build. */
+const METRIC_INDEX: Record<Metric, 2 | 3 | 4 | 5 | 6> = { comments: 2, cls: 3, chars: 4, addressed: 5, commits: 6 };
+
+/** summaries/author_weekly.json: [account, org, commits] rows per week, with
+ * accounts, emails and orgs as in reviewer_weekly.json. */
+export interface AuthorFile {
+  meta: { fold_into_other: string[]; [k: string]: unknown };
+  orgs: string[];
+  accounts: Record<string, string>;
+  emails?: Record<string, string>;
+  weeks: Record<string, [account: number, org: number, commits: number][]>;
+}
+
+/** The commit authors as a ReviewerBoard whose rows have only commits
+ * (column 6), so the per-person sections read it like the reviewers'. Every
+ * row counts as the author's org: their org is the one most of their commits
+ * resolve to. */
+export function authorBoard(file: AuthorFile): ReviewerBoard {
+  const weeks: Record<string, ReviewerRow[]> = {};
+  for (const [w, rows] of Object.entries(file.weeks)) weeks[w] = rows.map(([a, o, n]) => [a, o, 0, 0, 0, 0, n]);
+  return { meta: { ...file.meta, authors: true }, orgs: file.orgs, accounts: file.accounts, emails: file.emails, weeks };
+}
+
+/** summaries/area_commits.json: [node, org, commits] rows per week, indexed
+ * like the area_weekly.json it names. */
+export interface AreaCommitsFile {
+  meta: { areas_generated_at: string; [k: string]: unknown };
+  weeks: Record<string, [node: number, org: number, commits: number][]>;
+}
+
+/** The commits by directory as a DirBoard sharing `areas`' tree, nodes and
+ * orgs, whose rows have only commits (column 6). Null if the file was made
+ * with another area_weekly.json, whose indexes may not match. */
+export function commitBoard(areas: DirBoard, file: AreaCommitsFile): DirBoard | null {
+  if (!areas.meta.generated_at || file.meta.areas_generated_at !== areas.meta.generated_at) return null;
+  const weeks: DirBoard['weeks'] = {};
+  for (const [w, rows] of Object.entries(file.weeks)) weeks[w] = rows.map(([n, o, c]) => [n, o, 0, 0, 0, 0, c]);
+  const board = { ...areas, weeks };
+  // The same tree: share its cached paths and children.
+  const tree = treeCache.get(areas);
+  if (tree) treeCache.set(board, tree);
+  return board;
+}
 
 export interface ReviewerBoard {
   meta: { fold_into_other: string[]; [k: string]: unknown };
@@ -767,7 +878,7 @@ function computeReviewerTotals(
       t.value += r[col] ?? 0;
       t.comments += r[2];
       t.reviews += r[3];
-      t.orgCount.set(r[1], (t.orgCount.get(r[1]) ?? 0) + r[2]);
+      t.orgCount.set(r[1], (t.orgCount.get(r[1]) ?? 0) + r[2] + (r[6] ?? 0));
     }
   }
   const orgOf = (orgCount: Map<number, number>) => {
@@ -872,7 +983,8 @@ export const PER_REVIEW_MIN = 3;
 
 /** What the per-review spread divides by reviewed CLs: the metric itself,
  * or review comments when the metric is reviewed CLs. */
-export const perReviewMetric = (metric: Metric): Metric => (metric === 'cls' ? 'comments' : metric);
+export const perReviewMetric = (metric: Metric): Metric =>
+  metric === 'cls' || metric === 'commits' ? 'comments' : metric;
 
 export interface OrgPerReviewSpread extends OrgSpread {
   /** The row's pooled figure: its reviewers' summed metric ÷ their summed
@@ -922,37 +1034,54 @@ export function reviewerHandle(board: ReviewerBoard, account: number): string {
   return board.emails?.[account] ?? board.accounts[account] ?? `Account ${account}`;
 }
 
-/** One reviewer's weekly review comments and addressed comments over `weeks`
- * (addressed is null for weeks not in `classified`), and their org: the one
- * most of their comments in those weeks resolve to. */
+/** One person's weekly review comments and addressed comments over `weeks`
+ * (addressed is null for weeks not in `classified`), their commits if
+ * `authors` is given (else null), and their org: the one most of their
+ * comments and commits in those weeks resolve to. */
 export function reviewerSeries(
   board: ReviewerBoard,
   account: number,
   weeks: string[],
   classified: ReadonlySet<string>,
-): { name: string; email: string | null; org: string | null; comments: number[]; addressed: (number | null)[] } {
-  const orgCount = new Map<number, number>();
+  authors?: ReviewerBoard,
+): { name: string; email: string | null; org: string | null; comments: number[]; addressed: (number | null)[];
+  commits: number[] | null } {
+  const orgCount = new Map<string, number>();
   const comments: number[] = [];
   const addressed: (number | null)[] = [];
+  const commits: number[] = [];
   for (const w of weeks) {
     let c = 0;
     let a = 0;
+    let k = 0;
     for (const r of board.weeks[w] ?? []) {
       if (r[0] !== account) continue;
       c += r[2];
       a += r[5] ?? 0;
-      orgCount.set(r[1], (orgCount.get(r[1]) ?? 0) + r[2]);
+      orgCount.set(board.orgs[r[1]], (orgCount.get(board.orgs[r[1]]) ?? 0) + r[2]);
+    }
+    for (const r of authors?.weeks[w] ?? []) {
+      if (r[0] !== account) continue;
+      k += r[6] ?? 0;
+      orgCount.set(authors!.orgs[r[1]], (orgCount.get(authors!.orgs[r[1]]) ?? 0) + (r[6] ?? 0));
     }
     comments.push(c);
     addressed.push(classified.has(w) ? a : null);
+    commits.push(k);
   }
   let org: string | null = null;
   let best = -1;
   for (const [o, c] of orgCount) {
-    if (c > best || (c === best && org !== null && board.orgs[o] < org)) [org, best] = [board.orgs[o], c];
+    if (c > best || (c === best && org !== null && o < org)) [org, best] = [o, c];
   }
-  return { name: board.accounts[account] ?? `Account ${account}`, email: board.emails?.[account] ?? null, org,
-    comments, addressed };
+  return {
+    name: board.accounts[account] ?? authors?.accounts[account] ?? `Account ${account}`,
+    email: board.emails?.[account] ?? authors?.emails?.[account] ?? null,
+    org,
+    comments,
+    addressed,
+    commits: authors ? commits : null,
+  };
 }
 
 /** The orgs on a leaderboard, most reviewers first (ties: the org whose
@@ -1146,6 +1275,8 @@ export interface OrgTotals {
   addressed_comments: number;
   pending_comments: number;
   share_addressed: number;
+  commits: number;
+  share_commits: number;
 }
 
 export function orgTotals(summary: Summary, weeks: string[], reviewers?: Map<string, number>): OrgTotals[] {
@@ -1158,7 +1289,7 @@ export function orgTotals(summary: Summary, weeks: string[], reviewers?: Map<str
       t = {
         org: r.org, reviewers: 0, reviewed_cls: 0, comments: 0, review_chars: 0, ai_comments: 0,
         post_merge_comments: 0, share_cls: 0, share_comments: 0, share_chars: 0,
-        addressed_comments: 0, pending_comments: 0, share_addressed: 0,
+        addressed_comments: 0, pending_comments: 0, share_addressed: 0, commits: 0, share_commits: 0,
       };
       by.set(r.org, t);
     }
@@ -1170,18 +1301,20 @@ export function orgTotals(summary: Summary, weeks: string[], reviewers?: Map<str
     t.post_merge_comments += r.post_merge_comments ?? 0;
     t.addressed_comments += r.addressed_comments ?? 0;
     t.pending_comments += r.pending_comments ?? 0;
+    t.commits += r.commits ?? 0;
   }
   const out = [...by.values()];
-  const sum = (k: 'reviewed_cls' | 'comments' | 'review_chars' | 'addressed_comments') =>
+  const sum = (k: 'reviewed_cls' | 'comments' | 'review_chars' | 'addressed_comments' | 'commits') =>
     out.reduce((s, t) => s + t[k], 0);
-  const [cls, comments, chars, addressed] =
-    [sum('reviewed_cls'), sum('comments'), sum('review_chars'), sum('addressed_comments')];
+  const [cls, comments, chars, addressed, commits] =
+    [sum('reviewed_cls'), sum('comments'), sum('review_chars'), sum('addressed_comments'), sum('commits')];
   for (const t of out) {
     if (reviewers) t.reviewers = reviewers.get(t.org) ?? 0;
     t.share_cls = cls ? t.reviewed_cls / cls : 0;
     t.share_comments = comments ? t.comments / comments : 0;
     t.share_chars = chars ? t.review_chars / chars : 0;
     t.share_addressed = addressed ? t.addressed_comments / addressed : 0;
+    t.share_commits = commits ? t.commits / commits : 0;
   }
   return out;
 }
@@ -1232,7 +1365,7 @@ export function barScale(
 }
 
 // ---------------------------------------------------------------------------
-// Review by directory (summaries/area_weekly.json): a tree to drill into.
+// Contribution by directory (summaries/area_weekly.json): a tree to drill into.
 
 /** Every review comment, in scope or not, as a directory tree. Roots are the
  * top-level directories, plus `area` prefixes from config/paths.txt (e.g.
@@ -1254,7 +1387,8 @@ export interface DirBoard {
   orgs: string[];
   /** [parent index or -1, label (a root's path, else the segment below its parent), included]. */
   nodes: [parent: number, label: string, included: 0 | 1][];
-  weeks: Record<string, [node: number, org: number, comments: number, cls: number, chars: number, addressed?: number][]>;
+  weeks: Record<string, [node: number, org: number, comments: number, cls: number, chars: number, addressed?: number,
+    commits?: number][]>;
 }
 
 /** Rows each tree level shows before an "other" row, and how many more each
@@ -1561,9 +1695,11 @@ export interface DirLink {
   url: string;
   /** The directory searched. */
   path: string;
-  /** Reviewers the search names, and how many there were in all. */
+  /** Reviewers (or authors) the search names, and how many there were in all. */
   shown: number;
   total: number;
+  /** The search is for the people's own CLs (commits), not those they reviewed. */
+  authors?: boolean;
 }
 
 /** A Gerrit search for the CLs in a directory that the reviewers commented
@@ -1578,14 +1714,18 @@ export function gerritDirUrl(
   reviewers: Map<number, number> | undefined,
   range?: WeekRange,
   now?: Date,
+  authors = false,
 ): DirLink | null {
   if (!reviewers?.size || !path.endsWith('/') || path.startsWith('(')) return null;
   const ids = [...reviewers]
     .sort((a, b) => b[1] - a[1] || a[0] - b[0])
     .slice(0, MAX_LINK_REVIEWERS)
     .map(([id]) => id);
-  const who =
-    ids.length === 1
+  // Authors: their own merged CLs. Commits are credited to the git author,
+  // which is the CL owner for nearly every commit.
+  const who = authors
+    ? ['status:merged', ids.length === 1 ? `owner:${ids[0]}` : `(${ids.map((id) => `owner:${id}`).join(' OR ')})`]
+    : ids.length === 1
       ? [`commentby:${ids[0]}`, `-owner:${ids[0]}`]
       : [`(${ids.map((id) => `(commentby:${id} -owner:${id})`).join(' OR ')})`];
   return {
@@ -1593,6 +1733,7 @@ export function gerritDirUrl(
     path,
     shown: ids.length,
     total: reviewers.size,
+    ...(authors ? { authors: true } : {}),
   };
 }
 
@@ -1606,11 +1747,17 @@ export function dirRowLink(
   org: string,
   range?: WeekRange,
   now?: Date,
+  authors = false,
 ): DirLink | null {
   if (row.node === undefined || row.kind === 'other') return null;
   const reviewers = (row.kind === 'dir' ? idx.total : idx.own)[row.node]?.get(org);
-  return gerritDirUrl(dirTree(board).paths[row.node], reviewers, range, now);
+  return gerritDirUrl(dirTree(board).paths[row.node], reviewers, range, now, authors);
 }
+
+/** A person's own merged CLs on Chromium Gerrit over the range, or null
+ * without an email: what their commits link to. */
+export const gerritAuthoredUrl = (email: string | null, range?: WeekRange, now?: Date): string | null =>
+  email ? gerritQueryUrl([`owner:${email}`, 'status:merged', ...gerritDateTerms(range, now)]) : null;
 
 // ---------------------------------------------------------------------------
 // One directory in the organization chart, and the directory heatmap. Both
