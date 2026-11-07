@@ -325,15 +325,15 @@ A new card needs an `id` and its own `<a class="card-anchor">` before its `<h2>`
 ```
 cd web
 npm ci
-npm run dev        # http://localhost:5190 (landing page), /value.html (Value Exchange)
+npm run dev        # http://localhost:5182 (landing page), /value.html (Value Exchange)
 npm run build      # -> web/dist
-npm run preview    # serves web/dist at http://localhost:5191
+npm run preview    # serves web/dist at http://localhost:5183
 npm test           # build + unit tests + headless Chrome tests
 ```
 
 ### Dev server ports
 
-Ports follow `~/projects/argus-config/ports.md`. 5190 (dev) and 5191 (preview)
+Ports follow `~/projects/argus-config/ports.md`. 5182 (dev) and 5183 (preview)
 are cosh's user ports, forwarded to the laptop over SSH, with `strictPort` so
 a clash fails loudly. Servers started under Claude Code (`CLAUDECODE=1`) get a
 random port in 20000–39999 unless `DEV_PORT=user` is set. Use

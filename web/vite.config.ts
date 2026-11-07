@@ -16,11 +16,11 @@ export default defineConfig({
   base: './',
   server: {
     host: 'localhost',
-    ...devPort(5190),
+    ...devPort(5182),
     // Data files live outside web/ (summaries/, data/public/, config/).
     fs: { allow: ['..'] },
   },
-  preview: { host: 'localhost', ...devPort(5191) },
+  preview: { host: 'localhost', ...devPort(5183) },
   build: {
     outDir: 'dist',
     emptyOutDir: true,
