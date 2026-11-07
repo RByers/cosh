@@ -172,8 +172,7 @@
           <span data-if="!weeks">No review data in this range.</span>
           <span data-if="weeks"><slot name="metric"></slot> per week<span data-if="smoothed">, as a <slot name="smoothing"></slot> running average</span>,
             for each organization with at least <slot name="min"></slot> of the range's review comments; the rest are
-            “Other”. Google does most of the review, so the linear scale leaves out google.com to let the others be
-            compared.</span>
+            “Other”.</span>
         </template>
         <div class="toggles">
           <fieldset id="review-scale" class="segmented chart-toggle">
