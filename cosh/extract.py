@@ -135,7 +135,7 @@ def comments_path(project, number):
 
 def extract_week(host, project, iso_week, min_interval=1.0, max_comment_fetches=None,
                  data_dir=store.DATA_DIR, argv="", via="notedb", batch_size=200,
-                 batch_gap=5.0, duty_cycle=1.0):
+                 batch_gap=5.0, duty_cycle=1.0, throttle=None):
     raw = store.open_raw(data_dir)
     client = GerritClient(host, min_interval=min_interval)
     run_id = raw.execute(
@@ -180,7 +180,7 @@ def extract_week(host, project, iso_week, min_interval=1.0, max_comment_fetches=
         todo = [n for n, (_, c) in sorted(in_week.items()) if needs_comments(c)]
         if via == "notedb":
             remaining = fetch_notedb(client, raw, project, todo, in_week, batch_size,
-                                     batch_gap, max_comment_fetches, duty_cycle)
+                                     batch_gap, max_comment_fetches, duty_cycle, throttle)
         else:
             remaining = fetch_rest_comments(client, raw, host, project, todo,
                                             max_comment_fetches)
@@ -343,7 +343,7 @@ def stale_refs(todo, listed, tips):
 
 
 def fetch_notedb(client, raw, project, todo, in_week, batch_size, batch_gap, max_cls,
-                 duty_cycle=1.0):
+                 duty_cycle=1.0, throttle=None):
     """Batched `git fetch` of NoteDb meta refs, then resolve any comment
     author account ids the REST listing didn't give us. Returns CLs missing."""
     import time
@@ -362,15 +362,45 @@ def fetch_notedb(client, raw, project, todo, in_week, batch_size, batch_gap, max
         pending = pending[:max_cls]
     nb = (len(pending) + batch_size - 1) // batch_size
     print(f"  NoteDb: {len(pending)} meta refs to fetch in {nb} git fetches", file=sys.stderr)
-    dt = 0.0
-    for i in range(0, len(pending), batch_size):
-        if i:
-            # duty_cycle 0.5 => idle as long as the last fetch took; 1.0 => batch_gap only
-            time.sleep(max(batch_gap, dt * (1 - duty_cycle) / duty_cycle))
-        chunk = pending[i:i + batch_size]
-        dt = notedb.fetch_batch(repo, project, chunk)
-        print(f"  git fetch {i // batch_size + 1}/{nb}: {len(chunk)} refs in {dt:.0f}s",
-              file=sys.stderr)
+    chunks = [pending[i:i + batch_size] for i in range(0, len(pending), batch_size)]
+    if throttle is None:
+        dt = 0.0
+        for k, chunk in enumerate(chunks):
+            if k:
+                # duty_cycle 0.5 => idle as long as the last fetch took; 1.0 => batch_gap only
+                time.sleep(max(batch_gap, dt * (1 - duty_cycle) / duty_cycle))
+            dt = notedb.fetch_batch(repo, project, chunk)
+            print(f"  git fetch {k + 1}/{nb}: {len(chunk)} refs in {dt:.0f}s", file=sys.stderr)
+    else:
+        # Several fetches in flight (user-approved --jobs), each worker idling
+        # batch_gap between its own fetches; the shared throttle caps how many
+        # run at once and backs everyone off together on HTTP 429.
+        import threading
+        queue = list(enumerate(chunks))
+        qlock = threading.Lock()
+        errors = []
+
+        def worker():
+            while True:
+                with qlock:
+                    if not queue or errors:
+                        return
+                    k, chunk = queue.pop(0)
+                try:
+                    dt = notedb.fetch_batch(repo, project, chunk, throttle=throttle)
+                except Exception as e:  # noqa: BLE001 - reported below
+                    errors.append(e)
+                    return
+                print(f"  git fetch {k + 1}/{nb}: {len(chunk)} refs in {dt:.0f}s "
+                      f"({throttle.limit} at once)", file=sys.stderr, flush=True)
+                time.sleep(batch_gap)
+        threads = [threading.Thread(target=worker) for _ in range(min(throttle.max_jobs, len(chunks)))]
+        for t in threads:
+            t.start()
+        for t in threads:
+            t.join()
+        if errors:
+            raise errors[0]
     have = notedb.fetched_numbers(repo)
 
     # Account ids seen in comments but absent from the listing's DETAILED_ACCOUNTS.

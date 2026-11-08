@@ -16,6 +16,13 @@ regex plus Claude Haiku (`cosh classify`).
   on 2026-11-03. It is resumable: rerun `python3 -m cosh backfill --weeks 52
   --go` from the main checkout if it stops. Fetching beyond that year (years
   2–5, other repos or hosts) still needs explicit approval.
+- **Backfill of 2020-07 .. 2023-06 is approved** (2026-11-08):
+  `backfill --weeks 156 --newest 2023-W25`, 2020-W27 .. 2023-W25, NoteDb
+  only (their patch sets still need approval). The user approved up to 6
+  NoteDb fetches in flight **until Monday 2026-11-09, then 1**:
+  `--jobs 6 --jobs-until 2026-11-09T00:00-05:00` drops to 1 by itself at
+  that time. After Monday, resume with `--jobs 1` (the default). Log
+  `data/private/backfill-2020-*.log`, PID in `data/private/backfill-2020.pid`.
 - **Backfill back to 2023-07-01 (Radar's first data) is approved**
   (2026-11-04). That is `backfill --weeks 175 --newest 2026-W44`, 2023-W26 ..
   2026-W44, started 2026-11-04 with log `data/private/backfill-3y-*.log`. It is
@@ -26,7 +33,8 @@ regex plus Claude Haiku (`cosh classify`).
   refs. Run it only after the backfill has finished, never alongside it.
   Rerunning it to refresh is fine.
 - **Keep load on Gerrit and googlesource low.**
-  - Requests are serial. One exception, approved by the user on
+  - Requests are serial. Exceptions: the 2020–23 backfill above (6 NoteDb
+    fetches until Monday 2026-11-09, then 1), and, approved by the user on
     2026-11-07 (a weekend): the reviewed-CL patch-set fetch runs with
     `cosh patchsets --go --jobs 7`, at most 7 git fetches in flight at
     once (8 drew HTTP 429s). On a 429 all workers pause together and one

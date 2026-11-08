@@ -46,7 +46,10 @@ def week_list(newest, n):
     return out
 
 
-def backfill(host, project, weeks, go=False, duty_cycle=1.0, batch_size=200, argv=""):
+def backfill(host, project, weeks, go=False, duty_cycle=1.0, batch_size=200, argv="",
+             jobs=1, jobs_until=None):
+    """jobs > 1 (user-approved only) runs that many NoteDb fetches at once
+    until `jobs_until` (unix seconds), then one at a time."""
     raw = store.open_raw()
     done = {w for (w,) in raw.execute(
         "SELECT iso_week FROM week_progress WHERE host=? AND project=? AND fetched_at IS NOT NULL",
@@ -60,10 +63,14 @@ def backfill(host, project, weeks, go=False, duty_cycle=1.0, batch_size=200, arg
     if not go:
         print("plan only; pass --go to fetch", file=sys.stderr)
         return
+    throttle = None
+    if jobs > 1:
+        from .patchsets import DeadlineThrottle
+        throttle = DeadlineThrottle(jobs, jobs_until)
     for i, w in enumerate(todo, 1):
         print(f"=== [{i}/{len(todo)}] {w} ===", file=sys.stderr)
         extract_week(host, project, w, via="notedb", batch_size=batch_size,
-                     duty_cycle=duty_cycle, argv=argv)
+                     duty_cycle=duty_cycle, argv=argv, throttle=throttle)
         derive(weeks=[w])
     print("backfill done. Comments on still-open CLs are not fetched yet: run "
           "`python3 -m cosh extract-open`, then `derive` and `summarize`.", file=sys.stderr)

@@ -93,19 +93,36 @@ def tip_times(git_dir):
     return {int(n): int(t) for n, t in (line.split() for line in out.splitlines() if line)}
 
 
-def fetch_batch(git_dir, project, numbers, retries=5):
-    """One `git fetch` for many meta refs. Returns seconds taken."""
+def fetch_batch(git_dir, project, numbers, retries=5, throttle=None):
+    """One `git fetch` for many meta refs. Returns seconds taken. With a
+    shared `throttle` (patchsets.Throttle), parallel workers take turns
+    through it and back off together on HTTP 429; a rate-limited fetch is
+    retried without counting against `retries`."""
+    from .patchsets import is_rate_limited
     specs = "".join(f"+{meta_ref(n)}:{LOCAL_REF.format(n=n)}\n" for n in numbers)
     url = GIT_URL.format(project=project)
     delay = 30
-    for attempt in range(retries + 1):
+    attempt = limited = 0
+    while True:
         t0 = time.monotonic()
-        p = git(git_dir, "-c", "protocol.version=2", "fetch", "--quiet", "--no-tags",
-                "--no-write-fetch-head", "--stdin", url, input=specs, check=False, network=True)
+        if throttle:
+            throttle.acquire()
+        p = None
+        try:
+            p = git(git_dir, "-c", "protocol.version=2", "fetch", "--quiet", "--no-tags",
+                    "--no-write-fetch-head", "--stdin", url, input=specs, check=False, network=True)
+        finally:
+            if throttle:
+                throttle.release(p is not None and p.returncode != 0 and is_rate_limited(p.stderr))
         dt = time.monotonic() - t0
         if p.returncode == 0:
             return dt
         err = p.stderr.strip()
+        if throttle and is_rate_limited(err):
+            limited += 1
+            if limited > 20:
+                raise RuntimeError(f"git fetch rate-limited {limited} times: {err[:300]}")
+            continue
         # A missing ref (e.g. change deleted) fails the whole fetch: drop it and retry.
         missing = [n for n in numbers if meta_ref(n) in err and "couldn't find" in err]
         if missing:
@@ -117,6 +134,7 @@ def fetch_batch(git_dir, project, numbers, retries=5):
             continue
         if attempt == retries:
             raise RuntimeError(f"git fetch failed: {err[:500]}")
+        attempt += 1
         print(f"  git fetch failed ({err[:120]}); backing off {delay}s", file=sys.stderr)
         time.sleep(delay)
         delay = min(delay * 2, 900)

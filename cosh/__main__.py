@@ -97,6 +97,11 @@ def main(argv=None):
     b.add_argument("--duty-cycle", type=float, default=1.0,
                    help="fraction of time a git fetch may be in flight (default 1.0: one fetch at a time, back to back)")
     b.add_argument("--batch-size", type=int, default=200)
+    b.add_argument("--jobs", type=int, default=1,
+                   help="NoteDb fetches in flight at once (default 1; more only with the user's "
+                        "approval: 6 approved until Monday 2026-11-09, CLAUDE.md)")
+    b.add_argument("--jobs-until",
+                   help="ISO time after which --jobs drops to 1 (e.g. 2026-11-09T00:00-05:00)")
     b.add_argument("--go", action="store_true", help="actually fetch (otherwise print the plan)")
     b.add_argument("--host", default=HOST)
     b.add_argument("--project", default=PROJECT)
@@ -204,8 +209,14 @@ def main(argv=None):
         if not 0.05 <= a.duty_cycle <= 1.0:
             p.error("--duty-cycle must be in [0.05, 1.0]")
         weeks = week_list(a.newest or last_complete_week(), a.weeks)
+        if not 1 <= a.jobs <= 6:
+            p.error("--jobs must be 1..6 (more needs the user's approval)")
+        if a.jobs > 1 and not a.jobs_until:
+            p.error("--jobs above 1 needs --jobs-until (the approval is time-limited)")
+        from datetime import datetime as _dt
+        until = _dt.fromisoformat(a.jobs_until).timestamp() if a.jobs_until else None
         kw = dict(go=a.go, duty_cycle=a.duty_cycle, batch_size=min(a.batch_size, 500),
-                  argv=" ".join(sys.argv))
+                  argv=" ".join(sys.argv), jobs=a.jobs, jobs_until=until)
         if a.go:
             with store.extract_lock():
                 backfill(a.host, a.project, weeks, **kw)

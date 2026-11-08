@@ -195,6 +195,24 @@ class Throttle:
             self.cond.notify_all()
 
 
+class DeadlineThrottle(Throttle):
+    """A Throttle whose ceiling drops to `after_jobs` once `deadline` (unix
+    seconds) passes: e.g. the user's "6 at once until Monday, then 1"."""
+
+    def __init__(self, max_jobs, deadline, after_jobs=1, wall=time.time, **kw):
+        super().__init__(max_jobs, **kw)
+        self.deadline, self.after_jobs, self.wall = deadline, max(1, after_jobs), wall
+
+    def acquire(self):
+        with self.cond:
+            if self.deadline and self.wall() >= self.deadline and self.max_jobs > self.after_jobs:
+                self.max_jobs = self.after_jobs
+                self.limit = min(self.limit, self.after_jobs)
+                print(f"  past the parallel deadline; now {self.limit} at once",
+                      file=sys.stderr, flush=True)
+        super().acquire()
+
+
 def fetch_batch(git_dir, cls, retries=4, throttle=None, max_rate_limited=20):
     """One git fetch for the batch. A rate-limited fetch goes back through
     the throttle (shared pause) and is retried as is. Other failures back
