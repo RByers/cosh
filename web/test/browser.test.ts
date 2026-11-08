@@ -2392,6 +2392,10 @@ test('the Review Tone page: a name on a board opens a popup with its praise, lin
   // The chart shows just this popup's kind: praise given, as many as the list (all weeks).
   const chartLabel = () => page.$eval('#person-months', (c) => c.getAttribute('aria-label')!);
   assert.equal(await chartLabel(), `Praise given (${top.count}) per month`);
+  // Their places on the boards: first on this one over all scored weeks.
+  const ranks = await page.$$eval('#person-ranks li', (lis) => lis.map((li) => li.textContent!.replace(/\s+/g, ' ').trim()));
+  assert.match(ranks[0], /^#1 of [\d,]+ on Most net praise given, all scored weeks$/);
+  assert.ok(ranks.every((r) => /Most net praise given/.test(r)), 'only the board the popup came from');
   // Scrolling the popup never scrolls the page behind it, at its ends too.
   const y0 = await page.evaluate(() => scrollY);
   const box = (await page.$('#person-dialog'))!;

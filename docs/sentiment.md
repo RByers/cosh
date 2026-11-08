@@ -275,7 +275,10 @@ scored (2026-W37..W44 so far):
   comment, are listed, top 100. Each row has the name, the email, the
   glowing count, the distinct happy people and the counterparts: no
   per-person mean, which could be negative.
-- **Name popups** also chart, per month, exactly the kind of comment they
+- **Name popups** list the person's places on the boards (#8 of 265 on
+  Most net praise given, all scored weeks; and the past month): the board
+  the popup came from, or every board for the lookup box. Only boards they
+  are on are shown. They also chart, per month, exactly the kind of comment they
   list, over every week their board covers: praise given, praise received,
   glowing comments received as change author or as reviewer (the happy
   tables), or praise given and received for the lookup box. Praise and

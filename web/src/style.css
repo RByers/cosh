@@ -1728,6 +1728,19 @@ html:has(.person-dialog[open]) {
   overflow: hidden;
 }
 
+/* The popup person's places on the boards, one per line. */
+.person-ranks {
+  margin: 6px 0 0;
+  padding: 0;
+  list-style: none;
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+}
+
+.person-ranks:empty {
+  display: none;
+}
+
 /* The popup's praise per month. */
 .person-chart {
   margin: 12px 0 4px;

@@ -158,6 +158,13 @@ export function netBoard(d: PraiseData, key: 'given' | 'received', period: Perio
   return n === 'all' ? rows : rows.slice(0, n);
 }
 
+/** `email`'s place on a board (1-based, as the board numbers it) and the
+ * board's length, or null when they aren't on it. */
+export function boardRank(rows: { email: string }[], email: string): { rank: number; of: number } | null {
+  const i = rows.findIndex((r) => r.email === email);
+  return i < 0 ? null : { rank: i + 1, of: rows.length };
+}
+
 /** Every praise comment `email` gave or received, newest first: the popup
  * opened from the lookup box. */
 export function allPraise(d: PersonComments, email: string): PersonComment[] {
