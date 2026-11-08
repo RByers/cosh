@@ -23,6 +23,10 @@ Commits on `main` carry `Bug:` and `Fixed:` footers. Since 2024-01-01
 
 ## The bug tracker: what was tested
 
+**Now approved and built** (2026-11-08): the fetcher, its stored fields and
+how to resume it are in `docs/bugs.md`. What follows is the exploration that
+led to it.
+
 About 25 anonymous requests in all, serial, 1.5–2 s apart, with a generic
 User-Agent and no identity. No throttling was seen: every reply was a 200,
 403 or 405 in 0.2–1.2 s, with no 429, captcha or sign-in redirect. That is too
