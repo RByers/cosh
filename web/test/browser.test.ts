@@ -2434,7 +2434,7 @@ test('the Review Tone page: a name on a board opens a popup with its praise, lin
   assert.equal(items.length, top.count);
   for (const it of items) {
     assert.match(it.badge, /^\+\d\.\d$/);
-    assert.ok(it.by.startsWith(`${top.name} to `), it.by);
+    assert.match(it.by, new RegExp(`^${top.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')} \\((author|reviewer)\\) to [^(]+, `), it.by);
     assert.match(it.href ?? '', /^https:\/\/chromium-review\.googlesource\.com\/c\//);
   }
   // The monthly chart: praise only, given and received.

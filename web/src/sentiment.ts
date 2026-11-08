@@ -381,7 +381,11 @@ function commentItem(c: PersonComment, email?: string): HTMLElement {
   const li = el('li', undefined, `quote ${rel ? `quote-${rel}` : 'quote-praise'}`);
   li.append(el('blockquote', c.text));
   const by = el('p', undefined, 'quote-by');
-  by.append(scoreBadge(c.score), ' ', fragment('praise-by', { writer: c.writer, recipient: c.recipient, date: dayLabel(c.date) }));
+  // The popup's person gets their role on the CL after their name.
+  const role = (r?: string) => (r ? ` ${msg(`role-${r}`)}` : '');
+  const writer = c.writer + (email && c.writer_email === email ? role(c.writer_role) : '');
+  const recipient = c.recipient + (email && c.writer_email !== email && c.recipient_email === email ? role(c.recipient_role) : '');
+  by.append(scoreBadge(c.score), ' ', fragment('praise-by', { writer, recipient, date: dayLabel(c.date) }));
   const url = gerritLink(c.url);
   if (url) {
     const a = el('a', 'View review');
