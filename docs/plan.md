@@ -260,8 +260,8 @@ value_ratio(O, t) = O's share of Chromium addressed review comments
   acceptance rate (addressed ÷ comments). From `reviewer_weekly.json`, so a
   dot is a reviewer's average, not a single review: the data has no
   per-(reviewer, CL) rows.
-- Web UI date range: From/To dates (whole weeks, Monday to Sunday) plus presets, applied to
-  every chart, the tiles and the table (see `web/README.md`).
+- Web UI date range: All data, past year or past 3 months (2026-11-08; it was From/To
+  dates plus presets), applied to every chart, the tiles and the table (see `web/README.md`).
 
 **Next steps, in order**
 1. Have the user validate the UI (`cd web && npm run dev`).

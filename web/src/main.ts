@@ -425,7 +425,8 @@ function readStateFromUrl(data: Data): State {
   const dir = q.get('dir');
   const dirNode = dir ? dirNodeByPath(data.areas, dir) : null;
   const hmb = Number(q.get('hmb'));
-  const range = clampRange({ from, to }, full);
+  const preset = q.get('range');
+  const range = preset && RANGE_PRESETS.includes(preset) ? presetRange(data, presetWeeks(preset)) : clampRange({ from, to }, full);
   const asked = q.get('metric');
   const metric = availableMetrics(data).includes(asked as Metric) ? (asked as Metric) : defaultMetric(data);
   return {
@@ -451,11 +452,13 @@ function readStateFromUrl(data: Data): State {
   };
 }
 
-/** `allData` is the "All data" range: a range equal to it is left out of the
- * URL, so a reload or shared link keeps "All data" as new weeks arrive. */
-function writeStateToUrl(s: State, allData: WeekRange) {
-  const all = s.range.from === allData.from && s.range.to === allData.to;
-  history.replaceState(null, '', `#metric=${s.metric}${all ? '' : `&from=${s.range.from}&to=${s.range.to}`}&smooth=${s.smoothing}` +
+/** A range choice goes in the URL by name ("All data" not at all), so a
+ * reload or shared link keeps it as new weeks arrive; any other range (from
+ * an old link) by its weeks. */
+function writeStateToUrl(s: State, data: Data) {
+  const preset = rangePreset(data, s.range);
+  const range = preset === 'all' ? '' : preset ? `&range=${preset}` : `&from=${s.range.from}&to=${s.range.to}`;
+  history.replaceState(null, '', `#metric=${s.metric}${range}&smooth=${s.smoothing}` +
     (s.reviewScale === 'linear' ? '&rscale=linear' : '') +
     (s.reviewRatio ? '&ratio=1' : '') +
     (s.lbSize !== LEADERBOARD_SIZE ? `&lbn=${s.lbSize}` : '') +
@@ -473,8 +476,18 @@ function writeStateToUrl(s: State, allData: WeekRange) {
 /** How many directories the directory field suggests; any other one can be typed. */
 const DIR_OPTIONS = 3000;
 
-/** A range preset button's length in weeks (value.html's data-preset), or null for all data. */
-const presetWeeks = (b: HTMLElement) => (b.dataset.preset === 'all' ? null : Number(b.dataset.preset));
+/** The date range choices (value.html's #range values): weeks back from the
+ * latest week, or "all" for all the data. */
+const RANGE_PRESETS = ['all', '52', '13'];
+const presetWeeks = (v: string) => (v === 'all' ? null : Number(v));
+
+/** The choice whose range is `r`, if any ("all" first, when they coincide). */
+function rangePreset(data: Data, r: WeekRange): string | null {
+  return RANGE_PRESETS.find((v) => {
+    const p = presetRange(data, presetWeeks(v));
+    return p.from === r.from && p.to === r.to;
+  }) ?? null;
+}
 
 function presetRange(data: Data, weeks: number | null): WeekRange {
   const { full, common } = data.ranges;
@@ -596,47 +609,10 @@ function buildControls(data: Data, state: State, render: () => void, renderSoon:
     dirInput.focus();
   });
 
-  const { full } = data.ranges;
-  const fromInput = $<HTMLInputElement>('#from');
-  const toInput = $<HTMLInputElement>('#to');
-  for (const input of [fromInput, toInput]) {
-    input.min = isoDate(weekMonday(full.from));
-    input.max = isoDate(weekSunday(full.to));
-  }
-  // A date picks the ISO week it falls in. The "from" box snaps to that week's
-  // Monday and "to" to its Sunday, but only once the box loses focus, so
-  // typing a date isn't interrupted.
-  const sync = () => {
-    if (document.activeElement !== fromInput) fromInput.value = isoDate(weekMonday(state.range.from));
-    if (document.activeElement !== toInput) toInput.value = isoDate(weekSunday(state.range.to));
-  };
-  const onChange = (end: 'from' | 'to') => () => {
-    const d = parseIsoDate((end === 'from' ? fromInput : toInput).value);
-    if (!d) return;
-    const week = isoWeekOf(d);
-    let { from, to } = state.range;
-    if (end === 'from') {
-      from = week;
-      if (to < from) to = from;
-    } else {
-      to = week;
-      if (from > to) from = to;
-    }
-    state.range = clampRange({ from, to }, full);
+  radios($('#range'), rangePreset(data, state.range) ?? '', (v) => {
+    state.range = presetRange(data, presetWeeks(v));
     render();
-  };
-  fromInput.addEventListener('change', onChange('from'));
-  toInput.addEventListener('change', onChange('to'));
-  fromInput.addEventListener('blur', sync);
-  toInput.addEventListener('blur', sync);
-
-  for (const b of document.querySelectorAll<HTMLButtonElement>('#range-presets button')) {
-    b.addEventListener('click', () => {
-      state.range = presetRange(data, presetWeeks(b));
-      render();
-    });
-  }
-  return sync;
+  });
 }
 
 function renderRangeSummary(data: Data, state: State) {
@@ -644,10 +620,9 @@ function renderRangeSummary(data: Data, state: State) {
   const reviewWeeks = weeksIn(data.summary.meta.weeks, r).length;
   const n = rangeLength(r);
   fill($('#range-summary'), { dates: rangeDates(r), n, review: reviewWeeks, gaps: reviewWeeks < n });
-  for (const b of document.querySelectorAll<HTMLButtonElement>('#range-presets button')) {
-    const pr = presetRange(data, presetWeeks(b));
-    b.setAttribute('aria-pressed', String(pr.from === r.from && pr.to === r.to));
-  }
+  // A range from an old link (from=…&to=…) may match no choice.
+  const preset = rangePreset(data, r);
+  for (const input of $('#range').querySelectorAll<HTMLInputElement>('input')) input.checked = input.value === preset;
 }
 
 function renderTiles(data: Data, weeks: string[]) {
@@ -1403,7 +1378,6 @@ async function main(data: Data) {
   let usageChart: AnyChart | undefined;
   const browsers = topBrowsers(data.radar);
   const jumpWeek = derivativeJumpWeek(data.radar);
-  let syncInputs = () => {};
 
   // Every chart colours orgs from this one map, fixed for the page: the
   // range, metric and filters never repaint an org, and no two orgs share a
@@ -1424,7 +1398,7 @@ async function main(data: Data) {
     else $('main').removeAttribute('aria-busy');
   };
   const renderSoon = () => {
-    writeStateToUrl(state, data.ranges.common);
+    writeStateToUrl(state, data);
     if (pending) return;
     setPending(true);
     // rAF runs just before the next paint; the timeout after it.
@@ -1433,8 +1407,7 @@ async function main(data: Data) {
 
   const render = () => {
     if (pending) setPending(false);
-    writeStateToUrl(state, data.ranges.common);
-    syncInputs();
+    writeStateToUrl(state, data);
     renderRangeSummary(data, state);
     renderMetricNote(data, state);
     userRange = state.range;
@@ -1444,7 +1417,7 @@ async function main(data: Data) {
   // Re-renders only the given sections: what a control inside one of them
   // changes. A full render waiting for the next paint covers it.
   const update: Update = (...sections) => {
-    writeStateToUrl(state, data.ranges.common);
+    writeStateToUrl(state, data);
     if (pending) return;
     userRange = state.range;
     withView(data, state, () => renderViews(new Set(sections)));
@@ -1633,7 +1606,7 @@ async function main(data: Data) {
       if (!card || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
       e.preventDefault();
       state.card = card.id;
-      writeStateToUrl(state, data.ranges.common);
+      writeStateToUrl(state, data);
       card.scrollIntoView({ block: 'start' });
     });
   }
@@ -1670,7 +1643,7 @@ async function main(data: Data) {
     onPick: (m) => pick(m.id),
     none: (q) => msg('lb-search-none', { q }),
   });
-  syncInputs = buildControls(data, state, render, renderSoon, update, withCommits);
+  buildControls(data, state, render, renderSoon, update, withCommits);
   // The metric bar is sticky; scroll-padding-top (in style.css) keeps anchor
   // jumps clear of it, at whatever height it wraps to.
   const metricBar = $('.metric-bar');

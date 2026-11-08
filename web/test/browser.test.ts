@@ -107,6 +107,12 @@ async function defaultPage(): Promise<{ page: Page; errors: string[] }> {
 }
 
 /** Picks a metric and waits for the re-render it schedules (after a paint). */
+/** Picks a date range choice: "all", "52" (past year) or "13" (past 3 months). */
+async function pickRange(page: Page, v: string) {
+  await page.click(`#range input[value="${v}"]`);
+  await page.waitForSelector('body:not([data-pending])');
+}
+
 async function pickMetric(page: Page, id: string) {
   await page.click(`#metric input[value="${id}"]`);
   await page.waitForSelector('body:not([data-pending])');
@@ -196,10 +202,9 @@ test('page loads data and renders all three charts without errors', async () => 
 test('the page names weeks by their dates, never as ISO week labels', async () => {
   // Labels like 2026-W44 stay in the URL and the data; text, hover titles and
   // accessible names show dates (web/README.md, "Text and styling").
-  const { page, errors } = await open();
-  // All the data, then a one-week range.
-  for (const preset of ['all', '1']) {
-    await page.click(`#range-presets button[data-preset="${preset}"]`);
+  // All the data, then a one-week range (from an old link: no choice gives one).
+  for (const hash of ['', '#from=2026-W44&to=2026-W44']) {
+    const { page, errors } = await open(hash);
     await page.waitForSelector('#heat-chart a.hm-box');
     const text = await page.evaluate(() => {
       const parts = [document.body.innerText];
@@ -209,11 +214,11 @@ test('the page names weeks by their dates, never as ISO week labels', async () =
       for (const e of document.body.querySelectorAll('.visually-hidden')) parts.push(e.textContent ?? '');
       return parts.join('\n');
     });
-    assert.doesNotMatch(text, /\b\d{4}-W\d{2}\b/, `week label shown (preset ${preset})`);
-    assert.doesNotMatch(text, /ISO week/i, `"ISO week" shown (preset ${preset})`);
+    assert.doesNotMatch(text, /\b\d{4}-W\d{2}\b/, `week label shown (${hash})`);
+    assert.doesNotMatch(text, /ISO week/i, `"ISO week" shown (${hash})`);
+    assert.deepEqual(errors, []);
+    await page.close();
   }
-  assert.deepEqual(errors, []);
-  await page.close();
 });
 
 test('parity chart: review share against usage share on equal log axes, matching the table', async () => {
@@ -309,8 +314,8 @@ test('parity chart keeps orgs with none of the metric, on a 0 row below the log 
   // The big browser owners get a dot in any range (samsung.com has no
   // addressed comments in some short ones).
   const { page, errors } = await open();
-  for (const preset of ['all', '13', '4', '1']) {
-    await page.click(`#range-presets button[data-preset="${preset}"]`);
+  for (const preset of ['all', '52', '13']) {
+    await pickRange(page, preset);
     const d = await page.evaluate(() => {
       const c = window.__cosh!;
       const p = c.parityChart!;
@@ -369,7 +374,7 @@ test('value charts show the orgs with enough mean usage over the range', async (
     });
   // The last year leaves Amazon out; all the data (back to 2023) brings it back.
   const year = await charted();
-  await page.click('#range-presets button[data-preset="all"]');
+  await pickRange(page, 'all');
   const all = await charted();
   assert.deepEqual(errors, []);
   await page.close();
@@ -1033,10 +1038,6 @@ test('date range defaults to where review and usage data overlap, and drives eve
       return {
         range: c.state.range,
         common: c.data.ranges.common,
-        full: c.data.ranges.full,
-        radarFirst: [...c.data.radar.keys()].sort()[0],
-        from: (document.querySelector('#from') as HTMLInputElement).value,
-        to: (document.querySelector('#to') as HTMLInputElement).value,
         ratioWeeks: c.ratioChart!.data.labels as string[],
         usageWeeks: c.usageChart!.data.labels as string[],
         reviewWeeks: c.reviewChart!.data.labels as string[],
@@ -1044,15 +1045,12 @@ test('date range defaults to where review and usage data overlap, and drives eve
           .flatMap((ds) => (ds as unknown as { counts: number[] }).counts)
           .reduce((s: number, v: number) => s + v, 0),
         summary: document.querySelector('#range-summary')!.textContent,
-        pressed: document.querySelector('#range-presets [aria-pressed="true"]')?.textContent,
+        checked: document.querySelector('#range input:checked')?.closest('label')?.textContent,
       };
     });
   const d = await read();
   assert.deepEqual(d.range, d.common);
-  assert.equal(d.pressed, 'All data');
-  // The inputs show the Monday and Sunday of the range's end weeks.
-  assert.equal(new Date(`${d.from}T00:00:00Z`).getUTCDay(), 1);
-  assert.equal(new Date(`${d.to}T00:00:00Z`).getUTCDay(), 0);
+  assert.equal(d.checked, 'All data');
   assert.equal(d.usageWeeks[0], d.range.from);
   assert.equal(d.usageWeeks[d.usageWeeks.length - 1], d.range.to);
   // The ratio chart's 3-month average starts once its window is full of
@@ -1060,53 +1058,35 @@ test('date range defaults to where review and usage data overlap, and drives eve
   assert.equal(d.ratioWeeks[0], addWeeks(d.range.from, 12));
   assert.deepEqual(d.reviewWeeks.slice(d.reviewWeeks.length - d.ratioWeeks.length), d.ratioWeeks);
   // "All data" stays out of the URL, so a reload follows new data and keeps it picked.
-  assert.doesNotMatch(page.url(), /from=|to=/);
+  assert.doesNotMatch(page.url(), /from=|to=|range=/);
   const pinned = await open(`#metric=comments&from=${d.range.from}&to=${d.range.to}`);
-  assert.equal(await pinned.page.$eval('#range-presets [aria-pressed="true"]', (b) => b.textContent), 'All data');
-  assert.doesNotMatch(pinned.page.url(), /from=|to=/);
+  assert.equal(await pinned.page.$eval('#range input:checked', (i) => i.closest('label')!.textContent), 'All data');
+  assert.doesNotMatch(pinned.page.url(), /from=|to=|range=/);
   await pinned.page.close();
 
-  // Pick an earlier start date, four weeks before the default start: the
-  // usage chart widens to the week of that date, or to the earliest week with
-  // any data when that is later (review data now starts with Radar's, so the
-  // default start may already be the earliest).
-  const earlier = new Date(Date.parse(`${d.from}T00:00:00Z`) - 26 * 86_400_000); // a Wednesday
-  const earlierWeek = isoWeekOf(earlier) < d.full.from ? d.full.from : isoWeekOf(earlier);
-  await page.$eval(
-    '#from',
-    (i, v) => {
-      const input = i as HTMLInputElement;
-      input.value = v;
-      input.dispatchEvent(new Event('change', { bubbles: true }));
-    },
-    earlier.toISOString().slice(0, 10),
-  );
-  const wide = await read();
-  assert.equal(wide.range.from, earlierWeek);
-  // Radar's first week (2023-W27; its data starts Saturday 2023-07-01) can be
-  // later than the earliest review week the pickers allow.
-  assert.equal(wide.usageWeeks[0], earlierWeek < d.radarFirst ? d.radarFirst : earlierWeek);
-  assert.equal(wide.pressed, undefined);
-  assert.match(page.url(), new RegExp(`from=${earlierWeek}`));
-  assert.ok(wide.reviewTotal >= d.reviewTotal);
-
-  // A "from" after "to" pulls "to" along.
-  await page.$eval('#from', (i) => {
-    const input = i as HTMLInputElement;
-    input.value = '2030-01-01';
-    input.dispatchEvent(new Event('change', { bubbles: true }));
-  });
-  const late = await read();
-  assert.ok(late.range.from <= late.range.to, JSON.stringify(late.range));
-
-  // Presets: the latest week only.
-  await page.click('#range-presets [data-preset="1"]');
-  const one = await read();
-  assert.equal(one.range.from, one.range.to);
-  assert.equal(one.range.to, d.common.to);
-  assert.equal(await page.$eval('[data-preset="1"]', (b) => b.getAttribute('aria-pressed')), 'true');
+  // Past year and past 3 months end at the latest week, and go in the URL by name.
+  for (const [v, weeks, name] of [['52', 52, 'Past year'], ['13', 13, 'Past 3 months']] as const) {
+    await pickRange(page, v);
+    const r = await read();
+    assert.deepEqual(r.range, { from: addWeeks(d.common.to, 1 - weeks), to: d.common.to });
+    assert.equal(r.checked, name);
+    assert.equal(r.usageWeeks.length, weeks);
+    assert.ok(r.reviewTotal < d.reviewTotal);
+    assert.match(page.url(), new RegExp(`range=${v}(&|$)`));
+    assert.doesNotMatch(page.url(), /from=|to=/);
+    assert.match(r.summary!, new RegExp(`\\(${weeks} weeks\\)`));
+    const reopened = await open(`#metric=comments&range=${v}`);
+    assert.deepEqual(await reopened.page.evaluate(() => window.__cosh!.state.range), r.range);
+    await reopened.page.close();
+  }
   assert.deepEqual(errors, []);
   await page.close();
+
+  // A range from an old link that matches no choice leaves none picked, and stays in the URL.
+  const old = await open('#metric=comments&from=2026-W30&to=2026-W40');
+  assert.equal(await old.page.$('#range input:checked'), null);
+  assert.match(old.page.url(), /from=2026-W30&to=2026-W40/);
+  await old.page.close();
 });
 
 test('old #week= links open a one-week range', async () => {
@@ -1299,7 +1279,7 @@ test('a control in one section rebuilds only that section; the metric and range 
   assert.equal(await page.$$eval('#leaderboard-chart .lb-row[aria-pressed="true"]', (bs) => bs.length), 0);
   // The top controls change every section.
   assert.deepEqual(await rebuilt(() => pickMetric(page, 'chars')), Object.keys(parts));
-  assert.deepEqual(await rebuilt(click('#range-presets button[data-preset="13"]')), Object.keys(parts));
+  assert.deepEqual(await rebuilt(() => pickRange(page, '13')), Object.keys(parts));
   // Each control's state still reaches the URL.
   const hash = await page.evaluate(() => location.hash);
   for (const p of ['smooth=4', 'rscale=linear', 'hmb=13', 'hmv=share', 'hm=*-google.com', 'cxb=4', 'cxv=volume', 'lbn=50', 'lbo=*-google.com', 'metric=chars'])
@@ -1817,7 +1797,7 @@ test('a link (or a reload) restores the page state from the URL, and the page wr
   // Each control's own test checks what it writes to the URL; this reads every
   // setting back, as a reload or a shared link does.
   const reviewer = await (await defaultPage()).page.$eval('#leaderboard-chart .lb-row', (r) => (r as HTMLElement).dataset.account!);
-  const hash = '#metric=chars&from=2025-W45&to=2026-W44&smooth=52&rscale=linear&lbn=100&lbo=*-google.com' +
+  const hash = '#metric=chars&range=52&smooth=52&rscale=linear&lbn=100&lbo=*-google.com' +
     `&dir=${encodeURIComponent('chrome/')}&hm=microsoft.com&hmb=1&hmv=share&cxb=52&cxv=volume&lbr=${reviewer}`;
   const { page, errors } = await open(hash);
   const got = await page.evaluate(() => {

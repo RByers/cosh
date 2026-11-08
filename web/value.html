@@ -80,24 +80,19 @@
 
     <main hidden>
       <form class="filters" aria-label="Filters">
-        <fieldset id="range" class="range-picker">
-          <legend>Date range <span class="legend-note">(applies to everything below)</span></legend>
-          <div class="range-row">
-            <label>From <input type="date" id="from" required /></label>
-            <label>To <input type="date" id="to" required /></label>
-            <div id="range-presets" class="range-presets" role="group" aria-label="Quick ranges">
-              <button type="button" data-preset="all">All data</button>
-              <button type="button" data-preset="13">Last 13 weeks</button>
-              <button type="button" data-preset="4">Last 4 weeks</button>
-              <button type="button" data-preset="1">Latest week</button>
-            </div>
-          </div>
+        <div>
+          <fieldset id="range" class="segmented">
+            <legend>Date range <span class="legend-note">(applies to everything below)</span></legend>
+            <label><input type="radio" name="range" value="all" />All data</label>
+            <label><input type="radio" name="range" value="52" />Past year</label>
+            <label><input type="radio" name="range" value="13" />Past 3 months</label>
+          </fieldset>
           <p id="range-summary" class="range-summary" aria-live="polite"></p>
           <template data-msg="range-summary">
             <slot name="dates"></slot><span data-if="n!=1"> (<slot name="n"></slot> weeks)</span>.<span data-if="gaps">
             Review data covers <slot name="review"></slot> of <span data-if="n=1">it</span><span data-if="n!=1">them</span>.</span>
           </template>
-        </fieldset>
+        </div>
         <fieldset id="smoothing" class="segmented">
           <legend>Smoothing <span class="legend-note">(running average, for the charts over time)</span></legend>
           <label><input type="radio" name="smoothing" value="1" />Off</label>
