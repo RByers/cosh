@@ -298,6 +298,9 @@ dialog.addEventListener('close', () => {
 interface ChartSpec {
   range: [string, string];
   series: { key: SeriesKey; pick: (d: PersonComments) => PersonComment[] }[];
+  /** One bar per month with every series in it (the lookup popup), rather
+   * than a bar each for given and received. */
+  oneStack?: boolean;
 }
 
 /** A chart series: praise given or received, as change author or as reviewer.
@@ -349,7 +352,7 @@ function drawPersonChart(spec: ChartSpec | null, data?: PersonComments) {
       datasets: spec!.series.map((x, i) => ({
         label: labels[i],
         data: m!.counts[i],
-        stack: x.key.split('-')[0],
+        stack: spec!.oneStack ? 'all' : x.key.split('-')[0],
         backgroundColor: color(x.key),
       })),
     },
@@ -547,6 +550,7 @@ async function lookUp() {
     { email: who.email, boards: ['given', 'received', 'authors', 'reviewers'], period, range }, {
     range: d.weeks,
     series: roleSeries(who.email, ['given', 'received'], (c) => allPraise(c, who.email, d.weeks)),
+    oneStack: true,
   }, (c) => allPraise(c, who.email, range));
 }
 
