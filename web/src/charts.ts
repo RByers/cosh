@@ -746,13 +746,13 @@ export function renderReviewerChart(
   addressed: (number | null)[],
   color: string,
   theme: Theme,
-  /** Their commits per week; null if not loaded. Drawn as a line, a trailing
-   * 3-month mean on an axis of its own; hovering a month gives its own total. */
+  /** Their commits per week; null if not loaded. Drawn per month as a
+   * curved line on an axis of its own. */
   commits: number[] | null = null,
 ): Chart<'bar'> {
   const base = baseOptions(theme);
   // One bar per calendar month: weeks are too narrow to read over a long range.
-  const byMonth = monthlyTotals(weeks, comments, 3);
+  const byMonth = monthlyTotals(weeks, comments);
   const months = byMonth.months;
   // Addressed comments: the month's classified weeks; null if none is classified.
   const addressedMonths: (number | null)[] = months.map(() => null);
@@ -762,11 +762,14 @@ export function renderReviewerChart(
     if (v === null) unclassified[m]++;
     else addressedMonths[m] = (addressedMonths[m] ?? 0) + v;
   });
-  const monthly = commits && commits.some((v) => v > 0) ? monthlyTotals(weeks, commits, 3).months : null;
+  const monthly = commits && commits.some((v) => v > 0) ? monthlyTotals(weeks, commits).months : null;
+  // Each month's own total; monotone curves never overshoot below 0. The
+  // point shows only on hover.
   const commitLine = monthly
-    ? [{ type: 'line' as const, label: 'Commits per month (3-month average)', data: monthly.map((m) => m.mean),
-        yAxisID: 'y2', borderColor: theme.text, backgroundColor: theme.text, borderWidth: 1.5, pointRadius: 0,
-        pointHoverRadius: 0, pointStyle: 'line' as const, order: -1 }]
+    ? [{ type: 'line' as const, label: 'Commits per month', data: monthly.map((m) => m.total), yAxisID: 'y2',
+        cubicInterpolationMode: 'monotone' as const, borderColor: theme.text, backgroundColor: theme.text,
+        borderWidth: 1.5, pointRadius: 0, pointHoverRadius: 4, pointHoverBorderColor: theme.surface,
+        pointHoverBorderWidth: 1.5, order: -1 }]
     : [];
   // Each month is labelled by its first week, so the shared week axis names it.
   const labels = months.map((m) => m.week);
@@ -788,14 +791,15 @@ export function renderReviewerChart(
       plugins: {
         ...base.plugins,
         // Point styles in the legend: a square for each bar series, a short
-        // line for commits (as a box, its 1.5px outline read as a blob).
+        // line for commits (as a box, its 1.5px outline read as a blob). Set
+        // here, not on the dataset, where it would also draw the hover point
+        // as a dash along the curve.
         legend: { ...base.plugins.legend, labels: { ...base.plugins.legend.labels, boxHeight: 10,
-          usePointStyle: true, pointStyleWidth: 16 } },
+          usePointStyle: true, pointStyleWidth: 16,
+          generateLabels: (chart) => Chart.defaults.plugins.legend.labels.generateLabels(chart).map((l) =>
+            (chart.data.datasets[l.datasetIndex!] as { yAxisID?: string } | undefined)?.yAxisID === 'y2' ? { ...l, pointStyle: 'line' as const } : l) } },
         tooltip: {
           ...base.plugins.tooltip,
-          // The commits line's averages stay out of the tooltip: it gives the
-          // month's own total instead.
-          filter: (item) => item.dataset.yAxisID !== 'y2',
           callbacks: {
             title: (items) => {
               const m = items.length ? months[items[0].dataIndex] : null;
@@ -805,10 +809,6 @@ export function renderReviewerChart(
               if (ctx.raw === null) return `${ctx.dataset.label}: not classified`;
               const part = ctx.datasetIndex === 0 && unclassified[ctx.dataIndex] ? ' (classified weeks only)' : '';
               return `${fmtInt(ctx.raw as number)}  ${ctx.dataset.label}${part}`;
-            },
-            afterBody: (items) => {
-              if (!monthly || !items.length) return [];
-              return [`${fmtInt(monthly[items[0].dataIndex].total)}  commits`];
             },
           },
         },

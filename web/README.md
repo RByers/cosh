@@ -307,9 +307,9 @@ there alone; presentation in `src/style.css` (`src/home.css` for the landing pag
    from `reviewer_weekly.json` (no extra data) and has the link to the CLs
    they commented on, on Gerrit. Under Commits, the leaderboard and the
    per-person spread rank commit authors (`author_weekly.json`), and the
-   monthly chart adds their commits as a line on an axis of its own: commits
-   per month as a trailing 3-month average. Hovering a month gives its own
-   total, not the average. It also links to their merged CLs.
+   monthly chart adds their commits per month as a curved line on an axis of
+   its own; hovering a month shows its point and total. It also links to
+   their merged CLs.
 12. **How review threads are classified** (once some week is classified):
    one bar splitting the range's classified reviewer-started threads by how
    each was decided (owner's "Done", Haiku addressed, Haiku no change, no

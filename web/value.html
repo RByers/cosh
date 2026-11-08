@@ -729,7 +729,7 @@
           </div>
           <p id="rd-sub" class="sub"></p>
           <template data-msg="rd-sub">
-            <span data-if="commits"><slot name="commits"></slot> commits (the line: commits per month, as a 3-month average) and </span><slot name="total"></slot>
+            <span data-if="commits"><slot name="commits"></slot> commits (the line: commits per month) and </span><slot name="total"></slot>
             review comments in the range<span data-if="classified">;
             <slot name="addressed"></slot> addressed in the <span data-if="!all"><slot name="classified"></slot> classified </span>week<span data-if="classified!=1">s</span><span data-if="all"> shown</span>
             (the filled bars).</span><span data-if="!classified">. No week in this range is classified yet, so only

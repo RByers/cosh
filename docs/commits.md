@@ -127,7 +127,7 @@ fifth metric button.
   review comments, as it does for Reviewed CLs; Contribution depth shows
   each author's files changed per commit (`author_weekly.json` has a files
   column: every file the counted commits change, in scope or not). A
-  person's weekly chart plots their commits per month as a 3-month average.
+  person's monthly chart plots their commits per month as a curved line.
   Sections were renamed so
   they fit either side, and no heading changes with the metric anymore:
   Contribution by organization, Contribution by directory (and over time),

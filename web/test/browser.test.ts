@@ -2589,17 +2589,19 @@ test('Commits: a fifth metric, loaded on demand, with the same section headings'
     const c = window.__cosh!.reviewerChart!;
     const line = c.data.datasets.find((d) => (d as { yAxisID?: string }).yAxisID === 'y2')!;
     const points = (line.data as (number | null)[]).filter((v) => v !== null).length;
-    const afterBody = c.options.plugins!.tooltip!.callbacks!.afterBody as unknown as (items: { dataIndex: number }[]) => string[];
+    const l = line as unknown as { cubicInterpolationMode: string; pointRadius: number; pointHoverRadius: number };
     return { axis: (c.options.scales as Record<string, { title: { text: string } }>).y2.title.text, label: line.label,
-      points, weeks: c.data.labels!.length, hover: afterBody([{ dataIndex: 0 }]) };
+      points, weeks: c.data.labels!.length, curve: l.cubicInterpolationMode, radius: [l.pointRadius, l.pointHoverRadius] };
   });
   assert.equal(rd.axis, 'commits per month');
-  assert.equal(rd.label, 'Commits per month (3-month average)');
+  assert.equal(rd.label, 'Commits per month');
+  // A curve through each month's own total; its point shows only on hover.
+  assert.equal(rd.curve, 'monotone');
+  assert.deepEqual(rd.radius, [0, 4]);
   // One bar and one line point per month the range touches.
   const nWeeks = weeksIn(summary.meta.weeks, await page.evaluate(() => window.__cosh!.state.range)).length;
   assert.equal(rd.points, rd.weeks);
   assert.ok(rd.weeks >= Math.floor(nWeeks / 5) && rd.weeks <= Math.ceil(nWeeks / 4) + 1, `${JSON.stringify(rd)} for ${nWeeks} weeks`);
-  assert.match(rd.hover[0], /^[\d,]+  commits$/);
   // The tile totals the summary's commits over the range.
   const range = await page.evaluate(() => window.__cosh!.state.range);
   const weeks = new Set(weeksIn(summary.meta.weeks, range));

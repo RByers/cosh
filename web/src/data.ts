@@ -1066,8 +1066,6 @@ export interface MonthTotal {
   /** "Mar 2026". */
   label: string;
   total: number;
-  /** Trailing mean of the month's and the `window - 1` previous months' totals. */
-  mean: number;
   /** Index of its middle week in the weeks given. */
   at: number;
   /** Its first week in the weeks given. */
@@ -1077,13 +1075,11 @@ export interface MonthTotal {
 }
 
 /** Weekly counts (`values[i]` in `weeks[i]`, consecutive weeks) as calendar
- * months, by each week's Thursday (weekMonth): each month's total, a
- * trailing mean over it and the `window - 1` months before it (fewer at the
- * start of the weeks), and for each week the index of its month. */
+ * months, by each week's Thursday (weekMonth): each month's total, and for
+ * each week the index of its month. */
 export function monthlyTotals(
   weeks: readonly string[],
   values: readonly number[],
-  window = 3,
 ): { months: MonthTotal[]; monthOf: number[] } {
   const months: (MonthTotal & { first: number; last: number })[] = [];
   const monthOf: number[] = [];
@@ -1093,7 +1089,7 @@ export function monthlyTotals(
     const k = `${m.year}-${m.month}`;
     if (k !== key) {
       key = k;
-      months.push({ label: `${MONTHS[m.month]} ${m.year}`, total: 0, mean: 0, at: i, week: w, partial: false,
+      months.push({ label: `${MONTHS[m.month]} ${m.year}`, total: 0, at: i, week: w, partial: false,
         first: i, last: i });
     }
     const cur = months[months.length - 1];
@@ -1101,9 +1097,7 @@ export function monthlyTotals(
     cur.last = i;
     monthOf.push(months.length - 1);
   });
-  months.forEach((m, j) => {
-    const span = months.slice(Math.max(0, j - window + 1), j + 1);
-    m.mean = span.reduce((s, x) => s + x.total, 0) / span.length;
+  months.forEach((m) => {
     m.at = Math.floor((m.first + m.last) / 2);
     const same = (w: string) => { const x = weekMonth(w); const y = weekMonth(weeks[m.first]); return x.month === y.month && x.year === y.year; };
     m.partial = (m.first === 0 && same(addWeeks(weeks[0], -1))) ||

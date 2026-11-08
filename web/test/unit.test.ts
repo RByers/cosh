@@ -1345,12 +1345,12 @@ test('orgFilesPerCommitSpreads: files over commits per author, authors with too 
     [['x.com', [[7, 3]], 3], [OTHER, [[8, 10]], 10]]);
 });
 
-test('monthlyTotals: calendar months by Thursday, a trailing mean, each week\'s month', () => {
+test('monthlyTotals: calendar months by Thursday, each week\'s month', () => {
   // 2026-W40 starts on Sep 28, but its Thursday is Oct 1, so it is October's.
   const weeks = ['2026-W39', '2026-W40', '2026-W41', '2026-W44', '2026-W45', '2026-W49'];
-  const m = monthlyTotals(weeks, [1, 2, 3, 4, 5, 6], 3);
-  assert.deepEqual(m.months.map((x) => [x.label, x.total, x.mean]),
-    [['Sep 2026', 1, 1], ['Oct 2026', 9, 5], ['Nov 2026', 5, 5], ['Dec 2026', 6, 20 / 3]]);
+  const m = monthlyTotals(weeks, [1, 2, 3, 4, 5, 6]);
+  assert.deepEqual(m.months.map((x) => [x.label, x.total]),
+    [['Sep 2026', 1], ['Oct 2026', 9], ['Nov 2026', 5], ['Dec 2026', 6]]);
   assert.deepEqual(m.monthOf, [0, 1, 1, 1, 2, 3]);
   assert.deepEqual(m.months.map((x) => x.at), [0, 2, 4, 5]);
   assert.deepEqual(m.months.map((x) => x.week), ['2026-W39', '2026-W40', '2026-W45', '2026-W49']);
