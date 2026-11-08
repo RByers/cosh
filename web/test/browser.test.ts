@@ -2186,7 +2186,7 @@ test('the landing page links to the Value Exchange dashboard', async () => {
   page.on('pageerror', (e) => errors.push(String(e)));
   await page.setViewport({ width: 1100, height: 900 });
   await page.goto(baseUrl, { waitUntil: 'load' });
-  assert.equal(await page.title(), 'Chromium Open Source');
+  assert.equal(await page.title(), 'Chromium Open Source Health');
   const cards = await page.$$eval('.cards a', (as) =>
     as.map((a) => ({ href: a.getAttribute('href'), title: a.querySelector('h3')!.textContent })));
   assert.deepEqual(cards, [
@@ -2196,7 +2196,7 @@ test('the landing page links to the Value Exchange dashboard', async () => {
   // Styled by its own sheet.
   assert.match(await page.$eval('body', (b) => getComputedStyle(b).fontFamily), /system-ui/);
   await Promise.all([page.waitForNavigation(), page.click('.cards a')]);
-  assert.equal(await page.title(), 'Value Exchange - Chromium Open Source');
+  assert.equal(await page.title(), 'Value Exchange - Chromium Open Source Health');
   await page.waitForSelector('body[data-ready]');
   // …and the dashboard links back.
   assert.equal(await page.$eval('.crumb a', (a) => a.getAttribute('href')), './');
@@ -2229,7 +2229,7 @@ test('the Review Tone page: trend, praise leaderboard and samples; names only fo
   await page.setViewport({ width: 1100, height: 900 });
   await page.goto(baseUrl + 'sentiment.html', { waitUntil: 'load' });
   await page.waitForSelector('body[data-ready]');
-  assert.equal(await page.title(), 'Review Tone - Chromium Open Source');
+  assert.equal(await page.title(), 'Review Tone - Chromium Open Source Health');
   assert.equal(await page.$eval('#error', (e) => (e as HTMLElement).hidden), true);
   assert.equal(await page.$eval('.crumb a', (a) => a.getAttribute('href')), './');
   // Both charts drew.
