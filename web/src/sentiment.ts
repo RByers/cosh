@@ -314,7 +314,7 @@ function drawPersonChart(email: string) {
       interaction: { mode: 'index', intersect: false },
       scales: {
         x: { grid: { display: false }, ticks: { ...axis, maxRotation: 0, autoSkip: true, maxTicksLimit: 7 } },
-        y: { beginAtZero: true, grid: { color: theme.grid }, ticks: { ...axis, precision: 0 } },
+        y: { beginAtZero: true, grace: '10%', grid: { color: theme.grid }, ticks: { ...axis, precision: 0 } },
       },
       plugins: {
         legend: { labels: axis },

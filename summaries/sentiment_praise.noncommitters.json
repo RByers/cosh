@@ -1,5 +1,5 @@
 {
- "generated_at": "2026-11-08T00:48:37Z",
+ "generated_at": "2026-11-08T01:15:26Z",
  "prompt": "v3",
  "model": "haiku",
  "weeks": [
@@ -168,8 +168,14 @@
   {
    "week": "2026-W38",
    "email": "brianwang1984@bytedance.com",
-   "given": 1,
+   "given": 2,
    "received": 0
+  },
+  {
+   "week": "2026-W38",
+   "email": "dmurph@chromium.org",
+   "given": 0,
+   "received": 1
   },
   {
    "week": "2026-W38",
@@ -638,6 +644,12 @@
      "praise": 3
     },
     {
+     "email": "brianwang1984@bytedance.com",
+     "name": "Brian Wang",
+     "score": 1.1,
+     "praise": 4
+    },
+    {
      "email": "tkfydtls464@gmail.com",
      "name": "injun choi",
      "score": 1.0,
@@ -666,12 +678,6 @@
      "name": "Velikapati Dinesh (xWF)",
      "score": 0.8,
      "praise": 2
-    },
-    {
-     "email": "brianwang1984@bytedance.com",
-     "name": "Brian Wang",
-     "score": 0.7,
-     "praise": 3
     },
     {
      "email": "hop2deep@gmail.com",
@@ -834,8 +840,8 @@
     {
      "email": "dmurph@chromium.org",
      "name": "Daniel Murphy",
-     "score": 1.0,
-     "praise": 2
+     "score": 1.4,
+     "praise": 3
     },
     {
      "email": "kbabbitt@microsoft.com",

@@ -195,8 +195,8 @@ def build(weeks, data_dir=store.DATA_DIR, version=None, sandbox="auto", authors=
           praise_weeks=None):
     """The page's detail for comments written by `authors` (S.AUTHORS), and
     the comments behind its name popups: (detail, comments). `praise_weeks`
-    (default `weeks`) are the praise boards' weeks, which need only their
-    praise scored (`score --praise-only`)."""
+    (default `weeks`) are the praise boards' weeks, which may be more than
+    `weeks` (the week-by-week detail here)."""
     rows, scores, missing, n_trivial = load(weeks, data_dir, version)
     praise_weeks = praise_weeks or weeks
     extra = [w for w in praise_weeks if w not in weeks]

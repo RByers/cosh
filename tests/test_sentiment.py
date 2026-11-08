@@ -176,10 +176,11 @@ class PraiseTest(unittest.TestCase):
         self.assertEqual(doc["net"]["all"]["received"], [dict(email="rev@microsoft.com", name="Rev", score=0.5, praise=1)])
         self.assertTrue(all(x["score"] > 0 for p in doc["net"].values() for b in p.values() for x in b))
 
-    def test_is_praise_needs_the_words(self):
+    def test_is_praise_is_the_score_alone(self):
         self.assertTrue(S.is_praise({"id": "x", "text": "Thanks, great find"}, {"x": (0.5, False, None)}))
-        self.assertFalse(S.is_praise({"id": "x", "text": "Sure, will land it"}, {"x": (0.5, False, None)}))
-        self.assertFalse(S.is_praise({"id": "x", "text": "Thanks"}, {"x": (0.1, False, None)}))
+        self.assertTrue(S.is_praise({"id": "x", "text": "I really like this, nifty"}, {"x": (0.4, False, None)}))
+        self.assertFalse(S.is_praise({"id": "x", "text": "Thanks"}, {"x": (0.3, False, None)}))
+        self.assertFalse(S.is_praise({"id": "x", "text": "Thanks"}, {"x": None}))
 
 
 class FakeSandbox:
@@ -372,9 +373,9 @@ class RecentTest(unittest.TestCase):
         rows, scores = self.rows()
         for r in rows:
             r.update(project="chromium/src", cl=100, uuid=r["id"].split("/")[1])
-        rows[3]["text"] = "Makes sense, landing it"                  # P13: glowing, but no praise words
+        rows[3]["text"] = "Makes sense, landing it"                  # P13: glowing, no praise words, still praise
         d = R.person_comments(rows, scores, ["2026-W44"], ["2026-W44"])
-        self.assertEqual(d["praise"], ["100/r2"])                     # P12: "thanks" and glowing
+        self.assertEqual(d["praise"], ["100/r2", "100/r3"])
         self.assertEqual(d["happy"]["all"]["authors"], {"owner@x.org": ["100/r2", "100/r3"]})
         self.assertEqual(d["happy"]["all"]["reviewers"], {})
         self.assertEqual(set(d["comments"]), {"100/r2", "100/r3"})

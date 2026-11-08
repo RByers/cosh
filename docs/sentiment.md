@@ -71,7 +71,6 @@ python3 -m cosh.sentiment summary --name sample-5pct
 # Whole weeks can be collected and scored too (comments-<week>.jsonl, ~25 s a week to collect)
 python3 -m cosh.sentiment collect --week 2026-W44
 python3 -m cosh.sentiment score --week 2026-W44                # every comment
-python3 -m cosh.sentiment score --week 2026-W44 --praise-only  # only comments with praise words (~17%)
 # The praise leaderboard over scored weeks -> summaries/sentiment_praise.json
 python3 -m cosh.sentiment praise --week 2026-W37:2026-W44
 # Sample comments from fully scored weeks -> summaries/sentiment_samples.json
@@ -215,22 +214,25 @@ with a positive total (Top 15 or All), each with a score pill. Net praise
 needs the week files with identities (`cosh.sentiment_people collect`).
 
 - **Praise** is a comment scored glowing (≥ +0.4: specific appreciation or
-  stronger) that also contains a praise word (`PRAISE`: thanks, great,
-  nice, good catch, appreciate, …). The word test keeps weeks scored with
-  `--praise-only` comparable with fully scored ones.
+  stronger), from one person to another. The score alone decides, since
+  2026-11-07. Before, a comment also needed a praise word (a regex:
+  thanks, great, nice, …), so that weeks scored only where the regex
+  matched (`score --praise-only`, now removed) could be counted. On
+  2026-W37..W44 that missed 76 of 1,001 glowing comments, and a sample of
+  30 of them was nearly all real praise ("I really like these annotations",
+  "Good instinct!", "Nifty!", 🔥🔥🔥). +0.3 is too low a bar: it adds about
+  4,400 comments over those weeks, mostly routine thanks.
 - **Names are attached only to praise.** `praise` reruns `collect` for each
   week with `keep` set to the glowing comment ids, so no other comment's
   row is even built, and an `annotate` hook adds the writer and recipient.
   `tests/test_sentiment.py` (`PraiseTest`) checks that a negative comment
   never reaches the hook.
-- **Coverage.** Every week needs its `comments-<week>.jsonl` and scores for
-  every comment with a praise word. `praise` reports any unscored ones per
-  week in `coverage`.
-- **Cost.** On 2026-W37..W44 (fully scored), `PRAISE` matched 17% of
-  substantive comments and 92% of glowing ones (925 of 1,001), so
-  `--praise-only` costs about a fifth of full scoring: about $0.25 and 2
-  minutes a week, or $10–15 for a year. Those 8 weeks gave 849 praise
-  comments among 647 people; the most generous person gave 25.
+- **Coverage.** Every week needs its `comments-<week>.jsonl` (with
+  identities, `cosh.sentiment_people collect`) and every comment scored.
+  `praise` reports any unscored ones per week in `coverage`.
+- **Cost.** Full scoring is about $1.25 of Max usage and 3–4 minutes a
+  week at 8 calls at once. 2026-W37..W44 gave 872 praise comments by
+  committers among 621 people.
 
 ## Sample comments (`samples`)
 
@@ -241,7 +243,7 @@ comment id, so reruns pick the same ones. Only comments of at most 400
 characters are considered.
 
 - **Praise:** a score of +0.5 or more (+0.8 was tried first; it is rare,
-  3 in 8 weeks), a praise word and a human recipient. Each comes with
+  3 in 8 weeks) and a human recipient. Each comes with
   writer, recipient, date and a Gerrit link (`comment_url`). Names are
   attached as in `praise`: `collect` builds only the sampled comments.
 - **Grumpiness:** a score of −0.6 or less, not flagged as AI friction
@@ -273,6 +275,13 @@ scored (2026-W37..W44 so far):
   comment, are listed, top 100. Each row has the name, the email, the
   glowing count, the distinct happy people and the counterparts: no
   per-person mean, which could be negative.
+- **Name popups** also chart the person's praise given and received per
+  month over every week of `sentiment_praise.json` (praise counts only, so
+  nothing negative can show). The praise board's lookup box opens the same
+  popup for any email or unique name in that file, with autocomplete. The
+  praise boards can cover more weeks than the detail here:
+  `--praise-week 2025-W45:2026-W44` puts their praise comments in the popup
+  file while everything else stays on `--week`.
 - **Name popups:** `summaries/sentiment_comments.json` (and its .everyone
   and .noncommitters versions, about 0.5 MB each, loaded on the first
   popup) holds the comments behind the praise boards and the happy tables:

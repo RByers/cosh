@@ -195,14 +195,6 @@ def render(c):
 TRIVIAL = re.compile(r"^\W*(done|ack(nowledged)?|lgtm|ptal|fixed|resolved|marked as resolved|thanks?( you)?|"
                      r"ok(ay)?|sgtm|nit|\+1|will do|updated|lgtm,? thanks?( you)?|done,? thanks?( you)?|"
                      r"thanks?( you)?,? done)\W*$", re.I)
-# Words that most praise uses. `score --praise-only` scores just the comments
-# that match: on 2026-W37..W44 that was 17% of substantive comments and 92%
-# of the glowing ones (docs/sentiment.md, "Praise leaderboard").
-PRAISE = re.compile(r"thank|thx|great|nice|awesome|excellent|amazing|appreciat|"
-                    r"good (catch|find|point|idea|call|work|job|question)|kudos|brilliant|fantastic|wonderful|"
-                    r"impressive|love|cool|neat|helpful|clever|elegant|beautiful|well done|bravo|wow|woah|whoa|"
-                    r"perfect|superb|lovely|glad|happy|congrat|hero|stellar|🎉|🙏|❤|👍|💯|🚀|😍|🥳|\bty\b|\btyvm\b",
-                    re.I)
 
 PROMPT_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
                           "scripts", "sentiment_prompts")
@@ -361,14 +353,10 @@ def open_scores(data_dir=store.DATA_DIR):
 
 
 def score_week(week, data_dir=store.DATA_DIR, version=None, model="haiku", batch=50, jobs=8, limit=None,
-               sandbox="auto", praise_only=False):
+               sandbox="auto"):
     """Score every comment of `week` not yet scored with the current prompt,
-    saving each batch as it lands (so a stopped run resumes). praise_only:
-    just the comments PRAISE matches (enough for the praise leaderboard,
-    not for aggregates over the week)."""
+    saving each batch as it lands (so a stopped run resumes)."""
     rows = read_jsonl(os.path.join(out_dir(data_dir), f"comments-{week}.jsonl"))
-    if praise_only:
-        rows = [r for r in rows if PRAISE.search(r["text"])]
     definition = load_prompt(version)
     sha = prompt_sha(definition)
     db = open_scores(data_dir)
@@ -584,10 +572,12 @@ PRAISE_SUMMARY = os.path.join(os.path.dirname(SUMMARY), "sentiment_praise.json")
 
 
 def is_praise(row, scores):
-    """A glowing comment that PRAISE matches. Requiring the match keeps weeks
-    scored with --praise-only comparable with fully scored ones."""
+    """A glowing comment (score >= GLOWING, specific appreciation or
+    stronger). The model's score alone decides: a word list missed about 8%
+    of glowing comments ("I really like this", "Nifty!", emoji), so it was
+    dropped on 2026-11-07."""
     s = scores.get(row["id"])
-    return s is not None and s[0] >= GLOWING and bool(PRAISE.search(row["text"]))
+    return s is not None and s[0] >= GLOWING
 
 
 MONTH_WEEKS = 4      # the boards' "past month": the last four weeks
@@ -658,8 +648,7 @@ def praise(weeks, data_dir=store.DATA_DIR, version=None, authors=DEFAULT_AUTHORS
         p = os.path.join(out_dir(data_dir), f"comments-{w}.jsonl")
         if not os.path.exists(p):
             raise SystemExit(f"{w}: collect and score the week first ({p} is missing)")
-        unscored = sum(1 for r in read_jsonl(p) if r["id"] not in scores and PRAISE.search(r["text"])
-                       and not TRIVIAL.match(r["text"]))
+        unscored = sum(1 for r in read_jsonl(p) if r["id"] not in scores and not TRIVIAL.match(r["text"]))
         coverage.append(dict(week=w, unscored=unscored))
         got = []
         collect(w, data_dir, keep=glowing.__contains__,
@@ -804,8 +793,6 @@ def main(argv):
     import argparse
     ap = argparse.ArgumentParser(prog="python3 -m cosh.sentiment")
     ap.add_argument("step", choices=["collect", "score", "summary", "praise", "samples"])
-    ap.add_argument("--praise-only", action="store_true",
-                    help="score: only comments with praise words (enough for `praise`, not for aggregates)")
     ap.add_argument("--week", default="2026-W44", help="a week or a range, e.g. 2026-W37:2026-W44")
     ap.add_argument("--sample", type=float, default=None,
                     help="collect: a deterministic sample at this rate over --week's range, written as "
@@ -839,8 +826,7 @@ def main(argv):
             print(f"{len(rows)} comments -> {p} ({time.time() - t0:.0f}s)", file=sys.stderr)
     elif a.step == "score":
         for name in ([a.name] if a.name else weeks):
-            st = score_week(name, version=a.prompt, jobs=a.jobs, batch=a.batch, limit=a.limit, sandbox=a.sandbox,
-                            praise_only=a.praise_only)
+            st = score_week(name, version=a.prompt, jobs=a.jobs, batch=a.batch, limit=a.limit, sandbox=a.sandbox)
             print(f"{name}: scored {st['n']} in {st['calls']} calls, {st['tokens']} tokens, ${st['usd']:.2f} "
                   f"API-equivalent, {time.time() - t0:.0f}s", file=sys.stderr)
     elif a.step == "samples":
