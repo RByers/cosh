@@ -23,8 +23,11 @@ This is `docs/plan.md` ground rule 5 (user's policy, 2026-11-06, relaxed
   (reviewer vs CL owner) or by recipient kind (human vs AI), are fine.
 - **Organizations get no tone figures at all**, positive or negative.
 - **People may be named for praise:** the praise leaderboards, "who makes
-  whom happy" (counts of happy counterparts only) and sample praise with
+  whom happy" (counts of glowing comments only) and sample praise with
   Gerrit links.
+- **Net praise may net out grumpiness** (2026-11-07): the praise boards rank
+  by praise scores less grumpy ones, publishing only positive totals,
+  summed per period. Nothing shows a person's grumpiness on its own.
 - **Negative comments appear only anonymously**: text, month and at most
   the writer's role. Grumpy samples and the AI-friction list both pass a
   sandboxed screen (`screen_identifying`) for anything that identifies
@@ -202,6 +205,15 @@ praise comments they wrote (`given`) and were the recipient of
 praise counts: praise for an AI agent, or an owner's own top-level note,
 is left out.
 
+The boards rank by **net praise** (`net`, from `net_praise`, since
+2026-11-07): for each person, the scores of the praise comments they gave
+(or received), plus the scores of their grumpy ones (≤ −0.3, `ANGRY`), so
+those subtract. Neutral comments count for nothing. Totals are summed over
+all the scored weeks and over the last four, and only positive ones are
+published, with how many praise comments went in. The page lists everyone
+with a positive total (Top 15 or All), each with a score pill. Net praise
+needs the week files with identities (`cosh.sentiment_people collect`).
+
 - **Praise** is a comment scored glowing (≥ +0.4: specific appreciation or
   stronger) that also contains a praise word (`PRAISE`: thanks, great,
   nice, good catch, appreciate, …). The word test keeps weeks scored with
@@ -252,13 +264,15 @@ scored (2026-W37..W44 so far):
   average, the glowing and angry shares and the AI-friction count; the same
   per week; and the number of comments at each score, rounded to 0.1.
 - **Who makes whom happy**, over all the weeks and over the last four:
-  - *authors*: CL owners, counting the distinct reviewers who commented on
-    their CLs and how many of them wrote at least one glowing comment;
+  - *authors*: CL owners, from the glowing comments reviewers wrote on
+    their CLs;
   - *reviewers*: the same for CL owners' replies to reviewers.
-  Only people with at least 6 such counterparts and one happy one are
-  listed, top 100, ranked by happy counterparts. Each row has only the
-  name, the email and the two counts: no per-person mean, which could be
-  negative.
+  Ranked by every glowing comment (`glowing`), repeats from one person
+  included, since 2026-11-07 (before, by distinct happy people). Only people
+  at least 6 different people commented to that way, with one glowing
+  comment, are listed, top 100. Each row has the name, the email, the
+  glowing count, the distinct happy people and the counterparts: no
+  per-person mean, which could be negative.
 - **Name popups:** `summaries/sentiment_comments.json` (and its .everyone
   and .noncommitters versions, about 0.5 MB each, loaded on the first
   popup) holds the comments behind the praise boards and the happy tables:

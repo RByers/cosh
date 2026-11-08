@@ -80,8 +80,13 @@ value_ratio(O, t) = O's share of Chromium addressed review comments
      are fine.
    - **Organizations get no tone figures at all**, positive or negative.
    - **People may be named for praise:** the praise leaderboards, "who makes
-     whom happy" (counts of happy counterparts only, never a mean or
-     anything negative) and sample praise with Gerrit links.
+     whom happy" (counts of glowing comments, never a mean or anything
+     negative) and sample praise with Gerrit links.
+   - **Net praise may net out grumpiness** (user's decision, 2026-11-07):
+     the praise boards rank people by their praise scores less their
+     grumpy ones. Grumpiness only lowers a total; only positive totals are
+     published, already summed per period, so no published figure shows
+     anyone's negative tone on its own or highlights it.
    - **Negative comments appear only anonymously:** text, month and at most
      the writer's role, no names, links, files or exact dates. That covers
      the grumpy samples and the AI-friction list. Each one must pass a
@@ -184,6 +189,7 @@ value_ratio(O, t) = O's share of Chromium addressed review comments
 | 2026-11-07 | **Patch-set fetch backs off together on HTTP 429; at most 7 workers.** At 8 workers googlesource answered about 20 of 190 fetches with HTTP 429 ("Short term server-time rate limit exceeded", anonymous quota). Each worker had backed off alone and split its batch after two 429s, so the total rate barely dropped. Now a shared throttle pauses every worker (60 s, doubling to 15 min while 429s continue), runs one fewer fetch per 429 burst, and adds one back after 10 min without a 429. Rate-limited batches are retried whole, never split. The user asked to run at the server's limit with `--jobs 7` as the cap. Stopped at 193/369 fetches (31 GB) for a reboot; resume with `--jobs 7`. |
 | 2026-11-07 | **Committer status from the listings we hold.** `derive` fills a new `committers` table: an account is a committer if Gerrit lets it vote Code-Review (`permitted_voting_range` on any listing), and not one if it lacks a range on an open or abandoned CL. Newest listing wins. It is the status when the listings were fetched (Nov 3–5), used for comments of every date. Last year: 98.7% of non-bot comments by committers, 0.9% by non-committers, 0.4% unknown. Details in `docs/committers.md` | User's choice of the snapshot over vote-dated status: about 1% of last year's comments may be misplaced (2.5% over 3 years, former committers). Spam comes from non-committers |
 | 2026-11-07 | **Commits: a fifth Value Exchange metric, credited to the git author** (`docs/commits.md`). `cosh commits` (and the end of a full `derive`) reads `main`'s first-parent history from the local shared clone, offline, into derived.sqlite's `commits` and `commit_dirs` (about 1 min). A commit is a bot's if its CL is bot-owned or its git author matches `config/bots.txt` (a WebLayer builder authored 739 commits on human-owned CLs). `summarize` adds `commits`, `authors` and `share_commits` to `org_weekly` and writes `author_weekly.json`, `area_commits.json` and `area_authors.json`, which the page fetches only for Commits or Ratio (+31 KB gzipped on every visit; 1.8 MB, then 3.4 MB for links, on demand). Sections are renamed to fit either side and no heading changes with the metric: Contribution by organization / by directory / by directory over time / per person, Leaderboard, Review depth (was "<metric> per review"). The organization chart gets a **Ratio** toggle (Off by default): the review metric over commits, addressed comments over commits under Commits. Named orgs now need 0.25% of review comments *or* commits | User's instruction: "use commit author, count commits, show it as a 5th button", rename sections so they suit either, keep section names stable, add the Ratio toggle |
+| 2026-11-07 | **Review Tone: net praise boards, every glowing comment counts.** The praise boards rank by net praise: the scores of each person's praise comments plus the (negative) scores of their grumpy ones (≤ −0.3), neutral ones ignored, given and received alike; everyone with a positive total is listed (Top 15 / All), each with a score pill. `summaries/sentiment_praise.json` holds the boards per period (`net`), positive totals only. The "who makes whom happy" tables rank by every glowing comment, repeats from one person included (`glowing`), instead of distinct happy people; the 6-counterpart minimum stays. Ground rule 5 now allows grumpiness to lower a published praise total | User's instruction: "we're not at all highlighting the grump". Over 2026-W37..W44, repeats within a pair were about 15% of glowing comments in the happy tables |
 
 ## Status
 

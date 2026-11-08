@@ -2255,22 +2255,29 @@ test('the Review Tone page: last two months, board controls, happy tables, AI li
   for (const w of weeks) assert.match(w, /^\d{1,2} \w{3,4} \d{4}$/);
   assert.ok((await page.$eval('#recent-dist', (c) => (c as HTMLCanvasElement).width)) > 0);
 
-  // The praise boards: Top 100 shows more rows (up to 100); the past month changes the caption.
+  // The praise boards: net praise pills, highest first and all positive; "All" shows
+  // everyone with a positive total; the past month changes the caption.
   const rows = (id: string) => page.$$eval(`${id} tbody tr`, (trs) => trs.length);
   const given15 = await rows('#praise-given');
   assert.ok(given15 > 0 && given15 <= 15);
-  await page.click('#praise-size input[value="100"]');
-  const given100 = await rows('#praise-given');
-  assert.ok(given100 >= given15 && given100 <= 100);
+  const net = await page.$$eval('#praise-given tbody tr td:last-child .score-badge', (bs) => bs.map((b) => b.textContent!));
+  assert.equal(net.length, given15);
+  for (const v of net) assert.match(v, /^\+\d+\.\d$/);
+  const nets = net.map(Number);
+  assert.deepEqual(nets, [...nets].sort((a, b) => b - a));
+  await page.click('#praise-size input[value="all"]');
+  const givenAll = await rows('#praise-given');
+  assert.ok(givenAll > 100, `${givenAll} people with positive net praise`);
   const allSub = await page.$eval('#praise-sub', (e) => e.textContent!);
   await page.click('#praise-period input[value="month"]');
   assert.notEqual(await page.$eval('#praise-sub', (e) => e.textContent!), allSub);
   assert.ok((await rows('#praise-given')) > 0);
 
-  // Happy tables: names with "N of M" counts, expandable too.
+  // Happy tables: names with glowing comment counts, highest first, expandable too.
   const happy = await page.$$eval('#happy-authors tbody tr td:last-child', (tds) => tds.map((t) => t.textContent!));
   assert.ok(happy.length > 0 && happy.length <= 15);
-  for (const h of happy) assert.match(h, /^\d+ of \d+$/);
+  for (const h of happy) assert.match(h, /^\d+$/);
+  assert.deepEqual(happy.map(Number), happy.map(Number).sort((a, b) => b - a));
   await page.click('#happy-size input[value="100"]');
   assert.ok((await rows('#happy-authors')) >= happy.length);
   await page.click('#happy-period input[value="month"]');
@@ -2334,7 +2341,7 @@ test('the Review Tone page: the "Comments by" switch redraws every section and i
   for (const id of ['#trend-mean', '#trend-shares', '#recent-dist']) {
     assert.ok((await page.$eval(id, (c) => (c as HTMLCanvasElement).width)) > 0, id);
   }
-  await page.click('#praise-size input[value="100"]');
+  await page.click('#praise-size input[value="all"]');
   assert.ok((await page.$$eval('#praise-given tbody tr', (trs) => trs.length)) > 0);
 
   // A link with ?authors= opens on that choice; back to committers drops it.
@@ -2361,7 +2368,8 @@ test('the Review Tone page: a name on a board opens a popup with its praise, lin
 
   // The top praise giver: the popup lists as many comments as the board counts.
   const top = await page.$eval('#praise-given tbody tr', (tr) => ({
-    name: tr.querySelector('button')!.textContent!, count: Number(tr.lastElementChild!.textContent!.replace(/,/g, '')) }));
+    name: tr.querySelector('button')!.textContent!,
+    count: Number(/\((\d+) praise comments\)/.exec((tr.lastElementChild as HTMLElement).querySelector<HTMLElement>('.score-badge')!.title)![1]) }));
   await page.click('#praise-given tbody tr button');
   await page.waitForFunction(() => document.querySelectorAll('#person-list li.quote').length > 0);
   assert.equal(await dialog(), true);

@@ -1102,7 +1102,7 @@ test("leaderboard size 'all' takes every reviewer with a nonzero value", () => {
 });
 
 test('Review Tone: praise boards, dates and Gerrit links', async () => {
-  const { praiseBoard, praiseTotal, praisePeople, weeksBetween, monthLabel, dayLabel, gerritLink } = await import(
+  const { netBoard, praiseTotal, praisePeople, weeksBetween, monthLabel, dayLabel, gerritLink } = await import(
     '../src/tone.ts'
   );
   const d = {
@@ -1114,10 +1114,20 @@ test('Review Tone: praise boards, dates and Gerrit links', async () => {
       { week: '2026-W37', email: 'b@x.org', given: 0, received: 2 },
       { week: '2026-W38', email: 'c@x.org', given: 1, received: 1 },
     ],
+    net_scale: 5,
+    net: {
+      all: {
+        given: [{ email: 'a@x.org', name: 'Ann', score: 1.4, praise: 3 }, { email: 'c@x.org', name: 'Cy', score: 0.5, praise: 1 }],
+        received: [{ email: 'b@x.org', name: 'Bo', score: 1.1, praise: 2 }, { email: 'a@x.org', name: 'Ann', score: 0.4, praise: 1 }],
+      },
+      month: { given: [], received: [{ email: 'a@x.org', name: 'Ann', score: 0.4, praise: 1 }] },
+    },
   };
-  assert.deepEqual(praiseBoard(d, 'given').map((r) => [r.name, r.count]), [['Ann', 3], ['Cy', 1]]);
-  assert.deepEqual(praiseBoard(d, 'received').map((r) => [r.name, r.count]), [['Bo', 2], ['Ann', 1], ['Cy', 1]]);
-  assert.deepEqual(praiseBoard(d, 'received', 1).map((r) => r.name), ['Bo']);
+  assert.deepEqual(netBoard(d, 'given', 'all').map((r) => [r.name, r.score]), [['Ann', 1.4], ['Cy', 0.5]]);
+  assert.deepEqual(netBoard(d, 'received', 'all', 1).map((r) => r.name), ['Bo']);
+  assert.deepEqual(netBoard(d, 'received', 'all', 'all').map((r) => r.name), ['Bo', 'Ann']);
+  assert.deepEqual(netBoard(d, 'given', 'month'), []);
+  assert.deepEqual(netBoard(d, 'received', 'month').map((r) => r.name), ['Ann']);
   assert.equal(praiseTotal(d), 4);
   assert.equal(praisePeople(d), 3);
   assert.equal(weeksBetween(['2026-W37', '2026-W44']), '7 Sept and 1 Nov 2026'.replace('Sept', fmtMonthShort(8)));
@@ -1131,7 +1141,7 @@ test('Review Tone: praise boards, dates and Gerrit links', async () => {
 });
 
 test('Review Tone: periods and ranges', async () => {
-  const { periodWeeks, praiseBoard, praiseTotal, praisePeople } = await import('../src/tone.ts');
+  const { periodWeeks, praiseTotal, praisePeople } = await import('../src/tone.ts');
   assert.deepEqual(periodWeeks(['2026-W37', '2026-W44'], 'all'), ['2026-W37', '2026-W44']);
   assert.deepEqual(periodWeeks(['2026-W37', '2026-W44'], 'month'), ['2026-W41', '2026-W44']);
   assert.deepEqual(periodWeeks(['2026-W43', '2026-W44'], 'month'), ['2026-W43', '2026-W44']);
@@ -1144,10 +1154,10 @@ test('Review Tone: periods and ranges', async () => {
       { week: '2026-W44', email: 'b@x.org', given: 1, received: 0 },
       { week: '2026-W44', email: 'a@x.org', given: 0, received: 1 },
     ],
+    net_scale: 5,
+    net: { all: { given: [], received: [] }, month: { given: [], received: [] } },
   };
   const month: [string, string] = ['2026-W41', '2026-W44'];
-  assert.deepEqual(praiseBoard(d, 'given', 100, month).map((r) => [r.name, r.count]), [['Bo', 1]]);
-  assert.deepEqual(praiseBoard(d, 'given', 100).map((r) => [r.name, r.count]), [['Ann', 5], ['Bo', 1]]);
   assert.equal(praiseTotal(d, month), 1);
   assert.equal(praisePeople(d, month), 2);
 });

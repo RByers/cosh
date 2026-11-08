@@ -10,9 +10,9 @@ It writes, for those weeks:
   - the most negative comments flagged as AI friction, anonymously (text,
     month and the writer's role), after a sandboxed screen drops any that
     identify anyone;
-  - "who makes whom happy": the CL authors who draw glowing comments from
-    many different reviewers, and the reviewers who draw them from many
-    different authors, over all the weeks and over the last four.
+  - "who makes whom happy": the CL authors who draw the most glowing
+    comments from reviewers, and the reviewers who draw the most from
+    authors, over all the weeks and over the last four.
 
 Next to it, summaries/sentiment_comments.json (and its .everyone and
 .noncommitters versions) holds the comments behind the praise and happy
@@ -86,11 +86,13 @@ def _kind(r):
 
 
 def happy(rows, scores, top=TOP, ids=None):
-    """Who draws glowing comments from many different counterparts.
-    authors: CL owners, from reviewers' comments aimed at them; reviewers:
-    reviewers, from CL owners' replies to them. Each row: name, email,
-    counterparts (distinct people who wrote to them that way) and happy (how
-    many of those wrote at least one glowing comment). If `ids` is a dict,
+    """Who draws the most glowing comments. authors: CL owners, from
+    reviewers' comments aimed at them; reviewers: reviewers, from CL owners'
+    replies to them. Each row: name, email, glowing (every glowing comment
+    to them, repeats from one person included), happy (how many distinct
+    people wrote those) and counterparts (distinct people who wrote to them
+    that way at all). Ranked by glowing; only people with at least
+    MIN_COUNTERPARTS counterparts are listed. If `ids` is a dict,
     ids[table][email] gets the ids of each listed person's glowing comments."""
     names = {}
     for r in rows:
@@ -118,8 +120,8 @@ def happy(rows, scores, top=TOP, ids=None):
             name, email = names.get(p, (None, None))
             if not email:
                 continue
-            out.append(dict(name=name or email, email=email, counterparts=len(by), happy=hits))
-        out.sort(key=lambda x: (-x["happy"], -x["happy"] / x["counterparts"], x["name"]))
+            out.append(dict(name=name or email, email=email, glowing=len(glowing[p]), happy=hits, counterparts=len(by)))
+        out.sort(key=lambda x: (-x["glowing"], -x["happy"], x["name"]))
         out = out[:top]
         if ids is not None:
             by_email = {names[p][1]: p for p in to if names.get(p, (None, None))[1]}

@@ -172,2184 +172,2546 @@
   "all": {
    "authors": [
     {
-     "name": "Mason Freed",
-     "email": "masonf@chromium.org",
-     "counterparts": 30,
-     "happy": 6
+     "name": "Helmut Januschka",
+     "email": "helmut@januschka.com",
+     "glowing": 9,
+     "happy": 6,
+     "counterparts": 79
     },
     {
      "name": "Tomasz Wiszkowski",
      "email": "ender@google.com",
-     "counterparts": 45,
-     "happy": 6
+     "glowing": 8,
+     "happy": 6,
+     "counterparts": 45
     },
     {
-     "name": "Helmut Januschka",
-     "email": "helmut@januschka.com",
-     "counterparts": 79,
-     "happy": 6
+     "name": "Mason Freed",
+     "email": "masonf@chromium.org",
+     "glowing": 6,
+     "happy": 6,
+     "counterparts": 30
     },
     {
      "name": "Takashi Toyoshima",
      "email": "toyoshim@chromium.org",
-     "counterparts": 24,
-     "happy": 5
-    },
-    {
-     "name": "Jordan Bayles",
-     "email": "jophba@chromium.org",
-     "counterparts": 29,
-     "happy": 5
-    },
-    {
-     "name": "Arthur Sonzogni",
-     "email": "arthursonzogni@chromium.org",
-     "counterparts": 57,
-     "happy": 5
-    },
-    {
-     "name": "Alex Moshchuk",
-     "email": "alexmos@chromium.org",
-     "counterparts": 12,
-     "happy": 4
-    },
-    {
-     "name": "Benoit Lize",
-     "email": "lizeb@chromium.org",
-     "counterparts": 32,
-     "happy": 4
-    },
-    {
-     "name": "James Cook",
-     "email": "jamescook@chromium.org",
-     "counterparts": 42,
-     "happy": 4
-    },
-    {
-     "name": "Evan Stade",
-     "email": "evanstade@microsoft.com",
-     "counterparts": 45,
-     "happy": 4
+     "glowing": 6,
+     "happy": 5,
+     "counterparts": 24
     },
     {
      "name": "Arthur Milchior",
      "email": "arthurmilchior@chromium.org",
-     "counterparts": 75,
-     "happy": 4
-    },
-    {
-     "name": "Sasha Kunitskaya",
-     "email": "saskekun@google.com",
-     "counterparts": 7,
-     "happy": 3
-    },
-    {
-     "name": "Daniel Vogelheim",
-     "email": "vogelheim@chromium.org",
-     "counterparts": 9,
-     "happy": 3
-    },
-    {
-     "name": "Neha Sapre",
-     "email": "nehasapre@google.com",
-     "counterparts": 9,
-     "happy": 3
-    },
-    {
-     "name": "Vasili Svirski",
-     "email": "vsvirski@google.com",
-     "counterparts": 9,
-     "happy": 3
-    },
-    {
-     "name": "Devi Varaprasad Jonnala",
-     "email": "jonnalad@google.com",
-     "counterparts": 11,
-     "happy": 3
-    },
-    {
-     "name": "Aaron Leventhal",
-     "email": "aleventhal@google.com",
-     "counterparts": 12,
-     "happy": 3
-    },
-    {
-     "name": "Scott Yoder",
-     "email": "scottyoder@google.com",
-     "counterparts": 12,
-     "happy": 3
-    },
-    {
-     "name": "Marwan Tammam",
-     "email": "quarz@chromium.org",
-     "counterparts": 13,
-     "happy": 3
-    },
-    {
-     "name": "Josef Raska",
-     "email": "josefraska@google.com",
-     "counterparts": 15,
-     "happy": 3
-    },
-    {
-     "name": "Lucas Radaelli",
-     "email": "lucasradaelli@google.com",
-     "counterparts": 16,
-     "happy": 3
-    },
-    {
-     "name": "Miłosz Pracowity",
-     "email": "mioszpracowity@gmail.com",
-     "counterparts": 16,
-     "happy": 3
-    },
-    {
-     "name": "Thomas Lukaszewicz",
-     "email": "tluk@chromium.org",
-     "counterparts": 17,
-     "happy": 3
-    },
-    {
-     "name": "thefrog",
-     "email": "thefrog@chromium.org",
-     "counterparts": 18,
-     "happy": 3
-    },
-    {
-     "name": "Mikel Astiz",
-     "email": "mastiz@chromium.org",
-     "counterparts": 21,
-     "happy": 3
-    },
-    {
-     "name": "Josiah Kiehl",
-     "email": "kiehl@google.com",
-     "counterparts": 28,
-     "happy": 3
-    },
-    {
-     "name": "Keren Zhu",
-     "email": "kerenzhu@chromium.org",
-     "counterparts": 32,
-     "happy": 3
-    },
-    {
-     "name": "Mitsuru Oshima",
-     "email": "oshima@chromium.org",
-     "counterparts": 33,
-     "happy": 3
-    },
-    {
-     "name": "Thomas Anderson",
-     "email": "thomasanderson@chromium.org",
-     "counterparts": 36,
-     "happy": 3
-    },
-    {
-     "name": "Andrew Grieve",
-     "email": "agrieve@chromium.org",
-     "counterparts": 49,
-     "happy": 3
-    },
-    {
-     "name": "Eriko Kurimoto",
-     "email": "elkurin@chromium.org",
-     "counterparts": 54,
-     "happy": 3
-    },
-    {
-     "name": "David Liu",
-     "email": "lcdavid@google.com",
-     "counterparts": 6,
-     "happy": 2
-    },
-    {
-     "name": "Guillaume Saulnier-Comte",
-     "email": "gsaul@google.com",
-     "counterparts": 6,
-     "happy": 2
-    },
-    {
-     "name": "Michael Wilson",
-     "email": "mjwilson@chromium.org",
-     "counterparts": 6,
-     "happy": 2
-    },
-    {
-     "name": "Mike Jackson",
-     "email": "mjackson@microsoft.com",
-     "counterparts": 6,
-     "happy": 2
-    },
-    {
-     "name": "Gabriel Brito",
-     "email": "gabrielbrito@microsoft.com",
-     "counterparts": 7,
-     "happy": 2
-    },
-    {
-     "name": "jdh",
-     "email": "jdh@chromium.org",
-     "counterparts": 7,
-     "happy": 2
-    },
-    {
-     "name": "Abhijith Nair",
-     "email": "abhijithnair@chromium.org",
-     "counterparts": 8,
-     "happy": 2
-    },
-    {
-     "name": "Gayane Petrosyan",
-     "email": "gayane@google.com",
-     "counterparts": 8,
-     "happy": 2
-    },
-    {
-     "name": "Hojeong Park",
-     "email": "parkhj062@gmail.com",
-     "counterparts": 8,
-     "happy": 2
-    },
-    {
-     "name": "Bhuvana Betini",
-     "email": "bbetini@google.com",
-     "counterparts": 9,
-     "happy": 2
-    },
-    {
-     "name": "Daniel Castro",
-     "email": "drcastroa@google.com",
-     "counterparts": 9,
-     "happy": 2
-    },
-    {
-     "name": "Devon Loehr",
-     "email": "dloehr@google.com",
-     "counterparts": 9,
-     "happy": 2
-    },
-    {
-     "name": "Liza Bipin",
-     "email": "mlbipin@google.com",
-     "counterparts": 9,
-     "happy": 2
-    },
-    {
-     "name": "Piotr Kotynia",
-     "email": "piotrkotynia@google.com",
-     "counterparts": 10,
-     "happy": 2
-    },
-    {
-     "name": "Fred Shih",
-     "email": "ffred@chromium.org",
-     "counterparts": 11,
-     "happy": 2
+     "glowing": 6,
+     "happy": 4,
+     "counterparts": 75
     },
     {
      "name": "Peter Conn",
      "email": "peconn@chromium.org",
-     "counterparts": 11,
-     "happy": 2
+     "glowing": 6,
+     "happy": 2,
+     "counterparts": 11
+    },
+    {
+     "name": "Arthur Sonzogni",
+     "email": "arthursonzogni@chromium.org",
+     "glowing": 5,
+     "happy": 5,
+     "counterparts": 57
+    },
+    {
+     "name": "Jordan Bayles",
+     "email": "jophba@chromium.org",
+     "glowing": 5,
+     "happy": 5,
+     "counterparts": 29
+    },
+    {
+     "name": "Alex Moshchuk",
+     "email": "alexmos@chromium.org",
+     "glowing": 5,
+     "happy": 4,
+     "counterparts": 12
+    },
+    {
+     "name": "Aaron Leventhal",
+     "email": "aleventhal@google.com",
+     "glowing": 5,
+     "happy": 3,
+     "counterparts": 12
     },
     {
      "name": "Will Harris",
      "email": "wfh@chromium.org",
-     "counterparts": 11,
-     "happy": 2
+     "glowing": 5,
+     "happy": 2,
+     "counterparts": 11
     },
     {
-     "name": "Samar Chehade",
-     "email": "samarchehade@google.com",
-     "counterparts": 12,
-     "happy": 2
+     "name": "Benoit Lize",
+     "email": "lizeb@chromium.org",
+     "glowing": 4,
+     "happy": 4,
+     "counterparts": 32
     },
     {
-     "name": "Anunoy Ghosh",
-     "email": "anunoy@chromium.org",
-     "counterparts": 13,
-     "happy": 2
+     "name": "Evan Stade",
+     "email": "evanstade@microsoft.com",
+     "glowing": 4,
+     "happy": 4,
+     "counterparts": 45
     },
     {
-     "name": "Kunal Daftari",
-     "email": "kunaldaftari@google.com",
-     "counterparts": 13,
-     "happy": 2
+     "name": "James Cook",
+     "email": "jamescook@chromium.org",
+     "glowing": 4,
+     "happy": 4,
+     "counterparts": 42
+    },
+    {
+     "name": "Andrew Grieve",
+     "email": "agrieve@chromium.org",
+     "glowing": 4,
+     "happy": 3,
+     "counterparts": 49
+    },
+    {
+     "name": "Mikel Astiz",
+     "email": "mastiz@chromium.org",
+     "glowing": 4,
+     "happy": 3,
+     "counterparts": 21
+    },
+    {
+     "name": "Devon Loehr",
+     "email": "dloehr@google.com",
+     "glowing": 4,
+     "happy": 2,
+     "counterparts": 9
     },
     {
      "name": "Marijn Kruisselbrink",
      "email": "mek@chromium.org",
-     "counterparts": 13,
-     "happy": 2
-    },
-    {
-     "name": "Nate Chapin",
-     "email": "japhet@chromium.org",
-     "counterparts": 13,
-     "happy": 2
-    },
-    {
-     "name": "Zoraiz Naeem",
-     "email": "zoraiznaeem@chromium.org",
-     "counterparts": 14,
-     "happy": 2
-    },
-    {
-     "name": "Mei Liang",
-     "email": "meiliang@chromium.org",
-     "counterparts": 15,
-     "happy": 2
-    },
-    {
-     "name": "Paul Adedeji",
-     "email": "pauladedeji@google.com",
-     "counterparts": 15,
-     "happy": 2
-    },
-    {
-     "name": "Camille Lamy",
-     "email": "clamy@chromium.org",
-     "counterparts": 16,
-     "happy": 2
-    },
-    {
-     "name": "Elly",
-     "email": "ellyjones@chromium.org",
-     "counterparts": 16,
-     "happy": 2
-    },
-    {
-     "name": "Eva Su",
-     "email": "evasu@chromium.org",
-     "counterparts": 16,
-     "happy": 2
-    },
-    {
-     "name": "Khalid Peer",
-     "email": "khalidpeer@chromium.org",
-     "counterparts": 16,
-     "happy": 2
-    },
-    {
-     "name": "Vladimir Levin",
-     "email": "vmpstr@chromium.org",
-     "counterparts": 16,
-     "happy": 2
-    },
-    {
-     "name": "Dale Curtis",
-     "email": "dalecurtis@chromium.org",
-     "counterparts": 18,
-     "happy": 2
-    },
-    {
-     "name": "Juliet Knighton",
-     "email": "julietlevesque@google.com",
-     "counterparts": 18,
-     "happy": 2
-    },
-    {
-     "name": "Eleanor Lee",
-     "email": "eleanorlee@google.com",
-     "counterparts": 19,
-     "happy": 2
+     "glowing": 4,
+     "happy": 2,
+     "counterparts": 13
     },
     {
      "name": "Thomas Guilbert",
      "email": "tguilbert@chromium.org",
-     "counterparts": 19,
-     "happy": 2
+     "glowing": 4,
+     "happy": 2,
+     "counterparts": 19
     },
     {
-     "name": "Patrick Kettner",
-     "email": "patrickkettner@google.com",
-     "counterparts": 20,
-     "happy": 2
+     "name": "Daniel Vogelheim",
+     "email": "vogelheim@chromium.org",
+     "glowing": 3,
+     "happy": 3,
+     "counterparts": 9
     },
     {
-     "name": "utzcoz",
-     "email": "utzcoz@gmail.com",
-     "counterparts": 20,
-     "happy": 2
+     "name": "Devi Varaprasad Jonnala",
+     "email": "jonnalad@google.com",
+     "glowing": 3,
+     "happy": 3,
+     "counterparts": 11
     },
     {
-     "name": "Samuel Attard",
-     "email": "samuel.r.attard@gmail.com",
-     "counterparts": 21,
-     "happy": 2
+     "name": "Eriko Kurimoto",
+     "email": "elkurin@chromium.org",
+     "glowing": 3,
+     "happy": 3,
+     "counterparts": 54
     },
     {
-     "name": "mmenke",
-     "email": "mmenke@chromium.org",
-     "counterparts": 21,
-     "happy": 2
+     "name": "Josef Raska",
+     "email": "josefraska@google.com",
+     "glowing": 3,
+     "happy": 3,
+     "counterparts": 15
     },
     {
-     "name": "Maksim Sisov",
-     "email": "msisov@igalia.com",
-     "counterparts": 23,
-     "happy": 2
+     "name": "Josiah Kiehl",
+     "email": "kiehl@google.com",
+     "glowing": 3,
+     "happy": 3,
+     "counterparts": 28
     },
     {
-     "name": "Daniel Cheng",
-     "email": "dcheng@chromium.org",
-     "counterparts": 24,
-     "happy": 2
+     "name": "Keren Zhu",
+     "email": "kerenzhu@chromium.org",
+     "glowing": 3,
+     "happy": 3,
+     "counterparts": 32
     },
     {
-     "name": "Stanisław Solarewicz",
-     "email": "ssolarewicz@chromium.org",
-     "counterparts": 24,
-     "happy": 2
+     "name": "Lucas Radaelli",
+     "email": "lucasradaelli@google.com",
+     "glowing": 3,
+     "happy": 3,
+     "counterparts": 16
+    },
+    {
+     "name": "Marwan Tammam",
+     "email": "quarz@chromium.org",
+     "glowing": 3,
+     "happy": 3,
+     "counterparts": 13
+    },
+    {
+     "name": "Mitsuru Oshima",
+     "email": "oshima@chromium.org",
+     "glowing": 3,
+     "happy": 3,
+     "counterparts": 33
+    },
+    {
+     "name": "Miłosz Pracowity",
+     "email": "mioszpracowity@gmail.com",
+     "glowing": 3,
+     "happy": 3,
+     "counterparts": 16
+    },
+    {
+     "name": "Neha Sapre",
+     "email": "nehasapre@google.com",
+     "glowing": 3,
+     "happy": 3,
+     "counterparts": 9
+    },
+    {
+     "name": "Sasha Kunitskaya",
+     "email": "saskekun@google.com",
+     "glowing": 3,
+     "happy": 3,
+     "counterparts": 7
+    },
+    {
+     "name": "Scott Yoder",
+     "email": "scottyoder@google.com",
+     "glowing": 3,
+     "happy": 3,
+     "counterparts": 12
+    },
+    {
+     "name": "Thomas Anderson",
+     "email": "thomasanderson@chromium.org",
+     "glowing": 3,
+     "happy": 3,
+     "counterparts": 36
+    },
+    {
+     "name": "Thomas Lukaszewicz",
+     "email": "tluk@chromium.org",
+     "glowing": 3,
+     "happy": 3,
+     "counterparts": 17
+    },
+    {
+     "name": "Vasili Svirski",
+     "email": "vsvirski@google.com",
+     "glowing": 3,
+     "happy": 3,
+     "counterparts": 9
+    },
+    {
+     "name": "thefrog",
+     "email": "thefrog@chromium.org",
+     "glowing": 3,
+     "happy": 3,
+     "counterparts": 18
     },
     {
      "name": "Antonio Sartori",
      "email": "antoniosartori@chromium.org",
-     "counterparts": 25,
-     "happy": 2
+     "glowing": 3,
+     "happy": 2,
+     "counterparts": 25
     },
     {
-     "name": "Mike Taylor",
-     "email": "miketaylr@chromium.org",
-     "counterparts": 25,
-     "happy": 2
+     "name": "Camille Lamy",
+     "email": "clamy@chromium.org",
+     "glowing": 3,
+     "happy": 2,
+     "counterparts": 16
     },
     {
-     "name": "Marc Treib",
-     "email": "treib@chromium.org",
-     "counterparts": 26,
-     "happy": 2
+     "name": "Guillaume Saulnier-Comte",
+     "email": "gsaul@google.com",
+     "glowing": 3,
+     "happy": 2,
+     "counterparts": 6
     },
     {
-     "name": "Rebekah Potter",
-     "email": "rbpotter@chromium.org",
-     "counterparts": 26,
-     "happy": 2
+     "name": "Khalid Peer",
+     "email": "khalidpeer@chromium.org",
+     "glowing": 3,
+     "happy": 2,
+     "counterparts": 16
     },
     {
-     "name": "Chris Davis",
-     "email": "chrdavis@microsoft.com",
-     "counterparts": 28,
-     "happy": 2
-    },
-    {
-     "name": "Fiaz Muhammad",
-     "email": "mfiaz@google.com",
-     "counterparts": 32,
-     "happy": 2
+     "name": "Liza Bipin",
+     "email": "mlbipin@google.com",
+     "glowing": 3,
+     "happy": 2,
+     "counterparts": 9
     },
     {
      "name": "Moe Ahmadi",
      "email": "mahmadi@chromium.org",
-     "counterparts": 32,
-     "happy": 2
+     "glowing": 3,
+     "happy": 2,
+     "counterparts": 32
     },
     {
-     "name": "Sky Malice",
-     "email": "skym@chromium.org",
-     "counterparts": 36,
-     "happy": 2
+     "name": "Stanisław Solarewicz",
+     "email": "ssolarewicz@chromium.org",
+     "glowing": 3,
+     "happy": 2,
+     "counterparts": 24
     },
     {
-     "name": "Duncan Mercer",
-     "email": "mercerd@google.com",
-     "counterparts": 40,
-     "happy": 2
+     "name": "Vladimir Levin",
+     "email": "vmpstr@chromium.org",
+     "glowing": 3,
+     "happy": 2,
+     "counterparts": 16
     },
     {
-     "name": "Francois Pierre Doray",
-     "email": "fdoray@chromium.org",
-     "counterparts": 44,
-     "happy": 2
+     "name": "Zoraiz Naeem",
+     "email": "zoraiznaeem@chromium.org",
+     "glowing": 3,
+     "happy": 2,
+     "counterparts": 14
     },
     {
-     "name": "Satoru Takabayashi",
-     "email": "satorux@google.com",
-     "counterparts": 51,
-     "happy": 2
+     "name": "utzcoz",
+     "email": "utzcoz@gmail.com",
+     "glowing": 3,
+     "happy": 2,
+     "counterparts": 20
+    },
+    {
+     "name": "Colin Blundell",
+     "email": "blundell@chromium.org",
+     "glowing": 3,
+     "happy": 1,
+     "counterparts": 9
+    },
+    {
+     "name": "Kaan Alsan",
+     "email": "alsan@chromium.org",
+     "glowing": 3,
+     "happy": 1,
+     "counterparts": 12
+    },
+    {
+     "name": "Lauren Winston",
+     "email": "lwinston@google.com",
+     "glowing": 3,
+     "happy": 1,
+     "counterparts": 10
+    },
+    {
+     "name": "Luke Deng",
+     "email": "lukedeng@google.com",
+     "glowing": 3,
+     "happy": 1,
+     "counterparts": 15
+    },
+    {
+     "name": "Peter Kotwicz",
+     "email": "pkotwicz@chromium.org",
+     "glowing": 3,
+     "happy": 1,
+     "counterparts": 11
+    },
+    {
+     "name": "Scott Haseley",
+     "email": "shaseley@chromium.org",
+     "glowing": 3,
+     "happy": 1,
+     "counterparts": 7
+    },
+    {
+     "name": "Abhijith Nair",
+     "email": "abhijithnair@chromium.org",
+     "glowing": 2,
+     "happy": 2,
+     "counterparts": 8
+    },
+    {
+     "name": "Anunoy Ghosh",
+     "email": "anunoy@chromium.org",
+     "glowing": 2,
+     "happy": 2,
+     "counterparts": 13
+    },
+    {
+     "name": "Bhuvana Betini",
+     "email": "bbetini@google.com",
+     "glowing": 2,
+     "happy": 2,
+     "counterparts": 9
+    },
+    {
+     "name": "Chris Davis",
+     "email": "chrdavis@microsoft.com",
+     "glowing": 2,
+     "happy": 2,
+     "counterparts": 28
+    },
+    {
+     "name": "Dale Curtis",
+     "email": "dalecurtis@chromium.org",
+     "glowing": 2,
+     "happy": 2,
+     "counterparts": 18
+    },
+    {
+     "name": "Daniel Castro",
+     "email": "drcastroa@google.com",
+     "glowing": 2,
+     "happy": 2,
+     "counterparts": 9
+    },
+    {
+     "name": "Daniel Cheng",
+     "email": "dcheng@chromium.org",
+     "glowing": 2,
+     "happy": 2,
+     "counterparts": 24
     },
     {
      "name": "David Bienvenu",
      "email": "davidbienvenu@chromium.org",
-     "counterparts": 69,
-     "happy": 2
+     "glowing": 2,
+     "happy": 2,
+     "counterparts": 69
     },
     {
-     "name": "Alex Valadkevich",
-     "email": "valadkevich@google.com",
-     "counterparts": 6,
-     "happy": 1
+     "name": "David Liu",
+     "email": "lcdavid@google.com",
+     "glowing": 2,
+     "happy": 2,
+     "counterparts": 6
     },
     {
-     "name": "Allen Li",
-     "email": "ayatane@chromium.org",
-     "counterparts": 6,
-     "happy": 1
+     "name": "Duncan Mercer",
+     "email": "mercerd@google.com",
+     "glowing": 2,
+     "happy": 2,
+     "counterparts": 40
     },
     {
-     "name": "Chrome Metrics Config Manager",
-     "email": "chrome-metrics-config-manager-server@google.com",
-     "counterparts": 6,
-     "happy": 1
+     "name": "Eleanor Lee",
+     "email": "eleanorlee@google.com",
+     "glowing": 2,
+     "happy": 2,
+     "counterparts": 19
     },
     {
-     "name": "Dan Polanco",
-     "email": "polardz@google.com",
-     "counterparts": 6,
-     "happy": 1
+     "name": "Elly",
+     "email": "ellyjones@chromium.org",
+     "glowing": 2,
+     "happy": 2,
+     "counterparts": 16
     },
     {
-     "name": "Demetrios Papadopoulos",
-     "email": "dpapad@chromium.org",
-     "counterparts": 6,
-     "happy": 1
+     "name": "Eva Su",
+     "email": "evasu@chromium.org",
+     "glowing": 2,
+     "happy": 2,
+     "counterparts": 16
     },
     {
-     "name": "Dmitry Gozman",
-     "email": "dgozman@chromium.org",
-     "counterparts": 6,
-     "happy": 1
+     "name": "Fiaz Muhammad",
+     "email": "mfiaz@google.com",
+     "glowing": 2,
+     "happy": 2,
+     "counterparts": 32
+    },
+    {
+     "name": "Francois Pierre Doray",
+     "email": "fdoray@chromium.org",
+     "glowing": 2,
+     "happy": 2,
+     "counterparts": 44
+    },
+    {
+     "name": "Fred Shih",
+     "email": "ffred@chromium.org",
+     "glowing": 2,
+     "happy": 2,
+     "counterparts": 11
+    },
+    {
+     "name": "Gabriel Brito",
+     "email": "gabrielbrito@microsoft.com",
+     "glowing": 2,
+     "happy": 2,
+     "counterparts": 7
+    },
+    {
+     "name": "Gayane Petrosyan",
+     "email": "gayane@google.com",
+     "glowing": 2,
+     "happy": 2,
+     "counterparts": 8
+    },
+    {
+     "name": "Hojeong Park",
+     "email": "parkhj062@gmail.com",
+     "glowing": 2,
+     "happy": 2,
+     "counterparts": 8
+    },
+    {
+     "name": "Juliet Knighton",
+     "email": "julietlevesque@google.com",
+     "glowing": 2,
+     "happy": 2,
+     "counterparts": 18
+    },
+    {
+     "name": "Kunal Daftari",
+     "email": "kunaldaftari@google.com",
+     "glowing": 2,
+     "happy": 2,
+     "counterparts": 13
+    },
+    {
+     "name": "Maksim Sisov",
+     "email": "msisov@igalia.com",
+     "glowing": 2,
+     "happy": 2,
+     "counterparts": 23
+    },
+    {
+     "name": "Marc Treib",
+     "email": "treib@chromium.org",
+     "glowing": 2,
+     "happy": 2,
+     "counterparts": 26
+    },
+    {
+     "name": "Mei Liang",
+     "email": "meiliang@chromium.org",
+     "glowing": 2,
+     "happy": 2,
+     "counterparts": 15
+    },
+    {
+     "name": "Michael Wilson",
+     "email": "mjwilson@chromium.org",
+     "glowing": 2,
+     "happy": 2,
+     "counterparts": 6
+    },
+    {
+     "name": "Mike Jackson",
+     "email": "mjackson@microsoft.com",
+     "glowing": 2,
+     "happy": 2,
+     "counterparts": 6
+    },
+    {
+     "name": "Mike Taylor",
+     "email": "miketaylr@chromium.org",
+     "glowing": 2,
+     "happy": 2,
+     "counterparts": 25
+    },
+    {
+     "name": "Nate Chapin",
+     "email": "japhet@chromium.org",
+     "glowing": 2,
+     "happy": 2,
+     "counterparts": 13
+    },
+    {
+     "name": "Patrick Kettner",
+     "email": "patrickkettner@google.com",
+     "glowing": 2,
+     "happy": 2,
+     "counterparts": 20
+    },
+    {
+     "name": "Paul Adedeji",
+     "email": "pauladedeji@google.com",
+     "glowing": 2,
+     "happy": 2,
+     "counterparts": 15
+    },
+    {
+     "name": "Piotr Kotynia",
+     "email": "piotrkotynia@google.com",
+     "glowing": 2,
+     "happy": 2,
+     "counterparts": 10
+    },
+    {
+     "name": "Rebekah Potter",
+     "email": "rbpotter@chromium.org",
+     "glowing": 2,
+     "happy": 2,
+     "counterparts": 26
+    },
+    {
+     "name": "Samar Chehade",
+     "email": "samarchehade@google.com",
+     "glowing": 2,
+     "happy": 2,
+     "counterparts": 12
+    },
+    {
+     "name": "Samuel Attard",
+     "email": "samuel.r.attard@gmail.com",
+     "glowing": 2,
+     "happy": 2,
+     "counterparts": 21
+    },
+    {
+     "name": "Satoru Takabayashi",
+     "email": "satorux@google.com",
+     "glowing": 2,
+     "happy": 2,
+     "counterparts": 51
+    },
+    {
+     "name": "Sky Malice",
+     "email": "skym@chromium.org",
+     "glowing": 2,
+     "happy": 2,
+     "counterparts": 36
+    },
+    {
+     "name": "jdh",
+     "email": "jdh@chromium.org",
+     "glowing": 2,
+     "happy": 2,
+     "counterparts": 7
+    },
+    {
+     "name": "mmenke",
+     "email": "mmenke@chromium.org",
+     "glowing": 2,
+     "happy": 2,
+     "counterparts": 21
+    },
+    {
+     "name": "Adam Yao",
+     "email": "adamyao@google.com",
+     "glowing": 2,
+     "happy": 1,
+     "counterparts": 11
+    },
+    {
+     "name": "Andy Li",
+     "email": "andylky@google.com",
+     "glowing": 2,
+     "happy": 1,
+     "counterparts": 8
+    },
+    {
+     "name": "Bofeng Chen",
+     "email": "bofengchen@google.com",
+     "glowing": 2,
+     "happy": 1,
+     "counterparts": 13
+    },
+    {
+     "name": "Dominic Battré",
+     "email": "battre@chromium.org",
+     "glowing": 2,
+     "happy": 1,
+     "counterparts": 9
+    },
+    {
+     "name": "Erik Chen",
+     "email": "erikchen@chromium.org",
+     "glowing": 2,
+     "happy": 1,
+     "counterparts": 31
     },
     {
      "name": "Ernest Nguyen Hung",
      "email": "ernn@google.com",
-     "counterparts": 6,
-     "happy": 1
+     "glowing": 2,
+     "happy": 1,
+     "counterparts": 6
     },
     {
-     "name": "Feras Aldahlawi",
-     "email": "frs@chromium.org",
-     "counterparts": 6,
-     "happy": 1
+     "name": "Fernando Ramirez",
+     "email": "ferny@google.com",
+     "glowing": 2,
+     "happy": 1,
+     "counterparts": 11
     },
     {
-     "name": "Gustavo Martin",
-     "email": "gusmartin@google.com",
-     "counterparts": 6,
-     "happy": 1
+     "name": "Hamzah Behery",
+     "email": "behery@chromium.org",
+     "glowing": 2,
+     "happy": 1,
+     "counterparts": 22
     },
     {
-     "name": "Jihad Hanna",
-     "email": "jihadghanna@google.com",
-     "counterparts": 6,
-     "happy": 1
+     "name": "Joe Mason",
+     "email": "joenotcharles@google.com",
+     "glowing": 2,
+     "happy": 1,
+     "counterparts": 19
     },
     {
-     "name": "Natalia Androsz",
-     "email": "nandrosz@chromium.org",
-     "counterparts": 6,
-     "happy": 1
-    },
-    {
-     "name": "Noam Rosenthal",
-     "email": "nrosenthal@google.com",
-     "counterparts": 6,
-     "happy": 1
-    },
-    {
-     "name": "Palak Agarwal",
-     "email": "agpalak@chromium.org",
-     "counterparts": 6,
-     "happy": 1
-    },
-    {
-     "name": "Philipp Hancke",
-     "email": "philipp.hancke@googlemail.com",
-     "counterparts": 6,
-     "happy": 1
-    },
-    {
-     "name": "Pâris Meuleman",
-     "email": "pmeuleman@chromium.org",
-     "counterparts": 6,
-     "happy": 1
-    },
-    {
-     "name": "Roman Arora",
-     "email": "romanarora@chromium.org",
-     "counterparts": 6,
-     "happy": 1
+     "name": "Miyoung Shin",
+     "email": "myid.shin@igalia.com",
+     "glowing": 2,
+     "happy": 1,
+     "counterparts": 10
     }
    ],
    "reviewers": [
     {
      "name": "Thomas Guilbert",
      "email": "tguilbert@chromium.org",
-     "counterparts": 13,
-     "happy": 7
-    },
-    {
-     "name": "Jan Keitel",
-     "email": "jkeitel@google.com",
-     "counterparts": 46,
-     "happy": 5
-    },
-    {
-     "name": "Alex Moshchuk",
-     "email": "alexmos@chromium.org",
-     "counterparts": 42,
-     "happy": 4
-    },
-    {
-     "name": "Jordan Bayles",
-     "email": "jophba@chromium.org",
-     "counterparts": 12,
-     "happy": 3
-    },
-    {
-     "name": "Daniel Murphy",
-     "email": "dmurph@chromium.org",
-     "counterparts": 15,
-     "happy": 3
-    },
-    {
-     "name": "Jinsuk Kim",
-     "email": "jinsukkim@chromium.org",
-     "counterparts": 19,
-     "happy": 3
-    },
-    {
-     "name": "Kyle Charbonneau",
-     "email": "kylechar@chromium.org",
-     "counterparts": 21,
-     "happy": 3
+     "glowing": 7,
+     "happy": 7,
+     "counterparts": 13
     },
     {
      "name": "Greg Thompson",
      "email": "grt@chromium.org",
-     "counterparts": 41,
-     "happy": 3
+     "glowing": 7,
+     "happy": 3,
+     "counterparts": 41
     },
     {
-     "name": "Dave Tapuska",
-     "email": "dtapuska@chromium.org",
-     "counterparts": 44,
-     "happy": 3
+     "name": "Jan Keitel",
+     "email": "jkeitel@google.com",
+     "glowing": 5,
+     "happy": 5,
+     "counterparts": 46
     },
     {
-     "name": "Marijn Kruisselbrink",
-     "email": "mek@chromium.org",
-     "counterparts": 8,
-     "happy": 2
+     "name": "Jordan Bayles",
+     "email": "jophba@chromium.org",
+     "glowing": 5,
+     "happy": 3,
+     "counterparts": 12
     },
     {
-     "name": "Lucia Giorgi",
-     "email": "quacksort@google.com",
-     "counterparts": 9,
-     "happy": 2
+     "name": "Alex Moshchuk",
+     "email": "alexmos@chromium.org",
+     "glowing": 4,
+     "happy": 4,
+     "counterparts": 42
     },
     {
-     "name": "Maria Kazinova",
-     "email": "kazinova@google.com",
-     "counterparts": 9,
-     "happy": 2
-    },
-    {
-     "name": "Michael Wilson",
-     "email": "mjwilson@chromium.org",
-     "counterparts": 10,
-     "happy": 2
-    },
-    {
-     "name": "Peter Wen",
-     "email": "wnwen@chromium.org",
-     "counterparts": 11,
-     "happy": 2
-    },
-    {
-     "name": "Etienne Pierre-Doray",
-     "email": "etiennep@chromium.org",
-     "counterparts": 12,
-     "happy": 2
-    },
-    {
-     "name": "Kaan Alsan",
-     "email": "alsan@chromium.org",
-     "counterparts": 12,
-     "happy": 2
-    },
-    {
-     "name": "Elly",
-     "email": "ellyjones@chromium.org",
-     "counterparts": 14,
-     "happy": 2
-    },
-    {
-     "name": "Mark Schillaci",
-     "email": "mschillaci@google.com",
-     "counterparts": 14,
-     "happy": 2
-    },
-    {
-     "name": "Bryant Chandler",
-     "email": "bryantchandler@chromium.org",
-     "counterparts": 18,
-     "happy": 2
-    },
-    {
-     "name": "Haiyang Pan",
-     "email": "hypan@google.com",
-     "counterparts": 18,
-     "happy": 2
-    },
-    {
-     "name": "Antonio Sartori",
-     "email": "antoniosartori@chromium.org",
-     "counterparts": 19,
-     "happy": 2
-    },
-    {
-     "name": "Maks Orlovich",
-     "email": "morlovich@chromium.org",
-     "counterparts": 22,
-     "happy": 2
-    },
-    {
-     "name": "Mike Dougherty",
-     "email": "michaeldo@chromium.org",
-     "counterparts": 22,
-     "happy": 2
-    },
-    {
-     "name": "Henrique Nakashima",
-     "email": "hnakashima@chromium.org",
-     "counterparts": 23,
-     "happy": 2
-    },
-    {
-     "name": "Devlin Cronin",
-     "email": "rdevlin.cronin@chromium.org",
-     "counterparts": 24,
-     "happy": 2
-    },
-    {
-     "name": "David Bokan",
-     "email": "bokan@chromium.org",
-     "counterparts": 25,
-     "happy": 2
-    },
-    {
-     "name": "Rebekah Potter",
-     "email": "rbpotter@chromium.org",
-     "counterparts": 26,
-     "happy": 2
-    },
-    {
-     "name": "Avi Drissman",
-     "email": "avi@chromium.org",
-     "counterparts": 27,
-     "happy": 2
-    },
-    {
-     "name": "Christoph Schwering",
-     "email": "schwering@google.com",
-     "counterparts": 27,
-     "happy": 2
-    },
-    {
-     "name": "Rune Lillesveen",
-     "email": "futhark@chromium.org",
-     "counterparts": 31,
-     "happy": 2
-    },
-    {
-     "name": "Thomas Lukaszewicz",
-     "email": "tluk@chromium.org",
-     "counterparts": 32,
-     "happy": 2
-    },
-    {
-     "name": "Marc Treib",
-     "email": "treib@chromium.org",
-     "counterparts": 35,
-     "happy": 2
+     "name": "Kyle Charbonneau",
+     "email": "kylechar@chromium.org",
+     "glowing": 4,
+     "happy": 3,
+     "counterparts": 21
     },
     {
      "name": "Arthur Sonzogni",
      "email": "arthursonzogni@chromium.org",
-     "counterparts": 39,
-     "happy": 2
+     "glowing": 4,
+     "happy": 2,
+     "counterparts": 39
     },
     {
-     "name": "Daniel Cheng",
-     "email": "dcheng@chromium.org",
-     "counterparts": 87,
-     "happy": 2
+     "name": "Vasiliy Telezhnikov",
+     "email": "vasilyt@chromium.org",
+     "glowing": 4,
+     "happy": 1,
+     "counterparts": 25
     },
     {
-     "name": "Anthi Orfanou",
-     "email": "anthie@google.com",
-     "counterparts": 6,
-     "happy": 1
+     "name": "Daniel Murphy",
+     "email": "dmurph@chromium.org",
+     "glowing": 3,
+     "happy": 3,
+     "counterparts": 15
     },
     {
-     "name": "Fabio Tirelo",
-     "email": "ftirelo@chromium.org",
-     "counterparts": 6,
-     "happy": 1
+     "name": "Dave Tapuska",
+     "email": "dtapuska@chromium.org",
+     "glowing": 3,
+     "happy": 3,
+     "counterparts": 44
     },
     {
-     "name": "Gustavo Martin",
-     "email": "gusmartin@google.com",
-     "counterparts": 6,
-     "happy": 1
+     "name": "Jinsuk Kim",
+     "email": "jinsukkim@chromium.org",
+     "glowing": 3,
+     "happy": 3,
+     "counterparts": 19
     },
     {
-     "name": "Mei Liang",
-     "email": "meiliang@chromium.org",
-     "counterparts": 6,
-     "happy": 1
+     "name": "David Bokan",
+     "email": "bokan@chromium.org",
+     "glowing": 3,
+     "happy": 2,
+     "counterparts": 25
     },
     {
-     "name": "Varun Khaneja",
-     "email": "vakh@chromium.org",
-     "counterparts": 6,
-     "happy": 1
+     "name": "Henrique Nakashima",
+     "email": "hnakashima@chromium.org",
+     "glowing": 3,
+     "happy": 2,
+     "counterparts": 23
     },
     {
-     "name": "Łukasz Barczyński",
-     "email": "lbarczynski@google.com",
-     "counterparts": 6,
-     "happy": 1
+     "name": "Kaan Alsan",
+     "email": "alsan@chromium.org",
+     "glowing": 3,
+     "happy": 2,
+     "counterparts": 12
     },
     {
-     "name": "Benjamin Keen",
-     "email": "bkeen@google.com",
-     "counterparts": 7,
-     "happy": 1
+     "name": "Lucia Giorgi",
+     "email": "quacksort@google.com",
+     "glowing": 3,
+     "happy": 2,
+     "counterparts": 9
     },
     {
-     "name": "Devon Loehr",
-     "email": "dloehr@google.com",
-     "counterparts": 7,
-     "happy": 1
+     "name": "Marc Treib",
+     "email": "treib@chromium.org",
+     "glowing": 3,
+     "happy": 2,
+     "counterparts": 35
     },
     {
-     "name": "Xu Li",
-     "email": "mxlg@google.com",
-     "counterparts": 7,
-     "happy": 1
-    },
-    {
-     "name": "Zonghan Xu",
-     "email": "xzonghan@chromium.org",
-     "counterparts": 7,
-     "happy": 1
-    },
-    {
-     "name": "Chris Lu",
-     "email": "thegreenfrog@google.com",
-     "counterparts": 8,
-     "happy": 1
-    },
-    {
-     "name": "Dominic Farolino",
-     "email": "dom@chromium.org",
-     "counterparts": 8,
-     "happy": 1
-    },
-    {
-     "name": "Hiroki Nakagawa",
-     "email": "nhiroki@chromium.org",
-     "counterparts": 8,
-     "happy": 1
-    },
-    {
-     "name": "James Leung",
-     "email": "jamesleung@google.com",
-     "counterparts": 8,
-     "happy": 1
-    },
-    {
-     "name": "Louis Romero",
-     "email": "lpromero@google.com",
-     "counterparts": 8,
-     "happy": 1
-    },
-    {
-     "name": "Paul Jensen",
-     "email": "pauljensen@chromium.org",
-     "counterparts": 8,
-     "happy": 1
-    },
-    {
-     "name": "Pavol Marko",
-     "email": "pmarko@chromium.org",
-     "counterparts": 8,
-     "happy": 1
-    },
-    {
-     "name": "Riley Tatum",
-     "email": "rtatum@google.com",
-     "counterparts": 8,
-     "happy": 1
-    },
-    {
-     "name": "Tommy Nyquist",
-     "email": "nyquist@chromium.org",
-     "counterparts": 8,
-     "happy": 1
-    },
-    {
-     "name": "Chris Fredrickson",
-     "email": "cfredric@chromium.org",
-     "counterparts": 9,
-     "happy": 1
-    },
-    {
-     "name": "Jenna Himawan",
-     "email": "jhimawan@google.com",
-     "counterparts": 9,
-     "happy": 1
-    },
-    {
-     "name": "Justin Cohen",
-     "email": "justincohen@google.com",
-     "counterparts": 9,
-     "happy": 1
-    },
-    {
-     "name": "Shu Yang",
-     "email": "shuyng@google.com",
-     "counterparts": 9,
-     "happy": 1
-    },
-    {
-     "name": "Ankush Singh",
-     "email": "ankushkush@google.com",
-     "counterparts": 10,
-     "happy": 1
-    },
-    {
-     "name": "Mohamed Amir Yosef",
-     "email": "mamir@chromium.org",
-     "counterparts": 10,
-     "happy": 1
-    },
-    {
-     "name": "Steven Luong",
-     "email": "stluong@chromium.org",
-     "counterparts": 10,
-     "happy": 1
-    },
-    {
-     "name": "Vladimir Levin",
-     "email": "vmpstr@chromium.org",
-     "counterparts": 10,
-     "happy": 1
-    },
-    {
-     "name": "Adithya Srinivasan",
-     "email": "adithyas@chromium.org",
-     "counterparts": 11,
-     "happy": 1
-    },
-    {
-     "name": "Alison Gale",
-     "email": "agale@chromium.org",
-     "counterparts": 11,
-     "happy": 1
-    },
-    {
-     "name": "Francois Pierre Doray",
-     "email": "fdoray@chromium.org",
-     "counterparts": 11,
-     "happy": 1
-    },
-    {
-     "name": "Guido Urdaneta",
-     "email": "guidou@chromium.org",
-     "counterparts": 11,
-     "happy": 1
-    },
-    {
-     "name": "Ian Kilpatrick",
-     "email": "ikilpatrick@chromium.org",
-     "counterparts": 11,
-     "happy": 1
-    },
-    {
-     "name": "Ioana Treib",
-     "email": "ioanap@chromium.org",
-     "counterparts": 11,
-     "happy": 1
-    },
-    {
-     "name": "Moe Adel",
-     "email": "adelm@google.com",
-     "counterparts": 11,
-     "happy": 1
-    },
-    {
-     "name": "Morten Stenshorne",
-     "email": "mstensho@chromium.org",
-     "counterparts": 11,
-     "happy": 1
-    },
-    {
-     "name": "Noah Rose Ledesma",
-     "email": "noahrose@google.com",
-     "counterparts": 11,
-     "happy": 1
-    },
-    {
-     "name": "Nicolas Ouellet-Payeur",
-     "email": "nicolaso@chromium.org",
-     "counterparts": 12,
-     "happy": 1
-    },
-    {
-     "name": "Duncan Mercer",
-     "email": "mercerd@google.com",
-     "counterparts": 13,
-     "happy": 1
-    },
-    {
-     "name": "Mark Mentovai",
-     "email": "mark@chromium.org",
-     "counterparts": 13,
-     "happy": 1
-    },
-    {
-     "name": "Dibyajyoti Pal",
-     "email": "dibyapal@chromium.org",
-     "counterparts": 14,
-     "happy": 1
-    },
-    {
-     "name": "Fred Shih",
-     "email": "ffred@chromium.org",
-     "counterparts": 14,
-     "happy": 1
-    },
-    {
-     "name": "Sirisha Kavuluru",
-     "email": "skavuluru@google.com",
-     "counterparts": 14,
-     "happy": 1
-    },
-    {
-     "name": "Xi Han",
-     "email": "hanxi@chromium.org",
-     "counterparts": 14,
-     "happy": 1
-    },
-    {
-     "name": "Yi Gu",
-     "email": "yigu@chromium.org",
-     "counterparts": 14,
-     "happy": 1
-    },
-    {
-     "name": "Łukasz Anforowicz",
-     "email": "lukasza@chromium.org",
-     "counterparts": 14,
-     "happy": 1
-    },
-    {
-     "name": "David Tseng",
-     "email": "dtseng@chromium.org",
-     "counterparts": 15,
-     "happy": 1
-    },
-    {
-     "name": "Linyu He",
-     "email": "linyuh@google.com",
-     "counterparts": 15,
-     "happy": 1
-    },
-    {
-     "name": "Viktor Semeniuk",
-     "email": "vsemeniuk@google.com",
-     "counterparts": 15,
-     "happy": 1
-    },
-    {
-     "name": "David Baron",
-     "email": "dbaron@chromium.org",
-     "counterparts": 16,
-     "happy": 1
-    },
-    {
-     "name": "Mark Foltz",
-     "email": "mfoltz@chromium.org",
-     "counterparts": 16,
-     "happy": 1
-    },
-    {
-     "name": "Timofey Chudakov",
-     "email": "tchudakov@google.com",
-     "counterparts": 16,
-     "happy": 1
-    },
-    {
-     "name": "mmenke",
-     "email": "mmenke@chromium.org",
-     "counterparts": 16,
-     "happy": 1
-    },
-    {
-     "name": "Danil Somsikov",
-     "email": "dsv@chromium.org",
-     "counterparts": 17,
-     "happy": 1
-    },
-    {
-     "name": "Reilly Grant",
-     "email": "reillyg@chromium.org",
-     "counterparts": 17,
-     "happy": 1
-    },
-    {
-     "name": "Tim",
-     "email": "tjudkins@chromium.org",
-     "counterparts": 17,
-     "happy": 1
-    },
-    {
-     "name": "Joe Mason",
-     "email": "joenotcharles@google.com",
-     "counterparts": 18,
-     "happy": 1
-    },
-    {
-     "name": "Rainhard Findling",
-     "email": "rainhard@chromium.org",
-     "counterparts": 18,
-     "happy": 1
-    },
-    {
-     "name": "Tomasz Wiszkowski",
-     "email": "ender@google.com",
-     "counterparts": 18,
-     "happy": 1
-    },
-    {
-     "name": "Alex Ilin",
-     "email": "alexilin@chromium.org",
-     "counterparts": 19,
-     "happy": 1
-    },
-    {
-     "name": "Nihar Majmudar",
-     "email": "niharm@google.com",
-     "counterparts": 19,
-     "happy": 1
-    },
-    {
-     "name": "Paul Adedeji",
-     "email": "pauladedeji@google.com",
-     "counterparts": 19,
-     "happy": 1
-    },
-    {
-     "name": "Ben Pastene",
-     "email": "bpastene@chromium.org",
-     "counterparts": 20,
-     "happy": 1
-    },
-    {
-     "name": "Boris Sazonov",
-     "email": "bsazonov@chromium.org",
-     "counterparts": 21,
-     "happy": 1
-    },
-    {
-     "name": "Mason Freed",
-     "email": "masonf@chromium.org",
-     "counterparts": 21,
-     "happy": 1
-    },
-    {
-     "name": "Tibor Goldschwendt",
-     "email": "tiborg@chromium.org",
-     "counterparts": 21,
-     "happy": 1
+     "name": "Mike Dougherty",
+     "email": "michaeldo@chromium.org",
+     "glowing": 3,
+     "happy": 2,
+     "counterparts": 22
     },
     {
      "name": "Charlie Reis",
      "email": "creis@chromium.org",
-     "counterparts": 22,
-     "happy": 1
+     "glowing": 3,
+     "happy": 1,
+     "counterparts": 22
+    },
+    {
+     "name": "Sky Malice",
+     "email": "skym@chromium.org",
+     "glowing": 3,
+     "happy": 1,
+     "counterparts": 29
+    },
+    {
+     "name": "Antonio Sartori",
+     "email": "antoniosartori@chromium.org",
+     "glowing": 2,
+     "happy": 2,
+     "counterparts": 19
+    },
+    {
+     "name": "Avi Drissman",
+     "email": "avi@chromium.org",
+     "glowing": 2,
+     "happy": 2,
+     "counterparts": 27
+    },
+    {
+     "name": "Bryant Chandler",
+     "email": "bryantchandler@chromium.org",
+     "glowing": 2,
+     "happy": 2,
+     "counterparts": 18
+    },
+    {
+     "name": "Christoph Schwering",
+     "email": "schwering@google.com",
+     "glowing": 2,
+     "happy": 2,
+     "counterparts": 27
+    },
+    {
+     "name": "Daniel Cheng",
+     "email": "dcheng@chromium.org",
+     "glowing": 2,
+     "happy": 2,
+     "counterparts": 87
+    },
+    {
+     "name": "Devlin Cronin",
+     "email": "rdevlin.cronin@chromium.org",
+     "glowing": 2,
+     "happy": 2,
+     "counterparts": 24
+    },
+    {
+     "name": "Elly",
+     "email": "ellyjones@chromium.org",
+     "glowing": 2,
+     "happy": 2,
+     "counterparts": 14
+    },
+    {
+     "name": "Etienne Pierre-Doray",
+     "email": "etiennep@chromium.org",
+     "glowing": 2,
+     "happy": 2,
+     "counterparts": 12
+    },
+    {
+     "name": "Haiyang Pan",
+     "email": "hypan@google.com",
+     "glowing": 2,
+     "happy": 2,
+     "counterparts": 18
+    },
+    {
+     "name": "Maks Orlovich",
+     "email": "morlovich@chromium.org",
+     "glowing": 2,
+     "happy": 2,
+     "counterparts": 22
+    },
+    {
+     "name": "Maria Kazinova",
+     "email": "kazinova@google.com",
+     "glowing": 2,
+     "happy": 2,
+     "counterparts": 9
+    },
+    {
+     "name": "Marijn Kruisselbrink",
+     "email": "mek@chromium.org",
+     "glowing": 2,
+     "happy": 2,
+     "counterparts": 8
+    },
+    {
+     "name": "Mark Schillaci",
+     "email": "mschillaci@google.com",
+     "glowing": 2,
+     "happy": 2,
+     "counterparts": 14
+    },
+    {
+     "name": "Michael Wilson",
+     "email": "mjwilson@chromium.org",
+     "glowing": 2,
+     "happy": 2,
+     "counterparts": 10
+    },
+    {
+     "name": "Peter Wen",
+     "email": "wnwen@chromium.org",
+     "glowing": 2,
+     "happy": 2,
+     "counterparts": 11
+    },
+    {
+     "name": "Rebekah Potter",
+     "email": "rbpotter@chromium.org",
+     "glowing": 2,
+     "happy": 2,
+     "counterparts": 26
+    },
+    {
+     "name": "Rune Lillesveen",
+     "email": "futhark@chromium.org",
+     "glowing": 2,
+     "happy": 2,
+     "counterparts": 31
+    },
+    {
+     "name": "Thomas Lukaszewicz",
+     "email": "tluk@chromium.org",
+     "glowing": 2,
+     "happy": 2,
+     "counterparts": 32
+    },
+    {
+     "name": "David Baron",
+     "email": "dbaron@chromium.org",
+     "glowing": 2,
+     "happy": 1,
+     "counterparts": 16
+    },
+    {
+     "name": "Justin Cohen",
+     "email": "justincohen@google.com",
+     "glowing": 2,
+     "happy": 1,
+     "counterparts": 9
+    },
+    {
+     "name": "Moe Adel",
+     "email": "adelm@google.com",
+     "glowing": 2,
+     "happy": 1,
+     "counterparts": 11
+    },
+    {
+     "name": "Paul Adedeji",
+     "email": "pauladedeji@google.com",
+     "glowing": 2,
+     "happy": 1,
+     "counterparts": 19
+    },
+    {
+     "name": "Tibor Goldschwendt",
+     "email": "tiborg@chromium.org",
+     "glowing": 2,
+     "happy": 1,
+     "counterparts": 21
+    },
+    {
+     "name": "Will Harris",
+     "email": "wfh@chromium.org",
+     "glowing": 2,
+     "happy": 1,
+     "counterparts": 35
+    },
+    {
+     "name": "Łukasz Barczyński",
+     "email": "lbarczynski@google.com",
+     "glowing": 2,
+     "happy": 1,
+     "counterparts": 6
+    },
+    {
+     "name": "Adithya Srinivasan",
+     "email": "adithyas@chromium.org",
+     "glowing": 1,
+     "happy": 1,
+     "counterparts": 11
+    },
+    {
+     "name": "Alex Ilin",
+     "email": "alexilin@chromium.org",
+     "glowing": 1,
+     "happy": 1,
+     "counterparts": 19
+    },
+    {
+     "name": "Alexei Svitkine",
+     "email": "asvitkine@chromium.org",
+     "glowing": 1,
+     "happy": 1,
+     "counterparts": 23
+    },
+    {
+     "name": "Alison Gale",
+     "email": "agale@chromium.org",
+     "glowing": 1,
+     "happy": 1,
+     "counterparts": 11
+    },
+    {
+     "name": "Andrew Grieve",
+     "email": "agrieve@chromium.org",
+     "glowing": 1,
+     "happy": 1,
+     "counterparts": 27
+    },
+    {
+     "name": "Ankush Singh",
+     "email": "ankushkush@google.com",
+     "glowing": 1,
+     "happy": 1,
+     "counterparts": 10
+    },
+    {
+     "name": "Anthi Orfanou",
+     "email": "anthie@google.com",
+     "glowing": 1,
+     "happy": 1,
+     "counterparts": 6
+    },
+    {
+     "name": "Ben Pastene",
+     "email": "bpastene@chromium.org",
+     "glowing": 1,
+     "happy": 1,
+     "counterparts": 20
+    },
+    {
+     "name": "Benjamin Keen",
+     "email": "bkeen@google.com",
+     "glowing": 1,
+     "happy": 1,
+     "counterparts": 7
+    },
+    {
+     "name": "Bo Liu",
+     "email": "boliu@chromium.org",
+     "glowing": 1,
+     "happy": 1,
+     "counterparts": 28
+    },
+    {
+     "name": "Boris Sazonov",
+     "email": "bsazonov@chromium.org",
+     "glowing": 1,
+     "happy": 1,
+     "counterparts": 21
+    },
+    {
+     "name": "Calder Kitagawa",
+     "email": "ckitagawa@chromium.org",
+     "glowing": 1,
+     "happy": 1,
+     "counterparts": 35
+    },
+    {
+     "name": "Chris Fredrickson",
+     "email": "cfredric@chromium.org",
+     "glowing": 1,
+     "happy": 1,
+     "counterparts": 9
+    },
+    {
+     "name": "Chris Lu",
+     "email": "thegreenfrog@google.com",
+     "glowing": 1,
+     "happy": 1,
+     "counterparts": 8
+    },
+    {
+     "name": "Dale Curtis",
+     "email": "dalecurtis@chromium.org",
+     "glowing": 1,
+     "happy": 1,
+     "counterparts": 25
+    },
+    {
+     "name": "Dan H",
+     "email": "harringtond@chromium.org",
+     "glowing": 1,
+     "happy": 1,
+     "counterparts": 23
+    },
+    {
+     "name": "Danil Somsikov",
+     "email": "dsv@chromium.org",
+     "glowing": 1,
+     "happy": 1,
+     "counterparts": 17
+    },
+    {
+     "name": "Darryl James",
+     "email": "dljames@chromium.org",
+     "glowing": 1,
+     "happy": 1,
+     "counterparts": 31
+    },
+    {
+     "name": "David Tseng",
+     "email": "dtseng@chromium.org",
+     "glowing": 1,
+     "happy": 1,
+     "counterparts": 15
+    },
+    {
+     "name": "Demetrios Papadopoulos",
+     "email": "dpapad@chromium.org",
+     "glowing": 1,
+     "happy": 1,
+     "counterparts": 55
+    },
+    {
+     "name": "Devon Loehr",
+     "email": "dloehr@google.com",
+     "glowing": 1,
+     "happy": 1,
+     "counterparts": 7
+    },
+    {
+     "name": "Dibyajyoti Pal",
+     "email": "dibyapal@chromium.org",
+     "glowing": 1,
+     "happy": 1,
+     "counterparts": 14
+    },
+    {
+     "name": "Dominic Farolino",
+     "email": "dom@chromium.org",
+     "glowing": 1,
+     "happy": 1,
+     "counterparts": 8
+    },
+    {
+     "name": "Duncan Mercer",
+     "email": "mercerd@google.com",
+     "glowing": 1,
+     "happy": 1,
+     "counterparts": 13
+    },
+    {
+     "name": "Eshwar Stalin",
+     "email": "estalin@chromium.org",
+     "glowing": 1,
+     "happy": 1,
+     "counterparts": 25
+    },
+    {
+     "name": "Fabio Tirelo",
+     "email": "ftirelo@chromium.org",
+     "glowing": 1,
+     "happy": 1,
+     "counterparts": 6
+    },
+    {
+     "name": "Francois Pierre Doray",
+     "email": "fdoray@chromium.org",
+     "glowing": 1,
+     "happy": 1,
+     "counterparts": 11
+    },
+    {
+     "name": "Fred Shih",
+     "email": "ffred@chromium.org",
+     "glowing": 1,
+     "happy": 1,
+     "counterparts": 14
+    },
+    {
+     "name": "Gauthier Ambard",
+     "email": "gambard@chromium.org",
+     "glowing": 1,
+     "happy": 1,
+     "counterparts": 41
+    },
+    {
+     "name": "Giovanni Ortuno Urquidi",
+     "email": "ortuno@chromium.org",
+     "glowing": 1,
+     "happy": 1,
+     "counterparts": 24
+    },
+    {
+     "name": "Guido Urdaneta",
+     "email": "guidou@chromium.org",
+     "glowing": 1,
+     "happy": 1,
+     "counterparts": 11
+    },
+    {
+     "name": "Gustavo Martin",
+     "email": "gusmartin@google.com",
+     "glowing": 1,
+     "happy": 1,
+     "counterparts": 6
+    },
+    {
+     "name": "Hiroki Nakagawa",
+     "email": "nhiroki@chromium.org",
+     "glowing": 1,
+     "happy": 1,
+     "counterparts": 8
+    },
+    {
+     "name": "Ian Kilpatrick",
+     "email": "ikilpatrick@chromium.org",
+     "glowing": 1,
+     "happy": 1,
+     "counterparts": 11
+    },
+    {
+     "name": "Ioana Treib",
+     "email": "ioanap@chromium.org",
+     "glowing": 1,
+     "happy": 1,
+     "counterparts": 11
+    },
+    {
+     "name": "James Leung",
+     "email": "jamesleung@google.com",
+     "glowing": 1,
+     "happy": 1,
+     "counterparts": 8
+    },
+    {
+     "name": "Jenna Himawan",
+     "email": "jhimawan@google.com",
+     "glowing": 1,
+     "happy": 1,
+     "counterparts": 9
+    },
+    {
+     "name": "Joe Mason",
+     "email": "joenotcharles@google.com",
+     "glowing": 1,
+     "happy": 1,
+     "counterparts": 18
+    },
+    {
+     "name": "Keren Zhu",
+     "email": "kerenzhu@chromium.org",
+     "glowing": 1,
+     "happy": 1,
+     "counterparts": 36
+    },
+    {
+     "name": "Linyu He",
+     "email": "linyuh@google.com",
+     "glowing": 1,
+     "happy": 1,
+     "counterparts": 15
+    },
+    {
+     "name": "Louis Romero",
+     "email": "lpromero@google.com",
+     "glowing": 1,
+     "happy": 1,
+     "counterparts": 8
+    },
+    {
+     "name": "Mark Foltz",
+     "email": "mfoltz@chromium.org",
+     "glowing": 1,
+     "happy": 1,
+     "counterparts": 16
+    },
+    {
+     "name": "Mark Mentovai",
+     "email": "mark@chromium.org",
+     "glowing": 1,
+     "happy": 1,
+     "counterparts": 13
+    },
+    {
+     "name": "Mason Freed",
+     "email": "masonf@chromium.org",
+     "glowing": 1,
+     "happy": 1,
+     "counterparts": 21
+    },
+    {
+     "name": "Mei Liang",
+     "email": "meiliang@chromium.org",
+     "glowing": 1,
+     "happy": 1,
+     "counterparts": 6
+    },
+    {
+     "name": "Mohamed Amir Yosef",
+     "email": "mamir@chromium.org",
+     "glowing": 1,
+     "happy": 1,
+     "counterparts": 10
+    },
+    {
+     "name": "Morten Stenshorne",
+     "email": "mstensho@chromium.org",
+     "glowing": 1,
+     "happy": 1,
+     "counterparts": 11
+    },
+    {
+     "name": "Nicolas Ouellet-Payeur",
+     "email": "nicolaso@chromium.org",
+     "glowing": 1,
+     "happy": 1,
+     "counterparts": 12
+    },
+    {
+     "name": "Nihar Majmudar",
+     "email": "niharm@google.com",
+     "glowing": 1,
+     "happy": 1,
+     "counterparts": 19
+    },
+    {
+     "name": "Noah Rose Ledesma",
+     "email": "noahrose@google.com",
+     "glowing": 1,
+     "happy": 1,
+     "counterparts": 11
+    },
+    {
+     "name": "Olivier Robin",
+     "email": "olivierrobin@chromium.org",
+     "glowing": 1,
+     "happy": 1,
+     "counterparts": 25
+    },
+    {
+     "name": "Paul Jensen",
+     "email": "pauljensen@chromium.org",
+     "glowing": 1,
+     "happy": 1,
+     "counterparts": 8
+    },
+    {
+     "name": "Pavol Marko",
+     "email": "pmarko@chromium.org",
+     "glowing": 1,
+     "happy": 1,
+     "counterparts": 8
+    },
+    {
+     "name": "Rainhard Findling",
+     "email": "rainhard@chromium.org",
+     "glowing": 1,
+     "happy": 1,
+     "counterparts": 18
+    },
+    {
+     "name": "Reilly Grant",
+     "email": "reillyg@chromium.org",
+     "glowing": 1,
+     "happy": 1,
+     "counterparts": 17
+    },
+    {
+     "name": "Riley Tatum",
+     "email": "rtatum@google.com",
+     "glowing": 1,
+     "happy": 1,
+     "counterparts": 8
     }
    ]
   },
   "month": {
    "authors": [
     {
-     "name": "Jordan Bayles",
-     "email": "jophba@chromium.org",
-     "counterparts": 21,
-     "happy": 5
-    },
-    {
-     "name": "Benoit Lize",
-     "email": "lizeb@chromium.org",
-     "counterparts": 22,
-     "happy": 4
-    },
-    {
      "name": "Arthur Milchior",
      "email": "arthurmilchior@chromium.org",
-     "counterparts": 74,
-     "happy": 4
-    },
-    {
-     "name": "Takashi Toyoshima",
-     "email": "toyoshim@chromium.org",
-     "counterparts": 19,
-     "happy": 3
-    },
-    {
-     "name": "James Cook",
-     "email": "jamescook@chromium.org",
-     "counterparts": 29,
-     "happy": 3
-    },
-    {
-     "name": "Arthur Sonzogni",
-     "email": "arthursonzogni@chromium.org",
-     "counterparts": 33,
-     "happy": 3
-    },
-    {
-     "name": "Eriko Kurimoto",
-     "email": "elkurin@chromium.org",
-     "counterparts": 45,
-     "happy": 3
-    },
-    {
-     "name": "Devi Varaprasad Jonnala",
-     "email": "jonnalad@google.com",
-     "counterparts": 6,
-     "happy": 2
-    },
-    {
-     "name": "Devon Loehr",
-     "email": "dloehr@google.com",
-     "counterparts": 6,
-     "happy": 2
-    },
-    {
-     "name": "Mike Jackson",
-     "email": "mjackson@microsoft.com",
-     "counterparts": 6,
-     "happy": 2
-    },
-    {
-     "name": "Aaron Leventhal",
-     "email": "aleventhal@google.com",
-     "counterparts": 8,
-     "happy": 2
-    },
-    {
-     "name": "Bhuvana Betini",
-     "email": "bbetini@google.com",
-     "counterparts": 8,
-     "happy": 2
-    },
-    {
-     "name": "Marijn Kruisselbrink",
-     "email": "mek@chromium.org",
-     "counterparts": 8,
-     "happy": 2
+     "glowing": 6,
+     "happy": 4,
+     "counterparts": 74
     },
     {
      "name": "Peter Conn",
      "email": "peconn@chromium.org",
-     "counterparts": 8,
-     "happy": 2
+     "glowing": 6,
+     "happy": 2,
+     "counterparts": 8
     },
     {
-     "name": "Liza Bipin",
-     "email": "mlbipin@google.com",
-     "counterparts": 9,
-     "happy": 2
+     "name": "Jordan Bayles",
+     "email": "jophba@chromium.org",
+     "glowing": 5,
+     "happy": 5,
+     "counterparts": 21
     },
     {
-     "name": "Piotr Kotynia",
-     "email": "piotrkotynia@google.com",
-     "counterparts": 9,
-     "happy": 2
+     "name": "Benoit Lize",
+     "email": "lizeb@chromium.org",
+     "glowing": 4,
+     "happy": 4,
+     "counterparts": 22
     },
     {
-     "name": "Scott Yoder",
-     "email": "scottyoder@google.com",
-     "counterparts": 9,
-     "happy": 2
+     "name": "Takashi Toyoshima",
+     "email": "toyoshim@chromium.org",
+     "glowing": 4,
+     "happy": 3,
+     "counterparts": 19
     },
     {
-     "name": "Thomas Lukaszewicz",
-     "email": "tluk@chromium.org",
-     "counterparts": 10,
-     "happy": 2
+     "name": "Devon Loehr",
+     "email": "dloehr@google.com",
+     "glowing": 4,
+     "happy": 2,
+     "counterparts": 6
+    },
+    {
+     "name": "Arthur Sonzogni",
+     "email": "arthursonzogni@chromium.org",
+     "glowing": 3,
+     "happy": 3,
+     "counterparts": 33
+    },
+    {
+     "name": "Eriko Kurimoto",
+     "email": "elkurin@chromium.org",
+     "glowing": 3,
+     "happy": 3,
+     "counterparts": 45
+    },
+    {
+     "name": "James Cook",
+     "email": "jamescook@chromium.org",
+     "glowing": 3,
+     "happy": 3,
+     "counterparts": 29
     },
     {
      "name": "Antonio Sartori",
      "email": "antoniosartori@chromium.org",
-     "counterparts": 13,
-     "happy": 2
-    },
-    {
-     "name": "Paul Adedeji",
-     "email": "pauladedeji@google.com",
-     "counterparts": 14,
-     "happy": 2
-    },
-    {
-     "name": "Vladimir Levin",
-     "email": "vmpstr@chromium.org",
-     "counterparts": 14,
-     "happy": 2
-    },
-    {
-     "name": "Marc Treib",
-     "email": "treib@chromium.org",
-     "counterparts": 16,
-     "happy": 2
-    },
-    {
-     "name": "Mike Taylor",
-     "email": "miketaylr@chromium.org",
-     "counterparts": 16,
-     "happy": 2
-    },
-    {
-     "name": "Maksim Sisov",
-     "email": "msisov@igalia.com",
-     "counterparts": 20,
-     "happy": 2
-    },
-    {
-     "name": "Mason Freed",
-     "email": "masonf@chromium.org",
-     "counterparts": 23,
-     "happy": 2
-    },
-    {
-     "name": "Mitsuru Oshima",
-     "email": "oshima@chromium.org",
-     "counterparts": 24,
-     "happy": 2
-    },
-    {
-     "name": "Francois Pierre Doray",
-     "email": "fdoray@chromium.org",
-     "counterparts": 25,
-     "happy": 2
-    },
-    {
-     "name": "Thomas Anderson",
-     "email": "thomasanderson@chromium.org",
-     "counterparts": 27,
-     "happy": 2
-    },
-    {
-     "name": "Evan Stade",
-     "email": "evanstade@microsoft.com",
-     "counterparts": 33,
-     "happy": 2
-    },
-    {
-     "name": "Tomasz Wiszkowski",
-     "email": "ender@google.com",
-     "counterparts": 34,
-     "happy": 2
+     "glowing": 3,
+     "happy": 2,
+     "counterparts": 13
     },
     {
      "name": "Helmut Januschka",
      "email": "helmut@januschka.com",
-     "counterparts": 50,
-     "happy": 2
+     "glowing": 3,
+     "happy": 2,
+     "counterparts": 50
     },
     {
-     "name": "Adam Rice",
-     "email": "ricea@chromium.org",
-     "counterparts": 6,
-     "happy": 1
-    },
-    {
-     "name": "David Pennington",
-     "email": "dpenning@chromium.org",
-     "counterparts": 6,
-     "happy": 1
-    },
-    {
-     "name": "Dmitry Gozman",
-     "email": "dgozman@chromium.org",
-     "counterparts": 6,
-     "happy": 1
-    },
-    {
-     "name": "Eldar Pulatov",
-     "email": "epulatov.dev@gmail.com",
-     "counterparts": 6,
-     "happy": 1
-    },
-    {
-     "name": "Guillaume Saulnier-Comte",
-     "email": "gsaul@google.com",
-     "counterparts": 6,
-     "happy": 1
-    },
-    {
-     "name": "Lauren Winston",
-     "email": "lwinston@google.com",
-     "counterparts": 6,
-     "happy": 1
-    },
-    {
-     "name": "Lia Hiscock",
-     "email": "liahiscock@microsoft.com",
-     "counterparts": 6,
-     "happy": 1
-    },
-    {
-     "name": "Luke Deng",
-     "email": "lukedeng@google.com",
-     "counterparts": 6,
-     "happy": 1
-    },
-    {
-     "name": "Michael Wojcicka",
-     "email": "mwoj@google.com",
-     "counterparts": 6,
-     "happy": 1
-    },
-    {
-     "name": "Patrick Noland",
-     "email": "pnoland@chromium.org",
-     "counterparts": 6,
-     "happy": 1
-    },
-    {
-     "name": "Sebastien S-G",
-     "email": "sebsg@chromium.org",
-     "counterparts": 6,
-     "happy": 1
-    },
-    {
-     "name": "Sky Debreuil",
-     "email": "skydebreuil@google.com",
-     "counterparts": 6,
-     "happy": 1
-    },
-    {
-     "name": "Xuehui Chen",
-     "email": "xuehuichen@google.com",
-     "counterparts": 6,
-     "happy": 1
-    },
-    {
-     "name": "Zack Han",
-     "email": "zackhan@chromium.org",
-     "counterparts": 6,
-     "happy": 1
-    },
-    {
-     "name": "Zhou, Shuangshuang",
-     "email": "shuangshuang.zhou@intel.com",
-     "counterparts": 6,
-     "happy": 1
-    },
-    {
-     "name": "Adriana Ixba",
-     "email": "aixba@chromium.org",
-     "counterparts": 7,
-     "happy": 1
-    },
-    {
-     "name": "Camille Lamy",
-     "email": "clamy@chromium.org",
-     "counterparts": 7,
-     "happy": 1
+     "name": "Marijn Kruisselbrink",
+     "email": "mek@chromium.org",
+     "glowing": 3,
+     "happy": 2,
+     "counterparts": 8
     },
     {
      "name": "Colin Blundell",
      "email": "blundell@chromium.org",
-     "counterparts": 7,
-     "happy": 1
+     "glowing": 3,
+     "happy": 1,
+     "counterparts": 7
     },
     {
-     "name": "Gianni Chen",
-     "email": "giannich@chromium.org",
-     "counterparts": 7,
-     "happy": 1
+     "name": "Lauren Winston",
+     "email": "lwinston@google.com",
+     "glowing": 3,
+     "happy": 1,
+     "counterparts": 6
     },
     {
-     "name": "Hidehiko Abe",
-     "email": "hidehiko@chromium.org",
-     "counterparts": 7,
-     "happy": 1
+     "name": "Thomas Guilbert",
+     "email": "tguilbert@chromium.org",
+     "glowing": 3,
+     "happy": 1,
+     "counterparts": 14
     },
     {
-     "name": "Jeffrey Gour",
-     "email": "jeffreygour@microsoft.com",
-     "counterparts": 7,
-     "happy": 1
+     "name": "Aaron Leventhal",
+     "email": "aleventhal@google.com",
+     "glowing": 2,
+     "happy": 2,
+     "counterparts": 8
     },
     {
-     "name": "Juliet Knighton",
-     "email": "julietlevesque@google.com",
-     "counterparts": 7,
-     "happy": 1
+     "name": "Bhuvana Betini",
+     "email": "bbetini@google.com",
+     "glowing": 2,
+     "happy": 2,
+     "counterparts": 8
     },
     {
-     "name": "Robbie McElrath",
-     "email": "rmcelrath@chromium.org",
-     "counterparts": 7,
-     "happy": 1
+     "name": "Devi Varaprasad Jonnala",
+     "email": "jonnalad@google.com",
+     "glowing": 2,
+     "happy": 2,
+     "counterparts": 6
     },
     {
-     "name": "Ryan Qin",
-     "email": "ryqin@chromium.org",
-     "counterparts": 7,
-     "happy": 1
+     "name": "Evan Stade",
+     "email": "evanstade@microsoft.com",
+     "glowing": 2,
+     "happy": 2,
+     "counterparts": 33
     },
     {
-     "name": "Stacy Gaikovaia",
-     "email": "gaiko@google.com",
-     "counterparts": 7,
-     "happy": 1
+     "name": "Francois Pierre Doray",
+     "email": "fdoray@chromium.org",
+     "glowing": 2,
+     "happy": 2,
+     "counterparts": 25
     },
     {
-     "name": "Yrian Derreumaux",
-     "email": "yrian@google.com",
-     "counterparts": 7,
-     "happy": 1
+     "name": "Liza Bipin",
+     "email": "mlbipin@google.com",
+     "glowing": 2,
+     "happy": 2,
+     "counterparts": 9
     },
     {
-     "name": "thefrog",
-     "email": "thefrog@chromium.org",
-     "counterparts": 7,
-     "happy": 1
+     "name": "Maksim Sisov",
+     "email": "msisov@igalia.com",
+     "glowing": 2,
+     "happy": 2,
+     "counterparts": 20
     },
     {
-     "name": "Agata Szpotek",
-     "email": "szpotekagata@google.com",
-     "counterparts": 8,
-     "happy": 1
+     "name": "Marc Treib",
+     "email": "treib@chromium.org",
+     "glowing": 2,
+     "happy": 2,
+     "counterparts": 16
     },
     {
-     "name": "Alfredo Higuera",
-     "email": "alfredohiguera@google.com",
-     "counterparts": 8,
-     "happy": 1
+     "name": "Mason Freed",
+     "email": "masonf@chromium.org",
+     "glowing": 2,
+     "happy": 2,
+     "counterparts": 23
     },
     {
-     "name": "David Hinojosa",
-     "email": "davidhinojosa@google.com",
-     "counterparts": 8,
-     "happy": 1
+     "name": "Mike Jackson",
+     "email": "mjackson@microsoft.com",
+     "glowing": 2,
+     "happy": 2,
+     "counterparts": 6
     },
     {
-     "name": "Fernando Ramirez",
-     "email": "ferny@google.com",
-     "counterparts": 8,
-     "happy": 1
+     "name": "Mike Taylor",
+     "email": "miketaylr@chromium.org",
+     "glowing": 2,
+     "happy": 2,
+     "counterparts": 16
     },
     {
-     "name": "Haiyang Pan",
-     "email": "hypan@google.com",
-     "counterparts": 8,
-     "happy": 1
+     "name": "Mitsuru Oshima",
+     "email": "oshima@chromium.org",
+     "glowing": 2,
+     "happy": 2,
+     "counterparts": 24
     },
     {
-     "name": "Jilin Yang",
-     "email": "jilinyang@google.com",
-     "counterparts": 8,
-     "happy": 1
+     "name": "Paul Adedeji",
+     "email": "pauladedeji@google.com",
+     "glowing": 2,
+     "happy": 2,
+     "counterparts": 14
     },
     {
-     "name": "Miyoung Shin",
-     "email": "myid.shin@igalia.com",
-     "counterparts": 8,
-     "happy": 1
+     "name": "Piotr Kotynia",
+     "email": "piotrkotynia@google.com",
+     "glowing": 2,
+     "happy": 2,
+     "counterparts": 9
     },
     {
-     "name": "Peter Kvitek",
-     "email": "kvitekp@chromium.org",
-     "counterparts": 8,
-     "happy": 1
+     "name": "Scott Yoder",
+     "email": "scottyoder@google.com",
+     "glowing": 2,
+     "happy": 2,
+     "counterparts": 9
     },
     {
-     "name": "Rob Pitkin",
-     "email": "robpitkin@chromium.org",
-     "counterparts": 8,
-     "happy": 1
+     "name": "Thomas Anderson",
+     "email": "thomasanderson@chromium.org",
+     "glowing": 2,
+     "happy": 2,
+     "counterparts": 27
     },
     {
-     "name": "Sangbaek Park",
-     "email": "sangbaekpark@chromium.org",
-     "counterparts": 8,
-     "happy": 1
+     "name": "Thomas Lukaszewicz",
+     "email": "tluk@chromium.org",
+     "glowing": 2,
+     "happy": 2,
+     "counterparts": 10
     },
     {
-     "name": "Solomon Kinard",
-     "email": "solomonkinard@chromium.org",
-     "counterparts": 8,
-     "happy": 1
+     "name": "Tomasz Wiszkowski",
+     "email": "ender@google.com",
+     "glowing": 2,
+     "happy": 2,
+     "counterparts": 34
     },
     {
-     "name": "Takashi Sakamoto",
-     "email": "tasak@google.com",
-     "counterparts": 8,
-     "happy": 1
-    },
-    {
-     "name": "Yixi Wu",
-     "email": "yixiwu@google.com",
-     "counterparts": 8,
-     "happy": 1
-    },
-    {
-     "name": "Łukasz Barczyński",
-     "email": "lbarczynski@google.com",
-     "counterparts": 8,
-     "happy": 1
-    },
-    {
-     "name": "Austin Zhang",
-     "email": "austinzzr@google.com",
-     "counterparts": 9,
-     "happy": 1
-    },
-    {
-     "name": "Caleb Raitto",
-     "email": "caraitto@chromium.org",
-     "counterparts": 9,
-     "happy": 1
-    },
-    {
-     "name": "David Roger",
-     "email": "droger@chromium.org",
-     "counterparts": 9,
-     "happy": 1
-    },
-    {
-     "name": "Joe Mason",
-     "email": "joenotcharles@google.com",
-     "counterparts": 9,
-     "happy": 1
-    },
-    {
-     "name": "Mike Ho",
-     "email": "homi@google.com",
-     "counterparts": 9,
-     "happy": 1
-    },
-    {
-     "name": "Neil Coronado",
-     "email": "nemco@google.com",
-     "counterparts": 9,
-     "happy": 1
-    },
-    {
-     "name": "Neil Kronlage",
-     "email": "neilkr@meta.com",
-     "counterparts": 9,
-     "happy": 1
-    },
-    {
-     "name": "Nohemi Fernandez",
-     "email": "fernandex@google.com",
-     "counterparts": 9,
-     "happy": 1
-    },
-    {
-     "name": "Ramin Halavati",
-     "email": "rhalavati@chromium.org",
-     "counterparts": 9,
-     "happy": 1
-    },
-    {
-     "name": "Trevor Perrier",
-     "email": "perrier@chromium.org",
-     "counterparts": 9,
-     "happy": 1
-    },
-    {
-     "name": "Alex Chen",
-     "email": "alexwchen@chromium.org",
-     "counterparts": 10,
-     "happy": 1
-    },
-    {
-     "name": "Amya Singhal",
-     "email": "amyasinghal@google.com",
-     "counterparts": 10,
-     "happy": 1
+     "name": "Vladimir Levin",
+     "email": "vmpstr@chromium.org",
+     "glowing": 2,
+     "happy": 2,
+     "counterparts": 14
     },
     {
      "name": "Bofeng Chen",
      "email": "bofengchen@google.com",
-     "counterparts": 10,
-     "happy": 1
+     "glowing": 2,
+     "happy": 1,
+     "counterparts": 10
     },
     {
-     "name": "Friedrich Hauser",
-     "email": "friedrichh@chromium.org",
-     "counterparts": 10,
-     "happy": 1
+     "name": "Erik Chen",
+     "email": "erikchen@chromium.org",
+     "glowing": 2,
+     "happy": 1,
+     "counterparts": 25
     },
     {
-     "name": "Karol Sygiet",
-     "email": "sygiet@google.com",
-     "counterparts": 10,
-     "happy": 1
+     "name": "Joe Mason",
+     "email": "joenotcharles@google.com",
+     "glowing": 2,
+     "happy": 1,
+     "counterparts": 9
     },
     {
-     "name": "Nate Chapin",
-     "email": "japhet@chromium.org",
-     "counterparts": 10,
-     "happy": 1
+     "name": "Moe Ahmadi",
+     "email": "mahmadi@chromium.org",
+     "glowing": 2,
+     "happy": 1,
+     "counterparts": 24
     },
     {
-     "name": "Ritika Gupta",
-     "email": "ritikagup@google.com",
-     "counterparts": 10,
-     "happy": 1
+     "name": "Robbie McElrath",
+     "email": "rmcelrath@chromium.org",
+     "glowing": 2,
+     "happy": 1,
+     "counterparts": 7
+    },
+    {
+     "name": "Trevor Perrier",
+     "email": "perrier@chromium.org",
+     "glowing": 2,
+     "happy": 1,
+     "counterparts": 9
+    },
+    {
+     "name": "utzcoz",
+     "email": "utzcoz@gmail.com",
+     "glowing": 2,
+     "happy": 1,
+     "counterparts": 12
+    },
+    {
+     "name": "Adam Rice",
+     "email": "ricea@chromium.org",
+     "glowing": 1,
+     "happy": 1,
+     "counterparts": 6
+    },
+    {
+     "name": "Adriana Ixba",
+     "email": "aixba@chromium.org",
+     "glowing": 1,
+     "happy": 1,
+     "counterparts": 7
+    },
+    {
+     "name": "Agata Szpotek",
+     "email": "szpotekagata@google.com",
+     "glowing": 1,
+     "happy": 1,
+     "counterparts": 8
+    },
+    {
+     "name": "Aldo Culquicondor",
+     "email": "acondor@chromium.org",
+     "glowing": 1,
+     "happy": 1,
+     "counterparts": 14
+    },
+    {
+     "name": "Alex Chen",
+     "email": "alexwchen@chromium.org",
+     "glowing": 1,
+     "happy": 1,
+     "counterparts": 10
     },
     {
      "name": "Alexis Wu",
      "email": "alexiswu@google.com",
-     "counterparts": 11,
-     "happy": 1
+     "glowing": 1,
+     "happy": 1,
+     "counterparts": 11
+    },
+    {
+     "name": "Alfredo Higuera",
+     "email": "alfredohiguera@google.com",
+     "glowing": 1,
+     "happy": 1,
+     "counterparts": 8
+    },
+    {
+     "name": "Alison Gale",
+     "email": "agale@chromium.org",
+     "glowing": 1,
+     "happy": 1,
+     "counterparts": 17
     },
     {
      "name": "Alvin Ji",
      "email": "alvinji@chromium.org",
-     "counterparts": 11,
-     "happy": 1
+     "glowing": 1,
+     "happy": 1,
+     "counterparts": 11
     },
     {
-     "name": "Elly",
-     "email": "ellyjones@chromium.org",
-     "counterparts": 11,
-     "happy": 1
+     "name": "Amya Singhal",
+     "email": "amyasinghal@google.com",
+     "glowing": 1,
+     "happy": 1,
+     "counterparts": 10
     },
     {
-     "name": "Eva Su",
-     "email": "evasu@chromium.org",
-     "counterparts": 11,
-     "happy": 1
+     "name": "Andrea Orru",
+     "email": "andreaorru@chromium.org",
+     "glowing": 1,
+     "happy": 1,
+     "counterparts": 14
     },
     {
-     "name": "Josef Raska",
-     "email": "josefraska@google.com",
-     "counterparts": 11,
-     "happy": 1
+     "name": "Anna Sato",
+     "email": "annasato@chromium.org",
+     "glowing": 1,
+     "happy": 1,
+     "counterparts": 19
     },
     {
-     "name": "Nicolas MacBeth",
-     "email": "nicolasmacbeth@google.com",
-     "counterparts": 11,
-     "happy": 1
+     "name": "Austin Zhang",
+     "email": "austinzzr@google.com",
+     "glowing": 1,
+     "happy": 1,
+     "counterparts": 9
     },
     {
-     "name": "Rushan Suleymanov",
-     "email": "rushans@google.com",
-     "counterparts": 11,
-     "happy": 1
+     "name": "Aviv Kiss",
+     "email": "avivkiss@google.com",
+     "glowing": 1,
+     "happy": 1,
+     "counterparts": 16
     },
     {
-     "name": "Samar Chehade",
-     "email": "samarchehade@google.com",
-     "counterparts": 11,
-     "happy": 1
+     "name": "Caleb Raitto",
+     "email": "caraitto@chromium.org",
+     "glowing": 1,
+     "happy": 1,
+     "counterparts": 9
+    },
+    {
+     "name": "Camille Lamy",
+     "email": "clamy@chromium.org",
+     "glowing": 1,
+     "happy": 1,
+     "counterparts": 7
+    },
+    {
+     "name": "Chris Davis",
+     "email": "chrdavis@microsoft.com",
+     "glowing": 1,
+     "happy": 1,
+     "counterparts": 17
+    },
+    {
+     "name": "Chris Fredrickson",
+     "email": "cfredric@chromium.org",
+     "glowing": 1,
+     "happy": 1,
+     "counterparts": 24
+    },
+    {
+     "name": "Christian Dullweber",
+     "email": "dullweber@chromium.org",
+     "glowing": 1,
+     "happy": 1,
+     "counterparts": 16
     },
     {
      "name": "Danil Somsikov",
      "email": "dsv@chromium.org",
-     "counterparts": 12,
-     "happy": 1
+     "glowing": 1,
+     "happy": 1,
+     "counterparts": 12
+    },
+    {
+     "name": "David Bienvenu",
+     "email": "davidbienvenu@chromium.org",
+     "glowing": 1,
+     "happy": 1,
+     "counterparts": 50
+    },
+    {
+     "name": "David Hinojosa",
+     "email": "davidhinojosa@google.com",
+     "glowing": 1,
+     "happy": 1,
+     "counterparts": 8
+    },
+    {
+     "name": "David Pennington",
+     "email": "dpenning@chromium.org",
+     "glowing": 1,
+     "happy": 1,
+     "counterparts": 6
+    },
+    {
+     "name": "David Roger",
+     "email": "droger@chromium.org",
+     "glowing": 1,
+     "happy": 1,
+     "counterparts": 9
+    },
+    {
+     "name": "Dmitry Gozman",
+     "email": "dgozman@chromium.org",
+     "glowing": 1,
+     "happy": 1,
+     "counterparts": 6
+    },
+    {
+     "name": "Duncan Mercer",
+     "email": "mercerd@google.com",
+     "glowing": 1,
+     "happy": 1,
+     "counterparts": 35
+    },
+    {
+     "name": "Eldar Pulatov",
+     "email": "epulatov.dev@gmail.com",
+     "glowing": 1,
+     "happy": 1,
+     "counterparts": 6
     },
     {
      "name": "Eleanor Lee",
      "email": "eleanorlee@google.com",
-     "counterparts": 12,
-     "happy": 1
+     "glowing": 1,
+     "happy": 1,
+     "counterparts": 12
+    },
+    {
+     "name": "Elly",
+     "email": "ellyjones@chromium.org",
+     "glowing": 1,
+     "happy": 1,
+     "counterparts": 11
+    },
+    {
+     "name": "Eva Su",
+     "email": "evasu@chromium.org",
+     "glowing": 1,
+     "happy": 1,
+     "counterparts": 11
+    },
+    {
+     "name": "Fernando Ramirez",
+     "email": "ferny@google.com",
+     "glowing": 1,
+     "happy": 1,
+     "counterparts": 8
+    },
+    {
+     "name": "Fiaz Muhammad",
+     "email": "mfiaz@google.com",
+     "glowing": 1,
+     "happy": 1,
+     "counterparts": 20
+    },
+    {
+     "name": "Friedrich Hauser",
+     "email": "friedrichh@chromium.org",
+     "glowing": 1,
+     "happy": 1,
+     "counterparts": 10
+    },
+    {
+     "name": "Gary Klassen",
+     "email": "gklassen@chromium.org",
+     "glowing": 1,
+     "happy": 1,
+     "counterparts": 26
+    },
+    {
+     "name": "Gianni Chen",
+     "email": "giannich@chromium.org",
+     "glowing": 1,
+     "happy": 1,
+     "counterparts": 7
+    },
+    {
+     "name": "Guillaume Saulnier-Comte",
+     "email": "gsaul@google.com",
+     "glowing": 1,
+     "happy": 1,
+     "counterparts": 6
+    },
+    {
+     "name": "Haiyang Pan",
+     "email": "hypan@google.com",
+     "glowing": 1,
+     "happy": 1,
+     "counterparts": 8
+    },
+    {
+     "name": "Henrique Nakashima",
+     "email": "hnakashima@chromium.org",
+     "glowing": 1,
+     "happy": 1,
+     "counterparts": 14
+    },
+    {
+     "name": "Hidehiko Abe",
+     "email": "hidehiko@chromium.org",
+     "glowing": 1,
+     "happy": 1,
+     "counterparts": 7
     },
     {
      "name": "Jack Thiesen",
      "email": "jthiesen@chromium.org",
-     "counterparts": 12,
-     "happy": 1
+     "glowing": 1,
+     "happy": 1,
+     "counterparts": 12
+    },
+    {
+     "name": "Jeffrey Gour",
+     "email": "jeffreygour@microsoft.com",
+     "glowing": 1,
+     "happy": 1,
+     "counterparts": 7
+    },
+    {
+     "name": "Jeffrey Yu",
+     "email": "yuje@chromium.org",
+     "glowing": 1,
+     "happy": 1,
+     "counterparts": 47
+    },
+    {
+     "name": "Jilin Yang",
+     "email": "jilinyang@google.com",
+     "glowing": 1,
+     "happy": 1,
+     "counterparts": 8
+    },
+    {
+     "name": "Joel Hockey",
+     "email": "joelhockey@chromium.org",
+     "glowing": 1,
+     "happy": 1,
+     "counterparts": 19
+    },
+    {
+     "name": "Johannes Kron",
+     "email": "kron@chromium.org",
+     "glowing": 1,
+     "happy": 1,
+     "counterparts": 12
+    },
+    {
+     "name": "Josef Raska",
+     "email": "josefraska@google.com",
+     "glowing": 1,
+     "happy": 1,
+     "counterparts": 11
+    },
+    {
+     "name": "Josiah Kiehl",
+     "email": "kiehl@google.com",
+     "glowing": 1,
+     "happy": 1,
+     "counterparts": 12
+    },
+    {
+     "name": "Juliet Knighton",
+     "email": "julietlevesque@google.com",
+     "glowing": 1,
+     "happy": 1,
+     "counterparts": 7
+    },
+    {
+     "name": "Karol Sygiet",
+     "email": "sygiet@google.com",
+     "glowing": 1,
+     "happy": 1,
+     "counterparts": 10
+    },
+    {
+     "name": "Katie D",
+     "email": "katie@chromium.org",
+     "glowing": 1,
+     "happy": 1,
+     "counterparts": 15
+    },
+    {
+     "name": "Keigo Oka",
+     "email": "oka@chromium.org",
+     "glowing": 1,
+     "happy": 1,
+     "counterparts": 50
+    },
+    {
+     "name": "Khalid Peer",
+     "email": "khalidpeer@chromium.org",
+     "glowing": 1,
+     "happy": 1,
+     "counterparts": 15
+    },
+    {
+     "name": "Lei Zhang",
+     "email": "thestig@chromium.org",
+     "glowing": 1,
+     "happy": 1,
+     "counterparts": 22
+    },
+    {
+     "name": "Lia Hiscock",
+     "email": "liahiscock@microsoft.com",
+     "glowing": 1,
+     "happy": 1,
+     "counterparts": 6
+    },
+    {
+     "name": "Lucas Radaelli",
+     "email": "lucasradaelli@google.com",
+     "glowing": 1,
+     "happy": 1,
+     "counterparts": 13
+    },
+    {
+     "name": "Lucia Giorgi",
+     "email": "quacksort@google.com",
+     "glowing": 1,
+     "happy": 1,
+     "counterparts": 14
+    },
+    {
+     "name": "Luke Deng",
+     "email": "lukedeng@google.com",
+     "glowing": 1,
+     "happy": 1,
+     "counterparts": 6
+    },
+    {
+     "name": "Mark Foltz",
+     "email": "mfoltz@chromium.org",
+     "glowing": 1,
+     "happy": 1,
+     "counterparts": 12
+    },
+    {
+     "name": "Michael Tatarski",
+     "email": "mtatarski@google.com",
+     "glowing": 1,
+     "happy": 1,
+     "counterparts": 18
     }
    ],
    "reviewers": [
     {
      "name": "Thomas Guilbert",
      "email": "tguilbert@chromium.org",
-     "counterparts": 13,
-     "happy": 6
+     "glowing": 6,
+     "happy": 6,
+     "counterparts": 13
     },
     {
      "name": "Jordan Bayles",
      "email": "jophba@chromium.org",
-     "counterparts": 6,
-     "happy": 3
+     "glowing": 4,
+     "happy": 3,
+     "counterparts": 6
     },
     {
      "name": "Jan Keitel",
      "email": "jkeitel@google.com",
-     "counterparts": 30,
-     "happy": 3
-    },
-    {
-     "name": "Maria Kazinova",
-     "email": "kazinova@google.com",
-     "counterparts": 7,
-     "happy": 2
-    },
-    {
-     "name": "Michael Wilson",
-     "email": "mjwilson@chromium.org",
-     "counterparts": 8,
-     "happy": 2
-    },
-    {
-     "name": "Lucia Giorgi",
-     "email": "quacksort@google.com",
-     "counterparts": 9,
-     "happy": 2
-    },
-    {
-     "name": "Antonio Sartori",
-     "email": "antoniosartori@chromium.org",
-     "counterparts": 10,
-     "happy": 2
-    },
-    {
-     "name": "Daniel Murphy",
-     "email": "dmurph@chromium.org",
-     "counterparts": 11,
-     "happy": 2
-    },
-    {
-     "name": "Kyle Charbonneau",
-     "email": "kylechar@chromium.org",
-     "counterparts": 13,
-     "happy": 2
+     "glowing": 3,
+     "happy": 3,
+     "counterparts": 30
     },
     {
      "name": "David Bokan",
      "email": "bokan@chromium.org",
-     "counterparts": 20,
-     "happy": 2
-    },
-    {
-     "name": "Alex Moshchuk",
-     "email": "alexmos@chromium.org",
-     "counterparts": 23,
-     "happy": 2
+     "glowing": 3,
+     "happy": 2,
+     "counterparts": 20
     },
     {
      "name": "Greg Thompson",
      "email": "grt@chromium.org",
-     "counterparts": 23,
-     "happy": 2
+     "glowing": 3,
+     "happy": 2,
+     "counterparts": 23
     },
     {
-     "name": "Daniel Cheng",
-     "email": "dcheng@chromium.org",
-     "counterparts": 49,
-     "happy": 2
-    },
-    {
-     "name": "Alison Gale",
-     "email": "agale@chromium.org",
-     "counterparts": 6,
-     "happy": 1
-    },
-    {
-     "name": "Elly",
-     "email": "ellyjones@chromium.org",
-     "counterparts": 6,
-     "happy": 1
-    },
-    {
-     "name": "Mohamed Amir Yosef",
-     "email": "mamir@chromium.org",
-     "counterparts": 6,
-     "happy": 1
-    },
-    {
-     "name": "Adithya Srinivasan",
-     "email": "adithyas@chromium.org",
-     "counterparts": 7,
-     "happy": 1
-    },
-    {
-     "name": "James Leung",
-     "email": "jamesleung@google.com",
-     "counterparts": 7,
-     "happy": 1
-    },
-    {
-     "name": "Kaan Alsan",
-     "email": "alsan@chromium.org",
-     "counterparts": 7,
-     "happy": 1
-    },
-    {
-     "name": "Riley Tatum",
-     "email": "rtatum@google.com",
-     "counterparts": 7,
-     "happy": 1
-    },
-    {
-     "name": "Ankush Singh",
-     "email": "ankushkush@google.com",
-     "counterparts": 8,
-     "happy": 1
-    },
-    {
-     "name": "Chris Lu",
-     "email": "thegreenfrog@google.com",
-     "counterparts": 8,
-     "happy": 1
-    },
-    {
-     "name": "Duncan Mercer",
-     "email": "mercerd@google.com",
-     "counterparts": 8,
-     "happy": 1
-    },
-    {
-     "name": "Etienne Pierre-Doray",
-     "email": "etiennep@chromium.org",
-     "counterparts": 8,
-     "happy": 1
-    },
-    {
-     "name": "Justin Cohen",
-     "email": "justincohen@google.com",
-     "counterparts": 8,
-     "happy": 1
-    },
-    {
-     "name": "Morten Stenshorne",
-     "email": "mstensho@chromium.org",
-     "counterparts": 8,
-     "happy": 1
-    },
-    {
-     "name": "David Tseng",
-     "email": "dtseng@chromium.org",
-     "counterparts": 9,
-     "happy": 1
-    },
-    {
-     "name": "Fred Shih",
-     "email": "ffred@chromium.org",
-     "counterparts": 9,
-     "happy": 1
-    },
-    {
-     "name": "Jinsuk Kim",
-     "email": "jinsukkim@chromium.org",
-     "counterparts": 9,
-     "happy": 1
-    },
-    {
-     "name": "Yi Gu",
-     "email": "yigu@chromium.org",
-     "counterparts": 9,
-     "happy": 1
-    },
-    {
-     "name": "Łukasz Anforowicz",
-     "email": "lukasza@chromium.org",
-     "counterparts": 9,
-     "happy": 1
-    },
-    {
-     "name": "Danil Somsikov",
-     "email": "dsv@chromium.org",
-     "counterparts": 10,
-     "happy": 1
-    },
-    {
-     "name": "Joe Mason",
-     "email": "joenotcharles@google.com",
-     "counterparts": 10,
-     "happy": 1
-    },
-    {
-     "name": "Rainhard Findling",
-     "email": "rainhard@chromium.org",
-     "counterparts": 10,
-     "happy": 1
-    },
-    {
-     "name": "Tim",
-     "email": "tjudkins@chromium.org",
-     "counterparts": 10,
-     "happy": 1
-    },
-    {
-     "name": "Viktor Semeniuk",
-     "email": "vsemeniuk@google.com",
-     "counterparts": 10,
-     "happy": 1
-    },
-    {
-     "name": "Alexei Svitkine",
-     "email": "asvitkine@chromium.org",
-     "counterparts": 11,
-     "happy": 1
-    },
-    {
-     "name": "Dibyajyoti Pal",
-     "email": "dibyapal@chromium.org",
-     "counterparts": 11,
-     "happy": 1
-    },
-    {
-     "name": "Alex Ilin",
-     "email": "alexilin@chromium.org",
-     "counterparts": 12,
-     "happy": 1
-    },
-    {
-     "name": "Haiyang Pan",
-     "email": "hypan@google.com",
-     "counterparts": 12,
-     "happy": 1
-    },
-    {
-     "name": "Mark Foltz",
-     "email": "mfoltz@chromium.org",
-     "counterparts": 12,
-     "happy": 1
-    },
-    {
-     "name": "Devlin Cronin",
-     "email": "rdevlin.cronin@chromium.org",
-     "counterparts": 13,
-     "happy": 1
-    },
-    {
-     "name": "Boris Sazonov",
-     "email": "bsazonov@chromium.org",
-     "counterparts": 14,
-     "happy": 1
-    },
-    {
-     "name": "Bryant Chandler",
-     "email": "bryantchandler@chromium.org",
-     "counterparts": 14,
-     "happy": 1
-    },
-    {
-     "name": "Rebekah Potter",
-     "email": "rbpotter@chromium.org",
-     "counterparts": 14,
-     "happy": 1
-    },
-    {
-     "name": "Ryan Sultanem",
-     "email": "rsult@google.com",
-     "counterparts": 14,
-     "happy": 1
-    },
-    {
-     "name": "mmenke",
-     "email": "mmenke@chromium.org",
-     "counterparts": 14,
-     "happy": 1
-    },
-    {
-     "name": "Olivier Robin",
-     "email": "olivierrobin@chromium.org",
-     "counterparts": 15,
-     "happy": 1
-    },
-    {
-     "name": "Paul Adedeji",
-     "email": "pauladedeji@google.com",
-     "counterparts": 15,
-     "happy": 1
-    },
-    {
-     "name": "Rune Lillesveen",
-     "email": "futhark@chromium.org",
-     "counterparts": 16,
-     "happy": 1
-    },
-    {
-     "name": "Avi Drissman",
-     "email": "avi@chromium.org",
-     "counterparts": 17,
-     "happy": 1
+     "name": "Lucia Giorgi",
+     "email": "quacksort@google.com",
+     "glowing": 3,
+     "happy": 2,
+     "counterparts": 9
     },
     {
      "name": "Charlie Reis",
      "email": "creis@chromium.org",
-     "counterparts": 17,
-     "happy": 1
+     "glowing": 3,
+     "happy": 1,
+     "counterparts": 17
     },
     {
-     "name": "Sky Malice",
-     "email": "skym@chromium.org",
-     "counterparts": 18,
-     "happy": 1
+     "name": "Alex Moshchuk",
+     "email": "alexmos@chromium.org",
+     "glowing": 2,
+     "happy": 2,
+     "counterparts": 23
     },
     {
-     "name": "Maks Orlovich",
-     "email": "morlovich@chromium.org",
-     "counterparts": 19,
-     "happy": 1
+     "name": "Antonio Sartori",
+     "email": "antoniosartori@chromium.org",
+     "glowing": 2,
+     "happy": 2,
+     "counterparts": 10
     },
     {
-     "name": "Thomas Lukaszewicz",
-     "email": "tluk@chromium.org",
-     "counterparts": 19,
-     "happy": 1
+     "name": "Daniel Cheng",
+     "email": "dcheng@chromium.org",
+     "glowing": 2,
+     "happy": 2,
+     "counterparts": 49
     },
     {
-     "name": "Andrew Grieve",
-     "email": "agrieve@chromium.org",
-     "counterparts": 20,
-     "happy": 1
+     "name": "Daniel Murphy",
+     "email": "dmurph@chromium.org",
+     "glowing": 2,
+     "happy": 2,
+     "counterparts": 11
     },
     {
-     "name": "Eshwar Stalin",
-     "email": "estalin@chromium.org",
-     "counterparts": 22,
-     "happy": 1
+     "name": "Kyle Charbonneau",
+     "email": "kylechar@chromium.org",
+     "glowing": 2,
+     "happy": 2,
+     "counterparts": 13
     },
     {
-     "name": "Keren Zhu",
-     "email": "kerenzhu@chromium.org",
-     "counterparts": 24,
-     "happy": 1
+     "name": "Maria Kazinova",
+     "email": "kazinova@google.com",
+     "glowing": 2,
+     "happy": 2,
+     "counterparts": 7
     },
     {
-     "name": "Marc Treib",
-     "email": "treib@chromium.org",
-     "counterparts": 25,
-     "happy": 1
-    },
-    {
-     "name": "Will Harris",
-     "email": "wfh@chromium.org",
-     "counterparts": 25,
-     "happy": 1
+     "name": "Michael Wilson",
+     "email": "mjwilson@chromium.org",
+     "glowing": 2,
+     "happy": 2,
+     "counterparts": 8
     },
     {
      "name": "Arthur Sonzogni",
      "email": "arthursonzogni@chromium.org",
-     "counterparts": 27,
-     "happy": 1
+     "glowing": 2,
+     "happy": 1,
+     "counterparts": 27
+    },
+    {
+     "name": "Justin Cohen",
+     "email": "justincohen@google.com",
+     "glowing": 2,
+     "happy": 1,
+     "counterparts": 8
+    },
+    {
+     "name": "Marc Treib",
+     "email": "treib@chromium.org",
+     "glowing": 2,
+     "happy": 1,
+     "counterparts": 25
+    },
+    {
+     "name": "Paul Adedeji",
+     "email": "pauladedeji@google.com",
+     "glowing": 2,
+     "happy": 1,
+     "counterparts": 15
+    },
+    {
+     "name": "Will Harris",
+     "email": "wfh@chromium.org",
+     "glowing": 2,
+     "happy": 1,
+     "counterparts": 25
+    },
+    {
+     "name": "Adithya Srinivasan",
+     "email": "adithyas@chromium.org",
+     "glowing": 1,
+     "happy": 1,
+     "counterparts": 7
+    },
+    {
+     "name": "Alex Ilin",
+     "email": "alexilin@chromium.org",
+     "glowing": 1,
+     "happy": 1,
+     "counterparts": 12
+    },
+    {
+     "name": "Alexei Svitkine",
+     "email": "asvitkine@chromium.org",
+     "glowing": 1,
+     "happy": 1,
+     "counterparts": 11
+    },
+    {
+     "name": "Alison Gale",
+     "email": "agale@chromium.org",
+     "glowing": 1,
+     "happy": 1,
+     "counterparts": 6
+    },
+    {
+     "name": "Andrew Grieve",
+     "email": "agrieve@chromium.org",
+     "glowing": 1,
+     "happy": 1,
+     "counterparts": 20
+    },
+    {
+     "name": "Ankush Singh",
+     "email": "ankushkush@google.com",
+     "glowing": 1,
+     "happy": 1,
+     "counterparts": 8
+    },
+    {
+     "name": "Avi Drissman",
+     "email": "avi@chromium.org",
+     "glowing": 1,
+     "happy": 1,
+     "counterparts": 17
+    },
+    {
+     "name": "Boris Sazonov",
+     "email": "bsazonov@chromium.org",
+     "glowing": 1,
+     "happy": 1,
+     "counterparts": 14
+    },
+    {
+     "name": "Bryant Chandler",
+     "email": "bryantchandler@chromium.org",
+     "glowing": 1,
+     "happy": 1,
+     "counterparts": 14
+    },
+    {
+     "name": "Chris Lu",
+     "email": "thegreenfrog@google.com",
+     "glowing": 1,
+     "happy": 1,
+     "counterparts": 8
+    },
+    {
+     "name": "Danil Somsikov",
+     "email": "dsv@chromium.org",
+     "glowing": 1,
+     "happy": 1,
+     "counterparts": 10
     },
     {
      "name": "Dave Tapuska",
      "email": "dtapuska@chromium.org",
-     "counterparts": 30,
-     "happy": 1
+     "glowing": 1,
+     "happy": 1,
+     "counterparts": 30
+    },
+    {
+     "name": "David Tseng",
+     "email": "dtseng@chromium.org",
+     "glowing": 1,
+     "happy": 1,
+     "counterparts": 9
+    },
+    {
+     "name": "Devlin Cronin",
+     "email": "rdevlin.cronin@chromium.org",
+     "glowing": 1,
+     "happy": 1,
+     "counterparts": 13
+    },
+    {
+     "name": "Dibyajyoti Pal",
+     "email": "dibyapal@chromium.org",
+     "glowing": 1,
+     "happy": 1,
+     "counterparts": 11
+    },
+    {
+     "name": "Duncan Mercer",
+     "email": "mercerd@google.com",
+     "glowing": 1,
+     "happy": 1,
+     "counterparts": 8
+    },
+    {
+     "name": "Elly",
+     "email": "ellyjones@chromium.org",
+     "glowing": 1,
+     "happy": 1,
+     "counterparts": 6
+    },
+    {
+     "name": "Eshwar Stalin",
+     "email": "estalin@chromium.org",
+     "glowing": 1,
+     "happy": 1,
+     "counterparts": 22
+    },
+    {
+     "name": "Etienne Pierre-Doray",
+     "email": "etiennep@chromium.org",
+     "glowing": 1,
+     "happy": 1,
+     "counterparts": 8
+    },
+    {
+     "name": "Fred Shih",
+     "email": "ffred@chromium.org",
+     "glowing": 1,
+     "happy": 1,
+     "counterparts": 9
+    },
+    {
+     "name": "Haiyang Pan",
+     "email": "hypan@google.com",
+     "glowing": 1,
+     "happy": 1,
+     "counterparts": 12
+    },
+    {
+     "name": "James Leung",
+     "email": "jamesleung@google.com",
+     "glowing": 1,
+     "happy": 1,
+     "counterparts": 7
+    },
+    {
+     "name": "Jinsuk Kim",
+     "email": "jinsukkim@chromium.org",
+     "glowing": 1,
+     "happy": 1,
+     "counterparts": 9
+    },
+    {
+     "name": "Joe Mason",
+     "email": "joenotcharles@google.com",
+     "glowing": 1,
+     "happy": 1,
+     "counterparts": 10
+    },
+    {
+     "name": "Kaan Alsan",
+     "email": "alsan@chromium.org",
+     "glowing": 1,
+     "happy": 1,
+     "counterparts": 7
+    },
+    {
+     "name": "Keren Zhu",
+     "email": "kerenzhu@chromium.org",
+     "glowing": 1,
+     "happy": 1,
+     "counterparts": 24
+    },
+    {
+     "name": "Maks Orlovich",
+     "email": "morlovich@chromium.org",
+     "glowing": 1,
+     "happy": 1,
+     "counterparts": 19
+    },
+    {
+     "name": "Mark Foltz",
+     "email": "mfoltz@chromium.org",
+     "glowing": 1,
+     "happy": 1,
+     "counterparts": 12
+    },
+    {
+     "name": "Mohamed Amir Yosef",
+     "email": "mamir@chromium.org",
+     "glowing": 1,
+     "happy": 1,
+     "counterparts": 6
+    },
+    {
+     "name": "Morten Stenshorne",
+     "email": "mstensho@chromium.org",
+     "glowing": 1,
+     "happy": 1,
+     "counterparts": 8
+    },
+    {
+     "name": "Olivier Robin",
+     "email": "olivierrobin@chromium.org",
+     "glowing": 1,
+     "happy": 1,
+     "counterparts": 15
+    },
+    {
+     "name": "Rainhard Findling",
+     "email": "rainhard@chromium.org",
+     "glowing": 1,
+     "happy": 1,
+     "counterparts": 10
+    },
+    {
+     "name": "Rebekah Potter",
+     "email": "rbpotter@chromium.org",
+     "glowing": 1,
+     "happy": 1,
+     "counterparts": 14
+    },
+    {
+     "name": "Riley Tatum",
+     "email": "rtatum@google.com",
+     "glowing": 1,
+     "happy": 1,
+     "counterparts": 7
+    },
+    {
+     "name": "Rune Lillesveen",
+     "email": "futhark@chromium.org",
+     "glowing": 1,
+     "happy": 1,
+     "counterparts": 16
+    },
+    {
+     "name": "Ryan Sultanem",
+     "email": "rsult@google.com",
+     "glowing": 1,
+     "happy": 1,
+     "counterparts": 14
+    },
+    {
+     "name": "Sky Malice",
+     "email": "skym@chromium.org",
+     "glowing": 1,
+     "happy": 1,
+     "counterparts": 18
+    },
+    {
+     "name": "Thomas Lukaszewicz",
+     "email": "tluk@chromium.org",
+     "glowing": 1,
+     "happy": 1,
+     "counterparts": 19
+    },
+    {
+     "name": "Tim",
+     "email": "tjudkins@chromium.org",
+     "glowing": 1,
+     "happy": 1,
+     "counterparts": 10
+    },
+    {
+     "name": "Viktor Semeniuk",
+     "email": "vsemeniuk@google.com",
+     "glowing": 1,
+     "happy": 1,
+     "counterparts": 10
+    },
+    {
+     "name": "Yi Gu",
+     "email": "yigu@chromium.org",
+     "glowing": 1,
+     "happy": 1,
+     "counterparts": 9
+    },
+    {
+     "name": "mmenke",
+     "email": "mmenke@chromium.org",
+     "glowing": 1,
+     "happy": 1,
+     "counterparts": 14
+    },
+    {
+     "name": "Łukasz Anforowicz",
+     "email": "lukasza@chromium.org",
+     "glowing": 1,
+     "happy": 1,
+     "counterparts": 9
     }
    ]
   }

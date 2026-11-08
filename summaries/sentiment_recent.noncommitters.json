@@ -149,34 +149,39 @@
    "authors": [],
    "reviewers": [
     {
-     "name": "Sorin Jianu",
-     "email": "sorin@chromium.org",
-     "counterparts": 6,
-     "happy": 1
-    },
-    {
-     "name": "Hidehiko Abe",
-     "email": "hidehiko@chromium.org",
-     "counterparts": 7,
-     "happy": 1
-    },
-    {
      "name": "Mitsuru Oshima",
      "email": "oshima@chromium.org",
-     "counterparts": 7,
-     "happy": 1
+     "glowing": 2,
+     "happy": 1,
+     "counterparts": 7
     },
     {
      "name": "Dale Curtis",
      "email": "dalecurtis@chromium.org",
-     "counterparts": 8,
-     "happy": 1
+     "glowing": 1,
+     "happy": 1,
+     "counterparts": 8
+    },
+    {
+     "name": "Hidehiko Abe",
+     "email": "hidehiko@chromium.org",
+     "glowing": 1,
+     "happy": 1,
+     "counterparts": 7
+    },
+    {
+     "name": "Sorin Jianu",
+     "email": "sorin@chromium.org",
+     "glowing": 1,
+     "happy": 1,
+     "counterparts": 6
     },
     {
      "name": "Takashi Toyoshima",
      "email": "toyoshim@chromium.org",
-     "counterparts": 8,
-     "happy": 1
+     "glowing": 1,
+     "happy": 1,
+     "counterparts": 8
     }
    ]
   },
@@ -184,16 +189,18 @@
    "authors": [],
    "reviewers": [
     {
-     "name": "Hidehiko Abe",
-     "email": "hidehiko@chromium.org",
-     "counterparts": 6,
-     "happy": 1
-    },
-    {
      "name": "Dale Curtis",
      "email": "dalecurtis@chromium.org",
-     "counterparts": 7,
-     "happy": 1
+     "glowing": 1,
+     "happy": 1,
+     "counterparts": 7
+    },
+    {
+     "name": "Hidehiko Abe",
+     "email": "hidehiko@chromium.org",
+     "glowing": 1,
+     "happy": 1,
+     "counterparts": 6
     }
    ]
   }

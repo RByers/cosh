@@ -50,7 +50,9 @@ regex plus Claude Haiku (`cosh classify`).
   Nothing published may rank, list, quote or link people, teams or other
   identifiable groups by negative tone, and orgs get no tone figures at
   all. People may be named for praise (praise leaderboards, "who makes whom
-  happy" counts, praise samples with links). Negative comments appear only
+  happy" counts, praise samples with links). The praise boards rank by net
+  praise (praise scores less grumpy ones); only positive totals, summed per
+  period, are published (2026-11-07). Negative comments appear only
   anonymously (text, month, at most the writer's role), after the
   sandboxed `screen_identifying`. The code itself may attach identities
   (`cosh.sentiment_people`) and compute per-person figures; just never

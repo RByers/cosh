@@ -33,11 +33,27 @@ export interface ToneTrend {
   months: { m: string; month: TonePoint; span: [string, string]; rolling: TonePoint }[];
 }
 
+/** A person on a net praise board: their praise scores, less their grumpy
+ * ones; only positive totals are published. */
+export interface NetRow {
+  email: string;
+  name: string;
+  /** The net total. */
+  score: number;
+  /** How many praise comments went into it. */
+  praise: number;
+}
+
 /** summaries/sentiment_praise.json */
 export interface PraiseData {
   weeks: [string, string];
   people: Record<string, string>;
+  /** Praise comment counts per person and week (the caption's totals). */
   weekly: { week: string; email: string; given: number; received: number }[];
+  /** The boards: net praise per period, highest first, positive totals only. */
+  net: Record<Period, Record<'given' | 'received', NetRow[]>>;
+  /** A net total this large gets a pill's full colour. */
+  net_scale: number;
 }
 
 /** summaries/sentiment_samples.json */
@@ -61,8 +77,11 @@ export interface ToneStat {
 export interface HappyRow {
   name: string;
   email: string;
-  counterparts: number;
+  /** Every glowing comment to them, repeats from one person included (the rank). */
+  glowing: number;
+  /** Distinct people who wrote those. */
   happy: number;
+  counterparts: number;
 }
 
 /** summaries/sentiment_recent.json (cosh/sentiment_recent.py) */
@@ -130,28 +149,13 @@ export function periodWeeks(range: [string, string], period: Period): [string, s
 
 const maxWeek = (a: string, b: string) => (a > b ? a : b);
 
-export interface BoardRow {
-  email: string;
-  name: string;
-  count: number;
-}
-
 const within = (week: string, [from, to]: [string, string]) => week >= from && week <= to;
 
-/** The top `n` people by praise given or received, summed over the weeks
- * (all of them, or those in `range`); ties by name. People with none are
- * left out, so a board can be shorter than `n`. */
-export function praiseBoard(d: PraiseData, key: 'given' | 'received', n = 15, range?: [string, string]): BoardRow[] {
-  const sums = new Map<string, number>();
-  for (const r of d.weekly) {
-    if (range && !within(r.week, range)) continue;
-    sums.set(r.email, (sums.get(r.email) ?? 0) + r[key]);
-  }
-  return [...sums]
-    .filter(([, c]) => c > 0)
-    .map(([email, count]) => ({ email, name: d.people[email] ?? email, count }))
-    .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name))
-    .slice(0, n);
+/** A net praise board for `period`: the top `n` (or everyone, "all"), as
+ * the data ranks them (highest net total first). */
+export function netBoard(d: PraiseData, key: 'given' | 'received', period: Period, n: number | 'all' = 15): NetRow[] {
+  const rows = d.net?.[period]?.[key] ?? [];
+  return n === 'all' ? rows : rows.slice(0, n);
 }
 
 /** Praise comments in the data or in `range` (each counts once, as given). */

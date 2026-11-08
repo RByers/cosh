@@ -590,9 +590,60 @@ def is_praise(row, scores):
     return s is not None and s[0] >= GLOWING and bool(PRAISE.search(row["text"]))
 
 
+MONTH_WEEKS = 4      # the boards' "past month": the last four weeks
+NET_SCALE = 5.0      # a net praise total this large gets the full pill colour on the page
+
+
+def net_praise(weeks, scores, data_dir=store.DATA_DIR, authors=DEFAULT_AUTHORS):
+    """Net praise per person, over all `weeks` and over the last four: the
+    scores of the praise comments they gave (or received), plus the scores of
+    the grumpy ones (score <= ANGRY, so these subtract); neutral comments
+    count for nothing. Human to human, written by `authors`.
+
+    Ground rule 5 (2026-11-07): grumpiness may lower a net total, but only
+    positive totals are published, summed per period, so no figure shows
+    anyone's negative tone on its own. Each entry: email, name, score (the
+    net total) and praise (how many praise comments)."""
+    rows = []
+    for w in weeks:
+        for r in read_jsonl(os.path.join(out_dir(data_dir), f"comments-{w}.jsonl")):
+            if r["id"] in scores:
+                r["week"] = w
+                rows.append(r)
+    if rows and "author" not in rows[0]:
+        raise SystemExit("these comment files have no identities: collect them with "
+                         "`python3 -m cosh.sentiment_people collect`")
+    rows = by_authors(rows, authors, data_dir)
+    out = {}
+    for period, ws in (("all", set(weeks)), ("month", set(weeks[-MONTH_WEEKS:]))):
+        total = {k: defaultdict(float) for k in ("given", "received")}
+        count = {k: defaultdict(int) for k in ("given", "received")}
+        names = {}
+        for r in rows:
+            if r["week"] not in ws or _target_kind(r) != "person":
+                continue
+            writer, recipient = r.get("author_email"), r.get("target_email")
+            if not writer or not recipient:
+                continue
+            sc = scores[r["id"]][0]
+            praised = is_praise(r, scores)
+            if not praised and sc > ANGRY:
+                continue                      # neutral: counts for nothing
+            names[writer] = r.get("author_name") or writer
+            names[recipient] = r.get("target_name") or recipient
+            for k, e in (("given", writer), ("received", recipient)):
+                total[k][e] += sc
+                count[k][e] += praised
+        out[period] = {k: sorted((dict(email=e, name=names[e], score=round(v, 2), praise=count[k][e])
+                                  for e, v in total[k].items() if round(v, 2) > 0),
+                                 key=lambda x: (-x["score"], x["name"])) for k in total}
+    return out
+
+
 def praise(weeks, data_dir=store.DATA_DIR, version=None, authors=DEFAULT_AUTHORS):
     """Praise given and received per person and week, from human to human,
-    counting only praise written by `authors`.
+    counting only praise written by `authors`, plus the net praise boards
+    (`net_praise`).
 
     Ground rule 5 allows naming people for praise, never for negative tone,
     so identities are attached here only to comments already scored glowing:
@@ -625,8 +676,10 @@ def praise(weeks, data_dir=store.DATA_DIR, version=None, authors=DEFAULT_AUTHORS
                 people[email] = name or email
                 rows[(w, email)][k] += 1
     return dict(generated_at=store.now_iso(), prompt=version or PROMPT_VERSION, model="haiku",
-                weeks=[weeks[0], weeks[-1]], authors=authors, threshold=GLOWING, coverage=coverage, people=people,
-                weekly=[dict(week=w, email=e, given=g, received=r) for (w, e), (g, r) in sorted(rows.items())])
+                weeks=[weeks[0], weeks[-1]], authors=authors, threshold=GLOWING, angry=ANGRY, net_scale=NET_SCALE,
+                coverage=coverage, people=people,
+                weekly=[dict(week=w, email=e, given=g, received=r) for (w, e), (g, r) in sorted(rows.items())],
+                net=net_praise(weeks, scores, data_dir, authors))
 
 
 # ---------------------------------------------------------------- sample comments

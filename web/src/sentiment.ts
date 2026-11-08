@@ -30,7 +30,7 @@ import {
   gerritLink,
   monthLabel,
   periodWeeks,
-  praiseBoard,
+  netBoard,
   praisePeople,
   praiseTotal,
   weeksBetween,
@@ -244,7 +244,7 @@ function renderRecent(r: ToneRecent, theme: Theme) {
 // ---- leaderboards
 
 /** A board's rows. Each name is a button that opens its comments (`open`). */
-function boardRows(table: HTMLTableElement, rows: { name: string; email: string; count: string }[],
+function boardRows(table: HTMLTableElement, rows: { name: string; email: string; count: string | Node; title?: string }[],
   open: (r: { name: string; email: string }) => void) {
   table.tBodies[0].replaceChildren(...rows.map((r, i) => {
     const tr = el('tr');
@@ -254,7 +254,10 @@ function boardRows(table: HTMLTableElement, rows: { name: string; email: string;
     b.title = r.email;
     b.addEventListener('click', () => open(r));
     who.append(b);
-    tr.append(el('td', String(i + 1)), who, el('td', r.count, 'num'));
+    const count = el('td', undefined, 'num');
+    count.append(r.count);
+    if (r.title) count.title = r.title;
+    tr.append(el('td', String(i + 1)), who, count);
     return tr;
   }));
 }
@@ -321,12 +324,16 @@ const happySize = radio<string>('happy-size', () => drawHappy());
 function drawPraise() {
   const d = praiseData;
   if (!d) return;
-  const range = periodWeeks(d.weeks, praisePeriod());
-  const n = Number(praiseSize());
+  const period = praisePeriod();
+  const range = periodWeeks(d.weeks, period);
+  const size = praiseSize();
+  const n = size === 'all' ? 'all' : Number(size);
+  $('#net-angry').textContent = String(Math.abs(recentData?.thresholds.angry ?? 0.3));
   fill($('#praise-sub'), { range: weeksBetween(range), n: fmtInt(praiseTotal(d, range)), people: fmtInt(praisePeople(d, range)) });
   for (const key of ['given', 'received'] as const) {
     boardRows($<HTMLTableElement>(`#praise-${key}`),
-      praiseBoard(d, key, n, range).map((r) => ({ name: r.name, email: r.email, count: fmtInt(r.count) })),
+      netBoard(d, key, period, n).map((r) => ({ name: r.name, email: r.email,
+        count: scoreBadge(r.score, d.net_scale, `Net praise ${signed1(r.score)} (${fmtInt(r.praise)} praise comments)`) })),
       (r) => openPerson(msg(`person-praise-${key}`, { name: r.name }), (c) => praiseComments(c, r.email, key, range)));
   }
 }
@@ -334,7 +341,8 @@ function drawPraise() {
 function drawHappy() {
   const r = recentData;
   if (!r) return;
-  const fmtRow = (x: HappyRow) => ({ name: x.name, email: x.email, count: `${fmtInt(x.happy)} of ${fmtInt(x.counterparts)}` });
+  const fmtRow = (x: HappyRow) => ({ name: x.name, email: x.email, count: fmtInt(x.glowing),
+    title: `${fmtInt(x.glowing)} glowing comments from ${fmtInt(x.happy)} of the ${fmtInt(x.counterparts)} people who commented` });
   const p = happyPeriod();
   const n = Number(happySize());
   fill($('#happy-sub'), { range: weeksBetween(p === 'all' ? r.weeks : r.month_weeks), min: r.min_counterparts });
@@ -348,13 +356,13 @@ function drawHappy() {
 
 /** A comment's score as a small pill: "+0.6" or "−0.8", tinted from neutral
  * toward the glowing or the angry colour as the score grows. */
-function scoreBadge(score: number): HTMLElement {
+function scoreBadge(score: number, scale = 1, title = `Score ${signed1(score)} on a scale from −1 to +1`): HTMLElement {
   const b = el('span', signed1(score), 'score-badge');
-  const m = Math.min(1, Math.abs(score));
+  const m = Math.min(1, Math.abs(score) / scale);
   b.dataset.pole = score < 0 ? 'neg' : 'pos';
   b.style.setProperty('--mix', `${Math.round(m * 100)}%`);
   if (m > 0.6) b.classList.add('score-strong');
-  b.title = `Score ${signed1(score)} on a scale from −1 to +1`;
+  b.title = title;
   return b;
 }
 

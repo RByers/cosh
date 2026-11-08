@@ -18,6 +18,13 @@ def c(cid, aid, msg, ts="2026-10-27 10:00:00.000000000", parent=None, **kw):
     return d
 
 
+def ident():
+    """An Identities hook over ACCTS, as `cosh.sentiment_people collect` uses for the week files."""
+    from cosh import sentiment_people as P
+    accts = {k: dict(v, name=v["email"].split("@")[0].title()) for k, v in ACCTS.items()}
+    return P.Identities(accounts=accts, resolve=lambda e, day=None: e.split("@")[1] if e else "(no email)")
+
+
 def run(comments, annotate=None):
     return S._cl_comments(HOST, "chromium/src", 100, 1, "subj", "NEW", {"f.cc": comments}, ACCTS,
                           "2026-10-26 00:00:00", "2026-11-02 00:00:00", annotate=annotate)
@@ -138,7 +145,7 @@ class PraiseTest(unittest.TestCase):
                 "2026-10-26 00:00:00", "2026-11-02 00:00:00", keep=keep, annotate=spy)
 
         with tempfile.TemporaryDirectory() as d:
-            S.write_jsonl(os.path.join(d, "sentiment", "comments-2026-W44.jsonl"), run(comments))
+            S.write_jsonl(os.path.join(d, "sentiment", "comments-2026-W44.jsonl"), run(comments, annotate=ident()))
             import sqlite3
             db = sqlite3.connect(os.path.join(d, "derived.sqlite"))
             db.execute("CREATE TABLE accounts (host, account_id, email, name)")
@@ -163,6 +170,11 @@ class PraiseTest(unittest.TestCase):
         self.assertEqual({(r["email"], r["given"], r["received"]) for r in doc["weekly"]},
                          {("owner@chromium.org", 1, 1), ("rev@microsoft.com", 1, 1)})
         self.assertEqual(doc["coverage"], [{"week": "2026-W44", "unscored": 0}])
+        # Net praise: Rev's praise (+0.6) is cancelled by their angry comment (−0.6), so Rev has no
+        # positive total to show as a giver, and Owner none as a recipient. Only positives are published.
+        self.assertEqual(doc["net"]["all"]["given"], [dict(email="owner@chromium.org", name="Owner", score=0.5, praise=1)])
+        self.assertEqual(doc["net"]["all"]["received"], [dict(email="rev@microsoft.com", name="Rev", score=0.5, praise=1)])
+        self.assertTrue(all(x["score"] > 0 for p in doc["net"].values() for b in p.values() for x in b))
 
     def test_is_praise_needs_the_words(self):
         self.assertTrue(S.is_praise({"id": "x", "text": "Thanks, great find"}, {"x": (0.5, False, None)}))
@@ -323,7 +335,12 @@ class RecentTest(unittest.TestCase):
         from cosh import sentiment_recent as R
         rows, scores = self.rows()
         h = R.happy(rows, scores)
-        self.assertEqual(h["authors"], [dict(name="Owner", email="owner@x.org", counterparts=7, happy=2)])
+        self.assertEqual(h["authors"], [dict(name="Owner", email="owner@x.org", glowing=2, happy=2, counterparts=7)])
+        # Repeats count: a second glowing comment from P12 raises glowing, not happy.
+        extra = dict(rows[2], id="100/again")
+        scores["100/again"] = (0.7, False, None)
+        h = R.happy(rows + [extra], scores)
+        self.assertEqual((h["authors"][0]["glowing"], h["authors"][0]["happy"]), (3, 2))
         self.assertEqual(h["reviewers"], [])
         h = R.happy(rows[:5], scores)                      # 5 counterparts: below MIN_COUNTERPARTS
         self.assertEqual(h["authors"], [])
@@ -423,7 +440,7 @@ class AuthorsTest(unittest.TestCase):
                     c("p", 2, "Wonderful cleanup, I learned a lot", parent="b")]    # reviewer (not) -> owner
         scores = {"100/b": (0.5, False, None), "100/p": (0.6, False, None)}
         with tempfile.TemporaryDirectory() as d:
-            S.write_jsonl(os.path.join(d, "sentiment", "comments-2026-W44.jsonl"), run(comments))
+            S.write_jsonl(os.path.join(d, "sentiment", "comments-2026-W44.jsonl"), run(comments, annotate=ident()))
             self.derived(d, [(1, 1), (2, 0)])
             import sqlite3
             db = sqlite3.connect(os.path.join(d, "derived.sqlite"))
