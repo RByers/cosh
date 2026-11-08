@@ -33,6 +33,101 @@ that AI tools are common? It looks at:
 - the burden of supporting others: who reviews newcomers, how review moves
   from experts to people who were newcomers a few years earlier.
 
+## Goal and signals (as stated on the page, 2026-11-08)
+
+**Goal.** Chromium has grown through code review: experts give feedback,
+newcomers learn to need less of it, then review and own code and train the
+next newcomers. AI tools make changes cheaper to write than to review. The
+page asks whether that cycle still holds, and how the community can adapt to
+agentic engineering in a way that improves product quality, robustness,
+engineering rigour and velocity, and keeps growing its people into expert
+engineers.
+
+**Signals.**
+
+- *Balance:* review load index (threads against the 2023–24 norm for the
+  CL's size and directory); CLs per reviewer.
+- *Speed:* hours to first substantive review; attention-set waits.
+- *Quality:* lines changed after review, rounds, reverts within 30 days.
+- *Growth:* review load by tenure and familiarity; growth paths (velocity,
+  size, breadth, reviewing, independence) against a shuffled null; cohorts.
+- *Carrying the project:* review share by tenure, who approves newcomers,
+  new regular reviewers and OWNERS, mentees who become mentors.
+
+## Review of claims and goals (Fable, 2026-11-08)
+
+A second review read the page and these notes against the data. Its factual
+points were checked and hold, and the page now says:
+
+- About as many people comment as author (1,325 commenters for 1,240
+  authors in 2026 Q3). Approvals concentrate (busiest tenth 55% → 68%) while
+  thread-writing doesn't (56% → 57%). "Who carries the load" is now "How
+  review is shared".
+- Per-author velocity rose from 2023 (6.3 → 10.4 commits a month, mean), as
+  active authors fell, not first in 2026. The median author has stayed at
+  about 2 a month since 2017; the rise is in the top tail (90th percentile
+  12.7 → 15.3).
+- The median wait in 2026 Q3 (5.2 h) is back at 2023 Q3's (5.1 h), not a
+  new high.
+- New regular reviewers recovered from 68 (2025) to 99 by October 2026.
+- The 2–5-year share of newcomer approvals fell partly because 2023–24 had
+  the smallest intakes of new authors; it needs a per-capita version.
+- "Joined" means first commit on `main`, which includes experienced
+  engineers. The 2025 cohort's lower review load may be reviewers easing off.
+  Its later points rest on few people, and it doesn't start with larger CLs.
+  The heading is now "the 2025 joiners land more and review sooner".
+- The AI-marked first-review difference (39 h, 95% interval 2–77 h, 41
+  author-quarters, one of seven tests) is now worded "may have".
+- Pages name groups only neutrally: "Growth paths by career stage" replaces
+  "who isn't growing".
+
+Still open from the review:
+
+- per-capita newcomer review by tenure band;
+- a balanced panel (people active in both 2024 and 2026) for velocity;
+- splitting first-time contributors from people who were active in Gerrit
+  before their first commit;
+- colouring the directory table by load rather than by a team's response
+  time;
+- folding the mechanical section into the method.
+
+**Gaps against the goals** (all from local data unless marked):
+
+- complexity beyond lines (files, directories, OWNERS approvals needed,
+  non-test share);
+- newcomers' thoroughness as reviewers (addressed threads per review,
+  response time by months since joining);
+- the distribution of reviewer load (concurrent CLs in a reviewer's
+  attention set; share held over 24 weekday hours);
+- `new_dir_share` (moving to new areas) on the cohort charts;
+- review-driven vs author-driven rework (changed lines on files with an
+  addressed thread);
+- reviewability on arrival (uploads before sending, description length,
+  `Bug:` footer);
+- AI attribution beyond the trailer (tool names in messages, the sentiment
+  AI-friction flags, and difference-in-differences by when a directory first
+  uses the trailer).
+
+A Gerrit backfill to 2020 and the bug tracker **need approval**.
+
+**Proposed additional goals for agentic engineering:**
+
+1. Do tests travel with code (test co-change, test ÷ code lines)?
+2. Post-land fixes: lines changed again within 30/90 days, by the same
+   author or others.
+3. Revert–reland cycles, including flaky-test reverts.
+4. Does review depth track risk (security-sensitive trees against leaf UI)?
+5. Do AI-era newcomers still learn (early feedback against later
+   independence measured on author-side signals)?
+6. Reviewer load sustainability and each directory's bus factor (approvers
+   covering 80% of approvals).
+7. Time to first OWNERS and to first approval of another's CL, by cohort.
+8. Review conversation under agents (questions vs directives, addressed
+   rate, AI friction).
+
+Each would be shown as aggregates by quarter, cohort or directory group,
+never by person.
+
 ## The user's decisions (2026-11-08)
 
 - **People:** aggregate and cohort views, plus an individual lookup, but no
@@ -408,8 +503,11 @@ the report artifact, drawn with Chart.js from `summaries/balance.json`. That
 file holds 17 aggregate datasets: `balance_report.py`'s `report.json`, plus the
 growth, pipeline, mentorship, AI-paired and mechanical tables from
 `balance_growth.py` and `balance_analysis.py`, joined by hand for now. It has
-no controls yet, so the date range and mechanical toggle below are still
-planned.
+no date range or mechanical toggle yet (planned below). Single-series charts
+show distributions as shaded bands (middle half and 10th–90th percentile)
+around the median. "Directories over time" is an expandable heatmap of
+directories (to three levels) by quarter, from `summaries/balance_dirs.json`
+(`dirs` in `balance_report.py`'s output), with a choice of measure.
 
 The design below is the target. Each chart follows the project's conventions: text in the HTML, dates not
 ISO weeks, one date range for the page, a mechanical-CL toggle.

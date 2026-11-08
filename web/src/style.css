@@ -2087,3 +2087,29 @@ dl.defs dd {
 .balance-table td {
   padding: 5px 8px;
 }
+
+/* The question and signals at the top of balance.html. */
+.lede .goal-head {
+  margin: 16px 0 4px;
+  font-size: 1.05rem;
+}
+
+.lede .signals {
+  margin: 0 0 12px;
+  padding-left: 22px;
+  color: var(--text-secondary);
+}
+
+.lede .signals li + li {
+  margin-top: 4px;
+}
+
+/* Directories over time (balance.html): shaded like the complexity heatmap. */
+.dirmap,
+#dir-legend {
+  --color: var(--accent);
+}
+
+.dirmap .hm-bin {
+  text-align: left;
+}

@@ -3,9 +3,12 @@
 // from summaries/balance.json (aggregates only: docs/balance.md).
 import { Chart, Filler, type ChartDataset, type Plugin, type TooltipItem } from 'chart.js';
 import balanceUrl from '../../summaries/balance.json?url';
+import dirsUrl from '../../summaries/balance_dirs.json?url';
+import type { DirRow } from './data.ts';
+import { heatRowLabel, heatTable, node } from './heatmap.ts';
 import { readTheme, type Theme } from './charts.ts';
 import { fmtNum } from './format.ts';
-import { fill } from './text.ts';
+import { fill, msg } from './text.ts';
 
 Chart.register(Filler);
 
@@ -215,29 +218,47 @@ function categories(
     fmt, opts);
 }
 
-function ftrBands(rows: Row[], theme: Theme) {
-  const rs = rows.filter((r) => String(r.q) <= LAST_QUARTER);
+
+/** A distribution over time: shaded bands from the 10th to the 90th
+ * percentile (lighter) and the 25th to the 75th (darker), the median as a
+ * line, and optionally a dashed line for an overall figure such as the mean.
+ * `key` names fields key_p10 .. key_p90 in each row. */
+function bands(
+  id: string, rows: Row[], key: string, theme: Theme, fmt: (v: number) => string,
+  opts: { label: string; x?: string; zero?: boolean; max?: number; extra?: { field: string; label: string } },
+) {
+  const x = opts.x ?? 'q';
   const c = theme.series[0];
-  const col = (k: string) => rs.map((r) => r[k] as number);
-  const band = (label: string, data: number[], bg: string | undefined, fillTo: string | false): ChartDataset<'line'> =>
-    ({ label, data, borderWidth: 0, pointRadius: 0, pointHoverRadius: 0, backgroundColor: bg ?? c, borderColor: c, fill: fillTo, tension: 0 });
-  const fmt = FMT.h;
-  const o = options(theme, fmt, false);
-  o.plugins.tooltip.callbacks.label = (i: TooltipItem<'line'>) => `${i.dataset.label}: ${fmt(i.parsed.y ?? 0)}`;
-  charts.push(new Chart($<HTMLCanvasElement>('#c-ftr'), {
+  const col = (p: number) => rows.map((r) => (r[`${key}_p${p}`] as number | null) ?? null);
+  const edge = (label: string, data: (number | null)[], fill: string | false, bg: string): ChartDataset<'line'> =>
+    ({ label, data, borderWidth: 0, pointRadius: 0, pointHoverRadius: 0, backgroundColor: bg, fill, tension: 0 });
+  const datasets: ChartDataset<'line'>[] = [
+    edge('', col(90), '+3', faint(c, '1f')),
+    edge('', col(75), '+1', faint(c, '40')),
+    edge('', col(25), false, c),
+    edge('', col(10), false, c),
+    { label: opts.label, data: col(50), borderColor: c, backgroundColor: c, borderWidth: 2, pointRadius: 0,
+      pointHoverRadius: 4, tension: 0, fill: false },
+  ];
+  if (opts.extra) {
+    const e = opts.extra;
+    datasets.push({ label: e.label, data: rows.map((r) => r[e.field] as number), borderColor: theme.text,
+      backgroundColor: theme.text, borderWidth: 1.5, borderDash: [5, 3], pointRadius: 0, pointHoverRadius: 3,
+      tension: 0, fill: false });
+  }
+  const labels = rows.map((r) => (x === 'q' ? qLabel(String(r.q)) : String(r[x])));
+  const o = options(theme, fmt, !!opts.extra);
+  o.plugins.tooltip.callbacks.label = (i: TooltipItem<'line'>) => {
+    const r = rows[i.dataIndex];
+    if (i.datasetIndex !== 4) return `${i.dataset.label}: ${fmt(i.parsed.y ?? 0)}`;
+    const v = (p: number) => fmt(Number(r[`${key}_p${p}`]));
+    return [`${opts.label}: ${v(50)}`, `  middle half: ${v(25)} to ${v(75)}`, `  10th to 90th percentile: ${v(10)} to ${v(90)}`] as unknown as string;
+  };
+  charts.push(new Chart($<HTMLCanvasElement>(`#${id}`), {
     type: 'line',
-    data: {
-      labels: rs.map((r) => qLabel(String(r.q))),
-      datasets: [
-        band('90th percentile', col('ftr_p90'), faint(c, '22'), '+2'),
-        band('75th percentile', col('ftr_p75'), faint(c, '44'), '+1'),
-        band('25th percentile', col('ftr_p25'), undefined, false),
-        { label: 'Median', data: col('ftr_p50'), borderColor: c, backgroundColor: c, borderWidth: 2, pointRadius: 2.5,
-          pointHoverRadius: 4, tension: 0, fill: false },
-      ],
-    },
-    options: { ...o, scales: axes(theme, (v) => `${num(0)(v)} h`, { zero: true }) },
-  }));
+    data: { labels, datasets },
+    options: { ...o, scales: axes(theme, fmt, { zero: opts.zero, max: opts.max }) },
+  } as never));
 }
 
 const PATHS: [string, string][] = [
@@ -348,6 +369,148 @@ const text = (v: number) => String(v);
 export const waitChange = (before: number | null, now: number | null) =>
   before === null || now === null || !before ? '' : (now - before) / before > 0.1 ? 'worse' : (now - before) / before < -0.1 ? 'better' : '';
 
+// ---- directories over time
+
+interface DirData {
+  quarters: string[];
+  fields: string[];
+  dirs: { path: string; cls: number; q: ((number | null)[] | null)[] }[];
+}
+
+/** Cells resting on fewer CLs stay grey. */
+export const DIR_CELL_MIN = 20;
+
+const DIR_FMT: Record<string, (v: number) => string> = {
+  load_index: (v) => `${num(2)(v)}×`,
+  threads_per_100: num(1),
+  ftr_p50: (v) => `${num(1)(v)} h`,
+  interdiff_p50: pctOf(0),
+  newcomer_share: pctOf(1),
+  median_lines: num(0),
+  cls: num(0),
+};
+const DIR_UNIT: Record<string, string> = {
+  load_index: 'load index',
+  threads_per_100: 'threads per 100 lines',
+  ftr_p50: 'median hours to first review',
+  interdiff_p50: 'median share changed after review',
+  newcomer_share: 'of CLs from newcomers',
+  median_lines: 'median lines',
+  cls: 'CLs',
+};
+
+/** A directory's parent path ("chrome/browser/" for "chrome/browser/ui/"), or null at the top. */
+export const parentDir = (path: string) => {
+  const parts = path.split('/').filter(Boolean);
+  return parts.length > 1 ? parts.slice(0, -1).join('/') + '/' : null;
+};
+
+/** The p-th percentile of sorted values. */
+const quantile = (xs: number[], p: number) => xs[Math.min(xs.length - 1, Math.floor(p * xs.length))];
+
+function dirMap(data: DirData) {
+  const box = $('#dir-chart');
+  const byPath = new Map(data.dirs.map((d) => [d.path, d]));
+  const kids = new Map<string | null, string[]>();
+  for (const d of data.dirs) {
+    const p = parentDir(d.path);
+    // A directory whose parent was left out (too few CLs) goes under its nearest kept ancestor.
+    let up = p;
+    while (up && !byPath.has(up)) up = parentDir(up);
+    if (!kids.has(up)) kids.set(up, []);
+    kids.get(up)!.push(d.path);
+  }
+  for (const list of kids.values()) list.sort((a, b) => byPath.get(b)!.cls - byPath.get(a)!.cls);
+  const expanded = new Set<string>();
+  const metric = () => document.querySelector<HTMLInputElement>('input[name="dir-metric"]:checked')!.value;
+  const field = (m: string) => data.fields.indexOf(m);
+  const ncls = field('cls');
+
+  const draw = () => {
+    const m = metric();
+    const fi = field(m);
+    const fmt = DIR_FMT[m];
+    const values = data.dirs.flatMap((d) => d.q.flatMap((c) =>
+      c && (c[ncls] ?? 0) >= DIR_CELL_MIN && c[fi] !== null ? [c[fi]!] : [])).sort((a, b) => a - b);
+    const volume = m === 'cls';
+    const lo = volume ? 0 : quantile(values, 0.05);
+    const hi = volume ? values[values.length - 1] : quantile(values, 0.95);
+    const t = (v: number) => (volume ? Math.sqrt(v / hi) : hi > lo ? (v - lo) / (hi - lo) : 0.5);
+    fill($('#dir-note'), { m });
+    fill($('#dir-legend'), { lo: fmt(lo), hi: fmt(hi) });
+
+    const rows: DirRow[] = [];
+    const walk = (parent: string | null, depth: number) => {
+      for (const path of kids.get(parent) ?? []) {
+        const d = byPath.get(path)!;
+        const open = expanded.has(path);
+        rows.push({
+          key: path, kind: 'dir', depth, label: depth ? path.slice((parent ?? '').length) : path, title: path,
+          included: 1, value: d.cls, byOrg: new Map(), expandable: kids.has(path), expanded: open,
+        });
+        if (open) walk(path, depth + 1);
+      }
+    };
+    walk(null, 0);
+
+    const table = heatTable('dir-table', data.quarters.length);
+    const head = node('thead');
+    const hr = node('tr');
+    const corner = node('th', 'hm-corner', msg('hm-corner'));
+    corner.scope = 'col';
+    hr.append(corner);
+    data.quarters.forEach((q, i) => {
+      const th = node('th', 'hm-bin');
+      th.scope = 'col';
+      const title = qLabel(q);
+      // A tick at each year's first column.
+      if (i === 0 || q.endsWith('Q1')) th.append(node('span', 'hm-tick', q.slice(0, 4)));
+      th.append(node('span', 'visually-hidden', title));
+      th.title = title;
+      hr.append(th);
+    });
+    head.append(hr);
+    const body = node('tbody');
+    for (const r of rows) {
+      const d = byPath.get(r.key)!;
+      const tr = node('tr', 'hm-row hm-dir');
+      tr.dataset.key = r.key;
+      const th = heatRowLabel(r, r.title, num(0)(d.cls), (key) => {
+        if (expanded.has(key)) expanded.delete(key);
+        else expanded.add(key);
+        draw();
+      });
+      th.title = `${r.title}: ${num(0)(d.cls)} CLs since July 2023`;
+      tr.append(th);
+      d.q.forEach((c, i) => {
+        const td = node('td', 'hm-cell');
+        const cell = node('span', 'hm-box');
+        const n = c?.[ncls] ?? 0;
+        const v = c?.[fi] ?? null;
+        const lines = [`${r.title}, ${qLabel(data.quarters[i])}`, `${num(0)(n)} CLs`];
+        if (c && n >= DIR_CELL_MIN && v !== null) {
+          cell.classList.add('hm-shade');
+          cell.style.setProperty('--t', String(Math.min(1, Math.max(0, t(v)))));
+          if (!volume) lines.push(`${fmt(v)} ${DIR_UNIT[m]}`);
+          cell.append(node('span', 'visually-hidden', `${fmt(v)} ${DIR_UNIT[m]}`));
+        } else {
+          cell.classList.add('hm-zero');
+          if (n) lines.push('Too few CLs to shade');
+          cell.append(node('span', 'visually-hidden', n ? 'too few CLs' : 'no CLs'));
+        }
+        cell.title = lines.join('\n');
+        td.append(cell);
+        tr.append(td);
+      });
+      body.append(tr);
+    }
+    table.append(head, body);
+    box.replaceChildren(table);
+  };
+  for (const i of document.querySelectorAll<HTMLInputElement>('input[name="dir-metric"]')) i.addEventListener('change', draw);
+  draw();
+}
+
 // ---- the page
 
 function render(data: BalanceData) {
@@ -357,24 +520,26 @@ function render(data: BalanceData) {
   for (const c of charts) c.destroy();
   charts = [];
 
-  quarters('c-velocity', d.exchange, theme, [{ field: 'cls_per_author', label: 'CLs per author' }], FMT.n1);
-  quarters('c-size', d.exchange, theme, [{ field: 'median_lines', label: 'Median lines' }], FMT.n0);
+  const exq = d.exchange.filter((r) => String(r.q) <= LAST_QUARTER);
+  bands('c-velocity', exq, 'cls_per_author', theme, FMT.n1,
+    { label: 'Median author', zero: true, extra: { field: 'cls_per_author', label: 'Mean' } });
+  bands('c-size', exq, 'lines', theme, FMT.n0, { label: 'Median CL', zero: true });
   quarters('c-load', d.exchange, theme, [{ field: 'load_index', label: 'Load index' }], FMT.n2, { ref: 1 });
-  const longrun = d.git_quarters.filter((r) => String(r.q) <= LAST_QUARTER);
-  line('c-longrun', theme, longrun.map((r) => qLabel(String(r.q))), [
-    { label: 'Commits per author per month', data: longrun.map((r) => r.per_author_month as number), color: theme.series[0] },
-    { label: 'Median lines (right axis)', data: longrun.map((r) => r.median_lines as number), color: theme.series[1], axis: 'y2' },
-  ], FMT.n1, { zero: true, y2fmt: FMT.n0 });
+  const git = d.git_quarters.filter((r) => String(r.q) <= LAST_QUARTER);
+  bands('c-longrun', git, 'per_author_month', theme, FMT.n1,
+    { label: 'Median author', zero: true, extra: { field: 'per_author_month', label: 'Mean' } });
+  bands('c-longlines', git, 'lines', theme, FMT.n0, { label: 'Median commit', zero: true });
 
-  quarters('c-perreviewer', d.reviewer_quarters, theme, [{ field: 'cls_per_reviewer', label: 'CLs per reviewer' }], FMT.n1, { zero: true });
+  bands('c-perreviewer', d.reviewer_quarters.filter((r) => String(r.q) <= LAST_QUARTER), 'reviewed', theme, FMT.n0,
+    { label: 'Median reviewer', zero: true, extra: { field: 'cls_per_reviewer', label: 'Merged CLs ÷ commenting reviewers' } });
   quarters('c-top10', d.git_quarters, theme, [{ field: 'top10_share', label: 'Busiest tenth' }], FMT.pct);
 
-  ftrBands(d.exchange, theme);
+  bands('c-ftr', exq, 'ftr', theme, (v) => `${num(1)(v)} h`, { label: 'Median CL', zero: true });
   quarters('c-waits', d.exchange, theme, [
     { field: 'reviewer_wait_wd_p50', label: 'Reviewer, weekdays' }, { field: 'owner_wait_p50', label: 'Author' },
   ], FMT.h, { zero: true });
 
-  quarters('c-interdiff', d.exchange, theme, [{ field: 'interdiff_share', label: 'Changed after review' }], FMT.pct, { zero: true });
+  bands('c-interdiff', exq, 'interdiff_cl', theme, FMT.pct, { label: 'Median reviewed CL', zero: true, max: 1 });
   quarters('c-reverted', d.exchange, theme, [{ field: 'reverted', label: 'Reverted within 30 days' }], FMT.pct1, { zero: true });
 
   table('t-areas', d.areas, [
@@ -433,10 +598,14 @@ function render(data: BalanceData) {
 async function main() {
   const main = $('main');
   try {
-    const r = await fetch(balanceUrl);
-    if (!r.ok) throw new Error(`${balanceUrl}: ${r.status}`);
-    const data = (await r.json()) as BalanceData;
+    const get = async <T,>(url: string) => {
+      const r = await fetch(url);
+      if (!r.ok) throw new Error(`${url}: ${r.status}`);
+      return (await r.json()) as T;
+    };
+    const [data, dirs] = await Promise.all([get<BalanceData>(balanceUrl), get<DirData>(dirsUrl)]);
     render(data);
+    dirMap(dirs);
     // Charts read their colours from CSS: redraw when the colour scheme flips.
     matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => render(data));
   } catch (e) {

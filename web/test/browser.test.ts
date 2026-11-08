@@ -2679,11 +2679,26 @@ test('the Review Balance page: a draft warning first, every figure, chart and ta
   for (const f of figures) assert.match(f, /\d/, f);
   // Every chart is drawn, and every table has rows.
   const canvases = await page.$$eval('canvas', (cs) => cs.map((c) => [c.id, c.width > 0 && c.height > 0] as const));
-  assert.equal(canvases.length, 22);
+  assert.equal(canvases.length, 23);
   for (const [id, drawn] of canvases) assert.ok(drawn, id);
   const rows = await page.$$eval('table.balance-table', (ts) => ts.map((t) => [t.id, (t as HTMLTableElement).tBodies[0].rows.length] as const));
   assert.deepEqual(rows.map(([id]) => id), ['t-areas', 't-tenure', 't-ai', 't-mech']);
   for (const [id, n] of rows) assert.ok(n > 3, id);
+  // The directory heatmap: top-level rows, one cell per quarter; ▸ opens a directory, and a measure
+  // switch reshades the cells.
+  const dirRows = () => page.$$eval('#dir-table tbody tr', (trs) => trs.map((tr) => (tr as HTMLElement).dataset.key!));
+  const tops = await dirRows();
+  assert.ok(tops.length >= 10 && tops.every((k) => k.split('/').filter(Boolean).length === 1), tops.join(' '));
+  assert.equal(await page.$$eval('#dir-table tbody tr:first-child td', (tds) => tds.length), 13);
+  await page.click('#dir-table tr[data-key="chrome/"] .ar-toggle');
+  const opened = await dirRows();
+  assert.ok(opened.includes('chrome/browser/'), opened.join(' '));
+  const shades = () => page.$$eval('#dir-table .hm-shade', (cs) => cs.map((c) => (c as HTMLElement).style.getPropertyValue('--t')));
+  const before = await shades();
+  assert.ok(before.length > 50);
+  await page.click('input[name="dir-metric"][value="ftr_p50"]');
+  assert.notDeepEqual(await shades(), before);
+  assert.match(await page.$eval('#dir-note', (n) => n.textContent!), /first substantive review/);
   // Directory waits that grew are marked; nothing else in the table is.
   assert.ok(await page.$('#t-areas td.worse'));
   assert.deepEqual(await page.$$eval('#t-areas td.worse, #t-areas td.better', (tds) =>

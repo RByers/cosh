@@ -33,6 +33,16 @@ def pct(xs, p):
     return round(xs[min(len(xs) - 1, int(p * len(xs)))], 2) if xs else None
 
 
+PCTS = (.1, .25, .5, .75, .9)
+
+
+def spread(name, xs):
+    """{name_p10: .., name_p25: .., name_p50: .., name_p75: .., name_p90: ..}: the
+    percentiles the page draws as shaded bands."""
+    xs = list(xs)
+    return {f"{name}_p{int(p * 100)}": pct(xs, p) for p in PCTS}
+
+
 def r(x, n=2):
     return None if x is None or (isinstance(x, float) and math.isnan(x)) else round(x, n)
 
@@ -93,9 +103,12 @@ def main():
         s = byq[q]
         rv = [c for c in s if c["first_review_at"]]
         idf = [c for c in rv if c["interdiff_status"] == "ok" and c["lines_final"]]
-        authors = len({c["pid"] for c in s})
+        per_author = Counter(c["pid"] for c in s)
+        authors = len(per_author)
         ex.append(dict(
             q=q, cls=len(s), authors=authors, cls_per_author=r(len(s) / authors),
+            **spread("cls_per_author", per_author.values()), **spread("lines", (c["lines"] for c in s)),
+            **spread("interdiff_cl", (c["lines_changed"] / c["lines_final"] for c in idf)),
             median_lines=st.median(c["lines"] for c in s), p90_lines=pct([c["lines"] for c in s], .9),
             threads_per_cl=r(st.mean(c["threads"] for c in s)),
             threads_per_100=r(st.mean(100 * c["threads"] / c["lines"] for c in s if c["lines"] >= 10)),
@@ -107,7 +120,7 @@ def main():
             rounds=r(st.mean(c["rounds"] or 0 for c in rv)),
             reverted=r(sum(1 for c in s if c["reverted_at"] and c["reverted_at"] - c["closed_at"] < 30 * DAY)
                        / len(s), 4),
-            ftr=[pct([c["ftr"] for c in rv], p) for p in (.25, .5, .75, .9)],
+            **spread("ftr", (c["ftr"] for c in rv)),
             reviewer_wait_p50=pct([c["reviewer_wait_h"] for c in rv], .5),
             reviewer_wait_wd_p50=pct([c["reviewer_wait_wd_h"] for c in rv], .5),
             owner_wait_p50=pct([c["owner_wait_h"] for c in rv], .5),
@@ -132,6 +145,9 @@ def main():
         gl.append(dict(
             q=q, commits=len(s), authors=len(authors), approvers=len(appr),
             per_author_month=r(len(s) / len(authors) / 3), median_lines=st.median(c["lines"] for c in s),
+            # The spread across authors active in the quarter: their commits / 3 months.
+            **spread("per_author_month", (n / 3 for n in authors.values())),
+            **spread("lines", (c["lines"] for c in s)),
             approvals_per_approver_month=r(sum(top) / max(1, len(top)) / 3),
             top10_share=r(sum(top[:k]) / max(1, sum(top)), 3),
             approvers_per_author=r(len(appr) / len(authors), 3),
@@ -214,6 +230,7 @@ def main():
         authors = len({c["pid"] for c in byq[q]})
         rq.append(dict(q=q, reviewers=len(rs), authors=authors, reviewers_per_author=r(len(rs) / authors, 3),
                        cls_per_reviewer=r(len(byq[q]) / max(1, len(rs))),
+                       **spread("reviewed", (v["cls"] for _, v in rs)),
                        threads_top10_share=r(sum(th[:k]) / max(1, sum(th)), 3),
                        reviewer_hours_per_cl=r(sum(c["reviewer_wait_wd_h"] or 0 for c in byq[q]) / len(byq[q]))))
     out["reviewer_quarters"] = rq
@@ -251,6 +268,47 @@ def main():
         areas.append(row)
     areas.sort(key=lambda x: -(x["2024"]["cls"] + x["recent"]["cls"]))
     out["areas"] = areas[:30]
+
+    # ------------------------------------- directory tree by quarter (heatmaps)
+    # Each CL counts in its main 3-level directory (most changed lines) and
+    # that directory's ancestors. Directories with under DIR_MIN CLs over the
+    # whole period are left out, so a directory's listed children needn't add
+    # up to it.
+    DIR_MIN = 300
+    top3 = {}
+    for c in commits:
+        d = dirs3.get(c["cid"])
+        if c["n"] and d:
+            top3[c["n"]] = d[0]
+    cells = defaultdict(list)
+    for c in use:
+        d = top3.get(c["change_number"])
+        if not d or c["q"] > LAST_Q:
+            continue
+        parts = d.rstrip("/").split("/")
+        for k in range(1, len(parts) + 1):
+            cells[("/".join(parts[:k]) + "/", c["q"])].append(c)
+    totals = Counter()
+    for (path, _), s in cells.items():
+        totals[path] += len(s)
+    keep = sorted(p for p, n in totals.items() if n >= DIR_MIN)
+
+    def dir_cell(s):
+        rv = [c for c in s if c["first_review_at"]]
+        idf = [c for c in rv if c["interdiff_status"] == "ok" and c["lines_final"]]
+        big = [c for c in s if c["lines"] >= 10]
+        return [len(s),
+                r(sum(c["threads"] for c in s) / sum(c["exp24"] for c in s)) if sum(c["exp24"] for c in s) else None,
+                r(st.mean(100 * c["threads"] / c["lines"] for c in big), 2) if big else None,
+                pct([c["ftr"] for c in rv], .5),
+                r(sum(1 for c in s if c["ten"] is not None and c["ten"] < 1) / len(s), 3),
+                pct([c["lines_changed"] / c["lines_final"] for c in idf], .5),
+                st.median(c["lines"] for c in s)]
+    out["dirs"] = dict(
+        quarters=Q, min_cls=DIR_MIN,
+        fields=["cls", "load_index", "threads_per_100", "ftr_p50", "newcomer_share", "interdiff_p50", "median_lines"],
+        dirs=[dict(path=p, cls=totals[p], q=[dir_cell(cells[(p, q)]) if cells.get((p, q)) else None for q in Q])
+              for p in keep])
 
     # ---------------------------------------------- cohort curves (Gerrit era)
     def cohort(pid):
