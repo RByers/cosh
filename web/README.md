@@ -17,7 +17,8 @@ add a card in `index.html`, and add browser tests that open it. The landing
 page's illustration is original: don't use the Chromium or Chrome logos.
 
 Each card's `<p class="sources">` lists every data source its page uses
-(Gerrit code review, Chromium git history, Cloudflare Radar, Claude Haiku …).
+(Gerrit code review, Chromium git history, Cloudflare Radar …).
+Models such as Claude Haiku are tools, not data sources, so they aren't listed.
 When a page starts or stops using a source, update its card in the same
 change.
 
