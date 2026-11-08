@@ -1144,11 +1144,24 @@ test('Review Tone: praise boards, dates and Gerrit links', async () => {
 });
 
 test('Review Tone: periods and ranges', async () => {
-  const { periodWeeks, praiseTotal, praisePeople } = await import('../src/tone.ts');
-  assert.deepEqual(periodWeeks(['2026-W37', '2026-W44'], 'all'), ['2026-W37', '2026-W44']);
-  assert.deepEqual(periodWeeks(['2026-W37', '2026-W44'], 'month'), ['2026-W41', '2026-W44']);
-  assert.deepEqual(periodWeeks(['2026-W43', '2026-W44'], 'month'), ['2026-W43', '2026-W44']);
-  assert.deepEqual(periodWeeks(['2025-W50', '2026-W02'], 'month'), ['2025-W51', '2026-W02']);
+  const { periodWeeks, periodsOf, periodKind, happyComments, praiseTotal, praisePeople } = await import('../src/tone.ts');
+  // Weeks go to the month and year of their Thursday: 2026-W01's is 1 Jan 2026.
+  assert.deepEqual(periodsOf(['2025-W45', '2026-W02']),
+    { years: ['2025', '2026'], months: ['2025-11', '2025-12', '2026-01'] });
+  assert.deepEqual(periodWeeks(['2025-W45', '2026-W44'], 'all'), ['2025-W45', '2026-W44']);
+  assert.deepEqual(periodWeeks(['2025-W45', '2026-W44'], '2025'), ['2025-W45', '2025-W52']);
+  assert.deepEqual(periodWeeks(['2025-W45', '2026-W44'], '2026'), ['2026-W01', '2026-W44']);
+  assert.deepEqual(periodWeeks(['2025-W45', '2026-W44'], '2026-01'), ['2026-W01', '2026-W05']);
+  assert.deepEqual(periodWeeks(['2025-W45', '2026-W44'], '2026-10'), ['2026-W40', '2026-W44']);
+  assert.equal(periodWeeks(['2025-W45', '2026-W44'], '2024'), null);
+  assert.deepEqual(['all', '2026', '2026-10'].map(periodKind), ['all', 'year', 'month']);
+  const c = (week: string) => ({ text: '', date: '', week, score: 0.5, writer: '', writer_email: '', recipient: '',
+    recipient_email: 'a@x.org', url: '' });
+  const pc = { weeks: ['2026-W40', '2026-W44'] as [string, string], praise: [],
+    comments: { x: c('2026-W40'), y: c('2026-W44') }, happy: { authors: { 'a@x.org': ['x', 'y'] }, reviewers: {} } };
+  assert.equal(happyComments(pc, 'a@x.org', 'authors').length, 2);
+  assert.deepEqual(happyComments(pc, 'a@x.org', 'authors', ['2026-W41', '2026-W44']).map((x) => x.week), ['2026-W44']);
+  assert.deepEqual(happyComments(pc, 'b@x.org', 'authors'), []);
   const d = {
     weeks: ['2026-W37', '2026-W44'] as [string, string],
     people: { 'a@x.org': 'Ann', 'b@x.org': 'Bo' },
@@ -1158,7 +1171,7 @@ test('Review Tone: periods and ranges', async () => {
       { week: '2026-W44', email: 'a@x.org', given: 0, received: 1 },
     ],
     net_scale: 5,
-    net: { all: { given: [], received: [] }, month: { given: [], received: [] } },
+    net: { all: { given: [], received: [] } },
   };
   const month: [string, string] = ['2026-W41', '2026-W44'];
   assert.equal(praiseTotal(d, month), 1);

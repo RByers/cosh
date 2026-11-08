@@ -38,9 +38,25 @@
     </header>
 
     <main aria-busy="true">
-      <!-- Whose comments every section below counts. Outside any card so it
-           stays stuck to the top of the window, like value.html's metric bar. -->
-      <div class="metric-bar">
+      <!-- Which dates and whose comments every section below counts. Outside
+           any card so it stays stuck to the top of the window, like
+           value.html's metric bar. src/sentiment.ts lists the years and
+           months that have data. -->
+      <div class="metric-bar tone-bar">
+        <fieldset id="period" class="segmented">
+          <legend>Dates</legend>
+          <label><input type="radio" name="period" value="all" checked />All</label>
+          <label><input type="radio" name="period" value="year" />Year</label>
+          <label><input type="radio" name="period" value="month" />Month</label>
+        </fieldset>
+        <div class="select-toggle select-short" id="period-year-box" hidden>
+          <label for="period-year">Year</label>
+          <select id="period-year"></select>
+        </div>
+        <div class="select-toggle select-short" id="period-month-box" hidden>
+          <label for="period-month">Month</label>
+          <select id="period-month"></select>
+        </div>
         <fieldset id="authors" class="segmented">
           <legend>Comments by</legend>
           <label><input type="radio" name="authors" value="committers" checked />Committers</label>
@@ -69,7 +85,8 @@
           A <slot name="rate"></slot> random sample of human review comments: <slot name="n"></slot>
           substantive comments over <slot name="months"></slot> months, about <slot name="perMonth"></slot> a
           month. Each point is a <slot name="window"></slot>-month rolling average centred on its month, and the
-          shaded band is its 95% interval. Wiggles inside the band are mostly noise.
+          shaded band is its 95% interval. Wiggles inside the band are mostly noise.<span data-if="mark"> The
+          larger dot is <slot name="mark"></slot>.</span>
         </template>
         <h3>Average score</h3>
         <div class="chart">
@@ -90,7 +107,7 @@
 
       <section id="recent" class="card" aria-labelledby="recent-title">
         <a class="card-anchor" href="#recent" aria-label="Link to this section" title="Link to this section">#</a>
-        <h2 id="recent-title">The last two months in full</h2>
+        <h2 id="recent-title">Every comment, not a sample</h2>
         <p id="recent-sub" class="sub"></p>
         <template data-msg="recent-sub">
           Every human review comment written between <slot name="range"></slot>, not a sample.
@@ -103,13 +120,15 @@
           <div class="tile" id="tile-angry"><div class="tile-label">Angry</div><div class="tile-value"></div></div>
           <div class="tile" id="tile-ai"><div class="tile-label">AI friction</div><div class="tile-value"></div></div>
         </div>
-        <h3>Week by week</h3>
+        <h3 id="recent-rows-title"></h3>
+        <template data-msg="recent-rows-title"><span data-if="k=week">Week by week</span><span data-if="k=month">Month by month</span></template>
         <div class="table-wrap">
           <table id="recent-weekly">
-            <thead><tr><th scope="col">Week of</th><th scope="col">Comments</th><th scope="col">Average</th><th scope="col">Glowing</th><th scope="col">Angry</th><th scope="col">AI friction</th></tr></thead>
+            <thead><tr><th scope="col" id="recent-rows-col"></th><th scope="col">Comments</th><th scope="col">Average</th><th scope="col">Glowing</th><th scope="col">Angry</th><th scope="col">AI friction</th></tr></thead>
             <tbody></tbody>
           </table>
         </div>
+        <template data-msg="recent-rows-col"><span data-if="k=week">Week of</span><span data-if="k=month">Month</span></template>
         <h3>How scores are spread</h3>
         <div class="chart">
           <canvas id="recent-dist" role="img" aria-label="Share of comments at each score from −1 to +1 in steps of 0.1, on a log scale."></canvas>
@@ -130,11 +149,6 @@
           <slot name="people"></slot> people. Praise for AI agents isn't counted.
         </template>
         <div class="toggles">
-          <fieldset id="praise-period" class="segmented chart-toggle">
-            <legend>Period</legend>
-            <label><input type="radio" name="praise-period" value="all" checked />All scored weeks</label>
-            <label><input type="radio" name="praise-period" value="month" />Past month</label>
-          </fieldset>
           <fieldset id="praise-size" class="segmented chart-toggle">
             <legend>Show</legend>
             <label><input type="radio" name="praise-size" value="15" checked />Top 15</label>
@@ -177,11 +191,6 @@
           glowing comments.
         </template>
         <div class="toggles">
-          <fieldset id="happy-period" class="segmented chart-toggle">
-            <legend>Period</legend>
-            <label><input type="radio" name="happy-period" value="all" checked />All scored weeks</label>
-            <label><input type="radio" name="happy-period" value="month" />Past month</label>
-          </fieldset>
           <fieldset id="happy-size" class="segmented chart-toggle">
             <legend>Show</legend>
             <label><input type="radio" name="happy-size" value="15" checked />Top 15</label>
@@ -206,7 +215,13 @@
         <div class="person-head">
           <h2 id="person-title"></h2>
           <div class="person-actions">
-            <button type="button" id="person-print" class="person-print">Print or save as PDF</button>
+            <button type="button" id="person-print" class="person-print" aria-label="Print or save as PDF"
+              title="Print or save as PDF">
+              <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false">
+                <path d="M7 9V3h10v6M7 18H5a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2M7 14h10v7H7z"
+                  fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" />
+              </svg>
+            </button>
             <button type="button" id="person-close" class="person-close" aria-label="Close">×</button>
           </div>
         </div>

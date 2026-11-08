@@ -1,30 +1,370 @@
 {
- "generated_at": "2026-11-08T04:56:49Z",
+ "generated_at": "2026-11-08T13:10:08Z",
  "prompt": "v3",
  "weeks": [
-  "2026-W37",
+  "2025-W45",
   "2026-W44"
  ],
  "authors": "noncommitters",
- "month_weeks": [
-  "2026-W41",
-  "2026-W44"
- ],
  "thresholds": {
   "glowing": 0.4,
   "angry": -0.3
  },
  "min_counterparts": 6,
  "missing": 0,
- "n_trivial": 39351,
- "total": {
-  "n": 6128,
-  "mean": 0.0223,
-  "glowing": 0.0095,
-  "angry": 0.0055,
-  "ai": 10
- },
  "weekly": [
+  {
+   "week": "2025-W45",
+   "n": 402,
+   "mean": 0.0269,
+   "glowing": 0.01,
+   "angry": 0.0025,
+   "ai": 0
+  },
+  {
+   "week": "2025-W46",
+   "n": 378,
+   "mean": 0.0201,
+   "glowing": 0.0079,
+   "angry": 0.0159,
+   "ai": 0
+  },
+  {
+   "week": "2025-W47",
+   "n": 508,
+   "mean": 0.0262,
+   "glowing": 0.0098,
+   "angry": 0.002,
+   "ai": 1
+  },
+  {
+   "week": "2025-W48",
+   "n": 389,
+   "mean": 0.0234,
+   "glowing": 0.0103,
+   "angry": 0.0129,
+   "ai": 4
+  },
+  {
+   "week": "2025-W49",
+   "n": 414,
+   "mean": 0.0278,
+   "glowing": 0.0266,
+   "angry": 0.0169,
+   "ai": 0
+  },
+  {
+   "week": "2025-W50",
+   "n": 418,
+   "mean": 0.0244,
+   "glowing": 0.0048,
+   "angry": 0.0024,
+   "ai": 0
+  },
+  {
+   "week": "2025-W51",
+   "n": 363,
+   "mean": 0.0251,
+   "glowing": 0.0138,
+   "angry": 0.0,
+   "ai": 0
+  },
+  {
+   "week": "2025-W52",
+   "n": 134,
+   "mean": 0.006,
+   "glowing": 0.0149,
+   "angry": 0.0224,
+   "ai": 0
+  },
+  {
+   "week": "2026-W01",
+   "n": 111,
+   "mean": 0.0351,
+   "glowing": 0.0,
+   "angry": 0.0,
+   "ai": 0
+  },
+  {
+   "week": "2026-W02",
+   "n": 495,
+   "mean": 0.0325,
+   "glowing": 0.0242,
+   "angry": 0.0061,
+   "ai": 0
+  },
+  {
+   "week": "2026-W03",
+   "n": 526,
+   "mean": 0.0221,
+   "glowing": 0.0152,
+   "angry": 0.0057,
+   "ai": 0
+  },
+  {
+   "week": "2026-W04",
+   "n": 447,
+   "mean": 0.0183,
+   "glowing": 0.0112,
+   "angry": 0.0112,
+   "ai": 0
+  },
+  {
+   "week": "2026-W05",
+   "n": 544,
+   "mean": 0.0189,
+   "glowing": 0.0129,
+   "angry": 0.0221,
+   "ai": 0
+  },
+  {
+   "week": "2026-W06",
+   "n": 484,
+   "mean": 0.0039,
+   "glowing": 0.0062,
+   "angry": 0.0227,
+   "ai": 0
+  },
+  {
+   "week": "2026-W07",
+   "n": 410,
+   "mean": 0.0183,
+   "glowing": 0.0073,
+   "angry": 0.0122,
+   "ai": 0
+  },
+  {
+   "week": "2026-W08",
+   "n": 393,
+   "mean": 0.0074,
+   "glowing": 0.0025,
+   "angry": 0.0102,
+   "ai": 0
+  },
+  {
+   "week": "2026-W09",
+   "n": 568,
+   "mean": 0.0139,
+   "glowing": 0.007,
+   "angry": 0.0141,
+   "ai": 0
+  },
+  {
+   "week": "2026-W10",
+   "n": 516,
+   "mean": 0.0188,
+   "glowing": 0.0116,
+   "angry": 0.0078,
+   "ai": 0
+  },
+  {
+   "week": "2026-W11",
+   "n": 533,
+   "mean": 0.0218,
+   "glowing": 0.0075,
+   "angry": 0.0056,
+   "ai": 0
+  },
+  {
+   "week": "2026-W12",
+   "n": 572,
+   "mean": 0.0206,
+   "glowing": 0.0122,
+   "angry": 0.0122,
+   "ai": 0
+  },
+  {
+   "week": "2026-W13",
+   "n": 603,
+   "mean": 0.0138,
+   "glowing": 0.0182,
+   "angry": 0.0282,
+   "ai": 0
+  },
+  {
+   "week": "2026-W14",
+   "n": 646,
+   "mean": 0.0118,
+   "glowing": 0.0062,
+   "angry": 0.0077,
+   "ai": 1
+  },
+  {
+   "week": "2026-W15",
+   "n": 423,
+   "mean": 0.0109,
+   "glowing": 0.0047,
+   "angry": 0.0047,
+   "ai": 0
+  },
+  {
+   "week": "2026-W16",
+   "n": 503,
+   "mean": 0.0157,
+   "glowing": 0.0099,
+   "angry": 0.0179,
+   "ai": 0
+  },
+  {
+   "week": "2026-W17",
+   "n": 519,
+   "mean": 0.032,
+   "glowing": 0.0193,
+   "angry": 0.0058,
+   "ai": 0
+  },
+  {
+   "week": "2026-W18",
+   "n": 489,
+   "mean": 0.0211,
+   "glowing": 0.0143,
+   "angry": 0.0164,
+   "ai": 2
+  },
+  {
+   "week": "2026-W19",
+   "n": 446,
+   "mean": 0.0226,
+   "glowing": 0.009,
+   "angry": 0.0045,
+   "ai": 0
+  },
+  {
+   "week": "2026-W20",
+   "n": 496,
+   "mean": 0.0234,
+   "glowing": 0.0141,
+   "angry": 0.0121,
+   "ai": 3
+  },
+  {
+   "week": "2026-W21",
+   "n": 508,
+   "mean": 0.0217,
+   "glowing": 0.0059,
+   "angry": 0.0098,
+   "ai": 0
+  },
+  {
+   "week": "2026-W22",
+   "n": 452,
+   "mean": 0.0044,
+   "glowing": 0.0022,
+   "angry": 0.0376,
+   "ai": 1
+  },
+  {
+   "week": "2026-W23",
+   "n": 508,
+   "mean": 0.0098,
+   "glowing": 0.0,
+   "angry": 0.0059,
+   "ai": 1
+  },
+  {
+   "week": "2026-W24",
+   "n": 699,
+   "mean": 0.0103,
+   "glowing": 0.0043,
+   "angry": 0.01,
+   "ai": 1
+  },
+  {
+   "week": "2026-W25",
+   "n": 518,
+   "mean": 0.017,
+   "glowing": 0.0116,
+   "angry": 0.0097,
+   "ai": 0
+  },
+  {
+   "week": "2026-W26",
+   "n": 679,
+   "mean": 0.019,
+   "glowing": 0.0044,
+   "angry": 0.0044,
+   "ai": 2
+  },
+  {
+   "week": "2026-W27",
+   "n": 486,
+   "mean": 0.0212,
+   "glowing": 0.0103,
+   "angry": 0.0082,
+   "ai": 2
+  },
+  {
+   "week": "2026-W28",
+   "n": 636,
+   "mean": 0.0261,
+   "glowing": 0.0079,
+   "angry": 0.0031,
+   "ai": 1
+  },
+  {
+   "week": "2026-W29",
+   "n": 538,
+   "mean": 0.0151,
+   "glowing": 0.0,
+   "angry": 0.0019,
+   "ai": 3
+  },
+  {
+   "week": "2026-W30",
+   "n": 600,
+   "mean": 0.0192,
+   "glowing": 0.005,
+   "angry": 0.0,
+   "ai": 0
+  },
+  {
+   "week": "2026-W31",
+   "n": 644,
+   "mean": 0.0183,
+   "glowing": 0.0047,
+   "angry": 0.0062,
+   "ai": 1
+  },
+  {
+   "week": "2026-W32",
+   "n": 682,
+   "mean": 0.016,
+   "glowing": 0.0088,
+   "angry": 0.0044,
+   "ai": 1
+  },
+  {
+   "week": "2026-W33",
+   "n": 613,
+   "mean": 0.0253,
+   "glowing": 0.0082,
+   "angry": 0.0049,
+   "ai": 0
+  },
+  {
+   "week": "2026-W34",
+   "n": 628,
+   "mean": 0.0323,
+   "glowing": 0.0111,
+   "angry": 0.0048,
+   "ai": 0
+  },
+  {
+   "week": "2026-W35",
+   "n": 633,
+   "mean": 0.0221,
+   "glowing": 0.0126,
+   "angry": 0.0032,
+   "ai": 2
+  },
+  {
+   "week": "2026-W36",
+   "n": 659,
+   "mean": 0.017,
+   "glowing": 0.003,
+   "angry": 0.0061,
+   "ai": 2
+  },
   {
    "week": "2026-W37",
    "n": 648,
@@ -90,155 +430,2708 @@
    "ai": 1
   }
  ],
- "dist": [
-  [
-   -0.7,
-   2
-  ],
-  [
-   -0.6,
-   3
-  ],
-  [
-   -0.5,
-   2
-  ],
-  [
-   -0.4,
-   3
-  ],
-  [
-   -0.3,
-   24
-  ],
-  [
-   -0.2,
-   47
-  ],
-  [
-   -0.1,
-   97
-  ],
-  [
-   0.0,
-   4971
-  ],
-  [
-   0.1,
-   615
-  ],
-  [
-   0.2,
-   109
-  ],
-  [
-   0.3,
-   197
-  ],
-  [
-   0.4,
-   28
-  ],
-  [
-   0.5,
-   30
-  ]
+ "monthly": [
+  {
+   "month": "2025-11",
+   "weeks": [
+    "2025-W45",
+    "2025-W48"
+   ],
+   "n": 1677,
+   "mean": 0.0243,
+   "glowing": 0.0095,
+   "angry": 0.0078,
+   "ai": 5
+  },
+  {
+   "month": "2025-12",
+   "weeks": [
+    "2025-W49",
+    "2025-W52"
+   ],
+   "n": 1329,
+   "mean": 0.0238,
+   "glowing": 0.015,
+   "angry": 0.0083,
+   "ai": 0
+  },
+  {
+   "month": "2026-01",
+   "weeks": [
+    "2026-W01",
+    "2026-W05"
+   ],
+   "n": 2123,
+   "mean": 0.0236,
+   "glowing": 0.0151,
+   "angry": 0.0108,
+   "ai": 0
+  },
+  {
+   "month": "2026-02",
+   "weeks": [
+    "2026-W06",
+    "2026-W09"
+   ],
+   "n": 1855,
+   "mean": 0.0109,
+   "glowing": 0.0059,
+   "angry": 0.0151,
+   "ai": 0
+  },
+  {
+   "month": "2026-03",
+   "weeks": [
+    "2026-W10",
+    "2026-W13"
+   ],
+   "n": 2224,
+   "mean": 0.0186,
+   "glowing": 0.0126,
+   "angry": 0.0139,
+   "ai": 0
+  },
+  {
+   "month": "2026-04",
+   "weeks": [
+    "2026-W14",
+    "2026-W18"
+   ],
+   "n": 2580,
+   "mean": 0.0182,
+   "glowing": 0.0109,
+   "angry": 0.0105,
+   "ai": 3
+  },
+  {
+   "month": "2026-05",
+   "weeks": [
+    "2026-W19",
+    "2026-W22"
+   ],
+   "n": 1902,
+   "mean": 0.0182,
+   "glowing": 0.0079,
+   "angry": 0.0158,
+   "ai": 4
+  },
+  {
+   "month": "2026-06",
+   "weeks": [
+    "2026-W23",
+    "2026-W26"
+   ],
+   "n": 2404,
+   "mean": 0.0141,
+   "glowing": 0.005,
+   "angry": 0.0075,
+   "ai": 4
+  },
+  {
+   "month": "2026-07",
+   "weeks": [
+    "2026-W27",
+    "2026-W31"
+   ],
+   "n": 2904,
+   "mean": 0.0201,
+   "glowing": 0.0055,
+   "angry": 0.0038,
+   "ai": 7
+  },
+  {
+   "month": "2026-08",
+   "weeks": [
+    "2026-W32",
+    "2026-W35"
+   ],
+   "n": 2556,
+   "mean": 0.0237,
+   "glowing": 0.0102,
+   "angry": 0.0043,
+   "ai": 3
+  },
+  {
+   "month": "2026-09",
+   "weeks": [
+    "2026-W36",
+    "2026-W39"
+   ],
+   "n": 2695,
+   "mean": 0.0227,
+   "glowing": 0.0093,
+   "angry": 0.0056,
+   "ai": 5
+  },
+  {
+   "month": "2026-10",
+   "weeks": [
+    "2026-W40",
+    "2026-W44"
+   ],
+   "n": 4092,
+   "mean": 0.0212,
+   "glowing": 0.0086,
+   "angry": 0.0056,
+   "ai": 7
+  }
  ],
- "happy": {
+ "periods": {
   "all": {
-   "authors": [],
-   "reviewers": [
+   "weeks": [
+    "2025-W45",
+    "2026-W44"
+   ],
+   "n_trivial": 224315,
+   "total": {
+    "n": 28341,
+    "mean": 0.02,
+    "glowing": 0.0093,
+    "angry": 0.0085,
+    "ai": 38
+   },
+   "dist": [
+    [
+     -1.0,
+     7
+    ],
+    [
+     -0.9,
+     9
+    ],
+    [
+     -0.8,
+     4
+    ],
+    [
+     -0.7,
+     7
+    ],
+    [
+     -0.6,
+     16
+    ],
+    [
+     -0.5,
+     17
+    ],
+    [
+     -0.4,
+     23
+    ],
+    [
+     -0.3,
+     158
+    ],
+    [
+     -0.2,
+     231
+    ],
+    [
+     -0.1,
+     470
+    ],
+    [
+     0.0,
+     23256
+    ],
+    [
+     0.1,
+     2394
+    ],
+    [
+     0.2,
+     485
+    ],
+    [
+     0.3,
+     1000
+    ],
+    [
+     0.4,
+     110
+    ],
+    [
+     0.5,
+     150
+    ],
+    [
+     0.6,
+     3
+    ],
+    [
+     0.7,
+     1
+    ]
+   ],
+   "happy": {
+    "authors": [
+     {
+      "name": "Tomasz Wiszkowski",
+      "email": "ender@google.com",
+      "glowing": 2,
+      "happy": 2,
+      "counterparts": 8
+     },
+     {
+      "name": "Christoph Schwering",
+      "email": "schwering@google.com",
+      "glowing": 1,
+      "happy": 1,
+      "counterparts": 6
+     },
+     {
+      "name": "Etienne Pierre-Doray",
+      "email": "etiennep@chromium.org",
+      "glowing": 1,
+      "happy": 1,
+      "counterparts": 7
+     },
+     {
+      "name": "Helmut Januschka",
+      "email": "helmut@januschka.com",
+      "glowing": 1,
+      "happy": 1,
+      "counterparts": 18
+     },
+     {
+      "name": "Justin Cohen",
+      "email": "justincohen@google.com",
+      "glowing": 1,
+      "happy": 1,
+      "counterparts": 6
+     },
+     {
+      "name": "Kent Tamura",
+      "email": "tkent@chromium.org",
+      "glowing": 1,
+      "happy": 1,
+      "counterparts": 8
+     },
+     {
+      "name": "Kurt Catti-Schmidt",
+      "email": "kschmi@microsoft.com",
+      "glowing": 1,
+      "happy": 1,
+      "counterparts": 7
+     },
+     {
+      "name": "Mason Freed",
+      "email": "masonf@chromium.org",
+      "glowing": 1,
+      "happy": 1,
+      "counterparts": 10
+     },
+     {
+      "name": "Ramin Halavati",
+      "email": "rhalavati@chromium.org",
+      "glowing": 1,
+      "happy": 1,
+      "counterparts": 6
+     },
+     {
+      "name": "Xu, Mingming1",
+      "email": "mingming1.xu@intel.com",
+      "glowing": 1,
+      "happy": 1,
+      "counterparts": 6
+     }
+    ],
+    "reviewers": [
+     {
+      "name": "Dominic Battré",
+      "email": "battre@chromium.org",
+      "glowing": 6,
+      "happy": 3,
+      "counterparts": 13
+     },
+     {
+      "name": "Dana Fried",
+      "email": "dfried@chromium.org",
+      "glowing": 4,
+      "happy": 4,
+      "counterparts": 18
+     },
+     {
+      "name": "Mike Wittman",
+      "email": "wittman@chromium.org",
+      "glowing": 4,
+      "happy": 1,
+      "counterparts": 12
+     },
+     {
+      "name": "Demetrios Papadopoulos",
+      "email": "dpapad@chromium.org",
+      "glowing": 3,
+      "happy": 3,
+      "counterparts": 16
+     },
+     {
+      "name": "Greg Thompson",
+      "email": "grt@chromium.org",
+      "glowing": 3,
+      "happy": 3,
+      "counterparts": 29
+     },
+     {
+      "name": "Hidehiko Abe",
+      "email": "hidehiko@chromium.org",
+      "glowing": 3,
+      "happy": 3,
+      "counterparts": 32
+     },
+     {
+      "name": "Mike West",
+      "email": "mkwst@chromium.org",
+      "glowing": 3,
+      "happy": 3,
+      "counterparts": 10
+     },
+     {
+      "name": "Takashi Toyoshima",
+      "email": "toyoshim@chromium.org",
+      "glowing": 3,
+      "happy": 3,
+      "counterparts": 14
+     },
+     {
+      "name": "Andrea Orru",
+      "email": "andreaorru@chromium.org",
+      "glowing": 3,
+      "happy": 2,
+      "counterparts": 9
+     },
+     {
+      "name": "Christoph Schwering",
+      "email": "schwering@google.com",
+      "glowing": 3,
+      "happy": 2,
+      "counterparts": 11
+     },
+     {
+      "name": "Daniel Murphy",
+      "email": "dmurph@chromium.org",
+      "glowing": 3,
+      "happy": 1,
+      "counterparts": 10
+     },
+     {
+      "name": "Charlie Reis",
+      "email": "creis@chromium.org",
+      "glowing": 2,
+      "happy": 2,
+      "counterparts": 9
+     },
+     {
+      "name": "Dale Curtis",
+      "email": "dalecurtis@chromium.org",
+      "glowing": 2,
+      "happy": 2,
+      "counterparts": 27
+     },
+     {
+      "name": "Darryl James",
+      "email": "dljames@chromium.org",
+      "glowing": 2,
+      "happy": 2,
+      "counterparts": 20
+     },
+     {
+      "name": "Francois Pierre Doray",
+      "email": "fdoray@chromium.org",
+      "glowing": 2,
+      "happy": 2,
+      "counterparts": 8
+     },
+     {
+      "name": "Kelvin Jiang",
+      "email": "kelvinjiang@chromium.org",
+      "glowing": 2,
+      "happy": 2,
+      "counterparts": 8
+     },
+     {
+      "name": "Mark Mentovai",
+      "email": "mark@chromium.org",
+      "glowing": 2,
+      "happy": 2,
+      "counterparts": 15
+     },
+     {
+      "name": "Mason Freed",
+      "email": "masonf@chromium.org",
+      "glowing": 2,
+      "happy": 2,
+      "counterparts": 21
+     },
+     {
+      "name": "Mike Wasserman",
+      "email": "msw@chromium.org",
+      "glowing": 2,
+      "happy": 2,
+      "counterparts": 18
+     },
+     {
+      "name": "Dibyajyoti Pal",
+      "email": "dibyapal@chromium.org",
+      "glowing": 2,
+      "happy": 1,
+      "counterparts": 7
+     },
+     {
+      "name": "Mitsuru Oshima",
+      "email": "oshima@chromium.org",
+      "glowing": 2,
+      "happy": 1,
+      "counterparts": 18
+     },
+     {
+      "name": "Scott Yoder",
+      "email": "scottyoder@google.com",
+      "glowing": 2,
+      "happy": 1,
+      "counterparts": 7
+     },
+     {
+      "name": "Thomas Lukaszewicz",
+      "email": "tluk@chromium.org",
+      "glowing": 2,
+      "happy": 1,
+      "counterparts": 24
+     },
+     {
+      "name": "Vasiliy Telezhnikov",
+      "email": "vasilyt@chromium.org",
+      "glowing": 2,
+      "happy": 1,
+      "counterparts": 8
+     },
+     {
+      "name": "Alex Rudenko",
+      "email": "alexrudenko@chromium.org",
+      "glowing": 1,
+      "happy": 1,
+      "counterparts": 14
+     },
+     {
+      "name": "Alexei Svitkine",
+      "email": "asvitkine@chromium.org",
+      "glowing": 1,
+      "happy": 1,
+      "counterparts": 15
+     },
+     {
+      "name": "Anders Hartvoll Ruud",
+      "email": "andruud@chromium.org",
+      "glowing": 1,
+      "happy": 1,
+      "counterparts": 7
+     },
+     {
+      "name": "Arthur Sonzogni",
+      "email": "arthursonzogni@chromium.org",
+      "glowing": 1,
+      "happy": 1,
+      "counterparts": 19
+     },
+     {
+      "name": "Bo Liu",
+      "email": "boliu@chromium.org",
+      "glowing": 1,
+      "happy": 1,
+      "counterparts": 13
+     },
+     {
+      "name": "Brandon Jones",
+      "email": "bajones@chromium.org",
+      "glowing": 1,
+      "happy": 1,
+      "counterparts": 8
+     },
+     {
+      "name": "Brian Sheedy",
+      "email": "bsheedy@chromium.org",
+      "glowing": 1,
+      "happy": 1,
+      "counterparts": 11
+     },
+     {
+      "name": "Chris Fredrickson",
+      "email": "cfredric@chromium.org",
+      "glowing": 1,
+      "happy": 1,
+      "counterparts": 6
+     },
+     {
+      "name": "Colin Blundell",
+      "email": "blundell@chromium.org",
+      "glowing": 1,
+      "happy": 1,
+      "counterparts": 17
+     },
+     {
+      "name": "Dan Clark",
+      "email": "daniec@microsoft.com",
+      "glowing": 1,
+      "happy": 1,
+      "counterparts": 9
+     },
+     {
+      "name": "David Tseng",
+      "email": "dtseng@chromium.org",
+      "glowing": 1,
+      "happy": 1,
+      "counterparts": 10
+     },
+     {
+      "name": "Devlin Cronin",
+      "email": "rdevlin.cronin@chromium.org",
+      "glowing": 1,
+      "happy": 1,
+      "counterparts": 24
+     },
+     {
+      "name": "Dominik Röttsches",
+      "email": "drott@chromium.org",
+      "glowing": 1,
+      "happy": 1,
+      "counterparts": 10
+     },
+     {
+      "name": "Fredrik Söderquist",
+      "email": "fs@opera.com",
+      "glowing": 1,
+      "happy": 1,
+      "counterparts": 16
+     },
+     {
+      "name": "Gabriel Charette",
+      "email": "gab@chromium.org",
+      "glowing": 1,
+      "happy": 1,
+      "counterparts": 10
+     },
+     {
+      "name": "Hongchan Choi",
+      "email": "hongchan@google.com",
+      "glowing": 1,
+      "happy": 1,
+      "counterparts": 9
+     },
+     {
+      "name": "Jacques Newman",
+      "email": "janewman@microsoft.com",
+      "glowing": 1,
+      "happy": 1,
+      "counterparts": 9
+     },
+     {
+      "name": "Joey Arhar",
+      "email": "jarhar@chromium.org",
+      "glowing": 1,
+      "happy": 1,
+      "counterparts": 12
+     },
+     {
+      "name": "Jonathan Ross",
+      "email": "jonross@chromium.org",
+      "glowing": 1,
+      "happy": 1,
+      "counterparts": 9
+     },
+     {
+      "name": "Kent Tamura",
+      "email": "tkent@chromium.org",
+      "glowing": 1,
+      "happy": 1,
+      "counterparts": 20
+     },
+     {
+      "name": "Keren Zhu",
+      "email": "kerenzhu@chromium.org",
+      "glowing": 1,
+      "happy": 1,
+      "counterparts": 19
+     },
+     {
+      "name": "Koji Ishii",
+      "email": "kojii@chromium.org",
+      "glowing": 1,
+      "happy": 1,
+      "counterparts": 16
+     },
+     {
+      "name": "Kramer Ge",
+      "email": "fangzhoug@chromium.org",
+      "glowing": 1,
+      "happy": 1,
+      "counterparts": 7
+     },
+     {
+      "name": "Lei Zhang",
+      "email": "thestig@chromium.org",
+      "glowing": 1,
+      "happy": 1,
+      "counterparts": 37
+     },
+     {
+      "name": "Marc Treib",
+      "email": "treib@chromium.org",
+      "glowing": 1,
+      "happy": 1,
+      "counterparts": 16
+     },
+     {
+      "name": "Michael Thiessen",
+      "email": "mthiesse@chromium.org",
+      "glowing": 1,
+      "happy": 1,
+      "counterparts": 6
+     },
+     {
+      "name": "Mike Dougherty",
+      "email": "michaeldo@chromium.org",
+      "glowing": 1,
+      "happy": 1,
+      "counterparts": 6
+     },
+     {
+      "name": "Morten Stenshorne",
+      "email": "mstensho@chromium.org",
+      "glowing": 1,
+      "happy": 1,
+      "counterparts": 9
+     },
+     {
+      "name": "Nate Chapin",
+      "email": "japhet@chromium.org",
+      "glowing": 1,
+      "happy": 1,
+      "counterparts": 6
+     },
+     {
+      "name": "Nate Fischer",
+      "email": "ntfschr@chromium.org",
+      "glowing": 1,
+      "happy": 1,
+      "counterparts": 11
+     },
+     {
+      "name": "Olga Sharonova",
+      "email": "olka@chromium.org",
+      "glowing": 1,
+      "happy": 1,
+      "counterparts": 8
+     },
+     {
+      "name": "Rafael Cintron",
+      "email": "rafael.cintron@microsoft.com",
+      "glowing": 1,
+      "happy": 1,
+      "counterparts": 12
+     },
+     {
+      "name": "Rick Byers",
+      "email": "rbyers@chromium.org",
+      "glowing": 1,
+      "happy": 1,
+      "counterparts": 12
+     },
+     {
+      "name": "Sorin Jianu",
+      "email": "sorin@chromium.org",
+      "glowing": 1,
+      "happy": 1,
+      "counterparts": 9
+     },
+     {
+      "name": "Thomas Guilbert",
+      "email": "tguilbert@chromium.org",
+      "glowing": 1,
+      "happy": 1,
+      "counterparts": 8
+     },
+     {
+      "name": "Tom Sepez",
+      "email": "tsepez@chromium.org",
+      "glowing": 1,
+      "happy": 1,
+      "counterparts": 10
+     },
+     {
+      "name": "mmenke",
+      "email": "mmenke@chromium.org",
+      "glowing": 1,
+      "happy": 1,
+      "counterparts": 7
+     },
+     {
+      "name": "Łukasz Anforowicz",
+      "email": "lukasza@chromium.org",
+      "glowing": 1,
+      "happy": 1,
+      "counterparts": 9
+     }
+    ]
+   },
+   "ai": [
     {
-     "name": "Mitsuru Oshima",
-     "email": "oshima@chromium.org",
-     "glowing": 2,
-     "happy": 1,
-     "counterparts": 7
+     "text": "The window based tests are consistentntly failing try deep research and find a fix instead of hit and trial",
+     "score": -0.6,
+     "month": "2026-05",
+     "role": "author"
     },
     {
-     "name": "Dale Curtis",
-     "email": "dalecurtis@chromium.org",
-     "glowing": 1,
-     "happy": 1,
-     "counterparts": 8
+     "text": "oh, heavens.  i know all of that.  i just didn't have time to actually go over it so i was curious what it would do with this template goop.  that's why i warned you up front what it was.",
+     "score": -0.6,
+     "month": "2026-04",
+     "role": "reviewer"
     },
     {
-     "name": "Hidehiko Abe",
-     "email": "hidehiko@chromium.org",
-     "glowing": 1,
-     "happy": 1,
-     "counterparts": 7
+     "text": "Some AI comments. I will do manual review later.",
+     "score": -0.3,
+     "month": "2026-06",
+     "role": "reviewer"
     },
     {
-     "name": "Sorin Jianu",
-     "email": "sorin@chromium.org",
-     "glowing": 1,
-     "happy": 1,
-     "counterparts": 6
+     "text": "Hold off on reviewing this for the moment.. gemini seems to have pulled in a stale branch and lost a bunch of changes, frustratingly..\n\nI will fix this in a followup.",
+     "score": -0.3,
+     "month": "2026-10",
+     "role": "author"
     },
     {
-     "name": "Takashi Toyoshima",
-     "email": "toyoshim@chromium.org",
-     "glowing": 1,
-     "happy": 1,
-     "counterparts": 8
+     "text": "Gemini should have updated the unit test to have coverage of this.",
+     "score": -0.3,
+     "month": "2026-05",
+     "role": "author"
+    },
+    {
+     "text": "AI generated comments actually make sense this time",
+     "score": -0.3,
+     "month": "2026-10",
+     "role": "reviewer"
+    },
+    {
+     "text": "claude found this stale comment and kept trying to change it so fixing at the source.",
+     "score": -0.3,
+     "month": "2026-05",
+     "role": "author"
+    },
+    {
+     "text": "Those LLMs, as if they understand language. Will correct. They would probably need a repository to learn how to create commit messages correctly, amirite?",
+     "score": -0.3,
+     "month": "2026-10",
+     "role": "author"
+    },
+    {
+     "text": "<<Comment to Autoroll agent>>\nTry to find a solution without patching the upstream code. If this is required, there must be a justification for the patch.",
+     "score": -0.3,
+     "month": "2026-07",
+     "role": "author"
+    },
+    {
+     "text": "AI comment.",
+     "score": -0.2,
+     "month": "2026-06",
+     "role": "reviewer"
+    },
+    {
+     "text": "woof. yes. sorry, AI nonsense. cleaned up. I also saw some dependency issues I'm fixing now.",
+     "score": -0.2,
+     "month": "2026-07",
+     "role": "author"
+    },
+    {
+     "text": "As the tests were failing and I relied on Gemini to help me fix them, I also relied on Gemini to reason about this. Please read it with a grain of salt:\n\n`AllowLeak()` is to prevent gMock errors because the mock is held by a Mojo SelfOwnedReceiver that isn't destroyed until browser teardown after the test body ends.",
+     "score": -0.1,
+     "month": "2026-08",
+     "role": "author"
+    },
+    {
+     "text": "Ah. Yeah, i'm fine to leave it as []--gemini just kept pointing out that () was a better default since it's immutable. It's not clear why it only did it for skip_brands.. But I don't feel strongly, so I'll just revert it.",
+     "score": -0.1,
+     "month": "2026-10",
+     "role": "author"
+    },
+    {
+     "text": "Done - we're working on adding a deterministic git diff checker to ensure the LLM doesn't add lines, because it doesn't always listen to that instruction in the prompt ;)",
+     "score": -0.1,
+     "month": "2025-11",
+     "role": "author"
+    },
+    {
+     "text": "Apologies for the slop comment, the machine went off the rails.",
+     "score": 0.0,
+     "month": "2026-07",
+     "role": "author"
+    },
+    {
+     "text": "Lines removes per suggestion above. For context, I thought these were needed due to the AI review agent kept suggesting to mention the MOJO rules.",
+     "score": 0.0,
+     "month": "2026-09",
+     "role": "author"
+    },
+    {
+     "text": "The AI Reviewer is complaining quite a lot about this ASSIGN_OR_RETURN usage, so I kindly ask you to double check if I did it right 😊",
+     "score": 0.0,
+     "month": "2026-08",
+     "role": "author"
+    },
+    {
+     "text": "right. I was confused by some AI review comments previously. Actually the XRMediaQuadLayerInit marks width/height are optional, and XRQuadLayerInit gives 2 default values. In either way, we don't need this check",
+     "score": 0.0,
+     "month": "2026-06",
+     "role": "author"
+    },
+    {
+     "text": "Gotya, thanks for the feedback! For context, I thought these were needed due to the AI review agent kept suggesting to mention the MOJO rules.",
+     "score": 0.1,
+     "month": "2026-09",
+     "role": "author"
     }
-   ]
+   ],
+   "ai_left_out": {
+    "screened": 15,
+    "long_or_linked": 4
+   }
   },
-  "month": {
-   "authors": [],
-   "reviewers": [
+  "2025": {
+   "weeks": [
+    "2025-W45",
+    "2025-W52"
+   ],
+   "n_trivial": 26723,
+   "total": {
+    "n": 3006,
+    "mean": 0.0241,
+    "glowing": 0.012,
+    "angry": 0.008,
+    "ai": 5
+   },
+   "dist": [
+    [
+     -1.0,
+     1
+    ],
+    [
+     -0.7,
+     2
+    ],
+    [
+     -0.6,
+     1
+    ],
+    [
+     -0.5,
+     1
+    ],
+    [
+     -0.4,
+     3
+    ],
+    [
+     -0.3,
+     16
+    ],
+    [
+     -0.2,
+     21
+    ],
+    [
+     -0.1,
+     47
+    ],
+    [
+     0.0,
+     2413
+    ],
+    [
+     0.1,
+     293
+    ],
+    [
+     0.2,
+     69
+    ],
+    [
+     0.3,
+     103
+    ],
+    [
+     0.4,
+     12
+    ],
+    [
+     0.5,
+     24
+    ]
+   ],
+   "happy": {
+    "authors": [],
+    "reviewers": [
+     {
+      "name": "Thomas Lukaszewicz",
+      "email": "tluk@chromium.org",
+      "glowing": 2,
+      "happy": 1,
+      "counterparts": 6
+     },
+     {
+      "name": "Hidehiko Abe",
+      "email": "hidehiko@chromium.org",
+      "glowing": 1,
+      "happy": 1,
+      "counterparts": 9
+     }
+    ]
+   },
+   "ai": [
     {
-     "name": "Dale Curtis",
-     "email": "dalecurtis@chromium.org",
-     "glowing": 1,
-     "happy": 1,
-     "counterparts": 7
+     "text": "Done - we're working on adding a deterministic git diff checker to ensure the LLM doesn't add lines, because it doesn't always listen to that instruction in the prompt ;)",
+     "score": -0.1,
+     "month": "2025-11",
+     "role": "author"
+    }
+   ],
+   "ai_left_out": {
+    "screened": 2,
+    "long_or_linked": 2
+   }
+  },
+  "2025-11": {
+   "weeks": [
+    "2025-W45",
+    "2025-W48"
+   ],
+   "n_trivial": 14527,
+   "total": {
+    "n": 1677,
+    "mean": 0.0243,
+    "glowing": 0.0095,
+    "angry": 0.0078,
+    "ai": 5
+   },
+   "dist": [
+    [
+     -0.7,
+     1
+    ],
+    [
+     -0.6,
+     1
+    ],
+    [
+     -0.5,
+     1
+    ],
+    [
+     -0.4,
+     1
+    ],
+    [
+     -0.3,
+     9
+    ],
+    [
+     -0.2,
+     16
+    ],
+    [
+     -0.1,
+     21
+    ],
+    [
+     0.0,
+     1329
+    ],
+    [
+     0.1,
+     185
+    ],
+    [
+     0.2,
+     43
+    ],
+    [
+     0.3,
+     54
+    ],
+    [
+     0.4,
+     3
+    ],
+    [
+     0.5,
+     13
+    ]
+   ],
+   "happy": {
+    "authors": [],
+    "reviewers": [
+     {
+      "name": "Hidehiko Abe",
+      "email": "hidehiko@chromium.org",
+      "glowing": 1,
+      "happy": 1,
+      "counterparts": 7
+     }
+    ]
+   },
+   "ai": [
+    {
+     "text": "Done - we're working on adding a deterministic git diff checker to ensure the LLM doesn't add lines, because it doesn't always listen to that instruction in the prompt ;)",
+     "score": -0.1,
+     "month": "2025-11",
+     "role": "author"
+    }
+   ],
+   "ai_left_out": {
+    "screened": 2,
+    "long_or_linked": 2
+   }
+  },
+  "2025-12": {
+   "weeks": [
+    "2025-W49",
+    "2025-W52"
+   ],
+   "n_trivial": 12196,
+   "total": {
+    "n": 1329,
+    "mean": 0.0238,
+    "glowing": 0.015,
+    "angry": 0.0083,
+    "ai": 0
+   },
+   "dist": [
+    [
+     -1.0,
+     1
+    ],
+    [
+     -0.7,
+     1
+    ],
+    [
+     -0.4,
+     2
+    ],
+    [
+     -0.3,
+     7
+    ],
+    [
+     -0.2,
+     5
+    ],
+    [
+     -0.1,
+     26
+    ],
+    [
+     0.0,
+     1084
+    ],
+    [
+     0.1,
+     108
+    ],
+    [
+     0.2,
+     26
+    ],
+    [
+     0.3,
+     49
+    ],
+    [
+     0.4,
+     9
+    ],
+    [
+     0.5,
+     11
+    ]
+   ],
+   "happy": {
+    "authors": [],
+    "reviewers": []
+   },
+   "ai": [],
+   "ai_left_out": {
+    "screened": 0,
+    "long_or_linked": 0
+   }
+  },
+  "2026": {
+   "weeks": [
+    "2026-W01",
+    "2026-W44"
+   ],
+   "n_trivial": 197592,
+   "total": {
+    "n": 25335,
+    "mean": 0.0195,
+    "glowing": 0.009,
+    "angry": 0.0086,
+    "ai": 33
+   },
+   "dist": [
+    [
+     -1.0,
+     6
+    ],
+    [
+     -0.9,
+     9
+    ],
+    [
+     -0.8,
+     4
+    ],
+    [
+     -0.7,
+     5
+    ],
+    [
+     -0.6,
+     15
+    ],
+    [
+     -0.5,
+     16
+    ],
+    [
+     -0.4,
+     20
+    ],
+    [
+     -0.3,
+     142
+    ],
+    [
+     -0.2,
+     210
+    ],
+    [
+     -0.1,
+     423
+    ],
+    [
+     0.0,
+     20843
+    ],
+    [
+     0.1,
+     2101
+    ],
+    [
+     0.2,
+     416
+    ],
+    [
+     0.3,
+     897
+    ],
+    [
+     0.4,
+     98
+    ],
+    [
+     0.5,
+     126
+    ],
+    [
+     0.6,
+     3
+    ],
+    [
+     0.7,
+     1
+    ]
+   ],
+   "happy": {
+    "authors": [
+     {
+      "name": "Tomasz Wiszkowski",
+      "email": "ender@google.com",
+      "glowing": 2,
+      "happy": 2,
+      "counterparts": 8
+     },
+     {
+      "name": "Etienne Pierre-Doray",
+      "email": "etiennep@chromium.org",
+      "glowing": 1,
+      "happy": 1,
+      "counterparts": 7
+     },
+     {
+      "name": "Helmut Januschka",
+      "email": "helmut@januschka.com",
+      "glowing": 1,
+      "happy": 1,
+      "counterparts": 17
+     },
+     {
+      "name": "Justin Cohen",
+      "email": "justincohen@google.com",
+      "glowing": 1,
+      "happy": 1,
+      "counterparts": 6
+     },
+     {
+      "name": "Kent Tamura",
+      "email": "tkent@chromium.org",
+      "glowing": 1,
+      "happy": 1,
+      "counterparts": 8
+     },
+     {
+      "name": "Kurt Catti-Schmidt",
+      "email": "kschmi@microsoft.com",
+      "glowing": 1,
+      "happy": 1,
+      "counterparts": 7
+     },
+     {
+      "name": "Mason Freed",
+      "email": "masonf@chromium.org",
+      "glowing": 1,
+      "happy": 1,
+      "counterparts": 9
+     }
+    ],
+    "reviewers": [
+     {
+      "name": "Dominic Battré",
+      "email": "battre@chromium.org",
+      "glowing": 6,
+      "happy": 3,
+      "counterparts": 12
+     },
+     {
+      "name": "Dana Fried",
+      "email": "dfried@chromium.org",
+      "glowing": 4,
+      "happy": 4,
+      "counterparts": 17
+     },
+     {
+      "name": "Mike Wittman",
+      "email": "wittman@chromium.org",
+      "glowing": 4,
+      "happy": 1,
+      "counterparts": 10
+     },
+     {
+      "name": "Greg Thompson",
+      "email": "grt@chromium.org",
+      "glowing": 3,
+      "happy": 3,
+      "counterparts": 26
+     },
+     {
+      "name": "Takashi Toyoshima",
+      "email": "toyoshim@chromium.org",
+      "glowing": 3,
+      "happy": 3,
+      "counterparts": 14
+     },
+     {
+      "name": "Andrea Orru",
+      "email": "andreaorru@chromium.org",
+      "glowing": 3,
+      "happy": 2,
+      "counterparts": 9
+     },
+     {
+      "name": "Christoph Schwering",
+      "email": "schwering@google.com",
+      "glowing": 3,
+      "happy": 2,
+      "counterparts": 11
+     },
+     {
+      "name": "Daniel Murphy",
+      "email": "dmurph@chromium.org",
+      "glowing": 3,
+      "happy": 1,
+      "counterparts": 9
+     },
+     {
+      "name": "Charlie Reis",
+      "email": "creis@chromium.org",
+      "glowing": 2,
+      "happy": 2,
+      "counterparts": 6
+     },
+     {
+      "name": "Dale Curtis",
+      "email": "dalecurtis@chromium.org",
+      "glowing": 2,
+      "happy": 2,
+      "counterparts": 25
+     },
+     {
+      "name": "Darryl James",
+      "email": "dljames@chromium.org",
+      "glowing": 2,
+      "happy": 2,
+      "counterparts": 18
+     },
+     {
+      "name": "Demetrios Papadopoulos",
+      "email": "dpapad@chromium.org",
+      "glowing": 2,
+      "happy": 2,
+      "counterparts": 15
+     },
+     {
+      "name": "Hidehiko Abe",
+      "email": "hidehiko@chromium.org",
+      "glowing": 2,
+      "happy": 2,
+      "counterparts": 24
+     },
+     {
+      "name": "Kelvin Jiang",
+      "email": "kelvinjiang@chromium.org",
+      "glowing": 2,
+      "happy": 2,
+      "counterparts": 6
+     },
+     {
+      "name": "Mike Wasserman",
+      "email": "msw@chromium.org",
+      "glowing": 2,
+      "happy": 2,
+      "counterparts": 16
+     },
+     {
+      "name": "Mike West",
+      "email": "mkwst@chromium.org",
+      "glowing": 2,
+      "happy": 2,
+      "counterparts": 9
+     },
+     {
+      "name": "Mitsuru Oshima",
+      "email": "oshima@chromium.org",
+      "glowing": 2,
+      "happy": 1,
+      "counterparts": 15
+     },
+     {
+      "name": "Scott Yoder",
+      "email": "scottyoder@google.com",
+      "glowing": 2,
+      "happy": 1,
+      "counterparts": 6
+     },
+     {
+      "name": "Alexei Svitkine",
+      "email": "asvitkine@chromium.org",
+      "glowing": 1,
+      "happy": 1,
+      "counterparts": 15
+     },
+     {
+      "name": "Anders Hartvoll Ruud",
+      "email": "andruud@chromium.org",
+      "glowing": 1,
+      "happy": 1,
+      "counterparts": 7
+     },
+     {
+      "name": "Bo Liu",
+      "email": "boliu@chromium.org",
+      "glowing": 1,
+      "happy": 1,
+      "counterparts": 13
+     },
+     {
+      "name": "Colin Blundell",
+      "email": "blundell@chromium.org",
+      "glowing": 1,
+      "happy": 1,
+      "counterparts": 12
+     },
+     {
+      "name": "Dan Clark",
+      "email": "daniec@microsoft.com",
+      "glowing": 1,
+      "happy": 1,
+      "counterparts": 9
+     },
+     {
+      "name": "David Tseng",
+      "email": "dtseng@chromium.org",
+      "glowing": 1,
+      "happy": 1,
+      "counterparts": 10
+     },
+     {
+      "name": "Devlin Cronin",
+      "email": "rdevlin.cronin@chromium.org",
+      "glowing": 1,
+      "happy": 1,
+      "counterparts": 21
+     },
+     {
+      "name": "Dibyajyoti Pal",
+      "email": "dibyapal@chromium.org",
+      "glowing": 1,
+      "happy": 1,
+      "counterparts": 7
+     },
+     {
+      "name": "Dominik Röttsches",
+      "email": "drott@chromium.org",
+      "glowing": 1,
+      "happy": 1,
+      "counterparts": 8
+     },
+     {
+      "name": "Fredrik Söderquist",
+      "email": "fs@opera.com",
+      "glowing": 1,
+      "happy": 1,
+      "counterparts": 16
+     },
+     {
+      "name": "Gabriel Charette",
+      "email": "gab@chromium.org",
+      "glowing": 1,
+      "happy": 1,
+      "counterparts": 9
+     },
+     {
+      "name": "Jacques Newman",
+      "email": "janewman@microsoft.com",
+      "glowing": 1,
+      "happy": 1,
+      "counterparts": 7
+     },
+     {
+      "name": "Joey Arhar",
+      "email": "jarhar@chromium.org",
+      "glowing": 1,
+      "happy": 1,
+      "counterparts": 12
+     },
+     {
+      "name": "Kent Tamura",
+      "email": "tkent@chromium.org",
+      "glowing": 1,
+      "happy": 1,
+      "counterparts": 20
+     },
+     {
+      "name": "Keren Zhu",
+      "email": "kerenzhu@chromium.org",
+      "glowing": 1,
+      "happy": 1,
+      "counterparts": 15
+     },
+     {
+      "name": "Lei Zhang",
+      "email": "thestig@chromium.org",
+      "glowing": 1,
+      "happy": 1,
+      "counterparts": 36
+     },
+     {
+      "name": "Marc Treib",
+      "email": "treib@chromium.org",
+      "glowing": 1,
+      "happy": 1,
+      "counterparts": 14
+     },
+     {
+      "name": "Mark Mentovai",
+      "email": "mark@chromium.org",
+      "glowing": 1,
+      "happy": 1,
+      "counterparts": 11
+     },
+     {
+      "name": "Mason Freed",
+      "email": "masonf@chromium.org",
+      "glowing": 1,
+      "happy": 1,
+      "counterparts": 20
+     },
+     {
+      "name": "Michael Thiessen",
+      "email": "mthiesse@chromium.org",
+      "glowing": 1,
+      "happy": 1,
+      "counterparts": 6
+     },
+     {
+      "name": "Mike Dougherty",
+      "email": "michaeldo@chromium.org",
+      "glowing": 1,
+      "happy": 1,
+      "counterparts": 6
+     },
+     {
+      "name": "Morten Stenshorne",
+      "email": "mstensho@chromium.org",
+      "glowing": 1,
+      "happy": 1,
+      "counterparts": 8
+     },
+     {
+      "name": "Nate Chapin",
+      "email": "japhet@chromium.org",
+      "glowing": 1,
+      "happy": 1,
+      "counterparts": 6
+     },
+     {
+      "name": "Nate Fischer",
+      "email": "ntfschr@chromium.org",
+      "glowing": 1,
+      "happy": 1,
+      "counterparts": 8
+     },
+     {
+      "name": "Olga Sharonova",
+      "email": "olka@chromium.org",
+      "glowing": 1,
+      "happy": 1,
+      "counterparts": 7
+     },
+     {
+      "name": "Rafael Cintron",
+      "email": "rafael.cintron@microsoft.com",
+      "glowing": 1,
+      "happy": 1,
+      "counterparts": 12
+     },
+     {
+      "name": "Sorin Jianu",
+      "email": "sorin@chromium.org",
+      "glowing": 1,
+      "happy": 1,
+      "counterparts": 8
+     },
+     {
+      "name": "Thomas Guilbert",
+      "email": "tguilbert@chromium.org",
+      "glowing": 1,
+      "happy": 1,
+      "counterparts": 6
+     },
+     {
+      "name": "mmenke",
+      "email": "mmenke@chromium.org",
+      "glowing": 1,
+      "happy": 1,
+      "counterparts": 6
+     },
+     {
+      "name": "Łukasz Anforowicz",
+      "email": "lukasza@chromium.org",
+      "glowing": 1,
+      "happy": 1,
+      "counterparts": 9
+     }
+    ]
+   },
+   "ai": [
+    {
+     "text": "The window based tests are consistentntly failing try deep research and find a fix instead of hit and trial",
+     "score": -0.6,
+     "month": "2026-05",
+     "role": "author"
     },
     {
-     "name": "Hidehiko Abe",
-     "email": "hidehiko@chromium.org",
-     "glowing": 1,
-     "happy": 1,
-     "counterparts": 6
+     "text": "oh, heavens.  i know all of that.  i just didn't have time to actually go over it so i was curious what it would do with this template goop.  that's why i warned you up front what it was.",
+     "score": -0.6,
+     "month": "2026-04",
+     "role": "reviewer"
+    },
+    {
+     "text": "Some AI comments. I will do manual review later.",
+     "score": -0.3,
+     "month": "2026-06",
+     "role": "reviewer"
+    },
+    {
+     "text": "Hold off on reviewing this for the moment.. gemini seems to have pulled in a stale branch and lost a bunch of changes, frustratingly..\n\nI will fix this in a followup.",
+     "score": -0.3,
+     "month": "2026-10",
+     "role": "author"
+    },
+    {
+     "text": "Gemini should have updated the unit test to have coverage of this.",
+     "score": -0.3,
+     "month": "2026-05",
+     "role": "author"
+    },
+    {
+     "text": "AI generated comments actually make sense this time",
+     "score": -0.3,
+     "month": "2026-10",
+     "role": "reviewer"
+    },
+    {
+     "text": "claude found this stale comment and kept trying to change it so fixing at the source.",
+     "score": -0.3,
+     "month": "2026-05",
+     "role": "author"
+    },
+    {
+     "text": "Those LLMs, as if they understand language. Will correct. They would probably need a repository to learn how to create commit messages correctly, amirite?",
+     "score": -0.3,
+     "month": "2026-10",
+     "role": "author"
+    },
+    {
+     "text": "<<Comment to Autoroll agent>>\nTry to find a solution without patching the upstream code. If this is required, there must be a justification for the patch.",
+     "score": -0.3,
+     "month": "2026-07",
+     "role": "author"
+    },
+    {
+     "text": "AI comment.",
+     "score": -0.2,
+     "month": "2026-06",
+     "role": "reviewer"
+    },
+    {
+     "text": "woof. yes. sorry, AI nonsense. cleaned up. I also saw some dependency issues I'm fixing now.",
+     "score": -0.2,
+     "month": "2026-07",
+     "role": "author"
+    },
+    {
+     "text": "As the tests were failing and I relied on Gemini to help me fix them, I also relied on Gemini to reason about this. Please read it with a grain of salt:\n\n`AllowLeak()` is to prevent gMock errors because the mock is held by a Mojo SelfOwnedReceiver that isn't destroyed until browser teardown after the test body ends.",
+     "score": -0.1,
+     "month": "2026-08",
+     "role": "author"
+    },
+    {
+     "text": "Ah. Yeah, i'm fine to leave it as []--gemini just kept pointing out that () was a better default since it's immutable. It's not clear why it only did it for skip_brands.. But I don't feel strongly, so I'll just revert it.",
+     "score": -0.1,
+     "month": "2026-10",
+     "role": "author"
+    },
+    {
+     "text": "Apologies for the slop comment, the machine went off the rails.",
+     "score": 0.0,
+     "month": "2026-07",
+     "role": "author"
+    },
+    {
+     "text": "Lines removes per suggestion above. For context, I thought these were needed due to the AI review agent kept suggesting to mention the MOJO rules.",
+     "score": 0.0,
+     "month": "2026-09",
+     "role": "author"
+    },
+    {
+     "text": "The AI Reviewer is complaining quite a lot about this ASSIGN_OR_RETURN usage, so I kindly ask you to double check if I did it right 😊",
+     "score": 0.0,
+     "month": "2026-08",
+     "role": "author"
+    },
+    {
+     "text": "right. I was confused by some AI review comments previously. Actually the XRMediaQuadLayerInit marks width/height are optional, and XRQuadLayerInit gives 2 default values. In either way, we don't need this check",
+     "score": 0.0,
+     "month": "2026-06",
+     "role": "author"
+    },
+    {
+     "text": "Gotya, thanks for the feedback! For context, I thought these were needed due to the AI review agent kept suggesting to mention the MOJO rules.",
+     "score": 0.1,
+     "month": "2026-09",
+     "role": "author"
     }
-   ]
+   ],
+   "ai_left_out": {
+    "screened": 13,
+    "long_or_linked": 2
+   }
+  },
+  "2026-01": {
+   "weeks": [
+    "2026-W01",
+    "2026-W05"
+   ],
+   "n_trivial": 16314,
+   "total": {
+    "n": 2123,
+    "mean": 0.0236,
+    "glowing": 0.0151,
+    "angry": 0.0108,
+    "ai": 0
+   },
+   "dist": [
+    [
+     -1.0,
+     4
+    ],
+    [
+     -0.9,
+     2
+    ],
+    [
+     -0.5,
+     3
+    ],
+    [
+     -0.4,
+     3
+    ],
+    [
+     -0.3,
+     11
+    ],
+    [
+     -0.2,
+     25
+    ],
+    [
+     -0.1,
+     40
+    ],
+    [
+     0.0,
+     1671
+    ],
+    [
+     0.1,
+     194
+    ],
+    [
+     0.2,
+     48
+    ],
+    [
+     0.3,
+     90
+    ],
+    [
+     0.4,
+     11
+    ],
+    [
+     0.5,
+     21
+    ]
+   ],
+   "happy": {
+    "authors": [],
+    "reviewers": [
+     {
+      "name": "Mike Wasserman",
+      "email": "msw@chromium.org",
+      "glowing": 2,
+      "happy": 2,
+      "counterparts": 6
+     }
+    ]
+   },
+   "ai": [],
+   "ai_left_out": {
+    "screened": 0,
+    "long_or_linked": 0
+   }
+  },
+  "2026-02": {
+   "weeks": [
+    "2026-W06",
+    "2026-W09"
+   ],
+   "n_trivial": 18089,
+   "total": {
+    "n": 1855,
+    "mean": 0.0109,
+    "glowing": 0.0059,
+    "angry": 0.0151,
+    "ai": 0
+   },
+   "dist": [
+    [
+     -0.9,
+     1
+    ],
+    [
+     -0.7,
+     1
+    ],
+    [
+     -0.6,
+     3
+    ],
+    [
+     -0.5,
+     3
+    ],
+    [
+     -0.4,
+     4
+    ],
+    [
+     -0.3,
+     16
+    ],
+    [
+     -0.2,
+     25
+    ],
+    [
+     -0.1,
+     48
+    ],
+    [
+     0.0,
+     1528
+    ],
+    [
+     0.1,
+     127
+    ],
+    [
+     0.2,
+     30
+    ],
+    [
+     0.3,
+     58
+    ],
+    [
+     0.4,
+     3
+    ],
+    [
+     0.5,
+     8
+    ]
+   ],
+   "happy": {
+    "authors": [],
+    "reviewers": []
+   },
+   "ai": [],
+   "ai_left_out": {
+    "screened": 0,
+    "long_or_linked": 0
+   }
+  },
+  "2026-03": {
+   "weeks": [
+    "2026-W10",
+    "2026-W13"
+   ],
+   "n_trivial": 18071,
+   "total": {
+    "n": 2224,
+    "mean": 0.0186,
+    "glowing": 0.0126,
+    "angry": 0.0139,
+    "ai": 0
+   },
+   "dist": [
+    [
+     -0.9,
+     1
+    ],
+    [
+     -0.8,
+     1
+    ],
+    [
+     -0.7,
+     1
+    ],
+    [
+     -0.6,
+     3
+    ],
+    [
+     -0.5,
+     2
+    ],
+    [
+     -0.3,
+     23
+    ],
+    [
+     -0.2,
+     16
+    ],
+    [
+     -0.1,
+     39
+    ],
+    [
+     0.0,
+     1833
+    ],
+    [
+     0.1,
+     150
+    ],
+    [
+     0.2,
+     51
+    ],
+    [
+     0.3,
+     76
+    ],
+    [
+     0.4,
+     14
+    ],
+    [
+     0.5,
+     14
+    ]
+   ],
+   "happy": {
+    "authors": [],
+    "reviewers": [
+     {
+      "name": "Dale Curtis",
+      "email": "dalecurtis@chromium.org",
+      "glowing": 1,
+      "happy": 1,
+      "counterparts": 7
+     }
+    ]
+   },
+   "ai": [],
+   "ai_left_out": {
+    "screened": 0,
+    "long_or_linked": 0
+   }
+  },
+  "2026-04": {
+   "weeks": [
+    "2026-W14",
+    "2026-W18"
+   ],
+   "n_trivial": 21516,
+   "total": {
+    "n": 2580,
+    "mean": 0.0182,
+    "glowing": 0.0109,
+    "angry": 0.0105,
+    "ai": 3
+   },
+   "dist": [
+    [
+     -1.0,
+     1
+    ],
+    [
+     -0.9,
+     2
+    ],
+    [
+     -0.8,
+     2
+    ],
+    [
+     -0.6,
+     3
+    ],
+    [
+     -0.5,
+     3
+    ],
+    [
+     -0.4,
+     1
+    ],
+    [
+     -0.3,
+     15
+    ],
+    [
+     -0.2,
+     24
+    ],
+    [
+     -0.1,
+     52
+    ],
+    [
+     0.0,
+     2110
+    ],
+    [
+     0.1,
+     210
+    ],
+    [
+     0.2,
+     31
+    ],
+    [
+     0.3,
+     98
+    ],
+    [
+     0.4,
+     11
+    ],
+    [
+     0.5,
+     16
+    ],
+    [
+     0.6,
+     1
+    ]
+   ],
+   "happy": {
+    "authors": [],
+    "reviewers": [
+     {
+      "name": "Hidehiko Abe",
+      "email": "hidehiko@chromium.org",
+      "glowing": 1,
+      "happy": 1,
+      "counterparts": 7
+     }
+    ]
+   },
+   "ai": [
+    {
+     "text": "oh, heavens.  i know all of that.  i just didn't have time to actually go over it so i was curious what it would do with this template goop.  that's why i warned you up front what it was.",
+     "score": -0.6,
+     "month": "2026-04",
+     "role": "reviewer"
+    }
+   ],
+   "ai_left_out": {
+    "screened": 2,
+    "long_or_linked": 0
+   }
+  },
+  "2026-05": {
+   "weeks": [
+    "2026-W19",
+    "2026-W22"
+   ],
+   "n_trivial": 17957,
+   "total": {
+    "n": 1902,
+    "mean": 0.0182,
+    "glowing": 0.0079,
+    "angry": 0.0158,
+    "ai": 4
+   },
+   "dist": [
+    [
+     -0.6,
+     1
+    ],
+    [
+     -0.5,
+     1
+    ],
+    [
+     -0.4,
+     6
+    ],
+    [
+     -0.3,
+     22
+    ],
+    [
+     -0.2,
+     14
+    ],
+    [
+     -0.1,
+     30
+    ],
+    [
+     0.0,
+     1543
+    ],
+    [
+     0.1,
+     172
+    ],
+    [
+     0.2,
+     30
+    ],
+    [
+     0.3,
+     68
+    ],
+    [
+     0.4,
+     6
+    ],
+    [
+     0.5,
+     8
+    ],
+    [
+     0.6,
+     1
+    ]
+   ],
+   "happy": {
+    "authors": [],
+    "reviewers": []
+   },
+   "ai": [
+    {
+     "text": "The window based tests are consistentntly failing try deep research and find a fix instead of hit and trial",
+     "score": -0.6,
+     "month": "2026-05",
+     "role": "author"
+    },
+    {
+     "text": "Gemini should have updated the unit test to have coverage of this.",
+     "score": -0.3,
+     "month": "2026-05",
+     "role": "author"
+    },
+    {
+     "text": "claude found this stale comment and kept trying to change it so fixing at the source.",
+     "score": -0.3,
+     "month": "2026-05",
+     "role": "author"
+    }
+   ],
+   "ai_left_out": {
+    "screened": 1,
+    "long_or_linked": 0
+   }
+  },
+  "2026-06": {
+   "weeks": [
+    "2026-W23",
+    "2026-W26"
+   ],
+   "n_trivial": 18696,
+   "total": {
+    "n": 2404,
+    "mean": 0.0141,
+    "glowing": 0.005,
+    "angry": 0.0075,
+    "ai": 4
+   },
+   "dist": [
+    [
+     -0.9,
+     2
+    ],
+    [
+     -0.7,
+     1
+    ],
+    [
+     -0.6,
+     1
+    ],
+    [
+     -0.4,
+     1
+    ],
+    [
+     -0.3,
+     13
+    ],
+    [
+     -0.2,
+     10
+    ],
+    [
+     -0.1,
+     39
+    ],
+    [
+     0.0,
+     2084
+    ],
+    [
+     0.1,
+     142
+    ],
+    [
+     0.2,
+     21
+    ],
+    [
+     0.3,
+     78
+    ],
+    [
+     0.4,
+     6
+    ],
+    [
+     0.5,
+     6
+    ]
+   ],
+   "happy": {
+    "authors": [],
+    "reviewers": [
+     {
+      "name": "Lei Zhang",
+      "email": "thestig@chromium.org",
+      "glowing": 1,
+      "happy": 1,
+      "counterparts": 6
+     }
+    ]
+   },
+   "ai": [
+    {
+     "text": "Some AI comments. I will do manual review later.",
+     "score": -0.3,
+     "month": "2026-06",
+     "role": "reviewer"
+    },
+    {
+     "text": "right. I was confused by some AI review comments previously. Actually the XRMediaQuadLayerInit marks width/height are optional, and XRQuadLayerInit gives 2 default values. In either way, we don't need this check",
+     "score": 0.0,
+     "month": "2026-06",
+     "role": "author"
+    }
+   ],
+   "ai_left_out": {
+    "screened": 2,
+    "long_or_linked": 0
+   }
+  },
+  "2026-07": {
+   "weeks": [
+    "2026-W27",
+    "2026-W31"
+   ],
+   "n_trivial": 22953,
+   "total": {
+    "n": 2904,
+    "mean": 0.0201,
+    "glowing": 0.0055,
+    "angry": 0.0038,
+    "ai": 7
+   },
+   "dist": [
+    [
+     -0.5,
+     1
+    ],
+    [
+     -0.4,
+     2
+    ],
+    [
+     -0.3,
+     8
+    ],
+    [
+     -0.2,
+     20
+    ],
+    [
+     -0.1,
+     27
+    ],
+    [
+     0.0,
+     2455
+    ],
+    [
+     0.1,
+     237
+    ],
+    [
+     0.2,
+     36
+    ],
+    [
+     0.3,
+     102
+    ],
+    [
+     0.4,
+     8
+    ],
+    [
+     0.5,
+     8
+    ]
+   ],
+   "happy": {
+    "authors": [],
+    "reviewers": []
+   },
+   "ai": [
+    {
+     "text": "<<Comment to Autoroll agent>>\nTry to find a solution without patching the upstream code. If this is required, there must be a justification for the patch.",
+     "score": -0.3,
+     "month": "2026-07",
+     "role": "author"
+    },
+    {
+     "text": "AI comment.",
+     "score": -0.2,
+     "month": "2026-06",
+     "role": "reviewer"
+    },
+    {
+     "text": "woof. yes. sorry, AI nonsense. cleaned up. I also saw some dependency issues I'm fixing now.",
+     "score": -0.2,
+     "month": "2026-07",
+     "role": "author"
+    },
+    {
+     "text": "Apologies for the slop comment, the machine went off the rails.",
+     "score": 0.0,
+     "month": "2026-07",
+     "role": "author"
+    }
+   ],
+   "ai_left_out": {
+    "screened": 3,
+    "long_or_linked": 0
+   }
+  },
+  "2026-08": {
+   "weeks": [
+    "2026-W32",
+    "2026-W35"
+   ],
+   "n_trivial": 19864,
+   "total": {
+    "n": 2556,
+    "mean": 0.0237,
+    "glowing": 0.0102,
+    "angry": 0.0043,
+    "ai": 3
+   },
+   "dist": [
+    [
+     -1.0,
+     1
+    ],
+    [
+     -0.9,
+     1
+    ],
+    [
+     -0.8,
+     1
+    ],
+    [
+     -0.6,
+     1
+    ],
+    [
+     -0.5,
+     1
+    ],
+    [
+     -0.3,
+     6
+    ],
+    [
+     -0.2,
+     25
+    ],
+    [
+     -0.1,
+     40
+    ],
+    [
+     0.0,
+     2098
+    ],
+    [
+     0.1,
+     194
+    ],
+    [
+     0.2,
+     50
+    ],
+    [
+     0.3,
+     112
+    ],
+    [
+     0.4,
+     10
+    ],
+    [
+     0.5,
+     14
+    ],
+    [
+     0.6,
+     1
+    ],
+    [
+     0.7,
+     1
+    ]
+   ],
+   "happy": {
+    "authors": [],
+    "reviewers": [
+     {
+      "name": "Greg Thompson",
+      "email": "grt@chromium.org",
+      "glowing": 1,
+      "happy": 1,
+      "counterparts": 6
+     }
+    ]
+   },
+   "ai": [
+    {
+     "text": "As the tests were failing and I relied on Gemini to help me fix them, I also relied on Gemini to reason about this. Please read it with a grain of salt:\n\n`AllowLeak()` is to prevent gMock errors because the mock is held by a Mojo SelfOwnedReceiver that isn't destroyed until browser teardown after the test body ends.",
+     "score": -0.1,
+     "month": "2026-08",
+     "role": "author"
+    },
+    {
+     "text": "The AI Reviewer is complaining quite a lot about this ASSIGN_OR_RETURN usage, so I kindly ask you to double check if I did it right 😊",
+     "score": 0.0,
+     "month": "2026-08",
+     "role": "author"
+    }
+   ],
+   "ai_left_out": {
+    "screened": 0,
+    "long_or_linked": 1
+   }
+  },
+  "2026-09": {
+   "weeks": [
+    "2026-W36",
+    "2026-W39"
+   ],
+   "n_trivial": 19231,
+   "total": {
+    "n": 2695,
+    "mean": 0.0227,
+    "glowing": 0.0093,
+    "angry": 0.0056,
+    "ai": 5
+   },
+   "dist": [
+    [
+     -0.7,
+     2
+    ],
+    [
+     -0.3,
+     13
+    ],
+    [
+     -0.2,
+     17
+    ],
+    [
+     -0.1,
+     43
+    ],
+    [
+     0.0,
+     2179
+    ],
+    [
+     0.1,
+     287
+    ],
+    [
+     0.2,
+     44
+    ],
+    [
+     0.3,
+     85
+    ],
+    [
+     0.4,
+     12
+    ],
+    [
+     0.5,
+     13
+    ]
+   ],
+   "happy": {
+    "authors": [],
+    "reviewers": [
+     {
+      "name": "David Tseng",
+      "email": "dtseng@chromium.org",
+      "glowing": 1,
+      "happy": 1,
+      "counterparts": 6
+     },
+     {
+      "name": "Sorin Jianu",
+      "email": "sorin@chromium.org",
+      "glowing": 1,
+      "happy": 1,
+      "counterparts": 6
+     }
+    ]
+   },
+   "ai": [
+    {
+     "text": "Lines removes per suggestion above. For context, I thought these were needed due to the AI review agent kept suggesting to mention the MOJO rules.",
+     "score": 0.0,
+     "month": "2026-09",
+     "role": "author"
+    },
+    {
+     "text": "Gotya, thanks for the feedback! For context, I thought these were needed due to the AI review agent kept suggesting to mention the MOJO rules.",
+     "score": 0.1,
+     "month": "2026-09",
+     "role": "author"
+    }
+   ],
+   "ai_left_out": {
+    "screened": 3,
+    "long_or_linked": 0
+   }
+  },
+  "2026-10": {
+   "weeks": [
+    "2026-W40",
+    "2026-W44"
+   ],
+   "n_trivial": 24901,
+   "total": {
+    "n": 4092,
+    "mean": 0.0212,
+    "glowing": 0.0086,
+    "angry": 0.0056,
+    "ai": 7
+   },
+   "dist": [
+    [
+     -0.6,
+     3
+    ],
+    [
+     -0.5,
+     2
+    ],
+    [
+     -0.4,
+     3
+    ],
+    [
+     -0.3,
+     15
+    ],
+    [
+     -0.2,
+     34
+    ],
+    [
+     -0.1,
+     65
+    ],
+    [
+     0.0,
+     3342
+    ],
+    [
+     0.1,
+     388
+    ],
+    [
+     0.2,
+     75
+    ],
+    [
+     0.3,
+     130
+    ],
+    [
+     0.4,
+     17
+    ],
+    [
+     0.5,
+     18
+    ]
+   ],
+   "happy": {
+    "authors": [],
+    "reviewers": [
+     {
+      "name": "Mitsuru Oshima",
+      "email": "oshima@chromium.org",
+      "glowing": 2,
+      "happy": 1,
+      "counterparts": 7
+     },
+     {
+      "name": "Dale Curtis",
+      "email": "dalecurtis@chromium.org",
+      "glowing": 1,
+      "happy": 1,
+      "counterparts": 7
+     },
+     {
+      "name": "Hidehiko Abe",
+      "email": "hidehiko@chromium.org",
+      "glowing": 1,
+      "happy": 1,
+      "counterparts": 6
+     },
+     {
+      "name": "Takashi Toyoshima",
+      "email": "toyoshim@chromium.org",
+      "glowing": 1,
+      "happy": 1,
+      "counterparts": 7
+     }
+    ]
+   },
+   "ai": [
+    {
+     "text": "Hold off on reviewing this for the moment.. gemini seems to have pulled in a stale branch and lost a bunch of changes, frustratingly..\n\nI will fix this in a followup.",
+     "score": -0.3,
+     "month": "2026-10",
+     "role": "author"
+    },
+    {
+     "text": "AI generated comments actually make sense this time",
+     "score": -0.3,
+     "month": "2026-10",
+     "role": "reviewer"
+    },
+    {
+     "text": "Those LLMs, as if they understand language. Will correct. They would probably need a repository to learn how to create commit messages correctly, amirite?",
+     "score": -0.3,
+     "month": "2026-10",
+     "role": "author"
+    },
+    {
+     "text": "Ah. Yeah, i'm fine to leave it as []--gemini just kept pointing out that () was a better default since it's immutable. It's not clear why it only did it for skip_brands.. But I don't feel strongly, so I'll just revert it.",
+     "score": -0.1,
+     "month": "2026-10",
+     "role": "author"
+    }
+   ],
+   "ai_left_out": {
+    "screened": 2,
+    "long_or_linked": 1
+   }
   }
- },
- "ai": [
-  {
-   "text": "AI generated comments actually make sense this time",
-   "score": -0.3,
-   "month": "2026-10",
-   "role": "reviewer"
-  },
-  {
-   "text": "Those LLMs, as if they understand language. Will correct. They would probably need a repository to learn how to create commit messages correctly, amirite?",
-   "score": -0.3,
-   "month": "2026-10",
-   "role": "author"
-  },
-  {
-   "text": "Lines removes per suggestion above. For context, I thought these were needed due to the AI review agent kept suggesting to mention the MOJO rules.",
-   "score": 0.0,
-   "month": "2026-09",
-   "role": "author"
-  },
-  {
-   "text": "yeah i'm also unsure these particular \"for the agent\" comments actually were helpful.  they were merely proscriptive of things that jetski already knew if it read the 'for the human' part.  it wasn't like the human version was the softer and lighter version and the agent one was info-dense.",
-   "score": 0.0,
-   "month": "2026-10",
-   "role": "reviewer"
-  },
-  {
-   "text": "Gotya, thanks for the feedback! For context, I thought these were needed due to the AI review agent kept suggesting to mention the MOJO rules.",
-   "score": 0.1,
-   "month": "2026-09",
-   "role": "author"
-  }
- ],
- "ai_left_out": {
-  "screened": 4,
-  "long_or_linked": 1
  }
 }

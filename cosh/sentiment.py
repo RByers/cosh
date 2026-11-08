@@ -592,12 +592,49 @@ def is_praise(row, scores):
     return s is not None and s[0] >= GLOWING
 
 
-MONTH_WEEKS = 4      # the boards' "past month": the last four weeks
 NET_SCALE = 5.0      # a net praise total this large gets the full pill colour on the page
 
 
+def periods(weeks):
+    """The page's date choices over `weeks` (ISO weeks, oldest first): "all",
+    each calendar year ("2026") and each calendar month ("2026-10"). A week
+    belongs to the month and year of its Thursday, as on the page. Each maps to
+    its weeks, oldest first."""
+    out = {"all": list(weeks)}
+    for w in weeks:
+        y, n = w.split("-W")
+        t = date.fromisocalendar(int(y), int(n), 4)
+        out.setdefault(f"{t.year}", []).append(w)
+        out.setdefault(f"{t.year}-{t.month:02d}", []).append(w)
+    return out
+
+
+def screen_first(pool, n, text, sandbox, cache, batch=30):
+    """The first `n` ids of `pool` (in order) that `screen_identifying` passes.
+    Ids not yet in `cache` are screened `batch` at a time, ahead of need;
+    cache[id] is True when flagged, so a run can share it across periods and
+    groups and never screen a comment twice. Returns (kept, how many of the
+    ids looked at were flagged)."""
+    kept, flagged = [], 0
+    for k, i in enumerate(pool):
+        if i not in cache:
+            chunk = [x for x in pool[k:] if x not in cache][:batch]
+            keys = {f"C{j}": x for j, x in enumerate(chunk)}
+            hit = screen_identifying([(key, text(x)) for key, x in keys.items()], sandbox)
+            for key, x in keys.items():
+                cache[x] = key in hit
+        if cache[i]:
+            flagged += 1
+        else:
+            kept.append(i)
+            if len(kept) >= n:
+                break
+    return kept, flagged
+
+
 def net_praise(weeks, scores, data_dir=store.DATA_DIR, authors=DEFAULT_AUTHORS):
-    """Net praise per person, over all `weeks` and over the last four: the
+    """Net praise per person, over all `weeks`, each calendar year and each
+    calendar month (`periods`): the
     scores of the praise comments they gave (or received), plus the scores of
     the grumpy ones (score <= ANGRY, so these subtract); neutral comments
     count for nothing. Human to human, written by `authors`.
@@ -617,7 +654,8 @@ def net_praise(weeks, scores, data_dir=store.DATA_DIR, authors=DEFAULT_AUTHORS):
                          "`python3 -m cosh.sentiment_people collect`")
     rows = by_authors(rows, authors, data_dir)
     out = {}
-    for period, ws in (("all", set(weeks)), ("month", set(weeks[-MONTH_WEEKS:]))):
+    for period, ws in periods(weeks).items():
+        ws = set(ws)
         total = {k: defaultdict(float) for k in ("given", "received")}
         count = {k: defaultdict(int) for k in ("given", "received")}
         names = {}
@@ -740,10 +778,12 @@ def _draw(ids, seed):
 
 
 def samples(weeks, data_dir=store.DATA_DIR, version=None, n=10, seed="2026-11", sandbox="auto",
-            authors=DEFAULT_AUTHORS):
+            authors=DEFAULT_AUTHORS, screened=None):
     """The most extreme praise (highest scores) and grumpy comments (lowest
-    scores, not flagged as AI friction) written by `authors` in fully scored weeks. Ties are broken by a
+    scores, not flagged as AI friction) written by `authors` in fully scored
+    weeks, for each of the page's periods (`periods`). Ties are broken by a
     deterministic shuffle (`seed`), so reruns pick the same comments.
+    `screened` is a `screen_first` cache to share between calls.
 
     Ground rule 5: praise comes with names and a Gerrit link; grumpy comments
     come with their text, score and month only, and only when a sandboxed
@@ -753,52 +793,55 @@ def samples(weeks, data_dir=store.DATA_DIR, version=None, n=10, seed="2026-11", 
     for w in weeks:
         for r in read_jsonl(os.path.join(out_dir(data_dir), f"comments-{w}.jsonl")):
             if r["id"] in scores and len(r["text"]) <= SAMPLE_CHARS:
+                r["week"] = w
                 rows[r["id"]] = r
     rows = {r["id"]: r for r in by_authors(rows.values(), authors, data_dir)}
-    praise_ids = sorted(_draw([i for i, r in rows.items() if scores[i][0] >= PRAISE_SAMPLE and is_praise(r, scores)
-                               and _target_kind(r) == "person"], seed), key=lambda i: -scores[i][0])[:n]
+    praise_all = sorted(_draw([i for i, r in rows.items() if scores[i][0] >= PRAISE_SAMPLE and is_praise(r, scores)
+                               and _target_kind(r) == "person"], seed), key=lambda i: -scores[i][0])
     # AI-friction comments have their own section (cosh.sentiment_recent), so
     # the grumpy samples are the rest.
-    grumpy_pool = sorted(_draw([i for i, r in rows.items() if scores[i][0] <= GRUMPY_SAMPLE and not scores[i][1]
-                                and not _LINKY.search(r["text"])], seed), key=lambda i: scores[i][0])
+    grumpy_all = sorted(_draw([i for i, r in rows.items() if scores[i][0] <= GRUMPY_SAMPLE and not scores[i][1]
+                               and not _LINKY.search(r["text"])], seed), key=lambda i: scores[i][0])
+    cache = {} if screened is None else screened
     box = make_sandbox(sandbox, data_dir) if isinstance(sandbox, str) else sandbox
-    grumpy = []
+    picked = {}
     try:
-        for b in range(0, len(grumpy_pool), 3 * n):
-            if len(grumpy) >= n:
-                break
-            chunk = grumpy_pool[b:b + 3 * n]
-            keys = {f"C{j}": i for j, i in enumerate(chunk)}
-            flagged = screen_identifying([(k, rows[i]["text"]) for k, i in keys.items()], box)
-            grumpy += [keys[k] for k in keys if k not in flagged]
+        for key, ws in periods(weeks).items():
+            ws = set(ws)
+            grumpy, _ = screen_first([i for i in grumpy_all if rows[i]["week"] in ws], n,
+                                     lambda i: rows[i]["text"], box, cache, 3 * n)
+            picked[key] = ([i for i in praise_all if rows[i]["week"] in ws][:n], grumpy)
     finally:
         if box is not sandbox:
             box.close()
-    grumpy = grumpy[:n]
 
-    db = sqlite3.connect(f"file:{os.path.join(data_dir, store.DERIVED_FILE)}?mode=ro", uri=True)
-    names = {(h, a): (e, nm) for h, a, e, nm in db.execute("SELECT host, account_id, email, name FROM accounts")}
-    who = {}
-    want = set(praise_ids)
-    def week_of(ts):
-        y, wk, _ = date.fromisoformat(ts[:10]).isocalendar()
-        return f"{y}-W{wk:02d}"
-    for w in sorted({week_of(rows[i]["written_at"]) for i in praise_ids}):
-        collect(w, data_dir, keep=want.__contains__,
-                annotate=lambda row, ids: who.__setitem__(row["id"], ids))
-    praise_out = []
-    for i in praise_ids:
-        r, ids = rows[i], who.get(i)
-        if not ids:
-            continue
-        a = names.get((ids["host"], ids["author"]), (None, None))
-        t = names.get((ids["host"], ids["target"]), (None, None))
-        praise_out.append(dict(text=r["text"], score=scores[i][0], date=r["written_at"][:10],
-                               writer=a[1] or a[0], recipient=t[1] or t[0],
-                               url=comment_url(r["project"], r["cl"], r["uuid"])))
-    grumpy_out = [dict(text=rows[i]["text"], score=scores[i][0], month=rows[i]["written_at"][:7]) for i in grumpy]
+    # Names: from the week files' identities (`cosh.sentiment_people collect`),
+    # else by collecting the praise comments' weeks again with only them kept.
+    want = {i for p, _ in picked.values() for i in p}
+    who = {i: rows[i] for i in want if rows[i].get("author_email")}
+    if len(who) < len(want):
+        db = sqlite3.connect(f"file:{os.path.join(data_dir, store.DERIVED_FILE)}?mode=ro", uri=True)
+        names = {(h, a): (e, nm) for h, a, e, nm in db.execute("SELECT host, account_id, email, name FROM accounts")}
+        ids = {}
+        for w in sorted({rows[i]["week"] for i in want - set(who)}):
+            collect(w, data_dir, keep=(want - set(who)).__contains__,
+                    annotate=lambda row, x: ids.__setitem__(row["id"], x))
+        for i, x in ids.items():
+            a = names.get((x["host"], x["author"]), (None, None))
+            t = names.get((x["host"], x["target"]), (None, None))
+            who[i] = dict(author_email=a[0], author_name=a[1], target_email=t[0], target_name=t[1])
+
+    def praise_item(i):
+        r, x = rows[i], who[i]
+        return dict(text=r["text"], score=scores[i][0], date=r["written_at"][:10],
+                    writer=x.get("author_name") or x.get("author_email"),
+                    recipient=x.get("target_name") or x.get("target_email"),
+                    url=comment_url(r["project"], r["cl"], r["uuid"]))
+    out = {key: dict(praise=[praise_item(i) for i in p if i in who],
+                     grumpy=[dict(text=rows[i]["text"], score=scores[i][0], month=rows[i]["written_at"][:7]) for i in g])
+           for key, (p, g) in picked.items()}
     return dict(generated_at=store.now_iso(), prompt=version or PROMPT_VERSION, weeks=[weeks[0], weeks[-1]],
-                authors=authors, praise_min=PRAISE_SAMPLE, grumpy_max=GRUMPY_SAMPLE, praise=praise_out, grumpy=grumpy_out)
+                authors=authors, praise_min=PRAISE_SAMPLE, grumpy_max=GRUMPY_SAMPLE, periods=out)
 
 
 def main(argv):
@@ -842,13 +885,15 @@ def main(argv):
             print(f"{name}: scored {st['n']} in {st['calls']} calls, {st['tokens']} tokens, ${st['usd']:.2f} "
                   f"API-equivalent, {time.time() - t0:.0f}s", file=sys.stderr)
     elif a.step == "samples":
+        screened = {}
         for g in groups:
-            doc = samples(weeks, version=a.prompt, sandbox=a.sandbox, authors=g)
+            doc = samples(weeks, version=a.prompt, sandbox=a.sandbox, authors=g, screened=screened)
             out = a.out or authors_path(SAMPLES_SUMMARY, g)
             with open(out, "w") as f:
                 json.dump(doc, f, indent=1, ensure_ascii=False)
                 f.write("\n")
-            print(f"{g}: {len(doc['praise'])} praise, {len(doc['grumpy'])} grumpy samples -> {out}", file=sys.stderr)
+            print(f"{g}: {len(doc['periods'])} periods, {len(screened)} comments screened so far -> {out}",
+                  file=sys.stderr)
     elif a.step == "praise":
         for g in groups:
             doc = praise(weeks, version=a.prompt, authors=g)

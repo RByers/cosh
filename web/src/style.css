@@ -280,6 +280,19 @@ html {
   border-bottom: 1px solid var(--border);
 }
 
+/* Review Tone's bar: the dates (a kind, then a year or month to pick) and
+   whose comments, side by side, wrapping on narrow screens. */
+.tone-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 8px 16px;
+}
+
+.tone-bar .select-toggle[hidden] {
+  display: none;
+}
+
 /* Smaller buttons on phones, so the bar takes less of the screen. */
 @media (max-width: 480px) {
   .metric-bar .segmented label {
@@ -1747,10 +1760,18 @@ canvas.pointing {
   color: #fff;
 }
 
-/* A name on a praise board or happy table: opens its comments. */
+/* A name on a praise board or happy table: opens its comments. Its email
+   address sits under it. */
 .person-link {
   font: inherit;
   text-align: left;
+}
+
+.person-email {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  overflow-wrap: anywhere;
 }
 
 /* The name popup: the page's colours, scrolling inside when long. */
@@ -1859,15 +1880,17 @@ html:has(.person-dialog[open]) {
   gap: 8px;
 }
 
+/* An icon button, the size of the close button beside it. */
 .person-print {
+  display: inline-grid;
+  place-items: center;
+  min-width: 32px;
   min-height: 32px;
-  padding: 4px 10px;
+  padding: 0;
   border: 1px solid var(--border);
   border-radius: 6px;
   background: var(--page);
   color: var(--text-primary);
-  font: inherit;
-  font-size: 0.85rem;
   cursor: pointer;
 }
 

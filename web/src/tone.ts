@@ -50,19 +50,22 @@ export interface PraiseData {
   people: Record<string, string>;
   /** Praise comment counts per person and week (the caption's totals). */
   weekly: { week: string; email: string; given: number; received: number }[];
-  /** The boards: net praise per period, highest first, positive totals only. */
+  /** The boards: net praise per period (all, each year, each month),
+   * highest first, positive totals only. */
   net: Record<Period, Record<'given' | 'received', NetRow[]>>;
   /** A net total this large gets a pill's full colour. */
   net_scale: number;
 }
 
-/** summaries/sentiment_samples.json */
+/** summaries/sentiment_samples.json: the samples of each period. */
 export interface ToneSamples {
   weeks: [string, string];
   praise_min: number;
   grumpy_max: number;
-  praise: { text: string; score: number; date: string; writer: string; recipient: string; url: string }[];
-  grumpy: { text: string; score: number; month: string }[];
+  periods: Record<Period, {
+    praise: { text: string; score: number; date: string; writer: string; recipient: string; url: string }[];
+    grumpy: { text: string; score: number; month: string }[];
+  }>;
 }
 
 export interface ToneStat {
@@ -84,18 +87,24 @@ export interface HappyRow {
   counterparts: number;
 }
 
+/** One period's detail in summaries/sentiment_recent.json. */
+export interface RecentPeriod {
+  weeks: [string, string];
+  n_trivial: number;
+  total: ToneStat;
+  dist: [number, number][];
+  happy: { authors: HappyRow[]; reviewers: HappyRow[] };
+  ai: { text: string; score: number; month: string; role: 'author' | 'reviewer' }[];
+}
+
 /** summaries/sentiment_recent.json (cosh/sentiment_recent.py) */
 export interface ToneRecent {
   weeks: [string, string];
-  month_weeks: [string, string];
   thresholds: { glowing: number; angry: number };
   min_counterparts: number;
-  n_trivial: number;
-  total: ToneStat;
   weekly: (ToneStat & { week: string })[];
-  dist: [number, number][];
-  happy: Record<Period, { authors: HappyRow[]; reviewers: HappyRow[] }>;
-  ai: { text: string; score: number; month: string; role: 'author' | 'reviewer' }[];
+  monthly: (ToneStat & { month: string; weeks: [string, string] })[];
+  periods: Record<Period, RecentPeriod>;
 }
 
 /** One praise or glowing comment behind a board, for a name popup. */
@@ -132,8 +141,9 @@ export interface PersonComments {
   comments: Record<string, PersonComment>;
   /** Every praise comment, as counted on the praise boards. */
   praise: string[];
-  /** Each listed person's glowing comments, by period and table. */
-  happy: Record<Period, Record<'authors' | 'reviewers', Record<string, string[]>>>;
+  /** The glowing comments of everyone in a happy table in some period, over
+   * every week, by table. */
+  happy: Record<'authors' | 'reviewers', Record<string, string[]>>;
 }
 
 const newestFirst = (a: PersonComment, b: PersonComment) => b.date.localeCompare(a.date) || b.score - a.score;
@@ -146,21 +156,52 @@ export function praiseComments(d: PersonComments, email: string, key: 'given' | 
     .sort(newestFirst);
 }
 
-/** The glowing comments behind `email`'s row in a happy table, newest first. */
-export function happyComments(d: PersonComments, email: string, table: 'authors' | 'reviewers', period: Period): PersonComment[] {
-  return (d.happy[period]?.[table]?.[email] ?? []).map((id) => d.comments[id]).filter(Boolean).sort(newestFirst);
+/** The glowing comments behind `email`'s row in a happy table (in `range`,
+ * if given), newest first. */
+export function happyComments(d: PersonComments, email: string, table: 'authors' | 'reviewers',
+  range?: [string, string]): PersonComment[] {
+  return (d.happy?.[table]?.[email] ?? []).map((id) => d.comments[id])
+    .filter((c) => c && (!range || within(c.week, range))).sort(newestFirst);
 }
 
-/** The leaderboards' periods: every scored week, or the last four. */
-export type Period = 'all' | 'month';
-export const MONTH_WEEKS = 4;
+/** The page's date choice: "all", a calendar year ("2026") or a calendar
+ * month ("2026-10"). A week belongs to the month and year of its Thursday
+ * (cosh.sentiment.periods). */
+export type Period = string;
 
-/** The weeks of `range` that `period` covers. */
-export function periodWeeks(range: [string, string], period: Period): [string, string] {
-  return period === 'all' ? range : [maxWeek(range[0], addWeeks(range[1], 1 - MONTH_WEEKS)), range[1]];
+export const periodKind = (p: Period): 'all' | 'year' | 'month' =>
+  p === 'all' ? 'all' : /^\d{4}$/.test(p) ? 'year' : 'month';
+
+const weekKeys = (w: string) => {
+  const { year, month } = weekMonth(w);
+  return [String(year), `${year}-${String(month + 1).padStart(2, '0')}`];
+};
+
+/** The years and months the weeks of `range` fall in, oldest first. */
+export function periodsOf([from, to]: [string, string]): { years: string[]; months: string[] } {
+  const years = new Set<string>();
+  const months = new Set<string>();
+  for (let w = from; w <= to; w = addWeeks(w, 1)) {
+    const [y, m] = weekKeys(w);
+    years.add(y);
+    months.add(m);
+  }
+  return { years: [...years], months: [...months] };
 }
 
-const maxWeek = (a: string, b: string) => (a > b ? a : b);
+/** The weeks of `range` in `period`, or null when there are none. */
+export function periodWeeks(range: [string, string], period: Period): [string, string] | null {
+  if (period === 'all') return range;
+  let first: string | null = null;
+  let last: string | null = null;
+  for (let w = range[0]; w <= range[1]; w = addWeeks(w, 1)) {
+    if (weekKeys(w).includes(period)) {
+      first ??= w;
+      last = w;
+    }
+  }
+  return first && last ? [first, last] : null;
+}
 
 const within = (week: string, [from, to]: [string, string]) => week >= from && week <= to;
 

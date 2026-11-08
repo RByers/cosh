@@ -2301,7 +2301,7 @@ test('the Review Tone page: trend, praise leaderboard and samples; names only fo
   await page.close();
 });
 
-test('the Review Tone page: last two months, board controls, happy tables, AI list and prompt', async () => {
+test('the Review Tone page: every comment, board controls, happy tables, AI list and prompt', async () => {
   const page = await browser.newPage();
   const errors: string[] = [];
   page.on('console', (m) => m.type() === 'error' && errors.push(m.text()));
@@ -2309,17 +2309,18 @@ test('the Review Tone page: last two months, board controls, happy tables, AI li
   await page.setViewport({ width: 1100, height: 900 });
   await page.goto(baseUrl + 'sentiment.html', { waitUntil: 'load' });
   await page.waitForSelector('body[data-ready]');
-  // Tiles and the weekly table are filled; weeks are named by their dates.
+  // Tiles and the table are filled: a row per month over all the dates.
   for (const id of ['tile-n', 'tile-trivial', 'tile-mean', 'tile-glowing', 'tile-angry', 'tile-ai']) {
     assert.notEqual(await page.$eval(`#${id} .tile-value`, (e) => e.textContent!.trim()), '', id);
   }
-  const weeks = await page.$$eval('#recent-weekly tbody th', (ths) => ths.map((t) => t.textContent!));
-  assert.ok(weeks.length >= 4);
-  for (const w of weeks) assert.match(w, /^\d{1,2} \w{3,4} \d{4}$/);
+  assert.equal(await page.$eval('#recent-rows-title', (e) => e.textContent), 'Month by month');
+  const months = await page.$$eval('#recent-weekly tbody th', (ths) => ths.map((t) => t.textContent!));
+  assert.ok(months.length >= 2);
+  for (const m of months) assert.match(m, /^[A-Z][a-z]{2,3} \d{4}$/);
   assert.ok((await page.$eval('#recent-dist', (c) => (c as HTMLCanvasElement).width)) > 0);
 
   // The praise boards: net praise pills, highest first and all positive; "All" shows
-  // everyone with a positive total; the past month changes the caption.
+  // everyone with a positive total; another year changes the caption.
   const rows = (id: string) => page.$$eval(`${id} tbody tr`, (trs) => trs.length);
   const given15 = await rows('#praise-given');
   assert.ok(given15 > 0 && given15 <= 15);
@@ -2332,9 +2333,10 @@ test('the Review Tone page: last two months, board controls, happy tables, AI li
   const givenAll = await rows('#praise-given');
   assert.ok(givenAll > 100, `${givenAll} people with positive net praise`);
   const allSub = await page.$eval('#praise-sub', (e) => e.textContent!);
-  await page.click('#praise-period input[value="month"]');
+  await page.click('#period input[value="year"]');
   assert.notEqual(await page.$eval('#praise-sub', (e) => e.textContent!), allSub);
   assert.ok((await rows('#praise-given')) > 0);
+  await page.click('#period input[value="all"]');
 
   // Happy tables: names with glowing comment counts, highest first, expandable too.
   const happy = await page.$$eval('#happy-authors tbody tr td:last-child', (tds) => tds.map((t) => t.textContent!));
@@ -2343,8 +2345,11 @@ test('the Review Tone page: last two months, board controls, happy tables, AI li
   assert.deepEqual(happy.map(Number), happy.map(Number).sort((a, b) => b - a));
   await page.click('#happy-size input[value="100"]');
   assert.ok((await rows('#happy-authors')) >= happy.length);
-  await page.click('#happy-period input[value="month"]');
-  assert.ok((await rows('#happy-reviewers')) > 0);
+  // Each name on the boards and tables shows its email address.
+  for (const id of ['#praise-given', '#praise-received', '#happy-authors', '#happy-reviewers']) {
+    const emails = await page.$$eval(`${id} tbody td:nth-child(2) .person-email`, (es) => es.map((e) => e.textContent!));
+    assert.ok(emails.length > 0 && emails.every((e) => /^[^@\s]+@[^@\s]+$/.test(e)), id);
+  }
 
   // The AI-friction list: the most negative 20 at most, two cards across,
   // anonymous (no links), month and role only.
@@ -2371,6 +2376,66 @@ test('the Review Tone page: last two months, board controls, happy tables, AI li
   assert.match(await page.$eval('#prompt-text', (e) => e.textContent!), /Rate the emotional tone/);
   const text = await page.$eval('body', (b) => (b as HTMLElement).innerText);
   assert.doesNotMatch(text, /\b\d{4}-W\d{2}\b/);
+  assert.deepEqual(errors, []);
+  await page.close();
+});
+
+test('the Review Tone page: the Dates switch picks all, a year or a month for every section, kept in the URL', async () => {
+  const page = await browser.newPage();
+  const errors: string[] = [];
+  page.on('console', (m) => m.type() === 'error' && errors.push(m.text()));
+  page.on('pageerror', (e) => errors.push(String(e)));
+  await page.setViewport({ width: 1100, height: 900 });
+  await page.goto(baseUrl + 'sentiment.html', { waitUntil: 'load' });
+  await page.waitForSelector('body[data-ready="committers"]');
+  const shown = (id: string) => page.$eval(id, (e) => !(e as HTMLElement).hidden && (e as HTMLElement).offsetWidth > 0);
+  const subs = () => page.$$eval('#recent-sub, #praise-sub, #happy-sub, #samples-sub, #ai-sub',
+    (es) => es.map((e) => e.textContent!.replace(/\s+/g, ' ')));
+  const n = async () => Number((await page.$eval('#tile-n .tile-value', (e) => e.textContent!)).replace(/\D/g, ''));
+  // The controls sit in the sticky bar, before "Comments by".
+  assert.equal(await page.$eval('.metric-bar', (b) => b.firstElementChild!.id), 'period');
+  assert.equal(await shown('#period-year-box'), false);
+  assert.equal(await shown('#period-month-box'), false);
+  const all = { subs: await subs(), n: await n(), trend: await page.$eval('#trend-sub', (e) => e.textContent!) };
+
+  // A year: the newest by default; every section's dates change.
+  await page.click('#period input[value="year"]');
+  assert.equal(await shown('#period-year-box'), true);
+  const years = await page.$$eval('#period-year option', (os) => os.map((o) => (o as HTMLOptionElement).value));
+  assert.deepEqual(years, [...years].sort().reverse());
+  assert.equal(await page.$eval('#period-year', (s) => (s as HTMLSelectElement).value), years[0]);
+  assert.match(page.url(), new RegExp(`[?&]period=${years[0]}\\b`));
+  const year = await subs();
+  for (let i = 0; i < year.length; i++) assert.notEqual(year[i], all.subs[i], year[i]);
+  assert.ok((await n()) < all.n);
+  assert.notEqual(await page.$eval('#trend-sub', (e) => e.textContent!), all.trend);
+
+  // A month: the newest by default, a row per week, and the trend marks it.
+  await page.click('#period input[value="month"]');
+  assert.equal(await shown('#period-year-box'), false);
+  assert.equal(await shown('#period-month-box'), true);
+  const months = await page.$$eval('#period-month option', (os) => os.map((o) => (o as HTMLOptionElement).value));
+  assert.equal(await page.$eval('#period-month', (s) => (s as HTMLSelectElement).value), months[0]);
+  assert.match(await page.$eval('#period-month option', (o) => o.textContent!), /^[A-Z][a-z]{2,3} \d{4}$/);
+  assert.equal(await page.$eval('#recent-rows-title', (e) => e.textContent), 'Week by week');
+  const weeks = await page.$$eval('#recent-weekly tbody th', (ths) => ths.map((t) => t.textContent!));
+  assert.ok(weeks.length >= 4 && weeks.length <= 5);
+  for (const w of weeks) assert.match(w, /^\d{1,2} \w{3,4} \d{4}$/);
+  assert.match(await page.$eval('#trend-sub', (e) => e.textContent!), /The larger dot is [A-Z][a-z]{2,3} \d{4}\./);
+  const newest = await n();
+  await page.select('#period-month', months[1]);
+  assert.match(page.url(), new RegExp(`[?&]period=${months[1]}\\b`));
+  assert.notEqual(await n(), newest);
+  assert.ok((await page.$$eval('#praise-given tbody tr', (trs) => trs.length)) > 0);
+
+  // A link with ?period= opens on it; All drops it.
+  await page.goto(baseUrl + `sentiment.html?period=${months[1]}`, { waitUntil: 'load' });
+  await page.waitForSelector('body[data-ready="committers"]');
+  assert.equal(await page.$eval('#period input[value="month"]', (i) => (i as HTMLInputElement).checked), true);
+  assert.equal(await page.$eval('#period-month', (s) => (s as HTMLSelectElement).value), months[1]);
+  await page.click('#period input[value="all"]');
+  assert.doesNotMatch(page.url(), /period=/);
+  assert.equal(await n(), all.n);
   assert.deepEqual(errors, []);
   await page.close();
 });
@@ -2433,9 +2498,12 @@ test('the Review Tone page: a name on a board opens a popup with its praise, lin
   const top = await page.$eval('#praise-given tbody tr', (tr) => ({
     name: tr.querySelector('button')!.textContent!,
     count: Number(/\((\d+) praise comments\)/.exec((tr.lastElementChild as HTMLElement).querySelector<HTMLElement>('.score-badge')!.title)![1]) }));
+  const topEmail = await page.$eval('#praise-given tbody tr .person-email', (e) => e.textContent!);
   await page.click('#praise-given tbody tr button');
   await page.waitForFunction(() => document.querySelectorAll('#person-list li.quote').length > 0);
   assert.equal(await dialog(), true);
+  // The open popup is in the URL's hash, so it can be shared.
+  assert.equal(new URL(page.url()).hash, `#given=${topEmail}`);
   assert.equal(await page.$eval('#person-title', (e) => e.textContent), `Chromium code review praise given by ${top.name}`);
   const items = await page.$$eval('#person-list li', (lis) => lis.map((li) => {
     const by = li.querySelector('.quote-by')!.cloneNode(true) as HTMLElement;
@@ -2473,6 +2541,13 @@ test('the Review Tone page: a name on a board opens a popup with its praise, lin
   for (let i = 0; i < 30; i++) await page.mouse.wheel({ deltaY: 400 });
   await new Promise((res) => setTimeout(res, 200));
   assert.equal(await page.evaluate(() => scrollY), y0);
+  // The print button is an icon, as small as the close button.
+  const printBox = (await (await page.$('#person-print'))!.boundingBox())!;
+  const closeBox = (await (await page.$('#person-close'))!.boundingBox())!;
+  assert.equal(await page.$eval('#person-print', (b) => b.textContent!.trim()), '');
+  assert.equal(await page.$eval('#person-print', (b) => b.getAttribute('aria-label')), 'Print or save as PDF');
+  assert.ok(printBox.width <= closeBox.width + 1, `${printBox.width} vs ${closeBox.width}`);
+
   // Print: the page takes the person's title while printing, and prints only the popup.
   await page.evaluate(() => {
     (window as unknown as { printed: string }).printed = '';
@@ -2490,20 +2565,22 @@ test('the Review Tone page: a name on a board opens a popup with its praise, lin
   }));
   assert.deepEqual(printed, { praise: 'none', header: 'none', dialog: 'visible', buttons: 'none' });
   await page.emulateMediaType('screen');
-  // Escape closes it; so does a click on the backdrop.
+  // Escape closes it, and the hash goes; so does a click on the backdrop.
   await page.keyboard.press('Escape');
   assert.equal(await dialog(), false);
+  await page.waitForFunction(() => location.hash === '');
   await page.click('#happy-authors tbody tr button');
   await page.waitForFunction(() => document.querySelectorAll('#person-list li.quote').length > 0);
   assert.match(await page.$eval('#person-title', (e) => e.textContent!), /^Glowing Chromium code review comments from reviewers to /);
   assert.match(await chartLabel(), /^Received as change author \(\d+\) per month$/);
   assert.ok((await page.$$eval('#person-list li', (lis) => lis.map((li) => li.className)))
     .every((c) => c.includes('quote-received-author')));
+  assert.match(new URL(page.url()).hash, /^#authors=[^@]+@/);
   await page.mouse.click(5, 5);
   assert.equal(await dialog(), false);
 
   // The lookup box: an email typed by hand opens that person's praise, given and received.
-  const email = await page.$eval('#praise-received tbody tr button', (b) => (b as HTMLElement).title);
+  const email = await page.$eval('#praise-received tbody tr .person-email', (e) => e.textContent!);
   const options = () => page.$$eval('#praise-people option', (os) => os.length);
   assert.equal(await options(), 0, 'no suggestions before typing');
   await page.type('#praise-find-input', '@');
@@ -2518,6 +2595,7 @@ test('the Review Tone page: a name on a board opens a popup with its praise, lin
   assert.match(await chartLabel(),
     /^Given as change author \(\d+\), Given as reviewer \(\d+\), Received as change author \(\d+\), Received as reviewer \(\d+\) per month$/);
   assert.equal(await page.$eval('#person-chart', (e) => (e as HTMLElement).hidden), false);
+  assert.equal(new URL(page.url()).hash, `#person=${email}`);
   await page.keyboard.press('Escape');
   await page.$eval('#praise-find-input', (i) => ((i as HTMLInputElement).value = ''));
   await page.type('#praise-find-input', 'nobody@example.invalid');
@@ -2538,6 +2616,26 @@ test('the Review Tone page: a name on a board opens a popup with its praise, lin
   assert.equal(await page.$eval('#person-chart', (e) => (e as HTMLElement).hidden), true);
   assert.equal(await page.$$eval('#person-list li', (lis) => lis.length), 0);
   await page.keyboard.press('Escape');
+
+  // A shared link opens the popup it names, for the dates in it, in each mode.
+  for (const mode of ['given', 'received', 'authors', 'reviewers', 'person']) {
+    const table = { given: '#praise-given', received: '#praise-received', authors: '#happy-authors',
+      reviewers: '#happy-reviewers', person: '#praise-received' }[mode]!;
+    const who = await page.$eval(`${table} tbody tr`, (tr) => ({ name: tr.querySelector('button')!.textContent!,
+      email: tr.querySelector('.person-email')!.textContent! }));
+    await page.goto(baseUrl + `sentiment.html?period=2026#${mode}=${who.email}`, { waitUntil: 'load' });
+    await page.waitForFunction(() => (document.querySelector('#person-dialog') as HTMLDialogElement).open
+      && document.querySelector('#person-note')!.textContent !== 'Loading comments…');
+    const title = await page.$eval('#person-title', (e) => e.textContent!);
+    assert.ok(title.endsWith(who.name), `${mode}: ${title}`);
+    assert.match(await page.$eval('#person-note', (e) => e.textContent!), /between 29 Dec 2025 and /, mode); // 2026's first week starts in 2025
+    await page.keyboard.press('Escape');
+    assert.equal(await dialog(), false, `${mode}: closed`);
+    await page.waitForFunction(() => location.hash === '');
+    assert.match(page.url(), /period=2026/);
+    await page.goto(baseUrl + 'sentiment.html', { waitUntil: 'load' });
+    await page.waitForSelector('body[data-ready="committers"]');
+  }
   assert.deepEqual(errors, []);
   await page.close();
 });

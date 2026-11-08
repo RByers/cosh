@@ -1,145 +1,1958 @@
 {
- "generated_at": "2026-11-07T21:04:11Z",
+ "generated_at": "2026-11-08T13:06:02Z",
  "prompt": "v3",
  "weeks": [
-  "2026-W37",
+  "2025-W45",
   "2026-W44"
  ],
  "authors": "everyone",
  "praise_min": 0.5,
  "grumpy_max": -0.6,
- "praise": [
-  {
-   "text": "LGTM\n\nThank you very much Shiino-san for a massive & passionate contributor to V8 bindings for many years!!",
-   "score": 0.9,
-   "date": "2026-10-29",
-   "writer": "Kentaro Hara",
-   "recipient": "Yuki Shiino",
-   "url": "https://chromium-review.googlesource.com/c/chromium/src/+/8682300/comment/b76b10e1_325e1070/"
+ "periods": {
+  "all": {
+   "praise": [
+    {
+     "text": "@futhark@chromium.org, best sample of making complicated things look easy, thanks for properly fixing it, amazing to watch/learn! 🥰",
+     "score": 0.9,
+     "date": "2026-08-20",
+     "writer": "Helmut Januschka",
+     "recipient": "Rune Lillesveen",
+     "url": "https://chromium-review.googlesource.com/c/chromium/src/+/8250989/comment/783072c5_dd747127/"
+    },
+    {
+     "text": "LGTM\n\nThank you very much Shiino-san for a massive & passionate contributor to V8 bindings for many years!!",
+     "score": 0.9,
+     "date": "2026-10-29",
+     "writer": "Kentaro Hara",
+     "recipient": "Yuki Shiino",
+     "url": "https://chromium-review.googlesource.com/c/chromium/src/+/8682300/comment/b76b10e1_325e1070/"
+    },
+    {
+     "text": "This is really good job.\n\nI wanted that fix for years.",
+     "score": 0.8,
+     "date": "2026-05-13",
+     "writer": "Etienne Bergeron",
+     "recipient": "Chang Liu",
+     "url": "https://chromium-review.googlesource.com/c/chromium/src/+/7839618/comment/ae76a9a0_6a78f7c6/"
+    },
+    {
+     "text": "that's some good investigation there. well done!",
+     "score": 0.8,
+     "date": "2026-10-16",
+     "writer": "Will Harris",
+     "recipient": "Joe Mason",
+     "url": "https://chromium-review.googlesource.com/c/chromium/src/+/8588515/comment/9a42d71d_4db38694/"
+    },
+    {
+     "text": "This is brilliant. I'm especially pleased that the syntax for referencing the variants is the same regardless of if it's primary or not.",
+     "score": 0.8,
+     "date": "2026-06-29",
+     "writer": "Devon Loehr",
+     "recipient": "Julia Hansbrough",
+     "url": "https://chromium-review.googlesource.com/c/chromium/src/+/8019896/comment/d0047c5c_7a599469/"
+    },
+    {
+     "text": "Amazing catch, thanks a ton!!! This woiuld have been a crash basically.\nMade it so the working set gets cleared, since that feels like the easiest thing that I can test (and there's a new unittest for it).",
+     "score": 0.8,
+     "date": "2026-03-05",
+     "writer": "Johannes Henkel",
+     "recipient": "Scott Haseley",
+     "url": "https://chromium-review.googlesource.com/c/chromium/src/+/7617350/comment/3e39fb64_d8ceb16c/"
+    },
+    {
+     "text": "I much prefer this approach. And it's easily extensible in exactly the way we'll need. THANK YOU!",
+     "score": 0.8,
+     "date": "2026-02-23",
+     "writer": "Dana Fried",
+     "recipient": "Maks Orlovich",
+     "url": "https://chromium-review.googlesource.com/c/chromium/src/+/7568427/comment/1048df3f_272d44da/"
+    },
+    {
+     "text": "This is perfect! Truly the solution could not have been complete without that suggestion!",
+     "score": 0.8,
+     "date": "2025-11-21",
+     "writer": "Emily Andrews",
+     "recipient": "Andrea Orru",
+     "url": "https://chromium-review.googlesource.com/c/chromium/src/+/7164260/comment/ad85604d_253b8f3f/"
+    },
+    {
+     "text": "Excellent, I love how cleanly this all fell out with everything in the right place! And thanks for verifying with the actual screen reader. LGTM!",
+     "score": 0.8,
+     "date": "2026-07-11",
+     "writer": "Tim",
+     "recipient": "Eva Su",
+     "url": "https://chromium-review.googlesource.com/c/chromium/src/+/8067623/comment/84aaa26e_e1fa26ac/"
+    },
+    {
+     "text": "wow have no idea how you figured this out. well done!",
+     "score": 0.8,
+     "date": "2025-12-18",
+     "writer": "Moe Ahmadi",
+     "recipient": "Paul Adedeji",
+     "url": "https://chromium-review.googlesource.com/c/chromium/src/+/7257097/comment/641bc1ba_cc366185/"
+    }
+   ],
+   "grumpy": [
+    {
+     "text": "Fuck you tf",
+     "score": -0.9,
+     "month": "2026-04"
+    },
+    {
+     "text": "who tf thought it was a good idea? wtf switching to firefox morons",
+     "score": -0.9,
+     "month": "2026-02"
+    },
+    {
+     "text": "The only flaw here is the removal of users' freedom and the denial of a right acquired since the birth of Chromium. Product managers who act against end-users should be fired as soon as possible.",
+     "score": -0.9,
+     "month": "2026-06"
+    },
+    {
+     "text": "It's not fucking \"dead code\" you sick fucks.",
+     "score": -0.9,
+     "month": "2026-06"
+    },
+    {
+     "text": "bs",
+     "score": -0.8,
+     "month": "2025-11"
+    },
+    {
+     "text": "I totally fail to understand you.\n\nThe .grd has a desc and examples of value. \nPlease give an example of what you want to do instead. That seems to be the best case solution, the work done properly. And you seem to decrease code quality.\n\nLearn from this mistake or be very convincing about why this is a bad implementation",
+     "score": -0.8,
+     "month": "2026-10"
+    },
+    {
+     "text": "Sorry, but this submission isn't anywhere near the quality we'd expect from a contributor :(.",
+     "score": -0.8,
+     "month": "2026-08"
+    },
+    {
+     "text": "Remove \"All\", and move up to after the class. I've pointed this out at least 3 times now, please pay attention.",
+     "score": -0.7,
+     "month": "2025-11"
+    },
+    {
+     "text": "Honestly this feels like a waste of my time!",
+     "score": -0.7,
+     "month": "2026-01"
+    },
+    {
+     "text": "this is not acceptable. You can't just add extra code on top of existing code. The fact this file increased in LOC by 72 is a sign that you didn't solve the problem in the simplest way. You could just modify `on_lookup_done` instead.",
+     "score": -0.7,
+     "month": "2026-02"
+    }
+   ]
   },
-  {
-   "text": "that's some good investigation there. well done!",
-   "score": 0.8,
-   "date": "2026-10-16",
-   "writer": "Will Harris",
-   "recipient": "Joe Mason",
-   "url": "https://chromium-review.googlesource.com/c/chromium/src/+/8588515/comment/9a42d71d_4db38694/"
+  "2025": {
+   "praise": [
+    {
+     "text": "This is perfect! Truly the solution could not have been complete without that suggestion!",
+     "score": 0.8,
+     "date": "2025-11-21",
+     "writer": "Emily Andrews",
+     "recipient": "Andrea Orru",
+     "url": "https://chromium-review.googlesource.com/c/chromium/src/+/7164260/comment/ad85604d_253b8f3f/"
+    },
+    {
+     "text": "wow have no idea how you figured this out. well done!",
+     "score": 0.8,
+     "date": "2025-12-18",
+     "writer": "Moe Ahmadi",
+     "recipient": "Paul Adedeji",
+     "url": "https://chromium-review.googlesource.com/c/chromium/src/+/7257097/comment/641bc1ba_cc366185/"
+    },
+    {
+     "text": "Thank you so much for this catch -- I would not have noticed it.  I've updated the code to resolve this here, and I am open to other suggestions on how to best handle this.",
+     "score": 0.7,
+     "date": "2025-12-01",
+     "writer": "Gary Klassen",
+     "recipient": "Philip Rogers",
+     "url": "https://chromium-review.googlesource.com/c/chromium/src/+/7088469/comment/475b8dcb_64020f95/"
+    },
+    {
+     "text": "Hi Paul,thank you so much for the suggested code fix and comment(it helps me to learn about the context a lot!) above! Really appreciate it!",
+     "score": 0.6,
+     "date": "2025-12-10",
+     "writer": "Wenhu Cheng",
+     "recipient": "Paul Adedeji",
+     "url": "https://chromium-review.googlesource.com/c/chromium/src/+/7237872/comment/ab12f89f_b85d35fd/"
+    },
+    {
+     "text": "This is a great comment that explains what \"essential\" is and why we're adding to the labelParts in these specific circumstances. Thanks for adding this, the code is much more readable now! 👍",
+     "score": 0.6,
+     "date": "2025-12-02",
+     "writer": "Tommy Martino",
+     "recipient": "yiwen qian",
+     "url": "https://chromium-review.googlesource.com/c/chromium/src/+/7204891/comment/86b7ffad_0d51dc14/"
+    },
+    {
+     "text": "Thanks for going above and beyond and looking into our import process so that you could send us a clean fix! Much appreciated.",
+     "score": 0.6,
+     "date": "2025-11-25",
+     "writer": "Etienne Dechamps",
+     "recipient": "George Burgess",
+     "url": "https://chromium-review.googlesource.com/c/chromium/src/+/7186506/comment/a8b34817_6924378e/"
+    },
+    {
+     "text": "FYI, that was an excellent writeup of the issue for the discussion list; thank you!",
+     "score": 0.6,
+     "date": "2025-12-19",
+     "writer": "Avi Drissman",
+     "recipient": "Antonio Sartori",
+     "url": "https://chromium-review.googlesource.com/c/chromium/src/+/7269607/comment/aa12342f_a8174384/"
+    },
+    {
+     "text": "I recently had to fix quite a few flakes in WebApp tests that don't wait for all the different async steps, but AFAICT this test is doing everything right.  (I didn't know about the EnableLinkCapturingByUser helper function - it would have saved me a lot of time.) Nice job!",
+     "score": 0.6,
+     "date": "2025-11-19",
+     "writer": "Joe Mason",
+     "recipient": "Vovo Yang",
+     "url": "https://chromium-review.googlesource.com/c/chromium/src/+/7129640/comment/66057259_4a6005c6/"
+    },
+    {
+     "text": "THANK YOU for the screencasts!  They make the importance of this CL super obvious to see, and easy to tell what's changing!",
+     "score": 0.6,
+     "date": "2025-12-13",
+     "writer": "Olivia Saul",
+     "recipient": "Verina Armanyous",
+     "url": "https://chromium-review.googlesource.com/c/chromium/src/+/7245759/comment/4dd6b83b_3e95f6b9/"
+    },
+    {
+     "text": "This is a very subtle bug, great find!",
+     "score": 0.6,
+     "date": "2025-11-28",
+     "writer": "Alex Ilin",
+     "recipient": "Michael Thiessen",
+     "url": "https://chromium-review.googlesource.com/c/chromium/src/+/7208680/comment/73ed2685_8c255a0f/"
+    }
+   ],
+   "grumpy": [
+    {
+     "text": "bs",
+     "score": -0.8,
+     "month": "2025-11"
+    },
+    {
+     "text": "Remove \"All\", and move up to after the class. I've pointed this out at least 3 times now, please pay attention.",
+     "score": -0.7,
+     "month": "2025-11"
+    },
+    {
+     "text": "We should not erase tab from closed list on new navigation. I tried to explain this a few times in previous comments. Please let me know if this is causing some problem I'm not seeing",
+     "score": -0.6,
+     "month": "2025-12"
+    },
+    {
+     "text": "You know, I don't think it's my responsibility to do this now. This patch isn't helping",
+     "score": -0.6,
+     "month": "2025-12"
+    },
+    {
+     "text": "Please don't arbitrarily resolve this thread. It tracks an action item for the CL author. Just marking it as done won't advance the CL.",
+     "score": -0.6,
+     "month": "2025-11"
+    },
+    {
+     "text": "you dot get a vote",
+     "score": -0.6,
+     "month": "2025-11"
+    },
+    {
+     "text": "This is faililng on all the bots? Did you check the results?",
+     "score": -0.6,
+     "month": "2025-11"
+    },
+    {
+     "text": "No, because we signal it on line 301, which is run (for the first time) as soon as the command is started.\n\nIt's confusing, I just spent 20 minutes trying to untangle this to figure out if there was a UAF somewhere.",
+     "score": -0.6,
+     "month": "2025-11"
+    },
+    {
+     "text": "So, let me repeat my original question: What happens on ChromeOS?\n\nBased on the other test, the `AvatarToolbarButton` exists and shows the error..? Why can't the user click on it, then?",
+     "score": -0.6,
+     "month": "2025-12"
+    },
+    {
+     "text": "I'm afraid I'm not comfortable with this change landing before it was completed.\n\nMoving forward please don't rush submitting changes before collecting all approvals.",
+     "score": -0.6,
+     "month": "2025-12"
+    }
+   ]
   },
-  {
-   "text": "I love this approach! Better than my more hacky approach in https://crrev.com/c/8547911. I'm in favor of landing this instead of mine.",
-   "score": 0.7,
-   "date": "2026-10-16",
-   "writer": "Mason Freed",
-   "recipient": "Arthur Sonzogni",
-   "url": "https://chromium-review.googlesource.com/c/chromium/src/+/8578586/comment/0587f71a_1e72f5d5/"
+  "2025-11": {
+   "praise": [
+    {
+     "text": "This is perfect! Truly the solution could not have been complete without that suggestion!",
+     "score": 0.8,
+     "date": "2025-11-21",
+     "writer": "Emily Andrews",
+     "recipient": "Andrea Orru",
+     "url": "https://chromium-review.googlesource.com/c/chromium/src/+/7164260/comment/ad85604d_253b8f3f/"
+    },
+    {
+     "text": "Thanks for going above and beyond and looking into our import process so that you could send us a clean fix! Much appreciated.",
+     "score": 0.6,
+     "date": "2025-11-25",
+     "writer": "Etienne Dechamps",
+     "recipient": "George Burgess",
+     "url": "https://chromium-review.googlesource.com/c/chromium/src/+/7186506/comment/a8b34817_6924378e/"
+    },
+    {
+     "text": "I recently had to fix quite a few flakes in WebApp tests that don't wait for all the different async steps, but AFAICT this test is doing everything right.  (I didn't know about the EnableLinkCapturingByUser helper function - it would have saved me a lot of time.) Nice job!",
+     "score": 0.6,
+     "date": "2025-11-19",
+     "writer": "Joe Mason",
+     "recipient": "Vovo Yang",
+     "url": "https://chromium-review.googlesource.com/c/chromium/src/+/7129640/comment/66057259_4a6005c6/"
+    },
+    {
+     "text": "This is a very subtle bug, great find!",
+     "score": 0.6,
+     "date": "2025-11-28",
+     "writer": "Alex Ilin",
+     "recipient": "Michael Thiessen",
+     "url": "https://chromium-review.googlesource.com/c/chromium/src/+/7208680/comment/73ed2685_8c255a0f/"
+    },
+    {
+     "text": "Thanks for your review and catching the missing logic in DiscardEligibilityPolicy::CanDiscard().",
+     "score": 0.5,
+     "date": "2025-11-26",
+     "writer": "Vovo Yang",
+     "recipient": "Joe Mason",
+     "url": "https://chromium-review.googlesource.com/c/chromium/src/+/7129640/comment/fef98959_78190178/"
+    },
+    {
+     "text": "Yeah if we can't combine it into a single SpanWriter then this makes sense to me. Thanks! And this alone should make sure that this whole CL is actually a performance win (2 less vectors and memory allocations).",
+     "score": 0.5,
+     "date": "2025-11-18",
+     "writer": "Stephen Nusko",
+     "recipient": "Danilo Tedeschi",
+     "url": "https://chromium-review.googlesource.com/c/chromium/src/+/7152542/comment/cb7736a5_90b7b343/"
+    },
+    {
+     "text": "Thank you for the split! it makes the change much more readable and easy to follow 👍",
+     "score": 0.5,
+     "date": "2025-11-12",
+     "writer": "Menghan Yang",
+     "recipient": "Anton Goncharenko",
+     "url": "https://chromium-review.googlesource.com/c/chromium/src/+/7131542/comment/baaad39c_9af60645/"
+    },
+    {
+     "text": "That works, and helps keep the metrics logic more self-contained. thanks for the suggestion! implemented",
+     "score": 0.5,
+     "date": "2025-11-11",
+     "writer": "Sana Akbani",
+     "recipient": "Bryant Chandler",
+     "url": "https://chromium-review.googlesource.com/c/chromium/src/+/7125305/comment/c15991d9_a359b5b9/"
+    },
+    {
+     "text": "Yay 😊",
+     "score": 0.5,
+     "date": "2025-11-26",
+     "writer": "Gabriel Charette",
+     "recipient": "Zack Han",
+     "url": "https://chromium-review.googlesource.com/c/chromium/src/+/7138558/comment/3bdf3dce_b17c5b81/"
+    },
+    {
+     "text": "This looks pretty good to me! \n\nI left some minor comments and improvement suggestions.\n\nThank you for adding an extensive suite of tests!",
+     "score": 0.5,
+     "date": "2025-11-06",
+     "writer": "Alex Ilin",
+     "recipient": "Konstantin Andrikopoulos",
+     "url": "https://chromium-review.googlesource.com/c/chromium/src/+/7115078/comment/94e841c2_a392bf75/"
+    }
+   ],
+   "grumpy": [
+    {
+     "text": "bs",
+     "score": -0.8,
+     "month": "2025-11"
+    },
+    {
+     "text": "Remove \"All\", and move up to after the class. I've pointed this out at least 3 times now, please pay attention.",
+     "score": -0.7,
+     "month": "2025-11"
+    },
+    {
+     "text": "Please don't arbitrarily resolve this thread. It tracks an action item for the CL author. Just marking it as done won't advance the CL.",
+     "score": -0.6,
+     "month": "2025-11"
+    },
+    {
+     "text": "you dot get a vote",
+     "score": -0.6,
+     "month": "2025-11"
+    },
+    {
+     "text": "This is faililng on all the bots? Did you check the results?",
+     "score": -0.6,
+     "month": "2025-11"
+    },
+    {
+     "text": "No, because we signal it on line 301, which is run (for the first time) as soon as the command is started.\n\nIt's confusing, I just spent 20 minutes trying to untangle this to figure out if there was a UAF somewhere.",
+     "score": -0.6,
+     "month": "2025-11"
+    },
+    {
+     "text": "what was 'Done'. This was a question.",
+     "score": -0.6,
+     "month": "2025-11"
+    }
+   ]
   },
-  {
-   "text": "Thank you for all your hard work over the years, Reilly!  I appreciate it.\n\nIf there's any files you'd like to remain an owner of (APIs?  HID / USB?  etc), feel free to add yourself for those!",
-   "score": 0.7,
-   "date": "2026-09-24",
-   "writer": "Devlin Cronin",
-   "recipient": "Reilly Grant",
-   "url": "https://chromium-review.googlesource.com/c/chromium/src/+/8453422/comment/68e810a1_f4b8f630/"
+  "2025-12": {
+   "praise": [
+    {
+     "text": "wow have no idea how you figured this out. well done!",
+     "score": 0.8,
+     "date": "2025-12-18",
+     "writer": "Moe Ahmadi",
+     "recipient": "Paul Adedeji",
+     "url": "https://chromium-review.googlesource.com/c/chromium/src/+/7257097/comment/641bc1ba_cc366185/"
+    },
+    {
+     "text": "Thank you so much for this catch -- I would not have noticed it.  I've updated the code to resolve this here, and I am open to other suggestions on how to best handle this.",
+     "score": 0.7,
+     "date": "2025-12-01",
+     "writer": "Gary Klassen",
+     "recipient": "Philip Rogers",
+     "url": "https://chromium-review.googlesource.com/c/chromium/src/+/7088469/comment/475b8dcb_64020f95/"
+    },
+    {
+     "text": "Hi Paul,thank you so much for the suggested code fix and comment(it helps me to learn about the context a lot!) above! Really appreciate it!",
+     "score": 0.6,
+     "date": "2025-12-10",
+     "writer": "Wenhu Cheng",
+     "recipient": "Paul Adedeji",
+     "url": "https://chromium-review.googlesource.com/c/chromium/src/+/7237872/comment/ab12f89f_b85d35fd/"
+    },
+    {
+     "text": "This is a great comment that explains what \"essential\" is and why we're adding to the labelParts in these specific circumstances. Thanks for adding this, the code is much more readable now! 👍",
+     "score": 0.6,
+     "date": "2025-12-02",
+     "writer": "Tommy Martino",
+     "recipient": "yiwen qian",
+     "url": "https://chromium-review.googlesource.com/c/chromium/src/+/7204891/comment/86b7ffad_0d51dc14/"
+    },
+    {
+     "text": "FYI, that was an excellent writeup of the issue for the discussion list; thank you!",
+     "score": 0.6,
+     "date": "2025-12-19",
+     "writer": "Avi Drissman",
+     "recipient": "Antonio Sartori",
+     "url": "https://chromium-review.googlesource.com/c/chromium/src/+/7269607/comment/aa12342f_a8174384/"
+    },
+    {
+     "text": "THANK YOU for the screencasts!  They make the importance of this CL super obvious to see, and easy to tell what's changing!",
+     "score": 0.6,
+     "date": "2025-12-13",
+     "writer": "Olivia Saul",
+     "recipient": "Verina Armanyous",
+     "url": "https://chromium-review.googlesource.com/c/chromium/src/+/7245759/comment/4dd6b83b_3e95f6b9/"
+    },
+    {
+     "text": "Cool. Thank you for making the examples more functional at different window sizes.",
+     "score": 0.5,
+     "date": "2025-12-02",
+     "writer": "Dana Fried",
+     "recipient": "Yisi Yu",
+     "url": "https://chromium-review.googlesource.com/c/chromium/src/+/7210832/comment/d7432cf0_5a0a6bde/"
+    },
+    {
+     "text": "Thanks a lot for your advice — it was really helpful.\nI wrote some test cases based on your suggestions and pushed them.\nWhen you have a moment, could you take a quick look and let me know if there's anything I should add or improve?",
+     "score": 0.5,
+     "date": "2025-12-01",
+     "writer": "윤형배",
+     "recipient": "Koji Ishii",
+     "url": "https://chromium-review.googlesource.com/c/chromium/src/+/7133359/comment/92843a8e_13799b8f/"
+    },
+    {
+     "text": "Thanks, the link was very helpful!",
+     "score": 0.5,
+     "date": "2025-12-02",
+     "writer": "Tommy Martino",
+     "recipient": "yiwen qian",
+     "url": "https://chromium-review.googlesource.com/c/chromium/src/+/7204891/comment/3b7b74b2_25b527c5/"
+    },
+    {
+     "text": "Nice!! i think this is the correct approach for passing the query controller, and good catch on creating a new session handle in case the old session handle is still needed on the previous web contents.",
+     "score": 0.5,
+     "date": "2025-12-03",
+     "writer": "Jason Hu",
+     "recipient": "Nihar Majmudar",
+     "url": "https://chromium-review.googlesource.com/c/chromium/src/+/7225574/comment/6dd8f49a_4332dd1d/"
+    }
+   ],
+   "grumpy": [
+    {
+     "text": "We should not erase tab from closed list on new navigation. I tried to explain this a few times in previous comments. Please let me know if this is causing some problem I'm not seeing",
+     "score": -0.6,
+     "month": "2025-12"
+    },
+    {
+     "text": "You know, I don't think it's my responsibility to do this now. This patch isn't helping",
+     "score": -0.6,
+     "month": "2025-12"
+    },
+    {
+     "text": "So, let me repeat my original question: What happens on ChromeOS?\n\nBased on the other test, the `AvatarToolbarButton` exists and shows the error..? Why can't the user click on it, then?",
+     "score": -0.6,
+     "month": "2025-12"
+    },
+    {
+     "text": "I'm afraid I'm not comfortable with this change landing before it was completed.\n\nMoving forward please don't rush submitting changes before collecting all approvals.",
+     "score": -0.6,
+     "month": "2025-12"
+    },
+    {
+     "text": "Next time, could you please put some details into answers to review comments? I asked a question, \"done\" isn't an answer.",
+     "score": -0.6,
+     "month": "2025-12"
+    },
+    {
+     "text": "Ack, I took a look again but you did not address the question I asked above after I wrote this comment...",
+     "score": -0.6,
+     "month": "2025-12"
+    }
+   ]
   },
-  {
-   "text": "I feel like I just read a novel! Thanks you for the extremely detailed explanation and investigation!",
-   "score": 0.7,
-   "date": "2026-09-09",
-   "writer": "Sky Malice",
-   "recipient": "Samuel Huang",
-   "url": "https://chromium-review.googlesource.com/c/chromium/src/+/8354111/comment/b734e785_e913baab/"
+  "2026": {
+   "praise": [
+    {
+     "text": "@futhark@chromium.org, best sample of making complicated things look easy, thanks for properly fixing it, amazing to watch/learn! 🥰",
+     "score": 0.9,
+     "date": "2026-08-20",
+     "writer": "Helmut Januschka",
+     "recipient": "Rune Lillesveen",
+     "url": "https://chromium-review.googlesource.com/c/chromium/src/+/8250989/comment/783072c5_dd747127/"
+    },
+    {
+     "text": "LGTM\n\nThank you very much Shiino-san for a massive & passionate contributor to V8 bindings for many years!!",
+     "score": 0.9,
+     "date": "2026-10-29",
+     "writer": "Kentaro Hara",
+     "recipient": "Yuki Shiino",
+     "url": "https://chromium-review.googlesource.com/c/chromium/src/+/8682300/comment/b76b10e1_325e1070/"
+    },
+    {
+     "text": "This is really good job.\n\nI wanted that fix for years.",
+     "score": 0.8,
+     "date": "2026-05-13",
+     "writer": "Etienne Bergeron",
+     "recipient": "Chang Liu",
+     "url": "https://chromium-review.googlesource.com/c/chromium/src/+/7839618/comment/ae76a9a0_6a78f7c6/"
+    },
+    {
+     "text": "that's some good investigation there. well done!",
+     "score": 0.8,
+     "date": "2026-10-16",
+     "writer": "Will Harris",
+     "recipient": "Joe Mason",
+     "url": "https://chromium-review.googlesource.com/c/chromium/src/+/8588515/comment/9a42d71d_4db38694/"
+    },
+    {
+     "text": "This is brilliant. I'm especially pleased that the syntax for referencing the variants is the same regardless of if it's primary or not.",
+     "score": 0.8,
+     "date": "2026-06-29",
+     "writer": "Devon Loehr",
+     "recipient": "Julia Hansbrough",
+     "url": "https://chromium-review.googlesource.com/c/chromium/src/+/8019896/comment/d0047c5c_7a599469/"
+    },
+    {
+     "text": "Amazing catch, thanks a ton!!! This woiuld have been a crash basically.\nMade it so the working set gets cleared, since that feels like the easiest thing that I can test (and there's a new unittest for it).",
+     "score": 0.8,
+     "date": "2026-03-05",
+     "writer": "Johannes Henkel",
+     "recipient": "Scott Haseley",
+     "url": "https://chromium-review.googlesource.com/c/chromium/src/+/7617350/comment/3e39fb64_d8ceb16c/"
+    },
+    {
+     "text": "I much prefer this approach. And it's easily extensible in exactly the way we'll need. THANK YOU!",
+     "score": 0.8,
+     "date": "2026-02-23",
+     "writer": "Dana Fried",
+     "recipient": "Maks Orlovich",
+     "url": "https://chromium-review.googlesource.com/c/chromium/src/+/7568427/comment/1048df3f_272d44da/"
+    },
+    {
+     "text": "Excellent, I love how cleanly this all fell out with everything in the right place! And thanks for verifying with the actual screen reader. LGTM!",
+     "score": 0.8,
+     "date": "2026-07-11",
+     "writer": "Tim",
+     "recipient": "Eva Su",
+     "url": "https://chromium-review.googlesource.com/c/chromium/src/+/8067623/comment/84aaa26e_e1fa26ac/"
+    },
+    {
+     "text": "wow impressed you managed to switch from mojom to proto so quickly. the code all looks good. very very close. Happy to pre-emptive LGTM to unblock you as I see no security issues right now. well done.",
+     "score": 0.8,
+     "date": "2026-03-06",
+     "writer": "Will Harris",
+     "recipient": "Krishna Kurapati",
+     "url": "https://chromium-review.googlesource.com/c/chromium/src/+/7549264/comment/3cf3f33b_cb10bf83/"
+    },
+    {
+     "text": "Wow, amazing work on figuring out this issue! I agree with deferring creation of AudioParameters, passing an AudioParametersBuilder around and calling .Build() when needed. Thanks for taking a look!",
+     "score": 0.8,
+     "date": "2026-04-22",
+     "writer": "Syed AbuTalib",
+     "recipient": "Daniel Cheng",
+     "url": "https://chromium-review.googlesource.com/c/chromium/src/+/7759235/comment/58b7050a_7da3cb99/"
+    }
+   ],
+   "grumpy": [
+    {
+     "text": "Fuck you tf",
+     "score": -0.9,
+     "month": "2026-04"
+    },
+    {
+     "text": "who tf thought it was a good idea? wtf switching to firefox morons",
+     "score": -0.9,
+     "month": "2026-02"
+    },
+    {
+     "text": "The only flaw here is the removal of users' freedom and the denial of a right acquired since the birth of Chromium. Product managers who act against end-users should be fired as soon as possible.",
+     "score": -0.9,
+     "month": "2026-06"
+    },
+    {
+     "text": "It's not fucking \"dead code\" you sick fucks.",
+     "score": -0.9,
+     "month": "2026-06"
+    },
+    {
+     "text": "I totally fail to understand you.\n\nThe .grd has a desc and examples of value. \nPlease give an example of what you want to do instead. That seems to be the best case solution, the work done properly. And you seem to decrease code quality.\n\nLearn from this mistake or be very convincing about why this is a bad implementation",
+     "score": -0.8,
+     "month": "2026-10"
+    },
+    {
+     "text": "Sorry, but this submission isn't anywhere near the quality we'd expect from a contributor :(.",
+     "score": -0.8,
+     "month": "2026-08"
+    },
+    {
+     "text": "Honestly this feels like a waste of my time!",
+     "score": -0.7,
+     "month": "2026-01"
+    },
+    {
+     "text": "this is not acceptable. You can't just add extra code on top of existing code. The fact this file increased in LOC by 72 is a sign that you didn't solve the problem in the simplest way. You could just modify `on_lookup_done` instead.",
+     "score": -0.7,
+     "month": "2026-02"
+    },
+    {
+     "text": "Get out of here",
+     "score": -0.7,
+     "month": "2026-06"
+    },
+    {
+     "text": "so did it get wiped out ?? the tree wont open so ill take it by your neasyness of bluntly ignoring me while begging for help means I got got,,,,",
+     "score": -0.7,
+     "month": "2026-02"
+    }
+   ]
   },
-  {
-   "text": "This is awesome! So happy to see this get fixed, and it was surprisingly concise/simple!",
-   "score": 0.6,
-   "date": "2026-09-16",
-   "writer": "Sky Malice",
-   "recipient": "Tomasz Wiszkowski",
-   "url": "https://chromium-review.googlesource.com/c/chromium/src/+/8415313/comment/17058137_998b1eb1/"
+  "2026-01": {
+   "praise": [
+    {
+     "text": "Thanks Antonio for the really great review! You catched a lot of issues here and there and helped improve the design a lot! I appreciate your level of precision.",
+     "score": 0.7,
+     "date": "2026-01-09",
+     "writer": "Judith Hemp",
+     "recipient": "Antonio Sartori",
+     "url": "https://chromium-review.googlesource.com/c/chromium/src/+/7224131/comment/6d34da88_2c6f6979/"
+    },
+    {
+     "text": "<3 thanks for all of this exploration, I'm really feeling good about our knowledge here.",
+     "score": 0.6,
+     "date": "2026-01-21",
+     "writer": "Daniel Murphy",
+     "recipient": "Nate Chapin",
+     "url": "https://chromium-review.googlesource.com/c/chromium/src/+/7417994/comment/f08c529d_cb6307ba/"
+    },
+    {
+     "text": "This is really great.\n\nI am always asking any devs to give a two or three lines description on the CL (no matters how simple it is.\n\nI am doing TPMs work and investigation and these comments a gold to us.\nEven a simple:  No behavior change.",
+     "score": 0.6,
+     "date": "2026-01-27",
+     "writer": "Etienne Bergeron",
+     "recipient": "Jean-Philippe Gravel",
+     "url": "https://chromium-review.googlesource.com/c/chromium/src/+/7509023/comment/61d6207b_06830e7d/"
+    },
+    {
+     "text": "@wtc@google.com - really really thankfull, for the insights, and also for the challenge!😊 this lead me to find the root cause for the +1 \"hack\". here is the follow up CL that cleans it up! https://chromium-review.googlesource.com/c/chromium/src/+/7507834",
+     "score": 0.6,
+     "date": "2026-01-21",
+     "writer": "Helmut Januschka",
+     "recipient": "Wan-Teh Chang",
+     "url": "https://chromium-review.googlesource.com/c/chromium/src/+/7484708/comment/14a344e3_d69cf32c/"
+    },
+    {
+     "text": "It's great to see this work solving a corner case in MQ dispatching, rather than adding entirely new JS events on Window. Thank you for your diligence pursuing the best outcome!",
+     "score": 0.6,
+     "date": "2025-12-29",
+     "writer": "Mike Wasserman",
+     "recipient": "Patryk Chodur",
+     "url": "https://chromium-review.googlesource.com/c/chromium/src/+/7322466/comment/0c5c5dd8_766e13fe/"
+    },
+    {
+     "text": "Best of luck Yuki! Great to work with you over the years.",
+     "score": 0.6,
+     "date": "2026-01-05",
+     "writer": "Alex Newcomer",
+     "recipient": "Yuki Awano",
+     "url": "https://chromium-review.googlesource.com/c/chromium/src/+/7396906/comment/d20bcf7b_accaeec8/"
+    },
+    {
+     "text": "I'll leave the discoveries in the bug itself.\n\nMany thanks to Henrique for a thorough investigation.",
+     "score": 0.6,
+     "date": "2026-01-30",
+     "writer": "Xu Tan",
+     "recipient": "Henrique Nakashima",
+     "url": "https://chromium-review.googlesource.com/c/chromium/src/+/7533699/comment/5f303255_008227fb/"
+    },
+    {
+     "text": "Perfect, thank you! Makes it much clearer to map between spec and code.",
+     "score": 0.5,
+     "date": "2026-01-30",
+     "writer": "David Maunder",
+     "recipient": "Chase Hartsell",
+     "url": "https://chromium-review.googlesource.com/c/chromium/src/+/7533265/comment/ce107918_b0da0618/"
+    },
+    {
+     "text": "Oh nice, I wasn't aware of `chrome://glic/internals` - this seems very useful.\n\nI'll add this in a follow-up CL, to avoid losing the LGTM and so I can submit this and the child ahead of branch.",
+     "score": 0.5,
+     "date": "2026-01-08",
+     "writer": "James Lee",
+     "recipient": "Justin DeWitt",
+     "url": "https://chromium-review.googlesource.com/c/chromium/src/+/7300505/comment/dd7d9792_75b50c18/"
+    },
+    {
+     "text": "Ah, that's a very good point, thanks for catching it!\n\nYeah, you're right, we'll want to remove these. Approach-wise, would it be appropriate to add a field to `NavigationEntry` for this?",
+     "score": 0.5,
+     "date": "2026-01-13",
+     "writer": "Peter Conn",
+     "recipient": "Rakina Zata Amni",
+     "url": "https://chromium-review.googlesource.com/c/chromium/src/+/7396074/comment/74e5ce07_f3488e0c/"
+    }
+   ],
+   "grumpy": [
+    {
+     "text": "Honestly this feels like a waste of my time!",
+     "score": -0.7,
+     "month": "2026-01"
+    },
+    {
+     "text": "What is the type of `this` that you are trying to workaround here? This line is basically so hacky that is unacceptable, and there must be better ways to do this, but need a bit mre info to understand what you are trynig to do.",
+     "score": -0.6,
+     "month": "2026-01"
+    },
+    {
+     "text": "No I don't think you understand.\n\n```\nThis should be:\nif (base::FeatureList::IsEnabled(mojom::features::kWebNNCoreML)\n    && !is_incognito\n#if BUILDFLAG(IS_MAC)\n    && base::mac...\n#endif\n```",
+     "score": -0.6,
+     "month": "2026-01"
+    },
+    {
+     "text": "Blank lines between methods (see surrounding code, I shouldn't have to point this out).",
+     "score": -0.6,
+     "month": "2026-01"
+    },
+    {
+     "text": "It's difficult to review for correctness when files are moved and nontrivially rewritten in a single CL. I think I've been able to satisfy uncertainties this time (after numerous hours). **Please** separate changes from file moves, and break changes into smaller parts when possible in the future.",
+     "score": -0.6,
+     "month": "2026-01"
+    }
+   ]
   },
-  {
-   "text": "Thank you! This code is a lot cleaner and easier to understand than before. I appreciate your receptiveness with all of the back and forth on the design comments",
-   "score": 0.6,
-   "date": "2026-09-10",
-   "writer": "Noah Rose Ledesma",
-   "recipient": "Etienne Noël",
-   "url": "https://chromium-review.googlesource.com/c/chromium/src/+/8311791/comment/7a767dea_94410980/"
+  "2026-02": {
+   "praise": [
+    {
+     "text": "I much prefer this approach. And it's easily extensible in exactly the way we'll need. THANK YOU!",
+     "score": 0.8,
+     "date": "2026-02-23",
+     "writer": "Dana Fried",
+     "recipient": "Maks Orlovich",
+     "url": "https://chromium-review.googlesource.com/c/chromium/src/+/7568427/comment/1048df3f_272d44da/"
+    },
+    {
+     "text": "That was insanely helpful and reduced this M sized CL to XS. Thank you :D",
+     "score": 0.8,
+     "date": "2026-02-10",
+     "writer": "Bhaskar Sharma",
+     "recipient": "Andrew Rayskiy",
+     "url": "https://chromium-review.googlesource.com/c/chromium/src/+/7562330/comment/84c8c92f_054c0757/"
+    },
+    {
+     "text": "Thank you for your patience and detailed comments! 😊 I have learned enormously thanks to you!",
+     "score": 0.7,
+     "date": "2026-02-13",
+     "writer": "Angela Novakovic",
+     "recipient": "Noémie St-Onge",
+     "url": "https://chromium-review.googlesource.com/c/chromium/src/+/7412187/comment/c913e842_fe187f10/"
+    },
+    {
+     "text": "🎉🎉🎉🎉🎉 Congrats on getting this shipped Jayson! It's been years, approaching a decade, that developers have wanted this feature. Thanks for getting it across the finish line.",
+     "score": 0.7,
+     "date": "2026-02-03",
+     "writer": "Mason Freed",
+     "recipient": "Jayson Chen",
+     "url": "https://chromium-review.googlesource.com/c/chromium/src/+/7541708/comment/10380112_b28cd781/"
+    },
+    {
+     "text": "I just want to say that this is an extremely helpful CL description. Thank you!",
+     "score": 0.6,
+     "date": "2026-02-05",
+     "writer": "Tommy Nyquist",
+     "recipient": "Phil Yan",
+     "url": "https://chromium-review.googlesource.com/c/chromium/src/+/7529662/comment/5f4b1d4b_4b98abe2/"
+    },
+    {
+     "text": "Was just locally testing this change and it's really a nice touch to the user experience. Nice work!",
+     "score": 0.6,
+     "date": "2026-02-26",
+     "writer": "Eshwar Stalin",
+     "recipient": "Caroline Rising",
+     "url": "https://chromium-review.googlesource.com/c/chromium/src/+/7595695/comment/63fa279b_b561353a/"
+    },
+    {
+     "text": "Yes. I think that is an excellent approach.",
+     "score": 0.5,
+     "date": "2026-02-23",
+     "writer": "Dana Fried",
+     "recipient": "Maks Orlovich",
+     "url": "https://chromium-review.googlesource.com/c/chromium/src/+/7568427/comment/e490da60_55eda2d0/"
+    },
+    {
+     "text": "I think this is a good change, and perhaps we should revise AudioFloatArray to use this pattern in the future.",
+     "score": 0.5,
+     "date": "2026-02-26",
+     "writer": "Hongchan Choi",
+     "recipient": "Michael Wilson",
+     "url": "https://chromium-review.googlesource.com/c/chromium/src/+/7604848/comment/185389b6_23708dc3/"
+    },
+    {
+     "text": "Thanks for this Tarek, keep this up, I'll use it for the reland CL!",
+     "score": 0.5,
+     "date": "2026-02-13",
+     "writer": "Joemer Ramos",
+     "recipient": "Tarek Makkouk",
+     "url": "https://chromium-review.googlesource.com/c/chromium/src/+/7571426/comment/31528b75_ad149eca/"
+    },
+    {
+     "text": "Great idea for addressing the animation issue. Comments are just suggestions. Feel free to rephrase / omit\nThanks!",
+     "score": 0.5,
+     "date": "2026-02-06",
+     "writer": "Emilia Paz",
+     "recipient": "Masa Fujita",
+     "url": "https://chromium-review.googlesource.com/c/chromium/src/+/7545119/comment/651d5022_05b40796/"
+    }
+   ],
+   "grumpy": [
+    {
+     "text": "who tf thought it was a good idea? wtf switching to firefox morons",
+     "score": -0.9,
+     "month": "2026-02"
+    },
+    {
+     "text": "this is not acceptable. You can't just add extra code on top of existing code. The fact this file increased in LOC by 72 is a sign that you didn't solve the problem in the simplest way. You could just modify `on_lookup_done` instead.",
+     "score": -0.7,
+     "month": "2026-02"
+    },
+    {
+     "text": "so did it get wiped out ?? the tree wont open so ill take it by your neasyness of bluntly ignoring me while begging for help means I got got,,,,",
+     "score": -0.7,
+     "month": "2026-02"
+    },
+    {
+     "text": "this clearly can't happen since it's right after setDelegates\n\nplease re-examine every instance of this pattern you are adding and justify every instance why it's needed\n\ndo not just add unnecessary null checks since they are very hard to remove and end up hiding real bugs",
+     "score": -0.6,
+     "month": "2026-02"
+    },
+    {
+     "text": "wow how is this code not tested?? :(",
+     "score": -0.6,
+     "month": "2026-02"
+    },
+    {
+     "text": "We can't merge a patch that isn't good, even if you will fix it later in the branch.\n\nCould you please either fix this patch, or abandon this patch?",
+     "score": -0.6,
+     "month": "2026-02"
+    },
+    {
+     "text": "CHECK\n\nDCHECK makes absolutely zero sense here. I know the rest of the code uses DCHECK, but that's not an excuse.",
+     "score": -0.6,
+     "month": "2026-02"
+    },
+    {
+     "text": "I'm not even going to try to read this. Please move this in a separate script file (either Shell or Python, I don't mind, although you may have to switch to Python for it to be readable) with clear inputs, clear outputs and clear intermediate steps.",
+     "score": -0.6,
+     "month": "2026-02"
+    },
+    {
+     "text": "This is super awkward, verbose, and fragile compared to the code it replaced. The mojom method does not need all these parameters, it only needs the storage key. Replace the UpdateOrCreateBucket method you created with UpdateOrCreateDefaultBucket which just takes a storage key.",
+     "score": -0.6,
+     "month": "2026-02"
+    },
+    {
+     "text": "How come this file was not formatted in the first place? `git cl upload` should not have allowed this. Can you fix the formatting across the whole file, send that as a CL, and then rebase this CL on top of that one? (For the test file too)",
+     "score": -0.6,
+     "month": "2026-02"
+    }
+   ]
   },
-  {
-   "text": "...but if you're doing what I think you're doing, this is extremely clever.",
-   "score": 0.6,
-   "date": "2026-09-15",
-   "writer": "Dana Fried",
-   "recipient": "Christopher Grant",
-   "url": "https://chromium-review.googlesource.com/c/chromium/src/+/8388136/comment/53e9ed2d_fb4ffbb8/"
+  "2026-03": {
+   "praise": [
+    {
+     "text": "Amazing catch, thanks a ton!!! This woiuld have been a crash basically.\nMade it so the working set gets cleared, since that feels like the easiest thing that I can test (and there's a new unittest for it).",
+     "score": 0.8,
+     "date": "2026-03-05",
+     "writer": "Johannes Henkel",
+     "recipient": "Scott Haseley",
+     "url": "https://chromium-review.googlesource.com/c/chromium/src/+/7617350/comment/3e39fb64_d8ceb16c/"
+    },
+    {
+     "text": "wow impressed you managed to switch from mojom to proto so quickly. the code all looks good. very very close. Happy to pre-emptive LGTM to unblock you as I see no security issues right now. well done.",
+     "score": 0.8,
+     "date": "2026-03-06",
+     "writer": "Will Harris",
+     "recipient": "Krishna Kurapati",
+     "url": "https://chromium-review.googlesource.com/c/chromium/src/+/7549264/comment/3cf3f33b_cb10bf83/"
+    },
+    {
+     "text": "Sorry for my delay, this LGTM.\n\nThank you for keeping the setnoparent minimally scoped and justifying why it's needed. It's a perfect example of what this facility is good for.",
+     "score": 0.6,
+     "date": "2026-03-03",
+     "writer": "Rick Byers",
+     "recipient": "Marke Hallowell",
+     "url": "https://chromium-review.googlesource.com/c/chromium/src/+/7614517/comment/665cd4b1_cf6ea706/"
+    },
+    {
+     "text": "Great, thanks for working through all the pieces on this one! I love that we managed to whittle it down to about 1/4 the original size, making it much more digestible and directed. LGTM, with just a couple small nits.",
+     "score": 0.6,
+     "date": "2026-03-11",
+     "writer": "Tim",
+     "recipient": "Nicolas Ouellet-Payeur",
+     "url": "https://chromium-review.googlesource.com/c/chromium/src/+/7624660/comment/00744c1c_81c574f7/"
+    },
+    {
+     "text": "I like it! Quite a different approach to the problem than I had considered, but it helps quite nicely! (Though I guess only for data types using `DataTypeStore`, but that's quite a lot of them.)",
+     "score": 0.6,
+     "date": "2026-03-20",
+     "writer": "Marc Treib",
+     "recipient": "Rushan Suleymanov",
+     "url": "https://chromium-review.googlesource.com/c/chromium/src/+/7684310/comment/c44955db_8bfeaff6/"
+    },
+    {
+     "text": "It's a sad LGTM. \n\nThanks for being a fantastic reviewer and code owner!",
+     "score": 0.6,
+     "date": "2026-03-24",
+     "writer": "Andreea Costinas",
+     "recipient": "Steven Bennetts",
+     "url": "https://chromium-review.googlesource.com/c/chromium/src/+/7697852/comment/d9cd1b04_bfeb58d4/"
+    },
+    {
+     "text": "This is awesome! Thanks Keren!",
+     "score": 0.5,
+     "date": "2026-03-10",
+     "writer": "Allen Bauer",
+     "recipient": "Keren Zhu",
+     "url": "https://chromium-review.googlesource.com/c/chromium/src/+/7648201/comment/1d33dcde_d57ab141/"
+    },
+    {
+     "text": "Generally LGTM.  Thanks for navigating the weirdness with the tests and multiple flags impacting branding. ^_^;",
+     "score": 0.5,
+     "date": "2026-03-24",
+     "writer": "Olivia Saul",
+     "recipient": "Fernando Ramirez",
+     "url": "https://chromium-review.googlesource.com/c/chromium/src/+/7693457/comment/1b8e0219_9818774c/"
+    },
+    {
+     "text": "Thanks to the team for making this simple enough for all threads to use! :)",
+     "score": 0.5,
+     "date": "2026-03-27",
+     "writer": "Saifuddin Hitawala",
+     "recipient": "Thiabaud Engelbrecht",
+     "url": "https://chromium-review.googlesource.com/c/chromium/src/+/7663145/comment/2b06899f_12c69870/"
+    },
+    {
+     "text": "Thanks for the investigation! I assumed it is the same known problem with minimized window sharing but it makes sense that Chrome has another layer of optimization that prevents it from happening. Updated commit message to be more accurate.",
+     "score": 0.5,
+     "date": "2026-03-16",
+     "writer": "Grace Cham",
+     "recipient": "Calder Kitagawa",
+     "url": "https://chromium-review.googlesource.com/c/chromium/src/+/7636779/comment/35117b2d_d4228b1c/"
+    }
+   ],
+   "grumpy": [
+    {
+     "text": "your a dik",
+     "score": -0.7,
+     "month": "2026-03"
+    },
+    {
+     "text": "WHO REVIEWED THESE TESTS? THEY DIDNT EVEN CHECK THESE IN THE ORIGINAL\n\n(not that it excuses me from not adding the checks back in)",
+     "score": -0.6,
+     "month": "2026-03"
+    },
+    {
+     "text": "This is not a bug but an intended behavior controlled by an experimental flag, `#confirmation-button-swap-order`. The difference between channels or builds probably has to do with which experiment group you're being placed in.\n\nPlease don't try to work around this – instead, test your feature with that flag enabled/disabled and ensure you are consistent with the rest of the app.",
+     "score": -0.6,
+     "month": "2026-03"
+    },
+    {
+     "text": "Drive-by from looking at `git log`. Too late to fix, but please pay attention to warnings next time.",
+     "score": -0.6,
+     "month": "2026-03"
+    },
+    {
+     "text": "No, not done?!",
+     "score": -0.6,
+     "month": "2026-03"
+    },
+    {
+     "text": "A big minus. Way to go!",
+     "score": -0.6,
+     "month": "2026-03"
+    },
+    {
+     "text": "Or, as I said, let's do a simple (a really simple!!!) intermediate step with checking the `GetTrustedWebBundleIdsForTesting()` in the meantime and then migrate the rest incrementally.\n\n(IT WILL BE EASIER!!!!!!)",
+     "score": -0.6,
+     "month": "2026-03"
+    },
+    {
+     "text": "I think I have asked to remove this test.  Why is it still here?",
+     "score": -0.6,
+     "month": "2026-03"
+    },
+    {
+     "text": "Still not done.",
+     "score": -0.6,
+     "month": "2026-03"
+    },
+    {
+     "text": "Please read all the comments before proceeding. My first comments suggested how to adjust your current approach (let the mediator ask the coordinator to show sign-in through a delegate protocol) but I then realized this may not be necessary, since `saveWithSelectedIdentity:` should probably not be called if the selected destination is Drive and the user is not signed-in.",
+     "score": -0.6,
+     "month": "2026-03"
+    }
+   ]
   },
-  {
-   "text": "Wow, amazing finds. Thanks for the speedups, lgtm!",
-   "score": 0.6,
-   "date": "2026-10-20",
-   "writer": "Peter Wen",
-   "recipient": "Benoit Lize",
-   "url": "https://chromium-review.googlesource.com/c/chromium/src/+/8618912/comment/2562a128_d1a59b4a/"
+  "2026-04": {
+   "praise": [
+    {
+     "text": "Wow, amazing work on figuring out this issue! I agree with deferring creation of AudioParameters, passing an AudioParametersBuilder around and calling .Build() when needed. Thanks for taking a look!",
+     "score": 0.8,
+     "date": "2026-04-22",
+     "writer": "Syed AbuTalib",
+     "recipient": "Daniel Cheng",
+     "url": "https://chromium-review.googlesource.com/c/chromium/src/+/7759235/comment/58b7050a_7da3cb99/"
+    },
+    {
+     "text": "That's a great find! It is amazing how you noticed that subtle difference between Esc and Cmd+Ctrl+F and dug really deep into it.",
+     "score": 0.8,
+     "date": "2026-04-28",
+     "writer": "Keren Zhu",
+     "recipient": "Bryan Oltman",
+     "url": "https://chromium-review.googlesource.com/c/chromium/src/+/7795307/comment/8018cc70_64ba3bd8/"
+    },
+    {
+     "text": "Truly above and beyond the call of duty. Thank you!!!11!",
+     "score": 0.7,
+     "date": "2026-04-12",
+     "writer": "Greg Thompson",
+     "recipient": "Will Harris",
+     "url": "https://chromium-review.googlesource.com/c/chromium/src/+/7728046/comment/ddc2470d_459ebff0/"
+    },
+    {
+     "text": "FYI: I just wanted to call out that this is really great!\n\nBy passing `document_id` over the async boundary (instead of a raw `RenderFrameHost*`) and re-fetching it here, we completely avoid a potential Use-After-Free if the frame navigated or closed while we were waiting for the server. Great job keeping memory safety in mind! 🎉",
+     "score": 0.7,
+     "date": "2026-04-24",
+     "writer": "Tommy Nyquist",
+     "recipient": "Justin DeWitt",
+     "url": "https://chromium-review.googlesource.com/c/chromium/src/+/7765640/comment/2593a64a_ab5b1e7c/"
+    },
+    {
+     "text": "+1000 lgtm, thanks for all the incredible work here Vince! I do still plan on having a pass on your pending CLs though before they land if that's possible, thanks! :)",
+     "score": 0.7,
+     "date": "2026-04-27",
+     "writer": "Nicolas MacBeth",
+     "recipient": "Vincent Boisselle",
+     "url": "https://chromium-review.googlesource.com/c/chromium/src/+/7795280/comment/0bec26e1_2e1d09c1/"
+    },
+    {
+     "text": "That's perfect!  Thank you so much for staying ahead of this; great work.",
+     "score": 0.6,
+     "date": "2026-04-03",
+     "writer": "Olivia Saul",
+     "recipient": "Fernando Ramirez",
+     "url": "https://chromium-review.googlesource.com/c/chromium/src/+/7728924/comment/2c34a235_52917d80/"
+    },
+    {
+     "text": "Nice!! Thank you so much Sophie! This is exactly what I imagined this would look like ( : hopefully the QueryContextualizer API made sense for this change!",
+     "score": 0.6,
+     "date": "2026-04-01",
+     "writer": "Jason Hu",
+     "recipient": "Sophie Chang",
+     "url": "https://chromium-review.googlesource.com/c/chromium/src/+/7720295/comment/799f83eb_2dd33b9a/"
+    },
+    {
+     "text": "Yes, good call.  Change made.  And now I would like to pause and appreciate just how clear and well formatted this comment is.  Well done and thank you!",
+     "score": 0.6,
+     "date": "2026-03-30",
+     "writer": "Gary Klassen",
+     "recipient": "David Bokan",
+     "url": "https://chromium-review.googlesource.com/c/chromium/src/+/7711033/comment/38dad7f9_22f254ae/"
+    },
+    {
+     "text": "LGTM - Hooray! Having a whole browser test file ported is rare. Most have at least one disabled on Android. Well done!",
+     "score": 0.6,
+     "date": "2026-03-30",
+     "writer": "James Cook",
+     "recipient": "Michael Wojcicka",
+     "url": "https://chromium-review.googlesource.com/c/chromium/src/+/7712634/comment/d2571d47_0350b5e4/"
+    },
+    {
+     "text": "Wow thank you! This is a HUGE tip. A lot of old fixture code is now deprecated and removed. Thanks!",
+     "score": 0.6,
+     "date": "2026-04-03",
+     "writer": "Di Wu",
+     "recipient": "Hidehiko Abe",
+     "url": "https://chromium-review.googlesource.com/c/chromium/src/+/7720026/comment/fe4b2b69_de25390f/"
+    }
+   ],
+   "grumpy": [
+    {
+     "text": "Fuck you tf",
+     "score": -0.9,
+     "month": "2026-04"
+    },
+    {
+     "text": "How can it be that neither the author nor any reviewer saw that a change in indentation has created havoc in this file?",
+     "score": -0.6,
+     "month": "2026-04"
+    },
+    {
+     "text": "Please actually check.",
+     "score": -0.6,
+     "month": "2026-04"
+    },
+    {
+     "text": "This is so new. How are we still landing code with these problems.",
+     "score": -0.6,
+     "month": "2026-04"
+    },
+    {
+     "text": "Not wrapped yet. Please try checking your own work and make sure it's done.",
+     "score": -0.6,
+     "month": "2026-04"
+    },
+    {
+     "text": "This is not full font name, name id 4, this is family name, which is different. Please thoroughly check this kind of thing before sending the change for review.",
+     "score": -0.6,
+     "month": "2026-04"
+    },
+    {
+     "text": "Still the same. Still shows the \"use two fingers to ...\" message for the entirety of the video an nothing else. Still muted.",
+     "score": -0.6,
+     "month": "2026-04"
+    },
+    {
+     "text": "....\n\nI see a pattern. Please stop doing this lambda stuff when it can just be a member function. The functionality of this is idential to binding the OnProgress member function with a weak pointer. Please try to stop doing this unless you have a good reason to use a lambda.",
+     "score": -0.6,
+     "month": "2026-04"
+    },
+    {
+     "text": "in general - if I leave a comment, it would be nice for you to do it in this cl. \n\nespecially as the turnaround since my last comment was quite long. \n\nit's not that much code to make it async",
+     "score": -0.6,
+     "month": "2026-04"
+    },
+    {
+     "text": "Can you pay a bit more attention to shared code snippets? Note that in my snippet above I completely removed the constructor as it no longer does anything. It is still present in your latest patch.",
+     "score": -0.6,
+     "month": "2026-03"
+    }
+   ]
   },
-  {
-   "text": "Congratulations on passing the quiz!  Given your knowledge of histograms logging and correctness, I thought you've been a histograms owner/reviewer for years.  Well, I'm glad you're making it official. :-)\n\nCheers,\nMark",
-   "score": 0.6,
-   "date": "2026-10-29",
-   "writer": "Mark Pearson",
-   "recipient": "Mikel Astiz",
-   "url": "https://chromium-review.googlesource.com/c/chromium/src/+/8662904/comment/eb9a80e5_7b839ee3/"
+  "2026-05": {
+   "praise": [
+    {
+     "text": "This is really good job.\n\nI wanted that fix for years.",
+     "score": 0.8,
+     "date": "2026-05-13",
+     "writer": "Etienne Bergeron",
+     "recipient": "Chang Liu",
+     "url": "https://chromium-review.googlesource.com/c/chromium/src/+/7839618/comment/ae76a9a0_6a78f7c6/"
+    },
+    {
+     "text": "LGTM, your explanation during our last 1:1 between main frames and iframes was super helpful for this review. I enjoyed walking through the logic, nicely done!",
+     "score": 0.6,
+     "date": "2026-05-09",
+     "writer": "Fernando Ramirez",
+     "recipient": "Olivia Saul",
+     "url": "https://chromium-review.googlesource.com/c/chromium/src/+/7833183/comment/06259f5f_0fbcfcb5/"
+    },
+    {
+     "text": "Thank you for doing this James, I really appreciate it! This will make tracing failures for TabGroup movement a lot easier (and help prevent memory leaks)!",
+     "score": 0.6,
+     "date": "2026-05-07",
+     "writer": "Michael Wojcicka",
+     "recipient": "James Cook",
+     "url": "https://chromium-review.googlesource.com/c/chromium/src/+/7827927/comment/55a3c070_0424c966/"
+    },
+    {
+     "text": "man this is  amazing, thank you!",
+     "score": 0.6,
+     "date": "2026-05-18",
+     "writer": "Lucas Radaelli",
+     "recipient": "David Segovia",
+     "url": "https://chromium-review.googlesource.com/c/chromium/src/+/7797575/comment/9324bfe4_a1a46dd5/"
+    },
+    {
+     "text": "I love the new change! Thanks for taking the time to considering the feedback, this looks really good!",
+     "score": 0.6,
+     "date": "2026-05-28",
+     "writer": "Fabio Tirelo",
+     "recipient": "Alex Valadkevich",
+     "url": "https://chromium-review.googlesource.com/c/chromium/src/+/7876183/comment/1fe4fdf5_8b109320/"
+    },
+    {
+     "text": "I love  how you're doing this with tests first to verify the subsequent changes are safe!!!",
+     "score": 0.6,
+     "date": "2026-05-08",
+     "writer": "Sky Malice",
+     "recipient": "Jakob Koblinsky",
+     "url": "https://chromium-review.googlesource.com/c/chromium/src/+/7818697/comment/034f4593_fe60a7c6/"
+    },
+    {
+     "text": "Fantastic, thanks!  That CL was really useful to step through alongside this one to make sure we see all the implications, and I found only one case in this CL that we missed.",
+     "score": 0.6,
+     "date": "2026-05-22",
+     "writer": "Charlie Reis",
+     "recipient": "Liam Brady",
+     "url": "https://chromium-review.googlesource.com/c/chromium/src/+/7851593/comment/4338d7ce_3f9e32b8/"
+    },
+    {
+     "text": "Thanks for digging this up and verifying. I hadn't noticed that difference between the two trees.",
+     "score": 0.5,
+     "date": "2026-05-22",
+     "writer": "David Grogan",
+     "recipient": "Jacques Newman",
+     "url": "https://chromium-review.googlesource.com/c/chromium/src/+/7858516/comment/9918dc0f_0abfc5f8/"
+    },
+    {
+     "text": "This diagram is great! It makes it very clear what's happening.",
+     "score": 0.5,
+     "date": "2026-05-25",
+     "writer": "Robert Flack",
+     "recipient": "Seokho Song",
+     "url": "https://chromium-review.googlesource.com/c/chromium/src/+/7771511/comment/9f8b774f_015b1e86/"
+    },
+    {
+     "text": "Thanks!  This was super useful for reviewing https://chromium-review.googlesource.com/c/chromium/src/+/7851593, by seeing all the places the compiler requires us to update when we only pass the origin.  A few notes below that aren't blocking for the CL we plan to land now.",
+     "score": 0.5,
+     "date": "2026-05-22",
+     "writer": "Charlie Reis",
+     "recipient": "Liam Brady",
+     "url": "https://chromium-review.googlesource.com/c/chromium/src/+/7870029/comment/4448d418_e8098a1f/"
+    }
+   ],
+   "grumpy": [
+    {
+     "text": "Sadly there was a regression in the commit message and the message reverted back to `Link:` instead of `Bug:`. \n\nPlease address this issue in your workflow next time.",
+     "score": -0.6,
+     "month": "2026-05"
+    },
+    {
+     "text": "This is still open. Please actually address comments before sending a CL for the next round of review!",
+     "score": -0.6,
+     "month": "2026-05"
+    },
+    {
+     "text": "Understood. Once again, I can please ask you not to close comments until the question has been fully answered and the person asking the question gets to decide that. This one has been answered now.",
+     "score": -0.6,
+     "month": "2026-05"
+    },
+    {
+     "text": "i hate to sound like a broken record, but StatusView should not poke around in these structures. \n\nPlease pass the TemplateUrl to the SearchEngineUtils like i asked previously.",
+     "score": -0.6,
+     "month": "2026-05"
+    },
+    {
+     "text": "please sort out the component and do not assume comments are resolved if people don't respond over a weekend!",
+     "score": -0.6,
+     "month": "2026-05"
+    },
+    {
+     "text": "Hi - again you have not uploaded any files with this. Please ensure that files have been uploaded. I'm going to take everyone off the reviewer list until this occurs.",
+     "score": -0.6,
+     "month": "2026-05"
+    },
+    {
+     "text": "It's still way too complicated for testing what you're trying to fix. First, understand what the issue is, then write a test that's checking that specifically.",
+     "score": -0.6,
+     "month": "2026-05"
+    },
+    {
+     "text": "This is kind of crazy. Can you clean this up and make it more standard?\n\nIs there a reason you cannot just `.setTheme(R.style.Theme_BrowserUI_DayNight)` like a normal test?",
+     "score": -0.6,
+     "month": "2026-05"
+    },
+    {
+     "text": "Your CL generally looks good, but we need something more than just \"acknowledged\" on every comment with no changes. Please either take my \"nit\" suggestions, or respond with your reasoning if you don't want to make those changes. When I say \"nit\" I mean \"sorry for calling out a small detail but please do address it\". If I intend for a comment to be optional I'll say so.",
+     "score": -0.6,
+     "month": "2026-05"
+    },
+    {
+     "text": "Maybe calm down when writing code. Same for below :)",
+     "score": -0.6,
+     "month": "2026-05"
+    }
+   ]
+  },
+  "2026-06": {
+   "praise": [
+    {
+     "text": "ok that was an amazing suggestion!!! 😄\n\nDone thanks alot Alex!!",
+     "score": 0.7,
+     "date": "2026-06-09",
+     "writer": "Amr Aboelkher",
+     "recipient": "Alex Ilin",
+     "url": "https://chromium-review.googlesource.com/c/chromium/src/+/7827481/comment/9705bb39_a6fea17f/"
+    },
+    {
+     "text": "This README is really fantastic.  Thank you so much for writing it up; I feel much more oriented now!",
+     "score": 0.7,
+     "date": "2026-06-03",
+     "writer": "Julia Hansbrough",
+     "recipient": "Devon Loehr",
+     "url": "https://chromium-review.googlesource.com/c/chromium/src/+/7884258/comment/6e3d6903_b3e37b5e/"
+    },
+    {
+     "text": "This is fantastic! Thank you for contributing it and fuzzing this important API surface. I only reviewed things at a high level but it looks good to me. Please wait for Vasiliy's review.",
+     "score": 0.7,
+     "date": "2026-06-23",
+     "writer": "Kenneth Russell",
+     "recipient": "ᄋᄋ",
+     "url": "https://chromium-review.googlesource.com/c/chromium/src/+/7976442/comment/988a2b7b_fc30eadd/"
+    },
+    {
+     "text": "Thank satan you caught this, I must have been totally zonked out. I authored every line of this change manually, not even using IDE code complete (though I did use find/replace.\n\nThe original code simply read the value without an early return, so I reverted it back to this behavior. I don't even recall deciding to change it in the first place.",
+     "score": 0.6,
+     "date": "2026-06-24",
+     "writer": "Claire Chambers",
+     "recipient": "Kevin Ellis",
+     "url": "https://chromium-review.googlesource.com/c/chromium/src/+/7959007/comment/8b7c460d_c4fa2bb3/"
+    },
+    {
+     "text": "Relying on the old context lines to check for coverage is an elegant workaround for the \"new code has no historical coverage\" problem. Great design choice.",
+     "score": 0.6,
+     "date": "2026-06-03",
+     "writer": "Jocelyn Tran",
+     "recipient": "Jessica Huang",
+     "url": "https://chromium-review.googlesource.com/c/chromium/src/+/7868063/comment/826539d1_0cd014b9/"
+    },
+    {
+     "text": "So this has been a footgun the whole time? Before this change, calling any `BrowserContextImpl::` function would've been undefined behavior? Thank you for catching this!",
+     "score": 0.6,
+     "date": "2026-06-06",
+     "writer": "Liam Brady",
+     "recipient": "Alex Moshchuk",
+     "url": "https://chromium-review.googlesource.com/c/chromium/src/+/7900492/comment/8f9428e7_e0bff009/"
+    },
+    {
+     "text": "Thanks! Those followups are exactly what I had in mind, and good to see that the first one will end up removing this helper.",
+     "score": 0.5,
+     "date": "2026-06-04",
+     "writer": "Alex Moshchuk",
+     "recipient": "Viktoriya Bryhider",
+     "url": "https://chromium-review.googlesource.com/c/chromium/src/+/7846580/comment/8c902565_4861b88e/"
+    },
+    {
+     "text": "Done, great catch, as it helped me to find an inconsistency in the precedence of header values withing the same rule. I created a small fix for this here https://chromium-review.git.corp.google.com/c/chromium/src/+/7956540",
+     "score": 0.5,
+     "date": "2026-06-17",
+     "writer": "Anatoli Hancharou",
+     "recipient": "Dominique Fauteux-Chapleau",
+     "url": "https://chromium-review.googlesource.com/c/chromium/src/+/7946183/comment/e1b0beda_17173452/"
+    },
+    {
+     "text": "Awesome - thanks for looking into this deeply and for updating the test!",
+     "score": 0.5,
+     "date": "2026-06-22",
+     "writer": "Richard Coles",
+     "recipient": "Wayne Jackson Jr.",
+     "url": "https://chromium-review.googlesource.com/c/chromium/src/+/7950759/comment/585ad3d2_ff46443a/"
+    },
+    {
+     "text": "Good cleanup, especially on the System Settings URLs.",
+     "score": 0.5,
+     "date": "2026-06-10",
+     "writer": "Mark Mentovai",
+     "recipient": "Avi Drissman",
+     "url": "https://chromium-review.googlesource.com/c/chromium/src/+/7920488/comment/feeefc84_5ea75f9f/"
+    }
+   ],
+   "grumpy": [
+    {
+     "text": "The only flaw here is the removal of users' freedom and the denial of a right acquired since the birth of Chromium. Product managers who act against end-users should be fired as soon as possible.",
+     "score": -0.9,
+     "month": "2026-06"
+    },
+    {
+     "text": "It's not fucking \"dead code\" you sick fucks.",
+     "score": -0.9,
+     "month": "2026-06"
+    },
+    {
+     "text": "Get out of here",
+     "score": -0.7,
+     "month": "2026-06"
+    },
+    {
+     "text": "\"Acknowledged\" is not an appropriate response to a question. What is the current state of the world on various platforms with this setting? What is the impact of making such a change.",
+     "score": -0.6,
+     "month": "2026-06"
+    },
+    {
+     "text": "This broke the TracingController CTS tests. This should be fixable; the tracing controller shouldn't depend on the profile.\n\nI thought we ran CTS on presubmit for WebView changes but I guess not? You should figure out how to make the trybots run CTS for next time (and also run them locally).",
+     "score": -0.6,
+     "month": "2026-06"
+    },
+    {
+     "text": "wah? so you are just adding an arbitrary delay?\n\nthat's not ok",
+     "score": -0.6,
+     "month": "2026-06"
+    },
+    {
+     "text": "Now it's different again?! Now all the call sites do it in the \"background\" case too.\nIf this was intentional, please provide the reasoning.",
+     "score": -0.6,
+     "month": "2026-06"
+    },
+    {
+     "text": "Reminder to self-review and catch silly things in the future.",
+     "score": -0.6,
+     "month": "2026-06"
+    },
+    {
+     "text": "I appreciate keeping some logic out, but is there a way to split this CL? I just spent ~30 minutes and that's without looking at tests.\n\nAlso, this adds way more than just piping. Please describe what the CL implements.",
+     "score": -0.6,
+     "month": "2026-06"
+    },
+    {
+     "text": "Given that both lines 165 and 171 are identical, you could move them out of the switch.\nAnd I don’t even understand how it helps to modify the value of the variable image. The value associated to arrowImageView.image’s seems to be the same before, and after your CL.\n\nCould you please provide screenshot of the fix. Before/after? I really fail to understand how this is a fix",
+     "score": -0.6,
+     "month": "2026-06"
+    }
+   ]
+  },
+  "2026-07": {
+   "praise": [
+    {
+     "text": "This is brilliant. I'm especially pleased that the syntax for referencing the variants is the same regardless of if it's primary or not.",
+     "score": 0.8,
+     "date": "2026-06-29",
+     "writer": "Devon Loehr",
+     "recipient": "Julia Hansbrough",
+     "url": "https://chromium-review.googlesource.com/c/chromium/src/+/8019896/comment/d0047c5c_7a599469/"
+    },
+    {
+     "text": "Excellent, I love how cleanly this all fell out with everything in the right place! And thanks for verifying with the actual screen reader. LGTM!",
+     "score": 0.8,
+     "date": "2026-07-11",
+     "writer": "Tim",
+     "recipient": "Eva Su",
+     "url": "https://chromium-review.googlesource.com/c/chromium/src/+/8067623/comment/84aaa26e_e1fa26ac/"
+    },
+    {
+     "text": "Sweet! I really appreciate this kind of foresight in our systems! Thank you for thinking about this well in advance (and dealing with my shenanigans lol)",
+     "score": 0.7,
+     "date": "2026-07-28",
+     "writer": "Darryl James",
+     "recipient": "Allen Bauer",
+     "url": "https://chromium-review.googlesource.com/c/chromium/src/+/8160322/comment/c7f9a318_9c785e7d/"
+    },
+    {
+     "text": "This is really a brilliant idea! I have get rid of those code in the ts file and only use `repeat()`. It still works pretty well, and I did learn a lot.",
+     "score": 0.7,
+     "date": "2026-07-25",
+     "writer": "Tianyang Xu",
+     "recipient": "Caleb Raitto",
+     "url": "https://chromium-review.googlesource.com/c/chromium/src/+/8105795/comment/b243e556_447eaefd/"
+    },
+    {
+     "text": "I have to say a huge thank-you to all of you for reviewing this incredibly complex and at times genuinely confusing issue. I think we finally made it.\n\nPeople may not fully appreciate how much work went into this, but it will make the PWA world a tiny bit better, than it was before!!",
+     "score": 0.6,
+     "date": "2026-07-30",
+     "writer": "Helmut Januschka",
+     "recipient": "Peter Conn",
+     "url": "https://chromium-review.googlesource.com/c/chromium/src/+/8117613/comment/3a21eab5_7dd28206/"
+    },
+    {
+     "text": "Nice catch.\n\nThe \"emabled\" flag is indeed redundant (and worse, statically stored) with the feature being present in the feature lists map.",
+     "score": 0.5,
+     "date": "2026-07-07",
+     "writer": "Roger McFarlane",
+     "recipient": "Luc Nguyen",
+     "url": "https://chromium-review.googlesource.com/c/chromium/src/+/8060624/comment/add5ab88_0118a454/"
+    },
+    {
+     "text": "Thanks Kunal for the simplifications. Looks great!",
+     "score": 0.5,
+     "date": "2026-07-21",
+     "writer": "Eshwar Stalin",
+     "recipient": "Kunal Daftari",
+     "url": "https://chromium-review.googlesource.com/c/chromium/src/+/8127264/comment/ac01edd7_ba2f25b1/"
+    },
+    {
+     "text": "I really like how this is moving in the direction of using the base class instead of a derived view class. :)",
+     "score": 0.5,
+     "date": "2026-07-09",
+     "writer": "Orin Jaworski",
+     "recipient": "Maks Orlovich",
+     "url": "https://chromium-review.googlesource.com/c/chromium/src/+/8060834/comment/cdfc014b_1857583e/"
+    },
+    {
+     "text": "Ended up reusing the existing `SuggestionUserDecision` enum. Thanks this made the code much more manageable to understand while logging.",
+     "score": 0.5,
+     "date": "2026-06-29",
+     "writer": "Aditya Gupta",
+     "recipient": "Jihad Hanna",
+     "url": "https://chromium-review.googlesource.com/c/chromium/src/+/7985344/comment/eec52647_431d9234/"
+    },
+    {
+     "text": "Thanks for the pointers, Kaan! All makes a lot of sense, I definitely understand BWI better now with your explanation. I updated this CL on top of your migration work to resolve merges and adjusted to use dynamic bwi from the profilebrowsercollection. Let me know what your thoughts are, thanks!",
+     "score": 0.5,
+     "date": "2026-07-17",
+     "writer": "Juliet Knighton",
+     "recipient": "Kaan Alsan",
+     "url": "https://chromium-review.googlesource.com/c/chromium/src/+/8093628/comment/77355e76_d28b3ff0/"
+    }
+   ],
+   "grumpy": [
+    {
+     "text": "Actually, this entire paragraph is useless. The entire rest of the commit message explains what’s going on with an adequate level of detail. You don’t need to name the function in the commit message. And “making it reusable?” Come on…",
+     "score": -0.6,
+     "month": "2026-07"
+    },
+    {
+     "text": "that sounds like you are saying \"synchronization lock\" just isn't needed, then why not just do what I suggested before and just start with display-sized surface when drag starts, and don't bother with growing surfaceview on size increase?\n\nwe are going in circles here...",
+     "score": -0.6,
+     "month": "2026-07"
+    },
+    {
+     "text": "packing is not explained in javadoc, there is no static assert that everything actually fits, and taking a step back, there is just no reason to be this obtuse, just pass everything as single args, and if there's too many, then just don't use ToJniCallback",
+     "score": -0.6,
+     "month": "2026-06"
+    },
+    {
+     "text": "two classes just to pass 3 ints is way too overkill too, just pass as 3 ints, and just don't use ToJniCallback which is currently limited to 2 args, use a regular callback and solve native lifetime issues separately",
+     "score": -0.6,
+     "month": "2026-06"
+    },
+    {
+     "text": "Remove unrelated new line. Why did you keep adding these??",
+     "score": -0.6,
+     "month": "2026-07"
+    },
+    {
+     "text": "i understand this, but for review, you dont need the same change in this cl and the other cl, like i said. if that is true, then you should A) chain it, or B), dont have me review this cl yet",
+     "score": -0.6,
+     "month": "2026-07"
+    },
+    {
+     "text": "Seriously, you still have two overloads of the constructor???\n\nThe caller should just bind and pass the `GetDesktopSessionCallback`.\n\nMake sure you only have **ONE CONSTRUCTOR**.",
+     "score": -0.6,
+     "month": "2026-07"
+    },
+    {
+     "text": "Sigh, time for everyone to reapprove",
+     "score": -0.6,
+     "month": "2026-07"
+    }
+   ]
+  },
+  "2026-08": {
+   "praise": [
+    {
+     "text": "@futhark@chromium.org, best sample of making complicated things look easy, thanks for properly fixing it, amazing to watch/learn! 🥰",
+     "score": 0.9,
+     "date": "2026-08-20",
+     "writer": "Helmut Januschka",
+     "recipient": "Rune Lillesveen",
+     "url": "https://chromium-review.googlesource.com/c/chromium/src/+/8250989/comment/783072c5_dd747127/"
+    },
+    {
+     "text": "This is amazing! Thanks for adding the builtin support!\n\nHonorary LGTM from me, as I'm not an owner 😊",
+     "score": 0.7,
+     "date": "2026-08-10",
+     "writer": "Aldo Culquicondor",
+     "recipient": "Daniel Cheng",
+     "url": "https://chromium-review.googlesource.com/c/chromium/src/+/8184201/comment/9f472806_45622013/"
+    },
+    {
+     "text": "tbh if the bots like this then I think it's good - using the `.test-mojom` extension is ideal here because it means it can't ship. so lgtm!\n\nty again for all the work to do this, I'm super impressed you picked this up so quickly!",
+     "score": 0.6,
+     "date": "2026-08-13",
+     "writer": "Will Harris",
+     "recipient": "Alexander Cooper",
+     "url": "https://chromium-review.googlesource.com/c/chromium/src/+/8251887/comment/713e1fb6_c3e2318a/"
+    },
+    {
+     "text": "I am so happy to see that you thought of this. Future developers won't even know that they should thank you when they're trying to debug shutdown issues!",
+     "score": 0.6,
+     "date": "2026-08-04",
+     "writer": "Greg Thompson",
+     "recipient": "Alex Attar",
+     "url": "https://chromium-review.googlesource.com/c/chromium/src/+/8135178/comment/2d8b16e0_c4ef652f/"
+    },
+    {
+     "text": "Wow! What a great find. I 100% bet that this is what caused the unclean shutdown I got last week when I signed out without first quitting Chrome. :-)",
+     "score": 0.6,
+     "date": "2026-08-14",
+     "writer": "Greg Thompson",
+     "recipient": "Will Harris",
+     "url": "https://chromium-review.googlesource.com/c/chromium/src/+/8252242/comment/c80e890d_51cff239/"
+    },
+    {
+     "text": "Thank you for going over this, this wouldn't have been as clean as is now without your extensive review!",
+     "score": 0.6,
+     "date": "2026-08-07",
+     "writer": "Marco Esau Garcia Martinez",
+     "recipient": "David Tseng",
+     "url": "https://chromium-review.googlesource.com/c/chromium/src/+/8177603/comment/57bca4b1_c9e01550/"
+    },
+    {
+     "text": "That's incredible, Fernando!  Fantastic job!",
+     "score": 0.6,
+     "date": "2026-08-11",
+     "writer": "Olivia Saul",
+     "recipient": "Fernando Ramirez",
+     "url": "https://chromium-review.googlesource.com/c/chromium/src/+/8200131/comment/a05b3fc6_4c4f53b8/"
+    },
+    {
+     "text": "Grouping all the immutable state together makes this *so* much simpler and makes it so much harder to get wrong. *chef's kiss*",
+     "score": 0.6,
+     "date": "2026-08-14",
+     "writer": "Richard Coles",
+     "recipient": "Sayed Elabady",
+     "url": "https://chromium-review.googlesource.com/c/chromium/src/+/8257217/comment/0ff2df3d_b5164176/"
+    },
+    {
+     "text": "+pdr@ for the required second approval.\n\npdr@ I think this is a brilliant way to improve LCD text, with benefits of tile memory usage reduction by merging more drawable contents. I think in the future we can extend the idea to cc to separate hit-testing functionality out of layers, which can probably make the logic clearer with potential performance benefits.",
+     "score": 0.6,
+     "date": "2026-08-18",
+     "writer": "Xianzhu Wang",
+     "recipient": "Barakat Soror",
+     "url": "https://chromium-review.googlesource.com/c/chromium/src/+/8256624/comment/b2546097_0f23a7a5/"
+    },
+    {
+     "text": "best review ever. the Connecting case had a bug indeed because the code was only looking at connected networks, not at connecting networks!\n\nfixed now.",
+     "score": 0.6,
+     "date": "2026-08-17",
+     "writer": "Pavol Marko",
+     "recipient": "Michael Ershov",
+     "url": "https://chromium-review.googlesource.com/c/chromium/src/+/8225005/comment/f180cffa_4295b015/"
+    }
+   ],
+   "grumpy": [
+    {
+     "text": "Sorry, but this submission isn't anywhere near the quality we'd expect from a contributor :(.",
+     "score": -0.8,
+     "month": "2026-08"
+    },
+    {
+     "text": "This CL isn't urgent, is it? Please normally don't resolve comments and land CLs if there are open questions.\n\nThe use of Object.equals() does not address that this is a footgun and, AFAICT, not idiomatic (Chromium-style) Java.",
+     "score": -0.6,
+     "month": "2026-08"
+    },
+    {
+     "text": "Important: in the future, please **don't bypass owners / go to broad area owners for code reviews**.",
+     "score": -0.6,
+     "month": "2026-08"
+    },
+    {
+     "text": "Please DO NOT ADD THIS TO THE OMNIBOX CODE.\n\nThis is toxic.\n\nThis is a\n- Do something\n- Don't do something\n- Take your best guess ⬅ this is a major problem\n\nDo NOT add this to the Omnibox please.",
+     "score": -0.6,
+     "month": "2026-08"
+    },
+    {
+     "text": "Do not be lazy and pass args with `RefCountedData`. You can add them individually to the bind closure.",
+     "score": -0.6,
+     "month": "2026-08"
+    },
+    {
+     "text": "please read my comment - or better yet - my chat.",
+     "score": -0.6,
+     "month": "2026-08"
+    },
+    {
+     "text": "So.. a completely new approach, but there is still no web test, nor instructions on how to reproduce the failure.\n\nSorry. I don't want to spend more time on this. I wasn't even the right reviewer for it in the first place.",
+     "score": -0.6,
+     "month": "2026-08"
+    },
+    {
+     "text": "Sir how could you be a owner of this",
+     "score": -0.6,
+     "month": "2026-08"
+    }
+   ]
+  },
+  "2026-09": {
+   "praise": [
+    {
+     "text": "Thank you for all your hard work over the years, Reilly!  I appreciate it.\n\nIf there's any files you'd like to remain an owner of (APIs?  HID / USB?  etc), feel free to add yourself for those!",
+     "score": 0.7,
+     "date": "2026-09-24",
+     "writer": "Devlin Cronin",
+     "recipient": "Reilly Grant",
+     "url": "https://chromium-review.googlesource.com/c/chromium/src/+/8453422/comment/68e810a1_f4b8f630/"
+    },
+    {
+     "text": "I feel like I just read a novel! Thanks you for the extremely detailed explanation and investigation!",
+     "score": 0.7,
+     "date": "2026-09-09",
+     "writer": "Sky Malice",
+     "recipient": "Samuel Huang",
+     "url": "https://chromium-review.googlesource.com/c/chromium/src/+/8354111/comment/b734e785_e913baab/"
+    },
+    {
+     "text": "This is awesome! So happy to see this get fixed, and it was surprisingly concise/simple!",
+     "score": 0.6,
+     "date": "2026-09-16",
+     "writer": "Sky Malice",
+     "recipient": "Tomasz Wiszkowski",
+     "url": "https://chromium-review.googlesource.com/c/chromium/src/+/8415313/comment/17058137_998b1eb1/"
+    },
+    {
+     "text": "Thank you for doing this. This is a really nice cleanup of the code in general and having it fix a crash is great too!\n\nThe comment above the `removeFeaturesIf()` function is super helpful and the unit test should prevent regression.",
+     "score": 0.6,
+     "date": "2026-09-04",
+     "writer": "Jack Thiesen",
+     "recipient": "Eva Su",
+     "url": "https://chromium-review.googlesource.com/c/chromium/src/+/8350402/comment/fddca497_961b6d7a/"
+    },
+    {
+     "text": "Thank you! This code is a lot cleaner and easier to understand than before. I appreciate your receptiveness with all of the back and forth on the design comments",
+     "score": 0.6,
+     "date": "2026-09-10",
+     "writer": "Noah Rose Ledesma",
+     "recipient": "Etienne Noël",
+     "url": "https://chromium-review.googlesource.com/c/chromium/src/+/8311791/comment/7a767dea_94410980/"
+    },
+    {
+     "text": "...but if you're doing what I think you're doing, this is extremely clever.",
+     "score": 0.6,
+     "date": "2026-09-15",
+     "writer": "Dana Fried",
+     "recipient": "Christopher Grant",
+     "url": "https://chromium-review.googlesource.com/c/chromium/src/+/8388136/comment/53e9ed2d_fb4ffbb8/"
+    },
+    {
+     "text": "really great point Alex!! thanks a lot!! reflected that in this CL! ptal and let me know your thoughts",
+     "score": 0.6,
+     "date": "2026-09-01",
+     "writer": "Amr Aboelkher",
+     "recipient": "Alex Ilin",
+     "url": "https://chromium-review.googlesource.com/c/chromium/src/+/8305853/comment/89dd4537_8f1aecea/"
+    },
+    {
+     "text": "wooohoo!! Go team! \n\nThank you so much for running that, Henrique!",
+     "score": 0.6,
+     "date": "2026-09-09",
+     "writer": "Tomasz Wiszkowski",
+     "recipient": "Henrique Nakashima",
+     "url": "https://chromium-review.googlesource.com/c/chromium/src/+/8377703/comment/72248352_ae8dc3ad/"
+    },
+    {
+     "text": "This is a great finding! I was able to repro this issue with the new unit test `ObserveKeySystemCapabilities_DualLazySoftwareAndHardwareOnly` and fixed it. Thanks for the great catch!",
+     "score": 0.6,
+     "date": "2026-09-21",
+     "writer": "Sangbaek Park",
+     "recipient": "Piet Schouten",
+     "url": "https://chromium-review.googlesource.com/c/chromium/src/+/8279530/comment/b540287b_e104e0a5/"
+    },
+    {
+     "text": "If I could +1 this twice, I would.\n\nThanks, should make it easier to understand incognito tab/window test failures!",
+     "score": 0.6,
+     "date": "2026-09-09",
+     "writer": "Henrique Nakashima",
+     "recipient": "Andrew Grieve",
+     "url": "https://chromium-review.googlesource.com/c/chromium/src/+/8377632/comment/9ed44aa8_5b6797f9/"
+    }
+   ],
+   "grumpy": [
+    {
+     "text": "Horrible hack. Please refrain from doing such things.",
+     "score": -0.6,
+     "month": "2026-08"
+    },
+    {
+     "text": "That has no business being here. It absolutely breaks the MVC structure.\nIf you want something reflected in the view, set it in the model and have the viewBinder react to it. Don't put lambdas into structs.",
+     "score": -0.6,
+     "month": "2026-09"
+    },
+    {
+     "text": "still failing. Next time, please make sure it passes before sending to us.",
+     "score": -0.6,
+     "month": "2026-09"
+    },
+    {
+     "text": "Obviously, in the future please don't make such large change.\nThis prevents making a good review.",
+     "score": -0.6,
+     "month": "2026-09"
+    },
+    {
+     "text": "Sigh... So many programmers get window hooks so wrong... or just do stupid things.",
+     "score": -0.6,
+     "month": "2026-09"
+    },
+    {
+     "text": "Stop all these irrelevant changes.",
+     "score": -0.6,
+     "month": "2026-09"
+    },
+    {
+     "text": "Please actually add it back.",
+     "score": -0.6,
+     "month": "2026-09"
+    }
+   ]
+  },
+  "2026-10": {
+   "praise": [
+    {
+     "text": "LGTM\n\nThank you very much Shiino-san for a massive & passionate contributor to V8 bindings for many years!!",
+     "score": 0.9,
+     "date": "2026-10-29",
+     "writer": "Kentaro Hara",
+     "recipient": "Yuki Shiino",
+     "url": "https://chromium-review.googlesource.com/c/chromium/src/+/8682300/comment/b76b10e1_325e1070/"
+    },
+    {
+     "text": "that's some good investigation there. well done!",
+     "score": 0.8,
+     "date": "2026-10-16",
+     "writer": "Will Harris",
+     "recipient": "Joe Mason",
+     "url": "https://chromium-review.googlesource.com/c/chromium/src/+/8588515/comment/9a42d71d_4db38694/"
+    },
+    {
+     "text": "I love this approach! Better than my more hacky approach in https://crrev.com/c/8547911. I'm in favor of landing this instead of mine.",
+     "score": 0.7,
+     "date": "2026-10-16",
+     "writer": "Mason Freed",
+     "recipient": "Arthur Sonzogni",
+     "url": "https://chromium-review.googlesource.com/c/chromium/src/+/8578586/comment/0587f71a_1e72f5d5/"
+    },
+    {
+     "text": "Wow, amazing finds. Thanks for the speedups, lgtm!",
+     "score": 0.6,
+     "date": "2026-10-20",
+     "writer": "Peter Wen",
+     "recipient": "Benoit Lize",
+     "url": "https://chromium-review.googlesource.com/c/chromium/src/+/8618912/comment/2562a128_d1a59b4a/"
+    },
+    {
+     "text": "Congratulations on passing the quiz!  Given your knowledge of histograms logging and correctness, I thought you've been a histograms owner/reviewer for years.  Well, I'm glad you're making it official. :-)\n\nCheers,\nMark",
+     "score": 0.6,
+     "date": "2026-10-29",
+     "writer": "Mark Pearson",
+     "recipient": "Mikel Astiz",
+     "url": "https://chromium-review.googlesource.com/c/chromium/src/+/8662904/comment/eb9a80e5_7b839ee3/"
+    },
+    {
+     "text": "Great attention to detail relying on the reverse destruction order here to disconnect the Mojo pipe before `notification_center_` drops its blocks. This perfectly prevents any `DCHECK(!connected)` crashes from delayed block deallocations.",
+     "score": 0.6,
+     "date": "2026-10-28",
+     "writer": "Daniel Murphy",
+     "recipient": "Marijn Kruisselbrink",
+     "url": "https://chromium-review.googlesource.com/c/chromium/src/+/8667692/comment/dbc08d97_dd2bf777/"
+    },
+    {
+     "text": "Thanks - the fix LGTM - it's quite smart and I can't think of anything better.  But, I do have one question below (as I said the CL LGTM, but maybe addressing the question will result in bigger savings on non-Fuchsia targets?).",
+     "score": 0.5,
+     "date": "2026-10-21",
+     "writer": "Łukasz Anforowicz",
+     "recipient": "Devon Loehr",
+     "url": "https://chromium-review.googlesource.com/c/chromium/src/+/8614038/comment/653c6004_a139241e/"
+    },
+    {
+     "text": "Sorry; a fair bit of context switching these days, so lmk if I can explain or missed context (the longer writeup below does help!).\n\n\nYeah. Otherwise, who would we parent the inactive documents to? I thought we were returning no parent.\n\n\nYeah. This is something VoiceOver has to handle e.g. an orphaned cocoa object.\n\n\nSg and thanks for the longer writeup; it helped!",
+     "score": 0.5,
+     "date": "2026-10-13",
+     "writer": "David Tseng",
+     "recipient": "Joanmarie Diggs",
+     "url": "https://chromium-review.googlesource.com/c/chromium/src/+/8395908/comment/34963c99_7d233582/"
+    },
+    {
+     "text": "Great catch, thank you! Restored the exact `||` checks from the original comparator so that two filtered-out accounts or two newly logged-in accounts immediately return `false` and preserve their original relative IDP order in `std::stable_sort`.",
+     "score": 0.5,
+     "date": "2026-10-05",
+     "writer": "Gary Klassen",
+     "recipient": "Yi Gu",
+     "url": "https://chromium-review.googlesource.com/c/chromium/src/+/8499923/comment/8972b4c7_9b580c5d/"
+    },
+    {
+     "text": "The main issue was that (with data: URLs at least) because they had an opaque origin, we didn't have the precursor available to us at the point we were trying to do the checks. However, your suggestion of putting the partition ID in the SiteInfo fixed that.\n\nI rejigged everything with that, and it seems quite nice actually.\n\n\nResponded in a top level comment.",
+     "score": 0.5,
+     "date": "2026-10-16",
+     "writer": "Peter Conn",
+     "recipient": "Alex Moshchuk",
+     "url": "https://chromium-review.googlesource.com/c/chromium/src/+/8529809/comment/80902fec_fe7821fb/"
+    }
+   ],
+   "grumpy": [
+    {
+     "text": "I totally fail to understand you.\n\nThe .grd has a desc and examples of value. \nPlease give an example of what you want to do instead. That seems to be the best case solution, the work done properly. And you seem to decrease code quality.\n\nLearn from this mistake or be very convincing about why this is a bad implementation",
+     "score": -0.8,
+     "month": "2026-10"
+    },
+    {
+     "text": "(Posting basically the same thing again most likely does not unclog any pipes... Just a thought.)",
+     "score": -0.6,
+     "month": "2026-10"
+    },
+    {
+     "text": "I told you to move it to a different file so that the helper can be reused!",
+     "score": -0.6,
+     "month": "2026-10"
+    },
+    {
+     "text": "This CL doesn't even begin to implement the semantics that would be needed to approach what the spec says, so it seems quite unfinished.",
+     "score": -0.6,
+     "month": "2026-10"
+    },
+    {
+     "text": "Sorry, this is too sloppy for consideration.",
+     "score": -0.6,
+     "month": "2026-10"
+    },
+    {
+     "text": "This does not make sense. You can ask me for help if you're not sure how to fix this.",
+     "score": -0.6,
+     "month": "2026-10"
+    },
+    {
+     "text": "I need you to please stop joking like this ...\n\ni can't tell if this is a joke or serious remark.",
+     "score": -0.6,
+     "month": "2026-10"
+    },
+    {
+     "text": "I sure hope we're done with all these shadow root problems.",
+     "score": -0.6,
+     "month": "2026-10"
+    },
+    {
+     "text": "again, why are we so obsessed with the overlay_token in this CL??? This CL really should only be making changes to UpdateImplicitTabContext() OnPageChanged. I don't understand why any of these logical differences in this CL are necessary?",
+     "score": -0.6,
+     "month": "2026-10"
+    },
+    {
+     "text": "Wow...this just seems like a really bad idea. Not suggesting any changes in this CL, just noticed it, and shocked that someone thought this was a good idea.",
+     "score": -0.6,
+     "month": "2026-10"
+    }
+   ]
   }
- ],
- "grumpy": [
-  {
-   "text": "I totally fail to understand you.\n\nThe .grd has a desc and examples of value. \nPlease give an example of what you want to do instead. That seems to be the best case solution, the work done properly. And you seem to decrease code quality.\n\nLearn from this mistake or be very convincing about why this is a bad implementation",
-   "score": -0.8,
-   "month": "2026-10"
-  },
-  {
-   "text": "(Posting basically the same thing again most likely does not unclog any pipes... Just a thought.)",
-   "score": -0.6,
-   "month": "2026-10"
-  },
-  {
-   "text": "same comment as previous CLs.  (And please make sure to apply it to any future CLs)",
-   "score": -0.6,
-   "month": "2026-10"
-  },
-  {
-   "text": "I told you to move it to a different file so that the helper can be reused!",
-   "score": -0.6,
-   "month": "2026-10"
-  },
-  {
-   "text": "This CL doesn't even begin to implement the semantics that would be needed to approach what the spec says, so it seems quite unfinished.",
-   "score": -0.6,
-   "month": "2026-10"
-  },
-  {
-   "text": "Sorry, this is too sloppy for consideration.",
-   "score": -0.6,
-   "month": "2026-10"
-  },
-  {
-   "text": "This does not make sense. You can ask me for help if you're not sure how to fix this.",
-   "score": -0.6,
-   "month": "2026-10"
-  },
-  {
-   "text": "I need you to please stop joking like this ...\n\ni can't tell if this is a joke or serious remark.",
-   "score": -0.6,
-   "month": "2026-10"
-  },
-  {
-   "text": "I sure hope we're done with all these shadow root problems.",
-   "score": -0.6,
-   "month": "2026-10"
-  },
-  {
-   "text": "again, why are we so obsessed with the overlay_token in this CL??? This CL really should only be making changes to UpdateImplicitTabContext() OnPageChanged. I don't understand why any of these logical differences in this CL are necessary?",
-   "score": -0.6,
-   "month": "2026-10"
-  }
- ]
+ }
 }

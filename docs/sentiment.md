@@ -5,12 +5,20 @@ Gerrit. The Review Tone dashboard (`web/sentiment.html`) shows:
 
 - a monthly trend of the whole project's review tone
   (`summaries/sentiment_monthly.json`, from a 5% sample);
-- the last two months in full, "who makes whom happy" and an anonymous
-  list of AI-friction comments (`summaries/sentiment_recent.json`,
+- every comment of the fully scored weeks, "who makes whom happy" and an
+  anonymous list of AI-friction comments (`summaries/sentiment_recent.json`,
   `cosh.sentiment_recent`);
 - leaderboards of who gives and receives the most praise
   (`summaries/sentiment_praise.json`);
 - a few sample comments (`summaries/sentiment_samples.json`).
+
+A "Dates" switch in the page's sticky bar applies to every section: all the
+fully scored weeks, one calendar year or one calendar month (the newest by
+default), kept in the URL as `?period=2026` or `?period=2026-10`. A week
+belongs to the month and year of its Thursday (`S.periods`). The summaries
+hold every section's figures for each such period, so the page only picks
+one. The trend covers its own 5% sample: all of it, the chosen year, or the
+chosen month's year with that month marked.
 
 ## The principle: our pages never point fingers
 
@@ -74,13 +82,14 @@ python3 -m cosh.sentiment score --week 2026-W44                # every comment
 # The praise leaderboard over fully scored weeks -> summaries/sentiment_praise.json
 # (the past year, 2025-W45..2026-W44, since 2026-11-08; reads every week once per group)
 python3 -m cosh.sentiment praise --week 2025-W45:2026-W44
-# Sample comments from fully scored weeks -> summaries/sentiment_samples.json
-# (one sandboxed screening call per 30 grumpy candidates; read the result before committing)
-python3 -m cosh.sentiment samples --week 2026-W37:2026-W44
+# Sample comments from fully scored weeks, per period -> summaries/sentiment_samples.json
+# (sandboxed screening calls, 30 grumpy candidates each, shared across periods and groups;
+# read the result before committing)
+python3 -m cosh.sentiment samples --week 2025-W45:2026-W44
 # Identities on the weeks' rows (same files, plus writer and recipient), then the
-# last two months, "who makes whom happy" and the AI-friction list -> summaries/sentiment_recent.json
+# per-period detail, "who makes whom happy" and the AI-friction list -> summaries/sentiment_recent.json
 python3 -m cosh.sentiment_people collect --week 2025-W45:2026-W44
-python3 -m cosh.sentiment_recent --week 2026-W37:2026-W44 --praise-week 2025-W45:2026-W44   # one screening call per 30 AI comments
+python3 -m cosh.sentiment_recent --week 2025-W45:2026-W44   # screening calls, 30 AI comments each
 # Everyone who commented, for the lookup box -> summaries/sentiment_people.json
 python3 -m cosh.sentiment_people lookup --week 2025-W45:2026-W44
 ```
@@ -211,8 +220,9 @@ The boards rank by **net praise** (`net`, from `net_praise`, since
 2026-11-07): for each person, the scores of the praise comments they gave
 (or received), plus the scores of their grumpy ones (≤ −0.3, `ANGRY`), so
 those subtract. Neutral comments count for nothing. Totals are summed over
-all the scored weeks and over the last four, and only positive ones are
-published, with how many praise comments went in. The page lists everyone
+each of the page's periods (all the weeks, each calendar year, each calendar
+month), and only positive ones are published, with how many praise comments
+went in. The page lists everyone
 with a positive total (Top 15 or All), each with a score pill. Net praise
 needs the week files with identities (`cosh.sentiment_people collect`).
 
@@ -239,9 +249,10 @@ needs the week files with identities (`cosh.sentiment_people collect`).
 
 ## Sample comments (`samples`)
 
-`summaries/sentiment_samples.json` holds the 10 highest-scoring praise and
-the 10 lowest-scoring grumpy comments from fully scored weeks (since
-2026-11-07; before, a random draw). Ties are broken by a fixed hash of the
+`summaries/sentiment_samples.json` holds, for each of the page's periods
+(`periods`), the 10 highest-scoring praise and the 10 lowest-scoring grumpy
+comments from its fully scored weeks (since 2026-11-07; before, a random
+draw). Writers and recipients come from the week files' identities. Ties are broken by a fixed hash of the
 comment id, so reruns pick the same ones. Only comments of at most 400
 characters are considered.
 
@@ -263,12 +274,15 @@ characters are considered.
 ## Fully scored weeks in detail (`cosh.sentiment_recent`)
 
 `summaries/sentiment_recent.json` covers weeks where every comment is
-scored (2026-W37..W44 so far):
+scored (2025-W45..2026-W44 so far), with a row per week (`weekly`) and per
+month (`monthly`), and the rest per period (`periods`: all, each year, each
+month):
 
 - **Overview:** substantive comments, bare acknowledgements left out, the
   average, the glowing and angry shares and the AI-friction count; the same
-  per week; and the number of comments at each score, rounded to 0.1.
-- **Who makes whom happy**, over all the weeks and over the last four:
+  per month (per week when a month is chosen); and the number of comments
+  at each score, rounded to 0.1.
+- **Who makes whom happy**, per period:
   - *authors*: CL owners, from the glowing comments reviewers wrote on
     their CLs;
   - *reviewers*: the same for CL owners' replies to reviewers.
@@ -278,8 +292,8 @@ scored (2026-W37..W44 so far):
   comment, are listed, top 100. Each row has the name, the email, the
   glowing count, the distinct happy people and the counterparts: no
   per-person mean, which could be negative.
-- **Name popups** list the person's places on the boards in the period
-  selected on the page, with its dates so a saved popup records them (#8
+- **Name popups** list the person's places on the boards for the dates
+  chosen on the page, with its dates so a saved popup records them (#8
   of 265 on Most net praise given between 7 Sept and 1 Nov 2026): the board the popup came from, or every board for the lookup box,
   which also lists only that period's praise. Only boards they are on are
   shown. Each comment in the popup file records the writer's and the
@@ -299,18 +313,23 @@ scored (2026-W37..W44 so far):
   popup's print button prints (or saves as PDF) just the popup, in light
   colours, with the page title set to the popup's (which names Chromium and the
   person) so a saved PDF is named after it and makes sense on its own.
-  The praise boards can cover more weeks than the detail here:
+  An open popup is in the URL's hash (`#given=`, `#received=`, `#authors=`,
+  `#reviewers=` or `#person=` and the email), so a link to it opens it for
+  the dates in the link; closing it drops the hash. The print button is a
+  printer icon. The praise boards can cover more weeks than the detail here:
   `--praise-week 2025-W45:2026-W44` puts their praise comments in the popup
   file while everything else stays on `--week`.
 - **Name popups:** `summaries/sentiment_comments.json` (and its .everyone
   and .noncommitters versions, about 2.7 MB each for a year, 0.7 MB compressed, loaded on the first
   popup) holds the comments behind the praise boards and the happy tables:
-  every praise comment, and each listed person's glowing comments, with
+  every praise comment, and the glowing comments of each person listed in
+  any period's happy tables, over every week (the page keeps the chosen
+  dates'), with
   text, date, writer, recipient and a Gerrit link. Selecting a name on the
   page lists them for the board's period. Only praise and glowing comments
   go in it (`person_comments` asserts this), so naming is allowed (ground
   rule 5). Per-person counts match the boards exactly.
-- **AI friction:** the 20 most negative comments the model flagged (lowest
+- **AI friction:** per period, the 20 most negative comments the model flagged (lowest
   score first, ties by a fixed hash), at most 600 characters and without
   URLs or handles, that pass `screen_identifying`, as text, score, month and
   the writer's role (CL author or reviewer). Candidates are screened in score

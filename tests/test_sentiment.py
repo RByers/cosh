@@ -337,10 +337,13 @@ class SamplesTest(unittest.TestCase):
                 doc = S.samples(["2026-W44"], d, sandbox=ScreenSandbox(), authors="everyone")
             finally:
                 S.collect = real
-        self.assertEqual([g["text"] for g in doc["grumpy"]], ["This is sloppy, again!!"])
-        self.assertEqual(set(doc["grumpy"][0]), {"text", "score", "month"})
-        self.assertEqual(doc["grumpy"][0]["month"], "2026-10")
-        [p] = doc["praise"]
+        self.assertEqual(list(doc["periods"]), ["all", "2026", "2026-10"])
+        for period in doc["periods"].values():
+            self.assertEqual([g["text"] for g in period["grumpy"]], ["This is sloppy, again!!"])
+        grumpy = doc["periods"]["all"]["grumpy"]
+        self.assertEqual(set(grumpy[0]), {"text", "score", "month"})
+        self.assertEqual(grumpy[0]["month"], "2026-10")
+        [p] = doc["periods"]["2026-10"]["praise"]
         self.assertEqual((p["writer"], p["recipient"]), ("Owner", "Rev"))
         self.assertEqual(p["url"], "https://chromium-review.googlesource.com/c/chromium/src/+/100/comment/b/")
 
@@ -372,6 +375,34 @@ class IdentitiesTest(unittest.TestCase):
             S.write_jsonl(os.path.join(S.out_dir(d), "comments-2026-W44.jsonl"), [dict(id="1/a", text="x")])
             with self.assertRaises(SystemExit):
                 P.lookup(["2026-W44"], d)
+
+
+class PeriodsTest(unittest.TestCase):
+    def test_weeks_go_to_their_thursdays_month(self):
+        p = S.periods(["2025-W52", "2026-W01", "2026-W05", "2026-W06"])
+        # 2026-W01's Thursday is 1 Jan 2026; 2026-W05's is 29 Jan; 2026-W06's 5 Feb.
+        self.assertEqual(p, {"all": ["2025-W52", "2026-W01", "2026-W05", "2026-W06"],
+                             "2025": ["2025-W52"], "2025-12": ["2025-W52"],
+                             "2026": ["2026-W01", "2026-W05", "2026-W06"],
+                             "2026-01": ["2026-W01", "2026-W05"], "2026-02": ["2026-W06"]})
+
+    def test_screen_first_shares_its_cache(self):
+        calls = []
+
+        class Box(ScreenSandbox):
+            def run(self, args, prompt):
+                calls.append(prompt)
+                return super().run(args, prompt)
+        texts = {"a": "fine", "b": "Alice again", "c": "fine too", "d": "also fine"}
+        cache = {}
+        kept, flagged = S.screen_first(list(texts), 2, texts.get, Box(), cache, batch=3)
+        self.assertEqual((kept, flagged), (["a", "c"], 1))
+        self.assertEqual(len(calls), 1)
+        self.assertEqual(cache, {"a": False, "b": True, "c": False})
+        kept, _ = S.screen_first(["c", "b", "d"], 5, texts.get, Box(), cache, batch=3)
+        self.assertEqual(kept, ["c", "d"])
+        self.assertEqual(len(calls), 2)                     # only "d" was new
+        self.assertEqual(calls[-1].count("### C"), 1)
 
 
 class RecentTest(unittest.TestCase):
@@ -408,6 +439,8 @@ class RecentTest(unittest.TestCase):
         self.assertEqual((o["total"]["n"], o["total"]["ai"]), (7, 1))
         self.assertEqual(o["weekly"][0]["week"], "2026-W44")
         self.assertEqual(sum(n for _, n in o["dist"]), 7)
+        [m] = R.monthly(rows, scores, ["2026-W44"])
+        self.assertEqual((m["month"], m["weeks"], m["n"], m["ai"]), ("2026-10", ["2026-W44", "2026-W44"], 7, 1))
         ai, screened, other = R.ai_comments(rows, scores, ScreenSandbox())
         self.assertEqual(ai, [dict(text="Looks good, thanks!", score=0.0, month="2026-10", role="reviewer")])
         self.assertEqual((screened, other), (0, 0))
@@ -429,10 +462,13 @@ class RecentTest(unittest.TestCase):
         for r in rows:
             r.update(project="chromium/src", cl=100, uuid=r["id"].split("/")[1])
         rows[3]["text"] = "Makes sense, landing it"                  # P13: glowing, no praise words, still praise
-        d = R.person_comments(rows, scores, ["2026-W44"], ["2026-W44"])
+        d = R.person_comments(rows, scores, ["2026-W44"])
         self.assertEqual(d["praise"], ["100/r2", "100/r3"])
-        self.assertEqual(d["happy"]["all"]["authors"], {"owner@x.org": ["100/r2", "100/r3"]})
-        self.assertEqual(d["happy"]["all"]["reviewers"], {})
+        self.assertEqual(d["happy"]["authors"], {"owner@x.org": ["100/r2", "100/r3"]})
+        self.assertEqual(d["happy"]["reviewers"], {})
+        # Only people listed in some period's table get their glowing comments.
+        nobody = R.person_comments(rows, scores, ["2026-W44"], {"authors": set(), "reviewers": set()})
+        self.assertEqual(nobody["happy"]["authors"], {})
         self.assertEqual(set(d["comments"]), {"100/r2", "100/r3"})
         c = d["comments"]["100/r2"]
         self.assertEqual((c["writer"], c["recipient"], c["date"], c["week"]), ("P12", "Owner", "2026-10-27", "2026-W44"))
@@ -448,9 +484,9 @@ class RecentTest(unittest.TestCase):
             r.update(project="chromium/src", cl=100, uuid=r["id"].split("/")[1])
         old = dict(rows[2], id="100/old", uuid="old", week="2026-W10", written_at="2026-03-03 10:00:00")
         scores["100/old"] = scores["100/r2"]
-        d = R.person_comments(rows, scores, ["2026-W10", "2026-W44"], ["2026-W44"], rows + [old])
+        d = R.person_comments(rows, scores, ["2026-W10", "2026-W44"], praise_rows=rows + [old])
         self.assertEqual(d["praise"], ["100/old", "100/r2", "100/r3"])
-        self.assertEqual(d["happy"]["all"]["authors"], {"owner@x.org": ["100/r2", "100/r3"]})
+        self.assertEqual(d["happy"]["authors"], {"owner@x.org": ["100/r2", "100/r3"]})
         self.assertEqual(d["comments"]["100/old"]["week"], "2026-W10")
         self.assertEqual(d["weeks"], ["2026-W10", "2026-W44"])
 

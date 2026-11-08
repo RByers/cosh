@@ -1,8 +1,11 @@
 // The Review Tone page (sentiment.html). Wording is in the HTML; this fills
 // in values and draws the charts. Comment text is untrusted and goes into
 // the DOM only as text (SECURITY.md). Ground rule 5: names and links only
-// for praise. The "Comments by" switch picks whose comments every section
-// counts; each choice has its own set of summary files.
+// for praise. The sticky bar's "Dates" (all, a calendar year or a calendar
+// month) and "Comments by" switches apply to every section; each "Comments
+// by" choice has its own set of summary files, each with every period in it.
+// An open name popup is in the URL's hash (#given=<email>, …), so it can be
+// shared.
 import { Chart, Filler, type ChartDataset } from 'chart.js';
 import monthlyUrl from '../../summaries/sentiment_monthly.json?url';
 import praiseUrl from '../../summaries/sentiment_praise.json?url';
@@ -31,6 +34,8 @@ import {
   gerritLink,
   monthLabel,
   periodWeeks,
+  periodKind,
+  periodsOf,
   netBoard,
   praisePeople,
   praiseTotal,
@@ -49,6 +54,7 @@ import {
   type PersonComments,
   type Period,
   type PraiseData,
+  type RecentPeriod,
   type TonePoint,
   type ToneRecent,
   type ToneSamples,
@@ -67,6 +73,8 @@ const URLS: Record<Authors, { monthly: string; praise: string; samples: string; 
 
 /** The writers chosen now, and their popup comments once loaded. */
 let shown: Authors = 'committers';
+/** The dates chosen now: "all", a year ("2026") or a month ("2026-10"). */
+let period: Period = 'all';
 const commentCache = new Map<Authors, Promise<PersonComments>>();
 const personComments = (a: Authors) => {
   let p = commentCache.get(a);
@@ -119,13 +127,16 @@ interface Series {
   ci: (p: TonePoint) => [number, number];
 }
 
-function bandedLine(canvas: HTMLCanvasElement, trend: ToneTrend, series: Series[], theme: Theme, fmt: (v: number) => string) {
-  const months = trend.months;
+/** A line per series with its 95% band, over `months`; the month at index
+ * `mark` (the month chosen on the page) gets a dot. */
+function bandedLine(canvas: HTMLCanvasElement, months: ToneTrend['months'], series: Series[], theme: Theme,
+  fmt: (v: number) => string, mark = -1) {
   const datasets: ChartDataset<'line', number[]>[] = [];
+  const dots = months.map((_, i) => (i === mark ? 5 : 0));
   for (const s of series) {
     datasets.push(
       { label: s.label, data: months.map((m) => s.v(m.rolling)), borderColor: s.color, backgroundColor: s.color,
-        borderWidth: 2, pointRadius: 0, pointHoverRadius: 4, tension: 0, fill: false },
+        borderWidth: 2, pointRadius: dots, pointHoverRadius: 4, tension: 0, fill: false },
       { label: '', data: months.map((m) => s.ci(m.rolling)[1]), borderWidth: 0, pointRadius: 0, pointHoverRadius: 0,
         backgroundColor: faint(s.color), fill: '+1' },
       { label: '', data: months.map((m) => s.ci(m.rolling)[0]), borderWidth: 0, pointRadius: 0, pointHoverRadius: 0,
@@ -170,44 +181,72 @@ function bandedLine(canvas: HTMLCanvasElement, trend: ToneTrend, series: Series[
   }));
 }
 
+/** The trend over the chosen dates: every month, the chosen year's, or the
+ * chosen month's year with that month marked. */
 function renderTrend(trend: ToneTrend, theme: Theme) {
-  const months = trend.months.length;
+  const kind = periodKind(period);
+  const year = kind === 'all' ? null : period.slice(0, 4);
+  let months = year ? trend.months.filter((m) => m.m.startsWith(`${year}-`)) : trend.months;
+  if (!months.length) months = trend.months;
+  const mark = kind === 'month' ? months.findIndex((m) => m.m === period) : -1;
+  const n = months.reduce((s, m) => s + m.month.n, 0);
   fill($('#trend-sub'), {
     rate: trend.rate ? pct(trend.rate).replace(/\.0%$/, '%') : 'random',
-    n: fmtInt(trend.n),
-    months,
-    perMonth: fmtInt(Math.round(trend.n / Math.max(1, months))),
+    n: fmtInt(n),
+    months: months.length,
+    perMonth: fmtInt(Math.round(n / Math.max(1, months.length))),
     window: trend.window,
+    mark: mark >= 0 ? monthLabel(period) : '',
   });
   fill($('#trend-note'), { glowing: trend.thresholds.glowing, angry: Math.abs(trend.thresholds.angry) });
-  bandedLine($<HTMLCanvasElement>('#trend-mean'), trend,
-    [{ label: 'Average score', color: theme.series[0], v: (p) => p.mean, ci: (p) => [p.lo, p.hi] }], theme, signed);
-  bandedLine($<HTMLCanvasElement>('#trend-shares'), trend, [
+  bandedLine($<HTMLCanvasElement>('#trend-mean'), months,
+    [{ label: 'Average score', color: theme.series[0], v: (p) => p.mean, ci: (p) => [p.lo, p.hi] }], theme, signed, mark);
+  bandedLine($<HTMLCanvasElement>('#trend-shares'), months, [
     { label: 'Glowing', color: theme.series[2], v: (p) => p.glowing, ci: (p) => p.glowing_ci },
     { label: 'Angry', color: theme.series[7], v: (p) => p.angry, ci: (p) => p.angry_ci },
     { label: 'AI friction', color: theme.series[6], v: (p) => p.ai, ci: (p) => p.ai_ci },
-  ], theme, pct);
+  ], theme, pct, mark);
 }
 
-// ---- the last two months
+// ---- every comment of the chosen dates
 
 function tile(id: string, value: string) {
   $(`#${id} .tile-value`).textContent = value;
 }
 
+const EMPTY_STAT = { n: 0, mean: null, glowing: null, angry: null, ai: 0 };
+
+/** The detail for the chosen dates; empty when the file has none for them. */
+function recentPeriod(r: ToneRecent): RecentPeriod {
+  return r.periods[period] ?? { weeks: r.weeks, n_trivial: 0, total: EMPTY_STAT, dist: [],
+    happy: { authors: [], reviewers: [] }, ai: [] };
+}
+
+/** The weeks the detail covers for the chosen dates. */
+const recentWeeks = (r: ToneRecent) => recentPeriod(r).weeks;
+
 function renderRecent(r: ToneRecent, theme: Theme) {
-  fill($('#recent-sub'), { range: weeksBetween(r.weeks) });
-  const t = r.total;
+  const d = recentPeriod(r);
+  fill($('#recent-sub'), { range: weeksBetween(d.weeks) });
+  const t = d.total;
   tile('tile-n', fmtInt(t.n));
-  tile('tile-trivial', fmtInt(r.n_trivial));
+  tile('tile-trivial', fmtInt(d.n_trivial));
   tile('tile-mean', t.mean === null ? '–' : signed(t.mean));
   tile('tile-glowing', t.glowing === null ? '–' : pct2(t.glowing));
   tile('tile-angry', t.angry === null ? '–' : pct2(t.angry));
   tile('tile-ai', fmtInt(t.ai));
-  $<HTMLTableElement>('#recent-weekly').tBodies[0].replaceChildren(...r.weekly.map((w) => {
+  // A month's weeks, or the months of a year or of every week.
+  const k = periodKind(period) === 'month' ? 'week' : 'month';
+  fill($('#recent-rows-title'), { k });
+  fill($('#recent-rows-col'), { k });
+  const within = (w: string) => w >= d.weeks[0] && w <= d.weeks[1];
+  const rows = k === 'week'
+    ? r.weekly.filter((w) => within(w.week)).map((w) => ({ ...w, label: fmtDay(weekMonday(w.week)) }))
+    : r.monthly.filter((m) => within(m.weeks[0]) || within(m.weeks[1])).map((m) => ({ ...m, label: monthLabel(m.month) }));
+  $<HTMLTableElement>('#recent-weekly').tBodies[0].replaceChildren(...rows.map((w) => {
     const tr = el('tr');
     tr.append(
-      el('th', fmtDay(weekMonday(w.week))),
+      el('th', w.label),
       el('td', fmtInt(w.n)),
       el('td', w.mean === null ? '–' : signed(w.mean)),
       el('td', w.glowing === null ? '–' : pct2(w.glowing)),
@@ -217,10 +256,10 @@ function renderRecent(r: ToneRecent, theme: Theme) {
     tr.firstElementChild!.setAttribute('scope', 'row');
     return tr;
   }));
-  const total = r.dist.reduce((s, [, n]) => s + n, 0) || 1;
+  const total = d.dist.reduce((s, [, n]) => s + n, 0) || 1;
   const bins: number[] = [];
   for (let i = -10; i <= 10; i++) bins.push(i / 10);
-  const share = new Map(r.dist.map(([b, n]) => [Math.round(b * 10) / 10, n / total]));
+  const share = new Map(d.dist.map(([b, n]) => [Math.round(b * 10) / 10, n / total]));
   const colors = bins.map((b) => (b <= r.thresholds.angry ? theme.series[7] : b >= r.thresholds.glowing ? theme.series[2] : theme.baseline));
   charts.push(new Chart($<HTMLCanvasElement>('#recent-dist'), {
     type: 'bar',
@@ -250,7 +289,8 @@ function renderRecent(r: ToneRecent, theme: Theme) {
 
 // ---- leaderboards
 
-/** A board's rows. Each name is a button that opens its comments (`open`). */
+/** A board's rows. Each name is a button that opens its comments (`open`),
+ * with the email address under it. */
 function boardRows(table: HTMLTableElement, rows: { name: string; email: string; count: string | Node; title?: string }[],
   open: (r: { name: string; email: string }) => void) {
   table.tBodies[0].replaceChildren(...rows.map((r, i) => {
@@ -258,9 +298,8 @@ function boardRows(table: HTMLTableElement, rows: { name: string; email: string;
     const who = el('td');
     const b = el('button', r.name, 'link-button person-link');
     b.type = 'button';
-    b.title = r.email;
     b.addEventListener('click', () => open(r));
-    who.append(b);
+    who.append(b, el('span', r.email, 'person-email'));
     const count = el('td', undefined, 'num');
     count.append(r.count);
     if (r.title) count.title = r.title;
@@ -291,6 +330,7 @@ $('#person-print').addEventListener('click', () => {
 dialog.addEventListener('close', () => {
   personChart?.destroy();
   personChart = undefined;
+  if (parseHash()) history.replaceState(null, '', location.pathname + location.search);
 });
 
 /** What a popup charts: one bar series per kind of comment it lists, over
@@ -401,24 +441,26 @@ function commentItem(c: PersonComment, email?: string): HTMLElement {
 /** A board a popup's person may be on: its rows for each period. */
 type RankBoard = 'given' | 'received' | 'authors' | 'reviewers';
 
-/** The weeks a board covers in `period`. */
-function boardWeeks(b: RankBoard, period: Period): [string, string] | null {
+/** The weeks a board covers for the chosen dates. */
+function boardWeeks(b: RankBoard): [string, string] | null {
   if (b === 'given' || b === 'received') return praiseData ? periodWeeks(praiseData.weeks, period) : null;
-  return recentData ? (period === 'all' ? recentData.weeks : recentData.month_weeks) : null;
+  return recentData ? recentWeeks(recentData) : null;
 }
 
-/** The person's places on `boards` in the period selected on the page, a
- * line each with its dates (so a printed popup records them). Boards they
- * aren't on are left out. */
-function drawRanks(email: string, boards: RankBoard[], period: Period) {
-  const rows = (b: RankBoard): { email: string }[] =>
-    b === 'given' || b === 'received'
-      ? (praiseData ? netBoard(praiseData, b, period, 'all') : [])
-      : (recentData?.happy[period][b] ?? []);
+/** A board's rows for the chosen dates, everyone on it. */
+function boardRowsFor(b: RankBoard): { email: string; name: string }[] {
+  if (b === 'given' || b === 'received') return praiseData ? netBoard(praiseData, b, period, 'all') : [];
+  return recentData ? recentPeriod(recentData).happy[b] : [];
+}
+
+/** The person's places on `boards` for the dates chosen on the page, a line
+ * each with its dates (so a printed popup records them). Boards they aren't
+ * on are left out. */
+function drawRanks(email: string, boards: RankBoard[]) {
   const items: HTMLElement[] = [];
   for (const b of boards) {
-    const r = boardRank(rows(b), email);
-    const weeks = boardWeeks(b, period);
+    const r = boardRank(boardRowsFor(b), email);
+    const weeks = boardWeeks(b);
     if (!r || !weeks) continue;
     const li = el('li');
     li.append(fragment('person-rank', { rank: fmtInt(r.rank), of: fmtInt(r.of), board: msg(`rank-${b}`), range: weeksBetween(weeks) }));
@@ -430,10 +472,10 @@ function drawRanks(email: string, boards: RankBoard[], period: Period) {
 /** Opens the popup: `title` and the person's board places at once, then the
  * comments `pick` chooses (from the weeks `who.range`), and the chart `chart`
  * describes. */
-function openPerson(title: string, who: { email: string; boards: RankBoard[]; period: Period; range: [string, string] },
+function openPerson(title: string, who: { email: string; boards: RankBoard[]; range: [string, string] },
   chart: ChartSpec | null, pick: (d: PersonComments) => PersonComment[]) {
   $('#person-title').textContent = title;
-  drawRanks(who.email, who.boards, who.period);
+  drawRanks(who.email, who.boards);
   const list = $('#person-list');
   const note = $('#person-note');
   list.replaceChildren();
@@ -465,16 +507,74 @@ function openPerson(title: string, who: { email: string; boards: RankBoard[]; pe
 // The boards' own toggles are wired once; each draw reads the current data.
 let praiseData: PraiseData | undefined;
 let recentData: ToneRecent | undefined;
-const praisePeriod = radio<Period>('praise-period', () => drawPraise());
 const praiseSize = radio<string>('praise-size', () => drawPraise());
-const happyPeriod = radio<Period>('happy-period', () => drawHappy());
 const happySize = radio<string>('happy-size', () => drawHappy());
+
+/** What a popup is about, as named in the URL's hash: praise given or
+ * received (the praise boards), glowing comments received as change author
+ * or as reviewer (the happy tables), or all of someone's praise (the lookup
+ * box). */
+type Mode = 'given' | 'received' | 'authors' | 'reviewers' | 'person';
+const MODES: readonly Mode[] = ['given', 'received', 'authors', 'reviewers', 'person'];
+
+/** The weeks the praise data covers for the chosen dates. */
+const praiseWeeks = (d: PraiseData) => periodWeeks(d.weeks, period) ?? d.weeks;
+
+/** Opens the popup for `email` in `mode`, and names it in the URL's hash. */
+function openMode(mode: Mode, email: string, name: string) {
+  const p = praiseData;
+  const r = recentData;
+  if (!p) return;
+  const range = praiseWeeks(p);
+  if (mode === 'given' || mode === 'received') {
+    openPerson(msg(`person-praise-${mode}`, { name }), { email, boards: [mode], range },
+      { range: p.weeks, series: roleSeries(email, [mode], (c) => praiseComments(c, email, mode, p.weeks)) },
+      (c) => praiseComments(c, email, mode, range));
+  } else if (mode === 'authors' || mode === 'reviewers') {
+    const weeks = r ? recentWeeks(r) : range;
+    openPerson(msg(`person-happy-${mode}`, { name }), { email, boards: [mode], range: weeks },
+      { range: r?.weeks ?? p.weeks, series: roleSeries(email, ['received'], (c) => happyComments(c, email, mode))
+        .filter((sr) => sr.key === (mode === 'authors' ? 'received-author' : 'received-reviewer')) },
+      (c) => happyComments(c, email, mode, weeks));
+  } else {
+    openPerson(msg('person-praise-all', { name }),
+      { email, boards: ['given', 'received', 'authors', 'reviewers'], range }, {
+        range: p.weeks,
+        series: roleSeries(email, ['given', 'received'], (c) => allPraise(c, email, p.weeks)),
+        oneStack: true,
+      }, (c) => allPraise(c, email, range));
+  }
+  const hash = `#${mode}=${email.replace(/[%#&\s]/g, encodeURIComponent)}`;
+  if (location.hash !== hash) history.replaceState(null, '', hash);
+}
+
+/** The popup the URL's hash names, if any. */
+function parseHash(): { mode: Mode; email: string } | null {
+  const m = /^#([a-z]+)=(.+)$/.exec(location.hash);
+  if (!m || !(MODES as readonly string[]).includes(m[1])) return null;
+  try {
+    return { mode: m[1] as Mode, email: decodeURIComponent(m[2]) };
+  } catch {
+    return null;
+  }
+}
+
+/** Opens the popup the URL's hash names, under the person's name from the
+ * data (any board, the praise data, or the lookup list). */
+async function openFromHash() {
+  const h = parseHash();
+  if (!h || !praiseData) return;
+  const fromBoards = (['given', 'received', 'authors', 'reviewers'] as const)
+    .map((b) => boardRowsFor(b).find((x) => x.email === h.email)?.name).find(Boolean);
+  let name = fromBoards ?? praiseData.people[h.email];
+  if (!name) name = (await lookupData()).people[h.email] ?? h.email;
+  openMode(h.mode, h.email, name);
+}
 
 function drawPraise() {
   const d = praiseData;
   if (!d) return;
-  const period = praisePeriod();
-  const range = periodWeeks(d.weeks, period);
+  const range = praiseWeeks(d);
   const size = praiseSize();
   const n = size === 'all' ? 'all' : Number(size);
   $('#net-angry').textContent = String(Math.abs(recentData?.thresholds.angry ?? 0.3));
@@ -483,9 +583,7 @@ function drawPraise() {
     boardRows($<HTMLTableElement>(`#praise-${key}`),
       netBoard(d, key, period, n).map((r) => ({ name: r.name, email: r.email,
         count: scoreBadge(r.score, d.net_scale, `Net praise ${signed1(r.score)} (${fmtInt(r.praise)} praise comments)`) })),
-      (r) => openPerson(msg(`person-praise-${key}`, { name: r.name }), { email: r.email, boards: [key], period, range },
-        { range: d.weeks, series: roleSeries(r.email, [key], (c) => praiseComments(c, r.email, key, d.weeks)) },
-        (c) => praiseComments(c, r.email, key, range)));
+      (r) => openMode(key, r.email, r.name));
   }
 }
 
@@ -544,18 +642,11 @@ async function lookUp() {
   const note = $('#praise-find-note');
   const who = findPerson(await lookupData(), findInput.value);
   if (!who) {
-    fill(note, { q: findInput.value.trim(), range: weeksBetween(d.weeks) }, 'praise-find-none');
+    fill(note, { q: findInput.value.trim(), range: weeksBetween(praiseWeeks(d)) }, 'praise-find-none');
     return;
   }
   note.textContent = '';
-  const period = praisePeriod();
-  const range = periodWeeks(d.weeks, period);
-  openPerson(msg('person-praise-all', { name: who.name }),
-    { email: who.email, boards: ['given', 'received', 'authors', 'reviewers'], period, range }, {
-    range: d.weeks,
-    series: roleSeries(who.email, ['given', 'received'], (c) => allPraise(c, who.email, d.weeks)),
-    oneStack: true,
-  }, (c) => allPraise(c, who.email, range));
+  openMode('person', who.email, who.name);
 }
 
 findForm.addEventListener('submit', (e) => {
@@ -573,27 +664,17 @@ findInput.addEventListener('input', (e) => {
   }
 });
 
-/** Every glowing comment behind `email`'s row in a happy table, over all its
- * weeks (the past-month list is part of it), for the popup's chart. */
-const happyAll = (c: PersonComments, email: string, table: 'authors' | 'reviewers') => {
-  const all = happyComments(c, email, table, 'all');
-  return all.length ? all : happyComments(c, email, table, 'month');
-};
-
 function drawHappy() {
   const r = recentData;
   if (!r) return;
   const fmtRow = (x: HappyRow) => ({ name: x.name, email: x.email, count: fmtInt(x.glowing),
     title: `${fmtInt(x.glowing)} glowing comments from ${fmtInt(x.happy)} of the ${fmtInt(x.counterparts)} people who commented` });
-  const p = happyPeriod();
+  const d = recentPeriod(r);
   const n = Number(happySize());
-  fill($('#happy-sub'), { range: weeksBetween(p === 'all' ? r.weeks : r.month_weeks), min: r.min_counterparts });
+  fill($('#happy-sub'), { range: weeksBetween(d.weeks), min: r.min_counterparts });
   for (const table of ['authors', 'reviewers'] as const) {
-    boardRows($<HTMLTableElement>(`#happy-${table}`), r.happy[p][table].slice(0, n).map(fmtRow),
-      (x) => openPerson(msg(`person-happy-${table}`, { name: x.name }), { email: x.email, boards: [table], period: p, range: p === 'all' ? r.weeks : r.month_weeks },
-        { range: r.weeks, series: roleSeries(x.email, ['received'], (c) => happyAll(c, x.email, table))
-          .filter((sr) => sr.key === (table === 'authors' ? 'received-author' : 'received-reviewer')) },
-        (c) => happyComments(c, x.email, table, p)));
+    boardRows($<HTMLTableElement>(`#happy-${table}`), d.happy[table].slice(0, n).map(fmtRow),
+      (x) => openMode(table, x.email, x.name));
   }
 }
 
@@ -620,10 +701,11 @@ function orNone(items: HTMLElement[]): HTMLElement[] {
 }
 
 function renderSamples(s: ToneSamples) {
-  fill($('#samples-sub'), { range: weeksBetween(s.weeks) });
+  const d = s.periods[period] ?? { praise: [], grumpy: [] };
+  fill($('#samples-sub'), { range: weeksBetween(periodWeeks(s.weeks, period) ?? s.weeks) });
   $('#praise-min').textContent = String(s.praise_min);
   $('#grumpy-max').textContent = String(Math.abs(s.grumpy_max));
-  $('#praise-samples').replaceChildren(...orNone(s.praise.map((p) => {
+  $('#praise-samples').replaceChildren(...orNone(d.praise.map((p) => {
     const li = el('li', undefined, 'quote quote-praise');
     li.append(el('blockquote', p.text));
     const by = el('p', undefined, 'quote-by');
@@ -639,7 +721,7 @@ function renderSamples(s: ToneSamples) {
     li.append(by);
     return li;
   })));
-  $('#grumpy-samples').replaceChildren(...orNone(s.grumpy.map((g) => {
+  $('#grumpy-samples').replaceChildren(...orNone(d.grumpy.map((g) => {
     const li = el('li', undefined, 'quote quote-grumpy');
     li.append(el('blockquote', g.text));
     const when = el('p', undefined, 'quote-by');
@@ -650,10 +732,10 @@ function renderSamples(s: ToneSamples) {
 }
 
 function renderAi(r: ToneRecent) {
-  const total = r.total.ai;
-  fill($('#ai-sub'), { range: weeksBetween(r.weeks), shown: fmtInt(r.ai.length), total: fmtInt(total) });
+  const d = recentPeriod(r);
+  fill($('#ai-sub'), { range: weeksBetween(d.weeks), shown: fmtInt(d.ai.length), total: fmtInt(d.total.ai) });
   // Most negative first, as the data lists them.
-  $('#ai-list').replaceChildren(...orNone(r.ai.map((c) => {
+  $('#ai-list').replaceChildren(...orNone(d.ai.map((c) => {
     const li = el('li', undefined, 'quote quote-ai');
     li.append(el('blockquote', c.text));
     const when = el('p', undefined, 'quote-by');
@@ -666,7 +748,10 @@ function renderAi(r: ToneRecent) {
 /** Bumped on every switch, so a slower earlier load doesn't draw over a later one. */
 let current = 0;
 
-/** Loads and draws every section for one choice of writers. */
+/** The loaded files for the writers shown. */
+let loaded: { trend: ToneTrend; samples: ToneSamples } | undefined;
+
+/** Loads every section's files for one choice of writers, then draws. */
 async function show(authors: Authors, token: number) {
   const u = URLS[authors];
   const [trend, praise, samples, recent] = await Promise.all([
@@ -678,19 +763,88 @@ async function show(authors: Authors, token: number) {
   if (token !== current) return;
   shown = authors;
   if (dialog.open) dialog.close();
+  praiseData = praise;
+  recentData = recent;
+  loaded = { trend, samples };
+  fillPeriods();
+  fillPeople();
+  draw();
+  fill($('#authors-note'), { a: authors });
+}
+
+/** Draws every section for the chosen dates. */
+function draw() {
+  if (!loaded || !praiseData || !recentData) return;
   for (const c of charts) c.destroy();
   charts = [];
   const theme = readTheme();
-  renderTrend(trend, theme);
-  renderRecent(recent, theme);
-  praiseData = praise;
-  recentData = recent;
-  fillPeople();
+  renderTrend(loaded.trend, theme);
+  renderRecent(recentData, theme);
   drawPraise();
   drawHappy();
-  renderSamples(samples);
-  renderAi(recent);
-  fill($('#authors-note'), { a: authors });
+  renderSamples(loaded.samples);
+  renderAi(recentData);
+}
+
+// ---- the dates: all, a calendar year or a calendar month
+
+const yearPick = $<HTMLSelectElement>('#period-year');
+const monthPick = $<HTMLSelectElement>('#period-month');
+
+/** The kind of dates checked (all, year, month). */
+const periodChoice = () => document.querySelector<HTMLInputElement>('input[name="period"]:checked')!.value as
+  'all' | 'year' | 'month';
+
+/** Lists the years and months the data has, newest first, keeping the
+ * choice when it's still there (else the newest). */
+function fillPeriods() {
+  if (!praiseData) return;
+  const { years, months } = periodsOf(praiseData.weeks);
+  const options = (sel: HTMLSelectElement, keys: string[], label: (k: string) => string) => {
+    const keep = sel.value;
+    sel.replaceChildren(...keys.slice().reverse().map((k) => {
+      const o = el('option', label(k));
+      o.value = k;
+      return o;
+    }));
+    if (keys.includes(keep)) sel.value = keep;
+  };
+  options(yearPick, years, (y) => y);
+  options(monthPick, months, monthLabel);
+  syncPeriod();
+}
+
+/** Shows the select for the kind checked and takes the dates from it. */
+function syncPeriod() {
+  const kind = periodChoice();
+  $('#period-year-box').hidden = kind !== 'year';
+  $('#period-month-box').hidden = kind !== 'month';
+  period = kind === 'year' ? yearPick.value || 'all' : kind === 'month' ? monthPick.value || 'all' : 'all';
+}
+
+/** A new choice of dates: redraw, and keep it in the URL (?period=…). */
+function changePeriod() {
+  syncPeriod();
+  const url = new URL(location.href);
+  if (period === 'all') url.searchParams.delete('period');
+  else url.searchParams.set('period', period);
+  history.replaceState(null, '', url);
+  if (dialog.open) dialog.close();
+  draw();
+}
+
+/** The dates in the URL (?period=2026 or 2026-10): checks their kind and
+ * picks them once the selects are filled. */
+function initialPeriod() {
+  const v = new URLSearchParams(location.search).get('period') ?? '';
+  const kind = /^\d{4}$/.test(v) ? 'year' : /^\d{4}-\d{2}$/.test(v) ? 'month' : 'all';
+  $<HTMLInputElement>(`input[name="period"][value="${kind}"]`).checked = true;
+  if (kind === 'all') return;
+  const sel = kind === 'year' ? yearPick : monthPick;
+  const o = el('option', v);
+  o.value = v;
+  sel.replaceChildren(o);
+  sel.value = v;
 }
 
 /** The writers in the URL (?authors=…), else committers. */
@@ -724,6 +878,7 @@ function main() {
   $('#prompt-text').textContent = promptText.trim();
   const start = initialAuthors();
   $<HTMLInputElement>(`input[name="authors"][value="${start}"]`).checked = true;
+  initialPeriod();
   const authors = radio<Authors>('authors', () => {
     const a = authors();
     const url = new URL(location.href);
@@ -732,7 +887,18 @@ function main() {
     history.replaceState(null, '', url);
     void run(a);
   });
-  void run(start);
+  radio('period', changePeriod);
+  yearPick.addEventListener('change', changePeriod);
+  monthPick.addEventListener('change', changePeriod);
+  // The bar is sticky; scroll-padding-top (style.css) keeps anchor jumps
+  // clear of it, at whatever height it wraps to.
+  const bar = $('.metric-bar');
+  new ResizeObserver(() => document.documentElement.style.setProperty('--metric-bar-h', `${bar.offsetHeight}px`))
+    .observe(bar);
+  // A shared link to a popup opens it once the data is in, and so does a
+  // hash typed or followed later.
+  void run(start).then(() => openFromHash());
+  window.addEventListener('hashchange', () => void openFromHash());
 }
 
 main();
