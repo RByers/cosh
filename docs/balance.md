@@ -128,6 +128,81 @@ A Gerrit backfill to 2020 and the bug tracker **need approval**.
 Each would be shown as aggregates by quarter, cohort or directory group,
 never by person.
 
+## Next data and analyses (Fable, 2026-11-08)
+
+A third review asked what to collect and what to run next. Its main
+finding: much of the "new" data is already local and needs no approval.
+Counts it found were spot-checked (27 `AGENTS.md`, 23 `GEMINI.md` and 620
+`Agent-Generated` commits since July 2026 on `main`).
+
+**Data, by value per cost:**
+
+1. **Local, approved, CPU only.**
+   - *Per-directory AI adoption dates:* first `AGENTS.md`, `GEMINI.md`,
+     `agents/`, `.gemini/` or `.claude/` in each directory. This is a
+     staggered treatment date for the difference-in-differences in item 3
+     of the next list.
+   - *A broader AI marker:* tool names and `Co-Authored-By` or
+     `Assisted-by` trailers in commit messages, about 6× the trailer set and
+     starting in 2025.
+   - *NoteDb tags `derive` drops today:*
+     - CQ dry runs and their results, a proxy for try-job quality;
+     - work-in-progress uploads before sending;
+     - who added which reviewer;
+     - Code-Owners results, giving the OWNERS approvals each CL needed.
+   - *Commit footers:*
+     - `Bug:`/`Fixed:`, on about 75% of commits;
+     - `Owners-Override`;
+     - `Low-Coverage-Reason`, falling from 1,660 in 2024 to 273 in 2026;
+     - `Auto-Submit`.
+   - *Abandoned CLs:* 67,005 already in `balance.sqlite`.
+2. **Gerrit backfill 2020-07 .. 2023-06** (**needs approval**; about
+   11 GB and 2 days serial). It gives a four-year pre-AI baseline. The
+   attention set starts late 2020, and interdiff would need those patch sets
+   too (about 70 GB more, a separate approval).
+3. **Bug-tracker metadata** for the `Bug:`/`Fixed:` IDs of reverts,
+   relands and fixes, sampled (**new source, needs approval**). It would
+   show regressions, security bugs and risk by directory.
+4. **Chrome Releases security-fix lists** (**needs approval**; tiny), to
+   tag security-fixing CLs.
+5. Lower value:
+   - other repos as comparison communities;
+   - LUCI flake data (mostly covered by CQ tags);
+   - patch sets of unreviewed CLs;
+   - surveys or interviews (non-public; need approval and consent).
+
+**Analyses on data we have:**
+
+1. *Author-side vs reviewer-side decomposition* in balanced panels: do
+   reviewers ease off, or do authors arrive better? Reviewers' threads with
+   reviewer fixed effects, against signals reviewers don't set: interdiff,
+   rounds, CQ failures, WIP uploads, reverts, post-land fixes.
+2. *Matched-cohort learning curves:* 2025 joiners against 2024 joiners
+   matched on first-quarter size, directory, org and prior Gerrit activity.
+3. *Event-study difference-in-differences* around each directory's first
+   agent-instruction file, against not-yet-treated directories. Check
+   pre-trends.
+4. *Within-person comparison* on the broader marker, including each
+   author's unmarked CLs before and after their first marked one.
+5. *Event studies* around dated project events (`agents/` 2025-07-10, the
+   AI policy 2025-08-01, the trailer 2026-07), against the same weeks of
+   2023–24.
+6. *Reviewer load and bus factor* per directory, with `Owners-Override`
+   and `Auto-Submit` as stress signals.
+7. *Quality beyond reverts:* post-land fixes, `Fixed:` chains, CQ failure
+   rate, test co-change.
+8. *Abandoned CLs:* review that stops a CL is the cycle working.
+9. *Review conversation under agents:* a sandboxed Haiku pass.
+
+**Its top five, in order:**
+
+1. Mine the local signals into `balance.sqlite`.
+2. Run the decomposition and matched cohorts.
+3. Run the directory difference-in-differences and the broader
+   within-person comparison.
+4. Ask whether to approve the 2020–23 backfill.
+5. Ask whether to approve sampled bug metadata and the security-fix list.
+
 ## The user's decisions (2026-11-08)
 
 - **People:** aggregate and cohort views, plus an individual lookup, but no
