@@ -77,14 +77,15 @@ Counts on 2026-11-08:
 
 ## Fetching politely
 
-- **Search: serial**, one request at a time, at least `--interval` (default
-  2 s, never below 1 s) from the end of one request to the start of the next.
-- **Monorail lookups: up to 4 at once, no wait** (`monorail --jobs 4
-  --interval 0`, approved by the user on 2026-11-08). The stubs are tiny
-  static pages. `--jobs` is capped at 4. Worker threads only send requests;
-  one thread logs and stores every reply in order. There is no back-off in
-  this mode: the first reply that isn't a stub, 403 or 404 stops every
-  worker at once (rerun to resume, or serially with the defaults).
+- **Search: serial**, one request at a time. The first run (2026-11-08)
+  waited 2 s between requests; after ~1,100 clean replies the user approved
+  no wait (`--interval`, default 0 s), relying on the back-off below.
+- **Monorail lookups: up to 4 at once, no wait** (`--jobs`, default and
+  maximum 4, approved by the user on 2026-11-08). The stubs are tiny static
+  pages. Worker threads only send requests; one thread logs and stores every
+  reply in order, including those still in flight after an error. A 429,
+  5xx or network error stops every worker, backs off (5, 15, 30 min) and
+  resumes with the IDs not yet done; other errors stop the run.
 - **50 IDs per request** (the search's page size), newest IDs first.
 - **Identity:** the usual cosh `User-Agent` and `From` header with the
   contact e-mail from `cosh/contact.py` (never hardcoded).
@@ -192,7 +193,7 @@ From the main checkout (or a worktree with
 python3 -m cosh.bugs ids                    # offline, ~10 s
 python3 -m cosh.bugs fetch                  # dry run: IDs, requests, hours
 nice -n 5 python3 -m cosh.bugs fetch --go   # resumable
-nice -n 5 python3 -m cosh.bugs monorail --go --jobs 4 --interval 0
+nice -n 5 python3 -m cosh.bugs monorail --go   # 4 at once
 nice -n 5 python3 -m cosh.bugs fetch --go   # asks the newly mapped IDs
 python3 -m cosh.bugs status                 # counts and enum histograms only
 python3 -m cosh.bugs fetch --retry-missing --go   # months later
@@ -202,6 +203,19 @@ The first search ran on 2026-11-08 in the background, log
 `data/private/bugs/fetch-*.log`. The Monorail lookups and the second search
 follow it as their own job, log `data/private/bugs/monorail-*.log`, PID in
 `data/private/bugs/monorail.pid`. Rerunning any step resumes it.
+
+## Why so few are visible
+
+About 39% of the IDs asked are visible, and security bugs more often (77%)
+than others (35%). It isn't a fetch error: all 1,095 search replies were
+HTTP 200, and 20 missing IDs fetched one by one (12 at random, 8 from
+batches where none of the 50 came back) all returned 403 "Unsigned-in user
+does not have permission to view issue" (replies in
+`data/private/bugs/probe/missing-2026-11-08/`). Since the 2024 move,
+Chromium's tracker shares its ID space with Google's internal trackers, so a
+plain `Bug: 4xxxxxxxx` footer may name a Google-internal or
+Google-restricted bug, which anonymous access can't see. Fixed security bugs
+open up after release, which is why they are more visible than the rest.
 
 ## Cost
 

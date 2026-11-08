@@ -1,12 +1,14 @@
 """cosh.bugs: footer parsing, response parsing and the fetch stop rules.
 No network: a fake transport stands in for issues.chromium.org."""
 
+import contextlib
 import gzip
 import io
 import json
 import os
 import tempfile
 import threading
+import time
 import unittest
 
 os.environ.setdefault("COSH_CONTACT", "test@example.invalid")
@@ -225,7 +227,8 @@ class FetchTest(unittest.TestCase):
 
     def test_interval_floor(self):
         with self.assertRaises(SystemExit):
-            bugs.Fetcher(self.db, data_dir=self.dir, interval=0.5)
+            bugs.Fetcher(self.db, data_dir=self.dir, interval=-1)
+        self.assertEqual(bugs.DEFAULT_INTERVAL, 0)
 
     def test_monorail_lookup(self):
         stub = b'<script>const url = "https://issues.chromium.org/40097049"</script>'
@@ -245,6 +248,7 @@ class FetchTest(unittest.TestCase):
             with lock:
                 calls.append(old)
             st, rbody = by_id[old]
+            time.sleep(0.005)  # a real reply takes a while; lets a stop take effect
             return st, {"content-type": "text/html"}, rbody, rbody, url
         t.calls = calls
         return t
@@ -273,10 +277,52 @@ class FetchTest(unittest.TestCase):
         t = self.stub_transport(by_id)
         f = bugs.Fetcher(self.db, data_dir=self.dir, interval=0, min_interval=0, transport=t,
                          log=io.StringIO())
-        with self.assertRaises(bugs.Stop):
+        with self.assertRaises(bugs.Backoff):
             f.resolve_monorail_parallel(sorted(by_id), 4)
-        self.assertEqual(self.db.execute("SELECT count(*) FROM monorail_map").fetchone()[0], 3)
+        done = {r[0] for r in self.db.execute("SELECT old_id FROM monorail_map")}
+        self.assertNotIn(1003, done)
+        self.assertTrue({1000, 1001, 1002} <= done)  # in-flight replies are kept too
         self.assertLess(len(t.calls), 40)  # the rest were cancelled
+
+    def test_monorail_parallel_403_on_other_4xx(self):
+        t = self.stub_transport({1: (410, b"gone")})
+        f = bugs.Fetcher(self.db, data_dir=self.dir, interval=0, min_interval=0, transport=t,
+                         log=io.StringIO())
+        with self.assertRaises(bugs.Stop) as cm:
+            f.resolve_monorail_parallel([1], 4)
+        self.assertNotIsInstance(cm.exception, bugs.Backoff)
+
+    def test_monorail_command_backs_off_and_resumes(self):
+        """A 429 makes cmd_monorail wait, then finish the IDs not yet done."""
+        with self.db:
+            self.db.executemany("INSERT INTO wanted (id) VALUES (?)",
+                                [(1000 + i,) for i in range(12)])
+        replies = {1000 + i: [(200, self.stub(40000000 + i))] for i in range(12)}
+        replies[1004] = [(429, b"slow"), (200, self.stub(40000004))]
+        lock = threading.Lock()
+
+        def t(method, url, body, headers):
+            old = int(url.rsplit("=", 1)[1])
+            with lock:
+                st, rbody = replies[old][0] if len(replies[old]) == 1 else replies[old].pop(0)
+            return st, {"content-type": "text/html"}, rbody, rbody, url
+        slept = []
+        real = bugs.Fetcher
+
+        def make(db, **kw):
+            return real(db, data_dir=self.dir, transport=t, log=io.StringIO(),
+                        sleep=slept.append, **kw)
+        old_open, old_lock = bugs.open_db, bugs.fetch_lock
+        bugs.Fetcher, bugs.open_db = make, lambda: self.db
+        bugs.fetch_lock = lambda name="fetch.lock": old_lock(name, self.dir)
+        try:
+            with contextlib.redirect_stdout(io.StringIO()):
+                bugs.main(["monorail", "--go"])
+        finally:
+            bugs.Fetcher, bugs.open_db, bugs.fetch_lock = real, old_open, old_lock
+        self.assertEqual(slept, [300])
+        self.assertEqual(self.db.execute("SELECT count(*), count(new_id) FROM monorail_map")
+                         .fetchone(), (12, 12))
 
     def test_monorail_jobs_capped(self):
         f = bugs.Fetcher(self.db, data_dir=self.dir, interval=0, min_interval=0,

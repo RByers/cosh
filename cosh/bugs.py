@@ -41,8 +41,10 @@ LIST_URL = f"https://{HOST}/action/issues/list"
 MONORAIL_URL = "https://bugs.chromium.org/p/chromium/issues/detail?id={}"
 TRACKER = "157"             # Chromium's tracker ID in the Google Issue Tracker
 BATCH = 50                  # IDs per search request (the search returns at most 50)
-MIN_INTERVAL = 1.0          # never less for the search endpoint (CLAUDE.md)
-DEFAULT_INTERVAL = 2.0
+# No wait between requests by default; any error backs off instead (approved
+# by the user on 2026-11-08, after a clean first run at 2 s).
+MIN_INTERVAL = 0.0
+DEFAULT_INTERVAL = 0.0
 # The Monorail stubs are tiny static redirects; the user approved up to 4 at
 # once with no wait between them (2026-11-08).
 MONORAIL_MAX_JOBS = 4
@@ -153,6 +155,11 @@ CREATE TABLE IF NOT EXISTS bugs (
 
 class Stop(Exception):
     """The fetch must stop now (blocked, rate-limited, or the API changed)."""
+
+
+class Backoff(Stop):
+    """A parallel run hit a rate limit, server error or network error: wait,
+    then go on with the IDs not yet done."""
 
 
 # ---------------------------------------------------------------- paths, db
@@ -609,23 +616,32 @@ class Fetcher:
                 self.sleep(self.interval)
             return sent
 
-        mapped = 0
+        mapped = n = 0
+        error = None
         ex = ThreadPoolExecutor(max_workers=jobs)
         try:
-            for n, (old, sent) in enumerate(zip(old_ids, ex.map(one, old_ids)), 1):
+            # Every reply that arrived is logged and kept, also those after an
+            # error; IDs a stopped worker skipped come back as None.
+            for old, sent in zip(old_ids, ex.map(one, old_ids)):
                 if sent is None:
-                    break
+                    continue
                 seq, st, h, rbody, rel, started, outcome, final = self.record("monorail", None, sent)
                 if outcome != "ok":
                     stop.set()
-                    raise Stop(f"request {seq}: HTTP {st} ({outcome}) on a Monorail lookup; "
-                               "stopping")
+                    retry = outcome in ("http", "net") and (st in (-1, 429) or st >= 500)
+                    if error is None or (isinstance(error, Backoff) and not retry):
+                        error = (Backoff if retry else Stop)(
+                            f"request {seq}: HTTP {st} ({outcome}) on a Monorail lookup")
+                    continue
                 mapped += self._store_monorail(old, seq, st, rbody, started) is not None
+                n += 1
                 if progress:
                     progress(n, mapped)
         finally:
             stop.set()
             ex.shutdown(wait=True, cancel_futures=True)
+        if error:
+            raise error
         return mapped
 
 
@@ -677,6 +693,10 @@ def cmd_fetch(args):
     print(f"done: {asked:,} asked, {seen:,} visible", flush=True)
 
 
+def mapped_already(db):
+    return {r[0] for r in db.execute("SELECT old_id FROM monorail_map")}
+
+
 def cmd_monorail(args):
     db = open_db()
     ids = [r[0] for r in db.execute(
@@ -698,8 +718,27 @@ def cmd_monorail(args):
             if n % 200 == 0 or n == len(ids):
                 print(f"{store.now_iso()} {n:,}/{len(ids):,} looked up, {m:,} mapped", flush=True)
         try:
-            if args.jobs > 1 or args.interval < MIN_INTERVAL:
-                f.resolve_monorail_parallel(ids, args.jobs, progress)
+            if args.jobs > 1:
+                done, attempt = 0, 0
+                while True:
+                    seen = mapped_already(db)
+                    left = [i for i in ids if i not in seen]
+                    try:
+                        f.resolve_monorail_parallel(left, args.jobs,
+                                                    lambda n, m: progress(done + n, m))
+                        break
+                    except Backoff as e:
+                        seen = mapped_already(db)
+                        now_left = sum(1 for i in ids if i not in seen)
+                        if now_left < len(left):
+                            attempt = 0  # progress since the last error
+                        if attempt == len(f.backoff):
+                            raise Stop(f"{e}; still failing after {attempt} back-offs")
+                        done = len(ids) - now_left
+                        print(f"{e}; backing off {f.backoff[attempt]} s "
+                              f"({attempt + 1}/{len(f.backoff)})", flush=True)
+                        f.sleep(f.backoff[attempt])
+                        attempt += 1
             else:
                 for n, old in enumerate(ids, 1):
                     mapped += f.resolve_monorail(old) is not None
@@ -758,7 +797,7 @@ def main(argv=None):
         p.add_argument("--interval", type=float, default=DEFAULT_INTERVAL)
         p.add_argument("--limit", type=int, help="at most this many requests")
         if name == "monorail":
-            p.add_argument("--jobs", type=int, default=1,
+            p.add_argument("--jobs", type=int, default=MONORAIL_MAX_JOBS,
                            help=f"lookups in flight at once, 1..{MONORAIL_MAX_JOBS}")
         if name == "fetch":
             p.add_argument("--retry-missing", action="store_true",
@@ -769,11 +808,9 @@ def main(argv=None):
     sub.add_parser("parse").set_defaults(fn=cmd_parse)
     sub.add_parser("status").set_defaults(fn=cmd_status)
     args = ap.parse_args(argv)
-    if args.cmd == "fetch" and args.interval < MIN_INTERVAL:
-        ap.error(f"--interval must be at least {MIN_INTERVAL} s")
+    if getattr(args, "interval", 0) < MIN_INTERVAL:
+        ap.error("--interval can't be negative")
     if args.cmd == "monorail":
-        if args.interval < 0:
-            ap.error("--interval can't be negative")
         if not 1 <= args.jobs <= MONORAIL_MAX_JOBS:
             ap.error(f"--jobs must be 1..{MONORAIL_MAX_JOBS}")
     args.fn(args)
