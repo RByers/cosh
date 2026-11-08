@@ -60,9 +60,10 @@
           bigger too. Review per line fell: like for like, a 2026 CL gets about a third less review than one in
           2023. Waits shortened in 2025 and are back to 2023 levels, and reverts haven't risen. People who joined
           in 2025 land more CLs and review others sooner than earlier joiners, and draw less review, which may be
-          their reviewers' doing as much as theirs. Approvals keep concentrating on the busiest reviewers, and
-          fewer mid-career reviewers approve newcomers' CLs, trends that began before AI tools. No single signal
-          here separates AI from other changes in the project.
+          their reviewers' doing as much as theirs. Fewer people review than write CLs, and each reviewer now sees
+          half again as many CLs as in 2023. Fewer mid-career reviewers approve newcomers' CLs, and fewer
+          newcomers go on to mentor others, trends that began before AI tools. No single signal here separates AI
+          from other changes in the project.
         </p>
         <p class="note">
           Merged, human-owned CLs on chromium/src <code>main</code>: Gerrit review data from July 2023 to
@@ -133,7 +134,7 @@
         <p class="note">
           Human commits with a CL on <code>main</code>, per quarter. Lines: the median; shading: the middle half
           (darker) and the 10th to 90th percentile (lighter); dashed: the mean. The typical author has landed
-          about 2 commits a month since 2017. The rise since 2023 comes from the busiest authors: the 90th
+          about 3 commits a month since 2017. The rise since 2023 comes from the busiest authors: the 90th
           percentile went from
           <b data-src="git_quarters" data-field="per_author_month_p90" data-where="q=2024Q3" data-fmt="n1">–</b> in
           2024 Q3 to
@@ -151,7 +152,7 @@
         <a class="card-anchor" href="#reviewers" aria-label="Link to this section" title="Link to this section">#</a>
         <h2 id="reviewers-title">How review is shared</h2>
         <p class="sub">
-          About as many people comment on others' CLs as write CLs. In 2026 Q3,
+          Fewer people review than write CLs. In 2026 Q3,
           <b data-src="reviewer_quarters" data-field="reviewers" data-where="q=2026Q3" data-fmt="n0">–</b> people left
           review comments on others' CLs, for
           <b data-src="reviewer_quarters" data-field="authors" data-where="q=2026Q3" data-fmt="n0">–</b> authors.
@@ -162,11 +163,11 @@
           2023 Q3.
         </p>
         <p class="sub">
-          Approvals have been concentrating for years, since before AI tools: the busiest tenth of approvers gave
+          Reviewing hasn't concentrated on a few people much: the busiest tenth of approvers gave
           <b data-src="git_quarters" data-field="top10_share" data-where="q=2019Q3" data-fmt="pct">–</b> of approvals
           in 2019, <b data-src="git_quarters" data-field="top10_share" data-where="q=2024Q3" data-fmt="pct">–</b> in
           2024 and <b data-src="git_quarters" data-field="top10_share" data-where="q=2026Q3" data-fmt="pct">–</b> in
-          2026. Commenting has not concentrated the same way: the busiest tenth of commenters wrote
+          2026, and the busiest tenth of commenters wrote
           <b data-src="reviewer_quarters" data-field="threads_top10_share" data-where="q=2023Q3" data-fmt="pct">–</b>
           of review threads in 2023 Q3 and
           <b data-src="reviewer_quarters" data-field="threads_top10_share" data-where="q=2026Q3" data-fmt="pct">–</b>
@@ -421,7 +422,7 @@
           <b data-src="growth_windows" data-field="none_core4" data-where="window=2023-24&amp;tenure=all" data-fmt="pct">–</b>
           in 2023–24 and
           <b data-src="growth_windows" data-field="none_core4" data-where="window=2025-26&amp;tenure=all" data-fmt="pct">–</b>
-          in 2025–26. Most of them have five or more years' tenure.
+          in 2025–26. About half of them have five or more years' tenure.
           Since AI tools arrived, the low-growth share has eased slightly, not risen.
         </p>
         <h3>Share of people improving on each path, by two-year window</h3>
@@ -457,9 +458,10 @@
           2025, from <b data-src="pipeline" data-field="new_regular_reviewers" data-where="year=2018" data-fmt="n0">–</b>
           in 2018, and recovered to
           <b data-src="pipeline" data-field="new_regular_reviewers" data-where="year=2026" data-fmt="n0">–</b> by
-          October 2026. Mentoring is concentrating too: the busiest tenth of mentors took
-          <b data-src="mentorship" data-field="top10_share" data-where="year=2025" data-fmt="pct">–</b> of 2025's
-          newcomers.
+          October 2026. Mentoring hasn't concentrated: the busiest tenth of mentors took
+          <b data-src="mentorship" data-field="top10_share" data-where="year=2018" data-fmt="pct">–</b> of 2018's
+          newcomers and
+          <b data-src="mentorship" data-field="top10_share" data-where="year=2025" data-fmt="pct">–</b> of 2025's.
         </p>
         <div class="panels">
           <figure class="panel"><h3>Who approves newcomers' CLs</h3>

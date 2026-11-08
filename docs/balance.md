@@ -33,6 +33,47 @@ that AI tools are common? It looks at:
 - the burden of supporting others: who reviews newcomers, how review moves
   from experts to people who were newcomers a few years earlier.
 
+## Correction: identity merge (2026-11-08)
+
+`balance_growth.load_all` merged a Gerrit owner's address with a commit's git
+author whenever the two differed on even one CL. 648 one-off pairs (someone
+landing another's CL, copybara imports) chained about 400 people into one
+"person". Since the fix (`alias_pairs`), two addresses are merged only when
+one owns at least 3 and at least half of the other's CLs. The largest merged
+identity now has 2 addresses. Every figure on the page and in
+`summaries/balance*.json` was regenerated, and the six tables that came from
+`balance_growth.py` are now parsed by `scripts/balance_growth_tables.py`
+instead of copied by hand.
+
+What changed, by finding (older text further down still has the old
+figures; the page has the corrected ones):
+
+- **Authors per quarter:** about 1,650 in 2023 Q3, not 1,190.
+  - CLs per author went from 16.7 to 23.0 in 2026 Q3, not 24.5 to 31.4.
+  - The median author was steady at about 9 CLs a quarter; the rise is in
+    the busiest authors.
+- **Approval concentration was an artefact.** The busiest tenth of
+  approvers gave 46% (2019), 45% (2024) and 48% (2026), not 57% → 68%.
+- **Newcomers' approvers:**
+  - 2–5-year reviewers gave 34% of approvals on newcomers' CLs in 2019 and
+    21% in 2026, not 25% → 6%.
+  - 10+-year reviewers gave 33%, not 69%.
+- **Mentees who became mentors:** 19% (2018 joiners) → 9% (2022), not
+  16% → 4%. The busiest tenth of mentors takes about a quarter of
+  newcomers every year, so mentoring isn't concentrating.
+- **Learning curves keep their shape.** By tenure: 2.41× in the first
+  quarter → 0.68× after ten years (2023–24), and 1.77× → 0.55× in 2026. By
+  familiarity: 1.70× → 0.66×.
+- **Cohorts at 9–12 months, 2025 joiners against 2023 joiners:** 7.2 CLs a
+  month against 3.0, load index 1.05× against 1.52×, and 2.4 reviews a
+  month against 1.3. The 2025 joiners don't start with smaller CLs.
+- **People improving on none of the four git paths:** 40% (2019–20), 45%
+  (2023–24), 43% (2025–26).
+- **AI-marked CLs:** first review 34 h sooner (95% interval 1–67 h, 47
+  author-quarters).
+- **Unchanged:** waits, reverts, rework, the load index and the mechanical
+  rule, which don't depend on identities.
+
 ## Goal and signals (as stated on the page, 2026-11-08)
 
 **Goal.** Chromium has grown through code review: experts give feedback,
@@ -59,10 +100,12 @@ engineers.
 A second review read the page and these notes against the data. Its factual
 points were checked and hold, and the page now says:
 
-- About as many people comment as author (1,325 commenters for 1,240
-  authors in 2026 Q3). Approvals concentrate (busiest tenth 55% → 68%) while
-  thread-writing doesn't (56% → 57%). "Who carries the load" is now "How
-  review is shared".
+- (Superseded by the identity correction below.) The review said about as
+  many people comment as author. With identities fixed, 1,323 commenters
+  served 1,694 authors in 2026 Q3, so fewer people review than author. Neither
+  approvals nor threads concentrate much (busiest tenth: approvals 46% →
+  48%, threads 56% → 57%). "Who carries the load" is now "How review is
+  shared".
 - Per-author velocity rose from 2023 (6.3 → 10.4 commits a month, mean), as
   active authors fell, not first in 2026. The median author has stayed at
   about 2 a month since 2017; the rise is in the top tail (90th percentile
