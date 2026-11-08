@@ -1261,7 +1261,7 @@ test('authorBoard reads like a reviewer board, commits in column 6', () => {
   assert.deepEqual(topReviewers(b, ['2026-W43', '2026-W44'], 'commits').map((r) => [r.name, r.org, r.value]),
     [['n7', 'x.com', 6], ['n8', 'gmail.com', 2]]);
   assert.deepEqual(topReviewers(b, '2026-W44', 'comments'), []);
-  // A person's weekly chart adds their commits.
+  // A person's monthly chart adds their commits.
   const r = board({ '2026-W44': [[1, 0, 3, 1, 10, 1]] });
   const s = reviewerSeries(r, 7, ['2026-W43', '2026-W44'], new Set(), b);
   assert.deepEqual([s.name, s.email, s.org, s.comments, s.commits], ['n7', 'n7@x.com', 'x.com', [0, 0], [1, 5]]);
@@ -1353,4 +1353,7 @@ test('monthlyTotals: calendar months by Thursday, a trailing mean, each week\'s 
     [['Sep 2026', 1, 1], ['Oct 2026', 9, 5], ['Nov 2026', 5, 5], ['Dec 2026', 6, 20 / 3]]);
   assert.deepEqual(m.monthOf, [0, 1, 1, 1, 2, 3]);
   assert.deepEqual(m.months.map((x) => x.at), [0, 2, 4, 5]);
+  assert.deepEqual(m.months.map((x) => x.week), ['2026-W39', '2026-W40', '2026-W45', '2026-W49']);
+  // September starts before the weeks given, and December runs on past them.
+  assert.deepEqual(m.months.map((x) => x.partial), [true, false, false, true]);
 });

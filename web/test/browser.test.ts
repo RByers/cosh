@@ -1211,7 +1211,7 @@ test('leaderboard shows up to 25 reviewers compactly', async () => {
   assert.match(comments.top, /^1\. [^·]+$/); // rank and name only; the org is the bar colour
   // The hover text gives the email (not the name or org), then the count with the metric.
   assert.match(comments.title, /^1\. [^@\s]+@[^@\s]+\.[a-z]+\n[\d,]+ review comments\n/i);
-  // Each row is a button that opens the reviewer's weekly chart.
+  // Each row is a button that opens the reviewer's monthly chart.
   assert.ok(comments.tags.every((t) => t === 'BUTTON'), `tags=${comments.tags}`);
   // Bars and gridlines share the plot column: a bar's length is its share of
   // the axis, measured against the gridline layer, which spans the axis.
@@ -1308,7 +1308,7 @@ test('a control in one section rebuilds only that section; the metric and range 
   await page.close();
 });
 
-test('clicking a reviewer opens their weekly chart with a Gerrit link; Close and the URL', async () => {
+test('clicking a reviewer opens their monthly chart with a Gerrit link; Close and the URL', async () => {
   const { page, errors } = await open();
   assert.equal(await page.$eval('#reviewer-detail', (d) => (d as HTMLElement).hidden), true);
   await page.click('#leaderboard-chart li:nth-child(2) .lb-row');
@@ -1499,7 +1499,7 @@ test('per-reviewer spread: a row of dots per org, a figures table, and clicking 
     assert.ok(n > 0 && q1 <= med && med <= q3, `${r.org}: ${r.cells}`);
     assert.match(r.cells[4], /^[\d.]+%$/);
   }
-  // Clicking a dot opens that reviewer's weekly chart.
+  // Clicking a dot opens that reviewer's monthly chart.
   const pt = await page.evaluate(() => {
     const c = window.__cosh!.distChart!;
     const meta = c.getDatasetMeta(1);
@@ -2595,9 +2595,11 @@ test('Commits: a fifth metric, loaded on demand, with the same section headings'
   });
   assert.equal(rd.axis, 'commits per month');
   assert.equal(rd.label, 'Commits per month (3-month average)');
-  // One point per month the range touches.
-  assert.ok(rd.points >= Math.floor(rd.weeks / 5) && rd.points <= Math.ceil(rd.weeks / 4) + 1, JSON.stringify(rd));
-  assert.match(rd.hover[0], /^[\d,]+  commits in [A-Z][a-z]{2} \d{4}$/);
+  // One bar and one line point per month the range touches.
+  const nWeeks = weeksIn(summary.meta.weeks, await page.evaluate(() => window.__cosh!.state.range)).length;
+  assert.equal(rd.points, rd.weeks);
+  assert.ok(rd.weeks >= Math.floor(nWeeks / 5) && rd.weeks <= Math.ceil(nWeeks / 4) + 1, `${JSON.stringify(rd)} for ${nWeeks} weeks`);
+  assert.match(rd.hover[0], /^[\d,]+  commits$/);
   // The tile totals the summary's commits over the range.
   const range = await page.evaluate(() => window.__cosh!.state.range);
   const weeks = new Set(weeksIn(summary.meta.weeks, range));

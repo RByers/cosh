@@ -190,7 +190,7 @@ interface State {
   heatValue: HeatValue;
   /** Heatmap rows the reader expanded; not in the URL. */
   heatExpanded: Set<string>;
-  /** The reviewer whose weekly chart is open (Gerrit account id), or null. */
+  /** The reviewer whose monthly chart is open (Gerrit account id), or null. */
   lbReviewer: number | null;
   /** The card a shared link points at (a section.card id; its "#" link), or null. */
   card: string | null;
@@ -321,7 +321,7 @@ type Section =
   | 'cx'
   | 'dist' // per-reviewer and per-review spreads
   | 'leaderboard'
-  | 'reviewer'; // the picked reviewer's weekly chart
+  | 'reviewer'; // the picked reviewer's monthly chart
 type Update = (...sections: Section[]) => void;
 const int = fmtInt;
 const day = fmtDay;

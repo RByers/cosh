@@ -582,7 +582,7 @@
             <span data-if="m=addressed">Everyone with a review comment counts, so those with none addressed sit at
               0.</span>
             <span data-if="m!=addressed">People with no <slot name="metric"></slot> are left out.</span>
-            Hover a dot for the person; click it for their weekly chart.</span>
+            Hover a dot for the person; click it for their monthly chart.</span>
         </template>
         <div id="dist-box" class="chart">
           <canvas id="dist-chart" role="img" aria-label="Each person's total for the metric over the selected range, one row of dots per organization, with each row's middle half boxed and its median marked; the table below lists the figures"></canvas>
@@ -655,13 +655,13 @@
             It is a rough measure of how big their changes are. Dots, rows and boxes are as in Contribution per
             person. Only authors with at least <slot name="min"></slot> commits count, so one commit doesn't decide a
             dot. “All commits” pools the whole row (its files over its commits), so busy authors weigh more. Hover a
-            dot for the author; click it for their weekly chart.</span><span data-if="chosen!=commits">Each reviewer's <slot name="metric"></slot> over the range divided by
+            dot for the author; click it for their monthly chart.</span><span data-if="chosen!=commits">Each reviewer's <slot name="metric"></slot> over the range divided by
             the CLs they commented on, which likely reflects how thorough they are or how complex their CLs are. Dots,
             rows and boxes are as in Contribution per person. Only reviewers with at least <slot name="min"></slot>
             reviewed CLs count, so one CL doesn't decide a dot<span data-if="m=addressed">; those with none addressed
             sit at 0, and the few above <slot name="cap"></slot> sit in the right margin</span>.
             “All reviews” pools the whole row (its total over its reviews), so busy reviewers weigh more. The range's
-            edges are approximate, as in the complexity chart. Hover a dot for the reviewer; click it for their weekly
+            edges are approximate, as in the complexity chart. Hover a dot for the reviewer; click it for their monthly
             chart.</span></span>
         </template>
         <template data-msg="pr-people"><span data-if="kind=review">Reviewers</span><span data-if="kind=commits">Authors</span></template>
@@ -737,7 +737,7 @@
             Comments that led to no change aren't a bad sign: questions are part of good review.
           </template>
           <div class="chart">
-            <canvas id="reviewer-chart" role="img" aria-label="The selected person's review comments, addressed comments and commits per week"></canvas>
+            <canvas id="reviewer-chart" role="img" aria-label="The selected person's review comments, addressed comments and commits per month"></canvas>
           </div>
           <p class="rd-gerrit"><a id="rd-gerrit" target="_blank" rel="noopener">Open the CLs they commented on in this range on Gerrit</a></p>
           <p class="rd-gerrit" hidden><a id="rd-gerrit-own" target="_blank" rel="noopener">Open their merged CLs in this range on Gerrit</a></p>

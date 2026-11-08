@@ -56,7 +56,7 @@ a theme change re-render every section. Every other control re-renders only
 the section it sits in (`update(...)` with a `Section` in `src/main.ts`).
 Smoothing, for example, rebuilds just the two charts it smooths, and the
 heatmap's toggles rebuild just the heatmap. Picking a reviewer builds only
-their weekly chart: the leaderboard's pressed row and the spread charts'
+their monthly chart: the leaderboard's pressed row and the spread charts'
 ring are updated in place. When adding a control, give it the narrowest
 sections it affects. A browser test checks which parts each control
 rebuilds.
@@ -288,7 +288,7 @@ there alone; presentation in `src/style.css` (`src/home.css` for the landing pag
    one row per org: the 10 orgs with the largest total, then everyone else
    (gmail.com included) as Other. Each row with at least 5 reviewers has a
    box over its middle half (25th to 75th percentile) and a line at the
-   median. Hovering a dot gives the reviewer's email; clicking it opens their weekly
+   median. Hovering a dot gives the reviewer's email; clicking it opens their monthly
    chart, as on the leaderboard. A table under the chart gives each org's
    reviewers, quartiles, top 10%'s share and total. Reviewers with 0 of the
    metric are left out, except under addressed comments, where everyone who
@@ -299,15 +299,17 @@ there alone; presentation in `src/style.css` (`src/home.css` for the landing pag
    one organization (the 25 with the most review in the range), one
    compact bar each, coloured by org. Orgs with a colour get a legend
    entry; the rest are muted and named on their rows, not in the legend. Clicking a
-   reviewer opens their weekly chart over the picked range: review comments,
-   with addressed comments filled in for classified weeks. The chart comes
+   reviewer opens their monthly chart over the picked range: one bar per
+   calendar month (by each week's Thursday, `monthlyTotals`) of review
+   comments, with addressed comments filled in from the month's classified
+   weeks. Hovering a month gives its totals, and says when the range covers
+   only part of it. The chart comes
    from `reviewer_weekly.json` (no extra data) and has the link to the CLs
    they commented on, on Gerrit. Under Commits, the leaderboard and the
    per-person spread rank commit authors (`author_weekly.json`), and the
-   weekly chart adds their commits as a line on an axis of its own: commits
-   per calendar month as a trailing 3-month average (`monthlyTotals`), one
-   point per month. Hovering a week gives its month's own total, not the
-   average. It also links to their merged CLs.
+   monthly chart adds their commits as a line on an axis of its own: commits
+   per month as a trailing 3-month average. Hovering a month gives its own
+   total, not the average. It also links to their merged CLs.
 12. **How review threads are classified** (once some week is classified):
    one bar splitting the range's classified reviewer-started threads by how
    each was decided (owner's "Done", Haiku addressed, Haiku no change, no

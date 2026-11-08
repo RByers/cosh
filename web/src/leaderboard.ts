@@ -19,7 +19,7 @@ const frac = (v: number, max: number) => String(v / max);
 /** Fills `box` with the leaderboard. Bars take the org's colour (`colorOf`);
  * orgs without one get the muted neutral and their name after the
  * reviewer's, so every row's org can be read off. Each row is a button that
- * selects the reviewer (`onSelect`): the page then shows their weekly chart,
+ * selects the reviewer (`onSelect`): the page then shows their monthly chart,
  * with the link to their reviews on Gerrit. `selected` is pressed. */
 export function buildLeaderboard(
   box: HTMLElement,
@@ -68,8 +68,8 @@ export function buildLeaderboard(
       row.addEventListener('click', () => onSelect(r.id));
       // Hover card: the email stands for name and org (a name only without one).
       row.title = `${i + 1}. ${r.email ?? `${r.name} (${r.org})`}\n${fmt(r.value)} ${unit}` +
-        (commits ? '\nShows their commits and comments week by week, with links to them on Gerrit'
-          : '\nShows their comments week by week, with a link to them on Gerrit');
+        (commits ? '\nShows their commits and comments month by month, with links to them on Gerrit'
+          : '\nShows their comments month by month, with a link to them on Gerrit');
       const color = colorOf(r.org);
       const label = node('span', 'lb-label');
       label.append(

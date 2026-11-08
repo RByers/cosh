@@ -746,30 +746,39 @@ export function renderReviewerChart(
   addressed: (number | null)[],
   color: string,
   theme: Theme,
-  /** Their commits per week; null if not loaded. Drawn per calendar month,
-   * as a trailing 3-month mean on an axis of its own; hovering a week gives
-   * its month's own total. */
+  /** Their commits per week; null if not loaded. Drawn as a line, a trailing
+   * 3-month mean on an axis of its own; hovering a month gives its own total. */
   commits: number[] | null = null,
 ): Chart<'bar'> {
   const base = baseOptions(theme);
-  const monthly = commits && commits.some((v) => v > 0) ? monthlyTotals(weeks, commits, 3) : null;
-  // One point per month, at its middle week; the line spans the weeks between.
-  const lineData: (number | null)[] = weeks.map(() => null);
-  for (const m of monthly?.months ?? []) lineData[m.at] = m.mean;
+  // One bar per calendar month: weeks are too narrow to read over a long range.
+  const byMonth = monthlyTotals(weeks, comments, 3);
+  const months = byMonth.months;
+  // Addressed comments: the month's classified weeks; null if none is classified.
+  const addressedMonths: (number | null)[] = months.map(() => null);
+  const unclassified = months.map(() => 0);
+  addressed.forEach((v, i) => {
+    const m = byMonth.monthOf[i];
+    if (v === null) unclassified[m]++;
+    else addressedMonths[m] = (addressedMonths[m] ?? 0) + v;
+  });
+  const monthly = commits && commits.some((v) => v > 0) ? monthlyTotals(weeks, commits, 3).months : null;
   const commitLine = monthly
-    ? [{ type: 'line' as const, label: 'Commits per month (3-month average)', data: lineData, yAxisID: 'y2',
-        spanGaps: true, borderColor: theme.text, backgroundColor: theme.text, borderWidth: 1.5, pointRadius: 0,
+    ? [{ type: 'line' as const, label: 'Commits per month (3-month average)', data: monthly.map((m) => m.mean),
+        yAxisID: 'y2', borderColor: theme.text, backgroundColor: theme.text, borderWidth: 1.5, pointRadius: 0,
         pointHoverRadius: 0, pointStyle: 'line' as const, order: -1 }]
     : [];
+  // Each month is labelled by its first week, so the shared week axis names it.
+  const labels = months.map((m) => m.week);
   return new Chart(canvas, {
     type: 'bar',
     data: {
-      labels: weeks,
+      labels,
       datasets: [
-        { label: 'Addressed comments', data: addressed, backgroundColor: color, borderWidth: 0, order: 0,
+        { label: 'Addressed comments', data: addressedMonths, backgroundColor: color, borderWidth: 0, order: 0,
           pointStyle: 'rect' },
-        { label: 'Review comments', data: comments, backgroundColor: theme.grid, borderColor: theme.muted,
-          borderWidth: 1, order: 1, pointStyle: 'rect' },
+        { label: 'Review comments', data: months.map((m) => m.total), backgroundColor: theme.grid,
+          borderColor: theme.muted, borderWidth: 1, order: 1, pointStyle: 'rect' },
         // A line on the bar chart; Chart.js types a mixed chart's datasets loosely.
         ...(commitLine as unknown as { label: string; data: number[] }[]),
       ],
@@ -785,31 +794,36 @@ export function renderReviewerChart(
         tooltip: {
           ...base.plugins.tooltip,
           // The commits line's averages stay out of the tooltip: it gives the
-          // hovered week's month and that month's own total instead.
+          // month's own total instead.
           filter: (item) => item.dataset.yAxisID !== 'y2',
           callbacks: {
-            title: weekTooltipTitle,
-            label: (ctx) => (ctx.raw === null ? `${ctx.dataset.label}: not classified` : `${ctx.raw}  ${ctx.dataset.label}`),
+            title: (items) => {
+              const m = items.length ? months[items[0].dataIndex] : null;
+              return m ? `${m.label}${m.partial ? ' (only part of it is in the range)' : ''}` : '';
+            },
+            label: (ctx) => {
+              if (ctx.raw === null) return `${ctx.dataset.label}: not classified`;
+              const part = ctx.datasetIndex === 0 && unclassified[ctx.dataIndex] ? ' (classified weeks only)' : '';
+              return `${fmtInt(ctx.raw as number)}  ${ctx.dataset.label}${part}`;
+            },
             afterBody: (items) => {
               if (!monthly || !items.length) return [];
-              const m = monthly.months[monthly.monthOf[items[0].dataIndex]];
-              return [`${fmtInt(m.total)}  commits in ${m.label}`];
+              return [`${fmtInt(monthly[items[0].dataIndex].total)}  commits`];
             },
           },
         },
       },
       scales: {
-        // Both series share each week's slot, the addressed bar in front.
-        x: { ...weekAxis(theme, weeks, true), stacked: true },
+        // Both series share each month's slot, the addressed bar in front.
+        x: { ...weekAxis(theme, labels, true), stacked: true },
         y: {
           stacked: false,
           min: 0,
-          title: { display: true, text: 'comments per week', color: theme.muted },
+          title: { display: true, text: 'comments per month', color: theme.muted },
           border: { display: false },
           grid: { color: theme.grid },
           ticks: { color: theme.muted, precision: 0 },
         },
-        // Months hold about four weeks: commits get a scale of their own.
         ...(monthly
           ? { y2: {
               position: 'right' as const,
@@ -981,7 +995,7 @@ export function renderSpreadChart(
               const p = ctx.raw as P;
               return `${handleOf(p.id)}: ${fmt(p.value)} ${unit}`;
             },
-            footer: () => 'Click for their weekly chart',
+            footer: () => 'Click for their monthly chart',
           },
           footerColor: theme.muted,
           footerFont: { weight: 'normal' as const },
