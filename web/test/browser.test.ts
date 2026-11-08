@@ -274,6 +274,47 @@ test('parity chart: review share against usage share on equal log axes, matching
   assert.ok(Math.abs(w - h) / w < 0.15, `${w}x${h}`);
 });
 
+test('parity chart scale switch: log by default, linear from 0 to 100% on both axes, with the diagonal', async () => {
+  const { page, errors } = await open();
+  const read = () =>
+    page.evaluate(() => {
+      const c = window.__cosh!.parityChart!;
+      const { x, y } = c.scales;
+      return {
+        types: [x.type, y.type],
+        bounds: [x.min, x.max, y.min, y.max],
+        ticks: y.ticks.map((t: { value: number }) => t.value),
+        xTitle: (c.options.scales.x as { title: { text: string } }).title.text,
+        plugins: (c.config.plugins ?? []).map((p: { id: string }) => p.id),
+        sub: document.querySelector('#parity-sub')!.textContent!,
+        labels: [...document.querySelectorAll('#parity-scale label')].map((l) => l.textContent),
+        checked: document.querySelector<HTMLInputElement>('#parity-scale input:checked')!.value,
+      };
+    });
+  const log = await read();
+  assert.deepEqual(log.labels, ['Log', 'Linear']);
+  assert.equal(log.checked, 'log');
+  assert.deepEqual(log.types, ['logarithmic', 'logarithmic']);
+  assert.equal(log.bounds[1], 1);
+  assert.match(log.xTitle, /log scale/);
+  assert.match(log.sub, /on log axes/);
+  await page.click('#parity-scale input[value="linear"]');
+  const lin = await read();
+  assert.deepEqual(lin.types, ['linear', 'linear']);
+  assert.deepEqual(lin.bounds, [0, 1, 0, 1]);
+  assert.equal(lin.ticks.length, 11);
+  assert.doesNotMatch(lin.xTitle, /log scale/);
+  assert.doesNotMatch(lin.sub, /log axes/);
+  assert.match(lin.sub, /1\.0×/);
+  assert.ok(lin.plugins.includes('parityLine'));
+  assert.match(page.url(), /pscale=linear/);
+  await page.click('#parity-scale input[value="log"]');
+  assert.doesNotMatch(page.url(), /pscale/);
+  assert.deepEqual((await read()).types, ['logarithmic', 'logarithmic']);
+  assert.deepEqual(errors, []);
+  await page.close();
+});
+
 test('parity chart strips: a small mark per other metric, at its own share, keyed by shape', async () => {
   const { page, errors } = await open();
   const read = () => page.evaluate(() => {
@@ -1256,6 +1297,7 @@ test('a control in one section rebuilds only that section; the metric and range 
   const click = (sel: string) => () => page.click(sel);
   const select = (sel: string, v: string) => () => page.select(sel, v);
   assert.deepEqual(await rebuilt(click('#smoothing input[value="4"]')), ['ratio', 'review']);
+  assert.deepEqual(await rebuilt(click('#parity-scale input[value="linear"]')), ['parity']);
   assert.deepEqual(await rebuilt(click('#review-scale input[value="linear"]')), ['review']);
   assert.deepEqual(await rebuilt(click('#heat-bin input[value="13"]')), ['heat']);
   assert.deepEqual(await rebuilt(click('#heat-value input[value="share"]')), ['heat']);
@@ -1282,7 +1324,7 @@ test('a control in one section rebuilds only that section; the metric and range 
   assert.deepEqual(await rebuilt(() => pickRange(page, '13')), Object.keys(parts));
   // Each control's state still reaches the URL.
   const hash = await page.evaluate(() => location.hash);
-  for (const p of ['smooth=4', 'rscale=linear', 'hmb=13', 'hmv=share', 'hm=*-google.com', 'cxb=4', 'cxv=volume', 'lbn=50', 'lbo=*-google.com', 'metric=chars'])
+  for (const p of ['smooth=4', 'pscale=linear', 'rscale=linear', 'hmb=13', 'hmv=share', 'hm=*-google.com', 'cxb=4', 'cxv=volume', 'lbn=50', 'lbo=*-google.com', 'metric=chars'])
     assert.ok(decodeURIComponent(hash).includes(p), `${p} in ${hash}`);
   assert.deepEqual(errors, []);
   await page.close();
@@ -1797,13 +1839,13 @@ test('a link (or a reload) restores the page state from the URL, and the page wr
   // Each control's own test checks what it writes to the URL; this reads every
   // setting back, as a reload or a shared link does.
   const reviewer = await (await defaultPage()).page.$eval('#leaderboard-chart .lb-row', (r) => (r as HTMLElement).dataset.account!);
-  const hash = '#metric=chars&range=52&smooth=52&rscale=linear&lbn=100&lbo=*-google.com' +
+  const hash = '#metric=chars&range=52&smooth=52&pscale=linear&rscale=linear&lbn=100&lbo=*-google.com' +
     `&dir=${encodeURIComponent('chrome/')}&hm=microsoft.com&hmb=1&hmv=share&cxb=52&cxv=volume&lbr=${reviewer}`;
   const { page, errors } = await open(hash);
   const got = await page.evaluate(() => {
     const value = (sel: string) => document.querySelector<HTMLInputElement | HTMLSelectElement>(sel)!.value;
     return {
-      controls: ['#metric input:checked', '#smoothing input:checked', '#review-scale input:checked', '#review-dir',
+      controls: ['#metric input:checked', '#smoothing input:checked', '#parity-scale input:checked', '#review-scale input:checked', '#review-dir',
         '#leaderboard-size', '#leaderboard-org', '#heat-org', '#heat-bin input:checked', '#heat-value input:checked',
         '#cx-bin input:checked', '#cx-value input:checked'].map(value),
       yType: window.__cosh!.reviewChart!.options.scales.y.type,
@@ -1812,7 +1854,7 @@ test('a link (or a reload) restores the page state from the URL, and the page wr
     };
   });
   assert.deepEqual(got.controls,
-    ['chars', '52', 'linear', 'chrome/', '100', '*-google.com', 'microsoft.com', '1', 'share', '52', 'volume']);
+    ['chars', '52', 'linear', 'linear', 'chrome/', '100', '*-google.com', 'microsoft.com', '1', 'share', '52', 'volume']);
   assert.equal(got.yType, 'linear');
   assert.ok(got.detail, 'the reviewer chart is open');
   // Written back in the page's own order: the same settings.

@@ -362,8 +362,11 @@ export function parityBounds(points: ParityPoint[]): { min: number; max: number 
   return { min, max: max > min ? max : min * 10 };
 }
 
+/** Value ratio chart axes: log (the default) or linear, both 0 to 100%. */
+export type ParityScale = 'log' | 'linear';
+
 /** Contribution share against usage share over the range, one point per org, both
- * on log axes with the same bounds. Each org's other metrics are smaller marks,
+ * on log axes (or both linear, from 0) with the same bounds. Each org's other metrics are smaller marks,
  * one shape per metric (`marks`, the legend), joined by a thin shaded strip
  * from the lowest to the highest: how much its ratio depends on the metric. The diagonal y = x is a 1.0× value ratio:
  * orgs above it review more than their usage share, those below less. Orgs
@@ -377,10 +380,15 @@ export function renderParityChart(
   colors: Map<string, string>,
   theme: Theme,
   marks: MetricMark[] = [],
+  /** Linear runs both axes from 0 to 100%, where zeros need no extra row. */
+  scale: ParityScale = 'log',
 ): Chart<'scatter'> {
-  const { min, max } = parityBounds(points);
+  const linear = scale === 'linear';
+  const bounds = parityBounds(points);
+  const min = linear ? 0 : bounds.min;
+  const max = linear ? 1 : bounds.max;
   // Both axes extend alike, so the diagonal stays at 45°.
-  const zero = points.some((p) => [p, ...(p.others ?? [])].some((q) => q.contribution <= 0)) ? min / 10 : null;
+  const zero = !linear && points.some((p) => [p, ...(p.others ?? [])].some((q) => q.contribution <= 0)) ? min / 10 : null;
   const lo = zero ?? min;
   const styleOf = (metric: string) => marks.find((m) => m.metric === metric)?.style ?? 'circle';
   const datasets = points.map((p) => {
@@ -486,18 +494,20 @@ export function renderParityChart(
     },
   };
   // Ticks, labels and gridlines on whole decades only: 0.01%, 0.1%, 1%, …
-  const decades: number[] = [];
-  for (let e = Math.round(Math.log10(lo)); e <= Math.round(Math.log10(max)); e++) decades.push(10 ** e);
+  // On the linear axes, every 10% instead.
+  const ticks: number[] = [];
+  if (linear) for (let i = 0; i <= 10; i++) ticks.push(i / 10);
+  else for (let e = Math.round(Math.log10(lo)); e <= Math.round(Math.log10(max)); e++) ticks.push(10 ** e);
   const isZeroTick = (v: number) => zero !== null && Math.abs(v / zero - 1) < 1e-6;
   const axis = (title: string, zeroLabel: boolean) => ({
-    type: 'logarithmic' as const,
+    type: linear ? ('linear' as const) : ('logarithmic' as const),
     min: lo,
     max,
-    title: { display: true, text: title, color: theme.muted },
+    title: { display: true, text: linear ? title : `${title} (log scale)`, color: theme.muted },
     border: { color: theme.baseline },
     grid: { color: theme.grid },
     afterBuildTicks: (scale: Scale) => {
-      scale.ticks = decades.map((value) => ({ value }));
+      scale.ticks = ticks.map((value) => ({ value }));
     },
     ticks: {
       color: theme.muted,
@@ -569,8 +579,8 @@ export function renderParityChart(
         },
       },
       scales: {
-        x: axis('share of Chromium browser usage (log scale)', false),
-        y: axis(`share of ${metricLabel} (log scale)`, true),
+        x: axis('share of Chromium browser usage', false),
+        y: axis(`share of ${metricLabel}`, true),
       },
     },
   });

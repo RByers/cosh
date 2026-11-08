@@ -27,6 +27,7 @@ import {
   renderSpreadChart,
   renderReviewerChart,
   type ReviewScale,
+  type ParityScale,
   renderUsageChart,
   type Theme,
 } from './charts.ts';
@@ -167,6 +168,8 @@ interface State {
   range: WeekRange;
   /** Value ratio running average, in weeks (1 = off). */
   smoothing: Smoothing;
+  /** Value ratio chart axes: log or linear. */
+  parityScale: ParityScale;
   /** Review chart axis: log with every org, or linear without google.com. */
   reviewScale: ReviewScale;
   /** The review chart plots the review metric over commits (ratioNumerator). */
@@ -314,6 +317,7 @@ const rangeNamedOrgs = (data: Data, state: State) => {
  * control re-renders only the section it sits in (see buildControls). */
 type Section =
   | 'value' // parity chart, tiles and the organization table
+  | 'parity' // the parity chart alone (its scale)
   | 'ratio' // value ratio over time (smoothed)
   | 'review' // review chart (smoothed), its scale and directory
   | 'usage'
@@ -416,6 +420,7 @@ function readStateFromUrl(data: Data): State {
   const to = isWeek(q.get('to')) ? q.get('to')! : isWeek(week) ? week : common.to;
   const sm = Number(q.get('smooth'));
   const smoothing = SMOOTHING_WEEKS.find((w) => w === sm) ?? DEFAULT_SMOOTHING;
+  const parityScale: ParityScale = q.get('pscale') === 'linear' ? 'linear' : 'log';
   const reviewScale: ReviewScale = q.get('rscale') === 'linear' ? 'linear' : 'log';
   const reviewRatio = q.get('ratio') === '1' && hasCommits(data.summary);
   const lbn = q.get('lbn');
@@ -433,6 +438,7 @@ function readStateFromUrl(data: Data): State {
     metric,
     range,
     smoothing,
+    parityScale,
     reviewScale,
     reviewRatio,
     lbSize,
@@ -459,6 +465,7 @@ function writeStateToUrl(s: State, data: Data) {
   const preset = rangePreset(data, s.range);
   const range = preset === 'all' ? '' : preset ? `&range=${preset}` : `&from=${s.range.from}&to=${s.range.to}`;
   history.replaceState(null, '', `#metric=${s.metric}${range}&smooth=${s.smoothing}` +
+    (s.parityScale === 'linear' ? '&pscale=linear' : '') +
     (s.reviewScale === 'linear' ? '&rscale=linear' : '') +
     (s.reviewRatio ? '&ratio=1' : '') +
     (s.lbSize !== LEADERBOARD_SIZE ? `&lbn=${s.lbSize}` : '') +
@@ -532,6 +539,10 @@ function buildControls(data: Data, state: State, render: () => void, renderSoon:
     state.smoothing = Number(v) as Smoothing;
     // Only the two smoothed charts change.
     update('ratio', 'review');
+  });
+  radios($('#parity-scale'), state.parityScale, (v) => {
+    state.parityScale = v as ParityScale;
+    update('parity');
   });
   radios($('#review-scale'), state.reviewScale, (v) => {
     state.reviewScale = v as ReviewScale;
@@ -723,9 +734,11 @@ function renderParity(data: Data, state: State, weeks: string[], orgs: string[],
       colors,
       theme,
       marks,
+      state.parityScale,
     );
   });
   fill($('#parity-sub'), {
+    log: state.parityScale === 'log',
     weeks: weeks.length,
     multi: weeks.length > 1,
     metric: metricLabel,
@@ -1452,7 +1465,7 @@ async function main(data: Data) {
     // The value charts show the orgs with enough mean usage over the range.
     const shown = rangeChartedOrgs(data.radar, data.orgBrowsers, orgs, vWeeks);
 
-    if (want('value')) renderParity(data, state, vWeeks, shown, colors, theme);
+    if (want('value') || want('parity')) renderParity(data, state, vWeeks, shown, colors, theme);
     if (want('ratio')) renderRatio(weeks, vWeeks, dataWeeks, shown, colors, theme);
     if (want('review')) renderReview(weeks, dataWeeks, colors, theme);
     if (want('heat')) renderHeat(data, state, colors, theme, update);
