@@ -86,3 +86,19 @@ rebuild the pages from the saved JSON without reloading the data:
 - Peer bands mix very different roles (TLs, area owners, part-time
   contributors), so a low or high percentile is a prompt to look, not a
   conclusion.
+
+## Cluster exemplars
+
+`scripts/balance_exemplars.py` writes one private page naming a few clear
+examples of each activity pattern (people in that pattern for most of
+2025–26, mid-range activity) and of each trajectory (the longest records).
+It reads `data/private/balance_clusters/people.json`, so run
+`scripts/balance_clusters.py` first (`docs/balance-clusters.md`).
+
+```
+COSH_DATA_DIR=<main>/data/private python3 scripts/balance_exemplars.py [--per 3]
+```
+
+Output: `data/private/balance_people/exemplars.html`, published as a
+private artifact. Its URL is in `artifacts.json` under `exemplars`. The
+same privacy rules apply as for profiles.
