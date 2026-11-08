@@ -424,6 +424,15 @@ def fnum(v, kind):
     return f"{v:,.1f}" if abs(v) < 100 else f"{v:,.0f}"
 
 
+def tick(v, kind):
+    """An axis label: whole numbers without decimals."""
+    if kind in ("n", "int") and abs(v - round(v)) < 1e-9:
+        return f"{round(v):,}"
+    if kind == "x" and abs(v * 4 - round(v * 4)) < 1e-9:
+        return f"{v:g}×"
+    return fnum(v, kind)
+
+
 def chart(periods, peers, me, kind, w=420, h=170):
     """Peers' 10–90 and 25–75 percentile bands, their median dashed, and the
     person's line on top. peers: list of pcts dicts or None; me: values."""
@@ -431,15 +440,23 @@ def chart(periods, peers, me, kind, w=420, h=170):
     vals = [v for v in me if v is not None] + [p["p90"] for p in peers if p]
     if not vals:
         return '<p class="note">Not enough activity to chart.</p>'
-    top = max(vals) * 1.08 or 1
+    top = max(vals) * 1.05 or 1
+    if kind == "pct":
+        top = min(top, 1.0)
+    # A round tick step, four or five ticks.
+    raw = top / 4
+    mag = 10 ** math.floor(math.log10(raw)) if raw > 0 else 1
+    stepv = next(m * mag for m in (1, 2, 2.5, 5, 10) if m * mag >= raw)
+    top = stepv * math.ceil(top / stepv - 1e-9)
+    ticks = int(round(top / stepv))
     n = len(periods)
     x = lambda i: L + (w - L - Rr) * (i + 0.5) / n
     y = lambda v: T + (h - T - B) * (1 - min(v, top) / top)
     parts = [f'<svg viewBox="0 0 {w} {h}" role="img" aria-label="Person against peers of the same tenure">']
-    for k in range(5):
-        v = top * k / 4
+    for k in range(ticks + 1):
+        v = stepv * k
         parts.append(f'<line class="ax" x1="{L}" x2="{w - Rr}" y1="{y(v):.1f}" y2="{y(v):.1f}"/>'
-                     f'<text x="{L - 4}" y="{y(v) + 3:.1f}" text-anchor="end">{html.escape(fnum(v, kind))}</text>')
+                     f'<text x="{L - 4}" y="{y(v) + 3:.1f}" text-anchor="end">{html.escape(tick(v, kind))}</text>')
     step = max(1, math.ceil(n / 8))
     for i, p in enumerate(periods):
         if i % step == 0 or i == n - 1:
@@ -581,7 +598,7 @@ def render(r):
         f"<td>{fnum((x['me'] or {}).get('share'), 'pct')}</td><td>{x['rank'].get('commits') if x['me'] else '–'}</td>"
         f"<td>{x['rank'].get('approvals') if x['me'] else '–'}</td><td>{x['raw']['ai_broad']}</td></tr>" for x in r["git"])
     pts = "".join(f"<li>{html.escape(p)}</li>" for p in summary_points(r))
-    return f"""<title>Review balance: {html.escape(name)}</title>
+    return f"""<title>{html.escape(name.split("@")[0])} review profile</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;600&family=Source+Serif+4:opsz,wght@8..60,600&display=swap">
 <style>{CSS}</style>
@@ -655,7 +672,18 @@ def render(r):
 """
 
 
+def rerender(out_dir):
+    """Rebuild every page from its saved JSON (no data load)."""
+    for f in sorted(os.listdir(out_dir)):
+        if f.endswith(".json"):
+            r = json.load(open(os.path.join(out_dir, f)))
+            open(os.path.join(out_dir, f[:-5] + ".html"), "w").write(render(r))
+
+
 def main():
+    if sys.argv[1:2] == ["--rerender"]:
+        rerender(sys.argv[2] if len(sys.argv) > 2 else os.path.join(store.DATA_DIR, "balance_people"))
+        return
     ap = argparse.ArgumentParser()
     S = os.environ.get("BALANCE_SCRATCH", ".")
     ap.add_argument("--first-commit", default=os.path.join(S, "first_commit.txt"))

@@ -44,7 +44,11 @@ BALANCE_SCRATCH=$S COSH_DATA_DIR=<main>/data/private \
   `scripts/balance_clusters.py`) are used when present.
 
 Publish each page as a **private** artifact (the Artifact tool, one per
-person, updating the same artifact on a rerun), and check it renders.
+person), and check it renders. The URLs of published profiles are kept in
+`data/private/balance_people/artifacts.json`. On a rerun, update each one
+by passing its URL, so links stay the same. To change only the layout,
+rebuild the pages from the saved JSON without reloading the data:
+`python3 scripts/balance_person.py --rerender [dir]`.
 
 ## What a profile shows
 
