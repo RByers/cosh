@@ -20,6 +20,8 @@ import {
   ORG_BRIGHT,
   readTheme,
   renderParityChart,
+  renderValueShapeChart,
+  type ShapeOrg,
   renderRatioChart,
   renderReviewChart,
   renderSpreadChart,
@@ -207,6 +209,7 @@ let perReviewChart: AnyChart | undefined;
 /** What the usage chart was last built for (see renderViews). */
 let usageChartKey = '';
 let parityChart: AnyChart | undefined;
+let valueChart: AnyChart | undefined;
 let examples: Promise<ThreadExamples> | null = null;
 
 /** Organization choices (heatmap and leaderboard) besides a single org. */
@@ -224,6 +227,7 @@ declare global {
     __cosh?: {
       data: Data;
       state: State;
+      valueChart?: AnyChart;
       parityChart?: AnyChart;
       ratioChart?: AnyChart;
       reviewChart?: AnyChart;
@@ -680,7 +684,7 @@ function skippedVars(weeks: string[], vWeeks: string[]) {
 
 /** Each org's share of the metric and of usage over the range, and their
  * ratio: what the table lists and the parity chart plots. */
-function orgRangeShares(data: Data, state: State, weeks: string[], vWeeks: string[] = weeks) {
+function orgRangeShares(data: Data, metric: Metric, weeks: string[], vWeeks: string[] = weeks) {
   const totals = orgTotals(data.summary, weeks, distinctReviewers(data.reviewers, weeks).byOrg);
   // Contribution share and usage share over the same weeks: those with both.
   const vTotals = vWeeks === weeks ? totals : orgTotals(data.summary, vWeeks);
@@ -689,7 +693,7 @@ function orgRangeShares(data: Data, state: State, weeks: string[], vWeeks: strin
     const row = totals.find((r) => r.org === org);
     const vRow = vTotals.find((r) => r.org === org);
     const browsers = data.orgBrowsers.get(org);
-    const contribution = vRow ? vRow[SHARE_COLUMN[state.metric]] : 0;
+    const contribution = vRow ? vRow[SHARE_COLUMN[metric]] : 0;
     const derived = browsers && vWeeks.length ? meanDerivedShare(data.radar, vWeeks, browsers) : null;
     const ratio = derived !== null && derived >= MIN_DERIVED_SHARE ? contribution / derived : null;
     const unknownUsage = UNKNOWN_USAGE_ORGS.has(org);
@@ -697,11 +701,53 @@ function orgRangeShares(data: Data, state: State, weeks: string[], vWeeks: strin
   });
 }
 
+/** The value shape chart: every org's value ratio on every metric over the
+ * user's range (addressed comments over its classified part), for the orgs
+ * with enough usage over it. It doesn't depend on the chosen metric, which
+ * only makes that axis's label bold. */
+function renderValueShape(data: Data, state: State, orgs: string[], colors: Map<string, string>, theme: Theme) {
+  const range = userRange ?? state.range;
+  const metrics = availableMetrics(data).filter((m) => m !== 'addressed' || addressedRange(data.summary, range).range);
+  const vWeeks = ratioWeeks(weeksIn(data.summary.meta.weeks, range), data.radar);
+  const shown = rangeChartedOrgs(data.radar, data.orgBrowsers, orgs, vWeeks);
+  const byMetric = metrics.map((m) => {
+    const r = m === 'addressed' ? addressedRange(data.summary, range).range! : range;
+    const weeks = weeksIn(data.summary.meta.weeks, r);
+    const mWeeks = m === 'addressed' ? ratioWeeks(weeks, data.radar, addressedWeeks(data.summary)) : ratioWeeks(weeks, data.radar);
+    return new Map(orgRangeShares(data, m, mWeeks).map((it) => [it.org, it]));
+  });
+  const items: ShapeOrg[] = shown
+    .map((org) => ({
+      org,
+      shares: byMetric.map((by) => {
+        const it = by.get(org);
+        return it && it.ratio !== null ? { contribution: it.contribution, derived: it.derived! } : null;
+      }),
+    }))
+    .filter((o) => o.shares.some((x) => x !== null));
+  drawChart(() => {
+    valueChart?.destroy();
+    valueChart = renderValueShapeChart(
+      $<HTMLCanvasElement>('#value-chart'),
+      items,
+      metrics.map(metricName),
+      metrics.indexOf(state.metric),
+      colors,
+      theme,
+    );
+  });
+  fill($('#value-sub'), {
+    weeks: vWeeks.length,
+    multi: vWeeks.length > 1,
+    partial: metrics.includes('addressed') && addressedRange(data.summary, range).weeks.length < weeksIn(data.summary.meta.weeks, range).length,
+  });
+}
+
 /** The parity chart: review share against usage share over the range, for
  * the orgs the ratio-over-time chart shows. */
 function renderParity(data: Data, state: State, weeks: string[], orgs: string[], colors: Map<string, string>, theme: Theme) {
   const metricLabel = metricUnit(state.metric);
-  const items = orgRangeShares(data, state, weeks).filter((it) => orgs.includes(it.org) && it.ratio !== null);
+  const items = orgRangeShares(data, state.metric, weeks).filter((it) => orgs.includes(it.org) && it.ratio !== null);
   drawChart(() => {
     parityChart?.destroy();
     parityChart = renderParityChart(
@@ -722,7 +768,7 @@ function renderParity(data: Data, state: State, weeks: string[], orgs: string[],
 function renderTable(data: Data, state: State, weeks: string[], vWeeks: string[], colors: Map<string, string>) {
   const classified = new Set(addressedWeeks(data.summary));
   const addressedShown = weeks.length > 0 && weeks.every((w) => classified.has(w));
-  const items = orgRangeShares(data, state, weeks, vWeeks);
+  const items = orgRangeShares(data, state.metric, weeks, vWeeks);
   items.sort((a, b) => b.contribution - a.contribution || (b.derived ?? 0) - (a.derived ?? 0));
   const shown = trimRanked(items, TABLE_TOP_ORGS, (it) => !!it.browsers || it.unknownUsage);
   const hidden = items.length - shown.length;
@@ -1434,7 +1480,10 @@ async function main(data: Data) {
     // The value charts show the orgs with enough mean usage over the range.
     const shown = rangeChartedOrgs(data.radar, data.orgBrowsers, orgs, vWeeks);
 
-    if (want('value')) renderParity(data, state, vWeeks, shown, colors, theme);
+    if (want('value')) {
+      renderValueShape(data, state, orgs, colors, theme);
+      renderParity(data, state, vWeeks, shown, colors, theme);
+    }
     if (want('ratio')) renderRatio(weeks, vWeeks, dataWeeks, shown, colors, theme);
     if (want('review')) renderReview(weeks, dataWeeks, colors, theme);
     if (want('heat')) renderHeat(data, state, colors, theme, update);
@@ -1470,7 +1519,7 @@ async function main(data: Data) {
     }
     // Queued after the charts, so it holds the new ones.
     drawChart(() => {
-      window.__cosh = { data, state, parityChart, ratioChart, reviewChart, usageChart, distChart, perReviewChart, render };
+      window.__cosh = { data, state, valueChart, parityChart, ratioChart, reviewChart, usageChart, distChart, perReviewChart, render };
     });
   };
 

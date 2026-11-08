@@ -79,7 +79,58 @@
     <template data-msg="error">Couldn't load data: <slot name="error"></slot></template>
 
     <main hidden>
-      <!-- Outside the form so it can stay stuck to the top of the window the whole way down the page. -->
+      <form class="filters" aria-label="Filters">
+        <fieldset id="range" class="range-picker">
+          <legend>Date range <span class="legend-note">(applies to everything below)</span></legend>
+          <div class="range-row">
+            <label>From <input type="date" id="from" required /></label>
+            <label>To <input type="date" id="to" required /></label>
+            <div id="range-presets" class="range-presets" role="group" aria-label="Quick ranges">
+              <button type="button" data-preset="all">All data</button>
+              <button type="button" data-preset="13">Last 13 weeks</button>
+              <button type="button" data-preset="4">Last 4 weeks</button>
+              <button type="button" data-preset="1">Latest week</button>
+            </div>
+          </div>
+          <p id="range-summary" class="range-summary" aria-live="polite"></p>
+          <template data-msg="range-summary">
+            <slot name="dates"></slot><span data-if="n!=1"> (<slot name="n"></slot> weeks)</span>.<span data-if="gaps">
+            Review data covers <slot name="review"></slot> of <span data-if="n=1">it</span><span data-if="n!=1">them</span>.</span>
+          </template>
+        </fieldset>
+        <fieldset id="smoothing" class="segmented">
+          <legend>Smoothing <span class="legend-note">(running average, for the charts over time)</span></legend>
+          <label><input type="radio" name="smoothing" value="1" />Off</label>
+          <label><input type="radio" name="smoothing" value="4" />4 weeks</label>
+          <label><input type="radio" name="smoothing" value="13" />3 months</label>
+          <label><input type="radio" name="smoothing" value="52" />1 year</label>
+        </fieldset>
+      </form>
+
+      <section id="value" class="card" aria-labelledby="value-title">
+        <a class="card-anchor" href="#value" aria-label="Link to this section" title="Link to this section">#</a>
+        <h2 id="value-title">Value ratio</h2>
+        <p id="value-sub" class="sub"></p>
+        <template data-msg="value-sub">
+          <span data-if="!weeks">No review data in this range.</span>
+          <span data-if="weeks">Each organization's value ratio on every contribution metric: its share of the metric
+            ÷ its browsers' share of Chromium browser usage<span data-if="multi"> (contribution: totals over the
+            range; usage: mean weekly share)</span>. One axis per metric, on a log scale from the center out, and
+            one shaded shape per organization. The bold ring is a 1.0× value ratio, contribution in proportion to
+            usage: on an axis where a shape reaches outside it, that organization contributes more than its usage
+            share.<span data-if="partial"> Addressed comments cover only the range's classified weeks.</span></span>
+        </template>
+        <div class="chart chart-radar">
+          <canvas id="value-chart" role="img" aria-label="Value ratio per organization on each contribution metric, as one shape per organization on a radar chart with a log scale and a ring at a 1.0 value ratio; the table below lists the selected metric's values."></canvas>
+        </div>
+        <p class="note">
+          Organizations under 0.1% of Chromium usage over the range get no ratio. Click a name in the legend to
+          hide or show its shape.
+        </p>
+      </section>
+
+      <!-- Below the value ratio, which shows every metric at once; everything after it shows the chosen one.
+           Outside the form so it can stay stuck to the top of the window the whole way down the rest of the page. -->
       <div class="metric-bar">
         <!-- These names are also the metric's name in headings, charts and
              captions; "metric-unit" below is its name mid-sentence. -->
@@ -109,43 +160,16 @@
             metric (addressed comments, with Commits chosen) by commits.</li>
         </ul>
       </aside>
-      <form class="filters" aria-label="Filters">
-        <p id="metric-note" class="range-summary metric-note" aria-live="polite" hidden></p>
-        <!-- Shown only with Addressed comments chosen and no week in the range classified. -->
-        <template data-msg="metric-note">
-          No week in this range is classified yet<span data-if="classified"> (classified: <span data-if="classified!=1"><slot name="classified"></slot> weeks, </span><slot name="dates"></slot>)</span>,
-          so there is nothing to show; the other metrics cover it.
-        </template>
-        <fieldset id="range" class="range-picker">
-          <legend>Date range <span class="legend-note">(applies to everything below)</span></legend>
-          <div class="range-row">
-            <label>From <input type="date" id="from" required /></label>
-            <label>To <input type="date" id="to" required /></label>
-            <div id="range-presets" class="range-presets" role="group" aria-label="Quick ranges">
-              <button type="button" data-preset="all">All data</button>
-              <button type="button" data-preset="13">Last 13 weeks</button>
-              <button type="button" data-preset="4">Last 4 weeks</button>
-              <button type="button" data-preset="1">Latest week</button>
-            </div>
-          </div>
-          <p id="range-summary" class="range-summary" aria-live="polite"></p>
-          <template data-msg="range-summary">
-            <slot name="dates"></slot><span data-if="n!=1"> (<slot name="n"></slot> weeks)</span>.<span data-if="gaps">
-            Review data covers <slot name="review"></slot> of <span data-if="n=1">it</span><span data-if="n!=1">them</span>.</span>
-          </template>
-        </fieldset>
-        <fieldset id="smoothing" class="segmented">
-          <legend>Smoothing <span class="legend-note">(running average, for the charts over time)</span></legend>
-          <label><input type="radio" name="smoothing" value="1" />Off</label>
-          <label><input type="radio" name="smoothing" value="4" />4 weeks</label>
-          <label><input type="radio" name="smoothing" value="13" />3 months</label>
-          <label><input type="radio" name="smoothing" value="52" />1 year</label>
-        </fieldset>
-      </form>
+      <p id="metric-note" class="range-summary metric-note" aria-live="polite" hidden></p>
+      <!-- Shown only with Addressed comments chosen and no week in the range classified. -->
+      <template data-msg="metric-note">
+        No week in this range is classified yet<span data-if="classified"> (classified: <span data-if="classified!=1"><slot name="classified"></slot> weeks, </span><slot name="dates"></slot>)</span>,
+        so there is nothing to show; the other metrics cover it.
+      </template>
 
       <section id="parity" class="card" aria-labelledby="parity-title">
         <a class="card-anchor" href="#parity" aria-label="Link to this section" title="Link to this section">#</a>
-        <h2 id="parity-title">Value ratio</h2>
+        <h2 id="parity-title">Contribution against usage</h2>
         <p id="parity-sub" class="sub"></p>
         <template data-msg="parity-sub">
           <span data-if="!weeks">No review data in this range.</span>

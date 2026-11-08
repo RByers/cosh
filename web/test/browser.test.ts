@@ -179,13 +179,18 @@ test('page loads data and renders all three charts without errors', async () => 
     assert.ok(c.w > 200 && c.h > 200, `${c.k} has size ${c.w}x${c.h}`);
     assert.ok(c.n >= 1, `${c.k} has datasets`);
   }
-  // Charts come in order: parity, ratio over time, review, usage, the table, directories, directories over time,
+  // Charts come in order: value ratio, contribution against usage, ratio over time, review, usage, the table, directories, directories over time,
   // the per-reviewer distribution, review complexity over time, per review, then the leaderboard.
   const order = await page.$$eval('main > section', (s) => s.map((e) => e.querySelector('canvas, table, .lb, .ar')?.id));
   assert.deepEqual(order.filter(Boolean),
-    ['parity-chart', 'ratio-chart', 'review-chart', 'usage-chart', 'org-table', 'area-chart', 'heat-table', 'dist-chart', 'cx-table', 'pr-chart', 'leaderboard-chart']);
-  const titles = await page.$$eval('#parity-title, #ratio-title', (h) => h.map((e) => e.textContent));
-  assert.deepEqual(titles, ['Value ratio', 'Value ratio over time']);
+    ['value-chart', 'parity-chart', 'ratio-chart', 'review-chart', 'usage-chart', 'org-table', 'area-chart', 'heat-table', 'dist-chart', 'cx-table', 'pr-chart', 'leaderboard-chart']);
+  const titles = await page.$$eval('#value-title, #parity-title, #ratio-title', (h) => h.map((e) => e.textContent));
+  assert.deepEqual(titles, ['Value ratio', 'Contribution against usage', 'Value ratio over time']);
+  // The metric picker comes after the value ratio, which shows every metric,
+  // and before everything that shows only the chosen one.
+  const [valueBottom, barTop, parityTop] = await page.evaluate(() =>
+    ['#value', '.metric-bar', '#parity'].map((s) => document.querySelector(s)!.getBoundingClientRect().top + scrollY));
+  assert.ok(valueBottom < barTop && barTop < parityTop, `${valueBottom} ${barTop} ${parityTop}`);
 });
 
 test('the page names weeks by their dates, never as ISO week labels', async () => {
@@ -262,6 +267,52 @@ test('parity chart: review share against usage share on equal log axes, matching
   const w = d.area.right - d.area.left;
   const h = d.area.bottom - d.area.top;
   assert.ok(Math.abs(w - h) / w < 0.15, `${w}x${h}`);
+});
+
+test('value ratio radar: an axis per metric and a shape per org, matching the parity chart on the chosen metric', async () => {
+  const { page, errors } = await open();
+  const read = () => page.evaluate(() => {
+    const c = window.__cosh!.valueChart!;
+    const p = window.__cosh!.parityChart!;
+    const r = c.scales.r as unknown as { ticks: { value: number; label: string }[] };
+    type Shares = ({ contribution: number; derived: number } | null)[];
+    return {
+      type: (c.config as { type: string }).type,
+      labels: c.data.labels as string[],
+      ticks: r.ticks.map((t) => t.label),
+      shapes: Object.fromEntries(c.data.datasets.map((ds: { label?: string }) => [ds.label, (ds as unknown as { shares: Shares }).shares])),
+      parity: Object.fromEntries(p.data.datasets.map((ds: { label?: string; data: unknown[] }): [string, number] => {
+        const pt = ds.data[0] as { x: number; share: number };
+        return [ds.label!, pt.share / pt.x];
+      })),
+      sub: document.querySelector('#value-sub')!.textContent!,
+    };
+  });
+  const d = await read();
+  assert.deepEqual(errors, []);
+  assert.equal(d.type, 'radar');
+  const names = ['Addressed comments', 'Review comments', 'Review characters', 'Reviewed CLs', 'Commits'];
+  assert.deepEqual(d.labels, hasAddressedWeeks() ? names : names.slice(1));
+  assert.ok(d.ticks.includes('1.0×'), String(d.ticks));
+  assert.match(d.sub, /1\.0×/);
+  for (const org of ['google.com', 'microsoft.com', 'opera.com']) assert.ok(org in d.shapes, `${org} missing`);
+  assert.ok(!('brave.com' in d.shapes));
+  // The addressed axis (the chosen metric) agrees with the parity chart.
+  for (const [org, ratio] of Object.entries(d.parity)) {
+    const s = d.shapes[org]?.[0];
+    assert.ok(s, org);
+    assert.ok(Math.abs(s.contribution / s.derived - ratio) <= 1e-9 + 1e-6 * ratio, `${org}: ${JSON.stringify(s)} vs ${ratio}`);
+  }
+  // Another metric changes the parity chart, not the radar.
+  await pickMetric(page, 'cls');
+  const e = await read();
+  assert.deepEqual(e.shapes, d.shapes);
+  const i = e.labels.indexOf('Reviewed CLs');
+  for (const [org, ratio] of Object.entries(e.parity)) {
+    const s = e.shapes[org]![i]!;
+    assert.ok(Math.abs(s.contribution / s.derived - ratio) <= 1e-9 + 1e-6 * ratio, `${org} (CLs)`);
+  }
+  await page.close();
 });
 
 test('parity chart keeps orgs with none of the metric, on a 0 row below the log scale', async () => {

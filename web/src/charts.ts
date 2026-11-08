@@ -9,7 +9,10 @@ import {
   LineController,
   LineElement,
   PointElement,
+  RadarController,
+  RadialLinearScale,
   ScatterController,
+  Filler,
   Tooltip,
   type ChartType,
   type FontSpec,
@@ -32,6 +35,9 @@ Chart.register(
   LineElement,
   PointElement,
   ScatterController,
+  RadarController,
+  RadialLinearScale,
+  Filler,
   LinearScale,
   LogarithmicScale,
   CategoryScale,
@@ -313,7 +319,10 @@ export function renderRatioChart(
           },
           ticks: {
             color: (ctx) => (isParity(ctx.tick?.value ?? NaN) ? theme.parity : theme.muted),
-            font: (ctx) => ({ weight: isParity(ctx.tick?.value ?? NaN) ? 'bold' : 'normal' }),
+            font: (ctx) => ({
+              size: ctx.chart.width < 520 ? 10 : 12,
+              weight: isParity(ctx.tick?.value ?? NaN) ? 'bold' : 'normal',
+            }),
             callback: (v) => `${formatRatio(Number(v))}×`,
           },
           grid: {
@@ -510,6 +519,135 @@ export function renderParityChart(
       scales: {
         x: axis('share of Chromium browser usage (log scale)', false),
         y: axis(`share of ${metricLabel} (log scale)`, true),
+      },
+    },
+  });
+}
+
+/** One org's value ratio for each metric the value shape chart shows. */
+export interface ShapeOrg {
+  org: string;
+  /** Per metric: contribution share and usage share, or null where the org
+   * has no ratio (too little usage over that metric's weeks). */
+  shares: ({ contribution: number; derived: number } | null)[];
+}
+
+/** A decade's ratio label: 0.001, 0.01, 0.1, 1.0, 10. */
+const decadeLabel = (e: number) => (e >= 0 ? formatRatio(10 ** e) : String(10 ** e));
+
+/** The value shape chart's radial range in decades (log10 of the ratio):
+ * `center` is the whole decade at the center, `outer` the edge, a little past
+ * the largest ratio and always past the 1.0× ring. A ratio of 0 (no
+ * contribution) sits at the center, one decade below the smallest other
+ * ratio, like the parity chart's 0 row. */
+export function shapeBounds(ratios: number[]): { center: number; outer: number; zero: boolean } {
+  const pos = ratios.filter((r) => r > 0);
+  const zero = ratios.some((r) => r === 0);
+  const lo = pos.length ? Math.min(-1, Math.floor(Math.log10(Math.min(...pos)) + 1e-9)) : -1;
+  const outer = Math.max(0, pos.length ? Math.log10(Math.max(...pos)) : 0) + 0.2;
+  return { center: zero ? lo - 1 : lo, outer, zero };
+}
+
+/** Every org's value ratio on every metric at once: one axis per metric, the
+ * ratio on a log scale from the center out, and each org a shaded polygon
+ * through its ratios. The bold ring is 1.0×, contribution in proportion to
+ * usage: an org reaching outside it on an axis contributes more than its
+ * usage share on that metric. `selected` is the metric picked below the chart,
+ * whose axis label is bold. */
+export function renderValueShapeChart(
+  canvas: HTMLCanvasElement,
+  orgs: ShapeOrg[],
+  metricLabels: string[],
+  selected: number,
+  colors: Map<string, string>,
+  theme: Theme,
+): Chart<'radar'> {
+  const ratio = (s: { contribution: number; derived: number } | null) => (s ? s.contribution / s.derived : null);
+  const all = orgs.flatMap((o) => o.shares.map(ratio)).filter((r): r is number => r !== null);
+  const { center, outer, zero } = shapeBounds(all);
+  const r = (x: number | null) => (x === null ? null : x > 0 ? Math.log10(x) - center : 0);
+  const datasets = orgs.map((o) => {
+    const color = colors.get(o.org) ?? theme.muted;
+    return {
+      label: o.org,
+      data: o.shares.map((s) => r(ratio(s))),
+      shares: o.shares,
+      borderColor: color,
+      backgroundColor: withAlpha(color, 0.08),
+      pointBackgroundColor: color,
+      pointBorderColor: theme.surface,
+      borderWidth: 2,
+      pointRadius: 5,
+      pointHoverRadius: 7,
+      fill: true,
+      spanGaps: true,
+    };
+  });
+  const isParity = (v: number) => Math.abs(v + center) < 1e-6;
+  const base = baseOptions(theme);
+  return new Chart<'radar'>(canvas, {
+    type: 'radar',
+    data: { labels: metricLabels, datasets },
+    options: {
+      ...base,
+      interaction: { mode: 'nearest', intersect: true },
+      plugins: {
+        ...base.plugins,
+        legend: {
+          ...base.plugins.legend,
+          labels: { ...base.plugins.legend.labels, boxWidth: 14, boxHeight: 14 },
+        },
+        tooltip: {
+          ...base.plugins.tooltip,
+          yAlign: undefined,
+          displayColors: false,
+          callbacks: {
+            title: (items) => {
+              const it = items[0];
+              if (!it) return '';
+              const s = (it.dataset as unknown as { shares: ShapeOrg['shares'] }).shares[it.dataIndex];
+              return `${it.dataset.label}  ${formatRatio(ratio(s) ?? 0)}×`;
+            },
+            label: (ctx) => {
+              const s = (ctx.dataset as unknown as { shares: ShapeOrg['shares'] }).shares[ctx.dataIndex];
+              const m = metricLabels[ctx.dataIndex].toLowerCase();
+              return s ? [`${pct(s.contribution)} of ${m}`, `${pct(s.derived)} of usage`] : [];
+            },
+          },
+        },
+      },
+      scales: {
+        r: {
+          min: 0,
+          max: outer - center,
+          angleLines: { color: theme.grid },
+          // Ticks on whole decades only, not at the edge.
+          afterBuildTicks: (scale: Scale) => {
+            const ticks: Tick[] = [];
+            for (let v = 0; v <= outer - center + 1e-9; v++) ticks.push({ value: v });
+            scale.ticks = ticks;
+          },
+          grid: {
+            // Circles, so the organizations' polygons stand out from them.
+            circular: true,
+            color: (ctx) => (isParity(ctx.tick?.value ?? NaN) ? theme.parity : theme.grid),
+            lineWidth: (ctx) => (isParity(ctx.tick?.value ?? NaN) ? 2 : 1),
+          },
+          pointLabels: {
+            color: theme.text,
+            // One word a line on narrow screens, so the names fit beside the chart.
+            callback: (label: string) => (canvas.clientWidth < 520 ? label.split(' ') : label),
+            font: (ctx) => ({ size: ctx.chart.width < 520 ? 11 : 13, weight: ctx.index === selected ? 'bold' : 'normal' }),
+            padding: 6,
+          },
+          ticks: {
+            color: (ctx) => (isParity(ctx.tick?.value ?? NaN) ? theme.parity : theme.muted),
+            font: (ctx) => ({ weight: isParity(ctx.tick?.value ?? NaN) ? 'bold' : 'normal' }),
+            z: 1,
+            backdropColor: theme.surface,
+            callback: (v: number | string) => (zero && Number(v) === 0 ? '0' : `${decadeLabel(Number(v) + center)}×`),
+          },
+        },
       },
     },
   });
