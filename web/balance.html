@@ -490,16 +490,15 @@
         <a class="card-anchor" href="#ai" aria-label="Link to this section" title="Link to this section">#</a>
         <h2 id="ai-title">AI-marked CLs, compared with the same author's other CLs</h2>
         <p class="sub">
-          Since July 2026 some commits carry an <code>Agent-Generated</code> trailer, and a few from 2025 say they
-          were generated with Gemini. Comparing each author's marked CLs with their unmarked ones in the same
-          quarter, marked CLs may have got their first review sooner: about
-          <b data-src="ai_paired" data-field="diff" data-where="metric=h to first review" data-fmt="habs">–</b> on
-          average, but the 95% interval runs from
-          <b data-src="ai_paired" data-field="hi" data-where="metric=h to first review" data-fmt="habs">–</b> to
-          <b data-src="ai_paired" data-field="lo" data-where="metric=h to first review" data-fmt="habs">–</b>. No
-          other difference was clear. The sample is small
-          (<b data-src="ai_paired" data-field="n" data-where="metric=lines" data-fmt="n0">–</b> author-quarters)
-          and self-selected, and most AI use carries no marker.
+          About 2,500 commits since mid-2025 say they were made with an AI tool: an <code>Agent-Generated</code>
+          trailer (from July 2026), a co-author or assistant trailer naming one, or a line saying so. Comparing each
+          author's marked CLs with their unmarked ones in the same quarter
+          (<b data-src="ai_paired" data-field="n" data-where="metric=threads" data-fmt="n0">–</b> author-quarters),
+          marked CLs are larger, about 1.6 times the lines, but get the same review: threads, load, rework, rounds,
+          waits and reverts show no clear difference. Authors who start marking CLs don't change the rest of their
+          work either. Half the marked CLs come from five people, and most AI use carries no marker, so this
+          describes a few heavy users, not the project. An earlier version of this page reported faster first
+          reviews from the trailer alone; with the fuller set of markers, that difference is gone.
         </p>
         <h3>Marked minus unmarked, paired by author and quarter</h3>
         <div class="table-wrap">
@@ -508,7 +507,8 @@
             <tbody></tbody>
           </table>
         </div>
-        <p class="note">Lines are compared as log(1 + lines). Hours to first review counts clock hours.</p>
+        <p class="note">Lines and hours to first review are compared as log(1 + value), so a difference of 0.49 in
+          lines is about 1.6 times the size. Method and directory-level results: docs/balance-ai.md.</p>
       </section>
 
       <section id="mechanical" class="card" aria-labelledby="mechanical-title">

@@ -69,8 +69,13 @@ figures; the page has the corrected ones):
   month against 1.3. The 2025 joiners don't start with smaller CLs.
 - **People improving on none of the four git paths:** 40% (2019–20), 45%
   (2023–24), 43% (2025–26).
-- **AI-marked CLs:** first review 34 h sooner (95% interval 1–67 h, 47
-  author-quarters).
+- **AI-marked CLs:** with the identity fix, the trailer list still showed a
+  first review 34 h sooner (95% interval 1–67 h, 47 author-quarters). The
+  broader marker (`docs/balance-ai.md`, 2,527 commits, 201 author-quarters)
+  replaces it on the page:
+  - marked CLs are about 1.6× as large;
+  - review, rework, waits and reverts don't differ;
+  - the faster first review doesn't replicate.
 - **Unchanged:** waits, reverts, rework, the load index and the mechanical
   rule, which don't depend on identities.
 
