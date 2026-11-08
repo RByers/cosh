@@ -216,7 +216,7 @@ test('the page names weeks by their dates, never as ISO week labels', async () =
   await page.close();
 });
 
-test('parity chart: review share against usage share on log axes, matching the table', async () => {
+test('parity chart: review share against usage share on equal log axes, matching the table', async () => {
   const { page, errors } = await defaultPage();
   const d = await page.evaluate(() => {
     const c = window.__cosh!.parityChart!;
@@ -242,8 +242,9 @@ test('parity chart: review share against usage share on log axes, matching the t
   });
   assert.deepEqual(errors, []);
   assert.deepEqual(d.types, ['logarithmic', 'logarithmic']);
-  // Each axis has its own bounds, on whole powers of two.
-  for (const b of d.bounds) assert.ok(Math.abs(Math.log2(b) - Math.round(Math.log2(b))) < 1e-9, String(d.bounds));
+  // Same bounds on both axes, so the diagonal is y = x.
+  assert.equal(d.bounds[0], d.bounds[2]);
+  assert.equal(d.bounds[1], d.bounds[3]);
   assert.ok(d.plugins.includes('parityLine'));
   assert.match(d.yTitle, /^share of addressed comments/);
   assert.match(d.xTitle, /^share of Chromium browser usage/);
@@ -255,7 +256,7 @@ test('parity chart: review share against usage share on log axes, matching the t
   assert.ok(m.y < m.x, JSON.stringify(m));
   assert.ok(!('brave.com' in d.pts));
   for (const [org, p] of Object.entries(d.pts)) {
-    assert.ok(p.x >= d.bounds[0] && p.x <= d.bounds[1] && p.y >= d.bounds[2] && p.y <= d.bounds[3], org);
+    assert.ok(p.x >= d.bounds[0] && p.x <= d.bounds[1] && p.y >= d.bounds[0] && p.y <= d.bounds[1], org);
     // Plotted at its share, or at the bottom (0) tick when it has none.
     assert.equal(p.y, p.share > 0 ? p.share : d.bounds[2], org);
     // The table rounds (0.0005× shows as 0.0×).
@@ -321,6 +322,7 @@ test('parity chart keeps orgs with none of the metric, on a 0 row below the log 
           .map((ds: { label?: string; data: unknown[] }) => ({ org: ds.label!, y: (ds.data[0] as { y: number }).y })),
         yMin: y.min,
         bottomLabel: String(y.ticks[0]?.label),
+        xMin: p.scales.x.min,
       };
     });
     assert.deepEqual(errors, []);
@@ -329,6 +331,7 @@ test('parity chart keeps orgs with none of the metric, on a 0 row below the log 
     }
     if (d.zeros.length) {
       assert.equal(d.bottomLabel, '0', preset);
+      assert.equal(d.xMin, d.yMin, preset);
       for (const z of d.zeros) {
         assert.equal(z.y, d.yMin, `${preset}: ${z.org}`);
       }
