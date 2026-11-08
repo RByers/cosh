@@ -37,6 +37,11 @@ export const FMT: Record<string, (v: number) => string> = {
   x: (v) => `${num(2)(v)}×`,
   h: (v) => `${num(1)(v)} h`,
   habs: (v) => `${num(0)(Math.abs(v))} hours`,
+  /** A difference of logs, as a relative change. */
+  rel: (v) => `${v > 0 ? '+' : v < 0 ? '−' : ''}${num(0)(Math.abs(Math.expm1(v)) * 100)}%`,
+  /** A difference of shares, in percentage points. */
+  ptsabs: (v) => `${num(1)(Math.abs(v) * 100)} points`,
+  abspct: (v) => pctOf(0)(Math.abs(Math.expm1(v))),
 };
 
 /** The row matching `where` ("k=v&k2=v2", compared as text). */
@@ -346,6 +351,89 @@ function mechanicalBars(rows: Row[], theme: Theme) {
 
 // ---- tables
 
+// ---- growth signals, patterns and security fixes
+
+const SIGNAL_ERAS: [string, string][] = [['2023H2-2024', '2023 H2–2024'], ['2025', '2025'], ['2026', '2026 to October']];
+const SIGNAL_TENURE: Record<string, string> = { '0-3': '0–3 mo', '3-6': '3–6', '6-12': '6–12', '12-24': '1–2 y', '24-60': '2–5 y', '60-120': '5–10 y', '120+': '10 y+' };
+/** Signed, with the sign taken from the rounded value (no "−0.0"). */
+const signedBy = (digits: number, scale = 1, unit = '') => (v: number) => {
+  const r = Number((v * scale).toFixed(digits));
+  return `${r > 0 ? '+' : r < 0 ? '−' : ''}${num(digits)(Math.abs(r))}${unit}`;
+};
+const pts = signedBy(1, 100, ' pts');
+const rel = FMT.rel;
+const plus = (digits: number) => signedBy(digits);
+
+/** How each same-people panel measure is shown: [change format, raw format]. */
+const PANEL_FMT: Record<string, [(v: number) => string, ((v: number) => string) | null]> = {
+  reviewer_log1p_threads: [rel, FMT.n2],
+  reviewer_neg_vote: [pts, FMT.pct1],
+  author_log1p_threads_received: [rel, null],
+  author_rounds: [plus(2), FMT.n2],
+  author_interdiff_share: [pts, FMT.pct],
+  author_reverted_30d: [pts, FMT.pct1],
+  author_abandoned: [pts, FMT.pct1],
+  author_pre_send_uploads: [plus(2), FMT.n2],
+  author_neg_received: [pts, FMT.pct1],
+};
+
+export function panelRows(rows: Row[]): Row[] {
+  return rows.map((r) => {
+    const [f, raw] = PANEL_FMT[String(r.key)] ?? [signed, null];
+    const lo = r.lo as number, hi = r.hi as number;
+    const sig = lo > 0 || hi < 0;
+    return {
+      measure: String(r.measure),
+      before: raw && r.raw_2024 !== null ? raw(r.raw_2024 as number) : '–',
+      after: raw && r.raw_2026 !== null ? raw(r.raw_2026 as number) : '–',
+      change: f(r.change as number),
+      ci: `${f(lo)} to ${f(hi)}`,
+      clear: sig ? 'yes' : 'no',
+    };
+  });
+}
+
+const MATCHED: [string, string, (v: number) => string][] = [
+  ['still_active', 'Still active', FMT.pct],
+  ['cls_per_active_month', 'Merged CLs per active month', FMT.n1],
+  ['reviews_given_per_active_month', 'Reviews given per active month', FMT.n1],
+  ['load_index', 'Review load index', FMT.n2],
+  ['threads_resid', 'Threads, against the same quarter', FMT.n2],
+  ['interdiff_p50', 'Lines changed after review, median', FMT.pct],
+  ['rounds', 'Review rounds', FMT.n2],
+  ['abandon_rate', 'Abandoned', FMT.pct1],
+];
+
+export function matchedRows(rows: Row[]): Row[] {
+  const at = (arm: string, months: string) => rows.find((r) => r.arm === arm && r.months === months);
+  return MATCHED.map(([k, label, f]) => {
+    const out: Row = { measure: label };
+    for (const m of ['3-6', '9-12']) for (const y of ['2025', '2024']) {
+      const v = at(`joined ${y}`, m)?.[k];
+      out[`${y}_${m}`] = typeof v === 'number' ? f(v) : '–';
+    }
+    return out;
+  });
+}
+
+const SEVERITIES: [string, string][] = [['critical', 'Critical'], ['high', 'High'], ['medium', 'Medium'], ['low', 'Low']];
+
+function securityBars(rows: Row[], theme: Theme) {
+  const o = options(theme, FMT.n0, true, (i) => `${rows[i].year}: ${FMT.n0(Number(rows[i].total))} CVEs`);
+  const scales = axes(theme, FMT.n0, { zero: true });
+  charts.push(new Chart($<HTMLCanvasElement>('#c-security'), {
+    type: 'bar',
+    data: {
+      labels: rows.map((r) => (r.year === 2026 ? '2026 (to Nov)' : String(r.year))),
+      datasets: SEVERITIES.map(([k, label], i) => ({
+        label, data: rows.map((r) => r[k] as number), backgroundColor: theme.series[i],
+      })),
+    },
+    options: { ...o, plugins: { ...o.plugins, legend: { ...o.plugins.legend, labels: { ...o.plugins.legend.labels, boxHeight: 10, boxWidth: 10 } } },
+      scales: { x: { ...scales.x, stacked: true }, y: { ...scales.y, stacked: true } } },
+  } as never));
+}
+
 type Col = [field: string, fmt: (v: number) => string, cls?: (r: Row) => string];
 
 function table(id: string, rows: Row[], cols: Col[]) {
@@ -586,6 +674,38 @@ function render(data: BalanceData) {
   const owner = d.promotion.filter((r) => r.years === 3 && Number(r.cohort) >= 2014);
   line('c-owner', theme, owner.map((r) => String(r.cohort)),
     [{ label: 'OWNER within 3 years', data: owner.map((r) => r.owner as number), color: theme.series[0] }], FMT.pct, { zero: true });
+
+  categories('c-neg', d.signals_tenure, theme, { x: 'tenure_months', g: 'era', v: 'neg_index', groups: SIGNAL_ERAS,
+    xs: Object.keys(SIGNAL_TENURE), xl: (x) => SIGNAL_TENURE[x] }, FMT.n2, { ref: 1, zero: true });
+  categories('c-abandon', d.signals_tenure, theme, { x: 'tenure_months', g: 'era', v: 'abandon_index', groups: SIGNAL_ERAS,
+    xs: Object.keys(SIGNAL_TENURE), xl: (x) => SIGNAL_TENURE[x] }, FMT.n2, { ref: 1, zero: true });
+  const eraName = Object.fromEntries(SIGNAL_ERAS);
+  table('t-signals', d.signals_era.map((r) => ({ ...r, era: eraName[String(r.era)] ?? r.era })), [
+    ['era', text], ['cls', FMT.n0], ['abandon_rate', FMT.pct1], ['neg_share', FMT.pct1], ['after_neg_abandoned', FMT.pct],
+  ]);
+  const shown = panelRows(d.panels);
+  const panel = d.panels.map((r, i) => ({ r, row: shown[i] }));
+  for (const side of ['reviewer', 'author']) {
+    table(`t-panel-${side}`, panel.filter((p) => p.r.side === side).map((p) => p.row), [
+      ['measure', text], ['before', text], ['after', text], ['change', text], ['ci', text], ['clear', text],
+    ]);
+  }
+  table('t-matched', matchedRows(d.matched), [
+    ['measure', text], ['2025_3-6', text], ['2024_3-6', text], ['2025_9-12', text], ['2024_9-12', text],
+  ]);
+
+  table('t-patterns', d.patterns, [
+    ['pattern', text], ['share_pre', FMT.pct], ['share_recent', FMT.pct], ['tenure', FMT.n1], ['commits', FMT.n0],
+    ['approvals', FMT.n0], ['owner', FMT.pct],
+  ]);
+  table('t-joiners', d.joiner_paths.map((r) => ({ ...r, cohort: String(r.cohort).replace('-', '–') })), [
+    ['cohort', text], ['people', FMT.n0], ['light → reviewer', FMT.pct], ['ramping up to author', FMT.pct], ['stays light', FMT.pct],
+  ]);
+  table('t-transitions', d.transitions, [
+    ['window', text], ['light_review', FMT.pct], ['light_author', FMT.pct], ['author_review', FMT.pct], ['review_review', FMT.pct],
+  ]);
+
+  securityBars(d.security_years, theme);
 
   table('t-ai', d.ai_paired, [['metric', text], ['diff', signed], ['lo', signed], ['hi', signed], ['n', FMT.n0]]);
 

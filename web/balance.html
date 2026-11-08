@@ -47,8 +47,8 @@
             index), and how many CLs each reviewer carries.</li>
           <li><strong>Speed:</strong> hours from being sent for review to the first substantive review, and time
             spent waiting in Gerrit's attention set.</li>
-          <li><strong>Quality:</strong> how much a CL changes after review, review rounds, and reverts within 30
-            days.</li>
+          <li><strong>Quality:</strong> how much a CL changes after review, review rounds, reverts within 30
+            days, −1 votes and abandoned CLs.</li>
           <li><strong>Growth:</strong> whether people need less review as they gain tenure and know an area, and
             whether they grow in velocity, breadth or reviewing, compared with chance and across cohorts.</li>
           <li><strong>Carrying the project:</strong> moving from author to reviewer to OWNER, who reviews
@@ -59,11 +59,17 @@
           Per-author velocity has crept up since 2023 as the pool of active authors shrank, and in 2026 CLs got
           bigger too. Review per line fell: like for like, a 2026 CL gets about a third less review than one in
           2023. Waits shortened in 2025 and are back to 2023 levels, and reverts haven't risen. People who joined
-          in 2025 land more CLs and review others sooner than earlier joiners, and draw less review, which may be
-          their reviewers' doing as much as theirs. Fewer people review than write CLs, and each reviewer now sees
+          in 2025 land more CLs and review others sooner than earlier joiners, and draw less review. Fewer people review than write CLs, and each reviewer now sees
           half again as many CLs as in 2023. Fewer mid-career reviewers approve newcomers' CLs, and fewer
-          newcomers go on to mentor others, trends that began before AI tools. No single signal here separates AI
-          from other changes in the project.
+          newcomers go on to mentor others or move into reviewing, trends that began before AI tools.
+        </p>
+        <p>
+          Following the same people separates two explanations for the drop in review. Established authors get
+          fewer threads but their CLs are no better on what reviewers don't control, so reviewers seem to be easing
+          off a little. Newcomers who joined in 2025 do better than matched 2024 joiners even on those measures, so
+          they seem to arrive better. More CLs are abandoned in 2026, at every tenure. Security fixes jumped more
+          than tenfold in 2026, a new load on reviewers. No single signal here separates AI from other changes in
+          the project.
         </p>
         <p class="note">
           Merged, human-owned CLs on chromium/src <code>main</code>: Gerrit review data from July 2023 to
@@ -345,6 +351,53 @@
         </div>
       </section>
 
+      <section id="signals" class="card" aria-labelledby="signals-title">
+        <a class="card-anchor" href="#signals" aria-label="Link to this section" title="Link to this section">#</a>
+        <h2 id="signals-title">Wrong turns: −1 votes and abandoned CLs</h2>
+        <p class="sub">
+          A −1 vote or an abandoned CL often means the approach was wrong from the start, or the author didn't yet
+          have the skill to solve the problem. Chromium reviewers rarely vote −1: only
+          <b data-src="signals_era" data-field="neg_share" data-where="era=2023H2-2024" data-fmt="pct1">–</b> of
+          reviewed CLs got one in 2023–24, and
+          <b data-src="signals_era" data-field="neg_share" data-where="era=2026" data-fmt="pct1">–</b> in 2026.
+          Reviewers mostly object in comments. Still, −1 votes track learning as sharply as the review load index:
+          before AI tools, newcomers in their first three months drew
+          <b data-src="signals_tenure" data-field="neg_index" data-where="era=2023H2-2024&amp;tenure_months=0-3" data-fmt="x">–</b>
+          the usual rate for their CLs' size, and ten-year veterans
+          <b data-src="signals_tenure" data-field="neg_index" data-where="era=2023H2-2024&amp;tenure_months=120+" data-fmt="x">–</b>.
+        </p>
+        <p class="sub">
+          Abandonment is ten times as common, and it rose in 2026: from
+          <b data-src="signals_era" data-field="abandon_rate" data-where="era=2023H2-2024" data-fmt="pct1">–</b> of
+          reviewed CLs in 2023–24 to
+          <b data-src="signals_era" data-field="abandon_rate" data-where="era=2026" data-fmt="pct1">–</b>. It rose at
+          every tenure, most for newcomers, whose first-quarter CLs were abandoned at
+          <b data-src="signals_tenure" data-field="abandon_index" data-where="era=2026&amp;tenure_months=0-3" data-fmt="x">–</b>
+          the 2023–24 norm. A −1 now ends a CL more often than it leads to a reworked landing:
+          <b data-src="signals_era" data-field="after_neg_abandoned" data-where="era=2026" data-fmt="pct">–</b> of CLs
+          with a −1 were abandoned in 2026, against
+          <b data-src="signals_era" data-field="after_neg_abandoned" data-where="era=2023H2-2024" data-fmt="pct">–</b>
+          in 2023–24. That fits CLs becoming cheaper to write and to throw away. Abandoned CLs also include
+          duplicates, experiments and CLs replaced by another, so a rise isn't by itself evidence of weaker skill.
+        </p>
+        <div class="panels">
+          <figure class="panel"><h3>−1 votes by tenure</h3>
+            <p class="note">Share of reviewed CLs with a −1 or −2 from someone other than the author. 1.0 (dashed) is the 2023–24 rate for CLs of the same size.</p>
+            <div class="chart"><canvas id="c-neg" role="img" aria-label="Negative-vote index by the author's tenure, for 2023 H2 to 2024, 2025 and 2026."></canvas></div></figure>
+          <figure class="panel"><h3>Abandoned CLs by tenure</h3>
+            <p class="note">Share of reviewed CLs that were abandoned. 1.0 (dashed) is the 2023–24 rate for CLs of the same size.</p>
+            <div class="chart"><canvas id="c-abandon" role="img" aria-label="Abandonment index by the author's tenure, for 2023 H2 to 2024, 2025 and 2026."></canvas></div></figure>
+        </div>
+        <div class="table-wrap">
+          <table id="t-signals" class="balance-table">
+            <thead><tr><th>Period</th><th>Reviewed CLs</th><th>Abandoned</th><th>With a −1 or −2</th><th>Abandoned after a −1</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <p class="note">Reviewed CLs: closed CLs with substantive review, July 2023 to October 2026, mechanical CLs
+          left out. Votes come from each CL's Gerrit history; votes carried over to a new patch set count once.</p>
+      </section>
+
       <section id="cohorts" class="card" aria-labelledby="cohorts-title">
         <a class="card-anchor" href="#cohorts" aria-label="Link to this section" title="Link to this section">#</a>
         <h2 id="cohorts-title">Cohorts: the 2025 joiners land more and review sooner</h2>
@@ -365,8 +418,9 @@
         </p>
         <p class="sub">
           Part of the lower review load is the project-wide drop in 2026: veterans' load fell by about a fifth
-          too. Even allowing for that, the 2025 cohort drew less feedback sooner than earlier cohorts, which may be
-          their reviewers easing off as much as their own skill. A joiner is anyone whose first commit on
+          too. Even allowing for that, the 2025 cohort drew less feedback sooner than earlier cohorts. Comparing them
+          with matched 2024 joiners (<a href="#easing">below</a>) suggests they arrive better, not only that they
+          get less review. A joiner is anyone whose first commit on
           <code>main</code> falls in that year, including experienced engineers moving in from other projects.
           Each point counts only people still active at that stage, so the curves describe those who stayed, and
           the later points rest on few people.
@@ -401,6 +455,73 @@
             <tbody></tbody>
           </table>
         </div>
+      </section>
+
+      <section id="easing" class="card" aria-labelledby="easing-title">
+        <a class="card-anchor" href="#easing" aria-label="Link to this section" title="Link to this section">#</a>
+        <h2 id="easing-title">Arriving better, or easing off?</h2>
+        <p class="sub">
+          Review per CL fell in 2026. Either authors arrive better and need less, or reviewers ask less of the same
+          work. Following the same people from 2024 to 2026, on like-for-like CLs (same size, directory and
+          author tenure), separates the two. The same
+          <b data-src="signals_summary" data-field="reviewers" data-fmt="n0">–</b> reviewers started
+          <b data-src="panels" data-field="change" data-where="key=reviewer_log1p_threads" data-fmt="abspct">–</b>
+          fewer threads per review. The same
+          <b data-src="signals_summary" data-field="authors" data-fmt="n0">–</b> authors received
+          <b data-src="panels" data-field="change" data-where="key=author_log1p_threads_received" data-fmt="abspct">–</b>
+          fewer threads, but on the measures reviewers don't control they were no better: their CLs changed as
+          much after review and were reverted as often, and the share abandoned rose by
+          <b data-src="panels" data-field="change" data-where="key=author_abandoned" data-fmt="ptsabs">–</b>. They did upload more versions before sending a CL for review, which fits
+          self-revision with AI tools, but it hasn't shown up as less change after review. For established
+          authors, then, the evidence leans modestly to reviewers easing off. Since the threads that remain drive
+          as much change as before, reviewers may be dropping low-value comments rather than real problems.
+        </p>
+        <figure class="panel"><h3>The same reviewers, 2024 and 2026</h3>
+            <p class="note">Reviewers with 20 or more reviews in both years. Change: per review, against the 2024 average for the same CL size, directory and author tenure.</p>
+            <div class="table-wrap">
+              <table id="t-panel-reviewer" class="balance-table">
+                <thead><tr><th>Measure</th><th>2024</th><th>2026</th><th>Change</th><th>95% interval</th><th>Clear?</th></tr></thead>
+                <tbody></tbody>
+              </table>
+            </div></figure>
+        <figure class="panel"><h3>The same authors, 2024 and 2026</h3>
+            <p class="note">Authors with 10 or more reviewed CLs in both years. Change: per CL, against the 2024 average for the same size and the author's current tenure.</p>
+            <div class="table-wrap">
+              <table id="t-panel-author" class="balance-table">
+                <thead><tr><th>Measure</th><th>2024</th><th>2026</th><th>Change</th><th>95% interval</th><th>Clear?</th></tr></thead>
+                <tbody></tbody>
+              </table>
+            </div></figure>
+        <h3>Newcomers: matched cohorts</h3>
+        <p class="sub">
+          For newcomers the answer differs. We paired
+          <b data-src="signals_summary" data-field="matched_pairs" data-fmt="n0">–</b> people who joined in 2025 with
+          2024 joiners who started alike: CL size, top-level directory, email domain and Gerrit activity before
+          their first commit. Nine to twelve months in, the 2025 joiners still landed more
+          (<b data-src="matched" data-field="cls_per_active_month" data-where="arm=joined 2025&amp;months=9-12" data-fmt="n1">–</b>
+          CLs a month against
+          <b data-src="matched" data-field="cls_per_active_month" data-where="arm=joined 2024&amp;months=9-12" data-fmt="n1">–</b>)
+          and reviewed more. Their CLs also changed less after review, a measure reviewers don't control
+          (<b data-src="matched" data-field="interdiff_p50" data-where="arm=joined 2025&amp;months=9-12" data-fmt="pct">–</b>
+          of lines against
+          <b data-src="matched" data-field="interdiff_p50" data-where="arm=joined 2024&amp;months=9-12" data-fmt="pct">–</b>),
+          and they drew fewer threads even against the same quarter's norm, so their lead isn't only the
+          project-wide drop. The cost is more abandoned CLs early on. For newcomers, the signs lean to arriving
+          better.
+        </p>
+        <div class="table-wrap">
+          <table id="t-matched" class="balance-table">
+            <thead><tr><th>Measure</th><th>Joined 2025, 3–6 months</th><th>Joined 2024, 3–6 months</th><th>Joined 2025, 9–12 months</th><th>Joined 2024, 9–12 months</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <p class="note">
+          Caveats: there is no pair of years before AI tools to compare with yet, so some of the change may be
+          ordinary drift (a 2021 → 2023 comparison will follow once that history is fetched). Reviewers active in
+          both years are the steady core. Matching is on coarse groups, so some 2025 joiners had no match, and the
+          matched comparison has no intervals yet. Thread counts are compared as logarithms, so their change is
+          relative. "Clear" means the 95% interval leaves out zero.
+        </p>
       </section>
 
       <section id="growth" class="card" aria-labelledby="growth-title">
@@ -486,6 +607,50 @@
         </div>
       </section>
 
+      <section id="patterns" class="card" aria-labelledby="patterns-title">
+        <a class="card-anchor" href="#patterns" aria-label="Link to this section" title="Link to this section">#</a>
+        <h2 id="patterns-title">Patterns of activity, and how people move between them</h2>
+        <p class="sub">
+          Grouping every person's half-years by what they did (commits, size, breadth, approvals, review share,
+          newcomer approvals, OWNERS status and tenure) gives six patterns. The mix is stable: the shares moved
+          only a few points between 2023–24 and the most recent year, so AI tools haven't changed what roles people play,
+          even where they changed how much each role does. Patterns are scored against everyone active in the same
+          half-year, and many people sit near a boundary, so they describe tendencies, not labels.
+        </p>
+        <div class="table-wrap">
+          <table id="t-patterns" class="balance-table">
+            <thead><tr><th>Pattern</th><th>Share, 2023 H2–2024</th><th>Share, 2025 H2–2026 H1</th><th>Tenure, years</th><th>Commits</th><th>Approvals</th><th>In OWNERS</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <p class="note">Medians per half-year; OWNERS is the share ever added to an OWNERS file by then.</p>
+        <p class="sub">
+          The slowdown is in newcomers reaching reviewing. Of people who joined in 2017–2019,
+          <b data-src="joiner_paths" data-field="light → reviewer" data-where="cohort=2017-2019" data-fmt="pct">–</b>
+          moved from light activity into a reviewing pattern within three years; of the 2021–2023 joiners,
+          <b data-src="joiner_paths" data-field="light → reviewer" data-where="cohort=2021-2023" data-fmt="pct">–</b>,
+          and more stayed light. That began before AI tools. Once someone is an established author, the step to
+          reviewing is as likely as ever: about half of authors are in a reviewing pattern a year later, in every
+          period.
+        </p>
+        <figure class="panel"><h3>First three years, by when people joined</h3>
+            <p class="note">People with four or more active half-years in their first three years.</p>
+            <div class="table-wrap">
+              <table id="t-joiners" class="balance-table">
+                <thead><tr><th>Joined</th><th>People</th><th>Light → reviewer</th><th>Ramping up to author</th><th>Stays light</th></tr></thead>
+                <tbody></tbody>
+              </table>
+            </div></figure>
+        <figure class="panel"><h3>Where people are a year later</h3>
+            <p class="note">Share of people in each kind of pattern who are in the named one a year later.</p>
+            <div class="table-wrap">
+              <table id="t-transitions" class="balance-table">
+                <thead><tr><th>Starting</th><th>Light → reviewing</th><th>Light → authoring</th><th>Authoring → reviewing</th><th>Reviewing stays reviewing</th></tr></thead>
+                <tbody></tbody>
+              </table>
+            </div></figure>
+      </section>
+
       <section id="ai" class="card" aria-labelledby="ai-title">
         <a class="card-anchor" href="#ai" aria-label="Link to this section" title="Link to this section">#</a>
         <h2 id="ai-title">AI-marked CLs, compared with the same author's other CLs</h2>
@@ -509,6 +674,44 @@
         </div>
         <p class="note">Lines and hours to first review are compared as log(1 + value), so a difference of 0.49 in
           lines is about 1.6 times the size. Method and directory-level results: docs/balance-ai.md.</p>
+        <h3>Adoption by directory (speculative)</h3>
+        <p class="sub">
+          Agent instruction files (<code>AGENTS.md</code>, <code>GEMINI.md</code>, <code>.claude/</code> and the
+          like) don't predict AI use. Only 15 of the 115 busiest directories have one, only 5 of those ever reach
+          a visible share of marked CLs, and 36 reach it without a file. One enthusiast can add a file nobody else
+          uses. A better treatment is the first quarter in which at least 5% of a directory's CLs are marked. In
+          the 41 directories that reached it, review per CL drifted down afterwards (load index about 0.1 lower,
+          with flat trends before), the direction of thinner review once AI is in use. With so few directories, no
+          quarter's change is distinguishable from zero. Most AI use is unmarked, so every comparison here is
+          biased toward finding nothing.
+        </p>
+        <p class="sub">
+          Other commit footers that might signal shortcuts, such as <code>Owners-Override</code>,
+          <code>Auto-Submit</code> and <code>No-Try</code>, have been flat since 2021 and mark small, routine CLs, so
+          they say little about the review balance.
+        </p>
+      </section>
+
+      <section id="security" class="card" aria-labelledby="security-title">
+        <a class="card-anchor" href="#security" aria-label="Link to this section" title="Link to this section">#</a>
+        <h2 id="security-title">Security fixes: a new load in 2026</h2>
+        <p class="sub">
+          The <a href="https://chromereleases.googleblog.com/" target="_blank" rel="noopener">Chrome Releases</a>
+          posts list every security fix that ships. From 2020 to 2025 they listed 190 to 380 CVEs a year
+          (<b data-src="security_years" data-field="total" data-where="year=2025" data-fmt="n0">–</b> in 2025). In
+          2026, to early November, they listed
+          <b data-src="security_years" data-field="total" data-where="year=2026" data-fmt="n0">–</b>, hundreds a
+          month from March on. Most are credited to Google, and some to AI-assisted security research, so this
+          looks like AI-driven vulnerability discovery. Each fix is a CL someone writes and someone reviews, so it
+          is a direct new load on reviewers, separate from authors using AI to write ordinary code. Next we will
+          compare how security-fix CLs are reviewed with other CLs.
+        </p>
+        <figure class="panel"><h3>CVEs fixed per year, by severity</h3>
+          <p class="note">From the Chrome Releases posts.
+            <b data-src="security_summary" data-field="bugs_with_commit" data-fmt="n0">–</b> of the
+            <b data-src="security_summary" data-field="cves" data-fmt="n0">–</b> CVEs since 2020 are matched to fixing
+            commits on <code>main</code>; most of the rest were fixed in V8, Skia or ANGLE and arrive in rolls.</p>
+          <div class="chart"><canvas id="c-security" role="img" aria-label="CVEs listed in Chrome Releases posts per year since 2020, stacked by severity."></canvas></div></figure>
       </section>
 
       <section id="mechanical" class="card" aria-labelledby="mechanical-title">

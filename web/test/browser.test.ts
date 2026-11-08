@@ -2679,11 +2679,15 @@ test('the Review Balance page: a draft warning first, every figure, chart and ta
   for (const f of figures) assert.match(f, /\d/, f);
   // Every chart is drawn, and every table has rows.
   const canvases = await page.$$eval('canvas', (cs) => cs.map((c) => [c.id, c.width > 0 && c.height > 0] as const));
-  assert.equal(canvases.length, 23);
+  assert.equal(canvases.length, 26);
   for (const [id, drawn] of canvases) assert.ok(drawn, id);
   const rows = await page.$$eval('table.balance-table', (ts) => ts.map((t) => [t.id, (t as HTMLTableElement).tBodies[0].rows.length] as const));
-  assert.deepEqual(rows.map(([id]) => id), ['t-areas', 't-tenure', 't-ai', 't-mech']);
-  for (const [id, n] of rows) assert.ok(n > 3, id);
+  assert.deepEqual(rows.map(([id]) => id), ['t-areas', 't-signals', 't-tenure', 't-panel-reviewer', 't-panel-author',
+    't-matched', 't-patterns', 't-joiners', 't-transitions', 't-ai', 't-mech']);
+  for (const [id, n] of rows) assert.ok(n >= 2, id);
+  // The same-people panels flag which changes are clear of zero.
+  assert.deepEqual(await page.$$eval('#t-panel-reviewer tbody tr td:last-child', (tds) => tds.map((t) => t.textContent)),
+    ['yes', 'no']);
   // The directory heatmap: top-level rows, one cell per quarter; ▸ opens a directory, and a measure
   // switch reshades the cells.
   const dirRows = () => page.$$eval('#dir-table tbody tr', (trs) => trs.map((tr) => (tr as HTMLElement).dataset.key!));

@@ -649,11 +649,26 @@ so the revert chart should be by size as well as over time.
 
 **Status (2026-11-08):** a first draft is live as `web/balance.html`, with a
 large "Draft: under development" warning at the top. It isn't linked from the
-landing page yet. It is the static report: the same text, 22 charts and 4 tables as
-the report artifact, drawn with Chart.js from `summaries/balance.json`. That
-file holds 17 aggregate datasets: `balance_report.py`'s `report.json`, plus the
-growth, pipeline, mentorship, AI-paired and mechanical tables from
-`balance_growth.py` and `balance_analysis.py`, joined by hand for now. It has
+landing page yet. It has 26 charts and 11 tables, drawn with Chart.js from
+`summaries/balance.json`. That file holds 29 aggregate datasets:
+- `balance_report.py`'s `report.json`;
+- the growth, pipeline, mentorship, AI-paired and mechanical tables from
+  `balance_growth.py` (via `balance_growth_tables.py`) and
+  `balance_analysis.py`;
+- since 2026-11-08, `scripts/balance_page_extras.py`, which adds the growth
+  signals (−1 votes, abandonment, same-people panels, matched cohorts;
+  `docs/balance-signals.md`), the activity patterns
+  (`docs/balance-clusters.md`, aggregate shares only) and the Chrome
+  Releases CVE counts (`docs/bugs-and-security.md`). Rerun it after any of
+  those inputs changes:
+  `COSH_DATA_DIR=<main>/data/private python3 scripts/balance_page_extras.py`.
+  It reads `data/private/balance_signals.json` (`balance_signals.py report
+  --out`).
+
+Sections added on 2026-11-08: "Wrong turns" (−1 votes and abandoned CLs by
+tenure), "Arriving better, or easing off?" (the panels and matched cohorts),
+"Patterns of activity", AI adoption by directory and footers, and "Security
+fixes". It has
 no date range or mechanical toggle yet (planned below). Single-series charts
 show distributions as shaded bands (middle half and 10th–90th percentile)
 around the median. "Directories over time" is an expandable heatmap of
