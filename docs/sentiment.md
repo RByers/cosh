@@ -279,7 +279,11 @@ scored (2026-W37..W44 so far):
   selected on the page, with its dates so a saved popup records them (#8
   of 265 on Most net praise given between 7 Sept and 1 Nov 2026): the board the popup came from, or every board for the lookup box,
   which also lists only that period's praise. Only boards they are on are
-  shown. They also chart, per month, exactly the kind of comment they
+  shown. Each comment in the popup file records the writer's and the
+  recipient's role on the CL (`writer_role`, `recipient_role`: "author"
+  for its owner, else "reviewer"), so received praise is split into two
+  greens (as change author, as reviewer) and given praise into two blues,
+  stacked in the chart and on the cards' edges. They also chart, per month, exactly the kind of comment they
   list, over every week their board covers: praise given, praise received,
   glowing comments received as change author or as reviewer (the happy
   tables), or praise given and received for the lookup box. Praise and

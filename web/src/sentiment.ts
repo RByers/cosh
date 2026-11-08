@@ -42,6 +42,7 @@ import {
   happyComments,
   boardRank,
   byMonth,
+  relation,
   praiseComments,
   type HappyRow,
   type PersonComment,
@@ -296,7 +297,20 @@ dialog.addEventListener('close', () => {
  * the weeks its board covers. */
 interface ChartSpec {
   range: [string, string];
-  series: { key: 'given' | 'received' | 'author' | 'reviewer'; pick: (d: PersonComments) => PersonComment[] }[];
+  series: { key: SeriesKey; pick: (d: PersonComments) => PersonComment[] }[];
+}
+
+/** A chart series: praise given or received, as change author or as reviewer.
+ * Given and received each stack their two roles. */
+type SeriesKey = 'given-author' | 'given-reviewer' | 'received-author' | 'received-reviewer';
+
+/** The popup's series for `email`: its comments in `kinds` (given, received
+ * or both), split by role. */
+function roleSeries(email: string, kinds: ('given' | 'received')[], pick: (d: PersonComments) => PersonComment[]) {
+  return kinds.flatMap((k) => (['author', 'reviewer'] as const).map((role) => ({
+    key: `${k}-${role}` as SeriesKey,
+    pick: (d: PersonComments) => pick(d).filter((c) => relation(c, email) === `${k}-${role}`),
+  })));
 }
 
 /** The popup's monthly chart, destroyed when the popup closes. */
@@ -326,7 +340,8 @@ function drawPersonChart(spec: ChartSpec | null, data?: PersonComments) {
   const axis = { color: theme.text, font: { family: theme.font } };
   const labels = spec!.series.map((x, i) => `${msg(`chart-${x.key}`)} (${fmtInt(totals[i])})`);
   $('#person-months').setAttribute('aria-label', `${labels.join(', ')} per month`);
-  const colors = { given: theme.series[0], received: theme.series[2], author: theme.series[2], reviewer: theme.series[2] };
+  const css = getComputedStyle(document.documentElement);
+  const color = (k: SeriesKey) => css.getPropertyValue(k.startsWith('given') ? `--${k}` : `--praise-${k.slice('received-'.length)}`).trim();
   personChart = new Chart($<HTMLCanvasElement>('#person-months'), {
     type: 'bar',
     data: {
@@ -334,7 +349,8 @@ function drawPersonChart(spec: ChartSpec | null, data?: PersonComments) {
       datasets: spec!.series.map((x, i) => ({
         label: labels[i],
         data: m!.counts[i],
-        backgroundColor: colors[x.key],
+        stack: x.key.split('-')[0],
+        backgroundColor: color(x.key),
       })),
     },
     options: {
@@ -342,8 +358,8 @@ function drawPersonChart(spec: ChartSpec | null, data?: PersonComments) {
       animation: false,
       interaction: { mode: 'index', intersect: false },
       scales: {
-        x: { grid: { display: false }, ticks: { ...axis, maxRotation: 0, autoSkip: true, maxTicksLimit: 7 } },
-        y: { beginAtZero: true, grace: '10%', grid: { color: theme.grid }, ticks: { ...axis, precision: 0 } },
+        x: { stacked: true, grid: { display: false }, ticks: { ...axis, maxRotation: 0, autoSkip: true, maxTicksLimit: 7 } },
+        y: { stacked: true, beginAtZero: true, grace: '10%', grid: { color: theme.grid }, ticks: { ...axis, precision: 0 } },
       },
       plugins: {
         legend: { labels: axis },
@@ -355,8 +371,11 @@ function drawPersonChart(spec: ChartSpec | null, data?: PersonComments) {
   });
 }
 
-function commentItem(c: PersonComment): HTMLElement {
-  const li = el('li', undefined, 'quote quote-praise');
+/** A popup card; `email`'s cards are tinted by how the comment relates to
+ * them (given or received, as change author or as reviewer). */
+function commentItem(c: PersonComment, email?: string): HTMLElement {
+  const rel = email ? relation(c, email) : null;
+  const li = el('li', undefined, `quote ${rel ? `quote-${rel}` : 'quote-praise'}`);
   li.append(el('blockquote', c.text));
   const by = el('p', undefined, 'quote-by');
   by.append(scoreBadge(c.score), ' ', fragment('praise-by', { writer: c.writer, recipient: c.recipient, date: dayLabel(c.date) }));
@@ -428,7 +447,7 @@ function openPerson(title: string, who: { email: string; boards: RankBoard[]; pe
         return;
       }
       note.textContent = msg('person-count', { n: fmtInt(items.length), range });
-      list.replaceChildren(...orNone(items.map(commentItem)));
+      list.replaceChildren(...orNone(items.map((c) => commentItem(c, who.email))));
     },
     (e) => {
       if (want === shown) note.textContent = msg('error', { error: String(e) });
@@ -458,7 +477,7 @@ function drawPraise() {
       netBoard(d, key, period, n).map((r) => ({ name: r.name, email: r.email,
         count: scoreBadge(r.score, d.net_scale, `Net praise ${signed1(r.score)} (${fmtInt(r.praise)} praise comments)`) })),
       (r) => openPerson(msg(`person-praise-${key}`, { name: r.name }), { email: r.email, boards: [key], period, range },
-        { range: d.weeks, series: [{ key, pick: (c) => praiseComments(c, r.email, key, d.weeks) }] },
+        { range: d.weeks, series: roleSeries(r.email, [key], (c) => praiseComments(c, r.email, key, d.weeks)) },
         (c) => praiseComments(c, r.email, key, range)));
   }
 }
@@ -527,7 +546,7 @@ async function lookUp() {
   openPerson(msg('person-praise-all', { name: who.name }),
     { email: who.email, boards: ['given', 'received', 'authors', 'reviewers'], period, range }, {
     range: d.weeks,
-    series: (['given', 'received'] as const).map((key) => ({ key, pick: (c: PersonComments) => praiseComments(c, who.email, key, d.weeks) })),
+    series: roleSeries(who.email, ['given', 'received'], (c) => allPraise(c, who.email, d.weeks)),
   }, (c) => allPraise(c, who.email, range));
 }
 
@@ -564,7 +583,8 @@ function drawHappy() {
   for (const table of ['authors', 'reviewers'] as const) {
     boardRows($<HTMLTableElement>(`#happy-${table}`), r.happy[p][table].slice(0, n).map(fmtRow),
       (x) => openPerson(msg(`person-happy-${table}`, { name: x.name }), { email: x.email, boards: [table], period: p, range: p === 'all' ? r.weeks : r.month_weeks },
-        { range: r.weeks, series: [{ key: table === 'authors' ? 'author' : 'reviewer', pick: (c) => happyAll(c, x.email, table) }] },
+        { range: r.weeks, series: roleSeries(x.email, ['received'], (c) => happyAll(c, x.email, table))
+          .filter((sr) => sr.key === (table === 'authors' ? 'received-author' : 'received-reviewer')) },
         (c) => happyComments(c, x.email, table, p)));
   }
 }

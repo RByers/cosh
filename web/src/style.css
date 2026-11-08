@@ -17,6 +17,12 @@
   --series-6: #008300;
   --series-7: #6250d6;
   --series-8: #e34948;
+  /* Praise by role on the CL (sentiment.html popups): received in two
+     greens, given in two blues; as change author, then as reviewer. */
+  --praise-author: #1baf7a;
+  --praise-reviewer: #6aab2e;
+  --given-author: #2a78d6;
+  --given-reviewer: #2aa2c9;
   /* Org colours (orgColorSlots): six vivid hues for the dominant orgs, then
      the same hues muted for the rest, so every coloured org has its own. */
   --org-1: #2a78d6;
@@ -54,6 +60,10 @@
     --series-6: #008300;
     --series-7: #9085e9;
     --series-8: #e66767;
+    --praise-author: #199e70;
+    --praise-reviewer: #6fae3a;
+    --given-author: #3987e5;
+    --given-reviewer: #3cb2d8;
     /* Org colours (orgColorSlots): six vivid hues for the dominant orgs, then
        the same hues muted for the rest, so every coloured org has its own. */
     --org-1: #3987e5;
@@ -90,6 +100,10 @@
   --series-6: #008300;
   --series-7: #9085e9;
   --series-8: #e66767;
+  --praise-author: #199e70;
+  --praise-reviewer: #6fae3a;
+  --given-author: #3987e5;
+  --given-reviewer: #3cb2d8;
   /* Org colours (orgColorSlots): six vivid hues for the dominant orgs, then
      the same hues muted for the rest, so every coloured org has its own. */
   --org-1: #3987e5;
@@ -1637,6 +1651,24 @@ canvas.pointing {
 
 .quote-praise {
   --quote: var(--series-3);
+}
+
+/* Popup cards, by the comment's relation to the person: received or given,
+ * as change author or as reviewer (the chart's colours). */
+.quote-received-author {
+  --quote: var(--praise-author);
+}
+
+.quote-received-reviewer {
+  --quote: var(--praise-reviewer);
+}
+
+.quote-given-author {
+  --quote: var(--given-author);
+}
+
+.quote-given-reviewer {
+  --quote: var(--given-reviewer);
 }
 
 .quote-grumpy {

@@ -108,7 +108,20 @@ export interface PersonComment {
   writer_email: string;
   recipient: string;
   recipient_email: string;
+  /** Each one's role on the CL: "author" (its owner) or "reviewer". Missing
+   * in files written before 2026-11-07. */
+  writer_role?: Role;
+  recipient_role?: Role;
   url: string;
+}
+
+export type Role = 'author' | 'reviewer';
+
+/** How a popup comment relates to `email`: given or received, as change
+ * author or as reviewer. Null when the file doesn't say. */
+export function relation(c: PersonComment, email: string): `${'given' | 'received'}-${Role}` | null {
+  if (c.writer_email === email) return c.writer_role ? `given-${c.writer_role}` : null;
+  return c.recipient_role ? `received-${c.recipient_role}` : null;
 }
 
 /** summaries/sentiment_comments.json (cosh/sentiment_recent.py): the

@@ -161,10 +161,13 @@ def ai_comments(rows, scores, sandbox, n=AI_SHOWN, seed="2026-11"):
 
 def _record(r, scores):
     """One praise or glowing comment for a name popup: text, date, writer,
-    recipient and a Gerrit link."""
+    recipient, each one's role on the CL ("author": its owner, else
+    "reviewer") and a Gerrit link."""
     return dict(text=r["text"], date=r["written_at"][:10], week=r["week"], score=scores[r["id"]][0],
                 writer=r.get("author_name") or r.get("author_email"), writer_email=r.get("author_email"),
+                writer_role="author" if r.get("author_role") == "AUTHOR" else "reviewer",
                 recipient=r.get("target_name") or r.get("target_email"), recipient_email=r.get("target_email"),
+                recipient_role="author" if r.get("target") is not None and r.get("target") == r.get("owner") else "reviewer",
                 url=S.comment_url(r["project"], r["cl"], r["uuid"]))
 
 

@@ -1179,6 +1179,15 @@ test('Review Tone: counts per month and the lookup box', async () => {
   assert.equal(findPerson(d, ''), null);
 });
 
+test('Review Tone: how a popup comment relates to its person', async () => {
+  const { relation } = await import('../src/tone.ts');
+  const c = { text: '', date: '', week: '2026-W44', score: 0.5, writer: 'A', writer_email: 'a@x.org', recipient: 'B',
+    recipient_email: 'b@x.org', url: '', writer_role: 'reviewer' as const, recipient_role: 'author' as const };
+  assert.equal(relation(c, 'a@x.org'), 'given-reviewer');
+  assert.equal(relation(c, 'b@x.org'), 'received-author');
+  assert.equal(relation({ ...c, writer_role: undefined }, 'a@x.org'), null, 'older files have no roles');
+});
+
 test('Review Tone: lookup suggestions', async () => {
   const { suggestPeople } = await import('../src/tone.ts');
   const people: Record<string, string> = { 'zed@x.org': 'Ann Zed', 'ann@x.org': 'Ann', 'bo@x.org': 'Bo Annis' };

@@ -397,6 +397,7 @@ class RecentTest(unittest.TestCase):
         self.assertEqual(set(d["comments"]), {"100/r2", "100/r3"})
         c = d["comments"]["100/r2"]
         self.assertEqual((c["writer"], c["recipient"], c["date"], c["week"]), ("P12", "Owner", "2026-10-27", "2026-W44"))
+        self.assertEqual((c["writer_role"], c["recipient_role"]), ("reviewer", "author"))
         self.assertEqual(c["url"], "https://chromium-review.googlesource.com/c/chromium/src/+/100/comment/r2/")
         self.assertTrue(all(scores[i][0] >= S.GLOWING for i in d["comments"]))
 

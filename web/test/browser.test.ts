@@ -2391,7 +2391,12 @@ test('the Review Tone page: a name on a board opens a popup with its praise, lin
   assert.match(await page.$eval('#person-chart-sub', (e) => e.textContent!), /^Per month between /);
   // The chart shows just this popup's kind: praise given, as many as the list (all weeks).
   const chartLabel = () => page.$eval('#person-months', (c) => c.getAttribute('aria-label')!);
-  assert.equal(await chartLabel(), `Praise given (${top.count}) per month`);
+  // Stacked by the giver's role; the two add up to the list, and each card wears its role's blue.
+  const given = /^Given as change author \((\d+)\), Given as reviewer \((\d+)\) per month$/.exec(await chartLabel());
+  assert.ok(given, await chartLabel());
+  assert.equal(Number(given[1]) + Number(given[2]), top.count);
+  const cards = await page.$$eval('#person-list li', (lis) => lis.map((li) => li.className));
+  assert.ok(cards.every((c) => /quote-given-(author|reviewer)/.test(c)), cards.join());
   // Their place on this board, in the selected period only.
   const ranks = await page.$$eval('#person-ranks li', (lis) => lis.map((li) => li.textContent!.replace(/\s+/g, ' ').trim()));
   assert.equal(ranks.length, 1);
@@ -2428,7 +2433,9 @@ test('the Review Tone page: a name on a board opens a popup with its praise, lin
   await page.click('#happy-authors tbody tr button');
   await page.waitForFunction(() => document.querySelectorAll('#person-list li.quote').length > 0);
   assert.match(await page.$eval('#person-title', (e) => e.textContent!), /^Glowing Chromium code review comments from reviewers to /);
-  assert.match(await chartLabel(), /^Glowing comments received as change author \(\d+\) per month$/);
+  assert.match(await chartLabel(), /^Received as change author \(\d+\) per month$/);
+  assert.ok((await page.$$eval('#person-list li', (lis) => lis.map((li) => li.className)))
+    .every((c) => c.includes('quote-received-author')));
   await page.mouse.click(5, 5);
   assert.equal(await dialog(), false);
 
@@ -2445,7 +2452,8 @@ test('the Review Tone page: a name on a board opens a popup with its praise, lin
   await page.keyboard.press('Enter');
   await page.waitForFunction(() => document.querySelectorAll('#person-list li.quote').length > 0);
   assert.match(await page.$eval('#person-title', (e) => e.textContent!), /^Chromium code review praise from and to /);
-  assert.match(await chartLabel(), /^Praise given \(\d+\), Praise received \(\d+\) per month$/);
+  assert.match(await chartLabel(),
+    /^Given as change author \(\d+\), Given as reviewer \(\d+\), Received as change author \(\d+\), Received as reviewer \(\d+\) per month$/);
   assert.equal(await page.$eval('#person-chart', (e) => (e as HTMLElement).hidden), false);
   await page.keyboard.press('Escape');
   await page.$eval('#praise-find-input', (i) => ((i as HTMLInputElement).value = ''));
