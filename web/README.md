@@ -16,6 +16,11 @@ To add a dashboard, add its page and an `input` entry in the Vite config,
 add a card in `index.html`, and add browser tests that open it. The landing
 page's illustration is original: don't use the Chromium or Chrome logos.
 
+Each card's `<p class="sources">` lists every data source its page uses
+(Gerrit code review, Chromium git history, Cloudflare Radar, Claude Haiku …).
+When a page starts or stops using a source, update its card in the same
+change.
+
 ## Value Exchange (`value.html`)
 
 It reads only committed, public files, which Vite emits as hashed assets at

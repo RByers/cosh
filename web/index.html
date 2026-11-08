@@ -13,6 +13,8 @@
     <!--
       The landing page: one card per dashboard. Like value.html, its wording
       lives here and its presentation in src/home.css. It has no script.
+      Each card's "sources" line lists every data source its page uses; keep
+      it current when a page starts or stops using one.
     -->
     <header class="hero">
       <div class="hero-text">
@@ -97,7 +99,7 @@
                 of it? Compares each organization's share of the code review that changed Chromium's shared engine with its
                 browsers' share of Chromium-based browser usage, week by week.
               </p>
-              <p class="sources">Gerrit code review · Cloudflare Radar</p>
+              <p class="sources">Gerrit code review · Chromium git history · Cloudflare Radar · Claude Haiku</p>
             </article>
           </a>
         </li>
@@ -121,8 +123,7 @@
         </li>
       </ul>
       <p class="more">
-        More dashboards are planned, drawing on Chromium's git history, its bug tracker and other public
-        sources.
+        More dashboards are planned, drawing on Chromium's bug tracker and other public sources.
       </p>
     </main>
 

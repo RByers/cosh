@@ -86,7 +86,10 @@ regex plus Claude Haiku (`cosh classify`).
 - Web UI: `web/` (Vite + TypeScript, Chart.js), one page per dashboard
   (`web/value.html` is Value Exchange) plus the landing page
   `web/index.html`, which has a card for each one. A new dashboard needs a
-  page, an `input` entry in `web/vite.config.ts` and a card. `cd web && npm test` builds
+  page, an `input` entry in `web/vite.config.ts` and a card. Each card's
+  sources line lists every data source its page uses: when a page starts
+  or stops using one (git history, Radar, Haiku …), update the card in the
+  same change. `cd web && npm test` builds
   it and runs Vitest unit tests and headless-Chrome tests (puppeteer-core with
   `/usr/bin/google-chrome`). Vitest is capped at `maxWorkers: 4`, with test
   files run serially.
