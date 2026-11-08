@@ -85,8 +85,9 @@ People are joined across addresses: `chromium.org` and `google.com` by
 username, SVN-era `user@domain@<uuid>` emails, and a Gerrit owner's email
 with the git author of the same CL.
 
-Analyses: `scripts/balance_analysis.py trends|mechanical|pipeline` and
-`scripts/balance_growth.py growth|burden|ai`. They print tables, read no
+Analyses: `scripts/balance_analysis.py trends|mechanical|pipeline`,
+`scripts/balance_growth.py growth|burden|ai`, and `scripts/balance_report.py`
+(the datasets behind the published report). They print tables, read no
 comment text, and print no one's identity. (`scripts/balance_explore.py`
 is the first W44-only prototype, superseded by `cosh/balance.py`.)
 
@@ -303,6 +304,47 @@ cohort, and fewer mentees becoming mentors, a decline that started around
 2020, before AI. In 2026, newcomer volume jumped while recent graduates
 almost stopped reviewing newcomers. The experts who now carry it give
 less feedback per CL (section 4) and take longer to give it (section 2).
+
+### 6b. Reviewer load, cohorts and directories (`scripts/balance_report.py`)
+
+These use the final mechanical rule (section 8) and people joined across
+addresses. `balance_report.py` writes them as one JSON file of aggregates.
+
+**Reviewers are spread thinner.** People who commented on someone else's
+CL in a quarter: 1,450 (2023Q3) → 1,325 (2026Q3), while authors went
+1,190 → 1,240. Merged CLs per commenting reviewer: 19.1 → 29.4. The
+busiest tenth of approvers gave 55–57% of approvals in 2017–19, 63% in 2024
+and 68% in 2026. That concentration started before AI tools. Per CL, the
+review load index (threads vs the 2023–24 norm for the size and directory)
+went 1.09 (2023Q3) → 0.91 (2025Q3) → 0.72 (2026Q3).
+
+**Individual reviewers are not slower.** Weekday hours from being added to
+the attention set to a reviewer's first comment stayed at a median of 3–5
+for every tenure band from 2023 to 2026. Threads per CL reviewed fell
+slightly for the 5–10-year band (3.65 → 2.7). Longer waits for authors
+come from volume, not from slower individuals.
+
+**Joiner cohorts.** People who joined in 2023, 2024 or 2025, 9–12 months
+after their first commit:
+
+| Cohort | CLs per person per month | Review load index | Others' CLs reviewed per month |
+|---|---:|---:|---:|
+| Joined 2023 | 2.2 | 1.69 | 1.0 |
+| Joined 2024 | 2.5 | 1.87 | 0.8 |
+| Joined 2025 | 6.6 | 1.08 | 2.1 |
+
+The 2025 cohort lands about 2.5× as many CLs, needs less feedback sooner,
+and starts reviewing others earlier. Part of the lower load is the 2026
+project-wide drop (veterans fell about 20%), but even scaled up by that the
+2025 cohort's 1.35 is below 1.69 and 1.87. Each point counts only people
+still active, so this describes those who stayed.
+
+**Directories (2024 vs 2025Q4–2026Q3).** The shift is broad. Newcomers' share
+of CLs rose in nearly every busy directory: `chrome/browser` 3.9% → 13.5%,
+`chrome/test` 2.7% → 21.9%, `components/autofill` 3.7% → 16.3%. Threads per
+100 lines fell in most. Median first-review waits nearly doubled in
+`content/browser` (5.8 → 11.1 h) and `third_party/blink` (5.9 → 10.0 h),
+while UI-heavy directories stayed flat or got faster.
 
 ### 7. AI-marked CLs
 
