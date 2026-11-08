@@ -205,7 +205,10 @@
       <dialog id="person-dialog" class="person-dialog" aria-labelledby="person-title">
         <div class="person-head">
           <h2 id="person-title"></h2>
-          <button type="button" id="person-close" class="person-close" aria-label="Close">×</button>
+          <div class="person-actions">
+            <button type="button" id="person-print" class="person-print">Print or save as PDF</button>
+            <button type="button" id="person-close" class="person-close" aria-label="Close">×</button>
+          </div>
         </div>
         <figure id="person-chart" class="person-chart">
           <figcaption id="person-chart-sub" class="sub"></figcaption>
@@ -222,6 +225,8 @@
       <template data-msg="person-praise-received">Praise received by <slot name="name"></slot></template>
       <template data-msg="person-happy-authors">Glowing comments from reviewers to <slot name="name"></slot></template>
       <template data-msg="person-happy-reviewers">Glowing comments from change authors to <slot name="name"></slot></template>
+      <!-- The document title while printing the popup: browsers name the saved PDF after it. -->
+      <template data-msg="person-print-title"><slot name="title"></slot> · Chromium review tone</template>
       <template data-msg="person-loading">Loading comments…</template>
       <template data-msg="person-count"><slot name="n"></slot> comments in this period, newest first, each linked to its review.</template>
 

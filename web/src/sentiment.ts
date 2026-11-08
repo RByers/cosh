@@ -37,6 +37,7 @@ import {
   type Authors,
   allPraise,
   findPerson,
+  suggestPeople,
   happyComments,
   praiseByMonth,
   praiseComments,
@@ -276,6 +277,14 @@ dialog.addEventListener('click', (e) => {
   if (e.target === dialog && !inside) dialog.close();
 });
 $('#person-close').addEventListener('click', () => dialog.close());
+// Print prints just the popup (style.css, @media print). The page title is
+// the person's while printing, so a saved PDF is named after them.
+$('#person-print').addEventListener('click', () => {
+  const title = document.title;
+  document.title = msg('person-print-title', { title: $('#person-title').textContent ?? '' });
+  window.addEventListener('afterprint', () => (document.title = title), { once: true });
+  window.print();
+});
 dialog.addEventListener('close', () => {
   personChart?.destroy();
   personChart = undefined;
@@ -283,10 +292,19 @@ dialog.addEventListener('close', () => {
 
 /** The popup's monthly praise chart, destroyed when the popup closes. */
 let personChart: Chart | undefined;
+let chartEmail = '';
+// Printing uses the light colours (style.css), so the chart is redrawn in
+// them, and in the screen's again afterwards.
+for (const ev of ['beforeprint', 'afterprint']) {
+  window.addEventListener(ev, () => {
+    if (dialog.open && personChart) drawPersonChart(chartEmail);
+  });
+}
 
 /** `email`'s praise given and received per month, over every week of the
  * praise data. Hidden for someone with no praise. Praise only (ground rule 5). */
 function drawPersonChart(email: string) {
+  chartEmail = email;
   personChart?.destroy();
   personChart = undefined;
   const fig = $('#person-chart');
@@ -397,16 +415,21 @@ function drawPraise() {
 const findForm = $<HTMLFormElement>('#praise-find');
 const findInput = $<HTMLInputElement>('#praise-find-input');
 
-/** The lookup's suggestions: everyone in the praise data, by name. */
-function fillPeople(d: PraiseData) {
-  $('#praise-people').replaceChildren(...Object.entries(d.people)
-    .sort((a, b) => a[1].localeCompare(b[1]))
-    .map(([email, name]) => {
-      const o = el('option');
-      o.value = email;
-      o.label = name;
-      return o;
-    }));
+/** The lookup's suggestions: none until something is typed, then at most
+ * SUGGESTIONS people whose name or email contains it. */
+function suggest() {
+  const people = praiseData ? suggestPeople(praiseData, findInput.value, SUGGESTIONS) : [];
+  $('#praise-people').replaceChildren(...people.map(({ email, name }) => {
+    const o = el('option');
+    o.value = email;
+    o.label = name;
+    return o;
+  }));
+}
+const SUGGESTIONS = 10;
+
+function fillPeople() {
+  suggest();
   $('#praise-find-note').textContent = '';
 }
 
@@ -430,6 +453,7 @@ findForm.addEventListener('submit', (e) => {
 });
 // Picking a suggestion opens it at once; typing waits for Enter or Show.
 findInput.addEventListener('input', (e) => {
+  suggest();
   if (!(e instanceof InputEvent) || e.inputType === 'insertReplacementText') {
     if (praiseData && findPerson(praiseData, findInput.value)) lookUp();
   }
@@ -537,7 +561,7 @@ async function show(authors: Authors, token: number) {
   renderRecent(recent, theme);
   praiseData = praise;
   recentData = recent;
-  fillPeople(praise);
+  fillPeople();
   drawPraise();
   drawHappy();
   renderSamples(samples);

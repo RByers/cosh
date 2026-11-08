@@ -1184,6 +1184,18 @@ test('Review Tone: praise per month and the lookup box', async () => {
   assert.equal(findPerson(d, ''), null);
 });
 
+test('Review Tone: lookup suggestions', async () => {
+  const { suggestPeople } = await import('../src/tone.ts');
+  const people: Record<string, string> = { 'zed@x.org': 'Ann Zed', 'ann@x.org': 'Ann', 'bo@x.org': 'Bo Annis' };
+  for (let i = 0; i < 20; i++) people[`p${i}@y.org`] = `Person ${i}`;
+  assert.deepEqual(suggestPeople({ people }, ''), []);
+  assert.deepEqual(suggestPeople({ people }, '  '), []);
+  // Starts-with first (by name), then contains.
+  assert.deepEqual(suggestPeople({ people }, 'ANN').map((p) => p.email), ['ann@x.org', 'zed@x.org', 'bo@x.org']);
+  assert.equal(suggestPeople({ people }, 'y.org').length, 10);
+  assert.equal(suggestPeople({ people }, 'y.org', 3).length, 3);
+});
+
 /** en-GB's short name for a month (0-based): "Sept" or "Sep" depending on ICU. */
 function fmtMonthShort(m: number): string {
   return new Intl.DateTimeFormat('en-GB', { month: 'short', timeZone: 'UTC' }).format(Date.UTC(2026, m, 1));

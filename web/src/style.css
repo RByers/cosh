@@ -34,7 +34,7 @@
   --critical: #d03b3b;
 }
 
-@media (prefers-color-scheme: dark) {
+@media screen and (prefers-color-scheme: dark) {
   :root:not([data-theme='light']) {
     color-scheme: dark;
     --page: #0d0d0d;
@@ -1793,6 +1793,62 @@ html:has(.person-dialog[open]) {
 .person-head h2 {
   margin: 0;
   font-size: 1.1rem;
+}
+
+.person-actions {
+  display: flex;
+  flex: none;
+  gap: 8px;
+}
+
+.person-print {
+  min-height: 32px;
+  padding: 4px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--page);
+  color: var(--text-primary);
+  font: inherit;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+/* Printing with the popup open prints only the popup, every comment of it,
+ * on white. */
+@media print {
+  html:has(.person-dialog[open]) {
+    overflow: visible;
+  }
+
+  body:has(.person-dialog[open]) > :not(main),
+  main:has(> .person-dialog[open]) > :not(.person-dialog) {
+    display: none;
+  }
+
+  .person-dialog[open] {
+    position: static;
+    width: auto;
+    max-width: none;
+    max-height: none;
+    margin: 0;
+    padding: 0;
+    overflow: visible;
+    border: 0;
+    background: #fff;
+    color: #000;
+  }
+
+  .person-dialog::backdrop {
+    display: none;
+  }
+
+  .person-actions {
+    display: none;
+  }
+
+  .person-dialog .quote {
+    break-inside: avoid;
+  }
 }
 
 .person-close {

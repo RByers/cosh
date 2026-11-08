@@ -2397,6 +2397,23 @@ test('the Review Tone page: a name on a board opens a popup with its praise, lin
   for (let i = 0; i < 30; i++) await page.mouse.wheel({ deltaY: 400 });
   await new Promise((res) => setTimeout(res, 200));
   assert.equal(await page.evaluate(() => scrollY), y0);
+  // Print: the page takes the person's title while printing, and prints only the popup.
+  await page.evaluate(() => {
+    (window as unknown as { printed: string }).printed = '';
+    window.print = () => ((window as unknown as { printed: string }).printed = document.title);
+  });
+  await page.click('#person-print');
+  assert.equal(await page.evaluate(() => (window as unknown as { printed: string }).printed),
+    `Praise given by ${top.name} · Chromium review tone`);
+  await page.emulateMediaType('print');
+  const printed = await page.evaluate(() => ({
+    praise: getComputedStyle(document.querySelector('#praise')!).display,
+    header: getComputedStyle(document.querySelector('header')!).display,
+    dialog: getComputedStyle(document.querySelector('#person-dialog')!).overflow,
+    buttons: getComputedStyle(document.querySelector('.person-actions')!).display,
+  }));
+  assert.deepEqual(printed, { praise: 'none', header: 'none', dialog: 'visible', buttons: 'none' });
+  await page.emulateMediaType('screen');
   // Escape closes it; so does a click on the backdrop.
   await page.keyboard.press('Escape');
   assert.equal(await dialog(), false);
@@ -2408,8 +2425,13 @@ test('the Review Tone page: a name on a board opens a popup with its praise, lin
 
   // The lookup box: an email typed by hand opens that person's praise, given and received.
   const email = await page.$eval('#praise-received tbody tr button', (b) => (b as HTMLElement).title);
-  assert.ok((await page.$$eval('#praise-people option', (os) => os.length)) > 0);
+  const options = () => page.$$eval('#praise-people option', (os) => os.length);
+  assert.equal(await options(), 0, 'no suggestions before typing');
+  await page.type('#praise-find-input', '@');
+  assert.equal(await options(), 10, 'at most 10 suggestions');
+  await page.$eval('#praise-find-input', (i) => ((i as HTMLInputElement).value = ''));
   await page.type('#praise-find-input', email.toUpperCase());
+  assert.ok((await options()) >= 1);
   await page.keyboard.press('Enter');
   await page.waitForFunction(() => document.querySelectorAll('#person-list li.quote').length > 0);
   assert.match(await page.$eval('#person-title', (e) => e.textContent!), /^Praise from and to /);

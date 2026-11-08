@@ -206,6 +206,20 @@ export function findPerson(d: Pick<PraiseData, 'people'>, query: string): { emai
   return byName.length === 1 ? { email: byName[0][0], name: byName[0][1] } : null;
 }
 
+/** Up to `n` people whose name or email contains `query` (any case), those
+ * starting with it first, then by name. None for an empty query. */
+export function suggestPeople(d: Pick<PraiseData, 'people'>, query: string, n = 10): { email: string; name: string }[] {
+  const q = query.trim().toLowerCase();
+  if (!q) return [];
+  const starts = (e: string, name: string) => e.toLowerCase().startsWith(q) || name.toLowerCase().startsWith(q);
+  return Object.entries(d.people)
+    .filter(([e, name]) => e.toLowerCase().includes(q) || name.toLowerCase().includes(q))
+    .map(([email, name]) => ({ email, name, first: starts(email, name) ? 0 : 1 }))
+    .sort((a, b) => a.first - b.first || a.name.localeCompare(b.name))
+    .slice(0, n)
+    .map(({ email, name }) => ({ email, name }));
+}
+
 /** Praise comments in the data or in `range` (each counts once, as given). */
 export const praiseTotal = (d: PraiseData, range?: [string, string]) =>
   d.weekly.filter((r) => !range || within(r.week, range)).reduce((s, r) => s + r.given, 0);
