@@ -1,5 +1,5 @@
 {
- "generated_at": "2026-11-08T01:15:47Z",
+ "generated_at": "2026-11-08T04:55:55Z",
  "prompt": "v3",
  "weeks": [
   "2026-W37",
@@ -2808,12 +2808,6 @@
    "role": "reviewer"
   },
   {
-   "text": "Small note to the author: if you use AI-tooling, ensure that you thoroughly understand the code that you are touching and changing. The output of your AI tooling is *your* responsibility.\n\n(This CL exhibits numerous indications that Claude assisted or even fully generated this patch. And I am not even talking about the fact that your refactoring CLs are not even minutes apart.)",
-   "score": -0.6,
-   "month": "2026-09",
-   "role": "reviewer"
-  },
-  {
    "text": "This is the second attempt to use AI generated comments as is. Sorry if they are not meaningful.",
    "score": -0.6,
    "month": "2026-09",
@@ -2836,10 +2830,16 @@
    "score": -0.5,
    "month": "2026-10",
    "role": "reviewer"
+  },
+  {
+   "text": "- Before reset guards test against previous bad state\n- After reset guards subsequent tests from bad state left by our tests.\n\nneed human owner to review bot comments. these seem random and irrelevant.",
+   "score": -0.5,
+   "month": "2026-10",
+   "role": "author"
   }
  ],
  "ai_left_out": {
-  "screened": 17,
+  "screened": 21,
   "long_or_linked": 90
  }
 }

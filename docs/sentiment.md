@@ -71,15 +71,18 @@ python3 -m cosh.sentiment summary --name sample-5pct
 # Whole weeks can be collected and scored too (comments-<week>.jsonl, ~25 s a week to collect)
 python3 -m cosh.sentiment collect --week 2026-W44
 python3 -m cosh.sentiment score --week 2026-W44                # every comment
-# The praise leaderboard over scored weeks -> summaries/sentiment_praise.json
-python3 -m cosh.sentiment praise --week 2026-W37:2026-W44
+# The praise leaderboard over fully scored weeks -> summaries/sentiment_praise.json
+# (the past year, 2025-W45..2026-W44, since 2026-11-08; reads every week once per group)
+python3 -m cosh.sentiment praise --week 2025-W45:2026-W44
 # Sample comments from fully scored weeks -> summaries/sentiment_samples.json
 # (one sandboxed screening call per 30 grumpy candidates; read the result before committing)
 python3 -m cosh.sentiment samples --week 2026-W37:2026-W44
 # Identities on the weeks' rows (same files, plus writer and recipient), then the
 # last two months, "who makes whom happy" and the AI-friction list -> summaries/sentiment_recent.json
-python3 -m cosh.sentiment_people collect --week 2026-W37:2026-W44
-python3 -m cosh.sentiment_recent --week 2026-W37:2026-W44   # ~3 min per group: one screening call per 30 AI comments
+python3 -m cosh.sentiment_people collect --week 2025-W45:2026-W44
+python3 -m cosh.sentiment_recent --week 2026-W37:2026-W44 --praise-week 2025-W45:2026-W44   # one screening call per 30 AI comments
+# Everyone who commented, for the lookup box -> summaries/sentiment_people.json
+python3 -m cosh.sentiment_people lookup --week 2025-W45:2026-W44
 ```
 
 `cosh.sentiment_people collect` writes the same `comments-<week>.jsonl`
@@ -300,7 +303,7 @@ scored (2026-W37..W44 so far):
   `--praise-week 2025-W45:2026-W44` puts their praise comments in the popup
   file while everything else stays on `--week`.
 - **Name popups:** `summaries/sentiment_comments.json` (and its .everyone
-  and .noncommitters versions, about 0.5 MB each, loaded on the first
+  and .noncommitters versions, about 2.7 MB each for a year, 0.7 MB compressed, loaded on the first
   popup) holds the comments behind the praise boards and the happy tables:
   every praise comment, and each listed person's glowing comments, with
   text, date, writer, recipient and a Gerrit link. Selecting a name on the

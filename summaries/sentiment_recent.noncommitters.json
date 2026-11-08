@@ -1,5 +1,5 @@
 {
- "generated_at": "2026-11-08T01:16:24Z",
+ "generated_at": "2026-11-08T04:56:49Z",
  "prompt": "v3",
  "weeks": [
   "2026-W37",
@@ -225,6 +225,12 @@
    "role": "author"
   },
   {
+   "text": "yeah i'm also unsure these particular \"for the agent\" comments actually were helpful.  they were merely proscriptive of things that jetski already knew if it read the 'for the human' part.  it wasn't like the human version was the softer and lighter version and the agent one was info-dense.",
+   "score": 0.0,
+   "month": "2026-10",
+   "role": "reviewer"
+  },
+  {
    "text": "Gotya, thanks for the feedback! For context, I thought these were needed due to the AI review agent kept suggesting to mention the MOJO rules.",
    "score": 0.1,
    "month": "2026-09",
@@ -232,7 +238,7 @@
   }
  ],
  "ai_left_out": {
-  "screened": 5,
+  "screened": 4,
   "long_or_linked": 1
  }
 }
