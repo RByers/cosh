@@ -468,18 +468,6 @@ input[type='date']:focus-visible,
   height: 420px;
 }
 
-/* The value ratio radar: tall enough that its shapes, not the legend and
- * axis names, fill it. */
-.chart-radar {
-  height: 600px;
-}
-
-@media (max-width: 480px) {
-  .chart-radar {
-    height: 340px;
-  }
-}
-
 /* Equal axes: both are log over the same decades, so the parity diagonal
  * sits at 45°. */
 .chart-square {

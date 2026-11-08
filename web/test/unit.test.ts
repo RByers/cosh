@@ -1,5 +1,5 @@
 // Unit tests for the pure data/scale modules (no browser).
-import { lineDataset, shapeBounds } from '../src/charts.ts';
+import { lineDataset } from '../src/charts.ts';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -1330,23 +1330,6 @@ test('Gerrit links stay on Gerrit whatever the data says', () => {
     assert.equal(new URL(url).origin, 'https://chromium-review.googlesource.com');
   }
   assert.doesNotMatch(gerritCommentUrl(1, '../../evil'), /\/\.\.\//);
-});
-
-test('value shape bounds: whole decade at the center, edge just past the largest ratio and the 1.0× ring', () => {
-  // 0.003× .. 1.2×: center at 0.001×, edge a bit past 1.2×.
-  const a = shapeBounds([0.003, 0.5, 1.2]);
-  assert.equal(a.center, -3);
-  assert.equal(a.zero, false);
-  assert.ok(Math.abs(a.outer - (Math.log10(1.2) + 0.2)) < 1e-9);
-  // All under 1.0×: the 1.0× ring is still drawn.
-  assert.ok(shapeBounds([0.02, 0.4]).outer > 0);
-  assert.equal(shapeBounds([0.02, 0.4]).center, -2);
-  // A 0 sits at the center, one decade below the smallest other ratio.
-  const z = shapeBounds([0, 0.003, 1]);
-  assert.equal(z.center, -4);
-  assert.equal(z.zero, true);
-  // At least 0.1× at the center.
-  assert.equal(shapeBounds([0.5, 2]).center, -1);
 });
 
 test('orgFilesPerCommitSpreads: files over commits per author, authors with too few commits left out', () => {

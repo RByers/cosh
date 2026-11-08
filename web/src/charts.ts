@@ -9,14 +9,12 @@ import {
   LineController,
   LineElement,
   PointElement,
-  RadarController,
-  RadialLinearScale,
   ScatterController,
-  Filler,
   Tooltip,
   type ChartType,
   type FontSpec,
   type Plugin,
+  type PointStyle,
   type Scale,
   type Tick,
   type TooltipModel,
@@ -35,9 +33,6 @@ Chart.register(
   LineElement,
   PointElement,
   ScatterController,
-  RadarController,
-  RadialLinearScale,
-  Filler,
   LinearScale,
   LogarithmicScale,
   CategoryScale,
@@ -319,10 +314,7 @@ export function renderRatioChart(
           },
           ticks: {
             color: (ctx) => (isParity(ctx.tick?.value ?? NaN) ? theme.parity : theme.muted),
-            font: (ctx) => ({
-              size: ctx.chart.width < 520 ? 10 : 12,
-              weight: isParity(ctx.tick?.value ?? NaN) ? 'bold' : 'normal',
-            }),
+            font: (ctx) => ({ weight: isParity(ctx.tick?.value ?? NaN) ? 'bold' : 'normal' }),
             callback: (v) => `${formatRatio(Number(v))}×`,
           },
           grid: {
@@ -342,6 +334,14 @@ export interface ParityPoint {
   contribution: number;
   /** Mean weekly share of Chromium browser usage over the range. */
   derived: number;
+  /** The same for each other metric, drawn as small marks on the org's strip. */
+  others?: { metric: string; contribution: number; derived: number }[];
+}
+
+/** A metric's mark on the parity chart: its name (as in hover cards) and shape. */
+export interface MetricMark {
+  metric: string;
+  style: PointStyle;
 }
 
 /** Log-axis tick label as a percentage: 0.001 → "0.1%", 0.5 → "50%". */
@@ -352,7 +352,10 @@ export function formatShare(v: number): string {
 /** Shared bounds for both log axes: whole decades around every value, so the
  * y = x parity line runs corner to corner. */
 export function parityBounds(points: ParityPoint[]): { min: number; max: number } {
-  const vals = points.flatMap((p) => [p.contribution, p.derived]).filter((v) => v > 0);
+  const vals = points
+    .flatMap((p) => [p, ...(p.others ?? [])])
+    .flatMap((p) => [p.contribution, p.derived])
+    .filter((v) => v > 0);
   if (!vals.length) return { min: 0.001, max: 1 };
   const min = 10 ** Math.floor(Math.log10(Math.min(...vals)) + 1e-9);
   const max = Math.min(1, 10 ** Math.ceil(Math.log10(Math.max(...vals)) - 1e-9));
@@ -360,7 +363,9 @@ export function parityBounds(points: ParityPoint[]): { min: number; max: number 
 }
 
 /** Contribution share against usage share over the range, one point per org, both
- * on log axes with the same bounds. The diagonal y = x is a 1.0× value ratio:
+ * on log axes with the same bounds. Each org's other metrics are smaller marks,
+ * one shape per metric (`marks`, the legend), joined by a thin shaded strip
+ * from the lowest to the highest: how much its ratio depends on the metric. The diagonal y = x is a 1.0× value ratio:
  * orgs above it review more than their usage share, those below less. Orgs
  * with no review in the range have no place on a log scale, so, as on the
  * review chart, the axes then start one power of ten lower and that bottom
@@ -371,22 +376,30 @@ export function renderParityChart(
   metricLabel: string,
   colors: Map<string, string>,
   theme: Theme,
+  marks: MetricMark[] = [],
 ): Chart<'scatter'> {
   const { min, max } = parityBounds(points);
   // Both axes extend alike, so the diagonal stays at 45°.
-  const zero = points.some((p) => p.contribution <= 0) ? min / 10 : null;
+  const zero = points.some((p) => [p, ...(p.others ?? [])].some((q) => q.contribution <= 0)) ? min / 10 : null;
   const lo = zero ?? min;
-  const datasets = points.map((p) => ({
-    label: p.org,
-    data: [{ x: p.derived, y: p.contribution > 0 ? p.contribution : lo, share: p.contribution }],
-    backgroundColor: colors.get(p.org) ?? theme.muted,
-    borderColor: theme.surface,
-    borderWidth: 2,
-    pointRadius: 7,
-    pointHoverRadius: 9,
-    // An org near 100% sits on the edge; draw its whole dot.
-    clip: false as const,
-  }));
+  const styleOf = (metric: string) => marks.find((m) => m.metric === metric)?.style ?? 'circle';
+  const datasets = points.map((p) => {
+    // The chosen metric first: the org's label and the tests read data[0].
+    const all = [{ metric: metricLabel, contribution: p.contribution, derived: p.derived }, ...(p.others ?? [])];
+    return {
+      label: p.org,
+      data: all.map((q) => ({ x: q.derived, y: q.contribution > 0 ? q.contribution : lo, share: q.contribution, metric: q.metric })),
+      backgroundColor: colors.get(p.org) ?? theme.muted,
+      borderColor: theme.surface,
+      borderWidth: all.map((_, i) => (i ? 1 : 2)),
+      // The chosen metric is always a large dot; the others their own shape.
+      pointStyle: (ctx: { dataIndex: number }): PointStyle => (ctx.dataIndex ? styleOf(all[ctx.dataIndex].metric) : 'circle'),
+      pointRadius: all.map((_, i) => (i ? 5 : 7)),
+      pointHoverRadius: all.map((_, i) => (i ? 6 : 9)),
+      // An org near 100% sits on the edge; draw its whole dot.
+      clip: false as const,
+    };
+  });
   const plugin: Plugin<'scatter'> = {
     id: 'parityLine',
     // The parity diagonal, under the points.
@@ -417,6 +430,23 @@ export function renderParityChart(
       ctx.textAlign = 'left';
       ctx.textBaseline = 'bottom';
       ctx.fillText('1.0× value ratio (parity)', 24, -4);
+      ctx.restore();
+      // Each org's strip, at its chosen metric's usage share (every metric's,
+      // when they cover the same weeks), from its lowest mark to its highest.
+      ctx.save();
+      chart.data.datasets.forEach((ds, i) => {
+        const meta = chart.getDatasetMeta(i);
+        if (meta.hidden || meta.data.length < 2) return;
+        const ys = meta.data.map((pt) => pt.y);
+        const top = Math.min(...ys);
+        const bottom = Math.max(...ys);
+        const w = 6;
+        ctx.globalAlpha = 0.25;
+        ctx.fillStyle = (ds.backgroundColor as string) ?? theme.muted;
+        ctx.beginPath();
+        ctx.roundRect(meta.data[0].x - w / 2, top - w / 2, w, bottom - top + w, w / 2);
+        ctx.fill();
+      });
       ctx.restore();
     },
     // Org names beside their points, so the chart reads without the legend.
@@ -486,8 +516,30 @@ export function renderParityChart(
       interaction: { mode: 'nearest', intersect: true },
       plugins: {
         ...base.plugins,
-        // Each point is labelled with its org instead.
-        legend: { display: false },
+        // Each point is labelled with its org instead; the legend is the
+        // other metrics' marks.
+        legend: {
+          display: marks.length > 0,
+          position: 'top',
+          align: 'start',
+          onClick: () => {},
+          labels: {
+            usePointStyle: true,
+            boxWidth: 8,
+            boxHeight: 8,
+            color: theme.text,
+            generateLabels: () =>
+              marks.map((m) => ({
+                text: m.metric,
+                pointStyle: m.style,
+                fillStyle: theme.muted,
+                strokeStyle: theme.muted,
+                fontColor: theme.text,
+                lineWidth: 1,
+                hidden: false,
+              })),
+          },
+        },
         // Three lines below the point (above near the bottom), clear of its
         // neighbours: the org and its ratio, then the ratio as a fraction,
         // review share over usage share with a rule between them.
@@ -510,8 +562,8 @@ export function renderParityChart(
               return `${it.dataset.label}  ${formatRatio(p.share / p.x)}×`;
             },
             label: (ctx) => {
-              const p = ctx.raw as { x: number; share: number };
-              return [`${pct(p.share)} of ${metricLabel}`, `${pct(p.x)} of usage`];
+              const p = ctx.raw as { x: number; share: number; metric: string };
+              return [`${pct(p.share)} of ${p.metric}`, `${pct(p.x)} of usage`];
             },
           },
         },
@@ -519,135 +571,6 @@ export function renderParityChart(
       scales: {
         x: axis('share of Chromium browser usage (log scale)', false),
         y: axis(`share of ${metricLabel} (log scale)`, true),
-      },
-    },
-  });
-}
-
-/** One org's value ratio for each metric the value shape chart shows. */
-export interface ShapeOrg {
-  org: string;
-  /** Per metric: contribution share and usage share, or null where the org
-   * has no ratio (too little usage over that metric's weeks). */
-  shares: ({ contribution: number; derived: number } | null)[];
-}
-
-/** A decade's ratio label: 0.001, 0.01, 0.1, 1.0, 10. */
-const decadeLabel = (e: number) => (e >= 0 ? formatRatio(10 ** e) : String(10 ** e));
-
-/** The value shape chart's radial range in decades (log10 of the ratio):
- * `center` is the whole decade at the center, `outer` the edge, a little past
- * the largest ratio and always past the 1.0× ring. A ratio of 0 (no
- * contribution) sits at the center, one decade below the smallest other
- * ratio, like the parity chart's 0 row. */
-export function shapeBounds(ratios: number[]): { center: number; outer: number; zero: boolean } {
-  const pos = ratios.filter((r) => r > 0);
-  const zero = ratios.some((r) => r === 0);
-  const lo = pos.length ? Math.min(-1, Math.floor(Math.log10(Math.min(...pos)) + 1e-9)) : -1;
-  const outer = Math.max(0, pos.length ? Math.log10(Math.max(...pos)) : 0) + 0.2;
-  return { center: zero ? lo - 1 : lo, outer, zero };
-}
-
-/** Every org's value ratio on every metric at once: one axis per metric, the
- * ratio on a log scale from the center out, and each org a shaded polygon
- * through its ratios. The bold ring is 1.0×, contribution in proportion to
- * usage: an org reaching outside it on an axis contributes more than its
- * usage share on that metric. `selected` is the metric picked below the chart,
- * whose axis label is bold. */
-export function renderValueShapeChart(
-  canvas: HTMLCanvasElement,
-  orgs: ShapeOrg[],
-  metricLabels: string[],
-  selected: number,
-  colors: Map<string, string>,
-  theme: Theme,
-): Chart<'radar'> {
-  const ratio = (s: { contribution: number; derived: number } | null) => (s ? s.contribution / s.derived : null);
-  const all = orgs.flatMap((o) => o.shares.map(ratio)).filter((r): r is number => r !== null);
-  const { center, outer, zero } = shapeBounds(all);
-  const r = (x: number | null) => (x === null ? null : x > 0 ? Math.log10(x) - center : 0);
-  const datasets = orgs.map((o) => {
-    const color = colors.get(o.org) ?? theme.muted;
-    return {
-      label: o.org,
-      data: o.shares.map((s) => r(ratio(s))),
-      shares: o.shares,
-      borderColor: color,
-      backgroundColor: withAlpha(color, 0.08),
-      pointBackgroundColor: color,
-      pointBorderColor: theme.surface,
-      borderWidth: 2,
-      pointRadius: 5,
-      pointHoverRadius: 7,
-      fill: true,
-      spanGaps: true,
-    };
-  });
-  const isParity = (v: number) => Math.abs(v + center) < 1e-6;
-  const base = baseOptions(theme);
-  return new Chart<'radar'>(canvas, {
-    type: 'radar',
-    data: { labels: metricLabels, datasets },
-    options: {
-      ...base,
-      interaction: { mode: 'nearest', intersect: true },
-      plugins: {
-        ...base.plugins,
-        legend: {
-          ...base.plugins.legend,
-          labels: { ...base.plugins.legend.labels, boxWidth: 14, boxHeight: 14 },
-        },
-        tooltip: {
-          ...base.plugins.tooltip,
-          yAlign: undefined,
-          displayColors: false,
-          callbacks: {
-            title: (items) => {
-              const it = items[0];
-              if (!it) return '';
-              const s = (it.dataset as unknown as { shares: ShapeOrg['shares'] }).shares[it.dataIndex];
-              return `${it.dataset.label}  ${formatRatio(ratio(s) ?? 0)}×`;
-            },
-            label: (ctx) => {
-              const s = (ctx.dataset as unknown as { shares: ShapeOrg['shares'] }).shares[ctx.dataIndex];
-              const m = metricLabels[ctx.dataIndex].toLowerCase();
-              return s ? [`${pct(s.contribution)} of ${m}`, `${pct(s.derived)} of usage`] : [];
-            },
-          },
-        },
-      },
-      scales: {
-        r: {
-          min: 0,
-          max: outer - center,
-          angleLines: { color: theme.grid },
-          // Ticks on whole decades only, not at the edge.
-          afterBuildTicks: (scale: Scale) => {
-            const ticks: Tick[] = [];
-            for (let v = 0; v <= outer - center + 1e-9; v++) ticks.push({ value: v });
-            scale.ticks = ticks;
-          },
-          grid: {
-            // Circles, so the organizations' polygons stand out from them.
-            circular: true,
-            color: (ctx) => (isParity(ctx.tick?.value ?? NaN) ? theme.parity : theme.grid),
-            lineWidth: (ctx) => (isParity(ctx.tick?.value ?? NaN) ? 2 : 1),
-          },
-          pointLabels: {
-            color: theme.text,
-            // One word a line on narrow screens, so the names fit beside the chart.
-            callback: (label: string) => (canvas.clientWidth < 520 ? label.split(' ') : label),
-            font: (ctx) => ({ size: ctx.chart.width < 520 ? 11 : 13, weight: ctx.index === selected ? 'bold' : 'normal' }),
-            padding: 6,
-          },
-          ticks: {
-            color: (ctx) => (isParity(ctx.tick?.value ?? NaN) ? theme.parity : theme.muted),
-            font: (ctx) => ({ weight: isParity(ctx.tick?.value ?? NaN) ? 'bold' : 'normal' }),
-            z: 1,
-            backdropColor: theme.surface,
-            callback: (v: number | string) => (zero && Number(v) === 0 ? '0' : `${decadeLabel(Number(v) + center)}×`),
-          },
-        },
       },
     },
   });
