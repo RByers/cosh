@@ -1,278 +1,436 @@
-# Author/reviewer balance: design notes
+# Author/reviewer balance: design notes and findings
 
-Status: design and first measurements (2026-11-07). Nothing is built in
-`derive`, `summarize` or the web UI yet. The page will be `web/balance.html`.
-Everything here comes from data already on disk; nothing was fetched.
+Status: analysis done over all the data (2026-11-08); the page
+(`web/balance.html`) is not built yet. Nothing was fetched for this:
+everything comes from data already on disk (Gerrit 2023-07 .. 2026-10,
+NoteDb, the patch-set commits of every reviewed CL, and `main`'s full
+history).
 
 ## The question
 
 The user's note *Agents and Accountability of Authors and Reviewers*
 ([Google doc](https://docs.google.com/document/d/1Zwq7exQ52CK34nGY8PrnWniOui5B7lsGSveZgqBpiFw/edit?usp=sharing))
-argues that agentic tools make CLs cheap to write but not cheap to review,
-which moves effort from authors to scarce expert reviewers. It asks both
-sides to keep the exchange proportionate:
+argues that agentic tools make CLs cheap to write but not to review, which
+moves effort from authors to scarce expert reviewers. Its principles:
 
 1. Authors own the correctness and reviewability of their work.
 2. Reviewers owe timely feedback.
 3. Authors should learn from feedback, so their CLs need less review over
    time.
-4. Reviewers should get a return on their time.
+4. Reviewers should get a return on their time, by building author skill.
 
-Among the author measures it suggests: how small the CLs are, and how many
-land with few substantive changes.
+The page asks: **does Chromium still grow and scale through review**, with
+experts training newcomers who become experts and train the next ones, now
+that AI tools are common? It looks at:
 
-To show that balance, the page needs three per-CL estimates, each compared
-with what is typical for the code it touches:
+- per CL: change complexity, review difficulty, rework before landing,
+  reverts and review latency, against what is typical for the code touched;
+- the trends since 2025: larger CLs, more of them, slower and thinner
+  review;
+- growth: needing less feedback for a given size and area, taking on
+  bigger changes or new areas, reviewing others, becoming an OWNER. People
+  grow along different paths, so no single measure is used;
+- the burden of supporting others: who reviews newcomers, how review moves
+  from experts to people who were newcomers a few years earlier.
 
-- **Change complexity:** how big and hard the change is, before review.
-- **Review difficulty:** how much reviewer effort it took.
-- **Rework:** how much the CL had to change before it could land.
+## The user's decisions (2026-11-08)
 
-## Data available
+- **People:** aggregate and cohort views, plus an individual lookup, but no
+  rankings. Leaderboards celebrate growth and contribution without shaming
+  anyone, as the Review Tone page's praise boards do. Growth scores per
+  person are computed only to be aggregated and are never published.
+- **Mechanical CLs** can be toggled off, and the page defends the cutoff
+  with its own chart (below).
+- **All 175 weeks** of Gerrit data are used, plus `main`'s history for
+  everything git can tell.
+- **Latency** comes from the attention set, with a caveat that it doesn't
+  know working hours.
+- **Reverts** are tracked.
 
-| Source | What it gives | Coverage |
-|---|---|---|
-| `changes` (listing) | final insertions and deletions, patch-set count, created and submitted times | every CL, all 175 weeks |
-| `comments`, `threads`, `labels.sqlite` | reviewer comments per file, threads, addressed or not | every CL, all 175 weeks |
-| NoteDb meta refs | each upload's time, uploader, commit SHA and Gerrit's change kind (rework, trivial rebase, message only, no change); votes; attention-set changes with reasons; code-owner approvals listing the files each vote approved | every CL, all 175 weeks |
-| Patch-set commits (`refs/patchsets/<CL>/<ps>`, blob-less) | per patch set, the files changed and their blob ids, so we can tell which files changed between two patch sets | **2026-W44 only** (the pilot, 7,639 CLs) |
-| `main` history (blob-less now; full blobs being fetched, approved 2026-11-06) | files of each landed commit; reverts and relands; with blobs, per-file line counts and OWNERS files | all of `main` |
+## Data and how it's built
 
-What we can't get without new fetching:
-- **Line counts per file**, or between patch sets, need blobs. The full blob
-  fetch of `main` covers each landed CL's final diff, but blobs that exist
-  only in earlier patch sets are not on `main`.
-- **Patch-set file lists beyond 2026-W44** need the patch-set commits for
-  those weeks. The pilot measured about 530 MB transferred per week for
-  commits and trees (57 MB on disk after repack). This needs approval.
+`python3 -m cosh.balance <stage>` (offline, `GIT_NO_LAZY_FETCH=1`) writes
+rebuildable files in `data/private/`:
 
-## First measurements (2026-W44)
+| Stage | Output | What | Time |
+|---|---|---|---|
+| `git` | `balance-git.sqlite` | first-parent `main` since 2017-01-01: author, dates, CL (`Reviewed-on`), `Reviewed-by` approvers, reverts, relands, per-file line counts (`gcommits`, `gfiles`, `paths`); 1.30M commits | ~1.5 h |
+| `timeline` | `balance-timeline.sqlite` | per CL from NoteDb: uploads with Gerrit's change kind, and attention-set intervals per account; 337k CLs (CLs with no comments have no local meta ref) | ~10 min |
+| `interdiff` | `balance-interdiff.sqlite` | per reviewed CL: the first reviewed patch set's diff against the final one, as multisets of added and removed lines, so a rebase changes nothing; 275k CLs | ~25 min with `--shard i/3` |
+| `cl` | `balance.sqlite` | one row per human-owned CL joining all of the above with review threads and labels (`cl`), per-reviewer attention (`cl_attention`), lines per directory (`cl_dirs`) | ~1 min |
 
-`scripts/balance_explore.py` computes the measures below for the 4,327
-merged, human-owned CLs that closed in 2026-W44, all of which have their
-patch sets locally. It runs in about 10 s. It reads no comment text and
-writes no comment text.
+Definitions in `cl`:
 
-```
-COSH_DATA_DIR=<main checkout>/data/private \
-  python3 scripts/balance_explore.py --week 2026-W44 --out <scratch>/balance-w44.jsonl
-```
+- **First substantive review:** the first inline reviewer comment, else the
+  root of the first reviewer thread the owner answered. A lone "LGTM" isn't
+  substantive review; 74,792 CLs with comments had none.
+- **Sent for review:** the first time a non-owner human entered the
+  attention set.
+- **Rounds:** owner rework uploads after the CL was sent that follow a new
+  reviewer-started thread.
+- **Interdiff share:** lines that differ between the first reviewed and
+  final patch sets' diffs, over the final diff's lines.
+- **Attention hours:** the union of the intervals in which any non-owner
+  human (or the owner) was in the attention set. It counts nights,
+  weekends and holidays. `reviewer_wait_wd_h` leaves out Saturdays and
+  Sundays in UTC, which is only a partial fix.
 
-**Distributions per CL**
+Also used: when each person was first added to an OWNERS file (41,208
+additions since 2012, from `git log -p -- '*OWNERS'`), each author's first
+commit over all history (tenure), and the ~1,000 commits with an AI marker
+in their message (`Agent-Generated:` trailer from 2026-07, "Generated with
+Gemini" and the like from 2025).
 
-| Measure | p25 | p50 | p75 | p90 | p99 |
+People are joined across addresses: `chromium.org` and `google.com` by
+username, SVN-era `user@domain@<uuid>` emails, and a Gerrit owner's email
+with the git author of the same CL.
+
+Analyses: `scripts/balance_analysis.py trends|mechanical|pipeline` and
+`scripts/balance_growth.py growth|burden|ai`. They print tables, read no
+comment text, and print no one's identity. (`scripts/balance_explore.py`
+is the first W44-only prototype, superseded by `cosh/balance.py`.)
+
+## Findings
+
+### 1. The exchange since AI: more and bigger CLs, thinner review
+
+Human commits on `main` with a CL, and merged human-owned CLs, by quarter:
+
+| Quarter | Commits per active author per month | Median lines | p90 lines | Reviewer threads per CL | Standardized threads per CL (half-year) |
 |---|---:|---:|---:|---:|---:|
-| lines changed (insertions + deletions) | 17 | 68 | 203 | 461 | 1,971 |
-| files | 2 | 3 | 7 | 13 | 46 |
-| patch sets | 3 | 4 | 7 | 12 | 31 |
-| rework uploads after the first review | 0 | 1 | 3 | 5 | 13 |
-| reviewer threads | 0 | 1 | 3 | 6 | 20 |
-| addressed threads | 0 | 0 | 1 | 4 | 15 |
-| reviewers who commented | 0 | 1 | 1 | 2 | 4 |
-| files edited after the first review (base unchanged) | 0 | 0 | 1 | 2 | 8 |
-| hours from upload to first review comment | 5.6 | 23 | 81 | 194 | 1,141 |
-| hours from first review comment to submit | 3.3 | 19 | 65 | 171 | 1,109 |
+| 2019Q3 | 5.7 | 39 | 391 | | |
+| 2022Q3 | 4.8 | 42 | 386 | | |
+| 2023Q3 | 5.5 | 38 | 346 | 3.19 | 3.10 |
+| 2024Q3 | 5.8 | 45 | 393 | 2.97 | 2.85 |
+| 2025Q1 | 5.6 | 43 | 366 | 2.89 | 2.78 |
+| 2025Q3 | 6.3 | 42 | 360 | 2.75 | 2.64 |
+| 2026Q1 | 6.5 | 44 | 359 | 2.75 | 2.47 |
+| 2026Q2 | 6.7 | 52 | 386 | 2.76 | |
+| 2026Q3 | 7.6 | 65 | 445 | 2.61 | 1.98 (2026H2) |
 
-2,580 of the CLs (60%) got at least one reviewer comment. The rest landed
-on a vote alone.
+- **Velocity and size broke out in 2026, not 2025.** Commits per author
+  stayed between 4.5 and 6.5 a month from 2017 to 2025, then reached 7.6 in
+  2026Q3.
+  Median CL size, flat at 38–46 lines for nine years, rose to 65 (and 72
+  in the partial 2026Q4). The largest CLs grew less: the share ≥ 1,000
+  lines stayed at 2.5–3.1%.
+- **Review per line fell.** Reviewer threads per 100 changed lines (mean
+  per CL, CLs ≥ 10 lines) went 4.3 (2023Q3), 3.9 (2025Q1), 2.8 (2026Q3).
+- **It isn't composition.** Re-weighting every half-year to 2024's mix of
+  author tenure, CL size (10 buckets) and directory, threads per CL go
+  3.10, 3.07, 2.85, 2.78, 2.64, 2.47, 1.98 (2023H2 .. 2026H2). The fall is
+  steeper after standardization, because CLs got bigger.
+- **Reverts did not rise.** Landed CLs reverted within 30 days: about
+  3.5% in 2017–2020, 3.0% in 2022–23, 2.6–2.8% in 2024–25, and 2.6–3.0% in
+  2026 (2026Q4's 1.9% isn't final yet). Relands per quarter rose with
+  volume (~420 to 562).
 
-**Rank correlations (Spearman, all 4,327 CLs)**
+### 2. Latency: faster in 2025, slower again in 2026
 
-| | ρ |
-|---|---:|
-| lines ~ files | +0.72 |
-| lines ~ reviewer threads | +0.47 |
-| files ~ reviewer threads | +0.36 |
-| reviewer threads ~ addressed threads | +0.83 |
-| addressed threads ~ rework uploads | +0.72 |
-| addressed threads ~ files edited after review | +0.69 |
-| lines ~ files edited after review | +0.43 |
-| reviewer threads ~ hours from first review to submit | +0.54 |
-| lines ~ hours from first review to submit | +0.31 |
+Merged human-owned CLs that got substantive review:
 
-**By size**
+| Quarter | Hours sent → first substantive review (p50, p75) | Reviewer attention hours per CL (p50) | Owner attention hours (p50) |
+|---|---|---:|---:|
+| 2023Q3 | 5.2, 22.5 | 18.3 | 22.4 |
+| 2024Q3 | 3.7, 19.7 | 15.5 | 9.7 |
+| 2025Q2 | 3.3, 18.2 | 12.4 | 10.9 |
+| 2026Q1 | 4.3, 20.4 | 16.2 | 15.7 |
+| 2026Q3 | 5.2, 22.4 | 17.9 | 17.6 |
 
-| Lines changed | CLs | Reviewed | Mean threads | Mean addressed | Files edited after review |
+Review got faster through 2025Q2 and has slowed every quarter since, as
+volume rose. Owner attention time rose too: CLs wait longer on both sides.
+Hours count nights and weekends, so the medians reflect time zones as much
+as effort. Per reviewer, weekday attention hours per CL for reviewers with
+10+ years' tenure went from 5.6 (2025H1) to 8.8 (2026H2).
+
+### 3. Rework after review
+
+After the first substantive review, a reviewed CL's diff changed by a
+median 5% of its lines (p75 44%, p90 96%). Pooled, lines changed over final
+lines were 0.37 (2023Q3), 0.28–0.31 (2024), 0.31–0.36 (2025–26). Owner
+rework uploads after review: 3.0 (2023), 2.8–3.1 (2024–25), 3.1–3.2
+(2026). Rounds per reviewed CL: 1.25 (2023), 1.11–1.17 (2025), 1.18–1.20
+(2026). CLs aren't landing in better shape in the AI era, and they aren't
+clearly worse.
+
+In the 2026-W44 prototype, 98% of files with an addressed thread changed
+after review, against few of the files whose threads weren't addressed.
+The interdiff and the classifier agree.
+
+### 4. Learning curves: needing less feedback, before and after AI
+
+**Review load index:** reviewer threads on a CL ÷ the mean for CLs of its
+size (10 buckets) and top 2-level directory in 2023–24 (1.00 = the
+2023–24 norm). Merged, non-mechanical CLs:
+
+| Author tenure | 2023H2–2024 | 2025 | 2026 |
+|---|---:|---:|---:|
+| < 6 months | 2.43 | 2.00 | 1.45 |
+| 6–12 months | 1.89 | 1.66 | 1.10 |
+| 1–2 years | 1.50 | 1.68 | 0.96 |
+| 2–5 years | 1.08 | 1.06 | 0.85 |
+| 5+ years | 0.86 | 0.78 | 0.66 |
+
+| Author's prior commits in the CL's main directory (3 levels) | 2023H2–2024 | 2025 | 2026 |
+|---|---:|---:|---:|
+| 0 | 1.82 | 1.75 | 1.34 |
+| 1–4 | 1.57 | 1.38 | 1.12 |
+| 5–19 | 1.24 | 1.11 | 0.94 |
+| 20–99 | 0.96 | 0.93 | 0.75 |
+| 100+ | 0.81 | 0.75 | 0.63 |
+
+- **The learning signal is clear before AI.** A newcomer's CL drew 2.8×
+  the review of a 5-year veteran's at the same size and place, and a first
+  CL in a directory 2.2× that of someone with 100+ commits there.
+- **In 2026 everyone gets less review, and newcomers lose the most.** A
+  newcomer's CL fell from 2.43 to 1.45 of the old norm, a veteran's from
+  0.86 to 0.66. The newcomer-to-veteran gap narrowed from 2.8× to 2.2×.
+  That's either newcomers arriving more capable (with AI help), or
+  reviewers giving newcomers less of the feedback that trains them. The
+  data can't yet tell which. Section 6 suggests the second is at least
+  part of it, since the same experts are spread thinner.
+
+### 5. Growth along several paths
+
+For each person and half-year (`scripts/balance_growth.py growth`):
+
+- **velocity:** CLs per active month;
+- **size:** median lines;
+- **breadth:** distinct 3-level directories among a random 20 of the
+  half-year's CLs, so it doesn't just track volume;
+- **reviewing:** `Reviewed-by` approvals per active month;
+- **independence** (2023+): minus the residual of threads, interdiff share
+  and rounds against (size, directory, quarter) means.
+
+Each dimension has the half-year's population median subtracted, so a
+person's growth is measured against their peers in the same era, not
+against the AI tools everyone got. In each two-year window, each person
+gets a least-squares slope per dimension (≥ 3 measured half-years). The
+slope is shrunk toward zero by its noise
+(`var_between / (var_between + se²)`). It counts as "improving" if it is
+above the 80th percentile of slopes from the same people with their
+half-years shuffled. By chance alone, 20% would "improve" on any one
+dimension.
+
+Share improving, all people with ≥ 3 measured half-years:
+
+| Window | People | Velocity | Size | Breadth | Reviewing | Independence (threads) | Improving on none of the 4 git dimensions |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| 2019–20 | 743 | 25% | 19% | 29% | 36% | | 40% |
+| 2021–22 | 761 | 27% | 18% | 21% | 44% | | 39% |
+| 2023–24 | 803 | 22% | 19% | 20% | 34% | 36% | 47% |
+| 2025–26 | 695 | 24% | 18% | 28% | 41% | 43% | 42% |
+
+(2017–18 is left out: `Reviewed-by` starts mid-2017, which inflates
+"reviewing".)
+
+- **People grow by reviewing and by needing less review**, well above
+  chance. **They don't grow by writing bigger CLs**: size is at chance in
+  every window, which fits the project's preference for small CLs. Breadth
+  and velocity are only modestly above chance.
+- **Newcomers grow fastest.** In 2025–26, 0–2-year people improved on
+  independence 58% of the time and on reviewing 52%. Those who joined
+  during the window: 71% and 73%.
+- **The share growing on none of the git paths rose before AI**, from 39–40%
+  (2019–22) to 47% (2023–24), then eased to 42% (2025–26). Most of it is
+  people with 5+ years' tenure, who plateau (59% in 2023–24), as expected.
+  So far there's no sign that AI-era people grow less. The 2025–26 window
+  is only 3.5 half-years long, and its newcomers have been watched for a
+  year at most.
+- **Independence growth may be partly reviewers easing off.** Section 4
+  shows review thinning for newcomers in 2026, so the independence slopes
+  overstate learning in that window. Interdiff share and rounds are less
+  sensitive to how much reviewers write, and grow less (29% and 44%).
+
+### 6. Taking on the burden: from author to reviewer to OWNER
+
+**Review share** (approvals given ÷ (approvals + CLs authored)), median by
+start cohort and tenure year: about 0 in year 1, 0.03–0.17 in year 2,
+0.26–0.36 in year 3, 0.33–0.50 in year 4, and 0.5–0.7 after 6+ years.
+People reliably move from writing to reviewing. The 2023 cohort is a
+little slower (0.33 in year 4); the 2025 cohort is faster (0.17 in year 2,
+small n).
+
+**Who reviews newcomers** (approvals of CLs by authors in their first
+year, by the approver's tenure):
+
+| Year | Newcomer-CL approvals | < 2 y | 2–5 y | 5–10 y | 10+ y | Approvers | Share of all approvals |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| 2019 | 26,593 | 10% | 25% | 40% | 25% | 657 | 23% |
+| 2021 | 13,919 | 8% | 24% | 32% | 35% | 670 | 12% |
+| 2023 | 13,311 | 6% | 20% | 24% | 51% | 651 | 11% |
+| 2025 | 14,742 | 6% | 11% | 21% | 62% | 631 | 14% |
+| 2026 | 26,018 | 8% | 6% | 16% | 69% | 745 | 20% |
+
+The 10+ year column partly reflects the project aging (no one could have
+10 years' tenure in 2017). But the drop of the 2–5-year "recent
+graduates", from a quarter of newcomer review to 6%, is the clearest sign
+that the training chain is thinning. In 2026, newcomer CLs are a fifth of
+all approvals, and the oldest reviewers carry most of them.
+
+**The pipeline:**
+
+| Year | New authors (≥ 5 CLs) | New regular reviewers (first year with ≥ 60 approvals) | First added to an OWNERS file |
+|---|---:|---:|---:|
+| 2018 | 271 | 160 | 147 |
+| 2020 | 261 | 108 | 182 |
+| 2022 | 413 | 115 | 223 |
+| 2023 | 160 | 120 | 215 |
+| 2024 | 170 | 122 | 132 |
+| 2025 | 222 | 68 | 129 |
+| 2026 (to Oct) | 276 | 99 | 189 |
+
+Kaplan-Meier, by start cohort (people with ≥ 20 CLs ever): the share who
+became regular reviewers within 3 years was 15–22% (2017–2021 cohorts), 17%
+(2022) and 13% (2023). The share in an OWNERS file within 3 years was 43–57%
+(2017–2022), then 38% (2023). The ≥ 20 CLs condition favours fast starters
+in recent cohorts, so the decline is if anything understated.
+
+**Mentorship lineage.** A person's mentors are the top 2 approvers of their
+first 10 CLs. Of 2017–2019 newcomers, 11–16% went on within 4 years to
+mentor at least 2 newcomers themselves; of 2020–21 newcomers 7%, and of
+2022's 4% (that window closes in 2026). Mentoring is concentrating: the
+busiest 10% of mentors took 41–45% of newcomers in 2017–2024 and 49–52% in
+2025–26.
+
+**Cross-org review:** 7% of approvals in 2017–18 crossed email domains,
+9–12% in 2019–25, and 12.8% in 2026.
+
+**Reading it together:** the chain still works for individuals. Newcomers
+still learn fast, and people still move from writing to reviewing. But
+fewer of them complete it: fewer new regular reviewers and OWNERS per
+cohort, and fewer mentees becoming mentors, a decline that started around
+2020, before AI. In 2026, newcomer volume jumped while recent graduates
+almost stopped reviewing newcomers. The experts who now carry it give
+less feedback per CL (section 4) and take longer to give it (section 2).
+
+### 7. AI-marked CLs
+
+960 marked CLs fall in 53 author-quarters where the same author also landed
+unmarked CLs. Paired by author and quarter, the marked ones got their first
+review 39 hours sooner (95% CI 2–77 h). Size, threads, threads per line,
+interdiff share, rounds and reverts showed no significant difference (all
+CIs span zero). The sample is small, self-selected and dominated by a few
+teams. The marker only exists from 2026-07, so most AI use is unmarked and
+can't be compared directly.
+
+### 8. Mechanical CLs
+
+Merged human-owned CLs with a landed commit (403,149), by file count:
+
+| Files | CLs | With a reviewer thread | Threads per CL | Threads per file | Reverted < 30 d |
 |---|---:|---:|---:|---:|---:|
-| < 10 | 691 | 34% | 0.48 | 0.12 | 8% |
-| 10–49 | 1,190 | 47% | 0.82 | 0.32 | 18% |
-| 50–249 | 1,570 | 68% | 2.20 | 1.29 | 43% |
-| 250–999 | 751 | 83% | 5.16 | 3.61 | 63% |
-| ≥ 1,000 | 125 | 77% | 6.59 | 4.89 | 57% |
+| 1 | 115,564 | 46% | 0.85 | 0.85 | 2.3% |
+| 2–4 | 136,743 | 63% | 1.99 | 0.73 | 2.9% |
+| 5–9 | 83,593 | 75% | 4.02 | 0.62 | 3.6% |
+| 10–19 | 44,702 | 81% | 6.65 | 0.51 | 4.6% |
+| 20–49 | 16,899 | 78% | 7.50 | 0.29 | 5.2% |
+| 50–99 | 3,069 | 69% | 4.52 | 0.07 | 5.2% |
+| 100–199 | 1,228 | 64% | 3.25 | 0.024 | 4.6% |
+| 200–499 | 835 | 45% | 2.07 | 0.007 | 4.8% |
+| 500+ | 516 | 35% | 1.40 | 0.001 | 3.9% |
 
-The ≥ 1,000 bucket is less reviewed than 250–999 because it holds
-mechanical CLs: of the 35 CLs with ≥ 50 files, 12 got no reviewer comment
-(one is a third_party/grpc import of 5,863 files).
+Review per file collapses past about 50 files. File count alone mixes big
+real refactors with mass edits, so the 67,249 CLs with ≥ 10 files also get
+a **repetition ratio**: 1 − distinct changed lines ÷ changed lines, from the
+landed commit's diff. A line added to 300 files, or a renamed symbol,
+scores near 1.
 
-**What the numbers say**
+| Repetition | CLs (≥ 10 files) | With a thread | Threads per file | Median files |
+|---|---:|---:|---:|---:|
+| 0–0.2 | 9,123 | 73% | 0.31 | 13 |
+| 0.2–0.4 | 31,900 | 84% | 0.53 | 14 |
+| 0.4–0.6 | 16,501 | 81% | 0.44 | 16 |
+| 0.6–0.8 | 6,625 | 68% | 0.14 | 23 |
+| 0.8–0.9 | 1,312 | 59% | 0.08 | 25 |
+| 0.9–1.0 | 1,459 | 52% | 0.04 | 38 |
 
-1. **Size explains only part of review effort, and the path explains about
-   as much again.** For log(1 + threads), the share of variance explained
-   by group means is 0.23 for the size bucket, 0.14 for the CL's main
-   directory (2 levels), and 0.42 for the two together (inflated by small
-   cells). At the same size, `content/browser/` CLs got more threads than
-   `ios/chrome/` ones (1.57 vs 0.49 at 10–49 lines), and
-   `components/autofill/` 8.4 at 250–999 lines against 5.2 for
-   `chrome/browser/`. Baselines therefore need both size and path.
-2. **Author habits show through.** After subtracting the (size, directory)
-   mean, an owner's residual threads in odd-numbered CLs correlate
-   r = 0.58 with their even-numbered ones (171 owners with ≥ 3 CLs in each
-   half, one week). That is a stable trait, but it mixes the author with
-   the reviewers they pick and the areas they work in.
-3. **File-level rework from tree diffs works, and it agrees with the
-   classifier.** For each file of the final diff, the script compares its
-   blob with the patch set the first reviewer comment was written on. Over
-   24,199 files in reviewed CLs:
+**Proposed rule:** a CL is mechanical if it has ≥ 100 files, or ≥ 10 files
+with repetition ≥ 0.8. That's 4,875 CLs (1.2% of merged CLs). They get
+0.010 threads per file, against 0.36 for the other CLs with ≥ 10 files, and
+47% of them got no thread at all. The rule deliberately doesn't use review
+counts, which would bias the review measures it filters. The page's hexbin
+(files against threads per file, coloured by repetition) shows the cluster
+and the cutoff. The analyses above used a provisional rule (≥ 50 files and
+no thread); switching is a next step.
 
-   | File after review | Files | With an addressed thread | With only unaddressed threads |
-   |---|---:|---:|---:|
-   | unchanged | 15,823 | 60 | 207 |
-   | edited, base unchanged | 2,926 | 1,617 | 69 |
-   | edited, base also moved (may be only a rebase) | 3,869 | 795 | 116 |
-   | added after review | 1,581 | 174 | 20 |
+Reverts climb with file count (2.3% for one file, about 5% for 20+ files),
+so the revert chart should be by size as well as over time.
 
-   98% of files with an addressed thread changed, and most files whose only
-   threads were not addressed did not. 55% of the clean edits had an
-   addressed thread on the file; the rest is the author's own iteration,
-   in line with `review-impact.md` (only about 21% of post-review uploads
-   tie to an addressed thread).
-4. **Rebases are the main noise.** When a file's base also changed, a tree
-   diff can't tell an edit from a rebase onto a newer `main`. Blobs would
-   settle it, by comparing the two patch sets' diffs rather than their
-   files. Until then, count only clean edits and added files.
-5. **Reverts are visible in `main` alone.** October 2026 had 23,286
-   commits, 421 reverts (`This reverts commit`) and 224 relands. A revert
-   is the clearest sign that a CL landed before it was ready (principle 1),
-   and it needs no new data.
+## The page (`web/balance.html`)
 
-## Proposed measures
+Each chart follows the project's conventions: text in the HTML, dates not
+ISO weeks, one date range for the page, a mechanical-CL toggle.
 
-Each measure is per CL, from data we have unless marked. Bot-owned CLs,
-bot accounts and mechanical CLs (rule to be decided; see Open decisions)
-are left out.
+1. **The exchange:** two lines by quarter, CLs per active author and
+   reviewer threads per 100 lines (raw and standardized to 2024's mix),
+   with 2025 marked. The core of the page in one chart.
+2. **Size and rework:** median and p90 lines, interdiff share and rounds by
+   quarter; revert rate within 30 days.
+3. **Latency:** percentile bands (p25/p50/p75/p90) of hours to first
+   substantive review, and reviewer and owner attention hours, with the
+   working-hours caveat in the caption.
+4. **Learning curves:** review load index by tenure (x axis), one line per
+   era, and the same by familiarity with the directory. These answer "do
+   people still need less review as they learn?"
+5. **Growth paths:** grouped bars per window, the share improving on each
+   path, with the 20% chance line dashed, and the share improving on none.
+   No individual appears.
+6. **From author to reviewer:** review share by tenure year, one line per
+   cohort; beside it, a stacked area of newcomer approvals by approver
+   tenure per year.
+7. **The pipeline:** Kaplan-Meier step curves by cohort for "regular
+   reviewer" and "OWNER"; new reviewers and OWNERS per year; mentees who
+   became mentors.
+8. **By directory:** typical size, review load index, rework and latency
+   per directory, as a drill-down tree like Value Exchange's.
+9. **Mechanical CLs:** a hexbin of files against threads per file,
+   coloured by repetition ratio, with the cutoff drawn on it. It defends
+   the toggle.
+10. **Individual lookup:** one person's own paths over time (CLs a month,
+    size, directories, approvals given, newcomers reviewed, mentees, the
+    date they became an OWNER) against their cohort's band. No rank, no
+    growth score, no review load index (it reads as a judgment and mixes
+    in reviewer behaviour).
+11. **Celebration boards** (named, positive only, like the praise boards):
+    milestones in the range (first regular year as a reviewer, first
+    OWNERS file, first newcomer reviewed), most newcomers reviewed,
+    mentees who went on to review others, and fastest median first
+    review given. Never a "least" board and never a growth score.
 
-### Change complexity (the author's side)
+The summaries will be built by `summarize` from `balance.sqlite`: quarterly
+aggregates, cohort tables, per-directory figures, and per-person monthly
+counts for the lookup and boards (all from public Gerrit and git data;
+ground rule 3).
 
-| Measure | Definition | Data |
-|---|---|---|
-| **lines** | insertions + deletions of the final patch set | listing, now |
-| **files**, **directories** | files in the final diff, and distinct directories (2 and 3 levels) | patch-set trees (W44), or the landed commit on `main` (all weeks) |
-| **owner directories** | OWNERS files whose approval it needed, from the code-owner approval messages in NoteDb or OWNERS at the parent commit | NoteDb now; OWNERS blobs with the blob fetch |
-| **new files** | files added | trees, now |
-| **lines per file** | per-file insertions and deletions, so per-path size is exact | blobs of `main` (being fetched) |
-| **share of tests, generated and vendored files** | by path patterns (`*_unittest.cc`, `*_browsertest.cc`, `web_tests/`, `tools/metrics/`, `third_party/<vendored>/`, golden files) | trees, now |
+## Data-quality notes
 
-Lines stay the headline size. Lines ~ files is 0.72, so the file count adds
-little except for the mechanical CLs, where it flags them.
-
-### Review difficulty (the reviewers' side)
-
-| Measure | Definition | Data |
-|---|---|---|
-| **threads** | reviewer-started threads, excluding bots | now |
-| **addressed threads** | threads that led to a change (`comment-classifier.md`) | now |
-| **comments**, **chars** | reviewer comments and characters, quotes removed | now |
-| **reviewers** | distinct human reviewers who commented | now |
-| **rounds** | times the CL went back to the author after review: owner rework uploads that follow a reviewer comment, counted once per batch | NoteDb, now |
-| **reviewer wait** | time the CL sat in a reviewer's attention set, and time to first review | NoteDb attention set, now |
-| **comment size** (later) | nit / minor / substantive / major per addressed thread, the "value of a comment" idea in `plan.md` | a classifier extension |
-
-Threads is the headline. It tracks addressed threads at 0.83 and time to
-land at 0.54, and it is where reviewer effort is visible.
-
-### Rework (how much the CL had to change)
-
-| Measure | Definition | Data |
-|---|---|---|
-| **rework uploads after review** | uploads Gerrit marked as rework, after the first reviewer comment | NoteDb, all weeks |
-| **files edited after review** | files of the final diff whose blob differs from the first reviewed patch set, base unchanged, plus files added after review | patch-set trees: W44 now, other weeks need approval |
-| **review-driven share** | of those files, the share with an addressed thread on them | trees + labels |
-| **interdiff lines** | lines that differ between the first reviewed and final patch set's diffs, rebases removed | patch-set blobs: needs approval |
-| **reverted** | a later `main` commit reverts it (within N days) | `main` history, now |
-
-The first reviewed patch set should be the one the first *substantive*
-reviewer thread was written on, not the first comment of any kind: a lone
-"LGTM" on the final patch set would otherwise count as review with no
-rework. The prototype uses the first comment; that refinement is next.
-
-## Path baselines
-
-Review comments are placed on files (inline comments on their file;
-patchset-level ones on their author's most-commented file, as in
-metric_version 6). So each measure can be split by directory, and each CL
-compared with what is typical for the directories it touches.
-
-- **Unit:** a (CL, directory) pair. Weight CLs equally within a directory,
-  not files, so a 5,863-file import doesn't swamp `third_party/`.
-- **Directories:** the same tree as `area_weekly.json` (10,000 busiest
-  directories; rarer ones roll up into their nearest kept ancestor), so the
-  page can share the drill-down tree.
-- **Per directory and period:** the median and quartiles of lines per CL
-  (in that directory), threads per CL, addressed threads per CL, and the
-  share of its files edited after review.
-- **Expected value of a CL:** for threads and rework, the mean over its
-  directories (weighted by its lines or files in each) of the directory's
-  typical value at the CL's size bucket, falling back to the parent
-  directory when a cell has fewer than about 30 CLs. A CL's **review load
-  index** is observed ÷ expected. Over many CLs, the sum of observed over
-  the sum of expected is more stable than a mean of ratios.
-
-## What the page could show
-
-These follow the principles of `plan.md` (2026-11-04, "acceptance rate is
-not a citizenship signal"): show where effort went, not scores that make
-people avoid asking questions.
-
-1. **The exchange over time:** reviewer threads per 100 changed lines, and
-   the share of CLs landing with few substantive changes, project-wide.
-   Watch whether agentic tools move them.
-2. **By directory:** typical size, review load and rework, as a tree like
-   "Review complexity by directory over time" on the Value Exchange page.
-3. **Size vs review:** a scatter or binned chart of lines against threads,
-   with the path baseline, so very large or very contested CLs stand out.
-4. **Learning over time (principle 3):** for cohorts of authors by tenure,
-   review load index by month since their first CL. Aggregate by cohort;
-   see Open decisions for anything per person.
-5. **Timeliness (principle 2):** time to first review and reviewer wait,
-   by directory.
-6. **Org view:** by the owner's org, review load index and reverts,
-   alongside how much review each org gives (from Value Exchange).
-
-## Open decisions for the user
-
-1. **Per-person views.** Ground rule 3 allows per-person data from public
-   sources, but "this author's CLs need twice the usual review" judges a
-   person more directly than a review count does. Options: aggregate only
-   (project, directory, org, tenure cohort); per-author figures shown only
-   when someone looks themselves up; or full per-author tables. Proposed:
-   start aggregate and decide per-person views as a separate step.
-2. **Fetching patch-set commits beyond 2026-W44** (about 530 MB a week
-   over the wire, blob-less), for file-level rework over more than one
-   week. Without it, rework rests on Gerrit's rework-upload count, which is
-   available for all weeks but counts uploads, not how much changed.
-3. **Fetching patch-set blobs** for interdiff lines and rebase-proof
-   rework, after the full `main` blob fetch finishes. The pilot measured
-   123k distinct blobs for W44 (113k for human-owned CLs); fetching by
-   blob id loads the server badly, so it needs the "truthful haves" fetch
-   the pilot describes. A timing test (`plan.md`, 2026-11-07) did that
-   for 1,500 W44 CLs: commits, trees and unlanded blobs in one fetch,
-   72 s per 1,000 CLs, about 9.5 KB on disk per patch set after a
-   repack. All weeks would be about 15 h and 33 GB.
-4. **Mechanical CLs:** exclude by rule (e.g. ≥ 50 files with no reviewer
-   thread, vendored `third_party/` imports, generated-only diffs), or keep
-   them and show them separately.
-5. **How far back:** NoteDb measures (rework uploads, rounds, wait times)
-   cover all 175 weeks now; per-file measures cover W44 until more patch
-   sets are fetched.
+- **The shared clone has a damaged object:** a tree delta at offset
+  2,323,392,059 of `pack-f60330f3…` fails zlib's check. Git falls back to
+  the older duplicate pack, which still holds every commit and tree, so
+  nothing here was affected. A blob damaged the same way would have no
+  fallback. Run `git fsck` on `~/projects/shared/chromium` before trusting
+  the older pack's removal.
+- `Reviewed-on` used the short form `…/c/<n>` from Oct 2018 to Feb 2019,
+  and `Reviewed-by` footers start mid-2017.
+- `Bot-Commit:` marks Rubber Stamper's approval (clean reverts, relands,
+  cherry-picks), not a bot author. Those commits are left out of velocity
+  but counted when finding what got reverted.
+- Reverts per quarter among human-approved commits fell after 2021 because
+  most reverts became bot-approved (`Bot-Commit:`): 4,075 human-approved
+  reverts in 2020, then about 1,200 human-approved and 2,400–3,100
+  bot-approved a year from 2021.
+- The patch-set fetch's final repack crashed (git exit 134) after all
+  fetches finished. The data is complete, but the repo has 1,200 packs.
 
 ## Next steps
 
-1. Refine "first reviewed patch set" to the first substantive thread, and
-   add rounds, reviewer wait and reverts to the script.
-2. Build path baselines over W44 and check how stable they are week to
-   week, using what can be computed for all weeks (lines from the listing,
-   files from the landed commit on `main`, threads, rework uploads).
-3. Once blobs of `main` are local: lines per file, so per-directory size is
-   exact.
-4. With the user's decisions above: derived tables in `derive`
-   (`cl_metrics`, `cl_files`), summaries (`balance_*.json`), then the page.
+1. Switch the analyses to the mechanical rule in section 8 (repetition
+   ratios for every ≥ 10-file CL go into `balance.sqlite`).
+2. `summarize`: write the balance summaries; then the page, its tests and a
+   landing-page card.
+3. Check whether "independence" growth in 2025–26 holds on interdiff share
+   and rounds alone, as more half-years arrive.
+4. Ask: would a Gerrit backfill of 2020–2023 (not approved) be worth it?
+   It would give the review-need learning curve a pre-AI baseline of four
+   years instead of 18 months.

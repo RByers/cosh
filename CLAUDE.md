@@ -74,7 +74,7 @@ regex plus Claude Haiku (`cosh classify`).
 ## Conventions
 
 - Python standard library only. Run with `python3 -m cosh <cmd>`.
-- Tests: `python3 -m unittest tests.test_derive tests.test_extract tests.test_radar tests.test_classify tests.test_sentiment tests.test_patchsets`.
+- Tests: `python3 -m unittest tests.test_derive tests.test_extract tests.test_radar tests.test_classify tests.test_sentiment tests.test_patchsets tests.test_balance`.
   These run in a single process, which complies with the global limit of 4
   test workers. `tests.test_extract` uses a fake Gerrit and never touches the
   network.
@@ -154,6 +154,9 @@ regex plus Claude Haiku (`cosh classify`).
   web/node_modules`. Don't run `npm ci` or `npm install` there. Git ignores
   the link, so leave it in place: `git worktree remove` cleans it up, and
   removing it yourself triggers a permission prompt.
+- `data/private/balance*.sqlite` (author/reviewer balance, `docs/balance.md`)
+  are rebuildable from local data with `python3 -m cosh.balance
+  git|timeline|interdiff|cl`, in that order (about 2 h; nothing is fetched).
 - `data/private/derived.sqlite` can always be rebuilt with
   `rm data/private/derived.sqlite && python3 -m cosh derive` (about 9 min
   for 666k CLs, 2026-11-04, threads included). A full `derive` ends by

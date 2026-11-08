@@ -193,6 +193,7 @@ value_ratio(O, t) = O's share of Chromium addressed review comments
 | 2026-11-07 | **Review Tone: net praise boards, every glowing comment counts.** The praise boards rank by net praise: the scores of each person's praise comments plus the (negative) scores of their grumpy ones (≤ −0.3), neutral ones ignored, given and received alike; everyone with a positive total is listed (Top 15 / All), each with a score pill. `summaries/sentiment_praise.json` holds the boards per period (`net`), positive totals only. The "who makes whom happy" tables rank by every glowing comment, repeats from one person included (`glowing`), instead of distinct happy people; the 6-counterpart minimum stays. Ground rule 5 now allows grumpiness to lower a published praise total | User's instruction: "we're not at all highlighting the grump". Over 2026-W37..W44, repeats within a pair were about 15% of glowing comments in the happy tables |
 | 2026-11-07 | **Praise is any glowing comment between people; popups chart praise per month.** `is_praise` drops its praise-word regex: a score of +0.4 or more decides, and `score --praise-only` is removed, so the praise boards need fully scored weeks. The regex missed 76 of 1,001 glowing comments in 2026-W37..W44, nearly all real praise ("I really like these annotations", "Nifty!", emoji); +0.3 would add about 4,400 mostly routine thanks. Full scoring of 2025-W45..2026-W36 started (about $55 of Max usage, 8 calls at once), so the boards and net praise can cover a year. The name popup gains a bar chart of the person's praise given and received per month, and the praise board a lookup box (email or name, with autocomplete); scrolling stays inside the popup. `sentiment_recent --praise-week` lets the popup file cover the boards' weeks | User's instructions: show people their progress without calling out negativity; "I don't trust that regex's can identify praise reliably" after reviewing the missed comments; "Yes, full scoring" |
 | 2026-11-07 | **Value ratio chart: a strip per org with a mark for each metric; the metric picker comes after it.** Each org keeps its large dot for the chosen metric, and the other metrics are small marks (one shape each, keyed above the chart) on a thin shaded strip from its lowest to its highest, at the same usage share. The metric bar and its definitions follow the chart, before the sections that show only the chosen metric | User's request, to show how much each org's ratio varies by metric. A radar of the five metrics was tried first and dropped: the usage axis must stay. No new data: `org_weekly.json`, already loaded, has every metric's share per org and week |
+| 2026-11-08 | **Balance page: people and scope.** Aggregate and cohort views plus an individual lookup, no rankings; boards celebrate milestones and contributions (newcomers reviewed, mentees who went on to review, first OWNERS file), never a growth score or a "least" list. Per-person growth slopes are computed only to be aggregated. Mechanical CLs (≥ 100 files, or ≥ 10 files with repetition ≥ 0.8) can be toggled off, with the cutoff shown in a chart. All 175 weeks plus `main` since 2017 | User's decisions after the first design (`docs/balance.md`) |
 
 ## Status
 
@@ -373,11 +374,14 @@ value_ratio(O, t) = O's share of Chromium addressed review comments
          the headline. Size is more subjective than "addressed or not".
      - **Storage:** store it as a small integer column in
        `labels.sqlite`, with its own definition version.
-7. **Author/reviewer balance page** (`web/balance.html`; design and first
-   2026-W44 measurements in `docs/balance.md`). Per CL: change complexity,
-   review difficulty and rework, each against what is typical for the
-   directories it touches. Waiting on the user's decisions listed there
-   (per-person views, patch-set fetches beyond W44, mechanical CLs).
+7. **Author/reviewer balance page** (`web/balance.html`; data, findings and
+   page design in `docs/balance.md`). `python3 -m cosh.balance
+   git|timeline|interdiff|cl` builds `data/private/balance*.sqlite` offline
+   (per CL: size, review, latency, rebase-proof rework, reverts; `main`
+   since 2017 with `Reviewed-by`). Analyses over all 175 weeks are done
+   (2026-11-08): AI-era trends, learning curves, growth paths, the
+   author-to-reviewer pipeline, mechanical CLs. Next: summaries and the
+   page.
 8. **Commits** (`docs/commits.md`): built 2026-11-07 as the fifth metric,
    with the Ratio toggle. Open: lines changed as a size-weighted variant
    (about an hour of local `--numstat`), and whether authorship also belongs
