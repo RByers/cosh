@@ -134,6 +134,7 @@ import {
   ratioOrgs,
   ratioSeries,
   gerritAuthoredUrl,
+  orgFilesPerCommitSpreads,
 } from './data.ts';
 import { formatRatio } from './scale.ts';
 import { fill, msg, type Vars } from './text.ts';
@@ -234,6 +235,7 @@ declare global {
       usageChart?: AnyChart;
       distChart?: AnyChart;
       perReviewChart?: AnyChart;
+      readonly reviewerChart?: AnyChart;
       render: () => void;
     };
   }
@@ -1186,8 +1188,7 @@ function renderDistribution(
       pick,
     );
   });
-  renderPerReview(data, state, weeksIn(Object.keys(data.reviewers.weeks), state.range), spreads.map((s) => s.org),
-    colorOf, theme, pick);
+  renderPerReview(data, state, spreads.map((s) => s.org), colorOf, theme, pick);
 }
 
 /** Where the addressed-comments-per-review axis ends: a few reviewers far
@@ -1200,15 +1201,19 @@ const PER_REVIEW_CAP = 9;
 function renderPerReview(
   data: Data,
   state: State,
-  weeks: string[],
   orgOrder: string[],
   colorOf: (org: string) => string,
   theme: Theme,
   pick: (id: number) => void,
 ) {
+  // Under Commits: each author's files changed per commit; else the metric per reviewed CL.
+  const authors = state.metric === 'commits' && data.authors ? data.authors : null;
+  const weeks = weeksIn(Object.keys((authors ?? data.reviewers).weeks), state.range);
   const num = perReviewMetric(state.metric);
-  const unit = `${metricUnit(num)} per review`;
-  const spreads = orgPerReviewSpreads(data.reviewers, weeks, state.metric, orgOrder);
+  const unit = authors ? msg('pr-unit-commits') : `${metricUnit(num)} per review`;
+  const spreads = authors
+    ? orgFilesPerCommitSpreads(authors, weeks, orgOrder)
+    : orgPerReviewSpreads(data.reviewers, weeks, state.metric, orgOrder);
 
   fill($('#pr-sub'), {
     weeks: weeks.length,
@@ -1216,8 +1221,11 @@ function renderPerReview(
     min: PER_REVIEW_MIN,
     cap: PER_REVIEW_CAP,
     m: num,
-    chosen: state.metric,
+    chosen: authors ? 'commits' : state.metric,
   });
+  const kind = authors ? 'commits' : 'review';
+  $('#pr-people').textContent = msg('pr-people', { kind });
+  $('#pr-pooled').textContent = msg('pr-pooled', { kind });
 
   const fmt = (v: number) => fmtNum(v, { maximumFractionDigits: v < 10 ? 2 : 0 });
   $('#pr-table tbody').replaceChildren(
@@ -1244,13 +1252,14 @@ function renderPerReview(
       $<HTMLCanvasElement>('#pr-chart'),
       spreads,
       colorOf,
-      (id) => reviewerHandle(data.reviewers, id),
+      (id) => personHandle(data, id),
       unit,
       theme,
       () => state.lbReviewer,
       pick,
-      { axisTitle: `${unit}, per reviewer over the range`, linear: true,
-        cap: num === 'addressed' ? PER_REVIEW_CAP : undefined },
+      // Files per commit run from 1 to hundreds (mass changes): a log axis, as in Contribution per person.
+      { axisTitle: `${unit}, per ${authors ? 'author' : 'reviewer'} over the range`, linear: !authors,
+        cap: !authors && num === 'addressed' ? PER_REVIEW_CAP : undefined },
     );
   });
 }
@@ -1519,7 +1528,12 @@ async function main(data: Data) {
     }
     // Queued after the charts, so it holds the new ones.
     drawChart(() => {
-      window.__cosh = { data, state, valueChart, parityChart, ratioChart, reviewChart, usageChart, distChart, perReviewChart, render };
+      window.__cosh = { data, state, valueChart, parityChart, ratioChart, reviewChart, usageChart, distChart, perReviewChart,
+        render,
+        // Built outside renderViews' queue too (picking a person), so read it when asked.
+        get reviewerChart() {
+          return reviewerChart;
+        } };
     });
   };
 

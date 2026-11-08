@@ -2584,8 +2584,30 @@ test('Commits: a fifth metric, loaded on demand, with the same section headings'
   assert.deepEqual(await headings(), before, 'headings stay put whatever the metric');
   assert.match(await page.evaluate(() => window.__cosh!.reviewChart!.options.scales.y.title.text), /^commits per week/);
   assert.equal(await page.$eval('#area-chart .ar-head .ar-vol', (e) => e.textContent), 'Commits');
-  // Contribution depth says it shows review comments under Commits.
-  assert.match(await page.$eval('#pr-sub', (e) => e.textContent!), /With Commits chosen, it shows review comments per review/);
+  // Contribution depth shows each author's files per commit under Commits.
+  assert.match(await page.$eval('#pr-sub', (e) => e.textContent!), /Each author's files changed per commit/);
+  assert.deepEqual(await page.$$eval('#pr-table th[scope="col"]', (ths) => [ths[1].textContent, ths[5].textContent]),
+    ['Authors', 'All commits']);
+  assert.match(await page.evaluate(() => window.__cosh!.perReviewChart!.options.scales.x.title.text),
+    /^files changed per commit, per author/);
+  // The person chart: commits per month on an axis of their own, each month's own total on hover.
+  const lbId = await page.$eval('#leaderboard-chart .lb-row', (r) => (r as HTMLElement).dataset.account!);
+  await page.click(`#leaderboard-chart .lb-row[data-account="${lbId}"]`);
+  await page.waitForFunction(() => !document.querySelector<HTMLElement>('#reviewer-detail')!.hidden);
+  await page.waitForFunction(() => !!window.__cosh!.reviewerChart);
+  const rd = await page.evaluate(() => {
+    const c = window.__cosh!.reviewerChart!;
+    const line = c.data.datasets.find((d) => (d as { yAxisID?: string }).yAxisID === 'y2')!;
+    const points = (line.data as (number | null)[]).filter((v) => v !== null).length;
+    const afterBody = c.options.plugins!.tooltip!.callbacks!.afterBody as unknown as (items: { dataIndex: number }[]) => string[];
+    return { axis: (c.options.scales as Record<string, { title: { text: string } }>).y2.title.text, label: line.label,
+      points, weeks: c.data.labels!.length, hover: afterBody([{ dataIndex: 0 }]) };
+  });
+  assert.equal(rd.axis, 'commits per month');
+  assert.equal(rd.label, 'Commits per month (3-month average)');
+  // One point per month the range touches.
+  assert.ok(rd.points >= Math.floor(rd.weeks / 5) && rd.points <= Math.ceil(rd.weeks / 4) + 1, JSON.stringify(rd));
+  assert.match(rd.hover[0], /^[\d,]+  commits in [A-Z][a-z]{2} \d{4}$/);
   // The tile totals the summary's commits over the range.
   const range = await page.evaluate(() => window.__cosh!.state.range);
   const weeks = new Set(weeksIn(summary.meta.weeks, range));

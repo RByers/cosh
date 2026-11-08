@@ -11,6 +11,8 @@ import {
   ratioOrgs,
   ratioSeries,
   gerritAuthoredUrl,
+  orgFilesPerCommitSpreads,
+  monthlyTotals,
   complexityGrid,
   complexityScale,
   gerritCommentUrl,
@@ -1345,4 +1347,27 @@ test('value shape bounds: whole decade at the center, edge just past the largest
   assert.equal(z.zero, true);
   // At least 0.1× at the center.
   assert.equal(shapeBounds([0.5, 2]).center, -1);
+});
+
+test('orgFilesPerCommitSpreads: files over commits per author, authors with too few commits left out', () => {
+  const b = authorBoard({
+    meta: { fold_into_other: ['gmail.com'] },
+    orgs: ['x.com', 'gmail.com'],
+    accounts: { 7: 'n7', 8: 'n8', 9: 'n9' },
+    weeks: { '2026-W43': [[7, 0, 2, 10], [9, 0, 1, 1]], '2026-W44': [[7, 0, 2, 2], [8, 1, 4, 40]] },
+  });
+  const s = orgFilesPerCommitSpreads(b, ['2026-W43', '2026-W44'], ['x.com'], 3);
+  // n7: 12 files / 4 commits; n8 (gmail.com) is Other; n9 has one commit.
+  assert.deepEqual(s.map((r) => [r.org, r.reviewers.map((x) => [x.id, x.value]), r.pooled]),
+    [['x.com', [[7, 3]], 3], [OTHER, [[8, 10]], 10]]);
+});
+
+test('monthlyTotals: calendar months by Thursday, a trailing mean, each week\'s month', () => {
+  // 2026-W40 starts on Sep 28, but its Thursday is Oct 1, so it is October's.
+  const weeks = ['2026-W39', '2026-W40', '2026-W41', '2026-W44', '2026-W45', '2026-W49'];
+  const m = monthlyTotals(weeks, [1, 2, 3, 4, 5, 6], 3);
+  assert.deepEqual(m.months.map((x) => [x.label, x.total, x.mean]),
+    [['Sep 2026', 1, 1], ['Oct 2026', 9, 5], ['Nov 2026', 5, 5], ['Dec 2026', 6, 20 / 3]]);
+  assert.deepEqual(m.monthOf, [0, 1, 1, 1, 2, 3]);
+  assert.deepEqual(m.months.map((x) => x.at), [0, 2, 4, 5]);
 });

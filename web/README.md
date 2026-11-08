@@ -271,8 +271,11 @@ there alone; presentation in `src/style.css` (`src/home.css` for the landing pag
    `renderSpreadChart`, on a linear axis from 0): just above the per-reviewer
    spread and on the same org rows, each reviewer's metric over the range divided by their reviewed
    CLs (CLs they commented on), or review comments per review under the
-   Reviewed CLs and Commits metrics. Its heading, “Contribution depth”, stays the
-   same whatever the metric, like every section's.
+   Reviewed CLs metric. Under Commits it shows each author's files changed
+   per commit instead (`orgFilesPerCommitSpreads`, from `author_weekly.json`'s
+   files column: every file their counted commits change), on a log axis, for
+   authors with at least 3 commits. Its heading, “Contribution depth”, stays
+   the same whatever the metric, like every section's.
    Only reviewers with at least 3 reviewed CLs (`PER_REVIEW_MIN`) and a
    review comment count; under addressed comments those with none addressed
    sit at 0. The table gives each row's reviewers, quartiles and “All
@@ -301,8 +304,10 @@ there alone; presentation in `src/style.css` (`src/home.css` for the landing pag
    from `reviewer_weekly.json` (no extra data) and has the link to the CLs
    they commented on, on Gerrit. Under Commits, the leaderboard and the
    per-person spread rank commit authors (`author_weekly.json`), and the
-   weekly chart adds their commits as a line, with a link to their
-   merged CLs.
+   weekly chart adds their commits as a line on an axis of its own: commits
+   per calendar month as a trailing 3-month average (`monthlyTotals`), one
+   point per month. Hovering a week gives its month's own total, not the
+   average. It also links to their merged CLs.
 12. **How review threads are classified** (once some week is classified):
    one bar splitting the range's classified reviewer-started threads by how
    each was decided (owner's "Done", Haiku addressed, Haiku no change, no

@@ -100,7 +100,7 @@ EXAMPLES_PER_OUTCOME = 3          # per classified week
 EXAMPLE_WEEKS = 52                # the most recent classified weeks only
 EXAMPLE_MESSAGES, EXAMPLE_CHARS = 8, 700
 REVIEWER_COLUMNS = ["account_id", "org", "comments", "cls", "chars", "addressed"]
-AUTHOR_COLUMNS = ["account_id", "org", "commits"]
+AUTHOR_COLUMNS = ["account_id", "org", "commits", "files"]
 
 # Non-bot accounts on human-owned CLs on main. CROSS JOIN pins the join order
 # (SQLite never reorders it): scan the comments, then look up the CL and the
@@ -220,7 +220,7 @@ def comment_facts(db, resolve, scope, weeks=None, own=None):
         if f is None:
             f = facts[(week, aid, org)] = dict(week=week, account_id=aid, email=email, name=name,
                                                org=org, comments=0, chars=0, ai=0, post_merge=0,
-                                               cls=set(), addressed=0, pending=0, commits=0)
+                                               cls=set(), addressed=0, pending=0, commits=0, files=0)
         return f
 
     # Comments and chars: grouped per day, so the org is resolved as of the day
@@ -293,8 +293,8 @@ def commit_facts(db, resolve, scope, facts, areas, weeks=None):
         dirs_of[cid].append(d)
     included = {}
     out = defaultdict(lambda: dict(commits=0, authors=set()))
-    for cid, cl, email, week, day in db.execute(
-            "SELECT commit_id, change_number, author_email, iso_week, substr(landed_at, 1, 10) "
+    for cid, cl, email, week, day, n_files in db.execute(
+            "SELECT commit_id, change_number, author_email, iso_week, substr(landed_at, 1, 10), n_files "
             "FROM commits WHERE is_bot = 0"):
         if not keep(week):
             continue
@@ -318,9 +318,10 @@ def commit_facts(db, resolve, scope, facts, areas, weeks=None):
             gerrit_email, name = names.get(aid, (None, None))
             f = index[(week, aid, org)] = dict(week=week, account_id=aid, email=gerrit_email, name=name,
                                                org=org, comments=0, chars=0, ai=0, post_merge=0,
-                                               cls=set(), addressed=0, pending=0, commits=0)
+                                               cls=set(), addressed=0, pending=0, commits=0, files=0)
             facts.append(f)
         f["commits"] += 1
+        f["files"] += n_files     # every file it changes, in scope or not: its size
     return out
 
 
@@ -630,7 +631,9 @@ def write_reviewers(facts, path):
 def write_authors(facts, path):
     """author_weekly.json: every commit author's in-scope commits per (week,
     account, org), like reviewer_weekly.json (same compact layout, Gerrit
-    accounts and emails), with [account_id, org index, commits] rows. Org is
+    accounts and emails), with [account_id, org index, commits, files] rows,
+    files being every file those commits change, in scope or not (the
+    page's files per commit). Org is
     the git author's, before the fold_into_other fold. Separate from the
     reviewers, as most authors review little; the web UI loads it only for
     the Commits metric."""
@@ -642,15 +645,16 @@ def write_authors(facts, path):
         names[aid] = f["name"] or (f["email"] or "").split("@")[0] or f"Account {aid}"
         if f["email"]:
             emails[aid] = f["email"]
-        weeks[f["week"]].append((aid, f["org"], f["commits"]))
-    orgs = sorted({org for rows in weeks.values() for _, org, _ in rows})
+        weeks[f["week"]].append((aid, f["org"], f["commits"], f["files"]))
+    orgs = sorted({row[1] for rows in weeks.values() for row in rows})
     org_index = {o: i for i, o in enumerate(orgs)}
     meta = dict(generated_at=store.now_iso(), columns=AUTHOR_COLUMNS,
                 fold_into_other=sorted(FOLD_INTO_OTHER),
                 scope="every commit author, one row per (week, account, org): human commits on main "
                       "touching an in-scope file, by week landed, with the git author's org (before "
                       "the fold_into_other fold). The account is the Gerrit account with the git "
-                      "author's email, else the CL owner's.")
+                      "author's email, else the CL owner's. files: every file those commits change, "
+                      "in scope or not.")
     with _atomic_open(path) as fh:
         fh.write('{"meta": %s,\n "orgs": %s,\n "accounts": {' % (json.dumps(meta), json.dumps(orgs)))
         fh.write(",".join('\n  "%d": %s' % (aid, json.dumps(names[aid], ensure_ascii=False))
@@ -662,7 +666,7 @@ def write_authors(facts, path):
         for i, (week, rows) in enumerate(sorted(weeks.items())):
             rows.sort(key=lambda r: (-r[2], r[0], r[1]))
             fh.write('%s\n  %s: [' % ("," if i else "", json.dumps(week)))
-            fh.write(",".join("\n   [%d,%d,%d]" % (aid, org_index[org], n) for aid, org, n in rows))
+            fh.write(",".join("\n   [%d,%d,%d,%d]" % (aid, org_index[org], n, k) for aid, org, n, k in rows))
             fh.write("\n  ]")
         fh.write("\n }\n}\n")
 

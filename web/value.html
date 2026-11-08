@@ -665,34 +665,42 @@
 
       <section id="per-review" class="card" aria-labelledby="pr-title">
         <a class="card-anchor" href="#per-review" aria-label="Link to this section" title="Link to this section">#</a>
-        <!-- With Reviewed CLs or Commits chosen, this chart shows review comments per review. -->
+        <!-- With Reviewed CLs chosen, this chart shows review comments per review; with Commits, files per commit. -->
         <h2 id="pr-title">Contribution depth</h2>
         <p id="pr-sub" class="sub"></p>
         <template data-msg="pr-sub">
           <span data-if="!weeks">No reviewer data in this range.</span>
-          <span data-if="weeks">Each reviewer's <slot name="metric"></slot> over the range divided by
+          <span data-if="weeks"><span data-if="chosen=commits">Each author's files changed per commit over the
+            range: every file their counted commits change, on the selected paths or not, divided by those commits.
+            It is a rough measure of how big their changes are. Dots, rows and boxes are as in Contribution per
+            person. Only authors with at least <slot name="min"></slot> commits count, so one commit doesn't decide a
+            dot. “All commits” pools the whole row (its files over its commits), so busy authors weigh more. Hover a
+            dot for the author; click it for their weekly chart.</span><span data-if="chosen!=commits">Each reviewer's <slot name="metric"></slot> over the range divided by
             the CLs they commented on, which likely reflects how thorough they are or how complex their CLs are. Dots,
             rows and boxes are as in Contribution per person. Only reviewers with at least <slot name="min"></slot>
             reviewed CLs count, so one CL doesn't decide a dot<span data-if="m=addressed">; those with none addressed
             sit at 0, and the few above <slot name="cap"></slot> sit in the right margin</span>.
             “All reviews” pools the whole row (its total over its reviews), so busy reviewers weigh more. The range's
             edges are approximate, as in the complexity chart. Hover a dot for the reviewer; click it for their weekly
-            chart.<span data-if="chosen=commits"> With Commits chosen, it shows review comments per review, since
-            commits have no per-review figure.</span></span>
+            chart.</span></span>
         </template>
+        <template data-msg="pr-people"><span data-if="kind=review">Reviewers</span><span data-if="kind=commits">Authors</span></template>
+        <template data-msg="pr-pooled"><span data-if="kind=review">All reviews</span><span data-if="kind=commits">All commits</span></template>
+        <!-- The values' name with Commits chosen, in the axis title and hover text. -->
+        <template data-msg="pr-unit-commits">files changed per commit</template>
         <div id="pr-box" class="chart">
-          <canvas id="pr-chart" role="img" aria-label="Each reviewer's metric per reviewed CL over the selected range, one row of dots per organization, with each row's middle half boxed and its median marked; the table below lists the figures"></canvas>
+          <canvas id="pr-chart" role="img" aria-label="Each reviewer's metric per reviewed CL (each author's files per commit, under Commits) over the selected range, one row of dots per organization, with each row's middle half boxed and its median marked; the table below lists the figures"></canvas>
         </div>
         <div class="table-wrap">
           <table id="pr-table" class="dist-table" aria-labelledby="pr-title">
             <thead>
               <tr>
                 <th scope="col">Org</th>
-                <th scope="col">Reviewers</th>
+                <th scope="col" id="pr-people">Reviewers</th>
                 <th scope="col">25th percentile</th>
                 <th scope="col">Median</th>
                 <th scope="col">75th percentile</th>
-                <th scope="col">All reviews</th>
+                <th scope="col" id="pr-pooled">All reviews</th>
               </tr>
             </thead>
             <tbody></tbody>
@@ -741,7 +749,7 @@
           </div>
           <p id="rd-sub" class="sub"></p>
           <template data-msg="rd-sub">
-            <span data-if="commits"><slot name="commits"></slot> commits (the line) and </span><slot name="total"></slot>
+            <span data-if="commits"><slot name="commits"></slot> commits (the line: commits per month, as a 3-month average) and </span><slot name="total"></slot>
             review comments in the range<span data-if="classified">;
             <slot name="addressed"></slot> addressed in the <span data-if="!all"><slot name="classified"></slot> classified </span>week<span data-if="classified!=1">s</span><span data-if="all"> shown</span>
             (the filled bars).</span><span data-if="!classified">. No week in this range is classified yet, so only

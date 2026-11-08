@@ -667,30 +667,32 @@ export function compareWeeks(a: string, b: string): number {
  * [account_id, index into `orgs`, comments, cls, chars]. Orgs are resolved
  * before org_weekly's fold of `meta.fold_into_other` into "Other". */
 export type ReviewerRow = [account: number, org: number, comments: number, cls: number, chars: number,
-  addressed?: number, commits?: number];
+  addressed?: number, commits?: number, files?: number];
 
 /** Column of each metric in ReviewerRow and AreaBoard rows. Files written
  * before the addressed metric have no column 5; it reads as 0. Commits
  * (column 6) are only in the boards authorBoard and commitBoard build. */
 const METRIC_INDEX: Record<Metric, 2 | 3 | 4 | 5 | 6> = { comments: 2, cls: 3, chars: 4, addressed: 5, commits: 6 };
 
-/** summaries/author_weekly.json: [account, org, commits] rows per week, with
- * accounts, emails and orgs as in reviewer_weekly.json. */
+/** summaries/author_weekly.json: [account, org, commits, files] rows per
+ * week, with accounts, emails and orgs as in reviewer_weekly.json. files is
+ * every file those commits change (absent in files written before it). */
 export interface AuthorFile {
   meta: { fold_into_other: string[]; [k: string]: unknown };
   orgs: string[];
   accounts: Record<string, string>;
   emails?: Record<string, string>;
-  weeks: Record<string, [account: number, org: number, commits: number][]>;
+  weeks: Record<string, [account: number, org: number, commits: number, files?: number][]>;
 }
 
 /** The commit authors as a ReviewerBoard whose rows have only commits
- * (column 6), so the per-person sections read it like the reviewers'. Every
+ * (column 6) and the files they change (column 7), so the per-person
+ * sections read it like the reviewers'. Every
  * row counts as the author's org: their org is the one most of their commits
  * resolve to. */
 export function authorBoard(file: AuthorFile): ReviewerBoard {
   const weeks: Record<string, ReviewerRow[]> = {};
-  for (const [w, rows] of Object.entries(file.weeks)) weeks[w] = rows.map(([a, o, n]) => [a, o, 0, 0, 0, 0, n]);
+  for (const [w, rows] of Object.entries(file.weeks)) weeks[w] = rows.map(([a, o, n, k]) => [a, o, 0, 0, 0, 0, n, k ?? 0]);
   return { meta: { ...file.meta, authors: true }, orgs: file.orgs, accounts: file.accounts, emails: file.emails, weeks };
 }
 
@@ -1025,6 +1027,71 @@ export function orgPerReviewSpreads(
     }
     return { ...s, pooled: den ? num / den : 0 };
   });
+}
+
+/** Each author's files changed per commit over the weeks (an author board,
+ * see authorBoard), grouped into the given org rows like
+ * orgPerReviewSpreads: a rough measure of how big their changes are. Authors
+ * with under `minCommits` commits are left out; `pooled` is a row's files
+ * over its commits. */
+export function orgFilesPerCommitSpreads(
+  authors: ReviewerBoard,
+  weeks: string | string[],
+  order: readonly string[],
+  minCommits = PER_REVIEW_MIN,
+): OrgPerReviewSpread[] {
+  const files = new Map<number, number>();
+  for (const w of asList(weeks)) for (const r of authors.weeks[w] ?? []) files.set(r[0], (files.get(r[0]) ?? 0) + (r[7] ?? 0));
+  const rows = reviewerTotals(authors, weeks, 'commits').filter((r) => r.value >= minCommits);
+  const commitsOf = new Map(rows.map((r) => [r.id, r.value]));
+  const spreads = orgSpreads(
+    rows.map((r) => ({ id: r.id, value: (files.get(r.id) ?? 0) / r.value, org: r.org })),
+    authors.meta.fold_into_other ?? [],
+    [],
+    order,
+  );
+  return spreads.map((s) => {
+    let num = 0;
+    let den = 0;
+    for (const { id } of s.reviewers) {
+      num += files.get(id) ?? 0;
+      den += commitsOf.get(id)!;
+    }
+    return { ...s, pooled: den ? num / den : 0 };
+  });
+}
+
+/** Weekly counts (`values[i]` in `weeks[i]`) as calendar months, by each
+ * week's Thursday (weekMonth): each month's total, a trailing mean over it
+ * and the `window - 1` months before it (fewer at the start of the weeks),
+ * the index of its middle week (where a chart plots it), and for each week
+ * the index of its month. */
+export function monthlyTotals(
+  weeks: readonly string[],
+  values: readonly number[],
+  window = 3,
+): { months: { label: string; total: number; mean: number; at: number }[]; monthOf: number[] } {
+  const months: { label: string; total: number; mean: number; at: number; first: number; last: number }[] = [];
+  const monthOf: number[] = [];
+  let key = '';
+  weeks.forEach((w, i) => {
+    const m = weekMonth(w);
+    const k = `${m.year}-${m.month}`;
+    if (k !== key) {
+      key = k;
+      months.push({ label: `${MONTHS[m.month]} ${m.year}`, total: 0, mean: 0, at: i, first: i, last: i });
+    }
+    const cur = months[months.length - 1];
+    cur.total += values[i] ?? 0;
+    cur.last = i;
+    monthOf.push(months.length - 1);
+  });
+  months.forEach((m, j) => {
+    const span = months.slice(Math.max(0, j - window + 1), j + 1);
+    m.mean = span.reduce((s, x) => s + x.total, 0) / span.length;
+    m.at = Math.floor((m.first + m.last) / 2);
+  });
+  return { months: months.map(({ label, total, mean, at }) => ({ label, total, mean, at })), monthOf };
 }
 
 /** How hover cards name a reviewer: their Gerrit email, which is shorter

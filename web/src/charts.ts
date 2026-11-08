@@ -25,7 +25,7 @@ import {
 import { fmtInt, fmtNum } from './format.ts';
 import { toFont, toPadding } from 'chart.js/helpers';
 import type { OrgSpread, RadarWeekly, RatioPoint } from './data.ts';
-import { browserShare, monthTicks, OTHER, weekTitle } from './data.ts';
+import { browserShare, monthlyTotals, monthTicks, OTHER, weekTitle } from './data.ts';
 import { formatRatio } from './scale.ts';
 
 Chart.register(
@@ -823,13 +823,20 @@ export function renderReviewerChart(
   addressed: (number | null)[],
   color: string,
   theme: Theme,
-  /** Their commits per week, drawn as a line; null if not loaded. */
+  /** Their commits per week; null if not loaded. Drawn per calendar month,
+   * as a trailing 3-month mean on an axis of its own; hovering a week gives
+   * its month's own total. */
   commits: number[] | null = null,
 ): Chart<'bar'> {
   const base = baseOptions(theme);
-  const commitLine = commits && commits.some((v) => v > 0)
-    ? [{ type: 'line' as const, label: 'Commits', data: commits, borderColor: theme.text, backgroundColor: theme.text,
-        borderWidth: 1.5, pointRadius: 0, pointStyle: 'line' as const, order: -1 }]
+  const monthly = commits && commits.some((v) => v > 0) ? monthlyTotals(weeks, commits, 3) : null;
+  // One point per month, at its middle week; the line spans the weeks between.
+  const lineData: (number | null)[] = weeks.map(() => null);
+  for (const m of monthly?.months ?? []) lineData[m.at] = m.mean;
+  const commitLine = monthly
+    ? [{ type: 'line' as const, label: 'Commits per month (3-month average)', data: lineData, yAxisID: 'y2',
+        spanGaps: true, borderColor: theme.text, backgroundColor: theme.text, borderWidth: 1.5, pointRadius: 0,
+        pointHoverRadius: 0, pointStyle: 'line' as const, order: -1 }]
     : [];
   return new Chart(canvas, {
     type: 'bar',
@@ -854,9 +861,17 @@ export function renderReviewerChart(
           usePointStyle: true, pointStyleWidth: 16 } },
         tooltip: {
           ...base.plugins.tooltip,
+          // The commits line's averages stay out of the tooltip: it gives the
+          // hovered week's month and that month's own total instead.
+          filter: (item) => item.dataset.yAxisID !== 'y2',
           callbacks: {
             title: weekTooltipTitle,
             label: (ctx) => (ctx.raw === null ? `${ctx.dataset.label}: not classified` : `${ctx.raw}  ${ctx.dataset.label}`),
+            afterBody: (items) => {
+              if (!monthly || !items.length) return [];
+              const m = monthly.months[monthly.monthOf[items[0].dataIndex]];
+              return [`${fmtInt(m.total)}  commits in ${m.label}`];
+            },
           },
         },
       },
@@ -866,11 +881,22 @@ export function renderReviewerChart(
         y: {
           stacked: false,
           min: 0,
-          title: { display: true, text: commitLine.length ? 'per week' : 'comments per week', color: theme.muted },
+          title: { display: true, text: 'comments per week', color: theme.muted },
           border: { display: false },
           grid: { color: theme.grid },
           ticks: { color: theme.muted, precision: 0 },
         },
+        // Months hold about four weeks: commits get a scale of their own.
+        ...(monthly
+          ? { y2: {
+              position: 'right' as const,
+              min: 0,
+              title: { display: true, text: 'commits per month', color: theme.muted },
+              border: { display: false },
+              grid: { drawOnChartArea: false },
+              ticks: { color: theme.muted, precision: 0 },
+            } }
+          : {}),
       },
     },
   });

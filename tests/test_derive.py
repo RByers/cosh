@@ -630,9 +630,10 @@ class CommitsTest(unittest.TestCase):
                                   "igalia.com": (0, 1, 1, 0.5)})
         # Authors: the Gerrit account with the git author's email, else the CL owner.
         a = files["author_weekly"]
-        self.assertEqual(a["meta"]["columns"], ["account_id", "org", "commits"])
-        self.assertEqual(sorted((r[0], a["orgs"][r[1]], r[2]) for r in a["weeks"]["2026-W44"]),
-                         [(5, "igalia.com", 1), (6, "intel.com", 1)])
+        self.assertEqual(a["meta"]["columns"], ["account_id", "org", "commits", "files"])
+        # files: every file the commits change, in scope or not (a's commit touches chrome/ too).
+        self.assertEqual(sorted((r[0], a["orgs"][r[1]], r[2], r[3]) for r in a["weeks"]["2026-W44"]),
+                         [(5, "igalia.com", 1, 2), (6, "intel.com", 1, 2)])
         self.assertEqual(a["emails"], {"5": "a@igalia.com", "6": "c-gerrit@intel.com"})
         # The reviewers' file is unchanged by commits.
         self.assertEqual([r[0] for r in files["reviewer_weekly"]["weeks"]["2026-W44"]], [2])
