@@ -2397,6 +2397,10 @@ test('the Review Tone page: the Dates switch picks all, a year or a month for ev
   assert.equal(await shown('#period-year-box'), false);
   assert.equal(await shown('#period-month-box'), false);
   const all = { subs: await subs(), n: await n(), trend: await page.$eval('#trend-sub', (e) => e.textContent!) };
+  // All dates: every comment from Dec 2025 on, the 5% sample before, and a line between.
+  assert.match(all.trend, /^Every human review comment from Dec 2025 on: [\d,]+ substantive comments/);
+  assert.match(all.trend, /Before that, a 5% random sample: [\d,]+ substantive comments over \d+ months/);
+  assert.match(all.trend, /The dashed line marks where the sample ends/);
 
   // A year: the newest by default; every section's dates change.
   await page.click('#period input[value="year"]');
@@ -2409,6 +2413,8 @@ test('the Review Tone page: the Dates switch picks all, a year or a month for ev
   for (let i = 0; i < year.length; i++) assert.notEqual(year[i], all.subs[i], year[i]);
   assert.ok((await n()) < all.n);
   assert.notEqual(await page.$eval('#trend-sub', (e) => e.textContent!), all.trend);
+  // The newest year has no sampled months, so no sample and no line.
+  assert.doesNotMatch(await page.$eval('#trend-sub', (e) => e.textContent!), /sample|dashed/);
 
   // A month: the newest by default, a row per week, and the trend marks it.
   await page.click('#period input[value="month"]');

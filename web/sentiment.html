@@ -82,12 +82,19 @@
         <h2 id="trend-title">Review tone over time</h2>
         <p id="trend-sub" class="sub"></p>
         <template data-msg="trend-sub">
-          A <slot name="rate"></slot> random sample of human review comments: <slot name="n"></slot>
-          substantive comments over <slot name="months"></slot> months, about <slot name="perMonth"></slot> a
-          month. Each point is a <slot name="window"></slot>-month rolling average centred on its month, and the
-          shaded band is its 95% interval. Wiggles inside the band are mostly noise.<span data-if="mark"> The
-          larger dot is <slot name="mark"></slot>.</span>
+          <span data-if="nFull">Every human review comment from <slot name="fullFrom"></slot> on:
+          <slot name="nFull"></slot> substantive comments, about <slot name="fullPerMonth"></slot> a month.</span>
+          <span data-if="nSample"><span data-if="nFull">Before that, a</span><span data-if="!nFull">A</span>
+          <slot name="rate"></slot> random sample: <slot name="nSample"></slot> substantive comments over
+          <slot name="sampleMonths"></slot> months, about <slot name="perMonth"></slot> a month.</span> Each point is
+          a <slot name="window"></slot>-month rolling average centred on its month, and the shaded band is its 95%
+          interval. Wiggles inside the band are mostly noise.<span data-if="boundary"> The dashed line marks where
+          the sample ends; the bands narrow after it.</span><span data-if="mark"> The larger dot is
+          <slot name="mark"></slot>.</span>
         </template>
+        <template data-msg="trend-footer-full"><slot name="n"></slot> comments</template>
+        <template data-msg="trend-footer-sample"><slot name="n"></slot> sampled comments (<slot name="rate"></slot>)</template>
+        <template data-msg="trend-footer-mixed"><slot name="n"></slot> comments, some from the <slot name="rate"></slot> sample</template>
         <h3>Average score</h3>
         <div class="chart">
           <canvas id="trend-mean" role="img" aria-label="Average review comment score per month, a 3-month rolling average with a 95% band."></canvas>
@@ -311,8 +318,9 @@
         <p class="note">
           The prompt was tuned against 261 comments labelled by Claude Opus and spot-checked by hand. On
           those it agrees with Opus's labels to within 0.05 on average (Pearson r 0.92–0.93), and puts 88–90% of comments in the same class of
-          negative, neutral or positive. The trend uses a deterministic 5% sample of comments; the last two
-          months, the leaderboards and the sample comments use every comment in their weeks. Code and method:
+          negative, neutral or positive. The trend uses every comment from December 2025 on, and a deterministic
+          5% sample of comments before that; the leaderboards and the sample comments use every comment in their
+          weeks. Code and method:
           <a target="_blank" rel="noopener" href="https://github.com/RByers/cosh/blob/main/docs/sentiment.md">docs/sentiment.md</a>.
         </p>
         <details class="prompt">

@@ -522,53 +522,93 @@ def _wilson(k, n, z=1.96):
 
 def _point(v):
     """Mean (95% CI) and shares glowing, angry and AI friction (Wilson 95%
-    CIs) of [(score, ai), ...]."""
+    CIs) of [(score, ai, weight), ...]. A sampled comment weighs 1/rate, so
+    a window that pools sampled and complete months counts each month at its
+    true size; the intervals use the effective size (sum w)^2 / sum w^2,
+    which is just n when the weights are equal."""
     n = len(v)
-    s = [x[0] for x in v]
-    mean = sum(s) / n
-    sd = math.sqrt(sum((x - mean) ** 2 for x in s) / max(1, n - 1))
-    g, a, ai = sum(x >= GLOWING for x in s), sum(x <= ANGRY for x in s), sum(1 for x in v if x[1])
-    h = 1.96 * sd / math.sqrt(n)
+    tw = sum(x[2] for x in v)
+    n_eff = tw * tw / sum(x[2] * x[2] for x in v)
+    mean = sum(x[0] * x[2] for x in v) / tw
+    sd = math.sqrt(sum(x[2] * (x[0] - mean) ** 2 for x in v) / tw * n_eff / max(1, n_eff - 1))
+    share = lambda f: sum(x[2] for x in v if f(x)) / tw
+    g, a, ai = share(lambda x: x[0] >= GLOWING), share(lambda x: x[0] <= ANGRY), share(lambda x: x[1])
+    h = 1.96 * sd / math.sqrt(n_eff)
     return dict(n=n, mean=round(mean, 4), lo=round(mean - h, 4), hi=round(mean + h, 4),
-                glowing=round(g / n, 4), glowing_ci=_wilson(g, n), angry=round(a / n, 4), angry_ci=_wilson(a, n),
-                ai=round(ai / n, 4), ai_ci=_wilson(ai, n))
+                glowing=round(g, 4), glowing_ci=_wilson(g * n_eff, n_eff), angry=round(a, 4),
+                angry_ci=_wilson(a * n_eff, n_eff), ai=round(ai, 4), ai_ci=_wilson(ai * n_eff, n_eff))
 
 
-def trend(rows, scores, window=ROLL):
-    """The monthly trend of a sample: for each whole month, its own figures
-    and those of a centred `window` of months (two at the ends), substantive
-    comments only. Aggregate only: nothing is broken down by person or org."""
+def full_months(weeks):
+    """The calendar months ('2026-10') that lie wholly inside `weeks` (ISO
+    weeks, oldest first)."""
+    if not weeks:
+        return set()
+    start, end = week_bounds(weeks[0])[0], week_bounds(weeks[-1])[1]
+    out, y, m = set(), int(start[:4]), int(start[5:7])
+    while f"{y:04d}-{m:02d}" <= end[:7]:
+        nxt = f"{y + m // 12:04d}-{m % 12 + 1:02d}-01 00:00:00"
+        if f"{y:04d}-{m:02d}-01 00:00:00" >= start and nxt <= end:
+            out.add(f"{y:04d}-{m:02d}")
+        y, m = y + m // 12, m % 12 + 1
+    return out
+
+
+def trend(rows, scores, window=ROLL, rate=1.0, full_rows=(), full=frozenset()):
+    """The monthly trend: for each whole month, its own figures and those of
+    a centred `window` of months (two at the ends), substantive comments
+    only. `rows` are a sample at `rate`; the months in `full` use every
+    comment (`full_rows`) instead, and are marked `full`. Aggregate only:
+    nothing is broken down by person or org."""
     by = defaultdict(list)
-    n_trivial = 0
-    for r in rows:
+    n_trivial = missing = 0
+    used = [(r, 1 / rate) for r in rows if r["written_at"][:7] not in full] + \
+           [(r, 1.0) for r in full_rows if r["written_at"][:7] in full]
+    for r, w in used:
         if r["id"] not in scores:
+            missing += 1
             continue
         if TRIVIAL.match(r["text"]):
             n_trivial += 1
             continue
         s = scores[r["id"]]
-        by[r["written_at"][:7]].append((s[0], s[1]))
-    sizes = sorted(len(v) for v in by.values())
+        by[r["written_at"][:7]].append((s[0], s[1], w))
+    sizes = sorted(sum(x[2] for x in v) for v in by.values())
     cut = MIN_MONTH * sizes[len(sizes) // 2] if sizes else 0
-    months = [m for m in sorted(by) if len(by[m]) >= cut]
+    months = [m for m in sorted(by) if sum(x[2] for x in by[m]) >= cut]
     h = window // 2
     out = []
     for i, m in enumerate(months):
         span = months[max(0, i - h):i + h + 1]
-        out.append(dict(m=m, month=_point(by[m]), span=[span[0], span[-1]],
-                        rolling=_point([x for k in span for x in by[k]])))
+        out.append(dict(m=m, full=m in full, month=_point(by[m]), span=[span[0], span[-1]],
+                        rolling=dict(_point([x for k in span for x in by[k]]), full=all(k in full for k in span))))
     return dict(window=window, months=out, n=sum(len(by[m]) for m in months), n_trivial=n_trivial,
-                missing=sum(1 for r in rows if r["id"] not in scores))
+                missing=missing)
 
 
-def write_summary(name, data_dir=store.DATA_DIR, version=None, out=None, authors=DEFAULT_AUTHORS):
+def trend_rows(name, weeks=(), data_dir=store.DATA_DIR):
+    """The rows behind the trend: the sample set `name`, and every comment
+    of `weeks` (fully scored weeks) for the months they wholly cover."""
+    sample = read_jsonl(os.path.join(out_dir(data_dir), f"comments-{name}.jsonl"))
+    months = full_months(list(weeks))
+    rows = [r for w in weeks for r in read_jsonl(os.path.join(out_dir(data_dir), f"comments-{w}.jsonl"))
+            if r["written_at"][:7] in months]
+    return sample, rows, months
+
+
+def write_summary(name, data_dir=store.DATA_DIR, version=None, out=None, authors=DEFAULT_AUTHORS,
+                  weeks=(), loaded=None, scores=None):
     """summaries/sentiment_monthly.json (or its .<authors> version) from a
-    scored sample set, counting only comments written by `authors`."""
-    rows = by_authors(read_jsonl(os.path.join(out_dir(data_dir), f"comments-{name}.jsonl")), authors, data_dir)
-    t = trend(rows, load_scores(None, data_dir, version))
+    scored sample set, with every comment for the months that `weeks` (fully
+    scored) wholly cover, counting only comments written by `authors`."""
+    sample, rows, months = loaded or trend_rows(name, weeks, data_dir)
     m = re.search(r"(\d+(?:\.\d+)?)pct", name)
+    rate = float(m.group(1)) / 100 if m else None
+    committers = None if authors == "everyone" else committer_accounts(data_dir)
+    t = trend(by_authors(sample, authors, data_dir, committers), scores or load_scores(None, data_dir, version),
+              rate=rate or 1.0, full_rows=by_authors(rows, authors, data_dir, committers), full=months)
     doc = dict(generated_at=store.now_iso(), prompt=version or PROMPT_VERSION, model="haiku", sample=name,
-               rate=float(m.group(1)) / 100 if m else None, authors=authors,
+               rate=rate, full_weeks=[weeks[0], weeks[-1]] if weeks else None, authors=authors,
                thresholds=dict(glowing=GLOWING, angry=ANGRY), **t)
     out = out or authors_path(SUMMARY, authors)
     os.makedirs(os.path.dirname(out), exist_ok=True)
@@ -853,6 +893,9 @@ def main(argv):
                     help="collect: a deterministic sample at this rate over --week's range, written as "
                          "comments-<name>.jsonl; score/summary: use with --name")
     ap.add_argument("--name", default=None, help="name of a sample set, e.g. sample-5pct")
+    ap.add_argument("--full-weeks", default=None,
+                    help="summary: fully scored weeks, e.g. 2025-W45:2026-W44; the months they wholly cover "
+                         "use every comment instead of the sample")
     ap.add_argument("--prompt", default=None, help=f"prompt version (default {PROMPT_VERSION})")
     ap.add_argument("--jobs", type=int, default=8)
     ap.add_argument("--sandbox", choices=["auto", "bwrap", "none"], default="auto",
@@ -907,8 +950,11 @@ def main(argv):
     else:
         if not a.name:
             ap.error("summary needs --name (a scored sample set)")
+        full = weeks_in(a.full_weeks) if a.full_weeks else []
+        loaded, scores = trend_rows(a.name, full), load_scores(None, version=a.prompt)
         for g in groups:
-            p, doc = write_summary(a.name, version=a.prompt, out=a.out, authors=g)
+            p, doc = write_summary(a.name, version=a.prompt, out=a.out, authors=g, weeks=full, loaded=loaded,
+                                   scores=scores)
             print(f"{g}: {len(doc['months'])} months, {doc['n']} substantive comments, {doc['missing']} unscored "
                   f"-> {p}", file=sys.stderr)
 

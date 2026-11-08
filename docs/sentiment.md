@@ -4,7 +4,8 @@
 Gerrit. The Review Tone dashboard (`web/sentiment.html`) shows:
 
 - a monthly trend of the whole project's review tone
-  (`summaries/sentiment_monthly.json`, from a 5% sample);
+  (`summaries/sentiment_monthly.json`: every comment of the fully scored
+  months, a 5% sample before them);
 - every comment of the fully scored weeks, "who makes whom happy" and an
   anonymous list of AI-friction comments (`summaries/sentiment_recent.json`,
   `cosh.sentiment_recent`);
@@ -17,8 +18,9 @@ fully scored weeks, one calendar year or one calendar month (the newest by
 default), kept in the URL as `?period=2026` or `?period=2026-10`. A week
 belongs to the month and year of its Thursday (`S.periods`). The summaries
 hold every section's figures for each such period, so the page only picks
-one. The trend covers its own 5% sample: all of it, the chosen year, or the
-chosen month's year with that month marked.
+one. The trend covers its own range (all of it, the chosen year, or the
+chosen month's year with that month marked), which reaches back before
+the fully scored weeks through the 5% sample.
 
 ## The principle: our pages never point fingers
 
@@ -75,7 +77,8 @@ python3 -m cosh.sentiment collect --week 2023-W26:2026-W44 --sample 0.05 --name 
 python3 -m cosh.sentiment score --name sample-5pct
 # The public monthly trend -> summaries/sentiment_monthly.json (committers) and its
 # .everyone / .noncommitters versions, as for praise, samples and sentiment_recent below
-python3 -m cosh.sentiment summary --name sample-5pct
+# --full-weeks: months wholly inside these (fully scored) weeks use every comment
+python3 -m cosh.sentiment summary --name sample-5pct --full-weeks 2025-W45:2026-W44
 # Whole weeks can be collected and scored too (comments-<week>.jsonl, ~25 s a week to collect)
 python3 -m cosh.sentiment collect --week 2026-W44
 python3 -m cosh.sentiment score --week 2026-W44                # every comment
@@ -182,13 +185,21 @@ The labels (comment id, score, AI flag) are kept private
 ## The monthly trend (`summary`)
 
 `summaries/sentiment_monthly.json` has one entry per whole month of the
-sample. Months with under half the median month's sampled comments (the
-partial first and last) are dropped. Each entry has:
+sample. Months wholly inside `--full-weeks` (`full_weeks`; today
+2025-12 .. 2026-10, since 2025-W45 starts on 3 Nov) use every comment of
+their weeks instead of the sample, and are marked `full`; the rest use the
+sample. In a rolling window that pools both, each sampled comment weighs
+1/rate (20), so every month counts at its true size, and the intervals use
+the effective sample size (Σw)²/Σw². Months whose estimated size is under
+half the median month's (the partial first and last) are dropped. Each
+entry has:
 
+- `m`, and `full` when the month uses every comment;
 - `month`: that month's own figures;
 - `rolling`: figures pooled over a centred 3-month window (`ROLL`; two
   months at the ends), with `span` giving the window. Neighbouring points
-  share comments, so their intervals overlap.
+  share comments, so their intervals overlap. `rolling.full` is set when
+  every month in the window uses every comment.
 
 Both give `n` (substantive comments), the mean score with a 95% interval
 (`lo`, `hi`), and the shares `glowing` (≥ +0.4), `angry` (≤ −0.3) and `ai`
@@ -199,7 +210,10 @@ month-to-month changes in the mean (0.0047 on average) were about what
 sampling noise alone would give. The 5% sample (about 2,700 a month) with
 the 3-month window brings that to 0.0008, with 95% intervals of about
 ±0.002 on the mean. Halving the noise again would take a 20% sample (about
-4× the scoring cost).
+4× the scoring cost). The fully scored months (about 57,000 substantive
+committer comments a month) have intervals about 5× narrower, about
+±0.0004 on the 3-month mean. The page draws a dashed line where the
+sample ends.
 
 **What it shows (2026-11-06).** The mean sat at about +0.012 to +0.014
 from 2023 through 2025, fell to about +0.0075 in spring and summer 2026,

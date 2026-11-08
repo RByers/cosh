@@ -30,7 +30,18 @@ export interface ToneTrend {
   window: number;
   thresholds: { glowing: number; angry: number };
   n: number;
-  months: { m: string; month: TonePoint; span: [string, string]; rolling: TonePoint }[];
+  /** The first and last fully scored weeks, whose wholly covered months
+   * use every comment instead of the sample. */
+  full_weeks?: [string, string] | null;
+  months: {
+    m: string;
+    /** This month uses every comment, not the sample. */
+    full?: boolean;
+    month: TonePoint;
+    span: [string, string];
+    /** `full`: every month in the span is. */
+    rolling: TonePoint & { full?: boolean };
+  }[];
 }
 
 /** A person on a net praise board: their praise scores, less their grumpy

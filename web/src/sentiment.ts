@@ -130,7 +130,7 @@ interface Series {
 /** A line per series with its 95% band, over `months`; the month at index
  * `mark` (the month chosen on the page) gets a dot. */
 function bandedLine(canvas: HTMLCanvasElement, months: ToneTrend['months'], series: Series[], theme: Theme,
-  fmt: (v: number) => string, mark = -1) {
+  fmt: (v: number) => string, mark: number, boundary: number, footer: (i: number) => string) {
   const datasets: ChartDataset<'line', number[]>[] = [];
   const dots = months.map((_, i) => (i === mark ? 5 : 0));
   for (const s of series) {
@@ -143,8 +143,27 @@ function bandedLine(canvas: HTMLCanvasElement, months: ToneTrend['months'], seri
         fill: false },
     );
   }
+  // A dashed line between the last sampled month and the first complete one.
+  const divider = {
+    id: 'sample-divider',
+    afterDatasetsDraw(chart: Chart) {
+      if (boundary <= 0) return;
+      const { ctx, chartArea: area, scales: { x } } = chart;
+      const px = (x.getPixelForValue(boundary - 1) + x.getPixelForValue(boundary)) / 2;
+      ctx.save();
+      ctx.strokeStyle = theme.muted;
+      ctx.lineWidth = 1;
+      ctx.setLineDash([4, 4]);
+      ctx.beginPath();
+      ctx.moveTo(px, area.top);
+      ctx.lineTo(px, area.bottom);
+      ctx.stroke();
+      ctx.restore();
+    },
+  };
   charts.push(new Chart(canvas, {
     type: 'line',
+    plugins: [divider],
     data: { labels: months.map((m) => monthLabel(m.m)), datasets },
     options: {
       maintainAspectRatio: false,
@@ -173,7 +192,7 @@ function bandedLine(canvas: HTMLCanvasElement, months: ToneTrend['months'], seri
               const [lo, hi] = s.ci(p);
               return `${s.label}: ${fmt(s.v(p))} (95% ${fmt(lo)} to ${fmt(hi)})`;
             },
-            footer: (items) => `${fmtInt(months[items[0].dataIndex].rolling.n)} comments`,
+            footer: (items) => footer(items[0].dataIndex),
           },
         },
       },
@@ -189,23 +208,40 @@ function renderTrend(trend: ToneTrend, theme: Theme) {
   let months = year ? trend.months.filter((m) => m.m.startsWith(`${year}-`)) : trend.months;
   if (!months.length) months = trend.months;
   const mark = kind === 'month' ? months.findIndex((m) => m.m === period) : -1;
-  const n = months.reduce((s, m) => s + m.month.n, 0);
+  const full = months.filter((m) => m.full);
+  const sampled = months.filter((m) => !m.full);
+  const count = (ms: typeof months) => ms.reduce((s, m) => s + m.month.n, 0);
+  const perMonth = (ms: typeof months) => fmtInt(Math.round(count(ms) / Math.max(1, ms.length)));
+  const rate = trend.rate ? pct(trend.rate).replace(/\.0%$/, '%') : 'random';
+  const boundary = full.length && sampled.length ? months.findIndex((m) => m.full) : -1;
   fill($('#trend-sub'), {
-    rate: trend.rate ? pct(trend.rate).replace(/\.0%$/, '%') : 'random',
-    n: fmtInt(n),
-    months: months.length,
-    perMonth: fmtInt(Math.round(n / Math.max(1, months.length))),
+    nFull: full.length ? fmtInt(count(full)) : '',
+    fullFrom: full.length ? monthLabel(full[0].m) : '',
+    fullPerMonth: perMonth(full),
+    nSample: sampled.length ? fmtInt(count(sampled)) : '',
+    rate,
+    sampleMonths: sampled.length,
+    perMonth: perMonth(sampled),
     window: trend.window,
+    boundary: boundary > 0,
     mark: mark >= 0 ? monthLabel(period) : '',
   });
   fill($('#trend-note'), { glowing: trend.thresholds.glowing, angry: Math.abs(trend.thresholds.angry) });
+  // Tooltip footer: how many comments the point pools, and whether any were sampled.
+  const footer = (i: number) => {
+    const m = months[i];
+    const inSpan = trend.months.filter((x) => x.m >= m.span[0] && x.m <= m.span[1]);
+    const kind = m.rolling.full ? 'full' : inSpan.some((x) => x.full) ? 'mixed' : 'sample';
+    return msg(`trend-footer-${kind}`, { n: fmtInt(m.rolling.n), rate });
+  };
   bandedLine($<HTMLCanvasElement>('#trend-mean'), months,
-    [{ label: 'Average score', color: theme.series[0], v: (p) => p.mean, ci: (p) => [p.lo, p.hi] }], theme, signed, mark);
+    [{ label: 'Average score', color: theme.series[0], v: (p) => p.mean, ci: (p) => [p.lo, p.hi] }], theme, signed, mark,
+    boundary, footer);
   bandedLine($<HTMLCanvasElement>('#trend-shares'), months, [
     { label: 'Glowing', color: theme.series[2], v: (p) => p.glowing, ci: (p) => p.glowing_ci },
     { label: 'Angry', color: theme.series[7], v: (p) => p.angry, ci: (p) => p.angry_ci },
     { label: 'AI friction', color: theme.series[6], v: (p) => p.ai, ci: (p) => p.ai_ci },
-  ], theme, pct, mark);
+  ], theme, pct, mark, boundary, footer);
 }
 
 // ---- every comment of the chosen dates

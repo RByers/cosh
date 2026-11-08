@@ -124,6 +124,32 @@ class TrendTest(unittest.TestCase):
             self.assertEqual(len(doc["months"]), 3)
 
 
+    def test_full_months_replace_the_sample(self):
+        self.assertEqual(S.full_months(S.weeks_in("2025-W45:2026-W44")),
+                         {f"2025-12"} | {f"2026-{m:02d}" for m in range(1, 11)})   # Nov 2025 starts on the 3rd
+        self.assertEqual(S.full_months(S.weeks_in("2026-W41:2026-W44")), set())   # W41 starts Oct 5
+        sample, full, scores = [], [], {}
+        for m, n, score in (("2026-01", 5, 0.2), ("2026-02", 5, 0.2), ("2026-03", 5, 0.2)):
+            for i in range(n):   # a 5% sample: each sampled comment stands for 20
+                sample.append(dict(id=f"s{m}/{i}", written_at=f"{m}-10 10:00:00", text="Looks fine to me."))
+                scores[f"s{m}/{i}"] = (score, False, None)
+        for m in ("2026-02", "2026-03"):
+            for i in range(100):
+                full.append(dict(id=f"f{m}/{i}", written_at=f"{m}-10 10:00:00", text="Looks fine to me."))
+                scores[f"f{m}/{i}"] = (0.0, False, None)
+        full.append(dict(id="f-jan", written_at="2026-01-10 10:00:00", text="Looks fine to me."))   # Jan isn't full
+        scores["f-jan"] = (1.0, False, None)
+        t = S.trend(sample, scores, rate=0.05, full_rows=full, full={"2026-02", "2026-03"})
+        jan, feb, mar = t["months"]
+        self.assertEqual([(m["full"], m["month"]["n"]) for m in t["months"]],
+                         [(False, 5), (True, 100), (True, 100)])
+        self.assertEqual((jan["month"]["mean"], feb["month"]["mean"]), (0.2, 0.0))
+        self.assertEqual((jan["rolling"]["full"], mar["rolling"]["full"]), (False, True))
+        # Jan's 5 sampled comments stand for 100, so Jan-Feb pools to an even mean.
+        self.assertAlmostEqual(jan["rolling"]["mean"], 0.1)
+        self.assertEqual(t["n"], 205)
+
+
 class PraiseTest(unittest.TestCase):
     def test_only_praise_gets_names(self):
         """Ground rule 5: people may be named for praise, never for negative tone."""
