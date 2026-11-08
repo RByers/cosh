@@ -241,7 +241,14 @@ def repack(git_dir):
     """Lossless: roll up packs geometrically and drop objects the shared
     clone already holds (-l). Never prunes."""
     t0 = time.time()
-    git(git_dir, "-c", "pack.threads=4", "repack", "--geometric=2", "-d", "-l", "-q")
+    # One thread: with 4, pack-objects reached 8 GB and aborted (exit 134)
+    # on 65 GB of packs, 2026-11-07.
+    p = git(git_dir, "-c", "pack.threads=1", "-c", "pack.windowMemory=1g",
+            "-c", "pack.deltaCacheSize=128m", "repack", "--geometric=2", "-d", "-l", "-q",
+            check=False)
+    if p.returncode != 0:
+        raise SystemExit(f"repack failed (exit {p.returncode}); old packs are untouched:\n"
+                         f"{p.stderr.strip()[-2000:]}")
     return time.time() - t0
 
 
