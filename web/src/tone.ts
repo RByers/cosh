@@ -167,31 +167,30 @@ export function allPraise(d: PersonComments, email: string): PersonComment[] {
     .sort(newestFirst);
 }
 
-/** `email`'s praise given and received per month ("2026-10"), every month
- * of the data's weeks included (a week counts in its Thursday's month).
- * Praise only, so the chart can't show anything negative (ground rule 5). */
-export function praiseByMonth(d: Pick<PraiseData, 'weeks' | 'weekly'>, email: string): { months: string[]; given: number[]; received: number[] } {
+/** Counts per month ("2026-10") of each list's items, by the month of their
+ * week's Thursday, over every month of `range` (weeks). The popup charts
+ * exactly the comments it lists (praise or glowing only, ground rule 5). */
+export function byMonth(range: [string, string], lists: { week: string }[][]): { months: string[]; counts: number[][] } {
   const key = (w: string) => {
     const { year, month } = weekMonth(w);
     return `${year}-${String(month + 1).padStart(2, '0')}`;
   };
   const months: string[] = [];
-  for (let m = key(d.weeks[0]); m <= key(d.weeks[1]); ) {
+  for (let m = key(range[0]); m <= key(range[1]); ) {
     months.push(m);
     const [y, mm] = m.split('-').map(Number);
     m = mm === 12 ? `${y + 1}-01` : `${y}-${String(mm + 1).padStart(2, '0')}`;
   }
   const at = new Map(months.map((m, i) => [m, i]));
-  const given = months.map(() => 0);
-  const received = months.map(() => 0);
-  for (const r of d.weekly) {
-    if (r.email !== email) continue;
-    const i = at.get(key(r.week));
-    if (i === undefined) continue;
-    given[i] += r.given;
-    received[i] += r.received;
-  }
-  return { months, given, received };
+  const counts = lists.map((items) => {
+    const c = months.map(() => 0);
+    for (const it of items) {
+      const i = at.get(key(it.week));
+      if (i !== undefined) c[i]++;
+    }
+    return c;
+  });
+  return { months, counts };
 }
 
 /** The person a lookup names: an email (any case), or a name that only one

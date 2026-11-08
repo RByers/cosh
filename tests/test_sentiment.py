@@ -319,6 +319,22 @@ class IdentitiesTest(unittest.TestCase):
         self.assertEqual((out["g"]["target"], out["g"]["target_org"], out["g"]["target_is_ai"]), (-1, P.AI_TARGET, True))
 
 
+    def test_lookup_lists_everyone_without_tone(self):
+        from cosh import sentiment_people as P
+        with tempfile.TemporaryDirectory() as d:
+            os.makedirs(S.out_dir(d))
+            rows = [dict(id="1/a", text="meh", author_email="a@x.org", author_name="Ann", target_email="b@x.org",
+                         target_name=None),
+                    dict(id="1/b", text="hi", author_email="b@x.org", author_name="Bo", target_email=None)]
+            S.write_jsonl(os.path.join(S.out_dir(d), "comments-2026-W44.jsonl"), rows)
+            doc = P.lookup(["2026-W44"], d)
+            self.assertEqual(doc["people"], {"a@x.org": "Ann", "b@x.org": "Bo"})
+            self.assertEqual(set(doc), {"generated_at", "weeks", "people"})
+            S.write_jsonl(os.path.join(S.out_dir(d), "comments-2026-W44.jsonl"), [dict(id="1/a", text="x")])
+            with self.assertRaises(SystemExit):
+                P.lookup(["2026-W44"], d)
+
+
 class RecentTest(unittest.TestCase):
     def rows(self):
         """CL owner 1 gets reviews from people 10..16; 12 and 13 write glowing ones."""

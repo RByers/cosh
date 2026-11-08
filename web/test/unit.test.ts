@@ -1162,22 +1162,17 @@ test('Review Tone: periods and ranges', async () => {
   assert.equal(praisePeople(d, month), 2);
 });
 
-test('Review Tone: praise per month and the lookup box', async () => {
-  const { praiseByMonth, findPerson } = await import('../src/tone.ts');
+test('Review Tone: counts per month and the lookup box', async () => {
+  const { byMonth, findPerson } = await import('../src/tone.ts');
   const d = {
-    weeks: ['2025-W52', '2026-W09'] as [string, string],
     people: { 'a@x.org': 'Ann', 'b@x.org': 'Bo', 'B@y.org': 'Bo' },
-    weekly: [
-      { week: '2025-W52', email: 'a@x.org', given: 2, received: 0 },
-      { week: '2026-W01', email: 'a@x.org', given: 1, received: 3 },
-      { week: '2026-W05', email: 'a@x.org', given: 0, received: 1 },
-      { week: '2026-W05', email: 'b@x.org', given: 4, received: 4 },
-    ],
   };
-  // 2026-W01's Thursday is 1 Jan; 2026-W05's is 29 Jan; February has none of Ann's.
-  assert.deepEqual(praiseByMonth(d, 'a@x.org'),
-    { months: ['2025-12', '2026-01', '2026-02'], given: [2, 1, 0], received: [0, 4, 0] });
-  assert.deepEqual(praiseByMonth(d, 'nobody@x.org').given, [0, 0, 0]);
+  // 2026-W01's Thursday is 1 Jan; 2026-W05's is 29 Jan; February has none.
+  const given = [{ week: '2025-W52' }, { week: '2025-W52' }, { week: '2026-W01' }, { week: '2027-W01' }];
+  const received = [{ week: '2026-W05' }];
+  assert.deepEqual(byMonth(['2025-W52', '2026-W09'], [given, received]),
+    { months: ['2025-12', '2026-01', '2026-02'], counts: [[2, 1, 0], [0, 1, 0]] });
+  assert.deepEqual(byMonth(['2025-W52', '2026-W09'], [[]]).counts, [[0, 0, 0]]);
   assert.deepEqual(findPerson(d, ' A@X.org '), { email: 'a@x.org', name: 'Ann' });
   assert.deepEqual(findPerson(d, 'ann'), { email: 'a@x.org', name: 'Ann' });
   assert.equal(findPerson(d, 'Bo'), null, 'two people share the name');

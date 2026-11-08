@@ -2388,7 +2388,10 @@ test('the Review Tone page: a name on a board opens a popup with its praise, lin
   }
   // The monthly chart: praise only, given and received.
   assert.equal(await page.$eval('#person-chart', (e) => (e as HTMLElement).hidden), false);
-  assert.match(await page.$eval('#person-chart-sub', (e) => e.textContent!), /given and [\d,]+ received/);
+  assert.match(await page.$eval('#person-chart-sub', (e) => e.textContent!), /^Per month between /);
+  // The chart shows just this popup's kind: praise given, as many as the list (all weeks).
+  const chartLabel = () => page.$eval('#person-months', (c) => c.getAttribute('aria-label')!);
+  assert.equal(await chartLabel(), `Praise given (${top.count}) per month`);
   // Scrolling the popup never scrolls the page behind it, at its ends too.
   const y0 = await page.evaluate(() => scrollY);
   const box = (await page.$('#person-dialog'))!;
@@ -2420,6 +2423,7 @@ test('the Review Tone page: a name on a board opens a popup with its praise, lin
   await page.click('#happy-authors tbody tr button');
   await page.waitForFunction(() => document.querySelectorAll('#person-list li.quote').length > 0);
   assert.match(await page.$eval('#person-title', (e) => e.textContent!), /^Glowing comments from reviewers to /);
+  assert.match(await chartLabel(), /^Glowing comments received as change author \(\d+\) per month$/);
   await page.mouse.click(5, 5);
   assert.equal(await dialog(), false);
 
@@ -2428,20 +2432,36 @@ test('the Review Tone page: a name on a board opens a popup with its praise, lin
   const options = () => page.$$eval('#praise-people option', (os) => os.length);
   assert.equal(await options(), 0, 'no suggestions before typing');
   await page.type('#praise-find-input', '@');
+  await page.waitForFunction(() => document.querySelectorAll('#praise-people option').length > 0);
+  await new Promise((r) => setTimeout(r, 100));
   assert.equal(await options(), 10, 'at most 10 suggestions');
   await page.$eval('#praise-find-input', (i) => ((i as HTMLInputElement).value = ''));
   await page.type('#praise-find-input', email.toUpperCase());
-  assert.ok((await options()) >= 1);
   await page.keyboard.press('Enter');
   await page.waitForFunction(() => document.querySelectorAll('#person-list li.quote').length > 0);
   assert.match(await page.$eval('#person-title', (e) => e.textContent!), /^Praise from and to /);
+  assert.match(await chartLabel(), /^Praise given \(\d+\), Praise received \(\d+\) per month$/);
   assert.equal(await page.$eval('#person-chart', (e) => (e as HTMLElement).hidden), false);
   await page.keyboard.press('Escape');
   await page.$eval('#praise-find-input', (i) => ((i as HTMLInputElement).value = ''));
   await page.type('#praise-find-input', 'nobody@example.invalid');
   await page.click('#praise-find button');
-  assert.match(await page.$eval('#praise-find-note', (e) => e.textContent!), /No praise comments found/);
+  assert.match(await page.$eval('#praise-find-note', (e) => e.textContent!), /No one called/);
   assert.equal(await dialog(), false);
+
+  // Anyone who commented can be looked up, praised or not.
+  const summaries = new URL('../../summaries/', import.meta.url);
+  const all = JSON.parse(readFileSync(fileURLToPath(new URL('sentiment_people.json', summaries)), 'utf8')).people as Record<string, string>;
+  const praised = JSON.parse(readFileSync(fileURLToPath(new URL('sentiment_praise.json', summaries)), 'utf8')).people as Record<string, string>;
+  const unpraised = Object.keys(all).find((e) => !(e in praised))!;
+  await page.$eval('#praise-find-input', (i) => ((i as HTMLInputElement).value = ''));
+  await page.type('#praise-find-input', unpraised);
+  await page.keyboard.press('Enter');
+  await page.waitForFunction(() => /No praise comments counted/.test(document.querySelector('#person-note')!.textContent!));
+  assert.equal(await dialog(), true);
+  assert.equal(await page.$eval('#person-chart', (e) => (e as HTMLElement).hidden), true);
+  assert.equal(await page.$$eval('#person-list li', (lis) => lis.length), 0);
+  await page.keyboard.press('Escape');
   assert.deepEqual(errors, []);
   await page.close();
 });

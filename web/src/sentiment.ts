@@ -16,6 +16,7 @@ import monthlyOthersUrl from '../../summaries/sentiment_monthly.noncommitters.js
 import praiseOthersUrl from '../../summaries/sentiment_praise.noncommitters.json?url';
 import samplesOthersUrl from '../../summaries/sentiment_samples.noncommitters.json?url';
 import recentOthersUrl from '../../summaries/sentiment_recent.noncommitters.json?url';
+import lookupUrl from '../../summaries/sentiment_people.json?url';
 import commentsUrl from '../../summaries/sentiment_comments.json?url';
 import commentsEveryoneUrl from '../../summaries/sentiment_comments.everyone.json?url';
 import commentsOthersUrl from '../../summaries/sentiment_comments.noncommitters.json?url';
@@ -39,7 +40,7 @@ import {
   findPerson,
   suggestPeople,
   happyComments,
-  praiseByMonth,
+  byMonth,
   praiseComments,
   type HappyRow,
   type PersonComment,
@@ -290,41 +291,50 @@ dialog.addEventListener('close', () => {
   personChart = undefined;
 });
 
-/** The popup's monthly praise chart, destroyed when the popup closes. */
+/** What a popup charts: one bar series per kind of comment it lists, over
+ * the weeks its board covers. */
+interface ChartSpec {
+  range: [string, string];
+  series: { key: 'given' | 'received' | 'author' | 'reviewer'; pick: (d: PersonComments) => PersonComment[] }[];
+}
+
+/** The popup's monthly chart, destroyed when the popup closes. */
 let personChart: Chart | undefined;
-let chartEmail = '';
+let lastChart: { spec: ChartSpec; data: PersonComments } | undefined;
 // Printing uses the light colours (style.css), so the chart is redrawn in
 // them, and in the screen's again afterwards.
 for (const ev of ['beforeprint', 'afterprint']) {
   window.addEventListener(ev, () => {
-    if (dialog.open && personChart) drawPersonChart(chartEmail);
+    if (dialog.open && personChart && lastChart) drawPersonChart(lastChart.spec, lastChart.data);
   });
 }
 
-/** `email`'s praise given and received per month, over every week of the
- * praise data. Hidden for someone with no praise. Praise only (ground rule 5). */
-function drawPersonChart(email: string) {
-  chartEmail = email;
+/** The popup's comments per month, a series for each kind `spec` names, so
+ * the chart shows just what the popup is about. Hidden when there are none. */
+function drawPersonChart(spec: ChartSpec | null, data?: PersonComments) {
   personChart?.destroy();
   personChart = undefined;
   const fig = $('#person-chart');
-  const d = praiseData;
-  const m = d ? praiseByMonth(d, email) : null;
-  const given = m ? m.given.reduce((a, b) => a + b, 0) : 0;
-  const received = m ? m.received.reduce((a, b) => a + b, 0) : 0;
-  fig.hidden = !d || !m || given + received === 0;
+  lastChart = spec && data ? { spec, data } : undefined;
+  const m = spec && data ? byMonth(spec.range, spec.series.map((x) => x.pick(data))) : null;
+  const totals = m ? m.counts.map((c) => c.reduce((a, b) => a + b, 0)) : [];
+  fig.hidden = !m || totals.every((t) => t === 0);
   if (fig.hidden) return;
-  fill($('#person-chart-sub'), { range: weeksBetween(d!.weeks), given: fmtInt(given), received: fmtInt(received) });
+  fill($('#person-chart-sub'), { range: weeksBetween(spec!.range) });
   const theme = readTheme();
   const axis = { color: theme.text, font: { family: theme.font } };
+  const labels = spec!.series.map((x, i) => `${msg(`chart-${x.key}`)} (${fmtInt(totals[i])})`);
+  $('#person-months').setAttribute('aria-label', `${labels.join(', ')} per month`);
+  const colors = { given: theme.series[0], received: theme.series[2], author: theme.series[2], reviewer: theme.series[2] };
   personChart = new Chart($<HTMLCanvasElement>('#person-months'), {
     type: 'bar',
     data: {
       labels: m!.months.map(monthLabel),
-      datasets: [
-        { label: 'Given', data: m!.given, backgroundColor: theme.series[0] },
-        { label: 'Received', data: m!.received, backgroundColor: theme.series[2] },
-      ],
+      datasets: spec!.series.map((x, i) => ({
+        label: labels[i],
+        data: m!.counts[i],
+        backgroundColor: colors[x.key],
+      })),
     },
     options: {
       maintainAspectRatio: false,
@@ -336,7 +346,9 @@ function drawPersonChart(email: string) {
       },
       plugins: {
         legend: { labels: axis },
-        tooltip: { callbacks: { label: (item) => `${item.dataset.label}: ${fmtInt(Number(item.raw))}` } },
+        tooltip: {
+          callbacks: { label: (item) => `${msg(`chart-${spec!.series[item.datasetIndex].key}`)}: ${fmtInt(Number(item.raw))}` },
+        },
       },
     },
   });
@@ -359,16 +371,17 @@ function commentItem(c: PersonComment): HTMLElement {
   return li;
 }
 
-/** Opens the popup for `email`: `title` and the monthly chart at once, then
- * the comments `pick` chooses, counted with the message `count`. */
-function openPerson(title: string, email: string, pick: (d: PersonComments) => PersonComment[], count = 'person-count') {
+/** Opens the popup: `title` at once, then the comments `pick` chooses,
+ * counted with the message `count`, and the chart `chart` describes. */
+function openPerson(title: string, chart: ChartSpec | null, pick: (d: PersonComments) => PersonComment[],
+  count = 'person-count') {
   $('#person-title').textContent = title;
   const list = $('#person-list');
   const note = $('#person-note');
   list.replaceChildren();
   note.textContent = msg('person-loading');
   if (!dialog.open) dialog.showModal();
-  drawPersonChart(email);
+  drawPersonChart(null);
   list.scrollTop = 0;
   dialog.scrollTop = 0;
   const want = shown;
@@ -376,6 +389,11 @@ function openPerson(title: string, email: string, pick: (d: PersonComments) => P
     (d) => {
       if (want !== shown || !dialog.open) return;
       const items = pick(d);
+      drawPersonChart(chart, d);
+      if (!items.length && praiseData) {
+        note.textContent = msg('person-none', { range: weeksBetween(praiseData.weeks) });
+        return;
+      }
       note.textContent = msg(count, { n: fmtInt(items.length) });
       list.replaceChildren(...orNone(items.map(commentItem)));
     },
@@ -406,7 +424,9 @@ function drawPraise() {
     boardRows($<HTMLTableElement>(`#praise-${key}`),
       netBoard(d, key, period, n).map((r) => ({ name: r.name, email: r.email,
         count: scoreBadge(r.score, d.net_scale, `Net praise ${signed1(r.score)} (${fmtInt(r.praise)} praise comments)`) })),
-      (r) => openPerson(msg(`person-praise-${key}`, { name: r.name }), r.email, (c) => praiseComments(c, r.email, key, range)));
+      (r) => openPerson(msg(`person-praise-${key}`, { name: r.name }),
+        { range: d.weeks, series: [{ key, pick: (c) => praiseComments(c, r.email, key, d.weeks) }] },
+        (c) => praiseComments(c, r.email, key, range)));
   }
 }
 
@@ -415,10 +435,35 @@ function drawPraise() {
 const findForm = $<HTMLFormElement>('#praise-find');
 const findInput = $<HTMLInputElement>('#praise-find-input');
 
+/** Everyone who commented in the praise weeks (summaries/sentiment_people.json),
+ * loaded when the box is first used, so anyone can be looked up. */
+let lookupPeople: Promise<Record<string, string>> | undefined;
+const everyone = () => {
+  if (!lookupPeople) {
+    lookupPeople = getJson<{ people: Record<string, string> }>(lookupUrl).then((d) => d.people);
+    lookupPeople.catch(() => (lookupPeople = undefined));
+  }
+  return lookupPeople;
+};
+
+/** The people the box can find: everyone, plus anyone in the praise data. */
+async function lookupData(): Promise<{ people: Record<string, string> }> {
+  let all: Record<string, string> = {};
+  try {
+    all = await everyone();
+  } catch {
+    // Without the list, the box still finds everyone with praise.
+  }
+  return { people: { ...all, ...praiseData?.people } };
+}
+
 /** The lookup's suggestions: none until something is typed, then at most
  * SUGGESTIONS people whose name or email contains it. */
-function suggest() {
-  const people = praiseData ? suggestPeople(praiseData, findInput.value, SUGGESTIONS) : [];
+async function suggest() {
+  const typed = findInput.value;
+  const d = typed.trim() ? await lookupData() : { people: {} };
+  if (findInput.value !== typed) return;
+  const people = suggestPeople(d, typed, SUGGESTIONS);
   $('#praise-people').replaceChildren(...people.map(({ email, name }) => {
     const o = el('option');
     o.value = email;
@@ -429,35 +474,48 @@ function suggest() {
 const SUGGESTIONS = 10;
 
 function fillPeople() {
-  suggest();
+  void suggest();
   $('#praise-find-note').textContent = '';
 }
 
 /** Opens the popup for what the box names, or says no one matched. */
-function lookUp() {
+async function lookUp() {
   const d = praiseData;
   if (!d) return;
   const note = $('#praise-find-note');
-  const who = findPerson(d, findInput.value);
+  const who = findPerson(await lookupData(), findInput.value);
   if (!who) {
     fill(note, { q: findInput.value.trim(), range: weeksBetween(d.weeks) }, 'praise-find-none');
     return;
   }
   note.textContent = '';
-  openPerson(msg('person-praise-all', { name: who.name }), who.email, (c) => allPraise(c, who.email), 'person-all-count');
+  openPerson(msg('person-praise-all', { name: who.name }), {
+    range: d.weeks,
+    series: (['given', 'received'] as const).map((key) => ({ key, pick: (c: PersonComments) => praiseComments(c, who.email, key, d.weeks) })),
+  }, (c) => allPraise(c, who.email), 'person-all-count');
 }
 
 findForm.addEventListener('submit', (e) => {
   e.preventDefault();
-  lookUp();
+  void lookUp();
 });
+findInput.addEventListener('focus', () => void everyone().catch(() => undefined), { once: true });
 // Picking a suggestion opens it at once; typing waits for Enter or Show.
 findInput.addEventListener('input', (e) => {
-  suggest();
+  void suggest();
   if (!(e instanceof InputEvent) || e.inputType === 'insertReplacementText') {
-    if (praiseData && findPerson(praiseData, findInput.value)) lookUp();
+    void lookupData().then((d) => {
+      if (findPerson(d, findInput.value)) void lookUp();
+    });
   }
 });
+
+/** Every glowing comment behind `email`'s row in a happy table, over all its
+ * weeks (the past-month list is part of it), for the popup's chart. */
+const happyAll = (c: PersonComments, email: string, table: 'authors' | 'reviewers') => {
+  const all = happyComments(c, email, table, 'all');
+  return all.length ? all : happyComments(c, email, table, 'month');
+};
 
 function drawHappy() {
   const r = recentData;
@@ -469,7 +527,9 @@ function drawHappy() {
   fill($('#happy-sub'), { range: weeksBetween(p === 'all' ? r.weeks : r.month_weeks), min: r.min_counterparts });
   for (const table of ['authors', 'reviewers'] as const) {
     boardRows($<HTMLTableElement>(`#happy-${table}`), r.happy[p][table].slice(0, n).map(fmtRow),
-      (x) => openPerson(msg(`person-happy-${table}`, { name: x.name }), x.email, (c) => happyComments(c, x.email, table, p)));
+      (x) => openPerson(msg(`person-happy-${table}`, { name: x.name }),
+        { range: r.weeks, series: [{ key: table === 'authors' ? 'author' : 'reviewer', pick: (c) => happyAll(c, x.email, table) }] },
+        (c) => happyComments(c, x.email, table, p)));
   }
 }
 

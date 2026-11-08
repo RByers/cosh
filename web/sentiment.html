@@ -149,8 +149,8 @@
           <datalist id="praise-people"></datalist>
           <p id="praise-find-note" class="sub" aria-live="polite"></p>
         </form>
-        <template data-msg="praise-find-none">No praise comments found for “<slot name="q"></slot>” between
-          <slot name="range"></slot>.</template>
+        <template data-msg="praise-find-none">No one called “<slot name="q"></slot>” wrote or received a review
+          comment between <slot name="range"></slot>.</template>
         <div class="tone-boards">
           <div>
             <h3>Most net praise given</h3>
@@ -212,13 +212,16 @@
         </div>
         <figure id="person-chart" class="person-chart">
           <figcaption id="person-chart-sub" class="sub"></figcaption>
-          <div class="person-chart-box"><canvas id="person-months" aria-label="Praise per month"></canvas></div>
+          <div class="person-chart-box"><canvas id="person-months" aria-label="Comments per month"></canvas></div>
         </figure>
         <p id="person-note" class="sub" aria-live="polite"></p>
         <ul id="person-list" class="quotes"></ul>
       </dialog>
-      <template data-msg="person-chart-sub">Praise per month between <slot name="range"></slot>:
-        <slot name="given"></slot> given and <slot name="received"></slot> received.</template>
+      <template data-msg="person-chart-sub">Per month between <slot name="range"></slot>.</template>
+      <template data-msg="chart-given">Praise given</template>
+      <template data-msg="chart-received">Praise received</template>
+      <template data-msg="chart-author">Glowing comments received as change author</template>
+      <template data-msg="chart-reviewer">Glowing comments received as reviewer</template>
       <template data-msg="person-praise-all">Praise from and to <slot name="name"></slot></template>
       <template data-msg="person-all-count"><slot name="n"></slot> comments, newest first, each linked to its review.</template>
       <template data-msg="person-praise-given">Praise given by <slot name="name"></slot></template>
@@ -227,6 +230,7 @@
       <template data-msg="person-happy-reviewers">Glowing comments from change authors to <slot name="name"></slot></template>
       <!-- The document title while printing the popup: browsers name the saved PDF after it. -->
       <template data-msg="person-print-title"><slot name="title"></slot> · Chromium review tone</template>
+      <template data-msg="person-none">No praise comments counted between <slot name="range"></slot>.</template>
       <template data-msg="person-loading">Loading comments…</template>
       <template data-msg="person-count"><slot name="n"></slot> comments in this period, newest first, each linked to its review.</template>
 

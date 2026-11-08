@@ -275,13 +275,19 @@ scored (2026-W37..W44 so far):
   comment, are listed, top 100. Each row has the name, the email, the
   glowing count, the distinct happy people and the counterparts: no
   per-person mean, which could be negative.
-- **Name popups** also chart the person's praise given and received per
-  month over every week of `sentiment_praise.json` (praise counts only, so
-  nothing negative can show). The praise board's lookup box opens the same
-  popup for any email or unique name in that file; its suggestions start
-  after the first character typed, at most 10. The popup's print button
-  prints (or saves as PDF) just the popup, in light colours, with the
-  page title set to the person so a saved PDF is named after them. The
+- **Name popups** also chart, per month, exactly the kind of comment they
+  list, over every week their board covers: praise given, praise received,
+  glowing comments received as change author or as reviewer (the happy
+  tables), or praise given and received for the lookup box. Praise and
+  glowing comments only, so nothing negative can show. The lookup box
+  finds anyone who wrote or answered a comment in the praise weeks, praised
+  or not: `python3 -m cosh.sentiment_people lookup --week 2025-W45:2026-W44`
+  writes `summaries/sentiment_people.json` (names and emails only, about
+  50 KB compressed for a year, loaded when the box is first used). Its
+  suggestions start after the first character typed, at most 10. The
+  popup's print button prints (or saves as PDF) just the popup, in light
+  colours, with the page title set to the person so a saved PDF is named
+  after them.
   praise boards can cover more weeks than the detail here:
   `--praise-week 2025-W45:2026-W44` puts their praise comments in the popup
   file while everything else stays on `--week`.
