@@ -247,6 +247,10 @@ def claude_args(model, schema=None, system=None):
             "--json-schema", json.dumps(schema or SCHEMA)]
 
 
+CRASH_EXITS = (134, 139)   # SIGABRT, SIGSEGV as shell-style exit codes
+CRASH_RETRIES = 2
+
+
 def claude_scores(model, definition, items, sandbox):
     """Score [(key, text)] in one headless call: ({key: (s, ai, why)}, cost).
 
@@ -259,7 +263,15 @@ def claude_scores(model, definition, items, sandbox):
     prompt = definition + "\n\n" + OUTPUT_SPEC + "\n\n" + body
     sent = {k for k, _ in items}
     t0 = time.time()
-    p = sandbox.run(claude_args(model), prompt)
+    for attempt in range(CRASH_RETRIES + 1):
+        p = sandbox.run(claude_args(model), prompt)
+        # The CLI sometimes crashes (an abort or segfault: exit 134 or 139,
+        # or killed by a signal) with nothing on stdout. Rerun those calls;
+        # anything else, a usage limit say, fails as before.
+        if p.stdout.strip() or (p.returncode not in CRASH_EXITS and p.returncode >= 0) or attempt == CRASH_RETRIES:
+            break
+        print(f"  claude -p crashed (exit {p.returncode}); retrying", file=sys.stderr)
+        time.sleep(5)
     wall = time.time() - t0
     try:
         d = json.loads(p.stdout)

@@ -198,6 +198,45 @@ class FakeSandbox:
         return P
 
 
+class CrashingSandbox(FakeSandbox):
+    """Crashes (exit 139, no output) `crashes` times, then replies."""
+
+    def __init__(self, reply, crashes):
+        super().__init__(reply)
+        self.crashes = crashes
+
+    def run(self, args, input):
+        if len(self.calls) < self.crashes:
+            self.calls.append((args, input))
+
+            class P:
+                returncode, stdout, stderr = 139, "", "Bun crashed"
+            return P
+        return super().run(args, input)
+
+
+class CrashRetryTest(unittest.TestCase):
+    REPLY = {"structured_output": {"scores": [{"id": "C0", "s": 0.4}]}, "usage": {}, "modelUsage": {}}
+
+    def setUp(self):
+        self.sleep, S.time.sleep = S.time.sleep, lambda s: None
+
+    def tearDown(self):
+        S.time.sleep = self.sleep
+
+    def test_a_crashed_call_is_rerun(self):
+        box = CrashingSandbox(self.REPLY, crashes=2)
+        got, _ = S.claude_scores("haiku", "DEF", [("C0", "x")], box)
+        self.assertEqual(got, {"C0": (0.4, False, "")})
+        self.assertEqual(len(box.calls), 3)
+
+    def test_it_gives_up_after_the_retries(self):
+        box = CrashingSandbox(self.REPLY, crashes=3)
+        with self.assertRaises(RuntimeError):
+            S.claude_scores("haiku", "DEF", [("C0", "x")], box)
+        self.assertEqual(len(box.calls), 3)
+
+
 class SecurityTest(unittest.TestCase):
     """SECURITY.md applied to the sentiment scorer."""
 
