@@ -1206,6 +1206,81 @@ a.ar-seg:focus-visible {
   outline-offset: 2px;
 }
 
+/* The leaderboard's "Find a person" box and its suggestion list, which
+ * floats over what follows. */
+.person-search {
+  position: relative;
+  display: grid;
+  min-width: min(100%, 18rem);
+  flex: 1 1 18rem;
+  max-width: 26rem;
+}
+
+.person-search label {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  margin-bottom: 4px;
+}
+
+.person-search input {
+  font: inherit;
+  font-size: 0.9rem;
+  color: var(--text-primary);
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 5px 8px;
+  min-width: 0;
+}
+
+.person-search input:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.person-list {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  z-index: 5;
+  margin: 2px 0 0;
+  padding: 4px 0;
+  list-style: none;
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+  max-height: 22rem;
+  overflow-y: auto;
+}
+
+.person-list li {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 8px;
+  align-items: baseline;
+  padding: 5px 10px;
+  font-size: 0.9rem;
+}
+
+.person-list [role='option'] {
+  cursor: pointer;
+}
+
+.person-list [aria-selected='true'] {
+  background: color-mix(in srgb, var(--accent) 14%, var(--surface-1));
+}
+
+.person-email {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.person-none {
+  color: var(--text-secondary);
+}
+
 .dir-status {
   grid-column: 1 / -1;
   font-size: 0.8rem;

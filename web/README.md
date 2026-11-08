@@ -310,6 +310,13 @@ there alone; presentation in `src/style.css` (`src/home.css` for the landing pag
    monthly chart adds their commits per month as a curved line on an axis of
    its own; hovering a month shows its point and total. It also links to
    their merged CLs.
+   **Find a person** (`src/personsearch.ts`, `findPeople` in `src/data.ts`)
+   opens anyone's chart by name or email, ranked or not. It suggests nothing
+   until something is typed, then at most 10 people: those whose name or
+   email starts with the text, then those with a word that does, then any
+   other match, the most active in the range first. It searches every
+   reviewer and, once loaded (the first keystroke fetches them), every commit
+   author. Arrow keys and Enter, or a click, pick one; Escape closes the list.
 12. **How review threads are classified** (once some week is classified):
    one bar splitting the range's classified reviewer-started threads by how
    each was decided (owner's "Done", Haiku addressed, Haiku no change, no

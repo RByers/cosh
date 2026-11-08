@@ -719,6 +719,14 @@
               <option value="all">All</option>
             </select>
           </div>
+          <!-- Suggests up to 10 people once something is typed (src/personsearch.ts). -->
+          <div class="person-search chart-toggle">
+            <label for="lb-search">Find a person</label>
+            <input id="lb-search" type="text" role="combobox" aria-autocomplete="list" aria-expanded="false"
+              aria-controls="lb-search-list" autocomplete="off" spellcheck="false" placeholder="Name or email" />
+            <ul id="lb-search-list" class="person-list" role="listbox" aria-label="People matching the search" hidden></ul>
+            <template data-msg="lb-search-none">No one matches “<slot name="q"></slot>”.</template>
+          </div>
         </div>
         <ul id="leaderboard-legend" class="legend" aria-label="Bar colour by organization"></ul>
         <div id="leaderboard-chart" class="lb"></div>

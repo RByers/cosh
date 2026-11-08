@@ -13,6 +13,7 @@ import {
   gerritAuthoredUrl,
   orgFilesPerCommitSpreads,
   monthlyTotals,
+  findPeople,
   complexityGrid,
   complexityScale,
   gerritCommentUrl,
@@ -1356,4 +1357,27 @@ test('monthlyTotals: calendar months by Thursday, each week\'s month', () => {
   assert.deepEqual(m.months.map((x) => x.week), ['2026-W39', '2026-W40', '2026-W45', '2026-W49']);
   // September starts before the weeks given, and December runs on past them.
   assert.deepEqual(m.months.map((x) => x.partial), [true, false, false, true]);
+});
+
+test('findPeople: nothing for a blank query; prefix, then word, then substring; busiest first; at most 10', () => {
+  const r: ReviewerBoard = {
+    meta: { fold_into_other: [] },
+    orgs: ['x.com'],
+    accounts: { 1: 'Ann Lee', 2: 'Lee Ann', 3: 'Joanne Park', 4: 'Bob Stone' },
+    emails: { 1: 'ann@x.com', 2: 'lee@x.com', 3: 'jo@x.com', 4: 'annex@x.com' },
+    weeks: { '2026-W44': [[1, 0, 1, 0, 0], [2, 0, 5, 0, 0], [3, 0, 9, 0, 0], [4, 0, 2, 0, 0]] },
+  };
+  assert.deepEqual(findPeople(r, undefined, '  ', ['2026-W44']), []);
+  // "ann": Ann Lee and Bob Stone (annex@) start with it (Bob busier), Lee Ann has
+  // a word starting with it, Joanne only contains it.
+  assert.deepEqual(findPeople(r, undefined, 'ANN', ['2026-W44']).map((m) => m.name),
+    ['Bob Stone', 'Ann Lee', 'Lee Ann', 'Joanne Park']);
+  assert.deepEqual(findPeople(r, undefined, 'zz', ['2026-W44']), []);
+  // Commit authors count once loaded, their commits as activity.
+  const a = authorBoard({ meta: { fold_into_other: [] }, orgs: ['x.com'], accounts: { 9: 'Annie Dev' },
+    emails: { 9: 'annie@x.com' }, weeks: { '2026-W44': [[9, 0, 50]] } });
+  assert.deepEqual(findPeople(r, a, 'ann', ['2026-W44']).map((m) => [m.name, m.activity])[0], ['Annie Dev', 50]);
+  // At most 10.
+  const many: ReviewerBoard = { ...r, accounts: Object.fromEntries(Array.from({ length: 30 }, (_, i) => [i + 10, `Sam ${i}`])) };
+  assert.equal(findPeople(many, undefined, 'sam', ['2026-W44']).length, 10);
 });

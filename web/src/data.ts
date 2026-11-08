@@ -1106,6 +1106,57 @@ export function monthlyTotals(
   return { months: months.map(({ first: _f, last: _l, ...m }) => m), monthOf };
 }
 
+/** A person the leaderboard's search box offers. */
+export interface PersonMatch {
+  id: number;
+  name: string;
+  email: string | null;
+  /** Review comments plus commits over the weeks given: how matches are ranked. */
+  activity: number;
+}
+
+/** Most people the search box suggests. */
+export const SEARCH_MAX = 10;
+
+/** People whose name or email matches `query` (case-insensitive), from the
+ * reviewer board and, if loaded, the author board: first those whose name or
+ * email starts with it, then those with a word that does, then any other
+ * containing it. Within each, the most active over `weeks` first (review
+ * comments plus commits), then by name. At most `max`; none for a blank query. */
+export function findPeople(
+  reviewers: ReviewerBoard,
+  authors: ReviewerBoard | undefined,
+  query: string,
+  weeks: readonly string[],
+  max = SEARCH_MAX,
+): PersonMatch[] {
+  const q = query.trim().toLowerCase();
+  if (!q) return [];
+  const activity = memo(reviewers, 'searchActivity', `${authors ? 1 : 0}|${weeks.join()}`, () => {
+    const out = new Map<number, number>();
+    for (const w of weeks) {
+      for (const r of reviewers.weeks[w] ?? []) out.set(r[0], (out.get(r[0]) ?? 0) + r[2]);
+      for (const r of authors?.weeks[w] ?? []) out.set(r[0], (out.get(r[0]) ?? 0) + (r[6] ?? 0));
+    }
+    return out;
+  });
+  const ids = new Set([...Object.keys(reviewers.accounts), ...Object.keys(authors?.accounts ?? {})]);
+  const found: (PersonMatch & { tier: number })[] = [];
+  for (const key of ids) {
+    const id = Number(key);
+    const name = reviewers.accounts[key] ?? authors?.accounts[key] ?? `Account ${id}`;
+    const email = reviewers.emails?.[key] ?? authors?.emails?.[key] ?? null;
+    const fields = [name.toLowerCase(), (email ?? '').toLowerCase()];
+    let tier = 3;
+    if (fields.some((f) => f.startsWith(q))) tier = 0;
+    else if (fields.some((f) => f.split(/[\s.@_+-]+/).some((word) => word.startsWith(q)))) tier = 1;
+    else if (fields.some((f) => f.includes(q))) tier = 2;
+    if (tier < 3) found.push({ id, name, email, activity: activity.get(id) ?? 0, tier });
+  }
+  found.sort((a, b) => a.tier - b.tier || b.activity - a.activity || (a.name < b.name ? -1 : a.name > b.name ? 1 : a.id - b.id));
+  return found.slice(0, max).map(({ tier: _t, ...m }) => m);
+}
+
 /** How hover cards name a reviewer: their Gerrit email, which is shorter
  * than a name plus affiliation and can be searched for directly; their name
  * if no email is known (files from before emails were added). */

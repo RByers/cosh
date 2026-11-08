@@ -34,6 +34,7 @@ import { buildAreaChart } from './areas.ts';
 import { buildComplexity, complexityVolumeMax, fmtRatio, type ComplexityValue } from './complexity.ts';
 import { buildHeatmap, heatMax, type HeatCellInfo, type HeatValue } from './heatmap.ts';
 import { buildLeaderboard } from './leaderboard.ts';
+import { personSearch } from './personsearch.ts';
 import {
   addWeeks,
   DEFAULT_HEAT_BIN,
@@ -135,6 +136,7 @@ import {
   ratioSeries,
   gerritAuthoredUrl,
   orgFilesPerCommitSpreads,
+  findPeople,
 } from './data.ts';
 import { formatRatio } from './scale.ts';
 import { fill, msg, type Vars } from './text.ts';
@@ -1656,6 +1658,18 @@ async function main(data: Data) {
         console.error(err);
       });
   };
+  // The leaderboard's "Find a person" box. The commit authors load on the
+  // first keystroke, so people who only commit can be found too.
+  const search = personSearch($<HTMLInputElement>('#lb-search'), $('#lb-search-list'), {
+    matches: (q) => findPeople(data.reviewers, data.authors, q,
+      weeksIn(new Set([...Object.keys(data.reviewers.weeks), ...Object.keys(data.authors?.weeks ?? {})]),
+        userRange ?? state.range)),
+    onType: () => {
+      if (!data.authors) loadCommits(data, onCommitLinks).then(() => search.refresh()).catch((err: unknown) => console.error(err));
+    },
+    onPick: (m) => pick(m.id),
+    none: (q) => msg('lb-search-none', { q }),
+  });
   syncInputs = buildControls(data, state, render, renderSoon, update, withCommits);
   // The metric bar is sticky; scroll-padding-top (in style.css) keeps anchor
   // jumps clear of it, at whatever height it wraps to.
@@ -1664,7 +1678,9 @@ async function main(data: Data) {
     document.documentElement.style.setProperty('--metric-bar-h', `${metricBar.offsetHeight}px`),
   ).observe(metricBar);
   // A shared link may ask for commits: draw once they're in.
-  if (needsCommits(state)) await loadCommits(data, onCommitLinks).catch((err: unknown) => console.error(err));
+  // A shared link to someone who only commits needs the authors too.
+  const authorOnly = state.lbReviewer !== null && !(String(state.lbReviewer) in data.reviewers.accounts);
+  if (needsCommits(state) || authorOnly) await loadCommits(data, onCommitLinks).catch((err: unknown) => console.error(err));
   render();
   // A shared link to a card: the browser can't jump there itself (the hash
   // isn't an id, and the page was hidden while loading), so scroll once the

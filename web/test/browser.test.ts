@@ -2718,3 +2718,53 @@ test('every page carries the Content Security Policy, breaks none of it, and it 
     await hit.close();
   }
 });
+
+test('the leaderboard finds a person by name or email: nothing until typed, at most 10, keyboard and mouse', async () => {
+  const authors = JSON.parse(readFileSync(fileURLToPath(new URL('../../summaries/author_weekly.json', import.meta.url)), 'utf8')) as {
+    accounts: Record<string, string>; weeks: Record<string, [number, number, number][]> };
+  const reviewers = JSON.parse(readFileSync(fileURLToPath(new URL('../../summaries/reviewer_weekly.json', import.meta.url)), 'utf8')) as {
+    accounts: Record<string, string> };
+  const { page, errors } = await open('#metric=comments');
+  const list = () => page.$$eval('#lb-search-list li', (ls) => ls.map((l) => l.textContent ?? ''));
+  const hidden = () => page.$eval('#lb-search-list', (l) => (l as HTMLElement).hidden);
+  await page.focus('#lb-search');
+  assert.equal(await hidden(), true, 'no suggestions before typing');
+  await page.type('#lb-search', 'a');
+  await page.waitForFunction(() => !document.querySelector<HTMLElement>('#lb-search-list')!.hidden);
+  const some = await list();
+  assert.ok(some.length > 0 && some.length <= 10, String(some.length));
+  // An email typed in full finds its person first (names can repeat: two accounts are "Daniel
+  // Cheng"); Enter opens their chart.
+  const leader = await page.$eval('#leaderboard-chart .lb-row', (r) => ({
+    id: (r as HTMLElement).dataset.account!, name: r.querySelector('.lb-name')!.textContent!,
+    email: r.getAttribute('title')!.split('\n')[0].replace(/^\d+\. /, '') }));
+  await page.click('#lb-search', { count: 3 });
+  await page.type('#lb-search', leader.email);
+  await page.waitForFunction((e) => document.querySelector('#lb-search-list li .person-email')?.textContent === e, {}, leader.email);
+  await page.keyboard.press('Enter');
+  await page.waitForFunction(() => !document.querySelector<HTMLElement>('#reviewer-detail')!.hidden);
+  assert.match(page.url(), new RegExp(`lbr=${leader.id}`));
+  assert.equal(await hidden(), true);
+  assert.equal(await page.$eval('#lb-search', (i) => (i as HTMLInputElement).value), leader.name);
+  // Escape closes the list; nothing matching says so.
+  await page.click('#lb-search', { count: 3 });
+  await page.type('#lb-search', 'zzqqxx');
+  await page.waitForFunction(() => /No one matches/.test(document.querySelector('#lb-search-list')!.textContent ?? ''));
+  await page.keyboard.press('Escape');
+  assert.equal(await hidden(), true);
+  // Someone who only commits is found too (the authors load on the first keystroke), by mouse.
+  const busiest = new Map<number, number>();
+  for (const rows of Object.values(authors.weeks)) for (const [id, , n] of rows) busiest.set(id, (busiest.get(id) ?? 0) + n);
+  const [onlyId] = [...busiest].filter(([id]) => !(String(id) in reviewers.accounts)).sort((a, b) => b[1] - a[1])[0];
+  const onlyName = authors.accounts[String(onlyId)];
+  await page.waitForFunction(() => !!window.__cosh!.data.authors);
+  await page.click('#lb-search', { count: 3 });
+  await page.type('#lb-search', onlyName);
+  // Names can repeat across accounts: pick this one by its id.
+  await page.waitForSelector(`#lb-search-list li[data-account="${onlyId}"]`);
+  await page.click(`#lb-search-list li[data-account="${onlyId}"]`);
+  await page.waitForFunction((id) => location.hash.includes(`lbr=${id}`), {}, onlyId);
+  assert.ok((await page.$eval('#rd-title', (t) => t.textContent!)).startsWith(onlyName));
+  assert.deepEqual(errors, []);
+  await page.close();
+});
