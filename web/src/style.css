@@ -1975,3 +1975,115 @@ details.prompt pre {
   border-radius: 6px;
   padding: 10px;
 }
+
+/* ---- Review Balance (balance.html) */
+
+/* A big yellow box at the top of a draft page. */
+.draft-warning {
+  margin: 0 0 20px;
+  padding: 16px 20px;
+  border: 2px solid var(--series-4);
+  border-left-width: 8px;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--series-4) 22%, var(--page));
+  color: var(--text-primary);
+  font-size: 1rem;
+}
+
+.draft-warning p {
+  margin: 0;
+}
+
+.draft-warning .draft-warning-head {
+  margin-bottom: 6px;
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+/* Charts side by side within a card, one per row on narrow screens. */
+.panels {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr));
+  gap: 16px 24px;
+  margin: 8px 0 16px;
+}
+
+.panel {
+  margin: 0;
+  min-width: 0;
+}
+
+.panel h3,
+#exchange > h3,
+#cohorts > h3,
+#growth > h3,
+#areas > h3,
+#ai > h3 {
+  margin: 0 0 4px;
+  font-size: 1rem;
+}
+
+.panel .note {
+  margin: 0 0 8px;
+}
+
+.chart.chart-short {
+  height: 220px;
+}
+
+.chart.chart-tall {
+  height: 340px;
+}
+
+.sub b,
+.tile-value b {
+  font-variant-numeric: tabular-nums;
+}
+
+.balance-table tr.group th {
+  text-align: center;
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.balance-table tbody th {
+  font-weight: normal;
+}
+
+.balance-table td.worse {
+  color: var(--critical);
+  font-weight: 600;
+}
+
+.balance-table td.better {
+  color: var(--series-3);
+  font-weight: 600;
+}
+
+dl.defs {
+  display: grid;
+  gap: 4px;
+  margin: 0 0 12px;
+}
+
+dl.defs dt {
+  font-weight: 600;
+  margin-top: 6px;
+}
+
+dl.defs dd {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  line-height: 1.5;
+  max-width: 80ch;
+}
+
+.balance-table {
+  font-size: 0.85rem;
+}
+
+.balance-table th,
+.balance-table td {
+  padding: 5px 8px;
+}

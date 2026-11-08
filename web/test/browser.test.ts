@@ -2657,6 +2657,64 @@ test('the Review Tone page fits a phone in dark mode', async () => {
   await page.close();
 });
 
+test('the Review Balance page: a draft warning first, every figure, chart and table filled, not on the landing page', async () => {
+  const page = await browser.newPage();
+  const errors: string[] = [];
+  page.on('console', (m) => m.type() === 'error' && errors.push(m.text()));
+  page.on('pageerror', (e) => errors.push(String(e)));
+  await page.setViewport({ width: 1100, height: 900 });
+  await page.goto(baseUrl + 'balance.html', { waitUntil: 'load' });
+  await page.waitForSelector('body[data-ready]');
+  assert.equal(await page.title(), 'Review Balance - Chromium Open Source Health');
+  // The draft warning comes right after the title, before any content.
+  const warning = await page.$eval('header h1 + .draft-warning', (w) => ({
+    text: w.textContent!, bg: getComputedStyle(w).backgroundColor, top: w.getBoundingClientRect().top }));
+  assert.match(warning.text, /Draft: under development/);
+  assert.ok(warning.top < 200, String(warning.top));
+  assert.notEqual(warning.bg, 'rgba(0, 0, 0, 0)');
+  assert.equal(await page.$eval('#error', (e) => (e as HTMLElement).hidden), true);
+  // Every figure in the text is filled with a number.
+  const figures = await page.$$eval('[data-src]', (bs) => bs.map((b) => b.textContent!));
+  assert.ok(figures.length > 60, String(figures.length));
+  for (const f of figures) assert.match(f, /\d/, f);
+  // Every chart is drawn, and every table has rows.
+  const canvases = await page.$$eval('canvas', (cs) => cs.map((c) => [c.id, c.width > 0 && c.height > 0] as const));
+  assert.equal(canvases.length, 22);
+  for (const [id, drawn] of canvases) assert.ok(drawn, id);
+  const rows = await page.$$eval('table.balance-table', (ts) => ts.map((t) => [t.id, (t as HTMLTableElement).tBodies[0].rows.length] as const));
+  assert.deepEqual(rows.map(([id]) => id), ['t-areas', 't-tenure', 't-ai', 't-mech']);
+  for (const [id, n] of rows) assert.ok(n > 3, id);
+  // Directory waits that grew are marked; nothing else in the table is.
+  assert.ok(await page.$('#t-areas td.worse'));
+  assert.deepEqual(await page.$$eval('#t-areas td.worse, #t-areas td.better', (tds) =>
+    [...new Set(tds.map((td) => (td as HTMLTableCellElement).cellIndex))]), [10]);
+  assert.deepEqual(errors, []);
+  await page.close();
+
+  // Not linked from the landing page yet.
+  const home = await browser.newPage();
+  await home.goto(baseUrl, { waitUntil: 'load' });
+  assert.equal(await home.$('a[href*="balance"]'), null);
+  await home.close();
+});
+
+test('the Review Balance page fits a phone in dark mode', async () => {
+  const page = await browser.newPage();
+  await page.emulateMediaFeatures([{ name: 'prefers-color-scheme', value: 'dark' }]);
+  await page.setViewport({ width: 360, height: 800 });
+  await page.goto(baseUrl + 'balance.html', { waitUntil: 'load' });
+  await page.waitForSelector('body[data-ready]');
+  const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+  assert.ok(overflow <= 0, `horizontal overflow ${overflow}px`);
+  if (process.env.SCREENSHOT_DIR) {
+    await page.screenshot({ path: join(process.env.SCREENSHOT_DIR, 'balance-phone-dark.png') as `${string}.png`, fullPage: true });
+    await page.emulateMediaFeatures([{ name: 'prefers-color-scheme', value: 'light' }]);
+    await page.setViewport({ width: 1100, height: 800 });
+    await page.screenshot({ path: join(process.env.SCREENSHOT_DIR, 'balance-light.png') as `${string}.png`, fullPage: true });
+  }
+  await page.close();
+});
+
 test('every link off the site opens in a new tab', async () => {
   // HTML and SVG links whose URL leaves this origin.
   const offsite = (p: Page) => p.$$eval('a', (as) => as.flatMap((a) => {
@@ -2676,8 +2734,12 @@ test('every link off the site opens in a new tab', async () => {
   await other.waitForSelector('body[data-ready]');
   const tone = await offsite(other);
   assert.ok(tone.some((l) => /review\.googlesource\.com/.test(l.href)), 'a praise sample links to its review');
+  await other.goto(baseUrl + 'balance.html', { waitUntil: 'load' });
+  await other.waitForSelector('body[data-ready]');
+  const balance = await offsite(other);
+  assert.ok(balance.some((l) => /github\.com/.test(l.href)), 'the method links to docs/balance.md');
   await other.close();
-  for (const l of [...value, ...home, ...tone]) assert.equal(l.target, '_blank', l.href);
+  for (const l of [...value, ...home, ...tone, ...balance]) assert.equal(l.target, '_blank', l.href);
 });
 
 test('Commits: a fifth metric, loaded on demand, with the same section headings', async () => {
@@ -2788,7 +2850,7 @@ test('Ratio: off by default; plots the review metric over commits', async () => 
 });
 
 test('every page carries the Content Security Policy, breaks none of it, and it blocks injected markup', async () => {
-  for (const path of ['', 'value.html', 'sentiment.html']) {
+  for (const path of ['', 'value.html', 'sentiment.html', 'balance.html']) {
     const page = await browser.newPage();
     const errors: string[] = [];
     page.on('console', (m) => m.type() === 'error' && errors.push(m.text()));

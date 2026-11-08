@@ -401,7 +401,17 @@ so the revert chart should be by size as well as over time.
 
 ## The page (`web/balance.html`)
 
-Each chart follows the project's conventions: text in the HTML, dates not
+**Status (2026-11-08):** a first draft is live as `web/balance.html`, with a
+large "Draft: under development" warning at the top. It isn't linked from the
+landing page yet. It is the static report: the same text, 22 charts and 4 tables as
+the report artifact, drawn with Chart.js from `summaries/balance.json`. That
+file holds 17 aggregate datasets: `balance_report.py`'s `report.json`, plus the
+growth, pipeline, mentorship, AI-paired and mechanical tables from
+`balance_growth.py` and `balance_analysis.py`, joined by hand for now. It has
+no controls yet, so the date range and mechanical toggle below are still
+planned.
+
+The design below is the target. Each chart follows the project's conventions: text in the HTML, dates not
 ISO weeks, one date range for the page, a mechanical-CL toggle.
 
 1. **The exchange:** two lines by quarter, CLs per active author and
@@ -469,8 +479,9 @@ ground rule 3).
 
 1. Switch the analyses to the mechanical rule in section 8 (repetition
    ratios for every ≥ 10-file CL go into `balance.sqlite`).
-2. `summarize`: write the balance summaries; then the page, its tests and a
-   landing-page card.
+2. Write `summaries/balance.json` from the scripts directly (today it is
+   assembled by hand), add the controls planned above, and then a
+   landing-page card once the draft warning can go.
 3. Check whether "independence" growth in 2025–26 holds on interdiff share
    and rounds alone, as more half-years arrive.
 4. Ask: would a Gerrit backfill of 2020–2023 (not approved) be worth it?

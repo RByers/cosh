@@ -1,0 +1,486 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light dark" />
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M8 1.5 13.6 4.75v6.5L8 14.5 2.4 11.25v-6.5Z' fill='%231a5fd0'/%3E%3Ccircle cx='8' cy='8' r='2.3' fill='%23fff'/%3E%3C/svg%3E" />
+    <title>Review Balance - Chromium Open Source Health</title>
+    <link rel="stylesheet" href="/src/style.css" />
+    <meta name="description" content="How Chromium's work is split between authors and reviewers, how people grow into reviewers, and what changed as AI tools arrived." />
+  </head>
+  <body>
+    <!--
+      The page's wording is in this file. Figures inside the text are
+      placeholders that src/balance.ts fills from summaries/balance.json:
+
+        <b data-src="exchange" data-field="cls" data-where="q=2026Q3" data-fmt="n0">–</b>
+
+      data-src names a dataset, data-field a column, data-where picks the row
+      (key=value pairs joined by &amp;, compared as text), data-fmt the format
+      (n0, n1, n2, n3, pct, pct1, x, h, habs; FMT in balance.ts).
+      Everything here is aggregate: no person is named or ranked
+      (docs/balance.md, "Page design").
+    -->
+    <header>
+      <nav class="crumb"><a href="./">← Chromium Open Source Health</a></nav>
+      <h1>Chromium Open Source Health - Review Balance</h1>
+      <aside class="draft-warning" role="note">
+        <p class="draft-warning-head">Draft: under development</p>
+        <p>
+          This page is an early draft. Its figures, methods and conclusions haven't been reviewed and may be
+          wrong or change without notice. Please don't cite or share them yet.
+        </p>
+      </aside>
+      <div class="lede">
+        <p>
+          Since early 2026 Chromium authors land more and larger changes while reviewers write less per line
+          and take longer to start. Newcomers learn faster than ever, but fewer people are stepping up to
+          review them, and the experts who do are stretched thinner.
+        </p>
+        <p class="note">
+          Merged, human-owned CLs on chromium/src <code>main</code>: Gerrit review data from July 2023 to
+          September 2026 (whole quarters), and git history since 2017. Mechanical CLs
+          (<b data-src="summary" data-field="mechanical_cls" data-fmt="n0">–</b> mass edits and imports) are
+          left out of the review measures.
+        </p>
+      </div>
+    </header>
+
+    <main aria-busy="true">
+      <p id="error" class="note" hidden></p>
+      <template data-msg="error">Couldn't load data: <slot name="error"></slot></template>
+
+      <section class="tiles" aria-label="Then and now">
+        <div class="tile"><div class="tile-label">CLs per active author, per quarter</div>
+          <div class="tile-value"><b data-src="exchange" data-field="cls_per_author" data-where="q=2024Q3" data-fmt="n1">–</b> → <b data-src="exchange" data-field="cls_per_author" data-where="q=2026Q3" data-fmt="n1">–</b></div>
+          <div class="tile-sub">2024 Q3 → 2026 Q3</div></div>
+        <div class="tile"><div class="tile-label">Median CL size, changed lines</div>
+          <div class="tile-value"><b data-src="exchange" data-field="median_lines" data-where="q=2024Q3" data-fmt="n0">–</b> → <b data-src="exchange" data-field="median_lines" data-where="q=2026Q3" data-fmt="n0">–</b></div>
+          <div class="tile-sub">2024 Q3 → 2026 Q3</div></div>
+        <div class="tile"><div class="tile-label">Reviewer threads per 100 changed lines</div>
+          <div class="tile-value"><b data-src="exchange" data-field="threads_per_100" data-where="q=2024Q3" data-fmt="n1">–</b> → <b data-src="exchange" data-field="threads_per_100" data-where="q=2026Q3" data-fmt="n1">–</b></div>
+          <div class="tile-sub">2024 Q3 → 2026 Q3</div></div>
+        <div class="tile"><div class="tile-label">CLs per commenting reviewer, per quarter</div>
+          <div class="tile-value"><b data-src="reviewer_quarters" data-field="cls_per_reviewer" data-where="q=2024Q3" data-fmt="n1">–</b> → <b data-src="reviewer_quarters" data-field="cls_per_reviewer" data-where="q=2026Q3" data-fmt="n1">–</b></div>
+          <div class="tile-sub">2024 Q3 → 2026 Q3</div></div>
+        <div class="tile"><div class="tile-label">Newcomer approvals by 2–5-year reviewers</div>
+          <div class="tile-value"><b data-src="newcomer_review" data-field="y2_5" data-where="year=2019" data-fmt="pct">–</b> → <b data-src="newcomer_review" data-field="y2_5" data-where="year=2026" data-fmt="pct">–</b></div>
+          <div class="tile-sub">2019 → 2026</div></div>
+      </section>
+
+      <section id="exchange" class="card" aria-labelledby="exchange-title">
+        <a class="card-anchor" href="#exchange" aria-label="Link to this section" title="Link to this section">#</a>
+        <h2 id="exchange-title">The exchange: more code per author, less review per line</h2>
+        <p class="sub">
+          For nine years an active Chromium author landed about the same number of CLs a month, of about the
+          same size. That broke in 2026. In the third quarter, the median CL was
+          <b data-src="exchange" data-field="median_lines" data-where="q=2026Q3" data-fmt="n0">–</b> changed lines
+          against <b data-src="exchange" data-field="median_lines" data-where="q=2025Q3" data-fmt="n0">–</b> a year
+          earlier, and merged CLs reached <b data-src="exchange" data-field="cls" data-where="q=2026Q3" data-fmt="n0">–</b>
+          in the quarter. Review did not keep up: reviewer threads per 100 changed lines fell from
+          <b data-src="exchange" data-field="threads_per_100" data-where="q=2023Q3" data-fmt="n1">–</b> in 2023 to
+          <b data-src="exchange" data-field="threads_per_100" data-where="q=2026Q3" data-fmt="n1">–</b>.
+        </p>
+        <p class="sub">
+          The review load index compares each CL's reviewer threads with the 2023–24 average for CLs of the same
+          size and directory, so bigger CLs or a shift between areas don't move it. It fell from
+          <b data-src="exchange" data-field="load_index" data-where="q=2023Q3" data-fmt="n2">–</b> to
+          <b data-src="exchange" data-field="load_index" data-where="q=2026Q3" data-fmt="n2">–</b>: like for like,
+          a 2026 CL gets about a third less review than one in 2023.
+        </p>
+        <div class="panels">
+          <figure class="panel"><h3>CLs per active author</h3>
+            <p class="note">Per quarter, people identified across their email addresses.</p>
+            <div class="chart chart-short"><canvas id="c-velocity" role="img" aria-label="CLs per active author, per quarter."></canvas></div></figure>
+          <figure class="panel"><h3>Median CL size</h3>
+            <p class="note">Changed lines (insertions + deletions) of merged CLs.</p>
+            <div class="chart chart-short"><canvas id="c-size" role="img" aria-label="Median changed lines of merged CLs, per quarter."></canvas></div></figure>
+          <figure class="panel"><h3>Review per CL, like for like</h3>
+            <p class="note">Review load index: 1.0 (dashed) is the 2023–24 average for a CL of the same size and directory.</p>
+            <div class="chart chart-short"><canvas id="c-load" role="img" aria-label="Review load index per quarter."></canvas></div></figure>
+        </div>
+        <h3>Nine years of git history</h3>
+        <p class="note">
+          Human commits with a CL on <code>main</code>: commits per active author per month and median changed
+          lines. Both were flat from 2017 until 2026.
+        </p>
+        <div class="chart"><canvas id="c-longrun" role="img" aria-label="Commits per active author per month and median changed lines, per quarter since 2017."></canvas></div>
+      </section>
+
+      <section id="reviewers" class="card" aria-labelledby="reviewers-title">
+        <a class="card-anchor" href="#reviewers" aria-label="Link to this section" title="Link to this section">#</a>
+        <h2 id="reviewers-title">Who carries the load</h2>
+        <p class="sub">
+          Reviewing is spread over fewer people than authoring. In 2026 Q3,
+          <b data-src="reviewer_quarters" data-field="reviewers" data-where="q=2026Q3" data-fmt="n0">–</b> people left
+          review comments on others' CLs, for
+          <b data-src="reviewer_quarters" data-field="authors" data-where="q=2026Q3" data-fmt="n0">–</b> authors.
+          With more CLs and no more reviewers, each commenting reviewer saw
+          <b data-src="reviewer_quarters" data-field="cls_per_reviewer" data-where="q=2026Q3" data-fmt="n1">–</b> CLs
+          in 2026 Q3 against
+          <b data-src="reviewer_quarters" data-field="cls_per_reviewer" data-where="q=2023Q3" data-fmt="n1">–</b> in
+          2023 Q3.
+        </p>
+        <p class="sub">
+          Approvals have been concentrating for years, since before AI tools: the busiest tenth of approvers gave
+          <b data-src="git_quarters" data-field="top10_share" data-where="q=2019Q3" data-fmt="pct">–</b> of approvals
+          in 2019, <b data-src="git_quarters" data-field="top10_share" data-where="q=2024Q3" data-fmt="pct">–</b> in
+          2024 and <b data-src="git_quarters" data-field="top10_share" data-where="q=2026Q3" data-fmt="pct">–</b> in
+          2026.
+        </p>
+        <div class="panels">
+          <figure class="panel"><h3>CLs per commenting reviewer</h3>
+            <p class="note">Merged CLs in the quarter ÷ people who commented on someone else's CL.</p>
+            <div class="chart chart-short"><canvas id="c-perreviewer" role="img" aria-label="Merged CLs per commenting reviewer, per quarter."></canvas></div></figure>
+          <figure class="panel"><h3>Share of approvals by the busiest tenth</h3>
+            <p class="note">From <code>Reviewed-by</code> footers, since mid-2017.</p>
+            <div class="chart chart-short"><canvas id="c-top10" role="img" aria-label="Share of approvals given by the busiest tenth of approvers, per quarter."></canvas></div></figure>
+        </div>
+      </section>
+
+      <section id="latency" class="card" aria-labelledby="latency-title">
+        <a class="card-anchor" href="#latency" aria-label="Link to this section" title="Link to this section">#</a>
+        <h2 id="latency-title">Waiting for review</h2>
+        <p class="sub">
+          Time from being sent for review to the first substantive comment (an inline comment, or a thread the
+          author had to answer) shortened through mid-2025 and has lengthened since: the median went from
+          <b data-src="exchange" data-field="ftr_p50" data-where="q=2025Q2" data-fmt="h">–</b> in 2025 Q2 to
+          <b data-src="exchange" data-field="ftr_p50" data-where="q=2026Q3" data-fmt="h">–</b> in 2026 Q3, and the
+          slowest tenth waited <b data-src="exchange" data-field="ftr_p90" data-where="q=2026Q3" data-fmt="h">–</b>
+          or more.
+        </p>
+        <p class="sub">
+          Individual reviewers are not much slower: the median reviewer still answers within a few weekday hours
+          of being asked (see <a href="#cohorts">Cohorts</a>). The waits grow because the same people face more CLs.
+        </p>
+        <p class="note">
+          Hours are clock hours from Gerrit's attention set, so nights, weekends and time zones are included
+          unless a chart says otherwise; Gerrit doesn't record working hours.
+        </p>
+        <div class="panels">
+          <figure class="panel"><h3>Hours to first substantive review</h3>
+            <p class="note">Bands: 25th to 75th percentile (darker) and to the 90th (lighter); line: median.</p>
+            <div class="chart"><canvas id="c-ftr" role="img" aria-label="Hours from being sent for review to the first substantive review: median, 25th to 75th and 90th percentiles, per quarter."></canvas></div></figure>
+          <figure class="panel"><h3>Time in the attention set per CL</h3>
+            <p class="note">Median hours a reviewer, or the author, was being waited on. Weekends left out for reviewers.</p>
+            <div class="chart"><canvas id="c-waits" role="img" aria-label="Median hours reviewers and authors spent in the attention set per CL, per quarter."></canvas></div></figure>
+        </div>
+      </section>
+
+      <section id="rework" class="card" aria-labelledby="rework-title">
+        <a class="card-anchor" href="#rework" aria-label="Link to this section" title="Link to this section">#</a>
+        <h2 id="rework-title">How much CLs change after review, and whether they stick</h2>
+        <p class="sub">
+          Comparing the diff a reviewer first saw with the diff that landed, line by line so rebases don't count:
+          the median reviewed CL changed by
+          <b data-src="exchange" data-field="interdiff_p50" data-where="q=2026Q3" data-fmt="pct">–</b> of its lines,
+          much as in 2024. Review rounds held at about
+          <b data-src="exchange" data-field="rounds" data-where="q=2026Q3" data-fmt="n1">–</b> per reviewed CL.
+          Reverts within 30 days did not rise:
+          <b data-src="exchange" data-field="reverted" data-where="q=2026Q3" data-fmt="pct1">–</b> of CLs in 2026 Q3
+          against <b data-src="exchange" data-field="reverted" data-where="q=2024Q3" data-fmt="pct1">–</b> in 2024 Q3.
+          Less review per line has not, so far, shown up as more breakage.
+        </p>
+        <div class="panels">
+          <figure class="panel"><h3>Lines changed after first review</h3>
+            <p class="note">All reviewed CLs: changed lines between the first reviewed and final diffs ÷ final diff lines.</p>
+            <div class="chart chart-short"><canvas id="c-interdiff" role="img" aria-label="Share of lines changed after the first review, per quarter."></canvas></div></figure>
+          <figure class="panel"><h3>Reverted within 30 days</h3>
+            <p class="note">Share of merged CLs that a later commit reverted.</p>
+            <div class="chart chart-short"><canvas id="c-reverted" role="img" aria-label="Share of merged CLs reverted within 30 days, per quarter."></canvas></div></figure>
+        </div>
+      </section>
+
+      <section id="areas" class="card" aria-labelledby="areas-title">
+        <a class="card-anchor" href="#areas" aria-label="Link to this section" title="Link to this section">#</a>
+        <h2 id="areas-title">Across the codebase</h2>
+        <p class="sub">
+          The same shift shows in nearly every busy directory: more CLs, more newcomers, fewer threads per line.
+          In <code>chrome/browser</code>, newcomers' CLs went from
+          <b data-src="areas" data-field="y24_newcomer_share" data-where="area=chrome/browser" data-fmt="pct1">–</b>
+          to <b data-src="areas" data-field="now_newcomer_share" data-where="area=chrome/browser" data-fmt="pct1">–</b>
+          of the total. Waits nearly doubled in the deepest platform code: the median first review in
+          <code>content/browser</code> went from
+          <b data-src="areas" data-field="y24_ftr_p50" data-where="area=content/browser" data-fmt="h">–</b> to
+          <b data-src="areas" data-field="now_ftr_p50" data-where="area=content/browser" data-fmt="h">–</b>, and in
+          <code>third_party/blink</code> from
+          <b data-src="areas" data-field="y24_ftr_p50" data-where="area=third_party/blink" data-fmt="h">–</b> to
+          <b data-src="areas" data-field="now_ftr_p50" data-where="area=third_party/blink" data-fmt="h">–</b>.
+        </p>
+        <h3>Busiest directories, 2024 against the last four quarters</h3>
+        <p class="note">
+          Directory: the CL's main 2-level directory. "Now" is 2025 Q4 to 2026 Q3. Load index: 1.0 is the
+          2023–24 average for the CL's size and directory. Hours to first review are red where the wait grew by
+          more than a tenth, green where it shrank by more than a tenth.
+        </p>
+        <div class="table-wrap">
+          <table id="t-areas" class="balance-table">
+            <thead>
+              <tr class="group"><th></th><th colspan="2">CLs</th><th colspan="2">Median lines</th><th colspan="2">Threads per 100 lines</th><th colspan="2">Load index</th><th colspan="2">Hours to first review</th><th colspan="2">Newcomer share</th></tr>
+              <tr><th>Directory</th><th>2024</th><th>Now</th><th>2024</th><th>Now</th><th>2024</th><th>Now</th><th>2024</th><th>Now</th><th>2024</th><th>Now</th><th>2024</th><th>Now</th></tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="learning" class="card" aria-labelledby="learning-title">
+        <a class="card-anchor" href="#learning" aria-label="Link to this section" title="Link to this section">#</a>
+        <h2 id="learning-title">Learning to need less review</h2>
+        <p class="sub">
+          Before AI tools, the learning signal was strong. A CL from someone in their first three months drew
+          <b data-src="learning" data-field="load_index" data-where="era=2023H2-2024&amp;bucket=0-3" data-fmt="x">–</b>
+          the usual review for its size and directory; after ten years,
+          <b data-src="learning" data-field="load_index" data-where="era=2023H2-2024&amp;bucket=120-999" data-fmt="x">–</b>.
+          Familiarity with the code mattered as much as tenure: a first CL in a directory drew
+          <b data-src="learning" data-field="load_index" data-where="era=2023H2-2024&amp;bucket=fam 0" data-fmt="x">–</b>,
+          against
+          <b data-src="learning" data-field="load_index" data-where="era=2023H2-2024&amp;bucket=fam 100+" data-fmt="x">–</b>
+          for someone with 100 or more commits there.
+        </p>
+        <p class="sub">
+          In 2026 the curve keeps its shape but drops, most at the start:
+          <b data-src="learning" data-field="load_index" data-where="era=2026 (to Sep)&amp;bucket=0-3" data-fmt="x">–</b>
+          for a first-quarter newcomer,
+          <b data-src="learning" data-field="load_index" data-where="era=2026 (to Sep)&amp;bucket=120-999" data-fmt="x">–</b>
+          for a ten-year veteran. Either newcomers arrive better prepared, or they get less of the feedback that
+          trains them. The <a href="#cohorts">cohorts</a> and the <a href="#pipeline">training chain</a> below
+          suggest both.
+        </p>
+        <div class="panels">
+          <figure class="panel"><h3>Review load by tenure</h3>
+            <p class="note">Months since the author's first commit. 1.0 (dashed) is the 2023–24 average for the CL's size and directory.</p>
+            <div class="chart"><canvas id="c-tenure" role="img" aria-label="Review load index by the author's tenure, for 2023 H2 to 2024, 2025 and 2026."></canvas></div></figure>
+          <figure class="panel"><h3>Review load by familiarity with the directory</h3>
+            <p class="note">The author's earlier commits in the CL's main 3-level directory.</p>
+            <div class="chart"><canvas id="c-fam" role="img" aria-label="Review load index by the author's earlier commits in the directory, for 2023 H2 to 2024, 2025 and 2026."></canvas></div></figure>
+        </div>
+      </section>
+
+      <section id="cohorts" class="card" aria-labelledby="cohorts-title">
+        <a class="card-anchor" href="#cohorts" aria-label="Link to this section" title="Link to this section">#</a>
+        <h2 id="cohorts-title">Cohorts: the 2025 joiners grew faster on every path</h2>
+        <p class="sub">
+          Following people who joined in 2023, 2024 and 2025 through their first months: by nine to twelve months
+          in, the 2025 joiners landed
+          <b data-src="cohort_curves" data-field="cls_per_person_month" data-where="cohort=joined 2025&amp;months=9-12" data-fmt="n1">–</b>
+          CLs a month against
+          <b data-src="cohort_curves" data-field="cls_per_person_month" data-where="cohort=joined 2023&amp;months=9-12" data-fmt="n1">–</b>
+          for the 2023 joiners at the same point. They drew less review for their size and area
+          (<b data-src="cohort_curves" data-field="load_index" data-where="cohort=joined 2025&amp;months=9-12" data-fmt="x">–</b>
+          against
+          <b data-src="cohort_curves" data-field="load_index" data-where="cohort=joined 2023&amp;months=9-12" data-fmt="x">–</b>),
+          and reviewed others' CLs sooner
+          (<b data-src="cohort_curves" data-field="reviews_per_person_month" data-where="cohort=joined 2025&amp;months=9-12" data-fmt="n1">–</b>
+          reviews a month against
+          <b data-src="cohort_curves" data-field="reviews_per_person_month" data-where="cohort=joined 2023&amp;months=9-12" data-fmt="n1">–</b>).
+        </p>
+        <p class="sub">
+          Part of the lower review load is the project-wide drop in 2026: veterans' load fell by about a fifth
+          too. Even allowing for that, the 2025 cohort needed less feedback sooner than earlier cohorts. Each point
+          counts only people still active at that stage, so the curves describe those who stayed.
+        </p>
+        <div class="panels">
+          <figure class="panel"><h3>Review load index</h3>
+            <p class="note">By months since first commit. Lower means less review than usual for the CL's size and directory.</p>
+            <div class="chart chart-short"><canvas id="c-co-load" role="img" aria-label="Review load index by months since first commit, for people who joined in 2023, 2024 and 2025."></canvas></div></figure>
+          <figure class="panel"><h3>CLs landed per person per month</h3>
+            <p class="note">Velocity.</p>
+            <div class="chart chart-short"><canvas id="c-co-vel" role="img" aria-label="CLs landed per person per month, by months since first commit, for people who joined in 2023, 2024 and 2025."></canvas></div></figure>
+          <figure class="panel"><h3>Others' CLs reviewed per person per month</h3>
+            <p class="note">CLs on which they left a review comment.</p>
+            <div class="chart chart-short"><canvas id="c-co-rev" role="img" aria-label="Others' CLs reviewed per person per month, by months since first commit, for people who joined in 2023, 2024 and 2025."></canvas></div></figure>
+        </div>
+        <h3>From author to reviewer, 2017–2026</h3>
+        <p class="note">
+          Median review share, approvals given ÷ (approvals + CLs authored), of each start-year cohort by year
+          since joining. Everyone starts as an author; by year four, a typical person approves nearly as many CLs
+          as they land.
+        </p>
+        <div class="chart chart-tall"><canvas id="c-gitco" role="img" aria-label="Median review share by year since joining, one line per start year from 2017 to 2025."></canvas></div>
+        <h3>Reviewers by tenure: speed and thoroughness</h3>
+        <p class="note">
+          Each (CL, reviewer) pair. Response: weekday hours from being added to the attention set to the first
+          comment. Threads: review threads started per CL reviewed. Newcomer share: CLs reviewed whose author was
+          in their first year.
+        </p>
+        <div class="table-wrap">
+          <table id="t-tenure" class="balance-table">
+            <thead><tr><th>Half-year</th><th>Reviewer tenure</th><th>CLs reviewed</th><th>Response, median h</th><th>Response, 75th pct h</th><th>Threads per CL</th><th>Addressed threads per CL</th><th>Newcomer share</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="growth" class="card" aria-labelledby="growth-title">
+        <a class="card-anchor" href="#growth" aria-label="Link to this section" title="Link to this section">#</a>
+        <h2 id="growth-title">Growth paths, and who isn't growing</h2>
+        <p class="sub">
+          For each person and half-year we measure velocity (CLs per active month), size (median lines), breadth
+          (directories among a fixed sample of their CLs), reviewing (approvals per active month) and, since 2023,
+          independence (needing fewer threads than peers for the same size and area). Each is taken relative to
+          everyone's median that half-year, so tools that help everyone don't count as anyone's growth. A person
+          is improving on a path when their two-year trend beats the 80th percentile of trends from the same
+          people with their half-years shuffled. Chance alone puts about 20% of people on any one path.
+        </p>
+        <p class="sub">
+          People grow mostly by reviewing more and by needing less review, not by writing bigger CLs: size sits
+          at chance in every window. The share improving on none of the four git paths was
+          <b data-src="growth_windows" data-field="none_core4" data-where="window=2019-20&amp;tenure=all" data-fmt="pct">–</b>
+          in 2019–20,
+          <b data-src="growth_windows" data-field="none_core4" data-where="window=2023-24&amp;tenure=all" data-fmt="pct">–</b>
+          in 2023–24 and
+          <b data-src="growth_windows" data-field="none_core4" data-where="window=2025-26&amp;tenure=all" data-fmt="pct">–</b>
+          in 2025–26. Most of them are people with five or more years' tenure who have plateaued as authors.
+          Since AI tools arrived, the low-growth share has eased slightly, not risen.
+        </p>
+        <h3>Share of people improving on each path, by two-year window</h3>
+        <p class="note">
+          All people with three or more measured half-years in the window. Dashed line: chance. Independence is
+          measured from 2023.
+        </p>
+        <div class="chart chart-tall"><canvas id="c-growth" role="img" aria-label="Share of people improving on velocity, size, breadth, reviewing and independence, by two-year window, against a chance line at 20%."></canvas></div>
+      </section>
+
+      <section id="pipeline" class="card" aria-labelledby="pipeline-title">
+        <a class="card-anchor" href="#pipeline" aria-label="Link to this section" title="Link to this section">#</a>
+        <h2 id="pipeline-title">The training chain: experts teaching newcomers who become experts</h2>
+        <p class="sub">
+          Chromium has always trained newcomers through review. For years, people who were themselves only a few
+          years in did a large share of it. In 2019 reviewers with two to five years' tenure gave
+          <b data-src="newcomer_review" data-field="y2_5" data-where="year=2019" data-fmt="pct">–</b> of the
+          approvals on newcomers' CLs; in 2026,
+          <b data-src="newcomer_review" data-field="y2_5" data-where="year=2026" data-fmt="pct">–</b>. Reviewers
+          with ten or more years now give
+          <b data-src="newcomer_review" data-field="y10p" data-where="year=2026" data-fmt="pct">–</b>, at a time
+          when newcomers' CLs are
+          <b data-src="newcomer_review" data-field="share_of_all" data-where="year=2026" data-fmt="pct">–</b> of all
+          approvals.
+        </p>
+        <p class="sub">
+          Fewer people complete the chain, and the decline started before AI tools. Of those who joined in 2018,
+          <b data-src="mentorship" data-field="became_mentors" data-where="year=2018" data-fmt="pct">–</b> were
+          mentoring newcomers of their own within four years; of the 2022 joiners,
+          <b data-src="mentorship" data-field="became_mentors" data-where="year=2022" data-fmt="pct">–</b>. New
+          regular reviewers (60 or more approvals in a year for the first time) fell to
+          <b data-src="pipeline" data-field="new_regular_reviewers" data-where="year=2025" data-fmt="n0">–</b> in
+          2025, from <b data-src="pipeline" data-field="new_regular_reviewers" data-where="year=2018" data-fmt="n0">–</b>
+          in 2018. Mentoring is concentrating too: the busiest tenth of mentors took
+          <b data-src="mentorship" data-field="top10_share" data-where="year=2025" data-fmt="pct">–</b> of 2025's
+          newcomers.
+        </p>
+        <div class="panels">
+          <figure class="panel"><h3>Who approves newcomers' CLs</h3>
+            <p class="note">
+              Approvals of CLs by authors in their first year, by the approver's tenure. The 10+ group could only
+              grow as the project aged, but the 2–5-year group shrinking is the clearest change.
+            </p>
+            <div class="chart"><canvas id="c-newcomer" role="img" aria-label="Approvals of newcomers' CLs by the approver's tenure, per year."></canvas></div></figure>
+          <figure class="panel"><h3>New regular reviewers and new OWNERS per year</h3>
+            <p class="note">First calendar year with 60 or more approvals; first addition to any OWNERS file. 2026 runs to October.</p>
+            <div class="chart"><canvas id="c-pipeline" role="img" aria-label="New regular reviewers, people first added to OWNERS and new authors, per year."></canvas></div></figure>
+          <figure class="panel"><h3>Mentees who became mentors</h3>
+            <p class="note">
+              Share of each start year's newcomers who, within four years, were among the top two approvers of at
+              least two newer people's first ten CLs. 2023 and later windows are still open.
+            </p>
+            <div class="chart chart-short"><canvas id="c-mentors" role="img" aria-label="Share of each start year's newcomers who became mentors within four years."></canvas></div></figure>
+          <figure class="panel"><h3>Becoming an OWNER within three years</h3>
+            <p class="note">Kaplan-Meier share of each start cohort (20 or more CLs) added to an OWNERS file within three years of their first commit.</p>
+            <div class="chart chart-short"><canvas id="c-owner" role="img" aria-label="Share of each start cohort added to an OWNERS file within three years."></canvas></div></figure>
+        </div>
+      </section>
+
+      <section id="ai" class="card" aria-labelledby="ai-title">
+        <a class="card-anchor" href="#ai" aria-label="Link to this section" title="Link to this section">#</a>
+        <h2 id="ai-title">AI-marked CLs, compared with the same author's other CLs</h2>
+        <p class="sub">
+          Since July 2026 some commits carry an <code>Agent-Generated</code> trailer, and a few from 2025 say they
+          were generated with Gemini. Comparing each author's marked CLs with their unmarked ones in the same
+          quarter, marked CLs got their first review about
+          <b data-src="ai_paired" data-field="diff" data-where="metric=h to first review" data-fmt="habs">–</b>
+          sooner. No other difference was clear. The sample is small
+          (<b data-src="ai_paired" data-field="n" data-where="metric=lines" data-fmt="n0">–</b> author-quarters)
+          and self-selected, and most AI use carries no marker.
+        </p>
+        <h3>Marked minus unmarked, paired by author and quarter</h3>
+        <div class="table-wrap">
+          <table id="t-ai" class="balance-table">
+            <thead><tr><th>Measure</th><th>Difference</th><th>95% CI low</th><th>95% CI high</th><th>Author-quarters</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <p class="note">Lines are compared as log(1 + lines). Hours to first review counts clock hours.</p>
+      </section>
+
+      <section id="mechanical" class="card" aria-labelledby="mechanical-title">
+        <a class="card-anchor" href="#mechanical" aria-label="Link to this section" title="Link to this section">#</a>
+        <h2 id="mechanical-title">Why mechanical CLs are left out</h2>
+        <p class="sub">
+          Past about 50 files, review per file collapses: CLs with 100 to 199 files got
+          <b data-src="mechanical_files" data-field="threads_per_file" data-where="files=100-199" data-fmt="n3">–</b>
+          threads per file, against
+          <b data-src="mechanical_files" data-field="threads_per_file" data-where="files=10-19" data-fmt="n2">–</b>
+          for 10 to 19 files. Repetitive diffs (the same lines repeated across files) behave the same at any size.
+          A CL counts as mechanical with 100 or more files, or with 10 or more files of which at least 80% of
+          changed lines are repeats. The rule doesn't look at review counts, so it can't bias the review measures
+          it filters.
+        </p>
+        <div class="panels">
+          <figure class="panel"><h3>Reviewer threads per file, by file count</h3>
+            <p class="note">Merged human-owned CLs, July 2023 to October 2026. Log scale; grey bars are always mechanical.</p>
+            <div class="chart chart-short"><canvas id="c-mechfiles" role="img" aria-label="Reviewer threads per file by the CL's file count, on a log scale."></canvas></div></figure>
+          <figure class="panel"><h3>CLs with 10+ files, by repetition</h3>
+            <p class="note">Repetition = 1 − distinct changed lines ÷ changed lines.</p>
+            <div class="table-wrap">
+              <table id="t-mech" class="balance-table">
+                <thead><tr><th>Repetition</th><th>CLs</th><th>With a thread</th><th>Threads per file</th><th>Median files</th></tr></thead>
+                <tbody></tbody>
+              </table>
+            </div></figure>
+        </div>
+      </section>
+
+      <section id="method" class="card" aria-labelledby="method-title">
+        <a class="card-anchor" href="#method" aria-label="Link to this section" title="Link to this section">#</a>
+        <h2 id="method-title">How it's measured</h2>
+        <dl class="defs">
+          <dt>Data</dt>
+          <dd>Chromium's public Gerrit review data (comments, threads and NoteDb history with uploads and the
+            attention set) from July 2023, every reviewed CL's patch sets, and chromium/src <code>main</code>'s full
+            git history, including <code>Reviewed-by</code> footers from mid-2017 and OWNERS files from 2012.</dd>
+          <dt>People</dt>
+          <dd>One person across addresses: the same username at chromium.org and google.com, old SVN-era addresses,
+            and the Gerrit owner and git author of the same CL. Tenure counts from a person's first commit on
+            <code>main</code>. Bots and service accounts are left out. No individual is named or ranked.</dd>
+          <dt>Substantive review</dt>
+          <dd>An inline reviewer comment, or a reviewer thread the author answered. A lone "LGTM" is not substantive
+            review.</dd>
+          <dt>Review load index</dt>
+          <dd>Reviewer threads ÷ the 2023–24 mean for CLs of the same size (ten log-spaced buckets) and main
+            2-level directory.</dd>
+          <dt>Lines changed after review</dt>
+          <dd>The added and removed lines of the first reviewed patch set's diff against the final one's, compared
+            as multisets, so a rebase changes nothing.</dd>
+          <dt>Growth</dt>
+          <dd>Per person, the least-squares slope of each path over the half-years of a two-year window (three or
+            more measured), shrunk toward zero by its noise and compared with slopes from shuffled half-years.
+            Individual slopes are never published.</dd>
+          <dt>AI attribution</dt>
+          <dd>Most AI use leaves no marker, so the before/after comparison can't separate AI from other changes in
+            2025–26: team growth, new hires, reorganisations, or tooling unrelated to AI.</dd>
+          <dt>Left out</dt>
+          <dd>Abandoned and open CLs; release branches; other repositories (V8, Skia, DevTools). Gerrit history
+            before July 2023 isn't fetched, so pre-AI review measures cover only 18 months. 2026 Q4 is incomplete
+            and is left out of the quarterly charts.</dd>
+        </dl>
+        <p class="note">
+          Code and method:
+          <a target="_blank" rel="noopener" href="https://github.com/RByers/cosh/blob/main/docs/balance.md">docs/balance.md</a>.
+        </p>
+      </section>
+    </main>
+    <script type="module" src="/src/balance.ts"></script>
+  </body>
+</html>
