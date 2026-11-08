@@ -691,16 +691,17 @@ export function renderReviewerChart(
   const base = baseOptions(theme);
   const commitLine = commits && commits.some((v) => v > 0)
     ? [{ type: 'line' as const, label: 'Commits', data: commits, borderColor: theme.text, backgroundColor: theme.text,
-        borderWidth: 1.5, borderDash: [4, 3], pointRadius: 0, order: -1 }]
+        borderWidth: 1.5, pointRadius: 0, pointStyle: 'line' as const, order: -1 }]
     : [];
   return new Chart(canvas, {
     type: 'bar',
     data: {
       labels: weeks,
       datasets: [
-        { label: 'Addressed comments', data: addressed, backgroundColor: color, borderWidth: 0, order: 0 },
+        { label: 'Addressed comments', data: addressed, backgroundColor: color, borderWidth: 0, order: 0,
+          pointStyle: 'rect' },
         { label: 'Review comments', data: comments, backgroundColor: theme.grid, borderColor: theme.muted,
-          borderWidth: 1, order: 1 },
+          borderWidth: 1, order: 1, pointStyle: 'rect' },
         // A line on the bar chart; Chart.js types a mixed chart's datasets loosely.
         ...(commitLine as unknown as { label: string; data: number[] }[]),
       ],
@@ -709,7 +710,10 @@ export function renderReviewerChart(
       ...base,
       plugins: {
         ...base.plugins,
-        legend: { ...base.plugins.legend, labels: { ...base.plugins.legend.labels, boxHeight: 10 } },
+        // Point styles in the legend: a square for each bar series, a short
+        // line for commits (as a box, its 1.5px outline read as a blob).
+        legend: { ...base.plugins.legend, labels: { ...base.plugins.legend.labels, boxHeight: 10,
+          usePointStyle: true, pointStyleWidth: 16 } },
         tooltip: {
           ...base.plugins.tooltip,
           callbacks: {

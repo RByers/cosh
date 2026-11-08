@@ -301,7 +301,7 @@ there alone; presentation in `src/style.css` (`src/home.css` for the landing pag
    from `reviewer_weekly.json` (no extra data) and has the link to the CLs
    they commented on, on Gerrit. Under Commits, the leaderboard and the
    per-person spread rank commit authors (`author_weekly.json`), and the
-   weekly chart adds their commits as a dashed line, with a link to their
+   weekly chart adds their commits as a line, with a link to their
    merged CLs.
 12. **How review threads are classified** (once some week is classified):
    one bar splitting the range's classified reviewer-started threads by how
