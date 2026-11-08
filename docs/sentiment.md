@@ -275,10 +275,11 @@ scored (2026-W37..W44 so far):
   comment, are listed, top 100. Each row has the name, the email, the
   glowing count, the distinct happy people and the counterparts: no
   per-person mean, which could be negative.
-- **Name popups** list the person's places on the boards (#8 of 265 on
-  Most net praise given, all scored weeks; and the past month): the board
-  the popup came from, or every board for the lookup box. Only boards they
-  are on are shown. They also chart, per month, exactly the kind of comment they
+- **Name popups** list the person's places on the boards in the period
+  selected on the page, with its dates so a saved popup records them (#8
+  of 265 on Most net praise given between 7 Sept and 1 Nov 2026): the board the popup came from, or every board for the lookup box,
+  which also lists only that period's praise. Only boards they are on are
+  shown. They also chart, per month, exactly the kind of comment they
   list, over every week their board covers: praise given, praise received,
   glowing comments received as change author or as reviewer (the happy
   tables), or praise given and received for the lookup box. Praise and
@@ -289,8 +290,9 @@ scored (2026-W37..W44 so far):
   50 KB compressed for a year, loaded when the box is first used). Its
   suggestions start after the first character typed, at most 10. The
   popup's print button prints (or saves as PDF) just the popup, in light
-  colours, with the page title set to the person so a saved PDF is named
-  after them. The praise boards can cover more weeks than the detail here:
+  colours, with the page title set to the popup's (which names Chromium and the
+  person) so a saved PDF is named after it and makes sense on its own.
+  The praise boards can cover more weeks than the detail here:
   `--praise-week 2025-W45:2026-W44` puts their praise comments in the popup
   file while everything else stays on `--week`.
 - **Name popups:** `summaries/sentiment_comments.json` (and its .everyone

@@ -165,12 +165,12 @@ export function boardRank(rows: { email: string }[], email: string): { rank: num
   return i < 0 ? null : { rank: i + 1, of: rows.length };
 }
 
-/** Every praise comment `email` gave or received, newest first: the popup
- * opened from the lookup box. */
-export function allPraise(d: PersonComments, email: string): PersonComment[] {
+/** Every praise comment `email` gave or received (in `range`, if given),
+ * newest first: the popup opened from the lookup box. */
+export function allPraise(d: PersonComments, email: string, range?: [string, string]): PersonComment[] {
   return d.praise
     .map((id) => d.comments[id])
-    .filter((c) => c && (c.writer_email === email || c.recipient_email === email))
+    .filter((c) => c && (!range || within(c.week, range)) && (c.writer_email === email || c.recipient_email === email))
     .sort(newestFirst);
 }
 

@@ -375,33 +375,37 @@ function commentItem(c: PersonComment): HTMLElement {
 /** A board a popup's person may be on: its rows for each period. */
 type RankBoard = 'given' | 'received' | 'authors' | 'reviewers';
 
-/** The person's places on `boards`, over all scored weeks and the past month
- * (the period shown on the page first), as a line each. Boards they aren't on
- * are left out. */
-function drawRanks(email: string, boards: RankBoard[], first: Period) {
-  const periods: Period[] = first === 'all' ? ['all', 'month'] : ['month', 'all'];
-  const rows = (b: RankBoard, p: Period): { email: string }[] =>
+/** The weeks a board covers in `period`. */
+function boardWeeks(b: RankBoard, period: Period): [string, string] | null {
+  if (b === 'given' || b === 'received') return praiseData ? periodWeeks(praiseData.weeks, period) : null;
+  return recentData ? (period === 'all' ? recentData.weeks : recentData.month_weeks) : null;
+}
+
+/** The person's places on `boards` in the period selected on the page, a
+ * line each with its dates (so a printed popup records them). Boards they
+ * aren't on are left out. */
+function drawRanks(email: string, boards: RankBoard[], period: Period) {
+  const rows = (b: RankBoard): { email: string }[] =>
     b === 'given' || b === 'received'
-      ? (praiseData ? netBoard(praiseData, b, p, 'all') : [])
-      : (recentData?.happy[p][b] ?? []);
+      ? (praiseData ? netBoard(praiseData, b, period, 'all') : [])
+      : (recentData?.happy[period][b] ?? []);
   const items: HTMLElement[] = [];
   for (const b of boards) {
-    for (const p of periods) {
-      const r = boardRank(rows(b, p), email);
-      if (!r) continue;
-      const li = el('li');
-      li.append(fragment('person-rank', { rank: fmtInt(r.rank), of: fmtInt(r.of), board: msg(`rank-${b}`), period: msg(`rank-${p}`) }));
-      items.push(li);
-    }
+    const r = boardRank(rows(b), email);
+    const weeks = boardWeeks(b, period);
+    if (!r || !weeks) continue;
+    const li = el('li');
+    li.append(fragment('person-rank', { rank: fmtInt(r.rank), of: fmtInt(r.of), board: msg(`rank-${b}`), range: weeksBetween(weeks) }));
+    items.push(li);
   }
   $('#person-ranks').replaceChildren(...items);
 }
 
 /** Opens the popup: `title` and the person's board places at once, then the
- * comments `pick` chooses, counted with the message `count`, and the chart
- * `chart` describes. */
-function openPerson(title: string, who: { email: string; boards: RankBoard[]; period: Period }, chart: ChartSpec | null,
-  pick: (d: PersonComments) => PersonComment[], count = 'person-count') {
+ * comments `pick` chooses (from the weeks `who.range`), and the chart `chart`
+ * describes. */
+function openPerson(title: string, who: { email: string; boards: RankBoard[]; period: Period; range: [string, string] },
+  chart: ChartSpec | null, pick: (d: PersonComments) => PersonComment[]) {
   $('#person-title').textContent = title;
   drawRanks(who.email, who.boards, who.period);
   const list = $('#person-list');
@@ -418,11 +422,12 @@ function openPerson(title: string, who: { email: string; boards: RankBoard[]; pe
       if (want !== shown || !dialog.open) return;
       const items = pick(d);
       drawPersonChart(chart, d);
-      if (!items.length && praiseData) {
-        note.textContent = msg('person-none', { range: weeksBetween(praiseData.weeks) });
+      const range = weeksBetween(who.range);
+      if (!items.length) {
+        note.textContent = msg('person-none', { range });
         return;
       }
-      note.textContent = msg(count, { n: fmtInt(items.length) });
+      note.textContent = msg('person-count', { n: fmtInt(items.length), range });
       list.replaceChildren(...orNone(items.map(commentItem)));
     },
     (e) => {
@@ -452,7 +457,7 @@ function drawPraise() {
     boardRows($<HTMLTableElement>(`#praise-${key}`),
       netBoard(d, key, period, n).map((r) => ({ name: r.name, email: r.email,
         count: scoreBadge(r.score, d.net_scale, `Net praise ${signed1(r.score)} (${fmtInt(r.praise)} praise comments)`) })),
-      (r) => openPerson(msg(`person-praise-${key}`, { name: r.name }), { email: r.email, boards: [key], period },
+      (r) => openPerson(msg(`person-praise-${key}`, { name: r.name }), { email: r.email, boards: [key], period, range },
         { range: d.weeks, series: [{ key, pick: (c) => praiseComments(c, r.email, key, d.weeks) }] },
         (c) => praiseComments(c, r.email, key, range)));
   }
@@ -517,11 +522,13 @@ async function lookUp() {
     return;
   }
   note.textContent = '';
+  const period = praisePeriod();
+  const range = periodWeeks(d.weeks, period);
   openPerson(msg('person-praise-all', { name: who.name }),
-    { email: who.email, boards: ['given', 'received', 'authors', 'reviewers'], period: 'all' }, {
+    { email: who.email, boards: ['given', 'received', 'authors', 'reviewers'], period, range }, {
     range: d.weeks,
     series: (['given', 'received'] as const).map((key) => ({ key, pick: (c: PersonComments) => praiseComments(c, who.email, key, d.weeks) })),
-  }, (c) => allPraise(c, who.email), 'person-all-count');
+  }, (c) => allPraise(c, who.email, range));
 }
 
 findForm.addEventListener('submit', (e) => {
@@ -556,7 +563,7 @@ function drawHappy() {
   fill($('#happy-sub'), { range: weeksBetween(p === 'all' ? r.weeks : r.month_weeks), min: r.min_counterparts });
   for (const table of ['authors', 'reviewers'] as const) {
     boardRows($<HTMLTableElement>(`#happy-${table}`), r.happy[p][table].slice(0, n).map(fmtRow),
-      (x) => openPerson(msg(`person-happy-${table}`, { name: x.name }), { email: x.email, boards: [table], period: p },
+      (x) => openPerson(msg(`person-happy-${table}`, { name: x.name }), { email: x.email, boards: [table], period: p, range: p === 'all' ? r.weeks : r.month_weeks },
         { range: r.weeks, series: [{ key: table === 'authors' ? 'author' : 'reviewer', pick: (c) => happyAll(c, x.email, table) }] },
         (c) => happyComments(c, x.email, table, p)));
   }

@@ -2373,7 +2373,7 @@ test('the Review Tone page: a name on a board opens a popup with its praise, lin
   await page.click('#praise-given tbody tr button');
   await page.waitForFunction(() => document.querySelectorAll('#person-list li.quote').length > 0);
   assert.equal(await dialog(), true);
-  assert.equal(await page.$eval('#person-title', (e) => e.textContent), `Praise given by ${top.name}`);
+  assert.equal(await page.$eval('#person-title', (e) => e.textContent), `Chromium code review praise given by ${top.name}`);
   const items = await page.$$eval('#person-list li', (lis) => lis.map((li) => {
     const by = li.querySelector('.quote-by')!.cloneNode(true) as HTMLElement;
     const badge = by.querySelector('.score-badge');
@@ -2392,10 +2392,11 @@ test('the Review Tone page: a name on a board opens a popup with its praise, lin
   // The chart shows just this popup's kind: praise given, as many as the list (all weeks).
   const chartLabel = () => page.$eval('#person-months', (c) => c.getAttribute('aria-label')!);
   assert.equal(await chartLabel(), `Praise given (${top.count}) per month`);
-  // Their places on the boards: first on this one over all scored weeks.
+  // Their place on this board, in the selected period only.
   const ranks = await page.$$eval('#person-ranks li', (lis) => lis.map((li) => li.textContent!.replace(/\s+/g, ' ').trim()));
-  assert.match(ranks[0], /^#1 of [\d,]+ on Most net praise given, all scored weeks$/);
-  assert.ok(ranks.every((r) => /Most net praise given/.test(r)), 'only the board the popup came from');
+  assert.equal(ranks.length, 1);
+  assert.match(ranks[0], /^#1 of [\d,]+ on Most net praise given between \d+ \w+( \d{4})? and \d+ \w+ \d{4}$/);
+  assert.match(await page.$eval('#person-note', (e) => e.textContent!), /^[\d,]+ comments between \d+ \w+/);
   // Scrolling the popup never scrolls the page behind it, at its ends too.
   const y0 = await page.evaluate(() => scrollY);
   const box = (await page.$('#person-dialog'))!;
@@ -2411,7 +2412,7 @@ test('the Review Tone page: a name on a board opens a popup with its praise, lin
   });
   await page.click('#person-print');
   assert.equal(await page.evaluate(() => (window as unknown as { printed: string }).printed),
-    `Praise given by ${top.name} · Chromium review tone`);
+    `Chromium code review praise given by ${top.name}`);
   await page.emulateMediaType('print');
   const printed = await page.evaluate(() => ({
     praise: getComputedStyle(document.querySelector('#praise')!).display,
@@ -2426,7 +2427,7 @@ test('the Review Tone page: a name on a board opens a popup with its praise, lin
   assert.equal(await dialog(), false);
   await page.click('#happy-authors tbody tr button');
   await page.waitForFunction(() => document.querySelectorAll('#person-list li.quote').length > 0);
-  assert.match(await page.$eval('#person-title', (e) => e.textContent!), /^Glowing comments from reviewers to /);
+  assert.match(await page.$eval('#person-title', (e) => e.textContent!), /^Glowing Chromium code review comments from reviewers to /);
   assert.match(await chartLabel(), /^Glowing comments received as change author \(\d+\) per month$/);
   await page.mouse.click(5, 5);
   assert.equal(await dialog(), false);
@@ -2443,7 +2444,7 @@ test('the Review Tone page: a name on a board opens a popup with its praise, lin
   await page.type('#praise-find-input', email.toUpperCase());
   await page.keyboard.press('Enter');
   await page.waitForFunction(() => document.querySelectorAll('#person-list li.quote').length > 0);
-  assert.match(await page.$eval('#person-title', (e) => e.textContent!), /^Praise from and to /);
+  assert.match(await page.$eval('#person-title', (e) => e.textContent!), /^Chromium code review praise from and to /);
   assert.match(await chartLabel(), /^Praise given \(\d+\), Praise received \(\d+\) per month$/);
   assert.equal(await page.$eval('#person-chart', (e) => (e as HTMLElement).hidden), false);
   await page.keyboard.press('Escape');

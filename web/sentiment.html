@@ -219,29 +219,26 @@
         <ul id="person-list" class="quotes"></ul>
       </dialog>
       <template data-msg="person-rank">#<slot name="rank"></slot> of <slot name="of"></slot> on
-        <slot name="board"></slot>, <slot name="period"></slot></template>
+        <slot name="board"></slot> between <slot name="range"></slot></template>
       <template data-msg="rank-given">Most net praise given</template>
       <template data-msg="rank-received">Most net praise received</template>
       <template data-msg="rank-authors">Change authors who make reviewers happy</template>
       <template data-msg="rank-reviewers">Reviewers who make authors happy</template>
-      <template data-msg="rank-all">all scored weeks</template>
-      <template data-msg="rank-month">past month</template>
       <template data-msg="person-chart-sub">Per month between <slot name="range"></slot>.</template>
       <template data-msg="chart-given">Praise given</template>
       <template data-msg="chart-received">Praise received</template>
       <template data-msg="chart-author">Glowing comments received as change author</template>
       <template data-msg="chart-reviewer">Glowing comments received as reviewer</template>
-      <template data-msg="person-praise-all">Praise from and to <slot name="name"></slot></template>
-      <template data-msg="person-all-count"><slot name="n"></slot> comments, newest first, each linked to its review.</template>
-      <template data-msg="person-praise-given">Praise given by <slot name="name"></slot></template>
-      <template data-msg="person-praise-received">Praise received by <slot name="name"></slot></template>
-      <template data-msg="person-happy-authors">Glowing comments from reviewers to <slot name="name"></slot></template>
-      <template data-msg="person-happy-reviewers">Glowing comments from change authors to <slot name="name"></slot></template>
+      <template data-msg="person-praise-all">Chromium code review praise from and to <slot name="name"></slot></template>
+      <template data-msg="person-praise-given">Chromium code review praise given by <slot name="name"></slot></template>
+      <template data-msg="person-praise-received">Chromium code review praise received by <slot name="name"></slot></template>
+      <template data-msg="person-happy-authors">Glowing Chromium code review comments from reviewers to <slot name="name"></slot></template>
+      <template data-msg="person-happy-reviewers">Glowing Chromium code review comments from change authors to <slot name="name"></slot></template>
       <!-- The document title while printing the popup: browsers name the saved PDF after it. -->
-      <template data-msg="person-print-title"><slot name="title"></slot> · Chromium review tone</template>
+      <template data-msg="person-print-title"><slot name="title"></slot></template>
       <template data-msg="person-none">No praise comments counted between <slot name="range"></slot>.</template>
       <template data-msg="person-loading">Loading comments…</template>
-      <template data-msg="person-count"><slot name="n"></slot> comments in this period, newest first, each linked to its review.</template>
+      <template data-msg="person-count"><slot name="n"></slot> comments between <slot name="range"></slot>, newest first, each linked to its review.</template>
 
       <section id="samples" class="card" aria-labelledby="samples-title">
         <a class="card-anchor" href="#samples" aria-label="Link to this section" title="Link to this section">#</a>
