@@ -1700,6 +1700,11 @@ canvas.pointing {
   width: 100%;
 }
 
+/* "Glowing comments" may wrap, so the board fits a phone whatever the font. */
+.tone-board th.num {
+  white-space: normal;
+}
+
 .tone-board td:first-child {
   color: var(--text-muted);
 }
