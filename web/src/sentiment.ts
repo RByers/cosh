@@ -35,7 +35,10 @@ import {
   praiseTotal,
   weeksBetween,
   type Authors,
+  allPraise,
+  findPerson,
   happyComments,
+  praiseByMonth,
   praiseComments,
   type HappyRow,
   type PersonComment,
@@ -273,6 +276,53 @@ dialog.addEventListener('click', (e) => {
   if (e.target === dialog && !inside) dialog.close();
 });
 $('#person-close').addEventListener('click', () => dialog.close());
+dialog.addEventListener('close', () => {
+  personChart?.destroy();
+  personChart = undefined;
+});
+
+/** The popup's monthly praise chart, destroyed when the popup closes. */
+let personChart: Chart | undefined;
+
+/** `email`'s praise given and received per month, over every week of the
+ * praise data. Hidden for someone with no praise. Praise only (ground rule 5). */
+function drawPersonChart(email: string) {
+  personChart?.destroy();
+  personChart = undefined;
+  const fig = $('#person-chart');
+  const d = praiseData;
+  const m = d ? praiseByMonth(d, email) : null;
+  const given = m ? m.given.reduce((a, b) => a + b, 0) : 0;
+  const received = m ? m.received.reduce((a, b) => a + b, 0) : 0;
+  fig.hidden = !d || !m || given + received === 0;
+  if (fig.hidden) return;
+  fill($('#person-chart-sub'), { range: weeksBetween(d!.weeks), given: fmtInt(given), received: fmtInt(received) });
+  const theme = readTheme();
+  const axis = { color: theme.text, font: { family: theme.font } };
+  personChart = new Chart($<HTMLCanvasElement>('#person-months'), {
+    type: 'bar',
+    data: {
+      labels: m!.months.map(monthLabel),
+      datasets: [
+        { label: 'Given', data: m!.given, backgroundColor: theme.series[0] },
+        { label: 'Received', data: m!.received, backgroundColor: theme.series[2] },
+      ],
+    },
+    options: {
+      maintainAspectRatio: false,
+      animation: false,
+      interaction: { mode: 'index', intersect: false },
+      scales: {
+        x: { grid: { display: false }, ticks: { ...axis, maxRotation: 0, autoSkip: true, maxTicksLimit: 7 } },
+        y: { beginAtZero: true, grid: { color: theme.grid }, ticks: { ...axis, precision: 0 } },
+      },
+      plugins: {
+        legend: { labels: axis },
+        tooltip: { callbacks: { label: (item) => `${item.dataset.label}: ${fmtInt(Number(item.raw))}` } },
+      },
+    },
+  });
+}
 
 function commentItem(c: PersonComment): HTMLElement {
   const li = el('li', undefined, 'quote quote-praise');
@@ -291,20 +341,24 @@ function commentItem(c: PersonComment): HTMLElement {
   return li;
 }
 
-/** Opens the popup: `title` at once, then the comments `pick` chooses. */
-function openPerson(title: string, pick: (d: PersonComments) => PersonComment[]) {
+/** Opens the popup for `email`: `title` and the monthly chart at once, then
+ * the comments `pick` chooses, counted with the message `count`. */
+function openPerson(title: string, email: string, pick: (d: PersonComments) => PersonComment[], count = 'person-count') {
   $('#person-title').textContent = title;
   const list = $('#person-list');
   const note = $('#person-note');
   list.replaceChildren();
   note.textContent = msg('person-loading');
   if (!dialog.open) dialog.showModal();
+  drawPersonChart(email);
+  list.scrollTop = 0;
+  dialog.scrollTop = 0;
   const want = shown;
   personComments(want).then(
     (d) => {
       if (want !== shown || !dialog.open) return;
       const items = pick(d);
-      note.textContent = msg('person-count', { n: fmtInt(items.length) });
+      note.textContent = msg(count, { n: fmtInt(items.length) });
       list.replaceChildren(...orNone(items.map(commentItem)));
     },
     (e) => {
@@ -334,9 +388,52 @@ function drawPraise() {
     boardRows($<HTMLTableElement>(`#praise-${key}`),
       netBoard(d, key, period, n).map((r) => ({ name: r.name, email: r.email,
         count: scoreBadge(r.score, d.net_scale, `Net praise ${signed1(r.score)} (${fmtInt(r.praise)} praise comments)`) })),
-      (r) => openPerson(msg(`person-praise-${key}`, { name: r.name }), (c) => praiseComments(c, r.email, key, range)));
+      (r) => openPerson(msg(`person-praise-${key}`, { name: r.name }), r.email, (c) => praiseComments(c, r.email, key, range)));
   }
 }
+
+// ---- the lookup box: any email (or name) with praise, with autocomplete
+
+const findForm = $<HTMLFormElement>('#praise-find');
+const findInput = $<HTMLInputElement>('#praise-find-input');
+
+/** The lookup's suggestions: everyone in the praise data, by name. */
+function fillPeople(d: PraiseData) {
+  $('#praise-people').replaceChildren(...Object.entries(d.people)
+    .sort((a, b) => a[1].localeCompare(b[1]))
+    .map(([email, name]) => {
+      const o = el('option');
+      o.value = email;
+      o.label = name;
+      return o;
+    }));
+  $('#praise-find-note').textContent = '';
+}
+
+/** Opens the popup for what the box names, or says no one matched. */
+function lookUp() {
+  const d = praiseData;
+  if (!d) return;
+  const note = $('#praise-find-note');
+  const who = findPerson(d, findInput.value);
+  if (!who) {
+    fill(note, { q: findInput.value.trim(), range: weeksBetween(d.weeks) }, 'praise-find-none');
+    return;
+  }
+  note.textContent = '';
+  openPerson(msg('person-praise-all', { name: who.name }), who.email, (c) => allPraise(c, who.email), 'person-all-count');
+}
+
+findForm.addEventListener('submit', (e) => {
+  e.preventDefault();
+  lookUp();
+});
+// Picking a suggestion opens it at once; typing waits for Enter or Show.
+findInput.addEventListener('input', (e) => {
+  if (!(e instanceof InputEvent) || e.inputType === 'insertReplacementText') {
+    if (praiseData && findPerson(praiseData, findInput.value)) lookUp();
+  }
+});
 
 function drawHappy() {
   const r = recentData;
@@ -348,7 +445,7 @@ function drawHappy() {
   fill($('#happy-sub'), { range: weeksBetween(p === 'all' ? r.weeks : r.month_weeks), min: r.min_counterparts });
   for (const table of ['authors', 'reviewers'] as const) {
     boardRows($<HTMLTableElement>(`#happy-${table}`), r.happy[p][table].slice(0, n).map(fmtRow),
-      (x) => openPerson(msg(`person-happy-${table}`, { name: x.name }), (c) => happyComments(c, x.email, table, p)));
+      (x) => openPerson(msg(`person-happy-${table}`, { name: x.name }), x.email, (c) => happyComments(c, x.email, table, p)));
   }
 }
 
@@ -440,6 +537,7 @@ async function show(authors: Authors, token: number) {
   renderRecent(recent, theme);
   praiseData = praise;
   recentData = recent;
+  fillPeople(praise);
   drawPraise();
   drawHappy();
   renderSamples(samples);

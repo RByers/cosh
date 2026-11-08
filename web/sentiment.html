@@ -141,6 +141,16 @@
             <label><input type="radio" name="praise-size" value="all" />All</label>
           </fieldset>
         </div>
+        <form id="praise-find" class="person-find" autocomplete="off">
+          <label for="praise-find-input">Look up anyone's praise</label>
+          <input id="praise-find-input" type="text" inputmode="email" list="praise-people" spellcheck="false"
+            placeholder="Email address or name" />
+          <button type="submit">Show</button>
+          <datalist id="praise-people"></datalist>
+          <p id="praise-find-note" class="sub" aria-live="polite"></p>
+        </form>
+        <template data-msg="praise-find-none">No praise comments found for “<slot name="q"></slot>” between
+          <slot name="range"></slot>.</template>
         <div class="tone-boards">
           <div>
             <h3>Most net praise given</h3>
@@ -153,7 +163,7 @@
         </div>
         <p class="note">Net praise adds up the scores of a person's praise comments and takes away the scores of any
           grumpy ones (−<span id="net-angry"></span> or less); neutral comments count for nothing. Everyone with a positive
-          total is ranked by it. Select a name to read their praise comments.</p>
+          total is ranked by it. Select a name to read their praise comments and see their praise month by month.</p>
       </section>
 
       <section id="happy" class="card" aria-labelledby="happy-title">
@@ -197,9 +207,17 @@
           <h2 id="person-title"></h2>
           <button type="button" id="person-close" class="person-close" aria-label="Close">×</button>
         </div>
+        <figure id="person-chart" class="person-chart">
+          <figcaption id="person-chart-sub" class="sub"></figcaption>
+          <div class="person-chart-box"><canvas id="person-months" aria-label="Praise per month"></canvas></div>
+        </figure>
         <p id="person-note" class="sub" aria-live="polite"></p>
         <ul id="person-list" class="quotes"></ul>
       </dialog>
+      <template data-msg="person-chart-sub">Praise per month between <slot name="range"></slot>:
+        <slot name="given"></slot> given and <slot name="received"></slot> received.</template>
+      <template data-msg="person-praise-all">Praise from and to <slot name="name"></slot></template>
+      <template data-msg="person-all-count"><slot name="n"></slot> comments, newest first, each linked to its review.</template>
       <template data-msg="person-praise-given">Praise given by <slot name="name"></slot></template>
       <template data-msg="person-praise-received">Praise received by <slot name="name"></slot></template>
       <template data-msg="person-happy-authors">Glowing comments from reviewers to <slot name="name"></slot></template>

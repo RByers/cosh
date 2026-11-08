@@ -2,7 +2,7 @@
 // `python3 -m cosh.sentiment summary | praise | samples` (docs/sentiment.md).
 // Ground rule 5: people are named only for praise; grumpy samples carry no
 // names, links or dates finer than a month.
-import { addWeeks, weekMonday, weekSunday } from './data.ts';
+import { addWeeks, weekMonday, weekMonth, weekSunday } from './data.ts';
 import { fmtDay } from './format.ts';
 
 export type Interval = [number, number];
@@ -156,6 +156,54 @@ const within = (week: string, [from, to]: [string, string]) => week >= from && w
 export function netBoard(d: PraiseData, key: 'given' | 'received', period: Period, n: number | 'all' = 15): NetRow[] {
   const rows = d.net?.[period]?.[key] ?? [];
   return n === 'all' ? rows : rows.slice(0, n);
+}
+
+/** Every praise comment `email` gave or received, newest first: the popup
+ * opened from the lookup box. */
+export function allPraise(d: PersonComments, email: string): PersonComment[] {
+  return d.praise
+    .map((id) => d.comments[id])
+    .filter((c) => c && (c.writer_email === email || c.recipient_email === email))
+    .sort(newestFirst);
+}
+
+/** `email`'s praise given and received per month ("2026-10"), every month
+ * of the data's weeks included (a week counts in its Thursday's month).
+ * Praise only, so the chart can't show anything negative (ground rule 5). */
+export function praiseByMonth(d: Pick<PraiseData, 'weeks' | 'weekly'>, email: string): { months: string[]; given: number[]; received: number[] } {
+  const key = (w: string) => {
+    const { year, month } = weekMonth(w);
+    return `${year}-${String(month + 1).padStart(2, '0')}`;
+  };
+  const months: string[] = [];
+  for (let m = key(d.weeks[0]); m <= key(d.weeks[1]); ) {
+    months.push(m);
+    const [y, mm] = m.split('-').map(Number);
+    m = mm === 12 ? `${y + 1}-01` : `${y}-${String(mm + 1).padStart(2, '0')}`;
+  }
+  const at = new Map(months.map((m, i) => [m, i]));
+  const given = months.map(() => 0);
+  const received = months.map(() => 0);
+  for (const r of d.weekly) {
+    if (r.email !== email) continue;
+    const i = at.get(key(r.week));
+    if (i === undefined) continue;
+    given[i] += r.given;
+    received[i] += r.received;
+  }
+  return { months, given, received };
+}
+
+/** The person a lookup names: an email (any case), or a name that only one
+ * person has. Null when no one in the data matches. */
+export function findPerson(d: Pick<PraiseData, 'people'>, query: string): { email: string; name: string } | null {
+  const q = query.trim().toLowerCase();
+  if (!q) return null;
+  const people = Object.entries(d.people);
+  const byEmail = people.find(([e]) => e.toLowerCase() === q);
+  if (byEmail) return { email: byEmail[0], name: byEmail[1] };
+  const byName = people.filter(([, n]) => n.toLowerCase() === q);
+  return byName.length === 1 ? { email: byName[0][0], name: byName[0][1] } : null;
 }
 
 /** Praise comments in the data or in `range` (each counts once, as given). */

@@ -1712,11 +1712,71 @@ canvas.pointing {
 .person-dialog {
   width: min(720px, calc(100vw - 32px));
   max-height: min(80vh, 900px);
+  /* Wheel and touch scrolling stay in the popup, even at its ends, and the
+   * page behind doesn't move while it is open (below). */
+  overflow-y: auto;
+  overscroll-behavior: contain;
   padding: 16px;
   border: 1px solid var(--border);
   border-radius: 10px;
   background: var(--surface-1);
   color: var(--text-primary);
+}
+
+html:has(.person-dialog[open]) {
+  scrollbar-gutter: stable;
+  overflow: hidden;
+}
+
+/* The popup's praise per month. */
+.person-chart {
+  margin: 12px 0 4px;
+}
+
+.person-chart-box {
+  position: relative;
+  height: 180px;
+}
+
+/* The praise board's lookup box: label, input and button on one line when they fit. */
+.person-find {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 8px;
+  margin: 12px 0;
+}
+
+.person-find input {
+  flex: 1 1 220px;
+  max-width: 360px;
+  min-height: 32px;
+  padding: 4px 8px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--page);
+  color: var(--text-primary);
+  font: inherit;
+}
+
+.person-find button {
+  min-height: 32px;
+  padding: 4px 12px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface-1);
+  color: var(--text-primary);
+  font: inherit;
+  cursor: pointer;
+}
+
+.person-find .sub {
+  flex-basis: 100%;
+  margin: 0;
+}
+
+.person-find .sub:empty {
+  display: none;
 }
 
 .person-dialog::backdrop {

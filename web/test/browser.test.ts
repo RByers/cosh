@@ -2386,6 +2386,17 @@ test('the Review Tone page: a name on a board opens a popup with its praise, lin
     assert.ok(it.by.startsWith(`${top.name} to `), it.by);
     assert.match(it.href ?? '', /^https:\/\/chromium-review\.googlesource\.com\/c\//);
   }
+  // The monthly chart: praise only, given and received.
+  assert.equal(await page.$eval('#person-chart', (e) => (e as HTMLElement).hidden), false);
+  assert.match(await page.$eval('#person-chart-sub', (e) => e.textContent!), /given and [\d,]+ received/);
+  // Scrolling the popup never scrolls the page behind it, at its ends too.
+  const y0 = await page.evaluate(() => scrollY);
+  const box = (await page.$('#person-dialog'))!;
+  const r = (await box.boundingBox())!;
+  await page.mouse.move(r.x + r.width / 2, r.y + r.height / 2);
+  for (let i = 0; i < 30; i++) await page.mouse.wheel({ deltaY: 400 });
+  await new Promise((res) => setTimeout(res, 200));
+  assert.equal(await page.evaluate(() => scrollY), y0);
   // Escape closes it; so does a click on the backdrop.
   await page.keyboard.press('Escape');
   assert.equal(await dialog(), false);
@@ -2393,6 +2404,21 @@ test('the Review Tone page: a name on a board opens a popup with its praise, lin
   await page.waitForFunction(() => document.querySelectorAll('#person-list li.quote').length > 0);
   assert.match(await page.$eval('#person-title', (e) => e.textContent!), /^Glowing comments from reviewers to /);
   await page.mouse.click(5, 5);
+  assert.equal(await dialog(), false);
+
+  // The lookup box: an email typed by hand opens that person's praise, given and received.
+  const email = await page.$eval('#praise-received tbody tr button', (b) => (b as HTMLElement).title);
+  assert.ok((await page.$$eval('#praise-people option', (os) => os.length)) > 0);
+  await page.type('#praise-find-input', email.toUpperCase());
+  await page.keyboard.press('Enter');
+  await page.waitForFunction(() => document.querySelectorAll('#person-list li.quote').length > 0);
+  assert.match(await page.$eval('#person-title', (e) => e.textContent!), /^Praise from and to /);
+  assert.equal(await page.$eval('#person-chart', (e) => (e as HTMLElement).hidden), false);
+  await page.keyboard.press('Escape');
+  await page.$eval('#praise-find-input', (i) => ((i as HTMLInputElement).value = ''));
+  await page.type('#praise-find-input', 'nobody@example.invalid');
+  await page.click('#praise-find button');
+  assert.match(await page.$eval('#praise-find-note', (e) => e.textContent!), /No praise comments found/);
   assert.equal(await dialog(), false);
   assert.deepEqual(errors, []);
   await page.close();

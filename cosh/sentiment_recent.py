@@ -3,7 +3,7 @@
 
   python3 -m cosh.sentiment_people collect --week 2026-W37:2026-W44   # rows with identities
   python3 -m cosh.sentiment score --week 2026-W37:2026-W44            # every comment
-  python3 -m cosh.sentiment_recent --week 2026-W37:2026-W44
+  python3 -m cosh.sentiment_recent --week 2026-W37:2026-W44 --praise-week 2025-W45:2026-W44
 
 It writes, for those weeks:
   - an overview, a week-by-week table and the score distribution;
@@ -168,32 +168,44 @@ def _record(r, scores):
                 url=S.comment_url(r["project"], r["cl"], r["uuid"]))
 
 
-def person_comments(rows, scores, weeks, month):
+def person_comments(rows, scores, weeks, month, praise_rows=None):
     """The comments behind the praise boards (`praise`: every praise comment
     from one person to another, as on summaries/sentiment_praise.json) and
     the happy tables (`happy[period][table][email]`: each listed person's
-    glowing comments). Only praise and glowing comments: never negative ones."""
-    praise = [r for r in rows if S.is_praise(r, scores) and S._target_kind(r) == "person"
+    glowing comments). Only praise and glowing comments: never negative ones.
+
+    Praise comes from `praise_rows` when given (the praise boards can cover
+    more weeks than the fully scored ones, `rows`), and `weeks` is then their
+    range."""
+    praise_rows = rows if praise_rows is None else praise_rows
+    praise = [r for r in praise_rows if S.is_praise(r, scores) and S._target_kind(r) == "person"
               and r.get("author_email") and r.get("target_email")]
     happy_ids = {}
     for period, rs in (("all", rows), ("month", [r for r in rows if r["week"] in month])):
         happy_ids[period] = {}
         happy(rs, scores, ids=happy_ids[period])
     wanted = {r["id"] for r in praise} | {i for p in happy_ids.values() for t in p.values() for v in t.values() for i in v}
-    comments = {r["id"]: _record(r, scores) for r in rows if r["id"] in wanted}
+    comments = {r["id"]: _record(r, scores) for r in (*rows, *praise_rows) if r["id"] in wanted}
     assert all(scores[i][0] >= S.GLOWING for i in comments), "only praise and glowing comments"
     return dict(weeks=[weeks[0], weeks[-1]], comments=comments, praise=sorted(r["id"] for r in praise),
                 happy=happy_ids)
 
 
-def build(weeks, data_dir=store.DATA_DIR, version=None, sandbox="auto", authors=S.DEFAULT_AUTHORS):
+def build(weeks, data_dir=store.DATA_DIR, version=None, sandbox="auto", authors=S.DEFAULT_AUTHORS,
+          praise_weeks=None):
     """The page's detail for comments written by `authors` (S.AUTHORS), and
-    the comments behind its name popups: (detail, comments)."""
+    the comments behind its name popups: (detail, comments). `praise_weeks`
+    (default `weeks`) are the praise boards' weeks, which need only their
+    praise scored (`score --praise-only`)."""
     rows, scores, missing, n_trivial = load(weeks, data_dir, version)
-    if rows and "author" not in rows[0]:
+    praise_weeks = praise_weeks or weeks
+    extra = [w for w in praise_weeks if w not in weeks]
+    praise_rows = rows + (load(extra, data_dir, version)[0] if extra else [])
+    if any("author" not in r for r in praise_rows[:1] + praise_rows[-1:]):
         raise SystemExit("these comment files have no identities: collect them with "
                          "`python3 -m cosh.sentiment_people collect`")
     rows = S.by_authors(rows, authors, data_dir)
+    praise_rows = S.by_authors(praise_rows, authors, data_dir)
     month = weeks[-MONTH_WEEKS:]
     box = S.make_sandbox(sandbox, data_dir) if isinstance(sandbox, str) else sandbox
     try:
@@ -207,7 +219,7 @@ def build(weeks, data_dir=store.DATA_DIR, version=None, sandbox="auto", authors=
                 **overview(rows, scores, weeks),
                 happy=dict(all=happy(rows, scores), month=happy([r for r in rows if r["week"] in month], scores)),
                 ai=ai, ai_left_out=dict(screened=screened_out, long_or_linked=too_long)), \
-        dict(generated_at=store.now_iso(), authors=authors, **person_comments(rows, scores, weeks, month))
+        dict(generated_at=store.now_iso(), authors=authors, **person_comments(rows, scores, [praise_weeks[0], praise_weeks[-1]], month, praise_rows))
 
 
 def main(argv):
@@ -215,6 +227,8 @@ def main(argv):
     import json
     ap = argparse.ArgumentParser(prog="python3 -m cosh.sentiment_recent")
     ap.add_argument("--week", required=True, help="fully scored weeks, e.g. 2026-W37:2026-W44")
+    ap.add_argument("--praise-week", default=None,
+                    help="the praise boards' weeks for the name popups (default --week), e.g. 2025-W45:2026-W44")
     ap.add_argument("--prompt", default=None)
     ap.add_argument("--sandbox", choices=["auto", "bwrap", "none"], default="auto")
     ap.add_argument("--authors", choices=S.AUTHORS + ("all",), default="all",
@@ -225,7 +239,8 @@ def main(argv):
         ap.error("--out needs one --authors group")
     for g in (S.AUTHORS if a.authors == "all" else (a.authors,)):
         t0 = time.time()
-        doc, comments = build(S.weeks_in(a.week), version=a.prompt, sandbox=a.sandbox, authors=g)
+        doc, comments = build(S.weeks_in(a.week), version=a.prompt, sandbox=a.sandbox, authors=g,
+                              praise_weeks=S.weeks_in(a.praise_week) if a.praise_week else None)
         out = a.out or S.authors_path(OUT, g)
         with open(out, "w") as f:
             json.dump(doc, f, indent=1, ensure_ascii=False)

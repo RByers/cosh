@@ -383,6 +383,20 @@ class RecentTest(unittest.TestCase):
         self.assertEqual(c["url"], "https://chromium-review.googlesource.com/c/chromium/src/+/100/comment/r2/")
         self.assertTrue(all(scores[i][0] >= S.GLOWING for i in d["comments"]))
 
+    def test_popup_praise_can_cover_more_weeks(self):
+        """Praise from praise-only weeks reaches the popups; the happy tables stay on the fully scored rows."""
+        from cosh import sentiment_recent as R
+        rows, scores = self.rows()
+        for r in rows:
+            r.update(project="chromium/src", cl=100, uuid=r["id"].split("/")[1])
+        old = dict(rows[2], id="100/old", uuid="old", week="2026-W10", written_at="2026-03-03 10:00:00")
+        scores["100/old"] = scores["100/r2"]
+        d = R.person_comments(rows, scores, ["2026-W10", "2026-W44"], ["2026-W44"], rows + [old])
+        self.assertEqual(d["praise"], ["100/old", "100/r2", "100/r3"])
+        self.assertEqual(d["happy"]["all"]["authors"], {"owner@x.org": ["100/r2", "100/r3"]})
+        self.assertEqual(d["comments"]["100/old"]["week"], "2026-W10")
+        self.assertEqual(d["weeks"], ["2026-W10", "2026-W44"])
+
 
 if __name__ == "__main__":
     unittest.main()
