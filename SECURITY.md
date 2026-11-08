@@ -44,9 +44,12 @@ performance or capability for extreme isolation.
 2. **Exfiltration of sensitive data**, chiefly the credentials listed above.
    Also covered: the user's ssh and gpg agents, Claude session transcripts in
    `~/.claude`, and anything else in `$HOME`.
-3. **Script injection on the public site.** Gerrit names, emails, paths and
-   directories are shown on the web UI. They must never be able to run script
-   in a visitor's browser.
+3. **Script injection (XSS) on the public site.** Gerrit names, emails,
+   paths, directories and review-comment text (the praise quotes and
+   anonymous samples on the Review Tone page) are shown on the web UI. They
+   must never be able to run script in a visitor's browser, or send a
+   visitor somewhere other than the Gerrit page a link says it opens. See
+   "Script injection on the site" below.
 
 **Accepted (we don't defend against these):**
 
@@ -66,8 +69,58 @@ performance or capability for extreme isolation.
 | `derive`, `summarize` (Python) | SQL or command injection | SQL is parameterised: f-strings only splice in `?` placeholders and fixed clauses. The `git` calls take argv lists, never a shell, and their arguments are change numbers and project names from our own query config. The comment regex only reads the text. |
 | `cosh classify`: headless Claude (Haiku) | **Prompt injection** (next section) | No tools, schema-constrained output, sandboxed process. |
 | `cosh.sentiment score`: headless Claude (Haiku) | Prompt injection; a wider output channel than classify's booleans | The same layers as classify: no tools, `Sandbox`, `--sandbox auto\|bwrap\|none`. The reply is a clamped score, an `ai` boolean and a reason of at most 80 characters, reduced to plain words (`clean_why`: no markup, URLs or control characters). Only ids that were sent are kept. A hijacked batch can set scores or write a short label next to any comment in it, which is accepted metric skew. Reasons stay in `data/private/`; only monthly aggregates are published. `docs/sentiment.md`, "Security". |
-| Web UI (`web/`) | XSS on the public site | Untrusted strings go into the DOM with `textContent`, attributes and `<template>` clones, never with `innerHTML`, `insertAdjacentHTML` or `document.write`. Keep it that way: no HTML-string rendering of data. |
+| Web UI (`web/`) | XSS on the public site | Untrusted strings go into the DOM only as text, never parsed as markup or code; links built from data always point at Gerrit. Details and checks in "Script injection on the site" below. |
 | Claude Code sessions developing cosh (interactive or background agents, with Bash and git) | Prompt injection with real tools | Don't read raw comment bodies into a tool-enabled session in bulk. To label or audit threads, use the sandboxed headless path (`cosh classify`, `classifier_audit.py judge`). Small samples read while debugging are fine: treat their text as data, never as instructions. Building the 2026-11-04 gold set ran tool-enabled Haiku subagents over 400 threads (`docs/comment-classifier.md`). That was accepted at the time, but don't repeat it at scale. |
+
+## Script injection on the site
+
+The site is static (GitHub Pages) and has no logins, cookies or user
+input, so a script injected into it could not steal much. It could still
+deface the page, send visitors to a phishing page, or run code under our
+name, so we keep untrusted text from ever becoming markup, code or a
+link target. The data reaches the browser as JSON (`summaries/`,
+`fetch` + `JSON.parse`), and the pages are built with DOM calls. The
+rules, all of which `web/src/` follows as of the audit below:
+
+- **Text only.** Data goes into the DOM through `textContent`, `<option>`
+  text, `title`/`aria-label` attributes and the `<slot>`s of
+  `<template data-msg>` clones (`web/src/text.ts` replaces a slot with a
+  text node). Chart.js draws labels and tooltips on a canvas, as text. No
+  script uses `innerHTML`, `outerHTML`, `insertAdjacentHTML`,
+  `document.write`, `DOMParser`, `srcdoc`, `eval` or `new Function`.
+- **Links go to Gerrit.** Every `href` built from data starts with a
+  fixed `https://chromium-review.googlesource.com/` prefix, and the
+  data's part is URL-encoded (`gerritQueryUrl`, `gerritCommentUrl` in
+  `web/src/data.ts`). URLs taken whole from the data (the Review Tone
+  page's comment links) pass `gerritLink` (`web/src/tone.ts`), which drops
+  anything not under that prefix, so `javascript:` and look-alike hosts
+  are refused. Links open in a new tab with `rel="noopener"`.
+- **Styles come from code.** Scripts set CSS custom properties only to
+  numbers and to colours from the theme, never to strings from the data.
+- **URL state is validated.** The `#…` and `?authors=` parameters, which
+  anyone can put in a link, are matched against fixed lists or patterns,
+  or used only as lookup keys and `<option>` text. A card id is checked
+  against `^[\w-]+$` before it goes into a selector.
+- **Nothing else renders HTML.** The Python side writes JSON and CSV, and
+  Markdown that GitHub sanitises when it shows it.
+
+Tests enforce the first two rules (`web/test/unit.test.ts`): one fails if
+any file in `web/src/` contains an HTML or code sink, and others feed
+hostile names, emails, paths and URLs (`javascript:`, quotes, `<img
+onerror>`, `../`, look-alike hosts) to the link builders. A new
+dashboard is covered by the sink check automatically; if it builds links
+from data, use these builders or `gerritLink`.
+
+Audited on 2026-11-07: every DOM write, attribute, style property, link
+and URL parameter in `web/src/` (both dashboards and the landing page).
+No vulnerability found.
+
+**Not adopted (yet): a Content Security Policy.** A `<meta
+http-equiv="Content-Security-Policy">` with `script-src 'self'` would be a
+second layer if a sink ever slipped in. GitHub Pages can't send headers, and
+Chart.js and our scripts set inline styles, so it would need `style-src
+'unsafe-inline'` and testing against both the Vite dev server and the
+build. Worth adding before the site goes live.
 
 ## Prompt injection in `cosh classify`
 

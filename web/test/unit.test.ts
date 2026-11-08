@@ -1272,3 +1272,36 @@ test('gerritDirUrl for authors searches their merged CLs; gerritAuthoredUrl a pe
   assert.equal(gerritAuthoredUrl('a@x.com', range, NOW), `${Q}owner:a@x.com+status:merged+after:2026-10-04`);
   assert.equal(gerritAuthoredUrl(null, range, NOW), null);
 });
+
+// SECURITY.md, "Script injection on the public site": names, emails, paths
+// and comment text from Gerrit are attacker-controlled, so no script may
+// turn a string into markup or code.
+test('no script parses strings as HTML or code', async () => {
+  const { readdirSync } = await import('node:fs');
+  const dir = fileURLToPath(new URL('../src/', import.meta.url));
+  const sinks =
+    /\.(innerHTML|outerHTML|srcdoc)\b|insertAdjacentHTML|document\.write|createContextualFragment|DOMParser|setHTMLUnsafe|parseHTMLUnsafe|\beval\s*\(|new\s+Function\b|javascript:/;
+  const files = readdirSync(dir).filter((f) => f.endsWith('.ts'));
+  assert.ok(files.length > 5);
+  for (const f of files) {
+    readFileSync(dir + f, 'utf8').split('\n').forEach((line, i) => {
+      assert.doesNotMatch(line, sinks, `${f}:${i + 1}`);
+    });
+  }
+});
+
+test('Gerrit links stay on Gerrit whatever the data says', () => {
+  const evil = 'javascript:alert(1)//"><img src=x onerror=alert(1)>';
+  for (const url of [
+    gerritReviewsUrl(evil)!,
+    gerritAuthoredUrl(evil)!,
+    gerritCommentUrl(1, evil),
+    gerritCommentUrl(1, '../../../../evil'),
+    gerritDirUrl(`${evil}/`, new Map([[1, 1]]))!.url,
+  ]) {
+    assert.ok(url.startsWith('https://chromium-review.googlesource.com/'), url);
+    assert.doesNotMatch(url, /["<> ]/, url);
+    assert.equal(new URL(url).origin, 'https://chromium-review.googlesource.com');
+  }
+  assert.doesNotMatch(gerritCommentUrl(1, '../../evil'), /\/\.\.\//);
+});
