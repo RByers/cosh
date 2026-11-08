@@ -1,6 +1,35 @@
+import { readdirSync } from 'node:fs';
+import { getPriority, setPriority } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import type { Plugin } from 'vite';
 import { defineConfig } from 'vitest/config';
+
+// Test runs drop their CPU priority by 5 nice levels, relative to whatever
+// launched them, so they yield to interactive sessions on this shared machine
+// under contention without being starved. It happens at config load so the
+// workers and headless Chrome started afterwards inherit it. Linux nice is per
+// thread and threads already running (vite's transform workers, libuv's pool)
+// keep their own, so each is reniced; without /proc, tid 0 is the process.
+// VITEST is set before vitest loads this file (`vite` and `vite build` leave it
+// unset). browser.test.ts imports this file inside a worker, which has
+// VITEST_WORKER_ID set and must not lower the priority a second time.
+const NICE_STEP = 5;
+if (process.env.VITEST && !process.env.VITEST_WORKER_ID) {
+  const nice = Math.min(19, getPriority() + NICE_STEP);
+  let threads = [0];
+  try {
+    threads = readdirSync('/proc/self/task').map(Number);
+  } catch {
+    // No /proc: not Linux.
+  }
+  for (const tid of threads) {
+    try {
+      setPriority(tid, nice);
+    } catch {
+      // Not permitted, or the thread exited: it keeps the caller's priority.
+    }
+  }
+}
 
 const page = (name: string) => fileURLToPath(new URL(name, import.meta.url));
 
