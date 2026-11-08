@@ -125,10 +125,10 @@ python3 -m cosh extract-open              # snapshot open CLs and fetch their co
 python3 -m cosh derive                    # build derived.sqlite from the cache (offline)
 python3 -m cosh classify --week 2026-W44  # optional: Haiku labels for threads the regex doesn't settle
 python3 -m cosh summarize                 # write summaries/org_weekly.{csv,json}
-python3 -m cosh radar                     # Cloudflare Radar browser share (source secrets.sh first)
+python3 -m cosh radar                     # Cloudflare Radar browser share (source ~/.secrets/cosh/secrets.sh first)
 python3 -m cosh backfill --weeks 52       # plan only; --go fetches (resumable)
 python3 -m unittest tests.test_derive tests.test_extract tests.test_radar tests.test_classify
-cd web && npm ci && npm run dev           # web UI: / is the landing page, /value.html the dashboard (web/README.md)
+cd web && npm ci && npm run serve         # web UI on localhost:5182: / is the landing page (web/README.md)
 ```
 
 ## Docs

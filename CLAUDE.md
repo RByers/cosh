@@ -66,8 +66,9 @@ regex plus Claude Haiku (`cosh classify`).
   (`cosh.sentiment_people`) and compute per-person figures; just never
   publish negative ones. Gold sets and per-comment model reasons stay in
   `data/private/`.
-- **The Radar token** is loaded with `source secrets.sh`. Never print or
-  commit it.
+- **The Radar token** is loaded with `source ~/.secrets/cosh/secrets.sh`
+  (outside the repo; argus keeps no secrets under `~/projects`). Never print
+  or commit it.
 - **The contact e-mail** sent with every request lives in the gitignored
   `data/private/settings.json` (`{"contact_email": ...}`) of the main
   checkout, which worktrees find on their own. `COSH_CONTACT` overrides it.
@@ -170,6 +171,11 @@ regex plus Claude Haiku (`cosh classify`).
   in the HTML, and `a.target = '_blank'` on links the scripts build (SVG
   links too). Links within the site (the crumb, `#` anchors, the landing
   page's cards) stay in the same tab. A browser test checks every page.
+- The user's browser gets `npm run serve` (`vite preview` on user port 5182,
+  rebuilt by `vite build --watch`), never the dev server. `npm run dev`
+  always takes a random port and is for your own checks. To show the user a
+  worktree, run `DEV_PORT=user npm run serve` there (web/README.md, "Dev
+  server ports").
 - In a worktree, give `web/` its dependencies by symlinking the main
   checkout's: `ln -s /home/rbagent/projects/cosh/web/node_modules
   web/node_modules`. Don't run `npm ci` or `npm install` there. Git ignores

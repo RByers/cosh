@@ -13,7 +13,7 @@ added.
 - The credentials on that machine are limited to what cosh and the agents
   working on it need:
   - the Claude login (`CLAUDE_CODE_OAUTH_TOKEN`);
-  - the Cloudflare Radar API token (`secrets.sh`);
+  - the Cloudflare Radar API token (`~/.secrets/cosh/secrets.sh`, outside the repo);
   - git push access for this repo.
   
   None of them reaches production systems or other people's data.
@@ -178,7 +178,7 @@ failed:
 3. **The process holds nothing worth stealing** (`cosh/sandbox.py`):
    - **Scrubbed environment.** `claude` sees only `PATH`, the locale, a fresh
      `HOME`/`TMPDIR`, `CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC=1`, and its
-     own credential. The Radar token from `secrets.sh`, git and GitHub
+     own credential. The Radar token from `~/.secrets/cosh/secrets.sh`, git and GitHub
      tokens, and the parent Claude session's socket and token aren't passed
      on, even when `classify` runs from a shell or agent that has them.
    - **Fresh, private `HOME` and working directory for each call.** Each is
@@ -198,7 +198,7 @@ failed:
        doesn't need it.
      - A read-only root filesystem, with empty tmpfs over:
        - `/home`: the repo, `data/private`, `~/.ssh`, `~/.claude` (its token
-         and transcripts) and `secrets.sh`;
+         and transcripts) and `~/.secrets` (the Radar token);
        - `/run/user`: the ssh-agent, gpg-agent and D-Bus sockets, and the
          Claude daemon's sockets;
        - `/root`, `/tmp`, `/var/tmp`, `/mnt`, `/media` and `/srv`;
@@ -290,10 +290,44 @@ the machine starts holding more valuable credentials.
 
 ## Secrets handling
 
-- `secrets.sh` (the Radar token) is gitignored and is loaded with
-  `source secrets.sh`. Never print or commit it. This rule is also in
-  `CLAUDE.md`.
+- The Radar token lives in `~/.secrets/cosh/secrets.sh` (directory 700, file
+  600), outside the repo, and is loaded with `source ~/.secrets/cosh/secrets.sh`.
+  Never print or commit it. This rule is also in `CLAUDE.md`. It moved out of
+  the repo on 2026-11-08, after the dev server was found serving it (below):
+  argus keeps no secrets anywhere under `~/projects`
+  (`~/projects/argus-config/SECURITY.md`). `.gitignore` still ignores
+  `secrets*` as a backstop.
 - cosh code never prints the Claude credential. `cosh/sandbox.py` reads it
   only to pass it into the jail's environment.
 - `data/private/` is gitignored because of its size, not because it is
   secret. Everything in it is public (`docs/plan.md`, ground rule 3).
+
+## Dev servers and the forwarded user port
+
+Anything listening on argus's forwarded "user ports" (5170–5189) is
+reachable by every account on argus and by every process on any machine
+that SSH-forwards them, such as a work laptop. A dev server on a random port
+is still reachable by every argus account. On 2026-11-08 cosh's Vite dev
+server, then on user port 5182 with `server.fs.allow: ['..']`, served
+`secrets.sh` (the Radar token) and `data/private/*.sqlite` to anyone who
+asked (`~/projects/argus-config/tools/argus-health/SECURITY.md`, "Dev
+servers on the forwarded ports"). The impact was small: the token is
+revocable and the data is public. What changed (rules in
+`~/projects/argus-config/ports.md`):
+
+- **The user port runs `vite preview`, not the dev server.** `npm run serve`
+  (`web/serve.mjs`) builds, then runs `vite build --watch` and `vite preview`
+  on 5182 together. Preview serves only `web/dist/`, which the site publishes
+  anyway, and has none of the dev server's `/@fs/`, on-the-fly compiling or
+  `?raw` handling, where Vite's allow-list bypass bugs have been. The cost is
+  hot reload: reload the page after an edit. Port 5183 is retired.
+- **The dev server (`npm run dev`) always takes a random port** in
+  20000–39999. It's for agents' own checks, never for the user's browser.
+- **`server.fs.allow` lists only what the pages import:** `web/`,
+  `summaries/`, `data/public/`, `config/` and `scripts/sentiment_prompts/`,
+  never the repo root. `fs.deny` adds `secrets*` and `data/private/**` as
+  backstops. Checked on 2026-11-08: `/@fs/` requests for `secrets.sh` and
+  `data/private/*` get 403, and every page loads with nothing blocked.
+- **Secrets live in `~/.secrets/cosh/`**, outside every served tree.
+- **Both servers listen on `localhost` only**, and Vite is kept on a
+  supported release line, since its security fixes go to current majors only.

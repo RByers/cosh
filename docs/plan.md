@@ -61,9 +61,9 @@ value_ratio(O, t) = O's share of Chromium addressed review comments
      guesses that aren't backed by a public record, still needs the user's
      approval before it's committed.
    - Sentiment is the exception: ground rule 5.
-4. **Credentials:** `secrets.sh` (gitignored, mode 600) exports
-   `CLOUDFLARE_API_TOKEN`. Load it with `source secrets.sh`, and never print
-   or commit the token.
+4. **Credentials:** `~/.secrets/cosh/secrets.sh` (mode 600, outside the
+   repo) exports `CLOUDFLARE_API_TOKEN`. Load it with
+   `source ~/.secrets/cosh/secrets.sh`, and never print or commit the token.
 5. **Sentiment: our pages never point fingers** (user's policy, 2026-11-06;
    relaxed 2026-11-07). Review-comment tone (`cosh.sentiment`,
    `docs/sentiment.md`) is a reading of how people behave, so what we
@@ -268,7 +268,7 @@ value_ratio(O, t) = O's share of Chromium addressed review comments
   dates plus presets), applied to every chart, the tiles and the table (see `web/README.md`).
 
 **Next steps, in order**
-1. Have the user validate the UI (`cd web && npm run dev`).
+1. Have the user validate the UI (`cd web && npm run serve`, localhost:5182).
 2. Try to get Radar history before 2023-07, whose requests returned HTTP 500.
    (The September 2026 `ChromeDerivative` jump has been investigated; see
    Decisions and `radar-research.md`.)

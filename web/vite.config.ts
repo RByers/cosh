@@ -33,13 +33,16 @@ if (process.env.VITEST && !process.env.VITEST_WORKER_ID) {
 
 const page = (name: string) => fileURLToPath(new URL(name, import.meta.url));
 
-// Ports: see argus-config/ports.md. USER_PORT is forwarded to the user's laptop over SSH.
-// Servers started by Claude Code (CLAUDECODE=1: tests, harnesses, an agent checking its work)
-// get a random port in 20000–39999 instead, unless DEV_PORT=user hands the server to the user.
+// Ports: see argus-config/ports.md. USER_PORT is forwarded to the user's laptop over SSH, and
+// only `vite preview` (`npm run serve`) uses it. The dev server always gets a random port in
+// 20000-39999, whoever runs it: it's for agents' own checks, never for the user's browser.
+// Preview started by Claude Code (CLAUDECODE=1: tests, harnesses, an agent checking its work)
+// gets a random port too, unless DEV_PORT=user hands it to the user. Never use port 0: Vite
+// treats it as unset and falls back to 5173, another project's user port.
+const USER_PORT = 5182;
 const forUser = !process.env.CLAUDECODE || process.env.DEV_PORT === 'user';
 export const randomPort = () => 20000 + Math.floor(Math.random() * 20000);
-const devPort = (userPort: number) =>
-  forUser ? { port: userPort, strictPort: true } : { port: randomPort(), strictPort: false };
+const randomPortOptions = () => ({ port: randomPort(), strictPort: false });
 
 /** The Content Security Policy every built page carries (SECURITY.md,
  * "Script injection on the site"): scripts, styles and data only from the
@@ -77,11 +80,27 @@ export default defineConfig({
   base: './',
   server: {
     host: 'localhost',
-    ...devPort(5182),
-    // Data files live outside web/ (summaries/, data/public/, config/).
-    fs: { allow: ['..'] },
+    ...randomPortOptions(),
+    // The dev server serves any file it's allowed to, and every account on argus can reach it
+    // (SECURITY.md, "Dev servers"). So allow only what the pages import: web/ itself plus these
+    // data folders, never the repo root.
+    fs: {
+      allow: ['.', '../summaries', '../data/public', '../config', '../scripts/sentiment_prompts'],
+      // Backstops in case the allow list is widened or bypassed. Setting deny replaces Vite's
+      // defaults, so they are repeated here.
+      deny: [
+        '.env',
+        '.env.*',
+        '*.{crt,pem,key,p12,pfx,cer,der}',
+        '.npmrc',
+        '.yarnrc.yml',
+        '**/.git/**',
+        'secrets*',
+        '**/data/private/**',
+      ],
+    },
   },
-  preview: { host: 'localhost', ...devPort(5183) },
+  preview: { host: 'localhost', ...(forUser ? { port: USER_PORT, strictPort: true } : randomPortOptions()) },
   build: {
     outDir: 'dist',
     emptyOutDir: true,

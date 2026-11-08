@@ -30,7 +30,7 @@ python3 -m cosh extract --week 2026-W44     # network; cached and resumable (Not
 python3 -m cosh extract-open                # network; open-CL snapshot + its NoteDb refs (after the backfill)
 python3 -m cosh derive [--out PATH]         # offline: raw cache -> data/private/derived.sqlite
 python3 -m cosh summarize [--db PATH] [--out DIR]   # offline: -> summaries/ (path scope: config/paths.txt)
-python3 -m cosh radar [--offline]           # Cloudflare Radar; needs `source secrets.sh`
+python3 -m cosh radar [--offline]           # Cloudflare Radar; needs `source ~/.secrets/cosh/secrets.sh`
 python3 -m cosh backfill --weeks 52 [--go]  # plan only unless --go (the 52 weeks are approved)
 python3 -m cosh update-affiliations         # refresh config/affiliations.json5
 python3 -m cosh status

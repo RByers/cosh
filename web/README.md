@@ -179,7 +179,7 @@ there alone; presentation in `src/style.css` (`src/home.css` for the landing pag
   listeners in the script), and no script uses `innerHTML` or other HTML
   sinks: the browser refuses them. Data loads only from the site itself.
   The dev server runs without the policy, so check a change against `npm
-  test`, which runs the build.
+  test` or `npm run serve`, which use the build.
 
 ## Layout
 
@@ -376,20 +376,43 @@ A new card needs an `id` and its own `<a class="card-anchor">` before its `<h2>`
 ```
 cd web
 npm ci
-npm run dev        # http://localhost:5182 (landing page), /value.html (Value Exchange)
+npm run serve      # for the user: http://localhost:5182 (landing page), /value.html (Value Exchange)
+npm run dev        # dev server with hot reload, random port: for agents' own checks
 npm run build      # -> web/dist
-npm run preview    # serves web/dist at http://localhost:5183
+npm run preview    # serves web/dist once, without rebuilding
 npm test           # build + unit tests + headless Chrome tests
 ```
 
+`npm run serve` (`serve.mjs`) builds once, then runs `vite build --watch`
+and `vite preview` together. An edit is rebuilt within seconds: reload the
+page to see it (there is no hot reload). Preview starts only after the first
+build succeeds, and Ctrl-C or killing it stops both.
+
 ### Dev server ports
 
-Ports follow `~/projects/argus-config/ports.md`. 5182 (dev) and 5183 (preview)
-are cosh's user ports, forwarded to the laptop over SSH, with `strictPort` so
-a clash fails loudly. Servers started under Claude Code (`CLAUDECODE=1`) get a
-random port in 20000–39999 unless `DEV_PORT=user` is set. Use
-`DEV_PORT=user npm run preview` to hand a server to the user. The browser
-tests always use a random port in that range.
+Ports follow `~/projects/argus-config/ports.md`. 5182 is cosh's user port,
+forwarded to the laptop over SSH, and only `vite preview` (`npm run serve`)
+uses it, with `strictPort` so a clash fails loudly. 5183 is retired.
+
+- **The dev server (`npm run dev`) always takes a random port** in
+  20000–39999, whoever runs it. It is for agents' own checks, never for the
+  user's browser: it serves source files on request, and every account on
+  argus can reach it (SECURITY.md, "Dev servers and the forwarded user port").
+- **Preview** takes 5182 for the user (no `CLAUDECODE`). Started under Claude
+  Code (`CLAUDECODE=1`) it gets a random port too, unless `DEV_PORT=user` is
+  set: an agent hands the user a server with `DEV_PORT=user npm run serve`
+  (also `! DEV_PORT=user npm run serve` at the Claude prompt). If 5182 is
+  taken, it fails; tell the user rather than stopping a server you didn't
+  start.
+- Both listen on `localhost` only. Never pass `--port 0`: Vite treats it as
+  unset and falls back to 5173, another project's user port.
+- `server.fs.allow` lists only what the pages import (`web/`, `summaries/`,
+  `data/public/`, `config/`, `scripts/sentiment_prompts/`), and `fs.deny`
+  blocks `secrets*` and `data/private/**`. A page that imports from a new
+  folder needs it added there; the dev server logs "outside of Vite serving
+  allow list" otherwise.
+
+The browser tests always use a random port in that range.
 
 The browser tests use `puppeteer-core` with an installed Chrome
 (`/usr/bin/google-chrome`, override with `CHROME_PATH`); they download no

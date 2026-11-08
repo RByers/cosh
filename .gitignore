@@ -3,8 +3,8 @@ data/private/
 .research/gerrit/responses/
 __pycache__/
 
-# credentials
-secrets.sh
+# credentials live in ~/.secrets/cosh/ (SECURITY.md); this is a backstop
+secrets*
 # one-off research downloads (re-fetchable)
 .research/affiliations/
 *.pyc
