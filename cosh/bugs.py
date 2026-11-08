@@ -27,6 +27,7 @@ import re
 import sqlite3
 import subprocess
 import sys
+import threading
 import time
 import urllib.error
 import urllib.request
@@ -40,8 +41,11 @@ LIST_URL = f"https://{HOST}/action/issues/list"
 MONORAIL_URL = "https://bugs.chromium.org/p/chromium/issues/detail?id={}"
 TRACKER = "157"             # Chromium's tracker ID in the Google Issue Tracker
 BATCH = 50                  # IDs per search request (the search returns at most 50)
-MIN_INTERVAL = 1.0          # never less (CLAUDE.md)
+MIN_INTERVAL = 1.0          # never less for the search endpoint (CLAUDE.md)
 DEFAULT_INTERVAL = 2.0
+# The Monorail stubs are tiny static redirects; the user approved up to 4 at
+# once with no wait between them (2026-11-08).
+MONORAIL_MAX_JOBS = 4
 SHARED = os.path.expanduser("~/projects/shared/chromium")
 SINCE = "2023-07-01"        # start of the Gerrit analysis window
 MONORAIL_MAX = 1_600_000    # IDs below this are Monorail-era (crbug.com/1234567; it ended near 1.53M)
@@ -162,16 +166,18 @@ def open_db(data_dir=None):
 
 
 @contextmanager
-def fetch_lock(data_dir=None):
-    """Only one bug fetch at a time. Not extract.lock: that one is for Gerrit."""
+def fetch_lock(name="fetch.lock", data_dir=None):
+    """Only one search fetch (fetch.lock) and one Monorail lookup
+    (monorail.lock) at a time; the two talk to different hosts, so they may
+    overlap. Not extract.lock: that one is for Gerrit."""
     d = bugs_dir(data_dir)
     os.makedirs(d, exist_ok=True)
-    fh = open(os.path.join(d, "fetch.lock"), "w")
+    fh = open(os.path.join(d, name), "w")
     try:
         try:
             fcntl.flock(fh, fcntl.LOCK_EX | fcntl.LOCK_NB)
         except BlockingIOError:
-            raise SystemExit("another bug fetch holds data/private/bugs/fetch.lock")
+            raise SystemExit(f"another bug fetch holds data/private/bugs/{name}")
         fh.write(f"{os.getpid()}\n")
         fh.flush()
         yield
@@ -448,9 +454,9 @@ class Fetcher:
 
     def __init__(self, db, data_dir=None, interval=DEFAULT_INTERVAL, transport=http,
                  log=sys.stderr, sleep=time.sleep, clock=time.monotonic,
-                 backoff=(300, 900, 1800)):
-        if interval < MIN_INTERVAL:
-            raise SystemExit(f"--interval must be at least {MIN_INTERVAL} s")
+                 backoff=(300, 900, 1800), min_interval=MIN_INTERVAL):
+        if interval < min_interval:
+            raise SystemExit(f"--interval must be at least {min_interval} s")
         self.db, self.dir = db, bugs_dir(data_dir)
         self.interval, self.transport, self.log = interval, transport, log
         self.sleep, self.clock, self.backoff = sleep, clock, backoff
@@ -478,32 +484,45 @@ class Fetcher:
         os.replace(tmp, path)
         return rel
 
+    def send(self, method, url, body=None, extra_headers=None):
+        """The HTTP part alone (safe to run on several threads at once)."""
+        started = store.now_iso()
+        t0 = self.clock()
+        resp = self.transport(method, url, body, {**self.headers, **(extra_headers or {})})
+        return started, round(self.clock() - t0, 3), resp
+
+    def record(self, kind, body, sent):
+        """Log one response and keep its body. The row's seq is assigned by
+        SQLite on insert, so several processes can log at once. Returns
+        (seq, status, headers, body, rel, started, outcome, final)."""
+        started, elapsed, (st, h, wire, rbody, final) = sent
+        blocked = looks_blocked(kind, h, rbody, final)
+        outcome = ("blocked" if blocked else "net" if st == -1
+                   else "ok" if st == 200 or (kind == "monorail" and st in (403, 404))
+                   else "http")
+        with self.db:
+            seq = self.db.execute(
+                "INSERT INTO requests (kind, started_at, elapsed_s, http_status, "
+                "final_url, headers, request_body, wire_bytes, body_bytes, outcome) "
+                "VALUES (?,?,?,?,?,?,?,?,?,?)",
+                (kind, started, elapsed, st, final, json.dumps(h),
+                 body.decode() if body else None, len(wire), len(rbody), outcome)).lastrowid
+        rel = None
+        if wire or rbody:
+            ext = "html.gz" if kind == "monorail" else "json.gz"
+            rel = self._save(kind, f"{seq:07d}.{ext}", wire, rbody, h)
+            with self.db:
+                self.db.execute("UPDATE requests SET file=? WHERE seq=?", (rel, seq))
+        return seq, st, h, rbody, rel, started, outcome, final
+
     def request(self, kind, method, url, body=None, extra_headers=None):
         """Send one request with the stop rules. Returns (seq, status, body, rel, started)."""
         for attempt in range(len(self.backoff) + 1):
             self._pace()
-            started = store.now_iso()
-            t0 = self.clock()
-            st, h, wire, rbody, final = self.transport(
-                method, url, body, {**self.headers, **(extra_headers or {})})
+            sent = self.send(method, url, body, extra_headers)
             self._last = self.clock()
-            seq = (self.db.execute("SELECT max(seq) FROM requests").fetchone()[0] or 0) + 1
-            rel = None
-            if wire or rbody:
-                ext = "html.gz" if kind == "monorail" else "json.gz"
-                rel = self._save(kind, f"{seq:07d}.{ext}", wire, rbody, h)
-            blocked = looks_blocked(kind, h, rbody, final)
-            outcome = ("blocked" if blocked else "net" if st == -1
-                       else "ok" if st == 200 or (kind == "monorail" and st in (403, 404))
-                       else "http")
-            with self.db:
-                self.db.execute(
-                    "INSERT INTO requests (seq, kind, started_at, elapsed_s, http_status, "
-                    "final_url, headers, request_body, wire_bytes, body_bytes, file, outcome) "
-                    "VALUES (?,?,?,?,?,?,?,?,?,?,?,?)",
-                    (seq, kind, started, round(self._last - t0, 3), st, final,
-                     json.dumps(h), body.decode() if body else None, len(wire),
-                     len(rbody), rel, outcome))
+            seq, st, h, rbody, rel, started, outcome, final = self.record(kind, body, sent)
+            blocked = outcome == "blocked"
             if blocked:
                 raise Stop(f"request {seq}: HTTP {st} looks like a captcha or sign-in page "
                            f"({final}); stopping")
@@ -560,11 +579,54 @@ class Fetcher:
     def resolve_monorail(self, old_id):
         seq, st, rbody, rel, started = self.request("monorail", "GET",
                                                     MONORAIL_URL.format(old_id))
+        return self._store_monorail(old_id, seq, st, rbody, started)
+
+    def _store_monorail(self, old_id, seq, st, rbody, started):
         new = monorail_target(rbody) if st == 200 else None
         with self.db:
             self.db.execute("INSERT OR REPLACE INTO monorail_map VALUES (?,?,?,?,?)",
                             (old_id, new, st, started, seq))
         return new
+
+    def resolve_monorail_parallel(self, old_ids, jobs, progress=None):
+        """Look up old IDs with up to `jobs` requests in flight, each worker
+        waiting `interval` s between its own requests. Workers only do HTTP;
+        this thread logs and stores every response, in order. There is no
+        back-off here: the first reply that isn't a stub, 403 or 404 stops
+        the run (rerun to resume, or go serial). Returns how many mapped."""
+        from concurrent.futures import ThreadPoolExecutor
+        if not 1 <= jobs <= MONORAIL_MAX_JOBS:
+            raise SystemExit(f"--jobs must be 1..{MONORAIL_MAX_JOBS}")
+        stop = threading.Event()
+
+        def one(old):
+            if stop.is_set():
+                return None
+            sent = self.send("GET", MONORAIL_URL.format(old))
+            if sent[2][0] not in (200, 403, 404):
+                stop.set()  # every worker stops at once, before main has logged it
+            if self.interval:
+                self.sleep(self.interval)
+            return sent
+
+        mapped = 0
+        ex = ThreadPoolExecutor(max_workers=jobs)
+        try:
+            for n, (old, sent) in enumerate(zip(old_ids, ex.map(one, old_ids)), 1):
+                if sent is None:
+                    break
+                seq, st, h, rbody, rel, started, outcome, final = self.record("monorail", None, sent)
+                if outcome != "ok":
+                    stop.set()
+                    raise Stop(f"request {seq}: HTTP {st} ({outcome}) on a Monorail lookup; "
+                               "stopping")
+                mapped += self._store_monorail(old, seq, st, rbody, started) is not None
+                if progress:
+                    progress(n, mapped)
+        finally:
+            stop.set()
+            ex.shutdown(wait=True, cancel_futures=True)
+        return mapped
 
 
 # ---------------------------------------------------------------- commands
@@ -622,20 +684,26 @@ def cmd_monorail(args):
         "AND id NOT IN (SELECT old_id FROM monorail_map) ORDER BY id DESC")]
     if args.limit:
         ids = ids[:args.limit]
-    print(f"{len(ids):,} Monorail IDs to map, about {_eta(len(ids), args.interval):.1f} h "
-          f"at {args.interval} s", flush=True)
+    print(f"{len(ids):,} Monorail IDs to map, about "
+          f"{_eta(len(ids), args.interval) / args.jobs:.1f} h at {args.interval} s, "
+          f"{args.jobs} at once", flush=True)
     if not args.go:
         print("dry run; add --go to fetch")
         return
-    with fetch_lock():
-        f = Fetcher(db, interval=args.interval)
+    with fetch_lock("monorail.lock"):
+        f = Fetcher(db, interval=args.interval, min_interval=0)
         mapped = 0
+
+        def progress(n, m):
+            if n % 200 == 0 or n == len(ids):
+                print(f"{store.now_iso()} {n:,}/{len(ids):,} looked up, {m:,} mapped", flush=True)
         try:
-            for n, old in enumerate(ids, 1):
-                mapped += f.resolve_monorail(old) is not None
-                if n % 200 == 0 or n == len(ids):
-                    print(f"{store.now_iso()} {n:,}/{len(ids):,} looked up, {mapped:,} mapped",
-                          flush=True)
+            if args.jobs > 1 or args.interval < MIN_INTERVAL:
+                f.resolve_monorail_parallel(ids, args.jobs, progress)
+            else:
+                for n, old in enumerate(ids, 1):
+                    mapped += f.resolve_monorail(old) is not None
+                    progress(n, mapped)
         except Stop as e:
             print(f"STOP: {e}", flush=True)
             sys.exit(2)
@@ -689,6 +757,9 @@ def main(argv=None):
         p.add_argument("--go", action="store_true")
         p.add_argument("--interval", type=float, default=DEFAULT_INTERVAL)
         p.add_argument("--limit", type=int, help="at most this many requests")
+        if name == "monorail":
+            p.add_argument("--jobs", type=int, default=1,
+                           help=f"lookups in flight at once, 1..{MONORAIL_MAX_JOBS}")
         if name == "fetch":
             p.add_argument("--retry-missing", action="store_true",
                            help="re-ask IDs that weren't visible")
@@ -698,8 +769,13 @@ def main(argv=None):
     sub.add_parser("parse").set_defaults(fn=cmd_parse)
     sub.add_parser("status").set_defaults(fn=cmd_status)
     args = ap.parse_args(argv)
-    if getattr(args, "interval", DEFAULT_INTERVAL) < MIN_INTERVAL:
+    if args.cmd == "fetch" and args.interval < MIN_INTERVAL:
         ap.error(f"--interval must be at least {MIN_INTERVAL} s")
+    if args.cmd == "monorail":
+        if args.interval < 0:
+            ap.error("--interval can't be negative")
+        if not 1 <= args.jobs <= MONORAIL_MAX_JOBS:
+            ap.error(f"--jobs must be 1..{MONORAIL_MAX_JOBS}")
     args.fn(args)
 
 

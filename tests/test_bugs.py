@@ -6,6 +6,7 @@ import io
 import json
 import os
 import tempfile
+import threading
 import unittest
 
 os.environ.setdefault("COSH_CONTACT", "test@example.invalid")
@@ -233,6 +234,68 @@ class FetchTest(unittest.TestCase):
         self.assertIsNone(f.resolve_monorail(1018678))
         self.assertEqual(self.db.execute("SELECT * FROM monorail_map ORDER BY old_id")
                          .fetchall()[0][:3], (1018677, 40097049, 200))
+
+    def stub_transport(self, by_id):
+        """Replies keyed by the old ID in the URL, since workers run in any order."""
+        lock = threading.Lock()
+        calls = []
+
+        def t(method, url, body, headers):
+            old = int(url.rsplit("=", 1)[1])
+            with lock:
+                calls.append(old)
+            st, rbody = by_id[old]
+            return st, {"content-type": "text/html"}, rbody, rbody, url
+        t.calls = calls
+        return t
+
+    def stub(self, new):
+        return f'<script>const url = "https://issues.chromium.org/{new}"</script>'.encode()
+
+    def test_monorail_parallel(self):
+        by_id = {1000 + i: (200, self.stub(40000000 + i)) for i in range(20)}
+        by_id[1005] = (404, b"not found")
+        f = bugs.Fetcher(self.db, data_dir=self.dir, interval=0, min_interval=0,
+                         transport=self.stub_transport(by_id), log=io.StringIO())
+        seen = []
+        self.assertEqual(f.resolve_monorail_parallel(sorted(by_id), 4, lambda n, m: seen.append(n)), 19)
+        self.assertEqual(seen, list(range(1, 21)))
+        rows = self.db.execute("SELECT old_id, new_id, http_status FROM monorail_map ORDER BY old_id").fetchall()
+        self.assertEqual(len(rows), 20)
+        self.assertEqual(rows[5], (1005, None, 404))
+        self.assertEqual(rows[6], (1006, 40000006, 200))
+        # Every reply is logged once, with its body kept.
+        self.assertEqual(self.db.execute("SELECT count(*), count(file) FROM requests").fetchone(), (20, 20))
+
+    def test_monorail_parallel_stops_on_429(self):
+        by_id = {1000 + i: (200, self.stub(40000000 + i)) for i in range(40)}
+        by_id[1003] = (429, b"slow down")
+        t = self.stub_transport(by_id)
+        f = bugs.Fetcher(self.db, data_dir=self.dir, interval=0, min_interval=0, transport=t,
+                         log=io.StringIO())
+        with self.assertRaises(bugs.Stop):
+            f.resolve_monorail_parallel(sorted(by_id), 4)
+        self.assertEqual(self.db.execute("SELECT count(*) FROM monorail_map").fetchone()[0], 3)
+        self.assertLess(len(t.calls), 40)  # the rest were cancelled
+
+    def test_monorail_jobs_capped(self):
+        f = bugs.Fetcher(self.db, data_dir=self.dir, interval=0, min_interval=0,
+                         transport=self.stub_transport({}), log=io.StringIO())
+        with self.assertRaises(SystemExit):
+            f.resolve_monorail_parallel([1], 5)
+
+    def test_seq_from_two_connections(self):
+        """Two processes logging at once get distinct request numbers."""
+        other = bugs.open_db(self.dir)
+        a = self.fetcher([(200, "application/json", search_body([]))])
+        b = bugs.Fetcher(other, data_dir=self.dir, interval=0, min_interval=0,
+                         transport=self.stub_transport({7: (200, self.stub(40000007))}),
+                         log=io.StringIO())
+        b.resolve_monorail_parallel([7], 1)
+        a.fetch_batch([11])
+        b2 = self.db.execute("SELECT seq, kind, file FROM requests ORDER BY seq").fetchall()
+        self.assertEqual([(r[0], r[1]) for r in b2], [(1, "monorail"), (2, "list")])
+        self.assertTrue(b2[0][2].endswith("0000001.html.gz") and b2[1][2].endswith("0000002.json.gz"))
 
     def test_parse_rebuilds(self):
         f = self.fetcher([(200, "application/json", search_body([issue(11)]))])

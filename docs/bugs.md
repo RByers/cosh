@@ -77,8 +77,14 @@ Counts on 2026-11-08:
 
 ## Fetching politely
 
-- **Serial**, one request at a time, at least `--interval` (default 2 s,
-  never below 1 s) from the end of one request to the start of the next.
+- **Search: serial**, one request at a time, at least `--interval` (default
+  2 s, never below 1 s) from the end of one request to the start of the next.
+- **Monorail lookups: up to 4 at once, no wait** (`monorail --jobs 4
+  --interval 0`, approved by the user on 2026-11-08). The stubs are tiny
+  static pages. `--jobs` is capped at 4. Worker threads only send requests;
+  one thread logs and stores every reply in order. There is no back-off in
+  this mode: the first reply that isn't a stub, 403 or 404 stops every
+  worker at once (rerun to resume, or serially with the defaults).
 - **50 IDs per request** (the search's page size), newest IDs first.
 - **Identity:** the usual cosh `User-Agent` and `From` header with the
   contact e-mail from `cosh/contact.py` (never hardcoded).
@@ -91,9 +97,13 @@ Counts on 2026-11-08:
   - three replies with an unexpected shape in a row: stop.
 
   A stop exits with status 2 and a `STOP:` line in the log.
-- **Lock:** `data/private/bugs/fetch.lock`, so two bug fetches never run
-  at once. It is not `extract.lock`: that one serialises Gerrit and
-  googlesource fetches, and this is a different host.
+- **Locks:** `data/private/bugs/fetch.lock` for searches and
+  `monorail.lock` for lookups, so two of either never run at once. The two
+  kinds talk to different hosts and may overlap. Request numbers (`seq`)
+  are assigned by SQLite on insert, so both can log at once. (The first
+  search run, started before this change, still numbered requests itself,
+  so lookups waited for it to finish.) Neither is `extract.lock`: that one
+  serialises Gerrit and googlesource fetches.
 - **Resumable:** each request is logged and its IDs recorded in `asked`
   before the next one. A rerun asks only IDs never asked. A request that
   stopped half-way leaves its IDs unasked, so they are asked again.
@@ -182,17 +192,16 @@ From the main checkout (or a worktree with
 python3 -m cosh.bugs ids                    # offline, ~10 s
 python3 -m cosh.bugs fetch                  # dry run: IDs, requests, hours
 nice -n 5 python3 -m cosh.bugs fetch --go   # resumable
-nice -n 5 python3 -m cosh.bugs monorail --go
+nice -n 5 python3 -m cosh.bugs monorail --go --jobs 4 --interval 0
 nice -n 5 python3 -m cosh.bugs fetch --go   # asks the newly mapped IDs
 python3 -m cosh.bugs status                 # counts and enum histograms only
 python3 -m cosh.bugs fetch --retry-missing --go   # months later
 ```
 
-The full run started on 2026-11-08 chains the three `--go` steps in one
-background job (`fetch`, `monorail`, `fetch`), log
-`data/private/bugs/fetch-*.log`, process group ID in
-`data/private/bugs/fetch.pid` (`kill -- -$(cat …/fetch.pid)` stops it;
-rerunning the chain resumes).
+The first search ran on 2026-11-08 in the background, log
+`data/private/bugs/fetch-*.log`. The Monorail lookups and the second search
+follow it as their own job, log `data/private/bugs/monorail-*.log`, PID in
+`data/private/bugs/monorail.pid`. Rerunning any step resumes it.
 
 ## Cost
 
@@ -201,7 +210,8 @@ Trial on 2026-11-08: 5 requests, 250 IDs (the newest), 120 visible (48%),
 uncompressed. Monorail stubs are ~2 KB.
 
 Estimate for the full run: ~2,520 search requests (~2 h at 2 s) and ~21,300
-Monorail lookups (~14 h), then ~430 searches for the mapped IDs; about
+Monorail lookups (~14 h serially at 2 s; under an hour at 4 at once with no
+wait), then ~430 searches for the mapped IDs; about
 1.2 GB on disk, nearly all in `raw/list/`.
 
 ## Untrusted content
