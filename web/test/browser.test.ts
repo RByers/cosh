@@ -1614,7 +1614,7 @@ test('per-review spread: the metric per reviewed CL, on the per-reviewer rows; r
       };
     });
   const v = await read();
-  assert.equal(v.title, 'Review depth');
+  assert.equal(v.title, 'Contribution depth');
   // A linear axis from 0 here; the per-reviewer spread keeps its log axis.
   assert.deepEqual(await page.evaluate(() => [window.__cosh!.perReviewChart!.scales.x.type,
     window.__cosh!.perReviewChart!.scales.x.min, window.__cosh!.distChart!.scales.x.type]), ['linear', 0, 'logarithmic']);
@@ -1638,7 +1638,7 @@ test('per-review spread: the metric per reviewed CL, on the per-reviewer rows; r
     window.__cosh!.render();
   });
   // The heading stays put whatever the metric.
-  assert.equal(await page.$eval('#pr-title', (e) => e.textContent), 'Review depth');
+  assert.equal(await page.$eval('#pr-title', (e) => e.textContent), 'Contribution depth');
   // Other metrics have no cap: the axis reaches the largest value.
   assert.ok(await page.evaluate(() => {
     const c = window.__cosh!.perReviewChart!;
@@ -2533,6 +2533,8 @@ test('Commits: a fifth metric, loaded on demand, with the same section headings'
   assert.deepEqual(await headings(), before, 'headings stay put whatever the metric');
   assert.match(await page.evaluate(() => window.__cosh!.reviewChart!.options.scales.y.title.text), /^commits per week/);
   assert.equal(await page.$eval('#area-chart .ar-head .ar-vol', (e) => e.textContent), 'Commits');
+  // Contribution depth says it shows review comments under Commits.
+  assert.match(await page.$eval('#pr-sub', (e) => e.textContent!), /With Commits chosen, it shows review comments per review/);
   // The tile totals the summary's commits over the range.
   const range = await page.evaluate(() => window.__cosh!.state.range);
   const weeks = new Set(weeksIn(summary.meta.weeks, range));

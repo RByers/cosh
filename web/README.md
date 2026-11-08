@@ -267,11 +267,11 @@ there alone; presentation in `src/style.css` (`src/home.css` for the landing pag
    in scope or not, but leaves out `(no file)`: those comments are mostly
    sign-offs and a third of all reviews. Comments count in the week written,
    CLs in the week closed. From `area_weekly.json`; no extra data.
-9. **Review depth** (`orgPerReviewSpreads` in `src/data.ts`, the same
+9. **Contribution depth** (`orgPerReviewSpreads` in `src/data.ts`, the same
    `renderSpreadChart`, on a linear axis from 0): just above the per-reviewer
    spread and on the same org rows, each reviewer's metric over the range divided by their reviewed
    CLs (CLs they commented on), or review comments per review under the
-   Reviewed CLs and Commits metrics. Its heading, “Review depth”, stays the
+   Reviewed CLs and Commits metrics. Its heading, “Contribution depth”, stays the
    same whatever the metric, like every section's.
    Only reviewers with at least 3 reviewed CLs (`PER_REVIEW_MIN`) and a
    review comment count; under addressed comments those with none addressed

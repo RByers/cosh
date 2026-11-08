@@ -1170,6 +1170,7 @@ function renderPerReview(
     min: PER_REVIEW_MIN,
     cap: PER_REVIEW_CAP,
     m: num,
+    chosen: state.metric,
   });
 
   const fmt = (v: number) => fmtNum(v, { maximumFractionDigits: v < 10 ? 2 : 0 });

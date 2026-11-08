@@ -123,11 +123,11 @@ fifth metric button.
   have doubled what every visit loads (commits touch far more directories
   than comments do); kept apart, every visit loads 31 KB more (gzipped).
 - **The page:** a "Commits" button, a Commits tile and table column. Every
-  section works under Commits; Review complexity and Review depth show
+  section works under Commits; Review complexity and Contribution depth show
   review comments, as they do for Reviewed CLs. Sections were renamed so
   they fit either side, and no heading changes with the metric anymore:
   Contribution by organization, Contribution by directory (and over time),
-  Contribution per person, Leaderboard, Review depth. Orgs are named in the
+  Contribution per person, Leaderboard, Contribution depth. Orgs are named in the
   charts if they have 0.25% of review comments *or* of commits.
 - **Ratio** (organization chart, Off by default): the chosen review metric
   ÷ commits per org and week (addressed comments ÷ commits under Commits),

@@ -642,7 +642,7 @@
       <section id="per-review" class="card" aria-labelledby="pr-title">
         <a class="card-anchor" href="#per-review" aria-label="Link to this section" title="Link to this section">#</a>
         <!-- With Reviewed CLs or Commits chosen, this chart shows review comments per review. -->
-        <h2 id="pr-title">Review depth</h2>
+        <h2 id="pr-title">Contribution depth</h2>
         <p id="pr-sub" class="sub"></p>
         <template data-msg="pr-sub">
           <span data-if="!weeks">No reviewer data in this range.</span>
@@ -653,7 +653,8 @@
             sit at 0, and the few above <slot name="cap"></slot> sit in the right margin</span>.
             “All reviews” pools the whole row (its total over its reviews), so busy reviewers weigh more. The range's
             edges are approximate, as in the complexity chart. Hover a dot for the reviewer; click it for their weekly
-            chart.</span>
+            chart.<span data-if="chosen=commits"> With Commits chosen, it shows review comments per review, since
+            commits have no per-review figure.</span></span>
         </template>
         <div id="pr-box" class="chart">
           <canvas id="pr-chart" role="img" aria-label="Each reviewer's metric per reviewed CL over the selected range, one row of dots per organization, with each row's middle half boxed and its median marked; the table below lists the figures"></canvas>
