@@ -69,7 +69,7 @@ performance or capability for extreme isolation.
 | `derive`, `summarize` (Python) | SQL or command injection | SQL is parameterised: f-strings only splice in `?` placeholders and fixed clauses. The `git` calls take argv lists, never a shell, and their arguments are change numbers and project names from our own query config. The comment regex only reads the text. |
 | `cosh classify`: headless Claude (Haiku) | **Prompt injection** (next section) | No tools, schema-constrained output, sandboxed process. |
 | `cosh.sentiment score`: headless Claude (Haiku) | Prompt injection; a wider output channel than classify's booleans | The same layers as classify: no tools, `Sandbox`, `--sandbox auto\|bwrap\|none`. The reply is a clamped score, an `ai` boolean and a reason of at most 80 characters, reduced to plain words (`clean_why`: no markup, URLs or control characters). Only ids that were sent are kept. A hijacked batch can set scores or write a short label next to any comment in it, which is accepted metric skew. Reasons stay in `data/private/`; only monthly aggregates are published. `docs/sentiment.md`, "Security". |
-| Web UI (`web/`) | XSS on the public site | Untrusted strings go into the DOM only as text, never parsed as markup or code; links built from data always point at Gerrit. Details and checks in "Script injection on the site" below. |
+| Web UI (`web/`) | XSS on the public site | Untrusted strings go into the DOM only as text, never parsed as markup or code; links built from data always point at Gerrit; a Content Security Policy with Trusted Types blocks what slips through. Details and checks in "Script injection on the site" below. |
 | Claude Code sessions developing cosh (interactive or background agents, with Bash and git) | Prompt injection with real tools | Don't read raw comment bodies into a tool-enabled session in bulk. To label or audit threads, use the sandboxed headless path (`cosh classify`, `classifier_audit.py judge`). Small samples read while debugging are fine: treat their text as data, never as instructions. Building the 2026-11-04 gold set ran tool-enabled Haiku subagents over 400 threads (`docs/comment-classifier.md`). That was accepted at the time, but don't repeat it at scale. |
 
 ## Script injection on the site
@@ -113,14 +113,40 @@ from data, use these builders or `gerritLink`.
 
 Audited on 2026-11-07: every DOM write, attribute, style property, link
 and URL parameter in `web/src/` (both dashboards and the landing page).
-No vulnerability found.
+No vulnerability found. The only change the CSP needed was moving the
+filters form's `onsubmit` attribute into `main.ts`.
 
-**Not adopted (yet): a Content Security Policy.** A `<meta
-http-equiv="Content-Security-Policy">` with `script-src 'self'` would be a
-second layer if a sink ever slipped in. GitHub Pages can't send headers, and
-Chart.js and our scripts set inline styles, so it would need `style-src
-'unsafe-inline'` and testing against both the Vite dev server and the
-build. Worth adding before the site goes live.
+**A Content Security Policy is the second layer**, for a sink that slips
+past the rules above. Every built page carries it as a `<meta>` (GitHub
+Pages can't send headers); `CSP` in `web/vite.config.ts` adds it at build
+time:
+
+```
+default-src 'none'; script-src 'self'; style-src 'self';
+img-src 'self' data:; connect-src 'self'; base-uri 'none';
+form-action 'none'; require-trusted-types-for 'script'; trusted-types 'none'
+```
+
+- Only the site's own script files run: no inline `<script>`, no `on…=`
+  handlers, no `eval`. Injected markup can't run code.
+- Trusted Types with no policies make `innerHTML`, `insertAdjacentHTML`
+  and the other HTML sinks throw, so a sink added by mistake fails loudly
+  instead of becoming an XSS.
+- Styles, data and images come only from the site (plus `data:` favicons),
+  and there's nowhere for a form to submit or a `<base>` to redirect to.
+- Our scripts may still set CSS custom properties through `style`
+  (CSSOM), which the policy allows.
+
+A `<meta>` policy can't set `frame-ancestors`, so the site could still be
+framed; there is nothing on it to click-jack. The dev server runs
+without the policy, since it injects CSS as inline `<style>` and uses a
+websocket.
+
+`web/test/browser.test.ts` checks that every page carries the policy and
+loads without a violation, that `insertAdjacentHTML` throws, and that an
+inline `<script>` and `onerror` handler injected into the served HTML
+don't run. A unit test keeps inline scripts, styles and handlers out of
+the HTML pages.
 
 ## Prompt injection in `cosh classify`
 

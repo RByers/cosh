@@ -12,7 +12,7 @@ import { afterAll as after, beforeAll as before, test } from 'vitest';
 import { fileURLToPath } from 'node:url';
 import puppeteer, { type Browser, type HTTPRequest, type Page } from 'puppeteer-core';
 import { createServer, preview, type PreviewServer } from 'vite';
-import { randomPort } from '../vite.config.ts';
+import { CSP, randomPort } from '../vite.config.ts';
 import { addWeeks, addressedWeeks, isoWeekOf, namedOrgs, weeksIn, type Summary } from '../src/data.ts';
 
 /** The committed summary the build bundles. */
@@ -2583,4 +2583,56 @@ test('Ratio: off by default; plots the review metric over commits', async () => 
   assert.doesNotMatch(page.url(), /ratio=1/);
   assert.deepEqual(errors, []);
   await page.close();
+});
+
+test('every page carries the Content Security Policy, breaks none of it, and it blocks injected markup', async () => {
+  for (const path of ['', 'value.html', 'sentiment.html']) {
+    const page = await browser.newPage();
+    const errors: string[] = [];
+    page.on('console', (m) => m.type() === 'error' && errors.push(m.text()));
+    page.on('pageerror', (e) => errors.push(String(e)));
+    await page.evaluateOnNewDocument(() => {
+      (window as unknown as { violations: string[] }).violations = [];
+      document.addEventListener('securitypolicyviolation', (e) =>
+        (window as unknown as { violations: string[] }).violations.push(`${e.violatedDirective} ${e.blockedURI}`));
+    });
+    await page.setViewport({ width: 1100, height: 900 });
+    await page.goto(baseUrl + path, { waitUntil: 'load' });
+    if (path) await page.waitForSelector('body[data-ready]');
+    assert.equal(
+      await page.$eval('meta[http-equiv="Content-Security-Policy"]', (m) => m.getAttribute('content')),
+      CSP, path);
+    // The page itself trips nothing.
+    assert.deepEqual(await page.evaluate(() => (window as unknown as { violations: string[] }).violations), [], path);
+    assert.deepEqual(errors, [], path);
+    // A stray innerHTML-style sink throws (Trusted Types)…
+    const threw = await page.evaluate(() => {
+      try {
+        document.body.insertAdjacentHTML('beforeend', '<img src=x onerror="window.pwned=true">');
+        return false;
+      } catch {
+        return true;
+      }
+    });
+    assert.equal(threw, true, path);
+    await page.close();
+
+    // …and markup injected into the page itself doesn't run (script-src).
+    const hit = await browser.newPage();
+    await hit.setRequestInterception(true);
+    hit.on('request', (r) => {
+      if (r.isNavigationRequest()) {
+        void fetch(r.url()).then(async (res) => {
+          const html = (await res.text()).replace('</body>',
+            '<script>window.pwned = 1</script><img src="x" onerror="window.pwned = 2"></body>');
+          void r.respond({ status: 200, contentType: 'text/html', body: html });
+        });
+      } else void r.continue();
+    });
+    await hit.goto(baseUrl + path, { waitUntil: 'load' });
+    if (path) await hit.waitForSelector('body[data-ready]');
+    assert.ok(await hit.$('img[src="x"][onerror]'), `${path}: the markup wasn't injected`);
+    assert.equal(await hit.evaluate(() => (window as unknown as { pwned?: number }).pwned), undefined, path);
+    await hit.close();
+  }
 });

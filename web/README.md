@@ -166,6 +166,13 @@ there alone; presentation in `src/style.css` (`src/home.css` for the landing pag
   `--share`, `--fill`, `--at`, `--depth`, `--rows`, `--t`) that `style.css`
   turns into colours, widths and heights. Chart.js drawing options are the
   exception, though the charts take their colours and font from CSS.
+- The built pages carry a Content Security Policy (`CSP` in
+  `vite.config.ts`; SECURITY.md, "Script injection on the site"). So the
+  HTML has no inline scripts, `<style>`, `style=` or `on…=` handlers (add
+  listeners in the script), and no script uses `innerHTML` or other HTML
+  sinks: the browser refuses them. Data loads only from the site itself.
+  The dev server runs without the policy, so check a change against `npm
+  test`, which runs the build.
 
 ## Layout
 

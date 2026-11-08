@@ -1345,6 +1345,9 @@ function derivativeJumpWeek(radar: RadarWeekly): string | null {
 
 async function main(data: Data) {
   const state = readStateFromUrl(data);
+  // The filters are a <form> for its semantics only: Enter mustn't submit it.
+  // Here, not an onsubmit attribute, which the CSP blocks.
+  $('form.filters').addEventListener('submit', (e) => e.preventDefault());
   const classifierPrompt = JSON.parse(classifierPromptJson) as { system: string; prompt: string };
   $('#classifier-system').textContent = classifierPrompt.system;
   $('#classifier-prompt').textContent = classifierPrompt.prompt.trimEnd();

@@ -1,4 +1,5 @@
 import { fileURLToPath } from 'node:url';
+import type { Plugin } from 'vite';
 import { defineConfig } from 'vitest/config';
 
 const page = (name: string) => fileURLToPath(new URL(name, import.meta.url));
@@ -11,7 +12,38 @@ export const randomPort = () => 20000 + Math.floor(Math.random() * 20000);
 const devPort = (userPort: number) =>
   forUser ? { port: userPort, strictPort: true } : { port: randomPort(), strictPort: false };
 
+/** The Content Security Policy every built page carries (SECURITY.md,
+ * "Script injection on the site"): scripts, styles and data only from the
+ * site itself, and Trusted Types so the browser refuses innerHTML and other
+ * HTML sinks outright. GitHub Pages can't send headers, so it is a <meta>,
+ * which can't set frame-ancestors or report-uri. Only the build gets it:
+ * the dev server injects CSS as inline <style> and talks over a websocket. */
+export const CSP = [
+  "default-src 'none'",
+  "script-src 'self'",
+  "style-src 'self'",
+  // The favicons are data: URLs.
+  "img-src 'self' data:",
+  "connect-src 'self'",
+  "base-uri 'none'",
+  "form-action 'none'",
+  "require-trusted-types-for 'script'",
+  "trusted-types 'none'",
+].join('; ');
+
+const csp = (): Plugin => ({
+  name: 'cosh-csp',
+  apply: 'build',
+  // Right after <meta charset>, before anything the policy governs.
+  transformIndexHtml(html, { filename }) {
+    const charset = '<meta charset="utf-8" />';
+    if (!html.includes(charset)) throw new Error(`${filename}: no ${charset} to put the CSP after`);
+    return html.replace(charset, `${charset}\n    <meta http-equiv="Content-Security-Policy" content="${CSP}" />`);
+  },
+});
+
 export default defineConfig({
+  plugins: [csp()],
   // Relative asset URLs, so the site works from any GitHub Pages path.
   base: './',
   server: {

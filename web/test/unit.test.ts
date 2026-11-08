@@ -1295,6 +1295,14 @@ test('no script parses strings as HTML or code', async () => {
       assert.doesNotMatch(line, sinks, `${f}:${i + 1}`);
     });
   }
+  // Nor do the pages carry inline handlers or scripts, which the CSP blocks.
+  const web = fileURLToPath(new URL('../', import.meta.url));
+  for (const f of readdirSync(web).filter((f) => f.endsWith('.html'))) {
+    const html = readFileSync(web + f, 'utf8');
+    assert.doesNotMatch(html, /<[^>]*\son[a-z]+\s*=/i, `${f}: inline event handler`);
+    assert.doesNotMatch(html, /<script(?![^>]*\ssrc=)[^>]*>/i, `${f}: inline script`);
+    assert.doesNotMatch(html, /\sstyle\s*=|<style/i, `${f}: inline style`);
+  }
 });
 
 test('Gerrit links stay on Gerrit whatever the data says', () => {
