@@ -349,26 +349,26 @@ export function formatShare(v: number): string {
   return `${fmtNum(v * 100, { maximumSignificantDigits: 2 })}%`;
 }
 
-/** Shared bounds for both log axes: whole decades around every value, so the
- * y = x parity line runs corner to corner. */
-export function parityBounds(points: ParityPoint[]): { min: number; max: number } {
-  const vals = points
-    .flatMap((p) => [p, ...(p.others ?? [])])
-    .flatMap((p) => [p.contribution, p.derived])
-    .filter((v) => v > 0);
-  if (!vals.length) return { min: 0.001, max: 1 };
-  const min = 10 ** Math.floor(Math.log10(Math.min(...vals)) + 1e-9);
-  const max = Math.min(1, 10 ** Math.ceil(Math.log10(Math.max(...vals)) - 1e-9));
-  return { min, max: max > min ? max : min * 10 };
+/** Bounds for one log axis: whole powers of two around its values (positive
+ * ones only), so the orgs fill the plot. */
+export function parityBounds(values: number[]): { min: number; max: number } {
+  const vals = values.filter((v) => v > 0);
+  if (!vals.length) return { min: 2 ** -10, max: 1 };
+  const min = 2 ** Math.floor(Math.log2(Math.min(...vals)) + 1e-9);
+  const max = Math.min(1, 2 ** Math.ceil(Math.log2(Math.max(...vals)) - 1e-9));
+  return { min, max: max > min ? max : min * 2 };
 }
 
 /** Contribution share against usage share over the range, one point per org, both
- * on log axes with the same bounds. Each org's other metrics are smaller marks,
+ * on log axes, each with its own bounds: contribution shares span far more
+ * powers of two than usage shares do, and shared bounds left most of the
+ * width empty. Each org's other metrics are smaller marks,
  * one shape per metric (`marks`, the legend), joined by a thin shaded strip
- * from the lowest to the highest: how much its ratio depends on the metric. The diagonal y = x is a 1.0× value ratio:
+ * from the lowest to the highest: how much its ratio depends on the metric. The
+ * line y = x is a 1.0× value ratio (no longer at 45°, the axes differing):
  * orgs above it review more than their usage share, those below less. Orgs
  * with no review in the range have no place on a log scale, so, as on the
- * review chart, the axes then start one power of ten lower and that bottom
+ * review chart, the y axis then starts one power of two lower and that bottom
  * tick, labelled 0 on the y axis, is where they sit (their tooltips say 0). */
 export function renderParityChart(
   canvas: HTMLCanvasElement,
@@ -378,10 +378,14 @@ export function renderParityChart(
   theme: Theme,
   marks: MetricMark[] = [],
 ): Chart<'scatter'> {
-  const { min, max } = parityBounds(points);
-  // Both axes extend alike, so the diagonal stays at 45°.
-  const zero = points.some((p) => [p, ...(p.others ?? [])].some((q) => q.contribution <= 0)) ? min / 10 : null;
-  const lo = zero ?? min;
+  const all = points.flatMap((p) => [p, ...(p.others ?? [])]);
+  const xb = parityBounds(all.map((p) => p.derived));
+  const yb = parityBounds(all.map((p) => p.contribution));
+  const zero = all.some((q) => q.contribution <= 0) ? yb.min / 2 : null;
+  const lo = zero ?? yb.min;
+  // The parity line's ends: where y = x enters and leaves the plot.
+  const from = Math.max(xb.min, lo);
+  const to = Math.min(xb.max, yb.max);
   const styleOf = (metric: string) => marks.find((m) => m.metric === metric)?.style ?? 'circle';
   const datasets = points.map((p) => {
     // The chosen metric first: the org's label and the tests read data[0].
@@ -413,16 +417,15 @@ export function renderParityChart(
       ctx.clip();
       ctx.strokeStyle = theme.parity;
       ctx.lineWidth = 2;
-      // Corner to corner, through the 0 row's extra decade too when there is one.
       ctx.beginPath();
-      ctx.moveTo(x.getPixelForValue(lo), y.getPixelForValue(lo));
-      ctx.lineTo(x.getPixelForValue(max), y.getPixelForValue(max));
+      ctx.moveTo(x.getPixelForValue(from), y.getPixelForValue(from));
+      ctx.lineTo(x.getPixelForValue(to), y.getPixelForValue(to));
       ctx.stroke();
       // Its label runs along the line, above it near the low end: high review
-      // on tiny usage, a corner no org is near.
-      const x0 = x.getPixelForValue(lo);
-      const y0 = y.getPixelForValue(lo);
-      const angle = Math.atan2(y.getPixelForValue(max) - y0, x.getPixelForValue(max) - x0);
+      // on low usage, a corner no org is near.
+      const x0 = x.getPixelForValue(from);
+      const y0 = y.getPixelForValue(from);
+      const angle = Math.atan2(y.getPixelForValue(to) - y0, x.getPixelForValue(to) - x0);
       ctx.translate(x0, y0);
       ctx.rotate(angle);
       ctx.fillStyle = theme.parity;
@@ -474,7 +477,9 @@ export function renderParityChart(
         const w = ctx.measureText(label).width;
         const h = 14;
         const at = (l: number, cy: number): Box => ({ l, r: l + w, t: cy - h / 2, b: cy + h / 2 });
-        const options = [at(x + 12, y), at(x - 12 - w, y), at(x - w / 2, y - 16), at(x - w / 2, y + 16)];
+        // Above or below, slid sideways to stay in the chart (dots near an edge).
+        const mid = Math.max(a.left, Math.min(x - w / 2, a.right + 8 - w));
+        const options = [at(x + 12, y), at(x - 12 - w, y), at(mid, y - 16), at(mid, y + 16)];
         const fits = (o: Box) => o.l >= a.left && o.r <= a.right + 8 && o.t >= a.top - 8 && o.b <= a.bottom + 8;
         const clear = (o: Box) =>
           fits(o) && !placed.some((p) => hit(o, p)) && !dots.some((d, j) => j !== i && hit(o, d));
@@ -485,27 +490,34 @@ export function renderParityChart(
       ctx.restore();
     },
   };
-  // Ticks, labels and gridlines on whole decades only: 0.01%, 0.1%, 1%, …
-  const decades: number[] = [];
-  for (let e = Math.round(Math.log10(lo)); e <= Math.round(Math.log10(max)); e++) decades.push(10 ** e);
   const isZeroTick = (v: number) => zero !== null && Math.abs(v / zero - 1) < 1e-6;
-  const axis = (title: string, zeroLabel: boolean) => ({
-    type: 'logarithmic' as const,
-    min: lo,
-    max,
-    title: { display: true, text: title, color: theme.muted },
-    border: { color: theme.baseline },
-    grid: { color: theme.grid },
-    afterBuildTicks: (scale: Scale) => {
-      scale.ticks = decades.map((value) => ({ value }));
-    },
-    ticks: {
-      color: theme.muted,
-      autoSkip: false,
-      maxRotation: 0,
-      callback: (v: number | string) => (zeroLabel && isZeroTick(Number(v)) ? '0' : formatShare(Number(v))),
-    },
-  });
+  const axis = (title: string, min: number, max: number, zeroLabel: boolean) => {
+    // Ticks and gridlines on whole powers of two only: …, 25%, 50%, 100%, but
+    // labels on every few, counted down from the top so the top bound is
+    // always labelled: at most ~8 per axis.
+    const steps: number[] = [];
+    for (let e = Math.round(Math.log2(min)); e <= Math.round(Math.log2(max)); e++) steps.push(2 ** e);
+    const every = Math.ceil(steps.length / 8);
+    const labelled = (i: number) => (steps.length - 1 - i) % every === 0;
+    return {
+      type: 'logarithmic' as const,
+      min,
+      max,
+      title: { display: true, text: title, color: theme.muted },
+      border: { color: theme.baseline },
+      grid: { color: theme.grid },
+      afterBuildTicks: (scale: Scale) => {
+        scale.ticks = steps.map((value) => ({ value }));
+      },
+      ticks: {
+        color: theme.muted,
+        autoSkip: false,
+        maxRotation: 0,
+        callback: (v: number | string, i: number) =>
+          zeroLabel && isZeroTick(Number(v)) ? '0' : labelled(i) ? formatShare(Number(v)) : '',
+      },
+    };
+  };
   const base = baseOptions(theme);
   return new Chart<'scatter'>(canvas, {
     type: 'scatter',
@@ -569,8 +581,8 @@ export function renderParityChart(
         },
       },
       scales: {
-        x: axis('share of Chromium browser usage (log scale)', false),
-        y: axis(`share of ${metricLabel} (log scale)`, true),
+        x: axis('share of Chromium browser usage (log scale)', xb.min, xb.max, false),
+        y: axis(`share of ${metricLabel} (log scale)`, lo, yb.max, true),
       },
     },
   });
