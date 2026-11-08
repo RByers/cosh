@@ -79,6 +79,34 @@ figures; the page has the corrected ones):
 - **Unchanged:** waits, reverts, rework, the load index and the mechanical
   rule, which don't depend on identities.
 
+## Further analyses (2026-11-08)
+
+Each has its own doc, with commands to regenerate:
+
+- `docs/balance-signals.md`:
+  - **−1 votes** (about 0.5% of reviewed CLs) fall with tenure and
+    familiarity as steeply as the load index.
+  - **Abandonment** rose from 5.7% to 8.0%.
+  - **Same people, 2024 → 2026:** the same reviewers write 3% fewer
+    threads, and the same authors get 9% fewer, while their rework and
+    reverts are flat. That leans to reviewers easing off for established
+    authors.
+  - **Matched cohorts:** 2025 joiners keep their lead over matched 2024
+    joiners, and their CLs change less after review. That leans to
+    arriving better.
+- `docs/balance-ai.md`:
+  - the broad AI marker;
+  - same-author comparisons: marked CLs are larger and reviewed the same;
+  - directory adoption: agent files don't predict use;
+  - footers: not relevant.
+- `docs/balance-clusters.md`:
+  - six activity patterns and nine trajectories;
+  - fewer recent joiners move into reviewing within three years.
+- `docs/bugs-and-security.md`:
+  - the Chrome Releases security fixes, with 2026's jump to about 3,900
+    CVEs;
+  - how bug-tracker data could be fetched (that needs approval).
+
 ## Goal and signals (as stated on the page, 2026-11-08)
 
 **Goal.** Chromium has grown through code review: experts give feedback,
