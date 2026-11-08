@@ -2309,15 +2309,32 @@ test('the Review Tone page: every comment, board controls, happy tables, AI list
   await page.setViewport({ width: 1100, height: 900 });
   await page.goto(baseUrl + 'sentiment.html', { waitUntil: 'load' });
   await page.waitForSelector('body[data-ready]');
-  // Tiles and the table are filled: a row per month over all the dates.
+  // Tiles are filled, there's no table repeating the charts, and the
+  // distribution counts every comment of the dates.
+  assert.equal(await page.$eval('#recent-title', (e) => e.textContent), 'Distribution');
   for (const id of ['tile-n', 'tile-trivial', 'tile-mean', 'tile-glowing', 'tile-angry', 'tile-ai']) {
     assert.notEqual(await page.$eval(`#${id} .tile-value`, (e) => e.textContent!.trim()), '', id);
   }
-  assert.equal(await page.$eval('#recent-rows-title', (e) => e.textContent), 'Month by month');
-  const months = await page.$$eval('#recent-weekly tbody th', (ths) => ths.map((t) => t.textContent!));
-  assert.ok(months.length >= 2);
-  for (const m of months) assert.match(m, /^[A-Z][a-z]{2,3} \d{4}$/);
+  assert.equal(await page.$('#recent table'), null);
   assert.ok((await page.$eval('#recent-dist', (c) => (c as HTMLCanvasElement).width)) > 0);
+  const distTotal = () => page.evaluate(() =>
+    (window.__tone!['recent-dist'].data.datasets[0].data as (number | null)[]).reduce<number>((s, v) => s + (v ?? 0), 0));
+  const tileN = () => page.$eval('#tile-n .tile-value', (e) => Number(e.textContent!.replace(/\D/g, '')));
+  assert.equal(await distTotal(), await tileN());
+  // The trend's average chart has the grey comments line on a right axis.
+  const extra = await page.evaluate(() => {
+    const d = window.__tone!['trend-mean'].data.datasets.find((x) => x.label === 'Comments') as
+      { yAxisID?: string; data: number[] } | undefined;
+    return d && { axis: d.yAxisID, data: d.data };
+  });
+  assert.equal(extra?.axis, 'y1');
+  assert.ok(extra!.data.every((v) => Number.isInteger(v) && v > 0));
+  // The page says "grumpy", not "angry" (the scoring prompt, quoted as given, aside).
+  assert.doesNotMatch(await page.$eval('main', (e) => {
+    const m = e.cloneNode(true) as HTMLElement;
+    m.querySelector('#prompt-text')?.remove();
+    return m.textContent!;
+  }), /\bangry\b/i);
 
   // The praise boards: net praise pills, highest first and all positive; "All" shows
   // everyone with a positive total; another year changes the caption.
@@ -2423,15 +2440,17 @@ test('the Review Tone page: the Dates switch picks all, a year or a month for ev
   const months = await page.$$eval('#period-month option', (os) => os.map((o) => (o as HTMLOptionElement).value));
   assert.equal(await page.$eval('#period-month', (s) => (s as HTMLSelectElement).value), months[0]);
   assert.match(await page.$eval('#period-month option', (o) => o.textContent!), /^[A-Z][a-z]{2,3} \d{4}$/);
-  assert.equal(await page.$eval('#recent-rows-title', (e) => e.textContent), 'Week by week');
-  const weeks = await page.$$eval('#recent-weekly tbody th', (ths) => ths.map((t) => t.textContent!));
-  assert.ok(weeks.length >= 4 && weeks.length <= 5);
-  for (const w of weeks) assert.match(w, /^\d{1,2} \w{3,4} \d{4}$/);
   assert.match(await page.$eval('#trend-sub', (e) => e.textContent!), /The larger dot is [A-Z][a-z]{2,3} \d{4}\./);
+  // The distribution follows the month: its bars add up to the month's comments.
+  const bars = () => page.evaluate(() =>
+    (window.__tone!['recent-dist'].data.datasets[0].data as (number | null)[]).reduce<number>((s, v) => s + (v ?? 0), 0));
+  const monthBars = await bars();
+  assert.equal(monthBars, await page.$eval('#tile-n .tile-value', (e) => Number(e.textContent!.replace(/\D/g, ''))));
   const newest = await n();
   await page.select('#period-month', months[1]);
   assert.match(page.url(), new RegExp(`[?&]period=${months[1]}\\b`));
   assert.notEqual(await n(), newest);
+  assert.notEqual(await bars(), monthBars);
   assert.ok((await page.$$eval('#praise-given tbody tr', (trs) => trs.length)) > 0);
 
   // A link with ?period= opens on it; All drops it.

@@ -25,8 +25,7 @@ import commentsEveryoneUrl from '../../summaries/sentiment_comments.everyone.jso
 import commentsOthersUrl from '../../summaries/sentiment_comments.noncommitters.json?url';
 import promptText from '../../scripts/sentiment_prompts/v3.txt?raw';
 import { readTheme, type Theme } from './charts.ts';
-import { weekMonday } from './data.ts';
-import { fmtDay, fmtInt, fmtNum } from './format.ts';
+import { fmtInt, fmtNum } from './format.ts';
 import { fill, fragment, msg } from './text.ts';
 import {
   AUTHORS,
@@ -86,6 +85,12 @@ const personComments = (a: Authors) => {
   return p;
 };
 
+declare global {
+  interface Window {
+    __tone?: Record<string, Chart>;
+  }
+}
+
 /** The charts drawn for the current choice, destroyed before redrawing. */
 let charts: Chart[] = [];
 
@@ -127,10 +132,19 @@ interface Series {
   ci: (p: TonePoint) => [number, number];
 }
 
+/** A grey line on a right-hand axis, alongside the banded series. */
+interface Extra {
+  label: string;
+  data: number[];
+  /** The tooltip line for month `i`. */
+  tip: (i: number) => string;
+}
+
 /** A line per series with its 95% band, over `months`; the month at index
- * `mark` (the month chosen on the page) gets a dot. */
+ * `mark` (the month chosen on the page) gets a dot. `extra` adds a grey line
+ * on a right-hand axis. */
 function bandedLine(canvas: HTMLCanvasElement, months: ToneTrend['months'], series: Series[], theme: Theme,
-  fmt: (v: number) => string, mark: number, boundary: number, footer: (i: number) => string) {
+  fmt: (v: number) => string, mark: number, boundary: number, footer: (i: number) => string, extra?: Extra) {
   const datasets: ChartDataset<'line', number[]>[] = [];
   const dots = months.map((_, i) => (i === mark ? 5 : 0));
   for (const s of series) {
@@ -161,6 +175,14 @@ function bandedLine(canvas: HTMLCanvasElement, months: ToneTrend['months'], seri
       ctx.restore();
     },
   };
+  if (extra) {
+    datasets.push({ label: extra.label, data: extra.data, yAxisID: 'y1', borderColor: theme.muted,
+      backgroundColor: theme.muted, borderWidth: 1.5, pointRadius: dots, pointHoverRadius: 4, tension: 0, fill: false });
+  }
+  const y1 = extra ? {
+    y1: { position: 'right' as const, beginAtZero: true, grid: { display: false },
+      ticks: { color: theme.muted, callback: (v: string | number) => fmtInt(Number(v)), font: { family: theme.font } } },
+  } : {};
   charts.push(new Chart(canvas, {
     type: 'line',
     plugins: [divider],
@@ -173,10 +195,11 @@ function bandedLine(canvas: HTMLCanvasElement, months: ToneTrend['months'], seri
       scales: {
         x: { grid: { color: theme.grid }, ticks: { color: theme.text, maxTicksLimit: 12, font: { family: theme.font } } },
         y: { grid: { color: theme.grid }, ticks: { color: theme.text, callback: (v) => fmt(Number(v)), font: { family: theme.font } } },
+        ...y1,
       },
       plugins: {
         legend: {
-          display: series.length > 1,
+          display: series.length > 1 || !!extra,
           labels: { color: theme.text, filter: (item) => !!item.text, font: { family: theme.font } },
         },
         tooltip: {
@@ -187,6 +210,7 @@ function bandedLine(canvas: HTMLCanvasElement, months: ToneTrend['months'], seri
               return m.span[0] === m.span[1] ? monthLabel(m.m) : `${monthLabel(m.span[0])} – ${monthLabel(m.span[1])}`;
             },
             label: (item) => {
+              if (extra && item.dataset.label === extra.label) return extra.tip(item.dataIndex);
               const s = series.find((x) => x.label === item.dataset.label)!;
               const p = months[item.dataIndex].rolling;
               const [lo, hi] = s.ci(p);
@@ -214,6 +238,9 @@ function renderTrend(trend: ToneTrend, theme: Theme) {
   const perMonth = (ms: typeof months) => fmtInt(Math.round(count(ms) / Math.max(1, ms.length)));
   const rate = trend.rate ? pct(trend.rate).replace(/\.0%$/, '%') : 'random';
   const boundary = full.length && sampled.length ? months.findIndex((m) => m.full) : -1;
+  // The sample's monthly counts scaled up to every comment (20x for a 5% sample);
+  // fully scored months are counted as they are.
+  const scale = trend.rate ? Math.round(1 / trend.rate) : 20;
   fill($('#trend-sub'), {
     nFull: full.length ? fmtInt(count(full)) : '',
     fullFrom: full.length ? monthLabel(full[0].m) : '',
@@ -225,6 +252,7 @@ function renderTrend(trend: ToneTrend, theme: Theme) {
     window: trend.window,
     boundary: boundary > 0,
     mark: mark >= 0 ? monthLabel(period) : '',
+    scale,
   });
   fill($('#trend-note'), { glowing: trend.thresholds.glowing, angry: Math.abs(trend.thresholds.angry) });
   // Tooltip footer: how many comments the point pools, and whether any were sampled.
@@ -236,10 +264,12 @@ function renderTrend(trend: ToneTrend, theme: Theme) {
   };
   bandedLine($<HTMLCanvasElement>('#trend-mean'), months,
     [{ label: 'Average score', color: theme.series[0], v: (p) => p.mean, ci: (p) => [p.lo, p.hi] }], theme, signed, mark,
-    boundary, footer);
+    boundary, footer, { label: 'Comments', data: months.map((m) => m.month.n * (m.full ? 1 : scale)),
+      tip: (i) => months[i].full ? `Comments that month: ${fmtInt(months[i].month.n)}`
+        : `Comments that month: about ${fmtInt(months[i].month.n * scale)}` });
   bandedLine($<HTMLCanvasElement>('#trend-shares'), months, [
     { label: 'Glowing', color: theme.series[2], v: (p) => p.glowing, ci: (p) => p.glowing_ci },
-    { label: 'Angry', color: theme.series[7], v: (p) => p.angry, ci: (p) => p.angry_ci },
+    { label: 'Grumpy', color: theme.series[7], v: (p) => p.angry, ci: (p) => p.angry_ci },
     { label: 'AI friction', color: theme.series[6], v: (p) => p.ai, ci: (p) => p.ai_ci },
   ], theme, pct, mark, boundary, footer);
 }
@@ -271,37 +301,16 @@ function renderRecent(r: ToneRecent, theme: Theme) {
   tile('tile-glowing', t.glowing === null ? '–' : pct2(t.glowing));
   tile('tile-angry', t.angry === null ? '–' : pct2(t.angry));
   tile('tile-ai', fmtInt(t.ai));
-  // A month's weeks, or the months of a year or of every week.
-  const k = periodKind(period) === 'month' ? 'week' : 'month';
-  fill($('#recent-rows-title'), { k });
-  fill($('#recent-rows-col'), { k });
-  const within = (w: string) => w >= d.weeks[0] && w <= d.weeks[1];
-  const rows = k === 'week'
-    ? r.weekly.filter((w) => within(w.week)).map((w) => ({ ...w, label: fmtDay(weekMonday(w.week)) }))
-    : r.monthly.filter((m) => within(m.weeks[0]) || within(m.weeks[1])).map((m) => ({ ...m, label: monthLabel(m.month) }));
-  $<HTMLTableElement>('#recent-weekly').tBodies[0].replaceChildren(...rows.map((w) => {
-    const tr = el('tr');
-    tr.append(
-      el('th', w.label),
-      el('td', fmtInt(w.n)),
-      el('td', w.mean === null ? '–' : signed(w.mean)),
-      el('td', w.glowing === null ? '–' : pct2(w.glowing)),
-      el('td', w.angry === null ? '–' : pct2(w.angry)),
-      el('td', fmtInt(w.ai)),
-    );
-    tr.firstElementChild!.setAttribute('scope', 'row');
-    return tr;
-  }));
   const total = d.dist.reduce((s, [, n]) => s + n, 0) || 1;
   const bins: number[] = [];
   for (let i = -10; i <= 10; i++) bins.push(i / 10);
-  const share = new Map(d.dist.map(([b, n]) => [Math.round(b * 10) / 10, n / total]));
+  const count = new Map(d.dist.map(([b, n]) => [Math.round(b * 10) / 10, n]));
   const colors = bins.map((b) => (b <= r.thresholds.angry ? theme.series[7] : b >= r.thresholds.glowing ? theme.series[2] : theme.baseline));
   charts.push(new Chart($<HTMLCanvasElement>('#recent-dist'), {
     type: 'bar',
     data: {
       labels: bins.map((b) => (b > 0 ? '+' : b < 0 ? '−' : '') + Math.abs(b).toFixed(1)),
-      datasets: [{ label: 'Share of comments', data: bins.map((b) => share.get(b) ?? null), backgroundColor: colors }],
+      datasets: [{ label: 'Comments', data: bins.map((b) => count.get(b) ?? null), backgroundColor: colors }],
     },
     options: {
       maintainAspectRatio: false,
@@ -310,14 +319,14 @@ function renderRecent(r: ToneRecent, theme: Theme) {
         x: { grid: { display: false }, ticks: { color: theme.text, font: { family: theme.font } } },
         y: {
           type: 'logarithmic',
-          min: 1e-5,
+          min: 0.5,
           grid: { color: theme.grid },
-          ticks: { color: theme.text, font: { family: theme.font }, callback: (v) => (Math.log10(Number(v)) % 1 === 0 ? pct(Number(v)).replace(/\.0%$/, '%') : '') },
+          ticks: { color: theme.text, font: { family: theme.font }, callback: (v) => (Number(v) >= 1 && Math.log10(Number(v)) % 1 === 0 ? fmtInt(Number(v)) : '') },
         },
       },
       plugins: {
         legend: { display: false },
-        tooltip: { callbacks: { label: (item) => `${pct2(Number(item.raw))} of comments` } },
+        tooltip: { callbacks: { label: (item) => `${fmtInt(Number(item.raw))} comments (${pct2(Number(item.raw) / total)})` } },
       },
     },
   }));
@@ -717,7 +726,7 @@ function drawHappy() {
 // ---- comments
 
 /** A comment's score as a small pill: "+0.6" or "−0.8", tinted from neutral
- * toward the glowing or the angry colour as the score grows. */
+ * toward the glowing or the grumpy colour as the score grows. */
 function scoreBadge(score: number, scale = 1, title = `Score ${signed1(score)} on a scale from −1 to +1`): HTMLElement {
   const b = el('span', signed1(score), 'score-badge');
   const m = Math.min(1, Math.abs(score) / scale);
@@ -820,6 +829,8 @@ function draw() {
   drawHappy();
   renderSamples(loaded.samples);
   renderAi(recentData);
+  // For the browser tests: the charts just drawn, by canvas id.
+  window.__tone = Object.fromEntries(charts.map((c) => [c.canvas.id, c]));
 }
 
 // ---- the dates: all, a calendar year or a calendar month

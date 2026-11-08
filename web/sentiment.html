@@ -30,7 +30,7 @@
         <p>
           Each human review comment is scored by an AI model (Claude Haiku) from −1 (hostile) through
           0 (neutral, including firm technical criticism) to +1 (heartfelt gratitude). Almost all review
-          is neutral, so averages sit just above zero; the shares of glowing and angry comments move more.
+          is neutral, so averages sit just above zero; the shares of glowing and grumpy comments move more.
           The scores are one model's reading of tone and make mistakes, so this page never names anyone
           for negative tone.
         </p>
@@ -90,22 +90,24 @@
           a <slot name="window"></slot>-month rolling average centred on its month, and the shaded band is its 95%
           interval. Wiggles inside the band are mostly noise.<span data-if="boundary"> The dashed line marks where
           the sample ends; the bands narrow after it.</span><span data-if="mark"> The larger dot is
-          <slot name="mark"></slot>.</span>
+          <slot name="mark"></slot>.</span> The grey line (right axis) counts
+          comments each month<span data-if="nSample">, estimated for sampled months as the sample's count times
+          <slot name="scale"></slot></span>.
         </template>
         <template data-msg="trend-footer-full"><slot name="n"></slot> comments</template>
         <template data-msg="trend-footer-sample"><slot name="n"></slot> sampled comments (<slot name="rate"></slot>)</template>
         <template data-msg="trend-footer-mixed"><slot name="n"></slot> comments, some from the <slot name="rate"></slot> sample</template>
         <h3>Average score</h3>
         <div class="chart">
-          <canvas id="trend-mean" role="img" aria-label="Average review comment score per month, a 3-month rolling average with a 95% band."></canvas>
+          <canvas id="trend-mean" role="img" aria-label="Average review comment score per month, a 3-month rolling average with a 95% band, and the estimated number of comments per month."></canvas>
         </div>
-        <h3>Glowing, angry and AI-frustrated comments</h3>
+        <h3>Glowing, grumpy and AI-frustrated comments</h3>
         <div class="chart">
-          <canvas id="trend-shares" role="img" aria-label="Share of glowing comments, angry comments and comments expressing frustration with AI, per month, each a 3-month rolling average with a 95% band."></canvas>
+          <canvas id="trend-shares" role="img" aria-label="Share of glowing comments, grumpy comments and comments expressing frustration with AI, per month, each a 3-month rolling average with a 95% band."></canvas>
         </div>
         <p id="trend-note" class="note"></p>
         <template data-msg="trend-note">
-          Glowing: a score of +<slot name="glowing"></slot> or more (specific appreciation or stronger). Angry: −<slot name="angry"></slot>
+          Glowing: a score of +<slot name="glowing"></slot> or more (specific appreciation or stronger). Grumpy: −<slot name="angry"></slot>
           or less (curt, impatient or worse). AI friction: any negative feeling about AI in code review, such as
           annoyance at AI review comments, AI-written changes or an agent repeating a mistake. Bare
           acknowledgements ("Done", "LGTM", "PTAL") are left out.
@@ -114,7 +116,7 @@
 
       <section id="recent" class="card" aria-labelledby="recent-title">
         <a class="card-anchor" href="#recent" aria-label="Link to this section" title="Link to this section">#</a>
-        <h2 id="recent-title">Every comment, not a sample</h2>
+        <h2 id="recent-title">Distribution</h2>
         <p id="recent-sub" class="sub"></p>
         <template data-msg="recent-sub">
           Every human review comment written between <slot name="range"></slot>, not a sample.
@@ -124,25 +126,16 @@
           <div class="tile" id="tile-trivial"><div class="tile-label">Bare "Done" / "LGTM" / "PTAL", left out</div><div class="tile-value"></div></div>
           <div class="tile" id="tile-mean"><div class="tile-label">Average score</div><div class="tile-value"></div></div>
           <div class="tile" id="tile-glowing"><div class="tile-label">Glowing</div><div class="tile-value"></div></div>
-          <div class="tile" id="tile-angry"><div class="tile-label">Angry</div><div class="tile-value"></div></div>
+          <div class="tile" id="tile-angry"><div class="tile-label">Grumpy</div><div class="tile-value"></div></div>
           <div class="tile" id="tile-ai"><div class="tile-label">AI friction</div><div class="tile-value"></div></div>
         </div>
-        <h3 id="recent-rows-title"></h3>
-        <template data-msg="recent-rows-title"><span data-if="k=week">Week by week</span><span data-if="k=month">Month by month</span></template>
-        <div class="table-wrap">
-          <table id="recent-weekly">
-            <thead><tr><th scope="col" id="recent-rows-col"></th><th scope="col">Comments</th><th scope="col">Average</th><th scope="col">Glowing</th><th scope="col">Angry</th><th scope="col">AI friction</th></tr></thead>
-            <tbody></tbody>
-          </table>
-        </div>
-        <template data-msg="recent-rows-col"><span data-if="k=week">Week of</span><span data-if="k=month">Month</span></template>
         <h3>How scores are spread</h3>
         <div class="chart">
-          <canvas id="recent-dist" role="img" aria-label="Share of comments at each score from −1 to +1 in steps of 0.1, on a log scale."></canvas>
+          <canvas id="recent-dist" role="img" aria-label="Number of comments at each score from −1 to +1 in steps of 0.1, on a log scale."></canvas>
         </div>
         <p class="note">
-          The share of comments at each score, rounded to 0.1, on a log scale: nearly all comments are neutral,
-          so the tails would be invisible on a linear one.
+          How many comments got each score, rounded to 0.1, on a log scale: nearly all comments are neutral,
+          so the tails would be invisible on a linear one. Hover a bar for its share of the total.
         </p>
       </section>
 

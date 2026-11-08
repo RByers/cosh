@@ -5,7 +5,9 @@ Gerrit. The Review Tone dashboard (`web/sentiment.html`) shows:
 
 - a monthly trend of the whole project's review tone
   (`summaries/sentiment_monthly.json`: every comment of the fully scored
-  months, a 5% sample before them);
+  months, a 5% sample before them), with a grey line
+  counting comments per month (for sampled months, the sample's count
+  times 20);
 - every comment of the fully scored weeks, "who makes whom happy" and an
   anonymous list of AI-friction comments (`summaries/sentiment_recent.json`,
   `cosh.sentiment_recent`);
@@ -203,7 +205,9 @@ entry has:
 
 Both give `n` (substantive comments), the mean score with a 95% interval
 (`lo`, `hi`), and the shares `glowing` (≥ +0.4), `angry` (≤ −0.3) and `ai`
-(AI friction), each with a Wilson 95% interval.
+(AI friction), each with a Wilson 95% interval. The page calls `angry`
+comments "grumpy" (2026-11-08): few are really angry. The data keeps the
+name `angry`.
 
 **Noise.** A 1% sample had about 550 substantive comments a month; its
 month-to-month changes in the mean (0.0047 on average) were about what
@@ -292,10 +296,12 @@ scored (2025-W45..2026-W44 so far), with a row per week (`weekly`) and per
 month (`monthly`), and the rest per period (`periods`: all, each year, each
 month):
 
-- **Overview:** substantive comments, bare acknowledgements left out, the
-  average, the glowing and angry shares and the AI-friction count; the same
-  per month (per week when a month is chosen); and the number of comments
-  at each score, rounded to 0.1.
+- **Distribution** (the page's section of that name): substantive
+  comments, bare acknowledgements left out, the average, the glowing and
+  angry shares and the AI-friction count, and the number of comments at
+  each score, rounded to 0.1, charted as counts on a log scale. `weekly`
+  and `monthly` aren't shown since 2026-11-08: the trend charts cover
+  them.
 - **Who makes whom happy**, per period:
   - *authors*: CL owners, from the glowing comments reviewers wrote on
     their CLs;
