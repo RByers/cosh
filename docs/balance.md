@@ -807,7 +807,7 @@ so the revert chart should be by size as well as over time.
 
 **Status (2026-11-08):** a first draft is live as `web/balance.html`, with a
 large "Draft: under development" warning at the top. Its landing-page card
-(2026-11-08) carries a yellow "In development" box with the same text. It has 53 charts and 7 tables, drawn with Chart.js from
+(2026-11-08) carries a yellow "In development / Early draft" box below its description. It has 53 charts and 7 tables, drawn with Chart.js from
 `summaries/balance.json`. That file holds 47 aggregate datasets:
 - `balance_report.py`'s `report.json`;
 - the growth, pipeline, mentorship, AI-paired and mechanical tables from

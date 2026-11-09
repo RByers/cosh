@@ -322,7 +322,7 @@ h2 {
 
 /* A yellow "In development" box on the card of a draft dashboard. */
 .card:has(.card-warning) {
-  grid-template-rows: auto auto 1fr auto;
+  grid-template-rows: auto 1fr auto auto;
 }
 
 .card:has(.card-warning) .card-icon {
@@ -330,8 +330,8 @@ h2 {
 }
 
 .card .card-warning {
-  margin: 4px 0 10px;
-  padding: 10px 12px;
+  margin: 10px 0 0;
+  padding: 8px 12px;
   border: 2px solid var(--warn);
   border-left-width: 6px;
   border-radius: 8px;
