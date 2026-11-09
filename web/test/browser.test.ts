@@ -2784,6 +2784,8 @@ test('the Review Balance page: a draft warning first, every figure, chart and ta
   await page.click('input[name="dir-metric"][value="ftr_p50"]');
   assert.notDeepEqual(await shades(), before);
   assert.match(await page.$eval('#dir-note', (n) => n.textContent!), /first substantive review/);
+  await page.click('input[name="dir-metric"][value="review_time_p50"]');
+  assert.match(await page.$eval('#dir-note', (n) => n.textContent!), /Median review time/);
   // Across the codebase: top-level directories first, ▸ opens one; every value cell is shaded, with
   // an 8px gap in the card's colour before each 2024 column.
   const areaRows = () => page.$$eval('#t-areas tbody tr', (trs) => trs.map((tr) => (tr as HTMLElement).dataset.key!));
@@ -2795,13 +2797,13 @@ test('the Review Balance page: a draft warning first, every figure, chart and ta
   assert.ok((await areaRows()).some((k) => k.startsWith('chrome/browser/') && k !== 'chrome/browser/'));
   const cells = await page.$$eval('#t-areas tbody tr:first-child td', (tds) => tds.map((td) => ({
     t: (td as HTMLElement).style.getPropertyValue('--t'), gap: getComputedStyle(td).borderLeftWidth })));
-  assert.equal(cells.length, 12);
+  assert.equal(cells.length, 14);
   for (const c of cells) assert.match(c.t, /^(0|1|0\.\d+)$/);
   assert.deepEqual(cells.map((c) => c.gap), cells.map((_, i) => (i % 2 ? '0px' : '8px')));
   // Directory waits that grew are marked; nothing else in the table is.
   assert.ok(await page.$('#t-areas td.worse'));
   assert.deepEqual(await page.$$eval('#t-areas td.worse, #t-areas td.better', (tds) =>
-    [...new Set(tds.map((td) => (td as HTMLTableCellElement).cellIndex))]), [10]);
+    [...new Set(tds.map((td) => (td as HTMLTableCellElement).cellIndex))].sort((a, b) => a - b)), [10, 12]);
   // Defined terms: every use opens a bubble that exists, and tapping one shows its short definition next
   // to it, with a link to the full section; Escape closes it.
   const targets = await page.$$eval('button.term', (bs) => bs.map((b) => b.getAttribute('popovertarget')!));

@@ -319,7 +319,12 @@ Definitions in `cl`:
 - **Attention hours:** the union of the intervals in which any non-owner
   human (or the owner) was in the attention set. It counts nights,
   weekends and holidays. `reviewer_wait_wd_h` leaves out Saturdays and
-  Sundays in UTC, which is only a partial fix.
+  Sundays in UTC, which is only a partial fix. The page calls the
+  reviewer side, `reviewer_wait_wd_h`, **review time**: the weekday hours a
+  CL was blocked waiting for review. `balance_report.py` gives its
+  percentiles per quarter (`review_time_p5` .. `_p95` in `exchange`,
+  drawn as bands, with p90 as a dashed line) and its median per
+  directory (`review_time_p50` in `areas` and `dirs`), 2026-11-08.
 
 Also used: when each person was first added to an OWNERS file (41,208
 additions since 2012, from `git log -p -- '*OWNERS'`), each author's first

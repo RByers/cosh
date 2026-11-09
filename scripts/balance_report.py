@@ -135,6 +135,8 @@ def main():
             **spread("ftr", (c["ftr"] for c in rv)),
             reviewer_wait_p50=pct([c["reviewer_wait_h"] for c in rv], .5),
             reviewer_wait_wd_p50=pct([c["reviewer_wait_wd_h"] for c in rv], .5),
+            # Review time: weekday hours some reviewer was in the attention set.
+            **spread("review_time", (c["reviewer_wait_wd_h"] for c in rv)),
             owner_wait_p50=pct([c["owner_wait_h"] for c in rv], .5),
             ai_marked=sum(1 for c in s if c.get("sha") in ai)))
     out["exchange"] = ex
@@ -308,6 +310,7 @@ def main():
                 threads_per_100=r(st.mean(100 * c["threads"] / c["lines"] for c in big)) if big else None,
                 load_index=r(sum(c["threads"] for c in s) / exp) if exp else None,
                 ftr_p50=pct([c["ftr"] for c in rv], .5),
+                review_time_p50=pct([c["reviewer_wait_wd_h"] for c in rv], .5),
                 interdiff_share=r(sum(c["lines_changed"] for c in idf) / max(1, sum(c["lines_final"] for c in idf))),
                 newcomer_share=r(sum(1 for c in s if c["ten"] is not None and c["ten"] < 1) / len(s), 3),
                 reverted=r(sum(1 for c in s if c["reverted_at"] and c["reverted_at"] - c["closed_at"] < 30 * DAY)
@@ -345,10 +348,12 @@ def main():
                 pct([c["ftr"] for c in rv], .5),
                 r(sum(1 for c in s if c["ten"] is not None and c["ten"] < 1) / len(s), 3),
                 pct([c["lines_changed"] / c["lines_final"] for c in idf], .5),
-                st.median(c["lines"] for c in s)]
+                st.median(c["lines"] for c in s),
+                pct([c["reviewer_wait_wd_h"] for c in rv], .5)]
     out["dirs"] = dict(
         quarters=Q, min_cls=DIR_MIN,
-        fields=["cls", "load_index", "threads_per_100", "ftr_p50", "newcomer_share", "interdiff_p50", "median_lines"],
+        fields=["cls", "load_index", "threads_per_100", "ftr_p50", "newcomer_share", "interdiff_p50", "median_lines",
+                "review_time_p50"],
         dirs=[dict(path=p, cls=totals[p], q=[dir_cell(cells[(p, q)]) if cells.get((p, q)) else None for q in Q])
               for p in keep])
 

@@ -45,8 +45,8 @@
         <ul class="signals">
           <li><strong>Balance:</strong> how much review feedback each CL gets for its size and directory (the review load
             index), and how many CLs each reviewer carries.</li>
-          <li><strong>Speed:</strong> hours from being sent for review to the first substantive review, and time
-            spent waiting in Gerrit's attention set.</li>
+          <li><strong>Speed:</strong> hours from being sent for review to the first substantive review, and review
+            time: the weekday hours a CL spent waiting on a reviewer in Gerrit's attention set.</li>
           <li><strong>Quality:</strong> how much a CL changes after review, review rounds, reverts within 30
             days, −1 votes and abandoned CLs.</li>
           <li><strong>Growth:</strong> whether people need less review feedback as they gain tenure and know an area, and
@@ -231,9 +231,10 @@
         <div class="panels">
           <figure class="panel"><h3>Hours to first substantive review</h3>
             <div class="chart"><canvas id="c-ftr" role="img" aria-label="Hours from being sent for review to the first substantive review: median, 25th to 75th and 5th to 95th percentiles, per quarter."></canvas></div></figure>
-          <figure class="panel"><h3>Time in the attention set per CL</h3>
-            <p class="note">Median hours a reviewer, or the author, was being waited on. Weekends left out for reviewers.</p>
-            <div class="chart"><canvas id="c-waits" role="img" aria-label="Median hours reviewers and authors spent in the attention set per CL, per quarter."></canvas></div></figure>
+          <figure class="panel"><h3>Review time per CL</h3>
+            <p class="note">Hours some reviewer was in the attention set, so the CL was blocked waiting for review.
+              Weekends left out.</p>
+            <div class="chart"><canvas id="c-waits" role="img" aria-label="Review time per CL: weekday hours some reviewer was in the attention set, median, 25th to 75th and 5th to 95th percentiles, and the 90th percentile as a dashed line, per quarter."></canvas></div></figure>
         </div>
         <p class="note">
           The whole distribution, for the latest year against 2023 H2–2024, the pre-AI baseline the other
@@ -245,9 +246,9 @@
           <figure class="panel"><h3>Hours to first substantive review, then and now</h3>
             <p class="note">Clock hours from being sent for review to the first substantive comment.</p>
             <div class="chart"><canvas id="c-ftr-hist" role="img" aria-label="Histogram of hours to first substantive review: the latest year against 2023 H2–2024."></canvas></div></figure>
-          <figure class="panel"><h3>Reviewers' time in the attention set, then and now</h3>
-            <p class="note">Hours some reviewer was being waited on per CL, weekends left out.</p>
-            <div class="chart"><canvas id="c-wait-hist" role="img" aria-label="Histogram of reviewers' weekday hours in the attention set per CL: the latest year against 2023 H2–2024."></canvas></div></figure>
+          <figure class="panel"><h3>Review time, then and now</h3>
+            <p class="note">Hours some reviewer was in the attention set per CL, weekends left out.</p>
+            <div class="chart"><canvas id="c-wait-hist" role="img" aria-label="Histogram of review time, weekday hours some reviewer was in the attention set per CL: the latest year against 2023 H2–2024."></canvas></div></figure>
         </div>
       </section>
 
@@ -297,14 +298,15 @@
           A CL counts in its main 3-level directory (the one with the most changed lines) and in that
           directory's parents. Directories with under 200 CLs in either period are left out. "Now" is 2025 Q4 to
           2026 Q3. <button type="button" class="term" popovertarget="def-load-index">Load index</button>: 1.0 is the 2023–24 average for the CL's size and directory. Each measure's two
-          columns share one shading, stronger for more (CLs on a log scale). Hours to first review are red where
-          the wait grew by more than a tenth, green where it shrank by more than a tenth.
+          columns share one shading, stronger for more (CLs on a log scale). Review time is the weekday hours a CL
+          waited on a reviewer in the attention set. Both waits are red where they grew by more than a tenth, green
+          where they shrank by more than a tenth.
         </p>
         <div class="table-wrap">
           <table id="t-areas" class="balance-table area-table">
             <thead>
-              <tr class="group"><th></th><th colspan="2">CLs</th><th colspan="2">Median lines</th><th colspan="2">Threads per 100 lines</th><th colspan="2">Load index</th><th colspan="2">Hours to first review</th><th colspan="2">Newcomer share</th></tr>
-              <tr><th>Directory</th><th>2024</th><th>Now</th><th>2024</th><th>Now</th><th>2024</th><th>Now</th><th>2024</th><th>Now</th><th>2024</th><th>Now</th><th>2024</th><th>Now</th></tr>
+              <tr class="group"><th></th><th colspan="2">CLs</th><th colspan="2">Median lines</th><th colspan="2">Threads per 100 lines</th><th colspan="2">Load index</th><th colspan="2">Hours to first review</th><th colspan="2">Review time, hours</th><th colspan="2">Newcomer share</th></tr>
+              <tr><th>Directory</th><th>2024</th><th>Now</th><th>2024</th><th>Now</th><th>2024</th><th>Now</th><th>2024</th><th>Now</th><th>2024</th><th>Now</th><th>2024</th><th>Now</th><th>2024</th><th>Now</th></tr>
             </thead>
             <tbody></tbody>
           </table>
@@ -327,6 +329,7 @@
             <label><input type="radio" name="dir-metric" value="load_index" checked />Load index</label>
             <label><input type="radio" name="dir-metric" value="threads_per_100" />Threads per 100 lines</label>
             <label><input type="radio" name="dir-metric" value="ftr_p50" />Hours to first review</label>
+            <label><input type="radio" name="dir-metric" value="review_time_p50" />Review time</label>
             <label><input type="radio" name="dir-metric" value="interdiff_p50" />Changed after review</label>
             <label><input type="radio" name="dir-metric" value="newcomer_share" />Newcomer share</label>
             <label><input type="radio" name="dir-metric" value="median_lines" />Median lines</label>
@@ -339,6 +342,8 @@
             same size and directory (1.0).</span>
           <span data-if="m=threads_per_100">Mean reviewer threads per 100 changed lines, for CLs of 10 lines or more.</span>
           <span data-if="m=ftr_p50">Median clock hours from being sent for review to the first substantive review.</span>
+          <span data-if="m=review_time_p50">Median review time: weekday hours some reviewer was in the attention
+            set, so the CL was blocked waiting for review.</span>
           <span data-if="m=interdiff_p50">Median share of a reviewed CL's lines that changed after its first review.</span>
           <span data-if="m=newcomer_share">Share of CLs whose author was in their first year.</span>
           <span data-if="m=median_lines">Median changed lines per CL.</span>

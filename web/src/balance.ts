@@ -573,7 +573,7 @@ export const waitChange = (before: number | null, now: number | null) =>
 /** Measures of the directory table, each a 2024 and a now column on one shared shading scale. */
 const AREA_COLS: [string, (v: number) => string][] = [
   ['cls', FMT.n0], ['median_lines', FMT.n0], ['threads_per_100', FMT.n1], ['load_index', FMT.n2],
-  ['ftr_p50', FMT.n1], ['newcomer_share', FMT.pct1],
+  ['ftr_p50', FMT.n1], ['review_time_p50', FMT.n1], ['newcomer_share', FMT.pct1],
 ];
 
 /** Shading, 0..1, for each measure: CLs on a log scale (directories span three levels), the rest
@@ -635,8 +635,8 @@ function areaTable(rows: Row[]) {
             const v = r[`${era}_${m}`];
             const td = node('td', `area-cell area-${era}`, typeof v === 'number' ? fmt(v) : '–');
             if (typeof v === 'number') td.style.setProperty('--t', String(scale[m](v)));
-            if (m === 'ftr_p50' && era === 'now') {
-              const c = waitChange(r.y24_ftr_p50 as number | null, r.now_ftr_p50 as number | null);
+            if ((m === 'ftr_p50' || m === 'review_time_p50') && era === 'now') {
+              const c = waitChange(r[`y24_${m}`] as number | null, r[`now_${m}`] as number | null);
               if (c) td.classList.add(c);
             }
             tr.append(td);
@@ -667,6 +667,7 @@ const DIR_FMT: Record<string, (v: number) => string> = {
   load_index: (v) => `${num(2)(v)}×`,
   threads_per_100: num(1),
   ftr_p50: (v) => `${num(1)(v)} h`,
+  review_time_p50: (v) => `${num(1)(v)} h`,
   interdiff_p50: pctOf(0),
   newcomer_share: pctOf(1),
   median_lines: num(0),
@@ -676,6 +677,7 @@ const DIR_UNIT: Record<string, string> = {
   load_index: 'load index',
   threads_per_100: 'threads per 100 lines',
   ftr_p50: 'median hours to first review',
+  review_time_p50: 'median review time',
   interdiff_p50: 'median share changed after review',
   newcomer_share: 'of CLs from newcomers',
   median_lines: 'median lines',
@@ -820,9 +822,8 @@ function render(data: BalanceData) {
   loadHistogram('c-hist-threads', d.reviewer_load_hist, 'threads', theme);
 
   bands('c-ftr', exq, 'ftr', theme, (v) => `${num(1)(v)} h`, { label: 'Median CL', zero: true });
-  quarters('c-waits', d.exchange, theme, [
-    { field: 'reviewer_wait_wd_p50', label: 'Reviewer, weekdays' }, { field: 'owner_wait_p50', label: 'Author' },
-  ], FMT.h, { zero: true });
+  bands('c-waits', exq, 'review_time', theme, FMT.h,
+    { label: 'Median CL', zero: true, extra: { field: 'review_time_p90', label: 'p90' } });
   yearHistogram('c-ftr-hist', d.ftr_hist, d.ftr_hist_summary[0], theme);
   yearHistogram('c-wait-hist', d.wait_hist, d.wait_hist_summary[0], theme);
 
