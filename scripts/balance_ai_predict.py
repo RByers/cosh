@@ -273,7 +273,9 @@ def haiku(args):
 
     def keep(r):                     # --no-topic: leave out the unsafe-buffer work agents are often given
         return not (args.no_topic and TOPIC.search(r["text"]))
-    pos = cap_per_author([r for r in group(args.pos) if keep(r)], 3, rnd)
+    def era(r):                      # --pos-since 2026Q2: only marked CLs from that quarter on
+        return not args.pos_since or quarter(r["t"]) >= args.pos_since
+    pos = cap_per_author([r for r in group(args.pos) if keep(r) and era(r)], 3, rnd)
     neg = cap_per_author([r for r in group(args.neg) if keep(r)], 3, rnd)
     rnd.shuffle(pos)
     rnd.shuffle(neg)
@@ -296,15 +298,17 @@ def haiku(args):
         if k in got:
             f = feats(r["text"])
             res.append(dict(sha=r["sha"], label="marked" if r in pos else "neg", rule=r["rule"], p=got[k], score=score(f)))
-    tag = f"{args.pos}-{args.neg}{'-notopic' if args.no_topic else ''}-n{args.n}-s{args.seed}"
-    out = os.path.join(OUT_DIR, f"haiku-{tag}.jsonl")
+    tag = (f"{args.pos}{'-' + args.pos_since if args.pos_since else ''}-{args.neg}"
+           f"{'-notopic' if args.no_topic else ''}-n{args.n}-s{args.seed}")
+    # Haiku keeps the haiku- prefix that `estimate` reads; other models get their own.
+    out = os.path.join(OUT_DIR, f"{'haiku' if args.model == 'haiku' else 'model-' + args.model}-{tag}.jsonl")
     with open(out, "w") as f:
         for r in res:
             f.write(json.dumps(r) + "\n")
     ps = [r["p"] for r in res if r["label"] == "marked"]
     ns = [r["p"] for r in res if r["label"] != "marked"]
-    print(f"{len(res)}/{len(items)} scored, ${usd:.2f}, {time.time() - t0:.0f}s -> {out}")
-    print(f"Haiku AUC {auc(ps, ns):.3f}; feature-score AUC on the same items "
+    print(f"{args.model}: {len(res)}/{len(items)} scored, ${usd:.2f}, {time.time() - t0:.0f}s -> {out}")
+    print(f"{args.model} AUC {auc(ps, ns):.3f}; feature-score AUC on the same items "
           f"{auc([r['score'] for r in res if r['label'] == 'marked'], [r['score'] for r in res if r['label'] != 'marked']):.3f}")
     for cut in (0.3, 0.5, 0.7):
         tp = sum(p >= cut for p in ps)
@@ -665,6 +669,7 @@ def main():
     h.add_argument("--pos", choices=("marked", "unmarked"), default="marked")
     h.add_argument("--neg", choices=("pre", "unmarked", "pre_same"), default="pre")
     h.add_argument("--no-topic", action="store_true")
+    h.add_argument("--pos-since", help="only positives from this quarter on, e.g. 2026Q2")
     h.add_argument("--batch", type=int, default=10)
     h.add_argument("--jobs", type=int, default=4)
     h.add_argument("--seed", type=int, default=1)

@@ -233,6 +233,42 @@ tools) and is where adoption shows. AI-assisted code with a human
 description is largely invisible, from the description or the diff, so
 treat any estimate as a lower bound on AI involvement.
 
+## 6. Haiku, Sonnet or Opus?
+
+The same prompt, batches of 10 and identical items (`haiku --model
+haiku|sonnet|opus --seed 3 --n 80`) went to all three models. The two samples
+each have 80 marked and 80 pre-AI CLs, at most 3 per author. The 95%
+intervals come from a paired bootstrap over the items. "Recall at 1 FP" is
+the recall at the cutoff that lets through one of the 80 human CLs.
+
+| | Haiku | Sonnet | Opus | Mean of 3 |
+|---|---:|---:|---:|---:|
+| **2026Q2+ marked:** AUC | 0.89 | 0.91 | **0.93** | 0.93 |
+| difference from Haiku | — | +0.02 [−0.01, +0.06] | +0.04 [0.00, +0.08] | +0.04 [+0.01, +0.07] |
+| recall at 1 FP | 0.59 | 0.75 | 0.74 | 0.74 |
+| **All marked (with 2025):** AUC | 0.85 | 0.86 | **0.91** | 0.90 |
+| difference from Haiku | — | +0.01 [−0.05, +0.06] | +0.06 [+0.01, +0.10] | +0.05 [+0.02, +0.08] |
+| recall at 1 FP | 0.45 | 0.55 | 0.71 | 0.71 |
+| CLI-reported cost per 1,000 CLs | ~$0.06 | ~$1.25 | ~$2.50 | |
+
+- **Opus is better, mostly on the harder cases.** It gains 0.04 AUC on
+  2026-style CLs and 0.06 with 2025's included. At a near-zero
+  false-positive rate it catches 71–74% of marked CLs, where Haiku catches
+  45–59%.
+- **Sonnet's gain over Haiku is within noise** on AUC. It is mainly better
+  calibrated: Haiku's false positives at p ≥ 0.3 (9%) fall to 0–1%.
+- **Averaging the three models adds nothing over Opus alone.**
+- The models agree on 87–95% of CLs at p ≥ 0.5. All three are fully
+  precise at p ≥ 0.5 on these samples (0 or 1 false positive in 80).
+- 80 per side is small: the intervals are about ±0.05 AUC.
+
+**Choice:** Haiku is good enough for quarterly shares, where §4's error is
+dominated by the reference definition, not the classifier. For per-CL
+selection, e.g. a "likely AI" group of CLs to compare review load on, Opus
+raises recall by about 15 points at the same precision. At ~$2.50 per 1,000
+CLs, scoring every 2026 CL (about 90k) would cost about $230 in CLI-reported
+usage, so a sample is the sensible scope.
+
 ## Verdicts
 
 - **Per CL: precise flags, unreliable negatives.** For 2026-style
@@ -277,6 +313,7 @@ python3 scripts/balance_ai_predict.py trend --n 150
 python3 scripts/balance_ai_predict.py estimate   # ~30 s, needs the haiku and trend outputs
 python3 scripts/balance_ai_predict.py diffs      # ~30 s, regex features of the landed diffs
 python3 scripts/balance_ai_predict.py haiku-diffs --period 2025|2026   # Haiku on diffs, ~$0.07
+python3 scripts/balance_ai_predict.py haiku --n 80 --seed 3 --model sonnet|opus [--pos-since 2026Q2]   # §6
 ```
 
 Each Haiku run of 300 descriptions takes about 30 s with 4 calls at once.
