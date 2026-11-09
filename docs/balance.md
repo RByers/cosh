@@ -33,6 +33,26 @@ that AI tools are common? It looks at:
 - the burden of supporting others: who reviews newcomers, how review moves
   from experts to people who were newcomers a few years earlier.
 
+## Primary finding: the two growth trajectories (2026-11-08)
+
+The user's call (2026-11-08): of everything here, two patterns are the
+clearest trends showing growth, and the ones to optimize for.
+
+1. **Review load falls with tenure.** Before AI tools (2023 H2–2024), a CL
+   from someone in their first three months drew 2.41× the 2023–24 review
+   load for its size and directory, and after ten years 0.68×, falling at
+   every step between (section 4). In 2026 the curve keeps its shape but
+   sits lower (1.77× → 0.55×).
+2. **Review share rises with years since joining.** Approvals given ÷
+   (approvals + CLs landed) goes from nothing in year one (81% approve no
+   one's CL) to a median of 51% by year five, and every join year from
+   2017 to 2025 follows the same path (year-five medians 50–53%; section 6
+   and `scripts/balance_review_share.py`).
+
+The page leads with both (`#trajectories`, and the first paragraph of
+"What we see so far"). Most people follow both. The question that follows is
+who doesn't, and whether that is changing (section 0 below).
+
 ## Correction: identity merge (2026-11-08)
 
 `balance_growth.load_all` merged a Gerrit owner's address with a commit's git
@@ -347,6 +367,101 @@ comment text, and print no one's identity. (`scripts/balance_explore.py`
 is the first W44-only prototype, superseded by `cosh/balance.py`.)
 
 ## Findings
+
+### 0. Falling behind the growth trajectories (`scripts/balance_behind.py`)
+
+How often do people who still contribute significantly fall well behind
+the two trajectories, and is that rate changing? Run 2026-11-08 (9,130
+people after the identity merge). Shares only; nothing per person is
+written.
+
+**Behind on reviewing.** Person-years of people who joined in 2017–2025, in
+years 3–9 since joining, who landed 24 or more CLs that calendar year (2
+a month; 2026 prorated to the 10 months in the data): 3,038 person-years,
+1,122 people. *Behind* means a review share under half the pooled median
+for that year since joining (year 3: under 19%; year 5 and later: under
+25–27%).
+
+| Calendar year | People | Behind | Same tenure mix | Years 3–4 | Years 5–9 | Median share |
+|---|---:|---:|---:|---:|---:|---:|
+| 2021 | 331 | 13.9% | 13.6% | 14.9% | 9.7% | 47% |
+| 2022 | 362 | 15.2% | 16.3% | 19.5% | 8.5% | 50% |
+| 2023 | 451 | 16.0% | 16.2% | 16.8% | 15.1% | 47% |
+| 2024 | 616 | 16.4% | 16.8% | 19.9% | 12.6% | 46% |
+| 2025 | 502 | 19.7% | 21.7% | 22.3% | 18.0% | 46% |
+| 2026 (to Oct) | 502 | 21.5% | 25.1% | 29.8% | 18.8% | 46% |
+
+- **It is rising.** About one in six steady contributors was behind in
+  2021–24; one in five in 2025 and one in four in 2026 (95% interval for
+  the raw 2026 rate 18–25%, against 14–20% in 2024). The rise shows at 3–4
+  years and at 5–9 years. 2019–20 (29%, 25%) hold only the 2017–18
+  joiners in years 3–4, so they aren't comparable.
+- **The median doesn't move** (46–50% since 2021), and the share approving
+  nothing at all stays at 3–5%. The middle of the curve holds while the
+  lower tail grows.
+- **By join year, at year five:** 10% (2017 and 2018 joiners), 16% (2019),
+  19% (2020), 18% (2021), 21% (2022). At year three it varies between 15%
+  and 29% with no trend.
+- **Robust to the thresholds.** Same-mix rate in 2024 → 2026: 21% → 28%
+  with 12+ CLs landed; 15% → 20% with 48+; 11% → 18% with a cut at a third
+  of the median; 31% → 38% at three quarters.
+- **Lasting, often a phase.** Of people behind one year and counted the
+  next, 53% are behind again, against 12% of everyone. Of the 518 people
+  counted in three or more years, 31% were behind at least once and 5%
+  three years in a row.
+
+**Behind on review load.** Person-halves of authors with 2 or more years
+since their first commit and 12 or more merged, non-mechanical CLs in the
+half-year (6 in 2026 Q3, the last whole quarter): 4,903 person-halves,
+1,278 people. A person's load index is their CLs' reviewer threads ÷ the
+sum of each CL's 2023–24 norm. *Behind* means 1.5× or more the median of
+their tenure band (2–4, 4–8, 8+ years) in the same half-year. The 2023
+H2–2024 medians were 1.02, 0.82 and 0.73.
+
+| Half-year | People | Behind peers | 95% interval | Chance alone | Behind the 2023–24 curve |
+|---|---:|---:|---:|---:|---:|
+| 2023 H2 | 645 | 21.7% | 18.7–25.1% | 7.0% | 21.9% |
+| 2024 H1 | 741 | 20.8% | 18.0–23.9% | 7.0% | 21.5% |
+| 2024 H2 | 752 | 21.0% | 18.3–24.1% | 8.0% | 20.7% |
+| 2025 H1 | 730 | 21.6% | 18.8–24.8% | 7.6% | 17.4% |
+| 2025 H2 | 664 | 22.3% | 19.3–25.6% | 7.3% | 15.7% |
+| 2026 H1 | 672 | 18.8% | 16.0–21.9% | 6.5% | 14.4% |
+| 2026 Q3 | 687 | 26.1% | 22.9–29.5% | 10.8% | 13.1% |
+
+- **Level, not rising.** Relative to peers in the same half-year, about
+  21% are behind throughout. 2026 Q3 is a single quarter with half the CLs
+  per person, so its noise floor (*chance alone*) is higher too; the
+  excess over chance (12–15 points) is steady.
+- *Chance alone* deals each half-year's and band's CLs out to the same
+  people at random (20 times) and counts how many land 1.5× over the
+  median: 7.7% overall. About two thirds of those behind are beyond noise.
+- **Against the fixed 2023–24 curve**, fewer people are behind each year
+  (22% → 13%), but that is the project-wide drop in review feedback
+  (section 4), not people catching up.
+- Of people behind one half-year and counted the next, 48% are behind
+  again, against 19% of everyone.
+
+**Is it the same people?** Among person-years in both sets, people behind
+on reviewing also had a half-year behind on review load 30% of the time in
+2024 (others 27%), but 48% in 2025 (others 30%) and 41% in 2026 (others
+28%; about 95 people behind each year). Tentative: in 2025–26 the two
+groups started to overlap.
+
+**Reading.** The learning curve (needing less review) is holding for the
+same share of people as before. The step into reviewing is what more
+steady contributors miss now, and since 2025 they are more often also the
+people still drawing heavy review. It fits the other signs that fewer
+recent joiners move into reviewing (section 6, `docs/balance-clusters.md`)
+and that per-author velocity rose in the top tail: landing more without
+approving more lowers review share. What causes it (team structure,
+OWNERS coverage, time pressure, AI tools) isn't something this data shows.
+
+Rerun (about 6 min; `--cache` keeps the loaded data for reruns,
+`--explore` prints the threshold, volume and overlap checks and writes
+nothing):
+`COSH_DATA_DIR=<main>/data/private python3 scripts/balance_behind.py
+--first-commit F --owners-added O --mech M` (writes `behind_share_*` and
+`behind_load*` into `summaries/balance.json`).
 
 ### 1. The exchange since AI: more and bigger CLs, thinner review
 
@@ -692,7 +807,7 @@ so the revert chart should be by size as well as over time.
 
 **Status (2026-11-08):** a first draft is live as `web/balance.html`, with a
 large "Draft: under development" warning at the top. It isn't linked from the
-landing page yet. It has 46 charts and 7 tables, drawn with Chart.js from
+landing page yet. It has 52 charts and 7 tables, drawn with Chart.js from
 `summaries/balance.json`. That file holds 47 aggregate datasets:
 - `balance_report.py`'s `report.json`;
 - the growth, pipeline, mentorship, AI-paired and mechanical tables from
@@ -720,6 +835,10 @@ landing page yet. It has 46 charts and 7 tables, drawn with Chart.js from
   over 2023–24, the load index's norm years. Same CLs and `--mech` list:
   `COSH_DATA_DIR=<main>/data/private python3 scripts/balance_definitions.py --mech mech.jsonl`.
 
+- `scripts/balance_behind.py` (2026-11-08), the "two growth
+  trajectories" section at the top of the page: shares of steady
+  contributors behind on review share (by calendar year) and on review load
+  (by half-year), with persistence and a chance baseline (section 0).
 - `scripts/balance_review_share.py` (2026-11-08), the "From author to
   reviewer" histogram: shares of people by review share (none, then
   tenths) at each year since joining, all 2017–2025 join years pooled, plus

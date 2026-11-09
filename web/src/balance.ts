@@ -153,7 +153,7 @@ function line(
   id: string,
   theme: Theme,
   labels: string[],
-  series: { label: string; data: (number | null)[]; color: string; axis?: string }[],
+  series: { label: string; data: (number | null)[]; color: string; axis?: string; dash?: boolean }[],
   fmt: (v: number) => string,
   opts: {
     zero?: boolean; ref?: number; y2fmt?: (v: number) => string;
@@ -187,7 +187,7 @@ function line(
       labels,
       // Past the palette's eight colours, lines repeat them dashed.
       datasets: series.map((s, i) => ({
-        borderDash: i >= theme.series.length && !opts.ramp ? [5, 3] : [],
+        borderDash: s.dash || (i >= theme.series.length && !opts.ramp) ? [5, 3] : [],
         label: s.label,
         data: s.data,
         yAxisID: s.axis ?? 'y',
@@ -1147,6 +1147,32 @@ function patternSwatches(theme: Theme) {
   }
 }
 
+/** The two growth trajectories and the shares of people behind them (#trajectories). */
+function trajectories(d: Record<string, Row[]>, eras: [string, string][], tenureXl: Record<string, string>, theme: Theme) {
+  categories('c-key-load', d.learning, theme, { x: 'bucket', g: 'era', v: 'load_index', groups: eras,
+    xs: Object.keys(tenureXl), xl: (x) => tenureXl[x] }, FMT.n2, { ref: 1 });
+  const ys = d.review_share_years;
+  line('c-key-share', theme, ys.map((r) => `Year ${r.year}`), [
+    { label: 'Median', data: ys.map((r) => r.p50 as number), color: theme.series[0] },
+    { label: 'Lowest join year', data: ys.map((r) => r.cohort_p50_min as number | null), color: theme.muted, dash: true },
+    { label: 'Highest join year', data: ys.map((r) => r.cohort_p50_max as number | null), color: theme.muted, dash: true },
+  ], FMT.pct, { zero: true });
+  // 2019–20 hold only the 2017–18 joiners in their third and fourth years, too few to compare.
+  const by = d.behind_share_by_year.filter((r) => Number(r.year) >= 2021);
+  line('c-behind-share', theme, by.map((r) => (r.year === 2026 ? '2026 to Oct' : String(r.year))), [
+    { label: 'All, same tenure mix', data: by.map((r) => r.behind_std as number), color: theme.series[0] },
+    { label: 'Years 3–4', data: by.map((r) => r.y3_4 as number | null), color: theme.series[1] },
+    { label: 'Years 5–9', data: by.map((r) => r.y5_9 as number | null), color: theme.series[2] },
+  ], FMT.pct, { zero: true });
+  const bl = d.behind_load.filter((r) => r.band === 'all');
+  const halfLabel = (h: string) => (h === '2026H2' ? '2026 Q3' : h.replace('H', ' H'));
+  line('c-behind-load', theme, bl.map((r) => halfLabel(String(r.half))), [
+    { label: 'Behind same-half peers', data: bl.map((r) => r.behind_rel as number), color: theme.series[0] },
+    { label: 'Behind the 2023–24 curve', data: bl.map((r) => r.behind_fixed as number), color: theme.series[1] },
+    { label: 'Chance alone', data: bl.map((r) => r.null as number), color: theme.muted, dash: true },
+  ], FMT.pct, { zero: true });
+}
+
 function render(data: BalanceData) {
   fillFigures(data);
   const d = data.datasets;
@@ -1187,6 +1213,7 @@ function render(data: BalanceData) {
   const tenureXl: Record<string, string> = { '0-3': '0–3 mo', '3-6': '3–6', '6-12': '6–12', '12-24': '1–2 y', '24-60': '2–5 y', '60-120': '5–10 y', '120-999': '10 y+' };
   categories('c-tenure', d.learning, theme, { x: 'bucket', g: 'era', v: 'load_index', groups: eras,
     xs: Object.keys(tenureXl), xl: (x) => tenureXl[x] }, FMT.n2, { ref: 1 });
+  trajectories(d, eras, tenureXl, theme);
   const famXl: Record<string, string> = { 'fam 0': 'None', 'fam 1-4': '1–4', 'fam 5-19': '5–19', 'fam 20-99': '20–99', 'fam 100+': '100+' };
   categories('c-fam', d.learning, theme, { x: 'bucket', g: 'era', v: 'load_index', groups: eras,
     xs: Object.keys(famXl), xl: (x) => famXl[x] }, FMT.n2, { ref: 1 });

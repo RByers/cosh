@@ -56,6 +56,15 @@
         </ul>
         <h2 class="goal-head">What we see so far</h2>
         <p>
+          <strong>Two growth trajectories are the clearest patterns in the data, and the ones to protect.</strong>
+          The review feedback a CL draws for its size and directory falls steadily with the author's tenure, and the
+          share of people's review work rises steadily with years since joining, on the same path for every join
+          year since 2017. Most people follow both. Among people still landing CLs steadily, about one in five is
+          well behind on each in a given year. Behind on review load, that rate has held level since 2023;
+          behind on reviewing, it has risen from about one in six in 2024 to one in four in 2026
+          (<a href="#trajectories">details</a>).
+        </p>
+        <p>
           Per-author velocity has crept up since 2023 as the pool of active authors shrank, and in 2026 CLs got
           bigger too. Review feedback per line fell: like for like, a 2026 CL gets about a third less review feedback than one in
           2023. Waits shortened in 2025 and are back to 2023 levels, and reverts haven't risen. People who joined
@@ -100,6 +109,71 @@
         <div class="tile"><div class="tile-label"><button type="button" class="term" popovertarget="def-newcomer">Newcomer</button> approvals by 2–5-year reviewers</div>
           <div class="tile-value"><b data-src="newcomer_review" data-field="y2_5" data-where="year=2019" data-fmt="pct">–</b> → <b data-src="newcomer_review" data-field="y2_5" data-where="year=2026" data-fmt="pct">–</b></div>
           <div class="tile-sub">2019 → 2026</div></div>
+      </section>
+
+      <section id="trajectories" class="card" aria-labelledby="trajectories-title">
+        <a class="card-anchor" href="#trajectories" aria-label="Link to this section" title="Link to this section">#</a>
+        <h2 id="trajectories-title">The two growth trajectories, and who falls behind them</h2>
+        <p class="sub">
+          Two patterns stand out from everything on this page as the shape of growth in Chromium. First, people need
+          less review feedback as they gain tenure: before AI tools, a CL from someone in their first three months drew
+          <b data-src="learning" data-field="load_index" data-where="era=2023H2-2024&amp;bucket=0-3" data-fmt="x">–</b>
+          the usual <button type="button" class="term" popovertarget="def-load-index">review load</button> for its size and directory, and after ten years
+          <b data-src="learning" data-field="load_index" data-where="era=2023H2-2024&amp;bucket=120-999" data-fmt="x">–</b>,
+          falling at every step between. Second, people take on more of the reviewing: review share (approvals given ÷
+          approvals plus CLs landed) rises from nothing in the first year
+          (<b data-src="review_share_years" data-field="none" data-where="year=1" data-fmt="pct">–</b> approve no one's
+          CL) to a median of
+          <b data-src="review_share_years" data-field="p50" data-where="year=5" data-fmt="pct">–</b> by year five, and
+          every join year from 2017 to 2025 follows the same path. Both are what the project should optimize for:
+          <button type="button" class="term" popovertarget="def-newcomer">newcomers</button> who need less review feedback each year and in time give it.
+        </p>
+        <div class="panels">
+          <figure class="panel"><h3>Review load by tenure</h3>
+            <p class="note">Months since the author's first commit. 1.0 (dashed) is the 2023–24 average for the CL's size and directory.</p>
+            <div class="chart chart-short"><canvas id="c-key-load" role="img" aria-label="Review load index by the author's tenure, for 2023 H2 to 2024, 2025 and 2026."></canvas></div></figure>
+          <figure class="panel"><h3>Review share by year since joining</h3>
+            <p class="note">Median over people who joined from 2017 to 2025, with the lowest and highest join year's median.</p>
+            <div class="chart chart-short"><canvas id="c-key-share" role="img" aria-label="Median review share by year since joining, all join years together, with the lowest and highest join year's median."></canvas></div></figure>
+        </div>
+        <h3>How often people fall behind</h3>
+        <p class="sub">
+          Behind on reviewing: in years three to nine since joining, landing 24 or more CLs that year, and with a review
+          share under half the median for that year since joining. In 2021–24 about one in six such people were
+          behind; then
+          <b data-src="behind_share_by_year" data-field="behind_std" data-where="year=2025" data-fmt="pct">–</b> in 2025
+          and <b data-src="behind_share_by_year" data-field="behind_std" data-where="year=2026" data-fmt="pct">–</b> in
+          2026, adjusted to the same mix of years since joining. The rise holds at every threshold tried, and at
+          five years or more as well
+          (<b data-src="behind_share_by_year" data-field="y5_9" data-where="year=2024" data-fmt="pct">–</b> in 2024,
+          <b data-src="behind_share_by_year" data-field="y5_9" data-where="year=2026" data-fmt="pct">–</b> in 2026).
+          The median hasn't moved: the middle of the curve holds while its lower tail grows.
+        </p>
+        <p class="sub">
+          Behind on review load: 2 or more years since the first commit, 12 or more CLs in the half-year, and a load
+          index at least 1.5 times the median of people at the same tenure in the same half-year.
+          <b data-src="behind_load_summary" data-field="behind_rel" data-fmt="pct">–</b> of such people are behind,
+          against <b data-src="behind_load_summary" data-field="null" data-fmt="pct">–</b> that chance alone would put
+          there, and the rate has held level from 2023 to 2026. Against the fixed 2023–24 curve fewer people are
+          behind each year, but that is the project-wide drop in review feedback, not people catching up.
+        </p>
+        <p class="sub">
+          Falling behind is often a phase, but not just noise. Of people behind on reviewing one year,
+          <b data-src="behind_share_summary" data-field="stay" data-fmt="pct">–</b> are behind again the next, against
+          <b data-src="behind_share_summary" data-field="base" data-fmt="pct">–</b> of everyone; on review load,
+          <b data-src="behind_load_summary" data-field="stay" data-fmt="pct">–</b> against
+          <b data-src="behind_load_summary" data-field="base" data-fmt="pct">–</b>. Of people counted in three or more
+          years, <b data-src="behind_share_summary" data-field="ever" data-fmt="pct">–</b> were behind on reviewing at
+          least once and <b data-src="behind_share_summary" data-field="run3" data-fmt="pct">–</b> three years in a row.
+        </p>
+        <div class="panels">
+          <figure class="panel"><h3>Behind on reviewing</h3>
+            <p class="note">Share of people landing 24 or more CLs a year (prorated for 2026, to October) whose review share is under half the median for their year since joining.</p>
+            <div class="chart chart-short"><canvas id="c-behind-share" role="img" aria-label="Share of steady contributors behind on review share, by calendar year 2021 to 2026, for years 3 to 4 and 5 to 9 since joining and adjusted overall."></canvas></div></figure>
+          <figure class="panel"><h3>Behind on review load</h3>
+            <p class="note">Share of authors with 2+ years' tenure and 12 or more CLs in the half-year (6 in 2026 Q3) whose load index is 1.5× or more their tenure band's median.</p>
+            <div class="chart chart-short"><canvas id="c-behind-load" role="img" aria-label="Share of authors behind on review load by half-year, against the same half-year's peers and against the 2023 to 2024 curve, with the share chance alone gives."></canvas></div></figure>
+        </div>
       </section>
 
       <section id="exchange" class="card" aria-labelledby="exchange-title">
