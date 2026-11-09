@@ -567,3 +567,116 @@ partly selection.
   subgroup results with CIs just excluding zero (newcomers, 2025) should be
   read as hypotheses.
 - **Relands** were excluded as units and not analysed separately.
+
+## Follow-up (2026-11-09)
+
+`scripts/review_roi_part1_followup.py` on `cl_table_f.sqlite`. That is the
+final table plus approval and sent times and the first approver's weekly
+load; the unit and all other columns are unchanged. The run took 603 s.
+Output is in `followup.txt` and `followup.json`, and the main numbers are
+in `part1_results.json` under `followup`. All models have the D3 controls.
+SEs are clustered by author, except in item 2, where they are clustered
+by first approver.
+
+### 1. Reverts review could plausibly prevent
+
+The outcome is a 30-day revert of one reason class; reverts of other
+classes count as non-events. Each cell gives the OR, then reverts per
+1,000 CLs from the 25th to the 75th percentile.
+
+| Exposure | Crash/functional + perf/size (4.3 per 1,000) | Compile/link + test failure (15.5 per 1,000) | All (26.7 per 1,000) |
+|---|---|---|---|
+| threads (per doubling) | 1.25 (1.20–1.31); +1.8 (+1.3 to +2.2) | 1.23 (1.20–1.26); +5.5 (+4.7 to +6.4) | 1.21; +9.0 |
+| rubber stamp | 0.70 (0.63–0.79); −1.4 (−1.8 to −1.0) | 0.73 (0.68–0.79); −4.4 (−5.3 to −3.4) | 0.76; −6.6 |
+| habit, log (per SD) | 0.947 (0.890–1.008); −0.30 (−0.64 to +0.05) | 0.976 (0.948–1.006); −0.47 (−1.06 to +0.12) | 0.959; −1.44 |
+| habit, residual threads (per SD) | 0.937 (0.882–0.995); −0.26 (−0.50 to −0.02) | 0.986 (0.958–1.016); −0.20 (−0.61 to +0.23) | 0.966; −0.84 |
+
+**Reading.** On the reverts review is best placed to prevent, the habit's
+OR is slightly lower: about −7% relative, against −2% for CI-type reverts.
+But it is no lower than for the unrelated reverts in D8 (0.952). Its
+interval overlaps both, and the absolute effect is about 0.3 per 1,000 CLs.
+Threads and rubber stamps look the same in every class.
+
+### 2. The first approver's weekly load as an outside source of review depth
+
+The load is log2 of the first approver's count in the CL's approval week
+(ISO week, UTC) divided by their median active week in the half-year. It is
+then demeaned within approver × half-year, so only week-to-week variation
+for the same approver is used. CLs qualify when their first approver was
+active in 4+ weeks of the half-year: 353,218 CLs in 7,121 approver-halves.
+
+"Threads load" counts threads the approver wrote on *other* CLs that week.
+The reduced form and IV columns are per 1,000 CLs; "per doubling" means a
+doubling of the load.
+
+| Load measure | First stage: residual log1p threads per doubling (F) | Reduced form, all reverts (LPM per doubling; logistic OR per SD) | Crash/perf | Compile/test | Unrelated (negative control) | IV per +1 log1p thread, all reverts |
+|---|---|---|---|---|---|---|
+| CLs approved | −0.040 (F = 397) | +0.41 (−0.44 to +1.25); 1.012 (0.988–1.037) | −0.18 (−0.49 to +0.13) | +0.42 (−0.15 to +0.99) | +0.09 (−0.15 to +0.32) | −10.2 (−31.5 to +11.1) |
+| threads written elsewhere | −0.054 (F = 1,125) | −1.15 (−1.70 to −0.61); 0.954 (0.934–0.975) | −0.29 (−0.49 to −0.09) | −0.66 (−1.05 to −0.27) | −0.10 (−0.26 to +0.06) | +21.2 (+11.3 to +31.2) |
+
+Both first stages are strong. The first approver writes fewer threads in a
+busy week, and their CLs are more often rubber-stamped: +1.5 points per
+doubling of CL load, F = 120. The CL-count instrument has a null reduced
+form and passes the negative control.
+
+Its IV estimate, −10 reverts per 1,000 CLs per +1 log1p thread, has a CI
+from −31 to +11. For the 0.37-log gap between a 25th- and a
+75th-percentile-thorough approver, that is −3.8 per 1,000 (−11.6 to
++4.1). It excludes neither zero nor an effect several times the D4
+estimate.
+
+The threads-load instrument points the other way: busy weeks go with
+fewer reverts, an IV of +21 per 1,000 per log1p thread. That would mean
+more review causes reverts, which is implausible. Its reduced form on
+unrelated reverts has the same relative size (−4% per doubling, against
+−4.3% for all reverts), so it most likely fails the exclusion
+restriction. Weeks heavy with threads written elsewhere are probably
+weeks of a different kind of work.
+
+**Reading.** The cleanest outside variation in review depth shows no
+detectable effect on reverts. It is too imprecise to rule out a modest one
+(about 12 per 1,000 at the bound).
+
+### 3. Glance approvals (votes on disk only)
+
+A glance approval is the first approving vote less than 15 minutes after
+the CL was sent, with no reviewer thread. 1,309 of 276,803 qualifying CLs
+(0.5%) are glance approvals; most rubber stamps take longer.
+
+| Comparison | 30-day revert | OR (D3 controls) |
+|---|---|---|
+| glance vs every other CL | 2.75% vs 2.87% | 1.07 (0.77–1.49) |
+| glance vs slower rubber stamps (43,833) | 2.75% vs 2.07% | 1.27 (0.91–1.77) |
+| matched sets (author × dir3 × half × size, 66 sets) | glance CL reverted in 15, the other in 51 | conditional OR 0.91 (0.44–1.88) |
+
+**Reading.** Glance approvals are too rare to say much. Their revert rate
+is at the overall level, higher than slower rubber stamps (1.27, not
+significant). That direction is what one would expect if *some* look
+matters. It doesn't change the rubber-stamp picture, which is driven by
+CLs that needed no comment.
+
+### 4. Rubber stamp, votes on disk only
+
+There are 278,341 CLs with votes on disk. Rubber stamps are 45,381 of them
+(16.3%), with a 30-day revert rate of 2.10% against 3.03% for the rest.
+
+| | Raw OR | Stratified MH OR | D3 logistic |
+|---|---|---|---|
+| votes only | 0.69 (0.64–0.74) | 0.79 (0.73–0.85) | 0.81 (0.74–0.88); −5.6 per 1,000 (−7.4 to −3.5) |
+| all CLs (Part 1) | 0.65 (0.62–0.68) | 0.76 (0.71–0.81) | 0.76 (0.72–0.81); −6.6 per 1,000 |
+
+**Reading.** The CLs without votes on disk don't drive the result.
+Rubber-stamped CLs are reverted about 20% less often at equal size, place,
+author practice and era on the votes-only subset too.
+
+### Does the follow-up change the Part 1 conclusion?
+
+No.
+
+- Restricting to preventable reverts leaves the habit association small
+  (about 0.3 per 1,000) and no more specific than for unrelated reverts.
+- The approver-load instrument is strong. Its credible version, CLs
+  approved, finds no effect on reverts, with a CI of roughly ±12 per 1,000
+  for a quartile-sized change in thoroughness.
+- Glance approvals are rare and uninformative.
+- The rubber-stamp result holds without the CLs that have no votes.
