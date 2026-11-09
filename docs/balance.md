@@ -871,6 +871,11 @@ large "Draft: under development" warning at the top. Its landing-page card
   sentence of "Wrong turns", next to the aggregate abandon index by tenure
   (`docs/balance-signals.md`), and the summary fields are `abandon_*` and
   `rho_tenure_abandon` in `balance_authors.json`.
+  A scatter of each author's percentile within their tenure band on review
+  share against review load (2026-11-08, same year and authors) was also
+  tried and dropped: the two barely correlate (Spearman −0.23; 29% behind
+  on both halves against 25% by chance), so it showed a near-uniform cloud.
+  The aggregate overlap is in section 0 ("Is it the same people?").
 
 The page ends with two definition sections, "Defined: the review load
 index" and "Defined: newcomers and tenure" (a tenure timeline drawn in
