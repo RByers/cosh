@@ -208,6 +208,10 @@ regex plus Claude Haiku (`cosh classify`).
   review-comment tone scores from `python3 -m cosh.sentiment score` cost
   Max usage to remake. Size runs with `--name` (a sample set) or `--week`;
   `docs/sentiment.md` has measured costs.
+- Never delete `data/private/ai_predict/scores.sqlite` either: the
+  AI-written-description scores from `scripts/balance_ai_predict.py score`
+  (`docs/balance-ai-predict.md` §7) cost Max usage to remake. Rerunning
+  `score` resumes.
 - **Keep whatever we download; download only what we need.** Anything we
   put server load on to fetch is kept, losslessly, so it never has to be
   fetched again if we later want it (`docs/storage-design.md` §3.8). This is

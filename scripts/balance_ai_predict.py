@@ -246,14 +246,26 @@ HAIKU_SCHEMA = {"type": "object", "properties": {"scores": {"type": "array", "it
 
 
 def haiku_batch(box, model, items):
-    from cosh.sentiment import claude_args
+    """Score [(id, text)] in one sandboxed call: ({id: p}, usd). Retries CLI
+    crashes; raises RuntimeError on any other failure (a usage limit, say)."""
+    from cosh.sentiment import claude_args, CRASH_EXITS
     body = "\n\n".join(f"### {k}\n{t[:3000]}" for k, t in items)
-    p = box.run(claude_args(model, HAIKU_SCHEMA, HAIKU_SYSTEM), HAIKU_PROMPT + "\n\n" + body)
-    d = json.loads(p.stdout)
+    for attempt in range(3):
+        p = box.run(claude_args(model, HAIKU_SCHEMA, HAIKU_SYSTEM), HAIKU_PROMPT + "\n\n" + body)
+        if p.stdout.strip() or (p.returncode not in CRASH_EXITS and p.returncode >= 0):
+            break
+        time.sleep(5)
+    try:
+        d = json.loads(p.stdout)
+    except ValueError:
+        raise RuntimeError(f"claude -p failed (exit {p.returncode}): {(p.stderr or p.stdout)[:300]}")
+    if d.get("is_error"):
+        raise RuntimeError(f"claude -p error: {str(d.get('result'))[:300]}")
     out = d.get("structured_output") or {}
     sent = {k for k, _ in items}
     got = {x["id"]: max(0.0, min(1.0, float(x["p"]))) for x in out.get("scores", [])
-           if isinstance(x, dict) and x.get("id") in sent and isinstance(x.get("p"), (int, float))}
+           if isinstance(x, dict) and x.get("id") in sent and isinstance(x.get("p"), (int, float))
+           and not isinstance(x.get("p"), bool) and math.isfinite(x["p"])}
     return got, d.get("total_cost_usd") or 0
 
 
@@ -658,6 +670,132 @@ def haiku_diffs(args):
               f"false-positive rate {sum(p >= cut for p in ns) / len(ns):.2f}")
 
 
+# ---------------------------------------------------------------- scoring every CL
+
+SCORES = os.path.join(OUT_DIR, "scores.sqlite")
+
+
+def prompt_version():
+    import hashlib
+    return hashlib.sha256((HAIKU_SYSTEM + HAIKU_PROMPT + json.dumps(HAIKU_SCHEMA)).encode()).hexdigest()[:12]
+
+
+def open_scores():
+    import sqlite3
+    db = sqlite3.connect(SCORES, timeout=60)
+    db.execute("""CREATE TABLE IF NOT EXISTS scores (
+        sha TEXT NOT NULL, model TEXT NOT NULL, prompt TEXT NOT NULL,
+        t INTEGER NOT NULL,          -- commit time, unix seconds
+        label TEXT NOT NULL,         -- marked | unmarked | mid | pre (descs.jsonl)
+        chars INTEGER NOT NULL,      -- stripped description length
+        p REAL NOT NULL,             -- P(description written by an AI agent)
+        scored_at INTEGER NOT NULL,
+        PRIMARY KEY (sha, model, prompt)) WITHOUT ROWID""")
+    db.execute("CREATE TABLE IF NOT EXISTS runs (started_at INTEGER, model TEXT, prompt TEXT, since TEXT, "
+               "until_ TEXT, todo INTEGER, done INTEGER, usd REAL, finished_at INTEGER, stopped TEXT)")
+    return db
+
+
+def score(args):
+    """Score every CL description in a date range with a model, resumably.
+    Rerun the same command to continue; run `build` first to pick up CLs
+    landed since. Only the Claude API is called (cosh.sandbox), never Gerrit."""
+    import calendar
+    import fcntl
+    from concurrent.futures import as_completed
+    from cosh.sentiment import make_sandbox
+    os.makedirs(OUT_DIR, exist_ok=True)
+    lock = open(os.path.join(OUT_DIR, "score.lock"), "w")
+    try:
+        fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except OSError:
+        raise SystemExit("another `score` run holds ai_predict/score.lock")
+    ts = lambda d: calendar.timegm(time.strptime(d, "%Y-%m-%d"))
+    lo, hi = ts(args.since), ts(args.until) if args.until else 1 << 62
+    ver = prompt_version()
+    db = open_scores()
+    done = {r[0] for r in db.execute("SELECT sha FROM scores WHERE model = ? AND prompt = ?", (args.model, ver))}
+    todo = [r for r in load() if lo <= r["t"] < hi and r["sha"] not in done]
+    todo.sort(key=lambda r: -r["t"])         # newest first
+    if args.limit:
+        todo = todo[:args.limit]
+    batches = [todo[i:i + args.batch] for i in range(0, len(todo), args.batch)]
+    rate = {"haiku": 0.07, "sonnet": 1.25, "opus": 2.55}.get(args.model, 2.55)
+    print(f"{args.model} prompt {ver}: {len(done):,} already scored; {len(todo):,} to score in {len(batches):,} calls, "
+          f"about ${len(todo) * rate / 1000:.0f} CLI-reported", flush=True)
+    if args.dry_run or not todo:
+        return
+    run = db.execute("INSERT INTO runs(started_at, model, prompt, since, until_, todo, done, usd) VALUES (?,?,?,?,?,?,0,0)",
+                     (int(time.time()), args.model, ver, args.since, args.until, len(todo))).lastrowid
+    db.commit()
+    box = make_sandbox()
+    n = usd = fails = calls = 0
+    t0 = time.time()
+    stopped = None
+
+    def one(batch):
+        items = [(f"c{i}", r["text"]) for i, r in enumerate(batch)]
+        got, cost = haiku_batch(box, args.model, items)
+        return [(r, got[k]) for (k, _), r in zip(items, batch) if k in got], cost
+    try:
+        with ThreadPoolExecutor(args.jobs) as ex:
+            pending = iter(batches)
+            futs = {ex.submit(one, b) for b in [next(pending, None) for _ in range(args.jobs * 2)] if b}
+            while futs:
+                f = next(as_completed(futs))
+                futs.remove(f)
+                try:
+                    res, cost = f.result()
+                    fails = 0
+                except RuntimeError as e:
+                    fails += 1
+                    print(f"  batch failed ({fails} in a row): {e}", flush=True)
+                    if fails >= args.max_fails:
+                        stopped = str(e)[:300]
+                        print("  stopping: too many failures in a row; rerun to resume", flush=True)
+                        for g in futs:
+                            g.cancel()
+                        break
+                    time.sleep(min(300, 10 * 2 ** fails))
+                    res, cost = [], 0
+                now = int(time.time())
+                db.executemany("INSERT OR REPLACE INTO scores VALUES (?,?,?,?,?,?,?,?)",
+                               [(r["sha"], args.model, ver, r["t"], r["label"], len(r["text"]), p, now) for r, p in res])
+                n += len(res)
+                usd += cost
+                db.execute("UPDATE runs SET done = ?, usd = ? WHERE rowid = ?", (n, usd, run))
+                db.commit()
+                b = next(pending, None)
+                if b:
+                    futs.add(ex.submit(one, b))
+                calls += 1
+                if n and calls % 200 == 0:
+                    el = time.time() - t0
+                    print(f"  {n:,}/{len(todo):,} scored, ${usd:.2f}, {el / 60:.0f} min, "
+                          f"~{(len(todo) - n) * el / n / 60:.0f} min left", flush=True)
+    finally:
+        box.close()
+        db.execute("UPDATE runs SET finished_at = ?, stopped = ? WHERE rowid = ?", (int(time.time()), stopped, run))
+        db.commit()
+    print(f"done: {n:,} scored, ${usd:.2f}, {(time.time() - t0) / 60:.0f} min"
+          + (f"; {len(todo) - n:,} left for a rerun" if n < len(todo) else ""), flush=True)
+
+
+def report(args):
+    """Monthly share of CLs flagged as AI-written, from scores.sqlite."""
+    db = open_scores()
+    ver = prompt_version()
+    by = defaultdict(list)
+    for t, label, p in db.execute("SELECT t, label, p FROM scores WHERE model = ? AND prompt = ?", (args.model, ver)):
+        by[time.strftime("%Y-%m", time.gmtime(t))].append((label, p))
+    print(f"{args.model} prompt {ver}\nmonth      CLs   marked  p>=0.5  p>=0.7  mean p")
+    for m in sorted(by):
+        v = by[m]
+        ps = [p for _, p in v]
+        print(f"{m}  {len(v):>7,}  {sum(l == 'marked' for l, _ in v):>6}  {sum(p >= .5 for p in ps) / len(ps):6.1%}"
+              f"  {sum(p >= .7 for p in ps) / len(ps):6.1%}  {sum(ps) / len(ps):.3f}")
+
+
 def main():
     ap = argparse.ArgumentParser()
     sub = ap.add_subparsers(dest="cmd", required=True)
@@ -692,8 +830,20 @@ def main():
     hd.add_argument("--jobs", type=int, default=4)
     hd.add_argument("--seed", type=int, default=1)
     hd.add_argument("--model", default="haiku")
+    sc = sub.add_parser("score", help="score every CL in a date range, resumably")
+    sc.add_argument("--since", default="2025-07-01")
+    sc.add_argument("--until", help="exclusive, YYYY-MM-DD; default: everything built")
+    sc.add_argument("--model", default="haiku")
+    sc.add_argument("--batch", type=int, default=10)
+    sc.add_argument("--jobs", type=int, default=8)
+    sc.add_argument("--limit", type=int, help="score at most this many (for a trial)")
+    sc.add_argument("--max-fails", type=int, default=5, help="consecutive failed calls before stopping")
+    sc.add_argument("--dry-run", action="store_true")
+    rp = sub.add_parser("report")
+    rp.add_argument("--model", default="haiku")
     a = ap.parse_args()
-    {"build": build, "features": features, "haiku": haiku, "trend": trend, "estimate": estimate, "diffs": diffs, "haiku-diffs": haiku_diffs}[a.cmd](a)
+    {"build": build, "features": features, "haiku": haiku, "trend": trend, "estimate": estimate, "diffs": diffs,
+     "haiku-diffs": haiku_diffs, "score": score, "report": report}[a.cmd](a)
 
 
 if __name__ == "__main__":

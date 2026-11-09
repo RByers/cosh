@@ -270,6 +270,37 @@ CLs, scoring every landed human 2026 CL (120,110 to 2026-11-07) would cost
 about $310 in CLI-reported usage, against about $150 for Sonnet and $8 for
 Haiku. At 4 calls at once, each would take 2.5–3.5 hours.
 
+## 7. Scoring every CL
+
+`score` runs the classifier over every description in a date range and
+stores one row per CL in `data/private/ai_predict/scores.sqlite` (table
+`scores`: sha, model, prompt version, commit time, label, length, p). Each
+batch is committed as it finishes, so stopping and rerunning the same
+command resumes. Rows are keyed by model and a hash of the prompt, so a new
+prompt or model starts a fresh set beside the old one. `report` prints the
+monthly share of CLs flagged (p ≥ 0.5 and ≥ 0.7).
+
+```
+export COSH_DATA_DIR=<main>/data/private
+python3 scripts/balance_ai_predict.py build        # first, to pick up newly landed CLs
+python3 scripts/balance_ai_predict.py score --since 2025-07-01 --dry-run   # count and cost
+nice -n 5 python3 scripts/balance_ai_predict.py score --since 2025-07-01   # 8 calls at once
+python3 scripts/balance_ai_predict.py report
+```
+
+- Only the Claude API is called, through `cosh.sandbox`. Gerrit is never
+  touched, so the serial-request rule doesn't apply (as with `cosh
+  classify`). `ai_predict/score.lock` stops two runs at once.
+- Failed calls are logged and skipped, and their CLs are picked up by the
+  next run. After 5 failures in a row (a usage limit, say) the run stops.
+  `runs` records each run's counts and why it stopped.
+- **First run (2026-11-08):** Haiku, 2025-07-01 .. 2026-11-07, 171,804 CLs
+  in 17,181 calls, about 2¾ h at 8 calls at once and about $18
+  CLI-reported ($0.10 per 1,000). Log `ai_predict/score-*.log`, PID in
+  `ai_predict/score.pid`.
+- Like the other Claude-made data (`labels.sqlite`, `sentiment.sqlite`),
+  `scores.sqlite` costs Max usage to remake: don't delete it.
+
 ## Verdicts
 
 - **Per CL: precise flags, unreliable negatives.** For 2026-style
