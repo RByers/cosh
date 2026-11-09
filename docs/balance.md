@@ -807,7 +807,7 @@ so the revert chart should be by size as well as over time.
 
 **Status (2026-11-08):** a first draft is live as `web/balance.html`, with a
 large "Draft: under development" warning at the top. Its landing-page card
-(2026-11-08) carries a yellow "In development" box with the same text. It has 52 charts and 7 tables, drawn with Chart.js from
+(2026-11-08) carries a yellow "In development" box with the same text. It has 53 charts and 7 tables, drawn with Chart.js from
 `summaries/balance.json`. That file holds 47 aggregate datasets:
 - `balance_report.py`'s `report.json`;
 - the growth, pipeline, mentorship, AI-paired and mechanical tables from
@@ -860,6 +860,18 @@ large "Draft: under development" warning at the top. Its landing-page card
   (−0.24):
   `COSH_DATA_DIR=<main>/data/private python3 scripts/balance_authors.py --first-commit F --owners-added O --mech M`
   (about 3 min).
+  The same script (2026-11-08) adds each author's organization (`cosh.orgs`,
+  the org of most of their landed commits in the year) and their reviewed
+  and abandoned CLs: non-mechanical CLs closed in the year with a first
+  substantive review before closing, and how many were abandoned. The page
+  draws a third chart from them: abandonment after review against tenure,
+  one dot per author with 10+ reviewed CLs (1,152), area = CLs landed,
+  coloured by org with Value Exchange's colours (`valueOrgColorSlots` in
+  `web/src/data.ts`, so the page also reads `org_weekly.json`, the Radar
+  shares and `config/org_browsers.csv`). Tenure barely matters (Spearman
+  0.03; median 6.3% under 2 years, 6.7% at 10+ years, pooled 6.9%), while
+  people spread widely (p90 17%, 181 abandoned none). This complements the
+  aggregate abandon index by tenure in `docs/balance-signals.md`.
 
 The page ends with two definition sections, "Defined: the review load
 index" and "Defined: newcomers and tenure" (a tenure timeline drawn in

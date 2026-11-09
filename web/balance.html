@@ -432,7 +432,7 @@
 
       <section id="authors" class="card" aria-labelledby="authors-title">
         <a class="card-anchor" href="#authors" aria-label="Link to this section" title="Link to this section">#</a>
-        <h2 id="authors-title">Authors in the last year: breadth and review load</h2>
+        <h2 id="authors-title">Authors in the last year: breadth, review load and abandonment</h2>
         <p class="sub">
           November 2025 to October 2026, the
           <b data-src="authors_summary" data-field="authors" data-fmt="n0">–</b>
@@ -464,6 +464,32 @@
         </p>
         <div class="chart chart-tall"><canvas id="c-author-scatter" role="img" aria-label="Scatter plot of authors from November 2025 to October 2026: directories touched against review load index, coloured by tenure, sized by CLs landed."></canvas></div>
         <template data-msg="author-tip"><slot name="cls"></slot> CLs, <slot name="dirs"></slot> directories, load index <slot name="load"></slot>, <slot name="tenure"></slot> since first commit</template>
+        <h3>Abandonment after review against tenure, one dot per author</h3>
+        <p class="note">
+          Of each author's CLs closed in the year that drew a substantive review (an inline reviewer comment, or a
+          reviewer thread the author answered), the share they abandoned rather than landed. Across: years since
+          their first commit on <code>main</code>. Colour is the author's organization, in the Value Exchange page's
+          colours (grey for the rest), and a dot's area is CLs landed. Hover a dot for the author. It shows the
+          <b data-src="authors_summary" data-field="abandon_authors" data-fmt="n0">–</b>
+          authors with 10 or more reviewed CLs; the dashed line is their pooled rate,
+          <b data-src="authors_summary" data-field="abandon_pooled" data-fmt="pct1">–</b>.
+        </p>
+        <p class="note">
+          Tenure tells almost nothing here (rank correlation
+          <b data-src="authors_summary" data-field="rho_tenure_abandon" data-fmt="n2">–</b>): the median author
+          with under 2 years abandoned
+          <b data-src="authors_summary" data-field="abandon_p50_under2" data-fmt="pct1">–</b>
+          of their reviewed CLs, the median with 10 or more years
+          <b data-src="authors_summary" data-field="abandon_p50_10plus" data-fmt="pct1">–</b>.
+          The spread between people is far wider: one in ten abandoned
+          <b data-src="authors_summary" data-field="abandon_p90" data-fmt="pct1">–</b>
+          or more, while
+          <b data-src="authors_summary" data-field="abandon_zero" data-fmt="n0">–</b>
+          abandoned none. An abandoned CL is not always a failure: it may be an experiment, a duplicate or work
+          moved to another CL.
+        </p>
+        <div class="chart chart-tall"><canvas id="c-abandon-scatter" role="img" aria-label="Scatter plot of authors from November 2025 to October 2026: years since first commit against the share of reviewed CLs abandoned, coloured by organization, sized by CLs landed."></canvas></div>
+        <template data-msg="abandon-tip"><slot name="rate"></slot> abandoned (<slot name="abandoned"></slot> of <slot name="reviewed"></slot> reviewed CLs), <slot name="cls"></slot> CLs landed, <slot name="tenure"></slot> since first commit, <slot name="org"></slot></template>
       </section>
 
       <section id="learning" class="card" aria-labelledby="learning-title">

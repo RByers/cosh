@@ -93,8 +93,8 @@ import {
   sumWeeklyTotals,
   topBrowsers,
   orgWeeklyCounts,
-  orgsByAllTimeReview,
-  orgColorSlots,
+  CHARTED_ORGS,
+  valueOrgColorSlots,
   topReviewers,
   orgsByValue,
   reviewerTotals,
@@ -1399,7 +1399,7 @@ async function main(data: Data) {
   const classifierPrompt = JSON.parse(classifierPromptJson) as { system: string; prompt: string };
   $('#classifier-system').textContent = classifierPrompt.system;
   $('#classifier-prompt').textContent = classifierPrompt.prompt.trimEnd();
-  const orgs = chartedOrgs(data.radar, data.orgBrowsers).slice(0, 8);
+  const orgs = chartedOrgs(data.radar, data.orgBrowsers).slice(0, CHARTED_ORGS);
   let ratioChart: AnyChart | undefined;
   let reviewChart: AnyChart | undefined;
   let usageChart: AnyChart | undefined;
@@ -1410,7 +1410,7 @@ async function main(data: Data) {
   // range, metric and filters never repaint an org, and no two orgs share a
   // colour. A named org (namedOrgs) outside the map still gets its own
   // series, row and legend entry, in grey: it is never folded into Other.
-  const slots = orgColorSlots(orgsByAllTimeReview(data.summary), orgs, ORG_BRIGHT);
+  const slots = valueOrgColorSlots(data.summary, data.radar, data.orgBrowsers, ORG_BRIGHT);
   const colorsFor = (theme: Theme) => new Map([...slots].map(([o, i]) => [o, theme.orgs[i]]));
 
   // A render waiting for the next paint (renderSoon). Any render meanwhile
