@@ -107,6 +107,79 @@ If the 2026 recall (about 0.55) and 1% false-positive rate carry over,
 roughly 50–70% of 2026 Q3–Q4 descriptions are AI-written. That is a rough
 estimate: recall measured on marked CLs may not hold for unmarked ones.
 
+## 4. How accurately can we estimate the share?
+
+`estimate` fits the AI share of each quarter's unmarked CLs as a two-part
+mixture: human CLs look like pre-AI ones (2023Q3–2024Q2), and AI CLs look
+like a reference set of marked CLs. It reports 95% bootstrap intervals,
+resampling the quarter, both reference sets and the fit. There are three
+inputs: description length alone; length given diff size, so that growing
+CLs can't pass for AI (`balance-git.sqlite`); and Haiku's p (150 CLs per
+quarter from `trend`). The reference is marked CLs from 2026 Q2 on.
+
+| Quarter | Length | Length given diff size | Haiku |
+|---|---:|---:|---:|
+| 2024Q3–2025Q2 (out-of-sample checks) | 0% (≤ 2.6%) | 0–2% (≤ 5.6%) | 2–6% (≤ 12%) |
+| 2025Q3 | 0% [0, 2] | 1% [0, 4] | 11% [5, 19] |
+| 2025Q4 | 1% [0, 4] | 3% [1, 6] | 17% [10, 25] |
+| 2026Q1 | 4% [1, 9] | 5% [2, 9] | 21% [12, 31] |
+| 2026Q2 | 25% [19, 32] | 20% [13, 25] | 47% [37, 56] |
+| 2026Q3 | 47% [35, 53] | 33% [24, 36] | 64% [55, 75] |
+| 2026Q4 | 100% [87, 100] | 78% [59, 76] | 73% [62, 83] |
+
+**Sampling error is the small part.** The biggest error comes from what we
+assume AI-written descriptions look like, and the marked CLs are the only
+guide. For 2026Q3 by reference set:
+
+| AI reference | Length given size | Haiku |
+|---|---:|---:|
+| marked 2026Q2+ | 37% | 64% |
+| trailer rule only | 25% | 56% |
+| phrase rule only (2026Q2+) | 30% | 70% |
+| marked 2025 | 5% | 100% |
+
+The 2025 marked CLs mostly have human-style descriptions (an agent wrote the
+code, a person the description). Taken as the AI reference, they make
+length see almost nothing, and make Haiku call everything AI. So the question
+has to be narrower: what share of descriptions *read like 2026 agent output*.
+With a 2026 reference, the answers range over about ±10 points between
+references, on top of the bootstrap interval.
+
+**Length alone is not enough:**
+- It is blind before 2026. It estimates 0–1% in 2025 Q3–Q4, where Haiku finds
+  11–17% and the marked CLs prove some use.
+- It breaks as descriptions keep growing. In 2026 Q4, unmarked descriptions
+  are longer than the marked reference, so the fit hits 100% (and with diff
+  size, the bootstrap interval doesn't even contain the estimate).
+- CLs got bigger too. Controlling for diff size takes 2026Q3 from 47% to
+  33%.
+- It can't tell a long human description from an AI one. Pre-AI
+  descriptions over 800 characters are 5.2% of CLs, and Haiku flags only 4%
+  of them.
+
+**Haiku sees more than length.** At the same length, the share it flags
+(p ≥ 0.5) rose from pre-AI to 2026 Q2+: 0% → 4% under 200 characters,
+0.5% → 13% at 200–400, 0% → 52% at 400–800, and 4% → 80% over 800.
+
+**Haiku's false-positive floor:** 0.3% of pre-AI CLs at p ≥ 0.5. Its
+out-of-sample 2024Q3–2025Q2 estimates are 2–6%. That is either early AI use
+or a few points of bias; the intervals reach 12%.
+
+**What we can say with confidence:**
+- A lower bound with no model of AI text: in 2026 Q4, 39% of unmarked CLs
+  get p ≥ 0.5 against 0.3% before AI, so **at least about a third** of
+  recent descriptions read as AI-written.
+- The mixture estimate (2026 reference): **about 55–75% in 2026 Q3–Q4**,
+  and 10–20% in late 2025.
+- Quarter-to-quarter changes are much better determined than levels: every
+  method and reference shows the same 2026 Q2 jump.
+
+**To tighten it:** 600 CLs per quarter (about $0.50 in all) would halve the
+Haiku sampling interval to about ±5 points. The reference problem needs
+ground truth, though: for example, CLs whose description changed between
+patch sets in the way agents rewrite them, or an author survey. Classifying
+more cheaply won't fix it.
+
 ## Verdicts
 
 - **Per CL: not reliable as a label.** With AUC ~0.82 against human text,
@@ -114,8 +187,10 @@ estimate: recall measured on marked CLs may not hold for unmarked ones.
   CLs, and less still for 2025 CLs. Don't use it to mark individual CLs, and
   never to name people (`docs/plan.md`, rule 5 spirit).
 - **In aggregate: a useful adoption indicator.** The share of flagged
-  descriptions per quarter, or simply the share over 800 characters, tracks
-  AI use with a flat pre-AI baseline. It could replace or complement the
+  descriptions per quarter tracks AI use with a flat pre-AI baseline, at
+  roughly ±10–15 points on the level (§4). Description length alone moves
+  with it in 2026, but it misses 2025, saturates in 2026 Q4 and is confounded
+  with CL size. It could replace or complement the
   voluntary marker when comparing periods or directories on the balance
   page.
 - **It measures AI-written descriptions, not AI-written code.** 2025's
@@ -145,6 +220,7 @@ python3 scripts/balance_ai_predict.py haiku --n 150 --pos marked --neg pre [--no
 python3 scripts/balance_ai_predict.py haiku --n 150 --pos marked --neg pre_same|unmarked
 python3 scripts/balance_ai_predict.py haiku --n 150 --pos unmarked --neg pre
 python3 scripts/balance_ai_predict.py trend --n 150
+python3 scripts/balance_ai_predict.py estimate   # ~30 s, needs the haiku and trend outputs
 ```
 
 Each Haiku run of 300 descriptions takes about 30 s with 4 calls at once.

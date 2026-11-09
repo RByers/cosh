@@ -357,6 +357,159 @@ def trend(args):
               f"{sum(x >= .7 for x in v) / len(v):.3f}")
 
 
+# ---------------------------------------------------------------- prevalence
+
+def diff_sizes(shas):
+    """{sha: (files, ins + dels)} from balance-git.sqlite (offline)."""
+    import sqlite3
+    db = sqlite3.connect(f"file:{os.path.join(store.DATA_DIR, 'balance-git.sqlite')}?mode=ro", uri=True)
+    out = {}
+    for sha, files, ins, dels in db.execute("SELECT sha, files, ins, dels FROM gcommits WHERE landed_at >= ?",
+                                            (1688169600,)):            # 2023-07-01
+        if sha in shas:
+            out[sha] = (files, max(0, ins) + max(0, dels))
+    return out
+
+
+def mixture(xs, h, a, iters=300):
+    """MLE of the AI share pi, given each item's likelihood under the human (h)
+    and AI (a) reference distributions: EM for a two-component mixture with
+    fixed components. Items with the same likelihood pair are pooled."""
+    cells = Counter((h(x), a(x)) for x in xs)
+    n = len(xs)
+    pi = 0.2
+    for _ in range(iters):
+        pi = sum(c * pi * av / (pi * av + (1 - pi) * hv) for (hv, av), c in cells.items()) / n
+    return pi
+
+
+def binned(ref, edges, key, alpha=0.5):
+    """A smoothed histogram density over `edges` from the reference items."""
+    def b(x):
+        return sum(x >= e for e in edges)
+    c = Counter(b(key(r)) for r in ref)
+    tot = len(ref) + alpha * (len(edges) + 1)
+    return lambda x: (c[b(key(x))] + alpha) / tot, b
+
+
+def estimate(args):
+    """The AI share of unmarked CLs per quarter, three ways, with bootstrap
+    95% intervals: description length; length given diff size; Haiku."""
+    import bisect
+    rnd = random.Random(args.seed)
+    rows = load()
+    sizes = diff_sizes({r["sha"] for r in rows})
+    for r in rows:
+        r["q"] = quarter(r["t"])
+        r["len"] = math.log1p(len(r["text"]))
+        f, ln = sizes.get(r["sha"], (None, None))
+        r["size"] = None if ln is None else math.log1p(ln)
+    rows = [r for r in rows if r["size"] is not None]
+    human_q = {"2023Q3", "2023Q4", "2024Q1", "2024Q2"}
+    human_all = [r for r in rows if r["label"] == "pre"]
+    ai_ref_all = cap_per_author([r for r in rows if r["label"] == "marked" and r["q"] >= "2026Q2"], 10, rnd)
+    print(f"references: human = {len(human_all):,} pre-AI CLs (2023Q3-2024Q2); "
+          f"AI = {len(ai_ref_all)} marked CLs 2026Q2+ ({len({r['author'] for r in ai_ref_all})} authors, cap 10)")
+    len_edges = [math.log1p(x) for x in (60, 100, 150, 200, 260, 330, 420, 550, 750, 1000, 1400, 2000)]
+    size_edges = [math.log1p(x) for x in (10, 40, 150, 600)]
+
+    def fit_len(target, human, ai):
+        h, _ = binned(human, len_edges, lambda r: r["len"])
+        a, _ = binned(ai, len_edges, lambda r: r["len"])
+        return mixture(target, h, a)
+
+    def fit_cond(target, human, ai):
+        # P(length bin | size bin), separately per size bin: CL size growth can't pass for AI.
+        def cond(ref):
+            by = defaultdict(list)
+            for r in ref:
+                by[bisect.bisect(size_edges, r["size"])].append(r)
+            dens = {k: binned(v, len_edges, lambda r: r["len"])[0] for k, v in by.items()}
+            return lambda r: dens.get(bisect.bisect(size_edges, r["size"]), lambda _: 1.0)(r)
+        return mixture(target, cond(human), cond(ai))
+
+    def boot(fit, target, human, ai, n=args.boot):
+        est = fit(target, human, ai)
+        bs = []
+        for _ in range(n):
+            bs.append(fit([rnd.choice(target) for _ in target], [rnd.choice(human) for _ in human],
+                          [rnd.choice(ai) for _ in ai]))
+        bs.sort()
+        return est, bs[int(0.025 * n)], bs[int(0.975 * n) - 1]
+
+    by_q = defaultdict(list)
+    for r in rows:
+        if r["label"] in ("unmarked", "mid", "pre"):
+            by_q[r["q"]].append(r)
+    human_sub = rnd.sample(human_all, min(len(human_all), 4000))   # bootstrap speed
+
+    # Haiku: p from the trend run (unmarked, per quarter), AI reference from
+    # marked 2026Q2+ CLs scored in the haiku runs (one p per CL).
+    hp = defaultdict(list)
+    for fn in os.listdir(OUT_DIR):
+        if fn.startswith("haiku-marked-"):
+            for line in open(os.path.join(OUT_DIR, fn)):
+                x = json.loads(line)
+                if x["label"] == "marked":
+                    hp[x["sha"]].append(x["p"])
+    q_of = {r["sha"]: r["q"] for r in rows}
+    ai_p = [{"p": sum(v) / len(v)} for k, v in hp.items() if q_of.get(k, "") >= "2026Q2"]
+    trend = defaultdict(list)
+    for fn in os.listdir(OUT_DIR):
+        if fn.startswith("trend-"):
+            for line in open(os.path.join(OUT_DIR, fn)):
+                x = json.loads(line)
+                trend[x["q"]].append({"p": x["p"]})
+    human_p = [x for q in human_q for x in trend[q]]
+    p_edges = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7]
+
+    def fit_p(target, human, ai):
+        h, _ = binned(human, p_edges, lambda r: r["p"])
+        a, _ = binned(ai, p_edges, lambda r: r["p"])
+        return mixture(target, h, a)
+
+    print(f"Haiku references: human = {len(human_p)} pre-AI trend items; AI = {len(ai_p)} marked 2026Q2+ CLs")
+    print("\nAI share of unmarked CLs, with bootstrap 95% intervals (pre-AI quarters are the human reference "
+          "for length, so * marks out-of-sample checks that should be ~0)")
+    print(f"{'quarter':<9}{'n':>7}  {'length':>20}  {'length | diff size':>20}  {'Haiku (n=150)':>20}")
+    for q in sorted(by_q):
+        tgt = by_q[q]
+        sub = rnd.sample(tgt, min(len(tgt), args.per_q))
+        a = boot(fit_len, sub, human_sub, ai_ref_all)
+        b = boot(fit_cond, sub, human_sub, ai_ref_all)
+        c = boot(fit_p, trend[q], human_p, ai_p) if trend[q] else None
+        fmt = lambda e: f"{e[0]:5.1%} [{e[1]:5.1%},{e[2]:5.1%}]"
+        mark = " " if q in human_q else "*" if q < "2025Q3" else " "
+        print(f"{q}{mark:<2}{len(tgt):>7}  {fmt(a):>20}  {fmt(b):>20}  {fmt(c) if c else '':>20}")
+    # Sensitivity to the AI reference: who marks may not write like who doesn't.
+    print("\nsensitivity, 2026Q3, length | diff size, by AI reference set:")
+    tgt = rnd.sample(by_q["2026Q3"], min(len(by_q["2026Q3"]), args.per_q))
+    for name, ref in (("marked 2026Q2+", ai_ref_all),
+                      ("trailer rule only", [r for r in ai_ref_all if r["rule"] == "trailer"]),
+                      ("phrase rule only", [r for r in ai_ref_all if r["rule"] == "phrase"]),
+                      ("marked 2025", cap_per_author([r for r in rows if r["label"] == "marked"
+                                                      and r["q"] < "2026Q1"], 10, rnd))):
+        if len(ref) >= 30:
+            print(f"  {name:<20} n={len(ref):>4}  {fit_cond(tgt, human_sub, ref):.1%}")
+    print("\nsensitivity, 2026Q3, Haiku, by the human reference: pre-AI trend items "
+          f"{fit_p(trend['2026Q3'], human_p, ai_p):.1%}; plus 2024Q3-2025Q2 "
+          f"{fit_p(trend['2026Q3'], human_p + [x for q in ('2024Q3', '2024Q4', '2025Q1', '2025Q2') for x in trend[q]], ai_p):.1%}")
+    # Does Haiku add to length? Flag rate (p >= 0.5) by length band, pre-AI vs 2026Q2+.
+    tq = {}
+    for fn in os.listdir(OUT_DIR):
+        if fn.startswith("trend-"):
+            for line in open(os.path.join(OUT_DIR, fn)):
+                x = json.loads(line)
+                tq[x["sha"]] = x
+    text_len = {r["sha"]: len(r["text"]) for r in load() if r["sha"] in tq}
+    print("\nHaiku flag rate (p >= 0.5) by description length, unmarked trend items:")
+    for lo, hi in ((0, 200), (200, 400), (400, 800), (800, 10 ** 9)):
+        for per, qs in (("pre-AI", human_q), ("2026Q2+", {"2026Q2", "2026Q3", "2026Q4"})):
+            v = [x["p"] for k, x in tq.items() if x["q"] in qs and lo <= text_len.get(k, -1) < hi]
+            if v:
+                print(f"  {lo:>4}-{hi if hi < 10 ** 9 else '':<5} {per:<8} n={len(v):>3}  {sum(p >= .5 for p in v) / len(v):5.1%}")
+
+
 def main():
     ap = argparse.ArgumentParser()
     sub = ap.add_subparsers(dest="cmd", required=True)
@@ -378,8 +531,12 @@ def main():
     t.add_argument("--jobs", type=int, default=4)
     t.add_argument("--seed", type=int, default=1)
     t.add_argument("--model", default="haiku")
+    e = sub.add_parser("estimate")
+    e.add_argument("--per-q", type=int, default=3000, help="CLs per quarter for the length fits")
+    e.add_argument("--boot", type=int, default=100)
+    e.add_argument("--seed", type=int, default=1)
     a = ap.parse_args()
-    {"build": build, "features": features, "haiku": haiku, "trend": trend}[a.cmd](a)
+    {"build": build, "features": features, "haiku": haiku, "trend": trend, "estimate": estimate}[a.cmd](a)
 
 
 if __name__ == "__main__":
