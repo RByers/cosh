@@ -333,8 +333,8 @@ python3 scripts/balance_ai_predict.py report
   the p ≥ 0.7 share fell (22.5% → 16.7%). Worth a look: a burst of
   short CLs, or a change in how agents write descriptions.
 - These are raw flag rates, which miss AI descriptions Haiku is unsure of. §4's mixture
-  estimate puts the true share at about twice the p ≥ 0.5 rate in
-  2025–early 2026, falling to about 1.5× by 2026 Q3.
+  estimates run at about twice the sampled p ≥ 0.5 rate in every quarter
+  (1.7–2.6×).
 
 ## Verdicts
 
