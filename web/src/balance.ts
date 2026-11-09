@@ -45,6 +45,8 @@ export const FMT: Record<string, (v: number) => string> = {
   /** A difference of shares, in percentage points. */
   ptsabs: (v) => `${num(1)(Math.abs(v) * 100)} points`,
   abspct: (v) => pctOf(0)(Math.abs(Math.expm1(v))),
+  /** A ratio below 1, as the share less. */
+  drop: (v) => pctOf(0)(1 - v),
   /** A rate as a count per 100. */
   per100: (v) => num(1)(v * 100),
 };
@@ -1448,6 +1450,14 @@ function render(data: BalanceData) {
   const landedXl: Record<string, string> = { '0-10': '0–9', '10-30': '10–29', '30-100': '30–99', '100-300': '100–299', '300-1000': '300–999', '1000+': '1,000+' };
   categories('c-prac-landed', d.learning_practice.filter((r) => r.by === 'practice'), theme, { x: 'bucket', g: 'group',
     v: 'feedback_index', groups: rates, xs: Object.keys(landedXl), xl: (x) => landedXl[x] }, FMT.n2, { ref: 1 });
+  const tenures: [string, string][] = [['under 2 years', 'Under 2 years'], ['2+ years', '2 years or more']];
+  const fifthXl: Record<string, string> = { 1: 'Least', 2: '2nd', 3: 'Middle', 4: '4th', 5: 'Most' };
+  const pred = (id: string, v: string, fmt: (v: number) => string) =>
+    categories(id, d.fb_predict_fifths, theme, { x: 'fifth', g: 'group', v, groups: tenures,
+      xs: Object.keys(fifthXl), xl: (x) => fifthXl[x] }, fmt, { zero: true });
+  pred('c-pred-owners', 'owners', FMT.pct);
+  pred('c-pred-share', 'share', FMT.pct);
+  pred('c-pred-threads', 'threads_p50', FMT.n1);
 
   const cohorts: [string, string][] = [['joined 2023', 'Joined 2023'], ['joined 2024', 'Joined 2024'], ['joined 2025', 'Joined 2025']];
   const months = ['0-3', '3-6', '6-9', '9-12', '12-18', '18-24', '24-36'];

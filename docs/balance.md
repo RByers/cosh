@@ -656,6 +656,77 @@ Rerun: `COSH_DATA_DIR=<main>/data/private python3 scripts/balance_learning.py
 `learning_practice_fit` into `summaries/balance.json`; `--explore` prints the
 tenure × practice table instead; about 5 min).
 
+### 4c. Does the feedback index predict reviewing and owning? (`scripts/balance_feedback_predicts.py`, 2026-11-08)
+
+Unit: an author's half-year (2023 H2, 2024 H1, 2024 H2) with 6 or more
+merged, non-mechanical CLs whose summed 2023–24 norm is at least 3 threads:
+3,503 person-halves, 1,516 people. The predictor is their feedback index
+that half-year divided by the median of their tenure band (under 1, 1–2,
+2–4, 4–8, 8+ years) in the same half-year, so 1.0 is typical for their
+tenure and era. Outcomes after the half-year ends:
+
+- first added to any OWNERS file within 18 months (only the 786
+  person-halves not yet in one; 78% already are);
+- review share (approvals ÷ (approvals + CLs landed), git) over the next 12
+  months, among people with 6 or more of either;
+- review threads started on others' merged CLs per month over the next 12
+  months.
+
+By fifth of the relative index (least feedback → most):
+
+| | Least | 2nd | Middle | 4th | Most |
+|---|---:|---:|---:|---:|---:|
+| Index (median, relative) | 0.46 | 0.75 | 1.00 | 1.34 | 2.12 |
+| CLs in the half (median) | 37 | 39 | 35 | 29 | 18 |
+| OWNERS within 18 mo, under 2 y | 36% | 35% | 47% | 22% | 20% |
+| OWNERS within 18 mo, 2+ y | 27% | 29% | 19% | 20% | 28% |
+| Review share next year, under 2 y | 46% | 43% | 40% | 38% | 28% |
+| Review share next year, 2+ y | 63% | 62% | 61% | 58% | 53% |
+| Threads given per month, median, all | 7.0 | 10.3 | 8.4 | 5.7 | 2.3 |
+
+Fits per doubling of the relative index, standard errors clustered by
+person. *Volume* controls for log CLs landed in the half, tenure band and
+half-year; *full* adds the same outcome measured during the half (review
+share, and threads given; both for OWNERS):
+
+| Outcome | Group | Volume | Full | Per doubling of CLs (full) |
+|---|---|---:|---:|---:|
+| OWNERS (odds ratio) | all | 0.83 [0.69, 1.01] | 0.84 [0.69, 1.02] | 1.64 [1.33, 2.03] |
+| | under 2 y | 0.74 [0.59, 0.94] | 0.77 [0.60, 0.98] | 1.86 [1.43, 2.42] |
+| | 2+ y | 1.03 [0.72, 1.49] | 0.99 [0.69, 1.42] | 1.30 [0.90, 1.87] |
+| Review share (points) | all | −4.8 [−6.1, −3.6] | −1.4 [−2.2, −0.6] | +0.1 |
+| | under 2 y | −5.9 [−8.1, −3.6] | −1.8 [−3.5, −0.2] | −0.4 |
+| Threads given (ratio) | all | 0.92 [0.87, 0.97] | 1.01 [0.98, 1.04] | 1.17 [1.14, 1.21] |
+
+- **The raw gradient is clear, the added signal small.** The fifth drawing
+  most feedback goes on to review less (28% against 46% review share for
+  people under 2 years) and is added to OWNERS less often (20% against
+  36%). But that fifth also lands half as many CLs, and people who already
+  review draw less feedback on their own CLs (they know the code). Holding
+  those equal, the review-share gap falls to 1.4 points per doubling and
+  the threads-given gap disappears.
+- **OWNERS:** for people under 2 years, each doubling still goes with about
+  three quarters of the odds; for 2+ years, nothing. Ranking who is added
+  (AUC), the index alone scores 0.58, the controls 0.71, both 0.72. CLs
+  landed are the stronger predictor.
+- **Not noise.** Split-half reliability of the log index (alternate CLs of
+  the same half, Spearman–Brown) is 0.77, so the weak prediction isn't
+  just measurement error.
+- **Reading.** Needing less feedback and taking on review grow together
+  (the two trajectories), but at a given volume and current reviewing,
+  how much feedback someone draws adds little warning about whether they
+  will review or own code. Caveats: association, not cause; 18 months is
+  short for OWNERS, and an OWNERS addition is often a team decision, not
+  a judgement of the author; the base halves are all before AI tools.
+
+Rerun (about 5 min to load, then seconds with `--cache`):
+`COSH_DATA_DIR=<main>/data/private python3 scripts/balance_feedback_predicts.py
+--first-commit F --owners-added O --mech M [--cache P]` (writes
+`fb_predict_fifths`, `fb_predict_fit` and `fb_predict_summary` into
+`summaries/balance.json`; `--explore` prints them and writes nothing). The
+page shows it under "Learning to need less review feedback"
+(`#predicts`).
+
 ### 5. Growth along several paths
 
 For each person and half-year (`scripts/balance_growth.py growth`):

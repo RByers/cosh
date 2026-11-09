@@ -856,6 +856,74 @@
           more. The latest year shows the same pattern. The groups may differ in other ways too, such as role, team
           or kind of work, so this shows what goes with learning, not what causes it.
         </p>
+        <h3 id="predicts">Does needing less feedback lead to reviewing and owning?</h3>
+        <p class="note">
+          Authors with 6 or more merged CLs in a half-year from July 2023 to December 2024
+          (<b data-src="fb_predict_summary" data-field="person_halves" data-fmt="n0">–</b> author half-years,
+          <b data-src="fb_predict_summary" data-field="people" data-fmt="n0">–</b> people), split into fifths by
+          their <button type="button" class="term" popovertarget="def-feedback-index">feedback index</button> that
+          half-year against others of the same tenure, from the fifth drawing least feedback to the fifth drawing
+          most. Then what they did next: whether they were first added to an OWNERS file within 18 months (people
+          not in one yet), their review share over the next 12 months (people still active), and the review
+          threads they started on others' CLs over the next 12 months.
+        </p>
+        <div class="panels">
+          <figure class="panel"><h3>Added to OWNERS within 18 months</h3>
+            <p class="note">Share of people not yet in an OWNERS file.</p>
+            <div class="chart chart-short"><canvas id="c-pred-owners" role="img" aria-label="Share first added to an OWNERS file within 18 months, by fifth of the feedback index, for authors under 2 years and 2 or more years on the project."></canvas></div></figure>
+          <figure class="panel"><h3>Review share the next year</h3>
+            <p class="note">Median approvals given ÷ (approvals + CLs landed).</p>
+            <div class="chart chart-short"><canvas id="c-pred-share" role="img" aria-label="Median review share over the next 12 months, by fifth of the feedback index, for authors under 2 years and 2 or more years on the project."></canvas></div></figure>
+          <figure class="panel"><h3>Feedback given the next year</h3>
+            <p class="note">Median review threads started on others' CLs per month.</p>
+            <div class="chart chart-short"><canvas id="c-pred-threads" role="img" aria-label="Median review threads started on others' CLs per month over the next 12 months, by fifth of the feedback index, for authors under 2 years and 2 or more years on the project."></canvas></div></figure>
+        </div>
+        <p class="sub">
+          People whose CLs draw the most feedback go on to review less. Among authors under 2 years on the project,
+          <b data-src="fb_predict_fifths" data-field="owners" data-where="group=under 2 years&amp;fifth=1" data-fmt="pct">–</b>
+          of the fifth drawing least feedback were added to an OWNERS file within 18 months, against
+          <b data-src="fb_predict_fifths" data-field="owners" data-where="group=under 2 years&amp;fifth=5" data-fmt="pct">–</b>
+          of the fifth drawing most, and their median review share the next year was
+          <b data-src="fb_predict_fifths" data-field="share" data-where="group=under 2 years&amp;fifth=1" data-fmt="pct">–</b>
+          against
+          <b data-src="fb_predict_fifths" data-field="share" data-where="group=under 2 years&amp;fifth=5" data-fmt="pct">–</b>.
+          For people with 2 or more years, being added to OWNERS doesn't follow the feedback index at all.
+        </p>
+        <p class="sub">
+          Much of the gap is what people already do. The fifth drawing most feedback lands fewer CLs, and people who
+          already review a lot draw less feedback on their own CLs. With the CLs landed, tenure and half-year held
+          equal, each doubling of the feedback index goes with a review share
+          <b data-src="fb_predict_fit" data-field="vol_effect" data-where="group=all&amp;outcome=review_share" data-fmt="ptsabs">–</b>
+          lower the next year and
+          <b data-src="fb_predict_fit" data-field="vol_effect" data-where="group=all&amp;outcome=threads_given" data-fmt="drop">–</b>
+          fewer review threads given. Also holding equal how much they reviewed during the half-year, the review
+          share gap shrinks to
+          <b data-src="fb_predict_fit" data-field="effect" data-where="group=all&amp;outcome=review_share" data-fmt="ptsabs">–</b>
+          and the threads gap disappears. For OWNERS, among people under 2 years, each doubling still goes with
+          <b data-src="fb_predict_fit" data-field="effect" data-where="group=under 2 years&amp;outcome=owners" data-fmt="x">–</b>
+          the odds of being added (95% interval
+          <b data-src="fb_predict_fit" data-field="lo" data-where="group=under 2 years&amp;outcome=owners" data-fmt="n2">–</b>
+          to
+          <b data-src="fb_predict_fit" data-field="hi" data-where="group=under 2 years&amp;outcome=owners" data-fmt="n2">–</b>),
+          but CLs landed predict it far better: each doubling of those goes with
+          <b data-src="fb_predict_fit" data-field="cls_effect" data-where="group=under 2 years&amp;outcome=owners" data-fmt="x">–</b>
+          the odds.
+        </p>
+        <p class="sub">
+          So the feedback index is a weak predictor of who goes on to review and own code once volume and current
+          reviewing are known. Ranking who is added to OWNERS, it alone scores
+          <b data-src="fb_predict_fit" data-field="auc_fi" data-where="group=all&amp;outcome=owners" data-fmt="n2">–</b>
+          (0.5 is chance, 1 is perfect); CLs landed, tenure and current reviewing score
+          <b data-src="fb_predict_fit" data-field="auc_controls" data-where="group=all&amp;outcome=owners" data-fmt="n2">–</b>,
+          and adding the feedback index makes it
+          <b data-src="fb_predict_fit" data-field="auc_both" data-where="group=all&amp;outcome=owners" data-fmt="n2">–</b>.
+          That isn't because the index is noise: computed from alternate CLs of the same half-year, its two halves
+          agree well (reliability
+          <b data-src="fb_predict_summary" data-field="reliability" data-fmt="n2">–</b>). Needing less feedback
+          and taking on review grow together, as the <a href="#trajectories">two trajectories</a> show, but one
+          doesn't add much warning about the other. This shows association, not cause, and the 18-month window is
+          short for OWNERS.
+        </p>
       </section>
 
       <section id="signals" class="card" aria-labelledby="signals-title">
