@@ -839,6 +839,13 @@ function render(data: BalanceData) {
   const famXl: Record<string, string> = { 'fam 0': 'None', 'fam 1-4': '1–4', 'fam 5-19': '5–19', 'fam 20-99': '20–99', 'fam 100+': '100+' };
   categories('c-fam', d.learning, theme, { x: 'bucket', g: 'era', v: 'load_index', groups: eras,
     xs: Object.keys(famXl), xl: (x) => famXl[x] }, FMT.n2, { ref: 1 });
+  const rates: [string, string][] = [['prolific', 'Prolific (top fifth)'], ['average', 'Average (middle fifth)']];
+  const pracTenureXl: Record<string, string> = { '0-3': '0–3 mo', '3-6': '3–6', '6-12': '6–12', '12-24': '1–2 y', '24-48': '2–4 y', '48+': '4 y+' };
+  categories('c-prac-tenure', d.learning_practice.filter((r) => r.by === 'tenure'), theme, { x: 'bucket', g: 'group',
+    v: 'load_index', groups: rates, xs: Object.keys(pracTenureXl), xl: (x) => pracTenureXl[x] }, FMT.n2, { ref: 1 });
+  const landedXl: Record<string, string> = { '0-10': '0–9', '10-30': '10–29', '30-100': '30–99', '100-300': '100–299', '300-1000': '300–999', '1000+': '1,000+' };
+  categories('c-prac-landed', d.learning_practice.filter((r) => r.by === 'practice'), theme, { x: 'bucket', g: 'group',
+    v: 'load_index', groups: rates, xs: Object.keys(landedXl), xl: (x) => landedXl[x] }, FMT.n2, { ref: 1 });
 
   const cohorts: [string, string][] = [['joined 2023', 'Joined 2023'], ['joined 2024', 'Joined 2024'], ['joined 2025', 'Joined 2025']];
   const months = ['0-3', '3-6', '6-9', '9-12', '12-18', '18-24', '24-36'];

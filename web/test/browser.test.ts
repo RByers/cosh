@@ -2760,7 +2760,7 @@ test('the Review Balance page: a draft warning first, every figure, chart and ta
   for (const f of figures) assert.match(f, /\d/, f);
   // Every chart is drawn, and every table has rows.
   const canvases = await page.$$eval('canvas', (cs) => cs.map((c) => [c.id, c.width > 0 && c.height > 0] as const));
-  assert.equal(canvases.length, 31);
+  assert.equal(canvases.length, 33);
   for (const [id, drawn] of canvases) assert.ok(drawn, id);
   const rows = await page.$$eval('table.balance-table', (ts) => ts.map((t) => [t.id, (t as HTMLTableElement).tBodies[0].rows.length] as const));
   assert.deepEqual(rows.map(([id]) => id), ['t-areas', 't-signals', 't-tenure', 't-panel-reviewer', 't-panel-author',

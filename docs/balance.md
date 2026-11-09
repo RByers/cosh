@@ -442,6 +442,35 @@ size (10 buckets) and top 2-level directory in 2023–24 (1.00 = the
   data can't yet tell which. Section 6 suggests the second is at least
   part of it, since the same experts are spread thinner.
 
+### 4b. Practice or time: commits landed against tenure
+
+`scripts/balance_learning.py` (2026-11-08) asks whether review need falls
+with months on the project or with CLs landed. Authors whose first commit
+is in 2017 or later (so `balance-git.sqlite` holds all their commits);
+merged, non-mechanical CLs of 2023Q3–2024Q4 (112,615 CLs, 2,158 people).
+"Practice" is the author's commits on `main` before the CL.
+
+- **Practice predicts about twice as well.** Share of the variance in the
+  calendar-adjusted thread residual explained by bin means: tenure 3.5%,
+  practice 7.6%, both 7.9%. Spearman ρ with the residual: −0.15 and −0.24.
+  Within a practice bin, tenure barely correlates (ρ −0.11 to +0.06);
+  within a tenure bin, practice still does (ρ −0.16 to −0.37). In
+  2025Q4–2026Q3 (`--era now`): 5.3%, 8.2%, 8.4%, same pattern.
+- **Prolific newcomers learn faster by the calendar, not per CL.** Groups
+  by commits landed in the first 12 months: the top fifth (34 or more,
+  "prolific") and the middle fifth (3–9, "average"). Load index in the
+  second year: 1.18 against 1.84. By commits landed: 0–9, 2.84 against
+  2.82; 30–99, 1.54 against 1.39; 100–299, 1.14 against 0.91. Per CL the
+  average group learns at least as fast. Points with fewer than 200 CLs
+  or 20 people are left out.
+- Caveats: groups are by first-year output, so they may also differ in
+  role, team and kind of work. This is association, not cause.
+
+Rerun: `COSH_DATA_DIR=<main>/data/private python3 scripts/balance_learning.py
+--first-commit F --owners-added O --mech M` (writes `learning_practice` and
+`learning_practice_fit` into `summaries/balance.json`; `--explore` prints the
+tenure × practice table instead; about 5 min).
+
 ### 5. Growth along several paths
 
 For each person and half-year (`scripts/balance_growth.py growth`):
@@ -654,7 +683,7 @@ so the revert chart should be by size as well as over time.
 
 **Status (2026-11-08):** a first draft is live as `web/balance.html`, with a
 large "Draft: under development" warning at the top. It isn't linked from the
-landing page yet. It has 31 charts and 11 tables, drawn with Chart.js from
+landing page yet. It has 33 charts and 11 tables, drawn with Chart.js from
 `summaries/balance.json`. That file holds 35 aggregate datasets:
 - `balance_report.py`'s `report.json`;
 - the growth, pipeline, mentorship, AI-paired and mechanical tables from

@@ -386,6 +386,48 @@
             <p class="note">The author's earlier commits in the CL's main 3-level directory.</p>
             <div class="chart"><canvas id="c-fam" role="img" aria-label="Review load index by the author's earlier commits in the directory, for 2023 H2 to 2024, 2025 and 2026."></canvas></div></figure>
         </div>
+        <h3 id="practice">Practice or time?</h3>
+        <p class="sub">
+          What teaches authors to need less review is landing CLs, not months on the project. Before AI tools, the
+          number of commits an author had already landed explained
+          <b data-src="learning_practice_fit" data-field="r2_practice" data-fmt="pct1">–</b> of the variation in
+          review load between CLs, against
+          <b data-src="learning_practice_fit" data-field="r2_tenure" data-fmt="pct1">–</b> for tenure, and the two
+          together explained only
+          <b data-src="learning_practice_fit" data-field="r2_both" data-fmt="pct1">–</b>. Among authors who had
+          landed the same number of commits, those who had been around longer drew no less review.
+        </p>
+        <p class="sub">
+          So prolific contributors learn faster by the calendar, but not per CL. Take the fifth of newcomers who
+          landed the most in their first year
+          (<b data-src="learning_practice_fit" data-field="prolific_min" data-fmt="n0">–</b> commits or more) and
+          the middle fifth
+          (<b data-src="learning_practice_fit" data-field="average_min" data-fmt="n0">–</b> to
+          <b data-src="learning_practice_fit" data-field="average_max" data-fmt="n0">–</b>). In their second year,
+          the prolific group's CLs drew
+          <b data-src="learning_practice" data-field="load_index" data-where="by=tenure&amp;group=prolific&amp;bucket=12-24" data-fmt="x">–</b>
+          the usual review and the average group's
+          <b data-src="learning_practice" data-field="load_index" data-where="by=tenure&amp;group=average&amp;bucket=12-24" data-fmt="x">–</b>.
+          Counted in commits landed, the curves meet, and the average group's is if anything a little lower: in their first ten commits,
+          <b data-src="learning_practice" data-field="load_index" data-where="by=practice&amp;group=prolific&amp;bucket=0-10" data-fmt="x">–</b>
+          and
+          <b data-src="learning_practice" data-field="load_index" data-where="by=practice&amp;group=average&amp;bucket=0-10" data-fmt="x">–</b>;
+          after 30 to 100,
+          <b data-src="learning_practice" data-field="load_index" data-where="by=practice&amp;group=prolific&amp;bucket=30-100" data-fmt="x">–</b>
+          and
+          <b data-src="learning_practice" data-field="load_index" data-where="by=practice&amp;group=average&amp;bucket=30-100" data-fmt="x">–</b>.
+          Prolific people need less review sooner because they get more practice, not because each CL teaches them
+          more. The latest year shows the same pattern. The groups may differ in other ways too, such as role, team
+          or kind of work, so this shows what goes with learning, not what causes it.
+        </p>
+        <div class="panels">
+          <figure class="panel"><h3>Prolific and average contributors, by tenure</h3>
+            <p class="note">CLs from 2023 H2–2024 by authors who joined in 2017 or later, grouped by commits landed in their first year. 1.0 (dashed) is the 2023–24 average for the CL's size and directory.</p>
+            <div class="chart"><canvas id="c-prac-tenure" role="img" aria-label="Review load index by the author's tenure, for prolific and average contributors."></canvas></div></figure>
+          <figure class="panel"><h3>Prolific and average contributors, by commits landed</h3>
+            <p class="note">The same CLs, by the author's commits on main before the CL. Points with fewer than 20 people are left out.</p>
+            <div class="chart"><canvas id="c-prac-landed" role="img" aria-label="Review load index by the author's commits landed so far, for prolific and average contributors."></canvas></div></figure>
+        </div>
       </section>
 
       <section id="signals" class="card" aria-labelledby="signals-title">
