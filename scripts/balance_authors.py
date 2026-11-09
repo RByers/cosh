@@ -1,9 +1,9 @@
-"""Per-author breadth, review load and abandonment over the last year, for
-the Review Balance page's "Authors in the last year" section
-(docs/balance.md): a histogram of distinct directories touched per author, a
-scatter of one dot per author (directories, review load index, tenure, CLs
-landed), and a scatter of abandonment after review against tenure, coloured
-by organization.
+"""Per-author breadth and review load over the last year, for the Review
+Balance page's "Authors in the last year" section (docs/balance.md): a
+histogram of distinct directories touched per author, and a scatter of one
+dot per author (directories, review load index, tenure, CLs landed). The
+summary also holds abandonment after review against tenure, which the page
+quotes in "Wrong turns" (tenure barely predicts it).
 
 Unlike the other balance scripts this writes one row per person, with their
 commit email, to summaries/balance_authors.json. That is published: it comes
@@ -21,13 +21,10 @@ The year is 2025-11-01 .. 2026-11-01 (the data ends in October 2026).
   CLs closed in the year ÷ the sum of the 2023–24 means for each CL's size and
   directory (the page's load index, pooled per author).
 - Tenure: years from the first commit on main (all history) to the year's end.
-- Reviewed / abandoned: the author's non-mechanical CLs closed (merged or
-  abandoned) in the year that had a first substantive review before closing
-  (an inline reviewer comment, or a reviewer thread the owner answered), and
-  how many of those were abandoned. The page shows the rate when reviewed is
-  at least MIN_REVIEWED.
-- Org: the organization (cosh.orgs, as on the Value Exchange page) of most of
-  the author's landed commits in the year, from the commit email and date.
+- Abandonment (summary only): of the author's non-mechanical CLs closed
+  (merged or abandoned) in the year with a first substantive review before
+  closing (an inline reviewer comment, or a reviewer thread the owner
+  answered), the share abandoned, for authors with MIN_REVIEWED or more.
 Authors need MIN_CLS CLs landed to appear; the histogram uses the same people.
 """
 
@@ -44,7 +41,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import balance_analysis as A  # noqa: E402
 import balance_growth as G  # noqa: E402
 from balance_report import mech_set  # noqa: E402
-from cosh import balance, orgs  # noqa: E402
+from cosh import balance  # noqa: E402
 
 START = datetime(2025, 11, 1, tzinfo=timezone.utc).timestamp()
 END = G.CENSOR                      # 2026-11-01, end of data
@@ -54,22 +51,17 @@ MIN_REVIEWED = 10                   # reviewed CLs closed in the year for an aba
 
 
 def raw_emails(ids):
-    """({person id: the commit author address they used most in the year}, as written (not merged),
-    {person id: the organization of most of their commits in the year})."""
+    """{person id: the commit author address they used most in the year}, as written (not merged)."""
     db = A.ro(balance.db_path("git"))
-    resolve = orgs.OrgResolver()
-    cnt, org = defaultdict(Counter), defaultdict(Counter)
-    for e, bot, at in db.execute("SELECT author_email, is_bot, landed_at FROM gcommits WHERE change_number IS NOT NULL "
-                                 "AND landed_at >= ? AND landed_at < ?", (START, END)):
+    cnt = defaultdict(Counter)
+    for e, bot in db.execute("SELECT author_email, is_bot FROM gcommits WHERE change_number IS NOT NULL "
+                             "AND landed_at >= ? AND landed_at < ?", (START, END)):
         if not bot and not A.is_bot_email(e):
             e = e.lower()
             if e.count("@") > 1:
                 e = e.rsplit("@", 1)[0]
-            p = ids.find(A.person(e))
-            cnt[p][e] += 1
-            org[p][resolve(e, datetime.fromtimestamp(at, timezone.utc).strftime("%Y-%m-%d"))] += 1
-    return ({p: c.most_common(1)[0][0] for p, c in cnt.items()},
-            {p: c.most_common(1)[0][0] for p, c in org.items()})
+            cnt[ids.find(A.person(e))][e] += 1
+    return {p: c.most_common(1)[0][0] for p, c in cnt.items()}
 
 
 def compute(args):
@@ -108,7 +100,7 @@ def compute(args):
             threads[c["pid"]] += c["threads"]
             expected[c["pid"]] += c["exp24"]
 
-    email, org = raw_emails(ids)
+    email = raw_emails(ids)
     out = []
     for p, n in landed.items():
         if n < MIN_CLS or p not in email:
@@ -119,7 +111,7 @@ def compute(args):
             email=email[p], cls=n, dirs=len(dirs[p]),
             load=round(threads[p] / e, 3) if e >= MIN_EXPECTED else None,
             tenure=round((END - t0) / G.YEAR, 2) if t0 is not None and t0 < END else None,
-            org=org[p], reviewed=reviewed[p], abandoned=abandoned[p]))
+            reviewed=reviewed[p], abandoned=abandoned[p]))
     out.sort(key=lambda r: r["email"])
     return out
 
@@ -167,7 +159,7 @@ def summary(rows):
                 rho_dirs_cls=round(spearman([r["dirs"] for r in rows], [r["cls"] for r in rows]), 2))
 
 
-COLUMNS = ["email", "cls", "dirs", "load", "tenure", "org", "reviewed", "abandoned"]
+COLUMNS = ["email", "cls", "dirs", "load", "tenure"]
 
 
 def main():

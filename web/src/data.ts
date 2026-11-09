@@ -545,20 +545,6 @@ export function orgColorSlots(
   return out;
 }
 
-/** How many orgs the value charts consider (chartedOrgs, in order). */
-export const CHARTED_ORGS = 8;
-
-/** Value Exchange's org → colour slot map (orgColorSlots over its ranked and
- * charted orgs), so other pages colour orgs exactly as it does. */
-export function valueOrgColorSlots(
-  summary: Summary,
-  radar: RadarWeekly,
-  orgBrowsers: Map<string, string[]>,
-  bright: number,
-): Map<string, number> {
-  return orgColorSlots(orgsByAllTimeReview(summary), chartedOrgs(radar, orgBrowsers).slice(0, CHARTED_ORGS), bright);
-}
-
 /** Weekly counts of the metric for the `names` orgs (see namedOrgs), ranked by
  * their total over the given weeks, then everything else as a final "Other"
  * series. `values[i]` is the count in `weeks[i]`. With `smoothing` > 1, each

@@ -165,6 +165,12 @@ directory to 0.24–0.31 after 100 or more commits there, in every era.
   every tenure, most for newcomers (twice the norm in their first quarter)
   but also for 5–10-year veterans (1.48). That is consistent with cheaper,
   more exploratory CLs. It isn't evidence of weaker skill.
+- **Per author, abandonment doesn't track tenure** (2026-11-08,
+  `scripts/balance_authors.py`): over Nov 2025 – Oct 2026, among 1,152
+  authors with 10+ reviewed CLs, the rank correlation of tenure with the
+  share abandoned is 0.03 (median 6.3% under 2 years, 6.7% at 10+). The
+  index above differs by tenure mostly in the first quarter, which few
+  of those authors are in; between people, the spread (p90 17%) swamps it.
 
 By start cohort (months since first commit), neg index and abandon index:
 

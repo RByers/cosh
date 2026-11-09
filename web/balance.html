@@ -434,7 +434,7 @@
 
       <section id="authors" class="card" aria-labelledby="authors-title">
         <a class="card-anchor" href="#authors" aria-label="Link to this section" title="Link to this section">#</a>
-        <h2 id="authors-title">Authors in the last year: breadth, review load and abandonment</h2>
+        <h2 id="authors-title">Authors in the last year: breadth and review load</h2>
         <p class="sub">
           November 2025 to October 2026, the
           <b data-src="authors_summary" data-field="authors" data-fmt="n0">–</b>
@@ -472,32 +472,6 @@
         </div>
         <div class="chart chart-tall"><canvas id="c-author-scatter" role="img" aria-label="Scatter plot of authors from November 2025 to October 2026: directories touched against review load index, coloured by tenure, sized by CLs landed."></canvas></div>
         <template data-msg="author-tip"><slot name="cls"></slot> CLs, <slot name="dirs"></slot> directories, load index <slot name="load"></slot>, <slot name="tenure"></slot> since first commit</template>
-        <h3>Abandonment after review against tenure, one dot per author</h3>
-        <p class="note">
-          Of each author's CLs closed in the year that drew a substantive review (an inline reviewer comment, or a
-          reviewer thread the author answered), the share they abandoned rather than landed. Across: years since
-          their first commit on <code>main</code>. Colour is the author's organization, in the Value Exchange page's
-          colours (grey for the rest), and a dot's area is CLs landed. Hover a dot for the author. It shows the
-          <b data-src="authors_summary" data-field="abandon_authors" data-fmt="n0">–</b>
-          authors with 10 or more reviewed CLs; the dashed line is their pooled rate,
-          <b data-src="authors_summary" data-field="abandon_pooled" data-fmt="pct1">–</b>.
-        </p>
-        <p class="note">
-          Tenure tells almost nothing here (rank correlation
-          <b data-src="authors_summary" data-field="rho_tenure_abandon" data-fmt="n2">–</b>): the median author
-          with under 2 years abandoned
-          <b data-src="authors_summary" data-field="abandon_p50_under2" data-fmt="pct1">–</b>
-          of their reviewed CLs, the median with 10 or more years
-          <b data-src="authors_summary" data-field="abandon_p50_10plus" data-fmt="pct1">–</b>.
-          The spread between people is far wider: one in ten abandoned
-          <b data-src="authors_summary" data-field="abandon_p90" data-fmt="pct1">–</b>
-          or more, while
-          <b data-src="authors_summary" data-field="abandon_zero" data-fmt="n0">–</b>
-          abandoned none. An abandoned CL is not always a failure: it may be an experiment, a duplicate or work
-          moved to another CL.
-        </p>
-        <div class="chart chart-tall"><canvas id="c-abandon-scatter" role="img" aria-label="Scatter plot of authors from November 2025 to October 2026: years since first commit against the share of reviewed CLs abandoned, coloured by organization, sized by CLs landed."></canvas></div>
-        <template data-msg="abandon-tip"><slot name="rate"></slot> abandoned (<slot name="abandoned"></slot> of <slot name="reviewed"></slot> reviewed CLs), <slot name="cls"></slot> CLs landed, <slot name="tenure"></slot> since first commit, <slot name="org"></slot></template>
       </section>
 
       <section id="learning" class="card" aria-labelledby="learning-title">
@@ -597,7 +571,13 @@
           <b data-src="signals_era" data-field="abandon_rate" data-where="era=2026" data-fmt="pct1">–</b>. It rose at
           every tenure, most for <button type="button" class="term" popovertarget="def-newcomer">newcomers</button>, whose first-quarter CLs were abandoned at
           <b data-src="signals_tenure" data-field="abandon_index" data-where="era=2026&amp;tenure_months=0-3" data-fmt="x">–</b>
-          the 2023–24 norm. A −1 now ends a CL more often than it leads to a reworked landing:
+          the 2023–24 norm. Between people, though, tenure says almost nothing: over the last year, among the
+          <b data-src="authors_summary" data-field="abandon_authors" data-fmt="n0">–</b> authors with 10 or more
+          reviewed CLs, the median with under 2 years abandoned
+          <b data-src="authors_summary" data-field="abandon_p50_under2" data-fmt="pct1">–</b> of them and the
+          median with 10 or more years
+          <b data-src="authors_summary" data-field="abandon_p50_10plus" data-fmt="pct1">–</b> (rank correlation
+          with tenure <b data-src="authors_summary" data-field="rho_tenure_abandon" data-fmt="n2">–</b>). A −1 now ends a CL more often than it leads to a reworked landing:
           <b data-src="signals_era" data-field="after_neg_abandoned" data-where="era=2026" data-fmt="pct">–</b> of CLs
           with a −1 were abandoned in 2026, against
           <b data-src="signals_era" data-field="after_neg_abandoned" data-where="era=2023H2-2024" data-fmt="pct">–</b>

@@ -2,18 +2,13 @@
 // in the figures marked with data-src and draws the charts and tables, from
 // summaries/balance.json (aggregates), balance_dirs.json and, for the
 // authors section, balance_authors.json (one row per author: docs/balance.md).
-// The abandonment scatter colours orgs as Value Exchange does, so it also
-// reads that page's org summary, Radar shares and org browsers.
 import { BubbleController, Chart, Filler, type ChartDataset, type Plugin, type TooltipItem } from 'chart.js';
 import balanceUrl from '../../summaries/balance.json?url';
 import dirsUrl from '../../summaries/balance_dirs.json?url';
 import authorsUrl from '../../summaries/balance_authors.json?url';
-import orgSummaryUrl from '../../summaries/org_weekly.json?url';
-import radarUrl from '../../data/public/radar_browser_share.csv?url';
-import orgBrowsersUrl from '../../config/org_browsers.csv?url';
-import { OTHER, parseOrgBrowsers, parseRadarWeekly, valueOrgColorSlots, type DirRow, type Summary } from './data.ts';
+import type { DirRow } from './data.ts';
 import { heatRowLabel, heatTable, node } from './heatmap.ts';
-import { ORG_BRIGHT, readTheme, type Theme } from './charts.ts';
+import { readTheme, type Theme } from './charts.ts';
 import { fmtHoursBin, fmtNum, fmtQuarterMonth } from './format.ts';
 import { fill, msg } from './text.ts';
 import { initTerms } from './terms.ts';
@@ -153,9 +148,6 @@ interface SeriesSpec {
 
 let charts: Chart[] = [];
 let authorRows: AuthorRow[] = [];
-/** Value Exchange's org colour slots (valueOrgColorSlots), and the fewest reviewed CLs for an abandon rate. */
-let orgSlots = new Map<string, number>();
-let minReviewed = 10;
 
 function line(
   id: string,
@@ -665,11 +657,9 @@ function securityBars(rows: Row[], theme: Theme) {
 
 // ---- authors in the last year (balance_authors.json)
 
-type AuthorRow = [email: string, cls: number, dirs: number, load: number | null, tenure: number | null,
-  org: string, reviewed: number, abandoned: number];
+type AuthorRow = [email: string, cls: number, dirs: number, load: number | null, tenure: number | null];
 interface AuthorData {
   summary: Row;
-  min_reviewed: number;
   authors: AuthorRow[];
 }
 
@@ -791,74 +781,6 @@ function authorScatter(rows: AuthorRow[], theme: Theme) {
           title: { display: true, text: 'Review load index', color: theme.muted, font: { family: theme.font } },
           grid: { color: theme.grid }, border: { display: false },
           ticks: { ...tick, autoSkip: false, callback: logTicks([0.1, 0.2, 0.5, 1, 2, 5, 10], (v) => String(v)) },
-        },
-      },
-    },
-  } as never));
-}
-
-/** Abandonment after review against tenure, one dot per author with enough reviewed CLs: coloured
- * by org with Value Exchange's colours (orgs without one are grey "Other"), area by CLs landed. */
-function abandonScatter(rows: AuthorRow[], pooled: number, theme: Theme) {
-  const rate = (r: AuthorRow) => r[7] / r[6];
-  const use = rows.filter((r) => r[4] !== null && r[6] >= minReviewed).sort((a, b) => b[1] - a[1]);
-  const orgOf = (r: AuthorRow) => (orgSlots.has(r[5]) ? r[5] : OTHER);
-  const count = new Map<string, number>();
-  for (const r of use) count.set(orgOf(r), (count.get(orgOf(r)) ?? 0) + 1);
-  // Biggest org first, so it is drawn underneath; Other last.
-  const orgs = [...count.keys()].sort((a, b) => Number(a === OTHER) - Number(b === OTHER) || count.get(b)! - count.get(a)!);
-  const datasets = orgs.map((org, i) => {
-    const pts = use.filter((r) => orgOf(r) === org);
-    const c = org === OTHER ? theme.muted : theme.orgs[orgSlots.get(org)!];
-    return {
-      label: org,
-      data: pts.map((r) => ({ x: r[4]!, y: rate(r), r: dotRadius(r[1]) })),
-      rows: pts,
-      // The biggest org's crowd is fainter, so the smaller orgs' dots stand out on it.
-      backgroundColor: faint(c, i === 0 ? '55' : '99'),
-      borderColor: c,
-      borderWidth: 1,
-      hoverBorderColor: theme.parity,
-      hoverBorderWidth: 2,
-    };
-  });
-  const o = options(theme, FMT.pct, true);
-  const tick = { color: theme.muted, font: { family: theme.font } };
-  const rowAt = (i: TooltipItem<'line'>) => (datasets[i.datasetIndex].rows as AuthorRow[])[i.dataIndex];
-  charts.push(new Chart($<HTMLCanvasElement>('#c-abandon-scatter'), {
-    type: 'bubble',
-    data: { datasets },
-    plugins: [refLine(pooled, theme.muted)],
-    options: {
-      ...o,
-      interaction: { mode: 'nearest' as const, intersect: true },
-      plugins: {
-        ...o.plugins,
-        legend: { ...o.plugins.legend, labels: { ...o.plugins.legend.labels, boxHeight: 10, boxWidth: 10 } },
-        tooltip: {
-          ...o.plugins.tooltip,
-          callbacks: {
-            title: (items: TooltipItem<'line'>[]) => (items.length ? rowAt(items[0])[0] : ''),
-            label: (i: TooltipItem<'line'>) => {
-              const r = rowAt(i);
-              return msg('abandon-tip', { rate: FMT.pct1(rate(r)), abandoned: FMT.n0(r[7]), reviewed: FMT.n0(r[6]),
-                cls: FMT.n0(r[1]), tenure: `${FMT.n1(r[4]!)} years`, org: r[5] });
-            },
-          },
-        },
-      },
-      scales: {
-        x: {
-          type: 'linear', min: 0,
-          title: { display: true, text: 'Years since first commit', color: theme.muted, font: { family: theme.font } },
-          grid: { color: theme.grid }, border: { color: theme.baseline },
-          ticks: { ...tick, maxRotation: 0, stepSize: 5 },
-        },
-        y: {
-          type: 'linear', min: 0,
-          title: { display: true, text: 'Reviewed CLs abandoned', color: theme.muted, font: { family: theme.font } },
-          grid: { color: theme.grid }, border: { display: false },
-          ticks: { ...tick, maxTicksLimit: 7, callback: (v: number | string) => FMT.pct(Number(v)) },
         },
       },
     },
@@ -1321,7 +1243,6 @@ function render(data: BalanceData) {
   areaTable(d.areas);
   authorDirs(authorRows, theme);
   authorScatter(authorRows, theme);
-  abandonScatter(authorRows, Number(d.authors_summary[0].abandon_pooled), theme);
 
   const eras: [string, string][] = [['2023H2-2024', '2023 H2–2024'], ['2025', '2025'], ['2026 (to Sep)', '2026 to September']];
   const tenureXl: Record<string, string> = { '0-3': '0–3 mo', '3-6': '3–6', '6-12': '6–12', '12-24': '1–2 y', '24-60': '2–5 y', '60-120': '5–10 y', '120-999': '10 y+' };
@@ -1413,18 +1334,10 @@ async function main() {
       if (!r.ok) throw new Error(`${url}: ${r.status}`);
       return (await r.json()) as T;
     };
-    const text = async (url: string) => {
-      const r = await fetch(url);
-      if (!r.ok) throw new Error(`${url}: ${r.status}`);
-      return r.text();
-    };
-    const [data, dirs, authors, orgSummary, radar, orgBrowsers] = await Promise.all([
-      get<BalanceData>(balanceUrl), get<DirData>(dirsUrl), get<AuthorData>(authorsUrl),
-      get<Summary>(orgSummaryUrl), text(radarUrl).then(parseRadarWeekly), text(orgBrowsersUrl).then(parseOrgBrowsers)]);
+    const [data, dirs, authors] = await Promise.all([
+      get<BalanceData>(balanceUrl), get<DirData>(dirsUrl), get<AuthorData>(authorsUrl)]);
     data.datasets.authors_summary = [authors.summary];
     authorRows = authors.authors;
-    minReviewed = authors.min_reviewed;
-    orgSlots = valueOrgColorSlots(orgSummary, radar, orgBrowsers, ORG_BRIGHT);
     render(data);
     dirMap(dirs);
     initTerms();
