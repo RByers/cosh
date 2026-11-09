@@ -111,15 +111,63 @@ def half_of(t):
     return f"{d.year}H{1 if d.month <= 6 else 2}"
 
 
-def queue_quarters(use):
-    """Per page directory (and all of Chromium) and quarter: merged CLs, the median first-review wait, and
-    reviewers in the attention set of 5+ of the directory's CLs, from balance.sqlite's cl_attention."""
+A_PERIOD = ("2024Q1", "2025Q2")       # "then" on the page's queue section
+B_PERIOD = ("2026Q2", "2026Q4")       # "since April 2026"; 2026Q4 is partial
+QUARTER_DAYS = 365.25 / 4
+
+
+def load_attention():
+    """{change_number: [account_id]} of every non-owner human in a CL's attention set, from balance.sqlite."""
     import sqlite3
     from cosh import balance
     db = sqlite3.connect(f"file:{balance.db_path('cl')}?mode=ro", uri=True)
     att = defaultdict(list)
     for n, a in db.execute("SELECT change_number, account_id FROM cl_attention"):
         att[n].append(a)
+    return att
+
+
+def wait_h(c):
+    """Clock hours from being sent for review to the first substantive review, or None."""
+    if c["first_review_at"] and c["sent_at"] and c["first_review_at"] >= c["sent_at"]:
+        return (c["first_review_at"] - c["sent_at"]) / 3600
+    return None
+
+
+def period_of(q):
+    if A_PERIOD[0] <= q <= A_PERIOD[1]:
+        return "a"
+    if B_PERIOD[0] <= q <= B_PERIOD[1]:
+        return "b"
+    return None
+
+
+def period_quarters(use):
+    """Quarters in each period, the last one pro rata to the data's last CL, so per-quarter rates compare."""
+    last = max(c["closed_at"] for c in use)
+    start_b = ts(2026, 4)
+    return {"a": 6.0, "b": max(0.5, (last - start_b) / 86400 / QUARTER_DAYS)}
+
+
+def reviewers_of(c, att):
+    return {a for a in att.get(c["change_number"], []) if a != c["owner"]}
+
+
+def active_per_quarter(cls, att):
+    """Mean over the quarters of {quarter: reviewers in the attention set of 5+ of these CLs}, and the set of
+    people who were such a reviewer in any quarter."""
+    per = defaultdict(Counter)
+    for c in cls:
+        for a in reviewers_of(c, att):
+            per[A.quarter(c["closed_at"])][a] += 1
+    counts = [sum(1 for k in x.values() if k >= 5) for x in per.values()]
+    people = {a for x in per.values() for a, k in x.items() if k >= 5}
+    return (st.mean(counts) if counts else 0), people
+
+
+def queue_quarters(use, att):
+    """Per page directory (and all of Chromium) and quarter: merged CLs, the median first-review wait, and
+    reviewers in the attention set of 5+ of the directory's CLs, from balance.sqlite's cl_attention."""
     groups = defaultdict(list)
     for c in use:
         q = A.quarter(c["closed_at"])
@@ -130,12 +178,12 @@ def queue_quarters(use):
             groups[(c["d2"], q)].append(c)
     out = []
     for (d, q), s in sorted(groups.items()):
-        w = [(c["first_review_at"] - c["sent_at"]) / 3600 for c in s
-             if c["first_review_at"] and c["sent_at"] and c["first_review_at"] >= c["sent_at"]]
-        rv = Counter(a for c in s for a in set(att.get(c["change_number"], [])) if a != c["owner"])
+        w = [wait_h(c) for c in s]
+        rv = Counter(a for c in s for a in reviewers_of(c, att))
         reviewers = sum(1 for k in rv.values() if k >= 5)
-        out.append(dict(dir=d, q=q, cls=len(s), ftr_p50=rnd(pct(w, .5)), reviewers=reviewers,
-                        cls_per_reviewer=rnd(len(s) / reviewers, 1) if reviewers else None))
+        out.append(dict(dir=d, q=q, cls=len(s), ftr_p50=rnd(pct(w, .5)), ftr_p75=rnd(pct(w, .75)), reviewers=reviewers,
+                        cls_per_reviewer=rnd(len(s) / reviewers, 1) if reviewers else None,
+                        feedback_index=rnd(sum(c["threads"] for c in s) / sum(c["exp24"] for c in s))))
     base = defaultdict(list)
     for o in out:
         if o["q"].startswith("2024"):
@@ -143,6 +191,178 @@ def queue_quarters(use):
     for o in out:
         o["cls_index"] = rnd(o["cls"] / st.mean(base[o["dir"]]))
     return out
+
+
+def queue_months(use):
+    """All of Chromium by month, 2023-07 to the last complete month: merged CLs, reviewed CLs, and the median
+    and upper-quartile first-review wait."""
+    last = max(c["closed_at"] for c in use)
+    ld = datetime.fromtimestamp(last, timezone.utc)
+    last_m = f"{ld.year}-{ld.month:02d}"
+    complete = ld.day >= 28            # the data's last month counts only when it is (nearly) complete
+    months = defaultdict(list)
+    for c in use:
+        d = datetime.fromtimestamp(c["closed_at"], timezone.utc)
+        m = f"{d.year}-{d.month:02d}"
+        if m >= "2023-07" and (m < last_m or complete):
+            months[m].append(c)
+    out = []
+    for m, s in sorted(months.items()):
+        w = [wait_h(c) for c in s]
+        w = [x for x in w if x is not None]
+        out.append(dict(m=m, cls=len(s), reviewed=len(w), ftr_p50=rnd(pct(w, .5)), ftr_p75=rnd(pct(w, .75)),
+                        lines_p50=pct([c["lines"] for c in s], .5)))
+    return out
+
+
+def queue_hours(use):
+    """All of Chromium: by the UTC hour the CL was sent for review, each period's share of reviewed CLs and
+    median wait."""
+    by = {"a": defaultdict(list), "b": defaultdict(list)}
+    for c in use:
+        p = period_of(A.quarter(c["closed_at"]))
+        w = wait_h(c)
+        if p and w is not None:
+            by[p][datetime.fromtimestamp(c["sent_at"], timezone.utc).hour].append(w)
+    n = {p: sum(len(v) for v in by[p].values()) for p in by}
+    return [dict(hour=h, share_a=rnd(len(by["a"][h]) / n["a"], 4), share_b=rnd(len(by["b"][h]) / n["b"], 4),
+                 wait_a=rnd(pct(by["a"][h], .5)), wait_b=rnd(pct(by["b"][h], .5))) for h in range(24)]
+
+
+def queue_dirs(use, att, min_cls=800):
+    """Per 2-level directory with min_cls+ CLs in period A, and all of Chromium: CLs per quarter, median
+    wait, active reviewers per quarter (5+ of the directory's CLs in the quarter), CLs per active reviewer,
+    the share of B's active reviewers who weren't active there in A (renewal), and the median CL size."""
+    nq = period_quarters(use)
+    by = defaultdict(lambda: {"a": [], "b": []})
+    for c in use:
+        p = period_of(A.quarter(c["closed_at"]))
+        if p:
+            by["all"][p].append(c)
+            if c["d2"]:
+                by[c["d2"]][p].append(c)
+    out = []
+    for d, ps in by.items():
+        if len(ps["a"]) < min_cls or not ps["b"]:
+            continue
+        row = dict(dir=d)
+        act = {}
+        for p in ("a", "b"):
+            s = ps[p]
+            w = [wait_h(c) for c in s]
+            act[p] = active_per_quarter(s, att)
+            row[f"cls_q_{p}"] = rnd(len(s) / nq[p], 0)
+            row[f"wait_{p}"] = rnd(pct(w, .5))
+            row[f"reviewers_{p}"] = rnd(act[p][0], 0)
+            row[f"per_reviewer_{p}"] = rnd(len(s) / nq[p] / act[p][0], 1) if act[p][0] else None
+            row[f"lines_{p}"] = pct([c["lines"] for c in s], .5)
+        row["renewal"] = rnd(len(act["b"][1] - act["a"][1]) / len(act["a"][1]), 3) if act["a"][1] else None
+        out.append(row)
+    out.sort(key=lambda r: -(r["wait_b"] / r["wait_a"]) if r["wait_a"] and r["wait_b"] else 0)
+    return out
+
+
+def queue_shift(use, att):
+    """What the reviewers who were active in a directory in A (5+ of its CLs in some quarter) and still
+    reviewed anywhere in B did per quarter in each period: CLs reviewed in the directory, CLs reviewed
+    elsewhere, and CLs of their own landed (means per person). dir=all: everyone active as a reviewer in A."""
+    nq = period_quarters(use)
+    dq = defaultdict(lambda: defaultdict(Counter))       # (period, dir) -> account -> quarter -> CLs
+    load = defaultdict(lambda: defaultdict(Counter))     # period -> account -> dir -> CLs
+    authored = defaultdict(Counter)
+    for c in use:
+        p = period_of(A.quarter(c["closed_at"]))
+        if not p:
+            continue
+        authored[p][c["owner"]] += 1
+        q = A.quarter(c["closed_at"])
+        for a in reviewers_of(c, att):
+            load[p][a][c["d2"]] += 1
+            dq[(p, c["d2"])][a][q] += 1
+            dq[(p, "all")][a][q] += 1
+    out = []
+    for d in PAGE_DIRS + ["all"]:
+        active_a = {a for a, qs in dq[("a", d)].items() if any(k >= 5 for k in qs.values())}
+        stay = [a for a in active_a if load["b"].get(a)]
+        for p in ("a", "b"):
+            tot = [sum(load[p][a].values()) / nq[p] for a in stay]
+            ind = [load[p][a][d] / nq[p] for a in stay] if d != "all" else [0.0] * len(stay)
+            au = [authored[p][a] / nq[p] for a in stay]
+            out.append(dict(dir=d, period=p, people=len(stay), active_a=len(active_a),
+                            in_dir=rnd(st.mean(ind), 1), elsewhere=rnd(st.mean(t - i for t, i in zip(tot, ind)), 1),
+                            reviewed=rnd(st.mean(tot), 1), reviewed_p50=rnd(pct(tot, .5), 1),
+                            authored=rnd(st.mean(au), 1), authored_p50=rnd(pct(au, .5), 1)))
+    return out
+
+
+def queue_mix(use, att):
+    """All of Chromium: B's reviewed CLs given A's waits for CLs of the same size band, hour band sent,
+    reviewers in the attention set and owner org group (Google or not), and for size alone."""
+    import random
+    from cosh import orgs
+    resolve = orgs.OrgResolver()
+
+    def size_band(l):
+        return 0 if l < 10 else 1 if l < 50 else 2 if l < 200 else 3 if l < 1000 else 4
+
+    def hour_band(t):
+        d = datetime.fromtimestamp(t, timezone.utc)
+        return "wknd" if d.weekday() >= 5 else "us" if 14 <= d.hour < 22 else "eu" if 6 <= d.hour < 14 else "night"
+
+    def google(c):
+        day = datetime.fromtimestamp(c["closed_at"], timezone.utc).strftime("%Y-%m-%d")
+        return resolve(c["owner_email"], day) == "google.com"
+
+    keys = {"size": lambda c: size_band(c["lines"]),
+            "mix": lambda c: (size_band(c["lines"]), hour_band(c["sent_at"]), min(len(reviewers_of(c, att)), 3), google(c))}
+    random.seed(1)
+    row = {}
+    for name, kf in keys.items():
+        pool, ks = defaultdict(list), []
+        for c in use:
+            p = period_of(A.quarter(c["closed_at"]))
+            w = wait_h(c)
+            if not p or w is None:
+                continue
+            if p == "a":
+                pool[kf(c)].append(w)
+            else:
+                ks.append(kf(c))
+        sim = [random.choice(pool[k]) for k in ks if pool.get(k)]
+        row[f"wait_b_{name}"] = rnd(pct(sim, .5))
+        row[f"matched_{name}"] = rnd(len(sim) / len(ks), 3)
+    wa = [wait_h(c) for c in use if period_of(A.quarter(c["closed_at"])) == "a"]
+    wb = [wait_h(c) for c in use if period_of(A.quarter(c["closed_at"])) == "b"]
+    row["wait_a"] = rnd(pct(wa, .5))
+    row["wait_b"] = rnd(pct(wb, .5))
+    # Owner org groups: share of reviewed CLs and median wait.
+    g = {"a": defaultdict(list), "b": defaultdict(list)}
+    for c in use:
+        p = period_of(A.quarter(c["closed_at"]))
+        w = wait_h(c)
+        if p and w is not None:
+            g[p]["google" if google(c) else "other"].append(w)
+    for p in ("a", "b"):
+        n = sum(len(v) for v in g[p].values())
+        for k in ("google", "other"):
+            row[f"share_{k}_{p}"] = rnd(len(g[p][k]) / n, 3)
+            row[f"wait_{k}_{p}"] = rnd(pct(g[p][k], .5))
+    return [row]
+
+
+def queue_summary(quarters):
+    """One row for the page's tiles: 2024's quarterly average against 2026Q3 for all of Chromium, with the
+    change as a log ratio (the page formats it as a percentage)."""
+    rows = [r for r in quarters if r["dir"] == "all"]
+    then = [r for r in rows if r["q"].startswith("2024")]
+    now = next(r for r in rows if r["q"] == "2026Q3")
+    out = {}
+    for f in ("cls", "reviewers", "cls_per_reviewer", "ftr_p50", "feedback_index"):
+        a = st.mean(r[f] for r in then)
+        out[f"{f}_then"] = rnd(a, 2 if f in ("feedback_index", "ftr_p50") else 0)
+        out[f"{f}_now"] = now[f]
+        out[f"{f}_rel"] = rnd(math.log(now[f] / a), 4)
+    return [out]
 
 
 def inflow(commits, cdir, first, authored, start):
@@ -218,6 +438,26 @@ def inflow_periods(rows):
                  rate=rnd(x["arrivals"] / x["active"], 3), rate_new=rnd(x["arrivals_new"] / x["active"], 3),
                  g_rate=rnd(x["g_arrivals"] / x["g_active"], 3), g_rate_new=rnd(x["g_arrivals_new"] / x["g_active"], 3))
             for (d, per), x in sorted(by.items())]
+
+
+def print_queues(new):
+    print("\n== Queue summary (2024 average -> 2026Q3):", new["queue_summary"][0])
+    print("== Mix-adjusted wait:", new["queue_mix"][0])
+    print("== Months: m, CLs, reviewed, p50, p75, lines p50")
+    for r in new["queue_months"]:
+        print(f"  {r['m']} {r['cls']} {r['reviewed']} {f2(r['ftr_p50'])} {f2(r['ftr_p75'], 1)} {r['lines_p50']}")
+    print("== Hours (UTC): share a, b; wait a, b")
+    for r in new["queue_hours"]:
+        print(f"  {r['hour']:02d} {r['share_a']:.3f} {r['share_b']:.3f} {f2(r['wait_a'])} {f2(r['wait_b'])}")
+    print("== Directories: CLs/q a, b; wait a, b; reviewers/q a, b; per reviewer a, b; renewal; lines a, b")
+    for r in new["queue_dirs"]:
+        print(f"  {r['dir']:26s} {r['cls_q_a']:6.0f} {r['cls_q_b']:6.0f}  {f2(r['wait_a'], 1)} {f2(r['wait_b'], 1)}  "
+              f"{r['reviewers_a']:5.0f} {r['reviewers_b']:5.0f}  {f2(r['per_reviewer_a'], 1)} {f2(r['per_reviewer_b'], 1)}  "
+              f"{f2(r['renewal'])}  {r['lines_a']} {r['lines_b']}")
+    print("== Stayers per quarter: dir, period, people, in dir, elsewhere, reviewed (median), authored (median)")
+    for r in new["queue_shift"]:
+        print(f"  {r['dir']:26s} {r['period']} {r['people']:4d}/{r['active_a']:4d}  {r['in_dir']:5.1f} {r['elsewhere']:5.1f}  "
+              f"{r['reviewed']:5.1f} ({r['reviewed_p50']:.1f})  {r['authored']:5.1f} ({r['authored_p50']:.1f})")
 
 
 def print_inflow(rows):
@@ -515,7 +755,15 @@ def main():
             row[f"wait_{pe.lower()}"] = rnd(pct([w for w, _ in per_q[pe][b]], .5))
         new["queue_approver"].append(row)
     new["queue_blink"] = [dict(wait_a=rnd(pct(allA, .5)), wait_b=rnd(pct(allB, .5)), wait_b_mix=rnd(pct(sim, .5)))]
-    new["queue_quarters"] = queue_quarters(use)
+    att = load_attention()
+    new["queue_quarters"] = queue_quarters(use, att)
+    new["queue_summary"] = queue_summary(new["queue_quarters"])
+    new["queue_months"] = queue_months(use)
+    new["queue_hours"] = queue_hours(use)
+    new["queue_dirs"] = queue_dirs(use, att, min_cls=800)
+    new["queue_shift"] = queue_shift(use, att)
+    new["queue_mix"] = queue_mix(use, att)
+    print_queues(new)
     new["queue_inflow"] = inflow(commits, cdir, first, authored, start)
     new["queue_inflow_periods"] = inflow_periods(new["queue_inflow"])
     print_inflow(new["queue_inflow"])

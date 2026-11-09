@@ -788,11 +788,15 @@ and 68% in 2026. That concentration started before AI tools. Per CL, the
 feedback index (threads vs the 2023–24 norm for the size and directory)
 went 1.09 (2023Q3) → 0.91 (2025Q3) → 0.72 (2026Q3).
 
-**Individual reviewers are not slower.** Weekday hours from being added to
-the attention set to a reviewer's first comment stayed at a median of 3–5
-for every tenure band from 2023 to 2026. Threads per CL reviewed fell
-slightly for the 5–10-year band (3.65 → 2.7). Longer waits for authors
-come from volume, not from slower individuals.
+**Individual reviewers were not slower, until 2026.** Weekday hours from
+being added to the attention set to a reviewer's first comment stayed at a
+median of 3–5 for every tenure band from 2023 to 2025. In 2026 the
+longest-serving bands slowed: 10+ years 3.8 (2025H1) → 5.1 (2026H1) →
+6.2 h (2026H2), 5–10 years 2.9 → 3.9 → 4.6, 2–5 years 2.4 → 2.7 → 3.6,
+under 2 years flat at 2.6 (`reviewers_by_tenure`; corrected 2026-11-09,
+section 6d). Threads per CL reviewed fell slightly for the 5–10-year band
+(3.65 → 2.7). Most of the longer wait for authors still comes from volume:
+the same people face more CLs.
 
 **Joiner cohorts.** People who joined in 2023, 2024 or 2025, 9–12 months
 after their first commit:
@@ -984,8 +988,9 @@ Googlers, and has promoted ever fewer authors to reviewers. So when its
 volume rose in 2026, no new reviewers absorbed it, and the busiest 10
 approvers took a larger share.
 
-The page shows this as "Blink and Chrome: where the longer review queues
-come from" (`#queues`), from the `queue_*` datasets this script writes.
+The page shows this in "Source of longer review queues" (`#queues`), from
+the `queue_*` datasets this script writes; section 6d has the project-wide
+part of that section.
 
 This seems to contradict section 6b's "individual reviewers are not
 slower". The two measure different things. Here it is time from the CL
@@ -995,7 +1000,175 @@ reviewer being added to their own first comment.
 Rerun: `COSH_DATA_DIR=<main>/data/private python3 scripts/balance_dirgrowth.py
 [summaries/balance.json] --first-commit F --owners-added O --mech M
 [--min-cls 800]` (prints the tables; with the path, also writes the
-page's `queue_*` datasets; about 5 min).
+page's `queue_*` datasets; about 5 min). `--min-cls 800` also sets which
+directories `queue_dirs` lists.
+
+### 6d. Source of longer review queues, project-wide (2026-11-09)
+
+The page's `#queues` section was reworked to explain the project-wide
+slowdown first and blink as the sharpest case. Same CLs as 6c (merged,
+human-owned, non-mechanical, with a substantive first review); "A" (then)
+is 2024Q1–2025Q2 and "B" (now) 2026Q2–Q4, Q4 to early November, with
+per-quarter rates pro rata. Active reviewer: in the attention set of 5+ of
+the directory's CLs in a quarter. All from `scripts/balance_dirgrowth.py`
+(`queue_summary`, `queue_months`, `queue_hours`, `queue_dirs`,
+`queue_shift`, `queue_mix`), cross-checked with ad hoc queries of
+`balance.sqlite` that use Gerrit account IDs rather than the identity
+merge; the two agree to within rounding.
+
+**The queue, 2024 average → 2026Q3, all of Chromium:**
+
+| CLs a quarter | Active reviewers | CLs per active reviewer | Feedback index | Median wait |
+|---:|---:|---:|---:|---:|
+| 27,888 → 38,915 (+40%) | 993 → 996 (0%) | 28.0 → 39.1 (+39%) | 0.97 → 0.72 (−26%) | 4.0 → 5.2 h (+28%) |
+
+- **By month** the rise is recent and steep: median 3.7 h in October
+  2025, 4.2–5.2 through the first half of 2026, 6.7 in September 2026 and
+  8.2 in October 2026 (p75 19.6 → 24.4). CLs a month went 10,045 →
+  17,838 (+78%) over the same year; the median CL from 40 to 69 lines.
+  Early November (1,205 reviewed CLs) is at 9.5 h.
+- **Two steps.** Active reviewers fell from ~1,000 (2023Q3–2024Q3) to 840
+  (2025Q4), −16%, while CLs held at 26–28k a quarter. Waits still fell to
+  3.3 h (2025Q2): reviewers covered the gap by reviewing more lightly
+  (feedback index 0.97 → 0.92). From 2026Q1 CLs rose to 30.6k, 32.8k and
+  38.9k; active reviewers came back to 996 (new people, section below),
+  so CLs per active reviewer went 28 → 39, the feedback index fell to
+  0.72, and the median wait rose every quarter to 5.2 h. The relation
+  between load per reviewer and wait is loose, though: 2023Q3 had 27
+  CLs per reviewer and a 5.1 h wait, 2025Q2 31 and 3.3 h.
+
+**Not the CLs.** B's reviewed CLs given A's waits for the same size band
+(<10, 10–50, 50–200, 200–1000, 1000+ lines), hour band sent (US 14–22
+UTC, Europe 6–14, night, weekend), reviewers in the attention set (1, 2,
+3+) and owner org (Google or not): median 4.29 h, against 5.58 actual and
+3.82 in A. Size alone gives 4.27. So the mix explains about a quarter of
+the rise and all of it is bigger CLs; the shares by hour, reviewers and
+org barely moved. (Adding the 2-level directory to the key leaves 12% of
+B's CLs unmatched and gives 3.9 h; directory mix is not it either.) Owner
+org: Google-owned CLs 3.46 → 4.78 h (93.6% → 91.4% of reviewed CLs),
+others 11.1 → 15.5 h. Every size band slowed 30–40%; every number of
+reviewers 45–50%; every weekday 40–50%.
+
+**By hour sent (UTC), median wait A → B:** the slowdown is same-day
+turnaround for US afternoons.
+
+| Hour | 09 | 12 | 14 | 16 | 18 | 20 | 21 | 22 | 23 | 02 |
+|---|---|---|---|---|---|---|---|---|---|---|
+| A | 4.5 | 2.8 | 2.6 | 2.6 | 2.1 | 2.1 | 2.8 | 6.5 | 13.3 | 13.9 |
+| B | 5.2 | 2.9 | 3.3 | 3.3 | 3.0 | 4.4 | 8.0 | 13.4 | 15.3 | 14.3 |
+
+CLs sent 0–13 UTC (Asia and Europe's day) changed little: they were
+always answered the next US morning. The share of CLs by hour is the
+same in both periods (US hours 14–22 are 51% → 52%).
+
+**By directory (800+ CLs in A), CLs a quarter, median wait, active
+reviewers a quarter, CLs per active reviewer, renewal (share of B's
+active reviewers not active there in A), median lines:**
+
+| Directory | CLs/q A → B | Wait A → B | Reviewers/q A → B | Per reviewer A → B | Renewal | Lines A → B |
+|---|---|---|---|---|---:|---|
+| `gpu/command_buffer` | 173 → 212 | 2.2 → 10.1 | 10 → 13 | 17.6 → 15.9 | 29% | 26 → 64 |
+| `testing/buildbot` | 174 → 82 | 1.4 → 5.8 | 8 → 2 | 22.7 → 49.0 | 8% | 21 → 10 |
+| `ash/webui` | 215 → 59 | 3.9 → 11.0 | 18 → 2 | 12.0 → 25.1 | 2% | 48 → 54 |
+| `media/gpu` | 134 → 131 | 5.1 → 12.1 | 10 → 7 | 13.0 → 18.7 | 14% | 36 → 47 |
+| `third_party/blink` | 3,106 → 3,857 | 5.6 → 12.2 | 168 → 140 | 18.5 → 27.5 | 15% | 43 → 57 |
+| `components/viz` | 162 → 128 | 4.2 → 9.0 | 12 → 7 | 13.6 → 17.5 | 11% | 42 → 61 |
+| `content/browser` | 873 → 1,154 | 6.2 → 12.3 | 83 → 77 | 10.5 → 14.9 | 28% | 67 → 84 |
+| `infra/config` | 254 → 317 | 1.7 → 3.1 | 13 → 13 | 20.1 → 25.0 | 38% | 27 → 24 |
+| `ash/system` | 185 → 74 | 7.4 → 12.9 | 15 → 3 | 12.5 → 24.8 | 8% | 59 → 30 |
+| `chromeos/ash` | 258 → 152 | 5.3 → 9.2 | 25 → 7 | 10.3 → 20.8 | 4% | 71 → 57 |
+| all | 27,374 → 38,526 | 3.8 → 5.6 | 956 → 915 | 28.6 → 42.1 | 21% | 43 → 60 |
+| `ios/chrome` | 1,806 → 2,751 | 3.7 → 4.9 | 60 → 72 | 30.2 → 38.0 | 42% | 40 → 59 |
+| `chrome/android` | 954 → 2,013 | 2.2 → 2.8 | 51 → 69 | 18.6 → 29.2 | 45% | 56 → 67 |
+| `chrome/browser` | 6,865 → 12,299 | 3.5 → 4.3 | 436 → 455 | 15.8 → 27.0 | 29% | 54 → 71 |
+| `testing/variations` | 543 → 690 | 1.3 → 1.6 | 12 → 12 | 45.2 → 59.2 | 37% | 19 → 18 |
+| `tools/metrics` | 822 → 832 | 2.7 → 3.2 | 50 → 26 | 16.6 → 31.6 | 12% | 11 → 9 |
+| `chrome/test` | 556 → 1,050 | 3.8 → 4.4 | 41 → 59 | 13.5 → 17.9 | 62% | 81 → 89 |
+| `ui/views` | 172 → 233 | 6.5 → 7.0 | 16 → 15 | 11.1 → 15.5 | 21% | 33 → 63 |
+| `components/autofill` | 601 → 861 | 3.2 → 2.9 | 30 → 32 | 19.9 → 26.6 | 40% | 71 → 86 |
+| `ash/wm` | 174 → 54 | 4.2 → 3.5 | 8 → 3 | 21.3 → 20.2 | 12% | 70 → 28 |
+
+- The directories that doubled are platform and graphics
+  (`third_party/blink`, `content/browser`, `gpu/command_buffer`,
+  `components/viz`, `media/gpu`), build and test infrastructure
+  (`build/config` 0.8 → 2.6 h, `testing/buildbot`, `infra/config`) and
+  ChromeOS (`ash/*`, `chromeos/ash`), which lost 60–75% of their CLs and
+  most of their reviewers as ChromeOS moved onto Android. Chrome's UI
+  directories rose 15–35% and `components/autofill` got faster.
+- **Load per reviewer within the directory doesn't separate them.**
+  Across the 22 directories, the correlation of the log wait ratio with
+  the log ratio of CLs per active reviewer is −0.04; `chrome/browser`
+  took on the most per reviewer (+71%) and slowed least. With the log
+  ratio of active reviewers it is −0.20, with renewal −0.26, with the
+  change in reviewers per CL +0.21, and with how much the directory's A
+  reviewers' attention share there fell −0.10. None is clearly above
+  noise with 22 directories of very different sizes.
+- Platform directories renewed their reviewer pools least (blink 15%,
+  `media/gpu` 14%, `components/viz` 11%) and the Chrome directories most
+  (28–62%). Reviewers per CL hardly changed anywhere (blink 1.30 → 1.28).
+
+**What the same reviewers did (people active as reviewers in the
+directory in A who still reviewed anywhere in B), per quarter, means per
+person:**
+
+| Directory | People | Reviewed there A → B | Reviewed elsewhere A → B | Own CLs landed A → B |
+|---|---:|---|---|---|
+| `third_party/blink` | 273 of 302 | 13.3 → 15.9 | 36.5 → 47.6 | 25.3 → 29.3 |
+| `content/browser` | 143 of 160 | 8.9 → 10.1 | 62.3 → 78.0 | 29.0 → 35.9 |
+| `chrome/browser` | 625 of 747 | 14.4 → 22.9 | 29.4 → 35.1 | 25.0 → 30.1 |
+| `chrome/android` | 90 of 96 | 13.2 → 22.6 | 52.3 → 85.0 | 38.2 → 50.1 |
+| `ios/chrome` | 96 of 103 | 20.7 → 27.1 | 33.5 → 43.7 | 35.5 → 38.8 |
+| all (active anywhere) | 1,108 of 1,417 | – | 31.4 → 42.0 (median 16.0 → 15.9) | 20.5 → 24.5 (median 12.8 → 10.5) |
+
+- Reviewers who stayed review about a third more CLs and land a fifth
+  more of their own; the medians are flat, so the growth is in the
+  heavier reviewers and authors. Only 29 of blink's 302 A reviewers
+  stopped reviewing altogether (3 of them still author).
+- Blink's and `content/browser`'s reviewers review as many of their own
+  directory's CLs per head as before and more elsewhere. Of blink
+  reviewers' attention-set memberships, `chrome/browser` went from 19% to
+  25% and blink from 27% to 25%; `content/browser` reviewers' went
+  `chrome/browser` 19% → 25%, `content/browser` 13% → 11%. So the
+  platform reviewers' extra effort went mostly to `chrome/browser`, where
+  the volume is, and to their own CLs; their directories' CLs each still
+  get as many reviewers, but every one of those reviewers has a longer
+  personal queue.
+- `chrome/browser`'s review supply grew with its CLs: attention-set
+  memberships in the directory 10,556 → 17,707 a quarter, 3,104 of them
+  from people not active there in A.
+
+**Individual response time.** Weekday hours from being added to a CL to
+the reviewer's first comment (`reviewers_by_tenure`): 10+ years 3.8 (2025H1)
+→ 6.2 (2026H2), 5–10 years 2.9 → 4.6, 2–5 years 2.4 → 3.6, under 2 years
+2.6 → 2.6. The page's latency section and 6b were corrected.
+
+**Reading it together.** In order of how firmly the data support each:
+
+1. **More CLs for the same reviewers**: the one firm driver. CLs +40%
+   (October +78% year on year), the median CL half again as big,
+   newcomers' share of CLs tripled, and reviewers land a fifth more CLs of
+   their own; the reviewer pool is 2024's size. AI-marked CLs are too few
+   to say how much of the volume is AI-written.
+2. **A pipeline that thinned before AI**: 68 new regular reviewers in
+   2025 (fewest since 2017), new-reviewer share down in 21 of 22
+   directories; the surge found no new reviewers, least of all in the
+   platform directories.
+3. **Attention follows the volume** (a reading, not a measured cause):
+   platform reviewers added `chrome/browser` reviewing and their own CLs
+   on top of their platform reviewing.
+4. Not drivers: the CL mix (a quarter, all size); the shift to
+   longer-serving approvers (none); load per reviewer within a directory.
+5. Not visible: time outside review, working hours beyond the UTC hour,
+   AI use in authoring, and whether authors choose busy reviewers or
+   OWNERS leave no one else.
+
+The page draws: the five tiles (`queue_summary`); monthly median wait and
+CLs (`queue_months`, to the last complete month); the five quarterly
+series indexed to 2024 (`queue_quarters`, dir `all`, which now also carries
+`ftr_p75` and `feedback_index`); wait by hour sent (`queue_hours`);
+stacked bars of what stayers did (`queue_shift`); horizontal bars of the
+median wait by directory (`queue_dirs`); then the blink-against-Chrome
+charts of 6c.
 
 ### 7. AI-marked CLs
 
@@ -1070,6 +1243,9 @@ large "Draft: under development" warning at the top. Its landing-page card
   `COSH_DATA_DIR=<main>/data/private python3 scripts/balance_page_extras.py`.
   It reads `data/private/balance_signals.json` (`balance_signals.py report
   --out`).
+- `scripts/balance_dirgrowth.py` (2026-11-08, extended 2026-11-09), the
+  "Source of longer review queues" section: `queue_*` datasets (sections
+  6c and 6d).
 - `scripts/balance_histograms.py` (2026-11-08), the "Waiting for review"
   histograms: shares of reviewed CLs by hours to first substantive review
   and by reviewers' weekday attention-set hours, for the latest year

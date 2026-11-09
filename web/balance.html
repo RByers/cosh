@@ -310,9 +310,14 @@
           <b data-src="exchange" data-field="ftr_p50" data-where="q=2025Q2" data-fmt="h">–</b> in 2025 Q2 to
           <b data-src="exchange" data-field="ftr_p50" data-where="q=2026Q3" data-fmt="h">–</b> in 2026 Q3, and the
           slowest 1 in 20 waited <b data-src="exchange" data-field="ftr_p95" data-where="q=2026Q3" data-fmt="h">–</b>
-          or more. Individual reviewers are not much slower: the median reviewer still answers within a few weekday
-          hours of being asked (see <a href="#cohorts">Cohorts</a>). The waits grow because the same people face
-          more CLs.
+          or more. The waits grow mostly because the same people face more CLs (<a href="#queues">Source of longer
+          review queues</a>). Until 2026 individual reviewers were no slower: the median reviewer answered within a
+          few weekday hours of being asked. In 2026 the longest-serving ones are: reviewers with 10 or more years on
+          the project took
+          <b data-src="reviewers_by_tenure" data-field="resp_p50" data-where="half=2025H1&amp;band=10y+" data-fmt="h">–</b>
+          of weekday time to their first comment in the first half of 2025 and
+          <b data-src="reviewers_by_tenure" data-field="resp_p50" data-where="half=2026H2&amp;band=10y+" data-fmt="h">–</b>
+          in the second half of 2026 (see <a href="#cohorts">Cohorts</a>).
         </p>
         <h3>Then and now</h3>
         <p class="note">
@@ -437,19 +442,179 @@
 
       <section id="queues" class="card" aria-labelledby="queues-title">
         <a class="card-anchor" href="#queues" aria-label="Link to this section" title="Link to this section">#</a>
-        <h2 id="queues-title">Blink and Chrome: where the longer review queues come from</h2>
+        <h2 id="queues-title">Source of longer review queues</h2>
         <p class="sub">
-          Waits for a first review grew far more in <code>third_party/blink</code> and <code>content/browser</code>
-          than in Chrome's directories. This section compares five big directories on what feeds a review queue:
-          how many CLs arrive, how many reviewers share them, how many new people start working there, how hard the
-          code is to learn, and how quickly authors there become reviewers.
+          Waits for a first review have grown across the project since mid-2025, and far more in some directories
+          than in others. This section asks where the longer queues come from: what the CLs are, when they are
+          sent, who reviews them and how busy those people are, and then compares five big directories on what
+          feeds a review queue.
         </p>
         <p class="note">
-          A CL or commit belongs to the 2-level directory holding most of its lines. Merged, human-owned CLs,
-          mechanical ones left out.
+          Merged, human-owned CLs, mechanical ones left out, that got a substantive review (an inline comment, or a
+          thread the author answered). Hours are clock hours from being sent for review, nights and weekends
+          included. "Then" is 2024 Q1 to 2025 Q2, when waits were shortest; "now" is April 2026 onwards. An active
+          reviewer is in the attention set of 5 or more of a directory's CLs in a quarter. A CL belongs to the
+          2-level directory holding most of its lines.
         </p>
 
-        <h3>The queue</h3>
+        <h3>How the queue formed</h3>
+        <p class="note">All of Chromium, 2024's quarterly average against 2026 Q3.</p>
+        <ol class="flow" aria-label="How the queue formed, 2024 against 2026 Q3">
+          <li><span class="flow-label">CLs merged a quarter</span>
+            <span class="flow-vals"><b data-src="queue_summary" data-field="cls_then" data-fmt="n0">–</b><span class="flow-to"> to </span><b data-src="queue_summary" data-field="cls_now" data-fmt="n0">–</b></span>
+            <span class="flow-delta" data-src="queue_summary" data-field="cls_rel" data-fmt="rel">–</span></li>
+          <li><span class="flow-label">Active reviewers</span>
+            <span class="flow-vals"><b data-src="queue_summary" data-field="reviewers_then" data-fmt="n0">–</b><span class="flow-to"> to </span><b data-src="queue_summary" data-field="reviewers_now" data-fmt="n0">–</b></span>
+            <span class="flow-delta" data-src="queue_summary" data-field="reviewers_rel" data-fmt="rel">–</span></li>
+          <li><span class="flow-label">CLs per active reviewer</span>
+            <span class="flow-vals"><b data-src="queue_summary" data-field="cls_per_reviewer_then" data-fmt="n0">–</b><span class="flow-to"> to </span><b data-src="queue_summary" data-field="cls_per_reviewer_now" data-fmt="n0">–</b></span>
+            <span class="flow-delta" data-src="queue_summary" data-field="cls_per_reviewer_rel" data-fmt="rel">–</span></li>
+          <li><span class="flow-label"><button type="button" class="term" popovertarget="def-feedback-index">Feedback index</button> per CL</span>
+            <span class="flow-vals"><b data-src="queue_summary" data-field="feedback_index_then" data-fmt="n2">–</b><span class="flow-to"> to </span><b data-src="queue_summary" data-field="feedback_index_now" data-fmt="n2">–</b></span>
+            <span class="flow-delta" data-src="queue_summary" data-field="feedback_index_rel" data-fmt="rel">–</span></li>
+          <li class="flow-main"><span class="flow-label">Median wait for review</span>
+            <span class="flow-vals"><b data-src="queue_summary" data-field="ftr_p50_then" data-fmt="h">–</b><span class="flow-to"> to </span><b data-src="queue_summary" data-field="ftr_p50_now" data-fmt="h">–</b></span>
+            <span class="flow-delta" data-src="queue_summary" data-field="ftr_p50_rel" data-fmt="rel">–</span></li>
+        </ol>
+        <div class="panels">
+          <figure class="panel"><h3>Month by month</h3>
+            <p class="note">Median hours to first substantive review, and CLs merged (right axis).</p>
+            <div class="chart"><canvas id="c-qu-months" role="img" aria-label="Median hours to first substantive review and merged CLs per month, July 2023 to October 2026, all of Chromium."></canvas></div></figure>
+          <figure class="panel"><h3>Against 2024</h3>
+            <p class="note">Each quarter's figure over its 2024 average (1.0).</p>
+            <div class="chart"><canvas id="c-qu-steps" role="img" aria-label="Merged CLs, active reviewers, CLs per active reviewer, feedback per CL and the median wait per quarter, each relative to its 2024 average, all of Chromium."></canvas></div></figure>
+        </div>
+        <p class="sub">
+          A CL sent for review waited a median of
+          <b data-src="queue_months" data-field="ftr_p50" data-where="m=2025-10" data-fmt="h">–</b> for its first
+          substantive review in October 2025 and
+          <b data-src="queue_months" data-field="ftr_p50" data-where="m=2026-10" data-fmt="h">–</b> in October 2026.
+          The pool of reviewers is the size it was in 2024; everything that passes through it grew. It happened in
+          two steps. Through 2025 the number of active reviewers fell, from
+          <b data-src="queue_quarters" data-field="reviewers" data-where="dir=all&amp;q=2024Q3" data-fmt="n0">–</b> in
+          2024 Q3 to
+          <b data-src="queue_quarters" data-field="reviewers" data-where="dir=all&amp;q=2025Q4" data-fmt="n0">–</b> in
+          2025 Q4, while CLs held steady. Waits kept falling anyway: reviewers covered the gap by reviewing each CL
+          more lightly, and the feedback index went from
+          <b data-src="queue_quarters" data-field="feedback_index" data-where="dir=all&amp;q=2024Q3" data-fmt="n2">–</b>
+          to <b data-src="queue_quarters" data-field="feedback_index" data-where="dir=all&amp;q=2025Q4" data-fmt="n2">–</b>.
+          Then CLs rose, from
+          <b data-src="queue_quarters" data-field="cls" data-where="dir=all&amp;q=2025Q2" data-fmt="n0">–</b> in
+          2025 Q2 to
+          <b data-src="queue_quarters" data-field="cls" data-where="dir=all&amp;q=2026Q3" data-fmt="n0">–</b> in
+          2026 Q3 and
+          <b data-src="queue_months" data-field="cls" data-where="m=2026-10" data-fmt="n0">–</b> in October 2026 alone,
+          against <b data-src="queue_months" data-field="cls" data-where="m=2025-10" data-fmt="n0">–</b> a year
+          earlier. Reviewers came back to 2024's number, each facing
+          <b data-src="queue_quarters" data-field="cls_per_reviewer" data-where="dir=all&amp;q=2026Q3" data-fmt="n0">–</b>
+          CLs a quarter against
+          <b data-src="queue_quarters" data-field="cls_per_reviewer" data-where="dir=all&amp;q=2024Q3" data-fmt="n0">–</b>,
+          and the wait rose with the load.
+        </p>
+
+        <h3>The CLs, the clock and the reviewers</h3>
+        <div class="panels">
+          <figure class="panel"><h3>Wait by the hour sent</h3>
+            <p class="note">Median hours to first substantive review by the UTC hour the CL was sent for review.
+              14:00 to 22:00 UTC is the working day in US time zones (summer time). Hover for each hour's share of CLs.</p>
+            <div class="chart"><canvas id="c-qu-hours" role="img" aria-label="Median hours to first substantive review by the UTC hour the CL was sent, 2024 Q1 to 2025 Q2 against since April 2026."></canvas></div></figure>
+          <figure class="panel"><h3>What the same reviewers do each quarter</h3>
+            <p class="note">People who were active reviewers in a directory then and still review now: CLs they
+              reviewed in that directory, CLs they reviewed elsewhere, and CLs of their own they landed, per quarter,
+              means per person. Lighter bars are then.</p>
+            <div class="chart"><canvas id="c-qu-shift" role="img" aria-label="Per quarter, for the reviewers active in each of five directories then and still reviewing now: CLs reviewed in the directory, CLs reviewed elsewhere and CLs of their own landed, then and now."></canvas></div></figure>
+        </div>
+        <p class="sub">
+          It is not the CLs. Had every CL since April 2026 waited what a CL of its size, hour sent, number of
+          reviewers and owner's organisation (Google or not) waited then, the median would be
+          <b data-src="queue_mix" data-field="wait_b_mix" data-fmt="h">–</b> rather than
+          <b data-src="queue_mix" data-field="wait_b" data-fmt="h">–</b>, against
+          <b data-src="queue_mix" data-field="wait_a" data-fmt="h">–</b> then. The mix of CLs explains about a quarter
+          of the rise, and all of that is bigger CLs: the median CL grew from
+          <b data-src="queue_dirs" data-field="lines_a" data-where="dir=all" data-fmt="n0">–</b> to
+          <b data-src="queue_dirs" data-field="lines_b" data-where="dir=all" data-fmt="n0">–</b> changed lines, and size
+          alone gives <b data-src="queue_mix" data-field="wait_b_size" data-fmt="h">–</b>. CLs from outside Google
+          wait about three times as long in both periods
+          (<b data-src="queue_mix" data-field="wait_other_a" data-fmt="h">–</b> to
+          <b data-src="queue_mix" data-field="wait_other_b" data-fmt="h">–</b>, against
+          <b data-src="queue_mix" data-field="wait_google_a" data-fmt="h">–</b> to
+          <b data-src="queue_mix" data-field="wait_google_b" data-fmt="h">–</b> for Google's) and are
+          <b data-src="queue_mix" data-field="share_other_b" data-fmt="pct">–</b> of reviewed CLs, from
+          <b data-src="queue_mix" data-field="share_other_a" data-fmt="pct">–</b>.
+        </p>
+        <p class="sub">
+          What was lost is the same-day review. CLs sent in Europe's and Asia's working day wait about as long as
+          before: they were always answered the next US morning. CLs sent in the US afternoon used to be reviewed
+          within two or three hours; a CL sent at 21:00 UTC (early afternoon on the US west coast) waited
+          <b data-src="queue_hours" data-field="wait_a" data-where="hour=21" data-fmt="h">–</b> then and waits
+          <b data-src="queue_hours" data-field="wait_b" data-where="hour=21" data-fmt="h">–</b> now, and one sent at
+          22:00 UTC <b data-src="queue_hours" data-field="wait_a" data-where="hour=22" data-fmt="h">–</b> then and
+          <b data-src="queue_hours" data-field="wait_b" data-where="hour=22" data-fmt="h">–</b> now.
+        </p>
+        <p class="sub">
+          The reviewers are busier on both sides. Those active then who still review now reviewed
+          <b data-src="queue_shift" data-field="reviewed" data-where="dir=all&amp;period=a" data-fmt="n0">–</b> CLs
+          a quarter then and
+          <b data-src="queue_shift" data-field="reviewed" data-where="dir=all&amp;period=b" data-fmt="n0">–</b> now,
+          and land
+          <b data-src="queue_shift" data-field="authored" data-where="dir=all&amp;period=a" data-fmt="n0">–</b> to
+          <b data-src="queue_shift" data-field="authored" data-where="dir=all&amp;period=b" data-fmt="n0">–</b> CLs of
+          their own. Blink's reviewers review about as many blink CLs per head as before
+          (<b data-src="queue_shift" data-field="in_dir" data-where="dir=third_party/blink&amp;period=a" data-fmt="n0">–</b>
+          to <b data-src="queue_shift" data-field="in_dir" data-where="dir=third_party/blink&amp;period=b" data-fmt="n0">–</b>)
+          but
+          <b data-src="queue_shift" data-field="elsewhere" data-where="dir=third_party/blink&amp;period=a" data-fmt="n0">–</b>
+          to <b data-src="queue_shift" data-field="elsewhere" data-where="dir=third_party/blink&amp;period=b" data-fmt="n0">–</b>
+          elsewhere, most of the growth in <code>chrome/browser</code>, and land
+          <b data-src="queue_shift" data-field="authored" data-where="dir=third_party/blink&amp;period=a" data-fmt="n0">–</b>
+          to <b data-src="queue_shift" data-field="authored" data-where="dir=third_party/blink&amp;period=b" data-fmt="n0">–</b>
+          CLs of their own. The longest-serving reviewers have also become slower to answer once asked: reviewers
+          with 10 or more years on the project took
+          <b data-src="reviewers_by_tenure" data-field="resp_p50" data-where="half=2025H1&amp;band=10y+" data-fmt="h">–</b>
+          of weekday time from being added to a CL to their first comment in the first half of 2025 and
+          <b data-src="reviewers_by_tenure" data-field="resp_p50" data-where="half=2026H2&amp;band=10y+" data-fmt="h">–</b>
+          in the second half of 2026, while reviewers under 2 years on the project are unchanged at
+          <b data-src="reviewers_by_tenure" data-field="resp_p50" data-where="half=2026H2&amp;band=&lt;2y" data-fmt="h">–</b>
+          (<a href="#cohorts">Cohorts</a>).
+        </p>
+
+        <h3>Where it slowed</h3>
+        <figure class="panel"><h3>Median wait by directory, then and now</h3>
+          <p class="note">2-level directories with 800 or more reviewed CLs then, in order of how much they slowed.
+            Hover for CLs and active reviewers a quarter.</p>
+          <div class="chart chart-dirs"><canvas id="c-qu-dirs" role="img" aria-label="Median hours to first substantive review by 2-level directory, 2024 Q1 to 2025 Q2 against since April 2026, in order of how much each slowed."></canvas></div></figure>
+        <p class="sub">
+          Platform and graphics directories (<code>third_party/blink</code>, <code>content/browser</code>,
+          <code>gpu/command_buffer</code>, <code>components/viz</code>, <code>media/gpu</code>), build and test
+          infrastructure (<code>build/config</code>, <code>testing/buildbot</code>, <code>infra/config</code>) and
+          the ChromeOS directories doubled their waits or worse. Chrome's UI directories
+          (<code>chrome/browser</code>, <code>chrome/android</code>, <code>ios/chrome</code>,
+          <code>chrome/test</code>) rose by 15–35%, and <code>components/autofill</code> got faster. Load per
+          reviewer within a directory doesn't tell them apart: <code>chrome/browser</code>'s active reviewers took
+          on <b data-src="queue_dirs" data-field="per_reviewer_a" data-where="dir=chrome/browser" data-fmt="n0">–</b>
+          to <b data-src="queue_dirs" data-field="per_reviewer_b" data-where="dir=chrome/browser" data-fmt="n0">–</b>
+          CLs a quarter each and its wait went from
+          <b data-src="queue_dirs" data-field="wait_a" data-where="dir=chrome/browser" data-fmt="h">–</b> to
+          <b data-src="queue_dirs" data-field="wait_b" data-where="dir=chrome/browser" data-fmt="h">–</b>, while
+          <code>content/browser</code>'s went from
+          <b data-src="queue_dirs" data-field="per_reviewer_a" data-where="dir=content/browser" data-fmt="n0">–</b> to
+          <b data-src="queue_dirs" data-field="per_reviewer_b" data-where="dir=content/browser" data-fmt="n0">–</b>
+          and its wait doubled. What the slower directories share is a reviewer pool that didn't renew:
+          <b data-src="queue_dirs" data-field="renewal" data-where="dir=third_party/blink" data-fmt="pct">–</b> of
+          blink's active reviewers now weren't active there then, against
+          <b data-src="queue_dirs" data-field="renewal" data-where="dir=chrome/browser" data-fmt="pct">–</b> in
+          <code>chrome/browser</code> and
+          <b data-src="queue_dirs" data-field="renewal" data-where="dir=chrome/android" data-fmt="pct">–</b> in
+          <code>chrome/android</code>. The ChromeOS directories lost most of their CLs and their reviewers alike as
+          ChromeOS moved onto Android; what remains waits for people who have moved on.
+        </p>
+
+        <h3>Blink against Chrome</h3>
+        <p class="note">
+          The rest of this section compares five big directories on what feeds a review queue: how many CLs arrive,
+          how many reviewers share them, how many new people start working there, how hard the code is to learn, and
+          how quickly authors there become reviewers.
+        </p>
         <div class="panels">
           <figure class="panel"><h3>Hours to first substantive review</h3>
             <p class="note">Median clock hours from being sent for review.</p>
@@ -458,23 +623,19 @@
             <p class="note">Each directory's CLs per quarter, 1.0 being its 2024 average.</p>
             <div class="chart"><canvas id="c-qu-volume" role="img" aria-label="Merged CLs per quarter relative to each directory's 2024 average, for five directories and all of Chromium."></canvas></div></figure>
           <figure class="panel"><h3>CLs per active reviewer</h3>
-            <p class="note">Merged CLs ÷ active reviewers, per quarter. An active reviewer is in the attention set of
-              5 or more of the directory's CLs that quarter.</p>
+            <p class="note">Merged CLs ÷ active reviewers, per quarter.</p>
             <div class="chart"><canvas id="c-qu-perrev" role="img" aria-label="Merged CLs per active reviewer per quarter, for five directories and all of Chromium."></canvas></div></figure>
         </div>
         <p class="sub">
           Blink's median wait more than doubled, from
-          <b data-src="queue_growth" data-field="wait_a" data-where="dir=third_party/blink" data-fmt="h">–</b> in
-          2024 Q1 to 2025 Q2 to
-          <b data-src="queue_growth" data-field="wait_b" data-where="dir=third_party/blink" data-fmt="h">–</b> since
-          April 2026, and so did <code>content/browser</code>'s. In <code>chrome/browser</code> it went only from
+          <b data-src="queue_growth" data-field="wait_a" data-where="dir=third_party/blink" data-fmt="h">–</b> then to
+          <b data-src="queue_growth" data-field="wait_b" data-where="dir=third_party/blink" data-fmt="h">–</b> now,
+          and so did <code>content/browser</code>'s. In <code>chrome/browser</code> it went only from
           <b data-src="queue_growth" data-field="wait_a" data-where="dir=chrome/browser" data-fmt="h">–</b> to
           <b data-src="queue_growth" data-field="wait_b" data-where="dir=chrome/browser" data-fmt="h">–</b>.
           Chrome's directories took on the most new CLs and the most new reviewers, and their waits barely moved.
-          Blink's CLs grew less, but its active reviewers didn't grow, so each of them shares about a fifth more
-          CLs than in 2024. Load within the directory doesn't explain the difference on its own, though:
-          <code>chrome/browser</code>'s reviewers took on half as many again without slowing, and
-          <code>content/browser</code>'s load per reviewer stayed flat while its wait doubled.
+          Blink's CLs grew less, but its active reviewers didn't grow, so each of them shares about half again as
+          many CLs as in 2024.
         </p>
 
         <h3>Who arrives</h3>
@@ -523,6 +684,9 @@
             <p class="note">Share of the directory's approvals (<code>Reviewed-by</code>) given by people under 3
               years since their first Chromium commit. 2026 runs to October.</p>
             <div class="chart"><canvas id="c-qu-open" role="img" aria-label="Share of each of five directories' approvals given by people under 3 years on the project, by year."></canvas></div></figure>
+          <figure class="panel"><h3>Blink's wait by approver's years on the project</h3>
+            <p class="note">Median hours to first substantive review, CLs with one approver.</p>
+            <div class="chart"><canvas id="c-qu-approver" role="img" aria-label="Median hours to first substantive review of blink CLs with one approver, by the approver's years on the project, 2024 Q1 to 2025 Q2 against since April 2026."></canvas></div></figure>
         </div>
         <p class="sub">
           Blink is the hardest of these directories to grow in: a CL by someone in their first year there draws
@@ -540,30 +704,44 @@
           <b data-src="queue_openness" data-field="new_reviewer_share" data-where="dir=third_party/blink&amp;year=2026" data-fmt="pct">–</b>
           of blink's approvals, down from
           <b data-src="queue_openness" data-field="new_reviewer_share" data-where="dir=third_party/blink&amp;year=2020" data-fmt="pct">–</b>
-          in 2020.
+          in 2020. That doesn't explain its longer waits directly: approvers of every tenure slowed alike. If blink's
+          CLs with one approver had kept then's waits for their approver's years on the project, the median would be
+          <b data-src="queue_blink" data-field="wait_b_mix" data-where="" data-fmt="h">–</b> now, not
+          <b data-src="queue_blink" data-field="wait_b" data-where="" data-fmt="h">–</b>.
         </p>
 
-        <h3>Does that explain blink's longer waits?</h3>
-        <div class="panels">
-          <figure class="panel"><h3>Blink's wait by approver's years on the project</h3>
-            <p class="note">Median hours to first substantive review, CLs with one approver.</p>
-            <div class="chart"><canvas id="c-qu-approver" role="img" aria-label="Median hours to first substantive review of blink CLs with one approver, by the approver's years on the project, 2024 Q1 to 2025 Q2 against since April 2026."></canvas></div></figure>
+        <h3>What may be driving it</h3>
+        <div class="sub">
+          <p>Reading it together, in order of how much the data back each one:</p>
+          <ul>
+            <li><b>More CLs for the same reviewers.</b> This is the one firm driver. CLs rose by a third from 2024 to
+              2026 Q3 and by three quarters in October year on year, the median CL is half again as big, newcomers'
+              share of CLs tripled (<a href="#areas">Where review is going</a>), and the reviewers themselves land a
+              fifth more CLs of their own. The reviewer pool is the same size as in 2024, so every one of those CLs
+              lands on the same people, who answer later and say less per CL. AI-marked CLs are too few to say how
+              much of the new volume is AI-written (<a href="#ai">AI-marked CLs</a>).</li>
+            <li><b>A reviewer pipeline that thinned before AI tools.</b> New regular reviewers fell to
+              <b data-src="pipeline" data-field="new_regular_reviewers" data-where="year=2025" data-fmt="n0">–</b> in
+              2025, the fewest since 2017, and the share of approvals given by people under 3 years on the project
+              fell in 21 of 22 big directories (<a href="#pipeline">The training chain</a>). The 2026 surge found no
+              new reviewers to absorb it. Platform directories, which attract and promote the fewest new people, had
+              the least slack.</li>
+            <li><b>Attention follows the volume.</b> Platform reviewers didn't stop reviewing their own directories;
+              they added reviewing in <code>chrome/browser</code>, where most of the new CLs are, and more CLs of
+              their own. Each blink or <code>content/browser</code> CL still gets as many reviewers as before, but
+              every one of those reviewers has a longer personal queue. This is a reading of the figures above, not a
+              measured cause.</li>
+            <li><b>Not drivers.</b> The kinds of CL being sent (about a quarter of the rise, all of it size); the
+              shift to longer-serving approvers in blink (none of it, every tenure band slowed alike); and load per
+              reviewer within a directory, which rose most where waits rose least.</li>
+            <li><b>What these data can't see.</b> Time spent outside review (design, incidents, meetings, planning),
+              working hours and time zones beyond the UTC hour, how much of the new code is AI-written, and whether
+              authors now send CLs to fewer, busier reviewers by choice or because OWNERS files leave no one else.</li>
+          </ul>
         </div>
-        <p class="sub">
-          Not directly. Approvers of every tenure slowed. If blink's CLs with one approver had kept their 2024 Q1 to
-          2025 Q2 waits for their approver's years on the project, the median would be
-          <b data-src="queue_blink" data-field="wait_b_mix" data-where="" data-fmt="h">–</b> since April 2026, not
-          <b data-src="queue_blink" data-field="wait_b" data-where="" data-fmt="h">–</b>: the shift to longer-serving
-          approvers explains none of it. Across 22 directories, those that are hard to learn didn't slow more, and
-          those that took on fewer new reviewers slowed only slightly more. The thin pipeline works indirectly:
-          blink attracts and promotes fewer people, so when its volume rose in 2026 no new reviewers absorbed it.
-          But the slowdown is shared by <code>content/browser</code>, <code>gpu/</code>, <code>media/gpu</code> and
-          <code>components/viz</code>, which suggests the platform reviewers' time is going elsewhere, to work these
-          data don't show.
-        </p>
         <p class="note">
           Method and more directories: <a href="https://github.com/RByers/cosh/blob/main/docs/balance.md#2b-blinks-rise-in-review-delay-2026-11-08" target="_blank" rel="noopener">docs/balance.md</a>,
-          sections 2b and 6c.
+          sections 2b, 6c and 6d.
         </p>
       </section>
 

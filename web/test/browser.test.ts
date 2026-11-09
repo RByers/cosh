@@ -2766,7 +2766,7 @@ test('the Review Balance page: a draft warning first, every figure, chart and ta
   for (const f of figures) assert.match(f, /\d/, f);
   // Every chart is drawn, and every table has rows.
   const canvases = await page.$$eval('canvas', (cs) => cs.map((c) => [c.id, c.width > 0 && c.height > 0] as const));
-  assert.equal(canvases.length, 60);
+  assert.equal(canvases.length, 65);
   for (const [id, drawn] of canvases) assert.ok(drawn, id);
   // Authors' emails in the scatter's hover cards are off until "e" is pressed 10 times in a row;
   // any other key starts the count again, and 10 more presses switch them off.

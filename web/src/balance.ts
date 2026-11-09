@@ -1240,16 +1240,109 @@ function trajectories(d: Record<string, Row[]>, eras: [string, string][], tenure
   ], FMT.pct, { zero: true });
 }
 
-// ---- Blink and Chrome: where the longer review queues come from
+// ---- Source of longer review queues
 
 const QUEUE_DIRS = ['third_party/blink', 'content/browser', 'chrome/browser', 'chrome/android', 'ios/chrome'];
+const MONTH_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const THEN = '2024 Q1 to 2025 Q2';
+const NOW = 'Since April 2026';
 
 function queues(d: Record<string, Row[]>, theme: Theme) {
   const color = (i: number) => theme.series[i % theme.series.length];
-  // Quarterly lines, one per directory, and all of Chromium dashed.
   const qrows = d.queue_quarters.filter((r) => String(r.q) <= LAST_QUARTER);
   const qs = [...new Set(qrows.map((r) => String(r.q)))].sort();
   const at = (dir: string, q: string) => qrows.find((r) => r.dir === dir && r.q === q);
+
+  // Month by month: the median wait, with CLs merged on the right axis.
+  const ms = d.queue_months;
+  const monthLabel = (m: string) => `${MONTH_SHORT[Number(m.slice(5)) - 1]} ${m.slice(0, 4)}`;
+  line('c-qu-months', theme, ms.map((r) => monthLabel(String(r.m))), [
+    { label: 'Median wait', data: ms.map((r) => r.ftr_p50 as number), color: color(0) },
+    { label: 'CLs merged', data: ms.map((r) => r.cls as number), color: theme.muted, dash: true, axis: 'y2' },
+  ], FMT.h, { zero: true, y2fmt: FMT.n0 });
+
+  // Two steps: all of Chromium's quarterly figures over their 2024 average.
+  const all = qs.map((q) => at('all', q)).filter((r): r is Row => !!r);
+  const index = (field: string) => {
+    const base = all.filter((r) => String(r.q).startsWith('2024')).map((r) => Number(r[field]));
+    const mean = base.reduce((a, v) => a + v, 0) / base.length;
+    return all.map((r) => Number(r[field]) / mean);
+  };
+  line('c-qu-steps', theme, all.map((r) => qLabel(String(r.q))), [
+    { label: 'CLs merged', data: index('cls'), color: color(0) },
+    { label: 'Active reviewers', data: index('reviewers'), color: color(1) },
+    { label: 'CLs per active reviewer', data: index('cls_per_reviewer'), color: color(2) },
+    { label: 'Feedback per CL', data: index('feedback_index'), color: color(3) },
+    { label: 'Median wait', data: index('ftr_p50'), color: color(4) },
+  ], FMT.n2, { ref: 1 });
+
+  // Wait by the UTC hour the CL was sent, then and now, with each hour's share of CLs in the tooltip.
+  const hs = d.queue_hours;
+  line('c-qu-hours', theme, hs.map((r) => `${String(r.hour).padStart(2, '0')}:00`), [
+    { label: THEN, data: hs.map((r) => r.wait_a as number), color: theme.muted },
+    { label: NOW, data: hs.map((r) => r.wait_b as number), color: color(0) },
+  ], FMT.h, {
+    zero: true, pointRadius: 2,
+    tip: (i) => {
+      const r = hs[i.dataIndex];
+      const share = Number(i.datasetIndex === 0 ? r.share_a : r.share_b);
+      return `${i.dataset.label}: ${FMT.h(i.parsed.y ?? 0)}, ${FMT.pct1(share)} of CLs`;
+    },
+  });
+
+  // What the same reviewers do each quarter: horizontal stacked bars, then (lighter) and now, per directory.
+  const shift = d.queue_shift.filter((r) => r.dir !== 'all');
+  const shiftRows = QUEUE_DIRS.flatMap((dir) => ['a', 'b'].map((p) => shift.find((r) => r.dir === dir && r.period === p)!));
+  const shiftParts: [string, string][] = [['in_dir', 'Reviewed in the directory'], ['elsewhere', 'Reviewed elsewhere'], ['authored', 'Own CLs landed']];
+  const so = options(theme, FMT.n1, true, (i) => `${shiftRows[i].dir}, ${shiftRows[i].period === 'a' ? THEN : NOW}`);
+  so.interaction = { mode: 'index' as const, intersect: false, axis: 'y' } as never;
+  so.plugins.tooltip.callbacks.label = (i: TooltipItem<'line'>) =>
+    `${i.dataset.label}: ${FMT.n1((i.parsed as unknown as { x: number }).x)} a quarter (${FMT.n0(Number(shiftRows[i.dataIndex].people))} people)`;
+  const sax = axes(theme, FMT.n0, { zero: true });
+  charts.push(new Chart($<HTMLCanvasElement>('#c-qu-shift'), {
+    type: 'bar',
+    data: {
+      labels: shiftRows.map((r) => `${r.dir}, ${r.period === 'a' ? 'then' : 'now'}`),
+      datasets: shiftParts.map(([field, label], i) => ({
+        label, data: shiftRows.map((r) => Number(r[field])), stack: 'q', borderRadius: 1,
+        backgroundColor: shiftRows.map((r) => (r.period === 'a' ? faint(color(i), '66') : color(i))),
+      })),
+    },
+    options: { ...so, indexAxis: 'y' as const,
+      plugins: { ...so.plugins, legend: { ...so.plugins.legend, labels: { ...so.plugins.legend.labels, boxHeight: 10, boxWidth: 10 } } },
+      scales: { x: { ...sax.y, stacked: true, position: 'top' as const }, y: { stacked: true, grid: { display: false }, border: { display: false },
+        ticks: { color: theme.text, font: { family: theme.font, size: 11 }, autoSkip: false } } } },
+  } as never));
+
+  // Median wait by directory, then and now: horizontal bars in order of the slowdown.
+  const ds = d.queue_dirs;
+  const dirLabel = (r: Row) => (r.dir === 'all' ? 'All of Chromium' : String(r.dir));
+  const periods: [string, string][] = [['a', THEN], ['b', NOW]];
+  const dopt = options(theme, FMT.h, true, (i) => dirLabel(ds[i]));
+  dopt.interaction = { mode: 'index' as const, intersect: false, axis: 'y' } as never;
+  dopt.plugins.tooltip.callbacks.label = (i: TooltipItem<'line'>) => {
+    const [k, label] = periods[i.datasetIndex];
+    const r = ds[i.dataIndex];
+    const x = (i.parsed as unknown as { x: number }).x;
+    return `${label}: ${FMT.h(x)}, ${FMT.n0(Number(r[`cls_q_${k}`]))} CLs and ${FMT.n0(Number(r[`reviewers_${k}`]))} active reviewers a quarter`;
+  };
+  const dax = axes(theme, FMT.h, { zero: true });
+  charts.push(new Chart($<HTMLCanvasElement>('#c-qu-dirs'), {
+    type: 'bar',
+    data: {
+      labels: ds.map(dirLabel),
+      datasets: periods.map(([k, label], i) => ({
+        label, data: ds.map((r) => (r[`wait_${k}`] as number | null) ?? null), borderRadius: 2,
+        backgroundColor: i === 0 ? faint(color(0), '66') : color(0),
+      })),
+    },
+    options: { ...dopt, indexAxis: 'y' as const,
+      plugins: { ...dopt.plugins, legend: { ...dopt.plugins.legend, labels: { ...dopt.plugins.legend.labels, boxHeight: 10, boxWidth: 10 } } },
+      scales: { x: { ...dax.y, position: 'top' as const }, y: { grid: { display: false }, border: { display: false },
+        ticks: { color: theme.text, font: { family: theme.font, size: 12 }, autoSkip: false } } } },
+  } as never));
+
+  // Quarterly lines, one per directory, and all of Chromium dashed.
   const perQuarter = (id: string, field: string, fmt: (v: number) => string, opts: { zero?: boolean; ref?: number } = {}) =>
     line(id, theme, qs.map(qLabel), [
       ...QUEUE_DIRS.map((dir, i) => ({ label: dir, data: qs.map((q) => (at(dir, q)?.[field] as number | undefined) ?? null), color: color(i) })),
@@ -1285,7 +1378,6 @@ function queues(d: Record<string, Row[]>, theme: Theme) {
   // Blink's wait by approver tenure, then and now: bars, with each band's share of CLs in the tooltip.
   const rs = d.queue_approver;
   const bandLabels = ['Under 3 years', '3–8 years', '8 years or more'];
-  const periods: [string, string][] = [['a', '2024 Q1 to 2025 Q2'], ['b', 'Since April 2026']];
   const o = options(theme, FMT.h, true, (i) => bandLabels[i]);
   o.plugins.tooltip.callbacks.label = (i: TooltipItem<'line'>) => {
     const [k, label] = periods[i.datasetIndex];
@@ -1296,7 +1388,7 @@ function queues(d: Record<string, Row[]>, theme: Theme) {
     data: {
       labels: bandLabels,
       datasets: periods.map(([k, label], i) => ({
-        label, data: rs.map((r) => (r[`wait_${k}`] as number | null) ?? null), backgroundColor: color(i), borderRadius: 2,
+        label, data: rs.map((r) => (r[`wait_${k}`] as number | null) ?? null), backgroundColor: i === 0 ? faint(color(0), '66') : color(0), borderRadius: 2,
       })),
     },
     options: { ...o, plugins: { ...o.plugins, legend: { ...o.plugins.legend, labels: { ...o.plugins.legend.labels, boxHeight: 10, boxWidth: 10 } } },
