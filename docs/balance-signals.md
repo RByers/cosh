@@ -7,7 +7,7 @@ questions the page leaves open:
    familiarity, like the review load index does? (A −1 or an abandoned CL
    often means the approach was wrong from the start, or the author lacked
    the skill to solve it.)
-2. When review per CL fell in 2026, did **authors arrive better**, or did
+2. When review feedback per CL fell in 2026, did **authors arrive better**, or did
    **reviewers ease off**?
 3. Do the 2025 joiners still look faster once compared with **matched**
    2024 joiners?
@@ -252,7 +252,7 @@ index 1.83 against 2.28, and abandonment 8.6% against 6.5%.
 
 **Verdict.** The 2025 joiners' lead survives matching:
 - They land more and review others more.
-- They draw less review than matched 2024 joiners.
+- They draw less review feedback than matched 2024 joiners.
 - Their CLs also change less after review: interdiff 0.29 against 0.37, an
   author-side signal.
 - Their thread residual is lower even against the same quarter's norm.

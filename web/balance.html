@@ -43,13 +43,13 @@
         </p>
         <h2 class="goal-head">The signals</h2>
         <ul class="signals">
-          <li><strong>Balance:</strong> how much review each CL gets for its size and directory (the review load
+          <li><strong>Balance:</strong> how much review feedback each CL gets for its size and directory (the review load
             index), and how many CLs each reviewer carries.</li>
           <li><strong>Speed:</strong> hours from being sent for review to the first substantive review, and time
             spent waiting in Gerrit's attention set.</li>
           <li><strong>Quality:</strong> how much a CL changes after review, review rounds, reverts within 30
             days, −1 votes and abandoned CLs.</li>
-          <li><strong>Growth:</strong> whether people need less review as they gain tenure and know an area, and
+          <li><strong>Growth:</strong> whether people need less review feedback as they gain tenure and know an area, and
             whether they grow in velocity, breadth or reviewing, compared with chance and across cohorts.</li>
           <li><strong>Carrying the project:</strong> moving from author to reviewer to OWNER, who reviews
             newcomers, and how many mentees become mentors.</li>
@@ -57,14 +57,14 @@
         <h2 class="goal-head">What we see so far</h2>
         <p>
           Per-author velocity has crept up since 2023 as the pool of active authors shrank, and in 2026 CLs got
-          bigger too. Review per line fell: like for like, a 2026 CL gets about a third less review than one in
+          bigger too. Review feedback per line fell: like for like, a 2026 CL gets about a third less review feedback than one in
           2023. Waits shortened in 2025 and are back to 2023 levels, and reverts haven't risen. People who joined
-          in 2025 land more CLs and review others sooner than earlier joiners, and draw less review. Fewer people review than write CLs, and each reviewer now sees
+          in 2025 land more CLs and review others sooner than earlier joiners, and draw less review feedback. Fewer people review than write CLs, and each reviewer now sees
           half again as many CLs as in 2023. Fewer mid-career reviewers approve newcomers' CLs, and fewer
           newcomers go on to mentor others or move into reviewing, trends that began before AI tools.
         </p>
         <p>
-          Following the same people separates two explanations for the drop in review. Established authors get
+          Following the same people separates two explanations for the drop in review feedback. Established authors get
           fewer threads but their CLs are no better on what reviewers don't control, so reviewers seem to be easing
           off a little. Newcomers who joined in 2025 do better than matched 2024 joiners even on those measures, so
           they seem to arrive better. More CLs are abandoned in 2026, at every tenure. Security fixes jumped more
@@ -104,7 +104,7 @@
 
       <section id="exchange" class="card" aria-labelledby="exchange-title">
         <a class="card-anchor" href="#exchange" aria-label="Link to this section" title="Link to this section">#</a>
-        <h2 id="exchange-title">The exchange: more code per author, less review per line</h2>
+        <h2 id="exchange-title">The exchange: more code per author, less review feedback per line</h2>
         <p class="sub">
           From 2017 to 2022 an active Chromium author landed about the same number of CLs a month, of about the
           same size. Since 2023, per-author velocity has crept up as the pool of active authors shrank, mostly
@@ -121,7 +121,7 @@
           size and directory, so bigger CLs or a shift between areas don't move it. It fell from
           <b data-src="exchange" data-field="load_index" data-where="q=2023Q3" data-fmt="n2">–</b> to
           <b data-src="exchange" data-field="load_index" data-where="q=2026Q3" data-fmt="n2">–</b>: like for like,
-          a 2026 CL gets about a third less review than one in 2023.
+          a 2026 CL gets about a third less review feedback than one in 2023.
         </p>
         <div class="panels">
           <figure class="panel"><h3>CLs per active author</h3>
@@ -233,7 +233,7 @@
           Reverts within 30 days did not rise:
           <b data-src="exchange" data-field="reverted" data-where="q=2026Q3" data-fmt="pct1">–</b> of CLs in 2026 Q3
           against <b data-src="exchange" data-field="reverted" data-where="q=2024Q3" data-fmt="pct1">–</b> in 2024 Q3.
-          Less review per line has not, so far, shown up as more breakage.
+          Less review feedback per line has not, so far, shown up as more breakage.
         </p>
         <div class="panels">
           <figure class="panel"><h3>Lines changed after first review</h3>
@@ -320,7 +320,7 @@
 
       <section id="learning" class="card" aria-labelledby="learning-title">
         <a class="card-anchor" href="#learning" aria-label="Link to this section" title="Link to this section">#</a>
-        <h2 id="learning-title">Learning to need less review</h2>
+        <h2 id="learning-title">Learning to need less review feedback</h2>
         <p class="sub">
           Before AI tools, the learning signal was strong. A CL from someone in their first three months drew
           <b data-src="learning" data-field="load_index" data-where="era=2023H2-2024&amp;bucket=0-3" data-fmt="x">–</b>
@@ -407,7 +407,7 @@
           <b data-src="cohort_curves" data-field="cls_per_person_month" data-where="cohort=joined 2025&amp;months=9-12" data-fmt="n1">–</b>
           CLs a month against
           <b data-src="cohort_curves" data-field="cls_per_person_month" data-where="cohort=joined 2023&amp;months=9-12" data-fmt="n1">–</b>
-          for the 2023 joiners at the same point. They drew less review for their size and area
+          for the 2023 joiners at the same point. They drew less review feedback for their size and area
           (<b data-src="cohort_curves" data-field="load_index" data-where="cohort=joined 2025&amp;months=9-12" data-fmt="x">–</b>
           against
           <b data-src="cohort_curves" data-field="load_index" data-where="cohort=joined 2023&amp;months=9-12" data-fmt="x">–</b>),
@@ -420,14 +420,14 @@
           Part of the lower review load is the project-wide drop in 2026: veterans' load fell by about a fifth
           too. Even allowing for that, the 2025 cohort drew less feedback sooner than earlier cohorts. Comparing them
           with matched 2024 joiners (<a href="#easing">below</a>) suggests they arrive better, not only that they
-          get less review. A joiner is anyone whose first commit on
+          get less review feedback. A joiner is anyone whose first commit on
           <code>main</code> falls in that year, including experienced engineers moving in from other projects.
           Each point counts only people still active at that stage, so the curves describe those who stayed, and
           the later points rest on few people.
         </p>
         <div class="panels">
           <figure class="panel"><h3>Review load index</h3>
-            <p class="note">By months since first commit. Lower means less review than usual for the CL's size and directory.</p>
+            <p class="note">By months since first commit. Lower means less review feedback than usual for the CL's size and directory.</p>
             <div class="chart chart-short"><canvas id="c-co-load" role="img" aria-label="Review load index by months since first commit, for people who joined in 2023, 2024 and 2025."></canvas></div></figure>
           <figure class="panel"><h3>CLs landed per person per month</h3>
             <p class="note">Velocity.</p>
@@ -536,7 +536,7 @@
           people with their half-years shuffled. Chance alone puts about 20% of people on any one path.
         </p>
         <p class="sub">
-          People grow mostly by reviewing more and by needing less review, not by writing bigger CLs: size sits
+          People grow mostly by reviewing more and by needing less review feedback, not by writing bigger CLs: size sits
           at chance in every window. The share improving on none of the four git paths was
           <b data-src="growth_windows" data-field="none_core4" data-where="window=2019-20&amp;tenure=all" data-fmt="pct">–</b>
           in 2019–20,
@@ -680,7 +680,7 @@
           like) don't predict AI use. Only 15 of the 115 busiest directories have one, only 5 of those ever reach
           a visible share of marked CLs, and 36 reach it without a file. One enthusiast can add a file nobody else
           uses. A better treatment is the first quarter in which at least 5% of a directory's CLs are marked. In
-          the 41 directories that reached it, review per CL drifted down afterwards (load index about 0.1 lower,
+          the 41 directories that reached it, review feedback per CL drifted down afterwards (load index about 0.1 lower,
           with flat trends before), the direction of thinner review once AI is in use. With so few directories, no
           quarter's change is distinguishable from zero. Most AI use is unmarked, so every comparison here is
           biased toward finding nothing.
@@ -718,7 +718,7 @@
         <a class="card-anchor" href="#mechanical" aria-label="Link to this section" title="Link to this section">#</a>
         <h2 id="mechanical-title">Why mechanical CLs are left out</h2>
         <p class="sub">
-          Past about 50 files, review per file collapses: CLs with 100 to 199 files got
+          Past about 50 files, review feedback per file collapses: CLs with 100 to 199 files got
           <b data-src="mechanical_files" data-field="threads_per_file" data-where="files=100-199" data-fmt="n3">–</b>
           threads per file, against
           <b data-src="mechanical_files" data-field="threads_per_file" data-where="files=10-19" data-fmt="n2">–</b>

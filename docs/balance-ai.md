@@ -169,13 +169,13 @@ Share of human commits with each footer, Q3 of each year:
 
 Each footer's CLs compared with the same author's other CLs that quarter:
 - **Owners-Override:** these CLs are much smaller (log lines −1.05) and get
-  less review (load −0.34). The rate is flat at 2–3% since 2021, with no
+  less review feedback (load −0.34). The rate is flat at 2–3% since 2021, with no
   AI-era change. It doesn't track reviewer scarcity: across 441
   directory-years, the correlation with commits per approver is r = −0.08.
-- **Auto-Submit:** smaller CLs (−0.96), slightly less review (−0.15) and
+- **Auto-Submit:** smaller CLs (−0.96), slightly less review feedback (−0.15) and
   fewer reverts (−1.6 points). Flat at 25–30% since 2021, a little lower in
   2026.
-- **Low-Coverage-Reason:** bigger CLs (+1.2) with more review (+0.41). It
+- **Low-Coverage-Reason:** bigger CLs (+1.2) with more review feedback (+0.41). It
   fell from 2.5% to 0.3% between 2024 Q3 and 2025 Q3, before most AI use: a
   tooling or policy change, not a behaviour signal.
 - **No-Try (781 CLs) and Disable-Rts (706):** reverted much more often
@@ -196,7 +196,7 @@ Each footer's CLs compared with the same author's other CLs that quarter:
   busy directories (15 of 115) and don't predict marked use: file
   directories use AI *less* than the rest.
 - **Usage-based directory DiD: suggestive, not conclusive.** After a
-  directory starts using AI visibly, review per CL drifts down by about 0.1
+  directory starts using AI visibly, review feedback per CL drifts down by about 0.1
   load, with flat pre-trends. No cell is significant with 41 directories.
   Worth repeating as the broad marker accumulates quarters.
 - **Footers: not relevant to the balance goals.** Owners-Override and

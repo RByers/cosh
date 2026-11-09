@@ -15,8 +15,8 @@ moves effort from authors to scarce expert reviewers. Its principles:
 
 1. Authors own the correctness and reviewability of their work.
 2. Reviewers owe timely feedback.
-3. Authors should learn from feedback, so their CLs need less review over
-   time.
+3. Authors should learn from feedback, so their CLs need less review feedback
+   over time.
 4. Reviewers should get a return on their time, by building author skill.
 
 The page asks: **does Chromium still grow and scale through review**, with
@@ -429,7 +429,7 @@ size (10 buckets) and top 2-level directory in 2023–24 (1.00 = the
 - **The learning signal is clear before AI.** A newcomer's CL drew 2.8×
   the review of a 5-year veteran's at the same size and place, and a first
   CL in a directory 2.2× that of someone with 100+ commits there.
-- **In 2026 everyone gets less review, and newcomers lose the most.** A
+- **In 2026 everyone gets less review feedback, and newcomers lose the most.** A
   newcomer's CL fell from 2.43 to 1.45 of the old norm, a veteran's from
   0.86 to 0.66. The newcomer-to-veteran gap narrowed from 2.8× to 2.2×.
   That's either newcomers arriving more capable (with AI help), or
@@ -471,7 +471,7 @@ Share improving, all people with ≥ 3 measured half-years:
 (2017–18 is left out: `Reviewed-by` starts mid-2017, which inflates
 "reviewing".)
 
-- **People grow by reviewing and by needing less review**, well above
+- **People grow by reviewing and by needing less review feedback**, well above
   chance. **They don't grow by writing bigger CLs**: size is at chance in
   every window, which fits the project's preference for small CLs. Breadth
   and velocity are only modestly above chance.
@@ -688,7 +688,7 @@ ISO weeks, one date range for the page, a mechanical-CL toggle.
    working-hours caveat in the caption.
 4. **Learning curves:** review load index by tenure (x axis), one line per
    era, and the same by familiarity with the directory. These answer "do
-   people still need less review as they learn?"
+   people still need less review feedback as they learn?"
 5. **Growth paths:** grouped bars per window, the share improving on each
    path, with the 20% chance line dashed, and the share improving on none.
    No individual appears.

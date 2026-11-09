@@ -134,7 +134,7 @@ load and rounds residuals and interdiff. It is mostly a newcomer signal.
 | reviewer-mentors (most approvals on newcomers' CLs) | 7% | 2.2 | 24 | 22 | 80% |
 
 The review model finds the same six groups. Its "newcomers ramping up"
-(11%, tenure 0.3 years) draw much more review than usual for their CLs'
+(11%, tenure 0.3 years) draw much more review feedback than usual for their CLs'
 size and directory (load and rounds residuals +1.7 SD), and its
 reviewer-mentors (6%) start a few more threads per review.
 
