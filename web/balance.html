@@ -459,11 +459,17 @@
           Across: directories touched. Up: the author's
           <button type="button" class="term" popovertarget="def-load-index">review load index</button>
           over the year, their reviewer threads against the 2023–24 norm for CLs of the same size and directory
-          (1.0, dashed). Colour is tenure at the end of October 2026, and a dot's area is CLs landed. Hover a dot for
+          (1.0, dashed). Colour is tenure at the end of October 2026, fading from green for new authors through blue at 5
+          years to red at 10 years or more, and a dot's area is CLs landed. Hover a dot for
           the author. Both axes are logarithmic. Broader authors draw somewhat less feedback per CL (rank correlation
           <b data-src="authors_summary" data-field="rho_dirs_load" data-fmt="n2">–</b>), partly because they are
           often longer-tenured and land more.
         </p>
+        <div class="tenure-key" aria-hidden="true">
+          <span class="tenure-key-title">Years since first commit</span>
+          <span class="tenure-key-bar"></span>
+          <span class="tenure-key-ticks"><span>0</span><span>5</span><span>10+</span></span>
+        </div>
         <div class="chart chart-tall"><canvas id="c-author-scatter" role="img" aria-label="Scatter plot of authors from November 2025 to October 2026: directories touched against review load index, coloured by tenure, sized by CLs landed."></canvas></div>
         <template data-msg="author-tip"><slot name="cls"></slot> CLs, <slot name="dirs"></slot> directories, load index <slot name="load"></slot>, <slot name="tenure"></slot> since first commit</template>
         <h3>Abandonment after review against tenure, one dot per author</h3>

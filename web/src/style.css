@@ -2510,3 +2510,33 @@ button.term:focus-visible {
 .pattern-rules thead th:nth-child(n + 5) {
   text-align: right;
 }
+
+/* Balance: the tenure key above the breadth scatter, the same green → blue → red
+   OKLab blend the script gives the dots (tenureColor in balance.ts). */
+.tenure-key {
+  display: grid;
+  grid-template-columns: auto minmax(120px, 240px);
+  justify-content: start;
+  column-gap: 10px;
+  align-items: center;
+  margin: 4px 0 6px;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+.tenure-key-title {
+  grid-row: 1;
+}
+.tenure-key-bar {
+  grid-row: 1;
+  grid-column: 2;
+  height: 10px;
+  border-radius: 2px;
+  background: linear-gradient(to right in oklab, var(--series-3), var(--series-1), var(--series-8));
+}
+.tenure-key-ticks {
+  grid-row: 2;
+  grid-column: 2;
+  display: flex;
+  justify-content: space-between;
+  color: var(--text-muted);
+}

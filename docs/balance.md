@@ -868,7 +868,8 @@ large "Draft: under development" warning at the top. Its landing-page card
   one dot per author with 10+ reviewed CLs (1,152), area = CLs landed,
   coloured by org with Value Exchange's colours (`valueOrgColorSlots` in
   `web/src/data.ts`, so the page also reads `org_weekly.json`, the Radar
-  shares and `config/org_browsers.csv`). Tenure barely matters (Spearman
+  shares and `config/org_browsers.csv`; that use is cosmetic, so the landing
+  card doesn't list Radar as a source). Tenure barely matters (Spearman
   0.03; median 6.3% under 2 years, 6.7% at 10+ years, pooled 6.9%), while
   people spread widely (p90 17%, 181 abandoned none). This complements the
   aggregate abandon index by tenure in `docs/balance-signals.md`.

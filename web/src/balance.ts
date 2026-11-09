@@ -692,32 +692,68 @@ function authorDirs(rows: AuthorRow[], theme: Theme) {
   } as never));
 }
 
-/** Tenure bands for the scatter, in years at the end of the period; the same labels and colours as
- * the other tenure charts on the page. */
-const AUTHOR_TENURE: [number, number, string][] = [[0, 2, 'Under 2 years'], [2, 5, '2–5 years'], [5, 10, '5–10 years'], [10, Infinity, '10+ years']];
+/** Hex colour → OKLab, and back (clamped to sRGB). */
+function oklab(hex: string): [number, number, number] {
+  const lin = (i: number) => {
+    const c = parseInt(hex.slice(i, i + 2), 16) / 255;
+    return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+  };
+  const [r, g, b] = [lin(1), lin(3), lin(5)];
+  const l = Math.cbrt(0.4122214708 * r + 0.5363325363 * g + 0.0514459929 * b);
+  const m = Math.cbrt(0.2119034982 * r + 0.6806995451 * g + 0.1073969566 * b);
+  const s = Math.cbrt(0.0883024619 * r + 0.2817188376 * g + 0.6299787005 * b);
+  return [0.2104542553 * l + 0.793617785 * m - 0.0040720468 * s,
+    1.9779984951 * l - 2.428592205 * m + 0.4505937099 * s,
+    0.0259040371 * l + 0.7827717662 * m - 0.808675766 * s];
+}
+function fromOklab([L, a, b]: number[]): string {
+  const l = (L + 0.3963377774 * a + 0.2158037573 * b) ** 3;
+  const m = (L - 0.1055613458 * a - 0.0638541728 * b) ** 3;
+  const s = (L - 0.0894841775 * a - 1.291485548 * b) ** 3;
+  const rgb = [4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s,
+    -1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s,
+    -0.0041960863 * l - 0.7034186147 * m + 1.707614701 * s];
+  return '#' + rgb.map((c) => {
+    const v = c <= 0.0031308 ? 12.92 * c : 1.055 * c ** (1 / 2.4) - 0.055;
+    return Math.round(Math.min(1, Math.max(0, v)) * 255).toString(16).padStart(2, '0');
+  }).join('');
+}
+
+/** Tenure colour for the breadth scatter: green at 0 years, blue at TENURE_MID, red from TENURE_MAX on,
+ * blended in OKLab like the gradient key in style.css (.tenure-key). */
+const TENURE_MID = 5;
+const TENURE_MAX = 10;
+function tenureColor(theme: Theme): (years: number) => string {
+  const stops = [theme.series[2], theme.series[0], theme.series[7]].map(oklab);
+  return (years) => {
+    const t = Math.min(1, Math.max(0, years / TENURE_MAX)) * 2;
+    const [a, b] = t <= 1 ? [stops[0], stops[1]] : [stops[1], stops[2]];
+    const f = t <= 1 ? t : t - 1;
+    return fromOklab(a.map((v, i) => v + (b[i] - v) * f));
+  };
+}
 /** The load index axis starts here: the few authors whose CLs drew no threads sit on the floor. */
 const LOAD_FLOOR = 0.1;
 /** Dot radius in px: area grows with CLs landed. */
 const dotRadius = (cls: number) => 1.5 + Math.sqrt(cls) * 0.35;
 
 function authorScatter(rows: AuthorRow[], theme: Theme) {
-  const tenureOf = (t: number) => AUTHOR_TENURE.findIndex(([lo, hi]) => t >= lo && t < hi);
+  const colorOf = tenureColor(theme);
   // Big dots first, so small ones stay on top and can be hovered.
-  const sorted = rows.filter((r) => r[3] !== null && r[4] !== null).sort((a, b) => b[1] - a[1]);
-  const datasets = AUTHOR_TENURE.map(([, , label], i) => {
-    const pts = sorted.filter((r) => tenureOf(r[4]!) === i);
-    return {
-      label,
-      data: pts.map((r) => ({ x: r[2], y: Math.max(LOAD_FLOOR, r[3]!), r: dotRadius(r[1]) })),
-      rows: pts,
-      backgroundColor: faint(theme.series[i], '99'),
-      borderColor: theme.series[i],
-      borderWidth: 1,
-      hoverBorderColor: theme.parity,
-      hoverBorderWidth: 2,
-    };
-  });
-  const o = options(theme, FMT.n2, true);
+  const pts = rows.filter((r) => r[3] !== null && r[4] !== null).sort((a, b) => b[1] - a[1]);
+  const colors = pts.map((r) => colorOf(r[4]!));
+  const datasets = [{
+    label: 'Authors',
+    data: pts.map((r) => ({ x: r[2], y: Math.max(LOAD_FLOOR, r[3]!), r: dotRadius(r[1]) })),
+    rows: pts,
+    backgroundColor: colors.map((c) => faint(c, '99')),
+    borderColor: colors,
+    borderWidth: 1,
+    hoverBorderColor: theme.parity,
+    hoverBorderWidth: 2,
+  }];
+  // The gradient key in the HTML replaces the legend.
+  const o = options(theme, FMT.n2, false);
   const tick = { color: theme.muted, font: { family: theme.font } };
   const logTicks = (keep: number[], fmt: (v: number) => string) => (v: number | string) =>
     keep.includes(Number(v)) ? fmt(Number(v)) : '';
@@ -731,7 +767,6 @@ function authorScatter(rows: AuthorRow[], theme: Theme) {
       interaction: { mode: 'nearest' as const, intersect: true },
       plugins: {
         ...o.plugins,
-        legend: { ...o.plugins.legend, labels: { ...o.plugins.legend.labels, boxHeight: 10, boxWidth: 10 } },
         tooltip: {
           ...o.plugins.tooltip,
           callbacks: {
