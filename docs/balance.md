@@ -1127,6 +1127,13 @@ large "Draft: under development" warning at the top. Its landing-page card
   on both halves against 25% by chance), so it showed a near-uniform cloud.
   The aggregate overlap is in section 0 ("Is it the same people?").
 
+Since 2026-11-08 each section follows one layout: before the charts only
+what a reader needs to read them (definitions, who is counted), then the
+charts, then what they show, with the figures. The text doesn't describe a
+chart's shape (axes, series, colours): the legends and axes do that, and a
+figure's `.note` caption names only what they can't, such as the unlabelled
+dashed norm line. Findings are never stated above the chart they come from.
+
 The page ends with two definition sections, "Defined: the feedback
 index" and "Defined: newcomers and tenure" (a tenure timeline drawn in
 HTML and CSS). Every use of "feedback index" or "newcomer" in the page's prose
