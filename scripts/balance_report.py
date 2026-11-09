@@ -265,38 +265,56 @@ def main():
     out["reviewer_load_top"] = load_top(hist)
 
     # -------------------------------------------------------------- by area
+    # 2024 against the last four quarters, per directory: each CL counts in
+    # its main 3-level directory (most changed lines) and that directory's
+    # ancestors, like the quarterly tree below. A directory is kept when both
+    # eras have AREA_MIN CLs. Rows are flat: y24_<measure> and now_<measure>.
+    AREA_MIN = 200
+    top3 = {}
+    for c in commits:
+        d = dirs3.get(c["cid"])
+        if c["n"] and d:
+            top3[c["n"]] = d[0]
+
     def era(c):
         y = A.year(c["closed_at"])
         if y == 2024:
-            return "2024"
+            return "y24"
         if c["closed_at"] >= datetime(2025, 10, 1, tzinfo=timezone.utc).timestamp() and c["q"] <= LAST_Q:
-            return "recent"       # 2025Q4 .. 2026Q3
+            return "now"       # 2025Q4 .. 2026Q3
         return None
     ar = defaultdict(lambda: defaultdict(list))
     for c in use:
         e = era(c)
-        if e and c["d2"]:
-            ar[c["d2"]][e].append(c)
+        d = top3.get(c["change_number"])
+        if not e or not d:
+            continue
+        parts = d.rstrip("/").split("/")
+        for k in range(1, len(parts) + 1):
+            ar["/".join(parts[:k]) + "/"][e].append(c)
     areas = []
     for a, es in ar.items():
-        if len(es["2024"]) < 400 or len(es["recent"]) < 400:
+        if len(es["y24"]) < AREA_MIN or len(es["now"]) < AREA_MIN:
             continue
         row = dict(area=a)
-        for e, s in es.items():
+        for e in ("y24", "now"):
+            s = es[e]
             rv = [c for c in s if c["first_review_at"]]
             idf = [c for c in rv if c["interdiff_status"] == "ok" and c["lines_final"]]
-            row[e] = dict(
+            big = [c for c in s if c["lines"] >= 10]
+            exp = sum(c["exp24"] for c in s)
+            row.update({f"{e}_{k}": v for k, v in dict(
                 cls=len(s), authors=len({c["pid"] for c in s}), median_lines=st.median(c["lines"] for c in s),
-                threads_per_100=r(st.mean(100 * c["threads"] / c["lines"] for c in s if c["lines"] >= 10)),
-                load_index=r(sum(c["threads"] for c in s) / sum(c["exp24"] for c in s)),
+                threads_per_100=r(st.mean(100 * c["threads"] / c["lines"] for c in big)) if big else None,
+                load_index=r(sum(c["threads"] for c in s) / exp) if exp else None,
                 ftr_p50=pct([c["ftr"] for c in rv], .5),
                 interdiff_share=r(sum(c["lines_changed"] for c in idf) / max(1, sum(c["lines_final"] for c in idf))),
                 newcomer_share=r(sum(1 for c in s if c["ten"] is not None and c["ten"] < 1) / len(s), 3),
                 reverted=r(sum(1 for c in s if c["reverted_at"] and c["reverted_at"] - c["closed_at"] < 30 * DAY)
-                           / len(s), 4))
+                           / len(s), 4)).items()})
         areas.append(row)
-    areas.sort(key=lambda x: -(x["2024"]["cls"] + x["recent"]["cls"]))
-    out["areas"] = areas[:30]
+    areas.sort(key=lambda x: (x["area"].count("/"), -(x["y24_cls"] + x["now_cls"])))
+    out["areas"] = areas
 
     # ------------------------------------- directory tree by quarter (heatmaps)
     # Each CL counts in its main 3-level directory (most changed lines) and
@@ -304,11 +322,6 @@ def main():
     # whole period are left out, so a directory's listed children needn't add
     # up to it.
     DIR_MIN = 300
-    top3 = {}
-    for c in commits:
-        d = dirs3.get(c["cid"])
-        if c["n"] and d:
-            top3[c["n"]] = d[0]
     cells = defaultdict(list)
     for c in use:
         d = top3.get(c["change_number"])

@@ -282,24 +282,26 @@
         <p class="sub">
           The same shift shows in nearly every busy directory: more CLs, more newcomers, fewer threads per line.
           In <code>chrome/browser</code>, newcomers' CLs went from
-          <b data-src="areas" data-field="y24_newcomer_share" data-where="area=chrome/browser" data-fmt="pct1">–</b>
-          to <b data-src="areas" data-field="now_newcomer_share" data-where="area=chrome/browser" data-fmt="pct1">–</b>
+          <b data-src="areas" data-field="y24_newcomer_share" data-where="area=chrome/browser/" data-fmt="pct1">–</b>
+          to <b data-src="areas" data-field="now_newcomer_share" data-where="area=chrome/browser/" data-fmt="pct1">–</b>
           of the total. Waits nearly doubled in the deepest platform code: the median first review in
           <code>content/browser</code> went from
-          <b data-src="areas" data-field="y24_ftr_p50" data-where="area=content/browser" data-fmt="h">–</b> to
-          <b data-src="areas" data-field="now_ftr_p50" data-where="area=content/browser" data-fmt="h">–</b>, and in
+          <b data-src="areas" data-field="y24_ftr_p50" data-where="area=content/browser/" data-fmt="h">–</b> to
+          <b data-src="areas" data-field="now_ftr_p50" data-where="area=content/browser/" data-fmt="h">–</b>, and in
           <code>third_party/blink</code> from
-          <b data-src="areas" data-field="y24_ftr_p50" data-where="area=third_party/blink" data-fmt="h">–</b> to
-          <b data-src="areas" data-field="now_ftr_p50" data-where="area=third_party/blink" data-fmt="h">–</b>.
+          <b data-src="areas" data-field="y24_ftr_p50" data-where="area=third_party/blink/" data-fmt="h">–</b> to
+          <b data-src="areas" data-field="now_ftr_p50" data-where="area=third_party/blink/" data-fmt="h">–</b>.
         </p>
-        <h3>Busiest directories, 2024 against the last four quarters</h3>
+        <h3>Directories, 2024 against the last four quarters</h3>
         <p class="note">
-          Directory: the CL's main 2-level directory. "Now" is 2025 Q4 to 2026 Q3. Load index: 1.0 is the
-          2023–24 average for the CL's size and directory. Hours to first review are red where the wait grew by
-          more than a tenth, green where it shrank by more than a tenth.
+          A CL counts in its main 3-level directory (the one with the most changed lines) and in that
+          directory's parents. Directories with under 200 CLs in either period are left out. "Now" is 2025 Q4 to
+          2026 Q3. Load index: 1.0 is the 2023–24 average for the CL's size and directory. Each measure's two
+          columns share one shading, stronger for more (CLs on a log scale). Hours to first review are red where
+          the wait grew by more than a tenth, green where it shrank by more than a tenth. ▸ opens a directory.
         </p>
         <div class="table-wrap">
-          <table id="t-areas" class="balance-table">
+          <table id="t-areas" class="balance-table area-table">
             <thead>
               <tr class="group"><th></th><th colspan="2">CLs</th><th colspan="2">Median lines</th><th colspan="2">Threads per 100 lines</th><th colspan="2">Load index</th><th colspan="2">Hours to first review</th><th colspan="2">Newcomer share</th></tr>
               <tr><th>Directory</th><th>2024</th><th>Now</th><th>2024</th><th>Now</th><th>2024</th><th>Now</th><th>2024</th><th>Now</th><th>2024</th><th>Now</th><th>2024</th><th>Now</th></tr>

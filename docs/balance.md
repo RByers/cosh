@@ -684,6 +684,13 @@ reviewers per quarter, by CLs commented on and by threads started
 `balance_report.py`, copied into `balance.json` on 2026-11-08). "Directories over time" is an expandable heatmap of
 directories (to three levels) by quarter, from `summaries/balance_dirs.json`
 (`dirs` in `balance_report.py`'s output), with a choice of measure.
+"Across the codebase" is the same tree as an expandable table, 2024 against
+the last four quarters (`areas` in `balance_report.py`'s output, rows flat
+as `y24_<measure>` and `now_<measure>`): each CL counts in its main 3-level
+directory and its parents, and a directory needs 200 CLs in each period.
+Cells are shaded on one scale per measure, so both periods and every row
+compare at a glance. Rebuilt 2026-11-08 by copying `areas` from a fresh
+`report.json` into `balance.json`.
 
 The design below is the target. Each chart follows the project's conventions: text in the HTML, dates not
 ISO weeks, one date range for the page, a mechanical-CL toggle.

@@ -527,6 +527,90 @@ const text = (v: number) => String(v);
 export const waitChange = (before: number | null, now: number | null) =>
   before === null || now === null || !before ? '' : (now - before) / before > 0.1 ? 'worse' : (now - before) / before < -0.1 ? 'better' : '';
 
+// ---- across the codebase
+
+/** Measures of the directory table, each a 2024 and a now column on one shared shading scale. */
+const AREA_COLS: [string, (v: number) => string][] = [
+  ['cls', FMT.n0], ['median_lines', FMT.n0], ['threads_per_100', FMT.n1], ['load_index', FMT.n2],
+  ['ftr_p50', FMT.n1], ['newcomer_share', FMT.pct1],
+];
+
+/** Shading, 0..1, for each measure: CLs on a log scale (directories span three levels), the rest
+ * linear from the 5th to the 95th percentile of every directory's two values. */
+export function areaScales(rows: Row[]): Record<string, (v: number) => number> {
+  const out: Record<string, (v: number) => number> = {};
+  for (const [m] of AREA_COLS) {
+    const xs = rows.flatMap((r) => [r[`y24_${m}`], r[`now_${m}`]])
+      .filter((v): v is number => typeof v === 'number').sort((a, b) => a - b);
+    const clamp = (t: number) => Math.min(1, Math.max(0, t));
+    if (m === 'cls') {
+      const lo = Math.log(Math.max(1, xs[0])), hi = Math.log(xs[xs.length - 1]);
+      out[m] = (v) => clamp(hi > lo ? (Math.log(Math.max(1, v)) - lo) / (hi - lo) : 0.5);
+    } else {
+      const lo = quantile(xs, 0.05), hi = quantile(xs, 0.95);
+      out[m] = (v) => clamp(hi > lo ? (v - lo) / (hi - lo) : 0.5);
+    }
+  }
+  return out;
+}
+
+function areaTable(rows: Row[]) {
+  const body = $<HTMLTableElement>('#t-areas').tBodies[0];
+  const byPath = new Map(rows.map((r) => [String(r.area), r]));
+  const kids = new Map<string | null, string[]>();
+  for (const r of rows) {
+    // Under the nearest directory that's in the table.
+    let up = parentDir(String(r.area));
+    while (up && !byPath.has(up)) up = parentDir(up);
+    if (!kids.has(up)) kids.set(up, []);
+    kids.get(up)!.push(String(r.area));
+  }
+  const size = (p: string) => (byPath.get(p)!.y24_cls as number) + (byPath.get(p)!.now_cls as number);
+  for (const list of kids.values()) list.sort((a, b) => size(b) - size(a));
+  const scale = areaScales(rows);
+  const expanded = new Set<string>();
+
+  const draw = () => {
+    const trs: HTMLTableRowElement[] = [];
+    const walk = (parent: string | null, depth: number) => {
+      for (const path of kids.get(parent) ?? []) {
+        const r = byPath.get(path)!;
+        const open = expanded.has(path);
+        const row: DirRow = {
+          key: path, kind: 'dir', depth, label: depth ? path.slice((parent ?? '').length) : path, title: path,
+          included: 1, value: size(path), byOrg: new Map(), expandable: kids.has(path), expanded: open,
+        };
+        const tr = node('tr', 'hm-row');
+        tr.dataset.key = path;
+        const th = heatRowLabel(row, path, '', (key) => {
+          if (expanded.has(key)) expanded.delete(key);
+          else expanded.add(key);
+          draw();
+        });
+        th.title = path;
+        tr.append(th);
+        for (const [m, fmt] of AREA_COLS) {
+          for (const era of ['y24', 'now']) {
+            const v = r[`${era}_${m}`];
+            const td = node('td', `area-cell area-${era}`, typeof v === 'number' ? fmt(v) : '–');
+            if (typeof v === 'number') td.style.setProperty('--t', String(scale[m](v)));
+            if (m === 'ftr_p50' && era === 'now') {
+              const c = waitChange(r.y24_ftr_p50 as number | null, r.now_ftr_p50 as number | null);
+              if (c) td.classList.add(c);
+            }
+            tr.append(td);
+          }
+        }
+        trs.push(tr);
+        if (open) walk(path, depth + 1);
+      }
+    };
+    walk(null, 0);
+    body.replaceChildren(...trs);
+  };
+  draw();
+}
+
 // ---- directories over time
 
 interface DirData {
@@ -704,12 +788,7 @@ function render(data: BalanceData) {
   bands('c-interdiff', exq, 'interdiff_cl', theme, FMT.pct, { label: 'Median reviewed CL', zero: true, max: 1 });
   quarters('c-reverted', d.exchange, theme, [{ field: 'reverted', label: 'Reverted within 30 days' }], FMT.pct1, { zero: true });
 
-  table('t-areas', d.areas, [
-    ['area', text], ['y24_cls', FMT.n0], ['now_cls', FMT.n0], ['y24_median_lines', FMT.n0], ['now_median_lines', FMT.n0],
-    ['y24_threads_per_100', FMT.n1], ['now_threads_per_100', FMT.n1], ['y24_load_index', FMT.n2], ['now_load_index', FMT.n2],
-    ['y24_ftr_p50', FMT.n1], ['now_ftr_p50', FMT.n1, (r) => waitChange(r.y24_ftr_p50 as number | null, r.now_ftr_p50 as number | null)],
-    ['y24_newcomer_share', FMT.pct1], ['now_newcomer_share', FMT.pct1],
-  ]);
+  areaTable(d.areas);
 
   const eras: [string, string][] = [['2023H2-2024', '2023 H2–2024'], ['2025', '2025'], ['2026 (to Sep)', '2026 to September']];
   const tenureXl: Record<string, string> = { '0-3': '0–3 mo', '3-6': '3–6', '6-12': '6–12', '12-24': '1–2 y', '24-60': '2–5 y', '60-120': '5–10 y', '120-999': '10 y+' };

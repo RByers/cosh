@@ -2784,6 +2784,20 @@ test('the Review Balance page: a draft warning first, every figure, chart and ta
   await page.click('input[name="dir-metric"][value="ftr_p50"]');
   assert.notDeepEqual(await shades(), before);
   assert.match(await page.$eval('#dir-note', (n) => n.textContent!), /first substantive review/);
+  // Across the codebase: top-level directories first, ▸ opens one; every value cell is shaded, with
+  // an 8px gap in the card's colour before each 2024 column.
+  const areaRows = () => page.$$eval('#t-areas tbody tr', (trs) => trs.map((tr) => (tr as HTMLElement).dataset.key!));
+  const areaTops = await areaRows();
+  assert.ok(areaTops.length >= 5 && areaTops.every((k) => k.split('/').filter(Boolean).length === 1), areaTops.join(' '));
+  await page.click('#t-areas tr[data-key="chrome/"] .ar-toggle');
+  assert.ok((await areaRows()).includes('chrome/browser/'));
+  await page.click('#t-areas tr[data-key="chrome/browser/"] .ar-toggle');
+  assert.ok((await areaRows()).some((k) => k.startsWith('chrome/browser/') && k !== 'chrome/browser/'));
+  const cells = await page.$$eval('#t-areas tbody tr:first-child td', (tds) => tds.map((td) => ({
+    t: (td as HTMLElement).style.getPropertyValue('--t'), gap: getComputedStyle(td).borderLeftWidth })));
+  assert.equal(cells.length, 12);
+  for (const c of cells) assert.match(c.t, /^(0|1|0\.\d+)$/);
+  assert.deepEqual(cells.map((c) => c.gap), cells.map((_, i) => (i % 2 ? '0px' : '8px')));
   // Directory waits that grew are marked; nothing else in the table is.
   assert.ok(await page.$('#t-areas td.worse'));
   assert.deepEqual(await page.$$eval('#t-areas td.worse, #t-areas td.better', (tds) =>

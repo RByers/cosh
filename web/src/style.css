@@ -2113,3 +2113,25 @@ dl.defs dd {
 .dirmap .hm-bin {
   text-align: left;
 }
+
+/* Across the codebase (balance.html): each cell shaded by --t (0..1) on its
+ * measure's scale, shared by the 2024 and now columns. A gap in the card's
+ * colour sets each pair apart. Shading stops at 60% so the text stays legible. */
+.area-table {
+  --color: var(--accent);
+}
+
+.area-table td.area-cell {
+  background: color-mix(in oklab, var(--color) calc(6% + 54% * var(--t, 0)), var(--surface-1));
+  border-bottom: 2px solid var(--surface-1);
+}
+
+.area-table td.area-y24,
+.area-table tr.group th:not(:first-child),
+.area-table thead tr:last-child th:nth-child(even) {
+  border-left: 8px solid var(--surface-1);
+}
+
+.area-table tbody th.hm-label {
+  padding: 0 8px 0 0;
+}
