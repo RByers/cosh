@@ -40,6 +40,22 @@ Chart.register(
   Legend,
 );
 
+/** A touch opens a chart's hover card, but nothing closes it: there is no
+ * mouseout. So any press elsewhere on the page closes every open card. A
+ * press on a chart itself is left to Chart.js, which moves its card. Every
+ * page with charts imports this module. The card closes the way a mouse
+ * leaving the chart closes it: clearing it directly wouldn't last, because
+ * Chart.js replays the last touch on its next update. (Unit tests import
+ * this module in Node, which has no window.) */
+globalThis.addEventListener?.(
+  'pointerdown',
+  (e) => {
+    for (const c of Object.values(Chart.instances))
+      if (e.target !== c.canvas && c.tooltip?.getActiveElements().length) c.canvas.dispatchEvent(new MouseEvent('mouseout'));
+  },
+  { capture: true, passive: true },
+);
+
 export interface Theme {
   text: string;
   muted: string;

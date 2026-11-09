@@ -3064,3 +3064,34 @@ test('the leaderboard finds a person by name or email: nothing until typed, at m
   assert.deepEqual(errors, []);
   await page.close();
 });
+
+test('a touch anywhere off a chart closes its hover card, on every page with charts', async () => {
+  for (const [path, canvas] of [['value.html', '#ratio-chart'], ['balance.html', '#c-velocity'], ['sentiment.html', '#trend-mean']]) {
+    const page = await browser.newPage();
+    const errors: string[] = [];
+    page.on('pageerror', (e) => errors.push(String(e)));
+    await page.setViewport({ width: 1100, height: 900, hasTouch: true });
+    await page.goto(baseUrl + path, { waitUntil: 'load' });
+    await page.waitForSelector('body[data-ready]');
+    // The canvas's pixels and centre, scrolled into view.
+    const at = () =>
+      page.$eval(canvas, (c) => {
+        c.scrollIntoView({ block: 'center' });
+        const r = c.getBoundingClientRect();
+        return { url: (c as HTMLCanvasElement).toDataURL(), x: r.left + r.width / 2, y: r.top + r.height / 2 };
+      });
+    const before = await at();
+    await page.touchscreen.tap(before.x, before.y);
+    assert.ok((await at()).url !== before.url, `${path}: the tap opened no card`);
+    // A tap on the page's heading, far from any chart.
+    const h1 = await page.$eval('h1', (h) => {
+      scrollTo(0, 0);
+      const r = h.getBoundingClientRect();
+      return { x: r.left + 20, y: r.top + r.height / 2 };
+    });
+    await page.touchscreen.tap(h1.x, h1.y);
+    assert.ok((await at()).url === before.url, `${path}: the card stayed open`);
+    assert.deepEqual(errors, [], path);
+    await page.close();
+  }
+});
