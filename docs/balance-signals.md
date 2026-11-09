@@ -1,4 +1,4 @@
-# Growth signals: −1 votes, abandoned CLs, arriving better or easing off, matched cohorts
+# Growth signals: −1 votes, abandoned CLs, arriving better equipped or easing off, matched cohorts
 
 Part of the Review Balance analysis (`docs/balance.md`). It answers three
 questions the page leaves open:
@@ -7,7 +7,7 @@ questions the page leaves open:
    familiarity, like the review load index does? (A −1 or an abandoned CL
    often means the approach was wrong from the start, or the author lacked
    the skill to solve it.)
-2. When review feedback per CL fell in 2026, did **authors arrive better**, or did
+2. When review feedback per CL fell in 2026, did **authors arrive better equipped** (such as with effective AI tools), or did
    **reviewers ease off**?
 3. Do the 2025 joiners still look faster once compared with **matched**
    2024 joiners?
@@ -50,7 +50,7 @@ averaged and are never written out.
 - **Uploads before sending:** owner rework uploads before the CL was first
   sent for review (`sent_at`), from `balance-timeline.sqlite`.
 
-### Balanced panels (arriving better vs easing off)
+### Balanced panels (arriving better equipped vs easing off)
 
 - **Reviewer side.**
   - The panel: reviewers with ≥ 20 reviews in 2024 and ≥ 20 in 2026. A
@@ -76,7 +76,7 @@ averaged and are never written out.
     as change.
 - **Reading it.** The same reviewers writing fewer threads while author-side
   quality is flat or worse means reviewers are easing off. Author-side
-  measures improving alongside means authors are arriving better.
+  measures improving alongside means authors are arriving better equipped.
 
 ### Matched cohorts
 
@@ -181,7 +181,7 @@ joiners'. They abandon more CLs in their first six months (index about 1.4
 against 1.1–1.3). Cells hold 130–450 people and votes are rare, so the
 neg-index cells move by ±0.5 from noise alone.
 
-### Arriving better, or easing off? (balanced panels, 2024 → 2026)
+### Arriving better equipped, or easing off? (balanced panels, 2024 → 2026)
 
 **Reviewer side** (527 reviewers with ≥ 20 reviews in both years; 84k and
 96k reviews):
@@ -207,7 +207,7 @@ measure is adjusted for size and the author's current tenure band:
 | Any −1 received | 0.38% → 0.41% | flat |
 
 **Verdict.** The evidence leans to *reviewers easing off*, modestly. It
-does not show authors arriving better:
+does not show authors arriving better equipped:
 
 - The same reviewers, on like-for-like CLs, write about 3% fewer threads.
 - The same authors receive about 9% fewer threads. The gap beyond 3%
@@ -259,7 +259,7 @@ index 1.83 against 2.28, and abandonment 8.6% against 6.5%.
 
 So their lead isn't the 2026 project-wide drop alone. Survivorship is
 similar in both arms. The one cost is early abandonment (8.6% against 6.5%
-at 3–6 months). For newcomers, then, the signs lean to *arriving better*,
+at 3–6 months). For newcomers, then, the signs lean to *arriving better equipped*,
 unlike the established-author panel.
 
 ## Caveats

@@ -67,7 +67,7 @@
           Following the same people separates two explanations for the drop in review feedback. Established authors get
           fewer threads but their CLs are no better on what reviewers don't control, so reviewers seem to be easing
           off a little. <button type="button" class="term" popovertarget="def-newcomer">Newcomers</button> who joined in 2025 do better than matched 2024 joiners even on those measures, so
-          they seem to arrive better. More CLs are abandoned in 2026, at every tenure. Security fixes jumped more
+          they seem to arrive better equipped, such as with effective AI tools. More CLs are abandoned in 2026, at every tenure. Security fixes jumped more
           than tenfold in 2026, a new load on reviewers. No single signal here separates AI from other changes in
           the project.
         </p>
@@ -374,7 +374,7 @@
           <b data-src="learning" data-field="load_index" data-where="era=2026 (to Sep)&amp;bucket=0-3" data-fmt="x">–</b>
           for a first-quarter <button type="button" class="term" popovertarget="def-newcomer">newcomer</button>,
           <b data-src="learning" data-field="load_index" data-where="era=2026 (to Sep)&amp;bucket=120-999" data-fmt="x">–</b>
-          for a ten-year veteran. Either <button type="button" class="term" popovertarget="def-newcomer">newcomers</button> arrive better prepared, or they get less of the feedback that
+          for a ten-year veteran. Either <button type="button" class="term" popovertarget="def-newcomer">newcomers</button> arrive better equipped, or they get less of the feedback that
           trains them. The <a href="#cohorts">cohorts</a> and the <a href="#pipeline">training chain</a> below
           suggest both.
         </p>
@@ -498,7 +498,7 @@
         <p class="sub">
           Part of the lower review load is the project-wide drop in 2026: veterans' load fell by about a fifth
           too. Even allowing for that, the 2025 cohort drew less feedback sooner than earlier cohorts. Comparing them
-          with matched 2024 joiners (<a href="#easing">below</a>) suggests they arrive better, not only that they
+          with matched 2024 joiners (<a href="#easing">below</a>) suggests they arrive better equipped, not only that they
           get less review feedback. A joiner is anyone whose first commit on
           <code>main</code> falls in that year, including experienced engineers moving in from other projects.
           Each point counts only people still active at that stage, so the curves describe those who stayed, and
@@ -524,23 +524,33 @@
         <div class="chart chart-tall"><canvas id="c-gitco" role="img" aria-label="Median review share by year since joining, one line per start year from 2017 to 2025."></canvas></div>
         <h3>Reviewers by tenure: speed and thoroughness</h3>
         <p class="note">
-          Each (CL, reviewer) pair. Response: weekday hours from being added to the attention set to the first
-          comment. Threads: review threads started per CL reviewed. <button type="button" class="term" popovertarget="def-newcomer">Newcomer</button> share: CLs reviewed whose author was
-          in their first year.
+          Every CL a reviewer was asked to review, grouped by the reviewer's tenure, per half-year; 2026 H2 runs
+          to October. Veterans with ten or more years got slower to respond in 2026 while the other groups kept
+          pace, threads per CL drifted down in every group, and every group took on more CLs from
+          <button type="button" class="term" popovertarget="def-newcomer">newcomers</button>, reviewers under two
+          years most of all. Hover a point for the number of CLs and the slower 75th-percentile response.
         </p>
-        <div class="table-wrap">
-          <table id="t-tenure" class="balance-table">
-            <thead><tr><th>Half-year</th><th>Reviewer tenure</th><th>CLs reviewed</th><th>Response, median h</th><th>Response, 75th pct h</th><th>Threads per CL</th><th>Addressed threads per CL</th><th>Newcomer share</th></tr></thead>
-            <tbody></tbody>
-          </table>
+        <div class="panels panels-2">
+          <figure class="panel"><h3>First response, median</h3>
+            <p class="note">Weekday hours from being added to the attention set to the first comment.</p>
+            <div class="chart chart-short"><canvas id="c-rt-resp" role="img" aria-label="Median weekday hours to a reviewer's first response, per half-year, by the reviewer's tenure."></canvas></div></figure>
+          <figure class="panel"><h3>Threads started per CL reviewed</h3>
+            <p class="note">Review comment threads the reviewer opened.</p>
+            <div class="chart chart-short"><canvas id="c-rt-threads" role="img" aria-label="Review threads started per CL reviewed, per half-year, by the reviewer's tenure."></canvas></div></figure>
+          <figure class="panel"><h3>Addressed threads per CL reviewed</h3>
+            <p class="note">Of those, threads that led the author to change the CL.</p>
+            <div class="chart chart-short"><canvas id="c-rt-addressed" role="img" aria-label="Addressed review threads per CL reviewed, per half-year, by the reviewer's tenure."></canvas></div></figure>
+          <figure class="panel"><h3>CLs reviewed that were a newcomer's</h3>
+            <p class="note">Share of CLs reviewed whose author was in their first year.</p>
+            <div class="chart chart-short"><canvas id="c-rt-newcomer" role="img" aria-label="Share of CLs reviewed whose author was a newcomer, per half-year, by the reviewer's tenure."></canvas></div></figure>
         </div>
       </section>
 
       <section id="easing" class="card" aria-labelledby="easing-title">
         <a class="card-anchor" href="#easing" aria-label="Link to this section" title="Link to this section">#</a>
-        <h2 id="easing-title">Arriving better, or easing off?</h2>
+        <h2 id="easing-title">Arriving better equipped, or easing off?</h2>
         <p class="sub">
-          Review per CL fell in 2026. Either authors arrive better and need less, or reviewers ask less of the same
+          Review per CL fell in 2026. Either authors arrive better equipped and need less, or reviewers ask less of the same
           work. Following the same people from 2024 to 2026, on like-for-like CLs (same size, directory and
           author tenure), separates the two. The same
           <b data-src="signals_summary" data-field="reviewers" data-fmt="n0">–</b> reviewers started
@@ -555,22 +565,28 @@
           authors, then, the evidence leans modestly to reviewers easing off. Since the threads that remain drive
           as much change as before, reviewers may be dropping low-value comments rather than real problems.
         </p>
-        <figure class="panel"><h3>The same reviewers, 2024 and 2026</h3>
-            <p class="note">Reviewers with 20 or more reviews in both years. Change: per review, against the 2024 average for the same CL size, directory and author tenure.</p>
-            <div class="table-wrap">
-              <table id="t-panel-reviewer" class="balance-table">
-                <thead><tr><th>Measure</th><th>2024</th><th>2026</th><th>Change</th><th>95% interval</th><th>Clear?</th></tr></thead>
-                <tbody></tbody>
-              </table>
-            </div></figure>
-        <figure class="panel"><h3>The same authors, 2024 and 2026</h3>
-            <p class="note">Authors with 10 or more reviewed CLs in both years. Change: per CL, against the 2024 average for the same size and the author's current tenure.</p>
-            <div class="table-wrap">
-              <table id="t-panel-author" class="balance-table">
-                <thead><tr><th>Measure</th><th>2024</th><th>2026</th><th>Change</th><th>95% interval</th><th>Clear?</th></tr></thead>
-                <tbody></tbody>
-              </table>
-            </div></figure>
+        <figure class="panel forest-fig" aria-labelledby="forest-title">
+          <h3 id="forest-title">The same people, 2024 → 2026: what changed</h3>
+          <p class="note">
+            Each bar is one measure's change, as a share of its 2024 level, on like-for-like work: the same CL
+            size, directory and author tenure. The dot is the best estimate and the bar its 95% interval. A faded
+            bar crosses zero, so there is no clear change. If authors arrived better equipped, the bottom group
+            would improve too: fewer lines changed after review, fewer CLs reverted or abandoned. Reviewers with
+            20 or more reviews in both years; authors with 10 or more reviewed CLs. Hover a row for the 2024 and
+            2026 figures.
+          </p>
+          <div class="forest" id="forest">
+            <div class="forest-scale" aria-hidden="true"><span></span><div class="forest-ticks"></div><span></span></div>
+            <h4 class="forest-group">Set by reviewers</h4>
+            <ul class="forest-rows" data-keys="reviewer_log1p_threads reviewer_neg_vote author_log1p_threads_received author_rounds author_neg_received"></ul>
+            <h4 class="forest-group">Not set by reviewers: the authors' CLs</h4>
+            <ul class="forest-rows" data-keys="author_interdiff_share author_reverted_30d author_abandoned author_pre_send_uploads"></ul>
+            <p class="forest-legend note" aria-hidden="true">
+              <span class="forest-key"><i class="forest-ci"></i><i class="forest-dot"></i></span> clear change
+              <span class="forest-key faded"><i class="forest-ci"></i><i class="forest-dot"></i></span> no clear change
+            </p>
+          </div>
+        </figure>
         <h3>Newcomers: matched cohorts</h3>
         <p class="sub">
           For <button type="button" class="term" popovertarget="def-newcomer">newcomers</button> the answer differs. We paired
@@ -586,13 +602,31 @@
           <b data-src="matched" data-field="interdiff_p50" data-where="arm=joined 2024&amp;months=9-12" data-fmt="pct">–</b>),
           and they drew fewer threads even against the same quarter's norm, so their lead isn't only the
           project-wide drop. The cost is more abandoned CLs early on. For <button type="button" class="term" popovertarget="def-newcomer">newcomers</button>, the signs lean to arriving
-          better.
+          better equipped.
         </p>
-        <div class="table-wrap">
-          <table id="t-matched" class="balance-table">
-            <thead><tr><th>Measure</th><th>Joined 2025, 3–6 months</th><th>Joined 2024, 3–6 months</th><th>Joined 2025, 9–12 months</th><th>Joined 2024, 9–12 months</th></tr></thead>
-            <tbody></tbody>
-          </table>
+        <p class="note">
+          Each line follows one group of matched people by months since their first commit. Hover a point for
+          how many were still active.
+        </p>
+        <div class="panels">
+          <figure class="panel"><h3>CLs landed per month</h3>
+            <p class="note">Merged CLs a month, among people who uploaded a CL in that window.</p>
+            <div class="chart chart-short"><canvas id="c-m-cls" role="img" aria-label="Merged CLs per active month, by months since first commit, for matched 2025 and 2024 joiners."></canvas></div></figure>
+          <figure class="panel"><h3>Reviews given per month</h3>
+            <p class="note">Others' CLs reviewed a month, among the same people.</p>
+            <div class="chart chart-short"><canvas id="c-m-rev" role="img" aria-label="Reviews given per active month, by months since first commit, for matched 2025 and 2024 joiners."></canvas></div></figure>
+          <figure class="panel"><h3>Review load index</h3>
+            <p class="note">1 is usual for the CL's size and directory.</p>
+            <div class="chart chart-short"><canvas id="c-m-load" role="img" aria-label="Review load index, by months since first commit, for matched 2025 and 2024 joiners."></canvas></div></figure>
+          <figure class="panel"><h3>Threads, against the same quarter</h3>
+            <p class="note">Standard deviations above the norm for that quarter's CLs of the same size and directory.</p>
+            <div class="chart chart-short"><canvas id="c-m-resid" role="img" aria-label="Review threads against the same quarter's norm, by months since first commit, for matched 2025 and 2024 joiners."></canvas></div></figure>
+          <figure class="panel"><h3>Lines changed after review, median</h3>
+            <p class="note">Not set by reviewers.</p>
+            <div class="chart chart-short"><canvas id="c-m-interdiff" role="img" aria-label="Median share of lines changed after review, by months since first commit, for matched 2025 and 2024 joiners."></canvas></div></figure>
+          <figure class="panel"><h3>CLs abandoned</h3>
+            <p class="note">Not set by reviewers.</p>
+            <div class="chart chart-short"><canvas id="c-m-abandon" role="img" aria-label="Share of CLs abandoned, by months since first commit, for matched 2025 and 2024 joiners."></canvas></div></figure>
         </div>
         <p class="note">
           Caveats: there is no pair of years before AI tools to compare with yet, so some of the change may be

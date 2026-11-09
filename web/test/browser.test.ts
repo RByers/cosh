@@ -2760,15 +2760,27 @@ test('the Review Balance page: a draft warning first, every figure, chart and ta
   for (const f of figures) assert.match(f, /\d/, f);
   // Every chart is drawn, and every table has rows.
   const canvases = await page.$$eval('canvas', (cs) => cs.map((c) => [c.id, c.width > 0 && c.height > 0] as const));
-  assert.equal(canvases.length, 33);
+  assert.equal(canvases.length, 43);
   for (const [id, drawn] of canvases) assert.ok(drawn, id);
   const rows = await page.$$eval('table.balance-table', (ts) => ts.map((t) => [t.id, (t as HTMLTableElement).tBodies[0].rows.length] as const));
-  assert.deepEqual(rows.map(([id]) => id), ['t-areas', 't-signals', 't-tenure', 't-panel-reviewer', 't-panel-author',
-    't-matched', 't-patterns', 't-joiners', 't-transitions', 't-ai', 't-mech']);
+  assert.deepEqual(rows.map(([id]) => id), ['t-areas', 't-signals', 't-patterns', 't-joiners', 't-transitions', 't-ai', 't-mech']);
   for (const [id, n] of rows) assert.ok(n >= 2, id);
-  // The same-people panels flag which changes are clear of zero.
-  assert.deepEqual(await page.$$eval('#t-panel-reviewer tbody tr td:last-child', (tds) => tds.map((t) => t.textContent)),
-    ['yes', 'no']);
+  // The same-people changes: one row per measure, faded where the interval crosses zero, each
+  // dot inside its interval and the intervals within the track.
+  const forest = await page.$$eval('#forest .forest-rows li', (lis) => lis.map((li) => {
+    const box = (sel: string) => li.querySelector(sel)!.getBoundingClientRect();
+    const [t, ci, dot] = [box('.forest-track'), box('.forest-ci'), box('.forest-dot')];
+    return { cls: li.className, label: li.querySelector('.forest-label')!.textContent, title: (li as HTMLElement).title,
+      inside: dot.left + dot.width / 2 >= ci.left - 1 && dot.left + dot.width / 2 <= ci.right + 1,
+      within: ci.left >= t.left - 1 && ci.right <= t.right + 1 };
+  }));
+  assert.equal(forest.length, 9);
+  assert.deepEqual(forest.slice(0, 2).map((f) => f.cls), ['clear', 'faded']);
+  for (const f of forest) {
+    assert.ok(f.inside && f.within, JSON.stringify(f));
+    assert.match(f.title, /95% interval/);
+  }
+  assert.ok(await page.$$eval('#forest .forest-ticks span', (ts) => ts.some((t) => t.textContent === '0%')));
   // The directory heatmap: top-level rows, one cell per quarter; ▸ opens a directory, and a measure
   // switch reshades the cells.
   const dirRows = () => page.$$eval('#dir-table tbody tr', (trs) => trs.map((tr) => (tr as HTMLElement).dataset.key!));

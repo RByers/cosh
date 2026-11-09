@@ -488,43 +488,121 @@ const PANEL_FMT: Record<string, [(v: number) => string, ((v: number) => string) 
   author_neg_received: [pts, FMT.pct1],
 };
 
-export function panelRows(rows: Row[]): Row[] {
-  return rows.map((r) => {
-    const [f, raw] = PANEL_FMT[String(r.key)] ?? [signed, null];
-    const lo = r.lo as number, hi = r.hi as number;
-    const sig = lo > 0 || hi < 0;
-    return {
-      measure: String(r.measure),
-      before: raw && r.raw_2024 !== null ? raw(r.raw_2024 as number) : '–',
-      after: raw && r.raw_2026 !== null ? raw(r.raw_2026 as number) : '–',
-      change: f(r.change as number),
-      ci: `${f(lo)} to ${f(hi)}`,
-      clear: sig ? 'yes' : 'no',
-    };
-  });
+/** A panel row's change and 95% interval as shares of its 2024 level: log
+ * measures as relative changes, the rest divided by the 2024 figure. */
+export function relChange(r: Row): [number, number, number] {
+  const log = String(r.key).includes('log1p');
+  const base = Number(r.raw_2024);
+  const f = (v: number) => (log ? Math.expm1(v) : v / base);
+  return [f(Number(r.change)), f(Number(r.lo)), f(Number(r.hi))];
 }
 
-const MATCHED: [string, string, (v: number) => string][] = [
-  ['still_active', 'Still active', FMT.pct],
-  ['cls_per_active_month', 'Merged CLs per active month', FMT.n1],
-  ['reviews_given_per_active_month', 'Reviews given per active month', FMT.n1],
-  ['load_index', 'Review load index', FMT.n2],
-  ['threads_resid', 'Threads, against the same quarter', FMT.n2],
-  ['interdiff_p50', 'Lines changed after review, median', FMT.pct],
-  ['rounds', 'Review rounds', FMT.n2],
-  ['abandon_rate', 'Abandoned', FMT.pct1],
-];
+/** A share as a signed whole percentage ("+52%", "0%"). */
+const relPct = signedBy(0, 100, '%');
 
-export function matchedRows(rows: Row[]): Row[] {
-  const at = (arm: string, months: string) => rows.find((r) => r.arm === arm && r.months === months);
-  return MATCHED.map(([k, label, f]) => {
-    const out: Row = { measure: label };
-    for (const m of ['3-6', '9-12']) for (const y of ['2025', '2024']) {
-      const v = at(`joined ${y}`, m)?.[k];
-      out[`${y}_${m}`] = typeof v === 'number' ? f(v) : '–';
-    }
-    return out;
-  });
+/** "Arriving better equipped, or easing off?": each same-people measure's change since 2024
+ * as a dot and an interval on one shared scale, faded where the interval crosses zero. */
+function forest(rows: Row[]) {
+  const root = $('#forest');
+  const rel = rows.map(relChange);
+  const step = 0.25;
+  const lo = Math.min(0, Math.floor(Math.min(...rel.map((x) => x[1])) / step) * step);
+  const hi = Math.max(0, Math.ceil(Math.max(...rel.map((x) => x[2])) / step) * step);
+  const at = (v: number) => String((v - lo) / (hi - lo));
+  root.style.setProperty('--zero', at(0));
+  const ticks = root.querySelector('.forest-ticks')!;
+  const tickEls: HTMLElement[] = [];
+  for (let k = 0; lo + k * step <= hi + 1e-9; k++) {
+    const v = lo + k * step;
+    const t = document.createElement('span');
+    t.textContent = relPct(v);
+    t.style.setProperty('--at', at(v));
+    tickEls.push(t);
+  }
+  ticks.replaceChildren(...tickEls);
+  const el = (tag: string, cls: string, text = '') => {
+    const e = document.createElement(tag);
+    e.className = cls;
+    e.textContent = text;
+    return e;
+  };
+  for (const ul of root.querySelectorAll<HTMLElement>('.forest-rows')) {
+    ul.replaceChildren(...ul.dataset.keys!.split(' ').map((k) => {
+      const i = rows.findIndex((r) => r.key === k);
+      if (i < 0) throw new Error(`no panel row ${k}`);
+      const r = rows[i];
+      const [v, l, h] = rel[i];
+      const [f, raw] = PANEL_FMT[k] ?? [signed, null];
+      const clear = Number(r.lo) > 0 || Number(r.hi) < 0;
+      const li = el('li', clear ? 'clear' : 'faded');
+      li.style.setProperty('--lo', at(l));
+      li.style.setProperty('--hi', at(h));
+      li.style.setProperty('--v', at(v));
+      const track = el('span', 'forest-track');
+      track.append(el('i', 'forest-ci'), el('i', 'forest-dot'));
+      li.append(el('span', 'forest-label', String(r.measure)), track, el('span', 'forest-val', relPct(v)));
+      const years = raw ? `2024: ${raw(Number(r.raw_2024))}, 2026: ${raw(Number(r.raw_2026))}. ` : '';
+      li.title = `${years}Change ${f(Number(r.change))}, 95% interval ${f(Number(r.lo))} to ${f(Number(r.hi))}; `
+        + `${FMT.n0(Number(r.n))} ${r.side === 'reviewer' ? 'reviewers' : 'authors'}.`;
+      return li;
+    }));
+  }
+}
+
+const MATCHED_ARMS: [string, string][] = [['joined 2024', 'Joined 2024'], ['joined 2025', 'Joined 2025']];
+const MATCHED_MONTHS = ['0-3', '3-6', '6-9', '9-12'];
+
+/** Matched cohorts: one small chart per measure, the 2025 joiners against their 2024 matches,
+ * coloured as in the cohort charts above. */
+function matchedCharts(rows: Row[], theme: Theme) {
+  const at = (arm: string, m: string) => rows.find((r) => r.arm === arm && r.months === m);
+  const chart = (id: string, field: string, fmt: (v: number) => string, opts: { zero?: boolean; ref?: number } = {}) =>
+    line(id, theme, MATCHED_MONTHS.map((m) => `${m.replace('-', '–')} mo`),
+      MATCHED_ARMS.map(([arm, label], i) => ({
+        label, color: theme.series[i + 1],
+        data: MATCHED_MONTHS.map((m) => (at(arm, m)?.[field] as number | undefined) ?? null),
+      })), fmt, {
+        ...opts,
+        tip: (i) => {
+          const r = at(MATCHED_ARMS[i.datasetIndex][0], MATCHED_MONTHS[i.dataIndex]);
+          const v = i.parsed.y === null ? '–' : fmt(i.parsed.y);
+          return r ? `${i.dataset.label}: ${v} (${FMT.n0(Number(r.active))} of ${FMT.n0(Number(r.people))} still active)`
+            : `${i.dataset.label}: –`;
+        },
+      });
+  chart('c-m-cls', 'cls_per_active_month', FMT.n1, { zero: true });
+  chart('c-m-rev', 'reviews_given_per_active_month', FMT.n1, { zero: true });
+  chart('c-m-load', 'load_index', FMT.n2, { zero: true, ref: 1 });
+  chart('c-m-resid', 'threads_resid', FMT.n1, { zero: true });
+  chart('c-m-interdiff', 'interdiff_p50', FMT.pct, { zero: true });
+  chart('c-m-abandon', 'abandon_rate', FMT.pct1, { zero: true });
+}
+
+const RT_BANDS: [string, string][] = [['<2y', 'Under 2 years'], ['2-5y', '2–5 years'], ['5-10y', '5–10 years'], ['10y+', '10+ years']];
+
+/** Reviewers by tenure: one chart per measure over half-years, a line per tenure band (the
+ * same colours as the approvals-by-tenure chart). 2023 H1 is left off: only a few hundred
+ * reviews, before the fetched history starts in earnest. */
+function reviewerTenure(rows: Row[], theme: Theme) {
+  const halves = [...new Set(rows.map((r) => String(r.half)))].filter((h) => h >= '2023H2').sort();
+  const at = (band: string, h: string) => rows.find((r) => r.band === band && r.half === h);
+  const chart = (id: string, field: string, fmt: (v: number) => string, extra?: (r: Row) => string) =>
+    line(id, theme, halves.map((h) => h.replace('H', ' H')),
+      RT_BANDS.map(([band, label], i) => ({
+        label, color: theme.series[i],
+        data: halves.map((h) => (at(band, h)?.[field] as number | undefined) ?? null),
+      })), fmt, {
+        zero: true,
+        tip: (i) => {
+          const r = at(RT_BANDS[i.datasetIndex][0], halves[i.dataIndex]);
+          const v = i.parsed.y === null ? '–' : fmt(i.parsed.y);
+          return r ? `${i.dataset.label}: ${v}${extra ? extra(r) : ''}, ${FMT.n0(Number(r.reviews))} CLs` : `${i.dataset.label}: –`;
+        },
+      });
+  chart('c-rt-resp', 'resp_p50', FMT.h, (r) => ` (p75 ${FMT.h(Number(r.resp_p75))})`);
+  chart('c-rt-threads', 'threads_per_review', FMT.n2);
+  chart('c-rt-addressed', 'addressed_per_review', FMT.n2);
+  chart('c-rt-newcomer', 'newcomer_share', FMT.pct);
 }
 
 const SEVERITIES: [string, string][] = [['critical', 'Critical'], ['high', 'High'], ['medium', 'Medium'], ['low', 'Low']];
@@ -856,10 +934,7 @@ function render(data: BalanceData) {
   const years = [2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025];
   categories('c-gitco', d.git_cohorts, theme, { x: 'year', g: 'cohort', v: 'review_share',
     groups: years.map((y) => [y, `Joined ${y}`]), xs: [1, 2, 3, 4, 5, 6, 7, 8, 9], xl: (x) => `Year ${x}` }, FMT.pct, { zero: true });
-  table('t-tenure', d.reviewers_by_tenure, [
-    ['half', text], ['band', text], ['reviews', FMT.n0], ['resp_p50', FMT.n1], ['resp_p75', FMT.n1],
-    ['threads_per_review', FMT.n2], ['addressed_per_review', FMT.n2], ['newcomer_share', FMT.pct],
-  ]);
+  reviewerTenure(d.reviewers_by_tenure, theme);
 
   growthBars(d.growth_windows, theme);
 
@@ -885,16 +960,8 @@ function render(data: BalanceData) {
   table('t-signals', d.signals_era.map((r) => ({ ...r, era: eraName[String(r.era)] ?? r.era })), [
     ['era', text], ['cls', FMT.n0], ['abandon_rate', FMT.pct1], ['neg_share', FMT.pct1], ['after_neg_abandoned', FMT.pct],
   ]);
-  const shown = panelRows(d.panels);
-  const panel = d.panels.map((r, i) => ({ r, row: shown[i] }));
-  for (const side of ['reviewer', 'author']) {
-    table(`t-panel-${side}`, panel.filter((p) => p.r.side === side).map((p) => p.row), [
-      ['measure', text], ['before', text], ['after', text], ['change', text], ['ci', text], ['clear', text],
-    ]);
-  }
-  table('t-matched', matchedRows(d.matched), [
-    ['measure', text], ['2025_3-6', text], ['2024_3-6', text], ['2025_9-12', text], ['2024_9-12', text],
-  ]);
+  forest(d.panels);
+  matchedCharts(d.matched, theme);
 
   table('t-patterns', d.patterns, [
     ['pattern', text], ['share_pre', FMT.pct], ['share_recent', FMT.pct], ['tenure', FMT.n1], ['commits', FMT.n0],

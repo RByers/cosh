@@ -93,7 +93,7 @@ Each has its own doc, with commands to regenerate:
     authors.
   - **Matched cohorts:** 2025 joiners keep their lead over matched 2024
     joiners, and their CLs change less after review. That leans to
-    arriving better.
+    arriving better equipped.
 - `docs/balance-ai.md`:
   - the broad AI marker;
   - same-author comparisons: marked CLs are larger and reviewed the same;
@@ -250,7 +250,7 @@ Counts it found were spot-checked (27 `AGENTS.md`, 23 `GEMINI.md` and 620
 **Analyses on data we have:**
 
 1. *Author-side vs reviewer-side decomposition* in balanced panels: do
-   reviewers ease off, or do authors arrive better? Reviewers' threads with
+   reviewers ease off, or do authors arrive better equipped? Reviewers' threads with
    reviewer fixed effects, against signals reviewers don't set: interdiff,
    rounds, CQ failures, WIP uploads, reverts, post-land fixes.
 2. *Matched-cohort learning curves:* 2025 joiners against 2024 joiners
@@ -437,7 +437,7 @@ size (10 buckets) and top 2-level directory in 2023–24 (1.00 = the
 - **In 2026 everyone gets less review feedback, and newcomers lose the most.** A
   newcomer's CL fell from 2.43 to 1.45 of the old norm, a veteran's from
   0.86 to 0.66. The newcomer-to-veteran gap narrowed from 2.8× to 2.2×.
-  That's either newcomers arriving more capable (with AI help), or
+  That's either newcomers arriving better equipped (such as with effective AI tools), or
   reviewers giving newcomers less of the feedback that trains them. The
   data can't yet tell which. Section 6 suggests the second is at least
   part of it, since the same experts are spread thinner.
@@ -719,9 +719,15 @@ section, which `web/src/terms.ts` places beside the term. Headings, table
 headers, labels and links aren't marked.
 
 Sections added on 2026-11-08: "Wrong turns" (−1 votes and abandoned CLs by
-tenure), "Arriving better, or easing off?" (the panels and matched cohorts),
+tenure), "Arriving better equipped, or easing off?" (the panels and matched cohorts),
 "Patterns of activity", AI adoption by directory and footers, and "Security
-fixes". It has
+fixes". "Reviewers by tenure" and "Arriving better equipped, or easing
+off?" were tables until 2026-11-08 and are now charts: four small line charts
+over half-years (one line per reviewer tenure band), an interval chart of the
+same-people changes on one shared scale (each change as a share of its 2024
+level, faded where the 95% interval crosses zero; the natural-unit figures
+are in each row's hover title), and small 2025-vs-2024 charts for the matched
+cohorts. It has
 no date range or mechanical toggle yet (planned below). Single-series charts
 show distributions as shaded bands (middle half and 5th–95th percentile)
 around the median, named p25–p75 and p5–p95 in the legend rather than in

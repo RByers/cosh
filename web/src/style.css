@@ -2316,3 +2316,160 @@ button.term:focus-visible {
     margin-top: 8px;
   }
 }
+
+/* Four charts in a two-by-two grid on wide screens. */
+.panels.panels-2 {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr));
+}
+
+/* "Arriving better equipped, or easing off?": each measure's change since 2024 as a dot
+ * and a 95% interval on one shared scale. The script sets --zero, and per row --lo, --hi
+ * and --v, as fractions of the track's width. */
+.forest {
+  --label: minmax(0, 15rem);
+  --val: 3.5rem;
+  margin-top: 8px;
+}
+
+.forest-scale,
+.forest-rows li {
+  display: grid;
+  grid-template-columns: var(--label) minmax(0, 1fr) var(--val);
+  gap: 0 12px;
+  align-items: center;
+}
+
+.forest-ticks {
+  position: relative;
+  height: 1.4em;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.forest-ticks span {
+  position: absolute;
+  left: calc(var(--at) * 100%);
+  transform: translateX(-50%);
+  white-space: nowrap;
+}
+
+/* The end labels stay inside the track. */
+.forest-ticks span:first-child {
+  transform: none;
+}
+
+.forest-ticks span:last-child {
+  transform: translateX(-100%);
+}
+
+.forest-group {
+  margin: 12px 0 2px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.forest-rows {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.forest-rows li {
+  padding: 3px 0;
+  border-top: 1px solid var(--grid);
+  font-size: 0.875rem;
+}
+
+.forest-label {
+  min-width: 0;
+}
+
+.forest-val {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.forest-track {
+  position: relative;
+  height: 20px;
+  /* The zero line. */
+  background: linear-gradient(var(--text-secondary), var(--text-secondary))
+    calc(var(--zero) * 100%) 0 / 1px 100% no-repeat;
+}
+
+.forest-ci,
+.forest-dot {
+  position: absolute;
+  top: 50%;
+  background: var(--series-1);
+}
+
+.forest-ci {
+  left: calc(var(--lo) * 100%);
+  width: max(2px, calc((var(--hi) - var(--lo)) * 100%));
+  height: 6px;
+  margin-top: -3px;
+  border-radius: 3px;
+  opacity: 0.45;
+}
+
+.forest-dot {
+  left: calc(var(--v) * 100%);
+  width: 10px;
+  height: 10px;
+  margin: -5px 0 0 -5px;
+  border-radius: 50%;
+}
+
+.forest-rows li.faded .forest-ci,
+.forest-rows li.faded .forest-dot,
+.forest-key.faded i {
+  background: var(--text-muted);
+}
+
+.forest-rows li.faded .forest-ci,
+.forest-key.faded .forest-ci {
+  opacity: 0.3;
+}
+
+.forest-rows li.faded .forest-val {
+  color: var(--text-muted);
+}
+
+.forest-legend {
+  margin-top: 10px;
+}
+
+.forest-key {
+  position: relative;
+  display: inline-block;
+  width: 28px;
+  height: 10px;
+  margin: 0 4px 0 12px;
+  vertical-align: middle;
+  --lo: 0;
+  --hi: 1;
+  --v: 0.5;
+}
+
+.forest-key:first-child {
+  margin-left: 0;
+}
+
+/* Phones: the label above its track. */
+@media (max-width: 600px) {
+  .forest-scale,
+  .forest-rows li {
+    grid-template-columns: minmax(0, 1fr) var(--val);
+  }
+
+  .forest-scale > span:first-child {
+    display: none;
+  }
+
+  .forest-label {
+    grid-column: 1 / -1;
+  }
+}
