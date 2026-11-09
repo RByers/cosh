@@ -13,7 +13,7 @@ import { fileURLToPath } from 'node:url';
 import puppeteer, { type Browser, type HTTPRequest, type Page } from 'puppeteer-core';
 import { createServer, preview, type PreviewServer } from 'vite';
 import { CSP, randomPort } from '../vite.config.ts';
-import { addWeeks, addressedWeeks, isoWeekOf, namedOrgs, weeksIn, type Summary } from '../src/data.ts';
+import { addWeeks, addressedWeeks, isoWeekOf, namedOrgs, orgsWithShare, weeksIn, type Metric, type Summary } from '../src/data.ts';
 
 /** The committed summary the build bundles. */
 const summary = JSON.parse(
@@ -434,21 +434,28 @@ test('parity chart keeps orgs with none of the metric, on a 0 row below the log 
   await page.close();
 });
 
-test('organization chart names the orgs with enough review comments, whatever the metric', async () => {
-  const { page, errors } = await open('#metric=comments&from=2025-W45&to=2026-W44');
-  const labels = async () => {
-    const d = await page.evaluate(() => window.__cosh!.reviewChart!.data.datasets.map((ds) => ds.label!));
-    return { orgs: d.filter((o) => o !== 'Other'), named: await namedOn(page) };
-  };
-  const comments = await labels();
-  await pickMetric(page, 'cls');
-  const cls = await labels();
-  assert.deepEqual(errors, []);
-  await page.close();
-  // The same set for both metrics: the rule's orgs (each has a colour over this range).
-  assert.deepEqual([...comments.orgs].sort(), [...comments.named].sort());
-  assert.deepEqual([...cls.orgs].sort(), [...comments.orgs].sort());
-  for (const o of ['google.com', 'microsoft.com', 'intel.com', 'opera.com', 'igalia.com']) assert.ok(comments.orgs.includes(o), o);
+test('organization chart names the orgs with enough of the chosen metric', async () => {
+  // The page names orgs with 0.25% of review comments or commits; this chart
+  // drops those under 0.25% of its own metric (an org that only commits has
+  // no line under review comments).
+  for (const hash of ['#metric=comments&from=2025-W45&to=2026-W44', '#metric=comments&range=13']) {
+    const { page, errors } = await open(hash);
+    const labels = async (metric: Metric) => {
+      const d = await page.evaluate(() => window.__cosh!.reviewChart!.data.datasets.map((ds) => ds.label!));
+      const range = await page.evaluate(() => window.__cosh!.state.range);
+      const weeks = weeksIn(summary.meta.weeks, range);
+      return { orgs: d.filter((o) => o !== 'Other'), want: orgsWithShare(summary, weeks, metric, namedOrgs(summary, weeks)) };
+    };
+    const comments = await labels('comments');
+    await pickMetric(page, 'commits');
+    const commits = await labels('commits');
+    assert.match(await page.$eval('#review-sub', (e) => e.textContent!), /of the range's commits/);
+    assert.deepEqual(errors, []);
+    await page.close();
+    assert.deepEqual([...comments.orgs].sort(), [...comments.want].sort(), hash);
+    assert.deepEqual([...commits.orgs].sort(), [...commits.want].sort(), hash);
+    for (const o of ['google.com', 'microsoft.com', 'intel.com']) assert.ok(comments.orgs.includes(o), `${hash} ${o}`);
+  }
 });
 
 test('value charts show the orgs with enough mean usage over the range', async () => {

@@ -201,7 +201,7 @@
         <template data-msg="review-sub">
           <span data-if="!weeks">No review data in this range.</span>
           <span data-if="weeks"><slot name="metric"></slot> per week<span data-if="smoothed">, as a <slot name="smoothing"></slot> running average</span>,
-            for each organization with at least <slot name="min"></slot> of the range's review comments or commits; the
+            for each organization with at least <slot name="min"></slot> of the range's <slot name="of"></slot>; the
             rest are “Other”.</span>
         </template>
         <div class="toggles">

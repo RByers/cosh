@@ -475,6 +475,22 @@ export function namedOrgs(
     .map(([org]) => org);
 }
 
+/** The `orgs` with at least `minShare` of `metric` over the week(s): an org
+ * named for its commits, say, but with no review comments drops out of a
+ * review-comment chart. */
+export function orgsWithShare(
+  summary: Summary,
+  weeks: string | string[],
+  metric: Metric,
+  orgs: readonly string[],
+  minShare = NAMED_ORG_MIN_SHARE,
+): string[] {
+  const rows = topOrgCounts(summary, weeks, metric);
+  const total = rows.reduce((s, r) => s + r.value, 0);
+  const value = new Map(rows.map((r) => [r.org, r.value]));
+  return orgs.filter((o) => total > 0 && (value.get(o) ?? 0) / total >= minShare);
+}
+
 /** The metric summed over the given week(s): the top `n` orgs, then
  * everything else (including the summary's own "Other" row, e.g. gmail.com)
  * as a final "Other" entry. */

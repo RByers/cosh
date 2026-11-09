@@ -57,6 +57,7 @@ import {
   topBrowsers,
   topOrgCounts,
   namedOrgs,
+  orgsWithShare,
   NAMED_ORG_MIN_SHARE,
   orgWeeklyCounts,
   orgsByAllTimeReview,
@@ -232,6 +233,15 @@ test('namedOrgs: orgs with enough of the review comments, largest first, capped'
   // Decided by review comments whatever the metric; no weeks, no orgs.
   assert.deepEqual(namedOrgs(SUMMARY, ['1999-W01']), []);
   assert.equal(NAMED_ORG_MIN_SHARE, 0.0025);
+});
+
+test('orgsWithShare keeps the orgs with enough of one metric', () => {
+  // Of 1000 comments: microsoft.com 5%, igalia.com 3%, gmail.com 1%; nova.com has none.
+  const orgs = ['google.com', 'microsoft.com', 'igalia.com', 'gmail.com', 'nova.com'];
+  assert.deepEqual(orgsWithShare(SUMMARY, '2026-W44', 'comments', orgs), ['google.com', 'microsoft.com', 'igalia.com', 'gmail.com']);
+  assert.deepEqual(orgsWithShare(SUMMARY, '2026-W44', 'comments', orgs, 0.02), ['google.com', 'microsoft.com', 'igalia.com']);
+  // No data for the metric or weeks: none.
+  assert.deepEqual(orgsWithShare(SUMMARY, ['1999-W01'], 'comments', orgs), []);
 });
 
 test('topOrgCounts folds the tail and the summary Other row together', () => {

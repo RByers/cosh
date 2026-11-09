@@ -112,6 +112,7 @@ import {
   TABLE_TOP_ORGS,
   namedOrgs,
   NAMED_ORG_MIN_SHARE,
+  orgsWithShare,
   weekMonday,
   weeksIn,
   weekSunday,
@@ -1561,13 +1562,14 @@ async function main(data: Data) {
   const renderReview = (weeks: string[], dataWeeks: string[] | undefined, colors: Map<string, string>, theme: Theme) => {
     // One directory (every comment in it, from the directory data), or the path scope (org_weekly).
     const dirNode = state.reviewDir === null ? null : dirNodeByPath(data.areas, state.reviewDir);
-    const named = rangeNamedOrgs(data, state);
     const exclude = state.reviewScale === 'linear' ? [LINEAR_EXCLUDED_ORG] : [];
     const classified = addressedWeeks(data.summary);
     // With the ratio on: the review metric (addressed comments for Commits) over commits.
     const ratio = state.reviewRatio && !!data.authors;
     const num = ratio ? ratioNumerator(state.metric, classified.length > 0) : state.metric;
     const numWeeks = num === 'addressed' ? classified : undefined;
+    // The page's named orgs, less those too small by this chart's metric.
+    const named = orgsWithShare(data.summary, weeks, num, rangeNamedOrgs(data, state));
     const series = (m: Metric, known: readonly string[] | undefined, nameable?: (org: string) => boolean) =>
       dirNode === null
         ? orgWeeklyCounts(data.summary, weeks, m, named, state.smoothing, exclude, known, nameable)
@@ -1602,6 +1604,7 @@ async function main(data: Data) {
       smoothed: state.smoothing > 1,
       smoothing: smoothingName(state.smoothing),
       min: pct(NAMED_ORG_MIN_SHARE),
+      of: metricUnit(num),
     });
     const ratioNote = $('#review-ratio-note');
     ratioNote.hidden = !ratio;
