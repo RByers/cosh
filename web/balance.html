@@ -137,17 +137,17 @@
         <h3>Nine years of git history</h3>
         <p class="note">
           Human commits with a CL on <code>main</code>, per quarter. The typical author has landed
-          about 3 commits a month since 2017. The rise since 2023 comes from the busiest authors: the 90th
+          about 3 commits a month since 2017. The rise since 2023 comes from the busiest authors: the 95th
           percentile went from
-          <b data-src="git_quarters" data-field="per_author_month_p90" data-where="q=2024Q3" data-fmt="n1">–</b> in
+          <b data-src="git_quarters" data-field="per_author_month_p95" data-where="q=2024Q3" data-fmt="n1">–</b> in
           2024 Q3 to
-          <b data-src="git_quarters" data-field="per_author_month_p90" data-where="q=2026Q3" data-fmt="n1">–</b>.
+          <b data-src="git_quarters" data-field="per_author_month_p95" data-where="q=2026Q3" data-fmt="n1">–</b>.
         </p>
         <div class="panels">
           <figure class="panel"><h3>Commits per author per month</h3>
-            <div class="chart"><canvas id="c-longrun" role="img" aria-label="Commits per active author per month for each quarter since 2017: median, middle half, 10th to 90th percentile and mean."></canvas></div></figure>
+            <div class="chart"><canvas id="c-longrun" role="img" aria-label="Commits per active author per month for each quarter since 2017: median, middle half, 5th to 95th percentile and mean."></canvas></div></figure>
           <figure class="panel"><h3>Changed lines per commit</h3>
-            <div class="chart"><canvas id="c-longlines" role="img" aria-label="Changed lines per commit for each quarter since 2017: median, middle half and 10th to 90th percentile."></canvas></div></figure>
+            <div class="chart"><canvas id="c-longlines" role="img" aria-label="Changed lines per commit for each quarter since 2017: median, middle half and 5th to 95th percentile."></canvas></div></figure>
         </div>
       </section>
 
@@ -217,7 +217,7 @@
           median went from
           <b data-src="exchange" data-field="ftr_p50" data-where="q=2025Q2" data-fmt="h">–</b> in 2025 Q2 to
           <b data-src="exchange" data-field="ftr_p50" data-where="q=2026Q3" data-fmt="h">–</b> in 2026 Q3, and the
-          slowest tenth waited <b data-src="exchange" data-field="ftr_p90" data-where="q=2026Q3" data-fmt="h">–</b>
+          slowest 1 in 20 waited <b data-src="exchange" data-field="ftr_p95" data-where="q=2026Q3" data-fmt="h">–</b>
           or more.
         </p>
         <p class="sub">
@@ -230,7 +230,7 @@
         </p>
         <div class="panels">
           <figure class="panel"><h3>Hours to first substantive review</h3>
-            <div class="chart"><canvas id="c-ftr" role="img" aria-label="Hours from being sent for review to the first substantive review: median, 25th to 75th and 90th percentiles, per quarter."></canvas></div></figure>
+            <div class="chart"><canvas id="c-ftr" role="img" aria-label="Hours from being sent for review to the first substantive review: median, 25th to 75th and 5th to 95th percentiles, per quarter."></canvas></div></figure>
           <figure class="panel"><h3>Time in the attention set per CL</h3>
             <p class="note">Median hours a reviewer, or the author, was being waited on. Weekends left out for reviewers.</p>
             <div class="chart"><canvas id="c-waits" role="img" aria-label="Median hours reviewers and authors spent in the attention set per CL, per quarter."></canvas></div></figure>

@@ -33,7 +33,7 @@ def pct(xs, p):
     return round(xs[min(len(xs) - 1, int(p * len(xs)))], 2) if xs else None
 
 
-PCTS = (.1, .25, .5, .75, .9)
+PCTS = (.05, .1, .25, .5, .75, .9, .95)
 
 
 def spread(name, xs):

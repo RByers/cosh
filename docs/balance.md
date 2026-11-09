@@ -689,9 +689,13 @@ tenure), "Arriving better, or easing off?" (the panels and matched cohorts),
 "Patterns of activity", AI adoption by directory and footers, and "Security
 fixes". It has
 no date range or mechanical toggle yet (planned below). Single-series charts
-show distributions as shaded bands (middle half and 10th–90th percentile)
-around the median, named p25–p75 and p10–p90 in the legend rather than in
-each caption. "How review is shared" has two histograms of commenting
+show distributions as shaded bands (middle half and 5th–95th percentile)
+around the median, named p25–p75 and p5–p95 in the legend rather than in
+each caption. The outer band was p10–p90 until 2026-11-08; it reaches p95
+because 1 in 20 is still a common case (a review wait of about 4.5 days in
+2026 Q3), and that tail grew more than p90 did (CLs per reviewer: p90 49 →
+72, p95 74 → 109 from 2023 Q3 to 2026 Q3). At the bottom p5 nearly always
+equals p10 (1 CL, no lines changed after review), so nothing is lost there. "How review is shared" has two histograms of commenting
 reviewers per quarter, by CLs commented on and by threads started
 (`reviewer_load_hist` and its 100-or-more summary `reviewer_load_top` from
 `balance_report.py`, copied into `balance.json` on 2026-11-08). "Directories over time" is an expandable heatmap of

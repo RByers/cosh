@@ -232,10 +232,12 @@ function categories(
 }
 
 
-/** A distribution over time: shaded bands from the 10th to the 90th
+/** A distribution over time: shaded bands from the 5th to the 95th
  * percentile (lighter) and the 25th to the 75th (darker), the median as a
  * line, and optionally a dashed line for an overall figure such as the mean.
- * `key` names fields key_p10 .. key_p90 in each row. */
+ * `key` names fields key_p5 .. key_p95 in each row. The outer band reaches
+ * p95 because 1 in 20 is still common (a slow review, a big CL); at the
+ * bottom p5 is nearly always p10 (1 CL, no lines changed). */
 function bands(
   id: string, rows: Row[], key: string, theme: Theme, fmt: (v: number) => string,
   opts: { label: string; x?: string; zero?: boolean; max?: number; extra?: { field: string; label: string } },
@@ -246,10 +248,10 @@ function bands(
   const edge = (label: string, data: (number | null)[], fill: string | false, bg: string): ChartDataset<'line'> =>
     ({ label, data, borderWidth: 0, pointRadius: 0, pointHoverRadius: 0, backgroundColor: bg, fill, tension: 0 });
   const datasets: ChartDataset<'line'>[] = [
-    edge('', col(90), '+3', faint(c, '1f')),
+    edge('', col(95), '+3', faint(c, '1f')),
     edge('', col(75), '+1', faint(c, '40')),
     edge('', col(25), false, c),
-    edge('', col(10), false, c),
+    edge('', col(5), false, c),
     { label: opts.label, data: col(50), borderColor: c, backgroundColor: c, borderWidth: 2, pointRadius: 0,
       pointHoverRadius: 4, tension: 0, fill: false },
   ];
@@ -265,7 +267,7 @@ function bands(
     const r = rows[i.dataIndex];
     if (i.datasetIndex !== 4) return `${i.dataset.label}: ${fmt(i.parsed.y ?? 0)}`;
     const v = (p: number) => fmt(Number(r[`${key}_p${p}`]));
-    return [`${opts.label}: ${v(50)}`, `  ${BAND_MID}: ${v(25)} to ${v(75)}`, `  ${BAND_WIDE}: ${v(10)} to ${v(90)}`] as unknown as string;
+    return [`${opts.label}: ${v(50)}`, `  ${BAND_MID}: ${v(25)} to ${v(75)}`, `  ${BAND_WIDE}: ${v(5)} to ${v(95)}`] as unknown as string;
   };
   // The legend names the shaded bands too: lines as lines, bands as filled boxes.
   const item = (text: string, datasetIndex: number, style: 'line' | 'rect', color: string, lineWidth: number, lineDash: number[] = []) =>
@@ -291,7 +293,7 @@ function bands(
 }
 
 const BAND_MID = 'p25–p75';
-const BAND_WIDE = 'p10–p90';
+const BAND_WIDE = 'p5–p95';
 
 const PATHS: [string, string][] = [
   ['velocity', 'Velocity'], ['size', 'Size'], ['breadth', 'Breadth'], ['reviewing', 'Reviewing'], ['indep_threads', 'Independence'],
