@@ -111,15 +111,21 @@
           <span data-if="weeks">Each organization's share of <slot name="metric"></slot> against its browsers' share of
             Chromium browser usage<span data-if="multi"> (contribution: totals over the range; usage: mean weekly share)</span><span data-if="log">,
             on log axes</span>. The diagonal is a 1.0× value ratio, contribution in proportion to usage: organizations above it
-            contribute more than their usage share, those below less. The small marks on each organization's strip are
+            contribute more than their usage share, those below less.<span data-if="all"> The small marks on each organization's strip are
             its shares of the other contribution metrics (shapes in the key), so the strip shows how much its ratio
-            depends on the metric. Pick the metric for the large dot, and for the rest of the page, below.</span>
+            depends on the metric.</span> Pick the metric<span data-if="all"> for the large dot</span>, and for the rest of the page, below.</span>
         </template>
         <div class="toggles">
+          <fieldset id="parity-metrics" class="segmented chart-toggle">
+            <legend>Metrics</legend>
+            <label><input type="radio" name="parity-metrics" value="active" />Selected metric</label>
+            <label><input type="radio" name="parity-metrics" value="all" />All metrics</label>
+          </fieldset>
           <fieldset id="parity-scale" class="segmented chart-toggle">
             <legend>Scale</legend>
             <label><input type="radio" name="parity-scale" value="log" />Log</label>
             <label><input type="radio" name="parity-scale" value="linear" />Linear</label>
+            <label><input type="radio" name="parity-scale" value="linear-ng" />Linear, without google.com</label>
           </fieldset>
         </div>
         <div class="chart chart-square">

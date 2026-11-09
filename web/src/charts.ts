@@ -362,8 +362,16 @@ export function parityBounds(points: ParityPoint[]): { min: number; max: number 
   return { min, max: max > min ? max : min * 10 };
 }
 
-/** Value ratio chart axes: log (the default) or linear, both 0 to 100%. */
-export type ParityScale = 'log' | 'linear';
+/** Value ratio chart axes: log (the default), linear from 0 to 100%, or
+ * linear without google.com (the caller leaves it out), from 0 to just past
+ * the largest share. Both axes always share their bounds. */
+export type ParityScale = 'log' | 'linear' | 'linear-ng';
+
+/** A round tick step for a linear axis from 0 to `top`: at most 10 ticks. */
+export function linearStep(top: number): number {
+  const p = 10 ** Math.floor(Math.log10(top / 10) + 1e-9);
+  return [1, 2, 2.5, 5, 10].map((m) => Number((m * p).toPrecision(12))).find((st) => top / st <= 10 + 1e-9) ?? 10 * p;
+}
 
 /** Contribution share against usage share over the range, one point per org, both
  * on log axes (or both linear, from 0) with the same bounds. Each org's other metrics are smaller marks,
@@ -383,10 +391,12 @@ export function renderParityChart(
   /** Linear runs both axes from 0 to 100%, where zeros need no extra row. */
   scale: ParityScale = 'log',
 ): Chart<'scatter'> {
-  const linear = scale === 'linear';
+  const linear = scale !== 'log';
   const bounds = parityBounds(points);
+  const top = Math.max(0, ...points.flatMap((p) => [p, ...(p.others ?? [])]).flatMap((p) => [p.contribution, p.derived]));
+  const step = scale === 'linear-ng' && top > 0 ? linearStep(Math.min(1, top)) : 0.1;
   const min = linear ? 0 : bounds.min;
-  const max = linear ? 1 : bounds.max;
+  const max = !linear ? bounds.max : scale === 'linear-ng' && top > 0 ? Math.min(1, Math.ceil(top / step - 1e-9) * step) : 1;
   // Both axes extend alike, so the diagonal stays at 45°.
   const zero = !linear && points.some((p) => [p, ...(p.others ?? [])].some((q) => q.contribution <= 0)) ? min / 10 : null;
   const lo = zero ?? min;
@@ -494,9 +504,9 @@ export function renderParityChart(
     },
   };
   // Ticks, labels and gridlines on whole decades only: 0.01%, 0.1%, 1%, …
-  // On the linear axes, every 10% instead.
+  // On the linear axes, every round step instead.
   const ticks: number[] = [];
-  if (linear) for (let i = 0; i <= 10; i++) ticks.push(i / 10);
+  if (linear) for (let i = 0; i * step <= max + 1e-9; i++) ticks.push(i * step);
   else for (let e = Math.round(Math.log10(lo)); e <= Math.round(Math.log10(max)); e++) ticks.push(10 ** e);
   const isZeroTick = (v: number) => zero !== null && Math.abs(v / zero - 1) < 1e-6;
   const axis = (title: string, zeroLabel: boolean) => ({

@@ -170,6 +170,8 @@ interface State {
   smoothing: Smoothing;
   /** Value ratio chart axes: log or linear. */
   parityScale: ParityScale;
+  /** Value ratio chart: the chosen metric only, or every metric's marks too. */
+  parityAll: boolean;
   /** Review chart axis: log with every org, or linear without google.com. */
   reviewScale: ReviewScale;
   /** The review chart plots the review metric over commits (ratioNumerator). */
@@ -420,7 +422,9 @@ function readStateFromUrl(data: Data): State {
   const to = isWeek(q.get('to')) ? q.get('to')! : isWeek(week) ? week : common.to;
   const sm = Number(q.get('smooth'));
   const smoothing = SMOOTHING_WEEKS.find((w) => w === sm) ?? DEFAULT_SMOOTHING;
-  const parityScale: ParityScale = q.get('pscale') === 'linear' ? 'linear' : 'log';
+  const ps = q.get('pscale');
+  const parityScale: ParityScale = ps === 'linear' || ps === 'linear-ng' ? ps : 'log';
+  const parityAll = q.get('pm') === 'all';
   const reviewScale: ReviewScale = q.get('rscale') === 'linear' ? 'linear' : 'log';
   const reviewRatio = q.get('ratio') === '1' && hasCommits(data.summary);
   const lbn = q.get('lbn');
@@ -439,6 +443,7 @@ function readStateFromUrl(data: Data): State {
     range,
     smoothing,
     parityScale,
+    parityAll,
     reviewScale,
     reviewRatio,
     lbSize,
@@ -465,7 +470,8 @@ function writeStateToUrl(s: State, data: Data) {
   const preset = rangePreset(data, s.range);
   const range = preset === 'all' ? '' : preset ? `&range=${preset}` : `&from=${s.range.from}&to=${s.range.to}`;
   history.replaceState(null, '', `#metric=${s.metric}${range}&smooth=${s.smoothing}` +
-    (s.parityScale === 'linear' ? '&pscale=linear' : '') +
+    (s.parityScale !== 'log' ? `&pscale=${s.parityScale}` : '') +
+    (s.parityAll ? '&pm=all' : '') +
     (s.reviewScale === 'linear' ? '&rscale=linear' : '') +
     (s.reviewRatio ? '&ratio=1' : '') +
     (s.lbSize !== LEADERBOARD_SIZE ? `&lbn=${s.lbSize}` : '') +
@@ -539,6 +545,10 @@ function buildControls(data: Data, state: State, render: () => void, renderSoon:
     state.smoothing = Number(v) as Smoothing;
     // Only the two smoothed charts change.
     update('ratio', 'review');
+  });
+  radios($('#parity-metrics'), state.parityAll ? 'all' : 'active', (v) => {
+    state.parityAll = v === 'all';
+    update('parity');
   });
   radios($('#parity-scale'), state.parityScale, (v) => {
     state.parityScale = v as ParityScale;
@@ -704,19 +714,21 @@ const METRIC_MARKS: Record<Metric, PointStyle> = {
  * (addressed comments: its classified weeks), like the chosen one would. */
 function renderParity(data: Data, state: State, weeks: string[], orgs: string[], colors: Map<string, string>, theme: Theme) {
   const metricLabel = metricUnit(state.metric);
-  const items = orgRangeShares(data, state.metric, weeks).filter((it) => orgs.includes(it.org) && it.ratio !== null);
+  // "Linear, without google.com" leaves Google out, so the axes can shrink to everyone else.
+  const noGoogle = state.parityScale === 'linear-ng';
+  const items = orgRangeShares(data, state.metric, weeks)
+    .filter((it) => orgs.includes(it.org) && it.ratio !== null && !(noGoogle && it.org === LINEAR_EXCLUDED_ORG));
   const range = userRange ?? state.range;
-  const others = availableMetrics(data)
-    .filter((m) => m !== state.metric)
+  // The other metrics' marks, only when all metrics are shown.
+  const otherMetrics = state.parityAll ? availableMetrics(data).filter((m) => m !== state.metric) : [];
+  const others = otherMetrics
     .flatMap((m) => {
       const r = m === 'addressed' ? addressedRange(data.summary, range).range : range;
       if (!r) return [];
       const mWeeks = ratioWeeks(weeksIn(data.summary.meta.weeks, r), data.radar, m === 'addressed' ? addressedWeeks(data.summary) : undefined);
       return [{ metric: metricUnit(m), shares: new Map(orgRangeShares(data, m, mWeeks).map((it) => [it.org, it])) }];
     });
-  const marks: MetricMark[] = availableMetrics(data)
-    .filter((m) => m !== state.metric)
-    .map((m) => ({ metric: metricUnit(m), style: METRIC_MARKS[m] }));
+  const marks: MetricMark[] = otherMetrics.map((m) => ({ metric: metricUnit(m), style: METRIC_MARKS[m] }));
   drawChart(() => {
     parityChart?.destroy();
     parityChart = renderParityChart(
@@ -739,6 +751,7 @@ function renderParity(data: Data, state: State, weeks: string[], orgs: string[],
   });
   fill($('#parity-sub'), {
     log: state.parityScale === 'log',
+    all: state.parityAll,
     weeks: weeks.length,
     multi: weeks.length > 1,
     metric: metricLabel,

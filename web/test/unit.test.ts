@@ -1,5 +1,5 @@
 // Unit tests for the pure data/scale modules (no browser).
-import { lineDataset } from '../src/charts.ts';
+import { lineDataset, linearStep } from '../src/charts.ts';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -1393,4 +1393,13 @@ test('findPeople: nothing for a blank query; prefix, then word, then substring; 
   // At most 10.
   const many: ReviewerBoard = { ...r, accounts: Object.fromEntries(Array.from({ length: 30 }, (_, i) => [i + 10, `Sam ${i}`])) };
   assert.equal(findPeople(many, undefined, 'sam', ['2026-W44']).length, 10);
+});
+
+test('linearStep: a round step giving at most 10 ticks from 0', () => {
+  assert.equal(linearStep(1), 0.1);
+  assert.equal(linearStep(0.09), 0.01);
+  assert.equal(linearStep(0.12), 0.02);
+  assert.equal(linearStep(0.2), 0.02);
+  assert.equal(linearStep(0.4), 0.05);
+  assert.equal(linearStep(0.03), 0.005);
 });
