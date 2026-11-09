@@ -361,7 +361,8 @@ username, SVN-era `user@domain@<uuid>` emails, and a Gerrit owner's email
 with the git author of the same CL.
 
 Analyses: `scripts/balance_analysis.py trends|mechanical|pipeline`,
-`scripts/balance_growth.py growth|burden|ai`, and `scripts/balance_report.py`
+`scripts/balance_growth.py growth|burden|ai`, `scripts/balance_dirgrowth.py`
+(growth by directory, section 6c), and `scripts/balance_report.py`
 (the datasets behind the published report). They print tables, read no
 comment text, and print no one's identity. (`scripts/balance_explore.py`
 is the first W44-only prototype, superseded by `cosh/balance.py`.)
@@ -513,6 +514,71 @@ volume rose. Owner attention time rose too: CLs wait longer on both sides.
 Hours count nights and weekends, so the medians reflect time zones as much
 as effort. Per reviewer, weekday attention hours per CL for reviewers with
 10+ years' tenure went from 5.6 (2025H1) to 8.8 (2026H2).
+
+### 2b. Blink's rise in review delay (2026-11-08)
+
+The CLs here are merged, human-owned CLs under 100 files whose landed
+commit has most of its lines in `third_party/blink/`, and that got a
+substantive first review: about 39% of them each quarter. Hours run from
+when the CL was sent to its first substantive review. The comparison is
+A = 2024Q1–2025Q2 against B = 2026Q2–Q4. 2026Q4 runs only to early
+November.
+
+| Quarter | Reviewed CLs | p25 | p50 | p75 |
+|---|---:|---:|---:|---:|
+| 2024Q2 | 1,158 | 0.8 | 5.3 | 22.0 |
+| 2025Q2 | 1,291 | 0.8 | 4.2 | 19.9 |
+| 2025Q4 | 1,028 | 1.2 | 8.6 | 27.3 |
+| 2026Q2 | 1,425 | 1.5 | 10.8 | 34.6 |
+| 2026Q3 | 1,465 | 2.0 | 12.3 | 45.6 |
+
+From A to B the median went from 5.6 to 12.2 h and the p75 from 22 to
+43 h. CLs reviewed within an hour fell from 26% to 18%, and waits over a
+day rose from 23% to 33%. Over the same time the Chromium-wide median went
+from 3.3 to 5.2 h. Blink slowed about twice as much as the project, and
+about as much as `content/browser` (section 6c).
+
+- **The mix of CLs explains about 1 h of the 6.6.** B's CLs were given A's
+  waits for CLs of the same org group, size, author tenure and
+  Friday/weekend send. That gives a median of 6.6 h, against 12.2 h
+  actual. The mix shifts are real but small:
+  - Microsoft-owned CLs rose from 10% to 17% of reviewed blink CLs, and
+    they wait about twice as long as Google-owned ones (10 → 19 h).
+  - Authors in their first year in blink rose from 10% to 17%.
+  - The median CL grew from about 40 lines to 57–65 by 2026Q3–Q4.
+- **Every group slowed about 2×.**
+  - Google-owned CLs went from 4.6 to 8.9 h, and CLs by authors with 4+
+    years in blink from 4.9 to 11.1 h.
+  - Every size band, both `renderer/` and `web_tests/`, and every number
+    of reviewers slowed.
+  - Same-day turnaround was lost most: CLs sent 16–20 UTC (US mornings and
+    afternoons) went from 3.0 to 10.4 h, and Friday sends from 4.9 to
+    15.2 h.
+- **Load per reviewer rose.**
+  - People who were in the attention set of 5+ blink CLs in a quarter
+    numbered 175–182 in 2024Q4–2025Q2 and 149–164 in 2026, while blink
+    CLs rose.
+  - Blink CLs per such reviewer went from about 24 to 29–31 a quarter.
+  - The 30 busiest blink reviewers of A mostly stayed: only 2 cut their
+    blink rate by three-quarters. The rest went from a median of 47 to 62
+    blink CLs a quarter, and from 97 to 109 CLs across all of Chromium.
+  - 34 reviewers had enough CLs where they were the only reviewer in both
+    periods. The 27 whose load rose 25% or more got slower by a median of
+    2 h. The 7 whose load didn't rise got 0.5 h faster, though that is a
+    small group.
+- **It happened in two steps.**
+  - From mid-2025 to early 2026 the median rose to 7–12 h while blink's
+    volume stayed flat and its reviewer pool shrank (130 in 2025Q4).
+  - From 2026Q2, volume rose. Lines merged in blink went from about 140k a
+    month to 220k in September 2026 and 286k in October. October also had
+    a record 1,854 CLs from 332 authors, a broad rise, not a few authors.
+- **AI-marked CLs are under 1% of blink's**, too few to say whether
+  AI-written code plays a part.
+- Approvers' growth, and whether it explains the delay, is in section 6c.
+
+These numbers come from ad hoc queries of `balance.sqlite`.
+`scripts/balance_dirgrowth.py` reproduces the A/B medians and the
+blink drill-down.
 
 ### 3. Rework after review
 
@@ -749,6 +815,138 @@ of CLs rose in nearly every busy directory: `chrome/browser` 3.9% → 13.5%,
 100 lines fell in most. Median first-review waits nearly doubled in
 `content/browser` (5.8 → 11.1 h) and `third_party/blink` (5.9 → 10.0 h),
 while UI-heavy directories stayed flat or got faster.
+
+### 6c. Growth by directory: difficulty and openness (`scripts/balance_dirgrowth.py`, 2026-11-08)
+
+Directories are 2-level: the one holding most of a commit's lines. A
+person's **directory tenure** is the time since their first commit in it.
+git history starts in 2017, so anyone already in a directory then starts
+in 2017. That still puts them in the top bin for 2023+ CLs.
+
+**Difficulty: how fast review need falls with directory tenure.** The
+review load index (section 4) of a directory's CLs is binned by the
+author's directory tenure (< 6 months, 6–12 months, 1–2, 2–4, 4+ years).
+Then ln(index) is fitted against log2(tenure), weighted by CLs.
+exp(slope) is the **factor per doubling**: 0.80 means an author's CLs draw
+20% fewer threads each time their tenure there doubles. A lower factor
+means a steeper learning curve, with more to learn before an author needs
+little review. The table also gives the ratio of the first year's index to
+the 4+ year bin's.
+
+**Openness: how fast authors become reviewers there.**
+
+- **Promotion:** of people who joined the project in 2017 or later,
+  started in the directory in 2017–19 or 2020–21, and landed 5+ CLs there
+  within 2 years, the share who gave 10+ approvals (`Reviewed-by`) on
+  others' commits there within 3 years of starting.
+- **New-reviewer share:** the share of the directory's approvals given by
+  approvers under 3 years on the project. Directory tenure can't be used
+  here: before about 2021 it can't tell veterans from newcomers.
+
+Busiest directories. "Pre" is 2023Q3–2024Q4 and "now" is 2025Q4–2026Q3:
+
+| Directory | CLs pre | Factor per doubling, pre → now | First year ÷ 4+ years, pre → now | Promoted within 3 y, 2017–19 → 2020–21 | New-reviewer share 2019, 2022, 2024, 2026 |
+|---|---:|---|---|---|---|
+| `chrome/browser` | 41,804 | 0.80 → 0.83 | 2.48 → 2.10 | 50% → 50% | 20, 21, 21, 14% |
+| `third_party/blink` | 17,532 | 0.76 → 0.75 | 3.08 → 3.04 | 40% → 29% | 15, 14, 11, 4% |
+| `ios/chrome` | 10,353 | 0.84 → 0.81 | 1.97 → 2.36 | 36% → 61% (small) | 22, 11, 23, 13% |
+| `content/browser` | 5,507 | 0.81 → 0.89 | 2.23 → 1.62 | 32% → 42% | 11, 15, 11, 5% |
+| `tools/metrics` | 5,051 | 0.84 → 0.80 | 1.98 → 2.51 | 19% → 31% | 11, 18, 17, 8% |
+| `chrome/android` | 4,957 | 0.78 → 0.85 | 2.51 → 2.09 | 45% → 45% | 18, 15, 16, 17% |
+| `chrome/test` | 3,717 | 0.83 → 0.84 | 2.27 → 1.76 | 30% → 45% | 32, 32, 29, 24% |
+| `components/autofill` | 3,620 | 0.74 → 0.78 | 2.77 → 2.98 | 17% → – | 19, 33, 45, 12% |
+| `testing/variations` | 3,246 | 0.95 → 0.86 | 1.21 → 1.79 | 26% → 25% | 8, 22, 25, 14% |
+
+Promotion cohorts have 50–440 people in the big directories and under 40
+in `ios/chrome` and `components/autofill`. 2026 runs to the end of
+October.
+
+- **Blink is the hardest directory to grow in.** Of the 22 directories
+  with 800+ CLs pre, its curve is the second steepest pre and the
+  steepest now. A first-year blink author's CL draws 3.1× the review of a
+  4+ year one's. Elsewhere that ratio is 1.2–2.9×. Its curve hardly moved
+  between eras (index 2.65, 1.75, 1.35, 0.97, 0.76 pre; 2.21, 1.89, 1.88,
+  1.14, 0.69 now). `components/autofill` is about as steep, and testing
+  and config directories are the flattest.
+- **Openness falls in nearly every directory in 2026.** The 2026
+  new-reviewer share is below 2024's in 21 of 22 directories. That is the
+  project-wide thinning of section 6 seen per directory.
+- **Blink has become one of the least open of the big directories.**
+  - Its new-reviewer share went 15% (2018–20) → 11% (2024) → 4% (2026),
+    the lowest of the big directories with `content/browser`.
+  - Promotion within 3 years fell from 40% to 29%. `chrome/browser` held
+    at 50%.
+  - New regular blink approvers (first year with 25+ blink approvals)
+    numbered 44–51 a year in 2019–20, 20 in 2024 and 10 in 2026 to
+    October.
+  - Approvers with 10+ blink approvals in a year numbered 234 in 2025 and
+    206 in 2026, and the busiest 10 gave 25% of approvals in 2024 and 32%
+    in 2026.
+  - Approvers with 8+ years on the project gave 15% of blink approvals in
+    2018 and 64% in 2026.
+- **Difficulty and openness barely go together across directories.** The
+  correlation between the factor per doubling and promotion is −0.16.
+  Hard directories aren't clearly the closed ones.
+
+**Does either explain blink's longer review waits (section 2b)? Not
+directly.**
+
+- **Across directories, difficulty doesn't predict the slowdown.** The
+  median first-review wait from A to B (2024Q1–2025Q2 to 2026Q2–Q4)
+  doubled in blink (5.6 → 12.2 h), `content/browser` (6.2 → 12.3),
+  `ash/*`, `gpu/command_buffer`, `media/gpu`, `components/viz`,
+  `build/config` and `testing/buildbot`. It rose 20–30% in
+  `chrome/browser`, `ios/chrome`, `chrome/android` and `chrome/test`, and
+  fell in `components/autofill`. Correlation of the log wait ratio with
+  the factor per doubling: +0.34, the wrong sign for "hard directories
+  slowed more". With the first-year ratio: −0.38, the same message.
+- **Openness predicts it only weakly.** The correlation with the 2026
+  new-reviewer share is −0.42 (closed directories slowed more), and with
+  promotion −0.03. With 22 directories, of very different sizes, none of
+  these is clearly above noise.
+- **Within blink, the shift to older approvers explains none of it.** On
+  blink CLs with one approver, approvers with 8+ years on the project went
+  from 53% to 66% and those under 3 years from 11% to 3%. Giving B's CLs
+  A's waits for their approver's tenure band leaves the median at 4.7 h,
+  against 11.6 h actual. Every band slowed:
+
+  | Approver's years on the project | Share A → B | Median wait A → B |
+  |---|---|---|
+  | < 3 | 11% → 3% | 5.4 → 19.3 h |
+  | 3–8 | 36% → 31% | 4.6 → 14.8 h |
+  | 8+ | 53% → 66% | 4.8 → 10.1 h |
+
+  Approvers with few blink approvals slowed too (3.4 → 15.3 h for under
+  10 a quarter, 248 CLs in B), so per-reviewer blink load isn't the whole
+  story either.
+- **Difficulty adds load through the author mix.** Blink's first-year
+  authors draw 3× the review, and their share of reviewed CLs rose from
+  10% to 17%. Their waits rose less than veterans' (9.9 → 16.5 h against
+  4.9 → 11.1 h). This is the same small mix effect as in section 2b, about
+  1 h.
+- **The timing doesn't match.** Blink's openness has been falling
+  steadily since about 2020, and its difficulty is stable. The wait
+  jumped in 2025H2–2026, together with volume and across nearly every
+  platform directory at once.
+
+**Reading it together:** blink's slower first review is a recent, broad
+slowdown that hits every approver group. It looks like reviewers spread
+across more work, in blink and in the platform directories around it,
+rather than a growth problem that suddenly bit. The thin pipeline matters
+indirectly. Blink is the hardest place to grow and has promoted ever fewer
+authors to reviewers. So when volume rose in 2026, there was no new
+reviewer capacity to absorb it, and the busiest 10 approvers took a larger
+share. Testing this further would need the reviewers' work outside blink
+and outside review, which we don't have.
+
+This seems to contradict section 6b's "individual reviewers are not
+slower". The two measure different things. Here it is time from the CL
+being sent to its first substantive review. There it is time from a given
+reviewer being added to their own first comment.
+
+Rerun: `COSH_DATA_DIR=<main>/data/private python3 scripts/balance_dirgrowth.py
+--first-commit F --owners-added O --mech M [--min-cls 800]` (prints only;
+about 5 min).
 
 ### 7. AI-marked CLs
 
