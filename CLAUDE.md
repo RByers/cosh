@@ -127,7 +127,11 @@ regex plus Claude Haiku (`cosh classify`).
     `python3 -m cosh patchsets --go --repack-gb 1000 --jobs 7` from the main
     checkout. It repacks with `repack --geometric=2 -d -l` at the end (or
     when under 25 GB is free), which is lossless because the objects it
-    drops are in the shared clone. Patch sets of CLs without
+    drops are in the shared clone. The fetch is done and the repo was
+    repacked on 2026-11-09 (19 GB, 4 packs). A whole-repo repack runs out
+    of memory on argus, so repack in groups and keep old packs until
+    checked: `scripts/patchsets_chunked_repack.sh`, then
+    `scripts/patchsets_pack_coverage.sh` (`docs/plan.md`, 2026-11-09). Patch sets of CLs without
     human review still need approval. Use this repo, not the pilot repo,
     for patch sets.
   - Still run every command with `GIT_NO_LAZY_FETCH=1`. Lazy fetches
