@@ -396,7 +396,39 @@ value_ratio(O, t) = O's share of Chromium addressed review comments
    - the OWNER bit;
    - years 2–5 of backfill;
    - other repos and hosts (v8, devtools-frontend and skia are listed in
-     `gerrit-api-research.md` §6);
+     `gerrit-api-research.md` §6). **V8 sizing** (2026-11-08, from local
+     data only, nothing fetched; fetching `v8/v8` needs approval):
+     - Size: the "Roll V8 from … (N revisions)" commits on chromium/src
+       `main` give 7,800–8,250 V8 commits a year (2024–2026), about 26k
+       since 2023-07: about 4.5% of chromium/src's 574k merged CLs over
+       the same 175 weeks. With abandoned and open CLs, about 35–40k CLs
+       against our 774k.
+     - Fetch cost for the 175 weeks: listing about 350 REST requests
+       (6 min) with weekly windows, but about 10k (3 h) with today's
+       6-hour windows (`WINDOW_HOURS` in `cosh/extract.py`; the count
+       follows windows, not CLs, so make it per project). NoteDb about
+       85 fetches, 17k refs, about 40 min (chromium/src: 1,766 fetches,
+       335k refs, 12.4 h; 10.3k REST requests). Account lookups: a few
+       dozen. Git repo: `chromium.googlesource.com/v8/v8`, same Gerrit
+       host.
+     - Processing: `derive` about 30 s more; `classify` about 18k threads
+       (about 1.6M Haiku tokens); sentiment about 50k comments.
+     - Extras, each needing approval: a `v8/v8` `main` clone for the
+       Commits metric (guess 1–2 GB, unmeasured); about 100k patch sets
+       for the balance work.
+     - Code that assumes chromium/src: the `PROJECT` default in
+       `cosh/__main__.py`, `config/paths.txt`, the `Reviewed-on` regexes
+       in `cosh/commits.py` and `cosh/balance.py`, `cosh/patchsets.py`,
+       the scope text in `summarize`. Storage is keyed by host and
+       project and `extract` takes `--project`, so raw data needs no
+       migration.
+     - Open questions: committer detection relies on chromium/src's
+       Code-Review permissions (`docs/committers.md`); V8 has its own
+       committer list, so check `permitted_voting_range` on `v8/v8`.
+       Combined totals or a project switch? The ratio's denominator is
+       Chromium browser usage (Radar), which leaves out V8's use in
+       Node, Deno, Electron and Workers, so a switch looks better.
+       Affiliations map by email domain and should carry over;
    - exact CL file lists for the path scope, from a blob-less fetch of
      `main`'s commits and trees, mapped to CLs by their `Reviewed-on:`
      footers (needs approval; would place the comments that are now
