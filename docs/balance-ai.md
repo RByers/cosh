@@ -62,7 +62,8 @@ only, were 80 of 80 genuine AI-assisted CLs. Two samples of 40 near misses
 markers. The rules were widened after each sample, and the second sample's
 misses ("vibe-coded with gemini-cli", "AI assisted with fixing…", "[Agent
 fix]") are now caught too. So recall is roughly 90% of what the messages say.
-Most AI use carries no marker at all.
+Most AI use carries no marker at all. `docs/balance-ai-predict.md`
+predicts unmarked AI use from description style instead.
 
 **Who it covers** (merged, human-owned, non-mechanical CLs since mid-2023):
 

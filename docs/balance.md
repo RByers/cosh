@@ -99,6 +99,10 @@ Each has its own doc, with commands to regenerate:
   - same-author comparisons: marked CLs are larger and reviewed the same;
   - directory adoption: agent files don't predict use;
   - footers: not relevant.
+- `docs/balance-ai-predict.md`:
+  - predicting unmarked AI use from description style: Haiku is too weak
+    per CL, but the flagged share per quarter jumps in 2026 Q2 after a flat
+    pre-AI baseline.
 - `docs/balance-clusters.md`:
   - six activity patterns and nine trajectories;
   - fewer recent joiners move into reviewing within three years.
