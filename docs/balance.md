@@ -688,8 +688,8 @@ so the revert chart should be by size as well as over time.
 
 **Status (2026-11-08):** a first draft is live as `web/balance.html`, with a
 large "Draft: under development" warning at the top. It isn't linked from the
-landing page yet. It has 44 charts and 6 tables, drawn with Chart.js from
-`summaries/balance.json`. That file holds 42 aggregate datasets:
+landing page yet. It has 46 charts and 7 tables, drawn with Chart.js from
+`summaries/balance.json`. That file holds 47 aggregate datasets:
 - `balance_report.py`'s `report.json`;
 - the growth, pipeline, mentorship, AI-paired and mechanical tables from
   `balance_growth.py` (via `balance_growth_tables.py`) and
@@ -697,7 +697,8 @@ landing page yet. It has 44 charts and 6 tables, drawn with Chart.js from
 - since 2026-11-08, `scripts/balance_page_extras.py`, which adds the growth
   signals (−1 votes, abandonment, same-people panels, matched cohorts;
   `docs/balance-signals.md`), the activity patterns
-  (`docs/balance-clusters.md`, aggregate shares only) and the Chrome
+  (`docs/balance-clusters.md`, aggregate shares only, plus the pattern
+  maps and rules from `balance_clusters/map.json`) and the Chrome
   Releases CVE counts (`docs/bugs-and-security.md`). Rerun it after any of
   those inputs changes:
   `COSH_DATA_DIR=<main>/data/private python3 scripts/balance_page_extras.py`.

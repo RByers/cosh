@@ -905,6 +905,148 @@ function dirMap(data: DirData) {
 
 // ---- the page
 
+// ---- the map of activity patterns
+
+/** Colour order of the six patterns: fixed, so a pattern keeps its colour on
+ * both maps and in the rules table (docs/balance-clusters.md). */
+export const PATTERNS = [
+  'authors who also review a lot', 'steady authors', 'newcomers ramping up',
+  'mostly reviewing', 'early-career, light activity', 'reviewer-mentors',
+];
+const patternColor = (theme: Theme, p: string) => theme.series[Math.max(0, PATTERNS.indexOf(p))];
+/** Axis ranges in PCA units, wide enough for every cell. */
+const MAP_X: [number, number] = [-3.75, 4.25];
+const MAP_Y: Record<string, [number, number]> = { pc2: [-4, 2.75], pc3: [-2.75, 3.25] };
+const sentence = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+
+/** Shade of a cell: more person-halves, more opaque (log scale). */
+export function cellAlpha(n: number, max: number): number {
+  return 0.12 + 0.68 * Math.log(n) / Math.log(Math.max(2, max));
+}
+
+/** An ellipse's outline points, for drawing and tests. */
+export function ellipsePoints(e: { cx: number; cy: number; rx: number; ry: number; angle: number }, steps = 72) {
+  const c = Math.cos(e.angle), s = Math.sin(e.angle);
+  return Array.from({ length: steps + 1 }, (_, i) => {
+    const t = (2 * Math.PI * i) / steps;
+    const u = e.rx * Math.cos(t), v = e.ry * Math.sin(t);
+    return { x: e.cx + u * c - v * s, y: e.cy + u * s + v * c };
+  });
+}
+
+function patternMap(id: string, view: string, cells: Row[], ellipses: Row[], bin: number, theme: Theme) {
+  const mine = cells.filter((r) => r.view === view);
+  const max = Math.max(...mine.map((r) => Number(r.n)));
+  const rgb = (hex: string, a: number) => faint(hex, Math.round(a * 255).toString(16).padStart(2, '0'));
+  const datasets = PATTERNS.map((p) => ({
+    label: sentence(p),
+    pattern: p,
+    data: mine.filter((r) => r.pattern === p).map((r) => ({ x: Number(r.x), y: Number(r.y), n: Number(r.n), share: Number(r.share) })),
+    backgroundColor: patternColor(theme, p),
+    borderColor: patternColor(theme, p),
+    pointRadius: 0,
+    pointHoverRadius: 0,
+    pointHitRadius: 6,
+  }));
+  // Cells under the datasets, ellipses over them; both skip hidden patterns.
+  const draw: Plugin<'scatter'> = {
+    id: 'patternMap',
+    beforeDatasetsDraw(chart) {
+      const { x, y } = chart.scales;
+      const ctx = chart.ctx;
+      const { left, top, width, height } = chart.chartArea;
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(left, top, width, height);
+      ctx.clip();
+      const w = Math.abs(x.getPixelForValue(bin) - x.getPixelForValue(0));
+      const h = Math.abs(y.getPixelForValue(bin) - y.getPixelForValue(0));
+      datasets.forEach((ds, i) => {
+        if (!chart.isDatasetVisible(i)) return;
+        for (const c of ds.data) {
+          ctx.fillStyle = rgb(patternColor(theme, ds.pattern), cellAlpha(c.n, max));
+          ctx.fillRect(x.getPixelForValue(c.x) - w / 2, y.getPixelForValue(c.y) - h / 2, w, h);
+        }
+      });
+      // Centre lines: the average person active that half-year.
+      ctx.strokeStyle = theme.baseline;
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(x.getPixelForValue(0), top);
+      ctx.lineTo(x.getPixelForValue(0), top + height);
+      ctx.moveTo(left, y.getPixelForValue(0));
+      ctx.lineTo(left + width, y.getPixelForValue(0));
+      ctx.stroke();
+      ctx.restore();
+    },
+    afterDatasetsDraw(chart) {
+      const { x, y } = chart.scales;
+      const ctx = chart.ctx;
+      ctx.save();
+      for (const e of ellipses.filter((r) => r.view === view)) {
+        const i = PATTERNS.indexOf(String(e.pattern));
+        if (i < 0 || !chart.isDatasetVisible(i)) continue;
+        const pts = ellipsePoints(e as unknown as { cx: number; cy: number; rx: number; ry: number; angle: number });
+        const path = new Path2D();
+        pts.forEach((p, j) => (j ? path.lineTo : path.moveTo).call(path, x.getPixelForValue(p.x), y.getPixelForValue(p.y)));
+        // A surface halo keeps each outline readable over the cells.
+        ctx.strokeStyle = theme.surface;
+        ctx.lineWidth = 4;
+        ctx.stroke(path);
+        ctx.strokeStyle = patternColor(theme, String(e.pattern));
+        ctx.lineWidth = 2;
+        ctx.stroke(path);
+        const cx = x.getPixelForValue(Number(e.cx)), cy = y.getPixelForValue(Number(e.cy));
+        ctx.fillStyle = patternColor(theme, String(e.pattern));
+        ctx.strokeStyle = theme.surface;
+        ctx.beginPath();
+        ctx.arc(cx, cy, 4, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.stroke();
+      }
+      ctx.restore();
+    },
+  };
+  const tick = { display: false };
+  const [x0, x1] = MAP_X, [y0, y1] = MAP_Y[view];
+  const base = options(theme, FMT.n0, true);
+  charts.push(new Chart($<HTMLCanvasElement>(`#${id}`), {
+    type: 'scatter',
+    data: { datasets },
+    options: {
+      ...base,
+      interaction: { mode: 'nearest' as const, intersect: true },
+      scales: {
+        x: { type: 'linear', min: x0, max: x1, grid: { display: false }, border: { color: theme.baseline }, ticks: tick },
+        y: { type: 'linear', min: y0, max: y1, grid: { display: false }, border: { color: theme.baseline }, ticks: tick },
+      },
+      plugins: {
+        ...base.plugins,
+        legend: { ...base.plugins.legend, labels: { ...base.plugins.legend.labels, boxHeight: 10, boxWidth: 10 } },
+        tooltip: {
+          ...base.plugins.tooltip,
+          boxHeight: 10,
+          filter: () => true,
+          callbacks: {
+            label: (i: TooltipItem<'scatter'>) => {
+              const r = i.raw as { n: number; share: number };
+              return `${i.dataset.label}: ${msg('map-tip', { n: FMT.n0(r.n), share: FMT.pct(r.share) })}`;
+            },
+          },
+        },
+      },
+    },
+    plugins: [draw],
+  } as never));
+}
+
+/** Colour swatches beside the patterns in the rules table. */
+function patternSwatches(theme: Theme) {
+  for (const el of document.querySelectorAll<HTMLElement>('.swatch[data-pattern]')) {
+    el.style.setProperty('--swatch', patternColor(theme, el.dataset.pattern!));
+  }
+}
+
 function render(data: BalanceData) {
   fillFigures(data);
   const d = data.datasets;
@@ -997,6 +1139,10 @@ function render(data: BalanceData) {
     ['pattern', text], ['share_pre', FMT.pct], ['share_recent', FMT.pct], ['tenure', FMT.n1], ['commits', FMT.n0],
     ['approvals', FMT.n0], ['owner', FMT.pct],
   ]);
+  const mapSummary = d.pattern_map_summary[0];
+  patternMap('c-map-pc2', 'pc2', d.pattern_cells, d.pattern_ellipses, Number(mapSummary.bin), theme);
+  patternMap('c-map-pc3', 'pc3', d.pattern_cells, d.pattern_ellipses, Number(mapSummary.bin), theme);
+  patternSwatches(theme);
   table('t-joiners', d.joiner_paths.map((r) => ({ ...r, cohort: String(r.cohort).replace('-', '–') })), [
     ['cohort', text], ['people', FMT.n0], ['light → reviewer', FMT.pct], ['ramping up to author', FMT.pct], ['stays light', FMT.pct],
   ]);

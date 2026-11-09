@@ -184,7 +184,46 @@ recovered in 2026. Nothing here shows the AI era cutting the step from
 author to reviewer. The slowdown is in newcomers reaching reviewing within
 their first three years, and that predates 2025.
 
-## Caveats
+## Map and rules (on the page)
+
+`scripts/balance_cluster_map.py` (2026-11-08) draws the git-model patterns
+for the page and turns them into plain criteria. Run it after
+`balance_clusters.py`, then `balance_page_extras.py`:
+
+```bash
+COSH_DATA_DIR=/home/rbagent/projects/cosh/data/private python3 scripts/balance_cluster_map.py
+COSH_DATA_DIR=/home/rbagent/projects/cosh/data/private python3 scripts/balance_page_extras.py
+```
+
+It reads `people.json` and writes `balance_clusters/map.json`, aggregates
+only:
+
+- **Maps.** Person-halves binned in 0.25-unit squares on PC1 × PC2 and
+  PC1 × PC3, with each square's count and most common pattern. Squares
+  with fewer than 5 person-halves are dropped (267 and 367 of 27,966), so no
+  square stands for one person and no one's PC scores are published.
+  PC1 × PC2 separates four patterns; PC3 (larger CLs, more approvals on
+  newcomers' CLs) separates the two pairs that overlap there:
+  reviewer-mentors from steady authors, newcomers from early-career.
+- **Ellipses.** Per pattern and map, mean ± 1.5 SD along the principal axes
+  of its scores. Each holds 62–71% of its pattern's half-years.
+- **Rules** (`rule()`), checked in order on raw per-half-year values. They
+  came from a depth-4 decision tree on raw counts (84% agreement), rounded
+  to readable thresholds:
+
+  | # | Pattern | Rule | Caught | Right |
+  |---|---|---|---|---|
+  | 1 | reviewer-mentors | 3+ approvals, a third or more on first-year authors' CLs | 92% | 65% |
+  | 2 | authors who also review a lot | in OWNERS, 12+ commits, 50+ approvals | 78% | 89% |
+  | 3 | steady authors | in OWNERS, 12+ commits, under 50 approvals | 74% | 79% |
+  | 4 | mostly reviewing | in OWNERS, under 12 commits, approvals ≥ commits | 78% | 90% |
+  | 5 | newcomers ramping up | anyone else with median CL ≥ 40 lines | 87% | 84% |
+  | 6 | early-career, light activity | everyone else | 89% | 73% |
+
+  They agree with k-means for 81.4% of person-halves. The rules use fixed
+  counts while the clusters use within-half z-scores, so the fit varies a
+  little by year.
+
 
 - Low silhouettes: membership near a boundary is arbitrary, so read a
   person's path as a tendency, not a label.

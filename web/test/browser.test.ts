@@ -2760,11 +2760,15 @@ test('the Review Balance page: a draft warning first, every figure, chart and ta
   for (const f of figures) assert.match(f, /\d/, f);
   // Every chart is drawn, and every table has rows.
   const canvases = await page.$$eval('canvas', (cs) => cs.map((c) => [c.id, c.width > 0 && c.height > 0] as const));
-  assert.equal(canvases.length, 44);
+  assert.equal(canvases.length, 46);
   for (const [id, drawn] of canvases) assert.ok(drawn, id);
   const rows = await page.$$eval('table.balance-table', (ts) => ts.map((t) => [t.id, (t as HTMLTableElement).tBodies[0].rows.length] as const));
-  assert.deepEqual(rows.map(([id]) => id), ['t-areas', 't-signals', 't-patterns', 't-joiners', 't-transitions', 't-ai', 't-mech']);
+  assert.deepEqual(rows.map(([id]) => id), ['t-areas', 't-signals', 't-patterns', 't-pattern-rules', 't-joiners', 't-transitions', 't-ai', 't-mech']);
   for (const [id, n] of rows) assert.ok(n >= 2, id);
+  // The pattern maps' rules table: six patterns, each with a swatch in its own colour.
+  const swatches = await page.$$eval('#t-pattern-rules .swatch', (ss) => ss.map((e) => getComputedStyle(e).backgroundColor));
+  assert.equal(swatches.length, 6);
+  assert.equal(new Set(swatches).size, 6, swatches.join(' '));
   // The same-people changes: one row per measure, faded where the interval crosses zero, each
   // dot inside its interval and the intervals within the track.
   const forest = await page.$$eval('#forest .forest-rows li', (lis) => lis.map((li) => {

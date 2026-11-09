@@ -763,6 +763,103 @@
         </div>
         <p class="note">Medians per half-year; OWNERS is the share ever added to an OWNERS file by then.</p>
         <p class="sub">
+          On a map, the six patterns sit side by side. A principal-component analysis (PCA) finds the directions in
+          which the nine measures vary most together. The first, across, is seniority and reviewing
+          (<b data-src="pattern_map_summary" data-field="pc1" data-fmt="pct">–</b> of the variation): more
+          approvals, OWNERS status, a larger share of reviewing and longer tenure. The second, up, is authoring
+          (<b data-src="pattern_map_summary" data-field="pc2" data-fmt="pct">–</b>): commits in more months, and
+          less of one's activity going to review. Four patterns separate on those two. The third direction
+          (<b data-src="pattern_map_summary" data-field="pc3" data-fmt="pct">–</b>), larger CLs and more approvals
+          on newcomers' CLs, separates the other two pairs: reviewer-mentors from steady authors, and newcomers
+          from early-career contributors.
+        </p>
+        <template data-msg="map-tip"><slot name="n"></slot> person-halves, <slot name="share"></slot> in this pattern</template>
+        <div class="panels">
+          <figure class="panel"><h3>Seniority and reviewing, against authoring</h3>
+            <p class="note">Right: more approvals, OWNERS, a larger review share, longer tenure. Up: more commits in
+              more months; down: mostly reviewing.</p>
+            <div class="chart chart-map"><canvas id="c-map-pc2" role="img" aria-label="Map of person-halves: seniority and reviewing across, authoring up, coloured by activity pattern with an ellipse around each pattern."></canvas></div></figure>
+          <figure class="panel"><h3>Seniority and reviewing, against CL size and mentoring</h3>
+            <p class="note">Right: as on the first map. Up: larger CLs and more approvals on newcomers' CLs; down: smaller
+              CLs spread over more directories.</p>
+            <div class="chart chart-map"><canvas id="c-map-pc3" role="img" aria-label="Map of person-halves: seniority and reviewing across, CL size and mentoring up, coloured by activity pattern with an ellipse around each pattern."></canvas></div></figure>
+        </div>
+        <p class="note">
+          Each square is a small region of the map holding at least five person-halves, darker where there are more,
+          in the colour of its most common pattern; sparser regions are left blank, so no square stands for one
+          person. Each ellipse is 1.5 standard deviations around a pattern's centre and holds about two-thirds of
+          its half-years. The centre lines mark the average person active that half-year. Click a pattern in the
+          legend to hide it.
+        </p>
+        <h3 id="pattern-rules-title">What puts someone in each pattern</h3>
+        <p class="sub">
+          The clustering weighs all nine measures at once, but the maps show which few tell the patterns apart.
+          Checked in this order, these rules on a half-year's counts give the same pattern as the clustering for
+          <b data-src="pattern_map_summary" data-field="agreement" data-fmt="pct">–</b> of person-halves. Most
+          misses sit near a boundary, where the clustering itself is a close call. The rules use fixed counts, while
+          the clustering compares each person with everyone active in the same half-year, so they fit some years
+          better than others.
+        </p>
+        <div class="table-wrap">
+          <table id="t-pattern-rules" class="balance-table pattern-rules" aria-labelledby="pattern-rules-title">
+            <thead><tr><th>Pattern</th><th>On the maps</th><th>Rule</th><th>Typical half-year (medians)</th><th>Caught by the rule</th><th>Rule is right</th></tr></thead>
+            <tbody>
+              <tr>
+                <th scope="row"><span class="swatch" data-pattern="reviewer-mentors"></span>1. Reviewer-mentors</th>
+                <td>Right of centre on the first map, mixed in with steady authors; at the top of the second map.</td>
+                <td>At least three approvals, a third or more of them on CLs by first-year authors.</td>
+                <td><b data-src="pattern_rules" data-field="commits" data-where="pattern=reviewer-mentors" data-fmt="n0">–</b> commits, <b data-src="pattern_rules" data-field="approvals" data-where="pattern=reviewer-mentors" data-fmt="n0">–</b> approvals, <b data-src="pattern_rules" data-field="newcomer_share" data-where="pattern=reviewer-mentors" data-fmt="pct">–</b> of them on newcomers' CLs; <b data-src="pattern_rules" data-field="tenure" data-where="pattern=reviewer-mentors" data-fmt="n1">–</b> years in</td>
+                <td><b data-src="pattern_rules" data-field="recall" data-where="pattern=reviewer-mentors" data-fmt="pct">–</b></td>
+                <td><b data-src="pattern_rules" data-field="precision" data-where="pattern=reviewer-mentors" data-fmt="pct">–</b></td>
+              </tr>
+              <tr>
+                <th scope="row"><span class="swatch" data-pattern="authors who also review a lot"></span>2. Authors who also review a lot</th>
+                <td>Far right on both maps, above the centre line on the first map.</td>
+                <td>In OWNERS, 12 or more commits and 50 or more approvals.</td>
+                <td><b data-src="pattern_rules" data-field="commits" data-where="pattern=authors who also review a lot" data-fmt="n0">–</b> commits, <b data-src="pattern_rules" data-field="approvals" data-where="pattern=authors who also review a lot" data-fmt="n0">–</b> approvals; <b data-src="pattern_rules" data-field="tenure" data-where="pattern=authors who also review a lot" data-fmt="n1">–</b> years in</td>
+                <td><b data-src="pattern_rules" data-field="recall" data-where="pattern=authors who also review a lot" data-fmt="pct">–</b></td>
+                <td><b data-src="pattern_rules" data-field="precision" data-where="pattern=authors who also review a lot" data-fmt="pct">–</b></td>
+              </tr>
+              <tr>
+                <th scope="row"><span class="swatch" data-pattern="steady authors"></span>3. Steady authors</th>
+                <td>Just right of centre and above it on the first map; in the middle of the second map, over mostly reviewing.</td>
+                <td>In OWNERS, 12 or more commits and fewer than 50 approvals.</td>
+                <td><b data-src="pattern_rules" data-field="commits" data-where="pattern=steady authors" data-fmt="n0">–</b> commits, <b data-src="pattern_rules" data-field="approvals" data-where="pattern=steady authors" data-fmt="n0">–</b> approvals; <b data-src="pattern_rules" data-field="tenure" data-where="pattern=steady authors" data-fmt="n1">–</b> years in</td>
+                <td><b data-src="pattern_rules" data-field="recall" data-where="pattern=steady authors" data-fmt="pct">–</b></td>
+                <td><b data-src="pattern_rules" data-field="precision" data-where="pattern=steady authors" data-fmt="pct">–</b></td>
+              </tr>
+              <tr>
+                <th scope="row"><span class="swatch" data-pattern="mostly reviewing"></span>4. Mostly reviewing</th>
+                <td>At the bottom of the first map, around the middle.</td>
+                <td>In OWNERS, fewer than 12 commits, and approvals at least as many as commits.</td>
+                <td><b data-src="pattern_rules" data-field="commits" data-where="pattern=mostly reviewing" data-fmt="n0">–</b> commits, <b data-src="pattern_rules" data-field="approvals" data-where="pattern=mostly reviewing" data-fmt="n0">–</b> approvals; <b data-src="pattern_rules" data-field="tenure" data-where="pattern=mostly reviewing" data-fmt="n1">–</b> years in</td>
+                <td><b data-src="pattern_rules" data-field="recall" data-where="pattern=mostly reviewing" data-fmt="pct">–</b></td>
+                <td><b data-src="pattern_rules" data-field="precision" data-where="pattern=mostly reviewing" data-fmt="pct">–</b></td>
+              </tr>
+              <tr>
+                <th scope="row"><span class="swatch" data-pattern="newcomers ramping up"></span>5. Newcomers ramping up</th>
+                <td>Far left, above the centre line on both maps.</td>
+                <td>Anyone else whose median CL changes 40 or more lines.</td>
+                <td><b data-src="pattern_rules" data-field="commits" data-where="pattern=newcomers ramping up" data-fmt="n0">–</b> commits of <b data-src="pattern_rules" data-field="lines" data-where="pattern=newcomers ramping up" data-fmt="n0">–</b> lines, no approvals; <b data-src="pattern_rules" data-field="tenure" data-where="pattern=newcomers ramping up" data-fmt="n1">–</b> years in, <b data-src="pattern_rules" data-field="owner" data-where="pattern=newcomers ramping up" data-fmt="pct">–</b> in OWNERS</td>
+                <td><b data-src="pattern_rules" data-field="recall" data-where="pattern=newcomers ramping up" data-fmt="pct">–</b></td>
+                <td><b data-src="pattern_rules" data-field="precision" data-where="pattern=newcomers ramping up" data-fmt="pct">–</b></td>
+              </tr>
+              <tr>
+                <th scope="row"><span class="swatch" data-pattern="early-career, light activity"></span>6. Early-career, light activity</th>
+                <td>Far left, below the newcomers, especially on the second map.</td>
+                <td>Everyone else: median CL under 40 lines.</td>
+                <td><b data-src="pattern_rules" data-field="commits" data-where="pattern=early-career, light activity" data-fmt="n0">–</b> commits of <b data-src="pattern_rules" data-field="lines" data-where="pattern=early-career, light activity" data-fmt="n0">–</b> lines, no approvals; <b data-src="pattern_rules" data-field="tenure" data-where="pattern=early-career, light activity" data-fmt="n1">–</b> years in, <b data-src="pattern_rules" data-field="owner" data-where="pattern=early-career, light activity" data-fmt="pct">–</b> in OWNERS</td>
+                <td><b data-src="pattern_rules" data-field="recall" data-where="pattern=early-career, light activity" data-fmt="pct">–</b></td>
+                <td><b data-src="pattern_rules" data-field="precision" data-where="pattern=early-career, light activity" data-fmt="pct">–</b></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="note">Counts are per half-year; approvals are <code>Reviewed-by</code> lines; first-year authors are
+          within a year of their first commit. CL size is the median changed lines; its medians here leave out half-years without
+          a commit. Caught: the share of the pattern's half-years the rule puts in it. Right: the share of the
+          rule's picks that the clustering put there too.</p>
+        <p class="sub">
           The slowdown is in <button type="button" class="term" popovertarget="def-newcomer">newcomers</button> reaching reviewing. Of people who joined in 2017–2019,
           <b data-src="joiner_paths" data-field="light → reviewer" data-where="cohort=2017-2019" data-fmt="pct">–</b>
           moved from light activity into a reviewing pattern within three years; of the 2021–2023 joiners,

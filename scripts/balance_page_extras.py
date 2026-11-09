@@ -4,12 +4,14 @@ summaries/balance.json (the Review Balance page).
 Inputs are aggregate outputs of other scripts, all in $COSH_DATA_DIR:
   balance_signals.json             scripts/balance_signals.py report --out
   balance_clusters/clusters.json   scripts/balance_clusters.py
+  balance_clusters/map.json        scripts/balance_cluster_map.py
   chrome_releases/summary.json     scripts/chrome_releases.py join
 
   COSH_DATA_DIR=<main>/data/private python3 scripts/balance_page_extras.py [summaries/balance.json]
 
 Nothing here names a person: clusters.json's "aggregate" block holds shares
-only, and people.json (per person) is never read.
+only, map.json holds binned counts (cells of 5+ person-halves), ellipses and
+rule agreement, and people.json (per person) is never read.
 """
 
 import json
@@ -87,6 +89,11 @@ def clusters(c):
     return out
 
 
+def pattern_map(m):
+    return {"pattern_cells": m["cells"], "pattern_ellipses": m["ellipses"], "pattern_loadings": m["loadings"],
+            "pattern_rules": m["rules"], "pattern_map_summary": [m["summary"]]}
+
+
 def security(s):
     sev = ["Critical", "High", "Medium", "Low"]
     rows = []
@@ -106,6 +113,7 @@ def main():
     new = {}
     new.update(signals(json.load(open(os.path.join(d, "balance_signals.json")))))
     new.update(clusters(json.load(open(os.path.join(d, "balance_clusters", "clusters.json")))))
+    new.update(pattern_map(json.load(open(os.path.join(d, "balance_clusters", "map.json")))))
     new.update(security(json.load(open(os.path.join(d, "chrome_releases", "summary.json")))))
     for k, v in new.items():
         print(f"{k}: {len(v)} rows", file=sys.stderr)

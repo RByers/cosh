@@ -2473,3 +2473,40 @@ button.term:focus-visible {
     grid-column: 1 / -1;
   }
 }
+
+/* The pattern maps: square-ish, with room for a two-line legend. */
+.chart.chart-map {
+  height: 380px;
+}
+
+.swatch {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  margin-right: 6px;
+  border-radius: 2px;
+  background: var(--swatch);
+  vertical-align: baseline;
+}
+
+.pattern-rules td,
+.pattern-rules th {
+  vertical-align: top;
+  white-space: normal;
+  text-align: left;
+}
+
+.pattern-rules tbody th {
+  white-space: nowrap;
+}
+
+.pattern-rules td:nth-child(2),
+.pattern-rules td:nth-child(3),
+.pattern-rules td:nth-child(4) {
+  min-width: 14em;
+}
+
+.pattern-rules td:nth-child(n + 5),
+.pattern-rules thead th:nth-child(n + 5) {
+  text-align: right;
+}
