@@ -38,6 +38,9 @@
   --org-11: #c37995;
   --org-12: #8379c3;
   --critical: #d03b3b;
+  /* A one-hue ramp for ordered series (CL size tenths): faint to strong. */
+  --seq-lo: #bcd5f3;
+  --seq-hi: #0b3a78;
 }
 
 @media screen and (prefers-color-scheme: dark) {
@@ -60,6 +63,8 @@
     --series-6: #008300;
     --series-7: #9085e9;
     --series-8: #e66767;
+    --seq-lo: #23405f;
+    --seq-hi: #b5d6fb;
     --praise-author: #199e70;
     --praise-reviewer: #6fae3a;
     --given-author: #3987e5;
@@ -100,6 +105,8 @@
   --series-6: #008300;
   --series-7: #9085e9;
   --series-8: #e66767;
+  --seq-lo: #23405f;
+  --seq-hi: #b5d6fb;
   --praise-author: #199e70;
   --praise-reviewer: #6fae3a;
   --given-author: #3987e5;
@@ -2134,4 +2141,178 @@ dl.defs dd {
 
 .area-table tbody th.hm-label {
   padding: 0 8px 0 0;
+}
+
+/* Terms with a definition (balance.html): a dotted underline; tapping opens
+ * a bubble (.term-pop, a popover) that src/terms.ts places beside the term. */
+button.term {
+  all: unset;
+  cursor: help;
+  text-decoration: underline dotted;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+  text-decoration-color: var(--text-muted);
+}
+
+button.term:hover,
+button.term[aria-expanded='true'] {
+  text-decoration-color: currentColor;
+}
+
+button.term:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+  border-radius: 2px;
+}
+
+.term-pop {
+  position: absolute;
+  inset: auto;
+  margin: 0;
+  width: min(22rem, calc(100vw - 32px));
+  padding: 10px 12px;
+  background: var(--surface-1);
+  color: var(--text-primary);
+  border: 1px solid var(--baseline);
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.18);
+  font-size: 0.875rem;
+  line-height: 1.45;
+  top: var(--pop-top, 30vh);
+  left: var(--pop-left, 16px);
+}
+
+.term-pop p {
+  margin: 0;
+}
+
+/* Hidden until src/terms.ts has placed it, so it doesn't flash elsewhere. */
+.term-pop:popover-open:not([data-placed]) {
+  visibility: hidden;
+}
+
+.term-pop p + p {
+  margin-top: 6px;
+}
+
+.term-pop a {
+  color: var(--accent);
+}
+
+.formula {
+  margin: 4px 0 12px;
+  padding: 8px 12px;
+  border-left: 3px solid var(--accent);
+  background: var(--page);
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+/* "Defined: newcomers and tenure": a timeline of tenure bands, not to scale. */
+.tenure-def {
+  margin: 8px 0 12px;
+}
+
+.tenure-track {
+  display: grid;
+  grid-template-columns: 1fr 1.6fr 1.2fr 1.6fr 1.6fr 1.3fr;
+  gap: 0 3px;
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.tb {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  font-size: 0.8rem;
+  line-height: 1.3;
+}
+
+.tb-bar {
+  height: 18px;
+  border-radius: 3px;
+  background: var(--seg);
+}
+
+.tb-new {
+  --seg: var(--series-2);
+}
+
+.tb-q1 .tb-bar {
+  background: repeating-linear-gradient(135deg, var(--series-2) 0 6px, color-mix(in srgb, var(--series-2) 70%, var(--surface-1)) 6px 9px);
+}
+
+.tb-lt2 {
+  --seg: color-mix(in srgb, var(--series-1) 35%, var(--surface-1));
+}
+
+.tb-y2 {
+  --seg: color-mix(in srgb, var(--series-1) 55%, var(--surface-1));
+}
+
+.tb-y5 {
+  --seg: color-mix(in srgb, var(--series-1) 78%, var(--surface-1));
+}
+
+.tb-y10 {
+  --seg: var(--series-1);
+}
+
+.tb-name {
+  font-weight: 600;
+}
+
+.tb-use {
+  color: var(--text-secondary);
+}
+
+.tenure-marks {
+  display: grid;
+  grid-template-columns: 1fr 1.6fr 1.2fr 1.6fr 1.6fr 1.3fr;
+  gap: 4px 3px;
+  margin: 8px 0 6px;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.tm-start {
+  margin: 6px 0 -8px;
+  padding: 0 0 10px 8px;
+  border-left: 2px solid var(--text-primary);
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.tm-new {
+  grid-row: 1;
+  grid-column: 1 / 3;
+  padding-top: 3px;
+  border-top: 2px solid var(--series-2);
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+@media (max-width: 560px) {
+  .tenure-track {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+
+  .tb {
+    display: grid;
+    grid-template-columns: 56px 6.5rem 1fr;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .tenure-marks {
+    display: none;
+  }
+
+  .tenure-def .note {
+    margin-top: 8px;
+  }
 }

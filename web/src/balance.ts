@@ -9,6 +9,7 @@ import { heatRowLabel, heatTable, node } from './heatmap.ts';
 import { readTheme, type Theme } from './charts.ts';
 import { fmtHoursBin, fmtNum, fmtQuarterMonth } from './format.ts';
 import { fill, msg } from './text.ts';
+import { initTerms } from './terms.ts';
 
 Chart.register(Filler);
 
@@ -151,7 +152,13 @@ function line(
   labels: string[],
   series: { label: string; data: (number | null)[]; color: string; axis?: string }[],
   fmt: (v: number) => string,
-  opts: { zero?: boolean; ref?: number; y2fmt?: (v: number) => string } = {},
+  opts: {
+    zero?: boolean; ref?: number; y2fmt?: (v: number) => string;
+    /** Tooltip title and line text, for charts that say more than the value. */
+    title?: (i: number) => string; tip?: (i: TooltipItem<'line'>) => string;
+    /** Solid lines however many series (ordered series such as size tenths). */
+    ramp?: boolean; pointRadius?: number;
+  } = {},
 ) {
   const scales: Record<string, unknown> = axes(theme, fmt, opts);
   if (opts.y2fmt) {
@@ -164,7 +171,8 @@ function line(
       ticks: { color: theme.muted, font: { family: theme.font }, maxTicksLimit: 6, callback: (v: number | string) => f(Number(v)) },
     };
   }
-  const o = options(theme, fmt, series.length > 1);
+  const o = options(theme, fmt, series.length > 1, opts.title);
+  if (opts.tip) o.plugins.tooltip.callbacks.label = opts.tip;
   if (opts.y2fmt) {
     const f2 = opts.y2fmt;
     o.plugins.tooltip.callbacks.label = (i: TooltipItem<'line'>) =>
@@ -176,14 +184,14 @@ function line(
       labels,
       // Past the palette's eight colours, lines repeat them dashed.
       datasets: series.map((s, i) => ({
-        borderDash: i >= theme.series.length ? [5, 3] : [],
+        borderDash: i >= theme.series.length && !opts.ramp ? [5, 3] : [],
         label: s.label,
         data: s.data,
         yAxisID: s.axis ?? 'y',
         borderColor: s.color,
         backgroundColor: s.color,
         borderWidth: 2,
-        pointRadius: labels.length > 12 ? 0 : 2.5,
+        pointRadius: opts.pointRadius ?? (labels.length > 12 ? 0 : 2.5),
         pointHoverRadius: 4,
         tension: 0,
         spanGaps: true,
@@ -334,6 +342,37 @@ function yearHistogram(id: string, rows: Row[], summary: Row, theme: Theme) {
     options: { ...o, plugins: { ...o.plugins, legend: { ...o.plugins.legend, labels: { ...o.plugins.legend.labels, boxHeight: 10, boxWidth: 10 } } },
       scales: axes(theme, FMT.pct, { zero: true }) },
   } as never));
+}
+
+/** `t` (0..1) of the way from hex colour `a` to `b`. */
+function mix(a: string, b: string, t: number): string {
+  const rgb = (h: string) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
+  const [x, y] = [rgb(a), rgb(b)];
+  return '#' + x.map((v, i) => Math.round(v + (y[i] - v) * t).toString(16).padStart(2, '0')).join('');
+}
+
+/** "Defined: the review load index": one line per tenth of CLs by size, the
+ * share of its CLs by reviewer threads, on a one-hue ramp from small to big. */
+function loadDefinition(hist: Row[], deciles: Row[], theme: Theme) {
+  const cs = getComputedStyle(document.documentElement);
+  const lo = cs.getPropertyValue('--seq-lo').trim();
+  const hi = cs.getPropertyValue('--seq-hi').trim();
+  // One point per thread count; the open-ended last bin is left off (the caption gives its share).
+  const bins = hist.filter((r) => r.decile === deciles[0].decile && r.hi !== null);
+  const labels = bins.map((b) => (b.hi === b.lo ? String(b.lo) : `${b.lo}–${b.hi}`));
+  const last = deciles.length - 1;
+  const series = deciles.map((d, i) => ({
+    label: i === last ? msg('loaddef-top', { lo: FMT.n0(Number(d.lo)) })
+      : msg('loaddef-decile', { lo: FMT.n0(Number(d.lo)), hi: FMT.n0(Number(d.hi)) }),
+    data: bins.map((b) => (hist.find((r) => r.decile === d.decile && r.bin === b.bin)?.share as number | undefined) ?? null),
+    color: /^#[0-9a-f]{6}$/i.test(lo) && /^#[0-9a-f]{6}$/i.test(hi) ? mix(lo, hi, i / last) : theme.series[0],
+  }));
+  line('c-loaddef', theme, labels, series, FMT.pct, {
+    zero: true, ramp: true, pointRadius: 1.5,
+    title: (i) => msg('loaddef-bin', { threads: labels[i] }),
+    tip: (i) => `${i.dataset.label}: ${msg('loaddef-tip', {
+      share: FMT.pct1(i.parsed.y ?? 0), mean: FMT.n1(Number(deciles[i.datasetIndex].mean_threads)) })}`,
+  });
 }
 
 const TENURE_BANDS: [string, string][] = [['lt2', 'Under 2 years'], ['y2_5', '2–5 years'], ['y5_10', '5–10 years'], ['y10p', '10+ years']];
@@ -862,6 +901,8 @@ function render(data: BalanceData) {
 
   table('t-ai', d.ai_paired, [['metric', text], ['diff', signed], ['lo', signed], ['hi', signed], ['n', FMT.n0]]);
 
+  loadDefinition(d.load_def_hist, d.load_def_deciles, theme);
+
   mechanicalBars(d.mechanical_files, theme);
   table('t-mech', d.mechanical_repetition, [
     ['repetition', text], ['cls', FMT.n0], ['with_thread', FMT.pct], ['threads_per_file', FMT.n3], ['median_files', FMT.n0],
@@ -879,6 +920,7 @@ async function main() {
     const [data, dirs] = await Promise.all([get<BalanceData>(balanceUrl), get<DirData>(dirsUrl)]);
     render(data);
     dirMap(dirs);
+    initTerms();
     // Charts read their colours from CSS: redraw when the colour scheme flips.
     matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => render(data));
   } catch (e) {

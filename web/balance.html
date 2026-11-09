@@ -35,8 +35,8 @@
       <div class="lede">
         <h2 class="goal-head">The question</h2>
         <p>
-          Chromium has grown for two decades through code review: experts give feedback, newcomers learn to need
-          less of it, and in time they review and own code themselves and train the next newcomers. AI tools now
+          Chromium has grown for two decades through code review: experts give feedback, <button type="button" class="term" popovertarget="def-newcomer">newcomers</button> learn to need
+          less of it, and in time they review and own code themselves and train the next <button type="button" class="term" popovertarget="def-newcomer">newcomers</button>. AI tools now
           make changes cheaper to write than to review. This page asks whether that cycle still holds, and how
           the community can adapt to agentic engineering in a way that improves product quality, robustness,
           engineering rigour and velocity, and keeps growing its people into expert engineers.
@@ -52,7 +52,7 @@
           <li><strong>Growth:</strong> whether people need less review feedback as they gain tenure and know an area, and
             whether they grow in velocity, breadth or reviewing, compared with chance and across cohorts.</li>
           <li><strong>Carrying the project:</strong> moving from author to reviewer to OWNER, who reviews
-            newcomers, and how many mentees become mentors.</li>
+            <button type="button" class="term" popovertarget="def-newcomer">newcomers</button>, and how many mentees become mentors.</li>
         </ul>
         <h2 class="goal-head">What we see so far</h2>
         <p>
@@ -60,13 +60,13 @@
           bigger too. Review feedback per line fell: like for like, a 2026 CL gets about a third less review feedback than one in
           2023. Waits shortened in 2025 and are back to 2023 levels, and reverts haven't risen. People who joined
           in 2025 land more CLs and review others sooner than earlier joiners, and draw less review feedback. Fewer people review than write CLs, and each reviewer now sees
-          half again as many CLs as in 2023. Fewer mid-career reviewers approve newcomers' CLs, and fewer
-          newcomers go on to mentor others or move into reviewing, trends that began before AI tools.
+          half again as many CLs as in 2023. Fewer mid-career reviewers approve <button type="button" class="term" popovertarget="def-newcomer">newcomers</button>' CLs, and fewer
+          <button type="button" class="term" popovertarget="def-newcomer">newcomers</button> go on to mentor others or move into reviewing, trends that began before AI tools.
         </p>
         <p>
           Following the same people separates two explanations for the drop in review feedback. Established authors get
           fewer threads but their CLs are no better on what reviewers don't control, so reviewers seem to be easing
-          off a little. Newcomers who joined in 2025 do better than matched 2024 joiners even on those measures, so
+          off a little. <button type="button" class="term" popovertarget="def-newcomer">Newcomers</button> who joined in 2025 do better than matched 2024 joiners even on those measures, so
           they seem to arrive better. More CLs are abandoned in 2026, at every tenure. Security fixes jumped more
           than tenfold in 2026, a new load on reviewers. No single signal here separates AI from other changes in
           the project.
@@ -97,7 +97,7 @@
         <div class="tile"><div class="tile-label">CLs per commenting reviewer, per quarter</div>
           <div class="tile-value"><b data-src="reviewer_quarters" data-field="cls_per_reviewer" data-where="q=2024Q3" data-fmt="n1">–</b> → <b data-src="reviewer_quarters" data-field="cls_per_reviewer" data-where="q=2026Q3" data-fmt="n1">–</b></div>
           <div class="tile-sub">2024 Q3 → 2026 Q3</div></div>
-        <div class="tile"><div class="tile-label">Newcomer approvals by 2–5-year reviewers</div>
+        <div class="tile"><div class="tile-label"><button type="button" class="term" popovertarget="def-newcomer">Newcomer</button> approvals by 2–5-year reviewers</div>
           <div class="tile-value"><b data-src="newcomer_review" data-field="y2_5" data-where="year=2019" data-fmt="pct">–</b> → <b data-src="newcomer_review" data-field="y2_5" data-where="year=2026" data-fmt="pct">–</b></div>
           <div class="tile-sub">2019 → 2026</div></div>
       </section>
@@ -117,7 +117,7 @@
           <b data-src="exchange" data-field="threads_per_100" data-where="q=2026Q3" data-fmt="n1">–</b>.
         </p>
         <p class="sub">
-          The review load index compares each CL's reviewer threads with the 2023–24 average for CLs of the same
+          The <button type="button" class="term" popovertarget="def-load-index">review load index</button> compares each CL's reviewer threads with the 2023–24 average for CLs of the same
           size and directory, so bigger CLs or a shift between areas don't move it. It fell from
           <b data-src="exchange" data-field="load_index" data-where="q=2023Q3" data-fmt="n2">–</b> to
           <b data-src="exchange" data-field="load_index" data-where="q=2026Q3" data-fmt="n2">–</b>: like for like,
@@ -131,7 +131,7 @@
             <p class="note">Changed lines (insertions + deletions) of merged CLs.</p>
             <div class="chart chart-short"><canvas id="c-size" role="img" aria-label="Median changed lines of merged CLs, per quarter."></canvas></div></figure>
           <figure class="panel"><h3>Review per CL, like for like</h3>
-            <p class="note">Review load index: 1.0 (dashed) is the 2023–24 average for a CL of the same size and directory.</p>
+            <p class="note"><button type="button" class="term" popovertarget="def-load-index">Review load index</button>: 1.0 (dashed) is the 2023–24 average for a CL of the same size and directory.</p>
             <div class="chart chart-short"><canvas id="c-load" role="img" aria-label="Review load index per quarter."></canvas></div></figure>
         </div>
         <h3>Nine years of git history</h3>
@@ -280,8 +280,8 @@
         <a class="card-anchor" href="#areas" aria-label="Link to this section" title="Link to this section">#</a>
         <h2 id="areas-title">Across the codebase</h2>
         <p class="sub">
-          The same shift shows in nearly every busy directory: more CLs, more newcomers, fewer threads per line.
-          In <code>chrome/browser</code>, newcomers' CLs went from
+          The same shift shows in nearly every busy directory: more CLs, more <button type="button" class="term" popovertarget="def-newcomer">newcomers</button>, fewer threads per line.
+          In <code>chrome/browser</code>, <button type="button" class="term" popovertarget="def-newcomer">newcomers</button>' CLs went from
           <b data-src="areas" data-field="y24_newcomer_share" data-where="area=chrome/browser/" data-fmt="pct1">–</b>
           to <b data-src="areas" data-field="now_newcomer_share" data-where="area=chrome/browser/" data-fmt="pct1">–</b>
           of the total. Waits nearly doubled in the deepest platform code: the median first review in
@@ -296,7 +296,7 @@
         <p class="note">
           A CL counts in its main 3-level directory (the one with the most changed lines) and in that
           directory's parents. Directories with under 200 CLs in either period are left out. "Now" is 2025 Q4 to
-          2026 Q3. Load index: 1.0 is the 2023–24 average for the CL's size and directory. Each measure's two
+          2026 Q3. <button type="button" class="term" popovertarget="def-load-index">Load index</button>: 1.0 is the 2023–24 average for the CL's size and directory. Each measure's two
           columns share one shading, stronger for more (CLs on a log scale). Hours to first review are red where
           the wait grew by more than a tenth, green where it shrank by more than a tenth.
         </p>
@@ -335,7 +335,7 @@
         </div>
         <p id="dir-note" class="note"></p>
         <template data-msg="dir-note">
-          <span data-if="m=load_index">Review load index: reviewer threads against the 2023–24 average for CLs of the
+          <span data-if="m=load_index"><button type="button" class="term" popovertarget="def-load-index">Review load index</button>: reviewer threads against the 2023–24 average for CLs of the
             same size and directory (1.0).</span>
           <span data-if="m=threads_per_100">Mean reviewer threads per 100 changed lines, for CLs of 10 lines or more.</span>
           <span data-if="m=ftr_p50">Median clock hours from being sent for review to the first substantive review.</span>
@@ -367,9 +367,9 @@
         <p class="sub">
           In 2026 the curve keeps its shape but drops, most at the start:
           <b data-src="learning" data-field="load_index" data-where="era=2026 (to Sep)&amp;bucket=0-3" data-fmt="x">–</b>
-          for a first-quarter newcomer,
+          for a first-quarter <button type="button" class="term" popovertarget="def-newcomer">newcomer</button>,
           <b data-src="learning" data-field="load_index" data-where="era=2026 (to Sep)&amp;bucket=120-999" data-fmt="x">–</b>
-          for a ten-year veteran. Either newcomers arrive better prepared, or they get less of the feedback that
+          for a ten-year veteran. Either <button type="button" class="term" popovertarget="def-newcomer">newcomers</button> arrive better prepared, or they get less of the feedback that
           trains them. The <a href="#cohorts">cohorts</a> and the <a href="#pipeline">training chain</a> below
           suggest both.
         </p>
@@ -392,8 +392,8 @@
           <b data-src="signals_era" data-field="neg_share" data-where="era=2023H2-2024" data-fmt="pct1">–</b> of
           reviewed CLs got one in 2023–24, and
           <b data-src="signals_era" data-field="neg_share" data-where="era=2026" data-fmt="pct1">–</b> in 2026.
-          Reviewers mostly object in comments. Still, −1 votes track learning as sharply as the review load index:
-          before AI tools, newcomers in their first three months drew
+          Reviewers mostly object in comments. Still, −1 votes track learning as sharply as the <button type="button" class="term" popovertarget="def-load-index">review load index</button>:
+          before AI tools, <button type="button" class="term" popovertarget="def-newcomer">newcomers</button> in their first three months drew
           <b data-src="signals_tenure" data-field="neg_index" data-where="era=2023H2-2024&amp;tenure_months=0-3" data-fmt="x">–</b>
           the usual rate for their CLs' size, and ten-year veterans
           <b data-src="signals_tenure" data-field="neg_index" data-where="era=2023H2-2024&amp;tenure_months=120+" data-fmt="x">–</b>.
@@ -403,7 +403,7 @@
           <b data-src="signals_era" data-field="abandon_rate" data-where="era=2023H2-2024" data-fmt="pct1">–</b> of
           reviewed CLs in 2023–24 to
           <b data-src="signals_era" data-field="abandon_rate" data-where="era=2026" data-fmt="pct1">–</b>. It rose at
-          every tenure, most for newcomers, whose first-quarter CLs were abandoned at
+          every tenure, most for <button type="button" class="term" popovertarget="def-newcomer">newcomers</button>, whose first-quarter CLs were abandoned at
           <b data-src="signals_tenure" data-field="abandon_index" data-where="era=2026&amp;tenure_months=0-3" data-fmt="x">–</b>
           the 2023–24 norm. A −1 now ends a CL more often than it leads to a reworked landing:
           <b data-src="signals_era" data-field="after_neg_abandoned" data-where="era=2026" data-fmt="pct">–</b> of CLs
@@ -478,7 +478,7 @@
         <h3>Reviewers by tenure: speed and thoroughness</h3>
         <p class="note">
           Each (CL, reviewer) pair. Response: weekday hours from being added to the attention set to the first
-          comment. Threads: review threads started per CL reviewed. Newcomer share: CLs reviewed whose author was
+          comment. Threads: review threads started per CL reviewed. <button type="button" class="term" popovertarget="def-newcomer">Newcomer</button> share: CLs reviewed whose author was
           in their first year.
         </p>
         <div class="table-wrap">
@@ -526,7 +526,7 @@
             </div></figure>
         <h3>Newcomers: matched cohorts</h3>
         <p class="sub">
-          For newcomers the answer differs. We paired
+          For <button type="button" class="term" popovertarget="def-newcomer">newcomers</button> the answer differs. We paired
           <b data-src="signals_summary" data-field="matched_pairs" data-fmt="n0">–</b> people who joined in 2025 with
           2024 joiners who started alike: CL size, top-level directory, email domain and Gerrit activity before
           their first commit. Nine to twelve months in, the 2025 joiners still landed more
@@ -538,7 +538,7 @@
           of lines against
           <b data-src="matched" data-field="interdiff_p50" data-where="arm=joined 2024&amp;months=9-12" data-fmt="pct">–</b>),
           and they drew fewer threads even against the same quarter's norm, so their lead isn't only the
-          project-wide drop. The cost is more abandoned CLs early on. For newcomers, the signs lean to arriving
+          project-wide drop. The cost is more abandoned CLs early on. For <button type="button" class="term" popovertarget="def-newcomer">newcomers</button>, the signs lean to arriving
           better.
         </p>
         <div class="table-wrap">
@@ -590,21 +590,21 @@
         <a class="card-anchor" href="#pipeline" aria-label="Link to this section" title="Link to this section">#</a>
         <h2 id="pipeline-title">The training chain: experts teaching newcomers who become experts</h2>
         <p class="sub">
-          Chromium has always trained newcomers through review. For years, people who were themselves only a few
+          Chromium has always trained <button type="button" class="term" popovertarget="def-newcomer">newcomers</button> through review. For years, people who were themselves only a few
           years in did a large share of it. In 2019 reviewers with two to five years' tenure gave
           <b data-src="newcomer_review" data-field="y2_5" data-where="year=2019" data-fmt="pct">–</b> of the
-          approvals on newcomers' CLs; in 2026,
+          approvals on <button type="button" class="term" popovertarget="def-newcomer">newcomers</button>' CLs; in 2026,
           <b data-src="newcomer_review" data-field="y2_5" data-where="year=2026" data-fmt="pct">–</b>. Reviewers
           with ten or more years now give
           <b data-src="newcomer_review" data-field="y10p" data-where="year=2026" data-fmt="pct">–</b>, at a time
-          when newcomers' CLs are
+          when <button type="button" class="term" popovertarget="def-newcomer">newcomers</button>' CLs are
           <b data-src="newcomer_review" data-field="share_of_all" data-where="year=2026" data-fmt="pct">–</b> of all
           approvals.
         </p>
         <p class="sub">
           Fewer people complete the chain, and the decline started before AI tools. Of those who joined in 2018,
           <b data-src="mentorship" data-field="became_mentors" data-where="year=2018" data-fmt="pct">–</b> were
-          mentoring newcomers of their own within four years; of the 2022 joiners,
+          mentoring <button type="button" class="term" popovertarget="def-newcomer">newcomers</button> of their own within four years; of the 2022 joiners,
           <b data-src="mentorship" data-field="became_mentors" data-where="year=2022" data-fmt="pct">–</b>. New
           regular reviewers (60 or more approvals in a year for the first time) fell to
           <b data-src="pipeline" data-field="new_regular_reviewers" data-where="year=2025" data-fmt="n0">–</b> in
@@ -613,7 +613,7 @@
           <b data-src="pipeline" data-field="new_regular_reviewers" data-where="year=2026" data-fmt="n0">–</b> by
           October 2026. Mentoring hasn't concentrated: the busiest tenth of mentors took
           <b data-src="mentorship" data-field="top10_share" data-where="year=2018" data-fmt="pct">–</b> of 2018's
-          newcomers and
+          <button type="button" class="term" popovertarget="def-newcomer">newcomers</button> and
           <b data-src="mentorship" data-field="top10_share" data-where="year=2025" data-fmt="pct">–</b> of 2025's.
         </p>
         <div class="panels">
@@ -629,7 +629,7 @@
             <div class="chart"><canvas id="c-pipeline" role="img" aria-label="New regular reviewers, people first added to OWNERS and new authors, per year."></canvas></div></figure>
           <figure class="panel"><h3>Mentees who became mentors</h3>
             <p class="note">
-              Share of each start year's newcomers who, within four years, were among the top two approvers of at
+              Share of each start year's <button type="button" class="term" popovertarget="def-newcomer">newcomers</button> who, within four years, were among the top two approvers of at
               least two newer people's first ten CLs. 2023 and later windows are still open.
             </p>
             <div class="chart chart-short"><canvas id="c-mentors" role="img" aria-label="Share of each start year's newcomers who became mentors within four years."></canvas></div></figure>
@@ -644,7 +644,7 @@
         <h2 id="patterns-title">Patterns of activity, and how people move between them</h2>
         <p class="sub">
           Grouping every person's half-years by what they did (commits, size, breadth, approvals, review share,
-          newcomer approvals, OWNERS status and tenure) gives six patterns. The mix is stable: the shares moved
+          <button type="button" class="term" popovertarget="def-newcomer">newcomer</button> approvals, OWNERS status and tenure) gives six patterns. The mix is stable: the shares moved
           only a few points between 2023–24 and the most recent year, so AI tools haven't changed what roles people play,
           even where they changed how much each role does. Patterns are scored against everyone active in the same
           half-year, and many people sit near a boundary, so they describe tendencies, not labels.
@@ -657,7 +657,7 @@
         </div>
         <p class="note">Medians per half-year; OWNERS is the share ever added to an OWNERS file by then.</p>
         <p class="sub">
-          The slowdown is in newcomers reaching reviewing. Of people who joined in 2017–2019,
+          The slowdown is in <button type="button" class="term" popovertarget="def-newcomer">newcomers</button> reaching reviewing. Of people who joined in 2017–2019,
           <b data-src="joiner_paths" data-field="light → reviewer" data-where="cohort=2017-2019" data-fmt="pct">–</b>
           moved from light activity into a reviewing pattern within three years; of the 2021–2023 joiners,
           <b data-src="joiner_paths" data-field="light → reviewer" data-where="cohort=2021-2023" data-fmt="pct">–</b>,
@@ -712,7 +712,7 @@
           like) don't predict AI use. Only 15 of the 115 busiest directories have one, only 5 of those ever reach
           a visible share of marked CLs, and 36 reach it without a file. One enthusiast can add a file nobody else
           uses. A better treatment is the first quarter in which at least 5% of a directory's CLs are marked. In
-          the 41 directories that reached it, review feedback per CL drifted down afterwards (load index about 0.1 lower,
+          the 41 directories that reached it, review feedback per CL drifted down afterwards (<button type="button" class="term" popovertarget="def-load-index">load index</button> about 0.1 lower,
           with flat trends before), the direction of thinner review once AI is in use. With so few directories, no
           quarter's change is distinguishable from zero. Most AI use is unmarked, so every comparison here is
           biased toward finding nothing.
@@ -774,6 +774,103 @@
         </div>
       </section>
 
+      <section id="load-index" class="card" aria-labelledby="load-index-title">
+        <a class="card-anchor" href="#load-index" aria-label="Link to this section" title="Link to this section">#</a>
+        <h2 id="load-index-title">Defined: the review load index</h2>
+        <p class="sub">
+          Review feedback is counted in reviewer threads: comment threads on a CL started by someone other than
+          its author (bots left out). A vote or a lone "LGTM" starts none. Bigger CLs draw more of them. In
+          2023–24 the smallest tenth of CLs, up to
+          <b data-src="load_def_deciles" data-field="hi" data-where="decile=1" data-fmt="n0">–</b> changed lines,
+          drew <b data-src="load_def_deciles" data-field="mean_threads" data-where="decile=1" data-fmt="n1">–</b>
+          threads on average, and
+          <b data-src="load_def_deciles" data-field="no_thread" data-where="decile=1" data-fmt="pct">–</b> of them
+          none. The largest tenth, over
+          <b data-src="load_def_deciles" data-field="lo" data-where="decile=10" data-fmt="n0">–</b> lines, drew
+          <b data-src="load_def_deciles" data-field="mean_threads" data-where="decile=10" data-fmt="n1">–</b>.
+          Areas differ too: some directories review more closely than others.
+        </p>
+        <p class="sub">
+          So each CL is compared with a norm: the mean threads, over 2023–24, of CLs of the same size and the same
+          main 2-level directory (such as <code>chrome/browser</code>). Size uses ten buckets that each double the
+          last: under 4 lines, 4–7, 8–15 and so on up to 1,024 or more. Where a directory had fewer than 30 CLs of
+          a size, the norm is the mean for that size alone. A group's load index is its CLs' threads added up,
+          divided by their norms added up:
+        </p>
+        <p class="formula">load index = Σ reviewer threads ÷ Σ 2023–24 norms</p>
+        <p class="sub">
+          1.0 means the group got as much review feedback as like-for-like CLs did in 2023–24; 0.67 means a third
+          less; 2.0, twice as much. Because size and directory are held fixed, CLs getting bigger or work moving
+          between areas doesn't move the index; only the feedback per like CL does. It is meant for groups (a
+          quarter, a tenure band, a cohort), not single CLs: threads per CL are lumpy, as the chart shows, and a
+          single CL's index says little.
+        </p>
+        <figure class="panel"><h3>Reviewer threads per CL, by CL size</h3>
+          <p class="note">
+            Share of each size tenth's CLs by the reviewer threads they drew, merged CLs of 2023–24, mechanical
+            CLs left out. CLs tied at a cut stay together, so the smallest tenths hold a little more or less than
+            10%. The stronger the colour, the bigger the CLs. CLs with more than
+            <b data-src="load_def_summary" data-field="max_threads" data-fmt="n0">–</b> threads are off the chart:
+            <b data-src="load_def_deciles" data-field="over_max" data-where="decile=10" data-fmt="pct">–</b> of the
+            largest tenth.
+          </p>
+          <div class="chart chart-tall"><canvas id="c-loaddef" role="img" aria-label="Distribution of reviewer threads per CL, one line for each tenth of CLs by size, 2023 to 2024."></canvas></div></figure>
+        <template data-msg="loaddef-decile"><slot name="lo"></slot>–<slot name="hi"></slot> lines</template>
+        <template data-msg="loaddef-top"><slot name="lo"></slot>+ lines</template>
+        <template data-msg="loaddef-bin"><slot name="threads"></slot> reviewer threads</template>
+        <template data-msg="loaddef-tip"><slot name="share"></slot> of CLs (mean <slot name="mean"></slot> threads)</template>
+      </section>
+
+      <section id="newcomer" class="card" aria-labelledby="newcomer-title">
+        <a class="card-anchor" href="#newcomer" aria-label="Link to this section" title="Link to this section">#</a>
+        <h2 id="newcomer-title">Defined: newcomers and tenure</h2>
+        <p class="sub">
+          Tenure is counted from a person's first commit on chromium/src <code>main</code>, under any of their
+          email addresses. A newcomer is anyone in their first year after that commit. Each CL is placed by its
+          author's tenure on the day it closed, so the same person writes newcomer CLs for twelve months and then
+          stops. Experienced engineers moving in from other projects count as newcomers too: the page measures
+          time in Chromium, not experience. A person "joined" in the year of that first commit, which is how the
+          cohorts are named.
+        </p>
+        <figure class="panel tenure-def" aria-labelledby="tenure-def-title">
+          <h3 id="tenure-def-title">One person's timeline</h3>
+          <p class="tm-start">First commit on <code>main</code>: tenure starts</p>
+          <ol class="tenure-track" aria-label="Tenure bands used on this page, from the first commit on main">
+            <li class="tb tb-new tb-q1"><span class="tb-bar"></span><span class="tb-name">0–3 months</span><span class="tb-use">first-quarter newcomer</span></li>
+            <li class="tb tb-new"><span class="tb-bar"></span><span class="tb-name">3–12 months</span><span class="tb-use">newcomer</span></li>
+            <li class="tb tb-lt2"><span class="tb-bar"></span><span class="tb-name">1–2 years</span><span class="tb-use">under 2 years</span></li>
+            <li class="tb tb-y2"><span class="tb-bar"></span><span class="tb-name">2–5 years</span><span class="tb-use">recent graduates, the training chain's middle</span></li>
+            <li class="tb tb-y5"><span class="tb-bar"></span><span class="tb-name">5–10 years</span><span class="tb-use">experienced</span></li>
+            <li class="tb tb-y10"><span class="tb-bar"></span><span class="tb-name">10+ years</span><span class="tb-use">veteran</span></li>
+          </ol>
+          <div class="tenure-marks" aria-hidden="true">
+            <span class="tm-new">Newcomer: the first 12 months</span>
+          </div>
+          <p class="note">Not to scale. The tenure charts split the first year further (0–3, 3–6 and 6–12 months);
+            the reviewer charts use the four bands from "under 2 years".</p>
+        </figure>
+        <p class="sub">
+          In 2026 newcomers' CLs were
+          <b data-src="newcomer_review" data-field="share_of_all" data-where="year=2026" data-fmt="pct">–</b> of all
+          approvals on <code>main</code>, against
+          <b data-src="newcomer_review" data-field="share_of_all" data-where="year=2023" data-fmt="pct">–</b> in 2023.
+          "Newcomer approvals" are approvals (<code>Reviewed-by</code>) of those CLs, grouped by the approver's own
+          tenure.
+        </p>
+      </section>
+
+      <div id="def-load-index" class="term-pop" popover role="note" aria-label="Load index">
+        <p><strong>Review load index:</strong> reviewer threads on a group of CLs ÷ the 2023–24 mean for CLs of
+          the same size and directory. 1.0 is the 2023–24 norm; below 1, less review feedback than like CLs got
+          then.</p>
+        <p><a href="#load-index">Full definition</a></p>
+      </div>
+      <div id="def-newcomer" class="term-pop" popover role="note" aria-label="Newcomer">
+        <p><strong>Newcomer:</strong> an author in the first 12 months after their first commit on chromium/src
+          <code>main</code>, whatever their experience elsewhere.</p>
+        <p><a href="#newcomer">Full definition</a></p>
+      </div>
+
       <section id="method" class="card" aria-labelledby="method-title">
         <a class="card-anchor" href="#method" aria-label="Link to this section" title="Link to this section">#</a>
         <h2 id="method-title">How it's measured</h2>
@@ -791,7 +888,10 @@
             review.</dd>
           <dt>Review load index</dt>
           <dd>Reviewer threads ÷ the 2023–24 mean for CLs of the same size (ten log-spaced buckets) and main
-            2-level directory.</dd>
+            2-level directory (<a href="#load-index">defined above</a>).</dd>
+          <dt>Newcomer</dt>
+          <dd>An author in their first year after their first commit on <code>main</code>
+            (<a href="#newcomer">defined above</a>).</dd>
           <dt>Lines changed after review</dt>
           <dd>The added and removed lines of the first reviewed patch set's diff against the final one's, compared
             as multisets, so a rebase changes nothing.</dd>

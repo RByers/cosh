@@ -2760,7 +2760,7 @@ test('the Review Balance page: a draft warning first, every figure, chart and ta
   for (const f of figures) assert.match(f, /\d/, f);
   // Every chart is drawn, and every table has rows.
   const canvases = await page.$$eval('canvas', (cs) => cs.map((c) => [c.id, c.width > 0 && c.height > 0] as const));
-  assert.equal(canvases.length, 30);
+  assert.equal(canvases.length, 31);
   for (const [id, drawn] of canvases) assert.ok(drawn, id);
   const rows = await page.$$eval('table.balance-table', (ts) => ts.map((t) => [t.id, (t as HTMLTableElement).tBodies[0].rows.length] as const));
   assert.deepEqual(rows.map(([id]) => id), ['t-areas', 't-signals', 't-tenure', 't-panel-reviewer', 't-panel-author',
@@ -2802,6 +2802,25 @@ test('the Review Balance page: a draft warning first, every figure, chart and ta
   assert.ok(await page.$('#t-areas td.worse'));
   assert.deepEqual(await page.$$eval('#t-areas td.worse, #t-areas td.better', (tds) =>
     [...new Set(tds.map((td) => (td as HTMLTableCellElement).cellIndex))]), [10]);
+  // Defined terms: every use opens a bubble that exists, and tapping one shows its short definition next
+  // to it, with a link to the full section; Escape closes it.
+  const targets = await page.$$eval('button.term', (bs) => bs.map((b) => b.getAttribute('popovertarget')!));
+  assert.ok(targets.filter((t) => t === 'def-load-index').length >= 5, targets.join(' '));
+  assert.ok(targets.filter((t) => t === 'def-newcomer').length >= 10, targets.join(' '));
+  for (const t of new Set(targets)) assert.ok(await page.$(`#${t}.term-pop[popover] a[href^="#"]`), t);
+  const term = await page.$('#learning button.term[popovertarget="def-newcomer"]');
+  await term!.scrollIntoView();
+  await term!.click();
+  await page.waitForSelector('#def-newcomer[data-placed]');
+  const placed = await page.$eval('#def-newcomer', (p) => {
+    const t = document.querySelector('#learning button.term[popovertarget="def-newcomer"]')!.getClientRects()[0];
+    const r = p.getBoundingClientRect();
+    return { open: p.matches(':popover-open'), visible: getComputedStyle(p).visibility, gap: Math.min(Math.abs(r.top - t.bottom), Math.abs(t.top - r.bottom)),
+      inside: r.left >= 0 && r.right <= document.documentElement.clientWidth, link: p.querySelector('a')!.getAttribute('href') };
+  });
+  assert.deepEqual({ ...placed, gap: placed.gap < 20 }, { open: true, visible: 'visible', gap: true, inside: true, link: '#newcomer' });
+  await page.keyboard.press('Escape');
+  assert.equal(await page.$eval('#def-newcomer', (p) => p.matches(':popover-open')), false);
   assert.deepEqual(errors, []);
   await page.close();
 

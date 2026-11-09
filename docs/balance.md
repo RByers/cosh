@@ -649,7 +649,7 @@ so the revert chart should be by size as well as over time.
 
 **Status (2026-11-08):** a first draft is live as `web/balance.html`, with a
 large "Draft: under development" warning at the top. It isn't linked from the
-landing page yet. It has 30 charts and 11 tables, drawn with Chart.js from
+landing page yet. It has 31 charts and 11 tables, drawn with Chart.js from
 `summaries/balance.json`. That file holds 35 aggregate datasets:
 - `balance_report.py`'s `report.json`;
 - the growth, pipeline, mentorship, AI-paired and mechanical tables from
@@ -670,6 +670,19 @@ landing page yet. It has 30 charts and 11 tables, drawn with Chart.js from
   (2025 Q4 – 2026 Q3) against the 2023 H2–2024 baseline. Same CLs as the
   quarterly charts; it reads `balance.sqlite` and the `--mech` list:
   `COSH_DATA_DIR=<main>/data/private python3 scripts/balance_histograms.py --mech mech.jsonl`.
+- `scripts/balance_definitions.py` (2026-11-08), for the "Defined: the
+  review load index" section: shares of CLs by reviewer threads (0 to 20,
+  one bin each, plus the share above 20) for each tenth of CLs by size,
+  over 2023–24, the load index's norm years. Same CLs and `--mech` list:
+  `COSH_DATA_DIR=<main>/data/private python3 scripts/balance_definitions.py --mech mech.jsonl`.
+
+The page ends with two definition sections, "Defined: the review load
+index" and "Defined: newcomers and tenure" (a tenure timeline drawn in
+HTML and CSS). Every use of "load index" or "newcomer" in the page's prose
+is a dotted-underlined `<button class="term" popovertarget="def-…">`;
+tapping it opens a popover with a short definition and a link to the
+section, which `web/src/terms.ts` places beside the term. Headings, table
+headers, labels and links aren't marked.
 
 Sections added on 2026-11-08: "Wrong turns" (−1 votes and abandoned CLs by
 tenure), "Arriving better, or easing off?" (the panels and matched cohorts),
