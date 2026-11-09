@@ -180,11 +180,65 @@ ground truth, though: for example, CLs whose description changed between
 patch sets in the way agents rewrite them, or an author survey. Classifying
 more cheaply won't fix it.
 
+## 5. Per CL: how well can we tell?
+
+**Descriptions, 2026 style.** This compares marked 2026 Q2+ CLs (174) with
+pre-AI CLs (449), each scored once per CL. Haiku's AUC is **0.89**. Length
+alone gets 0.77. Adding length to Haiku in a logistic model, cross-validated
+by author, gets 0.888, so it adds nothing.
+
+| Haiku cutoff | Recall (2026 marked) | False positives (pre-AI) | Flagged CLs that are AI* | Unflagged CLs that are AI* | Correct* |
+|---|---:|---:|---:|---:|---:|
+| p ≥ 0.3 | 82% | 16.5% | 88% | 24% | 83% |
+| p ≥ 0.4 | 69% | 4.2% | 96% | 33% | 80% |
+| p ≥ 0.5 | 53% | 0.9% | 99% | 42% | 71% |
+| p ≥ 0.7 | 29% | 0.2% | 99% | 54% | 57% |
+
+\* At a 60% AI share, about 2026 Q3 (§4). This assumes 2026's human
+descriptions look like pre-AI ones and unmarked AI ones like marked ones.
+
+So a **flag is trustworthy** (96–99% at p ≥ 0.4), but **no flag doesn't mean
+human**: a third or more of unflagged 2026 CLs are still AI. Per CL it is
+right about 80% of the time at best. That's good enough to select
+likely-AI CLs for aggregate comparisons, but not to label every CL.
+
+**2025-style CLs (AI code, human description).** Haiku on the description
+gets AUC 0.74 against pre-AI CLs, with 23% recall at p ≥ 0.5.
+
+**Can the code tell instead?** Not cheaply. `diffs` computes regex features
+over the landed commits' added code lines (local shared clone): comment share, words per
+comment, sentence-style comments, explaining comments ("ensure", "so that",
+"note:"), test share and size. The AUCs, marked against pre-AI and against
+the same authors' pre-AI CLs:
+
+| Feature | 2025 marked | 2026 marked |
+|---|---|---|
+| test share | 0.59 | 0.57 |
+| log added lines | 0.44–0.46 | 0.55–0.57 |
+| comment share, words per comment, sentence comments | 0.34–0.38 (fewer) | 0.48–0.53 |
+| explaining comments | 0.43–0.46 | 0.51–0.54 |
+
+Marked 2025 CLs have *fewer* comments, but that is topic: many are small
+unsafe-buffer fixes. Haiku given only the diff (`haiku-diffs`, first 3,000
+characters, against the same authors' pre-AI CLs, 120 per side) gets AUC
+0.71 for 2025 and 0.70 for 2026. Recall at p ≥ 0.5 is 17% and 36%, with 3–6%
+false positives. Some of that may be topic too, since the comparison is with
+older work. AI code in Chromium, after review and the author's edits, isn't
+recognisable from the diff any better than from a 2025 description.
+Diffs cost about 2× the tokens.
+
+**Conclusion:** classify descriptions, and define the target as "the
+description reads as AI-written". That is measurable (AUC 0.89 for current
+tools) and is where adoption shows. AI-assisted code with a human
+description is largely invisible, from the description or the diff, so
+treat any estimate as a lower bound on AI involvement.
+
 ## Verdicts
 
-- **Per CL: not reliable as a label.** With AUC ~0.82 against human text,
-  Haiku has high precision only at cutoffs where it misses over half of AI
-  CLs, and less still for 2025 CLs. Don't use it to mark individual CLs, and
+- **Per CL: precise flags, unreliable negatives.** For 2026-style
+  descriptions AUC is 0.89. At p ≥ 0.4, 96% of flagged CLs are AI, but a third
+  of unflagged ones are too (§5). 2025-style CLs (AI code, human
+  description) are mostly invisible, from the description or the diff. Don't use it to mark individual CLs, and
   never to name people (`docs/plan.md`, rule 5 spirit).
 - **In aggregate: a useful adoption indicator.** The share of flagged
   descriptions per quarter tracks AI use with a flat pre-AI baseline, at
@@ -221,6 +275,8 @@ python3 scripts/balance_ai_predict.py haiku --n 150 --pos marked --neg pre_same|
 python3 scripts/balance_ai_predict.py haiku --n 150 --pos unmarked --neg pre
 python3 scripts/balance_ai_predict.py trend --n 150
 python3 scripts/balance_ai_predict.py estimate   # ~30 s, needs the haiku and trend outputs
+python3 scripts/balance_ai_predict.py diffs      # ~30 s, regex features of the landed diffs
+python3 scripts/balance_ai_predict.py haiku-diffs --period 2025|2026   # Haiku on diffs, ~$0.07
 ```
 
 Each Haiku run of 300 descriptions takes about 30 s with 4 calls at once.

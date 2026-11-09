@@ -510,6 +510,150 @@ def estimate(args):
                 print(f"  {lo:>4}-{hi if hi < 10 ** 9 else '':<5} {per:<8} n={len(v):>3}  {sum(p >= .5 for p in v) / len(v):5.1%}")
 
 
+# ---------------------------------------------------------------- diffs
+
+CODE_EXT = re.compile(r"\.(?:cc|h|mm|cpp|c|java|kt|ts|js|py|gn|gni|swift|rs)$")
+COMMENT = re.compile(r"^\s*(?://+|#(?!include|define|if|endif|else|elif|pragma|import|undef)|/?\*+)\s?(.*)$")
+TESTY = re.compile(r"(?:test|browsertest|unittest|_tests?/|/test/|fuzzer)", re.I)
+EXPLAIN = re.compile(r"\b(?:ensure[sd]?|explicitly|this (?:is|ensures|allows|prevents)|we (?:need|must|use)|"
+                     r"note:|important:|instead of|so that|otherwise)\b", re.I)
+
+
+def diff_feats(shas):
+    """{sha: features} from the landed commits' diffs (local shared clone, regexes only)."""
+    out = {}
+    shas = list(shas)
+    for i in range(0, len(shas), 200):
+        p = subprocess.run(["git", "-C", ba.SHARED, "show", "--format=%x01%H", "--unified=0", "--no-color",
+                            "--no-ext-diff", "--diff-filter=AM", *shas[i:i + 200]], capture_output=True, text=True,
+                           errors="replace", env={**os.environ, "GIT_NO_LAZY_FETCH": "1"})
+        for rec in p.stdout.split("\x01")[1:]:
+            sha, _, body = rec.partition("\n")
+            f = Counter()
+            path = None
+            for line in body.splitlines():
+                if line.startswith("+++ "):
+                    path = line[6:] if line.startswith("+++ b/") else None
+                    if path and CODE_EXT.search(path):
+                        f["files"] += 1
+                    continue
+                if not path or not CODE_EXT.search(path) or not line.startswith("+"):
+                    continue
+                text = line[1:]
+                if not text.strip():
+                    continue
+                f["added"] += 1
+                if TESTY.search(path):
+                    f["test"] += 1
+                m = COMMENT.match(text)
+                if m:
+                    c = m.group(1).strip()
+                    f["comments"] += 1
+                    f["comment_words"] += len(c.split())
+                    if re.search(r"[a-z]\.$", c) and len(c.split()) >= 4:
+                        f["sentence"] += 1
+                    if EXPLAIN.search(c):
+                        f["explain"] += 1
+            out[sha.strip()] = f
+    return out
+
+
+def diffs(args):
+    rnd = random.Random(args.seed)
+    rows = load()
+    for r in rows:
+        r["q"] = quarter(r["t"])
+    marked_authors = {r["author"] for r in rows if r["label"] == "marked"}
+    groups = {
+        "marked 2025": cap_per_author([r for r in rows if r["label"] == "marked" and r["q"] < "2026Q1"], 10, rnd),
+        "marked 2026Q2+": cap_per_author([r for r in rows if r["label"] == "marked" and r["q"] >= "2026Q2"], 10, rnd),
+        "pre-AI": rnd.sample(cap_per_author([r for r in rows if r["label"] == "pre"], 2, rnd), 2000),
+        "pre, same authors": cap_per_author([r for r in rows if r["label"] == "pre" and r["author"] in marked_authors],
+                                            10, rnd),
+        "unmarked 2026Q2+": rnd.sample(cap_per_author([r for r in rows if r["label"] == "unmarked"
+                                                       and r["q"] >= "2026Q2"], 2, rnd), 2000),
+    }
+    feats_by = diff_feats({r["sha"] for g in groups.values() for r in g})
+
+    def vals(r):
+        f = feats_by.get(r["sha"])
+        if not f or f["added"] < 5:
+            return None
+        n = f["added"]
+        com = max(1, f["comments"])
+        return {"log added lines": math.log1p(n), "comment share": f["comments"] / n,
+                "words per comment": f["comment_words"] / com, "sentence comments / 100 lines": 100 * f["sentence"] / n,
+                "explaining comments / 100 lines": 100 * f["explain"] / n, "test share": f["test"] / n}
+    table = {g: [v for v in map(vals, rs) if v] for g, rs in groups.items()}
+    print("CLs with >= 5 added code lines: " + ", ".join(f"{g} {len(v)}" for g, v in table.items()))
+    keys = list(next(iter(table.values()))[0])
+    print(f"\n{'feature':<33}" + "".join(f"{g[:16]:>17}" for g in table) + "   AUC 25/pre 25/same 26/pre 26/same")
+    for k in keys:
+        col = {g: [v[k] for v in vs] for g, vs in table.items()}
+        mean = lambda xs: sum(xs) / len(xs)
+        a = [auc(col[m], col[n]) for m in ("marked 2025", "marked 2026Q2+") for n in ("pre-AI", "pre, same authors")]
+        print(f"{k:<33}" + "".join(f"{mean(c):>17.3f}" for c in col.values())
+              + "   " + "  ".join(f"{x:.2f}" for x in a))
+
+
+DIFF_PROMPT = """Each item below is the diff (added and removed lines, no description) of a Chromium code change,
+cut to 3,000 characters. Estimate the probability that the code was written mostly by an AI coding agent
+(Gemini CLI, Claude Code, Codex, Copilot ...) rather than by a human engineer. Judge only the code: comment
+style and density, naming, defensive checks, test structure, consistency. Give p in [0, 1] for each id.
+Return every id exactly once."""
+
+
+def diff_text(sha):
+    p = subprocess.run(["git", "-C", ba.SHARED, "show", "--format=", "--unified=1", "--no-color", "--no-ext-diff", sha],
+                       capture_output=True, text=True, errors="replace", env={**os.environ, "GIT_NO_LAZY_FETCH": "1"})
+    return re.sub(r"\d{6,}", "N", p.stdout[:3000])
+
+
+def haiku_diffs(args):
+    """Haiku on diffs only: marked CLs of a period against the same authors' pre-AI CLs."""
+    from cosh.sentiment import make_sandbox, claude_args
+    rnd = random.Random(args.seed)
+    rows = load()
+    for r in rows:
+        r["q"] = quarter(r["t"])
+    inp = (lambda r: r["q"] < "2026Q1") if args.period == "2025" else (lambda r: r["q"] >= "2026Q2")
+    pos = cap_per_author([r for r in rows if r["label"] == "marked" and inp(r)], 3, rnd)
+    authors = {r["author"] for r in pos}
+    neg = cap_per_author([r for r in rows if r["label"] == "pre" and r["author"] in authors], 3, rnd)
+    rnd.shuffle(pos)
+    rnd.shuffle(neg)
+    sample = [(1, r) for r in pos[:args.n]] + [(0, r) for r in neg[:args.n]]
+    rnd.shuffle(sample)
+    items = [(f"c{i}", diff_text(r["sha"])) for i, (_, r) in enumerate(sample)]
+    batches = [items[i:i + 5] for i in range(0, len(items), 5)]
+    box = make_sandbox()
+
+    def call(b):
+        body = "\n\n".join(f"### {k}\n{t}" for k, t in b)
+        p = box.run(claude_args(args.model, HAIKU_SCHEMA, HAIKU_SYSTEM.replace("commit descriptions", "code diffs")
+                                .replace("descriptions", "diffs")), DIFF_PROMPT + "\n\n" + body)
+        d = json.loads(p.stdout)
+        sent = {k for k, _ in b}
+        return ({x["id"]: float(x["p"]) for x in (d.get("structured_output") or {}).get("scores", [])
+                 if isinstance(x, dict) and x.get("id") in sent and isinstance(x.get("p"), (int, float))},
+                d.get("total_cost_usd") or 0)
+    got, usd = {}, 0.0
+    try:
+        with ThreadPoolExecutor(args.jobs) as ex:
+            for g, c in ex.map(call, batches):
+                got.update(g)
+                usd += c
+    finally:
+        box.close()
+    ps = [got[k] for (k, _), (y, _) in zip(items, sample) if k in got and y]
+    ns = [got[k] for (k, _), (y, _) in zip(items, sample) if k in got and not y]
+    print(f"{len(ps)}+{len(ns)} scored, ${usd:.2f}. Haiku on diffs, marked {args.period} vs same authors' pre-AI: "
+          f"AUC {auc(ps, ns):.3f}")
+    for cut in (0.3, 0.5, 0.7):
+        print(f"  p>={cut}: recall {sum(p >= cut for p in ps) / len(ps):.2f}, "
+              f"false-positive rate {sum(p >= cut for p in ns) / len(ns):.2f}")
+
+
 def main():
     ap = argparse.ArgumentParser()
     sub = ap.add_subparsers(dest="cmd", required=True)
@@ -535,8 +679,16 @@ def main():
     e.add_argument("--per-q", type=int, default=3000, help="CLs per quarter for the length fits")
     e.add_argument("--boot", type=int, default=100)
     e.add_argument("--seed", type=int, default=1)
+    d = sub.add_parser("diffs")
+    d.add_argument("--seed", type=int, default=1)
+    hd = sub.add_parser("haiku-diffs")
+    hd.add_argument("--period", choices=("2025", "2026"), default="2025")
+    hd.add_argument("--n", type=int, default=120)
+    hd.add_argument("--jobs", type=int, default=4)
+    hd.add_argument("--seed", type=int, default=1)
+    hd.add_argument("--model", default="haiku")
     a = ap.parse_args()
-    {"build": build, "features": features, "haiku": haiku, "trend": trend, "estimate": estimate}[a.cmd](a)
+    {"build": build, "features": features, "haiku": haiku, "trend": trend, "estimate": estimate, "diffs": diffs, "haiku-diffs": haiku_diffs}[a.cmd](a)
 
 
 if __name__ == "__main__":
