@@ -657,7 +657,8 @@ function securityBars(rows: Row[], theme: Theme) {
 
 // ---- authors in the last year (balance_authors.json)
 
-type AuthorRow = [email: string, cls: number, dirs: number, load: number | null, tenure: number | null];
+type AuthorRow = [email: string, cls: number, dirs: number, load: number | null, tenure: number | null,
+  approvals: number, share: number, sharePct: number | null, loadPct: number | null];
 interface AuthorData {
   summary: Row;
   authors: AuthorRow[];
@@ -783,6 +784,91 @@ function authorScatter(rows: AuthorRow[], theme: Theme) {
           ticks: { ...tick, autoSkip: false, callback: logTicks([0.1, 0.2, 0.5, 1, 2, 5, 10], (v) => String(v)) },
         },
       },
+    },
+  } as never));
+}
+
+/** Dashed lines at the middle of both axes: the percentile scatter's four quarters. */
+const crossLines = (color: string): Plugin<'bubble'> => ({
+  id: 'crossLines',
+  afterDatasetsDraw(chart) {
+    const x = chart.scales.x.getPixelForValue(50);
+    const y = chart.scales.y.getPixelForValue(50);
+    const { left, right, top, bottom } = chart.chartArea;
+    const ctx = chart.ctx;
+    ctx.save();
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 1;
+    ctx.setLineDash([4, 3]);
+    ctx.beginPath();
+    ctx.moveTo(left, y);
+    ctx.lineTo(right, y);
+    ctx.moveTo(x, top);
+    ctx.lineTo(x, bottom);
+    ctx.stroke();
+    ctx.restore();
+  },
+});
+
+/** Tenure bands of the percentile scatter, in years at the end of the period (TENURE_BANDS in
+ * scripts/balance_authors.py, which ranks authors within them). */
+const AUTHOR_TENURE: [number, number, string][] = [[0, 2, 'Under 2 years'], [2, 5, '2–5 years'], [5, 10, '5–10 years'], [10, Infinity, '10+ years']];
+
+/** One dot per author: percentile on review share (across) and on review load (up) within their tenure
+ * band; colour by tenure band, area by CLs landed plus approvals given. */
+function percentileScatter(rows: AuthorRow[], theme: Theme) {
+  const tenureOf = (t: number) => AUTHOR_TENURE.findIndex(([lo, hi]) => t >= lo && t < hi);
+  // Each band takes the breadth scatter's tenure gradient at its middle year (10+ at the red end).
+  const colorOf = tenureColor(theme);
+  const bandColor = AUTHOR_TENURE.map(([lo, hi]) => colorOf(Number.isFinite(hi) ? (lo + hi) / 2 : lo));
+  const size = (r: AuthorRow) => r[1] + r[5];
+  const sorted = rows.filter((r) => r[7] !== null && r[8] !== null && r[4] !== null).sort((a, b) => size(b) - size(a));
+  const datasets = AUTHOR_TENURE.map(([, , label], i) => {
+    const pts = sorted.filter((r) => tenureOf(r[4]!) === i);
+    return {
+      label,
+      data: pts.map((r) => ({ x: r[7]!, y: r[8]!, r: 1 + Math.sqrt(size(r)) * 0.22 })),
+      rows: pts,
+      backgroundColor: faint(bandColor[i], '99'),
+      borderColor: bandColor[i],
+      borderWidth: 1,
+      hoverBorderColor: theme.parity,
+      hoverBorderWidth: 2,
+    };
+  });
+  const o = options(theme, FMT.n0, true);
+  const tick = { color: theme.muted, font: { family: theme.font } };
+  const rowAt = (i: TooltipItem<'line'>) => (datasets[i.datasetIndex].rows as AuthorRow[])[i.dataIndex];
+  const axis = (text: string) => ({
+    type: 'linear', min: 0, max: 100,
+    title: { display: true, text, color: theme.muted, font: { family: theme.font } },
+    grid: { color: theme.grid }, border: { color: theme.baseline },
+    ticks: { ...tick, stepSize: 25, callback: (v: number | string) => `${v}` },
+  });
+  charts.push(new Chart($<HTMLCanvasElement>('#c-pct-scatter'), {
+    type: 'bubble',
+    data: { datasets },
+    plugins: [crossLines(theme.muted)],
+    options: {
+      ...o,
+      interaction: { mode: 'nearest' as const, intersect: true },
+      plugins: {
+        ...o.plugins,
+        legend: { ...o.plugins.legend, labels: { ...o.plugins.legend.labels, boxHeight: 10, boxWidth: 10 } },
+        tooltip: {
+          ...o.plugins.tooltip,
+          callbacks: {
+            title: (items: TooltipItem<'line'>[]) => (items.length ? rowAt(items[0])[0] : ''),
+            label: (i: TooltipItem<'line'>) => {
+              const [, cls, , load, tenure, approvals, share, sharePct, loadPct] = rowAt(i);
+              return msg('pct-tip', { share: FMT.pct(share), sharePct: FMT.n0(sharePct!), load: FMT.n2(load!),
+                loadPct: FMT.n0(loadPct!), cls: FMT.n0(cls), approvals: FMT.n0(approvals),
+                tenure: `${FMT.n1(tenure!)} years` });
+            },
+          },
+        },
+      },
+      scales: { x: axis('Review share percentile in tenure band'), y: axis('Review load percentile in tenure band') },
     },
   } as never));
 }
@@ -1249,6 +1335,7 @@ function render(data: BalanceData) {
   categories('c-tenure', d.learning, theme, { x: 'bucket', g: 'era', v: 'load_index', groups: eras,
     xs: Object.keys(tenureXl), xl: (x) => tenureXl[x] }, FMT.n2, { ref: 1 });
   trajectories(d, eras, tenureXl, theme);
+  percentileScatter(authorRows, theme);
   const famXl: Record<string, string> = { 'fam 0': 'None', 'fam 1-4': '1–4', 'fam 5-19': '5–19', 'fam 20-99': '20–99', 'fam 100+': '100+' };
   categories('c-fam', d.learning, theme, { x: 'bucket', g: 'era', v: 'load_index', groups: eras,
     xs: Object.keys(famXl), xl: (x) => famXl[x] }, FMT.n2, { ref: 1 });

@@ -25,6 +25,11 @@ The year is 2025-11-01 .. 2026-11-01 (the data ends in October 2026).
   (merged or abandoned) in the year with a first substantive review before
   closing (an inline reviewer comment, or a reviewer thread the owner
   answered), the share abandoned, for authors with MIN_REVIEWED or more.
+- Approvals: others' CLs landed in the year with the author in `Reviewed-by`;
+  review share = approvals ÷ (approvals + CLs landed).
+- share_pct, load_pct: the author's percentile on review share and on the
+  load index among authors in the same tenure band (under 2, 2–5, 5–10, 10+
+  years), for the "Ahead and behind for their tenure" scatter.
 Authors need MIN_CLS CLs landed to appear; the histogram uses the same people.
 """
 
@@ -48,6 +53,8 @@ END = G.CENSOR                      # 2026-11-01, end of data
 MIN_CLS = 10                        # CLs landed in the year to be shown
 MIN_EXPECTED = 2.0                  # expected threads needed for a load index
 MIN_REVIEWED = 10                   # reviewed CLs closed in the year for an abandon rate
+# Tenure bands in years at END, as on the page's other tenure charts (AUTHOR_TENURE in balance.ts).
+TENURE_BANDS = [(0, 2), (2, 5), (5, 10), (10, float("inf"))]
 
 
 def raw_emails(ids):
@@ -74,11 +81,14 @@ def compute(args):
         if c["n"] and d:
             top2[c["n"]] = "/".join(d[0].split("/")[:2])
 
-    landed, dirs = Counter(), defaultdict(set)
+    landed, dirs, approved = Counter(), defaultdict(set), Counter()
     for c in commits:
         if not c["n"] or c["is_revert"] or c["n"] in mech or not (START <= c["at"] < END):
             continue
         landed[c["pid"]] += 1
+        for rv in set(c["rbp"]):
+            if rv != c["pid"]:
+                approved[rv] += 1
         d = dirs3.get(c["cid"])
         if d:
             dirs[c["pid"]] |= d[1]
@@ -111,9 +121,35 @@ def compute(args):
             email=email[p], cls=n, dirs=len(dirs[p]),
             load=round(threads[p] / e, 3) if e >= MIN_EXPECTED else None,
             tenure=round((END - t0) / G.YEAR, 2) if t0 is not None and t0 < END else None,
-            reviewed=reviewed[p], abandoned=abandoned[p]))
+            reviewed=reviewed[p], abandoned=abandoned[p],
+            approvals=approved[p], share=round(approved[p] / (approved[p] + n), 3)))
+    band_percentiles(out)
     out.sort(key=lambda r: r["email"])
     return out
+
+
+def band_of(tenure):
+    for i, (lo, hi) in enumerate(TENURE_BANDS):
+        if tenure is not None and lo <= tenure < hi:
+            return i
+    return None
+
+
+def band_percentiles(rows):
+    """Each author's place within their tenure band, 0–100 (mid-rank, so ties share a value): on review
+    share (higher = reviews more of what they land) and on review load (higher = draws more feedback per
+    CL). Only authors with both a load index and a tenure are ranked."""
+    groups = defaultdict(list)
+    for r in rows:
+        r["share_pct"] = r["load_pct"] = None
+        b = band_of(r["tenure"])
+        if b is not None and r["load"] is not None:
+            groups[b].append(r)
+    for g in groups.values():
+        n = len(g)
+        for key, out in (("share", "share_pct"), ("load", "load_pct")):
+            for r, k in zip(g, ranks([r[key] for r in g])):
+                r[out] = round(100 * (k + 0.5) / n, 1)
 
 
 def ranks(xs):
@@ -154,12 +190,21 @@ def summary(rows):
         abandon_zero=sum(r["abandoned"] == 0 for r in ab),
         abandon_p50_under2=medr(band(0, 2)), abandon_p50_10plus=medr(band(10, 1e9)),
         rho_tenure_abandon=round(spearman([r["tenure"] for r in ab], [rate(r) for r in ab]), 2))
-    return dict(**abandon, authors=len(rows), dirs_p50=q(0.5), dirs_p90=q(0.9), dirs_100=sum(d >= 100 for d in ds),
+    ranked = [r for r in rows if r["share_pct"] is not None]
+    quad = lambda f: round(sum(f(r) for r in ranked) / len(ranked), 4)
+    return dict(**abandon, ranked=len(ranked),
+                rho_pct=round(spearman([r["share_pct"] for r in ranked], [r["load_pct"] for r in ranked]), 2),
+                # Quarters of the percentile square: behind on both = bottom half on review share and top
+                # half on load; ahead on both = the reverse.
+                behind_both=quad(lambda r: r["share_pct"] < 50 and r["load_pct"] >= 50),
+                ahead_both=quad(lambda r: r["share_pct"] >= 50 and r["load_pct"] < 50),
+                behind_both_q=quad(lambda r: r["share_pct"] < 25 and r["load_pct"] >= 75),
+                authors=len(rows), dirs_p50=q(0.5), dirs_p90=q(0.9), dirs_100=sum(d >= 100 for d in ds),
                 rho_dirs_load=round(spearman([r["dirs"] for r in both], [r["load"] for r in both]), 2),
                 rho_dirs_cls=round(spearman([r["dirs"] for r in rows], [r["cls"] for r in rows]), 2))
 
 
-COLUMNS = ["email", "cls", "dirs", "load", "tenure"]
+COLUMNS = ["email", "cls", "dirs", "load", "tenure", "approvals", "share", "share_pct", "load_pct"]
 
 
 def main():
