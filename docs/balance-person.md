@@ -74,6 +74,13 @@ rebuild the pages from the saved JSON without reloading the data:
   reviewers, OWNERS or mentors.
 - **In brief:** a few generated, factual sentences with percentiles. No
   judgements.
+- **Terms:** wording follows the public Review Balance page, and each
+  measure, fact and term links to the section that defines it on
+  `https://cosh.rbyers.ca/balance.html` (`DASHBOARD` and `term()` in the
+  script; the exemplars page uses the same helper). When the page renames a
+  term or a section anchor, update the script and rerender. The clusters'
+  "trajectory" is shown as a "path between patterns", since the page's
+  "Growth trajectories" mean something else.
 
 ## Caveats
 

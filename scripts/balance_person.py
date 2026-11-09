@@ -48,6 +48,12 @@ BAND_NAME = {"<2y": "under 2 years", "2-5y": "2–5 years", "5-10y": "5–10 yea
 MIN_AUTHOR_YEAR = 6        # commits + approvals in a year to count as an active peer
 MIN_HALF_CLS = 5           # CLs in a half-year for author-side Gerrit measures
 MIN_HALF_REVIEWS = 10      # CLs reviewed in a half-year for reviewer-side measures
+DASHBOARD = "https://cosh.rbyers.ca/balance.html"   # the public Review Balance page, which defines the terms
+
+
+def term(text, anchor):
+    """A link to the dashboard section that defines a term (opens in a new tab)."""
+    return f'<a href="{DASHBOARD}#{anchor}" target="_blank" rel="noopener">{html.escape(text)}</a>'
 
 
 def band(tenure):
@@ -390,6 +396,7 @@ svg text { fill: var(--muted); font-family: var(--font-data); font-size: 10px; }
 .pm { stroke: var(--peer); stroke-width: 1.2; stroke-dasharray: 3 3; fill: none; }
 .me { stroke: var(--me); stroke-width: 2.4; fill: none; } .med { fill: var(--me); }
 .ax { stroke: var(--line); stroke-width: 1; }
+a { color: var(--me); text-underline-offset: 2px; }
 .legend { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 0.8rem; color: var(--muted); }
 .legend i { display: inline-block; width: 14px; height: 8px; margin-right: 5px; vertical-align: middle; border-radius: 2px; }
 .lg-me { background: var(--me); height: 3px !important; } .lg-b2 { background: var(--band); } .lg-b1 { background: var(--band2); }
@@ -504,8 +511,9 @@ LEGEND = ('<div class="legend"><span><i class="lg-me"></i>This person</span><spa
           '<span><i class="lg-b2"></i>Peers\' middle half</span><span><i class="lg-b1"></i>Peers\' 10th–90th percentile</span></div>')
 
 
-def fig(title, note, periods, peers, me, kind):
-    return (f'<figure><h3>{html.escape(title)}</h3><p class="note">{html.escape(note)}</p>'
+def fig(title, note, periods, peers, me, kind, anchor):
+    """A chart panel; anchor is the dashboard section that defines the measure."""
+    return (f'<figure><h3>{html.escape(title)}</h3><p class="note">{html.escape(note)} {term("Definition", anchor)}</p>'
             f'{chart(periods, peers, me, kind)}</figure>')
 
 
@@ -514,40 +522,42 @@ def date(t):
 
 
 def summary_points(r):
-    """A few neutral, factual observations from the data."""
+    """A few neutral, factual observations from the data, as HTML with term links."""
     pts = []
     g = [x for x in r["git"] if x["me"]]
     if g:
         last = g[-1]
         b = BAND_NAME.get(last["band"], "")
         for k, label in (("commits", "commits a month"), ("approvals", "approvals given a month"),
-                         ("newcomer", "approvals of newcomers' CLs a month")):
+                         ("newcomer", f"approvals of {term('newcomers', 'newcomer')}' CLs a month")):
             rk = last["rank"].get(k)
             if rk is not None:
+                ten = "tenure" if pts else term("tenure", "newcomer")      # link the term once
                 pts.append(f"In {last['period']}: {fnum(last['me'][k], 'n')} {label}, the {ordinal(rk)} percentile "
-                           f"among active people with {b} tenure.")
+                           f"among active people with {b} {ten}.")
         sh = [(x["period"], x["me"]["share"]) for x in g]
         if len(sh) >= 3:
-            pts.append(f"Review share (approvals ÷ approvals + commits) went from {fnum(sh[0][1], 'pct')} in {sh[0][0]} "
+            pts.append(f"{term('Review share', 'trajectories')} (approvals ÷ (approvals + commits)) went from {fnum(sh[0][1], 'pct')} in {sh[0][0]} "
                        f"to {fnum(sh[-1][1], 'pct')} in {sh[-1][0]}.")
     hs = [x for x in r["half"] if x["author"]]
     if hs:
         a = hs[-1]
         rk = a["author_rank"].get("load")
         if rk is not None and a["author"]["load"] is not None:
-            pts.append(f"In {a['period']} their CLs drew a feedback index of {fnum(a['author']['load'], 'x')} "
+            pts.append(f"In {a['period']} their CLs drew a {term('feedback index', 'feedback-index')} of {fnum(a['author']['load'], 'x')} "
                        f"(1.0 is the 2023–24 norm for the CL's size and directory), the {ordinal(rk)} percentile among peers.")
     rs = [x for x in r["half"] if x["reviewer"]]
     if rs:
         a = rs[-1]
         rk = a["reviewer_rank"].get("resp")
         if a["reviewer"]["resp"] is not None and rk is not None:
-            pts.append(f"As a reviewer in {a['period']}: median first response {fnum(a['reviewer']['resp'], 'h')} (weekday hours), "
+            pts.append(f"As a reviewer in {a['period']}: median {term('first response', 'cohorts')} {fnum(a['reviewer']['resp'], 'h')} (weekday hours), "
                        f"faster than {100 - rk}% of peers; {fnum(a['reviewer']['threads'], 'n')} threads per CL reviewed.")
     m = r["mentees"]
     if m["total"]:
-        pts.append(f"Among the top two approvers of the first CLs of {m['total']} people who joined since 2017; "
-                   f"{m['became_regular']} of them became regular reviewers and {m['became_owner']} OWNERS.")
+        pts.append(f"Among the top two approvers of the first CLs of {m['total']} people who joined since 2017 "
+                   f"({term('mentoring', 'pipeline')}); {m['became_regular']} of them became "
+                   f"{term('regular reviewers', 'pipeline')} and {m['became_owner']} OWNERS.")
     return pts
 
 
@@ -567,12 +577,12 @@ def render(r):
     name = r["email"]
     tenure_now = (NOW - r["first"]) / YEAR if r["first"] else None
     facts = [
-        ("First commit on main", date(r["first"])),
-        ("Tenure", f"{tenure_now:.1f} years" if tenure_now else "–"),
-        ("First OWNERS file", date(r["owner"])),
-        ("First year with 60+ approvals", str(r["regular"]) if r["regular"] else "–"),
-        ("Newcomers mentored", str(r["mentees"]["total"])),
-        ("AI-marked commits (broad)", str(sum(x["raw"]["ai_broad"] for x in r["git"]))),
+        ("First commit on main", date(r["first"]), "newcomer"),
+        ("Tenure", f"{tenure_now:.1f} years" if tenure_now else "–", "newcomer"),
+        ("First OWNERS file", date(r["owner"]), "pipeline"),
+        ("Regular reviewer since", str(r["regular"]) if r["regular"] else "–", "pipeline"),
+        ("Newcomers mentored", str(r["mentees"]["total"]), "pipeline"),
+        ("AI-marked commits (broad)", str(sum(x["raw"]["ai_broad"] for x in r["git"])), "ai"),
     ]
     cl = r.get("clusters")
     cluster_html = ""
@@ -587,8 +597,8 @@ def render(r):
         key = "".join(f'<span><i class="c{idx[n]}"></i>{html.escape(n)}</span>' for n in names)
         cluster_html = (
             '<section><h2>Pattern over time</h2>'
-            f'<p>Trajectory: <strong>{html.escape(cl.get("trajectory") or "–")}</strong>. Each cell is a half-year, '
-            'coloured by the activity pattern that best fits it (docs/balance-clusters.md).</p>'
+            f'<p>Path between patterns: <strong>{html.escape(cl.get("trajectory") or "–")}</strong>. Each cell is a '
+            f'half-year, coloured by the {term("activity pattern", "patterns")} that best fits it.</p>'
             f'<div class="strip">{cells}</div><div class="legend">{key}</div>'
             '<p class="note">Patterns are regions of a continuum found by clustering everyone\'s activity, scored '
             'against everyone active in the same half-year. They describe what someone did, not how well.</p></section>')
@@ -597,7 +607,7 @@ def render(r):
         f"<td>{x['raw']['approvals']:,}</td><td>{x['raw']['newcomer']:,}</td>"
         f"<td>{fnum((x['me'] or {}).get('share'), 'pct')}</td><td>{x['rank'].get('commits') if x['me'] else '–'}</td>"
         f"<td>{x['rank'].get('approvals') if x['me'] else '–'}</td><td>{x['raw']['ai_broad']}</td></tr>" for x in r["git"])
-    pts = "".join(f"<li>{html.escape(p)}</li>" for p in summary_points(r))
+    pts = "".join(f"<li>{p}</li>" for p in summary_points(r))
     return f"""<title>{html.escape(name.split("@")[0])} review profile</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;600&family=Source+Serif+4:opsz,wght@8..60,600&display=swap">
@@ -609,63 +619,65 @@ def render(r):
     <p class="muted">Also as: {html.escape(", ".join(r["aliases"]) or "no other addresses")}</p>
     <div class="private"><strong>Private.</strong> This profile names one person and compares them with peers. It is not
       part of the public dashboard and should not be shared without their consent. Peers are everyone active in the same
-      period with the same tenure band; percentiles describe activity, not quality or worth.</div>
+      period with the same {term("tenure band", "newcomer")}; percentiles describe activity, not quality or worth.</div>
+    <p class="note">Terms and measures follow the public {term("Review Balance dashboard", "method")}; each links to its
+      definition there.</p>
   </header>
-  <section class="facts">{"".join(f'<div class="fact"><span class="k">{html.escape(k)}</span><span class="v">{html.escape(v)}</span></div>' for k, v in facts)}</section>
+  <section class="facts">{"".join(f'<div class="fact"><span class="k">{term(k, a)}</span><span class="v">{html.escape(v)}</span></div>' for k, v, a in facts)}</section>
   <section><h2>In brief</h2><ul class="sum">{pts}</ul></section>
   {cluster_html}
   <section>
     <h2>Authoring and reviewing, 2017–2026</h2>
     <p class="note">From chromium/src git history: commits with a CL, and approvals from Reviewed-by footers. Rates are per
       month of the year covered (2026 runs to early November). Peers: people with 6+ commits and approvals that year in the
-      same tenure band.</p>
+      same {term("tenure band", "newcomer")}.</p>
     {LEGEND}
     <div class="grid">
-      {fig("Commits per month", "Commits landed, per month.", periods_y, gp("commits"), gm("commits"), "n")}
-      {fig("Approvals given per month", "Others' CLs approved, per month.", periods_y, gp("approvals"), gm("approvals"), "n")}
-      {fig("Review share", "Approvals ÷ (approvals + commits).", periods_y, gp("share"), gm("share"), "pct")}
-      {fig("Approvals of newcomers' CLs per month", "CLs by authors in their first year.", periods_y, gp("newcomer"), gm("newcomer"), "n")}
-      {fig("Median lines per commit", "Changed lines.", periods_y, gp("lines"), gm("lines"), "n")}
-      {fig("Directories touched", "Distinct 2-level directories committed to in the year.", periods_y, gp("dirs"), gm("dirs"), "n")}
+      {fig("Commits per month", "Commits landed, per month.", periods_y, gp("commits"), gm("commits"), "n", "exchange")}
+      {fig("Approvals given per month", "Others' CLs approved, per month.", periods_y, gp("approvals"), gm("approvals"), "n", "reviewers")}
+      {fig("Review share", "Approvals ÷ (approvals + commits).", periods_y, gp("share"), gm("share"), "pct", "trajectories")}
+      {fig("Approvals of newcomers' CLs per month", "CLs by authors in their first year.", periods_y, gp("newcomer"), gm("newcomer"), "n", "pipeline")}
+      {fig("Median lines per commit", "Changed lines.", periods_y, gp("lines"), gm("lines"), "n", "exchange")}
+      {fig("Directories touched", "Distinct 2-level directories committed to in the year.", periods_y, gp("dirs"), gm("dirs"), "n", "authors")}
     </div>
   </section>
   <section>
     <h2>Since mid-2023: their CLs in review</h2>
     <p class="note">From Gerrit, per half-year, for merged non-mechanical CLs they owned (5+ in the half-year). Peers: owners
-      in the same tenure band.</p>
+      in the same {term("tenure band", "newcomer")}.</p>
     {LEGEND}
     <div class="grid">
-      {fig("Feedback index", "Reviewer threads ÷ the 2023–24 average for the CL's size and directory.", periods_h, ap("load"), am("load"), "x")}
-      {fig("Hours to first substantive review", "Median, clock hours.", periods_h, ap("ftr"), am("ftr"), "h")}
-      {fig("Lines changed after first review", "Median share per reviewed CL.", periods_h, ap("interdiff"), am("interdiff"), "pct")}
-      {fig("Abandoned after review", "Share of their reviewed CLs abandoned.", periods_h, ap("abandon"), am("abandon"), "pct")}
+      {fig("Feedback index", "Reviewer threads ÷ the 2023–24 average for the CL's size and directory.", periods_h, ap("load"), am("load"), "x", "feedback-index")}
+      {fig("Hours to first substantive review", "Median, clock hours.", periods_h, ap("ftr"), am("ftr"), "h", "latency")}
+      {fig("Lines changed after first review", "Median share per reviewed CL.", periods_h, ap("interdiff"), am("interdiff"), "pct", "rework")}
+      {fig("Abandoned after review", "Share of their reviewed CLs abandoned.", periods_h, ap("abandon"), am("abandon"), "pct", "signals")}
     </div>
   </section>
   <section>
     <h2>Since mid-2023: as a reviewer</h2>
     <p class="note">Others' CLs they commented on (10+ in the half-year). Response: weekday hours from being added to the
-      attention set to their first comment. Peers: reviewers in the same tenure band.</p>
+      attention set to their first comment. Peers: reviewers in the same {term("tenure band", "newcomer")}.</p>
     {LEGEND}
     <div class="grid">
-      {fig("CLs reviewed per month", "Others' merged CLs they commented on.", periods_h, rp("reviewed"), rmm("reviewed"), "n")}
-      {fig("Median first response", "Weekday hours.", periods_h, rp("resp"), rmm("resp"), "h")}
-      {fig("Threads per CL reviewed", "Review threads they started.", periods_h, rp("threads"), rmm("threads"), "n")}
-      {fig("Newcomer share of their reviews", "CLs whose author was in their first year.", periods_h, rp("newcomer"), rmm("newcomer"), "pct")}
+      {fig("CLs reviewed per month", "Others' merged CLs they commented on.", periods_h, rp("reviewed"), rmm("reviewed"), "n", "reviewers")}
+      {fig("Median first response", "Weekday hours.", periods_h, rp("resp"), rmm("resp"), "h", "cohorts")}
+      {fig("Threads per CL reviewed", "Review threads they started.", periods_h, rp("threads"), rmm("threads"), "n", "cohorts")}
+      {fig("Newcomer share of their reviews", "CLs whose author was in their first year.", periods_h, rp("newcomer"), rmm("newcomer"), "pct", "cohorts")}
     </div>
   </section>
   <section>
     <h2>Year by year</h2>
-    <div class="tbl"><table><thead><tr><th>Year</th><th>Tenure band</th><th>Commits</th><th>Approvals</th><th>Of newcomers</th>
-      <th>Review share</th><th>Commits pctile</th><th>Approvals pctile</th><th>AI-marked</th></tr></thead><tbody>{rows}</tbody></table></div>
-    <p class="note">Mentoring: among the top two approvers of the first ten CLs of {r["mentees"]["total"]} people who joined
+    <div class="tbl"><table><thead><tr><th>Year</th><th>{term("Tenure band", "newcomer")}</th><th>Commits</th><th>Approvals</th><th>Of {term("newcomers", "newcomer")}</th>
+      <th>{term("Review share", "trajectories")}</th><th>Commits pctile</th><th>Approvals pctile</th><th>{term("AI-marked", "ai")}</th></tr></thead><tbody>{rows}</tbody></table></div>
+    <p class="note">{term("Mentoring", "pipeline")}: among the top two approvers of the first ten CLs of {r["mentees"]["total"]} people who joined
       since 2017 (by start year: {html.escape(", ".join(f"{k}: {v}" for k, v in r["mentees"]["by_year"].items()) or "none")});
-      {r["mentees"]["became_regular"]} became regular reviewers, {r["mentees"]["became_owner"]} were added to OWNERS and
+      {r["mentees"]["became_regular"]} became {term("regular reviewers", "pipeline")}, {r["mentees"]["became_owner"]} were added to OWNERS and
       {r["mentees"]["became_mentor"]} went on to mentor others.</p>
   </section>
   <section>
     <h2>How this is made</h2>
     <p class="note">scripts/balance_person.py, from public Chromium Gerrit and git data (docs/balance-person.md). Measures and
-      definitions follow the public Review Balance page. Identity merges a person's addresses across domains and the Gerrit
+      definitions follow the public {term("Review Balance dashboard", "method")}. Identity merges a person's addresses across domains and the Gerrit
       owner and git author of the same CL; extra aliases were given by hand. Generated {datetime.now(timezone.utc):%-d %b %Y}.</p>
   </section>
 </main>
@@ -677,6 +689,8 @@ def rerender(out_dir):
     for f in sorted(os.listdir(out_dir)):
         if f.endswith(".json"):
             r = json.load(open(os.path.join(out_dir, f)))
+            if not isinstance(r, dict) or "git" not in r:      # artifacts.json and other non-profiles
+                continue
             open(os.path.join(out_dir, f[:-5] + ".html"), "w").write(render(r))
 
 

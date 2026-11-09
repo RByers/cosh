@@ -1,9 +1,11 @@
-"""Private: named examples of each activity pattern and trajectory
-(docs/balance-person.md, "Cluster exemplars").
+"""Private: named examples of each activity pattern and of each path between
+patterns (docs/balance-person.md, "Cluster exemplars"). The clusters' data
+calls a path a "trajectory"; the page doesn't, because the dashboard's
+"Growth trajectories" are something else.
 
 Reads data/private/balance_clusters/people.json (scripts/balance_clusters.py)
 and writes one HTML page naming a few clear examples per pattern and per
-trajectory, to make the aggregate clusters concrete. PRIVATE: never
+path, to make the aggregate clusters concrete. PRIVATE: never
 published on the site; share only as a private claude.ai artifact.
 
   COSH_DATA_DIR=<main>/data/private python3 scripts/balance_exemplars.py [--per 3] [--out FILE]
@@ -19,7 +21,7 @@ from collections import Counter
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from cosh import store  # noqa: E402
-from balance_person import CSS  # noqa: E402
+from balance_person import CSS, term  # noqa: E402
 
 RECENT = ["2025H1", "2025H2", "2026H1", "2026H2"]
 
@@ -53,7 +55,7 @@ def pick_patterns(people, per):
 
 
 def pick_trajectories(people, per):
-    """Per trajectory: those with the longest active record, typical activity."""
+    """Per path between patterns: those with the longest active record."""
     by = {}
     for pid, r in people.items():
         t = r.get("trajectory")
@@ -84,7 +86,7 @@ def person_block(pid, r, idx):
     commits = sum((h.get("raw") or {}).get("commits") or 0 for h in recent)
     approvals = sum((h.get("raw") or {}).get("approvals") or 0 for h in recent)
     return (f'<div class="ex"><h3>{html.escape(pid)}</h3>'
-            f'<p class="note">{html.escape(r.get("trajectory") or "no trajectory")} · 2025–26: {commits:,} commits, '
+            f'<p class="note">{html.escape(r.get("trajectory") or "no clear path")} · 2025–26: {commits:,} commits, '
             f'{approvals:,} approvals</p>{strip(r, idx)}</div>')
 
 
@@ -96,7 +98,7 @@ def render(people, patterns, trajectories, names):
         f'typical examples:</p><div class="exs">{"".join(person_block(p, people[p], idx) for p in ps)}</div></section>'
         for name, (n, ps) in sorted(patterns.items()))
     tra = "".join(
-        f'<section><h2>{html.escape(t)}</h2><p class="note">{n:,} people with this trajectory; examples with the '
+        f'<section><h2>{html.escape(t)}</h2><p class="note">{n:,} people on this path; examples with the '
         f'longest records:</p><div class="exs">{"".join(person_block(p, people[p], idx) for p in ps)}</div></section>'
         for t, (n, ps) in sorted(trajectories.items(), key=lambda kv: -kv[1][0]))
     return f"""<title>Chromium activity patterns</title>
@@ -111,14 +113,19 @@ def render(people, patterns, trajectories, names):
   <header style="display:grid;gap:10px">
     <p class="note">Chromium review balance · activity patterns</p>
     <h1>Who fits each pattern</h1>
-    <div class="private"><strong>Private.</strong> This page names people as examples of activity patterns found by
-      clustering everyone's git activity (docs/balance-clusters.md). Patterns describe what someone did in each
-      half-year, scored against everyone active then; they are not judgements, and this page is not for sharing.</div>
+    <div class="private"><strong>Private.</strong> This page names people as examples of the
+      {term("activity patterns", "patterns")} found by clustering everyone's git activity. Patterns describe what someone
+      did in each half-year, scored against everyone active then; they are not judgements, and this page is not for
+      sharing.</div>
+    <p class="note">Patterns, and how people move between them, are defined on the public
+      {term("Review Balance dashboard", "patterns")}.</p>
     <div class="legend">{key}</div>
   </header>
   <h2>Patterns in 2025–26</h2>
   {pat}
-  <h2>Trajectories since 2017</h2>
+  <h2>Paths between patterns since 2017</h2>
+  <p class="note">Each person's overall course across half-years since 2017. {term("Moving between patterns", "patterns")}
+    shows how common each step is.</p>
   {tra}
 </main>
 """
