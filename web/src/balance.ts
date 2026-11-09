@@ -1,9 +1,11 @@
 // The Review Balance page (balance.html). Wording is in the HTML; this fills
-// in the figures marked with data-src and draws the charts and tables, all
-// from summaries/balance.json (aggregates only: docs/balance.md).
-import { Chart, Filler, type ChartDataset, type Plugin, type TooltipItem } from 'chart.js';
+// in the figures marked with data-src and draws the charts and tables, from
+// summaries/balance.json (aggregates), balance_dirs.json and, for the
+// authors section, balance_authors.json (one row per author: docs/balance.md).
+import { BubbleController, Chart, Filler, type ChartDataset, type Plugin, type TooltipItem } from 'chart.js';
 import balanceUrl from '../../summaries/balance.json?url';
 import dirsUrl from '../../summaries/balance_dirs.json?url';
+import authorsUrl from '../../summaries/balance_authors.json?url';
 import type { DirRow } from './data.ts';
 import { heatRowLabel, heatTable, node } from './heatmap.ts';
 import { readTheme, type Theme } from './charts.ts';
@@ -11,7 +13,7 @@ import { fmtHoursBin, fmtNum, fmtQuarterMonth } from './format.ts';
 import { fill, msg } from './text.ts';
 import { initTerms } from './terms.ts';
 
-Chart.register(Filler);
+Chart.register(Filler, BubbleController);
 
 type Row = Record<string, string | number | null>;
 interface BalanceData {
@@ -145,6 +147,7 @@ interface SeriesSpec {
 }
 
 let charts: Chart[] = [];
+let authorRows: AuthorRow[] = [];
 
 function line(
   id: string,
@@ -652,6 +655,103 @@ function securityBars(rows: Row[], theme: Theme) {
   } as never));
 }
 
+// ---- authors in the last year (balance_authors.json)
+
+type AuthorRow = [email: string, cls: number, dirs: number, load: number | null, tenure: number | null];
+interface AuthorData {
+  summary: Row;
+  authors: AuthorRow[];
+}
+
+/** Bins of directories touched: tens up to 150, then 150 or more. */
+const DIR_BINS = [...Array(15).keys()].map((i) => [i * 10, i * 10 + 9] as const);
+const dirBin = ([lo, hi]: readonly [number, number]) => (lo === 0 ? `1–${hi}` : `${lo}–${hi}`);
+
+function authorDirs(rows: AuthorRow[], theme: Theme) {
+  const counts = [...DIR_BINS.map(() => 0), 0];
+  for (const r of rows) counts[Math.min(DIR_BINS.length, Math.floor(r[2] / 10))]++;
+  const labels = [...DIR_BINS.map(dirBin), `${DIR_BINS.length * 10}+`];
+  const o = options(theme, FMT.n0, false, (i) => `${labels[i]} directories`);
+  o.plugins.tooltip.callbacks.label = (i: TooltipItem<'line'>) =>
+    `${FMT.n0(counts[i.dataIndex])} authors (${FMT.pct(counts[i.dataIndex] / rows.length)})`;
+  const scales = axes(theme, FMT.n0, { zero: true });
+  charts.push(new Chart($<HTMLCanvasElement>('#c-author-dirs'), {
+    type: 'bar',
+    data: { labels, datasets: [{ label: 'Authors', data: counts, backgroundColor: theme.series[0], borderRadius: 2 }] },
+    options: { ...o, scales: { ...scales, x: { ...scales.x, ticks: { ...scales.x.ticks, autoSkip: true } } } },
+  } as never));
+}
+
+/** Tenure bands for the scatter, in years at the end of the period; the same labels and colours as
+ * the other tenure charts on the page. */
+const AUTHOR_TENURE: [number, number, string][] = [[0, 2, 'Under 2 years'], [2, 5, '2–5 years'], [5, 10, '5–10 years'], [10, Infinity, '10+ years']];
+/** The load index axis starts here: the few authors whose CLs drew no threads sit on the floor. */
+const LOAD_FLOOR = 0.1;
+/** Dot radius in px: area grows with CLs landed. */
+const dotRadius = (cls: number) => 1.5 + Math.sqrt(cls) * 0.35;
+
+function authorScatter(rows: AuthorRow[], theme: Theme) {
+  const tenureOf = (t: number) => AUTHOR_TENURE.findIndex(([lo, hi]) => t >= lo && t < hi);
+  // Big dots first, so small ones stay on top and can be hovered.
+  const sorted = rows.filter((r) => r[3] !== null && r[4] !== null).sort((a, b) => b[1] - a[1]);
+  const datasets = AUTHOR_TENURE.map(([, , label], i) => {
+    const pts = sorted.filter((r) => tenureOf(r[4]!) === i);
+    return {
+      label,
+      data: pts.map((r) => ({ x: r[2], y: Math.max(LOAD_FLOOR, r[3]!), r: dotRadius(r[1]) })),
+      rows: pts,
+      backgroundColor: faint(theme.series[i], '99'),
+      borderColor: theme.series[i],
+      borderWidth: 1,
+      hoverBorderColor: theme.parity,
+      hoverBorderWidth: 2,
+    };
+  });
+  const o = options(theme, FMT.n2, true);
+  const tick = { color: theme.muted, font: { family: theme.font } };
+  const logTicks = (keep: number[], fmt: (v: number) => string) => (v: number | string) =>
+    keep.includes(Number(v)) ? fmt(Number(v)) : '';
+  const rowAt = (i: TooltipItem<'line'>) => (datasets[i.datasetIndex].rows as AuthorRow[])[i.dataIndex];
+  charts.push(new Chart($<HTMLCanvasElement>('#c-author-scatter'), {
+    type: 'bubble',
+    data: { datasets },
+    plugins: [refLine(1, theme.muted)],
+    options: {
+      ...o,
+      interaction: { mode: 'nearest' as const, intersect: true },
+      plugins: {
+        ...o.plugins,
+        legend: { ...o.plugins.legend, labels: { ...o.plugins.legend.labels, boxHeight: 10, boxWidth: 10 } },
+        tooltip: {
+          ...o.plugins.tooltip,
+          callbacks: {
+            title: (items: TooltipItem<'line'>[]) => (items.length ? rowAt(items[0])[0] : ''),
+            label: (i: TooltipItem<'line'>) => {
+              const [, cls, dirs, load, tenure] = rowAt(i);
+              return msg('author-tip', { cls: FMT.n0(cls), dirs: FMT.n0(dirs), load: FMT.n2(load!),
+                tenure: `${FMT.n1(tenure!)} years` });
+            },
+          },
+        },
+      },
+      scales: {
+        x: {
+          type: 'logarithmic', min: 1,
+          title: { display: true, text: 'Directories touched', color: theme.muted, font: { family: theme.font } },
+          grid: { color: theme.grid }, border: { color: theme.baseline },
+          ticks: { ...tick, autoSkip: false, maxRotation: 0, callback: logTicks([1, 2, 5, 10, 20, 50, 100, 200, 500, 1000], FMT.n0) },
+        },
+        y: {
+          type: 'logarithmic', min: LOAD_FLOOR,
+          title: { display: true, text: 'Review load index', color: theme.muted, font: { family: theme.font } },
+          grid: { color: theme.grid }, border: { display: false },
+          ticks: { ...tick, autoSkip: false, callback: logTicks([0.1, 0.2, 0.5, 1, 2, 5, 10], (v) => String(v)) },
+        },
+      },
+    },
+  } as never));
+}
+
 type Col = [field: string, fmt: (v: number) => string, cls?: (r: Row) => string];
 
 function table(id: string, rows: Row[], cols: Col[]) {
@@ -1080,6 +1180,8 @@ function render(data: BalanceData) {
   quarters('c-reverted', d.exchange, theme, [{ field: 'reverted', label: 'Reverted within 30 days' }], FMT.pct1, { zero: true });
 
   areaTable(d.areas);
+  authorDirs(authorRows, theme);
+  authorScatter(authorRows, theme);
 
   const eras: [string, string][] = [['2023H2-2024', '2023 H2–2024'], ['2025', '2025'], ['2026 (to Sep)', '2026 to September']];
   const tenureXl: Record<string, string> = { '0-3': '0–3 mo', '3-6': '3–6', '6-12': '6–12', '12-24': '1–2 y', '24-60': '2–5 y', '60-120': '5–10 y', '120-999': '10 y+' };
@@ -1170,7 +1272,10 @@ async function main() {
       if (!r.ok) throw new Error(`${url}: ${r.status}`);
       return (await r.json()) as T;
     };
-    const [data, dirs] = await Promise.all([get<BalanceData>(balanceUrl), get<DirData>(dirsUrl)]);
+    const [data, dirs, authors] = await Promise.all([
+      get<BalanceData>(balanceUrl), get<DirData>(dirsUrl), get<AuthorData>(authorsUrl)]);
+    data.datasets.authors_summary = [authors.summary];
+    authorRows = authors.authors;
     render(data);
     dirMap(dirs);
     initTerms();

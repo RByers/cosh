@@ -355,6 +355,42 @@
         <div id="dir-chart" class="hm-wrap dirmap" role="region" tabindex="0" aria-labelledby="dirs-title"></div>
       </section>
 
+      <section id="authors" class="card" aria-labelledby="authors-title">
+        <a class="card-anchor" href="#authors" aria-label="Link to this section" title="Link to this section">#</a>
+        <h2 id="authors-title">Authors in the last year: breadth and review load</h2>
+        <p class="sub">
+          November 2025 to October 2026, the
+          <b data-src="authors_summary" data-field="authors" data-fmt="n0">–</b>
+          people who landed 10 or more CLs on <code>main</code> (reverts and mechanical CLs aside). A directory is
+          a 3-level path such as <code>chrome/browser/ui</code>; an author touched it if any of their CLs changed a
+          file in it.
+        </p>
+        <h3>Directories touched per author</h3>
+        <p class="note">
+          The median author touched
+          <b data-src="authors_summary" data-field="dirs_p50" data-fmt="n0">–</b>
+          directories and one in ten touched
+          <b data-src="authors_summary" data-field="dirs_p90" data-fmt="n0">–</b>
+          or more;
+          <b data-src="authors_summary" data-field="dirs_100" data-fmt="n0">–</b>
+          touched 100 or more. Breadth goes with volume: more CLs, more directories (rank correlation
+          <b data-src="authors_summary" data-field="rho_dirs_cls" data-fmt="n2">–</b>).
+        </p>
+        <div class="chart"><canvas id="c-author-dirs" role="img" aria-label="Histogram of authors by distinct 3-level directories touched from November 2025 to October 2026."></canvas></div>
+        <h3>Breadth against review load, one dot per author</h3>
+        <p class="note">
+          Across: directories touched. Up: the author's
+          <button type="button" class="term" popovertarget="def-load-index">review load index</button>
+          over the year, their reviewer threads against the 2023–24 norm for CLs of the same size and directory
+          (1.0, dashed). Colour is tenure at the end of October 2026, and a dot's area is CLs landed. Hover a dot for
+          the author. Both axes are logarithmic. Broader authors draw somewhat less feedback per CL (rank correlation
+          <b data-src="authors_summary" data-field="rho_dirs_load" data-fmt="n2">–</b>), partly because they are
+          often longer-tenured and land more.
+        </p>
+        <div class="chart chart-tall"><canvas id="c-author-scatter" role="img" aria-label="Scatter plot of authors from November 2025 to October 2026: directories touched against review load index, coloured by tenure, sized by CLs landed."></canvas></div>
+        <template data-msg="author-tip"><slot name="cls"></slot> CLs, <slot name="dirs"></slot> directories, load index <slot name="load"></slot>, <slot name="tenure"></slot> since first commit</template>
+      </section>
+
       <section id="learning" class="card" aria-labelledby="learning-title">
         <a class="card-anchor" href="#learning" aria-label="Link to this section" title="Link to this section">#</a>
         <h2 id="learning-title">Learning to need less review feedback</h2>

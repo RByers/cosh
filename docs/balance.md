@@ -728,6 +728,20 @@ landing page yet. It has 46 charts and 7 tables, drawn with Chart.js from
   definition as `git_cohorts`:
   `COSH_DATA_DIR=<main>/data/private python3 scripts/balance_review_share.py --first-commit F --owners-added O`.
 
+- `scripts/balance_authors.py` (2026-11-08), the "Authors in the last
+  year" section: per author with 10+ CLs landed from 2025-11 to 2026-10
+  (1,313 people), distinct 3-level directories touched, the review load
+  index pooled over their CLs, tenure and CLs landed, with their most-used
+  commit email. Unlike the other scripts it writes **one row per person**
+  (`summaries/balance_authors.json`), drawn as a histogram of directories
+  and a scatter (directories × load index, colour = tenure band, area =
+  CLs) whose hover card names the author. Published under ground rule 3
+  (public data; the load index is not tone). Breadth tracks volume
+  (Spearman 0.72 with CLs) and goes with slightly less feedback per CL
+  (−0.24):
+  `COSH_DATA_DIR=<main>/data/private python3 scripts/balance_authors.py --first-commit F --owners-added O --mech M`
+  (about 3 min).
+
 The page ends with two definition sections, "Defined: the review load
 index" and "Defined: newcomers and tenure" (a tenure timeline drawn in
 HTML and CSS). Every use of "load index" or "newcomer" in the page's prose
