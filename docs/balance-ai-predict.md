@@ -266,8 +266,9 @@ the recall at the cutoff that lets through one of the 80 human CLs.
 dominated by the reference definition, not the classifier. For per-CL
 selection, e.g. a "likely AI" group of CLs to compare the feedback index on, Opus
 raises recall by about 15 points at the same precision. At ~$2.50 per 1,000
-CLs, scoring every 2026 CL (about 90k) would cost about $230 in CLI-reported
-usage, so a sample is the sensible scope.
+CLs, scoring every landed human 2026 CL (120,110 to 2026-11-07) would cost
+about $310 in CLI-reported usage, against about $150 for Sonnet and $8 for
+Haiku. At 4 calls at once, each would take 2.5–3.5 hours.
 
 ## Verdicts
 
