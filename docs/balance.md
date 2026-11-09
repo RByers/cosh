@@ -649,8 +649,8 @@ so the revert chart should be by size as well as over time.
 
 **Status (2026-11-08):** a first draft is live as `web/balance.html`, with a
 large "Draft: under development" warning at the top. It isn't linked from the
-landing page yet. It has 26 charts and 11 tables, drawn with Chart.js from
-`summaries/balance.json`. That file holds 29 aggregate datasets:
+landing page yet. It has 28 charts and 11 tables, drawn with Chart.js from
+`summaries/balance.json`. That file holds 31 aggregate datasets:
 - `balance_report.py`'s `report.json`;
 - the growth, pipeline, mentorship, AI-paired and mechanical tables from
   `balance_growth.py` (via `balance_growth_tables.py`) and
@@ -671,7 +671,11 @@ tenure), "Arriving better, or easing off?" (the panels and matched cohorts),
 fixes". It has
 no date range or mechanical toggle yet (planned below). Single-series charts
 show distributions as shaded bands (middle half and 10th–90th percentile)
-around the median. "Directories over time" is an expandable heatmap of
+around the median, named p25–p75 and p10–p90 in the legend rather than in
+each caption. "How review is shared" has two histograms of commenting
+reviewers per quarter, by CLs commented on and by threads started
+(`reviewer_load_hist` and its 100-or-more summary `reviewer_load_top` from
+`balance_report.py`, copied into `balance.json` on 2026-11-08). "Directories over time" is an expandable heatmap of
 directories (to three levels) by quarter, from `summaries/balance_dirs.json`
 (`dirs` in `balance_report.py`'s output), with a choice of measure.
 

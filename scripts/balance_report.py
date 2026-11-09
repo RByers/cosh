@@ -56,6 +56,18 @@ def mech_set(path):
     return out
 
 
+def load_top(hist):
+    """The heaviest reviewers per quarter: those with 100 or more CLs (or threads), summed from the histogram."""
+    top = defaultdict(lambda: dict(reviewers=0, share=0.0, load_share=0.0))
+    for h in hist:
+        if h["bin"] in ("100-299", "300+"):
+            t = top[(h["q"], h["by"])]
+            for k in t:
+                t[k] += h[k]
+    return [dict(q=q, by=by, min=100, reviewers=t["reviewers"], share=r(t["share"], 4), load_share=r(t["load_share"], 4))
+            for (q, by), t in top.items()]
+
+
 def quarters(lo, hi):
     y, q = int(lo[:4]), int(lo[-1])
     while f"{y}Q{q}" <= hi:
@@ -234,6 +246,23 @@ def main():
                        threads_top10_share=r(sum(th[:k]) / max(1, sum(th)), 3),
                        reviewer_hours_per_cl=r(sum(c["reviewer_wait_wd_h"] or 0 for c in byq[q]) / len(byq[q]))))
     out["reviewer_quarters"] = rq
+    # How review load spreads over reviewers: per quarter, commenting reviewers binned by the CLs they
+    # commented on and by the threads they started, with each bin's share of all CLs reviewed / threads.
+    BINS = [(0, 0), (1, 1), (2, 3), (4, 9), (10, 29), (30, 99), (100, 299), (300, None)]
+    hist = []
+    for q in ("2023Q3", "2024Q3", "2025Q3", "2026Q3"):
+        rs = [v for (a, qq), v in per_reviewer_q.items() if qq == q]
+        for by in ("cls", "threads"):
+            tot = sum(v[by] for v in rs)
+            for lo, hi in BINS:
+                if by == "cls" and lo == 0:
+                    continue
+                xs = [v[by] for v in rs if v[by] >= lo and (hi is None or v[by] <= hi)]
+                hist.append(dict(q=q, by=by, bin=f"{lo}+" if hi is None else str(lo) if lo == hi else f"{lo}-{hi}",
+                                 reviewers=len(xs), share=r(len(xs) / max(1, len(rs)), 4),
+                                 load_share=r(sum(xs) / max(1, tot), 4)))
+    out["reviewer_load_hist"] = hist
+    out["reviewer_load_top"] = load_top(hist)
 
     # -------------------------------------------------------------- by area
     def era(c):

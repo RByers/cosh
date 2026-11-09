@@ -252,19 +252,38 @@ function bands(
       tension: 0, fill: false });
   }
   const labels = rows.map((r) => (x === 'q' ? qLabel(String(r.q)) : String(r[x])));
-  const o = options(theme, fmt, !!opts.extra);
+  const o = options(theme, fmt, true);
   o.plugins.tooltip.callbacks.label = (i: TooltipItem<'line'>) => {
     const r = rows[i.dataIndex];
     if (i.datasetIndex !== 4) return `${i.dataset.label}: ${fmt(i.parsed.y ?? 0)}`;
     const v = (p: number) => fmt(Number(r[`${key}_p${p}`]));
-    return [`${opts.label}: ${v(50)}`, `  middle half: ${v(25)} to ${v(75)}`, `  10th to 90th percentile: ${v(10)} to ${v(90)}`] as unknown as string;
+    return [`${opts.label}: ${v(50)}`, `  ${BAND_MID}: ${v(25)} to ${v(75)}`, `  ${BAND_WIDE}: ${v(10)} to ${v(90)}`] as unknown as string;
+  };
+  // The legend names the shaded bands too: lines as lines, bands as filled boxes.
+  const item = (text: string, datasetIndex: number, style: 'line' | 'rect', color: string, lineWidth: number, lineDash: number[] = []) =>
+    ({ text, datasetIndex, pointStyle: style, fillStyle: color, strokeStyle: color, lineWidth, lineDash, fontColor: theme.text });
+  const legendItems = [
+    item(opts.label, 4, 'line', c, 2),
+    item(BAND_MID, 1, 'rect', faint(c, '57'), 0),
+    item(BAND_WIDE, 0, 'rect', faint(c, '1f'), 0),
+    ...(opts.extra ? [item(opts.extra.label, 5, 'line', theme.text, 1.5, [4, 2])] : []),
+  ];
+  const legend = {
+    ...o.plugins.legend,
+    labels: {
+      ...o.plugins.legend.labels, usePointStyle: true, pointStyleWidth: 14, boxWidth: 14, boxHeight: 10,
+      generateLabels: (chart: Chart) => legendItems.map((it) => ({ ...it, hidden: !chart.isDatasetVisible(it.datasetIndex) })),
+    },
   };
   charts.push(new Chart($<HTMLCanvasElement>(`#${id}`), {
     type: 'line',
     data: { labels, datasets },
-    options: { ...o, scales: axes(theme, fmt, { zero: opts.zero, max: opts.max }) },
+    options: { ...o, plugins: { ...o.plugins, legend }, scales: axes(theme, fmt, { zero: opts.zero, max: opts.max }) },
   } as never));
 }
+
+const BAND_MID = 'p25–p75';
+const BAND_WIDE = 'p10–p90';
 
 const PATHS: [string, string][] = [
   ['velocity', 'Velocity'], ['size', 'Size'], ['breadth', 'Breadth'], ['reviewing', 'Reviewing'], ['indep_threads', 'Independence'],
@@ -314,7 +333,37 @@ function newcomerStack(rows: Row[], theme: Theme) {
   } as never));
 }
 
-const ALWAYS_MECHANICAL = new Set(['100-199', '200-499', '500+']);
+const HIST_QUARTERS = ['2023Q3', LAST_QUARTER];
+
+/** Reviewers binned by load (`by` is "cls" or "threads"), one bar per quarter in HIST_QUARTERS. */
+function loadHistogram(id: string, rows: Row[], by: string, theme: Theme) {
+  const rs = rows.filter((r) => r.by === by);
+  const bins = [...new Set(rs.map((r) => String(r.bin)))];
+  const at = (q: string, b: string) => rs.find((r) => r.q === q && r.bin === b);
+  const unit = by === 'cls' ? 'CLs reviewed' : 'threads';
+  const o = options(theme, FMT.pct, true, (i) => `${bins[i].replace('-', '–')} ${by === 'cls' ? 'CLs' : 'threads'}`);
+  const scales = axes(theme, FMT.pct, { zero: true });
+  o.plugins.tooltip.callbacks.label = (i: TooltipItem<'line'>) => {
+    const r = at(HIST_QUARTERS[i.datasetIndex], bins[i.dataIndex]);
+    if (!r) return `${i.dataset.label}: –`;
+    return `${i.dataset.label}: ${FMT.pct(Number(r.share))} of reviewers (${FMT.n0(Number(r.reviewers))}), ` +
+      `${FMT.pct(Number(r.load_share))} of ${unit}`;
+  };
+  charts.push(new Chart($<HTMLCanvasElement>(`#${id}`), {
+    type: 'bar',
+    data: {
+      labels: bins.map((b) => b.replace('-', '–')),
+      datasets: HIST_QUARTERS.map((q, i) => ({
+        label: qLabel(q), data: bins.map((b) => (at(q, b)?.share as number | undefined) ?? null),
+        backgroundColor: theme.series[i], borderRadius: 2,
+      })),
+    },
+    options: { ...o, plugins: { ...o.plugins, legend: { ...o.plugins.legend, labels: { ...o.plugins.legend.labels, boxHeight: 10, boxWidth: 10 } } },
+      scales: { ...scales, x: { ...scales.x, ticks: { ...scales.x.ticks, autoSkip: false } } } },
+  } as never));
+}
+
+const ALWAYS_MECHANICAL =new Set(['100-199', '200-499', '500+']);
 
 function mechanicalBars(rows: Row[], theme: Theme) {
   const o = options(theme, FMT.n3, false, (i) => `${rows[i].files} files`);
@@ -621,6 +670,8 @@ function render(data: BalanceData) {
   bands('c-perreviewer', d.reviewer_quarters.filter((r) => String(r.q) <= LAST_QUARTER), 'reviewed', theme, FMT.n0,
     { label: 'Median reviewer', zero: true, extra: { field: 'cls_per_reviewer', label: 'Merged CLs ÷ commenting reviewers' } });
   quarters('c-top10', d.git_quarters, theme, [{ field: 'top10_share', label: 'Busiest tenth' }], FMT.pct);
+  loadHistogram('c-hist-cls', d.reviewer_load_hist, 'cls', theme);
+  loadHistogram('c-hist-threads', d.reviewer_load_hist, 'threads', theme);
 
   bands('c-ftr', exq, 'ftr', theme, (v) => `${num(1)(v)} h`, { label: 'Median CL', zero: true });
   quarters('c-waits', d.exchange, theme, [

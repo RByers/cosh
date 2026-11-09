@@ -125,12 +125,10 @@
         </p>
         <div class="panels">
           <figure class="panel"><h3>CLs per active author</h3>
-            <p class="note">Per quarter, people identified across their email addresses. Line: the median author;
-              shading: the middle half of authors (darker) and the 10th to 90th percentile (lighter); dashed: the mean.</p>
+            <p class="note">Per quarter, people identified across their email addresses.</p>
             <div class="chart chart-short"><canvas id="c-velocity" role="img" aria-label="CLs per active author, per quarter."></canvas></div></figure>
           <figure class="panel"><h3>Median CL size</h3>
-            <p class="note">Changed lines (insertions + deletions) of merged CLs. Line: the median CL; shading: the
-              middle half and the 10th to 90th percentile.</p>
+            <p class="note">Changed lines (insertions + deletions) of merged CLs.</p>
             <div class="chart chart-short"><canvas id="c-size" role="img" aria-label="Median changed lines of merged CLs, per quarter."></canvas></div></figure>
           <figure class="panel"><h3>Review per CL, like for like</h3>
             <p class="note">Review load index: 1.0 (dashed) is the 2023–24 average for a CL of the same size and directory.</p>
@@ -138,8 +136,7 @@
         </div>
         <h3>Nine years of git history</h3>
         <p class="note">
-          Human commits with a CL on <code>main</code>, per quarter. Lines: the median; shading: the middle half
-          (darker) and the 10th to 90th percentile (lighter); dashed: the mean. The typical author has landed
+          Human commits with a CL on <code>main</code>, per quarter. The typical author has landed
           about 3 commits a month since 2017. The rise since 2023 comes from the busiest authors: the 90th
           percentile went from
           <b data-src="git_quarters" data-field="per_author_month_p90" data-where="q=2024Q3" data-fmt="n1">–</b> in
@@ -179,14 +176,34 @@
           <b data-src="reviewer_quarters" data-field="threads_top10_share" data-where="q=2026Q3" data-fmt="pct">–</b>
           in 2026 Q3.
         </p>
+        <p class="sub">
+          Counting CLs rather than threads, the heaviest reviewers carry more than they did. In 2026 Q3,
+          <b data-src="reviewer_load_top" data-field="reviewers" data-where="q=2026Q3&amp;by=cls" data-fmt="n0">–</b>
+          reviewers
+          (<b data-src="reviewer_load_top" data-field="share" data-where="q=2026Q3&amp;by=cls" data-fmt="pct">–</b>)
+          commented on 100 or more CLs each, together
+          <b data-src="reviewer_load_top" data-field="load_share" data-where="q=2026Q3&amp;by=cls" data-fmt="pct">–</b>
+          of all reviews; in 2023 Q3 it was
+          <b data-src="reviewer_load_top" data-field="reviewers" data-where="q=2023Q3&amp;by=cls" data-fmt="n0">–</b>
+          reviewers and
+          <b data-src="reviewer_load_top" data-field="load_share" data-where="q=2023Q3&amp;by=cls" data-fmt="pct">–</b>.
+          Most commenting reviewers review lightly: about a third commented on three CLs or fewer.
+        </p>
         <div class="panels">
           <figure class="panel"><h3>CLs per commenting reviewer</h3>
-            <p class="note">Others' CLs each person commented on in the quarter. Line: the median reviewer; shading:
-              the middle half and the 10th to 90th percentile; dashed: merged CLs ÷ commenting reviewers.</p>
+            <p class="note">Others' CLs each person commented on in the quarter.</p>
             <div class="chart chart-short"><canvas id="c-perreviewer" role="img" aria-label="Merged CLs per commenting reviewer, per quarter."></canvas></div></figure>
           <figure class="panel"><h3>Share of approvals by the busiest tenth</h3>
             <p class="note">From <code>Reviewed-by</code> footers, since mid-2017.</p>
             <div class="chart chart-short"><canvas id="c-top10" role="img" aria-label="Share of approvals given by the busiest tenth of approvers, per quarter."></canvas></div></figure>
+        </div>
+        <div class="panels">
+          <figure class="panel"><h3>Reviewers by CLs commented on</h3>
+            <p class="note">Share of commenting reviewers by how many others' CLs they commented on in the quarter.</p>
+            <div class="chart chart-short"><canvas id="c-hist-cls" role="img" aria-label="Histogram of commenting reviewers by the number of CLs they commented on, 2023 Q3 and 2026 Q3."></canvas></div></figure>
+          <figure class="panel"><h3>Reviewers by comment threads started</h3>
+            <p class="note">Share of commenting reviewers by how many review threads they started on others' CLs in the quarter.</p>
+            <div class="chart chart-short"><canvas id="c-hist-threads" role="img" aria-label="Histogram of commenting reviewers by the number of review threads they started, 2023 Q3 and 2026 Q3."></canvas></div></figure>
         </div>
       </section>
 
@@ -213,7 +230,6 @@
         </p>
         <div class="panels">
           <figure class="panel"><h3>Hours to first substantive review</h3>
-            <p class="note">Line: the median CL; shading: the middle half (darker) and the 10th to 90th percentile (lighter).</p>
             <div class="chart"><canvas id="c-ftr" role="img" aria-label="Hours from being sent for review to the first substantive review: median, 25th to 75th and 90th percentiles, per quarter."></canvas></div></figure>
           <figure class="panel"><h3>Time in the attention set per CL</h3>
             <p class="note">Median hours a reviewer, or the author, was being waited on. Weekends left out for reviewers.</p>
@@ -238,7 +254,7 @@
         <div class="panels">
           <figure class="panel"><h3>Lines changed after first review</h3>
             <p class="note">Changed lines between the first reviewed and final diffs ÷ final diff lines, per reviewed
-              CL. Line: the median CL; shading: the middle half and the 10th to 90th percentile.</p>
+              CL.</p>
             <div class="chart chart-short"><canvas id="c-interdiff" role="img" aria-label="Share of lines changed after the first review, per quarter."></canvas></div></figure>
           <figure class="panel"><h3>Reverted within 30 days</h3>
             <p class="note">Share of merged CLs that a later commit reverted.</p>
