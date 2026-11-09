@@ -1054,7 +1054,7 @@ large "Draft: under development" warning at the top. Its landing-page card
   and a scatter (directories × load index, colour = tenure on a continuous green → blue → red scale, area =
   CLs). Its hover card names the author only behind a hidden setting:
   pressing "e" 10 times in a row (no other key between) switches emails
-  on or off, remembered in that browser. The emails are still in the
+  on or off, for that page load only (off again after a reload). The emails are still in the
   published JSON. Published under ground rule 3
   (public data; the load index is not tone). Breadth tracks volume
   (Spearman 0.72 with CLs) and goes with slightly less feedback per CL

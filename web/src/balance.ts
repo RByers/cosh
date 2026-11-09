@@ -728,8 +728,8 @@ const LOAD_FLOOR = 0.1;
 const dotRadius = (cls: number) => 1.5 + Math.sqrt(cls) * 0.35;
 
 /** Authors' emails show in the scatter's hover cards only behind a hidden setting: press "e" ten
- * times in a row, with no other key between, to switch it on or off. Remembered in this browser. */
-const EMAIL_KEY = 'cosh.balance.emails';
+ * times in a row, with no other key between, to switch it on or off. Not remembered: every load
+ * starts with it off. */
 const EMAIL_PRESSES = 10;
 let showEmails = false;
 
@@ -740,7 +740,6 @@ function setShowEmails(on: boolean) {
 }
 
 function initEmailSetting() {
-  try { setShowEmails(localStorage.getItem(EMAIL_KEY) === '1'); } catch { /* storage blocked: stays off */ }
   let run = 0;
   addEventListener('keydown', (e) => {
     if (e.repeat) return;           // holding the key down isn't pressing it again
@@ -751,7 +750,6 @@ function initEmailSetting() {
     if (++run < EMAIL_PRESSES) return;
     run = 0;
     setShowEmails(!showEmails);
-    try { localStorage.setItem(EMAIL_KEY, showEmails ? '1' : '0'); } catch { /* not remembered */ }
   });
 }
 

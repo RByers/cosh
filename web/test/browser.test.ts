@@ -2777,6 +2777,12 @@ test('the Review Balance page: a draft warning first, every figure, chart and ta
   assert.equal(await emails(), null);
   await press('eeeeeeeeee');
   assert.equal(await emails(), '1');
+  // Not remembered: a reload starts with emails off.
+  await page.reload({ waitUntil: 'load' });
+  await page.waitForSelector('body[data-ready]');
+  assert.equal(await emails(), null);
+  await press('eeeeeeeeee');
+  assert.equal(await emails(), '1');
   await press('eeeeeeeeee');
   assert.equal(await emails(), null);
   const rows = await page.$$eval('table.balance-table', (ts) => ts.map((t) => [t.id, (t as HTMLTableElement).tBodies[0].rows.length] as const));
