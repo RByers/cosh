@@ -14,7 +14,7 @@ lines):
 - Directory tenure: time since the person's first commit whose main
   directory is d. git history starts in 2017, so anyone already in d then
   starts in 2017, which puts them in the top bin for 2023+ CLs anyway.
-- Learning slope (difficulty): the review load index (reviewer threads ÷
+- Learning slope (difficulty): the feedback index (reviewer threads ÷
   the 2023–24 mean for the CL's size and directory) of d's CLs in tenure
   bins, fitted as ln(index) against log2(directory tenure), weighted by CLs.
   exp(slope) is the factor per doubling of tenure: 0.80 means review need
@@ -494,7 +494,7 @@ def main():
     # ---------------------------------------------------------- the page's datasets
     new = {}
     new["queue_learning"] = [
-        dict(dir=d, era=e, bin=i, load_index=rnd(learning(rows[e][d])[2][i]))
+        dict(dir=d, era=e, bin=i, feedback_index=rnd(learning(rows[e][d])[2][i]))
         for d in PAGE_DIRS for e in ERAS for i in range(len(BINS))]
     new["queue_growth"] = []
     for o in out:

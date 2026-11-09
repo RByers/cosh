@@ -232,7 +232,7 @@ METRICS = {
     "log lines": lambda c: math.log1p(c["lines"]),
     "threads": lambda c: c["threads"],
     "threads/100 lines": lambda c: 100 * c["threads"] / max(10, c["lines"]),
-    "load (threads/exp)": lambda c: c["threads"] / c["exp24"] if c["exp24"] else None,
+    "feedback (threads/exp)": lambda c: c["threads"] / c["exp24"] if c["exp24"] else None,
     "interdiff share": lambda c: c["ish"],
     "rounds": lambda c: c["rounds"],
     "h to first review": lambda c: c["ftr"],
@@ -299,7 +299,7 @@ def event_person(use):
             ctrl[(c["q"], band(c["ten"]))]["all"].append(c)
     print(f"\n== Event study by person: {len(first_mark):,} authors with a marked CL; their UNMARKED CLs, "
           "relative quarter to the first mark, minus never-marked authors of the same tenure band that quarter")
-    names = ["log lines", "threads/100 lines", "load (threads/exp)", "interdiff share", "log h to first review",
+    names = ["log lines", "threads/100 lines", "feedback (threads/exp)", "interdiff share", "log h to first review",
              "reverted<30d"]
     print(f"{'rel q':>5} {'people':>7} " + " ".join(f"{n[:14]:>15}" for n in names))
     cache = {}
@@ -428,7 +428,7 @@ def did(use):
     if post and never:
         print(f"  mean broad-marked share per dir-quarter from 2025 Q3: file-treated after the file "
               f"{st.mean(post):.1%} (n={len(post)}), never-file dirs {st.mean(never):.1%} (n={len(never)})")
-    names = ["load (threads/exp)", "threads/100 lines", "h to first review", "interdiff share", "rounds",
+    names = ["feedback (threads/exp)", "threads/100 lines", "h to first review", "interdiff share", "rounds",
              "reverted<30d", "newcomer"]
     met = dict(METRICS)
     met["newcomer"] = lambda c: float(c["ten"] is not None and c["ten"] < 1)
@@ -552,7 +552,7 @@ def footers(use, commits):
         pairs = [(a, b) for a, b in grp.values() if a and b]
         n_cls = sum(len(a) for a, _ in pairs)
         out = []
-        for name in ("log lines", "load (threads/exp)", "h to first review", "reverted<30d"):
+        for name in ("log lines", "feedback (threads/exp)", "h to first review", "reverted<30d"):
             f = METRICS[name]
             ds = []
             for a, b in pairs:

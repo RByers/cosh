@@ -1,7 +1,7 @@
 """Learning by practice or by time? For the Review Balance page's "Learning
 to need less review feedback" section (docs/balance.md, section 4b).
 
-Compares two measures of experience as predictors of the review load index
+Compares two measures of experience as predictors of the feedback index
 (reviewer threads ÷ the 2023–24 mean for the CL's size and directory):
 months since the author's first commit (tenure), and the commits the author
 had landed on main before the CL (practice). Then splits authors by how fast
@@ -9,7 +9,7 @@ they landed CLs in their first year, prolific against average, and draws
 each group's curve against both measures.
 
 Offline; reads balance*.sqlite and derived.sqlite through balance_growth.
-Writes aggregates only (load index and counts per bin), never anything per
+Writes aggregates only (feedback index and counts per bin), never anything per
 person.
 
   COSH_DATA_DIR=<main>/data/private python3 scripts/balance_learning.py \
@@ -176,7 +176,7 @@ def datasets(rs, grp, cuts):
                 s = [c for c in rs if grp.get(c["pid"]) == g and key(c) == b]
                 if len(s) < MIN_CLS or len({c["pid"] for c in s}) < MIN_PEOPLE:
                     continue
-                curve.append(dict(by=by, group=g, bucket=b, load_index=index(s), cls=len(s),
+                curve.append(dict(by=by, group=g, bucket=b, feedback_index=index(s), cls=len(s),
                                   people=len({c["pid"] for c in s}),
                                   median_prior=st.median(c["prior"] for c in s),
                                   median_months=round(st.median(c["months"] for c in s), 1)))
@@ -196,7 +196,7 @@ def datasets(rs, grp, cuts):
 def explore(rs, grp):
     ten = lambda c: bin_of(TENURE, c["months"])
     pra = lambda c: bin_of(PRACTICE, c["prior"])
-    print("\nload index, tenure (rows) x prior commits (cols); n in brackets")
+    print("\nfeedback index, tenure (rows) x prior commits (cols); n in brackets")
     pl = [label(*b) for b in PRACTICE]
     print("tenure".ljust(8) + "".join(x.rjust(16) for x in pl))
     for b in TENURE:
@@ -206,7 +206,7 @@ def explore(rs, grp):
             s = [c for c in rs if ten(c) == t and pra(c) == p]
             line += (f"{index(s)} [{len(s)}]" if len(s) >= 100 else "").rjust(16)
         print(line)
-    # Within-tenure correlation of practice with load and within-practice correlation of tenure.
+    # Within-tenure correlation of practice with feedback and within-practice correlation of tenure.
     for name, outer, inner in (("practice | tenure", ten, lambda c: c["prior"]),
                                ("tenure | practice", pra, lambda c: c["months"])):
         out = []

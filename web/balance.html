@@ -44,7 +44,7 @@
         </p>
         <h2 class="goal-head">The signals</h2>
         <ul class="signals">
-          <li><strong>Balance:</strong> how much review feedback each CL gets for its size and directory (the review load
+          <li><strong>Balance:</strong> how much review feedback each CL gets for its size and directory (the feedback
             index), and how many CLs each reviewer carries.</li>
           <li><strong>Speed:</strong> hours from being sent for review to the first substantive review, and review
             time: the weekday hours a CL spent waiting on a reviewer in Gerrit's attention set.</li>
@@ -61,7 +61,7 @@
           The review feedback a CL draws for its size and directory falls steadily with the author's tenure, and the
           share of people's review work rises steadily with years since joining, on the same path for every join
           year since 2017. Most people follow both. Among people still landing CLs steadily, about one in five is
-          well behind on each in a given year. Behind on review load, that rate has held level since 2023;
+          well behind on each in a given year. Behind on feedback, that rate has held level since 2023;
           behind on reviewing, it has risen from about one in six in 2024 to one in four in 2026
           (<a href="#trajectories">details</a>).
         </p>
@@ -118,9 +118,9 @@
         <p class="sub">
           Two patterns stand out from everything on this page as the shape of growth in Chromium. First, people need
           less review feedback as they gain tenure: before AI tools, a CL from someone in their first three months drew
-          <b data-src="learning" data-field="load_index" data-where="era=2023H2-2024&amp;bucket=0-3" data-fmt="x">–</b>
-          the usual <button type="button" class="term" popovertarget="def-load-index">review load</button> for its size and directory, and after ten years
-          <b data-src="learning" data-field="load_index" data-where="era=2023H2-2024&amp;bucket=120-999" data-fmt="x">–</b>,
+          <b data-src="learning" data-field="feedback_index" data-where="era=2023H2-2024&amp;bucket=0-3" data-fmt="x">–</b>
+          the usual <button type="button" class="term" popovertarget="def-feedback-index">review feedback</button> for its size and directory, and after ten years
+          <b data-src="learning" data-field="feedback_index" data-where="era=2023H2-2024&amp;bucket=120-999" data-fmt="x">–</b>,
           falling at every step between. Second, people take on more of the reviewing: review share (approvals given ÷
           approvals plus CLs landed) rises from nothing in the first year
           (<b data-src="review_share_years" data-field="none" data-where="year=1" data-fmt="pct">–</b> approve no one's
@@ -130,9 +130,9 @@
           <button type="button" class="term" popovertarget="def-newcomer">newcomers</button> who need less review feedback each year and in time give it.
         </p>
         <div class="panels">
-          <figure class="panel"><h3>Review load by tenure</h3>
+          <figure class="panel"><h3>Feedback by tenure</h3>
             <p class="note">Months since the author's first commit. 1.0 (dashed) is the 2023–24 average for the CL's size and directory.</p>
-            <div class="chart chart-short"><canvas id="c-key-load" role="img" aria-label="Review load index by the author's tenure, for 2023 H2 to 2024, 2025 and 2026."></canvas></div></figure>
+            <div class="chart chart-short"><canvas id="c-key-feedback" role="img" aria-label="Feedback index by the author's tenure, for 2023 H2 to 2024, 2025 and 2026."></canvas></div></figure>
           <figure class="panel"><h3>Review share by year since joining</h3>
             <p class="note">Median over people who joined from 2017 to 2025, with the lowest and highest join year's median.</p>
             <div class="chart chart-short"><canvas id="c-key-share" role="img" aria-label="Median review share by year since joining, all join years together, with the lowest and highest join year's median."></canvas></div></figure>
@@ -151,19 +151,19 @@
           The median hasn't moved: the middle of the curve holds while its lower tail grows.
         </p>
         <p class="sub">
-          Behind on review load: 2 or more years since the first commit, 12 or more CLs in the half-year, and a load
+          Behind on feedback: 2 or more years since the first commit, 12 or more CLs in the half-year, and a feedback
           index at least 1.5 times the median of people at the same tenure in the same half-year.
-          <b data-src="behind_load_summary" data-field="behind_rel" data-fmt="pct">–</b> of such people are behind,
-          against <b data-src="behind_load_summary" data-field="null" data-fmt="pct">–</b> that chance alone would put
+          <b data-src="behind_feedback_summary" data-field="behind_rel" data-fmt="pct">–</b> of such people are behind,
+          against <b data-src="behind_feedback_summary" data-field="null" data-fmt="pct">–</b> that chance alone would put
           there, and the rate has held level from 2023 to 2026. Against the fixed 2023–24 curve fewer people are
           behind each year, but that is the project-wide drop in review feedback, not people catching up.
         </p>
         <p class="sub">
           Falling behind is often a phase, but not just noise. Of people behind on reviewing one year,
           <b data-src="behind_share_summary" data-field="stay" data-fmt="pct">–</b> are behind again the next, against
-          <b data-src="behind_share_summary" data-field="base" data-fmt="pct">–</b> of everyone; on review load,
-          <b data-src="behind_load_summary" data-field="stay" data-fmt="pct">–</b> against
-          <b data-src="behind_load_summary" data-field="base" data-fmt="pct">–</b>. Of people counted in three or more
+          <b data-src="behind_share_summary" data-field="base" data-fmt="pct">–</b> of everyone; on feedback,
+          <b data-src="behind_feedback_summary" data-field="stay" data-fmt="pct">–</b> against
+          <b data-src="behind_feedback_summary" data-field="base" data-fmt="pct">–</b>. Of people counted in three or more
           years, <b data-src="behind_share_summary" data-field="ever" data-fmt="pct">–</b> were behind on reviewing at
           least once and <b data-src="behind_share_summary" data-field="run3" data-fmt="pct">–</b> three years in a row.
         </p>
@@ -171,9 +171,9 @@
           <figure class="panel"><h3>Behind on reviewing</h3>
             <p class="note">Share of people landing 24 or more CLs a year (prorated for 2026, to October) whose review share is under half the median for their year since joining.</p>
             <div class="chart chart-short"><canvas id="c-behind-share" role="img" aria-label="Share of steady contributors behind on review share, by calendar year 2021 to 2026, for years 3 to 4 and 5 to 9 since joining and adjusted overall."></canvas></div></figure>
-          <figure class="panel"><h3>Behind on review load</h3>
-            <p class="note">Share of authors with 2+ years' tenure and 12 or more CLs in the half-year (6 in 2026 Q3) whose load index is 1.5× or more their tenure band's median.</p>
-            <div class="chart chart-short"><canvas id="c-behind-load" role="img" aria-label="Share of authors behind on review load by half-year, against the same half-year's peers and against the 2023 to 2024 curve, with the share chance alone gives."></canvas></div></figure>
+          <figure class="panel"><h3>Behind on feedback</h3>
+            <p class="note">Share of authors with 2+ years' tenure and 12 or more CLs in the half-year (6 in 2026 Q3) whose feedback index is 1.5× or more their tenure band's median.</p>
+            <div class="chart chart-short"><canvas id="c-behind-feedback" role="img" aria-label="Share of authors behind on feedback by half-year, against the same half-year's peers and against the 2023 to 2024 curve, with the share chance alone gives."></canvas></div></figure>
         </div>
       </section>
 
@@ -192,10 +192,10 @@
           <b data-src="exchange" data-field="threads_per_100" data-where="q=2026Q3" data-fmt="n1">–</b>.
         </p>
         <p class="sub">
-          The <button type="button" class="term" popovertarget="def-load-index">review load index</button> compares each CL's reviewer threads with the 2023–24 average for CLs of the same
+          The <button type="button" class="term" popovertarget="def-feedback-index">feedback index</button> compares each CL's reviewer threads with the 2023–24 average for CLs of the same
           size and directory, so bigger CLs or a shift between areas don't move it. It fell from
-          <b data-src="exchange" data-field="load_index" data-where="q=2023Q3" data-fmt="n2">–</b> to
-          <b data-src="exchange" data-field="load_index" data-where="q=2026Q3" data-fmt="n2">–</b>: like for like,
+          <b data-src="exchange" data-field="feedback_index" data-where="q=2023Q3" data-fmt="n2">–</b> to
+          <b data-src="exchange" data-field="feedback_index" data-where="q=2026Q3" data-fmt="n2">–</b>: like for like,
           a 2026 CL gets about a third less review feedback than one in 2023.
         </p>
         <div class="panels">
@@ -206,8 +206,8 @@
             <p class="note">Changed lines (insertions + deletions) of merged CLs.</p>
             <div class="chart chart-short"><canvas id="c-size" role="img" aria-label="Median changed lines of merged CLs, per quarter."></canvas></div></figure>
           <figure class="panel"><h3>Review per CL, like for like</h3>
-            <p class="note"><button type="button" class="term" popovertarget="def-load-index">Review load index</button>: 1.0 (dashed) is the 2023–24 average for a CL of the same size and directory.</p>
-            <div class="chart chart-short"><canvas id="c-load" role="img" aria-label="Review load index per quarter."></canvas></div></figure>
+            <p class="note"><button type="button" class="term" popovertarget="def-feedback-index">Feedback index</button>: 1.0 (dashed) is the 2023–24 average for a CL of the same size and directory.</p>
+            <div class="chart chart-short"><canvas id="c-feedback" role="img" aria-label="Feedback index per quarter."></canvas></div></figure>
         </div>
         <h3>Nine years of git history</h3>
         <p class="note">
@@ -374,7 +374,7 @@
           most changed lines, then down into its busiest subdirectory as long as that outweighs the files
           directly in it. Directories with under 200 CLs in either period are left out, and below three levels
           a directory opens only if it has over 1% of the CLs. "Now" is 2025 Q4 to
-          2026 Q3. <button type="button" class="term" popovertarget="def-load-index">Load index</button>: 1.0 is the 2023–24 average for the CL's size and directory. Each measure's two
+          2026 Q3. <button type="button" class="term" popovertarget="def-feedback-index">Feedback index</button>: 1.0 is the 2023–24 average for the CL's size and directory. Each measure's two
           columns share one shading, stronger for more (CLs on a log scale). Review time is the weekday hours a CL
           waited on a reviewer in the attention set. Both waits are red where they grew by more than a tenth, green
           where they shrank by more than a tenth.
@@ -382,7 +382,7 @@
         <div class="table-wrap">
           <table id="t-areas" class="balance-table area-table">
             <thead>
-              <tr class="group"><th></th><th colspan="2">CLs</th><th colspan="2">Median lines</th><th colspan="2">Threads per 100 lines</th><th colspan="2">Load index</th><th colspan="2">Hours to first review</th><th colspan="2">Review time, hours</th><th colspan="2">Newcomer share</th></tr>
+              <tr class="group"><th></th><th colspan="2">CLs</th><th colspan="2">Median lines</th><th colspan="2">Threads per 100 lines</th><th colspan="2">Feedback index</th><th colspan="2">Hours to first review</th><th colspan="2">Review time, hours</th><th colspan="2">Newcomer share</th></tr>
               <tr><th>Directory</th><th>2024</th><th>Now</th><th>2024</th><th>Now</th><th>2024</th><th>Now</th><th>2024</th><th>Now</th><th>2024</th><th>Now</th><th>2024</th><th>Now</th><th>2024</th><th>Now</th></tr>
             </thead>
             <tbody></tbody>
@@ -403,7 +403,7 @@
         <div class="toggles">
           <fieldset id="dir-metric" class="segmented chart-toggle">
             <legend>Show</legend>
-            <label><input type="radio" name="dir-metric" value="load_index" checked />Load index</label>
+            <label><input type="radio" name="dir-metric" value="feedback_index" checked />Feedback index</label>
             <label><input type="radio" name="dir-metric" value="threads_per_100" />Threads per 100 lines</label>
             <label><input type="radio" name="dir-metric" value="ftr_p50" />Hours to first review</label>
             <label><input type="radio" name="dir-metric" value="review_time_p50" />Review time</label>
@@ -415,7 +415,7 @@
         </div>
         <p id="dir-note" class="note"></p>
         <template data-msg="dir-note">
-          <span data-if="m=load_index"><button type="button" class="term" popovertarget="def-load-index">Review load index</button>: reviewer threads against the 2023–24 average for CLs of the
+          <span data-if="m=feedback_index"><button type="button" class="term" popovertarget="def-feedback-index">Feedback index</button>: reviewer threads against the 2023–24 average for CLs of the
             same size and directory (1.0).</span>
           <span data-if="m=threads_per_100">Mean reviewer threads per 100 changed lines, for CLs of 10 lines or more.</span>
           <span data-if="m=ftr_p50">Median clock hours from being sent for review to the first substantive review.</span>
@@ -528,11 +528,11 @@
           in 2020.
         </p>
         <div class="panels">
-          <figure class="panel"><h3>Review load by time in the directory</h3>
-            <p class="note"><button type="button" class="term" popovertarget="def-load-index">Load index</button>
+          <figure class="panel"><h3>Feedback by time in the directory</h3>
+            <p class="note"><button type="button" class="term" popovertarget="def-feedback-index">Feedback index</button>
               by the author's time since their first commit in the directory, July 2023 to 2024. A steeper fall means
               more to learn.</p>
-            <div class="chart"><canvas id="c-qu-learn" role="img" aria-label="Review load index by the author's time in the directory, for five directories, July 2023 to 2024."></canvas></div></figure>
+            <div class="chart"><canvas id="c-qu-learn" role="img" aria-label="Feedback index by the author's time in the directory, for five directories, July 2023 to 2024."></canvas></div></figure>
           <figure class="panel"><h3>Approvals by people new to the project</h3>
             <p class="note">Share of the directory's approvals (<code>Reviewed-by</code>) given by people under 3
               years since their first Chromium commit. 2026 runs to October.</p>
@@ -565,7 +565,7 @@
 
       <section id="authors" class="card" aria-labelledby="authors-title">
         <a class="card-anchor" href="#authors" aria-label="Link to this section" title="Link to this section">#</a>
-        <h2 id="authors-title">Authors in the last year: breadth and review load</h2>
+        <h2 id="authors-title">Authors in the last year: breadth and feedback</h2>
         <p class="sub">
           November 2025 to October 2026, the
           <b data-src="authors_summary" data-field="authors" data-fmt="n0">–</b>
@@ -585,15 +585,15 @@
           <b data-src="authors_summary" data-field="rho_dirs_cls" data-fmt="n2">–</b>).
         </p>
         <div class="chart"><canvas id="c-author-dirs" role="img" aria-label="Histogram of authors by distinct 3-level directories touched from November 2025 to October 2026."></canvas></div>
-        <h3>Breadth against review load, one dot per author</h3>
+        <h3>Breadth against feedback, one dot per author</h3>
         <p class="note">
           Across: directories touched. Up: the author's
-          <button type="button" class="term" popovertarget="def-load-index">review load index</button>
+          <button type="button" class="term" popovertarget="def-feedback-index">feedback index</button>
           over the year, their reviewer threads against the 2023–24 norm for CLs of the same size and directory
           (1.0, dashed). Colour is tenure at the end of October 2026, fading from green for new authors through blue at 5
           years to red at 10 years or more, and a dot's area is CLs landed. Hover a dot for
           its figures. Both axes are logarithmic. Broader authors draw somewhat less feedback per CL (rank correlation
-          <b data-src="authors_summary" data-field="rho_dirs_load" data-fmt="n2">–</b>), partly because they are
+          <b data-src="authors_summary" data-field="rho_dirs_feedback" data-fmt="n2">–</b>), partly because they are
           often longer-tenured and land more.
         </p>
         <div class="tenure-key" aria-hidden="true">
@@ -601,8 +601,8 @@
           <span class="tenure-key-bar"></span>
           <span class="tenure-key-ticks"><span>0</span><span>5</span><span>10+</span></span>
         </div>
-        <div class="chart chart-tall"><canvas id="c-author-scatter" role="img" aria-label="Scatter plot of authors from November 2025 to October 2026: directories touched against review load index, coloured by tenure, sized by CLs landed."></canvas></div>
-        <template data-msg="author-tip"><slot name="cls"></slot> CLs, <slot name="dirs"></slot> directories, load index <slot name="load"></slot>, <slot name="tenure"></slot> since first commit</template>
+        <div class="chart chart-tall"><canvas id="c-author-scatter" role="img" aria-label="Scatter plot of authors from November 2025 to October 2026: directories touched against feedback index, coloured by tenure, sized by CLs landed."></canvas></div>
+        <template data-msg="author-tip"><slot name="cls"></slot> CLs, <slot name="dirs"></slot> directories, feedback index <slot name="feedback"></slot>, <slot name="tenure"></slot> since first commit</template>
       </section>
 
       <section id="learning" class="card" aria-labelledby="learning-title">
@@ -610,38 +610,38 @@
         <h2 id="learning-title">Learning to need less review feedback</h2>
         <p class="sub">
           Before AI tools, the learning signal was strong. A CL from someone in their first three months drew
-          <b data-src="learning" data-field="load_index" data-where="era=2023H2-2024&amp;bucket=0-3" data-fmt="x">–</b>
+          <b data-src="learning" data-field="feedback_index" data-where="era=2023H2-2024&amp;bucket=0-3" data-fmt="x">–</b>
           the usual review for its size and directory; after ten years,
-          <b data-src="learning" data-field="load_index" data-where="era=2023H2-2024&amp;bucket=120-999" data-fmt="x">–</b>.
+          <b data-src="learning" data-field="feedback_index" data-where="era=2023H2-2024&amp;bucket=120-999" data-fmt="x">–</b>.
           Familiarity with the code mattered as much as tenure: a first CL in a directory drew
-          <b data-src="learning" data-field="load_index" data-where="era=2023H2-2024&amp;bucket=fam 0" data-fmt="x">–</b>,
+          <b data-src="learning" data-field="feedback_index" data-where="era=2023H2-2024&amp;bucket=fam 0" data-fmt="x">–</b>,
           against
-          <b data-src="learning" data-field="load_index" data-where="era=2023H2-2024&amp;bucket=fam 100+" data-fmt="x">–</b>
+          <b data-src="learning" data-field="feedback_index" data-where="era=2023H2-2024&amp;bucket=fam 100+" data-fmt="x">–</b>
           for someone with 100 or more commits there.
         </p>
         <p class="sub">
           In 2026 the curve keeps its shape but drops, most at the start:
-          <b data-src="learning" data-field="load_index" data-where="era=2026 (to Sep)&amp;bucket=0-3" data-fmt="x">–</b>
+          <b data-src="learning" data-field="feedback_index" data-where="era=2026 (to Sep)&amp;bucket=0-3" data-fmt="x">–</b>
           for a first-quarter <button type="button" class="term" popovertarget="def-newcomer">newcomer</button>,
-          <b data-src="learning" data-field="load_index" data-where="era=2026 (to Sep)&amp;bucket=120-999" data-fmt="x">–</b>
+          <b data-src="learning" data-field="feedback_index" data-where="era=2026 (to Sep)&amp;bucket=120-999" data-fmt="x">–</b>
           for a ten-year veteran. Either <button type="button" class="term" popovertarget="def-newcomer">newcomers</button> arrive better equipped, or they get less of the feedback that
           trains them. The <a href="#cohorts">cohorts</a> and the <a href="#pipeline">training chain</a> below
           suggest both.
         </p>
         <div class="panels">
-          <figure class="panel"><h3>Review load by tenure</h3>
+          <figure class="panel"><h3>Feedback by tenure</h3>
             <p class="note">Months since the author's first commit. 1.0 (dashed) is the 2023–24 average for the CL's size and directory.</p>
-            <div class="chart"><canvas id="c-tenure" role="img" aria-label="Review load index by the author's tenure, for 2023 H2 to 2024, 2025 and 2026."></canvas></div></figure>
-          <figure class="panel"><h3>Review load by familiarity with the directory</h3>
+            <div class="chart"><canvas id="c-tenure" role="img" aria-label="Feedback index by the author's tenure, for 2023 H2 to 2024, 2025 and 2026."></canvas></div></figure>
+          <figure class="panel"><h3>Feedback by familiarity with the directory</h3>
             <p class="note">The author's earlier commits in the CL's main 3-level directory.</p>
-            <div class="chart"><canvas id="c-fam" role="img" aria-label="Review load index by the author's earlier commits in the directory, for 2023 H2 to 2024, 2025 and 2026."></canvas></div></figure>
+            <div class="chart"><canvas id="c-fam" role="img" aria-label="Feedback index by the author's earlier commits in the directory, for 2023 H2 to 2024, 2025 and 2026."></canvas></div></figure>
         </div>
         <h3 id="practice">Practice or time?</h3>
         <p class="sub">
           What teaches authors to need less review is landing CLs, not months on the project. Before AI tools, the
           number of commits an author had already landed explained
           <b data-src="learning_practice_fit" data-field="r2_practice" data-fmt="pct1">–</b> of the variation in
-          review load between CLs, against
+          review feedback between CLs, against
           <b data-src="learning_practice_fit" data-field="r2_tenure" data-fmt="pct1">–</b> for tenure, and the two
           together explained only
           <b data-src="learning_practice_fit" data-field="r2_both" data-fmt="pct1">–</b>. Among authors who had
@@ -655,17 +655,17 @@
           (<b data-src="learning_practice_fit" data-field="average_min" data-fmt="n0">–</b> to
           <b data-src="learning_practice_fit" data-field="average_max" data-fmt="n0">–</b>). In their second year,
           the prolific group's CLs drew
-          <b data-src="learning_practice" data-field="load_index" data-where="by=tenure&amp;group=prolific&amp;bucket=12-24" data-fmt="x">–</b>
+          <b data-src="learning_practice" data-field="feedback_index" data-where="by=tenure&amp;group=prolific&amp;bucket=12-24" data-fmt="x">–</b>
           the usual review and the average group's
-          <b data-src="learning_practice" data-field="load_index" data-where="by=tenure&amp;group=average&amp;bucket=12-24" data-fmt="x">–</b>.
+          <b data-src="learning_practice" data-field="feedback_index" data-where="by=tenure&amp;group=average&amp;bucket=12-24" data-fmt="x">–</b>.
           Counted in commits landed, the curves meet, and the average group's is if anything a little lower: in their first ten commits,
-          <b data-src="learning_practice" data-field="load_index" data-where="by=practice&amp;group=prolific&amp;bucket=0-10" data-fmt="x">–</b>
+          <b data-src="learning_practice" data-field="feedback_index" data-where="by=practice&amp;group=prolific&amp;bucket=0-10" data-fmt="x">–</b>
           and
-          <b data-src="learning_practice" data-field="load_index" data-where="by=practice&amp;group=average&amp;bucket=0-10" data-fmt="x">–</b>;
+          <b data-src="learning_practice" data-field="feedback_index" data-where="by=practice&amp;group=average&amp;bucket=0-10" data-fmt="x">–</b>;
           after 30 to 100,
-          <b data-src="learning_practice" data-field="load_index" data-where="by=practice&amp;group=prolific&amp;bucket=30-100" data-fmt="x">–</b>
+          <b data-src="learning_practice" data-field="feedback_index" data-where="by=practice&amp;group=prolific&amp;bucket=30-100" data-fmt="x">–</b>
           and
-          <b data-src="learning_practice" data-field="load_index" data-where="by=practice&amp;group=average&amp;bucket=30-100" data-fmt="x">–</b>.
+          <b data-src="learning_practice" data-field="feedback_index" data-where="by=practice&amp;group=average&amp;bucket=30-100" data-fmt="x">–</b>.
           Prolific people need less review sooner because they get more practice, not because each CL teaches them
           more. The latest year shows the same pattern. The groups may differ in other ways too, such as role, team
           or kind of work, so this shows what goes with learning, not what causes it.
@@ -673,10 +673,10 @@
         <div class="panels">
           <figure class="panel"><h3>Prolific and average contributors, by tenure</h3>
             <p class="note">CLs from 2023 H2–2024 by authors who joined in 2017 or later, grouped by commits landed in their first year. 1.0 (dashed) is the 2023–24 average for the CL's size and directory.</p>
-            <div class="chart"><canvas id="c-prac-tenure" role="img" aria-label="Review load index by the author's tenure, for prolific and average contributors."></canvas></div></figure>
+            <div class="chart"><canvas id="c-prac-tenure" role="img" aria-label="Feedback index by the author's tenure, for prolific and average contributors."></canvas></div></figure>
           <figure class="panel"><h3>Prolific and average contributors, by commits landed</h3>
             <p class="note">The same CLs, by the author's commits on main before the CL. Points with fewer than 20 people are left out.</p>
-            <div class="chart"><canvas id="c-prac-landed" role="img" aria-label="Review load index by the author's commits landed so far, for prolific and average contributors."></canvas></div></figure>
+            <div class="chart"><canvas id="c-prac-landed" role="img" aria-label="Feedback index by the author's commits landed so far, for prolific and average contributors."></canvas></div></figure>
         </div>
       </section>
 
@@ -689,7 +689,7 @@
           <b data-src="signals_era" data-field="neg_share" data-where="era=2023H2-2024" data-fmt="pct1">–</b> of
           reviewed CLs got one in 2023–24, and
           <b data-src="signals_era" data-field="neg_share" data-where="era=2026" data-fmt="pct1">–</b> in 2026.
-          Reviewers mostly object in comments. Still, −1 votes track learning as sharply as the <button type="button" class="term" popovertarget="def-load-index">review load index</button>:
+          Reviewers mostly object in comments. Still, −1 votes track learning as sharply as the <button type="button" class="term" popovertarget="def-feedback-index">feedback index</button>:
           before AI tools, <button type="button" class="term" popovertarget="def-newcomer">newcomers</button> in their first three months drew
           <b data-src="signals_tenure" data-field="neg_index" data-where="era=2023H2-2024&amp;tenure_months=0-3" data-fmt="x">–</b>
           the usual rate for their CLs' size, and ten-year veterans
@@ -743,16 +743,16 @@
           CLs a month against
           <b data-src="cohort_curves" data-field="cls_per_person_month" data-where="cohort=joined 2023&amp;months=9-12" data-fmt="n1">–</b>
           for the 2023 joiners at the same point. They drew less review feedback for their size and area
-          (<b data-src="cohort_curves" data-field="load_index" data-where="cohort=joined 2025&amp;months=9-12" data-fmt="x">–</b>
+          (<b data-src="cohort_curves" data-field="feedback_index" data-where="cohort=joined 2025&amp;months=9-12" data-fmt="x">–</b>
           against
-          <b data-src="cohort_curves" data-field="load_index" data-where="cohort=joined 2023&amp;months=9-12" data-fmt="x">–</b>),
+          <b data-src="cohort_curves" data-field="feedback_index" data-where="cohort=joined 2023&amp;months=9-12" data-fmt="x">–</b>),
           and reviewed others' CLs sooner
           (<b data-src="cohort_curves" data-field="reviews_per_person_month" data-where="cohort=joined 2025&amp;months=9-12" data-fmt="n1">–</b>
           reviews a month against
           <b data-src="cohort_curves" data-field="reviews_per_person_month" data-where="cohort=joined 2023&amp;months=9-12" data-fmt="n1">–</b>).
         </p>
         <p class="sub">
-          Part of the lower review load is the project-wide drop in 2026: veterans' load fell by about a fifth
+          Part of the lower feedback is the project-wide drop in 2026: veterans' feedback fell by about a fifth
           too. Even allowing for that, the 2025 cohort drew less feedback sooner than earlier cohorts. Comparing them
           with matched 2024 joiners (<a href="#easing">below</a>) suggests they arrive better equipped, not only that they
           get less review feedback. A joiner is anyone whose first commit on
@@ -761,9 +761,9 @@
           the later points rest on few people.
         </p>
         <div class="panels">
-          <figure class="panel"><h3>Review load index</h3>
+          <figure class="panel"><h3>Feedback index</h3>
             <p class="note">By months since first commit. Lower means less review feedback than usual for the CL's size and directory.</p>
-            <div class="chart chart-short"><canvas id="c-co-load" role="img" aria-label="Review load index by months since first commit, for people who joined in 2023, 2024 and 2025."></canvas></div></figure>
+            <div class="chart chart-short"><canvas id="c-co-feedback" role="img" aria-label="Feedback index by months since first commit, for people who joined in 2023, 2024 and 2025."></canvas></div></figure>
           <figure class="panel"><h3>CLs landed per person per month</h3>
             <p class="note">Velocity.</p>
             <div class="chart chart-short"><canvas id="c-co-vel" role="img" aria-label="CLs landed per person per month, by months since first commit, for people who joined in 2023, 2024 and 2025."></canvas></div></figure>
@@ -896,9 +896,9 @@
           <figure class="panel"><h3>Reviews given per month</h3>
             <p class="note">Others' CLs reviewed a month, among the same people.</p>
             <div class="chart chart-short"><canvas id="c-m-rev" role="img" aria-label="Reviews given per active month, by months since first commit, for matched 2025 and 2024 joiners."></canvas></div></figure>
-          <figure class="panel"><h3>Review load index</h3>
+          <figure class="panel"><h3>Feedback index</h3>
             <p class="note">1 is usual for the CL's size and directory.</p>
-            <div class="chart chart-short"><canvas id="c-m-load" role="img" aria-label="Review load index, by months since first commit, for matched 2025 and 2024 joiners."></canvas></div></figure>
+            <div class="chart chart-short"><canvas id="c-m-feedback" role="img" aria-label="Feedback index, by months since first commit, for matched 2025 and 2024 joiners."></canvas></div></figure>
           <figure class="panel"><h3>Threads, against the same quarter</h3>
             <p class="note">Standard deviations above the norm for that quarter's CLs of the same size and directory.</p>
             <div class="chart chart-short"><canvas id="c-m-resid" role="img" aria-label="Review threads against the same quarter's norm, by months since first commit, for matched 2025 and 2024 joiners."></canvas></div></figure>
@@ -1150,7 +1150,7 @@
           trailer (from July 2026), a co-author or assistant trailer naming one, or a line saying so. Comparing each
           author's marked CLs with their unmarked ones in the same quarter
           (<b data-src="ai_paired" data-field="n" data-where="metric=threads" data-fmt="n0">–</b> author-quarters),
-          marked CLs are larger, about 1.6 times the lines, but get the same review: threads, load, rework, rounds,
+          marked CLs are larger, about 1.6 times the lines, but get the same review: threads, feedback index, rework, rounds,
           waits and reverts show no clear difference. Authors who start marking CLs don't change the rest of their
           work either. Half the marked CLs come from five people, and most AI use carries no marker, so this
           describes a few heavy users, not the project. An earlier version of this page reported faster first
@@ -1171,7 +1171,7 @@
           like) don't predict AI use. Only 15 of the 115 busiest directories have one, only 5 of those ever reach
           a visible share of marked CLs, and 36 reach it without a file. One enthusiast can add a file nobody else
           uses. A better treatment is the first quarter in which at least 5% of a directory's CLs are marked. In
-          the 41 directories that reached it, review feedback per CL drifted down afterwards (<button type="button" class="term" popovertarget="def-load-index">load index</button> about 0.1 lower,
+          the 41 directories that reached it, review feedback per CL drifted down afterwards (<button type="button" class="term" popovertarget="def-feedback-index">feedback index</button> about 0.1 lower,
           with flat trends before), the direction of thinner review once AI is in use. With so few directories, no
           quarter's change is distinguishable from zero. Most AI use is unmarked, so every comparison here is
           biased toward finding nothing.
@@ -1233,30 +1233,30 @@
         </div>
       </section>
 
-      <section id="load-index" class="card" aria-labelledby="load-index-title">
-        <a class="card-anchor" href="#load-index" aria-label="Link to this section" title="Link to this section">#</a>
-        <h2 id="load-index-title">Defined: the review load index</h2>
+      <section id="feedback-index" class="card" aria-labelledby="feedback-index-title">
+        <a class="card-anchor" href="#feedback-index" aria-label="Link to this section" title="Link to this section">#</a>
+        <h2 id="feedback-index-title">Defined: the feedback index</h2>
         <p class="sub">
           Review feedback is counted in reviewer threads: comment threads on a CL started by someone other than
           its author (bots left out). A vote or a lone "LGTM" starts none. Bigger CLs draw more of them. In
           2023–24 the smallest tenth of CLs, up to
-          <b data-src="load_def_deciles" data-field="hi" data-where="decile=1" data-fmt="n0">–</b> changed lines,
-          drew <b data-src="load_def_deciles" data-field="mean_threads" data-where="decile=1" data-fmt="n1">–</b>
+          <b data-src="feedback_def_deciles" data-field="hi" data-where="decile=1" data-fmt="n0">–</b> changed lines,
+          drew <b data-src="feedback_def_deciles" data-field="mean_threads" data-where="decile=1" data-fmt="n1">–</b>
           threads on average, and
-          <b data-src="load_def_deciles" data-field="no_thread" data-where="decile=1" data-fmt="pct">–</b> of them
+          <b data-src="feedback_def_deciles" data-field="no_thread" data-where="decile=1" data-fmt="pct">–</b> of them
           none. The largest tenth, over
-          <b data-src="load_def_deciles" data-field="lo" data-where="decile=10" data-fmt="n0">–</b> lines, drew
-          <b data-src="load_def_deciles" data-field="mean_threads" data-where="decile=10" data-fmt="n1">–</b>.
+          <b data-src="feedback_def_deciles" data-field="lo" data-where="decile=10" data-fmt="n0">–</b> lines, drew
+          <b data-src="feedback_def_deciles" data-field="mean_threads" data-where="decile=10" data-fmt="n1">–</b>.
           Areas differ too: some directories review more closely than others.
         </p>
         <p class="sub">
           So each CL is compared with a norm: the mean threads, over 2023–24, of CLs of the same size and the same
           main 2-level directory (such as <code>chrome/browser</code>). Size uses ten buckets that each double the
           last: under 4 lines, 4–7, 8–15 and so on up to 1,024 or more. Where a directory had fewer than 30 CLs of
-          a size, the norm is the mean for that size alone. A group's load index is its CLs' threads added up,
+          a size, the norm is the mean for that size alone. A group's feedback index is its CLs' threads added up,
           divided by their norms added up:
         </p>
-        <p class="formula">load index = Σ reviewer threads ÷ Σ 2023–24 norms</p>
+        <p class="formula">feedback index = Σ reviewer threads ÷ Σ 2023–24 norms</p>
         <p class="sub">
           1.0 means the group got as much review feedback as like-for-like CLs did in 2023–24; 0.67 means a third
           less; 2.0, twice as much. Because size and directory are held fixed, CLs getting bigger or work moving
@@ -1269,15 +1269,15 @@
             Share of each size tenth's CLs by the reviewer threads they drew, merged CLs of 2023–24, mechanical
             CLs left out. CLs tied at a cut stay together, so the smallest tenths hold a little more or less than
             10%. The stronger the colour, the bigger the CLs. CLs with more than
-            <b data-src="load_def_summary" data-field="max_threads" data-fmt="n0">–</b> threads are off the chart:
-            <b data-src="load_def_deciles" data-field="over_max" data-where="decile=10" data-fmt="pct">–</b> of the
+            <b data-src="feedback_def_summary" data-field="max_threads" data-fmt="n0">–</b> threads are off the chart:
+            <b data-src="feedback_def_deciles" data-field="over_max" data-where="decile=10" data-fmt="pct">–</b> of the
             largest tenth.
           </p>
-          <div class="chart chart-tall"><canvas id="c-loaddef" role="img" aria-label="Distribution of reviewer threads per CL, one line for each tenth of CLs by size, 2023 to 2024."></canvas></div></figure>
-        <template data-msg="loaddef-decile"><slot name="lo"></slot>–<slot name="hi"></slot> lines</template>
-        <template data-msg="loaddef-top"><slot name="lo"></slot>+ lines</template>
-        <template data-msg="loaddef-bin"><slot name="threads"></slot> reviewer threads</template>
-        <template data-msg="loaddef-tip"><slot name="share"></slot> of CLs (mean <slot name="mean"></slot> threads)</template>
+          <div class="chart chart-tall"><canvas id="c-feedbackdef" role="img" aria-label="Distribution of reviewer threads per CL, one line for each tenth of CLs by size, 2023 to 2024."></canvas></div></figure>
+        <template data-msg="feedbackdef-decile"><slot name="lo"></slot>–<slot name="hi"></slot> lines</template>
+        <template data-msg="feedbackdef-top"><slot name="lo"></slot>+ lines</template>
+        <template data-msg="feedbackdef-bin"><slot name="threads"></slot> reviewer threads</template>
+        <template data-msg="feedbackdef-tip"><slot name="share"></slot> of CLs (mean <slot name="mean"></slot> threads)</template>
       </section>
 
       <section id="newcomer" class="card" aria-labelledby="newcomer-title">
@@ -1318,11 +1318,11 @@
         </p>
       </section>
 
-      <div id="def-load-index" class="term-pop" popover role="note" aria-label="Load index">
-        <p><strong>Review load index:</strong> reviewer threads on a group of CLs ÷ the 2023–24 mean for CLs of
+      <div id="def-feedback-index" class="term-pop" popover role="note" aria-label="Feedback index">
+        <p><strong>Feedback index:</strong> reviewer threads on a group of CLs ÷ the 2023–24 mean for CLs of
           the same size and directory. 1.0 is the 2023–24 norm; below 1, less review feedback than like CLs got
           then.</p>
-        <p><a href="#load-index">Full definition</a></p>
+        <p><a href="#feedback-index">Full definition</a></p>
       </div>
       <div id="def-newcomer" class="term-pop" popover role="note" aria-label="Newcomer">
         <p><strong>Newcomer:</strong> an author in the first 12 months after their first commit on chromium/src
@@ -1345,9 +1345,9 @@
           <dt>Substantive review</dt>
           <dd>An inline reviewer comment, or a reviewer thread the author answered. A lone "LGTM" is not substantive
             review.</dd>
-          <dt>Review load index</dt>
+          <dt>Feedback index</dt>
           <dd>Reviewer threads ÷ the 2023–24 mean for CLs of the same size (ten log-spaced buckets) and main
-            2-level directory (<a href="#load-index">defined above</a>).</dd>
+            2-level directory (<a href="#feedback-index">defined above</a>).</dd>
           <dt>Newcomer</dt>
           <dd>An author in their first year after their first commit on <code>main</code>
             (<a href="#newcomer">defined above</a>).</dd>

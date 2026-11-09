@@ -155,7 +155,7 @@ def main():
             threads_per_cl=r(st.mean(c["threads"] for c in s)),
             threads_per_100=r(st.mean(100 * c["threads"] / c["lines"] for c in s if c["lines"] >= 10)),
             addressed_per_cl=r(st.mean(c["addressed"] for c in s)),
-            load_index=r(sum(c["threads"] for c in s) / sum(c["exp24"] for c in s)),
+            feedback_index=r(sum(c["threads"] for c in s) / sum(c["exp24"] for c in s)),
             no_substantive=r(1 - len(rv) / len(s), 3),
             interdiff_share=r(sum(c["lines_changed"] for c in idf) / sum(c["lines_final"] for c in idf)),
             interdiff_p50=pct([c["lines_changed"] / c["lines_final"] for c in idf], .5),
@@ -340,7 +340,7 @@ def main():
             row.update({f"{e}_{k}": v for k, v in dict(
                 cls=len(s), authors=len({c["pid"] for c in s}), median_lines=st.median(c["lines"] for c in s),
                 threads_per_100=r(st.mean(100 * c["threads"] / c["lines"] for c in big)) if big else None,
-                load_index=r(sum(c["threads"] for c in s) / exp) if exp else None,
+                feedback_index=r(sum(c["threads"] for c in s) / exp) if exp else None,
                 ftr_p50=pct([c["ftr"] for c in rv], .5),
                 review_time_p50=pct([c["reviewer_wait_wd_h"] for c in rv], .5),
                 interdiff_share=r(sum(c["lines_changed"] for c in idf) / max(1, sum(c["lines_final"] for c in idf))),
@@ -385,7 +385,7 @@ def main():
                 pct([c["reviewer_wait_wd_h"] for c in rv], .5)]
     out["dirs"] = dict(
         quarters=Q, min_cls=DIR_MIN,
-        fields=["cls", "load_index", "threads_per_100", "ftr_p50", "newcomer_share", "interdiff_p50", "median_lines",
+        fields=["cls", "feedback_index", "threads_per_100", "ftr_p50", "newcomer_share", "interdiff_p50", "median_lines",
                 "review_time_p50"],
         dirs=[dict(path=p, cls=totals[p], q=[dir_cell(cells[(p, q)]) if cells.get((p, q)) else None for q in Q])
               for p in keep])
@@ -449,7 +449,7 @@ def main():
             ppl = len(x["people"])
             y = rc[k].get(f"{lo}-{hi}", dict(cls=0, threads=0, people=set()))
             curves.append(dict(cohort=k, months=f"{lo}-{hi}", cls=x["n"], people=ppl,
-                               load_index=r(x["t"] / x["e"]), median_lines=st.median(x["lines"]),
+                               feedback_index=r(x["t"] / x["e"]), median_lines=st.median(x["lines"]),
                                cls_per_person_month=r(x["n"] / ppl / (hi - lo)),
                                new_dir_share=r(x["new"] / x["n"], 3),
                                interdiff_p50=pct(x["ish"], .5),
@@ -507,7 +507,7 @@ def main():
             y[0] += c["threads"]
             y[1] += c["exp24"]
             y[2] += 1
-    out["learning"] = [dict(era=e, bucket=b, load_index=r(v[0] / v[1]), cls=v[2]) for (e, b), v in lcv.items()]
+    out["learning"] = [dict(era=e, bucket=b, feedback_index=r(v[0] / v[1]), cls=v[2]) for (e, b), v in lcv.items()]
 
     with open(args.out, "w") as f:
         json.dump(out, f, indent=1)

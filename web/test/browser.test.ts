@@ -2846,7 +2846,7 @@ test('the Review Balance page: a draft warning first, every figure, chart and ta
   // Defined terms: every use opens a bubble that exists, and tapping one shows its short definition next
   // to it, with a link to the full section; Escape closes it.
   const targets = await page.$$eval('button.term', (bs) => bs.map((b) => b.getAttribute('popovertarget')!));
-  assert.ok(targets.filter((t) => t === 'def-load-index').length >= 5, targets.join(' '));
+  assert.ok(targets.filter((t) => t === 'def-feedback-index').length >= 5, targets.join(' '));
   assert.ok(targets.filter((t) => t === 'def-newcomer').length >= 10, targets.join(' '));
   for (const t of new Set(targets)) assert.ok(await page.$(`#${t}.term-pop[popover] a[href^="#"]`), t);
   const term = await page.$('#learning button.term[popovertarget="def-newcomer"]');

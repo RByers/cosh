@@ -183,7 +183,7 @@ def silhouette(rows, labels, sample=1500, seed=3):
 
 GIT_FEATURES = ["authored", "active_months", "size", "breadth", "approvals", "review_share",
                 "newcomer_approvals", "owner", "tenure"]
-REVIEW_FEATURES = ["load_resid", "interdiff", "rounds_resid", "threads_per_review",
+REVIEW_FEATURES = ["feedback_resid", "interdiff", "rounds_resid", "threads_per_review",
                    "response_h", "gerrit_reviews"]
 GERRIT_FROM = 2023 * 2 + 1          # 2023H2
 
@@ -255,7 +255,7 @@ def build_panel(cls, commits, ids, first, owner_at, use, dirs3, reviewer_rows):
         f["tenure"] = math.log1p(max(0.0, (half_start(h) - first[pid]) / YEAR))
         if h >= GERRIT_FROM:
             g = gerrit.get(key)
-            f["load_resid"] = st.mean(g["lr"]) if g and len(g["lr"]) >= 3 else None
+            f["feedback_resid"] = st.mean(g["lr"]) if g and len(g["lr"]) >= 3 else None
             f["interdiff"] = st.median(g["ish"]) if g and len(g["ish"]) >= 3 else None
             f["rounds_resid"] = st.mean(g["rr"]) if g and len(g["rr"]) >= 3 else None
             f["threads_per_review"] = st.mean(rv["threads"]) if nrev >= 3 else None

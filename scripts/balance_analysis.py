@@ -343,7 +343,7 @@ def growth(cls, commits, first_commit):
     exp = expected_threads(cls, top2)
     month = lambda t: (t - first_t) / (30.44 * 86400)
 
-    # ---- learning curve: review load vs tenure and area familiarity, per era
+    # ---- learning curve: feedback index vs tenure and area familiarity, per era
     prior = defaultdict(Counter)          # email -> dir3 -> commits so far
     fam = {}                              # CL -> author's prior commits in its top dir3
     for c in sorted(commits, key=lambda c: c["at"]):
@@ -377,7 +377,7 @@ def growth(cls, commits, first_commit):
             y[1] += exp(c)
             y[2] += 1
     eras = ["pre-AI 2023H2-2024", "2025", "2026"]
-    print("\nReview load index (reviewer threads / expected for size and area; 1.00 = 2023-24 norm) by tenure")
+    print("\nFeedback index (reviewer threads / expected for size and area; 1.00 = 2023-24 norm) by tenure")
     print(f"{'tenure':8}" + "".join(f"{e:>26}" for e in eras))
     for tb in ["0-1y", "1-2y", "2-4y", "4-8y", "8y+"]:
         print(f"{tb:8}" + "".join(f"{tab[(e, tb)][0] / max(1e-9, tab[(e, tb)][1]):>16.2f} ({tab[(e, tb)][2]:>6,})"
@@ -407,7 +407,7 @@ def growth(cls, commits, first_commit):
         for rv in c["rb"]:
             if rv in first and rv != c["email"]:
                 py[(rv, y)]["reviews"] += 1
-    # review load index per person-year (Gerrit, 2023H2+)
+    # feedback index per person-year (Gerrit, 2023H2+)
     rli = defaultdict(lambda: [0.0, 0.0, 0])
     for c in cls:
         if c["status"] == "MERGED" and c["closed_at"] and (c["files"] or 0) < MECH_FILES and c["owner_email"]:

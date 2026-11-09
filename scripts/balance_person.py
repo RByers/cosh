@@ -3,7 +3,7 @@
 For each person named, one self-contained HTML page comparing them with
 peers of the same tenure in the same period, on the measures of the public
 Review Balance page: authoring, reviewing, newcomer review, mentoring,
-OWNERS, and (since mid-2023) review load, waits and rework on their CLs and
+OWNERS, and (since mid-2023) feedback index, waits and rework on their CLs and
 their own speed and thoroughness as a reviewer.
 
 These pages name a person, so they are PRIVATE: they are written under
@@ -535,7 +535,7 @@ def summary_points(r):
         a = hs[-1]
         rk = a["author_rank"].get("load")
         if rk is not None and a["author"]["load"] is not None:
-            pts.append(f"In {a['period']} their CLs drew a review load index of {fnum(a['author']['load'], 'x')} "
+            pts.append(f"In {a['period']} their CLs drew a feedback index of {fnum(a['author']['load'], 'x')} "
                        f"(1.0 is the 2023–24 norm for the CL's size and directory), the {ordinal(rk)} percentile among peers.")
     rs = [x for x in r["half"] if x["reviewer"]]
     if rs:
@@ -635,7 +635,7 @@ def render(r):
       in the same tenure band.</p>
     {LEGEND}
     <div class="grid">
-      {fig("Review load index", "Reviewer threads ÷ the 2023–24 average for the CL's size and directory.", periods_h, ap("load"), am("load"), "x")}
+      {fig("Feedback index", "Reviewer threads ÷ the 2023–24 average for the CL's size and directory.", periods_h, ap("load"), am("load"), "x")}
       {fig("Hours to first substantive review", "Median, clock hours.", periods_h, ap("ftr"), am("ftr"), "h")}
       {fig("Lines changed after first review", "Median share per reviewed CL.", periods_h, ap("interdiff"), am("interdiff"), "pct")}
       {fig("Abandoned after review", "Share of their reviewed CLs abandoned.", periods_h, ap("abandon"), am("abandon"), "pct")}

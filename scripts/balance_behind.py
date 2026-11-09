@@ -2,7 +2,7 @@
 For the Review Balance page's "Growth: the two trajectories" section
 (docs/balance.md, section 0).
 
-The page's two clearest growth patterns are the review load index falling
+The page's two clearest growth patterns are the feedback index falling
 with tenure and review share (approvals ÷ (approvals + CLs authored)) rising
 with years since joining. This script measures how often people who still
 contribute significantly fall well behind those curves:
@@ -12,9 +12,9 @@ contribute significantly fall well behind those curves:
   more CLs that calendar year (2 a month; 2026 is prorated to the months in
   the data). They are *behind* when their review share is under half the
   pooled median for their year since joining.
-- **Review load** (Gerrit, 2023 H2 .. 2026 Q3): a person-half counts when the
+- **Feedback** (Gerrit, 2023 H2 .. 2026 Q3): a person-half counts when the
   author has 2 or more years of tenure and 12 or more merged, non-mechanical
-  CLs in the half-year. Their load index is reviewer threads ÷ the 2023–24
+  CLs in the half-year. Their feedback index is reviewer threads ÷ the 2023–24
   norm for each CL's size and directory, summed over those CLs. They are
   *behind* when it is 1.5× or more the median for their tenure band, either
   the 2023 H2–2024 median (fixed) or the same half-year's (relative, which
@@ -54,10 +54,10 @@ SHARE_YEARS = range(3, 10)        # years since joining that count
 MIN_LANDED = 24                   # CLs landed in the calendar year (prorated for a partial year)
 SHARE_FRACTION = 0.5              # behind: under this fraction of the pooled median for the year since joining
 
-# Review load.
-LOAD_TENURE = [(24, 48, "2-4 years"), (48, 96, "4-8 years"), (96, 10 ** 9, "8+ years")]   # months
+# Feedback index.
+FEEDBACK_TENURE = [(24, 48, "2-4 years"), (48, 96, "4-8 years"), (96, 10 ** 9, "8+ years")]   # months
 MIN_CLS = 12                      # merged, non-mechanical CLs in the half-year
-LOAD_FACTOR = 1.5                 # behind: this many times the band's median or more
+FEEDBACK_FACTOR = 1.5                 # behind: this many times the band's median or more
 REF_HALVES = ("2023H2", "2024H1", "2024H2")
 GERRIT_END = datetime(2026, 10, 1, tzinfo=timezone.utc).timestamp()    # whole quarters only
 PARTIAL = {"2026H2": 0.5}         # 2026 H2 is July–September: MIN_CLS is prorated
@@ -88,7 +88,7 @@ def load(args):
         for rv in c["rbp"]:
             if rv != c["pid"]:
                 given[rv][y] += 1
-    # --- review load, per person and half-year.
+    # --- feedback index, per person and half-year.
     dirs3 = A.commit_dirs(3)
     top2 = {}
     for c in commits:
@@ -100,11 +100,11 @@ def load(args):
         if c["change_number"] in mech:
             c["status"] = "MECH"
     use = G.cl_residuals(cls, top2)
-    load = defaultdict(list)        # (pid, half) -> [(threads, expected)] per CL
+    fb = defaultdict(list)        # (pid, half) -> [(threads, expected)] per CL
     for c in use:
         if c["closed_at"] < GERRIT_END:
-            load[(c["pid"], half(c["closed_at"]))].append((c["threads"], c["exp24"]))
-    return first, authored, given, load, last
+            fb[(c["pid"], half(c["closed_at"]))].append((c["threads"], c["exp24"]))
+    return first, authored, given, fb, last
 
 
 # ------------------------------------------------------------- review share
@@ -192,19 +192,19 @@ def share_datasets(rows):
                 behind_share_summary=[summary])
 
 
-# -------------------------------------------------------------- review load
+# --------------------------------------------------------------- feedback
 
 def band_of(months):
-    for lo, hi, name in LOAD_TENURE:
+    for lo, hi, name in FEEDBACK_TENURE:
         if lo <= months < hi:
             return name
     return None
 
 
-def load_rows(first, load):
-    """[(person, half, tenure band, person's load index, [(threads, expected)])] for counted person-halves."""
+def feedback_rows(first, fb):
+    """[(person, half, tenure band, person's feedback index, [(threads, expected)])] for counted person-halves."""
     out = []
-    for (p, h), xs in load.items():
+    for (p, h), xs in fb.items():
         t0 = first.get(p)
         if t0 is None or len(xs) < MIN_CLS * PARTIAL.get(h, 1):
             continue
@@ -238,7 +238,7 @@ def null_rate(rows, reps=20, seed=1):
                 vals.append(idx(pool[i:i + n]))
                 i += n
             m = st.median(vals)
-            hits[h] += sum(v >= LOAD_FACTOR * m for v in vals)
+            hits[h] += sum(v >= FEEDBACK_FACTOR * m for v in vals)
             tot[h] += len(vals)
     out = {h: hits[h] / tot[h] for h in tot}
     out["all"] = sum(hits.values()) / sum(tot.values())
@@ -255,17 +255,17 @@ def interval(k, n):
     return round(c - w, 4), round(c + w, 4)
 
 
-def load_datasets(rows):
+def feedback_datasets(rows):
     null = null_rate(rows)
-    ref = {b: st.median(r[3] for r in rows if r[2] == b and r[1] in REF_HALVES) for _, _, b in LOAD_TENURE}
+    ref = {b: st.median(r[3] for r in rows if r[2] == b and r[1] in REF_HALVES) for _, _, b in FEEDBACK_TENURE}
     halves = sorted({r[1] for r in rows})
     same = {(h, b): st.median(r[3] for r in rows if r[1] == h and r[2] == b)
-            for h in halves for _, _, b in LOAD_TENURE if any(r[1] == h and r[2] == b for r in rows)}
-    fixed = {(r[0], r[1]): r[3] >= LOAD_FACTOR * ref[r[2]] for r in rows}
-    rel = {(r[0], r[1]): r[3] >= LOAD_FACTOR * same[(r[1], r[2])] for r in rows}
+            for h in halves for _, _, b in FEEDBACK_TENURE if any(r[1] == h and r[2] == b for r in rows)}
+    fixed = {(r[0], r[1]): r[3] >= FEEDBACK_FACTOR * ref[r[2]] for r in rows}
+    rel = {(r[0], r[1]): r[3] >= FEEDBACK_FACTOR * same[(r[1], r[2])] for r in rows}
     out = []
     for h in halves:
-        for _, _, b in LOAD_TENURE + [(0, 0, "all")]:
+        for _, _, b in FEEDBACK_TENURE + [(0, 0, "all")]:
             s = [r for r in rows if r[1] == h and (b == "all" or r[2] == b)]
             if len(s) < MIN_PEOPLE:
                 continue
@@ -288,10 +288,10 @@ def load_datasets(rows):
                    ref_8=round(ref["8+ years"], 3),
                    stay=round(sum(stay) / len(stay), 4), stay_n=len(stay), base=round(sum(base) / len(base), 4),
                    behind_rel=round(sum(rel.values()) / len(rel), 4), null=round(null["all"], 4))
-    return dict(behind_load=out, behind_load_summary=[summary]), rel
+    return dict(behind_feedback=out, behind_feedback_summary=[summary]), rel
 
 
-def explore(first, authored, given, rows_load):
+def explore(first, authored, given, rows_fb):
     """Checks behind the published figures: thresholds, what moved, and whether the two groups overlap."""
     global MIN_LANDED, SHARE_FRACTION
     keep = MIN_LANDED, SHARE_FRACTION
@@ -314,22 +314,22 @@ def explore(first, authored, given, rows_load):
     med = {r["year"]: r["cut"] for r in d["behind_share_years"]}
     beh = {(r[0], r[1]) for r in rows if r[4] < med[r[2]]}
     by_py = defaultdict(list)
-    for r in rows_load:
+    for r in rows_fb:
         by_py[(r[0], int(r[1][:4]))].append(r)
-    print("\noverlap, 2024–2026: share-behind person-years that also have a load-behind half (relative)")
+    print("\noverlap, 2024–2026: share-behind person-years that also have a feedback-behind half (relative)")
     same = {}
-    for h in {r[1] for r in rows_load}:
-        for _, _, b in LOAD_TENURE:
-            v = [r[3] for r in rows_load if r[1] == h and r[2] == b]
+    for h in {r[1] for r in rows_fb}:
+        for _, _, b in FEEDBACK_TENURE:
+            v = [r[3] for r in rows_fb if r[1] == h and r[2] == b]
             if v:
                 same[(h, b)] = st.median(v)
-    lb = {(r[0], int(r[1][:4])) for r in rows_load if r[3] >= LOAD_FACTOR * same[(r[1], r[2])]}
+    lb = {(r[0], int(r[1][:4])) for r in rows_fb if r[3] >= FEEDBACK_FACTOR * same[(r[1], r[2])]}
     for y in (2024, 2025, 2026):
         s = [r for r in rows if r[1] == y and (r[0], y) in by_py]
         b1 = [r for r in s if (r[0], y) in beh]
         b0 = [r for r in s if (r[0], y) not in beh]
         f = lambda xs: sum((r[0], y) in lb for r in xs) / len(xs) if xs else float("nan")
-        print(f"  {y}: in both data n={len(s)}; load-behind among share-behind {f(b1):.3f} (n={len(b1)}),"
+        print(f"  {y}: in both data n={len(s)}; feedback-behind among share-behind {f(b1):.3f} (n={len(b1)}),"
               f" among others {f(b0):.3f}")
 
 
@@ -354,15 +354,15 @@ def main():
     LAST, LAST_Y = last, A.year(last)
     LAST_FRAC = datetime.fromtimestamp(last, timezone.utc).month / 12
     new = share_datasets(share_rows(first, authored, given, last))
-    rows_load = load_rows(first, per_half)
-    ld, rel = load_datasets(rows_load)
+    rows_fb = feedback_rows(first, per_half)
+    ld, rel = feedback_datasets(rows_fb)
     new.update(ld)
     for k, v in new.items():
         print(f"\n{k}", file=sys.stderr)
         for r in v:
             print(" ", r, file=sys.stderr)
     if args.explore:
-        explore(first, authored, given, rows_load)
+        explore(first, authored, given, rows_fb)
         return
     data = json.load(open(args.path))
     data["datasets"].update(new)

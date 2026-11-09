@@ -63,7 +63,7 @@ rebuild the pages from the saved JSON without reloading the data:
   - median lines;
   - directories touched.
 - **Since mid-2023 from Gerrit**, per half-year:
-  - their CLs' review load index, hours to first review, lines changed after
+  - their CLs' feedback index, hours to first review, lines changed after
     first review, and the share abandoned after review;
   - as a reviewer: CLs reviewed, median weekday response, threads per CL,
     and newcomer share.

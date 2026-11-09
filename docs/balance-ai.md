@@ -89,7 +89,7 @@ with both kinds of CL:
 | log(1+lines) | +0.24 [−0.19, +0.67] | **+0.49 [+0.28, +0.69]** | **+0.49 [+0.28, +0.70]** |
 | threads | −0.52 [−1.84, +0.81] | +0.48 [−0.28, +1.23] | +0.47 [−0.29, +1.23] |
 | threads per 100 lines | −0.25 [−2.44, +1.94] | +0.13 [−1.01, +1.28] | +0.04 [−1.09, +1.17] |
-| load (threads ÷ expected) | −0.14 [−0.48, +0.21] | +0.13 [−0.10, +0.36] | +0.11 [−0.11, +0.34] |
+| feedback index (threads ÷ expected) | −0.14 [−0.48, +0.21] | +0.13 [−0.10, +0.36] | +0.11 [−0.11, +0.34] |
 | interdiff share | +0.00 [−0.14, +0.14] | −0.04 [−0.10, +0.03] | −0.04 [−0.11, +0.03] |
 | rounds | −0.07 [−0.40, +0.26] | +0.06 [−0.14, +0.25] | +0.05 [−0.14, +0.24] |
 | log(1+h to first review) | −0.52 [−1.01, −0.03] (n=47) | +0.12 [−0.15, +0.39] (n=144) | +0.07 [−0.20, +0.35] |
@@ -97,7 +97,7 @@ with both kinds of CL:
 
 - **The only clear difference is size:** marked CLs are about 1.6× as large
   (e^0.49) as the same author's other CLs that quarter.
-- **Review is the same:** threads, load, rework, rounds and reverts don't
+- **Review is the same:** threads, feedback index, rework, rounds and reverts don't
   differ.
 - **The page's faster-first-review finding doesn't replicate.** The narrow
   set's "first review sooner" (about 34 h, log −0.52, n=47) is gone in the
@@ -110,12 +110,12 @@ marked CL. Each value is relative to never-marked authors of the same tenure
 band that quarter, averaged per person first, so the ± is across people.
 Nothing moves after the first mark:
 - size: +0.07 before against −0.02 to +0.06 after;
-- load: +0.01 to +0.13 before, +0.02 to +0.19 after, all within about ±0.2;
+- feedback index: +0.01 to +0.13 before, +0.02 to +0.19 after, all within about ±0.2;
 - log hours to first review: −0.14 to +0.29 throughout, each ±0.17;
 - reverts: within ±0.01.
 
 Starting to mark AI use doesn't change the rest of someone's work in any
-measure we have. These authors were already slightly larger-CL, higher-load
+measure we have. These authors were already slightly larger-CL, higher-feedback
 people before their first mark.
 
 ## 3. Adoption by directory (speculative)
@@ -144,9 +144,9 @@ across directories):
 - **File treatment:** flat everywhere. With 15 directories, and 2–5 by
   quarter +3, the intervals are wide.
 - **Usage treatment (41 directories):**
-  - Pre-trends are flat: load −0.01 to −0.04, threads per 100 lines
+  - Pre-trends are flat: feedback index −0.01 to −0.04, threads per 100 lines
     −0.02 to −0.22.
-  - Afterwards, load drifts to −0.08 to −0.10 (±0.14–0.17), threads per 100
+  - Afterwards, the feedback index drifts to −0.08 to −0.10 (±0.14–0.17), threads per 100
     lines to −0.40 to −0.49 at +1..+2 (±0.7), and interdiff to −0.03 to −0.05
     (±0.05–0.06).
   - Hours to first review, rounds, reverts and newcomer share show nothing.
@@ -170,7 +170,7 @@ Share of human commits with each footer, Q3 of each year:
 
 Each footer's CLs compared with the same author's other CLs that quarter:
 - **Owners-Override:** these CLs are much smaller (log lines −1.05) and get
-  less review feedback (load −0.34). The rate is flat at 2–3% since 2021, with no
+  less review feedback (feedback index −0.34). The rate is flat at 2–3% since 2021, with no
   AI-era change. It doesn't track reviewer scarcity: across 441
   directory-years, the correlation with commits per approver is r = −0.08.
 - **Auto-Submit:** smaller CLs (−0.96), slightly less review feedback (−0.15) and
@@ -198,7 +198,7 @@ Each footer's CLs compared with the same author's other CLs that quarter:
   directories use AI *less* than the rest.
 - **Usage-based directory DiD: suggestive, not conclusive.** After a
   directory starts using AI visibly, review feedback per CL drifts down by about 0.1
-  load, with flat pre-trends. No cell is significant with 41 directories.
+  on the feedback index, with flat pre-trends. No cell is significant with 41 directories.
   Worth repeating as the broad marker accumulates quarters.
 - **Footers: not relevant to the balance goals.** Owners-Override and
   Auto-Submit are flat since 2021, unrelated to reviewer load, and mark

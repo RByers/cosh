@@ -490,7 +490,7 @@ def matched_cohorts(L, use, seed=5):
                 still_active=rate(p in active for p in people),
                 cls_per_active_month=round(sum(1 for c in cs if c["status"] == "MERGED") / max(1, len(active)) / (hi - lo), 2),
                 reviews_given_per_active_month=round(given / max(1, len(active)) / (hi - lo), 2),
-                load_index=round(sum(c["threads"] for c in merged if c.get("exp24")) / exp, 3) if exp else None,
+                feedback_index=round(sum(c["threads"] for c in merged if c.get("exp24")) / exp, 3) if exp else None,
                 threads_resid=mean((c.get("r_threads") for c in merged), 3),
                 interdiff_p50=R.pct([c["ish"] for c in merged if c["ish"] is not None], .5),
                 rounds=mean((c["rounds"] or 0 for c in merged), 3),
@@ -504,7 +504,7 @@ def matched_cohorts(L, use, seed=5):
 def report(args):
     L = load(args)
     use = annotate(L)
-    # The load index's expectation (exp24) and calendar-adjusted thread residual, merged CLs.
+    # The feedback index's expectation (exp24) and calendar-adjusted thread residual, merged CLs.
     A.MECH_FILES = 10 ** 9      # the repetition rule (mech) applies instead of the provisional one
     merged = G.cl_residuals([c for c in L["cls"] if c["change_number"] not in L["mech"]], L["top2"])
     res = {c["change_number"]: c for c in merged}

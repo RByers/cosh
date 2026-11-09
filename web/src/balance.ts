@@ -77,7 +77,7 @@ const LAST_QUARTER = '2026Q3';
 const qLabel = (q: string) => q.replace('Q', ' Q');
 const faint = (hex: string, alpha: string) => (/^#[0-9a-f]{6}$/i.test(hex) ? hex + alpha : hex);
 
-/** A dashed horizontal line at `value` on the y axis (1.0 for the load
+/** A dashed horizontal line at `value` on the y axis (1.0 for the feedback
  * index, chance for growth). */
 const refLine = (value: number, color: string): Plugin<'line' | 'bar'> => ({
   id: 'refLine',
@@ -358,9 +358,9 @@ function mix(a: string, b: string, t: number): string {
   return '#' + x.map((v, i) => Math.round(v + (y[i] - v) * t).toString(16).padStart(2, '0')).join('');
 }
 
-/** "Defined: the review load index": one line per tenth of CLs by size, the
+/** "Defined: the feedback index": one line per tenth of CLs by size, the
  * share of its CLs by reviewer threads, on a one-hue ramp from small to big. */
-function loadDefinition(hist: Row[], deciles: Row[], theme: Theme) {
+function feedbackDefinition(hist: Row[], deciles: Row[], theme: Theme) {
   const cs = getComputedStyle(document.documentElement);
   const lo = cs.getPropertyValue('--seq-lo').trim();
   const hi = cs.getPropertyValue('--seq-hi').trim();
@@ -369,15 +369,15 @@ function loadDefinition(hist: Row[], deciles: Row[], theme: Theme) {
   const labels = bins.map((b) => (b.hi === b.lo ? String(b.lo) : `${b.lo}–${b.hi}`));
   const last = deciles.length - 1;
   const series = deciles.map((d, i) => ({
-    label: i === last ? msg('loaddef-top', { lo: FMT.n0(Number(d.lo)) })
-      : msg('loaddef-decile', { lo: FMT.n0(Number(d.lo)), hi: FMT.n0(Number(d.hi)) }),
+    label: i === last ? msg('feedbackdef-top', { lo: FMT.n0(Number(d.lo)) })
+      : msg('feedbackdef-decile', { lo: FMT.n0(Number(d.lo)), hi: FMT.n0(Number(d.hi)) }),
     data: bins.map((b) => (hist.find((r) => r.decile === d.decile && r.bin === b.bin)?.share as number | undefined) ?? null),
     color: /^#[0-9a-f]{6}$/i.test(lo) && /^#[0-9a-f]{6}$/i.test(hi) ? mix(lo, hi, i / last) : theme.series[0],
   }));
-  line('c-loaddef', theme, labels, series, FMT.pct, {
+  line('c-feedbackdef', theme, labels, series, FMT.pct, {
     zero: true, ramp: true, pointRadius: 1.5,
-    title: (i) => msg('loaddef-bin', { threads: labels[i] }),
-    tip: (i) => `${i.dataset.label}: ${msg('loaddef-tip', {
+    title: (i) => msg('feedbackdef-bin', { threads: labels[i] }),
+    tip: (i) => `${i.dataset.label}: ${msg('feedbackdef-tip', {
       share: FMT.pct1(i.parsed.y ?? 0), mean: FMT.n1(Number(deciles[i.datasetIndex].mean_threads)) })}`,
   });
 }
@@ -606,7 +606,7 @@ function matchedCharts(rows: Row[], theme: Theme) {
       });
   chart('c-m-cls', 'cls_per_active_month', FMT.n1, { zero: true });
   chart('c-m-rev', 'reviews_given_per_active_month', FMT.n1, { zero: true });
-  chart('c-m-load', 'load_index', FMT.n2, { zero: true, ref: 1 });
+  chart('c-m-feedback', 'feedback_index', FMT.n2, { zero: true, ref: 1 });
   chart('c-m-resid', 'threads_resid', FMT.n1, { zero: true });
   chart('c-m-interdiff', 'interdiff_p50', FMT.pct, { zero: true });
   chart('c-m-abandon', 'abandon_rate', FMT.pct1, { zero: true });
@@ -659,7 +659,7 @@ function securityBars(rows: Row[], theme: Theme) {
 
 // ---- authors in the last year (balance_authors.json)
 
-type AuthorRow = [email: string, cls: number, dirs: number, load: number | null, tenure: number | null];
+type AuthorRow = [email: string, cls: number, dirs: number, feedback: number | null, tenure: number | null];
 interface AuthorData {
   summary: Row;
   authors: AuthorRow[];
@@ -724,8 +724,8 @@ function tenureColor(theme: Theme): (years: number) => string {
     return fromOklab(a.map((v, i) => v + (b[i] - v) * f));
   };
 }
-/** The load index axis starts here: the few authors whose CLs drew no threads sit on the floor. */
-const LOAD_FLOOR = 0.1;
+/** The feedback index axis starts here: the few authors whose CLs drew no threads sit on the floor. */
+const FEEDBACK_FLOOR = 0.1;
 /** Dot radius in px: area grows with CLs landed. */
 const dotRadius = (cls: number) => 1.5 + Math.sqrt(cls) * 0.35;
 
@@ -762,7 +762,7 @@ function authorScatter(rows: AuthorRow[], theme: Theme) {
   const colors = pts.map((r) => colorOf(r[4]!));
   const datasets = [{
     label: 'Authors',
-    data: pts.map((r) => ({ x: r[2], y: Math.max(LOAD_FLOOR, r[3]!), r: dotRadius(r[1]) })),
+    data: pts.map((r) => ({ x: r[2], y: Math.max(FEEDBACK_FLOOR, r[3]!), r: dotRadius(r[1]) })),
     rows: pts,
     backgroundColor: colors.map((c) => faint(c, '99')),
     borderColor: colors,
@@ -790,8 +790,8 @@ function authorScatter(rows: AuthorRow[], theme: Theme) {
           callbacks: {
             title: (items: TooltipItem<'line'>[]) => (items.length && showEmails ? rowAt(items[0])[0] : ''),
             label: (i: TooltipItem<'line'>) => {
-              const [, cls, dirs, load, tenure] = rowAt(i);
-              return msg('author-tip', { cls: FMT.n0(cls), dirs: FMT.n0(dirs), load: FMT.n2(load!),
+              const [, cls, dirs, feedback, tenure] = rowAt(i);
+              return msg('author-tip', { cls: FMT.n0(cls), dirs: FMT.n0(dirs), feedback: FMT.n2(feedback!),
                 tenure: `${FMT.n1(tenure!)} years` });
             },
           },
@@ -805,8 +805,8 @@ function authorScatter(rows: AuthorRow[], theme: Theme) {
           ticks: { ...tick, autoSkip: false, maxRotation: 0, callback: logTicks([1, 2, 5, 10, 20, 50, 100, 200, 500, 1000], FMT.n0) },
         },
         y: {
-          type: 'logarithmic', min: LOAD_FLOOR,
-          title: { display: true, text: 'Review load index', color: theme.muted, font: { family: theme.font } },
+          type: 'logarithmic', min: FEEDBACK_FLOOR,
+          title: { display: true, text: 'Feedback index', color: theme.muted, font: { family: theme.font } },
           grid: { color: theme.grid }, border: { display: false },
           ticks: { ...tick, autoSkip: false, callback: logTicks([0.1, 0.2, 0.5, 1, 2, 5, 10], (v) => String(v)) },
         },
@@ -842,7 +842,7 @@ export const waitChange = (before: number | null, now: number | null) =>
 
 /** Measures of the directory table, each a 2024 and a now column on one shared shading scale. */
 const AREA_COLS: [string, (v: number) => string][] = [
-  ['cls', FMT.n0], ['median_lines', FMT.n0], ['threads_per_100', FMT.n1], ['load_index', FMT.n2],
+  ['cls', FMT.n0], ['median_lines', FMT.n0], ['threads_per_100', FMT.n1], ['feedback_index', FMT.n2],
   ['ftr_p50', FMT.n1], ['review_time_p50', FMT.n1], ['newcomer_share', FMT.pct1],
 ];
 
@@ -934,7 +934,7 @@ interface DirData {
 export const DIR_CELL_MIN = 20;
 
 const DIR_FMT: Record<string, (v: number) => string> = {
-  load_index: (v) => `${num(2)(v)}×`,
+  feedback_index: (v) => `${num(2)(v)}×`,
   threads_per_100: num(1),
   ftr_p50: (v) => `${num(1)(v)} h`,
   review_time_p50: (v) => `${num(1)(v)} h`,
@@ -944,7 +944,7 @@ const DIR_FMT: Record<string, (v: number) => string> = {
   cls: num(0),
 };
 const DIR_UNIT: Record<string, string> = {
-  load_index: 'load index',
+  feedback_index: 'feedback index',
   threads_per_100: 'threads per 100 lines',
   ftr_p50: 'median hours to first review',
   review_time_p50: 'median review time',
@@ -1212,7 +1212,7 @@ function patternSwatches(theme: Theme) {
 
 /** The two growth trajectories and the shares of people behind them (#trajectories). */
 function trajectories(d: Record<string, Row[]>, eras: [string, string][], tenureXl: Record<string, string>, theme: Theme) {
-  categories('c-key-load', d.learning, theme, { x: 'bucket', g: 'era', v: 'load_index', groups: eras,
+  categories('c-key-feedback', d.learning, theme, { x: 'bucket', g: 'era', v: 'feedback_index', groups: eras,
     xs: Object.keys(tenureXl), xl: (x) => tenureXl[x] }, FMT.n2, { ref: 1 });
   const ys = d.review_share_years;
   line('c-key-share', theme, ys.map((r) => `Year ${r.year}`), [
@@ -1227,9 +1227,9 @@ function trajectories(d: Record<string, Row[]>, eras: [string, string][], tenure
     { label: 'Years 3–4', data: by.map((r) => r.y3_4 as number | null), color: theme.series[1] },
     { label: 'Years 5–9', data: by.map((r) => r.y5_9 as number | null), color: theme.series[2] },
   ], FMT.pct, { zero: true });
-  const bl = d.behind_load.filter((r) => r.band === 'all');
+  const bl = d.behind_feedback.filter((r) => r.band === 'all');
   const halfLabel = (h: string) => (h === '2026H2' ? '2026 Q3' : h.replace('H', ' H'));
-  line('c-behind-load', theme, bl.map((r) => halfLabel(String(r.half))), [
+  line('c-behind-feedback', theme, bl.map((r) => halfLabel(String(r.half))), [
     { label: 'Behind same-half peers', data: bl.map((r) => r.behind_rel as number), color: theme.series[0] },
     { label: 'Behind the 2023–24 curve', data: bl.map((r) => r.behind_fixed as number), color: theme.series[1] },
     { label: 'Chance alone', data: bl.map((r) => r.null as number), color: theme.muted, dash: true },
@@ -1272,7 +1272,7 @@ function queues(d: Record<string, Row[]>, theme: Theme) {
 
   const bins = ['< 6 mo', '6–12 mo', '1–2 y', '2–4 y', '4 y+'];
   categories('c-qu-learn', d.queue_learning.filter((r) => r.era === 'pre'), theme, {
-    x: 'bin', g: 'dir', v: 'load_index', xs: [0, 1, 2, 3, 4], xl: (x) => bins[Number(x)],
+    x: 'bin', g: 'dir', v: 'feedback_index', xs: [0, 1, 2, 3, 4], xl: (x) => bins[Number(x)],
     groups: QUEUE_DIRS.map((dir) => [dir, dir]) }, FMT.n2, { ref: 1 });
   categories('c-qu-open', d.queue_openness, theme, {
     x: 'year', g: 'dir', v: 'new_reviewer_share', xs: [2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025, 2026], xl: String,
@@ -1311,7 +1311,7 @@ function render(data: BalanceData) {
   bands('c-velocity', exq, 'cls_per_author', theme, FMT.n1,
     { label: 'Median author', zero: true, extra: { field: 'cls_per_author', label: 'Mean' } });
   bands('c-size', exq, 'lines', theme, FMT.n0, { label: 'Median CL', zero: true });
-  quarters('c-load', d.exchange, theme, [{ field: 'load_index', label: 'Load index' }], FMT.n2, { ref: 1 });
+  quarters('c-feedback', d.exchange, theme, [{ field: 'feedback_index', label: 'Feedback index' }], FMT.n2, { ref: 1 });
   const git = d.git_quarters.filter((r) => String(r.q) <= LAST_QUARTER);
   bands('c-longrun', git, 'per_author_month', theme, FMT.n1,
     { label: 'Median author', zero: true, extra: { field: 'per_author_month', label: 'Mean' } });
@@ -1339,24 +1339,24 @@ function render(data: BalanceData) {
 
   const eras: [string, string][] = [['2023H2-2024', '2023 H2–2024'], ['2025', '2025'], ['2026 (to Sep)', '2026 to September']];
   const tenureXl: Record<string, string> = { '0-3': '0–3 mo', '3-6': '3–6', '6-12': '6–12', '12-24': '1–2 y', '24-60': '2–5 y', '60-120': '5–10 y', '120-999': '10 y+' };
-  categories('c-tenure', d.learning, theme, { x: 'bucket', g: 'era', v: 'load_index', groups: eras,
+  categories('c-tenure', d.learning, theme, { x: 'bucket', g: 'era', v: 'feedback_index', groups: eras,
     xs: Object.keys(tenureXl), xl: (x) => tenureXl[x] }, FMT.n2, { ref: 1 });
   trajectories(d, eras, tenureXl, theme);
   const famXl: Record<string, string> = { 'fam 0': 'None', 'fam 1-4': '1–4', 'fam 5-19': '5–19', 'fam 20-99': '20–99', 'fam 100+': '100+' };
-  categories('c-fam', d.learning, theme, { x: 'bucket', g: 'era', v: 'load_index', groups: eras,
+  categories('c-fam', d.learning, theme, { x: 'bucket', g: 'era', v: 'feedback_index', groups: eras,
     xs: Object.keys(famXl), xl: (x) => famXl[x] }, FMT.n2, { ref: 1 });
   const rates: [string, string][] = [['prolific', 'Prolific (top fifth)'], ['average', 'Average (middle fifth)']];
   const pracTenureXl: Record<string, string> = { '0-3': '0–3 mo', '3-6': '3–6', '6-12': '6–12', '12-24': '1–2 y', '24-48': '2–4 y', '48+': '4 y+' };
   categories('c-prac-tenure', d.learning_practice.filter((r) => r.by === 'tenure'), theme, { x: 'bucket', g: 'group',
-    v: 'load_index', groups: rates, xs: Object.keys(pracTenureXl), xl: (x) => pracTenureXl[x] }, FMT.n2, { ref: 1 });
+    v: 'feedback_index', groups: rates, xs: Object.keys(pracTenureXl), xl: (x) => pracTenureXl[x] }, FMT.n2, { ref: 1 });
   const landedXl: Record<string, string> = { '0-10': '0–9', '10-30': '10–29', '30-100': '30–99', '100-300': '100–299', '300-1000': '300–999', '1000+': '1,000+' };
   categories('c-prac-landed', d.learning_practice.filter((r) => r.by === 'practice'), theme, { x: 'bucket', g: 'group',
-    v: 'load_index', groups: rates, xs: Object.keys(landedXl), xl: (x) => landedXl[x] }, FMT.n2, { ref: 1 });
+    v: 'feedback_index', groups: rates, xs: Object.keys(landedXl), xl: (x) => landedXl[x] }, FMT.n2, { ref: 1 });
 
   const cohorts: [string, string][] = [['joined 2023', 'Joined 2023'], ['joined 2024', 'Joined 2024'], ['joined 2025', 'Joined 2025']];
   const months = ['0-3', '3-6', '6-9', '9-12', '12-18', '18-24', '24-36'];
   const monthXl = (x: string | number) => `${String(x).replace('-', '–')} mo`;
-  categories('c-co-load', d.cohort_curves, theme, { x: 'months', g: 'cohort', v: 'load_index', groups: cohorts, xs: months, xl: monthXl }, FMT.n2, { ref: 1 });
+  categories('c-co-feedback', d.cohort_curves, theme, { x: 'months', g: 'cohort', v: 'feedback_index', groups: cohorts, xs: months, xl: monthXl }, FMT.n2, { ref: 1 });
   categories('c-co-vel', d.cohort_curves, theme, { x: 'months', g: 'cohort', v: 'cls_per_person_month', groups: cohorts, xs: months, xl: monthXl }, FMT.n1, { zero: true });
   categories('c-co-rev', d.cohort_curves, theme, { x: 'months', g: 'cohort', v: 'reviews_per_person_month', groups: cohorts, xs: months, xl: monthXl }, FMT.n1, { zero: true });
   shareHistogram(d.review_share_hist, theme);
@@ -1411,7 +1411,7 @@ function render(data: BalanceData) {
 
   table('t-ai', d.ai_paired, [['metric', text], ['diff', signed], ['lo', signed], ['hi', signed], ['n', FMT.n0]]);
 
-  loadDefinition(d.load_def_hist, d.load_def_deciles, theme);
+  feedbackDefinition(d.feedback_def_hist, d.feedback_def_deciles, theme);
 
   mechanicalBars(d.mechanical_files, theme);
   table('t-mech', d.mechanical_repetition, [

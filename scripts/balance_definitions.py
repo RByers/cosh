@@ -1,6 +1,6 @@
-"""Add the "Load index" definition data to summaries/balance.json (the
+"""Add the "Feedback index" definition data to summaries/balance.json (the
 Review Balance page): for each decile of CL size, the share of CLs by the
-number of reviewer threads they drew, over 2023–24, the years the load
+number of reviewer threads they drew, over 2023–24, the years the feedback
 index takes its norm from.
 
 Offline; reads balance.sqlite (read-only) and the mechanical-CL list that
@@ -10,7 +10,7 @@ per bin only: nothing per person or per CL.
   COSH_DATA_DIR=<main>/data/private python3 scripts/balance_definitions.py \
       --mech mech.jsonl [summaries/balance.json]
 
-The CLs are those the load index uses: merged, with a known owner, not
+The CLs are those the feedback index uses: merged, with a known owner, not
 mechanical, closed in 2023 or 2024 (Gerrit data starts in July 2023).
 """
 
@@ -30,7 +30,7 @@ REF = (2023, 2024)
 
 # One bin per thread count up to MAX; the page doesn't draw the open-ended
 # last bin (it would pile the long tail into one point) but its share is in
-# load_def_deciles as over_max.
+# feedback_def_deciles as over_max.
 MAX = 20
 BINS = list(range(MAX + 2))
 
@@ -73,8 +73,8 @@ def datasets(cls):
         for i, k in enumerate(counts):
             rows.append(dict(decile=d + 1, bin=i, lo=BINS[i], hi=(BINS[i + 1] - 1) if i + 1 < len(BINS) else None,
                              share=round(k / len(g), 4)))
-    return {"load_def_hist": rows, "load_def_deciles": summary,
-            "load_def_summary": [dict(from_year=REF[0], to_year=REF[1], cls=total, max_threads=MAX)]}
+    return {"feedback_def_hist": rows, "feedback_def_deciles": summary,
+            "feedback_def_summary": [dict(from_year=REF[0], to_year=REF[1], cls=total, max_threads=MAX)]}
 
 
 def load(mech_path):
@@ -94,7 +94,7 @@ def main():
     data = json.load(open(args.path))
     new = datasets(load(args.mech))
     for k, v in new.items():
-        print(f"{k}: {v if k != 'load_def_hist' else len(v)}", file=sys.stderr)
+        print(f"{k}: {v if k != 'feedback_def_hist' else len(v)}", file=sys.stderr)
         data["datasets"][k] = v
     json.dump(data, open(args.path, "w"), separators=(",", ":"))
     open(args.path, "a").write("\n")

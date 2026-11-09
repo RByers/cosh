@@ -1,14 +1,14 @@
-"""Per-author breadth and review load over the last year, for the Review
+"""Per-author breadth and feedback index over the last year, for the Review
 Balance page's "Authors in the last year" section (docs/balance.md): a
 histogram of distinct directories touched per author, and a scatter of one
-dot per author (directories, review load index, tenure, CLs landed). The
+dot per author (directories, feedback index, tenure, CLs landed). The
 summary also holds abandonment after review against tenure, which the page
 quotes in "Wrong turns" (tenure barely predicts it).
 
 Unlike the other balance scripts this writes one row per person, with their
 commit email, to summaries/balance_authors.json. That is published: it comes
 from public Chromium git and Gerrit data (ground rule 3 of docs/plan.md), and
-the review load index is not tone.
+the feedback index is not tone.
 
   COSH_DATA_DIR=<main>/data/private python3 scripts/balance_authors.py \
       --first-commit F --owners-added O --mech M [summaries/balance_authors.json]
@@ -17,9 +17,9 @@ The year is 2025-11-01 .. 2026-11-01 (the data ends in October 2026).
 - CLs landed: commits on main with a CL in the year, reverts and mechanical
   CLs aside.
 - Directories: distinct 3-level directories over those commits' files.
-- Review load index: reviewer threads on the author's merged, non-mechanical
+- Feedback index: reviewer threads on the author's merged, non-mechanical
   CLs closed in the year ÷ the sum of the 2023–24 means for each CL's size and
-  directory (the page's load index, pooled per author).
+  directory (the page's feedback index, pooled per author).
 - Tenure: years from the first commit on main (all history) to the year's end.
 - Abandonment (summary only): of the author's non-mechanical CLs closed
   (merged or abandoned) in the year with a first substantive review before
@@ -46,7 +46,7 @@ from cosh import balance  # noqa: E402
 START = datetime(2025, 11, 1, tzinfo=timezone.utc).timestamp()
 END = G.CENSOR                      # 2026-11-01, end of data
 MIN_CLS = 10                        # CLs landed in the year to be shown
-MIN_EXPECTED = 2.0                  # expected threads needed for a load index
+MIN_EXPECTED = 2.0                  # expected threads needed for a feedback index
 MIN_REVIEWED = 10                   # reviewed CLs closed in the year for an abandon rate
 
 
@@ -109,7 +109,7 @@ def compute(args):
         e = expected[p]
         out.append(dict(
             email=email[p], cls=n, dirs=len(dirs[p]),
-            load=round(threads[p] / e, 3) if e >= MIN_EXPECTED else None,
+            feedback=round(threads[p] / e, 3) if e >= MIN_EXPECTED else None,
             tenure=round((END - t0) / G.YEAR, 2) if t0 is not None and t0 < END else None,
             reviewed=reviewed[p], abandoned=abandoned[p]))
     out.sort(key=lambda r: r["email"])
@@ -141,7 +141,7 @@ def spearman(xs, ys):
 def summary(rows):
     ds = sorted(r["dirs"] for r in rows)
     q = lambda p: ds[min(len(ds) - 1, int(p * len(ds)))]
-    both = [r for r in rows if r["load"] is not None]
+    both = [r for r in rows if r["feedback"] is not None]
     ab = [r for r in rows if r["reviewed"] >= MIN_REVIEWED and r["tenure"] is not None]
     rate = lambda r: r["abandoned"] / r["reviewed"]
     rates = sorted(rate(r) for r in ab)
@@ -155,11 +155,11 @@ def summary(rows):
         abandon_p50_under2=medr(band(0, 2)), abandon_p50_10plus=medr(band(10, 1e9)),
         rho_tenure_abandon=round(spearman([r["tenure"] for r in ab], [rate(r) for r in ab]), 2))
     return dict(**abandon, authors=len(rows), dirs_p50=q(0.5), dirs_p90=q(0.9), dirs_100=sum(d >= 100 for d in ds),
-                rho_dirs_load=round(spearman([r["dirs"] for r in both], [r["load"] for r in both]), 2),
+                rho_dirs_feedback=round(spearman([r["dirs"] for r in both], [r["feedback"] for r in both]), 2),
                 rho_dirs_cls=round(spearman([r["dirs"] for r in rows], [r["cls"] for r in rows]), 2))
 
 
-COLUMNS = ["email", "cls", "dirs", "load", "tenure"]
+COLUMNS = ["email", "cls", "dirs", "feedback", "tenure"]
 
 
 def main():
@@ -172,7 +172,7 @@ def main():
     args = ap.parse_args()
     rows = compute(args)
     summ = summary(rows)
-    print(summ, f"load missing {sum(r['load'] is None for r in rows)}, "
+    print(summ, f"feedback missing {sum(r['feedback'] is None for r in rows)}, "
           f"tenure missing {sum(r['tenure'] is None for r in rows)}", file=sys.stderr)
     data = dict(generated=datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
                 start="2025-11-01", end="2026-10-31", min_cls=MIN_CLS, min_reviewed=MIN_REVIEWED, summary=summ,

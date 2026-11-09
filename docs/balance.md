@@ -38,9 +38,9 @@ that AI tools are common? It looks at:
 The user's call (2026-11-08): of everything here, two patterns are the
 clearest trends showing growth, and the ones to optimize for.
 
-1. **Review load falls with tenure.** Before AI tools (2023 H2–2024), a CL
+1. **Feedback falls with tenure.** Before AI tools (2023 H2–2024), a CL
    from someone in their first three months drew 2.41× the 2023–24 review
-   load for its size and directory, and after ten years 0.68×, falling at
+   feedback for its size and directory, and after ten years 0.68×, falling at
    every step between (section 4). In 2026 the curve keeps its shape but
    sits lower (1.77× → 0.55×).
 2. **Review share rises with years since joining.** Approvals given ÷
@@ -85,7 +85,7 @@ figures; the page has the corrected ones):
   quarter → 0.68× after ten years (2023–24), and 1.77× → 0.55× in 2026. By
   familiarity: 1.70× → 0.66×.
 - **Cohorts at 9–12 months, 2025 joiners against 2023 joiners:** 7.2 CLs a
-  month against 3.0, load index 1.05× against 1.52×, and 2.4 reviews a
+  month against 3.0, feedback index 1.05× against 1.52×, and 2.4 reviews a
   month against 1.3. The 2025 joiners don't start with smaller CLs.
 - **People improving on none of the four git paths:** 40% (2019–20), 45%
   (2023–24), 43% (2025–26).
@@ -96,7 +96,7 @@ figures; the page has the corrected ones):
   - marked CLs are about 1.6× as large;
   - review, rework, waits and reverts don't differ;
   - the faster first review doesn't replicate.
-- **Unchanged:** waits, reverts, rework, the load index and the mechanical
+- **Unchanged:** waits, reverts, rework, the feedback index and the mechanical
   rule, which don't depend on identities.
 
 ## Further analyses (2026-11-08)
@@ -105,7 +105,7 @@ Each has its own doc, with commands to regenerate:
 
 - `docs/balance-signals.md`:
   - **−1 votes** (about 0.5% of reviewed CLs) fall with tenure and
-    familiarity as steeply as the load index.
+    familiarity as steeply as the feedback index.
   - **Abandonment** rose from 5.7% to 8.0%.
   - **Same people, 2024 → 2026:** the same reviewers write 3% fewer
     threads, and the same authors get 9% fewer, while their rework and
@@ -143,11 +143,11 @@ engineers.
 
 **Signals.**
 
-- *Balance:* review load index (threads against the 2023–24 norm for the
+- *Balance:* feedback index (threads against the 2023–24 norm for the
   CL's size and directory); CLs per reviewer.
 - *Speed:* hours to first substantive review; attention-set waits.
 - *Quality:* lines changed after review, rounds, reverts within 30 days.
-- *Growth:* review load by tenure and familiarity; growth paths (velocity,
+- *Growth:* feedback index by tenure and familiarity; growth paths (velocity,
   size, breadth, reviewing, independence) against a shuffled null; cohorts.
 - *Carrying the project:* review share by tenure, who approves newcomers,
   new regular reviewers and OWNERS, mentees who become mentors.
@@ -173,7 +173,7 @@ points were checked and hold, and the page now says:
 - The 2–5-year share of newcomer approvals fell partly because 2023–24 had
   the smallest intakes of new authors; it needs a per-capita version.
 - "Joined" means first commit on `main`, which includes experienced
-  engineers. The 2025 cohort's lower review load may be reviewers easing off.
+  engineers. The 2025 cohort's lower feedback index may be reviewers easing off.
   Its later points rest on few people, and it doesn't start with larger CLs.
   The heading is now "the 2025 joiners land more and review sooner".
 - The AI-marked first-review difference (39 h, 95% interval 2–77 h, 41
@@ -187,7 +187,7 @@ Still open from the review:
 - a balanced panel (people active in both 2024 and 2026) for velocity;
 - splitting first-time contributors from people who were active in Gerrit
   before their first commit;
-- colouring the directory table by load rather than by a team's response
+- colouring the directory table by feedback index rather than by a team's response
   time;
 - folding the mechanical section into the method.
 
@@ -411,10 +411,10 @@ for that year since joining (year 3: under 19%; year 5 and later: under
   counted in three or more years, 31% were behind at least once and 5%
   three years in a row.
 
-**Behind on review load.** Person-halves of authors with 2 or more years
+**Behind on feedback.** Person-halves of authors with 2 or more years
 since their first commit and 12 or more merged, non-mechanical CLs in the
 half-year (6 in 2026 Q3, the last whole quarter): 4,903 person-halves,
-1,278 people. A person's load index is their CLs' reviewer threads ÷ the
+1,278 people. A person's feedback index is their CLs' reviewer threads ÷ the
 sum of each CL's 2023–24 norm. *Behind* means 1.5× or more the median of
 their tenure band (2–4, 4–8, 8+ years) in the same half-year. The 2023
 H2–2024 medians were 1.02, 0.82 and 0.73.
@@ -443,7 +443,7 @@ H2–2024 medians were 1.02, 0.82 and 0.73.
   again, against 19% of everyone.
 
 **Is it the same people?** Among person-years in both sets, people behind
-on reviewing also had a half-year behind on review load 30% of the time in
+on reviewing also had a half-year behind on feedback 30% of the time in
 2024 (others 27%), but 48% in 2025 (others 30%) and 41% in 2026 (others
 28%; about 95 people behind each year). Tentative: in 2025–26 the two
 groups started to overlap.
@@ -462,7 +462,7 @@ Rerun (about 6 min; `--cache` keeps the loaded data for reruns,
 nothing):
 `COSH_DATA_DIR=<main>/data/private python3 scripts/balance_behind.py
 --first-commit F --owners-added O --mech M` (writes `behind_share_*` and
-`behind_load*` into `summaries/balance.json`).
+`behind_feedback*` into `summaries/balance.json`).
 
 ### 1. The exchange since AI: more and bigger CLs, thinner review
 
@@ -596,7 +596,7 @@ The interdiff and the classifier agree.
 
 ### 4. Learning curves: needing less feedback, before and after AI
 
-**Review load index:** reviewer threads on a CL ÷ the mean for CLs of its
+**Feedback index:** reviewer threads on a CL ÷ the mean for CLs of its
 size (10 buckets) and top 2-level directory in 2023–24 (1.00 = the
 2023–24 norm). Merged, non-mechanical CLs:
 
@@ -643,7 +643,7 @@ merged, non-mechanical CLs of 2023Q3–2024Q4 (112,615 CLs, 2,158 people).
   2025Q4–2026Q3 (`--era now`): 5.3%, 8.2%, 8.4%, same pattern.
 - **Prolific newcomers learn faster by the calendar, not per CL.** Groups
   by commits landed in the first 12 months: the top fifth (34 or more,
-  "prolific") and the middle fifth (3–9, "average"). Load index in the
+  "prolific") and the middle fifth (3–9, "average"). Feedback index in the
   second year: 1.18 against 1.84. By commits landed: 0–9, 2.84 against
   2.82; 30–99, 1.54 against 1.39; 100–299, 1.14 against 0.91. Per CL the
   average group learns at least as fast. Points with fewer than 200 CLs
@@ -785,7 +785,7 @@ CL in a quarter: 1,450 (2023Q3) → 1,325 (2026Q3), while authors went
 1,190 → 1,240. Merged CLs per commenting reviewer: 19.1 → 29.4. The
 busiest tenth of approvers gave 55–57% of approvals in 2017–19, 63% in 2024
 and 68% in 2026. That concentration started before AI tools. Per CL, the
-review load index (threads vs the 2023–24 norm for the size and directory)
+feedback index (threads vs the 2023–24 norm for the size and directory)
 went 1.09 (2023Q3) → 0.91 (2025Q3) → 0.72 (2026Q3).
 
 **Individual reviewers are not slower.** Weekday hours from being added to
@@ -797,14 +797,14 @@ come from volume, not from slower individuals.
 **Joiner cohorts.** People who joined in 2023, 2024 or 2025, 9–12 months
 after their first commit:
 
-| Cohort | CLs per person per month | Review load index | Others' CLs reviewed per month |
+| Cohort | CLs per person per month | Feedback index | Others' CLs reviewed per month |
 |---|---:|---:|---:|
 | Joined 2023 | 2.2 | 1.69 | 1.0 |
 | Joined 2024 | 2.5 | 1.87 | 0.8 |
 | Joined 2025 | 6.6 | 1.08 | 2.1 |
 
 The 2025 cohort lands about 2.5× as many CLs, needs less feedback sooner,
-and starts reviewing others earlier. Part of the lower load is the 2026
+and starts reviewing others earlier. Part of the lower feedback is the 2026
 project-wide drop (veterans fell about 20%), but even scaled up by that the
 2025 cohort's 1.35 is below 1.69 and 1.87. Each point counts only people
 still active, so this describes those who stayed.
@@ -824,7 +824,7 @@ git history starts in 2017, so anyone already in a directory then starts
 in 2017. That still puts them in the top bin for 2023+ CLs.
 
 **Difficulty: how fast review need falls with directory tenure.** The
-review load index (section 4) of a directory's CLs is binned by the
+feedback index (section 4) of a directory's CLs is binned by the
 author's directory tenure (< 6 months, 6–12 months, 1–2, 2–4, 4+ years).
 Then ln(index) is fitted against log2(tenure), weighted by CLs.
 exp(slope) is the **factor per doubling**: 0.80 means an author's CLs draw
@@ -1077,14 +1077,14 @@ large "Draft: under development" warning at the top. Its landing-page card
   quarterly charts; it reads `balance.sqlite` and the `--mech` list:
   `COSH_DATA_DIR=<main>/data/private python3 scripts/balance_histograms.py --mech mech.jsonl`.
 - `scripts/balance_definitions.py` (2026-11-08), for the "Defined: the
-  review load index" section: shares of CLs by reviewer threads (0 to 20,
+  feedback index" section: shares of CLs by reviewer threads (0 to 20,
   one bin each, plus the share above 20) for each tenth of CLs by size,
-  over 2023–24, the load index's norm years. Same CLs and `--mech` list:
+  over 2023–24, the feedback index's norm years. Same CLs and `--mech` list:
   `COSH_DATA_DIR=<main>/data/private python3 scripts/balance_definitions.py --mech mech.jsonl`.
 
 - `scripts/balance_behind.py` (2026-11-08), the "two growth
   trajectories" section at the top of the page: shares of steady
-  contributors behind on review share (by calendar year) and on review load
+  contributors behind on review share (by calendar year) and on feedback
   (by half-year), with persistence and a chance baseline (section 0).
 - `scripts/balance_review_share.py` (2026-11-08), the "From author to
   reviewer" histogram: shares of people by review share (none, then
@@ -1096,16 +1096,16 @@ large "Draft: under development" warning at the top. Its landing-page card
 
 - `scripts/balance_authors.py` (2026-11-08), the "Authors in the last
   year" section: per author with 10+ CLs landed from 2025-11 to 2026-10
-  (1,313 people), distinct 3-level directories touched, the review load
+  (1,313 people), distinct 3-level directories touched, the feedback
   index pooled over their CLs, tenure and CLs landed, with their most-used
   commit email. Unlike the other scripts it writes **one row per person**
   (`summaries/balance_authors.json`), drawn as a histogram of directories
-  and a scatter (directories × load index, colour = tenure on a continuous green → blue → red scale, area =
+  and a scatter (directories × feedback index, colour = tenure on a continuous green → blue → red scale, area =
   CLs). Its hover card names the author only behind a hidden setting:
   pressing "e" 10 times in a row (no other key between) switches emails
   on or off, for that page load only (off again after a reload). The emails are still in the
   published JSON. Published under ground rule 3
-  (public data; the load index is not tone). Breadth tracks volume
+  (public data; the feedback index is not tone). Breadth tracks volume
   (Spearman 0.72 with CLs) and goes with slightly less feedback per CL
   (−0.24):
   `COSH_DATA_DIR=<main>/data/private python3 scripts/balance_authors.py --first-commit F --owners-added O --mech M`
@@ -1122,14 +1122,14 @@ large "Draft: under development" warning at the top. Its landing-page card
   (`docs/balance-signals.md`), and the summary fields are `abandon_*` and
   `rho_tenure_abandon` in `balance_authors.json`.
   A scatter of each author's percentile within their tenure band on review
-  share against review load (2026-11-08, same year and authors) was also
+  share against feedback index (2026-11-08, same year and authors) was also
   tried and dropped: the two barely correlate (Spearman −0.23; 29% behind
   on both halves against 25% by chance), so it showed a near-uniform cloud.
   The aggregate overlap is in section 0 ("Is it the same people?").
 
-The page ends with two definition sections, "Defined: the review load
+The page ends with two definition sections, "Defined: the feedback
 index" and "Defined: newcomers and tenure" (a tenure timeline drawn in
-HTML and CSS). Every use of "load index" or "newcomer" in the page's prose
+HTML and CSS). Every use of "feedback index" or "newcomer" in the page's prose
 is a dotted-underlined `<button class="term" popovertarget="def-…">`;
 tapping it opens a popover with a short definition and a link to the
 section, which `web/src/terms.ts` places beside the term. Headings, table
@@ -1187,7 +1187,7 @@ ISO weeks, one date range for the page, a mechanical-CL toggle.
 3. **Latency:** percentile bands (p25/p50/p75/p90) of hours to first
    substantive review, and reviewer and owner attention hours, with the
    working-hours caveat in the caption.
-4. **Learning curves:** review load index by tenure (x axis), one line per
+4. **Learning curves:** feedback index by tenure (x axis), one line per
    era, and the same by familiarity with the directory. These answer "do
    people still need less review feedback as they learn?"
 5. **Growth paths:** grouped bars per window, the share improving on each
@@ -1199,7 +1199,7 @@ ISO weeks, one date range for the page, a mechanical-CL toggle.
 7. **The pipeline:** Kaplan-Meier step curves by cohort for "regular
    reviewer" and "OWNER"; new reviewers and OWNERS per year; mentees who
    became mentors.
-8. **By directory:** typical size, review load index, rework and latency
+8. **By directory:** typical size, feedback index, rework and latency
    per directory, as a drill-down tree like Value Exchange's.
 9. **Mechanical CLs:** a hexbin of files against threads per file,
    coloured by repetition ratio, with the cutoff drawn on it. It defends
@@ -1207,7 +1207,7 @@ ISO weeks, one date range for the page, a mechanical-CL toggle.
 10. **Individual lookup:** one person's own paths over time (CLs a month,
     size, directories, approvals given, newcomers reviewed, mentees, the
     date they became an OWNER) against their cohort's band. No rank, no
-    growth score, no review load index (it reads as a judgment and mixes
+    growth score, no feedback index (it reads as a judgment and mixes
     in reviewer behaviour).
 11. **Celebration boards** (named, positive only, like the praise boards):
     milestones in the range (first regular year as a reviewer, first

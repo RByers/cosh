@@ -4,7 +4,7 @@ Part of the Review Balance analysis (`docs/balance.md`). It answers three
 questions the page leaves open:
 
 1. Do **−1 votes** and **abandoned CLs** fall as people gain tenure and
-   familiarity, like the review load index does? (A −1 or an abandoned CL
+   familiarity, like the feedback index does? (A −1 or an abandoned CL
    often means the approach was wrong from the start, or the author lacked
    the skill to solve it.)
 2. When review feedback per CL fell in 2026, did **authors arrive better equipped** (such as with effective AI tools), or did
@@ -34,7 +34,7 @@ averaged and are never written out.
 - **Negative vote:** any −1 or −2 from a non-owner human. *neg share* is the
   share of substantively reviewed CLs with one. *neg index* is that share ÷
   the 2023–24 share for CLs of the same size (ten log buckets): 1.0 is the
-  2023–24 norm, like the load index.
+  2023–24 norm, like the feedback index.
 - **Abandon rate:** the share of substantively reviewed CLs (a reviewer
   thread or inline comment, the page's definition) that were abandoned.
   *abandon index* is the same against the 2023–24 rate by size. Size for
@@ -96,7 +96,7 @@ averaged and are never written out.
   counting only people whose whole window is observed:
   - share still active;
   - merged CLs and reviews given per active person-month;
-  - load index;
+  - feedback index;
   - calendar-adjusted thread residual (against the same size, directory
     and *quarter*, so the 2026 project-wide drop doesn't count);
   - median interdiff share and rounds;
@@ -139,7 +139,7 @@ ten times as common:
 Abandonment rose by 40% in 2026, and a −1 now ends a CL more often than it
 leads to a reworked landing.
 
-### Both fall with tenure and familiarity, like the load index
+### Both fall with tenure and familiarity, like the feedback index
 
 Index: 1.0 is the 2023–24 rate for CLs of the same size.
 
@@ -157,7 +157,7 @@ Familiarity (merged CLs, author's earlier commits in the directory) gives
 the same pattern. The neg index goes from about 1.1 on a first CL in a
 directory to 0.24–0.31 after 100 or more commits there, in every era.
 
-- **Negative votes** are a learning signal, as strong as the load index:
+- **Negative votes** are a learning signal, as strong as the feedback index:
   newcomers draw about 5× a 10-year veteran's rate. After the first three
   months the newcomer premium has been smaller since 2025 (1.0–1.3 against
   1.9–2.7 in 2023–24).
@@ -246,14 +246,14 @@ before their first commit. The google.com/chromium.org share is 61% and
 | Still active | 42% | 39% |
 | Merged CLs per active month | 6.45 | 4.00 |
 | Reviews given per active month | 2.45 | 1.32 |
-| Load index | 1.43 | 1.93 |
+| Feedback index | 1.43 | 1.93 |
 | Thread residual, calendar-adjusted | 0.84 | 1.02 |
 | Interdiff share, median | 0.29 | 0.37 |
 | Rounds | 1.76 | 2.09 |
 | Any −1 | 0.5% | 0.2% |
 | Abandoned | 6.3% | 6.8% |
 
-At 3–6 months the order is the same: 5.0 against 3.2 CLs a month, load
+At 3–6 months the order is the same: 5.0 against 3.2 CLs a month, feedback
 index 1.83 against 2.28, and abandonment 8.6% against 6.5%.
 
 **Verdict.** The 2025 joiners' lead survives matching:

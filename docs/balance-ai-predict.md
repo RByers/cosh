@@ -264,7 +264,7 @@ the recall at the cutoff that lets through one of the 80 human CLs.
 
 **Choice:** Haiku is good enough for quarterly shares, where §4's error is
 dominated by the reference definition, not the classifier. For per-CL
-selection, e.g. a "likely AI" group of CLs to compare review load on, Opus
+selection, e.g. a "likely AI" group of CLs to compare the feedback index on, Opus
 raises recall by about 15 points at the same precision. At ~$2.50 per 1,000
 CLs, scoring every 2026 CL (about 90k) would cost about $230 in CLI-reported
 usage, so a sample is the sensible scope.
@@ -293,7 +293,7 @@ usage, so a sample is the sensible scope.
 ## Next steps
 
 - Per-directory or per-tenure flagged shares (aggregate only), and a
-  difference-in-differences against review load, using the flagged share
+  difference-in-differences against the feedback index, using the flagged share
   in place of the 5% marker threshold (`docs/balance-ai.md` §3).
 - Calibrate on a larger 2026 marked sample, and try Sonnet on a subset to see
   whether recall on 2025-style CLs improves.

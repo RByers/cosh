@@ -144,7 +144,7 @@ COSH_DATA_DIR=/home/rbagent/projects/cosh/data/private python3 scripts/chrome_re
 
 - **Review depth against risk.** Directories with many security fixes
   (`content/browser`, `third_party/blink`, `gpu/command_buffer`) can be
-  compared with leaf UI, like for like, on load index, first-review wait
+  compared with leaf UI, like for like, on feedback index, first-review wait
   and approver tenure. Does review stay deep where the risk is, as CLs grow?
 - **Security-fix CLs as their own class.** Their review (threads, rounds,
   latency, who approves) in 2026, when their number jumped about fifteen-fold,
@@ -153,7 +153,7 @@ COSH_DATA_DIR=/home/rbagent/projects/cosh/data/private python3 scripts/chrome_re
 - **Regressions and post-land fixes** (with bug metadata, if approved): bugs
   marked as regressions with a `Fixed:` CL, traced back to the CL that
   introduced them (Introduced In, revert links), by era and by the original
-  CL's review load index. That turns "reverts didn't rise" into "did
+  CL's feedback index. That turns "reverts didn't rise" into "did
   regressions rise?".
 - **Rework from the bug side:** `Fixed By Code Changes` lists every CL for
   a bug, so we can count follow-up CLs per bug by era.

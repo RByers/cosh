@@ -37,7 +37,7 @@ runs only to October.
 | newcomer_approvals | share of approvals on CLs by first-year authors |
 | owner | 1 once first added to any OWNERS file |
 | tenure | log(1 + years since first commit) |
-| load_resid | mean residual of log(1 + threads) on the person's CLs, against size × directory × quarter (`cl_residuals`), from 2023 H2 |
+| feedback_resid | mean residual of log(1 + threads) on the person's CLs, against size × directory × quarter (`cl_residuals`), from 2023 H2 |
 | interdiff | median share of lines changed after first review, from 2023 H2 |
 | rounds_resid | mean residual of review rounds, from 2023 H2 |
 | threads_per_review | threads started per CL commented on, from 2023 H2 |
@@ -120,7 +120,7 @@ in the review model.
   review share.
 
 In the review model, PC3 (9%) gathers how much review a person's CLs drew:
-load and rounds residuals and interdiff. It is mostly a newcomer signal.
+feedback and rounds residuals and interdiff. It is mostly a newcomer signal.
 
 **Git-model clusters** (medians per half-year):
 
@@ -135,7 +135,7 @@ load and rounds residuals and interdiff. It is mostly a newcomer signal.
 
 The review model finds the same six groups. Its "newcomers ramping up"
 (11%, tenure 0.3 years) draw much more review feedback than usual for their CLs'
-size and directory (load and rounds residuals +1.7 SD), and its
+size and directory (feedback and rounds residuals +1.7 SD), and its
 reviewer-mentors (6%) start a few more threads per review.
 
 **Windows.** The shares barely move between pre-AI (2023 H2 to 2024 H2) and
