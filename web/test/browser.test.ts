@@ -2270,7 +2270,13 @@ test('the landing page links to the Value Exchange dashboard', async () => {
   assert.deepEqual(cards, [
     { href: 'value.html', title: 'Value Exchange' },
     { href: 'sentiment.html', title: 'Review Tone' },
+    { href: 'balance.html', title: 'Review Balance' },
   ]);
+  // Only the draft dashboard's card has the yellow "In development" box.
+  const warnings = await page.$$eval('.card-warning', (ws) => ws.map((w) => ({
+    card: w.closest('a')!.getAttribute('href'), head: w.querySelector('p')!.textContent, bg: getComputedStyle(w).backgroundColor })));
+  assert.deepEqual(warnings.map((w) => [w.card, w.head]), [['balance.html', 'In development']]);
+  assert.notEqual(warnings[0].bg, 'rgba(0, 0, 0, 0)');
   // Styled by its own sheet.
   assert.match(await page.$eval('body', (b) => getComputedStyle(b).fontFamily), /system-ui/);
   await Promise.all([page.waitForNavigation(), page.click('.cards a')]);
@@ -2738,7 +2744,7 @@ test('the Review Tone page fits a phone in dark mode', async () => {
   await page.close();
 });
 
-test('the Review Balance page: a draft warning first, every figure, chart and table filled, not on the landing page', async () => {
+test('the Review Balance page: a draft warning first, every figure, chart and table filled', async () => {
   const page = await browser.newPage();
   const errors: string[] = [];
   page.on('console', (m) => m.type() === 'error' && errors.push(m.text()));
@@ -2842,11 +2848,6 @@ test('the Review Balance page: a draft warning first, every figure, chart and ta
   assert.deepEqual(errors, []);
   await page.close();
 
-  // Not linked from the landing page yet.
-  const home = await browser.newPage();
-  await home.goto(baseUrl, { waitUntil: 'load' });
-  assert.equal(await home.$('a[href*="balance"]'), null);
-  await home.close();
 });
 
 test('the Review Balance page fits a phone in dark mode', async () => {

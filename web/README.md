@@ -10,7 +10,7 @@ per dashboard plus a landing page; each is an entry in
 | `index.html` | Landing page: an illustration and one card per dashboard | none | `src/home.css` |
 | `value.html` | Value Exchange dashboard (the rest of this file) | `src/main.ts` | `src/style.css` |
 | `sentiment.html` | Review Tone: the tone trend (with estimated comments per month), the distribution of every comment of the chosen dates (all, a calendar year or month), praise and "who makes whom happy" boards, sample comments and an anonymous AI-friction list, from `summaries/sentiment_*.json` (`docs/sentiment.md`). Names appear only for praise (`docs/plan.md`, ground rule 5) | `src/sentiment.ts`, `src/tone.ts` | `src/style.css` |
-| `balance.html` | Review Balance (draft, not linked from the landing page yet): authors and reviewers, latency, rework, learning curves, cohorts, growth paths and the training chain, from `summaries/balance.json` (aggregates only; `docs/balance.md`). Figures in its text are `<b data-src data-field data-where data-fmt>` placeholders that the script fills | `src/balance.ts` | `src/style.css` |
+| `balance.html` | Review Balance (draft; its landing-page card has an "In development" box): authors and reviewers, latency, rework, learning curves, cohorts, growth paths and the training chain, from `summaries/balance.json` (aggregates only; `docs/balance.md`). Figures in its text are `<b data-src data-field data-where data-fmt>` placeholders that the script fills | `src/balance.ts` | `src/style.css` |
 
 To add a dashboard, add its page and an `input` entry in the Vite config,
 add a card in `index.html`, and add browser tests that open it. The landing
