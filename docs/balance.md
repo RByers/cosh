@@ -130,6 +130,16 @@ Each has its own doc, with commands to regenerate:
   - the Chrome Releases security fixes, with 2026's jump to about 3,900
     CVEs;
   - how bug-tracker data could be fetched (that needs approval).
+- `docs/review-roi.md` (the page's `#roi` section, datasets `roi_*` from
+  `scripts/review_roi_report.py`):
+  - the return on review time: reverts can't show it, since more review
+    goes with more reverts even like for like, and most reverts are CI
+    breakage within a day;
+  - no long-term payoff shows either (directory panels, newcomers, blame
+    pilots);
+  - what review does change, from a 200-thread pilot: mostly docs, style
+    and design, with about 4.5% of addressed threads fixing something that
+    would have broken.
 
 ## Goal and signals (as stated on the page, 2026-11-08)
 

@@ -2766,7 +2766,7 @@ test('the Review Balance page: a draft warning first, every figure, chart and ta
   for (const f of figures) assert.match(f, /\d/, f);
   // Every chart is drawn, and every table has rows.
   const canvases = await page.$$eval('canvas', (cs) => cs.map((c) => [c.id, c.width > 0 && c.height > 0] as const));
-  assert.equal(canvases.length, 68);
+  assert.equal(canvases.length, 72);
   for (const [id, drawn] of canvases) assert.ok(drawn, id);
   // Authors' emails in the scatter's hover cards are off until "e" is pressed 10 times in a row;
   // any other key starts the count again, and 10 more presses switch them off.
@@ -2808,6 +2808,30 @@ test('the Review Balance page: a draft warning first, every figure, chart and ta
     assert.match(f.title, /95% interval/);
   }
   assert.ok(await page.$$eval('#forest .forest-ticks span', (ts) => ts.some((t) => t.textContent === '0%')));
+  // "What review buys" comes right after the rework section, with its four charts drawn and
+  // every figure filled.
+  assert.equal(await page.$eval('#rework + #roi', (s) => s.id), 'roi');
+  assert.deepEqual(await page.$$eval('#roi canvas', (cs) => cs.map((c) => c.id)),
+    ['c-roi-depth', 'c-roi-classes', 'c-roi-timing', 'c-roi-substance']);
+  const roiFigures = await page.$$eval('#roi [data-src]', (bs) => bs.map((b) => b.textContent!));
+  assert.ok(roiFigures.length > 30, String(roiFigures.length));
+  for (const f of roiFigures) assert.match(f, /\d/, f);
+  // Its forests: odds ratios on a shared log scale with a tick at 1, and the long-term
+  // estimates each on its own scale; every dot inside its interval, every interval in its track.
+  for (const [sel, n] of [['#roi-forest', 16], ['#roi-panels', 5]] as const) {
+    const rs = await page.$$eval(`${sel} .forest-rows li`, (lis) => lis.map((li) => {
+      const box = (s: string) => li.querySelector(s)!.getBoundingClientRect();
+      const [t, ci, dot] = [box('.forest-track'), box('.forest-ci'), box('.forest-dot')];
+      return { label: li.querySelector('.forest-label')!.textContent, val: li.querySelector('.forest-val')!.textContent,
+        inside: dot.left + dot.width / 2 >= ci.left - 1 && dot.left + dot.width / 2 <= ci.right + 1,
+        within: ci.left >= t.left - 1 && ci.right <= t.right + 1 };
+    }));
+    assert.equal(rs.length, n, sel);
+    for (const r of rs) {
+      assert.ok(r.inside && r.within && r.label && /\d/.test(r.val!), JSON.stringify(r));
+    }
+  }
+  assert.ok(await page.$$eval('#roi-forest .forest-ticks span', (ts) => ts.some((t) => t.textContent === '1')));
   // The directory heatmap: top-level rows, one cell per quarter; ▸ opens a directory, and a measure
   // switch reshades the cells.
   const dirRows = () => page.$$eval('#dir-table tbody tr', (trs) => trs.map((tr) => (tr as HTMLElement).dataset.key!));

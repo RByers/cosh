@@ -49,6 +49,11 @@ export const FMT: Record<string, (v: number) => string> = {
   drop: (v) => pctOf(0)(1 - v),
   /** A rate as a count per 100. */
   per100: (v) => num(1)(v * 100),
+  /** Signed, one decimal ("−3.8", "+4.1"). */
+  sn1: (v) => {
+    const r = Number(v.toFixed(1));
+    return `${r > 0 ? '+' : r < 0 ? '−' : ''}${num(1)(Math.abs(r))}`;
+  },
 };
 
 /** The row matching `where` ("k=v&k2=v2", compared as text). */
@@ -540,26 +545,38 @@ export function relChange(r: Row): [number, number, number] {
 /** A share as a signed whole percentage ("+52%", "0%"). */
 const relPct = signedBy(0, 100, '%');
 
-/** "Arriving better equipped, or easing off?": each same-people measure's change since 2024
- * as a dot and an interval on one shared scale, faded where the interval crosses zero. */
-function forest(rows: Row[]) {
-  const root = $('#forest');
-  const rel = rows.map(relChange);
-  const step = 0.25;
-  const lo = Math.min(0, Math.floor(Math.min(...rel.map((x) => x[1])) / step) * step);
-  const hi = Math.max(0, Math.ceil(Math.max(...rel.map((x) => x[2])) / step) * step);
-  const at = (v: number) => String((v - lo) / (hi - lo));
-  root.style.setProperty('--zero', at(0));
-  const ticks = root.querySelector('.forest-ticks')!;
-  const tickEls: HTMLElement[] = [];
-  for (let k = 0; lo + k * step <= hi + 1e-9; k++) {
-    const v = lo + k * step;
-    const t = document.createElement('span');
-    t.textContent = relPct(v);
-    t.style.setProperty('--at', at(v));
-    tickEls.push(t);
+/** How a dot-and-interval chart (`.forest`) places and describes its rows. */
+interface ForestSpec {
+  /** A row's value and 95% interval. */
+  value: (r: Row) => [number, number, number];
+  /** Where a value sits on the row's track, 0 to 1. */
+  pos: (v: number, r: Row) => number;
+  /** Where "no effect" sits on the row's track (the line). */
+  zero: (r: Row) => number;
+  /** Tick values and their text, for forests on one shared scale. */
+  ticks?: [number, string][];
+  /** The value shown after the track, and the row's hover card. */
+  val: (r: Row) => string;
+  title: (r: Row) => string;
+  /** Whether the interval leaves out "no effect" (drawn solid; otherwise faded). */
+  clear: (r: Row) => boolean;
+  /** The label of rows built from a list's data-keys. */
+  label?: (r: Row) => string;
+}
+
+/** Fills a `.forest`: each row a dot and an interval on a track, faded where the interval
+ * crosses "no effect". A list either names its rows in data-keys (labels from the data) or
+ * holds hand-written <li data-key> items whose text is the label. */
+function forest(root: HTMLElement, rows: Row[], spec: ForestSpec) {
+  const ticks = root.querySelector('.forest-ticks');
+  if (ticks && spec.ticks) {
+    ticks.replaceChildren(...spec.ticks.map(([v, text]) => {
+      const t = document.createElement('span');
+      t.textContent = text;
+      t.style.setProperty('--at', String(spec.pos(v, {})));
+      return t;
+    }));
   }
-  ticks.replaceChildren(...tickEls);
   const el = (tag: string, cls: string, text = '') => {
     const e = document.createElement(tag);
     e.className = cls;
@@ -567,25 +584,226 @@ function forest(rows: Row[]) {
     return e;
   };
   for (const ul of root.querySelectorAll<HTMLElement>('.forest-rows')) {
-    ul.replaceChildren(...ul.dataset.keys!.split(' ').map((k) => {
-      const i = rows.findIndex((r) => r.key === k);
-      if (i < 0) throw new Error(`no panel row ${k}`);
-      const r = rows[i];
-      const [v, l, h] = rel[i];
-      const [f, raw] = PANEL_FMT[k] ?? [signed, null];
-      const clear = Number(r.lo) > 0 || Number(r.hi) < 0;
-      const li = el('li', clear ? 'clear' : 'faded');
-      li.style.setProperty('--lo', at(l));
-      li.style.setProperty('--hi', at(h));
-      li.style.setProperty('--v', at(v));
+    const keyed = !!ul.dataset.keys;
+    if (keyed) {
+      ul.replaceChildren(...ul.dataset.keys!.split(' ').map((k) => {
+        const li = document.createElement('li');
+        li.dataset.key = k;
+        return li;
+      }));
+    }
+    for (const li of ul.querySelectorAll<HTMLElement>('li[data-key]')) {
+      // A hand-written label is kept in data-label, so a redraw finds it again.
+      const label = (li.dataset.label ??= li.textContent!.trim());
+      const r = rows.find((x) => x.key === li.dataset.key);
+      if (!r) throw new Error(`no forest row ${li.dataset.key}`);
+      const [v, l, h] = spec.value(r);
+      li.className = spec.clear(r) ? 'clear' : 'faded';
+      li.style.setProperty('--lo', String(spec.pos(l, r)));
+      li.style.setProperty('--hi', String(spec.pos(h, r)));
+      li.style.setProperty('--v', String(spec.pos(v, r)));
+      li.style.setProperty('--zero', String(spec.zero(r)));
       const track = el('span', 'forest-track');
       track.append(el('i', 'forest-ci'), el('i', 'forest-dot'));
-      li.append(el('span', 'forest-label', String(r.measure)), track, el('span', 'forest-val', relPct(v)));
+      li.replaceChildren(el('span', 'forest-label', keyed && spec.label ? spec.label(r) : label), track,
+        el('span', 'forest-val', spec.val(r)));
+      li.title = spec.title(r);
+    }
+  }
+}
+
+/** "Arriving better equipped, or easing off?": each same-people measure's change since 2024
+ * as a dot and an interval on one shared scale, faded where the interval crosses zero. */
+function panelForest(rows: Row[]) {
+  const rel = new Map(rows.map((r) => [r, relChange(r)]));
+  const all = [...rel.values()];
+  const step = 0.25;
+  const lo = Math.min(0, Math.floor(Math.min(...all.map((x) => x[1])) / step) * step);
+  const hi = Math.max(0, Math.ceil(Math.max(...all.map((x) => x[2])) / step) * step);
+  const pos = (v: number) => (v - lo) / (hi - lo);
+  const ticks: [number, string][] = [];
+  for (let k = 0; lo + k * step <= hi + 1e-9; k++) ticks.push([lo + k * step, relPct(lo + k * step)]);
+  forest($('#forest'), rows, {
+    value: (r) => rel.get(r)!,
+    pos,
+    zero: () => pos(0),
+    ticks,
+    label: (r) => String(r.measure),
+    val: (r) => relPct(rel.get(r)![0]),
+    clear: (r) => Number(r.lo) > 0 || Number(r.hi) < 0,
+    title: (r) => {
+      const [f, raw] = PANEL_FMT[String(r.key)] ?? [signed, null];
       const years = raw ? `2024: ${raw(Number(r.raw_2024))}, 2026: ${raw(Number(r.raw_2026))}. ` : '';
-      li.title = `${years}Change ${f(Number(r.change))}, 95% interval ${f(Number(r.lo))} to ${f(Number(r.hi))}; `
+      return `${years}Change ${f(Number(r.change))}, 95% interval ${f(Number(r.lo))} to ${f(Number(r.hi))}; `
         + `${FMT.n0(Number(r.n))} ${r.side === 'reviewer' ? 'reviewers' : 'authors'}.`;
-      return li;
-    }));
+    },
+  });
+}
+
+// ---- the return on review (#roi)
+
+const ROI_OR_TICKS = [0.5, 0.6, 0.8, 1, 1.25, 1.6, 2, 2.5];
+const orFmt = (v: number) => fmtNum(v, { maximumFractionDigits: 2 });
+
+/** Odds ratios of a revert on a log scale shared by every row, with the line at 1. */
+function roiOddsForest(rows: Row[]) {
+  const los = Math.min(...rows.map((r) => Number(r.lo)));
+  const his = Math.max(...rows.map((r) => Number(r.hi)));
+  const lo = Math.max(...ROI_OR_TICKS.filter((t) => t <= los));
+  const hi = Math.min(...ROI_OR_TICKS.filter((t) => t >= his));
+  const pos = (v: number) => Math.log(v / lo) / Math.log(hi / lo);
+  forest($('#roi-forest'), rows, {
+    value: (r) => [Number(r.or), Number(r.lo), Number(r.hi)],
+    pos,
+    zero: () => pos(1),
+    ticks: ROI_OR_TICKS.filter((t) => t >= lo && t <= hi).map((t) => [t, orFmt(t)]),
+    val: (r) => FMT.n2(Number(r.or)),
+    clear: (r) => Number(r.lo) > 1 || Number(r.hi) < 1,
+    title: (r) => `Odds ratio ${FMT.n2(Number(r.or))}, 95% interval ${FMT.n2(Number(r.lo))} to ${FMT.n2(Number(r.hi))}`
+      + ` (${r.unit}${r.n ? `; ${FMT.n0(Number(r.n))} ${r.group === 'within author' ? 'matched sets' : 'CLs'}` : ''}).`,
+  });
+}
+
+/** Part 2's estimates, in their own units: [value format, unit for the hover card]. */
+const ROI_PANEL_FMT: Record<string, (v: number) => string> = {
+  pts: signedBy(2, 1, ' pts'),
+  h: signedBy(1, 1, ' h'),
+  or: (v) => FMT.n2(v),
+  fi: signedBy(2),
+};
+
+/** "Does review today pay off later?": each estimate on its own scale, centred on no effect
+ * (log scale for odds ratios). */
+function roiPanelForest(rows: Row[]) {
+  const t = (r: Row) => (r.unit === 'or' ? Math.log : (v: number) => v);
+  const half = (r: Row) => {
+    const f = t(r);
+    const z = f(Number(r.null));
+    return 1.15 * Math.max(Math.abs(f(Number(r.lo)) - z), Math.abs(f(Number(r.hi)) - z));
+  };
+  const fmt = (r: Row) => ROI_PANEL_FMT[String(r.unit)] ?? FMT.n2;
+  forest($('#roi-panels'), rows, {
+    value: (r) => [Number(r.est), Number(r.lo), Number(r.hi)],
+    pos: (v, r) => 0.5 + (t(r)(v) - t(r)(Number(r.null))) / (2 * half(r)),
+    zero: () => 0.5,
+    val: (r) => fmt(r)(Number(r.est)),
+    clear: (r) => Number(r.lo) > Number(r.null) || Number(r.hi) < Number(r.null),
+    title: (r) => `${r.key}: ${fmt(r)(Number(r.est))}, 95% interval ${fmt(r)(Number(r.lo))} to ${fmt(r)(Number(r.hi))}; n = ${FMT.n0(Number(r.n))}.`,
+  });
+}
+
+/** Whiskers for a horizontal bar chart: each bar's interval from rows' lo and hi. */
+const whiskers = (rows: Row[], color: string): Plugin<'bar'> => ({
+  id: 'whiskers',
+  afterDatasetsDraw(chart) {
+    const { x, y } = chart.scales;
+    const ctx = chart.ctx;
+    ctx.save();
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 1.5;
+    rows.forEach((r, i) => {
+      const py = y.getPixelForValue(i);
+      const [a, b] = [x.getPixelForValue(Number(r.lo)), x.getPixelForValue(Number(r.hi))];
+      ctx.beginPath();
+      ctx.moveTo(a, py);
+      ctx.lineTo(b, py);
+      ctx.moveTo(a, py - 4);
+      ctx.lineTo(a, py + 4);
+      ctx.moveTo(b, py - 4);
+      ctx.lineTo(b, py + 4);
+      ctx.stroke();
+    });
+    ctx.restore();
+  },
+});
+
+/** Horizontal bars, one dataset per group so the legend names the groups; a bar has a value
+ * only in its own group's dataset. */
+function groupBars(
+  id: string, labels: string[], rowGroup: string[], groups: [string, string, string][], values: number[],
+  theme: Theme, tip: (i: number) => string, opts: { max?: number; plugins?: Plugin<'bar'>[] } = {},
+) {
+  const o = options(theme, FMT.pct, groups.length > 1, (i) => labels[i]);
+  o.interaction = { mode: 'index', intersect: false, axis: 'y' } as never;
+  o.plugins.tooltip.filter = (i: TooltipItem<'line'>) => i.raw !== null;
+  o.plugins.tooltip.callbacks.label = (i: TooltipItem<'line'>) => tip(i.dataIndex);
+  const tick = { color: theme.muted, font: { family: theme.font } };
+  charts.push(new Chart($<HTMLCanvasElement>(`#${id}`), {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: groups.map(([g, label, color]) => ({
+        label, backgroundColor: color, borderRadius: 2,
+        data: values.map((v, i) => (rowGroup[i] === g ? v : null)),
+      })),
+    },
+    options: {
+      ...o,
+      indexAxis: 'y',
+      plugins: { ...o.plugins, legend: { ...o.plugins.legend, labels: { ...o.plugins.legend.labels, boxHeight: 10, boxWidth: 10 } } },
+      scales: {
+        x: { stacked: true, beginAtZero: true, max: opts.max, grid: { color: theme.grid }, border: { display: false },
+          ticks: { ...tick, maxTicksLimit: 6, callback: (v: number | string) => FMT.pct(Number(v)) } },
+        y: { stacked: true, grid: { display: false }, border: { color: theme.baseline }, ticks: { ...tick, autoSkip: false } },
+      },
+    },
+    plugins: opts.plugins ?? [],
+  } as never));
+}
+
+function roiCharts(d: Record<string, Row[]>, theme: Theme) {
+  const sum = d.roi_summary[0];
+  const dep = d.roi_depth.filter((r) => r.measure === 'threads');
+  line('c-roi-depth', theme, dep.map((r) => String(r.bin)), [
+    { label: msg('roi-raw'), data: dep.map((r) => r.raw as number), color: theme.series[0] },
+    { label: msg('roi-adjusted'), data: dep.map((r) => r.adjusted as number), color: theme.series[1] },
+  ], FMT.pct1, {
+    zero: true, ref: Number(sum.rev30),
+    title: (i) => `${dep[i].bin} ${msg('roi-depth-x')}`,
+    tip: (i) => `${i.dataset.label}: ${msg('roi-depth-tip', { rate: FMT.pct1(i.parsed.y ?? 0), cls: FMT.n0(Number(dep[i.dataIndex].cls)) })}`,
+  });
+
+  const cls = d.roi_classes;
+  const grp = (r: Row) => (r.group === 'other' ? 'unknown' : String(r.group));
+  groupBars('c-roi-classes', cls.map((r) => msg(`roi-class-${r.key}`)), cls.map(grp), [
+    ['review', msg('roi-group-review'), theme.series[0]],
+    ['ci', msg('roi-group-ci'), theme.series[1]],
+    ['never', msg('roi-group-never'), theme.series[2]],
+    ['unknown', msg('roi-group-unknown'), theme.baseline],
+  ], cls.map((r) => Number(r.share)), theme, (i) => {
+    const r = cls[i];
+    return msg('roi-class-tip', {
+      share: FMT.pct1(Number(r.share)), n: FMT.n0(Number(r.n)),
+      within: r.within_24h === null ? '' : FMT.pct(Number(r.within_24h)),
+      median: r.median_h === null ? '' : FMT.h(Number(r.median_h)),
+    });
+  });
+
+  const tim = d.roi_timing;
+  const tLabels = tim.map((r) => msg(`roi-timing-${r.bin}`));
+  const o = options(theme, FMT.pct, false, (i) => tLabels[i]);
+  const tScales = axes(theme, FMT.pct, { zero: true });
+  o.plugins.tooltip.callbacks.label = (i: TooltipItem<'line'>) => {
+    const r = tim[i.dataIndex];
+    return msg('roi-timing-tip', { share: FMT.pct1(Number(r.share)), n: FMT.n0(Number(r.n)), cum: FMT.pct(Number(r.cum)) });
+  };
+  charts.push(new Chart($<HTMLCanvasElement>('#c-roi-timing'), {
+    type: 'bar',
+    data: { labels: tLabels, datasets: [{ label: 'Reverts', data: tim.map((r) => r.share as number), backgroundColor: theme.series[0], borderRadius: 2 }] },
+    options: { ...o, scales: { ...tScales, x: { ...tScales.x, ticks: { ...tScales.x.ticks, autoSkip: false } } } },
+  } as never));
+
+  roiOddsForest(d.roi_odds);
+  roiPanelForest(d.roi_panels);
+
+  const sub = d.roi_substance?.filter((r) => r.kind === 'label' || r.key === 'would_break');
+  if (sub) {
+    groupBars('c-roi-substance', sub.map((r) => msg(`roi-sub-${r.key}`)), sub.map((r) => String(r.kind)), [
+      ['label', msg('roi-sub-label'), theme.series[0]],
+      ['flag', msg('roi-sub-flag'), theme.series[3]],
+    ], sub.map((r) => Number(r.share)), theme, (i) => msg('roi-sub-tip', {
+      share: FMT.pct1(Number(sub[i].share)), lo: FMT.pct1(Number(sub[i].lo)), hi: FMT.pct1(Number(sub[i].hi)),
+    }), { plugins: [whiskers(sub, theme.text)], max: Math.ceil(Math.max(...sub.map((r) => Number(r.hi))) * 10) / 10 });
   }
 }
 
@@ -1399,6 +1617,9 @@ function queues(d: Record<string, Row[]>, theme: Theme) {
 }
 
 function render(data: BalanceData) {
+  for (const e of document.querySelectorAll<HTMLElement>('[data-needs]')) {
+    if (!data.datasets[e.dataset.needs!]) e.remove();
+  }
   fillFigures(data);
   const d = data.datasets;
   const theme = readTheme();
@@ -1495,7 +1716,8 @@ function render(data: BalanceData) {
   table('t-signals', d.signals_era.map((r) => ({ ...r, era: eraName[String(r.era)] ?? r.era })), [
     ['era', text], ['cls', FMT.n0], ['abandon_rate', FMT.pct1], ['neg_share', FMT.pct1], ['after_neg_abandoned', FMT.pct],
   ]);
-  forest(d.panels);
+  panelForest(d.panels);
+  roiCharts(d, theme);
   matchedCharts(d.matched, theme);
 
   table('t-patterns', d.patterns, [

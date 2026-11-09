@@ -2481,6 +2481,38 @@ button.term:focus-visible {
   }
 }
 
+/* "What review buys" (#roi): forests whose line marks no effect are dashed, values with
+ * units get a wider column, and a forest in a half-width panel puts each label above its
+ * track at every width. */
+.forest-dashed .forest-track {
+  background: repeating-linear-gradient(var(--text-secondary) 0 3px, transparent 3px 6px)
+    calc(var(--zero) * 100%) 0 / 1px 100% no-repeat;
+}
+
+.forest-wide {
+  --val: 5rem;
+}
+
+.forest-stacked .forest-rows li {
+  grid-template-columns: minmax(0, 1fr) var(--val);
+}
+
+.forest-stacked .forest-label {
+  grid-column: 1 / -1;
+  padding-top: 2px;
+}
+
+.card .tiles {
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  margin: 12px 0 16px;
+}
+
+.tile-vs {
+  font-size: 0.9rem;
+  font-weight: 400;
+  color: var(--text-secondary);
+}
+
 /* The pattern maps: square-ish, with room for a two-line legend. */
 .chart.chart-map {
   height: 380px;

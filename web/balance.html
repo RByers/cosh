@@ -18,7 +18,8 @@
 
       data-src names a dataset, data-field a column, data-where picks the row
       (key=value pairs joined by &amp;, compared as text), data-fmt the format
-      (n0, n1, n2, n3, pct, pct1, x, h, habs; FMT in balance.ts).
+      (n0, n1, n2, n3, pct, pct1, x, h, habs, sn1; FMT in balance.ts). An element with
+      data-needs="DATASET" is left out when that dataset is missing (a pilot not yet run).
       Everything here is aggregate: no person is named or ranked
       (docs/balance.md, "Page design").
 
@@ -86,6 +87,12 @@
           they seem to arrive better equipped, such as with effective AI tools. More CLs are abandoned in 2026, at every tenure. Security fixes jumped more
           than tenfold in 2026, a new load on reviewers. No single signal here separates AI from other changes in
           the project.
+        </p>
+        <p>
+          Reverts can't show what review is worth: reviewers spend more on CLs that look risky, so more review goes
+          with more reverts, and most reverts are build and test breakage caught within a day. What the data does
+          show is review changing the code before it lands, in about two CLs in five
+          (<a href="#roi">details</a>).
         </p>
         <p class="note">
           Merged, human-owned CLs on chromium/src <code>main</code>: Gerrit review data from July 2023 to
@@ -359,6 +366,250 @@
           <b data-src="exchange" data-field="reverted" data-where="q=2026Q3" data-fmt="pct1">–</b> of CLs in 2026 Q3
           against <b data-src="exchange" data-field="reverted" data-where="q=2024Q3" data-fmt="pct1">–</b> in 2024 Q3.
           Less review feedback per line has not, so far, shown up as more breakage.
+        </p>
+      </section>
+
+      <section id="roi" class="card" aria-labelledby="roi-title">
+        <a class="card-anchor" href="#roi" aria-label="Link to this section" title="Link to this section">#</a>
+        <h2 id="roi-title">What review buys: the return on review time, as far as the data can show</h2>
+        <p class="sub">
+          Reverts are the obvious outcome to count, but they can't show what review is worth. Reviewers spend more
+          time on the CLs that look risky, so more review goes with more reverts, not fewer, and no control fully
+          removes that. And most reverts are for breakage that tests and builds catch within a day, not the kind of
+          problem review is for. What the data can show is what review changes before a CL lands.
+        </p>
+        <p class="note">
+          <b data-src="roi_summary" data-field="unit_cls" data-fmt="n0">–</b> merged, human-owned, non-mechanical CLs
+          landed on <code>main</code> from July 2023 to September 2026; reverts and relands are left out as CLs, and
+          so are CLs approved by a bot. Reverts are every later commit on <code>main</code> that says it reverts
+          one, and their reasons are sorted by matching the revert message.
+        </p>
+        <div class="tiles">
+          <div class="tile"><div class="tile-label">CLs reverted within 30 days</div>
+            <div class="tile-value"><b data-src="roi_summary" data-field="rev30" data-fmt="pct1">–</b></div>
+            <div class="tile-sub"><b data-src="roi_summary" data-field="rev7" data-fmt="pct1">–</b> within 7 days</div></div>
+          <div class="tile"><div class="tile-label">Reverts within 24 hours of landing</div>
+            <div class="tile-value"><b data-src="roi_summary" data-field="within_24h" data-fmt="pct">–</b></div>
+            <div class="tile-sub">median <b data-src="roi_summary" data-field="median_h_to_revert" data-fmt="h">–</b></div></div>
+          <div class="tile"><div class="tile-label">Reverts for a crash, bug or slowdown, against those review could never prevent</div>
+            <div class="tile-value"><b data-src="roi_summary" data-field="review_for" data-fmt="pct">–</b>
+              <span class="tile-vs">vs</span> <b data-src="roi_summary" data-field="never" data-fmt="pct">–</b></div>
+            <div class="tile-sub">by the revert's stated reason</div></div>
+          <div class="tile"><div class="tile-label">Reviewer time for a revert and its reland, median</div>
+            <div class="tile-value"><b data-src="roi_summary" data-field="cycle_h_median" data-fmt="h">–</b></div>
+            <div class="tile-sub">attention hours; mean <b data-src="roi_summary" data-field="cycle_h_mean" data-fmt="h">–</b></div></div>
+          <div class="tile"><div class="tile-label">CLs where review changed something</div>
+            <div class="tile-value"><b data-src="roi_summary" data-field="with_addressed" data-fmt="pct">–</b></div>
+            <div class="tile-sub">a reviewer thread the author acted on</div></div>
+        </div>
+
+        <template data-msg="roi-raw">As found</template>
+        <template data-msg="roi-adjusted">Like for like</template>
+        <template data-msg="roi-depth-x">reviewer-started threads on the CL</template>
+        <template data-msg="roi-depth-tip"><slot name="rate"></slot> of <slot name="cls"></slot> CLs</template>
+        <template data-msg="roi-group-review">What review is for</template>
+        <template data-msg="roi-group-ci">Caught by builds and tests</template>
+        <template data-msg="roi-group-never">Review could never prevent</template>
+        <template data-msg="roi-group-unknown">Unknown or other</template>
+        <template data-msg="roi-class-test_failure">Test failure</template>
+        <template data-msg="roi-class-compile_or_link">Compile or link</template>
+        <template data-msg="roi-class-crash_or_functional">Crash or bug</template>
+        <template data-msg="roi-class-perf_or_size_regression">Slower or bigger</template>
+        <template data-msg="roi-class-flaky_or_unrelated">Flaky or unrelated</template>
+        <template data-msg="roi-class-dependent_or_requested">Another CL, or on request</template>
+        <template data-msg="roi-class-unknown">No reason given</template>
+        <template data-msg="roi-class-other">Other</template>
+        <template data-msg="roi-class-tip"><slot name="share"></slot> of reverts (<slot name="n"></slot>)<span data-if="within">; <slot name="within"></slot> of the 30-day ones within 24 hours, median <slot name="median"></slot></span></template>
+        <template data-msg="roi-timing-tip"><slot name="share"></slot> of reverts (<slot name="n"></slot>), <slot name="cum"></slot> by then</template>
+        <template data-msg="roi-timing-<1h">Under 1 h</template>
+        <template data-msg="roi-timing-1-6h">1–6 h</template>
+        <template data-msg="roi-timing-6-24h">6–24 h</template>
+        <template data-msg="roi-timing-1-7d">1–7 d</template>
+        <template data-msg="roi-timing-7-30d">7–30 d</template>
+        <template data-msg="roi-timing-30d+">30 d +</template>
+        <template data-msg="roi-sub-docs">Documentation, comments, naming</template>
+        <template data-msg="roi-sub-style">Style and readability</template>
+        <template data-msg="roi-sub-design">Design and structure</template>
+        <template data-msg="roi-sub-test">Tests</template>
+        <template data-msg="roi-sub-correctness">Correctness</template>
+        <template data-msg="roi-sub-process">Process (bugs, flags, OWNERS)</template>
+        <template data-msg="roi-sub-other">Other</template>
+        <template data-msg="roi-sub-would_break">Would have broken something</template>
+        <template data-msg="roi-sub-label">What the thread was about</template>
+        <template data-msg="roi-sub-flag">Any topic: would plausibly have broken something</template>
+        <template data-msg="roi-sub-tip"><slot name="share"></slot> of threads, 95% interval <slot name="lo"></slot> to <slot name="hi"></slot></template>
+
+        <div class="panels">
+          <figure class="panel"><h3>Revert rate by review depth, as found and like for like</h3>
+            <p class="note">By reviewer-started threads on the CL: the share reverted within 30 days. Like for like re-weights each group to the same mix
+              of size, directory and the author's practice there. The dashed line is all CLs.</p>
+            <div class="chart chart-short"><canvas id="c-roi-depth" role="img" aria-label="30-day revert rate by the number of reviewer-started threads, as found and re-weighted to the same mix of size, directory and author practice: both rise with more threads."></canvas></div></figure>
+          <figure class="panel"><h3>What reverts are for</h3>
+            <p class="note">Share of reverts since July 2023, by the reason the revert message gives.</p>
+            <div class="chart chart-short"><canvas id="c-roi-classes" role="img" aria-label="Share of reverts by stated reason, grouped into what review is for, what builds and tests catch, what review could never prevent, and unknown."></canvas></div></figure>
+          <figure class="panel"><h3>How soon reverts come</h3>
+            <p class="note">Time from landing to the revert, all reverts since July 2023.</p>
+            <div class="chart chart-short"><canvas id="c-roi-timing" role="img" aria-label="Share of reverts by time from landing to revert: most come within a day."></canvas></div></figure>
+        </div>
+
+        <figure class="panel forest-fig" aria-labelledby="roi-odds-title">
+          <h3 id="roi-odds-title">Odds of a revert, by what we hold equal</h3>
+          <p class="note">
+            Odds ratios of a revert within 30 days, with 95% intervals, on a log scale. Left of the dashed line, 1,
+            means fewer reverts. CLs with more of a measure are compared with CLs with less: as found; in groups of
+            the same size, directory, author practice and half-year; by the approver's habits on their other CLs
+            with all of those held equal; and within the same author's CLs.
+          </p>
+          <div class="forest forest-dashed forest-wide" id="roi-forest">
+            <div class="forest-scale" aria-hidden="true"><span></span><div class="forest-ticks"></div><span></span></div>
+            <h4 class="forest-group">This CL's review, as found</h4>
+            <ul class="forest-rows">
+              <li data-key="raw:threads">More reviewer threads</li>
+              <li data-key="raw:attn_h">More reviewer attention hours</li>
+              <li data-key="raw:addressed">More threads the author acted on</li>
+              <li data-key="raw:rubber_stamp">Approved with no thread at all</li>
+            </ul>
+            <h4 class="forest-group">This CL's review, like for like</h4>
+            <ul class="forest-rows">
+              <li data-key="normalized:threads">More reviewer threads</li>
+              <li data-key="normalized:attn_h">More reviewer attention hours</li>
+              <li data-key="normalized:addressed">More threads the author acted on</li>
+              <li data-key="normalized:rubber_stamp">Approved with no thread at all</li>
+            </ul>
+            <h4 class="forest-group">The approver, judged on their other CLs</h4>
+            <ul class="forest-rows">
+              <li data-key="habit:habit_log_first">Habitually thorough, per standard deviation</li>
+              <li data-key="habit:appr_appr3">Prior approvals in the directory, per doubling</li>
+              <li data-key="habit:appr_owner">An OWNER of the directory</li>
+              <li data-key="habit:appr_tenure">Years on the project, per doubling</li>
+            </ul>
+            <h4 class="forest-group">Within the same author, directory, half-year and size</h4>
+            <ul class="forest-rows">
+              <li data-key="within:habit_log_first">Habitually thorough approver</li>
+              <li data-key="within:threads">More reviewer threads</li>
+            </ul>
+            <h4 class="forest-group">Check: the approver's habit, by revert reason</h4>
+            <ul class="forest-rows">
+              <li data-key="nc:related">Reverts review could catch</li>
+              <li data-key="nc:unrelated">Reverts review could never prevent</li>
+            </ul>
+            <p class="forest-legend note" aria-hidden="true">
+              <span class="forest-key"><i class="forest-ci"></i><i class="forest-dot"></i></span> interval leaves out 1
+              <span class="forest-key faded"><i class="forest-ci"></i><i class="forest-dot"></i></span> interval includes 1
+            </p>
+          </div>
+        </figure>
+        <p class="sub">
+          Every measure of how much review a CL got goes with more reverts: CLs with more reviewer threads than the
+          median had <b data-src="roi_summary" data-field="threads_or_raw" data-fmt="n2">–</b> times the odds of a
+          revert as found, and still <b data-src="roi_summary" data-field="threads_or_norm" data-fmt="n2">–</b> times
+          like for like. Holding size, directory, practice and era equal removes a third to a half of the
+          association but never flips it. CLs approved with no thread at all are reverted less, even counting
+          only CLs whose votes are on record
+          (<b data-src="roi_summary" data-field="rs_votes_or" data-fmt="n2">–</b>, interval
+          <b data-src="roi_summary" data-field="rs_votes_lo" data-fmt="n2">–</b> to
+          <b data-src="roi_summary" data-field="rs_votes_hi" data-fmt="n2">–</b>): reviewers wave through what
+          looks safe, and it mostly is. The one measure that points the other way is how thorough the approver
+          habitually is on their other CLs, which doesn't depend on how risky this CL looks: a thorough approver
+          goes with <b data-src="roi_summary" data-field="habit_per_1000" data-fmt="n1">–</b> fewer reverts per
+          1,000 CLs (interval <b data-src="roi_summary" data-field="habit_per_1000_lo" data-fmt="n1">–</b> to
+          <b data-src="roi_summary" data-field="habit_per_1000_hi" data-fmt="n1">–</b>), about
+          <b data-src="roi_summary" data-field="habit_share_of_reverts" data-fmt="pct">–</b> of reverts. But it
+          goes with fewer reverts that review could never prevent just as much
+          (<b data-src="roi_summary" data-field="habit_nc_unrelated" data-fmt="n2">–</b>, against
+          <b data-src="roi_summary" data-field="habit_nc_related" data-fmt="n2">–</b> for the rest), so it is more
+          likely something else about those CLs than review preventing breakage. Within the same author's CLs it
+          disappears (<b data-src="roi_summary" data-field="habit_within" data-fmt="n2">–</b>, interval
+          <b data-src="roi_summary" data-field="habit_within_lo" data-fmt="n2">–</b> to
+          <b data-src="roi_summary" data-field="habit_within_hi" data-fmt="n2">–</b>). Even at the generous end of
+          its interval, <b data-src="roi_summary" data-field="habit_per_1000_hi" data-fmt="n1">–</b> reverts avoided
+          per 1,000 CLs would save about
+          <b data-src="roi_summary" data-field="habit_upper_hours" data-fmt="n0">–</b> reviewer attention hours per
+          1,000 CLs, at a revert's mean cost.
+        </p>
+        <p class="sub">
+          The one quasi-experiment uses the approver's weekly load, which makes them less thorough in a busy week
+          for reasons unrelated to the CL. It is null but imprecise: a quartile-to-quartile more thorough approver
+          changes reverts by <b data-src="roi_summary" data-field="iv_per_1000" data-fmt="sn1">–</b> per 1,000 CLs
+          (interval <b data-src="roi_summary" data-field="iv_per_1000_lo" data-fmt="sn1">–</b> to
+          <b data-src="roi_summary" data-field="iv_per_1000_hi" data-fmt="sn1">–</b>). That excludes neither no
+          effect nor a protective effect of about a third of reverts.
+        </p>
+        <p class="sub">
+          Reverts mostly measure the build and test system:
+          <b data-src="roi_summary" data-field="within_24h" data-fmt="pct">–</b> come within a day of landing, and
+          <b data-src="roi_summary" data-field="ci_caught" data-fmt="pct">–</b> are for a test or compile failure. Only
+          <b data-src="roi_summary" data-field="review_for" data-fmt="pct">–</b> name a crash, functional bug or
+          performance regression, the kind of thing review is for, and
+          <b data-src="roi_summary" data-field="never" data-fmt="pct">–</b> are for flaky tests, unrelated failures
+          or another CL's revert. Per 1,000 CLs, that is
+          <b data-src="roi_summary" data-field="prevent_per_1000" data-fmt="n1">–</b> reverts for the reasons review
+          is for against <b data-src="roi_summary" data-field="ci_per_1000" data-fmt="n1">–</b> for build and test
+          breakage. <b data-src="roi_summary" data-field="relanded" data-fmt="pct">–</b> of reverted
+          CLs land again, a median of <b data-src="roi_summary" data-field="reland_median_days" data-fmt="n1">–</b>
+          days later.
+        </p>
+
+        <div class="panels">
+          <figure class="panel forest-fig" aria-labelledby="roi-panels-title">
+            <h3 id="roi-panels-title">Does review today pay off later?</h3>
+            <p class="note">
+              Each estimate with its 95% interval, on its own scale around no effect (the dashed line). If review
+              paid off later, the first four would sit left of the line and the last right of it.
+            </p>
+            <div class="forest forest-dashed forest-wide forest-stacked" id="roi-panels">
+              <ul class="forest-rows">
+                <li data-key="H2a">A directory's deeper review → its revert rate next half-year (points per SD)</li>
+                <li data-key="H2b">→ its review time per CL next half-year (hours per SD)</li>
+                <li data-key="H2c">A newcomer's first-year feedback → their year-two reverts (odds ratio)</li>
+                <li data-key="H2d">CLs a later bug fix rewrote: their review against matched CLs (feedback index)</li>
+                <li data-key="H2e">Lines alive a year on: most against least reviewed CLs (points)</li>
+              </ul>
+            </div>
+          </figure>
+          <figure class="panel" data-needs="roi_substance"><h3>What review changes</h3>
+            <p class="note">Pilot: <b data-src="roi_summary" data-field="sub_threads" data-fmt="n0">–</b> random
+              threads the author acted on, from CLs landed July 2025 to September 2026, labelled by Claude Haiku, with
+              95% intervals. Each thread has one topic; whether it would have broken something is judged separately.</p>
+            <div class="chart chart-short"><canvas id="c-roi-substance" role="img" aria-label="Share of addressed review threads by topic, with intervals, and the share that would plausibly have broken something if left unfixed."></canvas></div></figure>
+        </div>
+        <p class="sub">
+          Nor does the data show review paying off later. Within a directory, deeper review in one half-year
+          doesn't go with fewer reverts in the next, and goes with slightly more review time, not less.
+          <button type="button" class="term" popovertarget="def-newcomer">Newcomers</button> who drew more feedback
+          in their first year drew more in their second and were reverted more, which looks like selection rather
+          than learning. In two small blame pilots, CLs whose lines a later bug fix rewrote had slightly more
+          review than matched CLs, and lines from well-reviewed CLs survive a year no better than others.
+        </p>
+        <p class="sub">
+          What review demonstrably does is change code before it lands: in
+          <b data-src="roi_summary" data-field="with_thread" data-fmt="pct">–</b> of CLs a reviewer started a thread,
+          and in <b data-src="roi_summary" data-field="with_addressed" data-fmt="pct">–</b> the author acted on one.
+          <span data-needs="roi_substance">In the pilot, most of those threads were about documentation, style and design;
+          <b data-src="roi_summary" data-field="sub_correctness" data-fmt="pct1">–</b> were about correctness, and
+          <b data-src="roi_summary" data-field="sub_would_break" data-fmt="pct1">–</b> (interval
+          <b data-src="roi_summary" data-field="sub_would_break_lo" data-fmt="pct1">–</b> to
+          <b data-src="roi_summary" data-field="sub_would_break_hi" data-fmt="pct1">–</b>) would plausibly have caused
+          a test failure, crash or visible bug if left unfixed. Spread over CLs, that is roughly
+          <b data-src="roi_summary" data-field="sub_cl_would_break" data-fmt="pct">–</b> of all CLs with a breaking
+          problem fixed in review, against <b data-src="roi_summary" data-field="rev30" data-fmt="pct1">–</b>
+          reverted within 30 days. If that holds, review heads off about twice as many breaking problems as escape
+          to a revert, but the pilot's interval is wide.
+          Of <b data-src="roi_summary" data-field="nearmiss_n" data-fmt="n0">–</b> CLs reverted for a crash or
+          functional bug, a reviewer had raised the problem in
+          <b data-src="roi_summary" data-field="nearmiss_yes" data-fmt="pct">–</b> and partly in
+          <b data-src="roi_summary" data-field="nearmiss_partly" data-fmt="pct">–</b>.</span>
+        </p>
+        <p class="note">
+          Caveats: attention hours are time a reviewer was asked to look, not time spent looking. Revert reasons
+          come from matching the message, and <b data-src="roi_summary" data-field="unknown" data-fmt="pct">–</b>
+          give none. The long-term tests and the topic labels are pilots on small samples.
+          <span data-needs="roi_substance">The topic labels agreed with a person's on
+          <b data-src="roi_summary" data-field="sub_agree" data-fmt="pct">–</b> of
+          <b data-src="roi_summary" data-field="sub_hand" data-fmt="n0">–</b> threads, and the share of CLs with a
+          breaking fix assumes a CL's threads are independent.</span> None of this measures what review is mostly for
+          beyond the next month: shared knowledge and code that stays easy to change. Method:
+          <a href="https://github.com/RByers/cosh/blob/main/docs/review-roi.md" target="_blank" rel="noopener">docs/review-roi.md</a>.
         </p>
       </section>
 

@@ -1,7 +1,7 @@
 # The return on code review: design and findings
 
-Status: design (2026-11-09). Findings are added below as the work packages
-finish. Nothing here fetches anything: every input is already on disk
+Status: built (2026-11-09). The design is below, then the findings, which
+are on the balance page as the `#roi` section ("What review buys"). Nothing here fetches anything: every input is already on disk
 (`balance*.sqlite`, `derived.sqlite`, `labels.sqlite`, `bugs/bugs.sqlite`, the
 shared Chromium clone and the patch-set repo). Any LLM pass or new download
 is piloted on a small sample first and costed before it runs at scale.

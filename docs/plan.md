@@ -391,7 +391,15 @@ value_ratio(O, t) = O's share of Chromium addressed review comments
    since 2017 with `Reviewed-by`). Analyses over all 175 weeks are done
    (2026-11-08): AI-era trends, learning curves, growth paths, the
    author-to-reviewer pipeline, mechanical CLs. Next: summaries and the
-   page.
+   page. **Return on review** (2026-11-09, `docs/review-roi.md`, page
+   section `#roi`): reverts cannot show review's value (more review goes
+   with more reverts even like for like; the one quasi-experiment is null
+   but imprecise), no long-term signal in directory or author panels or
+   in two blame pilots; what review demonstrably does is fix things before
+   landing (a 200-thread pilot: 7% of addressed threads fix correctness,
+   4.5% would have broken something, about 6% of CLs vs 2.7% reverted).
+   Scaling that pilot to 2,000 threads (about 0.55M Haiku tokens, minutes)
+   needs the user's go-ahead.
 8. **Commits** (`docs/commits.md`): built 2026-11-07 as the fifth metric,
    with the Ratio toggle. Open: lines changed as a size-weighted variant
    (about an hour of local `--numstat`), and whether authorship also belongs
