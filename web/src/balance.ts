@@ -455,7 +455,11 @@ function shareHistogram(rows: Row[], theme: Theme) {
     },
     // Labels thin out on narrow screens; the hover card names every bin.
     options: { ...o, plugins: { ...o.plugins, legend: { ...o.plugins.legend, labels: { ...o.plugins.legend.labels, boxHeight: 10, boxWidth: 10 } } },
-      scales: { ...scales, x: { ...scales.x, ticks: { ...scales.x.ticks, autoSkip: true, maxRotation: 0 } } } },
+      scales: {
+        x: { ...scales.x, ticks: { ...scales.x.ticks, autoSkip: true, maxRotation: 0 },
+          title: { display: true, text: 'review share: approvals ÷ (approvals + CLs authored)', color: theme.muted, font: { family: theme.font } } },
+        y: { ...scales.y, title: { display: true, text: 'share of people', color: theme.muted, font: { family: theme.font } } },
+      } },
   } as never));
 }
 
