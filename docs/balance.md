@@ -807,7 +807,7 @@ so the revert chart should be by size as well as over time.
 
 **Status (2026-11-08):** a first draft is live as `web/balance.html`, with a
 large "Draft: under development" warning at the top. Its landing-page card
-(2026-11-08) carries a yellow "In development" box below its description. It has 53 charts and 7 tables, drawn with Chart.js from
+(2026-11-08) carries a yellow "In development" box below its description. It has 52 charts and 7 tables, drawn with Chart.js from
 `summaries/balance.json`. That file holds 47 aggregate datasets:
 - `balance_report.py`'s `report.json`;
 - the growth, pipeline, mentorship, AI-paired and mechanical tables from
@@ -871,16 +871,6 @@ large "Draft: under development" warning at the top. Its landing-page card
   sentence of "Wrong turns", next to the aggregate abandon index by tenure
   (`docs/balance-signals.md`), and the summary fields are `abandon_*` and
   `rho_tenure_abandon` in `balance_authors.json`.
-  Since 2026-11-08 it also writes approvals given in the year, review share
-  (approvals ÷ approvals plus CLs landed) and each author's percentile on
-  review share and on load index within their tenure band (under 2, 2–5,
-  5–10, 10+ years), for the scatter at the end of `#trajectories`: one dot
-  per author, review share percentile across, load percentile up, colour by
-  tenure band, area by CLs plus approvals. The two percentiles correlate
-  only loosely (Spearman −0.23): 29% are behind on both (bottom half on
-  share, top half on load) and 29% ahead on both, against 25% if unrelated;
-  10% are in the bottom quarter on share and the top quarter on load,
-  against 6%.
 
 The page ends with two definition sections, "Defined: the review load
 index" and "Defined: newcomers and tenure" (a tenure timeline drawn in

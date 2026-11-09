@@ -175,25 +175,6 @@
             <p class="note">Share of authors with 2+ years' tenure and 12 or more CLs in the half-year (6 in 2026 Q3) whose load index is 1.5× or more their tenure band's median.</p>
             <div class="chart chart-short"><canvas id="c-behind-load" role="img" aria-label="Share of authors behind on review load by half-year, against the same half-year's peers and against the 2023 to 2024 curve, with the share chance alone gives."></canvas></div></figure>
         </div>
-        <h3 id="pct-scatter-title">Each author against their tenure band, November 2025 to October 2026</h3>
-        <p class="note">
-          One dot per author who landed 10 or more CLs in the year
-          (<b data-src="authors_summary" data-field="ranked" data-fmt="n0">–</b> people), placed by percentile among
-          authors in the same tenure band: across by review share (approvals given ÷ approvals plus CLs landed), up
-          by <button type="button" class="term" popovertarget="def-load-index">review load</button>. Bottom right is
-          ahead on both, reviewing more and drawing less feedback than peers; top left is behind on both. Colour is
-          the tenure band at the end of October 2026, on the same green-to-red scale as the breadth scatter, and a dot's area is CLs landed plus approvals given. Hover a dot for the
-          author. People in a band who approved no one's CL share one percentile, so they stand in a column at
-          the left. The two go together only loosely (rank correlation
-          <b data-src="authors_summary" data-field="rho_pct" data-fmt="n2">–</b>):
-          <b data-src="authors_summary" data-field="behind_both" data-fmt="pct">–</b> are in the top-left quarter and
-          <b data-src="authors_summary" data-field="ahead_both" data-fmt="pct">–</b> in the bottom right, against 25%
-          each if they were unrelated, and
-          <b data-src="authors_summary" data-field="behind_both_q" data-fmt="pct">–</b> are in the bottom quarter on
-          review share and the top quarter on load, against about 6%.
-        </p>
-        <div class="chart chart-tall"><canvas id="c-pct-scatter" role="img" aria-label="Scatter plot of authors from November 2025 to October 2026: review share percentile against review load percentile within their tenure band, coloured by tenure, sized by CLs landed plus approvals given."></canvas></div>
-        <template data-msg="pct-tip">Review share <slot name="share"></slot> (percentile <slot name="sharePct"></slot>), load index <slot name="load"></slot> (percentile <slot name="loadPct"></slot>); <slot name="cls"></slot> CLs, <slot name="approvals"></slot> approvals, <slot name="tenure"></slot> since first commit</template>
       </section>
 
       <section id="exchange" class="card" aria-labelledby="exchange-title">
