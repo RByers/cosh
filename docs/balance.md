@@ -208,7 +208,8 @@ Still open from the review:
   AI-friction flags, and difference-in-differences by when a directory first
   uses the trailer).
 
-A Gerrit backfill to 2020 and the bug tracker **need approval**.
+A Gerrit backfill back to 2017-07 was approved and started on 2026-11-09
+(`docs/plan.md`); its patch sets still need approval.
 
 **Proposed additional goals for agentic engineering:**
 
@@ -1503,6 +1504,8 @@ ground rule 3).
    draft warnings (page and landing-page card).
 3. Check whether "independence" growth in 2025–26 holds on interdiff share
    and rounds alone, as more half-years arrive.
-4. Ask: would a Gerrit backfill of 2020–2023 (not approved) be worth it?
-   It would give the review-need learning curve a pre-AI baseline of four
-   years instead of 18 months.
+4. Once the Gerrit backfill back to 2017-07 (started 2026-11-09) is done,
+   rebuild the balance stages and extend the review-need learning curve's
+   pre-AI baseline. Before late 2020 there is no attention set, so "sent
+   for review" and attention hours need a fallback definition, used for
+   every year.

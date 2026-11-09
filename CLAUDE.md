@@ -23,10 +23,19 @@ regex plus Claude Haiku (`cosh classify`).
   `--jobs 6 --jobs-until 2026-11-09T00:00-05:00` drops to 1 by itself at
   that time. After Monday, resume with `--jobs 1` (the default). Log
   `data/private/backfill-2020-*.log`, PID in `data/private/backfill-2020.pid`.
+- **Backfill back to 2017-07 is approved** (2026-11-09), so the balance
+  analysis can match the git history (Gerrit starts mid-2017; earlier
+  reviews were on Rietveld). NoteDb only, serial (`--jobs 1`), newest
+  first: `backfill --weeks 312 --newest 2023-W25 --jobs 1 --go`, 2017-W27 ..
+  2023-W25, which also finishes the 2020–23 range above. Started
+  2026-11-09, log `data/private/backfill-2017-*.log`, PID in
+  `data/private/backfill-2017.pid`; resumable with the same command.
+  Their patch sets still need approval, and the user doesn't want
+  "addressed" labels (`cosh classify`) for these years.
 - **Backfill back to 2023-07-01 (Radar's first data) is approved**
   (2026-11-04). That is `backfill --weeks 175 --newest 2026-W44`, 2023-W26 ..
   2026-W44, started 2026-11-04 with log `data/private/backfill-3y-*.log`. It is
-  resumable with the same command. Nothing earlier is approved.
+  resumable with the same command.
 - **The open-CL snapshot for that year is approved** (2026-11-03):
   `python3 -m cosh extract-open` lists open CLs updated since the oldest
   fetched week, plus CLs closed after the newest one, and fetches their NoteDb
