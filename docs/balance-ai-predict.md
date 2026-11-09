@@ -295,11 +295,46 @@ python3 scripts/balance_ai_predict.py report
   next run. After 5 failures in a row (a usage limit, say) the run stops.
   `runs` records each run's counts and why it stopped.
 - **First run (2026-11-08):** Haiku, 2025-07-01 .. 2026-11-07, 171,804 CLs
-  in 17,181 calls, about 2¾ h at 8 calls at once and about $18
-  CLI-reported ($0.10 per 1,000). Log `ai_predict/score-*.log`, PID in
-  `ai_predict/score.pid`.
+  in 116 min at 8 calls at once, with no failed calls, $12.60 CLI-reported
+  ($0.07 per 1,000). Log `ai_predict/score-20261108T2231.log`.
 - Like the other Claude-made data (`labels.sqlite`, `sentiment.sqlite`),
   `scores.sqlite` costs Max usage to remake: don't delete it.
+
+**Results (all landed human CLs, Haiku, prompt `3dd3ca1ff755`):**
+
+| Month | CLs | Marked | p ≥ 0.5 | p ≥ 0.7 |
+|---|---:|---:|---:|---:|
+| 2025-07 | 9,257 | 30 | 6.5% | 1.7% |
+| 2025-08 | 8,431 | 122 | 8.6% | 2.2% |
+| 2025-09 | 9,455 | 72 | 8.6% | 2.0% |
+| 2025-10 | 9,617 | 45 | 8.5% | 2.2% |
+| 2025-11 | 7,780 | 58 | 8.9% | 2.3% |
+| 2025-12 | 7,154 | 39 | 9.6% | 2.1% |
+| 2026-01 | 9,118 | 32 | 10.3% | 2.6% |
+| 2026-02 | 9,425 | 47 | 12.8% | 4.1% |
+| 2026-03 | 10,686 | 120 | 15.7% | 5.2% |
+| 2026-04 | 10,405 | 58 | 17.3% | 6.7% |
+| 2026-05 | 10,139 | 63 | 20.8% | 8.8% |
+| 2026-06 | 10,819 | 36 | 23.2% | 10.3% |
+| 2026-07 | 11,608 | 89 | 27.2% | 14.7% |
+| 2026-08 | 12,399 | 144 | 33.8% | 20.2% |
+| 2026-09 | 13,701 | 250 | 39.0% | 22.5% |
+| 2026-10 | 17,430 | 577 | 36.9% | 16.7% |
+| 2026-11 (to 7th) | 4,380 | 91 | 37.0% | 14.7% |
+
+- Pre-AI CLs score p ≥ 0.5 at about 0.3–1% (§2, §3), and 2024 Q3 –
+  2025 Q2 samples at 1–4%. So July 2025 is already above baseline.
+- Counting every CL, the rise is a steady ramp: flat at about 9% through
+  2025 H2, then up every month from 2026-01 to 39% in 2026-09. The quarterly
+  samples (§3) showed a sharper 2026 Q2 step. They counted each author at
+  most twice per quarter, so they weight people equally, while this table
+  weights CLs, which favours heavy authors.
+- October's CL count jumped by 27% while the flagged share levelled off and
+  the p ≥ 0.7 share fell (22.5% → 16.7%). Worth a look: a burst of
+  short CLs, or a change in how agents write descriptions.
+- These are raw flag rates, which miss AI descriptions Haiku is unsure of. §4's mixture
+  estimate puts the true share at about twice the p ≥ 0.5 rate in
+  2025–early 2026, falling to about 1.5× by 2026 Q3.
 
 ## Verdicts
 
