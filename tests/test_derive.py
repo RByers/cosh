@@ -550,6 +550,13 @@ class SummarizeTest(unittest.TestCase):
         self.assertEqual([(r["org"], r["reviewers"], r["comments"]) for r in rows],
                          [("Other", 6, 12), ("opera.com", 1, 2)])
 
+    def test_undisclosed_folded_into_other(self):
+        # The affiliations file's "Undisclosed" is a marker, not an org.
+        from cosh.summarize import fold
+        self.assertEqual(fold("Undisclosed"), "Other")
+        self.assertEqual(fold("Individual"), "Individual")
+        self.assertEqual(fold("intel.com"), "intel.com")
+
     def test_old_derived_db_is_refused(self):
         with tempfile.TemporaryDirectory() as d:
             import sqlite3

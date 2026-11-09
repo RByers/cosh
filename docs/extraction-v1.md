@@ -474,7 +474,8 @@ The org is a domain name, evaluated as of the day of the comment:
    - The file is a verbatim copy of Chromium's
      `third_party/blink/tools/commit_stats/affiliations.json5`.
    - Dates before a person's earliest `start` fall through to rule 2 or 3.
-   - The values `Individual` and `Undisclosed` are kept as-is.
+   - The values `Individual` and `Undisclosed` are kept as-is. Summaries
+     fold `Undisclosed` into Other, like `gmail.com` (`FOLD_INTO_OTHER`).
 2. **Other `@chromium.org` accounts** are attributed to `google.com`.
 3. **Everyone else** is attributed to the domain of their email address.
 

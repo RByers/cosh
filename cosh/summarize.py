@@ -32,8 +32,9 @@ scope; area_weekly covers every comment, so the web UI can show what the
 scope leaves out.
 
 In org_weekly every org is reported however few reviewers it has; only the
-domains in FOLD_INTO_OTHER (webmail domains that say nothing about an
-organization) are folded into 'Other'. Self-declared AI comments posted from a
+orgs in FOLD_INTO_OTHER (webmail domains, and the affiliations file's
+"Undisclosed", which say nothing about an organization) are folded into
+'Other'. Self-declared AI comments posted from a
 reviewer's own account count (since metric_version 4); the subset is
 ai_comments. Post-merge comments (written after the CL closed) count too; that
 subset is post_merge_comments. Only fully fetched weeks are reported
@@ -76,9 +77,10 @@ from .orgs import OrgResolver
 from .paths import DIR_LIMIT, ROOT_FILES, UNPLACED, anchor, dir_tree, directory, load_scope, place
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-# Domains always folded into Other, whatever their size: personal webmail
-# addresses are not an organization.
-FOLD_INTO_OTHER = frozenset({"gmail.com"})
+# Orgs always folded into Other, whatever their size: personal webmail
+# addresses are not an organization, and "Undisclosed" (affiliations.json5's
+# marker for an unnamed employer) is not one either.
+FOLD_INTO_OTHER = frozenset({"gmail.com", "Undisclosed"})
 OTHER = "Other"
 TOTALS_COLS = ["iso_week", "main_cls", "merged_cls", "abandoned_cls", "human_cls",
                "bot_cls", "human_cls_with_comments"]
