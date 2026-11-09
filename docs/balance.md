@@ -649,8 +649,8 @@ so the revert chart should be by size as well as over time.
 
 **Status (2026-11-08):** a first draft is live as `web/balance.html`, with a
 large "Draft: under development" warning at the top. It isn't linked from the
-landing page yet. It has 28 charts and 11 tables, drawn with Chart.js from
-`summaries/balance.json`. That file holds 31 aggregate datasets:
+landing page yet. It has 30 charts and 11 tables, drawn with Chart.js from
+`summaries/balance.json`. That file holds 35 aggregate datasets:
 - `balance_report.py`'s `report.json`;
 - the growth, pipeline, mentorship, AI-paired and mechanical tables from
   `balance_growth.py` (via `balance_growth_tables.py`) and
@@ -664,6 +664,12 @@ landing page yet. It has 28 charts and 11 tables, drawn with Chart.js from
   `COSH_DATA_DIR=<main>/data/private python3 scripts/balance_page_extras.py`.
   It reads `data/private/balance_signals.json` (`balance_signals.py report
   --out`).
+- `scripts/balance_histograms.py` (2026-11-08), the "Waiting for review"
+  histograms: shares of reviewed CLs by hours to first substantive review
+  and by reviewers' weekday attention-set hours, for the latest year
+  (2025 Q4 – 2026 Q3) against the 2023 H2–2024 baseline. Same CLs as the
+  quarterly charts; it reads `balance.sqlite` and the `--mech` list:
+  `COSH_DATA_DIR=<main>/data/private python3 scripts/balance_histograms.py --mech mech.jsonl`.
 
 Sections added on 2026-11-08: "Wrong turns" (−1 votes and abandoned CLs by
 tenure), "Arriving better, or easing off?" (the panels and matched cohorts),

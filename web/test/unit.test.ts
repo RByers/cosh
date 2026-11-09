@@ -1413,3 +1413,12 @@ test('linearStep: a round step giving at most 10 ticks from 0', () => {
   assert.equal(linearStep(0.4), 0.05);
   assert.equal(linearStep(0.03), 0.005);
 });
+
+test('fmtHoursBin names histogram bins in the low edge\'s unit; fmtQuarterMonth names a quarter\'s months', async () => {
+  const { fmtHoursBin, fmtQuarterMonth } = await import('../src/format.ts');
+  const edges = [0, 1, 2, 4, 8, 16, 24, 48, 96, 168, 336];
+  assert.deepEqual(edges.map((lo, i) => fmtHoursBin(lo, edges[i + 1] ?? null)),
+    ['< 1 h', '1–2 h', '2–4 h', '4–8 h', '8–16 h', '16–24 h', '1–2 d', '2–4 d', '4–7 d', '1–2 wk', '2 wk+']);
+  assert.equal(fmtQuarterMonth('2025Q4'), 'Oct 2025');
+  assert.equal(fmtQuarterMonth('2026Q3', true), 'Sept 2026');
+});

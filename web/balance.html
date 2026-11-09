@@ -235,6 +235,20 @@
             <p class="note">Median hours a reviewer, or the author, was being waited on. Weekends left out for reviewers.</p>
             <div class="chart"><canvas id="c-waits" role="img" aria-label="Median hours reviewers and authors spent in the attention set per CL, per quarter."></canvas></div></figure>
         </div>
+        <p class="note">
+          The whole distribution, for the latest year against 2023 H2–2024, the pre-AI baseline the other
+          charts use. Bars are shares of each period's reviewed CLs.
+        </p>
+        <template data-msg="hist-range"><slot name="from"></slot> to <slot name="to"></slot></template>
+        <template data-msg="hist-tip"><slot name="share"></slot> of <slot name="cls"></slot> CLs</template>
+        <div class="panels">
+          <figure class="panel"><h3>Hours to first substantive review, then and now</h3>
+            <p class="note">Clock hours from being sent for review to the first substantive comment.</p>
+            <div class="chart"><canvas id="c-ftr-hist" role="img" aria-label="Histogram of hours to first substantive review: the latest year against 2023 H2–2024."></canvas></div></figure>
+          <figure class="panel"><h3>Reviewers' time in the attention set, then and now</h3>
+            <p class="note">Hours some reviewer was being waited on per CL, weekends left out.</p>
+            <div class="chart"><canvas id="c-wait-hist" role="img" aria-label="Histogram of reviewers' weekday hours in the attention set per CL: the latest year against 2023 H2–2024."></canvas></div></figure>
+        </div>
       </section>
 
       <section id="rework" class="card" aria-labelledby="rework-title">

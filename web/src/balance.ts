@@ -7,7 +7,7 @@ import dirsUrl from '../../summaries/balance_dirs.json?url';
 import type { DirRow } from './data.ts';
 import { heatRowLabel, heatTable, node } from './heatmap.ts';
 import { readTheme, type Theme } from './charts.ts';
-import { fmtNum } from './format.ts';
+import { fmtHoursBin, fmtNum, fmtQuarterMonth } from './format.ts';
 import { fill, msg } from './text.ts';
 
 Chart.register(Filler);
@@ -312,6 +312,27 @@ function growthBars(rows: Row[], theme: Theme) {
     options: { ...o, plugins: { ...o.plugins, legend: { ...o.plugins.legend, labels: { ...o.plugins.legend.labels, boxHeight: 10, boxWidth: 10 } } },
       scales: axes(theme, FMT.pct, { zero: true }) },
     plugins: [refLine(CHANCE, theme.text)],
+  } as never));
+}
+
+/** Two periods' distributions side by side: shares of CLs per bin of hours. */
+function yearHistogram(id: string, rows: Row[], summary: Row, theme: Theme) {
+  const years = [
+    { key: 'then', from: summary.then_from, to: summary.then_to, cls: summary.then_cls, color: theme.series[0] },
+    { key: 'now', from: summary.now_from, to: summary.now_to, cls: summary.now_cls, color: theme.series[1] },
+  ].map((y) => ({ ...y, label: msg('hist-range', { from: fmtQuarterMonth(String(y.from)), to: fmtQuarterMonth(String(y.to), true) }) }));
+  const labels = rows.map((r) => fmtHoursBin(Number(r.lo), r.hi === null ? null : Number(r.hi)));
+  const o = options(theme, FMT.pct, true, (i) => labels[i]);
+  o.plugins.tooltip.callbacks.label = (i: TooltipItem<'line'>) =>
+    `${i.dataset.label}: ${msg('hist-tip', { share: FMT.pct1(i.parsed.y ?? 0), cls: FMT.n0(Number(years[i.datasetIndex].cls)) })}`;
+  charts.push(new Chart($<HTMLCanvasElement>(`#${id}`), {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: years.map((y) => ({ label: y.label, data: rows.map((r) => r[y.key] as number), backgroundColor: y.color, borderRadius: 2 })),
+    },
+    options: { ...o, plugins: { ...o.plugins, legend: { ...o.plugins.legend, labels: { ...o.plugins.legend.labels, boxHeight: 10, boxWidth: 10 } } },
+      scales: axes(theme, FMT.pct, { zero: true }) },
   } as never));
 }
 
@@ -677,6 +698,8 @@ function render(data: BalanceData) {
   quarters('c-waits', d.exchange, theme, [
     { field: 'reviewer_wait_wd_p50', label: 'Reviewer, weekdays' }, { field: 'owner_wait_p50', label: 'Author' },
   ], FMT.h, { zero: true });
+  yearHistogram('c-ftr-hist', d.ftr_hist, d.ftr_hist_summary[0], theme);
+  yearHistogram('c-wait-hist', d.wait_hist, d.wait_hist_summary[0], theme);
 
   bands('c-interdiff', exq, 'interdiff_cl', theme, FMT.pct, { label: 'Median reviewed CL', zero: true, max: 1 });
   quarters('c-reverted', d.exchange, theme, [{ field: 'reverted', label: 'Reverted within 30 days' }], FMT.pct1, { zero: true });
