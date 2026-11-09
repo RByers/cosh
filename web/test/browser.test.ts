@@ -2768,6 +2768,17 @@ test('the Review Balance page: a draft warning first, every figure, chart and ta
   const canvases = await page.$$eval('canvas', (cs) => cs.map((c) => [c.id, c.width > 0 && c.height > 0] as const));
   assert.equal(canvases.length, 52);
   for (const [id, drawn] of canvases) assert.ok(drawn, id);
+  // Authors' emails in the scatter's hover cards are off until "e" is pressed 10 times in a row;
+  // any other key starts the count again, and 10 more presses switch them off.
+  const emails = () => page.$eval('body', (b) => b.dataset.emails ?? null);
+  const press = async (keys: string) => { for (const k of keys) await page.keyboard.press(k as 'e'); };
+  assert.equal(await emails(), null);
+  await press('eeeeeeeeexe');
+  assert.equal(await emails(), null);
+  await press('eeeeeeeeee');
+  assert.equal(await emails(), '1');
+  await press('eeeeeeeeee');
+  assert.equal(await emails(), null);
   const rows = await page.$$eval('table.balance-table', (ts) => ts.map((t) => [t.id, (t as HTMLTableElement).tBodies[0].rows.length] as const));
   assert.deepEqual(rows.map(([id]) => id), ['t-areas', 't-signals', 't-patterns', 't-pattern-rules', 't-joiners', 't-transitions', 't-ai', 't-mech']);
   for (const [id, n] of rows) assert.ok(n >= 2, id);

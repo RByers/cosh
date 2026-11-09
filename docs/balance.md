@@ -1052,7 +1052,10 @@ large "Draft: under development" warning at the top. Its landing-page card
   commit email. Unlike the other scripts it writes **one row per person**
   (`summaries/balance_authors.json`), drawn as a histogram of directories
   and a scatter (directories × load index, colour = tenure on a continuous green → blue → red scale, area =
-  CLs) whose hover card names the author. Published under ground rule 3
+  CLs). Its hover card names the author only behind a hidden setting:
+  pressing "e" 10 times in a row (no other key between) switches emails
+  on or off, remembered in that browser. The emails are still in the
+  published JSON. Published under ground rule 3
   (public data; the load index is not tone). Breadth tracks volume
   (Spearman 0.72 with CLs) and goes with slightly less feedback per CL
   (−0.24):
