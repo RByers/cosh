@@ -425,6 +425,35 @@ function loadHistogram(id: string, rows: Row[], by: string, theme: Theme) {
   } as never));
 }
 
+/** Years since joining drawn in the review-share histogram. Year 1 is left out: most approve nothing. */
+const SHARE_YEARS = [2, 3, 5, 8];
+const shareBin = (b: number) => (b === 0 ? 'None' : `${(b - 1) * 10}–${b * 10}%`);
+
+/** People binned by review share, one bar per year since joining, all join years pooled. */
+function shareHistogram(rows: Row[], theme: Theme) {
+  const bins = [...Array(11).keys()];
+  const at = (y: number, b: number) => rows.find((r) => r.year === y && r.bin === b);
+  const o = options(theme, FMT.pct, true, (i) => `Review share: ${shareBin(bins[i]).replace('None', 'none')}`);
+  const scales = axes(theme, FMT.pct, { zero: true });
+  o.plugins.tooltip.callbacks.label = (i: TooltipItem<'line'>) => {
+    const r = at(SHARE_YEARS[i.datasetIndex], bins[i.dataIndex]);
+    return r ? `${i.dataset.label}: ${FMT.pct(Number(r.share))} of people (${FMT.n0(Number(r.people))})` : `${i.dataset.label}: –`;
+  };
+  charts.push(new Chart($<HTMLCanvasElement>('#c-share-hist'), {
+    type: 'bar',
+    data: {
+      labels: bins.map(shareBin),
+      datasets: SHARE_YEARS.map((y, i) => ({
+        label: `Year ${y}`, data: bins.map((b) => (at(y, b)?.share as number | undefined) ?? null),
+        backgroundColor: theme.series[i], borderRadius: 2,
+      })),
+    },
+    // Labels thin out on narrow screens; the hover card names every bin.
+    options: { ...o, plugins: { ...o.plugins, legend: { ...o.plugins.legend, labels: { ...o.plugins.legend.labels, boxHeight: 10, boxWidth: 10 } } },
+      scales: { ...scales, x: { ...scales.x, ticks: { ...scales.x.ticks, autoSkip: true, maxRotation: 0 } } } },
+  } as never));
+}
+
 const ALWAYS_MECHANICAL =new Set(['100-199', '200-499', '500+']);
 
 function mechanicalBars(rows: Row[], theme: Theme) {
@@ -931,6 +960,7 @@ function render(data: BalanceData) {
   categories('c-co-load', d.cohort_curves, theme, { x: 'months', g: 'cohort', v: 'load_index', groups: cohorts, xs: months, xl: monthXl }, FMT.n2, { ref: 1 });
   categories('c-co-vel', d.cohort_curves, theme, { x: 'months', g: 'cohort', v: 'cls_per_person_month', groups: cohorts, xs: months, xl: monthXl }, FMT.n1, { zero: true });
   categories('c-co-rev', d.cohort_curves, theme, { x: 'months', g: 'cohort', v: 'reviews_per_person_month', groups: cohorts, xs: months, xl: monthXl }, FMT.n1, { zero: true });
+  shareHistogram(d.review_share_hist, theme);
   const years = [2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025];
   categories('c-gitco', d.git_cohorts, theme, { x: 'year', g: 'cohort', v: 'review_share',
     groups: years.map((y) => [y, `Joined ${y}`]), xs: [1, 2, 3, 4, 5, 6, 7, 8, 9], xl: (x) => `Year ${x}` }, FMT.pct, { zero: true });

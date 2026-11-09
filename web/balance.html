@@ -517,11 +517,36 @@
         </div>
         <h3>From author to reviewer, 2017–2026</h3>
         <p class="note">
-          Median review share, approvals given ÷ (approvals + CLs authored), of each start-year cohort by year
-          since joining. Everyone starts as an author; by year four, a typical person approves nearly as many CLs
-          as they land.
+          Review share is approvals given ÷ (approvals + CLs authored) in a calendar year, for everyone who joined
+          from 2017 to 2025, in each year they authored or approved 6 or more CLs. Everyone starts as an author: in
+          their first year
+          <b data-src="review_share_years" data-field="none" data-where="year=1" data-fmt="pct">–</b>
+          approve nothing. The spread is wide after that. In year three
+          <b data-src="review_share_years" data-field="none" data-where="year=3" data-fmt="pct">–</b>
+          still approve nothing while
+          <b data-src="review_share_years" data-field="half" data-where="year=3" data-fmt="pct">–</b>
+          approve at least as many CLs as they land; by year five that is
+          <b data-src="review_share_years" data-field="half" data-where="year=5" data-fmt="pct">–</b>.
+          Bars are shares of the people active in that year since joining, all join years together.
         </p>
-        <div class="chart chart-tall"><canvas id="c-gitco" role="img" aria-label="Median review share by year since joining, one line per start year from 2017 to 2025."></canvas></div>
+        <div class="chart"><canvas id="c-share-hist" role="img" aria-label="Histogram of review share in years 2, 3, 5 and 8 since joining, for people who joined from 2017 to 2025."></canvas></div>
+        <h3>The same path whichever year people joined</h3>
+        <p class="note">
+          Median review share by year since joining, one line per join year. The lines bunch together, which is
+          why one histogram can stand for every join year: in year four the medians run from
+          <b data-src="review_share_years" data-field="cohort_p50_min" data-where="year=4" data-fmt="pct">–</b>
+          to
+          <b data-src="review_share_years" data-field="cohort_p50_max" data-where="year=4" data-fmt="pct">–</b>,
+          and in year five from
+          <b data-src="review_share_years" data-field="cohort_p50_min" data-where="year=5" data-fmt="pct">–</b>
+          to
+          <b data-src="review_share_years" data-field="cohort_p50_max" data-where="year=5" data-fmt="pct">–</b>.
+          Year two varies most
+          (<b data-src="review_share_years" data-field="cohort_p50_min" data-where="year=2" data-fmt="pct">–</b>
+          to <b data-src="review_share_years" data-field="cohort_p50_max" data-where="year=2" data-fmt="pct">–</b>),
+          while the typical person is only starting to approve.
+        </p>
+        <div class="chart chart-tall"><canvas id="c-gitco" role="img" aria-label="Median review share by year since joining, one line per join year from 2017 to 2025."></canvas></div>
         <h3>Reviewers by tenure: speed and thoroughness</h3>
         <p class="note">
           Every CL a reviewer was asked to review, grouped by the reviewer's tenure, per half-year; 2026 H2 runs

@@ -531,6 +531,11 @@ start cohort and tenure year: about 0 in year 1, 0.03–0.17 in year 2,
 People reliably move from writing to reviewing. The 2023 cohort is a
 little slower (0.33 in year 4); the 2025 cohort is faster (0.17 in year 2,
 small n).
+The spread around those medians is wide and also much the same for every
+join year, so the page shows one pooled histogram, then the medians by
+join year: in year 3, 20% still approve nothing while 29% approve at least
+as many CLs as they land; in year 5, 11% and 53%. Join-year medians run
+0.38–0.51 in year 4 and 0.50–0.53 in year 5.
 
 **Who reviews newcomers** (approvals of CLs by authors in their first
 year, by the approver's tenure):
@@ -683,8 +688,8 @@ so the revert chart should be by size as well as over time.
 
 **Status (2026-11-08):** a first draft is live as `web/balance.html`, with a
 large "Draft: under development" warning at the top. It isn't linked from the
-landing page yet. It has 33 charts and 11 tables, drawn with Chart.js from
-`summaries/balance.json`. That file holds 35 aggregate datasets:
+landing page yet. It has 44 charts and 6 tables, drawn with Chart.js from
+`summaries/balance.json`. That file holds 42 aggregate datasets:
 - `balance_report.py`'s `report.json`;
 - the growth, pipeline, mentorship, AI-paired and mechanical tables from
   `balance_growth.py` (via `balance_growth_tables.py`) and
@@ -709,6 +714,14 @@ landing page yet. It has 33 charts and 11 tables, drawn with Chart.js from
   one bin each, plus the share above 20) for each tenth of CLs by size,
   over 2023–24, the load index's norm years. Same CLs and `--mech` list:
   `COSH_DATA_DIR=<main>/data/private python3 scripts/balance_definitions.py --mech mech.jsonl`.
+
+- `scripts/balance_review_share.py` (2026-11-08), the "From author to
+  reviewer" histogram: shares of people by review share (none, then
+  tenths) at each year since joining, all 2017–2025 join years pooled, plus
+  per-year summaries (`review_share_years`: share approving nothing, share
+  at 50% or more, and the range of join-year medians). Same people and
+  definition as `git_cohorts`:
+  `COSH_DATA_DIR=<main>/data/private python3 scripts/balance_review_share.py --first-commit F --owners-added O`.
 
 The page ends with two definition sections, "Defined: the review load
 index" and "Defined: newcomers and tenure" (a tenure timeline drawn in
