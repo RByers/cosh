@@ -32,6 +32,7 @@ lines):
 """
 
 import argparse
+import json
 import math
 import os
 import statistics as st
@@ -97,8 +98,148 @@ def f2(x, n=2):
     return "–" if x is None else f"{x:.{n}f}"
 
 
+PAGE_DIRS = ["third_party/blink", "content/browser", "chrome/browser", "chrome/android", "ios/chrome"]
+HALF = 182.6 * 86400
+
+
+def rnd(x, n=2):
+    return None if x is None else round(x, n)
+
+
+def half_of(t):
+    d = datetime.fromtimestamp(t, timezone.utc)
+    return f"{d.year}H{1 if d.month <= 6 else 2}"
+
+
+def queue_quarters(use):
+    """Per page directory (and all of Chromium) and quarter: merged CLs, the median first-review wait, and
+    reviewers in the attention set of 5+ of the directory's CLs, from balance.sqlite's cl_attention."""
+    import sqlite3
+    from cosh import balance
+    db = sqlite3.connect(f"file:{balance.db_path('cl')}?mode=ro", uri=True)
+    att = defaultdict(list)
+    for n, a in db.execute("SELECT change_number, account_id FROM cl_attention"):
+        att[n].append(a)
+    groups = defaultdict(list)
+    for c in use:
+        q = A.quarter(c["closed_at"])
+        if not ("2023Q3" <= q <= "2026Q3"):
+            continue
+        groups[("all", q)].append(c)
+        if c["d2"] in PAGE_DIRS:
+            groups[(c["d2"], q)].append(c)
+    out = []
+    for (d, q), s in sorted(groups.items()):
+        w = [(c["first_review_at"] - c["sent_at"]) / 3600 for c in s
+             if c["first_review_at"] and c["sent_at"] and c["first_review_at"] >= c["sent_at"]]
+        rv = Counter(a for c in s for a in set(att.get(c["change_number"], [])) if a != c["owner"])
+        reviewers = sum(1 for k in rv.values() if k >= 5)
+        out.append(dict(dir=d, q=q, cls=len(s), ftr_p50=rnd(pct(w, .5)), reviewers=reviewers,
+                        cls_per_reviewer=rnd(len(s) / reviewers, 1) if reviewers else None))
+    base = defaultdict(list)
+    for o in out:
+        if o["q"].startswith("2024"):
+            base[o["dir"]].append(o["cls"])
+    for o in out:
+        o["cls_index"] = rnd(o["cls"] / st.mean(base[o["dir"]]))
+    return out
+
+
+def inflow(commits, cdir, first, authored, start):
+    """Per directory and half-year: people arriving (first commit there, and 3+ commits there within 120
+    days), split into new to Chromium (first commit anywhere within the half-year before) and moving in
+    from elsewhere, against active authors (3+ commits there that half). Also for Googlers only: the org
+    of the arriving commit's author email (cosh.orgs: chromium.org counts as Google unless the
+    affiliations file says otherwise)."""
+    import sqlite3
+    from cosh import balance, orgs
+    resolve = orgs.OrgResolver()
+    db = sqlite3.connect(f"file:{balance.db_path('git')}?mode=ro", uri=True)
+    raw = dict(db.execute("SELECT commit_id, author_email FROM gcommits"))
+    ats = {}
+    active = defaultdict(lambda: defaultdict(Counter))     # d -> half -> pid -> commits
+    goog_half = {}
+    for c in sorted(commits, key=lambda c: c["at"]):
+        d = cdir.get(c["cid"])
+        if d not in PAGE_DIRS:
+            continue
+        h = half_of(c["at"])
+        active[d][h][c["pid"]] += 1
+        k = (d, h, c["pid"])
+        if k not in goog_half:
+            day = datetime.fromtimestamp(c["at"], timezone.utc).strftime("%Y-%m-%d")
+            goog_half[k] = resolve(raw.get(c["cid"]), day) == "google.com"
+            if (c["pid"], d) not in ats:
+                ats[(c["pid"], d)] = goog_half[k]
+    rows = defaultdict(Counter)
+    for (p, d), s in start.items():
+        if d not in PAGE_DIRS or s < ts(2017, 7):
+            continue
+        if sum(1 for t in authored[(p, d)] if t < s + 120 * 86400) < 3:
+            continue
+        h = half_of(s)
+        new = first.get(p, 0) >= s - HALF
+        g = ats.get((p, d), False)
+        rows[(d, h)]["arrivals"] += 1
+        rows[(d, h)]["arrivals_new"] += new
+        rows[(d, h)]["g_arrivals"] += g
+        rows[(d, h)]["g_arrivals_new"] += g and new
+    out = []
+    for d in PAGE_DIRS:
+        for y in range(2018, 2027):
+            for hh in (1, 2):
+                h = f"{y}H{hh}"
+                if h > "2026H1":
+                    continue
+                act = [p for p, k in active[d][h].items() if k >= 3]
+                g_act = [p for p in act if goog_half.get((d, h, p))]
+                x = rows[(d, h)]
+                out.append(dict(dir=d, half=h, active=len(act), g_active=len(g_act), **{k: x[k] for k in (
+                    "arrivals", "arrivals_new", "g_arrivals", "g_arrivals_new")},
+                    rate=rnd(x["arrivals"] / len(act), 3) if act else None,
+                    rate_new=rnd(x["arrivals_new"] / len(act), 3) if act else None,
+                    g_rate=rnd(x["g_arrivals"] / len(g_act), 3) if g_act else None,
+                    g_rate_new=rnd(x["g_arrivals_new"] / len(g_act), 3) if g_act else None))
+    return out
+
+
+def inflow_periods(rows):
+    """queue_inflow summed over 2020–22, 2023–24 and 2025 to 2026 H1: rates are arrivals per half-year per
+    100 active authors."""
+    by = defaultdict(Counter)
+    for o in rows:
+        h = o["half"]
+        per = "2020-22" if "2020" <= h < "2023" else "2023-24" if "2023" <= h < "2025" else "2025-26" if h >= "2025" else None
+        if per:
+            for k in ("active", "g_active", "arrivals", "arrivals_new", "g_arrivals", "g_arrivals_new"):
+                by[(o["dir"], per)][k] += o[k]
+    return [dict(dir=d, period=per, arrivals=x["arrivals"], non_google=rnd(1 - x["g_arrivals"] / x["arrivals"], 3),
+                 google_active=rnd(x["g_active"] / x["active"], 3),
+                 rate=rnd(x["arrivals"] / x["active"], 3), rate_new=rnd(x["arrivals_new"] / x["active"], 3),
+                 g_rate=rnd(x["g_arrivals"] / x["g_active"], 3), g_rate_new=rnd(x["g_arrivals_new"] / x["g_active"], 3))
+            for (d, per), x in sorted(by.items())]
+
+
+def print_inflow(rows):
+    print("\n== Arrivals per 100 active authors, by year (all | Google), new to Chromium in brackets")
+    by = defaultdict(lambda: defaultdict(Counter))
+    for o in rows:
+        y = o["half"][:4]
+        for k in ("active", "g_active", "arrivals", "arrivals_new", "g_arrivals", "g_arrivals_new"):
+            by[o["dir"]][y][k] += o[k]
+    for d, ys in by.items():
+        cells = []
+        for y, x in sorted(ys.items()):
+            a = x["active"] or 1
+            ga = x["g_active"] or 1
+            cells.append(f"{y}: {100 * x['arrivals'] / a:.0f} ({100 * x['arrivals_new'] / a:.0f}) | "
+                         f"{100 * x['g_arrivals'] / ga:.0f} ({100 * x['g_arrivals_new'] / ga:.0f}) n{x['active']}")
+        print(d, "\n  " + "\n  ".join(cells))
+
+
 def main():
     ap = argparse.ArgumentParser()
+    ap.add_argument("path", nargs="?", help="summaries/balance.json to add the page's datasets to")
     ap.add_argument("--first-commit", required=True)
     ap.add_argument("--owners-added", required=True)
     ap.add_argument("--mech", required=True)
@@ -349,6 +490,40 @@ def main():
     allB = [w for b in per_q["B"] for w, _ in per_q["B"][b]]
     print(f"one-approver wait p50 A {f2(pct(allA, .5), 1)}; B with A's waits per approver-tenure bin "
           f"{f2(pct(sim, .5), 1)}; B actual {f2(pct(allB, .5), 1)}")
+
+    # ---------------------------------------------------------- the page's datasets
+    new = {}
+    new["queue_learning"] = [
+        dict(dir=d, era=e, bin=i, load_index=rnd(learning(rows[e][d])[2][i]))
+        for d in PAGE_DIRS for e in ERAS for i in range(len(BINS))]
+    new["queue_growth"] = []
+    for o in out:
+        if o[0] in PAGE_DIRS:
+            new["queue_growth"].append(dict(dir=o[0], factor_pre=rnd(o[2]), factor_now=rnd(o[3]), ratio_pre=rnd(o[4]),
+                                            ratio_now=rnd(o[5]), promoted_1719=rnd(o[6]), promoted_2021=rnd(o[7]),
+                                            wait_a=rnd(pct(wa[o[0]], .5)), wait_b=rnd(pct(wb[o[0]], .5))))
+    new["queue_openness"] = []
+    for d in PAGE_DIRS:
+        for y in range(2018, 2027):
+            sh, n = new_share(d, y)
+            new["queue_openness"].append(dict(dir=d, year=y, new_reviewer_share=rnd(sh, 3), approvals=n))
+    new["queue_approver"] = []
+    for b in ("<3y", "3-8y", "8y+"):
+        row = dict(bin=b)
+        for pe in ("A", "B"):
+            row[f"share_{pe.lower()}"] = rnd(mix[pe][b] / sum(mix[pe].values()), 3)
+            row[f"wait_{pe.lower()}"] = rnd(pct([w for w, _ in per_q[pe][b]], .5))
+        new["queue_approver"].append(row)
+    new["queue_blink"] = [dict(wait_a=rnd(pct(allA, .5)), wait_b=rnd(pct(allB, .5)), wait_b_mix=rnd(pct(sim, .5)))]
+    new["queue_quarters"] = queue_quarters(use)
+    new["queue_inflow"] = inflow(commits, cdir, first, authored, start)
+    new["queue_inflow_periods"] = inflow_periods(new["queue_inflow"])
+    print_inflow(new["queue_inflow"])
+    if args.path:
+        data = json.load(open(args.path))
+        data["datasets"].update(new)
+        json.dump(data, open(args.path, "w"), separators=(",", ":"))
+        open(args.path, "a").write("\n")
 
 
 if __name__ == "__main__":

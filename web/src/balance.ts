@@ -45,6 +45,8 @@ export const FMT: Record<string, (v: number) => string> = {
   /** A difference of shares, in percentage points. */
   ptsabs: (v) => `${num(1)(Math.abs(v) * 100)} points`,
   abspct: (v) => pctOf(0)(Math.abs(Math.expm1(v))),
+  /** A rate as a count per 100. */
+  per100: (v) => num(1)(v * 100),
 };
 
 /** The row matching `where` ("k=v&k2=v2", compared as text). */
@@ -1234,6 +1236,70 @@ function trajectories(d: Record<string, Row[]>, eras: [string, string][], tenure
   ], FMT.pct, { zero: true });
 }
 
+// ---- Blink and Chrome: where the longer review queues come from
+
+const QUEUE_DIRS = ['third_party/blink', 'content/browser', 'chrome/browser', 'chrome/android', 'ios/chrome'];
+
+function queues(d: Record<string, Row[]>, theme: Theme) {
+  const color = (i: number) => theme.series[i % theme.series.length];
+  // Quarterly lines, one per directory, and all of Chromium dashed.
+  const qrows = d.queue_quarters.filter((r) => String(r.q) <= LAST_QUARTER);
+  const qs = [...new Set(qrows.map((r) => String(r.q)))].sort();
+  const at = (dir: string, q: string) => qrows.find((r) => r.dir === dir && r.q === q);
+  const perQuarter = (id: string, field: string, fmt: (v: number) => string, opts: { zero?: boolean; ref?: number } = {}) =>
+    line(id, theme, qs.map(qLabel), [
+      ...QUEUE_DIRS.map((dir, i) => ({ label: dir, data: qs.map((q) => (at(dir, q)?.[field] as number | undefined) ?? null), color: color(i) })),
+      { label: 'All of Chromium', data: qs.map((q) => (at('all', q)?.[field] as number | undefined) ?? null), color: theme.muted, dash: true },
+    ], fmt, opts);
+  perQuarter('c-qu-ftr', 'ftr_p50', FMT.h, { zero: true });
+  perQuarter('c-qu-volume', 'cls_index', FMT.n2, { ref: 1 });
+  perQuarter('c-qu-perrev', 'cls_per_reviewer', FMT.n0, { zero: true });
+
+  // Arrivals by year: half-years summed, so a rate is per half-year on average.
+  const years = [2020, 2021, 2022, 2023, 2024, 2025, 2026];
+  const yearLabel = (y: number) => (y === 2026 ? 'Jan–Jun 2026' : String(y));
+  const rate = (dir: string, y: number, num: string, den: string) => {
+    const rs = d.queue_inflow.filter((r) => r.dir === dir && String(r.half).startsWith(String(y)));
+    const n = rs.reduce((a, r) => a + Number(r[num]), 0);
+    const k = rs.reduce((a, r) => a + Number(r[den]), 0);
+    return k ? n / k : null;
+  };
+  for (const [id, num, den] of [['c-qu-inflow', 'arrivals', 'active'], ['c-qu-inflow-g', 'g_arrivals_new', 'g_active']]) {
+    line(id, theme, years.map(yearLabel),
+      QUEUE_DIRS.map((dir, i) => ({ label: dir, data: years.map((y) => rate(dir, y, num, den)), color: color(i) })),
+      FMT.per100, { zero: true });
+  }
+
+  const bins = ['< 6 mo', '6–12 mo', '1–2 y', '2–4 y', '4 y+'];
+  categories('c-qu-learn', d.queue_learning.filter((r) => r.era === 'pre'), theme, {
+    x: 'bin', g: 'dir', v: 'load_index', xs: [0, 1, 2, 3, 4], xl: (x) => bins[Number(x)],
+    groups: QUEUE_DIRS.map((dir) => [dir, dir]) }, FMT.n2, { ref: 1 });
+  categories('c-qu-open', d.queue_openness, theme, {
+    x: 'year', g: 'dir', v: 'new_reviewer_share', xs: [2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025, 2026], xl: String,
+    groups: QUEUE_DIRS.map((dir) => [dir, dir]) }, FMT.pct, { zero: true });
+
+  // Blink's wait by approver tenure, then and now: bars, with each band's share of CLs in the tooltip.
+  const rs = d.queue_approver;
+  const bandLabels = ['Under 3 years', '3–8 years', '8 years or more'];
+  const periods: [string, string][] = [['a', '2024 Q1 to 2025 Q2'], ['b', 'Since April 2026']];
+  const o = options(theme, FMT.h, true, (i) => bandLabels[i]);
+  o.plugins.tooltip.callbacks.label = (i: TooltipItem<'line'>) => {
+    const [k, label] = periods[i.datasetIndex];
+    return `${label}: ${FMT.h(i.parsed.y ?? 0)}, ${FMT.pct(Number(rs[i.dataIndex][`share_${k}`]))} of CLs`;
+  };
+  charts.push(new Chart($<HTMLCanvasElement>('#c-qu-approver'), {
+    type: 'bar',
+    data: {
+      labels: bandLabels,
+      datasets: periods.map(([k, label], i) => ({
+        label, data: rs.map((r) => (r[`wait_${k}`] as number | null) ?? null), backgroundColor: color(i), borderRadius: 2,
+      })),
+    },
+    options: { ...o, plugins: { ...o.plugins, legend: { ...o.plugins.legend, labels: { ...o.plugins.legend.labels, boxHeight: 10, boxWidth: 10 } } },
+      scales: axes(theme, FMT.h, { zero: true }) },
+  } as never));
+}
+
 function render(data: BalanceData) {
   fillFigures(data);
   const d = data.datasets;
@@ -1267,6 +1333,7 @@ function render(data: BalanceData) {
   quarters('c-reverted', d.exchange, theme, [{ field: 'reverted', label: 'Reverted within 30 days' }], FMT.pct1, { zero: true });
 
   areaTable(d.areas);
+  queues(d, theme);
   authorDirs(authorRows, theme);
   authorScatter(authorRows, theme);
 

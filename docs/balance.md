@@ -929,15 +929,63 @@ directly.**
   jumped in 2025H2–2026, together with volume and across nearly every
   platform directory at once.
 
+**Who arrives (2026-11-08).** Someone arrives in a directory with their
+first commit there, if 3 or more of their commits land there within 120
+days. They are new to Chromium if their first commit anywhere was within
+the half-year before. Active authors land 3+ commits there in the
+half-year. Google is the org of the arriving commit's author email
+(`cosh.orgs`: `chromium.org` counts as Google unless the affiliations file
+says otherwise). Rates are arrivals per half-year per 100 active authors.
+Years before 2020 are left out: git starts in 2017, and Blink's
+directories were renamed into `third_party/blink` in 2018–19, which makes
+everyone look new there.
+
+| Directory | All arrivals 2020–22, 2023–24, 2025–26H1 | Googlers new to Chromium, per 100 Google authors | Non-Google share of arrivals, 2025–26H1 |
+|---|---|---|---:|
+| `third_party/blink` | 13.2, 8.2, 10.6 | 7.9, 3.1, 3.4 | 53% |
+| `content/browser` | 15.6, 10.6, 13.4 | 7.6, 3.0, 3.5 | 36% |
+| `chrome/browser` | 15.2, 7.9, 14.2 | 12.8, 4.8, 11.0 | 16% |
+| `chrome/android` | 13.5, 15.1, 20.5 | 9.2, 7.9, 12.1 | 6% |
+| `ios/chrome` | 19.9, 16.5, 18.6 | 12.5, 7.1, 10.3 | 9% |
+
+- **Yes, new people come to blink less than to Chrome's directories,
+  and new Googlers far less.** All five dipped in 2023–24. The 2025–26
+  wave of new people went to the Chrome directories, which got back to
+  10–12 new-to-Chromium Googlers per 100 Google authors. Blink and
+  `content/browser` stayed at about 3.5, under half their 2020–22 rate.
+- Half of blink's arrivals since 2025 are from outside Google (29% in
+  2020–22), and Google authors fell from 80% of blink's active authors to
+  71%.
+- **This feeds the reviewer pipeline, not this year's queue.** Few new
+  Googlers in blink means few future blink reviewers (promotion is
+  mostly of Googlers). Today it adds load through newcomer CLs, which in
+  blink draw 3× the review.
+
+**Load per reviewer doesn't separate the directories either.** Merged CLs
+per active reviewer (in the attention set of 5+ of the directory's CLs in
+the quarter), 2024 → 2026Q3: blink 17–19 → 22, `chrome/browser` 15–16 →
+25, `chrome/android` 17–20 → 27, `content/browser` 10–11 → 12. The Chrome
+directories took on the most volume and the most new reviewers
+(`chrome/browser` 383 active reviewers in 2025Q3, 524 in 2026Q3) and their
+waits barely moved. `content/browser`'s load per reviewer stayed flat
+while its wait doubled.
+
 **Reading it together:** blink's slower first review is a recent, broad
-slowdown that hits every approver group. It looks like reviewers spread
-across more work, in blink and in the platform directories around it,
-rather than a growth problem that suddenly bit. The thin pipeline matters
-indirectly. Blink is the hardest place to grow and has promoted ever fewer
-authors to reviewers. So when volume rose in 2026, there was no new
-reviewer capacity to absorb it, and the busiest 10 approvers took a larger
-share. Testing this further would need the reviewers' work outside blink
-and outside review, which we don't have.
+slowdown that hits every approver group. It's shared by the platform
+directories around it (`content/browser`, `gpu/`, `media/gpu`,
+`components/viz`) and not by the Chrome UI directories, even though the
+Chrome directories' reviewers took on more CLs each. So it's neither a
+growth problem that suddenly bit nor simply more CLs per reviewer in the
+directory. The likeliest explanation is that platform reviewers' time is
+going elsewhere, to review in other directories or to work outside
+review, which these data don't show. The thin pipeline matters
+indirectly. Blink is the hardest place to grow, attracts few new
+Googlers, and has promoted ever fewer authors to reviewers. So when its
+volume rose in 2026, no new reviewers absorbed it, and the busiest 10
+approvers took a larger share.
+
+The page shows this as "Blink and Chrome: where the longer review queues
+come from" (`#queues`), from the `queue_*` datasets this script writes.
 
 This seems to contradict section 6b's "individual reviewers are not
 slower". The two measure different things. Here it is time from the CL
@@ -945,8 +993,9 @@ being sent to its first substantive review. There it is time from a given
 reviewer being added to their own first comment.
 
 Rerun: `COSH_DATA_DIR=<main>/data/private python3 scripts/balance_dirgrowth.py
---first-commit F --owners-added O --mech M [--min-cls 800]` (prints only;
-about 5 min).
+[summaries/balance.json] --first-commit F --owners-added O --mech M
+[--min-cls 800]` (prints the tables; with the path, also writes the
+page's `queue_*` datasets; about 5 min).
 
 ### 7. AI-marked CLs
 

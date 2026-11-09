@@ -432,6 +432,137 @@
         <div id="dir-chart" class="hm-wrap dirmap" role="region" tabindex="0" aria-labelledby="dirs-title"></div>
       </section>
 
+      <section id="queues" class="card" aria-labelledby="queues-title">
+        <a class="card-anchor" href="#queues" aria-label="Link to this section" title="Link to this section">#</a>
+        <h2 id="queues-title">Blink and Chrome: where the longer review queues come from</h2>
+        <p class="sub">
+          The median wait for a first substantive review in <code>third_party/blink</code> more than doubled, from
+          <b data-src="queue_growth" data-field="wait_a" data-where="dir=third_party/blink" data-fmt="h">–</b> in
+          2024 Q1 to 2025 Q2 to
+          <b data-src="queue_growth" data-field="wait_b" data-where="dir=third_party/blink" data-fmt="h">–</b> since
+          April 2026, and so did <code>content/browser</code>'s. In <code>chrome/browser</code> it went only from
+          <b data-src="queue_growth" data-field="wait_a" data-where="dir=chrome/browser" data-fmt="h">–</b> to
+          <b data-src="queue_growth" data-field="wait_b" data-where="dir=chrome/browser" data-fmt="h">–</b>. This
+          section compares five big directories on what feeds a review queue: how many CLs arrive, how many
+          reviewers share them, how many new people start working there, how hard the code is to learn, and how
+          quickly authors there become reviewers.
+        </p>
+        <p class="note">
+          A CL or commit belongs to the 2-level directory holding most of its lines. Merged, human-owned CLs,
+          mechanical ones left out.
+        </p>
+
+        <h3>The queue</h3>
+        <p class="note">
+          Chrome's directories took on the most new CLs and the most new reviewers, and their waits barely moved.
+          Blink's CLs grew less, but its active reviewers didn't grow, so each of them shares about a fifth more
+          CLs than in 2024. But <code>chrome/browser</code>'s reviewers took on half as many again without slowing, and
+          <code>content/browser</code>'s load per reviewer stayed flat while its wait doubled: load within the
+          directory doesn't explain the difference on its own. An active reviewer is in the attention set of 5 or
+          more of the directory's CLs that quarter.
+        </p>
+        <div class="panels">
+          <figure class="panel"><h3>Hours to first substantive review</h3>
+            <p class="note">Median clock hours from being sent for review. The dashed line is all of Chromium.</p>
+            <div class="chart"><canvas id="c-qu-ftr" role="img" aria-label="Median hours to first substantive review per quarter, for five directories and all of Chromium."></canvas></div></figure>
+          <figure class="panel"><h3>Merged CLs against 2024</h3>
+            <p class="note">Each directory's CLs per quarter, 1.0 being its 2024 average.</p>
+            <div class="chart"><canvas id="c-qu-volume" role="img" aria-label="Merged CLs per quarter relative to each directory's 2024 average, for five directories and all of Chromium."></canvas></div></figure>
+          <figure class="panel"><h3>CLs per active reviewer</h3>
+            <p class="note">Merged CLs ÷ active reviewers, per quarter.</p>
+            <div class="chart"><canvas id="c-qu-perrev" role="img" aria-label="Merged CLs per active reviewer per quarter, for five directories and all of Chromium."></canvas></div></figure>
+        </div>
+
+        <h3>Who arrives</h3>
+        <p class="note">
+          Fewer new people start working in blink, and far fewer of them are Googlers new to Chromium. From 2025
+          to June 2026, per 100 active Google authors in the directory each half-year, blink gained
+          <b data-src="queue_inflow_periods" data-field="g_rate_new" data-where="dir=third_party/blink&amp;period=2025-26" data-fmt="per100">–</b>
+          Googlers new to Chromium, against
+          <b data-src="queue_inflow_periods" data-field="g_rate_new" data-where="dir=chrome/browser&amp;period=2025-26" data-fmt="per100">–</b>
+          in <code>chrome/browser</code> and
+          <b data-src="queue_inflow_periods" data-field="g_rate_new" data-where="dir=chrome/android&amp;period=2025-26" data-fmt="per100">–</b>
+          in <code>chrome/android</code>. In 2020–22 it was
+          <b data-src="queue_inflow_periods" data-field="g_rate_new" data-where="dir=third_party/blink&amp;period=2020-22" data-fmt="per100">–</b>.
+          The Chrome directories recovered from a 2023–24 dip with the 2025 wave of new people; blink and
+          <code>content/browser</code> didn't. Of the people who started in blink since 2025,
+          <b data-src="queue_inflow_periods" data-field="non_google" data-where="dir=third_party/blink&amp;period=2025-26" data-fmt="pct">–</b>
+          are from outside Google, against
+          <b data-src="queue_inflow_periods" data-field="non_google" data-where="dir=chrome/browser&amp;period=2025-26" data-fmt="pct">–</b>
+          in <code>chrome/browser</code>.
+        </p>
+        <p class="note">
+          Someone arrives in a directory with their first commit there, if 3 or more of their commits land there
+          within 4 months. They are new to Chromium if their first commit anywhere was within the half-year before.
+          Active authors land 3 or more commits there in the half-year. Google is the org of the author's email
+          (<code>chromium.org</code> counts as Google unless Chromium's affiliations file says otherwise). Years
+          before 2020 are left out: git history starts in 2017, and Blink's own directories were renamed into
+          <code>third_party/blink</code> in 2018–19. 2026 is January to June.
+        </p>
+        <div class="panels">
+          <figure class="panel"><h3>New arrivals</h3>
+            <p class="note">People arriving per 100 active authors each half-year, averaged over the year.</p>
+            <div class="chart"><canvas id="c-qu-inflow" role="img" aria-label="People arriving in each of five directories per 100 active authors each half-year, by year since 2020."></canvas></div></figure>
+          <figure class="panel"><h3>Googlers new to Chromium</h3>
+            <p class="note">Per 100 active Google authors in the directory each half-year.</p>
+            <div class="chart"><canvas id="c-qu-inflow-g" role="img" aria-label="Googlers new to Chromium arriving in each of five directories per 100 active Google authors each half-year, by year since 2020."></canvas></div></figure>
+        </div>
+
+        <h3>Growing into a reviewer</h3>
+        <p class="note">
+          Blink is the hardest of these directories to grow in: a CL by someone in their first year there draws
+          <b data-src="queue_growth" data-field="ratio_pre" data-where="dir=third_party/blink" data-fmt="x">–</b>
+          the review of one by someone with 4 or more years there, against
+          <b data-src="queue_growth" data-field="ratio_pre" data-where="dir=chrome/browser" data-fmt="x">–</b>
+          in <code>chrome/browser</code>, and that hasn't changed since AI tools arrived. Fewer of its authors
+          become reviewers: of people who joined Chromium since 2017 and started in blink in 2017–19,
+          <b data-src="queue_growth" data-field="promoted_1719" data-where="dir=third_party/blink" data-fmt="pct">–</b>
+          were approving others' blink CLs regularly within 3 years; of those who started in 2020–21,
+          <b data-src="queue_growth" data-field="promoted_2021" data-where="dir=third_party/blink" data-fmt="pct">–</b>.
+          In <code>chrome/browser</code> it held at
+          <b data-src="queue_growth" data-field="promoted_2021" data-where="dir=chrome/browser" data-fmt="pct">–</b>.
+          In 2026 people under 3 years on the project gave
+          <b data-src="queue_openness" data-field="new_reviewer_share" data-where="dir=third_party/blink&amp;year=2026" data-fmt="pct">–</b>
+          of blink's approvals, down from
+          <b data-src="queue_openness" data-field="new_reviewer_share" data-where="dir=third_party/blink&amp;year=2020" data-fmt="pct">–</b>
+          in 2020.
+        </p>
+        <div class="panels">
+          <figure class="panel"><h3>Review load by time in the directory</h3>
+            <p class="note"><button type="button" class="term" popovertarget="def-load-index">Load index</button>
+              by the author's time since their first commit in the directory, July 2023 to 2024. A steeper fall means
+              more to learn.</p>
+            <div class="chart"><canvas id="c-qu-learn" role="img" aria-label="Review load index by the author's time in the directory, for five directories, July 2023 to 2024."></canvas></div></figure>
+          <figure class="panel"><h3>Approvals by people new to the project</h3>
+            <p class="note">Share of the directory's approvals (<code>Reviewed-by</code>) given by people under 3
+              years since their first Chromium commit. 2026 runs to October.</p>
+            <div class="chart"><canvas id="c-qu-open" role="img" aria-label="Share of each of five directories' approvals given by people under 3 years on the project, by year."></canvas></div></figure>
+        </div>
+
+        <h3>Does that explain blink's longer waits?</h3>
+        <p class="note">
+          Not directly. If blink's CLs with one approver had kept their 2024 Q1 to 2025 Q2 waits for their
+          approver's years on the project, the median would be
+          <b data-src="queue_blink" data-field="wait_b_mix" data-where="" data-fmt="h">–</b> since April 2026, not
+          <b data-src="queue_blink" data-field="wait_b" data-where="" data-fmt="h">–</b>: the shift to longer-serving
+          approvers explains none of it, and approvers of every tenure slowed. Across 22 directories, those that are
+          hard to learn didn't slow more, and those that took on fewer new reviewers slowed only slightly more.
+          The thin pipeline works indirectly: blink attracts and promotes fewer people, so when its volume rose in
+          2026 no new reviewers absorbed it. But the slowdown is shared by <code>content/browser</code>,
+          <code>gpu/</code>, <code>media/gpu</code> and <code>components/viz</code>, which suggests the platform
+          reviewers' time is going elsewhere, to work these data don't show.
+        </p>
+        <div class="panels">
+          <figure class="panel"><h3>Blink's wait by approver's years on the project</h3>
+            <p class="note">Median hours to first substantive review, CLs with one approver.</p>
+            <div class="chart"><canvas id="c-qu-approver" role="img" aria-label="Median hours to first substantive review of blink CLs with one approver, by the approver's years on the project, 2024 Q1 to 2025 Q2 against since April 2026."></canvas></div></figure>
+        </div>
+        <p class="note">
+          Method and more directories: <a href="https://github.com/RByers/cosh/blob/main/docs/balance.md#2b-blinks-rise-in-review-delay-2026-11-08" target="_blank" rel="noopener">docs/balance.md</a>,
+          sections 2b and 6c.
+        </p>
+      </section>
+
       <section id="authors" class="card" aria-labelledby="authors-title">
         <a class="card-anchor" href="#authors" aria-label="Link to this section" title="Link to this section">#</a>
         <h2 id="authors-title">Authors in the last year: breadth and review load</h2>
