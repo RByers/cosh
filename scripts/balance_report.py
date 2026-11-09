@@ -47,6 +47,35 @@ def r(x, n=2):
     return None if x is None or (isinstance(x, float) and math.isnan(x)) else round(x, n)
 
 
+OPEN_SHARE = 0.01     # below 3 levels, a directory opens only with over 1% of the CLs
+CHAIN_SHARE = 0.9     # a deeper directory whose one listed child has this share is skipped
+
+
+def dir_tree(counts, total, listed):
+    """The directories to list, of `counts` ({path: CLs}). A directory is
+    listed when listed(path) holds and it is at most 3 levels deep or each of
+    its ancestors from level 3 down has over OPEN_SHARE of `total`. Below
+    level 3, a directory with a single listed child holding CHAIN_SHARE of its
+    CLs is left out (java/src/org/chromium/...), and the page puts the child
+    under the nearest listed ancestor."""
+    def depth(p):
+        return p.count("/")
+
+    def opens(p):
+        return depth(p) < 3 or counts[p] > OPEN_SHARE * total
+
+    def ancestors(p):
+        parts = p.rstrip("/").split("/")
+        return ["/".join(parts[:k]) + "/" for k in range(1, len(parts))]
+    keep = {p for p in counts if listed(p) and all(opens(a) for a in ancestors(p))}
+    kids = defaultdict(list)
+    for p in keep:
+        if depth(p) > 1:
+            kids[ancestors(p)[-1]].append(p)
+    skip = {p for p in keep if depth(p) > 3 and len(kids[p]) == 1 and counts[kids[p][0]] >= CHAIN_SHARE * counts[p]}
+    return sorted(keep - skip)
+
+
 def mech_set(path):
     out = set()
     for line in open(path):
@@ -88,6 +117,7 @@ def main():
     cls, commits, ids, first, owner_at, ai = G.load_all(args)
     mech = mech_set(args.mech)
     dirs3 = A.commit_dirs(3)
+    main_dir = A.commit_main_dirs(3)
     top2 = {}
     for c in commits:
         d = dirs3.get(c["cid"])
@@ -268,15 +298,14 @@ def main():
 
     # -------------------------------------------------------------- by area
     # 2024 against the last four quarters, per directory: each CL counts in
-    # its main 3-level directory (most changed lines) and that directory's
-    # ancestors, like the quarterly tree below. A directory is kept when both
-    # eras have AREA_MIN CLs. Rows are flat: y24_<measure> and now_<measure>.
+    # its main directory and that directory's ancestors, like the quarterly
+    # tree below. The main directory is the 3-level one with the most changed
+    # lines, then down into its heaviest subdirectory while that outweighs the
+    # files directly in it (A.commit_main_dirs). A directory is kept when both
+    # eras have AREA_MIN CLs and dir_tree lists it. Rows are flat:
+    # y24_<measure> and now_<measure>.
     AREA_MIN = 200
-    top3 = {}
-    for c in commits:
-        d = dirs3.get(c["cid"])
-        if c["n"] and d:
-            top3[c["n"]] = d[0]
+    top3 = {c["n"]: main_dir[c["cid"]] for c in commits if c["n"] and c["cid"] in main_dir}
 
     def era(c):
         y = A.year(c["closed_at"])
@@ -295,8 +324,11 @@ def main():
         for k in range(1, len(parts) + 1):
             ar["/".join(parts[:k]) + "/"][e].append(c)
     areas = []
+    era_n = Counter(e for c in use if (e := era(c)) and c["change_number"] in top3)
+    shown = set(dir_tree({a: len(es["y24"]) + len(es["now"]) for a, es in ar.items()}, era_n["y24"] + era_n["now"],
+                         lambda a: len(ar[a]["y24"]) >= AREA_MIN and len(ar[a]["now"]) >= AREA_MIN))
     for a, es in ar.items():
-        if len(es["y24"]) < AREA_MIN or len(es["now"]) < AREA_MIN:
+        if a not in shown:
             continue
         row = dict(area=a)
         for e in ("y24", "now"):
@@ -320,10 +352,10 @@ def main():
     out["areas"] = areas
 
     # ------------------------------------- directory tree by quarter (heatmaps)
-    # Each CL counts in its main 3-level directory (most changed lines) and
-    # that directory's ancestors. Directories with under DIR_MIN CLs over the
-    # whole period are left out, so a directory's listed children needn't add
-    # up to it.
+    # Each CL counts in its main directory (as above) and that directory's
+    # ancestors. Directories with under DIR_MIN CLs over the whole period, or
+    # that dir_tree leaves out, aren't listed, so a directory's listed
+    # children needn't add up to it.
     DIR_MIN = 300
     cells = defaultdict(list)
     for c in use:
@@ -336,7 +368,8 @@ def main():
     totals = Counter()
     for (path, _), s in cells.items():
         totals[path] += len(s)
-    keep = sorted(p for p, n in totals.items() if n >= DIR_MIN)
+    n_cls = sum(n for p, n in totals.items() if p.count("/") == 1)
+    keep = dir_tree(totals, n_cls, lambda p: totals[p] >= DIR_MIN)
 
     def dir_cell(s):
         rv = [c for c in s if c["first_review_at"]]

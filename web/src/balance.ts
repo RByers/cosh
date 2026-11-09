@@ -861,7 +861,7 @@ const AREA_COLS: [string, (v: number) => string][] = [
   ['ftr_p50', FMT.n1], ['review_time_p50', FMT.n1], ['newcomer_share', FMT.pct1],
 ];
 
-/** Shading, 0..1, for each measure: CLs on a log scale (directories span three levels), the rest
+/** Shading, 0..1, for each measure: CLs on a log scale (directories span many levels), the rest
  * linear from the 5th to the 95th percentile of every directory's two values. */
 export function areaScales(rows: Row[]): Record<string, (v: number) => number> {
   const out: Record<string, (v: number) => number> = {};

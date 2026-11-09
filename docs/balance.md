@@ -902,12 +902,22 @@ equals p10 (1 CL, no lines changed after review), so nothing is lost there. "How
 reviewers per quarter, by CLs commented on and by threads started
 (`reviewer_load_hist` and its 100-or-more summary `reviewer_load_top` from
 `balance_report.py`, copied into `balance.json` on 2026-11-08). "Directories over time" is an expandable heatmap of
-directories (to three levels) by quarter, from `summaries/balance_dirs.json`
+directories by quarter, from `summaries/balance_dirs.json`
 (`dirs` in `balance_report.py`'s output), with a choice of measure.
 "Across the codebase" is the same tree as an expandable table, 2024 against
 the last four quarters (`areas` in `balance_report.py`'s output, rows flat
-as `y24_<measure>` and `now_<measure>`): each CL counts in its main 3-level
+as `y24_<measure>` and `now_<measure>`): each CL counts in its main
 directory and its parents, and a directory needs 200 CLs in each period.
+Since 2026-11-08 both trees go below three levels: a CL's main directory is
+its main 3-level one (most changed lines), then down into the subdirectory
+with the most lines while that outweighs the files directly in it
+(`balance_analysis.commit_main_dirs`). Levels 1–3 list as before; below
+that a directory opens only when it has over 1% of the CLs (`OPEN_SHARE`
+in `balance_report.dir_tree`), and a directory with one listed child
+holding 90% of its CLs is skipped, so Java package chains such as
+`chrome/android/java/src/org/chromium/chrome/browser/` show as one row.
+That added 122 rows to the heatmap (to 388, 218 KB) and 42 to the table
+(to 147), the deepest nine levels down.
 Cells are shaded on one scale per measure, so both periods and every row
 compare at a glance. Rebuilt 2026-11-08 by copying `areas` from a fresh
 `report.json` into `balance.json`.

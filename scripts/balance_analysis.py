@@ -249,6 +249,57 @@ def commit_dirs(depth=3):
     return out
 
 
+def commit_main_dirs(depth=3):
+    """{commit_id: main directory at any depth}. Starts from the main
+    `depth`-level directory of commit_dirs (same weights, same choice), then
+    steps down into the subdirectory with the most lines for as long as it
+    outweighs the files directly in the current directory."""
+    db = ro(balance.db_path("git"))
+    paths = dict(db.execute("SELECT path_id, path FROM paths"))
+    cache, out, cur, files = {}, {}, None, []
+
+    def done():
+        if cur is None or not files:
+            return
+        acc = {}
+        for parts, w in files:
+            d = dir_of_parts(parts, depth)
+            acc[d] = acc.get(d, 0) + w
+        top = max(acc, key=acc.get)
+        here = next(p[:depth] for p, _ in files if dir_of_parts(p, depth) == top)
+        if len(here) < depth:          # files directly in a shallower directory
+            out[cur] = top
+            return
+        here = list(here)
+        sub = [(p, w) for p, w in files if p[:depth] == tuple(here)]
+        while True:
+            k, acc = len(here), {}
+            for p, w in sub:
+                c = p[k] if len(p) > k else None
+                acc[c] = acc.get(c, 0) + w
+            best = max(acc, key=acc.get)
+            if best is None:
+                break
+            here.append(best)
+            sub = [(p, w) for p, w in sub if len(p) > k and p[k] == best]
+        out[cur] = sys.intern("/".join(here) + "/")
+    for cid, pid, ins, dels in db.execute("SELECT commit_id, path_id, ins, dels FROM gfiles"):
+        if cid != cur:
+            done()
+            cur, files = cid, []
+        parts = cache.get(pid)
+        if parts is None:
+            parts = cache[pid] = tuple(paths[pid].split("/")[:-1])
+        files.append((parts, max(ins, 0) + max(dels, 0) + 1))
+    done()
+    return out
+
+
+def dir_of_parts(parts, depth):
+    """dir_of for a path already split into its directories."""
+    return "/".join(parts[:depth]) + "/" if parts else "(root)/"
+
+
 def size_bucket(lines):
     return 0 if lines < 10 else 1 if lines < 50 else 2 if lines < 250 else 3 if lines < 1000 else 4
 
