@@ -1,5 +1,5 @@
 {
- "generated_at": "2026-11-08T13:05:46Z",
+ "generated_at": "2026-11-10T22:39:38Z",
  "prompt": "v3",
  "weeks": [
   "2025-W45",
@@ -99,11 +99,6 @@
      "month": "2025-11"
     },
     {
-     "text": "I totally fail to understand you.\n\nThe .grd has a desc and examples of value. \nPlease give an example of what you want to do instead. That seems to be the best case solution, the work done properly. And you seem to decrease code quality.\n\nLearn from this mistake or be very convincing about why this is a bad implementation",
-     "score": -0.8,
-     "month": "2026-10"
-    },
-    {
      "text": "Sorry, but this submission isn't anywhere near the quality we'd expect from a contributor :(.",
      "score": -0.8,
      "month": "2026-08"
@@ -117,11 +112,6 @@
      "text": "Honestly this feels like a waste of my time!",
      "score": -0.7,
      "month": "2026-01"
-    },
-    {
-     "text": "this is not acceptable. You can't just add extra code on top of existing code. The fact this file increased in LOC by 72 is a sign that you didn't solve the problem in the simplest way. You could just modify `on_lookup_done` instead.",
-     "score": -0.7,
-     "month": "2026-02"
     },
     {
      "text": "(Posting basically the same thing again most likely does not unclog any pipes... Just a thought.)",
@@ -142,6 +132,16 @@
      "text": "\"Acknowledged\" is not an appropriate response to a question. What is the current state of the world on various platforms with this setting? What is the impact of making such a change.",
      "score": -0.6,
      "month": "2026-06"
+    },
+    {
+     "text": "Actually, this entire paragraph is useless. The entire rest of the commit message explains what’s going on with an adequate level of detail. You don’t need to name the function in the commit message. And “making it reusable?” Come on…",
+     "score": -0.6,
+     "month": "2026-07"
+    },
+    {
+     "text": "We should not erase tab from closed list on new navigation. I tried to explain this a few times in previous comments. Please let me know if this is causing some problem I'm not seeing",
+     "score": -0.6,
+     "month": "2025-12"
     }
    ]
   },
@@ -598,11 +598,6 @@
    ],
    "grumpy": [
     {
-     "text": "I totally fail to understand you.\n\nThe .grd has a desc and examples of value. \nPlease give an example of what you want to do instead. That seems to be the best case solution, the work done properly. And you seem to decrease code quality.\n\nLearn from this mistake or be very convincing about why this is a bad implementation",
-     "score": -0.8,
-     "month": "2026-10"
-    },
-    {
      "text": "Sorry, but this submission isn't anywhere near the quality we'd expect from a contributor :(.",
      "score": -0.8,
      "month": "2026-08"
@@ -611,11 +606,6 @@
      "text": "Honestly this feels like a waste of my time!",
      "score": -0.7,
      "month": "2026-01"
-    },
-    {
-     "text": "this is not acceptable. You can't just add extra code on top of existing code. The fact this file increased in LOC by 72 is a sign that you didn't solve the problem in the simplest way. You could just modify `on_lookup_done` instead.",
-     "score": -0.7,
-     "month": "2026-02"
     },
     {
      "text": "(Posting basically the same thing again most likely does not unclog any pipes... Just a thought.)",
@@ -646,6 +636,16 @@
      "text": "How can it be that neither the author nor any reviewer saw that a change in indentation has created havoc in this file?",
      "score": -0.6,
      "month": "2026-04"
+    },
+    {
+     "text": "This CL isn't urgent, is it? Please normally don't resolve comments and land CLs if there are open questions.\n\nThe use of Object.equals() does not address that this is a footgun and, AFAICT, not idiomatic (Chromium-style) Java.",
+     "score": -0.6,
+     "month": "2026-08"
+    },
+    {
+     "text": "This CL doesn't even begin to implement the semantics that would be needed to approach what the spec says, so it seems quite unfinished.",
+     "score": -0.6,
+     "month": "2026-10"
     }
    ]
   },
@@ -845,11 +845,6 @@
    ],
    "grumpy": [
     {
-     "text": "this is not acceptable. You can't just add extra code on top of existing code. The fact this file increased in LOC by 72 is a sign that you didn't solve the problem in the simplest way. You could just modify `on_lookup_done` instead.",
-     "score": -0.7,
-     "month": "2026-02"
-    },
-    {
      "text": "this clearly can't happen since it's right after setDelegates\n\nplease re-examine every instance of this pattern you are adding and justify every instance why it's needed\n\ndo not just add unnecessary null checks since they are very hard to remove and end up hiding real bugs",
      "score": -0.6,
      "month": "2026-02"
@@ -871,11 +866,6 @@
     },
     {
      "text": "I'm not even going to try to read this. Please move this in a separate script file (either Shell or Python, I don't mind, although you may have to switch to Python for it to be readable) with clear inputs, clear outputs and clear intermediate steps.",
-     "score": -0.6,
-     "month": "2026-02"
-    },
-    {
-     "text": "This is super awkward, verbose, and fragile compared to the code it replaced. The mojom method does not need all these parameters, it only needs the storage key. Replace the UpdateOrCreateBucket method you created with UpdateOrCreateDefaultBucket which just takes a storage key.",
      "score": -0.6,
      "month": "2026-02"
     },
@@ -1248,6 +1238,11 @@
      "month": "2026-05"
     },
     {
+     "text": "This obviously makes this function inconsistent in box ordering. Could you please explain what you're trying to do here instead of sending arbitrary code that seemingly fixes the bug?",
+     "score": -0.6,
+     "month": "2026-05"
+    },
+    {
      "text": "Understood. Once again, I can please ask you not to close comments until the question has been fully answered and the person asking the question gets to decide that. This one has been answered now.",
      "score": -0.6,
      "month": "2026-05"
@@ -1279,11 +1274,6 @@
     },
     {
      "text": "Your CL generally looks good, but we need something more than just \"acknowledged\" on every comment with no changes. Please either take my \"nit\" suggestions, or respond with your reasoning if you don't want to make those changes. When I say \"nit\" I mean \"sorry for calling out a small detail but please do address it\". If I intend for a comment to be optional I'll say so.",
-     "score": -0.6,
-     "month": "2026-05"
-    },
-    {
-     "text": "Maybe calm down when writing code. Same for below :)",
      "score": -0.6,
      "month": "2026-05"
     }
@@ -1515,6 +1505,11 @@
      "month": "2026-07"
     },
     {
+     "text": "A lot of them are not really used. Is this a first CL?\nThe purpose of this CL is very unclear. It would have been much easier if the purpose of each CL was clear.",
+     "score": -0.6,
+     "month": "2026-07"
+    },
+    {
      "text": "that sounds like you are saying \"synchronization lock\" just isn't needed, then why not just do what I suggested before and just start with display-sized surface when drag starts, and don't bother with growing surfaceview on size increase?\n\nwe are going in circles here...",
      "score": -0.6,
      "month": "2026-07"
@@ -1530,17 +1525,7 @@
      "month": "2026-06"
     },
     {
-     "text": "Remove unrelated new line. Why did you keep adding these??",
-     "score": -0.6,
-     "month": "2026-07"
-    },
-    {
      "text": "i understand this, but for review, you dont need the same change in this cl and the other cl, like i said. if that is true, then you should A) chain it, or B), dont have me review this cl yet",
-     "score": -0.6,
-     "month": "2026-07"
-    },
-    {
-     "text": "Seriously, you still have two overloads of the constructor???\n\nThe caller should just bind and pass the `GetDesktopSessionCallback`.\n\nMake sure you only have **ONE CONSTRUCTOR**.",
      "score": -0.6,
      "month": "2026-07"
     },
@@ -1654,21 +1639,6 @@
      "text": "Please DO NOT ADD THIS TO THE OMNIBOX CODE.\n\nThis is toxic.\n\nThis is a\n- Do something\n- Don't do something\n- Take your best guess ⬅ this is a major problem\n\nDo NOT add this to the Omnibox please.",
      "score": -0.6,
      "month": "2026-08"
-    },
-    {
-     "text": "Do not be lazy and pass args with `RefCountedData`. You can add them individually to the bind closure.",
-     "score": -0.6,
-     "month": "2026-08"
-    },
-    {
-     "text": "please read my comment - or better yet - my chat.",
-     "score": -0.6,
-     "month": "2026-08"
-    },
-    {
-     "text": "So.. a completely new approach, but there is still no web test, nor instructions on how to reproduce the failure.\n\nSorry. I don't want to spend more time on this. I wasn't even the right reviewer for it in the first place.",
-     "score": -0.6,
-     "month": "2026-08"
     }
    ]
   },
@@ -1767,22 +1737,12 @@
      "month": "2026-09"
     },
     {
-     "text": "still failing. Next time, please make sure it passes before sending to us.",
-     "score": -0.6,
-     "month": "2026-09"
-    },
-    {
      "text": "Obviously, in the future please don't make such large change.\nThis prevents making a good review.",
      "score": -0.6,
      "month": "2026-09"
     },
     {
      "text": "Sigh... So many programmers get window hooks so wrong... or just do stupid things.",
-     "score": -0.6,
-     "month": "2026-09"
-    },
-    {
-     "text": "Stop all these irrelevant changes.",
      "score": -0.6,
      "month": "2026-09"
     },
@@ -1878,17 +1838,7 @@
    ],
    "grumpy": [
     {
-     "text": "I totally fail to understand you.\n\nThe .grd has a desc and examples of value. \nPlease give an example of what you want to do instead. That seems to be the best case solution, the work done properly. And you seem to decrease code quality.\n\nLearn from this mistake or be very convincing about why this is a bad implementation",
-     "score": -0.8,
-     "month": "2026-10"
-    },
-    {
      "text": "(Posting basically the same thing again most likely does not unclog any pipes... Just a thought.)",
-     "score": -0.6,
-     "month": "2026-10"
-    },
-    {
-     "text": "I told you to move it to a different file so that the helper can be reused!",
      "score": -0.6,
      "month": "2026-10"
     },
@@ -1918,12 +1868,22 @@
      "month": "2026-10"
     },
     {
-     "text": "again, why are we so obsessed with the overlay_token in this CL??? This CL really should only be making changes to UpdateImplicitTabContext() OnPageChanged. I don't understand why any of these logical differences in this CL are necessary?",
+     "text": "Wow...this just seems like a really bad idea. Not suggesting any changes in this CL, just noticed it, and shocked that someone thought this was a good idea.",
      "score": -0.6,
      "month": "2026-10"
     },
     {
-     "text": "Wow...this just seems like a really bad idea. Not suggesting any changes in this CL, just noticed it, and shocked that someone thought this was a good idea.",
+     "text": "There are so many issues in detail, but let me focus on high-level comments in this round. I think this change needs to restart considering the best CL split so that the author and reviewer can understand what the change does. I have a strong concern on the point this change contains so many wrong comments.",
+     "score": -0.6,
+     "month": "2026-10"
+    },
+    {
+     "text": "Why are we landing an ugly hack instead of properly fixing? We don't land hacks and expect 'owners of this file' to fix them later.\n\nPlease fix this properly.",
+     "score": -0.6,
+     "month": "2026-10"
+    },
+    {
+     "text": "It's not acceptable.  Please fix the crash first, or drop this test.",
      "score": -0.6,
      "month": "2026-10"
     }

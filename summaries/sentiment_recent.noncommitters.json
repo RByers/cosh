@@ -1,5 +1,5 @@
 {
- "generated_at": "2026-11-08T13:10:08Z",
+ "generated_at": "2026-11-10T22:38:30Z",
  "prompt": "v3",
  "weeks": [
   "2025-W45",
@@ -15,419 +15,419 @@
  "weekly": [
   {
    "week": "2025-W45",
-   "n": 402,
-   "mean": 0.0269,
-   "glowing": 0.01,
-   "angry": 0.0025,
+   "n": 293,
+   "mean": 0.0307,
+   "glowing": 0.0137,
+   "angry": 0.0034,
    "ai": 0
   },
   {
    "week": "2025-W46",
-   "n": 378,
-   "mean": 0.0201,
-   "glowing": 0.0079,
-   "angry": 0.0159,
+   "n": 266,
+   "mean": 0.0256,
+   "glowing": 0.0113,
+   "angry": 0.0188,
    "ai": 0
   },
   {
    "week": "2025-W47",
-   "n": 508,
-   "mean": 0.0262,
-   "glowing": 0.0098,
-   "angry": 0.002,
+   "n": 364,
+   "mean": 0.0288,
+   "glowing": 0.0137,
+   "angry": 0.0027,
    "ai": 1
   },
   {
    "week": "2025-W48",
-   "n": 389,
-   "mean": 0.0234,
-   "glowing": 0.0103,
-   "angry": 0.0129,
+   "n": 278,
+   "mean": 0.0259,
+   "glowing": 0.0108,
+   "angry": 0.0108,
    "ai": 4
   },
   {
    "week": "2025-W49",
-   "n": 414,
-   "mean": 0.0278,
-   "glowing": 0.0266,
-   "angry": 0.0169,
+   "n": 313,
+   "mean": 0.031,
+   "glowing": 0.0288,
+   "angry": 0.0224,
    "ai": 0
   },
   {
    "week": "2025-W50",
-   "n": 418,
-   "mean": 0.0244,
-   "glowing": 0.0048,
-   "angry": 0.0024,
+   "n": 322,
+   "mean": 0.0261,
+   "glowing": 0.0031,
+   "angry": 0.0031,
    "ai": 0
   },
   {
    "week": "2025-W51",
-   "n": 363,
-   "mean": 0.0251,
-   "glowing": 0.0138,
+   "n": 254,
+   "mean": 0.0335,
+   "glowing": 0.0197,
    "angry": 0.0,
    "ai": 0
   },
   {
    "week": "2025-W52",
-   "n": 134,
-   "mean": 0.006,
-   "glowing": 0.0149,
-   "angry": 0.0224,
+   "n": 93,
+   "mean": 0.0054,
+   "glowing": 0.0215,
+   "angry": 0.0323,
    "ai": 0
   },
   {
    "week": "2026-W01",
-   "n": 111,
-   "mean": 0.0351,
+   "n": 77,
+   "mean": 0.0403,
    "glowing": 0.0,
    "angry": 0.0,
    "ai": 0
   },
   {
    "week": "2026-W02",
-   "n": 495,
-   "mean": 0.0325,
-   "glowing": 0.0242,
-   "angry": 0.0061,
+   "n": 360,
+   "mean": 0.0386,
+   "glowing": 0.0306,
+   "angry": 0.0083,
    "ai": 0
   },
   {
    "week": "2026-W03",
-   "n": 526,
-   "mean": 0.0221,
-   "glowing": 0.0152,
-   "angry": 0.0057,
+   "n": 395,
+   "mean": 0.0263,
+   "glowing": 0.0203,
+   "angry": 0.0076,
    "ai": 0
   },
   {
    "week": "2026-W04",
-   "n": 447,
-   "mean": 0.0183,
-   "glowing": 0.0112,
-   "angry": 0.0112,
+   "n": 315,
+   "mean": 0.0248,
+   "glowing": 0.0159,
+   "angry": 0.0095,
    "ai": 0
   },
   {
    "week": "2026-W05",
-   "n": 544,
-   "mean": 0.0189,
-   "glowing": 0.0129,
-   "angry": 0.0221,
+   "n": 413,
+   "mean": 0.023,
+   "glowing": 0.0169,
+   "angry": 0.0242,
    "ai": 0
   },
   {
    "week": "2026-W06",
-   "n": 484,
-   "mean": 0.0039,
-   "glowing": 0.0062,
-   "angry": 0.0227,
+   "n": 365,
+   "mean": 0.0014,
+   "glowing": 0.0055,
+   "angry": 0.0301,
    "ai": 0
   },
   {
    "week": "2026-W07",
-   "n": 410,
-   "mean": 0.0183,
-   "glowing": 0.0073,
-   "angry": 0.0122,
+   "n": 285,
+   "mean": 0.0228,
+   "glowing": 0.007,
+   "angry": 0.0175,
    "ai": 0
   },
   {
    "week": "2026-W08",
-   "n": 393,
-   "mean": 0.0074,
-   "glowing": 0.0025,
-   "angry": 0.0102,
+   "n": 317,
+   "mean": 0.0076,
+   "glowing": 0.0032,
+   "angry": 0.0095,
    "ai": 0
   },
   {
    "week": "2026-W09",
-   "n": 568,
-   "mean": 0.0139,
-   "glowing": 0.007,
-   "angry": 0.0141,
+   "n": 421,
+   "mean": 0.0147,
+   "glowing": 0.0095,
+   "angry": 0.019,
    "ai": 0
   },
   {
    "week": "2026-W10",
-   "n": 516,
-   "mean": 0.0188,
-   "glowing": 0.0116,
-   "angry": 0.0078,
+   "n": 375,
+   "mean": 0.0165,
+   "glowing": 0.008,
+   "angry": 0.0107,
    "ai": 0
   },
   {
    "week": "2026-W11",
-   "n": 533,
-   "mean": 0.0218,
-   "glowing": 0.0075,
-   "angry": 0.0056,
+   "n": 408,
+   "mean": 0.0238,
+   "glowing": 0.0098,
+   "angry": 0.0074,
    "ai": 0
   },
   {
    "week": "2026-W12",
-   "n": 572,
-   "mean": 0.0206,
-   "glowing": 0.0122,
-   "angry": 0.0122,
+   "n": 446,
+   "mean": 0.0233,
+   "glowing": 0.0157,
+   "angry": 0.0157,
    "ai": 0
   },
   {
    "week": "2026-W13",
-   "n": 603,
-   "mean": 0.0138,
-   "glowing": 0.0182,
-   "angry": 0.0282,
+   "n": 453,
+   "mean": 0.0177,
+   "glowing": 0.0221,
+   "angry": 0.0287,
    "ai": 0
   },
   {
    "week": "2026-W14",
-   "n": 646,
-   "mean": 0.0118,
-   "glowing": 0.0062,
-   "angry": 0.0077,
+   "n": 531,
+   "mean": 0.0136,
+   "glowing": 0.0075,
+   "angry": 0.0075,
    "ai": 1
   },
   {
    "week": "2026-W15",
-   "n": 423,
-   "mean": 0.0109,
-   "glowing": 0.0047,
-   "angry": 0.0047,
+   "n": 305,
+   "mean": 0.0134,
+   "glowing": 0.0066,
+   "angry": 0.0033,
    "ai": 0
   },
   {
    "week": "2026-W16",
-   "n": 503,
-   "mean": 0.0157,
-   "glowing": 0.0099,
-   "angry": 0.0179,
+   "n": 341,
+   "mean": 0.0208,
+   "glowing": 0.0117,
+   "angry": 0.0205,
    "ai": 0
   },
   {
    "week": "2026-W17",
-   "n": 519,
-   "mean": 0.032,
-   "glowing": 0.0193,
-   "angry": 0.0058,
+   "n": 410,
+   "mean": 0.0346,
+   "glowing": 0.022,
+   "angry": 0.0073,
    "ai": 0
   },
   {
    "week": "2026-W18",
-   "n": 489,
-   "mean": 0.0211,
-   "glowing": 0.0143,
-   "angry": 0.0164,
+   "n": 389,
+   "mean": 0.0237,
+   "glowing": 0.018,
+   "angry": 0.0206,
    "ai": 2
   },
   {
    "week": "2026-W19",
-   "n": 446,
-   "mean": 0.0226,
-   "glowing": 0.009,
-   "angry": 0.0045,
+   "n": 312,
+   "mean": 0.0282,
+   "glowing": 0.0064,
+   "angry": 0.0064,
    "ai": 0
   },
   {
    "week": "2026-W20",
-   "n": 496,
-   "mean": 0.0234,
-   "glowing": 0.0141,
-   "angry": 0.0121,
-   "ai": 3
+   "n": 353,
+   "mean": 0.0314,
+   "glowing": 0.017,
+   "angry": 0.0113,
+   "ai": 2
   },
   {
    "week": "2026-W21",
-   "n": 508,
-   "mean": 0.0217,
-   "glowing": 0.0059,
-   "angry": 0.0098,
+   "n": 382,
+   "mean": 0.0249,
+   "glowing": 0.0079,
+   "angry": 0.0105,
    "ai": 0
   },
   {
    "week": "2026-W22",
-   "n": 452,
-   "mean": 0.0044,
-   "glowing": 0.0022,
-   "angry": 0.0376,
-   "ai": 1
+   "n": 334,
+   "mean": 0.0201,
+   "glowing": 0.003,
+   "angry": 0.009,
+   "ai": 0
   },
   {
    "week": "2026-W23",
-   "n": 508,
-   "mean": 0.0098,
+   "n": 403,
+   "mean": 0.0114,
    "glowing": 0.0,
-   "angry": 0.0059,
+   "angry": 0.0074,
    "ai": 1
   },
   {
    "week": "2026-W24",
-   "n": 699,
-   "mean": 0.0103,
-   "glowing": 0.0043,
-   "angry": 0.01,
+   "n": 519,
+   "mean": 0.0129,
+   "glowing": 0.0058,
+   "angry": 0.0096,
    "ai": 1
   },
   {
    "week": "2026-W25",
-   "n": 518,
-   "mean": 0.017,
-   "glowing": 0.0116,
-   "angry": 0.0097,
+   "n": 407,
+   "mean": 0.0174,
+   "glowing": 0.0123,
+   "angry": 0.0123,
    "ai": 0
   },
   {
    "week": "2026-W26",
-   "n": 679,
-   "mean": 0.019,
-   "glowing": 0.0044,
-   "angry": 0.0044,
+   "n": 556,
+   "mean": 0.0214,
+   "glowing": 0.0054,
+   "angry": 0.0054,
    "ai": 2
   },
   {
    "week": "2026-W27",
-   "n": 486,
-   "mean": 0.0212,
-   "glowing": 0.0103,
-   "angry": 0.0082,
-   "ai": 2
+   "n": 374,
+   "mean": 0.0235,
+   "glowing": 0.0107,
+   "angry": 0.008,
+   "ai": 1
   },
   {
    "week": "2026-W28",
-   "n": 636,
-   "mean": 0.0261,
-   "glowing": 0.0079,
-   "angry": 0.0031,
+   "n": 510,
+   "mean": 0.0288,
+   "glowing": 0.0098,
+   "angry": 0.0039,
    "ai": 1
   },
   {
    "week": "2026-W29",
-   "n": 538,
-   "mean": 0.0151,
+   "n": 384,
+   "mean": 0.0167,
    "glowing": 0.0,
-   "angry": 0.0019,
+   "angry": 0.0026,
    "ai": 3
   },
   {
    "week": "2026-W30",
-   "n": 600,
-   "mean": 0.0192,
-   "glowing": 0.005,
+   "n": 436,
+   "mean": 0.0232,
+   "glowing": 0.0069,
    "angry": 0.0,
    "ai": 0
   },
   {
    "week": "2026-W31",
-   "n": 644,
-   "mean": 0.0183,
-   "glowing": 0.0047,
-   "angry": 0.0062,
-   "ai": 1
+   "n": 429,
+   "mean": 0.0214,
+   "glowing": 0.007,
+   "angry": 0.0047,
+   "ai": 0
   },
   {
    "week": "2026-W32",
-   "n": 682,
-   "mean": 0.016,
-   "glowing": 0.0088,
-   "angry": 0.0044,
+   "n": 509,
+   "mean": 0.0173,
+   "glowing": 0.0098,
+   "angry": 0.0059,
    "ai": 1
   },
   {
    "week": "2026-W33",
-   "n": 613,
-   "mean": 0.0253,
-   "glowing": 0.0082,
-   "angry": 0.0049,
+   "n": 460,
+   "mean": 0.0307,
+   "glowing": 0.0087,
+   "angry": 0.0043,
    "ai": 0
   },
   {
    "week": "2026-W34",
-   "n": 628,
-   "mean": 0.0323,
-   "glowing": 0.0111,
-   "angry": 0.0048,
+   "n": 479,
+   "mean": 0.0378,
+   "glowing": 0.0125,
+   "angry": 0.0063,
    "ai": 0
   },
   {
    "week": "2026-W35",
-   "n": 633,
-   "mean": 0.0221,
-   "glowing": 0.0126,
-   "angry": 0.0032,
+   "n": 442,
+   "mean": 0.0276,
+   "glowing": 0.0136,
+   "angry": 0.0023,
    "ai": 2
   },
   {
    "week": "2026-W36",
-   "n": 659,
-   "mean": 0.017,
-   "glowing": 0.003,
-   "angry": 0.0061,
-   "ai": 2
+   "n": 459,
+   "mean": 0.019,
+   "glowing": 0.0022,
+   "angry": 0.0087,
+   "ai": 0
   },
   {
    "week": "2026-W37",
-   "n": 648,
-   "mean": 0.0191,
-   "glowing": 0.0108,
-   "angry": 0.0062,
+   "n": 455,
+   "mean": 0.0193,
+   "glowing": 0.011,
+   "angry": 0.0088,
    "ai": 0
   },
   {
    "week": "2026-W38",
-   "n": 673,
-   "mean": 0.0189,
-   "glowing": 0.0089,
-   "angry": 0.0089,
+   "n": 504,
+   "mean": 0.019,
+   "glowing": 0.0099,
+   "angry": 0.0119,
    "ai": 1
   },
   {
    "week": "2026-W39",
-   "n": 715,
-   "mean": 0.035,
-   "glowing": 0.014,
-   "angry": 0.0014,
+   "n": 464,
+   "mean": 0.0425,
+   "glowing": 0.0194,
+   "angry": 0.0022,
    "ai": 2
   },
   {
    "week": "2026-W40",
-   "n": 771,
-   "mean": 0.0244,
-   "glowing": 0.0091,
-   "angry": 0.0065,
+   "n": 522,
+   "mean": 0.0285,
+   "glowing": 0.0134,
+   "angry": 0.0096,
    "ai": 1
   },
   {
    "week": "2026-W41",
-   "n": 765,
-   "mean": 0.0188,
-   "glowing": 0.0131,
-   "angry": 0.0144,
-   "ai": 3
+   "n": 494,
+   "mean": 0.0233,
+   "glowing": 0.0182,
+   "angry": 0.0162,
+   "ai": 2
   },
   {
    "week": "2026-W42",
-   "n": 661,
-   "mean": 0.0148,
-   "glowing": 0.0015,
-   "angry": 0.003,
+   "n": 479,
+   "mean": 0.0175,
+   "glowing": 0.0021,
+   "angry": 0.0021,
    "ai": 0
   },
   {
    "week": "2026-W43",
-   "n": 1031,
-   "mean": 0.0235,
-   "glowing": 0.0116,
-   "angry": 0.0019,
+   "n": 766,
+   "mean": 0.0257,
+   "glowing": 0.0131,
+   "angry": 0.0026,
    "ai": 2
   },
   {
    "week": "2026-W44",
-   "n": 864,
-   "mean": 0.0227,
-   "glowing": 0.0058,
-   "angry": 0.0035,
-   "ai": 1
+   "n": 580,
+   "mean": 0.0271,
+   "glowing": 0.0069,
+   "angry": 0.0034,
+   "ai": 0
   }
  ],
  "monthly": [
@@ -437,10 +437,10 @@
     "2025-W45",
     "2025-W48"
    ],
-   "n": 1677,
-   "mean": 0.0243,
-   "glowing": 0.0095,
-   "angry": 0.0078,
+   "n": 1201,
+   "mean": 0.0279,
+   "glowing": 0.0125,
+   "angry": 0.0083,
    "ai": 5
   },
   {
@@ -449,10 +449,10 @@
     "2025-W49",
     "2025-W52"
    ],
-   "n": 1329,
-   "mean": 0.0238,
-   "glowing": 0.015,
-   "angry": 0.0083,
+   "n": 982,
+   "mean": 0.0276,
+   "glowing": 0.0173,
+   "angry": 0.0112,
    "ai": 0
   },
   {
@@ -461,10 +461,10 @@
     "2026-W01",
     "2026-W05"
    ],
-   "n": 2123,
-   "mean": 0.0236,
-   "glowing": 0.0151,
-   "angry": 0.0108,
+   "n": 1560,
+   "mean": 0.0287,
+   "glowing": 0.0199,
+   "angry": 0.0122,
    "ai": 0
   },
   {
@@ -473,10 +473,10 @@
     "2026-W06",
     "2026-W09"
    ],
-   "n": 1855,
-   "mean": 0.0109,
-   "glowing": 0.0059,
-   "angry": 0.0151,
+   "n": 1388,
+   "mean": 0.0112,
+   "glowing": 0.0065,
+   "angry": 0.0195,
    "ai": 0
   },
   {
@@ -485,10 +485,10 @@
     "2026-W10",
     "2026-W13"
    ],
-   "n": 2224,
-   "mean": 0.0186,
-   "glowing": 0.0126,
-   "angry": 0.0139,
+   "n": 1682,
+   "mean": 0.0204,
+   "glowing": 0.0143,
+   "angry": 0.0161,
    "ai": 0
   },
   {
@@ -497,10 +497,10 @@
     "2026-W14",
     "2026-W18"
    ],
-   "n": 2580,
-   "mean": 0.0182,
-   "glowing": 0.0109,
-   "angry": 0.0105,
+   "n": 1976,
+   "mean": 0.0212,
+   "glowing": 0.0132,
+   "angry": 0.0116,
    "ai": 3
   },
   {
@@ -509,11 +509,11 @@
     "2026-W19",
     "2026-W22"
    ],
-   "n": 1902,
-   "mean": 0.0182,
-   "glowing": 0.0079,
-   "angry": 0.0158,
-   "ai": 4
+   "n": 1381,
+   "mean": 0.0261,
+   "glowing": 0.0087,
+   "angry": 0.0094,
+   "ai": 2
   },
   {
    "month": "2026-06",
@@ -521,10 +521,10 @@
     "2026-W23",
     "2026-W26"
    ],
-   "n": 2404,
-   "mean": 0.0141,
-   "glowing": 0.005,
-   "angry": 0.0075,
+   "n": 1885,
+   "mean": 0.0161,
+   "glowing": 0.0058,
+   "angry": 0.0085,
    "ai": 4
   },
   {
@@ -533,11 +533,11 @@
     "2026-W27",
     "2026-W31"
    ],
-   "n": 2904,
-   "mean": 0.0201,
-   "glowing": 0.0055,
+   "n": 2133,
+   "mean": 0.0231,
+   "glowing": 0.007,
    "angry": 0.0038,
-   "ai": 7
+   "ai": 5
   },
   {
    "month": "2026-08",
@@ -545,10 +545,10 @@
     "2026-W32",
     "2026-W35"
    ],
-   "n": 2556,
-   "mean": 0.0237,
-   "glowing": 0.0102,
-   "angry": 0.0043,
+   "n": 1890,
+   "mean": 0.0281,
+   "glowing": 0.0111,
+   "angry": 0.0048,
    "ai": 3
   },
   {
@@ -557,11 +557,11 @@
     "2026-W36",
     "2026-W39"
    ],
-   "n": 2695,
-   "mean": 0.0227,
-   "glowing": 0.0093,
-   "angry": 0.0056,
-   "ai": 5
+   "n": 1882,
+   "mean": 0.0249,
+   "glowing": 0.0106,
+   "angry": 0.008,
+   "ai": 3
   },
   {
    "month": "2026-10",
@@ -569,11 +569,11 @@
     "2026-W40",
     "2026-W44"
    ],
-   "n": 4092,
-   "mean": 0.0212,
-   "glowing": 0.0086,
-   "angry": 0.0056,
-   "ai": 7
+   "n": 2841,
+   "mean": 0.0247,
+   "glowing": 0.0109,
+   "angry": 0.0063,
+   "ai": 5
   }
  ],
  "periods": {
@@ -582,13 +582,13 @@
     "2025-W45",
     "2026-W44"
    ],
-   "n_trivial": 224315,
+   "n_trivial": 200154,
    "total": {
-    "n": 28341,
-    "mean": 0.02,
-    "glowing": 0.0093,
-    "angry": 0.0085,
-    "ai": 38
+    "n": 20801,
+    "mean": 0.0232,
+    "glowing": 0.0112,
+    "angry": 0.0094,
+    "ai": 30
    },
    "dist": [
     [
@@ -601,7 +601,7 @@
     ],
     [
      -0.8,
-     4
+     3
     ],
     [
      -0.7,
@@ -609,55 +609,55 @@
     ],
     [
      -0.6,
-     16
+     14
     ],
     [
      -0.5,
-     17
+     14
     ],
     [
      -0.4,
-     23
+     16
     ],
     [
      -0.3,
-     158
+     126
     ],
     [
      -0.2,
-     231
+     188
     ],
     [
      -0.1,
-     470
+     397
     ],
     [
      0.0,
-     23256
+     16765
     ],
     [
      0.1,
-     2394
+     1640
     ],
     [
      0.2,
-     485
+     433
     ],
     [
      0.3,
-     1000
+     950
     ],
     [
      0.4,
-     110
+     98
     ],
     [
      0.5,
-     150
+     132
     ],
     [
      0.6,
-     3
+     1
     ],
     [
      0.7,
@@ -911,7 +911,7 @@
       "email": "alexrudenko@chromium.org",
       "glowing": 1,
       "happy": 1,
-      "counterparts": 14
+      "counterparts": 13
      },
      {
       "name": "Alexei Svitkine",
@@ -1176,12 +1176,6 @@
    },
    "ai": [
     {
-     "text": "The window based tests are consistentntly failing try deep research and find a fix instead of hit and trial",
-     "score": -0.6,
-     "month": "2026-05",
-     "role": "author"
-    },
-    {
      "text": "oh, heavens.  i know all of that.  i just didn't have time to actually go over it so i was curious what it would do with this template goop.  that's why i warned you up front what it was.",
      "score": -0.6,
      "month": "2026-04",
@@ -1192,12 +1186,6 @@
      "score": -0.3,
      "month": "2026-06",
      "role": "reviewer"
-    },
-    {
-     "text": "Hold off on reviewing this for the moment.. gemini seems to have pulled in a stale branch and lost a bunch of changes, frustratingly..\n\nI will fix this in a followup.",
-     "score": -0.3,
-     "month": "2026-10",
-     "role": "author"
     },
     {
      "text": "Gemini should have updated the unit test to have coverage of this.",
@@ -1212,21 +1200,9 @@
      "role": "reviewer"
     },
     {
-     "text": "claude found this stale comment and kept trying to change it so fixing at the source.",
-     "score": -0.3,
-     "month": "2026-05",
-     "role": "author"
-    },
-    {
      "text": "Those LLMs, as if they understand language. Will correct. They would probably need a repository to learn how to create commit messages correctly, amirite?",
      "score": -0.3,
      "month": "2026-10",
-     "role": "author"
-    },
-    {
-     "text": "<<Comment to Autoroll agent>>\nTry to find a solution without patching the upstream code. If this is required, there must be a justification for the patch.",
-     "score": -0.3,
-     "month": "2026-07",
      "role": "author"
     },
     {
@@ -1242,27 +1218,9 @@
      "role": "author"
     },
     {
-     "text": "As the tests were failing and I relied on Gemini to help me fix them, I also relied on Gemini to reason about this. Please read it with a grain of salt:\n\n`AllowLeak()` is to prevent gMock errors because the mock is held by a Mojo SelfOwnedReceiver that isn't destroyed until browser teardown after the test body ends.",
-     "score": -0.1,
-     "month": "2026-08",
-     "role": "author"
-    },
-    {
-     "text": "Ah. Yeah, i'm fine to leave it as []--gemini just kept pointing out that () was a better default since it's immutable. It's not clear why it only did it for skip_brands.. But I don't feel strongly, so I'll just revert it.",
-     "score": -0.1,
-     "month": "2026-10",
-     "role": "author"
-    },
-    {
      "text": "Done - we're working on adding a deterministic git diff checker to ensure the LLM doesn't add lines, because it doesn't always listen to that instruction in the prompt ;)",
      "score": -0.1,
      "month": "2025-11",
-     "role": "author"
-    },
-    {
-     "text": "Apologies for the slop comment, the machine went off the rails.",
-     "score": 0.0,
-     "month": "2026-07",
      "role": "author"
     },
     {
@@ -1291,7 +1249,7 @@
     }
    ],
    "ai_left_out": {
-    "screened": 15,
+    "screened": 14,
     "long_or_linked": 4
    }
   },
@@ -1300,12 +1258,12 @@
     "2025-W45",
     "2025-W52"
    ],
-   "n_trivial": 26723,
+   "n_trivial": 24309,
    "total": {
-    "n": 3006,
-    "mean": 0.0241,
-    "glowing": 0.012,
-    "angry": 0.008,
+    "n": 2183,
+    "mean": 0.0278,
+    "glowing": 0.0147,
+    "angry": 0.0096,
     "ai": 5
    },
    "dist": [
@@ -1331,39 +1289,39 @@
     ],
     [
      -0.3,
-     16
+     13
     ],
     [
      -0.2,
-     21
+     17
     ],
     [
      -0.1,
-     47
+     42
     ],
     [
      0.0,
-     2413
+     1704
     ],
     [
      0.1,
-     293
+     210
     ],
     [
      0.2,
-     69
+     63
     ],
     [
      0.3,
-     103
+     94
     ],
     [
      0.4,
-     12
+     10
     ],
     [
      0.5,
-     24
+     22
     ]
    ],
    "happy": {
@@ -1403,12 +1361,12 @@
     "2025-W45",
     "2025-W48"
    ],
-   "n_trivial": 14527,
+   "n_trivial": 13195,
    "total": {
-    "n": 1677,
-    "mean": 0.0243,
-    "glowing": 0.0095,
-    "angry": 0.0078,
+    "n": 1201,
+    "mean": 0.0279,
+    "glowing": 0.0125,
+    "angry": 0.0083,
     "ai": 5
    },
    "dist": [
@@ -1430,35 +1388,35 @@
     ],
     [
      -0.3,
-     9
+     6
     ],
     [
      -0.2,
-     16
+     13
     ],
     [
      -0.1,
-     21
+     19
     ],
     [
      0.0,
-     1329
+     929
     ],
     [
      0.1,
-     185
+     130
     ],
     [
      0.2,
-     43
+     38
     ],
     [
      0.3,
-     54
+     47
     ],
     [
      0.4,
-     3
+     2
     ],
     [
      0.5,
@@ -1495,12 +1453,12 @@
     "2025-W49",
     "2025-W52"
    ],
-   "n_trivial": 12196,
+   "n_trivial": 11114,
    "total": {
-    "n": 1329,
-    "mean": 0.0238,
-    "glowing": 0.015,
-    "angry": 0.0083,
+    "n": 982,
+    "mean": 0.0276,
+    "glowing": 0.0173,
+    "angry": 0.0112,
     "ai": 0
    },
    "dist": [
@@ -1522,35 +1480,35 @@
     ],
     [
      -0.2,
-     5
+     4
     ],
     [
      -0.1,
-     26
+     23
     ],
     [
      0.0,
-     1084
+     775
     ],
     [
      0.1,
-     108
+     80
     ],
     [
      0.2,
-     26
+     25
     ],
     [
      0.3,
-     49
+     47
     ],
     [
      0.4,
-     9
+     8
     ],
     [
      0.5,
-     11
+     9
     ]
    ],
    "happy": {
@@ -1568,13 +1526,13 @@
     "2026-W01",
     "2026-W44"
    ],
-   "n_trivial": 197592,
+   "n_trivial": 175845,
    "total": {
-    "n": 25335,
-    "mean": 0.0195,
-    "glowing": 0.009,
-    "angry": 0.0086,
-    "ai": 33
+    "n": 18618,
+    "mean": 0.0227,
+    "glowing": 0.0107,
+    "angry": 0.0094,
+    "ai": 25
    },
    "dist": [
     [
@@ -1587,7 +1545,7 @@
     ],
     [
      -0.8,
-     4
+     3
     ],
     [
      -0.7,
@@ -1595,55 +1553,55 @@
     ],
     [
      -0.6,
-     15
+     13
     ],
     [
      -0.5,
-     16
+     13
     ],
     [
      -0.4,
-     20
+     13
     ],
     [
      -0.3,
-     142
+     113
     ],
     [
      -0.2,
-     210
+     171
     ],
     [
      -0.1,
-     423
+     355
     ],
     [
      0.0,
-     20843
+     15061
     ],
     [
      0.1,
-     2101
+     1430
     ],
     [
      0.2,
-     416
+     370
     ],
     [
      0.3,
-     897
+     856
     ],
     [
      0.4,
-     98
+     88
     ],
     [
      0.5,
-     126
+     110
     ],
     [
      0.6,
-     3
+     1
     ],
     [
      0.7,
@@ -2043,12 +2001,6 @@
    },
    "ai": [
     {
-     "text": "The window based tests are consistentntly failing try deep research and find a fix instead of hit and trial",
-     "score": -0.6,
-     "month": "2026-05",
-     "role": "author"
-    },
-    {
      "text": "oh, heavens.  i know all of that.  i just didn't have time to actually go over it so i was curious what it would do with this template goop.  that's why i warned you up front what it was.",
      "score": -0.6,
      "month": "2026-04",
@@ -2059,12 +2011,6 @@
      "score": -0.3,
      "month": "2026-06",
      "role": "reviewer"
-    },
-    {
-     "text": "Hold off on reviewing this for the moment.. gemini seems to have pulled in a stale branch and lost a bunch of changes, frustratingly..\n\nI will fix this in a followup.",
-     "score": -0.3,
-     "month": "2026-10",
-     "role": "author"
     },
     {
      "text": "Gemini should have updated the unit test to have coverage of this.",
@@ -2079,21 +2025,9 @@
      "role": "reviewer"
     },
     {
-     "text": "claude found this stale comment and kept trying to change it so fixing at the source.",
-     "score": -0.3,
-     "month": "2026-05",
-     "role": "author"
-    },
-    {
      "text": "Those LLMs, as if they understand language. Will correct. They would probably need a repository to learn how to create commit messages correctly, amirite?",
      "score": -0.3,
      "month": "2026-10",
-     "role": "author"
-    },
-    {
-     "text": "<<Comment to Autoroll agent>>\nTry to find a solution without patching the upstream code. If this is required, there must be a justification for the patch.",
-     "score": -0.3,
-     "month": "2026-07",
      "role": "author"
     },
     {
@@ -2105,24 +2039,6 @@
     {
      "text": "woof. yes. sorry, AI nonsense. cleaned up. I also saw some dependency issues I'm fixing now.",
      "score": -0.2,
-     "month": "2026-07",
-     "role": "author"
-    },
-    {
-     "text": "As the tests were failing and I relied on Gemini to help me fix them, I also relied on Gemini to reason about this. Please read it with a grain of salt:\n\n`AllowLeak()` is to prevent gMock errors because the mock is held by a Mojo SelfOwnedReceiver that isn't destroyed until browser teardown after the test body ends.",
-     "score": -0.1,
-     "month": "2026-08",
-     "role": "author"
-    },
-    {
-     "text": "Ah. Yeah, i'm fine to leave it as []--gemini just kept pointing out that () was a better default since it's immutable. It's not clear why it only did it for skip_brands.. But I don't feel strongly, so I'll just revert it.",
-     "score": -0.1,
-     "month": "2026-10",
-     "role": "author"
-    },
-    {
-     "text": "Apologies for the slop comment, the machine went off the rails.",
-     "score": 0.0,
      "month": "2026-07",
      "role": "author"
     },
@@ -2152,7 +2068,7 @@
     }
    ],
    "ai_left_out": {
-    "screened": 13,
+    "screened": 12,
     "long_or_linked": 2
    }
   },
@@ -2161,12 +2077,12 @@
     "2026-W01",
     "2026-W05"
    ],
-   "n_trivial": 16314,
+   "n_trivial": 14870,
    "total": {
-    "n": 2123,
-    "mean": 0.0236,
-    "glowing": 0.0151,
-    "angry": 0.0108,
+    "n": 1560,
+    "mean": 0.0287,
+    "glowing": 0.0199,
+    "angry": 0.0122,
     "ai": 0
    },
    "dist": [
@@ -2184,35 +2100,35 @@
     ],
     [
      -0.4,
-     3
+     2
     ],
     [
      -0.3,
-     11
+     8
     ],
     [
      -0.2,
-     25
+     18
     ],
     [
      -0.1,
-     40
+     35
     ],
     [
      0.0,
-     1671
+     1194
     ],
     [
      0.1,
-     194
+     134
     ],
     [
      0.2,
-     48
+     42
     ],
     [
      0.3,
-     90
+     87
     ],
     [
      0.4,
@@ -2220,7 +2136,7 @@
     ],
     [
      0.5,
-     21
+     20
     ]
    ],
    "happy": {
@@ -2246,12 +2162,12 @@
     "2026-W06",
     "2026-W09"
    ],
-   "n_trivial": 18089,
+   "n_trivial": 16440,
    "total": {
-    "n": 1855,
-    "mean": 0.0109,
-    "glowing": 0.0059,
-    "angry": 0.0151,
+    "n": 1388,
+    "mean": 0.0112,
+    "glowing": 0.0065,
+    "angry": 0.0195,
     "ai": 0
    },
    "dist": [
@@ -2277,7 +2193,7 @@
     ],
     [
      -0.3,
-     16
+     15
     ],
     [
      -0.2,
@@ -2285,27 +2201,27 @@
     ],
     [
      -0.1,
-     48
+     43
     ],
     [
      0.0,
-     1528
+     1105
     ],
     [
      0.1,
-     127
+     98
     ],
     [
      0.2,
-     30
+     26
     ],
     [
      0.3,
-     58
+     55
     ],
     [
      0.4,
-     3
+     1
     ],
     [
      0.5,
@@ -2327,12 +2243,12 @@
     "2026-W10",
     "2026-W13"
    ],
-   "n_trivial": 18071,
+   "n_trivial": 16327,
    "total": {
-    "n": 2224,
-    "mean": 0.0186,
-    "glowing": 0.0126,
-    "angry": 0.0139,
+    "n": 1682,
+    "mean": 0.0204,
+    "glowing": 0.0143,
+    "angry": 0.0161,
     "ai": 0
    },
    "dist": [
@@ -2358,39 +2274,39 @@
     ],
     [
      -0.3,
-     23
+     19
     ],
     [
      -0.2,
-     16
+     15
     ],
     [
      -0.1,
-     39
+     35
     ],
     [
      0.0,
-     1833
+     1363
     ],
     [
      0.1,
-     150
+     99
     ],
     [
      0.2,
-     51
+     47
     ],
     [
      0.3,
-     76
+     72
     ],
     [
      0.4,
-     14
+     12
     ],
     [
      0.5,
-     14
+     12
     ]
    ],
    "happy": {
@@ -2416,12 +2332,12 @@
     "2026-W14",
     "2026-W18"
    ],
-   "n_trivial": 21516,
+   "n_trivial": 19233,
    "total": {
-    "n": 2580,
-    "mean": 0.0182,
-    "glowing": 0.0109,
-    "angry": 0.0105,
+    "n": 1976,
+    "mean": 0.0212,
+    "glowing": 0.0132,
+    "angry": 0.0116,
     "ai": 3
    },
    "dist": [
@@ -2435,7 +2351,7 @@
     ],
     [
      -0.8,
-     2
+     1
     ],
     [
      -0.6,
@@ -2451,31 +2367,31 @@
     ],
     [
      -0.3,
-     15
+     12
     ],
     [
      -0.2,
-     24
+     22
     ],
     [
      -0.1,
-     52
+     38
     ],
     [
      0.0,
-     2110
+     1588
     ],
     [
      0.1,
-     210
+     159
     ],
     [
      0.2,
-     31
+     30
     ],
     [
      0.3,
-     98
+     90
     ],
     [
      0.4,
@@ -2483,7 +2399,7 @@
     ],
     [
      0.5,
-     16
+     14
     ],
     [
      0.6,
@@ -2520,66 +2436,54 @@
     "2026-W19",
     "2026-W22"
    ],
-   "n_trivial": 17957,
+   "n_trivial": 16064,
    "total": {
-    "n": 1902,
-    "mean": 0.0182,
-    "glowing": 0.0079,
-    "angry": 0.0158,
-    "ai": 4
+    "n": 1381,
+    "mean": 0.0261,
+    "glowing": 0.0087,
+    "angry": 0.0094,
+    "ai": 2
    },
    "dist": [
     [
-     -0.6,
-     1
-    ],
-    [
-     -0.5,
-     1
-    ],
-    [
      -0.4,
-     6
+     2
     ],
     [
      -0.3,
-     22
+     11
     ],
     [
      -0.2,
-     14
+     8
     ],
     [
      -0.1,
-     30
+     24
     ],
     [
      0.0,
-     1543
+     1100
     ],
     [
      0.1,
-     172
+     129
     ],
     [
      0.2,
-     30
+     28
     ],
     [
      0.3,
-     68
+     67
     ],
     [
      0.4,
-     6
+     4
     ],
     [
      0.5,
      8
-    ],
-    [
-     0.6,
-     1
     ]
    ],
    "happy": {
@@ -2588,19 +2492,7 @@
    },
    "ai": [
     {
-     "text": "The window based tests are consistentntly failing try deep research and find a fix instead of hit and trial",
-     "score": -0.6,
-     "month": "2026-05",
-     "role": "author"
-    },
-    {
      "text": "Gemini should have updated the unit test to have coverage of this.",
-     "score": -0.3,
-     "month": "2026-05",
-     "role": "author"
-    },
-    {
-     "text": "claude found this stale comment and kept trying to change it so fixing at the source.",
      "score": -0.3,
      "month": "2026-05",
      "role": "author"
@@ -2616,12 +2508,12 @@
     "2026-W23",
     "2026-W26"
    ],
-   "n_trivial": 18696,
+   "n_trivial": 16738,
    "total": {
-    "n": 2404,
-    "mean": 0.0141,
-    "glowing": 0.005,
-    "angry": 0.0075,
+    "n": 1885,
+    "mean": 0.0161,
+    "glowing": 0.0058,
+    "angry": 0.0085,
     "ai": 4
    },
    "dist": [
@@ -2643,31 +2535,31 @@
     ],
     [
      -0.3,
-     13
+     11
     ],
     [
      -0.2,
-     10
+     9
     ],
     [
      -0.1,
-     39
+     36
     ],
     [
      0.0,
-     2084
+     1608
     ],
     [
      0.1,
-     142
+     110
     ],
     [
      0.2,
-     21
+     19
     ],
     [
      0.3,
-     78
+     76
     ],
     [
      0.4,
@@ -2675,7 +2567,7 @@
     ],
     [
      0.5,
-     6
+     5
     ]
    ],
    "happy": {
@@ -2714,13 +2606,13 @@
     "2026-W27",
     "2026-W31"
    ],
-   "n_trivial": 22953,
+   "n_trivial": 20413,
    "total": {
-    "n": 2904,
-    "mean": 0.0201,
-    "glowing": 0.0055,
+    "n": 2133,
+    "mean": 0.0231,
+    "glowing": 0.007,
     "angry": 0.0038,
-    "ai": 7
+    "ai": 5
    },
    "dist": [
     [
@@ -2733,35 +2625,35 @@
     ],
     [
      -0.3,
-     8
+     5
     ],
     [
      -0.2,
-     20
+     18
     ],
     [
      -0.1,
-     27
+     23
     ],
     [
      0.0,
-     2455
+     1780
     ],
     [
      0.1,
-     237
+     162
     ],
     [
      0.2,
-     36
+     32
     ],
     [
      0.3,
-     102
+     95
     ],
     [
      0.4,
-     8
+     7
     ],
     [
      0.5,
@@ -2774,12 +2666,6 @@
    },
    "ai": [
     {
-     "text": "<<Comment to Autoroll agent>>\nTry to find a solution without patching the upstream code. If this is required, there must be a justification for the patch.",
-     "score": -0.3,
-     "month": "2026-07",
-     "role": "author"
-    },
-    {
      "text": "AI comment.",
      "score": -0.2,
      "month": "2026-06",
@@ -2788,12 +2674,6 @@
     {
      "text": "woof. yes. sorry, AI nonsense. cleaned up. I also saw some dependency issues I'm fixing now.",
      "score": -0.2,
-     "month": "2026-07",
-     "role": "author"
-    },
-    {
-     "text": "Apologies for the slop comment, the machine went off the rails.",
-     "score": 0.0,
      "month": "2026-07",
      "role": "author"
     }
@@ -2808,12 +2688,12 @@
     "2026-W32",
     "2026-W35"
    ],
-   "n_trivial": 19864,
+   "n_trivial": 17572,
    "total": {
-    "n": 2556,
-    "mean": 0.0237,
-    "glowing": 0.0102,
-    "angry": 0.0043,
+    "n": 1890,
+    "mean": 0.0281,
+    "glowing": 0.0111,
+    "angry": 0.0048,
     "ai": 3
    },
    "dist": [
@@ -2834,48 +2714,40 @@
      1
     ],
     [
-     -0.5,
-     1
-    ],
-    [
      -0.3,
-     6
+     5
     ],
     [
      -0.2,
-     25
+     17
     ],
     [
      -0.1,
-     40
+     33
     ],
     [
      0.0,
-     2098
+     1521
     ],
     [
      0.1,
-     194
+     138
     ],
     [
      0.2,
-     50
+     42
     ],
     [
      0.3,
-     112
+     109
     ],
     [
      0.4,
-     10
+     9
     ],
     [
      0.5,
-     14
-    ],
-    [
-     0.6,
-     1
+     11
     ],
     [
      0.7,
@@ -2896,12 +2768,6 @@
    },
    "ai": [
     {
-     "text": "As the tests were failing and I relied on Gemini to help me fix them, I also relied on Gemini to reason about this. Please read it with a grain of salt:\n\n`AllowLeak()` is to prevent gMock errors because the mock is held by a Mojo SelfOwnedReceiver that isn't destroyed until browser teardown after the test body ends.",
-     "score": -0.1,
-     "month": "2026-08",
-     "role": "author"
-    },
-    {
      "text": "The AI Reviewer is complaining quite a lot about this ASSIGN_OR_RETURN usage, so I kindly ask you to double check if I did it right 😊",
      "score": 0.0,
      "month": "2026-08",
@@ -2909,7 +2775,7 @@
     }
    ],
    "ai_left_out": {
-    "screened": 0,
+    "screened": 1,
     "long_or_linked": 1
    }
   },
@@ -2918,13 +2784,13 @@
     "2026-W36",
     "2026-W39"
    ],
-   "n_trivial": 19231,
+   "n_trivial": 16799,
    "total": {
-    "n": 2695,
-    "mean": 0.0227,
-    "glowing": 0.0093,
-    "angry": 0.0056,
-    "ai": 5
+    "n": 1882,
+    "mean": 0.0249,
+    "glowing": 0.0106,
+    "angry": 0.008,
+    "ai": 3
    },
    "dist": [
     [
@@ -2937,27 +2803,27 @@
     ],
     [
      -0.2,
-     17
+     14
     ],
     [
      -0.1,
-     43
+     37
     ],
     [
      0.0,
-     2179
+     1499
     ],
     [
      0.1,
-     287
+     178
     ],
     [
      0.2,
-     44
+     37
     ],
     [
      0.3,
-     85
+     82
     ],
     [
      0.4,
@@ -2965,7 +2831,7 @@
     ],
     [
      0.5,
-     13
+     8
     ]
    ],
    "happy": {
@@ -3002,7 +2868,7 @@
     }
    ],
    "ai_left_out": {
-    "screened": 3,
+    "screened": 1,
     "long_or_linked": 0
    }
   },
@@ -3011,62 +2877,62 @@
     "2026-W40",
     "2026-W44"
    ],
-   "n_trivial": 24901,
+   "n_trivial": 21389,
    "total": {
-    "n": 4092,
-    "mean": 0.0212,
-    "glowing": 0.0086,
-    "angry": 0.0056,
-    "ai": 7
+    "n": 2841,
+    "mean": 0.0247,
+    "glowing": 0.0109,
+    "angry": 0.0063,
+    "ai": 5
    },
    "dist": [
     [
      -0.6,
-     3
-    ],
-    [
-     -0.5,
      2
     ],
     [
+     -0.5,
+     1
+    ],
+    [
      -0.4,
-     3
+     1
     ],
     [
      -0.3,
-     15
+     14
     ],
     [
      -0.2,
-     34
+     25
     ],
     [
      -0.1,
-     65
+     51
     ],
     [
      0.0,
-     3342
+     2303
     ],
     [
      0.1,
-     388
+     223
     ],
     [
      0.2,
-     75
+     67
     ],
     [
      0.3,
-     130
+     123
     ],
     [
      0.4,
-     17
+     15
     ],
     [
      0.5,
-     18
+     16
     ]
    ],
    "happy": {
@@ -3104,12 +2970,6 @@
    },
    "ai": [
     {
-     "text": "Hold off on reviewing this for the moment.. gemini seems to have pulled in a stale branch and lost a bunch of changes, frustratingly..\n\nI will fix this in a followup.",
-     "score": -0.3,
-     "month": "2026-10",
-     "role": "author"
-    },
-    {
      "text": "AI generated comments actually make sense this time",
      "score": -0.3,
      "month": "2026-10",
@@ -3118,12 +2978,6 @@
     {
      "text": "Those LLMs, as if they understand language. Will correct. They would probably need a repository to learn how to create commit messages correctly, amirite?",
      "score": -0.3,
-     "month": "2026-10",
-     "role": "author"
-    },
-    {
-     "text": "Ah. Yeah, i'm fine to leave it as []--gemini just kept pointing out that () was a better default since it's immutable. It's not clear why it only did it for skip_brands.. But I don't feel strongly, so I'll just revert it.",
-     "score": -0.1,
      "month": "2026-10",
      "role": "author"
     }

@@ -1,5 +1,5 @@
 {
- "generated_at": "2026-11-08T13:09:16Z",
+ "generated_at": "2026-11-10T22:37:30Z",
  "prompt": "v3",
  "weeks": [
   "2025-W45",
@@ -15,419 +15,419 @@
  "weekly": [
   {
    "week": "2025-W45",
-   "n": 11117,
-   "mean": 0.0105,
-   "glowing": 0.0074,
-   "angry": 0.013,
+   "n": 9732,
+   "mean": 0.0097,
+   "glowing": 0.008,
+   "angry": 0.0146,
    "ai": 9
   },
   {
    "week": "2025-W46",
-   "n": 10574,
-   "mean": 0.0089,
-   "glowing": 0.0064,
-   "angry": 0.0123,
+   "n": 8832,
+   "mean": 0.0084,
+   "glowing": 0.0075,
+   "angry": 0.0146,
    "ai": 2
   },
   {
    "week": "2025-W47",
-   "n": 11266,
-   "mean": 0.0115,
-   "glowing": 0.0078,
-   "angry": 0.0118,
-   "ai": 12
+   "n": 9776,
+   "mean": 0.0113,
+   "glowing": 0.0088,
+   "angry": 0.0132,
+   "ai": 11
   },
   {
    "week": "2025-W48",
-   "n": 8696,
-   "mean": 0.0101,
-   "glowing": 0.0089,
-   "angry": 0.0148,
+   "n": 7501,
+   "mean": 0.0097,
+   "glowing": 0.01,
+   "angry": 0.0171,
    "ai": 11
   },
   {
    "week": "2025-W49",
-   "n": 10336,
-   "mean": 0.0121,
-   "glowing": 0.0077,
-   "angry": 0.0145,
-   "ai": 23
+   "n": 8846,
+   "mean": 0.0117,
+   "glowing": 0.0087,
+   "angry": 0.0163,
+   "ai": 22
   },
   {
    "week": "2025-W50",
-   "n": 11152,
-   "mean": 0.0104,
-   "glowing": 0.0072,
-   "angry": 0.0131,
+   "n": 9613,
+   "mean": 0.0103,
+   "glowing": 0.0081,
+   "angry": 0.015,
    "ai": 8
   },
   {
    "week": "2025-W51",
-   "n": 11330,
-   "mean": 0.0128,
-   "glowing": 0.0082,
-   "angry": 0.0138,
+   "n": 9898,
+   "mean": 0.0122,
+   "glowing": 0.009,
+   "angry": 0.0157,
    "ai": 13
   },
   {
    "week": "2025-W52",
-   "n": 2804,
-   "mean": 0.0144,
-   "glowing": 0.0093,
-   "angry": 0.0089,
+   "n": 2383,
+   "mean": 0.0141,
+   "glowing": 0.0101,
+   "angry": 0.0101,
    "ai": 2
   },
   {
    "week": "2026-W01",
-   "n": 2207,
-   "mean": 0.0099,
-   "glowing": 0.0068,
-   "angry": 0.0127,
-   "ai": 1
+   "n": 1944,
+   "mean": 0.0102,
+   "glowing": 0.0077,
+   "angry": 0.0134,
+   "ai": 0
   },
   {
    "week": "2026-W02",
-   "n": 10542,
+   "n": 8968,
    "mean": 0.0145,
-   "glowing": 0.0073,
-   "angry": 0.0098,
-   "ai": 9
+   "glowing": 0.0083,
+   "angry": 0.0112,
+   "ai": 7
   },
   {
    "week": "2026-W03",
-   "n": 11002,
-   "mean": 0.0136,
-   "glowing": 0.0071,
-   "angry": 0.0097,
+   "n": 9379,
+   "mean": 0.0131,
+   "glowing": 0.0075,
+   "angry": 0.0112,
    "ai": 7
   },
   {
    "week": "2026-W04",
-   "n": 10756,
-   "mean": 0.0113,
-   "glowing": 0.0064,
-   "angry": 0.0132,
+   "n": 9197,
+   "mean": 0.0107,
+   "glowing": 0.0071,
+   "angry": 0.0153,
    "ai": 10
   },
   {
    "week": "2026-W05",
-   "n": 12899,
-   "mean": 0.0145,
-   "glowing": 0.009,
-   "angry": 0.0116,
-   "ai": 14
+   "n": 11094,
+   "mean": 0.0143,
+   "glowing": 0.0102,
+   "angry": 0.0133,
+   "ai": 12
   },
   {
    "week": "2026-W06",
-   "n": 13134,
-   "mean": 0.0121,
-   "glowing": 0.0065,
-   "angry": 0.0137,
+   "n": 11346,
+   "mean": 0.0119,
+   "glowing": 0.0073,
+   "angry": 0.0156,
    "ai": 12
   },
   {
    "week": "2026-W07",
-   "n": 13596,
-   "mean": 0.0118,
-   "glowing": 0.0078,
-   "angry": 0.0116,
-   "ai": 7
+   "n": 11638,
+   "mean": 0.0124,
+   "glowing": 0.009,
+   "angry": 0.0125,
+   "ai": 5
   },
   {
    "week": "2026-W08",
-   "n": 11561,
-   "mean": 0.0116,
-   "glowing": 0.0068,
-   "angry": 0.012,
-   "ai": 3
+   "n": 9942,
+   "mean": 0.011,
+   "glowing": 0.0075,
+   "angry": 0.0134,
+   "ai": 2
   },
   {
    "week": "2026-W09",
-   "n": 13858,
-   "mean": 0.0103,
-   "glowing": 0.0078,
-   "angry": 0.0133,
-   "ai": 21
+   "n": 11956,
+   "mean": 0.01,
+   "glowing": 0.0087,
+   "angry": 0.0146,
+   "ai": 15
   },
   {
    "week": "2026-W10",
-   "n": 13732,
-   "mean": 0.0131,
-   "glowing": 0.0081,
-   "angry": 0.0111,
-   "ai": 18
+   "n": 11785,
+   "mean": 0.0129,
+   "glowing": 0.009,
+   "angry": 0.0128,
+   "ai": 16
   },
   {
    "week": "2026-W11",
-   "n": 12835,
-   "mean": 0.0098,
-   "glowing": 0.0062,
-   "angry": 0.014,
-   "ai": 23
+   "n": 10976,
+   "mean": 0.0093,
+   "glowing": 0.007,
+   "angry": 0.016,
+   "ai": 22
   },
   {
    "week": "2026-W12",
-   "n": 13433,
-   "mean": 0.0092,
-   "glowing": 0.0064,
-   "angry": 0.015,
-   "ai": 23
+   "n": 11675,
+   "mean": 0.0087,
+   "glowing": 0.0069,
+   "angry": 0.0166,
+   "ai": 21
   },
   {
    "week": "2026-W13",
-   "n": 13492,
-   "mean": 0.0104,
-   "glowing": 0.007,
-   "angry": 0.0157,
-   "ai": 18
+   "n": 11590,
+   "mean": 0.0101,
+   "glowing": 0.0078,
+   "angry": 0.0179,
+   "ai": 15
   },
   {
    "week": "2026-W14",
-   "n": 12288,
-   "mean": 0.0115,
-   "glowing": 0.0083,
-   "angry": 0.012,
-   "ai": 25
+   "n": 10420,
+   "mean": 0.0112,
+   "glowing": 0.0098,
+   "angry": 0.0135,
+   "ai": 21
   },
   {
    "week": "2026-W15",
-   "n": 11750,
-   "mean": 0.0106,
-   "glowing": 0.0072,
-   "angry": 0.0146,
-   "ai": 28
+   "n": 10048,
+   "mean": 0.0109,
+   "glowing": 0.0083,
+   "angry": 0.0163,
+   "ai": 15
   },
   {
    "week": "2026-W16",
-   "n": 13304,
-   "mean": 0.0087,
-   "glowing": 0.0065,
-   "angry": 0.017,
-   "ai": 27
+   "n": 11492,
+   "mean": 0.0082,
+   "glowing": 0.0072,
+   "angry": 0.0189,
+   "ai": 23
   },
   {
    "week": "2026-W17",
-   "n": 12540,
-   "mean": 0.0102,
-   "glowing": 0.0061,
-   "angry": 0.0116,
-   "ai": 32
-  },
-  {
-   "week": "2026-W18",
-   "n": 13713,
-   "mean": 0.0091,
-   "glowing": 0.0073,
-   "angry": 0.0147,
-   "ai": 26
-  },
-  {
-   "week": "2026-W19",
-   "n": 13706,
-   "mean": 0.009,
-   "glowing": 0.0071,
-   "angry": 0.017,
-   "ai": 36
-  },
-  {
-   "week": "2026-W20",
-   "n": 12897,
-   "mean": 0.0095,
-   "glowing": 0.0064,
-   "angry": 0.0143,
-   "ai": 27
-  },
-  {
-   "week": "2026-W21",
-   "n": 13459,
-   "mean": 0.0098,
-   "glowing": 0.0071,
-   "angry": 0.0148,
-   "ai": 37
-  },
-  {
-   "week": "2026-W22",
-   "n": 13212,
-   "mean": 0.0104,
-   "glowing": 0.0075,
-   "angry": 0.0131,
-   "ai": 25
-  },
-  {
-   "week": "2026-W23",
-   "n": 13870,
-   "mean": 0.0068,
-   "glowing": 0.0064,
-   "angry": 0.0182,
-   "ai": 39
-  },
-  {
-   "week": "2026-W24",
-   "n": 13798,
-   "mean": 0.0101,
-   "glowing": 0.0057,
-   "angry": 0.0133,
-   "ai": 33
-  },
-  {
-   "week": "2026-W25",
-   "n": 13129,
-   "mean": 0.0083,
-   "glowing": 0.0063,
-   "angry": 0.0135,
-   "ai": 33
-  },
-  {
-   "week": "2026-W26",
-   "n": 14697,
-   "mean": 0.0073,
-   "glowing": 0.0071,
-   "angry": 0.0168,
-   "ai": 45
-  },
-  {
-   "week": "2026-W27",
-   "n": 10073,
-   "mean": 0.0074,
-   "glowing": 0.0063,
+   "n": 10632,
+   "mean": 0.0097,
+   "glowing": 0.0069,
    "angry": 0.0131,
    "ai": 24
   },
   {
-   "week": "2026-W28",
-   "n": 12899,
-   "mean": 0.0073,
-   "glowing": 0.0061,
-   "angry": 0.0164,
-   "ai": 27
+   "week": "2026-W18",
+   "n": 11692,
+   "mean": 0.0091,
+   "glowing": 0.0083,
+   "angry": 0.0161,
+   "ai": 24
   },
   {
-   "week": "2026-W29",
-   "n": 13936,
-   "mean": 0.0076,
-   "glowing": 0.0062,
-   "angry": 0.0154,
+   "week": "2026-W19",
+   "n": 11760,
+   "mean": 0.0087,
+   "glowing": 0.0078,
+   "angry": 0.0193,
    "ai": 32
   },
   {
-   "week": "2026-W30",
-   "n": 14662,
-   "mean": 0.0097,
-   "glowing": 0.0056,
+   "week": "2026-W20",
+   "n": 11020,
+   "mean": 0.009,
+   "glowing": 0.0072,
+   "angry": 0.0161,
+   "ai": 25
+  },
+  {
+   "week": "2026-W21",
+   "n": 11517,
+   "mean": 0.0098,
+   "glowing": 0.0079,
    "angry": 0.0164,
+   "ai": 28
+  },
+  {
+   "week": "2026-W22",
+   "n": 11282,
+   "mean": 0.01,
+   "glowing": 0.0083,
+   "angry": 0.0147,
+   "ai": 21
+  },
+  {
+   "week": "2026-W23",
+   "n": 11810,
+   "mean": 0.0066,
+   "glowing": 0.0075,
+   "angry": 0.0196,
    "ai": 33
   },
   {
+   "week": "2026-W24",
+   "n": 11905,
+   "mean": 0.0098,
+   "glowing": 0.0064,
+   "angry": 0.0151,
+   "ai": 30
+  },
+  {
+   "week": "2026-W25",
+   "n": 11381,
+   "mean": 0.0079,
+   "glowing": 0.007,
+   "angry": 0.0152,
+   "ai": 27
+  },
+  {
+   "week": "2026-W26",
+   "n": 12771,
+   "mean": 0.0065,
+   "glowing": 0.0078,
+   "angry": 0.0192,
+   "ai": 44
+  },
+  {
+   "week": "2026-W27",
+   "n": 8709,
+   "mean": 0.0068,
+   "glowing": 0.0071,
+   "angry": 0.0149,
+   "ai": 23
+  },
+  {
+   "week": "2026-W28",
+   "n": 10933,
+   "mean": 0.0071,
+   "glowing": 0.007,
+   "angry": 0.0177,
+   "ai": 19
+  },
+  {
+   "week": "2026-W29",
+   "n": 12025,
+   "mean": 0.0072,
+   "glowing": 0.0071,
+   "angry": 0.0172,
+   "ai": 25
+  },
+  {
+   "week": "2026-W30",
+   "n": 12516,
+   "mean": 0.0096,
+   "glowing": 0.0062,
+   "angry": 0.0187,
+   "ai": 28
+  },
+  {
    "week": "2026-W31",
-   "n": 14426,
-   "mean": 0.0067,
-   "glowing": 0.0063,
-   "angry": 0.0185,
-   "ai": 47
+   "n": 12353,
+   "mean": 0.0065,
+   "glowing": 0.0072,
+   "angry": 0.0206,
+   "ai": 43
   },
   {
    "week": "2026-W32",
-   "n": 13773,
-   "mean": 0.0104,
-   "glowing": 0.0062,
-   "angry": 0.0133,
-   "ai": 36
+   "n": 11799,
+   "mean": 0.0102,
+   "glowing": 0.0069,
+   "angry": 0.0152,
+   "ai": 32
   },
   {
    "week": "2026-W33",
-   "n": 15138,
-   "mean": 0.0089,
-   "glowing": 0.0064,
-   "angry": 0.0161,
-   "ai": 50
+   "n": 13052,
+   "mean": 0.0087,
+   "glowing": 0.0071,
+   "angry": 0.018,
+   "ai": 40
   },
   {
    "week": "2026-W34",
-   "n": 14654,
-   "mean": 0.0093,
-   "glowing": 0.0073,
-   "angry": 0.0162,
-   "ai": 45
+   "n": 12281,
+   "mean": 0.0098,
+   "glowing": 0.0081,
+   "angry": 0.0168,
+   "ai": 36
   },
   {
    "week": "2026-W35",
-   "n": 15982,
-   "mean": 0.0095,
-   "glowing": 0.006,
-   "angry": 0.0155,
-   "ai": 51
+   "n": 13679,
+   "mean": 0.0092,
+   "glowing": 0.0067,
+   "angry": 0.0177,
+   "ai": 47
   },
   {
    "week": "2026-W36",
-   "n": 14236,
-   "mean": 0.0103,
-   "glowing": 0.0069,
-   "angry": 0.0167,
-   "ai": 39
+   "n": 12152,
+   "mean": 0.0101,
+   "glowing": 0.0078,
+   "angry": 0.0184,
+   "ai": 34
   },
   {
    "week": "2026-W37",
-   "n": 13267,
-   "mean": 0.011,
-   "glowing": 0.0081,
-   "angry": 0.0128,
-   "ai": 35
+   "n": 11269,
+   "mean": 0.0107,
+   "glowing": 0.0091,
+   "angry": 0.014,
+   "ai": 32
   },
   {
    "week": "2026-W38",
-   "n": 15874,
-   "mean": 0.0086,
-   "glowing": 0.0072,
-   "angry": 0.014,
-   "ai": 74
-  },
-  {
-   "week": "2026-W39",
-   "n": 15674,
-   "mean": 0.0129,
-   "glowing": 0.0075,
-   "angry": 0.0122,
-   "ai": 66
-  },
-  {
-   "week": "2026-W40",
-   "n": 15819,
-   "mean": 0.0142,
-   "glowing": 0.0082,
-   "angry": 0.0113,
-   "ai": 68
-  },
-  {
-   "week": "2026-W41",
-   "n": 16687,
-   "mean": 0.012,
-   "glowing": 0.0074,
-   "angry": 0.0131,
-   "ai": 74
-  },
-  {
-   "week": "2026-W42",
-   "n": 16248,
-   "mean": 0.013,
+   "n": 13262,
+   "mean": 0.0083,
    "glowing": 0.0084,
-   "angry": 0.0108,
-   "ai": 56
-  },
-  {
-   "week": "2026-W43",
-   "n": 15068,
-   "mean": 0.0114,
-   "glowing": 0.0063,
-   "angry": 0.0131,
+   "angry": 0.0158,
    "ai": 64
   },
   {
+   "week": "2026-W39",
+   "n": 13134,
+   "mean": 0.0129,
+   "glowing": 0.0087,
+   "angry": 0.0133,
+   "ai": 61
+  },
+  {
+   "week": "2026-W40",
+   "n": 13349,
+   "mean": 0.0143,
+   "glowing": 0.0091,
+   "angry": 0.0126,
+   "ai": 59
+  },
+  {
+   "week": "2026-W41",
+   "n": 14052,
+   "mean": 0.0118,
+   "glowing": 0.0083,
+   "angry": 0.0146,
+   "ai": 65
+  },
+  {
+   "week": "2026-W42",
+   "n": 13554,
+   "mean": 0.0131,
+   "glowing": 0.0095,
+   "angry": 0.0119,
+   "ai": 43
+  },
+  {
+   "week": "2026-W43",
+   "n": 12461,
+   "mean": 0.0119,
+   "glowing": 0.0074,
+   "angry": 0.0139,
+   "ai": 59
+  },
+  {
    "week": "2026-W44",
-   "n": 15884,
-   "mean": 0.0105,
-   "glowing": 0.0076,
-   "angry": 0.0163,
-   "ai": 88
+   "n": 12864,
+   "mean": 0.0121,
+   "glowing": 0.0089,
+   "angry": 0.016,
+   "ai": 75
   }
  ],
  "monthly": [
@@ -437,11 +437,11 @@
     "2025-W45",
     "2025-W48"
    ],
-   "n": 41653,
-   "mean": 0.0103,
-   "glowing": 0.0076,
-   "angry": 0.0129,
-   "ai": 34
+   "n": 35841,
+   "mean": 0.0098,
+   "glowing": 0.0085,
+   "angry": 0.0147,
+   "ai": 33
   },
   {
    "month": "2025-12",
@@ -449,11 +449,11 @@
     "2025-W49",
     "2025-W52"
    ],
-   "n": 35622,
-   "mean": 0.012,
-   "glowing": 0.0078,
-   "angry": 0.0134,
-   "ai": 46
+   "n": 30740,
+   "mean": 0.0116,
+   "glowing": 0.0087,
+   "angry": 0.0152,
+   "ai": 45
   },
   {
    "month": "2026-01",
@@ -461,11 +461,11 @@
     "2026-W01",
     "2026-W05"
    ],
-   "n": 47406,
-   "mean": 0.0133,
-   "glowing": 0.0075,
-   "angry": 0.0112,
-   "ai": 41
+   "n": 40582,
+   "mean": 0.013,
+   "glowing": 0.0083,
+   "angry": 0.0128,
+   "ai": 36
   },
   {
    "month": "2026-02",
@@ -473,11 +473,11 @@
     "2026-W06",
     "2026-W09"
    ],
-   "n": 52149,
-   "mean": 0.0114,
-   "glowing": 0.0073,
-   "angry": 0.0127,
-   "ai": 43
+   "n": 44882,
+   "mean": 0.0113,
+   "glowing": 0.0082,
+   "angry": 0.014,
+   "ai": 34
   },
   {
    "month": "2026-03",
@@ -485,11 +485,11 @@
     "2026-W10",
     "2026-W13"
    ],
-   "n": 53492,
-   "mean": 0.0106,
-   "glowing": 0.0069,
-   "angry": 0.0139,
-   "ai": 82
+   "n": 46026,
+   "mean": 0.0102,
+   "glowing": 0.0077,
+   "angry": 0.0158,
+   "ai": 74
   },
   {
    "month": "2026-04",
@@ -497,11 +497,11 @@
     "2026-W14",
     "2026-W18"
    ],
-   "n": 63595,
-   "mean": 0.01,
-   "glowing": 0.0071,
-   "angry": 0.014,
-   "ai": 138
+   "n": 54284,
+   "mean": 0.0098,
+   "glowing": 0.0081,
+   "angry": 0.0156,
+   "ai": 107
   },
   {
    "month": "2026-05",
@@ -509,11 +509,11 @@
     "2026-W19",
     "2026-W22"
    ],
-   "n": 53274,
-   "mean": 0.0096,
-   "glowing": 0.007,
-   "angry": 0.0148,
-   "ai": 125
+   "n": 45579,
+   "mean": 0.0094,
+   "glowing": 0.0078,
+   "angry": 0.0167,
+   "ai": 106
   },
   {
    "month": "2026-06",
@@ -521,11 +521,11 @@
     "2026-W23",
     "2026-W26"
    ],
-   "n": 55494,
-   "mean": 0.0081,
-   "glowing": 0.0064,
-   "angry": 0.0155,
-   "ai": 150
+   "n": 47867,
+   "mean": 0.0077,
+   "glowing": 0.0072,
+   "angry": 0.0173,
+   "ai": 134
   },
   {
    "month": "2026-07",
@@ -533,11 +533,11 @@
     "2026-W27",
     "2026-W31"
    ],
-   "n": 65996,
-   "mean": 0.0078,
-   "glowing": 0.0061,
-   "angry": 0.0161,
-   "ai": 163
+   "n": 56536,
+   "mean": 0.0075,
+   "glowing": 0.0069,
+   "angry": 0.018,
+   "ai": 138
   },
   {
    "month": "2026-08",
@@ -545,11 +545,11 @@
     "2026-W32",
     "2026-W35"
    ],
-   "n": 59547,
-   "mean": 0.0095,
-   "glowing": 0.0065,
-   "angry": 0.0153,
-   "ai": 182
+   "n": 50811,
+   "mean": 0.0094,
+   "glowing": 0.0072,
+   "angry": 0.017,
+   "ai": 155
   },
   {
    "month": "2026-09",
@@ -557,11 +557,11 @@
     "2026-W36",
     "2026-W39"
    ],
-   "n": 59051,
-   "mean": 0.0107,
-   "glowing": 0.0074,
-   "angry": 0.0139,
-   "ai": 214
+   "n": 49817,
+   "mean": 0.0105,
+   "glowing": 0.0085,
+   "angry": 0.0154,
+   "ai": 191
   },
   {
    "month": "2026-10",
@@ -569,11 +569,11 @@
     "2026-W40",
     "2026-W44"
    ],
-   "n": 79706,
-   "mean": 0.0122,
-   "glowing": 0.0076,
-   "angry": 0.0129,
-   "ai": 350
+   "n": 66280,
+   "mean": 0.0127,
+   "glowing": 0.0087,
+   "angry": 0.0138,
+   "ai": 301
   }
  ],
  "periods": {
@@ -582,13 +582,13 @@
     "2025-W45",
     "2026-W44"
    ],
-   "n_trivial": 224315,
+   "n_trivial": 200154,
    "total": {
-    "n": 666985,
-    "mean": 0.0104,
-    "glowing": 0.0071,
-    "angry": 0.014,
-    "ai": 1568
+    "n": 569245,
+    "mean": 0.0102,
+    "glowing": 0.0079,
+    "angry": 0.0156,
+    "ai": 1354
    },
    "dist": [
     [
@@ -597,63 +597,63 @@
     ],
     [
      -0.8,
-     12
+     11
     ],
     [
      -0.7,
-     19
+     18
     ],
     [
      -0.6,
-     320
+     296
     ],
     [
      -0.5,
-     309
+     292
     ],
     [
      -0.4,
-     761
+     714
     ],
     [
      -0.3,
-     7897
+     7538
     ],
     [
      -0.2,
-     11355
+     10882
     ],
     [
      -0.1,
-     28584
+     27568
     ],
     [
      0.0,
-     536774
+     453576
     ],
     [
      0.1,
-     44447
+     33036
     ],
     [
      0.2,
-     10442
+     9890
     ],
     [
      0.3,
-     21358
+     20898
     ],
     [
      0.4,
-     1997
+     1933
     ],
     [
      0.5,
-     2585
+     2471
     ],
     [
      0.6,
-     76
+     75
     ],
     [
      0.7,
@@ -661,7 +661,7 @@
     ],
     [
      0.8,
-     20
+     18
     ],
     [
      0.9,
@@ -2082,33 +2082,9 @@
      "role": "reviewer"
     },
     {
-     "text": "Looks like you didn't even try to build the code. You can't use chromium buildbot results to debug your AI written code, you should ensure that the code compiles and runs *before* you upload it.",
-     "score": -0.8,
-     "month": "2026-06",
-     "role": "reviewer"
-    },
-    {
      "text": "AI slop!!!",
      "score": -0.8,
      "month": "2026-06",
-     "role": "reviewer"
-    },
-    {
-     "text": "You're supposed to use the codereview tool as a guide. Most of the comments it generated aren't correct. If I wanted AI review, I would have done that. I'd appreciate not having to deal with unprocessed AI slop.",
-     "score": -0.7,
-     "month": "2026-04",
-     "role": "author"
-    },
-    {
-     "text": "OK i _think_ i am now talking to a human being.\n\nhave you seen my comments stating that this is a complex fix for a hypothetical issue yet?\n\nThis change will not be approved without an actual evidence that this is a problem that (a) exists and (b) can't be fixed by search engines.\n\nThis fix does not belong here.",
-     "score": -0.7,
-     "month": "2026-09",
-     "role": "reviewer"
-    },
-    {
-     "text": "not lgtm\n\nthe entire browser would be unusable without a locale pak. If a translation is missing, it defaults to English instead, so that would also not make it crash.\n\nthis seems like an AI-generated bug and patch?",
-     "score": -0.7,
-     "month": "2026-08",
      "role": "reviewer"
     },
     {
@@ -2148,25 +2124,7 @@
      "role": "reviewer"
     },
     {
-     "text": "This is meaningless the the reviewer. Do not include things like this in commit messages.",
-     "score": -0.6,
-     "month": "2026-09",
-     "role": "author"
-    },
-    {
-     "text": "You need to explain what fixed the test. Or state explicitly you checked and you don’t know. I can’t send a CL for review as-is.\n\nThis is already in the SKILL’s commit message file. Why was this ignored? How to ensure you don’t forget it?",
-     "score": -0.6,
-     "month": "2026-10",
-     "role": "author"
-    },
-    {
      "text": "Invalid: Please get to know GCedHeapVector.",
-     "score": -0.6,
-     "month": "2026-02",
-     "role": "author"
-    },
-    {
-     "text": "Checks are failing - adress them, and we need to do this without changing interfaces.",
      "score": -0.6,
      "month": "2026-02",
      "role": "author"
@@ -2194,11 +2152,53 @@
      "score": -0.6,
      "month": "2026-09",
      "role": "reviewer"
+    },
+    {
+     "text": "FWIW, we've generally had really bad experience with people trying to spanify the CSS code with LLMs. It ends up in inconsistencies and perf regressions nearly every single time.",
+     "score": -0.6,
+     "month": "2026-03",
+     "role": "reviewer"
+    },
+    {
+     "text": "Are all the comments in these CLs AI-generated? I'm finding them pretty difficult to read and understand.\n\nFor example, this could probably be rephrased as something like:\n\n```\n// Add a stream in another frame to prevent the manager from self-deleting when empty.\n```\n\nI think the code in this CL LGTM, but it would be nice to update the comments and CL description to be more readable. Otherwise, it's just noise.",
+     "score": -0.6,
+     "month": "2026-08",
+     "role": "reviewer"
+    },
+    {
+     "text": "This appears to be unrelated to the change as described in the patch. Could you try updating your model to do self-contained changes or strictly adhere to the patch description so that we don't have unintended diffs?",
+     "score": -0.6,
+     "month": "2026-10",
+     "role": "reviewer"
+    },
+    {
+     "text": "I WILL NEVER TRUST AI AGAIN. I WILL NEVER TRUST AI AGAIN. I WILL NEVER TRUST AI AGAIN. I WILL NEVER TRUST AI AGAIN. I WILL NEVER TRUST AI AGAIN. I WILL NEVER TRUST AI AGAIN. I WILL NEVER TRUST AI AGAIN. I WILL NEVER TRUST AI AGAIN. I WILL NEVER TRUST AI AGAIN. I WILL NEVER TRUST AI AGAIN. I WILL NEVER TRUST AI AGAIN. I WILL NEVER TRUST AI AGAIN. ...",
+     "score": -0.6,
+     "month": "2026-08",
+     "role": "author"
+    },
+    {
+     "text": "AI slop!",
+     "score": -0.6,
+     "month": "2026-09",
+     "role": "author"
+    },
+    {
+     "text": "Sorry, this is hand-wavy and feels like AI-generated text. There's no heavy fragmentation caused by small column widths here. `columns:0` means `column-width:0px`, which causes line boxes of zero width. Sure, small column width, but there are no line break opportunities in the test anyway, so it doesn't matter. We end up with two columns. Not exactly heavy. 😊",
+     "score": -0.6,
+     "month": "2026-06",
+     "role": "reviewer"
+    },
+    {
+     "text": "Looks like LLM output - not useful",
+     "score": -0.6,
+     "month": "2026-10",
+     "role": "reviewer"
     }
    ],
    "ai_left_out": {
-    "screened": 17,
-    "long_or_linked": 268
+    "screened": 22,
+    "long_or_linked": 246
    }
   },
   "2025": {
@@ -2206,13 +2206,13 @@
     "2025-W45",
     "2025-W52"
    ],
-   "n_trivial": 26723,
+   "n_trivial": 24309,
    "total": {
-    "n": 77275,
-    "mean": 0.0111,
-    "glowing": 0.0077,
-    "angry": 0.0131,
-    "ai": 80
+    "n": 66581,
+    "mean": 0.0106,
+    "glowing": 0.0086,
+    "angry": 0.0149,
+    "ai": 78
    },
    "dist": [
     [
@@ -2233,7 +2233,7 @@
     ],
     [
      -0.5,
-     29
+     27
     ],
     [
      -0.4,
@@ -2241,39 +2241,39 @@
     ],
     [
      -0.3,
-     881
+     865
     ],
     [
      -0.2,
-     1222
+     1197
     ],
     [
      -0.1,
-     2899
+     2844
     ],
     [
      0.0,
-     62910
+     53680
     ],
     [
      0.1,
-     5116
+     3899
     ],
     [
      0.2,
-     1262
+     1191
     ],
     [
      0.3,
-     2259
+     2202
     ],
     [
      0.4,
-     248
+     239
     ],
     [
      0.5,
-     330
+     319
     ],
     [
      0.6,
@@ -2285,7 +2285,7 @@
     ],
     [
      0.8,
-     3
+     2
     ]
    ],
    "happy": {
@@ -3639,12 +3639,6 @@
      "role": "reviewer"
     },
     {
-     "text": "Good to know that Gemini can hallucinate a bugId, even when we provide the right one..",
-     "score": -0.4,
-     "month": "2025-12",
-     "role": "author"
-    },
-    {
      "text": "Can you remove Gemini comments that are not adding value?",
      "score": -0.4,
      "month": "2025-12",
@@ -3709,10 +3703,16 @@
      "score": -0.3,
      "month": "2025-12",
      "role": "reviewer"
+    },
+    {
+     "text": "oh it's not, it was gemini being over helpful trying to fix a dependency issue and me not telling it no firmly enough. I'm annoyed it snuck this change back in and I missed it............",
+     "score": -0.3,
+     "month": "2025-12",
+     "role": "author"
     }
    ],
    "ai_left_out": {
-    "screened": 4,
+    "screened": 5,
     "long_or_linked": 26
    }
   },
@@ -3721,13 +3721,13 @@
     "2025-W45",
     "2025-W48"
    ],
-   "n_trivial": 14527,
+   "n_trivial": 13195,
    "total": {
-    "n": 41653,
-    "mean": 0.0103,
-    "glowing": 0.0076,
-    "angry": 0.0129,
-    "ai": 34
+    "n": 35841,
+    "mean": 0.0098,
+    "glowing": 0.0085,
+    "angry": 0.0147,
+    "ai": 33
    },
    "dist": [
     [
@@ -3744,7 +3744,7 @@
     ],
     [
      -0.5,
-     12
+     11
     ],
     [
      -0.4,
@@ -3752,39 +3752,39 @@
     ],
     [
      -0.3,
-     475
+     468
     ],
     [
      -0.2,
-     689
+     676
     ],
     [
      -0.1,
-     1629
+     1600
     ],
     [
      0.0,
-     33973
+     28921
     ],
     [
      0.1,
-     2646
+     2013
     ],
     [
      0.2,
-     687
+     651
     ],
     [
      0.3,
-     1178
+     1147
     ],
     [
      0.4,
-     135
+     130
     ],
     [
      0.5,
-     175
+     170
     ],
     [
      0.6,
@@ -4654,12 +4654,6 @@
      "role": "author"
     },
     {
-     "text": "The tool is confused, This code is unchanged in this CL.",
-     "score": -0.3,
-     "month": "2025-11",
-     "role": "author"
-    },
-    {
      "text": "I've had really bad luck with gemini going down weird rabbit holes when the build command is not explicitly told to it. Maybe instead of this line, just say \"do a test build\", and then at the beginning, tell it to not proceed if it has not already been told how to do a build?",
      "score": -0.3,
      "month": "2025-11",
@@ -4682,6 +4676,12 @@
      "score": -0.3,
      "month": "2025-11",
      "role": "reviewer"
+    },
+    {
+     "text": "This is not how it's calculated.\n\nIf you look down below for how the fractional coordinate is calculated, it is directly using the physical resolutions returned by PipeWire. Gemini seems to have renamed some variables without my knowledge. I've fixed them and made them slightly clearer.",
+     "score": -0.3,
+     "month": "2025-11",
+     "role": "author"
     },
     {
      "text": "LGTM! But please wait for the upcoming CL to be ready before landing this one. I want to avoid adding features that will never be used. Note that there are agents/bot that might try to remove unused/stall features.",
@@ -4715,7 +4715,7 @@
     }
    ],
    "ai_left_out": {
-    "screened": 2,
+    "screened": 1,
     "long_or_linked": 2
    }
   },
@@ -4724,13 +4724,13 @@
     "2025-W49",
     "2025-W52"
    ],
-   "n_trivial": 12196,
+   "n_trivial": 11114,
    "total": {
-    "n": 35622,
-    "mean": 0.012,
-    "glowing": 0.0078,
-    "angry": 0.0134,
-    "ai": 46
+    "n": 30740,
+    "mean": 0.0116,
+    "glowing": 0.0087,
+    "angry": 0.0152,
+    "ai": 45
    },
    "dist": [
     [
@@ -4747,7 +4747,7 @@
     ],
     [
      -0.5,
-     17
+     16
     ],
     [
      -0.4,
@@ -4755,39 +4755,39 @@
     ],
     [
      -0.3,
-     406
+     397
     ],
     [
      -0.2,
-     533
+     521
     ],
     [
      -0.1,
-     1270
+     1244
     ],
     [
      0.0,
-     28937
+     24759
     ],
     [
      0.1,
-     2470
+     1886
     ],
     [
      0.2,
-     575
+     540
     ],
     [
      0.3,
-     1081
+     1055
     ],
     [
      0.4,
-     113
+     109
     ],
     [
      0.5,
-     155
+     149
     ],
     [
      0.6,
@@ -4799,7 +4799,7 @@
     ],
     [
      0.8,
-     2
+     1
     ]
    ],
    "happy": {
@@ -5603,12 +5603,6 @@
      "role": "reviewer"
     },
     {
-     "text": "Good to know that Gemini can hallucinate a bugId, even when we provide the right one..",
-     "score": -0.4,
-     "month": "2025-12",
-     "role": "author"
-    },
-    {
      "text": "Can you remove Gemini comments that are not adding value?",
      "score": -0.4,
      "month": "2025-12",
@@ -5663,22 +5657,10 @@
      "role": "reviewer"
     },
     {
-     "text": "I don't know why I'm getting this Keep Sorted error.. I haven't made any changes to the sorting, and based on a diff checker, the \"suggested AI fix\" is identical to the current code.",
-     "score": -0.2,
-     "month": "2025-12",
-     "role": "author"
-    },
-    {
      "text": "SGTM, I see TODO's as documentation trackers more-so than \"must do's\".\n\nHence my hesitation to use AI to cut-out those documentation links, in general.",
      "score": -0.1,
      "month": "2025-12",
      "role": "reviewer"
-    },
-    {
-     "text": "The whole \"You are an expert...\" thing seems silly to me too. Actually, I'm unsure if this is useful; anecdotally, I don't see much difference with and without such prefaces though I note others use them. I've removed it for now.\n\nI've moved the substance of the agent prompt into a new lit style guide doc, ptal.",
-     "score": -0.1,
-     "month": "2025-12",
-     "role": "author"
     },
     {
      "text": "removed",
@@ -5688,7 +5670,7 @@
     }
    ],
    "ai_left_out": {
-    "screened": 3,
+    "screened": 5,
     "long_or_linked": 24
    }
   },
@@ -5697,13 +5679,13 @@
     "2026-W01",
     "2026-W44"
    ],
-   "n_trivial": 197592,
+   "n_trivial": 175845,
    "total": {
-    "n": 589710,
-    "mean": 0.0103,
-    "glowing": 0.007,
-    "angry": 0.0141,
-    "ai": 1488
+    "n": 502664,
+    "mean": 0.0101,
+    "glowing": 0.0079,
+    "angry": 0.0157,
+    "ai": 1276
    },
    "dist": [
     [
@@ -5712,63 +5694,63 @@
     ],
     [
      -0.8,
-     11
+     10
     ],
     [
      -0.7,
-     17
+     16
     ],
     [
      -0.6,
-     294
+     270
     ],
     [
      -0.5,
-     280
+     265
     ],
     [
      -0.4,
-     688
+     641
     ],
     [
      -0.3,
-     7016
+     6673
     ],
     [
      -0.2,
-     10133
+     9685
     ],
     [
      -0.1,
-     25685
+     24724
     ],
     [
      0.0,
-     473864
+     399896
     ],
     [
      0.1,
-     39331
+     29137
     ],
     [
      0.2,
-     9180
+     8699
     ],
     [
      0.3,
-     19099
+     18696
     ],
     [
      0.4,
-     1749
+     1694
     ],
     [
      0.5,
-     2255
+     2152
     ],
     [
      0.6,
-     64
+     63
     ],
     [
      0.7,
@@ -5776,7 +5758,7 @@
     ],
     [
      0.8,
-     17
+     16
     ],
     [
      0.9,
@@ -7191,33 +7173,9 @@
    },
    "ai": [
     {
-     "text": "Looks like you didn't even try to build the code. You can't use chromium buildbot results to debug your AI written code, you should ensure that the code compiles and runs *before* you upload it.",
-     "score": -0.8,
-     "month": "2026-06",
-     "role": "reviewer"
-    },
-    {
      "text": "AI slop!!!",
      "score": -0.8,
      "month": "2026-06",
-     "role": "reviewer"
-    },
-    {
-     "text": "You're supposed to use the codereview tool as a guide. Most of the comments it generated aren't correct. If I wanted AI review, I would have done that. I'd appreciate not having to deal with unprocessed AI slop.",
-     "score": -0.7,
-     "month": "2026-04",
-     "role": "author"
-    },
-    {
-     "text": "OK i _think_ i am now talking to a human being.\n\nhave you seen my comments stating that this is a complex fix for a hypothetical issue yet?\n\nThis change will not be approved without an actual evidence that this is a problem that (a) exists and (b) can't be fixed by search engines.\n\nThis fix does not belong here.",
-     "score": -0.7,
-     "month": "2026-09",
-     "role": "reviewer"
-    },
-    {
-     "text": "not lgtm\n\nthe entire browser would be unusable without a locale pak. If a translation is missing, it defaults to English instead, so that would also not make it crash.\n\nthis seems like an AI-generated bug and patch?",
-     "score": -0.7,
-     "month": "2026-08",
      "role": "reviewer"
     },
     {
@@ -7257,25 +7215,7 @@
      "role": "reviewer"
     },
     {
-     "text": "This is meaningless the the reviewer. Do not include things like this in commit messages.",
-     "score": -0.6,
-     "month": "2026-09",
-     "role": "author"
-    },
-    {
-     "text": "You need to explain what fixed the test. Or state explicitly you checked and you don’t know. I can’t send a CL for review as-is.\n\nThis is already in the SKILL’s commit message file. Why was this ignored? How to ensure you don’t forget it?",
-     "score": -0.6,
-     "month": "2026-10",
-     "role": "author"
-    },
-    {
      "text": "Invalid: Please get to know GCedHeapVector.",
-     "score": -0.6,
-     "month": "2026-02",
-     "role": "author"
-    },
-    {
-     "text": "Checks are failing - adress them, and we need to do this without changing interfaces.",
      "score": -0.6,
      "month": "2026-02",
      "role": "author"
@@ -7309,11 +7249,53 @@
      "score": -0.6,
      "month": "2026-03",
      "role": "reviewer"
+    },
+    {
+     "text": "Are all the comments in these CLs AI-generated? I'm finding them pretty difficult to read and understand.\n\nFor example, this could probably be rephrased as something like:\n\n```\n// Add a stream in another frame to prevent the manager from self-deleting when empty.\n```\n\nI think the code in this CL LGTM, but it would be nice to update the comments and CL description to be more readable. Otherwise, it's just noise.",
+     "score": -0.6,
+     "month": "2026-08",
+     "role": "reviewer"
+    },
+    {
+     "text": "This appears to be unrelated to the change as described in the patch. Could you try updating your model to do self-contained changes or strictly adhere to the patch description so that we don't have unintended diffs?",
+     "score": -0.6,
+     "month": "2026-10",
+     "role": "reviewer"
+    },
+    {
+     "text": "I WILL NEVER TRUST AI AGAIN. I WILL NEVER TRUST AI AGAIN. I WILL NEVER TRUST AI AGAIN. I WILL NEVER TRUST AI AGAIN. I WILL NEVER TRUST AI AGAIN. I WILL NEVER TRUST AI AGAIN. I WILL NEVER TRUST AI AGAIN. I WILL NEVER TRUST AI AGAIN. I WILL NEVER TRUST AI AGAIN. I WILL NEVER TRUST AI AGAIN. I WILL NEVER TRUST AI AGAIN. I WILL NEVER TRUST AI AGAIN. ...",
+     "score": -0.6,
+     "month": "2026-08",
+     "role": "author"
+    },
+    {
+     "text": "AI slop!",
+     "score": -0.6,
+     "month": "2026-09",
+     "role": "author"
+    },
+    {
+     "text": "Sorry, this is hand-wavy and feels like AI-generated text. There's no heavy fragmentation caused by small column widths here. `columns:0` means `column-width:0px`, which causes line boxes of zero width. Sure, small column width, but there are no line break opportunities in the test anyway, so it doesn't matter. We end up with two columns. Not exactly heavy. 😊",
+     "score": -0.6,
+     "month": "2026-06",
+     "role": "reviewer"
+    },
+    {
+     "text": "Looks like LLM output - not useful",
+     "score": -0.6,
+     "month": "2026-10",
+     "role": "reviewer"
+    },
+    {
+     "text": "this whole message does not make a lot of sense to me and contains internal contradictions e.g. it says there are 4 skills but there are 3 listed.\n\nTo me it feels like this was either written in a rush, or generated, and in both cases that does not help me as a reviewer understand what the CL is doing or why.\n\nPlease rewrite this to be clearer, and properly format it.",
+     "score": -0.6,
+     "month": "2026-01",
+     "role": "reviewer"
     }
    ],
    "ai_left_out": {
-    "screened": 16,
-    "long_or_linked": 242
+    "screened": 23,
+    "long_or_linked": 220
    }
   },
   "2026-01": {
@@ -7321,13 +7303,13 @@
     "2026-W01",
     "2026-W05"
    ],
-   "n_trivial": 16314,
+   "n_trivial": 14870,
    "total": {
-    "n": 47406,
-    "mean": 0.0133,
-    "glowing": 0.0075,
-    "angry": 0.0112,
-    "ai": 41
+    "n": 40582,
+    "mean": 0.013,
+    "glowing": 0.0083,
+    "angry": 0.0128,
+    "ai": 36
    },
    "dist": [
     [
@@ -7336,7 +7318,7 @@
     ],
     [
      -0.6,
-     17
+     16
     ],
     [
      -0.5,
@@ -7348,39 +7330,39 @@
     ],
     [
      -0.3,
-     464
+     455
     ],
     [
      -0.2,
-     699
+     686
     ],
     [
      -0.1,
-     1682
+     1638
     ],
     [
      0.0,
-     38485
+     32655
     ],
     [
      0.1,
-     3300
+     2491
     ],
     [
      0.2,
-     883
+     829
     ],
     [
      0.3,
-     1472
+     1426
     ],
     [
      0.4,
-     158
+     153
     ],
     [
      0.5,
-     186
+     173
     ],
     [
      0.6,
@@ -8306,12 +8288,6 @@
    },
    "ai": [
     {
-     "text": "This is not a CrOS WebUI, why is 'cros-' used across this file? (Again, is this file AI-generated? And ff so, you should be reviewing it very thoroughly before sending it to reviewers.",
-     "score": -0.6,
-     "month": "2026-01",
-     "role": "reviewer"
-    },
-    {
      "text": "this whole message does not make a lot of sense to me and contains internal contradictions e.g. it says there are 4 skills but there are 3 listed.\n\nTo me it feels like this was either written in a rush, or generated, and in both cases that does not help me as a reviewer understand what the CL is doing or why.\n\nPlease rewrite this to be clearer, and properly format it.",
      "score": -0.6,
      "month": "2026-01",
@@ -8372,12 +8348,6 @@
      "role": "author"
     },
     {
-     "text": "I'm not sure if EqualsCaseInsensitiveASCII is OK here. Gemini swears up and down that it is even though some non-ascii characters won't be handled correctly, unless the locale is set correctly.",
-     "score": -0.3,
-     "month": "2025-12",
-     "role": "author"
-    },
-    {
      "text": "Is this AI generated fix? I am not a big fan of this pattern. Can you instead split this in two lines? auto it = sub_factories_.find(source); if... same for the other usages of this pattern?",
      "score": -0.3,
      "month": "2026-01",
@@ -8402,12 +8372,6 @@
      "role": "reviewer"
     },
     {
-     "text": "Ok, need to pick a reviewer manually because the bot doesn't understand.",
-     "score": -0.3,
-     "month": "2026-01",
-     "role": "author"
-    },
-    {
      "text": "can you double check this isn't a regression? I believe we only want to do the above types, I think AI just added these for unknown reason - but maybe we used to allow the IsSupportedImageMimeType?",
      "score": -0.3,
      "month": "2026-01",
@@ -8424,11 +8388,29 @@
      "score": -0.2,
      "month": "2026-01",
      "role": "author"
+    },
+    {
+     "text": "obsolete review",
+     "score": -0.2,
+     "month": "2026-01",
+     "role": "author"
+    },
+    {
+     "text": "Looks like the bot still isn't happy. The html is cleared at the start of each test and I can't repro locally any more, so I've added a `microtasksFinished` to the end of the test.",
+     "score": -0.2,
+     "month": "2026-01",
+     "role": "author"
+    },
+    {
+     "text": "AI is there for blame",
+     "score": -0.2,
+     "month": "2026-01",
+     "role": "author"
     }
    ],
    "ai_left_out": {
-    "screened": 1,
-    "long_or_linked": 4
+    "screened": 2,
+    "long_or_linked": 3
    }
   },
   "2026-02": {
@@ -8436,66 +8418,66 @@
     "2026-W06",
     "2026-W09"
    ],
-   "n_trivial": 18089,
+   "n_trivial": 16440,
    "total": {
-    "n": 52149,
-    "mean": 0.0114,
-    "glowing": 0.0073,
-    "angry": 0.0127,
-    "ai": 43
+    "n": 44882,
+    "mean": 0.0113,
+    "glowing": 0.0082,
+    "angry": 0.014,
+    "ai": 34
    },
    "dist": [
     [
      -0.7,
-     2
+     1
     ],
     [
      -0.6,
-     20
+     18
     ],
     [
      -0.5,
-     23
+     22
     ],
     [
      -0.4,
-     58
+     51
     ],
     [
      -0.3,
-     559
+     538
     ],
     [
      -0.2,
-     810
+     783
     ],
     [
      -0.1,
-     1898
+     1848
     ],
     [
      0.0,
-     42559
+     36350
     ],
     [
      0.1,
-     3399
+     2533
     ],
     [
      0.2,
-     855
+     818
     ],
     [
      0.3,
-     1587
+     1553
     ],
     [
      0.4,
-     148
+     142
     ],
     [
      0.5,
-     222
+     216
     ],
     [
      0.6,
@@ -9480,34 +9462,10 @@
      "role": "author"
     },
     {
-     "text": "Checks are failing - adress them, and we need to do this without changing interfaces.",
-     "score": -0.6,
-     "month": "2026-02",
-     "role": "author"
-    },
-    {
-     "text": "Try again, without changing any interfaces.",
-     "score": -0.4,
-     "month": "2026-02",
-     "role": "author"
-    },
-    {
      "text": "still lgtm good luck with the robots",
      "score": -0.4,
      "month": "2026-02",
      "role": "reviewer"
-    },
-    {
-     "text": "Is this change needed? Do not make unneeded changes even if they are an improvment.",
-     "score": -0.4,
-     "month": "2026-02",
-     "role": "author"
-    },
-    {
-     "text": "We can't change interfaces. If you think it's not possible / very hard, help me understand why. Respond to this comment with a detailed anaylsis.",
-     "score": -0.4,
-     "month": "2026-02",
-     "role": "author"
     },
     {
      "text": "Invalid: Highlighted code is not relevant to what you're saying.",
@@ -9522,18 +9480,6 @@
      "role": "author"
     },
     {
-     "text": "Is this change needed? Do not make unneeded changes even if they are an improvement.",
-     "score": -0.4,
-     "month": "2026-02",
-     "role": "author"
-    },
-    {
-     "text": "This makes sense as a general best practice, but it doesn't actually prevent any allocations here, does it?!\n\n(Was this description AI-generated? It's IMO way too wordy / contains too many low-level details for a small cleanup CL..)",
-     "score": -0.4,
-     "month": "2026-02",
-     "role": "reviewer"
-    },
-    {
      "text": "Invalid: This seems to be wrong.",
      "score": -0.3,
      "month": "2026-02",
@@ -9544,12 +9490,6 @@
      "score": -0.3,
      "month": "2026-02",
      "role": "reviewer"
-    },
-    {
-     "text": "We need to do this without changing the public interface on any classes, we have the interface we need, it's just the build targets that were the issue.",
-     "score": -0.3,
-     "month": "2026-02",
-     "role": "author"
     },
     {
      "text": "Feel free to ignore too 😊.",
@@ -9564,38 +9504,20 @@
      "role": "author"
     },
     {
-     "text": "was that AI generated? the expectation changes seem formatted in an unexpected way.\n\nI'd expect\n\n```\nsome suppression\nsome suppression\nsome suppression\n\n# turn this back on (clear this is the next suppression)\nsome suppression\n```\n\nbut instead it's \n```\nsome suppression\nsome suppression\nsome suppression\n# turn this back on (clear this is the next suppression)\n\nsome suppression\n```\n\nbut LGTM.",
-     "score": -0.2,
-     "month": "2026-02",
-     "role": "reviewer"
-    },
-    {
-     "text": "Revert that, other approach was fine.",
-     "score": -0.2,
-     "month": "2026-02",
-     "role": "author"
-    },
-    {
-     "text": "Thanks, gemini sometimes makes a change that was for another projects :(.\nRevered.",
-     "score": -0.1,
-     "month": "2026-02",
-     "role": "author"
-    },
-    {
-     "text": "I tried the solution again with Gemini 3.0 this time and with a few prompt engineering and testing - I found a async solution with consistency guarantee. I have flag guarded this change and tested it extenstively.",
+     "text": "I blame AI",
      "score": 0.0,
      "month": "2026-02",
      "role": "author"
     },
     {
-     "text": "I blame AI",
+     "text": "Yes, my bad on sending this before the CQ showed this error. Funny enough AI review missed this lol.",
      "score": 0.0,
      "month": "2026-02",
      "role": "author"
     }
    ],
    "ai_left_out": {
-    "screened": 16,
+    "screened": 18,
     "long_or_linked": 6
    }
   },
@@ -9604,13 +9526,13 @@
     "2026-W10",
     "2026-W13"
    ],
-   "n_trivial": 18071,
+   "n_trivial": 16327,
    "total": {
-    "n": 53492,
-    "mean": 0.0106,
-    "glowing": 0.0069,
-    "angry": 0.0139,
-    "ai": 82
+    "n": 46026,
+    "mean": 0.0102,
+    "glowing": 0.0077,
+    "angry": 0.0158,
+    "ai": 74
    },
    "dist": [
     [
@@ -9623,11 +9545,11 @@
     ],
     [
      -0.6,
-     33
+     32
     ],
     [
      -0.5,
-     31
+     30
     ],
     [
      -0.4,
@@ -9635,39 +9557,39 @@
     ],
     [
      -0.3,
-     625
+     610
     ],
     [
      -0.2,
-     896
+     865
     ],
     [
      -0.1,
-     2009
+     1959
     ],
     [
      0.0,
-     43433
+     37025
     ],
     [
      0.1,
-     3495
+     2638
     ],
     [
      0.2,
-     885
+     843
     ],
     [
      0.3,
-     1658
+     1613
     ],
     [
      0.4,
-     140
+     134
     ],
     [
      0.5,
-     220
+     210
     ],
     [
      0.6,
@@ -10743,12 +10665,6 @@
      "role": "author"
     },
     {
-     "text": "I really hate how gemini has no memory of previous comments I made and so it keeps doing the same thing\n\nAnyway, please remove the (_, ...)",
-     "score": -0.5,
-     "month": "2026-03",
-     "role": "reviewer"
-    },
-    {
      "text": "Do you need help breaking out of your sandbox?",
      "score": -0.5,
      "month": "2026-03",
@@ -10791,13 +10707,7 @@
      "role": "reviewer"
     },
     {
-     "text": "Have you tried having gemini write a test given the bug description?\n\nI don't love having defense-in-depth branches without having some sort of associated coverage. If we must have it, I'd rather it just crash rather than trying to gracefully receover.",
-     "score": -0.4,
-     "month": "2026-03",
-     "role": "reviewer"
-    },
-    {
-     "text": "this is the only change in this CL, lets just update the CL description to say \"remove projects panel feature blocking bookmarks bar tab groups\" the CL description as is doesnt convey anything about the CL and seems to be AI generated.",
+     "text": "I don't understand this series of changes.  The x509_certificate_model was already not platform specific, why did you need to split this up and make an iOS specific version?\n\nAnd the choice of what to split seems to not make sense. Some things are duplicated in both that are not different like calculating the cert's hash. (I haven't had time to look over the whole thing)\n\nWas this AI generated?",
      "score": -0.4,
      "month": "2026-03",
      "role": "reviewer"
@@ -10837,10 +10747,22 @@
      "score": -0.3,
      "month": "2026-03",
      "role": "reviewer"
+    },
+    {
+     "text": "Fixed.\n\nGemini review is so great. (Gemini-CLI was the one that wrote this code, so ... room for improvement).\n\n(And hopefully this prototype API will never see the light of day ... so glad we didn't expose this metadata to the web).",
+     "score": -0.3,
+     "month": "2026-03",
+     "role": "author"
+    },
+    {
+     "text": "optional: many of these comments (which Gemini is very fond of) just describe what the code is doing without adding context or rationale... for cases where the code is clear, we don't need the comment.",
+     "score": -0.3,
+     "month": "2026-03",
+     "role": "reviewer"
     }
    ],
    "ai_left_out": {
-    "screened": 7,
+    "screened": 11,
     "long_or_linked": 10
    }
   },
@@ -10849,13 +10771,13 @@
     "2026-W14",
     "2026-W18"
    ],
-   "n_trivial": 21516,
+   "n_trivial": 19233,
    "total": {
-    "n": 63595,
-    "mean": 0.01,
-    "glowing": 0.0071,
-    "angry": 0.014,
-    "ai": 138
+    "n": 54284,
+    "mean": 0.0098,
+    "glowing": 0.0081,
+    "angry": 0.0156,
+    "ai": 107
    },
    "dist": [
     [
@@ -10868,51 +10790,51 @@
     ],
     [
      -0.6,
-     27
+     26
     ],
     [
      -0.5,
-     37
+     36
     ],
     [
      -0.4,
-     69
+     59
     ],
     [
      -0.3,
-     756
+     725
     ],
     [
      -0.2,
-     1132
+     1099
     ],
     [
      -0.1,
-     2643
+     2575
     ],
     [
      0.0,
-     51378
+     43369
     ],
     [
      0.1,
-     4154
+     3081
     ],
     [
      0.2,
-     923
+     881
     ],
     [
      0.3,
-     2024
+     1992
     ],
     [
      0.4,
-     187
+     183
     ],
     [
      0.5,
-     249
+     242
     ],
     [
      0.6,
@@ -12069,12 +11991,6 @@
    },
    "ai": [
     {
-     "text": "You're supposed to use the codereview tool as a guide. Most of the comments it generated aren't correct. If I wanted AI review, I would have done that. I'd appreciate not having to deal with unprocessed AI slop.",
-     "score": -0.7,
-     "month": "2026-04",
-     "role": "author"
-    },
-    {
      "text": "I'm starting to reach the conclusion that we need AGENTS.md files..",
      "score": -0.6,
      "month": "2026-03",
@@ -12187,11 +12103,17 @@
      "score": -0.3,
      "month": "2026-04",
      "role": "reviewer"
+    },
+    {
+     "text": "The AI generated fix changed as I was hitting save - we should also delete the old comment above",
+     "score": -0.3,
+     "month": "2026-03",
+     "role": "reviewer"
     }
    ],
    "ai_left_out": {
-    "screened": 11,
-    "long_or_linked": 23
+    "screened": 9,
+    "long_or_linked": 18
    }
   },
   "2026-05": {
@@ -12199,13 +12121,13 @@
     "2026-W19",
     "2026-W22"
    ],
-   "n_trivial": 17957,
+   "n_trivial": 16064,
    "total": {
-    "n": 53274,
-    "mean": 0.0096,
-    "glowing": 0.007,
-    "angry": 0.0148,
-    "ai": 125
+    "n": 45579,
+    "mean": 0.0094,
+    "glowing": 0.0078,
+    "angry": 0.0167,
+    "ai": 106
    },
    "dist": [
     [
@@ -12214,7 +12136,7 @@
     ],
     [
      -0.6,
-     29
+     28
     ],
     [
      -0.5,
@@ -12222,43 +12144,43 @@
     ],
     [
      -0.4,
-     67
+     66
     ],
     [
      -0.3,
-     665
+     637
     ],
     [
      -0.2,
-     939
+     897
     ],
     [
      -0.1,
-     2274
+     2213
     ],
     [
      0.0,
-     42953
+     36319
     ],
     [
      0.1,
-     3490
+     2649
     ],
     [
      0.2,
-     711
+     676
     ],
     [
      0.3,
-     1743
+     1710
     ],
     [
      0.4,
-     159
+     151
     ],
     [
      0.5,
-     206
+     195
     ],
     [
      0.6,
@@ -13288,12 +13210,6 @@
      "role": "author"
     },
     {
-     "text": "This looks like an LLM prototype that was iterated on over time. Maybe I misunderstand the comment at [1], but keep in mind that we require CL authors to be able to explain the entirety of the design and own the decisions behind them.",
-     "score": -0.6,
-     "month": "2026-05",
-     "role": "reviewer"
-    },
-    {
      "text": "how?\n\n\nwah?\n\n\nthis sounds like AI slop honestly..",
      "score": -0.6,
      "month": "2026-05",
@@ -13354,28 +13270,10 @@
      "role": "reviewer"
     },
     {
-     "text": "Remove duplicate blank line (please teach your agent to automatically handle this in the future)",
-     "score": -0.4,
-     "month": "2026-05",
-     "role": "reviewer"
-    },
-    {
      "text": "✨ vibes ✨",
      "score": -0.4,
      "month": "2026-05",
      "role": "reviewer"
-    },
-    {
-     "text": "Thank you for catching that, the automated reviewers didn't seem to mind taking reading the files in my home directory :)",
-     "score": -0.4,
-     "month": "2026-05",
-     "role": "author"
-    },
-    {
-     "text": "To Gemini: some linux presubmits are failing, please make sure that the GRPC code builds before uploading a new PS",
-     "score": -0.3,
-     "month": "2026-05",
-     "role": "author"
     },
     {
      "text": "It's somehow ridiculously difficult to get the agent to consistently format and fix python.  I actually have a follow-up staged which fixes this formattign so I'm going to go with this as-is rather than try to tease those changes out.",
@@ -13396,15 +13294,39 @@
      "role": "reviewer"
     },
     {
-     "text": "Rejected. Gemini added comment.",
+     "text": "Done. Also hand-fixed the condition the ai added here. It shouldn't be changing covered_range and is_extremity should care about the scroll direction.",
+     "score": -0.3,
+     "month": "2026-05",
+     "role": "author"
+    },
+    {
+     "text": "My experience is not great with those instructions - telling it to do something but fall back if it is too hard.\n\nWe can't tell if this will work well without trying, let's see!",
+     "score": -0.3,
+     "month": "2026-05",
+     "role": "reviewer"
+    },
+    {
+     "text": "Kind of weird to define a class inside a test? Shouldn't we have it in the anon namespace instead? I know AI likes to do it this way",
+     "score": -0.3,
+     "month": "2026-05",
+     "role": "reviewer"
+    },
+    {
+     "text": "Gemini also told me to do this, are you sure this is needed and/or helps? Which piece is this fixing exactly?",
+     "score": -0.3,
+     "month": "2026-05",
+     "role": "reviewer"
+    },
+    {
+     "text": "Yeah... I initially wasn't sure whether I should do this, since this constructure is at least usable without the `Create*` method.  I chose not to... but the AI thinks I should.",
      "score": -0.3,
      "month": "2026-05",
      "role": "author"
     }
    ],
    "ai_left_out": {
-    "screened": 5,
-    "long_or_linked": 22
+    "screened": 8,
+    "long_or_linked": 21
    }
   },
   "2026-06": {
@@ -13412,13 +13334,13 @@
     "2026-W23",
     "2026-W26"
    ],
-   "n_trivial": 18696,
+   "n_trivial": 16738,
    "total": {
-    "n": 55494,
-    "mean": 0.0081,
-    "glowing": 0.0064,
-    "angry": 0.0155,
-    "ai": 150
+    "n": 47867,
+    "mean": 0.0077,
+    "glowing": 0.0072,
+    "angry": 0.0173,
+    "ai": 134
    },
    "dist": [
     [
@@ -13439,43 +13361,43 @@
     ],
     [
      -0.4,
-     75
+     74
     ],
     [
      -0.3,
-     713
+     683
     ],
     [
      -0.2,
-     1051
+     1002
     ],
     [
      -0.1,
-     2557
+     2467
     ],
     [
      0.0,
-     44547
+     38051
     ],
     [
      0.1,
-     3588
+     2703
     ],
     [
      0.2,
-     806
+     772
     ],
     [
      0.3,
-     1730
+     1698
     ],
     [
      0.4,
-     158
+     154
     ],
     [
      0.5,
-     189
+     183
     ],
     [
      0.6,
@@ -14523,12 +14445,6 @@
    },
    "ai": [
     {
-     "text": "Looks like you didn't even try to build the code. You can't use chromium buildbot results to debug your AI written code, you should ensure that the code compiles and runs *before* you upload it.",
-     "score": -0.8,
-     "month": "2026-06",
-     "role": "reviewer"
-    },
-    {
      "text": "AI slop!!!",
      "score": -0.8,
      "month": "2026-06",
@@ -14631,6 +14547,12 @@
      "role": "reviewer"
     },
     {
+     "text": "I don't like this 😊\n\nThe CL description says (that Gemini says):\n\n\nI think the opposite is the case.\n\nThe member now occurs in the base class but it's actually the derived classes that must manage its lifecycle to avoid calling into AutofillDrivers during destruction.\n\nI find that quite confusing and misleading. This is the reason why I had put `autofill_manager_` in the derived classes.\n\n(And those casts in the instead of the covariant return types aren't pretty either.)",
+     "score": -0.4,
+     "month": "2026-06",
+     "role": "reviewer"
+    },
+    {
      "text": "It this refactoring necessary? Looks to me the AI just randomly decided to change it for no reason. The may_be variable names are weird, shouldn't it be maybe?\n\nIt's not clear to me what the purpose of the hardcoded \"unguessable\" token is.",
      "score": -0.4,
      "month": "2026-06",
@@ -14653,13 +14575,13 @@
     "2026-W27",
     "2026-W31"
    ],
-   "n_trivial": 22953,
+   "n_trivial": 20413,
    "total": {
-    "n": 65996,
-    "mean": 0.0078,
-    "glowing": 0.0061,
-    "angry": 0.0161,
-    "ai": 163
+    "n": 56536,
+    "mean": 0.0075,
+    "glowing": 0.0069,
+    "angry": 0.018,
+    "ai": 138
    },
    "dist": [
     [
@@ -14672,51 +14594,51 @@
     ],
     [
      -0.6,
-     31
+     29
     ],
     [
      -0.5,
-     28
+     26
     ],
     [
      -0.4,
-     83
+     80
     ],
     [
      -0.3,
-     919
+     881
     ],
     [
      -0.2,
-     1294
+     1235
     ],
     [
      -0.1,
-     2971
+     2841
     ],
     [
      0.0,
-     53091
+     45004
     ],
     [
      0.1,
-     4176
+     3131
     ],
     [
      0.2,
-     890
+     846
     ],
     [
      0.3,
-     2108
+     2069
     ],
     [
      0.4,
-     158
+     153
     ],
     [
      0.5,
-     237
+     231
     ],
     [
      0.6,
@@ -15091,6 +15013,13 @@
       "counterparts": 16
      },
      {
+      "name": "Colin Blundell",
+      "email": "blundell@chromium.org",
+      "glowing": 1,
+      "happy": 1,
+      "counterparts": 6
+     },
+     {
       "name": "Dana Fried",
       "email": "dfried@chromium.org",
       "glowing": 1,
@@ -15425,13 +15354,6 @@
       "glowing": 1,
       "happy": 1,
       "counterparts": 9
-     },
-     {
-      "name": "Yao Xiao",
-      "email": "yaoxia@chromium.org",
-      "glowing": 1,
-      "happy": 1,
-      "counterparts": 10
      }
     ],
     "reviewers": [
@@ -15876,6 +15798,12 @@
      "role": "reviewer"
     },
     {
+     "text": "You are responsible for the actions of your agent. Please try and be mindful of this when it comes to asking others to review the code.\n\nThis cl looks fine though. Thanks for the fixes to make sandbox code safer.",
+     "score": -0.5,
+     "month": "2026-07",
+     "role": "reviewer"
+    },
+    {
      "text": "1. please have your AI agent read the `AGENTS.md` file. it's unclear why this wasn't picked.\n2. please use `TimeUtils.uptimeMillis()`\n3. please consider updating `TimeUtils.UptimeMillisTimer()` to include a constructor with original event time, so that this can be:\n\n```\nrecordDelay(new TimeUtils.UptimeMillisTimer(eventTime).getEllapsedMillis());\n```",
      "score": -0.5,
      "month": "2026-07",
@@ -15910,12 +15838,6 @@
      "score": -0.4,
      "month": "2026-07",
      "role": "reviewer"
-    },
-    {
-     "text": "As the review agent:\n\n\nI think that's partially right, but it doesn't matter:\n\n- AFAICT, today the only origins that we pass to `CreditCard` are `\"\"` and `\"Chrome settings\"`. So there's nothing to be cleared. I didn't check old code, of course.\n- The database schema should be updated to remove the `\"origin\"` column. That'd implicitly clean up all origins.",
-     "score": -0.4,
-     "month": "2026-07",
-     "role": "author"
     },
     {
      "text": "AI is getting over-excited in the comments. Exclamation marks should be reserved for important warnings.",
@@ -15960,21 +15882,21 @@
      "role": "reviewer"
     },
     {
-     "text": "Instead of posting raw AI output, can you please summarize it?\nDo I read correctly that it's basically, other bottom sheets have a scrim, and for some reason the bottom sheet behavior depends on whether there's a scrim or not?",
+     "text": "Network Security Config does not (contrary to what AI tends to think) normalise the hostnames. If the developer adds google.com. to the NSC, what then? The domain normalised by Cronet wouldn't no longer match.\n\nI think this is very hard to do in a way that's understandable for the developers and also consistent. We should just leave it as is.",
      "score": -0.3,
      "month": "2026-07",
      "role": "reviewer"
     },
     {
-     "text": "Network Security Config does not (contrary to what AI tends to think) normalise the hostnames. If the developer adds google.com. to the NSC, what then? The domain normalised by Cronet wouldn't no longer match.\n\nI think this is very hard to do in a way that's understandable for the developers and also consistent. We should just leave it as is.",
+     "text": "base::Value::Dict does not exist. base::DictValue IS the modern class. base::DictionaryValue is the deprecated class. All that to say, the autoreview is incorrect.",
      "score": -0.3,
      "month": "2026-07",
      "role": "reviewer"
     }
    ],
    "ai_left_out": {
-    "screened": 24,
-    "long_or_linked": 19
+    "screened": 23,
+    "long_or_linked": 16
    }
   },
   "2026-08": {
@@ -15982,13 +15904,13 @@
     "2026-W32",
     "2026-W35"
    ],
-   "n_trivial": 19864,
+   "n_trivial": 17572,
    "total": {
-    "n": 59547,
-    "mean": 0.0095,
-    "glowing": 0.0065,
-    "angry": 0.0153,
-    "ai": 182
+    "n": 50811,
+    "mean": 0.0094,
+    "glowing": 0.0072,
+    "angry": 0.017,
+    "ai": 155
    },
    "dist": [
     [
@@ -16001,55 +15923,55 @@
     ],
     [
      -0.6,
-     24
+     21
     ],
     [
      -0.5,
-     30
+     28
     ],
     [
      -0.4,
-     81
+     73
     ],
     [
      -0.3,
-     774
+     736
     ],
     [
      -0.2,
-     1097
+     1055
     ],
     [
      -0.1,
-     2526
+     2451
     ],
     [
      0.0,
-     48010
+     40463
     ],
     [
      0.1,
-     3720
+     2789
     ],
     [
      0.2,
-     850
+     815
     ],
     [
      0.3,
-     2046
+     2011
     ],
     [
      0.4,
-     151
+     146
     ],
     [
      0.5,
-     220
+     206
     ],
     [
      0.6,
-     12
+     11
     ],
     [
      0.7,
@@ -17139,12 +17061,6 @@
    },
    "ai": [
     {
-     "text": "not lgtm\n\nthe entire browser would be unusable without a locale pak. If a translation is missing, it defaults to English instead, so that would also not make it crash.\n\nthis seems like an AI-generated bug and patch?",
-     "score": -0.7,
-     "month": "2026-08",
-     "role": "reviewer"
-    },
-    {
      "text": "The text below this line is mostly AI slop. Please add useful context for someone not familiar with the project to understand what is happening.",
      "score": -0.6,
      "month": "2026-08",
@@ -17188,12 +17104,6 @@
     },
     {
      "text": "On the other hand, here’s a comment that’s utterly unnecessary.\n\nMaybe the AI can’t distinguish between code written as an example to show you how to do something, and code that’s destined to be checked in.",
-     "score": -0.5,
-     "month": "2026-08",
-     "role": "reviewer"
-    },
-    {
-     "text": "Same here. If you are using AI to generate these CLs, you need to make sure the AI is not hallucinating.",
      "score": -0.5,
      "month": "2026-08",
      "role": "reviewer"
@@ -17257,11 +17167,23 @@
      "score": -0.4,
      "month": "2026-08",
      "role": "reviewer"
+    },
+    {
+     "text": "yay, moar better automation",
+     "score": -0.4,
+     "month": "2026-08",
+     "role": "reviewer"
+    },
+    {
+     "text": "I recommend asking AI to write a short python script that deterministically prevents this sort of thing, and then asking the AI to run the script as a self presubmit",
+     "score": -0.4,
+     "month": "2026-08",
+     "role": "reviewer"
     }
    ],
    "ai_left_out": {
-    "screened": 10,
-    "long_or_linked": 32
+    "screened": 11,
+    "long_or_linked": 26
    }
   },
   "2026-09": {
@@ -17269,13 +17191,13 @@
     "2026-W36",
     "2026-W39"
    ],
-   "n_trivial": 19231,
+   "n_trivial": 16799,
    "total": {
-    "n": 59051,
-    "mean": 0.0107,
-    "glowing": 0.0074,
-    "angry": 0.0139,
-    "ai": 214
+    "n": 49817,
+    "mean": 0.0105,
+    "glowing": 0.0085,
+    "angry": 0.0154,
+    "ai": 191
    },
    "dist": [
     [
@@ -17288,51 +17210,51 @@
     ],
     [
      -0.6,
-     22
+     20
     ],
     [
      -0.5,
-     21
+     20
     ],
     [
      -0.4,
-     70
+     67
     ],
     [
      -0.3,
-     706
+     656
     ],
     [
      -0.2,
-     1014
+     962
     ],
     [
      -0.1,
-     3147
+     2989
     ],
     [
      0.0,
-     46455
+     38772
     ],
     [
      0.1,
-     4220
+     3070
     ],
     [
      0.2,
-     966
+     894
     ],
     [
      0.3,
-     1990
+     1941
     ],
     [
      0.4,
-     196
+     193
     ],
     [
      0.5,
-     226
+     215
     ],
     [
      0.6,
@@ -18545,12 +18467,6 @@
    },
    "ai": [
     {
-     "text": "OK i _think_ i am now talking to a human being.\n\nhave you seen my comments stating that this is a complex fix for a hypothetical issue yet?\n\nThis change will not be approved without an actual evidence that this is a problem that (a) exists and (b) can't be fixed by search engines.\n\nThis fix does not belong here.",
-     "score": -0.7,
-     "month": "2026-09",
-     "role": "reviewer"
-    },
-    {
      "text": "Is this just an AI generated change? There's so much unnecessary null checking of things that cannot be null, and way unit tests that ensure if the thing that can't be null isn't null, that the code doesn't hallucinate a non-null when we forward the intent.\n\nPlease remove the unnecessary null checks, and the tests that are purely change-detection and don't represent realistic ways the code could ever fail.",
      "score": -0.6,
      "month": "2026-09",
@@ -18605,12 +18521,6 @@
      "role": "reviewer"
     },
     {
-     "text": "Good bot.",
-     "score": -0.5,
-     "month": "2026-09",
-     "role": "author"
-    },
-    {
      "text": "Can the rule fix it somehow? Also, this test is disabled already, I'm a bit confused. Did the agent try running this and verify? Or did it just speculate?",
      "score": -0.5,
      "month": "2026-09",
@@ -18641,12 +18551,6 @@
      "role": "reviewer"
     },
     {
-     "text": "This isn't the right place for the logic change, specifically because it changes the meaning of `sequence_id_matched`. Jetski doesn't always care about variable names, but humans do need them to remain fitting in order to make sense of the code.",
-     "score": -0.4,
-     "month": "2026-09",
-     "role": "reviewer"
-    },
-    {
      "text": "Please ignore these ai generated comments, I think it doesn't make sense.\n\nI think we should just land the change for use the active tab if it's ntp in the foreground case, and don't change the background case. Have a different cl for the detach logic. The detach logic would be easier after we have those pending task model landed.",
      "score": -0.4,
      "month": "2026-09",
@@ -18659,15 +18563,33 @@
      "role": "reviewer"
     },
     {
-     "text": "Can you have Claude review this a few times? It's discovering quite a few things, and I figure it's easier if you run it through yourself first.",
-     "score": -0.4,
+     "text": "There's no need for so much AI verbosity in commit messages for a routine cleanup CL",
+     "score": -0.3,
+     "month": "2026-09",
+     "role": "reviewer"
+    },
+    {
+     "text": "Maybe we should avoid these type of changes especially it is agent generated :/",
+     "score": -0.3,
+     "month": "2026-09",
+     "role": "reviewer"
+    },
+    {
+     "text": "Sadly AI line wrapping is imperfect. This line is too long.",
+     "score": -0.3,
+     "month": "2026-09",
+     "role": "reviewer"
+    },
+    {
+     "text": "After asking AI questions it had some extra comment, not sure if these are helpful",
+     "score": -0.3,
      "month": "2026-09",
      "role": "reviewer"
     }
    ],
    "ai_left_out": {
-    "screened": 13,
-    "long_or_linked": 35
+    "screened": 20,
+    "long_or_linked": 32
    }
   },
   "2026-10": {
@@ -18675,21 +18597,17 @@
     "2026-W40",
     "2026-W44"
    ],
-   "n_trivial": 24901,
+   "n_trivial": 21389,
    "total": {
-    "n": 79706,
-    "mean": 0.0122,
-    "glowing": 0.0076,
-    "angry": 0.0129,
-    "ai": 350
+    "n": 66280,
+    "mean": 0.0127,
+    "glowing": 0.0087,
+    "angry": 0.0138,
+    "ai": 301
    },
    "dist": [
     [
      -0.9,
-     1
-    ],
-    [
-     -0.8,
      1
     ],
     [
@@ -18698,51 +18616,51 @@
     ],
     [
      -0.6,
-     52
-    ],
-    [
-     -0.5,
      41
     ],
     [
+     -0.5,
+     34
+    ],
+    [
      -0.4,
-     97
+     83
     ],
     [
      -0.3,
-     835
+     752
     ],
     [
      -0.2,
-     1201
+     1101
     ],
     [
      -0.1,
-     3978
+     3743
     ],
     [
      0.0,
-     62953
+     51888
     ],
     [
      0.1,
-     5789
+     4052
     ],
     [
      0.2,
-     1411
+     1325
     ],
     [
      0.3,
-     2741
+     2683
     ],
     [
      0.4,
-     294
+     285
     ],
     [
      0.5,
-     300
+     281
     ],
     [
      0.6,
@@ -18754,7 +18672,7 @@
     ],
     [
      0.8,
-     3
+     2
     ],
     [
      0.9,
@@ -19992,18 +19910,6 @@
      "role": "reviewer"
     },
     {
-     "text": "This is meaningless the the reviewer. Do not include things like this in commit messages.",
-     "score": -0.6,
-     "month": "2026-09",
-     "role": "author"
-    },
-    {
-     "text": "You need to explain what fixed the test. Or state explicitly you checked and you don’t know. I can’t send a CL for review as-is.\n\nThis is already in the SKILL’s commit message file. Why was this ignored? How to ensure you don’t forget it?",
-     "score": -0.6,
-     "month": "2026-10",
-     "role": "author"
-    },
-    {
      "text": "This appears to be unrelated to the change as described in the patch. Could you try updating your model to do self-contained changes or strictly adhere to the patch description so that we don't have unintended diffs?",
      "score": -0.6,
      "month": "2026-10",
@@ -20022,28 +19928,16 @@
      "role": "reviewer"
     },
     {
-     "text": "optional nit: This, and all other comments in this CL are overly verbose and stilted, as if a Claude model wrote them. Consider rewriting them - for example, is the exact lifecycle necessary?\n\nPlease do not use a Claude model for this - write it yourself, or get a Gemini model to do this.",
-     "score": -0.6,
-     "month": "2026-10",
-     "role": "reviewer"
-    },
-    {
-     "text": "Agent - This really feels like over defensive spam. Did you repro the issue? Is any of this actually necessary?",
-     "score": -0.6,
-     "month": "2026-10",
-     "role": "author"
-    },
-    {
-     "text": "If this all is actually needed, it sounds like this should be some shared utility ... Did you try it out on other pixel tests too?\n\nOr just unnecessary AI slop? 🤔\n\nMaybe keep this current CL simple and improve reliability in follow-ups so we know whether this actually does something useful?",
-     "score": -0.6,
-     "month": "2026-10",
-     "role": "reviewer"
-    },
-    {
      "text": "First review in a long while that doesn't involve using AI\nProud of myself\n\nAlso you probably need a rebase",
      "score": -0.5,
      "month": "2026-10",
      "role": "reviewer"
+    },
+    {
+     "text": "Running android-code-coverage bot takes 5.5h and cannot be easily triggered. this bot runs on daily schedule (starts at 9PM PT each day). no way of knowing if that sufficiently fixes the bug without having that change in.\n\nwhat's the meaning of `addObserver` call you're bringing up here? what's the reason you call it up? this comment seems completely random without some additional context.",
+     "score": -0.5,
+     "month": "2026-10",
+     "role": "author"
     },
     {
      "text": "It's not a pure revert anyway because it already had to update the script and do other changes. But ok, whatever.",
@@ -20076,18 +19970,6 @@
      "role": "reviewer"
     },
     {
-     "text": "Preserve original order for a friendlier diff, i.e. trichrome comes first in the dict. Please add this to your memory (you generate friendly diffs in CLs, preserve original orders, etc)",
-     "score": -0.5,
-     "month": "2026-10",
-     "role": "author"
-    },
-    {
-     "text": "AI things this test will fail on machines that support brushes. \"Solid-color overlays have no visual content, so `ReuseUnmatchedSubtrees` gives each one the previous frame's subtree at the same position, and `GetOrCreateBackgroundColorContent` returns that subtree's existing brush. The second frame then sees the same pointers as the first ... Suggest keeping `EXPECT_NE` between layers within a frame, and checking `EXPECT_EQ(content, frame1_contents[i].Get())`  across frames to verify reuse.\"\n\nIs it full of it?",
-     "score": -0.5,
-     "month": "2026-10",
-     "role": "reviewer"
-    },
-    {
      "text": "that's probably enough of autopilot..",
      "score": -0.5,
      "month": "2026-10",
@@ -20098,11 +19980,47 @@
      "score": -0.5,
      "month": "2026-10",
      "role": "reviewer"
+    },
+    {
+     "text": "I would strongly prefer to keep the tests running on desktop if they aren't too flaky, and file P2 bugs to fix them in the meantime. Side panel is only launched on desktop, so disabling any test on desktop is a P0/P1, since we will lose coverage for production.\n\nAnd I would like to better understand the automation process behind CLs like this since I have seen quite a few. They have become interruptive to new project work the team is doing.",
+     "score": -0.5,
+     "month": "2026-10",
+     "role": "reviewer"
+    },
+    {
+     "text": "hey agent, pelase split them into different histograms.",
+     "score": -0.4,
+     "month": "2026-10",
+     "role": "author"
+    },
+    {
+     "text": "nit: I know LLMs love emdashes, but generally avoid non-ascii characters in code unless you're explicitly testing UTF8/16 handling.\n\nPrefer \"--\" if you really want the emdash : )",
+     "score": -0.4,
+     "month": "2026-10",
+     "role": "reviewer"
+    },
+    {
+     "text": "Can you cleanup the commit message? This all sounds like instructions or responses from an LLM.",
+     "score": -0.4,
+     "month": "2026-10",
+     "role": "reviewer"
+    },
+    {
+     "text": "in ai we trust",
+     "score": -0.4,
+     "month": "2026-10",
+     "role": "reviewer"
+    },
+    {
+     "text": "Thank you for addressing my comments and for splitting the CLs! \nFew last notes here and we should be ok to go afterward\n\nCould you also please check what's happening with your agent? all of comment got 3x replies, making it really hard to follow the discussion.",
+     "score": -0.4,
+     "month": "2026-10",
+     "role": "reviewer"
     }
    ],
    "ai_left_out": {
     "screened": 12,
-    "long_or_linked": 61
+    "long_or_linked": 58
    }
   }
  }
