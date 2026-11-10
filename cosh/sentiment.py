@@ -19,6 +19,10 @@ Each comment has a role (the CL owner's or a reviewer's) and a target kind:
   - "ai": a reply to an AI reviewer or to agent-written text, or a comment
     addressed "to <agent>: ...";
   - None: the owner's own thread-starting comments.
+
+The owner's notes to self (target None: a thread starter, or a reply in a
+thread nobody else has joined) are left out of every analysis
+(`is_self_note`, 2026-11-10): only comments to someone else count.
 """
 
 import hashlib
@@ -158,6 +162,8 @@ def _cl_comments(host, project, number, owner, subject, status, comments, accoun
         if TO_AGENT.match(text) or (parent is not None and _ai_text(parent[1])):
             t_bot = True
             t_aid = t_aid or -1
+        if aid == owner and not t_aid and not t_bot:
+            continue                     # the owner's note to self (`is_self_note`)
         day = ts[:10]
 
         def role(x_aid, x_c=None):
@@ -368,7 +374,7 @@ def score_week(week, data_dir=store.DATA_DIR, version=None, model="haiku", batch
                sandbox="auto"):
     """Score every comment of `week` not yet scored with the current prompt,
     saving each batch as it lands (so a stopped run resumes)."""
-    rows = read_jsonl(os.path.join(out_dir(data_dir), f"comments-{week}.jsonl"))
+    rows = comment_rows(os.path.join(out_dir(data_dir), f"comments-{week}.jsonl"))
     definition = load_prompt(version)
     sha = prompt_sha(definition)
     db = open_scores(data_dir)
@@ -422,6 +428,19 @@ def write_jsonl(path, rows):
 def read_jsonl(path):
     with open(path) as f:
         return [json.loads(l) for l in f if l.strip()]
+
+
+def is_self_note(r):
+    """The CL owner's comment that answers nobody else (a thread starter, or
+    a reply in a thread only the owner has written in). Not part of any
+    analysis: `collect` skips them, and `comment_rows` drops those in comment
+    files collected before 2026-11-10."""
+    return r.get("author_role") == "AUTHOR" and _target_kind(r) is None
+
+
+def comment_rows(path):
+    """A comments-*.jsonl file's rows, without the owner's notes to self."""
+    return [r for r in read_jsonl(path) if not is_self_note(r)]
 
 
 def out_dir(data_dir=store.DATA_DIR):
@@ -589,9 +608,9 @@ def trend(rows, scores, window=ROLL, rate=1.0, full_rows=(), full=frozenset()):
 def trend_rows(name, weeks=(), data_dir=store.DATA_DIR):
     """The rows behind the trend: the sample set `name`, and every comment
     of `weeks` (fully scored weeks) for the months they wholly cover."""
-    sample = read_jsonl(os.path.join(out_dir(data_dir), f"comments-{name}.jsonl"))
+    sample = comment_rows(os.path.join(out_dir(data_dir), f"comments-{name}.jsonl"))
     months = full_months(list(weeks))
-    rows = [r for w in weeks for r in read_jsonl(os.path.join(out_dir(data_dir), f"comments-{w}.jsonl"))
+    rows = [r for w in weeks for r in comment_rows(os.path.join(out_dir(data_dir), f"comments-{w}.jsonl"))
             if r["written_at"][:7] in months]
     return sample, rows, months
 
@@ -685,7 +704,7 @@ def net_praise(weeks, scores, data_dir=store.DATA_DIR, authors=DEFAULT_AUTHORS):
     net total) and praise (how many praise comments)."""
     rows = []
     for w in weeks:
-        for r in read_jsonl(os.path.join(out_dir(data_dir), f"comments-{w}.jsonl")):
+        for r in comment_rows(os.path.join(out_dir(data_dir), f"comments-{w}.jsonl")):
             if r["id"] in scores:
                 r["week"] = w
                 rows.append(r)
@@ -738,7 +757,7 @@ def praise(weeks, data_dir=store.DATA_DIR, version=None, authors=DEFAULT_AUTHORS
         p = os.path.join(out_dir(data_dir), f"comments-{w}.jsonl")
         if not os.path.exists(p):
             raise SystemExit(f"{w}: collect and score the week first ({p} is missing)")
-        unscored = sum(1 for r in read_jsonl(p) if r["id"] not in scores and not TRIVIAL.match(r["text"]))
+        unscored = sum(1 for r in comment_rows(p) if r["id"] not in scores and not TRIVIAL.match(r["text"]))
         coverage.append(dict(week=w, unscored=unscored))
         got = []
         collect(w, data_dir, keep=glowing.__contains__,
@@ -831,7 +850,7 @@ def samples(weeks, data_dir=store.DATA_DIR, version=None, n=10, seed="2026-11", 
     scores = load_scores(None, data_dir, version)
     rows = {}
     for w in weeks:
-        for r in read_jsonl(os.path.join(out_dir(data_dir), f"comments-{w}.jsonl")):
+        for r in comment_rows(os.path.join(out_dir(data_dir), f"comments-{w}.jsonl")):
             if r["id"] in scores and len(r["text"]) <= SAMPLE_CHARS:
                 r["week"] = w
                 rows[r["id"]] = r

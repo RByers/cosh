@@ -45,14 +45,31 @@ THREAD = [
 class CollectTest(unittest.TestCase):
     def test_roles_and_targets(self):
         out = {r["uuid"]: r for r in run(THREAD)}
-        self.assertEqual(set(out), {"a", "b", "c", "g", "h"})   # bot, out-of-week and agent text dropped
+        # bot, out-of-week and agent text dropped, and "c", the owner's note to self
+        self.assertEqual(set(out), {"a", "b", "g", "h"})
         self.assertEqual((out["a"]["author_role"], out["a"]["target_kind"]), ("REVIEWER", "person"))
         self.assertEqual((out["b"]["author_role"], out["b"]["target_kind"]), ("AUTHOR", "person"))
         self.assertEqual(out["b"]["context"], ["REVIEWER: Why is this here?"])
-        self.assertIsNone(out["c"]["target_kind"])               # owner's own top-level note
         self.assertEqual(out["g"]["target_kind"], "ai")          # reply to agent-written text
         self.assertEqual(out["g"]["context"][0][:3], "AI:")
         self.assertEqual(out["h"]["target_kind"], "ai")
+
+    def test_owner_notes_to_self_are_left_out(self):
+        """Only comments to someone else count: the owner's thread starters and
+        replies in threads only they wrote in are dropped, their replies to
+        reviewers and AI kept, and a reviewer's follow-up to themselves kept."""
+        out = {r["uuid"]: r for r in run([
+            c("n1", 1, "Note to self"), c("n2", 1, "And another", parent="n1"),
+            c("r1", 2, "Please fix"), c("r2", 2, "Also this", parent="r1"), c("o1", 1, "Fixed both", parent="r2"),
+            c("t1", 1, "to kaizen bot: thanks")])}
+        self.assertEqual(set(out), {"r1", "r2", "o1", "t1"})
+        with tempfile.TemporaryDirectory() as d:     # a file collected before the rule
+            p = os.path.join(d, "comments-x.jsonl")
+            S.write_jsonl(p, [dict(id="1/a", author_role="AUTHOR", target_kind=None),
+                              dict(id="1/b", author_role="AUTHOR", target_kind="person"),
+                              dict(id="1/c", author_role="REVIEWER", target_kind=None),
+                              dict(id="1/d", author_role="AUTHOR", target_is_ai=False)])
+            self.assertEqual([r["id"] for r in S.comment_rows(p)], ["1/b", "1/c"])
 
     def test_rows_carry_no_identities(self):
         """Ground rule 5: rows say what role a comment plays, not whose it is."""
@@ -383,7 +400,7 @@ class IdentitiesTest(unittest.TestCase):
         self.assertEqual((out["a"]["author_name"], out["a"]["target"], out["a"]["target_org"]),
                          ("Rev", 1, "chromium.org"))
         self.assertEqual((out["b"]["owner"], out["b"]["target_name"]), (1, "Rev"))
-        self.assertIsNone(out["c"]["target"])
+        self.assertNotIn("c", out)                    # the owner's note to self
         self.assertEqual((out["g"]["target"], out["g"]["target_org"], out["g"]["target_is_ai"]), (-1, P.AI_TARGET, True))
 
 

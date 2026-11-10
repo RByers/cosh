@@ -301,8 +301,10 @@
         <h2 id="method-title">How it's measured</h2>
         <p class="note">
           Comments come from Chromium's public Gerrit code review: every comment by a human account on a
-          change owned by a human, including the change owner's replies. Bots, AI reviewers and text an
-          agent posted under a person's account are left out. A committer is anyone Gerrit lets vote
+          change owned by a human that is addressed to someone else, including the change owner's replies
+          to reviewers. The owner's notes to self are left out: comments that start a thread, or that reply
+          in a thread nobody else has written in. Bots, AI reviewers and text an agent posted under a
+          person's account are left out too. A committer is anyone Gerrit lets vote
           Code-Review on Chromium changes, which only committers may. That status is as of November 2026,
           when the data was fetched, and is used for comments of every date. The model sees the comment, its file and up
           to four earlier comments in its thread, labelled only as from the change's author, a reviewer or

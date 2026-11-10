@@ -49,7 +49,7 @@ def load(weeks, data_dir=store.DATA_DIR, version=None):
     scores = S.load_scores(None, data_dir, version)
     rows, missing, n_trivial = [], 0, defaultdict(int)
     for w in weeks:
-        for r in S.read_jsonl(os.path.join(S.out_dir(data_dir), f"comments-{w}.jsonl")):
+        for r in S.comment_rows(os.path.join(S.out_dir(data_dir), f"comments-{w}.jsonl")):
             if r["id"] not in scores:
                 missing += 1
             elif S.TRIVIAL.match(r["text"]):

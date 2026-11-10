@@ -71,7 +71,7 @@ def lookup(weeks, data_dir=store.DATA_DIR):
     nothing about tone (ground rule 5)."""
     people = {}
     for w in weeks:
-        for r in S.read_jsonl(os.path.join(S.out_dir(data_dir), f"comments-{w}.jsonl")):
+        for r in S.comment_rows(os.path.join(S.out_dir(data_dir), f"comments-{w}.jsonl")):
             if "author_email" not in r:
                 raise SystemExit(f"{w}: no identities; collect it with `python3 -m cosh.sentiment_people collect`")
             for e, n in ((r.get("author_email"), r.get("author_name")), (r.get("target_email"), r.get("target_name"))):
