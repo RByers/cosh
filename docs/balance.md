@@ -130,6 +130,13 @@ Each has its own doc, with commands to regenerate:
   - the Chrome Releases security fixes, with 2026's jump to about 3,900
     CVEs;
   - how bug-tracker data could be fetched (that needs approval).
+- `docs/balance-addressed.md` (2026-11-10): an *addressed index* (threads
+  the author acted on ÷ their 2023–24 norm) against the feedback index.
+  It tracks code changed after review better (R² 0.26 vs 0.22) and falls
+  more steeply with tenure (newcomer ÷ veteran 5.1× vs 3.6×), but predicts
+  reverts, bug-inducing CLs, OWNERS and later reviewing no better. Keep the
+  feedback index for load; use the addressed index for review that changed
+  something.
 - `docs/review-roi.md` (the page's `#roi` section, datasets `roi_*` from
   `scripts/review_roi_report.py`):
   - the return on review time: reverts can't show it, since more review
