@@ -5,9 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="color-scheme" content="light dark" />
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M8 1.5 13.6 4.75v6.5L8 14.5 2.4 11.25v-6.5Z' fill='%231a5fd0'/%3E%3Ccircle cx='8' cy='8' r='2.3' fill='%23fff'/%3E%3C/svg%3E" />
-    <title>Review Balance - Chromium Open Source Health</title>
+    <title>Review Balance: code review load - Chromium Open Source Health</title>
     <link rel="stylesheet" href="/src/style.css" />
-    <meta name="description" content="How Chromium's work is split between authors and reviewers, how people grow into reviewers, and what changed as AI tools arrived." />
+    <meta name="description" content="Chromium code review load: how much work reviewers do, what review is worth, how people grow into reviewers, when that growth stalled, and how AI-written CLs are reviewed." />
   </head>
   <body>
     <!--
@@ -34,12 +34,1079 @@
       <aside class="draft-warning" role="note">
         <p class="draft-warning-head">Draft: under development</p>
         <p>
-          This page is an early draft. Its analysis has been reviewed once but is still very messy, overly
-          complex and with some AI slop. It will be simplified and clarified to the key takeaways and so is
-          probably not worth reading in detail yet.
+          This page is an early draft. The narrative at the top is a first pass. The earlier analysis below it has
+          been reviewed once but is still very messy, overly complex and with some AI slop. It will be simplified
+          and clarified to the key takeaways and so is probably not worth reading in detail yet.
         </p>
       </aside>
-      <div class="lede">
+      <div class="lede intro">
+        <h2 class="intro-head">Chromium code review load analysis</h2>
+        <p>
+          Chromium's expert reviewers say their review load has become unmanageable. This analysis looks for the
+          sources of that strain and for ways to ease it. The obvious answer is that AI tools mean more code is
+          written, perhaps of lower quality, and reviewers carry the difference. That answer hides a deeper
+          question: what is review worth, and how do we keep getting that value as engineering becomes agentic?
+          How would we know whether we still are, or whether we are giving up stewardship of the product? Chromium
+          is among the most complex and widely depended-on pieces of software in the world, the base of most
+          browsers and many application platforms, so keeping it healthy matters.
+        </p>
+        <h2 class="goal-head">What we found</h2>
+        <ul class="signals">
+          <li><strong>The load is real, and it sits on the busiest reviewers.</strong> The median reviewer reads and
+            writes about what they did in 2023. The busiest tenth went from <b data-src="reviewer_burden" data-field="cls_p90" data-where="q=2023Q3" data-fmt="n0">–</b> to
+            <b data-src="reviewer_burden" data-field="cls_p90" data-where="q=2026Q3" data-fmt="n0">–</b> CLs a quarter and from <b data-src="reviewer_burden" data-field="lines_p90" data-where="q=2023Q3" data-fmt="n0">–</b> to
+            <b data-src="reviewer_burden" data-field="lines_p90" data-where="q=2026Q3" data-fmt="n0">–</b> changed lines, most of it in 2026 (<a href="#burden">section 1</a>).</li>
+          <li><strong>Review's value shows in what it changes, not in reverts.</strong> Reviewers look hardest at
+            risky CLs, so more review goes with more reverts. But in about two CLs in five the author changed the
+            code because of a reviewer's comment, and a pilot suggests review stops about twice as many breaking
+            problems as escape to a revert. We can't yet measure what review does for codebase health
+            (<a href="#value">section 2</a>).</li>
+          <li><strong>Each CL gets about a third less review than in 2023.</strong> For established authors that
+            looks like reviewers asking less; for newcomers the code may be arriving better
+            (<a href="#quality-nuance">section 3</a>).</li>
+          <li><strong>Authors need less review as they land more CLs, and new reviewers are useful at once.</strong>
+            Authors act on a first-year reviewer's comments as often as a veteran's. What tenure adds is how much
+            people review (<a href="#value-sources">sections 4</a> and <a href="#capacity">5</a>).</li>
+          <li><strong>So capacity is a matter of how many people review, and the pool has stopped growing.</strong>
+            It grew by about 100 approvers a year until 2024. New authors who went on to land five or more CLs fell by more than half in 2023, and two
+            years later the pool grew by <b data-src="capacity_years" data-field="net_approvers" data-where="year=2025" data-fmt="n0">–</b>. Reviewers with ten or more years now give
+            <b data-src="capacity_years" data-field="approvals_y10p" data-where="year=2026" data-fmt="pct">–</b> of approvals, against <b data-src="capacity_years" data-field="approvals_y10p" data-where="year=2020" data-fmt="pct">–</b> in 2020
+            (<a href="#inflection">section 6</a>).</li>
+          <li><strong>AI's visible effect so far is volume, not breakage.</strong> Reverts haven't risen. The few
+            CLs marked as AI-generated wait longer and are reviewed by fewer, more senior people
+            (<a href="#ai-review">section 7</a>).</li>
+        </ul>
+        <nav class="toc" aria-label="Contents">
+          <ol>
+            <li><a href="#burden">How much work reviewers do</a></li>
+            <li><a href="#value">What review is worth</a></li>
+            <li><a href="#quality-nuance">Is the code arriving for review getting better?</a></li>
+            <li><a href="#value-sources">Where review's value comes from</a></li>
+            <li><a href="#capacity">Growing reviewers</a></li>
+            <li><a href="#inflection">The inflection: fewer newcomers, then fewer new reviewers</a></li>
+            <li><a href="#ai-review">How review is changing with AI</a></li>
+            <li><a href="#monitor">What to watch from here</a></li>
+          </ol>
+        </nav>
+        <p class="note">
+          Merged, human-owned CLs on chromium/src <code>main</code>: Gerrit review data from July 2023 to
+          September 2026 (whole quarters), and git history since 2017. Mechanical CLs
+          (<b data-src="summary" data-field="mechanical_cls" data-fmt="n0">–</b> mass edits and imports) are
+          left out of the review measures.
+        </p>
+      </div>
+    </header>
+
+    <main aria-busy="true">
+      <p id="error" class="note" hidden></p>
+      <template data-msg="error">Couldn't load data: <slot name="error"></slot></template>
+
+      <!--
+        The narrative: eight sections that open the page. Its charts are the earlier analysis's
+        charts drawn again into canvases of their own (ids starting n-; narrative() in balance.ts),
+        plus the charts of the narrative datasets (scripts/balance_narrative.py).
+      -->
+      <section id="burden" class="card narrative" aria-labelledby="burden-title">
+        <a class="card-anchor" href="#burden" aria-label="Link to this section" title="Link to this section">#</a>
+        <h2 id="burden-title">1. How much work reviewers do</h2>
+        <p class="sub">
+          Before asking what review is worth, measure the load. A reviewer's work depends on how much code they
+          read and on how much feedback they write: harder reviews take more comments. Each chart shows the median
+          reviewer as a line and shades the busier reviewers above them, up to the 75th, 90th, 95th and 99th
+          percentiles.
+        </p>
+        <p class="note">
+          A reviewer here is anyone who commented on someone else's merged CL in the quarter, counted once across
+          their addresses. Lines are the changed lines of the CLs they commented on; comments include replies. Log
+          scale, so the median stays visible under the busiest reviewers.
+        </p>
+        <div class="panels">
+          <figure class="panel"><h3>Lines of change reviewed per reviewer</h3>
+            <div class="chart"><canvas id="n-c-burden-lines" role="img" aria-label="Changed lines of the CLs each reviewer commented on, per quarter: the median, with bands up to the 75th, 90th, 95th and 99th percentiles, on a log scale."></canvas></div></figure>
+          <figure class="panel"><h3>Comments written per reviewer</h3>
+            <div class="chart"><canvas id="n-c-burden-comments" role="img" aria-label="Review comments each reviewer wrote on others' CLs, per quarter: the median, with bands up to the 75th, 90th, 95th and 99th percentiles, on a log scale."></canvas></div></figure>
+          <figure class="panel"><h3>CLs reviewed per reviewer</h3>
+            <div class="chart"><canvas id="n-c-burden-cls" role="img" aria-label="Others' CLs each reviewer commented on, per quarter: the median, with bands up to the 75th, 90th, 95th and 99th percentiles, on a log scale."></canvas></div></figure>
+        </div>
+        <p class="sub">
+          The median reviewer's load barely moved; the busiest reviewers' grew sharply. From 2023 Q3 to 2026 Q3
+          the median reviewer went from <b data-src="reviewer_burden" data-field="lines_p50" data-where="q=2023Q3" data-fmt="n0">–</b> to <b data-src="reviewer_burden" data-field="lines_p50" data-where="q=2026Q3" data-fmt="n0">–</b> changed lines a
+          quarter, from <b data-src="reviewer_burden" data-field="comments_p50" data-where="q=2023Q3" data-fmt="n0">–</b> to <b data-src="reviewer_burden" data-field="comments_p50" data-where="q=2026Q3" data-fmt="n0">–</b> comments and from
+          <b data-src="reviewer_burden" data-field="cls_p50" data-where="q=2023Q3" data-fmt="n0">–</b> to <b data-src="reviewer_burden" data-field="cls_p50" data-where="q=2026Q3" data-fmt="n0">–</b> CLs. At the 90th percentile, lines went from
+          <b data-src="reviewer_burden" data-field="lines_p90" data-where="q=2023Q3" data-fmt="n0">–</b> to <b data-src="reviewer_burden" data-field="lines_p90" data-where="q=2026Q3" data-fmt="n0">–</b> and CLs from <b data-src="reviewer_burden" data-field="cls_p90" data-where="q=2023Q3" data-fmt="n0">–</b> to
+          <b data-src="reviewer_burden" data-field="cls_p90" data-where="q=2026Q3" data-fmt="n0">–</b>; at the 99th, CLs went from <b data-src="reviewer_burden" data-field="cls_p99" data-where="q=2023Q3" data-fmt="n0">–</b> to
+          <b data-src="reviewer_burden" data-field="cls_p99" data-where="q=2026Q3" data-fmt="n0">–</b>. Most of the rise came in 2026. Meanwhile the number of reviewers fell from
+          <b data-src="reviewer_burden" data-field="reviewers" data-where="q=2023Q3" data-fmt="n0">–</b> to <b data-src="reviewer_burden" data-field="reviewers" data-where="q=2025Q4" data-fmt="n0">–</b> in
+          2025 Q4 before recovering to <b data-src="reviewer_burden" data-field="reviewers" data-where="q=2026Q3" data-fmt="n0">–</b>. The strain is concentrated
+          in the busiest reviewers, which fits who is saying the load has become unmanageable.
+        </p>
+        <h3>Nine years of approvals</h3>
+        <p class="note">From <code>Reviewed-by</code> footers of human commits with a CL on <code>main</code>: CLs
+          each approver approved in the quarter, and their changed lines. Log scale.</p>
+        <div class="panels">
+          <figure class="panel"><h3>CLs approved per approver</h3>
+            <div class="chart chart-short"><canvas id="n-c-approver-cls" role="img" aria-label="CLs each approver approved per quarter since 2017: the median, with bands up to the 75th, 90th, 95th and 99th percentiles, on a log scale."></canvas></div></figure>
+          <figure class="panel"><h3>Lines approved per approver</h3>
+            <div class="chart chart-short"><canvas id="n-c-approver-lines" role="img" aria-label="Changed lines each approver approved per quarter since 2017: the median, with bands up to the 75th, 90th, 95th and 99th percentiles, on a log scale."></canvas></div></figure>
+        </div>
+        <p class="sub">
+          The same shape holds over nine years. The 90th-percentile approver approved between about 75 and 100 CLs
+          a quarter from 2017 to 2025 (<b data-src="approver_burden" data-field="cls_p90" data-where="q=2017Q3" data-fmt="n0">–</b> in 2017 Q3,
+          <b data-src="approver_burden" data-field="cls_p90" data-where="q=2025Q3" data-fmt="n0">–</b> in 2025 Q3) and
+          <b data-src="approver_burden" data-field="cls_p90" data-where="q=2026Q3" data-fmt="n0">–</b> in 2026 Q3, the most in the series.
+        </p>
+
+        <h3>Who carries it</h3>
+        <div class="panels">
+          <figure class="panel"><h3>Reviewers and authors</h3>
+            <p class="note">People who commented on others' CLs, and people who landed CLs, per quarter.</p>
+            <div class="chart chart-short"><canvas id="n-c-reviewers" role="img" aria-label="Commenting reviewers and authors per quarter."></canvas></div></figure>
+          <figure class="panel"><h3>Reviewers by CLs commented on</h3>
+            <p class="note">Share of commenting reviewers by how many others' CLs they commented on in the quarter.</p>
+            <div class="chart chart-short"><canvas id="n-c-hist-cls" role="img" aria-label="Histogram of commenting reviewers by the number of CLs they commented on, 2023 Q3 and 2026 Q3."></canvas></div></figure>
+          <figure class="panel"><h3>Reviewers by comment threads started</h3>
+            <p class="note">Share of commenting reviewers by how many review threads they started on others' CLs in the quarter.</p>
+            <div class="chart chart-short"><canvas id="n-c-hist-threads" role="img" aria-label="Histogram of commenting reviewers by the number of review threads they started, 2023 Q3 and 2026 Q3."></canvas></div></figure>
+        </div>
+        <p class="sub">
+          Fewer people review than write CLs, and the gap has widened. In 2026 Q3,
+          <b data-src="reviewer_quarters" data-field="reviewers" data-where="q=2026Q3" data-fmt="n0">–</b> people
+          commented on others' CLs, for
+          <b data-src="reviewer_quarters" data-field="authors" data-where="q=2026Q3" data-fmt="n0">–</b> authors,
+          against <b data-src="reviewer_quarters" data-field="reviewers" data-where="q=2023Q3" data-fmt="n0">–</b>
+          and <b data-src="reviewer_quarters" data-field="authors" data-where="q=2023Q3" data-fmt="n0">–</b> in 2023
+          Q3. Each commenting reviewer saw
+          <b data-src="reviewer_quarters" data-field="cls_per_reviewer" data-where="q=2026Q3" data-fmt="n1">–</b> CLs
+          on average, against
+          <b data-src="reviewer_quarters" data-field="cls_per_reviewer" data-where="q=2023Q3" data-fmt="n1">–</b>.
+          The extra load went to the heaviest reviewers:
+          <b data-src="reviewer_load_top" data-field="reviewers" data-where="q=2026Q3&amp;by=cls" data-fmt="n0">–</b>
+          commented on 100 or more CLs each in 2026 Q3, together
+          <b data-src="reviewer_load_top" data-field="load_share" data-where="q=2026Q3&amp;by=cls" data-fmt="pct">–</b>
+          of all reviews, against
+          <b data-src="reviewer_load_top" data-field="reviewers" data-where="q=2023Q3&amp;by=cls" data-fmt="n0">–</b>
+          reviewers and
+          <b data-src="reviewer_load_top" data-field="load_share" data-where="q=2023Q3&amp;by=cls" data-fmt="pct">–</b>
+          in 2023 Q3. About a third of commenting reviewers review lightly, three CLs a quarter or fewer.
+        </p>
+        <div class="panels">
+          <figure class="panel"><h3>Share of approvals by the busiest tenth</h3>
+            <p class="note">From <code>Reviewed-by</code> footers, since mid-2017.</p>
+            <div class="chart chart-short"><canvas id="n-c-top10" role="img" aria-label="Share of approvals given by the busiest tenth of approvers, per quarter since 2017."></canvas></div></figure>
+          <figure class="panel"><h3>Hours to first substantive review</h3>
+            <p class="note">Clock hours from being sent for review to the first inline comment or thread the author had to answer.</p>
+            <div class="chart chart-short"><canvas id="n-c-ftr" role="img" aria-label="Hours from being sent for review to the first substantive review: median, 25th to 75th and 5th to 95th percentiles, per quarter."></canvas></div></figure>
+        </div>
+        <p class="sub">
+          Counted by approvals, the busiest tenth of approvers gave
+          <b data-src="git_quarters" data-field="top10_share" data-where="q=2023Q3" data-fmt="pct">–</b> in 2023 Q3
+          and <b data-src="git_quarters" data-field="top10_share" data-where="q=2026Q3" data-fmt="pct">–</b> in 2026
+          Q3, about where it was in 2017. Waiting is the visible cost: the median CL waited
+          <b data-src="exchange" data-field="ftr_p50" data-where="q=2025Q2" data-fmt="h">–</b> for a first
+          substantive review in 2025 Q2 and
+          <b data-src="exchange" data-field="ftr_p50" data-where="q=2026Q3" data-fmt="h">–</b> in 2026 Q3, and the
+          slowest 1 in 20 waited
+          <b data-src="exchange" data-field="ftr_p95" data-where="q=2026Q3" data-fmt="h">–</b> or more. Most of the
+          rise comes from the same reviewers facing more CLs (<a href="#queues">Source of longer review queues</a>).
+        </p>
+        <p class="note">Not measured yet: how long reviewing takes. Gerrit records when a reviewer is asked, not how
+          long they spend looking.</p>
+      </section>
+
+      <section id="value" class="card narrative" aria-labelledby="value-title">
+        <a class="card-anchor" href="#value" aria-label="Link to this section" title="Link to this section">#</a>
+        <h2 id="value-title">2. What review is worth: product quality, codebase health and velocity</h2>
+        <p class="sub">
+          Review exists for product quality, which is what users see. Reverts are our nearest proxy: each one marks
+          a quality problem that reached the tree. Product quality also depends on the health of the codebase: the
+          better kept the code, the cheaper it is to keep quality high and the faster later changes land. So review
+          should pay off twice: directly, by stopping defects before they land, and over time, by keeping code
+          maintainable so that quality rises and engineering velocity with it.
+        </p>
+
+        <h3>Direct: defects stopped before landing</h3>
+        <figure class="panel"><h3>Reverted within 30 days, since 2017</h3>
+          <p class="note">Share of human commits with a CL on <code>main</code> that a later commit reverted within
+            30 days, by the quarter they landed.</p>
+          <div class="chart chart-short"><canvas id="n-c-git-reverted" role="img" aria-label="Share of commits reverted within 30 days, per quarter since 2017."></canvas></div></figure>
+        <p class="sub">
+          Reverts have not risen.
+          <b data-src="git_quarters" data-field="reverted" data-where="q=2017Q3" data-fmt="pct1">–</b> of commits
+          were reverted within 30 days in 2017 Q3 and
+          <b data-src="git_quarters" data-field="reverted" data-where="q=2026Q3" data-fmt="pct1">–</b> in 2026 Q3.
+          The rate has drifted down since 2017, not up, and did not move when AI tools arrived.
+        </p>
+        <div class="panels">
+          <figure class="panel"><h3>What reverts are for</h3>
+            <p class="note">Share of reverts since July 2023, by the reason the revert message gives.</p>
+            <div class="chart chart-short"><canvas id="n-c-roi-classes" role="img" aria-label="Share of reverts by stated reason, grouped into what review is for, what builds and tests catch, what review could never prevent, and unknown."></canvas></div></figure>
+          <figure class="panel"><h3>How soon reverts come</h3>
+            <p class="note">Time from landing to the revert, all reverts since July 2023.</p>
+            <div class="chart chart-short"><canvas id="n-c-roi-timing" role="img" aria-label="Share of reverts by time from landing to revert: most come within a day."></canvas></div></figure>
+          <figure class="panel"><h3>Revert rate by review depth, as found and like for like</h3>
+            <p class="note">By reviewer-started threads on the CL: the share reverted within 30 days. Like for like re-weights each group to the same mix
+              of size, directory and the author's practice there. The dashed line is all CLs.</p>
+            <div class="chart chart-short"><canvas id="n-c-roi-depth" role="img" aria-label="30-day revert rate by the number of reviewer-started threads, as found and re-weighted to the same mix of size, directory and author practice: both rise with more threads."></canvas></div></figure>
+        </div>
+        <p class="sub">
+          Reverts mostly measure the build and test system:
+          <b data-src="roi_summary" data-field="within_24h" data-fmt="pct">–</b> come within a day of landing, and
+          <b data-src="roi_summary" data-field="ci_caught" data-fmt="pct">–</b> are for a test or compile failure.
+          Only <b data-src="roi_summary" data-field="review_for" data-fmt="pct">–</b> name a crash, functional bug or
+          performance regression, the kind of problem review is for:
+          <b data-src="roi_summary" data-field="prevent_per_1000" data-fmt="n1">–</b> per 1,000 CLs. And reviewers
+          spend more time on the CLs that look risky, so every measure of how much review a CL got goes with more
+          reverts, not fewer: CLs with more reviewer threads than the median had
+          <b data-src="roi_summary" data-field="threads_or_raw" data-fmt="n2">–</b> times the odds of a revert as
+          found, and still <b data-src="roi_summary" data-field="threads_or_norm" data-fmt="n2">–</b> times like for
+          like. CLs approved with no thread at all are reverted less: reviewers wave through what looks safe, and it
+          mostly is.
+        </p>
+        <figure class="panel forest-fig" aria-labelledby="n-roi-odds-title">
+          <h3 id="n-roi-odds-title">Odds of a revert, by what we hold equal</h3>
+          <p class="note">
+            Odds ratios of a revert within 30 days, with 95% intervals, on a log scale. Left of the dashed line, 1,
+            means fewer reverts. CLs with more of a measure are compared with CLs with less: as found; in groups of
+            the same size, directory, author practice and half-year; by the approver's habits on their other CLs
+            with all of those held equal; and within the same author's CLs.
+          </p>
+          <div class="forest forest-dashed forest-wide" id="n-roi-forest">
+            <div class="forest-scale" aria-hidden="true"><span></span><div class="forest-ticks"></div><span></span></div>
+            <h4 class="forest-group">This CL's review, as found</h4>
+            <ul class="forest-rows">
+              <li data-key="raw:threads">More reviewer threads</li>
+              <li data-key="raw:attn_h">More reviewer attention hours</li>
+              <li data-key="raw:addressed">More threads the author acted on</li>
+              <li data-key="raw:rubber_stamp">Approved with no thread at all</li>
+            </ul>
+            <h4 class="forest-group">This CL's review, like for like</h4>
+            <ul class="forest-rows">
+              <li data-key="normalized:threads">More reviewer threads</li>
+              <li data-key="normalized:attn_h">More reviewer attention hours</li>
+              <li data-key="normalized:addressed">More threads the author acted on</li>
+              <li data-key="normalized:rubber_stamp">Approved with no thread at all</li>
+            </ul>
+            <h4 class="forest-group">The approver, judged on their other CLs</h4>
+            <ul class="forest-rows">
+              <li data-key="habit:habit_log_first">Habitually thorough, per standard deviation</li>
+              <li data-key="habit:appr_appr3">Prior approvals in the directory, per doubling</li>
+              <li data-key="habit:appr_owner">An OWNER of the directory</li>
+              <li data-key="habit:appr_tenure">Years on the project, per doubling</li>
+            </ul>
+            <h4 class="forest-group">Within the same author, directory, half-year and size</h4>
+            <ul class="forest-rows">
+              <li data-key="within:habit_log_first">Habitually thorough approver</li>
+              <li data-key="within:threads">More reviewer threads</li>
+            </ul>
+            <h4 class="forest-group">Check: the approver's habit, by revert reason</h4>
+            <ul class="forest-rows">
+              <li data-key="nc:related">Reverts review could catch</li>
+              <li data-key="nc:unrelated">Reverts review could never prevent</li>
+            </ul>
+            <p class="forest-legend note" aria-hidden="true">
+              <span class="forest-key"><i class="forest-ci"></i><i class="forest-dot"></i></span> interval leaves out 1
+              <span class="forest-key faded"><i class="forest-ci"></i><i class="forest-dot"></i></span> interval includes 1
+            </p>
+          </div>
+        </figure>
+        <figure class="panel" data-needs="roi_substance"><h3>What review changes</h3>
+          <p class="note">Pilot: <b data-src="roi_summary" data-field="sub_threads" data-fmt="n0">–</b> random
+            threads the author acted on, from CLs landed July 2025 to September 2026, labelled by Claude Haiku, with
+            95% intervals. Each thread has one topic; whether it would have broken something is judged separately.</p>
+          <div class="chart chart-short"><canvas id="n-c-roi-substance" role="img" aria-label="Share of addressed review threads by topic, with intervals, and the share that would plausibly have broken something if left unfixed."></canvas></div></figure>
+        <p class="sub">
+          So reverts can't show what review is worth. What the data does show is review changing code before it
+          lands: in <b data-src="roi_summary" data-field="with_thread" data-fmt="pct">–</b> of CLs a reviewer started
+          a thread, and in <b data-src="roi_summary" data-field="with_addressed" data-fmt="pct">–</b> the author acted
+          on one.
+          <span data-needs="roi_substance">In the pilot,
+          <b data-src="roi_summary" data-field="sub_would_break" data-fmt="pct1">–</b> of those threads (interval
+          <b data-src="roi_summary" data-field="sub_would_break_lo" data-fmt="pct1">–</b> to
+          <b data-src="roi_summary" data-field="sub_would_break_hi" data-fmt="pct1">–</b>) would plausibly have caused
+          a test failure, crash or visible bug if left unfixed. Spread over CLs, that is roughly
+          <b data-src="roi_summary" data-field="sub_cl_would_break" data-fmt="pct">–</b> of CLs with a breaking
+          problem fixed in review, against <b data-src="roi_summary" data-field="rev30" data-fmt="pct1">–</b>
+          reverted within 30 days: about twice as many caught as escaped, though the interval is wide.</span>
+        </p>
+
+        <h3>Over time: codebase health and velocity</h3>
+        <figure class="panel forest-fig" aria-labelledby="n-roi-panels-title">
+          <h3 id="n-roi-panels-title">Does review today pay off later?</h3>
+          <p class="note">
+            Each estimate with its 95% interval, on its own scale around no effect (the dashed line). If review
+            paid off later, the first four would sit left of the line and the last right of it.
+          </p>
+          <div class="forest forest-dashed forest-wide" id="n-roi-panels">
+            <ul class="forest-rows">
+              <li data-key="H2a">A directory's deeper review → its revert rate next half-year (points per SD)</li>
+              <li data-key="H2b">→ its review time per CL next half-year (hours per SD)</li>
+              <li data-key="H2c">A newcomer's first-year feedback → their year-two reverts (odds ratio)</li>
+              <li data-key="H2d">CLs a later bug fix rewrote: their review against matched CLs (feedback index)</li>
+              <li data-key="H2e">Lines alive a year on: most against least reviewed CLs (points)</li>
+            </ul>
+          </div>
+        </figure>
+        <p class="sub">
+          The data don't show review paying off later. Within a directory, deeper review in one half-year doesn't
+          go with fewer reverts in the next, and goes with slightly more review time, not less.
+          <button type="button" class="term" popovertarget="def-newcomer">Newcomers</button> who drew more feedback
+          in their first year drew more in their second and were reverted more, which looks like selection rather
+          than learning. In two small blame pilots, CLs whose lines a later bug fix rewrote had slightly more review
+          than matched CLs, and lines from well-reviewed CLs survive a year no better than others. These tests are
+          small and their horizon short: finding no payoff is not evidence that there is none.
+        </p>
+
+        <h3>Codebase health across the project</h3>
+        <p class="sub">
+          We have no accepted measure of a directory's code health yet. What exists is the directory-level test
+          above (the first two rows) and the directory tables of the earlier analysis
+          (<a href="#areas">Across the codebase</a>, <a href="#dirs">Directories over time</a>), which show how
+          deeply and how quickly each directory is reviewed, not how healthy its code is.
+        </p>
+        <div class="note">
+          <p>Not measured yet, per directory and per reviewer, each joined to how deeply the directory was reviewed:</p>
+          <ul>
+            <li>later-change cost: review time and rounds of later CLs touching the same files;</li>
+            <li>defect density: bug-fix commits per line changed;</li>
+            <li>churn and line survival: how much new code is rewritten or deleted soon after landing.</li>
+          </ul>
+        </div>
+        <p class="sub"><strong>Open question:</strong> does careful review now make later CLs in the same code cheaper
+          to land?</p>
+      </section>
+
+      <section id="quality-nuance" class="card narrative" aria-labelledby="quality-nuance-title">
+        <a class="card-anchor" href="#quality-nuance" aria-label="Link to this section" title="Link to this section">#</a>
+        <h2 id="quality-nuance-title">3. Is the code arriving for review getting better?</h2>
+        <p class="sub">
+          The busiest reviewers carry more, and review changes the code. One nuance before going further: the code
+          sent for review may itself be improving, so that each change needs less review. If so, less feedback per
+          change is good news rather than reviewers giving up. The history is short, so this is not settled.
+        </p>
+        <div class="panels">
+          <figure class="panel"><h3>Review per CL, like for like</h3>
+            <p class="note"><button type="button" class="term" popovertarget="def-feedback-index">Feedback index</button>. The dashed line, 1.0, is the 2023–24 average for a CL of the same size and directory.</p>
+            <div class="chart chart-short"><canvas id="n-c-feedback" role="img" aria-label="Feedback index per quarter."></canvas></div></figure>
+          <figure class="panel"><h3>Lines changed after first review</h3>
+            <p class="note">Changed lines between the first reviewed and final diffs ÷ final diff lines, per reviewed
+              CL. Not set by reviewers alone.</p>
+            <div class="chart chart-short"><canvas id="n-c-interdiff" role="img" aria-label="Share of lines changed after the first review, per quarter."></canvas></div></figure>
+        </div>
+        <p class="sub">
+          Review per CL fell: the
+          <button type="button" class="term" popovertarget="def-feedback-index">feedback index</button>, which holds
+          size and directory fixed, went from
+          <b data-src="exchange" data-field="feedback_index" data-where="q=2023Q3" data-fmt="n2">–</b> in 2023 Q3 to
+          <b data-src="exchange" data-field="feedback_index" data-where="q=2026Q3" data-fmt="n2">–</b> in 2026 Q3. How
+          much CLs change after review did not: the median reviewed CL changed
+          <b data-src="exchange" data-field="interdiff_p50" data-where="q=2023Q3" data-fmt="pct">–</b> of its lines
+          after first review in 2023 Q3 and
+          <b data-src="exchange" data-field="interdiff_p50" data-where="q=2026Q3" data-fmt="pct">–</b> in 2026 Q3.
+        </p>
+        <figure class="panel forest-fig" aria-labelledby="n-forest-title">
+          <h3 id="n-forest-title">The same people, 2024 → 2026: what changed</h3>
+          <p class="note">
+            Each measure's change as a share of its 2024 level, with its 95% interval. Reviewers with 20 or more
+            reviews in both years; authors with 10 or more reviewed CLs.
+          </p>
+          <div class="forest" id="n-forest">
+            <div class="forest-scale" aria-hidden="true"><span></span><div class="forest-ticks"></div><span></span></div>
+            <h4 class="forest-group">Set by reviewers</h4>
+            <ul class="forest-rows" data-keys="reviewer_log1p_threads reviewer_neg_vote author_log1p_threads_received author_rounds author_neg_received"></ul>
+            <h4 class="forest-group">Not set by reviewers: the authors' CLs</h4>
+            <ul class="forest-rows" data-keys="author_interdiff_share author_reverted_30d author_abandoned author_pre_send_uploads"></ul>
+            <p class="forest-legend note" aria-hidden="true">
+              <span class="forest-key"><i class="forest-ci"></i><i class="forest-dot"></i></span> clear change
+              <span class="forest-key faded"><i class="forest-ci"></i><i class="forest-dot"></i></span> no clear change
+            </p>
+          </div>
+        </figure>
+        <p class="sub">
+          Following the same people from 2024 to 2026 separates the two readings. The same
+          <b data-src="signals_summary" data-field="reviewers" data-fmt="n0">–</b> reviewers started
+          <b data-src="panels" data-field="change" data-where="key=reviewer_log1p_threads" data-fmt="abspct">–</b>
+          fewer threads per review, and the same
+          <b data-src="signals_summary" data-field="authors" data-fmt="n0">–</b> authors received
+          <b data-src="panels" data-field="change" data-where="key=author_log1p_threads_received" data-fmt="abspct">–</b>
+          fewer threads. On the measures reviewers don't control, those authors' CLs were no better: they changed as
+          much after review and were reverted as often, and the share abandoned rose by
+          <b data-src="panels" data-field="change" data-where="key=author_abandoned" data-fmt="ptsabs">–</b>. For
+          established authors the evidence leans modestly to reviewers asking less, not to better code.
+        </p>
+        <h3>Newcomers: matched cohorts</h3>
+        <p class="note">
+          <b data-src="signals_summary" data-field="matched_pairs" data-fmt="n0">–</b> people who joined in 2025,
+          each paired with a 2024 joiner who started alike, followed by months since their first commit.
+        </p>
+        <div class="panels">
+          <figure class="panel"><h3>Feedback index</h3>
+            <p class="note">1 is usual for the CL's size and directory.</p>
+            <div class="chart chart-short"><canvas id="n-c-m-feedback" role="img" aria-label="Feedback index, by months since first commit, for matched 2025 and 2024 joiners."></canvas></div></figure>
+          <figure class="panel"><h3>Lines changed after review, median</h3>
+            <p class="note">Not set by reviewers.</p>
+            <div class="chart chart-short"><canvas id="n-c-m-interdiff" role="img" aria-label="Median share of lines changed after review, by months since first commit, for matched 2025 and 2024 joiners."></canvas></div></figure>
+          <figure class="panel"><h3>CLs abandoned</h3>
+            <p class="note">Not set by reviewers.</p>
+            <div class="chart chart-short"><canvas id="n-c-m-abandon" role="img" aria-label="Share of CLs abandoned, by months since first commit, for matched 2025 and 2024 joiners."></canvas></div></figure>
+        </div>
+        <p class="sub">
+          <button type="button" class="term" popovertarget="def-newcomer">Newcomers</button> differ. Nine to twelve
+          months in, the 2025 joiners' CLs changed less after review than their matched 2024 joiners'
+          (<b data-src="matched" data-field="interdiff_p50" data-where="arm=joined 2025&amp;months=9-12" data-fmt="pct">–</b>
+          of lines against
+          <b data-src="matched" data-field="interdiff_p50" data-where="arm=joined 2024&amp;months=9-12" data-fmt="pct">–</b>),
+          a measure reviewers don't control, and drew less feedback even against the same quarter's norm. Early on
+          they abandoned more CLs. For newcomers, the code may well be arriving better.
+        </p>
+        <p class="note">
+          There is no pair of years before AI tools to compare with yet, so some of the change may be ordinary
+          drift. The matched comparison has no intervals yet.
+        </p>
+        <p class="sub"><strong>Open question:</strong> does a 2021 → 2023 comparison of the same people show the same
+          drift before AI tools?</p>
+      </section>
+
+      <section id="value-sources" class="card narrative" aria-labelledby="value-sources-title">
+        <a class="card-anchor" href="#value-sources" aria-label="Link to this section" title="Link to this section">#</a>
+        <h2 id="value-sources-title">4. Where review's value comes from, and why authors need less of it over time</h2>
+        <p class="sub">
+          Which reviews carry the value? This section asks whether longer-tenured reviewers review more deeply and
+          write comments that change more code, and shows the other side of the exchange: the longer someone has
+          contributed, the less review their changes need.
+        </p>
+
+        <h3>Reviewer tenure and the depth of review</h3>
+        <p class="note">
+          Every CL a reviewer was asked to review, by the reviewer's years on the project, per half-year; 2026 H2
+          runs to October.
+        </p>
+        <div class="panels">
+          <figure class="panel"><h3>Threads started per CL reviewed</h3>
+            <p class="note">Review comment threads the reviewer opened.</p>
+            <div class="chart chart-short"><canvas id="n-c-rt-threads" role="img" aria-label="Review threads started per CL reviewed, per half-year, by the reviewer's tenure."></canvas></div></figure>
+          <figure class="panel"><h3>Addressed threads per CL reviewed</h3>
+            <p class="note">Of those, threads that led the author to change the CL.</p>
+            <div class="chart chart-short"><canvas id="n-c-rt-addressed" role="img" aria-label="Addressed review threads per CL reviewed, per half-year, by the reviewer's tenure."></canvas></div></figure>
+          <figure class="panel"><h3>First response, median</h3>
+            <p class="note">Weekday hours from being added to the attention set to the first comment.</p>
+            <div class="chart chart-short"><canvas id="n-c-rt-resp" role="img" aria-label="Median weekday hours to a reviewer's first response, per half-year, by the reviewer's tenure."></canvas></div></figure>
+        </div>
+        <p class="sub">
+          Tenure makes little difference to how deeply people review. In the second half of 2026, reviewers under 2
+          years on the project started
+          <b data-src="reviewers_by_tenure" data-field="threads_per_review" data-where="half=2026H2&amp;band=&lt;2y" data-fmt="n2">–</b>
+          threads per CL reviewed and those with 10 or more years
+          <b data-src="reviewers_by_tenure" data-field="threads_per_review" data-where="half=2026H2&amp;band=10y+" data-fmt="n2">–</b>,
+          and authors acted on
+          <b data-src="reviewers_by_tenure" data-field="addressed_per_review" data-where="half=2026H2&amp;band=&lt;2y" data-fmt="n2">–</b>
+          and
+          <b data-src="reviewers_by_tenure" data-field="addressed_per_review" data-where="half=2026H2&amp;band=10y+" data-fmt="n2">–</b>
+          of them. In 2023 the spread was as narrow, and reviewers with 5 to 10 years started the most
+          (<b data-src="reviewers_by_tenure" data-field="threads_per_review" data-where="half=2023H2&amp;band=5-10y" data-fmt="n2">–</b>).
+          What differs is speed: in the second half of 2026 the longest-serving took
+          <b data-src="reviewers_by_tenure" data-field="resp_p50" data-where="half=2026H2&amp;band=10y+" data-fmt="h">–</b>
+          of weekday time to a first comment, against
+          <b data-src="reviewers_by_tenure" data-field="resp_p50" data-where="half=2026H2&amp;band=&lt;2y" data-fmt="h">–</b>
+          for those under 2 years. Nor do longer-serving approvers go with fewer reverts: each doubling of an
+          approver's years on the project goes with
+          <b data-src="roi_odds" data-field="or" data-where="key=habit:appr_tenure" data-fmt="n2">–</b> times the odds
+          of a revert, probably because the hardest CLs go to them (<a href="#value">above</a>).
+        </p>
+        <p class="sub">
+          Counted by years since a reviewer's first commit, depth per review peaks around year four
+          (<b data-src="new_reviewer_growth" data-field="threads_per_review" data-where="year=4&amp;era=pre" data-fmt="n2">–</b> threads per review from July 2023
+          to June 2025, against <b data-src="new_reviewer_growth" data-field="threads_per_review" data-where="year=1&amp;era=pre" data-fmt="n2">–</b> in year one and
+          <b data-src="new_reviewer_growth" data-field="threads_per_review" data-where="year=11+&amp;era=pre" data-fmt="n2">–</b> after eleven years). What tenure buys
+          is volume and availability, more reviews from the same person, more than impact per comment
+          (<a href="#capacity">section 5</a>).
+        </p>
+        <p class="note">Not measured yet: whether longer-tenured reviewers' comments catch more of the problems that
+          matter, rather than more comments.</p>
+
+        <h3>Author tenure and feedback received</h3>
+        <div class="panels">
+          <figure class="panel"><h3>Feedback by tenure</h3>
+            <p class="note">Months since the author's first commit. The dashed line, 1.0, is the 2023–24 average for the CL's size and directory.</p>
+            <div class="chart chart-short"><canvas id="n-c-tenure" role="img" aria-label="Feedback index by the author's tenure, for 2023 H2 to 2024, 2025 and 2026."></canvas></div></figure>
+          <figure class="panel"><h3>Feedback by familiarity with the directory</h3>
+            <p class="note">The author's earlier commits in the CL's main 3-level directory.</p>
+            <div class="chart chart-short"><canvas id="n-c-fam" role="img" aria-label="Feedback index by the author's earlier commits in the directory, for 2023 H2 to 2024, 2025 and 2026."></canvas></div></figure>
+          <figure class="panel"><h3>Practice or time?</h3>
+            <p class="note">Prolific and average contributors' CLs from 2023 H2–2024, by the author's commits on main
+              before the CL (<a href="#practice">groups</a>).</p>
+            <div class="chart chart-short"><canvas id="n-c-prac-landed" role="img" aria-label="Feedback index by the author's commits landed so far, for prolific and average contributors."></canvas></div></figure>
+        </div>
+        <p class="sub">
+          Before AI tools, a CL from someone in their first three months drew
+          <b data-src="learning" data-field="feedback_index" data-where="era=2023H2-2024&amp;bucket=0-3" data-fmt="x">–</b>
+          the usual <button type="button" class="term" popovertarget="def-feedback-index">review feedback</button>
+          for its size and directory, and after ten years
+          <b data-src="learning" data-field="feedback_index" data-where="era=2023H2-2024&amp;bucket=120-999" data-fmt="x">–</b>,
+          falling at every step between. Knowing the code mattered as much: a first CL in a directory drew
+          <b data-src="learning" data-field="feedback_index" data-where="era=2023H2-2024&amp;bucket=fam 0" data-fmt="x">–</b>,
+          against
+          <b data-src="learning" data-field="feedback_index" data-where="era=2023H2-2024&amp;bucket=fam 100+" data-fmt="x">–</b>
+          with 100 or more commits there. What teaches authors to need less review is landing CLs, not months on
+          the project: commits already landed explain
+          <b data-src="learning_practice_fit" data-field="r2_practice" data-fmt="pct1">–</b> of the variation in
+          feedback between CLs, against
+          <b data-src="learning_practice_fit" data-field="r2_tenure" data-fmt="pct1">–</b> for tenure. In 2026 the
+          curve keeps its shape but sits lower at every tenure.
+        </p>
+
+        <h3>By author organization</h3>
+        <p class="note">
+          The author's organization from their e-mail address at the time of the CL. Individuals are authors with
+          gmail.com addresses. July 2023 to December 2024 ("before"), and October 2025 to September 2026 ("now").
+          Tenure bands with too few people in an organization are left out.
+        </p>
+        <div class="panels">
+          <figure class="panel"><h3>Feedback by tenure, per organization</h3>
+            <p class="note">July 2023 to December 2024. The dashed line, 1.0, is the 2023–24 average for the CL's size and directory.</p>
+            <div class="chart"><canvas id="n-c-org-feedback" role="img" aria-label="Feedback index by the author's tenure band, one line per author organization, July 2023 to December 2024."></canvas></div></figure>
+          <figure class="panel forest-fig" aria-labelledby="n-org-forest-title">
+            <h3 id="n-org-forest-title">Feedback against all authors, tenure held equal</h3>
+            <p class="note">Each organization's feedback against what all authors' CLs of the same size, directory and
+              tenure band drew (1 is the same), with 95% intervals, on a log scale.</p>
+            <div class="forest forest-dashed forest-stacked" id="n-org-forest">
+              <div class="forest-scale" aria-hidden="true"><span></span><div class="forest-ticks"></div><span></span></div>
+              <h4 class="forest-group">Before</h4>
+              <ul class="forest-rows">
+                <li data-key="google.com:pre">Google</li>
+                <li data-key="microsoft.com:pre">Microsoft</li>
+                <li data-key="igalia.com:pre">Igalia</li>
+                <li data-key="intel.com:pre">Intel</li>
+                <li data-key="gmail.com:pre">Individuals (gmail.com)</li>
+                <li data-key="Other:pre">Other</li>
+              </ul>
+              <h4 class="forest-group">Now</h4>
+              <ul class="forest-rows">
+                <li data-key="google.com:now">Google</li>
+                <li data-key="microsoft.com:now">Microsoft</li>
+                <li data-key="igalia.com:now">Igalia</li>
+                <li data-key="gmail.com:now">Individuals (gmail.com)</li>
+                <li data-key="Other:now">Other</li>
+              </ul>
+              <p class="forest-legend note" aria-hidden="true">
+                <span class="forest-key"><i class="forest-ci"></i><i class="forest-dot"></i></span> interval leaves out 1
+                <span class="forest-key faded"><i class="forest-ci"></i><i class="forest-dot"></i></span> interval includes 1
+              </p>
+            </div>
+          </figure>
+        </div>
+        <p class="sub">
+          Needing less feedback with tenure holds in every organization with enough people to measure it. Before AI
+          tools, first-year Google authors drew <b data-src="org_feedback" data-field="feedback_index" data-where="org=google.com&amp;era=pre&amp;band=&lt;1y" data-fmt="x">–</b>
+          the usual feedback and those with five or more years <b data-src="org_feedback" data-field="feedback_index" data-where="org=google.com&amp;era=pre&amp;band=5y+" data-fmt="x">–</b>;
+          Microsoft's <b data-src="org_feedback" data-field="feedback_index" data-where="org=microsoft.com&amp;era=pre&amp;band=&lt;1y" data-fmt="x">–</b> and
+          <b data-src="org_feedback" data-field="feedback_index" data-where="org=microsoft.com&amp;era=pre&amp;band=5y+" data-fmt="x">–</b>.
+          Much of the gap between organizations is tenure: individuals' CLs drew
+          <b data-src="org_feedback_fit" data-field="feedback_index" data-where="org=gmail.com&amp;era=pre" data-fmt="x">–</b> as found, but
+          <b data-src="org_feedback" data-field="cls" data-where="org=gmail.com&amp;era=pre&amp;band=&lt;1y" data-fmt="n0">–</b> of their
+          <b data-src="org_feedback" data-field="cls" data-where="org=gmail.com&amp;era=pre&amp;band=all" data-fmt="n0">–</b> CLs were by first-year authors, and with
+          tenure held equal they drew <b data-src="org_feedback_fit" data-field="ratio" data-where="org=gmail.com&amp;era=pre" data-fmt="n2">–</b> times what all
+          authors drew (<b data-src="org_feedback_fit" data-field="ratio" data-where="org=gmail.com&amp;era=now" data-fmt="n2">–</b> now). Google's authors sit at
+          par (<b data-src="org_feedback_fit" data-field="ratio" data-where="org=google.com&amp;era=now" data-fmt="n2">–</b> now). Microsoft's authors draw more
+          than tenure explains, <b data-src="org_feedback_fit" data-field="ratio" data-where="org=microsoft.com&amp;era=pre" data-fmt="n2">–</b> times before and
+          <b data-src="org_feedback_fit" data-field="ratio" data-where="org=microsoft.com&amp;era=now" data-fmt="n2">–</b> now, with intervals that leave out 1 in
+          both periods; Igalia's <b data-src="org_feedback_fit" data-field="ratio" data-where="org=igalia.com&amp;era=now" data-fmt="n2">–</b> now, up from par.
+          More feedback can mean newer areas of the code, review norms that differ across organizations or
+          stricter review of outside contributions, not weaker CLs; these data don't separate them. Intel's authors
+          now (<b data-src="org_feedback_fit" data-field="people" data-where="org=intel.com&amp;era=now" data-fmt="n0">–</b>
+          people) are too few to show.
+        </p>
+      </section>
+
+      <section id="capacity" class="card narrative" aria-labelledby="capacity-title">
+        <a class="card-anchor" href="#capacity" aria-label="Link to this section" title="Link to this section">#</a>
+        <h2 id="capacity-title">5. Growing reviewers: from contributor to reviewer</h2>
+        <p class="sub">
+          Contributors do not only come to need less review. They grow into reviewers who produce the same value
+          for others. This is the contributor lifecycle: the work people do in Chromium makes them more effective,
+          lowers the load they put on others, and in time turns them into reviewers, which feeds back into product
+          quality, codebase health and velocity.
+        </p>
+
+        <h3>Reviewing grows with tenure</h3>
+        <p class="note">
+          Review share is approvals given ÷ (approvals + CLs landed) in a calendar year, for everyone who joined
+          from 2017 to 2025, in each year they authored or approved 6 or more CLs.
+        </p>
+        <div class="panels">
+          <figure class="panel"><h3>Review share by year since joining</h3>
+            <p class="note">All join years together.</p>
+            <div class="chart chart-short"><canvas id="n-c-key-share" role="img" aria-label="Median review share by year since joining, all join years together, with the lowest and highest join year's median."></canvas></div></figure>
+          <figure class="panel"><h3>The same path whichever year people joined</h3>
+            <p class="note">Median review share, one line per join year.</p>
+            <div class="chart chart-short"><canvas id="n-c-gitco" role="img" aria-label="Median review share by year since joining, one line per join year from 2017 to 2025."></canvas></div></figure>
+        </div>
+        <figure class="panel"><h3>From author to reviewer</h3>
+          <p class="note">Share of people by review share in years 2, 3, 5 and 8 since joining.</p>
+          <div class="chart"><canvas id="n-c-share-hist" role="img" aria-label="Histogram of review share in years 2, 3, 5 and 8 since joining, for people who joined from 2017 to 2025."></canvas></div></figure>
+        <p class="sub">
+          Review share rises from nothing in the first year
+          (<b data-src="review_share_years" data-field="none" data-where="year=1" data-fmt="pct">–</b> approve no one's
+          CL) to a median of
+          <b data-src="review_share_years" data-field="p50" data-where="year=5" data-fmt="pct">–</b> by year five,
+          when <b data-src="review_share_years" data-field="half" data-where="year=5" data-fmt="pct">–</b> approve at
+          least as many CLs as they land. Every join year from 2017 to 2025 follows the same path: in year five the
+          medians run only from
+          <b data-src="review_share_years" data-field="cohort_p50_min" data-where="year=5" data-fmt="pct">–</b> to
+          <b data-src="review_share_years" data-field="cohort_p50_max" data-where="year=5" data-fmt="pct">–</b>.
+        </p>
+
+        <h3>New reviewers' comments change code from the start</h3>
+        <p class="note">
+          Every review (others' CLs a person commented on) by the reviewer's years since their first commit.
+          A thread is acted on when the author changed the CL in response.
+        </p>
+        <div class="panels">
+          <figure class="panel"><h3>Reviews per reviewer per quarter</h3>
+            <div class="chart chart-short"><canvas id="n-c-newrev-reviews" role="img" aria-label="Reviews per active reviewer per quarter, by the reviewer's years since first commit, July 2023 to June 2025 and July 2025 to September 2026."></canvas></div></figure>
+          <figure class="panel"><h3>Share of their threads the author acted on</h3>
+            <div class="chart chart-short"><canvas id="n-c-newrev-share" role="img" aria-label="Share of a reviewer's threads that the author acted on, by the reviewer's years since first commit, July 2023 to June 2025 and July 2025 to September 2026."></canvas></div></figure>
+        </div>
+        <p class="sub">
+          This is not what we expected. What grows with tenure is how much people review, not how often their
+          comments land. From July 2023 to June 2025, reviewers in their first year reviewed
+          <b data-src="new_reviewer_growth" data-field="reviews_per_reviewer_quarter" data-where="year=1&amp;era=pre" data-fmt="n0">–</b> CLs a quarter, by year four
+          <b data-src="new_reviewer_growth" data-field="reviews_per_reviewer_quarter" data-where="year=4&amp;era=pre" data-fmt="n0">–</b> and after eleven years
+          <b data-src="new_reviewer_growth" data-field="reviews_per_reviewer_quarter" data-where="year=11+&amp;era=pre" data-fmt="n0">–</b>. But authors acted on 55–62% of threads at every
+          tenure, first-year reviewers included (<b data-src="new_reviewer_growth" data-field="addressed_share" data-where="year=1&amp;era=pre" data-fmt="pct">–</b> in year one,
+          <b data-src="new_reviewer_growth" data-field="addressed_share" data-where="year=11+&amp;era=pre" data-fmt="pct">–</b> after eleven years). A new reviewer's comment is as likely to
+          change the code as a veteran's, so review capacity is mostly a matter of how many people review and how
+          much.
+        </p>
+
+        <h3>Does needing less feedback lead to reviewing and owning?</h3>
+        <p class="note">
+          Authors with 6 or more merged CLs in a half-year from July 2023 to December 2024, split into fifths by
+          their <button type="button" class="term" popovertarget="def-feedback-index">feedback index</button> that
+          half-year against others of the same tenure, from the fifth drawing least feedback to the fifth drawing
+          most (<a href="#predicts">details</a>).
+        </p>
+        <div class="panels">
+          <figure class="panel"><h3>Added to OWNERS within 18 months</h3>
+            <p class="note">Share of people not yet in an OWNERS file.</p>
+            <div class="chart chart-short"><canvas id="n-c-pred-owners" role="img" aria-label="Share first added to an OWNERS file within 18 months, by fifth of the feedback index, for authors under 2 years and 2 or more years on the project."></canvas></div></figure>
+          <figure class="panel"><h3>Review share the next year</h3>
+            <p class="note">Median approvals given ÷ (approvals + CLs landed).</p>
+            <div class="chart chart-short"><canvas id="n-c-pred-share" role="img" aria-label="Median review share over the next 12 months, by fifth of the feedback index, for authors under 2 years and 2 or more years on the project."></canvas></div></figure>
+        </div>
+        <p class="sub">
+          People whose CLs draw the most feedback go on to review less. Among authors under 2 years on the project,
+          <b data-src="fb_predict_fifths" data-field="owners" data-where="group=under 2 years&amp;fifth=1" data-fmt="pct">–</b>
+          of the fifth drawing least feedback were added to an OWNERS file within 18 months, against
+          <b data-src="fb_predict_fifths" data-field="owners" data-where="group=under 2 years&amp;fifth=5" data-fmt="pct">–</b>
+          of the fifth drawing most, and their median review share the next year was
+          <b data-src="fb_predict_fifths" data-field="share" data-where="group=under 2 years&amp;fifth=1" data-fmt="pct">–</b>
+          against
+          <b data-src="fb_predict_fifths" data-field="share" data-where="group=under 2 years&amp;fifth=5" data-fmt="pct">–</b>.
+          Much of the gap is what people already do: once CLs landed, tenure and current reviewing are held equal,
+          the feedback index adds little warning of who will review or own code. The two grow together.
+        </p>
+
+        <h3>Across organizations</h3>
+        <p class="note">
+          Review share by year since joining, as above, by the organization of the person's commits that year;
+          points with fewer than 30 people are left out. Approving needs OWNERS or committer status, which these
+          data don't model.
+        </p>
+        <figure class="panel"><h3>Median review share by year since joining</h3>
+          <div class="chart chart-short"><canvas id="n-c-org-reviewing" role="img" aria-label="Median review share by year since joining, one line per organization."></canvas></div></figure>
+        <figure class="panel"><h3>How much each organization's reviews change code</h3>
+          <p class="note">Reviews July 2023 to September 2026, by the reviewer's organization.</p>
+          <div class="table-wrap">
+            <table id="n-t-org-review" class="balance-table">
+              <thead><tr><th>Reviewers from</th><th>Reviewers</th><th>Reviews</th><th>Threads per review</th><th>Acted on per review</th><th>Share acted on</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div></figure>
+        <p class="sub">
+          Google contributors follow the path above: a median review share of
+          <b data-src="org_reviewing" data-field="review_share_p50" data-where="org=google.com&amp;year=2" data-fmt="pct">–</b> in year two,
+          <b data-src="org_reviewing" data-field="review_share_p50" data-where="org=google.com&amp;year=3" data-fmt="pct">–</b> in year three and
+          <b data-src="org_reviewing" data-field="review_share_p50" data-where="org=google.com&amp;year=4" data-fmt="pct">–</b> in year four. Contributors
+          elsewhere mostly don't become approvers: Microsoft's median is
+          <b data-src="org_reviewing" data-field="review_share_p50" data-where="org=microsoft.com&amp;year=3" data-fmt="pct">–</b> in year three, and for other
+          organizations the median stays at nothing, with only
+          <b data-src="org_reviewing" data-field="gives_any" data-where="org=Other&amp;year=3" data-fmt="pct">–</b> to
+          <b data-src="org_reviewing" data-field="gives_any" data-where="org=Other&amp;year=4" data-fmt="pct">–</b> giving any approval in years three to five.
+          Those outside Google who do review write comments that are acted on about as often or more: authors acted
+          on <b data-src="org_review_value" data-field="addressed_share" data-where="org=microsoft.com" data-fmt="pct">–</b> of Microsoft reviewers' threads,
+          against <b data-src="org_review_value" data-field="addressed_share" data-where="org=All" data-fmt="pct">–</b> overall, though less for Igalia
+          (<b data-src="org_review_value" data-field="addressed_share" data-where="org=igalia.com" data-fmt="pct">–</b>) and individuals
+          (<b data-src="org_review_value" data-field="addressed_share" data-where="org=gmail.com" data-fmt="pct">–</b>), whose reviews are few.
+        </p>
+
+        <h3>Before AI: capacity scaled with the project</h3>
+        <p class="note">
+          From the authors and <code>Reviewed-by</code> footers of human commits with a CL on <code>main</code>.
+          Active means at least one commit or approval in the year; 2017 is July to December and 2026 (marked *) January to September.
+        </p>
+        <figure class="panel"><h3>Active authors and approvers, and approvals per month</h3>
+          <div class="chart"><canvas id="n-c-cap-pool" role="img" aria-label="Active authors and active approvers per year since 2017, and approvals per month on the right axis."></canvas></div></figure>
+        <p class="sub">
+          Until 2024 the reviewer pool grew with the project. Active approvers went from
+          <b data-src="capacity_years" data-field="approvers" data-where="year=2017" data-fmt="n0">–</b> in the second half of 2017 to <b data-src="capacity_years" data-field="approvers" data-where="year=2024" data-fmt="n0">–</b> in 2024, about
+          100 more a year, and approvals per month from <b data-src="capacity_years" data-field="approvals_per_month" data-where="year=2017" data-fmt="n0">–</b> to
+          <b data-src="capacity_years" data-field="approvals_per_month" data-where="year=2024" data-fmt="n0">–</b>. Approvers per author rose from <b data-src="capacity_years" data-field="approvers_per_author" data-where="year=2018" data-fmt="n2">–</b>
+          in 2018 to <b data-src="capacity_years" data-field="approvers_per_author" data-where="year=2024" data-fmt="n2">–</b> in 2024. The next section shows where the new reviewers
+          came from, and when that stopped.
+        </p>
+      </section>
+
+      <section id="inflection" class="card narrative" aria-labelledby="inflection-title">
+        <a class="card-anchor" href="#inflection" aria-label="Link to this section" title="Link to this section">#</a>
+        <h2 id="inflection-title">6. The inflection: newcomers stopped arriving in 2023, and by 2025 the reviewer pool stopped growing</h2>
+        <p class="sub">
+          The pool of reviewers grew with the project until 2024, then stopped, and the extra load went to the
+          reviewers already there. The cause is older than the stall: reviewers come from newcomers, and from 2023
+          far fewer newcomers arrived. This section follows that through.
+        </p>
+        <p class="note">
+          Per year, from git history: human commits with a CL on <code>main</code> and their
+          <code>Reviewed-by</code> approvers. 2017 is July to December and 2026 (marked *) January to September, so counts in
+          those years are partial; rates per month compare across them. A new regular reviewer gives 60 or more
+          approvals in a calendar year for the first time.
+        </p>
+
+        <h3>Fewer newcomers from 2023</h3>
+        <div class="panels">
+          <figure class="panel"><h3>New authors, new reviewers and new OWNERS</h3>
+            <div class="chart chart-short"><canvas id="n-c-cap-intake" role="img" aria-label="New authors with 5 or more CLs in their first year, new regular reviewers and people first added to OWNERS, per year since 2017."></canvas></div></figure>
+          <figure class="panel"><h3>New authors, Google and everyone else</h3>
+            <p class="note">By the organization of their commits that year.</p>
+            <div class="chart chart-short"><canvas id="n-c-cap-new-orgs" role="img" aria-label="New authors per year, Google and everyone else, stacked."></canvas></div></figure>
+          <figure class="panel"><h3>Commits by the author's tenure</h3>
+            <p class="note">Share of each year's commits.</p>
+            <div class="chart chart-short"><canvas id="n-c-cap-commits-tenure" role="img" aria-label="Share of each year's commits by the author's years since first commit, stacked."></canvas></div></figure>
+        </div>
+        <p class="sub">
+          New authors who landed 5 or more CLs in their first year fell from <b data-src="capacity_years" data-field="new_authors_5" data-where="year=2022" data-fmt="n0">–</b> in 2022
+          to <b data-src="capacity_years" data-field="new_authors_5" data-where="year=2023" data-fmt="n0">–</b> in 2023 and <b data-src="capacity_years" data-field="new_authors_5" data-where="year=2024" data-fmt="n0">–</b> in 2024. The drop was at
+          Google: new Google authors went from <b data-src="capacity_orgs" data-field="new_authors" data-where="year=2022&amp;org=google" data-fmt="n0">–</b> to
+          <b data-src="capacity_orgs" data-field="new_authors" data-where="year=2023&amp;org=google" data-fmt="n0">–</b>, while new authors elsewhere held at 190 to 240 a year
+          (<b data-src="capacity_orgs" data-field="new_authors" data-where="year=2023&amp;org=other" data-fmt="n0">–</b> in 2023). Authors under two years on the project went from about a
+          third of commits (<b data-src="capacity_tenure" data-field="commits_share" data-where="year=2022&amp;band=lt2" data-fmt="pct">–</b> in 2022) to
+          <b data-src="capacity_tenure" data-field="commits_share" data-where="year=2024&amp;band=lt2" data-fmt="pct">–</b> in 2024 and <b data-src="capacity_tenure" data-field="commits_share" data-where="year=2025&amp;band=lt2" data-fmt="pct">–</b> in 2025.
+          Arrivals have picked up since (<b data-src="capacity_years" data-field="new_authors_5" data-where="year=2025" data-fmt="n0">–</b> in 2025,
+          <b data-src="capacity_years" data-field="new_authors_5" data-where="year=2026" data-fmt="n0">–</b> in 2026 to September), still short of 2022. If they follow the usual path,
+          they start to add review capacity from about 2027.
+        </p>
+
+        <h3>Two years later, fewer new reviewers</h3>
+        <figure class="panel"><h3>Net new approvers per year</h3>
+          <p class="note">People who began approving that year, less those who stopped. Someone who stopped
+            in 2025 or 2026 may yet come back, so the last two bars are less certain.</p>
+          <div class="chart chart-short"><canvas id="n-c-cap-net" role="img" aria-label="Net change in active approvers per year, 2018 to 2026."></canvas></div></figure>
+        <p class="sub">
+          People take two to three years to become reviewers, so the missing 2023–24 newcomers show up as missing
+          reviewers from 2025. The approver pool grew by <b data-src="capacity_years" data-field="net_approvers" data-where="year=2024" data-fmt="n0">–</b> to
+          <b data-src="capacity_years" data-field="net_approvers" data-where="year=2019" data-fmt="n0">–</b> people a year through 2024, then by <b data-src="capacity_years" data-field="net_approvers" data-where="year=2025" data-fmt="n0">–</b> in 2025
+          and <b data-src="capacity_years" data-field="net_approvers" data-where="year=2026" data-fmt="n0">–</b> in 2026 to September. New regular reviewers, about 120 a year from 2019
+          to 2024, fell to <b data-src="capacity_years" data-field="new_regular_reviewers" data-where="year=2025" data-fmt="n0">–</b> in 2025.
+        </p>
+
+        <h3>Who carries the load now</h3>
+        <div class="panels">
+          <figure class="panel"><h3>Approvals by the approver's tenure</h3>
+            <p class="note">Share of each year's approvals.</p>
+            <div class="chart chart-short"><canvas id="n-c-cap-approvals-tenure" role="img" aria-label="Share of each year's approvals by the approver's years since first commit, stacked."></canvas></div></figure>
+          <figure class="panel"><h3>Approvals per approver per month</h3>
+            <div class="chart chart-short"><canvas id="n-c-cap-load" role="img" aria-label="Approvals per active approver per month, per year since 2017."></canvas></div></figure>
+          <figure class="panel"><h3>Who approves newcomers' CLs</h3>
+            <p class="note">Approvals of CLs by authors in their first year, by the approver's tenure.</p>
+            <div class="chart chart-short"><canvas id="n-c-newcomer" role="img" aria-label="Approvals of newcomers' CLs by the approver's tenure, per year."></canvas></div></figure>
+        </div>
+        <p class="sub">
+          The load moved to the longest-serving. Reviewers with ten or more years on the project gave
+          <b data-src="capacity_years" data-field="approvals_y10p" data-where="year=2026" data-fmt="pct">–</b> of approvals in 2026, against <b data-src="capacity_years" data-field="approvals_y10p" data-where="year=2020" data-fmt="pct">–</b> in
+          2020, and the median approver's tenure rose from <b data-src="capacity_years" data-field="approver_tenure_p50" data-where="year=2020" data-fmt="n1">–</b> to
+          <b data-src="capacity_years" data-field="approver_tenure_p50" data-where="year=2026" data-fmt="n1">–</b> years. Approvals per approver per month drifted down from
+          <b data-src="capacity_years" data-field="approvals_per_approver_month" data-where="year=2017" data-fmt="n1">–</b> in 2017 to <b data-src="capacity_years" data-field="approvals_per_approver_month" data-where="year=2025" data-fmt="n1">–</b>
+          in 2025, as the pool grew faster than the work, then jumped to
+          <b data-src="capacity_years" data-field="approvals_per_approver_month" data-where="year=2026" data-fmt="n1">–</b> in 2026, when commits rose and no new reviewers came.
+          Reviewers two to five years in gave
+          <b data-src="newcomer_review" data-field="y2_5" data-where="year=2019" data-fmt="pct">–</b> of the approvals on
+          <button type="button" class="term" popovertarget="def-newcomer">newcomers</button>' CLs in 2019 and
+          <b data-src="newcomer_review" data-field="y2_5" data-where="year=2026" data-fmt="pct">–</b> in 2026.
+        </p>
+        <div class="panels">
+          <figure class="panel"><h3>Mentees who became mentors</h3>
+            <p class="note">Share of each start year's newcomers who, within four years, were among the top two
+              approvers of at least two newer people's first ten CLs. 2023 and later windows are still open.</p>
+            <div class="chart chart-short"><canvas id="n-c-mentors" role="img" aria-label="Share of each start year's newcomers who became mentors within four years."></canvas></div></figure>
+          <figure class="panel"><h3>New arrivals by directory</h3>
+            <p class="note">People arriving in each directory per 100 active authors each half-year, averaged over
+              the year; 2026 is January to June (<a href="#queues">details</a>).</p>
+            <div class="chart chart-short"><canvas id="n-c-qu-inflow" role="img" aria-label="People arriving in each of five directories per 100 active authors each half-year, by year since 2020."></canvas></div></figure>
+        </div>
+        <p class="sub">
+          Fewer newcomers went on to train others: of the 2018 joiners,
+          <b data-src="mentorship" data-field="became_mentors" data-where="year=2018" data-fmt="pct">–</b> were mentoring newcomers of their own within four
+          years; of the 2022 joiners, <b data-src="mentorship" data-field="became_mentors" data-where="year=2022" data-fmt="pct">–</b>. And the drop in arrivals
+          was deepest in platform code: per 100 active authors each half-year, <code>third_party/blink</code> gained
+          <b data-src="queue_inflow_periods" data-field="rate" data-where="dir=third_party/blink&amp;period=2020-22" data-fmt="per100">–</b> people in 2020–22 and
+          <b data-src="queue_inflow_periods" data-field="rate" data-where="dir=third_party/blink&amp;period=2023-24" data-fmt="per100">–</b> in 2023–24. Chrome's
+          directories recovered with the 2025 wave of new people; blink and <code>content/browser</code> did not.
+        </p>
+
+        <h3>What did not change</h3>
+        <p class="sub">
+          Existing people did not stop reviewing. The share of authors who also approve rose, from
+          <b data-src="capacity_years" data-field="authors_who_approve" data-where="year=2020" data-fmt="pct">–</b> in 2020 to <b data-src="capacity_years" data-field="authors_who_approve" data-where="year=2024" data-fmt="pct">–</b> in 2024 and
+          <b data-src="capacity_years" data-field="authors_who_approve" data-where="year=2026" data-fmt="pct">–</b> in 2026. The pool stopped being refilled.
+        </p>
+        <p class="note">
+          Limits: these data show the drop in arrivals, mostly at Google, not its cause. The share of steady
+          contributors behind on reviewing has also risen since 2024 (<a href="#monitor">What to watch</a>).
+        </p>
+      </section>
+
+      <section id="ai-review" class="card narrative" aria-labelledby="ai-review-title">
+        <a class="card-anchor" href="#ai-review" aria-label="Link to this section" title="Link to this section">#</a>
+        <h2 id="ai-review-title">7. How review is changing with AI</h2>
+        <p class="sub">
+          Against that baseline, compare CLs marked as AI-generated with the rest, since markers began to appear in
+          mid-2025. Three
+          questions: Do AI-generated CLs take more or less review? Is their review spread over reviewers
+          differently? Do they change product quality, for example the revert rate?
+        </p>
+        <p class="note">
+          A CL is AI-marked when its commit says it was made with an AI tool: an <code>Agent-Generated</code>
+          trailer (from July 2026), a co-author or assistant trailer naming one, or a line saying so. From July 2025
+          to September 2026 that is <b data-src="ai_summary" data-field="marked_cls" data-fmt="n0">–</b> CLs from <b data-src="ai_summary" data-field="marked_authors" data-fmt="n0">–</b> authors,
+          <b data-src="ai_summary" data-field="latest_marked_share" data-fmt="pct1">–</b> of CLs in 2026 Q3. Most AI-assisted work carries no marker, which limits
+          all three answers. The quarterly charts skip 2026 Q2, which had too few marked CLs to compare. "Likely AI-written" is a model's guess (Claude Haiku scoring each unmarked CL's
+          description), a subset of the unmarked CLs: <b data-src="ai_summary" data-field="latest_predicted_share" data-fmt="pct">–</b> of them in 2026 Q3.
+        </p>
+
+        <h3>Do AI-marked CLs take more or less review?</h3>
+        <div class="panels">
+          <figure class="panel"><h3>Review per CL, like for like</h3>
+            <p class="note"><button type="button" class="term" popovertarget="def-feedback-index">Feedback index</button>; the dashed line is the 2023–24 norm.</p>
+            <div class="chart chart-short"><canvas id="n-c-ai-feedback" role="img" aria-label="Feedback index of AI-marked, unmarked and likely AI-written CLs, per quarter."></canvas></div></figure>
+          <figure class="panel"><h3>Reviewer threads per CL</h3>
+            <div class="chart chart-short"><canvas id="n-c-ai-threads" role="img" aria-label="Reviewer threads per CL of AI-marked, unmarked and likely AI-written CLs, per quarter."></canvas></div></figure>
+          <figure class="panel"><h3>Hours to first substantive review, median</h3>
+            <div class="chart chart-short"><canvas id="n-c-ai-ftr" role="img" aria-label="Median hours to first substantive review of AI-marked, unmarked and likely AI-written CLs, per quarter."></canvas></div></figure>
+        </div>
+        <p class="sub">
+          There is no consistent difference in feedback. The marked set is small and swings with a few people's
+          campaigns: in 2025 Q4 its median CL changed <b data-src="ai_quarters" data-field="median_lines" data-where="q=2025Q4&amp;kind=marked" data-fmt="n0">–</b> lines, mostly
+          removals of dead TODOs. In 2026 Q3 its feedback index was <b data-src="ai_quarters" data-field="feedback_index" data-where="q=2026Q3&amp;kind=marked" data-fmt="n2">–</b>
+          against <b data-src="ai_quarters" data-field="feedback_index" data-where="q=2026Q3&amp;kind=other" data-fmt="n2">–</b> for unmarked CLs. Since late 2025, marked CLs have waited longer for a first
+          review: a median of <b data-src="ai_quarters" data-field="ftr_p50" data-where="q=2026Q3&amp;kind=marked" data-fmt="h">–</b> in 2026 Q3, against
+          <b data-src="ai_quarters" data-field="ftr_p50" data-where="q=2026Q3&amp;kind=other" data-fmt="h">–</b>. The CLs the model guesses are AI-written are bigger (median
+          <b data-src="ai_quarters" data-field="median_lines" data-where="q=2026Q3&amp;kind=predicted" data-fmt="n0">–</b> lines against <b data-src="ai_quarters" data-field="median_lines" data-where="q=2026Q3&amp;kind=other" data-fmt="n0">–</b>) and draw
+          more threads and rounds.
+        </p>
+
+        <h3>Is their review spread differently?</h3>
+        <p class="note">
+          Reviews of AI-marked CLs, July 2025 to September 2026, against 200 random sets of unmarked CLs of the same
+          size from the same quarters (the bar is their average, the whisker their 95% range).
+        </p>
+        <div class="panels">
+          <figure class="panel"><h3>Share of reviews by the busiest tenth of reviewers</h3>
+            <div class="chart chart-short"><canvas id="n-c-ai-top10" role="img" aria-label="Share of reviews done by the busiest tenth of reviewers, for AI-marked CLs and matched unmarked CLs."></canvas></div></figure>
+          <figure class="panel"><h3>Reviews by the reviewer's tenure</h3>
+            <div class="chart chart-short"><canvas id="n-c-ai-tenure" role="img" aria-label="Share of reviews by the reviewer's years on the project, for AI-marked CLs and matched unmarked CLs."></canvas></div></figure>
+        </div>
+        <p class="sub">
+          Review of marked CLs falls on fewer, more senior reviewers. The busiest tenth of their reviewers did
+          <b data-src="ai_reviewer_load" data-field="top10_share" data-where="kind=marked" data-fmt="pct">–</b> of the reviews, against <b data-src="ai_reviewer_load" data-field="top10_share" data-where="kind=other_matched" data-fmt="pct">–</b>
+          (<b data-src="ai_reviewer_load" data-field="top10_share_lo" data-where="kind=other_matched" data-fmt="pct">–</b> to <b data-src="ai_reviewer_load" data-field="top10_share_hi" data-where="kind=other_matched" data-fmt="pct">–</b>) for matched
+          unmarked CLs. Reviewers with ten or more years did <b data-src="ai_reviewer_load" data-field="y10p" data-where="kind=marked" data-fmt="pct1">–</b> of their reviews against
+          <b data-src="ai_reviewer_load" data-field="y10p" data-where="kind=other_matched" data-fmt="pct1">–</b>, and reviewers under two years <b data-src="ai_reviewer_load" data-field="lt2" data-where="kind=marked" data-fmt="pct1">–</b> against
+          <b data-src="ai_reviewer_load" data-field="lt2" data-where="kind=other_matched" data-fmt="pct1">–</b>. Part of this is that few authors write marked CLs, so few teams review
+          them.
+        </p>
+
+        <h3>Do they change product quality?</h3>
+        <p class="sub">
+          Marked CLs were reverted within 30 days less often: <b data-src="ai_summary" data-field="revert_marked" data-fmt="pct1">–</b> against
+          <b data-src="ai_summary" data-field="revert_other" data-fmt="pct1">–</b>, and <b data-src="ai_summary" data-field="revert_std_diff" data-fmt="sn1">–</b> points (interval
+          <b data-src="ai_summary" data-field="revert_std_lo" data-fmt="sn1">–</b> to <b data-src="ai_summary" data-field="revert_std_hi" data-fmt="sn1">–</b>) like for like on size, directory and quarter.
+          But within the same author's CLs the difference can't be told from zero, so it reflects who writes marked
+          CLs and what they are, not evidence that AI lowers reverts. There is no sign so far that it raises them.
+        </p>
+        <h3>Marked minus unmarked, paired by author and quarter</h3>
+        <p class="note">
+          Each author's marked CLs against their unmarked ones in the same quarter
+          (<b data-src="ai_paired" data-field="n" data-where="metric=threads" data-fmt="n0">–</b> author-quarters).
+          Lines and hours to first review are compared as log(1 + value), so a difference of 0.49 in lines is about
+          1.6 times the size.
+        </p>
+        <div class="table-wrap">
+          <table id="n-t-ai" class="balance-table">
+            <thead><tr><th>Measure</th><th>Difference</th><th>95% CI low</th><th>95% CI high</th><th>Author-quarters</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <p class="note">
+          A separate new load comes from AI-assisted security research: the Chrome Releases posts listed
+          <b data-src="security_years" data-field="total" data-where="year=2025" data-fmt="n0">–</b> CVEs in 2025 and <b data-src="security_years" data-field="total" data-where="year=2026" data-fmt="n0">–</b>
+          in 2026 to early November, and each fix is a CL someone reviews (<a href="#security">Security fixes</a>).
+          More on the marker and its limits: <a href="#ai">AI-marked CLs</a>.
+        </p>
+      </section>
+
+      <section id="monitor" class="card narrative" aria-labelledby="monitor-title">
+        <a class="card-anchor" href="#monitor" aria-label="Link to this section" title="Link to this section">#</a>
+        <h2 id="monitor-title">8. What to watch from here</h2>
+        <p class="sub">
+          Whatever form evaluation takes, changes will still need capable stewards to decide what goes into the
+          product and what is held back. These are the measures we propose to track so we can see whether that
+          ability is still being built, even if it moves beyond line-by-line code review.
+        </p>
+        <div class="table-wrap">
+          <table id="t-monitor" class="balance-table monitor-table">
+            <thead><tr><th>Metric</th><th>What it tells us</th><th>Latest value</th><th>Watch for</th></tr></thead>
+            <tbody>
+              <tr>
+                <th scope="row">Reviewer load: CLs, lines and comments per reviewer, median and 95th percentile</th>
+                <td>Whether review load is spread or concentrated</td>
+                <td>CLs <b data-src="reviewer_burden" data-field="cls_p50" data-where="q=2026Q3" data-fmt="n0">–</b> and <b data-src="reviewer_burden" data-field="cls_p95" data-where="q=2026Q3" data-fmt="n0">–</b>; lines <b data-src="reviewer_burden" data-field="lines_p50" data-where="q=2026Q3" data-fmt="n0">–</b> and <b data-src="reviewer_burden" data-field="lines_p95" data-where="q=2026Q3" data-fmt="n0">–</b>; comments
+                  <b data-src="reviewer_burden" data-field="comments_p50" data-where="q=2026Q3" data-fmt="n0">–</b> and <b data-src="reviewer_burden" data-field="comments_p95" data-where="q=2026Q3" data-fmt="n0">–</b>; 2026 Q3</td>
+                <td>The 95th percentile pulling away from the median</td>
+              </tr>
+              <tr>
+                <th scope="row">Hours to first substantive review, median</th>
+                <td>What the load costs authors</td>
+                <td><b data-src="exchange" data-field="ftr_p50" data-where="q=2026Q3" data-fmt="h">–</b>, 2026 Q3</td>
+                <td>Rises that more CLs per reviewer don't explain</td>
+              </tr>
+              <tr>
+                <th scope="row">Steady contributors behind on reviewing</th>
+                <td>Whether people still grow into reviewing</td>
+                <td><b data-src="behind_share_by_year" data-field="behind_std" data-where="year=2026" data-fmt="pct">–</b>, 2026</td>
+                <td>A further rise from about one in six in 2021–24</td>
+              </tr>
+              <tr>
+                <th scope="row">Authors behind on feedback</th>
+                <td>Whether people still learn to need less review</td>
+                <td><b data-src="behind_feedback" data-field="behind_rel" data-where="half=2026H2&amp;band=all" data-fmt="pct">–</b>,
+                  2026 Q3 (chance alone
+                  <b data-src="behind_feedback" data-field="null" data-where="half=2026H2&amp;band=all" data-fmt="pct">–</b>)</td>
+                <td>A rise beyond what chance alone gives</td>
+              </tr>
+              <tr>
+                <th scope="row">Review share in year five since joining, median</th>
+                <td>The path from author to reviewer</td>
+                <td><b data-src="review_share_years" data-field="p50" data-where="year=5" data-fmt="pct">–</b>, joiners of 2017–2021</td>
+                <td>A join year falling below the others</td>
+              </tr>
+              <tr>
+                <th scope="row">New regular reviewers and new OWNERS per year</th>
+                <td>Whether the reviewer pool renews</td>
+                <td><b data-src="pipeline" data-field="new_regular_reviewers" data-where="year=2026" data-fmt="n0">–</b> and
+                  <b data-src="pipeline" data-field="new_owners" data-where="year=2026" data-fmt="n0">–</b>, 2026 to October</td>
+                <td>Falling while CLs rise</td>
+              </tr>
+              <tr>
+                <th scope="row">New authors with 5 or more CLs in their first year</th>
+                <td>Tomorrow's reviewers, two to three years ahead</td>
+                <td><b data-src="capacity_years" data-field="new_authors_5" data-where="year=2026" data-fmt="n0">–</b>, 2026 to September; <b data-src="capacity_years" data-field="new_authors_5" data-where="year=2022" data-fmt="n0">–</b> in 2022</td>
+                <td>Staying near 2023–24's low</td>
+              </tr>
+              <tr>
+                <th scope="row">Net new approvers per year</th>
+                <td>Whether the reviewer pool is refilled</td>
+                <td><b data-src="capacity_years" data-field="net_approvers" data-where="year=2026" data-fmt="n0">–</b>, 2026 to September; <b data-src="capacity_years" data-field="net_approvers" data-where="year=2024" data-fmt="n0">–</b> or more a year to 2024</td>
+                <td>Staying near zero while CLs rise</td>
+              </tr>
+              <tr>
+                <th scope="row">Share of approvals by reviewers with 10 or more years</th>
+                <td>Whether the load rests on the longest-serving</td>
+                <td><b data-src="capacity_years" data-field="approvals_y10p" data-where="year=2026" data-fmt="pct">–</b>, 2026; <b data-src="capacity_years" data-field="approvals_y10p" data-where="year=2020" data-fmt="pct">–</b> in 2020</td>
+                <td>A further rise</td>
+              </tr>
+              <tr>
+                <th scope="row">Newcomer approvals by reviewers 2–5 years in</th>
+                <td>Whether recent graduates still train newcomers</td>
+                <td><b data-src="newcomer_review" data-field="y2_5" data-where="year=2026" data-fmt="pct">–</b>, 2026</td>
+                <td>A further fall</td>
+              </tr>
+              <tr>
+                <th scope="row">CLs where review changed something</th>
+                <td>Review's direct effect on the code</td>
+                <td><b data-src="roi_summary" data-field="with_addressed" data-fmt="pct">–</b>, July 2023 to September 2026</td>
+                <td>A fall while CLs grow</td>
+              </tr>
+              <tr>
+                <th scope="row">Reverted within 30 days; reverts for a crash, bug or slowdown per 1,000 CLs</th>
+                <td>Defects that escaped review</td>
+                <td><b data-src="git_quarters" data-field="reverted" data-where="q=2026Q3" data-fmt="pct1">–</b>, 2026 Q3;
+                  <b data-src="roi_summary" data-field="prevent_per_1000" data-fmt="n1">–</b> per 1,000, since July 2023</td>
+                <td>A rise in the second: the first mostly tracks builds and tests</td>
+              </tr>
+              <tr>
+                <th scope="row">AI-marked CLs' revert rate against the rest</th>
+                <td>Whether AI-written changes meet the same bar</td>
+                <td><b data-src="ai_summary" data-field="revert_marked" data-fmt="pct1">–</b> against <b data-src="ai_summary" data-field="revert_other" data-fmt="pct1">–</b>, July 2025
+                  to September 2026; no clear difference within the same author's CLs</td>
+                <td>A gap that persists as marking spreads</td>
+              </tr>
+              <tr>
+                <th scope="row">Concentration of AI-marked CLs' review</th>
+                <td>Whether review of AI-written changes falls on a few people</td>
+                <td>Busiest tenth of reviewers: <b data-src="ai_reviewer_load" data-field="top10_share" data-where="kind=marked" data-fmt="pct">–</b> of reviews, against
+                  <b data-src="ai_reviewer_load" data-field="top10_share" data-where="kind=other_matched" data-fmt="pct">–</b> for matched unmarked CLs</td>
+                <td>A widening gap as AI-written CLs grow</td>
+              </tr>
+              <tr>
+                <th scope="row">Decision quality: escaped defects per approver's area; CLs abandoned after a −1</th>
+                <td>Whether stewards still hold back what shouldn't land</td>
+                <td>Escaped defects: not built yet. Abandoned after a −1:
+                  <b data-src="signals_era" data-field="after_neg_abandoned" data-where="era=2026" data-fmt="pct">–</b>, 2026</td>
+                <td>To be set once measured</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3>Leading indicators: falling behind the growth trajectories</h3>
+        <div class="panels">
+          <figure class="panel"><h3>Behind on feedback</h3>
+            <p class="note">Share of authors with 2+ years' tenure and 12 or more CLs in the half-year (6 in 2026 Q3) whose feedback index is 1.5× or more their tenure band's median.</p>
+            <div class="chart chart-short"><canvas id="n-c-behind-feedback" role="img" aria-label="Share of authors behind on feedback by half-year, against the same half-year's peers and against the 2023 to 2024 curve, with the share chance alone gives."></canvas></div></figure>
+          <figure class="panel"><h3>Behind on reviewing</h3>
+            <p class="note">Share of people in years three to nine since joining, landing 24 or more CLs a year (prorated for 2026, to October), whose review share is under half the median for their year since joining.</p>
+            <div class="chart chart-short"><canvas id="n-c-behind-share" role="img" aria-label="Share of steady contributors behind on review share, by calendar year 2021 to 2026, for years 3 to 4 and 5 to 9 since joining and adjusted overall."></canvas></div></figure>
+        </div>
+        <p class="sub">
+          These two move first when growth stalls. Behind on reviewing rose from about one in six steady
+          contributors in 2021–24 to
+          <b data-src="behind_share_by_year" data-field="behind_std" data-where="year=2025" data-fmt="pct">–</b> in
+          2025 and <b data-src="behind_share_by_year" data-field="behind_std" data-where="year=2026" data-fmt="pct">–</b>
+          in 2026, adjusted to the same mix of years since joining. Behind on
+          <button type="button" class="term" popovertarget="def-feedback-index">feedback</button> held level from
+          2023 to early 2026, at about
+          <b data-src="behind_feedback_summary" data-field="behind_rel" data-fmt="pct">–</b> of such authors against
+          <b data-src="behind_feedback_summary" data-field="null" data-fmt="pct">–</b> by chance; 2026 Q3 is higher,
+          on fewer CLs per person (<a href="#trajectories">details</a>).
+        </p>
+
+        <h3>Properties of good change evaluation in an agentic future</h3>
+        <ul class="sub properties">
+          <li>It changes the code before it lands, as review does today in about two CLs in five.</li>
+          <li>Evaluators are grown, not only hired: every author is on a path to reviewing, as every join year since
+            2017 has been.</li>
+          <li>Load is spread, not concentrated on the longest-tenured.</li>
+          <li>Outcomes are measured after landing, not only before: escaped defects, and what later changes cost.</li>
+          <li>AI-written changes are held to the same measured outcomes as the rest.</li>
+        </ul>
+      </section>
+
+      <section class="earlier-break" aria-labelledby="earlier-title">
+        <h2 id="earlier-title">Earlier analysis</h2>
+        <p>Everything below is the previous version of this page, kept for review. Its parts will be moved up into the
+          narrative above or removed.</p>
+      </section>
+
+      <div class="lede earlier-lede">
         <h2 class="goal-head">The question</h2>
         <p>
           Chromium has grown for two decades through code review: experts give feedback, <button type="button" class="term" popovertarget="def-newcomer">newcomers</button> learn to need
@@ -101,11 +1168,7 @@
           left out of the review measures.
         </p>
       </div>
-    </header>
 
-    <main aria-busy="true">
-      <p id="error" class="note" hidden></p>
-      <template data-msg="error">Couldn't load data: <slot name="error"></slot></template>
 
       <section class="tiles" aria-label="Then and now">
         <div class="tile"><div class="tile-label">CLs per active author, per quarter</div>

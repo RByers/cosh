@@ -2645,3 +2645,66 @@ button.term:focus-visible {
     height: 560px;
   }
 }
+
+/* ---- Review Balance: the narrative at the top (balance.html) */
+
+.lede .intro-head {
+  margin: 8px 0 6px;
+  font-size: 1.35rem;
+  color: var(--text-primary);
+}
+
+/* The narrative's contents, under the intro. */
+.toc ol {
+  margin: 4px 0 12px;
+  padding-left: 22px;
+  columns: 2 18rem;
+  column-gap: 32px;
+}
+
+.toc li {
+  break-inside: avoid;
+  margin-bottom: 3px;
+}
+
+/* The break between the narrative and the earlier analysis: unmissable. */
+.earlier-break {
+  margin: 56px 0 24px;
+  padding: 20px 0 0;
+  border-top: 8px double var(--text-secondary);
+}
+
+.earlier-break h2 {
+  margin: 0 0 6px;
+  font-size: 1.7rem;
+}
+
+.earlier-break p {
+  margin: 0;
+  color: var(--text-secondary);
+}
+
+.earlier-lede {
+  margin-bottom: 24px;
+}
+
+/* The table of measures to watch: four text columns that wrap, scrolling sideways on phones. */
+.monitor-table {
+  table-layout: fixed;
+  min-width: 640px;
+}
+
+.monitor-table th,
+.monitor-table td {
+  text-align: left;
+  white-space: normal;
+  vertical-align: top;
+}
+
+.monitor-table th:nth-child(1) { width: 30%; }
+.monitor-table th:nth-child(2) { width: 24%; }
+.monitor-table th:nth-child(3) { width: 26%; }
+
+.narrative .properties {
+  padding-left: 22px;
+}

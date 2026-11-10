@@ -165,7 +165,7 @@ function line(
   series: { label: string; data: (number | null)[]; color: string; axis?: string; dash?: boolean }[],
   fmt: (v: number) => string,
   opts: {
-    zero?: boolean; ref?: number; y2fmt?: (v: number) => string;
+    zero?: boolean; max?: number; ref?: number; y2fmt?: (v: number) => string;
     /** Tooltip title and line text, for charts that say more than the value. */
     title?: (i: number) => string; tip?: (i: TooltipItem<'line'>) => string;
     /** Solid lines however many series (ordered series such as size tenths). */
@@ -230,7 +230,7 @@ function categories(
   id: string, rows: Row[], theme: Theme,
   spec: { x: string; g: string; v: string; xs: (string | number)[]; xl: (x: string | number) => string;
     groups: [string | number, string][] },
-  fmt: (v: number) => string, opts: { zero?: boolean; ref?: number } = {},
+  fmt: (v: number) => string, opts: { zero?: boolean; max?: number; ref?: number } = {},
 ) {
   const at = (g: string | number, x: string | number) =>
     rows.find((r) => String(r[spec.g]) === String(g) && String(r[spec.x]) === String(x));
@@ -306,6 +306,82 @@ function bands(
 
 const BAND_MID = 'p25–p75';
 const BAND_WIDE = 'p5–p95';
+
+/** Percentiles a fan can draw above its median line. */
+const FAN_LEVELS = [75, 90, 95, 99];
+
+/** The percentiles of a fan present in `rows` (fields key_p50, key_p75 …): the median, then each
+ * upper level some row has a number for. A missing p99, for example, is left out. */
+export function fanLevels(rows: Row[], key: string): number[] {
+  return [50, ...FAN_LEVELS.filter((p) => rows.some((r) => typeof r[`${key}_p${p}`] === 'number'))];
+}
+
+/** True for 1, 2 and 5 times a power of ten: the ticks a log axis labels. */
+export const logTick = (v: number) => {
+  if (!(v > 0)) return false;
+  const m = Math.round(v / 10 ** Math.floor(Math.log10(v) + 1e-9) * 1000) / 1000;
+  return m === 1 || m === 2 || m === 5;
+};
+
+/** A percentile fan over quarters (or another x field): the median as a line, and above it bands
+ * up to p75, p90, p95 and p99, each lighter than the last, for the busier part of a distribution.
+ * The legend names each band and the tooltip lists every percentile. `log` puts the y axis on a
+ * log scale, for when the top percentile dwarfs the median. */
+function fan(
+  id: string, rows: Row[], key: string, theme: Theme, fmt: (v: number) => string,
+  opts: { label: string; x?: string; log?: boolean; zero?: boolean },
+) {
+  const x = opts.x ?? 'q';
+  const c = theme.series[0];
+  const levels = fanLevels(rows, key);
+  // Lighter as the bands go up; the alphas are hex suffixes.
+  const alpha = ['59', '38', '22', '14'];
+  const col = (p: number) => rows.map((r) => {
+    const v = r[`${key}_p${p}`];
+    return typeof v === 'number' && (!opts.log || v > 0) ? v : null;
+  });
+  const name = (i: number) => `p${levels[i - 1]}–p${levels[i]}`;
+  // Bands first, each filling down to the one below it (dataset 0, the p75 band, fills to the
+  // median, which is last so that its line is drawn on top).
+  const top = levels.length - 1;
+  const datasets: ChartDataset<'line'>[] = [
+    ...levels.slice(1).map((p, i): ChartDataset<'line'> => ({ label: '', data: col(p), borderWidth: 0, pointRadius: 0,
+      pointHoverRadius: 0, tension: 0, backgroundColor: faint(c, alpha[i]), fill: i === 0 ? top : i - 1 })),
+    { label: opts.label, data: col(50), borderColor: c, backgroundColor: c, borderWidth: 2, pointRadius: 0,
+      pointHoverRadius: 4, tension: 0, fill: false },
+  ];
+  const labels = rows.map((r) => (x === 'q' ? qLabel(String(r.q)) : String(r[x])));
+  const o = options(theme, fmt, true);
+  o.plugins.tooltip.callbacks.label = (i: TooltipItem<'line'>) => {
+    const r = rows[i.dataIndex];
+    const v = (p: number) => (typeof r[`${key}_p${p}`] === 'number' ? fmt(Number(r[`${key}_p${p}`])) : '–');
+    return [`${opts.label}: ${v(50)}`, ...levels.slice(1).map((p) => `  p${p}: ${v(p)}`)] as unknown as string;
+  };
+  const legendItems = levels.map((_, i) => ({
+    text: i ? name(i) : opts.label, datasetIndex: i ? i - 1 : top, pointStyle: i ? 'rect' : 'line',
+    fillStyle: i ? faint(c, alpha[i - 1]) : c, strokeStyle: i ? faint(c, alpha[i - 1]) : c, lineWidth: i ? 0 : 2,
+    lineDash: [], fontColor: theme.text,
+  }));
+  const legend = {
+    ...o.plugins.legend,
+    labels: {
+      ...o.plugins.legend.labels, usePointStyle: true, pointStyleWidth: 14, boxWidth: 14, boxHeight: 10,
+      generateLabels: (chart: Chart) => legendItems.map((it) => ({ ...it, hidden: !chart.isDatasetVisible(it.datasetIndex) })),
+    },
+  };
+  const scales = axes(theme, fmt, { zero: opts.zero && !opts.log });
+  const y = opts.log
+    ? { ...scales.y, type: 'logarithmic',
+      grid: { color: (c: { tick?: { value: number } }) => (c.tick && logTick(c.tick.value) ? theme.grid : 'transparent') },
+      ticks: { ...scales.y.ticks, maxTicksLimit: undefined, autoSkip: false,
+      callback: (v: number | string) => (logTick(Number(v)) ? fmt(Number(v)) : '') } }
+    : scales.y;
+  charts.push(new Chart($<HTMLCanvasElement>(`#${id}`), {
+    type: 'line',
+    data: { labels, datasets },
+    options: { ...o, plugins: { ...o.plugins, legend }, scales: { ...scales, y } },
+  } as never));
+}
 
 const PATHS: [string, string][] = [
   ['velocity', 'Velocity'], ['size', 'Size'], ['breadth', 'Breadth'], ['reviewing', 'Reviewing'], ['indep_threads', 'Independence'],
@@ -391,10 +467,10 @@ function feedbackDefinition(hist: Row[], deciles: Row[], theme: Theme) {
 
 const TENURE_BANDS: [string, string][] = [['lt2', 'Under 2 years'], ['y2_5', '2–5 years'], ['y5_10', '5–10 years'], ['y10p', '10+ years']];
 
-function newcomerStack(rows: Row[], theme: Theme) {
+function newcomerStack(id: string, rows: Row[], theme: Theme) {
   const o = options(theme, FMT.pct, true, (i) => `${rows[i].year}: ${FMT.n0(Number(rows[i].approvals))} newcomer approvals`);
   const scales = axes(theme, FMT.pct, { zero: true, max: 1 });
-  charts.push(new Chart($<HTMLCanvasElement>('#c-newcomer'), {
+  charts.push(new Chart($<HTMLCanvasElement>(`#${id}`), {
     type: 'bar',
     data: {
       labels: rows.map((r) => String(r.year)),
@@ -442,7 +518,7 @@ const SHARE_YEARS = [2, 3, 5, 8];
 const shareBin = (b: number) => (b === 0 ? 'None' : `${(b - 1) * 10}–${b * 10}%`);
 
 /** People binned by review share, one bar per year since joining, all join years pooled. */
-function shareHistogram(rows: Row[], theme: Theme) {
+function shareHistogram(id: string, rows: Row[], theme: Theme) {
   const bins = [...Array(11).keys()];
   const at = (y: number, b: number) => rows.find((r) => r.year === y && r.bin === b);
   const o = options(theme, FMT.pct, true, (i) => `Review share: ${shareBin(bins[i]).replace('None', 'none')}`);
@@ -451,7 +527,7 @@ function shareHistogram(rows: Row[], theme: Theme) {
     const r = at(SHARE_YEARS[i.datasetIndex], bins[i.dataIndex]);
     return r ? `${i.dataset.label}: ${FMT.pct(Number(r.share))} of people (${FMT.n0(Number(r.people))})` : `${i.dataset.label}: –`;
   };
-  charts.push(new Chart($<HTMLCanvasElement>('#c-share-hist'), {
+  charts.push(new Chart($<HTMLCanvasElement>(`#${id}`), {
     type: 'bar',
     data: {
       labels: bins.map(shareBin),
@@ -614,7 +690,7 @@ function forest(root: HTMLElement, rows: Row[], spec: ForestSpec) {
 
 /** "Arriving better equipped, or easing off?": each same-people measure's change since 2024
  * as a dot and an interval on one shared scale, faded where the interval crosses zero. */
-function panelForest(rows: Row[]) {
+function panelForest(root: HTMLElement, rows: Row[]) {
   const rel = new Map(rows.map((r) => [r, relChange(r)]));
   const all = [...rel.values()];
   const step = 0.25;
@@ -623,7 +699,7 @@ function panelForest(rows: Row[]) {
   const pos = (v: number) => (v - lo) / (hi - lo);
   const ticks: [number, string][] = [];
   for (let k = 0; lo + k * step <= hi + 1e-9; k++) ticks.push([lo + k * step, relPct(lo + k * step)]);
-  forest($('#forest'), rows, {
+  forest(root, rows, {
     value: (r) => rel.get(r)!,
     pos,
     zero: () => pos(0),
@@ -646,21 +722,27 @@ const ROI_OR_TICKS = [0.5, 0.6, 0.8, 1, 1.25, 1.6, 2, 2.5];
 const orFmt = (v: number) => fmtNum(v, { maximumFractionDigits: 2 });
 
 /** Odds ratios of a revert on a log scale shared by every row, with the line at 1. */
-function roiOddsForest(rows: Row[]) {
+function roiOddsForest(root: HTMLElement, rows: Row[]) {
+  ratioForest(root, rows.map((r) => ({ ...r, v: r.or })), (r) =>
+    `Odds ratio ${FMT.n2(Number(r.or))}, 95% interval ${FMT.n2(Number(r.lo))} to ${FMT.n2(Number(r.hi))}`
+    + ` (${r.unit}${r.n ? `; ${FMT.n0(Number(r.n))} ${r.group === 'within author' ? 'matched sets' : 'CLs'}` : ''}).`);
+}
+
+/** Ratios (rows' v, lo and hi) with their intervals on a log scale shared by every row, the line at 1. */
+function ratioForest(root: HTMLElement, rows: Row[], title: (r: Row) => string) {
   const los = Math.min(...rows.map((r) => Number(r.lo)));
   const his = Math.max(...rows.map((r) => Number(r.hi)));
   const lo = Math.max(...ROI_OR_TICKS.filter((t) => t <= los));
   const hi = Math.min(...ROI_OR_TICKS.filter((t) => t >= his));
   const pos = (v: number) => Math.log(v / lo) / Math.log(hi / lo);
-  forest($('#roi-forest'), rows, {
-    value: (r) => [Number(r.or), Number(r.lo), Number(r.hi)],
+  forest(root, rows, {
+    value: (r) => [Number(r.v), Number(r.lo), Number(r.hi)],
     pos,
     zero: () => pos(1),
     ticks: ROI_OR_TICKS.filter((t) => t >= lo && t <= hi).map((t) => [t, orFmt(t)]),
-    val: (r) => FMT.n2(Number(r.or)),
+    val: (r) => FMT.n2(Number(r.v)),
     clear: (r) => Number(r.lo) > 1 || Number(r.hi) < 1,
-    title: (r) => `Odds ratio ${FMT.n2(Number(r.or))}, 95% interval ${FMT.n2(Number(r.lo))} to ${FMT.n2(Number(r.hi))}`
-      + ` (${r.unit}${r.n ? `; ${FMT.n0(Number(r.n))} ${r.group === 'within author' ? 'matched sets' : 'CLs'}` : ''}).`,
+    title,
   });
 }
 
@@ -674,7 +756,7 @@ const ROI_PANEL_FMT: Record<string, (v: number) => string> = {
 
 /** "Does review today pay off later?": each estimate on its own scale, centred on no effect
  * (log scale for odds ratios). */
-function roiPanelForest(rows: Row[]) {
+function roiPanelForest(root: HTMLElement, rows: Row[]) {
   const t = (r: Row) => (r.unit === 'or' ? Math.log : (v: number) => v);
   const half = (r: Row) => {
     const f = t(r);
@@ -682,7 +764,7 @@ function roiPanelForest(rows: Row[]) {
     return 1.15 * Math.max(Math.abs(f(Number(r.lo)) - z), Math.abs(f(Number(r.hi)) - z));
   };
   const fmt = (r: Row) => ROI_PANEL_FMT[String(r.unit)] ?? FMT.n2;
-  forest($('#roi-panels'), rows, {
+  forest(root, rows, {
     value: (r) => [Number(r.est), Number(r.lo), Number(r.hi)],
     pos: (v, r) => 0.5 + (t(r)(v) - t(r)(Number(r.null))) / (2 * half(r)),
     zero: () => 0.5,
@@ -751,10 +833,11 @@ function groupBars(
   } as never));
 }
 
-function roiCharts(d: Record<string, Row[]>, theme: Theme) {
+/** The #roi charts and forests; `pre` prefixes every id, so the narrative can draw them again. */
+function roiCharts(d: Record<string, Row[]>, theme: Theme, pre = '') {
   const sum = d.roi_summary[0];
   const dep = d.roi_depth.filter((r) => r.measure === 'threads');
-  line('c-roi-depth', theme, dep.map((r) => String(r.bin)), [
+  line(`${pre}c-roi-depth`, theme, dep.map((r) => String(r.bin)), [
     { label: msg('roi-raw'), data: dep.map((r) => r.raw as number), color: theme.series[0] },
     { label: msg('roi-adjusted'), data: dep.map((r) => r.adjusted as number), color: theme.series[1] },
   ], FMT.pct1, {
@@ -765,7 +848,7 @@ function roiCharts(d: Record<string, Row[]>, theme: Theme) {
 
   const cls = d.roi_classes;
   const grp = (r: Row) => (r.group === 'other' ? 'unknown' : String(r.group));
-  groupBars('c-roi-classes', cls.map((r) => msg(`roi-class-${r.key}`)), cls.map(grp), [
+  groupBars(`${pre}c-roi-classes`, cls.map((r) => msg(`roi-class-${r.key}`)), cls.map(grp), [
     ['review', msg('roi-group-review'), theme.series[0]],
     ['ci', msg('roi-group-ci'), theme.series[1]],
     ['never', msg('roi-group-never'), theme.series[2]],
@@ -787,18 +870,18 @@ function roiCharts(d: Record<string, Row[]>, theme: Theme) {
     const r = tim[i.dataIndex];
     return msg('roi-timing-tip', { share: FMT.pct1(Number(r.share)), n: FMT.n0(Number(r.n)), cum: FMT.pct(Number(r.cum)) });
   };
-  charts.push(new Chart($<HTMLCanvasElement>('#c-roi-timing'), {
+  charts.push(new Chart($<HTMLCanvasElement>(`#${pre}c-roi-timing`), {
     type: 'bar',
     data: { labels: tLabels, datasets: [{ label: 'Reverts', data: tim.map((r) => r.share as number), backgroundColor: theme.series[0], borderRadius: 2 }] },
     options: { ...o, scales: { ...tScales, x: { ...tScales.x, ticks: { ...tScales.x.ticks, autoSkip: false } } } },
   } as never));
 
-  roiOddsForest(d.roi_odds);
-  roiPanelForest(d.roi_panels);
+  roiOddsForest($(`#${pre}roi-forest`), d.roi_odds);
+  roiPanelForest($(`#${pre}roi-panels`), d.roi_panels);
 
   const sub = d.roi_substance?.filter((r) => r.kind === 'label' || r.key === 'would_break');
   if (sub) {
-    groupBars('c-roi-substance', sub.map((r) => msg(`roi-sub-${r.key}`)), sub.map((r) => String(r.kind)), [
+    groupBars(`${pre}c-roi-substance`, sub.map((r) => msg(`roi-sub-${r.key}`)), sub.map((r) => String(r.kind)), [
       ['label', msg('roi-sub-label'), theme.series[0]],
       ['flag', msg('roi-sub-flag'), theme.series[3]],
     ], sub.map((r) => Number(r.share)), theme, (i) => msg('roi-sub-tip', {
@@ -811,11 +894,13 @@ const MATCHED_ARMS: [string, string][] = [['joined 2024', 'Joined 2024'], ['join
 const MATCHED_MONTHS = ['0-3', '3-6', '6-9', '9-12'];
 
 /** Matched cohorts: one small chart per measure, the 2025 joiners against their 2024 matches,
- * coloured as in the cohort charts above. */
-function matchedCharts(rows: Row[], theme: Theme) {
+ * coloured as in the cohort charts above. `pre` prefixes each id; `only` limits the charts to
+ * those (unprefixed) ids. */
+function matchedCharts(rows: Row[], theme: Theme, pre = '', only?: string[]) {
   const at = (arm: string, m: string) => rows.find((r) => r.arm === arm && r.months === m);
-  const chart = (id: string, field: string, fmt: (v: number) => string, opts: { zero?: boolean; ref?: number } = {}) =>
-    line(id, theme, MATCHED_MONTHS.map((m) => `${m.replace('-', '–')} mo`),
+  const chart = (id: string, field: string, fmt: (v: number) => string, opts: { zero?: boolean; ref?: number } = {}) => {
+    if (only && !only.includes(id)) return;
+    line(pre + id, theme, MATCHED_MONTHS.map((m) => `${m.replace('-', '–')} mo`),
       MATCHED_ARMS.map(([arm, label], i) => ({
         label, color: theme.series[i + 1],
         data: MATCHED_MONTHS.map((m) => (at(arm, m)?.[field] as number | undefined) ?? null),
@@ -828,6 +913,7 @@ function matchedCharts(rows: Row[], theme: Theme) {
             : `${i.dataset.label}: –`;
         },
       });
+  };
   chart('c-m-cls', 'cls_per_active_month', FMT.n1, { zero: true });
   chart('c-m-rev', 'reviews_given_per_active_month', FMT.n1, { zero: true });
   chart('c-m-feedback', 'feedback_index', FMT.n2, { zero: true, ref: 1 });
@@ -838,10 +924,18 @@ function matchedCharts(rows: Row[], theme: Theme) {
 
 const RT_BANDS: [string, string][] = [['<2y', 'Under 2 years'], ['2-5y', '2–5 years'], ['5-10y', '5–10 years'], ['10y+', '10+ years']];
 
+/** The reviewers-by-tenure measures: field, format and extra hover text. */
+const RT_MEASURES: Record<string, [string, (v: number) => string, ((r: Row) => string)?]> = {
+  resp: ['resp_p50', FMT.h, (r) => ` (p75 ${FMT.h(Number(r.resp_p75))})`],
+  threads: ['threads_per_review', FMT.n2],
+  addressed: ['addressed_per_review', FMT.n2],
+  newcomer: ['newcomer_share', FMT.pct],
+};
+
 /** Reviewers by tenure: one chart per measure over half-years, a line per tenure band (the
  * same colours as the approvals-by-tenure chart). 2023 H1 is left off: only a few hundred
  * reviews, before the fetched history starts in earnest. */
-function reviewerTenure(rows: Row[], theme: Theme) {
+function reviewerTenure(rows: Row[], theme: Theme, ids: [id: string, measure: string][]) {
   const halves = [...new Set(rows.map((r) => String(r.half)))].filter((h) => h >= '2023H2').sort();
   const at = (band: string, h: string) => rows.find((r) => r.band === band && r.half === h);
   const chart = (id: string, field: string, fmt: (v: number) => string, extra?: (r: Row) => string) =>
@@ -857,10 +951,7 @@ function reviewerTenure(rows: Row[], theme: Theme) {
           return r ? `${i.dataset.label}: ${v}${extra ? extra(r) : ''}, ${FMT.n0(Number(r.reviews))} CLs` : `${i.dataset.label}: –`;
         },
       });
-  chart('c-rt-resp', 'resp_p50', FMT.h, (r) => ` (p75 ${FMT.h(Number(r.resp_p75))})`);
-  chart('c-rt-threads', 'threads_per_review', FMT.n2);
-  chart('c-rt-addressed', 'addressed_per_review', FMT.n2);
-  chart('c-rt-newcomer', 'newcomer_share', FMT.pct);
+  for (const [id, m] of ids) chart(id, ...RT_MEASURES[m]);
 }
 
 const SEVERITIES: [string, string][] = [['critical', 'Critical'], ['high', 'High'], ['medium', 'Medium'], ['low', 'Low']];
@@ -1434,30 +1525,85 @@ function patternSwatches(theme: Theme) {
   }
 }
 
-/** The two growth trajectories and the shares of people behind them (#trajectories). */
-function trajectories(d: Record<string, Row[]>, eras: [string, string][], tenureXl: Record<string, string>, theme: Theme) {
-  categories('c-key-feedback', d.learning, theme, { x: 'bucket', g: 'era', v: 'feedback_index', groups: eras,
-    xs: Object.keys(tenureXl), xl: (x) => tenureXl[x] }, FMT.n2, { ref: 1 });
+// ---- learning and growth charts, each drawn into the canvas it is given
+
+const ERAS: [string, string][] = [['2023H2-2024', '2023 H2–2024'], ['2025', '2025'], ['2026 (to Sep)', '2026 to September']];
+const TENURE_XL: Record<string, string> = { '0-3': '0–3 mo', '3-6': '3–6', '6-12': '6–12', '12-24': '1–2 y', '24-60': '2–5 y', '60-120': '5–10 y', '120-999': '10 y+' };
+const FAM_XL: Record<string, string> = { 'fam 0': 'None', 'fam 1-4': '1–4', 'fam 5-19': '5–19', 'fam 20-99': '20–99', 'fam 100+': '100+' };
+
+/** Feedback index by the author's tenure (TENURE_XL) or familiarity with the directory (FAM_XL), one line per era. */
+function learningChart(id: string, d: Record<string, Row[]>, theme: Theme, buckets: Record<string, string>) {
+  categories(id, d.learning, theme, { x: 'bucket', g: 'era', v: 'feedback_index', groups: ERAS,
+    xs: Object.keys(buckets), xl: (x) => buckets[x] }, FMT.n2, { ref: 1 });
+}
+
+const PRACTICE_GROUPS: [string, string][] = [['prolific', 'Prolific (top fifth)'], ['average', 'Average (middle fifth)']];
+const PRACTICE_XL: Record<string, Record<string, string>> = {
+  tenure: { '0-3': '0–3 mo', '3-6': '3–6', '6-12': '6–12', '12-24': '1–2 y', '24-48': '2–4 y', '48+': '4 y+' },
+  practice: { '0-10': '0–9', '10-30': '10–29', '30-100': '30–99', '100-300': '100–299', '300-1000': '300–999', '1000+': '1,000+' },
+};
+
+/** Prolific against average contributors' feedback index, by tenure or by commits landed (`by`). */
+function practiceChart(id: string, d: Record<string, Row[]>, theme: Theme, by: 'tenure' | 'practice') {
+  const xl = PRACTICE_XL[by];
+  categories(id, d.learning_practice.filter((r) => r.by === by), theme, { x: 'bucket', g: 'group',
+    v: 'feedback_index', groups: PRACTICE_GROUPS, xs: Object.keys(xl), xl: (x) => xl[x] }, FMT.n2, { ref: 1 });
+}
+
+const FB_TENURES: [string, string][] = [['under 2 years', 'Under 2 years'], ['2+ years', '2 years or more']];
+const FIFTH_XL: Record<string, string> = { 1: 'Least', 2: '2nd', 3: 'Middle', 4: '4th', 5: 'Most' };
+
+/** What authors did next, by fifth of their feedback index: `v` is fb_predict_fifths' column. */
+function predChart(id: string, d: Record<string, Row[]>, theme: Theme, v: string, fmt: (v: number) => string) {
+  categories(id, d.fb_predict_fifths, theme, { x: 'fifth', g: 'group', v, groups: FB_TENURES,
+    xs: Object.keys(FIFTH_XL), xl: (x) => FIFTH_XL[x] }, fmt, { zero: true });
+}
+
+/** Median review share by year since joining, one line per join year. */
+function gitCohortChart(id: string, d: Record<string, Row[]>, theme: Theme) {
+  const years = [2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025];
+  categories(id, d.git_cohorts, theme, { x: 'year', g: 'cohort', v: 'review_share',
+    groups: years.map((y) => [y, `Joined ${y}`]), xs: [1, 2, 3, 4, 5, 6, 7, 8, 9], xl: (x) => `Year ${x}` }, FMT.pct, { zero: true });
+}
+
+/** Median review share by year since joining, with the lowest and highest join year's. */
+function keyShare(id: string, d: Record<string, Row[]>, theme: Theme) {
   const ys = d.review_share_years;
-  line('c-key-share', theme, ys.map((r) => `Year ${r.year}`), [
+  line(id, theme, ys.map((r) => `Year ${r.year}`), [
     { label: 'Median', data: ys.map((r) => r.p50 as number), color: theme.series[0] },
     { label: 'Lowest join year', data: ys.map((r) => r.cohort_p50_min as number | null), color: theme.muted, dash: true },
     { label: 'Highest join year', data: ys.map((r) => r.cohort_p50_max as number | null), color: theme.muted, dash: true },
   ], FMT.pct, { zero: true });
+}
+
+/** Share of steady contributors behind on reviewing, by calendar year. */
+function behindShare(id: string, d: Record<string, Row[]>, theme: Theme) {
   // 2019–20 hold only the 2017–18 joiners in their third and fourth years, too few to compare.
   const by = d.behind_share_by_year.filter((r) => Number(r.year) >= 2021);
-  line('c-behind-share', theme, by.map((r) => (r.year === 2026 ? '2026 to Oct' : String(r.year))), [
+  line(id, theme, by.map((r) => (r.year === 2026 ? '2026 to Oct' : String(r.year))), [
     { label: 'All, same tenure mix', data: by.map((r) => r.behind_std as number), color: theme.series[0] },
     { label: 'Years 3–4', data: by.map((r) => r.y3_4 as number | null), color: theme.series[1] },
     { label: 'Years 5–9', data: by.map((r) => r.y5_9 as number | null), color: theme.series[2] },
   ], FMT.pct, { zero: true });
+}
+
+/** Share of authors behind on feedback, by half-year. */
+function behindFeedback(id: string, d: Record<string, Row[]>, theme: Theme) {
   const bl = d.behind_feedback.filter((r) => r.band === 'all');
   const halfLabel = (h: string) => (h === '2026H2' ? '2026 Q3' : h.replace('H', ' H'));
-  line('c-behind-feedback', theme, bl.map((r) => halfLabel(String(r.half))), [
+  line(id, theme, bl.map((r) => halfLabel(String(r.half))), [
     { label: 'Behind same-half peers', data: bl.map((r) => r.behind_rel as number), color: theme.series[0] },
     { label: 'Behind the 2023–24 curve', data: bl.map((r) => r.behind_fixed as number), color: theme.series[1] },
     { label: 'Chance alone', data: bl.map((r) => r.null as number), color: theme.muted, dash: true },
   ], FMT.pct, { zero: true });
+}
+
+/** The two growth trajectories and the shares of people behind them (#trajectories). */
+function trajectories(d: Record<string, Row[]>, theme: Theme) {
+  learningChart('c-key-feedback', d, theme, TENURE_XL);
+  keyShare('c-key-share', d, theme);
+  behindShare('c-behind-share', d, theme);
+  behindFeedback('c-behind-feedback', d, theme);
 }
 
 // ---- Source of longer review queues
@@ -1466,6 +1612,29 @@ const QUEUE_DIRS = ['third_party/blink', 'content/browser', 'chrome/browser', 'c
 const MONTH_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 const THEN = '2024 Q1 to 2025 Q2';
 const NOW = 'Since April 2026';
+
+/** People arriving in each of the five directories per 100 active authors, by year: half-years
+ * summed, so a rate is per half-year on average. `num` and `den` name queue_inflow's columns. */
+function queueInflow(id: string, d: Record<string, Row[]>, theme: Theme, num: string, den: string) {
+  const years = [2020, 2021, 2022, 2023, 2024, 2025, 2026];
+  const yearLabel = (y: number) => (y === 2026 ? 'Jan–Jun 2026' : String(y));
+  const rate = (dir: string, y: number) => {
+    const rs = d.queue_inflow.filter((r) => r.dir === dir && String(r.half).startsWith(String(y)));
+    const n = rs.reduce((a, r) => a + Number(r[num]), 0);
+    const k = rs.reduce((a, r) => a + Number(r[den]), 0);
+    return k ? n / k : null;
+  };
+  line(id, theme, years.map(yearLabel),
+    QUEUE_DIRS.map((dir, i) => ({ label: dir, data: years.map((y) => rate(dir, y)), color: theme.series[i % theme.series.length] })),
+    FMT.per100, { zero: true });
+}
+
+/** Share of each of the five directories' approvals given by people under 3 years on the project. */
+function queueOpenness(id: string, d: Record<string, Row[]>, theme: Theme) {
+  categories(id, d.queue_openness, theme, {
+    x: 'year', g: 'dir', v: 'new_reviewer_share', xs: [2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025, 2026], xl: String,
+    groups: QUEUE_DIRS.map((dir) => [dir, dir]) }, FMT.pct, { zero: true });
+}
 
 function queues(d: Record<string, Row[]>, theme: Theme) {
   const color = (i: number) => theme.series[i % theme.series.length];
@@ -1572,28 +1741,14 @@ function queues(d: Record<string, Row[]>, theme: Theme) {
   perQuarter('c-qu-volume', 'cls_index', FMT.n2, { ref: 1 });
   perQuarter('c-qu-perrev', 'cls_per_reviewer', FMT.n0, { zero: true });
 
-  // Arrivals by year: half-years summed, so a rate is per half-year on average.
-  const years = [2020, 2021, 2022, 2023, 2024, 2025, 2026];
-  const yearLabel = (y: number) => (y === 2026 ? 'Jan–Jun 2026' : String(y));
-  const rate = (dir: string, y: number, num: string, den: string) => {
-    const rs = d.queue_inflow.filter((r) => r.dir === dir && String(r.half).startsWith(String(y)));
-    const n = rs.reduce((a, r) => a + Number(r[num]), 0);
-    const k = rs.reduce((a, r) => a + Number(r[den]), 0);
-    return k ? n / k : null;
-  };
-  for (const [id, num, den] of [['c-qu-inflow', 'arrivals', 'active'], ['c-qu-inflow-g', 'g_arrivals_new', 'g_active']]) {
-    line(id, theme, years.map(yearLabel),
-      QUEUE_DIRS.map((dir, i) => ({ label: dir, data: years.map((y) => rate(dir, y, num, den)), color: color(i) })),
-      FMT.per100, { zero: true });
-  }
+  queueInflow('c-qu-inflow', d, theme, 'arrivals', 'active');
+  queueInflow('c-qu-inflow-g', d, theme, 'g_arrivals_new', 'g_active');
 
   const bins = ['< 6 mo', '6–12 mo', '1–2 y', '2–4 y', '4 y+'];
   categories('c-qu-learn', d.queue_learning.filter((r) => r.era === 'pre'), theme, {
     x: 'bin', g: 'dir', v: 'feedback_index', xs: [0, 1, 2, 3, 4], xl: (x) => bins[Number(x)],
     groups: QUEUE_DIRS.map((dir) => [dir, dir]) }, FMT.n2, { ref: 1 });
-  categories('c-qu-open', d.queue_openness, theme, {
-    x: 'year', g: 'dir', v: 'new_reviewer_share', xs: [2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025, 2026], xl: String,
-    groups: QUEUE_DIRS.map((dir) => [dir, dir]) }, FMT.pct, { zero: true });
+  queueOpenness('c-qu-open', d, theme);
 
   // Blink's wait by approver tenure, then and now: bars, with each band's share of CLs in the tooltip.
   const rs = d.queue_approver;
@@ -1614,6 +1769,205 @@ function queues(d: Record<string, Row[]>, theme: Theme) {
     options: { ...o, plugins: { ...o.plugins, legend: { ...o.plugins.legend, labels: { ...o.plugins.legend.labels, boxHeight: 10, boxWidth: 10 } } },
       scales: axes(theme, FMT.h, { zero: true }) },
   } as never));
+}
+
+/** New regular reviewers, people first added to OWNERS and new authors, per year. */
+function pipelineChart(id: string, d: Record<string, Row[]>, theme: Theme) {
+  const pipe = d.pipeline;
+  line(id, theme, pipe.map((r) => String(r.year)), [
+    { label: 'New regular reviewers', data: pipe.map((r) => r.new_regular_reviewers as number), color: theme.series[0] },
+    { label: 'First added to OWNERS', data: pipe.map((r) => r.new_owners as number), color: theme.series[1] },
+    { label: 'New authors', data: pipe.map((r) => r.new_authors as number), color: theme.series[2] },
+  ], FMT.n0, { zero: true });
+}
+
+/** Share of each start year's newcomers who became mentors within four years. */
+function mentorsChart(id: string, d: Record<string, Row[]>, theme: Theme) {
+  line(id, theme, d.mentorship.map((r) => String(r.year)),
+    [{ label: 'Became mentors within 4 years', data: d.mentorship.map((r) => r.became_mentors as number), color: theme.series[0] }],
+    FMT.pct, { zero: true });
+}
+
+/** Share of each start cohort added to OWNERS within three years. */
+function ownerChart(id: string, d: Record<string, Row[]>, theme: Theme) {
+  const owner = d.promotion.filter((r) => r.years === 3 && Number(r.cohort) >= 2014);
+  line(id, theme, owner.map((r) => String(r.cohort)),
+    [{ label: 'OWNER within 3 years', data: owner.map((r) => r.owner as number), color: theme.series[0] }], FMT.pct, { zero: true });
+}
+
+/** Stacked bars: one bar per label, a segment per series (vertical unless `horizontal`). */
+function stackBars(
+  id: string, labels: string[], series: { label: string; data: (number | null)[]; color: string }[],
+  theme: Theme, fmt: (v: number) => string, opts: { horizontal?: boolean; max?: number; title?: (i: number) => string } = {},
+) {
+  const o = options(theme, fmt, true, opts.title);
+  if (opts.horizontal) {
+    o.interaction = { mode: 'index', intersect: false, axis: 'y' } as never;
+    o.plugins.tooltip.callbacks.label = (i: TooltipItem<'line'>) =>
+      `${i.dataset.label}: ${fmt((i.parsed as unknown as { x: number }).x)}`;
+  }
+  const sc = axes(theme, fmt, { zero: true, max: opts.max });
+  const value = { ...sc.y, stacked: true };
+  // Categories thin out when they don't fit (year labels on narrow panels); the hover card names each.
+  const cat = { ...sc.x, stacked: true, ticks: { ...sc.x.ticks, autoSkip: !opts.horizontal } };
+  charts.push(new Chart($<HTMLCanvasElement>(`#${id}`), {
+    type: 'bar',
+    data: { labels, datasets: series.map((s) => ({ label: s.label, data: s.data, backgroundColor: s.color, borderRadius: 1 })) },
+    options: { ...o, ...(opts.horizontal ? { indexAxis: 'y' as const } : {}),
+      plugins: { ...o.plugins, legend: { ...o.plugins.legend, labels: { ...o.plugins.legend.labels, boxHeight: 10, boxWidth: 10 } } },
+      scales: opts.horizontal ? { x: { ...value, position: 'top' as const }, y: { ...cat, grid: { display: false } } } : { x: cat, y: value } },
+  } as never));
+}
+
+/** AI-marked CLs against the same author's unmarked ones, paired by quarter. */
+const aiTable = (id: string, rows: Row[]) =>
+  table(id, rows, [['metric', text], ['diff', signed], ['lo', signed], ['hi', signed], ['n', FMT.n0]]);
+
+// ---- the narrative at the top of the page
+
+/** Organizations as the narrative names them, in legend order. */
+const ORG_NAMES: [string, string][] = [
+  ['google.com', 'Google'], ['microsoft.com', 'Microsoft'], ['igalia.com', 'Igalia'], ['intel.com', 'Intel'],
+  ['gmail.com', 'Individuals (gmail.com)'], ['Other', 'Other'], ['All', 'All authors'],
+];
+const orgName = (org: string) => ORG_NAMES.find(([k]) => k === org)?.[1] ?? org;
+const capYear = (y: number | string) => (Number(y) === 2026 ? '2026*' : String(y));
+const TENURE_STACK: [string, string][] = [['lt2', 'Under 2 years'], ['y2_5', '2–5 years'], ['y5_10', '5–10 years'], ['y10p', '10+ years']];
+/** Fewer people than this and an org's point on the review-share chart is left off. */
+const ORG_MIN_PEOPLE = 30;
+
+/** The narrative's charts: some of the earlier analysis's charts drawn again into canvases of
+ * their own (ids starting n-), and the charts of the narrative datasets. */
+function narrative(d: Record<string, Row[]>, theme: Theme) {
+  const upTo = (rows: Row[]) => rows.filter((r) => String(r.q) <= LAST_QUARTER);
+  const exq = upTo(d.exchange);
+  const color = (i: number) => theme.series[i % theme.series.length];
+
+  // 1. How much work reviewers do (#burden)
+  const rb = upTo(d.reviewer_burden);
+  fan('n-c-burden-lines', rb, 'lines', theme, FMT.n0, { label: 'Median reviewer', log: true });
+  fan('n-c-burden-comments', rb, 'comments', theme, FMT.n0, { label: 'Median reviewer', log: true });
+  fan('n-c-burden-cls', rb, 'cls', theme, FMT.n0, { label: 'Median reviewer', log: true });
+  const ab = upTo(d.approver_burden);
+  fan('n-c-approver-cls', ab, 'cls', theme, FMT.n0, { label: 'Median approver', log: true });
+  fan('n-c-approver-lines', ab, 'lines', theme, FMT.n0, { label: 'Median approver', log: true });
+  quarters('n-c-reviewers', d.reviewer_quarters, theme,
+    [{ field: 'reviewers', label: 'Commenting reviewers' }, { field: 'authors', label: 'Authors' }], FMT.n0, { zero: true });
+  loadHistogram('n-c-hist-cls', d.reviewer_load_hist, 'cls', theme);
+  loadHistogram('n-c-hist-threads', d.reviewer_load_hist, 'threads', theme);
+  quarters('n-c-top10', d.git_quarters, theme, [{ field: 'top10_share', label: 'Busiest tenth' }], FMT.pct);
+  bands('n-c-ftr', exq, 'ftr', theme, FMT.h, { label: 'Median CL', zero: true });
+
+  // 2. What review is worth (#value)
+  quarters('n-c-git-reverted', d.git_quarters, theme, [{ field: 'reverted', label: 'Reverted within 30 days' }], FMT.pct1, { zero: true });
+  roiCharts(d, theme, 'n-');
+
+  // 3. Is the code arriving for review getting better? (#quality-nuance)
+  quarters('n-c-feedback', d.exchange, theme, [{ field: 'feedback_index', label: 'Feedback index' }], FMT.n2, { ref: 1 });
+  bands('n-c-interdiff', exq, 'interdiff_cl', theme, FMT.pct, { label: 'Median reviewed CL', zero: true, max: 1 });
+  panelForest($('#n-forest'), d.panels);
+  matchedCharts(d.matched, theme, 'n-', ['c-m-feedback', 'c-m-interdiff', 'c-m-abandon']);
+
+  // 4. Where review's value comes from (#value-sources)
+  reviewerTenure(d.reviewers_by_tenure, theme, [['n-c-rt-threads', 'threads'], ['n-c-rt-addressed', 'addressed'], ['n-c-rt-resp', 'resp']]);
+  learningChart('n-c-tenure', d, theme, TENURE_XL);
+  learningChart('n-c-fam', d, theme, FAM_XL);
+  practiceChart('n-c-prac-landed', d, theme, 'practice');
+  const bandXl: Record<string, string> = { '<1y': 'First year', '1-2y': '1–2 y', '2-5y': '2–5 y', '5y+': '5 y+' };
+  categories('n-c-org-feedback', d.org_feedback.filter((r) => r.era === 'pre'), theme, {
+    x: 'band', g: 'org', v: 'feedback_index', xs: Object.keys(bandXl), xl: (x) => bandXl[x],
+    groups: ORG_NAMES.filter(([o]) => o !== 'All'),
+  }, FMT.n2, { ref: 1 });
+  const fit = d.org_feedback_fit.filter((r) => !(r.org === 'intel.com' && r.era === 'now'));
+  ratioForest($('#n-org-forest'), fit.map((r) => ({ ...r, key: `${r.org}:${r.era}`, v: r.ratio, lo: r.ratio_lo, hi: r.ratio_hi })),
+    (r) => `${orgName(String(r.org))}: ${FMT.n2(Number(r.ratio))} times all authors once tenure is held equal, 95% interval `
+      + `${FMT.n2(Number(r.ratio_lo))} to ${FMT.n2(Number(r.ratio_hi))}; feedback index as found ${FMT.n2(Number(r.feedback_index))}; `
+      + `${FMT.n0(Number(r.people))} people, ${FMT.n0(Number(r.cls))} CLs.`);
+
+  // 5. Growing reviewers (#capacity)
+  keyShare('n-c-key-share', d, theme);
+  gitCohortChart('n-c-gitco', d, theme);
+  shareHistogram('n-c-share-hist', d.review_share_hist, theme);
+  const yearsXl: Record<string, string> = { 1: 'Year 1', 2: '2', 3: '3', 4: '4', 5: '5', '6-7': '6–7', '8-10': '8–10', '11+': '11+' };
+  const growEras: [string, string][] = [['pre', 'Jul 2023 to Jun 2025'], ['now', 'Jul 2025 to Sep 2026']];
+  const nrg = (id: string, v: string, fmt: (v: number) => string, max?: number) =>
+    categories(id, d.new_reviewer_growth, theme, { x: 'year', g: 'era', v, xs: Object.keys(yearsXl), xl: (x) => yearsXl[x],
+      groups: growEras }, fmt, { zero: true, max });
+  nrg('n-c-newrev-reviews', 'reviews_per_reviewer_quarter', FMT.n0);
+  nrg('n-c-newrev-share', 'addressed_share', FMT.pct, 1);
+  categories('n-c-org-reviewing', d.org_reviewing.filter((r) => Number(r.people) >= ORG_MIN_PEOPLE), theme, {
+    x: 'year', g: 'org', v: 'review_share_p50', xs: [1, 2, 3, 4, 5, 6, 7, 8], xl: (x) => `Year ${x}`,
+    groups: ORG_NAMES.filter(([o]) => d.org_reviewing.some((r) => r.org === o)),
+  }, FMT.pct, { zero: true });
+  table('n-t-org-review', d.org_review_value.map((r) => ({ ...r, org: orgName(String(r.org)) })), [
+    ['org', text], ['reviewers', FMT.n0], ['reviews', FMT.n0], ['threads_per_review', FMT.n2], ['addressed_per_review', FMT.n2],
+    ['addressed_share', FMT.pct],
+  ]);
+  predChart('n-c-pred-owners', d, theme, 'owners', FMT.pct);
+  predChart('n-c-pred-share', d, theme, 'share', FMT.pct);
+  const cy = d.capacity_years;
+  line('n-c-cap-pool', theme, cy.map((r) => capYear(r.year as number)), [
+    { label: 'Active authors', data: cy.map((r) => r.authors as number), color: color(0) },
+    { label: 'Active approvers', data: cy.map((r) => r.approvers as number), color: color(1) },
+    { label: 'Approvals per month', data: cy.map((r) => r.approvals_per_month as number), color: theme.muted, dash: true, axis: 'y2' },
+  ], FMT.n0, { zero: true, y2fmt: FMT.n0 });
+
+  // 6. The inflection (#inflection)
+  line('n-c-cap-intake', theme, cy.map((r) => capYear(r.year as number)), [
+    { label: 'New authors with 5+ CLs in their first year', data: cy.map((r) => r.new_authors_5 as number), color: color(2) },
+    { label: 'New regular reviewers', data: cy.map((r) => r.new_regular_reviewers as number), color: color(0) },
+    { label: 'First added to OWNERS', data: cy.map((r) => r.new_owners as number), color: color(1) },
+  ], FMT.n0, { zero: true });
+  const co = d.capacity_orgs;
+  const coYears = [...new Set(co.map((r) => Number(r.year)))].sort();
+  stackBars('n-c-cap-new-orgs', coYears.map(capYear), [['google', 'Google'], ['other', 'Everyone else']].map(([org, label], i) => ({
+    label, color: color(i), data: coYears.map((y) => (co.find((r) => Number(r.year) === y && r.org === org)?.new_authors as number) ?? null),
+  })), theme, FMT.n0);
+  const ct = d.capacity_tenure;
+  const ctYears = [...new Set(ct.map((r) => Number(r.year)))].sort();
+  const byBand = (field: string) => TENURE_STACK.map(([band, label], i) => ({
+    label, color: color(i), data: ctYears.map((y) => (ct.find((r) => Number(r.year) === y && r.band === band)?.[field] as number) ?? 0),
+  }));
+  stackBars('n-c-cap-commits-tenure', ctYears.map(capYear), byBand('commits_share'), theme, FMT.pct, { max: 1 });
+  const net = cy.filter((r) => r.net_approvers !== null);
+  stackBars('n-c-cap-net', net.map((r) => capYear(r.year as number)),
+    [{ label: 'Net new approvers', data: net.map((r) => r.net_approvers as number), color: color(0) }], theme, FMT.n0);
+  stackBars('n-c-cap-approvals-tenure', cy.map((r) => capYear(r.year as number)), TENURE_STACK.map(([band, label], i) => ({
+    label, color: color(i), data: cy.map((r) => r[`approvals_${band}`] as number),
+  })), theme, FMT.pct, { max: 1 });
+  line('n-c-cap-load', theme, cy.map((r) => capYear(r.year as number)), [
+    { label: 'Approvals per approver per month', data: cy.map((r) => r.approvals_per_approver_month as number), color: color(0) },
+  ], FMT.n1, { zero: true });
+  newcomerStack('n-c-newcomer', d.newcomer_review, theme);
+  mentorsChart('n-c-mentors', d, theme);
+  queueInflow('n-c-qu-inflow', d, theme, 'arrivals', 'active');
+
+  // 7. How review is changing with AI (#ai-review)
+  const aq = d.ai_quarters;
+  const aqs = [...new Set(aq.map((r) => String(r.q)))].sort();
+  const kinds: [string, string][] = [['marked', 'AI-marked'], ['other', 'Not marked'], ['predicted', 'Not marked, likely AI-written (model guess)']];
+  const aiChart = (id: string, v: string, fmt: (v: number) => string, opts: { zero?: boolean; ref?: number } = {}) =>
+    categories(id, aq, theme, { x: 'q', g: 'kind', v, xs: aqs, xl: (x) => qLabel(String(x)), groups: kinds }, fmt, opts);
+  aiChart('n-c-ai-feedback', 'feedback_index', FMT.n2, { zero: true, ref: 1 });
+  aiChart('n-c-ai-threads', 'threads_per_cl', FMT.n1, { zero: true });
+  aiChart('n-c-ai-ftr', 'ftr_p50', FMT.h, { zero: true });
+  const load = (k: string) => d.ai_reviewer_load.find((r) => r.kind === k)!;
+  const loadRows: Row[] = [load('marked'), load('other_matched')].map((r) => ({
+    ...r, lo: r.top10_share_lo ?? r.top10_share, hi: r.top10_share_hi ?? r.top10_share }));
+  const loadLabels = ['AI-marked CLs', 'Matched unmarked CLs'];
+  groupBars('n-c-ai-top10', loadLabels, ['marked', 'other'], [['marked', loadLabels[0], color(0)], ['other', loadLabels[1], color(1)]],
+    loadRows.map((r) => Number(r.top10_share)), theme,
+    (i) => `${FMT.pct(Number(loadRows[i].top10_share))} of reviews by the busiest tenth of ${FMT.n0(Number(loadRows[i].reviewers))} reviewers`
+      + (i ? `, 95% range ${FMT.pct(Number(loadRows[i].lo))} to ${FMT.pct(Number(loadRows[i].hi))}` : ''),
+    { max: 1, plugins: [whiskers(loadRows, theme.text)] });
+  stackBars('n-c-ai-tenure', loadLabels, TENURE_STACK.map(([band, label], i) => ({
+    label, color: color(i), data: loadRows.map((r) => r[band] as number),
+  })), theme, FMT.pct, { horizontal: true, max: 1 });
+  aiTable('n-t-ai', d.ai_paired);
+
+  // 8. What to watch (#monitor)
+  behindFeedback('n-c-behind-feedback', d, theme);
+  behindShare('n-c-behind-share', d, theme);
 }
 
 function render(data: BalanceData) {
@@ -1656,29 +2010,14 @@ function render(data: BalanceData) {
   authorDirs(authorRows, theme);
   authorScatter(authorRows, theme);
 
-  const eras: [string, string][] = [['2023H2-2024', '2023 H2–2024'], ['2025', '2025'], ['2026 (to Sep)', '2026 to September']];
-  const tenureXl: Record<string, string> = { '0-3': '0–3 mo', '3-6': '3–6', '6-12': '6–12', '12-24': '1–2 y', '24-60': '2–5 y', '60-120': '5–10 y', '120-999': '10 y+' };
-  categories('c-tenure', d.learning, theme, { x: 'bucket', g: 'era', v: 'feedback_index', groups: eras,
-    xs: Object.keys(tenureXl), xl: (x) => tenureXl[x] }, FMT.n2, { ref: 1 });
-  trajectories(d, eras, tenureXl, theme);
-  const famXl: Record<string, string> = { 'fam 0': 'None', 'fam 1-4': '1–4', 'fam 5-19': '5–19', 'fam 20-99': '20–99', 'fam 100+': '100+' };
-  categories('c-fam', d.learning, theme, { x: 'bucket', g: 'era', v: 'feedback_index', groups: eras,
-    xs: Object.keys(famXl), xl: (x) => famXl[x] }, FMT.n2, { ref: 1 });
-  const rates: [string, string][] = [['prolific', 'Prolific (top fifth)'], ['average', 'Average (middle fifth)']];
-  const pracTenureXl: Record<string, string> = { '0-3': '0–3 mo', '3-6': '3–6', '6-12': '6–12', '12-24': '1–2 y', '24-48': '2–4 y', '48+': '4 y+' };
-  categories('c-prac-tenure', d.learning_practice.filter((r) => r.by === 'tenure'), theme, { x: 'bucket', g: 'group',
-    v: 'feedback_index', groups: rates, xs: Object.keys(pracTenureXl), xl: (x) => pracTenureXl[x] }, FMT.n2, { ref: 1 });
-  const landedXl: Record<string, string> = { '0-10': '0–9', '10-30': '10–29', '30-100': '30–99', '100-300': '100–299', '300-1000': '300–999', '1000+': '1,000+' };
-  categories('c-prac-landed', d.learning_practice.filter((r) => r.by === 'practice'), theme, { x: 'bucket', g: 'group',
-    v: 'feedback_index', groups: rates, xs: Object.keys(landedXl), xl: (x) => landedXl[x] }, FMT.n2, { ref: 1 });
-  const tenures: [string, string][] = [['under 2 years', 'Under 2 years'], ['2+ years', '2 years or more']];
-  const fifthXl: Record<string, string> = { 1: 'Least', 2: '2nd', 3: 'Middle', 4: '4th', 5: 'Most' };
-  const pred = (id: string, v: string, fmt: (v: number) => string) =>
-    categories(id, d.fb_predict_fifths, theme, { x: 'fifth', g: 'group', v, groups: tenures,
-      xs: Object.keys(fifthXl), xl: (x) => fifthXl[x] }, fmt, { zero: true });
-  pred('c-pred-owners', 'owners', FMT.pct);
-  pred('c-pred-share', 'share', FMT.pct);
-  pred('c-pred-threads', 'threads_p50', FMT.n1);
+  learningChart('c-tenure', d, theme, TENURE_XL);
+  trajectories(d, theme);
+  learningChart('c-fam', d, theme, FAM_XL);
+  practiceChart('c-prac-tenure', d, theme, 'tenure');
+  practiceChart('c-prac-landed', d, theme, 'practice');
+  predChart('c-pred-owners', d, theme, 'owners', FMT.pct);
+  predChart('c-pred-share', d, theme, 'share', FMT.pct);
+  predChart('c-pred-threads', d, theme, 'threads_p50', FMT.n1);
 
   const cohorts: [string, string][] = [['joined 2023', 'Joined 2023'], ['joined 2024', 'Joined 2024'], ['joined 2025', 'Joined 2025']];
   const months = ['0-3', '3-6', '6-9', '9-12', '12-18', '18-24', '24-36'];
@@ -1686,27 +2025,17 @@ function render(data: BalanceData) {
   categories('c-co-feedback', d.cohort_curves, theme, { x: 'months', g: 'cohort', v: 'feedback_index', groups: cohorts, xs: months, xl: monthXl }, FMT.n2, { ref: 1 });
   categories('c-co-vel', d.cohort_curves, theme, { x: 'months', g: 'cohort', v: 'cls_per_person_month', groups: cohorts, xs: months, xl: monthXl }, FMT.n1, { zero: true });
   categories('c-co-rev', d.cohort_curves, theme, { x: 'months', g: 'cohort', v: 'reviews_per_person_month', groups: cohorts, xs: months, xl: monthXl }, FMT.n1, { zero: true });
-  shareHistogram(d.review_share_hist, theme);
-  const years = [2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025];
-  categories('c-gitco', d.git_cohorts, theme, { x: 'year', g: 'cohort', v: 'review_share',
-    groups: years.map((y) => [y, `Joined ${y}`]), xs: [1, 2, 3, 4, 5, 6, 7, 8, 9], xl: (x) => `Year ${x}` }, FMT.pct, { zero: true });
-  reviewerTenure(d.reviewers_by_tenure, theme);
+  shareHistogram('c-share-hist', d.review_share_hist, theme);
+  gitCohortChart('c-gitco', d, theme);
+  reviewerTenure(d.reviewers_by_tenure, theme,
+    [['c-rt-resp', 'resp'], ['c-rt-threads', 'threads'], ['c-rt-addressed', 'addressed'], ['c-rt-newcomer', 'newcomer']]);
 
   growthBars(d.growth_windows, theme);
 
-  newcomerStack(d.newcomer_review, theme);
-  const pipe = d.pipeline;
-  line('c-pipeline', theme, pipe.map((r) => String(r.year)), [
-    { label: 'New regular reviewers', data: pipe.map((r) => r.new_regular_reviewers as number), color: theme.series[0] },
-    { label: 'First added to OWNERS', data: pipe.map((r) => r.new_owners as number), color: theme.series[1] },
-    { label: 'New authors', data: pipe.map((r) => r.new_authors as number), color: theme.series[2] },
-  ], FMT.n0, { zero: true });
-  line('c-mentors', theme, d.mentorship.map((r) => String(r.year)),
-    [{ label: 'Became mentors within 4 years', data: d.mentorship.map((r) => r.became_mentors as number), color: theme.series[0] }],
-    FMT.pct, { zero: true });
-  const owner = d.promotion.filter((r) => r.years === 3 && Number(r.cohort) >= 2014);
-  line('c-owner', theme, owner.map((r) => String(r.cohort)),
-    [{ label: 'OWNER within 3 years', data: owner.map((r) => r.owner as number), color: theme.series[0] }], FMT.pct, { zero: true });
+  newcomerStack('c-newcomer', d.newcomer_review, theme);
+  pipelineChart('c-pipeline', d, theme);
+  mentorsChart('c-mentors', d, theme);
+  ownerChart('c-owner', d, theme);
 
   categories('c-neg', d.signals_tenure, theme, { x: 'tenure_months', g: 'era', v: 'neg_index', groups: SIGNAL_ERAS,
     xs: Object.keys(SIGNAL_TENURE), xl: (x) => SIGNAL_TENURE[x] }, FMT.n2, { ref: 1, zero: true });
@@ -1716,7 +2045,7 @@ function render(data: BalanceData) {
   table('t-signals', d.signals_era.map((r) => ({ ...r, era: eraName[String(r.era)] ?? r.era })), [
     ['era', text], ['cls', FMT.n0], ['abandon_rate', FMT.pct1], ['neg_share', FMT.pct1], ['after_neg_abandoned', FMT.pct],
   ]);
-  panelForest(d.panels);
+  panelForest($('#forest'), d.panels);
   roiCharts(d, theme);
   matchedCharts(d.matched, theme);
 
@@ -1737,9 +2066,11 @@ function render(data: BalanceData) {
 
   securityBars(d.security_years, theme);
 
-  table('t-ai', d.ai_paired, [['metric', text], ['diff', signed], ['lo', signed], ['hi', signed], ['n', FMT.n0]]);
+  aiTable('t-ai', d.ai_paired);
 
   feedbackDefinition(d.feedback_def_hist, d.feedback_def_deciles, theme);
+
+  narrative(d, theme);
 
   mechanicalBars(d.mechanical_files, theme);
   table('t-mech', d.mechanical_repetition, [

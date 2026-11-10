@@ -1385,6 +1385,26 @@ large "Draft: under development" warning at the top. Its landing-page card
   on both halves against 25% by chance), so it showed a near-uniform cloud.
   The aggregate overlap is in section 0 ("Is it the same people?").
 
+**Narrative restructure (2026-11-09).** The page now opens with a narrative,
+"Chromium code review load analysis": the intro (the strain reviewers report,
+and the question of what review is worth), a contents list and eight
+sections, each framing → charts → what they show → at most one "Open
+question" or "Not measured yet" line: 1 `#burden` (percentile fans of lines,
+comments and CLs per reviewer, nine years of approvals), 2 `#value` (reverts
+since 2017, the #roi charts and forests), 3 `#quality-nuance`, 4
+`#value-sources` (reviewer and author tenure, organizations), 5 `#capacity`
+(review share, new reviewers' growth, organizations, the pool before AI), 6
+`#inflection` (fewer newcomers from 2023, fewer new reviewers from 2025), 7
+`#ai-review` (effort, spread, quality of AI-marked CLs) and 8 `#monitor` (a
+table of measures to track, the two "behind" charts, and properties of good
+change evaluation). Charts reused from the earlier analysis are drawn again
+into canvases with ids starting `n-` (the builders take their target id),
+and the new ones read the narrative datasets below. A fan (`fan()` in
+`balance.ts`) shows a median line with bands up to p75, p90, p95 and p99,
+on a log axis where the top dwarfs the median. Below a full-width "Earlier
+analysis" break the previous page follows unchanged, its old lede included,
+to be moved up into the narrative or removed.
+
 Since 2026-11-08 each section follows one layout: before the charts only
 what a reader needs to read them (definitions, who is counted), then the
 charts, then what they show, with the figures. The text doesn't describe a
@@ -1519,3 +1539,61 @@ ground rule 3).
    pre-AI baseline. Before late 2020 there is no attention set, so "sent
    for review" and attention hours need a fallback definition, used for
    every year.
+
+## Narrative datasets (`scripts/balance_narrative.py`, 2026-11-09)
+
+For the page's narrative restructure ("Chromium Code Review Load
+Analysis"), one script adds 13 aggregate datasets to
+`summaries/balance.json` (about +49 KB). Same population as
+`balance_report.py`: merged, human-owned, non-mechanical CLs closed
+2023Q3..2026Q3; people merged across addresses; tenure from the first
+commit on `main`. A *review* is a (CL, reviewer) pair: a non-bot non-owner
+who commented before close and has a first commit, as in
+`reviewer_quarters` (keyed by account it reproduces `reviewed_p50`/`p90`
+exactly; keyed by person, as here, the median is 1 higher). Git datasets
+use human non-revert commits with a CL and their `Reviewed-by` approvers
+(from 2017-07). Orgs come from `cosh.orgs` on the raw e-mail at the CL's
+or commit's date. Cells under 20 people or 200 CLs are dropped or pooled
+into "Other".
+
+- `reviewer_burden` (per quarter): spread across reviewers of `cls`,
+  `lines` (changed lines of the CLs they commented on), `comments`
+  (individual comments, replies included) and `hours` (weekday hours in
+  the attention set on those CLs, summed: waiting time, not work):
+  `_p50.._p99`, `_mean`. `approver_burden`: the same for approvals and
+  approved lines from git, 2017Q3..2026Q3.
+- `org_feedback`: author org × era (`pre` 2023H2–2024, `now` 2025Q4–2026Q3)
+  × tenure band (`<1y`, `1-2y`, `2-5y`, `5y+`, `all`) → feedback index.
+  `org_feedback_fit`: per org and era, indirect standardisation for
+  tenure (threads ÷ threads expected from size, area *and* the all-org
+  index of the author's tenure band); `ratio` (1 = all orgs) with a 95%
+  bootstrap interval over the org's authors, and the tenure mix.
+- `org_reviewing`: review share (approvals ÷ (approvals + CLs), people
+  with 6+ in the year, join years 2017–2025) by org of the person's
+  commits that year and year since joining: median and share approving
+  anything. `org_review_value`: per reviewer org, threads, addressed
+  threads and comments per review, and the addressed share.
+- `new_reviewer_growth`: by the reviewer's years since first commit
+  (1..5, 6-7, 8-10, 11+) and era (`pre` 2023Q3–2025Q2, `now`
+  2025Q3–2026Q3): reviews per active reviewer-quarter, threads and
+  addressed threads per review, addressed ÷ threads started.
+- `ai_quarters`, `ai_reviewer_load`, `ai_summary`: CLs with the broad
+  marker (`ai_marked_broad.txt`, `docs/balance-ai.md`) as `marked`;
+  `predicted` = unmarked CLs Haiku scores p ≥ 0.5 (`ai_predict/scores.sqlite`,
+  2025-07 on; 99% precise, `docs/balance-ai-predict.md` §5), a subset of
+  `other`. Load: concentration (top 10%, top 1%, Gini) and reviewer-tenure
+  mix of reviews, with `other_matched` = 200 quarter-matched random samples
+  of other CLs of the marked set's size. Summary: revert rates raw,
+  standardised to marked CLs' size bucket × top directory × quarter (normal
+  and author-cluster bootstrap 95% intervals, in points), and the paired
+  figure from `ai_paired`.
+- `capacity_years` (2017 Jul–Dec .. 2026 Jan–Sep, with `months`),
+  `capacity_tenure` (authors by tenure band: share who approve, shares of
+  commits and approvals) and `capacity_orgs` (Google vs other, by the org
+  of a person's commits that year). `new_regular_reviewers` and
+  `new_owners` follow `pipeline`; `left_*` and `new_approvers` are censored
+  at the ends (2017 has no prior year; 2026 is 9 months).
+
+Regenerate (about 5 min cold, 10 s with `--cache`; deterministic):
+`COSH_DATA_DIR=<main>/data/private nice -n 5 python3 scripts/balance_narrative.py
+--first-commit F --owners-added O --mech M [--cache /tmp/…/narrative.pkl]`.
