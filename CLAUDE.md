@@ -30,6 +30,13 @@ regex plus Claude Haiku (`cosh classify`).
   2023-W25, which also finishes the 2020–23 range above. Started
   2026-11-09, log `data/private/backfill-2017-*.log`, PID in
   `data/private/backfill-2017.pid`; resumable with the same command.
+  Run it as its own user service so it outlives the session that starts
+  it (a `setsid nohup` start died with its session on 2026-11-09):
+  `systemd-run --user --unit=cosh-backfill-2017 --nice=5
+  --working-directory=$PWD -p StandardOutput=append:$PWD/<log> -p
+  StandardError=append:$PWD/<log> python3 -m cosh backfill ...`. That
+  stop skipped `derive` for 2021-W36, so run a full `derive` after it
+  ends.
   Their patch sets still need approval, and the user doesn't want
   "addressed" labels (`cosh classify`) for these years.
 - **Backfill back to 2023-07-01 (Radar's first data) is approved**
