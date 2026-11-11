@@ -52,8 +52,9 @@
         </p>
         <h2 class="goal-head">What we found</h2>
         <ul class="signals">
-          <li><strong>The load is real, and it sits on the busiest reviewers.</strong> The median reviewer reads and
-            writes about what they did in 2023. The busiest tenth went from <b data-src="reviewer_burden" data-field="cls_p90" data-where="q=2023Q3" data-fmt="n0">–</b> to
+          <li><strong>The load is real, it jumped in 2026, and it is heaviest on the busiest reviewers.</strong>
+            The median reviewer read <b data-src="reviewer_burden" data-field="lines_p50" data-where="q=2026Q3" data-fmt="n0">–</b> changed lines in
+            2026 Q3, up from <b data-src="reviewer_burden" data-field="lines_p50" data-where="q=2025Q3" data-fmt="n0">–</b> a year earlier. The busiest tenth went from <b data-src="reviewer_burden" data-field="cls_p90" data-where="q=2023Q3" data-fmt="n0">–</b> to
             <b data-src="reviewer_burden" data-field="cls_p90" data-where="q=2026Q3" data-fmt="n0">–</b> CLs a quarter and from <b data-src="reviewer_burden" data-field="lines_p90" data-where="q=2023Q3" data-fmt="n0">–</b> to
             <b data-src="reviewer_burden" data-field="lines_p90" data-where="q=2026Q3" data-fmt="n0">–</b> changed lines, most of it in 2026 (<a href="#burden">section 1</a>).</li>
           <li><strong>Review's value shows in what it changes, not in reverts.</strong> Reviewers look hardest at
@@ -129,16 +130,21 @@
             <div class="chart"><canvas id="n-c-burden-cls" role="img" aria-label="Others' CLs each reviewer commented on, per quarter: the median, with bands up to the 75th, 90th, 95th and 99th percentiles, on a log scale."></canvas></div></figure>
         </div>
         <p class="sub">
-          The median reviewer's load barely moved; the busiest reviewers' grew sharply. From 2023 Q3 to 2026 Q3
-          the median reviewer went from <b data-src="reviewer_burden" data-field="lines_p50" data-where="q=2023Q3" data-fmt="n0">–</b> to <b data-src="reviewer_burden" data-field="lines_p50" data-where="q=2026Q3" data-fmt="n0">–</b> changed lines a
-          quarter, from <b data-src="reviewer_burden" data-field="comments_p50" data-where="q=2023Q3" data-fmt="n0">–</b> to <b data-src="reviewer_burden" data-field="comments_p50" data-where="q=2026Q3" data-fmt="n0">–</b> comments and from
-          <b data-src="reviewer_burden" data-field="cls_p50" data-where="q=2023Q3" data-fmt="n0">–</b> to <b data-src="reviewer_burden" data-field="cls_p50" data-where="q=2026Q3" data-fmt="n0">–</b> CLs. At the 90th percentile, lines went from
+          The load eased through 2025 and then rose sharply in 2026, for the median reviewer as well as the
+          busiest. The median reviewer's changed lines fell from
+          <b data-src="reviewer_burden" data-field="lines_p50" data-where="q=2023Q3" data-fmt="n0">–</b> a quarter in 2023 Q3 to
+          <b data-src="reviewer_burden" data-field="lines_p50" data-where="q=2025Q3" data-fmt="n0">–</b> in 2025 Q3, then climbed to
+          <b data-src="reviewer_burden" data-field="lines_p50" data-where="q=2026Q3" data-fmt="n0">–</b> in 2026 Q3, and their CLs went from
+          <b data-src="reviewer_burden" data-field="cls_p50" data-where="q=2025Q3" data-fmt="n0">–</b> to <b data-src="reviewer_burden" data-field="cls_p50" data-where="q=2026Q3" data-fmt="n0">–</b> in that last year. Only
+          comments are back where they were in 2023 (<b data-src="reviewer_burden" data-field="comments_p50" data-where="q=2023Q3" data-fmt="n0">–</b> then,
+          <b data-src="reviewer_burden" data-field="comments_p50" data-where="q=2026Q3" data-fmt="n0">–</b> now). Over the three years the busiest grew more. At the 90th percentile, lines went from
           <b data-src="reviewer_burden" data-field="lines_p90" data-where="q=2023Q3" data-fmt="n0">–</b> to <b data-src="reviewer_burden" data-field="lines_p90" data-where="q=2026Q3" data-fmt="n0">–</b> and CLs from <b data-src="reviewer_burden" data-field="cls_p90" data-where="q=2023Q3" data-fmt="n0">–</b> to
           <b data-src="reviewer_burden" data-field="cls_p90" data-where="q=2026Q3" data-fmt="n0">–</b>; at the 99th, CLs went from <b data-src="reviewer_burden" data-field="cls_p99" data-where="q=2023Q3" data-fmt="n0">–</b> to
           <b data-src="reviewer_burden" data-field="cls_p99" data-where="q=2026Q3" data-fmt="n0">–</b>. Most of the rise came in 2026. Meanwhile the number of reviewers fell from
           <b data-src="reviewer_burden" data-field="reviewers" data-where="q=2023Q3" data-fmt="n0">–</b> to <b data-src="reviewer_burden" data-field="reviewers" data-where="q=2025Q4" data-fmt="n0">–</b> in
-          2025 Q4 before recovering to <b data-src="reviewer_burden" data-field="reviewers" data-where="q=2026Q3" data-fmt="n0">–</b>. The strain is concentrated
-          in the busiest reviewers, which fits who is saying the load has become unmanageable.
+          2025 Q4 before recovering to <b data-src="reviewer_burden" data-field="reviewers" data-where="q=2026Q3" data-fmt="n0">–</b>. Everyone's load
+          grew in 2026, and the busiest reviewers carry the most of it, which fits who is saying the load has
+          become unmanageable.
         </p>
         <h3>Nine years of approvals</h3>
         <p class="note">From <code>Reviewed-by</code> footers of human commits with a CL on <code>main</code>: CLs
