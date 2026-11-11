@@ -38,6 +38,8 @@ Offline; prints aggregates and coefficients only, never anything per person.
   python3 scripts/balance_addressed_value.py blame --table cl_table.sqlite --blame-dir S [--out blame.json]
   python3 scripts/balance_addressed_value.py people --first-commit F --owners-added O --mech M \
       [--cache P] [--out people.json]
+  python3 scripts/balance_addressed_value.py report --cl cl.json --blame blame.json --people people.json \\
+      [summaries/balance.json]      # datasets addr_tenure and addr_compare for the page
 """
 
 import argparse
@@ -496,6 +498,69 @@ def run_people(args):
     print(f"  summary {summ}\n  reliability {rel}", file=sys.stderr, flush=True)
     return dict(summary=summ, reliability=rel, fits=people_fits(rows))
 
+# =================================================================== report
+
+TEN_KEY = {"0-3 mo": "0-3", "3-6 mo": "3-6", "6-12 mo": "6-12", "1-2 y": "12-24", "2-5 y": "24-60",
+           "5-10 y": "60-120", "10+ y": "120-999"}      # the page's tenure buckets (balance.ts TENURE_XL)
+
+
+def run_report(args):
+    """Merge the cl, blame and people results into summaries/balance.json as
+    `addr_tenure` (each index by tenure, for the chart) and `addr_compare`
+    (one row per comparison, for the table and the prose)."""
+    cl, bl, pe = (json.load(open(f)) for f in (args.cl, args.blame, args.people))
+    tenure = []
+    for r in cl["gradient_bins"]:
+        if r["gradient"] != "tenure":
+            continue
+        for which in ("feedback", "addressed", "unaddressed", "addressed_share"):
+            tenure.append(dict(era=r["era"], bucket=TEN_KEY[r["bin"]], which=which, value=r[which], cls=r["cls"]))
+    cmp_ = []
+
+    def row(measure, **kw):
+        cmp_.append(dict(measure=measure, **{k: (round(v, 4) if isinstance(v, float) else v) for k, v in kw.items()}))
+
+    for s in cl["gradient_steepness"]:
+        row(f"steep_{s['gradient']}_{s['era']}", feedback=s["feedback"], addressed=s["addressed"],
+            unaddressed=s["unaddressed"], ratio=s["a_over_f"], ratio_lo=s["a_over_f_ci"][0], ratio_hi=s["a_over_f_ci"][1])
+    for d in cl["direct"]:
+        if d["subset"] != "all":
+            continue
+        row(f"{d['outcome']}_r2", feedback=d["threads"]["within_r2"], addressed=d["addressed"]["within_r2"],
+            unaddressed=d["unaddressed"]["within_r2"], both=d["addressed+unaddressed"]["within_r2"], n=d["n"])
+        if d["outcome"] == "rev":
+            b, ci = d["threads+addressed share"]["beta"][1], d["threads+addressed share"]["ci"][1]
+            row("rev_addressed_share", value=b / 100, lo=ci[0] / 100, hi=ci[1] / 100, mean=d["mean"] / 100)
+    sz = bl["szz_induced_minus_stratum"]
+    ln2 = math.log(2)       # log2 differences -> natural log, for the page's `rel` format
+    row("szz", feedback=sz["lt"][0] * ln2, addressed=sz["la"][0] * ln2, unaddressed=sz["lu"][0] * ln2, n=sz["n"])
+    sv = bl["survival_corr_with_stratum_deviation"]
+    row("survival_corr", feedback=sv["lt"][0], addressed=sv["la"][0], unaddressed=sv["lu"][0], n=sv["n"])
+    rel = pe["reliability"]
+    row("reliability", feedback=rel["fi"]["spearman_brown"], addressed=rel["ai"]["spearman_brown"],
+        unaddressed=rel["ui"]["spearman_brown"])
+    for f in pe["fits"]:
+        if f["group"] != "all":
+            continue
+        k = "auc" if f["outcome"] == "owners" else "r2"
+        base = f.get("auc_controls", f.get("r2_controls"))
+        extra = {}
+        if f["outcome"] == "feedback_next":
+            extra = dict(split_addressed=f["addressed+unaddressed"]["lai"][0],
+                         split_unaddressed=f["addressed+unaddressed"]["lui"][0])
+        row(f"{f['outcome']}_{k}", controls=base, feedback=f["feedback"][k], addressed=f["addressed"][k],
+            n=f["n"], **extra)
+    row("totals", threads=cl["totals"]["threads"], addressed=cl["totals"]["addressed"],
+        share=cl["totals"]["addressed"] / cl["totals"]["threads"], cls=cl["totals"]["cls"],
+        corr=pe["summary"]["corr_log_feedback_addressed"])
+    data = json.load(open(args.path))
+    data["datasets"].update(addr_tenure=tenure, addr_compare=cmp_)
+    json.dump(data, open(args.path, "w"), separators=(",", ":"))
+    open(args.path, "a").write("\n")
+    print(f"wrote addr_tenure ({len(tenure)}) and addr_compare ({len(cmp_)}) to {args.path}", file=sys.stderr)
+    for r in cmp_:
+        print(" ", r, file=sys.stderr)
+
 
 def main():
     ap = argparse.ArgumentParser()
@@ -507,6 +572,11 @@ def main():
     c.add_argument("--table", required=True)
     c.add_argument("--blame-dir", required=True, help="scratch dir of review_roi_blame.py (szz_items.jsonl, survival_items.jsonl)")
     c.add_argument("--out")
+    r = sp.add_parser("report")
+    r.add_argument("path", nargs="?", default="summaries/balance.json")
+    r.add_argument("--cl", required=True)
+    r.add_argument("--blame", required=True)
+    r.add_argument("--people", required=True)
     b = sp.add_parser("people")
     b.add_argument("--first-commit", required=True)
     b.add_argument("--owners-added", required=True)
@@ -514,8 +584,8 @@ def main():
     b.add_argument("--cache")
     b.add_argument("--out")
     args = ap.parse_args()
-    res = dict(cl=run_cl, blame=run_blame, people=run_people)[args.cmd](args)
-    if args.out:
+    res = dict(cl=run_cl, blame=run_blame, people=run_people, report=run_report)[args.cmd](args)
+    if getattr(args, "out", None):
         json.dump(res, open(args.out, "w"), indent=1)
 
 

@@ -554,6 +554,90 @@
           curve keeps its shape but sits lower at every tenure.
         </p>
 
+        <h3 id="acted-on">Counting only the feedback authors acted on</h3>
+        <p class="note">
+          The feedback index counts every reviewer thread. Value Exchange's classifier also says which threads the
+          author acted on, changing the CL in response. Those labels exist only for CLs from July 2023, so the rest of
+          this page, including every trend before then, still counts all threads. This part compares the two over
+          July 2023 to September 2026, where both exist. The <em>acted-on index</em> is built like the feedback
+          index: threads acted on ÷ the 2023–24 mean for CLs of the same size and directory.
+        </p>
+        <div class="panels">
+          <figure class="panel"><h3>Feedback by tenure, acted on or not</h3>
+            <p class="note">July 2023 to December 2024. Each line is against its own 2023–24 norm; the dashed line, 1.0, is that norm.</p>
+            <div class="chart chart-short"><canvas id="n-c-acted-tenure" role="img" aria-label="Feedback index, acted-on index and not-acted-on index by the author's tenure, July 2023 to December 2024."></canvas></div></figure>
+        </div>
+        <figure class="panel"><h3>All threads or only those acted on: what each tracks</h3>
+            <p class="note">Like CLs compared (same size, directory and half-year) except the learning curves, which are
+              ratios of the indices.</p>
+            <div class="table-wrap">
+              <table id="n-t-acted" class="balance-table">
+                <thead><tr><th>Measure</th><th>All threads</th><th>Acted on</th><th>Not acted on</th></tr></thead>
+                <tbody>
+                  <tr><th>First-quarter newcomer ÷ 10-year veteran</th>
+                    <td><b data-src="addr_compare" data-field="feedback" data-where="measure=steep_tenure_2023H2-2024" data-fmt="x">–</b></td>
+                    <td><b data-src="addr_compare" data-field="addressed" data-where="measure=steep_tenure_2023H2-2024" data-fmt="x">–</b></td>
+                    <td><b data-src="addr_compare" data-field="unaddressed" data-where="measure=steep_tenure_2023H2-2024" data-fmt="x">–</b></td></tr>
+                  <tr><th>First CL in a directory ÷ 100+ commits there</th>
+                    <td><b data-src="addr_compare" data-field="feedback" data-where="measure=steep_practice_2023H2-2024" data-fmt="x">–</b></td>
+                    <td><b data-src="addr_compare" data-field="addressed" data-where="measure=steep_practice_2023H2-2024" data-fmt="x">–</b></td>
+                    <td><b data-src="addr_compare" data-field="unaddressed" data-where="measure=steep_practice_2023H2-2024" data-fmt="x">–</b></td></tr>
+                  <tr><th>Lines changed after review: share of variation explained</th>
+                    <td><b data-src="addr_compare" data-field="feedback" data-where="measure=ish_r2" data-fmt="pct">–</b></td>
+                    <td><b data-src="addr_compare" data-field="addressed" data-where="measure=ish_r2" data-fmt="pct">–</b></td>
+                    <td><b data-src="addr_compare" data-field="unaddressed" data-where="measure=ish_r2" data-fmt="pct">–</b></td></tr>
+                  <tr><th>Reverted within 30 days: share of variation explained</th>
+                    <td><b data-src="addr_compare" data-field="feedback" data-where="measure=rev_r2" data-fmt="pct1">–</b></td>
+                    <td><b data-src="addr_compare" data-field="addressed" data-where="measure=rev_r2" data-fmt="pct1">–</b></td>
+                    <td><b data-src="addr_compare" data-field="unaddressed" data-where="measure=rev_r2" data-fmt="pct1">–</b></td></tr>
+                  <tr><th>CLs a later bug fix rewrote: review against like CLs</th>
+                    <td><b data-src="addr_compare" data-field="feedback" data-where="measure=szz" data-fmt="rel">–</b></td>
+                    <td><b data-src="addr_compare" data-field="addressed" data-where="measure=szz" data-fmt="rel">–</b></td>
+                    <td><b data-src="addr_compare" data-field="unaddressed" data-where="measure=szz" data-fmt="rel">–</b></td></tr>
+                  <tr><th>Added to OWNERS within 18 months: ranking (AUC)</th>
+                    <td><b data-src="addr_compare" data-field="feedback" data-where="measure=owners_auc" data-fmt="n2">–</b></td>
+                    <td><b data-src="addr_compare" data-field="addressed" data-where="measure=owners_auc" data-fmt="n2">–</b></td>
+                    <td>–</td></tr>
+                  <tr><th>Same author's feedback the next half-year: share explained</th>
+                    <td><b data-src="addr_compare" data-field="feedback" data-where="measure=feedback_next_r2" data-fmt="pct">–</b></td>
+                    <td><b data-src="addr_compare" data-field="addressed" data-where="measure=feedback_next_r2" data-fmt="pct">–</b></td>
+                    <td>–</td></tr>
+                </tbody>
+              </table>
+            </div></figure>
+        <p class="sub">
+          Authors acted on <b data-src="addr_compare" data-field="share" data-where="measure=totals" data-fmt="pct">–</b>
+          of reviewer threads, but the share falls with experience: from
+          <b data-src="addr_tenure" data-field="value" data-where="era=2023H2-2024&amp;bucket=0-3&amp;which=addressed_share" data-fmt="pct">–</b>
+          for authors in their first three months to
+          <b data-src="addr_tenure" data-field="value" data-where="era=2023H2-2024&amp;bucket=120-999&amp;which=addressed_share" data-fmt="pct">–</b>
+          after ten years. So counting only threads acted on makes the learning curve steeper: the gap between a
+          first-quarter newcomer and a 10-year veteran is
+          <b data-src="addr_compare" data-field="ratio" data-where="measure=steep_tenure_2023H2-2024" data-fmt="n2">–</b>
+          times as wide in feedback acted on as in all feedback (95% interval
+          <b data-src="addr_compare" data-field="ratio_lo" data-where="measure=steep_tenure_2023H2-2024" data-fmt="n2">–</b> to
+          <b data-src="addr_compare" data-field="ratio_hi" data-where="measure=steep_tenure_2023H2-2024" data-fmt="n2">–</b>),
+          and threads not acted on barely fall after the second year. Whether veterans' comments are more often
+          optional or veterans push back more, the data can't say. Threads acted on also track what review changes
+          better: they explain more of the lines changed after review than all threads do, and the rest explain
+          almost none.
+        </p>
+        <p class="sub">
+          They predict nothing later any better. Like every other measure of review, both go with more reverts and
+          more later bug fixes, and they rank who becomes an OWNER equally well. At an equal number of threads, CLs
+          whose threads were all acted on were reverted
+          <b data-src="addr_compare" data-field="value" data-where="measure=rev_addressed_share" data-fmt="ptsabs">–</b>
+          less often (of <b data-src="addr_compare" data-field="mean" data-where="measure=rev_addressed_share" data-fmt="pct1">–</b>),
+          a weak hint at most. And feedback acted on doesn't lower the next half-year's feedback more than
+          feedback not acted on does: both persist, so this is no sign that acting on feedback teaches more. The
+          feedback index stays this page's measure of review load, since every thread costs time whether or not it
+          is acted on. The acted-on index is the better measure of review that changed something, but only from
+          July 2023.
+        </p>
+        <template data-msg="acted-feedback">All threads (feedback index)</template>
+        <template data-msg="acted-addressed">Acted on</template>
+        <template data-msg="acted-unaddressed">Not acted on</template>
+
         <h3>By author organization</h3>
         <p class="note">
           The author's organization from their e-mail address at the time of the CL. Individuals are authors with
@@ -2814,6 +2898,12 @@
           less; 2.0, twice as much. Because size and directory are held fixed, CLs getting bigger or work moving
           between areas doesn't move the index; only the feedback per like CL does.
         </p>
+        <p class="sub">
+          The index counts every reviewer thread, whether or not the author acted on it. Which threads were acted
+          on is known only for CLs from July 2023, so the index can't use it and still reach back to 2017. Over the
+          years where both exist, an index of threads acted on falls more steeply with tenure and tracks code changed
+          by review better, but predicts reverts and growth no better (<a href="#acted-on">comparison</a>).
+        </p>
         <figure class="panel"><h3>Reviewer threads per CL, by CL size</h3>
           <p class="note">
             Share of each size tenth's CLs by the reviewer threads they drew, merged CLs of 2023–24, mechanical
@@ -2883,7 +2973,7 @@
       <div id="def-feedback-index" class="term-pop" popover role="note" aria-label="Feedback index">
         <p><strong>Feedback index:</strong> reviewer threads on a group of CLs ÷ the 2023–24 mean for CLs of
           the same size and directory. 1.0 is the 2023–24 norm; below 1, less review feedback than like CLs got
-          then.</p>
+          then. It counts all threads, acted on or not: which were acted on is known only from July 2023.</p>
         <p><a href="#feedback-index">Full definition</a></p>
       </div>
       <div id="def-newcomer" class="term-pop" popover role="note" aria-label="Newcomer">

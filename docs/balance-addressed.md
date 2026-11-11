@@ -63,6 +63,15 @@ changes". Neither one rescues reverts or later outcomes as evidence of
 value; that remains the substance pilot's direct count
 (`review-roi-substance.md`).
 
+## On the page
+
+`web/balance.html`, section 4, "Counting only the feedback authors acted
+on" (`#acted-on`): the three indices by tenure (dataset `addr_tenure`), a
+table of the main comparisons and two paragraphs (`addr_compare`), with the
+note that labels start in July 2023, so the rest of the page still counts
+all threads. The feedback-index definition and its popover say the same.
+The datasets come from `balance_addressed_value.py report` (below).
+
 ## Results
 
 ### 1. Learning gradients (per CL, ratio of sums)
@@ -198,6 +207,8 @@ nice -n 5 python3 scripts/balance_addressed_value.py blame --table cl_table.sqli
     --blame-dir <blame scratch> --out blame.json                                                    # ~1 min
 nice -n 5 python3 scripts/balance_addressed_value.py people --first-commit F --owners-added O \
     --mech M --cache people.pkl --out people.json                                                   # ~6 min
+nice -n 5 python3 scripts/balance_addressed_value.py report --cl cl.json --blame blame.json \
+    --people people.json          # writes addr_tenure and addr_compare into summaries/balance.json
 ```
 
 The 2026-11-10 run used the table built 2026-11-09 (`cl_table_f.sqlite`,

@@ -1873,6 +1873,10 @@ function narrative(d: Record<string, Row[]>, theme: Theme) {
   learningChart('n-c-tenure', d, theme, TENURE_XL);
   learningChart('n-c-fam', d, theme, FAM_XL);
   practiceChart('n-c-prac-landed', d, theme, 'practice');
+  categories('n-c-acted-tenure', d.addr_tenure.filter((r) => r.era === '2023H2-2024'), theme, {
+    x: 'bucket', g: 'which', v: 'value', xs: Object.keys(TENURE_XL), xl: (x) => TENURE_XL[x],
+    groups: ['feedback', 'addressed', 'unaddressed'].map((w) => [w, msg(`acted-${w}`)]),
+  }, FMT.n2, { ref: 1 });
   const bandXl: Record<string, string> = { '<1y': 'First year', '1-2y': '1–2 y', '2-5y': '2–5 y', '5y+': '5 y+' };
   categories('n-c-org-feedback', d.org_feedback.filter((r) => r.era === 'pre'), theme, {
     x: 'band', g: 'org', v: 'feedback_index', xs: Object.keys(bandXl), xl: (x) => bandXl[x],
