@@ -52,11 +52,15 @@
         </p>
         <h2 class="goal-head">What we found</h2>
         <ul class="signals">
-          <li><strong>The load is real, it jumped in 2026, and it is heaviest on the busiest reviewers.</strong>
-            The median reviewer read <b data-src="reviewer_burden" data-field="lines_p50" data-where="q=2026Q3" data-fmt="n0">–</b> changed lines in
-            2026 Q3, up from <b data-src="reviewer_burden" data-field="lines_p50" data-where="q=2025Q3" data-fmt="n0">–</b> a year earlier. The busiest tenth went from <b data-src="reviewer_burden" data-field="cls_p90" data-where="q=2023Q3" data-fmt="n0">–</b> to
-            <b data-src="reviewer_burden" data-field="cls_p90" data-where="q=2026Q3" data-fmt="n0">–</b> CLs a quarter and from <b data-src="reviewer_burden" data-field="lines_p90" data-where="q=2023Q3" data-fmt="n0">–</b> to
-            <b data-src="reviewer_burden" data-field="lines_p90" data-where="q=2026Q3" data-fmt="n0">–</b> changed lines, most of it in 2026 (<a href="#burden">section 1</a>).</li>
+          <li><strong>The load is real, and it jumped in 2026.</strong> In the year to 2026 Q3 the median
+            reviewer's changed lines grew fastest, by <b data-src="reviewer_burden" data-field="lines_p50" data-where="q=2026Q3" data-from="q=2025Q3" data-change="rel" data-fmt="chg">–</b>
+            to <b data-src="reviewer_burden" data-field="lines_p50" data-where="q=2026Q3" data-fmt="n0">–</b> a quarter, against
+            <b data-src="reviewer_burden" data-field="lines_p90" data-where="q=2026Q3" data-from="q=2025Q3" data-change="rel" data-fmt="chg">–</b> for the busiest tenth.
+            In absolute terms the busiest carry far more: they review
+            <b data-src="reviewer_burden" data-field="lines_p90" data-where="q=2026Q3" data-fmt="n0">–</b> lines a quarter and took on
+            <b data-src="reviewer_burden" data-field="lines_p90" data-where="q=2026Q3" data-from="q=2025Q3" data-fmt="n0">–</b> more, against
+            <b data-src="reviewer_burden" data-field="lines_p50" data-where="q=2026Q3" data-from="q=2025Q3" data-fmt="n0">–</b> more for the median
+            (<a href="#burden">section 1</a>).</li>
           <li><strong>Review's value shows in what it changes, not in reverts.</strong> Reviewers look hardest at
             risky CLs, so more review goes with more reverts. But in about two CLs in five the author changed the
             code because of a reviewer's comment, and a pilot suggests review stops about twice as many breaking
@@ -113,7 +117,7 @@
         <p class="sub">
           Before asking what review is worth, measure the load. A reviewer's work depends on how much code they
           read and on how much feedback they write: harder reviews take more comments. Each chart shows the median
-          reviewer as a line and shades the busier reviewers above them, up to the 75th, 90th, 95th and 99th
+          reviewer as a line and shades the busier reviewers above them, up to the 75th, 90th and 95th
           percentiles.
         </p>
         <p class="note">
@@ -123,16 +127,16 @@
         </p>
         <div class="panels">
           <figure class="panel"><h3>Lines of change reviewed per reviewer</h3>
-            <div class="chart"><canvas id="n-c-burden-lines" role="img" aria-label="Changed lines of the CLs each reviewer commented on, per quarter: the median, with bands up to the 75th, 90th, 95th and 99th percentiles, on a log scale."></canvas></div></figure>
+            <div class="chart"><canvas id="n-c-burden-lines" role="img" aria-label="Changed lines of the CLs each reviewer commented on, per quarter: the median, with bands up to the 75th, 90th and 95th percentiles, on a log scale."></canvas></div></figure>
           <figure class="panel"><h3>Comments written per reviewer</h3>
-            <div class="chart"><canvas id="n-c-burden-comments" role="img" aria-label="Review comments each reviewer wrote on others' CLs, per quarter: the median, with bands up to the 75th, 90th, 95th and 99th percentiles, on a log scale."></canvas></div></figure>
+            <div class="chart"><canvas id="n-c-burden-comments" role="img" aria-label="Review comments each reviewer wrote on others' CLs, per quarter: the median, with bands up to the 75th, 90th and 95th percentiles, on a log scale."></canvas></div></figure>
           <figure class="panel"><h3>CLs reviewed per reviewer</h3>
-            <div class="chart"><canvas id="n-c-burden-cls" role="img" aria-label="Others' CLs each reviewer commented on, per quarter: the median, with bands up to the 75th, 90th, 95th and 99th percentiles, on a log scale."></canvas></div></figure>
+            <div class="chart"><canvas id="n-c-burden-cls" role="img" aria-label="Others' CLs each reviewer commented on, per quarter: the median, with bands up to the 75th, 90th and 95th percentiles, on a log scale."></canvas></div></figure>
         </div>
         <div class="panels">
-          <figure class="panel"><h3>Year-over-year growth in lines reviewed per reviewer</h3>
-            <p class="note">Change in each percentile's changed lines from the same quarter a year earlier.</p>
-            <div class="chart chart-short"><canvas id="n-c-burden-lines-yoy" role="img" aria-label="Year-over-year change in changed lines reviewed per reviewer, per quarter, one line each for the median and the 75th, 90th, 95th and 99th percentiles."></canvas></div></figure>
+          <figure class="panel"><h3>Quarterly growth in lines reviewed per reviewer</h3>
+            <p class="note">Change in each percentile's changed lines from the quarter before.</p>
+            <div class="chart chart-short"><canvas id="n-c-burden-lines-qoq" role="img" aria-label="Quarter-over-quarter change in changed lines reviewed per reviewer, one line each for the median and the 75th, 90th and 95th percentiles."></canvas></div></figure>
         </div>
         <p class="sub">
           The load eased through 2025 and then rose sharply in 2026, for the median reviewer as well as the
@@ -144,11 +148,10 @@
           comments are back where they were in 2023 (<b data-src="reviewer_burden" data-field="comments_p50" data-where="q=2023Q3" data-fmt="n0">–</b> then,
           <b data-src="reviewer_burden" data-field="comments_p50" data-where="q=2026Q3" data-fmt="n0">–</b> now). Over the three years the busiest grew more. At the 90th percentile, lines went from
           <b data-src="reviewer_burden" data-field="lines_p90" data-where="q=2023Q3" data-fmt="n0">–</b> to <b data-src="reviewer_burden" data-field="lines_p90" data-where="q=2026Q3" data-fmt="n0">–</b> and CLs from <b data-src="reviewer_burden" data-field="cls_p90" data-where="q=2023Q3" data-fmt="n0">–</b> to
-          <b data-src="reviewer_burden" data-field="cls_p90" data-where="q=2026Q3" data-fmt="n0">–</b>; at the 99th, CLs went from <b data-src="reviewer_burden" data-field="cls_p99" data-where="q=2023Q3" data-fmt="n0">–</b> to
-          <b data-src="reviewer_burden" data-field="cls_p99" data-where="q=2026Q3" data-fmt="n0">–</b>. Most of the rise came in 2026. Meanwhile the number of reviewers fell from
+          <b data-src="reviewer_burden" data-field="cls_p90" data-where="q=2026Q3" data-fmt="n0">–</b>. Most of the rise came in 2026. Meanwhile the number of reviewers fell from
           <b data-src="reviewer_burden" data-field="reviewers" data-where="q=2023Q3" data-fmt="n0">–</b> to <b data-src="reviewer_burden" data-field="reviewers" data-where="q=2025Q4" data-fmt="n0">–</b> in
           2025 Q4 before recovering to <b data-src="reviewer_burden" data-field="reviewers" data-where="q=2026Q3" data-fmt="n0">–</b>. Everyone's load
-          grew in 2026, and the busiest reviewers carry the most of it, which fits who is saying the load has
+          grew in 2026, and in absolute terms the busiest reviewers carry the most of it, which fits who is saying the load has
           become unmanageable.
         </p>
         <h3>Nine years of approvals</h3>
@@ -156,9 +159,9 @@
           each approver approved in the quarter, and their changed lines. Log scale.</p>
         <div class="panels">
           <figure class="panel"><h3>CLs approved per approver</h3>
-            <div class="chart chart-short"><canvas id="n-c-approver-cls" role="img" aria-label="CLs each approver approved per quarter since 2017: the median, with bands up to the 75th, 90th, 95th and 99th percentiles, on a log scale."></canvas></div></figure>
+            <div class="chart chart-short"><canvas id="n-c-approver-cls" role="img" aria-label="CLs each approver approved per quarter since 2017: the median, with bands up to the 75th, 90th and 95th percentiles, on a log scale."></canvas></div></figure>
           <figure class="panel"><h3>Lines approved per approver</h3>
-            <div class="chart chart-short"><canvas id="n-c-approver-lines" role="img" aria-label="Changed lines each approver approved per quarter since 2017: the median, with bands up to the 75th, 90th, 95th and 99th percentiles, on a log scale."></canvas></div></figure>
+            <div class="chart chart-short"><canvas id="n-c-approver-lines" role="img" aria-label="Changed lines each approver approved per quarter since 2017: the median, with bands up to the 75th, 90th and 95th percentiles, on a log scale."></canvas></div></figure>
         </div>
         <p class="sub">
           The same shape holds over nine years. The 90th-percentile approver approved between about 75 and 100 CLs
