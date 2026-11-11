@@ -330,11 +330,86 @@ python3 scripts/balance_ai_predict.py report
   most twice per quarter, so they weight people equally, while this table
   weights CLs, which favours heavy authors.
 - October's CL count jumped by 27% while the flagged share levelled off and
-  the p ≥ 0.7 share fell (22.5% → 16.7%). Worth a look: a burst of
-  short CLs, or a change in how agents write descriptions.
+  the p ≥ 0.7 share fell (22.5% → 16.7%). §8 shows this is mostly Haiku
+  losing recall on a new agent writing style, not adoption stalling.
 - These are raw flag rates, which miss AI descriptions Haiku is unsure of. §4's mixture
   estimates run at about twice the sampled p ≥ 0.5 rate in every quarter
   (1.7–2.6×).
+
+## 8. October 2026: more CLs, fewer confident flags
+
+**Where the extra CLs came from.** September had 13,701 CLs and October
+17,430 (+3,729). The extra CLs are **not** newcomers, mass edits or tiny
+CLs:
+- the share of authors under 6 months fell from 9.4% to 8.1%;
+- the share of CLs with ≥ 100 files fell from 0.5% to 0.3%;
+- the median diff stayed at 70 lines, and CLs of ≤ 10 lines went from 17.7% to 17.0%.
+
+The same people wrote more: authors +5% (1,293 → 1,361), CLs per author
+10.6 → 12.8. The 50 authors with the biggest gains account for 69% of the
+increase. Half their October CLs are flagged (p ≥ 0.5: 48%), and the 10
+biggest gainers carry 343 of October's 577 marked CLs. So the volume jump is
+largely AI-heavy authors landing more CLs.
+
+**Why the flags fell.** Everyone else's p ≥ 0.7 share also fell (22.4% →
+15.9%), while descriptions got *longer* (median 409 → 479 characters).
+Within every length band the confident share fell. At 300–600 characters,
+for example, it went 20% (Sep) → 11% (Oct) → 7% (Nov). Haiku's recall on
+known-AI CLs fell too: trailer-marked CLs dropped from 73% to 38% at p ≥ 0.7
+and phrase-marked from 28% to 12%. So AI descriptions changed style.
+
+Weekly, the confident share drops from the week of Sep 21 (W39) on. Over
+the same weeks, the style of all descriptions shifted:
+
+| | Jun | Jul | Aug | Sep | Oct | Nov |
+|---|---:|---:|---:|---:|---:|---:|
+| "This CL / change / patch" | 33.7% | 30.8% | 31.2% | 25.7% | 17.8% | 14.6% |
+| first person (I, we) | 10.2% | 8.1% | 7.8% | 5.7% | 4.2% | 3.0% |
+| `Test:` line | 3.7% | 4.0% | 4.3% | 4.1% | 6.8% | 7.7% |
+| > 3 paragraphs | 25.8% | 25.9% | 28.8% | 32.6% | 34.4% | 33.2% |
+
+**Likely causes**, from the shared clone (file names, dates and a few
+lines read as data):
+- 2026-09-09 and 09-11: `agents/prompts/templates/git_operations.md`, the
+  shared template for agents' git work, now says a new patch set doesn't
+  update the Gerrit description, and that agents must update it with `git
+  cl description`. Landed descriptions would then carry later revisions,
+  not just the first draft. Landing trails upload by a week or more, so
+  this fits a drop from W39.
+- 2026-10-16: 36 rule files under `agents/knowledge_base/rules/` on
+  writing commit messages in Chromium style (e.g. "replace tool boilerplate
+  with accurate commit description", "prefix commit message summary with
+  subsystem"). `Test:` lines rise from the next week (5.9% → 9.3%).
+- Model or tool upgrades may also play a part; nothing local shows them.
+
+**Corrected for recall.** Dividing each month's flagged share by that
+month's recall on marked CLs (leaving out the three-person `Agent-Generated`
+group, whose terse descriptions Haiku misses anyway) gives:
+
+| Month | Flagged | Recall | Corrected share [95%] |
+|---|---:|---:|---:|
+| 2026-07 | 27.2% | 50% | 54% [41, 76] |
+| 2026-08 | 33.8% | 63% | 53% [46, 63] |
+| 2026-09 | 39.0% | 75% | 51% [47, 57] |
+| 2026-10 | 36.9% | 51% | 72% [64, 83] |
+| 2026-11 (to 7th) | 37.0% | 20% (n = 50) | not usable |
+
+Monthly recall is noisy, and marked CLs may not write like unmarked
+ones. Still, October's share is more likely *higher* than September's,
+not flat.
+
+**Consequences:**
+- A fixed classifier drifts as agent instructions and models change.
+  Raw flagged shares after 2026-09 undercount, and comparisons across
+  that date need a recall correction or a refreshed classifier.
+- Cheap fix: estimate each month against a rolling AI reference (that
+  month's marked CLs, as above, or the §4 mixture). This needs no new calls.
+- Better fix: rewrite the prompt for current agent output and rescore
+  2026-09 onward (about 35k CLs, ~$2.50 with Haiku). Or test whether Opus
+  (§6) holds its recall on October's marked CLs before switching models.
+- This also blurs AI-written and AI-assisted descriptions further. As
+  agents learn Chromium's house style, the description stops being a
+  reliable tell.
 
 ## Verdicts
 
