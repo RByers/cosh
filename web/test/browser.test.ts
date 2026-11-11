@@ -2766,7 +2766,7 @@ test('the Review Balance page: a draft warning first, every figure, chart and ta
   for (const f of figures) assert.match(f, /\d/, f);
   // Every chart is drawn, and every table has rows.
   const canvases = await page.$$eval('canvas', (cs) => cs.map((c) => [c.id, c.width > 0 && c.height > 0] as const));
-  assert.equal(canvases.length, 125);
+  assert.equal(canvases.length, 126);
   for (const [id, drawn] of canvases) assert.ok(drawn, id);
   // The narrative opens the page: its eight sections, in order, each with a heading, then the
   // separator, then every section of the earlier analysis.
@@ -2789,7 +2789,7 @@ test('the Review Balance page: a draft warning first, every figure, chart and ta
     return cv.toDataURL() === empty.toDataURL();
   }).map((c) => c.id));
   assert.deepEqual(blank, []);
-  assert.equal(await page.$$eval('canvas[id^="n-"]', (cs) => cs.length), 53);
+  assert.equal(await page.$$eval('canvas[id^="n-"]', (cs) => cs.length), 54);
   // Narrative ids never clash with the earlier analysis's.
   const ids = await page.$$eval('[id]', (es) => es.map((e) => e.id));
   assert.equal(new Set(ids).size, ids.length);

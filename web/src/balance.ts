@@ -383,6 +383,31 @@ function fan(
   } as never));
 }
 
+/** The previous year's quarter: 2026Q3 -> 2025Q3. */
+const yearBefore = (q: string) => `${Number(q.slice(0, 4)) - 1}${q.slice(4)}`;
+
+/** Relative change from the same quarter a year earlier, as "+36%" or "−4%". */
+const growthPct = (v: number) => (v > 0 ? '+' : v < 0 ? '−' : '') + pctOf(0)(Math.abs(v));
+
+/** Year-over-year growth of a fan's percentiles (key_p50 .. key_p99): one line per percentile,
+ * for each quarter that has the same quarter a year earlier. */
+function yoy(id: string, rows: Row[], key: string, theme: Theme) {
+  const byQ = new Map(rows.map((r) => [String(r.q), r]));
+  const rs = rows.filter((r) => byQ.has(yearBefore(String(r.q))));
+  const levels = fanLevels(rows, key);
+  line(id, theme, rs.map((r) => qLabel(String(r.q))),
+    levels.map((p, i) => ({
+      label: p === 50 ? 'Median (p50)' : `p${p}`,
+      color: theme.series[i % theme.series.length],
+      data: rs.map((r) => {
+        const now = r[`${key}_p${p}`];
+        const then = byQ.get(yearBefore(String(r.q)))?.[`${key}_p${p}`];
+        return typeof now === 'number' && typeof then === 'number' && then > 0 ? now / then - 1 : null;
+      }),
+    })),
+    growthPct, { ref: 0, pointRadius: 2.5 });
+}
+
 const PATHS: [string, string][] = [
   ['velocity', 'Velocity'], ['size', 'Size'], ['breadth', 'Breadth'], ['reviewing', 'Reviewing'], ['indep_threads', 'Independence'],
 ];
@@ -1848,6 +1873,7 @@ function narrative(d: Record<string, Row[]>, theme: Theme) {
   fan('n-c-burden-lines', rb, 'lines', theme, FMT.n0, { label: 'Median reviewer', log: true });
   fan('n-c-burden-comments', rb, 'comments', theme, FMT.n0, { label: 'Median reviewer', log: true });
   fan('n-c-burden-cls', rb, 'cls', theme, FMT.n0, { label: 'Median reviewer', log: true });
+  yoy('n-c-burden-lines-yoy', rb, 'lines', theme);
   const ab = upTo(d.approver_burden);
   fan('n-c-approver-cls', ab, 'cls', theme, FMT.n0, { label: 'Median approver', log: true });
   fan('n-c-approver-lines', ab, 'lines', theme, FMT.n0, { label: 'Median approver', log: true });
