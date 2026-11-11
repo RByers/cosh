@@ -2716,6 +2716,14 @@ test('the Review Tone page: a name on a board opens a popup with its praise, lin
     const title = await page.$eval('#person-title', (e) => e.textContent!);
     assert.ok(title.endsWith(who.name), `${mode}: ${title}`);
     assert.match(await page.$eval('#person-note', (e) => e.textContent!), /between 29 Dec 2025 and /, mode); // 2026's first week starts in 2025
+    // The chart covers the same dates as the list, and adds up to it.
+    const listed = await page.$$eval('#person-list li.quote', (lis) => lis.length);
+    if (listed) {
+      assert.equal(await page.$eval('#person-chart', (e) => (e as HTMLElement).hidden), false, mode);
+      assert.match(await page.$eval('#person-chart-sub', (e) => e.textContent!), /^Per month between 29 Dec 2025 and /, mode);
+      const counts = [...(await chartLabel()).matchAll(/\((\d+)\)/g)].map((x) => Number(x[1]));
+      assert.equal(counts.reduce((a, b) => a + b, 0), listed, mode);
+    }
     await page.keyboard.press('Escape');
     assert.equal(await dialog(), false, `${mode}: closed`);
     await page.waitForFunction(() => location.hash === '');
@@ -2723,6 +2731,14 @@ test('the Review Tone page: a name on a board opens a popup with its praise, lin
     await page.goto(baseUrl + 'sentiment.html', { waitUntil: 'load' });
     await page.waitForSelector('body[data-ready="committers"]');
   }
+  // With one month chosen, the popup lists that month's comments and has no chart.
+  const month = await page.$eval('#period-month option', (o) => (o as HTMLOptionElement).value);
+  await page.goto(baseUrl + `sentiment.html?period=${month}`, { waitUntil: 'load' });
+  await page.waitForSelector('body[data-ready="committers"]');
+  await page.click('#praise-received tbody tr button');
+  await page.waitForFunction(() => document.querySelectorAll('#person-list li.quote').length > 0);
+  assert.equal(await page.$eval('#person-chart', (e) => (e as HTMLElement).hidden), true);
+  await page.keyboard.press('Escape');
   assert.deepEqual(errors, []);
   await page.close();
 });

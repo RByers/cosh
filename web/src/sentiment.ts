@@ -379,7 +379,7 @@ dialog.addEventListener('close', () => {
 });
 
 /** What a popup charts: one bar series per kind of comment it lists, over
- * the weeks its board covers. */
+ * the weeks it lists them from (the dates chosen on the page). */
 interface ChartSpec {
   range: [string, string];
   series: { key: SeriesKey; pick: (d: PersonComments) => PersonComment[] }[];
@@ -413,7 +413,8 @@ for (const ev of ['beforeprint', 'afterprint']) {
 }
 
 /** The popup's comments per month, a series for each kind `spec` names, so
- * the chart shows just what the popup is about. Hidden when there are none. */
+ * the chart shows just what the popup is about. Hidden when there are none,
+ * and when the chosen dates are one month (the count line says it all). */
 function drawPersonChart(spec: ChartSpec | null, data?: PersonComments) {
   personChart?.destroy();
   personChart = undefined;
@@ -421,7 +422,7 @@ function drawPersonChart(spec: ChartSpec | null, data?: PersonComments) {
   lastChart = spec && data ? { spec, data } : undefined;
   const m = spec && data ? byMonth(spec.range, spec.series.map((x) => x.pick(data))) : null;
   const totals = m ? m.counts.map((c) => c.reduce((a, b) => a + b, 0)) : [];
-  fig.hidden = !m || totals.every((t) => t === 0);
+  fig.hidden = !m || m.months.length < 2 || totals.every((t) => t === 0);
   if (fig.hidden) return;
   fill($('#person-chart-sub'), { range: weeksBetween(spec!.range) });
   const theme = readTheme();
@@ -573,19 +574,19 @@ function openMode(mode: Mode, email: string, name: string) {
   const range = praiseWeeks(p);
   if (mode === 'given' || mode === 'received') {
     openPerson(msg(`person-praise-${mode}`, { name }), { email, boards: [mode], range },
-      { range: p.weeks, series: roleSeries(email, [mode], (c) => praiseComments(c, email, mode, p.weeks)) },
+      { range, series: roleSeries(email, [mode], (c) => praiseComments(c, email, mode, range)) },
       (c) => praiseComments(c, email, mode, range));
   } else if (mode === 'authors' || mode === 'reviewers') {
     const weeks = r ? recentWeeks(r) : range;
     openPerson(msg(`person-happy-${mode}`, { name }), { email, boards: [mode], range: weeks },
-      { range: r?.weeks ?? p.weeks, series: roleSeries(email, ['received'], (c) => happyComments(c, email, mode))
+      { range: weeks, series: roleSeries(email, ['received'], (c) => happyComments(c, email, mode, weeks))
         .filter((sr) => sr.key === (mode === 'authors' ? 'received-author' : 'received-reviewer')) },
       (c) => happyComments(c, email, mode, weeks));
   } else {
     openPerson(msg('person-praise-all', { name }),
       { email, boards: ['given', 'received', 'authors', 'reviewers'], range }, {
-        range: p.weeks,
-        series: roleSeries(email, ['given', 'received'], (c) => allPraise(c, email, p.weeks)),
+        range,
+        series: roleSeries(email, ['given', 'received'], (c) => allPraise(c, email, range)),
         oneStack: true,
       }, (c) => allPraise(c, email, range));
   }
