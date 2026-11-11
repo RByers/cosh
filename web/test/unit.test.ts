@@ -1422,3 +1422,79 @@ test('fmtHoursBin names histogram bins in the low edge\'s unit; fmtQuarterMonth 
   assert.equal(fmtQuarterMonth('2025Q4'), 'Oct 2025');
   assert.equal(fmtQuarterMonth('2026Q3', true), 'Sept 2026');
 });
+
+// ---- Review Feedback (src/feedback.ts)
+
+test('review feedback: addresses normalise and hash as scripts/review_feedback.py key() does', async () => {
+  const { normalizeEmail, personKey, looksLikeEmail } = await import('../src/feedback.ts');
+  assert.equal(normalizeEmail('  Foo.Bar@Chromium.org '), 'foo.bar@google.com');
+  assert.equal(normalizeEmail('user@chromium.org@0039d316-1c4b-4281-b951-d872f2087c98'), 'user@google.com');
+  assert.equal(normalizeEmail('a@Microsoft.com'), 'a@microsoft.com');
+  // Values printed by the Python script's key().
+  assert.equal(await personKey('Foo.Bar@Chromium.org'), 'fb3b9e32f56a8f89c2ea38de91844541');
+  assert.equal(await personKey('foo.bar@google.com'), 'fb3b9e32f56a8f89c2ea38de91844541');
+  assert.equal(await personKey('  someone@microsoft.com '), '5005b7c30306573a80bf031dd778435d');
+  assert.equal(await personKey('user@chromium.org@0039d316-1c4b-4281-b951-d872f2087c98'), 'aa541a61ff13d7a7b67c4ed4ed491ce4');
+  const { FIXTURE_EMAIL, FIXTURE_KEY, ALIAS_EMAIL, ALIAS_KEY } = await import('./feedback-fixture.ts');
+  assert.equal(await personKey(FIXTURE_EMAIL), FIXTURE_KEY);
+  assert.equal(await personKey(ALIAS_EMAIL), ALIAS_KEY);
+  assert.ok(looksLikeEmail('a@b.org'));
+  assert.ok(!looksLikeEmail('alice'));
+  assert.ok(!looksLikeEmail('a@b'));
+});
+
+test('review feedback: percentiles and quantiles read off 21 quantiles', async () => {
+  const { percentileOf, quantile } = await import('../src/feedback.ts');
+  const q = Array.from({ length: 21 }, (_, i) => i / 10);       // 0 .. 2 evenly
+  assert.equal(percentileOf(q, -1), 0);
+  assert.equal(percentileOf(q, 5), 1);
+  assert.ok(Math.abs(percentileOf(q, 1) - 0.5) < 1e-9);
+  assert.ok(Math.abs(percentileOf(q, 1.05) - 0.525) < 1e-9);
+  assert.equal(quantile(q, 0.5), 1);
+  assert.ok(Math.abs(quantile(q, 0.25) - 0.5) < 1e-9);
+  // A run of equal quantiles: the middle of the run.
+  const flat = [0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 3];
+  assert.equal(percentileOf(flat, 1), (5 + 15) / 2 / 20);
+});
+
+test('review feedback: periods, experience bands, directories and the comment list', async () => {
+  const F = await import('../src/feedback.ts');
+  const { person } = await import('./feedback-fixture.ts');
+  const day = (s: string) => Math.floor(Date.parse(`${s}T00:00:00Z`) / 86_400_000);
+  assert.ok(F.inPeriod(day('2026-03-11'), '2026H1'));
+  assert.ok(!F.inPeriod(day('2026-07-01'), '2026H1'));
+  assert.ok(F.inPeriod(day('2026-07-01'), '2026'));
+  assert.ok(F.inPeriod(day('2020-01-01'), 'all'));
+  assert.equal(F.isoDay(day('2026-03-11')), '2026-03-11');
+  assert.deepEqual([0, 1, 4, 5, 19, 20, 99, 100].map(F.xpBand), [0, 1, 1, 2, 2, 3, 3, 4]);
+  // Experience bands: CL 1 (no earlier commits, 2 threads in its one directory), CL 2 (7 earlier
+  // in dir 1: 0.75 of it and its thread; 1 earlier in dir 0: 0.25), CL 3 (150 earlier: 2 threads).
+  const xp = F.xpBreakdown(person, 'all', 'td');
+  assert.deepEqual(xp.map((b) => b.cls), [1, 0.25, 0.75, 0, 1]);
+  assert.deepEqual(xp.map((b) => b.obs), [2, 0, 1, 0, 2]);
+  assert.ok(Math.abs(xp[2].den - 0.75 * 3) < 1e-9);
+  assert.deepEqual(F.xpBreakdown(person, 'all', 'ad').map((b) => b.obs), [1, 0, 1, 0, 1]);
+  assert.deepEqual(F.xpBreakdown(person, 'all', 'tn').map((b) => b.den), [1, 0.25, 0.75, 0, 1]);
+  // Directories: chrome/browser/ui/ has CLs 1 and 2.
+  const dirs = F.dirTable(person, 'all', 't');
+  assert.deepEqual(dirs.map((d) => [d.dir, d.cls, d.threads, d.prior]),
+    [['chrome/browser/ui/', 2, 2, 1], ['third_party/blink/renderer/', 1, 2, 150], ['content/browser/', 1, 1, 7]]);
+  assert.ok(Math.abs(dirs[0].expected - (2.5 + 0.25 * 3)) < 1e-9);
+  // Comments: newest first; addressed only; one directory; praise only.
+  const all = F.threadRows(person, 'all', 't', null, false);
+  assert.deepEqual(all.map((r) => r.uuid), ['cccc_0003', 'cccc_0001', 'bbbb_0002', 'aaaa_0002', 'aaaa_0001']);
+  assert.equal(all[0].file, '/PATCHSET_LEVEL');
+  assert.equal(F.isoDay(all[1].day), '2026-09-01');
+  assert.deepEqual(F.threadRows(person, 'all', 'a', null, false).map((r) => r.uuid), ['cccc_0001', 'bbbb_0002', 'aaaa_0001']);
+  assert.deepEqual(F.threadRows(person, '2026H1', 't', null, false).map((r) => r.uuid), ['bbbb_0002']);
+  assert.deepEqual(F.threadRows(person, 'all', 't', 2, false).map((r) => r.uuid), ['cccc_0003', 'cccc_0001']);
+  assert.deepEqual(F.threadRows(person, 'all', 't', null, true).map((r) => r.uuid), ['cccc_0003', 'bbbb_0002']);
+  // Links are encoded and always go to Gerrit.
+  assert.equal(F.commentUrl(5, 'a/b'), 'https://chromium-review.googlesource.com/c/chromium/src/+/5/comment/a%2Fb/');
+  // Peer groups: tenure needs a band; the experience group reads the adjusted value.
+  assert.equal(F.groupKey('ten', person.periods.all), 'ten:2-5y');
+  assert.equal(F.groupKey('org:igalia', person.periods.all), 'org:igalia');
+  assert.equal(F.valueFor('dirxp', person.periods.all, 'td'), 1.1);
+  assert.equal(F.valueFor('all', person.periods.all, 'ad'), 0.8);
+  assert.deepEqual(F.halves(['all', '2026H2', '2025', '2023H2']), ['2023H2', '2026H2']);
+});

@@ -3068,7 +3068,7 @@ test('Ratio: off by default; plots the review metric over commits', async () => 
 });
 
 test('every page carries the Content Security Policy, breaks none of it, and it blocks injected markup', async () => {
-  for (const path of ['', 'value.html', 'sentiment.html', 'balance.html']) {
+  for (const path of ['', 'value.html', 'sentiment.html', 'balance.html', 'review-feedback.html']) {
     const page = await browser.newPage();
     const errors: string[] = [];
     page.on('console', (m) => m.type() === 'error' && errors.push(m.text()));
@@ -3198,4 +3198,120 @@ test('a touch anywhere off a chart closes its hover card, on every page with cha
     assert.deepEqual(errors, [], path);
     await page.close();
   }
+});
+
+// ---- Review Feedback (review-feedback.html). Its per-person data isn't
+// committed, so these tests serve the made-up person in feedback-fixture.ts.
+
+async function feedbackPage(): Promise<{ page: Page; errors: string[] }> {
+  const { person, peers, FIXTURE_KEY, ALIAS_KEY } = await import('./feedback-fixture.ts');
+  const page = await browser.newPage();
+  await page.setViewport({ width: 1100, height: 900 });
+  const errors: string[] = [];
+  page.on('console', (m) => m.type() === 'error' && !/404/.test(m.text()) && errors.push(m.text()));
+  page.on('pageerror', (e) => errors.push(String(e)));
+  await page.setRequestInterception(true);
+  page.on('request', (r: HTTPRequest) => {
+    const path = new URL(r.url()).pathname;
+    const json = (body: unknown) => void r.respond({ status: 200, contentType: 'application/json', body: JSON.stringify(body) });
+    if (path.endsWith('/review-feedback/peers.json')) json(peers);
+    else if (path.endsWith(`/review-feedback/u/${FIXTURE_KEY}.json`)) json(person);
+    else if (path.endsWith(`/review-feedback/u/${ALIAS_KEY}.json`)) json({ see: FIXTURE_KEY });
+    else if (path.includes('/review-feedback/u/')) void r.respond({ status: 404, body: 'not found' });
+    else void r.continue();
+  });
+  await page.goto(baseUrl + 'review-feedback.html', { waitUntil: 'load' });
+  await page.waitForSelector('body[data-ready]');
+  return { page, errors };
+}
+
+async function lookUp(page: Page, email: string) {
+  await page.click('#rf-email', { count: 3 });
+  await page.keyboard.press('Backspace');
+  await page.type('#rf-email', email);
+  await page.click('#rf-find button');
+  await page.waitForFunction(() => !/Looking/.test(document.querySelector('#rf-find-note')!.textContent ?? ''));
+}
+
+test('review feedback: the caveat, a lookup field that offers no completions, and an unknown address', async () => {
+  const { page, errors } = await feedbackPage();
+  assert.equal(await page.title(), 'Review Feedback - Chromium Open Source Health');
+  assert.equal(await page.$eval('.rf-disclaimer', (e) => e.textContent!.trim()),
+    'This analysis is imperfect and is intended as a learning guide only.');
+  const input = await page.$eval('#rf-email', (i) => ({ ac: i.getAttribute('autocomplete'), list: i.getAttribute('list'),
+    type: i.getAttribute('type'), name: i.getAttribute('name'), form: i.closest('form')!.getAttribute('autocomplete') }));
+  assert.deepEqual(input, { ac: 'off', list: null, type: 'text', name: null, form: 'off' });
+  assert.equal(await page.$('datalist'), null);
+  assert.equal(await page.$eval('main', (m) => (m as HTMLElement).hidden), true);
+  await lookUp(page, 'nobody@example.com');
+  assert.match(await page.$eval('#rf-find-note', (e) => e.textContent!), /No changes owned by that address/);
+  assert.equal(await page.$eval('main', (m) => (m as HTMLElement).hidden), true);
+  // The landing page doesn't link to it yet.
+  const home = await browser.newPage();
+  await home.goto(baseUrl, { waitUntil: 'load' });
+  assert.equal(await home.$('a[href="review-feedback.html"]'), null);
+  await home.close();
+  assert.deepEqual(errors, []);
+  await page.close();
+});
+
+test('review feedback: a person, the measures, peer groups, directories and comments', async () => {
+  const { page, errors } = await feedbackPage();
+  const { ALIAS_EMAIL } = await import('./feedback-fixture.ts');
+  // Another address of the same person finds them too.
+  await lookUp(page, ALIAS_EMAIL);
+  await page.waitForFunction(() => !document.querySelector<HTMLElement>('main')!.hidden);
+  const tile = (id: string) => page.$eval(`#${id} .tile-value`, (e) => e.textContent);
+  assert.equal(await tile('rf-tile-cls'), '3');
+  assert.equal(await tile('rf-tile-threads'), '5');
+  assert.equal(await tile('rf-tile-you'), '1.20×');
+  // Peers 'all': quantiles 0.4..3 evenly, so the median is 1.7 and 1.2 sits at 8/26ths.
+  assert.equal(await tile('rf-tile-peers'), '1.70×');
+  assert.equal(await tile('rf-tile-rank'), '31%');
+  assert.ok(await page.evaluate(() => !!window.__rf!.charts.trend && !!window.__rf!.charts.xp));
+  // Addressed only, per change.
+  await page.click('input[name="rf-kind"][value="a"]');
+  await page.click('input[name="rf-corr"][value="n"]');
+  assert.equal(await tile('rf-tile-threads'), '3');
+  assert.equal(await tile('rf-tile-you'), '0.80');
+  assert.match(await page.$eval('#summary-sub', (e) => e.textContent!), /you addressed per change you landed/);
+  assert.equal(await page.$eval('#comments-sub', (e) => e.textContent!.split(' ')[0]), '3');
+  await page.click('input[name="rf-kind"][value="t"]');
+  await page.click('input[name="rf-corr"][value="d"]');
+  // Same experience per directory reads the adjusted value; Igalia has no peers for this measure,
+  // and orgs get no tone figures.
+  await page.select('#rf-peers', 'dirxp');
+  assert.equal(await tile('rf-tile-you'), '1.10×');
+  await page.select('#rf-peers', 'org:igalia');
+  assert.equal(await tile('rf-tile-peers'), '–');
+  assert.match(await page.$eval('#rf-praise-note', (e) => e.textContent!), /Organizations get no tone figures/);
+  await page.select('#rf-peers', 'ten');
+  assert.match(await page.$eval('#rf-tile-peers .tile-sub', (e) => e.textContent!), /^Tenure 2–5 years/);
+  // Directories: selecting one lists only its comments.
+  assert.deepEqual(await page.$$eval('#rf-dirs tbody th', (ths) => ths.map((t) => t.textContent)),
+    ['chrome/browser/ui/', 'third_party/blink/renderer/', 'content/browser/']);
+  await page.click('#rf-dirs tbody tr:nth-child(2) .rf-dir-pick');
+  assert.equal(await page.$$eval('#rf-threads li', (ls) => ls.length), 2);
+  assert.equal(await page.$eval('#rf-dir', (s) => (s as HTMLSelectElement).value), '2');
+  await page.select('#rf-dir', '');
+  assert.equal(await page.$$eval('#rf-threads li', (ls) => ls.length), 5);
+  // Praise only; comment text stays text, and each comment links to Gerrit in a new tab.
+  await page.click('input[name="rf-show"][value="praise"]');
+  assert.equal(await page.$$eval('#rf-threads li', (ls) => ls.length), 2);
+  assert.equal(await page.$('#rf-threads img, #rf-praise img'), null);
+  assert.ok((await page.$eval('#rf-threads', (e) => e.textContent!)).includes('<img src=x onerror=alert(1)>'));
+  const links = await page.$$eval('#rf-threads a, #rf-praise a', (as) => as.map((a) => [a.getAttribute('href'), a.getAttribute('target')]));
+  assert.ok(links.length >= 4);
+  for (const [href, target] of links) {
+    assert.match(href!, /^https:\/\/chromium-review\.googlesource\.com\/c\/chromium\/src\/\+\/\d+\/comment\/[\w%]+\/$/);
+    assert.equal(target, '_blank');
+  }
+  // A half-year: one change.
+  await page.select('#rf-period', '2026H1');
+  assert.equal(await tile('rf-tile-cls'), '1');
+  assert.ok((await page.$$eval('#rf-period option', (os) => os.map((o) => o.textContent))).includes('July – October 2026'));
+  const text = await page.$eval('body', (b) => b.innerText);
+  assert.doesNotMatch(text, /\b\d{4}-W\d{2}\b/);
+  assert.deepEqual(errors, []);
+  await page.close();
 });

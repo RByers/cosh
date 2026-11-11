@@ -2735,3 +2735,121 @@ button.term:focus-visible {
 .narrative .properties {
   padding-left: 22px;
 }
+
+/* ---- Review Feedback (review-feedback.html) ---- */
+
+/* The page's standing caveat, under the title: hard to miss. */
+.rf-disclaimer {
+  margin: 0 0 16px;
+  padding: 10px 14px;
+  border: 2px solid var(--series-4);
+  border-left-width: 6px;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--series-4) 18%, var(--surface-1));
+  color: var(--text-primary);
+  font-weight: 600;
+  max-width: 75ch;
+}
+
+.rf-find {
+  margin: 16px 0 24px;
+}
+
+.rf-find label {
+  font-weight: 600;
+}
+
+.rf-table td.num,
+.rf-table th.num {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.rf-table th[scope='row'] {
+  text-align: left;
+  font-weight: normal;
+}
+
+.rf-table tr[aria-selected='true'] {
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+}
+
+/* A directory name that filters the comment list: looks like a link. */
+.rf-dir-pick {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--accent);
+  font: inherit;
+  font-family: ui-monospace, monospace;
+  font-size: 0.85rem;
+  text-align: left;
+  cursor: pointer;
+  overflow-wrap: anywhere;
+}
+
+.rf-dir-pick:hover {
+  text-decoration: underline;
+}
+
+.rf-more {
+  margin: 8px 0 0;
+  min-height: 32px;
+  padding: 4px 12px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface-1);
+  color: var(--text-primary);
+  font: inherit;
+  cursor: pointer;
+}
+
+.rf-thread-head {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 4px 12px;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  overflow-wrap: anywhere;
+}
+
+.rf-tags {
+  display: inline-flex;
+  gap: 6px;
+}
+
+.rf-tag {
+  padding: 0 6px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  font-size: 0.75rem;
+  white-space: nowrap;
+}
+
+.rf-tag-on {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.rf-tag-praise {
+  border-color: var(--series-3);
+  color: var(--series-3);
+}
+
+.rf-text {
+  margin: 4px 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.rf-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 8px 16px;
+}
+
+.rf-bar .select-toggle {
+  min-width: 0;
+}
