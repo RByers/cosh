@@ -1520,6 +1520,12 @@ ground rule 3).
   nothing here was affected. A blob damaged the same way would have no
   fallback. Run `git fsck` on `~/projects/shared/chromium` before trusting
   the older pack's removal.
+- Gerrit's `main` was `master` until 2021-04-07 00:00 UTC (the listing
+  queries both before 2021-05-01; `derive` records `master` as `main`).
+  On the rename day, 6,836 stale `master` CLs, created 2017–2019, were
+  abandoned at once. They are real abandons, but they make 2021-W14's
+  abandoned count a one-off spike: leave that week's mass abandon out of
+  trends.
 - `Reviewed-on` used the short form `…/c/<n>` from Oct 2018 to Feb 2019,
   and `Reviewed-by` footers start mid-2017.
 - `Bot-Commit:` marks Rubber Stamper's approval (clean reverts, relands,
