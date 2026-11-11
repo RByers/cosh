@@ -36,7 +36,11 @@ regex plus Claude Haiku (`cosh classify`).
   --working-directory=$PWD -p StandardOutput=append:$PWD/<log> -p
   StandardError=append:$PWD/<log> python3 -m cosh backfill ...`. That
   stop skipped `derive` for 2021-W36, so run a full `derive` after it
-  ends.
+  ends. The branch was `master` until 2021-W14, so the first run
+  (finished 2026-11-10) listed 0 CLs for 2017-W27 .. 2021-W13; listings
+  before 2021-05-01 now query `master` too (`extract.branches_for`) and
+  `derive` records it as `main`. Those weeks were reset and refetched
+  from 2026-11-11.
   Their patch sets still need approval, and the user doesn't want
   "addressed" labels (`cosh classify`) for these years.
 - **Backfill back to 2023-07-01 (Radar's first data) is approved**

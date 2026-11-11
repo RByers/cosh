@@ -28,6 +28,16 @@ MIN_WINDOW = timedelta(minutes=15)
 LIST_OPTIONS = ["DETAILED_ACCOUNTS", "DETAILED_LABELS"]
 GERRIT_TS = "%Y-%m-%d %H:%M:%S"
 BRANCH = "main"           # release branches are out of scope
+# chromium/src's main branch was called `master` until 2021-W14 (early April
+# 2021). Windows that start before OLD_BRANCH_UNTIL list both names; derive
+# records `master` as `main`. An old `master` CL abandoned after this date
+# would be missed, but the rename moved open CLs to `main`.
+OLD_BRANCH = "master"
+OLD_BRANCH_UNTIL = datetime(2021, 5, 1, tzinfo=timezone.utc)
+
+
+def branches_for(start):
+    return (BRANCH, OLD_BRANCH) if start < OLD_BRANCH_UNTIL else (BRANCH,)
 # Abandoned CLs count: review that keeps a flawed CL from landing is valuable work.
 STATUSES = ("merged", "abandoned")
 
@@ -65,22 +75,23 @@ def closed_ts(change):
     return change.get("submitted") or change["updated"]
 
 
-def window_key(project, start, end, offset=0, status="merged", snap=None):
-    k = f"{project}@{BRANCH}|{status}|{start:%Y-%m-%dT%H:%M:%S}|{end:%Y-%m-%dT%H:%M:%S}"
+def window_key(project, start, end, offset=0, status="merged", snap=None, branch=BRANCH):
+    k = f"{project}@{branch}|{status}|{start:%Y-%m-%dT%H:%M:%S}|{end:%Y-%m-%dT%H:%M:%S}"
     # Open-CL listings change over time; `snap` (the snapshot's listed_at)
     # keeps each snapshot's windows apart, while a resumed snapshot reuses them.
     return k + (f"|S={offset}" if offset else "") + (f"|snap={snap}" if snap else "")
 
 
-def list_window(client, raw, project, start, end, offset=0, status="merged", snap=None):
+def list_window(client, raw, project, start, end, offset=0, status="merged", snap=None,
+                branch=BRANCH):
     """Return the list of change dicts for one window page (cached).
     status 'merged' filters on merge time; 'abandoned' and 'open' on `updated`."""
-    key = window_key(project, start, end, offset, status, snap)
+    key = window_key(project, start, end, offset, status, snap, branch)
     cached = store.get_response(raw, client.host, "list_window", key)
     if cached is not None and cached[0] == 200:
         return json.loads(cached[1]), key
     after, before = ("mergedafter", "mergedbefore") if status == "merged" else ("after", "before")
-    q = (f'project:{project} branch:{BRANCH} status:{status} '
+    q = (f'project:{project} branch:{branch} status:{status} '
          f'{after}:"{start:{GERRIT_TS}} +0000" {before}:"{end:{GERRIT_TS}} +0000"')
     params = [("q", q), ("n", PAGE_SIZE)] + [("o", o) for o in LIST_OPTIONS]
     if offset:
@@ -100,16 +111,18 @@ def _keep(out, key, c):
         out[c["_number"]] = (key, c)
 
 
-def list_range(client, raw, project, start, end, out, status="merged", snap=None):
+def list_range(client, raw, project, start, end, out, status="merged", snap=None,
+               branch=BRANCH):
     """Collect {change_number: (window_key, change)} for CLs in [start, end]
     (by merge time for 'merged', by `updated` otherwise)."""
-    changes, key = list_window(client, raw, project, start, end, status=status, snap=snap)
+    changes, key = list_window(client, raw, project, start, end, status=status, snap=snap,
+                                 branch=branch)
     if changes and changes[-1].get("_more_changes"):
         if end - start > MIN_WINDOW:
             mid = start + (end - start) / 2
             mid = mid.replace(microsecond=0)
-            list_range(client, raw, project, start, mid, out, status, snap)
-            list_range(client, raw, project, mid, end, out, status, snap)
+            list_range(client, raw, project, start, mid, out, status, snap, branch)
+            list_range(client, raw, project, mid, end, out, status, snap, branch)
             return
         # Tiny window still overflowing (should not happen): fall back to paging.
         offset = 0
@@ -117,10 +130,11 @@ def list_range(client, raw, project, start, end, out, status="merged", snap=None
             offset += len(changes)
             for c in changes:
                 _keep(out, key, c)
-            changes, key = list_window(client, raw, project, start, end, offset, status, snap)
+            changes, key = list_window(client, raw, project, start, end, offset, status, snap,
+                                         branch)
     for c in changes:
         _keep(out, key, c)
-    print(f"  listed {status} {start:%Y-%m-%d %H:%M}..{end:%Y-%m-%d %H:%M}: {len(changes)} CLs "
+    print(f"  listed {branch} {status} {start:%Y-%m-%d %H:%M}..{end:%Y-%m-%d %H:%M}: {len(changes)} CLs "
           f"(requests so far: {client.request_count})", file=sys.stderr)
 
 
@@ -147,14 +161,16 @@ def extract_week(host, project, iso_week, min_interval=1.0, max_comment_fetches=
         week_start, week_end = iso_week_bounds(iso_week)
         found = {}
         for cl_status in STATUSES:
-            print(f"[{iso_week}] listing {project}@{BRANCH} {cl_status} "
+            print(f"[{iso_week}] listing {project}@{'+'.join(branches_for(week_start))} {cl_status} "
                   f"{week_start:%Y-%m-%d}..{week_end:%Y-%m-%d}", file=sys.stderr)
             day = week_start
             while day < week_end:
                 w = day
                 while w < day + timedelta(days=1):
                     w_end = w + timedelta(hours=WINDOW_HOURS)
-                    list_range(client, raw, project, w, w_end, found, cl_status)
+                    for branch in branches_for(w):
+                        list_range(client, raw, project, w, w_end, found, cl_status,
+                                   branch=branch)
                     w = w_end
                 day += timedelta(days=1)
 

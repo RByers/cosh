@@ -27,6 +27,11 @@ from .paths import anchor, is_file
 # threads (root_uuid, threads table) and the addressed_comments metric.
 METRIC_VERSION = "7"
 
+
+def _branch(name):
+    """chromium/src's `master` was renamed `main` in April 2021: one branch."""
+    return "main" if name == "master" else name
+
 def human_text(message):
     """Comment text minus quoted reply lines ('> ...')."""
     lines = [l for l in (message or "").splitlines() if not l.lstrip().startswith(">")]
@@ -154,7 +159,7 @@ def derive_change(change, comments):
 
     ch = dict(
         change_number=change["_number"], project=change["project"],
-        branch=change["branch"], change_id=change.get("change_id"),
+        branch=_branch(change["branch"]), change_id=change.get("change_id"),
         owner_account=owner_id, status=change["status"], created_at=_ts(change["created"]),
         updated_at=_ts(change["updated"]),
         submitted_at=_ts(change.get("submitted") or "") or None,

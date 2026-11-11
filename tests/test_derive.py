@@ -663,3 +663,11 @@ class CommitsTest(unittest.TestCase):
             rows = summarize(data_dir=d, out_dir=os.path.join(d, "s"), metric="commits")
         # No commits table filled: zero commits, no share.
         self.assertEqual([(r["org"], r["commits"], r["share"]) for r in rows], [("microsoft.com", 0, None)])
+
+
+class BranchRenameTest(unittest.TestCase):
+    def test_master_is_recorded_as_main(self):
+        from cosh.derive import _branch
+        self.assertEqual(_branch("master"), "main")
+        self.assertEqual(_branch("main"), "main")
+        self.assertEqual(_branch("refs/branch-heads/4044"), "refs/branch-heads/4044")

@@ -40,7 +40,8 @@ class FakeGerrit:
         want = {"open": "NEW", "merged": "MERGED", "abandoned": "ABANDONED"}[status]
         # `_merged_at` (test only): Gerrit's index merge time for a CL whose
         # listing has no `submitted`, as seen for CL 5039071.
-        hits = [c for c in self.changes if c["status"] == want
+        branch = re.search(r"branch:(\w+)", q).group(1)
+        hits = [c for c in self.changes if c["status"] == want and c["branch"] == branch
                 and lo <= ((field == "submitted" and c.get("_merged_at")) or c.get(field, ""))[:19] <= hi]
         hits = sorted(hits, key=lambda c: c["updated"], reverse=True)
         out = [{k: v for k, v in c.items() if k != "_merged_at"} for c in hits[:self.page]]
@@ -138,6 +139,30 @@ class ExtractWeekTest(unittest.TestCase):
                 "SELECT change_number FROM week_changes WHERE iso_week='2023-W49'"))
             raw.close()
         self.assertEqual(listed, [1, 2])
+
+    def test_weeks_before_the_rename_list_master_too(self):
+        changes = [
+            dict(cl(1, "MERGED", "2020-03-03 00:00:00", submitted="2020-03-03 00:00:00"),
+                 branch="master"),
+            cl(2, "MERGED", "2020-03-04 00:00:00", submitted="2020-03-04 00:00:00"),
+            dict(cl(3, "ABANDONED", "2020-03-05 00:00:00"), branch="master"),
+            dict(cl(4, "MERGED", "2020-03-05 00:00:00", submitted="2020-03-05 00:00:00"),
+                 branch="refs/branch-heads/4044"),
+        ]
+        fake = FakeGerrit(changes)
+        with tempfile.TemporaryDirectory() as d, \
+                mock.patch.object(extract, "GerritClient", lambda host, min_interval: fake), \
+                mock.patch.object(extract, "fetch_notedb", lambda *a, **k: []):
+            extract.extract_week(H, P, "2020-W10", data_dir=d)
+            raw = store.open_raw(d)
+            listed = sorted(n for (n,) in raw.execute(
+                "SELECT change_number FROM week_changes WHERE iso_week='2020-W10'"))
+            raw.close()
+        self.assertEqual(listed, [1, 2, 3])
+        self.assertEqual(sum("branch:master" in q for q in fake.queries),
+                         sum("branch:main" in q for q in fake.queries))
+        # After the rename, `main` only.
+        self.assertEqual(extract.branches_for(datetime(2021, 6, 1, tzinfo=timezone.utc)), ("main",))
 
     def test_closed_ts_falls_back_to_updated(self):
         self.assertEqual(extract.closed_ts(cl(2, "MERGED", "2023-12-15 04:26:05")), "2023-12-15 04:26:05")
