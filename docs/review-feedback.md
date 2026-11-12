@@ -65,6 +65,17 @@ that experience. Its axis is always years. It shows:
   steeply under every adjustment and org (outside Google 2.1 against 2.5
   times), which is what the page says makes it the better sign of growth;
   the sentence flips if the data ever says otherwise.
+  The gap is narrower than on the Balance page (all 3.6, acted on 5.1
+  times), mostly because this page leaves out general comments: they are
+  rarely addressed and barely fall with tenure, so counting them flattens
+  the all-threads line, while the addressed line hardly moves. A scratch
+  probe on 2026-11-12 (fall from 0–3 months to 10+ years, all / addressed):
+  this chart 3.5 / 4.1; with general comments 2.8 / 4.1; pooled per CL
+  over 2023 H2–2024 without them 4.5 / 5.1, and with them 3.6 / 5.1
+  (66% → 45% addressed), which reproduces the Balance chart. Pooling
+  instead of medians makes both lines steeper, and the period matters
+  little. This chart and the next sit side by side (`.rf-pair`), each
+  with its own note.
 - *Which tenure explains the fall* (`tenure_cmp`): for each tenure measure
   (years, earlier commits on `main`, directory experience), everyone's
   pooled feedback per band against all five bands together, each CL placed

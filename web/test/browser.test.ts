@@ -3304,9 +3304,16 @@ test('review feedback: the opening card explains the index before any address is
       rotation: (c.options.scales!.x as { ticks: { minRotation?: number } }).ticks.minRotation,
       data: c.data.datasets[0].data, axes: [s.x.title?.text, s.y.title?.text] };
   }, key);
-  const halves = await page.$$eval('.rf-pair > div', (ds) => ds.map((d) => Math.round(d.getBoundingClientRect().width)));
-  assert.equal(halves.length, 2);
-  assert.ok(Math.abs(halves[0] - halves[1]) <= 1, String(halves));
+  // Two pairs side by side: all against addressed and the tenure measures, then size and directory.
+  const pairs = await page.$$eval('.rf-pair', (ps) => ps.map((p) => [...p.children].map((d) => {
+    const r = d.getBoundingClientRect();
+    return [Math.round(r.width), Math.round(r.top), d.querySelector('canvas')!.id];
+  })));
+  assert.deepEqual(pairs.map((p) => p.map(([, , id]) => id)), [['rf-kinds', 'rf-tenures'], ['rf-size', 'rf-dir-chart']]);
+  for (const [[w0, top0], [w1, top1]] of pairs) {
+    assert.ok(Math.abs(Number(w0) - Number(w1)) <= 1, String(pairs));
+    assert.equal(top0, top1);
+  }
   let sz = await bars('size');
   assert.equal(sz.type, 'bar');
   // Columns with the labels at 45°, like the year-over-year histogram; smallest size first.

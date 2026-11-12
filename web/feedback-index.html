@@ -119,9 +119,12 @@
           In the median year, feedback <span data-if="fell">fell</span><span data-if="!fell">grew</span> by
           <slot name="median"></slot>; bars on the right are years in which it grew.
         </template>
+        <!-- Two half-width line charts, side by side on wide screens, each with its own note. -->
+        <div class="rf-pair">
+        <div>
         <h3>All feedback or only addressed feedback, by tenure</h3>
         <ul id="rf-kinds-legend" class="legend rf-line-legend" aria-label="Lines"></ul>
-        <div class="chart">
+        <div class="chart rf-half-chart">
           <canvas id="rf-kinds" role="img" aria-label="Median feedback index by years since a contributor's first commit, for all reviewer threads and for addressed threads only."></canvas>
         </div>
         <p id="rf-kinds-note" class="note"></p>
@@ -146,10 +149,11 @@
           their threads, ten-year veterans <slot name="share10"></slot>. Counting those threads adds feedback that
           experience removes less of, which blurs the fall that learning brings.</span>
         </template>
-
+        </div>
+        <div>
         <h3>Which tenure explains the fall</h3>
         <ul id="rf-tenures-legend" class="legend rf-line-legend" aria-label="Tenure measured by"></ul>
-        <div class="chart">
+        <div class="chart rf-half-chart">
           <canvas id="rf-tenures" role="img" aria-label="Feedback in each of five tenure bands, least experienced first, for tenure measured in years since the first commit, changes landed before, and earlier commits in the directory."></canvas>
         </div>
         <p id="rf-tenures-note" class="note"></p>
@@ -177,6 +181,8 @@
           data-if="best=dir">Here directory experience accounts for the most, <slot name="explained"></slot> of the
           yearly fall.</span>
         </template>
+        </div>
+        </div>
         <p class="note">
           The first three charts always measure tenure in years.
         </p>
