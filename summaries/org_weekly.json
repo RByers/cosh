@@ -1,6 +1,6 @@
 {
  "meta": {
-  "generated_at": "2026-11-12T12:22:47Z",
+  "generated_at": "2026-11-12T18:54:10Z",
   "weeks": [
    "2017-W27",
    "2017-W28",
@@ -12924,13 +12924,13 @@
    "post_merge_comments": 65,
    "addressed_comments": 1353,
    "pending_comments": 1091,
-   "commits": 1196,
+   "commits": 1195,
    "authors": 417,
    "share_cls": 0.9847,
    "share_comments": 0.9862,
    "share_chars": 0.9868,
    "share_addressed": 0.9905,
-   "share_commits": 0.9322
+   "share_commits": 0.9321
   },
   {
    "iso_week": "2018-W05",
@@ -16764,7 +16764,7 @@
    "post_merge_comments": 54,
    "addressed_comments": 1314,
    "pending_comments": 1141,
-   "commits": 917,
+   "commits": 916,
    "authors": 323,
    "share_cls": 0.9784,
    "share_comments": 0.989,
@@ -17064,13 +17064,13 @@
    "post_merge_comments": 78,
    "addressed_comments": 1288,
    "pending_comments": 1136,
-   "commits": 971,
+   "commits": 970,
    "authors": 370,
    "share_cls": 0.9909,
    "share_comments": 0.9922,
    "share_chars": 0.986,
    "share_addressed": 0.9984,
-   "share_commits": 0.9548
+   "share_commits": 0.9547
   },
   {
    "iso_week": "2018-W19",
@@ -17130,7 +17130,7 @@
    "share_comments": 0.001,
    "share_chars": 0.0007,
    "share_addressed": 0.0008,
-   "share_commits": 0.0029
+   "share_commits": 0.003
   },
   {
    "iso_week": "2018-W19",
@@ -17250,7 +17250,7 @@
    "share_comments": 0.0,
    "share_chars": 0.0,
    "share_addressed": 0.0,
-   "share_commits": 0.0029
+   "share_commits": 0.003
   },
   {
    "iso_week": "2018-W19",
@@ -17310,7 +17310,7 @@
    "share_comments": 0.0,
    "share_chars": 0.0,
    "share_addressed": 0.0,
-   "share_commits": 0.0029
+   "share_commits": 0.003
   },
   {
    "iso_week": "2018-W19",
@@ -17744,13 +17744,13 @@
    "post_merge_comments": 48,
    "addressed_comments": 1372,
    "pending_comments": 1211,
-   "commits": 1123,
+   "commits": 1119,
    "authors": 377,
    "share_cls": 0.9843,
    "share_comments": 0.9916,
    "share_chars": 0.9924,
    "share_addressed": 0.9928,
-   "share_commits": 0.9437
+   "share_commits": 0.9435
   },
   {
    "iso_week": "2018-W21",
@@ -17790,7 +17790,7 @@
    "share_comments": 0.0023,
    "share_chars": 0.0039,
    "share_addressed": 0.0007,
-   "share_commits": 0.005
+   "share_commits": 0.0051
   },
   {
    "iso_week": "2018-W21",
@@ -17850,7 +17850,7 @@
    "share_comments": 0.001,
    "share_chars": 0.0001,
    "share_addressed": 0.0022,
-   "share_commits": 0.0134
+   "share_commits": 0.0135
   },
   {
    "iso_week": "2018-W21",
@@ -18064,7 +18064,7 @@
    "post_merge_comments": 36,
    "addressed_comments": 1119,
    "pending_comments": 907,
-   "commits": 1016,
+   "commits": 1015,
    "authors": 352,
    "share_cls": 0.977,
    "share_comments": 0.9782,
@@ -19064,13 +19064,13 @@
    "post_merge_comments": 30,
    "addressed_comments": 1215,
    "pending_comments": 986,
-   "commits": 1027,
+   "commits": 1026,
    "authors": 385,
    "share_cls": 0.991,
    "share_comments": 0.9722,
    "share_chars": 0.977,
    "share_addressed": 0.9886,
-   "share_commits": 0.9422
+   "share_commits": 0.9421
   },
   {
    "iso_week": "2018-W25",
@@ -19404,13 +19404,13 @@
    "post_merge_comments": 38,
    "addressed_comments": 1237,
    "pending_comments": 1032,
-   "commits": 981,
+   "commits": 979,
    "authors": 336,
    "share_cls": 0.9812,
    "share_comments": 0.981,
    "share_chars": 0.9787,
    "share_addressed": 0.996,
-   "share_commits": 0.9478
+   "share_commits": 0.9477
   },
   {
    "iso_week": "2018-W26",
@@ -19644,13 +19644,13 @@
    "post_merge_comments": 31,
    "addressed_comments": 929,
    "pending_comments": 808,
-   "commits": 712,
+   "commits": 710,
    "authors": 264,
    "share_cls": 0.9609,
    "share_comments": 0.9727,
    "share_chars": 0.9697,
    "share_addressed": 0.9769,
-   "share_commits": 0.9187
+   "share_commits": 0.9185
   },
   {
    "iso_week": "2018-W27",
@@ -19690,7 +19690,7 @@
    "share_comments": 0.0106,
    "share_chars": 0.0076,
    "share_addressed": 0.0158,
-   "share_commits": 0.0245
+   "share_commits": 0.0246
   },
   {
    "iso_week": "2018-W27",
@@ -19730,7 +19730,7 @@
    "share_comments": 0.0,
    "share_chars": 0.0,
    "share_addressed": 0.0,
-   "share_commits": 0.0077
+   "share_commits": 0.0078
   },
   {
    "iso_week": "2018-W27",
@@ -19810,7 +19810,7 @@
    "share_comments": 0.0,
    "share_chars": 0.0,
    "share_addressed": 0.0,
-   "share_commits": 0.0077
+   "share_commits": 0.0078
   },
   {
    "iso_week": "2018-W27",
@@ -19950,7 +19950,7 @@
    "share_comments": 0.0,
    "share_chars": 0.0,
    "share_addressed": 0.0,
-   "share_commits": 0.0077
+   "share_commits": 0.0078
   },
   {
    "iso_week": "2018-W27",
@@ -19984,7 +19984,7 @@
    "post_merge_comments": 53,
    "addressed_comments": 1315,
    "pending_comments": 1029,
-   "commits": 1066,
+   "commits": 1065,
    "authors": 369,
    "share_cls": 0.9831,
    "share_comments": 0.9923,
@@ -20384,13 +20384,13 @@
    "post_merge_comments": 26,
    "addressed_comments": 1151,
    "pending_comments": 1002,
-   "commits": 961,
+   "commits": 957,
    "authors": 371,
    "share_cls": 0.9886,
    "share_comments": 0.9935,
    "share_chars": 0.9924,
    "share_addressed": 1.0,
-   "share_commits": 0.9449
+   "share_commits": 0.9447
   },
   {
    "iso_week": "2018-W29",
@@ -20590,7 +20590,7 @@
    "share_comments": 0.0,
    "share_chars": 0.0,
    "share_addressed": 0.0,
-   "share_commits": 0.0098
+   "share_commits": 0.0099
   },
   {
    "iso_week": "2018-W29",
@@ -20630,7 +20630,7 @@
    "share_comments": 0.0,
    "share_chars": 0.0,
    "share_addressed": 0.0,
-   "share_commits": 0.0088
+   "share_commits": 0.0089
   },
   {
    "iso_week": "2018-W29",
@@ -20670,7 +20670,7 @@
    "share_comments": 0.0,
    "share_chars": 0.0,
    "share_addressed": 0.0,
-   "share_commits": 0.0029
+   "share_commits": 0.003
   },
   {
    "iso_week": "2018-W30",
@@ -20684,13 +20684,13 @@
    "post_merge_comments": 36,
    "addressed_comments": 1359,
    "pending_comments": 925,
-   "commits": 960,
+   "commits": 957,
    "authors": 336,
    "share_cls": 0.9903,
    "share_comments": 0.9845,
    "share_chars": 0.9875,
    "share_addressed": 0.9985,
-   "share_commits": 0.9311
+   "share_commits": 0.9309
   },
   {
    "iso_week": "2018-W30",
@@ -21044,13 +21044,13 @@
    "post_merge_comments": 49,
    "addressed_comments": 1114,
    "pending_comments": 955,
-   "commits": 933,
+   "commits": 932,
    "authors": 352,
    "share_cls": 0.9975,
    "share_comments": 0.995,
    "share_chars": 0.9949,
    "share_addressed": 0.9991,
-   "share_commits": 0.9599
+   "share_commits": 0.9598
   },
   {
    "iso_week": "2018-W31",
@@ -21264,13 +21264,13 @@
    "post_merge_comments": 30,
    "addressed_comments": 1320,
    "pending_comments": 1088,
-   "commits": 918,
-   "authors": 347,
+   "commits": 915,
+   "authors": 346,
    "share_cls": 0.97,
    "share_comments": 0.9929,
    "share_chars": 0.9962,
    "share_addressed": 0.9962,
-   "share_commits": 0.9613
+   "share_commits": 0.9611
   },
   {
    "iso_week": "2018-W32",
@@ -21290,7 +21290,7 @@
    "share_comments": 0.0027,
    "share_chars": 0.0004,
    "share_addressed": 0.0,
-   "share_commits": 0.001
+   "share_commits": 0.0011
   },
   {
    "iso_week": "2018-W32",
@@ -21310,7 +21310,7 @@
    "share_comments": 0.002,
    "share_chars": 0.002,
    "share_addressed": 0.0008,
-   "share_commits": 0.0136
+   "share_commits": 0.0137
   },
   {
    "iso_week": "2018-W32",
@@ -21350,7 +21350,7 @@
    "share_comments": 0.0007,
    "share_chars": 0.0006,
    "share_addressed": 0.0015,
-   "share_commits": 0.0031
+   "share_commits": 0.0032
   },
   {
    "iso_week": "2018-W32",
@@ -21410,7 +21410,7 @@
    "share_comments": 0.0,
    "share_chars": 0.0,
    "share_addressed": 0.0,
-   "share_commits": 0.0031
+   "share_commits": 0.0032
   },
   {
    "iso_week": "2018-W32",
@@ -21510,7 +21510,7 @@
    "share_comments": 0.0,
    "share_chars": 0.0,
    "share_addressed": 0.0,
-   "share_commits": 0.001
+   "share_commits": 0.0011
   },
   {
    "iso_week": "2018-W33",
@@ -21524,7 +21524,7 @@
    "post_merge_comments": 31,
    "addressed_comments": 1369,
    "pending_comments": 1033,
-   "commits": 999,
+   "commits": 998,
    "authors": 379,
    "share_cls": 0.9807,
    "share_comments": 0.973,
@@ -21704,13 +21704,13 @@
    "post_merge_comments": 56,
    "addressed_comments": 1373,
    "pending_comments": 1124,
-   "commits": 958,
+   "commits": 957,
    "authors": 370,
    "share_cls": 0.9824,
    "share_comments": 0.9856,
    "share_chars": 0.987,
    "share_addressed": 0.9899,
-   "share_commits": 0.959
+   "share_commits": 0.9589
   },
   {
    "iso_week": "2018-W34",
@@ -22584,7 +22584,7 @@
    "post_merge_comments": 43,
    "addressed_comments": 1349,
    "pending_comments": 930,
-   "commits": 856,
+   "commits": 855,
    "authors": 364,
    "share_cls": 0.9877,
    "share_comments": 0.9859,
@@ -22844,13 +22844,13 @@
    "post_merge_comments": 57,
    "addressed_comments": 1194,
    "pending_comments": 984,
-   "commits": 879,
+   "commits": 877,
    "authors": 348,
    "share_cls": 0.9804,
    "share_comments": 0.9916,
    "share_chars": 0.9953,
    "share_addressed": 0.9975,
-   "share_commits": 0.9224
+   "share_commits": 0.9222
   },
   {
    "iso_week": "2018-W38",
@@ -22870,7 +22870,7 @@
    "share_comments": 0.0061,
    "share_chars": 0.0039,
    "share_addressed": 0.0008,
-   "share_commits": 0.0115
+   "share_commits": 0.0116
   },
   {
    "iso_week": "2018-W38",
@@ -22910,7 +22910,7 @@
    "share_comments": 0.0008,
    "share_chars": 0.0,
    "share_addressed": 0.0017,
-   "share_commits": 0.0304
+   "share_commits": 0.0305
   },
   {
    "iso_week": "2018-W38",
@@ -22930,7 +22930,7 @@
    "share_comments": 0.0,
    "share_chars": 0.0,
    "share_addressed": 0.0,
-   "share_commits": 0.0052
+   "share_commits": 0.0053
   },
   {
    "iso_week": "2018-W38",
@@ -22970,7 +22970,7 @@
    "share_comments": 0.0,
    "share_chars": 0.0,
    "share_addressed": 0.0,
-   "share_commits": 0.001
+   "share_commits": 0.0011
   },
   {
    "iso_week": "2018-W38",
@@ -22990,7 +22990,7 @@
    "share_comments": 0.0,
    "share_chars": 0.0,
    "share_addressed": 0.0,
-   "share_commits": 0.001
+   "share_commits": 0.0011
   },
   {
    "iso_week": "2018-W38",
@@ -23070,7 +23070,7 @@
    "share_comments": 0.0,
    "share_chars": 0.0,
    "share_addressed": 0.0,
-   "share_commits": 0.0073
+   "share_commits": 0.0074
   },
   {
    "iso_week": "2018-W39",
@@ -28524,13 +28524,13 @@
    "post_merge_comments": 29,
    "addressed_comments": 1400,
    "pending_comments": 1111,
-   "commits": 980,
-   "authors": 368,
+   "commits": 979,
+   "authors": 367,
    "share_cls": 0.9702,
    "share_comments": 0.9713,
    "share_chars": 0.969,
    "share_addressed": 0.9743,
-   "share_commits": 0.9066
+   "share_commits": 0.9065
   },
   {
    "iso_week": "2019-W06",
