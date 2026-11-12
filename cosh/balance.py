@@ -492,26 +492,69 @@ def union_hours(spans, lo, hi):
     return tot / 3600
 
 
+CL_FACTS = ("change_number", "owner", "owner_email", "status", "created_at", "closed_at", "close_week",
+            "ins", "dels", "patchsets", "sha", "files", "git_lines", "is_revert", "is_reland", "reverted_at")
+
+
+def cl_facts(ddb, gdb):
+    """The first columns of `cl`, CL_FACTS: those that come from
+    derived.sqlite (`ddb`) and commits.sqlite (`gdb`) alone. Tuples in
+    change-number order, one per human-owned chromium/src `main` CL: the
+    owner's address as Gerrit has it, times in unix seconds, and for a merged
+    CL its landed commit. Also {commit_id: change_number} of the landed
+    commits, for cl_dirs. stage_cl builds on these, and the Feedback Index
+    (scripts/review_feedback.py) reads them directly, so it needs no balance
+    stage."""
+    emails = dict(ddb.execute("SELECT account_id, email FROM accounts"))
+    cls = ddb.execute("""SELECT change_number, owner_account, status, created_at, closed_at, close_week,
+                                insertions, deletions, patchsets FROM changes
+                         WHERE is_bot_owned = 0 AND project = 'chromium/src' AND branch = 'main'""").fetchall()
+    landed = {}
+    for cid, n, sha, files, ins, dels, rv, rl in gdb.execute(
+            "SELECT commit_id, change_number, sha, files, ins, dels, reverts_sha IS NOT NULL, is_reland "
+            "FROM gcommits WHERE change_number IS NOT NULL"):
+        landed[n] = (cid, sha, files, ins + dels, rv, rl)
+    reverted = {}
+    for target, at in gdb.execute("SELECT reverts_sha, landed_at FROM gcommits WHERE reverts_sha IS NOT NULL"):
+        reverted[target] = min(at, reverted.get(target, at))
+    rows = []
+    for n, owner, status, created, closed, cweek, ins, dels, nps in sorted(cls):
+        lg = landed.get(n) if status == "MERGED" else None
+        rows.append((n, owner, emails.get(owner), status, epoch(created), epoch(closed) if closed else None,
+                     cweek, ins, dels, nps, *(lg[1:] if lg else (None,) * 5),
+                     reverted.get(lg[1]) if lg else None))
+    return rows, {v[0]: n for n, v in landed.items()}
+
+
+def cl_dirs(gdb, by_cid, numbers=None):
+    """The cl_dirs table: {(change_number, 3-level directory): [files, lines]}
+    of the landed commits in `by_cid` (from cl_facts), only for the CLs in
+    `numbers` if given."""
+    from collections import defaultdict
+    paths = dict(gdb.execute("SELECT path_id, path FROM paths"))
+    agg = defaultdict(lambda: [0, 0])
+    for cid, pid, ins, dels in gdb.execute("SELECT commit_id, path_id, ins, dels FROM gfiles"):
+        n = by_cid.get(cid)
+        if n is None or (numbers is not None and n not in numbers):
+            continue
+        g = agg[(n, dir3(paths[pid]))]
+        g[0] += 1
+        g[1] += max(ins, 0) + max(dels, 0)
+    return agg
+
+
 def stage_cl(db):
     from collections import defaultdict
     db.executescript(CL_SCHEMA)
-    db.execute(f"ATTACH 'file:{os.path.join(store.DATA_DIR, store.DERIVED_FILE)}?mode=ro' AS d")
-    for st in ("git", "timeline", "interdiff"):
+    derived = os.path.join(store.DATA_DIR, store.DERIVED_FILE)
+    db.execute(f"ATTACH 'file:{derived}?mode=ro' AS d")
+    for st in ("timeline", "interdiff"):
         db.execute(f"ATTACH 'file:{db_path(st)}?mode=ro' AS {st[0]}{st[1:3]}")
+    ddb = sqlite3.connect(f"file:{derived}?mode=ro", uri=True)
+    gdb = sqlite3.connect(f"file:{db_path('git')}?mode=ro", uri=True)
     print("cl: loading", flush=True)
     bots = {r[0] for r in db.execute("SELECT account_id FROM d.accounts WHERE is_bot = 1")}
-    emails = dict(db.execute("SELECT account_id, email FROM d.accounts"))
-    cls = db.execute("""SELECT change_number, owner_account, status, created_at, closed_at, close_week,
-                               insertions, deletions, patchsets FROM d.changes
-                        WHERE is_bot_owned = 0 AND project = 'chromium/src' AND branch = 'main'""").fetchall()
-    landed = {}
-    for cid, n, sha, files, ins, dels, rv, rl in db.execute(
-            "SELECT commit_id, change_number, sha, files, ins, dels, reverts_sha IS NOT NULL, is_reland "
-            "FROM git.gcommits WHERE change_number IS NOT NULL"):
-        landed[n] = (cid, sha, files, ins + dels, rv, rl)
-    reverted = {}
-    for target, at in db.execute("SELECT reverts_sha, landed_at FROM git.gcommits WHERE reverts_sha IS NOT NULL"):
-        reverted[target] = min(at, reverted.get(target, at))
+    facts, by_cid = cl_facts(ddb, gdb)
     # Review from derived.sqlite, as summarize counts it (human non-owners).
     labels = {}
     from . import classify
@@ -560,12 +603,10 @@ def stage_cl(db):
     idf = {r[0]: r[1:] for r in db.execute(
         "SELECT change_number, seen_ps, lines_seen, lines_final, lines_changed, files_changed, files_added, "
         "status FROM int.interdiff")}
-    print(f"cl: joining {len(cls):,} CLs", flush=True)
+    print(f"cl: joining {len(facts):,} CLs", flush=True)
     rows, att_rows = [], []
-    for n, owner, status, created, closed, cweek, ins, dels, nps in cls:
-        c0 = epoch(created)
-        c1 = epoch(closed) if closed else None
-        lg = landed.get(n) if status == "MERGED" else None
+    for fact in facts:
+        n, owner, c0, c1 = fact[0], fact[1], fact[4], fact[5]
         r = rev.get(n)
         engaged = [t for t, replied in roots.get(n, []) if replied]
         first = (r[4] if r else None) or (min(engaged) if engaged else None)
@@ -597,10 +638,7 @@ def stage_cl(db):
         ous = union_spans(others, c0, hi)
         t = thr.get(n, [0, 0, 0])
         i = idf.get(n, (None,) * 7)
-        rows.append((n, owner, emails.get(owner), status, c0, c1, cweek, ins, dels, nps,
-                     lg[1] if lg else None, lg[2] if lg else None, lg[3] if lg else None,
-                     lg[4] if lg else None, lg[5] if lg else None,
-                     reverted.get(lg[1]) if lg else None,
+        rows.append((*fact,
                      r[0] if r else 0, r[1] if r else 0, len(r[2]) if r else 0, t[0], t[1], t[2],
                      first, sent, rework_after, rounds,
                      union_hours(others, c0, hi) if a else None,
@@ -610,16 +648,7 @@ def stage_cl(db):
     db.executemany(f"INSERT INTO cl VALUES ({','.join('?' * 36)})", rows)
     db.executemany("INSERT INTO cl_attention VALUES (?,?,?,?)", att_rows)
     print("cl: directories", flush=True)
-    paths = dict(db.execute("SELECT path_id, path FROM git.paths"))
-    by_cid = {v[0]: n for n, v in landed.items()}
-    agg = defaultdict(lambda: [0, 0])
-    for cid, pid, ins, dels in db.execute("SELECT commit_id, path_id, ins, dels FROM git.gfiles"):
-        n = by_cid.get(cid)
-        if n is None:
-            continue
-        g = agg[(n, dir3(paths[pid]))]
-        g[0] += 1
-        g[1] += max(ins, 0) + max(dels, 0)
+    agg = cl_dirs(gdb, by_cid)
     db.executemany("INSERT INTO cl_dirs VALUES (?,?,?,?)", ((n, d, f, l) for (n, d), (f, l) in agg.items()))
     db.commit()
     print(f"cl: done, {len(rows):,} CLs, {len(agg):,} CL directories", flush=True)

@@ -165,6 +165,46 @@ class StageTimelineTest(unittest.TestCase):
         self.assertEqual(tables, {"uploads", "attention", "votes", "timeline_done"})
 
 
+class ClFactsTest(unittest.TestCase):
+    """cl_facts and cl_dirs: the part of `cl` the Feedback Index reads without balance.sqlite."""
+
+    def test_facts_and_dirs(self):
+        ddb, gdb = sqlite3.connect(":memory:"), sqlite3.connect(":memory:")
+        ddb.executescript("""
+            CREATE TABLE accounts (account_id INTEGER, email TEXT);
+            CREATE TABLE changes (change_number INTEGER, owner_account INTEGER, status TEXT, created_at TEXT,
+              closed_at TEXT, close_week TEXT, insertions INTEGER, deletions INTEGER, patchsets INTEGER,
+              is_bot_owned INTEGER, project TEXT, branch TEXT);
+            INSERT INTO accounts VALUES (1, 'A@chromium.org');
+            INSERT INTO changes VALUES
+              (20, 1, 'MERGED', '2026-11-02 10:00:00', '2026-11-03 10:00:00', '2026-W45', 5, 2, 3, 0, 'chromium/src', 'main'),
+              (10, 1, 'ABANDONED', '2026-11-02 10:00:00', NULL, NULL, 1, 0, 1, 0, 'chromium/src', 'main'),
+              (30, 1, 'MERGED', '2026-11-02 10:00:00', '2026-11-03 10:00:00', '2026-W45', 1, 1, 1, 1, 'chromium/src', 'main'),
+              (40, 1, 'MERGED', '2026-11-02 10:00:00', '2026-11-03 10:00:00', '2026-W45', 1, 1, 1, 0, 'chromium/src', 'other');
+        """)
+        gdb.executescript("""
+            CREATE TABLE gcommits (commit_id INTEGER, change_number INTEGER, sha TEXT, files INTEGER, ins INTEGER,
+              dels INTEGER, reverts_sha TEXT, is_reland INTEGER, landed_at INTEGER);
+            CREATE TABLE paths (path_id INTEGER, path TEXT);
+            CREATE TABLE gfiles (commit_id INTEGER, path_id INTEGER, ins INTEGER, dels INTEGER);
+            INSERT INTO gcommits VALUES (7, 20, 'abc', 2, 4, 2, NULL, 0, 100), (8, NULL, 'def', 1, 0, 4, 'abc', 0, 150),
+              (9, 10, 'ghi', 1, 1, 0, NULL, 0, 90);
+            INSERT INTO paths VALUES (1, 'a/b/c/d.cc'), (2, 'a/b/c/e/f.cc'), (3, 'top.txt');
+            INSERT INTO gfiles VALUES (7, 1, 3, 1), (7, 2, 1, 1), (8, 3, 0, 4), (9, 3, 1, 0);
+        """)
+        rows, by_cid = balance.cl_facts(ddb, gdb)
+        facts = [dict(zip(balance.CL_FACTS, r)) for r in rows]
+        self.assertEqual([f["change_number"] for f in facts], [10, 20])      # sorted, bots and other branches out
+        self.assertEqual(facts[1], dict(change_number=20, owner=1, owner_email="A@chromium.org", status="MERGED",
+                                        created_at=ts("2026-11-02 10:00"), closed_at=ts("2026-11-03 10:00"),
+                                        close_week="2026-W45", ins=5, dels=2, patchsets=3, sha="abc", files=2,
+                                        git_lines=6, is_revert=0, is_reland=0, reverted_at=150))
+        self.assertIsNone(facts[0]["sha"])               # not merged: no landed commit
+        self.assertEqual(by_cid, {7: 20, 9: 10})
+        self.assertEqual(dict(balance.cl_dirs(gdb, by_cid)), {(20, "a/b/c/"): [2, 6], (10, "(root)/"): [1, 1]})
+        self.assertEqual(dict(balance.cl_dirs(gdb, by_cid, {20})), {(20, "a/b/c/"): [2, 6]})
+
+
 class HoursTest(unittest.TestCase):
     def test_union(self):
         self.assertEqual(balance.union_hours([(0, 3600), (1800, 7200), (10800, 14400)], 0, 99999), 3.0)

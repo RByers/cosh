@@ -815,16 +815,16 @@
 
     {
       "id": "review-feedback", "group": "feedback", "command": "nice -n 5 python3 scripts/review_feedback.py",
-      "code": ["scripts/review_feedback.py"],
+      "code": ["scripts/review_feedback.py", "scripts/balance_analysis.py", "scripts/balance_growth.py", "cosh/balance.py"],
       "purpose": "Writes each person's review feedback against their peers, as files named by a hash of their address.",
-      "inputs": ["data/private/balance.sqlite", "data/private/commits.sqlite", "data/private/derived.sqlite", "data/private/labels.sqlite", "data/private/sentiment.sqlite", "data/private/sentiment/", "config/bots.txt", "config/affiliations.json5"],
+      "inputs": ["data/private/commits.sqlite", "data/private/derived.sqlite", "data/private/labels.sqlite", "data/private/sentiment.sqlite", "data/private/sentiment/", "config/bots.txt", "config/affiliations.json5"],
       "outputs": ["web/public/review-feedback/"],
       "network": true, "lock": null,
       "incremental": "Deletes and rewrites every file.",
-      "duration": "about 2 min, 3 GB of memory", "token_cost": null, "cost_source": "docs/review-feedback.md",
+      "duration": "about 3 min (188 s on 2026-11-12), 3 GB of memory", "token_cost": null, "cost_source": "docs/review-feedback.md",
       "refresh": "routine",
       "approval": "Tone is praise only. The output stays out of git until the page is published.",
-      "notes": "Earlier commits count from 2008: commits.sqlite holds main's whole history. It runs update-affiliations first by itself (its only network use). `npm run serve` picks the new files up by itself a few seconds after the run ends."
+      "notes": "Needs no balance stage: it computes the per-CL facts it uses (owner, status, Gerrit size, landed commit, lines per directory) from derived.sqlite and commits.sqlite with the balance-cl step's own functions (cosh.balance.cl_facts and cl_dirs), so the two can't drift. Earlier commits count from 2008: commits.sqlite holds main's whole history. It runs update-affiliations first by itself (its only network use). `npm run serve` picks the new files up by itself a few seconds after the run ends."
     },
     {
       "id": "feedback-coach", "group": "feedback", "command": "python3 scripts/feedback_coach.py <email> [--dry-run]",

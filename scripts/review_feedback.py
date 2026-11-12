@@ -1,7 +1,7 @@
 """Per-person data for the Review Feedback page (web/feedback-index.html,
 docs/review-feedback.md).
 
-Offline; reads balance*.sqlite, commits.sqlite, derived.sqlite,
+Offline; reads derived.sqlite, commits.sqlite (no balance stage),
 labels.sqlite, sentiment.sqlite and the sentiment comment files. Writes, under --out
 (default web/public/review-feedback/):
 
@@ -166,8 +166,7 @@ def trim_end(t):
 
 def data_range(use):
     """The dates the page covers, from the data: the weeks `derive` recorded as
-    fetched, no earlier than the oldest usable CL's week (balance.sqlite may
-    not have caught up with an older backfill yet), trimmed to months."""
+    fetched, no earlier than the oldest usable CL's week, trimmed to months."""
     d = A.ro(os.path.join(store.DATA_DIR, store.DERIVED_FILE))
     row = d.execute("SELECT v FROM meta WHERE k = 'fetched_weeks'").fetchone()
     weeks = sorted(json.loads(row[0])) if row else []
@@ -374,8 +373,18 @@ def early_commits(before=balance.SINCE):
 
 
 def load(args):
+    """The CLs, as balance.sqlite's `cl` has them but only the columns
+    derived.sqlite and commits.sqlite give (cosh.balance.cl_facts, so no
+    balance stage is needed), owners' addresses normalised; human commits;
+    identities; first commits. Also the CLs' raw owner addresses and
+    {commit_id: change_number} of their landed commits."""
     import balance_growth as G
-    cls = A.load_cl()
+    facts, by_cid = balance.cl_facts(A.ro(os.path.join(store.DATA_DIR, store.DERIVED_FILE)), A.git_db())
+    raw_email = {f[0]: f[2] for f in facts}
+    cls = [dict(zip(balance.CL_FACTS, f)) for f in facts]
+    del facts
+    for c in cls:
+        c["owner_email"] = A.person(c["owner_email"]) if c["owner_email"] else None
     commits = A.load_commits()
     ids = G.Ids()
     for a, b in G.alias_pairs(cls, commits):
@@ -389,7 +398,7 @@ def load(args):
         k = ids.find(e)
         first[k] = min(t, first.get(k, t))
     print(f"loaded {len(cls):,} CLs, {len(commits):,} commits", file=sys.stderr, flush=True)
-    return cls, commits, ids, first
+    return cls, commits, ids, first, raw_email, by_cid
 
 
 mech_set = A.mech_set
@@ -536,8 +545,8 @@ def main():
     args = ap.parse_args()
     import balance_growth as G
 
-    cls, commits, ids, first = load(args)
-    mech = mech_set(args.mech)
+    cls, commits, ids, first, raw_email, by_cid = load(args)
+    mech = mech_set(args.mech, cls)
     dirs3 = A.commit_dirs(3)
     top2 = {}
     for c in commits:
@@ -582,7 +591,7 @@ def main():
     big = {c["n"] for c in commits if c["n"] and (c["files"] or 0) >= 100}
     del commits
 
-    # Older merged CLs (HISTORY_ISO up to the CLs balance.sqlite has), for the
+    # Older merged CLs (HISTORY_ISO up to the oldest of `cls`), for the
     # opening card's cohort curves only: all reviewer threads against the same
     # 2023-24 norms. Addressed labels and directory experience exist only from
     # START on.
@@ -659,12 +668,10 @@ def main():
     by_n = {c["change_number"]: c for c in use}
     print(f"{len(use):,} CLs in range {day_str(START)} .. {day_str(END - DAY)}", file=sys.stderr, flush=True)
 
-    db = A.ro(balance.db_path("cl"))
-    raw_email = dict(db.execute("SELECT change_number, owner_email FROM cl"))
-    cl_dirs = defaultdict(dict)
-    for n, d, files, lines in db.execute("SELECT change_number, dir, files, lines FROM cl_dirs"):
-        if n in by_n:
-            cl_dirs[n][d] = (lines + files, lines)
+    cl_dirs = defaultdict(dict)       # in balance.sqlite's order: by CL, then directory
+    for (n, d), (files, lines) in sorted(balance.cl_dirs(A.git_db(), by_cid, by_n).items()):
+        cl_dirs[n][d] = (lines + files, lines)
+    del by_cid
     orgs = OrgResolver()
     for c in use:
         n = c["change_number"]

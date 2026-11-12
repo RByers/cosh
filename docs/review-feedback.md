@@ -63,8 +63,9 @@ The years versions:
   2018, 2020, 2022, 2024 and 2025 for all threads. For those, the script also counts the merged, human-owned
   CLs on `main` from 2018 to June 2023 in `derived.sqlite` (about 494k),
   against the same 2023–24 norms; older CLs leave out only those with 100+
-  files (the mechanical list covers `balance.sqlite`'s CLs). Directory experience covers
-  the same years (`balance.sqlite` has CLs from July 2017 since 2026-11-12),
+  files (the mechanical list covers the CLs the script reads in full, every
+  `main` CL in `derived.sqlite`). Directory experience covers
+  the same years (`derived.sqlite` has CLs from July 2017 since 2026-11-12),
   so its lines start in 2018 too; addressed labels exist only from
   `addr_start`, so with those the lines start later. On 2026-11-12 the curves line up: 2.2–2.5× in the first half-year
   for every start year from 2018 to 2024 (size and directory, all threads).
@@ -166,8 +167,7 @@ figures differ from the Balance page's index, which counts them.
 
 - **Dates come from the data**, never from the code. The range runs from
   the oldest week in `derived.sqlite`'s `fetched_weeks` (but no earlier than
-  the oldest CL in `balance.sqlite`, which lags an older backfill until
-  `cosh.balance` is rerun) to the end of the newest. A range that spills a
+  the oldest usable CL) to the end of the newest. A range that spills a
   week or less into a month is trimmed to the month, so the page can name
   periods by month without slivers: Monday 2023-06-26 .. Sunday 2026-11-01
   becomes 2023-07-01 .. 2026-10-31. `peers.json` gives the page `start`,
@@ -311,19 +311,27 @@ The measures:
 
 ## Generate
 
-Offline, about 2 minutes and 3 GB:
+Offline, about 3 minutes (188 s on 2026-11-12) and 3 GB:
 
 ```
 COSH_DATA_DIR=<main>/data/private nice -n 5 python3 scripts/review_feedback.py [--out DIR]
 ```
 
-First commits and mechanical CLs come from `commits.sqlite`
-(`docs/commits.md`); `--first-commit F` and `--mech F` read the old
-hand-made files instead.
+It reads only `derived.sqlite`, `commits.sqlite`, `labels.sqlite`, the
+sentiment files and config, never `balance*.sqlite`, so refreshing the page
+needs none of the balance stages (timeline, interdiff, cl). The per-CL facts
+it needs (owner, status, Gerrit insertions and deletions, closing time, the
+landed commit's sha and files, and its lines and files per 3-level
+directory) come from `cosh.balance.cl_facts` and `cl_dirs`, the functions
+`python3 -m cosh.balance cl` builds `balance.sqlite`'s `cl` and `cl_dirs`
+from, so the two can't drift (2026-11-12; before, it read them from
+`balance.sqlite`). First commits and mechanical CLs come from
+`commits.sqlite` (`docs/commits.md`); `--first-commit F` and `--mech F` read
+the old hand-made files instead.
 
 To take in an older backfill (back to 2017-07), let it finish, then run a
-full `derive`, `python3 -m cosh commits` and `python3 -m cosh.balance
-timeline|interdiff|cl`, then this script: nothing in it names a date.
+full `derive` (which ends with `python3 -m cosh commits`), then this
+script: nothing in it names a date.
 
 The served site (`npm run serve`) rebuilds by itself once `public/` has been
 quiet for 5 seconds, so a run's files are served shortly after it ends

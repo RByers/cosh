@@ -451,3 +451,15 @@ details; this is the log.
   `review_feedback_inputs/` gone; the flags still read such files).
   Balance and Feedback Index outputs are unchanged; `summarize` now reads
   the short `Reviewed-on:` URLs of 2017–19 (`docs/commits.md`).
+- **2026-11-12, the Feedback Index no longer needs the balance pipeline.**
+  `scripts/review_feedback.py` read the few per-CL facts it uses (owner,
+  status, closing time, Gerrit insertions and deletions, the landed
+  commit's sha and file count, lines and files per 3-level directory) from
+  `balance.sqlite`, so refreshing the page meant rerunning `balance
+  timeline` (35 min), `interdiff` (25 min) and `cl`. It now computes them
+  from `derived.sqlite` and `commits.sqlite` with `cosh.balance.cl_facts`
+  and `cl_dirs`, the functions `balance cl` itself builds `cl` and `cl_dirs`
+  from, so the definitions can't drift. Its output is byte-identical
+  (40,023 files) and the run takes about the same time (188 s against 182 s
+  before, which also needed `balance cl`'s 100 s); `plan
+  data/private/balance-timeline.sqlite` no longer lists `review-feedback`.

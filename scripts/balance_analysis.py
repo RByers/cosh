@@ -74,10 +74,11 @@ def load_ai_marked(path=None):
     return set(open(path).read().split()) if path else commit_store.ai_marked(git_db())
 
 
-def mech_set(path=None):
+def mech_set(path=None, cls=None):
     """Mechanical CLs: merged CLs whose landed commit has 100 or more files,
     or 10 or more with a repetition ratio of 0.8 or more. From commits.sqlite's
-    repetition ratios and balance.sqlite's CLs, or from a mech.jsonl."""
+    repetition ratios and balance.sqlite's CLs (or `cls`, dicts with its
+    change_number, status, sha and files), or from a mech.jsonl."""
     out = set()
     if path:
         for line in open(path):
@@ -86,9 +87,13 @@ def mech_set(path=None):
                 out.add(n)
         return out
     rep = commit_store.repetition(git_db())
-    cl = ro(os.environ.get("BALANCE_CL") or balance.db_path("cl"))
-    for n, sha, files in cl.execute("SELECT change_number, sha, files FROM cl WHERE status = 'MERGED' "
-                                    "AND files >= 10"):
+    if cls is not None:
+        rows = ((c["change_number"], c["sha"], c["files"]) for c in cls
+                if c["status"] == "MERGED" and c["files"] is not None and c["files"] >= 10)
+    else:
+        rows = ro(os.environ.get("BALANCE_CL") or balance.db_path("cl")).execute(
+            "SELECT change_number, sha, files FROM cl WHERE status = 'MERGED' AND files >= 10")
+    for n, sha, files in rows:
         r = rep.get(sha)
         if files >= 100 or (r is not None and r >= 0.8):
             out.add(n)
