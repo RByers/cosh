@@ -45,6 +45,17 @@ that experience. Its axis is always years. It shows:
   person-years' CLs at random in two shows a year's value varies by about
   ±58% at 12–17 CLs, ±38% at 25–34, ±27% at 50–74 and ±16% at 150+, and a
   year-over-year change by about 1.4 times that.
+- *By change size* (`sizes` in `peers.json`, `size_breakdown`): every CL in
+  range by size bucket, the feedback index four ways: per CL and per 1,000
+  changed lines (each ÷ the same rate over all CLs, so 1.00 is the
+  average), and against the size and the size-and-directory norms (the
+  "Adjusted for" measures as they are; drawn bold for the current choice).
+  Buckets under 30 CLs are left out; addressed threads count CLs from the
+  labels' start. On 2026-11-12, all threads, <4 lines .. 1,024+: per CL
+  0.06 → 4.10 (512–1,023) → 3.84; per 1,000 lines 4.74 → 0.20; size and
+  directory 0.89–0.97. Threads grow far more slowly than lines, so a
+  per-line rate would favour big CLs about as strongly as a per-CL rate
+  favours small ones; the bucket norms take the curve as it is.
 
 For the person's sections below:
 
@@ -90,7 +101,13 @@ The measures:
     the CL's size bucket, 10 log buckets), or size and directory (÷ the
     2023–24 mean for size × top 2-level directory, groups of 30+, else size
     alone), computed the same way as `balance_growth.cl_residuals` but from
-    this page's thread counts.
+    this page's thread counts. Size is changed lines (insertions plus
+    deletions), in `balance_growth.size10`'s buckets: <4, 4–7, …, 1,024+.
+    There is no directory-only choice: on 2026-11-11 the script's `norm fit`
+    line gave R² 0.152 for the size norm, 0.034 for a directory-only norm and
+    0.191 for size and directory (2023–24 CLs, all threads; addressed
+    0.137 / 0.032 / 0.174). Directory adds a little on top of size, but alone
+    it leaves almost all of the size effect in.
 - **Peers always have the same tenure**, because feedback falls steeply with
   it (about 1.7× under a year or under 50 earlier commits, against 0.6× at
   10+ years or 1,000+). Two selectors pick the group:

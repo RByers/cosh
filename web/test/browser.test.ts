@@ -3295,6 +3295,31 @@ test('review feedback: the opening card explains the index before any address is
     .title.text), 'feedback index');
   assert.equal(await page.$('#rf-period'), null);
   assert.match(await page.$eval('#rf-cohorts-note', (e) => e.textContent!), /from that first commit\s+to October 2026:/);
+  // The size chart: four ways of measuring, on a log scale, with the "Adjusted for" choice bold.
+  const size = () => page.evaluate(() => {
+    const c = window.__rf!.charts.size;
+    const s = c.options.scales as Record<string, { type?: string; title?: { text?: string } }>;
+    return { type: s.y.type, axes: [s.x.title?.text, s.y.title?.text], labels: c.data.labels,
+      widths: c.data.datasets.map((d) => (d as { borderWidth: number }).borderWidth), last: c.data.datasets.map((d) => d.data.at(-1)) };
+  });
+  assert.deepEqual(await page.$$eval('#rf-size-legend li', (ls) => ls.map((l) => l.textContent)),
+    ['Per change, unadjusted', 'Per 1,000 changed lines', 'Adjusted for change size', 'Adjusted for size and directory']);
+  let sz = await size();
+  assert.equal(sz.type, 'logarithmic');
+  assert.deepEqual(sz.axes, ['lines changed', 'feedback index']);
+  assert.equal((sz.labels as string[]).length, 10);
+  assert.deepEqual(sz.widths, [1.5, 1.5, 1.5, 3.5]);
+  assert.deepEqual(sz.last, [3.84, 0.2, 0.92, 0.94]);
+  assert.match(await page.$eval('#rf-size-note', (e) => e.textContent!), /\(392,000 changes\).*average is 2\.02.*on average\s+9\.6/s);
+  await page.click('input[name="rf-corr"][value="n"]');
+  assert.deepEqual((await size()).widths, [3.5, 1.5, 1.5, 1.5]);
+  // Addressed threads: their own figures; sizes with too few changes are left out.
+  await page.click('input[name="rf-kind"][value="a"]');
+  sz = await size();
+  assert.deepEqual(sz.last, [null, null, null, null]);
+  assert.match(await page.$eval('#rf-size-note', (e) => e.textContent!), /Counting addressed threads/);
+  await page.click('input[name="rf-kind"][value="t"]');
+  await page.click('input[name="rf-corr"][value="d"]');
   // The histogram counts contributor-years from 2018 on.
   assert.match(await page.$eval('#rf-change-note', (e) => e.textContent!),
     /5,300 year-to-year changes from 1,900 contributors;\s+from\s+2018 on\).*fell by\s+16%/s);
@@ -3337,6 +3362,7 @@ test('review feedback: a person, the measures, peer groups, directories and comm
     change: ['change in feedback index from the year before', 'contributor-years'],
     trend: ['half-year', 'feedback index'],
     xp: ['your earlier commits in the directory', 'feedback index'],
+    size: ['lines changed', 'feedback index'],
   });
   // The page computes the values from the half-year files (unit tests check the arithmetic).
   assert.equal(await tile('rf-tile-you'), '0.71×');

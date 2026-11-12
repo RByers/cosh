@@ -121,8 +121,28 @@
           <slot name="median"></slot>; bars on the left are years in which it grew.
         </template>
         <p class="note">
-          These two charts always measure tenure in years.
+          The first two charts always measure tenure in years.
         </p>
+        <h3>By change size, measured four ways</h3>
+        <ul id="rf-size-legend" class="legend rf-line-legend" aria-label="Feedback index measured"></ul>
+        <template data-msg="size-line-perCl">Per change, unadjusted</template>
+        <template data-msg="size-line-perKLine">Per 1,000 changed lines</template>
+        <template data-msg="size-line-size">Adjusted for change size</template>
+        <template data-msg="size-line-dir">Adjusted for size and directory</template>
+        <div class="chart">
+          <canvas id="rf-size" role="img" aria-label="Feedback index by the number of lines a change changed, measured per change, per 1,000 changed lines, and adjusted for size, and for size and directory."></canvas>
+        </div>
+        <p id="rf-size-note" class="note"></p>
+        <template data-msg="size-note">
+          Every change landed from <slot name="from"></slot> to <slot name="to"></slot>
+          (<slot name="n"></slot> changes), by its changed lines (added plus removed), on a log scale. Counting<span
+          data-if="kind=a"> addressed</span> threads per change, where the average is <slot name="perCl"></slot>,
+          big changes draw many times the feedback small ones do. Counting them per 1,000 changed lines (on average
+          <slot name="perKLine"></slot>) overcorrects the other way, because feedback grows far more slowly than
+          the size of a change. Against the 2023–24 average for changes of the same size, alone or in the same
+          directory, as “Adjusted for” does, every size comes out close to the same index. The bold line is the
+          “Adjusted for” choice above; sizes with fewer than 30 changes are left out.
+        </template>
         <template data-msg="org-name-google">Google</template>
         <template data-msg="org-name-nongoogle">outside Google</template>
       </section>

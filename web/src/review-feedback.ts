@@ -343,6 +343,62 @@ function renderIntro() {
       },
     },
   });
+  renderSizes(axis);
+}
+
+/** The opening card's size chart: the feedback index by change size, four ways;
+ * the "Adjusted for" choice is drawn bold. */
+function renderSizes(axis: (title: string) => object) {
+  destroy('size');
+  const peers = state.peers!;
+  const s = peers.sizes?.[state.kind];
+  const labels = peers.size_labels;
+  if (!s || !labels) return;
+  const t = theme();
+  const [from, to] = rangeOf(peers, state.kind);
+  put($('#rf-size-note'), 'size-note', { kind: state.kind, n: fmtInt(s.n),
+    from: monthOf(fromMonth(from), true), to: monthOf(toMonth(to), true),
+    perCl: fmtNum(s.avgPerCl, { maximumFractionDigits: 2 }), perKLine: fmtNum(s.avgPerKLine, { maximumFractionDigits: 1 }) });
+  const bold = ({ n: 'perCl', s: 'size', d: 'dir' } as const)[state.corr];
+  const ways = (['perCl', 'perKLine', 'size', 'dir'] as const).map((k, i) => ({ k, color: t.series[i], label: msg(`size-line-${k}`) }));
+  const legend = $('#rf-size-legend');
+  legend.replaceChildren(...ways.map((w) => {
+    const li = el('li');
+    const sw = el('span', undefined, 'swatch');
+    sw.style.setProperty('--color', w.color);
+    li.append(sw, document.createTextNode(w.label));
+    return li;
+  }));
+  charts.size = new Chart($<HTMLCanvasElement>('#rf-size'), {
+    type: 'line',
+    data: {
+      labels,
+      datasets: ways.map((w) => ({ label: w.label, data: s[w.k], borderColor: w.color, backgroundColor: w.color,
+        borderWidth: w.k === bold ? 3.5 : 1.5, pointRadius: w.k === bold ? 3.5 : 2, pointHoverRadius: 5, tension: 0,
+        fill: false, spanGaps: false })),
+    },
+    options: {
+      maintainAspectRatio: false,
+      animation: false,
+      interaction: { mode: 'index', intersect: false },
+      font: { family: t.font },
+      scales: {
+        x: { ...axis('lines changed'), grid: { display: false } },
+        y: { type: 'logarithmic', min: 0.05, max: 6, ...axis(msg('axis-feedback')),
+          ticks: { color: t.text, font: { family: t.font }, autoSkip: false,
+            callback: (v) => ([0.05, 0.1, 0.2, 0.5, 1, 2, 5].includes(Number(v)) ? fmtValue(Number(v), 'd') : '') } },
+      },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            title: (items) => `${labels[items[0].dataIndex]} lines changed: ${fmtInt(s.cls[items[0].dataIndex])} changes`,
+            label: (i) => `${ways[i.datasetIndex].label}: ${fmtValue(i.parsed.y ?? 0, 'd')}`,
+          },
+        },
+      },
+    },
+  });
 }
 
 // ---- render
