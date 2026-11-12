@@ -3295,9 +3295,9 @@ test('review feedback: the opening card explains the index before any address is
     .title.text), 'feedback index');
   assert.equal(await page.$('#rf-period'), null);
   assert.match(await page.$eval('#rf-cohorts-note', (e) => e.textContent!), /from that first commit\s+to October 2026:/);
-  // The histogram counts contributor-years, leaving out the years around Gerrit's 2020 change.
+  // The histogram counts contributor-years from 2018 on.
   assert.match(await page.$eval('#rf-change-note', (e) => e.textContent!),
-    /5,300 year-to-year changes from 1,900 contributors;\s+from\s+2018 on, leaving out the years around 2020.*fell by\s+16%/s);
+    /5,300 year-to-year changes from 1,900 contributors;\s+from\s+2018 on\).*fell by\s+16%/s);
   // It follows the switches: outside Google has one line, and a median that grew.
   await page.select('#rf-org', 'nongoogle');
   assert.deepEqual(await page.$$eval('#rf-cohort-legend li', (ls) => ls.map((l) => l.textContent)), ['started in 2024']);

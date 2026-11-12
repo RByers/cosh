@@ -29,13 +29,13 @@ export const top: Top = {
 /** Three changes, one per half-year. Each file lists its own names, in its own order. */
 export const shards: Record<string, Shard> = {
   // A thread without an excerpt has no comment id.
-  '2025H2': { dirs: ['chrome/browser/ui/'], files: ['chrome/browser/ui/view.cc', '/PATCHSET_LEVEL'], orgs: ['google.com'],
+  '2025H2': { dirs: ['chrome/browser/ui/'], files: ['chrome/browser/ui/view.cc', '/COMMIT_MSG'], orgs: ['google.com'],
     cls: [[1000001, day('2025-10-01'), 40, 2, 2.5, 1.2, 1.4, [[0, 1, 0]],
       [['', 0, -1, 1, 0], ['aaaa_0002', 1, 0, 0, 0, 'Please add a test.']], 0, 30]] },
   '2026H1': { dirs: ['content/browser/', 'chrome/browser/ui/'], files: ['content/browser/frame.cc'], orgs: ['google.com'],
     cls: [[1000002, day('2026-03-11'), 120, 3, 3, 2, 2, [[0, 0.75, 7], [1, 0.25, 1]],
       [['bbbb_0002', 0, -1, 1, 0, 'Great test coverage <img src=x onerror=alert(1)>']], 0, 80]] },
-  '2026H2': { dirs: ['third_party/blink/renderer/'], files: ['third_party/blink/renderer/core/a.cc', '/PATCHSET_LEVEL'],
+  '2026H2': { dirs: ['third_party/blink/renderer/'], files: ['third_party/blink/renderer/core/a.cc', '/COMMIT_MSG'],
     orgs: ['google.com'],
     cls: [[1000003, day('2026-09-03'), 10, 1, 1.5, 0.6, 0.9, [[0, 1, 150]],
       [['', 0, -2, 1, 0], ['cccc_0003', 1, -1, null, 0, 'Really nice cleanup, thanks!']], 0, 260]] },

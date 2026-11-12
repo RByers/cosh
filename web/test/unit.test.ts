@@ -1486,7 +1486,7 @@ test('review feedback: half-year files merge, and every period gets the values t
   assert.deepEqual(person.dirs, ['chrome/browser/ui/', 'content/browser/', 'third_party/blink/renderer/']);
   assert.deepEqual(person.cls.map((c) => c[7].map(([d]) => person.dirs[d])),
     [['chrome/browser/ui/'], ['content/browser/', 'chrome/browser/ui/'], ['third_party/blink/renderer/']]);
-  assert.deepEqual(person.cls[2][8].map((t) => person.files[t[1]]), ['third_party/blink/renderer/core/a.cc', '/PATCHSET_LEVEL']);
+  assert.deepEqual(person.cls[2][8].map((t) => person.files[t[1]]), ['third_party/blink/renderer/core/a.cc', '/COMMIT_MSG']);
   // Everything, and the half-years with changes (the over-time chart).
   assert.deepEqual(Object.keys(person.periods).sort(), ['2025H2', '2026H1', '2026H2', 'all']);
   const all = person.periods.all;
@@ -1562,7 +1562,7 @@ test('review feedback: half-year files merge, and every period gets the values t
   const rows = F.threadRows(person, 'all', 't', null);
   assert.deepEqual(rows.map((r) => `${r.cl}/${r.uuid}`),
     ['1000003/cccc_0003', '1000003/', '1000002/bbbb_0002', '1000001/aaaa_0002', '1000001/']);
-  assert.equal(rows[0].file, '/PATCHSET_LEVEL');
+  assert.equal(rows[0].file, '/COMMIT_MSG');
   assert.equal(F.isoDay(rows[1].day), '2026-09-01');
   assert.deepEqual(F.threadRows(person, 'all', 'a', null).map((r) => r.cl), [1000003, 1000002, 1000001]);
   assert.deepEqual(F.threadRows(person, '2026H1', 't', null).map((r) => r.uuid), ['bbbb_0002']);

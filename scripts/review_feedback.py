@@ -79,11 +79,9 @@ STEP = 0.5                    # tenure bins of the cohort curves, in years
 MIN_COHORT = 20               # people per point of a cohort curve
 # The histogram: one value per contributor and pair of consecutive calendar
 # years both counted (twice the half-year minimums), the change from one to
-# the next. Gerrit began recording general (patch-set-level) comments as
-# threads in July 2020, so pairs that include 2020 would show a jump that is
-# only bookkeeping: they are left out.
+# the next.
 MIN_YEAR_CLS, MIN_YEAR_EXP = 12, 6.0
-SKIP_YEARS = {2020}
+PATCHSET_LEVEL = "/PATCHSET_LEVEL"   # the path of a general comment's thread: not counted
 FLOOR = 0.05                  # values below this count as this in a ratio
 CHANGE_EDGES = list(range(-40, 81, 10))   # histogram bin edges, % less feedback than the year before
 
@@ -195,7 +193,7 @@ def yearly_changes(years, groups):
     year: (org, {metric: value or None}, {metric: value against directory
     experience or None})}, None where the year doesn't count for that
     measure. groups: name -> test of an org ("dir:" names use the second
-    dict). Each pair of consecutive counted years outside SKIP_YEARS gives one
+    dict). Each pair of consecutive counted years gives one
     value, % less feedback than the year before (-100 * (later / earlier - 1),
     values under FLOOR counted as FLOOR), in the group of the later year's org.
     Returns {group: {metric: {n, people, median, counts}}}."""
@@ -203,7 +201,7 @@ def yearly_changes(years, groups):
     who = {g: {m: set() for m in METRICS} for g in groups}
     for pid, ys in years.items():
         for y in sorted(ys):
-            if y + 1 not in ys or y in SKIP_YEARS or y + 1 in SKIP_YEARS:
+            if y + 1 not in ys:
                 continue
             (_, v0, x0), (org, v1, x1) = ys[y], ys[y + 1]
             for g, f in groups.items():
@@ -392,8 +390,7 @@ def main():
         old.append(dict(change_number=n, pid=ids.find(A.person(e)), email=e, closed_at=t, lines=lines,
                         sb=G.size10(lines), d2=top2.get(n), threads=0, addressed=0))
 
-    # The same CLs as the Balance page's feedback index: merged, human-owned,
-    # non-mechanical (balance_report.py's rule).
+    # Merged, human-owned, non-mechanical CLs (balance_report.py's rule).
     for c in cls:
         if c["change_number"] in mech:
             c["status"] = "MECH"
@@ -403,10 +400,40 @@ def main():
         c["lines"] = (c["ins"] or 0) + (c["dels"] or 0)
         c["sb"] = G.size10(c["lines"])
         c["d2"] = top2.get(c["change_number"])
+
+    # Reviewer threads: threads not started by a bot, on a file or the commit
+    # message. Patch-set-level threads are left out: Gerrit has recorded
+    # general comments as threads only since July 2020, they can't be tied to
+    # a directory, and few lead to a change in the code.
+    labels = {}
+    ldb = sqlite3.connect(f"file:{classify.labels_path(store.DATA_DIR)}?mode=ro", uri=True)
+    act = classify.active_classifier(ldb)
+    if act:
+        labels = {(n, rt, h): a for n, rt, h, a in ldb.execute(
+            "SELECT change_number, root_uuid, input_hash, addressed FROM labels WHERE classifier_id = ?", (act[0],))}
+    use_n = {c["change_number"]: c for c in use}
+    old_n = {c["change_number"]: c for c in old}
+    thr = defaultdict(list)          # change number -> [root, path, day, addressed]
+    for c in use:
+        c["threads"] = c["addressed"] = 0
+    for n, root, reply, rx, h, acct, at, path in ddb.execute(
+            "SELECT t.change_number, t.root_uuid, t.last_owner_reply_at, t.regex_addressed, t.input_hash, "
+            "t.root_account, c.written_at, c.path FROM threads t LEFT JOIN comments c ON c.host = t.host "
+            "AND c.change_number = t.change_number AND c.comment_id = t.root_uuid "
+            "WHERE t.host = 'chromium-review.googlesource.com'"):
+        if acct in bots or path == PATCHSET_LEVEL:
+            continue
+        if n in old_n:
+            old_n[n]["threads"] += 1
+        elif n in use_n:
+            addressed = 0 if reply is None else 1 if rx else labels.get((n, root, h))
+            thr[n].append([root, path or "", (at or "")[:10], addressed, reply is not None and not rx])
+            use_n[n]["threads"] += 1
+            use_n[n]["addressed"] += 1 if addressed else 0
+    del use_n, old_n
     norms(use, old)
     START, END = data_range(use)
     old = [c for c in old if c["closed_at"] < START]
-    old_n = {c["change_number"]: c for c in old}
     print(f"{len(old):,} older CLs for the cohort curves", file=sys.stderr, flush=True)
     use = [c for c in use if START <= c["closed_at"] < END]
     for c in use:           # the page sums the rounded values, so compute with them here too
@@ -435,43 +462,22 @@ def main():
                       for d, v in w.items()}
         c["main"] = max(w, key=w.get)
         c["prior"] = bisect.bisect_left(own_times.get(c["pid"], ()), at)
-        c["thr"] = []
     del xp_times, cl_dirs
 
-    # Reviewer threads (as `python3 -m cosh.balance cl` counts them).
-    labels = {}
-    ldb = sqlite3.connect(f"file:{classify.labels_path(store.DATA_DIR)}?mode=ro", uri=True)
-    act = classify.active_classifier(ldb)
-    if act:
-        labels = {(n, rt, h): a for n, rt, h, a in ldb.execute(
-            "SELECT change_number, root_uuid, input_hash, addressed FROM labels WHERE classifier_id = ?", (act[0],))}
-    mism = 0
+    # Each thread goes to the directory of its file; commit-message threads to
+    # the CL's main directory.
     need, have = defaultdict(int), defaultdict(int)      # week start -> threads needing a label, labelled
-    for n, root, reply, rx, h, acct, at, path in ddb.execute(            "SELECT t.change_number, t.root_uuid, t.last_owner_reply_at, t.regex_addressed, t.input_hash, "
-            "t.root_account, c.written_at, c.path FROM threads t LEFT JOIN comments c ON c.host = t.host "
-            "AND c.change_number = t.change_number AND c.comment_id = t.root_uuid "
-            "WHERE t.host = 'chromium-review.googlesource.com'"):
-        c = by_n.get(n)
-        if acct in bots:
-            continue
-        if c is None:
-            if n in old_n:
-                old_n[n]["threads"] += 1
-            continue
-        addressed = 0 if reply is None else 1 if rx else labels.get((n, root, h))
-        if reply is not None and not rx:
-            w = monday(c["closed_at"])
-            need[w] += 1
-            have[w] += addressed is not None
-        dr = A.dir_of(path, 3) if path and not path.startswith("/") else None
-        c["thr"].append([root, path or "", (at or "")[:10], addressed, dr if dr in c["units"] else c["main"]])
     for c in use:
-        if len(c["thr"]) != c["threads"]:
-            mism += 1
-        c["threads"] = len(c["thr"])
-        c["addressed"] = sum(1 for t in c["thr"] if t[3])
-    print(f"threads: {sum(c['threads'] for c in use):,} ({mism:,} CLs differ from the cl table)",
-          file=sys.stderr, flush=True)
+        c["thr"] = []
+        for root, path, at, addressed, needs_label in thr.get(c["change_number"], ()):
+            if needs_label:
+                w = monday(c["closed_at"])
+                need[w] += 1
+                have[w] += addressed is not None
+            dr = A.dir_of(path, 3) if path and not path.startswith("/") else None
+            c["thr"].append([root, path, at, addressed, dr if dr in c["units"] else c["main"]])
+    del thr
+    print(f"threads: {sum(c['threads'] for c in use):,}", file=sys.stderr, flush=True)
     # The addressed measure covers only the CLs with labels.
     ADDR_START = trim_start(addressed_start(need, have, START, END))
     for c in use:

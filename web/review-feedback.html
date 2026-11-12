@@ -113,7 +113,7 @@
           (<slot name="n"></slot> year-to-year changes from <slot name="people"></slot> contributors<span
           data-if="org">, counted where most of the later year's changes came from <slot name="org"></slot></span>;
           <span data-if="limited">whole years from <slot name="fromYear"></slot> on</span><span data-if="!limited">from
-          2018 on, leaving out the years around 2020, when Gerrit began counting general comments as threads</span>).
+          2018 on</span>).
           In the median year, feedback <span data-if="fell">fell</span><span data-if="!fell">grew</span> by
           <slot name="median"></slot>; bars on the left are years in which it grew.
         </template>
@@ -312,7 +312,9 @@
           <span data-rf-range="from"></span> to <span data-rf-range="to"></span>,
           leaving out mechanical ones (100 or more files, or mostly repeated lines), as on the
           <a href="balance.html">Review Balance</a> page. A reviewer thread is a comment thread on Gerrit started by
-          someone other than the change's owner, bots left out. It is addressed when the owner's reply led to a
+          someone other than the change's owner, bots left out, on a file or the commit message (general comments
+          on the whole change aren't counted: they can't be tied to a directory, and few lead to a change in the
+          code). It is addressed when the owner's reply led to a
           change in the code, as judged by a regular expression for “Done”-style replies and by an AI model (Claude
           Haiku) for the rest (<a target="_blank" rel="noopener"
           href="https://github.com/RByers/cosh/blob/main/docs/comment-classifier.md">how</a>). Counting only

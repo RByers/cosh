@@ -38,8 +38,7 @@ class ReviewFeedbackTest(unittest.TestCase):
         none = {k: None for k in R.METRICS}
         val = lambda td, ad=None: {**none, "td": td, "ad": ad}
         years = {
-            # Halving every year: 50% less each year; 2020 and its neighbours' pairs are left out,
-            # and 2022 -> 2024 isn't consecutive.
+            # 2022 -> 2024 isn't consecutive, so it gives no value.
             "p1": {2018: ("google.com", val(4.0), none), 2019: ("google.com", val(2.0), none),
                    2020: ("google.com", val(3.0), none), 2021: ("google.com", val(1.0), none),
                    2022: ("google.com", val(0.5), none), 2024: ("google.com", val(0.25, 1.0), none),
@@ -47,8 +46,9 @@ class ReviewFeedbackTest(unittest.TestCase):
         }
         groups = {"all": lambda o: True, "nongoogle": lambda o: o != "google.com", "dir:all": lambda o: True}
         ch = R.yearly_changes(years, groups)
-        # 2018->19 (50%), 2021->22 (50%), 2024->25 (0%), 2025->26 (0.25 -> 0 counts as FLOOR: 80%).
-        self.assertEqual(ch["all"]["td"]["n"], 4)
+        # 2018->19 (50%), 2019->20 (-50%), 2020->21 (67%), 2021->22 (50%), 2024->25 (0%),
+        # 2025->26 (0.25 -> 0 counts as FLOOR: 80%).
+        self.assertEqual(ch["all"]["td"]["n"], 6)
         self.assertEqual(ch["all"]["td"]["people"], 1)
         self.assertEqual(ch["all"]["td"]["median"], 50.0)
         # Addressed: 2024->25 (50% less), 2025->26 (100% more).
@@ -58,7 +58,7 @@ class ReviewFeedbackTest(unittest.TestCase):
         self.assertEqual(ch["nongoogle"]["td"]["n"], 2)
         self.assertEqual(ch["dir:all"]["td"]["n"], 1)
         self.assertEqual(ch["dir:all"]["td"]["median"], 50.0)
-        self.assertEqual(sum(ch["all"]["td"]["counts"]), 4)
+        self.assertEqual(sum(ch["all"]["td"]["counts"]), 6)
 
     def test_histogram(self):
         self.assertEqual(R.histogram([-99, -10, 0, 5, 10, 500], [-10, 0, 10, 20]), [2, 2, 2])

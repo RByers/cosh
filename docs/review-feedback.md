@@ -30,31 +30,33 @@ that experience. Its axis is always years. It shows:
   against the same 2023–24 norms; older CLs leave out only those with 100+
   files (`mech.jsonl` covers 2023 on). Addressed labels and directory
   experience exist only from the data's start (July 2023), so with those the lines start in
-  2023. On 2026-11-11 the curves line up: about 2.1× in the first half-year
-  for the 2020–24 starters (1.6× for 2018), 1.0–1.2× after two to three
-  years, and 0.6–0.8× after six to eight (size and directory, all threads).
-  These older half-years go into the curves only, not the yearly change.
+  2023. On 2026-11-12 the curves line up: 2.2–2.5× in the first half-year
+  for every start year from 2018 to 2024 (size and directory, all threads).
 - *Year-over-year change:* every contributor-year (`yearly_changes`): for
   each person and pair of consecutive calendar years in which they landed
   12+ changes with 6+ expected threads (twice the half-year minimums), the
   change in their value from one year to the next (values under 0.05 count
   as 0.05), as a histogram of % less feedback. All reviewer threads use every
-  CL from 2018 (older ones as for the cohort curves); pairs that include 2020
-  are left out, because Gerrit began recording general (patch-set-level)
-  comments as threads in July 2020 and threads per CL jump by about 40%
-  then. Addressed threads and directory experience use whole years from
-  their start (2024 on), with the same values as the person's sections. A
-  pair counts for an org group by the later year's org. On 2026-11-11: 5,274
-  changes from 1,904 people, median 16% less feedback a year (21% for
-  addressed threads, 1,746 changes). The leftmost bin ("grew 30%+") holds
-  16%: a ratio can grow without bound but fall by at most 100%, and noisy
-  years with few changes collect there.
+  CL from 2018 (older ones as for the cohort curves). Addressed threads and
+  directory experience use whole years from their start (2024 on), with the
+  same values as the person's sections. A pair counts for an org group by
+  the later year's org. On 2026-11-12: 6,849 changes from 2,020 people,
+  median 17% less feedback a year. The spread is mostly noise: splitting
+  person-years' CLs at random in two shows a year's value varies by about
+  ±58% at 12–17 CLs, ±38% at 25–34, ±27% at 50–74 and ±16% at 150+, and a
+  year-over-year change by about 1.4 times that.
 
 For the person's sections below:
 
-For merged, human-owned, non-mechanical CLs on `main` (the same set as the
+For merged, human-owned, non-mechanical CLs on `main` (the same CLs as the
 Review Balance page's feedback index, `docs/balance.md` section 4;
-mechanical CLs from `mech.jsonl`), over whatever dates the data covers:
+mechanical CLs from `mech.jsonl`), over whatever dates the data covers.
+**Reviewer threads** are threads not started by a bot, on a file or the
+commit message. Patch-set-level threads (general comments) aren't counted:
+Gerrit has recorded them as threads only since July 2020, they can't be tied
+to a directory, and only 5% are addressed (against about 80% of the others;
+they were 29% of all threads but 2.6% of addressed ones, 2026-11-12). So the
+figures differ from the Balance page's index, which counts them.
 
 - **Dates come from the data**, never from the code. The range runs from
   the oldest week in `derived.sqlite`'s `fetched_weeks` (but no earlier than
@@ -87,10 +89,8 @@ The measures:
   - *Adjusted for:* nothing (threads per CL), CL size (÷ the 2023–24 mean for
     the CL's size bucket, 10 log buckets), or size and directory (÷ the
     2023–24 mean for size × top 2-level directory, groups of 30+, else size
-    alone). Size and directory with all threads is exactly the Balance page's
-    feedback index: the script recomputes those norms the same way as
-    `balance_growth.cl_residuals`, and its thread counts match the `cl`
-    table's for every CL.
+    alone), computed the same way as `balance_growth.cl_residuals` but from
+    this page's thread counts.
 - **Peers always have the same tenure**, because feedback falls steeply with
   it (about 1.7× under a year or under 50 earlier commits, against 0.6× at
   10+ years or 1,000+). Two selectors pick the group:
@@ -111,9 +111,8 @@ The measures:
   median and middle half and the share of peers with less feedback.
 - **Directory experience.** Each CL is split over the 3-level directories its
   landed commit changed (`cl_dirs`, weighted by lines + files), and each
-  reviewer thread goes to the directory of its file (patch-set and commit
-  message threads, and files outside those directories, go to the CL's main
-  directory). Experience is the owner's earlier commits on `main` touching that
+  reviewer thread goes to the directory of its file (commit-message threads,
+  and files outside those directories, go to the CL's main directory). Experience is the owner's earlier commits on `main` touching that
   directory (from 2017, `balance-git.sqlite`), banded 0, 1–4, 5–19, 20–99,
   100+. Everyone's feedback is pooled per band; the "same experience" view
   divides a person's threads by the sum, over their CL-directory pieces, of
