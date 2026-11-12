@@ -362,8 +362,8 @@ today's `balance.json` key for key) makes it safe to do in pieces.
 | # | Change | Size | Rule |
 |---|---|---|---|
 | 12 | *(done)* One `collect` that always writes identities; steps that must not see them read a view without | S | 1 |
-| 13 | `cosh.sentiment publish --weeks …`: one command and one range for the trend, praise, samples, recent and people files (default range pending D3) | M | 1, 4 |
-| 14 | Cache screening verdicts in `sentiment.sqlite`, keyed by comment and prompt hash | S | — |
+| 13 | *(done)* `cosh.sentiment publish --weeks …`: one command and one range for the trend, praise, samples, recent and people files (default range pending D3) | M | 1, 4 |
+| 14 | *(done)* Cache screening verdicts in `sentiment.sqlite`, keyed by comment and prompt hash | S | — |
 | 15 | Move `review_feedback.py` to `cosh/feedback.py` (`python3 -m cosh.feedback`); it writes the committed `web/public/review-feedback/` (D2) | M | 2 |
 | 16 | *(done)* Give the review-ROI scripts a `--out` under `data/private/scratch/review_roi/` instead of the hard-coded session path | S | 3 |
 
@@ -423,3 +423,8 @@ details; this is the log.
 - **2026-11-12, item 16.** The review-ROI scripts default to
   `data/private/scratch/review_roi/` instead of another session's scratch
   directory.
+- **2026-11-12, items 13 and 14.** `python3 -m cosh.sentiment publish`
+  writes every Review Tone file from one `--week` range (default the
+  page's window, pending D3), replacing five steps in the inventory.
+  Screening verdicts persist in `sentiment.sqlite` (`screens`), so a rerun
+  costs no model calls for comments already screened.

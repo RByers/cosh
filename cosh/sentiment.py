@@ -363,6 +363,14 @@ CREATE TABLE IF NOT EXISTS scores (
   ai         INTEGER NOT NULL,
   why        TEXT,
   PRIMARY KEY (id, prompt_id, input_hash)) STRICT, WITHOUT ROWID;
+-- Verdicts of the identifying-detail screen (screen_identifying), so a rerun
+-- of samples or sentiment_recent screens nothing twice. Keyed by the
+-- screen's prompt; comment text never changes in Gerrit.
+CREATE TABLE IF NOT EXISTS screens (
+  id         TEXT NOT NULL,      -- '<change number>/<comment uuid>'
+  screen_sha TEXT NOT NULL,      -- sha256 of SCREEN_SYSTEM + SCREEN_PROMPT
+  flagged    INTEGER NOT NULL,
+  PRIMARY KEY (id, screen_sha)) STRICT, WITHOUT ROWID;
 """
 
 
@@ -668,6 +676,32 @@ def periods(weeks):
     return out
 
 
+class ScreenCache:
+    """A `screen_first` cache kept in sentiment.sqlite's `screens` table:
+    reads every verdict for the current screen prompt once, writes new ones
+    as they come."""
+
+    def __init__(self, data_dir=store.DATA_DIR):
+        self.db = open_scores(data_dir)
+        self.sha = hashlib.sha256((SCREEN_SYSTEM + "\n" + SCREEN_PROMPT).encode()).hexdigest()
+        self.seen = {i: bool(f) for i, f in self.db.execute(
+            "SELECT id, flagged FROM screens WHERE screen_sha = ?", (self.sha,))}
+
+    def __contains__(self, i):
+        return i in self.seen
+
+    def __getitem__(self, i):
+        return self.seen[i]
+
+    def __setitem__(self, i, flagged):
+        self.seen[i] = bool(flagged)
+        with self.db:
+            self.db.execute("INSERT OR REPLACE INTO screens VALUES (?,?,?)", (i, self.sha, int(bool(flagged))))
+
+    def __len__(self):
+        return len(self.seen)
+
+
 def screen_first(pool, n, text, sandbox, cache, batch=30):
     """The first `n` ids of `pool` (in order) that `screen_identifying` passes.
     Ids not yet in `cache` are screened `batch` at a time, ahead of need;
@@ -903,11 +937,35 @@ def samples(weeks, data_dir=store.DATA_DIR, version=None, n=10, seed="2026-11", 
                 authors=authors, praise_min=PRAISE_SAMPLE, grumpy_max=GRUMPY_SAMPLE, periods=out)
 
 
+# What the Review Tone page shows: the fully scored weeks, and the scored
+# sample behind the long trend. `publish` writes every file from these.
+PUBLISHED_WEEKS = "2025-W45:2026-W44"
+PUBLISHED_SAMPLE = "sample-5pct"
+
+
+def publish(weeks, sample, prompt=None, sandbox="auto"):
+    """Every published Review Tone file, from one range of fully scored
+    weeks: the trend (sample plus those weeks), praise boards, samples, the
+    per-period detail and the lookup list. Screening verdicts are cached in
+    sentiment.sqlite, so a rerun costs no model calls for comments already
+    screened."""
+    from . import sentiment_people, sentiment_recent
+    opt = (["--prompt", prompt] if prompt else [])
+    box = ["--sandbox", sandbox]
+    main(["summary", "--name", sample, "--full-weeks", weeks, *opt])
+    main(["praise", "--week", weeks, *opt])
+    main(["samples", "--week", weeks, *opt, *box])
+    sentiment_recent.main(["--week", weeks, *opt, *box])
+    sentiment_people.main(["lookup", "--week", weeks])
+
+
 def main(argv):
     import argparse
     ap = argparse.ArgumentParser(prog="python3 -m cosh.sentiment")
-    ap.add_argument("step", choices=["collect", "score", "summary", "praise", "samples"])
-    ap.add_argument("--week", default="2026-W44", help="a week or a range, e.g. 2026-W37:2026-W44")
+    ap.add_argument("step", choices=["collect", "score", "summary", "praise", "samples", "publish"])
+    ap.add_argument("--week", default=None,
+                    help="a week or a range, e.g. 2026-W37:2026-W44 (default 2026-W44; publish: "
+                         f"{PUBLISHED_WEEKS})")
     ap.add_argument("--sample", type=float, default=None,
                     help="collect: a deterministic sample at this rate over --week's range, written as "
                          "comments-<name>.jsonl; score/summary: use with --name")
@@ -929,7 +987,9 @@ def main(argv):
         ap.error("--out needs one --authors group")
     groups = AUTHORS if a.authors == "all" else (a.authors,)
     t0 = time.time()
-    weeks = weeks_in(a.week)
+    if a.step == "publish":
+        return publish(a.week or PUBLISHED_WEEKS, a.name or PUBLISHED_SAMPLE, a.prompt, a.sandbox)
+    weeks = weeks_in(a.week or "2026-W44")
     if a.step == "collect":
         # Always with identities, so comments-<name>.jsonl has one writer and
         # one format: per-person steps need them, the others ignore them.
@@ -951,7 +1011,7 @@ def main(argv):
             print(f"{name}: scored {st['n']} in {st['calls']} calls, {st['tokens']} tokens, ${st['usd']:.2f} "
                   f"API-equivalent, {time.time() - t0:.0f}s", file=sys.stderr)
     elif a.step == "samples":
-        screened = {}
+        screened = ScreenCache()
         for g in groups:
             doc = samples(weeks, version=a.prompt, sandbox=a.sandbox, authors=g, screened=screened)
             out = a.out or authors_path(SAMPLES_SUMMARY, g)

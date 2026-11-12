@@ -262,7 +262,7 @@ def main(argv):
     a = ap.parse_args(argv)
     if a.out and a.authors == "all":
         ap.error("--out needs one --authors group")
-    screened = {}
+    screened = S.ScreenCache()
     for g in (S.AUTHORS if a.authors == "all" else (a.authors,)):
         t0 = time.time()
         doc, comments = build(S.weeks_in(a.week), version=a.prompt, sandbox=a.sandbox, authors=g,

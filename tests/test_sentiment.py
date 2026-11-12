@@ -617,3 +617,24 @@ class AuthorsTest(unittest.TestCase):
         self.assertEqual(got["committers"], {("owner@chromium.org", 1, 0), ("rev@microsoft.com", 0, 1)})
         self.assertEqual(got["noncommitters"], {("rev@microsoft.com", 1, 0), ("owner@chromium.org", 0, 1)})
         self.assertEqual(got["everyone"], {("owner@chromium.org", 1, 1), ("rev@microsoft.com", 1, 1)})
+
+
+class ScreenCacheTest(unittest.TestCase):
+    """Screening verdicts persist in sentiment.sqlite, so a rerun makes no
+    model call for comments already screened."""
+
+    def test_persists_across_runs(self):
+        calls = []
+
+        class Counting(ScreenSandbox):
+            def run(self, args, prompt):
+                calls.append(1)
+                return super().run(args, prompt)
+        text = {"1/a": "Alice broke it", "1/b": "nit: rename", "1/c": "why?"}.get
+        pool = ["1/a", "1/b", "1/c"]
+        with tempfile.TemporaryDirectory() as d:
+            self.assertEqual(S.screen_first(pool, 2, text, Counting(), S.ScreenCache(d)), (["1/b", "1/c"], 1))
+            again = S.ScreenCache(d)
+            self.assertEqual(len(again), 3)
+            self.assertEqual(S.screen_first(pool, 2, text, Counting(), again), (["1/b", "1/c"], 1))
+        self.assertEqual(len(calls), 1)

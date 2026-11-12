@@ -84,6 +84,9 @@ python3 -m cosh.sentiment summary --name sample-5pct --full-weeks 2025-W45:2026-
 # Whole weeks can be collected and scored too (comments-<week>.jsonl, ~25 s a week to collect)
 python3 -m cosh.sentiment collect --week 2026-W44
 python3 -m cosh.sentiment score --week 2026-W44                # every comment
+# Every published file at once, from one range (the five commands below, in order;
+# defaults --week 2025-W45:2026-W44 --name sample-5pct). Read the samples before committing.
+python3 -m cosh.sentiment publish
 # The praise leaderboard over fully scored weeks -> summaries/sentiment_praise.json
 # (the past year, 2025-W45..2026-W44, since 2026-11-08; reads every week once per group)
 python3 -m cosh.sentiment praise --week 2025-W45:2026-W44
@@ -96,6 +99,11 @@ python3 -m cosh.sentiment_recent --week 2025-W45:2026-W44   # screening calls, 3
 # Everyone who commented, for the lookup box -> summaries/sentiment_people.json
 python3 -m cosh.sentiment_people lookup --week 2025-W45:2026-W44
 ```
+
+`samples` and `sentiment_recent` keep each screening verdict in
+`sentiment.sqlite` (`screens`, keyed by comment and the screening prompt's
+hash, since 2026-11-12), so a rerun screens only comments it has never seen,
+and picks the same samples.
 
 `cosh.sentiment collect` always adds identity fields (writer and
 recipient) to `comments-<week>.jsonl`, so the files have one writer and one
