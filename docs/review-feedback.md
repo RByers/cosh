@@ -26,8 +26,8 @@ that experience. Its axis is always years. It shows:
   newcomers in the early points) by tenure, in half-year bins, where 20+ people share a
   point. Every line starts at tenure 0: the page draws the years from 2018
   (`cohort_from`) whose curve begins at 0 with 3+ points, every other one when
-  there are more than five (`cohortYears`), so 2018, 2020, 2022 and 2024 for
-  all threads. For those, the script also counts the merged, human-owned
+  there are more than five, always keeping the newest (`cohortYears`), so
+  2018, 2020, 2022, 2024 and 2025 for all threads. For those, the script also counts the merged, human-owned
   CLs on `main` from 2018 to June 2023 in `derived.sqlite` (about 494k),
   against the same 2023–24 norms; older CLs leave out only those with 100+
   files (`mech.jsonl` covers 2023 on). Addressed labels and directory

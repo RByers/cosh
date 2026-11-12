@@ -1468,7 +1468,9 @@ test('review feedback: the opening card draws start years whose curve begins at 
   const curves: Record<string, [number, number, number][]> = { '2016': curve(0), '2017': curve(0.5) };
   for (let y = 2018; y <= 2025; y++) curves[y] = curve(0);
   curves['2026'] = [[0, 1.4, 260], [0.5, 1, 30]];
-  // From 2018 on, at least three points, every other one when there are more than five.
+  // From 2018 on, at least three points, every other one when there are more than five, plus the newest.
+  assert.deepEqual(cohortYears(curves, 2018), [2018, 2020, 2022, 2024, 2025]);
+  delete curves['2025'];
   assert.deepEqual(cohortYears(curves, 2018), [2018, 2020, 2022, 2024]);
   assert.deepEqual(cohortYears({ '2022': curve(0.5), '2023': curve(0), '2024': curve(0) }, 2018), [2023, 2024]);
 });
