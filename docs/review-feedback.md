@@ -121,14 +121,22 @@ The measures:
   is typical *for the experience the person had in the directories they
   worked in*, which credits people who work across more of the codebase. A
   chart and table give the person's feedback per band against everyone's.
-- **Directories**: CLs, threads, expected threads and earlier commits per
-  directory; selecting one filters the comment list. Selecting one of the
-  person's dots in the over-time chart filters this table and the comments
-  to the CLs landed in that half-year (the threads behind that point): a
-  named filter line with a Clear button appears above the table, and the
-  dot gets a ring for as long as the filter is on. Selecting the same dot
-  again also clears it, as does looking up someone else or switching to a
-  measure with no changes in that half-year.
+- **Directories**: CLs, threads, expected threads, their ratio and earlier
+  commits per directory, as an expandable tree like Value Exchange's
+  directory chart: top-level directories first, opening down to the 3-level
+  ones (a parent counts each CL once; earlier commits is the most in any one
+  directory below it). The ratio cell is shaded red below 1, white at 1 and
+  green above, on a log scale that saturates at 0.25× and 4×. Selecting a
+  directory at any level filters the comment list to it and below, together
+  with the page's all/addressed choice.
+- **Half-year filter**: selecting one of the person's dots in the over-time
+  chart filters the directory tree and the comments to the CLs landed in
+  that half-year (the threads behind that point), together with any
+  directory filter. A named filter line with a Clear button appears above
+  both the tree and the comments, and the dot gets a ring for as long as
+  the filter is on. Selecting the same dot again also clears it, as does
+  looking up someone else or switching to a measure with no changes in that
+  half-year.
 - **Comments**: every reviewer thread, newest first, with file, date and
   addressed or not. Threads whose text has been collected (every week in
   `data/private/sentiment/comments-*.jsonl`, 2025-W45 on today) get a

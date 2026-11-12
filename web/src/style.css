@@ -2830,6 +2830,36 @@ canvas.rf-pointable {
   text-decoration: underline;
 }
 
+/* The directory tree (review-feedback.ts, dirRows): rows indent by their depth
+ * (--depth), with the Value Exchange page's ▸/▾ toggles (.ar-toggle). */
+.rf-dir-label {
+  display: flex;
+  gap: 6px;
+  align-items: baseline;
+  padding-left: calc(var(--depth, 0) * 14px);
+}
+
+/* "rest of …" and "N more" rows are groupings, not directories. */
+.rf-dir-group {
+  font-style: italic;
+  color: var(--text-muted);
+}
+
+/* The ratio's shade: red below typical, green above, fading to the card at
+ * typical. --rf-shade is 0..1 (a quarter or 4× of typical and beyond: 1). */
+.rf-table td.rf-ratio-lo,
+.rf-table td.rf-ratio-hi {
+  background: color-mix(in srgb, var(--rf-ratio-color) calc(var(--rf-shade, 0) * 55%), transparent);
+}
+
+.rf-table td.rf-ratio-lo {
+  --rf-ratio-color: var(--critical);
+}
+
+.rf-table td.rf-ratio-hi {
+  --rf-ratio-color: var(--series-6);
+}
+
 .rf-more {
   margin: 8px 0 0;
   min-height: 32px;

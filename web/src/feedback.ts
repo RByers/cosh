@@ -313,35 +313,88 @@ export function xpBreakdown(p: Person, period: string, m: Metric): Sums[] {
   return out;
 }
 
-export interface DirRow {
-  dir: string;
-  /** Changes touching the directory. */
+/** Figures for one directory, or for a directory's own files ("rest of"). */
+export interface DirStats {
+  /** Changes touching it, each change once however many directories below it the change touches. */
   cls: number;
   threads: number;
   /** Expected threads there (size and directory norm, by line share). */
   expected: number;
-  /** The person's earlier commits there before their latest change in the period. */
+  /** The person's earlier commits there before their latest change in the period:
+   * for a parent, the most in any one directory below it. */
   prior: number;
-  index: number;
 }
 
-/** The person's directories in `period`, most changes first. */
-export function dirTable(p: Person, period: string, kind: Kind): DirRow[] {
-  const rows = new Map<number, DirRow>();
+/** A directory in the tree: the data's 3-level directories and their parents. */
+export interface DirNode extends DirStats {
+  /** Full path, ending in "/". */
+  path: string;
+  /** The last part of the path, e.g. "browser/". */
+  name: string;
+  children: DirNode[];
+  /** Files directly in this directory, when it also has subdirectories. */
+  own: DirStats | null;
+}
+
+const dirOrder = (a: DirNode, b: DirNode) =>
+  b.cls - a.cls || b.threads - a.threads || (a.path < b.path ? -1 : a.path > b.path ? 1 : 0);
+
+/** The person's directories in `period` as a tree, each level most changes
+ * first. A parent adds up its subdirectories (and own files), counting each
+ * change once. */
+export function dirTree(p: Person, period: string, kind: Kind): DirNode[] {
+  const nodes = new Map<string, DirNode>();
+  const roots: DirNode[] = [];
+  const stats = (): DirStats => ({ cls: 0, threads: 0, expected: 0, prior: 0 });
+  const add = (s: DirStats, threads: number, exp: number, prior: number) => {
+    s.threads += threads;
+    s.expected += exp;
+    s.prior = Math.max(s.prior, prior);
+  };
   const m: Metric = `${kind}d`;
   for (const c of clsFor(p, period, kind)) {
     const per = new Map<number, number>();
     for (const t of c[8]) per.set(t[4], (per.get(t[4]) ?? 0) + counts(t, kind));
+    const touched = new Set<DirNode>();
     for (const [d, w, prior] of c[7]) {
-      let r = rows.get(d);
-      if (!r) rows.set(d, (r = { dir: p.dirs[d], cls: 0, threads: 0, expected: 0, prior: 0, index: d }));
-      r.cls += 1;
-      r.threads += per.get(d) ?? 0;
-      r.expected += w * expected(c, m);
-      r.prior = Math.max(r.prior, prior);
+      const path = p.dirs[d];
+      const threads = per.get(d) ?? 0;
+      const exp = w * expected(c, m);
+      let parent: DirNode | null = null;
+      for (let at = 0; at < path.length;) {
+        const slash = path.indexOf('/', at);
+        const end = slash < 0 ? path.length : slash + 1;
+        const key = path.slice(0, end);
+        let n = nodes.get(key);
+        if (!n) {
+          nodes.set(key, (n = { path: key, name: path.slice(at, end), ...stats(), children: [], own: null }));
+          (parent ? parent.children : roots).push(n);
+        }
+        add(n, threads, exp, prior);
+        touched.add(n);
+        if (end === path.length) {
+          n.own ??= stats();
+          n.own.cls += 1;
+          add(n.own, threads, exp, prior);
+        }
+        parent = n;
+        at = end;
+      }
     }
+    for (const n of touched) n.cls += 1;
   }
-  return [...rows.values()].sort((a, b) => b.cls - a.cls || b.threads - a.threads || a.dir.localeCompare(b.dir));
+  for (const n of nodes.values()) {
+    n.children.sort(dirOrder);
+    // Without subdirectories, its own files are the whole directory.
+    if (!n.children.length) n.own = null;
+  }
+  return roots.sort(dirOrder);
+}
+
+/** The ratio cell's shade: -1 (a quarter of typical or less) .. 0 (typical) .. 1 (4× or more), on a log scale. */
+export function ratioShade(ratio: number): number {
+  if (!(ratio > 0)) return -1;
+  return Math.max(-1, Math.min(1, Math.log2(ratio) / 2));
 }
 
 export interface ThreadRow {
@@ -357,18 +410,17 @@ export interface ThreadRow {
 }
 
 /** Reviewer threads on the changes landed in `period`, newest first,
- * optionally only addressed ones, in one directory, or praise. */
-export function threadRows(p: Person, period: string, kind: Kind, dir: number | null, praiseOnly: boolean): ThreadRow[] {
+ * optionally only addressed ones, and only in directories under `dir` (a
+ * path prefix such as "chrome/" or "chrome/browser/ui/"). */
+export function threadRows(p: Person, period: string, kind: Kind, dir: string | null): ThreadRow[] {
   const praise = new Set(p.praise.map(([n, u]) => `${n}/${u}`));
   const out: ThreadRow[] = [];
   for (const c of clsFor(p, period, kind)) {
     for (const t of c[8]) {
       if (kind === 'a' && !t[3]) continue;
-      if (dir !== null && t[4] !== dir) continue;
-      const isPraise = praise.has(`${c[0]}/${t[0]}`);
-      if (praiseOnly && !isPraise) continue;
+      if (dir !== null && !p.dirs[t[4]].startsWith(dir)) continue;
       out.push({ cl: c[0], uuid: t[0], file: p.files[t[1]], day: c[1] + (t[2] ?? 0), addressed: t[3], dir: t[4],
-        text: t[5] ?? null, praise: isPraise });
+        text: t[5] ?? null, praise: praise.has(`${c[0]}/${t[0]}`) });
     }
   }
   return out.sort((a, b) => b.day - a.day || b.cl - a.cl);

@@ -238,11 +238,12 @@
         <template data-msg="directories-sub">
           The directories you changed most, with the reviewer threads in each. “Typical” is what a typical change
           of the same size and place drew in 2023–24<span data-if="corr=n"> (shown while nothing is adjusted for,
-          too)</span>. Select a directory to list its comments below.
+          too)</span>, and the ratio is shaded from red (fewer threads than typical) through white (typical) to green
+          (more). ▸ opens a directory; select one to list its comments below.
         </template>
         <!-- Set by selecting a dot in the over-time chart; filters this table and the comments. -->
         <p id="rf-half-filter" class="rf-filter" hidden>
-          <span id="rf-half-filter-name"></span>
+          <span id="rf-half-filter-name" class="rf-filter-name"></span>
           <button type="button" id="rf-half-clear">Clear</button>
         </p>
         <template data-msg="half-filter">Filter: only changes landed <slot name="half"></slot></template>
@@ -252,7 +253,6 @@
             <tbody></tbody>
           </table>
         </div>
-        <button type="button" id="rf-dirs-more" class="rf-more" hidden></button>
         <template data-msg="dirs-typical-t">The reviewer threads typical changes like yours would have drawn here: for
           each of your changes in this directory, the 2023–24 average number of reviewer threads for changes of the
           same size in the change's main two-level directory (or of that size anywhere, where fewer than 30 such
@@ -262,8 +262,11 @@
           threads for changes of the same size in the change's main two-level directory (or of that size anywhere,
           where fewer than 30 such changes landed), times the change's share in this directory (by lines and files),
           summed.</template>
-        <template data-msg="dirs-more">Show all <slot name="n"></slot> directories</template>
-        <p class="note">“Earlier commits” are yours in that directory before your latest change there.</p>
+        <template data-msg="dirs-other"><slot name="n"></slot> more</template>
+        <template data-msg="dirs-rest">rest of <slot name="dir"></slot></template>
+        <p class="note">A directory's changes count each change once, however many of its subdirectories the change
+          touched. “Earlier commits” are yours in that directory before your latest change there; for a directory
+          that opens, the most in any one directory below it.</p>
       </section>
 
       <section id="comments" class="card" aria-labelledby="comments-title">
@@ -277,16 +280,16 @@
           the comment itself are included for threads whose text has been collected (from November 2025 on); older
           ones link to their change.
         </template>
+        <!-- The same half-year filter as above the directories, together with the directory picker. -->
+        <p id="rf-half-filter-comments" class="rf-filter" hidden>
+          <span class="rf-filter-name"></span>
+          <button type="button" class="rf-half-clear">Clear</button>
+        </p>
         <div class="toggles">
           <div class="select-toggle">
             <label for="rf-dir">Directory</label>
             <select id="rf-dir"><option value="">All</option></select>
           </div>
-          <fieldset id="rf-show" class="segmented chart-toggle">
-            <legend>Show</legend>
-            <label><input type="radio" name="rf-show" value="all" checked />All</label>
-            <label><input type="radio" name="rf-show" value="praise" />Praise only</label>
-          </fieldset>
         </div>
         <ul id="rf-threads" class="quotes rf-threads"></ul>
         <button type="button" id="rf-threads-more" class="rf-more" hidden></button>

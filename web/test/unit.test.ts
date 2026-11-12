@@ -1515,11 +1515,10 @@ test('review feedback: half-year files merge, and every period gets the values t
   assert.deepEqual([la.v.tn, la.v.an, la.v.ad], [1.667, 1, 0.69]);
   assert.equal(later.periods['2025H2'].v.an, null);
   assert.equal(later.periods['2025H2'].acls, 0);
-  assert.deepEqual(F.threadRows(later, 'all', 'a', null, false).map((r) => r.cl), [1000003, 1000002]);
+  assert.deepEqual(F.threadRows(later, 'all', 'a', null).map((r) => r.cl), [1000003, 1000002]);
   assert.deepEqual(F.xpBreakdown(later, 'all', 'ad').map((b) => b.obs), [0, 0, 1, 0, 1]);
-  assert.deepEqual(F.dirTable(later, 'all', 'a').map((d) => d.dir),
-    ['content/browser/', 'third_party/blink/renderer/', 'chrome/browser/ui/']);
-  assert.equal(F.dirTable(later, 'all', 'a')[2].cls, 1);
+  assert.deepEqual(F.dirTree(later, 'all', 'a').map((d) => d.path), ['content/', 'third_party/', 'chrome/']);
+  assert.equal(F.dirTree(later, 'all', 'a')[2].cls, 1);
   // Periods are cut to the data's dates.
   assert.deepEqual(F.periodSpan('2026H2', [day('2023-07-01'), day('2026-11-01')]), [day('2026-07-01'), day('2026-11-01')]);
   assert.deepEqual(F.periodSpan('2023', [day('2023-07-01'), day('2026-11-01')]), [day('2023-07-01'), day('2024-01-01')]);
@@ -1540,20 +1539,38 @@ test('review feedback: half-year files merge, and every period gets the values t
   assert.ok(Math.abs(xp[2].den - 0.75 * 3) < 1e-9);
   assert.deepEqual(F.xpBreakdown(person, 'all', 'ad').map((b) => b.obs), [1, 0, 1, 0, 1]);
   assert.deepEqual(F.xpBreakdown(person, 'all', 'tn').map((b) => b.den), [1, 0.25, 0.75, 0, 1]);
-  const dirs = F.dirTable(person, 'all', 't');
-  assert.deepEqual(dirs.map((d) => [d.dir, d.cls, d.threads, d.prior]),
-    [['chrome/browser/ui/', 2, 2, 1], ['third_party/blink/renderer/', 1, 2, 150], ['content/browser/', 1, 1, 7]]);
-  assert.ok(Math.abs(dirs[0].expected - (2.5 + 0.25 * 3)) < 1e-9);
-  // Comments: newest first; addressed only; one directory; praise only.
-  const rows = F.threadRows(person, 'all', 't', null, false);
+  // Directories: a tree from the top level down to the data's 3-level directories.
+  const dirs = F.dirTree(person, 'all', 't');
+  assert.deepEqual(dirs.map((d) => [d.path, d.cls, d.threads, d.prior]),
+    [['chrome/', 2, 2, 1], ['third_party/', 1, 2, 150], ['content/', 1, 1, 7]]);
+  const ui = dirs[0].children[0].children[0];
+  assert.deepEqual([dirs[0].children[0].name, ui.name, ui.path, ui.cls, ui.children, ui.own], ['browser/', 'ui/',
+    'chrome/browser/ui/', 2, [], null]);
+  assert.ok(Math.abs(ui.expected - (2.5 + 0.25 * 3)) < 1e-9);
+  assert.ok(Math.abs(dirs[0].expected - ui.expected) < 1e-9);
+  // A parent counts a change once, however many directories below it the change touched; a
+  // directory with files of its own and subdirectories keeps its own files apart ("rest of").
+  const nested = F.dirTree({ ...person, dirs: person.dirs.map((d) => (d === 'content/browser/' ? 'chrome/browser/' : d)) },
+    'all', 't');
+  assert.deepEqual(nested.map((d) => [d.path, d.cls, d.threads, d.prior]), [['chrome/', 2, 3, 7], ['third_party/', 1, 2, 150]]);
+  const browser = nested[0].children[0];
+  assert.deepEqual([browser.cls, browser.threads, browser.own], [2, 3, { cls: 1, threads: 1, expected: browser.own!.expected, prior: 7 }]);
+  assert.deepEqual(browser.children.map((d) => [d.name, d.cls]), [['ui/', 2]]);
+  // The ratio's shade: log scale, white at typical, full at a quarter or four times.
+  assert.deepEqual([0, 0.25, 0.5, 1, 2, 4, 8].map(F.ratioShade), [-1, -1, -0.5, 0, 0.5, 1, 1]);
+  // Comments: newest first; addressed only; under one directory, at any level.
+  const rows = F.threadRows(person, 'all', 't', null);
   assert.deepEqual(rows.map((r) => `${r.cl}/${r.uuid}`),
     ['1000003/cccc_0003', '1000003/', '1000002/bbbb_0002', '1000001/aaaa_0002', '1000001/']);
   assert.equal(rows[0].file, '/PATCHSET_LEVEL');
   assert.equal(F.isoDay(rows[1].day), '2026-09-01');
-  assert.deepEqual(F.threadRows(person, 'all', 'a', null, false).map((r) => r.cl), [1000003, 1000002, 1000001]);
-  assert.deepEqual(F.threadRows(person, '2026H1', 't', null, false).map((r) => r.uuid), ['bbbb_0002']);
-  assert.deepEqual(F.threadRows(person, 'all', 't', 2, false).map((r) => r.uuid), ['cccc_0003', '']);
-  assert.deepEqual(F.threadRows(person, 'all', 't', null, true).map((r) => r.uuid), ['cccc_0003', 'bbbb_0002']);
+  assert.deepEqual(F.threadRows(person, 'all', 'a', null).map((r) => r.cl), [1000003, 1000002, 1000001]);
+  assert.deepEqual(F.threadRows(person, '2026H1', 't', null).map((r) => r.uuid), ['bbbb_0002']);
+  assert.deepEqual(F.threadRows(person, 'all', 't', 'third_party/blink/renderer/').map((r) => r.uuid), ['cccc_0003', '']);
+  assert.deepEqual(F.threadRows(person, 'all', 't', 'third_party/').map((r) => r.uuid), ['cccc_0003', '']);
+  assert.deepEqual(F.threadRows(person, 'all', 't', 'chrome/browser/').map((r) => r.cl), [1000001, 1000001]);
+  // The directory filter and the addressed filter together.
+  assert.deepEqual(F.threadRows(person, 'all', 'a', 'third_party/').map((r) => r.uuid), ['']);
   // Links are encoded and always go to Gerrit; without a comment id, to the change.
   assert.equal(F.commentUrl(5, 'a/b'), 'https://chromium-review.googlesource.com/c/chromium/src/+/5/comment/a%2Fb/');
   assert.equal(F.commentUrl(5, ''), 'https://chromium-review.googlesource.com/c/chromium/src/+/5');

@@ -11,7 +11,7 @@ import {
   buildPerson,
   clsOf,
   commentUrl,
-  dirTable,
+  dirTree,
   groupKey,
   halves,
   isoDay,
@@ -23,6 +23,7 @@ import {
   personKey,
   quantile,
   rangeOf,
+  ratioShade,
   threadRows,
   cohortYears,
   trendGroup,
@@ -33,6 +34,8 @@ import {
   type Top,
   type Corr,
   type CountField,
+  type DirNode,
+  type DirStats,
   type Dist,
   type Kind,
   type Metric,
@@ -59,6 +62,7 @@ declare global {
 const $ = <T extends Element = HTMLElement>(sel: string) => document.querySelector<T>(sel)!;
 const DATA = 'review-feedback/';
 const PAGE = 50;
+/** Directory rows per level before an "N more" row, as on the Value Exchange page. */
 const DIRS_SHOWN = 15;
 /** The page's figures always cover all the data; only the over-time chart splits it, by half-year. */
 const ALL = 'all';
@@ -70,12 +74,13 @@ const state = {
   corr: 'd' as Corr,
   tenure: 'time' as TenureBy,
   org: 'all' as PeerOrg,
-  dir: null as number | null,
+  /** The selected directory's path; comments are listed from it and below. */
+  dir: null as string | null,
   /** The half-year picked in the over-time chart, filtering the directories and comments. */
   half: null as string | null,
-  praiseOnly: false,
   threadsShown: PAGE,
-  allDirs: false,
+  /** Keys of the directory rows that are open (see dirRows). */
+  expanded: new Set<string>(),
 };
 const charts: Record<string, Chart> = {};
 window.__rf = { person: null, peers: null, charts, half: null };
@@ -224,7 +229,7 @@ async function lookup(raw: string) {
     state.dir = null;
     state.half = null;
     window.__rf!.half = null;
-    state.allDirs = false;
+    state.expanded = new Set();
     put(note, 'find-done', { n: fmtInt(found.cls.length), from: dayLabel(found.cls[0][1]), to: dayLabel(found.cls.at(-1)![1]) });
     // The person's praise is on the Review Tone page, which opens their popup from the hash.
     const praise = note.querySelector<HTMLAnchorElement>('.rf-praise-link');
@@ -562,48 +567,145 @@ function renderDirs() {
   const p = state.person!;
   put($('#directories-sub'), 'directories-sub', { corr: state.corr });
   $('#rf-dirs-typical').title = msg(`dirs-typical-${state.kind}`).replace(/\s+/g, ' ').trim();
-  const filter = $('#rf-half-filter');
-  filter.hidden = !state.half;
-  if (state.half) put($('#rf-half-filter-name'), 'half-filter', { half: halfName(state.half) });
-  const rows = dirTable(p, state.half ?? ALL, state.kind);
+  showHalfFilter('#rf-half-filter');
+  const roots = dirTree(p, state.half ?? ALL, state.kind);
   const body = $('#rf-dirs tbody');
-  body.replaceChildren();
-  const shown = state.allDirs ? rows : rows.slice(0, DIRS_SHOWN);
-  for (const r of shown) {
-    const tr = el('tr');
-    tr.dataset.dir = String(r.index);
-    if (state.dir === r.index) tr.setAttribute('aria-selected', 'true');
-    const th = el('th');
-    th.setAttribute('scope', 'row');
-    const b = el('button', r.dir, 'rf-dir-pick');
-    b.type = 'button';
-    b.addEventListener('click', () => {
-      state.dir = state.dir === r.index ? null : r.index;
-      state.threadsShown = PAGE;
-      renderDirs();
-      renderThreads();
-      if (state.dir !== null) $('#comments').scrollIntoView({ block: 'start' });
-    });
-    th.append(b);
-    tr.append(th, el('td', fmtInt(r.cls), 'num'), el('td', fmtInt(r.threads), 'num'),
-      el('td', fmtNum(r.expected, { maximumFractionDigits: 1 }), 'num'),
-      el('td', r.expected > 0 ? fmtValue(r.threads / r.expected, 'd') : '–', 'num'), el('td', fmtInt(r.prior), 'num'));
-    body.append(tr);
-  }
-  const more = $<HTMLButtonElement>('#rf-dirs-more');
-  more.hidden = state.allDirs || rows.length <= DIRS_SHOWN;
-  put(more, 'dirs-more', { n: fmtInt(rows.length) });
-  // The comment section's directory picker lists the same directories.
+  body.replaceChildren(...dirRows(roots).map(dirRow));
+  // The comment section's directory picker lists every directory in the tree, in path order.
+  const paths: string[] = [];
+  const walk = (ns: DirNode[]) => ns.forEach((n) => (paths.push(n.path), walk(n.children)));
+  walk(roots);
+  paths.sort();
   const sel = $<HTMLSelectElement>('#rf-dir');
   sel.replaceChildren(sel.options[0] ?? el('option'));
   sel.options[0].value = '';
-  for (const r of rows) {
-    const o = el('option', r.dir);
-    o.value = String(r.index);
+  for (const path of paths) {
+    const o = el('option', path);
+    o.value = path;
     sel.append(o);
   }
-  sel.value = state.dir === null ? '' : String(state.dir);
+  sel.value = state.dir ?? '';
   if (state.dir !== null && sel.value === '') state.dir = null;
+}
+
+/** One visible row of the directory tree: a directory, a directory's own files
+ * ("rest of"), or the smaller entries of a level ("N more"). */
+interface DirRowView {
+  key: string;
+  kind: 'dir' | 'rest' | 'other';
+  depth: number;
+  node?: DirNode;
+  /** Changes: unknown for "N more", where one change can touch several entries. */
+  stats: Omit<DirStats, 'cls'> & { cls: number | null };
+  expandable: boolean;
+  expanded: boolean;
+  count?: number;
+}
+
+type DirItem = { kind: 'dir' | 'rest'; node: DirNode; stats: DirStats };
+
+/** The rows to show, given `state.expanded`. Like the Value Exchange page's
+ * directory chart: each level lists DIRS_SHOWN entries, then an "N more" row
+ * that opens into the next ones; a directory with subdirectories opens into
+ * them plus a "rest of" row for its own files. */
+function dirRows(roots: DirNode[]): DirRowView[] {
+  const out: DirRowView[] = [];
+  const order = (a: DirItem, b: DirItem) => b.stats.cls - a.stats.cls || b.stats.threads - a.stats.threads ||
+    (a.kind === b.kind ? (a.node.path < b.node.path ? -1 : 1) : a.kind === 'dir' ? -1 : 1);
+  const emit = (it: DirItem, depth: number) => {
+    if (it.kind === 'rest') {
+      out.push({ key: `r:${it.node.path}`, kind: 'rest', depth, node: it.node, stats: it.stats, expandable: false, expanded: false });
+      return;
+    }
+    const n = it.node;
+    const key = `d:${n.path}`;
+    const expandable = n.children.length > 0;
+    const open = expandable && state.expanded.has(key);
+    out.push({ key, kind: 'dir', depth, node: n, stats: n, expandable, expanded: open });
+    if (!open) return;
+    const items: DirItem[] = n.children.map((c) => ({ kind: 'dir', node: c, stats: c }));
+    if (n.own) items.push({ kind: 'rest', node: n, stats: n.own });
+    group(items.sort(order), depth + 1, key, 0);
+  };
+  const group = (items: DirItem[], depth: number, parentKey: string, offset: number) => {
+    const head = items.slice(0, DIRS_SHOWN);
+    const tail = items.slice(DIRS_SHOWN);
+    for (const it of head) emit(it, depth);
+    if (!tail.length) return;
+    const key = `o:${parentKey}:${offset + DIRS_SHOWN}`;
+    const open = state.expanded.has(key);
+    out.push({
+      key, kind: 'other', depth, expandable: true, expanded: open, count: tail.length,
+      stats: {
+        cls: null,
+        threads: tail.reduce((s, it) => s + it.stats.threads, 0),
+        expected: tail.reduce((s, it) => s + it.stats.expected, 0),
+        prior: Math.max(...tail.map((it) => it.stats.prior)),
+      },
+    });
+    if (open) group(tail, depth + 1, key, offset + DIRS_SHOWN);
+  };
+  group(roots.map((n): DirItem => ({ kind: 'dir', node: n, stats: n })).sort(order), 0, 'root', 0);
+  return out;
+}
+
+function selectDir(path: string) {
+  state.dir = state.dir === path ? null : path;
+  state.threadsShown = PAGE;
+  renderDirs();
+  renderThreads();
+  if (state.dir !== null) $('#comments').scrollIntoView({ block: 'start' });
+}
+
+function dirRow(r: DirRowView): HTMLTableRowElement {
+  const tr = el('tr', undefined, `rf-dir-row rf-dir-${r.kind}`);
+  tr.dataset.key = r.key;
+  tr.dataset.depth = String(r.depth);
+  if (r.kind === 'dir' && state.dir === r.node!.path) tr.setAttribute('aria-selected', 'true');
+  const th = el('th');
+  th.setAttribute('scope', 'row');
+  const label = el('span', undefined, 'rf-dir-label');
+  label.style.setProperty('--depth', String(r.depth));
+  const name = r.kind === 'other' ? fragment('dirs-other', { n: fmtInt(r.count!) }).textContent!
+    : r.kind === 'rest' ? fragment('dirs-rest', { dir: r.node!.name }).textContent! : r.node!.name;
+  if (r.expandable) {
+    const t = el('button', r.expanded ? '▾' : '▸', 'ar-toggle');
+    t.type = 'button';
+    t.setAttribute('aria-expanded', String(r.expanded));
+    t.setAttribute('aria-label', `${r.expanded ? 'Collapse' : 'Expand'} ${r.kind === 'dir' ? r.node!.path : name}`);
+    t.addEventListener('click', () => {
+      if (state.expanded.has(r.key)) state.expanded.delete(r.key);
+      else state.expanded.add(r.key);
+      renderDirs();
+    });
+    label.append(t);
+  } else {
+    label.append(el('span', undefined, 'ar-toggle-space'));
+  }
+  if (r.kind === 'dir') {
+    const b = el('button', name, 'rf-dir-pick');
+    b.type = 'button';
+    b.title = `${r.node!.path}: list its comments below`;
+    b.addEventListener('click', () => selectDir(r.node!.path));
+    label.append(b);
+  } else {
+    const s = el('span', name, 'rf-dir-group');
+    s.title = r.kind === 'rest' ? `Files directly in ${r.node!.path}` : `${fmtInt(r.count!)} more, smaller entries`;
+    label.append(s);
+  }
+  th.append(label);
+  const s = r.stats;
+  const ratio = el('td', '–', 'num rf-ratio');
+  if (s.expected > 0) {
+    const v = s.threads / s.expected;
+    ratio.textContent = fmtValue(v, 'd');
+    const shade = ratioShade(v);
+    ratio.classList.add(shade < 0 ? 'rf-ratio-lo' : 'rf-ratio-hi');
+    ratio.style.setProperty('--rf-shade', String(Math.abs(shade)));
+  }
+  tr.append(th, el('td', s.cls === null ? '–' : fmtInt(s.cls), 'num'), el('td', fmtInt(s.threads), 'num'),
+    el('td', fmtNum(s.expected, { maximumFractionDigits: 1 }), 'num'), ratio, el('td', fmtInt(s.prior), 'num'));
+  return tr;
 }
 
 function threadItem(r: ThreadRow): HTMLLIElement {
@@ -622,11 +724,19 @@ function threadItem(r: ThreadRow): HTMLLIElement {
   return li;
 }
 
+/** Shows or hides one of the half-year filter lines (above the directories, and above the comments). */
+function showHalfFilter(sel: string) {
+  const filter = $(sel);
+  filter.hidden = !state.half;
+  if (state.half) put(filter.querySelector('.rf-filter-name')!, 'half-filter', { half: halfName(state.half) });
+}
+
 function renderThreads() {
   const p = state.person!;
-  const rows = threadRows(p, state.half ?? ALL, state.kind, state.dir, state.praiseOnly);
-  put($('#comments-sub'), 'comments-sub', { n: fmtInt(rows.length), kind: state.kind,
-    dir: state.dir === null ? '' : p.dirs[state.dir], half: state.half ? halfName(state.half) : '' });
+  showHalfFilter('#rf-half-filter-comments');
+  const rows = threadRows(p, state.half ?? ALL, state.kind, state.dir);
+  put($('#comments-sub'), 'comments-sub', { n: fmtInt(rows.length), kind: state.kind, dir: state.dir ?? '',
+    half: state.half ? halfName(state.half) : '' });
   const list = $('#rf-threads');
   list.replaceChildren(...rows.slice(0, state.threadsShown).map(threadItem));
   if (!rows.length) list.append(el('li', msg('threads-none'), 'quote-none'));
@@ -650,7 +760,7 @@ function init() {
     e.preventDefault();
     void lookup(input.value);
   });
-  $('#rf-half-clear').addEventListener('click', () => setHalf(null));
+  for (const b of document.querySelectorAll('#rf-half-clear, .rf-half-clear')) b.addEventListener('click', () => setHalf(null));
   radio<Kind>('rf-kind', (v) => {
     state.kind = v;
     state.threadsShown = PAGE;
@@ -681,23 +791,14 @@ function init() {
   });
   $<HTMLSelectElement>('#rf-dir').addEventListener('change', (e) => {
     const v = (e.target as HTMLSelectElement).value;
-    state.dir = v === '' ? null : Number(v);
+    state.dir = v === '' ? null : v;
     state.threadsShown = PAGE;
     renderDirs();
-    renderThreads();
-  });
-  radio<string>('rf-show', (v) => {
-    state.praiseOnly = v === 'praise';
-    state.threadsShown = PAGE;
     renderThreads();
   });
   $('#rf-threads-more').addEventListener('click', () => {
     state.threadsShown += PAGE;
     renderThreads();
-  });
-  $('#rf-dirs-more').addEventListener('click', () => {
-    state.allDirs = true;
-    renderDirs();
   });
   matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
     renderIntro();

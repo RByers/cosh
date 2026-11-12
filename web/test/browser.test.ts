@@ -3372,21 +3372,43 @@ test('review feedback: a person, the measures, peer groups, directories and comm
   assert.equal(await tile('rf-tile-peers'), '–');
   await page.select('#rf-org', 'google');
   assert.match(await peersSub(), /^Google authors, 2–5 years since their first commit/);
-  // Directories: selecting one lists only its comments.
-  assert.deepEqual(await page.$$eval('#rf-dirs tbody th', (ths) => ths.map((t) => t.textContent)),
-    ['chrome/browser/ui/', 'third_party/blink/renderer/', 'content/browser/']);
-  await page.click('#rf-dirs tbody tr:nth-child(2) .rf-dir-pick');
+  // Directories: a tree, top level first; ▸ opens a directory into its subdirectories.
+  const dirNames = () => page.$$eval('#rf-dirs tbody th', (ths) => ths.map((t) => t.textContent!.replace(/[▸▾]/, '')));
+  assert.deepEqual(await dirNames(), ['chrome/', 'third_party/', 'content/']);
+  await page.click('#rf-dirs tbody tr[data-key="d:third_party/"] .ar-toggle');
+  await page.click('#rf-dirs tbody tr[data-key="d:third_party/blink/"] .ar-toggle');
+  assert.deepEqual(await dirNames(), ['chrome/', 'third_party/', 'blink/', 'renderer/', 'content/']);
+  assert.deepEqual(await page.$$eval('#rf-dirs tbody tr', (trs) => trs.map((t) => (t as HTMLElement).dataset.depth)),
+    ['0', '0', '1', '2', '0']);
+  // The ratio is shaded red below typical and green above, more strongly further from it.
+  const shades = await page.$$eval('#rf-dirs td.rf-ratio', (tds) => tds.map((t) =>
+    [t.className, (t as HTMLElement).style.getPropertyValue('--rf-shade'), getComputedStyle(t).backgroundColor]));
+  for (const [cls, shade, bg] of shades) {
+    if (!/rf-ratio-(lo|hi)/.test(cls)) continue;
+    assert.ok(Number(shade) >= 0 && Number(shade) <= 1, shade);
+    if (Number(shade) > 0) assert.notEqual(bg, 'rgba(0, 0, 0, 0)');
+  }
+  // Selecting a directory, at any level, lists only the comments under it; the addressed filter applies too.
+  await page.click('#rf-dirs tbody tr[data-key="d:third_party/"] .rf-dir-pick');
   assert.equal(await page.$$eval('#rf-threads li', (ls) => ls.length), 2);
-  assert.equal(await page.$eval('#rf-dir', (s) => (s as HTMLSelectElement).value), '2');
+  assert.equal(await page.$eval('#rf-dir', (s) => (s as HTMLSelectElement).value), 'third_party/');
+  await page.click('input[name="rf-kind"][value="a"]');
+  assert.equal(await page.$$eval('#rf-threads li', (ls) => ls.length), 1);
+  await page.click('input[name="rf-kind"][value="t"]');
+  await page.select('#rf-dir', 'third_party/blink/renderer/');
+  assert.equal(await page.$eval('#rf-dirs tr[aria-selected="true"]', (t) => (t as HTMLElement).dataset.key),
+    'd:third_party/blink/renderer/');
+  assert.equal(await page.$$eval('#rf-threads li', (ls) => ls.length), 2);
   await page.select('#rf-dir', '');
   assert.equal(await page.$$eval('#rf-threads li', (ls) => ls.length), 5);
-  // Praise only; comment text stays text, and each comment links to Gerrit in a new tab.
-  await page.click('input[name="rf-show"][value="praise"]');
-  assert.equal(await page.$$eval('#rf-threads li', (ls) => ls.length), 2);
+  // There is no praise-only filter; praise is tagged in the list. Comment text stays text, and each
+  // comment links to Gerrit in a new tab.
+  assert.equal(await page.$('#rf-show'), null);
+  assert.equal(await page.$$eval('#rf-threads .rf-tag-praise', (ls) => ls.length), 2);
   assert.equal(await page.$('#rf-threads img'), null);
   assert.ok((await page.$eval('#rf-threads', (e) => e.textContent!)).includes('<img src=x onerror=alert(1)>'));
   const links = await page.$$eval('#rf-threads a', (as) => as.map((a) => [a.getAttribute('href'), a.getAttribute('target')]));
-  assert.equal(links.length, 2);
+  assert.equal(links.length, 5);
   for (const [href, target] of links) {
     assert.match(href!, /^https:\/\/chromium-review\.googlesource\.com\/c\/chromium\/src\/\+\/\d+(\/comment\/[\w%]+\/)?$/);
     assert.equal(target, '_blank');
@@ -3414,9 +3436,14 @@ test('review feedback: selecting a dot in the over-time chart filters the direct
     const r = chart.canvas.getBoundingClientRect();
     return { x: r.left + pt.x, y: r.top + pt.y };
   }, i);
-  const dirs = () => page.$$eval('#rf-dirs tbody th', (ths) => ths.map((t) => t.textContent));
+  const dirs = () => page.$$eval('#rf-dirs tbody th', (ths) => ths.map((t) => t.textContent!.replace(/[▸▾]/, '')));
   const threads = () => page.$$eval('#rf-threads li', (ls) => ls.length);
-  const filterShown = () => page.$eval('#rf-half-filter', (e) => !(e as HTMLElement).hidden);
+  // The filter line shows above the directories and above the comments alike.
+  const filterShown = async () => {
+    const shown = await page.$$eval('#rf-half-filter, #rf-half-filter-comments', (es) => es.map((e) => !(e as HTMLElement).hidden));
+    assert.equal(shown[0], shown[1]);
+    return shown[0];
+  };
   // Chart.js handles canvas events on the next animation frame.
   const clickAt = async (x: number, y: number) => {
     await page.mouse.click(x, y);
@@ -3433,9 +3460,17 @@ test('review feedback: selecting a dot in the over-time chart filters the direct
   assert.equal(await filterShown(), true);
   assert.equal(await page.$eval('#rf-half-filter-name', (e) => e.textContent!.trim()),
     'Filter: only changes landed January – June 2026');
-  assert.deepEqual(await dirs(), ['content/browser/', 'chrome/browser/ui/']);
+  assert.equal(await page.$eval('#rf-half-filter-comments .rf-filter-name', (e) => e.textContent!.trim()),
+    'Filter: only changes landed January – June 2026');
+  assert.deepEqual(await dirs(), ['content/', 'chrome/']);
   assert.equal(await threads(), 1);
   assert.match(await page.$eval('#comments-sub', (e) => e.textContent!), /^1 reviewer threads on changes landed January – June 2026,/);
+  // Together with a directory filter: that half-year's threads in the directory.
+  await page.select('#rf-dir', 'chrome/');
+  assert.equal(await threads(), 1);
+  assert.match(await page.$eval('#rf-threads li', (e) => e.textContent!), /No reviewer threads here/);
+  assert.match(await page.$eval('#comments-sub', (e) => e.textContent!), /^0 reviewer threads in\s+chrome\/ on changes landed January – June 2026,/);
+  await page.select('#rf-dir', '');
   // The ring stays through a redraw of the chart (a change of adjustment).
   await page.click('input[name="rf-corr"][value="n"]');
   assert.equal(await page.evaluate(() => window.__rf!.half), '2026H1');
@@ -3448,7 +3483,14 @@ test('review feedback: selecting a dot in the over-time chart filters the direct
   await page.$eval('#rf-trend', (c) => c.scrollIntoView({ block: 'center' }));
   const last = await dot(6);
   await clickAt(last.x, last.y);
-  assert.deepEqual(await dirs(), ['third_party/blink/renderer/']);
+  assert.deepEqual(await dirs(), ['third_party/']);
+  // The comments' Clear button clears it as well.
+  await page.click('#rf-half-filter-comments .rf-half-clear');
+  assert.equal(await filterShown(), false);
+  assert.equal(await threads(), 5);
+  await page.$eval('#rf-trend', (c) => c.scrollIntoView({ block: 'center' }));
+  await clickAt(last.x, last.y);
+  assert.equal(await filterShown(), true);
   await clickAt(last.x, last.y);
   assert.equal(await filterShown(), false);
   // A click away from the person's dots changes nothing.
