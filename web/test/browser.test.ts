@@ -13,7 +13,7 @@ import { fileURLToPath } from 'node:url';
 import puppeteer, { type Browser, type HTTPRequest, type Page } from 'puppeteer-core';
 import { createServer, preview, type PreviewServer } from 'vite';
 import { CSP, randomPort } from '../vite.config.ts';
-import type { Peers } from '../src/feedback.ts';
+import type { Peers, Shard } from '../src/feedback.ts';
 import { addWeeks, addressedWeeks, isoWeekOf, namedOrgs, orgsWithShare, weeksIn, type Metric, type Summary } from '../src/data.ts';
 
 /** The committed summary the build bundles. */
@@ -3220,9 +3220,10 @@ test('a touch anywhere off a chart closes its hover card, on every page with cha
 // ---- Review Feedback (feedback-index.html). Its per-person data isn't
 // committed, so these tests serve the made-up person in feedback-fixture.ts.
 
-async function feedbackPage(peersOverride?: Peers): Promise<{ page: Page; errors: string[] }> {
-  const { top, shards, peers: fixturePeers, FIXTURE_KEY, ALIAS_KEY } = await import('./feedback-fixture.ts');
+async function feedbackPage(peersOverride?: Peers, shardsOverride?: Record<string, Shard>): Promise<{ page: Page; errors: string[] }> {
+  const { top, shards: fixtureShards, peers: fixturePeers, FIXTURE_KEY, ALIAS_KEY } = await import('./feedback-fixture.ts');
   const peers = peersOverride ?? fixturePeers;
+  const shards = shardsOverride ?? fixtureShards;
   const page = await browser.newPage();
   await page.setViewport({ width: 1100, height: 900 });
   const errors: string[] = [];
@@ -3548,17 +3549,20 @@ test('review feedback: selecting a dot in the over-time chart filters the direct
 });
 
 test('review feedback: selecting a column of the threads-per-change chart filters the directories and comments', async () => {
-  const { page, errors } = await feedbackPage();
-  const { FIXTURE_EMAIL } = await import('./feedback-fixture.ts');
+  // CL 3 gets three more threads, none addressed: 5 in all.
+  const { FIXTURE_EMAIL, shards } = await import('./feedback-fixture.ts');
+  const h2 = structuredClone(shards['2026H2']);
+  h2.cls[0][8].push(['', 0, -2, 0, 0], ['', 0, -2, 0, 0], ['', 0, -2, 0, 0]);
+  const { page, errors } = await feedbackPage(undefined, { ...shards, '2026H2': h2 });
   await lookUp(page, FIXTURE_EMAIL);
   await page.waitForFunction(() => !document.querySelector<HTMLElement>('#rf-person')!.hidden);
   // It comes right after the directory-experience card.
   assert.deepEqual(await page.$$eval('#rf-person > section', (ss) => ss.map((s) => s.id).slice(1, 4)),
     ['experience', 'per-cl', 'directories']);
   const counts = () => page.evaluate(() => window.__rf!.charts.perCl.data.datasets[0].data);
-  // CLs 1 and 3 drew 2 threads each, CL 2 one.
-  assert.deepEqual(await counts(), [0, 1, 2, 0, 0, 0, 0, 0, 0, 0, 0]);
-  assert.deepEqual(await page.evaluate(() => window.__rf!.charts.perCl.data.labels!.at(-1)), '10+');
+  // CL 1 drew 2 threads, CL 2 one, CL 3 five.
+  assert.deepEqual(await counts(), [0, 2, 1, 0, 0, 0]);
+  assert.deepEqual(await page.evaluate(() => window.__rf!.charts.perCl.data.labels), ['0', '1–2', '3–5', '6–10', '11–20', '21+']);
   // Where column i's middle is on the page (half its height, so even a short column can be hit).
   const col = (i: number) => page.evaluate((i) => {
     const chart = window.__rf!.charts.perCl;
@@ -3580,14 +3584,14 @@ test('review feedback: selecting a column of the threads-per-change chart filter
   // Above the column's top: still that column.
   await clickCol(1);
   assert.equal(await page.evaluate(() => window.__rf!.bin), 1);
-  assert.deepEqual(await filters(), Array(2).fill('Filter: only changes with 1 reviewer thread'));
-  assert.deepEqual(await dirs(), ['content/', 'chrome/']);
-  assert.equal(await threads(), 1);
-  assert.match(await page.$eval('#comments-sub', (e) => e.textContent!), /^1 reviewer threads on changes with 1 reviewer thread, newest/);
+  assert.deepEqual(await filters(), Array(2).fill('Filter: only changes with 1–2 reviewer threads'));
+  assert.deepEqual(await dirs(), ['chrome/', 'content/']);
+  assert.equal(await threads(), 3);
+  assert.match(await page.$eval('#comments-sub', (e) => e.textContent!), /^3 reviewer threads on changes with 1–2 reviewer threads, newest/);
   await clickCol(2);
-  assert.deepEqual(await filters(), Array(2).fill('Filter: only changes with 2 reviewer threads'));
-  assert.deepEqual(await dirs(), ['chrome/', 'third_party/']);
-  assert.equal(await threads(), 4);
+  assert.deepEqual(await filters(), Array(2).fill('Filter: only changes with 3–5 reviewer threads'));
+  assert.deepEqual(await dirs(), ['third_party/']);
+  assert.equal(await threads(), 5);
   // Together with a half-year, which the chart follows too.
   await page.$eval('#rf-trend', (c) => c.scrollIntoView({ block: 'center' }));
   const dot = await page.evaluate(() => {
@@ -3599,23 +3603,23 @@ test('review feedback: selecting a column of the threads-per-change chart filter
   await page.mouse.click(dot.x, dot.y);
   await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
   assert.equal(await page.evaluate(() => window.__rf!.half), '2026H2');
-  assert.deepEqual(await counts(), [0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0]);
+  assert.deepEqual(await counts(), [0, 0, 1, 0, 0, 0]);
   assert.match(await page.$eval('#per-cl-sub', (e) => e.textContent!), /drew, for the changes landed July – October 2026\./);
   assert.equal(await page.evaluate(() => window.__rf!.bin), 2);
   assert.deepEqual(await dirs(), ['third_party/']);
   assert.match(await page.$eval('#comments-sub', (e) => e.textContent!),
-    /^2 reviewer threads on changes with 2 reviewer threads, landed July – October 2026, newest/);
+    /^5 reviewer threads on changes with 3–5 reviewer threads, landed July – October 2026, newest/);
   // An empty column can't be selected.
   await clickCol(0);
   assert.equal(await page.evaluate(() => window.__rf!.bin), 2);
   await page.click('#rf-half-clear');
   // The addressed measure: every change drew one addressed thread, so column 2 empties and its filter goes.
   await page.click('input[name="rf-kind"][value="a"]');
-  assert.deepEqual(await counts(), [0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
+  assert.deepEqual(await counts(), [0, 3, 0, 0, 0, 0]);
   assert.equal(await page.evaluate(() => window.__rf!.bin), null);
   assert.deepEqual(await filters(), [null, null]);
   await clickCol(1);
-  assert.deepEqual(await filters(), Array(2).fill('Filter: only changes with 1 addressed reviewer thread'));
+  assert.deepEqual(await filters(), Array(2).fill('Filter: only changes with 1–2 addressed reviewer threads'));
   // Either Clear button clears it, and so does selecting the column again.
   await page.click('#rf-bin-filter-comments .rf-bin-clear');
   assert.deepEqual(await filters(), [null, null]);

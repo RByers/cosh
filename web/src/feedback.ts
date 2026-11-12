@@ -333,12 +333,25 @@ export const clsIn = (p: Person, period: string) => p.cls.filter((c) => inPeriod
 export const clsFor = (p: Person, period: string, kind: Kind) =>
   clsIn(p, period).filter((c) => kind === 't' || c[1] >= p.addrStart);
 
-/** The threads-per-change histogram's columns: 0 … 9 reviewer threads, then 10 or more. */
-export const THREAD_BINS = 11;
-export const threadBinLabel = (b: number) => (b === THREAD_BINS - 1 ? `${b}+` : String(b));
+/** The threads-per-change histogram's columns, by their fewest threads: 0, 1–2, 3–5, 6–10,
+ * 11–20, 21+. Over all changes since July 2023 they hold 56, 23, 10, 6, 3 and 2% (2026-11-12). */
+export const THREAD_BIN_FROM = [0, 1, 3, 6, 11, 21];
+export const THREAD_BINS = THREAD_BIN_FROM.length;
+/** Column `b`'s fewest and most threads (null: no upper end). */
+export const threadBinRange = (b: number): [number, number | null] =>
+  [THREAD_BIN_FROM[b], b + 1 < THREAD_BINS ? THREAD_BIN_FROM[b + 1] - 1 : null];
+export function threadBinLabel(b: number): string {
+  const [lo, hi] = threadBinRange(b);
+  return hi === null ? `${lo}+` : lo === hi ? String(lo) : `${lo}–${hi}`;
+}
 /** The reviewer threads on a change that a measure of `kind` counts. */
 export const threadsOn = (c: ClRow, kind: Kind) => c[8].reduce((s, t) => s + counts(t, kind), 0);
-export const threadBin = (c: ClRow, kind: Kind) => Math.min(threadsOn(c, kind), THREAD_BINS - 1);
+export function threadBin(c: ClRow, kind: Kind): number {
+  const n = threadsOn(c, kind);
+  let b = 0;
+  while (b + 1 < THREAD_BINS && n >= THREAD_BIN_FROM[b + 1]) b++;
+  return b;
+}
 
 /** The changes `clsFor` gives, only those in histogram column `bin` (null: all). */
 const clsPicked = (p: Person, period: string, kind: Kind, bin: number | null) =>

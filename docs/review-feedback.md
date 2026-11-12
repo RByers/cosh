@@ -175,8 +175,10 @@ The measures:
   half-year.
 - **Threads per change**, after the directory-experience card: a histogram
   of the person's CLs by how many reviewer threads (addressed ones, with the
-  addressed measure) each drew, 0 to 9 and 10+, for the selected half-year
-  if there is one. Selecting a column filters the directory tree and the
+  addressed measure) each drew, in columns of 0, 1–2, 3–5, 6–10, 11–20 and
+  21+ (over all CLs since July 2023: 56, 23, 10, 6, 3 and 2%; addressed:
+  65, 19, 8, 4, 2 and 1%, 2026-11-12), for the selected half-year if there
+  is one. Selecting a column filters the directory tree and the
   comments to those CLs, together with the half-year and directory filters,
   with its own filter line and Clear button; selecting it again clears it,
   as does a new half-year or measure that leaves the column empty.

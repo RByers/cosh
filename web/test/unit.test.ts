@@ -1583,16 +1583,20 @@ test('review feedback: half-year files merge, and every period gets the values t
   // The directory filter and the addressed filter together.
   assert.deepEqual(F.threadRows(person, 'all', 'a', 'third_party/').map((r) => r.uuid), ['']);
   // Threads per change: CLs 1 and 3 drew 2 threads, CL 2 one; each drew one addressed thread.
-  assert.deepEqual(F.threadHistogram(person, 'all', 't'), [0, 1, 2, 0, 0, 0, 0, 0, 0, 0, 0]);
-  assert.deepEqual(F.threadHistogram(person, 'all', 'a'), [0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
-  assert.deepEqual(F.threadHistogram(person, '2026H1', 't'), [0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
-  assert.deepEqual([0, 9, 10].map(F.threadBinLabel), ['0', '9', '10+']);
+  assert.deepEqual(F.threadHistogram(person, 'all', 't'), [0, 3, 0, 0, 0, 0]);
+  assert.deepEqual(F.threadHistogram(person, 'all', 'a'), [0, 3, 0, 0, 0, 0]);
+  assert.deepEqual(F.threadHistogram(person, '2026H1', 't'), [0, 1, 0, 0, 0, 0]);
+  assert.deepEqual([0, 1, 2, 3, 4, 5].map(F.threadBinLabel), ['0', '1–2', '3–5', '6–10', '11–20', '21+']);
+  assert.deepEqual([0, 1, 2, 3, 5, 6, 10, 11, 20, 21, 400].map((n) =>
+    F.threadBin([0, 0, 0, 0, 0, 0, 0, [], Array.from({ length: n }, (): [string, number, number, 1, number] => ['', 0, 0, 1, 0]), 0, 0], 't')),
+  [0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5]);
   // A column filters the comments and the directories, together with the other filters.
-  assert.deepEqual(F.threadRows(person, 'all', 't', null, 2).map((r) => r.cl), [1000003, 1000003, 1000001, 1000001]);
-  assert.deepEqual(F.threadRows(person, 'all', 't', 'chrome/', 1).map((r) => r.cl), []);
-  assert.deepEqual(F.threadRows(person, '2026H2', 't', null, 2).map((r) => r.cl), [1000003, 1000003]);
-  assert.deepEqual(F.dirTree(person, 'all', 't', 1).map((d) => [d.path, d.cls]), [['content/', 1], ['chrome/', 1]]);
-  assert.deepEqual(F.dirTree(person, 'all', 't', 2).map((d) => d.path), ['chrome/', 'third_party/']);
+  assert.equal(F.threadRows(person, 'all', 't', null, 1).length, 5);
+  assert.deepEqual(F.threadRows(person, 'all', 't', null, 2).map((r) => r.cl), []);
+  assert.deepEqual(F.threadRows(person, 'all', 't', 'chrome/', 1).map((r) => r.cl), [1000001, 1000001]);
+  assert.deepEqual(F.threadRows(person, '2026H2', 't', null, 1).map((r) => r.cl), [1000003, 1000003]);
+  assert.deepEqual(F.dirTree(person, 'all', 't', 1).map((d) => [d.path, d.cls]), [['chrome/', 2], ['third_party/', 1], ['content/', 1]]);
+  assert.deepEqual(F.dirTree(person, 'all', 't', 0), []);
   // Links are encoded and always go to Gerrit; without a comment id, to the change.
   assert.equal(F.commentUrl(5, 'a/b'), 'https://chromium-review.googlesource.com/c/chromium/src/+/5/comment/a%2Fb/');
   assert.equal(F.commentUrl(5, ''), 'https://chromium-review.googlesource.com/c/chromium/src/+/5');

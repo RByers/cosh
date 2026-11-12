@@ -27,6 +27,7 @@ import {
   ratioShade,
   threadRows,
   threadBinLabel,
+  threadBinRange,
   threadHistogram,
   THREAD_BINS,
   ratioBins,
@@ -629,9 +630,12 @@ function renderPerCl() {
   });
 }
 
-/** Column `b` of the threads-per-change chart, in words: "2 reviewer threads". */
-const binName = (b: number) => msg('bin-name', { kind: state.kind, none: b === 0, n: fmtInt(b), one: b === 1,
-  more: b === THREAD_BINS - 1 });
+/** Column `b` of the threads-per-change chart, in words: "3–5 reviewer threads". */
+function binName(b: number): string {
+  const [lo, hi] = threadBinRange(b);
+  return msg('bin-name', { kind: state.kind, none: hi === 0, one: lo === 1 && hi === 1, more: hi === null,
+    n: hi === null || hi === lo ? fmtInt(lo) : `${fmtInt(lo)}–${fmtInt(hi)}` });
+}
 
 function renderXp() {
   destroy('xp');
