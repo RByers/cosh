@@ -1,0 +1,1 @@
+{"dirs":["third_party/libjingle_xmpp/","tools/mb/","tools/mb/mb_config_expectations/"],"files":["tools/mb/mb_config.pyl"],"orgs":["google.com"],"cls":[[8157411,20664,3,0.127,0.08,[[0,0]],[],0,13],[8613373,20748,16,0.381,0.254,[[1,0.722,0,12],[2,0.278,0,4]],[["b909ddf7_fd698785",0,-2,0,"why not use gpu_tests_release_trybot_remoteexec_siso here as well ?"]],0,14]]}

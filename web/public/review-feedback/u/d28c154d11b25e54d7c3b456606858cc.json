@@ -1,0 +1,1 @@
+{"v":4,"first":"2026-08","first_day":20679,"halves":["2026H2"],"tone":{"received":14,"praise":1,"share":null,"ten":"<1y","chg":"<50"},"praise":[[8192157,"cbc342cf_977d3141",20676,"Checking `setPersonalContextDelegate` is a great idea. I think it actually makes the new enum case redundant because of how specific it is. Would you mind reverting adding…"]]}

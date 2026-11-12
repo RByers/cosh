@@ -1,0 +1,1 @@
+{"dirs":["chrome/browser/extensions/","extensions/browser/"],"files":["chrome/browser/extensions/extension_service.cc","chrome/browser/extensions/user_host_restrictions_browsertest.cc","extensions/browser/permissions_manager.cc"],"orgs":["microsoft.com"],"cls":[[6558692,20283,102,2.344,1.853,[[0,0.581,3,60],[1,0.419,0,42]],[["",0,-52,1],["",1,-47,1],["",2,-47,0]],0,3]]}

@@ -690,7 +690,9 @@ def main():
         at = landed_at.get(n, c["closed_at"])
         c["units"] = {d: [r3(v / tot), bisect.bisect_left(xp_times.get((c["pid"], d), ()), at), lines]
                       for d, (v, lines) in w.items()}
-        c["main"] = max(w, key=lambda d: w[d][0])
+        # The first unit in the files' order (largest rounded share, then name):
+        # the page takes it as the directory of threads outside every unit.
+        c["main"] = min(c["units"], key=lambda d: (-c["units"][d][0], d))
         c["prior"] = bisect.bisect_left(own_times.get(c["pid"], ()), at)
     del xp_times, cl_dirs
 
@@ -1125,7 +1127,15 @@ def main():
         for t in CHANGES:
             groups[f"changes:{t}:{o}"] = (lambda t, of: lambda pp: pp["chg"] == t and of(pp["org"]))(t, of)
         groups[f"dir:{o}"] = (lambda of: lambda pp: of(pp["org"]))(of)
+    # The norms by size alone (expected threads and addressed threads per
+    # size10 bucket): the files leave them out and the page looks them up.
+    size_norm = {"t": [1.0] * 10, "a": [1.0] * 10}
+    for c in use:
+        size_norm["t"][c["sb"]], size_norm["a"][c["sb"]] = c["exp_ts"], c["exp_as"]
+    if any((size_norm["t"][c["sb"]], size_norm["a"][c["sb"]]) != (c["exp_ts"], c["exp_as"]) for c in use):
+        sys.exit("the size norms differ within a size bucket")
     peers = dict(generated=datetime.now(timezone.utc).strftime("%Y-%m-%d"), periods=allp, metrics=METRICS,
+                 size_norm=size_norm,
                  start=epoch_day(START), end=epoch_day(END), addr_start=epoch_day(ADDR_START),
                  tenure=TENURE, changes=CHANGES, xp=XP, min_peers=MIN_PEERS, qs=len(QS), min_cls=MIN_CLS, min_exp=MIN_EXP, min_received=MIN_RECEIVED,
                  tone_weeks=[TONE_WEEKS[0], TONE_WEEKS[-1]], dist={}, counts={}, bands={}, tone={},
@@ -1194,6 +1204,9 @@ def main():
     with open(os.path.join(out, "peers.json"), "w") as f:
         json.dump(peers, f, separators=(",", ":"))
     written, stubs, size = 0, 0, 0
+    # Half-years that reach into the year with comment text keep each thread;
+    # older ones keep counts per directory.
+    tone_start = week_start(TONE_WEEKS[0])
     taken = {}
     check = {}
     for pid, cs in people.items():
@@ -1207,13 +1220,13 @@ def main():
         for c in cs:
             by_half[half(c["closed_at"])].append(c)
         for h, hcs in sorted(by_half.items()):
-            data = json.dumps(shard(hcs, text), separators=(",", ":"), ensure_ascii=False)
+            data = json.dumps(shard(hcs, text, half_end(h) > tone_start), separators=(",", ":"), ensure_ascii=False)
             os.makedirs(os.path.join(out, h), exist_ok=True)
             with open(os.path.join(out, h, f"{k}.json"), "w") as f:
                 f.write(data)
             size += len(data.encode())
         r = received.get(pid, {})
-        top = dict(v=3, first=datetime.fromtimestamp(first[pid], timezone.utc).strftime("%Y-%m") if pid in first else None,
+        top = dict(v=4, first=datetime.fromtimestamp(first[pid], timezone.utc).strftime("%Y-%m") if pid in first else None,
                    first_day=epoch_day(first[pid]) if pid in first else None, halves=sorted(by_half),
                    tone=dict(received=r.get("tone", 0), praise=r.get("praise", 0), share=tone_share(pid),
                              ten=tone_bands(pid)["time"], chg=tone_bands(pid)["changes"]),
@@ -1245,15 +1258,31 @@ def main():
 HALF = re.compile(r"^\d{4}H[12]$")
 
 
-def shard(cs, text):
+def half_end(h):
+    """The timestamp a half-year ("2025H2") ends at."""
+    y, second = int(h[:4]), h[5] == "2"
+    return datetime(y + second, 1 if second else 7, 1, tzinfo=timezone.utc).timestamp()
+
+
+def shard(cs, text, threads):
     """One person's CLs of one half-year, oldest first: [change number, day
-    landed, lines, expected threads by size, by size and directory, expected
-    addressed by size, by size and directory, [[directory, line share,
-    earlier commits, lines changed there]], [[comment uuid, file, days after landing, addressed,
-    directory, excerpt]], org, the owner's earlier commits on main], with
-    directory, file and org names listed
-    once. A thread without an excerpt has an empty uuid: the page links its
-    CL instead."""
+    landed, lines, expected threads by size and directory, expected addressed
+    by size and directory, units, threads, org, the owner's earlier commits on
+    main], with directory, file and org names listed once. The expected
+    values by size alone are left out: they depend only on the size bucket,
+    and peers.json's `size_norm` lists them.
+
+    Units, largest share first: [directory, line share, earlier commits there,
+    lines changed there], or [directory, earlier commits there] for a CL
+    wholly in one directory (share 1, all of its lines).
+
+    With `threads` (half-years that reach into the year with comment text),
+    each reviewer thread: [comment uuid, file, days after landing, addressed,
+    excerpt]. The uuid is empty for a thread without an excerpt (the page
+    links its CL instead). A thread's directory is its file's (3 levels) when
+    that is one of the CL's units, else the first unit's. Without `threads`
+    the shard has `counts`: 1 and each CL has [threads, addressed] per unit,
+    in the units' order, or [] when it has no reviewer threads."""
     files, dirs, orgs = {}, {}, {}
 
     def idx(table, x):
@@ -1262,19 +1291,33 @@ def shard(cs, text):
     for c in cs:
         n = c["change_number"]
         d0 = epoch_day(c["closed_at"])
-        units = [[idx(dirs, dd), w, prior, lines]
-                 for dd, (w, prior, lines) in sorted(c["units"].items(), key=lambda kv: (-kv[1][0], kv[0]))]
+        order = sorted(c["units"].items(), key=lambda kv: (-kv[1][0], kv[0]))
+        assert order[0][0] == c["main"], n
+        (d1, (w1, prior1, lines1)), = order[:1]
+        if len(order) == 1 and w1 == 1 and lines1 == c["lines"]:
+            units = [[idx(dirs, d1), prior1]]
+        else:
+            units = [[idx(dirs, dd), w, prior, lines] for dd, (w, prior, lines) in order]
         thr = []
-        for root, path, at, addr, dd in sorted(c["thr"], key=lambda t: (t[2], t[0])):
-            ex = text.get(f"{n}/{root}")
-            t = [root if ex is not None else "", idx(files, path), (day_of(at) - d0) if at else None,
-                 None if addr is None else int(bool(addr)), idx(dirs, dd)]
-            if ex is not None:
-                t.append(ex)
-            thr.append(t)
-        rows.append([n, d0, c["lines"], c["exp_ts"], c["exp_td"], c["exp_as"], c["exp_ad"], units, thr,
-                     idx(orgs, c["org"]), c["prior"]])
-    return dict(dirs=list(dirs), files=list(files), orgs=list(orgs), cls=rows)
+        if threads:
+            for root, path, at, addr, dd in sorted(c["thr"], key=lambda t: (t[2], t[0])):
+                ex = text.get(f"{n}/{root}")
+                t = [root if ex is not None else "", idx(files, path), (day_of(at) - d0) if at else None,
+                     None if addr is None else int(bool(addr))]
+                if ex is not None:
+                    t.append(ex)
+                thr.append(t)
+        elif c["thr"]:
+            per = {dd: [0, 0] for dd, _ in order}
+            for _, _, _, addr, dd in c["thr"]:
+                per[dd][0] += 1
+                per[dd][1] += 1 if addr else 0
+            thr = [per[dd] for dd, _ in order]
+        rows.append([n, d0, c["lines"], c["exp_td"], c["exp_ad"], units, thr, idx(orgs, c["org"]), c["prior"]])
+    out = dict(dirs=list(dirs), files=list(files), orgs=list(orgs), cls=rows)
+    if not threads:
+        out["counts"] = 1
+    return out
 
 
 if __name__ == "__main__":

@@ -1,0 +1,1 @@
+{"dirs":["media/capture/video/"],"files":["media/capture/video/android/java/src/org/chromium/media/VideoCaptureCamera2.java"],"orgs":["gmail.com"],"cls":[[7951638,20622,5,0.378,0.243,[[0,0]],[["58120532_cb5fc44b",0,-1,1,"nit: return maxZoom != null && maxZoom > 1.0f;"]],0,38]]}

@@ -1,0 +1,1 @@
+{"dirs":["media/gpu/v4l2/"],"files":["media/gpu/v4l2/v4l2_video_decoder.cc"],"orgs":["google.com"],"cls":[[7347549,20451,98,0.03,0.015,[[0,186]],[["dce9f743_5a63bea5",0,0,0,"Hi Jianfeng. This is causing issues on stateful V4L2 platforms. The bit_depth == 10u test effectively blocked this for the existing stateful ChromeOS devices since they don't have 10-bit support.…"]],0,246]]}

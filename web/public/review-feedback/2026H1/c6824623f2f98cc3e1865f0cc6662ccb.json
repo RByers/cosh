@@ -1,0 +1,1 @@
+{"dirs":["tools/metrics/histograms/","base/system/","chrome/browser/performance_manager/"],"files":["base/system/sys_info_mac.mm"],"orgs":["island.io"],"cls":[[7320264,20485,25,0.698,0.559,[[0,0.607,0,16],[1,0.214,0,5],[2,0.179,0,4]],[["717e0cba_f18fafb0",0,-19,1,"This change makes the computation for Memory.Experimental.MacAvailableMemoryPercentFreePageCache2 here…"]],0,0]]}

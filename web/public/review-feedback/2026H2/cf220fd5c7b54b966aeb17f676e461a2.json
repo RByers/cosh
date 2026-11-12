@@ -1,0 +1,1 @@
+{"dirs":["docs/"],"files":["docs/gardener.md"],"orgs":["google.com"],"cls":[[8604952,20748,16,1.077,0.846,[[0,0]],[["db78bd4d_787394c2",0,-2,1,"Is this actually true? If https://crbug.com/40264921 is still accurate (specifically yiwei's comment #5), \"throttled\" is effectively just \"open\" but with a yellow color instead of a green one"]],0,76]]}

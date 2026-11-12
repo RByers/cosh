@@ -1,0 +1,1 @@
+{"v":4,"first":"2023-09","first_day":19606,"halves":["2023H2","2024H1","2024H2","2025H1","2026H1"],"tone":{"received":13,"praise":1,"share":null,"ten":"2-5y","chg":"<50"},"praise":[[7544962,"48f767af_9a1196bb",20489,"Thank you for making the fields private - this is very nice for encapsulating how the `all_crates` and the `crate-name` vs `crate-name@v1` interact."]]}

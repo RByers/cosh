@@ -1,0 +1,1 @@
+{"v":4,"first":"2026-10","first_day":20742,"halves":["2026H2"],"tone":{"received":21,"praise":1,"share":0.047619047619047616,"ten":"<1y","chg":"<50"},"praise":[[8597074,"285f0980_d18af1a2",20745,"LGTM. Correctly enables Skia Gold for post-submit Android CI suites while maintaining --bypass-skia-gold-functionality in precommit_args."]]}

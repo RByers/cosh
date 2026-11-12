@@ -4,6 +4,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { test } from 'vitest';
+import type { Shard } from '../src/feedback.ts';
 import * as G from '../src/dataflow-graph.ts';
 import {
   authorBoard,
@@ -1500,6 +1501,29 @@ test('review feedback: percentiles and quantiles read off 21 quantiles', async (
   assert.equal(percentileOf(flat, 1), (5 + 15) / 2 / 20);
 });
 
+test('review feedback: older half-years keep thread counts per directory, and the comments list groups them', async () => {
+  const F = await import('../src/feedback.ts');
+  const { top, peers, day } = await import('./feedback-fixture.ts');
+  // Two changes: one in two directories (3 threads, 1 addressed; 1 thread), one without threads.
+  const old: Shard = { dirs: ['ui/', 'base/'], files: [], orgs: ['google.com'], counts: 1, cls: [
+    [900001, day('2024-02-01'), 40, 2.5, 1.4, [[0, 0.6, 3, 30], [1, 0.4, 0, 10]], [[3, 1], [1, 0]], 0, 12],
+    [900002, day('2024-03-01'), 10, 1.5, 0.9, [[1, 4]], [], 0, 13]] };
+  const p = F.buildPerson({ ...top, halves: ['2024H1'] }, [old], peers);
+  assert.deepEqual(p.cls.map((c) => c[8].length), [4, 0]);
+  assert.deepEqual(p.cls[0][8].map((t) => [p.dirs[t[4]], t[3], t[1]]),
+    [['ui/', 1, -1], ['ui/', 0, -1], ['ui/', 0, -1], ['base/', 0, -1]]);
+  assert.deepEqual(p.cls[1][7], [[1, 1, 4, 10]]);
+  assert.deepEqual([p.periods.all.threads, p.periods.all.addressed], [4, 1]);
+  const rows = F.threadRows(p, 'all', 't', null);
+  assert.deepEqual(rows.map((r) => [r.cl, r.file, r.addressed, r.count]),
+    [[900001, 'ui/', 1, 1], [900001, 'ui/', 0, 2], [900001, 'base/', 0, 1]]);
+  assert.equal(F.threadsIn(rows), 4);
+  assert.deepEqual(F.threadRows(p, 'all', 'a', 'ui/').map((r) => r.count), [1]);
+  // Sizes and directories as balance_growth.size10 and balance_analysis.dir_of(path, 3) give them.
+  assert.deepEqual([0, 1, 3, 4, 7, 8, 1023, 1024, 50000].map(F.size10), [0, 0, 0, 1, 1, 2, 8, 9, 9]);
+  assert.deepEqual(['a.cc', 'ui/a.cc', 'a/b/c/d/e.cc'].map(F.dirOf), ['(root)/', 'ui/', 'a/b/c/']);
+});
+
 test('review feedback: half-year files merge, and every period gets the values the script computes', async () => {
   const F = await import('../src/feedback.ts');
   const { top, shards, peers, day } = await import('./feedback-fixture.ts');
@@ -1509,6 +1533,11 @@ test('review feedback: half-year files merge, and every period gets the values t
   assert.deepEqual(person.cls.map((c) => c[7].map(([d]) => person.dirs[d])),
     [['chrome/browser/ui/'], ['content/browser/', 'chrome/browser/ui/'], ['third_party/blink/renderer/']]);
   assert.deepEqual(person.cls[2][8].map((t) => person.files[t[1]]), ['third_party/blink/renderer/core/a.cc', '/COMMIT_MSG']);
+  // The expected values by size alone come from size_norm; a change wholly in one directory
+  // gets share 1 and all of its lines there; each thread the directory of its file.
+  assert.deepEqual(person.cls.map((c) => c.slice(2, 7)), [[40, 2, 2.5, 1.2, 1.4], [120, 3, 3, 2, 2], [10, 1, 1.5, 0.6, 0.9]]);
+  assert.deepEqual(person.cls[2][7], [[2, 1, 150, 10]]);
+  assert.deepEqual(person.cls[1][8].map((t) => person.dirs[t[4]]), ['content/browser/']);
   // Everything, and the half-years with changes (the over-time chart).
   assert.deepEqual(Object.keys(person.periods).sort(), ['2025H2', '2026H1', '2026H2', 'all']);
   const all = person.periods.all;

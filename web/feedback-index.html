@@ -431,7 +431,7 @@
           name="bin"></slot><span data-if="half">, landed <slot name="half"></slot></span></span><span
           data-if="!bin"><span data-if="half"> on changes landed <slot name="half"></slot></span></span>, newest first, each linked to its review. Text and a link to
           the comment itself are included for threads whose text has been collected (from November 2025 on); older
-          ones link to their change.
+          ones link to their change. Before July 2025 a change's threads are grouped by directory, without their files.
         </template>
         <!-- The same half-year filter as above the directories, together with the directory picker. -->
         <p id="rf-half-filter-comments" class="rf-filter" hidden>
@@ -453,6 +453,9 @@
         <template data-msg="threads-more">Show <slot name="n"></slot> more</template>
         <template data-msg="threads-none">No reviewer threads here.</template>
         <template data-msg="thread-meta"><slot name="date"></slot> · <slot name="file"></slot></template>
+        <template data-msg="thread-meta-count"><slot name="date"></slot> · <slot name="n"></slot> <span data-if="n=1">thread</span><span
+          data-if="n!=1">threads</span> in <slot name="dir"></slot></template>
+        <template data-msg="thread-no-text-count">Files, dates and text not included; find them on the change in Gerrit.</template>
         <template data-msg="thread-addressed">addressed</template>
         <template data-msg="thread-praise">praise</template>
         <template data-msg="thread-no-text">Text not included; find it on the change in Gerrit.</template>

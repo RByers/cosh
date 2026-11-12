@@ -2287,6 +2287,7 @@ test('the landing page links to the Value Exchange dashboard', async () => {
     { href: 'value.html', title: 'Value Exchange' },
     { href: 'sentiment.html', title: 'Review Tone' },
     { href: 'balance.html', title: 'Review Balance' },
+    { href: 'feedback-index.html', title: 'Feedback Index' },
   ]);
   // Only the draft dashboard's card has the yellow "In development" box.
   const warnings = await page.$$eval('.card-warning', (ws) => ws.map((w) => ({
@@ -3135,11 +3136,7 @@ test('every page carries the Content Security Policy, breaks none of it, and it 
       CSP, path);
     // The page itself trips nothing.
     assert.deepEqual(await page.evaluate(() => (window as unknown as { violations: string[] }).violations), [], path);
-    // The Review Feedback files are generated and gitignored, so a checkout without
-    // them (CI, a worktree) answers peers.json with a 404, which the page expects.
-    const unexpected = path === 'feedback-index.html'
-      ? errors.filter((e) => !/status of 404/.test(e)) : errors;
-    assert.deepEqual(unexpected, [], path);
+    assert.deepEqual(errors, [], path);
     // A stray innerHTML-style sink throws (Trusted Types)…
     const threw = await page.evaluate(() => {
       try {
@@ -3253,8 +3250,8 @@ test('a touch anywhere off a chart closes its hover card, on every page with cha
   }
 });
 
-// ---- Review Feedback (feedback-index.html). Its per-person data isn't
-// committed, so these tests serve the made-up person in feedback-fixture.ts.
+// ---- Review Feedback (feedback-index.html). These tests serve the made-up
+// person in feedback-fixture.ts, so they don't depend on the committed data.
 
 async function feedbackPage(peersOverride?: Peers, shardsOverride?: Record<string, Shard>): Promise<{ page: Page; errors: string[] }> {
   const { top, shards: fixtureShards, peers: fixturePeers, FIXTURE_KEY, ALIAS_KEY } = await import('./feedback-fixture.ts');
@@ -3311,10 +3308,10 @@ test('review feedback: the caveat, a lookup field that offers no completions, an
     /No changes owned by that address landed between July 2023 and October 2026\./);
   assert.match(await page.$eval('#find', (e) => e.textContent!), /every change you landed since July 2023,/);
   assert.equal(await page.$eval('#rf-person', (m) => (m as HTMLElement).hidden), true);
-  // The landing page doesn't link to it yet.
+  // The landing page links to it.
   const home = await browser.newPage();
   await home.goto(baseUrl, { waitUntil: 'load' });
-  assert.equal(await home.$('a[href="feedback-index.html"]'), null);
+  assert.notEqual(await home.$('a.card-link[href="feedback-index.html"]'), null);
   await home.close();
   assert.deepEqual(errors, []);
   await page.close();
@@ -3616,6 +3613,26 @@ test('review feedback: a person, the measures, peer groups, directories and comm
   await page.close();
 });
 
+test('review feedback: threads kept only as counts list as one row per change and directory', async () => {
+  // CL 1's half-year as an older file has it: 3 threads in its directory, 1 addressed.
+  const { FIXTURE_EMAIL, shards } = await import('./feedback-fixture.ts');
+  const h2: Shard = { ...shards['2025H2'], files: [], counts: 1,
+    cls: [[...shards['2025H2'].cls[0].slice(0, 6), [[3, 1]], ...shards['2025H2'].cls[0].slice(7)] as Shard['cls'][0]] };
+  const { page, errors } = await feedbackPage(undefined, { ...shards, '2025H2': h2 });
+  await lookUp(page, FIXTURE_EMAIL);
+  await page.waitForFunction(() => !document.querySelector<HTMLElement>('#rf-person')!.hidden);
+  const rows = () => page.$$eval('#rf-threads li', (ls) => ls.map((l) => ({
+    head: l.querySelector('.rf-thread-head')!.textContent!.replace(/\s+/g, ' ').trim(),
+    link: l.querySelector('a')!.getAttribute('href') })));
+  const grouped = (await rows()).filter((r) => r.link!.endsWith('/1000001'));
+  assert.deepEqual(grouped.map((r) => r.head.replace(/^.* · /, '')),
+    ['1 thread in chrome/browser/ui/addressed', '2 threads in chrome/browser/ui/']);
+  // The caption counts threads, not rows: 3 + 1 + 2.
+  assert.match(await page.$eval('#comments-sub', (e) => e.textContent!), /^\s*6 reviewer threads/);
+  assert.deepEqual(errors, []);
+  await page.close();
+});
+
 test('review feedback: selecting a dot in the over-time chart filters the directories and comments', async () => {
   const { page, errors } = await feedbackPage();
   const { FIXTURE_EMAIL } = await import('./feedback-fixture.ts');
@@ -3706,7 +3723,7 @@ test('review feedback: selecting a column of the threads-per-change chart filter
   // CL 3 gets three more threads, none addressed: 5 in all.
   const { FIXTURE_EMAIL, shards } = await import('./feedback-fixture.ts');
   const h2 = structuredClone(shards['2026H2']);
-  h2.cls[0][8].push(['', 0, -2, 0, 0], ['', 0, -2, 0, 0], ['', 0, -2, 0, 0]);
+  (h2.cls[0][6] as [string, number, number | null, 0 | 1 | null][]).push(['', 0, -2, 0], ['', 0, -2, 0], ['', 0, -2, 0]);
   const { page, errors } = await feedbackPage(undefined, { ...shards, '2026H2': h2 });
   await lookUp(page, FIXTURE_EMAIL);
   await page.waitForFunction(() => !document.querySelector<HTMLElement>('#rf-person')!.hidden);

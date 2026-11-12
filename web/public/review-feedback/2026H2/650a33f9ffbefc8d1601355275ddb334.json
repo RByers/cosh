@@ -1,0 +1,1 @@
+{"dirs":["components/reporting/proto/"],"files":["/COMMIT_MSG"],"orgs":["google.com"],"cls":[[8692907,20756,12,0.399,0.286,[[0,3]],[["944116d5_4f88d03c",0,0,1,"Let's also include the bug id in the CL description? `Bug:b:<bug_number>`"]],0,11]]}

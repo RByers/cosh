@@ -1,0 +1,1 @@
+{"dirs":["media/capabilities/"],"files":["media/capabilities/bucket_utility.cc"],"orgs":["google.com"],"cls":[[7274639,20440,47,1.21,0.931,[[0,0]],[["7eb08123_1be3e41f",0,0,1,"NIT: I think you cah use `std::ranges::lower_bound` here an throughout this file, so you won't have to explicitly give `begin()` and `end()` iterators?"]],0,1]]}

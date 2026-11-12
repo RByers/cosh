@@ -10,7 +10,3 @@ secrets*
 *.pyc
 
 .claude/worktrees
-
-# Per-person Review Feedback data (scripts/review_feedback.py): ~120 MB, rebuilt
-# from data/private; not committed until it is published (docs/review-feedback.md)
-web/public/review-feedback/

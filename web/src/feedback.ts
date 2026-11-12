@@ -39,17 +39,33 @@ export interface PeriodVals {
   x: Record<Metric, number | null>;
 }
 
-/** [comment uuid (empty when there's no excerpt: link the change instead),
- * file index, days after the change landed, addressed (null: not labelled),
- * directory index, excerpt (only where comment text is collected)]. */
+/** A reviewer thread, as the page holds it: [comment uuid (empty when there's
+ * no excerpt: link the change instead), file index (-1: the file isn't kept,
+ * in half-years before the comment text), days after the change landed,
+ * addressed (null: not labelled), directory index, excerpt (only where
+ * comment text is collected)]. */
 export type Thread = [string, number, number | null, 0 | 1 | null, number, string?];
 /** [directory index, share of the change's lines, the owner's earlier commits there,
- * lines changed there (added + deleted, in the landed commit; missing in older files)]. */
+ * lines changed there (added + deleted, in the landed commit)]. */
 export type Unit = [number, number, number, number?];
-/** [change number, day landed (days since 1970), lines, expected threads by
- * size, by size and directory, expected addressed by size, by size and
- * directory, units, threads, org index, the owner's earlier commits on main]. */
+/** A change, as the page holds it: [change number, day landed (days since
+ * 1970), lines, expected threads by size, by size and directory, expected
+ * addressed by size, by size and directory, units, threads, org index, the
+ * owner's earlier commits on main]. */
 export type ClRow = [number, number, number, number, number, number, number, Unit[], Thread[], number, number];
+
+/** A change in a half-year file (scripts/review_feedback.py `shard`): [change
+ * number, day landed, lines, expected threads by size and directory, expected
+ * addressed by size and directory, units, threads, org index, earlier commits
+ * on main]. The expected values by size alone come from peers.json's
+ * `size_norm`. A unit is [directory, share, earlier commits there, lines], or
+ * [directory, earlier commits there] for a change wholly in one directory.
+ * Threads are [uuid, file, days after landing, addressed, excerpt?], their
+ * directory told by the file; in a file with `counts`, [threads, addressed]
+ * per unit instead. */
+export type FileRow = [number, number, number, number, number, FileUnit[], FileThread[] | [number, number][], number, number];
+type FileUnit = [number, number] | [number, number, number, number];
+type FileThread = [string, number, number | null, 0 | 1 | null, string?];
 
 /** Tone received, with the person's tenure bands at the end of the tone year. */
 type Tone = { received: number; praise: number; share: number | null; ten: string | null; chg: string | null };
@@ -57,7 +73,7 @@ type Praise = [number, string, number, string][];
 
 /** u/<key>.json: who the person is and which half-year files they have. */
 export interface Top {
-  v: 3;
+  v: 4;
   first: string | null;
   /** First commit on main, as a day number. */
   first_day: number | null;
@@ -72,7 +88,9 @@ export interface Shard {
   dirs: string[];
   files: string[];
   orgs: string[];
-  cls: ClRow[];
+  /** 1: the changes carry thread counts per directory, not each thread. */
+  counts?: 1;
+  cls: FileRow[];
 }
 
 /** A person's files merged, with every period's values. */
@@ -119,6 +137,8 @@ export interface Peers {
   addr_start: number;
   periods: string[];
   metrics: Metric[];
+  /** Expected threads (t) and addressed threads (a) per change by size alone, per `size10` bucket. */
+  size_norm: { t: number[]; a: number[] };
   tenure: string[];
   changes: string[];
   xp: string[];
@@ -635,25 +655,42 @@ export interface ThreadRow {
   dir: number;
   text: string | null;
   praise: boolean;
+  /** Set on a row that stands for this many threads in one directory of a
+   * change, from a half-year whose files keep only counts (no file or day). */
+  count?: number;
 }
 
 /** Reviewer threads on the changes landed in `period`, newest first,
  * optionally only addressed ones, only in directories under `dir` (a
  * path prefix such as "chrome/" or "chrome/browser/ui/"), and only on the
- * changes in threads-per-change column `bin`. */
+ * changes in threads-per-change column `bin`. Threads kept only as counts
+ * come as one row per change, directory and addressed or not. */
 export function threadRows(p: Person, period: string, kind: Kind, dir: string | null, bin: number | null = null): ThreadRow[] {
   const praise = new Set(p.praise.map(([n, u]) => `${n}/${u}`));
   const out: ThreadRow[] = [];
   for (const c of clsPicked(p, period, kind, bin)) {
+    const groups = new Map<string, ThreadRow>();
     for (const t of c[8]) {
       if (kind === 'a' && !t[3]) continue;
       if (dir !== null && !p.dirs[t[4]].startsWith(dir)) continue;
+      if (t[1] < 0) {
+        const k = `${t[4]}/${t[3]}`;
+        const g = groups.get(k);
+        if (g) g.count! += 1;
+        else groups.set(k, { cl: c[0], uuid: '', file: p.dirs[t[4]], day: c[1], addressed: t[3], dir: t[4],
+          text: null, praise: false, count: 1 });
+        continue;
+      }
       out.push({ cl: c[0], uuid: t[0], file: p.files[t[1]], day: c[1] + (t[2] ?? 0), addressed: t[3], dir: t[4],
         text: t[5] ?? null, praise: praise.has(`${c[0]}/${t[0]}`) });
     }
+    out.push(...groups.values());
   }
   return out.sort((a, b) => b.day - a.day || b.cl - a.cl);
 }
+
+/** How many threads rows stand for. */
+export const threadsIn = (rows: ThreadRow[]) => rows.reduce((s, r) => s + (r.count ?? 1), 0);
 
 /** A Gerrit link to one comment (or to the change, without a uuid). The parts
  * come from data, so they are encoded. */
@@ -667,8 +704,18 @@ export const halves = (periods: string[]) => periods.filter((p) => /^\d{4}H[12]$
 
 // ---- Merging a person's files, and their values per period
 
-/** The half-year files merged into one person, names re-indexed. */
-export function mergePerson(top: Top, shards: Shard[]): Omit<Person, 'periods' | 'addrStart'> {
+/** balance_growth.size10: ten log-spaced size buckets of changed lines, <4, <8, …, <1024, 1024+. */
+export const size10 = (lines: number) => Math.min(9, Math.max(0, 30 - Math.clz32(Math.max(lines, 1))));
+
+/** balance_analysis.dir_of(path, 3): a file's directory, three levels deep. */
+export function dirOf(path: string): string {
+  const parts = path.split('/').slice(0, -1);
+  return parts.length ? `${parts.slice(0, 3).join('/')}/` : '(root)/';
+}
+
+/** The half-year files merged into one person, names re-indexed. `norm` is
+ * peers.json's `size_norm`, for the expected values by size alone. */
+export function mergePerson(top: Top, shards: Shard[], norm: Peers['size_norm']): Omit<Person, 'periods' | 'addrStart'> {
   const tables = { dirs: new Map<string, number>(), files: new Map<string, number>(), orgs: new Map<string, number>() };
   const at = (t: Map<string, number>, name: string) => {
     let i = t.get(name);
@@ -680,14 +727,27 @@ export function mergePerson(top: Top, shards: Shard[]): Omit<Person, 'periods' |
     const d = s.dirs.map((x) => at(tables.dirs, x));
     const f = s.files.map((x) => at(tables.files, x));
     const o = s.orgs.map((x) => at(tables.orgs, x));
-    for (const c of s.cls) {
-      const units = c[7].map(([di, ...rest]): Unit => [d[di], ...rest]);
-      const threads = c[8].map((t): Thread => {
-        const r: Thread = [t[0], f[t[1]], t[2], t[3], d[t[4]]];
-        if (t.length > 5) r.push(t[5]);
-        return r;
-      });
-      cls.push([c[0], c[1], c[2], c[3], c[4], c[5], c[6], units, threads, o[c[9]], c[10]]);
+    for (const [n, day, lines, td, ad, fileUnits, fileThreads, org, prior] of s.cls) {
+      const units = fileUnits.map((u): Unit => (u.length === 2 ? [d[u[0]], 1, u[1], lines] : [d[u[0]], u[1], u[2], u[3]]));
+      const threads: Thread[] = [];
+      if (s.counts) {
+        // Counts per unit: as many threads in each directory, without their files or days.
+        (fileThreads as [number, number][]).forEach(([all, addressed], i) => {
+          for (let k = 0; k < all; k++) threads.push(['', -1, null, k < addressed ? 1 : 0, units[i][0]]);
+        });
+      } else {
+        // A thread's directory is its file's, if the change has a unit there, else the first unit's.
+        const unitDirs = new Map(fileUnits.map((u) => [s.dirs[u[0]], d[u[0]]]));
+        for (const t of fileThreads as FileThread[]) {
+          const path = s.files[t[1]];
+          const own = path && !path.startsWith('/') ? unitDirs.get(dirOf(path)) : undefined;
+          const r: Thread = [t[0], f[t[1]], t[2], t[3], own ?? units[0][0]];
+          if (t.length > 4) r.push(t[4]);
+          threads.push(r);
+        }
+      }
+      const sb = size10(lines);
+      cls.push([n, day, lines, norm.t[sb], td, norm.a[sb], ad, units, threads, o[org], prior]);
     }
   }
   cls.sort((a, b) => a[1] - b[1] || a[0] - b[0]);
@@ -760,7 +820,7 @@ export function periodVals(p: Omit<Person, 'periods'>, peers: Peers, period: str
 
 /** A person ready for the page: merged, with values for every period they have changes in. */
 export function buildPerson(top: Top, shards: Shard[], peers: Peers): Person {
-  const base = { ...mergePerson(top, shards), addrStart: peers.addr_start };
+  const base = { ...mergePerson(top, shards, peers.size_norm), addrStart: peers.addr_start };
   const periods: Record<string, PeriodVals> = {};
   for (const period of peers.periods) {
     const vals = periodVals(base, peers, period);

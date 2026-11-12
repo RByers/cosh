@@ -429,11 +429,11 @@
 
     {
       "id": "web/public/review-feedback/", "group": "feedback", "path": "web/public/review-feedback/", "kind": "directory", "tier": "published",
-      "tracked_in_git": false, "rebuildable": true,
-      "size": "302 MB", "size_as_of": "2026-11-12",
-      "files": "peers.json, u/<hash>.json (7,024 people) and <half-year>/<hash>.json (19 folders, 2017H2 .. 2026H2); <hash> is a salted SHA-256 of the e-mail.",
+      "tracked_in_git": true, "rebuildable": true,
+      "size": "126 MB (53 MB gzipped file by file, as git stores it)", "size_as_of": "2026-11-12",
+      "files": "peers.json, u/<hash>.json (6,902 people, 122 other addresses) and <half-year>/<hash>.json (19 folders, 2017H2 .. 2026H2; before 2025H2 thread counts per directory, not each thread); <hash> is a salted SHA-256 of the e-mail.",
       "purpose": "Per-person review feedback against peers, which the Feedback Index page fetches by a hash of the address typed.",
-      "notes": "Gitignored until it is published, so the GitHub Pages build has none of it and the page finds nobody there."
+      "notes": "Committed and published on GitHub Pages since 2026-11-12. Finished half-years' files don't change between runs unless their inputs do, so git stores them once; each run rewrites the current half-year, u/ and peers.json. Commit with `git add -A web/public/review-feedback/`."
     },
     {
       "id": "data/private/feedback-coach/", "group": "feedback", "path": "data/private/feedback-coach/", "kind": "directory", "tier": "labels",
@@ -1043,8 +1043,8 @@
       "id": "page-feedback", "group": "feedback", "path": "web/feedback-index.html", "title": "Feedback Index",
       "purpose": "Type an address to see the review feedback on that person's changes against their peers'.",
       "entry_script": "web/src/review-feedback.ts",
-      "reads": ["web/public/review-feedback/"], "sources_line": null,
-      "notes": "Not linked from the landing page, and its data is not committed yet."
+      "reads": ["web/public/review-feedback/"], "sources_line": "Gerrit code review · Chromium git history",
+      "notes": "Linked from the landing page since 2026-11-12; carries noindex."
     },
     {
       "id": "page-dataflow", "group": "site", "path": "web/dataflow.html", "title": "Data flow",

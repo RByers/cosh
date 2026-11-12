@@ -3,8 +3,8 @@
 `web/feedback-index.html` lets anyone type an email address and study the
 review feedback on that person's Chromium changes against their peers'. It is
 a learning guide, and the page says so at the top: "This analysis is imperfect
-and is intended as a learning guide only". It isn't linked from the landing
-page yet, and it carries `noindex`.
+and is intended as a learning guide only". The landing page links to it
+(since 2026-11-12), and it carries `noindex`.
 
 ## What it shows
 
@@ -339,10 +339,12 @@ site), with `<key>` the hash of the person's address:
 - `u/<key>.json`: first commit, which half-years the person has files for,
   and praise received. Small (0.8 MB gzipped for everyone) and rewritten on
   every run. Each other address of the person is a stub `{"see": <key>}`.
-- `<half-year>/<key>.json` (`2023H2` … `2026H2` on 2026-11-11, one per
+- `<half-year>/<key>.json` (`2017H2` … `2026H2` on 2026-11-12, one per
   half-year in the range): that half-year's CLs, with
   their directory splits, threads and excerpts, and the directory, file and
-  org names listed once (`shard` in the script).
+  org names listed once (`shard` in the script, whose docstring has the
+  layout). Half-years before 2025H2 have thread counts per directory instead
+  of each thread (`"counts": 1`; see "Slimmed before publishing" below).
 
 The page computes everything else from these, the same way the script does
 for the peer groups: totals for any period, tenure, org, whether the person
@@ -357,18 +359,44 @@ don't (the 2023–24 norms, labels, mechanical list, identity merge and
 collected comment text): git stores them once. Each run rewrites the
 current half-year, `u/` and `peers.json`.
 
-Sizes on 2026-11-11 (4,009 people, 64 stubs), gzipped file by file as git
-stores them: 2.6–2.9 MB per half-year for 2023 H2 – 2025 H1, 4.8 MB for 2025
-H2, 12.5 and 10.7 MB for 2026 H1 and H2 (those have the excerpts), 0.9 MB for
-`u/` and `peers.json`: 40 MB in all, 110 MB unpacked. The script replaces
+Sizes on 2026-11-12 (6,902 people, 122 stubs, 40,023 files), gzipped file
+by file as git stores them: 27.4 MB for the 16 half-years 2017 H2 – 2025 H1
+(about 1.7 MB each), 4.3 MB for 2025 H2, 10.7 and 9.3 MB for 2026 H1 and H2
+(those have the excerpts), 1.5 MB for `u/` and `peers.json`: 53 MB in all,
+126 MB unpacked. The script replaces
 `u/` and every half-year folder on each run.
 
-**Not committed yet.** `web/public/review-feedback/` is gitignored, so
-publishing it on GitHub Pages waits for the user's decision. Until then the
-page works wherever the folder has been generated (`npm run serve` in the
-main checkout), and the browser tests serve a made-up person
-(`web/test/feedback-fixture.ts`). The inputs used on 2026-11-11 are kept in
-`data/private/review_feedback_inputs/`.
+**Committed and published** (the user's call, 2026-11-12):
+`web/public/review-feedback/` is in git, so the GitHub Pages build serves it.
+After regenerating, commit the folder with the change that needed it
+(`git add -A web/public/review-feedback/`, which also drops files the run
+removed). The browser tests serve a made-up person
+(`web/test/feedback-fixture.ts`), so they don't depend on the data. The
+script's inputs are kept in `data/private/review_feedback_inputs/` and
+aren't published.
+
+**Slimmed before publishing** (2026-11-12, file format v4): 197 MB → 126 MB,
+68 → 53 MB gzipped file by file. Nothing the page computes changed: every
+person's values and changes matched the v3 files', except that CLs whose
+two largest directories tie on rounded share now always take the first by
+name as their main directory (8 of 2.2M threads moved, a few rates moved by
+0.001). What changed:
+
+- Half-years before the one that reaches the comment-text year (before
+  2025H2) keep [threads, addressed] per directory of each CL instead of
+  each thread. The comments list shows those as one row per change and
+  directory ("3 threads in ui/views/"), linked to the change, without
+  files or dates. (The user's call: the alternatives were shorter excerpts,
+  dropping 2017–19, or dropping the per-directory data.)
+- The expected threads by size alone (`exp_ts`, `exp_as`) depend only on
+  the size bucket, so `peers.json`'s `size_norm` lists them once.
+- A thread's directory isn't stored: it is its file's (3 levels) when the
+  CL has a unit there, else the CL's first unit.
+- A CL wholly in one directory stores [directory, earlier commits there].
+
+Measured then (gzipped): comment excerpts 13 MB, per-directory data 17 MB,
+file paths 11 MB, comment uuids 3 MB; each half-year before 2023 about
+1.7 MB.
 
 ## Caveats
 

@@ -1,0 +1,1 @@
+{"dirs":["ios/chrome/browser/"],"files":["/COMMIT_MSG"],"orgs":["microsoft.com"],"cls":[[7513000,20480,4,0.28,0.2,[[0,0]],[["8487ccf1_7aea829e",0,0,1,"Move this to the bottom, and do not put on the same line. Your description should look like this: ``` Fix iOS 26 PDF partial translate menu item issue On iOS 26, when viewing online PDFs or opening…"]],0,0]]}

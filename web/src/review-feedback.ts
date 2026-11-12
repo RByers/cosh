@@ -28,6 +28,7 @@ import {
   rangeOf,
   ratioShade,
   threadRows,
+  threadsIn,
   threadBinLabel,
   threadBinRange,
   threadHistogram,
@@ -977,7 +978,9 @@ function dirRow(r: DirRowView): HTMLTableRowElement {
 function threadItem(r: ThreadRow): HTMLLIElement {
   const li = el('li', undefined, `quote rf-thread${r.praise ? ' quote-praise' : ''}`);
   const head = el('div', undefined, 'rf-thread-head');
-  head.append(fragment('thread-meta', { date: dayLabel(r.day), file: r.file }));
+  head.append(r.count === undefined
+    ? fragment('thread-meta', { date: dayLabel(r.day), file: r.file })
+    : fragment('thread-meta-count', { date: dayLabel(r.day), n: fmtInt(r.count), dir: r.file }));
   const tags = el('span', undefined, 'rf-tags');
   // Only the positive label: "not addressed" reads as ignored feedback, when such
   // threads usually needed no change.
@@ -985,7 +988,8 @@ function threadItem(r: ThreadRow): HTMLLIElement {
   if (r.praise) tags.append(el('span', msg('thread-praise'), 'rf-tag rf-tag-praise'));
   head.append(tags);
   li.append(head);
-  li.append(r.text ? el('p', r.text, 'rf-text') : el('p', msg('thread-no-text'), 'rf-text muted'));
+  li.append(r.text ? el('p', r.text, 'rf-text')
+    : el('p', msg(r.count === undefined ? 'thread-no-text' : 'thread-no-text-count'), 'rf-text muted'));
   li.append(link(commentUrl(r.cl, r.uuid), msg(r.uuid ? 'thread-link' : 'thread-link-cl')));
   return li;
 }
@@ -1009,7 +1013,7 @@ function renderThreads() {
   showHalfFilter('#rf-half-filter-comments');
   showBinFilter('#rf-bin-filter-comments');
   const rows = threadRows(p, state.half ?? ALL, state.kind, state.dir, state.bin);
-  put($('#comments-sub'), 'comments-sub', { n: fmtInt(rows.length), kind: state.kind, dir: state.dir ?? '',
+  put($('#comments-sub'), 'comments-sub', { n: fmtInt(threadsIn(rows)), kind: state.kind, dir: state.dir ?? '',
     half: state.half ? halfName(state.half) : '', bin: state.bin === null ? '' : binName(state.bin) });
   const list = $('#rf-threads');
   list.replaceChildren(...rows.slice(0, state.threadsShown).map(threadItem));

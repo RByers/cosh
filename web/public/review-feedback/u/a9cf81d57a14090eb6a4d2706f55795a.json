@@ -1,0 +1,1 @@
+{"v":4,"first":"2026-02","first_day":20508,"halves":["2026H1","2026H2"],"tone":{"received":292,"praise":1,"share":0.003424657534246575,"ten":"<1y","chg":"<50"},"praise":[[7883241,"ffbd240e_8dbd193e",20606,"Thanks for digging into the enums. I used jetski and arrived at similar observations. Yes, Chrome likes an early CHECK for NPE, so all good, thanks for checking it."]]}

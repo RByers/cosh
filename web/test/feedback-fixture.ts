@@ -1,7 +1,6 @@
 // A made-up person and peer file for the Review Feedback tests, shaped like
 // scripts/review_feedback.py's output: a top file and one file per
-// half-year. The real data is per person and isn't committed, so the browser
-// tests serve these instead.
+// half-year. The browser tests serve these instead of the committed data.
 import type { Metric, Peers, Shard, Top } from '../src/feedback.ts';
 
 /** personKey('Test.Person@chromium.org'), as the Python script computes it. */
@@ -17,7 +16,7 @@ const q = (lo: number, hi: number) => Array.from({ length: 21 }, (_, i) => Math.
 export const day = (s: string) => Math.floor(Date.parse(`${s}T00:00:00Z`) / 86_400_000);
 
 export const top: Top = {
-  v: 3,
+  v: 4,
   first: '2022-03',
   first_day: day('2022-03-01'),
   halves: ['2025H2', '2026H1', '2026H2'],
@@ -28,17 +27,18 @@ export const top: Top = {
 
 /** Three changes, one per half-year. Each file lists its own names, in its own order. */
 export const shards: Record<string, Shard> = {
-  // A thread without an excerpt has no comment id.
+  // A thread without an excerpt has no comment id. A thread's directory is its file's (or the first unit's).
   '2025H2': { dirs: ['chrome/browser/ui/'], files: ['chrome/browser/ui/view.cc', '/COMMIT_MSG'], orgs: ['google.com'],
-    cls: [[1000001, day('2025-10-01'), 40, 2, 2.5, 1.2, 1.4, [[0, 1, 0, 38]],
-      [['', 0, -1, 1, 0], ['aaaa_0002', 1, 0, 0, 0, 'Please add a test.']], 0, 30]] },
+    cls: [[1000001, day('2025-10-01'), 40, 2.5, 1.4, [[0, 1, 0, 38]],
+      [['', 0, -1, 1], ['aaaa_0002', 1, 0, 0, 'Please add a test.']], 0, 30]] },
   '2026H1': { dirs: ['content/browser/', 'chrome/browser/ui/'], files: ['content/browser/frame.cc'], orgs: ['google.com'],
-    cls: [[1000002, day('2026-03-11'), 120, 3, 3, 2, 2, [[0, 0.75, 7, 90], [1, 0.25, 1, 28]],
-      [['bbbb_0002', 0, -1, 1, 0, 'Great test coverage <img src=x onerror=alert(1)>']], 0, 80]] },
+    cls: [[1000002, day('2026-03-11'), 120, 3, 2, [[0, 0.75, 7, 90], [1, 0.25, 1, 28]],
+      [['bbbb_0002', 0, -1, 1, 'Great test coverage <img src=x onerror=alert(1)>']], 0, 80]] },
+  // Wholly in one directory: [directory, earlier commits there].
   '2026H2': { dirs: ['third_party/blink/renderer/'], files: ['third_party/blink/renderer/core/a.cc', '/COMMIT_MSG'],
     orgs: ['google.com'],
-    cls: [[1000003, day('2026-09-03'), 10, 1, 1.5, 0.6, 0.9, [[0, 1, 150]],
-      [['', 0, -2, 1, 0], ['cccc_0003', 1, -1, null, 0, 'Really nice cleanup, thanks!']], 0, 260]] },
+    cls: [[1000003, day('2026-09-03'), 10, 1.5, 0.9, [[0, 150]],
+      [['', 0, -2, 1], ['cccc_0003', 1, -1, null, 'Really nice cleanup, thanks!']], 0, 260]] },
 };
 
 const dist = (lo: number, hi: number) => each(() => ({ n: 120, q: q(lo, hi) }));
@@ -60,6 +60,8 @@ export const peers: Peers = {
   addr_start: day('2023-07-01'),
   periods,
   metrics: METRICS,
+  // The changes above are 40, 120 and 10 lines: size buckets 4, 5 and 2.
+  size_norm: { t: [1, 1, 1, 1, 2, 3, 1, 1, 1, 1], a: [1, 1, 0.6, 1, 1.2, 2, 1, 1, 1, 1] },
   tenure: ['<1y', '1-2y', '2-5y', '5-10y', '10y+'],
   changes: ['<50', '50-199', '200-499', '500-999', '1000+'],
   min_peers: 10,

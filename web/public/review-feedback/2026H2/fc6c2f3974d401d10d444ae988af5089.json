@@ -1,0 +1,1 @@
+{"dirs":["third_party/sframe/","(root)/"],"files":["third_party/sframe/README.chromium"],"orgs":["cisco.com"],"cls":[[8019125,20720,9,0.399,0.286,[[0,0.769,1,7],[1,0.231,1,2]],[["39f9082a_74b5ebce",0,-85,1,"Please fix this ERROR reported by Chromium License Check: Mismatch: Declared \"bsd-2-clause\" but content holds \"bsd-2-clause, mit\"."]],0,1]]}

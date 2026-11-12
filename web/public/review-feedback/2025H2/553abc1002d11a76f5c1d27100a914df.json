@@ -1,0 +1,1 @@
+{"dirs":["android_webview/browser/network_service/","content/browser/renderer_host/"],"files":["android_webview/browser/network_service/aw_proxying_url_loader_factory.cc"],"orgs":["bytedance.com"],"cls":[[6782441,20305,10,0.444,0.278,[[0,0]],[["",0,-12,0],["",0,-12,1],["",0,-12,0]],0,5],[6844457,20313,4,0.307,0.193,[[1,0]],[],0,6]]}

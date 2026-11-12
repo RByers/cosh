@@ -1,0 +1,1 @@
+{"v":4,"first":"2026-07","first_day":20661,"halves":["2026H2"],"tone":{"received":17,"praise":1,"share":null,"ten":"<1y","chg":"<50"},"praise":[[8423305,"70ca33c8_f5b50fda",20717,"LGTM. DelayHandler is the only current user of platform/audio/delay. And, handling external NaN is best done outside of the platform/audio layer anyway. Thank you for cleaning this up!"]]}

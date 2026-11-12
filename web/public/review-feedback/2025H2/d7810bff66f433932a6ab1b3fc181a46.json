@@ -1,0 +1,1 @@
+{"dirs":["ui/views/accessibility/"],"files":["ui/views/accessibility/ax_virtual_view_unittest.cc"],"orgs":["microsoft.com"],"cls":[[7246330,20438,55,1.682,1.283,[[0,0]],[["16b71cd1_f76b479a",0,-4,1,"Can we change `AXVirtualViewTest` to be a parameterized test (`TEST_P`, etc) with 1.0 and 2.0 scales? That way, all the tests will get run under multiple scale factors."]],0,1]]}

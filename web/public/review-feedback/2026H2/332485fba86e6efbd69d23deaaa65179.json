@@ -1,0 +1,1 @@
+{"dirs":["skia/config/"],"files":["skia/config/SkUserConfig.h"],"orgs":["google.com"],"cls":[[8415869,20717,2,0,0,[[0,0]],[["2eebffe5_a58aa990",0,-5,1,"minor naming nit, but for I think it's good practice to include a GRAPHITE_, a GANESH_, RASTER_ if the flag is controlling something specific to a backend."]],0,0]]}

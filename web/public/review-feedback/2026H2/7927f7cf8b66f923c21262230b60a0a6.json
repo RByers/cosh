@@ -1,0 +1,1 @@
+{"dirs":["components/capture_mode/"],"files":["components/capture_mode/audio_capturer_unittest.cc"],"orgs":["google.com"],"cls":[[8133142,20658,164,3.848,3.085,[[0,0]],[["48301ef9_fd541ada",0,0,1,"nit: put the test body outside of anonymous namespace? (base class can stay in anonymous)"]],0,741]]}

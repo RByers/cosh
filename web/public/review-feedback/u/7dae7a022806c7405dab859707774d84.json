@@ -1,0 +1,1 @@
+{"v":4,"first":"2024-07","first_day":19926,"halves":["2024H2","2025H1","2025H2","2026H1","2026H2"],"tone":{"received":126,"praise":1,"share":0.007936507936507936,"ten":"2-5y","chg":"50-199"},"praise":[[8502476,"ca3e395b_17fe3b24",20735,"Thanks. Splitting this CL from the heuristic change makes the review much cleaner. LGTM % Mason's comment."]]}
