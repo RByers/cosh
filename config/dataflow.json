@@ -908,7 +908,7 @@
       "duration": "about 2 min, 3 GB of memory", "token_cost": null, "cost_source": "docs/review-feedback.md",
       "refresh": "routine",
       "approval": "Tone is praise only. The output stays out of git until the page is published.",
-      "notes": "It runs update-affiliations first by itself (its only network use). `npm run serve` shows the new files only after a fresh `npx vite build`."
+      "notes": "It runs update-affiliations first by itself (its only network use). `npm run serve` picks the new files up by itself a few seconds after the run ends."
     },
     {
       "id": "feedback-coach", "group": "feedback", "command": "python3 scripts/feedback_coach.py <email> [--dry-run]",
@@ -989,7 +989,7 @@
       "inputs": ["summaries/value-exchange", "data/public/radar_browser_share.csv", "config/org_browsers.csv", "summaries/sentiment_monthly*.json", "summaries/sentiment_praise*.json", "summaries/sentiment_samples*.json", "summaries/sentiment_recent*.json", "summaries/sentiment_people.json", "scripts/sentiment_prompts/", "summaries/balance.json", "summaries/balance_dirs.json", "summaries/balance_authors.json", "web/public/review-feedback/", "config/dataflow.json"],
       "outputs": ["web/dist/"],
       "network": false, "lock": null,
-      "incremental": "Rebuilds everything. `npm run serve` rebuilds on change and serves the result on port 5182.",
+      "incremental": "Rebuilds everything. `npm run serve` rebuilds on change, including new pages and new files in web/public/, and serves the result on port 5182.",
       "duration": "under 1 min; `npm test` adds the unit and browser tests", "token_cost": null, "cost_source": "Not measured",
       "refresh": "routine",
       "notes": "Files that no page imports never reach the site."

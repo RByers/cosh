@@ -390,6 +390,20 @@ and `vite preview` together. An edit is rebuilt within seconds: reload the
 page to see it (there is no hot reload). Preview starts only after the first
 build succeeds, and Ctrl-C or killing it stops both.
 
+The watch build reads the config once and watches only files the build
+imported, so `serve.mjs` restarts it (a full build under the current config)
+when new files could change what is built:
+
+- `vite.config.ts`, `package.json` or `tsconfig.json` changes;
+- an `.html` file appears in or leaves `web/`;
+- anything under `public/` changes, once it has been quiet for 5 seconds.
+
+So a new page (its `.html` plus its `input` entry) and new files in
+`public/` show up without restarting the server. If the build can't start,
+for instance on a config that doesn't parse, preview keeps serving the last
+build and the build is tried again at the next such change. A new npm
+dependency still needs `npm install` and a restart.
+
 ### Dev server ports
 
 Ports follow `~/projects/argus-config/ports.md`. 5182 is cosh's user port,
