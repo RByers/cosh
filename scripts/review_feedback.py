@@ -46,8 +46,8 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT = os.path.join(ROOT, "web", "public", "review-feedback")
 DAY = 86400
 YEAR = 365.25 * DAY
-START = datetime(2023, 7, 1, tzinfo=timezone.utc).timestamp()     # first whole half-year of Gerrit data
-END = datetime(2026, 11, 2, tzinfo=timezone.utc).timestamp()      # end of 2026-W44, the last whole week
+WEEK = 7 * DAY
+ADDR_COVER = 0.95             # the addressed measure starts where every later week has labels for this share
 TONE_WEEKS = sentiment.weeks_in("2025-W45:2026-W44")             # the year with comment text and tone scores
 SALT = "cosh-review-feedback-v1:"
 EXCERPT = 200                 # characters of a comment kept for the drill-down
@@ -96,6 +96,65 @@ def changes_band(n):
 
 def xp_band(n):
     return 0 if n == 0 else 1 if n < 5 else 2 if n < 20 else 3 if n < 100 else 4
+
+
+def week_start(w):
+    """Unix time of the Monday (UTC) that starts ISO week 'YYYY-Www'."""
+    y, n = w.split("-W")
+    return datetime.fromisocalendar(int(y), int(n), 1).replace(tzinfo=timezone.utc).timestamp()
+
+
+def monday(t):
+    """Unix time of the Monday (UTC) of the week containing t."""
+    d = epoch_day(t)
+    return (d - (d + 3) % 7) * DAY       # 1970-01-01 was a Thursday
+
+
+def month_start(t):
+    d = datetime.fromtimestamp(t, timezone.utc)
+    return datetime(d.year, d.month, 1, tzinfo=timezone.utc).timestamp()
+
+
+def trim_start(t):
+    """A start that spills a few days into the month before moves to the next
+    month's 1st (Monday 2023-06-26 becomes 2023-07-01), so the page names the
+    dates by month without a sliver of a half-year; one in a month's first
+    week stays (2017-07-03)."""
+    return max(t, month_start(t + 6 * DAY))
+
+
+def trim_end(t):
+    """An end (exclusive) a week or less into a month moves back to its 1st
+    (Monday 2026-11-02 becomes 2026-11-01)."""
+    m = month_start(t - DAY)
+    return m if t - m <= WEEK else t
+
+
+def data_range(use):
+    """The dates the page covers, from the data: the weeks `derive` recorded as
+    fetched, no earlier than the oldest usable CL's week (balance.sqlite may
+    not have caught up with an older backfill yet), trimmed to months."""
+    d = A.ro(os.path.join(store.DATA_DIR, store.DERIVED_FILE))
+    row = d.execute("SELECT v FROM meta WHERE k = 'fetched_weeks'").fetchone()
+    weeks = sorted(json.loads(row[0])) if row else []
+    if not weeks:
+        raise SystemExit("derived.sqlite records no fetched weeks")
+    first_cl = min(c["closed_at"] for c in use)
+    return trim_start(max(week_start(weeks[0]), monday(first_cl))), trim_end(week_start(weeks[-1]) + WEEK)
+
+
+def addressed_start(need, have, start, end):
+    """The first week from which every week up to `end` has an addressed label
+    for at least ADDR_COVER of the threads that need one (the owner replied,
+    and no "Done"-style regex match); `end` if even the last week hasn't.
+    Weeks are the ones the CLs closed in."""
+    t = monday(end - DAY) + WEEK
+    while t - WEEK >= monday(start):
+        w = t - WEEK
+        if need.get(w, 0) and have.get(w, 0) < ADDR_COVER * need[w]:
+            break
+        t = w
+    return min(max(t, start), end)
 
 
 def half(t):
@@ -185,6 +244,10 @@ def r3(x):
 def epoch_day(t):
     """Days since 1970-01-01 (UTC) of a unix time; the page turns them back into dates."""
     return int(t // DAY)
+
+
+def day_str(t):
+    return datetime.fromtimestamp(t, timezone.utc).strftime("%Y-%m-%d")
 
 
 def day_of(s):
@@ -306,12 +369,13 @@ def main():
         c["sb"] = G.size10(c["lines"])
         c["d2"] = top2.get(c["change_number"])
     norms(use)
+    START, END = data_range(use)
     use = [c for c in use if START <= c["closed_at"] < END]
     for c in use:           # the page sums the rounded values, so compute with them here too
         for k in ("exp_ts", "exp_td", "exp_as", "exp_ad"):
             c[k] = r3(c[k])
     by_n = {c["change_number"]: c for c in use}
-    print(f"{len(use):,} CLs in range", file=sys.stderr, flush=True)
+    print(f"{len(use):,} CLs in range {day_str(START)} .. {day_str(END - DAY)}", file=sys.stderr, flush=True)
 
     db = A.ro(balance.db_path("cl"))
     raw_email = dict(db.execute("SELECT change_number, owner_email FROM cl"))
@@ -348,6 +412,7 @@ def main():
         labels = {(n, rt, h): a for n, rt, h, a in ldb.execute(
             "SELECT change_number, root_uuid, input_hash, addressed FROM labels WHERE classifier_id = ?", (act[0],))}
     mism = 0
+    need, have = defaultdict(int), defaultdict(int)      # week start -> threads needing a label, labelled
     for n, root, reply, rx, h, acct, at, path in d.execute(
             "SELECT t.change_number, t.root_uuid, t.last_owner_reply_at, t.regex_addressed, t.input_hash, "
             "t.root_account, c.written_at, c.path FROM threads t LEFT JOIN comments c ON c.host = t.host "
@@ -357,6 +422,10 @@ def main():
         if c is None or acct in bots:
             continue
         addressed = 0 if reply is None else 1 if rx else labels.get((n, root, h))
+        if reply is not None and not rx:
+            w = monday(c["closed_at"])
+            need[w] += 1
+            have[w] += addressed is not None
         dr = A.dir_of(path, 3) if path and not path.startswith("/") else None
         c["thr"].append([root, path or "", (at or "")[:10], addressed, dr if dr in c["units"] else c["main"]])
     for c in use:
@@ -366,6 +435,13 @@ def main():
         c["addressed"] = sum(1 for t in c["thr"] if t[3])
     print(f"threads: {sum(c['threads'] for c in use):,} ({mism:,} CLs differ from the cl table)",
           file=sys.stderr, flush=True)
+    # The addressed measure covers only the CLs with labels.
+    ADDR_START = trim_start(addressed_start(need, have, START, END))
+    for c in use:
+        c["acov"] = c["closed_at"] >= ADDR_START
+    print(f"addressed from {day_str(ADDR_START)}", file=sys.stderr, flush=True)
+    if ADDR_START > max(START, datetime(2023, 1, 1, tzinfo=timezone.utc).timestamp()):
+        print("warning: 2023-24 isn't all labelled, so the addressed norms are too low", file=sys.stderr)
 
     # Tone: praise received, and comment text for the excerpts.
     scores = {}
@@ -461,6 +537,8 @@ def main():
         for o, a_, w, b, c in unit_rows(cs):
             for p in periods_of(c["closed_at"]):
                 for m in METRICS:
+                    if m[0] == "a" and not c["acov"]:
+                        continue
                     pool[(p, m, b)][0] += o if m[0] == "t" else a_
                     pool[(p, m, b)][1] += denom(m, c, w)
     allp = sorted({p for c in use for p in periods_of(c["closed_at"])}, key=lambda p: (p != "all", p))
@@ -475,16 +553,20 @@ def main():
 
     def person_period(pid, cs, p):
         s = sums(cs)
+        sa = sums([c for c in cs if c["acov"]])          # the addressed measures' CLs
         ten = [c["ten"] for c in cs if c["ten"] is not None]
         orgc = Counter(c["org"] for c in cs)
-        out = dict(cls=s["cls"], threads=s["t"], addressed=s["a"],
+        out = dict(cls=s["cls"], threads=s["t"], acls=sa["cls"], addressed=sa["a"],
                    ten=tenure_band(st.median(ten)) if ten else None,
                    chg=changes_band(st.median([c["prior"] for c in cs])), org=orgc.most_common(1)[0][0],
-                   ok=s["cls"] >= MIN_CLS and s["td"] >= MIN_EXP, v={}, x={}, bands={})
+                   ok=s["cls"] >= MIN_CLS and s["td"] >= MIN_EXP,
+                   ok_a=sa["cls"] >= MIN_CLS and sa["td"] >= MIN_EXP, v={}, x={}, bands={})
         bo = defaultdict(lambda: [0.0, 0.0, 0.0])      # (m, band) -> obs, own denominator, CL share
         xe = defaultdict(float)
         for o, a_, w, b, c in unit_rows(cs):
             for m in METRICS:
+                if m[0] == "a" and not c["acov"]:
+                    continue
                 ob = o if m[0] == "t" else a_
                 dn = denom(m, c, w)
                 bo[(m, b)][0] += ob
@@ -493,9 +575,10 @@ def main():
                 rb, ov = rate.get((p, m, b)), overall.get((p, m))
                 xe[m] += dn * (r3(rb / ov) if rb and ov else 1.0)     # peers.json's `rel`
         for m in METRICS:
-            v = value(s, m)
+            sm = s if m[0] == "t" else sa
+            v = value(sm, m)
             out["v"][m] = None if v is None else r3(v)
-            num = s[m[0]]
+            num = sm[m[0]]
             out["x"][m] = r3(num / xe[m]) if xe[m] else None
             out["bands"][m] = [[r3(bo[(m, b)][0]), r3(bo[(m, b)][1]), r3(bo[(m, b)][2])] for b in range(5)]
         return out
@@ -517,7 +600,10 @@ def main():
         byh = defaultdict(list)
         for c in cs:
             byh[half(c["closed_at"])].append(c["ten"])
-        pts = [(y0, st.median(byh[h]), pp["org"], pp["v"], pp["x"])
+        # A half-year counts for the addressed measures only with enough labelled CLs.
+        def counted(vals, pp):
+            return {m: v if m[0] == "t" or pp["ok_a"] else None for m, v in vals.items()}
+        pts = [(y0, st.median(byh[h]), pp["org"], counted(pp["v"], pp), counted(pp["x"], pp))
                for h, pp in per[pid].items() if HALF.match(h) and pp["ok"]]
         if pts:
             trend_pts.append(pts)
@@ -528,10 +614,12 @@ def main():
           f"(median {change['all']['td']['median']}% less a year)", file=sys.stderr, flush=True)
 
     # ------------------------------------------------ peers
+    tone_end = week_start(TONE_WEEKS[-1]) + WEEK
+
     def tone_bands(pid):
-        ten = (TONE_END_T - first[pid]) / YEAR if pid in first else None
+        ten = (tone_end - first[pid]) / YEAR if pid in first else None
         return dict(time=tenure_band(ten),
-                    changes=changes_band(bisect.bisect_left(own_times.get(pid, ()), TONE_END_T)))
+                    changes=changes_band(bisect.bisect_left(own_times.get(pid, ()), tone_end)))
 
     def tone_share(pid):
         r = received.get(pid)
@@ -549,18 +637,20 @@ def main():
             groups[f"changes:{t}:{o}"] = (lambda t, of: lambda pp: pp["chg"] == t and of(pp["org"]))(t, of)
         groups[f"dir:{o}"] = (lambda of: lambda pp: of(pp["org"]))(of)
     peers = dict(generated=datetime.now(timezone.utc).strftime("%Y-%m-%d"), periods=allp, metrics=METRICS,
+                 start=epoch_day(START), end=epoch_day(END), addr_start=epoch_day(ADDR_START),
                  tenure=TENURE, changes=CHANGES, xp=XP, min_peers=MIN_PEERS, qs=len(QS), min_cls=MIN_CLS, min_exp=MIN_EXP, min_received=MIN_RECEIVED,
                  tone_weeks=[TONE_WEEKS[0], TONE_WEEKS[-1]], dist={}, bands={}, tone={},
                  cohort_step=STEP, min_cohort=MIN_COHORT, cohorts=cohorts,
                  change_edges=CHANGE_EDGES, change=change)
     for p in allp:
-        rows = [(pid, pp[p]) for pid, pp in per.items() if p in pp and pp[p]["ok"]]
+        # Peers per kind: the addressed measures count people by their labelled CLs.
+        rows = {k: [(pid, pp[p]) for pid, pp in per.items() if p in pp and pp[p][ok]]
+                for k, ok in (("t", "ok"), ("a", "ok_a"))}
         dp = peers["dist"][p] = {}
         for g, f in groups.items():
-            sel = [x for _, x in rows if f(x)]
             dp[g] = {}
             for m in METRICS:
-                xs = [x["x" if g.startswith("dir:") else "v"][m] for x in sel]
+                xs = [x["x" if g.startswith("dir:") else "v"][m] for _, x in rows[m[0]] if f(x)]
                 xs = [v for v in xs if v is not None]
                 dp[g][m] = dict(n=len(xs), q=quantiles(xs) if len(xs) >= MIN_PEERS else None)
         # Per experience band: the pooled rate relative to everyone, and the spread of people
@@ -570,7 +660,7 @@ def main():
             ov = overall.get((p, m))
             bp[m] = []
             for b in range(5):
-                xs = [x["bands"][m][b][0] / x["bands"][m][b][1] for _, x in rows
+                xs = [x["bands"][m][b][0] / x["bands"][m][b][1] for _, x in rows[m[0]]
                       if x["bands"][m][b][2] >= 1.5 and x["bands"][m][b][1] > 0]
                 bp[m].append(dict(pooled=r3(rate[(p, m, b)]) if rate.get((p, m, b)) is not None else None,
                                   rel=r3(rate[(p, m, b)] / ov) if rate.get((p, m, b)) and ov else None,
@@ -681,9 +771,6 @@ def shard(cs, text):
         rows.append([n, d0, c["lines"], c["exp_ts"], c["exp_td"], c["exp_as"], c["exp_ad"], units, thr,
                      idx(orgs, c["org"]), c["prior"]])
     return dict(dirs=list(dirs), files=list(files), orgs=list(orgs), cls=rows)
-
-
-TONE_END_T = END
 
 
 if __name__ == "__main__":

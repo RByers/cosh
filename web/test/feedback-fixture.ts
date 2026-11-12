@@ -55,6 +55,9 @@ const periods = ['all', '2023', '2024', '2025', '2026', '2023H2', '2024H1', '202
 
 export const peers: Peers = {
   generated: '2026-11-11',
+  start: day('2023-07-01'),
+  end: day('2026-11-01'),
+  addr_start: day('2023-07-01'),
   periods,
   metrics: METRICS,
   tenure: ['<1y', '1-2y', '2-5y', '5-10y', '10y+'],

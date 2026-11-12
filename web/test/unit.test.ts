@@ -1494,6 +1494,24 @@ test('review feedback: half-year files merge, and every period gets the values t
   assert.deepEqual(['<1y', '1-2y', '2-5y', '5-10y', '10y+'], [0.5, 1.5, 4.9, 5, 12].map(F.tenureBand));
   assert.deepEqual([0, 49, 50, 199, 200, 499, 500, 999, 1000].map(F.changesBand),
     ['<50', '<50', '50-199', '50-199', '200-499', '200-499', '500-999', '500-999', '1000+']);
+  // Addressed labels from 2026: the addressed measures count only CLs 2 and 3 (2 addressed threads,
+  // over 2 + 0.9 expected); the thread measures still count all three.
+  const later = F.buildPerson(top, top.halves.map((h) => shards[h]), { ...peers, addr_start: day('2026-01-01') });
+  const la = later.periods.all;
+  assert.deepEqual([la.cls, la.threads, la.acls, la.addressed, la.ok_a], [3, 5, 2, 2, false]);
+  assert.deepEqual([la.v.tn, la.v.an, la.v.ad], [1.667, 1, 0.69]);
+  assert.equal(later.periods['2025H2'].v.an, null);
+  assert.equal(later.periods['2025H2'].acls, 0);
+  assert.deepEqual(F.threadRows(later, 'all', 'a', null, false).map((r) => r.cl), [1000003, 1000002]);
+  assert.deepEqual(F.xpBreakdown(later, 'all', 'ad').map((b) => b.obs), [0, 0, 1, 0, 1]);
+  assert.deepEqual(F.dirTable(later, 'all', 'a').map((d) => d.dir),
+    ['content/browser/', 'third_party/blink/renderer/', 'chrome/browser/ui/']);
+  assert.equal(F.dirTable(later, 'all', 'a')[2].cls, 1);
+  // Periods are cut to the data's dates.
+  assert.deepEqual(F.periodSpan('2026H2', [day('2023-07-01'), day('2026-11-01')]), [day('2026-07-01'), day('2026-11-01')]);
+  assert.deepEqual(F.periodSpan('2023', [day('2023-07-01'), day('2026-11-01')]), [day('2023-07-01'), day('2024-01-01')]);
+  assert.deepEqual(F.periodSpan('all', [1, 2]), [1, 2]);
+  assert.deepEqual(F.rangeOf({ ...peers, addr_start: day('2024-01-01') }, 'a'), [day('2024-01-01'), day('2026-11-01')]);
 
   assert.ok(F.inPeriod(day('2026-03-11'), '2026H1'));
   assert.ok(!F.inPeriod(day('2026-07-01'), '2026H1'));

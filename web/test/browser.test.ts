@@ -13,6 +13,7 @@ import { fileURLToPath } from 'node:url';
 import puppeteer, { type Browser, type HTTPRequest, type Page } from 'puppeteer-core';
 import { createServer, preview, type PreviewServer } from 'vite';
 import { CSP, randomPort } from '../vite.config.ts';
+import type { Peers } from '../src/feedback.ts';
 import { addWeeks, addressedWeeks, isoWeekOf, namedOrgs, orgsWithShare, weeksIn, type Metric, type Summary } from '../src/data.ts';
 
 /** The committed summary the build bundles. */
@@ -3219,8 +3220,9 @@ test('a touch anywhere off a chart closes its hover card, on every page with cha
 // ---- Review Feedback (review-feedback.html). Its per-person data isn't
 // committed, so these tests serve the made-up person in feedback-fixture.ts.
 
-async function feedbackPage(): Promise<{ page: Page; errors: string[] }> {
-  const { top, shards, peers, FIXTURE_KEY, ALIAS_KEY } = await import('./feedback-fixture.ts');
+async function feedbackPage(peersOverride?: Peers): Promise<{ page: Page; errors: string[] }> {
+  const { top, shards, peers: fixturePeers, FIXTURE_KEY, ALIAS_KEY } = await import('./feedback-fixture.ts');
+  const peers = peersOverride ?? fixturePeers;
   const page = await browser.newPage();
   await page.setViewport({ width: 1100, height: 900 });
   const errors: string[] = [];
@@ -3262,7 +3264,10 @@ test('review feedback: the caveat, a lookup field that offers no completions, an
   assert.equal(await page.$('datalist'), null);
   assert.equal(await page.$eval('#rf-person', (m) => (m as HTMLElement).hidden), true);
   await lookUp(page, 'nobody@example.com');
-  assert.match(await page.$eval('#rf-find-note', (e) => e.textContent!), /No changes owned by that address/);
+  // The dates come from peers.json.
+  assert.match(await page.$eval('#rf-find-note', (e) => e.textContent!),
+    /No changes owned by that address landed between July 2023 and October 2026\./);
+  assert.match(await page.$eval('#find', (e) => e.textContent!), /every change you landed since July 2023,/);
   assert.equal(await page.$eval('#rf-person', (m) => (m as HTMLElement).hidden), true);
   // The landing page doesn't link to it yet.
   const home = await browser.newPage();
@@ -3286,6 +3291,7 @@ test('review feedback: the opening card explains the index before any address is
   assert.deepEqual(await page.$$eval('#rf-cohort-legend li', (ls) => ls.map((l) => l.textContent)),
     ['started in 2019', 'started in 2024']);
   assert.ok((await page.$$eval('#rf-period option', (os) => os.length)) > 1);
+  assert.match(await page.$eval('#rf-cohorts-note', (e) => e.textContent!), /from July 2023 to\s+October 2026:/);
   assert.match(await page.$eval('#rf-change-note', (e) => e.textContent!), /1,100 contributors\).*fell by\s+17%/s);
   // It follows the switches: outside Google has one line, and a median that grew.
   await page.select('#rf-org', 'nongoogle');
@@ -3367,9 +3373,37 @@ test('review feedback: a person, the measures, peer groups, directories and comm
   // A half-year: one change.
   await page.select('#rf-period', '2026H1');
   assert.equal(await tile('rf-tile-cls'), '1');
-  assert.ok((await page.$$eval('#rf-period option', (os) => os.map((o) => o.textContent))).includes('July – October 2026'));
+  const options = () => page.$$eval('#rf-period option', (os) => os.map((o) => o.textContent));
+  assert.deepEqual(await options(), ['July 2023 – October 2026', 'January – October 2026', '2025', 'July – October 2026', 'January – June 2026',
+    'July – December 2025']);
+  assert.match(await page.$eval('#method', (e) => e.textContent!), /from\s+July 2023 to October 2026,.*from July 2023, where/s);
   const text = await page.$eval('body', (b) => b.innerText);
   assert.doesNotMatch(text, /\b\d{4}-W\d{2}\b/);
+  assert.deepEqual(errors, []);
+  await page.close();
+});
+
+test('review feedback: the addressed measure covers only the labelled dates', async () => {
+  const { peers, day, FIXTURE_EMAIL } = await import('./feedback-fixture.ts');
+  const { page, errors } = await feedbackPage({ ...peers, addr_start: day('2026-01-01') });
+  await lookUp(page, FIXTURE_EMAIL);
+  await page.waitForFunction(() => !document.querySelector<HTMLElement>('#rf-person')!.hidden);
+  const tile = (id: string) => page.$eval(`#${id} .tile-value`, (e) => e.textContent);
+  const options = () => page.$$eval('#rf-period option', (os) => os.map((o) => o.textContent));
+  assert.equal((await options()).length, 6);
+  await page.select('#rf-period', '2025H2');
+  await page.click('input[name="rf-kind"][value="a"]');
+  // 2025 has no labels: its periods go, and the period falls back to everything, from January 2026.
+  assert.deepEqual(await options(), ['January 2026 – October 2026', 'January – October 2026', 'July – October 2026', 'January – June 2026']);
+  assert.equal(await page.$eval('#rf-period', (s) => (s as HTMLSelectElement).value), 'all');
+  assert.equal(await tile('rf-tile-cls'), '2');
+  assert.equal(await tile('rf-tile-threads'), '2');
+  assert.equal(await page.$eval('#comments-sub', (e) => e.textContent!.split(' ')[0]), '2');
+  assert.equal(await page.evaluate(() => window.__rf!.charts.trend.data.labels!.length), 2);
+  assert.match(await page.$eval('#method', (e) => e.textContent!), /from January 2026, where/);
+  await page.click('input[name="rf-kind"][value="t"]');
+  assert.equal((await options()).length, 6);
+  assert.equal(await tile('rf-tile-cls'), '3');
   assert.deepEqual(errors, []);
   await page.close();
 });

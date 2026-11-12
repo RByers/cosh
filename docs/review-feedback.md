@@ -24,7 +24,7 @@ It shows:
   2019, 2022 and 2024 (`COHORT_YEARS`), the median of their per-half-year
   values (counted half-years only: 6+ CLs, 3+ expected threads) by tenure, in
   half-year bins, where 20+ people share a point. Each cohort covers the
-  stretch of tenure that fell between July 2023 and October 2026, and the
+  stretch of tenure that fell within the data's dates (below), and the
   curves line up into one falling curve: on 2026-11-11 the median went from
   about 2.1× in the first half-year to 1.0× around three years and 0.6× after
   ten (size and directory, all threads).
@@ -36,9 +36,30 @@ It shows:
 
 For the person's sections below:
 
-For merged, human-owned, non-mechanical CLs on `main` that landed from
-2023-07-01 to 2026-11-01 (the same set as the Review Balance page's feedback
-index, `docs/balance.md` section 4; mechanical CLs from `mech.jsonl`):
+For merged, human-owned, non-mechanical CLs on `main` (the same set as the
+Review Balance page's feedback index, `docs/balance.md` section 4;
+mechanical CLs from `mech.jsonl`), over whatever dates the data covers:
+
+- **Dates come from the data**, never from the code. The range runs from
+  the oldest week in `derived.sqlite`'s `fetched_weeks` (but no earlier than
+  the oldest CL in `balance.sqlite`, which lags an older backfill until
+  `cosh.balance` is rerun) to the end of the newest. A range that spills a
+  week or less into a month is trimmed to the month, so the page can name
+  periods by month without slivers: Monday 2023-06-26 .. Sunday 2026-11-01
+  becomes 2023-07-01 .. 2026-10-31. `peers.json` gives the page `start`,
+  `end` (exclusive) and `addr_start` as day numbers, and the page's prose and
+  period names come from them.
+- **The addressed measures** count only the CLs from `addr_start`: the first
+  week from which every week's CLs have an addressed label for at least 95%
+  of the threads that need one (the owner replied, and no "Done"-style regex
+  match), trimmed to the month like the range. Before it, those CLs count
+  for neither the person, their peers nor the opening card (`ok_a` and `acls` in the person's
+  values), and the page lists only the periods it covers while "addressed"
+  is selected. Labels are near complete from 2022-W06 (2026-11-11) and
+  absent before 2021-W52; the user doesn't want them for older years. The
+  script warns if 2023–24, the norms' reference years, isn't covered.
+
+The measures:
 
 - **The measure**, from three switches:
   - *Feedback:* every reviewer thread (a thread started by a human other than
@@ -127,6 +148,10 @@ COSH_DATA_DIR=<main>/data/private nice -n 5 python3 scripts/review_feedback.py \
     --first-commit $I/first_commit.txt --mech $I/mech.jsonl [--out DIR]
 ```
 
+To take in an older backfill (back to 2017-07), let it finish, then run a
+full `derive` and `python3 -m cosh.balance git|timeline|interdiff|cl`, then
+this script: nothing in it names a date.
+
 Output (default `web/public/review-feedback/`, which Vite copies into the
 site), with `<key>` the hash of the person's address:
 
@@ -136,7 +161,8 @@ site), with `<key>` the hash of the person's address:
 - `u/<key>.json`: first commit, which half-years the person has files for,
   and praise received. Small (0.8 MB gzipped for everyone) and rewritten on
   every run. Each other address of the person is a stub `{"see": <key>}`.
-- `<half-year>/<key>.json` (`2023H2` … `2026H2`): that half-year's CLs, with
+- `<half-year>/<key>.json` (`2023H2` … `2026H2` on 2026-11-11, one per
+  half-year in the range): that half-year's CLs, with
   their directory splits, threads and excerpts, and the directory, file and
   org names listed once (`shard` in the script).
 

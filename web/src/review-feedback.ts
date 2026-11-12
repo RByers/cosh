@@ -9,6 +9,7 @@ import { readTheme, type Theme } from './charts.ts';
 import {
   bandOf,
   buildPerson,
+  clsOf,
   commentUrl,
   dirTable,
   groupKey,
@@ -16,9 +17,12 @@ import {
   isoDay,
   looksLikeEmail,
   metricOf,
+  okFor,
   percentileOf,
+  periodSpan,
   personKey,
   quantile,
+  rangeOf,
   threadRows,
   trendGroup,
   valueFor,
@@ -108,17 +112,52 @@ function fmtValue(v: number | null | undefined, corr: Corr = state.corr): string
 }
 const pct = (v: number) => fmtNum(v, { style: 'percent', maximumFractionDigits: 0 });
 
-function periodName(p: string): string {
-  const last = state.peers ? halves(state.peers.periods).at(-1) : undefined;
-  if (p === 'all') return msg('period-all');
-  if (p.length === 4) {
-    if (p === '2023') return msg('period-year-h2', { year: p });
-    if (last && p === last.slice(0, 4)) return msg('period-year-now', { year: p });
-    return msg('period-year', { year: p });
-  }
+const monthOf = (day: number, year: boolean) => new Intl.DateTimeFormat('en-GB',
+  { month: 'long', year: year ? 'numeric' : undefined, timeZone: 'UTC' }).format(new Date(day * 86_400_000));
+/** The month a range starts in, and the one it ends in (`to` is exclusive). The script
+ * trims the ranges to whole months, give or take the first week. */
+const fromMonth = (from: number) => from;
+const toMonth = (to: number) => to - 1;
+
+/** A period's name, cut to the dates the current measure covers. */
+function periodName(p: string, kind: Kind = state.kind): string {
+  const range = rangeOf(state.peers!, kind);
+  const [from, to] = periodSpan(p, range);
+  if (p === 'all') return msg('period-all', { from: monthOf(fromMonth(from), true), to: monthOf(toMonth(to), true) });
   const year = p.slice(0, 4);
-  if (p.endsWith('H1')) return msg('period-half1', { year });
-  return p === last ? msg('period-half2-now', { year }) : msg('period-half2', { year });
+  const [whole0, whole1] = periodSpan(p, [-Infinity, Infinity]);
+  const a = monthOf(fromMonth(from), false);
+  const b = monthOf(toMonth(to), false);
+  if (a !== monthOf(fromMonth(whole0), false) || b !== monthOf(toMonth(whole1), false))
+    return msg('period-part', { from: a, to: b, year });
+  if (p.length === 4) return msg('period-year', { year });
+  return msg(p.endsWith('H1') ? 'period-half1' : 'period-half2', { year });
+}
+
+/** Whether `period` falls in the dates the current measure covers, and has changes it
+ * counts for the person shown (if any). */
+function hasPeriod(period: string, kind: Kind = state.kind): boolean {
+  if (!state.peers) return false;
+  const [from, to] = periodSpan(period, rangeOf(state.peers, kind));
+  return from < to && (!state.person || clsOf(state.person.periods[period], kind) > 0);
+}
+
+/** The dates the data covers, by name: the first and last month, the last day, and the
+ * month the addressed measures start (empty until peers.json has loaded). */
+function rangeVars(peers: Peers | null): Record<string, string> {
+  if (!peers) return { from: '', to: '', 'last-day': '', 'addr-from': '' };
+  return {
+    from: monthOf(fromMonth(peers.start), true),
+    to: monthOf(toMonth(peers.end), true),
+    'last-day': dayLabel(peers.end - 1),
+    'addr-from': monthOf(fromMonth(peers.addr_start), true),
+  };
+}
+
+/** The dates in the page's prose (`<span data-rf-range="from">` …). */
+function fillRange(peers: Peers) {
+  const vars = rangeVars(peers);
+  for (const e of document.querySelectorAll<HTMLElement>('[data-rf-range]')) e.textContent = vars[e.dataset.rfRange!] ?? '';
 }
 
 /** The peer group's name: who, and their tenure band (null when the person's is unknown). */
@@ -147,7 +186,7 @@ function destroy(name: string) {
 async function lookup(raw: string) {
   const note = $('#rf-find-note');
   if (!looksLikeEmail(raw)) {
-    put(note, 'find-none');
+    put(note, 'find-none', rangeVars(state.peers));
     return;
   }
   put(note, 'find-loading');
@@ -179,7 +218,7 @@ async function lookup(raw: string) {
     state.peers = peers;
     window.__rf!.peers = peers;
     if (!found || !peers) {
-      put(note, 'find-none');
+      put(note, 'find-none', rangeVars(peers));
       return;
     }
     state.person = found;
@@ -200,10 +239,10 @@ async function lookup(raw: string) {
 }
 
 function fillPeriods() {
+  // Only the periods with changes the current measure counts: the addressed ones start later.
   const sel = $<HTMLSelectElement>('#rf-period');
   const peers = state.peers!;
-  const p = state.person;
-  const has = (period: string) => !p || p.periods[period] !== undefined;
+  const has = (period: string) => period === 'all' || hasPeriod(period);
   sel.replaceChildren();
   for (const period of ['all', ...years(peers.periods).reverse(), ...halves(peers.periods).reverse()]) {
     if (!has(period)) continue;
@@ -226,8 +265,9 @@ function renderIntro() {
   const m = metric();
   const g = trendGroup(state.tenure, state.org);
   const org = state.org === 'all' ? '' : msg(`org-name-${state.org}`);
+  const [from, to] = rangeOf(peers, state.kind);
   const vars = { kind: state.kind, corr: state.corr, dirxp: state.tenure === 'dir', org, min: fmtInt(peers.min_cohort),
-    minCls: fmtInt(peers.min_cls) };
+    minCls: fmtInt(peers.min_cls), from: monthOf(fromMonth(from), true), to: monthOf(toMonth(to), true) };
   put($('#rf-cohorts-note'), 'cohorts-note', vars);
   const curves = peers.cohorts[g]?.[m] ?? {};
   const step = peers.cohort_step;
@@ -329,13 +369,13 @@ function renderSummary() {
   const vals = p.periods[state.period];
   const m = metric();
   put($('#summary-sub'), 'summary-sub', { corr: state.corr, kind: state.kind, tenure: state.tenure,
-    eligible: vals?.ok ?? false, minCls: peers.min_cls });
+    eligible: okFor(vals, state.kind), minCls: peers.min_cls });
   const tile = (id: string, text: string, sub?: string) => {
     $(`#${id} .tile-value`).textContent = text;
     const s = document.querySelector(`#${id} .tile-sub`);
     if (s) s.textContent = sub ?? '';
   };
-  tile('rf-tile-cls', fmtInt(vals?.cls ?? 0));
+  tile('rf-tile-cls', fmtInt(clsOf(vals, state.kind)));
   $('#rf-tile-threads .tile-label').textContent = msg(`tile-threads-${state.kind}`);
   tile('rf-tile-threads', fmtInt(state.kind === 't' ? vals?.threads ?? 0 : vals?.addressed ?? 0));
   const you = valueFor(state.tenure, vals, m);
@@ -364,14 +404,16 @@ function renderTrend() {
   const peers = state.peers!;
   const t: Theme = theme();
   const m = metric();
-  const hs = halves(peers.periods);
+  // The half-years the measure covers.
+  const [from, to] = rangeOf(peers, state.kind);
+  const hs = halves(peers.periods).filter((h) => { const [a, b] = periodSpan(h, [from, to]); return a < b; });
   const q = (h: string, f: number) => {
     const g = groupKey(state.tenure, state.org, p.periods[h]);
     const d = g ? peers.dist[h]?.[g]?.[m] : undefined;
     return d?.q ? quantile(d.q, f) : null;
   };
   const you = hs.map((h) => valueFor(state.tenure, p.periods[h], m));
-  const ok = hs.map((h) => p.periods[h]?.ok ?? false);
+  const ok = hs.map((h) => okFor(p.periods[h], state.kind));
   const band = (f: number, label = '') => ({ label, data: hs.map((h) => q(h, f)), borderWidth: 0, pointRadius: 0,
     pointHoverRadius: 0, tension: 0, spanGaps: true });
   const datasets: ChartDataset<'line', (number | null)[]>[] = [
@@ -406,8 +448,8 @@ function renderTrend() {
             label: (i) => {
               const h = hs[i.dataIndex];
               if (i.datasetIndex === 5) {
-                const v = p.periods[h];
-                return v ? `You: ${fmtValue(i.parsed.y)} (${fmtInt(v.cls)} changes)` : 'You: no changes';
+                const n = clsOf(p.periods[h], state.kind);
+                return n ? `You: ${fmtValue(i.parsed.y)} (${fmtInt(n)} changes)` : 'You: no changes';
               }
               return `Peers: median ${fmtValue(i.parsed.y)}, middle half ${fmtValue(q(h, 0.25))} – ${fmtValue(q(h, 0.75))}`;
             },
@@ -573,6 +615,7 @@ function init() {
   radio<Kind>('rf-kind', (v) => {
     state.kind = v;
     state.threadsShown = PAGE;
+    if (state.peers) fillPeriods();
     renderIntro();
     render();
   });
@@ -629,6 +672,7 @@ function init() {
     window.__rf!.peers = p;
     if (!p) return;
     $('#rf-min-cls').textContent = fmtInt(p.min_cls);
+    fillRange(p);
     if (!state.person) fillPeriods();
     renderIntro();
   }).catch(() => {}).finally(() => {

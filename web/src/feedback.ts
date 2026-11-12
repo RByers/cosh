@@ -21,6 +21,8 @@ export type PeerOrg = 'all' | 'google' | 'nongoogle';
 export interface PeriodVals {
   cls: number;
   threads: number;
+  /** Changes with addressed labels (landed from peers.json's addr_start), and their addressed threads. */
+  acls: number;
   addressed: number;
   /** Tenure band at the middle of the period's changes, null if unknown. */
   ten: string | null;
@@ -29,8 +31,9 @@ export interface PeriodVals {
   chg: string;
   /** The org most of the period's changes are attributed to. */
   org: string;
-  /** Enough changes to count among peers. */
+  /** Enough changes to count among peers; for the addressed measures, enough labelled ones. */
   ok: boolean;
+  ok_a: boolean;
   /** The measure; and the same against the directory-experience norm. */
   v: Record<Metric, number | null>;
   x: Record<Metric, number | null>;
@@ -73,6 +76,8 @@ export interface Shard {
 
 /** A person's files merged, with every period's values. */
 export interface Person {
+  /** The first day (days since 1970) of the changes the addressed measures count. */
+  addrStart: number;
   first: string | null;
   firstDay: number | null;
   periods: Record<string, PeriodVals>;
@@ -103,6 +108,11 @@ export interface Band extends Dist {
 
 export interface Peers {
   generated: string;
+  /** The changes covered, as day numbers: from `start` up to (not including) `end`. The
+   * addressed measures count only changes from `addr_start`, where the labels begin. */
+  start: number;
+  end: number;
+  addr_start: number;
   periods: string[];
   metrics: Metric[];
   tenure: string[];
@@ -177,6 +187,21 @@ export function inPeriod(day: number, period: string): boolean {
   return period === `${y}H${d.getUTCMonth() < 6 ? 1 : 2}`;
 }
 
+/** A period's days [from, to): all of `range` for "all", else the year or half-year cut to it. */
+export function periodSpan(period: string, range: [number, number]): [number, number] {
+  if (period === 'all') return range;
+  const y = Number(period.slice(0, 4));
+  const m0 = period.endsWith('H2') ? 6 : 0;
+  const m1 = period.length === 4 || period.endsWith('H2') ? 12 : 6;
+  const from = Date.UTC(y, m0, 1) / DAY_MS;
+  const to = Date.UTC(y, m1, 1) / DAY_MS;
+  return [Math.max(from, range[0]), Math.min(to, range[1])];
+}
+
+/** The days a measure of `kind` covers: the addressed ones start where the labels do. */
+export const rangeOf = (peers: Peers, kind: Kind): [number, number] =>
+  [kind === 'a' ? peers.addr_start : peers.start, peers.end];
+
 /** The share of a group whose value is below `v`, read off its quantiles. */
 export function percentileOf(q: number[], v: number): number {
   const k = q.length - 1;
@@ -236,6 +261,14 @@ const counts = (t: Thread, kind: Kind) => (kind === 't' ? 1 : t[3] ? 1 : 0);
 
 /** The changes landed in `period`. */
 export const clsIn = (p: Person, period: string) => p.cls.filter((c) => inPeriod(c[1], period));
+/** The changes landed in `period` that a measure of `kind` counts: the addressed ones need labels. */
+export const clsFor = (p: Person, period: string, kind: Kind) =>
+  clsIn(p, period).filter((c) => kind === 't' || c[1] >= p.addrStart);
+
+/** Whether the person counts among peers for a measure of `kind`. */
+export const okFor = (vals: PeriodVals | undefined, kind: Kind) => (kind === 't' ? vals?.ok : vals?.ok_a) ?? false;
+/** The changes a measure of `kind` counts. */
+export const clsOf = (vals: PeriodVals | undefined, kind: Kind) => (kind === 't' ? vals?.cls : vals?.acls) ?? 0;
 
 export interface Sums {
   /** Changes, counted by their share of lines (whole changes for a person's total). */
@@ -248,7 +281,7 @@ export interface Sums {
  * person's changes drew, against the metric's denominator. */
 export function xpBreakdown(p: Person, period: string, m: Metric): Sums[] {
   const out = Array.from({ length: 5 }, () => ({ cls: 0, obs: 0, den: 0 }));
-  for (const c of clsIn(p, period)) {
+  for (const c of clsFor(p, period, m[0] as Kind)) {
     const per = new Map<number, number>();
     for (const t of c[8]) per.set(t[4], (per.get(t[4]) ?? 0) + counts(t, m[0] as Kind));
     for (const [d, w, prior] of c[7]) {
@@ -277,7 +310,7 @@ export interface DirRow {
 export function dirTable(p: Person, period: string, kind: Kind): DirRow[] {
   const rows = new Map<number, DirRow>();
   const m: Metric = `${kind}d`;
-  for (const c of clsIn(p, period)) {
+  for (const c of clsFor(p, period, kind)) {
     const per = new Map<number, number>();
     for (const t of c[8]) per.set(t[4], (per.get(t[4]) ?? 0) + counts(t, kind));
     for (const [d, w, prior] of c[7]) {
@@ -309,7 +342,7 @@ export interface ThreadRow {
 export function threadRows(p: Person, period: string, kind: Kind, dir: number | null, praiseOnly: boolean): ThreadRow[] {
   const praise = new Set(p.praise.map(([n, u]) => `${n}/${u}`));
   const out: ThreadRow[] = [];
-  for (const c of clsIn(p, period)) {
+  for (const c of clsFor(p, period, kind)) {
     for (const t of c[8]) {
       if (kind === 'a' && !t[3]) continue;
       if (dir !== null && t[4] !== dir) continue;
@@ -337,7 +370,7 @@ export const years = (periods: string[]) => periods.filter((p) => /^\d{4}$/.test
 // ---- Merging a person's files, and their values per period
 
 /** The half-year files merged into one person, names re-indexed. */
-export function mergePerson(top: Top, shards: Shard[]): Omit<Person, 'periods'> {
+export function mergePerson(top: Top, shards: Shard[]): Omit<Person, 'periods' | 'addrStart'> {
   const tables = { dirs: new Map<string, number>(), files: new Map<string, number>(), orgs: new Map<string, number>() };
   const at = (t: Map<string, number>, name: string) => {
     let i = t.get(name);
@@ -385,15 +418,22 @@ export function periodVals(p: Omit<Person, 'periods'>, peers: Peers, period: str
   if (!cs.length) return undefined;
   let threads = 0;
   let addressed = 0;
-  const exp = { ts: 0, td: 0, as: 0, ad: 0 };
+  let acls = 0;
+  // Expected threads; tdA: expected threads on the labelled changes, for ok_a.
+  const exp = { ts: 0, td: 0, as: 0, ad: 0, tdA: 0 };
   const orgCount = new Map<number, number>();
+  const labelled = (c: ClRow) => c[1] >= p.addrStart;
   for (const c of cs) {
     threads += c[8].length;
-    addressed += c[8].filter((t) => t[3]).length;
     exp.ts += c[3];
     exp.td += c[4];
-    exp.as += c[5];
-    exp.ad += c[6];
+    if (labelled(c)) {
+      acls += 1;
+      addressed += c[8].filter((t) => t[3]).length;
+      exp.as += c[5];
+      exp.ad += c[6];
+      exp.tdA += c[4];
+    }
     orgCount.set(c[9], (orgCount.get(c[9]) ?? 0) + 1);
   }
   // Most common org; ties go to the one seen first (Python's Counter.most_common).
@@ -405,21 +445,24 @@ export function periodVals(p: Omit<Person, 'periods'>, peers: Peers, period: str
   const x = {} as Record<Metric, number | null>;
   const bands = peers.bands[period];
   for (const m of METRICS) {
-    const num = m[0] === 't' ? threads : addressed;
-    const den = m[1] === 'n' ? cs.length : exp[m as keyof typeof exp];
+    const isT = m[0] === 't';
+    const num = isT ? threads : addressed;
+    const den = m[1] === 'n' ? (isT ? cs.length : acls) : exp[m as 'ts' | 'td' | 'as' | 'ad'];
     v[m] = den ? r3(num / den) : null;
     let xe = 0;
-    for (const c of cs)
+    for (const c of cs) {
+      if (!isT && !labelled(c)) continue;
       for (const [, w, prior] of c[7]) xe += (m[1] === 'n' ? w : w * expected(c, m)) * (bands?.[m]?.[xpBand(prior)]?.rel ?? 1);
+    }
     x[m] = xe ? r3(num / xe) : null;
   }
-  return { cls: cs.length, threads, addressed, ten, prior, chg: changesBand(prior), org: p.orgs[org], ok: cs.length >= peers.min_cls && exp.td >= peers.min_exp,
-    v, x };
+  return { cls: cs.length, threads, acls, addressed, ten, prior, chg: changesBand(prior), org: p.orgs[org],
+    ok: cs.length >= peers.min_cls && exp.td >= peers.min_exp, ok_a: acls >= peers.min_cls && exp.tdA >= peers.min_exp, v, x };
 }
 
 /** A person ready for the page: merged, with values for every period they have changes in. */
 export function buildPerson(top: Top, shards: Shard[], peers: Peers): Person {
-  const base = mergePerson(top, shards);
+  const base = { ...mergePerson(top, shards), addrStart: peers.addr_start };
   const periods: Record<string, PeriodVals> = {};
   for (const period of peers.periods) {
     const vals = periodVals(base, peers, period);

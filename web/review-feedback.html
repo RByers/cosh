@@ -61,13 +61,12 @@
           </select>
         </div>
       </div>
-      <template data-msg="period-all">July 2023 – October 2026</template>
+      <!-- Periods are cut to the dates the measure covers (the addressed one starts later). -->
+      <template data-msg="period-all"><slot name="from"></slot> – <slot name="to"></slot></template>
       <template data-msg="period-year"><slot name="year"></slot></template>
       <template data-msg="period-half1">January – June <slot name="year"></slot></template>
       <template data-msg="period-half2">July – December <slot name="year"></slot></template>
-      <template data-msg="period-half2-now">July – October <slot name="year"></slot></template>
-      <template data-msg="period-year-h2">July – December <slot name="year"></slot></template>
-      <template data-msg="period-year-now">January – October <slot name="year"></slot></template>
+      <template data-msg="period-part"><slot name="from"></slot> – <slot name="to"></slot> <slot name="year"></slot></template>
 
       <section id="intro" class="card" aria-labelledby="intro-title">
         <a class="card-anchor" href="#intro" aria-label="Link to this section" title="Link to this section">#</a>
@@ -98,8 +97,8 @@
         </div>
         <p id="rf-cohorts-note" class="note"></p>
         <template data-msg="cohorts-note">
-          Each line follows the contributors whose first commit on main was in one year, from July 2023 to October
-          2026: the median of their<span data-if="kind=a"> addressed</span> feedback<span data-if="corr=n"> per
+          Each line follows the contributors whose first commit on main was in one year, from <slot name="from"></slot> to
+          <slot name="to"></slot>: the median of their<span data-if="kind=a"> addressed</span> feedback<span data-if="corr=n"> per
           change</span> in each half-year, by how long they had been contributing then<span data-if="dirxp">,
           measured against authors with the same experience in each directory</span><span data-if="org"> (only
           half-years in which most of their changes came from <slot name="org"></slot>)</span>. Points stand for
@@ -130,7 +129,7 @@
       <section id="find" class="card" aria-labelledby="find-title">
         <h2 id="find-title">Your review feedback</h2>
         <p class="sub">
-          Type your email address to see the reviewer threads on every change you landed since July 2023, set
+          Type your email address to see the reviewer threads on every change you landed since <span data-rf-range="from"></span>, set
           against authors with the same tenure: the same years since their first commit, the same number of
           changes landed before, or the same experience in each directory you changed.
         </p>
@@ -142,7 +141,8 @@
           <p id="rf-find-note" class="sub" aria-live="polite"></p>
         </form>
         <template data-msg="find-loading">Looking…</template>
-        <template data-msg="find-none">No changes owned by that address landed between July 2023 and October 2026.
+        <template data-msg="find-none">No changes owned by that address landed<span data-if="from"> between
+          <slot name="from"></slot> and <slot name="to"></slot></span>.
           Try the address you use in Gerrit; chromium.org and google.com addresses are the same here.</template>
         <template data-msg="find-error">Couldn't load the data: <slot name="error"></slot></template>
         <template data-msg="find-done">Showing <slot name="n"></slot> changes landed between <slot name="from"></slot>
@@ -201,7 +201,7 @@
         <p class="note">
           Each half-year on its own. The line is you; the shaded bands are the middle half and the 10th–90th
           percentile of your peers, and the dashed line their median. Half-years in which you landed few changes
-          are drawn as hollow dots. The last half-year runs to the end of October 2026.
+          are drawn as hollow dots. The last half-year runs to <span data-rf-range="last-day"></span>.
         </p>
       </section>
 
@@ -297,13 +297,16 @@
         <a class="card-anchor" href="#method" aria-label="Link to this section" title="Link to this section">#</a>
         <h2 id="method-title">How it's measured</h2>
         <p class="note">
-          Changes are the merged, human-owned Chromium changes on main that landed from July 2023 to October 2026,
+          Changes are the merged, human-owned Chromium changes on main that landed from
+          <span data-rf-range="from"></span> to <span data-rf-range="to"></span>,
           leaving out mechanical ones (100 or more files, or mostly repeated lines), as on the
           <a href="balance.html">Review Balance</a> page. A reviewer thread is a comment thread on Gerrit started by
           someone other than the change's owner, bots left out. It is addressed when the owner's reply led to a
           change in the code, as judged by a regular expression for “Done”-style replies and by an AI model (Claude
           Haiku) for the rest (<a target="_blank" rel="noopener"
-          href="https://github.com/RByers/cosh/blob/main/docs/comment-classifier.md">how</a>).
+          href="https://github.com/RByers/cosh/blob/main/docs/comment-classifier.md">how</a>). Counting only
+          addressed threads covers the changes from <span data-rf-range="addr-from"></span>, where those labels
+          begin.
         </p>
         <p class="note">
           Adjusting for size compares each change with the 2023–24 average for changes in the same of ten size
