@@ -220,6 +220,12 @@ To take in an older backfill (back to 2017-07), let it finish, then run a
 full `derive` and `python3 -m cosh.balance git|timeline|interdiff|cl`, then
 this script: nothing in it names a date.
 
+The served site (`npm run serve`'s `vite build --watch`) copies `public/`
+into `dist/` only when a source file changes, so after a run its pages keep
+the old data. Rebuild (`cd web && npx vite build`) or copy the changed files
+into `web/dist/review-feedback/`; a page change that needs new `peers.json`
+fields draws nothing until then (2026-11-12).
+
 Output (default `web/public/review-feedback/`, which Vite copies into the
 site), with `<key>` the hash of the person's address:
 
