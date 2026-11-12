@@ -3287,11 +3287,13 @@ test('review feedback: the opening card explains the index before any address is
   assert.equal(await page.$('.lede'), null);
   assert.match(await page.$eval('#intro', (e) => e.textContent!), /tool\s+for learning/);
   await page.waitForFunction(() => !!window.__rf!.charts.cohorts && !!window.__rf!.charts.change);
-  // One line per first-commit year that has points; the dates are listed before a lookup.
+  // One line per first-commit year whose curve starts at tenure 0; the dates are listed before a lookup.
   assert.deepEqual(await page.$$eval('#rf-cohort-legend li', (ls) => ls.map((l) => l.textContent)),
     ['started in 2019', 'started in 2024']);
+  assert.equal(await page.evaluate(() => (window.__rf!.charts.cohorts.options.scales!.y as { title: { text: string } })
+    .title.text), 'feedback index');
   assert.ok((await page.$$eval('#rf-period option', (os) => os.length)) > 1);
-  assert.match(await page.$eval('#rf-cohorts-note', (e) => e.textContent!), /from July 2023 to\s+October 2026:/);
+  assert.match(await page.$eval('#rf-cohorts-note', (e) => e.textContent!), /from that first commit\s+to October 2026:/);
   assert.match(await page.$eval('#rf-change-note', (e) => e.textContent!), /1,100 contributors\).*fell by\s+17%/s);
   // It follows the switches: outside Google has one line, and a median that grew.
   await page.select('#rf-org', 'nongoogle');

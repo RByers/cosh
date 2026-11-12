@@ -1453,6 +1453,17 @@ test('review feedback: addresses normalise and hash as scripts/review_feedback.p
   assert.ok(!looksLikeEmail('a@b'));
 });
 
+test('review feedback: the opening card draws start years whose curve begins at tenure 0', async () => {
+  const { cohortYears } = await import('../src/feedback.ts');
+  const curve = (b0: number): [number, number, number][] => [[b0, 2, 30], [b0 + 0.5, 1.5, 30], [b0 + 1, 1, 30]];
+  const curves: Record<string, [number, number, number][]> = { '2016': curve(0), '2017': curve(0.5) };
+  for (let y = 2018; y <= 2025; y++) curves[y] = curve(0);
+  curves['2026'] = [[0, 1.4, 260], [0.5, 1, 30]];
+  // From 2018 on, at least three points, every other one when there are more than five.
+  assert.deepEqual(cohortYears(curves, 2018), [2018, 2020, 2022, 2024]);
+  assert.deepEqual(cohortYears({ '2022': curve(0.5), '2023': curve(0), '2024': curve(0) }, 2018), [2023, 2024]);
+});
+
 test('review feedback: percentiles and quantiles read off 21 quantiles', async () => {
   const { percentileOf, quantile } = await import('../src/feedback.ts');
   const q = Array.from({ length: 21 }, (_, i) => i / 10);       // 0 .. 2 evenly

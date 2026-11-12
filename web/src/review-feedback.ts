@@ -24,6 +24,7 @@ import {
   quantile,
   rangeOf,
   threadRows,
+  cohortYears,
   trendGroup,
   valueFor,
   xpBreakdown,
@@ -60,8 +61,6 @@ const $ = <T extends Element = HTMLElement>(sel: string) => document.querySelect
 const DATA = 'review-feedback/';
 const PAGE = 50;
 const DIRS_SHOWN = 15;
-/** The first-commit years the opening card draws a line for. */
-const COHORT_YEARS = [2012, 2016, 2019, 2022, 2024];
 
 const state = {
   person: null as Person | null,
@@ -275,12 +274,13 @@ function renderIntro() {
   const org = state.org === 'all' ? '' : msg(`org-name-${state.org}`);
   const [from, to] = rangeOf(peers, state.kind);
   const vars = { kind: state.kind, corr: state.corr, dirxp: state.tenure === 'dir', org, min: fmtInt(peers.min_cohort),
+    limited: state.kind === 'a' || state.tenure === 'dir',
     minCls: fmtInt(peers.min_cls), from: monthOf(fromMonth(from), true), to: monthOf(toMonth(to), true) };
   put($('#rf-cohorts-note'), 'cohorts-note', vars);
   const curves = peers.cohorts[g]?.[m] ?? {};
   const step = peers.cohort_step;
-  const lines = COHORT_YEARS.map((y, i) => ({ year: y, color: t.series[i], pts: curves[String(y)] ?? [] }))
-    .filter((l) => l.pts.length);
+  const lines = cohortYears(curves, peers.cohort_from)
+    .map((y, i) => ({ year: y, color: t.series[i], pts: curves[String(y)] }));
   const legend = $('#rf-cohort-legend');
   legend.replaceChildren(...lines.map((l) => {
     const li = el('li');

@@ -135,6 +135,8 @@ export interface Peers {
   /** The opening card. Tenure bins of the cohort curves, in years, and the
    * fewest people a point stands for. */
   cohort_step: number;
+  /** The first year whose newcomers have Gerrit data from their start. */
+  cohort_from: number;
   min_cohort: number;
   /** Group -> measure -> year of first commit -> [tenure bin start, median, people]. */
   cohorts: Record<string, Record<Metric, Record<string, [number, number, number][]>>>;
@@ -152,7 +154,16 @@ export function trendGroup(by: TenureBy, org: PeerOrg): string {
   return by === 'dir' ? `dir:${org}` : org;
 }
 
-export const GERRIT = 'https://chromium-review.googlesource.com';
+/** The first-commit years the opening card draws: those from `from` on whose
+ * curve starts at tenure 0 and has 3 or more points, every other one from the
+ * oldest when there are more than `max`. */
+export function cohortYears(curves: Record<string, [number, number, number][]>, from: number, max = 5): number[] {
+  const ys = Object.keys(curves).map(Number).filter((y) => y >= from && curves[y].length >= 3 && curves[y][0][0] === 0)
+    .sort((a, b) => a - b);
+  return ys.length > max ? ys.filter((_, i) => i % 2 === 0) : ys;
+}
+
+export const GERRIT ='https://chromium-review.googlesource.com';
 const SALT = 'cosh-review-feedback-v1:';
 const DAY_MS = 86_400_000;
 

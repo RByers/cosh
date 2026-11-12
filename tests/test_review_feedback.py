@@ -63,6 +63,17 @@ class ReviewFeedbackTest(unittest.TestCase):
         self.assertEqual(sum(change["all"]["td"]["counts"]), 20)
         self.assertEqual(change["org:igalia"]["td"], dict(n=0, median=None, counts=[0] * (len(R.CHANGE_EDGES) - 1)))
 
+    def test_tenure_trends_older_points_only_in_curves(self):
+        m = {k: 1.0 for k in R.METRICS}
+        none = {k: None for k in R.METRICS}
+        # Older half-years (flagged) draw the curve from tenure 0 but don't count towards the yearly change.
+        pts = [[(2018, 0.2, "google.com", {**none, "td": 2.0}, none, True),
+                (2018, 5.2, "google.com", m, m), (2018, 5.7, "google.com", m, m)] for _ in range(R.MIN_COHORT)]
+        cohorts, change = R.tenure_trends(pts, {"all": lambda o: True})
+        self.assertEqual(cohorts["all"]["td"]["2018"], [[0.0, 2.0, 20], [5.0, 1.0, 20], [5.5, 1.0, 20]])
+        self.assertEqual(cohorts["all"]["ad"]["2018"], [[5.0, 1.0, 20], [5.5, 1.0, 20]])
+        self.assertEqual(change["all"]["td"]["n"], 0)      # two recent half-years: too few
+
     def test_excerpt(self):
         self.assertEqual(R.excerpt("  a \n b "), "a b")
         long = "word " * 100

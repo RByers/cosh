@@ -49,6 +49,9 @@ DAY = 86400
 YEAR = 365.25 * DAY
 WEEK = 7 * DAY
 ADDR_COVER = 0.95             # the addressed measure starts where every later week has labels for this share
+# The opening card's cohort curves reach back to 2018 (the first whole year of
+# Gerrit data; reviews before mid-2017 were on Rietveld), all threads only.
+HISTORY_ISO = "2018-01-01"
 TONE_WEEKS = sentiment.weeks_in("2025-W45:2026-W44")             # the year with comment text and tone scores
 SALT = "cosh-review-feedback-v1:"
 EXCERPT = 200                 # characters of a comment kept for the drill-down
@@ -216,16 +219,19 @@ def tenure_trends(points, groups):
     tenure bin, MIN_COHORT people or more) and the histogram of people's
     yearly reduction in feedback, % (-100 * annual_change), per group and
     measure. A half-year counts for a group by its org; a person's change by
-    the org of most of their half-years."""
+    the org of most of their half-years. A point may end with a sixth item,
+    True for half-years before START: those go into the curves only, so the
+    yearly change covers the same years for every measure."""
     curves = {g: {m: defaultdict(lambda: defaultdict(list)) for m in METRICS} for g in groups}
     changes = {g: {m: [] for m in METRICS} for g in groups}
     for pts in points:
-        org = Counter(p[2] for p in pts).most_common(1)[0][0]
+        recent = [p for p in pts if not (len(p) > 5 and p[5])]
+        org = Counter(p[2] for p in recent).most_common(1)[0][0] if recent else None
         for g, f in groups.items():
             xk = 4 if g.startswith("dir:") else 3
             for m in METRICS:
-                if f(org):
-                    c = annual_change([(p[1], p[xk][m]) for p in pts])
+                if recent and f(org):
+                    c = annual_change([(p[1], p[xk][m]) for p in recent])
                     if c is not None:
                         changes[g][m].append(-100 * c)
                 for p in pts:
@@ -294,12 +300,12 @@ def mech_set(path):
     return out
 
 
-def norms(use):
+def norms(use, also=()):
     """The 2023-24 norms, as in balance_growth.cl_residuals: mean reviewer
     threads (and addressed threads) per merged CL by size bucket and top
-    2-level directory (groups of 30 or more), else by size bucket alone."""
+    2-level directory (groups of 30 or more), else by size bucket alone.
+    Computed from `use`, and set on `use` and `also` (older CLs)."""
     ref = [c for c in use if A.year(c["closed_at"]) in (2023, 2024)]
-    out = {}
     for k in ("threads", "addressed"):
         g, b = defaultdict(list), defaultdict(list)
         for c in ref:
@@ -307,7 +313,7 @@ def norms(use):
             b[c["sb"]].append(c[k])
         gm = {x: st.mean(v) for x, v in g.items() if len(v) >= 30}
         bm = {x: st.mean(v) for x, v in b.items()}
-        for c in use:
+        for c in list(use) + list(also):
             s = bm.get(c["sb"], 1.0)
             c[f"exp_{k[0]}s"] = s
             c[f"exp_{k[0]}d"] = gm.get((c["sb"], c["d2"]), s)
@@ -356,7 +362,31 @@ def main():
     for c in cls:
         if c["pid"]:
             emails_of[c["pid"]].add(c["owner_email"])
+    big = {c["n"] for c in commits if c["n"] and (c["files"] or 0) >= 100}
     del commits
+
+    # Older merged CLs (HISTORY_ISO up to the CLs balance.sqlite has), for the
+    # opening card's cohort curves only: all reviewer threads against the same
+    # 2023-24 norms. Addressed labels and directory experience exist only from
+    # START on.
+    ddb = A.ro(os.path.join(store.DATA_DIR, store.DERIVED_FILE))
+    bots = {a for a, in ddb.execute("SELECT account_id FROM accounts WHERE is_bot = 1")}
+    acct_email = dict(ddb.execute("SELECT account_id, email FROM accounts WHERE host = "
+                                "'chromium-review.googlesource.com'"))
+    balance_from = datetime.fromtimestamp(min(c["closed_at"] for c in cls if c["closed_at"]), timezone.utc)
+    old = []
+    for n, acct, closed, ins, dels in ddb.execute(
+            "SELECT change_number, owner_account, closed_at, insertions, deletions FROM changes "
+            "WHERE host = 'chromium-review.googlesource.com' AND project = 'chromium/src' "
+            "AND branch IN ('main', 'master') AND status = 'MERGED' AND NOT is_bot_owned "
+            "AND closed_at >= ? AND closed_at < ?", (HISTORY_ISO, balance_from.strftime("%Y-%m-%d %H:%M:%S"))):
+        e = acct_email.get(acct)
+        if not e or acct in bots or A.is_bot_email(A.person(e)) or n in big or n in mech:
+            continue
+        t = datetime.strptime(closed[:19], "%Y-%m-%d %H:%M:%S").replace(tzinfo=timezone.utc).timestamp()
+        lines = (ins or 0) + (dels or 0)
+        old.append(dict(change_number=n, pid=ids.find(A.person(e)), email=e, closed_at=t, lines=lines,
+                        sb=G.size10(lines), d2=top2.get(n), threads=0, addressed=0))
 
     # The same CLs as the Balance page's feedback index: merged, human-owned,
     # non-mechanical (balance_report.py's rule).
@@ -369,8 +399,11 @@ def main():
         c["lines"] = (c["ins"] or 0) + (c["dels"] or 0)
         c["sb"] = G.size10(c["lines"])
         c["d2"] = top2.get(c["change_number"])
-    norms(use)
+    norms(use, old)
     START, END = data_range(use)
+    old = [c for c in old if c["closed_at"] < START]
+    old_n = {c["change_number"]: c for c in old}
+    print(f"{len(old):,} older CLs for the cohort curves", file=sys.stderr, flush=True)
     use = [c for c in use if START <= c["closed_at"] < END]
     for c in use:           # the page sums the rounded values, so compute with them here too
         for k in ("exp_ts", "exp_td", "exp_as", "exp_ad"):
@@ -402,10 +435,6 @@ def main():
     del xp_times, cl_dirs
 
     # Reviewer threads (as `python3 -m cosh.balance cl` counts them).
-    d = A.ro(os.path.join(store.DATA_DIR, store.DERIVED_FILE))
-    bots = {a for a, in d.execute("SELECT account_id FROM accounts WHERE is_bot = 1")}
-    acct_email = dict(d.execute("SELECT account_id, email FROM accounts WHERE host = "
-                                "'chromium-review.googlesource.com'"))
     labels = {}
     ldb = sqlite3.connect(f"file:{classify.labels_path(store.DATA_DIR)}?mode=ro", uri=True)
     act = classify.active_classifier(ldb)
@@ -414,13 +443,16 @@ def main():
             "SELECT change_number, root_uuid, input_hash, addressed FROM labels WHERE classifier_id = ?", (act[0],))}
     mism = 0
     need, have = defaultdict(int), defaultdict(int)      # week start -> threads needing a label, labelled
-    for n, root, reply, rx, h, acct, at, path in d.execute(
-            "SELECT t.change_number, t.root_uuid, t.last_owner_reply_at, t.regex_addressed, t.input_hash, "
+    for n, root, reply, rx, h, acct, at, path in ddb.execute(            "SELECT t.change_number, t.root_uuid, t.last_owner_reply_at, t.regex_addressed, t.input_hash, "
             "t.root_account, c.written_at, c.path FROM threads t LEFT JOIN comments c ON c.host = t.host "
             "AND c.change_number = t.change_number AND c.comment_id = t.root_uuid "
             "WHERE t.host = 'chromium-review.googlesource.com'"):
         c = by_n.get(n)
-        if c is None or acct in bots:
+        if acct in bots:
+            continue
+        if c is None:
+            if n in old_n:
+                old_n[n]["threads"] += 1
             continue
         addressed = 0 if reply is None else 1 if rx else labels.get((n, root, h))
         if reply is not None and not rx:
@@ -593,19 +625,38 @@ def main():
         per[pid] = {p: person_period(pid, v, p) for p, v in byp.items()}
 
     # ------------------------------------------------ the opening card
+    # Older half-years: all reviewer threads only, counted like the recent ones.
+    old_pts = defaultdict(list)
+    old_by = defaultdict(lambda: defaultdict(list))
+    for c in old:
+        if c["pid"] in first:
+            old_by[c["pid"]][half(c["closed_at"])].append(c)
+    for pid, byh in old_by.items():
+        for h, cs in byh.items():
+            ts, td = sum(r3(c["exp_ts"]) for c in cs), sum(r3(c["exp_td"]) for c in cs)
+            if len(cs) < MIN_CLS or td < MIN_EXP:
+                continue
+            t = sum(c["threads"] for c in cs)
+            v = {m: None for m in METRICS}
+            v.update(tn=r3(t / len(cs)), ts=r3(t / ts) if ts else None, td=r3(t / td) if td else None)
+            ten = st.median((epoch_day(c["closed_at"]) - epoch_day(first[pid])) / 365.25 for c in cs)
+            orgc = Counter(orgs(c["email"], datetime.fromtimestamp(c["closed_at"], timezone.utc)
+                                .strftime("%Y-%m-%d")) for c in cs)
+            old_pts[pid].append((datetime.fromtimestamp(first[pid], timezone.utc).year, ten,
+                                 orgc.most_common(1)[0][0], v, {m: None for m in METRICS}, True))
     trend_pts = []
-    for pid, cs in people.items():
+    for pid in set(people) | set(old_pts):
         if pid not in first:
             continue
         y0 = datetime.fromtimestamp(first[pid], timezone.utc).year
         byh = defaultdict(list)
-        for c in cs:
+        for c in people.get(pid, ()):
             byh[half(c["closed_at"])].append(c["ten"])
         # A half-year counts for the addressed measures only with enough labelled CLs.
         def counted(vals, pp):
             return {m: v if m[0] == "t" or pp["ok_a"] else None for m, v in vals.items()}
-        pts = [(y0, st.median(byh[h]), pp["org"], counted(pp["v"], pp), counted(pp["x"], pp))
-               for h, pp in per[pid].items() if HALF.match(h) and pp["ok"]]
+        pts = old_pts.get(pid, []) + [(y0, st.median(byh[h]), pp["org"], counted(pp["v"], pp), counted(pp["x"], pp))
+                                      for h, pp in per.get(pid, {}).items() if HALF.match(h) and pp["ok"]]
         if pts:
             trend_pts.append(pts)
     # The page's "Peers" choice, and the same against directory experience ("dir:").
@@ -641,7 +692,7 @@ def main():
                  start=epoch_day(START), end=epoch_day(END), addr_start=epoch_day(ADDR_START),
                  tenure=TENURE, changes=CHANGES, xp=XP, min_peers=MIN_PEERS, qs=len(QS), min_cls=MIN_CLS, min_exp=MIN_EXP, min_received=MIN_RECEIVED,
                  tone_weeks=[TONE_WEEKS[0], TONE_WEEKS[-1]], dist={}, counts={}, bands={}, tone={},
-                 cohort_step=STEP, min_cohort=MIN_COHORT, cohorts=cohorts,
+                 cohort_step=STEP, cohort_from=int(HISTORY_ISO[:4]), min_cohort=MIN_COHORT, cohorts=cohorts,
                  change_edges=CHANGE_EDGES, change=change)
     for p in allp:
         # Peers per kind: the addressed measures count people by their labelled CLs.

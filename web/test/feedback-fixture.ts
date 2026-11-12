@@ -76,11 +76,14 @@ export const peers: Peers = {
   bands: Object.fromEntries(periods.map((p) => [p, bands()])),
   tone: { all: { n: 900, q: q(0, 0.1) }, 'time:2-5y': { n: 200, q: q(0, 0.08) }, 'changes:50-199': { n: 150, q: q(0, 0.06) } },
   cohort_step: 0.5,
+  cohort_from: 2018,
   min_cohort: 20,
-  // Two first-commit years for everyone; outside Google only the newer one.
+  // Two first-commit years that start at tenure 0 for everyone; 2016 starts later, so it isn't drawn.
+  // Outside Google only 2024 has three points.
   cohorts: {
-    all: each(() => ({ '2019': [[4, 0.9, 80], [4.5, 0.85, 90]], '2024': [[0, 2.1, 170], [0.5, 1.7, 100], [1, 1.2, 90]] })),
-    nongoogle: each(() => ({ '2024': [[0, 2, 20]] })),
+    all: each(() => ({ '2016': [[4, 0.9, 80], [4.5, 0.85, 90], [5, 0.8, 90]],
+      '2019': [[0, 1.9, 300], [0.5, 1.5, 200], [1, 1.3, 190]], '2024': [[0, 2.1, 170], [0.5, 1.7, 100], [1, 1.2, 90]] })),
+    nongoogle: each(() => ({ '2022': [[0, 2.2, 30]], '2024': [[0, 2, 20], [0.5, 1.6, 20], [1, 1.1, 20]] })),
   },
   change_edges: [-40, -30, -20, -10, 0, 10, 20, 30, 40, 50, 60, 70, 80],
   change: {

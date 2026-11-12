@@ -20,14 +20,21 @@ half-years), and tenure by directory experience shows the values against
 that experience. Its axis is always years, and the dates don't apply to it.
 It shows:
 
-- *Cohort curves:* for people whose first commit on `main` was in 2012, 2016,
-  2019, 2022 and 2024 (`COHORT_YEARS`), the median of their per-half-year
-  values (counted half-years only: 6+ CLs, 3+ expected threads) by tenure, in
-  half-year bins, where 20+ people share a point. Each cohort covers the
-  stretch of tenure that fell within the data's dates (below), and the
-  curves line up into one falling curve: on 2026-11-11 the median went from
-  about 2.1× in the first half-year to 1.0× around three years and 0.6× after
-  ten (size and directory, all threads).
+- *Cohort curves:* per year of first commit on `main`, the median of
+  people's per-half-year values (counted half-years only: 6+ CLs, 3+
+  expected threads) by tenure, in half-year bins, where 20+ people share a
+  point. Every line starts at tenure 0: the page draws the years from 2018
+  (`cohort_from`) whose curve begins at 0 with 3+ points, every other one when
+  there are more than five (`cohortYears`), so 2018, 2020, 2022 and 2024 for
+  all threads. For those, the script also counts the merged, human-owned
+  CLs on `main` from 2018 to June 2023 in `derived.sqlite` (about 494k),
+  against the same 2023–24 norms; older CLs leave out only those with 100+
+  files (`mech.jsonl` covers 2023 on). Addressed labels and directory
+  experience exist only from the data's start (July 2023), so with those the lines start in
+  2023. On 2026-11-11 the curves line up: about 2.1× in the first half-year
+  for the 2020–24 starters (1.6× for 2018), 1.0–1.2× after two to three
+  years, and 0.6–0.8× after six to eight (size and directory, all threads).
+  These older half-years go into the curves only, not the yearly change.
 - *Yearly change:* per person with 3+ counted half-years spanning a year or
   more of tenure, exp of the least-squares slope of ln(value) against tenure
   (values under 0.05 count as 0.05), as a histogram of % reduction a year.

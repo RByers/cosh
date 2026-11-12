@@ -97,14 +97,16 @@
         </div>
         <p id="rf-cohorts-note" class="note"></p>
         <template data-msg="cohorts-note">
-          Each line follows the contributors whose first commit on main was in one year, from <slot name="from"></slot> to
-          <slot name="to"></slot>: the median of their<span data-if="kind=a"> addressed</span> feedback<span data-if="corr=n"> per
+          Each line follows the contributors whose first commit on main was in one year, from that first commit
+          to <slot name="to"></slot>: the median of their<span data-if="kind=a"> addressed</span> feedback<span data-if="corr=n"> per
           change</span> in each half-year, by how long they had been contributing then<span data-if="dirxp">,
           measured against authors with the same experience in each directory</span><span data-if="org"> (only
           half-years in which most of their changes came from <slot name="org"></slot>)</span>. Points stand for
           <slot name="min"></slot> or more contributors who landed <slot name="minCls"></slot> or more changes in
-          the half-year. Whenever they started, contributors draw less feedback the longer they have been
-          contributing.
+          the half-year. Reviewer threads are counted from 2018 on<span data-if="limited">, but
+          <span data-if="kind=a">addressed threads</span><span data-if="!kind=a">directory experience</span> only from
+          <slot name="from"></slot>, so only the newest start years can be followed from the beginning</span>. Whenever they started,
+          contributors draw less feedback the longer they have been contributing.
         </template>
         <h3>How fast each contributor's feedback falls</h3>
         <div class="chart">
