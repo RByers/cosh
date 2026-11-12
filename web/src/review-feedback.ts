@@ -156,14 +156,13 @@ function halfName(h: string): string {
   return msg(h.endsWith('H1') ? 'period-half1' : 'period-half2', { year });
 }
 
-/** The dates the data covers, by name: the first and last month, the last day, and the
+/** The dates the data covers, by name: the first and last month, and the
  * month the addressed measures start (empty until peers.json has loaded). */
 function rangeVars(peers: Peers | null): Record<string, string> {
-  if (!peers) return { from: '', to: '', 'last-day': '', 'addr-from': '' };
+  if (!peers) return { from: '', to: '', 'addr-from': '' };
   return {
     from: monthOf(fromMonth(peers.start), true),
     to: monthOf(toMonth(peers.end), true),
-    'last-day': dayLabel(peers.end - 1),
     'addr-from': monthOf(fromMonth(peers.addr_start), true),
   };
 }
@@ -611,10 +610,14 @@ function renderTrend() {
   const m = metric();
   // The half-years the measure covers.
   const [from, to] = rangeOf(peers, state.kind);
-  const hs = halves(peers.periods).filter((h) => { const [a, b] = periodSpan(h, [from, to]); return a < b; });
+  const all = halves(peers.periods).filter((h) => { const [a, b] = periodSpan(h, [from, to]); return a < b; });
   // Every half-year gets its peer group, also those without the person's changes: a band
   // drawn only where they have some was a lone point (no fill) for someone in one half-year.
-  const groups = halfGroups(state.tenure, state.org, p, hs);
+  // The axis starts where they started contributing.
+  const allGroups = halfGroups(state.tenure, state.org, p, all);
+  const first = Math.max(0, all.findIndex((h, i) => allGroups[i] !== null || p.periods[h]));
+  const hs = all.slice(first);
+  const groups = allGroups.slice(first);
   const q = (h: string, f: number) => {
     const g = groups[hs.indexOf(h)];
     const d = g ? peers.dist[h]?.[g]?.[m] : undefined;
@@ -634,7 +637,8 @@ function renderTrend() {
       pointBorderColor: t.series[0], pointRadius: 4, pointHoverRadius: 5, pointHitRadius: 10, borderWidth: 2, tension: 0,
       spanGaps: true, fill: false, order: 0 },
   ];
-  const names = hs.map((h) => halfName(h));
+  // Each point is named by the last day of the six months it covers.
+  const names = hs.map((h) => dayLabel(periodSpan(h, [from, to])[1] - 1));
   // The dot under the pointer, if it is one of the person's (dataset 5) with a value. Chart.js's
   // own event carries chart coordinates; the native one gave no hits under a real click.
   const dotAt = (chart: Chart, e: ChartEvent) => {
@@ -686,6 +690,7 @@ function renderTrend() {
         tooltip: {
           filter: (i) => i.datasetIndex >= 4,
           callbacks: {
+            title: (items) => (items.length ? halfName(hs[items[0].dataIndex]) : ''),
             label: (i) => {
               const h = hs[i.dataIndex];
               if (i.datasetIndex === 5) {

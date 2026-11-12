@@ -269,7 +269,7 @@
         <template data-msg="axis-feedback">feedback index</template>
         <template data-msg="axis-lines">lines changed</template>
         <template data-msg="axis-dir">directory</template>
-        <template data-msg="axis-half">half-year</template>
+        <template data-msg="axis-half">six months ending</template>
         <template data-msg="tile-threads-a">Addressed reviewer threads</template>
         <template data-msg="tile-threads-t">Reviewer threads</template>
         <template data-msg="tile-peers-sub"><slot name="group"></slot>: <slot name="n"></slot> authors, middle half
@@ -291,13 +291,14 @@
         <p id="rf-facts" class="note"></p>
         <h3>Over time</h3>
         <div class="chart">
-          <canvas id="rf-trend" role="img" aria-label="Your feedback per half-year against your peers' median, middle half and 10th to 90th percentile."></canvas>
+          <canvas id="rf-trend" role="img" aria-label="Your feedback per six months against your peers' median, middle half and 10th to 90th percentile."></canvas>
         </div>
         <p class="note">
-          Each half-year on its own. The line is you; the shaded bands are the middle half and the 10th–90th
-          percentile of your peers, and the dashed line their median. Half-years in which you landed few changes
-          are drawn as hollow dots. The last half-year runs to <span data-rf-range="last-day"></span>. Select
-          one of your dots to see where that half-year's feedback came from, below.
+          Each point covers the six months up to its date (January to June, or July to December), from the
+          half-year you started contributing. The line is you; the shaded bands are the
+          middle half and the 10th–90th percentile of your peers, and the dashed line their median. Points with few
+          of your changes are drawn hollow. Select one of your dots to see where that half-year's feedback came
+          from, below.
         </p>
       </section>
 

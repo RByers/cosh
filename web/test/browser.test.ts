@@ -3405,7 +3405,7 @@ test('review feedback: a person, the measures, peer groups, directories and comm
     change: ['change in feedback index from the year before', 'contributor-years'],
     kinds: ['years since first commit on main', 'feedback index'],
     tenures: ['tenure band: years / changes landed before / earlier commits in the directory', 'feedback index'],
-    trend: ['half-year', 'feedback index'],
+    trend: ['six months ending', 'feedback index'],
     xp: ['your earlier commits in the directory', 'feedback index'],
     perCl: ['reviewer threads on the change', 'your changes'],
     size: ['lines changed', 'feedback index'],
@@ -3488,8 +3488,7 @@ test('review feedback: a person, the measures, peer groups, directories and comm
   }
   // The over-time chart has every half-year of the data, the last one cut to its end.
   assert.deepEqual(await page.evaluate(() => window.__rf!.charts.trend.data.labels),
-    ['July – December 2023', 'January – June 2024', 'July – December 2024', 'January – June 2025', 'July – December 2025',
-      'January – June 2026', 'July – October 2026']);
+    ['31 Dec 2023', '30 Jun 2024', '31 Dec 2024', '30 Jun 2025', '31 Dec 2025', '30 Jun 2026', '31 Oct 2026']);
   assert.match(await page.$eval('#method', (e) => e.textContent!), /from\s+July 2023 to October 2026,.*from July 2023, where/s);
   const text = await page.$eval('body', (b) => b.innerText);
   assert.doesNotMatch(text, /\b\d{4}-W\d{2}\b/);
