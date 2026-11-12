@@ -7,6 +7,9 @@ import unittest
 from cosh.derive import (COMMITTER_UPSERT, account_name, committer_evidence, derive,
                          derive_change, mark_emailless_bots)
 from cosh import store
+from unittest import mock
+
+from cosh import orgs
 from cosh.orgs import OrgResolver, load_affiliations, parse_json5
 from cosh.paths import ROOT_FILES, UNPLACED, anchor, load_scope, parent_dir, parse_rules, place
 from cosh.summarize import summarize
@@ -119,6 +122,60 @@ class DeriveChangeTest(unittest.TestCase):
         aff = load_affiliations()
         self.assertGreater(len(aff), 20)
         self.assertTrue(all("@" in e for e in aff))
+
+
+class AffiliationsRefreshTest(unittest.TestCase):
+    """OrgResolver() refreshes config/affiliations.json5 once per process,
+    rewriting it only when chromium/src's copy differs. No network: urlopen
+    is faked."""
+
+    def setUp(self):
+        self.dir = tempfile.mkdtemp()
+        self.path = os.path.join(self.dir, "affiliations.json5")
+        self.served = '{"a@chromium.org": {affiliations: [{start: "2020-01-01", domain: "x.com"}]}}'
+        self.calls = 0
+        env = mock.patch.dict(os.environ, {"COSH_CONTACT": "test@example.invalid"})
+        env.start()
+        os.environ.pop("COSH_AFFILIATIONS_OFFLINE", None)
+        self.addCleanup(env.stop)
+        self.addCleanup(orgs._refreshed.clear)
+
+    def urlopen(self, req, timeout=None):
+        import base64
+        import io
+        self.calls += 1
+        if self.served is None:
+            raise OSError("network down")
+        r = io.BytesIO(base64.b64encode(self.served.encode()))
+        return mock.MagicMock(__enter__=lambda *a: r, __exit__=lambda *a: False)
+
+    def refresh(self):
+        with mock.patch.object(orgs.urllib.request, "urlopen", self.urlopen):
+            orgs.refresh_affiliations(self.path)
+
+    def test_writes_when_changed_then_not_again_in_the_process(self):
+        with open(self.path, "w") as f:
+            f.write("{}")
+        self.refresh()
+        self.assertEqual(load_affiliations(self.path), {"a@chromium.org": [("2020-01-01", "x.com")]})
+        self.assertTrue(os.path.exists(os.path.join(self.dir, "affiliations.source.txt")))
+        self.refresh()
+        self.assertEqual(self.calls, 1)
+
+    def test_unchanged_file_is_not_rewritten(self):
+        with open(self.path, "w") as f:
+            f.write(self.served)
+        with mock.patch.object(orgs.urllib.request, "urlopen", self.urlopen):
+            self.assertFalse(orgs.update_affiliations(self.path))
+        self.assertFalse(os.path.exists(os.path.join(self.dir, "affiliations.source.txt")))
+
+    def test_failed_fetch_stops_unless_offline(self):
+        self.served = None
+        with self.assertRaises(SystemExit):
+            self.refresh()
+        os.environ["COSH_AFFILIATIONS_OFFLINE"] = "1"
+        self.refresh()
+        self.assertEqual(self.calls, 1)
 
 
 class AccountTest(unittest.TestCase):

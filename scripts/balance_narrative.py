@@ -14,7 +14,8 @@ people or MIN_CLS CLs are dropped or pooled into "Other".
 
 --cache P pickles the loaded inputs to P (first run) and reads them back
 (later runs), which cuts a rerun from ~6 min to ~1 min. Delete P when any
-input changes. Output is deterministic (fixed seeds).
+input changes; a cache built with a different config/affiliations.json5 (it
+holds resolved orgs) is rebuilt by itself. Output is deterministic (fixed seeds).
 
 Population (as balance_report.py): merged, human-owned, non-mechanical CLs
 (mech list) closed 2023Q3..2026Q3; people merged across e-mail addresses
@@ -217,7 +218,8 @@ def load(args):
         G_.append(dict(pid=c["pid"], at=c["at"], n=c["n"], rbp=[x for x in c["rbp"] if x != c["pid"]],
                        lines=c["lines"], org=resolve(e, datetime.fromtimestamp(c["at"], timezone.utc)
                                                        .strftime("%Y-%m-%d"))))
-    return dict(cls=L, pairs=pairs, commits=G_, first=first, owner_at=owner_at)
+    return dict(cls=L, pairs=pairs, commits=G_, first=first, owner_at=owner_at,
+                affiliations=orgs.affiliations_digest())
 
 
 # ============================================================ 1. reviewer burden
@@ -723,9 +725,14 @@ def main():
     ap.add_argument("--ai-marked")
     ap.add_argument("--cache")
     args = ap.parse_args()
+    S = None
     if args.cache and os.path.exists(args.cache):
         S = pickle.load(open(args.cache, "rb"))
-    else:
+        orgs.refresh_affiliations()
+        if S.get("affiliations") != orgs.affiliations_digest():
+            print(f"{args.cache} was built with another affiliations file; reloading", file=sys.stderr)
+            S = None
+    if S is None:
         S = load(args)
         if args.cache:
             with open(args.cache + ".tmp", "wb") as f:

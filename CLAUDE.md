@@ -103,6 +103,10 @@ regex plus Claude Haiku (`cosh classify`).
 ## Conventions
 
 - Python standard library only. Run with `python3 -m cosh <cmd>`.
+- `config/affiliations.json5` (org attribution) refreshes itself: every
+  `OrgResolver()` fetches it from chromium/src `main` once per process (cheap,
+  no approval needed) and rewrites it only on a change. Commit it with the
+  outputs when it changes. `COSH_AFFILIATIONS_OFFLINE=1` skips the fetch.
 - Tests: `python3 -m unittest tests.test_derive tests.test_extract tests.test_radar tests.test_classify tests.test_sentiment tests.test_patchsets tests.test_balance tests.test_bugs tests.test_review_feedback`.
   These run in a single process, which complies with the global limit of 4
   test workers. `tests.test_extract` uses a fake Gerrit and never touches the

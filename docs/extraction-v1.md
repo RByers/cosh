@@ -32,7 +32,7 @@ python3 -m cosh derive [--out PATH]         # offline: raw cache -> data/private
 python3 -m cosh summarize [--db PATH] [--out DIR]   # offline: -> summaries/ (path scope: config/paths.txt)
 python3 -m cosh radar [--offline]           # Cloudflare Radar; needs `source ~/.secrets/cosh/secrets.sh`
 python3 -m cosh backfill --weeks 52 [--go]  # plan only unless --go (the 52 weeks are approved)
-python3 -m cosh update-affiliations         # refresh config/affiliations.json5
+python3 -m cosh update-affiliations         # refresh config/affiliations.json5 (analyses also do it)
 python3 -m cosh status
 python3 -m unittest tests.test_derive tests.test_extract tests.test_radar tests.test_classify
 ```
@@ -473,6 +473,13 @@ The org is a domain name, evaluated as of the day of the comment:
    its most recent affiliation whose `start` is on or before that date.
    - The file is a verbatim copy of Chromium's
      `third_party/blink/tools/commit_stats/affiliations.json5`.
+   - Every analysis refreshes it first: `OrgResolver()` fetches the file from
+     chromium/src `main` once per process (one small googlesource request)
+     and rewrites it only when it changed, saying so on stderr; commit it
+     with the outputs. A failed fetch stops the run;
+     `COSH_AFFILIATIONS_OFFLINE=1` uses the local copy as it is (the tests
+     set it in `tests/__init__.py`). `balance_narrative.py --cache` rebuilds
+     a cache made with a different copy.
    - Dates before a person's earliest `start` fall through to rule 2 or 3.
    - The values `Individual` and `Undisclosed` are kept as-is. Summaries
      fold `Undisclosed` into Other, like `gmail.com` (`FOLD_INTO_OTHER`).
