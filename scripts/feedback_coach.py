@@ -78,7 +78,6 @@ Write a Markdown report that:
   matter, and no more than about 1,000 words in all. Focus only on valuable, actionable feedback. Where there is
   little or no actionable feedback, say so plainly in a sentence instead of offering generic or
   low-value advice. Don't pad, don't praise or scold, and don't speculate beyond the evidence.
-- Never names reviewers or other people.
 
 Structure:
 {structure}
@@ -86,10 +85,11 @@ Structure:
 Start directly with the first heading; no title, preamble or closing remarks.
 """
 
-STRUCT_ONE = "- `## Patterns` then `## Where to invest` (a short, prioritised list)."
-STRUCT_SPLIT = """\
-- `## Overall`: cross-cutting patterns seen across directories, then `### Where to invest`
-  (a short, prioritised list).
+SUMMARY = ("- `# Summary` first: at most 3 point-form notes on where the biggest opportunities for "
+           "improvement lie.\n")
+STRUCT_ONE = SUMMARY + "- Then `## Patterns`."
+STRUCT_SPLIT = SUMMARY + """\
+- Then `## Overall`: cross-cutting patterns seen across directories.
 - Then one `## <directory>` section for each of these directories, in this order, covering only
   patterns specific to that directory in at most 3 bullets (don't repeat the overall ones; if
   there are none, say so in one line): {dirs}.

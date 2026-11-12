@@ -326,7 +326,9 @@ It takes the author's past year (`--days 365`, up to the newest comment in
 commit-message threads they **addressed** (regex, else the Haiku label), plus
 CL-level threads minus bare approvals. The newest 600 (`--max-threads`) go to
 one call of Claude Opus through `cosh.sandbox.Sandbox` (no tools, bwrap, reply
-bound to a JSON schema; comments are untrusted, `SECURITY.md`). With 80+
+bound to a JSON schema; comments are untrusted, `SECURITY.md`). The report
+opens with a Summary of at most 3 points on the biggest opportunities, then
+the patterns, each with examples and where to invest. With 80+
 threads the report gets a section per 2nd-level directory that has 20+
 (file threads by their file, the rest by the CL's main directory). The model
 cites threads as `[T12]`; the script turns them into Gerrit comment links and
