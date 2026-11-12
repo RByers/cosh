@@ -262,6 +262,23 @@
         </p>
       </section>
 
+      <section id="per-cl" class="card" aria-labelledby="per-cl-title">
+        <a class="card-anchor" href="#per-cl" aria-label="Link to this section" title="Link to this section">#</a>
+        <h2 id="per-cl-title">Reviewer threads per change</h2>
+        <p id="per-cl-sub" class="sub"></p>
+        <template data-msg="per-cl-sub">
+          How many reviewer threads<span data-if="kind=a"> you addressed</span> each of your changes
+          drew<span data-if="half">, for the changes landed <slot name="half"></slot></span>. Select a column to
+          see only those changes in the directories and comments below; select it again to clear the filter.
+        </template>
+        <div class="chart">
+          <canvas id="rf-per-cl" role="img" aria-label="Histogram of your changes by how many reviewer threads each drew."></canvas>
+        </div>
+        <template data-msg="axis-per-cl-t">reviewer threads on the change</template>
+        <template data-msg="axis-per-cl-a">addressed reviewer threads on the change</template>
+        <template data-msg="axis-your-cls">your changes</template>
+      </section>
+
       <section id="directories" class="card" aria-labelledby="directories-title">
         <a class="card-anchor" href="#directories" aria-label="Link to this section" title="Link to this section">#</a>
         <h2 id="directories-title">Where your feedback comes from</h2>
@@ -278,6 +295,16 @@
           <button type="button" id="rf-half-clear">Clear</button>
         </p>
         <template data-msg="half-filter">Filter: only changes landed <slot name="half"></slot></template>
+        <!-- Set by selecting a column of the threads-per-change chart; filters this table and the comments. -->
+        <p id="rf-bin-filter" class="rf-filter" hidden>
+          <span class="rf-filter-name"></span>
+          <button type="button" class="rf-bin-clear">Clear</button>
+        </p>
+        <template data-msg="bin-filter">Filter: only changes with <slot name="bin"></slot></template>
+        <!-- A column of the threads-per-change chart, in the filter lines and the comments' caption. -->
+        <template data-msg="bin-name"><span data-if="none">no</span><span data-if="!none"><slot
+          name="n"></slot></span><span data-if="kind=a"> addressed</span> reviewer <span
+          data-if="one">thread</span><span data-if="!one">threads</span><span data-if="more"> or more</span></template>
         <div class="table-wrap">
           <table id="rf-dirs" class="rf-table">
             <thead><tr><th scope="col">Directory</th><th scope="col" class="num">Changes</th><th scope="col" class="num">Threads</th><th scope="col" class="num" id="rf-dirs-typical">Typical</th><th scope="col" class="num">Ratio</th><th scope="col" class="num">Earlier commits</th></tr></thead>
@@ -306,8 +333,9 @@
         <p id="comments-sub" class="sub"></p>
         <template data-msg="comments-sub">
           <slot name="n"></slot> reviewer threads<span data-if="kind=a"> you addressed</span><span data-if="dir"> in
-          <code><slot name="dir"></slot></code></span><span data-if="half"> on changes landed
-          <slot name="half"></slot></span>, newest first, each linked to its review. Text and a link to
+          <code><slot name="dir"></slot></code></span><span data-if="bin"> on changes with <slot
+          name="bin"></slot><span data-if="half">, landed <slot name="half"></slot></span></span><span
+          data-if="!bin"><span data-if="half"> on changes landed <slot name="half"></slot></span></span>, newest first, each linked to its review. Text and a link to
           the comment itself are included for threads whose text has been collected (from November 2025 on); older
           ones link to their change.
         </template>
@@ -315,6 +343,10 @@
         <p id="rf-half-filter-comments" class="rf-filter" hidden>
           <span class="rf-filter-name"></span>
           <button type="button" class="rf-half-clear">Clear</button>
+        </p>
+        <p id="rf-bin-filter-comments" class="rf-filter" hidden>
+          <span class="rf-filter-name"></span>
+          <button type="button" class="rf-bin-clear">Clear</button>
         </p>
         <div class="toggles">
           <div class="select-toggle">

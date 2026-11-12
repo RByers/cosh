@@ -173,6 +173,13 @@ The measures:
   the filter is on. Selecting the same dot again also clears it, as does
   looking up someone else or switching to a measure with no changes in that
   half-year.
+- **Threads per change**, after the directory-experience card: a histogram
+  of the person's CLs by how many reviewer threads (addressed ones, with the
+  addressed measure) each drew, 0 to 9 and 10+, for the selected half-year
+  if there is one. Selecting a column filters the directory tree and the
+  comments to those CLs, together with the half-year and directory filters,
+  with its own filter line and Clear button; selecting it again clears it,
+  as does a new half-year or measure that leaves the column empty.
 - **Comments**: every reviewer thread, newest first, with file, date and
   addressed or not. Threads whose text has been collected (every week in
   `data/private/sentiment/comments-*.jsonl`, 2025-W45 on today) get a

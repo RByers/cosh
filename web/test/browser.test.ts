@@ -3380,6 +3380,7 @@ test('review feedback: a person, the measures, peer groups, directories and comm
     change: ['change in feedback index from the year before', 'contributor-years'],
     trend: ['half-year', 'feedback index'],
     xp: ['your earlier commits in the directory', 'feedback index'],
+    perCl: ['reviewer threads on the change', 'your changes'],
     size: ['lines changed', 'feedback index'],
     dirs: ['directory', 'feedback index'],
   });
@@ -3542,6 +3543,89 @@ test('review feedback: selecting a dot in the over-time chart filters the direct
   const box = (await page.$eval('#rf-trend', (c) => { const r = c.getBoundingClientRect(); return { x: r.left, y: r.top }; }));
   await clickAt(box.x + 5, box.y + 5);
   assert.equal(await filterShown(), false);
+  assert.deepEqual(errors, []);
+  await page.close();
+});
+
+test('review feedback: selecting a column of the threads-per-change chart filters the directories and comments', async () => {
+  const { page, errors } = await feedbackPage();
+  const { FIXTURE_EMAIL } = await import('./feedback-fixture.ts');
+  await lookUp(page, FIXTURE_EMAIL);
+  await page.waitForFunction(() => !document.querySelector<HTMLElement>('#rf-person')!.hidden);
+  // It comes right after the directory-experience card.
+  assert.deepEqual(await page.$$eval('#rf-person > section', (ss) => ss.map((s) => s.id).slice(1, 4)),
+    ['experience', 'per-cl', 'directories']);
+  const counts = () => page.evaluate(() => window.__rf!.charts.perCl.data.datasets[0].data);
+  // CLs 1 and 3 drew 2 threads each, CL 2 one.
+  assert.deepEqual(await counts(), [0, 1, 2, 0, 0, 0, 0, 0, 0, 0, 0]);
+  assert.deepEqual(await page.evaluate(() => window.__rf!.charts.perCl.data.labels!.at(-1)), '10+');
+  // Where column i's middle is on the page (half its height, so even a short column can be hit).
+  const col = (i: number) => page.evaluate((i) => {
+    const chart = window.__rf!.charts.perCl;
+    const bar = chart.getDatasetMeta(0).data[i];
+    const r = chart.canvas.getBoundingClientRect();
+    return { x: r.left + bar.x, y: r.top + chart.chartArea.top + 5 };
+  }, i);
+  const clickCol = async (i: number) => {
+    await page.$eval('#rf-per-cl', (c) => c.scrollIntoView({ block: 'center' }));
+    const at = await col(i);
+    await page.mouse.click(at.x, at.y);
+    await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
+  };
+  const dirs = () => page.$$eval('#rf-dirs tbody th', (ths) => ths.map((t) => t.textContent!.replace(/[▸▾]/, '')));
+  const threads = () => page.$$eval('#rf-threads li', (ls) => ls.length);
+  const filters = () => page.$$eval('#rf-bin-filter, #rf-bin-filter-comments', (es) =>
+    es.map((e) => ((e as HTMLElement).hidden ? null : e.querySelector('.rf-filter-name')!.textContent!.trim())));
+  assert.deepEqual(await filters(), [null, null]);
+  // Above the column's top: still that column.
+  await clickCol(1);
+  assert.equal(await page.evaluate(() => window.__rf!.bin), 1);
+  assert.deepEqual(await filters(), Array(2).fill('Filter: only changes with 1 reviewer thread'));
+  assert.deepEqual(await dirs(), ['content/', 'chrome/']);
+  assert.equal(await threads(), 1);
+  assert.match(await page.$eval('#comments-sub', (e) => e.textContent!), /^1 reviewer threads on changes with 1 reviewer thread, newest/);
+  await clickCol(2);
+  assert.deepEqual(await filters(), Array(2).fill('Filter: only changes with 2 reviewer threads'));
+  assert.deepEqual(await dirs(), ['chrome/', 'third_party/']);
+  assert.equal(await threads(), 4);
+  // Together with a half-year, which the chart follows too.
+  await page.$eval('#rf-trend', (c) => c.scrollIntoView({ block: 'center' }));
+  const dot = await page.evaluate(() => {
+    const chart = window.__rf!.charts.trend;
+    const pt = chart.getDatasetMeta(5).data[6];
+    const r = chart.canvas.getBoundingClientRect();
+    return { x: r.left + pt.x, y: r.top + pt.y };
+  });
+  await page.mouse.click(dot.x, dot.y);
+  await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
+  assert.equal(await page.evaluate(() => window.__rf!.half), '2026H2');
+  assert.deepEqual(await counts(), [0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0]);
+  assert.match(await page.$eval('#per-cl-sub', (e) => e.textContent!), /drew, for the changes landed July – October 2026\./);
+  assert.equal(await page.evaluate(() => window.__rf!.bin), 2);
+  assert.deepEqual(await dirs(), ['third_party/']);
+  assert.match(await page.$eval('#comments-sub', (e) => e.textContent!),
+    /^2 reviewer threads on changes with 2 reviewer threads, landed July – October 2026, newest/);
+  // An empty column can't be selected.
+  await clickCol(0);
+  assert.equal(await page.evaluate(() => window.__rf!.bin), 2);
+  await page.click('#rf-half-clear');
+  // The addressed measure: every change drew one addressed thread, so column 2 empties and its filter goes.
+  await page.click('input[name="rf-kind"][value="a"]');
+  assert.deepEqual(await counts(), [0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
+  assert.equal(await page.evaluate(() => window.__rf!.bin), null);
+  assert.deepEqual(await filters(), [null, null]);
+  await clickCol(1);
+  assert.deepEqual(await filters(), Array(2).fill('Filter: only changes with 1 addressed reviewer thread'));
+  // Either Clear button clears it, and so does selecting the column again.
+  await page.click('#rf-bin-filter-comments .rf-bin-clear');
+  assert.deepEqual(await filters(), [null, null]);
+  assert.equal(await threads(), 3);
+  await clickCol(1);
+  await page.click('#rf-bin-filter .rf-bin-clear');
+  assert.equal(await page.evaluate(() => window.__rf!.bin), null);
+  await clickCol(1);
+  await clickCol(1);
+  assert.equal(await page.evaluate(() => window.__rf!.bin), null);
   assert.deepEqual(errors, []);
   await page.close();
 });

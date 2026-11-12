@@ -25,6 +25,9 @@ import {
   rangeOf,
   ratioShade,
   threadRows,
+  threadBinLabel,
+  threadHistogram,
+  THREAD_BINS,
   ratioBins,
   cohortYears,
   trendGroup,
@@ -57,7 +60,8 @@ const put = (target: Element, key: string, vars: Vars = {}) => target.replaceChi
 
 declare global {
   interface Window {
-    __rf?: { person: Person | null; peers: Peers | null; charts: Record<string, Chart>; half: string | null };
+    __rf?: { person: Person | null; peers: Peers | null; charts: Record<string, Chart>; half: string | null;
+      bin: number | null };
   }
 }
 
@@ -80,12 +84,14 @@ const state = {
   dir: null as string | null,
   /** The half-year picked in the over-time chart, filtering the directories and comments. */
   half: null as string | null,
+  /** The column picked in the threads-per-change chart (THREAD_BINS), filtering the same. */
+  bin: null as number | null,
   threadsShown: PAGE,
   /** Keys of the directory rows that are open (see dirRows). */
   expanded: new Set<string>(),
 };
 const charts: Record<string, Chart> = {};
-window.__rf = { person: null, peers: null, charts, half: null };
+window.__rf = { person: null, peers: null, charts, half: null, bin: null };
 
 async function getJson<T>(url: string): Promise<T | null> {
   const r = await fetch(url);
@@ -231,6 +237,8 @@ async function lookup(raw: string) {
     state.dir = null;
     state.half = null;
     window.__rf!.half = null;
+    state.bin = null;
+    window.__rf!.bin = null;
     state.expanded = new Set();
     put(note, 'find-done', { n: fmtInt(found.cls.length), from: dayLabel(found.cls[0][1]), to: dayLabel(found.cls.at(-1)![1]) });
     // The person's praise is on the Review Tone page, which opens their popup from the hash.
@@ -397,6 +405,7 @@ function render() {
   renderSummary();
   renderTrend();
   renderXp();
+  renderPerCl();
   renderDirs();
   renderThreads();
 }
@@ -544,9 +553,81 @@ function setHalf(h: string | null) {
   window.__rf!.half = h;
   state.threadsShown = PAGE;
   charts.trend?.update('none');
+  renderPerCl();
   renderDirs();
   renderThreads();
 }
+
+/** Filters the directories and comments to the changes in threads-per-change column `b` (null: all). */
+function setBin(b: number | null) {
+  state.bin = b;
+  window.__rf!.bin = b;
+  state.threadsShown = PAGE;
+  renderPerCl();
+  renderDirs();
+  renderThreads();
+}
+
+/** The person's changes by how many reviewer threads (or addressed ones) each drew,
+ * for the half-year picked in the over-time chart if any. A column can be selected. */
+function renderPerCl() {
+  destroy('perCl');
+  const p = state.person!;
+  const t = theme();
+  const period = state.half ?? ALL;
+  const counts = threadHistogram(p, period, state.kind);
+  // A column left empty by a new half-year or measure drops its filter.
+  if (state.bin !== null && !counts[state.bin]) {
+    state.bin = null;
+    window.__rf!.bin = null;
+  }
+  put($('#per-cl-sub'), 'per-cl-sub', { kind: state.kind, half: state.half ? halfName(state.half) : '' });
+  const labels = Array.from({ length: THREAD_BINS }, (_, b) => threadBinLabel(b));
+  const axis = (title: string) => ({ grid: { color: t.grid }, title: { display: true, text: title, color: t.text },
+    ticks: { color: t.text, font: { family: t.font } } });
+  // The column under the pointer, anywhere in its height, if it has changes.
+  const colAt = (chart: Chart, e: ChartEvent) => {
+    const hit = chart.getElementsAtEventForMode(e as unknown as Event, 'index', { intersect: false }, false)[0];
+    return hit && counts[hit.index] > 0 ? hit.index : null;
+  };
+  charts.perCl = new Chart($<HTMLCanvasElement>('#rf-per-cl'), {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [{ data: counts, borderWidth: 0, categoryPercentage: 0.9, barPercentage: 1,
+        backgroundColor: counts.map((_, b) => (state.bin === null || state.bin === b ? t.series[0] : t.muted)) }],
+    },
+    options: {
+      maintainAspectRatio: false,
+      animation: false,
+      font: { family: t.font },
+      onHover: (e, _els, chart) => {
+        chart.canvas.classList.toggle('rf-pointable', colAt(chart, e) !== null);
+      },
+      onClick: (e, _els, chart) => {
+        const b = colAt(chart, e);
+        if (b !== null) setBin(state.bin === b ? null : b);
+      },
+      scales: {
+        x: { ...axis(msg(`axis-per-cl-${state.kind}`)), grid: { display: false } },
+        y: { beginAtZero: true, ...axis(msg('axis-your-cls')),
+          ticks: { color: t.text, font: { family: t.font }, precision: 0 } },
+      },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          intersect: false,
+          mode: 'index',
+          callbacks: { label: (i) => `${fmtInt(i.parsed.y ?? 0)} ${i.parsed.y === 1 ? 'change' : 'changes'}` },
+        },
+      },
+    },
+  });
+}
+
+/** Column `b` of the threads-per-change chart, in words: "2 reviewer threads". */
+const binName = (b: number) => msg('bin-name', { kind: state.kind, none: b === 0, n: fmtInt(b), one: b === 1,
+  more: b === THREAD_BINS - 1 });
 
 function renderXp() {
   destroy('xp');
@@ -611,7 +692,8 @@ function renderDirs() {
   put($('#directories-sub'), 'directories-sub', { corr: state.corr });
   $('#rf-dirs-typical').title = msg(`dirs-typical-${state.kind}`).replace(/\s+/g, ' ').trim();
   showHalfFilter('#rf-half-filter');
-  const roots = dirTree(p, state.half ?? ALL, state.kind);
+  showBinFilter('#rf-bin-filter');
+  const roots = dirTree(p, state.half ?? ALL, state.kind, state.bin);
   const body = $('#rf-dirs tbody');
   body.replaceChildren(...dirRows(roots).map(dirRow));
   // The comment section's directory picker lists every directory in the tree, in path order.
@@ -774,12 +856,20 @@ function showHalfFilter(sel: string) {
   if (state.half) put(filter.querySelector('.rf-filter-name')!, 'half-filter', { half: halfName(state.half) });
 }
 
+/** Shows or hides one of the threads-per-change filter lines. */
+function showBinFilter(sel: string) {
+  const filter = $(sel);
+  filter.hidden = state.bin === null;
+  if (state.bin !== null) put(filter.querySelector('.rf-filter-name')!, 'bin-filter', { bin: binName(state.bin) });
+}
+
 function renderThreads() {
   const p = state.person!;
   showHalfFilter('#rf-half-filter-comments');
-  const rows = threadRows(p, state.half ?? ALL, state.kind, state.dir);
+  showBinFilter('#rf-bin-filter-comments');
+  const rows = threadRows(p, state.half ?? ALL, state.kind, state.dir, state.bin);
   put($('#comments-sub'), 'comments-sub', { n: fmtInt(rows.length), kind: state.kind, dir: state.dir ?? '',
-    half: state.half ? halfName(state.half) : '' });
+    half: state.half ? halfName(state.half) : '', bin: state.bin === null ? '' : binName(state.bin) });
   const list = $('#rf-threads');
   list.replaceChildren(...rows.slice(0, state.threadsShown).map(threadItem));
   if (!rows.length) list.append(el('li', msg('threads-none'), 'quote-none'));
@@ -804,6 +894,7 @@ function init() {
     void lookup(input.value);
   });
   for (const b of document.querySelectorAll('#rf-half-clear, .rf-half-clear')) b.addEventListener('click', () => setHalf(null));
+  for (const b of document.querySelectorAll('.rf-bin-clear')) b.addEventListener('click', () => setBin(null));
   radio<Kind>('rf-kind', (v) => {
     state.kind = v;
     state.threadsShown = PAGE;
@@ -848,6 +939,7 @@ function init() {
     if (!state.person) return;
     renderTrend();
     renderXp();
+    renderPerCl();
   });
   void getJson<Peers>(`${DATA}peers.json`).then((p) => {
     state.peers = p;

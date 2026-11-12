@@ -310,6 +310,24 @@ export const clsIn = (p: Person, period: string) => p.cls.filter((c) => inPeriod
 export const clsFor = (p: Person, period: string, kind: Kind) =>
   clsIn(p, period).filter((c) => kind === 't' || c[1] >= p.addrStart);
 
+/** The threads-per-change histogram's columns: 0 … 9 reviewer threads, then 10 or more. */
+export const THREAD_BINS = 11;
+export const threadBinLabel = (b: number) => (b === THREAD_BINS - 1 ? `${b}+` : String(b));
+/** The reviewer threads on a change that a measure of `kind` counts. */
+export const threadsOn = (c: ClRow, kind: Kind) => c[8].reduce((s, t) => s + counts(t, kind), 0);
+export const threadBin = (c: ClRow, kind: Kind) => Math.min(threadsOn(c, kind), THREAD_BINS - 1);
+
+/** The changes `clsFor` gives, only those in histogram column `bin` (null: all). */
+const clsPicked = (p: Person, period: string, kind: Kind, bin: number | null) =>
+  clsFor(p, period, kind).filter((c) => bin === null || threadBin(c, kind) === bin);
+
+/** The person's changes landed in `period` by how many reviewer threads each drew. */
+export function threadHistogram(p: Person, period: string, kind: Kind): number[] {
+  const out = new Array<number>(THREAD_BINS).fill(0);
+  for (const c of clsFor(p, period, kind)) out[threadBin(c, kind)] += 1;
+  return out;
+}
+
 /** Whether the person counts among peers for a measure of `kind`. */
 export const okFor = (vals: PeriodVals | undefined, kind: Kind) => (kind === 't' ? vals?.ok : vals?.ok_a) ?? false;
 /** The changes a measure of `kind` counts. */
@@ -367,8 +385,8 @@ const dirOrder = (a: DirNode, b: DirNode) =>
 
 /** The person's directories in `period` as a tree, each level most changes
  * first. A parent adds up its subdirectories (and own files), counting each
- * change once. */
-export function dirTree(p: Person, period: string, kind: Kind): DirNode[] {
+ * change once. `bin` keeps only the changes in that threads-per-change column. */
+export function dirTree(p: Person, period: string, kind: Kind, bin: number | null = null): DirNode[] {
   const nodes = new Map<string, DirNode>();
   const roots: DirNode[] = [];
   const stats = (): DirStats => ({ cls: 0, threads: 0, expected: 0, prior: 0 });
@@ -378,7 +396,7 @@ export function dirTree(p: Person, period: string, kind: Kind): DirNode[] {
     s.prior = Math.max(s.prior, prior);
   };
   const m: Metric = `${kind}d`;
-  for (const c of clsFor(p, period, kind)) {
+  for (const c of clsPicked(p, period, kind, bin)) {
     const per = new Map<number, number>();
     for (const t of c[8]) per.set(t[4], (per.get(t[4]) ?? 0) + counts(t, kind));
     const touched = new Set<DirNode>();
@@ -436,12 +454,13 @@ export interface ThreadRow {
 }
 
 /** Reviewer threads on the changes landed in `period`, newest first,
- * optionally only addressed ones, and only in directories under `dir` (a
- * path prefix such as "chrome/" or "chrome/browser/ui/"). */
-export function threadRows(p: Person, period: string, kind: Kind, dir: string | null): ThreadRow[] {
+ * optionally only addressed ones, only in directories under `dir` (a
+ * path prefix such as "chrome/" or "chrome/browser/ui/"), and only on the
+ * changes in threads-per-change column `bin`. */
+export function threadRows(p: Person, period: string, kind: Kind, dir: string | null, bin: number | null = null): ThreadRow[] {
   const praise = new Set(p.praise.map(([n, u]) => `${n}/${u}`));
   const out: ThreadRow[] = [];
-  for (const c of clsFor(p, period, kind)) {
+  for (const c of clsPicked(p, period, kind, bin)) {
     for (const t of c[8]) {
       if (kind === 'a' && !t[3]) continue;
       if (dir !== null && !p.dirs[t[4]].startsWith(dir)) continue;
