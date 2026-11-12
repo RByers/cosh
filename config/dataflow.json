@@ -660,7 +660,7 @@
     {
       "id": "sentiment-publish", "group": "sentiment", "command": "python3 -m cosh.sentiment publish [--week 2025-W45:2026-W44] [--name sample-5pct]",
       "code": ["cosh/sentiment.py", "cosh/sentiment_recent.py", "cosh/sentiment_people.py", "cosh/sandbox.py"],
-      "purpose": "Writes every Review Tone file from one range of fully scored weeks: the monthly trend (5% sample plus those weeks), the praise boards, sample comments, the per-period detail with screened anonymous AI-friction comments, and the names for the person search. Negative samples are screened by sandboxed Haiku for anything identifying.",
+      "purpose": "Writes every Review Tone file from one range of fully scored weeks: trend, praise boards, screened samples, per-period detail and the names for the person search.",
       "inputs": ["data/private/sentiment.sqlite", "data/private/sentiment/", "data/private/derived.sqlite", "claude-model"],
       "outputs": ["summaries/sentiment_monthly*.json", "summaries/sentiment_praise*.json", "summaries/sentiment_samples*.json", "summaries/sentiment_recent*.json", "summaries/sentiment_people.json", "data/private/sentiment.sqlite"],
       "network": true, "lock": null,
@@ -668,7 +668,7 @@
       "duration": null, "token_cost": "small, not measured; nothing once the cache has the comments", "cost_source": "No measurement",
       "refresh": "routine",
       "approval": "Publishes names for praise only; never negative figures per person or org (docs/sentiment.md).",
-      "notes": "Until 2026-11-12 these were five commands (summary, praise, samples, sentiment_recent, sentiment_people lookup) that each took the week range by hand; they still run alone. The default range is the fixed window the page shows (D3 in docs/data-architecture.md)."
+      "notes": "The trend uses the 5% sample plus those weeks; negative and AI-friction samples are screened by sandboxed Haiku for anything identifying. Until 2026-11-12 these were five commands (summary, praise, samples, sentiment_recent, sentiment_people lookup) that each took the week range by hand; they still run alone. The default range is the fixed window the page shows (D3 in docs/data-architecture.md)."
     },
     {
       "id": "sentiment-tune", "group": "sentiment", "command": "python3 scripts/sentiment_tune.py <prompt version>",
@@ -802,7 +802,7 @@
     {
       "id": "roi-analysis", "group": "feedback", "command": "python3 scripts/review_roi_table.py ...; review_roi_part1.py; review_roi_part2.py; review_roi_blame.py; review_roi_reverts.py; review_roi_substance.py",
       "code": ["scripts/review_roi_table.py", "scripts/review_roi_part1.py", "scripts/review_roi_part1_followup.py", "scripts/review_roi_part2.py", "scripts/review_roi_blame.py", "scripts/review_roi_reverts.py", "scripts/review_roi_substance.py", "scripts/balance_addressed_value.py"],
-      "purpose": "The review-ROI studies: whether review feedback predicts later reverts, bug-fixing commits and security bugs; and the addressed index against the feedback index (balance_addressed_value.py cl, blame, people).",
+      "purpose": "The review-ROI studies: whether review feedback predicts later reverts, bug-fixing commits and security bugs; and the addressed index against the feedback index.",
       "inputs": ["data/private/balance.sqlite", "data/private/commits.sqlite", "data/private/balance-timeline.sqlite", "data/private/derived.sqlite", "data/private/labels.sqlite", "data/private/bugs/bugs.sqlite", "data/private/notedb/", "chromium-git", "claude-model"],
       "outputs": ["data/private/review_roi/"],
       "network": true, "lock": null,
