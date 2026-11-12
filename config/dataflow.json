@@ -1014,6 +1014,11 @@
       "entry_script": null, "reads": [], "sources_line": null
     },
     {
+      "id": "page-404", "group": "site", "path": "web/404.html", "title": "Page not found",
+      "purpose": "Shown for unknown URLs (GitHub Pages and npm run serve); reads no data.",
+      "entry_script": null, "reads": [], "sources_line": null
+    },
+    {
       "id": "page-value", "group": "gerrit", "path": "web/value.html", "title": "Value Exchange",
       "purpose": "Each organisation's share of code review and commits against its browsers' share of usage.",
       "entry_script": "web/src/main.ts",

@@ -1,4 +1,5 @@
-import { readdirSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { getPriority, setPriority } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import type { Plugin } from 'vite';
@@ -74,8 +75,34 @@ const csp = (): Plugin => ({
   },
 });
 
+/** `vite preview` answers an unknown URL with an empty 404. GitHub Pages
+ * serves 404.html instead, so preview does too: this runs after preview's
+ * static files and its .html fallback (which maps /value to /value.html),
+ * and lets through only .html files that exist in dist/. */
+const notFound = (): Plugin => ({
+  name: 'cosh-404',
+  configurePreviewServer(server) {
+    const dist = server.config.build.outDir;
+    const root = join(server.config.root, dist);
+    return () => {
+      server.middlewares.use((req, res, next) => {
+        const path = decodeURIComponent((req.url ?? '/').split(/[?#]/)[0]);
+        const page = join(root, path);
+        if (path.endsWith('.html') && page.startsWith(root) && existsSync(page)) return next();
+        const notFoundPage = join(root, '404.html');
+        if (!existsSync(notFoundPage)) return next();
+        res.statusCode = 404;
+        res.setHeader('Content-Type', 'text/html; charset=utf-8');
+        res.end(readFileSync(notFoundPage));
+      });
+    };
+  },
+});
+
 export default defineConfig({
-  plugins: [csp()],
+  plugins: [csp(), notFound()],
+  // Separate pages, not a single-page app: an unknown URL is a 404, not index.html.
+  appType: 'mpa',
   // Relative asset URLs, so the site works from any GitHub Pages path.
   base: './',
   server: {
@@ -114,6 +141,8 @@ export default defineConfig({
         balance: page('balance.html'),
         'feedback-index': page('feedback-index.html'),
         dataflow: page('dataflow.html'),
+        // Served for unknown URLs by GitHub Pages, and by preview (notFound above).
+        '404': page('404.html'),
       },
     },
   },

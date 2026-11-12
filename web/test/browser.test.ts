@@ -3099,8 +3099,25 @@ test('Ratio: off by default; plots the review metric over commits', async () => 
   await page.close();
 });
 
+test('an unknown URL gets the 404 page with status 404; real pages still load', async () => {
+  const page = await browser.newPage();
+  for (const [path, status] of [['no-such-page.html', 404], ['nope', 404], ['assets/missing.js', 404], ['', 200], ['value.html', 200], ['value', 200]] as const) {
+    const res = await page.goto(baseUrl + path, { waitUntil: 'load' });
+    // A page the browser already has may come back 304.
+    assert.equal(res!.status() >= 400 ? res!.status() : 200, status, path);
+    assert.equal(await page.$('main.not-found') !== null, status === 404, path);
+  }
+  // Its link leads home.
+  await page.goto(baseUrl + 'no-such-page.html', { waitUntil: 'load' });
+  await Promise.all([page.waitForNavigation(), page.click('main.not-found a')]);
+  assert.equal(new URL(page.url()).pathname, new URL(baseUrl).pathname + 'index.html');
+  await page.close();
+});
+
 test('every page carries the Content Security Policy, breaks none of it, and it blocks injected markup', async () => {
-  for (const path of ['', 'value.html', 'sentiment.html', 'balance.html', 'feedback-index.html', 'dataflow.html']) {
+  for (const path of ['', 'value.html', 'sentiment.html', 'balance.html', 'feedback-index.html', 'dataflow.html', '404.html']) {
+    // The landing page and the 404 page have no script to mark them ready.
+    const scripted = path !== '' && path !== '404.html';
     const page = await browser.newPage();
     const errors: string[] = [];
     page.on('console', (m) => m.type() === 'error' && errors.push(m.text()));
@@ -3112,13 +3129,17 @@ test('every page carries the Content Security Policy, breaks none of it, and it 
     });
     await page.setViewport({ width: 1100, height: 900 });
     await page.goto(baseUrl + path, { waitUntil: 'load' });
-    if (path) await page.waitForSelector('body[data-ready]');
+    if (scripted) await page.waitForSelector('body[data-ready]');
     assert.equal(
       await page.$eval('meta[http-equiv="Content-Security-Policy"]', (m) => m.getAttribute('content')),
       CSP, path);
     // The page itself trips nothing.
     assert.deepEqual(await page.evaluate(() => (window as unknown as { violations: string[] }).violations), [], path);
-    assert.deepEqual(errors, [], path);
+    // The Review Feedback files are generated and gitignored, so a checkout without
+    // them (CI, a worktree) answers peers.json with a 404, which the page expects.
+    const unexpected = path === 'feedback-index.html'
+      ? errors.filter((e) => !/status of 404/.test(e)) : errors;
+    assert.deepEqual(unexpected, [], path);
     // A stray innerHTML-style sink throws (Trusted Types)…
     const threw = await page.evaluate(() => {
       try {
@@ -3144,7 +3165,7 @@ test('every page carries the Content Security Policy, breaks none of it, and it 
       } else void r.continue();
     });
     await hit.goto(baseUrl + path, { waitUntil: 'load' });
-    if (path) await hit.waitForSelector('body[data-ready]');
+    if (scripted) await hit.waitForSelector('body[data-ready]');
     assert.ok(await hit.$('img[src="x"][onerror]'), `${path}: the markup wasn't injected`);
     assert.equal(await hit.evaluate(() => (window as unknown as { pwned?: number }).pwned), undefined, path);
     await hit.close();
