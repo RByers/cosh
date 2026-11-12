@@ -10,12 +10,15 @@
 #     that finds it gone rescans and finds the object through the new index.
 #  4. Rewrite and verify the index, then walk every ref with --missing=print; on any
 #     missing object, move the old packs back.
+# Resumable: groups already packed (listed in <workdir>/done-src.txt) are kept, as long
+# as objects/pack still holds exactly the packs in before.txt. If pack-objects is killed,
+# remove the tmp_pack_* it left in objects/pack by hand before resuming.
 # Nothing is pruned or deleted: the old packs stay in <workdir>/old-packs until a
 # person deletes them after checking. Loose objects are left alone.
 # Usage (holds the extract lock so no fetch adds packs meanwhile):
 #   flock -n data/private/extract.lock scripts/notedb_chunked_repack.sh <git_dir> <workdir>
 set -uo pipefail
-g=$(realpath "$1"); mkdir -p "$2"; W=$(realpath "$2"); GROUP_BYTES=${GROUP_BYTES:-1500000000}
+g=$(realpath "$1"); mkdir -p "$2"; W=$(realpath "$2"); GROUP_BYTES=${GROUP_BYTES:-700000000}
 export GIT_NO_LAZY_FETCH=1 LC_ALL=C
 P=$g/objects/pack; S=$W/stage; A=$W/old-packs
 log() { echo "$(date '+%F %T') $*"; }
@@ -30,18 +33,27 @@ mvpack() {
 }
 mkdir -p "$S" "$A"
 cd "$P" || exit 1
-[ -z "$(ls "$S")" ] || { log "staging dir $S is not empty; refusing"; exit 1; }
 ls *.keep 2>/dev/null && { log ".keep packs present; refusing"; exit 1; }
+if [ -s "$W/before.txt" ]; then
+  # Resume: the repo must not have changed since the first run listed its packs.
+  cmp -s <(sort "$W/before.txt") <(ls *.pack | sort) \
+    || { log "objects/pack differs from $W/before.txt; refusing to resume"; exit 1; }
+  touch "$W/done-src.txt"
+  log "resuming: $(wc -l < "$W/done-src.txt") of $(wc -l < "$W/before.txt") packs already repacked"
+else
+  [ -z "$(ls "$S")" ] || { log "staging dir $S is not empty; refusing"; exit 1; }
+  ls -tr *.pack > "$W/before.txt"
+  : > "$W/done-src.txt"
+  log "before: $(wc -l < "$W/before.txt") packs, $(du -sb . | cut -f1) bytes in objects/pack"
+fi
 
 # 1. groups
-ls -tr *.pack > "$W/before.txt"
-log "before: $(wc -l < "$W/before.txt") packs, $(du -sb . | cut -f1) bytes in objects/pack"
 grp=0; cur=(); bytes=0
 flush() {
   [ ${#cur[@]} -eq 0 ] && return 0
   grp=$((grp + 1))
   log "group $grp: ${#cur[@]} packs, $bytes bytes"
-  out=$(printf '%s\n' "${cur[@]}" | nice -n 5 git --git-dir "$g" -c pack.threads=2 \
+  out=$(printf '%s\n' "${cur[@]}" | nice -n 5 git --git-dir "$g" -c pack.threads=1 \
         -c pack.windowMemory=512m -c pack.deltaCacheSize=128m \
         pack-objects --stdin-packs --delta-base-offset --quiet "$S/pack")
   rc=$?
@@ -49,9 +61,11 @@ flush() {
   if ! nice -n 5 git --git-dir "$g" verify-pack "$S/pack-$out.idx" > /dev/null; then
     log "group $grp pack-$out VERIFY FAILED"; exit 1; fi
   log "group $grp -> pack-$out $(stat -c %s "$S/pack-$out.pack") bytes, verified"
+  printf '%s\n' "${cur[@]}" >> "$W/done-src.txt"
   cur=(); bytes=0
 }
 while read -r p; do
+  grep -qxF "$p" "$W/done-src.txt" && continue
   cur+=("$p"); bytes=$((bytes + $(stat -c %s "$p")))
   [ $bytes -ge "$GROUP_BYTES" ] && flush
 done < "$W/before.txt"

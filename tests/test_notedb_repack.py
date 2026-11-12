@@ -87,6 +87,38 @@ class ChunkedRepackTest(unittest.TestCase):
             self.assertNotIn("missing", reader.stdout.readline())
         reader.stdin.close()
         self.assertEqual(reader.wait(), 0)
+        reader.stdout.close()
+
+    def stage_first_group(self, n=3):
+        """What a run killed after its first group leaves: before.txt, done-src.txt
+        and one finished pack in the staging dir."""
+        work = os.path.join(self.tmp.name, "work")
+        os.makedirs(os.path.join(work, "stage"))
+        with open(os.path.join(work, "before.txt"), "w") as f:
+            f.write("\n".join(self.before) + "\n")
+        with open(os.path.join(work, "done-src.txt"), "w") as f:
+            f.write("\n".join(self.before[:n]) + "\n")
+        self.git("pack-objects", "--stdin-packs", "-q", os.path.join(work, "stage", "pack"),
+                 i="\n".join(self.before[:n]) + "\n")
+        return work
+
+    def test_resume_after_a_killed_run(self):
+        self.stage_first_group()
+        p, work = self.run_script(10**9)
+        self.assertEqual(p.returncode, 0, p.stdout + p.stderr)
+        self.assertIn("resuming: 3 of 8", p.stdout)
+        self.assertEqual(len(self.packs()), 2)                 # the staged group + the rest
+        self.assertEqual(self.git("cat-file", "-p", self.blob), "unreachable")
+        self.assertEqual(self.git("fsck", "--no-dangling"), "")
+        self.assertEqual(len(self.packs(os.path.join(work, "old-packs"))), 8)
+
+    def test_refuses_to_resume_if_the_packs_changed(self):
+        self.stage_first_group()
+        self.pack([self.git("hash-object", "-w", "--stdin", i="fetched meanwhile")])
+        p, _ = self.run_script(10**9)
+        self.assertNotEqual(p.returncode, 0)
+        self.assertIn("refusing to resume", p.stdout)
+        self.assertEqual(len(self.packs()), 9)
 
     def test_refuses_a_non_empty_staging_dir(self):
         work = os.path.join(self.tmp.name, "work")
