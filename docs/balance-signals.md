@@ -107,11 +107,20 @@ averaged and are never written out.
 ```bash
 cd ~/projects/cosh   # or a worktree; data comes from the main checkout
 export COSH_DATA_DIR=/home/rbagent/projects/cosh/data/private
-nice -n 5 python3 scripts/balance_signals.py votes      # resumable, ~1.5 h
+nice -n 5 python3 scripts/balance_signals.py votes      # resumable, ~30 min (below)
 nice -n 5 python3 scripts/balance_signals.py report \
     --first-commit first_commit.txt --owners-added owners_added.txt \
     --ai-marked ai_marked.txt --mech mech.jsonl --out signals.json   # ~4 min
 ```
+
+`votes` reads every CL in `balance.sqlite` (1.14M after the 2017
+backfill) and takes about 30 minutes, given a current multi-pack index in
+the NoteDb repo: about 660 CLs/s on a cold sample of 20,000 (2026-11-12).
+It lists `refs/meta/` once (`cosh.balance.meta_refs`); passing each batch's
+2,000 refnames to `for-each-ref` as patterns cost 54 s a batch at 715k
+refs. With 3,198 packs outside a stale index it ran at 14–34 CLs/s; `cosh
+notedb-maintain` fixes that, and `backfill` now runs it every 20 weeks and
+at the end. `--out` writes to another DB, for a scratch run.
 
 The four input files are the same ones `scripts/balance_report.py` takes
 (see `docs/balance.md`, "Data and how it's built"). Tests:

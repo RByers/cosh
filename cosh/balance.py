@@ -250,6 +250,18 @@ def parse_meta_log(entries):
     return uploads, spans
 
 
+def meta_refs(git_dir=None):
+    """Change numbers that have a refs/meta/<n> ref in the NoteDb repo.
+
+    List the refs once and intersect in Python: `for-each-ref` with many
+    refnames as patterns matches every ref against every pattern, which took
+    54 s per 2,000 CLs against 715k refs (2026-11-12)."""
+    out = subprocess.run(["git", "--git-dir", git_dir or NOTEDB, "for-each-ref",
+                          "--format=%(refname:lstrip=2)", "refs/meta/"],
+                         capture_output=True, text=True, env=ENV, check=True).stdout
+    return {int(x) for x in out.split() if x.isdigit()}
+
+
 def stage_timeline(db, numbers=None, batch=2000):
     """Walk each CL's meta ref history, many refs per `git log` process."""
     if numbers is None:
@@ -257,9 +269,7 @@ def stage_timeline(db, numbers=None, batch=2000):
         numbers = [r[0] for r in d.execute("SELECT change_number FROM changes WHERE is_bot_owned = 0 "
                                            "AND project = 'chromium/src' AND branch = 'main'")]
     done = {r[0] for r in db.execute("SELECT change_number FROM timeline_done")}
-    have = subprocess.run(["git", "--git-dir", NOTEDB, "for-each-ref", "--format=%(refname:lstrip=2)",
-                           "refs/meta/"], capture_output=True, text=True, env=ENV, check=True).stdout
-    have = {int(x) for x in have.split() if x.isdigit()}
+    have = meta_refs()
     missing = set(numbers) - have
     if missing:
         print(f"timeline: {len(missing):,} CLs have no meta ref locally; skipped", flush=True)

@@ -18,7 +18,7 @@ completed week is derived immediately (into derived.sqlite). Afterwards, run
 import sys
 from datetime import datetime, timedelta, timezone
 
-from . import store
+from . import notedb, store
 from .derive import derive
 from .extract import extract_week
 
@@ -27,6 +27,11 @@ from .extract import extract_week
 # ~38 s each) + as much again idle + ~8 min of listing and local work.
 EST_FETCH_MIN = 7
 EST_OTHER_MIN = 8
+# Each NoteDb fetch adds a pack, and git checks every pack outside the
+# multi-pack index on each object lookup. The 2017 backfill left 3,198 such
+# packs, which made reading the meta refs several times slower (2026-11-12),
+# so refresh the index every this many weeks and at the end.
+MAINTAIN_EVERY = 20
 
 
 def last_complete_week(now=None):
@@ -72,5 +77,7 @@ def backfill(host, project, weeks, go=False, duty_cycle=1.0, batch_size=200, arg
         extract_week(host, project, w, via="notedb", batch_size=batch_size,
                      duty_cycle=duty_cycle, argv=argv, throttle=throttle)
         derive(weeks=[w])
+        if i % MAINTAIN_EVERY == 0 or i == len(todo):
+            notedb.maintain(notedb.default_repo(project))
     print("backfill done. Comments on still-open CLs are not fetched yet: run "
           "`python3 -m cosh extract-open`, then `derive` and `summarize`.", file=sys.stderr)

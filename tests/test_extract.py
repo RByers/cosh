@@ -1,6 +1,7 @@
 """Offline tests of the open-CL snapshot: a fake Gerrit client stands in for
 the network, and the NoteDb fetch is stubbed out."""
 
+import io
 import json
 import re
 import tempfile
@@ -292,6 +293,21 @@ class ContactTest(unittest.TestCase):
         with mock.patch("cosh.backfill.backfill") as bf:
             main(["backfill", "--weeks", "1", "--newest", "2026-W44"])   # plan only: no check
         bf.assert_called_once()
+
+    def test_backfill_refreshes_notedb_index(self):
+        """The multi-pack index is rewritten every MAINTAIN_EVERY weeks and after the last."""
+        from cosh import backfill as B
+        raw = mock.Mock()
+        raw.execute.return_value = []
+        weeks = B.week_list("2026-W44", 5)
+        with mock.patch.object(B.store, "open_raw", return_value=raw), \
+                mock.patch.object(B, "extract_week"), mock.patch.object(B, "derive"), \
+                mock.patch.object(B, "MAINTAIN_EVERY", 2), \
+                mock.patch.object(B.notedb, "maintain") as maintain, \
+                mock.patch("sys.stderr", io.StringIO()):
+            B.backfill("chromium-review.googlesource.com", "chromium/src", weeks, go=True)
+        self.assertEqual(maintain.call_count, 3)                  # after weeks 2, 4 and 5
+        self.assertTrue(maintain.call_args.args[0].endswith("chromium_src.git"))
 
     def test_local_git_needs_no_contact(self):
         from cosh import notedb

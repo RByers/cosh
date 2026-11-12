@@ -2,7 +2,7 @@
 
   COSH_DATA_DIR=<main>/data/private python3 scripts/balance_signals.py votes
       Code-Review votes from NoteDb meta commits -> data/private/balance-votes.sqlite
-      (resumable; read-only on NoteDb, no network).
+      (or --out; resumable; read-only on NoteDb, no network).
   COSH_DATA_DIR=... python3 scripts/balance_signals.py report --first-commit F --out signals.json
       -1s and abandonment by tenure, balanced reviewer/author panels, matched cohorts.
 
@@ -69,20 +69,24 @@ CREATE TABLE IF NOT EXISTS votes_done (change_number INTEGER PRIMARY KEY) STRICT
 """
 
 
-def stage_votes(batch=2000):
-    db = sqlite3.connect(VOTES_DB)
+def stage_votes(batch=2000, numbers=None, out=None):
+    """`numbers` (default: every CL in balance.sqlite) and `out` (default
+    VOTES_DB) let a test or benchmark run a sample into a scratch DB."""
+    db = sqlite3.connect(out or VOTES_DB)
     db.executescript(VOTES_SCHEMA)
-    cl = sqlite3.connect(f"file:{balance.db_path('cl')}?mode=ro", uri=True)
-    numbers = [n for n, in cl.execute("SELECT change_number FROM cl")]
+    if numbers is None:
+        cl = sqlite3.connect(f"file:{balance.db_path('cl')}?mode=ro", uri=True)
+        numbers = [n for n, in cl.execute("SELECT change_number FROM cl")]
     done = {n for n, in db.execute("SELECT change_number FROM votes_done")}
     todo = sorted(set(numbers) - done)
-    print(f"votes: {len(todo):,} CLs to read ({len(done):,} done)", flush=True)
+    # CLs with no comments have no meta ref; they are marked done without a git call.
+    have = balance.meta_refs()
+    print(f"votes: {len(todo):,} CLs to read ({len(done):,} done; "
+          f"{len(set(todo) - have):,} have no meta ref)", flush=True)
     t0 = time.time()
     for i in range(0, len(todo), batch):
         part = todo[i:i + batch]
-        refs = subprocess.run(["git", "--git-dir", balance.NOTEDB, "for-each-ref", "--format=%(refname)",
-                               *[f"refs/meta/{n}" for n in part]], capture_output=True, text=True,
-                              env=balance.ENV, check=True).stdout.split()
+        refs = [f"refs/meta/{n}" for n in part if n in have]
         if refs:
             p = subprocess.run(["git", "--git-dir", balance.NOTEDB, "log", "--decorate=full",
                                 "--decorate-refs=refs/meta/",
@@ -532,7 +536,7 @@ def main():
     ap.add_argument("--out")
     args = ap.parse_args()
     if args.cmd == "votes":
-        stage_votes()
+        stage_votes(out=args.out)
     else:
         report(args)
 
