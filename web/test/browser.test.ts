@@ -3303,6 +3303,38 @@ test('review feedback: the opening card explains the index before any address is
   assert.equal(await page.$('.lede'), null);
   assert.match(await page.$eval('#intro', (e) => e.textContent!), /tool\s+for learning/);
   await page.waitForFunction(() => !!window.__rf!.charts.cohorts && !!window.__rf!.charts.change);
+  // Tenure is by changes landed before by default, and the first three charts follow it.
+  assert.equal(await page.$eval('#rf-tenure', (s) => (s as HTMLSelectElement).value), 'changes');
+  const xAxis = () => page.evaluate(() => ['cohorts', 'change', 'kinds'].map((k) =>
+    (window.__rf!.charts[k].options.scales!.x as { title: { text: string } }).title.text));
+  assert.deepEqual(await xAxis(), ['changes landed before (earlier commits on main)',
+    'change in feedback index from the doubling before', 'changes landed before (earlier commits on main)']);
+  assert.deepEqual(await page.$$eval('#rf-cohort-legend li', (ls) => ls.map((l) => l.textContent)),
+    ['started in 2018', 'started in 2023']);
+  // One point per bin of earlier changes, labelled by the bin.
+  assert.deepEqual(await page.evaluate(() => {
+    const c = window.__rf!.charts.cohorts;
+    const tick = (c.options.scales!.x as { ticks: { callback: (v: number) => string } }).ticks.callback;
+    return [c.data.datasets[0].data.map((p) => (p as { x: number }).x), tick(0), tick(7)];
+  }), [[0, 1, 2, 3], '<10', '1,000+']);
+  assert.match(await page.$eval('#rf-cohorts-note', (e) => e.textContent!), /how many changes they had landed before/);
+  assert.match(await page.$eval('#rf-change-title', (e) => e.textContent!), /as their changes landed double/);
+  assert.match(await page.$eval('#rf-change-note', (e) => e.textContent!),
+    /from the changes they landed with 32–63 earlier commits.*4,100 doublings from 1,500 contributors;\s+doublings begun from 2018 on\).*median doubling, feedback fell by\s+21%/s);
+  assert.match(await page.$eval('#rf-kinds-title', (e) => e.textContent!), /by changes landed before/);
+  assert.equal(await page.evaluate(() => (window.__rf!.charts.kinds.data.labels as string[]).join(' ')),
+    '<10 10–24 25–49 50–99 100–199 200–499 500–999 1,000+');
+  assert.equal((await page.$eval('#rf-kinds-note', (e) => e.textContent!)).replace(/\s+/g, ' ').trim(),
+    'Addressed feedback shows growth better: it falls 6 times from fewer than 10 earlier changes to 1,000 or more, '
+    + 'against 4.2 times for all feedback.');
+  // Directory experience keeps the changes axis.
+  await page.select('#rf-tenure', 'dir');
+  assert.equal((await xAxis())[0], 'changes landed before (earlier commits on main)');
+  // Years since the first commit remains a choice.
+  await page.select('#rf-tenure', 'time');
+  assert.deepEqual(await xAxis(), ['years since first commit on main', 'change in feedback index from the year before',
+    'years since first commit on main']);
+  assert.match(await page.$eval('#rf-change-title', (e) => e.textContent!), /falls per year/);
   // One line per first-commit year whose curve starts at tenure 0. There is no date selector: the page
   // covers all the data.
   assert.deepEqual(await page.$$eval('#rf-cohort-legend li', (ls) => ls.map((l) => l.textContent)),
@@ -3373,7 +3405,7 @@ test('review feedback: the opening card explains the index before any address is
     + 'months to ten years, against 3.5 times for all feedback.');
   // The three tenure measures, one line each, and which leaves the least of the yearly fall.
   assert.deepEqual(await page.$$eval('#rf-tenures-legend li', (ls) => ls.map((l) => l.textContent)),
-    ['Years since first commit', 'Changes landed before', 'Earlier commits in the directory']);
+    ['Changes landed before', 'Years since first commit', 'Earlier commits in the directory']);
   const tenuresNote = () => page.$eval('#rf-tenures-note', (e) => e.textContent!);
   assert.equal(await tenuresNote(), "Tenure by changes landed accounts for the most growth: 96% of a contributor's "
     + 'yearly fall in feedback, against 64% by years since the first commit and 30% by directory experience.');
@@ -3415,10 +3447,10 @@ test('review feedback: a person, the measures, peer groups, directories and comm
     const s = c.options.scales as Record<string, { title?: { text?: string } }>;
     return [k, [s.x.title?.text, s.y.title?.text]];
   }))), {
-    cohorts: ['years since first commit on main', 'feedback index'],
-    change: ['change in feedback index from the year before', 'contributor-years'],
-    kinds: ['years since first commit on main', 'feedback index'],
-    tenures: ['tenure band: years / changes landed before / earlier commits in the directory', 'feedback index'],
+    cohorts: ['changes landed before (earlier commits on main)', 'feedback index'],
+    change: ['change in feedback index from the doubling before', 'doublings of changes landed'],
+    kinds: ['changes landed before (earlier commits on main)', 'feedback index'],
+    tenures: ['tenure band: changes landed before / years / earlier commits in the directory', 'feedback index'],
     trend: ['six months ending', 'feedback index'],
     xp: ['your earlier commits in the directory', 'feedback index'],
     perCl: ['reviewer threads on the change', 'your changes'],
@@ -3427,9 +3459,12 @@ test('review feedback: a person, the measures, peer groups, directories and comm
   });
   // The page computes the values from the half-year files (unit tests check the arithmetic).
   assert.equal(await tile('rf-tile-you'), '0.71×');
-  // Peers are all authors with the same years since their first commit, by default.
-  assert.equal(await page.$eval('#rf-tenure', (s) => (s as HTMLSelectElement).value), 'time');
+  // Peers are all authors with the same number of changes landed before, by default.
+  assert.equal(await page.$eval('#rf-tenure', (s) => (s as HTMLSelectElement).value), 'changes');
   assert.equal(await page.$eval('#rf-org', (s) => (s as HTMLSelectElement).value), 'all');
+  assert.match(await page.$eval('#rf-tile-peers .tile-sub', (e) => e.textContent!), /^All authors, 50–199 earlier changes/);
+  // The same years since their first commit:
+  await page.select('#rf-tenure', 'time');
   assert.match(await page.$eval('#rf-tile-peers .tile-sub', (e) => e.textContent!),
     /^All authors, 2–5 years since their first commit: 120 authors,/);
   // Peers 'time:2-5y:all': quantiles 0.4..3 evenly, so the median is 1.7 and 0.714 sits at 12%.

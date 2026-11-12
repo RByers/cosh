@@ -96,6 +96,17 @@ CHANGE_RATIOS = [2 ** (k / 3) for k in range(-4, 5)]
 # Balance page's "acted on or not" chart, in years since the first commit.
 KIND_EDGES = [0.25, 0.5, 1, 2, 5, 10]
 KIND_LABELS = ["0–3 months", "3–6 months", "6–12 months", "1–2 years", "2–5 years", "5–10 years", "10+ years"]
+# The same by tenure in changes landed before (earlier commits on main, from
+# 2017, reverts left out), the page's main tenure measure: the cohort curves'
+# and the all-against-addressed chart's bins, below 10 up to 1,000 and more.
+CHG_EDGES = [10, 25, 50, 100, 200, 500, 1000]
+CHG_LABELS = ["<10", "10–24", "25–49", "50–99", "100–199", "200–499", "500–999", "1,000+"]
+# The histogram by changes landed: one value per contributor and doubling of
+# their changes landed before (32–63, 64–127, ... earlier commits), the ratio
+# of one doubling's value to the one before. A doubling counts with MIN_CLS
+# like a year; it starts at 32 so its 32-odd commits leave 25 changes after
+# mechanical ones and reverts.
+DOUBLING_FROM = 32
 PATCHSET_LEVEL = "/PATCHSET_LEVEL"   # the path of a general comment's thread: not counted
 FLOOR = 0.05                  # values below this count as this in a ratio
 
@@ -273,14 +284,29 @@ def histogram(xs, edges):
     return out
 
 
-def tenure_trends(points, groups):
+def year_bin(years):
+    return math.floor(years / STEP) * STEP
+
+
+def chg_bin(n):
+    """The index of earlier changes `n` in CHG_LABELS."""
+    return bisect.bisect_right(CHG_EDGES, n)
+
+
+def doubling(n):
+    """Which doubling of changes landed before `n` falls in: 0 for
+    DOUBLING_FROM up to twice that, 1 for the next, ...; None below it."""
+    return None if n < DOUBLING_FROM else int(math.log2(n / DOUBLING_FROM))
+
+
+def tenure_trends(points, groups, bin_of=year_bin):
     """The opening card's data. points: per person, their counted half-years
     as (first-commit year, tenure, org, {metric: value}, {metric: value
     against directory experience}). groups: name -> test of an org; names
     starting "dir:" use the values against directory experience. Returns
-    the cohort curves (median value per first-commit year and STEP-year
-    tenure bin, MIN_COHORT people or more), per group and measure. A
-    half-year counts for a group by its org."""
+    the cohort curves (median value per first-commit year and tenure bin,
+    `bin_of(tenure)`: STEP years by default, MIN_COHORT people or more), per
+    group and measure. A half-year counts for a group by its org."""
     curves = {g: {m: defaultdict(lambda: defaultdict(list)) for m in METRICS} for g in groups}
     for pts in points:
         for g, f in groups.items():
@@ -288,7 +314,7 @@ def tenure_trends(points, groups):
             for m in METRICS:
                 for p in pts:
                     if f(p[2]) and p[1] is not None and p[xk][m] is not None:
-                        curves[g][m][p[0]][math.floor(p[1] / STEP) * STEP].append(p[xk][m])
+                        curves[g][m][p[0]][bin_of(p[1])].append(p[xk][m])
     return {g: {m: {str(y): [[b, r3(st.median(v)), len(v)] for b, v in sorted(bs.items()) if len(v) >= MIN_COHORT]
                     for y, bs in sorted(per_m.items())} for m, per_m in gm.items()} for g, gm in curves.items()}
 
@@ -545,8 +571,10 @@ def main():
             continue
         t = datetime.strptime(closed[:19], "%Y-%m-%d %H:%M:%S").replace(tzinfo=timezone.utc).timestamp()
         lines = (ins or 0) + (dels or 0)
-        old.append(dict(change_number=n, pid=ids.find(A.person(e)), email=e, closed_at=t, lines=lines,
-                        sb=G.size10(lines), d2=top2.get(n), threads=0, addressed=0))
+        pid = ids.find(A.person(e))
+        old.append(dict(change_number=n, pid=pid, email=e, closed_at=t, lines=lines,
+                        sb=G.size10(lines), d2=top2.get(n), threads=0, addressed=0,
+                        prior=bisect.bisect_left(own_times.get(pid, ()), landed_at.get(n, t))))
 
     # Merged, human-owned, non-mechanical CLs (balance_report.py's rule).
     for c in cls:
@@ -853,6 +881,7 @@ def main():
     # ------------------------------------------------ the opening card
     # Older half-years: all reviewer threads only, counted like the recent ones.
     old_pts = defaultdict(list)
+    old_pts_chg = defaultdict(list)          # the same with tenure in changes landed before
     old_by = defaultdict(lambda: defaultdict(list))
     for c in old:
         c["org"] = orgs(c["email"], day_str(c["closed_at"]))
@@ -868,43 +897,54 @@ def main():
             v.update(tn=r3(t / len(cs)), ts=r3(t / ts) if ts else None, td=r3(t / td) if td else None)
             ten = st.median((epoch_day(c["closed_at"]) - epoch_day(first[pid])) / 365.25 for c in cs)
             orgc = Counter(c["org"] for c in cs)
-            old_pts[pid].append((datetime.fromtimestamp(first[pid], timezone.utc).year, ten,
-                                 orgc.most_common(1)[0][0], v, {m: None for m in METRICS}, True))
-    trend_pts = []
-    # org -> tenure bin -> [{corr: all values}, {corr: addressed values}, threads, addressed]
-    kind_bins = {o: [[defaultdict(list), defaultdict(list), 0, 0] for _ in KIND_LABELS] for o in ORGS}
+            pt = (datetime.fromtimestamp(first[pid], timezone.utc).year, ten,
+                  orgc.most_common(1)[0][0], v, {m: None for m in METRICS}, True)
+            old_pts[pid].append(pt)
+            old_pts_chg[pid].append((pt[0], st.median(c["prior"] for c in cs), *pt[2:]))
+    trend_pts, trend_pts_chg = [], []
+    # by -> org -> tenure bin -> [{corr: all values}, {corr: addressed values}, threads, addressed]
+    kind_bins = {by: {o: [[defaultdict(list), defaultdict(list), 0, 0] for _ in labels] for o in ORGS}
+                 for by, labels in (("time", KIND_LABELS), ("changes", CHG_LABELS))}
     for pid in set(people) | set(old_pts):
         if pid not in first:
             continue
         y0 = datetime.fromtimestamp(first[pid], timezone.utc).year
         byh = defaultdict(list)
+        priors = defaultdict(list)
         for c in people.get(pid, ()):
             byh[half(c["closed_at"])].append(c["ten"])
+            priors[half(c["closed_at"])].append(c["prior"])
         # A half-year counts for the addressed measures only with enough labelled CLs.
         def counted(vals, pp):
             return {m: v if m[0] == "t" or pp["curve_a"] else None for m, v in vals.items()}
+        hs = [(h, pp) for h, pp in per.get(pid, {}).items() if HALF.match(h) and pp["curve"]]
         pts = old_pts.get(pid, []) + [(y0, st.median(byh[h]), pp["org"], counted(pp["v"], pp), counted(pp["x"], pp))
-                                      for h, pp in per.get(pid, {}).items() if HALF.match(h) and pp["curve"]]
+                                      for h, pp in hs]
         if pts:
             trend_pts.append(pts)
+            trend_pts_chg.append(old_pts_chg.get(pid, []) + [
+                (y0, st.median(priors[h]), pp["org"], counted(pp["v"], pp), counted(pp["x"], pp)) for h, pp in hs])
         # All against addressed threads: the same half-years for both, those whose
         # CLs are all labelled, with enough of them for a cohort curve.
         for h, pp in per.get(pid, {}).items():
             if not (HALF.match(h) and pp["curve_a"] and pp["acls"] == pp["cls"] and byh[h]):
                 continue
-            b = bisect.bisect_right(KIND_EDGES, st.median(byh[h]))
-            for o, f in ORGS.items():
-                if not f(pp["org"]):
-                    continue
-                kind_bins[o][b][2] += pp["threads"]
-                kind_bins[o][b][3] += pp["addressed"]
-                for c in CORR:
-                    if pp["v"][f"t{c}"] is not None and pp["v"][f"a{c}"] is not None:
-                        kind_bins[o][b][0][c].append(pp["v"][f"t{c}"])
-                        kind_bins[o][b][1][c].append(pp["v"][f"a{c}"])
+            for by, b in (("time", bisect.bisect_right(KIND_EDGES, st.median(byh[h]))),
+                          ("changes", chg_bin(st.median(priors[h])))):
+                for o, f in ORGS.items():
+                    if not f(pp["org"]):
+                        continue
+                    kb = kind_bins[by][o][b]
+                    kb[2] += pp["threads"]
+                    kb[3] += pp["addressed"]
+                    for c in CORR:
+                        if pp["v"][f"t{c}"] is not None and pp["v"][f"a{c}"] is not None:
+                            kb[0][c].append(pp["v"][f"t{c}"])
+                            kb[1][c].append(pp["v"][f"a{c}"])
     # The page's "Peers" choice, and the same against directory experience ("dir:").
     trend_groups = {**ORGS, **{f"dir:{o}": of for o, of in ORGS.items()}}
     cohorts = tenure_trends(trend_pts, trend_groups)
+    cohorts_chg = tenure_trends(trend_pts_chg, trend_groups, chg_bin)
 
     # Person-years for the histogram. All reviewer threads: every CL of the
     # calendar year, older and recent. Addressed and directory experience:
@@ -943,11 +983,47 @@ def main():
                 xm[k] = {m: pp[src][m] if (m[0] == "t" or ok_a) else None for m in METRICS}
             matched[pid][y] = (org, xm)
     change = yearly_changes(years, trend_groups)
+    # The same per doubling of changes landed before: a doubling counts from
+    # the day its first commit landed, where the measure's data begins (2018
+    # for all threads, START for directory experience, ADDR_START addressed).
+    hist_from = datetime.fromisoformat(HISTORY_ISO).replace(tzinfo=timezone.utc).timestamp()
+    by_dbl = defaultdict(list)
+    for c in old + use:
+        k = doubling(c["prior"])
+        if k is not None:
+            by_dbl[(c["pid"], k)].append(c)
+    steps = defaultdict(dict)
+    for (pid, k), cs in by_dbl.items():
+        ts_ = own_times.get(pid, ())
+        lo = DOUBLING_FROM * 2 ** k
+        begun = ts_[lo] if lo < len(ts_) else min(c["closed_at"] for c in cs)
+        if begun < hist_from:
+            continue
+        s = sums(cs)
+        if not (s["cls"] >= MIN_CLS and s["td"] >= MIN_EXP):
+            continue
+        v = dict(none)
+        v.update(tn=r3(s["t"] / s["cls"]), ts=r3(s["t"] / s["ts"]) if s["ts"] else None,
+                 td=r3(s["t"] / s["td"]) if s["td"] else None)
+        x = dict(none)
+        recent = [c for c in cs if "thr" in c]
+        if begun >= START and recent:
+            pp = person_period(pid, recent, "all")
+            ok_a = begun >= ADDR_START and pp["ok_a"]
+            for m in METRICS:
+                if m[0] == "a" and ok_a:
+                    v[m] = pp["v"][m]
+                if m[0] == "t" or ok_a:
+                    x[m] = pp["x"][m]
+        steps[pid][k] = (Counter(c["org"] for c in cs).most_common(1)[0][0], v, x)
+    change_chg = yearly_changes(steps, trend_groups)
     drops = matched_changes(matched, ORGS)
-    kinds = {o: {c: [[r3(st.median(t[c])) if len(t[c]) >= MIN_COHORT else None,
-                      r3(st.median(a[c])) if len(a[c]) >= MIN_COHORT else None, len(t[c])] for t, a, _, _ in bins]
-                 for c in CORR} for o, bins in kind_bins.items()}
-    kind_share = {o: [r3(ad / th) if th else None for _, _, th, ad in bins] for o, bins in kind_bins.items()}
+    kinds, kind_share = ({by: {o: {c: [[r3(st.median(t[c])) if len(t[c]) >= MIN_COHORT else None,
+                                        r3(st.median(a[c])) if len(a[c]) >= MIN_COHORT else None, len(t[c])]
+                                       for t, a, _, _ in bins] for c in CORR} for o, bins in kb.items()}
+                          for by, kb in kind_bins.items()},
+                         {by: {o: [r3(ad / th) if th else None for _, _, th, ad in bins] for o, bins in kb.items()}
+                          for by, kb in kind_bins.items()})
     def band_rel(o, m, by):
         """[pooled rate relative to all bands', CLs] per band."""
         qs = [cmp_pool[(o, m, by, b)] for b in range(5)]
@@ -957,13 +1033,15 @@ def main():
                       for m in METRICS} for o in ORGS}
     for m in ("td", "ad"):
         d = drops["all"][m]
-        print(f"kinds by tenure ({m[1]}): " + " ".join(f"{t}/{a}/{n}" for t, a, n in kinds["all"][m[1]]),
-              file=sys.stderr)
+        for by in ("changes", "time"):
+            print(f"kinds by {by} ({m[1]}): " + " ".join(f"{t}/{a}/{n}" for t, a, n in kinds[by]["all"][m[1]]),
+                  file=sys.stderr)
         print(f"tenure bands ({m}): " + "; ".join(f"{by} " + " ".join(str(v) for v, _ in tenure_cmp["all"][m]["bands"][by])
                                                  for by in ("time", "changes", "dir")), file=sys.stderr)
         print(f"yearly drop matched ({m}, {d['n']} pairs from {d['people']}): none {d['none']}% time {d['time']}% "
               f"changes {d['changes']}% dir {d['dir']}%", file=sys.stderr, flush=True)
-    print("addressed share by tenure: " + " ".join(str(x) for x in kind_share["all"]), file=sys.stderr)
+    for by in ("changes", "time"):
+        print(f"addressed share by {by}: " + " ".join(str(x) for x in kind_share[by]["all"]), file=sys.stderr)
     by_size, dir_names, by_dir = median_breakdowns(use, G.size10)
     for m in ("tn", "ts", "td", "ad"):
         print(f"median by size ({m}): " + " ".join(f"{v}/{n}" for v, n in by_size["all"][m]), file=sys.stderr)
@@ -972,6 +1050,13 @@ def main():
     print(f"opening card: {len(trend_pts):,} people; {change['all']['td']['n']:,} year-over-year changes from "
           f"{change['all']['td']['people']:,} people (median {change['all']['td']['median']}% less), "
           f"{change['all']['ad']['n']:,} addressed", file=sys.stderr, flush=True)
+    for m in ("td", "ad"):
+        ch = change_chg["all"][m]
+        print(f"per doubling of changes ({m}): {ch['n']:,} from {ch['people']:,} people, median {ch['median']}% less; "
+              f"bins {ch['counts']}", file=sys.stderr)
+    for by, cs_ in (("changes", cohorts_chg), ("time", cohorts)):
+        print(f"cohorts by {by} (td): " + "; ".join(f"{y}: " + " ".join(f"{b}={v}" for b, v, _ in pts)
+                                                   for y, pts in cs_["all"]["td"].items() if pts), file=sys.stderr)
 
     # ------------------------------------------------ peers
     tone_end = week_start(TONE_WEEKS[-1]) + WEEK
@@ -1003,8 +1088,11 @@ def main():
                  cohort_step=STEP, cohort_from=int(HISTORY_ISO[:4]), min_cohort=MIN_COHORT, cohorts=cohorts,
                  change_ratios=[round(r, 4) for r in CHANGE_RATIOS], change=change, min_cohort_cls=MIN_COHORT_CLS,
                  size_labels=SIZE_LABELS, by_size=by_size, dir_names=dir_names, by_dir=by_dir,
-                 min_cell_cls=MIN_CELL_CLS, kind_labels=KIND_LABELS, kinds=kinds, kind_share=kind_share,
-                 tenure_cmp=tenure_cmp)
+                 min_cell_cls=MIN_CELL_CLS, kind_labels=KIND_LABELS, kinds=kinds["time"],
+                 kind_share=kind_share["time"], tenure_cmp=tenure_cmp,
+                 # The same by changes landed before (the page's main tenure measure).
+                 chg_labels=CHG_LABELS, cohorts_chg=cohorts_chg, kinds_chg=kinds["changes"],
+                 kind_share_chg=kind_share["changes"], doubling_from=DOUBLING_FROM, change_chg=change_chg)
     for p in allp:
         # Peers per kind: the addressed measures count people by their labelled CLs.
         rows = {k: [(pid, pp[p]) for pid, pp in per.items() if p in pp and pp[p][ok]]

@@ -170,6 +170,19 @@ export interface Peers {
    * median yearly change in % less feedback, plain (`none`) and against the
    * same tenure by each measure, over the same `n` pairs of years. */
   tenure_cmp?: Record<string, Record<Metric, TenureCmp>>;
+  /** The same opening-card charts with tenure in changes landed before (earlier
+   * commits on main), the page's main tenure measure: the bins (`chg_labels`,
+   * fewest first) of the cohort curves (`cohorts_chg`, bin index in place of
+   * years) and of the all-against-addressed chart (`kinds_chg`,
+   * `kind_share_chg`), and the histogram per doubling of changes landed from
+   * `doubling_from` (`change_chg`, each ratio one doubling's value over the one
+   * before). */
+  chg_labels?: string[];
+  cohorts_chg?: Record<string, Record<Metric, Record<string, [number, number, number][]>>>;
+  kinds_chg?: Record<string, Record<Corr, [number | null, number | null, number][]>>;
+  kind_share_chg?: Record<string, (number | null)[]>;
+  doubling_from?: number;
+  change_chg?: Record<string, Record<Metric, { n: number; people: number; median: number | null; counts: number[] }>>;
 }
 
 export type TenureMeasure = 'time' | 'changes' | 'dir';
@@ -209,9 +222,15 @@ export function ratioBins(edges: number[]): { label: string; fell: boolean }[] {
 
 /** The opening card's group: the "Peers" org, measured against directory
  * experience when tenure is by directory. Years and changes both show plain
- * values (the card's own axis is years). */
+ * values (the card's axis is `introAxis`). */
 export function trendGroup(by: TenureBy, org: PeerOrg): string {
   return by === 'dir' ? `dir:${org}` : org;
+}
+
+/** The opening card's tenure axis: years only when "Same tenure by" is years,
+ * changes landed before otherwise (directory experience has no axis of its own). */
+export function introAxis(by: TenureBy): 'time' | 'changes' {
+  return by === 'time' ? 'time' : 'changes';
 }
 
 /** The first-commit years the opening card draws: those from `from` on whose

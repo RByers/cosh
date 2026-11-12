@@ -16,6 +16,7 @@ import {
   groupKey,
   halfGroups,
   halves,
+  introAxis,
   isoDay,
   looksLikeEmail,
   metricOf,
@@ -81,7 +82,7 @@ const state = {
   peers: null as Peers | null,
   kind: 't' as Kind,
   corr: 'd' as Corr,
-  tenure: 'time' as TenureBy,
+  tenure: 'changes' as TenureBy,
   org: 'all' as PeerOrg,
   /** The selected directory's path; comments are listed from it and below. */
   dir: null as string | null,
@@ -264,24 +265,36 @@ function renderIntro() {
   const t = theme();
   const m = metric();
   const g = trendGroup(state.tenure, state.org);
+  // Tenure in changes landed before, unless "Same tenure by" is years.
+  const chg = introAxis(state.tenure) === 'changes' && !!peers.cohorts_chg && !!peers.chg_labels;
+  const chgLabels = peers.chg_labels ?? [];
   const org = state.org === 'all' ? '' : msg(`org-name-${state.org}`);
   const [from, to] = rangeOf(peers, state.kind);
   const vars = { kind: state.kind, corr: state.corr, dirxp: state.tenure === 'dir', org, min: fmtInt(peers.min_cohort),
-    limited: state.kind === 'a' || state.tenure === 'dir',
+    limited: state.kind === 'a' || state.tenure === 'dir', chg,
     minCls: fmtInt(peers.min_cls), minCohortCls: fmtInt(peers.min_cohort_cls),
     from: monthOf(fromMonth(from), true), to: monthOf(toMonth(to), true) };
   put($('#rf-cohorts-note'), 'cohorts-note', vars);
-  const curves = peers.cohorts[g]?.[m] ?? {};
+  const curves = (chg ? peers.cohorts_chg! : peers.cohorts)[g]?.[m] ?? {};
   const step = peers.cohort_step;
   const lines = cohortYears(curves, peers.cohort_from)
     .map((y, i) => ({ year: y, color: t.series[i], pts: curves[String(y)] }));
   lineLegend($('#rf-cohort-legend'), lines.map((l) => ({ label: `started in ${l.year}`, color: l.color })));
   const axis = (title: string) => ({ grid: { color: t.grid }, title: { display: true, text: title, color: t.text },
     ticks: { color: t.text, font: { family: t.font } } });
+  // Years: a point in the middle of its half-year bin. Changes: one point per bin, labelled.
+  const xScale = chg
+    ? { type: 'linear' as const, min: 0, max: chgLabels.length - 1, ...axis(msg('axis-changes-before')),
+      ticks: { color: t.text, font: { family: t.font }, stepSize: 1, autoSkip: false,
+        callback: (v: string | number) => chgLabels[Number(v)] ?? '' } }
+    : { type: 'linear' as const, min: 0, ...axis(msg('axis-years-since')) };
+  const binName = (b: number) => (chg ? `${chgLabels[b]} earlier changes`
+    : `${fmtNum(b, { maximumFractionDigits: 1 })}–${fmtNum(b + step, { maximumFractionDigits: 1 })} years in`);
   charts.cohorts = new Chart($<HTMLCanvasElement>('#rf-cohorts'), {
     type: 'line',
     data: {
-      datasets: lines.map((l) => ({ label: String(l.year), data: l.pts.map(([b, v]) => ({ x: b + step / 2, y: v })),
+      datasets: lines.map((l) => ({ label: String(l.year),
+        data: l.pts.map(([b, v]) => ({ x: chg ? b : b + step / 2, y: v })),
         borderColor: l.color, backgroundColor: l.color, borderWidth: 2, pointRadius: 2.5, pointHoverRadius: 4,
         tension: 0, fill: false })),
     },
@@ -291,7 +304,7 @@ function renderIntro() {
       interaction: { mode: 'nearest', intersect: false },
       font: { family: t.font },
       scales: {
-        x: { type: 'linear', min: 0, ...axis('years since first commit on main') },
+        x: xScale,
         y: { beginAtZero: true, ...axis(msg('axis-feedback')),
           ticks: { color: t.text, font: { family: t.font }, callback: (v) => fmtValue(Number(v)) } },
       },
@@ -303,8 +316,7 @@ function renderIntro() {
             label: (i) => {
               const l = lines[i.datasetIndex];
               const [b, , n] = l.pts[i.dataIndex];
-              const yrs = (x: number) => fmtNum(x, { maximumFractionDigits: 1 });
-              return `Started in ${l.year}, ${yrs(b)}–${yrs(b + step)} years in: median ${fmtValue(i.parsed.y)} (${fmtInt(n)} people)`;
+              return `Started in ${l.year}, ${binName(b)}: median ${fmtValue(i.parsed.y)} (${fmtInt(n)} people)`;
             },
           },
         },
@@ -312,13 +324,14 @@ function renderIntro() {
     },
   });
 
-  const ch = peers.change[g]?.[m];
+  const ch = (chg && peers.change_chg ? peers.change_chg : peers.change)[g]?.[m];
   const bins = ratioBins(peers.change_ratios);
   // The first whole calendar year the measure covers.
   const start = new Date(from * 86_400_000);
   const fromYear = start.getUTCFullYear() + (start.getUTCMonth() === 0 && start.getUTCDate() === 1 ? 0 : 1);
+  put($('#rf-change-title'), chg ? 'change-title-chg' : 'change-title-time');
   put($('#rf-change-note'), 'change-note', { ...vars, n: fmtInt(ch?.n ?? 0), people: fmtInt(ch?.people ?? 0),
-    fromYear,
+    fromYear, from: monthOf(fromMonth(from), true), doublingFrom: fmtInt(peers.doubling_from ?? 32),
     median: ch?.median == null ? '–' : pct(Math.abs(ch.median) / 100), fell: (ch?.median ?? 0) >= 0 });
   charts.change = new Chart($<HTMLCanvasElement>('#rf-change'), {
     type: 'bar',
@@ -332,12 +345,12 @@ function renderIntro() {
       animation: false,
       font: { family: t.font },
       scales: {
-        x: { ...axis('change in feedback index from the year before'), grid: { display: false } },
-        y: { beginAtZero: true, ...axis('contributor-years') },
+        x: { ...axis(msg(chg ? 'axis-change-chg' : 'axis-change-time')), grid: { display: false } },
+        y: { beginAtZero: true, ...axis(msg(chg ? 'axis-steps-chg' : 'axis-steps-time')) },
       },
       plugins: {
         legend: { display: false },
-        tooltip: { callbacks: { label: (i) => `${fmtInt(i.parsed.y ?? 0)} contributor-years` } },
+        tooltip: { callbacks: { label: (i) => `${fmtInt(i.parsed.y ?? 0)} ${chg ? 'doublings' : 'contributor-years'}` } },
       },
     },
   });
@@ -360,24 +373,27 @@ function lineLegend(target: Element, items: { label: string; color: string; dash
 const times = (a: number | null | undefined, b: number | null | undefined) =>
   a && b ? fmtNum(a / b, { maximumFractionDigits: 1 }) : '–';
 
-/** All reviewer threads against addressed ones only, by years since the first
- * commit, over the same contributor half-years ("Adjusted for" and "Peers" apply). */
+/** All reviewer threads against addressed ones only, by changes landed before
+ * (or years since the first commit, when tenure is by years), over the same
+ * contributor half-years ("Adjusted for" and "Peers" apply). */
 function renderKinds(axis: (title: string) => object) {
   destroy('kinds');
   const peers = state.peers!;
-  const rows = peers.kinds?.[state.org]?.[state.corr];
-  const labels = peers.kind_labels;
+  const chg = introAxis(state.tenure) === 'changes' && !!peers.kinds_chg && !!peers.chg_labels;
+  const rows = (chg ? peers.kinds_chg : peers.kinds)?.[state.org]?.[state.corr];
+  const labels = chg ? peers.chg_labels : peers.kind_labels;
   if (!rows?.length || !labels) {
     $('#rf-kinds-note').replaceChildren();
     $('#rf-kinds-legend').replaceChildren();
     return;
   }
   const t = theme();
-  const share = peers.kind_share?.[state.org] ?? [];
+  const share = (chg ? peers.kind_share_chg : peers.kind_share)?.[state.org] ?? [];
   const last = rows.length - 1;
   const [t0, a0] = rows[0];
   const [t10, a10] = rows[last];
-  put($('#rf-kinds-note'), 'kinds-note', { tFall: times(t0, t10), aFall: times(a0, a10),
+  put($('#rf-kinds-title'), chg ? 'kinds-title-chg' : 'kinds-title-time');
+  put($('#rf-kinds-note'), 'kinds-note', { chg, tFall: times(t0, t10), aFall: times(a0, a10),
     steeper: !!(t0 && t10 && a0 && a10 && a0 / a10 > t0 / t10) });
   const lines = [
     { label: msg('kinds-all'), color: t.series[1], data: rows.map((r) => r[0]) },
@@ -398,7 +414,7 @@ function renderKinds(axis: (title: string) => object) {
       interaction: { mode: 'index', intersect: false },
       font: { family: t.font },
       scales: {
-        x: { ...axis('years since first commit on main'), grid: { display: false } },
+        x: { ...axis(msg(chg ? 'axis-changes-before' : 'axis-years-since')), grid: { display: false } },
         y: { beginAtZero: true, ...axis(msg('axis-feedback')),
           ticks: { color: t.text, font: { family: t.font }, callback: (v) => fmtValue(Number(v)) } },
       },
@@ -420,7 +436,8 @@ function renderKinds(axis: (title: string) => object) {
   });
 }
 
-const TENURE_MEASURES = ['time', 'changes', 'dir'] as const;
+/** Changes landed before first: the page's main tenure measure. */
+const TENURE_MEASURES = ['changes', 'time', 'dir'] as const;
 /** Each measure's five bands, least experienced first, as the chart's tick lines. */
 const TENURE_BANDS: Record<(typeof TENURE_MEASURES)[number], string[]> = {
   time: ['<1 y', '1–2 y', '2–5 y', '5–10 y', '10+ y'],

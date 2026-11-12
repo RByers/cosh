@@ -98,6 +98,19 @@ class ReviewFeedbackTest(unittest.TestCase):
         self.assertEqual(cohorts["all"]["td"]["2021"], [])           # one person: too few for a point
         self.assertEqual(cohorts["org:igalia"]["td"], {"2021": []})
 
+    def test_changes_bins(self):
+        # Bins of earlier changes for the cohort curves and the all-against-addressed chart.
+        self.assertEqual([R.chg_bin(n) for n in (0, 9, 10, 24, 25, 99, 100, 499, 500, 999, 1000, 5000)],
+                         [0, 0, 1, 1, 2, 3, 4, 5, 6, 6, 7, 7])
+        self.assertEqual(len(R.CHG_LABELS), len(R.CHG_EDGES) + 1)
+        # Doublings for the histogram start at DOUBLING_FROM.
+        self.assertEqual([R.doubling(n) for n in (0, 31, 32, 63, 64, 127, 128, 1024, 2047, 2048)],
+                         [None, None, 0, 0, 1, 1, 2, 5, 5, 6])
+        m = {k: 1.0 for k in R.METRICS}
+        pts = [[(2020, 5, "google.com", m, m), (2020, 30, "google.com", m, m)] for _ in range(R.MIN_COHORT)]
+        cohorts = R.tenure_trends(pts, {"all": lambda o: True}, R.chg_bin)
+        self.assertEqual(cohorts["all"]["td"]["2020"], [[0, 1.0, 20], [2, 1.0, 20]])
+
     def test_tenure_trends_older_points(self):
         m = {k: 1.0 for k in R.METRICS}
         none = {k: None for k in R.METRICS}

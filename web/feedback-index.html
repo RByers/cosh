@@ -46,8 +46,8 @@
         <div class="select-toggle">
           <label for="rf-tenure">Same tenure by</label>
           <select id="rf-tenure">
+            <option value="changes" selected>Changes landed before</option>
             <option value="time">Years since first commit</option>
-            <option value="changes">Changes landed before</option>
             <option value="dir">Experience in each directory</option>
           </select>
         </div>
@@ -89,43 +89,62 @@
         <h3>By tenure, for contributors who started in different years</h3>
         <ul id="rf-cohort-legend" class="legend rf-line-legend" aria-label="First commit on main in"></ul>
         <div class="chart">
-          <canvas id="rf-cohorts" role="img" aria-label="Median feedback index by years since a contributor's first commit, one line per year of first commit."></canvas>
+          <canvas id="rf-cohorts" role="img" aria-label="Median feedback index by a contributor's tenure (changes landed before, or years since the first commit), one line per year of first commit."></canvas>
         </div>
         <p id="rf-cohorts-note" class="note"></p>
         <template data-msg="cohorts-note">
           Each line follows the contributors whose first commit on main was in one year, from that first commit
           to <slot name="to"></slot>: the median of their<span data-if="kind=a"> addressed</span> feedback<span data-if="corr=n"> per
-          change</span> in each half-year, by how long they had been contributing then<span data-if="dirxp">,
+          change</span> in each half-year, by <span data-if="chg">how many changes they had landed before (their
+          earlier commits on main)</span><span data-if="!chg">how long they had been contributing then</span><span data-if="dirxp">,
           measured against authors with the same experience in each directory</span><span data-if="org"> (only
           half-years in which most of their changes came from <slot name="org"></slot>)</span>. Points stand for
           <slot name="min"></slot> or more contributors who landed <slot name="minCohortCls"></slot> or more changes in
           the half-year. Reviewer threads are counted from 2018 on<span data-if="limited">, but
           <span data-if="kind=a">addressed threads</span><span data-if="!kind=a">directory experience</span> only from
           <slot name="from"></slot>, so only the newest start years can be followed from the beginning</span>. Whenever they started,
-          contributors draw less feedback the longer they have been contributing.
+          contributors draw less feedback <span data-if="chg">the more changes they have landed</span><span
+          data-if="!chg">the longer they have been contributing</span>.
         </template>
-        <h3>How fast each contributor's feedback falls per year</h3>
+        <h3 id="rf-change-title">How fast each contributor's feedback falls</h3>
+        <template data-msg="change-title-chg">How much each contributor's feedback falls as their changes landed double</template>
+        <template data-msg="change-title-time">How fast each contributor's feedback falls per year</template>
         <div class="chart">
-          <canvas id="rf-change" role="img" aria-label="Histogram of contributor-years by how much the feedback index changed from the year before."></canvas>
+          <canvas id="rf-change" role="img" aria-label="Histogram of how much contributors' feedback index changed each time their changes landed doubled, or from one year to the next."></canvas>
         </div>
         <p id="rf-change-note" class="note"></p>
         <template data-msg="change-note">
-          Every contributor-year: the change in a contributor's feedback index from one calendar year to the
+          <span data-if="chg">Each time a contributor's changes landed doubled: the change in their feedback index
+          from the changes they landed with <slot name="doublingFrom"></slot>–63 earlier commits on main to those
+          with 64–127, from 64–127 to 128–255, and so on, wherever they landed <slot name="minCls"></slot> or more
+          changes in both (<slot name="n"></slot> doublings from <slot name="people"></slot> contributors<span
+          data-if="org">, counted where most of the later doubling's changes came from <slot name="org"></slot></span>;
+          <span data-if="limited">doublings begun from <slot name="from"></slot> on</span><span
+          data-if="!limited">doublings begun from 2018 on</span>).
+          In the median doubling, feedback <span data-if="fell">fell</span><span data-if="!fell">grew</span> by
+          <slot name="median"></slot>; bars on the right are doublings in which it grew.</span><span
+          data-if="!chg">Every contributor-year: the change in a contributor's feedback index from one calendar year to the
           next, wherever they landed <slot name="minCls"></slot> or more changes in both
           (<slot name="n"></slot> year-to-year changes from <slot name="people"></slot> contributors<span
           data-if="org">, counted where most of the later year's changes came from <slot name="org"></slot></span>;
           <span data-if="limited">whole years from <slot name="fromYear"></slot> on</span><span data-if="!limited">from
           2018 on</span>).
           In the median year, feedback <span data-if="fell">fell</span><span data-if="!fell">grew</span> by
-          <slot name="median"></slot>; bars on the right are years in which it grew.
+          <slot name="median"></slot>; bars on the right are years in which it grew.</span>
         </template>
+        <template data-msg="axis-change-chg">change in feedback index from the doubling before</template>
+        <template data-msg="axis-change-time">change in feedback index from the year before</template>
+        <template data-msg="axis-steps-chg">doublings of changes landed</template>
+        <template data-msg="axis-steps-time">contributor-years</template>
         <!-- Two half-width line charts, side by side on wide screens, each with its own note. -->
         <div class="rf-pair">
         <div>
-        <h3>All feedback or only addressed feedback, by tenure</h3>
+        <h3 id="rf-kinds-title">All feedback or only addressed feedback, by tenure</h3>
+        <template data-msg="kinds-title-chg">All feedback or only addressed feedback, by changes landed before</template>
+        <template data-msg="kinds-title-time">All feedback or only addressed feedback, by years since the first commit</template>
         <ul id="rf-kinds-legend" class="legend rf-line-legend" aria-label="Lines"></ul>
         <div class="chart rf-half-chart">
-          <canvas id="rf-kinds" role="img" aria-label="Median feedback index by years since a contributor's first commit, for all reviewer threads and for addressed threads only."></canvas>
+          <canvas id="rf-kinds" role="img" aria-label="Median feedback index by a contributor's tenure, for all reviewer threads and for addressed threads only."></canvas>
         </div>
         <p id="rf-kinds-note" class="note"></p>
         <template data-msg="kinds-all">All reviewer threads</template>
@@ -133,9 +152,11 @@
         <template data-msg="kinds-norm">Each line's 2023–24 norm</template>
         <template data-msg="kinds-note">
           <span data-if="steeper">Addressed feedback shows growth better: it falls <slot name="aFall"></slot>
-          times from the first three months to ten years, against <slot name="tFall"></slot> times for all
-          feedback.</span><span data-if="!steeper">All feedback shows growth better here: it falls
-          <slot name="tFall"></slot> times from the first three months to ten years, against
+          times <span data-if="chg">from fewer than 10 earlier changes to 1,000 or more</span><span
+          data-if="!chg">from the first three months to ten years</span>, against <slot name="tFall"></slot> times
+          for all feedback.</span><span data-if="!steeper">All feedback shows growth better here: it falls
+          <slot name="tFall"></slot> times <span data-if="chg">from fewer than 10 earlier changes to 1,000 or
+          more</span><span data-if="!chg">from the first three months to ten years</span>, against
           <slot name="aFall"></slot> times for addressed feedback.</span>
         </template>
         </div>
@@ -143,7 +164,7 @@
         <h3>Which tenure explains the fall</h3>
         <ul id="rf-tenures-legend" class="legend rf-line-legend" aria-label="Tenure measured by"></ul>
         <div class="chart rf-half-chart">
-          <canvas id="rf-tenures" role="img" aria-label="Feedback in each of five tenure bands, least experienced first, for tenure measured in years since the first commit, changes landed before, and earlier commits in the directory."></canvas>
+          <canvas id="rf-tenures" role="img" aria-label="Feedback in each of five tenure bands, least experienced first, for tenure measured in changes landed before, years since the first commit, and earlier commits in the directory."></canvas>
         </div>
         <p id="rf-tenures-note" class="note"></p>
         <template data-msg="tenure-time">Years since first commit</template>
@@ -152,7 +173,9 @@
         <template data-msg="tenure-name-time">years since the first commit</template>
         <template data-msg="tenure-name-changes">changes landed</template>
         <template data-msg="tenure-name-dir">directory experience</template>
-        <template data-msg="axis-tenure-band">tenure band: years / changes landed before / earlier commits in the directory</template>
+        <template data-msg="axis-tenure-band">tenure band: changes landed before / years / earlier commits in the directory</template>
+        <template data-msg="axis-changes-before">changes landed before (earlier commits on main)</template>
+        <template data-msg="axis-years-since">years since first commit on main</template>
         <template data-msg="tenures-note">
           Tenure by <slot name="best"></slot> accounts for the most growth: <slot name="bestShare"></slot> of a
           contributor's yearly fall in feedback, against <slot name="share2"></slot> by
@@ -161,7 +184,8 @@
         </div>
         </div>
         <p class="note">
-          The first three charts always measure tenure in years.
+          The first three charts measure tenure as “Same tenure by” is set: in changes landed before (also for
+          experience in each directory), or in years since the first commit.
         </p>
         <!-- Two half-width bar charts: the median author's feedback index by change size and by directory. -->
         <div class="rf-pair">
@@ -198,8 +222,8 @@
         <h2 id="find-title">Your review feedback</h2>
         <p class="sub">
           Type your email address to see the reviewer threads on every change you landed since <span data-rf-range="from"></span>, set
-          against authors with the same tenure: the same years since their first commit, the same number of
-          changes landed before, or the same experience in each directory you changed.
+          against authors with the same tenure: the same number of changes landed before, the same years since
+          their first commit, or the same experience in each directory you changed.
         </p>
         <form id="rf-find" class="person-find rf-find" autocomplete="off">
           <label for="rf-email">Your email address</label>
@@ -431,9 +455,9 @@
           bands (by lines changed); adjusting for directory as well uses the average for that size in the same
           two-level directory, where there are 30 or more such changes. Peers are the authors who landed
           <span id="rf-min-cls"></span> or more changes, always with the same tenure, taken at the middle of
-          their changes. Tenure in years counts from a person's first commit on main.
-          Tenure in changes counts their earlier commits on main since 2017 (reverts left out), in bands of under
-          50, 50–199, 200–499, 500–999 and 1,000 or more. Tenure by experience in each directory divides
+          their changes. Tenure in changes, the main measure, counts their earlier commits on main since 2017
+          (reverts left out), in bands of under 50, 50–199, 200–499, 500–999 and 1,000 or more. Tenure in years
+          counts from a person's first commit on main. Tenure by experience in each directory divides
           everyone's feedback by what all authors drew at the same number of earlier commits in that directory.
           An author's organization is the one most of their changes are attributed to. Groups of
           fewer than ten peers get no comparison.

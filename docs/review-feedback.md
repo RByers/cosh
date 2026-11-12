@@ -17,7 +17,40 @@ once an address is found.
 feedback and adjustment switches; "Peers" picks its population (a half-year
 counts by its org, a person's change by the org of most of their
 half-years), and tenure by directory experience shows the values against
-that experience. Its axis is always years. It shows:
+that experience. **Changes landed before is the main tenure measure**
+(the user's call, 2026-11-12, after "Which tenure explains the fall" found it
+accounts for 96% of the yearly fall): "Same tenure by" defaults to it, and
+the first three charts use it as their axis, also under directory
+experience (which has no axis of its own). With "Years since first commit"
+they switch to the years versions described below (`introAxis` in
+`web/src/feedback.ts`). The changes versions (`chg_labels`, `cohorts_chg`,
+`kinds_chg`, `kind_share_chg`, `change_chg`, `doubling_from` in
+`peers.json`):
+
+- *Cohort curves by changes:* the same points, binned by the median of the
+  half-year's CLs' earlier commits on `main` (`prior`; older CLs get theirs
+  too) in `CHG_EDGES` bins: <10, 10–24, 25–49, 50–99, 100–199, 200–499,
+  500–999, 1,000+. On 2026-11-12 (all threads, size and directory) every
+  start year from 2017 to 2024 begins at 2.3–2.65× under 10 earlier changes
+  and falls steadily to 0.4–0.7× by 500+; the page draws 2018, 2020, 2022,
+  2024 and 2026.
+- *Per doubling of changes landed* (`change_chg`, from `yearly_changes`
+  over doublings instead of years): each person's CLs grouped by which
+  doubling of earlier commits they landed at (32–63, 64–127, …,
+  `DOUBLING_FROM` = 32 so a doubling's 32-odd commits leave 25 CLs after
+  mechanical ones), each counted with `MIN_CLS` and `MIN_EXP` like a year,
+  and the ratio of one doubling's value to the one before. A doubling
+  counts from the day its first commit landed, which must be on or after
+  where the measure's data begins (2018 for all threads, the range start for
+  directory experience, `addr_start` for addressed). On 2026-11-12: 3,741
+  doublings from 1,636 people, median 19.1% less feedback per doubling
+  (addressed: 1,529 from 791, 23.3%).
+- *All or addressed by changes:* the same half-years in the `CHG_EDGES`
+  bins. On 2026-11-12 (size and directory, all authors): all threads 2.09×
+  → 0.46× (4.6 times less), addressed 2.19× → 0.40× (5.4 times less),
+  share addressed 86% → 72%.
+
+The years versions:
 
 - *Cohort curves:* per year of first commit on `main`, the median of
   people's per-half-year values (half-years with 6+ CLs and 3+ expected
@@ -169,9 +202,10 @@ The measures:
 - **Peers always have the same tenure**, because feedback falls steeply with
   it (about 1.7× under a year or under 50 earlier commits, against 0.6× at
   10+ years or 1,000+). Two selectors pick the group:
-  - *Same tenure by:* years since the first commit on `main` (under 1, 1–2,
-    2–5, 5–10, 10+); earlier commits on `main` (from 2017, reverts left out:
-    under 50, 50–199, 200–499, 500–999, 1,000+); or **experience in each
+  - *Same tenure by:* earlier commits on `main`, "changes landed before",
+    the default (from 2017, reverts left out: under 50, 50–199, 200–499,
+    500–999, 1,000+); years since the first commit on `main` (under 1, 1–2,
+    2–5, 5–10, 10+); or **experience in each
     directory** (below). The band is taken at the median of the person's CLs
     in the period, so the over-time chart follows the person from band to
     band.
