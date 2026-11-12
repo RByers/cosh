@@ -357,21 +357,20 @@ function renderSizes(axis: (title: string) => object) {
     org: state.org === 'all' ? '' : msg(`org-name-${state.org}`), minCls: fmtInt(peers.min_cell_cls ?? 10),
     from: monthOf(fromMonth(from), true), to: monthOf(toMonth(to), true) });
   const yTitle = msg('axis-feedback');
-  const bars = (canvas: string, labels: string[], data: MedianBar[], xTitle: string, horizontal: boolean) => {
-    const value = horizontal ? 'x' : 'y';
-    const cat = horizontal ? 'y' : 'x';
-    return new Chart($<HTMLCanvasElement>(canvas), {
+  // Both as columns, like the year-over-year histogram, with the size or directory names at 45°.
+  const bars = (canvas: string, labels: string[], data: MedianBar[], xTitle: string) =>
+    new Chart($<HTMLCanvasElement>(canvas), {
       type: 'bar',
       data: { labels, datasets: [{ data: data.map(([v]) => v), backgroundColor: t.series[0], borderWidth: 0,
         categoryPercentage: 0.85, barPercentage: 1 }] },
       options: {
-        indexAxis: cat,
         maintainAspectRatio: false,
         animation: false,
         font: { family: t.font },
         scales: {
-          [cat]: { ...axis(xTitle), grid: { display: false } },
-          [value]: { beginAtZero: true, ...axis(yTitle),
+          x: { ...axis(xTitle), grid: { display: false },
+            ticks: { color: t.text, font: { family: t.font }, autoSkip: false, minRotation: 45, maxRotation: 45 } },
+          y: { beginAtZero: true, ...axis(yTitle),
             ticks: { color: t.text, font: { family: t.font }, callback: (v: string | number) => fmtValue(Number(v)) } },
         },
         plugins: {
@@ -380,14 +379,13 @@ function renderSizes(axis: (title: string) => object) {
         },
       },
     });
-  };
-  if (bySize && peers.size_labels) charts.size = bars('#rf-size', peers.size_labels, bySize, msg('axis-lines'), false);
+  if (bySize && peers.size_labels) charts.size = bars('#rf-size', peers.size_labels, bySize, msg('axis-lines'));
   const names = peers.dir_names;
   if (!byDir || !names) return;
   // Directories by their value, highest first; those without one go last.
   const order = names.map((_, i) => i)
     .sort((a, b) => (byDir[b][0] ?? -1) - (byDir[a][0] ?? -1));
-  charts.dirs = bars('#rf-dir-chart', order.map((i) => names[i]), order.map((i) => byDir[i]), msg('axis-dir'), true);
+  charts.dirs = bars('#rf-dir-chart', order.map((i) => names[i]), order.map((i) => byDir[i]), msg('axis-dir'));
 }
 
 // ---- render

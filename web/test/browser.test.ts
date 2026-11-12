@@ -3299,7 +3299,8 @@ test('review feedback: the opening card explains the index before any address is
   const bars = (key: string) => page.evaluate((key) => {
     const c = window.__rf!.charts[key];
     const s = c.options.scales as Record<string, { title?: { text?: string } }>;
-    return { type: (c.config as { type: string }).type, index: c.options.indexAxis, labels: c.data.labels,
+    return { type: (c.config as { type: string }).type, index: c.options.indexAxis ?? 'x', labels: c.data.labels,
+      rotation: (c.options.scales!.x as { ticks: { minRotation?: number } }).ticks.minRotation,
       data: c.data.datasets[0].data, axes: [s.x.title?.text, s.y.title?.text] };
   }, key);
   const halves = await page.$$eval('.rf-pair > div', (ds) => ds.map((d) => Math.round(d.getBoundingClientRect().width)));
@@ -3307,12 +3308,17 @@ test('review feedback: the opening card explains the index before any address is
   assert.ok(Math.abs(halves[0] - halves[1]) <= 1, String(halves));
   let sz = await bars('size');
   assert.equal(sz.type, 'bar');
+  // Columns with the labels at 45°, like the year-over-year histogram; smallest size first.
+  assert.equal(sz.index, 'x');
+  assert.equal(sz.rotation, 45);
   assert.deepEqual(sz.axes, ['lines changed', 'feedback index']);
+  assert.equal((sz.labels as string[])[0], '<4');
   assert.equal((sz.labels as string[]).length, 10);
   assert.deepEqual(sz.data.slice(0, 2), [0.68, 0.79]);
   const dirChart = await bars('dirs');
-  assert.equal(dirChart.index, 'y');
-  assert.deepEqual(dirChart.axes, ['feedback index', 'directory']);
+  assert.equal(dirChart.index, 'x');
+  assert.equal(dirChart.rotation, 45);
+  assert.deepEqual(dirChart.axes, ['directory', 'feedback index']);
   assert.deepEqual(dirChart.labels, ['third_party/blink/', 'tools/', 'chrome/browser/', 'ios/']);
   assert.deepEqual(dirChart.data, [1.05, 0.95, 0.93, null]);
   assert.match(await page.$eval('#rf-breakdown-note', (e) => e.textContent!), /The median contributor's feedback, from July 2023 to October 2026:.*10 or more such changes/s);
@@ -3375,7 +3381,7 @@ test('review feedback: a person, the measures, peer groups, directories and comm
     trend: ['half-year', 'feedback index'],
     xp: ['your earlier commits in the directory', 'feedback index'],
     size: ['lines changed', 'feedback index'],
-    dirs: ['feedback index', 'directory'],
+    dirs: ['directory', 'feedback index'],
   });
   // The page computes the values from the half-year files (unit tests check the arithmetic).
   assert.equal(await tile('rf-tile-you'), '0.71×');
