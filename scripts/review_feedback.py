@@ -64,7 +64,7 @@ MIN_CLS, MIN_EXP = 25, 12.0
 MIN_RECEIVED = 20             # ... and among tone peers with this many comments received
 QS = [i / 20 for i in range(21)]
 TENURE = ["<1y", "1-2y", "2-5y", "5-10y", "10y+"]
-CHANGES = ["<50", "50-199", "200-499", "500-999", "1000+"]   # the author's earlier commits on main (from 2017)
+CHANGES = ["<50", "50-199", "200-499", "500-999", "1000+"]   # the author's earlier commits on main (all of its history)
 XP = ["0", "1-4", "5-19", "20-99", "100+"]       # the author's earlier commits in the directory
 # Peers are always the same tenure, by one of three measures: years since the
 # first commit on main ("time"), earlier commits on main ("changes"), or
@@ -96,8 +96,8 @@ CHANGE_RATIOS = [2 ** (k / 3) for k in range(-4, 5)]
 # Balance page's "acted on or not" chart, in years since the first commit.
 KIND_EDGES = [0.25, 0.5, 1, 2, 5, 10]
 KIND_LABELS = ["0–3 months", "3–6 months", "6–12 months", "1–2 years", "2–5 years", "5–10 years", "10+ years"]
-# The same by tenure in changes landed before (earlier commits on main, from
-# 2017, reverts left out), the page's main tenure measure: the cohort curves'
+# The same by tenure in changes landed before (earlier commits on main over
+# all of its history, reverts left out), the page's main tenure measure: the cohort curves'
 # and the all-against-addressed chart's bins, below 10 up to 1,000 and more.
 CHG_EDGES = [10, 25, 50, 100, 200, 500, 1000]
 CHG_LABELS = ["<10", "10–24", "25–49", "50–99", "100–199", "200–499", "500–999", "1,000+"]
@@ -347,6 +347,38 @@ def excerpt(text):
 
 # ---------------------------------------------------------------- loading
 
+def early_commits(before=balance.SINCE):
+    """Main's first-parent commits that landed before `before`, which
+    balance-git.sqlite starts at, read from the shared clone (offline, about
+    a minute): [(author email, unix time landed, frozenset of 3-level
+    directories)], reverts ("This reverts commit" in the message) left out
+    as in load_commits. With them, earlier commits count from the start of
+    main's history (2008), not from 2017."""
+    import subprocess
+    cut = datetime.fromisoformat(before).replace(tzinfo=timezone.utc).timestamp()
+    env = {**os.environ, "GIT_NO_LAZY_FETCH": "1"}
+    git = ["git", "--git-dir", balance.SHARED, "log", "--first-parent", f"--before={before}", "main"]
+    reverts = set(subprocess.run(git + ["--grep=^This reverts commit", "--format=%H"], env=env, check=True,
+                                 capture_output=True, text=True).stdout.split())
+    out, cur = [], None
+    with subprocess.Popen(git + ["--no-renames", "--name-only", "--format=%x01%H%x09%ae%x09%ct"], env=env,
+                          stdout=subprocess.PIPE, text=True, errors="replace") as p:
+        for line in p.stdout:
+            line = line.rstrip("\n")
+            if line.startswith("\x01"):
+                if cur:
+                    out.append((cur[0], cur[1], frozenset(cur[2])))
+                sha, email, ct = line[1:].split("\t")
+                cur = None if sha in reverts or int(ct) >= cut else (email, int(ct), set())
+            elif line and cur:
+                cur[2].add(A.dir_of(line, 3))
+        if cur:
+            out.append((cur[0], cur[1], frozenset(cur[2])))
+    if p.returncode:
+        raise SystemExit(f"git log failed ({p.returncode})")
+    return out
+
+
 def load(args):
     import balance_growth as G
     cls = A.load_cl()
@@ -536,6 +568,17 @@ def main():
         if d:
             for x in d[1]:
                 xp_times[(c["pid"], x)].append(c["at"])
+    # balance-git.sqlite starts in 2017: earlier commits come from git itself.
+    early = 0
+    for email, at, ds in early_commits():
+        if A.is_bot_email(A.person(email)):
+            continue
+        pid = ids.find(email)
+        own_times[pid].append(at)
+        for x in ds:
+            xp_times[(pid, x)].append(at)
+        early += 1
+    print(f"{early:,} human commits before {balance.SINCE} counted as earlier commits", file=sys.stderr, flush=True)
     for v in xp_times.values():
         v.sort()
     for v in own_times.values():

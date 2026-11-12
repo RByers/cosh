@@ -901,14 +901,14 @@
       "id": "review-feedback", "group": "feedback", "command": "nice -n 5 python3 scripts/review_feedback.py --first-commit data/private/review_feedback_inputs/first_commit.txt --mech data/private/review_feedback_inputs/mech.jsonl",
       "code": ["scripts/review_feedback.py"],
       "purpose": "Writes each person's review feedback against their peers, as files named by a hash of their address.",
-      "inputs": ["data/private/balance.sqlite", "data/private/balance-git.sqlite", "data/private/derived.sqlite", "data/private/labels.sqlite", "data/private/sentiment.sqlite", "data/private/sentiment/", "data/private/review_feedback_inputs/", "config/bots.txt", "config/affiliations.json5"],
+      "inputs": ["data/private/balance.sqlite", "data/private/balance-git.sqlite", "data/private/derived.sqlite", "data/private/labels.sqlite", "data/private/sentiment.sqlite", "data/private/sentiment/", "data/private/review_feedback_inputs/", "config/bots.txt", "config/affiliations.json5", "chromium-git"],
       "outputs": ["web/public/review-feedback/"],
       "network": true, "lock": null,
       "incremental": "Deletes and rewrites every file.",
       "duration": "about 2 min, 3 GB of memory", "token_cost": null, "cost_source": "docs/review-feedback.md",
       "refresh": "routine",
       "approval": "Tone is praise only. The output stays out of git until the page is published.",
-      "notes": "It runs update-affiliations first by itself (its only network use). `npm run serve` picks the new files up by itself a few seconds after the run ends."
+      "notes": "It reads main's commits before 2017 (where balance-git.sqlite starts) from the shared clone, so earlier commits count from 2008. It runs update-affiliations first by itself (its only network use). `npm run serve` picks the new files up by itself a few seconds after the run ends."
     },
     {
       "id": "feedback-coach", "group": "feedback", "command": "python3 scripts/feedback_coach.py <email> [--dry-run]",

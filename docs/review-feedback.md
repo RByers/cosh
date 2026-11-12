@@ -19,7 +19,7 @@ counts by its org, a person's change by the org of most of their
 half-years), and tenure by directory experience shows the values against
 that experience. **Changes landed before is the main tenure measure**
 (the user's call, 2026-11-12, after "Which measure of experience explains the fall" found it
-accounts for 96% of the yearly fall): "Same experience by" defaults to it, and
+accounts for 85% of the yearly fall): "Same experience by" defaults to it, and
 the first three charts use it as their axis, also under directory
 experience (which has no axis of its own). With "Years since first commit"
 they switch to the years versions described below (`introAxis` in
@@ -42,13 +42,13 @@ they switch to the years versions described below (`introAxis` in
   and the ratio of one doubling's value to the one before. A doubling
   counts from the day its first commit landed, which must be on or after
   where the measure's data begins (2018 for all threads and directory
-  experience, `addr_start` for addressed). On 2026-11-12: 3,741
-  doublings from 1,636 people, median 19.1% less feedback per doubling
-  (addressed: 1,529 from 791, 23.3%).
+  experience, `addr_start` for addressed). On 2026-11-12: 3,213
+  doublings from 1,421 people, median 20.8% less feedback per doubling
+  (addressed: 1,486 from 760, 23.4%).
 - *All or addressed by changes:* the same half-years in the `CHG_EDGES`
   bins. On 2026-11-12 (size and directory, all authors): all threads 2.09×
-  → 0.46× (4.6 times less), addressed 2.19× → 0.40× (5.4 times less),
-  share addressed 86% → 72%.
+  → 0.48× (4.4 times less), addressed 2.20× → 0.43× (5.2 times less),
+  share addressed 86% → 73%.
 
 The years versions:
 
@@ -122,11 +122,14 @@ The years versions:
   the same pairs of years (as in the histogram). The page names the measure
   that leaves the change closest to zero (`bestTenure`). On 2026-11-12, all
   threads, size and directory: unmatched −16.2% a year (5,246 pairs from
-  1,565 people), −5.9% against the same years, −11.3% against directory
-  experience, −0.6% against changes landed (96% of the fall explained);
-  addressed −18.1%, −9.0%, −14.4%, −4.2%. Bands first to last: 3.6, 4.6 and
-  2.7 times less. Outside Google (109 people) years come out closest
-  (−0.4%; changes landed overshoots to +4.9%).
+  1,565 people), −5.9% against the same years, −11.5% against directory
+  experience, −2.5% against changes landed (85% of the fall explained);
+  addressed −18.1%, −9.0%, −14.4%, −5.3%. Bands first to last: 3.6 times
+  less by years, 4.3 by changes landed, 2.8 by directory experience.
+  Outside Google (109 people) years come out closest (−0.4%; changes landed
+  overshoots to +4.8%). With earlier commits counted only from 2017 (before
+  2026-11-12), changes landed came out at −0.6% (96%): undercounting
+  veterans made it look better than it is.
 - *By change size* and *by directory*, two half-width bar charts
   (`median_breakdowns`; `by_size`, `dir_names`, `by_dir` in `peers.json`):
   the median contributor's value for the chosen measure and "Peers" org
@@ -204,7 +207,7 @@ The measures:
   it (about 1.7× under a year or under 50 earlier commits, against 0.6× at
   10+ years or 1,000+). Two selectors pick the group:
   - *Same experience by:* earlier commits on `main`, "changes landed before",
-    the default (from 2017, reverts left out: under 50, 50–199, 200–499,
+    the default (over all of `main`'s history, reverts left out: under 50, 50–199, 200–499,
     500–999, 1,000+); years since the first commit on `main` (under 1, 1–2,
     2–5, 5–10, 10+); or **experience in each
     directory** (below). The band is taken at the median of the person's CLs
@@ -226,7 +229,8 @@ The measures:
   landed commit changed (`cl_dirs`, weighted by lines + files), and each
   reviewer thread goes to the directory of its file (commit-message threads,
   and files outside those directories, go to the CL's main directory). Experience is the owner's earlier commits on `main` touching that
-  directory (from 2017, `balance-git.sqlite`), banded 0, 1–4, 5–19, 20–99,
+  directory (`balance-git.sqlite` from 2017, and before then the shared
+  clone's `git log --first-parent --name-only`, `early_commits`), banded 0, 1–4, 5–19, 20–99,
   100+. Everyone's feedback is pooled per band; the "same experience" view
   divides a person's threads by the sum, over their CL-directory pieces, of
   expected threads × that band's pooled rate relative to everyone's. So 1.00×
@@ -366,9 +370,12 @@ main checkout), and the browser tests serve a made-up person
 
 ## Caveats
 
-- Tenure in years counts from the first commit on `main`; earlier commits,
-  on `main` or in a directory, count only from 2017, so people who were
-  active before then are undercounted (most are in the top band anyway).
+- Tenure in years counts from the first commit on `main`, and earlier
+  commits, on `main` or in a directory, from the start of its history
+  (2008). Before 2026-11-12 earlier commits counted only from 2017
+  (`balance-git.sqlite`'s start), which undercounted people active before
+  then. Before 2017, reverts are told by "This reverts commit" and bots by
+  address alone (there is no `Bot-Commit` trailer then).
 - Reviewer threads include any thread a non-owner started, including
   drive-by and gardening comments, as the feedback index does.
 - Peer groups mix very different roles, teams and kinds of work. A high or
