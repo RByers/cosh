@@ -102,7 +102,7 @@
           <slot name="from"></slot>, so only the newest start years can be followed from the beginning</span>. Whenever they started,
           contributors draw less feedback the longer they have been contributing.
         </template>
-        <h3>How fast each contributor's feedback falls</h3>
+        <h3>How fast each contributor's feedback falls per year</h3>
         <div class="chart">
           <canvas id="rf-change" role="img" aria-label="Histogram of contributor-years by how much the feedback index changed from the year before."></canvas>
         </div>
@@ -152,7 +152,7 @@
 
       <section id="summary" class="card" aria-labelledby="summary-title">
         <a class="card-anchor" href="#summary" aria-label="Link to this section" title="Link to this section">#</a>
-        <h2 id="summary-title">You and your peers</h2>
+        <h2 id="summary-title">How your feedback index compares to your peers</h2>
         <p id="summary-sub" class="sub"></p>
         <template data-msg="summary-sub">
           <span data-if="corr=n">Reviewer threads<span data-if="kind=a"> you addressed</span> per change you
