@@ -102,12 +102,10 @@ the gap between them is steady.
 The user chose: credit the git author, count commits (not lines), and add a
 fifth metric button.
 
-- **`python3 -m cosh commits`** (`cosh/commits.py`) rebuilds two tables of
-  `derived.sqlite` from the local clone, offline: `commits` (sha, CL from
-  the `Reviewed-on:` footer, git author, landing time, week, bot flag, file
-  count) and `commit_dirs` (each directory a commit touches). About 1 min
-  for 2023-W26 onward. A full `derive` runs it at its end; a per-week
-  derive (backfill) doesn't.
+- **`python3 -m cosh commits`** (`cosh/commits.py`) reads the local clone,
+  offline. Until 2026-11-12 it rebuilt two tables of `derived.sqlite`
+  (`commits` and `commit_dirs`) at the end of every full `derive`; it now
+  keeps `data/private/commits.sqlite` up to date instead (next section).
 - **Bots:** a commit is a bot's if its CL is bot-owned *or* its git author
   matches `config/bots.txt`. The second rule was added after the page named
   `chops-service-accounts.iam.gserviceaccount.com` as an org: a WebLayer
@@ -138,6 +136,71 @@ fifth metric button.
   "Ratio shows … over commits". Last year (2025-W45 .. 2026-W44),
   addressed comments per commit: opera.com 2.74, microsoft.com 2.18,
   intel.com 1.56, google.com 1.31, igalia.com 0.26, Other 0.16.
+
+## commits.sqlite: one store for main's history (2026-11-12)
+
+Main's history used to be read four times: `cosh commits` into
+`derived.sqlite` (since the oldest fetched week, file names only),
+`python3 -m cosh.balance git` into `balance-git.sqlite` (since 2017, with
+line counts), `review_feedback.early_commits` (before 2017, on every run),
+and by hand for the balance scripts' `--first-commit`, `--owners-added` and
+`--ai-marked` files, plus `BALANCE_MECH_OUT` for `--mech`. Now one step
+writes one store, and everything reads it:
+
+```
+python3 -m cosh commits [--jobs 4]      # offline; GIT_NO_LAZY_FETCH=1
+```
+
+`data/private/commits.sqlite` (`$COSH_COMMITS_DB` overrides the path) holds
+every first-parent commit of `main` since 2008, with its first-parent
+diff's files and line counts. It is incremental: a run appends the commits
+landed since the last one (seconds when nothing is new), then their OWNERS
+additions and repetition ratios. Rebuild it by deleting the file and
+rerunning: about 1 h 50 min (1.5 h of `git log`, then 20 min of OWNERS diffs and repetition ratios with 4 processes) from empty, 1.1 GB, against 786 MB for `balance-git.sqlite` plus 442 MB for `derived.sqlite`'s two commits tables.
+
+| Table | Rows | What |
+|---|---:|---|
+| `commits` | 1,676,752 | sha, git author (lowercased) and name, authored and landed (committer) time, CL (`Reviewed-on:`), `Bot-Commit:` flag, `Reviewed-by:` approvers, the commit it reverts, reland flag, AI-marker flag, files and lines |
+| `commit_files`, `paths` | 13,556,620 / 1,642,612 | each file of its first-parent diff, with lines added and deleted (`-1` binary) |
+| `owners_added` | 42,496 | each address on a line added to an OWNERS file (the first on the line) |
+| `repetition` | 173,608 | 1 − distinct changed lines ÷ changed lines, for commits with a CL and 10 or more files (NULL over 50,000 lines) |
+| views `gcommits`, `gfiles` | | the commits since 2017-01-01, the balance analyses' window |
+
+`commit_id` is landing order: 1 is the first commit since 2017-01-01,
+counting up, and the older history counts down from −1. So `commit_id > 0`
+is the balance window, and its ids, path ids and row order are exactly
+those of the former `balance-git.sqlite` (the store is built 2017-on
+first, then the older history), which keeps every balance result
+unchanged. "2017-01-01" is exactly what `balance-git.sqlite` had:
+2017-01-02 02:47 UTC (`commits.BALANCE_SINCE`), because git's
+`--since=2017-01-01` keeps the time of day of the run, so the 5 commits of
+New Year's Day count as older history. Reverts are flagged two ways:
+`reverts_sha` (a line "This reverts commit <40-hex sha>" after the subject
+paragraph, as the balance scripts always read it) and `is_revert` (`git
+log --grep='^This reverts commit'`, any line, which also catches SVN-era
+reverts naming `r12345`; the earlier commits leave these out).
+
+What reads it:
+
+- **`summarize`** (`commit_facts`) and **`feedback_coach.py`**: the commits
+  landed since `derived.sqlite`'s oldest fetched week
+  (`commits.value_commits`, `commits.dirs_of`), with the bot rule above
+  applied at read time.
+- **`cosh.balance cl`** and the balance, feedback and review-ROI scripts:
+  `balance.db_path("git")` is this file, read through `gcommits`, `gfiles`
+  and `paths` as before.
+- **The former hand-made inputs** are queries (`cosh/commits.py`, loaded by
+  `scripts/balance_analysis.py`): `first_commits` (each author's first
+  commit over all history), `owners_added` (since 2012), `ai_marked`
+  (`AI_MARKER`, since 2023), and `mech_set` (merged CLs in `balance.sqlite`
+  whose landed commit has 100 or more files, or 10 or more with a
+  repetition of 0.8 or more). The scripts' `--first-commit`,
+  `--owners-added`, `--ai-marked` and `--mech` flags still read the old
+  files for exploration; without them the store is used.
+- **`review_feedback.py`**'s earlier commits: the commits landed before
+  2017-01-01.
+
+Reproduced against the hand-made files on 2026-11-12: `gcommits`, `gfiles` and `paths` are row for row (ids and order) those of `balance-git.sqlite`; `first_commits` gives the same first commit for all 11,827 well-formed lines of `first_commit.txt`; `owners_added` the same 41,208 additions; `ai_marked` the same 1,002 shas; `mech_set` the same 11,624 CLs (every repetition ratio equal); the earlier commits the same 377,729. The Value window matches `derived.sqlite`'s commits and directories exactly, except the CL number: the store reads the short `Reviewed-on:` form (`chromium-review.googlesource.com/<n>`) that 152,372 commits of 2017-07 .. 2019 use and the old `cosh commits` missed. So `summarize` now credits 6,930 more of those commits to their CL owner's account (when no account has the git author's email) and counts 31 as bots' (bot-owned CLs); nothing after 2019 changes.
 
 ## The plan before building
 

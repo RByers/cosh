@@ -1,10 +1,13 @@
 """Datasets for the author/reviewer balance report (docs/balance.md).
 
-Offline; reads balance*.sqlite, derived.sqlite and labels.sqlite. Writes one
-JSON file of aggregates (no identities, no comment text).
+Offline; reads balance*.sqlite, commits.sqlite, derived.sqlite and
+labels.sqlite. Writes one JSON file of aggregates (no identities, no comment
+text).
 
-  COSH_DATA_DIR=<main>/data/private python3 scripts/balance_report.py \
-      --first-commit F --owners-added F --ai-marked F --mech mech.jsonl --out report.json
+  COSH_DATA_DIR=<main>/data/private python3 scripts/balance_report.py --out report.json
+
+--first-commit, --owners-added, --ai-marked and --mech read the old
+hand-made files instead of commits.sqlite (balance_analysis.py).
 """
 
 import argparse
@@ -76,13 +79,7 @@ def dir_tree(counts, total, listed):
     return sorted(keep - skip)
 
 
-def mech_set(path):
-    out = set()
-    for line in open(path):
-        n, files, threads, rep, lines = json.loads(line)
-        if files >= 100 or (rep is not None and rep >= 0.8):
-            out.add(n)
-    return out
+mech_set = A.mech_set     # imported from here by several scripts
 
 
 def load_top(hist):
@@ -108,10 +105,10 @@ def quarters(lo, hi):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--first-commit", required=True)
-    ap.add_argument("--owners-added", required=True)
-    ap.add_argument("--ai-marked")
-    ap.add_argument("--mech", required=True)
+    ap.add_argument("--first-commit", help="default: commits.sqlite")
+    ap.add_argument("--owners-added", help="default: commits.sqlite")
+    ap.add_argument("--ai-marked", help="default: commits.sqlite")
+    ap.add_argument("--mech", help="default: commits.sqlite")
     ap.add_argument("--out", required=True)
     args = ap.parse_args()
     cls, commits, ids, first, owner_at, ai = G.load_all(args)

@@ -18,12 +18,11 @@ clusters found in aggregate), **not for publication**.
 ## Generate
 
 From the worktree or main checkout, with the inputs `balance_report.py` uses
-(first-commit dates, OWNERS additions, AI markers, mechanical CLs; see
-`docs/balance.md`, "Data and how it's built"):
+(first-commit dates, OWNERS additions, AI markers, mechanical CLs, all from
+`commits.sqlite`; see `docs/balance.md`, "Data and how it's built"):
 
 ```
-S=<dir with first_commit.txt, owners_added.txt, ai_marked.txt, mech.jsonl>
-BALANCE_SCRATCH=$S COSH_DATA_DIR=<main>/data/private \
+COSH_DATA_DIR=<main>/data/private \
   nice -n 5 python3 scripts/balance_person.py \
     --person blundell@chromium.org \
     --person yoavweiss@chromium.org=yoav@yoav.ws,yoavweiss@google.com,yoav.weiss@shopify.com

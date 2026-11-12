@@ -22,6 +22,7 @@ The model cites threads as [T12]. The script turns those into Gerrit
 comment links and removes every other URL and any HTML the model wrote.
 Output: <data>/feedback-coach/<email>.md (gitignored, like all of
 data/private). Offline apart from the Claude call: reads derived.sqlite,
+commits.sqlite (a CL's main directory, from its landed commit's files),
 labels.sqlite and the NoteDb repos.
 """
 import argparse
@@ -36,6 +37,7 @@ from collections import Counter, defaultdict
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from cosh import classify, store                                    # noqa: E402
+from cosh import commits as commit_store                            # noqa: E402
 from cosh.derive import load_comments, prefetch_notedb              # noqa: E402
 
 HOST = "chromium-review.googlesource.com"
@@ -152,14 +154,20 @@ def cl_dirs(ddb, threads):
     """{change number: main 2nd-level directory}: of its landed commit's files, else of its file threads."""
     ns = sorted({t["n"] for t in threads})
     main = {}
-    for i in range(0, len(ns), 500):
-        part = ns[i:i + 500]
-        w = defaultdict(Counter)
-        for n, d, f in ddb.execute(
-                f"SELECT c.change_number, d.dir, d.n_files FROM commits c JOIN commit_dirs d USING (commit_id) "
-                f"WHERE c.change_number IN ({','.join('?' * len(part))})", part):
-            w[n][dir2(d) if d != "(top-level files)" else d] += f
-        main.update({n: c.most_common(1)[0][0] for n, c in w.items()})
+    cdb = commit_store.open_ro()
+    if cdb is not None:
+        lo = commit_store.window_start(cdb, commit_store.derived_since(ddb) + "T00:00:00Z")
+        for i in range(0, len(ns), 500):
+            part = ns[i:i + 500]
+            got = cdb.execute(f"SELECT commit_id, change_number FROM commits WHERE commit_id > ? AND "
+                              f"change_number IN ({','.join('?' * len(part))}) ORDER BY commit_id DESC",
+                              (lo, *part)).fetchall()
+            dirs = commit_store.dirs_of(cdb, lo, [cid for cid, _ in got])
+            w = defaultdict(Counter)
+            for cid, n in got:
+                for d, f in sorted(dirs.get(cid, {}).items()):
+                    w[n][dir2(d) if d != "(top-level files)" else d] += f
+            main.update({n: c.most_common(1)[0][0] for n, c in w.items()})
     by_cl = defaultdict(Counter)
     for t in threads:
         if not t["path"].startswith("/"):

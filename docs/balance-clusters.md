@@ -79,15 +79,14 @@ half-years.
 ## How to regenerate
 
 From a worktree or the main checkout, about 10 minutes and a few GB of RAM.
-It reads `balance*.sqlite`, `derived.sqlite` and the shared Chromium clone,
+It reads `balance*.sqlite`, `commits.sqlite`, `derived.sqlite` and the shared Chromium clone,
 and fetches nothing. Its inputs are the same as `balance_report.py`'s
-(`docs/balance.md`): the first-commit list, OWNERS additions and the
+(`docs/balance.md`), from `commits.sqlite`: the first-commit list, OWNERS additions and the
 mechanical-CL list.
 
 ```bash
 COSH_DATA_DIR=/home/rbagent/projects/cosh/data/private GIT_NO_LAZY_FETCH=1 nice -n 5 \
-  python3 scripts/balance_clusters.py --first-commit first_commit.txt \
-  --owners-added owners_added.txt --mech mech.jsonl [--k 6] [--out DIR]
+  python3 scripts/balance_clusters.py [--k 6] [--out DIR]
 ```
 
 It prints the aggregate tables below and writes two files:

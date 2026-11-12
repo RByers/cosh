@@ -1,6 +1,7 @@
 import hashlib
 import json
 import os
+import sqlite3
 import tempfile
 import unittest
 
@@ -628,36 +629,96 @@ if __name__ == "__main__":
     unittest.main()
 
 
+def make_git_repo(d, commits):
+    """A git work tree at d/repo with one commit per (author email, date,
+    files, message) on main; each file gets a line appended."""
+    import subprocess
+    repo = os.path.join(d, "repo")
+    os.makedirs(repo)
+    env = dict(os.environ, GIT_CONFIG_GLOBAL=os.devnull, GIT_CONFIG_NOSYSTEM="1")
+
+    def git(*args, **extra):
+        subprocess.run(["git", "-C", repo, *args], check=True, capture_output=True, env=dict(env, **extra))
+    git("init", "-q", "-b", "main")
+    for i, (email, date, files, msg) in enumerate(commits):
+        for f in files:
+            os.makedirs(os.path.dirname(os.path.join(repo, f)) or repo, exist_ok=True)
+            with open(os.path.join(repo, f), "a") as fh:
+                fh.write(f"{i}\n" if not f.endswith("OWNERS") else f"owner{i}@chromium.org # x\n")
+        git("add", "-A")
+        git("commit", "-q", "-m", msg, GIT_AUTHOR_NAME=f"Author {i}", GIT_AUTHOR_EMAIL=email,
+            GIT_COMMITTER_NAME="CQ", GIT_COMMITTER_EMAIL="cq@luci", GIT_AUTHOR_DATE=date, GIT_COMMITTER_DATE=date)
+    return repo
+
+
+def reviewed_on(cl):
+    return f"Change\n\nReviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/{cl}"
+
+
+class CommitsStoreTest(unittest.TestCase):
+    """commits.sqlite (cosh/commits.py) from a local git repo, no network."""
+
+    def test_history_owners_and_markers(self):
+        from cosh import commits
+        with tempfile.TemporaryDirectory() as d:
+            repo = make_git_repo(d, [
+                ("Old@Chromium.org", "2016-12-01T00:00:00Z", ["a/OWNERS"], "Old"),
+                ("x@chromium.org", "2016-12-02T00:00:00Z", ["b/x.cc"], "Revert\n\nThis reverts commit " + "a" * 40),
+                ("old@chromium.org", "2023-02-01T00:00:00Z", ["a/OWNERS", "c/y.cc"],
+                 "New\n\nGenerated with Claude\n\n" + reviewed_on(5).split("\n\n")[1])])
+            path = os.path.join(d, "commits.sqlite")
+            commits.update(path, repo, jobs=1)
+            make_git_repo_append = [("y@chromium.org", "2023-03-01T00:00:00Z", ["a/OWNERS"], reviewed_on(6))]
+            import subprocess
+            env = dict(os.environ, GIT_CONFIG_GLOBAL=os.devnull, GIT_CONFIG_NOSYSTEM="1",
+                       GIT_AUTHOR_NAME="Y", GIT_AUTHOR_EMAIL="y@chromium.org", GIT_COMMITTER_NAME="CQ",
+                       GIT_COMMITTER_EMAIL="cq@luci", GIT_AUTHOR_DATE="2023-03-01T00:00:00Z",
+                       GIT_COMMITTER_DATE="2023-03-01T00:00:00Z")
+            for email, date, files, msg in make_git_repo_append:
+                with open(os.path.join(repo, "a/OWNERS"), "a") as fh:
+                    fh.write("new@chromium.org\n")
+                subprocess.run(["git", "-C", repo, "commit", "-qam", msg], check=True, capture_output=True, env=env)
+            commits.update(path, repo, jobs=1)          # incremental
+            db = sqlite3.connect(path)
+            rows = db.execute("SELECT commit_id, author_email, change_number, reverts_sha IS NOT NULL, ai_marker, "
+                              "files FROM commits ORDER BY commit_id").fetchall()
+            # Landing order: 1 up from 2017-01-01, the older history down from -1.
+            self.assertEqual(rows, [(-2, "old@chromium.org", None, 0, 0, 1), (-1, "x@chromium.org", None, 1, 0, 1),
+                                    (1, "old@chromium.org", 5, 0, 1, 2), (2, "y@chromium.org", 6, 0, 0, 1)])
+            self.assertEqual([r[0] for r in db.execute("SELECT commit_id FROM gcommits")], [1, 2])
+            self.assertEqual([r[0] for r in db.execute("SELECT commit_id FROM commits WHERE is_revert")], [-1])
+            self.assertEqual(commits.first_commits(db), {"old@chromium.org": (1480550400, 0),
+                                                          "x@chromium.org": (1480636800, 0),
+                                                          "y@chromium.org": (1677628800, 0)})
+            # Newest first; the address on a line, without the diff's "+".
+            self.assertEqual(commits.owners_added(db, since="2010-01-01T00:00:00Z"),
+                             [(1677628800, "new@chromium.org", "a/OWNERS"),
+                              (1675209600, "owner2@chromium.org", "a/OWNERS"),
+                              (1480550400, "owner0@chromium.org", "a/OWNERS")])
+            self.assertEqual(len(commits.owners_added(db, since="2020-01-01T00:00:00Z")), 2)
+            self.assertEqual(commits.ai_marked(db), {db.execute("SELECT sha FROM commits WHERE commit_id = 1")
+                                                     .fetchone()[0]})
+            # The window `git log --since` lists: after the newest commit landed before it.
+            self.assertEqual(commits.window_start(db, "2017-01-01T00:00:00Z"), -1)
+            self.assertEqual(commits.window_start(db, "2023-02-15T00:00:00Z"), 1)
+            db.close()
+
+
 class CommitsTest(unittest.TestCase):
-    """cosh commits (a local git repo, no network) and the commits metric in summarize."""
+    """The commits metric in summarize, from commits.sqlite."""
 
     def make_repo(self, d):
-        import subprocess
-        repo = os.path.join(d, "repo")
-        os.makedirs(repo)
-        env = dict(os.environ, GIT_CONFIG_GLOBAL=os.devnull, GIT_CONFIG_NOSYSTEM="1")
-
-        def git(*args, **extra):
-            subprocess.run(["git", "-C", repo, *args], check=True, capture_output=True, env=dict(env, **extra))
-        git("init", "-q", "-b", "main")
-        for i, (email, date, files, cl) in enumerate([
-                ("old@intel.com", "2023-01-02T12:00:00Z", ["content/old.cc"], 99),   # before the fetched weeks
-                ("A@igalia.com", "2026-10-27T10:00:00Z", ["content/a.cc", "chrome/browser/ui/x.cc"], 100),
-                ("chromium-autoroll@skia-public.iam.gserviceaccount.com", "2026-10-27T11:00:00Z", ["DEPS"], 101),
-                ("b@google.com", "2026-10-27T12:00:00Z", ["chrome/browser/ui/y.cc"], 102),
-                ("c@intel.com", "2026-10-28T12:00:00Z", ["content/b.cc", "content/c.cc"], 103)]):
-            for f in files:
-                os.makedirs(os.path.dirname(os.path.join(repo, f)) or repo, exist_ok=True)
-                with open(os.path.join(repo, f), "a") as fh:
-                    fh.write(f"{i}\n")
-            git("add", "-A")
-            git("commit", "-q", "-m", f"Change {i}\n\nReviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/{cl}",
-                GIT_AUTHOR_NAME=f"Author {i}", GIT_AUTHOR_EMAIL=email, GIT_COMMITTER_NAME="CQ",
-                GIT_COMMITTER_EMAIL="cq@luci", GIT_AUTHOR_DATE=date, GIT_COMMITTER_DATE=date)
-        return repo
+        return make_git_repo(d, [
+            ("old@intel.com", "2023-01-02T12:00:00Z", ["content/old.cc"], reviewed_on(99)),   # before the fetched weeks
+            ("A@igalia.com", "2026-10-27T10:00:00Z", ["content/a.cc", "chrome/browser/ui/x.cc"], reviewed_on(100)),
+            ("chromium-autoroll@skia-public.iam.gserviceaccount.com", "2026-10-27T11:00:00Z", ["DEPS"],
+             reviewed_on(101)),
+            ("b@google.com", "2026-10-27T12:00:00Z", ["chrome/browser/ui/y.cc"], reviewed_on(102)),
+            ("c@intel.com", "2026-10-28T12:00:00Z", ["content/b.cc", "content/c.cc"], reviewed_on(103))])
 
     def test_commits_table_and_summaries(self):
-        from cosh.commits import build_commits
+        from cosh import commits as C
+        from cosh.extract import iso_week_of
         with tempfile.TemporaryDirectory() as d:
             repo = self.make_repo(d)
             summary_db(d, [(1, "owner@igalia.com"), (2, "rev@microsoft.com"), (5, "a@igalia.com"),
@@ -668,10 +729,13 @@ class CommitsTest(unittest.TestCase):
                 db.execute("UPDATE changes SET is_bot_owned = 1 WHERE change_number = 102")
                 db.execute("UPDATE changes SET owner_account = 6 WHERE change_number = 103")
                 db.execute("INSERT INTO meta VALUES ('fetched_weeks', '[\"2026-W44\"]')")
-            build_commits(db, repo)
-            commits = db.execute("SELECT change_number, author_email, iso_week, is_bot, n_files FROM commits "
-                                 "ORDER BY commit_id").fetchall()
-            dirs = db.execute("SELECT commit_id, dir, n_files FROM commit_dirs ORDER BY 1, 2").fetchall()
+            C.update(os.path.join(d, "commits.sqlite"), repo, jobs=1)
+            cdb = sqlite3.connect(os.path.join(d, "commits.sqlite"))
+            rows, lo = C.value_commits(cdb, db)
+            commits = [(cl, email, iso_week_of(landed), bot, files) for _, cl, email, landed, bot, files in rows]
+            by_cl = dict((cid, cl) for cid, cl, *_ in rows)
+            dirs = sorted((by_cl[cid], d_, k) for cid, c in C.dirs_of(cdb, lo).items() for d_, k in c.items())
+            cdb.close()
             db.close()
             out = os.path.join(d, "s")
             rows = summarize(data_dir=d, out_dir=out)
@@ -685,8 +749,8 @@ class CommitsTest(unittest.TestCase):
                                    (102, "b@google.com", "2026-W44", 1, 1),
                                    (101, "chromium-autoroll@skia-public.iam.gserviceaccount.com", "2026-W44", 1, 1),
                                    (100, "a@igalia.com", "2026-W44", 0, 2)])
-        self.assertEqual(dirs, [(1, "content/", 2), (2, "chrome/browser/ui/", 1), (3, ROOT_FILES, 1),
-                                (4, "chrome/browser/ui/", 1), (4, "content/", 1)])
+        self.assertEqual(dirs, [(100, "chrome/browser/ui/", 1), (100, "content/", 1), (101, ROOT_FILES, 1),
+                                (102, "chrome/browser/ui/", 1), (103, "content/", 2)])
         # Commits touching an in-scope file count for the git author's org;
         # orgs with commits but no review get rows too.
         by_org = {r["org"]: (r["comments"], r["commits"], r["authors"], r["share_commits"]) for r in rows}
@@ -718,7 +782,7 @@ class CommitsTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as d:
             summary_db(d, [(1, "owner@igalia.com"), (2, "rev@microsoft.com")], [(2, 1, 0, 0)])
             rows = summarize(data_dir=d, out_dir=os.path.join(d, "s"), metric="commits")
-        # No commits table filled: zero commits, no share.
+        # No commits.sqlite: zero commits, no share.
         self.assertEqual([(r["org"], r["commits"], r["share"]) for r in rows], [("microsoft.com", 0, None)])
 
 

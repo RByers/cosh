@@ -89,7 +89,7 @@ def load(mech_path):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("path", nargs="?", default="summaries/balance.json")
-    ap.add_argument("--mech", required=True)
+    ap.add_argument("--mech", help="default: commits.sqlite")
     args = ap.parse_args()
     data = json.load(open(args.path))
     new = datasets(load(args.mech))

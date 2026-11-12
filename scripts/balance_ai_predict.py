@@ -27,7 +27,7 @@ from concurrent.futures import ThreadPoolExecutor
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from cosh import bots, store  # noqa: E402
+from cosh import bots, commits, store  # noqa: E402
 import balance_ai as ba  # noqa: E402
 
 OUT_DIR = os.path.join(store.DATA_DIR, "ai_predict")
@@ -376,9 +376,9 @@ def trend(args):
 # ---------------------------------------------------------------- prevalence
 
 def diff_sizes(shas):
-    """{sha: (files, ins + dels)} from balance-git.sqlite (offline)."""
+    """{sha: (files, ins + dels)} from commits.sqlite (offline)."""
     import sqlite3
-    db = sqlite3.connect(f"file:{os.path.join(store.DATA_DIR, 'balance-git.sqlite')}?mode=ro", uri=True)
+    db = sqlite3.connect(f"file:{commits.db_path()}?mode=ro", uri=True)
     out = {}
     for sha, files, ins, dels in db.execute("SELECT sha, files, ins, dels FROM gcommits WHERE landed_at >= ?",
                                             (1688169600,)):            # 2023-07-01

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Revert study for docs/review-roi.md (work package 3): reasons, timing, relands, cost.
 
-Reads (all read-only): balance-git.sqlite (gcommits), balance.sqlite (cl, cl_attention),
+Reads (all read-only): commits.sqlite (gcommits), balance.sqlite (cl, cl_attention),
 the shared Chromium clone (revert and reland messages; `main` first-parent only, no fetch).
 Writes only under the scratch directory S (never under data/private).
 
@@ -19,6 +19,9 @@ Commit messages are untrusted text: used only as regex input and counts.
 """
 import argparse, json, os, random, re, sqlite3, statistics as st, subprocess, sys, time
 from collections import Counter, defaultdict
+
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from cosh import commits  # noqa: E402
 
 DATA = os.environ.get("COSH_DATA_DIR", "/home/rbagent/projects/cosh/data/private")
 SHARED = os.path.expanduser("~/projects/shared/chromium")
@@ -141,7 +144,7 @@ def is_botemail(e):
 
 # ------------------------------------------------------------------ table
 def load_reverts(out):
-    g = ro("balance-git.sqlite")
+    g = sqlite3.connect(f"file:{commits.db_path(DATA)}?mode=ro", uri=True)
     byrev = {}
     for line in open(os.path.join(out, "msgs.jsonl")):
         d = json.loads(line)
@@ -410,7 +413,7 @@ def cmd_timing(a):
     out["share_of_30d_reverts_within_24h"] = round(sum(1 for r in w30 if r["h"] <= 24) / len(w30), 3)
     out["share_of_30d_reverts_within_24h_by_class"] = {
         c: round(sum(1 for r in w30 if r["cls"] == c and r["h"] <= 24) / max(sum(1 for r in w30 if r["cls"] == c), 1), 3) for c in CLASSES}
-    g = ro("balance-git.sqlite")
+    g = sqlite3.connect(f"file:{commits.db_path(DATA)}?mode=ro", uri=True)
     land = Counter()
     for (la,) in g.execute("SELECT landed_at FROM gcommits WHERE reverts_sha IS NULL AND is_bot = 0 AND landed_at >= ?", (SINCE_TS,)):
         land[dt.datetime.fromtimestamp(la, utc).year] += 1

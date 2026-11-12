@@ -4,24 +4,23 @@ docs/review-roi-part1.md).
 One row per CL in the unit: merged, human-owned, non-mechanical, not a
 revert, not a reland, not a Bot-Commit (Rubber Stamper) approval, landed on
 main 2023-07-01 .. 2026-09-30 and at least 30 days before the newest commit
-in balance-git.sqlite. Each row has the revert outcomes (7, 30, 90 days),
+in commits.sqlite. Each row has the revert outcomes (7, 30, 90 days),
 the review-depth exposures, the approvers' expertise and habit, and the
 controls. Offline: reads data/private/balance*.sqlite and derived.sqlite
-read-only (no comment text), plus the shared inputs below, and writes one
-scratch SQLite file. Identities appear only as integer ids.
+and commits.sqlite read-only (no comment text), and writes one scratch
+SQLite file. Identities appear only as integer ids.
 
   export COSH_DATA_DIR=/home/rbagent/projects/cosh/data/private
-  I=data/private/review_feedback_inputs
   nice -n 5 python3 scripts/review_roi_table.py \
       --out data/private/scratch/review_roi/part1/cl_table.sqlite \
-      [--first-commit $I/first_commit.txt] [--owners-added $I/owners_added.txt] [--mech $I/mech.jsonl]
+      [--first-commit F] [--owners-added F] [--mech F]
 
-Without --first-commit, tenure is from the first authored commit in
-gcommits (since 2017-01), and authors whose first commit there is before
-2017-07 are flagged `tenure_censored` ("9+ years"). Without --mech the
-provisional mechanical rule applies (>= 50 files). Without --owners-added
-the OWNERS columns are NULL. The `meta` table records which inputs were
-used and the exclusion counts. About 2 minutes and 3.5 GB.
+Tenure is from the first commit over all of main's history, OWNERS from the
+OWNERS additions, mechanical CLs from the repetition ratios, all in
+commits.sqlite; the flags read the old hand-made files instead. An author
+missing from the first commits falls back to their first authored commit in
+gcommits. The `meta` table records which inputs were used and the exclusion
+counts. About 2 minutes and 3.5 GB.
 """
 
 import argparse
@@ -46,8 +45,6 @@ DAY = 86400
 MONTH = 365.25 * DAY / 12
 START = int(datetime(2023, 7, 1, tzinfo=timezone.utc).timestamp())
 STOP = int(datetime(2026, 10, 1, tzinfo=timezone.utc).timestamp())       # landed before this
-EARLY = int(datetime(2017, 7, 1, tzinfo=timezone.utc).timestamp())      # tenure censoring
-PROVISIONAL_MECH_FILES = 50
 MIN_HABIT = 5                    # other CLs the approver approved in the half-year
 
 TEST_DIR = {"test", "tests", "testing", "test_data", "testdata", "web_tests", "unittests", "browsertests",
@@ -88,16 +85,15 @@ def ro(path):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--out", required=True)
-    ap.add_argument("--first-commit")
-    ap.add_argument("--owners-added")
-    ap.add_argument("--mech")
+    ap.add_argument("--first-commit", help="default: commits.sqlite")
+    ap.add_argument("--owners-added", help="default: commits.sqlite")
+    ap.add_argument("--mech", help="default: commits.sqlite")
     args = ap.parse_args()
     meta = {"built_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
-            "mech_rule": "mech.jsonl: >= 100 files or >= 10 files with repetition >= 0.8" if args.mech
-            else f"provisional: >= {PROVISIONAL_MECH_FILES} files",
-            "tenure_source": "first_commit.txt (all history)" if args.first_commit
-            else "first authored commit in gcommits since 2017-01; first commit before 2017-07 = censored",
-            "owners_source": "owners_added.txt" if args.owners_added else "none"}
+            "mech_rule": ">= 100 files or >= 10 files with repetition >= 0.8 ("
+                         f"{'mech.jsonl' if args.mech else 'commits.sqlite'})",
+            "tenure_source": f"{'first_commit.txt' if args.first_commit else 'commits.sqlite'} (all history)",
+            "owners_source": "owners_added.txt" if args.owners_added else "commits.sqlite"}
 
     # ---------------------------------------------------------------- git
     g = ro(balance.db_path("git"))
@@ -192,12 +188,10 @@ def main():
     acct_pint = {a: pint(e) for a, e in emails.items() if e and a not in bots and not A.is_bot_email(e)}
 
     # --------------------------------------------------------- mechanical
-    mech = mech_set(args.mech) if args.mech else None
+    mech = mech_set(args.mech)
 
     def is_mech(c):
-        if mech is not None:
-            return c["change_number"] in mech
-        return (c["files"] or 0) >= PROVISIONAL_MECH_FILES
+        return c["change_number"] in mech
 
     # Base set (for norms and approver habits): merged, human-owned, landed, non-mechanical, not Bot-Commit.
     base = []
@@ -295,10 +289,9 @@ def main():
 
     # ----------------------------------------------------- first commits, OWNERS
     first = {}
-    if args.first_commit:
-        for e, t in A.load_first(args.first_commit).items():
-            k = pint(e)
-            first[k] = min(t, first.get(k, t))
+    for e, t in A.load_first(args.first_commit).items():
+        k = pint(e)
+        first[k] = min(t, first.get(k, t))
     first_git = {}
     for cid, sha, e, at, n, bot, rb, rv, rl in commits:
         if not bot and not A.is_bot_email(e):
@@ -306,16 +299,11 @@ def main():
             if k not in first_git:
                 first_git[k] = at
     owners = defaultdict(list)
-    if args.owners_added:
-        for line in open(args.owners_added):
-            f = line.rstrip("\n").split(" ", 2)
-            if len(f) != 3:
-                continue
-            t, e, path = f
-            dirp = path.rsplit("/", 1)[0] + "/" if "/" in path else ""
-            owners[pint(e)].append((int(t), dirp))
-        for k in owners:
-            owners[k].sort()
+    for t, e, path in A.load_owners_added(args.owners_added):
+        dirp = path.rsplit("/", 1)[0] + "/" if "/" in path else ""
+        owners[pint(e)].append((t, dirp))
+    for k in owners:
+        owners[k].sort()
 
     def tenure(p, at):
         """(months, censored) at time `at`."""
@@ -325,7 +313,7 @@ def main():
         t0 = first_git.get(p)
         if t0 is None:
             return None, 0
-        return max(0.0, (at - t0) / MONTH), int(not args.first_commit and t0 < EARLY)
+        return max(0.0, (at - t0) / MONTH), 0
 
     def owner_status(p, at, heavy_dir, dir3):
         """(covers: an OWNERS file at the CL's heaviest file's directory or a parent,
@@ -514,7 +502,7 @@ def main():
         tm, cens = tenure(c["author"], landed)
         own, ten, hb = [], [], []
         for p in c["appr"]:
-            own.append(owner_status(p, landed, heavy_dir, c["dir3"]) if args.owners_added else (None, None))
+            own.append(owner_status(p, landed, heavy_dir, c["dir3"]))
             ten.append(tenure(p, landed)[0])
             hb.append(loo(p, c))
         dt = datetime.fromtimestamp(landed, timezone.utc)

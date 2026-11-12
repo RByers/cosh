@@ -337,14 +337,18 @@ Counts it found were spot-checked (27 `AGENTS.md`, 23 `GEMINI.md` and 620
 
 ## Data and how it's built
 
-`python3 -m cosh.balance <stage>` (offline, `GIT_NO_LAZY_FETCH=1`) writes
-rebuildable files in `data/private/`, each holding only its own stage's
+Main's history comes from `data/private/commits.sqlite` (`python3 -m cosh
+commits`, `docs/commits.md`): its `gcommits`, `gfiles` and `paths` are
+first-parent `main` since 2017-01-01 (author, dates, CL from `Reviewed-on`,
+`Reviewed-by` approvers, reverts, relands, per-file line counts; 1.30M
+commits), as the former `balance-git.sqlite` (stage `git`, retired
+2026-11-12) had them. `python3 -m cosh.balance <stage>` (offline, `GIT_NO_LAZY_FETCH=1`) writes
+the other rebuildable files in `data/private/`, each holding only its own stage's
 tables (`COSH_BALANCE_<STAGE>=<path>` points a stage, and everything that
 reads it, at another file):
 
 | Stage | Output | What | Time |
 |---|---|---|---|
-| `git` | `balance-git.sqlite` | first-parent `main` since 2017-01-01: author, dates, CL (`Reviewed-on`), `Reviewed-by` approvers, reverts, relands, per-file line counts (`gcommits`, `gfiles`, `paths`); 1.30M commits | ~1.5 h |
 | `timeline` | `balance-timeline.sqlite` | per CL from NoteDb, in one walk of its meta ref: uploads with Gerrit's change kind (`uploads`), attention-set intervals per account (`attention`) and every Code-Review vote (`votes`); 716k CLs (CLs with no comments have no local meta ref). `timeline_done` keeps each CL's meta-ref tip, so a rerun rereads (and replaces) only CLs whose NoteDb log grew, such as open CLs refreshed by `extract-open` | ~35 min from empty |
 | `interdiff` | `balance-interdiff.sqlite` | per reviewed CL: the first reviewed patch set's diff against the final one, as multisets of added and removed lines, so a rebase changes nothing; 275k CLs | ~25 min with `--shard i/3` |
 | `cl` | `balance.sqlite` | one row per human-owned CL joining all of the above with review threads and labels (`cl`), per-reviewer attention (`cl_attention`), lines per directory (`cl_dirs`) | ~1 min |
@@ -370,11 +374,14 @@ Definitions in `cl`:
   drawn as bands, with p90 as a dashed line) and its median per
   directory (`review_time_p50` in `areas` and `dirs`), 2026-11-08.
 
-Also used: when each person was first added to an OWNERS file (41,208
-additions since 2012, from `git log -p -- '*OWNERS'`), each author's first
-commit over all history (tenure), and the ~1,000 commits with an AI marker
-in their message (`Agent-Generated:` trailer from 2026-07, "Generated with
-Gemini" and the like from 2025).
+Also used, all from `commits.sqlite` (the scripts' `--owners-added`,
+`--first-commit`, `--ai-marked` and `--mech` flags read the old hand-made
+files instead): when each person was added to an OWNERS file (41,208
+additions since 2012, from the OWNERS files' diffs), each author's first
+commit over all history (tenure), the ~1,000 commits since 2023 with an AI
+marker in their message (`Agent-Generated:` trailer from 2026-07,
+"Generated with Gemini" and the like from 2025), and the mechanical CLs
+(≥ 100 files, or ≥ 10 files with a repetition ratio of 0.8 or more).
 
 People are joined across addresses: `chromium.org` and `google.com` by
 username, SVN-era `user@domain@<uuid>` emails, and a Gerrit owner's email
@@ -480,8 +487,8 @@ OWNERS coverage, time pressure, AI tools) isn't something this data shows.
 Rerun (about 6 min; `--cache` keeps the loaded data for reruns,
 `--explore` prints the threshold, volume and overlap checks and writes
 nothing):
-`COSH_DATA_DIR=<main>/data/private python3 scripts/balance_behind.py
---first-commit F --owners-added O --mech M` (writes `behind_share_*` and
+`COSH_DATA_DIR=<main>/data/private python3 scripts/balance_behind.py`
+(writes `behind_share_*` and
 `behind_feedback*` into `summaries/balance.json`).
 
 ### 1. The exchange since AI: more and bigger CLs, thinner review
@@ -651,7 +658,7 @@ size (10 buckets) and top 2-level directory in 2023–24 (1.00 = the
 
 `scripts/balance_learning.py` (2026-11-08) asks whether review need falls
 with months on the project or with CLs landed. Authors whose first commit
-is in 2017 or later (so `balance-git.sqlite` holds all their commits);
+is in 2017 or later (so `gcommits` holds all their commits);
 merged, non-mechanical CLs of 2023Q3–2024Q4 (112,615 CLs, 2,158 people).
 "Practice" is the author's commits on `main` before the CL.
 
@@ -671,8 +678,8 @@ merged, non-mechanical CLs of 2023Q3–2024Q4 (112,615 CLs, 2,158 people).
 - Caveats: groups are by first-year output, so they may also differ in
   role, team and kind of work. This is association, not cause.
 
-Rerun: `COSH_DATA_DIR=<main>/data/private python3 scripts/balance_learning.py
---first-commit F --owners-added O --mech M` (writes `learning_practice` and
+Rerun: `COSH_DATA_DIR=<main>/data/private python3 scripts/balance_learning.py`
+(writes `learning_practice` and
 `learning_practice_fit` into `summaries/balance.json`; `--explore` prints the
 tenure × practice table instead; about 5 min).
 
@@ -741,7 +748,7 @@ share, and threads given; both for OWNERS):
 
 Rerun (about 5 min to load, then seconds with `--cache`):
 `COSH_DATA_DIR=<main>/data/private python3 scripts/balance_feedback_predicts.py
---first-commit F --owners-added O --mech M [--cache P]` (writes
+[--cache P]` (writes
 `fb_predict_fifths`, `fb_predict_fit` and `fb_predict_summary` into
 `summaries/balance.json`; `--explore` prints them and writes nothing). The
 page shows it under "Learning to need less review feedback"
@@ -1089,8 +1096,7 @@ being sent to its first substantive review. There it is time from a given
 reviewer being added to their own first comment.
 
 Rerun: `COSH_DATA_DIR=<main>/data/private python3 scripts/balance_dirgrowth.py
-[summaries/balance.json] --first-commit F --owners-added O --mech M
-[--min-cls 800]` (prints the tables; with the path, also writes the
+[summaries/balance.json] [--min-cls 800]` (prints the tables; with the path, also writes the
 page's `queue_*` datasets; about 5 min). `--min-cls 800` also sets which
 directories `queue_dirs` lists.
 
@@ -1341,13 +1347,13 @@ large "Draft: under development" warning at the top. Its landing-page card
   histograms: shares of reviewed CLs by hours to first substantive review
   and by reviewers' weekday attention-set hours, for the latest year
   (2025 Q4 – 2026 Q3) against the 2023 H2–2024 baseline. Same CLs as the
-  quarterly charts; it reads `balance.sqlite` and the `--mech` list:
-  `COSH_DATA_DIR=<main>/data/private python3 scripts/balance_histograms.py --mech mech.jsonl`.
+  quarterly charts; it reads `balance.sqlite` and the mechanical CLs:
+  `COSH_DATA_DIR=<main>/data/private python3 scripts/balance_histograms.py`.
 - `scripts/balance_definitions.py` (2026-11-08), for the "Defined: the
   feedback index" section: shares of CLs by reviewer threads (0 to 20,
   one bin each, plus the share above 20) for each tenth of CLs by size,
-  over 2023–24, the feedback index's norm years. Same CLs and `--mech` list:
-  `COSH_DATA_DIR=<main>/data/private python3 scripts/balance_definitions.py --mech mech.jsonl`.
+  over 2023–24, the feedback index's norm years. Same CLs and mechanical CLs:
+  `COSH_DATA_DIR=<main>/data/private python3 scripts/balance_definitions.py`.
 
 - `scripts/balance_behind.py` (2026-11-08), the "two growth
   trajectories" section at the top of the page: shares of steady
@@ -1359,7 +1365,7 @@ large "Draft: under development" warning at the top. Its landing-page card
   per-year summaries (`review_share_years`: share approving nothing, share
   at 50% or more, and the range of join-year medians). Same people and
   definition as `git_cohorts`:
-  `COSH_DATA_DIR=<main>/data/private python3 scripts/balance_review_share.py --first-commit F --owners-added O`.
+  `COSH_DATA_DIR=<main>/data/private python3 scripts/balance_review_share.py`.
 
 - `scripts/balance_authors.py` (2026-11-08), the "Authors in the last
   year" section: per author with 10+ CLs landed from 2025-11 to 2026-10
@@ -1375,7 +1381,7 @@ large "Draft: under development" warning at the top. Its landing-page card
   (public data; the feedback index is not tone). Breadth tracks volume
   (Spearman 0.72 with CLs) and goes with slightly less feedback per CL
   (−0.24):
-  `COSH_DATA_DIR=<main>/data/private python3 scripts/balance_authors.py --first-commit F --owners-added O --mech M`
+  `COSH_DATA_DIR=<main>/data/private python3 scripts/balance_authors.py`
   (about 3 min).
   The same script (2026-11-08) also summarizes **abandonment after review
   against tenure**, per author: of their non-mechanical CLs closed in the
@@ -1611,4 +1617,4 @@ into "Other".
 
 Regenerate (about 5 min cold, 10 s with `--cache`; deterministic):
 `COSH_DATA_DIR=<main>/data/private nice -n 5 python3 scripts/balance_narrative.py
---first-commit F --owners-added O --mech M [--cache /tmp/…/narrative.pkl]`.
+[--cache /tmp/…/narrative.pkl]`.

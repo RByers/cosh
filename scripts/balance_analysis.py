@@ -1,14 +1,19 @@
 """Exploratory analyses for the author/reviewer balance page (docs/balance.md).
 
 Offline; reads data/private/balance*.sqlite (python3 -m cosh.balance) and
-prints tables. No comment text is read. Per-person figures are computed only
-to aggregate them; nothing here prints a person's identity.
+commits.sqlite (python3 -m cosh commits) and prints tables. No comment text
+is read. Per-person figures are computed only to aggregate them; nothing here
+prints a person's identity.
 
-  COSH_DATA_DIR=<main>/data/private python3 scripts/balance_analysis.py trends|mechanical|growth \
-      [--first-commit F] [--ai-marked F]
+  COSH_DATA_DIR=<main>/data/private python3 scripts/balance_analysis.py trends|mechanical|growth|pipeline
 
---first-commit: lines "email first_commit_unix bot" over all of main's history
---ai-marked:    shas of commits with an AI marker in their message
+Also the loaders the other balance and feedback scripts share. Their inputs
+come from commits.sqlite; the old hand-made files still work for
+exploration, through the scripts' flags:
+--first-commit F   lines "email first_commit_unix bot" over all of main's history
+--owners-added F   lines "unix email path/OWNERS", an address added to an OWNERS file
+--ai-marked F      shas of commits with an AI marker in their message
+--mech F           mech.jsonl lines [change_number, files, threads, repetition, lines]
 """
 
 import argparse
@@ -24,23 +29,70 @@ from datetime import datetime, timezone
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from cosh import balance, store  # noqa: E402
+from cosh import commits as commit_store  # noqa: E402
 
 BOT = re.compile("|".join(l.split("#")[0].strip() for l in open(os.path.join(
     os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "config", "bots.txt"))
     if l.split("#")[0].strip()), re.I)
 
 
-def load_first(path):
+def git_db():
+    return ro(balance.db_path("git"))
+
+
+def load_first(path=None):
+    """{person: unix time of their first commit on main} over all of its
+    history: commits.sqlite, or a first_commit.txt."""
+    if path:
+        rows = (line.split() for line in open(path))
+        rows = ((f[0], int(f[1]), 0) for f in rows if len(f) == 3 and f[2] == "0" and not is_bot_email(f[0]))
+    else:
+        rows = ((e, t, b) for e, (t, b) in commit_store.first_commits(git_db()).items())
     first = {}
-    for line in open(path):
-        f = line.split()
-        if len(f) != 3:
-            continue
-        e, t, bot = f
-        if bot == "0" and not is_bot_email(e):
+    for e, t, bot in rows:
+        if not bot and not is_bot_email(e):
             e = person(e)
-            first[e] = min(int(t), first.get(e, int(t)))
+            first[e] = min(t, first.get(e, t))
     return first
+
+
+def load_owners_added(path=None):
+    """[(unix time, email, OWNERS path)]: each address added to an OWNERS
+    file since 2012 (commits.sqlite), or from an owners_added.txt."""
+    if not path:
+        return commit_store.owners_added(git_db())
+    out = []
+    for line in open(path):
+        t, e, f = line.rstrip("\n").split(" ", 2)
+        out.append((int(t), e, f))
+    return out
+
+
+def load_ai_marked(path=None):
+    """Shas of the commits since 2023 with an AI marker in their message
+    (commits.AI_MARKER; commits.sqlite), or from an ai_marked.txt."""
+    return set(open(path).read().split()) if path else commit_store.ai_marked(git_db())
+
+
+def mech_set(path=None):
+    """Mechanical CLs: merged CLs whose landed commit has 100 or more files,
+    or 10 or more with a repetition ratio of 0.8 or more. From commits.sqlite's
+    repetition ratios and balance.sqlite's CLs, or from a mech.jsonl."""
+    out = set()
+    if path:
+        for line in open(path):
+            n, files, threads, rep, lines = json.loads(line)
+            if files >= 100 or (rep is not None and rep >= 0.8):
+                out.add(n)
+        return out
+    rep = commit_store.repetition(git_db())
+    cl = ro(os.environ.get("BALANCE_CL") or balance.db_path("cl"))
+    for n, sha, files in cl.execute("SELECT change_number, sha, files FROM cl WHERE status = 'MERGED' "
+                                    "AND files >= 10"):
+        r = rep.get(sha)
+        if files >= 100 or (r is not None and r >= 0.8):
+            out.add(n)
+    return out
 
 
 def quarter(t):
@@ -90,7 +142,7 @@ def load_cl():
 
 def load_commits():
     """Human commits on main since 2017 with a Gerrit CL."""
-    db = ro(balance.db_path("git"))
+    db = git_db()
     rows = db.execute("SELECT commit_id, sha, author_email, landed_at, change_number, is_bot, reviewed_by, "
                       "reverts_sha, is_reland, files, ins + dels FROM gcommits").fetchall()
     reverted = defaultdict(lambda: None)
@@ -110,31 +162,10 @@ def load_commits():
 
 # ------------------------------------------------------------------ mechanical
 
-def repetition(shas, git_dir=balance.SHARED):
-    """{sha: 1 - distinct changed lines / changed lines} of landed commits,
-    or None when the diff is over balance.MAX_LINES. Mechanical edits (the
-    same line added in 300 files, renames of a symbol) score near 1."""
-    out = {}
-    for i in range(0, len(shas), 300):
-        part = shas[i:i + 300]
-        for sha, files in balance.diff_lines(git_dir, part).items():
-            if files is None:
-                out[sha] = None
-                continue
-            tot, distinct = 0, set()
-            for p, (a, d) in files.items():
-                for k, v in list(a.items()) + list(d.items()):
-                    tot += v
-                    distinct.add(k)
-            out[sha] = 1 - len(distinct) / tot if tot else 0.0
-    return out
-
-
 def mechanical(cls):
     m = [c for c in cls if c["status"] == "MERGED" and c["files"]]
     big = [c for c in m if c["files"] >= 10]
-    print(f"repetition ratio for {len(big):,} CLs with >= 10 files ...", file=sys.stderr, flush=True)
-    rep = repetition([c["sha"] for c in big])
+    rep = commit_store.repetition(git_db())     # python3 -m cosh commits computes them
     for c in m:
         c["rep"] = rep.get(c["sha"]) if c["files"] >= 10 else None
     rb = [0, 0.2, 0.4, 0.6, 0.8, 0.9, 1.01]
@@ -150,10 +181,6 @@ def mechanical(cls):
     if s:
         print(f"too big  {len(s):>7,} {sum(1 for c in s if c['threads']) / len(s):6.0%} "
               f"{st.mean(c['threads'] for c in s):6.2f}")
-    with open(os.environ.get("BALANCE_MECH_OUT", os.devnull), "w") as f:
-        for c in big:
-            f.write(json.dumps([c["change_number"], c["files"], c["threads"], c["rep"],
-                                (c["ins"] or 0) + (c["dels"] or 0)]) + "\n")
     print(f"{len(m):,} merged human-owned CLs with a landed commit")
     fb = [1, 2, 5, 10, 20, 50, 100, 200, 500, 10**9]
     lab = ["1", "2-4", "5-9", "10-19", "20-49", "50-99", "100-199", "200-499", "500+"]
@@ -230,7 +257,7 @@ def dir_of(path, depth):
 
 def commit_dirs(depth=3):
     """{commit_id: (top dir by lines, frozenset of dirs)} from gfiles."""
-    db = ro(balance.db_path("git"))
+    db = git_db()
     paths = dict(db.execute("SELECT path_id, path FROM paths"))
     cache, out, cur, acc = {}, {}, None, None
 
@@ -254,7 +281,7 @@ def commit_main_dirs(depth=3):
     `depth`-level directory of commit_dirs (same weights, same choice), then
     steps down into the subdirectory with the most lines for as long as it
     outweighs the files directly in the current directory."""
-    db = ro(balance.db_path("git"))
+    db = git_db()
     paths = dict(db.execute("SELECT path_id, path FROM paths"))
     cache, out, cur, files = {}, {}, None, []
 
@@ -516,11 +543,10 @@ def pipeline(commits, first_commit, owners_added):
     and how many people become reviewers and OWNERS, by start-year cohort."""
     first = load_first(first_commit)
     owner_at = {}
-    for line in open(owners_added):
-        t, e, _ = line.split(" ", 2)
+    for t, e, _ in load_owners_added(owners_added):
         e = person(e)
         if e in first:
-            owner_at[e] = min(int(t), owner_at.get(e, int(t)))
+            owner_at[e] = min(t, owner_at.get(e, t))
     yrs = lambda a, b: (b - a) / (365.25 * 86400)
     # Reviews given per person-year, and first year with >= 60 reviews.
     given = defaultdict(Counter)
@@ -580,15 +606,14 @@ def pipeline(commits, first_commit, owners_added):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("what", choices=["trends", "mechanical", "growth", "pipeline"])
-    ap.add_argument("--owners-added")
-    ap.add_argument("--first-commit")
-    ap.add_argument("--ai-marked")
+    ap.add_argument("--owners-added", help="default: commits.sqlite")
+    ap.add_argument("--first-commit", help="default: commits.sqlite")
+    ap.add_argument("--ai-marked", help="default: commits.sqlite")
     a = ap.parse_args()
-    ai = set(open(a.ai_marked).read().split()) if a.ai_marked else set()
     if a.what == "mechanical":
         mechanical(load_cl())
     elif a.what == "trends":
-        trends(load_cl(), load_commits(), ai)
+        trends(load_cl(), load_commits(), load_ai_marked(a.ai_marked))
     elif a.what == "pipeline":
         pipeline(load_commits(), a.first_commit, a.owners_added)
     else:

@@ -336,9 +336,9 @@ def explore(first, authored, given, rows_fb):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("path", nargs="?", default="summaries/balance.json")
-    ap.add_argument("--first-commit", required=True)
-    ap.add_argument("--owners-added", required=True)
-    ap.add_argument("--mech", required=True)
+    ap.add_argument("--first-commit", help="default: commits.sqlite")
+    ap.add_argument("--owners-added", help="default: commits.sqlite")
+    ap.add_argument("--mech", help="default: commits.sqlite")
     ap.add_argument("--cache", help="pickle of the loaded data, to rerun quickly")
     ap.add_argument("--explore", action="store_true", help="print tables; don't write")
     args = ap.parse_args()

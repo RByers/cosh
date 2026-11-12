@@ -63,7 +63,7 @@ The years versions:
   2018, 2020, 2022, 2024 and 2025 for all threads. For those, the script also counts the merged, human-owned
   CLs on `main` from 2018 to June 2023 in `derived.sqlite` (about 494k),
   against the same 2023–24 norms; older CLs leave out only those with 100+
-  files (`mech.jsonl` covers 2023 on). Directory experience covers
+  files (the mechanical list covers `balance.sqlite`'s CLs). Directory experience covers
   the same years (`balance.sqlite` has CLs from July 2017 since 2026-11-12),
   so its lines start in 2018 too; addressed labels exist only from
   `addr_start`, so with those the lines start later. On 2026-11-12 the curves line up: 2.2–2.5× in the first half-year
@@ -156,7 +156,7 @@ For the person's sections below:
 
 For merged, human-owned, non-mechanical CLs on `main` (the same CLs as the
 Review Balance page's feedback index, `docs/balance.md` section 4;
-mechanical CLs from `mech.jsonl`), over whatever dates the data covers.
+mechanical CLs from `commits.sqlite`), over whatever dates the data covers.
 **Reviewer threads** are threads not started by a bot, on a file or the
 commit message. Patch-set-level threads (general comments) aren't counted:
 Gerrit has recorded them as threads only since July 2020, they can't be tied
@@ -229,8 +229,8 @@ The measures:
   landed commit changed (`cl_dirs`, weighted by lines + files), and each
   reviewer thread goes to the directory of its file (commit-message threads,
   and files outside those directories, go to the CL's main directory). Experience is the owner's earlier commits on `main` touching that
-  directory (`balance-git.sqlite` from 2017, and before then the shared
-  clone's `git log --first-parent --name-only`, `early_commits`), banded 0, 1–4, 5–19, 20–99,
+  directory (`commits.sqlite`: `gcommits` from 2017, and the older
+  history before then, `early_commits`), banded 0, 1–4, 5–19, 20–99,
   100+. Everyone's feedback is pooled per band; the "same experience" view
   divides a person's threads by the sum, over their CL-directory pieces, of
   expected threads × that band's pooled rate relative to everyone's. So 1.00×
@@ -314,14 +314,16 @@ The measures:
 Offline, about 2 minutes and 3 GB:
 
 ```
-I=<dir with first_commit.txt and mech.jsonl, as for scripts/balance_report.py>
-COSH_DATA_DIR=<main>/data/private nice -n 5 python3 scripts/review_feedback.py \
-    --first-commit $I/first_commit.txt --mech $I/mech.jsonl [--out DIR]
+COSH_DATA_DIR=<main>/data/private nice -n 5 python3 scripts/review_feedback.py [--out DIR]
 ```
 
+First commits and mechanical CLs come from `commits.sqlite`
+(`docs/commits.md`); `--first-commit F` and `--mech F` read the old
+hand-made files instead.
+
 To take in an older backfill (back to 2017-07), let it finish, then run a
-full `derive` and `python3 -m cosh.balance git|timeline|interdiff|cl`, then
-this script: nothing in it names a date.
+full `derive`, `python3 -m cosh commits` and `python3 -m cosh.balance
+timeline|interdiff|cl`, then this script: nothing in it names a date.
 
 The served site (`npm run serve`) rebuilds by itself once `public/` has been
 quiet for 5 seconds, so a run's files are served shortly after it ends
@@ -372,8 +374,7 @@ After regenerating, commit the folder with the change that needed it
 (`git add -A web/public/review-feedback/`, which also drops files the run
 removed). The browser tests serve a made-up person
 (`web/test/feedback-fixture.ts`), so they don't depend on the data. The
-script's inputs are kept in `data/private/review_feedback_inputs/` and
-aren't published.
+script's inputs (`data/private/*.sqlite`) aren't published.
 
 **Slimmed before publishing** (2026-11-12, file format v4): 197 MB → 126 MB,
 68 → 53 MB gzipped file by file. Nothing the page computes changed: every

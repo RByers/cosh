@@ -122,15 +122,13 @@
       "id": "data/private/derived.sqlite", "group": "gerrit", "path": "data/private/derived.sqlite", "kind": "sqlite", "tier": "derived",
       "tracked_in_git": false, "rebuildable": true,
       "size": "2.4 GB", "size_as_of": "2026-11-12",
-      "purpose": "Per-CL, per-comment, per-thread and per-commit facts without comment text; the input to nearly every analysis.",
+      "purpose": "Per-CL, per-comment and per-thread facts without comment text; the input to nearly every analysis.",
       "tables": [
         {"name": "changes", "rows": 1607484, "purpose": "One row per CL: branch, owner, status, times, close week, size, bot flag."},
         {"name": "comments", "rows": 3728137, "purpose": "One row per published comment by someone other than the owner on a human-owned CL: week, path, length, AI flag."},
         {"name": "threads", "rows": 3062560, "purpose": "Reviewer-started threads: size, owner's last reply, the regex verdict and the hash that keys labels."},
         {"name": "accounts", "rows": 15566, "purpose": "Gerrit accounts: e-mail, name, bot flag."},
         {"name": "committers", "rows": 6570, "purpose": "Which accounts may vote Code-Review, as of the newest listing."},
-        {"name": "commits", "rows": 1254569, "purpose": "First-parent commits on main since 2017-07-03: CL, author, week, bot flag."},
-        {"name": "commit_dirs", "rows": 3702155, "purpose": "Directories each commit touches, with file counts."},
         {"name": "meta", "rows": 6, "purpose": "Metric version, fetched weeks, when it was derived."}
       ],
       "notes": "Rebuild: rm it, then `python3 -m cosh derive`. derived.prev.sqlite (2.1 GB) beside it is a leftover of the 2026-11-12 rebuild that no code reads."
@@ -311,16 +309,20 @@
     },
 
     {
-      "id": "data/private/balance-git.sqlite", "group": "balance", "path": "data/private/balance-git.sqlite", "kind": "sqlite", "tier": "derived",
+      "id": "data/private/commits.sqlite", "group": "git", "path": "data/private/commits.sqlite", "kind": "sqlite", "tier": "derived",
       "tracked_in_git": false, "rebuildable": true,
-      "size": "786 MB", "size_as_of": "2026-11-12",
-      "purpose": "Every commit on main with the files it touched and line counts, from the shared clone.",
+      "size": "1.1 GB", "size_as_of": "2026-11-12",
+      "purpose": "Every first-parent commit of main since 2008 with its files and line counts, OWNERS additions and repetition ratios: the one store of git history that every step reads.",
       "tables": [
-        {"name": "gcommits", "rows": 1297442, "purpose": "Commits: author, time, CL, lines added and deleted."},
-        {"name": "gfiles", "rows": 10216159, "purpose": "Files per commit with line counts."},
-        {"name": "paths", "rows": 1389925, "purpose": "Path dictionary for gfiles."}
+        {"name": "commits", "rows": 1676752, "purpose": "Commits: author, times, CL, Reviewed-by, reverts, relands, Bot-Commit and AI-marker flags, files and lines. commit_id counts up from 1 at 2017-01-01 and down from -1 before."},
+        {"name": "commit_files", "rows": 13556620, "purpose": "Files per commit with line counts."},
+        {"name": "paths", "rows": 1642612, "purpose": "Path dictionary for commit_files."},
+        {"name": "owners_added", "rows": 42496, "purpose": "Each address on a line added to an OWNERS file."},
+        {"name": "repetition", "rows": 173608, "purpose": "Repetition ratio of each commit with a CL and 10 or more files (mechanical CLs)."},
+        {"name": "gcommits", "rows": 1297442, "purpose": "View: the commits since 2017-01-01 (commit_id > 0), the balance analyses' window."},
+        {"name": "gfiles", "rows": 10216159, "purpose": "View: their files."}
       ],
-      "notes": "Each balance stage file holds only its own tables (since 2026-11-12; a file built before still has empty tables of the other stages until rebuilt)."
+      "notes": "Replaces balance-git.sqlite, derived.sqlite's commits tables and the hand-made first_commit.txt, owners_added.txt, ai_marked.txt and mech.jsonl (docs/commits.md). $COSH_COMMITS_DB overrides the path."
     },
     {
       "id": "data/private/balance-timeline.sqlite", "group": "balance", "path": "data/private/balance-timeline.sqlite", "kind": "sqlite", "tier": "derived",
@@ -351,14 +353,6 @@
         {"name": "cl_attention", "rows": 1049334, "purpose": "Per CL and person: time in the attention set."},
         {"name": "cl_dirs", "rows": 2462386, "purpose": "Directories each CL touches."}
       ]
-    },
-    {
-      "id": "data/private/review_feedback_inputs/", "group": "balance", "path": "data/private/review_feedback_inputs/", "name": "report inputs", "kind": "directory", "tier": "derived",
-      "tracked_in_git": false, "rebuildable": true,
-      "size": "9.8 MB", "size_as_of": "2026-11-12",
-      "files": "first_commit.txt (each author's first commit on main) and mech.jsonl (mechanical CLs).",
-      "purpose": "The side inputs most balance and feedback scripts take as --first-commit and --mech.",
-      "notes": "Only mech.jsonl has a command. first_commit.txt, and the owners_added.txt and narrow ai_marked.txt lists that balance scripts also take, have no script and no fixed path."
     },
     {
       "id": "data/private/ai_marked_broad.txt", "group": "balance", "path": "data/private/ai_marked_broad.txt", "kind": "text", "tier": "derived",
@@ -498,7 +492,7 @@
       "duration": "about 22 min per week", "token_cost": null, "cost_source": "docs/extraction-v1.md; cosh/backfill.py",
       "refresh": "routine",
       "approval": "Every approval ends at 2026-W44: fetching a newer week needs the user's approval first.",
-      "notes": "`cosh extract --week W` fetches without deriving. The per-week derive skips the commits tables, so run a full derive afterwards."
+      "notes": "`cosh extract --week W` fetches without deriving."
     },
     {
       "id": "backfill", "group": "gerrit", "command": "python3 -m cosh backfill --weeks N --newest <week> [--jobs K --jobs-until T] --go",
@@ -540,16 +534,16 @@
     },
     {
       "id": "derive", "group": "gerrit", "command": "python3 -m cosh derive",
-      "code": ["cosh/derive.py", "cosh/commits.py", "cosh/bots.py"],
-      "purpose": "Reduces every CL's listing and NoteDb comments to facts, then rebuilds the commits tables from git.",
-      "inputs": ["data/private/raw.sqlite", "data/private/notedb/", "chromium-git", "config/bots.txt"],
+      "code": ["cosh/derive.py", "cosh/bots.py"],
+      "purpose": "Reduces every CL's listing and NoteDb comments to facts.",
+      "inputs": ["data/private/raw.sqlite", "data/private/notedb/", "config/bots.txt"],
       "outputs": ["data/private/derived.sqlite"],
       "network": false, "lock": null,
-      "incremental": "Not incremental: a full run re-reads every CL. `--week W` does one week and skips commits.",
+      "incremental": "Not incremental: a full run re-reads every CL. `--week W` does one week.",
       "duration": "under 52 min for 1.6M CLs; 11.5 min for 775k", "token_cost": null,
       "cost_source": "File times of the 2026-11-12 run (upper bound); docs/plan.md, 2026-11-05",
       "refresh": "routine",
-      "notes": "`python3 -m cosh commits` rebuilds only the commits tables (1 to 2 min). Opens raw.sqlite read-only, so it is safe beside an extractor."
+      "notes": "Opens raw.sqlite read-only, so it is safe beside an extractor. Main's commits are in commits.sqlite (step commits), not here."
     },
     {
       "id": "classify", "group": "gerrit", "command": "python3 -m cosh classify --week <week> [--dry-run]",
@@ -570,7 +564,7 @@
       "id": "summarize", "group": "gerrit", "command": "python3 -m cosh summarize",
       "code": ["cosh/summarize.py", "cosh/orgs.py", "cosh/paths.py"],
       "purpose": "Aggregates the facts and labels into the Value Exchange summaries for every fetched week.",
-      "inputs": ["data/private/derived.sqlite", "data/private/labels.sqlite", "data/private/raw.sqlite", "data/private/notedb/", "config/paths.txt", "config/affiliations.json5"],
+      "inputs": ["data/private/derived.sqlite", "data/private/commits.sqlite", "data/private/labels.sqlite", "data/private/raw.sqlite", "data/private/notedb/", "config/paths.txt", "config/affiliations.json5"],
       "outputs": ["summaries/value-exchange"],
       "network": true, "lock": null,
       "incremental": "Rewrites every file for all weeks.",
@@ -604,6 +598,18 @@
       "notes": "scripts/comment_classifier.py still carries an older copy of the prompt than cosh/classify.py."
     },
 
+    {
+      "id": "commits", "group": "git", "command": "python3 -m cosh commits",
+      "code": ["cosh/commits.py", "cosh/balance.py", "cosh/bots.py", "cosh/paths.py"],
+      "purpose": "Appends main's new commits, with their files, line counts, OWNERS additions and repetition ratios, to the commits store.",
+      "inputs": ["chromium-git"],
+      "outputs": ["data/private/commits.sqlite"],
+      "network": false, "lock": "data/private/commits.sqlite.lock",
+      "incremental": "Appends the commits landed since its last run; seconds when nothing is new.",
+      "duration": "about 1 h 50 min from empty (1.5 h of git log, then 20 min of OWNERS diffs and repetition ratios with 4 processes); seconds when nothing is new", "token_cost": null, "cost_source": "Build of 2026-11-12 (docs/commits.md)",
+      "refresh": "routine",
+      "notes": "Run it after the shared clone gains commits; nothing in cosh updates the clone. It replaces `cosh.balance git`, derive's commits tables and the hand-made balance inputs."
+    },
     {
       "id": "patchsets-fetch", "group": "git", "command": "python3 -m cosh patchsets --go --repack-gb 1000 --jobs 7",
       "code": ["cosh/patchsets.py", "scripts/patchsets_chunked_repack.sh", "scripts/patchsets_pack_coverage.sh"],
@@ -682,17 +688,6 @@
     },
 
     {
-      "id": "balance-git", "group": "balance", "command": "python3 -m cosh.balance git",
-      "code": ["cosh/balance.py"],
-      "purpose": "Reads every commit on main with its files and line counts.",
-      "inputs": ["chromium-git"],
-      "outputs": ["data/private/balance-git.sqlite"],
-      "network": false, "lock": null,
-      "incremental": "Adds commits it doesn't have.",
-      "duration": "about 1.5 h from empty", "token_cost": null, "cost_source": "docs/balance.md",
-      "refresh": "routine"
-    },
-    {
       "id": "balance-timeline", "group": "balance", "command": "python3 -m cosh.balance timeline",
       "code": ["cosh/balance.py"],
       "purpose": "Reads each CL's uploads, attention-set changes and Code-Review votes from NoteDb.",
@@ -718,24 +713,12 @@
       "id": "balance-cl", "group": "balance", "command": "python3 -m cosh.balance cl",
       "code": ["cosh/balance.py"],
       "purpose": "Joins the stages into one row per CL.",
-      "inputs": ["data/private/derived.sqlite", "data/private/labels.sqlite", "data/private/balance-git.sqlite", "data/private/balance-timeline.sqlite", "data/private/balance-interdiff.sqlite"],
+      "inputs": ["data/private/derived.sqlite", "data/private/labels.sqlite", "data/private/commits.sqlite", "data/private/balance-timeline.sqlite", "data/private/balance-interdiff.sqlite"],
       "outputs": ["data/private/balance.sqlite"],
       "network": false, "lock": null,
       "incremental": "Rebuilds the whole table.",
       "duration": "about 2 min for 1.14M CLs", "token_cost": null, "cost_source": "data/private/balance-rebuild-20261112.log",
       "refresh": "routine"
-    },
-    {
-      "id": "report-inputs", "group": "balance", "command": "BALANCE_MECH_OUT=data/private/review_feedback_inputs/mech.jsonl python3 scripts/balance_analysis.py mechanical",
-      "code": ["scripts/balance_analysis.py"],
-      "purpose": "Writes the list of mechanical CLs; the first-commit list beside it is made by hand from git log.",
-      "inputs": ["data/private/balance.sqlite", "chromium-git"],
-      "outputs": ["data/private/review_feedback_inputs/"],
-      "network": false, "lock": null,
-      "incremental": "Rewrites mech.jsonl.",
-      "duration": null, "token_cost": null, "cost_source": "No timing recorded",
-      "refresh": "routine",
-      "notes": "mech.jsonl is written only when the BALANCE_MECH_OUT variable is set. No script writes first_commit.txt, owners_added.txt or the narrow ai_marked.txt."
     },
     {
       "id": "ai-markers", "group": "balance", "command": "python3 scripts/balance_ai.py markers",
@@ -761,10 +744,10 @@
       "approval": "Costs Max usage."
     },
     {
-      "id": "balance-report", "group": "balance", "command": "python3 scripts/balance_report.py --first-commit F --owners-added O --ai-marked A --mech M --out report.json",
+      "id": "balance-report", "group": "balance", "command": "python3 scripts/balance_report.py --out report.json",
       "code": ["scripts/balance_report.py", "scripts/balance_analysis.py"],
       "purpose": "Computes the page's core tables; its sections and the directory table are then copied into the summaries by hand.",
-      "inputs": ["data/private/balance.sqlite", "data/private/balance-git.sqlite", "data/private/balance-timeline.sqlite", "data/private/derived.sqlite", "data/private/labels.sqlite", "data/private/review_feedback_inputs/"],
+      "inputs": ["data/private/balance.sqlite", "data/private/commits.sqlite", "data/private/balance-timeline.sqlite", "data/private/derived.sqlite", "data/private/labels.sqlite"],
       "outputs": ["summaries/balance.json", "summaries/balance_dirs.json"],
       "network": false, "lock": null,
       "incremental": "Recomputes everything; the copy into the summaries is manual.",
@@ -773,10 +756,10 @@
       "notes": "Its window is hard-coded to end 2026-10, as in every balance page script: new weeks need the constants edited."
     },
     {
-      "id": "balance-datasets", "group": "balance", "command": "python3 scripts/balance_<name>.py --first-commit F --owners-added O --mech M [summaries/balance.json]",
+      "id": "balance-datasets", "group": "balance", "command": "python3 scripts/balance_<name>.py [summaries/balance.json]",
       "code": ["scripts/balance_narrative.py", "scripts/balance_dirgrowth.py", "scripts/balance_growth.py", "scripts/balance_growth_tables.py", "scripts/balance_histograms.py", "scripts/balance_definitions.py", "scripts/balance_behind.py", "scripts/balance_review_share.py", "scripts/balance_learning.py", "scripts/balance_feedback_predicts.py", "scripts/balance_addressed_value.py"],
       "purpose": "Eleven scripts that each compute a few of the page's datasets and merge them into balance.json.",
-      "inputs": ["data/private/balance.sqlite", "data/private/balance-git.sqlite", "data/private/derived.sqlite", "data/private/labels.sqlite", "data/private/review_feedback_inputs/", "data/private/ai_marked_broad.txt", "data/private/ai_predict/", "data/private/review_roi/", "config/affiliations.json5"],
+      "inputs": ["data/private/balance.sqlite", "data/private/commits.sqlite", "data/private/derived.sqlite", "data/private/labels.sqlite", "data/private/ai_marked_broad.txt", "data/private/ai_predict/", "data/private/review_roi/", "config/affiliations.json5"],
       "outputs": ["summaries/balance.json"],
       "network": false, "lock": null,
       "incremental": "Each reads the file, replaces its own datasets and writes it back; nothing runs them in order.",
@@ -788,7 +771,7 @@
       "id": "balance-extras", "group": "balance", "command": "python3 scripts/balance_signals.py report ... --out data/private/balance_signals.json; python3 scripts/balance_clusters.py ...; python3 scripts/balance_cluster_map.py; python3 scripts/balance_page_extras.py",
       "code": ["scripts/balance_signals.py", "scripts/balance_clusters.py", "scripts/balance_cluster_map.py", "scripts/balance_page_extras.py"],
       "purpose": "Computes the review-quality signals and contributor clusters, then merges them and the security-fix totals into balance.json.",
-      "inputs": ["data/private/balance.sqlite", "data/private/balance-git.sqlite", "data/private/balance-timeline.sqlite", "data/private/derived.sqlite", "data/private/review_feedback_inputs/", "data/private/chrome_releases/", "chromium-git"],
+      "inputs": ["data/private/balance.sqlite", "data/private/commits.sqlite", "data/private/balance-timeline.sqlite", "data/private/derived.sqlite", "data/private/chrome_releases/", "chromium-git"],
       "outputs": ["data/private/balance_signals.json", "data/private/balance_clusters/", "summaries/balance.json"],
       "network": false, "lock": null,
       "incremental": "Each script recomputes its own output.",
@@ -796,10 +779,10 @@
       "refresh": "optional"
     },
     {
-      "id": "balance-authors", "group": "balance", "command": "python3 scripts/balance_authors.py --first-commit F --owners-added O --mech M",
+      "id": "balance-authors", "group": "balance", "command": "python3 scripts/balance_authors.py",
       "code": ["scripts/balance_authors.py"],
       "purpose": "Writes the author-level distributions.",
-      "inputs": ["data/private/balance.sqlite", "data/private/balance-git.sqlite", "data/private/derived.sqlite", "data/private/review_feedback_inputs/"],
+      "inputs": ["data/private/balance.sqlite", "data/private/commits.sqlite", "data/private/derived.sqlite"],
       "outputs": ["summaries/balance_authors.json"],
       "network": false, "lock": null,
       "incremental": "Rewrites the file.",
@@ -821,7 +804,7 @@
       "id": "balance-analysis", "group": "balance", "command": "python3 scripts/balance_analysis.py trends|growth|pipeline; scripts/balance_ai.py paired|did|footers; scripts/balance_person.py; scripts/balance_exemplars.py; scripts/balance_explore.py",
       "code": ["scripts/balance_analysis.py", "scripts/balance_ai.py", "scripts/balance_ai_predict.py", "scripts/balance_person.py", "scripts/balance_exemplars.py", "scripts/balance_explore.py"],
       "purpose": "Exploratory analyses behind the balance docs: trends, AI effects, per-person career reports.",
-      "inputs": ["data/private/balance.sqlite", "data/private/balance-git.sqlite", "data/private/balance-timeline.sqlite", "data/private/derived.sqlite", "data/private/labels.sqlite", "data/private/ai_marked_broad.txt", "data/private/ai_predict/", "data/private/git/chromium-src.git/", "chromium-git", "claude-model"],
+      "inputs": ["data/private/balance.sqlite", "data/private/commits.sqlite", "data/private/balance-timeline.sqlite", "data/private/derived.sqlite", "data/private/labels.sqlite", "data/private/ai_marked_broad.txt", "data/private/ai_predict/", "data/private/git/chromium-src.git/", "chromium-git", "claude-model"],
       "outputs": ["data/private/balance_people/"],
       "network": true, "lock": null,
       "duration": "3 to 5 min and several GB of memory each", "token_cost": "small Haiku pilots, about $0.06 per 1,000 CLs",
@@ -831,23 +814,23 @@
     },
 
     {
-      "id": "review-feedback", "group": "feedback", "command": "nice -n 5 python3 scripts/review_feedback.py --first-commit data/private/review_feedback_inputs/first_commit.txt --mech data/private/review_feedback_inputs/mech.jsonl",
+      "id": "review-feedback", "group": "feedback", "command": "nice -n 5 python3 scripts/review_feedback.py",
       "code": ["scripts/review_feedback.py"],
       "purpose": "Writes each person's review feedback against their peers, as files named by a hash of their address.",
-      "inputs": ["data/private/balance.sqlite", "data/private/balance-git.sqlite", "data/private/derived.sqlite", "data/private/labels.sqlite", "data/private/sentiment.sqlite", "data/private/sentiment/", "data/private/review_feedback_inputs/", "config/bots.txt", "config/affiliations.json5", "chromium-git"],
+      "inputs": ["data/private/balance.sqlite", "data/private/commits.sqlite", "data/private/derived.sqlite", "data/private/labels.sqlite", "data/private/sentiment.sqlite", "data/private/sentiment/", "config/bots.txt", "config/affiliations.json5"],
       "outputs": ["web/public/review-feedback/"],
       "network": true, "lock": null,
       "incremental": "Deletes and rewrites every file.",
       "duration": "about 2 min, 3 GB of memory", "token_cost": null, "cost_source": "docs/review-feedback.md",
       "refresh": "routine",
       "approval": "Tone is praise only. The output stays out of git until the page is published.",
-      "notes": "It reads main's commits before 2017 (where balance-git.sqlite starts) from the shared clone, so earlier commits count from 2008. It runs update-affiliations first by itself (its only network use). `npm run serve` picks the new files up by itself a few seconds after the run ends."
+      "notes": "Earlier commits count from 2008: commits.sqlite holds main's whole history. It runs update-affiliations first by itself (its only network use). `npm run serve` picks the new files up by itself a few seconds after the run ends."
     },
     {
       "id": "feedback-coach", "group": "feedback", "command": "python3 scripts/feedback_coach.py <email> [--dry-run]",
       "code": ["scripts/feedback_coach.py", "cosh/sandbox.py"],
       "purpose": "Has sandboxed Opus write a private coaching report from one person's recent review threads.",
-      "inputs": ["data/private/derived.sqlite", "data/private/labels.sqlite", "data/private/notedb/", "claude-model"],
+      "inputs": ["data/private/derived.sqlite", "data/private/commits.sqlite", "data/private/labels.sqlite", "data/private/notedb/", "claude-model"],
       "outputs": ["data/private/feedback-coach/"],
       "network": true, "lock": null,
       "incremental": "`--reuse` rebuilds the report from the saved reply without a new call.",
@@ -859,7 +842,7 @@
       "id": "roi-analysis", "group": "feedback", "command": "python3 scripts/review_roi_table.py ...; review_roi_part1.py; review_roi_part2.py; review_roi_blame.py; review_roi_reverts.py; review_roi_substance.py",
       "code": ["scripts/review_roi_table.py", "scripts/review_roi_part1.py", "scripts/review_roi_part1_followup.py", "scripts/review_roi_part2.py", "scripts/review_roi_blame.py", "scripts/review_roi_reverts.py", "scripts/review_roi_substance.py"],
       "purpose": "The review-ROI studies: whether review feedback predicts later reverts, bug-fixing commits and security bugs.",
-      "inputs": ["data/private/balance.sqlite", "data/private/balance-git.sqlite", "data/private/balance-timeline.sqlite", "data/private/derived.sqlite", "data/private/labels.sqlite", "data/private/bugs/bugs.sqlite", "data/private/review_feedback_inputs/", "data/private/notedb/", "chromium-git", "claude-model"],
+      "inputs": ["data/private/balance.sqlite", "data/private/commits.sqlite", "data/private/balance-timeline.sqlite", "data/private/derived.sqlite", "data/private/labels.sqlite", "data/private/bugs/bugs.sqlite", "data/private/notedb/", "chromium-git", "claude-model"],
       "outputs": ["data/private/review_roi/"],
       "network": true, "lock": null,
       "duration": "about 1 h; the full blame runs were estimated at 10 to 16 CPU hours", "token_cost": "Haiku pilots only: 274 tokens per thread, 200 threads",

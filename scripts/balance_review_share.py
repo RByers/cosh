@@ -86,9 +86,9 @@ def load(args):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("path", nargs="?", default="summaries/balance.json")
-    ap.add_argument("--first-commit", required=True)
-    ap.add_argument("--owners-added", required=True)
-    ap.add_argument("--ai-marked")
+    ap.add_argument("--first-commit", help="default: commits.sqlite")
+    ap.add_argument("--owners-added", help="default: commits.sqlite")
+    ap.add_argument("--ai-marked", help="default: commits.sqlite")
     args = ap.parse_args()
     data = json.load(open(args.path))
     new = datasets(load(args))

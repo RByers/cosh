@@ -16,7 +16,7 @@ person.
       --first-commit F --owners-added F --mech mech.jsonl [--explore] [summaries/balance.json]
 
 Only authors whose first commit is on or after 2017-01-01 are used, since
-balance-git.sqlite starts then and earlier commits can't be counted. CLs are
+gcommits starts then and earlier commits are not counted here. CLs are
 merged and non-mechanical, closed 2023Q3 .. 2024Q4 (the pre-AI baseline the
 page's other era charts use) unless --era says otherwise.
 """
@@ -223,9 +223,9 @@ def explore(rs, grp):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("path", nargs="?", default="summaries/balance.json")
-    ap.add_argument("--first-commit", required=True)
-    ap.add_argument("--owners-added", required=True)
-    ap.add_argument("--mech", required=True)
+    ap.add_argument("--first-commit", help="default: commits.sqlite")
+    ap.add_argument("--owners-added", help="default: commits.sqlite")
+    ap.add_argument("--mech", help="default: commits.sqlite")
     ap.add_argument("--era", choices=sorted(ERAS), default="then")
     ap.add_argument("--explore", action="store_true", help="print tables; don't write")
     args = ap.parse_args()

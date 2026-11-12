@@ -1,22 +1,26 @@
 """Author/reviewer balance data (docs/balance.md), in data/private/balance.sqlite.
 
-Offline only: reads the local git clones, the NoteDb meta refs and
-derived.sqlite, and fetches nothing. Every git command runs with
-GIT_NO_LAZY_FETCH=1. balance.sqlite is rebuildable: delete it and rerun.
+Offline only: reads commits.sqlite (main's history, cosh/commits.py), the
+patch-set git repo, the NoteDb meta refs and derived.sqlite, and fetches
+nothing. Every git command runs with GIT_NO_LAZY_FETCH=1. balance.sqlite is
+rebuildable: delete it and rerun.
 
-Stages (each resumable; git, timeline and interdiff may run at once, but
+Stages (each resumable; timeline and interdiff may run at once, but
 interdiff needs timeline's uploads; each writes data/private/balance-<stage>.sqlite):
-  git        first-parent history of chromium/src main since 2017-01-01: author,
-             dates, CL number, Reviewed-by footers, reverts, per-file line counts
   timeline   per CL from NoteDb: uploads (kind, time, uploader), attention-set
              intervals per account and Code-Review votes; rereads a CL whose
              meta ref moved
   interdiff  per reviewed CL: how much its diff changed between the first
              reviewed patch set and the final one, comparing diffs, not files,
              so rebases don't count
-  cl         one row per CL joining all of the above with review threads
+  cl         one row per CL joining all of the above with review threads and
+             the landed commits (commits.sqlite's gcommits and gfiles: main
+             since 2017-01-01)
 
-  python3 -m cosh.balance git|timeline|interdiff|cl [--db PATH]
+  python3 -m cosh.balance timeline|interdiff|cl [--db PATH]
+
+db_path("git") is commits.sqlite, whose gcommits, gfiles and paths the
+scripts read as they read the former balance-git.sqlite.
 """
 
 import argparse
@@ -25,7 +29,6 @@ import os
 import re
 import sqlite3
 import subprocess
-import sys
 import time
 from datetime import datetime, timezone
 
@@ -35,39 +38,10 @@ SHARED = os.path.expanduser("~/projects/shared/chromium")
 PATCHSETS = os.path.join(store.DATA_DIR, "git", "chromium-patchsets.git")
 NOTEDB = os.path.join(store.DATA_DIR, "notedb", "chromium_src.git")
 ENV = {**os.environ, "GIT_NO_LAZY_FETCH": "1"}
-SINCE = "2017-01-01"
+SINCE = "2017-01-01"     # gcommits (commits.sqlite) starts here
 
 # Each stage's file holds only its own tables; `cl` makes its own (CL_SCHEMA).
 SCHEMA = {}
-SCHEMA["git"] = """
-CREATE TABLE IF NOT EXISTS paths (path_id INTEGER PRIMARY KEY, path TEXT NOT NULL UNIQUE) STRICT;
--- First-parent commits of main since SINCE.
-CREATE TABLE IF NOT EXISTS gcommits (
-  commit_id     INTEGER PRIMARY KEY,
-  sha           TEXT    NOT NULL UNIQUE,
-  author_email  TEXT    NOT NULL,       -- lowercased
-  authored_at   INTEGER NOT NULL,       -- unix seconds
-  landed_at     INTEGER NOT NULL,
-  change_number INTEGER,                -- chromium/src Reviewed-on; NULL if none
-  is_bot        INTEGER NOT NULL,       -- Bot-Commit footer
-  reviewed_by   TEXT,                   -- JSON list of lowercased emails, NULL if none
-  reverts_sha   TEXT,                   -- "This reverts commit <sha>"
-  is_reland     INTEGER NOT NULL,
-  files         INTEGER NOT NULL,
-  ins           INTEGER NOT NULL,       -- text lines (binary files count 0)
-  dels          INTEGER NOT NULL
-) STRICT;
-CREATE INDEX IF NOT EXISTS gcommits_cl ON gcommits(change_number);
-CREATE INDEX IF NOT EXISTS gcommits_author ON gcommits(author_email, landed_at);
-CREATE TABLE IF NOT EXISTS gfiles (
-  commit_id INTEGER NOT NULL,
-  path_id   INTEGER NOT NULL,
-  ins       INTEGER NOT NULL,           -- -1 for binary
-  dels      INTEGER NOT NULL,
-  PRIMARY KEY (commit_id, path_id)
-) STRICT, WITHOUT ROWID;
-"""
-
 SCHEMA["timeline"] = """
 -- Per CL, from its NoteDb meta ref.
 CREATE TABLE IF NOT EXISTS uploads (
@@ -122,9 +96,13 @@ def db_path(stage):
     """Each stage writes its own file, so stages can run at the same time;
     `cl` reads them all and writes balance.sqlite. COSH_BALANCE_<STAGE>
     (e.g. COSH_BALANCE_TIMELINE) points one stage at another file, for
-    writers and readers alike."""
+    writers and readers alike. "git" is commits.sqlite (cosh/commits.py,
+    $COSH_COMMITS_DB)."""
     if os.environ.get(f"COSH_BALANCE_{stage.upper()}"):
         return os.environ[f"COSH_BALANCE_{stage.upper()}"]
+    if stage == "git":
+        from . import commits
+        return commits.db_path()
     return os.path.join(store.DATA_DIR, "balance.sqlite" if stage == "cl" else f"balance-{stage}.sqlite")
 
 
@@ -144,87 +122,6 @@ def connect(path, stage):
 def git_popen(git_dir, *args, stdin=None):
     return subprocess.Popen(["git", "--git-dir", git_dir, *args], stdout=subprocess.PIPE,
                             stdin=subprocess.PIPE if stdin else None, env=ENV)
-
-
-# ---------------------------------------------------------------- git stage
-
-REVIEWED_ON = re.compile(r"chromium-review\.googlesource\.com/(?:c/)?(?:chromium/src/\+/)?(\d+)$")
-REVERTS = re.compile(rb"^This reverts commit ([0-9a-f]{40})", re.M)
-EMAIL = re.compile(r"<([^>]+)>")
-SEP = "\x1e"
-
-
-def stage_git(db, since=SINCE):
-    """Read `git log --first-parent --numstat` of main since `since` (or since
-    the newest commit already stored) in one process."""
-    last = db.execute("SELECT max(landed_at) FROM gcommits").fetchone()[0]
-    after = datetime.fromtimestamp(last, timezone.utc).isoformat() if last else since
-    fmt = SEP.join(["%x01%x02%x03%H", "%ae", "%at", "%ct", "%s",
-                    "%(trailers:key=Reviewed-on,valueonly,separator=%x1f)",
-                    "%(trailers:key=Reviewed-by,valueonly,separator=%x1f)",
-                    "%(trailers:key=Bot-Commit,valueonly,separator=%x1f)", "%b%x02"])
-    p = git_popen(SHARED, "log", "--first-parent", "--reverse", f"--since={after}", "--no-renames",
-                  "--numstat", f"--format={fmt}", "main")
-    paths = dict(db.execute("SELECT path, path_id FROM paths"))
-    known = {r[0] for r in db.execute("SELECT sha FROM gcommits WHERE landed_at >= ?", (last or 0,))}
-    buf, n, t0 = b"", 0, time.time()
-
-    def flush(rec):
-        nonlocal n
-        head, _, stat = rec.partition(b"\x02")
-        parts = head.decode("utf-8", "replace").split(SEP)
-        if len(parts) < 9 or not re.fullmatch(r"[0-9a-f]{40}", parts[0]):
-            print(f"git: skipped a malformed record: {head[:60]!r}", flush=True)
-            return
-        sha, email, at, ct, subj, ron, rby, bot, body = parts[:9]
-        if sha in known:
-            return
-        m = REVIEWED_ON.search(ron.split("\x1f")[0].strip()) if ron else None
-        rb = [e.lower() for v in rby.split("\x1f") if v for e in EMAIL.findall(v)]
-        rv = REVERTS.search(body.encode())
-        files, ins, dels = [], 0, 0
-        for line in stat.decode("utf-8", "replace").splitlines():
-            if not line.strip():
-                continue
-            f = line.split("\t", 2)
-            if len(f) != 3 or not (f[0].isdigit() or f[0] == "-"):
-                continue
-            a, d, path = f
-            a, d = (-1, -1) if a == "-" else (int(a), int(d))
-            pid = paths.get(path)
-            if pid is None:
-                pid = paths[path] = db.execute("INSERT INTO paths(path) VALUES (?)", (path,)).lastrowid
-            files.append((pid, a, d))
-            ins += max(a, 0)
-            dels += max(d, 0)
-        cid = db.execute("INSERT INTO gcommits(sha, author_email, authored_at, landed_at, change_number, "
-                         "is_bot, reviewed_by, reverts_sha, is_reland, files, ins, dels) "
-                         "VALUES (?,?,?,?,?,?,?,?,?,?,?,?)",
-                         (sha, email.lower(), int(at), int(ct), int(m.group(1)) if m else None,
-                          int(bool(bot.strip())), json.dumps(rb) if rb else None,
-                          rv.group(1).decode() if rv else None,
-                          int(subj.lower().startswith("reland")), len(files), ins, dels)).lastrowid
-        db.executemany("INSERT OR IGNORE INTO gfiles VALUES (?,?,?,?)", [(cid, *f) for f in files])
-        n += 1
-        if n % 5000 == 0:
-            db.commit()
-            print(f"git: {n:,} commits, {datetime.fromtimestamp(int(ct), timezone.utc):%Y-%m-%d}, "
-                  f"{n / (time.time() - t0):.0f}/s", flush=True)
-
-    for chunk in iter(lambda: p.stdout.read(1 << 20), b""):
-        buf += chunk
-        recs = buf.split(b"\x01\x02\x03")
-        buf = recs.pop()
-        for rec in recs:
-            if rec.strip():
-                flush(rec)
-    if buf.strip():
-        flush(buf)
-    rc = p.wait()
-    db.commit()
-    if rc:
-        raise SystemExit(f"git log exited {rc}; rerun to resume")
-    print(f"git: done, {n:,} new commits")
 
 
 # ----------------------------------------------------------- timeline stage
@@ -730,16 +627,13 @@ def stage_cl(db):
 
 def main(argv=None):
     ap = argparse.ArgumentParser(prog="cosh.balance")
-    ap.add_argument("stage", choices=["git", "timeline", "interdiff", "cl"])
+    ap.add_argument("stage", choices=["timeline", "interdiff", "cl"])
     ap.add_argument("--db")
-    ap.add_argument("--since", default=SINCE)
     ap.add_argument("--shard", default="0/1", help="interdiff: i/k, the CLs with number %% k == i")
     ap.add_argument("--week", help="timeline: only CLs closed in this ISO week (for tests)")
     args = ap.parse_args(argv)
     db = connect(args.db or db_path(args.stage), args.stage)
-    if args.stage == "git":
-        stage_git(db, args.since)
-    elif args.stage == "timeline":
+    if args.stage == "timeline":
         nums = None
         if args.week:
             d = sqlite3.connect(f"file:{os.path.join(store.DATA_DIR, store.DERIVED_FILE)}?mode=ro", uri=True)

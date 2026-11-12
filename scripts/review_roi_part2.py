@@ -23,19 +23,19 @@ docs/review-roi-part2.md.
 Unit CL: merged, human-owned (not a Bot-Commit, owner not a bot), not
 mechanical, not a revert or reland, landed on main 2023-07-01 .. 2026-09-30.
 
-Offline. Reads balance.sqlite, balance-git.sqlite and derived.sqlite
+Offline. Reads balance.sqlite, commits.sqlite and derived.sqlite
 (threads' root accounts only, never comment text) read-only. Prints and
 writes aggregates only; nothing per person or per CL is written.
 
   export COSH_DATA_DIR=/home/rbagent/projects/cosh/data/private
-  I=data/private/review_feedback_inputs
   S=data/private/scratch/review_roi/part2
-  nice -n 5 python3 scripts/review_roi_part2.py --first-commit $I/first_commit.txt \\
-      --mech $I/mech.jsonl --out $S/part2_panels.json [--cache $S/part2_cache.pkl]
+  nice -n 5 python3 scripts/review_roi_part2.py --out $S/part2_panels.json [--cache $S/part2_cache.pkl] \\
+      [--first-commit F] [--mech F]
 
-Without --first-commit, tenure starts at the first commit since 2017 in
-balance-git.sqlite; without --mech, a CL with 50 or more files counts as
-mechanical (the provisional rule). The output records which rules ran.
+Tenure starts at the first commit over all of main's history and
+mechanical CLs come from the repetition ratios, both in commits.sqlite; the
+flags read the old hand-made files instead. The output records which rules
+ran.
 About 15 s to load (a warm --cache skips it), then about 15 s; both scripts call os.nice(5).
 """
 
@@ -92,14 +92,13 @@ def load(args):
     bdb = A.ro(balance.db_path("cl"))
     gdb = A.ro(balance.db_path("git"))
     # Commits: author, landed time, approvers, flags.
-    g_by_sha, first_git, n_email = {}, {}, {}
+    g_by_sha, n_email = {}, {}
     for sha, email, at, n, bot, rb, rv, rl, files in gdb.execute(
             "SELECT sha, author_email, landed_at, change_number, is_bot, reviewed_by, reverts_sha, is_reland, files "
             "FROM gcommits"):
         human = not bot and not A.is_bot_email(email)
         if human:
             e = A.person(email)
-            first_git[e] = min(at, first_git.get(e, at))
             if n:
                 n_email[n] = e
         if at >= START - 400 * DAY:
@@ -123,28 +122,14 @@ def load(args):
         for a, k in cnt.items():
             if a != b and k >= 3 and k / tot >= 0.5:
                 ids.union(a, b)
-    if args.first_commit and os.path.exists(args.first_commit):
-        first = {}
-        for e, t in A.load_first(args.first_commit).items():
-            k = ids.find(e)
-            first[k] = min(t, first.get(k, t))
-        tenure_rule = "first_commit.txt (all history)"
-    else:
-        first = {}
-        for e, t in first_git.items():
-            k = ids.find(e)
-            first[k] = min(t, first.get(k, t))
-        tenure_rule = "first commit since 2017 in balance-git.sqlite (provisional)"
-    if args.mech and os.path.exists(args.mech):
-        mech = set()
-        for line in open(args.mech):
-            n, files, threads, rep, lines = json.loads(line)
-            if files >= 100 or (rep is not None and rep >= 0.8):
-                mech.add(n)
-        mech_rule = "mech.jsonl: >= 100 files, or >= 10 files with repetition >= 0.8"
-    else:
-        mech = None
-        mech_rule = "provisional: >= 50 files"
+    first = {}
+    for e, t in A.load_first(args.first_commit).items():
+        k = ids.find(e)
+        first[k] = min(t, first.get(k, t))
+    tenure_rule = f"{'first_commit.txt' if args.first_commit else 'commits.sqlite'} (all history)"
+    mech = A.mech_set(args.mech)
+    mech_rule = (">= 100 files, or >= 10 files with repetition >= 0.8 "
+                 f"({'mech.jsonl' if args.mech else 'commits.sqlite'})")
     print(f"  CLs loaded {time.time() - t0:.0f}s", file=sys.stderr, flush=True)
     units, other = [], {}
     for (n, owner, oe, status, closed, ins, dels, sha, files, isrev, isrel, rvat, thr, addr, fr, sent,
@@ -160,7 +145,7 @@ def load(args):
         other[n] = (pid, landed)                       # for threads given (H2c)
         if not (START <= landed < END):
             continue
-        if (mech is not None and n in mech) or (mech is None and (files or 0) >= 50):
+        if n in mech:
             continue
         lines = (ins or 0) + (dels or 0)
         units.append(dict(
@@ -553,22 +538,21 @@ def show(res):
 def main():
     os.nice(5)              # same as `nice -n 5`: blame and the loads yield to interactive work
     ap = argparse.ArgumentParser()
-    ap.add_argument("--first-commit")
-    ap.add_argument("--mech")
+    ap.add_argument("--first-commit", help="default: commits.sqlite")
+    ap.add_argument("--mech", help="default: commits.sqlite")
     ap.add_argument("--cache")
     ap.add_argument("--out")
     args = ap.parse_args()
     t0 = time.time()
     if args.cache and os.path.exists(args.cache):
         L = pickle.load(open(args.cache, "rb"))
-        if L.get("args") != (args.first_commit and os.path.exists(args.first_commit),
-                             args.mech and os.path.exists(args.mech)):
+        if L.get("args") != (args.first_commit, args.mech):
             L = None
     else:
         L = None
     if L is None:
         L = load(args)
-        L["args"] = (args.first_commit and os.path.exists(args.first_commit), args.mech and os.path.exists(args.mech))
+        L["args"] = (args.first_commit, args.mech)
         if args.cache:
             pickle.dump(L, open(args.cache, "wb"))
     units = L["units"]

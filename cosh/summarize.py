@@ -15,7 +15,7 @@ Three metrics, all from those comments:
 Reviewers in a week: accounts credited with any of these that week.
 
 The author side has one metric, commits (docs/commits.md): human first-parent
-commits on main (cosh/commits.py) that touch an in-scope file, in the ISO
+commits on main (commits.sqlite, cosh/commits.py) that touch an in-scope file, in the ISO
 week each landed, credited to the git author's org as of that day. authors:
 distinct git author emails among them. Reviewer and author rows share
 reviewer_weekly.json, keyed by Gerrit account (the git author's email, else
@@ -71,7 +71,8 @@ import os
 import sqlite3
 from collections import defaultdict
 
-from . import store
+from . import commits as commit_store, store
+from .extract import iso_week_of
 from .derive import METRIC_VERSION
 from .orgs import OrgResolver
 from .paths import DIR_LIMIT, ROOT_FILES, UNPLACED, anchor, dir_tree, directory, load_scope, place
@@ -268,8 +269,9 @@ def comment_facts(db, resolve, scope, weeks=None, own=None):
     return list(facts.values()), areas
 
 
-def commit_facts(db, resolve, scope, facts, areas, weeks=None):
-    """Adds the commits on main (cosh/commits.py) to comment_facts' results.
+def commit_facts(db, resolve, scope, facts, areas, weeks=None, commits_path=None):
+    """Adds the commits on main (commits.sqlite, cosh/commits.py) to
+    comment_facts' results.
 
     Human commits only, each in the ISO week it landed, credited to its git
     author's org as of that day. A commit counts in scope (`facts`) if any
@@ -278,8 +280,13 @@ def commit_facts(db, resolve, scope, facts, areas, weeks=None):
     with the git author's email, else the CL owner's; a commit with neither
     still counts for its org but for no person. Facts and areas are updated
     in place; returns per-(week, folded org) {"commits": n, "authors": set}
-    over in-scope commits, authors being emails."""
+    over in-scope commits, authors being emails. Without commits.sqlite
+    there are no commits."""
     keep = (lambda w: True) if weeks is None else weeks.__contains__
+    out = defaultdict(lambda: dict(commits=0, authors=set()))
+    cdb = commit_store.open_ro(commits_path)
+    if cdb is None:
+        return out
     by_email = {}
     names = {}
     for aid, email, name, bot in db.execute(
@@ -289,15 +296,13 @@ def commit_facts(db, resolve, scope, facts, areas, weeks=None):
             by_email.setdefault(email.lower(), aid)
     owner = dict(db.execute("SELECT change_number, owner_account FROM changes WHERE branch = 'main'"))
     index = {(f["week"], f["account_id"], f["org"]): f for f in facts}
-    dirs_of = defaultdict(list)
-    for cid, d in db.execute("""SELECT d.commit_id, d.dir FROM commit_dirs d
-                                JOIN commits c ON c.commit_id = d.commit_id WHERE c.is_bot = 0"""):
-        dirs_of[cid].append(d)
+    rows, lo = commit_store.value_commits(cdb, db)
+    rows = [r for r in rows if not r[4]]
+    dirs_of = {cid: sorted(c) for cid, c in commit_store.dirs_of(cdb, lo, [r[0] for r in rows]).items()}
+    cdb.close()
     included = {}
-    out = defaultdict(lambda: dict(commits=0, authors=set()))
-    for cid, cl, email, week, day, n_files in db.execute(
-            "SELECT commit_id, change_number, author_email, iso_week, substr(landed_at, 1, 10), n_files "
-            "FROM commits WHERE is_bot = 0"):
+    for cid, cl, email, landed, _, n_files in rows:
+        week, day = iso_week_of(landed), landed[:10]
         if not keep(week):
             continue
         org = resolve(email, day)
@@ -433,7 +438,7 @@ def summarize(data_dir=store.DATA_DIR, out_dir=os.path.join(ROOT, "summaries"), 
     classifier = load_labels(db, data_dir)
     own = reviewer_anchors(db)
     facts, areas = comment_facts(db, resolve, scope, weeks, own)
-    commits = commit_facts(db, resolve, scope, facts, areas, weeks)
+    commits = commit_facts(db, resolve, scope, facts, areas, weeks, commit_store.db_path(data_dir))
     threads, thread_picks = thread_breakdown(db, scope, own, weeks)
 
     folded = defaultdict(lambda: dict(reviewers=set(), cls=set(), comments=0, chars=0, ai=0,

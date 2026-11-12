@@ -111,9 +111,7 @@ averaged and are never written out.
 cd ~/projects/cosh   # or a worktree; data comes from the main checkout
 export COSH_DATA_DIR=/home/rbagent/projects/cosh/data/private
 nice -n 5 python3 -m cosh.balance timeline              # votes, uploads, attention (below)
-nice -n 5 python3 scripts/balance_signals.py report \
-    --first-commit first_commit.txt --owners-added owners_added.txt \
-    --ai-marked ai_marked.txt --mech mech.jsonl --out signals.json   # ~4 min
+nice -n 5 python3 scripts/balance_signals.py report --out signals.json   # ~4 min
 ```
 
 The `timeline` stage reads every CL with a NoteDb meta ref (716k of the
@@ -126,8 +124,9 @@ reads ran at 14–34 CLs/s; `cosh notedb-maintain` fixes that, and
 `COSH_BALANCE_TIMELINE=<path>` points the stage and its readers at another
 file, for a scratch run.
 
-The four input files are the same ones `scripts/balance_report.py` takes
-(see `docs/balance.md`, "Data and how it's built"). Tests:
+Its inputs (first commits, OWNERS additions, AI markers, mechanical CLs)
+come from `commits.sqlite`, as for `scripts/balance_report.py` (see
+`docs/balance.md`, "Data and how it's built"). Tests:
 `python3 -m unittest tests.test_balance tests.test_balance_signals` (the
 vote parser and the timeline stage are in `tests.test_balance`).
 

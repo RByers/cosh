@@ -699,12 +699,11 @@ def main():
         rerender(sys.argv[2] if len(sys.argv) > 2 else os.path.join(store.DATA_DIR, "balance_people"))
         return
     ap = argparse.ArgumentParser()
-    S = os.environ.get("BALANCE_SCRATCH", ".")
-    ap.add_argument("--first-commit", default=os.path.join(S, "first_commit.txt"))
-    ap.add_argument("--owners-added", default=os.path.join(S, "owners_added.txt"))
-    ap.add_argument("--ai-marked", default=os.path.join(S, "ai_marked.txt"))
+    ap.add_argument("--first-commit", help="default: commits.sqlite")
+    ap.add_argument("--owners-added", help="default: commits.sqlite")
+    ap.add_argument("--ai-marked", help="default: commits.sqlite")
     ap.add_argument("--ai-broad", default=os.path.join(store.DATA_DIR, "ai_marked_broad.txt"))
-    ap.add_argument("--mech", default=os.path.join(S, "mech.jsonl"))
+    ap.add_argument("--mech", help="default: commits.sqlite")
     ap.add_argument("--person", action="append", required=True,
                     help="email, optionally =alias,alias for addresses the identity merge misses")
     ap.add_argument("--out-dir", default=os.path.join(store.DATA_DIR, "balance_people"))

@@ -3,7 +3,7 @@
   python3 -m cosh extract --week 2026-W44 [--via notedb|rest] [--max-comment-fetches N]
   python3 -m cosh extract-open [--since ...] [--closed-since ...]
   python3 -m cosh derive [--week 2026-W44] [--out PATH]
-  python3 -m cosh commits [--db PATH]
+  python3 -m cosh commits [--db PATH] [--jobs N]
   python3 -m cosh classify [--week 2026-W44] [--max-threads N] [--dry-run] [--db PATH]
   python3 -m cosh summarize [--metric comments|cls|chars|addressed|commits] [--db PATH] [--out DIR]
   python3 -m cosh backfill --weeks 52 [--go] [--duty-cycle 1.0]
@@ -66,11 +66,10 @@ def main(argv=None):
     d.add_argument("--source", choices=["auto", "notedb", "rest"], default="auto",
                    help="comment source (auto = NoteDb if fetched, else REST cache)")
     d.add_argument("--out", help="derived DB path (default: data/private/derived.sqlite)")
-    d.add_argument("--no-commits", action="store_true",
-                   help="skip rebuilding the commits tables from the local Chromium git clone")
-    g = sub.add_parser("commits", help="rebuild derived.sqlite's commits from the local Chromium "
+    g = sub.add_parser("commits", help="update commits.sqlite, main's history, from the local Chromium "
                                         "git clone (offline; $COSH_CHROMIUM_GIT)")
-    g.add_argument("--db", help="derived DB path (default: data/private/derived.sqlite)")
+    g.add_argument("--db", help="store path (default: $COSH_COMMITS_DB or data/private/commits.sqlite)")
+    g.add_argument("--jobs", type=int, default=4, help="git diff processes for repetition ratios (at most 4)")
     c = sub.add_parser("classify",
                        help="label review threads as addressed with Claude Haiku via `claude -p` "
                             "(uses Max usage; writes data/private/labels.sqlite; optional step)")
@@ -178,21 +177,9 @@ def main(argv=None):
     elif a.cmd == "derive":
         from .derive import derive
         derive(weeks=a.week, source=a.source, out_path=a.out)
-        # A per-week derive (backfill) leaves the commits alone; a full one rebuilds them.
-        if not a.week and not a.no_commits:
-            from .commits import build_commits, repo_path
-            import os
-            if os.path.isdir(repo_path()):
-                db = store.open_derived(path=a.out)
-                build_commits(db)
-                db.close()
-            else:
-                print(f"no Chromium git repo at {repo_path()}: commits not rebuilt", file=sys.stderr)
     elif a.cmd == "commits":
-        from .commits import build_commits
-        db = store.open_derived(path=a.db)
-        build_commits(db)
-        db.close()
+        from .commits import update
+        update(a.db, jobs=max(1, min(a.jobs, 4)))
     elif a.cmd == "classify":
         from .classify import classify
         classify(db_path=a.db, weeks=a.week, model=a.model, batch=max(1, min(a.batch, 200)),

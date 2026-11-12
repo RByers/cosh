@@ -103,13 +103,10 @@ def load_all(args):
         k = ids.find(e)
         first[k] = min(t, first.get(k, t))
     owner_at = {}
-    for line in open(args.owners_added):
-        t, e, path = line.rstrip("\n").split(" ", 2)
-        if path.count("/") > 3:       # first addition at depth <= 3 (team moves into tiny subdirs aside)
-            pass
+    for t, e, path in A.load_owners_added(args.owners_added):
         k = ids.find(e)
-        owner_at[k] = min(int(t), owner_at.get(k, int(t)))
-    ai = set(open(args.ai_marked).read().split()) if args.ai_marked else set()
+        owner_at[k] = min(t, owner_at.get(k, t))
+    ai = A.load_ai_marked(args.ai_marked)
     print(f"loaded {len(cls):,} CLs, {len(commits):,} commits, {len(first):,} people", file=sys.stderr)
     return cls, commits, ids, first, owner_at, ai
 
@@ -614,9 +611,9 @@ def ai_effects(cls, commits, first, top2, ai):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("what", nargs="?", default="all", choices=["growth", "burden", "ai", "all"])
-    ap.add_argument("--first-commit", required=True)
-    ap.add_argument("--owners-added", required=True)
-    ap.add_argument("--ai-marked")
+    ap.add_argument("--first-commit", help="default: commits.sqlite")
+    ap.add_argument("--owners-added", help="default: commits.sqlite")
+    ap.add_argument("--ai-marked", help="default: commits.sqlite")
     args = ap.parse_args()
     cls, commits, ids, first, owner_at, ai = load_all(args)
     dirs3 = A.commit_dirs(3)

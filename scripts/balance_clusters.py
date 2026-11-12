@@ -484,9 +484,9 @@ def transitions(seq_by_person, starts):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--first-commit", required=True)
-    ap.add_argument("--owners-added", required=True)
-    ap.add_argument("--mech", required=True)
+    ap.add_argument("--first-commit", help="default: commits.sqlite")
+    ap.add_argument("--owners-added", help="default: commits.sqlite")
+    ap.add_argument("--mech", help="default: commits.sqlite")
     ap.add_argument("--out")
     ap.add_argument("--k", type=int, default=6, help="clusters per model (default 6; 0: best silhouette)")
     args = ap.parse_args()

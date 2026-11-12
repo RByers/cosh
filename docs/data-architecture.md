@@ -137,6 +137,13 @@ use `mech.jsonl`) *(reviewer)*.
 
 ### 3.2 Inputs with no home and no command
 
+**Fixed 2026-11-12** (except the review-ROI paths): the four inputs are now
+queries on `data/private/commits.sqlite`, which `python3 -m cosh commits`
+keeps up to date and which also replaced `balance-git.sqlite`,
+`derived.sqlite`'s commits tables and `review_feedback.early_commits`'s own
+walk of git (`docs/commits.md`). The flags still read old files for
+exploration. As found:
+
 Most balance and feedback scripts take `--first-commit F --owners-added O
 --mech M --ai-marked A`.
 
@@ -352,7 +359,7 @@ updated with it. Sizes: S is under an hour, M a few hours, L a day or more.
 
 | # | Change | Size | Rule |
 |---|---|---|---|
-| 7 | Add `cosh.balance inputs`: writes the first-commit, OWNERS-added, AI-marked and mechanical lists as tables in `balance.sqlite` (or fixed files beside it). Scripts read them from there; the `--first-commit … --mech …` arguments go | M | 3 |
+| 7 | **Done 2026-11-12, as `commits.sqlite` (`docs/commits.md`).** Add `cosh.balance inputs`: writes the first-commit, OWNERS-added, AI-marked and mechanical lists as tables in `balance.sqlite` (or fixed files beside it). Scripts read them from there; the `--first-commit … --mech …` arguments go | M | 3 |
 | 8 | ~~Fold the votes walk into `balance timeline` (one pass over NoteDb instead of two) and key `timeline_done` on the ref's tip~~ Done 2026-11-12 | M | 1, 5 |
 | 9 | Add `cosh.balance publish`: imports each dataset script's compute function, builds `balance.json`, `balance_dirs.json` and `balance_authors.json` from empty, and writes each once. The scripts keep their `main()` for exploration but no longer write into `summaries/` | L | 1, 2 |
 | 10 | Take the window from the data in `publish` (pending D3), and use one rule for mechanical CLs everywhere | M | 4 |
@@ -434,3 +441,13 @@ details; this is the log.
   page's window, pending D3), replacing five steps in the inventory.
   Screening verdicts persist in `sentiment.sqlite` (`screens`), so a rerun
   costs no model calls for comments already screened.
+- **2026-11-12, item 7 (and 3.2): one store for main's history.**
+  `python3 -m cosh commits` keeps `data/private/commits.sqlite` (all of
+  main since 2008, incremental) and every step reads it: it replaces
+  `balance-git.sqlite` (step `balance-git` gone), `derived.sqlite`'s
+  commits tables (`derive` no longer reads git), `review_feedback`'s own
+  walk of the pre-2017 history, and the hand-made first-commit, OWNERS,
+  AI-marked and mechanical lists (step `report-inputs` and
+  `review_feedback_inputs/` gone; the flags still read such files).
+  Balance and Feedback Index outputs are unchanged; `summarize` now reads
+  the short `Reviewed-on:` URLs of 2017–19 (`docs/commits.md`).

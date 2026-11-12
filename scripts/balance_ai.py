@@ -211,7 +211,7 @@ def load(args):
     use = G.cl_residuals(cls, top2)
     by_n = {c["n"]: c for c in commits if c["n"]}
     broad = load_marked()
-    narrow = set(open(args.ai_marked).read().split()) if args.ai_marked else set()
+    narrow = A.load_ai_marked(args.ai_marked)
     for c in use:
         g = by_n.get(c["change_number"])
         sha = g["sha"] if g else None
@@ -606,10 +606,10 @@ def main():
     ap.add_argument("--since", default="2024-01-01")
     ap.add_argument("--sample", type=int, default=0)
     ap.add_argument("--out")
-    ap.add_argument("--first-commit")
-    ap.add_argument("--owners-added")
-    ap.add_argument("--ai-marked", help="the narrow (Agent-Generated) list, for comparison")
-    ap.add_argument("--mech")
+    ap.add_argument("--first-commit", help="default: commits.sqlite")
+    ap.add_argument("--owners-added", help="default: commits.sqlite")
+    ap.add_argument("--ai-marked", help="the narrow (Agent-Generated) list, for comparison (default: commits.sqlite)")
+    ap.add_argument("--mech", help="default: commits.sqlite")
     args = ap.parse_args()
     if args.what == "markers":
         markers(args)

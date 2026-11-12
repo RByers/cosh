@@ -9,16 +9,17 @@ speculative.**
 
 ## Regenerating
 
-From the worktree or main checkout, with the report inputs from
-`docs/balance.md` (`first_commit.txt`, `owners_added.txt`, the narrow
-`ai_marked.txt` and `mech.jsonl`):
+From the worktree or main checkout. First commits, OWNERS additions, the
+narrow AI-marked list and the mechanical CLs come from `commits.sqlite`
+(`docs/commits.md`); `--first-commit`, `--owners-added`, `--ai-marked` and
+`--mech` read the old hand-made files instead:
 
 ```
 export COSH_DATA_DIR=<main>/data/private
 python3 scripts/balance_ai.py markers [--sample 40]   # -> $COSH_DATA_DIR/ai_marked_broad.txt
-python3 scripts/balance_ai.py paired  --first-commit F --owners-added O --ai-marked A --mech M
-python3 scripts/balance_ai.py did     --first-commit F --owners-added O --ai-marked A --mech M
-python3 scripts/balance_ai.py footers --first-commit F --owners-added O --ai-marked A --mech M
+python3 scripts/balance_ai.py paired
+python3 scripts/balance_ai.py did
+python3 scripts/balance_ai.py footers
 ```
 
 `markers` takes about a minute. Each of the others loads every CL and commit,

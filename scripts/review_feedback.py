@@ -1,8 +1,8 @@
 """Per-person data for the Review Feedback page (web/feedback-index.html,
 docs/review-feedback.md).
 
-Offline; reads balance*.sqlite, derived.sqlite, labels.sqlite,
-sentiment.sqlite and the sentiment comment files. Writes, under --out
+Offline; reads balance*.sqlite, commits.sqlite, derived.sqlite,
+labels.sqlite, sentiment.sqlite and the sentiment comment files. Writes, under --out
 (default web/public/review-feedback/):
 
   peers.json       percentiles of every peer group, per period and measure,
@@ -18,8 +18,10 @@ completions. Everything comes from public Gerrit and git data. Review tone
 appears only as praise (docs/plan.md, ground rule 5): nothing written here
 marks a comment, a person or an org as negative, and orgs get no tone figures.
 
-  COSH_DATA_DIR=<main>/data/private nice -n 5 python3 scripts/review_feedback.py \
-      --first-commit first_commit.txt --mech mech.jsonl [--out DIR]
+  COSH_DATA_DIR=<main>/data/private nice -n 5 python3 scripts/review_feedback.py [--out DIR]
+
+(--first-commit F and --mech F read the old hand-made files instead of
+commits.sqlite.)
 """
 
 import argparse
@@ -348,34 +350,26 @@ def excerpt(text):
 # ---------------------------------------------------------------- loading
 
 def early_commits(before=balance.SINCE):
-    """Main's first-parent commits that landed before `before`, which
-    balance-git.sqlite starts at, read from the shared clone (offline, about
-    a minute): [(author email, unix time landed, frozenset of 3-level
-    directories)], reverts ("This reverts commit" in the message) left out
-    as in load_commits. With them, earlier commits count from the start of
-    main's history (2008), not from 2017."""
-    import subprocess
+    """Main's first-parent commits that landed before `before`, where
+    gcommits starts (commits.sqlite): [(author email, unix time landed,
+    frozenset of 3-level directories)], reverts left out (`is_revert`: SVN-era
+    reverts may name no sha).
+    With them, earlier commits count from the start of main's history
+    (2008), not from 2017."""
     cut = datetime.fromisoformat(before).replace(tzinfo=timezone.utc).timestamp()
-    env = {**os.environ, "GIT_NO_LAZY_FETCH": "1"}
-    git = ["git", "--git-dir", balance.SHARED, "log", "--first-parent", f"--before={before}", "main"]
-    reverts = set(subprocess.run(git + ["--grep=^This reverts commit", "--format=%H"], env=env, check=True,
-                                 capture_output=True, text=True).stdout.split())
     out, cur = [], None
-    with subprocess.Popen(git + ["--no-renames", "--name-only", "--format=%x01%H%x09%ae%x09%ct"], env=env,
-                          stdout=subprocess.PIPE, text=True, errors="replace") as p:
-        for line in p.stdout:
-            line = line.rstrip("\n")
-            if line.startswith("\x01"):
-                if cur:
-                    out.append((cur[0], cur[1], frozenset(cur[2])))
-                sha, email, ct = line[1:].split("\t")
-                cur = None if sha in reverts or int(ct) >= cut else (email, int(ct), set())
-            elif line and cur:
-                cur[2].add(A.dir_of(line, 3))
-        if cur:
-            out.append((cur[0], cur[1], frozenset(cur[2])))
-    if p.returncode:
-        raise SystemExit(f"git log failed ({p.returncode})")
+    for cid, email, at, path in A.git_db().execute(
+            "SELECT c.commit_id, c.author_email, c.landed_at, p.path FROM commits c "
+            "LEFT JOIN commit_files f USING (commit_id) LEFT JOIN paths p USING (path_id) "
+            "WHERE c.landed_at < ? AND NOT c.is_revert ORDER BY c.commit_id", (cut,)):
+        if cur is None or cur[0] != cid:
+            if cur:
+                out.append((cur[1], cur[2], frozenset(cur[3])))
+            cur = (cid, email, at, set())
+        if path is not None:
+            cur[3].add(A.dir_of(path, 3))
+    if cur:
+        out.append((cur[1], cur[2], frozenset(cur[3])))
     return out
 
 
@@ -398,13 +392,7 @@ def load(args):
     return cls, commits, ids, first
 
 
-def mech_set(path):
-    out = set()
-    for line in open(path):
-        n, files, threads, rep, lines = json.loads(line)
-        if files >= 100 or (rep is not None and rep >= 0.8):
-            out.add(n)
-    return out
+mech_set = A.mech_set
 
 
 def norms(use, also=()):
@@ -541,8 +529,8 @@ def median_breakdowns(cs, size10):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--first-commit", required=True)
-    ap.add_argument("--mech", required=True)
+    ap.add_argument("--first-commit", help="default: commits.sqlite")
+    ap.add_argument("--mech", help="default: commits.sqlite")
     ap.add_argument("--out", default=OUT)
     ap.add_argument("--check", help="also write some people's per-period values here, to compare with the page's")
     args = ap.parse_args()
@@ -568,7 +556,7 @@ def main():
         if d:
             for x in d[1]:
                 xp_times[(c["pid"], x)].append(c["at"])
-    # balance-git.sqlite starts in 2017: earlier commits come from git itself.
+    # gcommits starts in 2017: earlier commits come from the rest of commits.sqlite.
     early = 0
     for email, at, ds in early_commits():
         if A.is_bot_email(A.person(email)):

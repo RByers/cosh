@@ -205,8 +205,8 @@ export COSH_DATA_DIR=/home/rbagent/projects/cosh/data/private
 nice -n 5 python3 scripts/balance_addressed_value.py cl --table cl_table.sqlite --out cl.json        # ~1 min
 nice -n 5 python3 scripts/balance_addressed_value.py blame --table cl_table.sqlite \
     --blame-dir <blame scratch> --out blame.json                                                    # ~1 min
-nice -n 5 python3 scripts/balance_addressed_value.py people --first-commit F --owners-added O \
-    --mech M --cache people.pkl --out people.json                                                   # ~6 min
+nice -n 5 python3 scripts/balance_addressed_value.py people \
+    --cache people.pkl --out people.json                                                            # ~6 min
 nice -n 5 python3 scripts/balance_addressed_value.py report --cl cl.json --blame blame.json \
     --people people.json          # writes addr_tenure and addr_compare into summaries/balance.json
 ```
