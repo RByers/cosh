@@ -122,7 +122,13 @@ The measures:
   worked in*, which credits people who work across more of the codebase. A
   chart and table give the person's feedback per band against everyone's.
 - **Directories**: CLs, threads, expected threads and earlier commits per
-  directory; selecting one filters the comment list.
+  directory; selecting one filters the comment list. Selecting one of the
+  person's dots in the over-time chart filters this table and the comments
+  to the CLs landed in that half-year (the threads behind that point): a
+  named filter line with a Clear button appears above the table, and the
+  dot gets a ring for as long as the filter is on. Selecting the same dot
+  again also clears it, as does looking up someone else or switching to a
+  measure with no changes in that half-year.
 - **Comments**: every reviewer thread, newest first, with file, date and
   addressed or not. Threads whose text has been collected (every week in
   `data/private/sentiment/comments-*.jsonl`, 2025-W45 on today) get a

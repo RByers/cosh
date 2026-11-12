@@ -3402,6 +3402,63 @@ test('review feedback: a person, the measures, peer groups, directories and comm
   await page.close();
 });
 
+test('review feedback: selecting a dot in the over-time chart filters the directories and comments', async () => {
+  const { page, errors } = await feedbackPage();
+  const { FIXTURE_EMAIL } = await import('./feedback-fixture.ts');
+  await lookUp(page, FIXTURE_EMAIL);
+  await page.waitForFunction(() => !document.querySelector<HTMLElement>('#rf-person')!.hidden);
+  // Where one of the person's dots (dataset 5) is on the page.
+  const dot = (i: number) => page.evaluate((i) => {
+    const chart = window.__rf!.charts.trend;
+    const pt = chart.getDatasetMeta(5).data[i];
+    const r = chart.canvas.getBoundingClientRect();
+    return { x: r.left + pt.x, y: r.top + pt.y };
+  }, i);
+  const dirs = () => page.$$eval('#rf-dirs tbody th', (ths) => ths.map((t) => t.textContent));
+  const threads = () => page.$$eval('#rf-threads li', (ls) => ls.length);
+  const filterShown = () => page.$eval('#rf-half-filter', (e) => !(e as HTMLElement).hidden);
+  // Chart.js handles canvas events on the next animation frame.
+  const clickAt = async (x: number, y: number) => {
+    await page.mouse.click(x, y);
+    await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
+  };
+  assert.equal(await filterShown(), false);
+  assert.equal(await dirs().then((d) => d.length), 3);
+  assert.equal(await threads(), 5);
+  // Half-years from July 2023: the person's first dot is the fifth, 2025 H2; 2026 H1 is the sixth.
+  await page.$eval('#rf-trend', (c) => c.scrollIntoView({ block: 'center' }));
+  const at = await dot(5);
+  await clickAt(at.x, at.y);
+  assert.equal(await page.evaluate(() => window.__rf!.half), '2026H1');
+  assert.equal(await filterShown(), true);
+  assert.equal(await page.$eval('#rf-half-filter-name', (e) => e.textContent!.trim()),
+    'Filter: only changes landed January – June 2026');
+  assert.deepEqual(await dirs(), ['content/browser/', 'chrome/browser/ui/']);
+  assert.equal(await threads(), 1);
+  assert.match(await page.$eval('#comments-sub', (e) => e.textContent!), /^1 reviewer threads on changes landed January – June 2026,/);
+  // The ring stays through a redraw of the chart (a change of adjustment).
+  await page.click('input[name="rf-corr"][value="n"]');
+  assert.equal(await page.evaluate(() => window.__rf!.half), '2026H1');
+  assert.equal(await filterShown(), true);
+  // Clear empties the filter; selecting the same dot twice does too.
+  await page.click('#rf-half-clear');
+  assert.equal(await filterShown(), false);
+  assert.equal(await page.evaluate(() => window.__rf!.half), null);
+  assert.equal(await threads(), 5);
+  await page.$eval('#rf-trend', (c) => c.scrollIntoView({ block: 'center' }));
+  const last = await dot(6);
+  await clickAt(last.x, last.y);
+  assert.deepEqual(await dirs(), ['third_party/blink/renderer/']);
+  await clickAt(last.x, last.y);
+  assert.equal(await filterShown(), false);
+  // A click away from the person's dots changes nothing.
+  const box = (await page.$eval('#rf-trend', (c) => { const r = c.getBoundingClientRect(); return { x: r.left, y: r.top }; }));
+  await clickAt(box.x + 5, box.y + 5);
+  assert.equal(await filterShown(), false);
+  assert.deepEqual(errors, []);
+  await page.close();
+});
+
 test('review feedback: the addressed measure covers only the labelled dates', async () => {
   const { peers, day, FIXTURE_EMAIL } = await import('./feedback-fixture.ts');
   const { page, errors } = await feedbackPage({ ...peers, addr_start: day('2026-01-01') });

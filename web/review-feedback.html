@@ -201,7 +201,8 @@
         <p class="note">
           Each half-year on its own. The line is you; the shaded bands are the middle half and the 10th–90th
           percentile of your peers, and the dashed line their median. Half-years in which you landed few changes
-          are drawn as hollow dots. The last half-year runs to <span data-rf-range="last-day"></span>.
+          are drawn as hollow dots. The last half-year runs to <span data-rf-range="last-day"></span>. Select
+          one of your dots to see where that half-year's feedback came from, below.
         </p>
       </section>
 
@@ -239,6 +240,12 @@
           of the same size and place drew in 2023–24<span data-if="corr=n"> (shown while nothing is adjusted for,
           too)</span>. Select a directory to list its comments below.
         </template>
+        <!-- Set by selecting a dot in the over-time chart; filters this table and the comments. -->
+        <p id="rf-half-filter" class="rf-filter" hidden>
+          <span id="rf-half-filter-name"></span>
+          <button type="button" id="rf-half-clear">Clear</button>
+        </p>
+        <template data-msg="half-filter">Filter: only changes landed <slot name="half"></slot></template>
         <div class="table-wrap">
           <table id="rf-dirs" class="rf-table">
             <thead><tr><th scope="col">Directory</th><th scope="col" class="num">Changes</th><th scope="col" class="num">Threads</th><th scope="col" class="num" id="rf-dirs-typical">Typical</th><th scope="col" class="num">Ratio</th><th scope="col" class="num">Earlier commits</th></tr></thead>
@@ -265,7 +272,8 @@
         <p id="comments-sub" class="sub"></p>
         <template data-msg="comments-sub">
           <slot name="n"></slot> reviewer threads<span data-if="kind=a"> you addressed</span><span data-if="dir"> in
-          <code><slot name="dir"></slot></code></span>, newest first, each linked to its review. Text and a link to
+          <code><slot name="dir"></slot></code></span><span data-if="half"> on changes landed
+          <slot name="half"></slot></span>, newest first, each linked to its review. Text and a link to
           the comment itself are included for threads whose text has been collected (from November 2025 on); older
           ones link to their change.
         </template>

@@ -4,7 +4,7 @@
 // the values and draws the charts. Comment text is untrusted and goes into the
 // DOM only as text (SECURITY.md). Tone appears only as praise (ground rule 5).
 // The address is never put in the URL.
-import { Chart, Filler, type ChartDataset } from 'chart.js';
+import { Chart, Filler, type ChartDataset, type ChartEvent, type Plugin } from 'chart.js';
 import { readTheme, type Theme } from './charts.ts';
 import {
   bandOf,
@@ -52,7 +52,7 @@ const put = (target: Element, key: string, vars: Vars = {}) => target.replaceChi
 
 declare global {
   interface Window {
-    __rf?: { person: Person | null; peers: Peers | null; charts: Record<string, Chart> };
+    __rf?: { person: Person | null; peers: Peers | null; charts: Record<string, Chart>; half: string | null };
   }
 }
 
@@ -71,12 +71,14 @@ const state = {
   tenure: 'time' as TenureBy,
   org: 'all' as PeerOrg,
   dir: null as number | null,
+  /** The half-year picked in the over-time chart, filtering the directories and comments. */
+  half: null as string | null,
   praiseOnly: false,
   threadsShown: PAGE,
   allDirs: false,
 };
 const charts: Record<string, Chart> = {};
-window.__rf = { person: null, peers: null, charts };
+window.__rf = { person: null, peers: null, charts, half: null };
 
 async function getJson<T>(url: string): Promise<T | null> {
   const r = await fetch(url);
@@ -220,6 +222,8 @@ async function lookup(raw: string) {
     state.person = found;
     window.__rf!.person = found;
     state.dir = null;
+    state.half = null;
+    window.__rf!.half = null;
     state.allDirs = false;
     put(note, 'find-done', { n: fmtInt(found.cls.length), from: dayLabel(found.cls[0][1]), to: dayLabel(found.cls.at(-1)![1]) });
     // The person's praise is on the Review Tone page, which opens their popup from the hash.
@@ -340,6 +344,8 @@ function renderIntro() {
 
 function render() {
   if (!state.person || !state.peers) return;
+  if (state.half && !(clsOf(state.person.periods[state.half], state.kind) > 0)) state.half = null;
+  window.__rf!.half = state.half;
   renderSummary();
   renderTrend();
   renderXp();
@@ -414,17 +420,49 @@ function renderTrend() {
     { ...band(0.25), fill: false, order: 3 },
     { ...band(0.5, 'peers'), borderColor: t.muted, borderWidth: 1.5, borderDash: [5, 4], fill: false, order: 1 },
     { label: 'you', data: you, borderColor: t.series[0], backgroundColor: ok.map((o) => (o ? t.series[0] : t.surface)),
-      pointBorderColor: t.series[0], pointRadius: 4, pointHoverRadius: 5, borderWidth: 2, tension: 0, spanGaps: true,
-      fill: false, order: 0 },
+      pointBorderColor: t.series[0], pointRadius: 4, pointHoverRadius: 5, pointHitRadius: 10, borderWidth: 2, tension: 0,
+      spanGaps: true, fill: false, order: 0 },
   ];
   const names = hs.map((h) => halfName(h));
+  // The dot under the pointer, if it is one of the person's (dataset 5) with a value. Chart.js's
+  // own event carries chart coordinates; the native one gave no hits under a real click.
+  const dotAt = (chart: Chart, e: ChartEvent) => {
+    const hit = chart.getElementsAtEventForMode(e as unknown as Event, 'nearest', { intersect: true }, false)
+      .find((x) => x.datasetIndex === 5);
+    return hit && you[hit.index] !== null ? hit.index : null;
+  };
+  // A ring around the selected dot, as long as its filter is on.
+  const ring: Plugin<'line'> = {
+    id: 'rf-ring',
+    afterDatasetsDraw(chart) {
+      const i = state.half ? hs.indexOf(state.half) : -1;
+      const pt = i >= 0 && you[i] !== null ? chart.getDatasetMeta(5).data[i] : undefined;
+      if (!pt) return;
+      const { ctx } = chart;
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(pt.x, pt.y, 9, 0, 2 * Math.PI);
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = t.series[0];
+      ctx.stroke();
+      ctx.restore();
+    },
+  };
   charts.trend = new Chart($<HTMLCanvasElement>('#rf-trend'), {
     type: 'line',
     data: { labels: names, datasets },
+    plugins: [ring],
     options: {
       maintainAspectRatio: false,
       animation: false,
       interaction: { mode: 'index', intersect: false },
+      onHover: (e, _els, chart) => {
+        chart.canvas.classList.toggle('rf-pointable', dotAt(chart, e) !== null);
+      },
+      onClick: (e, _els, chart) => {
+        const i = dotAt(chart, e);
+        if (i !== null) setHalf(state.half === hs[i] ? null : hs[i]);
+      },
       font: { family: t.font },
       scales: {
         x: { grid: { color: t.grid }, title: { display: true, text: msg('axis-half'), color: t.text },
@@ -450,6 +488,16 @@ function renderTrend() {
       },
     },
   });
+}
+
+/** Filters the directories and comments to the changes landed in half-year `h` (null: all). */
+function setHalf(h: string | null) {
+  state.half = h;
+  window.__rf!.half = h;
+  state.threadsShown = PAGE;
+  charts.trend?.update('none');
+  renderDirs();
+  renderThreads();
 }
 
 function renderXp() {
@@ -514,7 +562,10 @@ function renderDirs() {
   const p = state.person!;
   put($('#directories-sub'), 'directories-sub', { corr: state.corr });
   $('#rf-dirs-typical').title = msg(`dirs-typical-${state.kind}`).replace(/\s+/g, ' ').trim();
-  const rows = dirTable(p, ALL, state.kind);
+  const filter = $('#rf-half-filter');
+  filter.hidden = !state.half;
+  if (state.half) put($('#rf-half-filter-name'), 'half-filter', { half: halfName(state.half) });
+  const rows = dirTable(p, state.half ?? ALL, state.kind);
   const body = $('#rf-dirs tbody');
   body.replaceChildren();
   const shown = state.allDirs ? rows : rows.slice(0, DIRS_SHOWN);
@@ -573,9 +624,9 @@ function threadItem(r: ThreadRow): HTMLLIElement {
 
 function renderThreads() {
   const p = state.person!;
-  const rows = threadRows(p, ALL, state.kind, state.dir, state.praiseOnly);
+  const rows = threadRows(p, state.half ?? ALL, state.kind, state.dir, state.praiseOnly);
   put($('#comments-sub'), 'comments-sub', { n: fmtInt(rows.length), kind: state.kind,
-    dir: state.dir === null ? '' : p.dirs[state.dir] });
+    dir: state.dir === null ? '' : p.dirs[state.dir], half: state.half ? halfName(state.half) : '' });
   const list = $('#rf-threads');
   list.replaceChildren(...rows.slice(0, state.threadsShown).map(threadItem));
   if (!rows.length) list.append(el('li', msg('threads-none'), 'quote-none'));
@@ -599,6 +650,7 @@ function init() {
     e.preventDefault();
     void lookup(input.value);
   });
+  $('#rf-half-clear').addEventListener('click', () => setHalf(null));
   radio<Kind>('rf-kind', (v) => {
     state.kind = v;
     state.threadsShown = PAGE;
