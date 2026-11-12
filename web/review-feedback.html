@@ -104,15 +104,18 @@
         </template>
         <h3>How fast each contributor's feedback falls</h3>
         <div class="chart">
-          <canvas id="rf-change" role="img" aria-label="Histogram of contributors by how much their feedback index fell per year."></canvas>
+          <canvas id="rf-change" role="img" aria-label="Histogram of contributor-years by how much the feedback index changed from the year before."></canvas>
         </div>
         <p id="rf-change-note" class="note"></p>
         <template data-msg="change-note">
-          Contributors by the yearly change in their feedback index, from the trend over the half-years in which
-          they landed <slot name="minCls"></slot> or more changes (three or more, spanning at least a year;
-          <slot name="n"></slot> contributors<span data-if="org">, most of whose changes came from <slot name="org"></slot></span>). The
-          median contributor's feedback <span data-if="fell">fell</span><span data-if="!fell">grew</span> by
-          <slot name="median"></slot> a year; bars on the left are contributors whose feedback grew.
+          Every contributor-year: the change in a contributor's feedback index from one calendar year to the
+          next, wherever they landed <slot name="minYearCls"></slot> or more changes in both
+          (<slot name="n"></slot> year-to-year changes from <slot name="people"></slot> contributors<span
+          data-if="org">, counted where most of the later year's changes came from <slot name="org"></slot></span>;
+          <span data-if="limited">whole years from <slot name="fromYear"></slot> on</span><span data-if="!limited">from
+          2018 on, leaving out the years around 2020, when Gerrit began counting general comments as threads</span>).
+          In the median year, feedback <span data-if="fell">fell</span><span data-if="!fell">grew</span> by
+          <slot name="median"></slot>; bars on the left are years in which it grew.
         </template>
         <p class="note">
           These two charts always measure tenure in years.

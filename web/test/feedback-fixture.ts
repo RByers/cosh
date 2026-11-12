@@ -87,7 +87,8 @@ export const peers: Peers = {
   },
   change_edges: [-40, -30, -20, -10, 0, 10, 20, 30, 40, 50, 60, 70, 80],
   change: {
-    all: each(() => ({ n: 1100, median: 17.1, counts: [66, 32, 54, 92, 155, 209, 190, 120, 78, 52, 34, 24] })),
-    nongoogle: each(() => ({ n: 3, median: -5, counts: [0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0] })),
+    all: each(() => ({ n: 5300, people: 1900, median: 16.2, counts: [400, 200, 300, 450, 700, 800, 750, 600, 450, 300, 200, 150] })),
+    nongoogle: each(() => ({ n: 3, people: 2, median: -5, counts: [0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0] })),
   },
+  min_year_cls: 12,
 };

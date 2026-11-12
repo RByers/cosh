@@ -144,7 +144,9 @@ export interface Peers {
    * everything below edges[1], the last everything from edges[-2] on. */
   change_edges: number[];
   /** Group -> measure -> people's yearly reduction in feedback. */
-  change: Record<string, Record<Metric, { n: number; median: number | null; counts: number[] }>>;
+  change: Record<string, Record<Metric, { n: number; people: number; median: number | null; counts: number[] }>>;
+  /** A calendar year counts for the histogram with this many changes. */
+  min_year_cls: number;
 }
 
 /** The opening card's group: the "Peers" org, measured against directory

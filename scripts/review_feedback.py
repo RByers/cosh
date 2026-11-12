@@ -77,10 +77,15 @@ METRICS = [f"{k}{c}" for k in KINDS for c in CORR]
 # year, and how fast it falls for each person.
 STEP = 0.5                    # tenure bins of the cohort curves, in years
 MIN_COHORT = 20               # people per point of a cohort curve
-MIN_TREND_HALVES = 3          # a person's yearly change needs this many counted half-years ...
-MIN_TREND_SPAN = 1.0          # ... spanning this many years of tenure
-FLOOR = 0.05                  # values below this count as this on the log scale of the trend
-CHANGE_EDGES = list(range(-40, 81, 10))   # histogram bin edges, % less feedback per year
+# The histogram: one value per contributor and pair of consecutive calendar
+# years both counted (twice the half-year minimums), the change from one to
+# the next. Gerrit began recording general (patch-set-level) comments as
+# threads in July 2020, so pairs that include 2020 would show a jump that is
+# only bookkeeping: they are left out.
+MIN_YEAR_CLS, MIN_YEAR_EXP = 12, 6.0
+SKIP_YEARS = {2020}
+FLOOR = 0.05                  # values below this count as this in a ratio
+CHANGE_EDGES = list(range(-40, 81, 10))   # histogram bin edges, % less feedback than the year before
 
 
 def key(email):
@@ -185,20 +190,33 @@ def quantiles(xs):
     return out
 
 
-def annual_change(points):
-    """A person's yearly change in feedback: exp of the least-squares slope of
-    ln(value) against tenure in years, minus 1 (-0.3 is 30% less feedback a
-    year). points are (tenure, value); None without enough of them."""
-    pts = [(t, math.log(max(v, FLOOR))) for t, v in points if t is not None and v is not None]
-    if len(pts) < MIN_TREND_HALVES:
-        return None
-    ts = [t for t, _ in pts]
-    if max(ts) - min(ts) < MIN_TREND_SPAN:
-        return None
-    mt = st.mean(ts)
-    my = st.mean(y for _, y in pts)
-    sxx = sum((t - mt) ** 2 for t in ts)
-    return math.exp(sum((t - mt) * (y - my) for t, y in pts) / sxx) - 1
+def yearly_changes(years, groups):
+    """The histogram of year-over-year change. years: per person, {calendar
+    year: (org, {metric: value or None}, {metric: value against directory
+    experience or None})}, None where the year doesn't count for that
+    measure. groups: name -> test of an org ("dir:" names use the second
+    dict). Each pair of consecutive counted years outside SKIP_YEARS gives one
+    value, % less feedback than the year before (-100 * (later / earlier - 1),
+    values under FLOOR counted as FLOOR), in the group of the later year's org.
+    Returns {group: {metric: {n, people, median, counts}}}."""
+    xs = {g: {m: [] for m in METRICS} for g in groups}
+    who = {g: {m: set() for m in METRICS} for g in groups}
+    for pid, ys in years.items():
+        for y in sorted(ys):
+            if y + 1 not in ys or y in SKIP_YEARS or y + 1 in SKIP_YEARS:
+                continue
+            (_, v0, x0), (org, v1, x1) = ys[y], ys[y + 1]
+            for g, f in groups.items():
+                if not f(org):
+                    continue
+                a, b = (x0, x1) if g.startswith("dir:") else (v0, v1)
+                for m in METRICS:
+                    if a[m] is None or b[m] is None:
+                        continue
+                    xs[g][m].append(-100 * (max(b[m], FLOOR) / max(a[m], FLOOR) - 1))
+                    who[g][m].add(pid)
+    return {g: {m: dict(n=len(v), people=len(who[g][m]), median=round(st.median(v), 1) if v else None,
+                        counts=histogram(v, CHANGE_EDGES)) for m, v in gm.items()} for g, gm in xs.items()}
 
 
 def histogram(xs, edges):
@@ -216,32 +234,18 @@ def tenure_trends(points, groups):
     against directory experience}). groups: name -> test of an org; names
     starting "dir:" use the values against directory experience. Returns
     the cohort curves (median value per first-commit year and STEP-year
-    tenure bin, MIN_COHORT people or more) and the histogram of people's
-    yearly reduction in feedback, % (-100 * annual_change), per group and
-    measure. A half-year counts for a group by its org; a person's change by
-    the org of most of their half-years. A point may end with a sixth item,
-    True for half-years before START: those go into the curves only, so the
-    yearly change covers the same years for every measure."""
+    tenure bin, MIN_COHORT people or more), per group and measure. A
+    half-year counts for a group by its org."""
     curves = {g: {m: defaultdict(lambda: defaultdict(list)) for m in METRICS} for g in groups}
-    changes = {g: {m: [] for m in METRICS} for g in groups}
     for pts in points:
-        recent = [p for p in pts if not (len(p) > 5 and p[5])]
-        org = Counter(p[2] for p in recent).most_common(1)[0][0] if recent else None
         for g, f in groups.items():
             xk = 4 if g.startswith("dir:") else 3
             for m in METRICS:
-                if recent and f(org):
-                    c = annual_change([(p[1], p[xk][m]) for p in recent])
-                    if c is not None:
-                        changes[g][m].append(-100 * c)
                 for p in pts:
                     if f(p[2]) and p[1] is not None and p[xk][m] is not None:
                         curves[g][m][p[0]][math.floor(p[1] / STEP) * STEP].append(p[xk][m])
-    cohorts = {g: {m: {str(y): [[b, r3(st.median(v)), len(v)] for b, v in sorted(bs.items()) if len(v) >= MIN_COHORT]
-                       for y, bs in sorted(per_m.items())} for m, per_m in gm.items()} for g, gm in curves.items()}
-    change = {g: {m: dict(n=len(xs), median=round(st.median(xs), 1) if xs else None,
-                          counts=histogram(xs, CHANGE_EDGES)) for m, xs in gm.items()} for g, gm in changes.items()}
-    return cohorts, change
+    return {g: {m: {str(y): [[b, r3(st.median(v)), len(v)] for b, v in sorted(bs.items()) if len(v) >= MIN_COHORT]
+                    for y, bs in sorted(per_m.items())} for m, per_m in gm.items()} for g, gm in curves.items()}
 
 
 def r3(x):
@@ -629,6 +633,7 @@ def main():
     old_pts = defaultdict(list)
     old_by = defaultdict(lambda: defaultdict(list))
     for c in old:
+        c["org"] = orgs(c["email"], day_str(c["closed_at"]))
         if c["pid"] in first:
             old_by[c["pid"]][half(c["closed_at"])].append(c)
     for pid, byh in old_by.items():
@@ -640,8 +645,7 @@ def main():
             v = {m: None for m in METRICS}
             v.update(tn=r3(t / len(cs)), ts=r3(t / ts) if ts else None, td=r3(t / td) if td else None)
             ten = st.median((epoch_day(c["closed_at"]) - epoch_day(first[pid])) / 365.25 for c in cs)
-            orgc = Counter(orgs(c["email"], datetime.fromtimestamp(c["closed_at"], timezone.utc)
-                                .strftime("%Y-%m-%d")) for c in cs)
+            orgc = Counter(c["org"] for c in cs)
             old_pts[pid].append((datetime.fromtimestamp(first[pid], timezone.utc).year, ten,
                                  orgc.most_common(1)[0][0], v, {m: None for m in METRICS}, True))
     trend_pts = []
@@ -661,9 +665,41 @@ def main():
             trend_pts.append(pts)
     # The page's "Peers" choice, and the same against directory experience ("dir:").
     trend_groups = {**ORGS, **{f"dir:{o}": of for o, of in ORGS.items()}}
-    cohorts, change = tenure_trends(trend_pts, trend_groups)
-    print(f"opening card: {len(trend_pts):,} people, {change['all']['td']['n']:,} with a yearly change "
-          f"(median {change['all']['td']['median']}% less a year)", file=sys.stderr, flush=True)
+    cohorts = tenure_trends(trend_pts, trend_groups)
+
+    # Person-years for the histogram. All reviewer threads: every CL of the
+    # calendar year, older and recent. Addressed and directory experience:
+    # whole years from their start (ADDR_START, START) only.
+    years = defaultdict(dict)
+    by_year = defaultdict(list)
+    for c in old + use:
+        by_year[(c["pid"], int(day_str(c["closed_at"])[:4]))].append(c)
+    none = {m: None for m in METRICS}
+    for (pid, y), cs in by_year.items():
+        s = sums(cs)
+        ok = s["cls"] >= MIN_YEAR_CLS and s["td"] >= MIN_YEAR_EXP
+        v = dict(none)
+        if ok:
+            v.update(tn=r3(s["t"] / s["cls"]), ts=r3(s["t"] / s["ts"]) if s["ts"] else None,
+                     td=r3(s["t"] / s["td"]) if s["td"] else None)
+        x = dict(none)
+        # Whole years in range: the same values the page's periods have, against
+        # the rates of all the data ("all").
+        jan1 = datetime(y, 1, 1, tzinfo=timezone.utc).timestamp()
+        recent = [c for c in cs if "thr" in c]
+        pp = person_period(pid, recent, "all") if jan1 >= START and recent else None
+        if pp and ok:
+            ok_a = jan1 >= ADDR_START and pp["acls"] >= MIN_YEAR_CLS and pp["ok_a"]
+            for m in METRICS:
+                if m[0] == "a" and ok_a:
+                    v[m] = pp["v"][m]
+                if jan1 >= START and (m[0] == "t" or ok_a):
+                    x[m] = pp["x"][m]
+        years[pid][y] = (Counter(c["org"] for c in cs).most_common(1)[0][0], v, x)
+    change = yearly_changes(years, trend_groups)
+    print(f"opening card: {len(trend_pts):,} people; {change['all']['td']['n']:,} year-over-year changes from "
+          f"{change['all']['td']['people']:,} people (median {change['all']['td']['median']}% less), "
+          f"{change['all']['ad']['n']:,} addressed", file=sys.stderr, flush=True)
 
     # ------------------------------------------------ peers
     tone_end = week_start(TONE_WEEKS[-1]) + WEEK
@@ -693,7 +729,7 @@ def main():
                  tenure=TENURE, changes=CHANGES, xp=XP, min_peers=MIN_PEERS, qs=len(QS), min_cls=MIN_CLS, min_exp=MIN_EXP, min_received=MIN_RECEIVED,
                  tone_weeks=[TONE_WEEKS[0], TONE_WEEKS[-1]], dist={}, counts={}, bands={}, tone={},
                  cohort_step=STEP, cohort_from=int(HISTORY_ISO[:4]), min_cohort=MIN_COHORT, cohorts=cohorts,
-                 change_edges=CHANGE_EDGES, change=change)
+                 change_edges=CHANGE_EDGES, change=change, min_year_cls=MIN_YEAR_CLS)
     for p in allp:
         # Peers per kind: the addressed measures count people by their labelled CLs.
         rows = {k: [(pid, pp[p]) for pid, pp in per.items() if p in pp and pp[p][ok]]

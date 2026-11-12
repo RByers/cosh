@@ -3295,13 +3295,16 @@ test('review feedback: the opening card explains the index before any address is
     .title.text), 'feedback index');
   assert.equal(await page.$('#rf-period'), null);
   assert.match(await page.$eval('#rf-cohorts-note', (e) => e.textContent!), /from that first commit\s+to October 2026:/);
-  assert.match(await page.$eval('#rf-change-note', (e) => e.textContent!), /1,100 contributors\).*fell by\s+17%/s);
+  // The histogram counts contributor-years, leaving out the years around Gerrit's 2020 change.
+  assert.match(await page.$eval('#rf-change-note', (e) => e.textContent!),
+    /5,300 year-to-year changes from 1,900 contributors;\s+from\s+2018 on, leaving out the years around 2020.*fell by\s+16%/s);
   // It follows the switches: outside Google has one line, and a median that grew.
   await page.select('#rf-org', 'nongoogle');
   assert.deepEqual(await page.$$eval('#rf-cohort-legend li', (ls) => ls.map((l) => l.textContent)), ['started in 2024']);
-  assert.match(await page.$eval('#rf-change-note', (e) => e.textContent!), /came from outside Google\).*grew by\s+5%/s);
+  assert.match(await page.$eval('#rf-change-note', (e) => e.textContent!), /came from outside Google;.*grew by\s+5%/s);
   await page.click('input[name="rf-kind"][value="a"]');
   assert.match(await page.$eval('#rf-cohorts-note', (e) => e.textContent!), /their addressed feedback/);
+  assert.match(await page.$eval('#rf-change-note', (e) => e.textContent!), /whole years from \d{4} on/);
   assert.deepEqual(errors, []);
   await page.close();
 });
@@ -3331,7 +3334,7 @@ test('review feedback: a person, the measures, peer groups, directories and comm
     return [k, [s.x.title?.text, s.y.title?.text]];
   }))), {
     cohorts: ['years since first commit on main', 'feedback index'],
-    change: ['change in feedback index per year', 'contributors'],
+    change: ['change in feedback index from the year before', 'contributor-years'],
     trend: ['half-year', 'feedback index'],
     xp: ['your earlier commits in the directory', 'feedback index'],
   });

@@ -307,7 +307,11 @@ function renderIntro() {
     if (i === edges.length - 2) return `fell ${abs(lo)}%+`;
     return hi <= 0 ? `grew ${abs(hi)}–${abs(lo)}%` : `fell ${abs(lo)}–${abs(hi)}%`;
   });
-  put($('#rf-change-note'), 'change-note', { ...vars, n: fmtInt(ch?.n ?? 0),
+  // The first whole calendar year the measure covers.
+  const start = new Date(from * 86_400_000);
+  const fromYear = start.getUTCFullYear() + (start.getUTCMonth() === 0 && start.getUTCDate() === 1 ? 0 : 1);
+  put($('#rf-change-note'), 'change-note', { ...vars, n: fmtInt(ch?.n ?? 0), people: fmtInt(ch?.people ?? 0),
+    minYearCls: fmtInt(peers.min_year_cls), fromYear,
     median: ch?.median == null ? '–' : pct(Math.abs(ch.median) / 100), fell: (ch?.median ?? 0) >= 0 });
   charts.change = new Chart($<HTMLCanvasElement>('#rf-change'), {
     type: 'bar',
@@ -321,12 +325,12 @@ function renderIntro() {
       animation: false,
       font: { family: t.font },
       scales: {
-        x: { ...axis('change in feedback index per year'), grid: { display: false } },
-        y: { beginAtZero: true, ...axis('contributors') },
+        x: { ...axis('change in feedback index from the year before'), grid: { display: false } },
+        y: { beginAtZero: true, ...axis('contributor-years') },
       },
       plugins: {
         legend: { display: false },
-        tooltip: { callbacks: { label: (i) => `${fmtInt(i.parsed.y ?? 0)} contributors` } },
+        tooltip: { callbacks: { label: (i) => `${fmtInt(i.parsed.y ?? 0)} contributor-years` } },
       },
     },
   });

@@ -34,11 +34,21 @@ that experience. Its axis is always years. It shows:
   for the 2020–24 starters (1.6× for 2018), 1.0–1.2× after two to three
   years, and 0.6–0.8× after six to eight (size and directory, all threads).
   These older half-years go into the curves only, not the yearly change.
-- *Yearly change:* per person with 3+ counted half-years spanning a year or
-  more of tenure, exp of the least-squares slope of ln(value) against tenure
-  (values under 0.05 count as 0.05), as a histogram of % reduction a year.
-  On 2026-11-11: 1,106 people, median 17% less feedback a year (18% for
-  addressed threads); about a fifth had more.
+- *Year-over-year change:* every contributor-year (`yearly_changes`): for
+  each person and pair of consecutive calendar years in which they landed
+  12+ changes with 6+ expected threads (twice the half-year minimums), the
+  change in their value from one year to the next (values under 0.05 count
+  as 0.05), as a histogram of % less feedback. All reviewer threads use every
+  CL from 2018 (older ones as for the cohort curves); pairs that include 2020
+  are left out, because Gerrit began recording general (patch-set-level)
+  comments as threads in July 2020 and threads per CL jump by about 40%
+  then. Addressed threads and directory experience use whole years from
+  their start (2024 on), with the same values as the person's sections. A
+  pair counts for an org group by the later year's org. On 2026-11-11: 5,274
+  changes from 1,904 people, median 16% less feedback a year (21% for
+  addressed threads, 1,746 changes). The leftmost bin ("grew 30%+") holds
+  16%: a ratio can grow without bound but fall by at most 100%, and noisy
+  years with few changes collect there.
 
 For the person's sections below:
 
