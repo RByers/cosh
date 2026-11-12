@@ -1,5 +1,3 @@
 config/affiliations.json5 is a verbatim copy of
-third_party/blink/tools/commit_stats/affiliations.json5 from the open CL
-https://chromium-review.googlesource.com/c/chromium/src/+/8761992 (patch set 3,
-revision 7f25a6b04c3e18a047f4e08b7ca8b86cfbf69280), fetched 2026-11-07.
-Once that CL lands, refresh from main with: python3 -m cosh update-affiliations
+https://chromium.googlesource.com/chromium/src/+/main/third_party/blink/tools/commit_stats/affiliations.json5
+fetched 2026-11-12T11:20:34Z. Refresh with: python3 -m cosh update-affiliations
