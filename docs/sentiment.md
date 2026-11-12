@@ -91,18 +91,19 @@ python3 -m cosh.sentiment praise --week 2025-W45:2026-W44
 # (sandboxed screening calls, 30 grumpy candidates each, shared across periods and groups;
 # read the result before committing)
 python3 -m cosh.sentiment samples --week 2025-W45:2026-W44
-# Identities on the weeks' rows (same files, plus writer and recipient), then the
-# per-period detail, "who makes whom happy" and the AI-friction list -> summaries/sentiment_recent.json
-python3 -m cosh.sentiment_people collect --week 2025-W45:2026-W44
+# The per-period detail, "who makes whom happy" and the AI-friction list -> summaries/sentiment_recent.json
 python3 -m cosh.sentiment_recent --week 2025-W45:2026-W44   # screening calls, 30 AI comments each
 # Everyone who commented, for the lookup box -> summaries/sentiment_people.json
 python3 -m cosh.sentiment_people lookup --week 2025-W45:2026-W44
 ```
 
-`cosh.sentiment_people collect` writes the same `comments-<week>.jsonl`
-files as `cosh.sentiment collect`, with identity fields added; the text the
-model sees, and so every score, is the same. `sentiment_recent` refuses
-files without them.
+`cosh.sentiment collect` always adds identity fields (writer and
+recipient) to `comments-<week>.jsonl`, so the files have one writer and one
+format (2026-11-12; until then `cosh.sentiment_people collect` wrote the
+same files with them and `collect` without). The text the model sees, and
+so every score, is the same either way. `sentiment_recent` and `praise`
+refuse files without them. `cosh.sentiment_people collect` still works and
+is the same command.
 
 **Measured cost.** The 5% sample (2023-W26 .. 2026-W44) has 145,468
 comments. 26,933 are bare acknowledgements, scored 0 without a call. Scoring
@@ -250,7 +251,7 @@ each of the page's periods (all the weeks, each calendar year, each calendar
 month), and only positive ones are published, with how many praise comments
 went in. The page lists everyone
 with a positive total (Top 15 or All), each with a score pill. Net praise
-needs the week files with identities (`cosh.sentiment_people collect`).
+needs the week files with identities (`cosh.sentiment collect`).
 
 - **Praise** is a comment scored glowing (≥ +0.4: specific appreciation or
   stronger), from one person to another. The score alone decides, since
@@ -267,7 +268,7 @@ needs the week files with identities (`cosh.sentiment_people collect`).
   `tests/test_sentiment.py` (`PraiseTest`) checks that a negative comment
   never reaches the hook.
 - **Coverage.** Every week needs its `comments-<week>.jsonl` (with
-  identities, `cosh.sentiment_people collect`) and every comment scored.
+  identities, `cosh.sentiment collect`) and every comment scored.
   `praise` reports any unscored ones per week in `coverage`.
 - **Cost.** Full scoring is about $1.25 of Max usage and 3–4 minutes a
   week at 8 calls at once. 2026-W37..W44 gave 872 praise comments by

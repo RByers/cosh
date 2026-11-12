@@ -1,7 +1,7 @@
 """Detail for fully scored weeks on the Review Tone page: summaries/sentiment_recent.json
 (comments by committers), plus .everyone.json and .noncommitters.json.
 
-  python3 -m cosh.sentiment_people collect --week 2025-W45:2026-W44   # rows with identities
+  python3 -m cosh.sentiment collect --week 2025-W45:2026-W44   # rows with identities
   python3 -m cosh.sentiment score --week 2025-W45:2026-W44            # every comment
   python3 -m cosh.sentiment_recent --week 2025-W45:2026-W44
 
@@ -218,7 +218,7 @@ def build(weeks, data_dir=store.DATA_DIR, version=None, sandbox="auto", authors=
     praise_rows = rows + (load(extra, data_dir, version)[0] if extra else [])
     if any("author" not in r for r in praise_rows[:1] + praise_rows[-1:]):
         raise SystemExit("these comment files have no identities: collect them with "
-                         "`python3 -m cosh.sentiment_people collect`")
+                         "`python3 -m cosh.sentiment collect`")
     rows = S.by_authors(rows, authors, data_dir)
     praise_rows = S.by_authors(praise_rows, authors, data_dir)
     box = S.make_sandbox(sandbox, data_dir) if isinstance(sandbox, str) else sandbox

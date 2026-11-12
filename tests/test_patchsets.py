@@ -36,6 +36,8 @@ class PatchsetsTest(unittest.TestCase):
             p = os.path.join(d, "derived.sqlite")
             make_derived(p)
             self.assertEqual(patchsets.reviewed_cls(p), [(101, 2), (100, 3), (105, 1)])
+            # Only the approved range unless asked: 105 closed before 2026-01-01.
+            self.assertEqual(patchsets.reviewed_cls(p, since="2026-01-01"), [(101, 2), (100, 3)])
 
     def test_refspecs(self):
         self.assertEqual(patchsets.refspecs(8639211),

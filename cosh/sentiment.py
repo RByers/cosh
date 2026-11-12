@@ -710,7 +710,7 @@ def net_praise(weeks, scores, data_dir=store.DATA_DIR, authors=DEFAULT_AUTHORS):
                 rows.append(r)
     if rows and "author" not in rows[0]:
         raise SystemExit("these comment files have no identities: collect them with "
-                         "`python3 -m cosh.sentiment_people collect`")
+                         "`python3 -m cosh.sentiment collect`")
     rows = by_authors(rows, authors, data_dir)
     out = {}
     for period, ws in periods(weeks).items():
@@ -874,7 +874,7 @@ def samples(weeks, data_dir=store.DATA_DIR, version=None, n=10, seed="2026-11", 
         if box is not sandbox:
             box.close()
 
-    # Names: from the week files' identities (`cosh.sentiment_people collect`),
+    # Names: from the week files' identities (`cosh.sentiment collect`),
     # else by collecting the praise comments' weeks again with only them kept.
     want = {i for p, _ in picked.values() for i in p}
     who = {i: rows[i] for i in want if rows[i].get("author_email")}
@@ -931,12 +931,16 @@ def main(argv):
     t0 = time.time()
     weeks = weeks_in(a.week)
     if a.step == "collect":
+        # Always with identities, so comments-<name>.jsonl has one writer and
+        # one format: per-person steps need them, the others ignore them.
+        from .sentiment_people import Identities
+        ann = Identities()
         if a.sample:
             start, end = week_bounds(weeks[0])[0], week_bounds(weeks[-1])[1]
-            rows = collect(None, start=start, end=end, keep=lambda i: in_sample(i, a.sample))
+            rows = collect(None, start=start, end=end, keep=lambda i: in_sample(i, a.sample), annotate=ann)
             sets = [(a.name or f"sample-{a.sample:g}", rows)]
         else:
-            sets = [(w, collect(w)) for w in weeks]
+            sets = [(w, collect(w, annotate=ann)) for w in weeks]
         for name, rows in sets:
             p = os.path.join(out_dir(), f"comments-{name}.jsonl")
             write_jsonl(p, rows)

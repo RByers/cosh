@@ -304,6 +304,14 @@ def pending_threads(db, labels_db, weeks):
     return [r for r in rows if (r[0], r[1], r[2]) not in have]
 
 
+def tokens_per_thread(labels_db, default=330):
+    """Tokens per labelled thread over the finished runs in labels.sqlite
+    (300 to 360 in production), else `default`."""
+    t, n = labels_db.execute("SELECT sum(tokens), sum(threads) FROM runs WHERE finished_at IS NOT NULL "
+                             "AND tokens > 0 AND threads > 0").fetchone()
+    return t / n if n else default
+
+
 def classify(data_dir=store.DATA_DIR, db_path=None, weeks=None, model="haiku", batch=100,
              max_threads=None, dry_run=False, labels_db_path=None, jobs=8, sandbox="auto"):
     from .derive import load_comments, prefetch_notedb
@@ -317,7 +325,7 @@ def classify(data_dir=store.DATA_DIR, db_path=None, weeks=None, model="haiku", b
         todo = todo[:max_threads]
     calls = -(-len(todo) // batch)
     print(f"{len(todo)} threads need a model label ({calls} calls of up to {batch}, {jobs} at a time; "
-          f"roughly {len(todo) * 230 / 1e6:.1f}M tokens)", file=sys.stderr)
+          f"roughly {len(todo) * tokens_per_thread(labels_db) / 1e6:.1f}M tokens)", file=sys.stderr)
     if dry_run or not todo:
         return len(todo)
     lock = open(os.path.join(data_dir, LOCK_FILE), "w")

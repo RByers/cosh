@@ -128,6 +128,9 @@ def main(argv=None):
                     help="repack after this many GB of new packs (default 8; it also repacks "
                          "when under 25 GB is free, and always at the end)")
     ps.add_argument("--db", help="derived DB path (default: data/private/derived.sqlite)")
+    ps.add_argument("--since", default=None,
+                    help="CLs closed (or last updated) on or after this date (default: the approved "
+                         "2023-06-26; earlier needs the user's approval, CLAUDE.md)")
     sub.add_parser("status", help="show extraction progress")
     sub.add_parser("update-affiliations", help="refresh config/affiliations.json5 from chromium/src")
     r = sub.add_parser("radar", help="fetch Cloudflare Radar browser share (needs CLOUDFLARE_API_TOKEN) "
@@ -228,7 +231,8 @@ def main(argv=None):
         from . import patchsets
         kw = dict(derived_path=a.db, interval=a.interval, max_cls=a.max_cls,
                   max_ps=a.max_patchsets, max_batches=a.max_batches,
-                  repack_bytes=a.repack_gb * 1e9, jobs=max(1, min(a.jobs, 8)))
+                  repack_bytes=a.repack_gb * 1e9, jobs=max(1, min(a.jobs, 8)),
+                  since=a.since or patchsets.APPROVED_SINCE)
         if a.go:
             with store.extract_lock():
                 patchsets.run(go=True, **kw)

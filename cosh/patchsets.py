@@ -80,19 +80,27 @@ def refspecs(n):
     return f"+refs/changes/{nn}/{n}/*:refs/patchsets/{n}/*\n^refs/changes/{nn}/{n}/meta\n"
 
 
-def reviewed_cls(derived_path, project="chromium/src", branch="main"):
+# The approved range (CLAUDE.md, 2026-11-07): reviewed CLs closed (or, if
+# open, last updated) since 2023-W26. derived.sqlite now reaches back to
+# 2017, and patch sets of those older CLs are not approved, so a plain rerun
+# must not select them. Fetching outside this range needs approval first.
+APPROVED_SINCE = "2023-06-26"
+
+
+def reviewed_cls(derived_path, project="chromium/src", branch="main", since=APPROVED_SINCE):
     """[(change_number, patchsets)] for CLs with a comment from a human other
-    than the owner, newest first (closed, else last updated)."""
+    than the owner, closed (else last updated) on or after `since`, newest
+    first."""
     db = sqlite3.connect(f"file:{derived_path}?mode=ro", uri=True)
     return db.execute(
         """SELECT ch.change_number, coalesce(ch.patchsets, 1) FROM changes ch
-           WHERE ch.project = ? AND ch.branch = ? AND EXISTS (
+           WHERE ch.project = ? AND ch.branch = ? AND coalesce(ch.closed_at, ch.updated_at) >= ? AND EXISTS (
              SELECT 1 FROM comments cm
              LEFT JOIN accounts a ON a.host = cm.host AND a.account_id = cm.account_id
              WHERE cm.host = ch.host AND cm.change_number = ch.change_number
                AND cm.account_id != ch.owner_account AND coalesce(a.is_bot, 0) = 0)
            ORDER BY coalesce(ch.closed_at, ch.updated_at) DESC, ch.change_number DESC""",
-        (project, branch)).fetchall()
+        (project, branch, since)).fetchall()
 
 
 def batches(cls, max_cls=1000, max_ps=5000):
@@ -271,7 +279,7 @@ def repack(git_dir):
 
 
 def run(go=False, derived_path=None, git_dir=None, interval=2.0, max_cls=1000, max_ps=5000,
-        repack_bytes=8e9, min_free=25e9, max_batches=None, jobs=1):
+        repack_bytes=8e9, min_free=25e9, max_batches=None, jobs=1, since=APPROVED_SINCE):
     """Fetch the plan with up to `jobs` workers sharing the repo (each waits
     `interval` between its own fetches; a shared Throttle lowers how many
     run at once when the server rate-limits us). When new packs pass `repack_bytes`
@@ -279,7 +287,7 @@ def run(go=False, derived_path=None, git_dir=None, interval=2.0, max_cls=1000, m
     stop, the repo is repacked, and fetching continues."""
     derived_path = derived_path or os.path.join(store.DATA_DIR, "derived.sqlite")
     git_dir = git_dir or default_repo()
-    cls = reviewed_cls(derived_path)
+    cls = reviewed_cls(derived_path, since=since)
     done = fetched(git_dir) if os.path.isdir(git_dir) else set()
     todo = [c for c in cls if c[0] not in done]
     plan = batches(todo, max_cls, max_ps)

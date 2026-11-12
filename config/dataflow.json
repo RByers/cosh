@@ -642,7 +642,7 @@
     },
 
     {
-      "id": "sentiment-collect", "group": "sentiment", "command": "python3 -m cosh.sentiment_people collect --week <weeks>",
+      "id": "sentiment-collect", "group": "sentiment", "command": "python3 -m cosh.sentiment collect --week <weeks>",
       "code": ["cosh/sentiment.py", "cosh/sentiment_people.py"],
       "purpose": "Renders each week's review comments with their thread context and who wrote them, ready for scoring.",
       "inputs": ["data/private/derived.sqlite", "data/private/raw.sqlite", "data/private/notedb/", "config/affiliations.json5"],
