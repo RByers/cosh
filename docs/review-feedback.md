@@ -90,19 +90,20 @@ index, `docs/balance.md` section 4; mechanical CLs from `mech.jsonl`):
   200-character excerpt and a link to the comment itself; the others get
   neither, and link to their CL (their comment ids would be 29% of the data,
   2026-11-11).
-- **Praise received** in that year: comments to the person on their own CLs
-  from someone else scored glowing (≥ +0.4, `cosh.sentiment.GLOWING`), the
-  share of all comments to them, the peers' median share (all authors of the
-  same tenure in years, or in earlier commits when that is chosen, at the end
-  of the year; 20+ comments received), and the praise comments with links.
+- **Praise** has no section here: after a lookup, "See also your praise"
+  links to the Review Tone page's popup for the address
+  (`sentiment.html#person=<address>`), which matches it in any case and
+  across chromium.org and google.com (`resolveEmail` in `web/src/tone.ts`).
+  The address is in the link's fragment, so it never reaches a server. The
+  comment list still flags praise comments (scored glowing, ≥ +0.4, in the
+  tone year) and can show only those. The script still writes the person's
+  tone counts and the tone peers' shares, which nothing shows now.
 
 ## Ground rules
 
 - **Tone is praise only** (`docs/plan.md`, ground rule 5). Nothing written
   marks a comment, a person or a group as negative: comments carry an
-  addressed flag and a praise flag, never a score. Orgs get no tone figures,
-  so with Google or outside Google chosen the praise section compares with
-  all authors of the same tenure.
+  addressed flag and a praise flag, never a score. Orgs get no tone figures.
 - **No completions, no browsing.** The input has `autocomplete="off"`, no
   datalist and no name. Data files are named by
   `sha256("cosh-review-feedback-v1:" + normalised address)[:32]`

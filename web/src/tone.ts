@@ -277,6 +277,18 @@ export function findPerson(d: Pick<PraiseData, 'people'>, query: string): { emai
   return byName.length === 1 ? { email: byName[0][0], name: byName[0][1] } : null;
 }
 
+/** The key in `people` for an address from elsewhere (a link from the Review
+ * Feedback page): the same address, in any case, or with chromium.org and
+ * google.com swapped, which other pages treat as one person. Unchanged when
+ * none is there. */
+export function resolveEmail(people: Record<string, string>, email: string): string {
+  if (email in people) return email;
+  const lower = new Map(Object.keys(people).map((e) => [e.toLowerCase(), e]));
+  const e = email.trim().toLowerCase();
+  const swap = e.replace(/@(chromium\.org|google\.com)$/, (_, d: string) => (d === 'google.com' ? '@chromium.org' : '@google.com'));
+  return lower.get(e) ?? lower.get(swap) ?? email;
+}
+
 /** Up to `n` people whose name or email contains `query` (any case), those
  * starting with it first, then by name. None for an empty query. */
 export function suggestPeople(d: Pick<PraiseData, 'people'>, query: string, n = 10): { email: string; name: string }[] {

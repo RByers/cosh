@@ -146,7 +146,7 @@
           Try the address you use in Gerrit; chromium.org and google.com addresses are the same here.</template>
         <template data-msg="find-error">Couldn't load the data: <slot name="error"></slot></template>
         <template data-msg="find-done">Showing <slot name="n"></slot> changes landed between <slot name="from"></slot>
-          and <slot name="to"></slot>.</template>
+          and <slot name="to"></slot>. <a class="rf-praise-link" href="sentiment.html">See also your praise</a>.</template>
       </section>
 
       <!-- Everything below is about the person whose address was typed. -->
@@ -293,33 +293,6 @@
         <template data-msg="thread-link-cl">Open the change in Gerrit</template>
       </section>
 
-      <section id="praise" class="card" aria-labelledby="praise-title">
-        <a class="card-anchor" href="#praise" aria-label="Link to this section" title="Link to this section">#</a>
-        <h2 id="praise-title">Praise you received</h2>
-        <p id="praise-sub" class="sub"></p>
-        <template data-msg="praise-sub">
-          Review comments to you on your changes between <slot name="from"></slot> and <slot name="to"></slot>
-          (the year whose comments have been scored for tone) that an AI model scored as specific appreciation or
-          stronger. Only praise is shown: this site never marks comments, people or groups as negative, and gives
-          organizations no tone figures.
-        </template>
-        <div class="tiles">
-          <div class="tile" id="rf-tile-received"><div class="tile-label">Comments to you</div><div class="tile-value"></div></div>
-          <div class="tile" id="rf-tile-praise"><div class="tile-label">Praise</div><div class="tile-value"></div></div>
-          <div class="tile" id="rf-tile-praise-peers"><div class="tile-label">Peers' median share</div><div class="tile-value"></div><div class="tile-sub"></div></div>
-        </div>
-        <template data-msg="praise-peers-sub"><slot name="group"></slot>: <slot name="n"></slot> people with
-          <slot name="min"></slot> or more comments to them</template>
-        <template data-msg="praise-share"><slot name="n"></slot> (<slot name="share"></slot>)</template>
-        <template data-msg="praise-org-note">Organizations get no tone figures, so this compares with all
-          authors of the same tenure.</template>
-        <template data-msg="praise-dir-note">Experience per directory doesn't apply to praise, so this compares
-          by years since the first commit.</template>
-        <p id="rf-praise-note" class="note"></p>
-        <ul id="rf-praise" class="quotes"></ul>
-        <button type="button" id="rf-praise-more" class="rf-more" hidden></button>
-        <template data-msg="praise-none">No praise comments to you in this year.</template>
-      </section>
 
       <section id="method" class="card" aria-labelledby="method-title">
         <a class="card-anchor" href="#method" aria-label="Link to this section" title="Link to this section">#</a>

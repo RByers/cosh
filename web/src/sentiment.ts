@@ -42,6 +42,7 @@ import {
   type Authors,
   allPraise,
   findPerson,
+  resolveEmail,
   suggestPeople,
   happyComments,
   boardRank,
@@ -610,6 +611,7 @@ function parseHash(): { mode: Mode; email: string } | null {
 async function openFromHash() {
   const h = parseHash();
   if (!h || !praiseData) return;
+  if (!(h.email in praiseData.people)) h.email = resolveEmail((await lookupData()).people, h.email);
   const fromBoards = (['given', 'received', 'authors', 'reviewers'] as const)
     .map((b) => boardRowsFor(b).find((x) => x.email === h.email)?.name).find(Boolean);
   let name = fromBoards ?? praiseData.people[h.email];

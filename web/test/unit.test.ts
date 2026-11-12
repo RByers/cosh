@@ -1205,6 +1205,16 @@ test('Review Tone: counts per month and the lookup box', async () => {
   assert.equal(findPerson(d, ''), null);
 });
 
+test('Review Tone: a linked address finds its key in any case, or across chromium.org and google.com', async () => {
+  const { resolveEmail } = await import('../src/tone.ts');
+  const people = { 'a@chromium.org': 'Ann', 'B@google.com': 'Bo', 'c@x.org': 'Cy' };
+  assert.equal(resolveEmail(people, 'c@x.org'), 'c@x.org');
+  assert.equal(resolveEmail(people, 'A@Google.com'), 'a@chromium.org');
+  assert.equal(resolveEmail(people, 'b@chromium.org'), 'B@google.com');
+  assert.equal(resolveEmail(people, ' C@X.ORG '), 'c@x.org');
+  assert.equal(resolveEmail(people, 'd@x.org'), 'd@x.org');
+});
+
 test('Review Tone: how a popup comment relates to its person', async () => {
   const { relation } = await import('../src/tone.ts');
   const c = { text: '', date: '', week: '2026-W44', score: 0.5, writer: 'A', writer_email: 'a@x.org', recipient: 'B',

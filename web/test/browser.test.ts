@@ -3303,6 +3303,11 @@ test('review feedback: a person, the measures, peer groups, directories and comm
   // Another address of the same person finds them too.
   await lookUp(page, ALIAS_EMAIL);
   await page.waitForFunction(() => !document.querySelector<HTMLElement>('#rf-person')!.hidden);
+  // The lookup note links to the person's praise on the Review Tone page, in the same tab.
+  const praise = await page.$eval('#rf-find-note .rf-praise-link', (a) => [(a as HTMLAnchorElement).getAttribute('href'),
+    (a as HTMLAnchorElement).target, a.textContent]);
+  assert.deepEqual(praise, [`sentiment.html#person=${encodeURIComponent(ALIAS_EMAIL)}`, '', 'See also your praise']);
+  assert.equal(await page.$('#praise'), null);
   const tile = (id: string) => page.$eval(`#${id} .tile-value`, (e) => e.textContent);
   assert.equal(await tile('rf-tile-cls'), '3');
   assert.equal(await tile('rf-tile-threads'), '5');
@@ -3332,15 +3337,12 @@ test('review feedback: a person, the measures, peer groups, directories and comm
   await page.select('#rf-tenure', 'dir');
   assert.equal(await tile('rf-tile-you'), '0.49×');
   assert.match(await peersSub(), /^All authors, by experience in each directory/);
-  assert.match(await page.$eval('#rf-praise-note', (e) => e.textContent!), /compares by years/);
   await page.select('#rf-tenure', 'changes');
   assert.match(await peersSub(), /^All authors, 50–199 earlier changes/);
   assert.equal(await tile('rf-tile-peers'), '1.65×');
-  assert.match(await page.$eval('#rf-tile-praise-peers .tile-sub', (e) => e.textContent!), /50–199 earlier changes: 150/);
   await page.select('#rf-tenure', 'time');
   await page.select('#rf-org', 'nongoogle');
   assert.equal(await tile('rf-tile-peers'), '–');
-  assert.match(await page.$eval('#rf-praise-note', (e) => e.textContent!), /Organizations get no tone figures/);
   await page.select('#rf-org', 'google');
   assert.match(await peersSub(), /^Google authors, 2–5 years since their first commit/);
   // Directories: selecting one lists only its comments.
@@ -3354,10 +3356,10 @@ test('review feedback: a person, the measures, peer groups, directories and comm
   // Praise only; comment text stays text, and each comment links to Gerrit in a new tab.
   await page.click('input[name="rf-show"][value="praise"]');
   assert.equal(await page.$$eval('#rf-threads li', (ls) => ls.length), 2);
-  assert.equal(await page.$('#rf-threads img, #rf-praise img'), null);
+  assert.equal(await page.$('#rf-threads img'), null);
   assert.ok((await page.$eval('#rf-threads', (e) => e.textContent!)).includes('<img src=x onerror=alert(1)>'));
-  const links = await page.$$eval('#rf-threads a, #rf-praise a', (as) => as.map((a) => [a.getAttribute('href'), a.getAttribute('target')]));
-  assert.ok(links.length >= 4);
+  const links = await page.$$eval('#rf-threads a', (as) => as.map((a) => [a.getAttribute('href'), a.getAttribute('target')]));
+  assert.equal(links.length, 2);
   for (const [href, target] of links) {
     assert.match(href!, /^https:\/\/chromium-review\.googlesource\.com\/c\/chromium\/src\/\+\/\d+(\/comment\/[\w%]+\/)?$/);
     assert.equal(target, '_blank');

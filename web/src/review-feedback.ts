@@ -69,7 +69,6 @@ const state = {
   dir: null as number | null,
   praiseOnly: false,
   threadsShown: PAGE,
-  praiseShown: 10,
   allDirs: false,
 };
 const charts: Record<string, Chart> = {};
@@ -100,12 +99,6 @@ function link(href: string, text: string): HTMLAnchorElement {
 const dayLabel = (day: number) => fmtDay(new Date(`${isoDay(day)}T00:00:00Z`));
 const monthLabel = (ym: string) =>
   new Intl.DateTimeFormat('en-GB', { month: 'long', year: 'numeric', timeZone: 'UTC' }).format(new Date(`${ym}-01T00:00:00Z`));
-const weekStart = (w: string) => {
-  const [y, n] = w.split('-W').map(Number);
-  const jan4 = Date.UTC(y, 0, 4);
-  const mon = jan4 - ((new Date(jan4).getUTCDay() + 6) % 7) * 86_400_000;
-  return mon + (n - 1) * 7 * 86_400_000;
-};
 
 /** A value of the current measure: per change, or against a norm. */
 function fmtValue(v: number | null | undefined, corr: Corr = state.corr): string {
@@ -114,7 +107,6 @@ function fmtValue(v: number | null | undefined, corr: Corr = state.corr): string
   return corr === 'n' ? s : `${s}×`;
 }
 const pct = (v: number) => fmtNum(v, { style: 'percent', maximumFractionDigits: 0 });
-const pct1 = (v: number) => fmtNum(v, { style: 'percent', minimumFractionDigits: 1, maximumFractionDigits: 1 });
 
 function periodName(p: string): string {
   const last = state.peers ? halves(state.peers.periods).at(-1) : undefined;
@@ -195,6 +187,9 @@ async function lookup(raw: string) {
     state.dir = null;
     state.allDirs = false;
     put(note, 'find-done', { n: fmtInt(found.cls.length), from: dayLabel(found.cls[0][1]), to: dayLabel(found.cls.at(-1)![1]) });
+    // The person's praise is on the Review Tone page, which opens their popup from the hash.
+    const praise = note.querySelector<HTMLAnchorElement>('.rf-praise-link');
+    if (praise) praise.href = `sentiment.html#person=${encodeURIComponent(raw.trim())}`;
     fillPeriods();
     $('#rf-person').hidden = false;
     render();
@@ -326,7 +321,6 @@ function render() {
   renderXp();
   renderDirs();
   renderThreads();
-  renderPraise();
 }
 
 function renderSummary() {
@@ -555,40 +549,6 @@ function renderThreads() {
   put(more, 'threads-more', { n: fmtInt(Math.min(PAGE, rows.length - state.threadsShown)) });
 }
 
-function renderPraise() {
-  const p = state.person!;
-  const peers = state.peers!;
-  const [w0, w1] = peers.tone_weeks;
-  const from = weekStart(w0);
-  const to = weekStart(w1) + 6 * 86_400_000;
-  put($('#praise-sub'), 'praise-sub', { from: fmtDay(new Date(from)), to: fmtDay(new Date(to)) });
-  $('#rf-tile-received .tile-value').textContent = fmtInt(p.tone.received);
-  $('#rf-tile-praise .tile-value').textContent = p.tone.received
-    ? msg('praise-share', { n: fmtInt(p.tone.praise), share: pct1(p.tone.praise / p.tone.received) }) : fmtInt(p.tone.praise);
-  // Tone peers: all authors of the same tenure, in years or in changes (directory
-  // experience doesn't apply, so it compares by years). Orgs get no tone figures.
-  const by: TenureBy = state.tenure === 'changes' ? 'changes' : 'time';
-  const band = by === 'changes' ? p.tone.chg : p.tone.ten;
-  const d = band ? peers.tone[`${by}:${band}`] : undefined;
-  $('#rf-tile-praise-peers .tile-value').textContent = d?.q ? pct1(quantile(d.q, 0.5)) : '–';
-  $('#rf-tile-praise-peers .tile-sub').textContent = msg('praise-peers-sub', {
-    group: groupName(by, 'all', band), n: fmtInt(d?.n ?? 0), min: peers.min_received });
-  const note = $('#rf-praise-note');
-  if (state.org !== 'all') put(note, 'praise-org-note');
-  else if (state.tenure === 'dir') put(note, 'praise-dir-note');
-  else note.replaceChildren();
-  const list = $('#rf-praise');
-  list.replaceChildren();
-  for (const [cl, uuid, day, text] of p.praise.slice(0, state.praiseShown)) {
-    const li = el('li', undefined, 'quote quote-praise');
-    li.append(el('p', text, 'rf-text'), el('span', `${dayLabel(day)} · `, 'muted'), link(commentUrl(cl, uuid), msg('thread-link')));
-    list.append(li);
-  }
-  if (!p.praise.length) list.append(el('li', msg('praise-none'), 'quote-none'));
-  const more = $<HTMLButtonElement>('#rf-praise-more');
-  more.hidden = p.praise.length <= state.praiseShown;
-  put(more, 'threads-more', { n: fmtInt(Math.min(PAGE, p.praise.length - state.praiseShown)) });
-}
 
 // ---- wiring
 
@@ -628,7 +588,6 @@ function init() {
     if (!state.person) return;
     renderSummary();
     renderTrend();
-    renderPraise();
   };
   $<HTMLSelectElement>('#rf-tenure').addEventListener('change', (e) => {
     state.tenure = (e.target as HTMLSelectElement).value as TenureBy;
@@ -653,10 +612,6 @@ function init() {
   $('#rf-threads-more').addEventListener('click', () => {
     state.threadsShown += PAGE;
     renderThreads();
-  });
-  $('#rf-praise-more').addEventListener('click', () => {
-    state.praiseShown += PAGE;
-    renderPraise();
   });
   $('#rf-dirs-more').addEventListener('click', () => {
     state.allDirs = true;
