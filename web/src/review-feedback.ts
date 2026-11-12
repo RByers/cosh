@@ -696,6 +696,7 @@ function renderTrend() {
       plugins: {
         legend: { display: false },
         tooltip: {
+          position: 'primary',
           filter: (i) => i.datasetIndex >= 4,
           callbacks: {
             title: (items) => (items.length ? halfName(hs[items[0].dataIndex]) : ''),

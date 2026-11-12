@@ -3576,6 +3576,15 @@ test('review feedback: selecting a dot in the over-time chart filters the direct
   // Half-years from July 2023: the person's first dot is the fifth, 2025 H2; 2026 H1 is the sixth.
   await page.$eval('#rf-trend', (c) => c.scrollIntoView({ block: 'center' }));
   const at = await dot(5);
+  // The hover card points at the person's dot, not at the average of every series there.
+  await page.mouse.move(at.x, at.y);
+  await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
+  const caret = await page.evaluate(() => {
+    const chart = window.__rf!.charts.trend;
+    const r = chart.canvas.getBoundingClientRect();
+    return { x: r.left + chart.tooltip!.caretX, y: r.top + chart.tooltip!.caretY };
+  });
+  assert.ok(Math.abs(caret.x - at.x) < 1 && Math.abs(caret.y - at.y) < 1, JSON.stringify({ caret, at }));
   await clickAt(at.x, at.y);
   assert.equal(await page.evaluate(() => window.__rf!.half), '2026H1');
   assert.equal(await filterShown(), true);

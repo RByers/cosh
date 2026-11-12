@@ -93,6 +93,7 @@ export function readTheme(el: Element = document.documentElement): Theme {
 declare module 'chart.js' {
   interface TooltipPositionerMap {
     belowOrAbove: TooltipPositionerFunction<ChartType>;
+    primary: TooltipPositionerFunction<ChartType>;
   }
 }
 
@@ -130,6 +131,19 @@ Tooltip.positioners.belowOrAbove = function (items, eventPosition) {
   const o = cardOptions(this);
   const gap = o.caretSize + o.caretPadding;
   return { ...p, yAlign: p.y + gap + fractionCardHeight(o) <= this.chart.height ? 'top' : 'bottom' };
+};
+
+/** At the hovered point of the primary series: the one drawn on top (lowest
+ * `order`) that has a value there. The default averages every series at the
+ * index, bands included, which left the card pointing at empty space. */
+Tooltip.positioners.primary = function (items) {
+  const ds = this.chart.data.datasets;
+  const top = items
+    .filter((i) => i.element?.hasValue())
+    .sort((a, b) => (ds[a.datasetIndex].order ?? 0) - (ds[b.datasetIndex].order ?? 0))[0];
+  if (!top) return false;
+  const { x, y } = top.element.tooltipPosition(true);
+  return { x, y };
 };
 
 /** Draws the rule between a fraction card's two body lines, numerator over
