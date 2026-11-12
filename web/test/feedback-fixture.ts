@@ -51,7 +51,7 @@ const groups = () => ({
   'dir:all': dist(0.2, 2.2), 'dir:google': dist(0.2, 2), 'dir:nongoogle': dist(0.3, 2.4),
 });
 const bands = () => each(() => [2.1, 1.6, 1.2, 0.9, 0.7].map((pooled) => ({ pooled, rel: pooled, n: 50, q: q(pooled / 2, pooled * 2) })));
-const periods = ['all', '2023', '2024', '2025', '2026', '2023H2', '2024H1', '2024H2', '2025H1', '2025H2', '2026H1', '2026H2'];
+const periods = ['all', '2023H2', '2024H1', '2024H2', '2025H1', '2025H2', '2026H1', '2026H2'];
 
 export const peers: Peers = {
   generated: '2026-11-11',

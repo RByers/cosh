@@ -8,8 +8,8 @@ page yet, and it carries `noindex`.
 
 ## What it shows
 
-The page opens with the switches (dates, feedback, adjusted for, same tenure
-by, peers), then a card that explains the feedback index before anyone types an
+The page opens with the switches (feedback, adjusted for, same tenure by,
+peers), then a card that explains the feedback index before anyone types an
 address, then the address field. The sections about a person appear only
 once an address is found.
 
@@ -17,8 +17,7 @@ once an address is found.
 feedback and adjustment switches; "Peers" picks its population (a half-year
 counts by its org, a person's change by the org of most of their
 half-years), and tenure by directory experience shows the values against
-that experience. Its axis is always years, and the dates don't apply to it.
-It shows:
+that experience. Its axis is always years. It shows:
 
 - *Cohort curves:* per year of first commit on `main`, the median of
   people's per-half-year values (counted half-years only: 6+ CLs, 3+
@@ -55,7 +54,10 @@ mechanical CLs from `mech.jsonl`), over whatever dates the data covers:
   periods by month without slivers: Monday 2023-06-26 .. Sunday 2026-11-01
   becomes 2023-07-01 .. 2026-10-31. `peers.json` gives the page `start`,
   `end` (exclusive) and `addr_start` as day numbers, and the page's prose and
-  period names come from them.
+  half-year names come from them. There is no date selector: every figure
+  covers all of it (the user's call, 2026-11-11), and only the over-time
+  chart splits it, by half-year. So the script computes peers for
+  everything and for each half-year, not per calendar year.
 - **The addressed measures** count only the CLs from `addr_start`: the first
   week from which every week's CLs have an addressed label for at least 95%
   of the threads that need one (the owner replied, and no "Done"-style regex
@@ -79,7 +81,6 @@ The measures:
     feedback index: the script recomputes those norms the same way as
     `balance_growth.cl_residuals`, and its thread counts match the `cl`
     table's for every CL.
-  - *Dates:* everything, a calendar year or a half-year.
 - **Peers always have the same tenure**, because feedback falls steeply with
   it (about 1.7× under a year or under 50 earlier commits, against 0.6× at
   10+ years or 1,000+). Two selectors pick the group:

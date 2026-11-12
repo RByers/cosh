@@ -1487,18 +1487,20 @@ test('review feedback: half-year files merge, and every period gets the values t
   assert.deepEqual(person.cls.map((c) => c[7].map(([d]) => person.dirs[d])),
     [['chrome/browser/ui/'], ['content/browser/', 'chrome/browser/ui/'], ['third_party/blink/renderer/']]);
   assert.deepEqual(person.cls[2][8].map((t) => person.files[t[1]]), ['third_party/blink/renderer/core/a.cc', '/PATCHSET_LEVEL']);
-  assert.deepEqual(Object.keys(person.periods).sort(), ['2025', '2025H2', '2026', '2026H1', '2026H2', 'all']);
+  // Everything, and the half-years with changes (the over-time chart).
+  assert.deepEqual(Object.keys(person.periods).sort(), ['2025H2', '2026H1', '2026H2', 'all']);
   const all = person.periods.all;
   assert.deepEqual([all.cls, all.threads, all.addressed, all.ten, all.org, all.ok], [3, 5, 3, '2-5y', 'google.com', false]);
   // Earlier commits on main at the median change: 30, 80, 260.
   assert.deepEqual([all.prior, all.chg], [80, '50-199']);
-  assert.deepEqual([person.periods['2026'].prior, person.periods['2026'].chg], [170, '50-199']);
+  // Over two changes, the middle of 80 and 260 (any period peers.json lists gets values).
+  const y = F.buildPerson(top, top.halves.map((h) => shards[h]), { ...peers, periods: [...peers.periods, '2026'] });
+  assert.deepEqual([y.periods['2026'].prior, y.periods['2026'].chg, y.periods['2026'].cls], [170, '50-199', 2]);
   // 5 threads over 3 CLs, over 2.5 + 3 + 1.5 expected; 3 addressed over 1.4 + 2 + 0.9.
   assert.deepEqual([all.v.tn, all.v.td, all.v.an, all.v.ad], [1.667, 0.714, 1, 0.698]);
   // Against the band rates: 2.5 × 2.1 + 0.75 × 3 × 1.2 + 0.25 × 3 × 1.6 + 1.5 × 0.7 = 10.2.
   assert.equal(all.x.td, 0.49);
   assert.equal(person.periods['2026H1'].v.td, 0.333);
-  assert.equal(person.periods['2026'].cls, 2);
   // Six CLs with three expected threads count among peers.
   const six = F.buildPerson(top, [{ ...shards['2026H1'], cls: Array(6).fill(shards['2026H1'].cls[0]) }], peers);
   assert.equal(six.periods.all.ok, true);

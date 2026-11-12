@@ -29,10 +29,6 @@
     <main>
       <!-- What every section below counts, and whom it compares with. -->
       <div class="metric-bar rf-bar">
-        <div class="select-toggle select-short">
-          <label for="rf-period">Dates</label>
-          <select id="rf-period"></select>
-        </div>
         <fieldset id="rf-kind" class="segmented">
           <legend>Feedback</legend>
           <label><input type="radio" name="rf-kind" value="t" checked />All reviewer threads</label>
@@ -61,9 +57,7 @@
           </select>
         </div>
       </div>
-      <!-- Periods are cut to the dates the measure covers (the addressed one starts later). -->
-      <template data-msg="period-all"><slot name="from"></slot> – <slot name="to"></slot></template>
-      <template data-msg="period-year"><slot name="year"></slot></template>
+      <!-- Half-years in the over-time chart, cut to the dates the measure covers (the addressed one starts later). -->
       <template data-msg="period-half1">January – June <slot name="year"></slot></template>
       <template data-msg="period-half2">July – December <slot name="year"></slot></template>
       <template data-msg="period-part"><slot name="from"></slot> – <slot name="to"></slot> <slot name="year"></slot></template>
@@ -121,8 +115,7 @@
           <slot name="median"></slot> a year; bars on the left are contributors whose feedback grew.
         </template>
         <p class="note">
-          The dates chosen above apply to your own figures below, not to these two charts, and these always
-          measure tenure in years.
+          These two charts always measure tenure in years.
         </p>
         <template data-msg="org-name-google">Google</template>
         <template data-msg="org-name-nongoogle">outside Google</template>
@@ -167,7 +160,7 @@
           the Review Balance page's feedback index<span data-if="kind=a"> for addressed threads</span>.</span>
           <span data-if="tenure=dir">Here both you and your peers are measured against authors with the same
           number of earlier commits in each directory, so 1.00× is typical for that experience.</span>
-          <span data-if="!eligible">You landed too few changes in these dates to be placed among peers
+          <span data-if="!eligible">You landed too few changes to be placed among peers
           (<slot name="minCls"></slot> or more are needed), so treat your figure with care.</span>
         </template>
         <div class="tiles">
@@ -194,8 +187,8 @@
         <template data-msg="group-dir"><slot name="org"></slot>, by experience in each directory</template>
         <template data-msg="group-none">Tenure unknown</template>
         <template data-msg="you-facts">
-          Your first commit on main was in <slot name="first"></slot>. In these dates you were
-          <slot name="ten"></slot> in, with about <slot name="prior"></slot> earlier changes on main, and most
+          Your first commit on main was in <slot name="first"></slot>. At the middle of your
+          changes you were <slot name="ten"></slot> in, with about <slot name="prior"></slot> earlier changes on main, and most
           of your changes were landed as <slot name="org"></slot>.
         </template>
         <p id="rf-facts" class="note"></p>
@@ -261,7 +254,7 @@
           where fewer than 30 such changes landed), times the change's share in this directory (by lines and files),
           summed.</template>
         <template data-msg="dirs-more">Show all <slot name="n"></slot> directories</template>
-        <p class="note">“Earlier commits” are yours in that directory before your latest change there in these dates.</p>
+        <p class="note">“Earlier commits” are yours in that directory before your latest change there.</p>
       </section>
 
       <section id="comments" class="card" aria-labelledby="comments-title">
@@ -317,12 +310,12 @@
           Adjusting for size compares each change with the 2023–24 average for changes in the same of ten size
           bands (by lines changed); adjusting for directory as well uses the average for that size in the same
           two-level directory, where there are 30 or more such changes. Peers are the authors who landed
-          <span id="rf-min-cls"></span> or more changes in the same dates, always with the same tenure, taken at
-          the middle of their changes in the dates. Tenure in years counts from a person's first commit on main.
+          <span id="rf-min-cls"></span> or more changes, always with the same tenure, taken at the middle of
+          their changes. Tenure in years counts from a person's first commit on main.
           Tenure in changes counts their earlier commits on main since 2017 (reverts left out), in bands of under
           50, 50–199, 200–499, 500–999 and 1,000 or more. Tenure by experience in each directory divides
           everyone's feedback by what all authors drew at the same number of earlier commits in that directory.
-          An author's organization is the one most of their changes in the dates are attributed to. Groups of
+          An author's organization is the one most of their changes are attributed to. Groups of
           fewer than ten peers get no comparison.
         </p>
         <p class="note">

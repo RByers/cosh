@@ -3287,12 +3287,13 @@ test('review feedback: the opening card explains the index before any address is
   assert.equal(await page.$('.lede'), null);
   assert.match(await page.$eval('#intro', (e) => e.textContent!), /tool\s+for learning/);
   await page.waitForFunction(() => !!window.__rf!.charts.cohorts && !!window.__rf!.charts.change);
-  // One line per first-commit year whose curve starts at tenure 0; the dates are listed before a lookup.
+  // One line per first-commit year whose curve starts at tenure 0. There is no date selector: the page
+  // covers all the data.
   assert.deepEqual(await page.$$eval('#rf-cohort-legend li', (ls) => ls.map((l) => l.textContent)),
     ['started in 2019', 'started in 2024']);
   assert.equal(await page.evaluate(() => (window.__rf!.charts.cohorts.options.scales!.y as { title: { text: string } })
     .title.text), 'feedback index');
-  assert.ok((await page.$$eval('#rf-period option', (os) => os.length)) > 1);
+  assert.equal(await page.$('#rf-period'), null);
   assert.match(await page.$eval('#rf-cohorts-note', (e) => e.textContent!), /from that first commit\s+to October 2026:/);
   assert.match(await page.$eval('#rf-change-note', (e) => e.textContent!), /1,100 contributors\).*fell by\s+17%/s);
   // It follows the switches: outside Google has one line, and a median that grew.
@@ -3387,12 +3388,10 @@ test('review feedback: a person, the measures, peer groups, directories and comm
     assert.match(href!, /^https:\/\/chromium-review\.googlesource\.com\/c\/chromium\/src\/\+\/\d+(\/comment\/[\w%]+\/)?$/);
     assert.equal(target, '_blank');
   }
-  // A half-year: one change.
-  await page.select('#rf-period', '2026H1');
-  assert.equal(await tile('rf-tile-cls'), '1');
-  const options = () => page.$$eval('#rf-period option', (os) => os.map((o) => o.textContent));
-  assert.deepEqual(await options(), ['July 2023 – October 2026', 'January – October 2026', '2025', 'July – October 2026', 'January – June 2026',
-    'July – December 2025']);
+  // The over-time chart has every half-year of the data, the last one cut to its end.
+  assert.deepEqual(await page.evaluate(() => window.__rf!.charts.trend.data.labels),
+    ['July – December 2023', 'January – June 2024', 'July – December 2024', 'January – June 2025', 'July – December 2025',
+      'January – June 2026', 'July – October 2026']);
   assert.match(await page.$eval('#method', (e) => e.textContent!), /from\s+July 2023 to October 2026,.*from July 2023, where/s);
   const text = await page.$eval('body', (b) => b.innerText);
   assert.doesNotMatch(text, /\b\d{4}-W\d{2}\b/);
@@ -3406,20 +3405,16 @@ test('review feedback: the addressed measure covers only the labelled dates', as
   await lookUp(page, FIXTURE_EMAIL);
   await page.waitForFunction(() => !document.querySelector<HTMLElement>('#rf-person')!.hidden);
   const tile = (id: string) => page.$eval(`#${id} .tile-value`, (e) => e.textContent);
-  const options = () => page.$$eval('#rf-period option', (os) => os.map((o) => o.textContent));
-  assert.equal((await options()).length, 6);
-  await page.select('#rf-period', '2025H2');
+  assert.equal(await page.evaluate(() => window.__rf!.charts.trend.data.labels!.length), 7);
   await page.click('input[name="rf-kind"][value="a"]');
-  // 2025 has no labels: its periods go, and the period falls back to everything, from January 2026.
-  assert.deepEqual(await options(), ['January 2026 – October 2026', 'January – October 2026', 'July – October 2026', 'January – June 2026']);
-  assert.equal(await page.$eval('#rf-period', (s) => (s as HTMLSelectElement).value), 'all');
+  // Before 2026 there are no labels: the addressed figures count CLs 2 and 3, and the chart starts in 2026.
   assert.equal(await tile('rf-tile-cls'), '2');
   assert.equal(await tile('rf-tile-threads'), '2');
   assert.equal(await page.$eval('#comments-sub', (e) => e.textContent!.split(' ')[0]), '2');
   assert.equal(await page.evaluate(() => window.__rf!.charts.trend.data.labels!.length), 2);
   assert.match(await page.$eval('#method', (e) => e.textContent!), /from January 2026, where/);
   await page.click('input[name="rf-kind"][value="t"]');
-  assert.equal((await options()).length, 6);
+  assert.equal(await page.evaluate(() => window.__rf!.charts.trend.data.labels!.length), 7);
   assert.equal(await tile('rf-tile-cls'), '3');
   assert.deepEqual(errors, []);
   await page.close();

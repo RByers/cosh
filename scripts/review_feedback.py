@@ -167,9 +167,9 @@ def half(t):
 
 
 def periods_of(t):
-    """The periods a CL closed at t belongs to: all, its year, its half-year."""
-    h = half(t)
-    return ("all", h[:4], h)
+    """The periods a CL closed at t belongs to: all (the page's figures) and
+    its half-year (the over-time chart)."""
+    return ("all", half(t))
 
 
 def quantiles(xs):

@@ -28,7 +28,6 @@ import {
   trendGroup,
   valueFor,
   xpBreakdown,
-  years,
   type Alias,
   type Shard,
   type Top,
@@ -61,11 +60,12 @@ const $ = <T extends Element = HTMLElement>(sel: string) => document.querySelect
 const DATA = 'review-feedback/';
 const PAGE = 50;
 const DIRS_SHOWN = 15;
+/** The page's figures always cover all the data; only the over-time chart splits it, by half-year. */
+const ALL = 'all';
 
 const state = {
   person: null as Person | null,
   peers: null as Peers | null,
-  period: 'all',
   kind: 't' as Kind,
   corr: 'd' as Corr,
   tenure: 'time' as TenureBy,
@@ -126,27 +126,16 @@ const monthOf = (day: number, year: boolean) => new Intl.DateTimeFormat('en-GB',
 const fromMonth = (from: number) => from;
 const toMonth = (to: number) => to - 1;
 
-/** A period's name, cut to the dates the current measure covers. */
-function periodName(p: string, kind: Kind = state.kind): string {
-  const range = rangeOf(state.peers!, kind);
-  const [from, to] = periodSpan(p, range);
-  if (p === 'all') return msg('period-all', { from: monthOf(fromMonth(from), true), to: monthOf(toMonth(to), true) });
-  const year = p.slice(0, 4);
-  const [whole0, whole1] = periodSpan(p, [-Infinity, Infinity]);
+/** A half-year's name in the over-time chart, cut to the dates the current measure covers. */
+function halfName(h: string): string {
+  const [from, to] = periodSpan(h, rangeOf(state.peers!, state.kind));
+  const year = h.slice(0, 4);
+  const [whole0, whole1] = periodSpan(h, [-Infinity, Infinity]);
   const a = monthOf(fromMonth(from), false);
   const b = monthOf(toMonth(to), false);
   if (a !== monthOf(fromMonth(whole0), false) || b !== monthOf(toMonth(whole1), false))
     return msg('period-part', { from: a, to: b, year });
-  if (p.length === 4) return msg('period-year', { year });
-  return msg(p.endsWith('H1') ? 'period-half1' : 'period-half2', { year });
-}
-
-/** Whether `period` falls in the dates the current measure covers, and has changes it
- * counts for the person shown (if any). */
-function hasPeriod(period: string, kind: Kind = state.kind): boolean {
-  if (!state.peers) return false;
-  const [from, to] = periodSpan(period, rangeOf(state.peers, kind));
-  return from < to && (!state.person || clsOf(state.person.periods[period], kind) > 0);
+  return msg(h.endsWith('H1') ? 'period-half1' : 'period-half2', { year });
 }
 
 /** The dates the data covers, by name: the first and last month, the last day, and the
@@ -236,29 +225,12 @@ async function lookup(raw: string) {
     // The person's praise is on the Review Tone page, which opens their popup from the hash.
     const praise = note.querySelector<HTMLAnchorElement>('.rf-praise-link');
     if (praise) praise.href = `sentiment.html#person=${encodeURIComponent(raw.trim())}`;
-    fillPeriods();
     $('#rf-person').hidden = false;
     render();
     document.body.dataset.person = '1';
   } catch (e) {
     put(note, 'find-error', { error: String(e instanceof Error ? e.message : e) });
   }
-}
-
-function fillPeriods() {
-  // Only the periods with changes the current measure counts: the addressed ones start later.
-  const sel = $<HTMLSelectElement>('#rf-period');
-  const peers = state.peers!;
-  const has = (period: string) => period === 'all' || hasPeriod(period);
-  sel.replaceChildren();
-  for (const period of ['all', ...years(peers.periods).reverse(), ...halves(peers.periods).reverse()]) {
-    if (!has(period)) continue;
-    const o = el('option', periodName(period));
-    o.value = period;
-    sel.append(o);
-  }
-  if (!has(state.period)) state.period = 'all';
-  sel.value = state.period;
 }
 
 // ---- the opening card (no person needed)
@@ -374,7 +346,7 @@ function render() {
 function renderSummary() {
   const p = state.person!;
   const peers = state.peers!;
-  const vals = p.periods[state.period];
+  const vals = p.periods[ALL];
   const m = metric();
   put($('#summary-sub'), 'summary-sub', { corr: state.corr, kind: state.kind, tenure: state.tenure,
     eligible: okFor(vals, state.kind), minCls: peers.min_cls });
@@ -386,7 +358,7 @@ function renderSummary() {
   const g = groupKey(state.tenure, state.org, vals);
   // Where the person's counts sit among the same peers'.
   const rank = (field: CountField, v: number) => {
-    const d = g ? peers.counts?.[state.period]?.[g]?.[field] : undefined;
+    const d = g ? peers.counts?.[ALL]?.[g]?.[field] : undefined;
     return d?.q ? msg('tile-count-rank', { p: ordinal(percentileOf(d.q, v)) }) : '';
   };
   const cls = clsOf(vals, state.kind);
@@ -396,7 +368,7 @@ function renderSummary() {
   tile('rf-tile-threads', fmtInt(threads), rank(state.kind === 't' ? 'threads' : 'addressed', threads));
   const you = valueFor(state.tenure, vals, m);
   tile('rf-tile-you', fmtValue(you));
-  const dist: Dist | undefined = g ? peers.dist[state.period]?.[g]?.[m] : undefined;
+  const dist: Dist | undefined = g ? peers.dist[ALL]?.[g]?.[m] : undefined;
   const name = groupName(state.tenure, state.org, bandOf(state.tenure, vals));
   if (dist?.q) {
     tile('rf-tile-peers', fmtValue(quantile(dist.q, 0.5)), msg('tile-peers-sub', {
@@ -441,7 +413,7 @@ function renderTrend() {
       pointBorderColor: t.series[0], pointRadius: 4, pointHoverRadius: 5, borderWidth: 2, tension: 0, spanGaps: true,
       fill: false, order: 0 },
   ];
-  const names = hs.map((h) => periodName(h));
+  const names = hs.map((h) => halfName(h));
   charts.trend = new Chart($<HTMLCanvasElement>('#rf-trend'), {
     type: 'line',
     data: { labels: names, datasets },
@@ -483,8 +455,8 @@ function renderXp() {
   const t = theme();
   const m = metric();
   put($('#experience-sub'), 'experience-sub');
-  const mine = xpBreakdown(p, state.period, m);
-  const bands = peers.bands[state.period]?.[m] ?? [];
+  const mine = xpBreakdown(p, ALL, m);
+  const bands = peers.bands[ALL]?.[m] ?? [];
   const labels = peers.xp.map((x) => x);
   const you = mine.map((b) => (b.cls >= 1 && b.den > 0 ? b.obs / b.den : null));
   const datasets: ChartDataset<'line', (number | null)[]>[] = [
@@ -538,7 +510,7 @@ function renderDirs() {
   const p = state.person!;
   put($('#directories-sub'), 'directories-sub', { corr: state.corr });
   $('#rf-dirs-typical').title = msg(`dirs-typical-${state.kind}`).replace(/\s+/g, ' ').trim();
-  const rows = dirTable(p, state.period, state.kind);
+  const rows = dirTable(p, ALL, state.kind);
   const body = $('#rf-dirs tbody');
   body.replaceChildren();
   const shown = state.allDirs ? rows : rows.slice(0, DIRS_SHOWN);
@@ -597,7 +569,7 @@ function threadItem(r: ThreadRow): HTMLLIElement {
 
 function renderThreads() {
   const p = state.person!;
-  const rows = threadRows(p, state.period, state.kind, state.dir, state.praiseOnly);
+  const rows = threadRows(p, ALL, state.kind, state.dir, state.praiseOnly);
   put($('#comments-sub'), 'comments-sub', { n: fmtInt(rows.length), kind: state.kind,
     dir: state.dir === null ? '' : p.dirs[state.dir] });
   const list = $('#rf-threads');
@@ -623,15 +595,9 @@ function init() {
     e.preventDefault();
     void lookup(input.value);
   });
-  $<HTMLSelectElement>('#rf-period').addEventListener('change', (e) => {
-    state.period = (e.target as HTMLSelectElement).value;
-    state.threadsShown = PAGE;
-    render();
-  });
   radio<Kind>('rf-kind', (v) => {
     state.kind = v;
     state.threadsShown = PAGE;
-    if (state.peers) fillPeriods();
     renderIntro();
     render();
   });
@@ -689,7 +655,6 @@ function init() {
     if (!p) return;
     $('#rf-min-cls').textContent = fmtInt(p.min_cls);
     fillRange(p);
-    if (!state.person) fillPeriods();
     renderIntro();
   }).catch(() => {}).finally(() => {
     document.body.dataset.ready = '1';

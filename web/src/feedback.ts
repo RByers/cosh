@@ -381,8 +381,6 @@ export function commentUrl(cl: number, uuid?: string): string {
 
 /** Half-year periods in order, from peers.json's list. */
 export const halves = (periods: string[]) => periods.filter((p) => /^\d{4}H[12]$/.test(p)).sort();
-/** Calendar-year periods in order. */
-export const years = (periods: string[]) => periods.filter((p) => /^\d{4}$/.test(p)).sort();
 
 // ---- Merging a person's files, and their values per period
 
