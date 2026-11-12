@@ -1,9 +1,9 @@
 # cosh: data architecture
 
-Status: review of 2026-11-12. This covers how cosh's data fits together
-today, what makes it hard to manage, the architecture to aim for, and the
-changes that get there. Nothing proposed here is done yet, except the
-inventory itself.
+Status: review of 2026-11-12, updated the same day. This covers how cosh's
+data fits together, what makes it hard to manage, the architecture to aim
+for, and the changes that get there. Section 6 records what has been done
+since the review; items marked *(done)* below are resolved.
 
 The facts are in `config/dataflow.json`: every source, store, step and page.
 `web/dataflow.html` shows it as tables and a graph, and
@@ -23,10 +23,10 @@ there, and only there.
 - **The fix is mostly convention, not new machinery:** one command per
   published file, one writer per store, date ranges taken from the data,
   inputs at fixed paths, and an `update` command that walks the inventory.
-- **Three things need your decision** (section 5): whether to delete a
-  2.1 GB leftover, how the 302 MB of Feedback Index files get published,
-  and whether the Review Balance and Review Tone pages should follow new
-  weeks or stay fixed-window analyses.
+- **Two things still need your decision** (section 5): whether to delete a
+  2.1 GB leftover, and whether the Review Balance and Review Tone pages
+  should follow new weeks or stay fixed-window analyses. How the Feedback
+  Index is published was decided on 2026-11-12: its files are committed.
 
 ## 1. The inventory
 
@@ -104,8 +104,8 @@ Data moves through five layers. The first three are in `data/private/`
    The balance stage files build on it and on git, and the sentiment
    comment files are rendered from it.
 4. **Published**: `summaries/*`, `data/public/radar_browser_share.csv`,
-   `config/org_browsers.csv` (committed), and `web/public/review-feedback/`
-   (not committed).
+   `config/org_browsers.csv` and `web/public/review-feedback/` (all
+   committed; the last since 2026-11-12).
 5. **Site**: `web/dist/`, built locally or by the Pages workflow from the
    committed files.
 
@@ -183,7 +183,7 @@ that includes about 9 years of CLs whose patch sets are not approved. The
 bound exists only in CLAUDE.md prose. `extract` has the same shape: the
 approved range is in prose, not in the command.
 
-### 3.6 "Offline" steps that fetch and rewrite config
+### 3.6 Steps that fetch and rewrite config *(by design)*
 
 `OrgResolver()` fetches the affiliations file and may rewrite
 `config/affiliations.json5`. Eight call sites in seven files build one:
@@ -192,11 +192,18 @@ and two analysis scripts. So a summary step can change a config file as a side
 effect, and docs that call these steps offline are wrong. In the inventory
 this had to be modelled as "runs `update-affiliations` by itself".
 
-### 3.7 Published data that isn't published
+This is now a decision, not an accident (`docs/plan.md`, 2026-11-12): the
+fetch is cheap, many analyses depend on the file and some are slow, so none
+should run on a stale copy. `COSH_AFFILIATIONS_OFFLINE=1` skips it. Rule 7
+below is relaxed accordingly: the inventory should say which steps refresh
+affiliations, and docs shouldn't call them offline.
 
-`web/public/review-feedback/` is 302 MB in 7,000-odd files and gitignored.
-The Pages build has none of it, so on the live site the Feedback Index
-page finds nobody. Locally it also doubles `web/dist/` to 398 MB.
+### 3.7 Published data that isn't published *(done)*
+
+`web/public/review-feedback/` was 302 MB in 7,000-odd files and gitignored,
+so the live Feedback Index page found nobody. On 2026-11-12 its files were
+slimmed to 126 MB (53 MB as git stores them), committed, and published; the
+landing page links the page.
 
 ### 3.8 Three kinds of entry point
 
@@ -217,7 +224,10 @@ analyses, and the only way to tell them apart is the inventory.
   `summaries/org_weekly.csv` is read by no page.
 - **Two walks of the same logs.** `balance timeline` and
   `balance_signals.py votes` both read every CL's NoteDb event log. The
-  votes pass took 5 h 14 min on 2026-11-12.
+  votes pass took 5 h 14 min on 2026-11-12, before two fixes the same day
+  (list `refs/meta/` once; refresh the NoteDb multi-pack index after a
+  backfill, then a repack from 3,823 packs to 14) made a cold read about
+  560 CLs/s, roughly 20 minutes for every CL.
 - **One schema in five files.** Each `balance-*.sqlite` carries every
   stage's tables, mostly empty (`cosh/balance.py:114`).
 - **Same file, two writers.** `cosh.sentiment collect` and
@@ -279,9 +289,9 @@ Seven rules. The Gerrit core already follows all of them.
    (say `config/approved.json`) gives each fetcher its approved range, and
    the fetcher refuses anything outside it without an explicit override.
    CLAUDE.md keeps the reasons; the bound itself stops being prose.
-7. **A step is offline unless the inventory says it fetches.** Org
-   attribution reads `config/affiliations.json5` as it is; only
-   `update-affiliations` fetches it.
+7. **A step is offline unless the inventory says it fetches.** The one
+   deliberate exception is the affiliations refresh that every
+   `OrgResolver()` does (3.6); the inventory marks those steps.
 
 On top of these, one command ties the flow together:
 
@@ -316,18 +326,18 @@ updated with it. Sizes: S is under an hour, M a few hours, L a day or more.
 | # | Decision | Why it's yours |
 |---|---|---|
 | D1 | Delete `data/private/derived.prev.sqlite` and `derived.new.sqlite-*` (2.1 GB)? | Deleting data. No code reads them and `derived.sqlite` is rebuildable. |
-| D2 | How should the Feedback Index files be published? | 302 MB in 7,000 files is too much churn for the main branch. Options: a separate data branch that the Pages workflow checks out; a release asset the workflow downloads; or keep the page local-only. |
+| D2 | *(done 2026-11-12)* How should the Feedback Index files be published? | Decided: slimmed to 126 MB and committed to `main`; finished half-years don't change between runs, so git stores them once. |
 | D3 | Should Review Balance and Review Tone follow new weeks, or stay fixed-window analyses? | It decides whether their steps become `routine` (and need rule 4) or stay `optional` snapshots that are rerun deliberately. |
-| D5 | Delete `data/private/notedb/repack-20261112/old-packs` (12 GB)? | The 2026-11-12 repack verified every object and ref, and kept the old packs for a person to remove. |
+| D5 | *(done)* Delete `data/private/notedb/repack-20261112/old-packs` (12 GB)? | Deleted by the user on 2026-11-12. |
 | D4 | Retire the pilot repo `data/private/git/chromium-src.git`? | CLAUDE.md says never delete it. Only exploratory balance scripts read it. |
 
 ### Then: quick fixes that remove real risk
 
 | # | Change | Size | Rule |
 |---|---|---|---|
-| 1 | Give `cosh patchsets` `--since`/`--until`, defaulting to the approved 2023-W26 .. 2026-W44, so a plain rerun can't fetch unapproved CLs | S | 6 |
-| 2 | Make `OrgResolver()` read the committed file; fetch only in `update-affiliations` | S | 7 |
-| 3 | Fix the `classify --dry-run` estimate (use the last runs' measured tokens per thread from `labels.sqlite`'s `runs`) | S | — |
+| 1 | *(done)* Give `cosh patchsets` `--since`/`--until`, defaulting to the approved 2023-W26 .. 2026-W44, so a plain rerun can't fetch unapproved CLs | S | 6 |
+| 2 | *(dropped)* Make `OrgResolver()` read the committed file; fetch only in `update-affiliations` | — | the user chose the refresh (3.6) |
+| 3 | *(done)* Fix the `classify --dry-run` estimate (use the last runs' measured tokens per thread from `labels.sqlite`'s `runs`) | S | — |
 | 4 | Move `data/public/radar/adhoc/` out of the published tree (to `docs/` or `.research/`); drop `summaries/org_weekly.csv` or say on the page that it is a download | S | 3 |
 | 5 | Read `RATIO_EXCLUDED_BROWSERS` from `config/browsers.csv` (emit it in the Radar CSV or a small JSON) | S | 1 |
 | 6 | Bound `extract-open` to a recent window by default (say 2 years), with `--since` for a full relist | S | — |
@@ -351,10 +361,10 @@ today's `balance.json` key for key) makes it safe to do in pieces.
 
 | # | Change | Size | Rule |
 |---|---|---|---|
-| 12 | One `collect` that always writes identities; steps that must not see them read a view without | S | 1 |
+| 12 | *(done)* One `collect` that always writes identities; steps that must not see them read a view without | S | 1 |
 | 13 | `cosh.sentiment publish --weeks …`: one command and one range for the trend, praise, samples, recent and people files (default range pending D3) | M | 1, 4 |
 | 14 | Cache screening verdicts in `sentiment.sqlite`, keyed by comment and prompt hash | S | — |
-| 15 | Move `review_feedback.py` to `cosh/feedback.py` (`python3 -m cosh.feedback`) and write to wherever D2 decides | M | 2 |
+| 15 | Move `review_feedback.py` to `cosh/feedback.py` (`python3 -m cosh.feedback`); it writes the committed `web/public/review-feedback/` (D2) | M | 2 |
 | 16 | Give the review-ROI scripts a `--out` under `data/private/scratch/review_roi/` instead of the hard-coded session path | S | 3 |
 
 ### Last: the update command and tidying
@@ -382,3 +392,21 @@ git add summaries config && git commit
 
 The inventory shrinks too: about 30 steps instead of 42, with every
 published file having one writer, and `scripts/` holding only analysis.
+
+## 6. Progress
+
+What has changed since the review, newest last. The inventory has the
+details; this is the log.
+
+- **2026-11-12, Feedback Index published (D2).** Its files are committed
+  and served by GitHub Pages (3.7).
+- **2026-11-12, affiliations refresh kept (3.6).** The user chose to have
+  every `OrgResolver()` refresh the file; item 2 is dropped.
+- **2026-11-12, NoteDb reads fast again.** `votes` lists meta refs once,
+  `backfill` refreshes the multi-pack index, and the NoteDb repo was
+  repacked (3,823 packs to 14); the old packs are gone (D5).
+- **2026-11-12, quick fixes 1, 3 and 12.** `cosh patchsets` selects only
+  reviewed CLs closed (or last updated) since the approved 2023-06-26
+  unless `--since` says otherwise; `classify --dry-run` estimates from the
+  measured tokens per thread in `labels.sqlite` (317); `cosh.sentiment
+  collect` always writes identities, so the comment files have one writer.
