@@ -3317,6 +3317,21 @@ test('review feedback: a person, the measures, peer groups, directories and comm
   const tile = (id: string) => page.$eval(`#${id} .tile-value`, (e) => e.textContent);
   assert.equal(await tile('rf-tile-cls'), '3');
   assert.equal(await tile('rf-tile-threads'), '5');
+  const sub = (id: string) => page.$eval(`#${id} .tile-sub`, (e) => e.textContent);
+  assert.equal(await sub('rf-tile-cls'), '15th percentile among peers');
+  assert.equal(await sub('rf-tile-threads'), '25th percentile among peers');
+  assert.deepEqual(await page.$$eval('#rf-tile-you .tile-label, #rf-tile-peers .tile-label', (es) => es.map((e) => e.textContent)),
+    ['Your feedback index', "Peers' feedback index"]);
+  // Every chart's value axis is labelled.
+  assert.deepEqual(await page.evaluate(() => Object.fromEntries(Object.entries(window.__rf!.charts).map(([k, c]) => {
+    const s = c.options.scales as Record<string, { title?: { text?: string } }>;
+    return [k, [s.x.title?.text, s.y.title?.text]];
+  }))), {
+    cohorts: ['years since first commit on main', 'feedback index'],
+    change: ['change in feedback index per year', 'contributors'],
+    trend: ['half-year', 'feedback index'],
+    xp: ['your earlier commits in the directory', 'feedback index'],
+  });
   // The page computes the values from the half-year files (unit tests check the arithmetic).
   assert.equal(await tile('rf-tile-you'), '0.71×');
   // Peers are all authors with the same years since their first commit, by default.

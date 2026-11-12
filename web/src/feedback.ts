@@ -100,6 +100,9 @@ export interface Dist {
   q: number[] | null;
 }
 
+/** The counts peers.json has percentiles of. */
+export type CountField = 'cls' | 'threads' | 'acls' | 'addressed';
+
 export interface Band extends Dist {
   /** Everyone's feedback in the band, pooled, and that relative to everyone's overall. */
   pooled: number | null;
@@ -124,6 +127,9 @@ export interface Peers {
   min_received: number;
   tone_weeks: [string, string];
   dist: Record<string, Record<string, Record<Metric, Dist>>>;
+  /** Period -> group -> the same peers' changes landed and reviewer threads (acls,
+   * addressed: labelled changes and addressed threads, for the addressed measures). */
+  counts?: Record<string, Record<string, Record<CountField, Dist>>>;
   bands: Record<string, Record<Metric, Band[]>>;
   tone: Record<string, Dist>;
   /** The opening card. Tenure bins of the cohort curves, in years, and the

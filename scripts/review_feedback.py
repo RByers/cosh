@@ -5,7 +5,8 @@ Offline; reads balance*.sqlite, derived.sqlite, labels.sqlite,
 sentiment.sqlite and the sentiment comment files. Writes, under --out
 (default web/public/review-feedback/):
 
-  peers.json       percentiles of every peer group, per period and measure
+  peers.json       percentiles of every peer group, per period and measure,
+                   and of its CLs landed and reviewer threads
   u/<key>.json     one file per CL owner: their CLs, the reviewer threads on
                    them (with excerpts for the year that has comment text),
                    praise received, and their values per period and measure
@@ -639,7 +640,7 @@ def main():
     peers = dict(generated=datetime.now(timezone.utc).strftime("%Y-%m-%d"), periods=allp, metrics=METRICS,
                  start=epoch_day(START), end=epoch_day(END), addr_start=epoch_day(ADDR_START),
                  tenure=TENURE, changes=CHANGES, xp=XP, min_peers=MIN_PEERS, qs=len(QS), min_cls=MIN_CLS, min_exp=MIN_EXP, min_received=MIN_RECEIVED,
-                 tone_weeks=[TONE_WEEKS[0], TONE_WEEKS[-1]], dist={}, bands={}, tone={},
+                 tone_weeks=[TONE_WEEKS[0], TONE_WEEKS[-1]], dist={}, counts={}, bands={}, tone={},
                  cohort_step=STEP, min_cohort=MIN_COHORT, cohorts=cohorts,
                  change_edges=CHANGE_EDGES, change=change)
     for p in allp:
@@ -653,6 +654,15 @@ def main():
                 xs = [x["x" if g.startswith("dir:") else "v"][m] for _, x in rows[m[0]] if f(x)]
                 xs = [v for v in xs if v is not None]
                 dp[g][m] = dict(n=len(xs), q=quantiles(xs) if len(xs) >= MIN_PEERS else None)
+        # The same peers' counts: CLs landed and reviewer threads on them (for the
+        # addressed measures, labelled CLs and addressed threads).
+        cp = peers["counts"][p] = {}
+        for g, f in groups.items():
+            cp[g] = {}
+            for k, fields in (("t", ("cls", "threads")), ("a", ("acls", "addressed"))):
+                for fld in fields:
+                    xs = [x[fld] for _, x in rows[k] if f(x)]
+                    cp[g][fld] = dict(n=len(xs), q=quantiles(xs) if len(xs) >= MIN_PEERS else None)
         # Per experience band: the pooled rate relative to everyone, and the spread of people
         # with enough CL share in the band (1.5 CLs' worth or more).
         bp = peers["bands"][p] = {}

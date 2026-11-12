@@ -32,6 +32,7 @@ import {
   type Shard,
   type Top,
   type Corr,
+  type CountField,
   type Dist,
   type Kind,
   type Metric,
@@ -111,6 +112,13 @@ function fmtValue(v: number | null | undefined, corr: Corr = state.corr): string
   return corr === 'n' ? s : `${s}×`;
 }
 const pct = (v: number) => fmtNum(v, { style: 'percent', maximumFractionDigits: 0 });
+const ORDINAL = new Intl.PluralRules('en', { type: 'ordinal' });
+const SUFFIX: Record<string, string> = { one: 'st', two: 'nd', few: 'rd', other: 'th' };
+/** A share (0–1) as an ordinal percentile: "64th". */
+const ordinal = (v: number) => {
+  const n = Math.round(v * 100);
+  return `${n}${SUFFIX[ORDINAL.select(n)]}`;
+};
 
 const monthOf = (day: number, year: boolean) => new Intl.DateTimeFormat('en-GB',
   { month: 'long', year: year ? 'numeric' : undefined, timeZone: 'UTC' }).format(new Date(day * 86_400_000));
@@ -297,7 +305,7 @@ function renderIntro() {
       font: { family: t.font },
       scales: {
         x: { type: 'linear', min: 0, ...axis('years since first commit on main') },
-        y: { beginAtZero: true, ...axis(''), title: { display: false },
+        y: { beginAtZero: true, ...axis(msg('axis-feedback')),
           ticks: { color: t.text, font: { family: t.font }, callback: (v) => fmtValue(Number(v)) } },
       },
       plugins: {
@@ -375,12 +383,19 @@ function renderSummary() {
     const s = document.querySelector(`#${id} .tile-sub`);
     if (s) s.textContent = sub ?? '';
   };
-  tile('rf-tile-cls', fmtInt(clsOf(vals, state.kind)));
+  const g = groupKey(state.tenure, state.org, vals);
+  // Where the person's counts sit among the same peers'.
+  const rank = (field: CountField, v: number) => {
+    const d = g ? peers.counts?.[state.period]?.[g]?.[field] : undefined;
+    return d?.q ? msg('tile-count-rank', { p: ordinal(percentileOf(d.q, v)) }) : '';
+  };
+  const cls = clsOf(vals, state.kind);
+  tile('rf-tile-cls', fmtInt(cls), rank(state.kind === 't' ? 'cls' : 'acls', cls));
   $('#rf-tile-threads .tile-label').textContent = msg(`tile-threads-${state.kind}`);
-  tile('rf-tile-threads', fmtInt(state.kind === 't' ? vals?.threads ?? 0 : vals?.addressed ?? 0));
+  const threads = state.kind === 't' ? vals?.threads ?? 0 : vals?.addressed ?? 0;
+  tile('rf-tile-threads', fmtInt(threads), rank(state.kind === 't' ? 'threads' : 'addressed', threads));
   const you = valueFor(state.tenure, vals, m);
   tile('rf-tile-you', fmtValue(you));
-  const g = groupKey(state.tenure, state.org, vals);
   const dist: Dist | undefined = g ? peers.dist[state.period]?.[g]?.[m] : undefined;
   const name = groupName(state.tenure, state.org, bandOf(state.tenure, vals));
   if (dist?.q) {
@@ -436,8 +451,9 @@ function renderTrend() {
       interaction: { mode: 'index', intersect: false },
       font: { family: t.font },
       scales: {
-        x: { grid: { color: t.grid }, ticks: { color: t.text, font: { family: t.font }, maxRotation: 0, autoSkip: true } },
-        y: { beginAtZero: true, grid: { color: t.grid },
+        x: { grid: { color: t.grid }, title: { display: true, text: msg('axis-half'), color: t.text },
+          ticks: { color: t.text, font: { family: t.font }, maxRotation: 0, autoSkip: true } },
+        y: { beginAtZero: true, grid: { color: t.grid }, title: { display: true, text: msg('axis-feedback'), color: t.text },
           ticks: { color: t.text, font: { family: t.font }, callback: (v) => fmtValue(Number(v)) } },
       },
       plugins: {
@@ -492,7 +508,7 @@ function renderXp() {
       scales: {
         x: { grid: { color: t.grid }, title: { display: true, text: 'your earlier commits in the directory', color: t.text },
           ticks: { color: t.text, font: { family: t.font } } },
-        y: { beginAtZero: true, grid: { color: t.grid },
+        y: { beginAtZero: true, grid: { color: t.grid }, title: { display: true, text: msg('axis-feedback'), color: t.text },
           ticks: { color: t.text, font: { family: t.font }, callback: (v) => fmtValue(Number(v)) } },
       },
       plugins: {

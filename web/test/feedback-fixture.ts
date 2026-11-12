@@ -69,6 +69,10 @@ export const peers: Peers = {
   min_received: 20,
   tone_weeks: ['2025-W45', '2026-W44'],
   dist: Object.fromEntries(periods.map((p) => [p, groups()])),
+  // Every group's counts: 0..20 evenly, so 3 changes sit at 15% and 5 threads at 25%.
+  counts: Object.fromEntries(periods.map((p) => [p, Object.fromEntries(Object.keys(groups()).map((g) => [g,
+    { cls: { n: 120, q: q(0, 20) }, threads: { n: 120, q: q(0, 20) }, acls: { n: 120, q: q(0, 20) },
+      addressed: { n: 120, q: q(0, 20) } }]))])),
   bands: Object.fromEntries(periods.map((p) => [p, bands()])),
   tone: { all: { n: 900, q: q(0, 0.1) }, 'time:2-5y': { n: 200, q: q(0, 0.08) }, 'changes:50-199': { n: 150, q: q(0, 0.06) } },
   cohort_step: 0.5,

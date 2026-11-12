@@ -169,12 +169,15 @@
           (<slot name="minCls"></slot> or more are needed), so treat your figure with care.</span>
         </template>
         <div class="tiles">
-          <div class="tile" id="rf-tile-cls"><div class="tile-label">Changes landed</div><div class="tile-value"></div></div>
-          <div class="tile" id="rf-tile-threads"><div class="tile-label">Reviewer threads</div><div class="tile-value"></div></div>
-          <div class="tile" id="rf-tile-you"><div class="tile-label">You</div><div class="tile-value"></div></div>
-          <div class="tile" id="rf-tile-peers"><div class="tile-label">Peers' median</div><div class="tile-value"></div><div class="tile-sub"></div></div>
+          <div class="tile" id="rf-tile-cls"><div class="tile-label">Changes landed</div><div class="tile-value"></div><div class="tile-sub"></div></div>
+          <div class="tile" id="rf-tile-threads"><div class="tile-label">Reviewer threads</div><div class="tile-value"></div><div class="tile-sub"></div></div>
+          <div class="tile" id="rf-tile-you"><div class="tile-label">Your feedback index</div><div class="tile-value"></div></div>
+          <div class="tile" id="rf-tile-peers"><div class="tile-label">Peers' feedback index</div><div class="tile-value"></div><div class="tile-sub"></div></div>
           <div class="tile" id="rf-tile-rank"><div class="tile-label">Peers with less feedback than you</div><div class="tile-value"></div></div>
         </div>
+        <template data-msg="tile-count-rank"><slot name="p"></slot> percentile among peers</template>
+        <template data-msg="axis-feedback">feedback index</template>
+        <template data-msg="axis-half">half-year</template>
         <template data-msg="tile-threads-a">Addressed reviewer threads</template>
         <template data-msg="tile-threads-t">Reviewer threads</template>
         <template data-msg="tile-peers-sub"><slot name="group"></slot>: <slot name="n"></slot> authors, middle half

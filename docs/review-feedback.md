@@ -155,7 +155,9 @@ this script: nothing in it names a date.
 Output (default `web/public/review-feedback/`, which Vite copies into the
 site), with `<key>` the hash of the person's address:
 
-- `peers.json`: every peer group's quantiles per period and measure, and
+- `peers.json`: every peer group's quantiles per period and measure, and of
+  its changes landed and reviewer threads (`counts`; labelled changes and
+  addressed threads for the addressed measures), and
   everyone's pooled feedback per directory-experience band, and the opening
   card's cohort curves (`cohorts`) and yearly-change histogram (`change`).
 - `u/<key>.json`: first commit, which half-years the person has files for,
