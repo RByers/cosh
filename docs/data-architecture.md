@@ -122,6 +122,13 @@ code review and spot-checked in the code; the rest I measured directly.
 
 ### 3.1 One published file, a dozen writers, and hand copying
 
+**Fixed 2026-11-12** (item 9): `python3 -m cosh.balance_publish` writes
+`balance.json`, `balance_dirs.json` and `balance_authors.json` whole, from
+empty, from the steps its `STEPS` list records, and `--check` compares a
+rebuild with the committed files. The scripts no longer write into
+`summaries/`. Only the `growth` step still uses the 50-file rule for
+mechanical CLs (see item 10). As found:
+
 `summaries/balance.json` is written by `balance_report.py` (whose output is
 a scratch `report.json`, with sections then copied in by hand), by eleven
 dataset scripts, by `balance_page_extras.py` and by `review_roi_report.py`.
@@ -162,6 +169,9 @@ Most balance and feedback scripts take `--first-commit F --owners-added O
 - Balance scripts fix their window in constants (`LAST_Q = "2026Q3"` in
   `scripts/balance_report.py:28`, and likewise in `balance_growth.py` and
   `balance_signals.py`). New weeks can't reach the page without code edits.
+  *Since 2026-11-12* those ends follow one setting, `DATA_END` in
+  `cosh/balance_publish.py` (with `LAST_QUARTER` derived from it); the
+  comparison eras are still per script, pending D3.
 - Five sentiment commands each take `--week 2025-W45:2026-W44` (or
   `--full-weeks`, `--praise-week`) by hand, and the ranges must agree.
 
@@ -361,8 +371,8 @@ updated with it. Sizes: S is under an hour, M a few hours, L a day or more.
 |---|---|---|---|
 | 7 | **Done 2026-11-12, as `commits.sqlite` (`docs/commits.md`).** Add `cosh.balance inputs`: writes the first-commit, OWNERS-added, AI-marked and mechanical lists as tables in `balance.sqlite` (or fixed files beside it). Scripts read them from there; the `--first-commit … --mech …` arguments go | M | 3 |
 | 8 | ~~Fold the votes walk into `balance timeline` (one pass over NoteDb instead of two) and key `timeline_done` on the ref's tip~~ Done 2026-11-12 | M | 1, 5 |
-| 9 | Add `cosh.balance publish`: imports each dataset script's compute function, builds `balance.json`, `balance_dirs.json` and `balance_authors.json` from empty, and writes each once. The scripts keep their `main()` for exploration but no longer write into `summaries/` | L | 1, 2 |
-| 10 | Take the window from the data in `publish` (pending D3), and use one rule for mechanical CLs everywhere | M | 4 |
+| 9 | **Done 2026-11-12, as `python3 -m cosh.balance_publish`.** Add `cosh.balance publish`: imports each dataset script's compute function, builds `balance.json`, `balance_dirs.json` and `balance_authors.json` from empty, and writes each once. The scripts keep their `main()` for exploration but no longer write into `summaries/` | L | 1, 2 |
+| 10 | *(in part)* Take the window from the data in `publish` (pending D3), and use one rule for mechanical CLs everywhere. Done: the window is one setting, `balance_publish.DATA_END`, that the scripts' end-of-data constants follow (their comparison eras are still their own). Left: taking it from the data (D3), and the `growth` step's 50-file rule (switching it changes `growth_windows`, `ai_paired` and `ai_summary`, so it needs a deliberate republish) | M | 4 |
 | 11 | ~~Give each stage file only its own tables~~ (done 2026-11-12), and move them to `data/private/balance/` | S | 3 |
 
 Step 9 is the largest change in this plan and the one that pays most: it
@@ -463,3 +473,22 @@ details; this is the log.
   (40,023 files) and the run takes about the same time (188 s against 182 s
   before, which also needed `balance cl`'s 100 s); `plan
   data/private/balance-timeline.sqlite` no longer lists `review-feedback`.
+- **2026-11-12, item 9 (and 3.1): one writer for the balance page.**
+  `python3 -m cosh.balance_publish` writes `balance.json`,
+  `balance_dirs.json` and `balance_authors.json` whole, from empty, in
+  about 8 min. Its `STEPS` list records the step behind each of the 92
+  datasets, and `--check` rebuilds into scratch and compares dataset by
+  dataset. Five inventory steps (`balance-report`, `balance-datasets`,
+  `balance-extras`, `balance-authors`, `roi-report`) became two:
+  `balance-publish` and `balance-clusters` (the k-means analysis it reads).
+  The hand-copied tables (`mechanical_*`, `pipeline`, `report.json`'s
+  sections, `balance_dirs.json`) are computed; the signals no longer go
+  through `balance_signals.json`. Finished analyses it reads from fixed
+  paths: `balance_clusters/`, `chrome_releases/summary.json` and
+  `review_roi/` (now also `addressed_{cl,blame,people}.json`). On today's
+  data every dataset equals what the old scripts give, except
+  `growth_windows`, whose breadth samples depended on Python's hash seed
+  (now fixed). The committed files are not yet regenerated: most datasets
+  differ from them because of the 2017 backfill and the 2026-11-12 rebuild.
+  Item 10 in part: the window is one setting (`DATA_END`); the `growth`
+  step still uses the 50-file mechanical rule.

@@ -1,21 +1,19 @@
-"""Add the "Waiting for review" histograms to summaries/balance.json (the
+"""The "Waiting for review" histograms of summaries/balance.json (the
 Review Balance page): hours to first substantive review, and reviewers'
 weekday hours in the attention set, for the latest year against the pre-AI
 baseline the page's other era charts use (2023 H2 – 2024).
 
-Offline; reads balance.sqlite (read-only) and the mechanical-CL list that
-balance_report.py takes (--mech, one JSON line per CL). Writes shares of CLs
-per bin only: nothing per person or per CL.
+Offline; reads balance.sqlite (read-only) and the mechanical CLs
+(balance_report.mech_set). Gives shares of CLs per bin only: nothing per
+person or per CL. The page's copy comes from `python3 -m cosh.balance_publish`.
 
-  COSH_DATA_DIR=<main>/data/private python3 scripts/balance_histograms.py \
-      --mech mech.jsonl [summaries/balance.json]
+  COSH_DATA_DIR=<main>/data/private python3 scripts/balance_histograms.py [--out datasets.json]
 
 The CLs are those of the quarterly charts: merged, with a known owner, not
 mechanical, and with a substantive review.
 """
 
 import argparse
-import json
 import os
 import sys
 
@@ -24,6 +22,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import balance_analysis as A  # noqa: E402
 from balance_report import mech_set  # noqa: E402
 from cosh import balance  # noqa: E402
+from cosh.balance_publish import show  # noqa: E402
 
 # The latest whole year, and the pre-AI baseline (the "2023H2-2024" era).
 NOW = ("2025Q4", "2026Q3")
@@ -78,16 +77,10 @@ def load(mech_path):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("path", nargs="?", default="summaries/balance.json")
     ap.add_argument("--mech", help="default: commits.sqlite")
+    ap.add_argument("--out", help="write the datasets here as JSON")
     args = ap.parse_args()
-    data = json.load(open(args.path))
-    new = datasets(load(args.mech))
-    for k, v in new.items():
-        print(f"{k}: {v if k.endswith('summary') else len(v)}", file=sys.stderr)
-        data["datasets"][k] = v
-    json.dump(data, open(args.path, "w"), separators=(",", ":"))
-    open(args.path, "a").write("\n")
+    show(datasets(load(args.mech)), args.out)
 
 
 if __name__ == "__main__":

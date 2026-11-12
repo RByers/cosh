@@ -1,21 +1,19 @@
-"""Add the "Feedback index" definition data to summaries/balance.json (the
+"""The "Feedback index" definition data of summaries/balance.json (the
 Review Balance page): for each decile of CL size, the share of CLs by the
 number of reviewer threads they drew, over 2023–24, the years the feedback
 index takes its norm from.
 
-Offline; reads balance.sqlite (read-only) and the mechanical-CL list that
-balance_report.py takes (--mech, one JSON line per CL). Writes shares of CLs
-per bin only: nothing per person or per CL.
+Offline; reads balance.sqlite (read-only) and the mechanical CLs
+(balance_report.mech_set). Gives shares of CLs per bin only: nothing per
+person or per CL. The page's copy comes from `python3 -m cosh.balance_publish`.
 
-  COSH_DATA_DIR=<main>/data/private python3 scripts/balance_definitions.py \
-      --mech mech.jsonl [summaries/balance.json]
+  COSH_DATA_DIR=<main>/data/private python3 scripts/balance_definitions.py [--out datasets.json]
 
 The CLs are those the feedback index uses: merged, with a known owner, not
 mechanical, closed in 2023 or 2024 (Gerrit data starts in July 2023).
 """
 
 import argparse
-import json
 import os
 import statistics as st
 import sys
@@ -25,6 +23,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import balance_analysis as A  # noqa: E402
 from balance_report import mech_set  # noqa: E402
 from cosh import balance  # noqa: E402
+from cosh.balance_publish import show  # noqa: E402
 
 REF = (2023, 2024)
 
@@ -88,16 +87,10 @@ def load(mech_path):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("path", nargs="?", default="summaries/balance.json")
     ap.add_argument("--mech", help="default: commits.sqlite")
+    ap.add_argument("--out", help="write the datasets here as JSON")
     args = ap.parse_args()
-    data = json.load(open(args.path))
-    new = datasets(load(args.mech))
-    for k, v in new.items():
-        print(f"{k}: {v if k != 'feedback_def_hist' else len(v)}", file=sys.stderr)
-        data["datasets"][k] = v
-    json.dump(data, open(args.path, "w"), separators=(",", ":"))
-    open(args.path, "a").write("\n")
+    show(datasets(load(args.mech)), args.out)
 
 
 if __name__ == "__main__":

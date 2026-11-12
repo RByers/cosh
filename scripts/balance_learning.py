@@ -13,7 +13,9 @@ Writes aggregates only (feedback index and counts per bin), never anything per
 person.
 
   COSH_DATA_DIR=<main>/data/private python3 scripts/balance_learning.py \
-      --first-commit F --owners-added F --mech mech.jsonl [--explore] [summaries/balance.json]
+      [--explore] [--out datasets.json]
+
+The page's copy (era "then") comes from `python3 -m cosh.balance_publish`.
 
 Only authors whose first commit is on or after 2017-01-01 are used, since
 gcommits starts then and earlier commits are not counted here. CLs are
@@ -23,7 +25,6 @@ page's other era charts use) unless --era says otherwise.
 
 import argparse
 import bisect
-import json
 import math
 import os
 import statistics as st
@@ -36,6 +37,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import balance_analysis as A  # noqa: E402
 import balance_growth as G  # noqa: E402
 from balance_report import mech_set  # noqa: E402
+from cosh.balance_publish import show  # noqa: E402
 
 YEAR = G.YEAR
 MONTH = YEAR / 12
@@ -220,33 +222,34 @@ def explore(rs, grp):
         print(g, len(s), "CLs", len({c["pid"] for c in s}), "people")
 
 
-def main():
-    ap = argparse.ArgumentParser()
-    ap.add_argument("path", nargs="?", default="summaries/balance.json")
-    ap.add_argument("--first-commit", help="default: commits.sqlite")
-    ap.add_argument("--owners-added", help="default: commits.sqlite")
-    ap.add_argument("--mech", help="default: commits.sqlite")
-    ap.add_argument("--era", choices=sorted(ERAS), default="then")
-    ap.add_argument("--explore", action="store_true", help="print tables; don't write")
-    args = ap.parse_args()
+def compute(args, era="then"):
+    """The page's datasets, and the rows and groups behind them (for explore())."""
     args.ai_marked = None
     use, first, landed = load(args)
     rate = first_year_rate(first, landed)
     grp, cuts = groups_of(rate)
     print("first-year commits cuts", cuts, file=sys.stderr)
-    rs = rows(use, first, landed, args.era)
-    new = datasets(rs, grp, cuts)
+    rs = rows(use, first, landed, era)
+    return datasets(rs, grp, cuts), rs, grp
+
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--first-commit", help="default: commits.sqlite")
+    ap.add_argument("--owners-added", help="default: commits.sqlite")
+    ap.add_argument("--mech", help="default: commits.sqlite")
+    ap.add_argument("--era", choices=sorted(ERAS), default="then")
+    ap.add_argument("--explore", action="store_true", help="print tables too")
+    ap.add_argument("--out", help="write the datasets here as JSON")
+    args = ap.parse_args()
+    new, rs, grp = compute(args, args.era)
     for x in new["learning_practice_fit"]:
         print(x, file=sys.stderr)
     for x in new["learning_practice"]:
         print(x, file=sys.stderr)
     if args.explore:
         explore(rs, grp)
-        return
-    data = json.load(open(args.path))
-    data["datasets"].update(new)
-    json.dump(data, open(args.path, "w"), separators=(",", ":"))
-    open(args.path, "a").write("\n")
+    show(new, args.out)
 
 
 if __name__ == "__main__":

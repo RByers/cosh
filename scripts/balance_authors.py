@@ -5,15 +5,16 @@ dot per author (directories, feedback index, tenure, CLs landed). The
 summary also holds abandonment after review against tenure, which the page
 quotes in "Wrong turns" (tenure barely predicts it).
 
-Unlike the other balance scripts this writes one row per person, with their
-commit email, to summaries/balance_authors.json. That is published: it comes
+Unlike the other balance scripts this gives one row per person, with their
+commit email, for summaries/balance_authors.json (written by `python3 -m
+cosh.balance_publish`, which calls document()). That is published: it comes
 from public Chromium git and Gerrit data (ground rule 3 of docs/plan.md), and
 the feedback index is not tone.
 
-  COSH_DATA_DIR=<main>/data/private python3 scripts/balance_authors.py \
-      --first-commit F --owners-added O --mech M [summaries/balance_authors.json]
+  COSH_DATA_DIR=<main>/data/private python3 scripts/balance_authors.py --out F
 
-The year is 2025-11-01 .. 2026-11-01 (the data ends in October 2026).
+The year is the one before balance_publish.DATA_END: 2025-11-01 ..
+2026-11-01 (the data ends in October 2026).
 - CLs landed: commits on main with a CL in the year, reverts and mechanical
   CLs aside.
 - Directories: distinct 3-level directories over those commits' files.
@@ -34,7 +35,7 @@ import math
 import os
 import sys
 from collections import Counter, defaultdict
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -42,9 +43,11 @@ import balance_analysis as A  # noqa: E402
 import balance_growth as G  # noqa: E402
 from balance_report import mech_set  # noqa: E402
 from cosh import balance  # noqa: E402
+from cosh.balance_publish import DATA_END  # noqa: E402
 
-START = datetime(2025, 11, 1, tzinfo=timezone.utc).timestamp()
-END = G.CENSOR                      # 2026-11-01, end of data
+END_DAY = DATA_END                  # 2026-11-01, end of data
+START_DAY = END_DAY.replace(year=END_DAY.year - 1)
+START, END = START_DAY.timestamp(), END_DAY.timestamp()
 MIN_CLS = 10                        # CLs landed in the year to be shown
 MIN_EXPECTED = 2.0                  # expected threads needed for a feedback index
 MIN_REVIEWED = 10                   # reviewed CLs closed in the year for an abandon rate
@@ -162,22 +165,29 @@ def summary(rows):
 COLUMNS = ["email", "cls", "dirs", "feedback", "tenure"]
 
 
-def main():
-    ap = argparse.ArgumentParser()
-    ap.add_argument("path", nargs="?", default="summaries/balance_authors.json")
-    ap.add_argument("--first-commit", help="default: commits.sqlite")
-    ap.add_argument("--owners-added", help="default: commits.sqlite")
-    ap.add_argument("--ai-marked", help="default: commits.sqlite")
-    ap.add_argument("--mech", help="default: commits.sqlite")
-    args = ap.parse_args()
+def document(args):
+    """summaries/balance_authors.json's content."""
     rows = compute(args)
     summ = summary(rows)
     print(summ, f"feedback missing {sum(r['feedback'] is None for r in rows)}, "
           f"tenure missing {sum(r['tenure'] is None for r in rows)}", file=sys.stderr)
-    data = dict(generated=datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
-                start="2025-11-01", end="2026-10-31", min_cls=MIN_CLS, min_reviewed=MIN_REVIEWED, summary=summ,
+    return dict(generated=datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+                start=START_DAY.strftime("%Y-%m-%d"), end=(END_DAY - timedelta(days=1)).strftime("%Y-%m-%d"),
+                min_cls=MIN_CLS, min_reviewed=MIN_REVIEWED, summary=summ,
                 columns=COLUMNS, authors=[[r[k] for k in COLUMNS] for r in rows])
-    with open(args.path, "w") as f:
+
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--first-commit", help="default: commits.sqlite")
+    ap.add_argument("--owners-added", help="default: commits.sqlite")
+    ap.add_argument("--ai-marked", help="default: commits.sqlite")
+    ap.add_argument("--mech", help="default: commits.sqlite")
+    ap.add_argument("--out", required=True, help="where to write the file (the page's copy: "
+                    "python3 -m cosh.balance_publish)")
+    args = ap.parse_args()
+    data = document(args)
+    with open(args.out, "w") as f:
         json.dump(data, f, separators=(",", ":"))
         f.write("\n")
 

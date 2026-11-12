@@ -39,7 +39,11 @@ Offline; prints aggregates and coefficients only, never anything per person.
   python3 scripts/balance_addressed_value.py people --first-commit F --owners-added O --mech M \
       [--cache P] [--out people.json]
   python3 scripts/balance_addressed_value.py report --cl cl.json --blame blame.json --people people.json \\
-      [summaries/balance.json]      # datasets addr_tenure and addr_compare for the page
+      [--out datasets.json]      # datasets addr_tenure and addr_compare
+
+`python3 -m cosh.balance_publish` builds the page's addr_* datasets with
+report_datasets() from the three results, kept as
+$COSH_DATA_DIR/review_roi/addressed_{cl,blame,people}.json.
 """
 
 import argparse
@@ -505,10 +509,16 @@ TEN_KEY = {"0-3 mo": "0-3", "3-6 mo": "3-6", "6-12 mo": "6-12", "1-2 y": "12-24"
 
 
 def run_report(args):
-    """Merge the cl, blame and people results into summaries/balance.json as
+    new = report_datasets(*(json.load(open(f)) for f in (args.cl, args.blame, args.people)))
+    for r in new["addr_compare"]:
+        print(" ", r, file=sys.stderr)
+    return new
+
+
+def report_datasets(cl, bl, pe):
+    """The cl, blame and people results as the page's datasets
     `addr_tenure` (each index by tenure, for the chart) and `addr_compare`
     (one row per comparison, for the table and the prose)."""
-    cl, bl, pe = (json.load(open(f)) for f in (args.cl, args.blame, args.people))
     tenure = []
     for r in cl["gradient_bins"]:
         if r["gradient"] != "tenure":
@@ -553,13 +563,7 @@ def run_report(args):
     row("totals", threads=cl["totals"]["threads"], addressed=cl["totals"]["addressed"],
         share=cl["totals"]["addressed"] / cl["totals"]["threads"], cls=cl["totals"]["cls"],
         corr=pe["summary"]["corr_log_feedback_addressed"])
-    data = json.load(open(args.path))
-    data["datasets"].update(addr_tenure=tenure, addr_compare=cmp_)
-    json.dump(data, open(args.path, "w"), separators=(",", ":"))
-    open(args.path, "a").write("\n")
-    print(f"wrote addr_tenure ({len(tenure)}) and addr_compare ({len(cmp_)}) to {args.path}", file=sys.stderr)
-    for r in cmp_:
-        print(" ", r, file=sys.stderr)
+    return dict(addr_tenure=tenure, addr_compare=cmp_)
 
 
 def main():
@@ -573,7 +577,7 @@ def main():
     c.add_argument("--blame-dir", required=True, help="scratch dir of review_roi_blame.py (szz_items.jsonl, survival_items.jsonl)")
     c.add_argument("--out")
     r = sp.add_parser("report")
-    r.add_argument("path", nargs="?", default="summaries/balance.json")
+    r.add_argument("--out", help="write the datasets here as JSON")
     r.add_argument("--cl", required=True)
     r.add_argument("--blame", required=True)
     r.add_argument("--people", required=True)

@@ -29,11 +29,12 @@ Offline; writes aggregates only (rates, medians and coefficients per
 group), never anything per person.
 
   COSH_DATA_DIR=<main>/data/private python3 scripts/balance_feedback_predicts.py \
-      --first-commit F --owners-added F --mech mech.jsonl [--cache P] [--explore] [summaries/balance.json]
+      [--cache P] [--out datasets.json]
+
+The page's copy comes from `python3 -m cosh.balance_publish` (compute()).
 """
 
 import argparse
-import json
 import math
 import os
 import pickle
@@ -47,11 +48,12 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import balance_analysis as A  # noqa: E402
 import balance_growth as G  # noqa: E402
 from balance_report import mech_set  # noqa: E402
+from cosh.balance_publish import LAST_QUARTER, quarter_end, show  # noqa: E402
 
 YEAR = G.YEAR
 MONTH = YEAR / 12
 BASE = ("2023H2", "2024H1", "2024H2")      # every outcome window closes by 2026-06-30
-GERRIT_END = datetime(2026, 10, 1, tzinfo=timezone.utc).timestamp()
+GERRIT_END = quarter_end(LAST_QUARTER).timestamp()
 OWNER_MONTHS = 18
 NEXT_MONTHS = 12
 MIN_CLS = 6                     # merged, non-mechanical CLs in the half-year
@@ -409,35 +411,33 @@ def summary(rows):
                 median_cls=st.median(r["n"] for r in rows))
 
 
+def compute(args):
+    args.ai_marked = None
+    if getattr(args, "cache", None) and os.path.exists(args.cache):
+        loaded = pickle.load(open(args.cache, "rb"))
+    else:
+        loaded = load(args)
+        if getattr(args, "cache", None):
+            pickle.dump(loaded, open(args.cache, "wb"))
+    rows = rows_of(*loaded)
+    f = fits(rows)
+    return dict(fb_predict_fifths=fifths(rows), fb_predict_fit=f, fb_predict_summary=[summary(rows)])
+
+
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("path", nargs="?", default="summaries/balance.json")
     ap.add_argument("--first-commit", help="default: commits.sqlite")
     ap.add_argument("--owners-added", help="default: commits.sqlite")
     ap.add_argument("--mech", help="default: commits.sqlite")
     ap.add_argument("--cache", help="pickle of the loaded data, to rerun quickly")
-    ap.add_argument("--explore", action="store_true", help="print tables; don't write")
+    ap.add_argument("--out", help="write the datasets here as JSON")
     args = ap.parse_args()
-    args.ai_marked = None
-    if args.cache and os.path.exists(args.cache):
-        loaded = pickle.load(open(args.cache, "rb"))
-    else:
-        loaded = load(args)
-        if args.cache:
-            pickle.dump(loaded, open(args.cache, "wb"))
-    rows = rows_of(*loaded)
-    f = fits(rows)
-    new = dict(fb_predict_fifths=fifths(rows), fb_predict_fit=f, fb_predict_summary=[summary(rows)])
+    new = compute(args)
     for k, v in new.items():
         print(f"\n{k}", file=sys.stderr)
         for r in v:
             print(" ", r, file=sys.stderr)
-    if args.explore:
-        return
-    data = json.load(open(args.path))
-    data["datasets"].update(new)
-    json.dump(data, open(args.path, "w"), separators=(",", ":"))
-    open(args.path, "a").write("\n")
+    show(new, args.out)
 
 
 if __name__ == "__main__":

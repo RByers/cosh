@@ -1,4 +1,4 @@
-"""Add the "From author to reviewer" histogram to summaries/balance.json (the
+"""The "From author to reviewer" histogram of summaries/balance.json (the
 Review Balance page): how review share, approvals given ÷ (approvals + CLs
 authored), is spread across people at each year since joining.
 
@@ -8,12 +8,12 @@ they authored or approved 6 or more CLs (reverts and mechanical commits
 aside), with all join years pooled. Writes shares of people per bin only:
 nothing per person.
 
-  COSH_DATA_DIR=<main>/data/private python3 scripts/balance_review_share.py \
-      --first-commit F --owners-added F [summaries/balance.json]
+  COSH_DATA_DIR=<main>/data/private python3 scripts/balance_review_share.py [--out datasets.json]
+
+The page's copy comes from `python3 -m cosh.balance_publish`.
 """
 
 import argparse
-import json
 import os
 import statistics as st
 import sys
@@ -23,9 +23,10 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import balance_analysis as A  # noqa: E402
 import balance_growth as G  # noqa: E402
+from cosh.balance_publish import LAST_QUARTER, show  # noqa: E402
 
 COHORTS = range(2017, 2026)
-LAST_YEAR = 2026
+LAST_YEAR = int(LAST_QUARTER[:4])
 YEARS = range(1, 10)          # years since joining, as in git_cohorts
 MIN_COHORT = 20               # people a cohort needs for its median to count
 
@@ -85,18 +86,15 @@ def load(args):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("path", nargs="?", default="summaries/balance.json")
     ap.add_argument("--first-commit", help="default: commits.sqlite")
     ap.add_argument("--owners-added", help="default: commits.sqlite")
     ap.add_argument("--ai-marked", help="default: commits.sqlite")
+    ap.add_argument("--out", help="write the datasets here as JSON")
     args = ap.parse_args()
-    data = json.load(open(args.path))
     new = datasets(load(args))
     for r in new["review_share_years"]:
         print(r, file=sys.stderr)
-    data["datasets"].update(new)
-    json.dump(data, open(args.path, "w"), separators=(",", ":"))
-    open(args.path, "a").write("\n")
+    show(new, args.out)
 
 
 if __name__ == "__main__":

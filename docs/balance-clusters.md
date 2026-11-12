@@ -187,11 +187,11 @@ their first three years, and that predates 2025.
 
 `scripts/balance_cluster_map.py` (2026-11-08) draws the git-model patterns
 for the page and turns them into plain criteria. Run it after
-`balance_clusters.py`, then `balance_page_extras.py`:
+`balance_clusters.py`, then publish (step `clusters` reads both files):
 
 ```bash
 COSH_DATA_DIR=/home/rbagent/projects/cosh/data/private python3 scripts/balance_cluster_map.py
-COSH_DATA_DIR=/home/rbagent/projects/cosh/data/private python3 scripts/balance_page_extras.py
+COSH_DATA_DIR=/home/rbagent/projects/cosh/data/private nice -n 5 python3 -m cosh.balance_publish
 ```
 
 It reads `people.json` and writes `balance_clusters/map.json`, aggregates

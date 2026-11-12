@@ -2,8 +2,9 @@
 package 4).
 
 Reads the analyses' result files (plain JSON, aggregates only, no
-identities) and merges these datasets into summaries/balance.json for the
-Review Balance page's #roi section:
+identities) and gives these datasets of summaries/balance.json for the
+Review Balance page's #roi section (`python3 -m cosh.balance_publish` calls
+datasets()):
 
   roi_summary    one row of headline figures
   roi_odds       odds ratios of a 30-day revert, by design (the forest)
@@ -20,7 +21,7 @@ exists, substance_results.json. They come from scripts/review_roi_part1.py,
 review_roi_part2.py, review_roi_reverts.py and review_roi_substance.py.
 
   COSH_DATA_DIR=/home/rbagent/projects/cosh/data/private \\
-      python3 scripts/review_roi_report.py [--dir DIR] [summaries/balance.json]
+      python3 scripts/review_roi_report.py [--dir DIR] [--out datasets.json]
 
 Offline and fast; nothing is fetched.
 """
@@ -30,8 +31,11 @@ import json
 import math
 import os
 import re
+import sys
 
 HERE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, HERE)
+from cosh.balance_publish import show  # noqa: E402
 
 # The substance pilot's per-CL figures (docs/review-roi-substance.md,
 # "Summary"): among CLs with an addressed thread, the share with at least one
@@ -264,17 +268,13 @@ def summary_row(p1, rep, t, cost, sub):
     return [row]
 
 
-def main():
-    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    default = os.path.join(os.environ.get("COSH_DATA_DIR") or os.path.join(HERE, "data", "private"), "review_roi")
-    ap.add_argument("--dir", default=default)
-    ap.add_argument("path", nargs="?", default=os.path.join(HERE, "summaries", "balance.json"))
-    args = ap.parse_args()
-    p1 = load(args.dir, "part1_results.json")
-    rep = load(args.dir, "part1_report.json")
-    p2 = load(args.dir, "part2_results.json")
-    rv = load(args.dir, "reverts_results.json")
-    sub = load(args.dir, "substance_results.json", required=False)
+def datasets(d):
+    """The roi_* datasets from the result files in directory d."""
+    p1 = load(d, "part1_results.json")
+    rep = load(d, "part1_report.json")
+    p2 = load(d, "part2_results.json")
+    rv = load(d, "reverts_results.json")
+    sub = load(d, "substance_results.json", required=False)
     new = {
         "roi_summary": summary_row(p1, rep, rv["timing"], rv["cost"], sub),
         "roi_odds": odds_rows(p1),
@@ -285,16 +285,16 @@ def main():
     }
     if sub:
         new["roi_substance"] = substance_rows(sub)
-    with open(args.path) as f:
-        data = json.load(f)
-    if not sub:
-        data["datasets"].pop("roi_substance", None)
-    data["datasets"].update(new)
-    with open(args.path, "w") as f:
-        json.dump(data, f, separators=(",", ":"))
-        f.write("\n")
-    for k, v in new.items():
-        print(k, len(v), "rows")
+    return new
+
+
+def main():
+    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    default = os.path.join(os.environ.get("COSH_DATA_DIR") or os.path.join(HERE, "data", "private"), "review_roi")
+    ap.add_argument("--dir", default=default)
+    ap.add_argument("--out", help="write the datasets here as JSON")
+    args = ap.parse_args()
+    show(datasets(args.dir), args.out)
 
 
 if __name__ == "__main__":

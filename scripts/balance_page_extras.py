@@ -1,25 +1,29 @@
-"""Add the growth-signal, activity-pattern and security-fix datasets to
-summaries/balance.json (the Review Balance page).
+"""The growth-signal, activity-pattern and security-fix datasets of
+summaries/balance.json (the Review Balance page). `python3 -m
+cosh.balance_publish` calls these functions.
 
 Inputs are aggregate outputs of other scripts, all in $COSH_DATA_DIR:
-  balance_signals.json             scripts/balance_signals.py report --out
+  (signals)                        scripts/balance_signals.py (compute, or report --out)
   balance_clusters/clusters.json   scripts/balance_clusters.py
   balance_clusters/map.json        scripts/balance_cluster_map.py
   chrome_releases/summary.json     scripts/chrome_releases.py join
 
-  COSH_DATA_DIR=<main>/data/private python3 scripts/balance_page_extras.py [summaries/balance.json]
+  COSH_DATA_DIR=<main>/data/private python3 scripts/balance_page_extras.py \
+      [--signals signals.json] [--out datasets.json]
 
 Nothing here names a person: clusters.json's "aggregate" block holds shares
 only, map.json holds binned counts (cells of 5+ person-halves), ellipses and
 rule agreement, and people.json (per person) is never read.
 """
 
+import argparse
 import json
 import os
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from cosh import store  # noqa: E402
+from cosh.balance_publish import show  # noqa: E402
 
 WINDOWS = {"2019H1-2020H2": "2019–20 → a year later", "2021H1-2023H1": "2021–23 → a year later",
            "2024H1-2024H2": "2024 → 2025", "2025H1": "2025 H1 → 2026 H1"}
@@ -106,20 +110,18 @@ def security(s):
 
 
 def main():
-    path = sys.argv[1] if len(sys.argv) > 1 else "summaries/balance.json"
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--signals", help="a balance_signals.py report (default: none)")
+    ap.add_argument("--out", help="write the datasets here as JSON")
+    args = ap.parse_args()
     d = store.DATA_DIR
-    data = json.load(open(path))
-    ds = data["datasets"]
     new = {}
-    new.update(signals(json.load(open(os.path.join(d, "balance_signals.json")))))
+    if args.signals:
+        new.update(signals(json.load(open(args.signals))))
     new.update(clusters(json.load(open(os.path.join(d, "balance_clusters", "clusters.json")))))
     new.update(pattern_map(json.load(open(os.path.join(d, "balance_clusters", "map.json")))))
     new.update(security(json.load(open(os.path.join(d, "chrome_releases", "summary.json")))))
-    for k, v in new.items():
-        print(f"{k}: {len(v)} rows", file=sys.stderr)
-        ds[k] = v
-    json.dump(data, open(path, "w"), separators=(",", ":"))
-    open(path, "a").write("\n")
+    show(new, args.out)
 
 
 if __name__ == "__main__":

@@ -6,6 +6,9 @@ text).
 
   COSH_DATA_DIR=<main>/data/private python3 scripts/balance_report.py --out report.json
 
+That file is for exploration: the page's copy of these tables comes from
+`python3 -m cosh.balance_publish`, which calls compute().
+
 --first-commit, --owners-added, --ai-marked and --mech read the old
 hand-made files instead of commits.sqlite (balance_analysis.py).
 """
@@ -25,10 +28,11 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import balance_analysis as A  # noqa: E402
 import balance_growth as G  # noqa: E402
 from cosh import balance, classify, store  # noqa: E402
+from cosh.balance_publish import LAST_QUARTER  # noqa: E402
 
 YEAR = G.YEAR
 DAY = 86400
-FIRST_Q, LAST_Q = "2023Q3", "2026Q3"      # whole quarters of Gerrit data
+FIRST_Q, LAST_Q = "2023Q3", LAST_QUARTER      # whole quarters of Gerrit data
 
 
 def pct(xs, p):
@@ -103,14 +107,9 @@ def quarters(lo, hi):
             y, q = y + 1, 1
 
 
-def main():
-    ap = argparse.ArgumentParser()
-    ap.add_argument("--first-commit", help="default: commits.sqlite")
-    ap.add_argument("--owners-added", help="default: commits.sqlite")
-    ap.add_argument("--ai-marked", help="default: commits.sqlite")
-    ap.add_argument("--mech", help="default: commits.sqlite")
-    ap.add_argument("--out", required=True)
-    args = ap.parse_args()
+def compute(args):
+    """The report's tables: {"generated", "mechanical_cls", <dataset>: rows, ...,
+    "dirs": the balance_dirs.json document}."""
     cls, commits, ids, first, owner_at, ai = G.load_all(args)
     mech = mech_set(args.mech)
     dirs3 = A.commit_dirs(3)
@@ -505,7 +504,18 @@ def main():
             y[1] += c["exp24"]
             y[2] += 1
     out["learning"] = [dict(era=e, bucket=b, feedback_index=r(v[0] / v[1]), cls=v[2]) for (e, b), v in lcv.items()]
+    return out
 
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--first-commit", help="default: commits.sqlite")
+    ap.add_argument("--owners-added", help="default: commits.sqlite")
+    ap.add_argument("--ai-marked", help="default: commits.sqlite")
+    ap.add_argument("--mech", help="default: commits.sqlite")
+    ap.add_argument("--out", required=True)
+    args = ap.parse_args()
+    out = compute(args)
     with open(args.out, "w") as f:
         json.dump(out, f, indent=1)
     print(f"wrote {args.out}", file=sys.stderr)

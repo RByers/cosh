@@ -1,17 +1,20 @@
-"""Turn `balance_growth.py all` output into the page's datasets.
+"""Turn `balance_growth.py all` output into the page's datasets
+growth_windows, newcomer_review, mentorship, promotion and ai_paired.
+balance_growth prints tables for reading; this parser keeps the page
+reproducible from them. `python3 -m cosh.balance_publish` calls
+datasets() on balance_growth.page_tables(); to look at them by hand:
 
   python3 scripts/balance_growth.py all ... > out-growth.txt
-  python3 scripts/balance_growth_tables.py out-growth.txt summaries/balance.json
-
-Replaces growth_windows, newcomer_review, mentorship, promotion and ai_paired
-in summaries/balance.json with what the text output says (pipeline comes from
-balance_analysis.py and is left alone). balance_growth prints tables for
-reading; this parser keeps the page reproducible from them.
+  python3 scripts/balance_growth_tables.py out-growth.txt [--out datasets.json]
 """
 
-import json
+import argparse
+import os
 import re
 import sys
+
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from cosh.balance_publish import show  # noqa: E402
 
 
 def sections(text):
@@ -110,12 +113,8 @@ def ai_paired(lines):
     return rows
 
 
-def main():
-    text = open(sys.argv[1]).read()
+def datasets(text):
     secs = sections(text)
-    path = sys.argv[2]
-    data = json.load(open(path))
-    ds = data["datasets"]
     new = dict(
         growth_windows=growth_windows(find(secs, "Growth: per-person")),
         newcomer_review=newcomer_review(find(secs, "Who carries newcomer review")),
@@ -126,10 +125,15 @@ def main():
     for k, v in new.items():
         if not v:
             raise SystemExit(f"{k}: nothing parsed")
-        print(f"{k}: {len(v)} rows (was {len(ds.get(k, []))})", file=sys.stderr)
-        ds[k] = v
-    json.dump(data, open(path, "w"), separators=(",", ":"))
-    open(path, "a").write("\n")
+    return new
+
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("text", help="what `balance_growth.py all` printed")
+    ap.add_argument("--out", help="write the datasets here as JSON")
+    args = ap.parse_args()
+    show(datasets(open(args.text).read()), args.out)
 
 
 if __name__ == "__main__":

@@ -10,7 +10,9 @@ Writes aggregates only (no names, e-mails or IDs); cells under MIN_PEOPLE
 people or MIN_CLS CLs are dropped or pooled into "Other".
 
   COSH_DATA_DIR=<main>/data/private nice -n 5 python3 scripts/balance_narrative.py \
-      --first-commit F --owners-added O --mech M [--cache P] [summaries/balance.json]
+      [--cache P] [--ai-paired F] [--out datasets.json]
+
+The page's copy comes from `python3 -m cosh.balance_publish` (datasets()).
 
 --cache P pickles the loaded inputs to P (first run) and reads them back
 (later runs), which cuts a rerun from ~6 min to ~1 min. Delete P when any
@@ -68,14 +70,15 @@ import balance_analysis as A  # noqa: E402
 import balance_growth as G  # noqa: E402
 import balance_report as R  # noqa: E402
 from cosh import balance, classify, orgs, store  # noqa: E402
+from cosh.balance_publish import LAST_QUARTER, quarter_end, show  # noqa: E402
 
 YEAR = G.YEAR
 DAY = 86400
-Q = list(R.quarters("2023Q3", "2026Q3"))
+Q = list(R.quarters("2023Q3", LAST_QUARTER))
 MIN_PEOPLE, MIN_CLS = 20, 200
 PCTS = (.5, .75, .9, .95, .99)
 GIT_START = datetime(2017, 7, 1, tzinfo=timezone.utc).timestamp()     # Reviewed-by footers start
-GIT_END = datetime(2026, 10, 1, tzinfo=timezone.utc).timestamp()      # whole quarters only
+GIT_END = quarter_end(LAST_QUARTER).timestamp()      # whole quarters only
 AI_P = 0.5           # Haiku cutoff for "predicted" (99% precision, docs/balance-ai-predict.md §5)
 AI_MODEL = ("haiku", "3dd3ca1ff755")
 SEED = 20261109
@@ -716,15 +719,7 @@ def capacity(S, poy):
 
 # ======================================================================= main
 
-def main():
-    ap = argparse.ArgumentParser()
-    ap.add_argument("path", nargs="?", default="summaries/balance.json")
-    ap.add_argument("--first-commit", help="default: commits.sqlite")
-    ap.add_argument("--owners-added", help="default: commits.sqlite")
-    ap.add_argument("--mech", help="default: commits.sqlite")
-    ap.add_argument("--ai-marked", help="default: commits.sqlite")
-    ap.add_argument("--cache")
-    args = ap.parse_args()
+def load_cached(args):
     S = None
     if args.cache and os.path.exists(args.cache):
         S = pickle.load(open(args.cache, "rb"))
@@ -738,8 +733,12 @@ def main():
             with open(args.cache + ".tmp", "wb") as f:
                 pickle.dump(S, f, protocol=pickle.HIGHEST_PROTOCOL)
             os.replace(args.cache + ".tmp", args.cache)
-    data = json.load(open(args.path))
-    ds = data["datasets"]
+    return S
+
+
+def datasets(S, ai_paired):
+    """The datasets listed above. ai_summary quotes `ai_paired`
+    (balance_growth_tables), so it comes in."""
     new = {}
     new["reviewer_burden"] = reviewer_burden(S)
     new["approver_burden"] = approver_burden(S)
@@ -751,16 +750,23 @@ def main():
     ai_kinds(S)
     new["ai_quarters"] = ai_quarters(S)
     new["ai_reviewer_load"] = ai_reviewer_load(S)
-    new["ai_summary"] = ai_summary(S, ds.get("ai_paired", []))
+    new["ai_summary"] = ai_summary(S, ai_paired)
     new["capacity_years"], new["capacity_tenure"], new["capacity_orgs"] = capacity(S, poy)
-    for k, v in new.items():
-        print(f"{k}: {len(v)} rows", file=sys.stderr)
-        ds[k] = v
-    tmp = args.path + ".tmp"
-    with open(tmp, "w") as f:
-        json.dump(data, f, separators=(",", ":"))
-        f.write("\n")
-    os.replace(tmp, args.path)
+    return new
+
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--first-commit", help="default: commits.sqlite")
+    ap.add_argument("--owners-added", help="default: commits.sqlite")
+    ap.add_argument("--mech", help="default: commits.sqlite")
+    ap.add_argument("--ai-marked", help="default: commits.sqlite")
+    ap.add_argument("--cache")
+    ap.add_argument("--ai-paired", help="a JSON file with balance_growth_tables' ai_paired, for ai_summary")
+    ap.add_argument("--out", help="write the datasets here as JSON")
+    args = ap.parse_args()
+    paired = json.load(open(args.ai_paired))["ai_paired"] if args.ai_paired else []
+    show(datasets(load_cached(args), paired), args.out)
 
 
 if __name__ == "__main__":

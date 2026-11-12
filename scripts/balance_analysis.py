@@ -209,6 +209,46 @@ def mechanical(cls):
         print(f"{name:>8}" + "".join(f"{sum(1 for x in s if a <= x < b):>9,}" for a, b in zip(tb, tb[1:])))
 
 
+def as_printed(x, fmt):
+    """x rounded as mechanical() and pipeline() print it (f"{x:{fmt}}"), as a
+    number: the page's datasets were once copied from those tables."""
+    s = f"{x:{fmt}}"
+    return float(s[:-1]) / 100 if s.endswith("%") else int(s) if fmt == ".0f" else float(s)
+
+
+def mechanical_datasets(cls):
+    """The page's `mechanical_files` and `mechanical_repetition`: mechanical()'s
+    first two tables as rows, rounded as printed."""
+    m = [c for c in cls if c["status"] == "MERGED" and c["files"]]
+    big = [c for c in m if c["files"] >= 10]
+    rep = commit_store.repetition(git_db())
+    reps = []
+    rb = [0, 0.2, 0.4, 0.6, 0.8, 0.9, 1.01]
+    for lo, hi in zip(rb, rb[1:]):
+        s = [c for c in big if (r := rep.get(c["sha"])) is not None and lo <= r < hi]
+        if s:
+            reps.append(dict(repetition=f"{lo:.1f}-{min(hi, 1):.1f}", cls=len(s),
+                             with_thread=as_printed(sum(1 for c in s if c["threads"]) / len(s), ".0%"),
+                             threads_per_cl=as_printed(st.mean(c["threads"] for c in s), ".2f"),
+                             threads_per_file=as_printed(st.mean(c["threads"] / c["files"] for c in s), ".3f"),
+                             median_files=as_printed(med([c["files"] for c in s]), ".0f")))
+    files = []
+    fb = [1, 2, 5, 10, 20, 50, 100, 200, 500, 10**9]
+    lab = ["1", "2-4", "5-9", "10-19", "20-49", "50-99", "100-199", "200-499", "500+"]
+    for lo, hi, name in zip(fb, fb[1:], lab):
+        s = [c for c in m if lo <= c["files"] < hi]
+        if not s:
+            continue
+        rev = sum(1 for c in s if c["reverted_at"] and c["reverted_at"] - c["closed_at"] < 30 * 86400)
+        files.append(dict(files=name, cls=len(s),
+                          with_thread=as_printed(sum(1 for c in s if c["threads"]) / len(s), ".0%"),
+                          threads_per_cl=as_printed(st.mean(c["threads"] for c in s), ".2f"),
+                          threads_per_file=as_printed(st.mean(c["threads"] / c["files"] for c in s), ".3f"),
+                          lines_per_file=as_printed(med([(c["git_lines"] or 0) / c["files"] for c in s]), ".1f"),
+                          reverted=as_printed(rev / len(s), ".2%")))
+    return dict(mechanical_files=files, mechanical_repetition=reps)
+
+
 # ---------------------------------------------------------------------- trends
 
 def trends(cls, commits, ai):
@@ -543,17 +583,20 @@ def growth(cls, commits, first_commit):
 
 # -------------------------------------------------------------------- pipeline
 
-def pipeline(commits, first_commit, owners_added):
-    """Experts training newcomers who become experts: who reviews newcomers,
-    and how many people become reviewers and OWNERS, by start-year cohort."""
+def yrs(a, b):
+    return (b - a) / (365.25 * 86400)
+
+
+def pipeline_people(commits, first_commit=None, owners_added=None):
+    """pipeline()'s inputs: first commit and first OWNERS addition per person,
+    commits authored and reviews given per person and year, and each regular
+    reviewer's first year with >= 60 reviews."""
     first = load_first(first_commit)
     owner_at = {}
     for t, e, _ in load_owners_added(owners_added):
         e = person(e)
         if e in first:
             owner_at[e] = min(t, owner_at.get(e, t))
-    yrs = lambda a, b: (b - a) / (365.25 * 86400)
-    # Reviews given per person-year, and first year with >= 60 reviews.
     given = defaultdict(Counter)
     authored = defaultdict(Counter)
     for c in commits:
@@ -564,6 +607,26 @@ def pipeline(commits, first_commit, owners_added):
                 given[r][y] += 1
     became_reviewer = {e: min(y for y, n in g.items() if n >= 60) for e, g in given.items()
                        if any(n >= 60 for n in g.values()) and e in first}
+    return first, owner_at, authored, became_reviewer
+
+
+def pipeline_new_people(first, owner_at, authored, became_reviewer):
+    """The page's `pipeline`: new authors, regular reviewers and OWNERS per
+    year (pipeline()'s second table, rounded as printed)."""
+    rows = []
+    for y in range(2017, 2027):
+        no = [e for e, t in owner_at.items() if year(t) == y]
+        p50 = med([yrs(first[e], owner_at[e]) for e in no])
+        rows.append(dict(year=y, new_authors=sum(1 for e, t in first.items() if year(t) == y and authored[e][y] >= 5),
+                         new_regular_reviewers=sum(1 for yy in became_reviewer.values() if yy == y),
+                         new_owners=len(no), owner_tenure_p50=None if math.isnan(p50) else as_printed(p50, ".1f")))
+    return rows
+
+
+def pipeline(commits, first_commit, owners_added):
+    """Experts training newcomers who become experts: who reviews newcomers,
+    and how many people become reviewers and OWNERS, by start-year cohort."""
+    first, owner_at, authored, became_reviewer = pipeline_people(commits, first_commit, owners_added)
 
     print("Who reviews newcomers' CLs (author in their first year), by year: Reviewed-by reviewers'")
     print("tenure and whether they were in an OWNERS file at the time")

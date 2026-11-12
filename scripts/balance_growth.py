@@ -9,6 +9,8 @@ aggregated; nothing here prints anyone's identity.
 
 import argparse
 import bisect
+import contextlib
+import io
 import math
 import os
 import random
@@ -22,10 +24,11 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import balance_analysis as A  # noqa: E402
 from cosh import balance, store  # noqa: E402
+from cosh.balance_publish import DATA_END  # noqa: E402
 
 DAY = 86400
 YEAR = 365.25 * DAY
-CENSOR = datetime(2026, 11, 1, tzinfo=timezone.utc).timestamp()   # end of data
+CENSOR = DATA_END.timestamp()   # end of data
 
 
 def half(t):
@@ -245,7 +248,7 @@ def growth(cls, commits, ids, first, owner_at, top2, dirs3):
     # subtracted so a person's slope is growth relative to their peers.
     panel = {}
     people = {p for p, _ in ph} | {p for k in indep for p, _ in indep[k]}
-    for pid in people:
+    for pid in sorted(people):     # in a fixed order: dims() draws breadth samples from rnd
         if pid not in first:
             continue
         for h in range(2017 * 2, 2026 * 2 + 2):
@@ -608,13 +611,7 @@ def ai_effects(cls, commits, first, top2, ai):
                   f"n={len(ds)})")
 
 
-def main():
-    ap = argparse.ArgumentParser()
-    ap.add_argument("what", nargs="?", default="all", choices=["growth", "burden", "ai", "all"])
-    ap.add_argument("--first-commit", help="default: commits.sqlite")
-    ap.add_argument("--owners-added", help="default: commits.sqlite")
-    ap.add_argument("--ai-marked", help="default: commits.sqlite")
-    args = ap.parse_args()
+def run(args, what="all", timely=True):
     cls, commits, ids, first, owner_at, ai = load_all(args)
     dirs3 = A.commit_dirs(3)
     top2 = {}
@@ -622,13 +619,33 @@ def main():
         d = dirs3.get(c["cid"])
         if c["n"] and d:
             top2[c["n"]] = "/".join(d[0].split("/")[:2])
-    if args.what in ("burden", "all"):
+    if what in ("burden", "all"):
         burden(cls, commits, ids, first, owner_at)
-        timeliness(cls, ids, first)
-    if args.what in ("ai", "all"):
+        if timely:
+            timeliness(cls, ids, first)
+    if what in ("ai", "all"):
         ai_effects(cls, commits, first, top2, ai)
-    if args.what in ("growth", "all"):
+    if what in ("growth", "all"):
         growth(cls, commits, ids, first, owner_at, top2, dirs3)
+
+
+def page_tables(args):
+    """What `all` prints, without the timeliness table: the text that
+    balance_growth_tables.datasets() turns into the page's datasets."""
+    buf = io.StringIO()
+    with contextlib.redirect_stdout(buf):
+        run(args, timely=False)
+    return buf.getvalue()
+
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("what", nargs="?", default="all", choices=["growth", "burden", "ai", "all"])
+    ap.add_argument("--first-commit", help="default: commits.sqlite")
+    ap.add_argument("--owners-added", help="default: commits.sqlite")
+    ap.add_argument("--ai-marked", help="default: commits.sqlite")
+    args = ap.parse_args()
+    run(args, args.what)
 
 
 if __name__ == "__main__":

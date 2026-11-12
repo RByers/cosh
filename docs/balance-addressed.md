@@ -202,14 +202,15 @@ export COSH_DATA_DIR=/home/rbagent/projects/cosh/data/private
 # Inputs: the review-ROI per-CL table (scripts/review_roi_table.py) and its
 # shared inputs (docs/review-roi.md, package 0); blame scratch from
 # scripts/review_roi_blame.py szz / survival.
-nice -n 5 python3 scripts/balance_addressed_value.py cl --table cl_table.sqlite --out cl.json        # ~1 min
+R=$COSH_DATA_DIR/review_roi
+nice -n 5 python3 scripts/balance_addressed_value.py cl --table cl_table.sqlite --out $R/addressed_cl.json   # ~1 min
 nice -n 5 python3 scripts/balance_addressed_value.py blame --table cl_table.sqlite \
-    --blame-dir <blame scratch> --out blame.json                                                    # ~1 min
+    --blame-dir <blame scratch> --out $R/addressed_blame.json                                             # ~1 min
 nice -n 5 python3 scripts/balance_addressed_value.py people \
-    --cache people.pkl --out people.json                                                            # ~6 min
-nice -n 5 python3 scripts/balance_addressed_value.py report --cl cl.json --blame blame.json \
-    --people people.json          # writes addr_tenure and addr_compare into summaries/balance.json
+    --cache people.pkl --out $R/addressed_people.json                                                     # ~6 min
+nice -n 5 python3 -m cosh.balance_publish     # turns them into addr_tenure and addr_compare (step addressed)
 ```
 
-The 2026-11-10 run used the table built 2026-11-09 (`cl_table_f.sqlite`,
-356,546 unit CLs) and the inputs regenerated that day.
+`report --cl F --blame F --people F [--out F]` prints the two datasets
+without publishing. The 2026-11-10 run used the table built 2026-11-09
+(`cl_table_f.sqlite`, 356,546 unit CLs) and the inputs regenerated that day.

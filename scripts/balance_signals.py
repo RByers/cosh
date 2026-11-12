@@ -1,7 +1,10 @@
 """Growth signals beyond review threads (docs/balance-signals.md).
 
-  COSH_DATA_DIR=... python3 scripts/balance_signals.py report --first-commit F --out signals.json
+  COSH_DATA_DIR=... python3 scripts/balance_signals.py report --out signals.json
       -1s and abandonment by tenure, balanced reviewer/author panels, matched cohorts.
+
+`python3 -m cosh.balance_publish` calls compute() and turns the report into
+the page's signals_*, panels and matched datasets (balance_page_extras).
 
 Aggregates only: nothing per person is written to the output.
 """
@@ -19,10 +22,11 @@ from collections import Counter, defaultdict
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from cosh import balance, store  # noqa: E402
+from cosh.balance_publish import DATA_END  # noqa: E402
 
 YEAR = 365.25 * 86400
 FIRST_TS = 1687737600          # 2023-06-26 00:00 UTC: Monday of 2023-W26, the first Gerrit week
-END_TS = 1793491200            # 2026-11-01 00:00 UTC: end of the data used (2026-W44)
+END_TS = int(DATA_END.timestamp())     # 2026-11-01 00:00 UTC: end of the data used (2026-W44)
 
 # ------------------------------------------------------------------ report
 
@@ -404,7 +408,8 @@ def matched_cohorts(L, use, seed=5):
     return out
 
 
-def report(args):
+def compute(args):
+    """The report: -1s and abandonment tables, panels and matched cohorts."""
     L = load(args)
     use = annotate(L)
     # The feedback index's expectation (exp24) and calendar-adjusted thread residual, merged CLs.
@@ -420,6 +425,11 @@ def report(args):
     out.update(neg_abandon_tables(use))
     out["panels"] = panels(L, use)
     out["matched"] = matched_cohorts(L, use)
+    return out
+
+
+def report(args):
+    out = compute(args)
     with open(args.out, "w") as f:
         json.dump(out, f, indent=1)
     print(f"wrote {args.out}", file=sys.stderr)

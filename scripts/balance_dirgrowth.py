@@ -6,7 +6,10 @@ Offline; reads balance*.sqlite through balance_growth. Prints aggregates
 only (per directory and per tenure bin), never anything per person.
 
   COSH_DATA_DIR=<main>/data/private python3 scripts/balance_dirgrowth.py \
-      --first-commit F --owners-added F --mech mech.jsonl [--min-cls 3000]
+      [--min-cls 3000] [--out datasets.json]
+
+The page's queue_* datasets come from `python3 -m cosh.balance_publish`
+(compute()).
 
 Measures, per directory d (the 2-level directory holding most of a commit's
 lines):
@@ -32,7 +35,6 @@ lines):
 """
 
 import argparse
-import json
 import math
 import os
 import statistics as st
@@ -45,6 +47,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import balance_analysis as A  # noqa: E402
 import balance_growth as G  # noqa: E402
 from balance_report import mech_set  # noqa: E402
+from cosh.balance_publish import show  # noqa: E402
 
 YEAR = G.YEAR
 ERAS = {"pre": ("2023Q3", "2024Q4"), "now": ("2025Q4", "2026Q3")}
@@ -477,15 +480,8 @@ def print_inflow(rows):
         print(d, "\n  " + "\n  ".join(cells))
 
 
-def main():
-    ap = argparse.ArgumentParser()
-    ap.add_argument("path", nargs="?", help="summaries/balance.json to add the page's datasets to")
-    ap.add_argument("--first-commit", help="default: commits.sqlite")
-    ap.add_argument("--owners-added", help="default: commits.sqlite")
-    ap.add_argument("--mech", help="default: commits.sqlite")
-    ap.add_argument("--ai-marked", help="default: commits.sqlite")
-    ap.add_argument("--min-cls", type=int, default=3000, help="CLs in the 'pre' era for a directory to be listed")
-    args = ap.parse_args()
+def compute(args):
+    """Prints the tables and returns the page's queue_* datasets."""
     cls, commits, ids, first, owner_at, ai = G.load_all(args)
     mech = mech_set(args.mech)
     dirs3 = A.commit_dirs(3)
@@ -767,11 +763,19 @@ def main():
     new["queue_inflow"] = inflow(commits, cdir, first, authored, start)
     new["queue_inflow_periods"] = inflow_periods(new["queue_inflow"])
     print_inflow(new["queue_inflow"])
-    if args.path:
-        data = json.load(open(args.path))
-        data["datasets"].update(new)
-        json.dump(data, open(args.path, "w"), separators=(",", ":"))
-        open(args.path, "a").write("\n")
+    return new
+
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--first-commit", help="default: commits.sqlite")
+    ap.add_argument("--owners-added", help="default: commits.sqlite")
+    ap.add_argument("--mech", help="default: commits.sqlite")
+    ap.add_argument("--ai-marked", help="default: commits.sqlite")
+    ap.add_argument("--min-cls", type=int, default=3000, help="CLs in the 'pre' era for a directory to be listed")
+    ap.add_argument("--out", help="write the page's datasets here as JSON")
+    args = ap.parse_args()
+    show(compute(args), args.out)
 
 
 if __name__ == "__main__":

@@ -373,12 +373,6 @@
       "notes": "Only scores.sqlite costs tokens to remake; the rest is rebuildable."
     },
     {
-      "id": "data/private/balance_signals.json", "group": "balance", "path": "data/private/balance_signals.json", "kind": "json", "tier": "derived",
-      "tracked_in_git": false, "rebuildable": true,
-      "size": "18 KB", "size_as_of": "2026-11-12",
-      "purpose": "Review-quality signals over time (vote patterns, rubber-stamp rates) for the page's monitoring section."
-    },
-    {
       "id": "data/private/balance_clusters/", "group": "balance", "path": "data/private/balance_clusters/", "kind": "directory", "tier": "derived",
       "tracked_in_git": false, "rebuildable": true,
       "size": "14 MB", "size_as_of": "2026-11-12",
@@ -396,7 +390,7 @@
       "tracked_in_git": true, "rebuildable": true,
       "size": "420 KB", "size_as_of": "2026-11-12",
       "purpose": "Every dataset the Review Balance page draws, as named aggregates with no per-person rows.",
-      "notes": "About a dozen scripts each merge their own datasets into it, and some sections are copied in by hand. Its window ends 2026-10."
+      "notes": "Written whole by balance-publish, whose STEPS list records the step behind each of its 92 datasets. Its window ends 2026-10 (balance_publish.DATA_END)."
     },
     {
       "id": "summaries/balance_dirs.json", "group": "balance", "path": "summaries/balance_dirs.json", "kind": "json", "tier": "published",
@@ -429,10 +423,10 @@
     {
       "id": "data/private/review_roi/", "group": "feedback", "path": "data/private/review_roi/", "kind": "directory", "tier": "analysis",
       "tracked_in_git": false, "rebuildable": true,
-      "size": "296 KB in 5 files", "size_as_of": "2026-11-12",
-      "files": "part1_report.json, part1_results.json, part2_results.json, reverts_results.json, substance_results.json.",
-      "purpose": "Result files of the review-ROI studies (does review feedback predict reverts and bugs).",
-      "notes": "Copied here by hand from a session's scratch directory, whose path the scripts still hard-code."
+      "size": "296 KB in 5 files, plus 18 KB in the 3 addressed_* files", "size_as_of": "2026-11-12",
+      "files": "part1_report.json, part1_results.json, part2_results.json, reverts_results.json, substance_results.json; addressed_cl.json, addressed_blame.json, addressed_people.json (scripts/balance_addressed_value.py cl, blame and people --out).",
+      "purpose": "Result files of the review-ROI studies (does review feedback predict reverts and bugs) and of the addressed-index comparison, which balance-publish reads from these fixed names.",
+      "notes": "Copied here by hand from the scripts' scratch output (data/private/scratch/review_roi/ since 2026-11-12); rerunning the studies is an analysis, not part of a publish."
     },
 
     {
@@ -744,61 +738,28 @@
       "approval": "Costs Max usage."
     },
     {
-      "id": "balance-report", "group": "balance", "command": "python3 scripts/balance_report.py --out report.json",
-      "code": ["scripts/balance_report.py", "scripts/balance_analysis.py"],
-      "purpose": "Computes the page's core tables; its sections and the directory table are then copied into the summaries by hand.",
+      "id": "balance-clusters", "group": "balance", "command": "python3 scripts/balance_clusters.py; python3 scripts/balance_cluster_map.py",
+      "code": ["scripts/balance_clusters.py", "scripts/balance_cluster_map.py"],
+      "purpose": "Groups contributors' half-years into activity patterns and trajectories (k-means over private per-person panels), and maps the patterns.",
       "inputs": ["data/private/balance.sqlite", "data/private/commits.sqlite", "data/private/balance-timeline.sqlite", "data/private/derived.sqlite", "data/private/labels.sqlite"],
-      "outputs": ["summaries/balance.json", "summaries/balance_dirs.json"],
+      "outputs": ["data/private/balance_clusters/"],
       "network": false, "lock": null,
-      "incremental": "Recomputes everything; the copy into the summaries is manual.",
-      "duration": null, "token_cost": null, "cost_source": "No timing recorded",
+      "incremental": "Recomputes everything.",
+      "duration": "about 10 min", "token_cost": null, "cost_source": "docs/balance-clusters.md",
       "refresh": "optional",
-      "notes": "Its window is hard-coded to end 2026-10, as in every balance page script: new weeks need the constants edited."
+      "notes": "An analysis kept as an input of balance-publish (its per-person people.json stays private); rerun it before a publish when the clusters should follow new data."
     },
     {
-      "id": "balance-datasets", "group": "balance", "command": "python3 scripts/balance_<name>.py [summaries/balance.json]",
-      "code": ["scripts/balance_narrative.py", "scripts/balance_dirgrowth.py", "scripts/balance_growth.py", "scripts/balance_growth_tables.py", "scripts/balance_histograms.py", "scripts/balance_definitions.py", "scripts/balance_behind.py", "scripts/balance_review_share.py", "scripts/balance_learning.py", "scripts/balance_feedback_predicts.py", "scripts/balance_addressed_value.py"],
-      "purpose": "Eleven scripts that each compute a few of the page's datasets and merge them into balance.json.",
-      "inputs": ["data/private/balance.sqlite", "data/private/commits.sqlite", "data/private/derived.sqlite", "data/private/labels.sqlite", "data/private/ai_marked_broad.txt", "data/private/ai_predict/", "data/private/review_roi/", "config/affiliations.json5"],
-      "outputs": ["summaries/balance.json"],
+      "id": "balance-publish", "group": "balance", "command": "nice -n 5 python3 -m cosh.balance_publish [--check]",
+      "code": ["cosh/balance_publish.py", "scripts/balance_report.py", "scripts/balance_analysis.py", "scripts/balance_growth.py", "scripts/balance_growth_tables.py", "scripts/balance_narrative.py", "scripts/balance_dirgrowth.py", "scripts/balance_histograms.py", "scripts/balance_definitions.py", "scripts/balance_behind.py", "scripts/balance_review_share.py", "scripts/balance_learning.py", "scripts/balance_feedback_predicts.py", "scripts/balance_signals.py", "scripts/balance_page_extras.py", "scripts/review_roi_report.py", "scripts/balance_addressed_value.py", "scripts/balance_authors.py"],
+      "purpose": "Writes the Review Balance page's three files whole, from empty, by running each dataset's compute function in the order its STEPS list records.",
+      "inputs": ["data/private/balance.sqlite", "data/private/commits.sqlite", "data/private/balance-timeline.sqlite", "data/private/derived.sqlite", "data/private/labels.sqlite", "data/private/ai_marked_broad.txt", "data/private/ai_predict/", "data/private/balance_clusters/", "data/private/chrome_releases/", "data/private/review_roi/", "config/affiliations.json5"],
+      "outputs": ["summaries/balance.json", "summaries/balance_dirs.json", "summaries/balance_authors.json"],
       "network": false, "lock": null,
-      "incremental": "Each reads the file, replaces its own datasets and writes it back; nothing runs them in order.",
-      "duration": "3 to 6 min each, about 40 min in all", "token_cost": null, "cost_source": "docs/balance.md, per script",
+      "incremental": "Recomputes everything; --steps a,b reruns only those steps and reuses the others' results in data/private/scratch/balance-publish/steps/.",
+      "duration": "about 8 min, about 5 GB of memory at most (one step at a time)", "token_cost": null, "cost_source": "data/private/scratch/balance-publish/publish.log",
       "refresh": "optional",
-      "notes": "Each script's exact arguments are in its docstring. balance_growth and balance_analysis still use an older rule for mechanical CLs than the rest."
-    },
-    {
-      "id": "balance-extras", "group": "balance", "command": "python3 scripts/balance_signals.py report ... --out data/private/balance_signals.json; python3 scripts/balance_clusters.py ...; python3 scripts/balance_cluster_map.py; python3 scripts/balance_page_extras.py",
-      "code": ["scripts/balance_signals.py", "scripts/balance_clusters.py", "scripts/balance_cluster_map.py", "scripts/balance_page_extras.py"],
-      "purpose": "Computes the review-quality signals and contributor clusters, then merges them and the security-fix totals into balance.json.",
-      "inputs": ["data/private/balance.sqlite", "data/private/commits.sqlite", "data/private/balance-timeline.sqlite", "data/private/derived.sqlite", "data/private/chrome_releases/", "chromium-git"],
-      "outputs": ["data/private/balance_signals.json", "data/private/balance_clusters/", "summaries/balance.json"],
-      "network": false, "lock": null,
-      "incremental": "Each script recomputes its own output.",
-      "duration": "about 15 min (signals 4, clusters 10)", "token_cost": null, "cost_source": "docs/balance-signals.md; docs/balance-clusters.md",
-      "refresh": "optional"
-    },
-    {
-      "id": "balance-authors", "group": "balance", "command": "python3 scripts/balance_authors.py",
-      "code": ["scripts/balance_authors.py"],
-      "purpose": "Writes the author-level distributions.",
-      "inputs": ["data/private/balance.sqlite", "data/private/commits.sqlite", "data/private/derived.sqlite"],
-      "outputs": ["summaries/balance_authors.json"],
-      "network": false, "lock": null,
-      "incremental": "Rewrites the file.",
-      "duration": "about 3 min", "token_cost": null, "cost_source": "docs/balance.md",
-      "refresh": "optional"
-    },
-    {
-      "id": "roi-report", "group": "balance", "command": "python3 scripts/review_roi_report.py",
-      "code": ["scripts/review_roi_report.py"],
-      "purpose": "Merges the review-ROI study results into balance.json.",
-      "inputs": ["data/private/review_roi/"],
-      "outputs": ["summaries/balance.json"],
-      "network": false, "lock": null,
-      "incremental": "Replaces its own datasets in the file.",
-      "duration": "seconds", "token_cost": null, "cost_source": "docs/review-roi.md",
-      "refresh": "optional"
+      "notes": "Its window ends at balance_publish.DATA_END (2026-11-01; D3 decides whether it follows new weeks). --check rebuilds into the scratch directory and compares with the committed files, dataset by dataset. Reads balance_clusters/, chrome_releases/summary.json and review_roi/ as finished analyses; everything else is computed on each run."
     },
     {
       "id": "balance-analysis", "group": "balance", "command": "python3 scripts/balance_analysis.py trends|growth|pipeline; scripts/balance_ai.py paired|did|footers; scripts/balance_person.py; scripts/balance_exemplars.py; scripts/balance_explore.py",
@@ -840,15 +801,15 @@
     },
     {
       "id": "roi-analysis", "group": "feedback", "command": "python3 scripts/review_roi_table.py ...; review_roi_part1.py; review_roi_part2.py; review_roi_blame.py; review_roi_reverts.py; review_roi_substance.py",
-      "code": ["scripts/review_roi_table.py", "scripts/review_roi_part1.py", "scripts/review_roi_part1_followup.py", "scripts/review_roi_part2.py", "scripts/review_roi_blame.py", "scripts/review_roi_reverts.py", "scripts/review_roi_substance.py"],
-      "purpose": "The review-ROI studies: whether review feedback predicts later reverts, bug-fixing commits and security bugs.",
+      "code": ["scripts/review_roi_table.py", "scripts/review_roi_part1.py", "scripts/review_roi_part1_followup.py", "scripts/review_roi_part2.py", "scripts/review_roi_blame.py", "scripts/review_roi_reverts.py", "scripts/review_roi_substance.py", "scripts/balance_addressed_value.py"],
+      "purpose": "The review-ROI studies: whether review feedback predicts later reverts, bug-fixing commits and security bugs; and the addressed index against the feedback index (balance_addressed_value.py cl, blame, people).",
       "inputs": ["data/private/balance.sqlite", "data/private/commits.sqlite", "data/private/balance-timeline.sqlite", "data/private/derived.sqlite", "data/private/labels.sqlite", "data/private/bugs/bugs.sqlite", "data/private/notedb/", "chromium-git", "claude-model"],
       "outputs": ["data/private/review_roi/"],
       "network": true, "lock": null,
       "duration": "about 1 h; the full blame runs were estimated at 10 to 16 CPU hours", "token_cost": "Haiku pilots only: 274 tokens per thread, 200 threads",
       "cost_source": "docs/review-roi*.md",
       "refresh": "analysis",
-      "notes": "The scripts write to a session scratch directory they hard-code; results were copied into data/private/review_roi/ by hand. This is the only path by which bug-tracker data reaches a page."
+      "notes": "The scripts write to data/private/scratch/review_roi/ by default; the results balance-publish reads are copied into data/private/review_roi/ by hand (the addressed ones as addressed_cl.json, addressed_blame.json, addressed_people.json). This is the only path by which bug-tracker data reaches a page."
     },
     {
       "id": "impact-analysis", "group": "feedback", "command": "python3 scripts/review_impact.py --weeks 2026-W36:2026-W44 --out threads.jsonl; python3 scripts/review_impact_stats.py threads.jsonl",

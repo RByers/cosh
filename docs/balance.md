@@ -484,12 +484,11 @@ and that per-author velocity rose in the top tail: landing more without
 approving more lowers review share. What causes it (team structure,
 OWNERS coverage, time pressure, AI tools) isn't something this data shows.
 
-Rerun (about 6 min; `--cache` keeps the loaded data for reruns,
-`--explore` prints the threshold, volume and overlap checks and writes
-nothing):
-`COSH_DATA_DIR=<main>/data/private python3 scripts/balance_behind.py`
-(writes `behind_share_*` and
-`behind_feedback*` into `summaries/balance.json`).
+The page's `behind_share_*` and `behind_feedback*` come from `python3 -m
+cosh.balance_publish` (step `behind`). To look at them by hand (under a
+minute; `--cache` keeps the loaded data for reruns, `--explore` adds the
+threshold, volume and overlap checks):
+`COSH_DATA_DIR=<main>/data/private python3 scripts/balance_behind.py [--out F]`.
 
 ### 1. The exchange since AI: more and bigger CLs, thinner review
 
@@ -678,10 +677,10 @@ merged, non-mechanical CLs of 2023Q3–2024Q4 (112,615 CLs, 2,158 people).
 - Caveats: groups are by first-year output, so they may also differ in
   role, team and kind of work. This is association, not cause.
 
-Rerun: `COSH_DATA_DIR=<main>/data/private python3 scripts/balance_learning.py`
-(writes `learning_practice` and
-`learning_practice_fit` into `summaries/balance.json`; `--explore` prints the
-tenure × practice table instead; about 5 min).
+The page's `learning_practice` and `learning_practice_fit` come from
+`python3 -m cosh.balance_publish` (step `learning`). By hand:
+`COSH_DATA_DIR=<main>/data/private python3 scripts/balance_learning.py [--out F]`
+(`--explore` adds the tenure × practice table; under a minute).
 
 ### 4c. Does the feedback index predict reviewing and owning? (`scripts/balance_feedback_predicts.py`, 2026-11-08)
 
@@ -746,11 +745,11 @@ share, and threads given; both for OWNERS):
   short for OWNERS, and an OWNERS addition is often a team decision, not
   a judgement of the author; the base halves are all before AI tools.
 
-Rerun (about 5 min to load, then seconds with `--cache`):
+The page's `fb_predict_fifths`, `fb_predict_fit` and `fb_predict_summary`
+come from `python3 -m cosh.balance_publish` (step `feedback_predicts`). By
+hand (about a minute to load, then seconds with `--cache`):
 `COSH_DATA_DIR=<main>/data/private python3 scripts/balance_feedback_predicts.py
-[--cache P]` (writes
-`fb_predict_fifths`, `fb_predict_fit` and `fb_predict_summary` into
-`summaries/balance.json`; `--explore` prints them and writes nothing). The
+[--cache P] [--out F]`. The
 page shows it under "Learning to need less review feedback"
 (`#predicts`).
 
@@ -1095,10 +1094,10 @@ slower". The two measure different things. Here it is time from the CL
 being sent to its first substantive review. There it is time from a given
 reviewer being added to their own first comment.
 
-Rerun: `COSH_DATA_DIR=<main>/data/private python3 scripts/balance_dirgrowth.py
-[summaries/balance.json] [--min-cls 800]` (prints the tables; with the path, also writes the
-page's `queue_*` datasets; about 5 min). `--min-cls 800` also sets which
-directories `queue_dirs` lists.
+The page's `queue_*` datasets come from `python3 -m cosh.balance_publish`
+(step `dirgrowth`, with `--min-cls 3000`). By hand:
+`COSH_DATA_DIR=<main>/data/private python3 scripts/balance_dirgrowth.py
+[--min-cls 800] [--out F]` (prints the tables; about a minute).
 
 ### 6d. Source of longer review queues, project-wide (2026-11-09)
 
@@ -1320,26 +1319,80 @@ no thread); switching is a next step.
 Reverts climb with file count (2.3% for one file, about 5% for 20+ files),
 so the revert chart should be by size as well as over time.
 
+## Publishing the page's data (2026-11-12)
+
+One command writes all three of the page's files, whole and from empty:
+
+```
+COSH_DATA_DIR=<main>/data/private nice -n 5 python3 -m cosh.balance_publish            # into summaries/
+COSH_DATA_DIR=<main>/data/private nice -n 5 python3 -m cosh.balance_publish --check    # into the scratch dir; compare
+```
+
+`STEPS` in `cosh/balance_publish.py` is the record: each step names the
+datasets of `balance.json` (or the whole `balance_dirs.json` or
+`balance_authors.json`) it gives, and calls the compute function of the
+script below that makes them. Steps run in that order, each in its own
+process, and leave their results and logs in
+`data/private/scratch/balance-publish/steps/`; `--steps a,b` reruns only
+those and reuses the rest. A full run takes about 8 min (2026-11-12; the old scripts
+run one after another took about 10). `--check` (and
+`python3 -m cosh.balance_publish compare DIR_A DIR_B`) compares the files
+dataset by dataset, ignoring `generated`. The scripts' own `main()` no
+longer writes into `summaries/`: they print their tables and take `--out F`
+to save their datasets as JSON.
+
+Computed on every run, from the stores: `report` (`balance_report.py`;
+also `balance_dirs.json` and `summary`), `mechanical` and `pipeline`
+(`balance_analysis.py`, the tables once copied by hand from `mechanical`
+and `pipeline`), `growth` (`balance_growth.py`'s printed tables, parsed by
+`balance_growth_tables.py`), `narrative`, `dirgrowth`, `histograms`,
+`definitions`, `behind`, `review_share`, `learning`, `feedback_predicts`,
+`signals` (`balance_signals.compute()`, no longer through
+`data/private/balance_signals.json`) and `authors`.
+
+Read as finished analyses, from fixed paths in `data/private/`, because they
+take long, cost model calls or keep per-person results private:
+`balance_clusters/clusters.json` and `map.json` (step `clusters`; rerun
+`balance_clusters.py` and `balance_cluster_map.py` first when they should
+follow new data), `chrome_releases/summary.json` (`security`),
+`review_roi/*_results.json` and `part1_report.json` (`roi`), and
+`review_roi/addressed_{cl,blame,people}.json`, the outputs of
+`balance_addressed_value.py cl|blame|people --out` (`addressed`).
+
+The window is one setting, `DATA_END` (2026-11-01) in
+`cosh/balance_publish.py`, with `LAST_QUARTER` (2026Q3) derived from it;
+the scripts take their end of data from it. Their comparison eras (2023 H2
+– 2024, the latest four quarters, the 2026 Q2–Q4 queue period …) are still
+their own constants, so moving `DATA_END` extends the series but not the
+eras (D3 in `docs/data-architecture.md`).
+
+Mechanical CLs: every step uses the repetition rule (`mech_set`, section 8)
+except `growth`, whose `balance_growth.cl_residuals` still drops CLs by the
+older provisional rule (50+ files and no thread). Switching it changes
+every row of `growth_windows` and `ai_paired` (and so `ai_summary`;
+measured 2026-11-12), so it is left for a deliberate republish.
+`growth`'s breadth samples now draw people in a fixed order: before
+2026-11-12 its `growth_windows` changed from run to run with Python's hash
+seed.
+
 ## The page (`web/balance.html`)
 
 **Status (2026-11-08):** a first draft is live as `web/balance.html`, with a
 large "Draft: under development" warning at the top. Its landing-page card
 (2026-11-08) carries a yellow "In development" box below its description. It has 52 charts and 7 tables, drawn with Chart.js from
-`summaries/balance.json`. That file holds 47 aggregate datasets:
-- `balance_report.py`'s `report.json`;
+`summaries/balance.json`, written by `python3 -m cosh.balance_publish`
+(above). The datasets, by the script that computes them:
+- `balance_report.py`'s tables (`compute()`);
 - the growth, pipeline, mentorship, AI-paired and mechanical tables from
   `balance_growth.py` (via `balance_growth_tables.py`) and
   `balance_analysis.py`;
-- since 2026-11-08, `scripts/balance_page_extras.py`, which adds the growth
-  signals (−1 votes, abandonment, same-people panels, matched cohorts;
-  `docs/balance-signals.md`), the activity patterns
+- since 2026-11-08, `scripts/balance_page_extras.py`, which turns into
+  datasets the growth signals (−1 votes, abandonment, same-people panels,
+  matched cohorts; `docs/balance-signals.md`, from
+  `balance_signals.compute()`), the activity patterns
   (`docs/balance-clusters.md`, aggregate shares only, plus the pattern
   maps and rules from `balance_clusters/map.json`) and the Chrome
-  Releases CVE counts (`docs/bugs-and-security.md`). Rerun it after any of
-  those inputs changes:
-  `COSH_DATA_DIR=<main>/data/private python3 scripts/balance_page_extras.py`.
-  It reads `data/private/balance_signals.json` (`balance_signals.py report
-  --out`).
+  Releases CVE counts (`docs/bugs-and-security.md`).
 - `scripts/balance_dirgrowth.py` (2026-11-08, extended 2026-11-09), the
   "Source of longer review queues" section: `queue_*` datasets (sections
   6c and 6d).
@@ -1381,7 +1434,8 @@ large "Draft: under development" warning at the top. Its landing-page card
   (public data; the feedback index is not tone). Breadth tracks volume
   (Spearman 0.72 with CLs) and goes with slightly less feedback per CL
   (−0.24):
-  `COSH_DATA_DIR=<main>/data/private python3 scripts/balance_authors.py`
+  step `authors` of `python3 -m cosh.balance_publish`, or by hand
+  `COSH_DATA_DIR=<main>/data/private python3 scripts/balance_authors.py --out F`
   (about 3 min).
   The same script (2026-11-08) also summarizes **abandonment after review
   against tenure**, per author: of their non-mechanical CLs closed in the
@@ -1455,7 +1509,7 @@ because 1 in 20 is still a common case (a review wait of about 4.5 days in
 equals p10 (1 CL, no lines changed after review), so nothing is lost there. "How review is shared" has two histograms of commenting
 reviewers per quarter, by CLs commented on and by threads started
 (`reviewer_load_hist` and its 100-or-more summary `reviewer_load_top` from
-`balance_report.py`, copied into `balance.json` on 2026-11-08). "Directories over time" is an expandable heatmap of
+`balance_report.py`). "Directories over time" is an expandable heatmap of
 directories by quarter, from `summaries/balance_dirs.json`
 (`dirs` in `balance_report.py`'s output), with a choice of measure.
 "Across the codebase" is the same tree as an expandable table, 2024 against
@@ -1473,8 +1527,8 @@ holding 90% of its CLs is skipped, so Java package chains such as
 That added 122 rows to the heatmap (to 388, 218 KB) and 42 to the table
 (to 147), the deepest nine levels down.
 Cells are shaded on one scale per measure, so both periods and every row
-compare at a glance. Rebuilt 2026-11-08 by copying `areas` from a fresh
-`report.json` into `balance.json`.
+compare at a glance. Both come from `balance_report.compute()` through
+`python3 -m cosh.balance_publish` (step `report`).
 
 The design below is the target. Each chart follows the project's conventions: text in the HTML, dates not
 ISO weeks, one date range for the page, a mechanical-CL toggle.
@@ -1550,9 +1604,9 @@ ground rule 3).
 
 1. Switch the analyses to the mechanical rule in section 8 (repetition
    ratios for every ≥ 10-file CL go into `balance.sqlite`).
-2. Write `summaries/balance.json` from the scripts directly (today it is
-   assembled by hand), add the controls planned above, and then drop the
-   draft warnings (page and landing-page card).
+2. ~~Write `summaries/balance.json` from the scripts directly~~ (done
+   2026-11-12: `python3 -m cosh.balance_publish`). Add the controls planned
+   above, and then drop the draft warnings (page and landing-page card).
 3. Check whether "independence" growth in 2025–26 holds on interdiff share
    and rounds alone, as more half-years arrive.
 4. Once the Gerrit backfill back to 2017-07 (started 2026-11-09) is done,
@@ -1615,6 +1669,8 @@ into "Other".
   `new_owners` follow `pipeline`; `left_*` and `new_approvers` are censored
   at the ends (2017 has no prior year; 2026 is 9 months).
 
-Regenerate (about 5 min cold, 10 s with `--cache`; deterministic):
+The page's copy comes from `python3 -m cosh.balance_publish` (step
+`narrative`, after `growth`, whose `ai_paired` it quotes). By hand (about
+1.5 min cold, 10 s with `--cache`; deterministic):
 `COSH_DATA_DIR=<main>/data/private nice -n 5 python3 scripts/balance_narrative.py
-[--cache /tmp/…/narrative.pkl]`.
+[--cache /tmp/…/narrative.pkl] [--ai-paired F] [--out F]`.

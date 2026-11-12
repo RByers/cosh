@@ -25,11 +25,12 @@ noise. Offline; writes aggregates only (shares and counts per year, half or
 band), never anything per person.
 
   COSH_DATA_DIR=<main>/data/private python3 scripts/balance_behind.py \
-      --first-commit F --owners-added F --mech mech.jsonl [--explore] [summaries/balance.json]
+      [--cache P] [--explore] [--out datasets.json]
+
+The page's copy comes from `python3 -m cosh.balance_publish` (compute()).
 """
 
 import argparse
-import json
 import math
 import os
 import pickle
@@ -44,6 +45,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import balance_analysis as A  # noqa: E402
 import balance_growth as G  # noqa: E402
 from balance_report import mech_set  # noqa: E402
+from cosh.balance_publish import LAST_QUARTER, quarter_end, show  # noqa: E402
 
 YEAR = G.YEAR
 MONTH = YEAR / 12
@@ -59,7 +61,7 @@ FEEDBACK_TENURE = [(24, 48, "2-4 years"), (48, 96, "4-8 years"), (96, 10 ** 9, "
 MIN_CLS = 12                      # merged, non-mechanical CLs in the half-year
 FEEDBACK_FACTOR = 1.5                 # behind: this many times the band's median or more
 REF_HALVES = ("2023H2", "2024H1", "2024H2")
-GERRIT_END = datetime(2026, 10, 1, tzinfo=timezone.utc).timestamp()    # whole quarters only
+GERRIT_END = quarter_end(LAST_QUARTER).timestamp()    # whole quarters only
 PARTIAL = {"2026H2": 0.5}         # 2026 H2 is July–September: MIN_CLS is prorated
 MIN_PEOPLE = 20                   # per published point
 
@@ -333,15 +335,8 @@ def explore(first, authored, given, rows_fb):
               f" among others {f(b0):.3f}")
 
 
-def main():
-    ap = argparse.ArgumentParser()
-    ap.add_argument("path", nargs="?", default="summaries/balance.json")
-    ap.add_argument("--first-commit", help="default: commits.sqlite")
-    ap.add_argument("--owners-added", help="default: commits.sqlite")
-    ap.add_argument("--mech", help="default: commits.sqlite")
-    ap.add_argument("--cache", help="pickle of the loaded data, to rerun quickly")
-    ap.add_argument("--explore", action="store_true", help="print tables; don't write")
-    args = ap.parse_args()
+def compute(args):
+    """The page's behind_* datasets, plus what explore() needs."""
     args.ai_marked = None
     if args.cache and os.path.exists(args.cache):
         first, authored, given, per_half, last = pickle.load(open(args.cache, "rb"))
@@ -357,17 +352,26 @@ def main():
     rows_fb = feedback_rows(first, per_half)
     ld, rel = feedback_datasets(rows_fb)
     new.update(ld)
+    return new, (first, authored, given, rows_fb)
+
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--first-commit", help="default: commits.sqlite")
+    ap.add_argument("--owners-added", help="default: commits.sqlite")
+    ap.add_argument("--mech", help="default: commits.sqlite")
+    ap.add_argument("--cache", help="pickle of the loaded data, to rerun quickly")
+    ap.add_argument("--explore", action="store_true", help="print tables too")
+    ap.add_argument("--out", help="write the datasets here as JSON")
+    args = ap.parse_args()
+    new, state = compute(args)
     for k, v in new.items():
         print(f"\n{k}", file=sys.stderr)
         for r in v:
             print(" ", r, file=sys.stderr)
     if args.explore:
-        explore(first, authored, given, rows_fb)
-        return
-    data = json.load(open(args.path))
-    data["datasets"].update(new)
-    json.dump(data, open(args.path, "w"), separators=(",", ":"))
-    open(args.path, "a").write("\n")
+        explore(*state)
+    show(new, args.out)
 
 
 if __name__ == "__main__":
