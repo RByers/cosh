@@ -3255,7 +3255,7 @@ async function lookUp(page: Page, email: string) {
 
 test('review feedback: the caveat, a lookup field that offers no completions, and an unknown address', async () => {
   const { page, errors } = await feedbackPage();
-  assert.equal(await page.title(), 'Chromium Open Source Health - Feedback Index');
+  assert.equal(await page.title(), 'Feedback Index - Chromium Open Source Health');
   assert.equal(await page.$eval('.rf-disclaimer', (e) => e.textContent!.trim()),
     'This analysis is imperfect and is intended as a learning guide only.');
   const input = await page.$eval('#rf-email', (i) => ({ ac: i.getAttribute('autocomplete'), list: i.getAttribute('list'),
