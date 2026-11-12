@@ -5,7 +5,9 @@ public data sources: Gerrit code review and Cloudflare Radar today, with git
 history and bugs planned. The first dashboard is Value Exchange.
 
 Start with `docs/plan.md`, which covers the goal, ground rules, the decisions
-log, status and next steps. Then read `docs/extraction-v1.md` for the
+log, status and next steps. For how the data fits together (sources,
+databases, steps, published files), see `config/dataflow.json` and
+`docs/data-architecture.md`. Then read `docs/extraction-v1.md` for the
 implementation and metric definitions, and `docs/comment-classifier.md` for
 Value Exchange's primary metric: addressed review comments, classified by a
 regex plus Claude Haiku (`cosh classify`).
@@ -107,7 +109,29 @@ regex plus Claude Haiku (`cosh classify`).
   `OrgResolver()` fetches it from chromium/src `main` once per process (cheap,
   no approval needed) and rewrites it only on a change. Commit it with the
   outputs when it changes. `COSH_AFFILIATIONS_OFFLINE=1` skips the fetch.
-- Tests: `python3 -m unittest tests.test_derive tests.test_extract tests.test_radar tests.test_classify tests.test_sentiment tests.test_patchsets tests.test_balance tests.test_bugs tests.test_review_feedback tests.test_balance_signals tests.test_notedb_repack`.
+- **`config/dataflow.json` is the inventory of the data flow. Keep it up to
+  date.** It lists every external source, every store (database with its
+  tables, git repo, directory, published file), every processing step
+  (command, inputs, outputs, time and token cost, when to rerun it) and
+  every page with the files it reads. `web/dataflow.html` draws it, and
+  `docs/data-architecture.md` explains its fields and where the design is
+  heading. Update it in the same change whenever you:
+  - add, remove, rename or move a store, a table, a published file or a
+    data source;
+  - add or remove a command or script that reads or writes data, or change
+    what one reads or writes;
+  - make a page read a new file, or stop reading one;
+  - measure a new size, duration or token cost that differs noticeably
+    from what it says (then also set its `updated` date).
+
+  `python3 scripts/dataflow.py check` verifies it against the repository
+  (ids, code paths, committed data files, the files page scripts import)
+  and runs in `tests.test_dataflow`; it can't check purposes, sizes or
+  costs, so those are on you. `python3 scripts/dataflow.py plan <id> ...`
+  prints what to rerun, in order, and which files to commit when a source
+  or store has new data (a new Gerrit week: `plan gerrit-rest
+  gerrit-notedb`).
+- Tests: `python3 -m unittest tests.test_derive tests.test_extract tests.test_radar tests.test_classify tests.test_sentiment tests.test_patchsets tests.test_balance tests.test_bugs tests.test_review_feedback tests.test_balance_signals tests.test_notedb_repack tests.test_dataflow`.
   These run in a single process, which complies with the global limit of 4
   test workers. `tests.test_extract` uses a fake Gerrit and never touches the
   network.

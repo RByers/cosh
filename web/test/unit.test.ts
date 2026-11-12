@@ -4,6 +4,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { test } from 'vitest';
+import * as G from '../src/dataflow-graph.ts';
 import {
   authorBoard,
   commitBoard,
@@ -1639,4 +1640,96 @@ test('review feedback: half-year files merge, and every period gets the values t
   assert.equal(F.valueFor('dir', all, 'td'), 0.49);
   assert.equal(F.valueFor('time', all, 'ad'), 0.698);
   assert.deepEqual(F.halves(['all', '2026H2', '2025', '2023H2']), ['2023H2', '2026H2']);
+});
+
+// ---- Data flow (dataflow.html) ----
+
+const flow = JSON.parse(
+  readFileSync(fileURLToPath(new URL('../../config/dataflow.json', import.meta.url)), 'utf8'),
+) as G.Dataflow;
+
+/** A small inventory: a source, a fetch, a labelling step and a summary. */
+const tinyFlow = (): G.Dataflow => {
+  const step = (id: string, inputs: string[], outputs: string[], refresh: G.Refresh): G.Step => ({
+    id, group: 'g', command: id, code: [], purpose: id, inputs, outputs, network: false, refresh,
+  });
+  const store = (id: string, tier: G.Tier, tracked = false): G.Store => ({
+    id, group: 'g', path: id, kind: 'sqlite', tier, tracked_in_git: tracked, rebuildable: true, purpose: id,
+  });
+  return {
+    schema_version: 1, updated: '2026-11-12', about: '',
+    groups: [{ id: 'g', name: 'G', purpose: '' }],
+    sources: [{ id: 'src', group: 'g', name: 'Src', kind: 'git', purpose: '' }],
+    stores: [store('raw.db', 'raw'), store('labels.db', 'labels'), store('out.json', 'published', true), store('notes/', 'analysis')],
+    steps: [
+      step('fetch', ['src'], ['raw.db'], 'routine'),
+      step('label', ['raw.db', 'labels.db'], ['labels.db'], 'optional'),
+      step('sum', ['raw.db', 'labels.db'], ['out.json'], 'routine'),
+      step('study', ['raw.db'], ['notes/'], 'analysis'),
+      step('old', ['src'], ['raw.db'], 'one-off'),
+    ],
+    pages: [{ id: 'page', group: 'g', path: 'web/p.html', title: 'P', purpose: '', reads: ['out.json'] }],
+  };
+};
+
+test('dataflow: the committed inventory is a consistent graph with no loops', () => {
+  const g = G.buildGraph(flow);
+  assert.deepEqual(g.problems, []);
+  // Every edge goes to a later column, so nothing feeds itself.
+  const depth = G.layers(g);
+  for (const [a, b] of g.edges) assert.ok(depth.get(a)! < depth.get(b)!, `${a} -> ${b}`);
+  // Every published store is written by a step, and every page's files are too.
+  for (const s of flow.stores) {
+    if (s.tier === 'published' && s.rebuildable) assert.ok(g.in.get(s.id)!.length > 0, `${s.id} has no writer`);
+  }
+  // Every step and store says what it is for.
+  for (const item of [...flow.sources, ...flow.stores, ...flow.steps, ...flow.pages]) {
+    assert.ok(item.purpose.length > 10 && item.purpose.length < 200, `${item.id}: purpose`);
+  }
+});
+
+test('dataflow: a resumable step is not a loop, and bad references are reported', () => {
+  const d = tinyFlow();
+  const g = G.buildGraph(d);
+  assert.deepEqual(g.problems, []);
+  // "label" reads its own output: only the write is an edge.
+  assert.ok(!g.edges.some(([a, b]) => a === 'labels.db' && b === 'label'));
+  // src, fetch, raw.db, label, labels.db, sum: one column each.
+  assert.equal(G.layers(g).get('sum'), 5);
+  d.steps[0].inputs.push('nowhere');
+  d.pages[0].reads.push('fetch');
+  d.stores[0].group = 'x';
+  assert.deepEqual(G.buildGraph(d).problems, ['raw.db: unknown group x', 'fetch: unknown id nowhere', 'page: fetch is a step']);
+});
+
+test('dataflow: the plan runs routine and optional steps in flow order, never analysis or backfills', () => {
+  const g = G.buildGraph(tinyFlow());
+  const p = G.plan(g, ['src']);
+  assert.deepEqual(p.steps.map((s) => [s.step.id, s.afterOptional]), [['fetch', false], ['label', true], ['sum', false]]);
+  assert.deepEqual(p.commit.map((s) => s.id), ['out.json']);
+  assert.deepEqual(p.pages.map((x) => x.id), ['page']);
+  // New labels alone: only the summary.
+  assert.deepEqual(G.plan(g, ['labels.db']).steps.map((s) => s.step.id), ['sum']);
+  // The real file: a new week of Gerrit data ends at the Value Exchange summaries and the deploy.
+  const real = G.plan(G.buildGraph(flow), ['gerrit-rest', 'gerrit-notedb']);
+  const ids = real.steps.map((s) => s.step.id);
+  for (const want of ['extract', 'derive', 'classify', 'summarize', 'web-build', 'pages-deploy']) {
+    assert.ok(ids.includes(want), want);
+  }
+  assert.ok(ids.indexOf('extract') < ids.indexOf('derive') && ids.indexOf('derive') < ids.indexOf('summarize'));
+  assert.ok(!ids.includes('backfill') && !ids.includes('roi-analysis'));
+  assert.ok(real.commit.some((s) => s.id === 'summaries/value-exchange'));
+});
+
+test('dataflow: layout puts sources first, pages last, and every node in a free cell', () => {
+  const g = G.buildGraph(tinyFlow());
+  const keep = new Set([...g.nodes.keys()].filter((id) => id !== 'study' && id !== 'old' && id !== 'notes/'));
+  const placed = G.layout(g, keep);
+  assert.equal(placed.length, keep.size);
+  const col = new Map(placed.map((p) => [p.id, p.col]));
+  assert.equal(col.get('src'), 0);
+  assert.equal(col.get('page'), Math.max(...col.values()));
+  assert.equal(new Set(placed.map((p) => `${p.col},${p.row}`)).size, placed.length);
+  assert.equal(G.baseName('data/private/derived.sqlite'), 'derived.sqlite');
+  assert.equal(G.baseName('data/private/bugs/raw/'), 'bugs/raw/');
 });

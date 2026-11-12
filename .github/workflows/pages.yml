@@ -5,9 +5,9 @@ name: Pages
 on:
   push:
     branches: [main]
-    paths: ['web/**', 'summaries/**', 'data/public/radar_browser_share.csv', 'config/org_browsers.csv', '.github/workflows/pages.yml']
+    paths: ['web/**', 'summaries/**', 'data/public/radar_browser_share.csv', 'config/org_browsers.csv', 'config/dataflow.json', 'scripts/sentiment_prompts/**', '.github/workflows/pages.yml']
   pull_request:
-    paths: ['web/**', 'summaries/**', 'data/public/radar_browser_share.csv', 'config/org_browsers.csv', '.github/workflows/pages.yml']
+    paths: ['web/**', 'summaries/**', 'data/public/radar_browser_share.csv', 'config/org_browsers.csv', 'config/dataflow.json', 'scripts/sentiment_prompts/**', '.github/workflows/pages.yml']
   workflow_dispatch:
 
 permissions:

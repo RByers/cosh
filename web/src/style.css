@@ -2956,3 +2956,300 @@ canvas.rf-pointable {
 .chart.rf-half-chart {
   height: 300px;
 }
+
+/* ---- Data flow page (dataflow.html) ---- */
+
+/* A node's colour, by kind (or a store's tier): the graph's boxes, the
+   legend's keys, the tags in the tables and the edge of each name link.
+   The step colour is neutral so the stores, which carry the data, stand out. */
+.k-source { --color: var(--series-7); }
+.k-step { --color: var(--text-muted); }
+.k-raw { --color: var(--series-2); }
+.k-labels { --color: var(--series-5); }
+.k-derived { --color: var(--series-1); }
+.k-analysis { --color: var(--baseline); }
+.k-config { --color: var(--series-4); }
+.k-published { --color: var(--series-3); }
+.k-page { --color: var(--text-primary); }
+
+.df-find {
+  flex: 1 1 16rem;
+}
+
+.df-find input {
+  grid-column: 1 / -1;
+}
+
+.df-changed {
+  max-width: 28rem;
+  margin-bottom: 12px;
+}
+
+#plan h3,
+#detail h3 {
+  margin: 14px 0 4px;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+}
+
+/* Tables of prose: left-aligned cells that wrap, unlike the number tables. */
+.df-table th,
+.df-table td {
+  text-align: left;
+  white-space: normal;
+  vertical-align: top;
+  overflow-wrap: anywhere;
+}
+
+.df-table thead th {
+  white-space: nowrap;
+}
+
+.df-table .num,
+.df-table td:has(> .num) {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.df-table tbody th {
+  min-width: 11rem;
+}
+
+.df-table td {
+  min-width: 6rem;
+}
+
+.df-table tr[aria-selected] {
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+}
+
+.df-table code,
+#detail code,
+#plan code {
+  font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+  font-size: 0.8rem;
+  overflow-wrap: anywhere;
+}
+
+.df-mono {
+  font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+  font-size: 0.8rem;
+}
+
+.df-dim {
+  color: var(--text-muted);
+}
+
+/* A name that selects its node: a text button with its kind's colour on
+   the left edge. */
+.df-link {
+  display: inline-block;
+  max-width: 100%;
+  padding: 0 0 0 6px;
+  border: none;
+  border-left: 3px solid var(--color, var(--border));
+  background: none;
+  color: var(--accent);
+  text-align: left;
+  overflow-wrap: anywhere;
+  cursor: pointer;
+}
+
+.df-link:not(.df-mono) {
+  font: inherit;
+}
+
+.df-link:hover {
+  text-decoration: underline;
+}
+
+.df-link:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.df-links,
+.df-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.df-links li + li,
+.df-list li + li {
+  margin-top: 3px;
+}
+
+.df-list li {
+  overflow-wrap: anywhere;
+}
+
+/* A tier or "when to run" word. */
+.df-tag {
+  display: inline-block;
+  padding: 0 7px;
+  border: 1px solid var(--color, var(--border));
+  border-radius: 999px;
+  font-size: 0.75rem;
+  white-space: nowrap;
+  color: var(--text-secondary);
+}
+
+.df-tag.r-routine {
+  --color: var(--series-3);
+}
+
+.df-tag.r-optional,
+.df-tag.r-after {
+  --color: var(--series-4);
+}
+
+.df-tag.r-automatic {
+  --color: var(--series-1);
+}
+
+.df-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 20px;
+  margin-bottom: 10px;
+  font-size: 0.85rem;
+}
+
+.df-check {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+}
+
+.df-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  color: var(--text-secondary);
+}
+
+.df-key {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  margin-right: 5px;
+  vertical-align: -1px;
+  border: 1.5px solid var(--color);
+  border-radius: 2px;
+  background: color-mix(in srgb, var(--color) 22%, var(--surface-1));
+}
+
+.df-key.k-step {
+  border-radius: 6px;
+}
+
+/* The graph scrolls inside its box, both ways. */
+.df-graph {
+  overflow: auto;
+  max-height: min(78vh, 900px);
+  border: 1px solid var(--grid);
+  border-radius: 6px;
+  background: var(--page);
+}
+
+.df-graph:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.df-graph svg {
+  display: block;
+}
+
+.df-edge {
+  fill: none;
+  stroke: var(--baseline);
+  stroke-width: 1;
+}
+
+.df-node {
+  cursor: pointer;
+}
+
+.df-node rect {
+  fill: color-mix(in srgb, var(--color) 20%, var(--surface-1));
+  stroke: var(--color);
+  stroke-width: 1.25;
+}
+
+.df-node text {
+  fill: var(--text-primary);
+  font: 11px ui-monospace, 'SF Mono', Menlo, monospace;
+  dominant-baseline: central;
+  pointer-events: none;
+}
+
+.df-node.k-source text,
+.df-node.k-page text {
+  font: 600 11.5px system-ui, -apple-system, 'Segoe UI', sans-serif;
+}
+
+.df-node:hover rect {
+  stroke-width: 2.25;
+}
+
+/* With something selected, everything off its lineage fades. */
+.has-sel .df-node:not(.on),
+.has-sel .df-edge:not(.on) {
+  opacity: 0.16;
+}
+
+.df-edge.on {
+  stroke: var(--accent);
+  stroke-width: 1.6;
+}
+
+.df-node.sel rect {
+  stroke: var(--accent);
+  stroke-width: 3;
+}
+
+/* The selected item's facts: a label column and a value column. */
+.df-facts {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: 6px 16px;
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+.df-facts > div {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: subgrid;
+}
+
+.df-facts > div[hidden] {
+  display: none;
+}
+
+.df-facts dt {
+  color: var(--text-secondary);
+}
+
+.df-facts dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 560px) {
+  .df-facts {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 2px;
+  }
+
+  .df-facts > div {
+    margin-bottom: 6px;
+  }
+}

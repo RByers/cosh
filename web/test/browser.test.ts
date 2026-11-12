@@ -3100,7 +3100,7 @@ test('Ratio: off by default; plots the review metric over commits', async () => 
 });
 
 test('every page carries the Content Security Policy, breaks none of it, and it blocks injected markup', async () => {
-  for (const path of ['', 'value.html', 'sentiment.html', 'balance.html', 'feedback-index.html']) {
+  for (const path of ['', 'value.html', 'sentiment.html', 'balance.html', 'feedback-index.html', 'dataflow.html']) {
     const page = await browser.newPage();
     const errors: string[] = [];
     page.on('console', (m) => m.type() === 'error' && errors.push(m.text()));
@@ -3726,5 +3726,96 @@ test('review feedback: the addressed measure covers only the labelled dates', as
   assert.equal(await page.evaluate(() => window.__rf!.charts.trend.data.labels!.length), 7);
   assert.equal(await tile('rf-tile-cls'), '3');
   assert.deepEqual(errors, []);
+  await page.close();
+});
+
+test('the Data flow page lists the inventory, draws it, and plans a rerun', async () => {
+  const flow = JSON.parse(
+    readFileSync(fileURLToPath(new URL('../../config/dataflow.json', import.meta.url)), 'utf8'),
+  ) as { sources: unknown[]; stores: { tier: string }[]; steps: { refresh: string }[]; pages: unknown[] };
+  const page = await browser.newPage();
+  const errors: string[] = [];
+  page.on('console', (m) => m.type() === 'error' && errors.push(m.text()));
+  page.on('pageerror', (e) => errors.push(String(e)));
+  await page.setViewport({ width: 1100, height: 900 });
+  await page.goto(baseUrl + 'dataflow.html', { waitUntil: 'load' });
+  await page.waitForSelector('body[data-ready="1"]');
+
+  // Every item has a row in its table.
+  const rows = (id: string) => page.$$eval(`#${id} tr:not([hidden])`, (trs) => trs.length);
+  const published = flow.stores.filter((s) => s.tier === 'published').length;
+  assert.equal(await rows('sources-rows'), flow.sources.length);
+  assert.equal(await rows('outputs-rows'), published);
+  assert.equal(await rows('stores-rows'), flow.stores.length - published);
+  assert.equal(await rows('steps-rows'), flow.steps.length);
+  assert.equal(await rows('pages-rows'), flow.pages.length);
+
+  // The graph leaves out analysis scripts and backfills until asked.
+  const nodes = () => page.$$eval('#graph-box .df-node', (gs) => gs.map((g) => (g as SVGGElement).dataset.node!));
+  const quiet = flow.steps.filter((s) => s.refresh === 'analysis' || s.refresh === 'one-off').length;
+  const before = await nodes();
+  assert.ok(before.includes('derive') && before.includes('data/private/derived.sqlite') && !before.includes('backfill'));
+  await page.click('#show-analysis');
+  const all = await nodes();
+  assert.equal(all.length, flow.sources.length + flow.stores.length + flow.steps.length + flow.pages.length);
+  assert.ok(all.length >= before.length + quiet);
+  await page.click('#show-analysis');
+
+  // A click on a node shows its facts and lights up its lineage only.
+  await page.click('#graph-box .df-node[data-node="data/private/labels.sqlite"]');
+  assert.equal(await page.$eval('#detail-title', (e) => e.textContent), 'data/private/labels.sqlite');
+  assert.match(page.url(), /#n=data%2Fprivate%2Flabels\.sqlite$/);
+  const lit = await page.$$eval('#graph-box .df-node.on', (gs) => gs.map((g) => (g as SVGGElement).dataset.node!));
+  assert.ok(lit.includes('classify') && lit.includes('summarize') && lit.includes('page-value'), lit.join());
+  assert.ok(!lit.includes('radar') && !lit.includes('cloudflare-radar'), lit.join());
+  assert.match(await page.$eval('#detail-facts [data-field="rebuild"] dd', (e) => e.textContent!), /never delete/);
+  assert.equal(await page.$$eval('#detail-tables tr', (trs) => trs.length), 3);
+  // Names in the facts are links to the other items.
+  await page.click('#detail-facts [data-field="made_by"] button');
+  assert.equal(await page.$eval('#detail-title', (e) => e.textContent), 'classify');
+
+  // The plan for new Radar data: the fetch, the build, the deploy.
+  await page.select('#changed', 'cloudflare-radar');
+  assert.deepEqual(
+    await page.$$eval('#plan-steps tr th', (ths) => ths.map((t) => t.textContent)),
+    ['radar', 'web-build', 'pages-deploy']);
+  assert.match(await page.$eval('#plan-commit', (e) => e.textContent!), /radar_browser_share\.csv/);
+  assert.equal(await page.$eval('#plan-pages', (e) => e.textContent), 'Pages that change: Value Exchange.');
+
+  // The pipeline choice and the search box narrow the tables.
+  await page.select('#group', 'usage');
+  assert.equal(await rows('sources-rows'), 1);
+  assert.ok((await nodes()).length < before.length);
+  await page.select('#group', '');
+  await page.type('#find', 'haiku friction score');
+  assert.deepEqual(
+    await page.$$eval('#steps-rows tr:not([hidden]) th', (ths) => ths.map((t) => t.textContent)),
+    ['sentiment-score']);
+  assert.equal(await page.$eval('#sources', (e) => (e as HTMLElement).hidden), true);
+  assert.deepEqual(errors, []);
+
+  if (process.env.SCREENSHOT_DIR) {
+    await page.goto(baseUrl + 'dataflow.html#n=summarize', { waitUntil: 'load' });
+    await page.reload({ waitUntil: 'load' });
+    await page.waitForSelector('body[data-ready="1"]');
+    await page.screenshot({ path: join(process.env.SCREENSHOT_DIR, 'dataflow-light.png') as `${string}.png`, fullPage: true });
+  }
+
+  // A phone in dark mode: the wide graph and tables scroll inside their boxes.
+  await page.emulateMediaFeatures([{ name: 'prefers-color-scheme', value: 'dark' }]);
+  await page.setViewport({ width: 360, height: 800 });
+  await page.goto(baseUrl + 'dataflow.html', { waitUntil: 'load' });
+  await page.waitForSelector('body[data-ready="1"]');
+  const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+  assert.ok(overflow <= 0, `horizontal overflow ${overflow}px`);
+  if (process.env.SCREENSHOT_DIR) {
+    await page.screenshot({ path: join(process.env.SCREENSHOT_DIR, 'dataflow-phone-dark.png') as `${string}.png`, fullPage: true });
+  }
+  // Links off the site open in a new tab.
+  const offsite = await page.$$eval('a', (as) => as
+    .filter((a) => new URL(a.href, location.href).origin !== location.origin)
+    .map((a) => ({ href: a.href, target: a.target })));
+  assert.ok(offsite.length >= 2);
+  for (const l of offsite) assert.equal(l.target, '_blank', l.href);
   await page.close();
 });

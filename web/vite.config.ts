@@ -113,6 +113,7 @@ export default defineConfig({
         sentiment: page('sentiment.html'),
         balance: page('balance.html'),
         'feedback-index': page('feedback-index.html'),
+        dataflow: page('dataflow.html'),
       },
     },
   },

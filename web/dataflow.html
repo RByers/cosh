@@ -1,0 +1,259 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light dark" />
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M8 1.5 13.6 4.75v6.5L8 14.5 2.4 11.25v-6.5Z' fill='%231a5fd0'/%3E%3Ccircle cx='8' cy='8' r='2.3' fill='%23fff'/%3E%3C/svg%3E" />
+    <title>Data flow - Chromium Open Source Health</title>
+    <link rel="stylesheet" href="/src/style.css" />
+    <meta name="description" content="Where this site's data comes from: every source, database and processing step behind the dashboards, and how they connect." />
+  </head>
+  <body>
+    <!--
+      A map of the project's own data pipelines, for the people (and agents)
+      who maintain them. Everything shown comes from config/dataflow.json;
+      src/dataflow.ts only draws it. Like the other pages, the wording is in
+      this file (value.html's opening comment has the <template data-msg>
+      syntax) and the presentation in src/style.css.
+    -->
+    <header>
+      <nav class="crumb"><a href="./">← Chromium Open Source Health</a></nav>
+      <h1>Chromium Open Source Health - Data flow</h1>
+      <div class="lede">
+        <p>
+          How this site's data is made: the public sources it is fetched from, the databases and files it
+          passes through, the steps that turn one into the next, and the files the dashboards finally read.
+          It is a maintenance map, drawn from
+          <a target="_blank" rel="noopener" href="https://github.com/RByers/cosh/blob/main/config/dataflow.json">config/dataflow.json</a>;
+          the design it is heading for is in
+          <a target="_blank" rel="noopener" href="https://github.com/RByers/cosh/blob/main/docs/data-architecture.md">docs/data-architecture.md</a>.
+        </p>
+        <p id="counts" class="note"></p>
+        <template data-msg="counts">
+          <slot name="sources"></slot> sources, <slot name="stores"></slot> stores
+          (<slot name="published"></slot> of them published), <slot name="steps"></slot> steps and
+          <slot name="pages"></slot> pages. Sizes and timings were last checked on <slot name="updated"></slot>.
+        </template>
+      </div>
+    </header>
+
+    <main aria-busy="true">
+      <!-- Narrows every table and the graph. Outside any card so it stays
+           stuck to the top of the window, like value.html's metric bar. -->
+      <div class="metric-bar tone-bar">
+        <div class="select-toggle">
+          <label for="group">Pipeline</label>
+          <select id="group">
+            <option value="">All pipelines</option>
+          </select>
+        </div>
+        <div class="dir-filter df-find">
+          <label for="find">Find in the tables</label>
+          <input id="find" type="search" autocomplete="off" spellcheck="false" placeholder="derived.sqlite, classify, radar …" />
+        </div>
+      </div>
+
+      <section id="plan" class="card" aria-labelledby="plan-title">
+        <a class="card-anchor" href="#plan" aria-label="Link to this section" title="Link to this section">#</a>
+        <h2 id="plan-title">What to rerun</h2>
+        <p class="sub">
+          Pick what has new data. The steps downstream of it are listed in the order to run them, with the
+          files in git that change as a result.
+        </p>
+        <div class="select-toggle df-changed">
+          <label for="changed">New data in</label>
+          <select id="changed"></select>
+        </div>
+        <div id="plan-out" hidden>
+          <h3>Steps, in order</h3>
+          <div class="table-wrap" tabindex="0" role="region" aria-labelledby="plan-title">
+            <table class="df-table">
+              <thead>
+                <tr><th scope="col">Step</th><th scope="col">Command</th><th scope="col">Time</th><th scope="col">Tokens</th><th scope="col">When</th></tr>
+              </thead>
+              <tbody id="plan-steps"></tbody>
+            </table>
+          </div>
+          <h3>Files to commit</h3>
+          <ul id="plan-commit" class="df-list"></ul>
+          <p id="plan-pages" class="note"></p>
+          <template data-msg="plan-pages">
+            <span data-if="pages">Pages that change: <slot name="pages"></slot>.</span>
+            <span data-if="!pages">No page reads anything downstream of this.</span>
+          </template>
+        </div>
+        <p id="plan-none" class="note" hidden>Nothing that reruns routinely is downstream of this.</p>
+        <p class="note">
+          “Routine” steps are free and local. “Optional” steps cost Claude usage or need approval, so they
+          run only when wanted; steps marked “after optional” have something new to do only once one of
+          those has run. “Automatic” steps run by themselves when the files are pushed. The same plan
+          from the command line: <code>python3 scripts/dataflow.py plan &lt;id&gt;</code>.
+        </p>
+      </section>
+
+      <section id="graph" class="card" aria-labelledby="graph-title">
+        <a class="card-anchor" href="#graph" aria-label="Link to this section" title="Link to this section">#</a>
+        <h2 id="graph-title">The flow</h2>
+        <p class="sub">
+          Data flows left to right: sources, then the steps (rounded) and stores (square) between them, then
+          the pages. Click anything to see what it is and to light up everything upstream and downstream of
+          it. The tables below hold the same information.
+        </p>
+        <div class="df-controls">
+          <label class="df-check"><input type="checkbox" id="show-analysis" />Show analysis scripts and one-off backfills</label>
+          <ul class="df-legend" aria-label="Legend">
+            <li><span class="df-key k-source"></span>Source</li>
+            <li><span class="df-key k-step"></span>Step</li>
+            <li><span class="df-key k-raw"></span>Fetched (raw)</li>
+            <li><span class="df-key k-labels"></span>Model labels</li>
+            <li><span class="df-key k-derived"></span>Derived</li>
+            <li><span class="df-key k-analysis"></span>Analysis</li>
+            <li><span class="df-key k-config"></span>Config</li>
+            <li><span class="df-key k-published"></span>Published</li>
+            <li><span class="df-key k-page"></span>Page</li>
+          </ul>
+        </div>
+        <div id="graph-box" class="df-graph" tabindex="0" role="region" aria-labelledby="graph-title"></div>
+        <p id="graph-note" class="note"></p>
+        <template data-msg="graph-note">
+          <slot name="shown"></slot> of <slot name="total"></slot> items shown.
+          <span data-if="hidden"><slot name="hidden"></slot> analysis scripts, backfills and their outputs are hidden.</span>
+        </template>
+      </section>
+
+      <section id="detail" class="card" aria-labelledby="detail-title" hidden>
+        <a class="card-anchor" href="#detail" aria-label="Link to this section" title="Link to this section">#</a>
+        <h2 id="detail-title"></h2>
+        <p id="detail-purpose" class="sub"></p>
+        <!-- One row per fact; src/dataflow.ts fills the <dd>s and hides the rows that have nothing. -->
+        <dl id="detail-facts" class="df-facts">
+          <div data-field="kind"><dt>Kind</dt><dd></dd></div>
+          <div data-field="group"><dt>Pipeline</dt><dd></dd></div>
+          <div data-field="path"><dt>Path</dt><dd></dd></div>
+          <div data-field="url"><dt>Address</dt><dd></dd></div>
+          <div data-field="command"><dt>Command</dt><dd></dd></div>
+          <div data-field="code"><dt>Code</dt><dd></dd></div>
+          <div data-field="size"><dt>Size</dt><dd></dd></div>
+          <div data-field="files"><dt>Files</dt><dd></dd></div>
+          <div data-field="git"><dt>In git</dt><dd></dd></div>
+          <div data-field="rebuild"><dt>If lost</dt><dd></dd></div>
+          <div data-field="coverage"><dt>Coverage</dt><dd></dd></div>
+          <div data-field="access"><dt>Access</dt><dd></dd></div>
+          <div data-field="load_rules"><dt>Load rules</dt><dd></dd></div>
+          <div data-field="refresh"><dt>When to run</dt><dd></dd></div>
+          <div data-field="duration"><dt>Time</dt><dd></dd></div>
+          <div data-field="token_cost"><dt>Tokens</dt><dd></dd></div>
+          <div data-field="cost_source"><dt>Measured in</dt><dd></dd></div>
+          <div data-field="incremental"><dt>Reruns</dt><dd></dd></div>
+          <div data-field="network"><dt>Network</dt><dd></dd></div>
+          <div data-field="lock"><dt>Lock</dt><dd></dd></div>
+          <div data-field="approval"><dt>Approval</dt><dd></dd></div>
+          <div data-field="sources_line"><dt>Sources on its card</dt><dd></dd></div>
+          <div data-field="notes"><dt>Notes</dt><dd></dd></div>
+          <div data-field="inputs"><dt>Reads</dt><dd></dd></div>
+          <div data-field="outputs"><dt>Writes</dt><dd></dd></div>
+          <div data-field="made_by"><dt>Written by</dt><dd></dd></div>
+          <div data-field="used_by"><dt>Read by</dt><dd></dd></div>
+          <div data-field="origin"><dt>Comes from</dt><dd></dd></div>
+          <div data-field="reaches"><dt>Ends up in</dt><dd></dd></div>
+        </dl>
+        <template data-msg="git-yes">Committed<span data-if="paths">: <slot name="paths"></slot></span></template>
+        <template data-msg="git-no">Not committed (gitignored)</template>
+        <template data-msg="rebuild-yes">Rebuildable from local data</template>
+        <template data-msg="rebuild-no">Not rebuildable locally<span data-if="keep">; never delete</span></template>
+        <template data-msg="network-yes">Fetches from the network</template>
+        <template data-msg="network-no">Offline</template>
+        <div id="detail-tables-box" hidden>
+          <h3>Tables</h3>
+          <div class="table-wrap" tabindex="0" role="region" aria-labelledby="detail-title">
+            <table class="df-table">
+              <thead><tr><th scope="col">Table</th><th scope="col" class="num">Rows</th><th scope="col">Purpose</th></tr></thead>
+              <tbody id="detail-tables"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section id="sources" class="card" aria-labelledby="sources-title">
+        <a class="card-anchor" href="#sources" aria-label="Link to this section" title="Link to this section">#</a>
+        <h2 id="sources-title">Sources</h2>
+        <p class="sub">Where data is fetched from. Each fetch puts load on someone else's server, so each has rules.</p>
+        <div class="table-wrap" tabindex="0" role="region" aria-labelledby="sources-title">
+          <table class="df-table">
+            <thead>
+              <tr><th scope="col">Source</th><th scope="col">Purpose</th><th scope="col">Coverage</th><th scope="col">Load rules</th></tr>
+            </thead>
+            <tbody id="sources-rows"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="stores" class="card" aria-labelledby="stores-title">
+        <a class="card-anchor" href="#stores" aria-label="Link to this section" title="Link to this section">#</a>
+        <h2 id="stores-title">Intermediate stores</h2>
+        <p class="sub">
+          Databases, git repositories and files between the sources and the site. “Raw” was fetched and
+          “labels” cost Claude usage, so neither can be rebuilt locally; “derived” and “analysis” can.
+          “Config” is the hand-kept input in git.
+        </p>
+        <div class="table-wrap" tabindex="0" role="region" aria-labelledby="stores-title">
+          <table class="df-table">
+            <thead>
+              <tr><th scope="col">Store</th><th scope="col">Tier</th><th scope="col" class="num">Size</th><th scope="col">Purpose</th><th scope="col">Written by</th></tr>
+            </thead>
+            <tbody id="stores-rows"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="outputs" class="card" aria-labelledby="outputs-title">
+        <a class="card-anchor" href="#outputs" aria-label="Link to this section" title="Link to this section">#</a>
+        <h2 id="outputs-title">Published files</h2>
+        <p class="sub">The end of the flow: the files the pages read, and so the ones to commit when their inputs change.</p>
+        <div class="table-wrap" tabindex="0" role="region" aria-labelledby="outputs-title">
+          <table class="df-table">
+            <thead>
+              <tr><th scope="col">Files</th><th scope="col" class="num">Size</th><th scope="col">Purpose</th><th scope="col">Written by</th><th scope="col">Read by</th></tr>
+            </thead>
+            <tbody id="outputs-rows"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="steps" class="card" aria-labelledby="steps-title">
+        <a class="card-anchor" href="#steps" aria-label="Link to this section" title="Link to this section">#</a>
+        <h2 id="steps-title">Processing steps</h2>
+        <p class="sub">Every command that fetches, derives, labels or publishes data, in the order data flows through them.</p>
+        <div class="table-wrap" tabindex="0" role="region" aria-labelledby="steps-title">
+          <table class="df-table">
+            <thead>
+              <tr>
+                <th scope="col">Step</th><th scope="col">Purpose</th><th scope="col">Reads</th><th scope="col">Writes</th>
+                <th scope="col">Time</th><th scope="col">Tokens</th><th scope="col">When</th>
+              </tr>
+            </thead>
+            <tbody id="steps-rows"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="pages" class="card" aria-labelledby="pages-title">
+        <a class="card-anchor" href="#pages" aria-label="Link to this section" title="Link to this section">#</a>
+        <h2 id="pages-title">Pages</h2>
+        <p class="sub">The site's pages and the files each one reads.</p>
+        <div class="table-wrap" tabindex="0" role="region" aria-labelledby="pages-title">
+          <table class="df-table">
+            <thead>
+              <tr><th scope="col">Page</th><th scope="col">Purpose</th><th scope="col">Reads</th></tr>
+            </thead>
+            <tbody id="pages-rows"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <p id="no-match" class="note" hidden>Nothing in the tables matches.</p>
+    </main>
+    <script type="module" src="/src/dataflow.ts"></script>
+  </body>
+</html>
