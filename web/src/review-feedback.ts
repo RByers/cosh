@@ -378,6 +378,7 @@ function renderXp() {
 function renderDirs() {
   const p = state.person!;
   put($('#directories-sub'), 'directories-sub', { corr: state.corr });
+  $('#rf-dirs-typical').title = msg(`dirs-typical-${state.kind}`).replace(/\s+/g, ' ').trim();
   const rows = dirTable(p, state.period, state.kind);
   const body = $('#rf-dirs tbody');
   body.replaceChildren();

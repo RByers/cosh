@@ -174,17 +174,26 @@
         <h2 id="directories-title">Where your feedback comes from</h2>
         <p id="directories-sub" class="sub"></p>
         <template data-msg="directories-sub">
-          The directories you changed most, with the reviewer threads in each. “Expected” is what a typical change
+          The directories you changed most, with the reviewer threads in each. “Typical” is what a typical change
           of the same size and place drew in 2023–24<span data-if="corr=n"> (shown while nothing is adjusted for,
           too)</span>. Select a directory to list its comments below.
         </template>
         <div class="table-wrap">
           <table id="rf-dirs" class="rf-table">
-            <thead><tr><th scope="col">Directory</th><th scope="col" class="num">Changes</th><th scope="col" class="num">Threads</th><th scope="col" class="num">Expected</th><th scope="col" class="num">Ratio</th><th scope="col" class="num">Earlier commits</th></tr></thead>
+            <thead><tr><th scope="col">Directory</th><th scope="col" class="num">Changes</th><th scope="col" class="num">Threads</th><th scope="col" class="num" id="rf-dirs-typical">Typical</th><th scope="col" class="num">Ratio</th><th scope="col" class="num">Earlier commits</th></tr></thead>
             <tbody></tbody>
           </table>
         </div>
         <button type="button" id="rf-dirs-more" class="rf-more" hidden></button>
+        <template data-msg="dirs-typical-t">The reviewer threads typical changes like yours would have drawn here: for
+          each of your changes in this directory, the 2023–24 average number of reviewer threads for changes of the
+          same size in the change's main two-level directory (or of that size anywhere, where fewer than 30 such
+          changes landed), times the change's share in this directory (by lines and files), summed.</template>
+        <template data-msg="dirs-typical-a">The addressed reviewer threads typical changes like yours would have
+          drawn here: for each of your changes in this directory, the 2023–24 average number of addressed reviewer
+          threads for changes of the same size in the change's main two-level directory (or of that size anywhere,
+          where fewer than 30 such changes landed), times the change's share in this directory (by lines and files),
+          summed.</template>
         <template data-msg="dirs-more">Show all <slot name="n"></slot> directories</template>
         <p class="note">“Earlier commits” are yours in that directory before your latest change there in these dates.</p>
       </section>
