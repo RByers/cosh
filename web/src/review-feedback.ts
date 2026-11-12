@@ -44,7 +44,8 @@ import {
   type Corr,
   type CountField,
   type DirNode,
-  type DirStats,
+  type DirRowView,
+  dirRows,
   type Dist,
   type Kind,
   type MedianBar,
@@ -75,7 +76,6 @@ const $ = <T extends Element = HTMLElement>(sel: string) => document.querySelect
 const DATA = 'review-feedback/';
 const PAGE = 50;
 /** Directory rows per level before an "N more" row, as on the Value Exchange page. */
-const DIRS_SHOWN = 15;
 /** The page's figures always cover all the data; only the over-time chart splits it, by half-year. */
 const ALL = 'all';
 
@@ -896,7 +896,7 @@ function renderDirs() {
   showBinFilter('#rf-bin-filter');
   const roots = dirTree(p, state.half ?? ALL, state.kind, state.bin);
   const body = $('#rf-dirs tbody');
-  body.replaceChildren(...dirRows(roots).map(dirRow));
+  body.replaceChildren(...dirRows(roots, state.expanded, state.peers!.min_cls).map(dirRow));
   // The comment section's directory picker lists every directory in the tree, in path order.
   const paths: string[] = [];
   const walk = (ns: DirNode[]) => ns.forEach((n) => (paths.push(n.path), walk(n.children)));
@@ -912,67 +912,6 @@ function renderDirs() {
   }
   sel.value = state.dir ?? '';
   if (state.dir !== null && sel.value === '') state.dir = null;
-}
-
-/** One visible row of the directory tree: a directory, a directory's own files
- * ("rest of"), or the smaller entries of a level ("N more"). */
-interface DirRowView {
-  key: string;
-  kind: 'dir' | 'rest' | 'other';
-  depth: number;
-  node?: DirNode;
-  /** Changes: unknown for "N more", where one change can touch several entries. */
-  stats: Omit<DirStats, 'cls'> & { cls: number | null };
-  expandable: boolean;
-  expanded: boolean;
-  count?: number;
-}
-
-type DirItem = { kind: 'dir' | 'rest'; node: DirNode; stats: DirStats };
-
-/** The rows to show, given `state.expanded`. Like the Value Exchange page's
- * directory chart: each level lists DIRS_SHOWN entries, then an "N more" row
- * that opens into the next ones; a directory with subdirectories opens into
- * them plus a "rest of" row for its own files. */
-function dirRows(roots: DirNode[]): DirRowView[] {
-  const out: DirRowView[] = [];
-  const order = (a: DirItem, b: DirItem) => b.stats.cls - a.stats.cls || b.stats.threads - a.stats.threads ||
-    (a.kind === b.kind ? (a.node.path < b.node.path ? -1 : 1) : a.kind === 'dir' ? -1 : 1);
-  const emit = (it: DirItem, depth: number) => {
-    if (it.kind === 'rest') {
-      out.push({ key: `r:${it.node.path}`, kind: 'rest', depth, node: it.node, stats: it.stats, expandable: false, expanded: false });
-      return;
-    }
-    const n = it.node;
-    const key = `d:${n.path}`;
-    const expandable = n.children.length > 0;
-    const open = expandable && state.expanded.has(key);
-    out.push({ key, kind: 'dir', depth, node: n, stats: n, expandable, expanded: open });
-    if (!open) return;
-    const items: DirItem[] = n.children.map((c) => ({ kind: 'dir', node: c, stats: c }));
-    if (n.own) items.push({ kind: 'rest', node: n, stats: n.own });
-    group(items.sort(order), depth + 1, key, 0);
-  };
-  const group = (items: DirItem[], depth: number, parentKey: string, offset: number) => {
-    const head = items.slice(0, DIRS_SHOWN);
-    const tail = items.slice(DIRS_SHOWN);
-    for (const it of head) emit(it, depth);
-    if (!tail.length) return;
-    const key = `o:${parentKey}:${offset + DIRS_SHOWN}`;
-    const open = state.expanded.has(key);
-    out.push({
-      key, kind: 'other', depth, expandable: true, expanded: open, count: tail.length,
-      stats: {
-        cls: null,
-        threads: tail.reduce((s, it) => s + it.stats.threads, 0),
-        expected: tail.reduce((s, it) => s + it.stats.expected, 0),
-        prior: Math.max(...tail.map((it) => it.stats.prior)),
-      },
-    });
-    if (open) group(tail, depth + 1, key, offset + DIRS_SHOWN);
-  };
-  group(roots.map((n): DirItem => ({ kind: 'dir', node: n, stats: n })).sort(order), 0, 'root', 0);
-  return out;
 }
 
 function selectDir(path: string) {
@@ -1016,7 +955,7 @@ function dirRow(r: DirRowView): HTMLTableRowElement {
     label.append(b);
   } else {
     const s = el('span', name, 'rf-dir-group');
-    s.title = r.kind === 'rest' ? `Files directly in ${r.node!.path}` : `${fmtInt(r.count!)} more, smaller entries`;
+    s.title = r.kind === 'rest' ? `Files directly in ${r.node!.path}` : `${fmtInt(r.count!)} smaller entries`;
     label.append(s);
   }
   th.append(label);
@@ -1029,7 +968,7 @@ function dirRow(r: DirRowView): HTMLTableRowElement {
     ratio.classList.add(shade < 0 ? 'rf-ratio-lo' : 'rf-ratio-hi');
     ratio.style.setProperty('--rf-shade', String(Math.abs(shade)));
   }
-  tr.append(th, el('td', s.cls === null ? '–' : fmtInt(s.cls), 'num'), el('td', fmtInt(s.threads), 'num'),
+  tr.append(th, el('td', fmtInt(s.cls), 'num'), el('td', fmtInt(s.lines), 'num'), el('td', fmtInt(s.threads), 'num'),
     el('td', fmtNum(s.expected, { maximumFractionDigits: 1 }), 'num'), ratio, el('td', fmtInt(s.prior), 'num'));
   return tr;
 }
@@ -1152,6 +1091,7 @@ function init() {
     window.__rf!.peers = p;
     if (!p) return;
     $('#rf-min-cls').textContent = fmtInt(p.min_cls);
+    $('#rf-dirs-min').textContent = fmtInt(p.min_cls);
     fillRange(p);
     renderIntro();
   }).catch(() => {}).finally(() => {

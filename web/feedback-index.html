@@ -398,7 +398,7 @@
           data-if="one">thread</span><span data-if="!one">threads</span><span data-if="more"> or more</span></template>
         <div class="table-wrap">
           <table id="rf-dirs" class="rf-table">
-            <thead><tr><th scope="col">Directory</th><th scope="col" class="num">Changes</th><th scope="col" class="num">Threads</th><th scope="col" class="num" id="rf-dirs-typical">Typical</th><th scope="col" class="num">Ratio</th><th scope="col" class="num">Earlier commits</th></tr></thead>
+            <thead><tr><th scope="col">Directory</th><th scope="col" class="num">Changes</th><th scope="col" class="num" title="Lines changed there (added plus deleted), summed over your changes">Lines</th><th scope="col" class="num">Threads</th><th scope="col" class="num" id="rf-dirs-typical">Typical</th><th scope="col" class="num">Ratio</th><th scope="col" class="num">Earlier commits</th></tr></thead>
             <tbody></tbody>
           </table>
         </div>
@@ -411,10 +411,12 @@
           threads for changes of the same size in the change's main two-level directory (or of that size anywhere,
           where fewer than 30 such changes landed), times the change's share in this directory (by lines and files),
           summed.</template>
-        <template data-msg="dirs-other"><slot name="n"></slot> more</template>
+        <template data-msg="dirs-other">Other (<slot name="n"></slot>)</template>
         <template data-msg="dirs-rest">rest of <slot name="dir"></slot></template>
         <p class="note">A directory's changes count each change once, however many of its subdirectories the change
-          touched. “Earlier commits” are yours in that directory before your latest change there; for a directory
+          touched; “Other” counts each change once too, and lists, at each level, the directories with fewer than
+          <span id="rf-dirs-min">25</span> of your changes, too few for their ratio to say much (▸ opens it). “Lines”
+          are the lines changed there, added plus deleted. “Earlier commits” are yours in that directory before your latest change there; for a directory
           that opens, the most in any one directory below it.</p>
       </section>
 

@@ -43,8 +43,9 @@ export interface PeriodVals {
  * file index, days after the change landed, addressed (null: not labelled),
  * directory index, excerpt (only where comment text is collected)]. */
 export type Thread = [string, number, number | null, 0 | 1 | null, number, string?];
-/** [directory index, share of the change's lines, the owner's earlier commits there]. */
-export type Unit = [number, number, number];
+/** [directory index, share of the change's lines, the owner's earlier commits there,
+ * lines changed there (added + deleted, in the landed commit; missing in older files)]. */
+export type Unit = [number, number, number, number?];
 /** [change number, day landed (days since 1970), lines, expected threads by
  * size, by size and directory, expected addressed by size, by size and
  * directory, units, threads, org index, the owner's earlier commits on main]. */
@@ -467,12 +468,16 @@ export function chgBreakdown(p: Person, period: string, m: Metric, labels: strin
 export interface DirStats {
   /** Changes touching it, each change once however many directories below it the change touches. */
   cls: number;
+  /** Lines changed there (added + deleted), summed over the changes. */
+  lines: number;
   threads: number;
   /** Expected threads there (size and directory norm, by line share). */
   expected: number;
   /** The person's earlier commits there before their latest change in the period:
    * for a parent, the most in any one directory below it. */
   prior: number;
+  /** The changes counted in `cls`, so that a group of entries can count each change once. */
+  ids: Set<number>;
 }
 
 /** A directory in the tree: the data's 3-level directories and their parents. */
@@ -495,8 +500,9 @@ const dirOrder = (a: DirNode, b: DirNode) =>
 export function dirTree(p: Person, period: string, kind: Kind, bin: number | null = null): DirNode[] {
   const nodes = new Map<string, DirNode>();
   const roots: DirNode[] = [];
-  const stats = (): DirStats => ({ cls: 0, threads: 0, expected: 0, prior: 0 });
-  const add = (s: DirStats, threads: number, exp: number, prior: number) => {
+  const stats = (): DirStats => ({ cls: 0, lines: 0, threads: 0, expected: 0, prior: 0, ids: new Set() });
+  const add = (s: DirStats, lines: number, threads: number, exp: number, prior: number) => {
+    s.lines += lines;
     s.threads += threads;
     s.expected += exp;
     s.prior = Math.max(s.prior, prior);
@@ -506,8 +512,9 @@ export function dirTree(p: Person, period: string, kind: Kind, bin: number | nul
     const per = new Map<number, number>();
     for (const t of c[8]) per.set(t[4], (per.get(t[4]) ?? 0) + counts(t, kind));
     const touched = new Set<DirNode>();
-    for (const [d, w, prior] of c[7]) {
+    for (const [d, w, prior, dirLines] of c[7]) {
       const path = p.dirs[d];
+      const lines = dirLines ?? Math.round(w * c[2]);
       const threads = per.get(d) ?? 0;
       const exp = w * expected(c, m);
       let parent: DirNode | null = null;
@@ -520,18 +527,18 @@ export function dirTree(p: Person, period: string, kind: Kind, bin: number | nul
           nodes.set(key, (n = { path: key, name: path.slice(at, end), ...stats(), children: [], own: null }));
           (parent ? parent.children : roots).push(n);
         }
-        add(n, threads, exp, prior);
+        add(n, lines, threads, exp, prior);
         touched.add(n);
         if (end === path.length) {
           n.own ??= stats();
-          n.own.cls += 1;
-          add(n.own, threads, exp, prior);
+          if (!n.own.ids.has(c[0])) (n.own.cls += 1, n.own.ids.add(c[0]));
+          add(n.own, lines, threads, exp, prior);
         }
         parent = n;
         at = end;
       }
     }
-    for (const n of touched) n.cls += 1;
+    for (const n of touched) (n.cls += 1, n.ids.add(c[0]));
   }
   for (const n of nodes.values()) {
     n.children.sort(dirOrder);
@@ -539,6 +546,74 @@ export function dirTree(p: Person, period: string, kind: Kind, bin: number | nul
     if (!n.children.length) n.own = null;
   }
   return roots.sort(dirOrder);
+}
+
+/** One visible row of the directory table: a directory, a directory's own
+ * files ("rest of"), or a level's other entries ("Other"). */
+export interface DirRowView {
+  key: string;
+  kind: 'dir' | 'rest' | 'other';
+  depth: number;
+  node?: DirNode;
+  stats: DirStats;
+  expandable: boolean;
+  expanded: boolean;
+  /** Entries in an "Other" row. */
+  count?: number;
+}
+
+type DirItem = { kind: 'dir' | 'rest'; node: DirNode; stats: DirStats };
+
+/** The rows to show of `dirTree`'s tree, given which rows are open
+ * (`expanded`, by row key). Each level lists its entries with at least
+ * `minCls` changes, at most `shown` of them, and puts the rest in one "Other"
+ * row that opens into them; a level where no entry has `minCls` changes (or
+ * just one hasn't) lists its first `shown` instead. A directory with
+ * subdirectories opens into them plus a "rest of" row for its own files. */
+export function dirRows(roots: DirNode[], expanded: ReadonlySet<string>, minCls: number, shown = 15): DirRowView[] {
+  const out: DirRowView[] = [];
+  const order = (a: DirItem, b: DirItem) => b.stats.cls - a.stats.cls || b.stats.threads - a.stats.threads ||
+    (a.kind === b.kind ? (a.node.path < b.node.path ? -1 : 1) : a.kind === 'dir' ? -1 : 1);
+  const emit = (it: DirItem, depth: number) => {
+    if (it.kind === 'rest') {
+      out.push({ key: `r:${it.node.path}`, kind: 'rest', depth, node: it.node, stats: it.stats, expandable: false, expanded: false });
+      return;
+    }
+    const n = it.node;
+    const key = `d:${n.path}`;
+    const expandable = n.children.length > 0;
+    const open = expandable && expanded.has(key);
+    out.push({ key, kind: 'dir', depth, node: n, stats: n, expandable, expanded: open });
+    if (!open) return;
+    const items: DirItem[] = n.children.map((c) => ({ kind: 'dir', node: c, stats: c }));
+    if (n.own) items.push({ kind: 'rest', node: n, stats: n.own });
+    group(items.sort(order), depth + 1, key);
+  };
+  const group = (items: DirItem[], depth: number, parentKey: string) => {
+    const big = items.filter((it) => it.stats.cls >= minCls);
+    const head = (big.length && items.length - big.length > 1 ? big : items).slice(0, shown);
+    const tail = items.filter((it) => !head.includes(it));
+    for (const it of head) emit(it, depth);
+    if (!tail.length) return;
+    const key = `o:${parentKey}`;
+    const open = expanded.has(key);
+    const ids = new Set<number>();
+    for (const it of tail) for (const id of it.stats.ids) ids.add(id);
+    out.push({
+      key, kind: 'other', depth, expandable: true, expanded: open, count: tail.length,
+      stats: {
+        cls: ids.size,
+        ids,
+        lines: tail.reduce((s, it) => s + it.stats.lines, 0),
+        threads: tail.reduce((s, it) => s + it.stats.threads, 0),
+        expected: tail.reduce((s, it) => s + it.stats.expected, 0),
+        prior: Math.max(...tail.map((it) => it.stats.prior)),
+      },
+    });
+    if (open) group(tail, depth + 1, key);
+  };
+  group(roots.map((n): DirItem => ({ kind: 'dir', node: n, stats: n })).sort(order), 0, 'root');
+  return out;
 }
 
 /** The ratio cell's shade: -1 (a quarter of typical or less) .. 0 (typical) .. 1 (4× or more), on a log scale. */
@@ -603,7 +678,7 @@ export function mergePerson(top: Top, shards: Shard[]): Omit<Person, 'periods' |
     const f = s.files.map((x) => at(tables.files, x));
     const o = s.orgs.map((x) => at(tables.orgs, x));
     for (const c of s.cls) {
-      const units = c[7].map(([di, w, prior]): Unit => [d[di], w, prior]);
+      const units = c[7].map(([di, ...rest]): Unit => [d[di], ...rest]);
       const threads = c[8].map((t): Thread => {
         const r: Thread = [t[0], f[t[1]], t[2], t[3], d[t[4]]];
         if (t.length > 5) r.push(t[5]);

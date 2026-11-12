@@ -1583,8 +1583,28 @@ test('review feedback: half-year files merge, and every period gets the values t
     'all', 't');
   assert.deepEqual(nested.map((d) => [d.path, d.cls, d.threads, d.prior]), [['chrome/', 2, 3, 7], ['third_party/', 1, 2, 150]]);
   const browser = nested[0].children[0];
-  assert.deepEqual([browser.cls, browser.threads, browser.own], [2, 3, { cls: 1, threads: 1, expected: browser.own!.expected, prior: 7 }]);
+  assert.deepEqual([browser.cls, browser.threads, browser.own], [2, 3,
+    { cls: 1, lines: 90, threads: 1, expected: browser.own!.expected, prior: 7, ids: new Set([1000002]) }]);
   assert.deepEqual(browser.children.map((d) => [d.name, d.cls]), [['ui/', 2]]);
+  // Lines changed: each directory's own (CL 2: 90 in content/, 28 in chrome/), summed up the tree; a
+  // unit without them (older files) takes its share of the change's lines (CL 3: all 10).
+  assert.deepEqual(dirs.map((d) => [d.path, d.lines]), [['chrome/', 66], ['third_party/', 10], ['content/', 90]]);
+  assert.equal(nested[0].lines, 156);
+  // The table's rows: entries with fewer than `minCls` changes go into one "Other" row per level,
+  // which counts each change once and opens into them.
+  const view = (roots: typeof dirs, open: string[], min: number, shown?: number) =>
+    F.dirRows(roots, new Set(open), min, shown).map((r) =>
+      `${'  '.repeat(r.depth)}${r.kind === 'other' ? `other(${r.count})` : r.kind === 'rest' ? `rest ${r.node!.path}` : r.node!.path}` +
+      ` ${r.stats.cls}/${r.stats.lines}/${r.stats.threads}${r.expandable ? (r.expanded ? ' -' : ' +') : ''}`);
+  assert.deepEqual(view(dirs, [], 2), ['chrome/ 2/66/2 +', 'other(2) 2/100/3 +']);
+  assert.deepEqual(view(dirs, ['o:root'], 2), ['chrome/ 2/66/2 +', 'other(2) 2/100/3 -',
+    '  third_party/ 1/10/2 +', '  content/ 1/90/1 +']);
+  // Nothing big enough, or just one small entry: no "Other" row, only the page limit.
+  assert.deepEqual(view(dirs, [], 5), ['chrome/ 2/66/2 +', 'third_party/ 1/10/2 +', 'content/ 1/90/1 +']);
+  assert.deepEqual(view(nested, [], 2), ['chrome/ 2/156/3 +', 'third_party/ 1/10/2 +']);
+  assert.deepEqual(view(dirs, [], 5, 2), ['chrome/ 2/66/2 +', 'third_party/ 1/10/2 +', 'other(1) 1/90/1 +']);
+  // A change in two grouped entries counts once (CL 2, in chrome/ and content/).
+  assert.deepEqual(view(dirs, [], 5, 0), ['other(3) 3/166/5 +']);
   // The ratio's shade: log scale, white at typical, full at a quarter or four times.
   assert.deepEqual([0, 0.25, 0.5, 1, 2, 4, 8].map(F.ratioShade), [-1, -1, -0.5, 0, 0.5, 1, 1]);
   // Comments: newest first; addressed only; under one directory, at any level.

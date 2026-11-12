@@ -481,7 +481,7 @@ def median_breakdowns(cs, size10):
             per[t[4]][0] += 1
             per[t[4]][1] += 1 if t[3] else 0
         by = defaultdict(lambda: [0.0, 0, 0])
-        for d, (w, _) in c["units"].items():
+        for d, (w, *_) in c["units"].items():
             k = dkey(d)
             if k is not None:
                 by[k][0] += w
@@ -633,7 +633,7 @@ def main():
     cl_dirs = defaultdict(dict)
     for n, d, files, lines in db.execute("SELECT change_number, dir, files, lines FROM cl_dirs"):
         if n in by_n:
-            cl_dirs[n][d] = lines + files
+            cl_dirs[n][d] = (lines + files, lines)
     orgs = OrgResolver()
     for c in use:
         n = c["change_number"]
@@ -641,12 +641,13 @@ def main():
         c["org"] = orgs(raw_email.get(n), day)
         # Tenure in whole days, as the page computes it from the day numbers it has.
         c["ten"] = (epoch_day(c["closed_at"]) - epoch_day(first[c["pid"]])) / 365.25 if c["pid"] in first else None
-        w = cl_dirs.get(n) or {"(root)/": 1}
-        tot = sum(w.values())
+        # Each directory's weight is its lines plus files; the page also shows its lines.
+        w = cl_dirs.get(n) or {"(root)/": (1, c["lines"])}
+        tot = sum(v for v, _ in w.values())
         at = landed_at.get(n, c["closed_at"])
-        c["units"] = {d: [r3(v / tot), bisect.bisect_left(xp_times.get((c["pid"], d), ()), at)]
-                      for d, v in w.items()}
-        c["main"] = max(w, key=w.get)
+        c["units"] = {d: [r3(v / tot), bisect.bisect_left(xp_times.get((c["pid"], d), ()), at), lines]
+                      for d, (v, lines) in w.items()}
+        c["main"] = max(w, key=lambda d: w[d][0])
         c["prior"] = bisect.bisect_left(own_times.get(c["pid"], ()), at)
     del xp_times, cl_dirs
 
@@ -752,7 +753,7 @@ def main():
             for t in c["thr"]:
                 per[t[4]][0] += 1
                 per[t[4]][1] += 1 if t[3] else 0
-            for dd, (w, prior) in c["units"].items():
+            for dd, (w, prior, _) in c["units"].items():
                 yield per[dd][0], per[dd][1], w, xp_band(prior), c
 
     def denom(m, c, w):
@@ -1205,7 +1206,7 @@ def shard(cs, text):
     """One person's CLs of one half-year, oldest first: [change number, day
     landed, lines, expected threads by size, by size and directory, expected
     addressed by size, by size and directory, [[directory, line share,
-    earlier commits]], [[comment uuid, file, days after landing, addressed,
+    earlier commits, lines changed there]], [[comment uuid, file, days after landing, addressed,
     directory, excerpt]], org, the owner's earlier commits on main], with
     directory, file and org names listed
     once. A thread without an excerpt has an empty uuid: the page links its
@@ -1218,8 +1219,8 @@ def shard(cs, text):
     for c in cs:
         n = c["change_number"]
         d0 = epoch_day(c["closed_at"])
-        units = [[idx(dirs, dd), w, prior]
-                 for dd, (w, prior) in sorted(c["units"].items(), key=lambda kv: (-kv[1][0], kv[0]))]
+        units = [[idx(dirs, dd), w, prior, lines]
+                 for dd, (w, prior, lines) in sorted(c["units"].items(), key=lambda kv: (-kv[1][0], kv[0]))]
         thr = []
         for root, path, at, addr, dd in sorted(c["thr"], key=lambda t: (t[2], t[0])):
             ex = text.get(f"{n}/{root}")

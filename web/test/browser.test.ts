@@ -3559,6 +3559,9 @@ test('review feedback: a person, the measures, peer groups, directories and comm
   // Directories: a tree, top level first; ▸ opens a directory into its subdirectories.
   const dirNames = () => page.$$eval('#rf-dirs tbody th', (ths) => ths.map((t) => t.textContent!.replace(/[▸▾]/, '')));
   assert.deepEqual(await dirNames(), ['chrome/', 'third_party/', 'content/']);
+  // Changes, then lines changed there.
+  assert.deepEqual(await page.$$eval('#rf-dirs tbody tr:first-child td', (tds) => tds.slice(0, 2).map((t) => t.textContent)),
+    ['2', '66']);
   await page.click('#rf-dirs tbody tr[data-key="d:third_party/"] .ar-toggle');
   await page.click('#rf-dirs tbody tr[data-key="d:third_party/blink/"] .ar-toggle');
   assert.deepEqual(await dirNames(), ['chrome/', 'third_party/', 'blink/', 'renderer/', 'content/']);

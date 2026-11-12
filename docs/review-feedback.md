@@ -239,11 +239,16 @@ The measures:
   applies). "Per directory" switches to the directory-experience bands
   above, each CL split by its lines, against everyone's pooled feedback and
   the middle half of authors with 1.5 CLs' worth or more in the band.
-- **Directories**: CLs, threads, expected threads, their ratio and earlier
+- **Directories**: CLs, lines changed (added + deleted in the landed
+  commit, from `cl_dirs.lines`, the 4th field of each CL-directory unit),
+  threads, expected threads, their ratio and earlier
   commits per directory, as an expandable tree like Value Exchange's
   directory chart: top-level directories first, opening down to the 3-level
   ones (a parent counts each CL once; earlier commits is the most in any one
-  directory below it). The ratio cell is shaded green below 1, white at 1 and
+  directory below it). At each level, entries with fewer than `min_cls`
+  (25) of the person's CLs go into one "Other" row, which counts each CL
+  once and opens into them (2026-11-12); a level with none that big, or
+  just one smaller entry, lists its first 15 instead. The ratio cell is shaded green below 1, white at 1 and
   red above, on a log scale that saturates at 0.25× and 4×. Selecting a
   directory at any level filters the comment list to it and below, together
   with the page's all/addressed choice.
