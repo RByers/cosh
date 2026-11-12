@@ -7,7 +7,7 @@ Writes only under the scratch directory S (never under data/private).
 
 Rerun, from the worktree:
   export COSH_DATA_DIR=/home/rbagent/projects/cosh/data/private
-  S=/home/rbagent/.claude/jobs/9e4a825c/tmp/scratch/reverts
+  S=data/private/scratch/review_roi/reverts
   python3 scripts/review_roi_reverts.py parse   --out $S     # history -> $S/msgs.jsonl (~1 min)
   python3 scripts/review_roi_reverts.py table   --out $S     # revert_reasons.tsv, reverts_full.jsonl
   python3 scripts/review_roi_reverts.py samples --out $S     # samples per class (truncated reasons)
@@ -462,6 +462,6 @@ def cmd_pilot(a):
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
     ap.add_argument("cmd", choices=["parse", "table", "cost", "timing", "pilot", "results", "samples"])
-    ap.add_argument("--out", default="/home/rbagent/.claude/jobs/9e4a825c/tmp/scratch/reverts")
+    ap.add_argument("--out", default=os.path.join(DATA, "scratch", "review_roi", "reverts"))
     a = ap.parse_args()
     globals()["cmd_" + a.cmd](a)

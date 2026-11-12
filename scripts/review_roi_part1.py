@@ -8,7 +8,7 @@ only; prints the tables and writes a JSON summary of aggregates (no
 identities).
 
   export COSH_DATA_DIR=/home/rbagent/projects/cosh/data/private
-  S=/home/rbagent/.claude/jobs/9e4a825c/tmp/scratch/part1
+  S=data/private/scratch/review_roi/part1
   nice -n 5 python3 scripts/review_roi_part1.py --table $S/cl_table.sqlite \
       --json $S/part1_results.json [--reasons $S/../reverts/revert_reasons.tsv] \
       [--designs D1,D2,D3,D4,D5,D6,D7,D8] [--frac 0.15] [--reps 200] [--check] > $S/part1_report.txt

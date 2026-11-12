@@ -15,7 +15,7 @@ scratch directory --out, never under data/private or the repo.
 Rerun (from the review-roi worktree):
 
   export COSH_DATA_DIR=/home/rbagent/projects/cosh/data/private
-  S=/home/rbagent/.claude/jobs/9e4a825c/tmp/scratch/substance
+  S=data/private/scratch/review_roi/substance
   nice -n 5 python3 scripts/review_roi_substance.py run --n 200 --seed 7 --out $S --dry-run
   nice -n 5 python3 scripts/review_roi_substance.py run --n 200 --seed 7 --out $S
   nice -n 5 python3 scripts/review_roi_substance.py hand --n 40 --seed 11 --out $S   # prints 40 for a hand check
@@ -44,8 +44,9 @@ from cosh import store                                          # noqa: E402
 from cosh.classify import build_threads, render, input_hash      # noqa: E402
 from cosh.derive import load_comments, prefetch_notedb           # noqa: E402
 
-CL_TABLE = "/home/rbagent/.claude/jobs/9e4a825c/tmp/scratch/part1/cl_table.sqlite"
-REVERTS_DIR = "/home/rbagent/.claude/jobs/9e4a825c/tmp/scratch/reverts"
+SCRATCH = os.path.join(store.DATA_DIR, "scratch", "review_roi")
+CL_TABLE = os.path.join(SCRATCH, "part1", "cl_table.sqlite")
+REVERTS_DIR = os.path.join(SCRATCH, "reverts")
 HOST = "chromium-review.googlesource.com"
 LABELS = ["correctness", "test", "design", "docs", "style", "process", "other"]
 BATCH, JOBS, MAX_THREADS = 50, 4, 200

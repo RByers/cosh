@@ -25,7 +25,7 @@ numbers and shas, no identities) to the scratch directory and aggregates
 to --out.
 
   export COSH_DATA_DIR=/home/rbagent/projects/cosh/data/private
-  S=/home/rbagent/.claude/jobs/9e4a825c/tmp/scratch/part2
+  S=data/private/scratch/review_roi/part2
   # needs review_roi_part2.py's --cache pickle for the unit-CL table
   nice -n 5 python3 scripts/review_roi_blame.py szz --cache $S/cache.pkl --n 500 --jobs 2 --full-sample 50 \\
       --scratch $S --out $S/blame_szz.json

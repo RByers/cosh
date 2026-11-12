@@ -12,7 +12,7 @@ Reads the table from scripts/review_roi_table.py (with the load columns)
 and revert_reasons.tsv; reuses the models of scripts/review_roi_part1.py.
 
   export COSH_DATA_DIR=/home/rbagent/projects/cosh/data/private
-  S=/home/rbagent/.claude/jobs/9e4a825c/tmp/scratch/part1
+  S=data/private/scratch/review_roi/part1
   nice -n 5 python3 scripts/review_roi_part1_followup.py --table $S/cl_table_f.sqlite \
       --reasons $S/../reverts/revert_reasons.tsv --json $S/followup.json > $S/followup.txt
 

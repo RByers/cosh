@@ -11,9 +11,9 @@ read-only (no comment text), plus the shared inputs below, and writes one
 scratch SQLite file. Identities appear only as integer ids.
 
   export COSH_DATA_DIR=/home/rbagent/projects/cosh/data/private
-  I=/home/rbagent/.claude/jobs/9e4a825c/tmp/inputs
+  I=data/private/review_feedback_inputs
   nice -n 5 python3 scripts/review_roi_table.py \
-      --out /home/rbagent/.claude/jobs/9e4a825c/tmp/scratch/part1/cl_table.sqlite \
+      --out data/private/scratch/review_roi/part1/cl_table.sqlite \
       [--first-commit $I/first_commit.txt] [--owners-added $I/owners_added.txt] [--mech $I/mech.jsonl]
 
 Without --first-commit, tenure is from the first authored commit in

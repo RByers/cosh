@@ -467,8 +467,8 @@ step, not a full run.
 
 ```
 export COSH_DATA_DIR=/home/rbagent/projects/cosh/data/private
-I=/home/rbagent/.claude/jobs/9e4a825c/tmp/inputs
-S=/home/rbagent/.claude/jobs/9e4a825c/tmp/scratch/part2
+I=data/private/review_feedback_inputs
+S=data/private/scratch/review_roi/part2
 python3 scripts/review_roi_part2.py --first-commit $I/first_commit.txt --mech $I/mech.jsonl \
     --cache $S/cache.pkl --out $S/part2_panels.json          # ~25 s with a warm cache, ~1 min cold
 python3 scripts/review_roi_blame.py szz --cache $S/cache.pkl --n 500 --full-sample 8 --jobs 2 \

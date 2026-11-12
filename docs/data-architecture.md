@@ -365,7 +365,7 @@ today's `balance.json` key for key) makes it safe to do in pieces.
 | 13 | `cosh.sentiment publish --weeks …`: one command and one range for the trend, praise, samples, recent and people files (default range pending D3) | M | 1, 4 |
 | 14 | Cache screening verdicts in `sentiment.sqlite`, keyed by comment and prompt hash | S | — |
 | 15 | Move `review_feedback.py` to `cosh/feedback.py` (`python3 -m cosh.feedback`); it writes the committed `web/public/review-feedback/` (D2) | M | 2 |
-| 16 | Give the review-ROI scripts a `--out` under `data/private/scratch/review_roi/` instead of the hard-coded session path | S | 3 |
+| 16 | *(done)* Give the review-ROI scripts a `--out` under `data/private/scratch/review_roi/` instead of the hard-coded session path | S | 3 |
 
 ### Last: the update command and tidying
 
@@ -420,3 +420,6 @@ details; this is the log.
   Items 4 (moving `radar/adhoc/`) and 5 (the browser list in `data.ts`)
   were dropped: neither removes a step or a store, and 5 would add a data
   file for the page to fetch.
+- **2026-11-12, item 16.** The review-ROI scripts default to
+  `data/private/scratch/review_roi/` instead of another session's scratch
+  directory.
