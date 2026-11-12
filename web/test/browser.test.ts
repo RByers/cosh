@@ -3295,31 +3295,43 @@ test('review feedback: the opening card explains the index before any address is
     .title.text), 'feedback index');
   assert.equal(await page.$('#rf-period'), null);
   assert.match(await page.$eval('#rf-cohorts-note', (e) => e.textContent!), /from that first commit\s+to October 2026:/);
-  // The size chart: four ways of measuring, on a log scale, with the "Adjusted for" choice bold.
-  const size = () => page.evaluate(() => {
-    const c = window.__rf!.charts.size;
-    const s = c.options.scales as Record<string, { type?: string; title?: { text?: string } }>;
-    return { type: s.y.type, axes: [s.x.title?.text, s.y.title?.text], labels: c.data.labels,
-      widths: c.data.datasets.map((d) => (d as { borderWidth: number }).borderWidth), last: c.data.datasets.map((d) => d.data.at(-1)) };
-  });
-  assert.deepEqual(await page.$$eval('#rf-size-legend li', (ls) => ls.map((l) => l.textContent)),
-    ['Per change, unadjusted', 'Per 1,000 changed lines', 'Adjusted for change size', 'Adjusted for size and directory']);
-  let sz = await size();
-  assert.equal(sz.type, 'logarithmic');
+  // Two bar charts side by side: the median contributor by change size, and by directory, highest first.
+  const bars = (key: string) => page.evaluate((key) => {
+    const c = window.__rf!.charts[key];
+    const s = c.options.scales as Record<string, { title?: { text?: string } }>;
+    return { type: (c.config as { type: string }).type, index: c.options.indexAxis, labels: c.data.labels,
+      data: c.data.datasets[0].data, axes: [s.x.title?.text, s.y.title?.text] };
+  }, key);
+  const halves = await page.$$eval('.rf-pair > div', (ds) => ds.map((d) => Math.round(d.getBoundingClientRect().width)));
+  assert.equal(halves.length, 2);
+  assert.ok(Math.abs(halves[0] - halves[1]) <= 1, String(halves));
+  let sz = await bars('size');
+  assert.equal(sz.type, 'bar');
   assert.deepEqual(sz.axes, ['lines changed', 'feedback index']);
   assert.equal((sz.labels as string[]).length, 10);
-  assert.deepEqual(sz.widths, [1.5, 1.5, 1.5, 3.5]);
-  assert.deepEqual(sz.last, [3.84, 0.2, 0.92, 0.94]);
-  assert.match(await page.$eval('#rf-size-note', (e) => e.textContent!), /\(392,000 changes\).*average is 2\.02.*on average\s+9\.6/s);
+  assert.deepEqual(sz.data.slice(0, 2), [0.68, 0.79]);
+  const dirChart = await bars('dirs');
+  assert.equal(dirChart.index, 'y');
+  assert.deepEqual(dirChart.axes, ['feedback index', 'directory']);
+  assert.deepEqual(dirChart.labels, ['third_party/blink/', 'tools/', 'chrome/browser/', 'ios/']);
+  assert.deepEqual(dirChart.data, [1.05, 0.95, 0.93, null]);
+  assert.match(await page.$eval('#rf-breakdown-note', (e) => e.textContent!), /The median contributor's feedback, from July 2023 to October 2026:.*10 or more such changes/s);
+  // Unadjusted: per change, and the directories re-sort.
   await page.click('input[name="rf-corr"][value="n"]');
-  assert.deepEqual((await size()).widths, [3.5, 1.5, 1.5, 1.5]);
-  // Addressed threads: their own figures; sizes with too few changes are left out.
+  sz = await bars('size');
+  assert.deepEqual(sz.data.slice(0, 2), [0.09, 0.19]);
+  assert.deepEqual((await bars('dirs')).labels, ['chrome/browser/', 'third_party/blink/', 'tools/', 'ios/']);
+  assert.match(await page.$eval('#rf-breakdown-note', (e) => e.textContent!), /feedback per\s+change/);
+  // Addressed threads: their own figures; a size with too few contributors has no bar.
   await page.click('input[name="rf-kind"][value="a"]');
-  sz = await size();
-  assert.deepEqual(sz.last, [null, null, null, null]);
-  assert.match(await page.$eval('#rf-size-note', (e) => e.textContent!), /Counting addressed threads/);
+  assert.equal((await bars('size')).data.at(-1), null);
+  assert.match(await page.$eval('#rf-breakdown-note', (e) => e.textContent!), /median contributor's addressed feedback/);
   await page.click('input[name="rf-kind"][value="t"]');
   await page.click('input[name="rf-corr"][value="d"]');
+  // Peers: Google only has no directory figures here, so only the size chart is drawn.
+  await page.select('#rf-org', 'google');
+  assert.deepEqual(await page.evaluate(() => [!!window.__rf!.charts.size, !!window.__rf!.charts.dirs]), [true, false]);
+  await page.select('#rf-org', 'all');
   // The histogram counts contributor-years from 2018 on.
   assert.match(await page.$eval('#rf-change-note', (e) => e.textContent!),
     /5,300 year-to-year changes from 1,900 contributors;\s+from\s+2018 on\).*fell by\s+16%/s);
@@ -3363,6 +3375,7 @@ test('review feedback: a person, the measures, peer groups, directories and comm
     trend: ['half-year', 'feedback index'],
     xp: ['your earlier commits in the directory', 'feedback index'],
     size: ['lines changed', 'feedback index'],
+    dirs: ['feedback index', 'directory'],
   });
   // The page computes the values from the half-year files (unit tests check the arithmetic).
   assert.equal(await tile('rf-tile-you'), '0.71×');

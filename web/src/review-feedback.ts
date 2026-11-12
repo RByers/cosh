@@ -39,6 +39,7 @@ import {
   type DirStats,
   type Dist,
   type Kind,
+  type MedianBar,
   type Metric,
   type PeerOrg,
   type Peers,
@@ -340,59 +341,53 @@ function renderIntro() {
   renderSizes(axis);
 }
 
-/** The opening card's size chart: the feedback index by change size, four ways;
- * the "Adjusted for" choice is drawn bold. */
+/** The opening card's two bar charts: the median contributor's value by change
+ * size and by directory (highest first), for the measure and "Peers" org chosen. */
 function renderSizes(axis: (title: string) => object) {
   destroy('size');
+  destroy('dirs');
   const peers = state.peers!;
-  const s = peers.sizes?.[state.kind];
-  const labels = peers.size_labels;
-  if (!s || !labels) return;
+  const m = metric();
+  const bySize = peers.by_size?.[state.org]?.[m];
+  const byDir = peers.by_dir?.[state.org]?.[m];
+  if (!bySize && !byDir) return;
   const t = theme();
   const [from, to] = rangeOf(peers, state.kind);
-  put($('#rf-size-note'), 'size-note', { kind: state.kind, n: fmtInt(s.n),
-    from: monthOf(fromMonth(from), true), to: monthOf(toMonth(to), true),
-    perCl: fmtNum(s.avgPerCl, { maximumFractionDigits: 2 }), perKLine: fmtNum(s.avgPerKLine, { maximumFractionDigits: 1 }) });
-  const bold = ({ n: 'perCl', s: 'size', d: 'dir' } as const)[state.corr];
-  const ways = (['perCl', 'perKLine', 'size', 'dir'] as const).map((k, i) => ({ k, color: t.series[i], label: msg(`size-line-${k}`) }));
-  const legend = $('#rf-size-legend');
-  legend.replaceChildren(...ways.map((w) => {
-    const li = el('li');
-    const sw = el('span', undefined, 'swatch');
-    sw.style.setProperty('--color', w.color);
-    li.append(sw, document.createTextNode(w.label));
-    return li;
-  }));
-  charts.size = new Chart($<HTMLCanvasElement>('#rf-size'), {
-    type: 'line',
-    data: {
-      labels,
-      datasets: ways.map((w) => ({ label: w.label, data: s[w.k], borderColor: w.color, backgroundColor: w.color,
-        borderWidth: w.k === bold ? 3.5 : 1.5, pointRadius: w.k === bold ? 3.5 : 2, pointHoverRadius: 5, tension: 0,
-        fill: false, spanGaps: false })),
-    },
-    options: {
-      maintainAspectRatio: false,
-      animation: false,
-      interaction: { mode: 'index', intersect: false },
-      font: { family: t.font },
-      scales: {
-        x: { ...axis('lines changed'), grid: { display: false } },
-        y: { type: 'logarithmic', min: 0.05, max: 6, ...axis(msg('axis-feedback')),
-          ticks: { color: t.text, font: { family: t.font }, autoSkip: false,
-            callback: (v) => ([0.05, 0.1, 0.2, 0.5, 1, 2, 5].includes(Number(v)) ? fmtValue(Number(v), 'd') : '') } },
-      },
-      plugins: {
-        legend: { display: false },
-        tooltip: {
-          callbacks: {
-            title: (items) => `${labels[items[0].dataIndex]} lines changed: ${fmtInt(s.cls[items[0].dataIndex])} changes`,
-            label: (i) => `${ways[i.datasetIndex].label}: ${fmtValue(i.parsed.y ?? 0, 'd')}`,
-          },
+  put($('#rf-breakdown-note'), 'breakdown-note', { kind: state.kind, corr: state.corr,
+    org: state.org === 'all' ? '' : msg(`org-name-${state.org}`), minCls: fmtInt(peers.min_cell_cls ?? 10),
+    from: monthOf(fromMonth(from), true), to: monthOf(toMonth(to), true) });
+  const yTitle = msg('axis-feedback');
+  const bars = (canvas: string, labels: string[], data: MedianBar[], xTitle: string, horizontal: boolean) => {
+    const value = horizontal ? 'x' : 'y';
+    const cat = horizontal ? 'y' : 'x';
+    return new Chart($<HTMLCanvasElement>(canvas), {
+      type: 'bar',
+      data: { labels, datasets: [{ data: data.map(([v]) => v), backgroundColor: t.series[0], borderWidth: 0,
+        categoryPercentage: 0.85, barPercentage: 1 }] },
+      options: {
+        indexAxis: cat,
+        maintainAspectRatio: false,
+        animation: false,
+        font: { family: t.font },
+        scales: {
+          [cat]: { ...axis(xTitle), grid: { display: false } },
+          [value]: { beginAtZero: true, ...axis(yTitle),
+            ticks: { color: t.text, font: { family: t.font }, callback: (v: string | number) => fmtValue(Number(v)) } },
+        },
+        plugins: {
+          legend: { display: false },
+          tooltip: { callbacks: { label: (i) => `median ${fmtValue(data[i.dataIndex][0])} (${fmtInt(data[i.dataIndex][1])} contributors)` } },
         },
       },
-    },
-  });
+    });
+  };
+  if (bySize && peers.size_labels) charts.size = bars('#rf-size', peers.size_labels, bySize, msg('axis-lines'), false);
+  const names = peers.dir_names;
+  if (!byDir || !names) return;
+  // Directories by their value, highest first; those without one go last.
+  const order = names.map((_, i) => i)
+    .sort((a, b) => (byDir[b][0] ?? -1) - (byDir[a][0] ?? -1));
+  charts.dirs = bars('#rf-dir-chart', order.map((i) => names[i]), order.map((i) => byDir[i]), msg('axis-dir'), true);
 }
 
 // ---- render

@@ -122,25 +122,32 @@
         <p class="note">
           The first two charts always measure tenure in years.
         </p>
-        <h3>By change size, measured four ways</h3>
-        <ul id="rf-size-legend" class="legend rf-line-legend" aria-label="Feedback index measured"></ul>
-        <template data-msg="size-line-perCl">Per change, unadjusted</template>
-        <template data-msg="size-line-perKLine">Per 1,000 changed lines</template>
-        <template data-msg="size-line-size">Adjusted for change size</template>
-        <template data-msg="size-line-dir">Adjusted for size and directory</template>
-        <div class="chart">
-          <canvas id="rf-size" role="img" aria-label="Feedback index by the number of lines a change changed, measured per change, per 1,000 changed lines, and adjusted for size, and for size and directory."></canvas>
+        <!-- Two half-width bar charts: the median author's feedback index by change size and by directory. -->
+        <div class="rf-pair">
+          <div>
+            <h3>By change size</h3>
+            <div class="chart rf-half-chart">
+              <canvas id="rf-size" role="img" aria-label="Bar chart of the median contributor's feedback index by the number of lines a change changed."></canvas>
+            </div>
+          </div>
+          <div>
+            <h3>By directory</h3>
+            <div class="chart rf-half-chart">
+              <canvas id="rf-dir-chart" role="img" aria-label="Bar chart of the median contributor's feedback index in each of the ten directories with the most reviewer threads, highest first."></canvas>
+            </div>
+          </div>
         </div>
-        <p id="rf-size-note" class="note"></p>
-        <template data-msg="size-note">
-          Every change landed from <slot name="from"></slot> to <slot name="to"></slot>
-          (<slot name="n"></slot> changes), by its changed lines (added plus removed), on a log scale. Counting<span
-          data-if="kind=a"> addressed</span> threads per change, where the average is <slot name="perCl"></slot>,
-          big changes draw many times the feedback small ones do. Counting them per 1,000 changed lines (on average
-          <slot name="perKLine"></slot>) overcorrects the other way, because feedback grows far more slowly than
-          the size of a change. Against the 2023–24 average for changes of the same size, alone or in the same
-          directory, as “Adjusted for” does, every size comes out close to the same index. The bold line is the
-          “Adjusted for” choice above; sizes with fewer than 30 changes are left out.
+        <p id="rf-breakdown-note" class="note"></p>
+        <template data-msg="breakdown-note">
+          The median contributor's<span data-if="kind=a"> addressed</span> feedback<span data-if="corr=n"> per
+          change</span>, from <slot name="from"></slot> to <slot name="to"></slot><span data-if="org">, counting
+          only changes from <slot name="org"></slot></span>: each contributor's value from their changes of one size
+          (lines added plus removed), or from their share of the changes in one directory and the reviewer threads on
+          its files, wherever they landed <slot name="minCls"></slot> or more such changes. <span
+          data-if="corr=n">Unadjusted, bigger changes draw far more feedback; “Adjusted for” takes that out.</span><span
+          data-if="!corr=n">With the adjustment, sizes and directories come out much closer together.</span> The
+          directories are the ten with the most reviewer threads, the largest top-level ones split into their
+          subdirectories; bars stand for 10 or more contributors.
         </template>
         <template data-msg="org-name-google">Google</template>
         <template data-msg="org-name-nongoogle">outside Google</template>
@@ -196,6 +203,8 @@
         </div>
         <template data-msg="tile-count-rank"><slot name="p"></slot> percentile among peers</template>
         <template data-msg="axis-feedback">feedback index</template>
+        <template data-msg="axis-lines">lines changed</template>
+        <template data-msg="axis-dir">directory</template>
         <template data-msg="axis-half">half-year</template>
         <template data-msg="tile-threads-a">Addressed reviewer threads</template>
         <template data-msg="tile-threads-t">Reviewer threads</template>

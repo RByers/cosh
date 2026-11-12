@@ -52,15 +52,25 @@ that experience. Its axis is always years. It shows:
   shows a year's value varies by about ±58% at 12–17 CLs, ±38% at 25–34,
   ±27% at 50–74 and ±16% at 150+, and a year-over-year change by about 1.4
   times that.
-- *By change size* (`sizes` in `peers.json`, `size_breakdown`): every CL in
-  range by size bucket, the feedback index four ways: per CL and per 1,000
-  changed lines (each ÷ the same rate over all CLs, so 1.00 is the
-  average), and against the size and the size-and-directory norms (the
-  "Adjusted for" measures as they are; drawn bold for the current choice).
-  Buckets under 30 CLs are left out; addressed threads count CLs from the
-  labels' start. On 2026-11-12, all threads, <4 lines .. 1,024+: per CL
-  0.06 → 4.10 (512–1,023) → 3.84; per 1,000 lines 4.74 → 0.20; size and
-  directory 0.89–0.97. Threads grow far more slowly than lines, so a
+- *By change size* and *by directory*, two half-width bar charts
+  (`median_breakdowns`; `by_size`, `dir_names`, `by_dir` in `peers.json`):
+  the median contributor's value for the chosen measure and "Peers" org
+  (tenure not matched), over every CL in range. By size: each person's CLs
+  in one size bucket. By directory: each person's line share of their CLs
+  in the directory and the threads on its files (as in the person's
+  directory table). A person counts in a bar with 10+ CLs there and 3+
+  expected threads (size and directory norm); a bar needs 10 people. The
+  directories: first-level ones, those with over 10% of all reviewer
+  threads split into their second level (chrome/, third_party/ and
+  components/ on 2026-11-12), the 10 with the most threads; the page sorts
+  them by value. On 2026-11-12, all threads, per change: <4 lines 0.09 →
+  512–1,023 6.25 → 1,024+ 4.4; adjusted for size and directory 0.56–0.86
+  (medians sit below the 1.00 average, since a few heavily reviewed people
+  pull the mean up). By directory, per change: components/autofill/ 4.19
+  down to tools/ 1.05; adjusted: third_party/blink/ 1.05 down to
+  chrome/test/ 0.59.
+  An earlier chart (2026-11-12) compared ways of measuring by size: per
+  1,000 changed lines the index runs 4.74 (<4 lines) → 0.20 (1,024+), so a
   per-line rate would favour big CLs about as strongly as a per-CL rate
   favours small ones; the bucket norms take the curve as it is.
 

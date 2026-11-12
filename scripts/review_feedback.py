@@ -350,38 +350,98 @@ def norms(use, also=()):
 SIZE_LABELS = ["<4", "4–7", "8–15", "16–31", "32–63", "64–127", "128–255", "256–511", "512–1,023", "1,024+"]
 
 
-def size_breakdown(use, addr_start, size10):
-    """The feedback index by CL size bucket, four ways: per change and per
-    1,000 changed lines (each ÷ the same rate over all CLs, so 1.00 is the
-    average), and against the size norm and the size-and-directory norm (the
-    page's measures as they are). Addressed threads count only CLs from
-    `addr_start`, where labels exist. Returns {kind: {n, cls[], perCl[],
-    perKLine[], size[], dir[]}} with the CLs per bucket."""
-    out = {}
-    for k, x, es, ed, cs in (("t", "threads", "exp_ts", "exp_td", use),
-                             ("a", "addressed", "exp_as", "exp_ad", [c for c in use if c["closed_at"] >= addr_start])):
-        b = [dict(n=0, x=0, lines=0, es=0.0, ed=0.0) for _ in SIZE_LABELS]
-        for c in cs:
-            s = b[size10(c["lines"])]
-            s["n"] += 1
-            s["x"] += c[x]
-            s["lines"] += c["lines"]
-            s["es"] += c[es]
-            s["ed"] += c[ed]
-        n = sum(s["n"] for s in b)
-        xs = sum(s["x"] for s in b)
-        lines = sum(s["lines"] for s in b)
-        per_cl = xs / n if n else 0
-        per_line = xs / lines if lines else 0
-        ok = lambda s: s["n"] >= 30
-        out[k] = dict(
-            n=n, cls=[s["n"] for s in b],
-            perCl=[r3(s["x"] / s["n"] / per_cl) if ok(s) and per_cl else None for s in b],
-            perKLine=[r3(s["x"] / s["lines"] / per_line) if ok(s) and s["lines"] and per_line else None for s in b],
-            size=[r3(s["x"] / s["es"]) if ok(s) and s["es"] else None for s in b],
-            dir=[r3(s["x"] / s["ed"]) if ok(s) and s["ed"] else None for s in b],
-            avgPerCl=r3(per_cl), avgPerKLine=r3(per_line * 1000))
-    return out
+# A cell (an author's CLs of one size, or their share of one directory) counts
+# toward a bar's median with this many CLs and expected threads.
+MIN_CELL_CLS, MIN_CELL_EXP = 10, 3.0
+# A top-level directory with more than this share of all reviewer threads is
+# split into its second-level directories for the directory chart.
+SPLIT_SHARE = 0.10
+TOP_DIRS = 10
+
+
+def chart_dirs(cs):
+    """The directory chart's directories: first-level ones, those holding more
+    than SPLIT_SHARE of all reviewer threads split into their second level,
+    the TOP_DIRS with the most threads. Returns (names, key of a 3-level path)."""
+    def parts(path):
+        p = [x for x in path.split("/") if x]
+        return p[0] + "/", (p[0] + "/" + p[1] + "/") if len(p) > 1 else None
+    l1, l2 = Counter(), Counter()
+    for c in cs:
+        for t in c["thr"]:
+            a, b = parts(t[4])
+            l1[a] += 1
+            if b:
+                l2[b] += 1
+    total = sum(l1.values()) or 1
+    split = {d for d, n in l1.items() if n / total > SPLIT_SHARE}
+    vol = Counter({d: n for d, n in l1.items() if d not in split})
+    vol.update({d: n for d, n in l2.items() if parts(d)[0] in split})
+    names = [d for d, _ in vol.most_common(TOP_DIRS)]
+    chosen = set(names)
+
+    def key(path):
+        a, b = parts(path)
+        k = b if a in split else a
+        return k if k in chosen else None
+    return names, key
+
+
+def median_breakdowns(cs, size10):
+    """The opening card's bar charts: the median author's feedback index by CL
+    size bucket (whole CLs) and by directory (each CL's share in it, and the
+    threads on its files), per "Peers" org group and measure. An author counts
+    in a bar with MIN_CELL_CLS CLs there and MIN_CELL_EXP expected threads
+    (size and directory norm); a bar needs MIN_PEERS authors. Addressed
+    measures count only CLs with labels. Returns (by_size, dir names, by_dir),
+    each bar as [median or None, authors]."""
+    names, dkey = chart_dirs(cs)
+    # (org, chart, bar, pid, kind) -> [CLs, threads, den n, den s, den d]
+    cell = defaultdict(lambda: [0, 0.0, 0.0, 0.0, 0.0])
+
+    def add(c, chart, bar, w, t, a):
+        for o, of in ORGS.items():
+            if not of(c["org"]):
+                continue
+            for k, x in (("t", t), ("a", a)):
+                if k == "a" and not c["acov"]:
+                    continue
+                v = cell[(o, chart, bar, c["pid"], k)]
+                v[0] += 1
+                v[1] += x
+                v[2] += w
+                v[3] += w * c[f"exp_{k}s"]
+                v[4] += w * c[f"exp_{k}d"]
+
+    for c in cs:
+        add(c, "size", size10(c["lines"]), 1, c["threads"], c["addressed"])
+        per = defaultdict(lambda: [0, 0])
+        for t in c["thr"]:
+            per[t[4]][0] += 1
+            per[t[4]][1] += 1 if t[3] else 0
+        by = defaultdict(lambda: [0.0, 0, 0])
+        for d, (w, _) in c["units"].items():
+            k = dkey(d)
+            if k is not None:
+                by[k][0] += w
+                by[k][1] += per[d][0]
+                by[k][2] += per[d][1]
+        for k, (w, t, a) in by.items():
+            add(c, "dir", k, w, t, a)
+    vals = defaultdict(list)       # (org, chart, bar, metric) -> authors' values
+    for (o, chart, bar, pid, k), (n, x, dn, ds, dd) in cell.items():
+        if n < MIN_CELL_CLS or dd < MIN_CELL_EXP:
+            continue
+        for corr, den in (("n", dn), ("s", ds), ("d", dd)):
+            if den:
+                vals[(o, chart, bar, k + corr)].append(x / den)
+
+    def bar(o, chart, b, m):
+        xs = vals.get((o, chart, b, m), [])
+        return [r3(st.median(xs)) if len(xs) >= MIN_PEERS else None, len(xs)]
+    by_size = {o: {m: [bar(o, "size", b, m) for b in range(len(SIZE_LABELS))] for m in METRICS} for o in ORGS}
+    by_dir = {o: {m: [bar(o, "dir", d, m) for d in names] for m in METRICS} for o in ORGS}
+    return by_size, names, by_dir
 
 
 # ---------------------------------------------------------------- building
@@ -769,10 +829,11 @@ def main():
                     x[m] = pp["x"][m]
         years[pid][y] = (Counter(c["org"] for c in cs).most_common(1)[0][0], v, x)
     change = yearly_changes(years, trend_groups)
-    sizes = size_breakdown(use, ADDR_START, G.size10)
-    print("feedback index by size (all threads): per change " + " ".join(map(str, sizes["t"]["perCl"])) +
-          "; per 1,000 lines " + " ".join(map(str, sizes["t"]["perKLine"])) +
-          "; size and directory " + " ".join(map(str, sizes["t"]["dir"])), file=sys.stderr, flush=True)
+    by_size, dir_names, by_dir = median_breakdowns(use, G.size10)
+    for m in ("tn", "ts", "td", "ad"):
+        print(f"median by size ({m}): " + " ".join(f"{v}/{n}" for v, n in by_size["all"][m]), file=sys.stderr)
+        print(f"median by directory ({m}): " + ", ".join(f"{d} {v}/{n}" for d, (v, n) in zip(dir_names, by_dir["all"][m])),
+              file=sys.stderr, flush=True)
     print(f"opening card: {len(trend_pts):,} people; {change['all']['td']['n']:,} year-over-year changes from "
           f"{change['all']['td']['people']:,} people (median {change['all']['td']['median']}% less), "
           f"{change['all']['ad']['n']:,} addressed", file=sys.stderr, flush=True)
@@ -806,7 +867,8 @@ def main():
                  tone_weeks=[TONE_WEEKS[0], TONE_WEEKS[-1]], dist={}, counts={}, bands={}, tone={},
                  cohort_step=STEP, cohort_from=int(HISTORY_ISO[:4]), min_cohort=MIN_COHORT, cohorts=cohorts,
                  change_ratios=[round(r, 4) for r in CHANGE_RATIOS], change=change, min_cohort_cls=MIN_COHORT_CLS,
-                 size_labels=SIZE_LABELS, sizes=sizes)
+                 size_labels=SIZE_LABELS, by_size=by_size, dir_names=dir_names, by_dir=by_dir,
+                 min_cell_cls=MIN_CELL_CLS)
     for p in allp:
         # Peers per kind: the addressed measures count people by their labelled CLs.
         rows = {k: [(pid, pp[p]) for pid, pp in per.items() if p in pp and pp[p][ok]]

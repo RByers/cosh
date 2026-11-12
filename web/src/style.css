@@ -2934,3 +2934,18 @@ canvas.rf-pointable {
   border-radius: 1px;
   background: var(--color);
 }
+
+/* The opening card's two bar charts, side by side; stacked on narrow screens. */
+.rf-pair {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr));
+  gap: 8px 24px;
+}
+
+.rf-pair > div {
+  min-width: 0;
+}
+
+.chart.rf-half-chart {
+  height: 300px;
+}

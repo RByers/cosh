@@ -149,26 +149,19 @@ export interface Peers {
   change: Record<string, Record<Metric, { n: number; people: number; median: number | null; counts: number[] }>>;
   /** A half-year counts towards a cohort curve with this many changes. */
   min_cohort_cls: number;
-  /** The opening card's size chart: the size buckets (changed lines), and per
-   * kind the feedback index in each, four ways (null under 30 changes). */
+  /** The opening card's bar charts (scripts/review_feedback.py, median_breakdowns):
+   * per "Peers" org and measure, the median contributor's value and how many
+   * contributors, by size bucket (`size_labels`, changed lines) and by directory
+   * (`dir_names`). A contributor counts with `min_cell_cls` changes there. */
   size_labels?: string[];
-  sizes?: Record<Kind, SizeBreakdown>;
+  by_size?: Record<string, Record<Metric, MedianBar[]>>;
+  dir_names?: string[];
+  by_dir?: Record<string, Record<Metric, MedianBar[]>>;
+  min_cell_cls?: number;
 }
 
-/** The feedback index by change size (scripts/review_feedback.py, size_breakdown):
- * per change and per 1,000 changed lines, each ÷ the same rate over all changes,
- * and against the size norm and the size-and-directory norm. */
-export interface SizeBreakdown {
-  n: number;
-  cls: number[];
-  perCl: (number | null)[];
-  perKLine: (number | null)[];
-  size: (number | null)[];
-  dir: (number | null)[];
-  /** The averages the first two are divided by: threads per change, per 1,000 lines. */
-  avgPerCl: number;
-  avgPerKLine: number;
-}
+/** [median (null: too few contributors), contributors]. */
+export type MedianBar = [number | null, number];
 
 /** The histogram's bins as words ("fell 60%+", "fell 50–60%" … "grew 152%+"),
  * and whether each is a fall. */
