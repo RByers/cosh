@@ -107,7 +107,7 @@ regex plus Claude Haiku (`cosh classify`).
   `OrgResolver()` fetches it from chromium/src `main` once per process (cheap,
   no approval needed) and rewrites it only on a change. Commit it with the
   outputs when it changes. `COSH_AFFILIATIONS_OFFLINE=1` skips the fetch.
-- Tests: `python3 -m unittest tests.test_derive tests.test_extract tests.test_radar tests.test_classify tests.test_sentiment tests.test_patchsets tests.test_balance tests.test_bugs tests.test_review_feedback`.
+- Tests: `python3 -m unittest tests.test_derive tests.test_extract tests.test_radar tests.test_classify tests.test_sentiment tests.test_patchsets tests.test_balance tests.test_bugs tests.test_review_feedback tests.test_balance_signals tests.test_notedb_repack`.
   These run in a single process, which complies with the global limit of 4
   test workers. `tests.test_extract` uses a fake Gerrit and never touches the
   network.
