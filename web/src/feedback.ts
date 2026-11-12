@@ -285,22 +285,24 @@ export function groupKey(by: TenureBy, org: PeerOrg, vals: PeriodVals | undefine
   return band ? `${by}:${band}:${org}` : null;
 }
 
-/** The peer group for each of the half-years `hs` (sorted), including those the person
- * landed no changes in, so the trend's peer band covers them all: tenure in years at the
- * half-year's middle, or the earlier-changes band of the nearest half-year with changes
- * (the latest before it, else the first after). Null only when the tenure is unknown. */
-export function halfGroups(by: TenureBy, org: PeerOrg, p: Pick<Person, 'periods' | 'firstDay'>,
+/** The peer group for each of the half-years `hs`, including those the person landed no
+ * changes in: their tenure is known then too, so the trend's peer band covers them all.
+ * Years since the first commit at the half-year's middle, or the earlier commits on main
+ * there (one more than at their last change before it, else as many as at their first
+ * change after it). Null only when the first commit is unknown. */
+export function halfGroups(by: TenureBy, org: PeerOrg, p: Pick<Person, 'periods' | 'firstDay' | 'cls'>,
   hs: string[]): (string | null)[] {
-  const known = hs.map((h) => bandOf(by, p.periods[h]));
-  return hs.map((h, i) => {
+  const cls = [...p.cls].sort((a, b) => a[1] - b[1]);
+  return hs.map((h) => {
     if (by === 'dir') return `dir:${org}`;
-    let band = known[i];
-    if (!band && by === 'time' && p.firstDay !== null) {
-      const [a, b] = periodSpan(h, [-Infinity, Infinity]);
-      band = tenureBand(Math.max(0, (a + b) / 2 - p.firstDay) / 365.25);
-    }
+    let band = bandOf(by, p.periods[h]);
+    const [a, b] = periodSpan(h, [-Infinity, Infinity]);
+    const mid = (a + b) / 2;
+    if (!band && by === 'time' && p.firstDay !== null) band = tenureBand(Math.max(0, mid - p.firstDay) / 365.25);
     if (!band && by === 'changes') {
-      band = known.slice(0, i).reverse().find((x) => x) ?? known.slice(i + 1).find((x) => x) ?? null;
+      const before = cls.filter((c) => c[1] < mid).pop();
+      const after = cls.find((c) => c[1] >= mid);
+      band = before ? changesBand(before[10] + 1) : after ? changesBand(after[10]) : null;
     }
     return band ? `${by}:${band}:${org}` : null;
   });
