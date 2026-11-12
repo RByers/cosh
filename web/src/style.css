@@ -2853,3 +2853,11 @@ button.term:focus-visible {
 .rf-bar .select-toggle {
   min-width: 0;
 }
+
+/* The opening card's cohort legend: line keys in each line's --color. */
+.rf-line-legend .swatch {
+  width: 14px;
+  height: 3px;
+  border-radius: 1px;
+  background: var(--color);
+}

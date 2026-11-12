@@ -8,6 +8,34 @@ page yet, and it carries `noindex`.
 
 ## What it shows
 
+The page opens with the switches (dates, feedback, adjusted for, same tenure
+by, peers), then a card that explains the feedback index before anyone types an
+address, then the address field. The sections about a person appear only
+once an address is found.
+
+**The opening card** (`renderIntro`, data in `peers.json`) follows the
+feedback and adjustment switches; "Peers" picks its population (a half-year
+counts by its org, a person's change by the org of most of their
+half-years), and tenure by directory experience shows the values against
+that experience. Its axis is always years, and the dates don't apply to it.
+It shows:
+
+- *Cohort curves:* for people whose first commit on `main` was in 2012, 2016,
+  2019, 2022 and 2024 (`COHORT_YEARS`), the median of their per-half-year
+  values (counted half-years only: 6+ CLs, 3+ expected threads) by tenure, in
+  half-year bins, where 20+ people share a point. Each cohort covers the
+  stretch of tenure that fell between July 2023 and October 2026, and the
+  curves line up into one falling curve: on 2026-11-11 the median went from
+  about 2.1× in the first half-year to 1.0× around three years and 0.6× after
+  ten (size and directory, all threads).
+- *Yearly change:* per person with 3+ counted half-years spanning a year or
+  more of tenure, exp of the least-squares slope of ln(value) against tenure
+  (values under 0.05 count as 0.05), as a histogram of % reduction a year.
+  On 2026-11-11: 1,106 people, median 17% less feedback a year (18% for
+  addressed threads); about a fifth had more.
+
+For the person's sections below:
+
 For merged, human-owned, non-mechanical CLs on `main` that landed from
 2023-07-01 to 2026-11-01 (the same set as the Review Balance page's feedback
 index, `docs/balance.md` section 4; mechanical CLs from `mech.jsonl`):
@@ -102,7 +130,8 @@ Output (default `web/public/review-feedback/`, which Vite copies into the
 site), with `<key>` the hash of the person's address:
 
 - `peers.json`: every peer group's quantiles per period and measure, and
-  everyone's pooled feedback per directory-experience band.
+  everyone's pooled feedback per directory-experience band, and the opening
+  card's cohort curves (`cohorts`) and yearly-change histogram (`change`).
 - `u/<key>.json`: first commit, which half-years the person has files for,
   and praise received. Small (0.8 MB gzipped for everyone) and rewritten on
   every run. Each other address of the person is a stub `{"see": <key>}`.

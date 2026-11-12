@@ -3260,10 +3260,10 @@ test('review feedback: the caveat, a lookup field that offers no completions, an
     type: i.getAttribute('type'), name: i.getAttribute('name'), form: i.closest('form')!.getAttribute('autocomplete') }));
   assert.deepEqual(input, { ac: 'off', list: null, type: 'text', name: null, form: 'off' });
   assert.equal(await page.$('datalist'), null);
-  assert.equal(await page.$eval('main', (m) => (m as HTMLElement).hidden), true);
+  assert.equal(await page.$eval('#rf-person', (m) => (m as HTMLElement).hidden), true);
   await lookUp(page, 'nobody@example.com');
   assert.match(await page.$eval('#rf-find-note', (e) => e.textContent!), /No changes owned by that address/);
-  assert.equal(await page.$eval('main', (m) => (m as HTMLElement).hidden), true);
+  assert.equal(await page.$eval('#rf-person', (m) => (m as HTMLElement).hidden), true);
   // The landing page doesn't link to it yet.
   const home = await browser.newPage();
   await home.goto(baseUrl, { waitUntil: 'load' });
@@ -3273,12 +3273,36 @@ test('review feedback: the caveat, a lookup field that offers no completions, an
   await page.close();
 });
 
+test('review feedback: the opening card explains the index before any address is typed', async () => {
+  const { page, errors } = await feedbackPage();
+  // The switches and the card come first, then the address field.
+  const order = await page.$$eval('.rf-bar, #intro, #rf-find, #rf-person', (es) => es.map((e) => e.id || e.className));
+  assert.deepEqual(order, ['metric-bar rf-bar', 'intro', 'rf-find', 'rf-person']);
+  assert.equal(await page.$eval('#rf-person', (m) => (m as HTMLElement).hidden), true);
+  assert.equal(await page.$('.lede'), null);
+  assert.match(await page.$eval('#intro', (e) => e.textContent!), /tool\s+for learning/);
+  await page.waitForFunction(() => !!window.__rf!.charts.cohorts && !!window.__rf!.charts.change);
+  // One line per first-commit year that has points; the dates are listed before a lookup.
+  assert.deepEqual(await page.$$eval('#rf-cohort-legend li', (ls) => ls.map((l) => l.textContent)),
+    ['started in 2019', 'started in 2024']);
+  assert.ok((await page.$$eval('#rf-period option', (os) => os.length)) > 1);
+  assert.match(await page.$eval('#rf-change-note', (e) => e.textContent!), /1,100 contributors\).*fell by\s+17%/s);
+  // It follows the switches: outside Google has one line, and a median that grew.
+  await page.select('#rf-org', 'nongoogle');
+  assert.deepEqual(await page.$$eval('#rf-cohort-legend li', (ls) => ls.map((l) => l.textContent)), ['started in 2024']);
+  assert.match(await page.$eval('#rf-change-note', (e) => e.textContent!), /came from outside Google\).*grew by\s+5%/s);
+  await page.click('input[name="rf-kind"][value="a"]');
+  assert.match(await page.$eval('#rf-cohorts-note', (e) => e.textContent!), /their addressed feedback/);
+  assert.deepEqual(errors, []);
+  await page.close();
+});
+
 test('review feedback: a person, the measures, peer groups, directories and comments', async () => {
   const { page, errors } = await feedbackPage();
   const { ALIAS_EMAIL } = await import('./feedback-fixture.ts');
   // Another address of the same person finds them too.
   await lookUp(page, ALIAS_EMAIL);
-  await page.waitForFunction(() => !document.querySelector<HTMLElement>('main')!.hidden);
+  await page.waitForFunction(() => !document.querySelector<HTMLElement>('#rf-person')!.hidden);
   const tile = (id: string) => page.$eval(`#${id} .tile-value`, (e) => e.textContent);
   assert.equal(await tile('rf-tile-cls'), '3');
   assert.equal(await tile('rf-tile-threads'), '5');

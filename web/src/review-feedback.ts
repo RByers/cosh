@@ -20,6 +20,7 @@ import {
   personKey,
   quantile,
   threadRows,
+  trendGroup,
   valueFor,
   xpBreakdown,
   years,
@@ -54,6 +55,8 @@ const $ = <T extends Element = HTMLElement>(sel: string) => document.querySelect
 const DATA = 'review-feedback/';
 const PAGE = 50;
 const DIRS_SHOWN = 15;
+/** The first-commit years the opening card draws a line for. */
+const COHORT_YEARS = [2012, 2016, 2019, 2022, 2024];
 
 const state = {
   person: null as Person | null,
@@ -193,7 +196,7 @@ async function lookup(raw: string) {
     state.allDirs = false;
     put(note, 'find-done', { n: fmtInt(found.cls.length), from: dayLabel(found.cls[0][1]), to: dayLabel(found.cls.at(-1)![1]) });
     fillPeriods();
-    $('main').hidden = false;
+    $('#rf-person').hidden = false;
     render();
     document.body.dataset.person = '1';
   } catch (e) {
@@ -204,8 +207,8 @@ async function lookup(raw: string) {
 function fillPeriods() {
   const sel = $<HTMLSelectElement>('#rf-period');
   const peers = state.peers!;
-  const p = state.person!;
-  const has = (period: string) => p.periods[period] !== undefined;
+  const p = state.person;
+  const has = (period: string) => !p || p.periods[period] !== undefined;
   sel.replaceChildren();
   for (const period of ['all', ...years(peers.periods).reverse(), ...halves(peers.periods).reverse()]) {
     if (!has(period)) continue;
@@ -215,6 +218,103 @@ function fillPeriods() {
   }
   if (!has(state.period)) state.period = 'all';
   sel.value = state.period;
+}
+
+// ---- the opening card (no person needed)
+
+function renderIntro() {
+  const peers = state.peers;
+  if (!peers?.cohorts) return;
+  destroy('cohorts');
+  destroy('change');
+  const t = theme();
+  const m = metric();
+  const g = trendGroup(state.tenure, state.org);
+  const org = state.org === 'all' ? '' : msg(`org-name-${state.org}`);
+  const vars = { kind: state.kind, corr: state.corr, dirxp: state.tenure === 'dir', org, min: fmtInt(peers.min_cohort),
+    minCls: fmtInt(peers.min_cls) };
+  put($('#rf-cohorts-note'), 'cohorts-note', vars);
+  const curves = peers.cohorts[g]?.[m] ?? {};
+  const step = peers.cohort_step;
+  const lines = COHORT_YEARS.map((y, i) => ({ year: y, color: t.series[i], pts: curves[String(y)] ?? [] }))
+    .filter((l) => l.pts.length);
+  const legend = $('#rf-cohort-legend');
+  legend.replaceChildren(...lines.map((l) => {
+    const li = el('li');
+    const sw = el('span', undefined, 'swatch');
+    sw.style.setProperty('--color', l.color);
+    li.append(sw, document.createTextNode(`started in ${l.year}`));
+    return li;
+  }));
+  const axis = (title: string) => ({ grid: { color: t.grid }, title: { display: true, text: title, color: t.text },
+    ticks: { color: t.text, font: { family: t.font } } });
+  charts.cohorts = new Chart($<HTMLCanvasElement>('#rf-cohorts'), {
+    type: 'line',
+    data: {
+      datasets: lines.map((l) => ({ label: String(l.year), data: l.pts.map(([b, v]) => ({ x: b + step / 2, y: v })),
+        borderColor: l.color, backgroundColor: l.color, borderWidth: 2, pointRadius: 2.5, pointHoverRadius: 4,
+        tension: 0, fill: false })),
+    },
+    options: {
+      maintainAspectRatio: false,
+      animation: false,
+      interaction: { mode: 'nearest', intersect: false },
+      font: { family: t.font },
+      scales: {
+        x: { type: 'linear', min: 0, ...axis('years since first commit on main') },
+        y: { beginAtZero: true, ...axis(''), title: { display: false },
+          ticks: { color: t.text, font: { family: t.font }, callback: (v) => fmtValue(Number(v)) } },
+      },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            title: () => '',
+            label: (i) => {
+              const l = lines[i.datasetIndex];
+              const [b, , n] = l.pts[i.dataIndex];
+              const yrs = (x: number) => fmtNum(x, { maximumFractionDigits: 1 });
+              return `Started in ${l.year}, ${yrs(b)}–${yrs(b + step)} years in: median ${fmtValue(i.parsed.y)} (${fmtInt(n)} people)`;
+            },
+          },
+        },
+      },
+    },
+  });
+
+  const ch = peers.change[g]?.[m];
+  const edges = peers.change_edges;
+  // Bins of reduction: below 0 the feedback grew.
+  const abs = (x: number) => fmtInt(Math.abs(x));
+  const labels = edges.slice(0, -1).map((lo, i) => {
+    const hi = edges[i + 1];
+    if (i === 0) return `grew ${abs(hi)}%+`;
+    if (i === edges.length - 2) return `fell ${abs(lo)}%+`;
+    return hi <= 0 ? `grew ${abs(hi)}–${abs(lo)}%` : `fell ${abs(lo)}–${abs(hi)}%`;
+  });
+  put($('#rf-change-note'), 'change-note', { ...vars, n: fmtInt(ch?.n ?? 0),
+    median: ch?.median == null ? '–' : pct(Math.abs(ch.median) / 100), fell: (ch?.median ?? 0) >= 0 });
+  charts.change = new Chart($<HTMLCanvasElement>('#rf-change'), {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [{ data: ch?.counts ?? [], backgroundColor: edges.slice(0, -1).map((e) => (e >= 0 ? t.series[0] : t.muted)),
+        borderWidth: 0, categoryPercentage: 0.9, barPercentage: 1 }],
+    },
+    options: {
+      maintainAspectRatio: false,
+      animation: false,
+      font: { family: t.font },
+      scales: {
+        x: { ...axis('change in feedback index per year'), grid: { display: false } },
+        y: { beginAtZero: true, ...axis('contributors') },
+      },
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: (i) => `${fmtInt(i.parsed.y ?? 0)} contributors` } },
+      },
+    },
+  });
 }
 
 // ---- render
@@ -512,15 +612,20 @@ function init() {
   radio<Kind>('rf-kind', (v) => {
     state.kind = v;
     state.threadsShown = PAGE;
+    renderIntro();
     render();
   });
   radio<Corr>('rf-corr', (v) => {
     state.corr = v;
+    renderIntro();
+    if (!state.person) return;
     renderSummary();
     renderTrend();
     renderXp();
   });
   const peersChanged = () => {
+    renderIntro();
+    if (!state.person) return;
     renderSummary();
     renderTrend();
     renderPraise();
@@ -558,6 +663,7 @@ function init() {
     renderDirs();
   });
   matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+    renderIntro();
     if (!state.person) return;
     renderTrend();
     renderXp();
@@ -565,7 +671,10 @@ function init() {
   void getJson<Peers>(`${DATA}peers.json`).then((p) => {
     state.peers = p;
     window.__rf!.peers = p;
-    if (p) $('#rf-min-cls').textContent = fmtInt(p.min_cls);
+    if (!p) return;
+    $('#rf-min-cls').textContent = fmtInt(p.min_cls);
+    if (!state.person) fillPeriods();
+    renderIntro();
   }).catch(() => {}).finally(() => {
     document.body.dataset.ready = '1';
   });

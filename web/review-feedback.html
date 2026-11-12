@@ -24,37 +24,9 @@
       <nav class="crumb"><a href="./">← Chromium Open Source Health</a></nav>
       <h1>Chromium Open Source Health - Review Feedback</h1>
       <p class="rf-disclaimer" role="note">This analysis is imperfect and is intended as a learning guide only.</p>
-      <div class="lede">
-        <p>
-          How much review feedback do your Chromium changes draw, where does it come from, and how does that
-          compare with other authors? Reviewers start fewer threads on a change as its author learns the
-          code, so the feedback on your changes is one view of where you are still learning. Type your email
-          address to see the reviewer threads on every change you landed since July 2023, set against
-          authors with the same tenure: the same years since their first commit, the same number of changes
-          landed before, or the same experience in each directory you changed.
-        </p>
-        <p>
-          It counts feedback, not quality. Reviewers, teams and kinds of work differ a lot, and some of the
-          most valuable changes draw the most discussion. Use it to find patterns worth a look, not to rank
-          anyone.
-        </p>
-      </div>
-      <form id="rf-find" class="person-find rf-find" autocomplete="off">
-        <label for="rf-email">Your email address</label>
-        <input id="rf-email" type="text" inputmode="email" autocomplete="off" autocapitalize="off" autocorrect="off"
-          spellcheck="false" data-1p-ignore="" data-lpignore="true" data-form-type="other" />
-        <button type="submit">Show</button>
-        <p id="rf-find-note" class="sub" aria-live="polite"></p>
-      </form>
-      <template data-msg="find-loading">Looking…</template>
-      <template data-msg="find-none">No changes owned by that address landed between July 2023 and October 2026.
-        Try the address you use in Gerrit; chromium.org and google.com addresses are the same here.</template>
-      <template data-msg="find-error">Couldn't load the data: <slot name="error"></slot></template>
-      <template data-msg="find-done">Showing <slot name="n"></slot> changes landed between <slot name="from"></slot>
-        and <slot name="to"></slot>.</template>
     </header>
 
-    <main hidden>
+    <main>
       <!-- What every section below counts, and whom it compares with. -->
       <div class="metric-bar rf-bar">
         <div class="select-toggle select-short">
@@ -96,6 +68,89 @@
       <template data-msg="period-half2-now">July – October <slot name="year"></slot></template>
       <template data-msg="period-year-h2">July – December <slot name="year"></slot></template>
       <template data-msg="period-year-now">January – October <slot name="year"></slot></template>
+
+      <section id="intro" class="card" aria-labelledby="intro-title">
+        <a class="card-anchor" href="#intro" aria-label="Link to this section" title="Link to this section">#</a>
+        <h2 id="intro-title">The feedback index</h2>
+        <p>
+          One of the primary reasons a complex open source project like Chromium relies on code review is as a tool
+          for learning, to help newer contributors learn the engineering practices of the community. When the
+          project is healthy, contributors learn from their reviewers, reducing the need for their review and
+          ultimately becoming reviewers themselves to help teach the next generation of contributors.
+        </p>
+        <p>
+          The feedback index is a measure of how many comments a change receives in code review, with 1.00× being
+          the average, optionally adjusted for the change's size and directory (since changes vary in complexity;
+          see “Adjusted for” above). Over time, most Chromium contributors see a steep drop in their feedback
+          index (especially for addressed comments: those which ultimately lead to a change in the code),
+          suggesting they are learning to anticipate reviewer requests and become capable of perpetuating the
+          project's engineering culture themselves.
+        </p>
+        <p>
+          The feedback index is an imperfect metric and can't account for all variables in project complexity and
+          contributor style. Use this page as a guide to help you understand how your review feedback patterns
+          compare to others'.
+        </p>
+        <h3>By tenure, for contributors who started in different years</h3>
+        <ul id="rf-cohort-legend" class="legend rf-line-legend" aria-label="First commit on main in"></ul>
+        <div class="chart">
+          <canvas id="rf-cohorts" role="img" aria-label="Median feedback index by years since a contributor's first commit, one line per year of first commit."></canvas>
+        </div>
+        <p id="rf-cohorts-note" class="note"></p>
+        <template data-msg="cohorts-note">
+          Each line follows the contributors whose first commit on main was in one year, from July 2023 to October
+          2026: the median of their<span data-if="kind=a"> addressed</span> feedback<span data-if="corr=n"> per
+          change</span> in each half-year, by how long they had been contributing then<span data-if="dirxp">,
+          measured against authors with the same experience in each directory</span><span data-if="org"> (only
+          half-years in which most of their changes came from <slot name="org"></slot>)</span>. Points stand for
+          <slot name="min"></slot> or more contributors who landed <slot name="minCls"></slot> or more changes in
+          the half-year. Whenever they started, contributors draw less feedback the longer they have been
+          contributing.
+        </template>
+        <h3>How fast each contributor's feedback falls</h3>
+        <div class="chart">
+          <canvas id="rf-change" role="img" aria-label="Histogram of contributors by how much their feedback index fell per year."></canvas>
+        </div>
+        <p id="rf-change-note" class="note"></p>
+        <template data-msg="change-note">
+          Contributors by the yearly change in their feedback index, from the trend over the half-years in which
+          they landed <slot name="minCls"></slot> or more changes (three or more, spanning at least a year;
+          <slot name="n"></slot> contributors<span data-if="org">, most of whose changes came from <slot name="org"></slot></span>). The
+          median contributor's feedback <span data-if="fell">fell</span><span data-if="!fell">grew</span> by
+          <slot name="median"></slot> a year; bars on the left are contributors whose feedback grew.
+        </template>
+        <p class="note">
+          The dates chosen above apply to your own figures below, not to these two charts, and these always
+          measure tenure in years.
+        </p>
+        <template data-msg="org-name-google">Google</template>
+        <template data-msg="org-name-nongoogle">outside Google</template>
+      </section>
+
+      <section id="find" class="card" aria-labelledby="find-title">
+        <h2 id="find-title">Your review feedback</h2>
+        <p class="sub">
+          Type your email address to see the reviewer threads on every change you landed since July 2023, set
+          against authors with the same tenure: the same years since their first commit, the same number of
+          changes landed before, or the same experience in each directory you changed.
+        </p>
+        <form id="rf-find" class="person-find rf-find" autocomplete="off">
+          <label for="rf-email">Your email address</label>
+          <input id="rf-email" type="text" inputmode="email" autocomplete="off" autocapitalize="off" autocorrect="off"
+            spellcheck="false" data-1p-ignore="" data-lpignore="true" data-form-type="other" />
+          <button type="submit">Show</button>
+          <p id="rf-find-note" class="sub" aria-live="polite"></p>
+        </form>
+        <template data-msg="find-loading">Looking…</template>
+        <template data-msg="find-none">No changes owned by that address landed between July 2023 and October 2026.
+          Try the address you use in Gerrit; chromium.org and google.com addresses are the same here.</template>
+        <template data-msg="find-error">Couldn't load the data: <slot name="error"></slot></template>
+        <template data-msg="find-done">Showing <slot name="n"></slot> changes landed between <slot name="from"></slot>
+          and <slot name="to"></slot>.</template>
+      </section>
+
+      <!-- Everything below is about the person whose address was typed. -->
+      <div id="rf-person" hidden>
 
       <section id="summary" class="card" aria-labelledby="summary-title">
         <a class="card-anchor" href="#summary" aria-label="Link to this section" title="Link to this section">#</a>
@@ -298,6 +353,7 @@
           <a target="_blank" rel="noopener" href="https://github.com/RByers/cosh/blob/main/docs/review-feedback.md">docs/review-feedback.md</a>.
         </p>
       </section>
+      </div>
     </main>
     <script type="module" src="/src/review-feedback.ts"></script>
   </body>

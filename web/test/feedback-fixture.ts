@@ -68,4 +68,16 @@ export const peers: Peers = {
   dist: Object.fromEntries(periods.map((p) => [p, groups()])),
   bands: Object.fromEntries(periods.map((p) => [p, bands()])),
   tone: { all: { n: 900, q: q(0, 0.1) }, 'time:2-5y': { n: 200, q: q(0, 0.08) }, 'changes:50-199': { n: 150, q: q(0, 0.06) } },
+  cohort_step: 0.5,
+  min_cohort: 20,
+  // Two first-commit years for everyone; outside Google only the newer one.
+  cohorts: {
+    all: each(() => ({ '2019': [[4, 0.9, 80], [4.5, 0.85, 90]], '2024': [[0, 2.1, 170], [0.5, 1.7, 100], [1, 1.2, 90]] })),
+    nongoogle: each(() => ({ '2024': [[0, 2, 20]] })),
+  },
+  change_edges: [-40, -30, -20, -10, 0, 10, 20, 30, 40, 50, 60, 70, 80],
+  change: {
+    all: each(() => ({ n: 1100, median: 17.1, counts: [66, 32, 54, 92, 155, 209, 190, 120, 78, 52, 34, 24] })),
+    nongoogle: each(() => ({ n: 3, median: -5, counts: [0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0] })),
+  },
 };

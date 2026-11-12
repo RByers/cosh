@@ -116,6 +116,24 @@ export interface Peers {
   dist: Record<string, Record<string, Record<Metric, Dist>>>;
   bands: Record<string, Record<Metric, Band[]>>;
   tone: Record<string, Dist>;
+  /** The opening card. Tenure bins of the cohort curves, in years, and the
+   * fewest people a point stands for. */
+  cohort_step: number;
+  min_cohort: number;
+  /** Group -> measure -> year of first commit -> [tenure bin start, median, people]. */
+  cohorts: Record<string, Record<Metric, Record<string, [number, number, number][]>>>;
+  /** Histogram bin edges, % less feedback a year: the first bin takes
+   * everything below edges[1], the last everything from edges[-2] on. */
+  change_edges: number[];
+  /** Group -> measure -> people's yearly reduction in feedback. */
+  change: Record<string, Record<Metric, { n: number; median: number | null; counts: number[] }>>;
+}
+
+/** The opening card's group: the "Peers" org, measured against directory
+ * experience when tenure is by directory. Years and changes both show plain
+ * values (the card's own axis is years). */
+export function trendGroup(by: TenureBy, org: PeerOrg): string {
+  return by === 'dir' ? `dir:${org}` : org;
 }
 
 export const GERRIT = 'https://chromium-review.googlesource.com';

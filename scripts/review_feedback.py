@@ -27,6 +27,7 @@ import glob
 import re
 import hashlib
 import json
+import math
 import os
 import shutil
 import sqlite3
@@ -68,6 +69,14 @@ MIN_PEERS = 10                # fewer peers than this get no percentiles
 KINDS = ("t", "a")
 CORR = ("n", "s", "d")
 METRICS = [f"{k}{c}" for k in KINDS for c in CORR]
+# The page's opening card: how feedback falls with tenure, per first-commit
+# year, and how fast it falls for each person.
+STEP = 0.5                    # tenure bins of the cohort curves, in years
+MIN_COHORT = 20               # people per point of a cohort curve
+MIN_TREND_HALVES = 3          # a person's yearly change needs this many counted half-years ...
+MIN_TREND_SPAN = 1.0          # ... spanning this many years of tenure
+FLOOR = 0.05                  # values below this count as this on the log scale of the trend
+CHANGE_EDGES = list(range(-40, 81, 10))   # histogram bin edges, % less feedback per year
 
 
 def key(email):
@@ -111,6 +120,62 @@ def quantiles(xs):
         hi = min(lo + 1, len(xs) - 1)
         out.append(round(xs[lo] + (xs[hi] - xs[lo]) * (i - lo), 3))
     return out
+
+
+def annual_change(points):
+    """A person's yearly change in feedback: exp of the least-squares slope of
+    ln(value) against tenure in years, minus 1 (-0.3 is 30% less feedback a
+    year). points are (tenure, value); None without enough of them."""
+    pts = [(t, math.log(max(v, FLOOR))) for t, v in points if t is not None and v is not None]
+    if len(pts) < MIN_TREND_HALVES:
+        return None
+    ts = [t for t, _ in pts]
+    if max(ts) - min(ts) < MIN_TREND_SPAN:
+        return None
+    mt = st.mean(ts)
+    my = st.mean(y for _, y in pts)
+    sxx = sum((t - mt) ** 2 for t in ts)
+    return math.exp(sum((t - mt) * (y - my) for t, y in pts) / sxx) - 1
+
+
+def histogram(xs, edges):
+    """Counts per bin [edges[i], edges[i+1]), the first bin taking everything
+    below edges[1] and the last everything from edges[-2] on."""
+    out = [0] * (len(edges) - 1)
+    for x in xs:
+        out[min(max(bisect.bisect_right(edges, x) - 1, 0), len(out) - 1)] += 1
+    return out
+
+
+def tenure_trends(points, groups):
+    """The opening card's data. points: per person, their counted half-years
+    as (first-commit year, tenure, org, {metric: value}, {metric: value
+    against directory experience}). groups: name -> test of an org; names
+    starting "dir:" use the values against directory experience. Returns
+    the cohort curves (median value per first-commit year and STEP-year
+    tenure bin, MIN_COHORT people or more) and the histogram of people's
+    yearly reduction in feedback, % (-100 * annual_change), per group and
+    measure. A half-year counts for a group by its org; a person's change by
+    the org of most of their half-years."""
+    curves = {g: {m: defaultdict(lambda: defaultdict(list)) for m in METRICS} for g in groups}
+    changes = {g: {m: [] for m in METRICS} for g in groups}
+    for pts in points:
+        org = Counter(p[2] for p in pts).most_common(1)[0][0]
+        for g, f in groups.items():
+            xk = 4 if g.startswith("dir:") else 3
+            for m in METRICS:
+                if f(org):
+                    c = annual_change([(p[1], p[xk][m]) for p in pts])
+                    if c is not None:
+                        changes[g][m].append(-100 * c)
+                for p in pts:
+                    if f(p[2]) and p[1] is not None and p[xk][m] is not None:
+                        curves[g][m][p[0]][math.floor(p[1] / STEP) * STEP].append(p[xk][m])
+    cohorts = {g: {m: {str(y): [[b, r3(st.median(v)), len(v)] for b, v in sorted(bs.items()) if len(v) >= MIN_COHORT]
+                       for y, bs in sorted(per_m.items())} for m, per_m in gm.items()} for g, gm in curves.items()}
+    change = {g: {m: dict(n=len(xs), median=round(st.median(xs), 1) if xs else None,
+                          counts=histogram(xs, CHANGE_EDGES)) for m, xs in gm.items()} for g, gm in changes.items()}
+    return cohorts, change
 
 
 def r3(x):
@@ -443,6 +508,25 @@ def main():
                 byp[p].append(c)
         per[pid] = {p: person_period(pid, v, p) for p, v in byp.items()}
 
+    # ------------------------------------------------ the opening card
+    trend_pts = []
+    for pid, cs in people.items():
+        if pid not in first:
+            continue
+        y0 = datetime.fromtimestamp(first[pid], timezone.utc).year
+        byh = defaultdict(list)
+        for c in cs:
+            byh[half(c["closed_at"])].append(c["ten"])
+        pts = [(y0, st.median(byh[h]), pp["org"], pp["v"], pp["x"])
+               for h, pp in per[pid].items() if HALF.match(h) and pp["ok"]]
+        if pts:
+            trend_pts.append(pts)
+    # The page's "Peers" choice, and the same against directory experience ("dir:").
+    trend_groups = {**ORGS, **{f"dir:{o}": of for o, of in ORGS.items()}}
+    cohorts, change = tenure_trends(trend_pts, trend_groups)
+    print(f"opening card: {len(trend_pts):,} people, {change['all']['td']['n']:,} with a yearly change "
+          f"(median {change['all']['td']['median']}% less a year)", file=sys.stderr, flush=True)
+
     # ------------------------------------------------ peers
     def tone_bands(pid):
         ten = (TONE_END_T - first[pid]) / YEAR if pid in first else None
@@ -466,7 +550,9 @@ def main():
         groups[f"dir:{o}"] = (lambda of: lambda pp: of(pp["org"]))(of)
     peers = dict(generated=datetime.now(timezone.utc).strftime("%Y-%m-%d"), periods=allp, metrics=METRICS,
                  tenure=TENURE, changes=CHANGES, xp=XP, min_peers=MIN_PEERS, qs=len(QS), min_cls=MIN_CLS, min_exp=MIN_EXP, min_received=MIN_RECEIVED,
-                 tone_weeks=[TONE_WEEKS[0], TONE_WEEKS[-1]], dist={}, bands={}, tone={})
+                 tone_weeks=[TONE_WEEKS[0], TONE_WEEKS[-1]], dist={}, bands={}, tone={},
+                 cohort_step=STEP, min_cohort=MIN_COHORT, cohorts=cohorts,
+                 change_edges=CHANGE_EDGES, change=change)
     for p in allp:
         rows = [(pid, pp[p]) for pid, pp in per.items() if p in pp and pp[p]["ok"]]
         dp = peers["dist"][p] = {}
