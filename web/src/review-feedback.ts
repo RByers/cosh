@@ -7,6 +7,7 @@
 import { Chart, Filler, type ChartDataset } from 'chart.js';
 import { readTheme, type Theme } from './charts.ts';
 import {
+  buildPerson,
   commentUrl,
   dirTable,
   groupKey,
@@ -22,6 +23,8 @@ import {
   xpBreakdown,
   years,
   type Alias,
+  type Shard,
+  type Top,
   type Corr,
   type Dist,
   type Kind,
@@ -148,23 +151,30 @@ async function lookup(raw: string) {
   }
   put(note, 'find-loading');
   try {
-    const [peers, found] = await Promise.all([
+    const [peers, top] = await Promise.all([
       state.peers ? Promise.resolve(state.peers) : getJson<Peers>(`${DATA}peers.json`),
       (async () => {
         let k = await personKey(raw);
         for (let hops = 0; hops < 2; hops++) {
-          const d = await getJson<Person | Alias>(`${DATA}u/${k}.json`);
+          const d = await getJson<Top | Alias>(`${DATA}u/${k}.json`);
           if (!d) return null;
           if ('see' in d) {
             if (!/^[0-9a-f]{32}$/.test(d.see)) return null;
             k = d.see;
             continue;
           }
-          return d;
+          return { key: k, top: d };
         }
         return null;
       })(),
     ]);
+    // One file per half-year the person landed changes in.
+    const halvesOk = top?.top.halves.every((h) => /^\d{4}H[12]$/.test(h));
+    const shards = top && halvesOk
+      ? await Promise.all(top.top.halves.map((h) => getJson<Shard>(`${DATA}${h}/${top.key}.json`)))
+      : [];
+    const found = top && peers && halvesOk && shards.every((s) => s)
+      ? buildPerson(top.top, shards as Shard[], peers) : null;
     state.peers = peers;
     window.__rf!.peers = peers;
     if (!found || !peers) {
@@ -420,7 +430,7 @@ function threadItem(r: ThreadRow): HTMLLIElement {
   head.append(tags);
   li.append(head);
   li.append(r.text ? el('p', r.text, 'rf-text') : el('p', msg('thread-no-text'), 'rf-text muted'));
-  li.append(link(commentUrl(r.cl, r.uuid), msg('thread-link')));
+  li.append(link(commentUrl(r.cl, r.uuid), msg(r.uuid ? 'thread-link' : 'thread-link-cl')));
   return li;
 }
 

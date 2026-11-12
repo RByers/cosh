@@ -29,26 +29,50 @@ export interface PeriodVals {
   x: Record<Metric, number | null>;
 }
 
-/** [comment uuid, file index, days after the change landed, addressed (null:
- * not labelled), directory index, excerpt (last year only)]. */
+/** [comment uuid (empty when there's no excerpt: link the change instead),
+ * file index, days after the change landed, addressed (null: not labelled),
+ * directory index, excerpt (only where comment text is collected)]. */
 export type Thread = [string, number, number | null, 0 | 1 | null, number, string?];
 /** [directory index, share of the change's lines, the owner's earlier commits there]. */
 export type Unit = [number, number, number];
 /** [change number, day landed (days since 1970), lines, expected threads by
  * size, by size and directory, expected addressed by size, by size and
- * directory, units, threads]. */
-export type ClRow = [number, number, number, number, number, number, number, Unit[], Thread[]];
+ * directory, units, threads, org index]. */
+export type ClRow = [number, number, number, number, number, number, number, Unit[], Thread[], number];
 
-export interface Person {
-  v: 1;
-  generated: string;
+type Tone = { received: number; praise: number; share: number | null; ten: string | null };
+type Praise = [number, string, number, string][];
+
+/** u/<key>.json: who the person is and which half-year files they have. */
+export interface Top {
+  v: 2;
   first: string | null;
-  periods: Record<string, PeriodVals>;
-  tone: { received: number; praise: number; share: number | null; ten: string | null };
+  /** First commit on main, as a day number. */
+  first_day: number | null;
+  halves: string[];
+  tone: Tone;
   /** [change number, uuid, day, excerpt], newest first. */
-  praise: [number, string, number, string][];
+  praise: Praise;
+}
+
+/** <half>/<key>.json: one half-year's changes, with names listed once. */
+export interface Shard {
   dirs: string[];
   files: string[];
+  orgs: string[];
+  cls: ClRow[];
+}
+
+/** A person's files merged, with every period's values. */
+export interface Person {
+  first: string | null;
+  firstDay: number | null;
+  periods: Record<string, PeriodVals>;
+  tone: Tone;
+  praise: Praise;
+  dirs: string[];
+  files: string[];
+  orgs: string[];
   cls: ClRow[];
 }
 
@@ -270,3 +294,96 @@ export function commentUrl(cl: number, uuid?: string): string {
 export const halves = (periods: string[]) => periods.filter((p) => /^\d{4}H[12]$/.test(p)).sort();
 /** Calendar-year periods in order. */
 export const years = (periods: string[]) => periods.filter((p) => /^\d{4}$/.test(p)).sort();
+
+// ---- Merging a person's files, and their values per period
+
+/** The half-year files merged into one person, names re-indexed. */
+export function mergePerson(top: Top, shards: Shard[]): Omit<Person, 'periods'> {
+  const tables = { dirs: new Map<string, number>(), files: new Map<string, number>(), orgs: new Map<string, number>() };
+  const at = (t: Map<string, number>, name: string) => {
+    let i = t.get(name);
+    if (i === undefined) t.set(name, (i = t.size));
+    return i;
+  };
+  const cls: ClRow[] = [];
+  for (const s of shards) {
+    const d = s.dirs.map((x) => at(tables.dirs, x));
+    const f = s.files.map((x) => at(tables.files, x));
+    const o = s.orgs.map((x) => at(tables.orgs, x));
+    for (const c of s.cls) {
+      const units = c[7].map(([di, w, prior]): Unit => [d[di], w, prior]);
+      const threads = c[8].map((t): Thread => {
+        const r: Thread = [t[0], f[t[1]], t[2], t[3], d[t[4]]];
+        if (t.length > 5) r.push(t[5]);
+        return r;
+      });
+      cls.push([c[0], c[1], c[2], c[3], c[4], c[5], c[6], units, threads, o[c[9]]]);
+    }
+  }
+  cls.sort((a, b) => a[1] - b[1] || a[0] - b[0]);
+  return { first: top.first, firstDay: top.first_day, tone: top.tone, praise: top.praise,
+    dirs: [...tables.dirs.keys()], files: [...tables.files.keys()], orgs: [...tables.orgs.keys()], cls };
+}
+
+const r3 = (x: number) => Math.round(x * 1000) / 1000;
+const METRICS: Metric[] = ['tn', 'ts', 'td', 'an', 'as', 'ad'];
+
+function median(xs: number[]): number {
+  const s = [...xs].sort((a, b) => a - b);
+  const m = s.length >> 1;
+  return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2;
+}
+
+export const tenureBand = (y: number) => (y < 1 ? '<1y' : y < 2 ? '1-2y' : y < 5 ? '2-5y' : y < 10 ? '5-10y' : '10y+');
+
+/** A person's values for one period, as scripts/review_feedback.py
+ * `person_period` computes them for the peer groups: totals, tenure at the
+ * median change, the most common org, whether they count among peers, the
+ * measures, and the same measures against everyone's feedback at the same
+ * directory experience (peers.json's pooled `rel` per band). */
+export function periodVals(p: Omit<Person, 'periods'>, peers: Peers, period: string): PeriodVals | undefined {
+  const cs = clsIn(p as Person, period);
+  if (!cs.length) return undefined;
+  let threads = 0;
+  let addressed = 0;
+  const exp = { ts: 0, td: 0, as: 0, ad: 0 };
+  const orgCount = new Map<number, number>();
+  for (const c of cs) {
+    threads += c[8].length;
+    addressed += c[8].filter((t) => t[3]).length;
+    exp.ts += c[3];
+    exp.td += c[4];
+    exp.as += c[5];
+    exp.ad += c[6];
+    orgCount.set(c[9], (orgCount.get(c[9]) ?? 0) + 1);
+  }
+  // Most common org; ties go to the one seen first (Python's Counter.most_common).
+  let org = cs[0][9];
+  for (const [o, n] of orgCount) if (n > orgCount.get(org)!) org = o;
+  const ten = p.firstDay === null ? null : tenureBand(median(cs.map((c) => (c[1] - p.firstDay!) / 365.25)));
+  const v = {} as Record<Metric, number | null>;
+  const x = {} as Record<Metric, number | null>;
+  const bands = peers.bands[period];
+  for (const m of METRICS) {
+    const num = m[0] === 't' ? threads : addressed;
+    const den = m[1] === 'n' ? cs.length : exp[m as keyof typeof exp];
+    v[m] = den ? r3(num / den) : null;
+    let xe = 0;
+    for (const c of cs)
+      for (const [, w, prior] of c[7]) xe += (m[1] === 'n' ? w : w * expected(c, m)) * (bands?.[m]?.[xpBand(prior)]?.rel ?? 1);
+    x[m] = xe ? r3(num / xe) : null;
+  }
+  return { cls: cs.length, threads, addressed, ten, org: p.orgs[org], ok: cs.length >= peers.min_cls && exp.td >= peers.min_exp,
+    v, x };
+}
+
+/** A person ready for the page: merged, with values for every period they have changes in. */
+export function buildPerson(top: Top, shards: Shard[], peers: Peers): Person {
+  const base = mergePerson(top, shards);
+  const periods: Record<string, PeriodVals> = {};
+  for (const period of peers.periods) {
+    const vals = periodVals(base, peers, period);
+    if (vals) periods[period] = vals;
+  }
+  return { ...base, periods };
+}

@@ -45,11 +45,12 @@ index, `docs/balance.md` section 4; mechanical CLs from `mech.jsonl`):
   chart and table give the person's feedback per band against everyone's.
 - **Directories**: CLs, threads, expected threads and earlier commits per
   directory; selecting one filters the comment list.
-- **Comments**: every reviewer thread, newest first, with file, date,
-  addressed or not, and a Gerrit link. Text excerpts (200 characters) are
-  included for threads in the year whose comment text is collected for tone,
-  2025-W45 .. 2026-W44 (`data/private/sentiment/comments-*.jsonl`); older ones
-  link to Gerrit only.
+- **Comments**: every reviewer thread, newest first, with file, date and
+  addressed or not. Threads whose text has been collected (every week in
+  `data/private/sentiment/comments-*.jsonl`, 2025-W45 on today) get a
+  200-character excerpt and a link to the comment itself; the others get
+  neither, and link to their CL (their comment ids would be 29% of the data,
+  2026-11-11).
 - **Praise received** in that year: comments to the person on their own CLs
   from someone else scored glowing (≥ +0.4, `cosh.sentiment.GLOWING`), the
   share of all comments to them, the peers' median share (all authors or the
@@ -85,16 +86,42 @@ COSH_DATA_DIR=<main>/data/private nice -n 5 python3 scripts/review_feedback.py \
 ```
 
 Output (default `web/public/review-feedback/`, which Vite copies into the
-site): `peers.json` (about 0.5 MB) and `u/<key>.json`, one per person (4,009
-people and 64 address stubs on 2026-11-11; 124 MB in all, 45 MB gzipped; the
-largest file 0.6 MB). The `u/` folder is replaced on each run.
+site), with `<key>` the hash of the person's address:
 
-**Not committed yet.** `web/public/review-feedback/` is gitignored: 45 MB
-gzipped per refresh is a lot to add to the repository's permanent history,
-so publishing it on GitHub Pages waits for the user's decision. Until then the
+- `peers.json`: every peer group's quantiles per period and measure, and
+  everyone's pooled feedback per directory-experience band.
+- `u/<key>.json`: first commit, which half-years the person has files for,
+  and praise received. Small (0.8 MB gzipped for everyone) and rewritten on
+  every run. Each other address of the person is a stub `{"see": <key>}`.
+- `<half-year>/<key>.json` (`2023H2` … `2026H2`): that half-year's CLs, with
+  their directory splits, threads and excerpts, and the directory, file and
+  org names listed once (`shard` in the script).
+
+The page computes everything else from these, the same way the script does
+for the peer groups: totals for any period, tenure, org, whether the person
+counts among peers, the measures, and the same-experience measure (from
+`peers.json`'s rounded `rel` per band). To keep the two in step, the script
+rounds the norms and line shares where it computes them, and counts tenure
+in whole days. `--check FILE` writes the script's values for 300 people;
+on 2026-11-11 the page's matched all 54,126 of them to the last digit.
+
+So a half-year's files don't change once it is over, as long as the inputs
+don't (the 2023–24 norms, labels, mechanical list, identity merge and
+collected comment text): git stores them once. Each run rewrites the
+current half-year, `u/` and `peers.json`.
+
+Sizes on 2026-11-11 (4,009 people, 64 stubs), gzipped file by file as git
+stores them: 2.6–2.9 MB per half-year for 2023 H2 – 2025 H1, 4.8 MB for 2025
+H2, 12.5 and 10.7 MB for 2026 H1 and H2 (those have the excerpts), 0.9 MB for
+`u/` and `peers.json`: 40 MB in all, 110 MB unpacked. The script replaces
+`u/` and every half-year folder on each run.
+
+**Not committed yet.** `web/public/review-feedback/` is gitignored, so
+publishing it on GitHub Pages waits for the user's decision. Until then the
 page works wherever the folder has been generated (`npm run serve` in the
 main checkout), and the browser tests serve a made-up person
-(`web/test/feedback-fixture.ts`).
+(`web/test/feedback-fixture.ts`). The inputs used on 2026-11-11 are kept in
+`data/private/review_feedback_inputs/`.
 
 ## Caveats
 

@@ -3220,7 +3220,7 @@ test('a touch anywhere off a chart closes its hover card, on every page with cha
 // committed, so these tests serve the made-up person in feedback-fixture.ts.
 
 async function feedbackPage(): Promise<{ page: Page; errors: string[] }> {
-  const { person, peers, FIXTURE_KEY, ALIAS_KEY } = await import('./feedback-fixture.ts');
+  const { top, shards, peers, FIXTURE_KEY, ALIAS_KEY } = await import('./feedback-fixture.ts');
   const page = await browser.newPage();
   await page.setViewport({ width: 1100, height: 900 });
   const errors: string[] = [];
@@ -3231,7 +3231,9 @@ async function feedbackPage(): Promise<{ page: Page; errors: string[] }> {
     const path = new URL(r.url()).pathname;
     const json = (body: unknown) => void r.respond({ status: 200, contentType: 'application/json', body: JSON.stringify(body) });
     if (path.endsWith('/review-feedback/peers.json')) json(peers);
-    else if (path.endsWith(`/review-feedback/u/${FIXTURE_KEY}.json`)) json(person);
+    else if (path.endsWith(`/review-feedback/u/${FIXTURE_KEY}.json`)) json(top);
+    else if (/\/review-feedback\/\d{4}H[12]\//.test(path) && path.endsWith(`/${FIXTURE_KEY}.json`))
+      json(shards[path.split('/').at(-2)!]);
     else if (path.endsWith(`/review-feedback/u/${ALIAS_KEY}.json`)) json({ see: FIXTURE_KEY });
     else if (path.includes('/review-feedback/u/')) void r.respond({ status: 404, body: 'not found' });
     else void r.continue();
@@ -3280,16 +3282,17 @@ test('review feedback: a person, the measures, peer groups, directories and comm
   const tile = (id: string) => page.$eval(`#${id} .tile-value`, (e) => e.textContent);
   assert.equal(await tile('rf-tile-cls'), '3');
   assert.equal(await tile('rf-tile-threads'), '5');
-  assert.equal(await tile('rf-tile-you'), '1.20×');
-  // Peers 'all': quantiles 0.4..3 evenly, so the median is 1.7 and 1.2 sits at 8/26ths.
+  // The page computes the values from the half-year files (unit tests check the arithmetic).
+  assert.equal(await tile('rf-tile-you'), '0.71×');
+  // Peers 'all': quantiles 0.4..3 evenly, so the median is 1.7 and 0.714 sits at 12%.
   assert.equal(await tile('rf-tile-peers'), '1.70×');
-  assert.equal(await tile('rf-tile-rank'), '31%');
+  assert.equal(await tile('rf-tile-rank'), '12%');
   assert.ok(await page.evaluate(() => !!window.__rf!.charts.trend && !!window.__rf!.charts.xp));
   // Addressed only, per change.
   await page.click('input[name="rf-kind"][value="a"]');
   await page.click('input[name="rf-corr"][value="n"]');
   assert.equal(await tile('rf-tile-threads'), '3');
-  assert.equal(await tile('rf-tile-you'), '0.80');
+  assert.equal(await tile('rf-tile-you'), '1.00');
   assert.match(await page.$eval('#summary-sub', (e) => e.textContent!), /you addressed per change you landed/);
   assert.equal(await page.$eval('#comments-sub', (e) => e.textContent!.split(' ')[0]), '3');
   await page.click('input[name="rf-kind"][value="t"]');
@@ -3297,7 +3300,7 @@ test('review feedback: a person, the measures, peer groups, directories and comm
   // Same experience per directory reads the adjusted value; Igalia has no peers for this measure,
   // and orgs get no tone figures.
   await page.select('#rf-peers', 'dirxp');
-  assert.equal(await tile('rf-tile-you'), '1.10×');
+  assert.equal(await tile('rf-tile-you'), '0.49×');
   await page.select('#rf-peers', 'org:igalia');
   assert.equal(await tile('rf-tile-peers'), '–');
   assert.match(await page.$eval('#rf-praise-note', (e) => e.textContent!), /Organizations get no tone figures/);
@@ -3319,7 +3322,7 @@ test('review feedback: a person, the measures, peer groups, directories and comm
   const links = await page.$$eval('#rf-threads a, #rf-praise a', (as) => as.map((a) => [a.getAttribute('href'), a.getAttribute('target')]));
   assert.ok(links.length >= 4);
   for (const [href, target] of links) {
-    assert.match(href!, /^https:\/\/chromium-review\.googlesource\.com\/c\/chromium\/src\/\+\/\d+\/comment\/[\w%]+\/$/);
+    assert.match(href!, /^https:\/\/chromium-review\.googlesource\.com\/c\/chromium\/src\/\+\/\d+(\/comment\/[\w%]+\/)?$/);
     assert.equal(target, '_blank');
   }
   // A half-year: one change.

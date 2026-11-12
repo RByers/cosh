@@ -23,6 +23,8 @@ marks a comment, a person or an org as negative, and orgs get no tone figures.
 
 import argparse
 import bisect
+import glob
+import re
 import hashlib
 import json
 import os
@@ -178,6 +180,7 @@ def main():
     ap.add_argument("--first-commit", required=True)
     ap.add_argument("--mech", required=True)
     ap.add_argument("--out", default=OUT)
+    ap.add_argument("--check", help="also write some people's per-period values here, to compare with the page's")
     args = ap.parse_args()
     import balance_growth as G
 
@@ -221,6 +224,9 @@ def main():
         c["d2"] = top2.get(c["change_number"])
     norms(use)
     use = [c for c in use if START <= c["closed_at"] < END]
+    for c in use:           # the page sums the rounded values, so compute with them here too
+        for k in ("exp_ts", "exp_td", "exp_as", "exp_ad"):
+            c[k] = r3(c[k])
     by_n = {c["change_number"]: c for c in use}
     print(f"{len(use):,} CLs in range", file=sys.stderr, flush=True)
 
@@ -235,11 +241,12 @@ def main():
         n = c["change_number"]
         day = datetime.fromtimestamp(c["closed_at"], timezone.utc).strftime("%Y-%m-%d")
         c["org"] = orgs(raw_email.get(n), day)
-        c["ten"] = (c["closed_at"] - first[c["pid"]]) / YEAR if c["pid"] in first else None
+        # Tenure in whole days, as the page computes it from the day numbers it has.
+        c["ten"] = (epoch_day(c["closed_at"]) - epoch_day(first[c["pid"]])) / 365.25 if c["pid"] in first else None
         w = cl_dirs.get(n) or {"(root)/": 1}
         tot = sum(w.values())
         at = landed_at.get(n, c["closed_at"])
-        c["units"] = {d: [v / tot, bisect.bisect_left(xp_times.get((c["pid"], d), ()), at)]
+        c["units"] = {d: [r3(v / tot), bisect.bisect_left(xp_times.get((c["pid"], d), ()), at)]
                       for d, v in w.items()}
         c["main"] = max(w, key=w.get)
         c["thr"] = []
@@ -294,14 +301,19 @@ def main():
             e = acct_email.get(acct)
             tone_pid[acct] = ids.find(e) if e and not A.is_bot_email(e) else None
         return tone_pid[acct]
-    for w in TONE_WEEKS:
-        path = os.path.join(sentiment.out_dir(store.DATA_DIR), f"comments-{w}.jsonl")
+    # Excerpts come from every week whose comment text has been collected, so a
+    # half-year's file keeps them on later runs; praise only from the scored year.
+    tone = set(TONE_WEEKS)
+    for path in sorted(glob.glob(os.path.join(sentiment.out_dir(store.DATA_DIR), "comments-*-W*.jsonl"))):
+        w = os.path.basename(path)[len("comments-"):-len(".jsonl")]
         with open(path) as f:
             for line in f:
                 r = json.loads(line)
                 i = r["id"]
                 if i in roots:
                     text[i] = excerpt(r.get("text"))
+                if w not in tone:
+                    continue
                 if sentiment.is_self_note(r) or i not in scores or sentiment._target_kind(r) != "person":
                     continue
                 if r.get("target") != r.get("owner") or r.get("author") == r.get("owner"):
@@ -394,7 +406,7 @@ def main():
                 bo[(m, b)][1] += dn
                 bo[(m, b)][2] += w
                 rb, ov = rate.get((p, m, b)), overall.get((p, m))
-                xe[m] += dn * (rb / ov if rb and ov else 1.0)
+                xe[m] += dn * (r3(rb / ov) if rb and ov else 1.0)     # peers.json's `rel`
         for m in METRICS:
             v = value(s, m)
             out["v"][m] = None if v is None else r3(v)
@@ -463,61 +475,49 @@ def main():
         peers["tone"][f"ten:{t}"] = dict(n=len(xs), q=quantiles(xs))
 
     # ------------------------------------------------ write
+    # u/<key>.json: who the person is, which half-years they have, and praise
+    # (it changes on every run). <half>/<key>.json: that half-year's CLs, which
+    # later runs leave unchanged once the half-year is over, so git stores them once.
     out = args.out
-    if os.path.isdir(os.path.join(out, "u")):
-        shutil.rmtree(os.path.join(out, "u"))
-    os.makedirs(os.path.join(out, "u"))
+    for name in os.listdir(out) if os.path.isdir(out) else ():
+        if name == "u" or HALF.match(name):
+            shutil.rmtree(os.path.join(out, name))
+    os.makedirs(os.path.join(out, "u"), exist_ok=True)
     with open(os.path.join(out, "peers.json"), "w") as f:
         json.dump(peers, f, separators=(",", ":"))
     written, stubs, size = 0, 0, 0
     taken = {}
+    check = {}
     for pid, cs in people.items():
-        cs.sort(key=lambda c: c["closed_at"])
-        files, fidx, dirs, didx = [], {}, [], {}
-
-        def fi(x):
-            if x not in fidx:
-                fidx[x] = len(files)
-                files.append(x)
-            return fidx[x]
-
-        def di(x):
-            if x not in didx:
-                didx[x] = len(dirs)
-                dirs.append(x)
-            return didx[x]
-        rows = []
+        k = key(pid)
+        if k in taken:
+            print("hash collision, skipped one person", file=sys.stderr)
+            continue
+        taken[k] = pid
+        cs.sort(key=lambda c: (c["closed_at"], c["change_number"]))
+        by_half = defaultdict(list)
         for c in cs:
-            n = c["change_number"]
-            d0 = epoch_day(c["closed_at"])
-            units = [[di(dd), r3(w), prior] for dd, (w, prior) in sorted(c["units"].items(), key=lambda kv: -kv[1][0])]
-            thr = []
-            for root, path, at, addr, dd in sorted(c["thr"], key=lambda t: t[2]):
-                t = [root, fi(path), (day_of(at) - d0) if at else None, None if addr is None else int(bool(addr)), di(dd)]
-                if f"{n}/{root}" in text:
-                    t.append(text[f"{n}/{root}"])
-                thr.append(t)
-            rows.append([n, d0, c["lines"], r3(c["exp_ts"]), r3(c["exp_td"]), r3(c["exp_as"]), r3(c["exp_ad"]),
-                         units, thr])
+            by_half[half(c["closed_at"])].append(c)
+        for h, hcs in sorted(by_half.items()):
+            data = json.dumps(shard(hcs, text), separators=(",", ":"), ensure_ascii=False)
+            os.makedirs(os.path.join(out, h), exist_ok=True)
+            with open(os.path.join(out, h, f"{k}.json"), "w") as f:
+                f.write(data)
+            size += len(data.encode())
         r = received.get(pid, {})
-        doc = dict(v=1, generated=peers["generated"],
-                   first=datetime.fromtimestamp(first[pid], timezone.utc).strftime("%Y-%m") if pid in first else None,
-                   periods={p: {k: v for k, v in x.items() if k != "bands"} for p, x in per[pid].items()},
+        top = dict(v=2, first=datetime.fromtimestamp(first[pid], timezone.utc).strftime("%Y-%m") if pid in first else None,
+                   first_day=epoch_day(first[pid]) if pid in first else None, halves=sorted(by_half),
                    tone=dict(received=r.get("tone", 0), praise=r.get("praise", 0), share=tone_share(pid),
                              ten=tenure_band((TONE_END_T - first[pid]) / YEAR) if pid in first else None),
                    praise=[[n, u, day_of(day), t] for n, u, day, t in sorted(praise.get(pid, []), key=lambda x: x[2],
-                                                                            reverse=True)],
-                   dirs=dirs, files=files, cls=rows)
-        k = key(pid)
-        if k in taken:
-            print(f"hash collision, skipped one person", file=sys.stderr)
-            continue
-        taken[k] = pid
-        data = json.dumps(doc, separators=(",", ":"), ensure_ascii=False)
+                                                                            reverse=True)])
+        data = json.dumps(top, separators=(",", ":"), ensure_ascii=False)
         with open(os.path.join(out, "u", f"{k}.json"), "w") as f:
             f.write(data)
         size += len(data.encode())
         written += 1
+        if args.check and len(check) < 300:
+            check[k] = {p: {x: v for x, v in pp.items() if x != "bands"} for p, pp in per[pid].items()}
     for pid in people:
         for e in emails_of.get(pid, ()):
             k = key(e)
@@ -527,8 +527,45 @@ def main():
             with open(os.path.join(out, "u", f"{k}.json"), "w") as f:
                 f.write(json.dumps(dict(see=key(pid))))
             stubs += 1
+    if args.check:
+        with open(args.check, "w") as f:
+            json.dump(check, f)
     print(f"wrote {written:,} people ({size / 1e6:.1f} MB) and {stubs:,} other addresses to {out}",
           file=sys.stderr)
+
+
+HALF = re.compile(r"^\d{4}H[12]$")
+
+
+def shard(cs, text):
+    """One person's CLs of one half-year, oldest first: [change number, day
+    landed, lines, expected threads by size, by size and directory, expected
+    addressed by size, by size and directory, [[directory, line share,
+    earlier commits]], [[comment uuid, file, days after landing, addressed,
+    directory, excerpt]], org], with directory, file and org names listed
+    once. A thread without an excerpt has an empty uuid: the page links its
+    CL instead."""
+    files, dirs, orgs = {}, {}, {}
+
+    def idx(table, x):
+        return table.setdefault(x, len(table))
+    rows = []
+    for c in cs:
+        n = c["change_number"]
+        d0 = epoch_day(c["closed_at"])
+        units = [[idx(dirs, dd), w, prior]
+                 for dd, (w, prior) in sorted(c["units"].items(), key=lambda kv: (-kv[1][0], kv[0]))]
+        thr = []
+        for root, path, at, addr, dd in sorted(c["thr"], key=lambda t: (t[2], t[0])):
+            ex = text.get(f"{n}/{root}")
+            t = [root if ex is not None else "", idx(files, path), (day_of(at) - d0) if at else None,
+                 None if addr is None else int(bool(addr)), idx(dirs, dd)]
+            if ex is not None:
+                t.append(ex)
+            thr.append(t)
+        rows.append([n, d0, c["lines"], c["exp_ts"], c["exp_td"], c["exp_as"], c["exp_ad"], units, thr,
+                     idx(orgs, c["org"])])
+    return dict(dirs=list(dirs), files=list(files), orgs=list(orgs), cls=rows)
 
 
 TONE_END_T = END

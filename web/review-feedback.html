@@ -195,8 +195,9 @@
         <p id="comments-sub" class="sub"></p>
         <template data-msg="comments-sub">
           <slot name="n"></slot> reviewer threads<span data-if="kind=a"> you addressed</span><span data-if="dir"> in
-          <code><slot name="dir"></slot></code></span>, newest first, each linked to its review. Text is shown for
-          threads started from November 2025 on; open older ones in Gerrit.
+          <code><slot name="dir"></slot></code></span>, newest first, each linked to its review. Text and a link to
+          the comment itself are included for threads whose text has been collected (from November 2025 on); older
+          ones link to their change.
         </template>
         <div class="toggles">
           <div class="select-toggle">
@@ -217,8 +218,9 @@
         <template data-msg="thread-addressed">addressed</template>
         <template data-msg="thread-not-addressed">not addressed</template>
         <template data-msg="thread-praise">praise</template>
-        <template data-msg="thread-no-text">Text not included; open it in Gerrit.</template>
+        <template data-msg="thread-no-text">Text not included; find it on the change in Gerrit.</template>
         <template data-msg="thread-link">Open in Gerrit</template>
+        <template data-msg="thread-link-cl">Open the change in Gerrit</template>
       </section>
 
       <section id="praise" class="card" aria-labelledby="praise-title">
