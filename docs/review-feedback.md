@@ -41,8 +41,8 @@ they switch to the years versions described below (`introAxis` in
   mechanical ones), each counted with `MIN_CLS` and `MIN_EXP` like a year,
   and the ratio of one doubling's value to the one before. A doubling
   counts from the day its first commit landed, which must be on or after
-  where the measure's data begins (2018 for all threads, the range start for
-  directory experience, `addr_start` for addressed). On 2026-11-12: 3,741
+  where the measure's data begins (2018 for all threads and directory
+  experience, `addr_start` for addressed). On 2026-11-12: 3,741
   doublings from 1,636 people, median 19.1% less feedback per doubling
   (addressed: 1,529 from 791, 23.3%).
 - *All or addressed by changes:* the same half-years in the `CHG_EDGES`
@@ -63,9 +63,10 @@ The years versions:
   2018, 2020, 2022, 2024 and 2025 for all threads. For those, the script also counts the merged, human-owned
   CLs on `main` from 2018 to June 2023 in `derived.sqlite` (about 494k),
   against the same 2023–24 norms; older CLs leave out only those with 100+
-  files (`mech.jsonl` covers 2023 on). Addressed labels and directory
-  experience exist only from the data's start (July 2023), so with those the lines start in
-  2023. On 2026-11-12 the curves line up: 2.2–2.5× in the first half-year
+  files (`mech.jsonl` covers 2023 on). Directory experience covers
+  the same years (`balance.sqlite` has CLs from July 2017 since 2026-11-12),
+  so its lines start in 2018 too; addressed labels exist only from
+  `addr_start`, so with those the lines start later. On 2026-11-12 the curves line up: 2.2–2.5× in the first half-year
   for every start year from 2018 to 2024 (size and directory, all threads).
 - *Year-over-year change:* every contributor-year (`yearly_changes`): for
   each person and pair of consecutive calendar years in which they landed
@@ -76,8 +77,8 @@ The years versions:
   every rise above 30% in one open-ended bin while the same span of falls
   was split over five, so noise piled up in "grew 30%+" (16–20% of all
   values). All reviewer threads use every CL from 2018 (older ones as for
-  the cohort curves). Addressed threads and directory experience use whole
-  years from their start (2024 on), with the same values as the person's
+  the cohort curves). Directory experience also uses whole years from 2018; addressed threads use whole
+  years from `addr_start`, with the same values as the person's
   sections. A pair counts for an org group by the later year's org. On
   2026-11-12: 5,240 changes from 1,561 people, median 16% less feedback a
   year (21% for addressed threads); bins 7, 8, 13, 17, 19 | 16, 9, 6, 3, 3%.

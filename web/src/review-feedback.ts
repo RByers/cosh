@@ -278,7 +278,8 @@ function renderIntro() {
   const org = state.org === 'all' ? '' : msg(`org-name-${state.org}`);
   const [from, to] = rangeOf(peers, state.kind);
   const vars = { kind: state.kind, corr: state.corr, dirxp: state.tenure === 'dir', org, min: fmtInt(peers.min_cohort),
-    limited: state.kind === 'a' || state.tenure === 'dir', chg,
+    // Only addressed threads start later: directory experience covers the same years as all threads.
+    limited: state.kind === 'a', chg,
     minCls: fmtInt(peers.min_cls), minCohortCls: fmtInt(peers.min_cohort_cls),
     from: monthOf(fromMonth(from), true), to: monthOf(toMonth(to), true) };
   put($('#rf-cohorts-note'), 'cohorts-note', vars);
