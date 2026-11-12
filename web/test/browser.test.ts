@@ -3284,11 +3284,12 @@ test('review feedback: a person, the measures, peer groups, directories and comm
   assert.equal(await tile('rf-tile-threads'), '5');
   // The page computes the values from the half-year files (unit tests check the arithmetic).
   assert.equal(await tile('rf-tile-you'), '0.71×');
-  // Peers default to the same tenure.
-  assert.equal(await page.$eval('#rf-peers', (s) => (s as HTMLSelectElement).value), 'ten');
-  assert.match(await page.$eval('#rf-tile-peers .tile-sub', (e) => e.textContent!), /^Tenure 2–5 years/);
-  await page.select('#rf-peers', 'all');
-  // Peers 'all': quantiles 0.4..3 evenly, so the median is 1.7 and 0.714 sits at 12%.
+  // Peers are all authors with the same years since their first commit, by default.
+  assert.equal(await page.$eval('#rf-tenure', (s) => (s as HTMLSelectElement).value), 'time');
+  assert.equal(await page.$eval('#rf-org', (s) => (s as HTMLSelectElement).value), 'all');
+  assert.match(await page.$eval('#rf-tile-peers .tile-sub', (e) => e.textContent!),
+    /^All authors, 2–5 years since their first commit: 120 authors,/);
+  // Peers 'time:2-5y:all': quantiles 0.4..3 evenly, so the median is 1.7 and 0.714 sits at 12%.
   assert.equal(await tile('rf-tile-peers'), '1.70×');
   assert.equal(await tile('rf-tile-rank'), '12%');
   assert.ok(await page.evaluate(() => !!window.__rf!.charts.trend && !!window.__rf!.charts.xp));
@@ -3301,15 +3302,23 @@ test('review feedback: a person, the measures, peer groups, directories and comm
   assert.equal(await page.$eval('#comments-sub', (e) => e.textContent!.split(' ')[0]), '3');
   await page.click('input[name="rf-kind"][value="t"]');
   await page.click('input[name="rf-corr"][value="d"]');
-  // Same experience per directory reads the adjusted value; Igalia has no peers for this measure,
-  // and orgs get no tone figures.
-  await page.select('#rf-peers', 'dirxp');
+  // Experience per directory reads the adjusted value; outside Google there are too few peers of the
+  // person's years for this measure, and orgs get no tone figures.
+  const peersSub = () => page.$eval('#rf-tile-peers .tile-sub', (e) => e.textContent!);
+  await page.select('#rf-tenure', 'dir');
   assert.equal(await tile('rf-tile-you'), '0.49×');
-  await page.select('#rf-peers', 'org:igalia');
+  assert.match(await peersSub(), /^All authors, by experience in each directory/);
+  assert.match(await page.$eval('#rf-praise-note', (e) => e.textContent!), /compares by years/);
+  await page.select('#rf-tenure', 'changes');
+  assert.match(await peersSub(), /^All authors, 50–199 earlier changes/);
+  assert.equal(await tile('rf-tile-peers'), '1.65×');
+  assert.match(await page.$eval('#rf-tile-praise-peers .tile-sub', (e) => e.textContent!), /50–199 earlier changes: 150/);
+  await page.select('#rf-tenure', 'time');
+  await page.select('#rf-org', 'nongoogle');
   assert.equal(await tile('rf-tile-peers'), '–');
   assert.match(await page.$eval('#rf-praise-note', (e) => e.textContent!), /Organizations get no tone figures/);
-  await page.select('#rf-peers', 'ten');
-  assert.match(await page.$eval('#rf-tile-peers .tile-sub', (e) => e.textContent!), /^Tenure 2–5 years/);
+  await page.select('#rf-org', 'google');
+  assert.match(await peersSub(), /^Google authors, 2–5 years since their first commit/);
   // Directories: selecting one lists only its comments.
   assert.deepEqual(await page.$$eval('#rf-dirs tbody th', (ths) => ths.map((t) => t.textContent)),
     ['chrome/browser/ui/', 'third_party/blink/renderer/', 'content/browser/']);

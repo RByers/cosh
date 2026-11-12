@@ -30,8 +30,8 @@
           compare with other authors? Reviewers start fewer threads on a change as its author learns the
           code, so the feedback on your changes is one view of where you are still learning. Type your email
           address to see the reviewer threads on every change you landed since July 2023, set against
-          authors with the same tenure, in the same organization, or with the same experience in each
-          directory you changed.
+          authors with the same tenure: the same years since their first commit, the same number of changes
+          landed before, or the same experience in each directory you changed.
         </p>
         <p>
           It counts feedback, not quality. Reviewers, teams and kinds of work differ a lot, and some of the
@@ -73,15 +73,19 @@
           <label><input type="radio" name="rf-corr" value="d" checked />Size and directory</label>
         </fieldset>
         <div class="select-toggle">
-          <label for="rf-peers">Compare with</label>
-          <select id="rf-peers">
-            <option value="ten">Same tenure</option>
+          <label for="rf-tenure">Same tenure by</label>
+          <select id="rf-tenure">
+            <option value="time">Years since first commit</option>
+            <option value="changes">Changes landed before</option>
+            <option value="dir">Experience in each directory</option>
+          </select>
+        </div>
+        <div class="select-toggle select-short">
+          <label for="rf-org">Peers</label>
+          <select id="rf-org">
             <option value="all">All authors</option>
-            <option value="dirxp">Same experience in each directory</option>
-            <option value="org:google">Google</option>
-            <option value="org:microsoft">Microsoft</option>
-            <option value="org:igalia">Igalia</option>
-            <option value="org:nongoogle">Everyone outside Google</option>
+            <option value="google">Google</option>
+            <option value="nongoogle">Outside Google</option>
           </select>
         </div>
       </div>
@@ -104,7 +108,7 @@
           data-if="corr=d">Reviewer threads<span data-if="kind=a"> you addressed</span> on your changes, against the
           2023–24 average for changes of the same size in the same top-level directory: 1.00× is typical. This is
           the Review Balance page's feedback index<span data-if="kind=a"> for addressed threads</span>.</span>
-          <span data-if="peers=dirxp">Here both you and your peers are measured against authors with the same
+          <span data-if="tenure=dir">Here both you and your peers are measured against authors with the same
           number of earlier commits in each directory, so 1.00× is typical for that experience.</span>
           <span data-if="!eligible">You landed too few changes in these dates to be placed among peers
           (<slot name="minCls"></slot> or more are needed), so treat your figure with care.</span>
@@ -120,17 +124,19 @@
         <template data-msg="tile-threads-t">Reviewer threads</template>
         <template data-msg="tile-peers-sub"><slot name="group"></slot>: <slot name="n"></slot> authors, middle half
           <slot name="lo"></slot> – <slot name="hi"></slot></template>
-        <template data-msg="group-all">All authors</template>
-        <template data-msg="group-ten">Tenure <slot name="band"></slot></template>
-        <template data-msg="group-ten-none">Tenure unknown</template>
-        <template data-msg="group-dirxp">Same experience per directory</template>
-        <template data-msg="group-org:google">Google</template>
-        <template data-msg="group-org:microsoft">Microsoft</template>
-        <template data-msg="group-org:igalia">Igalia</template>
-        <template data-msg="group-org:nongoogle">Outside Google</template>
+        <template data-msg="org-all">All authors</template>
+        <template data-msg="org-google">Google authors</template>
+        <template data-msg="org-nongoogle">Authors outside Google</template>
+        <template data-msg="group-time"><slot name="org"></slot>, <slot name="band"></slot> since their first
+          commit</template>
+        <template data-msg="group-changes"><slot name="org"></slot>, <slot name="band"></slot> earlier
+          changes</template>
+        <template data-msg="group-dir"><slot name="org"></slot>, by experience in each directory</template>
+        <template data-msg="group-none">Tenure unknown</template>
         <template data-msg="you-facts">
-          Your first commit on main was in <slot name="first"></slot>; in these dates your tenure was
-          <slot name="ten"></slot> and most of your changes were landed as <slot name="org"></slot>.
+          Your first commit on main was in <slot name="first"></slot>. In these dates you were
+          <slot name="ten"></slot> in, with about <slot name="prior"></slot> earlier changes on main, and most
+          of your changes were landed as <slot name="org"></slot>.
         </template>
         <p id="rf-facts" class="note"></p>
         <h3>Over time</h3>
@@ -251,7 +257,9 @@
           <slot name="min"></slot> or more comments to them</template>
         <template data-msg="praise-share"><slot name="n"></slot> (<slot name="share"></slot>)</template>
         <template data-msg="praise-org-note">Organizations get no tone figures, so this compares with all
-          authors.</template>
+          authors of the same tenure.</template>
+        <template data-msg="praise-dir-note">Experience per directory doesn't apply to praise, so this compares
+          by years since the first commit.</template>
         <p id="rf-praise-note" class="note"></p>
         <ul id="rf-praise" class="quotes"></ul>
         <button type="button" id="rf-praise-more" class="rf-more" hidden></button>
@@ -274,11 +282,13 @@
           Adjusting for size compares each change with the 2023–24 average for changes in the same of ten size
           bands (by lines changed); adjusting for directory as well uses the average for that size in the same
           two-level directory, where there are 30 or more such changes. Peers are the authors who landed
-          <span id="rf-min-cls"></span> or more changes in the same dates; tenure counts from a person's first
-          commit on main and is taken at the middle of their changes; an author's organization is the one most of
-          their changes in the dates are attributed to. Comparing with the same experience in each directory
-          divides everyone's feedback by what all authors drew at the same number of earlier commits in that
-          directory.
+          <span id="rf-min-cls"></span> or more changes in the same dates, always with the same tenure, taken at
+          the middle of their changes in the dates. Tenure in years counts from a person's first commit on main.
+          Tenure in changes counts their earlier commits on main since 2017 (reverts left out), in bands of under
+          50, 50–199, 200–499, 500–999 and 1,000 or more. Tenure by experience in each directory divides
+          everyone's feedback by what all authors drew at the same number of earlier commits in that directory.
+          An author's organization is the one most of their changes in the dates are attributed to. Groups of
+          fewer than ten peers get no comparison.
         </p>
         <p class="note">
           Addresses are matched as in the Review Balance page: chromium.org and google.com addresses with the same

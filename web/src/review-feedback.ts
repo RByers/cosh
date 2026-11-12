@@ -7,6 +7,7 @@
 import { Chart, Filler, type ChartDataset } from 'chart.js';
 import { readTheme, type Theme } from './charts.ts';
 import {
+  bandOf,
   buildPerson,
   commentUrl,
   dirTable,
@@ -29,9 +30,10 @@ import {
   type Dist,
   type Kind,
   type Metric,
-  type PeerChoice,
+  type PeerOrg,
   type Peers,
   type Person,
+  type TenureBy,
   type ThreadRow,
 } from './feedback.ts';
 import { fmtDay, fmtInt, fmtNum } from './format.ts';
@@ -59,7 +61,8 @@ const state = {
   period: 'all',
   kind: 't' as Kind,
   corr: 'd' as Corr,
-  peer: 'ten' as PeerChoice,
+  tenure: 'time' as TenureBy,
+  org: 'all' as PeerOrg,
   dir: null as number | null,
   praiseOnly: false,
   threadsShown: PAGE,
@@ -123,13 +126,16 @@ function periodName(p: string): string {
   return p === last ? msg('period-half2-now', { year }) : msg('period-half2', { year });
 }
 
-function groupName(choice: PeerChoice, band: string | null): string {
-  if (choice === 'ten') return band ? msg('group-ten', { band: bandName(band) }) : msg('group-ten-none');
-  return msg(`group-${choice}`);
+/** The peer group's name: who, and their tenure band (null when the person's is unknown). */
+function groupName(by: TenureBy, org: PeerOrg, band: string | null): string {
+  const who = msg(`org-${org}`);
+  if (by === 'dir') return msg('group-dir', { org: who });
+  return band ? msg(`group-${by}`, { org: who, band: bandName(band) }) : msg('group-none');
 }
 
 const BAND_NAMES: Record<string, string> = {
   '<1y': 'under 1 year', '1-2y': '1–2 years', '2-5y': '2–5 years', '5-10y': '5–10 years', '10y+': '10 years or more',
+  '<50': 'under 50', '50-199': '50–199', '200-499': '200–499', '500-999': '500–999', '1000+': '1,000 or more',
 };
 const bandName = (b: string) => BAND_NAMES[b] ?? b;
 
@@ -228,7 +234,7 @@ function renderSummary() {
   const peers = state.peers!;
   const vals = p.periods[state.period];
   const m = metric();
-  put($('#summary-sub'), 'summary-sub', { corr: state.corr, kind: state.kind, peers: state.peer,
+  put($('#summary-sub'), 'summary-sub', { corr: state.corr, kind: state.kind, tenure: state.tenure,
     eligible: vals?.ok ?? false, minCls: peers.min_cls });
   const tile = (id: string, text: string, sub?: string) => {
     $(`#${id} .tile-value`).textContent = text;
@@ -238,22 +244,23 @@ function renderSummary() {
   tile('rf-tile-cls', fmtInt(vals?.cls ?? 0));
   $('#rf-tile-threads .tile-label').textContent = msg(`tile-threads-${state.kind}`);
   tile('rf-tile-threads', fmtInt(state.kind === 't' ? vals?.threads ?? 0 : vals?.addressed ?? 0));
-  const you = valueFor(state.peer, vals, m);
+  const you = valueFor(state.tenure, vals, m);
   tile('rf-tile-you', fmtValue(you));
-  const g = groupKey(state.peer, vals);
+  const g = groupKey(state.tenure, state.org, vals);
   const dist: Dist | undefined = g ? peers.dist[state.period]?.[g]?.[m] : undefined;
+  const name = groupName(state.tenure, state.org, bandOf(state.tenure, vals));
   if (dist?.q) {
     tile('rf-tile-peers', fmtValue(quantile(dist.q, 0.5)), msg('tile-peers-sub', {
-      group: groupName(state.peer, vals?.ten ?? null), n: fmtInt(dist.n),
-      lo: fmtValue(quantile(dist.q, 0.25)), hi: fmtValue(quantile(dist.q, 0.75)) }));
+      group: name, n: fmtInt(dist.n), lo: fmtValue(quantile(dist.q, 0.25)), hi: fmtValue(quantile(dist.q, 0.75)) }));
     tile('rf-tile-rank', you === null ? '–' : pct(percentileOf(dist.q, you)));
   } else {
-    tile('rf-tile-peers', '–', groupName(state.peer, vals?.ten ?? null));
+    tile('rf-tile-peers', '–', name);
     tile('rf-tile-rank', '–');
   }
   const facts = $('#rf-facts');
   if (vals && p.first) {
-    put(facts, 'you-facts', { first: monthLabel(p.first), ten: vals.ten ? bandName(vals.ten) : '–', org: vals.org });
+    put(facts, 'you-facts', { first: monthLabel(p.first), ten: vals.ten ? bandName(vals.ten) : '–',
+      prior: fmtInt(Math.round(vals.prior)), org: vals.org });
   } else facts.replaceChildren();
 }
 
@@ -265,11 +272,11 @@ function renderTrend() {
   const m = metric();
   const hs = halves(peers.periods);
   const q = (h: string, f: number) => {
-    const g = groupKey(state.peer, p.periods[h]) ?? (state.peer === 'ten' ? null : state.peer);
+    const g = groupKey(state.tenure, state.org, p.periods[h]);
     const d = g ? peers.dist[h]?.[g]?.[m] : undefined;
     return d?.q ? quantile(d.q, f) : null;
   };
-  const you = hs.map((h) => valueFor(state.peer, p.periods[h], m));
+  const you = hs.map((h) => valueFor(state.tenure, p.periods[h], m));
   const ok = hs.map((h) => p.periods[h]?.ok ?? false);
   const band = (f: number, label = '') => ({ label, data: hs.map((h) => q(h, f)), borderWidth: 0, pointRadius: 0,
     pointHoverRadius: 0, tension: 0, spanGaps: true });
@@ -458,15 +465,17 @@ function renderPraise() {
   $('#rf-tile-received .tile-value').textContent = fmtInt(p.tone.received);
   $('#rf-tile-praise .tile-value').textContent = p.tone.received
     ? msg('praise-share', { n: fmtInt(p.tone.praise), share: pct1(p.tone.praise / p.tone.received) }) : fmtInt(p.tone.praise);
-  // Tone peers: everyone or the same tenure. Orgs get no tone figures.
-  const isOrg = state.peer.startsWith('org:');
-  const g = state.peer === 'ten' && p.tone.ten ? `ten:${p.tone.ten}` : 'all';
-  const d = peers.tone[g];
+  // Tone peers: all authors of the same tenure, in years or in changes (directory
+  // experience doesn't apply, so it compares by years). Orgs get no tone figures.
+  const by: TenureBy = state.tenure === 'changes' ? 'changes' : 'time';
+  const band = by === 'changes' ? p.tone.chg : p.tone.ten;
+  const d = band ? peers.tone[`${by}:${band}`] : undefined;
   $('#rf-tile-praise-peers .tile-value').textContent = d?.q ? pct1(quantile(d.q, 0.5)) : '–';
   $('#rf-tile-praise-peers .tile-sub').textContent = msg('praise-peers-sub', {
-    group: groupName(g === 'all' ? 'all' : 'ten', p.tone.ten), n: fmtInt(d?.n ?? 0), min: peers.min_received });
+    group: groupName(by, 'all', band), n: fmtInt(d?.n ?? 0), min: peers.min_received });
   const note = $('#rf-praise-note');
-  if (isOrg) put(note, 'praise-org-note');
+  if (state.org !== 'all') put(note, 'praise-org-note');
+  else if (state.tenure === 'dir') put(note, 'praise-dir-note');
   else note.replaceChildren();
   const list = $('#rf-praise');
   list.replaceChildren();
@@ -511,11 +520,18 @@ function init() {
     renderTrend();
     renderXp();
   });
-  $<HTMLSelectElement>('#rf-peers').addEventListener('change', (e) => {
-    state.peer = (e.target as HTMLSelectElement).value as PeerChoice;
+  const peersChanged = () => {
     renderSummary();
     renderTrend();
     renderPraise();
+  };
+  $<HTMLSelectElement>('#rf-tenure').addEventListener('change', (e) => {
+    state.tenure = (e.target as HTMLSelectElement).value as TenureBy;
+    peersChanged();
+  });
+  $<HTMLSelectElement>('#rf-org').addEventListener('change', (e) => {
+    state.org = (e.target as HTMLSelectElement).value as PeerOrg;
+    peersChanged();
   });
   $<HTMLSelectElement>('#rf-dir').addEventListener('change', (e) => {
     const v = (e.target as HTMLSelectElement).value;

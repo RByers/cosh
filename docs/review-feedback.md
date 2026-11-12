@@ -24,13 +24,23 @@ index, `docs/balance.md` section 4; mechanical CLs from `mech.jsonl`):
     `balance_growth.cl_residuals`, and its thread counts match the `cl`
     table's for every CL.
   - *Dates:* everything, a calendar year or a half-year.
-- **Peers** ("Compare with"): the same tenure band (the default, because
-  feedback falls steeply with tenure: under 1, 1–2, 2–5, 5–10, 10+ years since
-  the first commit on `main`, at the median of the person's CLs in the period,
-  so the over-time chart follows the person's band); all authors; Google, Microsoft or Igalia (the org most of the
-  period's CLs are attributed to, `cosh/orgs.py`); everyone outside Google;
-  or **the same experience in each directory**. A person counts among peers
-  for a period with 6+ CLs and 3+ expected threads. The page shows the peers'
+- **Peers always have the same tenure**, because feedback falls steeply with
+  it (about 1.7× under a year or under 50 earlier commits, against 0.6× at
+  10+ years or 1,000+). Two selectors pick the group:
+  - *Same tenure by:* years since the first commit on `main` (under 1, 1–2,
+    2–5, 5–10, 10+); earlier commits on `main` (from 2017, reverts left out:
+    under 50, 50–199, 200–499, 500–999, 1,000+); or **experience in each
+    directory** (below). The band is taken at the median of the person's CLs
+    in the period, so the over-time chart follows the person from band to
+    band.
+  - *Peers:* all authors, Google, or everyone outside Google (the org most
+    of the period's CLs are attributed to, `cosh/orgs.py`).
+
+  peers.json has a distribution per period, measure and group:
+  `time:<band>:<org>`, `changes:<band>:<org>` and `dir:<org>`. A person
+  counts among peers for a period with 6+ CLs and 3+ expected threads; a
+  group of fewer than 10 (`min_peers`) gets no percentiles, which happens to
+  most non-Google groups past 200 earlier commits. The page shows the peers'
   median and middle half and the share of peers with less feedback.
 - **Directory experience.** Each CL is split over the 3-level directories its
   landed commit changed (`cl_dirs`, weighted by lines + files), and each
@@ -54,15 +64,17 @@ index, `docs/balance.md` section 4; mechanical CLs from `mech.jsonl`):
   2026-11-11).
 - **Praise received** in that year: comments to the person on their own CLs
   from someone else scored glowing (≥ +0.4, `cosh.sentiment.GLOWING`), the
-  share of all comments to them, the peers' median share (all authors or the
-  same tenure, 20+ comments received), and the praise comments with links.
+  share of all comments to them, the peers' median share (all authors of the
+  same tenure in years, or in earlier commits when that is chosen, at the end
+  of the year; 20+ comments received), and the praise comments with links.
 
 ## Ground rules
 
 - **Tone is praise only** (`docs/plan.md`, ground rule 5). Nothing written
   marks a comment, a person or a group as negative: comments carry an
   addressed flag and a praise flag, never a score. Orgs get no tone figures,
-  so with an org peer group the praise section compares with all authors.
+  so with Google or outside Google chosen the praise section compares with
+  all authors of the same tenure.
 - **No completions, no browsing.** The input has `autocomplete="off"`, no
   datalist and no name. Data files are named by
   `sha256("cosh-review-feedback-v1:" + normalised address)[:32]`
@@ -126,8 +138,9 @@ main checkout), and the browser tests serve a made-up person
 
 ## Caveats
 
-- Tenure counts from the first commit on `main`; earlier commits in a
-  directory count only from 2017.
+- Tenure in years counts from the first commit on `main`; earlier commits,
+  on `main` or in a directory, count only from 2017, so people who were
+  active before then are undercounted (most are in the top band anyway).
 - Reviewer threads include any thread a non-owner started, including
   drive-by and gardening comments, as the feedback index does.
 - Peer groups mix very different roles, teams and kinds of work. A high or

@@ -10,9 +10,13 @@ export type Kind = 't' | 'a';
 export type Corr = 'n' | 's' | 'd';
 export type Metric = `${Kind}${Corr}`;
 
-/** A peer group: everyone, the person's tenure band, an org, or everyone
- * measured against the same directory experience. */
-export type PeerChoice = 'all' | 'ten' | 'dirxp' | 'org:google' | 'org:microsoft' | 'org:igalia' | 'org:nongoogle';
+/** Peers always have the same tenure, by one of three measures: years since
+ * the first commit on main, earlier commits on main, or experience in each
+ * directory (everyone measured against what authors drew at the same number of
+ * earlier commits in the directory). */
+export type TenureBy = 'time' | 'changes' | 'dir';
+/** Which authors of that tenure: everyone, Google, or everyone outside Google. */
+export type PeerOrg = 'all' | 'google' | 'nongoogle';
 
 export interface PeriodVals {
   cls: number;
@@ -20,6 +24,9 @@ export interface PeriodVals {
   addressed: number;
   /** Tenure band at the middle of the period's changes, null if unknown. */
   ten: string | null;
+  /** Earlier commits on main at the middle of the period's changes, and its band. */
+  prior: number;
+  chg: string;
   /** The org most of the period's changes are attributed to. */
   org: string;
   /** Enough changes to count among peers. */
@@ -37,15 +44,16 @@ export type Thread = [string, number, number | null, 0 | 1 | null, number, strin
 export type Unit = [number, number, number];
 /** [change number, day landed (days since 1970), lines, expected threads by
  * size, by size and directory, expected addressed by size, by size and
- * directory, units, threads, org index]. */
-export type ClRow = [number, number, number, number, number, number, number, Unit[], Thread[], number];
+ * directory, units, threads, org index, the owner's earlier commits on main]. */
+export type ClRow = [number, number, number, number, number, number, number, Unit[], Thread[], number, number];
 
-type Tone = { received: number; praise: number; share: number | null; ten: string | null };
+/** Tone received, with the person's tenure bands at the end of the tone year. */
+type Tone = { received: number; praise: number; share: number | null; ten: string | null; chg: string | null };
 type Praise = [number, string, number, string][];
 
 /** u/<key>.json: who the person is and which half-year files they have. */
 export interface Top {
-  v: 2;
+  v: 3;
   first: string | null;
   /** First commit on main, as a day number. */
   first_day: number | null;
@@ -98,7 +106,9 @@ export interface Peers {
   periods: string[];
   metrics: Metric[];
   tenure: string[];
+  changes: string[];
   xp: string[];
+  min_peers: number;
   min_cls: number;
   min_exp: number;
   min_received: number;
@@ -174,15 +184,26 @@ export function quantile(q: number[], p: number): number {
   return q[lo] + (q[hi] - q[lo]) * (i - lo);
 }
 
-/** The peer group's key in peers.json for a choice, given the person's period values. */
-export function groupKey(choice: PeerChoice, vals: PeriodVals | undefined): string | null {
-  if (choice === 'ten') return vals?.ten ? `ten:${vals.ten}` : null;
-  return choice;
+/** The person's tenure band in a period by one measure (null: unknown, or by directory). */
+export function bandOf(by: TenureBy, vals: PeriodVals | undefined): string | null {
+  if (!vals) return null;
+  return by === 'time' ? vals.ten : by === 'changes' ? vals.chg : null;
+}
+
+/** The peer group's key in peers.json, given the person's period values. */
+export function groupKey(by: TenureBy, org: PeerOrg, vals: PeriodVals | undefined): string | null {
+  if (by === 'dir') return `dir:${org}`;
+  const band = bandOf(by, vals);
+  return band ? `${by}:${band}:${org}` : null;
 }
 
 /** The person's value to set against a peer group's distribution. */
-export const valueFor = (choice: PeerChoice, vals: PeriodVals | undefined, m: Metric) =>
-  vals ? (choice === 'dirxp' ? vals.x[m] : vals.v[m]) ?? null : null;
+export const valueFor = (by: TenureBy, vals: PeriodVals | undefined, m: Metric) =>
+  vals ? (by === 'dir' ? vals.x[m] : vals.v[m]) ?? null : null;
+
+/** Earlier-commit bands, as scripts/review_feedback.py `changes_band`. */
+export const changesBand = (n: number) =>
+  n < 50 ? '<50' : n < 200 ? '50-199' : n < 500 ? '200-499' : n < 1000 ? '500-999' : '1000+';
 
 /** Directory-experience bands, by earlier commits in the directory. */
 export const xpBand = (prior: number) => (prior === 0 ? 0 : prior < 5 ? 1 : prior < 20 ? 2 : prior < 100 ? 3 : 4);
@@ -317,7 +338,7 @@ export function mergePerson(top: Top, shards: Shard[]): Omit<Person, 'periods'> 
         if (t.length > 5) r.push(t[5]);
         return r;
       });
-      cls.push([c[0], c[1], c[2], c[3], c[4], c[5], c[6], units, threads, o[c[9]]]);
+      cls.push([c[0], c[1], c[2], c[3], c[4], c[5], c[6], units, threads, o[c[9]], c[10]]);
     }
   }
   cls.sort((a, b) => a[1] - b[1] || a[0] - b[0]);
@@ -337,8 +358,8 @@ function median(xs: number[]): number {
 export const tenureBand = (y: number) => (y < 1 ? '<1y' : y < 2 ? '1-2y' : y < 5 ? '2-5y' : y < 10 ? '5-10y' : '10y+');
 
 /** A person's values for one period, as scripts/review_feedback.py
- * `person_period` computes them for the peer groups: totals, tenure at the
- * median change, the most common org, whether they count among peers, the
+ * `person_period` computes them for the peer groups: totals, tenure (years
+ * and earlier commits) at the median change, the most common org, whether they count among peers, the
  * measures, and the same measures against everyone's feedback at the same
  * directory experience (peers.json's pooled `rel` per band). */
 export function periodVals(p: Omit<Person, 'periods'>, peers: Peers, period: string): PeriodVals | undefined {
@@ -361,6 +382,7 @@ export function periodVals(p: Omit<Person, 'periods'>, peers: Peers, period: str
   let org = cs[0][9];
   for (const [o, n] of orgCount) if (n > orgCount.get(org)!) org = o;
   const ten = p.firstDay === null ? null : tenureBand(median(cs.map((c) => (c[1] - p.firstDay!) / 365.25)));
+  const prior = median(cs.map((c) => c[10]));
   const v = {} as Record<Metric, number | null>;
   const x = {} as Record<Metric, number | null>;
   const bands = peers.bands[period];
@@ -373,7 +395,7 @@ export function periodVals(p: Omit<Person, 'periods'>, peers: Peers, period: str
       for (const [, w, prior] of c[7]) xe += (m[1] === 'n' ? w : w * expected(c, m)) * (bands?.[m]?.[xpBand(prior)]?.rel ?? 1);
     x[m] = xe ? r3(num / xe) : null;
   }
-  return { cls: cs.length, threads, addressed, ten, org: p.orgs[org], ok: cs.length >= peers.min_cls && exp.td >= peers.min_exp,
+  return { cls: cs.length, threads, addressed, ten, prior, chg: changesBand(prior), org: p.orgs[org], ok: cs.length >= peers.min_cls && exp.td >= peers.min_exp,
     v, x };
 }
 

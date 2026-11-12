@@ -23,6 +23,8 @@ class ReviewFeedbackTest(unittest.TestCase):
         self.assertEqual([R.xp_band(n) for n in (0, 1, 4, 5, 19, 20, 99, 100)], [0, 1, 1, 2, 2, 3, 3, 4])
         self.assertEqual([R.tenure_band(y) for y in (0.5, 1, 3, 7, 12, None)],
                          ["<1y", "1-2y", "2-5y", "5-10y", "10y+", None])
+        self.assertEqual([R.changes_band(n) for n in (0, 49, 50, 199, 200, 499, 500, 999, 1000, None)],
+                         ["<50", "<50", "50-199", "50-199", "200-499", "200-499", "500-999", "500-999", "1000+", None])
         self.assertEqual(R.day_of("1970-01-02 03:00:00"), 1)
         self.assertEqual(R.epoch_day(86400 * 3 + 5), 3)
 

@@ -1469,6 +1469,9 @@ test('review feedback: half-year files merge, and every period gets the values t
   assert.deepEqual(Object.keys(person.periods).sort(), ['2025', '2025H2', '2026', '2026H1', '2026H2', 'all']);
   const all = person.periods.all;
   assert.deepEqual([all.cls, all.threads, all.addressed, all.ten, all.org, all.ok], [3, 5, 3, '2-5y', 'google.com', false]);
+  // Earlier commits on main at the median change: 30, 80, 260.
+  assert.deepEqual([all.prior, all.chg], [80, '50-199']);
+  assert.deepEqual([person.periods['2026'].prior, person.periods['2026'].chg], [170, '50-199']);
   // 5 threads over 3 CLs, over 2.5 + 3 + 1.5 expected; 3 addressed over 1.4 + 2 + 0.9.
   assert.deepEqual([all.v.tn, all.v.td, all.v.an, all.v.ad], [1.667, 0.714, 1, 0.698]);
   // Against the band rates: 2.5 × 2.1 + 0.75 × 3 × 1.2 + 0.25 × 3 × 1.6 + 1.5 × 0.7 = 10.2.
@@ -1479,6 +1482,8 @@ test('review feedback: half-year files merge, and every period gets the values t
   const six = F.buildPerson(top, [{ ...shards['2026H1'], cls: Array(6).fill(shards['2026H1'].cls[0]) }], peers);
   assert.equal(six.periods.all.ok, true);
   assert.deepEqual(['<1y', '1-2y', '2-5y', '5-10y', '10y+'], [0.5, 1.5, 4.9, 5, 12].map(F.tenureBand));
+  assert.deepEqual([0, 49, 50, 199, 200, 499, 500, 999, 1000].map(F.changesBand),
+    ['<50', '<50', '50-199', '50-199', '200-499', '200-499', '500-999', '500-999', '1000+']);
 
   assert.ok(F.inPeriod(day('2026-03-11'), '2026H1'));
   assert.ok(!F.inPeriod(day('2026-07-01'), '2026H1'));
@@ -1511,10 +1516,13 @@ test('review feedback: half-year files merge, and every period gets the values t
   // Links are encoded and always go to Gerrit; without a comment id, to the change.
   assert.equal(F.commentUrl(5, 'a/b'), 'https://chromium-review.googlesource.com/c/chromium/src/+/5/comment/a%2Fb/');
   assert.equal(F.commentUrl(5, ''), 'https://chromium-review.googlesource.com/c/chromium/src/+/5');
-  // Peer groups: tenure needs a band; the experience group reads the adjusted value.
-  assert.equal(F.groupKey('ten', all), 'ten:2-5y');
-  assert.equal(F.groupKey('org:igalia', all), 'org:igalia');
-  assert.equal(F.valueFor('dirxp', all, 'td'), 0.49);
-  assert.equal(F.valueFor('all', all, 'ad'), 0.698);
+  // Peer groups: always the same tenure, by years or earlier changes (which need a band), or by
+  // directory experience, which reads the adjusted value.
+  assert.equal(F.groupKey('time', 'all', all), 'time:2-5y:all');
+  assert.equal(F.groupKey('changes', 'nongoogle', all), 'changes:50-199:nongoogle');
+  assert.equal(F.groupKey('dir', 'google', all), 'dir:google');
+  assert.equal(F.groupKey('time', 'all', { ...all, ten: null }), null);
+  assert.equal(F.valueFor('dir', all, 'td'), 0.49);
+  assert.equal(F.valueFor('time', all, 'ad'), 0.698);
   assert.deepEqual(F.halves(['all', '2026H2', '2025', '2023H2']), ['2023H2', '2026H2']);
 });

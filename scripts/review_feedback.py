@@ -54,8 +54,14 @@ MIN_CLS, MIN_EXP = 6, 3.0     # a person-period counts among peers with this man
 MIN_RECEIVED = 20             # ... and among tone peers with this many comments received
 QS = [i / 20 for i in range(21)]
 TENURE = ["<1y", "1-2y", "2-5y", "5-10y", "10y+"]
+CHANGES = ["<50", "50-199", "200-499", "500-999", "1000+"]   # the author's earlier commits on main (from 2017)
 XP = ["0", "1-4", "5-19", "20-99", "100+"]       # the author's earlier commits in the directory
-ORGS = {"google": "google.com", "microsoft": "microsoft.com", "igalia": "igalia.com"}
+# Peers are always the same tenure, by one of three measures: years since the
+# first commit on main ("time"), earlier commits on main ("changes"), or
+# experience in each directory ("dir"). Within that: all authors, Google, or
+# everyone outside Google.
+ORGS = {"all": lambda o: True, "google": lambda o: o == "google.com", "nongoogle": lambda o: o != "google.com"}
+MIN_PEERS = 10                # fewer peers than this get no percentiles
 # Measures: what counts (every reviewer thread, or only those the owner
 # addressed) over what it is compared with (CLs, or the 2023-24 norm for CLs
 # of that size, or of that size and top 2-level directory).
@@ -72,6 +78,11 @@ def key(email):
 def tenure_band(years):
     return None if years is None else "<1y" if years < 1 else "1-2y" if years < 2 else "2-5y" if years < 5 \
         else "5-10y" if years < 10 else "10y+"
+
+
+def changes_band(n):
+    return None if n is None else "<50" if n < 50 else "50-199" if n < 200 else "200-499" if n < 500 \
+        else "500-999" if n < 1000 else "1000+"
 
 
 def xp_band(n):
@@ -192,14 +203,21 @@ def main():
         d = dirs3.get(c["cid"])
         if c["n"] and d:
             top2[c["n"]] = "/".join(d[0].split("/")[:2])
-    # Earlier commits per (person, directory), for directory experience.
+    # Earlier commits per (person, directory), for directory experience, and
+    # per person, for tenure by changes (reverts left out of both).
     xp_times = defaultdict(list)
+    own_times = defaultdict(list)
     for c in commits:
+        if c["is_revert"]:
+            continue
+        own_times[c["pid"]].append(c["at"])
         d = dirs3.get(c["cid"])
-        if d and not c["is_revert"]:
+        if d:
             for x in d[1]:
                 xp_times[(c["pid"], x)].append(c["at"])
     for v in xp_times.values():
+        v.sort()
+    for v in own_times.values():
         v.sort()
     landed_at = {c["n"]: c["at"] for c in commits if c["n"]}
     del dirs3
@@ -249,6 +267,7 @@ def main():
         c["units"] = {d: [r3(v / tot), bisect.bisect_left(xp_times.get((c["pid"], d), ()), at)]
                       for d, v in w.items()}
         c["main"] = max(w, key=w.get)
+        c["prior"] = bisect.bisect_left(own_times.get(c["pid"], ()), at)
         c["thr"] = []
     del xp_times, cl_dirs
 
@@ -394,7 +413,8 @@ def main():
         ten = [c["ten"] for c in cs if c["ten"] is not None]
         orgc = Counter(c["org"] for c in cs)
         out = dict(cls=s["cls"], threads=s["t"], addressed=s["a"],
-                   ten=tenure_band(st.median(ten)) if ten else None, org=orgc.most_common(1)[0][0],
+                   ten=tenure_band(st.median(ten)) if ten else None,
+                   chg=changes_band(st.median([c["prior"] for c in cs])), org=orgc.most_common(1)[0][0],
                    ok=s["cls"] >= MIN_CLS and s["td"] >= MIN_EXP, v={}, x={}, bands={})
         bo = defaultdict(lambda: [0.0, 0.0, 0.0])      # (m, band) -> obs, own denominator, CL share
         xe = defaultdict(float)
@@ -424,31 +444,39 @@ def main():
         per[pid] = {p: person_period(pid, v, p) for p, v in byp.items()}
 
     # ------------------------------------------------ peers
+    def tone_bands(pid):
+        ten = (TONE_END_T - first[pid]) / YEAR if pid in first else None
+        return dict(time=tenure_band(ten),
+                    changes=changes_band(bisect.bisect_left(own_times.get(pid, ()), TONE_END_T)))
+
     def tone_share(pid):
         r = received.get(pid)
         if not r or r["tone"] < MIN_RECEIVED:
             return None
         return r["praise"] / r["tone"]
 
-    groups = {"all": lambda pp, pid: True, "dirxp": lambda pp, pid: True}
-    for t in TENURE:
-        groups[f"ten:{t}"] = (lambda t: lambda pp, pid: pp["ten"] == t)(t)
-    for g, dom in ORGS.items():
-        groups[f"org:{g}"] = (lambda dom: lambda pp, pid: pp["org"] == dom)(dom)
-    groups["org:nongoogle"] = lambda pp, pid: pp["org"] != "google.com"
+    # Groups: "<by>:<band>:<org>" for tenure in years ("time") or in earlier
+    # commits ("changes"), and "dir:<org>", measured against directory experience.
+    groups = {}
+    for o, of in ORGS.items():
+        for t in TENURE:
+            groups[f"time:{t}:{o}"] = (lambda t, of: lambda pp: pp["ten"] == t and of(pp["org"]))(t, of)
+        for t in CHANGES:
+            groups[f"changes:{t}:{o}"] = (lambda t, of: lambda pp: pp["chg"] == t and of(pp["org"]))(t, of)
+        groups[f"dir:{o}"] = (lambda of: lambda pp: of(pp["org"]))(of)
     peers = dict(generated=datetime.now(timezone.utc).strftime("%Y-%m-%d"), periods=allp, metrics=METRICS,
-                 tenure=TENURE, xp=XP, qs=len(QS), min_cls=MIN_CLS, min_exp=MIN_EXP, min_received=MIN_RECEIVED,
+                 tenure=TENURE, changes=CHANGES, xp=XP, min_peers=MIN_PEERS, qs=len(QS), min_cls=MIN_CLS, min_exp=MIN_EXP, min_received=MIN_RECEIVED,
                  tone_weeks=[TONE_WEEKS[0], TONE_WEEKS[-1]], dist={}, bands={}, tone={})
     for p in allp:
         rows = [(pid, pp[p]) for pid, pp in per.items() if p in pp and pp[p]["ok"]]
         dp = peers["dist"][p] = {}
         for g, f in groups.items():
-            sel = [(pid, x) for pid, x in rows if f(x, pid)]
+            sel = [x for _, x in rows if f(x)]
             dp[g] = {}
             for m in METRICS:
-                xs = [x["x" if g == "dirxp" else "v"][m] for _, x in sel]
+                xs = [x["x" if g.startswith("dir:") else "v"][m] for x in sel]
                 xs = [v for v in xs if v is not None]
-                dp[g][m] = dict(n=len(xs), q=quantiles(xs))
+                dp[g][m] = dict(n=len(xs), q=quantiles(xs) if len(xs) >= MIN_PEERS else None)
         # Per experience band: the pooled rate relative to everyone, and the spread of people
         # with enough CL share in the band (1.5 CLs' worth or more).
         bp = peers["bands"][p] = {}
@@ -461,18 +489,18 @@ def main():
                 bp[m].append(dict(pooled=r3(rate[(p, m, b)]) if rate.get((p, m, b)) is not None else None,
                                   rel=r3(rate[(p, m, b)] / ov) if rate.get((p, m, b)) and ov else None,
                                   n=len(xs), q=quantiles(xs)))
-    # Tone peers: praise share of comments received in the tone year, all and by tenure (no orgs).
+    # Tone peers: praise share of comments received in the tone year, by tenure
+    # in years or in earlier commits at its end (no orgs).
     tone_rows = []
     for pid in received:
         s = tone_share(pid)
-        if s is None:
-            continue
-        ten = (TONE_END_T - first[pid]) / YEAR if pid in first else None
-        tone_rows.append((tenure_band(ten), s))
+        if s is not None:
+            tone_rows.append((tone_bands(pid), s))
     peers["tone"]["all"] = dict(n=len(tone_rows), q=quantiles([s for _, s in tone_rows]))
-    for t in TENURE:
-        xs = [s for b, s in tone_rows if b == t]
-        peers["tone"][f"ten:{t}"] = dict(n=len(xs), q=quantiles(xs))
+    for by, names in (("time", TENURE), ("changes", CHANGES)):
+        for t in names:
+            xs = [s for b, s in tone_rows if b[by] == t]
+            peers["tone"][f"{by}:{t}"] = dict(n=len(xs), q=quantiles(xs) if len(xs) >= MIN_PEERS else None)
 
     # ------------------------------------------------ write
     # u/<key>.json: who the person is, which half-years they have, and praise
@@ -505,10 +533,10 @@ def main():
                 f.write(data)
             size += len(data.encode())
         r = received.get(pid, {})
-        top = dict(v=2, first=datetime.fromtimestamp(first[pid], timezone.utc).strftime("%Y-%m") if pid in first else None,
+        top = dict(v=3, first=datetime.fromtimestamp(first[pid], timezone.utc).strftime("%Y-%m") if pid in first else None,
                    first_day=epoch_day(first[pid]) if pid in first else None, halves=sorted(by_half),
                    tone=dict(received=r.get("tone", 0), praise=r.get("praise", 0), share=tone_share(pid),
-                             ten=tenure_band((TONE_END_T - first[pid]) / YEAR) if pid in first else None),
+                             ten=tone_bands(pid)["time"], chg=tone_bands(pid)["changes"]),
                    praise=[[n, u, day_of(day), t] for n, u, day, t in sorted(praise.get(pid, []), key=lambda x: x[2],
                                                                             reverse=True)])
         data = json.dumps(top, separators=(",", ":"), ensure_ascii=False)
@@ -542,7 +570,8 @@ def shard(cs, text):
     landed, lines, expected threads by size, by size and directory, expected
     addressed by size, by size and directory, [[directory, line share,
     earlier commits]], [[comment uuid, file, days after landing, addressed,
-    directory, excerpt]], org], with directory, file and org names listed
+    directory, excerpt]], org, the owner's earlier commits on main], with
+    directory, file and org names listed
     once. A thread without an excerpt has an empty uuid: the page links its
     CL instead."""
     files, dirs, orgs = {}, {}, {}
@@ -564,7 +593,7 @@ def shard(cs, text):
                 t.append(ex)
             thr.append(t)
         rows.append([n, d0, c["lines"], c["exp_ts"], c["exp_td"], c["exp_as"], c["exp_ad"], units, thr,
-                     idx(orgs, c["org"])])
+                     idx(orgs, c["org"]), c["prior"]])
     return dict(dirs=list(dirs), files=list(files), orgs=list(orgs), cls=rows)
 
 
