@@ -1,4 +1,4 @@
-// The Review Feedback page's data and arithmetic (review-feedback.html,
+// The Review Feedback page's data and arithmetic (feedback-index.html,
 // docs/review-feedback.md), kept apart from the DOM so unit tests can run it.
 // scripts/review_feedback.py writes one file per person, named by `personKey`
 // of their address, and peers.json with every peer group's percentiles.

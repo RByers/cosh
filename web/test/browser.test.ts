@@ -3085,7 +3085,7 @@ test('Ratio: off by default; plots the review metric over commits', async () => 
 });
 
 test('every page carries the Content Security Policy, breaks none of it, and it blocks injected markup', async () => {
-  for (const path of ['', 'value.html', 'sentiment.html', 'balance.html', 'review-feedback.html']) {
+  for (const path of ['', 'value.html', 'sentiment.html', 'balance.html', 'feedback-index.html']) {
     const page = await browser.newPage();
     const errors: string[] = [];
     page.on('console', (m) => m.type() === 'error' && errors.push(m.text()));
@@ -3217,7 +3217,7 @@ test('a touch anywhere off a chart closes its hover card, on every page with cha
   }
 });
 
-// ---- Review Feedback (review-feedback.html). Its per-person data isn't
+// ---- Review Feedback (feedback-index.html). Its per-person data isn't
 // committed, so these tests serve the made-up person in feedback-fixture.ts.
 
 async function feedbackPage(peersOverride?: Peers): Promise<{ page: Page; errors: string[] }> {
@@ -3240,7 +3240,7 @@ async function feedbackPage(peersOverride?: Peers): Promise<{ page: Page; errors
     else if (path.includes('/review-feedback/u/')) void r.respond({ status: 404, body: 'not found' });
     else void r.continue();
   });
-  await page.goto(baseUrl + 'review-feedback.html', { waitUntil: 'load' });
+  await page.goto(baseUrl + 'feedback-index.html', { waitUntil: 'load' });
   await page.waitForSelector('body[data-ready]');
   return { page, errors };
 }
@@ -3255,7 +3255,7 @@ async function lookUp(page: Page, email: string) {
 
 test('review feedback: the caveat, a lookup field that offers no completions, and an unknown address', async () => {
   const { page, errors } = await feedbackPage();
-  assert.equal(await page.title(), 'Review Feedback - Chromium Open Source Health');
+  assert.equal(await page.title(), 'Chromium Open Source Health - Feedback Index');
   assert.equal(await page.$eval('.rf-disclaimer', (e) => e.textContent!.trim()),
     'This analysis is imperfect and is intended as a learning guide only.');
   const input = await page.$eval('#rf-email', (i) => ({ ac: i.getAttribute('autocomplete'), list: i.getAttribute('list'),
@@ -3272,7 +3272,7 @@ test('review feedback: the caveat, a lookup field that offers no completions, an
   // The landing page doesn't link to it yet.
   const home = await browser.newPage();
   await home.goto(baseUrl, { waitUntil: 'load' });
-  assert.equal(await home.$('a[href="review-feedback.html"]'), null);
+  assert.equal(await home.$('a[href="feedback-index.html"]'), null);
   await home.close();
   assert.deepEqual(errors, []);
   await page.close();

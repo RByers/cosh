@@ -112,7 +112,7 @@ export default defineConfig({
         value: page('value.html'),
         sentiment: page('sentiment.html'),
         balance: page('balance.html'),
-        'review-feedback': page('review-feedback.html'),
+        'feedback-index': page('feedback-index.html'),
       },
     },
   },

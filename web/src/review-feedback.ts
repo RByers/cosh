@@ -1,4 +1,4 @@
-// The Review Feedback page (review-feedback.html). Wording is in the HTML;
+// The Review Feedback page (feedback-index.html). Wording is in the HTML;
 // this looks a person up by the address typed (never offering completions:
 // the data is one file per person, named by a hash of the address), fills in
 // the values and draws the charts. Comment text is untrusted and goes into the

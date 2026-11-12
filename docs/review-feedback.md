@@ -1,6 +1,6 @@
 # Review Feedback: a personal view of the feedback index
 
-`web/review-feedback.html` lets anyone type an email address and study the
+`web/feedback-index.html` lets anyone type an email address and study the
 review feedback on that person's Chromium changes against their peers'. It is
 a learning guide, and the page says so at the top: "This analysis is imperfect
 and is intended as a learning guide only". It isn't linked from the landing

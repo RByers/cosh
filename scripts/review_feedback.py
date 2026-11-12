@@ -1,4 +1,4 @@
-"""Per-person data for the Review Feedback page (web/review-feedback.html,
+"""Per-person data for the Review Feedback page (web/feedback-index.html,
 docs/review-feedback.md).
 
 Offline; reads balance*.sqlite, derived.sqlite, labels.sqlite,
