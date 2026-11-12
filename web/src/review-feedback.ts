@@ -25,6 +25,7 @@ import {
   rangeOf,
   ratioShade,
   threadRows,
+  ratioBins,
   cohortYears,
   trendGroup,
   valueFor,
@@ -256,7 +257,8 @@ function renderIntro() {
   const [from, to] = rangeOf(peers, state.kind);
   const vars = { kind: state.kind, corr: state.corr, dirxp: state.tenure === 'dir', org, min: fmtInt(peers.min_cohort),
     limited: state.kind === 'a' || state.tenure === 'dir',
-    minCls: fmtInt(peers.min_cls), from: monthOf(fromMonth(from), true), to: monthOf(toMonth(to), true) };
+    minCls: fmtInt(peers.min_cls), minCohortCls: fmtInt(peers.min_cohort_cls),
+    from: monthOf(fromMonth(from), true), to: monthOf(toMonth(to), true) };
   put($('#rf-cohorts-note'), 'cohorts-note', vars);
   const curves = peers.cohorts[g]?.[m] ?? {};
   const step = peers.cohort_step;
@@ -307,26 +309,18 @@ function renderIntro() {
   });
 
   const ch = peers.change[g]?.[m];
-  const edges = peers.change_edges;
-  // Bins of reduction: below 0 the feedback grew.
-  const abs = (x: number) => fmtInt(Math.abs(x));
-  const labels = edges.slice(0, -1).map((lo, i) => {
-    const hi = edges[i + 1];
-    if (i === 0) return `grew ${abs(hi)}%+`;
-    if (i === edges.length - 2) return `fell ${abs(lo)}%+`;
-    return hi <= 0 ? `grew ${abs(hi)}–${abs(lo)}%` : `fell ${abs(lo)}–${abs(hi)}%`;
-  });
+  const bins = ratioBins(peers.change_ratios);
   // The first whole calendar year the measure covers.
   const start = new Date(from * 86_400_000);
   const fromYear = start.getUTCFullYear() + (start.getUTCMonth() === 0 && start.getUTCDate() === 1 ? 0 : 1);
   put($('#rf-change-note'), 'change-note', { ...vars, n: fmtInt(ch?.n ?? 0), people: fmtInt(ch?.people ?? 0),
-    minYearCls: fmtInt(peers.min_year_cls), fromYear,
+    fromYear,
     median: ch?.median == null ? '–' : pct(Math.abs(ch.median) / 100), fell: (ch?.median ?? 0) >= 0 });
   charts.change = new Chart($<HTMLCanvasElement>('#rf-change'), {
     type: 'bar',
     data: {
-      labels,
-      datasets: [{ data: ch?.counts ?? [], backgroundColor: edges.slice(0, -1).map((e) => (e >= 0 ? t.series[0] : t.muted)),
+      labels: bins.map((b) => b.label),
+      datasets: [{ data: ch?.counts ?? [], backgroundColor: bins.map((b) => (b.fell ? t.series[0] : t.muted)),
         borderWidth: 0, categoryPercentage: 0.9, barPercentage: 1 }],
     },
     options: {

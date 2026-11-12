@@ -140,13 +140,15 @@ export interface Peers {
   min_cohort: number;
   /** Group -> measure -> year of first commit -> [tenure bin start, median, people]. */
   cohorts: Record<string, Record<Metric, Record<string, [number, number, number][]>>>;
-  /** Histogram bin edges, % less feedback a year: the first bin takes
-   * everything below edges[1], the last everything from edges[-2] on. */
-  change_edges: number[];
-  /** Group -> measure -> people's yearly reduction in feedback. */
+  /** The histogram's bin edges, as ratios of a year's value to the year
+   * before's, each paired with its reciprocal: len + 1 bins, from below the
+   * first edge to the last edge and up. */
+  change_ratios: number[];
+  /** Group -> measure -> year-over-year changes: counts per bin, and the
+   * median as % less feedback than the year before. */
   change: Record<string, Record<Metric, { n: number; people: number; median: number | null; counts: number[] }>>;
-  /** A calendar year counts for the histogram with this many changes. */
-  min_year_cls: number;
+  /** A half-year counts towards a cohort curve with this many changes. */
+  min_cohort_cls: number;
   /** The opening card's size chart: the size buckets (changed lines), and per
    * kind the feedback index in each, four ways (null under 30 changes). */
   size_labels?: string[];
@@ -166,6 +168,18 @@ export interface SizeBreakdown {
   /** The averages the first two are divided by: threads per change, per 1,000 lines. */
   avgPerCl: number;
   avgPerKLine: number;
+}
+
+/** The histogram's bins as words ("fell 60%+", "fell 50–60%" … "grew 152%+"),
+ * and whether each is a fall. */
+export function ratioBins(edges: number[]): { label: string; fell: boolean }[] {
+  const p = (x: number) => Math.round(Math.abs(x) * 100);
+  return Array.from({ length: edges.length + 1 }, (_, i) => {
+    const lo = i === 0 ? 0 : edges[i - 1];
+    const hi = i === edges.length ? Infinity : edges[i];
+    if (hi <= 1) return { fell: true, label: i === 0 ? `fell ${p(1 - hi)}%+` : `fell ${p(1 - hi)}–${p(1 - lo)}%` };
+    return { fell: false, label: i === edges.length ? `grew ${p(lo - 1)}%+` : `grew ${p(lo - 1)}–${p(hi - 1)}%` };
+  });
 }
 
 /** The opening card's group: the "Peers" org, measured against directory

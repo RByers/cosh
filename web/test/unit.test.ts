@@ -1453,6 +1453,15 @@ test('review feedback: addresses normalise and hash as scripts/review_feedback.p
   assert.ok(!looksLikeEmail('a@b'));
 });
 
+test('review feedback: the histogram names its ratio bins as falls and rises', async () => {
+  const { ratioBins } = await import('../src/feedback.ts');
+  // Edges as peers.json rounds them; each pairs with its reciprocal.
+  const bins = ratioBins([0.3969, 0.5, 0.63, 0.7937, 1, 1.2599, 1.5874, 2, 2.5198]);
+  assert.deepEqual(bins.map((b) => b.label), ['fell 60%+', 'fell 50–60%', 'fell 37–50%', 'fell 21–37%', 'fell 0–21%',
+    'grew 0–26%', 'grew 26–59%', 'grew 59–100%', 'grew 100–152%', 'grew 152%+']);
+  assert.deepEqual(bins.map((b) => b.fell), [true, true, true, true, true, false, false, false, false, false]);
+});
+
 test('review feedback: the opening card draws start years whose curve begins at tenure 0', async () => {
   const { cohortYears } = await import('../src/feedback.ts');
   const curve = (b0: number): [number, number, number][] => [[b0, 2, 30], [b0 + 0.5, 1.5, 30], [b0 + 1, 1, 30]];

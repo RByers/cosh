@@ -99,7 +99,7 @@
           change</span> in each half-year, by how long they had been contributing then<span data-if="dirxp">,
           measured against authors with the same experience in each directory</span><span data-if="org"> (only
           half-years in which most of their changes came from <slot name="org"></slot>)</span>. Points stand for
-          <slot name="min"></slot> or more contributors who landed <slot name="minCls"></slot> or more changes in
+          <slot name="min"></slot> or more contributors who landed <slot name="minCohortCls"></slot> or more changes in
           the half-year. Reviewer threads are counted from 2018 on<span data-if="limited">, but
           <span data-if="kind=a">addressed threads</span><span data-if="!kind=a">directory experience</span> only from
           <slot name="from"></slot>, so only the newest start years can be followed from the beginning</span>. Whenever they started,
@@ -112,13 +112,14 @@
         <p id="rf-change-note" class="note"></p>
         <template data-msg="change-note">
           Every contributor-year: the change in a contributor's feedback index from one calendar year to the
-          next, wherever they landed <slot name="minYearCls"></slot> or more changes in both
+          next, wherever they landed <slot name="minCls"></slot> or more changes in both
           (<slot name="n"></slot> year-to-year changes from <slot name="people"></slot> contributors<span
           data-if="org">, counted where most of the later year's changes came from <slot name="org"></slot></span>;
           <span data-if="limited">whole years from <slot name="fromYear"></slot> on</span><span data-if="!limited">from
           2018 on</span>).
           In the median year, feedback <span data-if="fell">fell</span><span data-if="!fell">grew</span> by
-          <slot name="median"></slot>; bars on the left are years in which it grew.
+          <slot name="median"></slot>; bars on the right are years in which it grew. A year's figure varies by
+          about a third by chance alone, so the spread is wider than the real changes.
         </template>
         <p class="note">
           The first two charts always measure tenure in years.

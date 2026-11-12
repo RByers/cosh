@@ -55,7 +55,12 @@ HISTORY_ISO = "2018-01-01"
 TONE_WEEKS = sentiment.weeks_in("2025-W45:2026-W44")             # the year with comment text and tone scores
 SALT = "cosh-review-feedback-v1:"
 EXCERPT = 200                 # characters of a comment kept for the drill-down
-MIN_CLS, MIN_EXP = 6, 3.0     # a person-period counts among peers with this many CLs and expected threads
+# Any one person's figure that is ranked among peers or goes into the
+# histogram rests on at least this many CLs and expected threads, whatever its
+# period (half-year, year or all the data): a figure's noise depends on how
+# many CLs it has, not how long the period is. At 25 CLs it is about ±38%
+# (docs/review-feedback.md).
+MIN_CLS, MIN_EXP = 25, 12.0
 MIN_RECEIVED = 20             # ... and among tone peers with this many comments received
 QS = [i / 20 for i in range(21)]
 TENURE = ["<1y", "1-2y", "2-5y", "5-10y", "10y+"]
@@ -77,13 +82,18 @@ METRICS = [f"{k}{c}" for k in KINDS for c in CORR]
 # year, and how fast it falls for each person.
 STEP = 0.5                    # tenure bins of the cohort curves, in years
 MIN_COHORT = 20               # people per point of a cohort curve
+# A person's half-year counts towards a cohort curve with fewer CLs: noise
+# barely moves a median, and a higher bar would keep only the most prolific
+# newcomers in the early points.
+MIN_COHORT_CLS, MIN_COHORT_EXP = 6, 3.0
 # The histogram: one value per contributor and pair of consecutive calendar
-# years both counted (twice the half-year minimums), the change from one to
-# the next.
-MIN_YEAR_CLS, MIN_YEAR_EXP = 12, 6.0
+# years both counted (MIN_CLS), the ratio of the later year's value to the
+# earlier's, in bins of equal width on a ratio scale (steps of ×2^(1/3), so
+# halved and doubled are edges): noise spreads evenly both ways and bar
+# heights compare.
+CHANGE_RATIOS = [2 ** (k / 3) for k in range(-4, 5)]
 PATCHSET_LEVEL = "/PATCHSET_LEVEL"   # the path of a general comment's thread: not counted
 FLOOR = 0.05                  # values below this count as this in a ratio
-CHANGE_EDGES = list(range(-40, 81, 10))   # histogram bin edges, % less feedback than the year before
 
 
 def key(email):
@@ -193,10 +203,11 @@ def yearly_changes(years, groups):
     year: (org, {metric: value or None}, {metric: value against directory
     experience or None})}, None where the year doesn't count for that
     measure. groups: name -> test of an org ("dir:" names use the second
-    dict). Each pair of consecutive counted years gives one
-    value, % less feedback than the year before (-100 * (later / earlier - 1),
-    values under FLOOR counted as FLOOR), in the group of the later year's org.
-    Returns {group: {metric: {n, people, median, counts}}}."""
+    dict). Each pair of consecutive counted years gives one ratio, later /
+    earlier (values under FLOOR counted as FLOOR), in the group of the later
+    year's org. Returns {group: {metric: {n, people, median (% less feedback
+    than the year before, from the median ratio), counts (per CHANGE_RATIOS
+    bin, smallest ratio first)}}}."""
     xs = {g: {m: [] for m in METRICS} for g in groups}
     who = {g: {m: set() for m in METRICS} for g in groups}
     for pid, ys in years.items():
@@ -211,18 +222,19 @@ def yearly_changes(years, groups):
                 for m in METRICS:
                     if a[m] is None or b[m] is None:
                         continue
-                    xs[g][m].append(-100 * (max(b[m], FLOOR) / max(a[m], FLOOR) - 1))
+                    xs[g][m].append(max(b[m], FLOOR) / max(a[m], FLOOR))
                     who[g][m].add(pid)
-    return {g: {m: dict(n=len(v), people=len(who[g][m]), median=round(st.median(v), 1) if v else None,
-                        counts=histogram(v, CHANGE_EDGES)) for m, v in gm.items()} for g, gm in xs.items()}
+    return {g: {m: dict(n=len(v), people=len(who[g][m]),
+                        median=round(-100 * (st.median(v) - 1), 1) if v else None,
+                        counts=histogram(v, CHANGE_RATIOS)) for m, v in gm.items()} for g, gm in xs.items()}
 
 
 def histogram(xs, edges):
-    """Counts per bin [edges[i], edges[i+1]), the first bin taking everything
-    below edges[1] and the last everything from edges[-2] on."""
-    out = [0] * (len(edges) - 1)
+    """Counts per bin between sorted edges: below edges[0], [edges[i],
+    edges[i+1]), and from edges[-1] on (len(edges) + 1 bins)."""
+    out = [0] * (len(edges) + 1)
     for x in xs:
-        out[min(max(bisect.bisect_right(edges, x) - 1, 0), len(out) - 1)] += 1
+        out[bisect.bisect_right(edges, x)] += 1
     return out
 
 
@@ -654,7 +666,10 @@ def main():
                    ten=tenure_band(st.median(ten)) if ten else None,
                    chg=changes_band(st.median([c["prior"] for c in cs])), org=orgc.most_common(1)[0][0],
                    ok=s["cls"] >= MIN_CLS and s["td"] >= MIN_EXP,
-                   ok_a=sa["cls"] >= MIN_CLS and sa["td"] >= MIN_EXP, v={}, x={}, bands={})
+                   ok_a=sa["cls"] >= MIN_CLS and sa["td"] >= MIN_EXP, v={}, x={}, bands={},
+                   # The lower bar for a cohort curve's medians (not on the page).
+                   curve=s["cls"] >= MIN_COHORT_CLS and s["td"] >= MIN_COHORT_EXP,
+                   curve_a=sa["cls"] >= MIN_COHORT_CLS and sa["td"] >= MIN_COHORT_EXP)
         bo = defaultdict(lambda: [0.0, 0.0, 0.0])      # (m, band) -> obs, own denominator, CL share
         xe = defaultdict(float)
         for o, a_, w, b, c in unit_rows(cs):
@@ -696,7 +711,7 @@ def main():
     for pid, byh in old_by.items():
         for h, cs in byh.items():
             ts, td = sum(r3(c["exp_ts"]) for c in cs), sum(r3(c["exp_td"]) for c in cs)
-            if len(cs) < MIN_CLS or td < MIN_EXP:
+            if len(cs) < MIN_COHORT_CLS or td < MIN_COHORT_EXP:
                 continue
             t = sum(c["threads"] for c in cs)
             v = {m: None for m in METRICS}
@@ -715,9 +730,9 @@ def main():
             byh[half(c["closed_at"])].append(c["ten"])
         # A half-year counts for the addressed measures only with enough labelled CLs.
         def counted(vals, pp):
-            return {m: v if m[0] == "t" or pp["ok_a"] else None for m, v in vals.items()}
+            return {m: v if m[0] == "t" or pp["curve_a"] else None for m, v in vals.items()}
         pts = old_pts.get(pid, []) + [(y0, st.median(byh[h]), pp["org"], counted(pp["v"], pp), counted(pp["x"], pp))
-                                      for h, pp in per.get(pid, {}).items() if HALF.match(h) and pp["ok"]]
+                                      for h, pp in per.get(pid, {}).items() if HALF.match(h) and pp["curve"]]
         if pts:
             trend_pts.append(pts)
     # The page's "Peers" choice, and the same against directory experience ("dir:").
@@ -734,7 +749,7 @@ def main():
     none = {m: None for m in METRICS}
     for (pid, y), cs in by_year.items():
         s = sums(cs)
-        ok = s["cls"] >= MIN_YEAR_CLS and s["td"] >= MIN_YEAR_EXP
+        ok = s["cls"] >= MIN_CLS and s["td"] >= MIN_EXP
         v = dict(none)
         if ok:
             v.update(tn=r3(s["t"] / s["cls"]), ts=r3(s["t"] / s["ts"]) if s["ts"] else None,
@@ -746,7 +761,7 @@ def main():
         recent = [c for c in cs if "thr" in c]
         pp = person_period(pid, recent, "all") if jan1 >= START and recent else None
         if pp and ok:
-            ok_a = jan1 >= ADDR_START and pp["acls"] >= MIN_YEAR_CLS and pp["ok_a"]
+            ok_a = jan1 >= ADDR_START and pp["ok_a"]
             for m in METRICS:
                 if m[0] == "a" and ok_a:
                     v[m] = pp["v"][m]
@@ -790,7 +805,7 @@ def main():
                  tenure=TENURE, changes=CHANGES, xp=XP, min_peers=MIN_PEERS, qs=len(QS), min_cls=MIN_CLS, min_exp=MIN_EXP, min_received=MIN_RECEIVED,
                  tone_weeks=[TONE_WEEKS[0], TONE_WEEKS[-1]], dist={}, counts={}, bands={}, tone={},
                  cohort_step=STEP, cohort_from=int(HISTORY_ISO[:4]), min_cohort=MIN_COHORT, cohorts=cohorts,
-                 change_edges=CHANGE_EDGES, change=change, min_year_cls=MIN_YEAR_CLS,
+                 change_ratios=[round(r, 4) for r in CHANGE_RATIOS], change=change, min_cohort_cls=MIN_COHORT_CLS,
                  size_labels=SIZE_LABELS, sizes=sizes)
     for p in allp:
         # Peers per kind: the addressed measures count people by their labelled CLs.
@@ -880,7 +895,7 @@ def main():
         size += len(data.encode())
         written += 1
         if args.check and len(check) < 300:
-            check[k] = {p: {x: v for x, v in pp.items() if x != "bands"} for p, pp in per[pid].items()}
+            check[k] = {p: {x: v for x, v in pp.items() if x not in ("bands", "curve", "curve_a")} for p, pp in per[pid].items()}
     for pid in people:
         for e in emails_of.get(pid, ()):
             k = key(e)

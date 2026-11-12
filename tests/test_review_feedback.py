@@ -58,10 +58,13 @@ class ReviewFeedbackTest(unittest.TestCase):
         self.assertEqual(ch["nongoogle"]["td"]["n"], 2)
         self.assertEqual(ch["dir:all"]["td"]["n"], 1)
         self.assertEqual(ch["dir:all"]["td"]["median"], 50.0)
-        self.assertEqual(sum(ch["all"]["td"]["counts"]), 6)
+        # Ratios 0.5, 1.5, 1/3, 0.5, 1, 0.2 in the bins below 0.397, [0.397, 0.5), [0.5, 0.63), ... from 2.52 on.
+        self.assertEqual(ch["all"]["td"]["counts"], [2, 0, 2, 0, 0, 1, 1, 0, 0, 0])
 
     def test_histogram(self):
-        self.assertEqual(R.histogram([-99, -10, 0, 5, 10, 500], [-10, 0, 10, 20]), [2, 2, 2])
+        self.assertEqual(R.histogram([0.1, 0.5, 1, 2, 5], [0.5, 1, 2]), [1, 1, 1, 2])
+        # The ratio bins pair each edge with its reciprocal.
+        self.assertEqual([round(1 / r, 6) for r in reversed(R.CHANGE_RATIOS)], [round(r, 6) for r in R.CHANGE_RATIOS])
 
     def test_tenure_trends(self):
         m = {k: 1.0 for k in R.METRICS}

@@ -20,8 +20,10 @@ half-years), and tenure by directory experience shows the values against
 that experience. Its axis is always years. It shows:
 
 - *Cohort curves:* per year of first commit on `main`, the median of
-  people's per-half-year values (counted half-years only: 6+ CLs, 3+
-  expected threads) by tenure, in half-year bins, where 20+ people share a
+  people's per-half-year values (half-years with 6+ CLs and 3+ expected
+  threads, `MIN_COHORT_CLS`: lower than the peer minimum, because noise
+  barely moves a median and a higher bar would keep only the most prolific
+  newcomers in the early points) by tenure, in half-year bins, where 20+ people share a
   point. Every line starts at tenure 0: the page draws the years from 2018
   (`cohort_from`) whose curve begins at 0 with 3+ points, every other one when
   there are more than five (`cohortYears`), so 2018, 2020, 2022 and 2024 for
@@ -34,17 +36,22 @@ that experience. Its axis is always years. It shows:
   for every start year from 2018 to 2024 (size and directory, all threads).
 - *Year-over-year change:* every contributor-year (`yearly_changes`): for
   each person and pair of consecutive calendar years in which they landed
-  12+ changes with 6+ expected threads (twice the half-year minimums), the
-  change in their value from one year to the next (values under 0.05 count
-  as 0.05), as a histogram of % less feedback. All reviewer threads use every
-  CL from 2018 (older ones as for the cohort curves). Addressed threads and
-  directory experience use whole years from their start (2024 on), with the
-  same values as the person's sections. A pair counts for an org group by
-  the later year's org. On 2026-11-12: 6,849 changes from 2,020 people,
-  median 17% less feedback a year. The spread is mostly noise: splitting
-  person-years' CLs at random in two shows a year's value varies by about
-  ±58% at 12–17 CLs, ±38% at 25–34, ±27% at 50–74 and ±16% at 150+, and a
-  year-over-year change by about 1.4 times that.
+  25+ changes with 12+ expected threads (the peer minimum, below), the ratio
+  of the later year's value to the earlier's (values under 0.05 count as
+  0.05). Bins are equal steps of ×2^(1/3) on a ratio scale (÷2.52 … ×2.52,
+  so halved and doubled are edges). Linear % bins (the first version) put
+  every rise above 30% in one open-ended bin while the same span of falls
+  was split over five, so noise piled up in "grew 30%+" (16–20% of all
+  values). All reviewer threads use every CL from 2018 (older ones as for
+  the cohort curves). Addressed threads and directory experience use whole
+  years from their start (2024 on), with the same values as the person's
+  sections. A pair counts for an org group by the later year's org. On
+  2026-11-12: 5,240 changes from 1,561 people, median 16% less feedback a
+  year (21% for addressed threads); bins 7, 8, 13, 17, 19 | 16, 9, 6, 3, 3%.
+  The spread is mostly noise: splitting person-years' CLs at random in two
+  shows a year's value varies by about ±58% at 12–17 CLs, ±38% at 25–34,
+  ±27% at 50–74 and ±16% at 150+, and a year-over-year change by about 1.4
+  times that.
 - *By change size* (`sizes` in `peers.json`, `size_breakdown`): every CL in
   range by size bucket, the feedback index four ways: per CL and per 1,000
   changed lines (each ÷ the same rate over all CLs, so 1.00 is the
@@ -122,8 +129,11 @@ The measures:
 
   peers.json has a distribution per period, measure and group:
   `time:<band>:<org>`, `changes:<band>:<org>` and `dir:<org>`. A person
-  counts among peers for a period with 6+ CLs and 3+ expected threads; a
-  group of fewer than 10 (`min_peers`) gets no percentiles, which happens to
+  counts among peers for a period with 25+ CLs and 12+ expected threads
+  (`MIN_CLS`, the same for a half-year, a year or all the data: a figure's
+  noise depends on its number of CLs, about ±38% at 25; on 2026-11-12 that
+  is 1,750 people with 96.6% of all CLs over all the data, against 2,554 at
+  the earlier minimum of 6); a group of fewer than 10 (`min_peers`) gets no percentiles, which happens to
   most non-Google groups past 200 earlier commits. The page shows the peers'
   median and middle half and the share of peers with less feedback.
 - **Directory experience.** Each CL is split over the 3-level directories its
