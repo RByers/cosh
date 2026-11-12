@@ -82,7 +82,7 @@ const ALL = 'all';
 const state = {
   person: null as Person | null,
   peers: null as Peers | null,
-  kind: 't' as Kind,
+  kind: 'a' as Kind,
   corr: 'd' as Corr,
   tenure: 'changes' as TenureBy,
   /** The experience card: by changes landed before ('all') or per directory. */

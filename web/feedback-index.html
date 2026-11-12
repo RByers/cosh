@@ -34,8 +34,8 @@
       <div class="metric-bar rf-bar">
         <fieldset id="rf-kind" class="segmented">
           <legend>Feedback</legend>
-          <label><input type="radio" name="rf-kind" value="t" checked />All reviewer threads</label>
-          <label><input type="radio" name="rf-kind" value="a" />Addressed only</label>
+          <label><input type="radio" name="rf-kind" value="a" checked />Addressed only</label>
+          <label><input type="radio" name="rf-kind" value="t" />All reviewer threads</label>
         </fieldset>
         <fieldset id="rf-corr" class="segmented">
           <legend>Adjusted for</legend>
@@ -48,7 +48,7 @@
           <select id="rf-tenure">
             <option value="changes" selected>Changes landed before</option>
             <option value="time">Years since first commit</option>
-            <option value="dir">Experience in each directory</option>
+            <option value="dir">Changes in each directory</option>
           </select>
         </div>
         <div class="select-toggle select-short">

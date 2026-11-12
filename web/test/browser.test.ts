@@ -3279,6 +3279,11 @@ async function feedbackPage(peersOverride?: Peers, shardsOverride?: Record<strin
   });
   await page.goto(baseUrl + 'feedback-index.html', { waitUntil: 'load' });
   await page.waitForSelector('body[data-ready]');
+  // Addressed only comes first and is the default; the tests below start from all threads.
+  assert.deepEqual(await page.$$eval('input[name="rf-kind"]', (is) => is.map((i) => [i.value, (i as HTMLInputElement).checked])),
+    [['a', true], ['t', false]]);
+  assert.equal(await page.$eval('#rf-tenure option[value="dir"]', (o) => o.textContent), 'Changes in each directory');
+  await page.click('input[name="rf-kind"][value="t"]');
   return { page, errors };
 }
 
