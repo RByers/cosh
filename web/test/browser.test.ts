@@ -3451,7 +3451,7 @@ test('review feedback: a person, the measures, peer groups, directories and comm
     change: ['change in feedback index from the doubling before', 'doublings of changes landed'],
     kinds: ['changes landed before (earlier commits on main)', 'feedback index'],
     tenures: ['experience band: changes landed before / years / earlier commits in the directory', 'feedback index'],
-    trend: ['six months ending', 'feedback index'],
+    trend: ['six months starting', 'feedback index'],
     xp: ['your earlier commits in the directory', 'feedback index'],
     perCl: ['reviewer threads on the change', 'your changes'],
     size: ['lines changed', 'feedback index'],
@@ -3535,9 +3535,9 @@ test('review feedback: a person, the measures, peer groups, directories and comm
     assert.match(href!, /^https:\/\/chromium-review\.googlesource\.com\/c\/chromium\/src\/\+\/\d+(\/comment\/[\w%]+\/)?$/);
     assert.equal(target, '_blank');
   }
-  // The over-time chart has every half-year of the data, the last one cut to its end.
+  // The over-time chart has every half-year of the data, named by the month each starts in.
   assert.deepEqual(await page.evaluate(() => window.__rf!.charts.trend.data.labels),
-    ['31 Dec 2023', '30 Jun 2024', '31 Dec 2024', '30 Jun 2025', '31 Dec 2025', '30 Jun 2026', '31 Oct 2026']);
+    ['Jul 2023', 'Jan 2024', 'Jul 2024', 'Jan 2025', 'Jul 2025', 'Jan 2026', 'Jul 2026']);
   assert.match(await page.$eval('#method', (e) => e.textContent!), /from\s+July 2023 to October 2026,.*from July 2023, where/s);
   const text = await page.$eval('body', (b) => b.innerText);
   assert.doesNotMatch(text, /\b\d{4}-W\d{2}\b/);

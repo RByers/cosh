@@ -143,6 +143,9 @@ const monthOf = (day: number, year: boolean) => new Intl.DateTimeFormat('en-GB',
 /** The month a range starts in, and the one it ends in (`to` is exclusive). The script
  * trims the ranges to whole months, give or take the first week. */
 const fromMonth = (from: number) => from;
+/** A month and year in short form ("Jul 2024"), for chart axes. */
+const shortMonth = (day: number) => new Intl.DateTimeFormat('en-US',
+  { month: 'short', year: 'numeric', timeZone: 'UTC' }).format(new Date(day * 86_400_000));
 const toMonth = (to: number) => to - 1;
 
 /** A half-year's name in the over-time chart, cut to the dates the current measure covers. */
@@ -645,8 +648,8 @@ function renderTrend() {
       pointBorderColor: t.series[0], pointRadius: 4, pointHoverRadius: 5, pointHitRadius: 10, borderWidth: 2, tension: 0,
       spanGaps: true, fill: false, order: 0 },
   ];
-  // Each point is named by the last day of the six months it covers.
-  const names = hs.map((h) => dayLabel(periodSpan(h, [from, to])[1] - 1));
+  // Each point is named by the month its six months start in ("Jan 2024").
+  const names = hs.map((h) => shortMonth(fromMonth(periodSpan(h, [from, to])[0])));
   // The dot under the pointer, if it is one of the person's (dataset 5) with a value. Chart.js's
   // own event carries chart coordinates; the native one gave no hits under a real click.
   const dotAt = (chart: Chart, e: ChartEvent) => {
