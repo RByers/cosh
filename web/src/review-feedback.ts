@@ -8,6 +8,7 @@ import { Chart, Filler, type ChartDataset, type ChartEvent, type Plugin } from '
 import { readTheme, type Theme } from './charts.ts';
 import {
   bandOf,
+  bestTenure,
   buildPerson,
   clsOf,
   commentUrl,
@@ -275,14 +276,7 @@ function renderIntro() {
   const step = peers.cohort_step;
   const lines = cohortYears(curves, peers.cohort_from)
     .map((y, i) => ({ year: y, color: t.series[i], pts: curves[String(y)] }));
-  const legend = $('#rf-cohort-legend');
-  legend.replaceChildren(...lines.map((l) => {
-    const li = el('li');
-    const sw = el('span', undefined, 'swatch');
-    sw.style.setProperty('--color', l.color);
-    li.append(sw, document.createTextNode(`started in ${l.year}`));
-    return li;
-  }));
+  lineLegend($('#rf-cohort-legend'), lines.map((l) => ({ label: `started in ${l.year}`, color: l.color })));
   const axis = (title: string) => ({ grid: { color: t.grid }, title: { display: true, text: title, color: t.text },
     ticks: { color: t.text, font: { family: t.font } } });
   charts.cohorts = new Chart($<HTMLCanvasElement>('#rf-cohorts'), {
@@ -348,7 +342,162 @@ function renderIntro() {
       },
     },
   });
+  renderKinds(axis);
+  renderTenures(axis);
   renderSizes(axis);
+}
+
+/** A line legend: one swatch per line, coloured by --color. */
+function lineLegend(target: Element, items: { label: string; color: string; dash?: boolean }[]) {
+  target.replaceChildren(...items.map((l) => {
+    const li = el('li');
+    const sw = el('span', undefined, l.dash ? 'swatch swatch-dash' : 'swatch');
+    sw.style.setProperty('--color', l.color);
+    li.append(sw, document.createTextNode(l.label));
+    return li;
+  }));
+}
+
+const times = (a: number | null | undefined, b: number | null | undefined) =>
+  a && b ? fmtNum(a / b, { maximumFractionDigits: 1 }) : '–';
+
+/** All reviewer threads against addressed ones only, by years since the first
+ * commit, over the same contributor half-years ("Adjusted for" and "Peers" apply). */
+function renderKinds(axis: (title: string) => object) {
+  destroy('kinds');
+  const peers = state.peers!;
+  const rows = peers.kinds?.[state.org]?.[state.corr];
+  const labels = peers.kind_labels;
+  if (!rows?.length || !labels) {
+    $('#rf-kinds-note').replaceChildren();
+    $('#rf-kinds-legend').replaceChildren();
+    return;
+  }
+  const t = theme();
+  const share = peers.kind_share?.[state.org] ?? [];
+  const last = rows.length - 1;
+  const [t0, a0] = rows[0];
+  const [t10, a10] = rows[last];
+  const s0 = share[0];
+  const s10 = share[last];
+  put($('#rf-kinds-note'), 'kinds-note', { corr: state.corr, org: state.org === 'all' ? '' : msg(`org-name-${state.org}`),
+    from: monthOf(fromMonth(peers.addr_start), true), to: monthOf(toMonth(peers.end), true),
+    minCohortCls: fmtInt(peers.min_cohort_cls), n: fmtInt(rows.reduce((s, r) => s + r[2], 0)),
+    t0: fmtValue(t0), t10: fmtValue(t10), a0: fmtValue(a0), a10: fmtValue(a10),
+    tFall: times(t0, t10), aFall: times(a0, a10),
+    steeper: !!(t0 && t10 && a0 && a10 && a0 / a10 > t0 / t10),
+    share0: s0 == null ? '–' : pct(s0), share10: s10 == null ? '–' : pct(s10),
+    sharefell: s0 != null && s10 != null && s0 - s10 >= 0.03 });
+  const lines = [
+    { label: msg('kinds-all'), color: t.series[1], data: rows.map((r) => r[0]) },
+    { label: msg('kinds-addressed'), color: t.series[0], data: rows.map((r) => r[1]) },
+  ];
+  const norm = state.corr !== 'n';
+  lineLegend($('#rf-kinds-legend'), [...lines, ...(norm ? [{ label: msg('kinds-norm'), color: t.muted, dash: true }] : [])]);
+  const datasets: ChartDataset<'line'>[] = lines.map((l) => ({ label: l.label, data: l.data, borderColor: l.color,
+    backgroundColor: l.color, borderWidth: 2, pointRadius: 3, pointHoverRadius: 4.5, tension: 0, fill: false }));
+  if (norm) datasets.push({ label: msg('kinds-norm'), data: labels.map(() => 1), borderColor: t.muted, borderDash: [4, 4],
+    borderWidth: 1, pointRadius: 0, pointHoverRadius: 0, fill: false });
+  charts.kinds = new Chart($<HTMLCanvasElement>('#rf-kinds'), {
+    type: 'line',
+    data: { labels, datasets },
+    options: {
+      maintainAspectRatio: false,
+      animation: false,
+      interaction: { mode: 'index', intersect: false },
+      font: { family: t.font },
+      scales: {
+        x: { ...axis('years since first commit on main'), grid: { display: false } },
+        y: { beginAtZero: true, ...axis(msg('axis-feedback')),
+          ticks: { color: t.text, font: { family: t.font }, callback: (v) => fmtValue(Number(v)) } },
+      },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          filter: (i) => i.datasetIndex < 2,
+          callbacks: {
+            label: (i) => `${lines[i.datasetIndex].label}: median ${fmtValue(i.parsed.y)}`,
+            footer: (items) => {
+              const b = items[0]?.dataIndex ?? 0;
+              const s = share[b];
+              return `${fmtInt(rows[b][2])} contributor half-years${s == null ? '' : `; ${pct(s)} of threads addressed`}`;
+            },
+          },
+        },
+      },
+    },
+  });
+}
+
+const TENURE_MEASURES = ['time', 'changes', 'dir'] as const;
+/** Each measure's five bands, least experienced first, as the chart's tick lines. */
+const TENURE_BANDS: Record<(typeof TENURE_MEASURES)[number], string[]> = {
+  time: ['<1 y', '1–2 y', '2–5 y', '5–10 y', '10+ y'],
+  changes: ['<50', '50–199', '200–499', '500–999', '1,000+'],
+  dir: ['0', '1–4', '5–19', '20–99', '100+'],
+};
+
+/** Feedback per tenure band for the three tenure measures, and how much of each
+ * contributor's yearly fall is left once peers are matched on each. */
+function renderTenures(axis: (title: string) => object) {
+  destroy('tenures');
+  const peers = state.peers!;
+  const c = peers.tenure_cmp?.[state.org]?.[metric()];
+  if (!c) {
+    $('#rf-tenures-note').replaceChildren();
+    $('#rf-tenures-legend').replaceChildren();
+    return;
+  }
+  const t = theme();
+  const [from, to] = rangeOf(peers, state.kind);
+  // The median yearly change, signed: the data has it as % less feedback.
+  const chg = (v: number | null) => (v === null ? '–'
+    : fmtNum(-v / 100, { style: 'percent', maximumFractionDigits: 1, signDisplay: 'exceptZero' }).replace('-', '−'));
+  const fall = (m: (typeof TENURE_MEASURES)[number]) => times(c.bands[m][0][0], c.bands[m][4][0]);
+  const best = bestTenure(c);
+  // How much of the plain yearly fall the best measure takes out (overshooting counts as missing).
+  const left = best ? Math.abs(c[best]!) : null;
+  const explained = left !== null && c.none ? pct(Math.max(0, Math.min(1, 1 - left / c.none))) : '–';
+  put($('#rf-tenures-note'), 'tenures-note', { kind: state.kind, corr: state.corr,
+    org: state.org === 'all' ? '' : msg(`org-name-${state.org}`),
+    from: monthOf(fromMonth(from), true), to: monthOf(toMonth(to), true), minCls: fmtInt(peers.min_cls),
+    n: fmtInt(c.n), people: fmtInt(c.people), none: chg(c.none), time: chg(c.time), changes: chg(c.changes),
+    dir: chg(c.dir), timeFall: fall('time'), changesFall: fall('changes'), dirFall: fall('dir'),
+    best: best ?? '', explained });
+  const lines = TENURE_MEASURES.map((m, i) => ({ m, label: msg(`tenure-${m}`), color: t.series[i] }));
+  lineLegend($('#rf-tenures-legend'), lines);
+  charts.tenures = new Chart($<HTMLCanvasElement>('#rf-tenures'), {
+    type: 'line',
+    data: {
+      labels: [0, 1, 2, 3, 4].map((b) => TENURE_MEASURES.map((m) => TENURE_BANDS[m][b])),
+      datasets: lines.map((l) => ({ label: l.label, data: c.bands[l.m].map(([v]) => v), borderColor: l.color,
+        backgroundColor: l.color, borderWidth: 2, pointRadius: 3, pointHoverRadius: 4.5, tension: 0, fill: false })),
+    },
+    options: {
+      maintainAspectRatio: false,
+      animation: false,
+      interaction: { mode: 'index', intersect: false },
+      font: { family: t.font },
+      scales: {
+        x: { ...axis(msg('axis-tenure-band')), grid: { display: false } },
+        y: { beginAtZero: true, ...axis(msg('axis-feedback')),
+          ticks: { color: t.text, font: { family: t.font }, callback: (v) => fmtValue(Number(v), 'd') } },
+      },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            title: () => '',
+            label: (i) => {
+              const l = lines[i.datasetIndex];
+              const [v, n] = c.bands[l.m][i.dataIndex];
+              return `${l.label} ${TENURE_BANDS[l.m][i.dataIndex]}: ${fmtValue(v, 'd')} (${fmtInt(n)} changes)`;
+            },
+          },
+        },
+      },
+    },
+  });
 }
 
 /** The opening card's two bar charts: the median contributor's value by change

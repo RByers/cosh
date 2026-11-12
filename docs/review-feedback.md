@@ -52,6 +52,36 @@ that experience. Its axis is always years. It shows:
   shows a year's value varies by about ±58% at 12–17 CLs, ±38% at 25–34,
   ±27% at 50–74 and ±16% at 150+, and a year-over-year change by about 1.4
   times that.
+- *All or addressed feedback, by tenure* (`kinds`, `kind_share`): like the
+  Balance page's "Feedback by tenure, acted on or not", two lines: the
+  median of all reviewer threads and of addressed ones, over the same
+  person-half-years (those with `MIN_COHORT_CLS` CLs, all labelled, from
+  `addr_start`), in the Balance page's tenure bins (0–3, 3–6, 6–12 months,
+  1–2, 2–5, 5–10, 10+ years), with each line's 2023–24 norm dashed. The
+  feedback switch doesn't apply; adjustment and "Peers" do. On 2026-11-12
+  (size and directory, all authors, 10,687 half-years): all threads 1.92× →
+  0.55× (3.5 times less), addressed 2.03× → 0.49× (4.1 times less), and the
+  share of threads addressed falls from 84% to 74%. Addressed falls more
+  steeply under every adjustment and org (outside Google 2.1 against 2.5
+  times), which is what the page says makes it the better sign of growth;
+  the sentence flips if the data ever says otherwise.
+- *Which tenure explains the fall* (`tenure_cmp`): for each tenure measure
+  (years, earlier commits on `main`, directory experience), everyone's
+  pooled feedback per band against all five bands together, each CL placed
+  by its own band when it landed (directory experience per CL-directory
+  piece, as in the person's sections), drawn on one axis of five bands. Its
+  test of which measure accounts for growth: each person-year's value is
+  also computed against the pooled rate of the same years band and the same
+  changes band (`xt`, `xc` in `person_period`, like `x` for directories),
+  and `matched_changes` takes the median year-over-year change of each over
+  the same pairs of years (as in the histogram). The page names the measure
+  that leaves the change closest to zero (`bestTenure`). On 2026-11-12, all
+  threads, size and directory: unmatched −16.2% a year (5,246 pairs from
+  1,565 people), −5.9% against the same years, −11.3% against directory
+  experience, −0.6% against changes landed (96% of the fall explained);
+  addressed −18.1%, −9.0%, −14.4%, −4.2%. Bands first to last: 3.6, 4.6 and
+  2.7 times less. Outside Google (109 people) years come out closest
+  (−0.4%; changes landed overshoots to +4.9%).
 - *By change size* and *by directory*, two half-width bar charts
   (`median_breakdowns`; `by_size`, `dir_names`, `by_dir` in `peers.json`):
   the median contributor's value for the chosen measure and "Peers" org

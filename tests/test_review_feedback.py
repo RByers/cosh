@@ -61,6 +61,26 @@ class ReviewFeedbackTest(unittest.TestCase):
         # Ratios 0.5, 1.5, 1/3, 0.5, 1, 0.2 in the bins below 0.397, [0.397, 0.5), [0.5, 0.63), ... from 2.52 on.
         self.assertEqual(ch["all"]["td"]["counts"], [2, 0, 2, 0, 0, 1, 1, 0, 0, 0])
 
+    def test_matched_changes(self):
+        none = {k: None for k in R.METRICS}
+        val = lambda td: {**none, "td": td}
+        y = lambda org, plain, time, changes, d: (org, dict(none=val(plain), time=val(time), changes=val(changes),
+                                                            dir=val(d)))
+        years = {
+            "p1": {2024: y("google.com", 2.0, 1.0, 1.0, 1.0), 2025: y("google.com", 1.0, 0.8, 1.0, 1.5)},
+            # 2025 -> 26 lacks a value by directory experience, so it isn't counted for any measure.
+            "p2": {2024: y("igalia.com", 1.0, 1.0, 1.0, 1.0), 2025: y("igalia.com", 0.5, 1.0, 1.0, 0.5),
+                   2026: y("igalia.com", 0.25, 1.0, 1.0, None)},
+        }
+        ch = R.matched_changes(years, {"all": lambda o: True, "nongoogle": lambda o: o != "google.com"})
+        a = ch["all"]["td"]
+        self.assertEqual((a["n"], a["people"]), (2, 2))
+        # Medians of the two ratios each, as % less: plain 0.5 and 0.5; time 0.8 and 1; changes 1 and 1;
+        # directory 1.5 and 0.5.
+        self.assertEqual((a["none"], a["time"], a["changes"], a["dir"]), (50.0, 10.0, 0.0, 0.0))
+        self.assertEqual(ch["nongoogle"]["td"]["n"], 1)
+        self.assertIsNone(ch["all"]["ad"]["none"])
+
     def test_histogram(self):
         self.assertEqual(R.histogram([0.1, 0.5, 1, 2, 5], [0.5, 1, 2]), [1, 1, 1, 2])
         # The ratio bins pair each edge with its reciprocal.

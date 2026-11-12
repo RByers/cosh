@@ -158,6 +158,38 @@ export interface Peers {
   dir_names?: string[];
   by_dir?: Record<string, Record<Metric, MedianBar[]>>;
   min_cell_cls?: number;
+  /** All against addressed feedback by tenure (`kind_labels`, years since the
+   * first commit): per "Peers" org and adjustment, [median of all threads,
+   * median of addressed threads (null: too few), contributor half-years], and
+   * the share of threads addressed per bin (`kind_share`). */
+  kind_labels?: string[];
+  kinds?: Record<string, Record<Corr, [number | null, number | null, number][]>>;
+  kind_share?: Record<string, (number | null)[]>;
+  /** The three tenure measures compared: per "Peers" org and measure, the
+   * pooled feedback per band relative to all bands ([value, changes]), and the
+   * median yearly change in % less feedback, plain (`none`) and against the
+   * same tenure by each measure, over the same `n` pairs of years. */
+  tenure_cmp?: Record<string, Record<Metric, TenureCmp>>;
+}
+
+export type TenureMeasure = 'time' | 'changes' | 'dir';
+
+export interface TenureCmp {
+  bands: Record<TenureMeasure, [number | null, number][]>;
+  n: number;
+  people: number;
+  none: number | null;
+  time: number | null;
+  changes: number | null;
+  dir: number | null;
+}
+
+/** The tenure measure that leaves the least of each contributor's yearly
+ * change unexplained (closest to zero), or null without data. */
+export function bestTenure(c: TenureCmp): TenureMeasure | null {
+  const ms = (['time', 'changes', 'dir'] as const).filter((m) => c[m] !== null);
+  if (!ms.length) return null;
+  return ms.reduce((a, b) => (Math.abs(c[b]!) < Math.abs(c[a]!) ? b : a));
 }
 
 /** [median (null: too few contributors), contributors]. */

@@ -3342,8 +3342,25 @@ test('review feedback: the opening card explains the index before any address is
   // The histogram counts contributor-years from 2018 on.
   assert.match(await page.$eval('#rf-change-note', (e) => e.textContent!),
     /5,300 year-to-year changes from 1,900 contributors;\s+from\s+2018 on\).*fell by\s+16%/s);
+  // All against addressed feedback by tenure, with each line's norm dashed.
+  assert.deepEqual(await page.$$eval('#rf-kinds-legend li', (ls) => ls.map((l) => l.textContent)),
+    ['All reviewer threads', 'Addressed threads only', "Each line's 2023–24 norm"]);
+  const kindsNote = () => page.$eval('#rf-kinds-note', (e) => e.textContent!);
+  assert.match(await kindsNote(), /\(10,640 contributor half-years\)/);
+  assert.match(await kindsNote(), /better sign of growth.*from 2\.03× in the first three months to 0\.49×.*\(4\.1 times less\).*from 1\.92× to 0\.55× \(3\.5 times less\)/s);
+  assert.match(await kindsNote(), /newcomers addressed 84% of their threads, ten-year veterans 74%/);
+  // The three tenure measures, one line each, and which leaves the least of the yearly fall.
+  assert.deepEqual(await page.$$eval('#rf-tenures-legend li', (ls) => ls.map((l) => l.textContent)),
+    ['Years since first commit', 'Changes landed before', 'Earlier commits in the directory']);
+  const tenuresNote = () => page.$eval('#rf-tenures-note', (e) => e.textContent!);
+  assert.match(await tenuresNote(), /falls 3\.6 times by years, 4\.7 times by changes landed and 2\.7 times by directory/);
+  assert.match(await tenuresNote(), /changed by −16\.2%.*the change was −5\.9% for years, −11\.3% for directory experience and −0\.6% for changes landed/s);
+  assert.match(await tenuresNote(), /Changes landed accounts for the most, 96% of the yearly fall/);
   // It follows the switches: outside Google has one line, and a median that grew.
   await page.select('#rf-org', 'nongoogle');
+  assert.match(await kindsNote(), /Here\s+addressed feedback falls no further/);
+  assert.doesNotMatch(await kindsNote(), /thin out/);
+  assert.match(await tenuresNote(), /\+4\.9% for changes landed.*Here years since the first commit account for the most, 97% of the yearly fall/s);
   assert.deepEqual(await page.$$eval('#rf-cohort-legend li', (ls) => ls.map((l) => l.textContent)), ['started in 2024']);
   assert.match(await page.$eval('#rf-change-note', (e) => e.textContent!), /came from outside Google;.*grew by\s+5%/s);
   await page.click('input[name="rf-kind"][value="a"]');
@@ -3379,6 +3396,8 @@ test('review feedback: a person, the measures, peer groups, directories and comm
   }))), {
     cohorts: ['years since first commit on main', 'feedback index'],
     change: ['change in feedback index from the year before', 'contributor-years'],
+    kinds: ['years since first commit on main', 'feedback index'],
+    tenures: ['tenure band: years / changes landed before / earlier commits in the directory', 'feedback index'],
     trend: ['half-year', 'feedback index'],
     xp: ['your earlier commits in the directory', 'feedback index'],
     perCl: ['reviewer threads on the change', 'your changes'],

@@ -119,8 +119,66 @@
           In the median year, feedback <span data-if="fell">fell</span><span data-if="!fell">grew</span> by
           <slot name="median"></slot>; bars on the right are years in which it grew.
         </template>
+        <h3>All feedback or only addressed feedback, by tenure</h3>
+        <ul id="rf-kinds-legend" class="legend rf-line-legend" aria-label="Lines"></ul>
+        <div class="chart">
+          <canvas id="rf-kinds" role="img" aria-label="Median feedback index by years since a contributor's first commit, for all reviewer threads and for addressed threads only."></canvas>
+        </div>
+        <p id="rf-kinds-note" class="note"></p>
+        <template data-msg="kinds-all">All reviewer threads</template>
+        <template data-msg="kinds-addressed">Addressed threads only</template>
+        <template data-msg="kinds-norm">Each line's 2023–24 norm</template>
+        <template data-msg="kinds-note">
+          The median contributor's feedback<span data-if="corr=n"> per change</span>, counting every reviewer
+          thread or only those the author addressed, over the same half-years: those from <slot name="from"></slot>
+          to <slot name="to"></slot> in which a contributor landed <slot name="minCohortCls"></slot> or more changes,
+          all with addressed labels<span data-if="org">, where most came from <slot name="org"></slot></span>
+          (<slot name="n"></slot> contributor half-years).<span data-if="!corr=n"> Each line is against its own
+          2023–24 norm.</span>
+          <span data-if="steeper">Addressed feedback is the better sign of growth. It falls further, from
+          <slot name="a0"></slot> in the first three months to <slot name="a10"></slot> after ten years
+          (<slot name="aFall"></slot> times less), while all feedback falls from <slot name="t0"></slot> to
+          <slot name="t10"></slot> (<slot name="tFall"></slot> times less).</span><span data-if="!steeper">Here
+          addressed feedback falls no further than all feedback: from <slot name="a0"></slot> to
+          <slot name="a10"></slot>, against <slot name="t0"></slot> to <slot name="t10"></slot>.</span>
+          <span data-if="sharefell">The threads authors don't act on, such as questions, ideas for later and
+          suggestions they decline, thin out more slowly: newcomers addressed <slot name="share0"></slot> of
+          their threads, ten-year veterans <slot name="share10"></slot>. Counting those threads adds feedback that
+          experience removes less of, which blurs the fall that learning brings.</span>
+        </template>
+
+        <h3>Which tenure explains the fall</h3>
+        <ul id="rf-tenures-legend" class="legend rf-line-legend" aria-label="Tenure measured by"></ul>
+        <div class="chart">
+          <canvas id="rf-tenures" role="img" aria-label="Feedback in each of five tenure bands, least experienced first, for tenure measured in years since the first commit, changes landed before, and earlier commits in the directory."></canvas>
+        </div>
+        <p id="rf-tenures-note" class="note"></p>
+        <template data-msg="tenure-time">Years since first commit</template>
+        <template data-msg="tenure-changes">Changes landed before</template>
+        <template data-msg="tenure-dir">Earlier commits in the directory</template>
+        <template data-msg="axis-tenure-band">tenure band: years / changes landed before / earlier commits in the directory</template>
+        <template data-msg="tenures-note">
+          Everyone's<span data-if="kind=a"> addressed</span> feedback<span data-if="corr=n"> per change</span> in
+          each tenure band, pooled and set against all five bands together, from <slot name="from"></slot> to
+          <slot name="to"></slot><span data-if="org">, counting only changes from <slot name="org"></slot></span>;
+          each change is placed by its author's tenure when it landed. From the first band to the last, feedback
+          falls <slot name="timeFall"></slot> times by years, <slot name="changesFall"></slot> times by changes
+          landed and <slot name="dirFall"></slot> times by directory experience.
+          From one year to the next, the median contributor's feedback changed by <slot name="none"></slot>
+          (<slot name="n"></slot> pairs of years with <slot name="minCls"></slot> or more changes in both, from
+          <slot name="people"></slot> contributors). Set against peers with the same tenure, the change was
+          <slot name="time"></slot> for years, <slot name="dir"></slot> for directory experience and
+          <slot name="changes"></slot> for changes landed. The closer to zero, the more of a contributor's growth
+          that tenure accounts for.
+          <span data-if="best=changes">Changes landed accounts for the most, <slot name="explained"></slot> of the
+          yearly fall: what makes contributors need less review is the changes they land, more than time on the
+          project or familiarity with one directory.</span><span data-if="best=time">Here years since the first
+          commit account for the most, <slot name="explained"></slot> of the yearly fall.</span><span
+          data-if="best=dir">Here directory experience accounts for the most, <slot name="explained"></slot> of the
+          yearly fall.</span>
+        </template>
         <p class="note">
-          The first two charts always measure tenure in years.
+          The first three charts always measure tenure in years.
         </p>
         <!-- Two half-width bar charts: the median author's feedback index by change size and by directory. -->
         <div class="rf-pair">

@@ -2935,6 +2935,13 @@ canvas.rf-pointable {
   background: var(--color);
 }
 
+/* A reference line, drawn dashed in the chart. */
+.rf-line-legend .swatch-dash {
+  height: 0;
+  background: none;
+  border-top: 2px dashed var(--color);
+}
+
 /* The opening card's two bar charts, side by side; stacked on narrow screens. */
 .rf-pair {
   display: grid;

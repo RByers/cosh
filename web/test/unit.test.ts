@@ -1462,6 +1462,16 @@ test('review feedback: the histogram names its ratio bins as falls and rises', a
   assert.deepEqual(bins.map((b) => b.fell), [true, true, true, true, true, false, false, false, false, false]);
 });
 
+test('review feedback: the tenure measure that leaves the least yearly change unexplained', async () => {
+  const { bestTenure } = await import('../src/feedback.ts');
+  const c = { bands: { time: [], changes: [], dir: [] }, n: 10, people: 5, none: 16 };
+  assert.equal(bestTenure({ ...c, time: 5.9, changes: 0.6, dir: 11.3 }), 'changes');
+  // Overshooting (feedback grows once matched) counts by its size.
+  assert.equal(bestTenure({ ...c, time: 0.4, changes: -4.9, dir: 7.6 }), 'time');
+  assert.equal(bestTenure({ ...c, time: null, changes: null, dir: 3 }), 'dir');
+  assert.equal(bestTenure({ ...c, time: null, changes: null, dir: null }), null);
+});
+
 test('review feedback: the opening card draws start years whose curve begins at tenure 0', async () => {
   const { cohortYears } = await import('../src/feedback.ts');
   const curve = (b0: number): [number, number, number][] => [[b0, 2, 30], [b0 + 0.5, 1.5, 30], [b0 + 1, 1, 30]];
