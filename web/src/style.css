@@ -2739,6 +2739,11 @@ button.term:focus-visible {
 /* ---- Review Feedback (review-feedback.html) ---- */
 
 /* The page's standing caveat, under the title: hard to miss. */
+.rf-summary {
+  margin: 0 0 12px;
+  max-width: 75ch;
+}
+
 .rf-disclaimer {
   margin: 0 0 16px;
   padding: 10px 14px;
