@@ -124,8 +124,8 @@ The measures:
   commits per directory, as an expandable tree like Value Exchange's
   directory chart: top-level directories first, opening down to the 3-level
   ones (a parent counts each CL once; earlier commits is the most in any one
-  directory below it). The ratio cell is shaded red below 1, white at 1 and
-  green above, on a log scale that saturates at 0.25× and 4×. Selecting a
+  directory below it). The ratio cell is shaded green below 1, white at 1 and
+  red above, on a log scale that saturates at 0.25× and 4×. Selecting a
   directory at any level filters the comment list to it and below, together
   with the page's all/addressed choice.
 - **Half-year filter**: selecting one of the person's dots in the over-time

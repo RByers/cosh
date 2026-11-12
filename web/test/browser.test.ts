@@ -3380,7 +3380,7 @@ test('review feedback: a person, the measures, peer groups, directories and comm
   assert.deepEqual(await dirNames(), ['chrome/', 'third_party/', 'blink/', 'renderer/', 'content/']);
   assert.deepEqual(await page.$$eval('#rf-dirs tbody tr', (trs) => trs.map((t) => (t as HTMLElement).dataset.depth)),
     ['0', '0', '1', '2', '0']);
-  // The ratio is shaded red below typical and green above, more strongly further from it.
+  // The ratio is shaded green below typical and red above, more strongly further from it.
   const shades = await page.$$eval('#rf-dirs td.rf-ratio', (tds) => tds.map((t) =>
     [t.className, (t as HTMLElement).style.getPropertyValue('--rf-shade'), getComputedStyle(t).backgroundColor]));
   for (const [cls, shade, bg] of shades) {

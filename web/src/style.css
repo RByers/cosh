@@ -2850,7 +2850,7 @@ canvas.rf-pointable {
   color: var(--text-muted);
 }
 
-/* The ratio's shade: red below typical, green above, fading to the card at
+/* The ratio's shade: green below typical (less feedback), red above, fading to the card at
  * typical. --rf-shade is 0..1 (a quarter or 4× of typical and beyond: 1). */
 .rf-table td.rf-ratio-lo,
 .rf-table td.rf-ratio-hi {
@@ -2858,11 +2858,11 @@ canvas.rf-pointable {
 }
 
 .rf-table td.rf-ratio-lo {
-  --rf-ratio-color: var(--critical);
+  --rf-ratio-color: var(--series-6);
 }
 
 .rf-table td.rf-ratio-hi {
-  --rf-ratio-color: var(--series-6);
+  --rf-ratio-color: var(--critical);
 }
 
 .rf-more {
