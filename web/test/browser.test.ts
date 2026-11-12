@@ -3284,6 +3284,10 @@ test('review feedback: a person, the measures, peer groups, directories and comm
   assert.equal(await tile('rf-tile-threads'), '5');
   // The page computes the values from the half-year files (unit tests check the arithmetic).
   assert.equal(await tile('rf-tile-you'), '0.71×');
+  // Peers default to the same tenure.
+  assert.equal(await page.$eval('#rf-peers', (s) => (s as HTMLSelectElement).value), 'ten');
+  assert.match(await page.$eval('#rf-tile-peers .tile-sub', (e) => e.textContent!), /^Tenure 2–5 years/);
+  await page.select('#rf-peers', 'all');
   // Peers 'all': quantiles 0.4..3 evenly, so the median is 1.7 and 0.714 sits at 12%.
   assert.equal(await tile('rf-tile-peers'), '1.70×');
   assert.equal(await tile('rf-tile-rank'), '12%');

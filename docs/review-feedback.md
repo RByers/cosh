@@ -24,9 +24,10 @@ index, `docs/balance.md` section 4; mechanical CLs from `mech.jsonl`):
     `balance_growth.cl_residuals`, and its thread counts match the `cl`
     table's for every CL.
   - *Dates:* everything, a calendar year or a half-year.
-- **Peers** ("Compare with"): all authors; the same tenure band (under 1, 1–2,
-  2–5, 5–10, 10+ years since the first commit on `main`, at the median of the
-  person's CLs in the period); Google, Microsoft or Igalia (the org most of the
+- **Peers** ("Compare with"): the same tenure band (the default, because
+  feedback falls steeply with tenure: under 1, 1–2, 2–5, 5–10, 10+ years since
+  the first commit on `main`, at the median of the person's CLs in the period,
+  so the over-time chart follows the person's band); all authors; Google, Microsoft or Igalia (the org most of the
   period's CLs are attributed to, `cosh/orgs.py`); everyone outside Google;
   or **the same experience in each directory**. A person counts among peers
   for a period with 6+ CLs and 3+ expected threads. The page shows the peers'

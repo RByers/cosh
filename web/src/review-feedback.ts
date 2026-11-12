@@ -59,7 +59,7 @@ const state = {
   period: 'all',
   kind: 't' as Kind,
   corr: 'd' as Corr,
-  peer: 'all' as PeerChoice,
+  peer: 'ten' as PeerChoice,
   dir: null as number | null,
   praiseOnly: false,
   threadsShown: PAGE,
