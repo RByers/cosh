@@ -289,14 +289,18 @@ export function groupKey(by: TenureBy, org: PeerOrg, vals: PeriodVals | undefine
  * changes in: their tenure is known then too, so the trend's peer band covers them all.
  * Years since the first commit at the half-year's middle, or the earlier commits on main
  * there (one more than at their last change before it, else as many as at their first
- * change after it). Null only when the first commit is unknown. */
+ * change after it). Null before they started contributing (the half-years that end
+ * before their first commit, else their first change), and for tenure in years when the
+ * first commit is unknown. */
 export function halfGroups(by: TenureBy, org: PeerOrg, p: Pick<Person, 'periods' | 'firstDay' | 'cls'>,
   hs: string[]): (string | null)[] {
   const cls = [...p.cls].sort((a, b) => a[1] - b[1]);
+  const start = p.firstDay ?? cls[0]?.[1] ?? Infinity;
   return hs.map((h) => {
+    const [a, b] = periodSpan(h, [-Infinity, Infinity]);
+    if (b <= start && !p.periods[h]) return null;
     if (by === 'dir') return `dir:${org}`;
     let band = bandOf(by, p.periods[h]);
-    const [a, b] = periodSpan(h, [-Infinity, Infinity]);
     const mid = (a + b) / 2;
     if (!band && by === 'time' && p.firstDay !== null) band = tenureBand(Math.max(0, mid - p.firstDay) / 365.25);
     if (!band && by === 'changes') {

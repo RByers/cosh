@@ -1620,6 +1620,12 @@ test('review feedback: half-year files merge, and every period gets the values t
     ['changes:<50:google', 'changes:<50:google', 'changes:50-199:google', 'changes:50-199:google']);
   assert.deepEqual(F.halfGroups('dir', 'all', only, hs), Array(4).fill('dir:all'));
   assert.deepEqual(F.halfGroups('time', 'all', { ...only, firstDay: null }, hs), [null, null, 'time:2-5y:all', null]);
+  // No peers before they started: from the half-year of the first commit, else of the first change.
+  const late = { ...only, firstDay: ymd(2024, 2) };
+  assert.deepEqual(F.halfGroups('time', 'all', late, hs), [null, 'time:<1y:all', 'time:2-5y:all', 'time:2-5y:all']);
+  assert.deepEqual(F.halfGroups('dir', 'all', late, hs), [null, 'dir:all', 'dir:all', 'dir:all']);
+  assert.deepEqual(F.halfGroups('changes', 'all', { ...only, firstDay: null }, hs),
+    [null, null, 'changes:50-199:all', 'changes:50-199:all']);
   assert.equal(F.valueFor('dir', all, 'td'), 0.49);
   assert.equal(F.valueFor('time', all, 'ad'), 0.698);
   assert.deepEqual(F.halves(['all', '2026H2', '2025', '2023H2']), ['2023H2', '2026H2']);
