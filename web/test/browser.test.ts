@@ -3490,6 +3490,23 @@ test('review feedback: a person, the measures, peer groups, directories and comm
   assert.equal(await tile('rf-tile-peers'), '1.70×');
   assert.equal(await tile('rf-tile-rank'), '12%');
   assert.ok(await page.evaluate(() => !!window.__rf!.charts.trend && !!window.__rf!.charts.xp));
+  // The experience chart's hover card points at the person's dot, not at the average of every series there.
+  await page.$eval('#rf-xp', (c) => c.scrollIntoView({ block: 'center' }));
+  const xpDot = await page.evaluate(() => {
+    const chart = window.__rf!.charts.xp;
+    const i = (chart.data.datasets[3].data as (number | null)[]).findIndex((v) => v !== null);
+    const pt = chart.getDatasetMeta(3).data[i];
+    const r = chart.canvas.getBoundingClientRect();
+    return { x: r.left + pt.x, y: r.top + pt.y };
+  });
+  await page.mouse.move(xpDot.x, xpDot.y);
+  await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
+  const xpCaret = await page.evaluate(() => {
+    const chart = window.__rf!.charts.xp;
+    const r = chart.canvas.getBoundingClientRect();
+    return { x: r.left + chart.tooltip!.caretX, y: r.top + chart.tooltip!.caretY };
+  });
+  assert.ok(Math.abs(xpCaret.x - xpDot.x) < 1 && Math.abs(xpCaret.y - xpDot.y) < 1, JSON.stringify({ xpCaret, xpDot }));
   // Addressed only, per change.
   await page.click('input[name="rf-kind"][value="a"]');
   await page.click('input[name="rf-corr"][value="n"]');

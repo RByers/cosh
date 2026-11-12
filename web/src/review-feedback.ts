@@ -868,6 +868,7 @@ function renderXp() {
       plugins: {
         legend: { display: false },
         tooltip: {
+          position: 'primary',
           filter: (i) => i.datasetIndex >= 2,
           callbacks: {
             label: (i) => (i.datasetIndex === 3 ? `You: ${fmtValue(i.parsed.y)}` : `${peerName}: ${fmtValue(i.parsed.y)}`),
