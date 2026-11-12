@@ -18,8 +18,8 @@ feedback and adjustment switches; "Peers" picks its population (a half-year
 counts by its org, a person's change by the org of most of their
 half-years), and tenure by directory experience shows the values against
 that experience. **Changes landed before is the main tenure measure**
-(the user's call, 2026-11-12, after "Which tenure explains the fall" found it
-accounts for 96% of the yearly fall): "Same tenure by" defaults to it, and
+(the user's call, 2026-11-12, after "Which measure of experience explains the fall" found it
+accounts for 96% of the yearly fall): "Same experience by" defaults to it, and
 the first three charts use it as their axis, also under directory
 experience (which has no axis of its own). With "Years since first commit"
 they switch to the years versions described below (`introAxis` in
@@ -85,7 +85,7 @@ The years versions:
   shows a year's value varies by about ±58% at 12–17 CLs, ±38% at 25–34,
   ±27% at 50–74 and ±16% at 150+, and a year-over-year change by about 1.4
   times that.
-- *All or addressed feedback, by tenure* (`kinds`, `kind_share`): like the
+- *All or addressed feedback, by experience* (`kinds`, `kind_share`): like the
   Balance page's "Feedback by tenure, acted on or not", two lines: the
   median of all reviewer threads and of addressed ones, over the same
   person-half-years (those with `MIN_COHORT_CLS` CLs, all labelled, from
@@ -109,7 +109,7 @@ The years versions:
   instead of medians makes both lines steeper, and the period matters
   little. This chart and the next sit side by side (`.rf-pair`), each
   with its own note.
-- *Which tenure explains the fall* (`tenure_cmp`): for each tenure measure
+- *Which measure of experience explains the fall* (`tenure_cmp`): for each tenure measure
   (years, earlier commits on `main`, directory experience), everyone's
   pooled feedback per band against all five bands together, each CL placed
   by its own band when it landed (directory experience per CL-directory
@@ -202,7 +202,7 @@ The measures:
 - **Peers always have the same tenure**, because feedback falls steeply with
   it (about 1.7× under a year or under 50 earlier commits, against 0.6× at
   10+ years or 1,000+). Two selectors pick the group:
-  - *Same tenure by:* earlier commits on `main`, "changes landed before",
+  - *Same experience by:* earlier commits on `main`, "changes landed before",
     the default (from 2017, reverts left out: under 50, 50–199, 200–499,
     500–999, 1,000+); years since the first commit on `main` (under 1, 1–2,
     2–5, 5–10, 10+); or **experience in each

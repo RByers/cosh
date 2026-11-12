@@ -44,7 +44,7 @@
           <label><input type="radio" name="rf-corr" value="d" checked />Size and directory</label>
         </fieldset>
         <div class="select-toggle">
-          <label for="rf-tenure">Same tenure by</label>
+          <label for="rf-tenure">Same experience by</label>
           <select id="rf-tenure">
             <option value="changes" selected>Changes landed before</option>
             <option value="time">Years since first commit</option>
@@ -86,10 +86,10 @@
           contributor style. Use this page as a guide to help you explore possible opportunities for learning and
           increasing your positive impact on the Chromium project.
         </p>
-        <h3>By tenure, for contributors who started in different years</h3>
+        <h3>By experience, for contributors who started in different years</h3>
         <ul id="rf-cohort-legend" class="legend rf-line-legend" aria-label="First commit on main in"></ul>
         <div class="chart">
-          <canvas id="rf-cohorts" role="img" aria-label="Median feedback index by a contributor's tenure (changes landed before, or years since the first commit), one line per year of first commit."></canvas>
+          <canvas id="rf-cohorts" role="img" aria-label="Median feedback index by a contributor's experience (changes landed before, or years since the first commit), one line per year of first commit."></canvas>
         </div>
         <p id="rf-cohorts-note" class="note"></p>
         <template data-msg="cohorts-note">
@@ -139,12 +139,12 @@
         <!-- Two half-width line charts, side by side on wide screens, each with its own note. -->
         <div class="rf-pair">
         <div>
-        <h3 id="rf-kinds-title">All feedback or only addressed feedback, by tenure</h3>
+        <h3 id="rf-kinds-title">All feedback or only addressed feedback, by experience</h3>
         <template data-msg="kinds-title-chg">All feedback or only addressed feedback, by changes landed before</template>
         <template data-msg="kinds-title-time">All feedback or only addressed feedback, by years since the first commit</template>
         <ul id="rf-kinds-legend" class="legend rf-line-legend" aria-label="Lines"></ul>
         <div class="chart rf-half-chart">
-          <canvas id="rf-kinds" role="img" aria-label="Median feedback index by a contributor's tenure, for all reviewer threads and for addressed threads only."></canvas>
+          <canvas id="rf-kinds" role="img" aria-label="Median feedback index by a contributor's experience, for all reviewer threads and for addressed threads only."></canvas>
         </div>
         <p id="rf-kinds-note" class="note"></p>
         <template data-msg="kinds-all">All reviewer threads</template>
@@ -161,10 +161,10 @@
         </template>
         </div>
         <div>
-        <h3>Which tenure explains the fall</h3>
-        <ul id="rf-tenures-legend" class="legend rf-line-legend" aria-label="Tenure measured by"></ul>
+        <h3>Which measure of experience explains the fall</h3>
+        <ul id="rf-tenures-legend" class="legend rf-line-legend" aria-label="Experience measured by"></ul>
         <div class="chart rf-half-chart">
-          <canvas id="rf-tenures" role="img" aria-label="Feedback in each of five tenure bands, least experienced first, for tenure measured in changes landed before, years since the first commit, and earlier commits in the directory."></canvas>
+          <canvas id="rf-tenures" role="img" aria-label="Feedback in each of five experience bands, least experienced first, for experience measured in changes landed before, years since the first commit, and earlier commits in the directory."></canvas>
         </div>
         <p id="rf-tenures-note" class="note"></p>
         <template data-msg="tenure-time">Years since first commit</template>
@@ -172,19 +172,19 @@
         <template data-msg="tenure-dir">Earlier commits in the directory</template>
         <template data-msg="tenure-name-time">years since the first commit</template>
         <template data-msg="tenure-name-changes">changes landed</template>
-        <template data-msg="tenure-name-dir">directory experience</template>
-        <template data-msg="axis-tenure-band">tenure band: changes landed before / years / earlier commits in the directory</template>
+        <template data-msg="tenure-name-dir">earlier commits in the directory</template>
+        <template data-msg="axis-tenure-band">experience band: changes landed before / years / earlier commits in the directory</template>
         <template data-msg="axis-changes-before">changes landed before (earlier commits on main)</template>
         <template data-msg="axis-years-since">years since first commit on main</template>
         <template data-msg="tenures-note">
-          Tenure by <slot name="best"></slot> accounts for the most growth: <slot name="bestShare"></slot> of a
+          Experience measured by <slot name="best"></slot> accounts for the most growth: <slot name="bestShare"></slot> of a
           contributor's yearly fall in feedback, against <slot name="share2"></slot> by
           <slot name="name2"></slot> and <slot name="share3"></slot> by <slot name="name3"></slot>.
         </template>
         </div>
         </div>
         <p class="note">
-          The first three charts measure tenure as “Same tenure by” is set: in changes landed before (also for
+          The first three charts measure experience as “Same experience by” is set: in changes landed before (also for
           experience in each directory), or in years since the first commit.
         </p>
         <!-- Two half-width bar charts: the median author's feedback index by change size and by directory. -->
@@ -222,7 +222,7 @@
         <h2 id="find-title">Your review feedback</h2>
         <p class="sub">
           Type your email address to see the reviewer threads on every change you landed since <span data-rf-range="from"></span>, set
-          against authors with the same tenure: the same number of changes landed before, the same years since
+          against authors with the same experience: the same number of changes landed before, the same years since
           their first commit, or the same experience in each directory you changed.
         </p>
         <form id="rf-find" class="person-find rf-find" autocomplete="off">
@@ -283,7 +283,7 @@
         <template data-msg="group-changes"><slot name="org"></slot>, <slot name="band"></slot> earlier
           changes</template>
         <template data-msg="group-dir"><slot name="org"></slot>, by experience in each directory</template>
-        <template data-msg="group-none">Tenure unknown</template>
+        <template data-msg="group-none">Experience unknown</template>
         <template data-msg="you-facts">
           Your first commit on main was in <slot name="first"></slot>. At the middle of your
           changes you were <slot name="ten"></slot> in, with about <slot name="prior"></slot> earlier changes on main, and most
@@ -454,10 +454,10 @@
           Adjusting for size compares each change with the 2023–24 average for changes in the same of ten size
           bands (by lines changed); adjusting for directory as well uses the average for that size in the same
           two-level directory, where there are 30 or more such changes. Peers are the authors who landed
-          <span id="rf-min-cls"></span> or more changes, always with the same tenure, taken at the middle of
-          their changes. Tenure in changes, the main measure, counts their earlier commits on main since 2017
-          (reverts left out), in bands of under 50, 50–199, 200–499, 500–999 and 1,000 or more. Tenure in years
-          counts from a person's first commit on main. Tenure by experience in each directory divides
+          <span id="rf-min-cls"></span> or more changes, always with the same experience, taken at the middle of
+          their changes. Experience in changes, the main measure, counts their earlier commits on main since 2017
+          (reverts left out), in bands of under 50, 50–199, 200–499, 500–999 and 1,000 or more. Experience in years
+          counts from a person's first commit on main. Experience in each directory divides
           everyone's feedback by what all authors drew at the same number of earlier commits in that directory.
           An author's organization is the one most of their changes are attributed to. Groups of
           fewer than ten peers get no comparison.

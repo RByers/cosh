@@ -3407,13 +3407,13 @@ test('review feedback: the opening card explains the index before any address is
   assert.deepEqual(await page.$$eval('#rf-tenures-legend li', (ls) => ls.map((l) => l.textContent)),
     ['Changes landed before', 'Years since first commit', 'Earlier commits in the directory']);
   const tenuresNote = () => page.$eval('#rf-tenures-note', (e) => e.textContent!);
-  assert.equal(await tenuresNote(), "Tenure by changes landed accounts for the most growth: 96% of a contributor's "
-    + 'yearly fall in feedback, against 64% by years since the first commit and 30% by directory experience.');
+  assert.equal(await tenuresNote(), "Experience measured by changes landed accounts for the most growth: 96% of a contributor's "
+    + 'yearly fall in feedback, against 64% by years since the first commit and 30% by earlier commits in the directory.');
   // It follows the switches: outside Google has one line, and a median that grew.
   await page.select('#rf-org', 'nongoogle');
   assert.match(await kindsNote(), /^All feedback shows growth better here: it falls 2\.3 times .* against 2 times for addressed/);
   // Changes landed overshoots (+4.9%), which counts against it like a shortfall.
-  assert.match(await tenuresNote(), /^Tenure by years since the first commit accounts for the most growth: 97% .* against 64% by changes landed and 45% by directory experience\.$/);
+  assert.match(await tenuresNote(), /^Experience measured by years since the first commit accounts for the most growth: 97% .* against 64% by changes landed and 45% by earlier commits in the directory\.$/);
   assert.deepEqual(await page.$$eval('#rf-cohort-legend li', (ls) => ls.map((l) => l.textContent)), ['started in 2024']);
   assert.match(await page.$eval('#rf-change-note', (e) => e.textContent!), /came from outside Google;.*grew by\s+5%/s);
   await page.click('input[name="rf-kind"][value="a"]');
@@ -3450,7 +3450,7 @@ test('review feedback: a person, the measures, peer groups, directories and comm
     cohorts: ['changes landed before (earlier commits on main)', 'feedback index'],
     change: ['change in feedback index from the doubling before', 'doublings of changes landed'],
     kinds: ['changes landed before (earlier commits on main)', 'feedback index'],
-    tenures: ['tenure band: changes landed before / years / earlier commits in the directory', 'feedback index'],
+    tenures: ['experience band: changes landed before / years / earlier commits in the directory', 'feedback index'],
     trend: ['six months ending', 'feedback index'],
     xp: ['your earlier commits in the directory', 'feedback index'],
     perCl: ['reviewer threads on the change', 'your changes'],
