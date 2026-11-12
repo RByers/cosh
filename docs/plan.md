@@ -237,6 +237,11 @@ value_ratio(O, t) = O's share of Chromium addressed review comments
   (2026-11-05 04:21 UTC, since 2023-06-26: 47,329 CLs, 5,383 NoteDb refs),
   then a full `derive` (774,616 CLs, 1,538,620 comments, 11.5 min) and
   `summarize`: the summaries cover all 175 weeks, 2023-W26 .. 2026-W44.
+- 2026-11-12: after the backfill to 2017-W27 and a full `derive`, `summarize`
+  covers all 487 weeks, 2017-W27 .. 2026-W44 (summaries/ 46 MB -> 95 MB).
+  Addressed labels (`cosh classify`) cover 2022-W01 onward; 2022 .. 2023-W25
+  took 153,672 threads, 51.6M Haiku tokens, $10.58 API-equivalent
+  (2026-11-11). 2017 .. 2021 stay unlabelled.
 - Cloudflare Radar: daily data from 2023-07-01 to now, aggregated to weeks
   and months in `data/public/radar_browser_share.csv`. Browser names are
   verified against the real data (`radar-research.md`, "Findings").

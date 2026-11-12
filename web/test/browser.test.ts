@@ -1193,6 +1193,26 @@ test('old #week= links open a one-week range', async () => {
   await page.close();
 });
 
+test('review chart draws weeks without review on a bottom "0" line', async () => {
+  // The whole range: in its early years some top orgs had weeks without
+  // review. They are zeros, not gaps, below every positive value.
+  const { page } = await open('#from=2017-W27&to=2026-W44');
+  const chart = await page.evaluate(() => {
+    const c = window.__cosh!.reviewChart!;
+    return {
+      values: c.data.datasets.flatMap((d) => d.data as (number | null)[]),
+      zeros: c.data.datasets.flatMap((d) => (d as unknown as { counts: number[] }).counts).filter((v) => v === 0).length,
+      yMin: c.scales.y.min,
+      bottomTick: c.scales.y.ticks[0]?.label,
+    };
+  });
+  assert.ok(chart.values.every((v) => typeof v === 'number' && v > 0), 'no gaps');
+  assert.ok(chart.zeros > 0, 'the range has weeks without review for some org');
+  assert.equal(chart.values.filter((v) => v === chart.yMin).length, chart.zeros, 'zeros sit on the axis floor');
+  assert.equal(chart.bottomTick, '0');
+  await page.close();
+});
+
 test('review chart is a weekly line per top org, Other last, on a log axis', async () => {
   const { page } = await defaultPage();
   const chart = await page.evaluate(() => {
@@ -1213,12 +1233,7 @@ test('review chart is a weekly line per top org, Other last, on a log axis', asy
     };
   });
   assert.equal(chart.type, 'line');
-  // Weeks without review are zeros, not gaps, drawn on a bottom "0" line
-  // below every positive value.
   assert.ok(chart.values.every((v) => typeof v === 'number' && v > 0), 'no gaps');
-  assert.ok(chart.zeros > 0, 'the default range has weeks without review for some org');
-  assert.equal(chart.values.filter((v) => v === chart.yMin).length, chart.zeros, 'zeros sit on the axis floor');
-  assert.equal(chart.bottomTick, '0');
   assert.equal(chart.yType, 'logarithmic');
   assert.equal(chart.orgs[0], 'google.com');
   assert.equal(chart.orgs[chart.orgs.length - 1], 'Other');
