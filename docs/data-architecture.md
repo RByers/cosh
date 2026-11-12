@@ -13,20 +13,21 @@ there, and only there.
 
 ## Summary
 
-- **Today:** 10 external sources, 47 stores, 42 steps, 6 pages. The Gerrit
-  core (`extract` → `derive` → `classify` → `summarize`) is clean: one module
-  each, one writer per store, one command per step. Radar is cleaner still.
-- **The hard parts are the three pipelines that grew out of analysis:**
-  balance, sentiment and review feedback. They work, but they depend on
-  hand steps, files with no fixed home, date ranges typed or hard-coded per
-  script, and a published file with about a dozen writers.
-- **The fix is mostly convention, not new machinery:** one command per
-  published file, one writer per store, date ranges taken from the data,
-  inputs at fixed paths, and an `update` command that walks the inventory.
-- **Two things still need your decision** (section 5): whether to delete a
-  2.1 GB leftover, and whether the Review Balance and Review Tone pages
-  should follow new weeks or stay fixed-window analyses. How the Feedback
-  Index is published was decided on 2026-11-12: its files are committed.
+- **At the review (morning of 2026-11-12):** 10 external sources, 47
+  stores, 42 steps, 7 pages. The Gerrit core (`extract` → `derive` →
+  `classify` → `summarize`) was clean; balance, sentiment and review
+  feedback depended on hand steps, files with no fixed home, ranges typed
+  per command, and a published file with about a dozen writers.
+- **After the same day's cleanup (section 7):** 44 stores and 33 steps.
+  Every published file has one writer; main's git history is one store
+  (`commits.sqlite`) instead of two plus four hand-made files; NoteDb is
+  walked once for balance instead of twice; the Feedback Index no longer
+  needs the balance pipeline; Review Tone and Review Balance each publish
+  with one command. What the site shows is unchanged except where a bug
+  was fixed (section 7).
+- **Still open** (section 5): the `update` command (17), approvals as data
+  (18), date ranges from the data (rule 4, pending D3), logs in one folder
+  (19), and two decisions: D1 (delete `derived.prev.sqlite`) and D3.
 
 ## 1. The inventory
 
@@ -492,3 +493,65 @@ details; this is the log.
   differ from them because of the 2017 backfill and the 2026-11-12 rebuild.
   Item 10 in part: the window is one setting (`DATA_END`); the `growth`
   step still uses the 50-file mechanical rule.
+
+## 7. Before and after (2026-11-12)
+
+Measured from `config/dataflow.json` and `data/private` before the first
+cleanup commit (f3e5466) and after the last one.
+
+| Measure | Before | After |
+|---|---|---|
+| Stores in the inventory | 47 | 44 |
+| Steps in the inventory | 42 (18 routine, 17 optional) | 33 (14 routine, 12 optional) |
+| SQLite files in `data/private` | 10 | 9 |
+| Published files with more than one writer | 1 (`balance.json`, 4 steps and hand copies) | 0 |
+| Shared inputs with no writer | 4 (`first_commit`, `owners_added`, `ai_marked`, `mech`) | 0 (queries on `commits.sqlite`) |
+| Copies of main's git history | 2 (`balance-git.sqlite`, `derived.sqlite` tables) plus a walk in every Feedback Index run | 1 (`commits.sqlite`) |
+| NoteDb walks for balance | 2 (`timeline`, `votes`) | 1 (`timeline`, 35.5 min from empty) |
+| Steps behind each page (upstream, excluding one-offs and analyses) | Value 8, Tone 12, Balance 21, Feedback 15 | Value 9, Tone 8, Balance 16, Feedback 10 |
+| Balance-only steps behind the Feedback Index | 5 (`balance-cl`, `-timeline`, `-interdiff`, `patchsets-fetch`, `report-inputs`) | 0 |
+| Commands to publish Review Tone | 5, range typed in each | 1 (`cosh.sentiment publish`) |
+| Commands to publish Review Balance | about 15 plus hand copies | 1 (`cosh.balance_publish`, 8.2 min) |
+| `extract-open` refresh | about 490 weekly listing windows | 1–2 after the next full run |
+| `data/private`, without `backup-20261112/` | 44.5 GB | 44.3 GB |
+| `derived.sqlite` | 2.43 GB | 1.74 GB |
+| git-history data | 786 MB + 442 MB | 1.13 GB, all of main since 2008 |
+
+Value's count rises by one only because `commits` became its own step
+instead of a part of `derive`; the work is the same.
+
+Processing times:
+
+- **Feedback Index refresh:** before, `review_feedback.py` (182 s) after
+  `balance cl` (100 s), which needed `timeline` (35 min) and `interdiff`
+  (25 min), plus a `mech.jsonl` rerun (about 2 h, single-threaded). After:
+  `cosh commits` (seconds when up to date) and `review_feedback.py`
+  (188 s).
+- **Git history:** before, `balance git` about 1.5 h from empty, plus the
+  mechanical diffs about 2 h, plus 1–2 min in every `derive`. After:
+  `cosh commits` 1 h 51 min from empty (four processes for the diffs),
+  seconds incrementally; `derive` no longer reads git.
+- **Review Balance:** the old scripts run in turn took about 615 s plus
+  hand copies; `balance_publish` takes 494 s.
+- **Review Tone:** screening verdicts are cached, so a rerun of `publish`
+  makes no model calls for comments already screened.
+
+What the site shows:
+
+- **Unchanged:** Review Tone (rebuilt files equal the committed ones), the
+  Feedback Index (all 40,023 files byte-identical), Review Balance (not
+  republished; `balance_publish` equals the old scripts on today's data).
+- **Changed, bug fixes:** Value Exchange's 2017–19 commit credit. The old
+  `cosh commits` missed the short `Reviewed-on` URL form that 152k commits
+  of 2017–19 use: 93 more people get their commits credited, and in 18
+  weeks of 2018-19 a few commits (at most 4 a week) on bot-owned CLs now
+  count as bots'. Nothing changes from 2019-W07 on.
+- **Not yet republished:** `summaries/balance*.json` would change in about
+  68 datasets because the committed copies predate the 2017 backfill and
+  the 2026-11-12 rebuild, and the page's text quotes some of the old
+  figures. `python3 -m cosh.balance_publish --check` shows the differences.
+
+Backups of every database touched are in `data/private/backup-20261112/`
+(4.2 GB): `derived`, `balance`, `balance-git`, `balance-timeline`,
+`balance-interdiff`, `balance-votes`, `labels`, `sentiment`,
+`ai_predict/scores`, `balance_signals.json` and the old input files.
