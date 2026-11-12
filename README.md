@@ -124,7 +124,7 @@ python3 -m cosh extract --week 2026-W44   # throttled Gerrit fetch, cached and r
 python3 -m cosh extract-open              # snapshot open CLs and fetch their comments
 python3 -m cosh derive                    # build derived.sqlite from the cache (offline)
 python3 -m cosh classify --week 2026-W44  # optional: Haiku labels for threads the regex doesn't settle
-python3 -m cosh summarize                 # write summaries/org_weekly.{csv,json}
+python3 -m cosh summarize                 # write summaries/org_weekly.json and the rest
 python3 -m cosh radar                     # Cloudflare Radar browser share (source ~/.secrets/cosh/secrets.sh first)
 python3 -m cosh backfill --weeks 52       # plan only; --go fetches (resumable)
 python3 -m unittest tests.test_derive tests.test_extract tests.test_radar tests.test_classify

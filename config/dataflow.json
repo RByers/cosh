@@ -175,13 +175,12 @@
     {
       "id": "summaries/value-exchange", "group": "gerrit", "path": "summaries/", "name": "Value Exchange summaries", "kind": "json", "tier": "published",
       "tracked_in_git": true,
-      "git_paths": ["summaries/org_weekly.json", "summaries/org_weekly.csv", "summaries/weekly_totals.csv", "summaries/reviewer_weekly.json", "summaries/author_weekly.json", "summaries/area_weekly.json", "summaries/area_reviewers.json", "summaries/area_commits.json", "summaries/area_authors.json", "summaries/thread_examples.json", "summaries/classifier_prompt.json"],
+      "git_paths": ["summaries/org_weekly.json", "summaries/weekly_totals.csv", "summaries/reviewer_weekly.json", "summaries/author_weekly.json", "summaries/area_weekly.json", "summaries/area_reviewers.json", "summaries/area_commits.json", "summaries/area_authors.json", "summaries/thread_examples.json", "summaries/classifier_prompt.json"],
       "rebuildable": true,
-      "size": "88 MB in 11 files", "size_as_of": "2026-11-12",
+      "size": "88 MB in 10 files", "size_as_of": "2026-11-12",
       "purpose": "Weekly contribution by organisation, person and directory for all 487 fetched weeks: everything Value Exchange shows except usage.",
       "tables": [
         {"name": "org_weekly.json", "purpose": "Per week and org: reviewers, CLs, comments, addressed comments, commits; plus the meta block. 3.4 MB."},
-        {"name": "org_weekly.csv", "purpose": "The same rows as CSV. No page reads it. 0.6 MB."},
         {"name": "weekly_totals.csv", "purpose": "Per week: CLs merged, abandoned, by humans and bots."},
         {"name": "reviewer_weekly.json", "purpose": "Every reviewer's weekly counts, for the leaderboard. 4.8 MB."},
         {"name": "author_weekly.json", "purpose": "Every commit author's weekly commits. 5.0 MB."},

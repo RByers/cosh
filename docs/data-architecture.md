@@ -338,7 +338,7 @@ updated with it. Sizes: S is under an hour, M a few hours, L a day or more.
 | 1 | *(done)* Give `cosh patchsets` `--since`/`--until`, defaulting to the approved 2023-W26 .. 2026-W44, so a plain rerun can't fetch unapproved CLs | S | 6 |
 | 2 | *(dropped)* Make `OrgResolver()` read the committed file; fetch only in `update-affiliations` | — | the user chose the refresh (3.6) |
 | 3 | *(done)* Fix the `classify --dry-run` estimate (use the last runs' measured tokens per thread from `labels.sqlite`'s `runs`) | S | — |
-| 4 | Move `data/public/radar/adhoc/` out of the published tree (to `docs/` or `.research/`); drop `summaries/org_weekly.csv` or say on the page that it is a download | S | 3 |
+| 4 | *(done in part)* Drop `summaries/org_weekly.csv` (done). Moving `data/public/radar/adhoc/` was dropped: it is 0.9 MB of fetched Radar responses that must be kept anyway, and moving it changes nothing else | S | 3 |
 | 5 | Read `RATIO_EXCLUDED_BROWSERS` from `config/browsers.csv` (emit it in the Radar CSV or a small JSON) | S | 1 |
 | 6 | Bound `extract-open` to a recent window by default (say 2 years), with `--since` for a full relist | S | — |
 

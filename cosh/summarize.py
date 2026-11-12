@@ -41,7 +41,7 @@ subset is post_merge_comments. Only fully fetched weeks are reported
 (meta.fetched_weeks).
 
 Outputs:
-  summaries/org_weekly.{csv,json}     one row per (week, org), in scope
+  summaries/org_weekly.json          one row per (week, org), in scope
   summaries/weekly_totals.csv         one row per close week: human vs bot commits
                                       on main, so bot-only stretches don't look like gaps
   summaries/reviewer_weekly.json      one row per (week, reviewer, org), in scope, for
@@ -494,10 +494,6 @@ def summarize(data_dir=store.DATA_DIR, out_dir=os.path.join(ROOT, "summaries"), 
         GROUP BY close_week ORDER BY close_week""") if weeks is None or r[0] in weeks]
 
     os.makedirs(out_dir, exist_ok=True)
-    with _atomic_open(os.path.join(out_dir, "org_weekly.csv"), newline="") as fh:
-        w = csv.DictWriter(fh, fieldnames=list(out[0]) if out else ["iso_week", "org"])
-        w.writeheader()
-        w.writerows(out)
     with _atomic_open(os.path.join(out_dir, "weekly_totals.csv"), newline="") as fh:
         w = csv.writer(fh)
         w.writerow(TOTALS_COLS)

@@ -155,7 +155,7 @@ cosh/
       account_orgs.csv       # per-person org overrides (manual guesses; §4)
       archive/*.jsonl.gz     # optional frozen weekly exports of raw
   summaries/                 # committed: what the front end fetches
-    org_weekly.csv  org_weekly.json
+    org_weekly.json
     reviewer_weekly.json     # every reviewer's weekly counts, per (week, org)
     area_weekly.json         # every comment per (week, directory, org)
     area_reviewers.json      # those comments by reviewer (directory chart's Gerrit links)
@@ -351,7 +351,8 @@ available).
 
 ### 3.7 Front-end summaries (committed)
 
-`summaries/org_weekly.csv` has one row per (week, org):
+`summaries/org_weekly.json` has one row per (week, org) (a CSV copy,
+`org_weekly.csv`, was written until 2026-11-12; no page read it):
 ```
 iso_week,org,reviewed_cls,reviewers,comments,review_chars,share_cls,share_chars,browser_share,ratio_cls,ratio_chars
 2026-W43,Google,2950,812,9100,1480000,0.88,0.90,0.70,1.26,1.29
