@@ -286,3 +286,20 @@ main checkout), and the browser tests serve a made-up person
   drive-by and gardening comments, as the feedback index does.
 - Peer groups mix very different roles, teams and kinds of work. A high or
   low figure is a prompt to look at the comments, not a conclusion.
+
+## Per-person feedback report (`scripts/feedback_coach.py`)
+
+`python3 scripts/feedback_coach.py <email>` writes a private Markdown report
+to `data/private/feedback-coach/<email>.md` (not published, not on the site).
+It takes the author's past year (`--days 365`, up to the newest comment in
+`derived.sqlite`) of reviewer threads on their own `main` CLs: file and
+commit-message threads they **addressed** (regex, else the Haiku label), plus
+CL-level threads minus bare approvals. The newest 600 (`--max-threads`) go to
+one call of Claude Opus through `cosh.sandbox.Sandbox` (no tools, bwrap, reply
+bound to a JSON schema; comments are untrusted, `SECURITY.md`). With 80+
+threads the report gets a section per 2nd-level directory that has 20+
+(file threads by their file, the rest by the CL's main directory). The model
+cites threads as `[T12]`; the script turns them into Gerrit comment links and
+strips any other URL or HTML. Its reply is kept next to the report
+(`.reply.json`), so `--reuse` re-renders without a new call; `--dry-run` only
+counts. On 2026-11-12 one report took about 1 min and 115–150k tokens.
