@@ -526,8 +526,9 @@ function threadItem(r: ThreadRow): HTMLLIElement {
   const head = el('div', undefined, 'rf-thread-head');
   head.append(fragment('thread-meta', { date: dayLabel(r.day), file: r.file }));
   const tags = el('span', undefined, 'rf-tags');
-  if (r.addressed !== null) tags.append(el('span', msg(r.addressed ? 'thread-addressed' : 'thread-not-addressed'),
-    `rf-tag ${r.addressed ? 'rf-tag-on' : ''}`));
+  // Only the positive label: "not addressed" reads as ignored feedback, when such
+  // threads usually needed no change.
+  if (r.addressed) tags.append(el('span', msg('thread-addressed'), 'rf-tag rf-tag-on'));
   if (r.praise) tags.append(el('span', msg('thread-praise'), 'rf-tag rf-tag-praise'));
   head.append(tags);
   li.append(head);
