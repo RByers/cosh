@@ -230,8 +230,15 @@ The measures:
   divides a person's threads by the sum, over their CL-directory pieces, of
   expected threads × that band's pooled rate relative to everyone's. So 1.00×
   is typical *for the experience the person had in the directories they
-  worked in*, which credits people who work across more of the codebase. A
-  chart and table give the person's feedback per band against everyone's.
+  worked in*, which credits people who work across more of the codebase.
+- **By your experience**: a chart and table of the person's feedback per
+  experience band. By default ("All your changes") the bands are changes
+  landed before (each CL by the owner's earlier commits on `main`, the same
+  bands as the trend's peers), against the median and middle half of the
+  peer group `changes:<band>:<org>` for the whole range (the "Peers" choice
+  applies). "Per directory" switches to the directory-experience bands
+  above, each CL split by its lines, against everyone's pooled feedback and
+  the middle half of authors with 1.5 CLs' worth or more in the band.
 - **Directories**: CLs, threads, expected threads, their ratio and earlier
   commits per directory, as an expandable tree like Value Exchange's
   directory chart: top-level directories first, opening down to the 3-level
@@ -248,7 +255,7 @@ The measures:
   the filter is on. Selecting the same dot again also clears it, as does
   looking up someone else or switching to a measure with no changes in that
   half-year.
-- **Threads per change**, after the directory-experience card: a histogram
+- **Threads per change**, after the experience card: a histogram
   of the person's CLs by how many reviewer threads (addressed ones, with the
   addressed measure) each drew, in columns of 0, 1–2, 3–5, 6–10, 11–20 and
   21+ (over all CLs since July 2023: 56, 23, 10, 6, 3 and 2%; addressed:

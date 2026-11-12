@@ -448,6 +448,21 @@ export function xpBreakdown(p: Person, period: string, m: Metric): Sums[] {
   return out;
 }
 
+/** Feedback by changes landed before: what the person's changes drew in each
+ * of `labels` (peers.json's `changes`, the `changesBand` bands), by the earlier
+ * commits on main each change had, against the metric's denominator. */
+export function chgBreakdown(p: Person, period: string, m: Metric, labels: string[]): Sums[] {
+  const out = labels.map(() => ({ cls: 0, obs: 0, den: 0 }));
+  for (const c of clsFor(p, period, m[0] as Kind)) {
+    const b = out[labels.indexOf(changesBand(c[10]))];
+    if (!b) continue;
+    b.cls += 1;
+    b.obs += threadsOn(c, m[0] as Kind);
+    b.den += expected(c, m);
+  }
+  return out;
+}
+
 /** Figures for one directory, or for a directory's own files ("rest of"). */
 export interface DirStats {
   /** Changes touching it, each change once however many directories below it the change touches. */

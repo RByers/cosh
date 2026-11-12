@@ -37,6 +37,7 @@ import {
   trendGroup,
   valueFor,
   xpBreakdown,
+  chgBreakdown,
   type Alias,
   type Shard,
   type Top,
@@ -53,6 +54,7 @@ import {
   type Person,
   type TenureBy,
   type ThreadRow,
+  type Sums,
 } from './feedback.ts';
 import { fmtDay, fmtInt, fmtNum } from './format.ts';
 import { fragment, msg, type Vars } from './text.ts';
@@ -83,6 +85,8 @@ const state = {
   kind: 't' as Kind,
   corr: 'd' as Corr,
   tenure: 'changes' as TenureBy,
+  /** The experience card: by changes landed before ('all') or per directory. */
+  xpBy: 'all' as 'all' | 'dir',
   org: 'all' as PeerOrg,
   /** The selected directory's path; comments are listed from it and below. */
   dir: null as string | null,
@@ -803,23 +807,46 @@ function binName(b: number): string {
     n: hi === null || hi === lo ? fmtInt(lo) : `${fmtInt(lo)}–${fmtInt(hi)}` });
 }
 
+/** The experience card: by changes landed before (all your changes) or by directory experience. */
 function renderXp() {
   destroy('xp');
   const p = state.person!;
   const peers = state.peers!;
   const t = theme();
   const m = metric();
-  put($('#experience-sub'), 'experience-sub');
-  const mine = xpBreakdown(p, ALL, m);
-  const bands = peers.bands[ALL]?.[m] ?? [];
-  const labels = peers.xp.map((x) => x);
+  const by = state.xpBy;
+  const org = state.org === 'all' ? '' : msg(`org-name-${state.org}`);
+  put($('#experience-sub'), `experience-sub-${by}`, { org });
+  put($('#rf-xp-note'), `experience-note-${by}`, { org, min: fmtInt(peers.min_peers) });
+  put($('#rf-xp-head'), `experience-head-${by}`);
+  put($('#rf-xp-head-peers'), `experience-peers-${by}`);
+  // Your changes in each band, and the peers' middle half and middle there.
+  let labels: string[];
+  let mine: Sums[];
+  let lo: (number | null)[];
+  let hi: (number | null)[];
+  let mid: (number | null)[];
+  if (by === 'all') {
+    labels = peers.changes.map(bandName);
+    mine = chgBreakdown(p, ALL, m, peers.changes);
+    const qs = peers.changes.map((b) => peers.dist[ALL]?.[`changes:${b}:${state.org}`]?.[m]?.q ?? null);
+    [lo, mid, hi] = [0.25, 0.5, 0.75].map((f) => qs.map((q) => (q ? quantile(q, f) : null)));
+  } else {
+    labels = [...peers.xp];
+    mine = xpBreakdown(p, ALL, m);
+    const bands = peers.bands[ALL]?.[m] ?? [];
+    lo = bands.map((b) => (b.q ? quantile(b.q, 0.25) : null));
+    hi = bands.map((b) => (b.q ? quantile(b.q, 0.75) : null));
+    mid = bands.map((b) => b.pooled);
+  }
   const you = mine.map((b) => (b.cls >= 1 && b.den > 0 ? b.obs / b.den : null));
+  const peerName = msg(`experience-peers-${by}`);
   const datasets: ChartDataset<'line', (number | null)[]>[] = [
-    { label: '', data: bands.map((b) => (b.q ? quantile(b.q, 0.75) : null)), borderWidth: 0, pointRadius: 0,
+    { label: '', data: hi, borderWidth: 0, pointRadius: 0,
       pointHoverRadius: 0, backgroundColor: t.baseline, fill: '+1', tension: 0, order: 3 },
-    { label: '', data: bands.map((b) => (b.q ? quantile(b.q, 0.25) : null)), borderWidth: 0, pointRadius: 0,
+    { label: '', data: lo, borderWidth: 0, pointRadius: 0,
       pointHoverRadius: 0, fill: false, tension: 0, order: 3 },
-    { label: 'all', data: bands.map((b) => b.pooled), borderColor: t.muted, borderDash: [5, 4], borderWidth: 1.5,
+    { label: 'peers', data: mid, borderColor: t.muted, borderDash: [5, 4], borderWidth: 1.5,
       pointRadius: 0, fill: false, tension: 0, order: 1 },
     { label: 'you', data: you, borderColor: t.series[0], backgroundColor: t.series[0], pointRadius: 4, borderWidth: 2,
       spanGaps: true, fill: false, tension: 0, order: 0 },
@@ -833,7 +860,7 @@ function renderXp() {
       interaction: { mode: 'index', intersect: false },
       font: { family: t.font },
       scales: {
-        x: { grid: { color: t.grid }, title: { display: true, text: 'your earlier commits in the directory', color: t.text },
+        x: { grid: { color: t.grid }, title: { display: true, text: msg(`axis-xp-${by}`), color: t.text },
           ticks: { color: t.text, font: { family: t.font } } },
         y: { beginAtZero: true, grid: { color: t.grid }, title: { display: true, text: msg('axis-feedback'), color: t.text },
           ticks: { color: t.text, font: { family: t.font }, callback: (v) => fmtValue(Number(v)) } },
@@ -843,7 +870,7 @@ function renderXp() {
         tooltip: {
           filter: (i) => i.datasetIndex >= 2,
           callbacks: {
-            label: (i) => (i.datasetIndex === 3 ? `You: ${fmtValue(i.parsed.y)}` : `All authors: ${fmtValue(i.parsed.y)}`),
+            label: (i) => (i.datasetIndex === 3 ? `You: ${fmtValue(i.parsed.y)}` : `${peerName}: ${fmtValue(i.parsed.y)}`),
           },
         },
       },
@@ -851,14 +878,13 @@ function renderXp() {
   });
   const body = $('#rf-xp-table tbody');
   body.replaceChildren();
-  peers.xp.forEach((label, b) => {
+  labels.forEach((label, b) => {
     const tr = el('tr');
     tr.append(el('th', label), el('td', fmtNum(mine[b].cls, { maximumFractionDigits: 1 }), 'num'),
-      el('td', fmtInt(mine[b].obs), 'num'), el('td', fmtValue(you[b]), 'num'), el('td', fmtValue(bands[b]?.pooled), 'num'));
+      el('td', fmtInt(mine[b].obs), 'num'), el('td', fmtValue(you[b]), 'num'), el('td', fmtValue(mid[b]), 'num'));
     tr.firstElementChild!.setAttribute('scope', 'row');
     body.append(tr);
   });
-  $('#rf-xp-note-q').textContent = '; the shaded band is the middle half of authors with at least one and a half changes in the band';
 }
 
 function renderDirs() {
@@ -1083,11 +1109,16 @@ function init() {
     renderTrend();
     renderXp();
   });
+  radio<'all' | 'dir'>('rf-xp-by', (v) => {
+    state.xpBy = v;
+    if (state.person) renderXp();
+  });
   const peersChanged = () => {
     renderIntro();
     if (!state.person) return;
     renderSummary();
     renderTrend();
+    renderXp();
   };
   $<HTMLSelectElement>('#rf-tenure').addEventListener('change', (e) => {
     state.tenure = (e.target as HTMLSelectElement).value as TenureBy;

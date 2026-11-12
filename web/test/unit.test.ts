@@ -1561,6 +1561,13 @@ test('review feedback: half-year files merge, and every period gets the values t
   assert.ok(Math.abs(xp[2].den - 0.75 * 3) < 1e-9);
   assert.deepEqual(F.xpBreakdown(person, 'all', 'ad').map((b) => b.obs), [1, 0, 1, 0, 1]);
   assert.deepEqual(F.xpBreakdown(person, 'all', 'tn').map((b) => b.den), [1, 0.25, 0.75, 0, 1]);
+  // By changes landed before: CL 1 (30 earlier on main: 2 threads over 2.5 expected), CL 2 (80: 1 over 3),
+  // CL 3 (260: 2 over 1.5); whole changes, whatever their directories.
+  const chg = F.chgBreakdown(person, 'all', 'td', peers.changes);
+  assert.deepEqual(chg.map((b) => [b.cls, b.obs, b.den]), [[1, 2, 2.5], [1, 1, 3], [1, 2, 1.5], [0, 0, 0], [0, 0, 0]]);
+  assert.deepEqual(F.chgBreakdown(person, 'all', 'ad', peers.changes).map((b) => b.obs), [1, 1, 1, 0, 0]);
+  assert.deepEqual(F.chgBreakdown(later, 'all', 'tn', peers.changes).map((b) => b.cls), [1, 1, 1, 0, 0]);
+  assert.deepEqual(F.chgBreakdown(later, 'all', 'an', peers.changes).map((b) => b.cls), [0, 1, 1, 0, 0]);
   // Directories: a tree from the top level down to the data's 3-level directories.
   const dirs = F.dirTree(person, 'all', 't');
   assert.deepEqual(dirs.map((d) => [d.path, d.cls, d.threads, d.prior]),

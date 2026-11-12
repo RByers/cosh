@@ -3452,11 +3452,30 @@ test('review feedback: a person, the measures, peer groups, directories and comm
     kinds: ['changes landed before (earlier commits on main)', 'feedback index'],
     tenures: ['experience band: changes landed before / years / earlier commits in the directory', 'feedback index'],
     trend: ['six months starting', 'feedback index'],
-    xp: ['your earlier commits in the directory', 'feedback index'],
+    xp: ['your changes landed before (earlier commits on main)', 'feedback index'],
     perCl: ['reviewer threads on the change', 'your changes'],
     size: ['lines changed', 'feedback index'],
     dirs: ['directory', 'feedback index'],
   });
+  // The experience card: by changes landed before, against peers with as many (only 'changes:50-199'
+  // has percentiles: 0.5..2.8 evenly, median 1.65); per directory on the toggle.
+  const xpRows = () => page.$$eval('#rf-xp-table tr', (rs) => rs.map((r) => [...r.children].map((c) => c.textContent)));
+  assert.equal(await page.$eval('#experience-title', (e) => e.textContent), 'By your experience');
+  assert.equal(await page.$eval('input[name="rf-xp-by"]:checked', (e) => (e as HTMLInputElement).value), 'all');
+  assert.deepEqual((await xpRows()).slice(0, 3), [
+    ['Your changes landed before', 'Your changes', 'Threads', 'You', 'Peers'],
+    ['under 50', '1', '2', '0.80×', '–'],
+    ['50–199', '1', '1', '0.33×', '1.65×'],
+  ]);
+  await page.click('input[name="rf-xp-by"][value="dir"]');
+  assert.deepEqual((await xpRows()).slice(0, 2), [
+    ['Your earlier commits in the directory', 'Your changes', 'Threads', 'You', 'All authors'],
+    ['0', '1', '2', '0.80×', '2.10×'],
+  ]);
+  assert.equal(await page.evaluate(() => (window.__rf!.charts.xp.options.scales as Record<string, { title?: { text?: string } }>).x.title?.text),
+    'your earlier commits in the directory');
+  assert.match(await page.$eval('#experience-sub', (e) => e.textContent!), /^\s*Each change is split across the directories/);
+  await page.click('input[name="rf-xp-by"][value="all"]');
   // The page computes the values from the half-year files (unit tests check the arithmetic).
   assert.equal(await tile('rf-tile-you'), '0.71×');
   // Peers are all authors with the same number of changes landed before, by default.

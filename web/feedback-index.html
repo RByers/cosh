@@ -305,27 +305,52 @@
 
       <section id="experience" class="card" aria-labelledby="experience-title">
         <a class="card-anchor" href="#experience" aria-label="Link to this section" title="Link to this section">#</a>
-        <h2 id="experience-title">By your experience in each directory</h2>
+        <h2 id="experience-title">By your experience</h2>
         <p id="experience-sub" class="sub"></p>
-        <template data-msg="experience-sub">
+        <template data-msg="experience-sub-all">
+          Your feedback by how many changes you had landed before each change (your earlier commits on main),
+          against peers with as many: the dashed line is their median<span data-if="org">
+          (<slot name="org"></slot> only)</span>, the shaded band their middle half.
+        </template>
+        <template data-msg="experience-sub-dir">
           Each change is split across the directories it changed (three levels deep, weighted by lines), and each
           reviewer thread goes to the directory of its file. Experience is how many of your commits had landed in
           that directory before the change. People who work across more of the codebase spend more of their time
           in directories they know less, so they draw more feedback for the same skill; this view sets that apart.
         </template>
+        <div class="toggles">
+          <fieldset id="rf-xp-by" class="segmented chart-toggle">
+            <legend>Experience</legend>
+            <label><input type="radio" name="rf-xp-by" value="all" checked />All your changes</label>
+            <label><input type="radio" name="rf-xp-by" value="dir" />Per directory</label>
+          </fieldset>
+        </div>
         <div class="chart">
-          <canvas id="rf-xp" role="img" aria-label="Your feedback by your earlier commits in the directory, against all authors' median and middle half."></canvas>
+          <canvas id="rf-xp" role="img" aria-label="Your feedback by your experience, against other authors' median and middle half."></canvas>
         </div>
         <div class="table-wrap">
           <table id="rf-xp-table" class="rf-table">
-            <thead><tr><th scope="col">Your earlier commits in the directory</th><th scope="col" class="num">Your changes</th><th scope="col" class="num">Threads</th><th scope="col" class="num">You</th><th scope="col" class="num">All authors</th></tr></thead>
+            <thead><tr><th scope="col" id="rf-xp-head"></th><th scope="col" class="num">Your changes</th><th scope="col" class="num">Threads</th><th scope="col" class="num">You</th><th scope="col" class="num" id="rf-xp-head-peers"></th></tr></thead>
             <tbody></tbody>
           </table>
         </div>
-        <p class="note">
+        <p id="rf-xp-note" class="note"></p>
+        <template data-msg="experience-note-all">
+          “Peers” is the median of authors whose typical change came after as many earlier changes, over all
+          their changes<span data-if="org"> (<slot name="org"></slot> only)</span>; bands with fewer than
+          <slot name="min"></slot> such authors are left out. Earlier commits count from 2017 on.
+        </template>
+        <template data-msg="experience-note-dir">
           “Your changes” counts each change in proportion to its lines in those directories. “All authors” is
-          everyone's feedback in that band pooled<span id="rf-xp-note-q"></span>. Earlier commits count from 2017 on.
-        </p>
+          everyone's feedback in that band pooled; the shaded band is the middle half of authors with at least
+          one and a half changes in the band. Earlier commits count from 2017 on.
+        </template>
+        <template data-msg="experience-head-all">Your changes landed before</template>
+        <template data-msg="experience-head-dir">Your earlier commits in the directory</template>
+        <template data-msg="experience-peers-all">Peers</template>
+        <template data-msg="experience-peers-dir">All authors</template>
+        <template data-msg="axis-xp-all">your changes landed before (earlier commits on main)</template>
+        <template data-msg="axis-xp-dir">your earlier commits in the directory</template>
       </section>
 
       <section id="per-cl" class="card" aria-labelledby="per-cl-title">
