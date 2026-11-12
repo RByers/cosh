@@ -285,6 +285,27 @@ export function groupKey(by: TenureBy, org: PeerOrg, vals: PeriodVals | undefine
   return band ? `${by}:${band}:${org}` : null;
 }
 
+/** The peer group for each of the half-years `hs` (sorted), including those the person
+ * landed no changes in, so the trend's peer band covers them all: tenure in years at the
+ * half-year's middle, or the earlier-changes band of the nearest half-year with changes
+ * (the latest before it, else the first after). Null only when the tenure is unknown. */
+export function halfGroups(by: TenureBy, org: PeerOrg, p: Pick<Person, 'periods' | 'firstDay'>,
+  hs: string[]): (string | null)[] {
+  const known = hs.map((h) => bandOf(by, p.periods[h]));
+  return hs.map((h, i) => {
+    if (by === 'dir') return `dir:${org}`;
+    let band = known[i];
+    if (!band && by === 'time' && p.firstDay !== null) {
+      const [a, b] = periodSpan(h, [-Infinity, Infinity]);
+      band = tenureBand(Math.max(0, (a + b) / 2 - p.firstDay) / 365.25);
+    }
+    if (!band && by === 'changes') {
+      band = known.slice(0, i).reverse().find((x) => x) ?? known.slice(i + 1).find((x) => x) ?? null;
+    }
+    return band ? `${by}:${band}:${org}` : null;
+  });
+}
+
 /** The person's value to set against a peer group's distribution. */
 export const valueFor = (by: TenureBy, vals: PeriodVals | undefined, m: Metric) =>
   vals ? (by === 'dir' ? vals.x[m] : vals.v[m]) ?? null : null;

@@ -13,6 +13,7 @@ import {
   commentUrl,
   dirTree,
   groupKey,
+  halfGroups,
   halves,
   isoDay,
   looksLikeEmail,
@@ -461,8 +462,11 @@ function renderTrend() {
   // The half-years the measure covers.
   const [from, to] = rangeOf(peers, state.kind);
   const hs = halves(peers.periods).filter((h) => { const [a, b] = periodSpan(h, [from, to]); return a < b; });
+  // Every half-year gets its peer group, also those without the person's changes: a band
+  // drawn only where they have some was a lone point (no fill) for someone in one half-year.
+  const groups = halfGroups(state.tenure, state.org, p, hs);
   const q = (h: string, f: number) => {
-    const g = groupKey(state.tenure, state.org, p.periods[h]);
+    const g = groups[hs.indexOf(h)];
     const d = g ? peers.dist[h]?.[g]?.[m] : undefined;
     return d?.q ? quantile(d.q, f) : null;
   };

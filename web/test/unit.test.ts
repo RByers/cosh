@@ -1602,6 +1602,14 @@ test('review feedback: half-year files merge, and every period gets the values t
   assert.equal(F.groupKey('changes', 'nongoogle', all), 'changes:50-199:nongoogle');
   assert.equal(F.groupKey('dir', 'google', all), 'dir:google');
   assert.equal(F.groupKey('time', 'all', { ...all, ten: null }), null);
+  // The trend's peer band covers half-years without the person's changes too.
+  const hs = ['2023H2', '2024H1', '2025H2', '2026H1'];
+  const only = { periods: { '2025H2': all }, firstDay: Date.UTC(2023, 0, 1) / 86_400_000 };
+  assert.deepEqual(F.halfGroups('time', 'all', only, hs),
+    ['time:<1y:all', 'time:1-2y:all', 'time:2-5y:all', 'time:2-5y:all']);
+  assert.deepEqual(F.halfGroups('changes', 'google', only, hs), Array(4).fill('changes:50-199:google'));
+  assert.deepEqual(F.halfGroups('dir', 'all', only, hs), Array(4).fill('dir:all'));
+  assert.deepEqual(F.halfGroups('time', 'all', { ...only, firstDay: null }, hs), [null, null, 'time:2-5y:all', null]);
   assert.equal(F.valueFor('dir', all, 'td'), 0.49);
   assert.equal(F.valueFor('time', all, 'ad'), 0.698);
   assert.deepEqual(F.halves(['all', '2026H2', '2025', '2023H2']), ['2023H2', '2026H2']);
