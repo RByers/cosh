@@ -3562,6 +3562,12 @@ test('review feedback: a person, the measures, peer groups, directories and comm
   // Changes, then lines changed there.
   assert.deepEqual(await page.$$eval('#rf-dirs tbody tr:first-child td', (tds) => tds.slice(0, 2).map((t) => t.textContent)),
     ['2', '66']);
+  // A directory opens only when something in it has min_cls (6) changes: here nothing does. With a
+  // minimum of 1, every directory opens.
+  assert.equal(await page.$$eval('#rf-dirs .ar-toggle', (ts) => ts.length), 0);
+  await page.evaluate(() => { window.__rf!.peers!.min_cls = 1; });
+  await page.click('input[name="rf-kind"][value="a"]');
+  await page.click('input[name="rf-kind"][value="t"]');
   await page.click('#rf-dirs tbody tr[data-key="d:third_party/"] .ar-toggle');
   await page.click('#rf-dirs tbody tr[data-key="d:third_party/blink/"] .ar-toggle');
   assert.deepEqual(await dirNames(), ['chrome/', 'third_party/', 'blink/', 'renderer/', 'content/']);

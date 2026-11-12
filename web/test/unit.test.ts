@@ -1596,13 +1596,18 @@ test('review feedback: half-year files merge, and every period gets the values t
     F.dirRows(roots, new Set(open), min, shown).map((r) =>
       `${'  '.repeat(r.depth)}${r.kind === 'other' ? `other(${r.count})` : r.kind === 'rest' ? `rest ${r.node!.path}` : r.node!.path}` +
       ` ${r.stats.cls}/${r.stats.lines}/${r.stats.threads}${r.expandable ? (r.expanded ? ' -' : ' +') : ''}`);
+  // A directory opens only when one of its entries has `minCls` changes (third_party/ and content/
+  // here don't), and an opened "Other" lists its entries whatever their size.
   assert.deepEqual(view(dirs, [], 2), ['chrome/ 2/66/2 +', 'other(2) 2/100/3 +']);
   assert.deepEqual(view(dirs, ['o:root'], 2), ['chrome/ 2/66/2 +', 'other(2) 2/100/3 -',
-    '  third_party/ 1/10/2 +', '  content/ 1/90/1 +']);
-  // Nothing big enough, or just one small entry: no "Other" row, only the page limit.
-  assert.deepEqual(view(dirs, [], 5), ['chrome/ 2/66/2 +', 'third_party/ 1/10/2 +', 'content/ 1/90/1 +']);
-  assert.deepEqual(view(nested, [], 2), ['chrome/ 2/156/3 +', 'third_party/ 1/10/2 +']);
-  assert.deepEqual(view(dirs, [], 5, 2), ['chrome/ 2/66/2 +', 'third_party/ 1/10/2 +', 'other(1) 1/90/1 +']);
+    '  third_party/ 1/10/2', '  content/ 1/90/1']);
+  // Below the top level, a single small entry ("rest of" too) goes into "Other" as well.
+  assert.deepEqual(view(nested, ['d:chrome/', 'd:chrome/browser/'], 2), ['chrome/ 2/156/3 -', '  chrome/browser/ 2/156/3 -',
+    '    chrome/browser/ui/ 2/66/2','    other(1) 1/90/1 +', 'other(1) 1/10/2 +']);
+  // Only a top level with nothing big enough lists its first entries instead, and none of them opens.
+  assert.deepEqual(view(dirs, [], 5), ['chrome/ 2/66/2', 'third_party/ 1/10/2', 'content/ 1/90/1']);
+  assert.deepEqual(view(nested, [], 3), ['chrome/ 2/156/3', 'third_party/ 1/10/2']);
+  assert.deepEqual(view(dirs, [], 5, 2), ['chrome/ 2/66/2', 'third_party/ 1/10/2', 'other(1) 1/90/1 +']);
   // A change in two grouped entries counts once (CL 2, in chrome/ and content/).
   assert.deepEqual(view(dirs, [], 5, 0), ['other(3) 3/166/5 +']);
   // The ratio's shade: log scale, white at typical, full at a quarter or four times.

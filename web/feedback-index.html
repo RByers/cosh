@@ -415,7 +415,8 @@
         <template data-msg="dirs-rest">rest of <slot name="dir"></slot></template>
         <p class="note">A directory's changes count each change once, however many of its subdirectories the change
           touched; “Other” counts each change once too, and lists, at each level, the directories with fewer than
-          <span id="rf-dirs-min">25</span> of your changes, too few for their ratio to say much (▸ opens it). “Lines”
+          <span id="rf-dirs-min">25</span> of your changes, too few for their ratio to say much (▸ opens it). A directory opens only when something in it has that
+          many; any directory can still be picked in the comments’ Directory list below. “Lines”
           are the lines changed there, added plus deleted. “Earlier commits” are yours in that directory before your latest change there; for a directory
           that opens, the most in any one directory below it.</p>
       </section>
