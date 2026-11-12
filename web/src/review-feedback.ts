@@ -377,16 +377,8 @@ function renderKinds(axis: (title: string) => object) {
   const last = rows.length - 1;
   const [t0, a0] = rows[0];
   const [t10, a10] = rows[last];
-  const s0 = share[0];
-  const s10 = share[last];
-  put($('#rf-kinds-note'), 'kinds-note', { corr: state.corr, org: state.org === 'all' ? '' : msg(`org-name-${state.org}`),
-    from: monthOf(fromMonth(peers.addr_start), true), to: monthOf(toMonth(peers.end), true),
-    minCohortCls: fmtInt(peers.min_cohort_cls), n: fmtInt(rows.reduce((s, r) => s + r[2], 0)),
-    t0: fmtValue(t0), t10: fmtValue(t10), a0: fmtValue(a0), a10: fmtValue(a10),
-    tFall: times(t0, t10), aFall: times(a0, a10),
-    steeper: !!(t0 && t10 && a0 && a10 && a0 / a10 > t0 / t10),
-    share0: s0 == null ? '–' : pct(s0), share10: s10 == null ? '–' : pct(s10),
-    sharefell: s0 != null && s10 != null && s0 - s10 >= 0.03 });
+  put($('#rf-kinds-note'), 'kinds-note', { tFall: times(t0, t10), aFall: times(a0, a10),
+    steeper: !!(t0 && t10 && a0 && a10 && a0 / a10 > t0 / t10) });
   const lines = [
     { label: msg('kinds-all'), color: t.series[1], data: rows.map((r) => r[0]) },
     { label: msg('kinds-addressed'), color: t.series[0], data: rows.map((r) => r[1]) },
@@ -448,21 +440,20 @@ function renderTenures(axis: (title: string) => object) {
     return;
   }
   const t = theme();
-  const [from, to] = rangeOf(peers, state.kind);
-  // The median yearly change, signed: the data has it as % less feedback.
-  const chg = (v: number | null) => (v === null ? '–'
-    : fmtNum(-v / 100, { style: 'percent', maximumFractionDigits: 1, signDisplay: 'exceptZero' }).replace('-', '−'));
-  const fall = (m: (typeof TENURE_MEASURES)[number]) => times(c.bands[m][0][0], c.bands[m][4][0]);
+  // How much of the plain yearly fall each measure takes out once peers are matched on it
+  // (overshooting counts as missing); the best first.
+  const explained = (m: (typeof TENURE_MEASURES)[number]) => {
+    const v = c[m];
+    return v === null || !c.none ? '–' : pct(Math.max(0, Math.min(1, 1 - Math.abs(v) / c.none)));
+  };
   const best = bestTenure(c);
-  // How much of the plain yearly fall the best measure takes out (overshooting counts as missing).
-  const left = best ? Math.abs(c[best]!) : null;
-  const explained = left !== null && c.none ? pct(Math.max(0, Math.min(1, 1 - left / c.none))) : '–';
-  put($('#rf-tenures-note'), 'tenures-note', { kind: state.kind, corr: state.corr,
-    org: state.org === 'all' ? '' : msg(`org-name-${state.org}`),
-    from: monthOf(fromMonth(from), true), to: monthOf(toMonth(to), true), minCls: fmtInt(peers.min_cls),
-    n: fmtInt(c.n), people: fmtInt(c.people), none: chg(c.none), time: chg(c.time), changes: chg(c.changes),
-    dir: chg(c.dir), timeFall: fall('time'), changesFall: fall('changes'), dirFall: fall('dir'),
-    best: best ?? '', explained });
+  if (best) {
+    const [, m2, m3] = [best, ...TENURE_MEASURES.filter((m) => m !== best)];
+    put($('#rf-tenures-note'), 'tenures-note', { best: msg(`tenure-name-${best}`), bestShare: explained(best),
+      name2: msg(`tenure-name-${m2}`), share2: explained(m2), name3: msg(`tenure-name-${m3}`), share3: explained(m3) });
+  } else {
+    $('#rf-tenures-note').replaceChildren();
+  }
   const lines = TENURE_MEASURES.map((m, i) => ({ m, label: msg(`tenure-${m}`), color: t.series[i] }));
   lineLegend($('#rf-tenures-legend'), lines);
   charts.tenures = new Chart($<HTMLCanvasElement>('#rf-tenures'), {

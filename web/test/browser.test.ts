@@ -3368,21 +3368,20 @@ test('review feedback: the opening card explains the index before any address is
   assert.deepEqual(await page.$$eval('#rf-kinds-legend li', (ls) => ls.map((l) => l.textContent)),
     ['All reviewer threads', 'Addressed threads only', "Each line's 2023–24 norm"]);
   const kindsNote = () => page.$eval('#rf-kinds-note', (e) => e.textContent!);
-  assert.match(await kindsNote(), /\(10,640 contributor half-years\)/);
-  assert.match(await kindsNote(), /better sign of growth.*from 2\.03× in the first three months to 0\.49×.*\(4\.1 times less\).*from 1\.92× to 0\.55× \(3\.5 times less\)/s);
-  assert.match(await kindsNote(), /newcomers addressed 84% of their threads, ten-year veterans 74%/);
+  // One sentence: which shows growth better, and by how much.
+  assert.equal(await kindsNote(), 'Addressed feedback shows growth better: it falls 4.1 times from the first three '
+    + 'months to ten years, against 3.5 times for all feedback.');
   // The three tenure measures, one line each, and which leaves the least of the yearly fall.
   assert.deepEqual(await page.$$eval('#rf-tenures-legend li', (ls) => ls.map((l) => l.textContent)),
     ['Years since first commit', 'Changes landed before', 'Earlier commits in the directory']);
   const tenuresNote = () => page.$eval('#rf-tenures-note', (e) => e.textContent!);
-  assert.match(await tenuresNote(), /falls 3\.6 times by years, 4\.7 times by changes landed and 2\.7 times by directory/);
-  assert.match(await tenuresNote(), /changed by −16\.2%.*the change was −5\.9% for years, −11\.3% for directory experience and −0\.6% for changes landed/s);
-  assert.match(await tenuresNote(), /Changes landed accounts for the most, 96% of the yearly fall/);
+  assert.equal(await tenuresNote(), "Tenure by changes landed accounts for the most growth: 96% of a contributor's "
+    + 'yearly fall in feedback, against 64% by years since the first commit and 30% by directory experience.');
   // It follows the switches: outside Google has one line, and a median that grew.
   await page.select('#rf-org', 'nongoogle');
-  assert.match(await kindsNote(), /Here\s+addressed feedback falls no further/);
-  assert.doesNotMatch(await kindsNote(), /thin out/);
-  assert.match(await tenuresNote(), /\+4\.9% for changes landed.*Here years since the first commit account for the most, 97% of the yearly fall/s);
+  assert.match(await kindsNote(), /^All feedback shows growth better here: it falls 2\.3 times .* against 2 times for addressed/);
+  // Changes landed overshoots (+4.9%), which counts against it like a shortfall.
+  assert.match(await tenuresNote(), /^Tenure by years since the first commit accounts for the most growth: 97% .* against 64% by changes landed and 45% by directory experience\.$/);
   assert.deepEqual(await page.$$eval('#rf-cohort-legend li', (ls) => ls.map((l) => l.textContent)), ['started in 2024']);
   assert.match(await page.$eval('#rf-change-note', (e) => e.textContent!), /came from outside Google;.*grew by\s+5%/s);
   await page.click('input[name="rf-kind"][value="a"]');
