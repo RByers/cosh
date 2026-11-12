@@ -339,8 +339,8 @@ updated with it. Sizes: S is under an hour, M a few hours, L a day or more.
 | 2 | *(dropped)* Make `OrgResolver()` read the committed file; fetch only in `update-affiliations` | — | the user chose the refresh (3.6) |
 | 3 | *(done)* Fix the `classify --dry-run` estimate (use the last runs' measured tokens per thread from `labels.sqlite`'s `runs`) | S | — |
 | 4 | *(done in part)* Drop `summaries/org_weekly.csv` (done). Moving `data/public/radar/adhoc/` was dropped: it is 0.9 MB of fetched Radar responses that must be kept anyway, and moving it changes nothing else | S | 3 |
-| 5 | Read `RATIO_EXCLUDED_BROWSERS` from `config/browsers.csv` (emit it in the Radar CSV or a small JSON) | S | 1 |
-| 6 | Bound `extract-open` to a recent window by default (say 2 years), with `--since` for a full relist | S | — |
+| 5 | *(dropped)* Read `RATIO_EXCLUDED_BROWSERS` from `config/browsers.csv` (emit it in the Radar CSV or a small JSON) | S | 1 |
+| 6 | *(done, differently)* Bound `extract-open` to a recent window by default (say 2 years), with `--since` for a full relist | S | — |
 
 ### Then: the balance pipeline, where most of the hand work is
 
@@ -410,3 +410,13 @@ details; this is the log.
   unless `--since` says otherwise; `classify --dry-run` estimates from the
   measured tokens per thread in `labels.sqlite` (317); `cosh.sentiment
   collect` always writes identities, so the comment files have one writer.
+- **2026-11-12, item 6 without losing coverage.** Instead of a fixed
+  window, `extract-open` lists only open CLs updated since the last
+  complete snapshot (a day's margin), when the snapshots reach back to the
+  oldest fetched week; derive already takes each CL's newest listing. A
+  refresh drops from about 490 weekly windows to one or two.
+- **2026-11-12, item 4 in part.** `summarize` no longer writes
+  `summaries/org_weekly.csv`, a copy of `org_weekly.json` no page read.
+  Items 4 (moving `radar/adhoc/`) and 5 (the browser list in `data.ts`)
+  were dropped: neither removes a step or a store, and 5 would add a data
+  file for the page to fetch.

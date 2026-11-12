@@ -242,13 +242,33 @@ def _list_span(client, raw, project, start, end, step, out, status, snap):
         w = w_end
 
 
+REFRESH_MARGIN = timedelta(days=1)
+
+
+def listed_through(raw, host, project, start):
+    """When the finished open-CL snapshots, taken together, have listed
+    every open CL updated from `start` on: the start of the newest snapshot
+    in an unbroken chain (each one's `since` no later than the previous
+    one's start, the first no later than `start`), else None. A backfill
+    that moves `start` earlier breaks the chain, so the next refresh lists
+    everything again."""
+    through = None
+    for listed_at, since in raw.execute(
+            """SELECT listed_at, since FROM open_listings WHERE host=? AND project=?
+               AND fetched_at IS NOT NULL ORDER BY listed_at""", (host, project)):
+        if _parse_iso(since) <= (through or start):
+            through = _parse_iso(listed_at)
+    return through
+
+
 def extract_open(host, project, since=None, closed_since=None, min_interval=1.0,
                  data_dir=store.DATA_DIR, argv="", batch_size=200, batch_gap=5.0,
                  duty_cycle=1.0, max_comment_fetches=None):
     """Snapshot the CLs whose comments the weekly (closed-CL) listings can't see
     yet, and fetch their NoteDb refs:
       - open CLs on main updated at/after `since` (default: start of the oldest
-        fetched week), and
+        fetched week, or a day before the last complete snapshot started if
+        the snapshots so far reach back that far: see `listed_through`), and
       - merged/abandoned CLs closed at/after `closed_since` (default: end of the
         newest fetched week), which no weekly listing covers yet.
     Comments are later bucketed by the week they were written, so this is what
@@ -273,7 +293,13 @@ def extract_open(host, project, since=None, closed_since=None, min_interval=1.0,
             if span is None and (since is None or closed_since is None):
                 raise SystemExit("no fetched weeks yet: pass --since and --closed-since")
             snap = store.now_iso()
-            since_s = since or f"{span[0]:%Y-%m-%dT%H:%M:%SZ}"
+            if since is None:
+                # Open CLs not updated since the last complete snapshot keep
+                # that snapshot's listing (derive takes each CL's newest), so
+                # only list what changed since it, with a day's margin.
+                done_to = listed_through(raw, host, project, span[0])
+                since = max(span[0], done_to - REFRESH_MARGIN) if done_to else span[0]
+            since_s = since if isinstance(since, str) else f"{since:%Y-%m-%dT%H:%M:%SZ}"
             closed_s = closed_since or f"{span[1]:%Y-%m-%dT%H:%M:%SZ}"
             raw.execute("""INSERT INTO open_listings(host, project, listed_at, since, closed_since,
                            last_run_id) VALUES (?,?,?,?,?,?)""",

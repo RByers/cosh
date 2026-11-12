@@ -529,11 +529,11 @@
       "inputs": ["gerrit-rest", "gerrit-notedb", "data/private/settings.json"],
       "outputs": ["data/private/raw.sqlite", "data/private/notedb/"],
       "network": true, "lock": "data/private/extract.lock",
-      "incremental": "Each run is a new snapshot that relists the whole span; refs are fetched only when missing or stale.",
+      "incremental": "Each run is a new snapshot. It lists open CLs updated since a day before the last complete snapshot started (the whole span from the oldest fetched week when the snapshots don't reach back that far, e.g. after a backfill); refs are fetched only when missing or stale.",
       "duration": null, "token_cost": null, "cost_source": "No timing recorded; the 2026-11-05 run listed 47,329 CLs and fetched 5,383 refs",
       "refresh": "routine",
       "approval": "Approved; rerunning to refresh is fine, but never alongside a backfill.",
-      "notes": "Its default start is the oldest fetched week, now 2017-W27, so each run lists about 490 weekly windows."
+      "notes": "The last snapshot (2026-11-05) listed from 2023-W26, so the next run lists from 2017-W27 once (about 490 weekly windows); later runs list only the days since the previous one."
     },
     {
       "id": "update-affiliations", "group": "gerrit", "command": "python3 -m cosh update-affiliations",

@@ -315,5 +315,32 @@ class ContactTest(unittest.TestCase):
             notedb.init_repo(f"{d}/x.git")          # raises if it wanted the contact
 
 
+class ListedThroughTest(unittest.TestCase):
+    """extract-open's default `since`: only what changed since the last
+    complete snapshot, if the snapshots reach back to the oldest week."""
+
+    def raw(self, rows):
+        d = tempfile.mkdtemp()
+        raw = store.open_raw(d)
+        raw.executemany("INSERT INTO open_listings(host, project, listed_at, since, closed_since, fetched_at) "
+                        "VALUES (?,?,?,?,?,?)", [(H, P, *r) for r in rows])
+        return raw
+
+    def test_chain(self):
+        start = datetime(2023, 6, 26, tzinfo=timezone.utc)
+        z = "2026-11-02T00:00:00Z"
+        self.assertIsNone(extract.listed_through(self.raw([]), H, P, start))
+        # A full snapshot, then an incremental one that starts before it.
+        raw = self.raw([("2026-11-04T00:00:00Z", "2023-06-26T00:00:00Z", z, "2026-11-04T01:00:00Z"),
+                        ("2026-11-10T00:00:00Z", "2026-11-03T00:00:00Z", z, "2026-11-10T01:00:00Z"),
+                        ("2026-11-11T00:00:00Z", "2026-11-09T00:00:00Z", z, None)])   # unfinished
+        self.assertEqual(extract.listed_through(raw, H, P, start), datetime(2026, 11, 10, tzinfo=timezone.utc))
+        # A backfill moved the oldest week earlier: list everything again.
+        self.assertIsNone(extract.listed_through(raw, H, P, datetime(2017, 7, 3, tzinfo=timezone.utc)))
+        # A snapshot that started later than the coverage leaves a gap.
+        raw = self.raw([("2026-11-04T00:00:00Z", "2025-11-03T00:00:00Z", z, "2026-11-04T01:00:00Z")])
+        self.assertIsNone(extract.listed_through(raw, H, P, start))
+
+
 if __name__ == "__main__":
     unittest.main()

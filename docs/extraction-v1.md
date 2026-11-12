@@ -118,6 +118,12 @@ week, plus a snapshot of **open** CLs (step 3).
    duty cycle and refetch rule. An unfinished snapshot is resumed; to refresh,
    run it again for a new snapshot. Derive uses each CL's newest listing,
    whether weekly or from a snapshot.
+   Since 2026-11-12 a refresh lists only open CLs updated since a day before
+   the last complete snapshot started, when the finished snapshots together
+   reach back to the oldest fetched week (`extract.listed_through`): an open
+   CL not updated since keeps its earlier listing, which is still current.
+   Otherwise (the first run, or after a backfill moved the oldest week
+   earlier) it lists from the oldest week. `--since` overrides both.
 4. **Account lookups.** Account IDs seen in NoteDb comments but absent from the
    listing are resolved with `/accounts/{id}`. W44 needed 4 lookups.
 5. **Politeness.**

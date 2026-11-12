@@ -51,8 +51,8 @@ regex plus Claude Haiku (`cosh classify`).
   resumable with the same command.
 - **The open-CL snapshot for that year is approved** (2026-11-03):
   `python3 -m cosh extract-open` lists open CLs updated since the oldest
-  fetched week, plus CLs closed after the newest one, and fetches their NoteDb
-  refs. Run it only after the backfill has finished, never alongside it.
+  fetched week (after the first full run, only since the last snapshot),
+  plus CLs closed after the newest one, and fetches their NoteDb refs. Run it only after the backfill has finished, never alongside it.
   Rerunning it to refresh is fine.
 - **Keep load on Gerrit and googlesource low.**
   - Requests are serial. Exceptions: the 2020–23 backfill above (6 NoteDb
