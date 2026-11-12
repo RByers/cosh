@@ -8,8 +8,9 @@ Stages (each resumable; git, timeline and interdiff may run at once, but
 interdiff needs timeline's uploads; each writes data/private/balance-<stage>.sqlite):
   git        first-parent history of chromium/src main since 2017-01-01: author,
              dates, CL number, Reviewed-by footers, reverts, per-file line counts
-  timeline   per CL from NoteDb: uploads (kind, time, uploader) and attention-set
-             intervals per account
+  timeline   per CL from NoteDb: uploads (kind, time, uploader), attention-set
+             intervals per account and Code-Review votes; rereads a CL whose
+             meta ref moved
   interdiff  per reviewed CL: how much its diff changed between the first
              reviewed patch set and the final one, comparing diffs, not files,
              so rebases don't count
@@ -36,8 +37,9 @@ NOTEDB = os.path.join(store.DATA_DIR, "notedb", "chromium_src.git")
 ENV = {**os.environ, "GIT_NO_LAZY_FETCH": "1"}
 SINCE = "2017-01-01"
 
-SCHEMA = """
-CREATE TABLE IF NOT EXISTS meta (k TEXT PRIMARY KEY, v TEXT) STRICT;
+# Each stage's file holds only its own tables; `cl` makes its own (CL_SCHEMA).
+SCHEMA = {}
+SCHEMA["git"] = """
 CREATE TABLE IF NOT EXISTS paths (path_id INTEGER PRIMARY KEY, path TEXT NOT NULL UNIQUE) STRICT;
 -- First-parent commits of main since SINCE.
 CREATE TABLE IF NOT EXISTS gcommits (
@@ -64,7 +66,9 @@ CREATE TABLE IF NOT EXISTS gfiles (
   dels      INTEGER NOT NULL,
   PRIMARY KEY (commit_id, path_id)
 ) STRICT, WITHOUT ROWID;
+"""
 
+SCHEMA["timeline"] = """
 -- Per CL, from its NoteDb meta ref.
 CREATE TABLE IF NOT EXISTS uploads (
   change_number INTEGER NOT NULL,
@@ -84,8 +88,20 @@ CREATE TABLE IF NOT EXISTS attention (
   end_at        INTEGER NOT NULL,
   PRIMARY KEY (change_number, account_id, start_at)
 ) STRICT, WITHOUT ROWID;
-CREATE TABLE IF NOT EXISTS timeline_done (change_number INTEGER PRIMARY KEY) STRICT;
+-- Every Code-Review vote cast (parse_votes).
+CREATE TABLE IF NOT EXISTS votes (
+  change_number INTEGER NOT NULL,
+  voter         INTEGER NOT NULL,
+  value         INTEGER NOT NULL,      -- -2..+2; 0 = vote removed
+  at            INTEGER NOT NULL,
+  ps            INTEGER NOT NULL,
+  PRIMARY KEY (change_number, voter, at, value)
+) STRICT, WITHOUT ROWID;
+-- The meta ref's tip when the CL was read: a CL is read again when its tip moves.
+CREATE TABLE IF NOT EXISTS timeline_done (change_number INTEGER PRIMARY KEY, tip TEXT NOT NULL) STRICT;
+"""
 
+SCHEMA["interdiff"] = """
 -- Per reviewed CL: the first reviewed patch set against the final one.
 CREATE TABLE IF NOT EXISTS interdiff (
   change_number INTEGER PRIMARY KEY,
@@ -104,14 +120,24 @@ CREATE TABLE IF NOT EXISTS interdiff (
 
 def db_path(stage):
     """Each stage writes its own file, so stages can run at the same time;
-    `cl` reads them all and writes balance.sqlite."""
+    `cl` reads them all and writes balance.sqlite. COSH_BALANCE_<STAGE>
+    (e.g. COSH_BALANCE_TIMELINE) points one stage at another file, for
+    writers and readers alike."""
+    if os.environ.get(f"COSH_BALANCE_{stage.upper()}"):
+        return os.environ[f"COSH_BALANCE_{stage.upper()}"]
     return os.path.join(store.DATA_DIR, "balance.sqlite" if stage == "cl" else f"balance-{stage}.sqlite")
 
 
-def connect(path):
+def connect(path, stage):
     db = sqlite3.connect(path, timeout=60)
     db.execute("PRAGMA journal_mode=WAL")
-    db.executescript(SCHEMA)
+    if stage == "timeline" and db.execute("SELECT 1 FROM pragma_table_info('timeline_done') "
+                                          "WHERE name = 'change_number'").fetchone() \
+            and not db.execute("SELECT 1 FROM pragma_table_info('timeline_done') WHERE name = 'tip'").fetchone():
+        # A store from before tips (and votes) were kept: an empty tip makes
+        # every CL read again, its old rows replaced.
+        db.execute("ALTER TABLE timeline_done ADD COLUMN tip TEXT NOT NULL DEFAULT ''")
+    db.executescript(SCHEMA.get(stage, ""))
     return db
 
 
@@ -250,31 +276,60 @@ def parse_meta_log(entries):
     return uploads, spans
 
 
+# "Label: Code-Review=-1", "Label: Code-Review=+2, <uuid>",
+# "Label: Code-Review=-1 Gerrit User 123 <123@uuid>" (on behalf of),
+# "Label: -Code-Review" / "=0" (vote removed). Copied-Label lines are copies
+# of an earlier vote onto a new patch set, so they are skipped.
+LABEL = re.compile(r"^Label: (-?)Code-Review(?:=([+-]?\d+))?(?:, [0-9a-f-]+)?(?: Gerrit User (\d+) <[^>]*>)?\s*$", re.M)
+PATCH_SET = re.compile(r"^Patch-set: (\d+)", re.M)
+
+
+def parse_votes(entries):
+    """entries: [(at, author_id, body)] oldest first. Returns
+    [(voter, value, at, ps)]: every Code-Review vote cast, 0 for a removal."""
+    out = []
+    for at, author, body in entries:
+        ps = PATCH_SET.search(body)
+        ps = int(ps.group(1)) if ps else 0
+        for m in LABEL.finditer(body):
+            removed, value, behalf = m.groups()
+            voter = int(behalf) if behalf else author
+            v = 0 if removed or value is None else int(value)
+            out.append((voter, v, at, ps))
+    return out
+
+
 def meta_refs(git_dir=None):
-    """Change numbers that have a refs/meta/<n> ref in the NoteDb repo.
+    """{change number: tip sha} of the refs/meta/<n> refs in the NoteDb repo.
 
     List the refs once and intersect in Python: `for-each-ref` with many
     refnames as patterns matches every ref against every pattern, which took
     54 s per 2,000 CLs against 715k refs (2026-11-12)."""
     out = subprocess.run(["git", "--git-dir", git_dir or NOTEDB, "for-each-ref",
-                          "--format=%(refname:lstrip=2)", "refs/meta/"],
+                          "--format=%(objectname) %(refname:lstrip=2)", "refs/meta/"],
                          capture_output=True, text=True, env=ENV, check=True).stdout
-    return {int(x) for x in out.split() if x.isdigit()}
+    return {int(n): sha for sha, n in (line.split() for line in out.splitlines()) if n.isdigit()}
 
 
 def stage_timeline(db, numbers=None, batch=2000):
-    """Walk each CL's meta ref history, many refs per `git log` process."""
+    """Walk each CL's meta ref history, many refs per `git log` process, and
+    keep its uploads, attention-set intervals and Code-Review votes. A CL is
+    read again (its rows replaced) when its ref's tip has moved since; CLs
+    with no ref are not marked, so a ref that arrives later is read."""
     if numbers is None:
         d = sqlite3.connect(f"file:{os.path.join(store.DATA_DIR, store.DERIVED_FILE)}?mode=ro", uri=True)
         numbers = [r[0] for r in d.execute("SELECT change_number FROM changes WHERE is_bot_owned = 0 "
                                            "AND project = 'chromium/src' AND branch = 'main'")]
-    done = {r[0] for r in db.execute("SELECT change_number FROM timeline_done")}
+    done = dict(db.execute("SELECT change_number, tip FROM timeline_done"))
     have = meta_refs()
-    missing = set(numbers) - have
+    numbers = set(numbers)
+    missing = numbers - have.keys()
     if missing:
         print(f"timeline: {len(missing):,} CLs have no meta ref locally; skipped", flush=True)
-    todo = sorted((set(numbers) & have) - done)
-    print(f"timeline: {len(todo):,} CLs to read ({len(done):,} done)", flush=True)
+    todo = sorted(n for n in numbers & have.keys() if done.get(n) != have[n])
+    again = sum(1 for n in todo if n in done)
+    print(f"timeline: {len(todo):,} CLs to read ({again:,} of them updated since read; "
+          f"{len(done):,} done)", flush=True)
     t0 = time.time()
     for i in range(0, len(todo), batch):
         part = todo[i:i + batch]
@@ -293,22 +348,26 @@ def stage_timeline(db, numbers=None, batch=2000):
             commits[sha] = (parent.split()[0] if parent else None, int(at), int(who.group(1)) if who else 0, body)
             for m in re.finditer(r"refs/meta/(\d+)", refs):
                 tips[int(m.group(1))] = sha
-        hist = {}
-        for n, sha in tips.items():
-            ents = []
+        del p
+        for n, tip in tips.items():
+            ents, sha = [], tip
             while sha in commits:
                 parent, at, who, body = commits[sha]
                 ents.append((at, who, body))
                 sha = parent
-            hist[n] = ents
-        for n, ents in hist.items():
             ents.reverse()
             ups, spans = parse_meta_log(ents)
+            if n in done:
+                for t in ("uploads", "attention", "votes"):
+                    db.execute(f"DELETE FROM {t} WHERE change_number = ?", (n,))
             db.executemany("INSERT OR REPLACE INTO uploads VALUES (?,?,?,?,?,?)",
                            [(n, ps, at, who, kind, sha) for ps, at, who, kind, sha in ups])
             db.executemany("INSERT OR REPLACE INTO attention VALUES (?,?,?,?)",
                            [(n, a, s, e) for a, s, e in spans])
-        db.executemany("INSERT OR IGNORE INTO timeline_done VALUES (?)", [(n,) for n in part])
+            db.executemany("INSERT OR IGNORE INTO votes VALUES (?,?,?,?,?)",
+                           [(n, *v) for v in parse_votes(ents)])
+            # The tip actually walked, which is newer than `have` if the ref moved meanwhile.
+            db.execute("INSERT OR REPLACE INTO timeline_done VALUES (?,?)", (n, tip))
         db.commit()
         k = i + len(part)
         print(f"timeline: {k:,}/{len(todo):,} ({k / (time.time() - t0):.0f} CLs/s)", flush=True)
@@ -677,7 +736,7 @@ def main(argv=None):
     ap.add_argument("--shard", default="0/1", help="interdiff: i/k, the CLs with number %% k == i")
     ap.add_argument("--week", help="timeline: only CLs closed in this ISO week (for tests)")
     args = ap.parse_args(argv)
-    db = connect(args.db or db_path(args.stage))
+    db = connect(args.db or db_path(args.stage), args.stage)
     if args.stage == "git":
         stage_git(db, args.since)
     elif args.stage == "timeline":

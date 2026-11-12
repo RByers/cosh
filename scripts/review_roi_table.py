@@ -244,7 +244,7 @@ def main():
 
     # -------------------------------------------------------------- votes
     base_by_n = {c["change_number"]: c for c in base}
-    v = ro(os.path.join(store.DATA_DIR, "balance-votes.sqlite"))
+    v = ro(balance.db_path("timeline"))
     votes = defaultdict(list)
     for n, voter, value, at in v.execute("SELECT change_number, voter, value, at FROM votes"):
         if n in base_by_n:

@@ -54,7 +54,7 @@ too, it is picking up confounding, not prevention.
 |---|---|
 | `balance.sqlite` `cl` | per CL (509,646; 403,235 merged; 2023-07 .. 2026-11): size, dirs, threads, addressed, comments, reviewers, rounds, rework, interdiff share, attention hours, first-review latency, `reverted_at`, `is_revert`, `is_reland`, owner |
 | `balance.sqlite` `cl_dirs`, `cl_attention` | the landed commit's lines per 3-level directory; each non-owner's attention hours |
-| `balance-votes.sqlite` `votes` | every Code-Review vote with voter, value, time, patch set: who approved (+2) and when |
+| `balance-timeline.sqlite` `votes` | every Code-Review vote with voter, value, time, patch set: who approved (+2) and when |
 | `balance-git.sqlite` `gcommits`, `gfiles` | 1.30M first-parent commits on `main` since 2017: author, `Reviewed-by`, `reverts_sha`, `is_reland`, `Bot-Commit`, per-file lines. Reviewer and author history per directory comes from here |
 | `derived.sqlite` `threads`, `comments`, `accounts` | thread roots and their authors (who started each thread), `regex_addressed`; `labels.sqlite` for the Haiku labels |
 | `~/projects/shared/chromium` | full `main` history with blobs: revert messages (reasons), blame, later fixes to a CL's lines |

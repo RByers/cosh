@@ -21,8 +21,10 @@ averaged and are never written out.
   on chromium/src `main`, human-owned, mechanical CLs left out (the
   repetition rule in `docs/balance.md`). Eras: 2023 H2–2024, 2025, and
   2026 (to October).
-- **Votes** (`scripts/balance_signals.py votes` →
-  `data/private/balance-votes.sqlite`, table `votes`):
+- **Votes** (table `votes` in `data/private/balance-timeline.sqlite`,
+  written by `python3 -m cosh.balance timeline` in the same NoteDb walk as
+  the uploads and attention set; until 2026-11-12 a separate
+  `balance_signals.py votes` pass wrote `balance-votes.sqlite`):
   - Every `Label: Code-Review=<v>` line in a CL's NoteDb meta history, with
     the voter, value, time and patch set. The voter is the meta commit's
     author, or the `Gerrit User N` named on the line when a vote was cast
@@ -30,7 +32,8 @@ averaged and are never written out.
   - `Copied-Label` lines (a vote carried to a new patch set) are skipped.
   - Only votes by humans other than the CL owner count.
   - It reads the local NoteDb repo only and fetches nothing. It is
-    resumable, and takes about 1.5 h for 510k CLs.
+    resumable, and rereads a CL whose meta ref has moved since
+    (`timeline_done` keeps each CL's tip).
 - **Negative vote:** any −1 or −2 from a non-owner human. *neg share* is the
   share of substantively reviewed CLs with one. *neg index* is that share ÷
   the 2023–24 share for CLs of the same size (ten log buckets): 1.0 is the
@@ -107,24 +110,26 @@ averaged and are never written out.
 ```bash
 cd ~/projects/cosh   # or a worktree; data comes from the main checkout
 export COSH_DATA_DIR=/home/rbagent/projects/cosh/data/private
-nice -n 5 python3 scripts/balance_signals.py votes      # resumable, ~30 min (below)
+nice -n 5 python3 -m cosh.balance timeline              # votes, uploads, attention (below)
 nice -n 5 python3 scripts/balance_signals.py report \
     --first-commit first_commit.txt --owners-added owners_added.txt \
     --ai-marked ai_marked.txt --mech mech.jsonl --out signals.json   # ~4 min
 ```
 
-`votes` reads every CL in `balance.sqlite` (1.14M after the 2017
-backfill) and takes about 30 minutes, given a current multi-pack index in
-the NoteDb repo: about 660 CLs/s on a cold sample of 20,000 (2026-11-12).
-It lists `refs/meta/` once (`cosh.balance.meta_refs`); passing each batch's
-2,000 refnames to `for-each-ref` as patterns cost 54 s a batch at 715k
-refs. With 3,198 packs outside a stale index it ran at 14–34 CLs/s; `cosh
-notedb-maintain` fixes that, and `backfill` now runs it every 20 weeks and
-at the end. `--out` writes to another DB, for a scratch run.
+The `timeline` stage reads every CL with a NoteDb meta ref (716k of the
+1.14M after the 2017 backfill; see `docs/balance.md` for its time). It
+lists `refs/meta/` once with each ref's tip (`cosh.balance.meta_refs`);
+passing each batch's 2,000 refnames to `for-each-ref` as patterns cost
+54 s a batch at 715k refs. With 3,198 packs outside a stale index the
+reads ran at 14–34 CLs/s; `cosh notedb-maintain` fixes that, and
+`backfill` now runs it every 20 weeks and at the end.
+`COSH_BALANCE_TIMELINE=<path>` points the stage and its readers at another
+file, for a scratch run.
 
 The four input files are the same ones `scripts/balance_report.py` takes
 (see `docs/balance.md`, "Data and how it's built"). Tests:
-`python3 -m unittest tests.test_balance_signals` (the vote parser).
+`python3 -m unittest tests.test_balance tests.test_balance_signals` (the
+vote parser and the timeline stage are in `tests.test_balance`).
 
 ## Results
 

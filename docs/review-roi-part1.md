@@ -59,7 +59,7 @@ Nothing was fetched, no comment text was read and no model was called.
 
 `review_roi_table.py` (67 s, peak RSS 3.6 GB) joins `balance.sqlite` `cl`,
 `cl_attention`, `balance-git.sqlite` (`gcommits`, `gfiles`, `paths`),
-`balance-votes.sqlite`, and `derived.sqlite` `accounts` and `comments`
+`balance-timeline.sqlite` `votes`, and `derived.sqlite` `accounts` and `comments`
 (counts only), plus the shared inputs `first_commit.txt`,
 `owners_added.txt` and `mech.jsonl`.
 

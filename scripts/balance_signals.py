@@ -1,8 +1,5 @@
 """Growth signals beyond review threads (docs/balance-signals.md).
 
-  COSH_DATA_DIR=<main>/data/private python3 scripts/balance_signals.py votes
-      Code-Review votes from NoteDb meta commits -> data/private/balance-votes.sqlite
-      (or --out; resumable; read-only on NoteDb, no network).
   COSH_DATA_DIR=... python3 scripts/balance_signals.py report --first-commit F --out signals.json
       -1s and abandonment by tenure, balanced reviewer/author panels, matched cohorts.
 
@@ -14,10 +11,7 @@ import json
 import math
 import os
 import random
-import re
-import sqlite3
 import statistics as st
-import subprocess
 import sys
 import time
 from collections import Counter, defaultdict
@@ -26,103 +20,9 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from cosh import balance, store  # noqa: E402
 
-VOTES_DB = os.path.join(store.DATA_DIR, "balance-votes.sqlite")
 YEAR = 365.25 * 86400
 FIRST_TS = 1687737600          # 2023-06-26 00:00 UTC: Monday of 2023-W26, the first Gerrit week
 END_TS = 1793491200            # 2026-11-01 00:00 UTC: end of the data used (2026-W44)
-
-# ------------------------------------------------------------------ votes
-
-# "Label: Code-Review=-1", "Label: Code-Review=+2, <uuid>",
-# "Label: Code-Review=-1 Gerrit User 123 <123@uuid>" (on behalf of),
-# "Label: -Code-Review" / "=0" (vote removed). Copied-Label lines are copies
-# of an earlier vote onto a new patch set, so they are skipped.
-LABEL = re.compile(r"^Label: (-?)Code-Review(?:=([+-]?\d+))?(?:, [0-9a-f-]+)?(?: Gerrit User (\d+) <[^>]*>)?\s*$", re.M)
-PATCH_SET = re.compile(r"^Patch-set: (\d+)", re.M)
-
-
-def parse_votes(entries):
-    """entries: [(at, author_id, body)] oldest first. Returns
-    [(voter, value, at, ps)]: every Code-Review vote cast, 0 for a removal."""
-    out = []
-    for at, author, body in entries:
-        ps = PATCH_SET.search(body)
-        ps = int(ps.group(1)) if ps else 0
-        for m in LABEL.finditer(body):
-            removed, value, behalf = m.groups()
-            voter = int(behalf) if behalf else author
-            v = 0 if removed or value is None else int(value)
-            out.append((voter, v, at, ps))
-    return out
-
-
-VOTES_SCHEMA = """
-CREATE TABLE IF NOT EXISTS votes (
-  change_number INTEGER NOT NULL,
-  voter         INTEGER NOT NULL,
-  value         INTEGER NOT NULL,      -- -2..+2; 0 = vote removed
-  at            INTEGER NOT NULL,
-  ps            INTEGER NOT NULL,
-  PRIMARY KEY (change_number, voter, at, value)
-) STRICT, WITHOUT ROWID;
-CREATE TABLE IF NOT EXISTS votes_done (change_number INTEGER PRIMARY KEY) STRICT;
-"""
-
-
-def stage_votes(batch=2000, numbers=None, out=None):
-    """`numbers` (default: every CL in balance.sqlite) and `out` (default
-    VOTES_DB) let a test or benchmark run a sample into a scratch DB."""
-    db = sqlite3.connect(out or VOTES_DB)
-    db.executescript(VOTES_SCHEMA)
-    if numbers is None:
-        cl = sqlite3.connect(f"file:{balance.db_path('cl')}?mode=ro", uri=True)
-        numbers = [n for n, in cl.execute("SELECT change_number FROM cl")]
-    done = {n for n, in db.execute("SELECT change_number FROM votes_done")}
-    todo = sorted(set(numbers) - done)
-    # CLs with no comments have no meta ref; they are marked done without a git call.
-    have = balance.meta_refs()
-    print(f"votes: {len(todo):,} CLs to read ({len(done):,} done; "
-          f"{len(set(todo) - have):,} have no meta ref)", flush=True)
-    t0 = time.time()
-    for i in range(0, len(todo), batch):
-        part = todo[i:i + batch]
-        refs = [f"refs/meta/{n}" for n in part if n in have]
-        if refs:
-            p = subprocess.run(["git", "--git-dir", balance.NOTEDB, "log", "--decorate=full",
-                                "--decorate-refs=refs/meta/",
-                                "--format=%x01%x02%x03%H%x00%P%x00%D%x00%at%x00%an%x00%B", *refs],
-                               capture_output=True, env=balance.ENV)
-            if p.returncode:
-                raise SystemExit(f"git log failed: {p.stderr[:500]!r}")
-            commits, tips = {}, {}
-            for rec in p.stdout.split(b"\x01\x02\x03")[1:]:
-                fields = rec.decode("utf-8", "replace").split("\x00", 5)
-                if len(fields) < 6:
-                    continue
-                sha, parent, rf, at, an, body = fields
-                who = re.match(r"Gerrit User (\d+)", an)
-                # Keep only what the vote parser needs.
-                body = "\n".join(l for l in body.splitlines() if l.startswith(("Label:", "Patch-set:")))
-                commits[sha] = (parent.split()[0] if parent else None, int(at), int(who.group(1)) if who else 0, body)
-                for m in re.finditer(r"refs/meta/(\d+)", rf):
-                    tips[int(m.group(1))] = sha
-            rows = []
-            for n, sha in tips.items():
-                ents = []
-                while sha in commits:
-                    parent, at, who, body = commits[sha]
-                    ents.append((at, who, body))
-                    sha = parent
-                ents.reverse()
-                rows += [(n, *v) for v in parse_votes(ents)]
-            db.executemany("INSERT OR IGNORE INTO votes VALUES (?,?,?,?,?)", rows)
-        db.executemany("INSERT OR IGNORE INTO votes_done VALUES (?)", [(n,) for n in part])
-        db.commit()
-        k = i + len(part)
-        print(f"votes: {k:,}/{len(todo):,} ({k / (time.time() - t0):.0f} CLs/s)", flush=True)
-
-
-
 
 # ------------------------------------------------------------------ report
 
@@ -179,13 +79,12 @@ def load(args):
     emails = dict(d.execute("SELECT account_id, email FROM accounts"))
     bots = {a for a, in d.execute("SELECT account_id FROM accounts WHERE is_bot = 1")}
     acct_pid = {a: ids.find(e) for a, e in emails.items() if e and not A.is_bot_email(e) and a not in bots}
-    # Code-Review votes by non-owner humans.
-    v = sqlite3.connect(f"file:{VOTES_DB}?mode=ro", uri=True)
-    votes = defaultdict(list)
-    for n, voter, value, at in v.execute("SELECT change_number, voter, value, at FROM votes"):
-        votes[n].append((voter, value, at))
-    # Uploads before the CL was sent for review (the author polishing alone).
+    # Code-Review votes (by non-owner humans, filtered below) and uploads
+    # before the CL was sent for review (the author polishing alone).
     tl = A.ro(balance.db_path("timeline"))
+    votes = defaultdict(list)
+    for n, voter, value, at in tl.execute("SELECT change_number, voter, value, at FROM votes"):
+        votes[n].append((voter, value, at))
     uploads = defaultdict(list)
     for n, at, who, kind in tl.execute("SELECT change_number, at, uploader, kind FROM uploads"):
         uploads[n].append((at, who, kind))
@@ -528,17 +427,14 @@ def report(args):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("cmd", choices=["votes", "report"])
+    ap.add_argument("cmd", choices=["report"])
     ap.add_argument("--first-commit")
     ap.add_argument("--owners-added")
     ap.add_argument("--ai-marked")
     ap.add_argument("--mech")
     ap.add_argument("--out")
     args = ap.parse_args()
-    if args.cmd == "votes":
-        stage_votes(out=args.out)
-    else:
-        report(args)
+    report(args)
 
 
 if __name__ == "__main__":

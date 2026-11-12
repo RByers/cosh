@@ -320,17 +320,18 @@
         {"name": "gfiles", "rows": 10216159, "purpose": "Files per commit with line counts."},
         {"name": "paths", "rows": 1389925, "purpose": "Path dictionary for gfiles."}
       ],
-      "notes": "Each balance stage file carries the whole schema, so it also has empty tables of the other stages."
+      "notes": "Each balance stage file holds only its own tables (since 2026-11-12; a file built before still has empty tables of the other stages until rebuilt)."
     },
     {
       "id": "data/private/balance-timeline.sqlite", "group": "balance", "path": "data/private/balance-timeline.sqlite", "kind": "sqlite", "tier": "derived",
       "tracked_in_git": false, "rebuildable": true,
-      "size": "445 MB", "size_as_of": "2026-11-12",
-      "purpose": "Each CL's patch-set uploads and attention-set changes, read from its NoteDb event log.",
+      "size": "530 MB", "size_as_of": "2026-11-12",
+      "purpose": "Each CL's patch-set uploads, attention-set changes and Code-Review votes, read from its NoteDb event log in one walk.",
       "tables": [
         {"name": "uploads", "rows": 4682336, "purpose": "One row per uploaded patch set: who and when."},
         {"name": "attention", "rows": 3698365, "purpose": "Attention-set changes: whose turn it was and when."},
-        {"name": "timeline_done", "rows": 715564, "purpose": "CLs already read; a CL is never read again."}
+        {"name": "votes", "rows": 2250353, "purpose": "Code-Review vote events: who, when, value, patch set."},
+        {"name": "timeline_done", "rows": 715564, "purpose": "CLs read, with their meta ref's tip then; a CL whose tip moved is read again."}
       ]
     },
     {
@@ -349,16 +350,6 @@
         {"name": "cl", "rows": 1140563, "purpose": "Per CL: 36 columns of size, timing, review and outcome facts."},
         {"name": "cl_attention", "rows": 1049334, "purpose": "Per CL and person: time in the attention set."},
         {"name": "cl_dirs", "rows": 2462386, "purpose": "Directories each CL touches."}
-      ]
-    },
-    {
-      "id": "data/private/balance-votes.sqlite", "group": "balance", "path": "data/private/balance-votes.sqlite", "kind": "sqlite", "tier": "derived",
-      "tracked_in_git": false, "rebuildable": true,
-      "size": "61 MB", "size_as_of": "2026-11-12",
-      "purpose": "Every Code-Review vote of each CL, read from its NoteDb event log.",
-      "tables": [
-        {"name": "votes", "rows": 2250353, "purpose": "Vote events: who, when, value."},
-        {"name": "votes_done", "rows": 1140563, "purpose": "CLs already read (including ones with no NoteDb ref, which are never retried)."}
       ]
     },
     {
@@ -704,12 +695,12 @@
     {
       "id": "balance-timeline", "group": "balance", "command": "python3 -m cosh.balance timeline",
       "code": ["cosh/balance.py"],
-      "purpose": "Reads each CL's uploads and attention-set changes from NoteDb.",
+      "purpose": "Reads each CL's uploads, attention-set changes and Code-Review votes from NoteDb.",
       "inputs": ["data/private/derived.sqlite", "data/private/notedb/"],
       "outputs": ["data/private/balance-timeline.sqlite"],
       "network": false, "lock": null,
-      "incremental": "Reads only CLs not yet done; a CL updated later is not read again.",
-      "duration": "21.5 min for 378k new CLs", "token_cost": null, "cost_source": "data/private/balance-rebuild-20261112.log",
+      "incremental": "Reads CLs not yet read and CLs whose meta ref's tip moved since (replacing their rows); CLs without a ref are looked for again next time.",
+      "duration": "35.5 min (330 CLs/s, sharing the box with another git walk) for 716k CLs from empty", "token_cost": null, "cost_source": "data/private/scratch/timeline/walk.log",
       "refresh": "routine"
     },
     {
@@ -733,19 +724,6 @@
       "incremental": "Rebuilds the whole table.",
       "duration": "about 2 min for 1.14M CLs", "token_cost": null, "cost_source": "data/private/balance-rebuild-20261112.log",
       "refresh": "routine"
-    },
-    {
-      "id": "balance-votes", "group": "balance", "command": "python3 scripts/balance_signals.py votes",
-      "code": ["scripts/balance_signals.py"],
-      "purpose": "Reads every Code-Review vote of each CL from NoteDb.",
-      "inputs": ["data/private/balance.sqlite", "data/private/notedb/"],
-      "outputs": ["data/private/balance-votes.sqlite"],
-      "network": false, "lock": null,
-      "incremental": "Only CLs not yet done; CLs with no NoteDb ref are marked done and never retried.",
-      "duration": "5 h 14 min for 631k CLs; about 30 min once NoteDb is repacked", "token_cost": null,
-      "cost_source": "data/private/balance-votes-20261112.log; docs/balance-signals.md",
-      "refresh": "routine",
-      "notes": "A second walk of the same NoteDb logs that balance-timeline reads."
     },
     {
       "id": "report-inputs", "group": "balance", "command": "BALANCE_MECH_OUT=data/private/review_feedback_inputs/mech.jsonl python3 scripts/balance_analysis.py mechanical",
@@ -810,7 +788,7 @@
       "id": "balance-extras", "group": "balance", "command": "python3 scripts/balance_signals.py report ... --out data/private/balance_signals.json; python3 scripts/balance_clusters.py ...; python3 scripts/balance_cluster_map.py; python3 scripts/balance_page_extras.py",
       "code": ["scripts/balance_signals.py", "scripts/balance_clusters.py", "scripts/balance_cluster_map.py", "scripts/balance_page_extras.py"],
       "purpose": "Computes the review-quality signals and contributor clusters, then merges them and the security-fix totals into balance.json.",
-      "inputs": ["data/private/balance-votes.sqlite", "data/private/balance.sqlite", "data/private/balance-git.sqlite", "data/private/balance-timeline.sqlite", "data/private/derived.sqlite", "data/private/review_feedback_inputs/", "data/private/chrome_releases/", "chromium-git"],
+      "inputs": ["data/private/balance.sqlite", "data/private/balance-git.sqlite", "data/private/balance-timeline.sqlite", "data/private/derived.sqlite", "data/private/review_feedback_inputs/", "data/private/chrome_releases/", "chromium-git"],
       "outputs": ["data/private/balance_signals.json", "data/private/balance_clusters/", "summaries/balance.json"],
       "network": false, "lock": null,
       "incremental": "Each script recomputes its own output.",
@@ -881,7 +859,7 @@
       "id": "roi-analysis", "group": "feedback", "command": "python3 scripts/review_roi_table.py ...; review_roi_part1.py; review_roi_part2.py; review_roi_blame.py; review_roi_reverts.py; review_roi_substance.py",
       "code": ["scripts/review_roi_table.py", "scripts/review_roi_part1.py", "scripts/review_roi_part1_followup.py", "scripts/review_roi_part2.py", "scripts/review_roi_blame.py", "scripts/review_roi_reverts.py", "scripts/review_roi_substance.py"],
       "purpose": "The review-ROI studies: whether review feedback predicts later reverts, bug-fixing commits and security bugs.",
-      "inputs": ["data/private/balance.sqlite", "data/private/balance-git.sqlite", "data/private/balance-votes.sqlite", "data/private/derived.sqlite", "data/private/labels.sqlite", "data/private/bugs/bugs.sqlite", "data/private/review_feedback_inputs/", "data/private/notedb/", "chromium-git", "claude-model"],
+      "inputs": ["data/private/balance.sqlite", "data/private/balance-git.sqlite", "data/private/balance-timeline.sqlite", "data/private/derived.sqlite", "data/private/labels.sqlite", "data/private/bugs/bugs.sqlite", "data/private/review_feedback_inputs/", "data/private/notedb/", "chromium-git", "claude-model"],
       "outputs": ["data/private/review_roi/"],
       "network": true, "lock": null,
       "duration": "about 1 h; the full blame runs were estimated at 10 to 16 CPU hours", "token_cost": "Haiku pilots only: 274 tokens per thread, 200 threads",

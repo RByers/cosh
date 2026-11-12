@@ -1,3 +1,9 @@
+import contextlib
+import io
+import os
+import sqlite3
+import subprocess
+import tempfile
 import unittest
 from collections import Counter
 from datetime import datetime, timezone
@@ -41,6 +47,122 @@ class MetaLogTest(unittest.TestCase):
         self.assertEqual(ups[0][4], "a" * 40)
         # Closed at 500; the second ADD stays open until the merge at 900.
         self.assertEqual(sorted(spans), [(7, 200, 500), (7, 700, 900)])
+
+
+class VoteParserTest(unittest.TestCase):
+    def test_votes_removals_behalf_and_copies(self):
+        entries = [
+            (100, 7, "Update patch set 2\n\nPatch Set 2: Code-Review-1\n\nPatch-set: 2\nLabel: Code-Review=-1\n"),
+            (200, 8, "Patch-set: 3\nLabel: Code-Review=+2, 1a2b3c4d-aaaa\n"
+                     "Label: Code-Review=-1 Gerrit User 99 <99@abcd>\nLabel: Commit-Queue=+1"),
+            (300, 7, "Patch-set: 3\nLabel: -Code-Review\n"
+                     "Copied-Label: Code-Review=-1, ab12 Gerrit User 7 <7@x>"),
+            (400, 9, "Patch-set: 4\nLabel: Code-Review=0"),
+        ]
+        self.assertEqual(balance.parse_votes(entries), [
+            (7, -1, 100, 2),       # the commit author votes
+            (8, 2, 200, 3),        # a vote uuid suffix is ignored
+            (99, -1, 200, 3),      # cast on behalf of another account
+            (7, 0, 300, 3),        # removal; the Copied-Label line is skipped
+            (9, 0, 400, 4),
+        ])
+
+    def test_no_votes(self):
+        self.assertEqual(balance.parse_votes([(1, 2, "Patch-set: 1\nLabel: Commit-Queue=+2")]), [])
+
+
+class StageTimelineTest(unittest.TestCase):
+    """stage_timeline against a tiny NoteDb-like repo: two CLs with meta refs,
+    one without, and an unrelated ref."""
+
+    def git(self, *args, msg=None):
+        p = subprocess.run(["git", "--git-dir", self.repo, *args], input=msg, capture_output=True,
+                           text=True, env={**os.environ, **self.ident})
+        if p.returncode:
+            raise AssertionError(f"git {args[0]} failed: {p.stderr}")
+        return p.stdout.strip()
+
+    def commit(self, ref, msgs, at, parent=None):
+        parent = ["-p", parent] if parent else []
+        for k, m in enumerate(msgs):
+            self.ident["GIT_AUTHOR_DATE"] = self.ident["GIT_COMMITTER_DATE"] = f"@{at + k} +0000"
+            sha = self.git("commit-tree", self.tree, *parent, msg=m)
+            parent = ["-p", sha]
+        self.git("update-ref", ref, sha)
+        return sha
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.repo = os.path.join(self.tmp.name, "notedb.git")
+        self.ident = {"GIT_AUTHOR_NAME": "Gerrit User 7", "GIT_AUTHOR_EMAIL": "7@x",
+                      "GIT_COMMITTER_NAME": "Gerrit", "GIT_COMMITTER_EMAIL": "g@x"}
+        subprocess.run(["git", "init", "-q", "--bare", self.repo], check=True)
+        self.tree = self.git("mktree", msg="")
+        self.tip101 = self.commit("refs/meta/101", [
+            "Create change\n\nPatch-set: 1\nCommit: " + "a" * 40 + "\n",
+            "Review\n\nPatch-set: 1\nLabel: Code-Review=-1\n"], 1000)
+        self.commit("refs/meta/102", ["Review\n\nPatch-set: 2\nLabel: Code-Review=+2\n"], 2000)
+        self.commit("refs/heads/other", ["not a meta ref\n\nPatch-set: 1\nLabel: Code-Review=+1\n"], 3000)
+        self.old = balance.NOTEDB
+        balance.NOTEDB = self.repo
+        self.db = balance.connect(os.path.join(self.tmp.name, "timeline.sqlite"), "timeline")
+
+    def tearDown(self):
+        balance.NOTEDB = self.old
+        self.db.close()
+        self.tmp.cleanup()
+
+    def run_stage(self):
+        out = io.StringIO()
+        with contextlib.redirect_stdout(out):
+            balance.stage_timeline(self.db, numbers=[101, 102, 103], batch=2)
+        return out.getvalue()
+
+    def rows(self, sql):
+        return self.db.execute(sql).fetchall()
+
+    def test_votes_uploads_and_tip_keyed_resume(self):
+        self.assertEqual(balance.meta_refs().keys(), {101, 102})
+        self.run_stage()
+        self.assertEqual(self.rows("SELECT change_number, voter, value, at, ps FROM votes ORDER BY 1"),
+                         [(101, 7, -1, 1001, 1), (102, 7, 2, 2000, 2)])
+        self.assertEqual(self.rows("SELECT change_number, ps, kind FROM uploads"), [(101, 1, "initial")])
+        # 103 has no meta ref, so it is not marked done and is looked for again.
+        done = dict(self.rows("SELECT change_number, tip FROM timeline_done"))
+        self.assertEqual(done, balance.meta_refs())
+        self.assertIn("0 CLs to read", self.run_stage())
+        # A later NoteDb update moves 101's tip: only 101 is read again, and
+        # its rows are replaced (the -1 is now a removal, a new patch set).
+        self.commit("refs/meta/101", ["Create patch set 2\n\nUploaded patch set 2.\n\nPatch-set: 2\n"
+                                      "Label: -Code-Review\n"], 1100, parent=self.tip101)
+        self.assertIn("1 CLs to read (1 of them updated", self.run_stage())
+        self.assertEqual(self.rows("SELECT change_number, voter, value, at FROM votes ORDER BY 1, 4"),
+                         [(101, 7, -1, 1001), (101, 7, 0, 1100), (102, 7, 2, 2000)])
+        self.assertEqual(self.rows("SELECT ps, kind FROM uploads WHERE change_number = 101 ORDER BY 1"),
+                         [(1, "initial"), (2, "rework")])
+        self.assertEqual(dict(self.rows("SELECT change_number, tip FROM timeline_done")), balance.meta_refs())
+
+    def test_old_store_is_read_again(self):
+        path = os.path.join(self.tmp.name, "old.sqlite")
+        old = sqlite3.connect(path)
+        old.executescript("CREATE TABLE timeline_done (change_number INTEGER PRIMARY KEY) STRICT;"
+                          "INSERT INTO timeline_done VALUES (101), (102);"
+                          "CREATE TABLE uploads (change_number INTEGER NOT NULL, ps INTEGER NOT NULL, "
+                          "at INTEGER NOT NULL, uploader INTEGER NOT NULL, kind TEXT NOT NULL, sha TEXT, "
+                          "PRIMARY KEY (change_number, ps)) STRICT, WITHOUT ROWID;"
+                          "INSERT INTO uploads VALUES (101, 9, 1, 1, 'rework', NULL);")
+        old.close()
+        self.db.close()
+        self.db = balance.connect(path, "timeline")
+        # Every CL is read again (2 of them already read), its stale rows replaced.
+        self.assertIn("2 CLs to read (2 of them updated", self.run_stage())
+        self.assertEqual(self.rows("SELECT count(*) FROM votes"), [(2,)])
+        self.assertEqual(self.rows("SELECT change_number, ps FROM uploads"), [(101, 1)])
+        self.assertIn("0 CLs to read", self.run_stage())
+
+    def test_stage_files_hold_only_their_tables(self):
+        tables = {r[0] for r in self.rows("SELECT name FROM sqlite_master WHERE type = 'table'")}
+        self.assertEqual(tables, {"uploads", "attention", "votes", "timeline_done"})
 
 
 class HoursTest(unittest.TestCase):

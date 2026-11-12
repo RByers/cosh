@@ -163,17 +163,20 @@ unchanged republishes the same window.
 
 ### 3.4 Steps that never look at a CL twice
 
-Three incremental steps mark a CL done by its number alone *(reviewer)*:
+Incremental steps marked a CL done by its number alone *(reviewer)*:
 
-- `balance timeline` (`timeline_done`) ignores later NoteDb updates.
-- `balance_signals.py votes` marks CLs with no NoteDb ref as done without
-  reading them, so a ref that arrives later (as the 2017 backfill's did) is
-  never read.
+- `balance timeline` (`timeline_done`) ignored later NoteDb updates.
+  *Fixed 2026-11-12:* it keeps each CL's meta-ref tip and rereads a CL
+  whose tip moved.
+- `balance_signals.py votes` marked CLs with no NoteDb ref as done without
+  reading them, so a ref that arrived later (as the 2017 backfill's did)
+  was never read. *Fixed 2026-11-12:* the pass is gone (folded into
+  `balance timeline`, which doesn't mark CLs without a ref).
 - `cosh patchsets` skips any CL in its fetched list, even if the CL gained
   patch sets since.
 
-`extract-open` refreshes open CLs every run, so these three go quietly
-stale for exactly the CLs that change most.
+`extract-open` refreshes open CLs every run, so the remaining one goes
+quietly stale for exactly the CLs that change most.
 
 ### 3.5 A plain rerun can exceed an approval
 
@@ -209,7 +212,7 @@ landing page links the page.
 
 Steps on the path to a published file are spread over `python3 -m cosh
 <cmd>` (core, radar, patchsets), `python3 -m cosh.<module>` (balance,
-sentiment, bugs) and `python3 scripts/<name>.py` (feedback, votes, every
+sentiment, bugs) and `python3 scripts/<name>.py` (feedback, every
 balance dataset, chrome releases). `scripts/` mixes these with one-off
 analyses, and the only way to tell them apart is the inventory.
 
@@ -227,9 +230,12 @@ analyses, and the only way to tell them apart is the inventory.
   votes pass took 5 h 14 min on 2026-11-12, before two fixes the same day
   (list `refs/meta/` once; refresh the NoteDb multi-pack index after a
   backfill, then a repack from 3,823 packs to 14) made a cold read about
-  560 CLs/s, roughly 20 minutes for every CL.
-- **One schema in five files.** Each `balance-*.sqlite` carries every
-  stage's tables, mostly empty (`cosh/balance.py:114`).
+  560 CLs/s. *Fixed 2026-11-12:* one walk (35.5 min for 716k CLs from
+  empty); `votes` is a table of `balance-timeline.sqlite`.
+- **One schema in five files.** Each `balance-*.sqlite` carried every
+  stage's tables, mostly empty. *Fixed 2026-11-12:* `cosh/balance.py`
+  `SCHEMA` is per stage. Files built before keep their empty tables until
+  rebuilt.
 - **Same file, two writers.** `cosh.sentiment collect` and
   `cosh.sentiment_people collect` write the same `comments-<week>.jsonl`,
   with and without identities. Whichever ran last wins, and `praise` fails
@@ -347,10 +353,10 @@ updated with it. Sizes: S is under an hour, M a few hours, L a day or more.
 | # | Change | Size | Rule |
 |---|---|---|---|
 | 7 | Add `cosh.balance inputs`: writes the first-commit, OWNERS-added, AI-marked and mechanical lists as tables in `balance.sqlite` (or fixed files beside it). Scripts read them from there; the `--first-commit … --mech …` arguments go | M | 3 |
-| 8 | Fold the votes walk into `balance timeline` (one pass over NoteDb instead of two) and key `timeline_done` on the ref's tip | M | 1, 5 |
+| 8 | ~~Fold the votes walk into `balance timeline` (one pass over NoteDb instead of two) and key `timeline_done` on the ref's tip~~ Done 2026-11-12 | M | 1, 5 |
 | 9 | Add `cosh.balance publish`: imports each dataset script's compute function, builds `balance.json`, `balance_dirs.json` and `balance_authors.json` from empty, and writes each once. The scripts keep their `main()` for exploration but no longer write into `summaries/` | L | 1, 2 |
 | 10 | Take the window from the data in `publish` (pending D3), and use one rule for mechanical CLs everywhere | M | 4 |
-| 11 | Give each stage file only its own tables, and move them to `data/private/balance/` | S | 3 |
+| 11 | ~~Give each stage file only its own tables~~ (done 2026-11-12), and move them to `data/private/balance/` | S | 3 |
 
 Step 9 is the largest change in this plan and the one that pays most: it
 turns about 15 commands and two hand copies into one, and makes the page's

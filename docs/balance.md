@@ -338,12 +338,14 @@ Counts it found were spot-checked (27 `AGENTS.md`, 23 `GEMINI.md` and 620
 ## Data and how it's built
 
 `python3 -m cosh.balance <stage>` (offline, `GIT_NO_LAZY_FETCH=1`) writes
-rebuildable files in `data/private/`:
+rebuildable files in `data/private/`, each holding only its own stage's
+tables (`COSH_BALANCE_<STAGE>=<path>` points a stage, and everything that
+reads it, at another file):
 
 | Stage | Output | What | Time |
 |---|---|---|---|
 | `git` | `balance-git.sqlite` | first-parent `main` since 2017-01-01: author, dates, CL (`Reviewed-on`), `Reviewed-by` approvers, reverts, relands, per-file line counts (`gcommits`, `gfiles`, `paths`); 1.30M commits | ~1.5 h |
-| `timeline` | `balance-timeline.sqlite` | per CL from NoteDb: uploads with Gerrit's change kind, and attention-set intervals per account; 337k CLs (CLs with no comments have no local meta ref) | ~10 min |
+| `timeline` | `balance-timeline.sqlite` | per CL from NoteDb, in one walk of its meta ref: uploads with Gerrit's change kind (`uploads`), attention-set intervals per account (`attention`) and every Code-Review vote (`votes`); 716k CLs (CLs with no comments have no local meta ref). `timeline_done` keeps each CL's meta-ref tip, so a rerun rereads (and replaces) only CLs whose NoteDb log grew, such as open CLs refreshed by `extract-open` | ~35 min from empty |
 | `interdiff` | `balance-interdiff.sqlite` | per reviewed CL: the first reviewed patch set's diff against the final one, as multisets of added and removed lines, so a rebase changes nothing; 275k CLs | ~25 min with `--shard i/3` |
 | `cl` | `balance.sqlite` | one row per human-owned CL joining all of the above with review threads and labels (`cl`), per-reviewer attention (`cl_attention`), lines per directory (`cl_dirs`) | ~1 min |
 
