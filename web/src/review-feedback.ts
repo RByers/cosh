@@ -37,6 +37,7 @@ import {
   cohortYears,
   trendGroup,
   valueFor,
+  forKind,
   xpBreakdown,
   chgBreakdown,
   type Alias,
@@ -580,10 +581,13 @@ function render() {
 function renderSummary() {
   const p = state.person!;
   const peers = state.peers!;
-  const vals = p.periods[ALL];
+  // Placed among peers by the changes the measure counts (the addressed ones start later).
+  const vals = forKind(p.periods[ALL], state.kind);
   const m = metric();
+  const [from, to] = rangeOf(peers, state.kind);
   put($('#summary-sub'), 'summary-sub', { corr: state.corr, kind: state.kind, tenure: state.tenure,
-    eligible: okFor(vals, state.kind), minCls: peers.min_cls });
+    eligible: okFor(vals, state.kind), minCls: peers.min_cls,
+    from: monthOf(fromMonth(from), true), to: monthOf(toMonth(to), true) });
   const tile = (id: string, text: string, sub?: string) => {
     $(`#${id} .tile-value`).textContent = text;
     const s = document.querySelector(`#${id} .tile-sub`);
@@ -637,7 +641,7 @@ function renderTrend() {
   // Every half-year gets its peer group, also those without the person's changes: a band
   // drawn only where they have some was a lone point (no fill) for someone in one half-year.
   // The axis starts where they started contributing.
-  const allGroups = halfGroups(state.tenure, state.org, p, all);
+  const allGroups = halfGroups(state.tenure, state.org, p, all, state.kind);
   const first = Math.max(0, all.findIndex((h, i) => allGroups[i] !== null || p.periods[h]));
   const hs = all.slice(first);
   const groups = allGroups.slice(first);

@@ -1564,6 +1564,12 @@ test('review feedback: half-year files merge, and every period gets the values t
   const la = later.periods.all;
   assert.deepEqual([la.cls, la.threads, la.acls, la.addressed, la.ok_a], [3, 5, 2, 2, false]);
   assert.deepEqual([la.v.tn, la.v.an, la.v.ad], [1.667, 1, 0.69]);
+  // The addressed measures' peers place them by those two CLs: earlier commits 80 and 260 there.
+  assert.deepEqual([la.prior, la.a?.prior, la.a?.chg], [80, 170, '50-199']);
+  assert.equal(F.forKind(la, 'a')?.prior, 170);
+  assert.equal(F.forKind(la, 't')?.prior, 80);
+  assert.equal(F.forKind({ ...la, a: { ...la.a!, chg: '200-499' } }, 'a')?.chg, '200-499');
+  assert.equal(later.periods['2025H2'].a, null);
   assert.equal(later.periods['2025H2'].v.an, null);
   assert.equal(later.periods['2025H2'].acls, 0);
   assert.deepEqual(F.threadRows(later, 'all', 'a', null).map((r) => r.cl), [1000003, 1000002]);

@@ -256,6 +256,11 @@
           2023–24 average for changes of the same size in the same top-level directory: 1.00× is typical.</span>
           <span data-if="tenure=dir">Here both you and your peers are measured against authors with the same
           number of earlier commits in each directory, so 1.00× is typical for that experience.</span>
+          These figures cover all your changes landed from <slot name="from"></slot> to <slot name="to"></slot><span
+          data-if="kind=a"> (when the addressed labels begin)</span>. Your peers are the authors with
+          <slot name="minCls"></slot> or more changes in that time<span data-if="tenure!=dir"> and the same
+          experience at the middle of them</span>; “peers with less feedback than you” is the share of them whose index is below yours, so a low
+          share means less feedback than most.
           <span data-if="!eligible">You landed too few changes to be placed among peers
           (<slot name="minCls"></slot> or more are needed), so treat your figure with care.</span>
         </template>

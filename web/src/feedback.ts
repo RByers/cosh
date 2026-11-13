@@ -18,19 +18,26 @@ export type TenureBy = 'time' | 'changes' | 'dir';
 /** Which authors of that tenure: everyone, Google, or everyone outside Google. */
 export type PeerOrg = 'all' | 'google' | 'nongoogle';
 
-export interface PeriodVals {
+/** What places a person among peers over a set of changes. */
+export interface Placing {
+  /** Tenure band at the middle of the changes, null if unknown. */
+  ten: string | null;
+  /** Earlier commits on main at the middle of the changes, and its band. */
+  prior: number;
+  chg: string;
+  /** The org most of the changes are attributed to. */
+  org: string;
+}
+
+export interface PeriodVals extends Placing {
   cls: number;
   threads: number;
   /** Changes with addressed labels (landed from peers.json's addr_start), and their addressed threads. */
   acls: number;
   addressed: number;
-  /** Tenure band at the middle of the period's changes, null if unknown. */
-  ten: string | null;
-  /** Earlier commits on main at the middle of the period's changes, and its band. */
-  prior: number;
-  chg: string;
-  /** The org most of the period's changes are attributed to. */
-  org: string;
+  /** The placing over the labelled changes only, which the addressed measures' peers use
+   * (null: none labelled). The fields above are over all of the period's changes. */
+  a: Placing | null;
   /** Enough changes to count among peers; for the addressed measures, enough labelled ones. */
   ok: boolean;
   ok_a: boolean;
@@ -368,14 +375,14 @@ export function groupKey(by: TenureBy, org: PeerOrg, vals: PeriodVals | undefine
  * before their first commit, else their first change), and for tenure in years when the
  * first commit is unknown. */
 export function halfGroups(by: TenureBy, org: PeerOrg, p: Pick<Person, 'periods' | 'firstDay' | 'cls'>,
-  hs: string[]): (string | null)[] {
+  hs: string[], kind: Kind = 't'): (string | null)[] {
   const cls = [...p.cls].sort((a, b) => a[1] - b[1]);
   const start = p.firstDay ?? cls[0]?.[1] ?? Infinity;
   return hs.map((h) => {
     const [a, b] = periodSpan(h, [-Infinity, Infinity]);
     if (b <= start && !p.periods[h]) return null;
     if (by === 'dir') return `dir:${org}`;
-    let band = bandOf(by, p.periods[h]);
+    let band = bandOf(by, forKind(p.periods[h], kind));
     const mid = (a + b) / 2;
     if (!band && by === 'time' && p.firstDay !== null) band = tenureBand(Math.max(0, mid - p.firstDay) / 365.25);
     if (!band && by === 'changes') {
@@ -769,6 +776,23 @@ function median(xs: number[]): number {
 
 export const tenureBand = (y: number) => (y < 1 ? '<1y' : y < 2 ? '1-2y' : y < 5 ? '2-5y' : y < 10 ? '5-10y' : '10y+');
 
+/** Tenure and org over `cs`, as cosh/feedback.py `placed`. */
+function placing(p: Omit<Person, 'periods'>, cs: ClRow[]): Placing {
+  // Most common org; ties go to the one seen first (Python's Counter.most_common).
+  const orgCount = new Map<number, number>();
+  for (const c of cs) orgCount.set(c[9], (orgCount.get(c[9]) ?? 0) + 1);
+  let org = cs[0][9];
+  for (const [o, n] of orgCount) if (n > orgCount.get(org)!) org = o;
+  const ten = p.firstDay === null ? null : tenureBand(median(cs.map((c) => (c[1] - p.firstDay!) / 365.25)));
+  const prior = median(cs.map((c) => c[10]));
+  return { ten, prior, chg: changesBand(prior), org: p.orgs[org] };
+}
+
+/** The period values with the placing a measure of `kind` sets against peers: for the
+ * addressed measures, over the labelled changes. */
+export const forKind = (vals: PeriodVals | undefined, kind: Kind): PeriodVals | undefined =>
+  vals && kind === 'a' && vals.a ? { ...vals, ...vals.a } : vals;
+
 /** A person's values for one period, as cosh/feedback.py
  * `person_period` computes them for the peer groups: totals, tenure (years
  * and earlier commits) at the median change, the most common org, whether they count among peers, the
@@ -782,8 +806,7 @@ export function periodVals(p: Omit<Person, 'periods'>, peers: Peers, period: str
   let acls = 0;
   // Expected threads; tdA: expected threads on the labelled changes, for ok_a.
   const exp = { ts: 0, td: 0, as: 0, ad: 0, tdA: 0 };
-  const orgCount = new Map<number, number>();
-  const labelled = (c: ClRow) => c[1] >= p.addrStart;
+  const labelled =(c: ClRow) => c[1] >= p.addrStart;
   for (const c of cs) {
     threads += c[8].length;
     exp.ts += c[3];
@@ -795,14 +818,9 @@ export function periodVals(p: Omit<Person, 'periods'>, peers: Peers, period: str
       exp.ad += c[6];
       exp.tdA += c[4];
     }
-    orgCount.set(c[9], (orgCount.get(c[9]) ?? 0) + 1);
   }
-  // Most common org; ties go to the one seen first (Python's Counter.most_common).
-  let org = cs[0][9];
-  for (const [o, n] of orgCount) if (n > orgCount.get(org)!) org = o;
-  const ten = p.firstDay === null ? null : tenureBand(median(cs.map((c) => (c[1] - p.firstDay!) / 365.25)));
-  const prior = median(cs.map((c) => c[10]));
-  const v = {} as Record<Metric, number | null>;
+  const lab = cs.filter(labelled);
+  const v ={} as Record<Metric, number | null>;
   const x = {} as Record<Metric, number | null>;
   const bands = peers.bands[period];
   for (const m of METRICS) {
@@ -817,8 +835,8 @@ export function periodVals(p: Omit<Person, 'periods'>, peers: Peers, period: str
     }
     x[m] = xe ? r3(num / xe) : null;
   }
-  return { cls: cs.length, threads, acls, addressed, ten, prior, chg: changesBand(prior), org: p.orgs[org],
-    ok: cs.length >= peers.min_cls && exp.td >= peers.min_exp, ok_a: acls >= peers.min_cls && exp.tdA >= peers.min_exp, v, x };
+  return { cls: cs.length, threads, acls, addressed, ...placing(p, cs), a: lab.length ? placing(p, lab) : null,
+    ok:cs.length >= peers.min_cls && exp.td >= peers.min_exp, ok_a: acls >= peers.min_cls && exp.tdA >= peers.min_exp, v, x };
 }
 
 /** A person ready for the page: merged, with values for every period they have changes in. */

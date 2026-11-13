@@ -212,9 +212,25 @@ The measures:
     2–5, 5–10, 10+); or **experience in each
     directory** (below). The band is taken at the median of the person's CLs
     in the period, so the over-time chart follows the person from band to
-    band.
+    band. For the addressed measures that is the median of the labelled
+    CLs only (from `addr_start`), the CLs those measures count: until
+    2026-11-13 it was over all of them since 2017 for the whole-range
+    figures too, which put 282 of the 2,013 people with an addressed
+    figure (14%, all long-time authors) a band lower than the CLs measured,
+    against less experienced peers who draw more feedback. Their "peers
+    with less feedback than you" read a median 13 points too low.
   - *Peers:* all authors, Google, or everyone outside Google (the org most
-    of the period's CLs are attributed to, `cosh/orgs.py`).
+    of the period's CLs are attributed to, `cosh/orgs.py`; for the
+    addressed measures, of the labelled CLs).
+- **Time range.** The summary tiles ("Your feedback index", "Peers' feedback
+  index", "Peers with less feedback than you") cover the whole range: every
+  CL landed from `start` (July 2017) up to `end`, or from `addr_start`
+  (February 2022) for the addressed measures. The rank tile is the share of
+  that range's peer group (25+ CLs and 12+ expected threads over it, same
+  band at the median) whose index is below the person's, so it is low for
+  people who draw less feedback than most. Over all eligible people it is
+  spread evenly (about 10% in each decile, checked 2026-11-13); the
+  half-year chart compares each half-year separately.
 
   peers.json has a distribution per period, measure and group:
   `time:<band>:<org>`, `changes:<band>:<org>` and `dir:<org>`. A person

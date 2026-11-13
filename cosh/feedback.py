@@ -927,11 +927,19 @@ def main():
     def person_period(pid, cs, p):
         s = sums(cs)
         sa = sums([c for c in cs if c["acov"]])          # the addressed measures' CLs
-        ten = [c["ten"] for c in cs if c["ten"] is not None]
-        orgc = Counter(c["org"] for c in cs)
-        out = dict(cls=s["cls"], threads=s["t"], acls=sa["cls"], addressed=sa["a"],
-                   ten=tenure_band(st.median(ten)) if ten else None,
-                   chg=changes_band(st.median([c["prior"] for c in cs])), org=orgc.most_common(1)[0][0],
+        def placed(cs):
+            """Tenure in years and in earlier commits at the middle of `cs`, and their
+            usual org: what places a person among peers."""
+            ten = [c["ten"] for c in cs if c["ten"] is not None]
+            return dict(ten=tenure_band(st.median(ten)) if ten else None,
+                        chg=changes_band(st.median([c["prior"] for c in cs])),
+                        org=Counter(c["org"] for c in cs).most_common(1)[0][0])
+        acs = [c for c in cs if c["acov"]]
+        out = dict(cls=s["cls"], threads=s["t"], acls=sa["cls"], addressed=sa["a"], **placed(cs),
+                   # The same over the addressed measures' CLs only, which start years
+                   # later: over all of "all", a grown author's band was lower than over
+                   # the CLs measured, setting them against less experienced peers.
+                   lab=placed(acs) if acs else None,
                    ok=s["cls"] >= MIN_CLS and s["td"] >= MIN_EXP,
                    ok_a=sa["cls"] >= MIN_CLS and sa["td"] >= MIN_EXP, v={}, x={}, bands={},
                    # The lower bar for a cohort curve's medians (not on the page).
@@ -1206,7 +1214,9 @@ def main():
     peers.update(count_peers(per, START, END, ADDR_START))
     for p in allp:
         # Peers per kind: the addressed measures count people by their labelled CLs.
-        rows = {k: [(pid, pp[p]) for pid, pp in per.items() if p in pp and pp[p][ok]]
+        # Each placed by the CLs its measures count (`lab` for the addressed ones).
+        rows = {k: [(pid, {**pp[p], **(pp[p]["lab"] or {})} if k == "a" else pp[p])
+                    for pid, pp in per.items() if p in pp and pp[p][ok]]
                 for k, ok in (("t", "ok"), ("a", "ok_a"))}
         dp = peers["dist"][p] = {}
         for g, f in groups.items():
