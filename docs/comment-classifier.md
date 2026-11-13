@@ -456,6 +456,7 @@ save model calls.
 python3 -m cosh derive                               # threads + regex (no model)
 python3 -m cosh classify --week 2026-W43 --dry-run   # how many threads need Haiku
 python3 -m cosh classify --week 2026-W43             # ~11 min and ~1M Haiku tokens per week
+python3 -m cosh classify --stop-at 0.99 --wait       # everything pending; pauses at 99% of a Max limit
 python3 -m cosh summarize
 ```
 
@@ -516,7 +517,15 @@ summarize (rebuildable)  derived.sqlite + labels.sqlite (read-only ATTACH) -> su
   - **Lock:** it takes its own `data/private/classify.lock`. It puts no load
     on Gerrit, so it may run while an extractor runs, as `derive` can.
   - **Limits:** a `--max-threads` cap lets a run be sized to the Max
-    limits.
+    limits. `--stop-at 0.99` watches them directly: calls run with
+    `--output-format stream-json`, whose `rate_limit_event` gives the
+    plan's `five_hour` and `seven_day` utilization (0..1, the same figures
+    as `/usage`), and each batch's log line shows them. Once one reaches
+    the share, no new calls start, the ones in flight are saved, and the
+    run exits with status 75; a call the limit rejects stops it the same
+    way. `--wait` instead sleeps until 5 minutes after that window resets
+    and goes on, until nothing is pending. The calls in flight can
+    overshoot the share slightly (up to `--jobs` batches).
 - **`summarize` without labels is fine:**
   - with no `labels.sqlite`, or an empty one, it still writes every other
     metric, and the addressed metric is just incomplete;

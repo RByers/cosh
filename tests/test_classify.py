@@ -215,6 +215,30 @@ class PendingTest(unittest.TestCase):
         self.assertEqual(cmd[cmd.index("--tools") + 1], "")
 
 
+    def test_stream_json_limits(self):
+        lines = [{"type": "system", "subtype": "init"},
+                 {"type": "rate_limit_event", "rate_limit_info": {"status": "allowed", "rateLimitType": "five_hour",
+                  "unifiedWindows": {"five_hour": {"utilization": 0.2, "resetsAt": 100, "status": "allowed"},
+                                     "seven_day": {"utilization": 0.995, "resetsAt": 200, "status": "allowed"}}}},
+                 {"type": "result", "structured_output": {"labels": [{"id": "T0", "done": True}]},
+                  "usage": {"input_tokens": 1}, "modelUsage": {"m": {}}}]
+        out = "\n".join(json.dumps(x) for x in lines)
+        box = sandbox.Sandbox("none", claude="python3", credentials={"CLAUDE_CODE_OAUTH_TOKEN": "tok"})
+        with mock.patch("subprocess.run", return_value=mock.Mock(stdout=out, stderr="", returncode=0)):
+            got, cost = classify.claude_batch("haiku", [("T0", "a")], box)
+        self.assertEqual(got, {"T0": True})
+        self.assertEqual(cost["limits"]["seven_day"], {"utilization": 0.995, "resets_at": 200, "status": "allowed"})
+        # A rejected call raises LimitReached, not a generic error.
+        lines[1]["rate_limit_info"].update(status="rejected", rateLimitType="seven_day")
+        lines[2] = {"type": "result", "is_error": True, "result": "limit"}
+        out = "\n".join(json.dumps(x) for x in lines)
+        with mock.patch("subprocess.run", return_value=mock.Mock(stdout=out, stderr="", returncode=1)):
+            with self.assertRaises(classify.LimitReached) as e:
+                classify.claude_batch("haiku", [("T0", "a")], box)
+        box.close()
+        self.assertEqual(e.exception.resets_at(), 200)
+
+
 class SandboxTest(unittest.TestCase):
     def test_credentials_from_env_else_settings(self):
         self.assertEqual(sandbox.find_credentials({"CLAUDE_CODE_OAUTH_TOKEN": "a", "X": "y"}),
@@ -326,6 +350,22 @@ class RunBatchesTest(unittest.TestCase):
             classify.run_batches((([i], i) for i in range(20)), call, 4, lambda ctx, g, c: saved.append(ctx))
         # 0, 2, 3 were in flight with 1 and still saved; nothing after them started.
         self.assertEqual(sorted(saved), [0, 2, 3])
+
+    def test_limit_in_save_finishes_in_flight_then_raises(self):
+        saved = []
+
+        def save(ctx, got, cost):
+            saved.append(ctx)
+            if ctx == 1:
+                raise classify.LimitReached({"seven_day": {"utilization": 0.99, "resets_at": 5}})
+
+        def call(items):
+            time.sleep(0.01 if items[0] == 1 else 0.05)
+            return {}, {}
+
+        with self.assertRaises(classify.LimitReached):
+            classify.run_batches((([i], i) for i in range(20)), call, 4, save)
+        self.assertEqual(sorted(saved), [0, 1, 2, 3])
 
 
 if __name__ == "__main__":

@@ -43,8 +43,12 @@ regex plus Claude Haiku (`cosh classify`).
   before 2021-05-01 now query `master` too (`extract.branches_for`) and
   `derive` records it as `main`. Those weeks were reset and refetched
   from 2026-11-11.
-  Their patch sets still need approval, and the user doesn't want
-  "addressed" labels (`cosh classify`) for these years.
+  Their patch sets still need approval. "Addressed" labels (`cosh
+  classify`) for 2017 .. 2021 were approved on 2026-11-13 (about 408k
+  threads, ~130M Haiku tokens), run with `--stop-at 0.99 --wait` so they
+  stop at 99% of the Max 5-hour or weekly limit and go on after the reset:
+  unit `cosh-classify-2017`, log `data/private/logs/classify-2017-*.log`;
+  resumable with the same command.
 - **Backfill back to 2023-07-01 (Radar's first data) is approved**
   (2026-11-04). That is `backfill --weeks 175 --newest 2026-W44`, 2023-W26 ..
   2026-W44, started 2026-11-04 with log `data/private/logs/backfill-3y-*.log`. It is

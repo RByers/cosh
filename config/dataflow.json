@@ -993,7 +993,7 @@
     },
     {
       "id": "classify",
-      "command": "python3 -m cosh classify --week <week> [--dry-run]",
+      "command": "python3 -m cosh classify --week <week> [--dry-run] [--stop-at 0.99 --wait]",
       "code": [
         "cosh/classify.py",
         "cosh/sandbox.py"

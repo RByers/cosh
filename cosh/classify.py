@@ -210,6 +210,61 @@ SCHEMA = {"type": "object", "properties": {"labels": {"type": "array", "items": 
     "required": ["id", "done"]}}}, "required": ["labels"]}
 
 
+class LimitReached(Exception):
+    """A usage-limit window of the plan is at or over the stop threshold (or
+    rejected a call). `windows` is {name: {utilization, resets_at, status}}."""
+
+    def __init__(self, windows):
+        self.windows = windows
+        super().__init__("usage limit reached: " + ", ".join(
+            f"{k} {w['utilization']:.0%} (resets {fmt_time(w['resets_at'])})" for k, w in sorted(windows.items())))
+
+    def resets_at(self):
+        """When the last of the windows that stopped us resets (epoch s), or None."""
+        times = [w["resets_at"] for w in self.windows.values() if w.get("resets_at")]
+        return max(times) if times else None
+
+
+def fmt_time(epoch):
+    return time.strftime("%Y-%m-%d %H:%M %Z", time.localtime(epoch)) if epoch else "?"
+
+
+def parse_output(stdout):
+    """(result, limits) from claude -p's output: `--output-format json` (one
+    object) or `stream-json` (one event per line). limits is
+    {window: {utilization (0..1), resets_at (epoch s), status}} from the
+    `rate_limit_event`s, e.g. five_hour and seven_day; {} if none came."""
+    try:
+        d = json.loads(stdout)
+        if isinstance(d, dict):
+            return d, {}
+    except ValueError:
+        pass
+    result, limits = None, {}
+    for line in stdout.splitlines():
+        try:
+            ev = json.loads(line)
+        except ValueError:
+            continue
+        if not isinstance(ev, dict):
+            continue
+        if ev.get("type") == "rate_limit_event":
+            info = ev.get("rate_limit_info") or {}
+            for name, w in (info.get("unifiedWindows") or {}).items():
+                if isinstance(w, dict) and isinstance(w.get("utilization"), (int, float)):
+                    limits[name] = dict(utilization=float(w["utilization"]), resets_at=w.get("resetsAt"),
+                                        status=w.get("status"))
+            kind = info.get("rateLimitType")
+            if info.get("status") == "rejected" and kind:
+                w = limits.setdefault(kind, dict(utilization=1.0, resets_at=info.get("resetsAt")))
+                w["status"] = "rejected"
+        elif ev.get("type") == "result":
+            result = ev
+    if result is None:
+        raise ValueError("no result event")
+    return result, limits
+
+
 def claude_batch(model, items, sandbox):
     """Classify [(id, text)] in one headless call. Returns ({id: bool}, cost).
 
@@ -217,7 +272,7 @@ def claude_batch(model, items, sandbox):
     servers or slash commands, its reply must match SCHEMA, and `sandbox`
     (cosh.sandbox.Sandbox) runs it with a fresh HOME and a scrubbed env."""
     prompt = user_prompt(items)
-    args = ["-p", "--model", model, "--output-format", "json", "--tools", "",
+    args = ["-p", "--model", model, "--output-format", "stream-json", "--verbose", "--tools", "",
            "--system-prompt", SYSTEM_PROMPT,
            "--strict-mcp-config", "--mcp-config", '{"mcpServers":{}}', "--disable-slash-commands",
            "--exclude-dynamic-system-prompt-sections", "--no-session-persistence",
@@ -226,10 +281,13 @@ def claude_batch(model, items, sandbox):
     p = sandbox.run(args, prompt)
     wall = time.time() - t0
     try:
-        d = json.loads(p.stdout)
+        d, limits = parse_output(p.stdout)
     except ValueError:
         raise RuntimeError(f"claude -p failed (exit {p.returncode}): {(p.stderr or p.stdout)[:500]}")
     if d.get("is_error"):
+        rejected = {k: w for k, w in limits.items() if w["status"] == "rejected"}
+        if rejected:
+            raise LimitReached(rejected)
         raise RuntimeError(f"claude -p error: {str(d.get('result'))[:500]}")
     out = d.get("structured_output") or {}
     if not out:
@@ -240,6 +298,7 @@ def claude_batch(model, items, sandbox):
     got = {x["id"]: bool(x["done"]) for x in out.get("labels", [])
            if isinstance(x, dict) and "id" in x and "done" in x}
     return got, dict(wall=wall, model=models[0] if models else model, usd=d.get("total_cost_usd") or 0,
+                     limits=limits,
                      tokens=sum(u.get(k, 0) or 0 for k in ("input_tokens", "cache_creation_input_tokens",
                                                            "cache_read_input_tokens", "output_tokens")))
 
@@ -249,7 +308,7 @@ def run_batches(batches, call, jobs, save):
     `jobs` at once, and save(ctx, got, cost) for each in completion order. Only
     `call` runs off the calling thread: `batches` is drawn and `save` called on
     it, so neither needs to be thread-safe, and at most `jobs` batches are
-    prepared ahead. If a call fails, no more are started; the ones in flight
+    prepared ahead. If a call fails, or save raises LimitReached, no more are started; the ones in flight
     finish and are saved, then the first error is raised."""
     batches = iter(batches)
     error = None
@@ -271,7 +330,10 @@ def run_batches(batches, call, jobs, save):
                 except Exception as e:      # keep the others' labels, then fail
                     error = error or e
                     continue
-                save(ctx, got, cost)
+                try:
+                    save(ctx, got, cost)
+                except LimitReached as e:   # saved; start nothing new, finish the rest
+                    error = error or e
     if error is not None:
         raise error
 
@@ -313,7 +375,10 @@ def tokens_per_thread(labels_db, default=330):
 
 
 def classify(data_dir=store.DATA_DIR, db_path=None, weeks=None, model="haiku", batch=100,
-             max_threads=None, dry_run=False, labels_db_path=None, jobs=8, sandbox="auto"):
+             max_threads=None, dry_run=False, labels_db_path=None, jobs=8, sandbox="auto", stop_at=None):
+    """Labels pending threads. With `stop_at` (0..1), starts no more calls once
+    a call reports a plan usage window (five_hour, seven_day) at or over that
+    share, and raises LimitReached after saving the calls in flight."""
     from .derive import load_comments, prefetch_notedb
     path = db_path or os.path.join(data_dir, store.DERIVED_FILE)
     db = sqlite3.connect(f"file:{path}?mode=ro", uri=True)
@@ -394,16 +459,23 @@ def classify(data_dir=store.DATA_DIR, db_path=None, weeks=None, model="haiku", b
                               "seconds=?, finished_at=? WHERE run_id=?",
                               (st["classifier_id"], st["done"], st["calls"], st["tokens"], st["usd"],
                                st["seconds"], store.now_iso(), run_id))
+        lim = cost.get("limits") or {}
+        usage = " ".join(f"{k} {w['utilization']:.0%}" for k, w in sorted(lim.items()))
         print(f"  batch {st['calls']}/{calls}: {len(rows)}/{len(keys)} labelled, {cost['wall']:.0f}s, "
-              f"{cost['tokens']} tokens ({st['done']}/{len(todo)} done)", file=sys.stderr)
+              f"{cost['tokens']} tokens ({st['done']}/{len(todo)} done){'; ' + usage if usage else ''}",
+              file=sys.stderr)
+        if stop_at is not None:
+            over = {k: w for k, w in lim.items() if w["utilization"] >= stop_at}
+            if over:
+                raise LimitReached(over)
 
     try:
         run_batches(prepare(), lambda items: claude_batch(model, items, box), jobs, save)
     finally:
         box.close()
-    print(f"labelled {st['done']} threads in {st['calls']} calls: {st['tokens']} tokens, "
-          f"{time.time() - t_run:.0f}s wall ({st['seconds']:.0f}s of calls, {jobs} at a time), "
-          f"${st['usd']:.2f} API-equivalent; {st['stale']} stale (rerun derive), "
-          f"{st['missing']} not found in NoteDb", file=sys.stderr)
-    lock.close()
+        print(f"labelled {st['done']} threads in {st['calls']} calls: {st['tokens']} tokens, "
+              f"{time.time() - t_run:.0f}s wall ({st['seconds']:.0f}s of calls, {jobs} at a time), "
+              f"${st['usd']:.2f} API-equivalent; {st['stale']} stale (rerun derive), "
+              f"{st['missing']} not found in NoteDb", file=sys.stderr)
+        lock.close()
     return st["done"]

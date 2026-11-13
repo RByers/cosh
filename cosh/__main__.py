@@ -86,6 +86,11 @@ def main(argv=None):
     c.add_argument("--sandbox", choices=["auto", "bwrap", "none"], default="auto",
                    help="jail for claude -p (SECURITY.md): auto = bubblewrap if it works here")
     c.add_argument("--db", help="derived DB path (default: data/private/derived.sqlite)")
+    c.add_argument("--stop-at", type=float, metavar="SHARE",
+                   help="stop starting calls once the plan's 5-hour or weekly usage reaches this share "
+                        "(e.g. 0.99), as reported by claude -p")
+    c.add_argument("--wait", action="store_true",
+                   help="with --stop-at: sleep until the limit resets, then go on, until nothing is pending")
     s = sub.add_parser("summarize", help="write summaries/ (path scope: config/paths.txt)")
     s.add_argument("--metric", choices=["comments", "cls", "chars", "addressed", "commits"], default="comments",
                    help="headline share: review comments (default), reviewed CLs, characters, "
@@ -197,10 +202,24 @@ def main(argv=None):
             old, new = fetch_main()
         print(f"main: {old[:12]} -> {new[:12]}" if old != new else f"main: up to date at {new[:12]}")
     elif a.cmd == "classify":
-        from .classify import classify
-        classify(db_path=a.db, weeks=a.week, model=a.model, batch=max(1, min(a.batch, 200)),
-                 max_threads=a.max_threads, dry_run=a.dry_run, jobs=max(1, min(a.jobs, 16)),
-                 sandbox=a.sandbox)
+        from .classify import classify, LimitReached, fmt_time
+        if a.wait and a.stop_at is None:
+            p.error("--wait needs --stop-at")
+        while True:
+            try:
+                classify(db_path=a.db, weeks=a.week, model=a.model, batch=max(1, min(a.batch, 200)),
+                         max_threads=a.max_threads, dry_run=a.dry_run, jobs=max(1, min(a.jobs, 16)),
+                         sandbox=a.sandbox, stop_at=a.stop_at)
+                break
+            except LimitReached as e:
+                print(f"stopped: {e}", file=sys.stderr, flush=True)
+                if not a.wait:
+                    sys.exit(75)
+                import time
+                until = (e.resets_at() or time.time() + 3600) + 300   # 5 min after the reset
+                print(f"waiting until {fmt_time(until)}", file=sys.stderr, flush=True)
+                while time.time() < until:
+                    time.sleep(min(600, max(1, until - time.time())))
     elif a.cmd == "summarize":
         from .summarize import summarize
         kw = dict(out_dir=a.out) if a.out else {}
