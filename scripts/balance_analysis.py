@@ -68,21 +68,22 @@ def load_ai_marked(path=None):
 
 
 def mech_set(path=None, cls=None):
-    """Mechanical CLs (commits.mechanical): from commits.sqlite's repetition
-    ratios and balance.sqlite's CLs (or `cls`, dicts with its change_number,
-    status, sha and files), or from a mech.jsonl."""
+    """The CLs the analyses leave out (commits.left_out): mechanical CLs,
+    from commits.sqlite's repetition ratios and balance.sqlite's CLs (or
+    `cls`, dicts with its change_number, status, sha and files) or from a
+    mech.jsonl, plus every large-scale-change CL (commits.lsc_cls)."""
     out = set()
     if path:
         for line in open(path):
             n, files, threads, rep, lines = json.loads(line)
             if files >= 100 or (rep is not None and rep >= 0.8):
                 out.add(n)
-        return out
+        return out | commit_store.lsc_cls(git_db())
     if cls is None:
         db = ro(os.environ.get("BALANCE_CL") or balance.db_path("cl"))
         cls = [dict(change_number=n, status="MERGED", sha=sha, files=files) for n, sha, files in db.execute(
             "SELECT change_number, sha, files FROM cl WHERE status = 'MERGED' AND files >= 10")]
-    return commit_store.mechanical(git_db(), cls)
+    return commit_store.left_out(git_db(), cls)
 
 
 def quarter(t):

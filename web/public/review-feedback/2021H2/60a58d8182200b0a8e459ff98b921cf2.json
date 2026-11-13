@@ -1,1 +1,1 @@
-{"dirs":["testing/libfuzzer/fuzzers/","tools/ipc_fuzzer/"],"files":[],"orgs":["google.com"],"cls":[[3054371,18834,1,0.127,0.08,[[0,20]],[],0,179],[3110915,18859,6,0.242,0.169,[[1,0]],[],0,180]],"counts":1}
+{"dirs":["testing/libfuzzer/fuzzers/","tools/ipc_fuzzer/"],"files":[],"orgs":["google.com"],"cls":[[3054371,18834,1,0.13,0.082,[[0,20]],[],0,179],[3110915,18859,6,0.248,0.173,[[1,0]],[],0,180]],"counts":1}

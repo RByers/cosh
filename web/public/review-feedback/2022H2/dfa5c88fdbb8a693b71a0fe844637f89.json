@@ -1,1 +1,1 @@
-{"dirs":["chrome/browser/page_load_metrics/","base/tracing/protos/","tools/perf/benchmarks/"],"files":[],"orgs":["google.com"],"cls":[[3898210,19277,215,4.195,3.394,[[0,0.896,5,193],[1,0.104,0,22]],[[6,2],[5,0]],0,54],[3952540,19279,3,0.111,0.089,[[2,4]],[],0,55]],"counts":1}
+{"dirs":["chrome/browser/page_load_metrics/","base/tracing/protos/","tools/perf/benchmarks/"],"files":[],"orgs":["google.com"],"cls":[[3898210,19277,215,4.21,3.407,[[0,0.896,5,193],[1,0.104,0,22]],[[6,2],[5,0]],0,54],[3952540,19279,3,0.116,0.093,[[2,4]],[],0,55]],"counts":1}

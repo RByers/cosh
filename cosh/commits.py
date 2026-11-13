@@ -75,7 +75,8 @@ CREATE TABLE IF NOT EXISTS commits (
   ai_marker     INTEGER NOT NULL,       -- AI_MARKER in the message
   files         INTEGER NOT NULL,       -- files in its first-parent diff
   ins           INTEGER NOT NULL,       -- text lines (binary files count 0)
-  dels          INTEGER NOT NULL
+  dels          INTEGER NOT NULL,
+  is_lsc        INTEGER NOT NULL DEFAULT 0  -- part of a large-scale change (LSC_GREP; set by _lsc)
 ) STRICT;
 CREATE INDEX IF NOT EXISTS commits_cl ON commits(change_number);
 CREATE INDEX IF NOT EXISTS commits_author ON commits(author_email, landed_at);
@@ -108,6 +109,14 @@ REVIEWED_ON = re.compile(r"chromium-review\.googlesource\.com/(?:c/)?(?:chromium
 REVERTS = re.compile(r"^This reverts commit ([0-9a-f]{40})", re.M)
 AI_MARKER = re.compile(r"^Agent-Generated:|[Gg]enerated (by|with|using) (Gemini|Claude|an? (AI|LLM)|Jetski|Cider"
                        r"|Copilot)|^Co-[Aa]uthored-[Bb]y: (Claude|Gemini|Copilot)", re.M)
+# A large-scale change (LSC): the word LSC or "large-scale change" anywhere in
+# the message (the LSC process's "See the LSC doc at go/lsc-chrome-...",
+# "LSC:" and "LSC-Id:" lines), or `git cl split`'s footer. Such CLs are
+# reviewed by policy, not line by line: since 2023-07 they drew 0.78 review
+# comments per CL against 3.67, a quarter to a fifth at any size, which skews
+# per-person review measures (GitHub issue #3, docs/commits.md). A Perl
+# regex for `git log -i -P --grep`, matched line by line.
+LSC_GREP = r"\bLSC\b|large[- ]scale (code )?change|^This CL was uploaded by git cl split"
 OWNER_EMAIL = re.compile(rb"[A-Za-z0-9._%-][A-Za-z0-9._%+-]*@[A-Za-z0-9.-]+\.[a-z]+")
 EMAIL = re.compile(r"<([^>]+)>")
 SEP = "\x1e"
@@ -131,6 +140,9 @@ def connect(path=None):
     db = sqlite3.connect(path, timeout=60)
     db.execute("PRAGMA journal_mode=WAL")
     db.executescript(SCHEMA)
+    if "is_lsc" not in {r[1] for r in db.execute("PRAGMA table_info(commits)")}:
+        with db:                    # a store from before is_lsc: _lsc tags its commits on the next update
+            db.execute("ALTER TABLE commits ADD COLUMN is_lsc INTEGER NOT NULL DEFAULT 0")
     return db
 
 
@@ -210,12 +222,13 @@ def _ingest(db, repo, revs, ids, paths, label):
             ins += max(a, 0)
             dels += max(d, 0)
         cid = next(ids)
-        db.execute("INSERT INTO commits VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+        db.execute("INSERT INTO commits VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
                    (cid, sha, email.lower(), name, int(at), int(ct), int(m.group(1)) if m else None,
                     int(bool(bot.strip())), json.dumps(rb) if rb else None, rv.group(1) if rv else None,
                     0,                                  # is_revert: set by _reverts
                     int(subj.lower().startswith("reland")), int(bool(AI_MARKER.search(subj + "\n" + body))),
-                    len(files), ins, dels))
+                    len(files), ins, dels,
+                    0))                                 # is_lsc: set by _lsc
         db.executemany("INSERT OR IGNORE INTO commit_files VALUES (?,?,?,?)", [(cid, *f) for f in files])
         n += 1
         if n % 5000 == 0:
@@ -256,6 +269,18 @@ def _reverts(db, repo, tip):
     with db:
         db.executemany("UPDATE commits SET is_revert = 1 WHERE sha = ?", [(s,) for s in shas])
         db.execute("INSERT OR REPLACE INTO meta VALUES ('reverts_through', ?)", (tip,))
+    return len(shas)
+
+
+def _lsc(db, repo, tip):
+    """Sets is_lsc on the commits since the last run's tip whose message
+    matches LSC_GREP (all of history on the first run)."""
+    done = db.execute("SELECT v FROM meta WHERE k = 'lsc_through'").fetchone()
+    revs = [f"{done[0]}..{tip}"] if done else [tip]
+    shas = _git(repo, "log", "--first-parent", "-i", "-P", f"--grep={LSC_GREP}", "--format=%H", *revs).split()
+    with db:
+        db.executemany("UPDATE commits SET is_lsc = 1 WHERE sha = ?", [(s,) for s in shas])
+        db.execute("INSERT OR REPLACE INTO meta VALUES ('lsc_through', ?)", (tip,))
     return len(shas)
 
 
@@ -418,6 +443,8 @@ def update(path=None, repo=None, jobs=4):
         del paths
         k = _reverts(db, repo, tip)
         print(f"commits: {k:,} reverts", file=sys.stderr, flush=True)
+        k = _lsc(db, repo, tip)
+        print(f"commits: {k:,} LSC commits", file=sys.stderr, flush=True)
         k = _owners(db, repo, tip)
         print(f"commits: {k:,} OWNERS additions", file=sys.stderr, flush=True)
         k = _repetition(db, repo, jobs)
@@ -485,13 +512,14 @@ def value_commits(db, ddb):
     email, landed 'YYYY-MM-DD HH:MM:SS' UTC, is_bot, files). A commit is a
     bot's if its CL's owner is a bot (changes.is_bot_owned) or config/bots.txt
     matches its git author: some bots (e.g. a WebLayer builder) author commits
-    on CLs a person owns. Also returns the window's lower bound."""
+    on CLs a person owns. Commits of a large-scale change (is_lsc) aren't
+    counted at all. Also returns the window's lower bound."""
     lo = window_start(db, derived_since(ddb) + "T00:00:00Z")
     bot_owned = dict(ddb.execute("SELECT change_number, is_bot_owned FROM changes WHERE branch = 'main'"))
     rows = []
     for cid, cl, email, landed, files in db.execute(
-            "SELECT commit_id, change_number, author_email, landed_at, files FROM commits WHERE commit_id > ? "
-            "ORDER BY commit_id DESC", (lo,)):
+            "SELECT commit_id, change_number, author_email, landed_at, files FROM commits "
+            "WHERE commit_id > ? AND NOT is_lsc ORDER BY commit_id DESC", (lo,)):
         bot = bool(bot_owned.get(cl)) or is_bot_email(email)
         day = datetime.fromtimestamp(landed, timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
         rows.append((cid, cl, email, day, int(bot), files))
@@ -575,6 +603,19 @@ def mechanical(db, cls):
         if c["files"] >= 100 or (r is not None and r >= 0.8):
             out.add(c["change_number"])
     return out
+
+
+def lsc_cls(db):
+    """Change numbers of the CLs whose landed commit is part of a
+    large-scale change (is_lsc). They're left out wherever mechanical CLs
+    are, and from the Value Exchange commits metric."""
+    return {n for (n,) in db.execute("SELECT change_number FROM commits WHERE is_lsc AND change_number IS NOT NULL")}
+
+
+def left_out(db, cls):
+    """The CLs per-CL review measures leave out: mechanical(db, cls) and
+    lsc_cls(db)."""
+    return mechanical(db, cls) | lsc_cls(db)
 
 
 def dir_of(path, depth):

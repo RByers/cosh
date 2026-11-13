@@ -249,7 +249,7 @@ regex plus Claude Haiku (`cosh classify`).
   the link, so leave it in place: `git worktree remove` cleans it up, and
   removing it yourself triggers a permission prompt.
 - `data/private/commits.sqlite` is main's whole first-parent history (files,
-  line counts, OWNERS additions, repetition ratios), the one store of git
+  line counts, LSC tags, OWNERS additions, repetition ratios), the one store of git
   history: `summarize`, the balance stages and every balance, feedback and
   review-ROI script read it, and it replaces the old `--first-commit`,
   `--owners-added`, `--ai-marked` and `--mech` files (the flags still read

@@ -147,7 +147,7 @@ def step_report(ctx):
     import balance_report
     out = balance_report.compute(_args())
     new = {k: out[k] for k in REPORT}
-    new["summary"] = [{"mechanical_cls": out["mechanical_cls"]}]
+    new["summary"] = [{"mechanical_cls": out["mechanical_cls"], "lsc_cls": out["lsc_cls"]}]
     new["balance_dirs.json"] = out["dirs"]
     return new
 

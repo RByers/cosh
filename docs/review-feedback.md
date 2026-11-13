@@ -155,9 +155,10 @@ The years versions:
 
 For the person's sections below:
 
-For merged, human-owned, non-mechanical CLs on `main` (the same CLs as the
-Review Balance page's feedback index, `docs/balance.md` section 4;
-mechanical CLs from `commits.sqlite`), over whatever dates the data covers.
+For merged, human-owned CLs on `main` that are neither mechanical nor part of
+a large-scale change (the same CLs as the Review Balance page's feedback
+index, `docs/balance.md` section 4; mechanical and LSC CLs from
+`commits.sqlite`, `docs/commits.md`), over whatever dates the data covers.
 **Reviewer threads** are threads not started by a bot, on a file or the
 commit message. Patch-set-level threads (general comments) aren't counted:
 Gerrit has recorded them as threads only since July 2020, they can't be tied

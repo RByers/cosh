@@ -703,6 +703,44 @@ class CommitsStoreTest(unittest.TestCase):
             self.assertEqual(commits.window_start(db, "2023-02-15T00:00:00Z"), 1)
             db.close()
 
+    def test_lsc(self):
+        """is_lsc: tagged on the first run, on an incremental one, and in a
+        store from before the column; lsc_cls and left_out read it."""
+        import subprocess
+        from cosh import commits
+        msgs = ["Plain change\n\nNo functional change. Refactor.\n\n",
+                "[ssci] Add a field\n\nSee the LSC doc at go/lsc-chrome-metadata\n\n",
+                "Split part\n\nThis CL was uploaded by git cl split.\n\n",
+                "Lscript cleanup\n\nTouches LSCs and a large-scale changes doc? No: large-scale change.\n\n"]
+        with tempfile.TemporaryDirectory() as d:
+            repo = make_git_repo(d, [("p@chromium.org", f"2024-01-0{i + 1}T00:00:00Z", [f"d/f{i}.cc"],
+                                      m + reviewed_on(10 + i).split("\n\n")[1]) for i, m in enumerate(msgs[:3])])
+            path = os.path.join(d, "commits.sqlite")
+            # A store from before the column: no is_lsc, no lsc_through.
+            db = sqlite3.connect(path)
+            db.executescript(commits.SCHEMA.replace(
+                ",\n  is_lsc        INTEGER NOT NULL DEFAULT 0  -- part of a large-scale change (LSC_GREP; set by _lsc)",
+                ""))
+            self.assertNotIn("is_lsc", {r[1] for r in db.execute("PRAGMA table_info(commits)")})
+            db.close()
+            commits.update(path, repo, jobs=1)
+            env = dict(os.environ, GIT_CONFIG_GLOBAL=os.devnull, GIT_CONFIG_NOSYSTEM="1",
+                       GIT_AUTHOR_NAME="P", GIT_AUTHOR_EMAIL="p@chromium.org", GIT_COMMITTER_NAME="CQ",
+                       GIT_COMMITTER_EMAIL="cq@luci", GIT_AUTHOR_DATE="2024-01-05T00:00:00Z",
+                       GIT_COMMITTER_DATE="2024-01-05T00:00:00Z")
+            with open(os.path.join(repo, "d/f9.cc"), "a") as fh:
+                fh.write("x\n")
+            subprocess.run(["git", "-C", repo, "add", "-A"], check=True, env=env)
+            subprocess.run(["git", "-C", repo, "commit", "-qm", msgs[3] + reviewed_on(13).split("\n\n")[1]],
+                           check=True, capture_output=True, env=env)
+            commits.update(path, repo, jobs=1)          # incremental
+            db = sqlite3.connect(path)
+            self.assertEqual(db.execute("SELECT change_number, is_lsc FROM commits ORDER BY commit_id").fetchall(),
+                             [(10, 0), (11, 1), (12, 1), (13, 1)])
+            self.assertEqual(commits.lsc_cls(db), {11, 12, 13})
+            self.assertEqual(commits.left_out(db, []), {11, 12, 13})
+            db.close()
+
 
 class CommitsTest(unittest.TestCase):
     """The commits metric in summarize, from commits.sqlite."""

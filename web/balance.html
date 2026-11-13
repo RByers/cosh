@@ -96,8 +96,9 @@
         <p class="note">
           Merged, human-owned CLs on chromium/src <code>main</code>: Gerrit review data from July 2023 to
           September 2026 (whole quarters), and git history since 2017. Mechanical CLs
-          (<b data-src="summary" data-field="mechanical_cls" data-fmt="n0">–</b> mass edits and imports) are
-          left out of the review measures.
+          (<b data-src="summary" data-field="mechanical_cls" data-fmt="n0">–</b> mass edits and imports) and
+          <a href="#mechanical">large-scale changes</a>
+          (<b data-src="summary" data-field="lsc_cls" data-fmt="n0">–</b> CLs) are left out of the review measures.
         </p>
       </div>
     </header>
@@ -1262,8 +1263,9 @@
         <p class="note">
           Merged, human-owned CLs on chromium/src <code>main</code>: Gerrit review data from July 2023 to
           September 2026 (whole quarters), and git history since 2017. Mechanical CLs
-          (<b data-src="summary" data-field="mechanical_cls" data-fmt="n0">–</b> mass edits and imports) are
-          left out of the review measures.
+          (<b data-src="summary" data-field="mechanical_cls" data-fmt="n0">–</b> mass edits and imports) and
+          <a href="#mechanical">large-scale changes</a>
+          (<b data-src="summary" data-field="lsc_cls" data-fmt="n0">–</b> CLs) are left out of the review measures.
         </p>
       </div>
 
@@ -2870,6 +2872,15 @@
           A CL counts as mechanical with 100 or more files, or with 10 or more files of which at least 80% of
           changed lines are repeats (the same lines repeated across files). The rule doesn't look at review counts,
           so it can't bias the review measures it filters.
+        </p>
+        <p class="sub">
+          Large-scale changes are left out too: CLs whose commit message cites Chromium's
+          <a href="https://chromium.googlesource.com/chromium/src/+/main/docs/process/lsc/large_scale_changes.md"
+            target="_blank" rel="noopener">LSC process</a> or that <code>git cl split</code> uploaded. Most are
+          small slices of one approved change, so the rule above misses them, and they are reviewed by policy rather
+          than line by line: since July 2023 they drew 0.78 review comments each, against 3.67 for other CLs, a
+          quarter to a fifth as many at any size. Refactors, by contrast, drew about half to two-thirds as many as
+          other CLs of their size and stay in.
         </p>
         <div class="panels">
           <figure class="panel"><h3>Reviewer threads per file, by file count</h3>

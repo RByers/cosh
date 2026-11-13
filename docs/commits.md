@@ -154,13 +154,13 @@ python3 -m cosh commits [--jobs 4]      # offline; GIT_NO_LAZY_FETCH=1
 `data/private/commits.sqlite` (`$COSH_COMMITS_DB` overrides the path) holds
 every first-parent commit of `main` since 2008, with its first-parent
 diff's files and line counts. It is incremental: a run appends the commits
-landed since the last one (seconds when nothing is new), then their OWNERS
-additions and repetition ratios. Rebuild it by deleting the file and
+landed since the last one (seconds when nothing is new), then their LSC
+tags, OWNERS additions and repetition ratios. Rebuild it by deleting the file and
 rerunning: about 1 h 50 min (1.5 h of `git log`, then 20 min of OWNERS diffs and repetition ratios with 4 processes) from empty, 1.1 GB, against 786 MB for `balance-git.sqlite` plus 442 MB for `derived.sqlite`'s two commits tables.
 
 | Table | Rows | What |
 |---|---:|---|
-| `commits` | 1,676,752 | sha, git author (lowercased) and name, authored and landed (committer) time, CL (`Reviewed-on:`), `Bot-Commit:` flag, `Reviewed-by:` approvers, the commit it reverts, reland flag, AI-marker flag, files and lines |
+| `commits` | 1,676,752 | sha, git author (lowercased) and name, authored and landed (committer) time, CL (`Reviewed-on:`), `Bot-Commit:` flag, `Reviewed-by:` approvers, the commit it reverts, reland flag, AI-marker flag, files and lines, LSC flag (`is_lsc`) |
 | `commit_files`, `paths` | 13,556,620 / 1,642,612 | each file of its first-parent diff, with lines added and deleted (`-1` binary) |
 | `owners_added` | 42,496 | each address on a line added to an OWNERS file (the first on the line) |
 | `repetition` | 173,608 | 1 − distinct changed lines ÷ changed lines, for commits with a CL and 10 or more files (NULL over 50,000 lines) |
@@ -180,6 +180,38 @@ paragraph, as the balance scripts always read it) and `is_revert` (`git
 log --grep='^This reverts commit'`, any line, which also catches SVN-era
 reverts naming `r12345`; the earlier commits leave these out).
 
+**Large-scale changes** (`is_lsc`, GitHub issue #3): `git log -i -P
+--grep=<commits.LSC_GREP>` over the commits since the last run's tip
+(`meta.lsc_through`; all of history on the first run), the way `is_revert`
+is set. A commit is tagged when its message has the word `LSC` or
+"large-scale change" (in practice the LSC process's "See the LSC doc at
+go/lsc-chrome-…", `LSC:` and `LSC-Id:` lines) or `git cl split`'s footer
+"This CL was uploaded by git cl split". 13,012 commits were tagged on
+2026-11-13, 4,669 of them since July 2023. A store from before the column
+gets it (`ALTER TABLE`) when opened, and the next run tags its commits.
+
+Why they're left out: since July 2023 LSC CLs drew 0.78 review comments
+each, against 3.67 for other CLs, a quarter to a fifth as many at the same
+file count, and 62% got none: they're reviewed by policy, not line by
+line. The mechanical rule misses them (only 126 CLs are both), because
+most are small slices of one split change. They're 95% Google's, so
+organization shares barely move, but a person who lands many of them
+looked like an author whose CLs need little review. Refactors were checked
+too and stay in: they drew 55–70% of other CLs' comments at the same
+size, and keyword tagging would drop 23% of Opera's commits against 7.6%
+of Google's. The issue has the tables.
+
+`commits.lsc_cls(db)` gives the tagged CLs and `commits.left_out(db, cls)`
+the mechanical ones plus those. They are left out of:
+
+- the Feedback Index (`cosh/feedback.py`), the balance analyses and the
+  review-ROI table (`mech_set` in `scripts/balance_analysis.py`, which
+  every script that drops mechanical CLs uses), with the balance page's
+  `summary` counting the two kinds apart (`mechanical_cls`, `lsc_cls`);
+- Value Exchange's Commits metric and its Ratio toggle
+  (`commits.value_commits` skips them), commits only: the review comments
+  on LSC CLs are real reviews and still count.
+
 What reads it:
 
 - **`summarize`** (`commit_facts`) and **`feedback_coach.py`**: the commits
@@ -194,7 +226,7 @@ What reads it:
   commit over all history), `owners_added` (since 2012), `ai_marked`
   (`AI_MARKER`, since 2023), and `mech_set` (merged CLs in `balance.sqlite`
   whose landed commit has 100 or more files, or 10 or more with a
-  repetition of 0.8 or more). The scripts' `--first-commit`,
+  repetition of 0.8 or more, plus every LSC CL). The scripts' `--first-commit`,
   `--owners-added`, `--ai-marked` and `--mech` flags still read the old
   files for exploration; without them the store is used.
 - **`cosh/feedback.py`**'s earlier commits: the commits landed before

@@ -108,7 +108,7 @@ def quarters(lo, hi):
 
 
 def compute(args):
-    """The report's tables: {"generated", "mechanical_cls", <dataset>: rows, ...,
+    """The report's tables: {"generated", "mechanical_cls", "lsc_cls", <dataset>: rows, ...,
     "dirs": the balance_dirs.json document}."""
     cls, commits, ids, first, owner_at, ai = G.load_all(args)
     mech = mech_set(args.mech)
@@ -120,10 +120,13 @@ def compute(args):
         if c["n"] and d:
             top2[c["n"]] = "/".join(d[0].split("/")[:2])
     A.MECH_FILES = 10 ** 9          # cl_residuals' provisional rule off; use the repetition rule
+    lsc = A.commit_store.lsc_cls(A.git_db())
+    lsc_merged = {c["change_number"] for c in cls if c["status"] == "MERGED"} & lsc
     for c in cls:
         if c["change_number"] in mech:
             c["status"] = "MECH"     # dropped by every MERGED filter below
-    out = {"generated": datetime.now(timezone.utc).strftime("%Y-%m-%d"), "mechanical_cls": len(mech)}
+    out = {"generated": datetime.now(timezone.utc).strftime("%Y-%m-%d"),
+           "mechanical_cls": len(mech - lsc), "lsc_cls": len(lsc_merged)}
     use = G.cl_residuals(cls, top2)            # merged, non-mechanical, with residuals and exp24
     for c in use:
         c["q"] = A.quarter(c["closed_at"])

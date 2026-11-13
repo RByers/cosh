@@ -569,12 +569,12 @@
       "rebuildable": true,
       "size": "1.1 GB",
       "size_as_of": "2026-11-12",
-      "purpose": "Every first-parent commit of main since 2008 with its files and line counts, OWNERS additions and repetition ratios: the one store of git history that every step reads.",
+      "purpose": "Every first-parent commit of main since 2008 with its files and line counts, LSC tags, OWNERS additions and repetition ratios: the one store of git history that every step reads.",
       "tables": [
         {
           "name": "commits",
           "rows": 1676752,
-          "purpose": "Commits: author, times, CL, Reviewed-by, reverts, relands, Bot-Commit and AI-marker flags, files and lines. commit_id counts up from 1 at 2017-01-01 and down from -1 before."
+          "purpose": "Commits: author, times, CL, Reviewed-by, reverts, relands, Bot-Commit, AI-marker and LSC (large-scale change) flags, files and lines. commit_id counts up from 1 at 2017-01-01 and down from -1 before."
         },
         {
           "name": "commit_files",
@@ -1129,7 +1129,7 @@
         "cosh/bots.py",
         "cosh/paths.py"
       ],
-      "purpose": "Appends main's new commits, with their files, line counts, OWNERS additions and repetition ratios, to the commits store.",
+      "purpose": "Appends main's new commits, with their files, line counts, LSC tags, OWNERS additions and repetition ratios, to the commits store.",
       "inputs": [
         "shared/chromium",
         "config/bots.txt"

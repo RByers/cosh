@@ -1,1 +1,1 @@
-{"dirs":["testing/libfuzzer/","pdf/pdfium/fuzzers/"],"files":[],"orgs":["google.com"],"cls":[[2111391,18341,17,0.662,0.495,[[0,2]],[[1,0]],0,79],[2113077,18341,2,0.127,0.08,[[1,0]],[],0,80]],"counts":1}
+{"dirs":["testing/libfuzzer/","pdf/pdfium/fuzzers/"],"files":[],"orgs":["google.com"],"cls":[[2111391,18341,17,0.67,0.502,[[0,2]],[[1,0]],0,79],[2113077,18341,2,0.13,0.082,[[1,0]],[],0,80]],"counts":1}

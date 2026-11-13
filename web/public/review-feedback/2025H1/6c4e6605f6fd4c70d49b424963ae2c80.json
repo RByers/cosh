@@ -1,1 +1,1 @@
-{"dirs":["tools/metrics/histograms/","base/trace_event/"],"files":[],"orgs":["google.com"],"cls":[[6227745,20131,206,3.212,2.646,[[0,16]],[[31,31]],0,73],[6619087,20244,2,0.127,0.08,[[1,0]],[],0,74]],"counts":1}
+{"dirs":["tools/metrics/histograms/","base/trace_event/"],"files":[],"orgs":["google.com"],"cls":[[6227745,20131,206,3.212,2.646,[[0,16]],[[31,31]],0,73],[6619087,20244,2,0.13,0.082,[[1,0]],[],0,74]],"counts":1}

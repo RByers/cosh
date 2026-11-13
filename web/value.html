@@ -256,7 +256,10 @@
           <p>Votes with no comment, such as a bare +1, don't count: they don't show how much review went into them.</p>
           <p><strong>Commits</strong> are the other side: commits on <code>main</code> (from Chromium's git history)
             that touch at least one of those paths, each in the week it landed and credited to its git author.
-            Commits of bot-owned CLs, such as autorolls, are left out.</p>
+            Commits of bot-owned CLs, such as autorolls, are left out, and so are large-scale changes (commits
+            whose message cites Chromium's LSC process, or that <code>git cl split</code> uploaded): they are
+            reviewed by policy rather than line by line, so they would understate an organization's review per
+            commit.</p>
           <p><strong>Organization.</strong> Each reviewer's organization as of the comment's date (for reviewed CLs,
             the close date), and each commit author's as of the day the commit landed, by the first rule that
             applies:</p>

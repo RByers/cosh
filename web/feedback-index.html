@@ -489,7 +489,8 @@
         <p class="note">
           Changes are the merged, human-owned Chromium changes on main that landed from
           <span data-rf-range="from"></span> to <span data-rf-range="to"></span>,
-          leaving out mechanical ones (100 or more files, or mostly repeated lines), as on the
+          leaving out mechanical ones (100 or more files, or mostly repeated lines) and large-scale changes (CLs
+          whose commit message cites Chromium's LSC process, or that <code>git cl split</code> uploaded), as on the
           <a href="balance.html">Review Balance</a> page. A reviewer thread is a comment thread on Gerrit started by
           someone other than the change's owner, bots left out, on a file or the commit message (general comments
           on the whole change aren't counted: they can't be tied to a directory, and few lead to a change in the

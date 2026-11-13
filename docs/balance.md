@@ -1319,6 +1319,15 @@ no thread); switching is a next step.
 Reverts climb with file count (2.3% for one file, about 5% for 20+ files),
 so the revert chart should be by size as well as over time.
 
+**Large-scale changes** (2026-11-13, GitHub issue #3) are left out wherever
+mechanical CLs are (`mech_set`), whatever their size: CLs whose landed
+commit's message cites the LSC process or `git cl split`
+(`commits.is_lsc`, `docs/commits.md`). Since July 2023 they drew 0.78
+review comments each against 3.67, and the rule above catches only 126 of
+them. The page counts them apart (`summary.lsc_cls`). The review-ROI
+results the page shows (`data/private/review_roi/`) still use the
+mechanical rule alone until that analysis is rerun.
+
 ## Publishing the page's data (2026-11-12)
 
 One command writes all three of the page's files, whole and from empty:

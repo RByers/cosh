@@ -607,7 +607,7 @@ def main():
     print(f"tone weeks {TONE_WEEKS[0]} .. {TONE_WEEKS[-1]}", file=sys.stderr, flush=True)
 
     cls, commits, ids, first, raw_email, by_cid = load(args)
-    mech = C.mechanical(git_db(), cls)
+    mech = C.left_out(git_db(), cls)       # mechanical and large-scale-change CLs
     dirs3 = C.commit_dirs(git_db(), 3)
     top2 = {}
     for c in commits:
@@ -677,7 +677,7 @@ def main():
                         sb=size10(lines), d2=top2.get(n), threads=0, addressed=0,
                         prior=bisect.bisect_left(own_times.get(pid, ()), landed_at.get(n, t))))
 
-    # Merged, human-owned, non-mechanical CLs (the review-ROI analyses' rule).
+    # Merged, human-owned CLs, neither mechanical nor LSC (the review-ROI analyses' rule).
     for c in cls:
         if c["change_number"] in mech:
             c["status"] = "MECH"
