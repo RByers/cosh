@@ -33,6 +33,8 @@ import time
 from datetime import datetime, timezone
 
 from . import store
+from .cl_facts import CL_FACTS, cl_dirs, cl_facts, dir3, epoch  # noqa: F401 (moved there)
+from .commits import HISTORY_SINCE, MAX_LINES, diff_lines  # noqa: F401 (moved there)
 
 SHARED = os.path.expanduser("~/projects/shared/chromium")
 PATCHSETS = os.path.join(store.DATA_DIR, "git", "chromium-patchsets.git")
@@ -272,7 +274,6 @@ def stage_timeline(db, numbers=None, batch=2000):
 
 # ---------------------------------------------------------- interdiff stage
 
-MAX_LINES = 50_000   # a patch set's diff bigger than this is not compared
 
 
 def first_review_times():
@@ -292,51 +293,6 @@ def first_review_times():
            WHERE a.is_bot = 0 AND t.last_owner_reply_at IS NOT NULL GROUP BY t.change_number"""
     for n, t in d.execute(q):
         out.setdefault(n, epoch(t))
-    return out
-
-
-def epoch(s):
-    return int(datetime.strptime(s[:19].replace("T", " "), "%Y-%m-%d %H:%M:%S")
-               .replace(tzinfo=timezone.utc).timestamp())
-
-
-def diff_lines(git_dir, shas):
-    """{sha: {path: (Counter of added lines, Counter of removed lines)} or None
-    when too big}, each commit against its first parent, from one
-    `git diff-tree --stdin -p -U0` process."""
-    import threading
-    from collections import Counter
-    p = subprocess.Popen(["git", "--git-dir", git_dir, "diff-tree", "--stdin", "-p", "-U0", "--no-renames",
-                          "--no-ext-diff", "--no-textconv"],
-                         stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, env=ENV)
-    w = threading.Thread(target=lambda: (p.stdin.write(("\n".join(shas) + "\n").encode()), p.stdin.close()))
-    w.start()
-    want, out = set(shas), {}
-    cur = files = path = None
-    in_hunk, n = False, 0
-    for line in p.stdout:
-        if len(line) == 41 and line[:40].decode(errors="replace") in want and line[40:] == b"\n":
-            cur = line[:40].decode()
-            files, n = {}, 0
-            out[cur] = files
-            continue
-        if cur is None or out[cur] is None:
-            continue
-        if line.startswith(b"diff --git "):
-            path = line[11:].rstrip(b"\n").split(b" b/", 1)[-1]
-            files[path] = (Counter(), Counter())
-            in_hunk = False
-        elif line.startswith(b"@@"):
-            in_hunk = True
-        elif line.startswith(b"Binary files"):
-            files[path][0][b"\0binary"] += 1
-        elif in_hunk and line[:1] in (b"+", b"-"):
-            files[path][0 if line[:1] == b"+" else 1][hash(line[1:])] += 1
-            n += 1
-            if n > MAX_LINES:
-                out[cur] = None
-    p.wait()
-    w.join()
     return out
 
 
@@ -449,11 +405,6 @@ CREATE TABLE cl_dirs (            -- landed commit's lines per directory (3 leve
 """
 
 
-def dir3(path):
-    parts = path.split("/")[:-1]
-    return "/".join(parts[:3]) + "/" if parts else "(root)/"
-
-
 def weekday_seconds(s, e):
     """Seconds of [s, e) that fall on Monday..Friday, UTC."""
     tot, day = 0, 86400
@@ -490,57 +441,6 @@ def union_hours(spans, lo, hi):
     if cur_e is not None:
         tot += cur_e - cur_s
     return tot / 3600
-
-
-CL_FACTS = ("change_number", "owner", "owner_email", "status", "created_at", "closed_at", "close_week",
-            "ins", "dels", "patchsets", "sha", "files", "git_lines", "is_revert", "is_reland", "reverted_at")
-
-
-def cl_facts(ddb, gdb):
-    """The first columns of `cl`, CL_FACTS: those that come from
-    derived.sqlite (`ddb`) and commits.sqlite (`gdb`) alone. Tuples in
-    change-number order, one per human-owned chromium/src `main` CL: the
-    owner's address as Gerrit has it, times in unix seconds, and for a merged
-    CL its landed commit. Also {commit_id: change_number} of the landed
-    commits, for cl_dirs. stage_cl builds on these, and the Feedback Index
-    (scripts/review_feedback.py) reads them directly, so it needs no balance
-    stage."""
-    emails = dict(ddb.execute("SELECT account_id, email FROM accounts"))
-    cls = ddb.execute("""SELECT change_number, owner_account, status, created_at, closed_at, close_week,
-                                insertions, deletions, patchsets FROM changes
-                         WHERE is_bot_owned = 0 AND project = 'chromium/src' AND branch = 'main'""").fetchall()
-    landed = {}
-    for cid, n, sha, files, ins, dels, rv, rl in gdb.execute(
-            "SELECT commit_id, change_number, sha, files, ins, dels, reverts_sha IS NOT NULL, is_reland "
-            "FROM gcommits WHERE change_number IS NOT NULL"):
-        landed[n] = (cid, sha, files, ins + dels, rv, rl)
-    reverted = {}
-    for target, at in gdb.execute("SELECT reverts_sha, landed_at FROM gcommits WHERE reverts_sha IS NOT NULL"):
-        reverted[target] = min(at, reverted.get(target, at))
-    rows = []
-    for n, owner, status, created, closed, cweek, ins, dels, nps in sorted(cls):
-        lg = landed.get(n) if status == "MERGED" else None
-        rows.append((n, owner, emails.get(owner), status, epoch(created), epoch(closed) if closed else None,
-                     cweek, ins, dels, nps, *(lg[1:] if lg else (None,) * 5),
-                     reverted.get(lg[1]) if lg else None))
-    return rows, {v[0]: n for n, v in landed.items()}
-
-
-def cl_dirs(gdb, by_cid, numbers=None):
-    """The cl_dirs table: {(change_number, 3-level directory): [files, lines]}
-    of the landed commits in `by_cid` (from cl_facts), only for the CLs in
-    `numbers` if given."""
-    from collections import defaultdict
-    paths = dict(gdb.execute("SELECT path_id, path FROM paths"))
-    agg = defaultdict(lambda: [0, 0])
-    for cid, pid, ins, dels in gdb.execute("SELECT commit_id, path_id, ins, dels FROM gfiles"):
-        n = by_cid.get(cid)
-        if n is None or (numbers is not None and n not in numbers):
-            continue
-        g = agg[(n, dir3(paths[pid]))]
-        g[0] += 1
-        g[1] += max(ins, 0) + max(dels, 0)
-    return agg
 
 
 def stage_cl(db):

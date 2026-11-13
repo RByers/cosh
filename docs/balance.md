@@ -1598,7 +1598,8 @@ ground rule 3).
   reverts in 2020, then about 1,200 human-approved and 2,400–3,100
   bot-approved a year from 2021.
 - The patch-set fetch's final repack crashed (git exit 134) after all
-  fetches finished. The data is complete, but the repo has 1,200 packs.
+  fetches finished. The data is complete; the repo was later repacked in
+  groups to 4 packs (19 GB, 2026-11-09; `scripts/patchsets_chunked_repack.sh`).
 
 ## Next steps
 

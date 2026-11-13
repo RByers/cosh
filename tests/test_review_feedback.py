@@ -1,12 +1,9 @@
-"""scripts/review_feedback.py helpers: the address hash the page shares,
+"""cosh/feedback.py helpers: the address hash the page shares,
 periods, bands, quantiles and excerpts. No data is read."""
 
-import os
-import sys
 import unittest
 
-sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "scripts"))
-import review_feedback as R  # noqa: E402
+from cosh import feedback as R
 
 
 class ReviewFeedbackTest(unittest.TestCase):

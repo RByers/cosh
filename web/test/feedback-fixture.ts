@@ -1,5 +1,5 @@
 // A made-up person and peer file for the Review Feedback tests, shaped like
-// scripts/review_feedback.py's output: a top file and one file per
+// cosh/feedback.py's output: a top file and one file per
 // half-year. The browser tests serve these instead of the committed data.
 import type { Metric, Peers, Shard, Top } from '../src/feedback.ts';
 

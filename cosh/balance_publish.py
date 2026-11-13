@@ -40,11 +40,12 @@ too costly or too private to repeat on every publish:
 The AI-predict scores (ai_predict/scores.sqlite, Haiku) are read as a store
 by balance_narrative.
 
-The analysis window is DATA_END below (D3 in docs/data-architecture.md:
-whether the page follows new weeks is undecided). The scripts take their
-end of data and last whole quarter from it; their comparison eras (2023 H2
-- 2024 against the latest four quarters, and so on) are still their own
-constants.
+The analysis window ends at DATA_END below, which follows the data: the
+first day of the month in which derived.sqlite's newest fetched week ends
+(so new weeks reach the page once a month is complete). The scripts take
+their end of data and last whole quarter from it; their comparison eras
+(2023 H2 - 2024 against the latest four quarters, and so on) are still their
+own constants. $COSH_BALANCE_DATA_END (YYYY-MM-DD) pins it.
 """
 
 import argparse
@@ -61,7 +62,28 @@ SUMMARIES = os.path.join(HERE, "summaries")
 
 # ------------------------------------------------------------------ window
 
-DATA_END = datetime(2026, 11, 1, tzinfo=timezone.utc)     # first day after the data (2026-W44)
+def data_end():
+    """The first day of the month in which derived.sqlite's newest fetched
+    week ends: 2026-11-01 for data through 2026-W44 (ending 2026-11-02).
+    Without a derived.sqlite (tests), 2026-11-01."""
+    if os.environ.get("COSH_BALANCE_DATA_END"):
+        return datetime.fromisoformat(os.environ["COSH_BALANCE_DATA_END"]).replace(tzinfo=timezone.utc)
+    import sqlite3
+    from datetime import date, timedelta
+    from cosh import store
+    path = os.path.join(store.DATA_DIR, store.DERIVED_FILE)
+    weeks = []
+    if os.path.exists(path):
+        db = sqlite3.connect(f"file:{path}?mode=ro", uri=True)
+        weeks = [w for (v,) in db.execute("SELECT v FROM meta WHERE k = 'fetched_weeks'") for w in json.loads(v or "[]")]
+    if not weeks:
+        return datetime(2026, 11, 1, tzinfo=timezone.utc)
+    y, w = max(weeks).split("-W")
+    end = date.fromisocalendar(int(y), int(w), 1) + timedelta(days=7)
+    return datetime(end.year, end.month, 1, tzinfo=timezone.utc)
+
+
+DATA_END = data_end()     # first day after the data
 
 
 def quarter_of(t):

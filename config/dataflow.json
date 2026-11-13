@@ -1,36 +1,33 @@
 {
-  "schema_version": 1,
-  "updated": "2026-11-12",
-  "about": "Every external source, data store, processing step and page of cosh, and the flows between them. Read by web/dataflow.html and scripts/dataflow.py (check, plan). Field meanings: docs/data-architecture.md, 'The inventory'. Keep it current: CLAUDE.md, Conventions.",
-  "groups": [
-    {"id": "gerrit", "name": "Gerrit core", "purpose": "Code review fetched from Gerrit, reduced to per-CL and per-comment facts, labelled, and summarised for Value Exchange."},
-    {"id": "git", "name": "Chromium git", "purpose": "Chromium's git history and the patch-set commits of reviewed CLs."},
-    {"id": "usage", "name": "Browser usage", "purpose": "Cloudflare Radar browser shares, the usage side of the value ratio."},
-    {"id": "sentiment", "name": "Review tone", "purpose": "Tone scores of review comments and the Review Tone page's files."},
-    {"id": "balance", "name": "Review balance", "purpose": "Per-CL author and reviewer effort, and the Review Balance page's datasets."},
-    {"id": "feedback", "name": "Review feedback", "purpose": "Per-person Feedback Index files, coaching reports and the review-ROI studies."},
-    {"id": "bugs", "name": "Bugs and releases", "purpose": "Bug-tracker metadata and Chrome Releases security fixes."},
-    {"id": "site", "name": "Site", "purpose": "Building the static site and publishing it to GitHub Pages."}
-  ],
+  "schema_version": 2,
+  "updated": "2026-11-13",
+  "about": "Every external source, data store, processing step and page of cosh, and the flows between them. Read by web/dataflow.html, scripts/dataflow.py (check, plan) and `python3 -m cosh update`. Field meanings and the flow rules: docs/data-architecture.md. Keep it current: CLAUDE.md, Conventions. Building and deploying the site (npm run build; the Pages workflow on push) is not a data step and isn't listed.",
   "sources": [
     {
-      "id": "gerrit-rest", "group": "gerrit", "name": "Gerrit REST", "kind": "rest-api",
+      "id": "gerrit",
+      "name": "Chromium Gerrit",
+      "kind": "rest-api + git",
       "url": "https://chromium-review.googlesource.com",
-      "purpose": "CL listings (metadata, labels, accounts) per 6-hour window, and account lookups.",
+      "purpose": "Code review of chromium/src: CL listings over REST, each CL's review comments and events as its NoteDb ref, and its uploaded patch sets.",
       "access": "Anonymous; every request carries the contact e-mail (data/private/settings.json or COSH_CONTACT).",
-      "load_rules": "Serial, at least 1 s apart, backoff on 429/5xx; one extractor at a time (data/private/extract.lock).",
-      "coverage": "chromium/src main (master before 2021-05), CLs closed 2017-W27 .. 2026-W44, plus an open-CL snapshot. Anything newer needs approval."
+      "load_rules": "REST serial, at least 1 s apart; NoteDb in batches of 200 refspecs, one fetch at a time; patch sets with glob refspecs only (never ls-remote or blobs by id), up to 7 fetches at once, pausing together on a 429. Backoff on 429/5xx; one extractor at a time (data/private/extract.lock).",
+      "coverage": "chromium/src main (master before 2021-05): CLs closed 2017-W27 .. 2026-W44 plus an open-CL snapshot; patch sets of reviewed CLs closed 2023-W26 .. 2026-W44. The approved ranges are config/approved.json, which the fetchers enforce.",
+      "notes": "Three channels of one host: REST (listings, accounts), NoteDb (refs/changes/NN/N/meta) and patch-set refs (refs/changes/NN/N/<ps>)."
     },
     {
-      "id": "gerrit-notedb", "group": "gerrit", "name": "Gerrit NoteDb", "kind": "git",
-      "url": "https://chromium.googlesource.com/chromium/src",
-      "purpose": "Review comments and the full review-event history of each CL, as its refs/changes/NN/N/meta ref.",
-      "access": "Anonymous git over HTTPS with the contact e-mail in the user agent.",
-      "load_rules": "Batches of 200 explicit refspecs, one fetch at a time, at least 5 s apart, under extract.lock; more than one job only with time-limited approval.",
-      "coverage": "Human-owned CLs with comments, 2017-W27 .. 2026-W44, plus the open-CL snapshot's."
+      "id": "chromium-git",
+      "name": "Chromium git",
+      "kind": "git",
+      "url": "https://chromium.googlesource.com/chromium/src.git (main)",
+      "purpose": "Chromium's git history on main: commits, authors, files touched, footers and file contents.",
+      "access": "Anonymous git over HTTPS with the contact e-mail; main only, no tags.",
+      "load_rules": "One fetch of main at a time, under data/private/extract.lock. Other branches or repos need approval.",
+      "coverage": "All of main, with full blobs (approved 2026-11-06 and 2026-11-07)."
     },
     {
-      "id": "chromium-affiliations", "group": "gerrit", "name": "Chromium affiliations file", "kind": "file",
+      "id": "chromium-affiliations",
+      "name": "Affiliations file",
+      "kind": "file",
       "url": "https://chromium.googlesource.com/chromium/src/+/main/third_party/blink/tools/commit_stats/affiliations.json5",
       "purpose": "Dated e-mail-to-employer overrides used to attribute each person to an organisation.",
       "access": "Anonymous GET with the contact headers.",
@@ -38,7 +35,9 @@
       "coverage": "The current file on main."
     },
     {
-      "id": "claude-model", "group": "gerrit", "name": "Claude (headless)", "kind": "model",
+      "id": "claude-model",
+      "name": "Claude (headless)",
+      "kind": "model",
       "url": "local `claude -p`",
       "purpose": "Labels and scores text that rules can't: addressed threads, comment tone, AI-written descriptions, coaching reports.",
       "access": "The user's Claude Max login; untrusted text only through cosh.sandbox.Sandbox (no tools, scrubbed env, bwrap jail).",
@@ -46,24 +45,9 @@
       "coverage": "Haiku for bulk labels; Opus for audits and coaching reports."
     },
     {
-      "id": "chromium-git", "group": "git", "name": "Chromium git (shared clone)", "kind": "git",
-      "url": "~/projects/shared/chromium (bare mirror of chromium/src main)",
-      "purpose": "Commit history and file contents of main: commits, authors, files touched, footers, blame.",
-      "access": "Local reads only, always with GIT_NO_LAZY_FETCH=1.",
-      "load_rules": "A clean mirror of main shared across projects: no cosh refs or local edits. No cosh command updates it.",
-      "coverage": "All of main with full blobs, 69 GB (2026-11-12).",
-      "notes": "New weeks' commits appear only after someone fetches main into the clone."
-    },
-    {
-      "id": "gerrit-patchsets", "group": "git", "name": "Gerrit patch sets", "kind": "git",
-      "url": "https://chromium.googlesource.com/chromium/src",
-      "purpose": "Every uploaded patch set (refs/changes/NN/N/*) of reviewed CLs, with blobs, for diffs between patch sets.",
-      "access": "Anonymous git over HTTPS with the contact e-mail.",
-      "load_rules": "Glob refspecs only (never ls-remote or blobs by id); up to 7 fetches at once, pausing together on a 429; under extract.lock.",
-      "coverage": "Reviewed CLs closed 2023-W26 .. 2026-W44: about 282k CLs, 2.0M patch sets. Older, unreviewed or newer CLs need approval."
-    },
-    {
-      "id": "cloudflare-radar", "group": "usage", "name": "Cloudflare Radar", "kind": "rest-api",
+      "id": "cloudflare-radar",
+      "name": "Cloudflare Radar",
+      "kind": "rest-api",
       "url": "https://api.cloudflare.com/client/v4/radar/http/timeseries_groups/",
       "purpose": "Daily share of human web requests per browser (all devices, and iOS alone) and per OS.",
       "access": "API token in CLOUDFLARE_API_TOKEN, from `source ~/.secrets/cosh/secrets.sh`; never printed or committed.",
@@ -71,7 +55,9 @@
       "coverage": "2023-06-26 (Radar's first data) to the day of the last run."
     },
     {
-      "id": "issues-chromium", "group": "bugs", "name": "Chromium issue tracker", "kind": "rest-api",
+      "id": "issues-chromium",
+      "name": "Chromium issue tracker",
+      "kind": "rest-api",
       "url": "https://issues.chromium.org/action/issues/list",
       "purpose": "Metadata (type, priority, severity, component, status) of the bugs named in commit footers and security release notes.",
       "access": "Anonymous POST to an undocumented endpoint; restricted bugs are silently left out (about 46% of asked IDs are visible).",
@@ -79,7 +65,9 @@
       "coverage": "147,407 bug IDs from Bug:/Fixed: footers on main since 2023-07-01 and from Chrome Releases security fixes."
     },
     {
-      "id": "monorail-stubs", "group": "bugs", "name": "Monorail redirect stubs", "kind": "web",
+      "id": "monorail-stubs",
+      "name": "Monorail stubs",
+      "kind": "web",
       "url": "https://bugs.chromium.org/p/chromium/issues/detail?id=",
       "purpose": "Redirect pages that map pre-2024 Monorail bug IDs to their new tracker IDs.",
       "access": "Anonymous GET.",
@@ -87,7 +75,9 @@
       "coverage": "All 21,267 Monorail-era IDs wanted as of 2026-11-08."
     },
     {
-      "id": "chrome-releases-blog", "group": "bugs", "name": "Chrome Releases blog", "kind": "web",
+      "id": "chrome-releases-blog",
+      "name": "Chrome Releases blog",
+      "kind": "web",
       "url": "https://chromereleases.googleblog.com/feeds/posts/default?alt=json",
       "purpose": "Release posts listing each security fix's CVE, bug ID and severity.",
       "access": "Anonymous GET; post bodies are parsed by regex only and never shown to a model.",
@@ -97,455 +87,928 @@
   ],
   "stores": [
     {
-      "id": "data/private/raw.sqlite", "group": "gerrit", "path": "data/private/raw.sqlite", "kind": "sqlite", "tier": "raw",
-      "tracked_in_git": false, "rebuildable": false, "never_delete": true,
-      "size": "2.5 GB", "size_as_of": "2026-11-12",
-      "purpose": "Lossless cache of every Gerrit REST response, plus which weeks and open-CL snapshots are fully fetched.",
+      "id": "gerrit-raw",
+      "name": "Fetched Gerrit data",
+      "path": "data/private/raw.sqlite + data/private/notedb/",
+      "kind": "sqlite + git-repo",
+      "tier": "raw",
+      "tracked_in_git": false,
+      "rebuildable": false,
+      "never_delete": true,
+      "size": "2.5 GB + 11.4 GB in 14 packs",
+      "size_as_of": "2026-11-12",
+      "purpose": "Everything fetched from Gerrit, losslessly: raw.sqlite caches every REST response and which weeks are done; notedb/ holds each CL's NoteDb ref, the only copy of comment text and review events.",
+      "files": "raw.sqlite; notedb/chromium_src.git, a bare repo with a ref refs/meta/<CL> per fetched CL (about 716k).",
       "tables": [
-        {"name": "responses", "rows": 40243, "purpose": "Every REST response, compressed, keyed by host, kind and key."},
-        {"name": "week_progress", "rows": 487, "purpose": "Per ISO week: when it was listed and when all its NoteDb refs were fetched."},
-        {"name": "week_changes", "rows": 1560147, "purpose": "Which listing response holds each CL of each week."},
-        {"name": "open_listings", "rows": 2, "purpose": "Open-CL snapshots and their progress."},
-        {"name": "open_changes", "rows": 75446, "purpose": "Which listing response holds each CL of an open snapshot."},
-        {"name": "extract_runs", "rows": 695, "purpose": "One row per extractor run: arguments, times, request count."}
-      ]
+        {
+          "name": "responses",
+          "rows": 40243,
+          "purpose": "Every REST response, compressed, keyed by host, kind and key."
+        },
+        {
+          "name": "week_progress",
+          "rows": 487,
+          "purpose": "Per ISO week: when it was listed and when all its NoteDb refs were fetched."
+        },
+        {
+          "name": "week_changes",
+          "rows": 1560147,
+          "purpose": "Which listing response holds each CL of each week."
+        },
+        {
+          "name": "open_listings",
+          "rows": 2,
+          "purpose": "Open-CL snapshots and their progress."
+        },
+        {
+          "name": "open_changes",
+          "rows": 75446,
+          "purpose": "Which listing response holds each CL of an open snapshot."
+        },
+        {
+          "name": "extract_runs",
+          "rows": 695,
+          "purpose": "One row per extractor run: arguments, times, request count."
+        }
+      ],
+      "notes": "Never delete either, never prune or gc notedb/. Lossless repacks only (cosh notedb-maintain, scripts/notedb_chunked_repack.sh). Comment text is untrusted."
     },
     {
-      "id": "data/private/notedb/", "group": "gerrit", "path": "data/private/notedb/", "kind": "git-repo", "tier": "raw",
-      "tracked_in_git": false, "rebuildable": false, "never_delete": true,
-      "size": "11.4 GB in 14 packs, plus 12 GB of old packs set aside", "size_as_of": "2026-11-12",
-      "files": "One bare repo, chromium_src.git, with a ref refs/meta/<CL> per fetched CL (about 716k). repack-20261112/old-packs holds the packs from before the 2026-11-12 repack until a person deletes them.",
-      "purpose": "NoteDb history of every fetched CL: the only local copy of review comment text and review events.",
-      "notes": "Never prune or gc. Lossless repacks only (cosh notedb-maintain, scripts/notedb_chunked_repack.sh). Comment text is untrusted."
-    },
-    {
-      "id": "data/private/derived.sqlite", "group": "gerrit", "path": "data/private/derived.sqlite", "kind": "sqlite", "tier": "derived",
-      "tracked_in_git": false, "rebuildable": true,
-      "size": "2.4 GB", "size_as_of": "2026-11-12",
+      "id": "data/private/derived.sqlite",
+      "path": "data/private/derived.sqlite",
+      "kind": "sqlite",
+      "tier": "derived",
+      "tracked_in_git": false,
+      "rebuildable": true,
+      "size": "1.7 GB",
+      "size_as_of": "2026-11-12",
       "purpose": "Per-CL, per-comment and per-thread facts without comment text; the input to nearly every analysis.",
       "tables": [
-        {"name": "changes", "rows": 1607484, "purpose": "One row per CL: branch, owner, status, times, close week, size, bot flag."},
-        {"name": "comments", "rows": 3728137, "purpose": "One row per published comment by someone other than the owner on a human-owned CL: week, path, length, AI flag."},
-        {"name": "threads", "rows": 3062560, "purpose": "Reviewer-started threads: size, owner's last reply, the regex verdict and the hash that keys labels."},
-        {"name": "accounts", "rows": 15566, "purpose": "Gerrit accounts: e-mail, name, bot flag."},
-        {"name": "committers", "rows": 6570, "purpose": "Which accounts may vote Code-Review, as of the newest listing."},
-        {"name": "meta", "rows": 6, "purpose": "Metric version, fetched weeks, when it was derived."}
+        {
+          "name": "changes",
+          "rows": 1607484,
+          "purpose": "One row per CL: branch, owner, status, times, close week, size, bot flag."
+        },
+        {
+          "name": "comments",
+          "rows": 3728137,
+          "purpose": "One row per published comment by someone other than the owner on a human-owned CL: week, path, length, AI flag."
+        },
+        {
+          "name": "threads",
+          "rows": 3062560,
+          "purpose": "Reviewer-started threads: size, owner's last reply, the regex verdict and the hash that keys labels."
+        },
+        {
+          "name": "accounts",
+          "rows": 15566,
+          "purpose": "Gerrit accounts: e-mail, name, bot flag."
+        },
+        {
+          "name": "committers",
+          "rows": 6570,
+          "purpose": "Which accounts may vote Code-Review, as of the newest listing."
+        },
+        {
+          "name": "meta",
+          "rows": 6,
+          "purpose": "Metric version, fetched weeks, when it was derived."
+        }
       ],
-      "notes": "Rebuild: rm it, then `python3 -m cosh derive`. derived.prev.sqlite (2.1 GB) beside it is a leftover of the 2026-11-12 rebuild that no code reads."
+      "notes": "Rebuild: rm it, then `python3 -m cosh derive` (about 9 min)."
     },
     {
-      "id": "data/private/labels.sqlite", "group": "gerrit", "path": "data/private/labels.sqlite", "kind": "sqlite", "tier": "labels",
-      "tracked_in_git": false, "rebuildable": false, "never_delete": true,
-      "size": "22 MB", "size_as_of": "2026-11-12",
+      "id": "data/private/labels.sqlite",
+      "path": "data/private/labels.sqlite",
+      "kind": "sqlite",
+      "tier": "labels",
+      "tracked_in_git": false,
+      "rebuildable": false,
+      "never_delete": true,
+      "size": "22 MB",
+      "size_as_of": "2026-11-12",
       "purpose": "Haiku's addressed / not-addressed label for each review thread the regex doesn't settle.",
       "tables": [
-        {"name": "labels", "rows": 517058, "purpose": "Addressed 0/1 per thread, classifier and input hash."},
-        {"name": "classifiers", "rows": 1, "purpose": "Model, definition version and prompt hash; the newest matching the code is active."},
-        {"name": "runs", "rows": 17, "purpose": "Each classify run's weeks, threads, calls, tokens and cost."}
+        {
+          "name": "labels",
+          "rows": 517058,
+          "purpose": "Addressed 0/1 per thread, classifier and input hash."
+        },
+        {
+          "name": "classifiers",
+          "rows": 1,
+          "purpose": "Model, definition version and prompt hash; the newest matching the code is active."
+        },
+        {
+          "name": "runs",
+          "rows": 17,
+          "purpose": "Each classify run's weeks, threads, calls, tokens and cost."
+        }
       ],
       "notes": "Covers 2022-W01 .. 2026-W44; the user doesn't want labels for 2017 .. 2021."
     },
     {
-      "id": "data/private/settings.json", "group": "gerrit", "path": "data/private/settings.json", "kind": "json", "tier": "config",
-      "tracked_in_git": false, "rebuildable": false,
-      "size": "under 1 KB", "size_as_of": "2026-11-12",
-      "purpose": "The contact e-mail sent with every request; fetching commands fail without it."
+      "id": "config/approved.json",
+      "path": "config/approved.json",
+      "kind": "json",
+      "tier": "config",
+      "tracked_in_git": true,
+      "rebuildable": false,
+      "size": "under 2 KB",
+      "size_as_of": "2026-11-13",
+      "purpose": "The fetch ranges the user has approved; extract, backfill, patchsets and cosh.bugs refuse anything outside them.",
+      "notes": "Widen a range only after the user approves, with a docs/plan.md decision in the same commit."
     },
     {
-      "id": "config/affiliations.json5", "group": "gerrit", "path": "config/affiliations.json5", "kind": "text", "tier": "config",
-      "tracked_in_git": true, "git_paths": ["config/affiliations.json5", "config/affiliations.source.txt"], "rebuildable": true,
-      "size": "20 KB", "size_as_of": "2026-11-12",
+      "id": "config/affiliations.json5",
+      "path": "config/affiliations.json5",
+      "kind": "text",
+      "tier": "raw",
+      "tracked_in_git": true,
+      "git_paths": [
+        "config/affiliations.json5",
+        "config/affiliations.source.txt"
+      ],
+      "rebuildable": true,
+      "size": "20 KB",
+      "size_as_of": "2026-11-12",
       "purpose": "Verbatim copy of Chromium's affiliations file, with a note of where and when it was fetched.",
-      "notes": "Any command that attributes orgs may rewrite it; commit it with the outputs when it changes."
+      "notes": "Written by the affiliations step, which every command that attributes orgs runs by itself (COSH_AFFILIATIONS_OFFLINE=1 skips it). Commit it with the outputs when it changes."
     },
     {
-      "id": "config/bots.txt", "group": "gerrit", "path": "config/bots.txt", "kind": "text", "tier": "config",
-      "tracked_in_git": true, "rebuildable": false,
-      "size": "under 4 KB", "size_as_of": "2026-11-12",
+      "id": "config/bots.txt",
+      "path": "config/bots.txt",
+      "kind": "text",
+      "tier": "config",
+      "tracked_in_git": true,
+      "rebuildable": false,
+      "size": "under 4 KB",
+      "size_as_of": "2026-11-12",
       "purpose": "Hand-kept e-mail patterns that mark bot accounts and bot commit authors."
     },
     {
-      "id": "config/paths.txt", "group": "gerrit", "path": "config/paths.txt", "kind": "text", "tier": "config",
-      "tracked_in_git": true, "rebuildable": false,
-      "size": "under 4 KB", "size_as_of": "2026-11-12",
+      "id": "config/paths.txt",
+      "path": "config/paths.txt",
+      "kind": "text",
+      "tier": "config",
+      "tracked_in_git": true,
+      "rebuildable": false,
+      "size": "under 4 KB",
+      "size_as_of": "2026-11-12",
       "purpose": "Hand-kept directory rules: which paths the contribution metrics count, and the directory tree's roots."
     },
     {
-      "id": "summaries/value-exchange", "group": "gerrit", "path": "summaries/", "name": "Value Exchange summaries", "kind": "json", "tier": "published",
+      "id": "summaries/value-exchange",
+      "path": "summaries/",
+      "name": "Value Exchange summaries",
+      "kind": "json",
+      "tier": "published",
       "tracked_in_git": true,
-      "git_paths": ["summaries/org_weekly.json", "summaries/weekly_totals.csv", "summaries/reviewer_weekly.json", "summaries/author_weekly.json", "summaries/area_weekly.json", "summaries/area_reviewers.json", "summaries/area_commits.json", "summaries/area_authors.json", "summaries/thread_examples.json", "summaries/classifier_prompt.json"],
+      "git_paths": [
+        "summaries/org_weekly.json",
+        "summaries/weekly_totals.csv",
+        "summaries/reviewer_weekly.json",
+        "summaries/author_weekly.json",
+        "summaries/area_weekly.json",
+        "summaries/area_reviewers.json",
+        "summaries/area_commits.json",
+        "summaries/area_authors.json",
+        "summaries/thread_examples.json",
+        "summaries/classifier_prompt.json"
+      ],
       "rebuildable": true,
-      "size": "88 MB in 10 files", "size_as_of": "2026-11-12",
+      "size": "88 MB in 10 files",
+      "size_as_of": "2026-11-12",
       "purpose": "Weekly contribution by organisation, person and directory for all 487 fetched weeks: everything Value Exchange shows except usage.",
       "tables": [
-        {"name": "org_weekly.json", "purpose": "Per week and org: reviewers, CLs, comments, addressed comments, commits; plus the meta block. 3.4 MB."},
-        {"name": "weekly_totals.csv", "purpose": "Per week: CLs merged, abandoned, by humans and bots."},
-        {"name": "reviewer_weekly.json", "purpose": "Every reviewer's weekly counts, for the leaderboard. 4.8 MB."},
-        {"name": "author_weekly.json", "purpose": "Every commit author's weekly commits. 5.0 MB."},
-        {"name": "area_weekly.json", "purpose": "Comments per week, directory and org. 12 MB."},
-        {"name": "area_reviewers.json", "purpose": "Who wrote each directory's comments. 16 MB."},
-        {"name": "area_commits.json", "purpose": "Commits per week, directory and org. 14 MB."},
-        {"name": "area_authors.json", "purpose": "Who made each directory's commits. 32 MB."},
-        {"name": "thread_examples.json", "purpose": "Example threads per outcome, with comment text (untrusted). 0.4 MB."},
-        {"name": "classifier_prompt.json", "purpose": "The addressed-classifier prompt, shown on the page."}
+        {
+          "name": "org_weekly.json",
+          "purpose": "Per week and org: reviewers, CLs, comments, addressed comments, commits; plus the meta block. 3.4 MB."
+        },
+        {
+          "name": "weekly_totals.csv",
+          "purpose": "Per week: CLs merged, abandoned, by humans and bots."
+        },
+        {
+          "name": "reviewer_weekly.json",
+          "purpose": "Every reviewer's weekly counts, for the leaderboard. 4.8 MB."
+        },
+        {
+          "name": "author_weekly.json",
+          "purpose": "Every commit author's weekly commits. 5.0 MB."
+        },
+        {
+          "name": "area_weekly.json",
+          "purpose": "Comments per week, directory and org. 12 MB."
+        },
+        {
+          "name": "area_reviewers.json",
+          "purpose": "Who wrote each directory's comments. 16 MB."
+        },
+        {
+          "name": "area_commits.json",
+          "purpose": "Commits per week, directory and org. 14 MB."
+        },
+        {
+          "name": "area_authors.json",
+          "purpose": "Who made each directory's commits. 32 MB."
+        },
+        {
+          "name": "thread_examples.json",
+          "purpose": "Example threads per outcome, with comment text (untrusted). 0.4 MB."
+        },
+        {
+          "name": "classifier_prompt.json",
+          "purpose": "The addressed-classifier prompt, shown on the page."
+        }
       ]
     },
     {
-      "id": "docs/audits/", "group": "gerrit", "path": "docs/audits/", "kind": "directory", "tier": "analysis",
-      "tracked_in_git": true, "git_paths": ["docs/audits/*"], "rebuildable": false,
-      "size": "740 KB", "size_as_of": "2026-11-12",
+      "id": "docs/audits/",
+      "path": "docs/audits/",
+      "kind": "directory",
+      "tier": "analysis",
+      "tracked_in_git": true,
+      "git_paths": [
+        "docs/audits/*"
+      ],
+      "rebuildable": false,
+      "size": "740 KB",
+      "size_as_of": "2026-11-12",
       "files": "classifier-2026-11-04.jsonl and classifier-2026-11-04-threads.jsonl.",
       "purpose": "The 800-thread audit of the addressed classifier: the threads and Opus's labels, so it can be rerun."
     },
-
     {
-      "id": "data/private/git/chromium-patchsets.git/", "group": "git", "path": "data/private/git/chromium-patchsets.git/", "kind": "git-repo", "tier": "raw",
-      "tracked_in_git": false, "rebuildable": false, "never_delete": true,
-      "size": "19 GB in 4 packs", "size_as_of": "2026-11-12",
+      "id": "data/private/git/chromium-patchsets.git/",
+      "name": "Patch-set commits",
+      "path": "data/private/git/chromium-patchsets.git/",
+      "kind": "git-repo",
+      "tier": "raw",
+      "tracked_in_git": false,
+      "rebuildable": false,
+      "never_delete": true,
+      "size": "19 GB in 4 packs",
+      "size_as_of": "2026-11-12",
       "files": "Bare repo with refs/patchsets/<CL>/<ps>; main's objects come from the shared clone through git alternates.",
       "purpose": "Every patch-set commit of reviewed CLs with its blobs, for diffing one patch set against the next.",
-      "notes": "Never prune. A whole-repo repack runs out of memory: repack in groups (scripts/patchsets_chunked_repack.sh)."
+      "notes": "Never prune. A whole-repo repack runs out of memory: repack in groups (scripts/patchsets_chunked_repack.sh). The W44 pilot repo (chromium-src.git) was retired on 2026-11-13: all its objects are here; its ref names are kept in data/private/git/chromium-src-pilot-refs.txt."
     },
     {
-      "id": "data/private/git/chromium-src.git/", "group": "git", "path": "data/private/git/chromium-src.git/", "kind": "git-repo", "tier": "raw",
-      "tracked_in_git": false, "rebuildable": false, "never_delete": true,
-      "size": "under 0.5 GB", "size_as_of": "2026-11-12",
-      "purpose": "The pilot patch-set repo: blob-less patch-set commits of 2026-W44 only, superseded by chromium-patchsets.git.",
-      "notes": "Read only by exploratory balance scripts. Use chromium-patchsets.git for patch sets."
-    },
-
-    {
-      "id": "data/public/radar/raw/", "group": "usage", "path": "data/public/radar/raw/", "kind": "directory", "tier": "raw",
-      "tracked_in_git": true, "git_paths": ["data/public/radar/raw/*"], "rebuildable": false,
-      "size": "1.7 MB in 43 files", "size_as_of": "2026-11-12",
+      "id": "data/public/radar/raw/",
+      "path": "data/public/radar/raw/",
+      "kind": "directory",
+      "tier": "raw",
+      "tracked_in_git": true,
+      "git_paths": [
+        "data/public/radar/raw/*"
+      ],
+      "rebuildable": false,
+      "size": "1.7 MB in 43 files",
+      "size_as_of": "2026-11-12",
       "files": "<series>_all_1d_<start>_<end>.json, one per calendar quarter, for series browser, browser_ios and os.",
       "purpose": "Verbatim cache of every Radar response, committed so the share CSV can be rebuilt offline.",
       "notes": "A refresh rewrites the three files of the current quarter."
     },
     {
-      "id": "data/public/radar/adhoc/", "group": "usage", "path": "data/public/radar/adhoc/", "kind": "directory", "tier": "analysis",
-      "tracked_in_git": true, "git_paths": ["data/public/radar/adhoc/**"], "rebuildable": false,
-      "size": "0.9 MB in 119 files", "size_as_of": "2026-11-12",
+      "id": "data/public/radar/adhoc/",
+      "path": "data/public/radar/adhoc/",
+      "kind": "directory",
+      "tier": "analysis",
+      "tracked_in_git": true,
+      "git_paths": [
+        "data/public/radar/adhoc/**"
+      ],
+      "rebuildable": false,
+      "size": "0.9 MB in 119 files",
+      "size_as_of": "2026-11-12",
       "purpose": "A one-off probe of a jump in Radar's ChromeDerivative share, behind docs/radar-research.md.",
       "notes": "Written by the two scripts inside it. Nothing reads it."
     },
     {
-      "id": "data/public/radar_browser_share.csv", "group": "usage", "path": "data/public/radar_browser_share.csv", "kind": "csv", "tier": "published",
-      "tracked_in_git": true, "rebuildable": true,
-      "size": "636 KB, 8,233 rows", "size_as_of": "2026-11-12",
+      "id": "data/public/radar_browser_share.csv",
+      "name": "Browser shares (Radar)",
+      "path": "data/public/radar_browser_share.csv",
+      "kind": "csv",
+      "tier": "published",
+      "tracked_in_git": true,
+      "rebuildable": true,
+      "size": "636 KB, 8,233 rows",
+      "size_as_of": "2026-11-12",
       "purpose": "Each browser's weekly and monthly share of requests, with iOS removed and renormalised among Chromium browsers."
     },
     {
-      "id": "config/browsers.csv", "group": "usage", "path": "config/browsers.csv", "kind": "csv", "tier": "config",
-      "tracked_in_git": true, "rebuildable": false,
-      "size": "under 4 KB", "size_as_of": "2026-11-12",
+      "id": "config/browsers.csv",
+      "path": "config/browsers.csv",
+      "kind": "csv",
+      "tier": "config",
+      "tracked_in_git": true,
+      "rebuildable": false,
+      "size": "under 4 KB",
+      "size_as_of": "2026-11-12",
       "purpose": "Hand-kept list of Radar's browser names: which are Chromium-based and which count in the usage denominator."
     },
     {
-      "id": "config/org_browsers.csv", "group": "usage", "path": "config/org_browsers.csv", "kind": "csv", "tier": "published",
-      "tracked_in_git": true, "rebuildable": false,
-      "size": "under 4 KB", "size_as_of": "2026-11-12",
-      "purpose": "Hand-kept map from each organisation to the browsers credited to it; the page joins usage to orgs with it.",
-      "notes": "Config that the page reads directly, so it is also a published file."
-    },
-
-    {
-      "id": "data/private/sentiment/", "group": "sentiment", "path": "data/private/sentiment/", "kind": "directory", "tier": "derived",
-      "tracked_in_git": false, "rebuildable": true,
-      "size": "1.1 GB", "size_as_of": "2026-11-12",
-      "files": "comments-<week>.jsonl (52 weeks), comments-sample-5pct.jsonl, gold.jsonl (tuning labels), tune-*.json, logs.",
-      "purpose": "Review comments rendered for tone scoring, with their thread context: one file per week and one 5% sample.",
-      "notes": "Holds untrusted comment text. gold.jsonl is not rebuildable. Two commands write the same week files, with and without identities."
+      "id": "config/org_browsers.csv",
+      "path": "config/org_browsers.csv",
+      "kind": "csv",
+      "tier": "config",
+      "tracked_in_git": true,
+      "rebuildable": false,
+      "size": "under 4 KB",
+      "size_as_of": "2026-11-12",
+      "purpose": "Hand-kept map from each organisation to the browsers credited to it; the page joins usage to orgs with it."
     },
     {
-      "id": "data/private/sentiment.sqlite", "group": "sentiment", "path": "data/private/sentiment.sqlite", "kind": "sqlite", "tier": "labels",
-      "tracked_in_git": false, "rebuildable": false, "never_delete": true,
-      "size": "51 MB", "size_as_of": "2026-11-12",
-      "purpose": "Haiku's tone score (-1 .. +1) and AI-friction flag for each scored comment.",
+      "id": "data/private/sentiment/",
+      "path": "data/private/sentiment/",
+      "kind": "directory",
+      "tier": "derived",
+      "tracked_in_git": false,
+      "rebuildable": true,
+      "size": "1.1 GB",
+      "size_as_of": "2026-11-12",
+      "files": "comments-<week>.jsonl (52 weeks) and comments-sample-5pct.jsonl, with identities.",
+      "purpose": "Review comments rendered with their thread context and who wrote them: the input to scoring, praise and the Feedback Index's excerpts.",
+      "notes": "Holds untrusted comment text. One writer (comments-collect).",
+      "name": "Rendered comments"
+    },
+    {
+      "id": "data/private/sentiment.sqlite",
+      "path": "data/private/sentiment.sqlite",
+      "kind": "sqlite",
+      "tier": "labels",
+      "tracked_in_git": false,
+      "rebuildable": false,
+      "never_delete": true,
+      "size": "51 MB",
+      "size_as_of": "2026-11-12",
+      "purpose": "Haiku's tone score (-1 .. +1) and AI-friction flag for each scored comment, and the cached identifying-detail screening verdicts.",
       "tables": [
-        {"name": "scores", "rows": 1019335, "purpose": "Score, AI flag and the model's reason per comment, prompt and input hash."},
-        {"name": "prompts", "rows": 1, "purpose": "The prompt version, hash and model the scores were made with."}
+        {
+          "name": "scores",
+          "rows": 1019335,
+          "purpose": "Score, AI flag and the model's reason per comment, prompt and input hash."
+        },
+        {
+          "name": "prompts",
+          "rows": 1,
+          "purpose": "The prompt version, hash and model the scores were made with."
+        },
+        {
+          "name": "screens",
+          "rows": null,
+          "purpose": "Screening verdicts (does a comment identify someone), keyed by comment and screen prompt; written by tone-publish as a cache."
+        }
       ],
-      "notes": "Per-comment reasons stay private."
+      "notes": "Per-comment reasons stay private.",
+      "name": "Comment scores"
     },
     {
-      "id": "scripts/sentiment_prompts/", "group": "sentiment", "path": "scripts/sentiment_prompts/", "kind": "text", "tier": "config",
-      "tracked_in_git": true, "git_paths": ["scripts/sentiment_prompts/*.txt"], "rebuildable": false,
-      "size": "under 20 KB", "size_as_of": "2026-11-12",
+      "id": "data/private/sentiment/tune",
+      "name": "Prompt-tuning results",
+      "path": "data/private/sentiment/{gold.jsonl,tune-*.json}",
+      "kind": "json",
+      "tier": "analysis",
+      "tracked_in_git": false,
+      "rebuildable": false,
+      "size": "under 1 MB",
+      "size_as_of": "2026-11-12",
+      "purpose": "The 261 hand-labelled gold comments (ids and scores, no text) and each prompt version's scores against them.",
+      "notes": "gold.jsonl is hand-made and not rebuildable; it stays private (docs/sentiment.md)."
+    },
+    {
+      "id": "scripts/sentiment_prompts/",
+      "name": "Scoring prompts",
+      "path": "scripts/sentiment_prompts/",
+      "kind": "text",
+      "tier": "config",
+      "tracked_in_git": true,
+      "git_paths": [
+        "scripts/sentiment_prompts/*.txt"
+      ],
+      "rebuildable": false,
+      "size": "under 20 KB",
+      "size_as_of": "2026-11-12",
       "files": "v1.txt, v2.txt and v3.txt (current).",
       "purpose": "The tone-scoring prompts; the page shows v3.",
       "notes": "Editing the current prompt changes its hash, so every comment would need rescoring."
     },
     {
-      "id": "summaries/sentiment_monthly*.json", "group": "sentiment", "path": "summaries/sentiment_monthly*.json", "kind": "json", "tier": "published",
-      "tracked_in_git": true, "git_paths": ["summaries/sentiment_monthly.json", "summaries/sentiment_monthly.everyone.json", "summaries/sentiment_monthly.noncommitters.json"], "rebuildable": true,
-      "size": "88 KB in 3 files", "size_as_of": "2026-11-12",
-      "purpose": "Monthly tone trend: mean score and shares of glowing, grumpy and AI-friction comments.",
-      "notes": "Each sentiment family has three files: committers (no suffix), .everyone and .noncommitters."
+      "id": "summaries/sentiment",
+      "name": "Review Tone summaries",
+      "path": "summaries/sentiment_*.json",
+      "kind": "json",
+      "tier": "published",
+      "tracked_in_git": true,
+      "git_paths": [
+        "summaries/sentiment_monthly.json",
+        "summaries/sentiment_monthly.everyone.json",
+        "summaries/sentiment_monthly.noncommitters.json",
+        "summaries/sentiment_praise.json",
+        "summaries/sentiment_praise.everyone.json",
+        "summaries/sentiment_praise.noncommitters.json",
+        "summaries/sentiment_samples.json",
+        "summaries/sentiment_samples.everyone.json",
+        "summaries/sentiment_samples.noncommitters.json",
+        "summaries/sentiment_recent.json",
+        "summaries/sentiment_recent.everyone.json",
+        "summaries/sentiment_recent.noncommitters.json",
+        "summaries/sentiment_comments.json",
+        "summaries/sentiment_comments.everyone.json",
+        "summaries/sentiment_comments.noncommitters.json",
+        "summaries/sentiment_people.json"
+      ],
+      "rebuildable": true,
+      "size": "10.8 MB in 16 files",
+      "size_as_of": "2026-11-12",
+      "purpose": "Everything Review Tone shows: the monthly trend, praise boards, sample comments, per-period detail and the person-search list. Negative comments only anonymously.",
+      "tables": [
+        {
+          "name": "sentiment_monthly*.json",
+          "purpose": "Monthly tone trend: mean score and shares of glowing, grumpy and AI-friction comments."
+        },
+        {
+          "name": "sentiment_praise*.json",
+          "purpose": "Praise leaderboards and who-praises-whom counts, by person; positive totals only."
+        },
+        {
+          "name": "sentiment_samples*.json",
+          "purpose": "Sample comments per tone band: praise with links, negative ones anonymous after screening."
+        },
+        {
+          "name": "sentiment_{recent,comments}*.json",
+          "purpose": "The score distribution per period, the anonymous AI-friction comments, and each person's praise comments for the name popups."
+        },
+        {
+          "name": "sentiment_people.json",
+          "purpose": "Names and e-mails of the people on the praise boards, for the page's person search."
+        }
+      ],
+      "notes": "Each family but sentiment_people has three files: committers (no suffix), .everyone and .noncommitters."
     },
     {
-      "id": "summaries/sentiment_praise*.json", "group": "sentiment", "path": "summaries/sentiment_praise*.json", "kind": "json", "tier": "published",
-      "tracked_in_git": true, "git_paths": ["summaries/sentiment_praise.json", "summaries/sentiment_praise.everyone.json", "summaries/sentiment_praise.noncommitters.json"], "rebuildable": true,
-      "size": "3.4 MB in 3 files", "size_as_of": "2026-11-12",
-      "purpose": "Praise leaderboards and who-praises-whom counts, by person; positive totals only."
+      "id": "shared/chromium",
+      "name": "Chromium git clone",
+      "path": "~/projects/shared/chromium",
+      "kind": "git-repo",
+      "tier": "raw",
+      "tracked_in_git": false,
+      "rebuildable": false,
+      "never_delete": true,
+      "size": "69 GB",
+      "size_as_of": "2026-11-12",
+      "purpose": "Bare mirror of chromium/src main with full blobs, shared across argus's projects; cosh only reads it and fetches main into it.",
+      "notes": "Outside cosh (~/projects/shared/README.md): keep it a clean mirror, no cosh refs or local edits, never prune or gc. cosh's patch-set repo borrows its objects through git alternates. Read it with GIT_NO_LAZY_FETCH=1."
     },
     {
-      "id": "summaries/sentiment_samples*.json", "group": "sentiment", "path": "summaries/sentiment_samples*.json", "kind": "json", "tier": "published",
-      "tracked_in_git": true, "git_paths": ["summaries/sentiment_samples.json", "summaries/sentiment_samples.everyone.json", "summaries/sentiment_samples.noncommitters.json"], "rebuildable": true,
-      "size": "224 KB in 3 files", "size_as_of": "2026-11-12",
-      "purpose": "Sample comments per tone band: praise with links, negative ones anonymous after screening."
-    },
-    {
-      "id": "summaries/sentiment_recent*.json", "group": "sentiment", "path": "summaries/sentiment_{recent,comments}*.json", "kind": "json", "tier": "published",
-      "tracked_in_git": true, "git_paths": ["summaries/sentiment_recent.json", "summaries/sentiment_recent.everyone.json", "summaries/sentiment_recent.noncommitters.json", "summaries/sentiment_comments.json", "summaries/sentiment_comments.everyone.json", "summaries/sentiment_comments.noncommitters.json"], "rebuildable": true,
-      "size": "6.9 MB in 6 files", "size_as_of": "2026-11-12",
-      "purpose": "The score distribution per period, the anonymous AI-friction comments, and each person's praise comments for the name popups."
-    },
-    {
-      "id": "summaries/sentiment_people.json", "group": "sentiment", "path": "summaries/sentiment_people.json", "kind": "json", "tier": "published",
-      "tracked_in_git": true, "rebuildable": true,
-      "size": "151 KB", "size_as_of": "2026-11-12",
-      "purpose": "Names and e-mails of the people on the praise boards, for the page's person search."
-    },
-
-    {
-      "id": "data/private/commits.sqlite", "group": "git", "path": "data/private/commits.sqlite", "kind": "sqlite", "tier": "derived",
-      "tracked_in_git": false, "rebuildable": true,
-      "size": "1.1 GB", "size_as_of": "2026-11-12",
+      "id": "data/private/commits.sqlite",
+      "path": "data/private/commits.sqlite",
+      "kind": "sqlite",
+      "tier": "derived",
+      "tracked_in_git": false,
+      "rebuildable": true,
+      "size": "1.1 GB",
+      "size_as_of": "2026-11-12",
       "purpose": "Every first-parent commit of main since 2008 with its files and line counts, OWNERS additions and repetition ratios: the one store of git history that every step reads.",
       "tables": [
-        {"name": "commits", "rows": 1676752, "purpose": "Commits: author, times, CL, Reviewed-by, reverts, relands, Bot-Commit and AI-marker flags, files and lines. commit_id counts up from 1 at 2017-01-01 and down from -1 before."},
-        {"name": "commit_files", "rows": 13556620, "purpose": "Files per commit with line counts."},
-        {"name": "paths", "rows": 1642612, "purpose": "Path dictionary for commit_files."},
-        {"name": "owners_added", "rows": 42496, "purpose": "Each address on a line added to an OWNERS file."},
-        {"name": "repetition", "rows": 173608, "purpose": "Repetition ratio of each commit with a CL and 10 or more files (mechanical CLs)."},
-        {"name": "gcommits", "rows": 1297442, "purpose": "View: the commits since 2017-01-01 (commit_id > 0), the balance analyses' window."},
-        {"name": "gfiles", "rows": 10216159, "purpose": "View: their files."}
+        {
+          "name": "commits",
+          "rows": 1676752,
+          "purpose": "Commits: author, times, CL, Reviewed-by, reverts, relands, Bot-Commit and AI-marker flags, files and lines. commit_id counts up from 1 at 2017-01-01 and down from -1 before."
+        },
+        {
+          "name": "commit_files",
+          "rows": 13556620,
+          "purpose": "Files per commit with line counts."
+        },
+        {
+          "name": "paths",
+          "rows": 1642612,
+          "purpose": "Path dictionary for commit_files."
+        },
+        {
+          "name": "owners_added",
+          "rows": 42496,
+          "purpose": "Each address on a line added to an OWNERS file."
+        },
+        {
+          "name": "repetition",
+          "rows": 173608,
+          "purpose": "Repetition ratio of each commit with a CL and 10 or more files (mechanical CLs)."
+        },
+        {
+          "name": "gcommits",
+          "rows": 1297442,
+          "purpose": "View: the commits since 2017-01-01 (commit_id > 0), the per-CL window."
+        },
+        {
+          "name": "gfiles",
+          "rows": 10216159,
+          "purpose": "View: their files."
+        }
       ],
-      "notes": "Replaces balance-git.sqlite, derived.sqlite's commits tables and the hand-made first_commit.txt, owners_added.txt, ai_marked.txt and mech.jsonl (docs/commits.md). $COSH_COMMITS_DB overrides the path."
+      "notes": "Rebuildable: delete it and rerun (about 1 h 50 min). $COSH_COMMITS_DB overrides the path (docs/commits.md)."
     },
     {
-      "id": "data/private/balance-timeline.sqlite", "group": "balance", "path": "data/private/balance-timeline.sqlite", "kind": "sqlite", "tier": "derived",
-      "tracked_in_git": false, "rebuildable": true,
-      "size": "530 MB", "size_as_of": "2026-11-12",
+      "id": "data/private/balance-timeline.sqlite",
+      "path": "data/private/balance-timeline.sqlite",
+      "kind": "sqlite",
+      "tier": "derived",
+      "tracked_in_git": false,
+      "rebuildable": true,
+      "size": "530 MB",
+      "size_as_of": "2026-11-12",
       "purpose": "Each CL's patch-set uploads, attention-set changes and Code-Review votes, read from its NoteDb event log in one walk.",
       "tables": [
-        {"name": "uploads", "rows": 4682336, "purpose": "One row per uploaded patch set: who and when."},
-        {"name": "attention", "rows": 3698365, "purpose": "Attention-set changes: whose turn it was and when."},
-        {"name": "votes", "rows": 2250353, "purpose": "Code-Review vote events: who, when, value, patch set."},
-        {"name": "timeline_done", "rows": 715564, "purpose": "CLs read, with their meta ref's tip then; a CL whose tip moved is read again."}
+        {
+          "name": "uploads",
+          "rows": 4682336,
+          "purpose": "One row per uploaded patch set: who and when."
+        },
+        {
+          "name": "attention",
+          "rows": 3698365,
+          "purpose": "Attention-set changes: whose turn it was and when."
+        },
+        {
+          "name": "votes",
+          "rows": 2250353,
+          "purpose": "Code-Review vote events: who, when, value, patch set."
+        },
+        {
+          "name": "timeline_done",
+          "rows": 715564,
+          "purpose": "CLs read, with their meta ref's tip then; a CL whose tip moved is read again."
+        }
       ]
     },
     {
-      "id": "data/private/balance-interdiff.sqlite", "group": "balance", "path": "data/private/balance-interdiff.sqlite", "kind": "sqlite", "tier": "derived",
-      "tracked_in_git": false, "rebuildable": true,
-      "size": "7.5 MB", "size_as_of": "2026-11-12",
+      "id": "data/private/balance-interdiff.sqlite",
+      "path": "data/private/balance-interdiff.sqlite",
+      "kind": "sqlite",
+      "tier": "derived",
+      "tracked_in_git": false,
+      "rebuildable": true,
+      "size": "7.5 MB",
+      "size_as_of": "2026-11-12",
       "purpose": "Lines changed between consecutive patch sets: how much each CL was reworked during review.",
-      "tables": [{"name": "interdiff", "rows": 273754, "purpose": "Per CL and patch-set pair: lines added and deleted, files."}]
+      "tables": [
+        {
+          "name": "interdiff",
+          "rows": 273754,
+          "purpose": "Per CL and patch-set pair: lines added and deleted, files."
+        }
+      ]
     },
     {
-      "id": "data/private/balance.sqlite", "group": "balance", "path": "data/private/balance.sqlite", "kind": "sqlite", "tier": "derived",
-      "tracked_in_git": false, "rebuildable": true,
-      "size": "307 MB", "size_as_of": "2026-11-12",
+      "id": "data/private/balance.sqlite",
+      "path": "data/private/balance.sqlite",
+      "kind": "sqlite",
+      "tier": "derived",
+      "tracked_in_git": false,
+      "rebuildable": true,
+      "size": "307 MB",
+      "size_as_of": "2026-11-12",
       "purpose": "One wide row per CL joining the stages: author and reviewer effort, latency, rework, comments, addressed labels.",
       "tables": [
-        {"name": "cl", "rows": 1140563, "purpose": "Per CL: 36 columns of size, timing, review and outcome facts."},
-        {"name": "cl_attention", "rows": 1049334, "purpose": "Per CL and person: time in the attention set."},
-        {"name": "cl_dirs", "rows": 2462386, "purpose": "Directories each CL touches."}
+        {
+          "name": "cl",
+          "rows": 1140563,
+          "purpose": "Per CL: 36 columns of size, timing, review and outcome facts."
+        },
+        {
+          "name": "cl_attention",
+          "rows": 1049334,
+          "purpose": "Per CL and person: time in the attention set."
+        },
+        {
+          "name": "cl_dirs",
+          "rows": 2462386,
+          "purpose": "Directories each CL touches."
+        }
       ]
     },
     {
-      "id": "data/private/ai_marked_broad.txt", "group": "balance", "path": "data/private/ai_marked_broad.txt", "kind": "text", "tier": "derived",
-      "tracked_in_git": false, "rebuildable": true,
-      "size": "140 KB", "size_as_of": "2026-11-12",
+      "id": "data/private/ai_marked_broad.txt",
+      "path": "data/private/ai_marked_broad.txt",
+      "kind": "text",
+      "tier": "derived",
+      "tracked_in_git": false,
+      "rebuildable": true,
+      "size": "140 KB",
+      "size_as_of": "2026-11-12",
       "purpose": "Commits on main whose message marks them as AI-assisted."
     },
     {
-      "id": "data/private/ai_predict/", "group": "balance", "path": "data/private/ai_predict/", "kind": "directory", "tier": "labels",
-      "tracked_in_git": false, "rebuildable": false, "never_delete": true,
-      "size": "202 MB", "size_as_of": "2026-11-12",
+      "id": "data/private/ai_predict/",
+      "path": "data/private/ai_predict/",
+      "kind": "directory",
+      "tier": "labels",
+      "tracked_in_git": false,
+      "rebuildable": false,
+      "never_delete": true,
+      "size": "202 MB",
+      "size_as_of": "2026-11-12",
       "files": "scores.sqlite (18 MB), descs.jsonl (the descriptions scored), and pilot result files.",
       "purpose": "Haiku's estimate, per CL description, of whether it was AI-written.",
       "tables": [
-        {"name": "scores", "rows": 171804, "purpose": "In scores.sqlite: one score per CL description."},
-        {"name": "runs", "rows": 2, "purpose": "In scores.sqlite: each scoring run's cost."}
+        {
+          "name": "scores",
+          "rows": 171804,
+          "purpose": "In scores.sqlite: one score per CL description."
+        },
+        {
+          "name": "runs",
+          "rows": 2,
+          "purpose": "In scores.sqlite: each scoring run's cost."
+        }
       ],
       "notes": "Only scores.sqlite costs tokens to remake; the rest is rebuildable."
     },
     {
-      "id": "data/private/balance_clusters/", "group": "balance", "path": "data/private/balance_clusters/", "kind": "directory", "tier": "derived",
-      "tracked_in_git": false, "rebuildable": true,
-      "size": "14 MB", "size_as_of": "2026-11-12",
+      "id": "data/private/balance_clusters/",
+      "path": "data/private/balance_clusters/",
+      "kind": "directory",
+      "tier": "derived",
+      "tracked_in_git": false,
+      "rebuildable": true,
+      "size": "14 MB",
+      "size_as_of": "2026-11-12",
       "files": "clusters.json, people.json, map.json.",
       "purpose": "Contributor clusters by working pattern, with a 2-D map of them."
     },
     {
-      "id": "data/private/balance_people/", "group": "balance", "path": "data/private/balance_people/", "kind": "directory", "tier": "analysis",
-      "tracked_in_git": false, "rebuildable": true,
-      "size": "760 KB", "size_as_of": "2026-11-12",
+      "id": "data/private/balance_people/",
+      "path": "data/private/balance_people/",
+      "kind": "directory",
+      "tier": "analysis",
+      "tracked_in_git": false,
+      "rebuildable": true,
+      "size": "760 KB",
+      "size_as_of": "2026-11-12",
       "purpose": "Per-person career reports for a few exemplar contributors; private drafts behind docs/balance-person.md."
     },
     {
-      "id": "summaries/balance.json", "group": "balance", "path": "summaries/balance.json", "kind": "json", "tier": "published",
-      "tracked_in_git": true, "rebuildable": true,
-      "size": "420 KB", "size_as_of": "2026-11-12",
+      "id": "summaries/balance.json",
+      "path": "summaries/balance.json",
+      "kind": "json",
+      "tier": "published",
+      "tracked_in_git": true,
+      "rebuildable": true,
+      "size": "420 KB",
+      "size_as_of": "2026-11-12",
       "purpose": "Every dataset the Review Balance page draws, as named aggregates with no per-person rows.",
-      "notes": "Written whole by balance-publish, whose STEPS list records the step behind each of its 92 datasets. Its window ends 2026-10 (balance_publish.DATA_END)."
+      "notes": "Written whole by balance-publish, whose STEPS list records the step behind each of its 92 datasets. Its window ends with the data (balance_publish.DATA_END: the first day of the month in which the newest fetched week ends)."
     },
     {
-      "id": "summaries/balance_dirs.json", "group": "balance", "path": "summaries/balance_dirs.json", "kind": "json", "tier": "published",
-      "tracked_in_git": true, "rebuildable": true,
-      "size": "218 KB, 388 rows", "size_as_of": "2026-11-12",
+      "id": "summaries/balance_dirs.json",
+      "path": "summaries/balance_dirs.json",
+      "kind": "json",
+      "tier": "published",
+      "tracked_in_git": true,
+      "rebuildable": true,
+      "size": "218 KB, 388 rows",
+      "size_as_of": "2026-11-12",
       "purpose": "Balance measures per directory, for the page's directory table."
     },
     {
-      "id": "summaries/balance_authors.json", "group": "balance", "path": "summaries/balance_authors.json", "kind": "json", "tier": "published",
-      "tracked_in_git": true, "rebuildable": true,
-      "size": "56 KB", "size_as_of": "2026-11-12",
+      "id": "summaries/balance_authors.json",
+      "path": "summaries/balance_authors.json",
+      "kind": "json",
+      "tier": "published",
+      "tracked_in_git": true,
+      "rebuildable": true,
+      "size": "56 KB",
+      "size_as_of": "2026-11-12",
       "purpose": "Author-level distributions for the page's author charts."
     },
-
     {
-      "id": "web/public/review-feedback/", "group": "feedback", "path": "web/public/review-feedback/", "kind": "directory", "tier": "published",
-      "tracked_in_git": true, "rebuildable": true,
-      "size": "126 MB (53 MB gzipped file by file, as git stores it)", "size_as_of": "2026-11-12",
+      "id": "web/public/review-feedback/",
+      "name": "Feedback Index files",
+      "path": "web/public/review-feedback/",
+      "kind": "directory",
+      "tier": "published",
+      "tracked_in_git": true,
+      "rebuildable": true,
+      "size": "126 MB (53 MB gzipped file by file, as git stores it)",
+      "size_as_of": "2026-11-12",
       "files": "peers.json, u/<hash>.json (6,902 people, 122 other addresses) and <half-year>/<hash>.json (19 folders, 2017H2 .. 2026H2; before 2025H2 thread counts per directory, not each thread); <hash> is a salted SHA-256 of the e-mail.",
       "purpose": "Per-person review feedback against peers, which the Feedback Index page fetches by a hash of the address typed.",
       "notes": "Committed and published on GitHub Pages since 2026-11-12. Finished half-years' files don't change between runs unless their inputs do, so git stores them once; each run rewrites the current half-year, u/ and peers.json. Commit with `git add -A web/public/review-feedback/`."
     },
     {
-      "id": "data/private/feedback-coach/", "group": "feedback", "path": "data/private/feedback-coach/", "kind": "directory", "tier": "labels",
-      "tracked_in_git": false, "rebuildable": false,
-      "size": "96 KB", "size_as_of": "2026-11-12",
+      "id": "data/private/feedback-coach/",
+      "path": "data/private/feedback-coach/",
+      "kind": "directory",
+      "tier": "labels",
+      "tracked_in_git": false,
+      "rebuildable": false,
+      "size": "96 KB",
+      "size_as_of": "2026-11-12",
       "files": "<e-mail>.md and <e-mail>.reply.json per report.",
       "purpose": "Private coaching reports that Opus writes from one person's review threads; never published."
     },
     {
-      "id": "data/private/review_roi/", "group": "feedback", "path": "data/private/review_roi/", "kind": "directory", "tier": "analysis",
-      "tracked_in_git": false, "rebuildable": true,
-      "size": "296 KB in 5 files, plus 18 KB in the 3 addressed_* files", "size_as_of": "2026-11-12",
+      "id": "data/private/review_roi/",
+      "path": "data/private/review_roi/",
+      "kind": "directory",
+      "tier": "analysis",
+      "tracked_in_git": false,
+      "rebuildable": true,
+      "size": "296 KB in 5 files, plus 18 KB in the 3 addressed_* files",
+      "size_as_of": "2026-11-12",
       "files": "part1_report.json, part1_results.json, part2_results.json, reverts_results.json, substance_results.json; addressed_cl.json, addressed_blame.json, addressed_people.json (scripts/balance_addressed_value.py cl, blame and people --out).",
       "purpose": "Result files of the review-ROI studies (does review feedback predict reverts and bugs) and of the addressed-index comparison, which balance-publish reads from these fixed names.",
-      "notes": "Copied here by hand from the scripts' scratch output (data/private/scratch/review_roi/ since 2026-11-12); rerunning the studies is an analysis, not part of a publish."
+      "notes": "Copied here from the scripts' output (data/private/scratch/review_roi/); rerunning the studies is an analysis, not part of a publish."
     },
-
     {
-      "id": "data/private/bugs/raw/", "group": "bugs", "path": "data/private/bugs/raw/", "kind": "directory", "tier": "raw",
-      "tracked_in_git": false, "rebuildable": false, "never_delete": true,
-      "size": "1.3 GB", "size_as_of": "2026-11-12",
+      "id": "data/private/scratch/",
+      "path": "data/private/scratch/",
+      "kind": "directory",
+      "tier": "analysis",
+      "tracked_in_git": false,
+      "rebuildable": true,
+      "size": null,
+      "purpose": "Scratch output of analysis scripts, one folder per topic; safe to delete."
+    },
+    {
+      "id": "data/private/bugs/raw/",
+      "path": "data/private/bugs/raw/",
+      "kind": "directory",
+      "tier": "raw",
+      "tracked_in_git": false,
+      "rebuildable": false,
+      "never_delete": true,
+      "size": "1.3 GB",
+      "size_as_of": "2026-11-12",
       "files": "list/<month>/<n>.json.gz (2,906 search replies) and monorail/<month>/<n>.html.gz (21,267 stubs).",
       "purpose": "Every tracker reply exactly as received.",
       "notes": "Bug titles are untrusted: print counts and enums only."
     },
     {
-      "id": "data/private/bugs/bugs.sqlite", "group": "bugs", "path": "data/private/bugs/bugs.sqlite", "kind": "sqlite", "tier": "raw",
-      "tracked_in_git": false, "rebuildable": false, "never_delete": true,
-      "size": "116 MB", "size_as_of": "2026-11-12",
+      "id": "data/private/bugs/bugs.sqlite",
+      "path": "data/private/bugs/bugs.sqlite",
+      "kind": "sqlite",
+      "tier": "raw",
+      "tracked_in_git": false,
+      "rebuildable": false,
+      "never_delete": true,
+      "size": "116 MB",
+      "size_as_of": "2026-11-12",
       "purpose": "Which bugs are wanted and asked for, the request log, and the parsed metadata of visible bugs.",
       "tables": [
-        {"name": "wanted", "rows": 147407, "purpose": "Bug IDs to ask for, with how many commits name each. Recomputed."},
-        {"name": "asked", "rows": 145278, "purpose": "Per ID: whether it was visible and when it was asked. Fetch history."},
-        {"name": "monorail_map", "rows": 21267, "purpose": "Old Monorail ID to new tracker ID. Fetch history."},
-        {"name": "requests", "rows": 24173, "purpose": "One row per HTTP request and its outcome. Fetch history."},
-        {"name": "bugs", "rows": 67347, "purpose": "Parsed metadata of each visible bug. Rebuildable from raw/ with `parse`."}
+        {
+          "name": "wanted",
+          "rows": 147407,
+          "purpose": "Bug IDs to ask for, with how many commits name each. Recomputed."
+        },
+        {
+          "name": "asked",
+          "rows": 145278,
+          "purpose": "Per ID: whether it was visible and when it was asked. Fetch history."
+        },
+        {
+          "name": "monorail_map",
+          "rows": 21267,
+          "purpose": "Old Monorail ID to new tracker ID. Fetch history."
+        },
+        {
+          "name": "requests",
+          "rows": 24173,
+          "purpose": "One row per HTTP request and its outcome. Fetch history."
+        },
+        {
+          "name": "bugs",
+          "rows": 67347,
+          "purpose": "Parsed metadata of each visible bug. Rebuildable from raw/ with `parse`."
+        }
       ],
       "notes": "Mixes fetch history that can't be rebuilt with two tables that can."
     },
     {
-      "id": "data/private/chrome_releases/", "group": "bugs", "path": "data/private/chrome_releases/", "kind": "directory", "tier": "raw",
-      "tracked_in_git": false, "rebuildable": false,
-      "size": "34 MB", "size_as_of": "2026-11-12",
+      "id": "data/private/chrome_releases/",
+      "name": "Chrome Releases posts",
+      "path": "data/private/chrome_releases/",
+      "kind": "directory",
+      "tier": "raw",
+      "tracked_in_git": false,
+      "rebuildable": false,
+      "size": "34 MB",
+      "size_as_of": "2026-11-12",
       "files": "raw/page-NNNN.json (26 feed pages), security_fixes.json, fixing_commits.json, summary.json.",
       "purpose": "The Chrome Releases feed, the security fixes parsed from it, and the commits on main that fixed them.",
       "notes": "Only raw/ is fetched; the three JSON files are rebuilt from it."
     },
-
     {
-      "id": "config/dataflow.json", "group": "site", "path": "config/dataflow.json", "kind": "json", "tier": "config",
-      "tracked_in_git": true, "rebuildable": false,
-      "size": "about 60 KB", "size_as_of": "2026-11-12",
+      "id": "config/dataflow.json",
+      "path": "config/dataflow.json",
+      "kind": "json",
+      "tier": "config",
+      "tracked_in_git": true,
+      "rebuildable": false,
+      "size": "about 60 KB",
+      "size_as_of": "2026-11-12",
       "purpose": "This inventory, kept by hand whenever a source, store, step or page changes.",
       "notes": "`python3 scripts/dataflow.py check` verifies it against the repository."
-    },
-    {
-      "id": "web/dist/", "group": "site", "path": "web/dist/", "kind": "directory", "tier": "derived",
-      "tracked_in_git": false, "rebuildable": true,
-      "size": "398 MB with the feedback files", "size_as_of": "2026-11-12",
-      "purpose": "The built site: the pages, their scripts, and a content-hashed copy of every data file a page imports."
     }
   ],
   "steps": [
     {
-      "id": "extract", "group": "gerrit", "command": "python3 -m cosh backfill --weeks 1 --newest <week> --go",
-      "code": ["cosh/extract.py", "cosh/backfill.py", "cosh/gerrit.py", "cosh/notedb.py", "cosh/store.py"],
-      "purpose": "Fetches one week: lists its closed CLs over REST, fetches their NoteDb refs, then derives that week.",
-      "inputs": ["gerrit-rest", "gerrit-notedb", "data/private/settings.json", "config/bots.txt"],
-      "outputs": ["data/private/raw.sqlite", "data/private/notedb/", "data/private/derived.sqlite"],
-      "network": true, "lock": "data/private/extract.lock",
-      "incremental": "Skips listing windows and refs already fetched; a finished week is skipped.",
-      "duration": "about 22 min per week", "token_cost": null, "cost_source": "docs/extraction-v1.md; cosh/backfill.py",
+      "id": "gerrit-fetch",
+      "command": "python3 -m cosh backfill --weeks 1 --newest <week> --go; python3 -m cosh extract-open",
+      "code": [
+        "cosh/approved.py",
+        "cosh/backfill.py",
+        "cosh/extract.py",
+        "cosh/gerrit.py",
+        "cosh/notedb.py",
+        "cosh/store.py"
+      ],
+      "purpose": "Fetches closed CLs week by week (listings over REST, review history as NoteDb refs) and snapshots the open ones.",
+      "inputs": [
+        "gerrit",
+        "config/bots.txt",
+        "config/approved.json"
+      ],
+      "outputs": [
+        "gerrit-raw"
+      ],
+      "network": true,
+      "lock": "data/private/extract.lock",
+      "incremental": "Skips listing windows and refs already fetched; a finished week is skipped. Each extract-open run lists open CLs updated since the last complete snapshot.",
+      "duration": "about 22 min per week (18.8 h for 52 weeks)",
+      "token_cost": null,
+      "cost_source": "docs/extraction-v1.md; docs/plan.md",
       "refresh": "routine",
-      "approval": "Every approval ends at 2026-W44: fetching a newer week needs the user's approval first.",
-      "notes": "`cosh extract --week W` fetches without deriving."
+      "approval": "Only weeks in config/approved.json (2017-W27 .. 2026-W44); the command refuses others. A newer week needs the user's approval, then an edit to that file.",
+      "notes": "backfill --weeks N runs many weeks, newest first; long runs go in a systemd user service (CLAUDE.md). backfill also derives each week it finishes (cosh.derive for that week), so derived.sqlite stays current between full derives. Never run alongside another extractor."
     },
     {
-      "id": "backfill", "group": "gerrit", "command": "python3 -m cosh backfill --weeks N --newest <week> [--jobs K --jobs-until T] --go",
-      "code": ["cosh/backfill.py"],
-      "purpose": "Runs the weekly fetch for many weeks, newest first.",
-      "inputs": ["gerrit-rest", "gerrit-notedb", "data/private/settings.json", "config/bots.txt"],
-      "outputs": ["data/private/raw.sqlite", "data/private/notedb/", "data/private/derived.sqlite"],
-      "network": true, "lock": "data/private/extract.lock",
-      "incremental": "Resumable with the same command.",
-      "duration": "18.8 h for 52 weeks", "token_cost": null, "cost_source": "docs/plan.md",
-      "refresh": "one-off",
-      "approval": "Approved and finished for 2017-W27 .. 2026-W44. Other ranges, repos or hosts need approval.",
-      "notes": "Long runs go in a systemd user service so they outlive the session (CLAUDE.md)."
-    },
-    {
-      "id": "extract-open", "group": "gerrit", "command": "python3 -m cosh extract-open",
-      "code": ["cosh/extract.py"],
-      "purpose": "Snapshots CLs that are still open (or closed after the newest fetched week), so their comments count.",
-      "inputs": ["gerrit-rest", "gerrit-notedb", "data/private/settings.json"],
-      "outputs": ["data/private/raw.sqlite", "data/private/notedb/"],
-      "network": true, "lock": "data/private/extract.lock",
-      "incremental": "Each run is a new snapshot. It lists open CLs updated since a day before the last complete snapshot started (the whole span from the oldest fetched week when the snapshots don't reach back that far, e.g. after a backfill); refs are fetched only when missing or stale.",
-      "duration": null, "token_cost": null, "cost_source": "No timing recorded; the 2026-11-05 run listed 47,329 CLs and fetched 5,383 refs",
-      "refresh": "routine",
-      "approval": "Approved; rerunning to refresh is fine, but never alongside a backfill.",
-      "notes": "The last snapshot (2026-11-05) listed from 2023-W26, so the next run lists from 2017-W27 once (about 490 weekly windows); later runs list only the days since the previous one."
-    },
-    {
-      "id": "update-affiliations", "group": "gerrit", "command": "python3 -m cosh update-affiliations",
-      "code": ["cosh/orgs.py"],
+      "id": "affiliations",
+      "command": "python3 -m cosh update-affiliations",
+      "code": [
+        "cosh/orgs.py"
+      ],
       "purpose": "Copies Chromium's affiliations file into config/ when it has changed.",
-      "inputs": ["chromium-affiliations", "data/private/settings.json"],
-      "outputs": ["config/affiliations.json5"],
-      "network": true, "lock": null,
+      "inputs": [
+        "chromium-affiliations"
+      ],
+      "outputs": [
+        "config/affiliations.json5"
+      ],
+      "network": true,
+      "lock": null,
       "incremental": "Rewrites only on a change.",
-      "duration": "seconds", "token_cost": null, "cost_source": "cosh/orgs.py",
+      "duration": "seconds",
+      "token_cost": null,
+      "cost_source": "cosh/orgs.py",
       "refresh": "routine",
-      "notes": "Rarely run by hand: summarize, review-feedback, sentiment-collect and several balance scripts run it by themselves whenever they attribute orgs (COSH_AFFILIATIONS_OFFLINE=1 stops that)."
+      "notes": "Every command that attributes orgs (summarize, comments-collect, review-feedback, balance-publish) also runs it by itself first; COSH_AFFILIATIONS_OFFLINE=1 stops that.",
+      "run": "python3 -m cosh update-affiliations"
     },
     {
-      "id": "derive", "group": "gerrit", "command": "python3 -m cosh derive",
-      "code": ["cosh/derive.py", "cosh/bots.py"],
+      "id": "derive",
+      "command": "python3 -m cosh derive",
+      "code": [
+        "cosh/derive.py",
+        "cosh/bots.py"
+      ],
       "purpose": "Reduces every CL's listing and NoteDb comments to facts.",
-      "inputs": ["data/private/raw.sqlite", "data/private/notedb/", "config/bots.txt"],
-      "outputs": ["data/private/derived.sqlite"],
-      "network": false, "lock": null,
+      "inputs": [
+        "gerrit-raw",
+        "config/bots.txt"
+      ],
+      "outputs": [
+        "data/private/derived.sqlite"
+      ],
+      "network": false,
+      "lock": null,
       "incremental": "Not incremental: a full run re-reads every CL. `--week W` does one week.",
-      "duration": "under 52 min for 1.6M CLs; 11.5 min for 775k", "token_cost": null,
+      "duration": "under 52 min for 1.6M CLs; 11.5 min for 775k",
+      "token_cost": null,
       "cost_source": "File times of the 2026-11-12 run (upper bound); docs/plan.md, 2026-11-05",
       "refresh": "routine",
-      "notes": "Opens raw.sqlite read-only, so it is safe beside an extractor. Main's commits are in commits.sqlite (step commits), not here."
+      "notes": "Opens raw.sqlite read-only, so it is safe beside an extractor. Main's commits are in commits.sqlite (step commits), not here.",
+      "run": "python3 -m cosh derive"
     },
     {
-      "id": "classify", "group": "gerrit", "command": "python3 -m cosh classify --week <week> [--dry-run]",
-      "code": ["cosh/classify.py", "cosh/sandbox.py"],
+      "id": "classify",
+      "command": "python3 -m cosh classify --week <week> [--dry-run]",
+      "code": [
+        "cosh/classify.py",
+        "cosh/sandbox.py"
+      ],
       "purpose": "Has sandboxed Haiku label the threads the regex doesn't settle as addressed or not.",
-      "inputs": ["data/private/derived.sqlite", "data/private/notedb/", "data/private/raw.sqlite", "claude-model"],
-      "outputs": ["data/private/labels.sqlite"],
-      "network": true, "lock": "data/private/classify.lock",
+      "inputs": [
+        "data/private/derived.sqlite",
+        "gerrit-raw",
+        "claude-model"
+      ],
+      "outputs": [
+        "data/private/labels.sqlite"
+      ],
+      "network": true,
+      "lock": "data/private/classify.lock",
       "incremental": "Only threads with no label for the current classifier and input hash; saved per batch, so it resumes.",
       "duration": "about 11 min per week; 41 min per year at 8 calls at once",
       "token_cost": "about 0.95M Haiku tokens per week ($0.22); 25.6M per year ($6)",
@@ -555,101 +1018,232 @@
       "notes": "A week shows the addressed metric only once it is 99% labelled, so the site's default metric needs this for each new week."
     },
     {
-      "id": "summarize", "group": "gerrit", "command": "python3 -m cosh summarize",
-      "code": ["cosh/summarize.py", "cosh/orgs.py", "cosh/paths.py"],
+      "id": "summarize",
+      "command": "python3 -m cosh summarize",
+      "code": [
+        "cosh/summarize.py",
+        "cosh/orgs.py",
+        "cosh/paths.py"
+      ],
       "purpose": "Aggregates the facts and labels into the Value Exchange summaries for every fetched week.",
-      "inputs": ["data/private/derived.sqlite", "data/private/commits.sqlite", "data/private/labels.sqlite", "data/private/raw.sqlite", "data/private/notedb/", "config/paths.txt", "config/affiliations.json5"],
-      "outputs": ["summaries/value-exchange"],
-      "network": true, "lock": null,
+      "inputs": [
+        "data/private/derived.sqlite",
+        "data/private/commits.sqlite",
+        "data/private/labels.sqlite",
+        "gerrit-raw",
+        "config/paths.txt",
+        "config/affiliations.json5"
+      ],
+      "outputs": [
+        "summaries/value-exchange"
+      ],
+      "network": true,
+      "lock": null,
       "incremental": "Rewrites every file for all weeks.",
-      "duration": null, "token_cost": null, "cost_source": "No timing recorded",
+      "duration": null,
+      "token_cost": null,
+      "cost_source": "No timing recorded",
       "refresh": "routine",
-      "notes": "It runs update-affiliations first by itself (its only network use), so config/affiliations.json5 may change too. It reads the raw stores for the example threads' text."
+      "notes": "It runs update-affiliations first by itself (its only network use), so config/affiliations.json5 may change too. It reads the raw stores for the example threads' text.",
+      "run": "python3 -m cosh summarize"
     },
     {
-      "id": "notedb-maintain", "group": "gerrit", "command": "python3 -m cosh notedb-maintain",
-      "code": ["cosh/notedb.py", "scripts/notedb_chunked_repack.sh"],
+      "id": "notedb-maintain",
+      "command": "python3 -m cosh notedb-maintain",
+      "code": [
+        "cosh/notedb.py",
+        "scripts/notedb_chunked_repack.sh"
+      ],
       "purpose": "Lossless housekeeping of the NoteDb repo: packs refs and indexes its packs, so reads stay fast.",
-      "inputs": ["data/private/notedb/"],
-      "outputs": ["data/private/notedb/"],
-      "network": false, "lock": "data/private/extract.lock",
+      "inputs": [
+        "gerrit-raw"
+      ],
+      "outputs": [
+        "gerrit-raw"
+      ],
+      "network": false,
+      "lock": "data/private/extract.lock",
       "incremental": "Deletes nothing.",
-      "duration": "41 min for the chunked repack of 3,823 packs into 14", "token_cost": null, "cost_source": "docs/plan.md, 2026-11-12",
-      "refresh": "optional",
+      "duration": "41 min for the chunked repack of 3,823 packs into 14",
+      "token_cost": null,
+      "cost_source": "docs/plan.md, 2026-11-12",
+      "refresh": "maintenance",
       "approval": "Never prune. The chunked repack keeps the old packs until a person has checked the new ones.",
       "notes": "For thousands of packs use scripts/notedb_chunked_repack.sh (700 MB groups); a whole-repo repack runs out of memory."
     },
     {
-      "id": "classifier-audit", "group": "gerrit", "command": "python3 scripts/classifier_audit.py sample|judge|score ...",
-      "code": ["scripts/classifier_audit.py", "scripts/comment_classifier.py", "scripts/commits_explore.py"],
+      "id": "classifier-audit",
+      "command": "python3 scripts/classifier_audit.py sample|judge|score ...",
+      "code": [
+        "scripts/classifier_audit.py",
+        "scripts/comment_classifier.py",
+        "scripts/commits_explore.py"
+      ],
       "purpose": "Audits the addressed classifier against Opus, and the earlier research that chose the classifier and the Commits metric.",
-      "inputs": ["data/private/derived.sqlite", "data/private/labels.sqlite", "data/private/notedb/", "claude-model"],
-      "outputs": ["docs/audits/"],
-      "network": true, "lock": null,
-      "duration": "32 Opus calls for 800 threads", "token_cost": "about $2.50 of Opus per 800 threads",
+      "inputs": [
+        "data/private/derived.sqlite",
+        "data/private/labels.sqlite",
+        "gerrit-raw",
+        "claude-model"
+      ],
+      "outputs": [
+        "docs/audits/"
+      ],
+      "network": true,
+      "lock": null,
+      "duration": "32 Opus calls for 800 threads",
+      "token_cost": "about $2.50 of Opus per 800 threads",
       "cost_source": "docs/comment-classifier.md",
       "refresh": "analysis",
       "notes": "scripts/comment_classifier.py still carries an older copy of the prompt than cosh/classify.py."
     },
-
     {
-      "id": "commits", "group": "git", "command": "python3 -m cosh commits",
-      "code": ["cosh/commits.py", "cosh/balance.py", "cosh/bots.py", "cosh/paths.py"],
-      "purpose": "Appends main's new commits, with their files, line counts, OWNERS additions and repetition ratios, to the commits store.",
-      "inputs": ["chromium-git"],
-      "outputs": ["data/private/commits.sqlite"],
-      "network": false, "lock": "data/private/commits.sqlite.lock",
-      "incremental": "Appends the commits landed since its last run; seconds when nothing is new.",
-      "duration": "about 1 h 50 min from empty (1.5 h of git log, then 20 min of OWNERS diffs and repetition ratios with 4 processes); seconds when nothing is new", "token_cost": null, "cost_source": "Build of 2026-11-12 (docs/commits.md)",
+      "id": "fetch-git",
+      "command": "python3 -m cosh fetch-git",
+      "code": [
+        "cosh/commits.py",
+        "cosh/contact.py"
+      ],
+      "purpose": "Fetches chromium/src main into the shared clone, so new weeks' commits reach commits.sqlite.",
+      "inputs": [
+        "chromium-git"
+      ],
+      "outputs": [
+        "shared/chromium"
+      ],
+      "network": true,
+      "lock": "data/private/extract.lock",
+      "incremental": "Fetches only what main gained since the last fetch.",
+      "duration": null,
+      "token_cost": null,
+      "cost_source": "Not measured",
       "refresh": "routine",
-      "notes": "Run it after the shared clone gains commits; nothing in cosh updates the clone. It replaces `cosh.balance git`, derive's commits tables and the hand-made balance inputs."
+      "approval": "main only (approved 2026-11-06); other branches or repos need approval.",
+      "notes": "The clone's README says cosh does these fetches. Run it before `cosh commits` when a new week is processed."
     },
     {
-      "id": "patchsets-fetch", "group": "git", "command": "python3 -m cosh patchsets --go --repack-gb 1000 --jobs 7",
-      "code": ["cosh/patchsets.py", "scripts/patchsets_chunked_repack.sh", "scripts/patchsets_pack_coverage.sh"],
+      "id": "commits",
+      "command": "python3 -m cosh commits",
+      "code": [
+        "cosh/commits.py",
+        "cosh/bots.py",
+        "cosh/paths.py"
+      ],
+      "purpose": "Appends main's new commits, with their files, line counts, OWNERS additions and repetition ratios, to the commits store.",
+      "inputs": [
+        "shared/chromium",
+        "config/bots.txt"
+      ],
+      "outputs": [
+        "data/private/commits.sqlite"
+      ],
+      "network": false,
+      "lock": "data/private/commits.sqlite.lock",
+      "incremental": "Appends the commits landed since its last run; seconds when nothing is new.",
+      "duration": "about 1 h 50 min from empty (1.5 h of git log, then 20 min of OWNERS diffs and repetition ratios with 4 processes); seconds when nothing is new",
+      "token_cost": null,
+      "cost_source": "Build of 2026-11-12 (docs/commits.md)",
+      "refresh": "routine",
+      "notes": "Run it after the shared clone gains commits; nothing in cosh updates the clone. It replaces `cosh.balance git`, derive's commits tables and the hand-made balance inputs.",
+      "run": "python3 -m cosh commits"
+    },
+    {
+      "id": "patchsets-fetch",
+      "command": "python3 -m cosh patchsets --go --repack-gb 1000 --jobs 7",
+      "code": [
+        "cosh/approved.py",
+        "cosh/patchsets.py",
+        "scripts/patchsets_chunked_repack.sh",
+        "scripts/patchsets_pack_coverage.sh"
+      ],
       "purpose": "Fetches every patch set of reviewed CLs, newest first, into the patch-set repo.",
-      "inputs": ["data/private/derived.sqlite", "gerrit-patchsets", "chromium-git"],
-      "outputs": ["data/private/git/chromium-patchsets.git/"],
-      "network": true, "lock": "data/private/extract.lock",
-      "incremental": "Skips CLs already fetched, even if they gained patch sets since.",
-      "duration": "72 s per 1,000 CLs", "token_cost": null, "cost_source": "docs/plan.md, 2026-11-07",
+      "inputs": [
+        "data/private/derived.sqlite",
+        "gerrit",
+        "shared/chromium",
+        "config/approved.json"
+      ],
+      "outputs": [
+        "data/private/git/chromium-patchsets.git/"
+      ],
+      "network": true,
+      "lock": "data/private/extract.lock",
+      "incremental": "Resumable. A CL is fetched again when Gerrit has more patch sets than were fetched (cosh-fetched.txt records the count).",
+      "duration": "72 s per 1,000 CLs",
+      "token_cost": null,
+      "cost_source": "docs/plan.md, 2026-11-07",
       "refresh": "optional",
-      "approval": "Approved only for CLs of 2023-W26 .. 2026-W44. It has no week bound, so a plain rerun would also fetch the unapproved 2017 .. 2023 CLs.",
+      "approval": "Only reviewed CLs in config/approved.json's range (closed 2023-06-26 .. 2026-11-02); the command refuses an earlier --since. Up to 7 fetches at once (approved 2026-11-07).",
       "notes": "Repack afterwards in groups with the two scripts; never prune."
     },
-
     {
-      "id": "radar", "group": "usage", "command": "source ~/.secrets/cosh/secrets.sh && python3 -m cosh radar",
-      "code": ["cosh/radar.py"],
+      "id": "radar",
+      "command": "source ~/.secrets/cosh/secrets.sh && python3 -m cosh radar",
+      "code": [
+        "cosh/radar.py"
+      ],
       "purpose": "Fetches the Radar quarters that are missing or incomplete and rewrites the browser-share CSV.",
-      "inputs": ["cloudflare-radar", "config/browsers.csv", "data/private/settings.json"],
-      "outputs": ["data/public/radar/raw/", "data/public/radar_browser_share.csv"],
-      "network": true, "lock": null,
+      "inputs": [
+        "cloudflare-radar",
+        "config/browsers.csv"
+      ],
+      "outputs": [
+        "data/public/radar/raw/",
+        "data/public/radar_browser_share.csv"
+      ],
+      "network": true,
+      "lock": null,
       "incremental": "Complete quarters are skipped; `--offline` rebuilds the CSV from the cache alone.",
-      "duration": "about 3 requests, a few seconds", "token_cost": null, "cost_source": "docs/radar-research.md",
+      "duration": "about 3 requests, a few seconds",
+      "token_cost": null,
+      "cost_source": "docs/radar-research.md",
       "refresh": "routine",
       "approval": "Approved. Never print or commit the token."
     },
-
     {
-      "id": "sentiment-collect", "group": "sentiment", "command": "python3 -m cosh.sentiment collect --week <weeks>",
-      "code": ["cosh/sentiment.py", "cosh/sentiment_people.py"],
+      "id": "comments-collect",
+      "command": "python3 -m cosh.sentiment collect --missing (or --week <weeks>; --sample 0.05 --name sample-5pct for the trend's sample)",
+      "code": [
+        "cosh/sentiment.py",
+        "cosh/sentiment_people.py"
+      ],
       "purpose": "Renders each week's review comments with their thread context and who wrote them, ready for scoring.",
-      "inputs": ["data/private/derived.sqlite", "data/private/raw.sqlite", "data/private/notedb/", "config/affiliations.json5"],
-      "outputs": ["data/private/sentiment/"],
-      "network": false, "lock": null,
+      "inputs": [
+        "data/private/derived.sqlite",
+        "gerrit-raw",
+        "config/affiliations.json5"
+      ],
+      "outputs": [
+        "data/private/sentiment/"
+      ],
+      "network": true,
+      "lock": null,
       "incremental": "Rewrites the week files it is given.",
-      "duration": "about 25 s per week; 2 min for the 5% sample", "token_cost": null, "cost_source": "docs/sentiment.md",
+      "duration": "about 25 s per week; 2 min for the 5% sample",
+      "token_cost": null,
+      "cost_source": "docs/sentiment.md",
       "refresh": "routine",
-      "notes": "`cosh.sentiment collect --sample 0.05 --name sample-5pct` makes the trend's sample. Plain `cosh.sentiment collect --week` writes the same week files without identities, which breaks praise and recent."
+      "notes": "--missing collects every fetched week since the oldest week file that has no file yet. It refreshes the affiliations file first, like every command that attributes people (its only network use).",
+      "run": "python3 -m cosh.sentiment collect --missing"
     },
     {
-      "id": "sentiment-score", "group": "sentiment", "command": "python3 -m cosh.sentiment score --week <weeks> | --name sample-5pct",
-      "code": ["cosh/sentiment.py", "cosh/sandbox.py"],
-      "purpose": "Has sandboxed Haiku score each comment's tone and flag friction with AI.",
-      "inputs": ["data/private/sentiment/", "scripts/sentiment_prompts/", "claude-model"],
-      "outputs": ["data/private/sentiment.sqlite"],
-      "network": true, "lock": null,
+      "id": "comments-score",
+      "command": "python3 -m cosh.sentiment score --week <weeks> | --name sample-5pct",
+      "code": [
+        "cosh/sentiment.py",
+        "cosh/sandbox.py"
+      ],
+      "purpose": "Has Haiku score each rendered comment's tone and AI friction, in the sandbox.",
+      "inputs": [
+        "data/private/sentiment/",
+        "scripts/sentiment_prompts/",
+        "claude-model"
+      ],
+      "outputs": [
+        "data/private/sentiment.sqlite"
+      ],
+      "network": true,
+      "lock": null,
       "incremental": "Skips comments already scored under the same prompt; saved per batch.",
       "duration": "3 to 4 min per week; 37 min for the 5% sample",
       "token_cost": "about $1.25 of Haiku per week; 21.9M tokens ($5.48) for the 5% sample",
@@ -658,276 +1252,574 @@
       "approval": "Costs Max usage: size runs with --name or --week."
     },
     {
-      "id": "sentiment-publish", "group": "sentiment", "command": "python3 -m cosh.sentiment publish [--week 2025-W45:2026-W44] [--name sample-5pct]",
-      "code": ["cosh/sentiment.py", "cosh/sentiment_recent.py", "cosh/sentiment_people.py", "cosh/sandbox.py"],
-      "purpose": "Writes every Review Tone file from one range of fully scored weeks: trend, praise boards, screened samples, per-period detail and the names for the person search.",
-      "inputs": ["data/private/sentiment.sqlite", "data/private/sentiment/", "data/private/derived.sqlite", "claude-model"],
-      "outputs": ["summaries/sentiment_monthly*.json", "summaries/sentiment_praise*.json", "summaries/sentiment_samples*.json", "summaries/sentiment_recent*.json", "summaries/sentiment_people.json"],
-      "network": true, "lock": null,
-      "incremental": "Rewrites every file. Screening verdicts are cached in sentiment.sqlite's screens table (since 2026-11-12), so only comments never screened cost a model call. That cache is the only thing it writes there and no other step reads it, so the store isn't listed as an output (the scores that review-feedback reads come from sentiment-score).",
-      "duration": null, "token_cost": "small, not measured; nothing once the cache has the comments", "cost_source": "No measurement",
+      "id": "tone-publish",
+      "command": "python3 -m cosh.sentiment publish [--week <first>:<last>]",
+      "code": [
+        "cosh/sentiment.py",
+        "cosh/sentiment_recent.py",
+        "cosh/sentiment_people.py",
+        "cosh/sandbox.py"
+      ],
+      "purpose": "Writes every Review Tone file from the newest year of fully scored weeks.",
+      "inputs": [
+        "data/private/sentiment.sqlite",
+        "data/private/sentiment/",
+        "data/private/derived.sqlite",
+        "claude-model",
+        "scripts/sentiment_prompts/"
+      ],
+      "outputs": [
+        "summaries/sentiment"
+      ],
+      "network": true,
+      "lock": null,
+      "incremental": "Rewrites every file. Screening verdicts are cached in sentiment.sqlite, so only new comments cost model calls.",
+      "duration": null,
+      "token_cost": "small, not measured; nothing once the cache has the comments",
+      "cost_source": "No measurement",
       "refresh": "routine",
       "approval": "Publishes names for praise only; never negative figures per person or org (docs/sentiment.md).",
-      "notes": "The trend uses the 5% sample plus those weeks; negative and AI-friction samples are screened by sandboxed Haiku for anything identifying. Until 2026-11-12 these were five commands (summary, praise, samples, sentiment_recent, sentiment_people lookup) that each took the week range by hand; they still run alone. The default range is the fixed window the page shows (D3 in docs/data-architecture.md)."
+      "notes": "The window follows the data: the newest run of up to 52 consecutive fully scored weeks (sentiment.scored_weeks). It also writes the screening cache (sentiment.sqlite's screens), which is not drawn as an output so the scores keep one writer.",
+      "run": "python3 -m cosh.sentiment publish"
     },
     {
-      "id": "sentiment-tune", "group": "sentiment", "command": "python3 scripts/sentiment_tune.py <prompt version>",
-      "code": ["scripts/sentiment_tune.py"],
+      "id": "tone-tune",
+      "command": "python3 scripts/sentiment_tune.py <prompt version>",
+      "code": [
+        "scripts/sentiment_tune.py"
+      ],
       "purpose": "Scores a prompt version against the 261 gold comments, to tune the prompt.",
-      "inputs": ["data/private/sentiment/", "scripts/sentiment_prompts/", "claude-model"],
-      "outputs": ["data/private/sentiment/"],
-      "network": true, "lock": null,
-      "duration": null, "token_cost": "small: about 6 calls per run", "cost_source": "docs/sentiment.md",
+      "inputs": [
+        "data/private/sentiment/",
+        "scripts/sentiment_prompts/",
+        "claude-model"
+      ],
+      "outputs": [
+        "data/private/sentiment/tune"
+      ],
+      "network": true,
+      "lock": null,
+      "duration": null,
+      "token_cost": "small: about 6 calls per run",
+      "cost_source": "docs/sentiment.md",
       "refresh": "analysis"
     },
-
     {
-      "id": "balance-timeline", "group": "balance", "command": "python3 -m cosh.balance timeline",
-      "code": ["cosh/balance.py"],
+      "id": "balance-timeline",
+      "command": "python3 -m cosh.balance timeline",
+      "code": [
+        "cosh/balance.py"
+      ],
       "purpose": "Reads each CL's uploads, attention-set changes and Code-Review votes from NoteDb.",
-      "inputs": ["data/private/derived.sqlite", "data/private/notedb/"],
-      "outputs": ["data/private/balance-timeline.sqlite"],
-      "network": false, "lock": null,
+      "inputs": [
+        "data/private/derived.sqlite",
+        "gerrit-raw"
+      ],
+      "outputs": [
+        "data/private/balance-timeline.sqlite"
+      ],
+      "network": false,
+      "lock": null,
       "incremental": "Reads CLs not yet read and CLs whose meta ref's tip moved since (replacing their rows); CLs without a ref are looked for again next time.",
-      "duration": "35.5 min (330 CLs/s, sharing the box with another git walk) for 716k CLs from empty", "token_cost": null, "cost_source": "data/private/scratch/timeline/walk.log",
-      "refresh": "routine"
+      "duration": "35.5 min (330 CLs/s, sharing the box with another git walk) for 716k CLs from empty",
+      "token_cost": null,
+      "cost_source": "data/private/scratch/timeline/walk.log",
+      "refresh": "routine",
+      "run": "python3 -m cosh.balance timeline"
     },
     {
-      "id": "balance-interdiff", "group": "balance", "command": "python3 -m cosh.balance interdiff [--shard i/3]",
-      "code": ["cosh/balance.py"],
+      "id": "balance-interdiff",
+      "command": "python3 -m cosh.balance interdiff [--shard i/3]",
+      "code": [
+        "cosh/balance.py"
+      ],
       "purpose": "Diffs each patch set against the next to measure rework during review.",
-      "inputs": ["data/private/balance-timeline.sqlite", "data/private/derived.sqlite", "data/private/git/chromium-patchsets.git/"],
-      "outputs": ["data/private/balance-interdiff.sqlite"],
-      "network": false, "lock": null,
+      "inputs": [
+        "data/private/balance-timeline.sqlite",
+        "data/private/derived.sqlite",
+        "data/private/git/chromium-patchsets.git/"
+      ],
+      "outputs": [
+        "data/private/balance-interdiff.sqlite"
+      ],
+      "network": false,
+      "lock": null,
       "incremental": "Only CLs without a result; CLs whose patch sets aren't fetched get none.",
-      "duration": "about 25 min as three shards", "token_cost": null, "cost_source": "docs/balance.md",
-      "refresh": "routine"
+      "duration": "about 25 min as three shards",
+      "token_cost": null,
+      "cost_source": "docs/balance.md",
+      "refresh": "routine",
+      "run": "python3 -m cosh.balance interdiff"
     },
     {
-      "id": "balance-cl", "group": "balance", "command": "python3 -m cosh.balance cl",
-      "code": ["cosh/balance.py"],
+      "id": "balance-cl",
+      "command": "python3 -m cosh.balance cl",
+      "code": [
+        "cosh/balance.py"
+      ],
       "purpose": "Joins the stages into one row per CL.",
-      "inputs": ["data/private/derived.sqlite", "data/private/labels.sqlite", "data/private/commits.sqlite", "data/private/balance-timeline.sqlite", "data/private/balance-interdiff.sqlite"],
-      "outputs": ["data/private/balance.sqlite"],
-      "network": false, "lock": null,
+      "inputs": [
+        "data/private/derived.sqlite",
+        "data/private/labels.sqlite",
+        "data/private/commits.sqlite",
+        "data/private/balance-timeline.sqlite",
+        "data/private/balance-interdiff.sqlite"
+      ],
+      "outputs": [
+        "data/private/balance.sqlite"
+      ],
+      "network": false,
+      "lock": null,
       "incremental": "Rebuilds the whole table.",
-      "duration": "about 2 min for 1.14M CLs", "token_cost": null, "cost_source": "data/private/balance-rebuild-20261112.log",
-      "refresh": "routine"
+      "duration": "about 2 min for 1.14M CLs",
+      "token_cost": null,
+      "cost_source": "data/private/balance-rebuild-20261112.log",
+      "refresh": "routine",
+      "run": "python3 -m cosh.balance cl"
     },
     {
-      "id": "ai-markers", "group": "balance", "command": "python3 scripts/balance_ai.py markers",
-      "code": ["scripts/balance_ai.py"],
+      "id": "ai-markers",
+      "command": "python3 scripts/balance_ai.py markers",
+      "code": [
+        "scripts/balance_ai.py"
+      ],
       "purpose": "Lists the commits whose messages mark them as AI-assisted.",
-      "inputs": ["chromium-git"],
-      "outputs": ["data/private/ai_marked_broad.txt"],
-      "network": false, "lock": null,
-      "duration": "about 1 min", "token_cost": null, "cost_source": "docs/balance-ai.md",
-      "refresh": "optional"
+      "inputs": [
+        "shared/chromium"
+      ],
+      "outputs": [
+        "data/private/ai_marked_broad.txt"
+      ],
+      "network": false,
+      "lock": null,
+      "duration": "about 1 min",
+      "token_cost": null,
+      "cost_source": "docs/balance-ai.md",
+      "refresh": "routine",
+      "run": "python3 scripts/balance_ai.py markers"
     },
     {
-      "id": "ai-predict", "group": "balance", "command": "python3 scripts/balance_ai_predict.py build && nice -n 5 python3 scripts/balance_ai_predict.py score --since 2025-07-01",
-      "code": ["scripts/balance_ai_predict.py", "cosh/sandbox.py"],
+      "id": "ai-predict",
+      "command": "python3 scripts/balance_ai_predict.py build && nice -n 5 python3 scripts/balance_ai_predict.py score --since 2025-07-01",
+      "code": [
+        "scripts/balance_ai_predict.py",
+        "cosh/sandbox.py"
+      ],
       "purpose": "Has sandboxed Haiku estimate, for each CL description, whether it was AI-written.",
-      "inputs": ["chromium-git", "data/private/ai_marked_broad.txt", "claude-model"],
-      "outputs": ["data/private/ai_predict/"],
-      "network": true, "lock": "data/private/ai_predict/score.lock",
+      "inputs": [
+        "shared/chromium",
+        "data/private/ai_marked_broad.txt",
+        "claude-model"
+      ],
+      "outputs": [
+        "data/private/ai_predict/"
+      ],
+      "network": true,
+      "lock": "data/private/ai_predict/score.lock",
       "incremental": "`score` resumes: descriptions already scored are skipped.",
-      "duration": "116 min for 171,804 CLs at 8 calls at once", "token_cost": "$12.60 of Haiku for 171,804 CLs",
+      "duration": "116 min for 171,804 CLs at 8 calls at once",
+      "token_cost": "$12.60 of Haiku for 171,804 CLs",
       "cost_source": "docs/balance-ai-predict.md, 2026-11-08",
       "refresh": "optional",
       "approval": "Costs Max usage."
     },
     {
-      "id": "balance-clusters", "group": "balance", "command": "python3 scripts/balance_clusters.py; python3 scripts/balance_cluster_map.py",
-      "code": ["scripts/balance_clusters.py", "scripts/balance_cluster_map.py"],
+      "id": "balance-clusters",
+      "command": "python3 scripts/balance_clusters.py; python3 scripts/balance_cluster_map.py",
+      "code": [
+        "scripts/balance_clusters.py",
+        "scripts/balance_cluster_map.py"
+      ],
       "purpose": "Groups contributors' half-years into activity patterns and trajectories (k-means over private per-person panels), and maps the patterns.",
-      "inputs": ["data/private/balance.sqlite", "data/private/commits.sqlite", "data/private/balance-timeline.sqlite", "data/private/derived.sqlite", "data/private/labels.sqlite"],
-      "outputs": ["data/private/balance_clusters/"],
-      "network": false, "lock": null,
+      "inputs": [
+        "data/private/balance.sqlite",
+        "data/private/commits.sqlite",
+        "data/private/balance-timeline.sqlite",
+        "data/private/derived.sqlite",
+        "data/private/labels.sqlite"
+      ],
+      "outputs": [
+        "data/private/balance_clusters/"
+      ],
+      "network": false,
+      "lock": null,
       "incremental": "Recomputes everything.",
-      "duration": "about 10 min", "token_cost": null, "cost_source": "docs/balance-clusters.md",
-      "refresh": "optional",
-      "notes": "An analysis kept as an input of balance-publish (its per-person people.json stays private); rerun it before a publish when the clusters should follow new data."
+      "duration": "about 10 min",
+      "token_cost": null,
+      "cost_source": "docs/balance-clusters.md",
+      "refresh": "routine",
+      "notes": "An analysis kept as an input of balance-publish (its per-person people.json stays private); rerun it before a publish when the clusters should follow new data.",
+      "run": "python3 scripts/balance_clusters.py && python3 scripts/balance_cluster_map.py"
     },
     {
-      "id": "balance-publish", "group": "balance", "command": "nice -n 5 python3 -m cosh.balance_publish [--check]",
-      "code": ["cosh/balance_publish.py", "scripts/balance_report.py", "scripts/balance_analysis.py", "scripts/balance_growth.py", "scripts/balance_growth_tables.py", "scripts/balance_narrative.py", "scripts/balance_dirgrowth.py", "scripts/balance_histograms.py", "scripts/balance_definitions.py", "scripts/balance_behind.py", "scripts/balance_review_share.py", "scripts/balance_learning.py", "scripts/balance_feedback_predicts.py", "scripts/balance_signals.py", "scripts/balance_page_extras.py", "scripts/review_roi_report.py", "scripts/balance_addressed_value.py", "scripts/balance_authors.py"],
+      "id": "balance-publish",
+      "command": "nice -n 5 python3 -m cosh.balance_publish [--check]",
+      "code": [
+        "cosh/balance_publish.py",
+        "scripts/balance_report.py",
+        "scripts/balance_analysis.py",
+        "scripts/balance_growth.py",
+        "scripts/balance_growth_tables.py",
+        "scripts/balance_narrative.py",
+        "scripts/balance_dirgrowth.py",
+        "scripts/balance_histograms.py",
+        "scripts/balance_definitions.py",
+        "scripts/balance_behind.py",
+        "scripts/balance_review_share.py",
+        "scripts/balance_learning.py",
+        "scripts/balance_feedback_predicts.py",
+        "scripts/balance_signals.py",
+        "scripts/balance_page_extras.py",
+        "scripts/review_roi_report.py",
+        "scripts/balance_addressed_value.py",
+        "scripts/balance_authors.py"
+      ],
       "purpose": "Writes the Review Balance page's three files whole, from empty, by running each dataset's compute function in the order its STEPS list records.",
-      "inputs": ["data/private/balance.sqlite", "data/private/commits.sqlite", "data/private/balance-timeline.sqlite", "data/private/derived.sqlite", "data/private/labels.sqlite", "data/private/ai_marked_broad.txt", "data/private/ai_predict/", "data/private/balance_clusters/", "data/private/chrome_releases/", "data/private/review_roi/", "config/affiliations.json5"],
-      "outputs": ["summaries/balance.json", "summaries/balance_dirs.json", "summaries/balance_authors.json"],
-      "network": false, "lock": null,
+      "inputs": [
+        "data/private/balance.sqlite",
+        "data/private/commits.sqlite",
+        "data/private/balance-timeline.sqlite",
+        "data/private/derived.sqlite",
+        "data/private/labels.sqlite",
+        "data/private/ai_marked_broad.txt",
+        "data/private/ai_predict/",
+        "data/private/balance_clusters/",
+        "data/private/chrome_releases/",
+        "data/private/review_roi/",
+        "config/affiliations.json5"
+      ],
+      "outputs": [
+        "summaries/balance.json",
+        "summaries/balance_dirs.json",
+        "summaries/balance_authors.json"
+      ],
+      "network": false,
+      "lock": null,
       "incremental": "Recomputes everything; --steps a,b reruns only those steps and reuses the others' results in data/private/scratch/balance-publish/steps/.",
-      "duration": "about 8 min, about 5 GB of memory at most (one step at a time)", "token_cost": null, "cost_source": "data/private/scratch/balance-publish/publish.log",
-      "refresh": "optional",
-      "notes": "Its window ends at balance_publish.DATA_END (2026-11-01; D3 decides whether it follows new weeks). --check rebuilds into the scratch directory and compares with the committed files, dataset by dataset. Reads balance_clusters/, chrome_releases/summary.json and review_roi/ as finished analyses; everything else is computed on each run."
+      "duration": "about 8 min, about 5 GB of memory at most (one step at a time)",
+      "token_cost": null,
+      "cost_source": "data/private/scratch/balance-publish/publish.log",
+      "refresh": "routine",
+      "notes": "Its window ends at balance_publish.DATA_END (2026-11-01; D3 decides whether it follows new weeks). --check rebuilds into the scratch directory and compares with the committed files, dataset by dataset. Reads balance_clusters/, chrome_releases/summary.json and review_roi/ as finished analyses; everything else is computed on each run.",
+      "run": "nice -n 5 python3 -m cosh.balance_publish"
     },
     {
-      "id": "balance-analysis", "group": "balance", "command": "python3 scripts/balance_analysis.py trends|growth|pipeline; scripts/balance_ai.py paired|did|footers; scripts/balance_person.py; scripts/balance_exemplars.py; scripts/balance_explore.py",
-      "code": ["scripts/balance_analysis.py", "scripts/balance_ai.py", "scripts/balance_ai_predict.py", "scripts/balance_person.py", "scripts/balance_exemplars.py", "scripts/balance_explore.py"],
+      "id": "balance-analysis",
+      "command": "python3 scripts/balance_analysis.py trends|growth|pipeline; scripts/balance_ai.py paired|did|footers; scripts/balance_person.py; scripts/balance_exemplars.py; scripts/balance_explore.py",
+      "code": [
+        "scripts/balance_analysis.py",
+        "scripts/balance_ai.py",
+        "scripts/balance_ai_predict.py",
+        "scripts/balance_person.py",
+        "scripts/balance_exemplars.py",
+        "scripts/balance_explore.py"
+      ],
       "purpose": "Exploratory analyses behind the balance docs: trends, AI effects, per-person career reports.",
-      "inputs": ["data/private/balance.sqlite", "data/private/commits.sqlite", "data/private/balance-timeline.sqlite", "data/private/derived.sqlite", "data/private/labels.sqlite", "data/private/ai_marked_broad.txt", "data/private/ai_predict/", "data/private/git/chromium-src.git/", "chromium-git", "claude-model"],
-      "outputs": ["data/private/balance_people/"],
-      "network": true, "lock": null,
-      "duration": "3 to 5 min and several GB of memory each", "token_cost": "small Haiku pilots, about $0.06 per 1,000 CLs",
+      "inputs": [
+        "data/private/balance.sqlite",
+        "data/private/commits.sqlite",
+        "data/private/balance-timeline.sqlite",
+        "data/private/derived.sqlite",
+        "data/private/labels.sqlite",
+        "data/private/ai_marked_broad.txt",
+        "data/private/ai_predict/",
+        "shared/chromium",
+        "claude-model"
+      ],
+      "outputs": [
+        "data/private/balance_people/"
+      ],
+      "network": true,
+      "lock": null,
+      "duration": "3 to 5 min and several GB of memory each",
+      "token_cost": "small Haiku pilots, about $0.06 per 1,000 CLs",
       "cost_source": "docs/balance-ai.md; docs/balance-ai-predict.md",
       "refresh": "analysis",
       "notes": "Results go into docs/balance*.md by hand. Network use is the model pilots only."
     },
-
     {
-      "id": "review-feedback", "group": "feedback", "command": "nice -n 5 python3 scripts/review_feedback.py",
-      "code": ["scripts/review_feedback.py", "scripts/balance_analysis.py", "scripts/balance_growth.py", "cosh/balance.py"],
+      "id": "review-feedback",
+      "command": "nice -n 5 python3 -m cosh.feedback",
+      "code": [
+        "cosh/feedback.py",
+        "cosh/cl_facts.py",
+        "cosh/people.py",
+        "cosh/commits.py"
+      ],
       "purpose": "Writes each person's review feedback against their peers, as files named by a hash of their address.",
-      "inputs": ["data/private/commits.sqlite", "data/private/derived.sqlite", "data/private/labels.sqlite", "data/private/sentiment.sqlite", "data/private/sentiment/", "config/bots.txt", "config/affiliations.json5"],
-      "outputs": ["web/public/review-feedback/"],
-      "network": true, "lock": null,
+      "inputs": [
+        "data/private/commits.sqlite",
+        "data/private/derived.sqlite",
+        "data/private/labels.sqlite",
+        "data/private/sentiment.sqlite",
+        "data/private/sentiment/",
+        "config/bots.txt",
+        "config/affiliations.json5"
+      ],
+      "outputs": [
+        "web/public/review-feedback/"
+      ],
+      "network": true,
+      "lock": null,
       "incremental": "Deletes and rewrites every file.",
-      "duration": "about 3 min (188 s on 2026-11-12), 3 GB of memory", "token_cost": null, "cost_source": "docs/review-feedback.md",
+      "duration": "about 3 min (188 s on 2026-11-12), 3 GB of memory",
+      "token_cost": null,
+      "cost_source": "docs/review-feedback.md",
       "refresh": "routine",
-      "approval": "Tone is praise only. The output stays out of git until the page is published.",
-      "notes": "Needs no balance stage: it computes the per-CL facts it uses (owner, status, Gerrit size, landed commit, lines per directory) from derived.sqlite and commits.sqlite with the balance-cl step's own functions (cosh.balance.cl_facts and cl_dirs), so the two can't drift. Earlier commits count from 2008: commits.sqlite holds main's whole history. It runs update-affiliations first by itself (its only network use). `npm run serve` picks the new files up by itself a few seconds after the run ends."
+      "approval": "Tone is praise only (docs/plan.md, ground rule 5).",
+      "notes": "Computes its per-CL facts (owner, status, Gerrit size, landed commit, lines per directory) from derived.sqlite and commits.sqlite (cosh.cl_facts). Earlier commits count from 2008. Its tone year is Review Tone's (sentiment.scored_weeks). It refreshes the affiliations file first (its only network use). `npm run serve` picks the new files up a few seconds after the run ends.",
+      "run": "nice -n 5 python3 -m cosh.feedback"
     },
     {
-      "id": "feedback-coach", "group": "feedback", "command": "python3 scripts/feedback_coach.py <email> [--dry-run]",
-      "code": ["scripts/feedback_coach.py", "cosh/sandbox.py"],
+      "id": "feedback-coach",
+      "command": "python3 scripts/feedback_coach.py <email> [--dry-run]",
+      "code": [
+        "scripts/feedback_coach.py",
+        "cosh/sandbox.py"
+      ],
       "purpose": "Has sandboxed Opus write a private coaching report from one person's recent review threads.",
-      "inputs": ["data/private/derived.sqlite", "data/private/commits.sqlite", "data/private/labels.sqlite", "data/private/notedb/", "claude-model"],
-      "outputs": ["data/private/feedback-coach/"],
-      "network": true, "lock": null,
+      "inputs": [
+        "data/private/derived.sqlite",
+        "data/private/commits.sqlite",
+        "data/private/labels.sqlite",
+        "gerrit-raw",
+        "claude-model"
+      ],
+      "outputs": [
+        "data/private/feedback-coach/"
+      ],
+      "network": true,
+      "lock": null,
       "incremental": "`--reuse` rebuilds the report from the saved reply without a new call.",
-      "duration": "about 1 min per report", "token_cost": "115k to 150k Opus tokens per report", "cost_source": "docs/review-feedback.md",
-      "refresh": "optional",
+      "duration": "about 1 min per report",
+      "token_cost": "115k to 150k Opus tokens per report",
+      "cost_source": "docs/review-feedback.md",
+      "refresh": "analysis",
       "approval": "Costs Max usage; reports are never published."
     },
     {
-      "id": "roi-analysis", "group": "feedback", "command": "python3 scripts/review_roi_table.py ...; review_roi_part1.py; review_roi_part2.py; review_roi_blame.py; review_roi_reverts.py; review_roi_substance.py",
-      "code": ["scripts/review_roi_table.py", "scripts/review_roi_part1.py", "scripts/review_roi_part1_followup.py", "scripts/review_roi_part2.py", "scripts/review_roi_blame.py", "scripts/review_roi_reverts.py", "scripts/review_roi_substance.py", "scripts/balance_addressed_value.py"],
+      "id": "roi-analysis",
+      "command": "python3 scripts/review_roi_table.py ...; review_roi_part1.py; review_roi_part2.py; review_roi_blame.py; review_roi_reverts.py; review_roi_substance.py",
+      "code": [
+        "scripts/review_roi_table.py",
+        "scripts/review_roi_part1.py",
+        "scripts/review_roi_part1_followup.py",
+        "scripts/review_roi_part2.py",
+        "scripts/review_roi_blame.py",
+        "scripts/review_roi_reverts.py",
+        "scripts/review_roi_substance.py",
+        "scripts/balance_addressed_value.py"
+      ],
       "purpose": "The review-ROI studies: whether review feedback predicts later reverts, bug-fixing commits and security bugs; and the addressed index against the feedback index.",
-      "inputs": ["data/private/balance.sqlite", "data/private/commits.sqlite", "data/private/balance-timeline.sqlite", "data/private/derived.sqlite", "data/private/labels.sqlite", "data/private/bugs/bugs.sqlite", "data/private/notedb/", "chromium-git", "claude-model"],
-      "outputs": ["data/private/review_roi/"],
-      "network": true, "lock": null,
-      "duration": "about 1 h; the full blame runs were estimated at 10 to 16 CPU hours", "token_cost": "Haiku pilots only: 274 tokens per thread, 200 threads",
+      "inputs": [
+        "data/private/balance.sqlite",
+        "data/private/commits.sqlite",
+        "data/private/balance-timeline.sqlite",
+        "data/private/derived.sqlite",
+        "data/private/labels.sqlite",
+        "data/private/bugs/bugs.sqlite",
+        "gerrit-raw",
+        "shared/chromium",
+        "claude-model"
+      ],
+      "outputs": [
+        "data/private/review_roi/"
+      ],
+      "network": true,
+      "lock": null,
+      "duration": "about 1 h; the full blame runs were estimated at 10 to 16 CPU hours",
+      "token_cost": "Haiku pilots only: 274 tokens per thread, 200 threads",
       "cost_source": "docs/review-roi*.md",
       "refresh": "analysis",
       "notes": "The scripts write to data/private/scratch/review_roi/ by default; the results balance-publish reads are copied into data/private/review_roi/ by hand (the addressed ones as addressed_cl.json, addressed_blame.json, addressed_people.json). This is the only path by which bug-tracker data reaches a page."
     },
     {
-      "id": "impact-analysis", "group": "feedback", "command": "python3 scripts/review_impact.py --weeks 2026-W36:2026-W44 --out threads.jsonl; python3 scripts/review_impact_stats.py threads.jsonl",
-      "code": ["scripts/review_impact.py", "scripts/review_impact_stats.py", "scripts/review_impact_confound.py", "scripts/review_impact_rank.py"],
+      "id": "impact-analysis",
+      "command": "python3 scripts/review_impact.py --weeks 2026-W36:2026-W44 --out threads.jsonl; python3 scripts/review_impact_stats.py threads.jsonl",
+      "code": [
+        "scripts/review_impact.py",
+        "scripts/review_impact_stats.py",
+        "scripts/review_impact_confound.py",
+        "scripts/review_impact_rank.py"
+      ],
       "purpose": "Early study of which review threads change the CL, behind docs/review-impact.md.",
-      "inputs": ["data/private/derived.sqlite", "data/private/notedb/"],
-      "outputs": [],
-      "network": false, "lock": null,
-      "duration": "about 25 s", "token_cost": null, "cost_source": "docs/review-impact.md",
+      "inputs": [
+        "data/private/derived.sqlite",
+        "gerrit-raw"
+      ],
+      "outputs": [
+        "data/private/scratch/"
+      ],
+      "network": false,
+      "lock": null,
+      "duration": "about 25 s",
+      "token_cost": null,
+      "cost_source": "docs/review-impact.md",
       "refresh": "analysis"
     },
-
     {
-      "id": "chrome-releases", "group": "bugs", "command": "python3 scripts/chrome_releases.py all",
-      "code": ["scripts/chrome_releases.py"],
+      "id": "chrome-releases",
+      "command": "python3 scripts/chrome_releases.py all",
+      "code": [
+        "scripts/chrome_releases.py"
+      ],
       "purpose": "Fetches the Chrome Releases feed, parses its security fixes and joins them to their fixing commits on main.",
-      "inputs": ["chrome-releases-blog", "chromium-git"],
-      "outputs": ["data/private/chrome_releases/"],
-      "network": true, "lock": null,
+      "inputs": [
+        "chrome-releases-blog",
+        "shared/chromium"
+      ],
+      "outputs": [
+        "data/private/chrome_releases/"
+      ],
+      "network": true,
+      "lock": null,
       "incremental": "Fetches only pages it lacks, so the newest page goes stale without --refresh; parse and join recompute.",
-      "duration": "about 1 min of fetching (26 requests)", "token_cost": null, "cost_source": "docs/bugs-and-security.md",
+      "duration": "about 1 min of fetching (26 requests)",
+      "token_cost": null,
+      "cost_source": "docs/bugs-and-security.md",
       "refresh": "optional",
       "approval": "Approved 2026-11-08."
     },
     {
-      "id": "bugs-ids", "group": "bugs", "command": "python3 -m cosh.bugs ids",
-      "code": ["cosh/bugs.py"],
+      "id": "bugs-ids",
+      "command": "python3 -m cosh.bugs ids",
+      "code": [
+        "cosh/approved.py",
+        "cosh/bugs.py"
+      ],
       "purpose": "Lists the bug IDs to ask for, from commit footers on main and the security fixes.",
-      "inputs": ["chromium-git", "data/private/chrome_releases/"],
-      "outputs": ["data/private/bugs/bugs.sqlite"],
-      "network": false, "lock": null,
+      "inputs": [
+        "shared/chromium",
+        "data/private/chrome_releases/",
+        "config/approved.json"
+      ],
+      "outputs": [
+        "data/private/bugs/bugs.sqlite"
+      ],
+      "network": false,
+      "lock": null,
       "incremental": "Recomputes the wanted table.",
-      "duration": "about 10 s", "token_cost": null, "cost_source": "docs/bugs.md",
+      "duration": "about 10 s",
+      "token_cost": null,
+      "cost_source": "docs/bugs.md",
       "refresh": "optional"
     },
     {
-      "id": "bugs-fetch", "group": "bugs", "command": "nice -n 5 python3 -m cosh.bugs fetch --go && nice -n 5 python3 -m cosh.bugs monorail --go && nice -n 5 python3 -m cosh.bugs fetch --go",
-      "code": ["cosh/bugs.py"],
+      "id": "bugs-fetch",
+      "command": "nice -n 5 python3 -m cosh.bugs fetch --go && nice -n 5 python3 -m cosh.bugs monorail --go && nice -n 5 python3 -m cosh.bugs fetch --go",
+      "code": [
+        "cosh/bugs.py"
+      ],
       "purpose": "Asks the tracker for every wanted bug not asked yet, maps old Monorail IDs, then asks for those too.",
-      "inputs": ["issues-chromium", "monorail-stubs", "data/private/settings.json"],
-      "outputs": ["data/private/bugs/raw/", "data/private/bugs/bugs.sqlite"],
-      "network": true, "lock": "data/private/bugs/fetch.lock, data/private/bugs/monorail.lock",
+      "inputs": [
+        "issues-chromium",
+        "monorail-stubs"
+      ],
+      "outputs": [
+        "data/private/bugs/raw/",
+        "data/private/bugs/bugs.sqlite"
+      ],
+      "network": true,
+      "lock": "data/private/bugs/fetch.lock, data/private/bugs/monorail.lock",
       "incremental": "Only IDs never asked; `fetch --retry-missing` re-asks invisible ones after 30 days. `parse` rebuilds the bugs table from raw/ offline.",
-      "duration": "about 1.5 h in all: 2,906 searches and 21,267 stub lookups", "token_cost": null,
+      "duration": "about 1.5 h in all: 2,906 searches and 21,267 stub lookups",
+      "token_cost": null,
       "cost_source": "data/private/bugs/*.log; docs/bugs.md",
       "refresh": "optional",
       "approval": "Approved 2026-11-08 for bugs in footers since 2023-07-01 and security fixes. Other trackers or b: bugs need approval."
-    },
-
-    {
-      "id": "web-build", "group": "site", "command": "cd web && npm run build",
-      "code": ["web/vite.config.ts", "web/package.json"],
-      "purpose": "Builds the site: each data file a page imports gets a hashed copy, and web/public/ is copied as it is.",
-      "inputs": ["summaries/value-exchange", "data/public/radar_browser_share.csv", "config/org_browsers.csv", "summaries/sentiment_monthly*.json", "summaries/sentiment_praise*.json", "summaries/sentiment_samples*.json", "summaries/sentiment_recent*.json", "summaries/sentiment_people.json", "scripts/sentiment_prompts/", "summaries/balance.json", "summaries/balance_dirs.json", "summaries/balance_authors.json", "web/public/review-feedback/", "config/dataflow.json"],
-      "outputs": ["web/dist/"],
-      "network": false, "lock": null,
-      "incremental": "Rebuilds everything. `npm run serve` rebuilds on change, including new pages and new files in web/public/, and serves the result on port 5182.",
-      "duration": "under 1 min; `npm test` adds the unit and browser tests", "token_cost": null, "cost_source": "Not measured",
-      "refresh": "routine",
-      "notes": "Files that no page imports never reach the site."
-    },
-    {
-      "id": "pages-deploy", "group": "site", "command": "git push (runs .github/workflows/pages.yml)",
-      "code": [".github/workflows/pages.yml"],
-      "purpose": "On a push to main, builds and tests the site from the committed files and publishes it to GitHub Pages.",
-      "inputs": ["summaries/value-exchange", "data/public/radar_browser_share.csv", "config/org_browsers.csv", "summaries/sentiment_monthly*.json", "summaries/sentiment_praise*.json", "summaries/sentiment_samples*.json", "summaries/sentiment_recent*.json", "summaries/sentiment_people.json", "scripts/sentiment_prompts/", "summaries/balance.json", "summaries/balance_dirs.json", "summaries/balance_authors.json", "config/dataflow.json"],
-      "outputs": [],
-      "network": true, "lock": null,
-      "incremental": "Rebuilds the whole site in CI; it never uses a local build.",
-      "duration": "a few minutes", "token_cost": null, "cost_source": "Not measured",
-      "refresh": "automatic",
-      "notes": "Runs only when web/, summaries/, the Radar CSV, config/org_browsers.csv, config/dataflow.json or the sentiment prompts change."
     }
   ],
   "pages": [
     {
-      "id": "page-index", "group": "site", "path": "web/index.html", "title": "Landing page",
+      "id": "page-index",
+      "path": "web/index.html",
+      "title": "Landing page",
       "purpose": "One card per dashboard; reads no data.",
-      "entry_script": null, "reads": [], "sources_line": null
+      "entry_script": null,
+      "reads": [],
+      "sources_line": null
     },
     {
-      "id": "page-404", "group": "site", "path": "web/404.html", "title": "Page not found",
+      "id": "page-404",
+      "path": "web/404.html",
+      "title": "Page not found",
       "purpose": "Shown for unknown URLs (GitHub Pages and npm run serve); reads no data.",
-      "entry_script": null, "reads": [], "sources_line": null
+      "entry_script": null,
+      "reads": [],
+      "sources_line": null
     },
     {
-      "id": "page-value", "group": "gerrit", "path": "web/value.html", "title": "Value Exchange",
+      "id": "page-value",
+      "names": [
+        "value"
+      ],
+      "path": "web/value.html",
+      "title": "Value Exchange",
       "purpose": "Each organisation's share of code review and commits against its browsers' share of usage.",
       "entry_script": "web/src/main.ts",
-      "reads": ["summaries/value-exchange", "data/public/radar_browser_share.csv", "config/org_browsers.csv"],
+      "reads": [
+        "summaries/value-exchange",
+        "data/public/radar_browser_share.csv",
+        "config/org_browsers.csv"
+      ],
       "sources_line": "Gerrit code review · Chromium git history · Cloudflare Radar"
     },
     {
-      "id": "page-sentiment", "group": "sentiment", "path": "web/sentiment.html", "title": "Review Tone",
+      "id": "page-sentiment",
+      "names": [
+        "tone"
+      ],
+      "path": "web/sentiment.html",
+      "title": "Review Tone",
       "purpose": "The tone of review comments over time, praise boards, and anonymous samples.",
       "entry_script": "web/src/sentiment.ts",
-      "reads": ["summaries/sentiment_monthly*.json", "summaries/sentiment_praise*.json", "summaries/sentiment_samples*.json", "summaries/sentiment_recent*.json", "summaries/sentiment_people.json", "scripts/sentiment_prompts/"],
+      "reads": [
+        "summaries/sentiment",
+        "scripts/sentiment_prompts/"
+      ],
       "sources_line": "Gerrit code review"
     },
     {
-      "id": "page-balance", "group": "balance", "path": "web/balance.html", "title": "Review Balance",
+      "id": "page-balance",
+      "names": [
+        "balance"
+      ],
+      "path": "web/balance.html",
+      "title": "Review Balance",
       "purpose": "How work is split between authors and reviewers, how people grow into reviewers, and what changed with AI tools.",
       "entry_script": "web/src/balance.ts",
-      "reads": ["summaries/balance.json", "summaries/balance_dirs.json", "summaries/balance_authors.json"],
+      "reads": [
+        "summaries/balance.json",
+        "summaries/balance_dirs.json",
+        "summaries/balance_authors.json"
+      ],
       "sources_line": "Gerrit code review · Chromium git history · Chromium bug tracker"
     },
     {
-      "id": "page-feedback", "group": "feedback", "path": "web/feedback-index.html", "title": "Feedback Index",
+      "id": "page-feedback",
+      "names": [
+        "feedback"
+      ],
+      "path": "web/feedback-index.html",
+      "title": "Feedback Index",
       "purpose": "Type an address to see the review feedback on that person's changes against their peers'.",
       "entry_script": "web/src/review-feedback.ts",
-      "reads": ["web/public/review-feedback/"], "sources_line": "Gerrit code review · Chromium git history",
+      "reads": [
+        "web/public/review-feedback/"
+      ],
+      "sources_line": "Gerrit code review · Chromium git history",
       "notes": "Linked from the landing page since 2026-11-12; carries noindex."
     },
     {
-      "id": "page-dataflow", "group": "site", "path": "web/dataflow.html", "title": "Data flow",
+      "id": "page-dataflow",
+      "path": "web/dataflow.html",
+      "title": "Data flow",
       "purpose": "This inventory as tables and a graph.",
       "entry_script": "web/src/dataflow.ts",
-      "reads": ["config/dataflow.json"], "sources_line": null
+      "reads": [
+        "config/dataflow.json"
+      ],
+      "sources_line": null
     }
   ]
 }

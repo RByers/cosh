@@ -30,11 +30,7 @@ from datetime import datetime, timezone
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from cosh import balance, store  # noqa: E402
 from cosh import commits as commit_store  # noqa: E402
-
-BOT = re.compile("|".join(l.split("#")[0].strip() for l in open(os.path.join(
-    os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "config", "bots.txt"))
-    if l.split("#")[0].strip()), re.I)
-
+from cosh.people import is_bot_email, person  # noqa: E402,F401 (shared with the Feedback Index)
 
 def git_db():
     return ro(balance.db_path("git"))
@@ -43,16 +39,13 @@ def git_db():
 def load_first(path=None):
     """{person: unix time of their first commit on main} over all of its
     history: commits.sqlite, or a first_commit.txt."""
-    if path:
-        rows = (line.split() for line in open(path))
-        rows = ((f[0], int(f[1]), 0) for f in rows if len(f) == 3 and f[2] == "0" and not is_bot_email(f[0]))
-    else:
-        rows = ((e, t, b) for e, (t, b) in commit_store.first_commits(git_db()).items())
+    if not path:
+        return commit_store.first_people(git_db())
     first = {}
-    for e, t, bot in rows:
-        if not bot and not is_bot_email(e):
-            e = person(e)
-            first[e] = min(t, first.get(e, t))
+    for f in (line.split() for line in open(path)):
+        if len(f) == 3 and f[2] == "0" and not is_bot_email(f[0]):
+            e = person(f[0])
+            first[e] = min(int(f[1]), first.get(e, int(f[1])))
     return first
 
 
@@ -75,10 +68,9 @@ def load_ai_marked(path=None):
 
 
 def mech_set(path=None, cls=None):
-    """Mechanical CLs: merged CLs whose landed commit has 100 or more files,
-    or 10 or more with a repetition ratio of 0.8 or more. From commits.sqlite's
-    repetition ratios and balance.sqlite's CLs (or `cls`, dicts with its
-    change_number, status, sha and files), or from a mech.jsonl."""
+    """Mechanical CLs (commits.mechanical): from commits.sqlite's repetition
+    ratios and balance.sqlite's CLs (or `cls`, dicts with its change_number,
+    status, sha and files), or from a mech.jsonl."""
     out = set()
     if path:
         for line in open(path):
@@ -86,18 +78,11 @@ def mech_set(path=None, cls=None):
             if files >= 100 or (rep is not None and rep >= 0.8):
                 out.add(n)
         return out
-    rep = commit_store.repetition(git_db())
-    if cls is not None:
-        rows = ((c["change_number"], c["sha"], c["files"]) for c in cls
-                if c["status"] == "MERGED" and c["files"] is not None and c["files"] >= 10)
-    else:
-        rows = ro(os.environ.get("BALANCE_CL") or balance.db_path("cl")).execute(
-            "SELECT change_number, sha, files FROM cl WHERE status = 'MERGED' AND files >= 10")
-    for n, sha, files in rows:
-        r = rep.get(sha)
-        if files >= 100 or (r is not None and r >= 0.8):
-            out.add(n)
-    return out
+    if cls is None:
+        db = ro(os.environ.get("BALANCE_CL") or balance.db_path("cl"))
+        cls = [dict(change_number=n, status="MERGED", sha=sha, files=files) for n, sha, files in db.execute(
+            "SELECT change_number, sha, files FROM cl WHERE status = 'MERGED' AND files >= 10")]
+    return commit_store.mechanical(git_db(), cls)
 
 
 def quarter(t):
@@ -122,20 +107,6 @@ def ro(path):
     return sqlite3.connect(f"file:{path}?mode=ro", uri=True)
 
 
-def person(e):
-    """One identity per person across Chromium's two common domains: many
-    people author as user@chromium.org and review as user@google.com."""
-    e = (e or "").lower()
-    if e.count("@") > 1:            # SVN-era author: user@domain@<repository uuid>
-        e = e.rsplit("@", 1)[0]
-    local, _, dom = e.partition("@")
-    return f"{local}@google.com" if dom in ("chromium.org", "google.com") else e
-
-
-def is_bot_email(e):
-    return not e or bool(BOT.search(e))
-
-
 def load_cl():
     db = ro(os.environ.get("BALANCE_CL") or balance.db_path("cl"))
     db.row_factory = sqlite3.Row
@@ -146,23 +117,8 @@ def load_cl():
 
 
 def load_commits():
-    """Human commits on main since 2017 with a Gerrit CL."""
-    db = git_db()
-    rows = db.execute("SELECT commit_id, sha, author_email, landed_at, change_number, is_bot, reviewed_by, "
-                      "reverts_sha, is_reland, files, ins + dels FROM gcommits").fetchall()
-    reverted = defaultdict(lambda: None)
-    for r in rows:
-        if r[7]:
-            reverted[r[7]] = min(r[3], reverted[r[7]] or r[3])
-    out = []
-    for cid, sha, email, at, n, bot, rb, rv, rl, files, lines in rows:
-        if bot or is_bot_email(email):
-            continue
-        out.append(dict(cid=cid, sha=sha, email=person(email), at=at, n=n,
-                        rb=[person(x) for x in json.loads(rb)] if rb else [],
-                        is_revert=rv is not None, reland=rl, files=files, lines=lines,
-                        reverted_at=reverted[sha]))
-    return out
+    """Human commits on main since 2017 with a Gerrit CL (commits.human_commits)."""
+    return commit_store.human_commits(git_db())
 
 
 # ------------------------------------------------------------------ mechanical
@@ -295,30 +251,12 @@ def trends(cls, commits, ai):
 
 # ---------------------------------------------------------------------- growth
 
-def dir_of(path, depth):
-    parts = path.split("/")[:-1]
-    return "/".join(parts[:depth]) + "/" if parts else "(root)/"
+dir_of = commit_store.dir_of
 
 
 def commit_dirs(depth=3):
     """{commit_id: (top dir by lines, frozenset of dirs)} from gfiles."""
-    db = git_db()
-    paths = dict(db.execute("SELECT path_id, path FROM paths"))
-    cache, out, cur, acc = {}, {}, None, None
-
-    def done():
-        if cur is not None and acc:
-            out[cur] = (max(acc, key=acc.get), frozenset(acc))
-    for cid, pid, ins, dels in db.execute("SELECT commit_id, path_id, ins, dels FROM gfiles"):
-        if cid != cur:
-            done()
-            cur, acc = cid, {}
-        d = cache.get(pid)
-        if d is None:
-            d = cache[pid] = sys.intern(dir_of(paths[pid], depth))
-        acc[d] = acc.get(d, 0) + max(ins, 0) + max(dels, 0) + 1
-    done()
-    return out
+    return commit_store.commit_dirs(git_db(), depth)
 
 
 def commit_main_dirs(depth=3):

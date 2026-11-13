@@ -1,6 +1,6 @@
 // The Review Feedback page's data and arithmetic (feedback-index.html,
 // docs/review-feedback.md), kept apart from the DOM so unit tests can run it.
-// scripts/review_feedback.py writes one file per person, named by `personKey`
+// cosh/feedback.py writes one file per person, named by `personKey`
 // of their address, and peers.json with every peer group's percentiles.
 
 /** What counts (every reviewer thread, or only addressed ones) and what it is
@@ -54,7 +54,7 @@ export type Unit = [number, number, number, number?];
  * owner's earlier commits on main]. */
 export type ClRow = [number, number, number, number, number, number, number, Unit[], Thread[], number, number];
 
-/** A change in a half-year file (scripts/review_feedback.py `shard`): [change
+/** A change in a half-year file (cosh/feedback.py `shard`): [change
  * number, day landed, lines, expected threads by size and directory, expected
  * addressed by size and directory, units, threads, org index, earlier commits
  * on main]. The expected values by size alone come from peers.json's
@@ -170,7 +170,7 @@ export interface Peers {
   change: Record<string, Record<Metric, { n: number; people: number; median: number | null; counts: number[] }>>;
   /** A half-year counts towards a cohort curve with this many changes. */
   min_cohort_cls: number;
-  /** The opening card's bar charts (scripts/review_feedback.py, median_breakdowns):
+  /** The opening card's bar charts (cosh/feedback.py, median_breakdowns):
    * per "Peers" org and measure, the median contributor's value and how many
    * contributors, by size bucket (`size_labels`, changed lines) and by directory
    * (`dir_names`). A contributor counts with `min_cell_cls` changes there. */
@@ -283,7 +283,7 @@ export function normalizeEmail(raw: string): string {
 /** Whether `raw` looks enough like an address to look up. */
 export const looksLikeEmail = (raw: string) => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(raw.trim());
 
-/** The data file's name for an address (scripts/review_feedback.py `key`). */
+/** The data file's name for an address (cosh/feedback.py `key`). */
 export async function personKey(raw: string): Promise<string> {
   const bytes = new TextEncoder().encode(SALT + normalizeEmail(raw));
   const hash = new Uint8Array(await crypto.subtle.digest('SHA-256', bytes));
@@ -388,7 +388,7 @@ export function halfGroups(by: TenureBy, org: PeerOrg, p: Pick<Person, 'periods'
 export const valueFor = (by: TenureBy, vals: PeriodVals | undefined, m: Metric) =>
   vals ? (by === 'dir' ? vals.x[m] : vals.v[m]) ?? null : null;
 
-/** Earlier-commit bands, as scripts/review_feedback.py `changes_band`. */
+/** Earlier-commit bands, as cosh/feedback.py `changes_band`. */
 export const changesBand = (n: number) =>
   n < 50 ? '<50' : n < 200 ? '50-199' : n < 500 ? '200-499' : n < 1000 ? '500-999' : '1000+';
 
@@ -766,7 +766,7 @@ function median(xs: number[]): number {
 
 export const tenureBand = (y: number) => (y < 1 ? '<1y' : y < 2 ? '1-2y' : y < 5 ? '2-5y' : y < 10 ? '5-10y' : '10y+');
 
-/** A person's values for one period, as scripts/review_feedback.py
+/** A person's values for one period, as cosh/feedback.py
  * `person_period` computes them for the peer groups: totals, tenure (years
  * and earlier commits) at the median change, the most common org, whether they count among peers, the
  * measures, and the same measures against everyone's feedback at the same

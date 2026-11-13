@@ -70,6 +70,8 @@ def main(argv=None):
                                         "git clone (offline; $COSH_CHROMIUM_GIT)")
     g.add_argument("--db", help="store path (default: $COSH_COMMITS_DB or data/private/commits.sqlite)")
     g.add_argument("--jobs", type=int, default=4, help="git diff processes for repetition ratios (at most 4)")
+    sub.add_parser("fetch-git", help="fetch chromium/src main (only) into the shared clone "
+                                     "~/projects/shared/chromium, under the extract lock")
     c = sub.add_parser("classify",
                        help="label review threads as addressed with Claude Haiku via `claude -p` "
                             "(uses Max usage; writes data/private/labels.sqlite; optional step)")
@@ -128,8 +130,8 @@ def main(argv=None):
                          "when under 25 GB is free, and always at the end)")
     ps.add_argument("--db", help="derived DB path (default: data/private/derived.sqlite)")
     ps.add_argument("--since", default=None,
-                    help="CLs closed (or last updated) on or after this date (default: the approved "
-                         "2023-06-26; earlier needs the user's approval, CLAUDE.md)")
+                    help="CLs closed (or last updated) on or after this date (default and earliest: "
+                         "config/approved.json)")
     sub.add_parser("status", help="show extraction progress")
     sub.add_parser("update-affiliations", help="refresh config/affiliations.json5 from chromium/src")
     r = sub.add_parser("radar", help="fetch Cloudflare Radar browser share (needs CLOUDFLARE_API_TOKEN) "
@@ -141,11 +143,18 @@ def main(argv=None):
     r.add_argument("--interval", type=float, default=1.0, help="min seconds between requests (>= 1.0)")
     r.add_argument("--retry-errors", action="store_true", help="re-request chunks cached as HTTP 4xx")
     r.add_argument("--offline", action="store_true", help="only rebuild the CSV from the raw cache")
+    sub.add_parser("update", add_help=False,
+                   help="rerun what is downstream of new data, in order (python3 -m cosh update --help)")
+    if argv is None:
+        argv = sys.argv[1:]
+    if argv[:1] == ["update"]:
+        from .update import main as update
+        sys.exit(update(argv[1:]))
     a = p.parse_args(argv)
 
     # Commands that talk to a server need the contact e-mail (cosh/contact.py).
     # Check before taking locks or starting work, so a missing one fails fast.
-    if (a.cmd in ("extract", "extract-open", "update-affiliations")
+    if (a.cmd in ("extract", "extract-open", "update-affiliations", "fetch-git")
             or (a.cmd in ("backfill", "patchsets") and a.go)
             or (a.cmd == "radar" and not a.offline)):
         from .contact import ContactMissing, contact
@@ -158,6 +167,8 @@ def main(argv=None):
         if a.interval < 1.0:
             p.error("--interval below 1.0s is not allowed (be polite to Gerrit)")
         from .extract import extract_week
+        from .approved import check_weeks
+        check_weeks([a.week])
         with store.extract_lock():
             extract_week(a.host, a.project, a.week, min_interval=a.interval,
                          max_comment_fetches=a.max_comment_fetches, argv=" ".join(sys.argv),
@@ -180,6 +191,11 @@ def main(argv=None):
     elif a.cmd == "commits":
         from .commits import update
         update(a.db, jobs=max(1, min(a.jobs, 4)))
+    elif a.cmd == "fetch-git":
+        from .commits import fetch_main
+        with store.extract_lock():
+            old, new = fetch_main()
+        print(f"main: {old[:12]} -> {new[:12]}" if old != new else f"main: up to date at {new[:12]}")
     elif a.cmd == "classify":
         from .classify import classify
         classify(db_path=a.db, weeks=a.week, model=a.model, batch=max(1, min(a.batch, 200)),
@@ -208,6 +224,8 @@ def main(argv=None):
         kw = dict(go=a.go, duty_cycle=a.duty_cycle, batch_size=min(a.batch_size, 500),
                   argv=" ".join(sys.argv), jobs=a.jobs, jobs_until=until)
         if a.go:
+            from .approved import check_weeks
+            check_weeks(weeks)
             with store.extract_lock():
                 backfill(a.host, a.project, weeks, **kw)
         else:
@@ -216,10 +234,12 @@ def main(argv=None):
         if a.interval < 1.0:
             p.error("--interval below 1.0s is not allowed (be polite to googlesource)")
         from . import patchsets
+        from .approved import patchsets_range
+        since, until = patchsets_range(a.since)
         kw = dict(derived_path=a.db, interval=a.interval, max_cls=a.max_cls,
                   max_ps=a.max_patchsets, max_batches=a.max_batches,
                   repack_bytes=a.repack_gb * 1e9, jobs=max(1, min(a.jobs, 8)),
-                  since=a.since or patchsets.APPROVED_SINCE)
+                  since=since, until=until)
         if a.go:
             with store.extract_lock():
                 patchsets.run(go=True, **kw)

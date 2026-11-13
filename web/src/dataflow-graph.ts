@@ -4,17 +4,10 @@
 // scripts/dataflow.py does the same checks and planning for the command line.
 
 export type Tier = 'raw' | 'labels' | 'derived' | 'analysis' | 'published' | 'config';
-export type Refresh = 'routine' | 'optional' | 'one-off' | 'analysis' | 'automatic';
-
-export interface Group {
-  id: string;
-  name: string;
-  purpose: string;
-}
+export type Refresh = 'routine' | 'optional' | 'one-off' | 'analysis' | 'maintenance';
 
 export interface Source {
   id: string;
-  group: string;
   name: string;
   url?: string;
   kind: string;
@@ -34,7 +27,6 @@ export interface TableInfo {
 
 export interface Store {
   id: string;
-  group: string;
   path: string;
   /** A short name, for a store that is a family of files rather than one path. */
   name?: string;
@@ -55,7 +47,6 @@ export interface Store {
 
 export interface Step {
   id: string;
-  group: string;
   command: string;
   code: string[];
   purpose: string;
@@ -68,13 +59,16 @@ export interface Step {
   token_cost?: string | null;
   cost_source?: string | null;
   refresh: Refresh;
+  /** What `python3 -m cosh update` runs, for a step it may run by itself. */
+  run?: string;
   approval?: string;
   notes?: string;
 }
 
 export interface PageInfo {
   id: string;
-  group: string;
+  /** Words that name this page's analysis: nodes named with them feed only this page. */
+  names?: string[];
   path: string;
   title: string;
   purpose: string;
@@ -88,7 +82,6 @@ export interface Dataflow {
   schema_version: number;
   updated: string;
   about: string;
-  groups: Group[];
   sources: Source[];
   stores: Store[];
   steps: Step[];
@@ -100,7 +93,6 @@ export type Kind = 'source' | 'store' | 'step' | 'page';
 export interface Node {
   id: string;
   kind: Kind;
-  group: string;
   /** Short name for the graph and for links. */
   label: string;
   source?: Source;
@@ -120,7 +112,7 @@ export interface Graph {
 }
 
 export const TIERS: Tier[] = ['raw', 'labels', 'derived', 'analysis', 'published', 'config'];
-export const REFRESHES: Refresh[] = ['routine', 'optional', 'one-off', 'analysis', 'automatic'];
+export const REFRESHES: Refresh[] = ['routine', 'optional', 'one-off', 'analysis', 'maintenance'];
 
 /** A path's last segment. A directory keeps its trailing slash and its
  * parent, so data/public/radar/raw/ and data/private/bugs/raw/ differ. */
@@ -132,22 +124,20 @@ export function baseName(path: string): string {
 export function buildGraph(d: Dataflow): Graph {
   const nodes = new Map<string, Node>();
   const problems: string[] = [];
-  const groups = new Set(d.groups.map((g) => g.id));
   const add = (n: Node) => {
     if (nodes.has(n.id)) problems.push(`duplicate id ${n.id}`);
-    if (!groups.has(n.group)) problems.push(`${n.id}: unknown group ${n.group}`);
     nodes.set(n.id, n);
   };
-  for (const s of d.sources) add({ id: s.id, kind: 'source', group: s.group, label: s.name, source: s });
+  for (const s of d.sources) add({ id: s.id, kind: 'source', label: s.name, source: s });
   for (const s of d.stores) {
     if (!TIERS.includes(s.tier)) problems.push(`${s.id}: unknown tier ${s.tier}`);
-    add({ id: s.id, kind: 'store', group: s.group, label: s.name ?? baseName(s.path), store: s });
+    add({ id: s.id, kind: 'store', label: s.name ?? baseName(s.path), store: s });
   }
   for (const s of d.steps) {
     if (!REFRESHES.includes(s.refresh)) problems.push(`${s.id}: unknown refresh ${s.refresh}`);
-    add({ id: s.id, kind: 'step', group: s.group, label: s.id, step: s });
+    add({ id: s.id, kind: 'step', label: s.id, step: s });
   }
-  for (const p of d.pages) add({ id: p.id, kind: 'page', group: p.group, label: baseName(p.path), page: p });
+  for (const p of d.pages) add({ id: p.id, kind: 'page', label: p.title, page: p });
 
   const edges: [string, string][] = [];
   const edge = (from: string, to: string, owner: string, want: Kind[]) => {
@@ -198,7 +188,7 @@ export function reach(
   return seen;
 }
 
-/** Each node's column: the longest path to it from a node with nothing
+/** Each node's layer: the longest path to it from a node with nothing
  * upstream, over the nodes in `keep`. Edges that would close a cycle are
  * ignored, so a loop in the file still gets drawn. */
 export function layers(g: Graph, keep: Set<string> = new Set(g.nodes.keys())): Map<string, number> {
@@ -236,11 +226,11 @@ export interface Plan {
 
 /** What to rerun, in order, when the nodes in `changed` have new data, and
  * what that changes in git. Routine and optional steps carry the change on;
- * one-off backfills and analysis scripts don't run as part of an update. */
+ * one-off backfills, analysis scripts and maintenance don't run as part of
+ * an update. */
 export function plan(g: Graph, changed: Iterable<string>): Plan {
   const runs = (n: Node, optional: boolean) =>
-    n.kind !== 'step' || n.step!.refresh === 'routine' || n.step!.refresh === 'automatic' ||
-    (optional && n.step!.refresh === 'optional');
+    n.kind !== 'step' || n.step!.refresh === 'routine' || (optional && n.step!.refresh === 'optional');
   const start = [...changed];
   const all = reach(g, start, 'out', (n) => runs(n, true));
   const sure = reach(g, start, 'out', (n) => runs(n, false));
@@ -257,20 +247,52 @@ export function plan(g: Graph, changed: Iterable<string>): Plan {
   };
 }
 
-export interface Placed {
-  id: string;
-  col: number;
-  row: number;
+/** The pages the page filter offers: those that read something fetched
+ * (not only config), in the inventory's order. */
+export function flowPages(g: Graph): PageInfo[] {
+  return [...g.nodes.values()]
+    .filter((n) => n.kind === 'page' && [...reach(g, [n.id], 'in')].some((i) => g.nodes.get(i)!.kind === 'source'))
+    .map((n) => n.page!);
 }
 
-/** Columns from `layers`, then rows ordered to keep edges short: a few
- * sweeps placing each node at the mean row of its neighbours in the column
- * before (then after). */
-export function layout(g: Graph, keep: Set<string>): Placed[] {
+/** The flow of `pages`: everything upstream of them, except maintenance
+ * (which rewrites a store in place and so has nothing upstream). With
+ * `extras`, also the steps no page needs (analyses, maintenance) that touch
+ * it, with what they write and what they read; with `extras` and every
+ * page, everything. */
+export function scope(g: Graph, pages: string[], extras: boolean): Set<string> {
+  const keep = reach(g, pages, 'in', (n) => n.step?.refresh !== 'maintenance');
+  if (!extras) return keep;
+  if (flowPages(g).every((p) => pages.includes(p.id))) return new Set(g.nodes.keys());
+  const more: string[] = [];
+  for (const n of g.nodes.values()) {
+    if (n.kind !== 'step' || keep.has(n.id)) continue;
+    if ([...n.step!.inputs, ...n.step!.outputs].some((i) => keep.has(i))) more.push(n.id);
+  }
+  for (const id of reach(g, more, 'in')) keep.add(id);
+  for (const id of more) for (const o of g.out.get(id) ?? []) keep.add(o);
+  return keep;
+}
+
+export interface Placed {
+  id: string;
+  /** Flow layer: 0 at the top (sources), the last for pages. */
+  layer: number;
+  /** Line from the top: a layer wider than `perLine` takes several. */
+  line: number;
+  /** Place within the line, and how many share it. */
+  pos: number;
+  of: number;
+}
+
+/** Layers from `layers`, top to bottom: pages share the last, and config
+ * files (anything with nothing upstream that isn't a source) sit just above
+ * their first reader, so the top layer holds only sources and config. Each
+ * layer is ordered to keep edges short (a few sweeps placing each node at
+ * the mean place of its neighbours in the layer above, then below), then
+ * wrapped into even lines of at most `perLine` nodes. */
+export function layout(g: Graph, keep: Set<string>, perLine = Infinity): Placed[] {
   const depth = layers(g, keep);
-  // Pages share the last column. Then whatever has nothing upstream and
-  // isn't a source (config files, a store whose writer is hidden) moves
-  // right, to just before its first reader, leaving column 0 to the sources.
   const last = Math.max(0, ...depth.values());
   for (const id of depth.keys()) if (g.nodes.get(id)!.kind === 'page') depth.set(id, last);
   for (const id of depth.keys()) {
@@ -280,24 +302,37 @@ export function layout(g: Graph, keep: Set<string>): Placed[] {
     if ((g.in.get(id) ?? []).some((i) => keep.has(i))) continue;
     depth.set(id, Math.max(0, Math.min(...outs.map((o) => depth.get(o)!)) - 1));
   }
-  const cols: string[][] = [];
-  for (const [id, c] of depth) (cols[c] ??= []).push(id);
-  for (let c = 0; c < cols.length; c++) cols[c] ??= [];
-  const row = new Map<string, number>();
-  const number = (col: string[]) => col.forEach((id, i) => row.set(id, i));
-  cols.forEach(number);
-  const sweep = (col: string[], dir: 'in' | 'out') => {
+  const byDepth: string[][] = [];
+  for (const [id, d] of depth) (byDepth[d] ??= []).push(id);
+  const rows = byDepth.filter((r) => r?.length);
+  // A node's place as a fraction of its layer's width, so layers of
+  // different widths compare.
+  const at = new Map<string, number>();
+  const number = (row: string[]) => row.forEach((id, i) => at.set(id, (i + 0.5) / row.length));
+  rows.forEach(number);
+  const sweep = (row: string[], dir: 'in' | 'out') => {
     const want = new Map<string, number>();
-    for (const id of col) {
-      const near = (g[dir].get(id) ?? []).filter((n) => keep.has(n) && row.has(n));
-      want.set(id, near.length ? near.reduce((s, n) => s + row.get(n)!, 0) / near.length : row.get(id)!);
+    for (const id of row) {
+      const near = (g[dir].get(id) ?? []).filter((n) => keep.has(n) && at.has(n));
+      want.set(id, near.length ? near.reduce((s, n) => s + at.get(n)!, 0) / near.length : at.get(id)!);
     }
-    col.sort((a, b) => want.get(a)! - want.get(b)! || row.get(a)! - row.get(b)!);
-    number(col);
+    row.sort((a, b) => want.get(a)! - want.get(b)! || at.get(a)! - at.get(b)!);
+    number(row);
   };
   for (let pass = 0; pass < 4; pass++) {
-    for (let c = 1; c < cols.length; c++) sweep(cols[c], 'in');
-    for (let c = cols.length - 2; c >= 0; c--) sweep(cols[c], 'out');
+    for (let r = 1; r < rows.length; r++) sweep(rows[r], 'in');
+    for (let r = rows.length - 2; r >= 0; r--) sweep(rows[r], 'out');
   }
-  return cols.flatMap((col, c) => col.map((id, r) => ({ id, col: c, row: r })));
+  const out: Placed[] = [];
+  let line = 0;
+  rows.forEach((row, layer) => {
+    const lines = Math.max(1, Math.ceil(row.length / Math.max(1, perLine)));
+    const size = Math.ceil(row.length / lines); // 7 in lines of 6: 4 and 3
+    for (let k = 0; k < lines; k++) {
+      const part = row.slice(k * size, (k + 1) * size);
+      part.forEach((id, pos) => out.push({ id, layer, line, pos, of: part.length }));
+      line++;
+    }
+  });
+  return out;
 }

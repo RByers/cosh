@@ -2976,6 +2976,29 @@ canvas.rf-pointable {
   flex: 1 1 16rem;
 }
 
+/* The page filter: a checkbox per page, wrapping on narrow screens. */
+.df-pages {
+  flex: 2 1 24rem;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.df-pages legend {
+  padding: 0;
+  margin-bottom: 4px;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.df-pages-pick {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  font-size: 0.9rem;
+}
+
 .df-find input {
   grid-column: 1 / -1;
 }
@@ -3104,7 +3127,7 @@ canvas.rf-pointable {
   --color: var(--series-4);
 }
 
-.df-tag.r-automatic {
+.df-tag.r-maintenance {
   --color: var(--series-1);
 }
 
@@ -3149,10 +3172,10 @@ canvas.rf-pointable {
   border-radius: 6px;
 }
 
-/* The graph scrolls inside its box, both ways. */
+/* The graph is drawn as wide as its box and as tall as it needs, so it never
+   scrolls inside the page. */
 .df-graph {
-  overflow: auto;
-  max-height: min(78vh, 900px);
+  overflow: hidden;
   border: 1px solid var(--grid);
   border-radius: 6px;
   background: var(--page);

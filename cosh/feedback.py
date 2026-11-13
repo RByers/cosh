@@ -1,7 +1,7 @@
 """Per-person data for the Review Feedback page (web/feedback-index.html,
 docs/review-feedback.md).
 
-Offline; reads derived.sqlite, commits.sqlite (no balance stage),
+Offline; reads derived.sqlite, commits.sqlite,
 labels.sqlite, sentiment.sqlite and the sentiment comment files. Writes, under --out
 (default web/public/review-feedback/):
 
@@ -18,10 +18,7 @@ completions. Everything comes from public Gerrit and git data. Review tone
 appears only as praise (docs/plan.md, ground rule 5): nothing written here
 marks a comment, a person or an org as negative, and orgs get no tone figures.
 
-  COSH_DATA_DIR=<main>/data/private nice -n 5 python3 scripts/review_feedback.py [--out DIR]
-
-(--first-commit F and --mech F read the old hand-made files instead of
-commits.sqlite.)
+  COSH_DATA_DIR=<main>/data/private nice -n 5 python3 -m cosh.feedback [--out DIR]
 """
 
 import argparse
@@ -39,11 +36,12 @@ import sys
 from collections import Counter, defaultdict
 from datetime import datetime, timezone
 
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-import balance_analysis as A  # noqa: E402
-from cosh import balance, classify, sentiment, store  # noqa: E402
-from cosh.orgs import OrgResolver  # noqa: E402
+from . import classify, sentiment, store
+from . import commits as C
+from . import cl_facts as F
+from .cl_facts import CL_FACTS, SINCE, cl_facts
+from .orgs import OrgResolver
+from .people import Ids, alias_pairs, is_bot_email, person
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT = os.path.join(ROOT, "web", "public", "review-feedback")
@@ -54,7 +52,7 @@ ADDR_COVER = 0.95             # the addressed measure starts where every later w
 # The opening card's cohort curves reach back to 2018 (the first whole year of
 # Gerrit data; reviews before mid-2017 were on Rietveld), all threads only.
 HISTORY_ISO = "2018-01-01"
-TONE_WEEKS = sentiment.weeks_in("2025-W45:2026-W44")             # the year with comment text and tone scores
+TONE_WEEKS = []              # the year with comment text and tone scores: set by main (--tone-weeks)
 SALT = "cosh-review-feedback-v1:"
 EXCERPT = 200                 # characters of a comment kept for the drill-down
 # Any one person's figure that is ranked among peers or goes into the
@@ -115,7 +113,7 @@ FLOOR = 0.05                  # values below this count as this in a ratio
 
 def key(email):
     """The file name for an address: the page normalises and hashes the same way."""
-    return hashlib.sha256((SALT + A.person(email.strip())).encode()).hexdigest()[:32]
+    return hashlib.sha256((SALT + person(email.strip())).encode()).hexdigest()[:32]
 
 
 def tenure_band(years):
@@ -167,7 +165,7 @@ def trim_end(t):
 def data_range(use):
     """The dates the page covers, from the data: the weeks `derive` recorded as
     fetched, no earlier than the oldest usable CL's week, trimmed to months."""
-    d = A.ro(os.path.join(store.DATA_DIR, store.DERIVED_FILE))
+    d = ro(os.path.join(store.DATA_DIR, store.DERIVED_FILE))
     row = d.execute("SELECT v FROM meta WHERE k = 'fetched_weeks'").fetchone()
     weeks = sorted(json.loads(row[0])) if row else []
     if not weeks:
@@ -346,9 +344,34 @@ def excerpt(text):
     return (cut if len(cut) > EXCERPT // 2 else t[:EXCERPT]) + "…"
 
 
+
+def ro(path):
+    return sqlite3.connect(f"file:{path}?mode=ro", uri=True)
+
+
+_GIT_DB = None
+
+
+def git_db():
+    """commits.sqlite, read-only, opened once."""
+    global _GIT_DB
+    if _GIT_DB is None:
+        _GIT_DB = ro(C.db_path())
+    return _GIT_DB
+
+
+def year(t):
+    return datetime.fromtimestamp(t, timezone.utc).year
+
+
+def size10(lines):
+    """Ten log-spaced size buckets: <4, <8, ..., <1024, 1024+ (changed lines)."""
+    return min(9, max(0, int(math.log2(max(lines, 1))) - 1))
+
+
 # ---------------------------------------------------------------- loading
 
-def early_commits(before=balance.SINCE):
+def early_commits(before=SINCE):
     """Main's first-parent commits that landed before `before`, where
     gcommits starts (commits.sqlite): [(author email, unix time landed,
     frozenset of 3-level directories)], reverts left out (`is_revert`: SVN-era
@@ -357,7 +380,7 @@ def early_commits(before=balance.SINCE):
     (2008), not from 2017."""
     cut = datetime.fromisoformat(before).replace(tzinfo=timezone.utc).timestamp()
     out, cur = [], None
-    for cid, email, at, path in A.git_db().execute(
+    for cid, email, at, path in git_db().execute(
             "SELECT c.commit_id, c.author_email, c.landed_at, p.path FROM commits c "
             "LEFT JOIN commit_files f USING (commit_id) LEFT JOIN paths p USING (path_id) "
             "WHERE c.landed_at < ? AND NOT c.is_revert ORDER BY c.commit_id", (cut,)):
@@ -366,50 +389,47 @@ def early_commits(before=balance.SINCE):
                 out.append((cur[1], cur[2], frozenset(cur[3])))
             cur = (cid, email, at, set())
         if path is not None:
-            cur[3].add(A.dir_of(path, 3))
+            cur[3].add(C.dir_of(path, 3))
     if cur:
         out.append((cur[1], cur[2], frozenset(cur[3])))
     return out
 
 
 def load(args):
-    """The CLs, as balance.sqlite's `cl` has them but only the columns
-    derived.sqlite and commits.sqlite give (cosh.balance.cl_facts, so no
-    balance stage is needed), owners' addresses normalised; human commits;
+    """The CLs, with the columns derived.sqlite and commits.sqlite give
+    (cosh.cl_facts), owners' addresses normalised; human commits;
     identities; first commits. Also the CLs' raw owner addresses and
     {commit_id: change_number} of their landed commits."""
-    import balance_growth as G
-    facts, by_cid = balance.cl_facts(A.ro(os.path.join(store.DATA_DIR, store.DERIVED_FILE)), A.git_db())
+    facts, by_cid = cl_facts(ro(os.path.join(store.DATA_DIR, store.DERIVED_FILE)), git_db())
     raw_email = {f[0]: f[2] for f in facts}
-    cls = [dict(zip(balance.CL_FACTS, f)) for f in facts]
+    cls = [dict(zip(CL_FACTS, f)) for f in facts]
     del facts
     for c in cls:
-        c["owner_email"] = A.person(c["owner_email"]) if c["owner_email"] else None
-    commits = A.load_commits()
-    ids = G.Ids()
-    for a, b in G.alias_pairs(cls, commits):
+        c["owner_email"] = person(c["owner_email"]) if c["owner_email"] else None
+    commits = C.human_commits(git_db())
+    ids = Ids()
+    for a, b in alias_pairs(cls, commits):
         ids.union(a, b)
     for c in commits:
         c["pid"] = ids.find(c["email"])
     for c in cls:
         c["pid"] = ids.find(c["owner_email"]) if c["owner_email"] else None
     first = {}
-    for e, t in A.load_first(args.first_commit).items():
+    for e, t in C.first_people(git_db()).items():
         k = ids.find(e)
         first[k] = min(t, first.get(k, t))
     print(f"loaded {len(cls):,} CLs, {len(commits):,} commits", file=sys.stderr, flush=True)
     return cls, commits, ids, first, raw_email, by_cid
 
 
-mech_set = A.mech_set
 
 
 def norms(use, also=()):
-    """The 2023-24 norms, as in balance_growth.cl_residuals: mean reviewer
+    """The 2023-24 norms, as in the review-ROI analysis: mean reviewer
     threads (and addressed threads) per merged CL by size bucket and top
     2-level directory (groups of 30 or more), else by size bucket alone.
     Computed from `use`, and set on `use` and `also` (older CLs)."""
-    ref = [c for c in use if A.year(c["closed_at"]) in (2023, 2024)]
+    ref = [c for c in use if year(c["closed_at"]) in (2023, 2024)]
     for k in ("threads", "addressed"):
         g, b = defaultdict(list), defaultdict(list)
         for c in ref:
@@ -436,7 +456,7 @@ def norms(use, also=()):
               file=sys.stderr, flush=True)
 
 
-# The opening card's size chart: the buckets of balance_growth.size10 (changed lines).
+# The opening card's size chart: ten log-spaced buckets of changed lines.
 SIZE_LABELS = ["<4", "4–7", "8–15", "16–31", "32–63", "64–127", "128–255", "256–511", "512–1,023", "1,024+"]
 
 
@@ -538,16 +558,17 @@ def median_breakdowns(cs, size10):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--first-commit", help="default: commits.sqlite")
-    ap.add_argument("--mech", help="default: commits.sqlite")
     ap.add_argument("--out", default=OUT)
     ap.add_argument("--check", help="also write some people's per-period values here, to compare with the page's")
+    ap.add_argument("--tone-weeks", help="the weeks with comment text and tone scores, e.g. 2025-W45:2026-W44 "
+                                         "(default: the newest year of fully scored weeks, as Review Tone)")
     args = ap.parse_args()
-    import balance_growth as G
+    TONE_WEEKS[:] = sentiment.weeks_in(args.tone_weeks or sentiment.scored_weeks())
+    print(f"tone weeks {TONE_WEEKS[0]} .. {TONE_WEEKS[-1]}", file=sys.stderr, flush=True)
 
     cls, commits, ids, first, raw_email, by_cid = load(args)
-    mech = mech_set(args.mech, cls)
-    dirs3 = A.commit_dirs(3)
+    mech = C.mechanical(git_db(), cls)
+    dirs3 = C.commit_dirs(git_db(), 3)
     top2 = {}
     for c in commits:
         d = dirs3.get(c["cid"])
@@ -568,14 +589,14 @@ def main():
     # gcommits starts in 2017: earlier commits come from the rest of commits.sqlite.
     early = 0
     for email, at, ds in early_commits():
-        if A.is_bot_email(A.person(email)):
+        if is_bot_email(person(email)):
             continue
         pid = ids.find(email)
         own_times[pid].append(at)
         for x in ds:
             xp_times[(pid, x)].append(at)
         early += 1
-    print(f"{early:,} human commits before {balance.SINCE} counted as earlier commits", file=sys.stderr, flush=True)
+    print(f"{early:,} human commits before {SINCE} counted as earlier commits", file=sys.stderr, flush=True)
     for v in xp_times.values():
         v.sort()
     for v in own_times.values():
@@ -595,36 +616,36 @@ def main():
     # opening card's cohort curves only: all reviewer threads against the same
     # 2023-24 norms. Addressed labels and directory experience exist only from
     # START on.
-    ddb = A.ro(os.path.join(store.DATA_DIR, store.DERIVED_FILE))
+    ddb = ro(os.path.join(store.DATA_DIR, store.DERIVED_FILE))
     bots = {a for a, in ddb.execute("SELECT account_id FROM accounts WHERE is_bot = 1")}
     acct_email = dict(ddb.execute("SELECT account_id, email FROM accounts WHERE host = "
                                 "'chromium-review.googlesource.com'"))
-    balance_from = datetime.fromtimestamp(min(c["closed_at"] for c in cls if c["closed_at"]), timezone.utc)
+    cls_from = datetime.fromtimestamp(min(c["closed_at"] for c in cls if c["closed_at"]), timezone.utc)
     old = []
     for n, acct, closed, ins, dels in ddb.execute(
             "SELECT change_number, owner_account, closed_at, insertions, deletions FROM changes "
             "WHERE host = 'chromium-review.googlesource.com' AND project = 'chromium/src' "
             "AND branch IN ('main', 'master') AND status = 'MERGED' AND NOT is_bot_owned "
-            "AND closed_at >= ? AND closed_at < ?", (HISTORY_ISO, balance_from.strftime("%Y-%m-%d %H:%M:%S"))):
+            "AND closed_at >= ? AND closed_at < ?", (HISTORY_ISO, cls_from.strftime("%Y-%m-%d %H:%M:%S"))):
         e = acct_email.get(acct)
-        if not e or acct in bots or A.is_bot_email(A.person(e)) or n in big or n in mech:
+        if not e or acct in bots or is_bot_email(person(e)) or n in big or n in mech:
             continue
         t = datetime.strptime(closed[:19], "%Y-%m-%d %H:%M:%S").replace(tzinfo=timezone.utc).timestamp()
         lines = (ins or 0) + (dels or 0)
-        pid = ids.find(A.person(e))
+        pid = ids.find(person(e))
         old.append(dict(change_number=n, pid=pid, email=e, closed_at=t, lines=lines,
-                        sb=G.size10(lines), d2=top2.get(n), threads=0, addressed=0,
+                        sb=size10(lines), d2=top2.get(n), threads=0, addressed=0,
                         prior=bisect.bisect_left(own_times.get(pid, ()), landed_at.get(n, t))))
 
-    # Merged, human-owned, non-mechanical CLs (balance_report.py's rule).
+    # Merged, human-owned, non-mechanical CLs (the review-ROI analyses' rule).
     for c in cls:
         if c["change_number"] in mech:
             c["status"] = "MECH"
     use = [c for c in cls if c["status"] == "MERGED" and c["closed_at"] and c["pid"]
-           and not A.is_bot_email(c["owner_email"])]
+           and not is_bot_email(c["owner_email"])]
     for c in use:
         c["lines"] = (c["ins"] or 0) + (c["dels"] or 0)
-        c["sb"] = G.size10(c["lines"])
+        c["sb"] = size10(c["lines"])
         c["d2"] = top2.get(c["change_number"])
 
     # Reviewer threads: threads not started by a bot, on a file or the commit
@@ -668,8 +689,8 @@ def main():
     by_n = {c["change_number"]: c for c in use}
     print(f"{len(use):,} CLs in range {day_str(START)} .. {day_str(END - DAY)}", file=sys.stderr, flush=True)
 
-    cl_dirs = defaultdict(dict)       # in balance.sqlite's order: by CL, then directory
-    for (n, d), (files, lines) in sorted(balance.cl_dirs(A.git_db(), by_cid, by_n).items()):
+    cl_dirs = defaultdict(dict)       # by CL, then directory
+    for (n, d), (files, lines) in sorted(F.cl_dirs(git_db(), by_cid, by_n).items()):
         cl_dirs[n][d] = (lines + files, lines)
     del by_cid
     orgs = OrgResolver()
@@ -701,7 +722,7 @@ def main():
                 w = monday(c["closed_at"])
                 need[w] += 1
                 have[w] += addressed is not None
-            dr = A.dir_of(path, 3) if path and not path.startswith("/") else None
+            dr = C.dir_of(path, 3) if path and not path.startswith("/") else None
             c["thr"].append([root, path, at, addressed, dr if dr in c["units"] else c["main"]])
     del thr
     print(f"threads: {sum(c['threads'] for c in use):,}", file=sys.stderr, flush=True)
@@ -729,7 +750,7 @@ def main():
     def pid_of(acct):
         if acct not in tone_pid:
             e = acct_email.get(acct)
-            tone_pid[acct] = ids.find(e) if e and not A.is_bot_email(e) else None
+            tone_pid[acct] = ids.find(e) if e and not is_bot_email(e) else None
         return tone_pid[acct]
     # Excerpts come from every week whose comment text has been collected, so a
     # half-year's file keeps them on later runs; praise only from the scored year.
@@ -1083,7 +1104,7 @@ def main():
               f"changes {d['changes']}% dir {d['dir']}%", file=sys.stderr, flush=True)
     for by in ("changes", "time"):
         print(f"addressed share by {by}: " + " ".join(str(x) for x in kind_share[by]["all"]), file=sys.stderr)
-    by_size, dir_names, by_dir = median_breakdowns(use, G.size10)
+    by_size, dir_names, by_dir = median_breakdowns(use, size10)
     for m in ("tn", "ts", "td", "ad"):
         print(f"median by size ({m}): " + " ".join(f"{v}/{n}" for v, n in by_size["all"][m]), file=sys.stderr)
         print(f"median by directory ({m}): " + ", ".join(f"{d} {v}/{n}" for d, (v, n) in zip(dir_names, by_dir["all"][m])),

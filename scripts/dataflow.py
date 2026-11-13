@@ -3,12 +3,14 @@
   python3 scripts/dataflow.py check
       Verify the inventory against the repository: ids and references, that
       code and tracked files exist, that every committed data file and every
-      file a page imports is listed. Exits 1 with the problems if not.
+      file a page imports is listed, and the flow rules hold
+      (docs/data-architecture.md, "Flow rules"). Exits 1 with the problems
+      if not.
 
   python3 scripts/dataflow.py plan ID [ID ...] [--json]
       What to rerun, in order, when the sources or stores named have new
       data, and which files in git change as a result. For a new week of
-      Gerrit data: `plan gerrit-rest gerrit-notedb`.
+      Gerrit data: `plan gerrit`. `python3 -m cosh update` runs the plan.
 
   python3 scripts/dataflow.py list [sources|stores|steps|pages]
       The ids, with one line each.
@@ -28,7 +30,9 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 PATH = os.path.join(ROOT, "config", "dataflow.json")
 
 TIERS = ("raw", "labels", "derived", "analysis", "published", "config")
-REFRESHES = ("routine", "optional", "one-off", "analysis", "automatic")
+REFRESHES = ("routine", "optional", "one-off", "analysis", "maintenance")
+# Steps that carry new data on towards the pages, in plans and `cosh update`.
+FLOWING = ("routine", "optional")
 # Directories where every committed file must belong to a store.
 DATA_DIRS = ("summaries/", "data/public/", "config/")
 
@@ -47,13 +51,10 @@ class Graph:
         self.problems = []
         self.nodes = {}
         self.kind = {}
-        groups = {g["id"] for g in d["groups"]}
         for kind in ("sources", "stores", "steps", "pages"):
             for item in d[kind]:
                 if item["id"] in self.nodes:
                     self.problems.append(f"duplicate id {item['id']}")
-                if item.get("group") not in groups:
-                    self.problems.append(f"{item['id']}: unknown group {item.get('group')}")
                 self.nodes[item["id"]] = item
                 self.kind[item["id"]] = kind[:-1]
         self.out = {i: [] for i in self.nodes}
@@ -68,6 +69,16 @@ class Graph:
             for r in p["reads"]:
                 self._edge(r, p["id"], p["id"], r, ("store",))
         self.order = {i: n for n, i in enumerate(self.nodes)}
+
+    def reach_back(self, start):
+        seen = set(start)
+        todo = list(seen)
+        while todo:
+            for prev in self.inn[todo.pop()]:
+                if prev not in seen:
+                    seen.add(prev)
+                    todo.append(prev)
+        return seen
 
     def _edge(self, a, b, owner, other, want):
         if other not in self.nodes:
@@ -122,7 +133,7 @@ def plan(d, changed):
             raise SystemExit(f"unknown id {c}; see `dataflow.py list`")
 
     def runs(optional):
-        ok = ("routine", "automatic") + (("optional",) if optional else ())
+        ok = ("routine",) + (("optional",) if optional else ())
         return lambda i: g.kind[i] != "step" or g.nodes[i]["refresh"] in ok
 
     everything = g.reach(changed, runs(True))
@@ -133,7 +144,8 @@ def plan(d, changed):
     return {
         "steps": [dict(id=s["id"], command=s["command"], refresh=s["refresh"],
                        after_optional=s["id"] not in sure, duration=s.get("duration"),
-                       token_cost=s.get("token_cost"), approval=s.get("approval"))
+                       token_cost=s.get("token_cost"), approval=s.get("approval"),
+                       run=s.get("run"), network=s.get("network", False))
                   for s in of("step")],
         "commit": [p for s in of("store") if s["tracked_in_git"] for p in s.get("git_paths", [s["path"]])],
         "pages": [p["path"] for p in of("page")],
@@ -209,7 +221,45 @@ def check(d, root=ROOT, files=None):
     for imp in sorted(page_imports(root)):
         if not any(matches(p, imp) for p in read):
             problems.append(f"{imp}: imported by a page script but in no page's reads")
+    problems += flow_problems(d, g)
     return problems
+
+
+def flow_problems(d, g):
+    """The flow rules (docs/data-architecture.md): everything a page depends
+    on traces back to a source, or is config; every step that runs as part
+    of an update reaches a page; and a node named after an analysis feeds
+    only that analysis's page."""
+    out = []
+    for p in d["pages"]:
+        pid = p["id"]
+        up = g.reach_back([pid]) - {pid}
+        made = [i for i in up if g.kind[i] != "store" or g.nodes[i]["tier"] != "config"]
+        if made and not any(g.kind[i] == "source" for i in up):
+            out.append(f"{pid}: nothing it reads comes from a source")
+        for i in sorted(up):
+            n = g.nodes[i]
+            if g.kind[i] == "store" and not g.inn[i] and n["tier"] != "config":
+                out.append(f"{i}: read on the way to {pid} but written by no step (make it config, or list its writer)")
+            if g.kind[i] == "step" and not g.inn[i] and n["refresh"] != "maintenance":
+                out.append(f"{i}: a step on the way to {pid} that reads nothing")
+    for s in d["steps"]:
+        if not s["outputs"]:
+            out.append(f"{s['id']}: writes nothing")
+        elif s["refresh"] in FLOWING and not any(g.kind[i] == "page" for i in g.reach([s["id"]])):
+            out.append(f"{s['id']}: {s['refresh']} but reaches no page (an analysis?)")
+    for src in d["sources"]:
+        if not g.out[src["id"]]:
+            out.append(f"{src['id']}: source that no step reads")
+    for p in d["pages"]:
+        for word in p.get("names", []):
+            for i, n in g.nodes.items():
+                if g.kind[i] == "page" or word not in f"{i} {n.get('name', '')}".lower():
+                    continue
+                other = sorted(x for x in g.reach([i]) if g.kind[x] == "page" and x != p["id"])
+                if other:
+                    out.append(f"{i}: named '{word}' ({p['title']}) but also feeds {', '.join(other)}")
+    return out
 
 
 def main(argv=None):
@@ -246,7 +296,7 @@ def main(argv=None):
         cost = "; ".join(x for x in (s["duration"], s["token_cost"]) if x)
         print(f"  [{when}] {s['id']}: {s['command']}" + (f"\n      {cost}" if cost else "")
               + (f"\n      approval: {s['approval']}" if s["approval"] else ""))
-    print("Files to commit:")
+    print("Then commit (and push; the Pages workflow publishes the site). Files to commit:")
     for f in result["commit"]:
         print(f"  {f}")
     print("Pages that change: " + (", ".join(result["pages"]) or "none"))

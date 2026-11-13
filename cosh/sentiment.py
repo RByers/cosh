@@ -937,10 +937,50 @@ def samples(weeks, data_dir=store.DATA_DIR, version=None, n=10, seed="2026-11", 
                 authors=authors, praise_min=PRAISE_SAMPLE, grumpy_max=GRUMPY_SAMPLE, periods=out)
 
 
-# What the Review Tone page shows: the fully scored weeks, and the scored
-# sample behind the long trend. `publish` writes every file from these.
-PUBLISHED_WEEKS = "2025-W45:2026-W44"
+# What the Review Tone page shows: the newest year of fully scored weeks
+# (scored_weeks), and the scored sample behind the long trend. `publish`
+# writes every file from these, so new scored weeks reach the page by
+# themselves (D3, docs/data-architecture.md).
+PUBLISHED_YEAR = 52
 PUBLISHED_SAMPLE = "sample-5pct"
+
+
+def missing_weeks(data_dir=store.DATA_DIR):
+    """Fetched weeks (derived.sqlite's meta) from the oldest comments-<week>
+    file on that have no file yet."""
+    have = sorted(f[len("comments-"):-len(".jsonl")] for f in os.listdir(out_dir(data_dir))
+                  if re.fullmatch(r"comments-\d{4}-W\d{2}\.jsonl", f))
+    db = sqlite3.connect(f"file:{os.path.join(data_dir, store.DERIVED_FILE)}?mode=ro", uri=True)
+    fetched = {w for (v,) in db.execute("SELECT v FROM meta WHERE k = 'fetched_weeks'") for w in json.loads(v or "[]")}
+    return sorted(w for w in fetched if have and w > have[0] and w not in have)
+
+
+def scored_weeks(n=PUBLISHED_YEAR, data_dir=store.DATA_DIR, version=None, model="haiku"):
+    """'<first>:<last>': the newest run of up to `n` consecutive weeks whose
+    comment files (comments-<week>.jsonl) are fully scored with the current
+    prompt. Raises if no week is."""
+    names = sorted(f[len("comments-"):-len(".jsonl")] for f in os.listdir(out_dir(data_dir))
+                   if re.fullmatch(r"comments-\d{4}-W\d{2}\.jsonl", f))
+    if not names:
+        raise SystemExit("no scored weeks: run `cosh.sentiment collect` and `score` first")
+    db = open_scores(data_dir)
+    row = db.execute("SELECT prompt_id FROM prompts WHERE sha256=? AND model=?",
+                     (prompt_sha(load_prompt(version)), model)).fetchone()
+    have = {i for (i,) in db.execute("SELECT id FROM scores WHERE prompt_id IN (0, ?)", (row[0] if row else -1,))}
+    run = []
+    for w in reversed(names):
+        if run and weeks_in(f"{w}:{run[-1]}") != [w, run[-1]]:
+            break                       # a gap: the run ends
+        if not all(r["id"] in have for r in comment_rows(os.path.join(out_dir(data_dir), f"comments-{w}.jsonl"))):
+            if run:
+                break
+            continue                    # the newest weeks may not be scored yet
+        run.append(w)
+        if len(run) == n:
+            break
+    if not run:
+        raise SystemExit("no fully scored week")
+    return f"{run[-1]}:{run[0]}"
 
 
 def publish(weeks, sample, prompt=None, sandbox="auto"):
@@ -965,7 +1005,7 @@ def main(argv):
     ap.add_argument("step", choices=["collect", "score", "summary", "praise", "samples", "publish"])
     ap.add_argument("--week", default=None,
                     help="a week or a range, e.g. 2026-W37:2026-W44 (default 2026-W44; publish: "
-                         f"{PUBLISHED_WEEKS})")
+                         "the newest year of fully scored weeks)")
     ap.add_argument("--sample", type=float, default=None,
                     help="collect: a deterministic sample at this rate over --week's range, written as "
                          "comments-<name>.jsonl; score/summary: use with --name")
@@ -982,14 +1022,22 @@ def main(argv):
     ap.add_argument("--authors", choices=AUTHORS + ("all",), default="all",
                     help="summary, praise, samples: whose comments count; 'all' writes one file for each")
     ap.add_argument("--out", default=None)
+    ap.add_argument("--missing", action="store_true",
+                    help="collect: every fetched week (derived.sqlite) since the oldest week file that has no "
+                         "comments-<week>.jsonl yet; what `cosh update` runs")
     a = ap.parse_args(argv)
     if a.out and a.authors == "all":
         ap.error("--out needs one --authors group")
     groups = AUTHORS if a.authors == "all" else (a.authors,)
     t0 = time.time()
     if a.step == "publish":
-        return publish(a.week or PUBLISHED_WEEKS, a.name or PUBLISHED_SAMPLE, a.prompt, a.sandbox)
+        weeks = a.week or scored_weeks(version=a.prompt)
+        print(f"publish: weeks {weeks}", file=sys.stderr)
+        return publish(weeks, a.name or PUBLISHED_SAMPLE, a.prompt, a.sandbox)
     weeks = weeks_in(a.week or "2026-W44")
+    if a.step == "collect" and a.missing:
+        weeks = missing_weeks()
+        print(f"collect: {len(weeks)} new weeks {weeks[:1]}..{weeks[-1:]}", file=sys.stderr)
     if a.step == "collect":
         # Always with identities, so comments-<name>.jsonl has one writer and
         # one format: per-person steps need them, the others ignore them.

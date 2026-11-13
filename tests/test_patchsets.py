@@ -66,8 +66,12 @@ class PatchsetsTest(unittest.TestCase):
                                text=True, capture_output=True, check=True).stdout.strip()
             patchsets.git(g, "update-ref", "refs/patchsets/42/1", c)
             with open(os.path.join(g, patchsets.DONE_FILE), "w") as f:
-                f.write("7\n")
-            self.assertEqual(patchsets.fetched(g), {7, 42})
+                f.write("7\n9 3\n42\n")
+            done = patchsets.fetched(g)
+            # A bare line with no refs is done; "N P" and refs give counts.
+            self.assertEqual(done, {7: float("inf"), 9: 3, 42: 1})
+            # A CL that gained patch sets since its fetch is fetched again.
+            self.assertEqual(patchsets.todo_cls([(7, 5), (9, 3), (42, 2), (50, 1)], done), [(42, 2), (50, 1)])
 
     def _run_fake(self, jobs, fail_on=None):
         with tempfile.TemporaryDirectory() as d:
@@ -144,7 +148,7 @@ class PatchsetsTest(unittest.TestCase):
             self.assertEqual(len(calls), 4)
             self.assertEqual(len(set(calls)), 1)   # same whole batch each time
             self.assertEqual(t.limit, 1)
-            self.assertEqual(open(os.path.join(d, patchsets.DONE_FILE)).read(), "1\n2\n")
+            self.assertEqual(open(os.path.join(d, patchsets.DONE_FILE)).read(), "1 1\n2 1\n")
 
 
 if __name__ == "__main__":

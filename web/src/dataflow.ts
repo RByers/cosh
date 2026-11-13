@@ -1,14 +1,18 @@
-// The Data flow page (dataflow.html): tables of every source, store, step
-// and page in config/dataflow.json, a graph of how they connect, and a
-// planner for what to rerun. Wording is in the HTML; this fills in values.
-// Everything goes into the DOM as text or attributes (the CSP forbids HTML
-// sinks), and scripts set classes and custom properties, never styles.
+// The Data flow page (dataflow.html): a graph of how config/dataflow.json's
+// sources, steps, stores and pages connect, drawn top to bottom, the facts
+// of whatever is picked, a planner for what to rerun, and tables of every
+// item. The page filter narrows all of them to what the chosen pages need.
+// Wording is in the HTML; this fills in values. Everything goes into the
+// DOM as text or attributes (the CSP forbids HTML sinks), and scripts set
+// classes and custom properties, never styles.
 import dataUrl from '../../config/dataflow.json?url';
 import {
   buildGraph,
+  flowPages,
   layout,
   plan,
   reach,
+  scope,
   type Dataflow,
   type Graph,
   type Node,
@@ -20,13 +24,15 @@ import { fill } from './text.ts';
 const SVG = 'http://www.w3.org/2000/svg';
 const REPO = 'https://github.com/RByers/cosh/blob/main/';
 
-// Graph geometry, in SVG user units.
-const NODE_W = 168;
+// Graph geometry, in SVG user units (CSS pixels: the SVG is drawn at the
+// box's width, so it never scrolls sideways).
+const NODE_W = 172;
 const NODE_H = 26;
-const COL_GAP = 52;
-const ROW_GAP = 8;
+const GAP_X = 12;
+const LAYER_GAP = 34; // between layers, where the edges run
+const LINE_GAP = 8; // between the lines of one wrapped layer
 const PAD = 8;
-const LABEL_MAX = 23;
+const LABEL_MAX = 24;
 
 const $ = <T extends Element = HTMLElement>(sel: string): T => {
   const e = document.querySelector<T>(sel);
@@ -54,6 +60,8 @@ function svg<K extends keyof SVGElementTagNameMap>(tag: K, attrs: Record<string,
 let data: Dataflow;
 let graph: Graph;
 let selected: string | null = null;
+/** What the page filter and the extras box leave in view. */
+let shown = new Set<string>();
 
 /** The class that colours a node: its kind, or a store's tier. */
 const tone = (n: Node) => (n.kind === 'store' ? `k-${n.store!.tier}` : `k-${n.kind}`);
@@ -64,8 +72,6 @@ const kindText = (n: Node): string => {
   return n.kind;
 };
 
-const groupName = (id: string) => data.groups.find((g) => g.id === id)?.name ?? id;
-
 /** A node's full name: a store's path (or family name), else its label. */
 const full = (n: Node) => (n.kind === 'store' ? (n.store!.name ?? n.store!.path) : n.label);
 
@@ -74,7 +80,7 @@ const full = (n: Node) => (n.kind === 'store' ? (n.store!.name ?? n.store!.path)
 function link(id: string, short = false): HTMLElement {
   const n = graph.nodes.get(id);
   if (!n) return el('span', id);
-  const mono = n.kind === 'source' || n.store?.name ? '' : ' df-mono';
+  const mono = n.kind === 'source' || n.kind === 'page' || n.store?.name ? '' : ' df-mono';
   const b = el('button', short ? n.label : full(n), `df-link ${tone(n)}${mono}`);
   b.type = 'button';
   b.dataset.node = id;
@@ -100,7 +106,6 @@ function repoLink(path: string): HTMLAnchorElement {
 function row(body: HTMLElement, n: Node, cells: (string | Node[] | HTMLElement | null | undefined)[]): void {
   const tr = el('tr');
   tr.dataset.node = n.id;
-  tr.dataset.group = n.group;
   const th = el('th');
   th.scope = 'row';
   th.append(link(n.id));
@@ -146,84 +151,85 @@ function tables(): void {
   for (const n of by(data.pages)) row($('#pages-rows'), n, [n.page!.purpose, nodesOf(n.page!.reads)]);
 }
 
-/** Hides the table rows the pipeline choice and the search box exclude. */
+/** The pages ticked in the page filter. */
+const chosen = () =>
+  [...document.querySelectorAll<HTMLInputElement>('#pages-pick input:checked')].map((i) => i.value);
+
+/** Hides the table rows outside the chosen pages' flow or not matching the search. */
 function filterTables(): void {
-  const group = $<HTMLSelectElement>('#group').value;
   const words = $<HTMLInputElement>('#find').value.toLowerCase().split(/\s+/).filter(Boolean);
-  let shown = 0;
+  let count = 0;
   for (const tr of document.querySelectorAll<HTMLElement>('main tbody tr[data-text]')) {
-    const hide = (group !== '' && tr.dataset.group !== group) || !words.every((w) => tr.dataset.text!.includes(w));
+    const hide = !shown.has(tr.dataset.node!) || !words.every((w) => tr.dataset.text!.includes(w));
     tr.hidden = hide;
-    if (!hide) shown++;
+    if (!hide) count++;
   }
   for (const sec of document.querySelectorAll<HTMLElement>('#sources, #stores, #outputs, #steps, #pages')) {
     sec.hidden = !sec.querySelector('tbody tr:not([hidden])');
   }
-  $('#no-match').hidden = shown > 0;
-}
-
-/** The nodes the graph draws: one pipeline's (with what they connect to),
- * without analysis scripts and backfills, and what only those touch,
- * unless asked for. */
-function visible(): Set<string> {
-  const group = $<HTMLSelectElement>('#group').value;
-  const extras = $<HTMLInputElement>('#show-analysis').checked;
-  const quiet = (n: Node) => n.kind === 'step' && (n.step!.refresh === 'analysis' || n.step!.refresh === 'one-off');
-  const keep = new Set<string>();
-  for (const n of graph.nodes.values()) {
-    if (!extras && quiet(n)) continue;
-    if (group !== '' && n.group !== group) continue;
-    keep.add(n.id);
-  }
-  // A pipeline is drawn with its neighbours from other pipelines.
-  if (group !== '') {
-    for (const id of [...keep]) {
-      for (const near of [...(graph.in.get(id) ?? []), ...(graph.out.get(id) ?? [])]) {
-        const n = graph.nodes.get(near)!;
-        if (extras || !quiet(n)) keep.add(near);
-      }
-    }
-  }
-  // Without the extras, drop what is left unconnected: stores only they use.
-  if (!extras) {
-    for (const id of [...keep]) {
-      const n = graph.nodes.get(id)!;
-      if (n.kind === 'step' || n.kind === 'page') continue;
-      const near = [...(graph.in.get(id) ?? []), ...(graph.out.get(id) ?? [])];
-      if (!near.some((x) => keep.has(x))) keep.delete(id);
-    }
-  }
-  return keep;
+  $('#no-match').hidden = count > 0;
 }
 
 const clip = (s: string) => (s.length > LABEL_MAX ? `${s.slice(0, LABEL_MAX - 1)}…` : s);
 
+let drawnWidth = 0;
+
+/** Draws the chosen pages' flow top to bottom, as wide as its box: a layer
+ * with more nodes than fit across wraps onto further lines. */
 function drawGraph(): void {
-  const keep = visible();
-  const placed = layout(graph, keep);
-  const cols = Math.max(0, ...placed.map((p) => p.col)) + 1;
-  const perCol = Array.from({ length: cols }, (_, c) => placed.filter((p) => p.col === c).length);
-  const rows = Math.max(1, ...perCol);
-  const width = PAD * 2 + cols * NODE_W + (cols - 1) * COL_GAP;
-  const height = PAD * 2 + rows * NODE_H + (rows - 1) * ROW_GAP;
+  const box = $('#graph-box');
+  const width = Math.max(NODE_W + 2 * PAD, box.clientWidth);
+  drawnWidth = box.clientWidth;
+  const perLine = Math.max(1, Math.floor((width - 2 * PAD + GAP_X) / (NODE_W + GAP_X)));
+  const placed = layout(graph, shown, perLine);
+  // Each line's top: lines of one layer close together, layers further apart.
+  const tops: number[] = [];
+  let y = PAD;
+  let prevLayer = -1;
+  for (const p of [...placed].sort((a, b) => a.line - b.line)) {
+    if (tops[p.line] !== undefined) continue;
+    if (prevLayer >= 0) y += NODE_H + (p.layer === prevLayer ? LINE_GAP : LAYER_GAP);
+    tops[p.line] = y;
+    prevLayer = p.layer;
+  }
+  const height = (placed.length ? y + NODE_H : 0) + PAD;
   const at = new Map<string, { x: number; y: number }>();
   for (const p of placed) {
-    // Each column is centred on the tallest one.
-    const top = PAD + ((rows - perCol[p.col]) * (NODE_H + ROW_GAP)) / 2;
-    at.set(p.id, { x: PAD + p.col * (NODE_W + COL_GAP), y: top + p.row * (NODE_H + ROW_GAP) });
+    // Each line is centred.
+    const left = (width - (p.of * NODE_W + (p.of - 1) * GAP_X)) / 2;
+    at.set(p.id, { x: left + p.pos * (NODE_W + GAP_X), y: tops[p.line] });
   }
 
   const root = svg('svg', { viewBox: `0 0 ${width} ${height}`, width, height, role: 'img', 'aria-labelledby': 'graph-title' });
   const edgeLayer = svg('g', { class: 'df-edges' });
-  for (const [a, b] of graph.edges) {
-    const p = at.get(a);
-    const q = at.get(b);
-    if (!p || !q) continue;
-    const x1 = p.x + NODE_W;
-    const y1 = p.y + NODE_H / 2;
-    const y2 = q.y + NODE_H / 2;
-    const bend = Math.max(24, (q.x - x1) / 2);
-    const path = svg('path', { class: 'df-edge', d: `M${x1} ${y1}C${x1 + bend} ${y1} ${q.x - bend} ${y2} ${q.x} ${y2}` });
+  const drawn = graph.edges.filter(([a, b]) => at.has(a) && at.has(b));
+  // Each edge leaves its node's bottom and enters the other's top at its own
+  // point, spread across the width in the order of the far ends, so edges
+  // don't bundle into one point.
+  const centre = (id: string) => at.get(id)!.x + NODE_W / 2;
+  const ports = new Map<string, number>();
+  const spread = (ends: Map<string, [string, string][]>, far: (e: [string, string]) => string, side: string) => {
+    for (const [id, list] of ends) {
+      list.sort((e, f) => centre(far(e)) - centre(far(f)));
+      list.forEach((e, k) => ports.set(`${side}${e[0]}>${e[1]}`, at.get(id)!.x + (NODE_W * (k + 1)) / (list.length + 1)));
+    }
+  };
+  const group = (key: (e: [string, string]) => string) => {
+    const m = new Map<string, [string, string][]>();
+    for (const e of drawn) (m.get(key(e)) ?? m.set(key(e), []).get(key(e))!).push(e);
+    return m;
+  };
+  spread(group((e) => e[0]), (e) => e[1], 'out');
+  spread(group((e) => e[1]), (e) => e[0], 'in');
+  for (const [a, b] of drawn) {
+    const p = at.get(a)!;
+    const q = at.get(b)!;
+    const x1 = ports.get(`out${a}>${b}`)!;
+    const y1 = p.y + NODE_H;
+    const x2 = ports.get(`in${a}>${b}`)!;
+    const y2 = q.y;
+    const bend = Math.max(14, (y2 - y1) / 2);
+    const path = svg('path', { class: 'df-edge', d: `M${x1} ${y1}C${x1} ${y1 + bend} ${x2} ${y2 - bend} ${x2} ${y2}` });
     path.dataset.from = a;
     path.dataset.to = b;
     edgeLayer.append(path);
@@ -231,11 +237,11 @@ function drawGraph(): void {
   const nodeLayer = svg('g');
   for (const p of placed) {
     const n = graph.nodes.get(p.id)!;
-    const { x, y } = at.get(p.id)!;
-    const g = svg('g', { class: `df-node ${tone(n)}`, transform: `translate(${x} ${y})` });
+    const { x, y: top } = at.get(p.id)!;
+    const g = svg('g', { class: `df-node ${tone(n)}`, transform: `translate(${x} ${top})` });
     g.dataset.node = n.id;
     const title = svg('title');
-    title.textContent = `${full(n)}:${(n.source ?? n.store ?? n.step ?? n.page)!.purpose}`;
+    title.textContent = `${full(n)}: ${(n.source ?? n.store ?? n.step ?? n.page)!.purpose}`;
     const round = n.kind === 'step' ? NODE_H / 2 : n.kind === 'store' ? 3 : 7;
     const text = svg('text', { x: 9, y: NODE_H / 2 });
     text.textContent = clip(n.label);
@@ -243,9 +249,8 @@ function drawGraph(): void {
     nodeLayer.append(g);
   }
   root.append(edgeLayer, nodeLayer);
-  $('#graph-box').replaceChildren(root);
-  const hidden = [...graph.nodes.values()].filter((n) => !keep.has(n.id) && ($<HTMLSelectElement>('#group').value === '' || n.group === $<HTMLSelectElement>('#group').value)).length;
-  fill($('#graph-note'), { shown: placed.length, total: graph.nodes.size, hidden: $<HTMLInputElement>('#show-analysis').checked ? 0 : hidden });
+  box.replaceChildren(root);
+  fill($('#graph-note'), { shown: placed.length, total: graph.nodes.size });
   highlight();
 }
 
@@ -299,10 +304,10 @@ function showDetail(): void {
     return span;
   };
   fact('kind', kindText(n));
-  fact('group', groupName(n.group));
-  fact('path', n.store && s.tracked_in_git && !/[*<]/.test(s.path!) ? repoLink(s.path!) : n.page ? repoLink(n.page.path) : s.path);
+  fact('path', n.store && s.tracked_in_git && !/[*<{+]/.test(s.path!) ? repoLink(s.path!) : n.page ? repoLink(n.page.path) : s.path);
   fact('url', n.source?.url);
   fact('command', t.command ? el('code', t.command) : null);
+  fact('run', t.run ? el('code', t.run) : null);
   const code = [...(t.code ?? []), ...(n.page?.entry_script ? [n.page.entry_script] : [])];
   if (code.length) {
     const ul = el('ul', null, 'df-links');
@@ -333,7 +338,7 @@ function showDetail(): void {
   const ends = (dir: 'in' | 'out', want: (x: Node) => boolean) =>
     idsOrNull([...reach(graph, [n.id], dir)].filter((id) => id !== n.id && want(graph.nodes.get(id)!)));
   fact('origin', n.kind === 'source' ? null : ends('in', (x) => x.kind === 'source'));
-  fact('reaches', n.kind === 'page' ? null : ends('out', (x) => x.kind === 'page' || (x.kind === 'store' && x.store!.tier === 'published')));
+  fact('reaches', n.kind === 'page' ? null : ends('out', (x) => x.kind === 'page'));
 
   const tbody = $('#detail-tables');
   tbody.replaceChildren();
@@ -353,31 +358,17 @@ function select(id: string | null, scroll: boolean): void {
   history.replaceState(null, '', selected ? `#n=${encodeURIComponent(selected)}` : location.pathname + location.search);
   highlight();
   showDetail();
-  if (selected && scroll) {
-    $('#detail').scrollIntoView({ block: 'nearest' });
-    revealInGraph();
-  }
+  if (selected && scroll) $('#detail').scrollIntoView({ block: 'nearest' });
 }
 
-/** Scrolls the graph's own box (not the page) to the selected node. */
-function revealInGraph(): void {
-  const box = $('#graph-box');
-  const node = box.querySelector<SVGGElement>('.df-node.sel');
-  if (!node) return;
-  const b = box.getBoundingClientRect();
-  const r = node.getBoundingClientRect();
-  box.scrollTo({
-    left: box.scrollLeft + r.left - b.left - (b.width - r.width) / 2,
-    top: box.scrollTop + r.top - b.top - (b.height - r.height) / 2,
-  });
-}
-
+/** The plan for the chosen "new data", narrowed to the chosen pages' flow. */
 function showPlan(): void {
   const id = $<HTMLSelectElement>('#changed').value;
   const p = plan(graph, [id]);
+  const steps = p.steps.filter((s) => shown.has(s.step.id));
   const body = $('#plan-steps');
   body.replaceChildren();
-  for (const { step, afterOptional } of p.steps) {
+  for (const { step, afterOptional } of steps) {
     const tr = el('tr');
     const th = el('th');
     th.scope = 'row';
@@ -392,30 +383,44 @@ function showPlan(): void {
   }
   const commit = $('#plan-commit');
   commit.replaceChildren();
-  for (const s of p.commit) {
+  for (const s of p.commit.filter((x) => shown.has(x.id))) {
     const li = el('li');
     li.append(link(s.id));
-    if (s.git_paths?.length) li.append(' ', el('span', s.git_paths.join(', '), 'df-mono df-dim'));
+    // The files to commit: a family's globs, or a named store's path.
+    const paths = s.git_paths ?? (s.name ? [s.path] : []);
+    if (paths.length) li.append(' ', el('span', paths.join(', '), 'df-mono df-dim'));
     commit.append(li);
   }
-  if (!p.commit.length) commit.append(el('li', '—'));
-  fill($('#plan-pages'), { pages: p.pages.map((x) => x.title).join(', ') });
-  $('#plan-out').hidden = !p.steps.length;
-  $('#plan-none').hidden = p.steps.length > 0;
+  if (!commit.children.length) commit.append(el('li', '—'));
+  fill($('#plan-pages'), { pages: p.pages.filter((x) => shown.has(x.id)).map((x) => x.title).join(', ') });
+  $('#plan-out').hidden = !steps.length;
+  $('#plan-none').hidden = steps.length > 0;
+}
+
+/** Recomputes what is in view and redraws everything that depends on it. */
+function refilter(): void {
+  shown = scope(graph, chosen(), $<HTMLInputElement>('#show-analysis').checked);
+  filterTables();
+  drawGraph();
+  showPlan();
 }
 
 function controls(): void {
-  const group = $<HTMLSelectElement>('#group');
-  for (const g of data.groups) {
-    const o = el('option', g.name);
-    o.value = g.id;
-    o.title = g.purpose;
-    group.append(o);
+  const pick = $('#pages-pick');
+  for (const p of flowPages(graph)) {
+    const label = el('label', null, 'df-check');
+    const box = el('input');
+    box.type = 'checkbox';
+    box.value = p.id;
+    box.checked = true;
+    label.title = p.purpose;
+    label.append(box, p.title);
+    pick.append(label);
   }
   // What can have new data: every source, then the stores that are fetched
   // or labelled (derived ones only change when those do).
   const changed = $<HTMLSelectElement>('#changed');
-  const pick = (label: string, nodes: Node[]) => {
+  const option = (label: string, nodes: Node[]) => {
     const og = el('optgroup');
     og.label = label;
     for (const n of nodes) {
@@ -426,17 +431,14 @@ function controls(): void {
     if (nodes.length) changed.append(og);
   };
   const all = [...graph.nodes.values()];
-  pick('Sources', all.filter((n) => n.kind === 'source'));
+  option('Sources', all.filter((n) => n.kind === 'source'));
   for (const tier of ['raw', 'labels', 'config', 'derived'] as const) {
-    pick(tier, all.filter((n) => n.store?.tier === tier));
+    option(tier, all.filter((n) => n.store?.tier === tier));
   }
   changed.addEventListener('change', showPlan);
-  group.addEventListener('change', () => {
-    filterTables();
-    drawGraph();
-  });
+  pick.addEventListener('change', refilter);
   $('#find').addEventListener('input', filterTables);
-  $('#show-analysis').addEventListener('change', drawGraph);
+  $('#show-analysis').addEventListener('change', refilter);
   document.addEventListener('click', (e) => {
     const hit = (e.target as Element).closest<HTMLElement | SVGElement>('[data-node]');
     if (!hit || hit.localName === 'tr') return;
@@ -445,6 +447,15 @@ function controls(): void {
     select(inGraph && id === selected ? null : id, !inGraph);
   });
   window.addEventListener('hashchange', fromHash);
+  // The graph is as wide as its box: redraw when the box's width changes.
+  let pending = 0;
+  new ResizeObserver(() => {
+    if ($('#graph-box').clientWidth === drawnWidth || pending) return;
+    pending = requestAnimationFrame(() => {
+      pending = 0;
+      drawGraph();
+    });
+  }).observe($('#graph-box'));
 }
 
 function fromHash(): void {
@@ -453,7 +464,6 @@ function fromHash(): void {
   selected = decodeURIComponent(m[1]);
   highlight();
   showDetail();
-  revealInGraph();
 }
 
 async function main(): Promise<void> {
@@ -470,9 +480,7 @@ async function main(): Promise<void> {
   });
   controls();
   tables();
-  filterTables();
-  drawGraph();
-  showPlan();
+  refilter();
   fromHash();
   $('main').removeAttribute('aria-busy');
   document.body.dataset.ready = '1';

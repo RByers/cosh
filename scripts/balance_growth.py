@@ -24,6 +24,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import balance_analysis as A  # noqa: E402
 from cosh import balance, store  # noqa: E402
+from cosh.people import Ids, alias_pairs  # noqa: E402,F401 (shared with the Feedback Index)
 from cosh.balance_publish import DATA_END  # noqa: E402
 
 DAY = 86400
@@ -46,48 +47,6 @@ def size10(lines):
 
 
 # --------------------------------------------------------------- identities
-
-class Ids:
-    """Union-find over emails: Chromium's two domains and SVN-era emails merge
-    by A.person(); Gerrit owner email and landed-commit author email of the
-    same CL merge too (people who switched addresses)."""
-
-    def __init__(self):
-        self.p = {}
-
-    def find(self, e):
-        e = A.person(e)
-        self.p.setdefault(e, e)
-        while self.p[e] != e:
-            self.p[e] = self.p[self.p[e]]
-            e = self.p[e]
-        return e
-
-    def union(self, a, b):
-        ra, rb = self.find(a), self.find(b)
-        if ra != rb:
-            self.p[max(ra, rb)] = min(ra, rb)
-
-
-def alias_pairs(cls, commits, min_cls=3, min_share=0.5):
-    """(owner email, git author email) pairs to treat as one person: the git
-    author's CLs are mostly (>= min_share, >= min_cls) owned in Gerrit by
-    that address. A single CL whose owner differs from its author (someone
-    landing another person's CL, a copybara import) is not evidence: merging
-    on those once chained ~400 people into one identity (2026-11-08)."""
-    by_n = {c["n"]: c for c in commits if c["n"]}
-    own = defaultdict(Counter)
-    for c in cls:
-        g = by_n.get(c["change_number"])
-        if g and c["owner_email"] and not A.is_bot_email(c["owner_email"]):
-            own[A.person(g["email"])][A.person(c["owner_email"])] += 1
-    out = []
-    for b, cnt in own.items():
-        tot = sum(cnt.values())
-        for a, n in cnt.items():
-            if a != b and n >= min_cls and n / tot >= min_share:
-                out.append((a, b))
-    return out
 
 
 def load_all(args):

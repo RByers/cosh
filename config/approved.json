@@ -1,0 +1,20 @@
+{
+  "about": "What the user has approved fetching. Fetchers read this file (cosh/approved.py) and refuse anything outside it, so a plain rerun can't exceed an approval. Widen a range only after the user approves, in the same commit as a line in docs/plan.md's decisions log. CLAUDE.md keeps the reasons and the load rules.",
+  "gerrit_weeks": {
+    "from": "2017-W27",
+    "to": "2026-W44",
+    "used_by": "cosh extract, cosh backfill (closed CLs of chromium/src main, NoteDb refs)",
+    "approved": "2026-11-03 (2025-W45..2026-W44), 2026-11-04 (from 2023-W26), 2026-11-08 (from 2020-W27), 2026-11-09 (from 2017-W27)"
+  },
+  "patchsets": {
+    "since": "2023-06-26",
+    "until": "2026-11-02",
+    "used_by": "cosh patchsets: every patch set of CLs with a human non-owner comment, closed (or, if open, last updated) in [since, until)",
+    "approved": "2026-11-07"
+  },
+  "bug_footers": {
+    "since": "2023-07-01",
+    "used_by": "cosh.bugs ids: Bug:/Fixed: footers of commits on main landed since this date, plus Chrome Releases security bugs",
+    "approved": "2026-11-08"
+  }
+}

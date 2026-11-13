@@ -80,27 +80,28 @@ def refspecs(n):
     return f"+refs/changes/{nn}/{n}/*:refs/patchsets/{n}/*\n^refs/changes/{nn}/{n}/meta\n"
 
 
-# The approved range (CLAUDE.md, 2026-11-07): reviewed CLs closed (or, if
-# open, last updated) since 2023-W26. derived.sqlite now reaches back to
-# 2017, and patch sets of those older CLs are not approved, so a plain rerun
-# must not select them. Fetching outside this range needs approval first.
-APPROVED_SINCE = "2023-06-26"
+# The approved range is config/approved.json's "patchsets" (cosh/approved.py):
+# reviewed CLs closed (or, if open, last updated) in [since, until).
+# derived.sqlite reaches back to 2017, and patch sets of older CLs are not
+# approved, so a plain rerun must not select them.
+APPROVED_SINCE = "2023-06-26"   # the default for callers that pass none
 
 
-def reviewed_cls(derived_path, project="chromium/src", branch="main", since=APPROVED_SINCE):
+def reviewed_cls(derived_path, project="chromium/src", branch="main", since=APPROVED_SINCE, until="9999"):
     """[(change_number, patchsets)] for CLs with a comment from a human other
-    than the owner, closed (else last updated) on or after `since`, newest
-    first."""
+    than the owner, closed (else last updated) on or after `since` and
+    before `until`, newest first."""
     db = sqlite3.connect(f"file:{derived_path}?mode=ro", uri=True)
     return db.execute(
         """SELECT ch.change_number, coalesce(ch.patchsets, 1) FROM changes ch
-           WHERE ch.project = ? AND ch.branch = ? AND coalesce(ch.closed_at, ch.updated_at) >= ? AND EXISTS (
+           WHERE ch.project = ? AND ch.branch = ? AND coalesce(ch.closed_at, ch.updated_at) >= ?
+             AND coalesce(ch.closed_at, ch.updated_at) < ? AND EXISTS (
              SELECT 1 FROM comments cm
              LEFT JOIN accounts a ON a.host = cm.host AND a.account_id = cm.account_id
              WHERE cm.host = ch.host AND cm.change_number = ch.change_number
                AND cm.account_id != ch.owner_account AND coalesce(a.is_bot, 0) = 0)
            ORDER BY coalesce(ch.closed_at, ch.updated_at) DESC, ch.change_number DESC""",
-        (project, branch, since)).fetchall()
+        (project, branch, since, until)).fetchall()
 
 
 def batches(cls, max_cls=1000, max_ps=5000):
@@ -119,13 +120,35 @@ def batches(cls, max_cls=1000, max_ps=5000):
 
 
 def fetched(git_dir):
-    done = set()
+    """{CL: patch sets fetched}. DONE_FILE lines are "N P" (fetched when the
+    CL had P patch sets) or, from before 2026-11-13, a bare "N"; a CL's refs
+    count too (its highest patch-set number). A bare line with no refs (a CL
+    that had none to fetch) counts as fully fetched."""
+    done = {}
     path = os.path.join(git_dir, DONE_FILE)
     if os.path.exists(path):
-        done.update(int(x) for x in open(path).read().split())
+        for line in open(path):
+            f = line.split()
+            if f:
+                n = int(f[0])
+                done[n] = max(done.get(n, 0), int(f[1]) if len(f) > 1 else 0)
+    bare = {n for n, p in done.items() if p == 0}
     refs = git(git_dir, "for-each-ref", "--format=%(refname)", "refs/patchsets/").stdout
-    done.update(int(r.split("/")[2]) for r in refs.split())
+    for r in refs.split():
+        _, _, n, ps = r.split("/")[:4]
+        n = int(n)
+        bare.discard(n)
+        if ps.isdigit():
+            done[n] = max(done.get(n, 0), int(ps))
+    for n in bare:
+        done[n] = float("inf")
     return done
+
+
+def todo_cls(cls, done):
+    """The CLs of [(n, patch sets)] with more patch sets than were fetched:
+    new CLs, and fetched ones that gained patch sets since."""
+    return [c for c in cls if done.get(c[0], 0) < c[1]]
 
 
 _done_lock = threading.Lock()
@@ -240,7 +263,7 @@ def fetch_batch(git_dir, cls, retries=4, throttle=None, max_rate_limited=20):
             throttle.release(p is not None and p.returncode != 0 and is_rate_limited(p.stderr))
         if p.returncode == 0:
             with _done_lock, open(os.path.join(git_dir, DONE_FILE), "a") as f:
-                f.write("".join(f"{n}\n" for n, _ in cls))
+                f.write("".join(f"{n} {ps}\n" for n, ps in cls))
             return time.time() - t0
         err = p.stderr.strip().replace("\n", " | ")[:300]
         if is_rate_limited(p.stderr):
@@ -279,7 +302,7 @@ def repack(git_dir):
 
 
 def run(go=False, derived_path=None, git_dir=None, interval=2.0, max_cls=1000, max_ps=5000,
-        repack_bytes=8e9, min_free=25e9, max_batches=None, jobs=1, since=APPROVED_SINCE):
+        repack_bytes=8e9, min_free=25e9, max_batches=None, jobs=1, since=APPROVED_SINCE, until="9999"):
     """Fetch the plan with up to `jobs` workers sharing the repo (each waits
     `interval` between its own fetches; a shared Throttle lowers how many
     run at once when the server rate-limits us). When new packs pass `repack_bytes`
@@ -287,9 +310,9 @@ def run(go=False, derived_path=None, git_dir=None, interval=2.0, max_cls=1000, m
     stop, the repo is repacked, and fetching continues."""
     derived_path = derived_path or os.path.join(store.DATA_DIR, "derived.sqlite")
     git_dir = git_dir or default_repo()
-    cls = reviewed_cls(derived_path, since=since)
-    done = fetched(git_dir) if os.path.isdir(git_dir) else set()
-    todo = [c for c in cls if c[0] not in done]
+    cls = reviewed_cls(derived_path, since=since, until=until)
+    done = fetched(git_dir) if os.path.isdir(git_dir) else {}
+    todo = todo_cls(cls, done)
     plan = batches(todo, max_cls, max_ps)
     print(f"reviewed CLs {len(cls):,} ({sum(p for _, p in cls):,} patch sets); "
           f"already fetched {len(cls) - len(todo):,}; to fetch {len(todo):,} CLs "

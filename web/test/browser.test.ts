@@ -3826,7 +3826,7 @@ test('review feedback: the addressed measure covers only the labelled dates', as
   await page.close();
 });
 
-test('the Data flow page lists the inventory, draws it, and plans a rerun', async () => {
+test('the Data flow page draws the chosen pages\' flow, lists the inventory, and plans a rerun', async () => {
   const flow = JSON.parse(
     readFileSync(fileURLToPath(new URL('../../config/dataflow.json', import.meta.url)), 'utf8'),
   ) as { sources: unknown[]; stores: { tier: string }[]; steps: { refresh: string }[]; pages: unknown[] };
@@ -3838,25 +3838,36 @@ test('the Data flow page lists the inventory, draws it, and plans a rerun', asyn
   await page.goto(baseUrl + 'dataflow.html', { waitUntil: 'load' });
   await page.waitForSelector('body[data-ready="1"]');
 
-  // Every item has a row in its table.
-  const rows = (id: string) => page.$$eval(`#${id} tr:not([hidden])`, (trs) => trs.length);
-  const published = flow.stores.filter((s) => s.tier === 'published').length;
-  assert.equal(await rows('sources-rows'), flow.sources.length);
-  assert.equal(await rows('outputs-rows'), published);
-  assert.equal(await rows('stores-rows'), flow.stores.length - published);
-  assert.equal(await rows('steps-rows'), flow.steps.length);
-  assert.equal(await rows('pages-rows'), flow.pages.length);
+  // The flow comes first, before the planner and the tables.
+  const order = await page.$$eval('main > section', (ss) => ss.map((s) => s.id));
+  assert.deepEqual(order.slice(0, 3), ['graph', 'detail', 'plan']);
 
-  // The graph leaves out analysis scripts and backfills until asked.
+  // A checkbox per page that reads fetched data, all ticked.
+  const picks = await page.$$eval('#pages-pick input', (is) => is.map((i) => [(i as HTMLInputElement).value, (i as HTMLInputElement).checked]));
+  assert.deepEqual(picks, [['page-value', true], ['page-sentiment', true], ['page-balance', true], ['page-feedback', true]]);
+
+  // The graph is drawn down the page, as wide as its box: no scrolling inside it.
   const nodes = () => page.$$eval('#graph-box .df-node', (gs) => gs.map((g) => (g as SVGGElement).dataset.node!));
-  const quiet = flow.steps.filter((s) => s.refresh === 'analysis' || s.refresh === 'one-off').length;
+  const box = await page.$eval('#graph-box', (e) => ({ sw: e.scrollWidth, cw: e.clientWidth, sh: e.scrollHeight, ch: e.clientHeight }));
+  assert.ok(box.sw <= box.cw && box.sh <= box.ch, JSON.stringify(box));
+  const ys = await page.$$eval('#graph-box .df-node', (gs) => Object.fromEntries(gs.map((g) => [(g as SVGGElement).dataset.node!, g.getBoundingClientRect().top])));
+  assert.ok(ys['gerrit'] < ys['gerrit-fetch'] && ys['gerrit-fetch'] < ys['derive'] && ys['derive'] < ys['page-value']);
+
+  // Without the extras, only what some page needs: no analyses, no maintenance.
   const before = await nodes();
-  assert.ok(before.includes('derive') && before.includes('data/private/derived.sqlite') && !before.includes('backfill'));
+  assert.ok(before.includes('derive') && before.includes('data/private/derived.sqlite'));
+  assert.ok(!before.includes('notedb-maintain') && !before.includes('feedback-coach'));
+  // An analysis whose output a page reads is drawn with where it comes from.
+  assert.ok(before.includes('roi-analysis') && before.includes('data/private/review_roi/'));
   await page.click('#show-analysis');
   const all = await nodes();
   assert.equal(all.length, flow.sources.length + flow.stores.length + flow.steps.length + flow.pages.length);
-  assert.ok(all.length >= before.length + quiet);
   await page.click('#show-analysis');
+
+  // Every item in the flow has a row in its table.
+  const rows = (id: string) => page.$$eval(`#${id} tr:not([hidden])`, (trs) => trs.length);
+  assert.equal(await rows('sources-rows') + await rows('stores-rows') + await rows('outputs-rows') +
+    await rows('steps-rows') + await rows('pages-rows'), before.length);
 
   // A click on a node shows its facts and lights up its lineage only.
   await page.click('#graph-box .df-node[data-node="data/private/labels.sqlite"]');
@@ -3871,23 +3882,32 @@ test('the Data flow page lists the inventory, draws it, and plans a rerun', asyn
   await page.click('#detail-facts [data-field="made_by"] button');
   assert.equal(await page.$eval('#detail-title', (e) => e.textContent), 'classify');
 
-  // The plan for new Radar data: the fetch, the build, the deploy.
+  // The plan for new Radar data: the fetch, for Value Exchange.
   await page.select('#changed', 'cloudflare-radar');
-  assert.deepEqual(
-    await page.$$eval('#plan-steps tr th', (ths) => ths.map((t) => t.textContent)),
-    ['radar', 'web-build', 'pages-deploy']);
+  assert.deepEqual(await page.$$eval('#plan-steps tr th', (ths) => ths.map((t) => t.textContent)), ['radar']);
   assert.match(await page.$eval('#plan-commit', (e) => e.textContent!), /radar_browser_share\.csv/);
   assert.equal(await page.$eval('#plan-pages', (e) => e.textContent), 'Pages that change: Value Exchange.');
 
-  // The pipeline choice and the search box narrow the tables.
-  await page.select('#group', 'usage');
-  assert.equal(await rows('sources-rows'), 1);
-  assert.ok((await nodes()).length < before.length);
-  await page.select('#group', '');
+  // Narrowing to the three pages that aren't Review Balance drops all of it.
+  await page.click('#pages-pick input[value="page-balance"]');
+  const three = await nodes();
+  assert.ok(three.length < before.length);
+  assert.deepEqual(three.filter((id) => id.includes('balance')), []);
+  assert.equal(await page.$eval('#steps-rows', (e) => e.textContent!.includes('balance-publish')), true);
+  assert.equal(await page.$eval('#steps-rows tr[data-node="balance-publish"]', (e) => (e as HTMLElement).hidden), true);
+  // Only Radar's own page left: Radar is still in, Gerrit's steps are not.
+  for (const id of ['page-sentiment', 'page-feedback']) await page.click(`#pages-pick input[value="${id}"]`);
+  await page.click('#pages-pick input[value="page-value"]');
+  assert.deepEqual(await nodes(), []);
+  await page.click('#pages-pick input[value="page-value"]');
+  assert.ok((await nodes()).includes('cloudflare-radar'));
+  for (const id of ['page-sentiment', 'page-balance', 'page-feedback']) await page.click(`#pages-pick input[value="${id}"]`);
+
+  // The search box narrows the tables.
   await page.type('#find', 'haiku friction score');
   assert.deepEqual(
     await page.$$eval('#steps-rows tr:not([hidden]) th', (ths) => ths.map((t) => t.textContent)),
-    ['sentiment-score']);
+    ['comments-score']);
   assert.equal(await page.$eval('#sources', (e) => (e as HTMLElement).hidden), true);
   assert.deepEqual(errors, []);
 
@@ -3898,13 +3918,15 @@ test('the Data flow page lists the inventory, draws it, and plans a rerun', asyn
     await page.screenshot({ path: join(process.env.SCREENSHOT_DIR, 'dataflow-light.png') as `${string}.png`, fullPage: true });
   }
 
-  // A phone in dark mode: the wide graph and tables scroll inside their boxes.
+  // A phone in dark mode: the graph narrows to fit, and nothing scrolls sideways.
   await page.emulateMediaFeatures([{ name: 'prefers-color-scheme', value: 'dark' }]);
   await page.setViewport({ width: 360, height: 800 });
   await page.goto(baseUrl + 'dataflow.html', { waitUntil: 'load' });
   await page.waitForSelector('body[data-ready="1"]');
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
   assert.ok(overflow <= 0, `horizontal overflow ${overflow}px`);
+  const narrow = await page.$eval('#graph-box', (e) => e.scrollWidth - e.clientWidth);
+  assert.ok(narrow <= 0, `graph overflow ${narrow}px`);
   if (process.env.SCREENSHOT_DIR) {
     await page.screenshot({ path: join(process.env.SCREENSHOT_DIR, 'dataflow-phone-dark.png') as `${string}.png`, fullPage: true });
   }

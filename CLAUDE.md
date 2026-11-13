@@ -24,14 +24,14 @@ regex plus Claude Haiku (`cosh classify`).
   NoteDb fetches in flight **until Monday 2026-11-09, then 1**:
   `--jobs 6 --jobs-until 2026-11-09T00:00-05:00` drops to 1 by itself at
   that time. After Monday, resume with `--jobs 1` (the default). Log
-  `data/private/backfill-2020-*.log`, PID in `data/private/backfill-2020.pid`.
+  `data/private/logs/backfill-2020-*.log`, PID in `data/private/logs/backfill-2020.pid`.
 - **Backfill back to 2017-07 is approved** (2026-11-09), so the balance
   analysis can match the git history (Gerrit starts mid-2017; earlier
   reviews were on Rietveld). NoteDb only, serial (`--jobs 1`), newest
   first: `backfill --weeks 312 --newest 2023-W25 --jobs 1 --go`, 2017-W27 ..
   2023-W25, which also finishes the 2020–23 range above. Started
-  2026-11-09, log `data/private/backfill-2017-*.log`, PID in
-  `data/private/backfill-2017.pid`; resumable with the same command.
+  2026-11-09, log `data/private/logs/backfill-2017-*.log`, PID in
+  `data/private/logs/backfill-2017.pid`; resumable with the same command.
   Run it as its own user service so it outlives the session that starts
   it (a `setsid nohup` start died with its session on 2026-11-09):
   `systemd-run --user --unit=cosh-backfill-2017 --nice=5
@@ -47,7 +47,7 @@ regex plus Claude Haiku (`cosh classify`).
   "addressed" labels (`cosh classify`) for these years.
 - **Backfill back to 2023-07-01 (Radar's first data) is approved**
   (2026-11-04). That is `backfill --weeks 175 --newest 2026-W44`, 2023-W26 ..
-  2026-W44, started 2026-11-04 with log `data/private/backfill-3y-*.log`. It is
+  2026-W44, started 2026-11-04 with log `data/private/logs/backfill-3y-*.log`. It is
   resumable with the same command.
 - **The open-CL snapshot for that year is approved** (2026-11-03):
   `python3 -m cosh extract-open` lists open CLs updated since the oldest
@@ -115,8 +115,11 @@ regex plus Claude Haiku (`cosh classify`).
   tables, git repo, directory, published file), every processing step
   (command, inputs, outputs, time and token cost, when to rerun it) and
   every page with the files it reads. `web/dataflow.html` draws it, and
-  `docs/data-architecture.md` explains its fields and where the design is
-  heading. Update it in the same change whenever you:
+  `docs/data-architecture.md` explains its fields and the flow rules
+  (every flow traces back to a source and ends in something a page reads;
+  names say who uses them). That doc is kept current, without history:
+  update it in the same change as what it describes. Update the inventory
+  in the same change whenever you:
   - add, remove, rename or move a store, a table, a published file or a
     data source;
   - add or remove a command or script that reads or writes data, or change
@@ -127,12 +130,19 @@ regex plus Claude Haiku (`cosh classify`).
 
   `python3 scripts/dataflow.py check` verifies it against the repository
   (ids, code paths, committed data files, the files page scripts import)
-  and runs in `tests.test_dataflow`; it can't check purposes, sizes or
-  costs, so those are on you. `python3 scripts/dataflow.py plan <id> ...`
-  prints what to rerun, in order, and which files to commit when a source
-  or store has new data (a new Gerrit week: `plan gerrit-rest
-  gerrit-notedb`).
-- Tests: `python3 -m unittest tests.test_derive tests.test_extract tests.test_radar tests.test_classify tests.test_sentiment tests.test_patchsets tests.test_balance tests.test_bugs tests.test_review_feedback tests.test_balance_signals tests.test_balance_publish tests.test_notedb_repack tests.test_dataflow`.
+  and the flow rules, and runs in `tests.test_dataflow`; it can't check
+  purposes, sizes or costs, so those are on you. `python3 scripts/dataflow.py
+  plan <id> ...` prints what to rerun, in order, and which files to commit
+  when a source or store has new data (a new Gerrit week: `plan gerrit`);
+  `python3 -m cosh update` runs the free, local steps of that plan and
+  lists the rest (fetches, model calls).
+- **Approved fetch ranges are data**: `config/approved.json`, which
+  `extract`, `backfill`, `patchsets` and `cosh.bugs` enforce. Widen a range
+  only after the user approves, in the same commit as a `docs/plan.md`
+  decision.
+- Run logs and PID files of long runs go in `data/private/logs/`;
+  analysis scratch in `data/private/scratch/<topic>/`.
+- Tests: `python3 -m unittest tests.test_derive tests.test_extract tests.test_radar tests.test_classify tests.test_sentiment tests.test_patchsets tests.test_balance tests.test_bugs tests.test_review_feedback tests.test_balance_signals tests.test_balance_publish tests.test_notedb_repack tests.test_dataflow tests.test_approved`.
   These run in a single process, which complies with the global limit of 4
   test workers. `tests.test_extract` uses a fake Gerrit and never touches the
   network.
@@ -158,12 +168,14 @@ regex plus Claude Haiku (`cosh classify`).
   README.md), so it must stay a clean mirror of `main`: no cosh refs, no
   local edits. Its full blobs were fetched on 2026-11-07 (`fetch --refetch`
   without a filter), so `-p`, `--numstat` and `blame` work there.
-  - cosh's own Chromium git data is `data/private/git/chromium-src.git`.
-    That repo reads `main`'s objects from the shared one (git alternates)
-    and holds only cosh refs. Today those are
-    `refs/patchsets/<CL>/<ps>`, the patch-set commits of 2026-W44, fetched
-    blob-less. Their 43k blobs that never landed on `main` aren't fetched
-    yet, and fetching them needs approval (`docs/plan.md`, 2026-11-07).
+  - `python3 -m cosh fetch-git` brings the clone's `main` up to date (one
+    fetch of `main` only, under the extract lock); run it before `cosh
+    commits` when a new week is processed.
+  - The W44 patch-set pilot repo (`data/private/git/chromium-src.git`) was
+    retired on 2026-11-13: every object it held is in
+    `chromium-patchsets.git` (or the shared clone), and its ref names are
+    kept in `data/private/git/chromium-src-pilot-refs.txt`. The repo itself
+    sits in `data/private/backup-20261113/` until the user deletes it.
   - **Every patch set of every reviewed CL is approved** (2026-11-07),
     with blobs: CLs in `derived.sqlite` with a comment from a human other
     than the owner, about 282k CLs and 2.0M patch sets, all weeks fetched.
@@ -171,8 +183,8 @@ regex plus Claude Haiku (`cosh classify`).
     into `data/private/git/chromium-patchsets.git` (same alternates,
     reftable refs), newest first, 1,000 CLs or 5,000 patch sets per fetch,
     under the extract lock. Started 2026-11-07, log
-    `data/private/patchsets-reviewed-*.log`, PID in
-    `data/private/patchsets.pid`. It is resumable: rerun
+    `data/private/logs/patchsets-reviewed-*.log`, PID in
+    `data/private/logs/patchsets.pid`. It is resumable: rerun
     `python3 -m cosh patchsets --go --repack-gb 1000 --jobs 7` from the main
     checkout. It repacks with `repack --geometric=2 -d -l` at the end (or
     when under 25 GB is free), which is lossless because the objects it
@@ -181,8 +193,9 @@ regex plus Claude Haiku (`cosh classify`).
     of memory on argus, so repack in groups and keep old packs until
     checked: `scripts/patchsets_chunked_repack.sh`, then
     `scripts/patchsets_pack_coverage.sh` (`docs/plan.md`, 2026-11-09). Patch sets of CLs without
-    human review still need approval. Use this repo, not the pilot repo,
-    for patch sets.
+    human review still need approval. `config/approved.json` holds the
+    approved range, and the command refuses an earlier `--since`. A CL is
+    fetched again when Gerrit has more patch sets than were fetched.
   - Still run every command with `GIT_NO_LAZY_FETCH=1`. Lazy fetches
     request one object at a time, and fetching blobs by ID that are
     reachable only from `refs/changes/*` is expensive for the server (one
@@ -191,8 +204,9 @@ regex plus Claude Haiku (`cosh classify`).
     (`+refs/changes/NN/N/*:refs/patchsets/N/*` with
     `^refs/changes/NN/N/meta`), never `git ls-remote` with patterns: that
     sends no ref prefix and streams every ref in chromium/src.
-  - Both repos set `log.mailmap false`, `gc.auto 0` and `maintenance.auto
-    false`. Never delete or prune either one. Fetching other branches,
+  - Both repos (the shared clone and `chromium-patchsets.git`) set
+    `log.mailmap false`, `gc.auto 0` and `maintenance.auto false`. Never
+    delete or prune either one. Fetching other branches,
     other repos, or patch sets beyond 2026-W44 needs approval.
   - Every fetch into either repo takes the extract lock
     (`flock data/private/extract.lock` in the main checkout), like any

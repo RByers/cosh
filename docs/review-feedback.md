@@ -314,7 +314,7 @@ The measures:
 Offline, about 3 minutes (188 s on 2026-11-12) and 3 GB:
 
 ```
-COSH_DATA_DIR=<main>/data/private nice -n 5 python3 scripts/review_feedback.py [--out DIR]
+COSH_DATA_DIR=<main>/data/private nice -n 5 python3 -m cosh.feedback [--out DIR]
 ```
 
 It reads only `derived.sqlite`, `commits.sqlite`, `labels.sqlite`, the

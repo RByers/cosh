@@ -1,26 +1,25 @@
 """Chromium's main history, in data/private/commits.sqlite (docs/commits.md).
 
 The one store of git history that every step and script reads: the Value
-Exchange commits metric (summarize), the feedback coach, the balance stages
-and scripts, the Feedback Index and the review-ROI scripts. Its one writer,
+Exchange commits metric (summarize), the Feedback Index (cosh/feedback.py),
+the feedback coach, and the analyses. Its one writer,
 `python3 -m cosh commits` (also run at the end of a full `derive`), reads
 the local bare clone (~/projects/shared/chromium, or $COSH_CHROMIUM_GIT) and
 never fetches: GIT_NO_LAZY_FETCH=1 and no remote command. It is incremental
 (it appends the commits that landed since its last run) and rebuildable
-(delete the file and rerun, about 2 h, most of it the repetition ratios).
+(delete the file and rerun, about 1 h 50 min: config/dataflow.json).
 
 Tables (SCHEMA below has the columns):
   commits       every first-parent commit of main, with its first-parent
                 diff's per-file line counts in commit_files (paths in paths)
   owners_added  each email address added to an OWNERS file
   repetition    the repetition ratio of commits with a CL and 10+ files
-  gcommits, gfiles  views: the commits landed since 2017-01-01, the window
-                the balance analyses use
+  gcommits, gfiles  views: the commits landed since 2017-01-01 (the
+                window per-CL analyses use; Gerrit starts in 2017)
 
 commit_id is landing order: 1 is the first commit landed since 2017-01-01
-(BALANCE_SINCE), counting up to the newest, and the older history counts
-down from -1. So `commit_id > 0` is the balance window, and its ids, path ids
-and row order are those of the former balance-git.sqlite.
+(HISTORY_SINCE), counting up to the newest, and the older history counts
+down from -1. So `commit_id > 0` is the per-CL window.
 
 $COSH_COMMITS_DB overrides the path (for a scratch copy).
 """
@@ -42,13 +41,13 @@ from .bots import _PATTERNS
 DEFAULT_REPO = os.path.expanduser("~/projects/shared/chromium")
 COMMITS_FILE = "commits.sqlite"
 ENV = {**os.environ, "GIT_NO_LAZY_FETCH": "1"}
-# The balance window (commit_id > 0) starts at the first commit landed on or
+# The per-CL window (commit_id > 0) starts at the first commit landed on or
 # after this time, walking main back from its tip as `git log --since` does.
-# It is "2017-01-01" as the former balance-git.sqlite had it: git's
-# `--since=2017-01-01` keeps the current time of day, and its first run was
-# at 21:47 Toronto time, so the window started at 2017-01-02 02:47 UTC (the 5
-# commits landed on New Year's Day are older history here).
-BALANCE_SINCE = "2017-01-02T02:47:00Z"
+# It is "2017-01-01" as first built: git's `--since=2017-01-01` keeps the
+# current time of day, and that run was at 21:47 Toronto time, so the window
+# started at 2017-01-02 02:47 UTC (the 5 commits landed on New Year's Day are
+# older history here).
+HISTORY_SINCE = "2017-01-02T02:47:00Z"
 # Inputs as first made by hand (2026-11-08), by `git log --since=<day>` in
 # Toronto time: OWNERS additions from 2012, AI markers from 2023.
 OWNERS_SINCE = "2012-01-01T05:00:00Z"
@@ -61,7 +60,7 @@ SCHEMA = """
 CREATE TABLE IF NOT EXISTS meta (k TEXT PRIMARY KEY, v TEXT) STRICT;
 CREATE TABLE IF NOT EXISTS paths (path_id INTEGER PRIMARY KEY, path TEXT NOT NULL UNIQUE) STRICT;
 CREATE TABLE IF NOT EXISTS commits (
-  commit_id     INTEGER PRIMARY KEY,    -- landing order; > 0 from BALANCE_SINCE on
+  commit_id     INTEGER PRIMARY KEY,    -- landing order; > 0 from HISTORY_SINCE on
   sha           TEXT    NOT NULL UNIQUE,
   author_email  TEXT    NOT NULL,       -- git author, lowercased
   author_name   TEXT    NOT NULL,
@@ -97,7 +96,7 @@ CREATE TABLE IF NOT EXISTS owners_added (
   PRIMARY KEY (commit_id, seq)
 ) STRICT, WITHOUT ROWID;
 -- 1 - distinct changed lines / changed lines of the commit's diff (near 1:
--- the same edit in many places). ratio NULL: over balance.MAX_LINES lines.
+-- the same edit in many places). ratio NULL: over MAX_LINES lines.
 CREATE TABLE IF NOT EXISTS repetition (commit_id INTEGER PRIMARY KEY, ratio REAL) STRICT;
 CREATE VIEW IF NOT EXISTS gcommits AS
   SELECT commit_id, sha, author_email, authored_at, landed_at, change_number, is_bot, reviewed_by,
@@ -154,6 +153,22 @@ def _git(repo, *args, check=True):
     if check and p.returncode:
         raise SystemExit(f"git {args[0]} in {repo} failed: {p.stderr.strip()}")
     return p.stdout.strip() if p.returncode == 0 else None
+
+
+def fetch_main(repo=None):
+    """Brings the shared clone's main up to date: one fetch of main only, no
+    tags, with the contact headers (its README: cosh does these fetches,
+    under cosh's extract lock, which the caller holds). Returns (old, new)
+    tip."""
+    from .contact import git_config, git_env
+    repo = repo or repo_path()
+    old = _git(repo, "rev-parse", "refs/heads/main")
+    p = subprocess.run(["git", "--git-dir", repo, *git_config(), "fetch", "--no-tags", "--quiet",
+                        "https://chromium.googlesource.com/chromium/src.git", "+refs/heads/main:refs/heads/main"],
+                       env={**ENV, **git_env()}, capture_output=True, text=True)
+    if p.returncode:
+        raise SystemExit(f"fetch of main into {repo} failed: {p.stderr.strip()}")
+    return old, _git(repo, "rev-parse", "refs/heads/main")
 
 
 # ------------------------------------------------------------------ writing
@@ -283,12 +298,54 @@ def _owner_rows(db, lines):
     return rows
 
 
+MAX_LINES = 50_000   # a patch set's diff bigger than this is not compared
+
+
+def diff_lines(git_dir, shas):
+    """{sha: {path: (Counter of added lines, Counter of removed lines)} or None
+    when too big}, each commit against its first parent, from one
+    `git diff-tree --stdin -p -U0` process."""
+    import threading
+    from collections import Counter
+    p = subprocess.Popen(["git", "--git-dir", git_dir, "diff-tree", "--stdin", "-p", "-U0", "--no-renames",
+                          "--no-ext-diff", "--no-textconv"],
+                         stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, env=ENV)
+    w = threading.Thread(target=lambda: (p.stdin.write(("\n".join(shas) + "\n").encode()), p.stdin.close()))
+    w.start()
+    want, out = set(shas), {}
+    cur = files = path = None
+    in_hunk, n = False, 0
+    for line in p.stdout:
+        if len(line) == 41 and line[:40].decode(errors="replace") in want and line[40:] == b"\n":
+            cur = line[:40].decode()
+            files, n = {}, 0
+            out[cur] = files
+            continue
+        if cur is None or out[cur] is None:
+            continue
+        if line.startswith(b"diff --git "):
+            path = line[11:].rstrip(b"\n").split(b" b/", 1)[-1]
+            files[path] = (Counter(), Counter())
+            in_hunk = False
+        elif line.startswith(b"@@"):
+            in_hunk = True
+        elif line.startswith(b"Binary files"):
+            files[path][0][b"\0binary"] += 1
+        elif in_hunk and line[:1] in (b"+", b"-"):
+            files[path][0 if line[:1] == b"+" else 1][hash(line[1:])] += 1
+            n += 1
+            if n > MAX_LINES:
+                out[cur] = None
+    p.wait()
+    w.join()
+    return out
+
+
 def ratios(repo, shas):
-    """{sha: repetition ratio, or None over balance.MAX_LINES} of commits
+    """{sha: repetition ratio, or None over MAX_LINES} of commits
     against their first parent: 1 - distinct changed lines / changed lines.
     Mechanical edits (the same line added in 300 files, renames of a symbol)
     score near 1."""
-    from .balance import diff_lines
     out = {}
     for sha, files in diff_lines(repo, shas).items():
         if files is None:
@@ -327,7 +384,7 @@ def _repetition(db, repo, jobs):
 
 def update(path=None, repo=None, jobs=4):
     """Brings the store up to date with the clone's main: new commits, then
-    (on the first runs) the history before BALANCE_SINCE, then OWNERS
+    (on the first runs) the history before HISTORY_SINCE, then OWNERS
     additions and repetition ratios for whatever is new. Resumable."""
     repo = repo or repo_path()
     if not os.path.isdir(repo):
@@ -342,8 +399,8 @@ def update(path=None, repo=None, jobs=4):
         paths = dict(db.execute("SELECT path, path_id FROM paths"))
         top = db.execute("SELECT max(commit_id), min(commit_id) FROM commits").fetchone()
         if top[0] is None or top[0] < 1:
-            n = _ingest(db, repo, ["--reverse", f"--since={BALANCE_SINCE}", tip], _count_from(1, 1),
-                        paths, f"since {BALANCE_SINCE[:10]}")
+            n = _ingest(db, repo, ["--reverse", f"--since={HISTORY_SINCE}", tip], _count_from(1, 1),
+                        paths, f"since {HISTORY_SINCE[:10]}")
         else:
             newest = db.execute("SELECT sha FROM commits WHERE commit_id = ?", (top[0],)).fetchone()[0]
             n = _ingest(db, repo, ["--reverse", f"{newest}..{tip}"], _count_from(top[0] + 1, 1), paths, "new")
@@ -465,6 +522,85 @@ def ai_marked(db, since=AI_SINCE):
 def repetition(db):
     """{sha: repetition ratio or None} of the commits that have one."""
     return dict(db.execute("SELECT c.sha, r.ratio FROM repetition r JOIN commits c USING (commit_id)"))
+
+
+# Per-person queries (cosh.people identities), shared by the Feedback Index
+# (cosh/feedback.py) and the analyses in scripts/.
+
+def first_people(db):
+    """{person: unix time of their first human commit on main}, over all of
+    its history."""
+    from .people import is_bot_email, person
+    first = {}
+    for e, (t, bot) in first_commits(db).items():
+        if not bot and not is_bot_email(e):
+            e = person(e)
+            first[e] = min(t, first.get(e, t))
+    return first
+
+
+def human_commits(db):
+    """Human commits on main since 2017 (gcommits) as dicts: cid, sha, email
+    (cosh.people.person), at, n (CL), rb (Reviewed-by people), is_revert,
+    reland, files, lines, reverted_at."""
+    import json
+    from .people import is_bot_email, person
+    rows = db.execute("SELECT commit_id, sha, author_email, landed_at, change_number, is_bot, reviewed_by, "
+                      "reverts_sha, is_reland, files, ins + dels FROM gcommits").fetchall()
+    reverted = {}
+    for r in rows:
+        if r[7]:
+            reverted[r[7]] = min(r[3], reverted.get(r[7]) or r[3])
+    out = []
+    for cid, sha, email, at, n, bot, rb, rv, rl, files, lines in rows:
+        if bot or is_bot_email(email):
+            continue
+        out.append(dict(cid=cid, sha=sha, email=person(email), at=at, n=n,
+                        rb=[person(x) for x in json.loads(rb)] if rb else [],
+                        is_revert=rv is not None, reland=rl, files=files, lines=lines,
+                        reverted_at=reverted.get(sha)))
+    return out
+
+
+def mechanical(db, cls):
+    """Mechanical CLs: merged CLs (dicts with change_number, status, sha,
+    files) whose landed commit has 100 or more files, or 10 or more with a
+    repetition ratio of 0.8 or more."""
+    rep = repetition(db)
+    out = set()
+    for c in cls:
+        if c["status"] != "MERGED" or c["files"] is None or c["files"] < 10:
+            continue
+        r = rep.get(c["sha"])
+        if c["files"] >= 100 or (r is not None and r >= 0.8):
+            out.add(c["change_number"])
+    return out
+
+
+def dir_of(path, depth):
+    """The `depth`-level directory of a path, with a trailing slash."""
+    parts = path.split("/")[:-1]
+    return "/".join(parts[:depth]) + "/" if parts else "(root)/"
+
+
+def commit_dirs(db, depth=3):
+    """{commit_id: (top dir by lines, frozenset of dirs)} of gcommits, from gfiles."""
+    paths = dict(db.execute("SELECT path_id, path FROM paths"))
+    cache, out, cur, acc = {}, {}, None, None
+
+    def done():
+        if cur is not None and acc:
+            out[cur] = (max(acc, key=acc.get), frozenset(acc))
+    for cid, pid, ins, dels in db.execute("SELECT commit_id, path_id, ins, dels FROM gfiles"):
+        if cid != cur:
+            done()
+            cur, acc = cid, {}
+        d = cache.get(pid)
+        if d is None:
+            d = cache[pid] = sys.intern(dir_of(paths[pid], depth))
+        acc[d] = acc.get(d, 0) + max(ins, 0) + max(dels, 0) + 1
+    done()
+    return out
 
 
 def main(argv=None):

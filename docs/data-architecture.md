@@ -1,557 +1,202 @@
 # cosh: data architecture
 
-Status: review of 2026-11-12, updated the same day. This covers how cosh's
-data fits together, what makes it hard to manage, the architecture to aim
-for, and the changes that get there. Section 6 records what has been done
-since the review; items marked *(done)* below are resolved.
+> **Kept current.** This document describes the data architecture as it is
+> now, and is updated in the same change as anything it describes. It holds
+> no history and no done-lists: to see what changed and when, compare
+> versions in git (`git log -p docs/data-architecture.md`, and the same for
+> `config/dataflow.json`). Decisions and their reasons are logged in
+> `docs/plan.md`.
 
-The facts are in `config/dataflow.json`: every source, store, step and page.
-`web/dataflow.html` shows it as tables and a graph, and
-`python3 scripts/dataflow.py plan <id>` prints what to rerun. This document
-doesn't repeat the inventory. Sizes, row counts, commands and costs live
-there, and only there.
+The facts are in `config/dataflow.json` (the inventory): every source,
+store, step and page, with paths, sizes, row counts, commands, measured
+times and costs. They live there and only there; this document and the
+other docs point to it rather than repeat its figures.
 
-## Summary
+- `web/dataflow.html` draws it: the flow of the pages you pick, top to
+  bottom, the facts of any item, a planner, and tables.
+- `python3 scripts/dataflow.py check` verifies it against the repository
+  and the flow rules below (run by `tests.test_dataflow`).
+- `python3 scripts/dataflow.py plan <id> ...` prints what to rerun after
+  new data, in order, and the files to commit.
+- `python3 -m cosh update` runs that plan (section 4).
 
-- **At the review (morning of 2026-11-12):** 10 external sources, 47
-  stores, 42 steps, 7 pages. The Gerrit core (`extract` → `derive` →
-  `classify` → `summarize`) was clean; balance, sentiment and review
-  feedback depended on hand steps, files with no fixed home, ranges typed
-  per command, and a published file with about a dozen writers.
-- **After the same day's cleanup (section 7):** 44 stores and 33 steps.
-  Every published file has one writer; main's git history is one store
-  (`commits.sqlite`) instead of two plus four hand-made files; NoteDb is
-  walked once for balance instead of twice; the Feedback Index no longer
-  needs the balance pipeline; Review Tone and Review Balance each publish
-  with one command. What the site shows is unchanged except where a bug
-  was fixed (section 7).
-- **Still open** (section 5): the `update` command (17), approvals as data
-  (18), date ranges from the data (rule 4, pending D3), logs in one folder
-  (19), and two decisions: D1 (delete `derived.prev.sqlite`) and D3.
+## 1. The shape
 
-## 1. The inventory
+Data moves down through five tiers. The first three live in `data/private/`
+(gitignored because of size, not privacy), the published tier is committed,
+and the site is built from it.
 
-`config/dataflow.json` has five lists. Ids are stable names that the other
-lists refer to.
-
-| List | One entry per | Id |
+| Tier | What | If lost |
 |---|---|---|
-| `groups` | pipeline (Gerrit core, balance, …) | short word |
-| `sources` | external system we fetch from, plus the Claude model | short name |
-| `stores` | database, git repo, directory, or family of published files | its path |
-| `steps` | command a person or script runs | short name |
-| `pages` | page of the site | `page-…` |
+| `raw` | fetched from outside, kept losslessly | refetch: server load, maybe approval |
+| `labels` | model output (Haiku scores and labels) | pay Claude usage again |
+| `derived` | computed from local data | rerun a step |
+| `published` | what a page reads, committed | rerun and commit |
+| `config` | hand-kept input in git | can't be regenerated |
+| `analysis` | scratch behind a doc, off every page's flow | rerun a script, or nothing |
 
-Fields that scripts rely on:
+The three dashboards other than Review Balance share one concise flow:
 
-- **`stores[].tier`** says what losing the store costs.
+```
+Chromium Gerrit ─ gerrit-fetch ─▶ Fetched Gerrit data ─ derive ─▶ derived.sqlite ─┬─ classify ─▶ labels.sqlite
+Chromium git ─── fetch-git ───▶ Chromium git clone ── commits ─▶ commits.sqlite  ├─ comments-collect ─▶ Rendered comments
+Affiliations file ─ affiliations ─▶ affiliations.json5                            │     └─ comments-score ─▶ Comment scores
+Cloudflare Radar ── radar ─▶ Browser shares (Radar)                               │
+Claude (Haiku): classify, comments-score, tone-publish's screening                │
+                                                                                  ▼
+  summarize      ─▶ Value Exchange summaries ─┐
+  (+ Radar shares, org_browsers.csv)          ├─▶ Value Exchange
+  tone-publish   ─▶ Review Tone summaries ────┼─▶ Review Tone
+  review-feedback (cosh.feedback) ─▶ Feedback Index files ─▶ Feedback Index
+```
 
-  | Tier | Meaning | If lost |
-  |---|---|---|
-  | `raw` | fetched from outside | refetch: server load, maybe approval |
-  | `labels` | model output | pay Claude usage again |
-  | `derived` | computed from local data | rerun a step |
-  | `analysis` | scratch behind a doc | rerun a script, or nothing |
-  | `published` | what a page reads | rerun and commit |
-  | `config` | hand-kept input | can't be regenerated |
+`derived.sqlite` (per-CL, per-comment and per-thread facts, no comment
+text) and `commits.sqlite` (main's whole first-parent history) are the two
+hubs nearly everything reads. Comment text exists only in NoteDb and in
+the rendered comment files, and reaches a model only through
+`cosh.sandbox.Sandbox`.
 
-- **`stores[].tracked_in_git`** and **`git_paths`** (globs; the store's
-  `path` when absent) say which files to commit when the store changes.
-- **`stores[].tables`** lists a database's tables with row counts, or a
-  file family's members.
-- **`steps[].inputs` / `outputs`** are source and store ids. These are the
-  edges of the graph. A step that lists a store in both resumes from it.
-- **`steps[].refresh`** says when a step runs.
+**Review Balance** is a separate flow on top of the same hubs: its stage
+databases (`balance-timeline`, `balance-interdiff`, `balance.sqlite`), the
+AI-marker and AI-prediction stores, the clusters, the review-ROI results
+and `python3 -m cosh.balance_publish`. Everything named "balance" feeds only
+that page, and none of the other three pages depends on any of it (the
+naming rule below checks this), so it can be changed or deleted on its own.
+
+## 2. Flow rules
+
+`scripts/dataflow.py check` enforces the first five; the rest are how the
+system is kept, and the inventory says where a step departs from them.
+
+1. **Every flow has inflows.** Everything a page reads traces back, through
+   the steps that write it, to an external source. The only stores with no
+   writer are config. (So in the drawn flow the top layer holds only
+   sources and config.)
+2. **Every flow has a final output.** Every step that runs as part of an
+   update (`routine` or `optional`) leads to something a page reads. A step
+   whose output reaches no page is an `analysis` (its output goes into a
+   doc), `one-off` or `maintenance`, and never runs in an update.
+3. **Every step writes something.**
+4. **Names say who uses them.** A source, step or store is named after an
+   analysis (a page's `names`: value, tone, balance, feedback) only when it
+   feeds that page alone. Anything shared is named for what it holds:
+   `comments-score` and "Comment scores", not "sentiment", because the
+   Feedback Index reads them too.
+5. **Every source is read** by some step.
+6. **One writer per store.** A step that lists a store as both input and
+   output resumes from it; that is not a second writer. A store a step
+   rewrites in place (NoteDb housekeeping) is `maintenance`. A cache table
+   a step keeps inside another's store (screening verdicts in
+   `sentiment.sqlite`) is noted on the step, not drawn.
+7. **Steps on the way to a page are cosh commands** (`python3 -m cosh …`,
+   `python3 -m cosh.<module>`), with a `run` command that `cosh update` may
+   run when the step is free and local. `scripts/` holds analyses.
+   Exceptions today are Review Balance's script steps (section 5).
+8. **Date ranges come from the data.** Review Tone and the Feedback Index's
+   tone year are the newest run of up to 52 fully scored weeks
+   (`cosh.sentiment.scored_weeks`); Review Balance's window ends with the
+   newest fetched week (`balance_publish.DATA_END`); Value Exchange covers
+   every fetched week. A fixed range is an explicit argument.
+9. **Incremental steps key on content, not on the CL number.** The NoteDb
+   timeline keeps each CL's meta-ref tip, and the patch-set fetch keeps
+   each CL's patch-set count; a CL whose marker no longer matches is read
+   again.
+10. **Approvals are data.** `config/approved.json` gives each fetcher its
+    approved range; `extract`, `backfill`, `patchsets` and `cosh.bugs`
+    refuse anything outside it. Widening a range needs the user's approval
+    and an edit to that file, logged in `docs/plan.md`. CLAUDE.md keeps the
+    reasons and the load rules.
+11. **A step is offline unless the inventory says it fetches.** The one
+    deliberate exception: every command that attributes orgs refreshes the
+    affiliations file first (`COSH_AFFILIATIONS_OFFLINE=1` skips it), so no
+    analysis runs on a stale copy.
+12. **Keep whatever we download, download only what we need**
+    (`docs/storage-design.md` §3.8). Raw stores are never slimmed or pruned;
+    data is reduced only in derived stores.
+
+## 3. The inventory
+
+`config/dataflow.json` has four lists. Ids are stable names the others
+refer to: a source's short name, a store's path (or a short id for a store
+that spans paths or files), a step's short name, `page-…` for a page.
+
+- **`sources[]`**: an external system we fetch from, plus the Claude model.
+  `access`, `load_rules` and `coverage` say how we may use it.
+- **`stores[]`**: a database, git repo, directory or family of files.
+  `tier` (table above); `name` (a short label for a family or a store
+  that spans paths); `tracked_in_git` and `git_paths` (globs; the path when
+  absent) say what to commit; `tables` lists a database's tables or a
+  family's members; `never_delete` marks what can't be remade.
+- **`steps[]`**: a command. `inputs` and `outputs` are source and store ids,
+  the edges of the graph. `command` is what a person types, `run` what
+  `cosh update` may run by itself (absent for fetches and model calls).
+  `refresh` says when it runs:
 
   | Value | Meaning |
   |---|---|
-  | `routine` | free and local (or an approved small fetch); rerun whenever an input changes |
-  | `optional` | costs Claude usage, needs approval, or redraws a fixed-window analysis; rerun when wanted |
-  | `one-off` | a backfill or setup that is finished |
+  | `routine` | free and local, or an approved small fetch; rerun whenever an input changes |
+  | `optional` | costs Claude usage or needs approval; rerun when wanted |
+  | `one-off` | a setup that is finished |
   | `analysis` | exploratory; its output goes into a doc, not the site |
-  | `automatic` | runs by itself (the Pages workflow on push) |
+  | `maintenance` | lossless housekeeping of a store in place |
 
-- **`steps[].duration`, `token_cost`, `cost_source`** are measured figures
-  and where each was measured. `null` means nobody has measured it.
-- **`pages[].reads`** are the stores a page imports or fetches.
+  `duration`, `token_cost` and `cost_source` are measured figures and
+  where each was measured; `null` means nobody has measured it.
+- **`pages[]`**: a page of the site, the stores it `reads`, and the `names`
+  of its analysis for rule 4.
 
-The planner (`scripts/dataflow.py plan`, and the page's "What to rerun")
-walks forward from the changed ids through `routine`, `optional` and
-`automatic` steps, orders them by their place in the flow, and lists the
-tracked stores they write.
+Building and deploying the site (`npm run build`; the Pages workflow on
+push) is not a data step and isn't listed.
 
-`scripts/dataflow.py check` (run by `tests.test_dataflow`) fails when:
+`check` also fails when an id is unknown or duplicated, the graph has a
+loop, a step's code file or a page doesn't exist, a committed file under
+`summaries/`, `data/public/` or `config/` belongs to no store, or a page
+script imports a data file that no page's `reads` covers. It can't check
+purposes, sizes or costs: keep those current by hand (CLAUDE.md).
 
-- an id is unknown or duplicated, or the graph has a loop;
-- a step's code file or a page doesn't exist;
-- a committed file under `summaries/`, `data/public/` or `config/` belongs
-  to no store;
-- a page script imports a data file that no page's `reads` covers;
-- a page exists that the inventory doesn't list.
+## 4. Running it
 
-It can't check purposes, sizes or costs.
+`python3 -m cosh update [--from ID ...] [--with-optional] [--dry-run]`
+plans from the given sources or stores (default: every source), runs each
+planned step that has a `run` command, in flow order, stops at the first
+failure, and lists the steps left for a person (fetches, which need
+approval, and model calls, which cost usage) with their measured cost, then
+the files to commit.
 
-## 2. Today's architecture
-
-Data moves through five layers. The first three are in `data/private/`
-(gitignored), the fourth is committed, the fifth is built.
-
-1. **Fetched** (`raw`): `raw.sqlite`, `notedb/`, `git/`, `bugs/raw/`,
-   `chrome_releases/raw/`, and the committed `data/public/radar/raw/`.
-   About 47 GB, plus the 69 GB shared Chromium clone that cosh only reads.
-2. **Labels**: `labels.sqlite`, `sentiment.sqlite`, `ai_predict/scores.sqlite`.
-   Under 100 MB, and the only stores that cost money to remake.
-3. **Derived**: `derived.sqlite` is the hub that nearly everything reads.
-   The balance stage files build on it and on git, and the sentiment
-   comment files are rendered from it.
-4. **Published**: `summaries/*`, `data/public/radar_browser_share.csv`,
-   `config/org_browsers.csv` and `web/public/review-feedback/` (all
-   committed; the last since 2026-11-12).
-5. **Site**: `web/dist/`, built locally or by the Pages workflow from the
-   committed files.
-
-A new week of Gerrit data today needs, in order: `backfill --weeks 1`,
-`extract-open`, a full `derive`, `classify --week`, `summarize`, then a
-commit. That path is five commands and well defined. Everything past it
-(balance, sentiment, feedback) adds about 20 more steps, several of them
-manual.
-
-## 3. What makes it hard to manage
-
-Each item names the evidence. Items marked *(reviewer)* were found by the
-code review and spot-checked in the code; the rest I measured directly.
-
-### 3.1 One published file, a dozen writers, and hand copying
-
-**Fixed 2026-11-12** (item 9): `python3 -m cosh.balance_publish` writes
-`balance.json`, `balance_dirs.json` and `balance_authors.json` whole, from
-empty, from the steps its `STEPS` list records, and `--check` compares a
-rebuild with the committed files. The scripts no longer write into
-`summaries/`. Only the `growth` step still uses the 50-file rule for
-mechanical CLs (see item 10). As found:
-
-`summaries/balance.json` is written by `balance_report.py` (whose output is
-a scratch `report.json`, with sections then copied in by hand), by eleven
-dataset scripts, by `balance_page_extras.py` and by `review_roi_report.py`.
-Each reads the file, replaces its own keys and writes it back. Nothing
-records the order, and nothing rebuilds the file from empty.
-`summaries/balance_dirs.json` is copied by hand entirely.
-
-Consequences: the file can't be regenerated with confidence, a script that
-is forgotten leaves stale datasets with no sign of it, and two scripts
-still disagree on a definition (`balance_growth.py` and
-`balance_analysis.py` use the old 50-file rule for mechanical CLs, the rest
-use `mech.jsonl`) *(reviewer)*.
-
-### 3.2 Inputs with no home and no command
-
-**Fixed 2026-11-12** (except the review-ROI paths): the four inputs are now
-queries on `data/private/commits.sqlite`, which `python3 -m cosh commits`
-keeps up to date and which also replaced `balance-git.sqlite`,
-`derived.sqlite`'s commits tables and `review_feedback.early_commits`'s own
-walk of git (`docs/commits.md`). The flags still read old files for
-exploration. As found:
-
-Most balance and feedback scripts take `--first-commit F --owners-added O
---mech M --ai-marked A`.
-
-- `mech.jsonl` is written only when the environment variable
-  `BALANCE_MECH_OUT` is set (`scripts/balance_analysis.py:153`).
-- `first_commit.txt`, `owners_added.txt` and the narrow `ai_marked.txt`
-  have no script at all, only prose in `docs/balance.md`.
-- Two of the four currently sit in `data/private/review_feedback_inputs/`.
-  The other two have no fixed path.
-- The review-ROI scripts write to another session's scratch directory,
-  which they hard-code (`/home/rbagent/.claude/jobs/9e4a825c/tmp/…` in six
-  scripts). Their results were copied to `data/private/review_roi/` by hand.
-
-### 3.3 Date ranges are typed or hard-coded per command
-
-- Balance scripts fix their window in constants (`LAST_Q = "2026Q3"` in
-  `scripts/balance_report.py:28`, and likewise in `balance_growth.py` and
-  `balance_signals.py`). New weeks can't reach the page without code edits.
-  *Since 2026-11-12* those ends follow one setting, `DATA_END` in
-  `cosh/balance_publish.py` (with `LAST_QUARTER` derived from it); the
-  comparison eras are still per script, pending D3.
-- Five sentiment commands each take `--week 2025-W45:2026-W44` (or
-  `--full-weeks`, `--praise-week`) by hand, and the ranges must agree.
-
-So the planner can say *which* steps follow new data, but running them
-unchanged republishes the same window.
-
-### 3.4 Steps that never look at a CL twice
-
-Incremental steps marked a CL done by its number alone *(reviewer)*:
-
-- `balance timeline` (`timeline_done`) ignored later NoteDb updates.
-  *Fixed 2026-11-12:* it keeps each CL's meta-ref tip and rereads a CL
-  whose tip moved.
-- `balance_signals.py votes` marked CLs with no NoteDb ref as done without
-  reading them, so a ref that arrived later (as the 2017 backfill's did)
-  was never read. *Fixed 2026-11-12:* the pass is gone (folded into
-  `balance timeline`, which doesn't mark CLs without a ref).
-- `cosh patchsets` skips any CL in its fetched list, even if the CL gained
-  patch sets since.
-
-`extract-open` refreshes open CLs every run, so the remaining one goes
-quietly stale for exactly the CLs that change most.
-
-### 3.5 A plain rerun can exceed an approval
-
-`cosh patchsets --go` selects every reviewed CL in `derived.sqlite`
-(`cosh/patchsets.py:83-95`), with no week bound. Since the 2017 backfill,
-that includes about 9 years of CLs whose patch sets are not approved. The
-bound exists only in CLAUDE.md prose. `extract` has the same shape: the
-approved range is in prose, not in the command.
-
-### 3.6 Steps that fetch and rewrite config *(by design)*
-
-`OrgResolver()` fetches the affiliations file and may rewrite
-`config/affiliations.json5`. Eight call sites in seven files build one:
-`summarize`, `sentiment_people`, `review_feedback.py`, two balance scripts
-and two analysis scripts. So a summary step can change a config file as a side
-effect, and docs that call these steps offline are wrong. In the inventory
-this had to be modelled as "runs `update-affiliations` by itself".
-
-This is now a decision, not an accident (`docs/plan.md`, 2026-11-12): the
-fetch is cheap, many analyses depend on the file and some are slow, so none
-should run on a stale copy. `COSH_AFFILIATIONS_OFFLINE=1` skips it. Rule 7
-below is relaxed accordingly: the inventory should say which steps refresh
-affiliations, and docs shouldn't call them offline.
-
-### 3.7 Published data that isn't published *(done)*
-
-`web/public/review-feedback/` was 302 MB in 7,000-odd files and gitignored,
-so the live Feedback Index page found nobody. On 2026-11-12 its files were
-slimmed to 126 MB (53 MB as git stores them), committed, and published; the
-landing page links the page.
-
-### 3.8 Three kinds of entry point
-
-Steps on the path to a published file are spread over `python3 -m cosh
-<cmd>` (core, radar, patchsets), `python3 -m cosh.<module>` (balance,
-sentiment, bugs) and `python3 scripts/<name>.py` (feedback, every
-balance dataset, chrome releases). `scripts/` mixes these with one-off
-analyses, and the only way to tell them apart is the inventory.
-
-### 3.9 Smaller things
-
-- **Leftovers.** `data/private/derived.prev.sqlite` (2.1 GB) and
-  `derived.new.sqlite-*` are from the 2026-11-12 rebuild; no code reads
-  them. `data/private/git/chromium-src.git` is the patch-set pilot,
-  superseded by `chromium-patchsets.git`.
-- **Scratch in the published tree.** `data/public/radar/adhoc/` (119 of
-  the 162 tracked Radar files) is a one-off probe that nothing reads.
-  `summaries/org_weekly.csv` is read by no page.
-- **Two walks of the same logs.** `balance timeline` and
-  `balance_signals.py votes` both read every CL's NoteDb event log. The
-  votes pass took 5 h 14 min on 2026-11-12, before two fixes the same day
-  (list `refs/meta/` once; refresh the NoteDb multi-pack index after a
-  backfill, then a repack from 3,823 packs to 14) made a cold read about
-  560 CLs/s. *Fixed 2026-11-12:* one walk (35.5 min for 716k CLs from
-  empty); `votes` is a table of `balance-timeline.sqlite`.
-- **One schema in five files.** Each `balance-*.sqlite` carried every
-  stage's tables, mostly empty. *Fixed 2026-11-12:* `cosh/balance.py`
-  `SCHEMA` is per stage. Files built before keep their empty tables until
-  rebuilt.
-- **Same file, two writers.** `cosh.sentiment collect` and
-  `cosh.sentiment_people collect` write the same `comments-<week>.jsonl`,
-  with and without identities. Whichever ran last wins, and `praise` fails
-  if it was the wrong one *(reviewer)*.
-- **Uncached model calls.** The identifying-detail screening inside
-  `sentiment samples` and `sentiment_recent` is cached in memory only, so
-  each rerun pays again *(reviewer)*.
-- **Duplicated constants.** The browsers left out of the usage denominator
-  are in `config/browsers.csv` and again in `web/src/data.ts`
-  (`RATIO_EXCLUDED_BROWSERS`). The classifier prompt has an older copy in
-  `scripts/comment_classifier.py`.
-- **A wrong estimate.** `classify --dry-run` assumes 230 tokens per thread
-  (`cosh/classify.py:320`); production runs measured 300 to 360.
-- **A growing refresh.** `extract-open` starts from the oldest fetched
-  week, now 2017-W27, so each refresh lists about 490 weekly windows.
-- **No updater for the shared clone.** `cosh commits` reads
-  `~/projects/shared/chromium`, but nothing in cosh fetches it, so a new
-  week has no commits until someone does.
-- **Stale docs.** Sizes, durations and schemas are repeated across
-  `docs/*.md` and CLAUDE.md and several disagree with the code (the three
-  durations for `cosh commits`, the pack count in `docs/balance.md`, the
-  file list in `docs/storage-design.md` §3.1).
-
-## 4. The architecture to aim for
-
-Seven rules. The Gerrit core already follows all of them.
-
-1. **Every store has exactly one writer step**, and that step can rebuild
-   it from its inputs alone. No read-modify-write of shared files, and no
-   hand copying. A published file is written whole by one command.
-2. **Every step on the way to a published file is a `cosh` command.**
-   `scripts/` holds only analysis whose output goes into a doc. The
-   inventory's `refresh` then matches the directory: anything in
-   `scripts/` is `analysis`.
-3. **Every store lives at a fixed path under its tier.** Inputs that
-   scripts share are stores with a writer, not arguments pointing at
-   wherever the file happens to be. Proposed layout, applied to new stores
-   first and to old ones only when convenient:
-
-   | Path | Holds |
-   |---|---|
-   | `data/private/raw.sqlite`, `notedb/`, `git/`, `bugs/`, `chrome_releases/` | fetched (as today) |
-   | `data/private/labels.sqlite`, `sentiment.sqlite`, `ai_predict/` | labels (as today) |
-   | `data/private/derived.sqlite`, `balance/*.sqlite`, `sentiment/` | derived |
-   | `data/private/scratch/<topic>/` | analysis output, safe to delete |
-   | `data/private/logs/` | run logs and PID files (60-odd loose files today) |
-   | `summaries/` | every published data file |
-
-4. **Date ranges come from the data.** A step's default range is "every
-   complete week (or month) its inputs have", read from `derived.sqlite`'s
-   `meta` or the labels' coverage. A fixed window is an explicit argument
-   that the publishing command records in the file it writes.
-5. **Incremental steps key on content, not on the CL number.** A done
-   marker stores what it saw (the NoteDb tip, the patch-set count), and the
-   step redoes a CL whose marker no longer matches.
-6. **Approvals are data that commands enforce.** A small committed file
-   (say `config/approved.json`) gives each fetcher its approved range, and
-   the fetcher refuses anything outside it without an explicit override.
-   CLAUDE.md keeps the reasons; the bound itself stops being prose.
-7. **A step is offline unless the inventory says it fetches.** The one
-   deliberate exception is the affiliations refresh that every
-   `OrgResolver()` does (3.6); the inventory marks those steps.
-
-On top of these, one command ties the flow together:
+A new week of data:
 
 ```
-python3 -m cosh update [--from ID ...] [--dry-run] [--with-optional]
-```
-
-It reads `config/dataflow.json`, runs the `routine` steps downstream of
-what changed in order, stops at the first failure, and prints the
-`optional` steps it skipped with their measured cost and the files to
-commit. It is `scripts/dataflow.py plan` plus execution, so it stays small.
-It only becomes possible once rules 1 to 4 hold, because today several
-steps can't be run without hand edits.
-
-What stays as it is:
-
-- **SQLite files and bare git repos, standard library only.** Nothing here
-  needs a workflow engine, a build system or a new store.
-- **`derived.sqlite` as the hub**, rebuilt whole. It is the simplest part of
-  the system, and at under an hour it doesn't need to be incremental yet.
-- **Separate balance stage files.** They let the slow stages run in
-  parallel and be rebuilt alone. Only their schemas and location change.
-- **Keeping everything fetched, losslessly** (`docs/storage-design.md` §3.8).
-
-## 5. What needs to change
-
-In order. Each step leaves the system working, and the inventory is
-updated with it. Sizes: S is under an hour, M a few hours, L a day or more.
-
-### First: decisions only you can make
-
-| # | Decision | Why it's yours |
-|---|---|---|
-| D1 | Delete `data/private/derived.prev.sqlite` and `derived.new.sqlite-*` (2.1 GB)? | Deleting data. No code reads them and `derived.sqlite` is rebuildable. |
-| D2 | *(done 2026-11-12)* How should the Feedback Index files be published? | Decided: slimmed to 126 MB and committed to `main`; finished half-years don't change between runs, so git stores them once. |
-| D3 | Should Review Balance and Review Tone follow new weeks, or stay fixed-window analyses? | It decides whether their steps become `routine` (and need rule 4) or stay `optional` snapshots that are rerun deliberately. |
-| D5 | *(done)* Delete `data/private/notedb/repack-20261112/old-packs` (12 GB)? | Deleted by the user on 2026-11-12. |
-| D4 | Retire the pilot repo `data/private/git/chromium-src.git`? | CLAUDE.md says never delete it. Only exploratory balance scripts read it. |
-
-### Then: quick fixes that remove real risk
-
-| # | Change | Size | Rule |
-|---|---|---|---|
-| 1 | *(done)* Give `cosh patchsets` `--since`/`--until`, defaulting to the approved 2023-W26 .. 2026-W44, so a plain rerun can't fetch unapproved CLs | S | 6 |
-| 2 | *(dropped)* Make `OrgResolver()` read the committed file; fetch only in `update-affiliations` | — | the user chose the refresh (3.6) |
-| 3 | *(done)* Fix the `classify --dry-run` estimate (use the last runs' measured tokens per thread from `labels.sqlite`'s `runs`) | S | — |
-| 4 | *(done in part)* Drop `summaries/org_weekly.csv` (done). Moving `data/public/radar/adhoc/` was dropped: it is 0.9 MB of fetched Radar responses that must be kept anyway, and moving it changes nothing else | S | 3 |
-| 5 | *(dropped)* Read `RATIO_EXCLUDED_BROWSERS` from `config/browsers.csv` (emit it in the Radar CSV or a small JSON) | S | 1 |
-| 6 | *(done, differently)* Bound `extract-open` to a recent window by default (say 2 years), with `--since` for a full relist | S | — |
-
-### Then: the balance pipeline, where most of the hand work is
-
-| # | Change | Size | Rule |
-|---|---|---|---|
-| 7 | **Done 2026-11-12, as `commits.sqlite` (`docs/commits.md`).** Add `cosh.balance inputs`: writes the first-commit, OWNERS-added, AI-marked and mechanical lists as tables in `balance.sqlite` (or fixed files beside it). Scripts read them from there; the `--first-commit … --mech …` arguments go | M | 3 |
-| 8 | ~~Fold the votes walk into `balance timeline` (one pass over NoteDb instead of two) and key `timeline_done` on the ref's tip~~ Done 2026-11-12 | M | 1, 5 |
-| 9 | **Done 2026-11-12, as `python3 -m cosh.balance_publish`.** Add `cosh.balance publish`: imports each dataset script's compute function, builds `balance.json`, `balance_dirs.json` and `balance_authors.json` from empty, and writes each once. The scripts keep their `main()` for exploration but no longer write into `summaries/` | L | 1, 2 |
-| 10 | *(in part)* Take the window from the data in `publish` (pending D3), and use one rule for mechanical CLs everywhere. Done: the window is one setting, `balance_publish.DATA_END`, that the scripts' end-of-data constants follow (their comparison eras are still their own). Left: taking it from the data (D3), and the `growth` step's 50-file rule (switching it changes `growth_windows`, `ai_paired` and `ai_summary`, so it needs a deliberate republish) | M | 4 |
-| 11 | ~~Give each stage file only its own tables~~ (done 2026-11-12), and move them to `data/private/balance/` | S | 3 |
-
-Step 9 is the largest change in this plan and the one that pays most: it
-turns about 15 commands and two hand copies into one, and makes the page's
-data reproducible. A golden-file test (the new command must reproduce
-today's `balance.json` key for key) makes it safe to do in pieces.
-
-### Then: sentiment and feedback
-
-| # | Change | Size | Rule |
-|---|---|---|---|
-| 12 | *(done)* One `collect` that always writes identities; steps that must not see them read a view without | S | 1 |
-| 13 | *(done)* `cosh.sentiment publish --weeks …`: one command and one range for the trend, praise, samples, recent and people files (default range pending D3) | M | 1, 4 |
-| 14 | *(done)* Cache screening verdicts in `sentiment.sqlite`, keyed by comment and prompt hash | S | — |
-| 15 | Move `review_feedback.py` to `cosh/feedback.py` (`python3 -m cosh.feedback`); it writes the committed `web/public/review-feedback/` (D2) | M | 2 |
-| 16 | *(done)* Give the review-ROI scripts a `--out` under `data/private/scratch/review_roi/` instead of the hard-coded session path | S | 3 |
-
-### Last: the update command and tidying
-
-| # | Change | Size | Rule |
-|---|---|---|---|
-| 17 | `python3 -m cosh update`, as in section 4 | M | — |
-| 18 | `config/approved.json` read by `extract`, `backfill`, `patchsets` and `bugs` | M | 6 |
-| 19 | Move run logs and PID files to `data/private/logs/` | S | 3 |
-| 20 | Key the patch-set fetch on patch-set count | S | 5 |
-| 21 | In `docs/*.md`, replace repeated sizes, durations and schemas with a pointer to the inventory, and fix the stale passages listed in 3.9 | M | — |
-| 22 | Decide who updates the shared Chromium clone and add that step to the inventory (it belongs to argus-config, not cosh) | S | — |
-
-### What this buys
-
-After steps 1 to 17, a new week of data is:
-
-```
-python3 -m cosh update --from gerrit-rest gerrit-notedb    # routine steps, in order
-python3 -m cosh classify --week <week>                     # optional, about $0.22
-python3 -m cosh.sentiment score --week <week>              # optional, about $1.25
+# after the user's approval, widen gerrit_weeks in config/approved.json
+python3 -m cosh backfill --weeks 1 --newest <week> --go
+python3 -m cosh extract-open
+python3 -m cosh fetch-git
+python3 -m cosh update                                    # derive, commits, collect, summaries
+python3 -m cosh classify --week <week>                    # optional (cost: the inventory)
+python3 -m cosh.sentiment score --week <week>             # optional
 python3 -m cosh update --from data/private/labels.sqlite data/private/sentiment.sqlite
-git add summaries config && git commit
+git add summaries config web/public/review-feedback && git commit
 ```
 
-The inventory shrinks too: about 30 steps instead of 42, with every
-published file having one writer, and `scripts/` holding only analysis.
+Where things live on disk, beyond the stores:
 
-## 6. Progress
+- `data/private/logs/`: run logs and PID files of long runs.
+- `data/private/scratch/<topic>/`: analysis output, safe to delete.
+- `data/private/backup-<date>/`: copies of what a cleanup touched, kept
+  until a person deletes them.
 
-What has changed since the review, newest last. The inventory has the
-details; this is the log.
+## 5. Where it falls short
 
-- **2026-11-12, Feedback Index published (D2).** Its files are committed
-  and served by GitHub Pages (3.7).
-- **2026-11-12, affiliations refresh kept (3.6).** The user chose to have
-  every `OrgResolver()` refresh the file; item 2 is dropped.
-- **2026-11-12, NoteDb reads fast again.** `votes` lists meta refs once,
-  `backfill` refreshes the multi-pack index, and the NoteDb repo was
-  repacked (3,823 packs to 14); the old packs are gone (D5).
-- **2026-11-12, quick fixes 1, 3 and 12.** `cosh patchsets` selects only
-  reviewed CLs closed (or last updated) since the approved 2023-06-26
-  unless `--since` says otherwise; `classify --dry-run` estimates from the
-  measured tokens per thread in `labels.sqlite` (317); `cosh.sentiment
-  collect` always writes identities, so the comment files have one writer.
-- **2026-11-12, item 6 without losing coverage.** Instead of a fixed
-  window, `extract-open` lists only open CLs updated since the last
-  complete snapshot (a day's margin), when the snapshots reach back to the
-  oldest fetched week; derive already takes each CL's newest listing. A
-  refresh drops from about 490 weekly windows to one or two.
-- **2026-11-12, item 4 in part.** `summarize` no longer writes
-  `summaries/org_weekly.csv`, a copy of `org_weekly.json` no page read.
-  Items 4 (moving `radar/adhoc/`) and 5 (the browser list in `data.ts`)
-  were dropped: neither removes a step or a store, and 5 would add a data
-  file for the page to fetch.
-- **2026-11-12, item 16.** The review-ROI scripts default to
-  `data/private/scratch/review_roi/` instead of another session's scratch
-  directory.
-- **2026-11-12, items 13 and 14.** `python3 -m cosh.sentiment publish`
-  writes every Review Tone file from one `--week` range (default the
-  page's window, pending D3), replacing five steps in the inventory.
-  Screening verdicts persist in `sentiment.sqlite` (`screens`), so a rerun
-  costs no model calls for comments already screened.
-- **2026-11-12, item 7 (and 3.2): one store for main's history.**
-  `python3 -m cosh commits` keeps `data/private/commits.sqlite` (all of
-  main since 2008, incremental) and every step reads it: it replaces
-  `balance-git.sqlite` (step `balance-git` gone), `derived.sqlite`'s
-  commits tables (`derive` no longer reads git), `review_feedback`'s own
-  walk of the pre-2017 history, and the hand-made first-commit, OWNERS,
-  AI-marked and mechanical lists (step `report-inputs` and
-  `review_feedback_inputs/` gone; the flags still read such files).
-  Balance and Feedback Index outputs are unchanged; `summarize` now reads
-  the short `Reviewed-on:` URLs of 2017–19 (`docs/commits.md`).
-- **2026-11-12, the Feedback Index no longer needs the balance pipeline.**
-  `scripts/review_feedback.py` read the few per-CL facts it uses (owner,
-  status, closing time, Gerrit insertions and deletions, the landed
-  commit's sha and file count, lines and files per 3-level directory) from
-  `balance.sqlite`, so refreshing the page meant rerunning `balance
-  timeline` (35 min), `interdiff` (25 min) and `cl`. It now computes them
-  from `derived.sqlite` and `commits.sqlite` with `cosh.balance.cl_facts`
-  and `cl_dirs`, the functions `balance cl` itself builds `cl` and `cl_dirs`
-  from, so the definitions can't drift. Its output is byte-identical
-  (40,023 files) and the run takes about the same time (188 s against 182 s
-  before, which also needed `balance cl`'s 100 s); `plan
-  data/private/balance-timeline.sqlite` no longer lists `review-feedback`.
-- **2026-11-12, item 9 (and 3.1): one writer for the balance page.**
-  `python3 -m cosh.balance_publish` writes `balance.json`,
-  `balance_dirs.json` and `balance_authors.json` whole, from empty, in
-  about 8 min. Its `STEPS` list records the step behind each of the 92
-  datasets, and `--check` rebuilds into scratch and compares dataset by
-  dataset. Five inventory steps (`balance-report`, `balance-datasets`,
-  `balance-extras`, `balance-authors`, `roi-report`) became two:
-  `balance-publish` and `balance-clusters` (the k-means analysis it reads).
-  The hand-copied tables (`mechanical_*`, `pipeline`, `report.json`'s
-  sections, `balance_dirs.json`) are computed; the signals no longer go
-  through `balance_signals.json`. Finished analyses it reads from fixed
-  paths: `balance_clusters/`, `chrome_releases/summary.json` and
-  `review_roi/` (now also `addressed_{cl,blame,people}.json`). On today's
-  data every dataset equals what the old scripts give, except
-  `growth_windows`, whose breadth samples depended on Python's hash seed
-  (now fixed). The committed files are not yet regenerated: most datasets
-  differ from them because of the 2017 backfill and the 2026-11-12 rebuild.
-  Item 10 in part: the window is one setting (`DATA_END`); the `growth`
-  step still uses the 50-file mechanical rule.
-
-## 7. Before and after (2026-11-12)
-
-Measured from `config/dataflow.json` and `data/private` before the first
-cleanup commit (f3e5466) and after the last one.
-
-| Measure | Before | After |
-|---|---|---|
-| Stores in the inventory | 47 | 44 |
-| Steps in the inventory | 42 (18 routine, 17 optional) | 33 (14 routine, 12 optional) |
-| SQLite files in `data/private` | 10 | 9 |
-| Published files with more than one writer | 1 (`balance.json`, 4 steps and hand copies) | 0 |
-| Shared inputs with no writer | 4 (`first_commit`, `owners_added`, `ai_marked`, `mech`) | 0 (queries on `commits.sqlite`) |
-| Copies of main's git history | 2 (`balance-git.sqlite`, `derived.sqlite` tables) plus a walk in every Feedback Index run | 1 (`commits.sqlite`) |
-| NoteDb walks for balance | 2 (`timeline`, `votes`) | 1 (`timeline`, 35.5 min from empty) |
-| Steps behind each page (upstream, excluding one-offs and analyses) | Value 8, Tone 12, Balance 21, Feedback 15 | Value 9, Tone 8, Balance 16, Feedback 10 |
-| Balance-only steps behind the Feedback Index | 5 (`balance-cl`, `-timeline`, `-interdiff`, `patchsets-fetch`, `report-inputs`) | 0 |
-| Commands to publish Review Tone | 5, range typed in each | 1 (`cosh.sentiment publish`) |
-| Commands to publish Review Balance | about 15 plus hand copies | 1 (`cosh.balance_publish`, 8.2 min) |
-| `extract-open` refresh | about 490 weekly listing windows | 1–2 after the next full run |
-| `data/private`, without `backup-20261112/` | 44.5 GB | 44.3 GB |
-| `derived.sqlite` | 2.43 GB | 1.74 GB |
-| git-history data | 786 MB + 442 MB | 1.13 GB, all of main since 2008 |
-
-Value's count rises by one only because `commits` became its own step
-instead of a part of `derive`; the work is the same.
-
-Processing times:
-
-- **Feedback Index refresh:** before, `review_feedback.py` (182 s) after
-  `balance cl` (100 s), which needed `timeline` (35 min) and `interdiff`
-  (25 min), plus a `mech.jsonl` rerun (about 2 h, single-threaded). After:
-  `cosh commits` (seconds when up to date) and `review_feedback.py`
-  (188 s).
-- **Git history:** before, `balance git` about 1.5 h from empty, plus the
-  mechanical diffs about 2 h, plus 1–2 min in every `derive`. After:
-  `cosh commits` 1 h 51 min from empty (four processes for the diffs),
-  seconds incrementally; `derive` no longer reads git.
-- **Review Balance:** the old scripts run in turn took about 615 s plus
-  hand copies; `balance_publish` takes 494 s.
-- **Review Tone:** screening verdicts are cached, so a rerun of `publish`
-  makes no model calls for comments already screened.
-
-What the site shows:
-
-- **Unchanged:** Review Tone (rebuilt files equal the committed ones), the
-  Feedback Index (all 40,023 files byte-identical), Review Balance (not
-  republished; `balance_publish` equals the old scripts on today's data).
-- **Changed, bug fixes:** Value Exchange's 2017–19 commit credit. The old
-  `cosh commits` missed the short `Reviewed-on` URL form that 152k commits
-  of 2017–19 use: 93 more people get their commits credited, and in 18
-  weeks of 2018-19 a few commits (at most 4 a week) on bot-owned CLs now
-  count as bots'. Nothing changes from 2019-W07 on.
-- **Not yet republished:** `summaries/balance*.json` would change in about
-  68 datasets because the committed copies predate the 2017 backfill and
-  the 2026-11-12 rebuild, and the page's text quotes some of the old
-  figures. `python3 -m cosh.balance_publish --check` shows the differences.
-
-Backups of every database touched are in `data/private/backup-20261112/`
-(4.2 GB): `derived`, `balance`, `balance-git`, `balance-timeline`,
-`balance-interdiff`, `balance-votes`, `labels`, `sentiment`,
-`ai_predict/scores`, `balance_signals.json` and the old input files.
+- **Review Balance** carries most of the remaining irregularity: several of
+  its steps are scripts (`balance_ai.py markers`, `balance_clusters.py`),
+  the review-ROI results are copied by hand from the analyses' scratch
+  output into `data/private/review_roi/`, its `growth` step still uses the
+  older 50-file rule for mechanical CLs, and its stage databases sit loose
+  in `data/private/` rather than in a folder of their own. It may be
+  deleted rather than fixed.
+- **`derived.sqlite` is rebuilt whole** by a full `derive`. That is simple
+  and takes minutes; it becomes worth making incremental only if it grows
+  much slower.
+- **Optional steps take their weeks by hand** (`classify --week`,
+  `cosh.sentiment score --week`), deliberately: they cost usage, so each
+  run is sized first.
+- **Some costs are unmeasured** (`duration: null` in the inventory).

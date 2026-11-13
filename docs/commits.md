@@ -142,7 +142,7 @@ fifth metric button.
 Main's history used to be read four times: `cosh commits` into
 `derived.sqlite` (since the oldest fetched week, file names only),
 `python3 -m cosh.balance git` into `balance-git.sqlite` (since 2017, with
-line counts), `review_feedback.early_commits` (before 2017, on every run),
+line counts), `cosh.feedback.early_commits` (before 2017, on every run),
 and by hand for the balance scripts' `--first-commit`, `--owners-added` and
 `--ai-marked` files, plus `BALANCE_MECH_OUT` for `--mech`. Now one step
 writes one store, and everything reads it:
@@ -197,7 +197,7 @@ What reads it:
   repetition of 0.8 or more). The scripts' `--first-commit`,
   `--owners-added`, `--ai-marked` and `--mech` flags still read the old
   files for exploration; without them the store is used.
-- **`review_feedback.py`**'s earlier commits: the commits landed before
+- **`cosh/feedback.py`**'s earlier commits: the commits landed before
   2017-01-01.
 
 Reproduced against the hand-made files on 2026-11-12: `gcommits`, `gfiles` and `paths` are row for row (ids and order) those of `balance-git.sqlite`; `first_commits` gives the same first commit for all 11,827 well-formed lines of `first_commit.txt`; `owners_added` the same 41,208 additions; `ai_marked` the same 1,002 shas; `mech_set` the same 11,624 CLs (every repetition ratio equal); the earlier commits the same 377,729. The Value window matches `derived.sqlite`'s commits and directories exactly, except the CL number: the store reads the short `Reviewed-on:` form (`chromium-review.googlesource.com/<n>`) that 152,372 commits of 2017-07 .. 2019 use and the old `cosh commits` missed. So `summarize` now credits 6,930 more of those commits to their CL owner's account (when no account has the git author's email) and counts 31 as bots' (bot-owned CLs); nothing after 2019 changes.

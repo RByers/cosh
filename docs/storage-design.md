@@ -140,28 +140,10 @@ Use SQLite settings `PRAGMA journal_mode=WAL; PRAGMA synchronous=NORMAL;` and
 
 ### 3.1 Layout on disk
 
-```
-cosh/
-  config/
-    org_domains.csv          # committed: email domain -> org  (no personal data)
-    org_browsers.csv         # committed: org -> Radar browser name(s)
-    bots.csv                 # committed: account patterns treated as bots
-  data/
-    public/
-      radar_browser_share.csv  # committed: Cloudflare Radar input, public data
-    private/                 # .gitignored (size and rebuildability, not privacy; §4)
-      raw.sqlite             # Gerrit response cache (source of truth)
-      derived.sqlite         # derived tables, rebuildable
-      account_orgs.csv       # per-person org overrides (manual guesses; §4)
-      archive/*.jsonl.gz     # optional frozen weekly exports of raw
-  summaries/                 # committed: what the front end fetches
-    org_weekly.json
-    reviewer_weekly.json     # every reviewer's weekly counts, per (week, org)
-    area_weekly.json         # every comment per (week, directory, org)
-    area_reviewers.json      # those comments by reviewer (directory chart's Gerrit links)
-    org_monthly.csv org_monthly.json
-    meta.json
-```
+Superseded: the current layout is `config/dataflow.json`, which lists every
+store with its path, tier and size (drawn at `web/dataflow.html`;
+`docs/data-architecture.md` explains it). This section's original sketch is
+in git history.
 
 ### 3.2 `raw.sqlite`: response cache
 
