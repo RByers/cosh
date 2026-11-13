@@ -148,9 +148,12 @@ export interface Peers {
   min_received: number;
   tone_weeks: [string, string];
   dist: Record<string, Record<string, Record<Metric, Dist>>>;
-  /** Period -> group -> the same peers' changes landed and reviewer threads (acls,
-   * addressed: labelled changes and addressed threads, for the addressed measures). */
-  counts?: Record<string, Record<string, Record<CountField, Dist>>>;
+  /** The latest half-year the data covers whole ("2026H1"), which the count tiles rank. */
+  count_half?: string | null;
+  /** Org ("all", "google", "nongoogle") -> changes landed and reviewer threads in
+   * `count_half` of everyone who landed a change then (acls, addressed: labelled
+   * changes and addressed threads, for the addressed measures). */
+  counts_half?: Record<string, Record<CountField, Dist>>;
   bands: Record<string, Record<Metric, Band[]>>;
   tone: Record<string, Dist>;
   /** The opening card. Tenure bins of the cohort curves, in years, and the

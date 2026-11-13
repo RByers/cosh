@@ -225,6 +225,17 @@ The measures:
   the earlier minimum of 6); a group of fewer than 10 (`min_peers`) gets no percentiles, which happens to
   most non-Google groups past 200 earlier commits. The page shows the peers'
   median and middle half and the share of peers with less feedback.
+- **Changes landed and reviewer threads** (the first two tiles) are ranked
+  apart from the feedback index: over the latest half-year the data covers
+  whole (`count_half`, 2026H1 as of 2026-11-13), among everyone of the same
+  "Peers" org who landed a change in it, with no experience band and no
+  25-CL minimum (`count_peers`). They used to be ranked by all-time totals
+  within the experience band, which was circular: a band chosen by changes
+  landed before (at the middle of one's changes) caps the totals in it, so
+  the `<50` band ran from 25 to about 120 and 83 changes came out at the
+  88th percentile (issue #1). Only that half-year is computed; the next one
+  replaces it once the data covers it whole, and earlier ones aren't
+  backfilled. The addressed counts need labels from the half-year's start.
 - **Directory experience.** Each CL is split over the 3-level directories its
   landed commit changed (`cl_dirs`, weighted by lines + files), and each
   reviewer thread goes to the directory of its file (commit-message threads,
@@ -341,9 +352,8 @@ old data, and a page change that needs new `peers.json` fields draws nothing.
 Output (default `web/public/review-feedback/`, which Vite copies into the
 site), with `<key>` the hash of the person's address:
 
-- `peers.json`: every peer group's quantiles per period and measure, and of
-  its changes landed and reviewer threads (`counts`; labelled changes and
-  addressed threads for the addressed measures), and
+- `peers.json`: every peer group's quantiles per period and measure, and
+  the count tiles' peers (`count_half`, `counts_half`: see below), and
   everyone's pooled feedback per directory-experience band, and the opening
   card's cohort curves (`cohorts`) and yearly-change histogram (`change`).
 - `u/<key>.json`: first commit, which half-years the person has files for,

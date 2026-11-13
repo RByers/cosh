@@ -590,16 +590,22 @@ function renderSummary() {
     if (s) s.textContent = sub ?? '';
   };
   const g = groupKey(state.tenure, state.org, vals);
-  // Where the person's counts sit among the same peers'.
-  const rank = (field: CountField, v: number) => {
-    const d = g ? peers.counts?.[ALL]?.[g]?.[field] : undefined;
-    return d?.q ? msg('tile-count-rank', { p: ordinal(percentileOf(d.q, v)) }) : '';
+  // The person's counts in the latest whole half-year, among everyone of the same org
+  // who landed a change then (no tenure band: one by changes landed would be circular).
+  const h = peers.count_half;
+  const hv = h ? p.periods[h] : undefined;
+  const rank = (field: CountField) => {
+    const d = h ? peers.counts_half?.[state.org]?.[field] : undefined;
+    if (!h || !d?.q) return '';
+    const v = hv?.[field] ?? 0;
+    return msg('tile-count-rank', { n: fmtInt(v), half: halfName(h), org: state.org,
+      p: v > 0 ? ordinal(percentileOf(d.q, v)) : '' });
   };
   const cls = clsOf(vals, state.kind);
-  tile('rf-tile-cls', fmtInt(cls), rank(state.kind === 't' ? 'cls' : 'acls', cls));
+  tile('rf-tile-cls', fmtInt(cls), rank(state.kind === 't' ? 'cls' : 'acls'));
   $('#rf-tile-threads .tile-label').textContent = msg(`tile-threads-${state.kind}`);
   const threads = state.kind === 't' ? vals?.threads ?? 0 : vals?.addressed ?? 0;
-  tile('rf-tile-threads', fmtInt(threads), rank(state.kind === 't' ? 'threads' : 'addressed', threads));
+  tile('rf-tile-threads', fmtInt(threads), rank(state.kind === 't' ? 'threads' : 'addressed'));
   const you = valueFor(state.tenure, vals, m);
   tile('rf-tile-you', fmtValue(you));
   const dist: Dist | undefined = g ? peers.dist[ALL]?.[g]?.[m] : undefined;

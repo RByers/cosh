@@ -31,6 +31,36 @@ class ReviewFeedbackTest(unittest.TestCase):
         self.assertEqual(R.quantiles([5]), [5] * 21)
         self.assertIsNone(R.quantiles([]))
 
+    def test_last_whole_half(self):
+        t = lambda s: R.datetime.fromisoformat(s + "T00:00:00+00:00").timestamp()
+        start = t("2017-07-03")
+        self.assertEqual(R.last_whole_half(start, t("2026-11-01")), "2026H1")
+        self.assertEqual(R.last_whole_half(start, t("2026-07-01")), "2026H1")
+        self.assertEqual(R.last_whole_half(start, t("2026-06-30")), "2025H2")
+        self.assertEqual(R.last_whole_half(t("2017-07-01"), t("2027-01-01")), "2026H2")
+        self.assertIsNone(R.last_whole_half(t("2026-03-01"), t("2026-11-01")))
+
+    def test_count_peers(self):
+        t = lambda s: R.datetime.fromisoformat(s + "T00:00:00+00:00").timestamp()
+        row = lambda cls, thr, acls, org: dict(cls=cls, threads=thr, acls=acls, addressed=acls // 2, org=org)
+        # 12 Googlers and 3 others in 2026H1, whatever their tenure; 2026H2 isn't whole yet,
+        # and one person was active only in 2025H2.
+        per = {f"g{i}": {"2026H1": row(i + 1, 10 * i, i, "google.com"), "2026H2": row(99, 99, 99, "google.com")}
+               for i in range(12)}
+        per.update({f"o{i}": {"2026H1": row(1, 1, 0, "igalia.com")} for i in range(3)})
+        per["old"] = {"2025H2": row(500, 500, 500, "google.com")}
+        out = R.count_peers(per, t("2017-07-03"), t("2026-11-01"), t("2023-07-01"))
+        self.assertEqual(out["count_half"], "2026H1")
+        c = out["counts_half"]
+        self.assertEqual((c["all"]["cls"]["n"], c["google"]["cls"]["n"], c["nongoogle"]["cls"]["n"]), (15, 12, 3))
+        self.assertEqual((c["google"]["cls"]["q"][0], c["google"]["cls"]["q"][-1]), (1, 12))
+        self.assertIsNone(c["nongoogle"]["cls"]["q"])          # fewer than MIN_PEERS
+        # Labelled counts: only people with labelled changes (g0 has none).
+        self.assertEqual(c["all"]["acls"]["n"], 11)
+        # Labels that start after the half-year began give no addressed peers.
+        late = R.count_peers(per, t("2017-07-03"), t("2026-11-01"), t("2026-02-01"))["counts_half"]
+        self.assertEqual((late["all"]["cls"]["n"], late["all"]["acls"]["n"]), (15, 0))
+
     def test_yearly_changes(self):
         none = {k: None for k in R.METRICS}
         val = lambda td, ad=None: {**none, "td": td, "ad": ad}

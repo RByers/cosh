@@ -3461,8 +3461,12 @@ test('review feedback: a person, the measures, peer groups, directories and comm
   assert.equal(await tile('rf-tile-cls'), '3');
   assert.equal(await tile('rf-tile-threads'), '5');
   const sub = (id: string) => page.$eval(`#${id} .tile-sub`, (e) => e.textContent);
-  assert.equal(await sub('rf-tile-cls'), '15th percentile among peers');
-  assert.equal(await sub('rf-tile-threads'), '25th percentile among peers');
+  // Ranked in the latest whole half-year only, among every author of the chosen org then.
+  assert.equal(await sub('rf-tile-cls'), '1 in January – June 2026: 5th percentile of all authors');
+  assert.equal(await sub('rf-tile-threads'), '1 in January – June 2026: 5th percentile of all authors');
+  await page.select('#rf-org', 'google');
+  assert.equal(await sub('rf-tile-cls'), '1 in January – June 2026: 10th percentile of Google authors');
+  await page.select('#rf-org', 'all');
   assert.deepEqual(await page.$$eval('#rf-tile-you .tile-label, #rf-tile-peers .tile-label', (es) => es.map((e) => e.textContent)),
     ['Your feedback index', "Peers' feedback index"]);
   // Every chart's value axis is labelled.

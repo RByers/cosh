@@ -266,7 +266,10 @@
           <div class="tile" id="rf-tile-peers"><div class="tile-label">Peers' feedback index</div><div class="tile-value"></div><div class="tile-sub"></div></div>
           <div class="tile" id="rf-tile-rank"><div class="tile-label">Peers with less feedback than you</div><div class="tile-value"></div></div>
         </div>
-        <template data-msg="tile-count-rank"><slot name="p"></slot> percentile among peers</template>
+        <template data-msg="tile-count-rank"><span data-if="p"><slot name="n"></slot> in <slot name="half"></slot>:
+          <slot name="p"></slot> percentile of <span data-if="org=all">all authors</span><span
+          data-if="org=google">Google authors</span><span data-if="org=nongoogle">authors outside
+          Google</span></span><span data-if="!p">None in <slot name="half"></slot></span></template>
         <template data-msg="axis-feedback">feedback index</template>
         <template data-msg="axis-lines">lines changed</template>
         <template data-msg="axis-dir">directory</template>
@@ -491,7 +494,10 @@
           counts from a person's first commit on main. Experience in each directory divides
           everyone's feedback by what all authors drew at the same number of earlier commits in that directory.
           An author's organization is the one most of their changes are attributed to. Groups of
-          fewer than ten peers get no comparison.
+          fewer than ten peers get no comparison. The changes landed and reviewer threads are ranked differently:
+          over the latest whole half-year only, among every author of the same organization who landed a change
+          in it, whatever their experience, since a group chosen by changes landed would rank them against
+          themselves.
         </p>
         <p class="note">
           Addresses are matched as in the Review Balance page: chromium.org and google.com addresses with the same

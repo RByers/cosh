@@ -6,7 +6,8 @@ labels.sqlite, sentiment.sqlite and the sentiment comment files. Writes, under -
 (default web/public/review-feedback/):
 
   peers.json       percentiles of every peer group, per period and measure,
-                   and of its CLs landed and reviewer threads
+                   and of the CLs landed and reviewer threads of everyone
+                   active in the latest whole half-year (count_peers)
   u/<key>.json     one file per CL owner: their CLs, the reviewer threads on
                    them (with excerpts for the year that has comment text),
                    praise received, and their values per period and measure
@@ -193,6 +194,22 @@ def half(t):
     return f"{d.year}H{1 + (d.month > 6)}"
 
 
+def half_span(h):
+    """Unix times [from, to) of half-year 'YYYYH1' or 'YYYYH2'."""
+    y, h2 = int(h[:4]), h.endswith("H2")
+    a = datetime(y, 7 if h2 else 1, 1, tzinfo=timezone.utc)
+    b = datetime(y + 1, 1, 1, tzinfo=timezone.utc) if h2 else datetime(y, 7, 1, tzinfo=timezone.utc)
+    return a.timestamp(), b.timestamp()
+
+
+def last_whole_half(start, end):
+    """The latest half-year that lies wholly within [start, end), or None."""
+    h = half(end - DAY)
+    if half_span(h)[1] > end:
+        h = half(half_span(h)[0] - DAY)          # the one before
+    return h if half_span(h)[0] >= start else None
+
+
 def periods_of(t):
     """The periods a CL closed at t belongs to: all (the page's figures) and
     its half-year (the over-time chart)."""
@@ -210,6 +227,29 @@ def quantiles(xs):
         hi = min(lo + 1, len(xs) - 1)
         out.append(round(xs[lo] + (xs[hi] - xs[lo]) * (i - lo), 3))
     return out
+
+
+def count_peers(per, start, end, addr_start):
+    """The count tiles' peers: changes landed and reviewer threads on them (acls,
+    addressed: labelled changes and addressed threads) in the latest half-year the
+    data covers whole, among everyone who landed a change then, per "Peers" org
+    (each person by their org that half-year). No tenure band: one chosen by
+    changes landed would rank changes landed against itself (issue #1), and one by
+    years would mix a half-year's newcomers with whole careers. Only that one
+    half-year: the next takes its place once the data covers it whole. The
+    addressed counts need labels from the half-year's start."""
+    h = last_whole_half(start, end)
+    if h is None:
+        return dict(count_half=None, counts_half={})
+    labelled = addr_start <= half_span(h)[0]
+    rows = [pp[h] for pp in per.values() if h in pp and pp[h]["cls"] > 0]
+    out = {}
+    for g, f in ORGS.items():
+        out[g] = {}
+        for fld, need in (("cls", "cls"), ("threads", "cls"), ("acls", "acls"), ("addressed", "acls")):
+            xs = [x[fld] for x in rows if x[need] > 0 and f(x["org"])] if labelled or need == "cls" else []
+            out[g][fld] = dict(n=len(xs), q=quantiles(xs) if len(xs) >= MIN_PEERS else None)
+    return dict(count_half=h, counts_half=out)
 
 
 def yearly_changes(years, groups):
@@ -1154,7 +1194,7 @@ def main():
                  size_norm=size_norm,
                  start=epoch_day(START), end=epoch_day(END), addr_start=epoch_day(ADDR_START),
                  tenure=TENURE, changes=CHANGES, xp=XP, min_peers=MIN_PEERS, qs=len(QS), min_cls=MIN_CLS, min_exp=MIN_EXP, min_received=MIN_RECEIVED,
-                 tone_weeks=[TONE_WEEKS[0], TONE_WEEKS[-1]], dist={}, counts={}, bands={}, tone={},
+                 tone_weeks=[TONE_WEEKS[0], TONE_WEEKS[-1]], dist={}, bands={}, tone={},
                  cohort_step=STEP, cohort_from=int(HISTORY_ISO[:4]), min_cohort=MIN_COHORT, cohorts=cohorts,
                  change_ratios=[round(r, 4) for r in CHANGE_RATIOS], change=change, min_cohort_cls=MIN_COHORT_CLS,
                  size_labels=SIZE_LABELS, by_size=by_size, dir_names=dir_names, by_dir=by_dir,
@@ -1163,6 +1203,7 @@ def main():
                  # The same by changes landed before (the page's main tenure measure).
                  chg_labels=CHG_LABELS, cohorts_chg=cohorts_chg, kinds_chg=kinds["changes"],
                  kind_share_chg=kind_share["changes"], doubling_from=DOUBLING_FROM, change_chg=change_chg)
+    peers.update(count_peers(per, START, END, ADDR_START))
     for p in allp:
         # Peers per kind: the addressed measures count people by their labelled CLs.
         rows = {k: [(pid, pp[p]) for pid, pp in per.items() if p in pp and pp[p][ok]]
@@ -1174,15 +1215,6 @@ def main():
                 xs = [x["x" if g.startswith("dir:") else "v"][m] for _, x in rows[m[0]] if f(x)]
                 xs = [v for v in xs if v is not None]
                 dp[g][m] = dict(n=len(xs), q=quantiles(xs) if len(xs) >= MIN_PEERS else None)
-        # The same peers' counts: CLs landed and reviewer threads on them (for the
-        # addressed measures, labelled CLs and addressed threads).
-        cp = peers["counts"][p] = {}
-        for g, f in groups.items():
-            cp[g] = {}
-            for k, fields in (("t", ("cls", "threads")), ("a", ("acls", "addressed"))):
-                for fld in fields:
-                    xs = [x[fld] for _, x in rows[k] if f(x)]
-                    cp[g][fld] = dict(n=len(xs), q=quantiles(xs) if len(xs) >= MIN_PEERS else None)
         # Per experience band: the pooled rate relative to everyone, and the spread of people
         # with enough CL share in the band (1.5 CLs' worth or more).
         bp = peers["bands"][p] = {}
