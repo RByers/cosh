@@ -3586,18 +3586,34 @@ test('review feedback: a person, the measures, peer groups, directories and comm
     if (Number(shade) > 0) assert.notEqual(bg, 'rgba(0, 0, 0, 0)');
   }
   // Selecting a directory, at any level, lists only the comments under it; the addressed filter applies too.
+  // Threads with text are listed; those without are rows of a table at the end.
+  const split = () => page.evaluate(() => [
+    document.querySelector<HTMLElement>('#rf-threads')!.hidden ? 0 : document.querySelectorAll('#rf-threads li').length,
+    document.querySelector<HTMLElement>('#rf-notext')!.hidden ? 0 : document.querySelectorAll('#rf-notext-table tbody tr').length]);
   await page.click('#rf-dirs tbody tr[data-key="d:third_party/"] .rf-dir-pick');
-  assert.equal(await page.$$eval('#rf-threads li', (ls) => ls.length), 2);
+  assert.deepEqual(await split(), [1, 1]);
   assert.equal(await page.$eval('#rf-dir', (s) => (s as HTMLSelectElement).value), 'third_party/');
   await page.click('input[name="rf-kind"][value="a"]');
-  assert.equal(await page.$$eval('#rf-threads li', (ls) => ls.length), 1);
+  assert.deepEqual(await split(), [0, 1]);
   await page.click('input[name="rf-kind"][value="t"]');
   await page.select('#rf-dir', 'third_party/blink/renderer/');
   assert.equal(await page.$eval('#rf-dirs tr[aria-selected="true"]', (t) => (t as HTMLElement).dataset.key),
     'd:third_party/blink/renderer/');
-  assert.equal(await page.$$eval('#rf-threads li', (ls) => ls.length), 2);
+  assert.deepEqual(await split(), [1, 1]);
   await page.select('#rf-dir', '');
-  assert.equal(await page.$$eval('#rf-threads li', (ls) => ls.length), 5);
+  assert.deepEqual(await split(), [3, 2]);
+  assert.equal(await page.$eval('#rf-notext h3', (e) => e.textContent), 'Additional comments without stored text');
+  // Each row: the change number, linked to it in Gerrit in a new tab; the date; the path.
+  assert.deepEqual(await page.$$eval('#rf-notext-table tbody tr', (trs) => trs.map((tr) => {
+    const a = tr.querySelector('a')!;
+    return [a.textContent, a.getAttribute('href'), a.getAttribute('target'),
+      ...[...tr.querySelectorAll('td')].slice(1).map((td) => td.textContent)];
+  })), [
+    ['1000003', 'https://chromium-review.googlesource.com/c/chromium/src/+/1000003', '_blank', '1 Sept 2026',
+      'third_party/blink/renderer/core/a.cc'],
+    ['1000001', 'https://chromium-review.googlesource.com/c/chromium/src/+/1000001', '_blank', '30 Sept 2025',
+      'chrome/browser/ui/view.cc'],
+  ]);
   // There is no praise-only filter; praise is tagged in the list. Comment text stays text, and each
   // comment links to Gerrit in a new tab.
   assert.equal(await page.$('#rf-show'), null);
@@ -3605,9 +3621,9 @@ test('review feedback: a person, the measures, peer groups, directories and comm
   assert.equal(await page.$('#rf-threads img'), null);
   assert.ok((await page.$eval('#rf-threads', (e) => e.textContent!)).includes('<img src=x onerror=alert(1)>'));
   const links = await page.$$eval('#rf-threads a', (as) => as.map((a) => [a.getAttribute('href'), a.getAttribute('target')]));
-  assert.equal(links.length, 5);
+  assert.equal(links.length, 3);
   for (const [href, target] of links) {
-    assert.match(href!, /^https:\/\/chromium-review\.googlesource\.com\/c\/chromium\/src\/\+\/\d+(\/comment\/[\w%]+\/)?$/);
+    assert.match(href!, /^https:\/\/chromium-review\.googlesource\.com\/c\/chromium\/src\/\+\/\d+\/comment\/[\w%]+\/$/);
     assert.equal(target, '_blank');
   }
   // The over-time chart has every half-year of the data, named by the month each starts in.
@@ -3628,12 +3644,11 @@ test('review feedback: threads kept only as counts list as one row per change an
   const { page, errors } = await feedbackPage(undefined, { ...shards, '2025H2': h2 });
   await lookUp(page, FIXTURE_EMAIL);
   await page.waitForFunction(() => !document.querySelector<HTMLElement>('#rf-person')!.hidden);
-  const rows = () => page.$$eval('#rf-threads li', (ls) => ls.map((l) => ({
-    head: l.querySelector('.rf-thread-head')!.textContent!.replace(/\s+/g, ' ').trim(),
-    link: l.querySelector('a')!.getAttribute('href') })));
+  const rows = () => page.$$eval('#rf-notext-table tbody tr', (trs) => trs.map((tr) => ({
+    path: tr.querySelector('td:last-child')!.textContent!.replace(/\s+/g, ' ').trim(),
+    link: tr.querySelector('a')!.getAttribute('href') })));
   const grouped = (await rows()).filter((r) => r.link!.endsWith('/1000001'));
-  assert.deepEqual(grouped.map((r) => r.head.replace(/^.* · /, '')),
-    ['1 thread in chrome/browser/ui/addressed', '2 threads in chrome/browser/ui/']);
+  assert.deepEqual(grouped.map((r) => r.path), ['chrome/browser/ui/ (1 thread)', 'chrome/browser/ui/ (2 threads)']);
   // The caption counts threads, not rows: 3 + 1 + 2.
   assert.match(await page.$eval('#comments-sub', (e) => e.textContent!), /^\s*6 reviewer threads/);
   assert.deepEqual(errors, []);
@@ -3653,7 +3668,8 @@ test('review feedback: selecting a dot in the over-time chart filters the direct
     return { x: r.left + pt.x, y: r.top + pt.y };
   }, i);
   const dirs = () => page.$$eval('#rf-dirs tbody th', (ths) => ths.map((t) => t.textContent!.replace(/[▸▾]/, '')));
-  const threads = () => page.$$eval('#rf-threads li', (ls) => ls.length);
+  // Threads listed with their text, plus the table of those without.
+  const threads = () => page.$$eval('#rf-threads li, #rf-notext-table tbody tr', (ls) => ls.length);
   // The filter line shows above the directories and above the comments alike.
   const filterShown = async () => {
     const shown = await page.$$eval('#rf-half-filter, #rf-half-filter-comments', (es) => es.map((e) => !(e as HTMLElement).hidden));
@@ -3755,7 +3771,8 @@ test('review feedback: selecting a column of the threads-per-change chart filter
     await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
   };
   const dirs = () => page.$$eval('#rf-dirs tbody th', (ths) => ths.map((t) => t.textContent!.replace(/[▸▾]/, '')));
-  const threads = () => page.$$eval('#rf-threads li', (ls) => ls.length);
+  // Threads listed with their text, plus the table of those without.
+  const threads = () => page.$$eval('#rf-threads li, #rf-notext-table tbody tr', (ls) => ls.length);
   const filters = () => page.$$eval('#rf-bin-filter, #rf-bin-filter-comments', (es) =>
     es.map((e) => ((e as HTMLElement).hidden ? null : e.querySelector('.rf-filter-name')!.textContent!.trim())));
   assert.deepEqual(await filters(), [null, null]);

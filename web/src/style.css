@@ -2877,6 +2877,13 @@ canvas.rf-pointable {
   cursor: pointer;
 }
 
+/* The table of threads without stored text, below the comment list. */
+.rf-notext-path {
+  font-family: ui-monospace, monospace;
+  font-size: 0.85rem;
+  overflow-wrap: anywhere;
+}
+
 .rf-thread-head {
   display: flex;
   flex-wrap: wrap;

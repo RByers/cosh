@@ -439,8 +439,9 @@
           <code><slot name="dir"></slot></code></span><span data-if="bin"> on changes with <slot
           name="bin"></slot><span data-if="half">, landed <slot name="half"></slot></span></span><span
           data-if="!bin"><span data-if="half"> on changes landed <slot name="half"></slot></span></span>, newest first, each linked to its review. Text and a link to
-          the comment itself are included for threads whose text has been collected (from November 2025 on); older
-          ones link to their change. Before July 2025 a change's threads are grouped by directory, without their files.
+          the comment itself are included for threads whose text has been collected (from November 2025 on); the
+          others are in a table at the end. Before July 2025 a change's threads are grouped by directory, without
+          their files.
         </template>
         <!-- The same half-year filter as above the directories, together with the directory picker. -->
         <p id="rf-half-filter-comments" class="rf-filter" hidden>
@@ -462,14 +463,23 @@
         <template data-msg="threads-more">Show <slot name="n"></slot> more</template>
         <template data-msg="threads-none">No reviewer threads here.</template>
         <template data-msg="thread-meta"><slot name="date"></slot> · <slot name="file"></slot></template>
-        <template data-msg="thread-meta-count"><slot name="date"></slot> · <slot name="n"></slot> <span data-if="n=1">thread</span><span
-          data-if="n!=1">threads</span> in <slot name="dir"></slot></template>
-        <template data-msg="thread-no-text-count">Files, dates and text not included; find them on the change in Gerrit.</template>
         <template data-msg="thread-addressed">addressed</template>
         <template data-msg="thread-praise">praise</template>
-        <template data-msg="thread-no-text">Text not included; find it on the change in Gerrit.</template>
         <template data-msg="thread-link">Open in Gerrit</template>
-        <template data-msg="thread-link-cl">Open the change in Gerrit</template>
+        <div id="rf-notext" hidden>
+          <h3>Additional comments without stored text</h3>
+          <p class="note">Find their text on the change in Gerrit. Before July 2025 a change's threads in a directory
+            share one row, with their count, and its date is when the change landed.</p>
+          <div class="table-wrap">
+            <table id="rf-notext-table" class="rf-table">
+              <thead><tr><th scope="col">CL</th><th scope="col">Date</th><th scope="col">Path</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <button type="button" id="rf-notext-more" class="rf-more" hidden></button>
+        </div>
+        <template data-msg="notext-path-count"><slot name="dir"></slot> (<slot name="n"></slot> <span
+          data-if="n=1">thread</span><span data-if="n!=1">threads</span>)</template>
       </section>
 
 

@@ -306,9 +306,12 @@ The measures:
 - **Comments**: every reviewer thread, newest first, with file, date and
   addressed or not. Threads whose text has been collected (every week in
   `data/private/sentiment/comments-*.jsonl`, 2025-W45 on today) get a
-  200-character excerpt and a link to the comment itself; the others get
-  neither, and link to their CL (their comment ids would be 29% of the data,
-  2026-11-11).
+  200-character excerpt and a link to the comment itself. The others go in
+  a table at the end, "Additional comments without stored text": CL number
+  (linked to the CL; their comment ids would be 29% of the data,
+  2026-11-11), date and path (before July 2025, one row per CL and
+  directory with its thread count). The list and the table page
+  separately.
 - **Praise** has no section here: after a lookup, "See also your praise"
   links to the Review Tone page's popup for the address
   (`sentiment.html#person=<address>`), which matches it in any case and

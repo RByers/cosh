@@ -97,6 +97,7 @@ const state = {
   /** The column picked in the threads-per-change chart (THREAD_BINS), filtering the same. */
   bin: null as number | null,
   threadsShown: PAGE,
+  noTextShown: PAGE,
   /** Keys of the directory rows that are open (see dirRows). */
   expanded: new Set<string>(),
 };
@@ -739,6 +740,7 @@ function setHalf(h: string | null) {
   state.half = h;
   window.__rf!.half = h;
   state.threadsShown = PAGE;
+  state.noTextShown = PAGE;
   charts.trend?.update('none');
   renderPerCl();
   renderDirs();
@@ -750,6 +752,7 @@ function setBin(b: number | null) {
   state.bin = b;
   window.__rf!.bin = b;
   state.threadsShown = PAGE;
+  state.noTextShown = PAGE;
   renderPerCl();
   renderDirs();
   renderThreads();
@@ -929,6 +932,7 @@ function renderDirs() {
 function selectDir(path: string) {
   state.dir = state.dir === path ? null : path;
   state.threadsShown = PAGE;
+  state.noTextShown = PAGE;
   renderDirs();
   renderThreads();
   if (state.dir !== null) $('#comments').scrollIntoView({ block: 'start' });
@@ -989,9 +993,7 @@ function dirRow(r: DirRowView): HTMLTableRowElement {
 function threadItem(r: ThreadRow): HTMLLIElement {
   const li = el('li', undefined, `quote rf-thread${r.praise ? ' quote-praise' : ''}`);
   const head = el('div', undefined, 'rf-thread-head');
-  head.append(r.count === undefined
-    ? fragment('thread-meta', { date: dayLabel(r.day), file: r.file })
-    : fragment('thread-meta-count', { date: dayLabel(r.day), n: fmtInt(r.count), dir: r.file }));
+  head.append(fragment('thread-meta', { date: dayLabel(r.day), file: r.file }));
   const tags = el('span', undefined, 'rf-tags');
   // Only the positive label: "not addressed" reads as ignored feedback, when such
   // threads usually needed no change.
@@ -999,10 +1001,21 @@ function threadItem(r: ThreadRow): HTMLLIElement {
   if (r.praise) tags.append(el('span', msg('thread-praise'), 'rf-tag rf-tag-praise'));
   head.append(tags);
   li.append(head);
-  li.append(r.text ? el('p', r.text, 'rf-text')
-    : el('p', msg(r.count === undefined ? 'thread-no-text' : 'thread-no-text-count'), 'rf-text muted'));
-  li.append(link(commentUrl(r.cl, r.uuid), msg(r.uuid ? 'thread-link' : 'thread-link-cl')));
+  li.append(el('p', r.text!, 'rf-text'));
+  li.append(link(commentUrl(r.cl, r.uuid), msg('thread-link')));
   return li;
+}
+
+/** A thread without stored text, as a row of the table below the list: the change, linked to the
+ * comment where its id is known, the date and the file (or directory and count). */
+function noTextRow(r: ThreadRow): HTMLTableRowElement {
+  const tr = el('tr');
+  const cl = el('td', undefined, 'num');
+  cl.append(link(commentUrl(r.cl, r.uuid), String(Math.trunc(r.cl))));
+  const path = el('td', undefined, 'rf-notext-path');
+  path.append(r.count === undefined ? r.file : fragment('notext-path-count', { dir: r.file, n: fmtInt(r.count) }));
+  tr.append(cl, el('td', dayLabel(r.day), 'num'), path);
+  return tr;
 }
 
 /** Shows or hides one of the half-year filter lines (above the directories, and above the comments). */
@@ -1026,12 +1039,22 @@ function renderThreads() {
   const rows = threadRows(p, state.half ?? ALL, state.kind, state.dir, state.bin);
   put($('#comments-sub'), 'comments-sub', { n: fmtInt(threadsIn(rows)), kind: state.kind, dir: state.dir ?? '',
     half: state.half ? halfName(state.half) : '', bin: state.bin === null ? '' : binName(state.bin) });
+  // Threads with text are listed; the rest go in a table at the end, each paged on its own.
+  const withText = rows.filter((r) => r.text);
+  const noText = rows.filter((r) => !r.text);
   const list = $('#rf-threads');
-  list.replaceChildren(...rows.slice(0, state.threadsShown).map(threadItem));
+  list.replaceChildren(...withText.slice(0, state.threadsShown).map(threadItem));
   if (!rows.length) list.append(el('li', msg('threads-none'), 'quote-none'));
-  const more = $<HTMLButtonElement>('#rf-threads-more');
-  more.hidden = rows.length <= state.threadsShown;
-  put(more, 'threads-more', { n: fmtInt(Math.min(PAGE, rows.length - state.threadsShown)) });
+  list.hidden = !withText.length && noText.length > 0;
+  showMore($<HTMLButtonElement>('#rf-threads-more'), withText.length, state.threadsShown);
+  $('#rf-notext').hidden = !noText.length;
+  $('#rf-notext-table tbody').replaceChildren(...noText.slice(0, state.noTextShown).map(noTextRow));
+  showMore($<HTMLButtonElement>('#rf-notext-more'), noText.length, state.noTextShown);
+}
+
+function showMore(more: HTMLButtonElement, total: number, shown: number) {
+  more.hidden = total <= shown;
+  put(more, 'threads-more', { n: fmtInt(Math.min(PAGE, total - shown)) });
 }
 
 
@@ -1054,6 +1077,7 @@ function init() {
   radio<Kind>('rf-kind', (v) => {
     state.kind = v;
     state.threadsShown = PAGE;
+    state.noTextShown = PAGE;
     renderIntro();
     render();
   });
@@ -1088,11 +1112,16 @@ function init() {
     const v = (e.target as HTMLSelectElement).value;
     state.dir = v === '' ? null : v;
     state.threadsShown = PAGE;
+    state.noTextShown = PAGE;
     renderDirs();
     renderThreads();
   });
   $('#rf-threads-more').addEventListener('click', () => {
     state.threadsShown += PAGE;
+    renderThreads();
+  });
+  $('#rf-notext-more').addEventListener('click', () => {
+    state.noTextShown += PAGE;
     renderThreads();
   });
   matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
