@@ -82,5 +82,23 @@ class InventoryTest(unittest.TestCase):
         self.assertEqual(p["pages"], ["web/value.html"])
 
 
+class CommittedSummariesTest(unittest.TestCase):
+    def test_area_files_match_area_weekly(self):
+        # area_commits/authors/reviewers.json index area_weekly.json's nodes
+        # and name the run that wrote it (meta.areas_generated_at); the page
+        # ignores a file that names another (commitBoard in web/src/data.ts),
+        # so committing only some of one summarize run's files empties the
+        # directory chart. Commit every summaries/ file a run writes.
+        import json
+        root = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "summaries")
+
+        def meta(name):
+            with open(os.path.join(root, name)) as f:
+                return json.load(f)["meta"]
+        stamp = meta("area_weekly.json")["generated_at"]
+        for name in ("area_commits.json", "area_authors.json", "area_reviewers.json"):
+            self.assertEqual(meta(name).get("areas_generated_at"), stamp, name)
+
+
 if __name__ == "__main__":
     unittest.main()
