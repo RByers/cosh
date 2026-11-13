@@ -588,6 +588,9 @@ export interface DirRowView {
   stats: DirStats;
   expandable: boolean;
   expanded: boolean;
+  /** Threads over typical, or null where the row has fewer than `minCls`
+   * changes (too few for the ratio to say much) or nothing typical. */
+  ratio: number | null;
   /** Entries in an "Other" row. */
   count?: number;
 }
@@ -597,33 +600,35 @@ type DirItem = { kind: 'dir' | 'rest'; node: DirNode; stats: DirStats };
 /** The rows to show of `dirTree`'s tree, given which rows are open
  * (`expanded`, by row key). Each level lists its entries with at least
  * `minCls` changes, at most `shown` of them, and puts the rest in one "Other"
- * row that opens into them, `shown` at a time. A directory opens (into its
- * subdirectories plus a "rest of" row for its own files) only when one of
- * those has `minCls` changes. Only the top level, when none of it has
- * `minCls` changes, lists its first `shown` entries instead. */
+ * row that opens into them, `shown` at a time; a level where none has
+ * `minCls` changes lists its first `shown` entries instead. Any directory
+ * with subdirectories opens (into them plus a "rest of" row for its own
+ * files), however small. Rows with fewer than `minCls` changes get no ratio. */
 export function dirRows(roots: DirNode[], expanded: ReadonlySet<string>, minCls: number, shown = 15): DirRowView[] {
   const out: DirRowView[] = [];
+  const big = (s: DirStats) => s.cls >= minCls;
+  const ratio = (s: DirStats) => (big(s) && s.expected > 0 ? s.threads / s.expected : null);
+  const row = (r: Omit<DirRowView, 'ratio'>): DirRowView => ({ ...r, ratio: ratio(r.stats) });
   const order = (a: DirItem, b: DirItem) => b.stats.cls - a.stats.cls || b.stats.threads - a.stats.threads ||
     (a.kind === b.kind ? (a.node.path < b.node.path ? -1 : 1) : a.kind === 'dir' ? -1 : 1);
   const emit = (it: DirItem, depth: number) => {
     if (it.kind === 'rest') {
-      out.push({ key: `r:${it.node.path}`, kind: 'rest', depth, node: it.node, stats: it.stats, expandable: false, expanded: false });
+      out.push(row({ key: `r:${it.node.path}`, kind: 'rest', depth, node: it.node, stats: it.stats, expandable: false, expanded: false }));
       return;
     }
     const n = it.node;
     const key = `d:${n.path}`;
-    const big = (x: DirStats | null) => x !== null && x.cls >= minCls;
-    const expandable = n.children.some(big) || (n.children.length > 0 && big(n.own));
+    const expandable = n.children.length > 0;
     const open = expandable && expanded.has(key);
-    out.push({ key, kind: 'dir', depth, node: n, stats: n, expandable, expanded: open });
+    out.push(row({ key, kind: 'dir', depth, node: n, stats: n, expandable, expanded: open }));
     if (!open) return;
     const items: DirItem[] = n.children.map((c) => ({ kind: 'dir', node: c, stats: c }));
     if (n.own) items.push({ kind: 'rest', node: n, stats: n.own });
-    group(items.sort(order), depth + 1, key, false);
+    group(items.sort(order), depth + 1, key, !items.some((it) => big(it.stats)));
   };
   // `plain`: list the first `shown` entries, whatever their size.
   const group = (items: DirItem[], depth: number, parentKey: string, plain: boolean) => {
-    const head = (plain ? items : items.filter((it) => it.stats.cls >= minCls)).slice(0, shown);
+    const head = (plain ? items : items.filter((it) => big(it.stats))).slice(0, shown);
     const tail = items.filter((it) => !head.includes(it));
     for (const it of head) emit(it, depth);
     if (!tail.length) return;
@@ -631,7 +636,7 @@ export function dirRows(roots: DirNode[], expanded: ReadonlySet<string>, minCls:
     const open = expanded.has(key);
     const ids = new Set<number>();
     for (const it of tail) for (const id of it.stats.ids) ids.add(id);
-    out.push({
+    out.push(row({
       key, kind: 'other', depth, expandable: true, expanded: open, count: tail.length,
       stats: {
         cls: ids.size,
@@ -641,11 +646,11 @@ export function dirRows(roots: DirNode[], expanded: ReadonlySet<string>, minCls:
         expected: tail.reduce((s, it) => s + it.stats.expected, 0),
         prior: Math.max(...tail.map((it) => it.stats.prior)),
       },
-    });
+    }));
     if (open) group(tail, depth + 1, key, true);
   };
   const top = roots.map((n): DirItem => ({ kind: 'dir', node: n, stats: n })).sort(order);
-  group(top, 0, 'root', !top.some((it) => it.stats.cls >= minCls));
+  group(top, 0, 'root', !top.some((it) => big(it.stats)));
   return out;
 }
 

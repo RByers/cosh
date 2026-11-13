@@ -1631,20 +1631,28 @@ test('review feedback: half-year files merge, and every period gets the values t
     F.dirRows(roots, new Set(open), min, shown).map((r) =>
       `${'  '.repeat(r.depth)}${r.kind === 'other' ? `other(${r.count})` : r.kind === 'rest' ? `rest ${r.node!.path}` : r.node!.path}` +
       ` ${r.stats.cls}/${r.stats.lines}/${r.stats.threads}${r.expandable ? (r.expanded ? ' -' : ' +') : ''}`);
-  // A directory opens only when one of its entries has `minCls` changes (third_party/ and content/
-  // here don't), and an opened "Other" lists its entries whatever their size.
+  // Any directory with subdirectories opens, however small, and an opened "Other" lists its
+  // entries whatever their size.
   assert.deepEqual(view(dirs, [], 2), ['chrome/ 2/66/2 +', 'other(2) 2/100/3 +']);
   assert.deepEqual(view(dirs, ['o:root'], 2), ['chrome/ 2/66/2 +', 'other(2) 2/100/3 -',
-    '  third_party/ 1/10/2', '  content/ 1/90/1']);
-  // Below the top level, a single small entry ("rest of" too) goes into "Other" as well.
+    '  third_party/ 1/10/2 +', '  content/ 1/90/1 +']);
+  // A level with nothing big enough lists its entries.
+  assert.deepEqual(view(dirs, ['o:root', 'd:third_party/'], 2).slice(2, 4),
+    ['  third_party/ 1/10/2 -', '    third_party/blink/ 1/10/2 +']);
+  // Below the top level, a single small entry ("rest of" too) goes into "Other" when something there is big.
   assert.deepEqual(view(nested, ['d:chrome/', 'd:chrome/browser/'], 2), ['chrome/ 2/156/3 -', '  chrome/browser/ 2/156/3 -',
     '    chrome/browser/ui/ 2/66/2','    other(1) 1/90/1 +', 'other(1) 1/10/2 +']);
-  // Only a top level with nothing big enough lists its first entries instead, and none of them opens.
-  assert.deepEqual(view(dirs, [], 5), ['chrome/ 2/66/2', 'third_party/ 1/10/2', 'content/ 1/90/1']);
-  assert.deepEqual(view(nested, [], 3), ['chrome/ 2/156/3', 'third_party/ 1/10/2']);
-  assert.deepEqual(view(dirs, [], 5, 2), ['chrome/ 2/66/2', 'third_party/ 1/10/2', 'other(1) 1/90/1 +']);
+  // A top level with nothing big enough lists its first entries instead; they still open.
+  assert.deepEqual(view(dirs, [], 5), ['chrome/ 2/66/2 +', 'third_party/ 1/10/2 +', 'content/ 1/90/1 +']);
+  assert.deepEqual(view(nested, [], 3), ['chrome/ 2/156/3 +', 'third_party/ 1/10/2 +']);
+  assert.deepEqual(view(dirs, [], 5, 2), ['chrome/ 2/66/2 +', 'third_party/ 1/10/2 +', 'other(1) 1/90/1 +']);
   // A change in two grouped entries counts once (CL 2, in chrome/ and content/).
   assert.deepEqual(view(dirs, [], 5, 0), ['other(3) 3/166/5 +']);
+  // Only rows with `minCls` changes get a ratio.
+  const ratios = F.dirRows(dirs, new Set(['o:root']), 2).map((r) => r.ratio);
+  assert.ok(Math.abs(ratios[0]! - 2 / dirs[0].expected) < 1e-9);
+  assert.deepEqual(ratios.slice(2), [null, null]);
+  assert.ok(ratios[1] !== null);
   // The ratio's shade: log scale, white at typical, full at a quarter or four times.
   assert.deepEqual([0, 0.25, 0.5, 1, 2, 4, 8].map(F.ratioShade), [-1, -1, -0.5, 0, 0.5, 1, 1]);
   // Comments: newest first; addressed only; under one directory, at any level.

@@ -279,10 +279,10 @@ The measures:
   ones (a parent counts each CL once; earlier commits is the most in any one
   directory below it). At each level, entries with fewer than `min_cls`
   (25) of the person's CLs go into one "Other" row, which counts each CL
-  once and opens into them (2026-11-12). A directory opens only when one
-  of its subdirectories (or its own files) has `min_cls` CLs; only a top
-  level with none that big lists its first 15 entries instead. Any
-  directory can still be picked for the comment list. The ratio cell is shaded green below 1, white at 1 and
+  once and opens into them (2026-11-12); a level with none that big lists
+  its first 15 entries instead. Any directory with subdirectories opens,
+  however small (2026-11-13), but a row with fewer than `min_cls` CLs
+  shows no ratio ("–"): too few to say much. The ratio cell is shaded green below 1, white at 1 and
   red above, on a log scale that saturates at 0.25× and 4×. Selecting a
   directory at any level filters the comment list to it and below, together
   with the page's all/addressed choice.

@@ -973,8 +973,9 @@ function dirRow(r: DirRowView): HTMLTableRowElement {
   th.append(label);
   const s = r.stats;
   const ratio = el('td', '–', 'num rf-ratio');
-  if (s.expected > 0) {
-    const v = s.threads / s.expected;
+  if (r.ratio === null) ratio.title = msg('dirs-no-ratio', { n: fmtInt(state.peers!.min_cls) });
+  else {
+    const v = r.ratio;
     ratio.textContent = fmtValue(v, 'd');
     const shade = ratioShade(v);
     ratio.classList.add(shade < 0 ? 'rf-ratio-lo' : 'rf-ratio-hi');

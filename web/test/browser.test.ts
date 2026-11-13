@@ -3563,12 +3563,15 @@ test('review feedback: a person, the measures, peer groups, directories and comm
   // Changes, then lines changed there.
   assert.deepEqual(await page.$$eval('#rf-dirs tbody tr:first-child td', (tds) => tds.slice(0, 2).map((t) => t.textContent)),
     ['2', '66']);
-  // A directory opens only when something in it has min_cls (6) changes: here nothing does. With a
-  // minimum of 1, every directory opens.
-  assert.equal(await page.$$eval('#rf-dirs .ar-toggle', (ts) => ts.length), 0);
+  // Every directory with subdirectories opens, but rows with fewer than min_cls (6) changes show no
+  // ratio. With a minimum of 1, every row has one.
+  assert.equal(await page.$$eval('#rf-dirs .ar-toggle', (ts) => ts.length), 3);
+  assert.deepEqual(await page.$$eval('#rf-dirs td.rf-ratio', (tds) => tds.map((t) => t.textContent)), ['–', '–', '–']);
+  assert.match(await page.$eval('#rf-dirs td.rf-ratio', (t) => (t as HTMLElement).title), /^Fewer than 6 changes/);
   await page.evaluate(() => { window.__rf!.peers!.min_cls = 1; });
   await page.click('input[name="rf-kind"][value="a"]');
   await page.click('input[name="rf-kind"][value="t"]');
+  assert.ok(!(await page.$$eval('#rf-dirs td.rf-ratio', (tds) => tds.map((t) => t.textContent))).includes('–'));
   await page.click('#rf-dirs tbody tr[data-key="d:third_party/"] .ar-toggle');
   await page.click('#rf-dirs tbody tr[data-key="d:third_party/blink/"] .ar-toggle');
   assert.deepEqual(await dirNames(), ['chrome/', 'third_party/', 'blink/', 'renderer/', 'content/']);
