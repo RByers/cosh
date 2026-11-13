@@ -753,6 +753,74 @@ hand (about a minute to load, then seconds with `--cache`):
 page shows it under "Learning to need less review feedback"
 (`#predicts`).
 
+### 4d. Reverts and the author's experience (`scripts/balance_reverts_experience.py`, 2026-11-13)
+
+Do authors get reverted less as they land more commits? Sample: every human
+commit with a CL on `main` landed 2017-07-01 .. 2026-09-30, not a revert,
+under 100 files and not an LSC: 869,692 commits, 27,818 (3.2%) reverted
+within 30 days (the page's revert rule). Experience is the author's earlier
+commits on `main` over its whole history (from 2008; reverts not counted),
+overall and touching the commit's main 2-level directory. Identities by
+`cosh.people.person` (no Gerrit owner aliases: git only).
+
+Three estimates per band: the share as found; like for like (a
+multiplicative Poisson model with factors for the band and for size10 ×
+dir2 × year); and same author (that model plus a factor per author, so
+each band is compared with the same people's commits in other bands).
+Fitted by iterative proportional fitting to 1e-6; 90% intervals from 30
+author-clustered Poisson bootstrap resamples, warm-started (40 iterations
+suffice: checked against 1,000). The directory chart's models also hold
+the overall band fixed.
+
+| earlier commits | commits | as found | like for like | same author (90%) |
+|---|---|---|---|---|
+| 0 | 5,679 | 3.17% | 3.45% | 4.49% (3.61–5.42) |
+| 1–2 | 8,573 | 3.73% | 3.77% | 4.13% (3.60–4.69) |
+| 3–9 | 22,863 | 3.50% | 3.35% | 3.67% (3.33–4.06) |
+| 10–29 | 47,078 | 3.48% | 3.34% | 3.58% (3.30–3.81) |
+| 30–99 | 110,753 | 3.24% | 3.21% | 3.38% (3.18–3.58) |
+| 100–299 | 192,112 | 3.25% | 3.27% | 3.38% (3.24–3.53) |
+| 300–999 | 286,330 | 3.21% | 3.24% | 3.14% (3.03–3.24) |
+| 1,000–2,999 | 155,780 | 3.05% | 3.05% | 2.89% (2.80–3.15) |
+| 3,000+ (28 authors) | 40,524 | 2.76% | 2.69% | 2.38% (2.09–3.00) |
+
+| earlier commits in the directory | commits | as found | like for like | same author (90%) |
+|---|---|---|---|---|
+| 0 | 46,807 | 3.45% | 4.02% | 4.27% (4.09–4.68) |
+| 1–2 | 49,108 | 3.65% | 3.55% | 3.50% (3.27–3.57) |
+| 3–9 | 91,254 | 3.48% | 3.43% | 3.36% (3.21–3.51) |
+| 10–29 | 130,747 | 3.42% | 3.38% | 3.29% (3.21–3.38) |
+| 30–99 | 194,379 | 3.31% | 3.29% | 3.21% (3.11–3.35) |
+| 100–299 | 188,203 | 3.13% | 3.02% | 3.04% (2.95–3.21) |
+| 300+ | 169,194 | 2.63% | 2.70% | 2.82% (2.64–3.00) |
+
+- **As found, almost flat** (3.2–3.7% up to 1,000 commits). **Within the
+  same author, the rate roughly halves** over a career: 4.5% on a first
+  commit, 3.4% after 100–299, 2.4% after 3,000+.
+- **Why the raw curve hides it: selection.** People who land only one
+  commit in the sample are reverted 1.4% of the time (small, safe
+  drive-by changes), so they pull the low bands down. Grouped by how far
+  each author eventually got, the rate falls with practice in every group:
+  e.g. authors who reached 300–999 commits were reverted 4.4% at 3–9
+  earlier commits and 3.2% at 30–99 (exploration on 2026-11-13, not
+  published).
+- **The directory adds to it.** With overall experience held fixed, a
+  first commit in a 2-level directory is reverted 4.3% (same author)
+  against 2.8% after 300+ there; most of the drop comes with the first
+  few commits in the directory.
+- **Caveats.** Association, not cause: experience also brings different
+  work within a size × directory × year cell. The top band is 28 people,
+  hence its wide interval. Most reverts are CI breakage (`docs/review-roi-reverts.md`),
+  which no amount of experience removes, so the floor stays above 2%.
+
+The page's `revert_practice`, `revert_practice_here` and
+`revert_practice_summary` come from `python3 -m cosh.balance_publish`
+(step `revert_experience`, 5.5 min). By hand:
+`COSH_DATA_DIR=<main>/data/private nice -n 5 python3
+scripts/balance_reverts_experience.py [--out F]`. The page shows it at the
+bottom, "Do authors get reverted less as they gain experience?"
+(`#revert-experience`).
+
 ### 5. Growth along several paths
 
 For each person and half-year (`scripts/balance_growth.py growth`):

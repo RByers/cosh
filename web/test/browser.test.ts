@@ -2799,7 +2799,7 @@ test('the Review Balance page: a draft warning first, every figure, chart and ta
   for (const f of figures) assert.match(f, /\d/, f);
   // Every chart is drawn, and every table has rows.
   const canvases = await page.$$eval('canvas', (cs) => cs.map((c) => [c.id, c.width > 0 && c.height > 0] as const));
-  assert.equal(canvases.length, 126);
+  assert.equal(canvases.length, 128);
   for (const [id, drawn] of canvases) assert.ok(drawn, id);
   // The narrative opens the page: its eight sections, in order, each with a heading, then the
   // separator, then every section of the earlier analysis.
@@ -2809,7 +2809,7 @@ test('the Review Balance page: a draft warning first, every figure, chart and ta
   for (const id of narrative) assert.ok(await page.$(`#${id}.card.narrative > h2`), id);
   assert.deepEqual(order.slice(9), ['trajectories', 'exchange', 'reviewers', 'latency', 'rework', 'roi', 'areas', 'dirs',
     'queues', 'authors', 'learning', 'signals', 'cohorts', 'easing', 'growth', 'pipeline', 'patterns', 'ai', 'security',
-    'mechanical', 'feedback-index', 'newcomer', 'method']);
+    'mechanical', 'feedback-index', 'newcomer', 'method', 'revert-experience']);
   // The old lede and tiles come right after the separator, and the contents list links every narrative section.
   assert.ok(await page.$('.earlier-break + .earlier-lede + .tiles'));
   assert.deepEqual(await page.$$eval('.intro .toc a', (as) => as.map((a) => a.getAttribute('href'))), narrative.map((id) => `#${id}`));

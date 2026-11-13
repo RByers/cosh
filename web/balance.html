@@ -3048,6 +3048,63 @@
           <a target="_blank" rel="noopener" href="https://github.com/RByers/cosh/blob/main/docs/balance.md">docs/balance.md</a>.
         </p>
       </section>
+
+      <section id="revert-experience" class="card" aria-labelledby="revert-experience-title">
+        <a class="card-anchor" href="#revert-experience" aria-label="Link to this section" title="Link to this section">#</a>
+        <h2 id="revert-experience-title">Do authors get reverted less as they gain experience?</h2>
+        <p class="sub">
+          Every human commit with a CL on <code>main</code> from July 2017 to September 2026
+          (<b data-src="revert_practice_summary" data-field="commits" data-fmt="n0">–</b> commits, not counting reverts or mass edits),
+          by how many commits the author had landed on <code>main</code> before it. A commit counts as reverted
+          if a later commit reverted it within 30 days:
+          <b data-src="revert_practice_summary" data-field="rate" data-fmt="pct1">–</b> of them were.
+        </p>
+        <div class="panels">
+          <figure class="panel"><h3>Revert rate by the author's earlier commits</h3>
+            <p class="note">The author's commits on <code>main</code> before this one, since 2008. Like for like
+              re-weights each band to the same mix of size, directory and year. Same author also compares each
+              author with their own commits in other bands; shaded, its 90% interval.</p>
+            <div class="chart"><canvas id="c-revexp-practice" role="img" aria-label="30-day revert rate by the author's earlier commits on main: as found, like for like, and against the same authors' other commits, which falls the most."></canvas></div></figure>
+          <figure class="panel"><h3>Revert rate by the author's earlier commits in the directory</h3>
+            <p class="note">The author's earlier commits touching the commit's main 2-level directory. Both
+              adjusted lines also hold the author's commits on <code>main</code> fixed, so they show what
+              knowing the directory adds.</p>
+            <div class="chart"><canvas id="c-revexp-here" role="img" aria-label="30-day revert rate by the author's earlier commits in the commit's directory, as found, like for like, and against the same authors' other commits, holding their overall experience fixed."></canvas></div></figure>
+        </div>
+        <p class="sub">
+          As found, experience barely moves the rate: an author's first commit is reverted
+          <b data-src="revert_practice_summary" data-field="first_rate" data-fmt="pct1">–</b> of the time, one after
+          100–299 earlier commits <b data-src="revert_practice_summary" data-field="mid_rate" data-fmt="pct1">–</b>, and one
+          after 3,000 or more <b data-src="revert_practice_summary" data-field="top_rate" data-fmt="pct1">–</b>. The flat
+          curve hides learning. Many people land only a commit or two, small and safe ones, and are rarely
+          reverted; those who stay are reverted more at first, then less. Comparing each author with themselves,
+          the rate falls from
+          <b data-src="revert_practice_summary" data-field="first_same" data-fmt="pct1">–</b> on a first commit to
+          <b data-src="revert_practice_summary" data-field="mid_same" data-fmt="pct1">–</b> after 100–299 and
+          <b data-src="revert_practice_summary" data-field="top_same" data-fmt="pct1">–</b> after 3,000 or more.
+        </p>
+        <p class="sub">
+          Knowing the directory matters on top of knowing <code>main</code>. With the author's overall experience
+          held fixed, a first commit in a directory is reverted
+          <b data-src="revert_practice_summary" data-field="here_first_same" data-fmt="pct1">–</b> of the time, against
+          <b data-src="revert_practice_summary" data-field="here_top_same" data-fmt="pct1">–</b> after 300 or more
+          commits there. Over a career the rate roughly halves, but it stays above 2%: most reverts are test and
+          build failures (<a href="#value">above</a>), which even veterans run into.
+        </p>
+        <p class="note">
+          Same author is a multiplicative model of the revert rate with a factor for each experience band, each
+          author, and each combination of size (ten log-spaced buckets), 2-level directory and year; each line is
+          scaled so its commit-weighted mean is the overall rate. Intervals: 30 bootstrap resamples of authors.
+          Bands with under 2,000 commits are left out. Code:
+          <a target="_blank" rel="noopener" href="https://github.com/RByers/cosh/blob/main/scripts/balance_reverts_experience.py">scripts/balance_reverts_experience.py</a>.
+        </p>
+        <template data-msg="revexp-raw">As found</template>
+        <template data-msg="revexp-like">Like for like</template>
+        <template data-msg="revexp-same">Same author</template>
+        <template data-msg="revexp-title"><slot name="band"></slot> earlier commits</template>
+        <template data-msg="revexp-tip-raw"><slot name="label"></slot>: <slot name="rate"></slot> of <slot name="n"></slot> commits by <slot name="authors"></slot> authors</template>
+        <template data-msg="revexp-tip-ci"><slot name="label"></slot>: <slot name="rate"></slot> (90% interval <slot name="lo"></slot> to <slot name="hi"></slot>)</template>
+      </section>
     </main>
     <script type="module" src="/src/balance.ts"></script>
   </body>

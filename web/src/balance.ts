@@ -1581,7 +1581,42 @@ function practiceChart(id: string, d: Record<string, Row[]>, theme: Theme, by: '
     v: 'feedback_index', groups: PRACTICE_GROUPS, xs: Object.keys(xl), xl: (x) => xl[x] }, FMT.n2, { ref: 1 });
 }
 
-const FB_TENURES: [string, string][] = [['under 2 years', 'Under 2 years'], ['2+ years', '2 years or more']];
+/** 30-day revert rate by the author's experience (rows of revert_practice or
+ * revert_practice_here): as found, like for like, and against the same authors'
+ * other commits, with that line's 90% interval shaded. */
+function revertExperience(id: string, rows: Row[], theme: Theme) {
+  const labels = rows.map((r) => String(r.band).replace(/(\d)(\d{3})/g, '$1,$2').replace('-', '–'));
+  const col = (k: string) => rows.map((r) => r[k] as number);
+  const c = theme.series[2];
+  const lineSet = (label: string, data: number[], color: string): ChartDataset<'line'> => ({
+    label, data, borderColor: color, backgroundColor: color, borderWidth: 2, pointRadius: 2.5,
+    pointHoverRadius: 4, tension: 0, fill: false,
+  });
+  const datasets: ChartDataset<'line'>[] = [
+    { label: '', data: col('same_hi'), borderWidth: 0, pointRadius: 0, pointHoverRadius: 0,
+      backgroundColor: faint(c, '33'), fill: '+1', tension: 0 },
+    { label: '', data: col('same_lo'), borderWidth: 0, pointRadius: 0, pointHoverRadius: 0,
+      backgroundColor: faint(c, '33'), fill: false, tension: 0 },
+    lineSet(msg('revexp-raw'), col('rate'), theme.series[0]),
+    lineSet(msg('revexp-like'), col('like'), theme.series[1]),
+    lineSet(msg('revexp-same'), col('same'), c),
+  ];
+  const o = options(theme, FMT.pct1, true, (i) => msg('revexp-title', { band: labels[i] }));
+  o.plugins.tooltip.callbacks.label = (i: TooltipItem<'line'>) => {
+    const r = rows[i.dataIndex];
+    const v = FMT.pct1(i.parsed.y ?? 0);
+    if (i.datasetIndex === 2) return msg('revexp-tip-raw', { label: String(i.dataset.label), rate: v, n: FMT.n0(Number(r.commits)), authors: FMT.n0(Number(r.authors)) });
+    if (i.datasetIndex === 4) return msg('revexp-tip-ci', { label: String(i.dataset.label), rate: v, lo: FMT.pct1(Number(r.same_lo)), hi: FMT.pct1(Number(r.same_hi)) });
+    return `${i.dataset.label}: ${v}`;
+  };
+  charts.push(new Chart($<HTMLCanvasElement>(`#${id}`), {
+    type: 'line',
+    data: { labels, datasets },
+    options: { ...o, scales: axes(theme, FMT.pct1, { zero: true }) },
+  } as never));
+}
+
+const FB_TENURES: [string, string][] =[['under 2 years', 'Under 2 years'], ['2+ years', '2 years or more']];
 const FIFTH_XL: Record<string, string> = { 1: 'Least', 2: '2nd', 3: 'Middle', 4: '4th', 5: 'Most' };
 
 /** What authors did next, by fifth of their feedback index: `v` is fb_predict_fifths' column. */
@@ -2101,6 +2136,8 @@ function render(data: BalanceData) {
   ]);
 
   securityBars(d.security_years, theme);
+  revertExperience('c-revexp-practice', d.revert_practice, theme);
+  revertExperience('c-revexp-here', d.revert_practice_here, theme);
 
   aiTable('t-ai', d.ai_paired);
 

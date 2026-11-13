@@ -16,10 +16,10 @@ their main() for exploration, and no longer write into summaries/.
 Each step runs in its own process (the scripts set module globals, and each
 loads several GB), one at a time, and leaves its result as JSON in the work
 directory ($COSH_DATA_DIR/scratch/balance-publish/steps by default) with a
-log of what it printed. A full run takes about 8 min (2026-11-12, at
-nice 10; the slowest steps are report 1.5 min, signals 1 min, narrative 1
-min); most of it is the same loading of balance.sqlite and commits.sqlite
-in each step.
+log of what it printed. A full run takes about 14 min (2026-11-12, at
+nice 10, plus revert_experience's 5.5 min added 2026-11-13; the other slow
+steps are report 1.5 min, signals 1 min, narrative 1 min); most of the rest
+is the same loading of balance.sqlite and commits.sqlite in each step.
 
 Everything is computed from the stores except these inputs, read from fixed
 paths under $COSH_DATA_DIR (or --inputs). Each is an analysis too slow,
@@ -213,6 +213,12 @@ def step_learning(ctx):
     return balance_learning.compute(_args(), "then")[0]
 
 
+def step_revert_experience(ctx):
+    _scripts()
+    import balance_reverts_experience
+    return balance_reverts_experience.compute()
+
+
 def step_feedback_predicts(ctx):
     _scripts()
     import balance_feedback_predicts
@@ -288,6 +294,8 @@ STEPS = [
                                  "behind_share_summary", "behind_feedback", "behind_feedback_summary"]),
     Step("review_share", step_review_share, ["review_share_hist", "review_share_years"]),
     Step("learning", step_learning, ["learning_practice", "learning_practice_fit"]),
+    Step("revert_experience", step_revert_experience, ["revert_practice", "revert_practice_here",
+                                                       "revert_practice_summary"]),
     Step("feedback_predicts", step_feedback_predicts, ["fb_predict_fifths", "fb_predict_fit", "fb_predict_summary"]),
     Step("signals", step_signals, ["signals_era", "signals_tenure", "signals_familiarity", "panels", "matched",
                                    "signals_summary"]),
