@@ -3847,7 +3847,8 @@ test('the Data flow page draws the chosen pages\' flow, lists the inventory, and
   assert.deepEqual(picks, [['page-value', true], ['page-sentiment', true], ['page-balance', true], ['page-feedback', true]]);
 
   // The graph is drawn down the page, as wide as its box: no scrolling inside it.
-  const nodes = () => page.$$eval('#graph-box .df-node', (gs) => gs.map((g) => (g as SVGGElement).dataset.node!));
+  // The items drawn, once each (a config file shows as a chip beside each reader).
+  const nodes = () => page.$$eval('#graph-box .df-node', (gs) => [...new Set(gs.map((g) => (g as SVGGElement).dataset.node!))]);
   const box = await page.$eval('#graph-box', (e) => ({ sw: e.scrollWidth, cw: e.clientWidth, sh: e.scrollHeight, ch: e.clientHeight }));
   assert.ok(box.sw <= box.cw && box.sh <= box.ch, JSON.stringify(box));
   const ys = await page.$$eval('#graph-box .df-node', (gs) => Object.fromEntries(gs.map((g) => [(g as SVGGElement).dataset.node!, g.getBoundingClientRect().top])));

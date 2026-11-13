@@ -1825,3 +1825,40 @@ test('dataflow: layout runs top to bottom, sources and config first, pages last,
   assert.equal(G.baseName('data/private/derived.sqlite'), 'derived.sqlite');
   assert.equal(G.baseName('data/private/bugs/raw/'), 'bugs/raw/');
 });
+
+test('dataflow: the routed drawing of each page has no crossings and no edge behind a box', () => {
+  const real = G.buildGraph(flow);
+  const size = { nodeW: 128, chipW: 112, chipGap: 10, laneW: 6, gap: 16 }; // as dataflow.ts
+  for (const pages of [['page-feedback'], ['page-value'], ['page-sentiment']]) {
+    const split = G.splitShared(real, G.scope(real, pages, false));
+    const r = G.route(split.g, split.keep, size);
+    assert.equal(r.crossings, 0, pages.join());
+    // Fits a desktop page's graph box (about 1,030 px wide) at 1:1.
+    assert.ok(r.width < 1000, `${pages}: ${r.width}`);
+    // Config files and the model are chips beside their reader, never boxes of their own.
+    for (const id of r.nodes.keys()) assert.equal(G.baseId(id), id);
+    assert.ok(r.chips.size > 0);
+    // Each layer's boxes (with their chips) don't overlap, and no edge runs
+    // through a layer inside one of them.
+    const spans: [number, number][][] = Array.from({ length: r.layers }, () => []);
+    for (const [id, p] of r.nodes) {
+      const mine = [...r.chips.values()].filter((c) => c.reader === id).map((c) => c.x);
+      const lo = Math.min(p.x - size.nodeW / 2, ...mine.map((x) => x - size.chipW / 2));
+      const hi = Math.max(p.x + size.nodeW / 2, ...mine.map((x) => x + size.chipW / 2));
+      spans[p.layer].push([lo, hi]);
+    }
+    for (const row of spans) {
+      row.sort((a, b) => a[0] - b[0]);
+      for (let i = 1; i < row.length; i++) assert.ok(row[i][0] >= row[i - 1][1], `${pages}: boxes overlap`);
+    }
+    for (const e of r.edges) {
+      e.xs.slice(1, -1).forEach((x, k) => {
+        for (const [lo, hi] of spans[e.layer + 1 + k]) assert.ok(x < lo || x > hi, `${e.from} -> ${e.to} passes a box`);
+      });
+    }
+  }
+  // Every page's flow: the same reader appears once however many chips it has.
+  const all = G.splitShared(real, G.scope(real, G.flowPages(real).map((p) => p.id), false));
+  const r = G.route(all.g, all.keep, size);
+  assert.equal(r.nodes.size + r.chips.size, all.keep.size);
+});

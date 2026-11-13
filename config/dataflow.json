@@ -36,7 +36,7 @@
     },
     {
       "id": "claude-model",
-      "name": "Claude (headless)",
+      "name": "Claude",
       "kind": "model",
       "url": "local `claude -p`",
       "purpose": "Labels and scores text that rules can't: addressed threads, comment tone, AI-written descriptions, coaching reports.",
@@ -260,7 +260,7 @@
     {
       "id": "summaries/value-exchange",
       "path": "summaries/",
-      "name": "Value Exchange summaries",
+      "name": "Value Exchange data",
       "kind": "json",
       "tier": "published",
       "tracked_in_git": true,
@@ -386,7 +386,7 @@
     },
     {
       "id": "data/public/radar_browser_share.csv",
-      "name": "Browser shares (Radar)",
+      "name": "Browser shares",
       "path": "data/public/radar_browser_share.csv",
       "kind": "csv",
       "tier": "published",
@@ -495,7 +495,7 @@
     },
     {
       "id": "summaries/sentiment",
-      "name": "Review Tone summaries",
+      "name": "Review Tone data",
       "path": "summaries/sentiment_*.json",
       "kind": "json",
       "tier": "published",
@@ -784,7 +784,7 @@
     },
     {
       "id": "web/public/review-feedback/",
-      "name": "Feedback Index files",
+      "name": "Feedback Index data",
       "path": "web/public/review-feedback/",
       "kind": "directory",
       "tier": "published",
@@ -887,7 +887,7 @@
     },
     {
       "id": "data/private/chrome_releases/",
-      "name": "Chrome Releases posts",
+      "name": "Chrome releases",
       "path": "data/private/chrome_releases/",
       "kind": "directory",
       "tier": "raw",

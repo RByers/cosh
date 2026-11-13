@@ -3208,14 +3208,14 @@ canvas.rf-pointable {
 
 .df-node text {
   fill: var(--text-primary);
-  font: 11px ui-monospace, 'SF Mono', Menlo, monospace;
+  font: 10px ui-monospace, 'SF Mono', Menlo, monospace;
   dominant-baseline: central;
   pointer-events: none;
 }
 
 .df-node.k-source text,
 .df-node.k-page text {
-  font: 600 11.5px system-ui, -apple-system, 'Segoe UI', sans-serif;
+  font: 600 10.5px system-ui, -apple-system, 'Segoe UI', sans-serif;
 }
 
 .df-node:hover rect {

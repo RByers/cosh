@@ -7,14 +7,18 @@
 // classes and custom properties, never styles.
 import dataUrl from '../../config/dataflow.json?url';
 import {
+  baseId,
   buildGraph,
   flowPages,
   layout,
   plan,
   reach,
+  route,
   scope,
+  splitShared,
   type Dataflow,
   type Graph,
+  type Routed,
   type Node,
   type Step,
   type Store,
@@ -24,15 +28,19 @@ import { fill } from './text.ts';
 const SVG = 'http://www.w3.org/2000/svg';
 const REPO = 'https://github.com/RByers/cosh/blob/main/';
 
-// Graph geometry, in SVG user units (CSS pixels: the SVG is drawn at the
-// box's width, so it never scrolls sideways).
-const NODE_W = 172;
-const NODE_H = 26;
-const GAP_X = 12;
-const LAYER_GAP = 34; // between layers, where the edges run
+// Graph geometry, in SVG user units (CSS pixels at 1:1; the SVG is never
+// wider than its box, so it never scrolls sideways).
+const NODE_W = 128;
+const NODE_H = 22;
+const CHIP_W = 112; // a config file or the model, beside the step that reads it
+const CHIP_GAP = 10;
+const LANE_W = 6; // an edge passing through a layer
+const GAP_X = 16;
+const LAYER_GAP = 28; // between layers, where the edges run
 const LINE_GAP = 8; // between the lines of one wrapped layer
 const PAD = 8;
-const LABEL_MAX = 24;
+const CHAR_W = 6.02; // the 10px monospace label font (0.6 em, a little spare)
+const MIN_SCALE = 0.8; // shrink a routed drawing at most this far, else wrap
 
 const $ = <T extends Element = HTMLElement>(sel: string): T => {
   const e = document.querySelector<T>(sel);
@@ -170,19 +178,124 @@ function filterTables(): void {
   $('#no-match').hidden = count > 0;
 }
 
-const clip = (s: string) => (s.length > LABEL_MAX ? `${s.slice(0, LABEL_MAX - 1)}…` : s);
+/** A label cut to what fits `width` units of the 10px font. */
+const clip = (s: string, width: number) => {
+  const max = Math.max(4, Math.floor((width - 12) / CHAR_W));
+  return s.length > max ? `${s.slice(0, max - 1)}…` : s;
+};
 
 let drawnWidth = 0;
 
-/** Draws the chosen pages' flow top to bottom, as wide as its box: a layer
- * with more nodes than fit across wraps onto further lines. */
+/** One box: a node, or a chip (a config file or the model beside its reader). */
+function box(id: string, x: number, y: number, w: number, chip = false): SVGGElement {
+  const base = baseId(id);
+  const n = graph.nodes.get(base)!;
+  const g = svg('g', { class: `df-node ${tone(n)}${chip ? ' df-chip' : ''}`, transform: `translate(${x} ${y})` });
+  g.dataset.node = base;
+  const title = svg('title');
+  title.textContent = `${full(n)}: ${(n.source ?? n.store ?? n.step ?? n.page)!.purpose}`;
+  const round = n.kind === 'step' ? NODE_H / 2 : n.kind === 'store' ? 3 : 6;
+  const text = svg('text', { x: 7, y: NODE_H / 2 });
+  text.textContent = clip(n.label, w);
+  g.append(title, svg('rect', { width: w, height: NODE_H, rx: round }), text);
+  return g;
+}
+
+function edgePath(from: string, to: string, d: string): SVGPathElement {
+  const path = svg('path', { class: 'df-edge', d });
+  path.dataset.from = baseId(from);
+  path.dataset.to = baseId(to);
+  return path;
+}
+
+/** Draws the chosen pages' flow top to bottom. Where it fits the box (or
+ * nearly: it may shrink a little), it is routed so that no edge passes
+ * behind a box and edges cross as little as the graph allows; on a narrow
+ * screen it wraps wide layers instead. */
 function drawGraph(): void {
-  const box = $('#graph-box');
-  const width = Math.max(NODE_W + 2 * PAD, box.clientWidth);
-  drawnWidth = box.clientWidth;
+  const host = $('#graph-box');
+  const avail = Math.max(NODE_W + 2 * PAD, host.clientWidth);
+  drawnWidth = host.clientWidth;
+  const split = splitShared(graph, shown);
+  const r = route(split.g, split.keep, { nodeW: NODE_W, chipW: CHIP_W, chipGap: CHIP_GAP, laneW: LANE_W, gap: GAP_X });
+  const natural = r.width + 2 * PAD;
+  const root = natural / avail <= 1 / MIN_SCALE ? drawRouted(r, avail) : drawWrapped(split.g, split.keep, avail);
+  host.replaceChildren(root);
+  fill($('#graph-note'), { shown: shown.size, total: graph.nodes.size });
+  highlight();
+}
+
+function drawRouted(r: Routed, avail: number): SVGSVGElement {
+  // Drawn at 1:1 and centred when it fits, else shrunk to the box's width.
+  const width = Math.max(avail, r.width + 2 * PAD);
+  const left = (width - r.width) / 2;
+  const top = (layer: number) => PAD + layer * (NODE_H + LAYER_GAP);
+  const height = r.layers ? top(r.layers) - LAYER_GAP + PAD : 2 * PAD;
+  const scale = avail / width;
+  const root = svg('svg', {
+    viewBox: `0 0 ${width} ${height}`, width: avail, height: height * scale, role: 'img', 'aria-labelledby': 'graph-title',
+  });
+  const edgeLayer = svg('g', { class: 'df-edges' });
+  const nodeLayer = svg('g');
+  // Ports: each edge leaves its box's bottom and enters the next box's top
+  // at its own point, in the order of where it goes (or comes from), so no
+  // two edges meet at a point or cross at a box.
+  const portsOut = new Map<string, number>();
+  const portsIn = new Map<string, number>();
+  const spread = (ends: Map<string, Routed['edges']>, ports: Map<string, number>, toward: (e: Routed['edges'][0]) => number) => {
+    for (const [id, list] of ends) {
+      list.sort((a, b) => toward(a) - toward(b));
+      const cx = left + r.nodes.get(id)!.x;
+      const span = NODE_W * 0.7;
+      list.forEach((e, k) => ports.set(`${e.from}>${e.to}`, cx - span / 2 + (span * (k + 1)) / (list.length + 1)));
+    }
+  };
+  const byFrom = new Map<string, Routed['edges']>();
+  const byTo = new Map<string, Routed['edges']>();
+  for (const e of r.edges) {
+    (byFrom.get(e.from) ?? byFrom.set(e.from, []).get(e.from)!).push(e);
+    (byTo.get(e.to) ?? byTo.set(e.to, []).get(e.to)!).push(e);
+  }
+  spread(byFrom, portsOut, (e) => e.xs[1]);
+  spread(byTo, portsIn, (e) => e.xs[e.xs.length - 2]);
+  for (const e of r.edges) {
+    const xs = e.xs.map((x) => left + x);
+    xs[0] = portsOut.get(`${e.from}>${e.to}`)!;
+    xs[xs.length - 1] = portsIn.get(`${e.from}>${e.to}`)!;
+    let y = top(e.layer) + NODE_H;
+    let d = `M${xs[0]} ${y}`;
+    for (let i = 1; i < xs.length; i++) {
+      const y2 = top(e.layer + i);
+      const bend = (y2 - y) / 2;
+      d += `C${xs[i - 1]} ${y + bend} ${xs[i]} ${y2 - bend} ${xs[i]} ${y2}`;
+      // Through a lane: straight down past the layer's boxes.
+      if (i < xs.length - 1) {
+        y = y2 + NODE_H;
+        d += `L${xs[i]} ${y}`;
+      }
+    }
+    edgeLayer.append(edgePath(e.from, e.to, d));
+  }
+  for (const [id, p] of r.nodes) nodeLayer.append(box(id, left + p.x - NODE_W / 2, top(p.layer), NODE_W));
+  for (const [id, c] of r.chips) {
+    const reader = r.nodes.get(c.reader)!;
+    const y = top(reader.layer);
+    const cx = left + c.x;
+    nodeLayer.append(box(id, cx - CHIP_W / 2, y, CHIP_W, true));
+    // The chip's link to its reader, across the gap between them.
+    const x1 = c.side === 'left' ? cx + CHIP_W / 2 : cx - CHIP_W / 2;
+    const x2 = left + reader.x + (c.side === 'left' ? -NODE_W / 2 : NODE_W / 2);
+    edgeLayer.append(edgePath(id, c.reader, `M${x1} ${y + NODE_H / 2}L${x2} ${y + NODE_H / 2}`));
+  }
+  root.append(edgeLayer, nodeLayer);
+  return root;
+}
+
+/** The narrow-screen drawing: layers wrapped into lines that fit, chips as
+ * boxes above their reader. Edges may pass behind boxes here. */
+function drawWrapped(g: Graph, keep: Set<string>, width: number): SVGSVGElement {
   const perLine = Math.max(1, Math.floor((width - 2 * PAD + GAP_X) / (NODE_W + GAP_X)));
-  const placed = layout(graph, shown, perLine);
-  // Each line's top: lines of one layer close together, layers further apart.
+  const placed = layout(g, keep, perLine);
   const tops: number[] = [];
   let y = PAD;
   let prevLayer = -1;
@@ -195,63 +308,25 @@ function drawGraph(): void {
   const height = (placed.length ? y + NODE_H : 0) + PAD;
   const at = new Map<string, { x: number; y: number }>();
   for (const p of placed) {
-    // Each line is centred.
     const left = (width - (p.of * NODE_W + (p.of - 1) * GAP_X)) / 2;
     at.set(p.id, { x: left + p.pos * (NODE_W + GAP_X), y: tops[p.line] });
   }
-
   const root = svg('svg', { viewBox: `0 0 ${width} ${height}`, width, height, role: 'img', 'aria-labelledby': 'graph-title' });
   const edgeLayer = svg('g', { class: 'df-edges' });
-  const drawn = graph.edges.filter(([a, b]) => at.has(a) && at.has(b));
-  // Each edge leaves its node's bottom and enters the other's top at its own
-  // point, spread across the width in the order of the far ends, so edges
-  // don't bundle into one point.
-  const centre = (id: string) => at.get(id)!.x + NODE_W / 2;
-  const ports = new Map<string, number>();
-  const spread = (ends: Map<string, [string, string][]>, far: (e: [string, string]) => string, side: string) => {
-    for (const [id, list] of ends) {
-      list.sort((e, f) => centre(far(e)) - centre(far(f)));
-      list.forEach((e, k) => ports.set(`${side}${e[0]}>${e[1]}`, at.get(id)!.x + (NODE_W * (k + 1)) / (list.length + 1)));
-    }
-  };
-  const group = (key: (e: [string, string]) => string) => {
-    const m = new Map<string, [string, string][]>();
-    for (const e of drawn) (m.get(key(e)) ?? m.set(key(e), []).get(key(e))!).push(e);
-    return m;
-  };
-  spread(group((e) => e[0]), (e) => e[1], 'out');
-  spread(group((e) => e[1]), (e) => e[0], 'in');
-  for (const [a, b] of drawn) {
-    const p = at.get(a)!;
-    const q = at.get(b)!;
-    const x1 = ports.get(`out${a}>${b}`)!;
+  for (const [a, b] of g.edges) {
+    const p = at.get(a);
+    const q = at.get(b);
+    if (!p || !q) continue;
+    const x1 = p.x + NODE_W / 2;
     const y1 = p.y + NODE_H;
-    const x2 = ports.get(`in${a}>${b}`)!;
-    const y2 = q.y;
-    const bend = Math.max(14, (y2 - y1) / 2);
-    const path = svg('path', { class: 'df-edge', d: `M${x1} ${y1}C${x1} ${y1 + bend} ${x2} ${y2 - bend} ${x2} ${y2}` });
-    path.dataset.from = a;
-    path.dataset.to = b;
-    edgeLayer.append(path);
+    const x2 = q.x + NODE_W / 2;
+    const bend = Math.max(12, (q.y - y1) / 2);
+    edgeLayer.append(edgePath(a, b, `M${x1} ${y1}C${x1} ${y1 + bend} ${x2} ${q.y - bend} ${x2} ${q.y}`));
   }
   const nodeLayer = svg('g');
-  for (const p of placed) {
-    const n = graph.nodes.get(p.id)!;
-    const { x, y: top } = at.get(p.id)!;
-    const g = svg('g', { class: `df-node ${tone(n)}`, transform: `translate(${x} ${top})` });
-    g.dataset.node = n.id;
-    const title = svg('title');
-    title.textContent = `${full(n)}: ${(n.source ?? n.store ?? n.step ?? n.page)!.purpose}`;
-    const round = n.kind === 'step' ? NODE_H / 2 : n.kind === 'store' ? 3 : 7;
-    const text = svg('text', { x: 9, y: NODE_H / 2 });
-    text.textContent = clip(n.label);
-    g.append(title, svg('rect', { width: NODE_W, height: NODE_H, rx: round }), text);
-    nodeLayer.append(g);
-  }
+  for (const p of placed) nodeLayer.append(box(p.id, at.get(p.id)!.x, at.get(p.id)!.y, NODE_W));
   root.append(edgeLayer, nodeLayer);
-  box.replaceChildren(root);
-  fill($('#graph-note'), { shown: placed.length, total: graph.nodes.size });
-  highlight();
+  return root;
 }
 
 /** Lights up the selected node's lineage in the graph. */
