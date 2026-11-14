@@ -250,8 +250,12 @@ value_ratio(O, t) = O's share of Chromium addressed review comments
   covers all 487 weeks, 2017-W27 .. 2026-W44 (summaries/ 46 MB -> 95 MB).
   Addressed labels (`cosh classify`) cover 2022-W01 onward; 2022 .. 2023-W25
   took 153,672 threads, 51.6M Haiku tokens, $10.58 API-equivalent
-  (2026-11-11). 2017 .. 2021 (about 408k threads) started on 2026-11-13,
-  stopping at 99% of the Max limits and resuming after each reset.
+  (2026-11-11). 2017 .. 2021 were labelled on 2026-11-13: 408,010
+  threads in 4,116 calls, 119.4M Haiku tokens, 2 h 29 min at 8 calls at
+  once, $26.16 API-equivalent; the Max 5-hour window went from 1% to 53%
+  and the weekly one from 68% to 72%, so the 99% stop never fired. Every
+  week, 2017-W27 .. 2026-W44, is now classified (`classify --dry-run`: 0
+  pending); `summarize` hasn't been rerun on them yet.
 - Cloudflare Radar: daily data from 2023-07-01 to now, aggregated to weeks
   and months in `data/public/radar_browser_share.csv`. Browser names are
   verified against the real data (`radar-research.md`, "Findings").
