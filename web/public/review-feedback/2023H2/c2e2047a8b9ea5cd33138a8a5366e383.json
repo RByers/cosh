@@ -1,1 +1,1 @@
-{"dirs":["testing/buildbot/"],"files":[],"orgs":["google.com"],"cls":[[2127912,19696,8,0.239,0.174,[[0,233]],[],0,1467]],"counts":1}
+{"dirs":["testing/buildbot/","infra/config/generated/"],"files":[],"orgs":["google.com"],"cls":[[2127912,19696,8,0.223,0.162,[[0,0.818,220,7],[1,0.182,54,1]],[],0,1467]],"counts":1}

@@ -146,6 +146,15 @@ class ReviewFeedbackTest(unittest.TestCase):
         # Older half-years: counts per unit, and no thread order to match.
         self.assertEqual(R.shard([c], False)["cls"][0][6], [[3, 1]])
 
+    def test_shard_names_the_unit_of_a_moved_file(self):
+        # old/x.cc is b/x.cc today, so its thread is in unit b/ (second), which
+        # the page can't tell from the file: the thread says so.
+        c = dict(change_number=8, closed_at=86400 * 20000, lines=10, exp_td=1.0, exp_ad=0.5, org="google.com",
+                 prior=3, main="a/", units={"a/": [0.6, 2, 6], "b/": [0.4, 1, 4]},
+                 thr=[["r1", "old/x.cc", "2024-10-04", 1, "b/"], ["r2", "a/y.cc", "2024-10-04", 0, "a/"],
+                      ["r3", "gone/z.cc", "2024-10-05", 1, "a/"]])
+        self.assertEqual(R.shard([c], True)["cls"][0][6], [[0, 0, 1, 1], [1, 0, 0], [2, 1, 1]])
+
 
 if __name__ == "__main__":
     unittest.main()

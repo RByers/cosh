@@ -1,1 +1,1 @@
-{"dirs":["extensions/browser/api/","extensions/common/api/","chromeos/dbus/proto/"],"files":[],"orgs":["google.com"],"cls":[[1410006,17912,15,0.484,0.316,[[0,0.737,9,12],[1,0.158,9,2],[2,0.105,9,1]],[],0,12]],"counts":1}
+{"dirs":["extensions/browser/api/","tools/json_schema_compiler/test/","chromeos/ash/components/"],"files":[],"orgs":["google.com"],"cls":[[1410006,17912,15,0.557,0.377,[[0,0.737,9,12],[1,0.158,9,2],[2,0.105,9,1]],[],0,12]],"counts":1}

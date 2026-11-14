@@ -1,1 +1,1 @@
-{"dirs":["extensions/renderer/","chrome/common/extensions/","chrome/renderer/extensions/"],"files":[],"orgs":["google.com"],"cls":[[1728572,18148,37,1.64,1.27,[[0,0.4,0,15],[1,0.325,0,12],[2,0.275,0,10]],[[2,2],[4,4],[0,0]],0,6]],"counts":1}
+{"dirs":["extensions/renderer/api/","extensions/common/api/"],"files":[],"orgs":["google.com"],"cls":[[1728572,18148,37,1.64,1.27,[[0,0.675,0,25],[1,0.325,0,12]],[[2,2],[4,4]],0,6]],"counts":1}

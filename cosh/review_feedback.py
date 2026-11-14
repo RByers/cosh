@@ -253,11 +253,12 @@ def size10(lines):
 
 # ---------------------------------------------------------------- loading
 
-def early_commits(before=SINCE):
+def early_commits(before=SINCE, current=None):
     """Main's first-parent commits that landed before `before`, where
     the per-CL window starts (commit_id > 0 in commits.sqlite): [(author email, unix time landed,
     frozenset of 3-level directories)], reverts left out (`is_revert`: SVN-era
-    reverts may name no sha).
+    reverts may name no sha). With `current` (commits.current_paths),
+    directories are today's names.
     With them, earlier commits count from the start of main's history
     (2008), not from 2017."""
     cut = datetime.fromisoformat(before).replace(tzinfo=timezone.utc).timestamp()
@@ -271,7 +272,7 @@ def early_commits(before=SINCE):
                 out.append((cur[1], cur[2], frozenset(cur[3])))
             cur = (cid, email, at, set())
         if path is not None:
-            cur[3].add(C.dir_of(path, 3))
+            cur[3].add(C.dir_of(current.get(path, path) if current else path, 3))
     if cur:
         out.append((cur[1], cur[2], frozenset(cur[3])))
     return out
@@ -747,7 +748,12 @@ def main():
 
     cls, commits, ids, first, raw_email, by_cid = load(args)
     mech = C.left_out(git_db(), cls)       # mechanical and large-scale-change CLs
-    dirs3 = C.commit_dirs(git_db(), 3)
+    # Every path under its name at main's tip, so a directory's history
+    # follows it across renames (third_party/WebKit/Source is
+    # third_party/blink/renderer).
+    current = C.current_paths(git_db())
+    print(f"{len(current):,} paths named as they are today", file=sys.stderr, flush=True)
+    dirs3 = C.commit_dirs(git_db(), 3, current)
     top2 = {}
     for c in commits:
         d = dirs3.get(c["cid"])
@@ -767,7 +773,7 @@ def main():
                 xp_times[(c["pid"], x)].append(c["at"])
     # The per-CL window starts in 2017: earlier commits come from the rest of commits.sqlite.
     early = 0
-    for email, at, ds in early_commits():
+    for email, at, ds in early_commits(current=current):
         if is_bot_email(person(email)):
             continue
         pid = ids.find(email)
@@ -846,7 +852,7 @@ def main():
     print(f"{len(use):,} CLs in range {day_str(START)} .. {day_str(END - DAY)}", file=sys.stderr, flush=True)
 
     cl_dirs = defaultdict(dict)       # by CL, then directory
-    for (n, d), (files, lines) in sorted(F.cl_dirs(git_db(), by_cid, by_n, dels=False).items()):
+    for (n, d), (files, lines) in sorted(F.cl_dirs(git_db(), by_cid, by_n, dels=False, current=current).items()):
         cl_dirs[n][d] = (lines + files, lines)
     del by_cid
     orgs = OrgResolver()
@@ -878,9 +884,9 @@ def main():
                 w = monday(c["closed_at"])
                 need[w] += 1
                 have[w] += addressed is not None
-            dr = C.dir_of(path, 3) if path and not path.startswith("/") else None
+            dr = C.dir_of(current.get(path, path), 3) if path and not path.startswith("/") else None
             c["thr"].append([root, path, at, addressed, dr if dr in c["units"] else c["main"]])
-    del thr
+    del thr, current
     print(f"threads: {sum(c['threads'] for c in use):,}", file=sys.stderr, flush=True)
     # The addressed measure covers only the CLs with labels.
     ADDR_START = trim_start(addressed_start(need, have, START, END))
@@ -1105,6 +1111,14 @@ def comment_file(cls, text, scores):
     return dict(cls=out)
 
 
+def page_dir(path, order):
+    """The directory the page gives a thread on `path` from the file alone
+    (`dirOf` in web/src/feedback.ts): its 3-level directory if that is one
+    of the units in `order`, else the first unit's."""
+    dr = C.dir_of(path, 3) if path and not path.startswith("/") else None
+    return dr if any(dd == dr for dd, _ in order) else order[0][0]
+
+
 def shard(cs, threads):
     """One person's CLs of one half-year, oldest first: [change number, day
     landed, lines, expected threads by size and directory, expected addressed
@@ -1120,7 +1134,9 @@ def shard(cs, threads):
     With `threads` (half-years from THREADS_FROM), each reviewer thread:
     [file, days after landing, addressed], in `thread_order`. A thread's
     directory is its file's (3 levels) when that is one of the CL's units,
-    else the first unit's. Without `threads` the shard has `counts`: 1 and
+    else the first unit's, which the page works out from the file; when the
+    file has moved since (so its directory today differs), the thread adds
+    its unit's position: [file, days, addressed, unit]. Without `threads` the shard has `counts`: 1 and
     each CL has [threads, addressed] per unit, in the units' order, or []
     when it has no reviewer threads."""
     files, dirs, orgs = {}, {}, {}
@@ -1140,8 +1156,12 @@ def shard(cs, threads):
             units = [[idx(dirs, dd), w, prior, lines] for dd, (w, prior, lines) in order]
         thr = []
         if threads:
-            thr = [[idx(files, path), (day_of(at) - d0) if at else None, None if addr is None else int(bool(addr))]
-                   for _, path, at, addr, _ in thread_order(c)]
+            pos = {dd: i for i, (dd, _) in enumerate(order)}
+            for _, path, at, addr, dd in thread_order(c):
+                t = [idx(files, path), (day_of(at) - d0) if at else None, None if addr is None else int(bool(addr))]
+                if dd != page_dir(path, order):     # the file has moved since: its unit, by position
+                    t.append(pos[dd])
+                thr.append(t)
         elif c["thr"]:
             per = {dd: [0, 0] for dd, _ in order}
             for _, _, _, addr, dd in c["thr"]:

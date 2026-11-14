@@ -1,1 +1,1 @@
-{"dirs":["chrome/browser/chromeos/","chrome/browser/policy/","chrome/test/data/","components/policy/resources/"],"files":[],"orgs":["google.com"],"cls":[[1120177,17714,69,3.042,2.433,[[0,0.619,249,36],[1,0.19,80,11],[2,0.143,61,8],[3,0.048,15,2]],[],0,494]],"counts":1}
+{"dirs":["chrome/browser/ash/","chrome/browser/policy/","components/policy/test/","components/policy/resources/"],"files":[],"orgs":["google.com"],"cls":[[1120177,17714,69,3.053,2.442,[[0,0.619,228,36],[1,0.19,59,11],[2,0.143,44,8],[3,0.048,45,2]],[],0,494]],"counts":1}

@@ -1,1 +1,1 @@
-{"dirs":["chromeos/ash/services/","chrome/browser/ash/"],"files":[],"orgs":["google.com"],"cls":[[4050824,19321,113,3.337,2.58,[[0,0.883,0,102],[1,0.117,0,11]],[[8,6],[2,1]],0,1]],"counts":1}
+{"dirs":["chromeos/ash/services/","chromeos/ash/components/","chrome/browser/ash/"],"files":[],"orgs":["google.com"],"cls":[[4050824,19321,113,3.343,2.608,[[0,0.883,1,102],[1,0.075,0,7],[2,0.042,0,4]],[[8,6],[1,1],[1,0]],0,1]],"counts":1}

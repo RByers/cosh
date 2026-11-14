@@ -1,1 +1,1 @@
-{"dirs":["third_party/WebKit/Source/","chrome/browser/ui/"],"files":[],"orgs":["yandex-team.ru"],"cls":[[920991,17578,1,0.174,0.115,[[0,0]],[],0,0],[866507,17612,18,1.035,0.792,[[1,0]],[[5,5]],0,1]],"counts":1}
+{"dirs":["third_party/blink/renderer/","chrome/test/base/"],"files":[],"orgs":["yandex-team.ru"],"cls":[[920991,17578,1,0.169,0.112,[[0,0]],[],0,0],[866507,17612,18,0.977,0.683,[[1,0]],[[5,5]],0,1]],"counts":1}

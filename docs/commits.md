@@ -163,6 +163,7 @@ rerunning: about 1 h 50 min (1.5 h of `git log`, then 20 min of OWNERS diffs and
 | `commits` | 1,676,752 | sha, git author (lowercased) and name, authored and landed (committer) time, CL (`Reviewed-on:`), `Bot-Commit:` flag, `Reviewed-by:` approvers, the commit it reverts, reland flag, AI-marker flag, files and lines, LSC flag (`is_lsc`) |
 | `commit_files`, `paths` | 13,556,620 / 1,642,612 | each file of its first-parent diff, with lines added and deleted (`-1` binary) |
 | `owners_added` | 42,496 | each address on a line added to an OWNERS file (the first on the line) |
+| `renames`, `tip_paths` | 615,936 / 517,788 | each file git finds renamed in a commit (old and new path); the files at main's tip (below) |
 | `repetition` | 173,608 | 1 − distinct changed lines ÷ changed lines, for commits with a CL and 10 or more files (NULL over 50,000 lines) |
 
 `commit_id` is landing order: 1 is the first commit since 2017-01-01,
@@ -199,6 +200,49 @@ looked like an author whose CLs need little review. Refactors were checked
 too and stay in: they drew 55–70% of other CLs' comments at the same
 size, and keyword tagging would drop 23% of Opera's commits against 7.6%
 of Google's. The issue has the tables.
+
+**Renames** (2026-11-14): `--no-renames` records a moved file as a
+deletion and an addition, so a directory's history stops at a rename:
+`third_party/WebKit/Source` became `third_party/blink/renderer` on
+2018-04-07 ("The Great Blink mv for source files"), and
+`third_party/WebKit/LayoutTests` became `third_party/blink/web_tests` on
+2018-11-25. The `renames` table holds every file `git diff-tree -M`
+(`-l5000`) finds renamed, old and new path ids, for the commits that could
+hold one (by line counts, a file with nothing added and one with nothing
+deleted, or two binary or empty files: `RENAME_CANDIDATES`, 147k of 1.68M).
+`tip_paths` lists the files at main's tip, refreshed on every run.
+`meta.renames_through` is the newest commit looked at; the first run takes
+about 3 min and found 615,936 renamed files in 37,179 commits.
+
+`commits.current_paths(db)` gives each path its name at the tip:
+
+- a renamed path takes its last new name, following renames of renames;
+  a path that is at the tip keeps its name (a name in use again is
+  today's file);
+- a path that then isn't at the tip (deleted before or after a move) takes
+  its directory's new name, if that directory is gone from the tip and at
+  least 90% (`DIR_MOVE_SHARE`), and 5 or more, of its moves went to one
+  place, and those are at least half (`DIR_MOVE_COVER`) of the files ever
+  renamed anywhere under it (24 tests moved from `external/wpt/` to
+  `http/tests/` don't rename `wpt`), with the directories' common tail left off
+  (`old/src/core/a.cc` → `new/renderer/core/a.cc` votes `old/src` →
+  `new/renderer`). The deepest such directory decides, looking no higher
+  than the deepest directory still at the tip; a gone directory whose
+  files went to several places (`LayoutTests/platform/linux/`, whose
+  baselines were shuffled between platforms before the big move) defers to
+  its parent. A move into a directory's own subdirectory (391 files from
+  `LayoutTests/external/wpt/` into `wpt/css/`) is a reorganisation and
+  doesn't vote. A new name that later moved again is followed on. So a
+  file deleted from
+  `third_party/WebKit/Source/core/dom/` in 2017 counts in
+  `third_party/blink/renderer/core/dom/`.
+
+Paths git didn't see renamed (moved with heavy edits in the same commit,
+or copied and later deleted) keep their names. On 2026-11-14 it renames
+672,995 of 1.64M paths, 13.9% of the lines added since 2017 change
+their 3-level directory, and 99.9% of the lines under `third_party/WebKit/`
+since 2017 count under `third_party/blink/`. `commit_dirs` and `cl_facts.cl_dirs` take it
+as `current`; the Feedback Index uses it, the balance scripts don't (yet).
 
 `commits.lsc_cls(db)` gives the tagged CLs and `commits.left_out(db, cls)`
 the mechanical ones plus those. They are left out of:

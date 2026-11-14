@@ -1,1 +1,1 @@
-{"dirs":["third_party/blink/renderer/","third_party/blink/public/","tools/metrics/histograms/"],"files":[],"orgs":["igalia.com"],"cls":[[6021661,20045,26,0.722,0.518,[[0,0.867,171,24],[1,0.067,3,1],[2,0.067,7,1]],[],0,377],[6035050,20046,10,0.533,0.369,[[0,172]],[],0,378]],"counts":1}
+{"dirs":["third_party/blink/renderer/","third_party/blink/public/","tools/metrics/histograms/"],"files":[],"orgs":["igalia.com"],"cls":[[6021661,20045,26,0.723,0.518,[[0,0.867,296,24],[1,0.067,7,1],[2,0.067,7,1]],[],0,377],[6035050,20046,10,0.537,0.373,[[0,297]],[],0,378]],"counts":1}

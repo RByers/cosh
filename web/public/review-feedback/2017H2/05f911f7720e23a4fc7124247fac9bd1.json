@@ -1,1 +1,1 @@
-{"dirs":["third_party/WebKit/LayoutTests/","third_party/WebKit/Source/"],"files":[],"orgs":["samsung.com"],"cls":[[683006,17438,29,0.939,0.709,[[0,0.839,2,25],[1,0.161,2,4]],[],0,28]],"counts":1}
+{"dirs":["third_party/blink/web_tests/","third_party/blink/renderer/"],"files":[],"orgs":["samsung.com"],"cls":[[683006,17438,29,0.723,0.518,[[0,0.839,2,25],[1,0.161,5,4]],[],0,28]],"counts":1}

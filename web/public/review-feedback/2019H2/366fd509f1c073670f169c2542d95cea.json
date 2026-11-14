@@ -1,1 +1,1 @@
-{"dirs":["chrome/browser/ssl/","components/url_formatter/spoof_checks/"],"files":[],"orgs":["google.com"],"cls":[[1677001,18088,136,5.576,4.507,[[0,1.0,0,138]],[[19,19]],0,0],[1740614,18120,18,0.939,0.709,[[1,0]],[[3,2]],0,1]],"counts":1}
+{"dirs":["components/security_interstitials/content/","chrome/browser/ssl/","components/url_formatter/spoof_checks/"],"files":[],"orgs":["google.com"],"cls":[[1677001,18088,136,5.298,4.261,[[0,0.615,0,86],[1,0.385,0,52]],[[16,16],[3,3]],0,0],[1740614,18120,18,0.939,0.709,[[2,0]],[[3,2]],0,1]],"counts":1}

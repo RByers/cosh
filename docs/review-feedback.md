@@ -38,6 +38,17 @@ Both are fixed: the page has no switches for them (the user's call,
   >2k (`BIN_EDGES` on earlier commits, `xbin`, `BIN_LABELS`; the names
   changed from "<8, 8–15, …" on 2026-11-14, the bins didn't). The page's
   axis says "experience (CLs landed on main)".
+- **Directories** are named as they are at main's tip
+  (`commits.current_paths`, `docs/commits.md`), for CLs' lines, comment
+  threads and earlier commits alike: a CL of 2017 in
+  `third_party/WebKit/Source/core/` counts in
+  `third_party/blink/renderer/core/`, so a directory's AFR, its peers'
+  rate and a person's experience there follow it across renames. A file
+  that moved to another directory counts where it is now; one deleted
+  before its directory moved takes the directory's new name. In the
+  per-thread files, a thread on a file that has moved since names its unit
+  (`[file, days, addressed, unit]`), since the page can't tell it from
+  the file.
 - **Feedback index (FI):** a person's AFR over their peers'. Per directory
   a CL wrote lines in, the addressed threads its peers would have drawn are
   those lines / 100 × the peers' rate there, and FI = addressed threads /
@@ -128,7 +139,7 @@ directories by lines. A directory (1, 2 or 3 levels) gets a row with
 pooled into an "Other (n)" row per level, and a directory with
 subdirectories has a "rest of" row for its own files. Each level shows its
 12 largest directories and an "n more" row for the rest; ▸ opens a row. On
-2026-11-14 the table has 2,953 entries. Once a person is shown, five
+2026-11-14 the table has 2,938 entries. Once a person is shown, five
 **Yours** columns appear (lines, feedback, addressed, AFR, FI under the
 norm picked in their section) and each level sorts by their lines: each of
 their units goes to its directory and parents, and to "rest of" or that

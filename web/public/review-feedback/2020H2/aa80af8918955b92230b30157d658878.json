@@ -1,1 +1,1 @@
-{"dirs":["chrome/browser/extensions/","extensions/browser/api/"],"files":[],"orgs":["google.com"],"cls":[[2321541,18479,34,1.77,1.388,[[0,0.766,0,26],[1,0.234,0,8]],[[2,2],[1,1]],0,0]],"counts":1}
+{"dirs":["chrome/browser/extensions/","extensions/browser/api/","extensions/browser/permissions/"],"files":[],"orgs":["google.com"],"cls":[[2321541,18479,34,1.771,1.386,[[0,0.66,0,22],[1,0.234,0,8],[2,0.106,0,4]],[[2,2],[1,1],[0,0]],0,0]],"counts":1}

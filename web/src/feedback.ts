@@ -34,11 +34,12 @@ export type ClRow = [number, number, number, Unit[], Thread[], number, number];
  * index, earlier commits on main]. A unit is [directory, share, earlier
  * commits there, lines], or [directory, earlier commits there] for a change
  * wholly in one directory. Threads are [file, days after landing,
- * addressed], their directory told by the file; in a file with `counts`,
+ * addressed], their directory told by the file, or [file, days, addressed,
+ * unit] for a file that has moved since; in a file with `counts`,
  * [threads, addressed] per unit instead. */
 export type FileRow = [number, number, number, number, number, FileUnit[], FileThread[] | [number, number][], number, number];
 type FileUnit = [number, number] | [number, number, number, number];
-type FileThread = [number, number | null, 0 | 1 | null];
+type FileThread = [number, number | null, 0 | 1 | null] | [number, number | null, 0 | 1 | null, number];
 
 /** u/<key>.json: who the person is and which half-year files they have. */
 export interface Top {
@@ -863,7 +864,8 @@ export function buildPerson(top: Top, shards: Shard[], peers: Pick<Peers, 'addr_
         const texts = listed.length === fileThreads.length ? listed : [];
         (fileThreads as FileThread[]).forEach((t, ti) => {
           const path = s.files[t[0]];
-          const own = path && !path.startsWith('/') ? unitDirs.get(dirOf(path)) : undefined;
+          const own = t.length > 3 ? units[t[3]!][0]
+            : path && !path.startsWith('/') ? unitDirs.get(dirOf(path)) : undefined;
           const c = texts[ti];
           const r: Thread = [c ? c[0] : '', f[t[0]], t[1], t[2], own ?? units[0][0]];
           if (c) {

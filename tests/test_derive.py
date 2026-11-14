@@ -740,6 +740,64 @@ class CommitsStoreTest(unittest.TestCase):
             self.assertEqual(commits.left_out(db, []), {11, 12, 13})
             db.close()
 
+    def test_renames_and_current_paths(self):
+        """renames and tip_paths, and current_paths: a renamed file takes its
+        new name, a file deleted before its directory moved takes the
+        directory's new name, and a directory still at the tip keeps its own."""
+        import subprocess
+        from cosh import commits
+        with tempfile.TemporaryDirectory() as d:
+            repo = os.path.join(d, "repo")
+            os.makedirs(repo)
+            env = dict(os.environ, GIT_CONFIG_GLOBAL=os.devnull, GIT_CONFIG_NOSYSTEM="1",
+                       GIT_AUTHOR_NAME="A", GIT_AUTHOR_EMAIL="a@chromium.org", GIT_COMMITTER_NAME="CQ",
+                       GIT_COMMITTER_EMAIL="cq@luci")
+
+            def git(*args, date="2018-01-01T00:00:00Z"):
+                subprocess.run(["git", "-C", repo, *args], check=True, capture_output=True,
+                               env=dict(env, GIT_AUTHOR_DATE=date, GIT_COMMITTER_DATE=date))
+
+            def write(path, text):
+                os.makedirs(os.path.dirname(os.path.join(repo, path)), exist_ok=True)
+                with open(os.path.join(repo, path), "w") as fh:
+                    fh.write(text)
+            git("init", "-q", "-b", "main")
+            moved = "abcdef"
+            for x in moved:
+                write(f"old/web/src/core/{x}.cc", "".join(f"{x} line {i}\n" for i in range(20)))
+            write("old/web/src/gone.cc", "gone\n")
+            write("keep/x.cc", "x\n" * 3 + "keep x\n")
+            write("keep/y.cc", "keep y\n")
+            git("add", "-A")
+            git("commit", "-qm", "Add")
+            git("rm", "-q", "old/web/src/gone.cc")
+            git("commit", "-qm", "Delete", date="2018-02-01T00:00:00Z")
+            os.makedirs(os.path.join(repo, "new/blink"))
+            git("mv", "old/web/src", "new/blink/renderer")
+            os.makedirs(os.path.join(repo, "other"))
+            git("mv", "keep/x.cc", "other/x.cc")
+            git("commit", "-qm", "The great mv", date="2018-03-01T00:00:00Z")
+            path = os.path.join(d, "commits.sqlite")
+            commits.update(path, repo, jobs=1)
+            db = sqlite3.connect(path)
+            self.assertEqual(db.execute("SELECT count(*) FROM renames WHERE commit_id = 3").fetchone(), (7,))
+            cur = commits.current_paths(db)
+            self.assertEqual(cur["old/web/src/core/a.cc"], "new/blink/renderer/core/a.cc")
+            self.assertEqual(cur["old/web/src/gone.cc"], "new/blink/renderer/gone.cc")
+            self.assertEqual(cur["keep/x.cc"], "other/x.cc")
+            self.assertNotIn("keep/y.cc", cur)
+            self.assertNotIn("new/blink/renderer/core/a.cc", cur)
+            self.assertEqual(commits.commit_dirs(db, 3)[1][1], {"old/web/src/", "keep/"})
+            self.assertEqual(commits.commit_dirs(db, 3, cur)[1][1], {"new/blink/renderer/", "keep/", "other/"})
+            # An incremental run looks only at the new commits, and refreshes the tip.
+            write("new/blink/renderer/core/a.cc", "changed\n")
+            git("commit", "-qam", "Edit", date="2018-04-01T00:00:00Z")
+            commits.update(path, repo, jobs=1)
+            self.assertEqual(db.execute("SELECT count(*) FROM renames").fetchone(), (7,))
+            self.assertEqual(db.execute("SELECT v FROM meta WHERE k = 'renames_through'").fetchone(), ("4",))
+            self.assertEqual(db.execute("SELECT count(*) FROM tip_paths").fetchone(), (8,))
+            db.close()
+
 
 class CommitsTest(unittest.TestCase):
     """The commits metric in summarize, from commits.sqlite."""

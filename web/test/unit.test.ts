@@ -1492,6 +1492,19 @@ test('review feedback: older half-years keep thread counts per directory, and th
   assert.deepEqual(['a.cc', 'ui/a.cc', 'a/b/c/d/e.cc'].map(F.dirOf), ['(root)/', 'ui/', 'a/b/c/']);
 });
 
+test('review feedback: a thread on a file that has moved since names its unit', async () => {
+  const F = await import('../src/feedback.ts');
+  const { top, peers, day } = await import('./feedback-fixture.ts');
+  // third_party/WebKit/Source/core/x.cc is in third_party/blink/renderer/ today (unit 1); the
+  // other threads' units follow from their files, or the first unit's.
+  const sh: Shard = { dirs: ['ui/', 'third_party/blink/renderer/'], orgs: ['google.com'],
+    files: ['third_party/WebKit/Source/core/x.cc', 'ui/a.cc', 'gone/b.cc'], cls: [
+      [900003, day('2025-08-01'), 40, 2.5, 1.4, [[0, 0.6, 3, 30], [1, 0.4, 0, 10]],
+        [[0, 0, 1, 1], [1, 0, 0], [2, 1, 1]], 0, 12]] };
+  const p = F.buildPerson({ ...top, halves: ['2025H2'] }, [sh], peers);
+  assert.deepEqual(p.cls[0][4].map((t) => p.dirs[t[4]]), ['third_party/blink/renderer/', 'ui/', 'ui/']);
+});
+
 test('review feedback: the AFR and index, as the script computes them', async () => {
   const F = await import('../src/feedback.ts');
   const { top, shards, peers, day } = await import('./feedback-fixture.ts');

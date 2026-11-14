@@ -1,1 +1,1 @@
-{"dirs":["chrome/browser/extensions/","components/safe_browsing/core/"],"files":[],"orgs":["microsoft.com"],"cls":[[3577940,19138,59,1.77,1.388,[[0,0.846,0,51],[1,0.154,0,8]],[[11,11],[1,1]],0,0]],"counts":1}
+{"dirs":["extensions/browser/","chrome/browser/extensions/","components/safe_browsing/core/"],"files":[],"orgs":["microsoft.com"],"cls":[[3577940,19138,59,1.771,1.386,[[0,0.431,0,26],[1,0.415,0,25],[2,0.154,0,8]],[[6,6],[5,5],[1,1]],0,0]],"counts":1}

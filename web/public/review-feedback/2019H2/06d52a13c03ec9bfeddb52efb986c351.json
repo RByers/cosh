@@ -1,1 +1,1 @@
-{"dirs":["chrome/browser/ui/","components/arc/intent_helper/","components/arc/common/","components/arc/"],"files":[],"orgs":["google.com"],"cls":[[1631128,18079,115,3.042,2.433,[[0,0.592,1,69],[1,0.336,0,39],[2,0.056,0,6],[3,0.016,0,1]],[[11,8],[5,5],[1,1],[0,0]],0,1]],"counts":1}
+{"dirs":["chrome/browser/ui/","chromeos/ash/experiences/","components/arc/intent_helper/","components/arc/"],"files":[],"orgs":["google.com"],"cls":[[1631128,18079,115,3.053,2.442,[[0,0.592,0,69],[1,0.2,0,22],[2,0.192,0,23],[3,0.016,0,1]],[[11,8],[3,3],[3,3],[0,0]],0,1]],"counts":1}

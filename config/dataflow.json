@@ -766,7 +766,7 @@
       "rebuildable": true,
       "size": "1.1 GB",
       "size_as_of": "2026-11-12",
-      "purpose": "Every first-parent commit of main since 2008 with its files and line counts, LSC tags, OWNERS additions and repetition ratios: the one store of git history that every step reads.",
+      "purpose": "Every first-parent commit of main since 2008 with its files and line counts, LSC tags, OWNERS additions, repetition ratios and renamed files: the one store of git history that every step reads.",
       "tables": [
         {
           "name": "commits",
@@ -830,6 +830,24 @@
           "columns": {
             "commit_id": "Foreign key to commits.commit_id.",
             "ratio": "1 minus distinct changed lines over changed lines; near 1 means the same edit repeated. Empty if too large."
+          }
+        },
+        {
+          "name": "renames",
+          "rows": 615936,
+          "purpose": "Files git finds renamed (-M) in a commit's first-parent diff, so directories can be followed across renames (commits.current_paths, the Feedback Index).",
+          "columns": {
+            "commit_id": "Foreign key to commits.commit_id (the commit that renamed the file).",
+            "old_path_id": "Foreign key to paths.path_id: the name before.",
+            "new_path_id": "Foreign key to paths.path_id: the name after."
+          }
+        },
+        {
+          "name": "tip_paths",
+          "rows": 517788,
+          "purpose": "The files at main's tip as of the last run, which tells current_paths whether a name is still in use.",
+          "columns": {
+            "path_id": "Foreign key to paths.path_id."
           }
         }
       ],
@@ -1592,7 +1610,7 @@
         "cosh/bots.py",
         "cosh/paths.py"
       ],
-      "purpose": "Appends main's new commits, with their files, line counts, LSC tags, OWNERS additions and repetition ratios, to the commits store.",
+      "purpose": "Appends main's new commits, with their files, line counts, LSC tags, OWNERS additions, repetition ratios and renamed files, to the commits store, and records the files at the tip.",
       "inputs": [
         "shared/chromium",
         "config/bots.txt"
@@ -1603,7 +1621,7 @@
       "network": false,
       "lock": "data/private/commits.sqlite.lock",
       "incremental": "Appends the commits landed since its last run; seconds when nothing is new.",
-      "duration": "about 1 h 50 min from empty (1.5 h of git log, then 20 min of OWNERS diffs and repetition ratios with 4 processes); seconds when nothing is new",
+      "duration": "about 1 h 55 min from empty (1.5 h of git log, then 20 min of OWNERS diffs and repetition ratios with 4 processes, 3 min of rename detection); seconds when nothing is new",
       "token_cost": null,
       "cost_source": "Build of 2026-11-12 (docs/commits.md)",
       "refresh": "routine",

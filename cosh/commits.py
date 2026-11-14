@@ -14,6 +14,9 @@ Tables (SCHEMA below has the columns):
                 diff's per-file line counts in commit_files (paths in paths)
   owners_added  each email address added to an OWNERS file
   repetition    the repetition ratio of commits with a CL and 10+ files
+  renames       files git finds renamed in a commit, and tip_paths the
+                files at main's tip: current_paths names each path as it
+                is today, so directories can be followed across renames
 
 commit_id is landing order: 1 is the first commit landed since 2017-01-01
 (HISTORY_SINCE), counting up to the newest, and the older history counts
@@ -97,6 +100,16 @@ CREATE TABLE IF NOT EXISTS owners_added (
 -- 1 - distinct changed lines / changed lines of the commit's diff (near 1:
 -- the same edit in many places). ratio NULL: over MAX_LINES lines.
 CREATE TABLE IF NOT EXISTS repetition (commit_id INTEGER PRIMARY KEY, ratio REAL) STRICT;
+-- Files git finds renamed (-M) in a commit's first-parent diff: what
+-- current_paths follows to give each path its name at main's tip.
+CREATE TABLE IF NOT EXISTS renames (
+  commit_id   INTEGER NOT NULL,
+  old_path_id INTEGER NOT NULL,
+  new_path_id INTEGER NOT NULL,
+  PRIMARY KEY (commit_id, old_path_id)
+) STRICT, WITHOUT ROWID;
+-- The files at main's tip as of the last run (path ids of commit_files' paths).
+CREATE TABLE IF NOT EXISTS tip_paths (path_id INTEGER PRIMARY KEY) STRICT;
 -- Compatibility views of balance-git.sqlite, retired 2026-11-14: readers say commit_id > 0.
 DROP VIEW IF EXISTS gcommits;
 DROP VIEW IF EXISTS gfiles;
@@ -320,6 +333,82 @@ def _owner_rows(db, lines):
     return rows
 
 
+# Rename detection (`git diff-tree -M`) looks only at commits that could
+# hold a rename: by --no-renames line counts, a deleted-looking file
+# (0 added) and an added-looking one (0 deleted), or two binary or two empty
+# files. 147k of 1.68M commits, about 12 min. Inexact renames are looked for
+# among at most RENAME_LIMIT files a side (git's -l).
+RENAME_CANDIDATES = """SELECT f.commit_id, c.sha FROM commit_files f JOIN commits c USING (commit_id)
+  WHERE f.commit_id > ? GROUP BY f.commit_id
+  HAVING (sum(f.ins = 0 AND f.dels > 0) > 0 AND sum(f.dels = 0 AND f.ins > 0) > 0)
+      OR sum(f.ins = -1) >= 2 OR sum(f.ins = 0 AND f.dels = 0) >= 2
+  ORDER BY f.commit_id"""
+RENAME_LIMIT = 5000
+
+
+def _renames(db, repo):
+    """Appends renames for the commits after the last run's (all of history on
+    the first run), from one `git diff-tree --stdin -M` process."""
+    import threading
+    done = db.execute("SELECT v FROM meta WHERE k = 'renames_through'").fetchone()
+    lo = int(done[0]) if done else -(1 << 62)
+    todo = db.execute(RENAME_CANDIDATES, (lo,)).fetchall()
+    top = db.execute("SELECT max(commit_id) FROM commits").fetchone()[0]
+    ids = {sha: cid for cid, sha in todo}
+    if not ids:
+        if top is not None:
+            with db:
+                db.execute("INSERT OR REPLACE INTO meta VALUES ('renames_through', ?)", (str(top),))
+        return 0
+    pid = dict(db.execute("SELECT path, path_id FROM paths"))
+    p = subprocess.Popen(["git", "--git-dir", repo, "diff-tree", "--stdin", "-r", "-M", f"-l{RENAME_LIMIT}",
+                          "--diff-filter=R", "--name-status"],
+                         stdin=subprocess.PIPE, stdout=subprocess.PIPE, env=ENV)
+    w = threading.Thread(target=lambda: (p.stdin.write("".join(s + "\n" for s in ids).encode()), p.stdin.close()))
+    w.start()
+    rows, cid, n = [], None, 0
+    with p:
+        for line in p.stdout:
+            line = line.decode("utf-8", "replace").rstrip("\n")
+            if line in ids:
+                cid = ids[line]
+                continue
+            f = line.split("\t")
+            if cid is None or len(f) != 3 or not f[0].startswith("R"):
+                continue
+            a, b = pid.get(f[1]), pid.get(f[2])     # numstat quotes paths as name-status does
+            if a is not None and b is not None:
+                rows.append((cid, a, b))
+            if len(rows) >= 50_000:
+                n += len(rows)
+                with db:
+                    db.executemany("INSERT OR IGNORE INTO renames VALUES (?,?,?)", rows)
+                rows = []
+    rc = p.wait()
+    w.join()
+    if rc:
+        raise SystemExit(f"git diff-tree exited {rc}; rerun to resume")
+    n += len(rows)
+    with db:
+        db.executemany("INSERT OR IGNORE INTO renames VALUES (?,?,?)", rows)
+        if top is not None:
+            db.execute("INSERT OR REPLACE INTO meta VALUES ('renames_through', ?)", (str(top),))
+    return n
+
+
+def _tip_paths(db, repo, tip):
+    """Replaces tip_paths with the files at `tip` (`git ls-tree`), those
+    commit_files has a path for."""
+    p = subprocess.run(["git", "--git-dir", repo, "ls-tree", "-r", "--name-only", tip],
+                       env=ENV, capture_output=True, check=True)
+    pid = dict(db.execute("SELECT path, path_id FROM paths"))
+    have = [(pid[x],) for x in p.stdout.decode("utf-8", "replace").splitlines() if x in pid]
+    with db:
+        db.execute("DELETE FROM tip_paths")
+        db.executemany("INSERT INTO tip_paths VALUES (?)", have)
+    return len(have)
+
+
 MAX_LINES = 50_000   # a patch set's diff bigger than this is not compared
 
 
@@ -446,6 +535,10 @@ def update(path=None, repo=None, jobs=4):
         print(f"commits: {k:,} OWNERS additions", file=sys.stderr, flush=True)
         k = _repetition(db, repo, jobs)
         print(f"commits: {k:,} repetition ratios", file=sys.stderr, flush=True)
+        k = _renames(db, repo)
+        print(f"commits: {k:,} renamed files", file=sys.stderr, flush=True)
+        k = _tip_paths(db, repo, tip)
+        print(f"commits: {k:,} files at the tip", file=sys.stderr, flush=True)
         with db:
             db.execute("INSERT OR REPLACE INTO meta VALUES ('updated_at', ?)", (store.now_iso(),))
             db.execute("INSERT OR REPLACE INTO meta VALUES ('tip', ?)", (tip,))
@@ -621,9 +714,99 @@ def dir_of(path, depth):
     return "/".join(parts[:depth]) + "/" if parts else "(root)/"
 
 
-def commit_dirs(db, depth=3):
-    """{commit_id: (top dir by lines, frozenset of dirs)} of the commits since 2017 (commit_id > 0)."""
+# A directory that's gone from main's tip takes the name most of its renamed
+# files moved to (current_paths) if this share of its moves went there, at
+# least this many files, and they're at least DIR_MOVE_COVER of the files
+# ever renamed anywhere under it (so a few files leaving a big directory
+# don't rename it).
+DIR_MOVE_SHARE, DIR_MOVE_MIN, DIR_MOVE_COVER = 0.9, 5, 0.5
+
+
+def current_paths(db):
+    """{path: its name at main's tip}, for the paths that have another one.
+
+    A path renamed (the renames table) takes its last new name, following
+    renames of renames. A path that's then not at the tip (deleted before or
+    after a move) takes its directory's new name if the directory is gone
+    from the tip and DIR_MOVE_SHARE of its renamed files went to one place:
+    the deepest such directory below the deepest one still at the tip (a
+    gone directory whose files went to several places defers to its
+    parent). So third_party/WebKit/Source/core/dom/X.cpp, deleted
+    in 2017, is third_party/blink/renderer/core/dom/X.cpp. A move into a
+    directory's own subdirectory (wpt/x.html to wpt/css/x.html) is a
+    reorganisation, not a new name for the directory, and doesn't count.
+    Paths that git
+    didn't see renamed (moved with heavy edits, or copied and later deleted)
+    keep their names. Empty if the store has no renames yet."""
+    rows = db.execute("SELECT r.commit_id, o.path, n.path FROM renames r JOIN paths o ON o.path_id = r.old_path_id "
+                      "JOIN paths n ON n.path_id = r.new_path_id ORDER BY r.commit_id DESC").fetchall()
+    if not rows:
+        return {}
+    final = {}
+    for _, a, b in rows:                 # newest first: b's later names are known
+        final[a] = final.get(b, b)
+    tip = {p for p, in db.execute("SELECT p.path FROM tip_paths t JOIN paths p USING (path_id)")}
+    live = set()                         # every directory at the tip, as a tuple of names
+    for p in tip:
+        parts = tuple(p.split("/")[:-1])
+        for i in range(1, len(parts) + 1):
+            live.add(parts[:i])
+    # Directory moves: each rename, with the directories' common tail left off.
+    votes, under = {}, Counter()
+    for a in {a for _, a, _ in rows}:
+        parts = a.split("/")[:-1]
+        for i in range(1, len(parts) + 1):
+            under[tuple(parts[:i])] += 1
+    for _, a, b in rows:
+        x, y = a.split("/")[:-1], b.split("/")[:-1]
+        while x and y and x[-1] == y[-1]:
+            x.pop()
+            y.pop()
+        if x and y[:len(x)] != x:        # not a move into its own subdirectory (a reorganisation)
+            c = votes.setdefault(tuple(x), Counter())
+            c[tuple(y)] += 1
+    moved = {}
+    for d, c in votes.items():
+        to, k = c.most_common(1)[0]
+        tot = sum(c.values())
+        if d not in live and k >= DIR_MOVE_MIN and k >= DIR_MOVE_SHARE * tot and k >= DIR_MOVE_COVER * under[d]:
+            moved[d] = to
+
+    def by_dir(p):
+        parts = p.split("/")
+        for i in range(len(parts) - 1, 0, -1):
+            d = tuple(parts[:i])
+            if d in live:
+                return p
+            to = moved.get(d)
+            if to is not None:
+                return "/".join((*to, *parts[i:]))
+        return p
+    out = {}
+    for (p,) in db.execute("SELECT path FROM paths"):
+        q = p if p in tip else final.get(p, p)    # a name in use again is today's file
+        seen = {q}
+        for _ in range(4):                  # a directory's new name may itself have moved later
+            if q in tip:
+                break
+            r = by_dir(q)
+            r = final.get(r, r)
+            if r in seen:                   # unchanged, or back and forth
+                break
+            seen.add(r)
+            q = r
+        if q != p:
+            out[p] = q
+    return out
+
+
+def commit_dirs(db, depth=3, current=None):
+    """{commit_id: (top dir by lines, frozenset of dirs)} of the commits since
+    2017 (commit_id > 0). With `current` (current_paths), each file counts
+    in the directory it's in today."""
     paths = dict(db.execute("SELECT path_id, path FROM paths"))
+    if current:
+        paths = {k: current.get(v, v) for k, v in paths.items()}
     cache, out, cur, acc = {}, {}, None, None
 
     def done():

@@ -1,1 +1,1 @@
-{"dirs":["chrome/browser/chromeos/","chrome/common/extensions/","chrome/test/data/"],"files":[],"orgs":["google.com"],"cls":[[3836699,19226,20,1.035,0.792,[[0,0.565,0,12],[1,0.304,0,6],[2,0.13,0,2]],[[1,0],[2,2],[0,0]],0,1]],"counts":1}
+{"dirs":["chrome/browser/ash/","tools/json_schema_compiler/test/","chrome/test/data/"],"files":[],"orgs":["google.com"],"cls":[[3836699,19226,20,1.03,0.787,[[0,0.565,1,12],[1,0.304,0,6],[2,0.13,0,2]],[[1,0],[2,2],[0,0]],0,1]],"counts":1}
