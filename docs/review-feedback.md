@@ -18,6 +18,8 @@ a learning guide, and the page says so at the top: "This analysis is imperfect
 and is intended as a learning guide only". The landing page links to it
 (since 2026-11-12), and it carries `noindex`.
 
+
+Correcting for the reviewer (analysis, not built): `docs/review-feedback-reviewers.md`.
 ## Definitions
 
 Both are fixed: the page has no switches for them (the user's call,
