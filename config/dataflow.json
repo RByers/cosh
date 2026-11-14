@@ -28,10 +28,10 @@
       "id": "chromium-affiliations",
       "name": "Affiliations file",
       "kind": "file",
-      "url": "https://chromium.googlesource.com/chromium/src/+/main/third_party/blink/tools/commit_stats/affiliations.json5",
-      "purpose": "Dated e-mail-to-employer overrides used to attribute each person to an organisation.",
+      "url": "https://chromium.googlesource.com/chromium/src/+/main/third_party/blink/tools/commit_stats/",
+      "purpose": "affiliations.json5 (dated e-mail-to-employer overrides used to attribute each person to an organisation) and org-list.txt beside it.",
       "access": "Anonymous GET with the contact headers.",
-      "load_rules": "One small request per process that builds an OrgResolver; no approval needed. COSH_AFFILIATIONS_OFFLINE=1 skips it.",
+      "load_rules": "Two small requests per `cosh update-affiliations` run (the one step that fetches them); no approval needed.",
       "coverage": "The current file on main."
     },
     {
@@ -205,7 +205,7 @@
           "purpose": "Each classify run's weeks, threads, calls, tokens and cost."
         }
       ],
-      "notes": "Covers 2022-W01 .. 2026-W44; the user doesn't want labels for 2017 .. 2021."
+      "notes": "Covers every week, 2017-W27 .. 2026-W44 (2017 .. 2021 labelled 2026-11-13)."
     },
     {
       "id": "config/approved.json",
@@ -227,13 +227,14 @@
       "tracked_in_git": true,
       "git_paths": [
         "config/affiliations.json5",
+        "config/org-list.txt",
         "config/affiliations.source.txt"
       ],
       "rebuildable": true,
       "size": "20 KB",
       "size_as_of": "2026-11-12",
-      "purpose": "Verbatim copy of Chromium's affiliations file, with a note of where and when it was fetched.",
-      "notes": "Written by the affiliations step, which every command that attributes orgs runs by itself (COSH_AFFILIATIONS_OFFLINE=1 skips it). Commit it with the outputs when it changes."
+      "purpose": "Verbatim copies of Chromium's affiliations.json5 and org-list.txt, with a note of where and when they were fetched.",
+      "notes": "Written only by the affiliations step; OrgResolver() reads the local copy and never fetches. Commit them with the outputs when they change."
     },
     {
       "id": "config/bots.txt",
@@ -949,7 +950,7 @@
       "code": [
         "cosh/orgs.py"
       ],
-      "purpose": "Copies Chromium's affiliations file into config/ when it has changed.",
+      "purpose": "Copies Chromium's affiliations.json5 and org-list.txt into config/ when they have changed.",
       "inputs": [
         "chromium-affiliations"
       ],
@@ -963,7 +964,7 @@
       "token_cost": null,
       "cost_source": "cosh/orgs.py",
       "refresh": "routine",
-      "notes": "Every command that attributes orgs (summarize, comments-collect, review-feedback, balance-publish) also runs it by itself first; COSH_AFFILIATIONS_OFFLINE=1 stops that.",
+      "notes": "The one step that fetches them: the commands that attribute orgs (summarize, comments-collect, review-feedback, balance-publish) read the local copy, so `cosh update` runs this first.",
       "run": "python3 -m cosh update-affiliations"
     },
     {
@@ -1011,7 +1012,7 @@
       "lock": "data/private/classify.lock",
       "incremental": "Only threads with no label for the current classifier and input hash; saved per batch, so it resumes.",
       "duration": "about 11 min per week; 41 min per year at 8 calls at once",
-      "token_cost": "about 0.95M Haiku tokens per week ($0.22); 25.6M per year ($6)",
+      "token_cost": "about 0.95M Haiku tokens per week ($0.22); 25.6M per year ($6); about 290 per thread (2017 .. 2021: 408k threads, 119M tokens, 2.5 h, $26)",
       "cost_source": "docs/comment-classifier.md; docs/plan.md",
       "refresh": "optional",
       "approval": "Costs Max usage: check --dry-run first (it underestimates by about a third). No labels for 2017 .. 2021.",
@@ -1037,14 +1038,14 @@
       "outputs": [
         "summaries/value-exchange"
       ],
-      "network": true,
+      "network": false,
       "lock": null,
       "incremental": "Rewrites every file for all weeks.",
       "duration": null,
       "token_cost": null,
       "cost_source": "No timing recorded",
       "refresh": "routine",
-      "notes": "It runs update-affiliations first by itself (its only network use), so config/affiliations.json5 may change too. It reads the raw stores for the example threads' text.",
+      "notes": "It reads the raw stores for the example threads' text.",
       "run": "python3 -m cosh summarize"
     },
     {
@@ -1216,14 +1217,14 @@
       "outputs": [
         "data/private/sentiment/"
       ],
-      "network": true,
+      "network": false,
       "lock": null,
       "incremental": "Rewrites the week files it is given.",
       "duration": "about 25 s per week; 2 min for the 5% sample",
       "token_cost": null,
       "cost_source": "docs/sentiment.md",
       "refresh": "routine",
-      "notes": "--missing collects every fetched week since the oldest week file that has no file yet. It refreshes the affiliations file first, like every command that attributes people (its only network use).",
+      "notes": "--missing collects every fetched week since the oldest week file that has no file yet.",
       "run": "python3 -m cosh.sentiment collect --missing"
     },
     {
@@ -1435,8 +1436,7 @@
         "data/private/balance.sqlite",
         "data/private/commits.sqlite",
         "data/private/balance-timeline.sqlite",
-        "data/private/derived.sqlite",
-        "data/private/labels.sqlite"
+        "data/private/derived.sqlite"
       ],
       "outputs": [
         "data/private/balance_clusters/"
@@ -1560,7 +1560,7 @@
       "outputs": [
         "web/public/review-feedback/"
       ],
-      "network": true,
+      "network": false,
       "lock": null,
       "incremental": "Deletes and rewrites every file.",
       "duration": "about 3 min (188 s on 2026-11-12), 3 GB of memory",

@@ -66,8 +66,10 @@ The years versions:
   files (the mechanical list covers the CLs the script reads in full, every
   `main` CL in `derived.sqlite`). Directory experience covers
   the same years (`derived.sqlite` has CLs from July 2017 since 2026-11-12),
-  so its lines start in 2018 too; addressed labels exist only from
-  `addr_start`, so with those the lines start later. On 2026-11-12 the curves line up: 2.2–2.5× in the first half-year
+  so its lines start in 2018 too. Addressed labels start at `addr_start`,
+  which is the start of the data (July 2017) since every week was labelled
+  on 2026-11-13, so addressed lines start in 2018 as well; the page says
+  so only if `addr_start` is later than the curves' first year. On 2026-11-12 the curves line up: 2.2–2.5× in the first half-year
   for every start year from 2018 to 2024 (size and directory, all threads).
 - *Year-over-year change:* every contributor-year (`yearly_changes`): for
   each person and pair of consecutive calendar years in which they landed
@@ -170,8 +172,9 @@ figures differ from the Balance page's index, which counts them.
   the oldest week in `derived.sqlite`'s `fetched_weeks` (but no earlier than
   the oldest usable CL) to the end of the newest. A range that spills a
   week or less into a month is trimmed to the month, so the page can name
-  periods by month without slivers: Monday 2023-06-26 .. Sunday 2026-11-01
-  becomes 2023-07-01 .. 2026-10-31. `peers.json` gives the page `start`,
+  periods by month without slivers: Sunday 2026-11-01 ends the range at
+  2026-10-31, and a start of Monday 2023-06-26 would become 2023-07-01
+  (today's, Monday 2017-07-03, is already in its month). `peers.json` gives the page `start`,
   `end` (exclusive) and `addr_start` as day numbers, and the page's prose and
   half-year names come from them. There is no date selector: every figure
   covers all of it (the user's call, 2026-11-11), and only the over-time
@@ -183,8 +186,8 @@ figures differ from the Balance page's index, which counts them.
   match), trimmed to the month like the range. Before it, those CLs count
   for neither the person, their peers nor the opening card (`ok_a` and `acls` in the person's
   values), and the page lists only the periods it covers while "addressed"
-  is selected. Labels are near complete from 2022-W06 (2026-11-11) and
-  absent before 2021-W52; the user doesn't want them for older years. The
+  is selected. Every week from 2017-W27 is labelled (2026-11-13),
+  so `addr_start` is the start of the data. The
   script warns if 2023–24, the norms' reference years, isn't covered.
 
 The measures:

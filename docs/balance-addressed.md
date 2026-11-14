@@ -67,9 +67,10 @@ value; that remains the substance pilot's direct count
 
 `web/balance.html`, section 4, "Counting only the feedback authors acted
 on" (`#acted-on`): the three indices by tenure (dataset `addr_tenure`), a
-table of the main comparisons and two paragraphs (`addr_compare`), with the
-note that labels start in July 2023, so the rest of the page still counts
-all threads. The feedback-index definition and its popover say the same.
+table of the main comparisons and two paragraphs (`addr_compare`), with a
+note that the rest of the page counts all threads and that this comparison
+covers the review-ROI unit (CLs landed July 2023 .. September 2026; labels
+cover every week since 2017-W27 as of 2026-11-13). The feedback-index definition and its popover say the same.
 The datasets come from `balance_addressed_value.py report` (below).
 
 ## Results

@@ -572,9 +572,9 @@
         <h3 id="acted-on">Counting only the feedback authors acted on</h3>
         <p class="note">
           The feedback index counts every reviewer thread. Value Exchange's classifier also says which threads the
-          author acted on, changing the CL in response. Those labels exist only for CLs from July 2023, so the rest of
-          this page, including every trend before then, still counts all threads. This part compares the two over
-          July 2023 to September 2026, where both exist. The <em>acted-on index</em> is built like the feedback
+          author acted on, changing the CL in response. The rest of this page counts all threads, since each one
+          costs review time. This part compares the two over the CLs of the review-ROI analysis, landed July 2023
+          to September 2026. The <em>acted-on index</em> is built like the feedback
           index: threads acted on ÷ the 2023–24 mean for CLs of the same size and directory.
         </p>
         <div class="panels">
@@ -646,8 +646,7 @@
           a weak hint at most. And feedback acted on doesn't lower the next half-year's feedback more than
           feedback not acted on does: both persist, so this is no sign that acting on feedback teaches more. The
           feedback index stays this page's measure of review load, since every thread costs time whether or not it
-          is acted on. The acted-on index is the better measure of review that changed something, but only from
-          July 2023.
+          is acted on. The acted-on index is the better measure of review that changed something.
         </p>
         <template data-msg="acted-feedback">All threads (feedback index)</template>
         <template data-msg="acted-addressed">Acted on</template>
@@ -2924,9 +2923,9 @@
           between areas doesn't move the index; only the feedback per like CL does.
         </p>
         <p class="sub">
-          The index counts every reviewer thread, whether or not the author acted on it. Which threads were acted
-          on is known only for CLs from July 2023, so the index can't use it and still reach back to 2017. Over the
-          years where both exist, an index of threads acted on falls more steeply with tenure and tracks code changed
+          The index counts every reviewer thread, whether or not the author acted on it, since every thread costs
+          review time. Over July 2023 to September 2026, where the two were compared, an index of threads acted on
+          falls more steeply with tenure and tracks code changed
           by review better, but predicts reverts and growth no better (<a href="#acted-on">comparison</a>).
         </p>
         <figure class="panel"><h3>Reviewer threads per CL, by CL size</h3>
@@ -2998,7 +2997,7 @@
       <div id="def-feedback-index" class="term-pop" popover role="note" aria-label="Feedback index">
         <p><strong>Feedback index:</strong> reviewer threads on a group of CLs ÷ the 2023–24 mean for CLs of
           the same size and directory. 1.0 is the 2023–24 norm; below 1, less review feedback than like CLs got
-          then. It counts all threads, acted on or not: which were acted on is known only from July 2023.</p>
+          then. It counts all threads, acted on or not.</p>
         <p><a href="#feedback-index">Full definition</a></p>
       </div>
       <div id="def-newcomer" class="term-pop" popover role="note" aria-label="Newcomer">
