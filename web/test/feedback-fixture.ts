@@ -54,7 +54,7 @@ const curve = Array.from({ length: 71 }, (_, i): [number, number] => {
 });
 
 export const peers: Peers = {
-  v: 5,
+  v: 7,
   generated: '2026-11-14',
   start: day('2023-07-01'),
   end: day('2026-11-01'),
@@ -72,7 +72,32 @@ export const peers: Peers = {
   norms,
   ref_bin: refBin,
   ref_all: 1.5,
-  f_dir: { '': { 'chrome/browser/': 1.1, 'content/': 0.9 }, e: { 'chrome/browser/': 1.2, 'content/': 0.8, 'third_party/blink/': 0.5 } },
+  min_rate_cls: 200,
+  min_dir_cls: 100,
+  // Everyone's rate per bin, then at any experience; 1.2, 0.8 and 0.5 times all of Chromium's in three
+  // directories. chrome/browser/ui/ has a rate of its own only at the first bin, and third_party/blink/
+  // none at any experience: their parents' count instead.
+  rates: {
+    '': [...refBin, 1.5],
+    'chrome/browser/': [4.8, 3.6, 3, 2.4, 2.04, 1.56, 1.2, 0.96, 0.72, null, 1.65],
+    'chrome/browser/ui/': [9, null, null, null, null, null, null, null, null, null, null],
+    'content/': [3.2, 2.4, 2, 1.6, 1.36, 1.04, 0.8, 0.64, 0.48, null, 1.35],
+    'third_party/blink/': [2, 1.5, 1.25, 1, 0.85, 0.65, 0.5, 0.4, 0.3, null, null],
+  },
+  scale: { '': 1, e: 1, d: 1, ed: 1 },
+  // Everyone's directory table: third_party/blink/ is among third_party/'s smaller entries.
+  dir_table: [
+    ['third_party/', 0, 6_000_000, 50_000, 40_000],
+    ['third_party/', 2, 500_000, 1_000, 800, 120],
+    ['chrome/', 0, 5_000_000, 150_000, 120_000],
+    ['chrome/browser/', 0, 4_000_000, 120_000, 100_000],
+    ['chrome/browser/ui/', 0, 2_500_000, 80_000, 70_000],
+    ['chrome/browser/', 1, 1_000, 30, 20],
+    ['chrome/browser/', 2, 2_000, 40, 30, 7],
+    ['content/', 0, 3_000_000, 90_000, 60_000],
+    ['content/browser/', 0, 2_000_000, 70_000, 50_000],
+    ['', 2, 1_000, 10, 5, 30],
+  ],
   f_org: { '': { 'google.com': 0.9, '*': 1.3 }, e: { 'google.com': 1, '*': 1.05 }, d: { 'google.com': 0.95, '*': 1.2 },
     ed: { 'google.com': 1.1, '*': 1 } },
   // The spread of everyone's rate per bin: a quarter to three times the median.

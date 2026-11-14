@@ -110,12 +110,15 @@
         <a class="card-anchor" href="#index" aria-label="Link to this section" title="Link to this section">#</a>
         <h2 id="index-title">Feedback index</h2>
         <p class="rf-def">
-          <strong>Feedback index</strong>: a contributor's AFR compared with their peers'. The peers'
-          rate is the median rate of contributors with the same experience (the line in the chart above),
-          adjusted for how much feedback per line the directories they worked in draw. 1.00× is typical; below 1
-          means less feedback than peers, above 1 more. Because it compares each change with others at the same
-          experience, the index doesn't fall as someone gains experience the way the rate does: it shows how
-          someone's feedback compares with their peers' at every stage.
+          <strong>Feedback index</strong>: a contributor's AFR compared with their peers'. In each directory, the
+          peers' rate is the AFR of everyone's changes there that were landed with the same experience (a
+          directory with too few such changes takes its parent directory's rate). A contributor's index in a
+          directory is their AFR there over their peers', and their overall index is all their addressed comments
+          over the number their peers would have drawn on the same lines, so directories count by how much
+          feedback peers draw there. 1.00× is typical (the median contributor); below 1 means less feedback than
+          peers, above 1 more. Because it compares each change with others at the same experience, the index
+          doesn't fall as someone gains experience the way the rate does: it shows how someone's feedback
+          compares with their peers' at every stage.
         </p>
         <h3>Everyone's feedback index</h3>
         <ul id="rf-fi-legend" class="legend rf-line-legend" aria-label="Lines"></ul>
@@ -131,6 +134,40 @@
           directories, some contributors draw several times as much feedback per line as others.
         </template>
         <template data-msg="axis-fi-share">contributors (smoothed)</template>
+
+        <h3>By directory</h3>
+        <div class="table-wrap">
+          <table id="rf-all-dirs" class="rf-table rf-all-dirs">
+            <thead>
+              <tr><th scope="col" rowspan="2">Directory</th><th scope="colgroup" colspan="4">Everyone</th>
+                <th scope="colgroup" colspan="5" class="rf-you-col rf-you-start">Yours</th></tr>
+              <tr><th scope="col" class="num" title="New or changed lines: each change's lines times its share in the directory">Lines</th>
+                <th scope="col" class="num" title="Review comments: comment threads started by reviewers, on a file or the commit message">Feedback</th>
+                <th scope="col" class="num" title="Review comments that led to a change in the code">Addressed</th>
+                <th scope="col" class="num" title="Addressed feedback rate: addressed comments per 100 lines">AFR</th>
+                <th scope="col" class="num rf-you-col rf-you-start" title="Your new or changed lines there">Lines</th>
+                <th scope="col" class="num rf-you-col" title="Review comments on your changes there">Feedback</th>
+                <th scope="col" class="num rf-you-col" title="Of those, the ones that led to a change in the code">Addressed</th>
+                <th scope="col" class="num rf-you-col" title="Your addressed comments per 100 lines there">AFR</th>
+                <th scope="col" class="num rf-you-col" title="Your feedback index there: your AFR over your peers'">FI</th></tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <template data-msg="dirs-more"><slot name="n"></slot> more</template>
+        <template data-msg="dirs-peers">Your peers' AFR on your lines there: <slot name="v"></slot></template>
+        <p id="rf-all-dirs-note" class="note"></p>
+        <template data-msg="all-dirs-note">
+          Everyone's changes from <slot name="from"></slot> to <slot name="to"></slot> by directory, with each
+          change's lines and comments split across the directories it changed, by lines. The AFR is shaded from
+          light (little feedback per line) to dark blue (a lot). Directories with fewer than
+          <slot name="minDir"></slot> changes are pooled in “Other”, and “rest of” is the files directly in a
+          directory. ▸ opens a directory.<span data-if="you"> The Yours columns are your changes, sorted by your
+          lines, with your feedback index in each directory against the peers chosen under
+          <a href="#summary">Your feedback index</a>. A directory's index adds up its subdirectories the same way
+          the overall index does, so it is the same whether the directory is open or not. Rows with fewer than
+          <slot name="minCls"></slot> of your changes show no AFR or index.</span>
+        </template>
         <template data-msg="legend-fi">Contributors</template>
         <template data-msg="legend-fi-marks">Median, and 10th and 90th percentiles</template>
       </section>
@@ -429,8 +466,8 @@
           the most contributors (<span class="rf-min-cell"></span> or more changes each). Directories matter much less
           than experience or size, except that imported third-party code and configuration directories (such as
           <code>third_party/libvpx/</code> or <code>testing/buildbot/</code>) draw almost no feedback per line. Organizations differ,
-          but mostly through their contributors' experience. The feedback index adjusts for directories by default,
-          and for organization if you choose it.
+          but mostly through their contributors' experience. The feedback index compares within directories by
+          default, and adjusts for organization if you choose it.
         </p>
         <template data-msg="axis-dir">directory</template>
         <template data-msg="axis-org">organization</template>
@@ -458,14 +495,20 @@
         </p>
         <p class="note">
           The feedback index divides the addressed comments on your changes by the number your peers would have
-          drawn on the same lines: for each change, its lines times the median rate of the opening chart at your
-          experience then, times a factor for each directory it changed (by how much more or less feedback per
-          line the directory draws than its changes' experience predicts), and, if chosen, a factor for your
-          organization. Directories with fewer than 300 changes take their top-level directory's factor (or none),
-          and smaller organizations share one factor. The factors are scaled so that the median contributor's index
-          doesn't change by adding them. Without experience, the typical rate is the median of everyone with
-          <span class="rf-min-cls"></span> or more changes. The spread of everyone's index (the tiles and the
-          over-time chart) counts contributors with <span class="rf-min-cls"></span> or more changes in the period.
+          drawn on the same lines. For each directory a change wrote lines in (three levels deep, such as
+          <code>chrome/browser/ui/</code>), those lines times the AFR of everyone's lines in that directory from
+          changes landed at the same experience (pooled: all their addressed comments per 100 of all their lines).
+          Where a directory has fewer than <span class="rf-min-rate"></span> changes' worth at that experience, its
+          parent's rate counts instead (<code>chrome/browser/</code>, then <code>chrome/</code>, then all of
+          Chromium). Without experience, the rates cover changes at any experience; without directories, all of
+          Chromium. If chosen, a factor for your organization multiplies it, and smaller organizations share one
+          factor. Pooled rates are lower than the typical contributor's (big changes draw less feedback per line),
+          so the expected comments are scaled to make the median contributor's index 1.00×. Adding up comments
+          and expected comments weighs each directory by the feedback peers would draw there: weighing by lines
+          instead lets a few comments in a directory that draws almost none (configuration, imported code) swing
+          the index, and made it less consistent between halves of each contributor's changes. The spread of
+          everyone's index (the tiles and the over-time chart) counts contributors with
+          <span class="rf-min-cls"></span> or more changes in the period.
         </p>
         <p class="note">
           Addresses are matched as in the Review Balance page: chromium.org and google.com addresses with the same

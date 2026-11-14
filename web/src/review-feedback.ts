@@ -8,12 +8,14 @@
 import { Chart, Filler, type ChartDataset, type ChartEvent, type Plugin } from 'chart.js';
 import { readTheme, withAlpha, type Theme } from './charts.ts';
 import {
+  afrShade,
   binReached,
   binSums,
   buildPerson,
   clsIn,
   commentUrl,
   dirRows,
+  dirTable,
   dirTree,
   fiOf,
   fr,
@@ -29,6 +31,7 @@ import {
   quantile,
   ratioShade,
   sums,
+  tableRows,
   threadBinLabel,
   threadBinRange,
   threadHistogram,
@@ -44,6 +47,7 @@ import {
   type Person,
   type CommentShard,
   type Shard,
+  type TableRowView,
   type ThreadRow,
   type Top,
 } from './feedback.ts';
@@ -86,6 +90,8 @@ const state = {
   noTextShown: PAGE,
   /** Keys of the directory rows that are open (see dirRows). */
   expanded: new Set<string>(),
+  /** Keys of everyone's directory table's rows that are open (see tableRows). */
+  allExpanded: new Set<string>(),
 };
 const charts: Record<string, Chart> = {};
 window.__rf = { person: null, peers: null, charts, half: null, bin: null, norm: state.norm };
@@ -119,6 +125,8 @@ const monthLabel = (ym: string) =>
 const ok = (v: number | null | undefined): v is number => v !== null && v !== undefined && Number.isFinite(v);
 /** An AFR: addressed comments per 100 lines. */
 const fmtFr = (v: number | null | undefined) => (ok(v) ? fmtNum(v, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '–');
+/** A large count, short ("27M", "761K"). */
+const fmtBig = (v: number) => fmtNum(v, { notation: 'compact', maximumFractionDigits: v >= 1e3 && v < 1e4 ? 1 : 0 });
 /** A feedback index. */
 const fmtFi = (v: number | null | undefined) => (ok(v) ? `${fmtNum(v, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}×` : '–');
 /** A change in %, signed ("−21%", "+12%"). */
@@ -166,6 +174,7 @@ function fillStatic(peers: Peers) {
   fill('.rf-min-cls', peers.min_cls);
   fill('.rf-min-bin', peers.min_bin_cls);
   fill('.rf-min-cell', peers.min_cell_cls);
+  fill('.rf-min-rate', peers.min_rate_cls);
 }
 
 /** Who the feedback index compares with, in words ("with as many changes landed before and in the same directories"). */
@@ -248,6 +257,7 @@ async function lookup(raw: string) {
     state.bin = null;
     window.__rf!.bin = null;
     state.expanded = new Set();
+    state.allExpanded = new Set();
     const cs = clsIn(found, ALL);
     put(note, 'find-done', { n: fmtInt(cs.length), from: dayLabel(cs[0][1]), to: dayLabel(cs.at(-1)![1]) });
     // The person's praise is on the Review Tone page, which opens their popup from the hash.
@@ -322,6 +332,7 @@ function renderIntro() {
   if (!peers?.fr_bins) return;
   renderGrowth();
   renderFiDist();
+  renderAllDirs();
   destroy('main');
   const t = theme();
   const p = state.person;
@@ -417,6 +428,86 @@ function renderFiDist() {
       plugins: { legend: { display: false }, tooltip: { enabled: false } },
     },
   });
+}
+
+/** An AFR cell, shaded from light (little feedback per line) to dark blue (a lot). */
+function afrCell(v: number | null, title?: string): HTMLTableCellElement {
+  const td = el('td', fmtFr(v), 'num');
+  if (title) td.title = title;
+  if (v === null || !Number.isFinite(v)) return td;
+  const shade = afrShade(v);
+  td.classList.add('rf-afr');
+  if (shade > 0.6) td.classList.add('rf-afr-dark');
+  td.style.setProperty('--rf-afr', String(shade));
+  return td;
+}
+
+/** Everyone's directory table, below the index's chart; with the person's columns once someone is shown. */
+function renderAllDirs() {
+  const peers = state.peers;
+  if (!peers?.dir_table) return;
+  const p = state.person;
+  const table = $('#rf-all-dirs');
+  table.classList.toggle('rf-with-you', !!p);
+  const rows = tableRows(dirTable(peers, p, ALL, state.norm), state.allExpanded, !!p, peers.min_cls);
+  $('#rf-all-dirs tbody').replaceChildren(...rows.map((r) => allDirRow(r, !!p)));
+  put($('#rf-all-dirs-note'), 'all-dirs-note', { ...rangeVars(peers), minDir: fmtInt(peers.min_dir_cls), you: !!p,
+    minCls: fmtInt(peers.min_cls) });
+}
+
+function allDirRow(r: TableRowView, you: boolean): HTMLTableRowElement {
+  const n = r.node;
+  const tr = el('tr', undefined, `rf-dir-row rf-dir-${n ? n.kind : 'more'}`);
+  tr.dataset.key = r.key;
+  const th = el('th');
+  th.setAttribute('scope', 'row');
+  const label = el('span', undefined, 'rf-dir-label');
+  label.style.setProperty('--depth', String(r.depth));
+  const name = !n ? msg('dirs-more', { n: fmtInt(r.more!) })
+    : n.kind === 'other' ? fragment('dirs-other', { n: fmtInt(n.count ?? 0) }).textContent!
+      : n.kind === 'rest' ? fragment('dirs-rest', { dir: n.path.split('/').filter(Boolean).at(-1) + '/' }).textContent! : n.name;
+  if (r.expandable) {
+    const b = el('button', r.expanded ? '▾' : '▸', 'ar-toggle');
+    b.type = 'button';
+    b.setAttribute('aria-expanded', String(r.expanded));
+    b.setAttribute('aria-label', `${r.expanded ? 'Collapse' : 'Expand'} ${n?.kind === 'dir' ? n.path : name}`);
+    b.addEventListener('click', () => {
+      if (state.allExpanded.has(r.key)) state.allExpanded.delete(r.key);
+      else state.allExpanded.add(r.key);
+      renderAllDirs();
+    });
+    label.append(b);
+  } else {
+    label.append(el('span', undefined, 'ar-toggle-space'));
+  }
+  const s = el('span', name, n?.kind === 'dir' ? 'rf-dir-name' : 'rf-dir-group');
+  if (n?.kind === 'dir') s.title = n.path;
+  else if (n?.kind === 'rest') s.title = `Files directly in ${n.path}`;
+  label.append(s);
+  th.append(label);
+  tr.append(th);
+  if (!n) {
+    const td = el('td');
+    td.colSpan = you ? 9 : 4;
+    tr.append(td);
+    return tr;
+  }
+  const a = n.all;
+  tr.append(el('td', fmtBig(a.lines), 'num'), el('td', fmtBig(a.threads), 'num'), el('td', fmtBig(a.addressed), 'num'),
+    afrCell(r.fr));
+  if (you) {
+    const y = n.you;
+    const few = y.cls && r.youFi === null ? msg('dirs-no-ratio', { n: fmtInt(state.peers!.min_cls) }) : undefined;
+    const peersFr = y.lines > 0 ? fmtFr((100 * y.expected) / y.lines) : '–';
+    const cell = (v: string, cls = 'num rf-you-col') => el('td', y.cls ? v : '', cls);
+    tr.append(cell(fmtInt(Math.round(y.lines)), 'num rf-you-col rf-you-start'), cell(fmtInt(y.threads)), cell(fmtInt(y.addressed)));
+    const fr_ = y.cls ? afrCell(r.youFr, few) : el('td');
+    const fi = y.cls ? fiCell(r.youFi, few ?? msg('dirs-peers', { v: peersFr })) : el('td');
+    fr_.classList.add('rf-you-col');
+    fi.classList.add('rf-you-col');
+    tr.append(fr_, fi);
+  }
+  return tr;
 }
 
 // ---- the methodology (rendered when opened)
@@ -594,6 +685,7 @@ function render() {
 /** Re-renders what depends on the norm. */
 function renderNorm() {
   if (!state.person) return;
+  renderAllDirs();
   renderSummary();
   renderTrend();
   renderDirs();

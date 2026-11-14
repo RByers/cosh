@@ -3385,6 +3385,49 @@ test('feedback index: the opening card defines the rate and index, with one char
   await page.close();
 });
 
+test('feedback index: everyone\'s directory table, and the person\'s columns in it', async () => {
+  const { page, errors } = await feedbackPage();
+  const rows = () => page.$$eval('#rf-all-dirs tbody tr', (trs) => trs.map((tr) =>
+    [...tr.children].filter((c) => getComputedStyle(c).display !== 'none').map((c) => c.textContent!.replace(/\s+/g, ' ').trim())));
+  const youShown = () => page.$eval('#rf-all-dirs thead .rf-you-col', (e) => getComputedStyle(e).display !== 'none');
+  // Everyone's figures by lines, AFR shaded, "Other" last; no Yours columns yet.
+  assert.deepEqual(await rows(), [
+    ['▸third_party/', '6M', '50K', '40K', '0.67'],
+    ['▸chrome/', '5M', '150K', '120K', '2.40'],
+    ['▸content/', '3M', '90K', '60K', '2.00'],
+    ['Other (30)', '1K', '10', '5', '0.50'],
+  ]);
+  assert.equal(await youShown(), false);
+  // 2.4 per 100 lines: log2(2.4 / 0.25) / 5 of the way to the darkest blue, with light text.
+  assert.deepEqual(await page.$eval('#rf-all-dirs tbody tr:nth-child(2) td:nth-child(5)',
+    (e) => [e.className, Number((e as HTMLElement).style.getPropertyValue('--rf-afr')).toFixed(3)]), ['num rf-afr rf-afr-dark', '0.653']);
+  // ▸ opens a directory into its subdirectories, own files and smaller entries.
+  await page.click('#rf-all-dirs tr[data-key="d:chrome/"] .ar-toggle');
+  await page.click('#rf-all-dirs tr[data-key="d:chrome/browser/"] .ar-toggle');
+  assert.deepEqual((await rows()).map((r) => r[0]),
+    ['▸third_party/', '▾chrome/', '▾browser/', 'ui/', 'rest of browser/', 'Other (7)', '▸content/', 'Other (30)']);
+  // After a lookup: the Yours columns, each level by the person's lines, opening state reset.
+  const { FIXTURE_EMAIL } = await import('./feedback-fixture.ts');
+  await lookUp(page, FIXTURE_EMAIL);
+  await page.waitForFunction(() => !document.querySelector<HTMLElement>('#rf-person')!.hidden);
+  assert.equal(await youShown(), true);
+  const r = await rows();
+  assert.deepEqual(r.map((x) => x[0]), ['▸content/', '▸chrome/', '▸third_party/', 'Other (30)']);
+  // chrome/: 40 + 28.5 lines, 2 comments, 1 addressed: 1.46 per 100 lines, 1 over 1.78 expected
+  // (0.4 × 3 + 0.285 × 2.04), which is 2.60 per 100 lines.
+  assert.deepEqual(r[1].slice(5), ['68', '2', '1', '1.46', '0.56×']);
+  assert.match(await page.$eval('#rf-all-dirs tr[data-key="d:chrome/"] td:last-child', (e) => (e as HTMLElement).title),
+    /^Your peers' AFR on your lines there: 2\.60$/);
+  // Rows with fewer of the person's changes than the minimum show no rate; rows without any show nothing.
+  assert.deepEqual(r[2].slice(5), ['10', '2', '1', '–', '–']);
+  assert.deepEqual(r[3].slice(5), ['', '', '', '', '']);
+  // The index follows the norm picked in the person's section.
+  await page.click('#rf-norm input[value="d"]');
+  assert.notEqual((await rows())[1][9], '0.56×');
+  assert.deepEqual(errors, []);
+  await page.close();
+});
+
 test('feedback index: a person\'s index, how their rate compares, directories and comments', async () => {
   const { page, errors } = await feedbackPage();
   const { ALIAS_EMAIL } = await import('./feedback-fixture.ts');

@@ -36,37 +36,49 @@ Both are fixed: the page has no switches for them (the user's call,
   >2k (`BIN_EDGES` on earlier commits, `xbin`, `BIN_LABELS`; the names
   changed from "<8, 8–15, …" on 2026-11-14, the bins didn't). The page's
   axis says "experience (CLs landed on main)".
-- **Feedback index (FI):** a person's AFR over their peers'. For each CL, the
-  addressed threads its peers would have drawn are its lines / 100 × a
-  typical rate × factors, and FI = addressed threads / that sum
-  (`expected` in the script, `unitExpected` in `web/src/feedback.ts`). What
-  the peers are (`NORMS`, picked on the page with three checkboxes):
-  - *Experience* (`e`, on by default): the typical rate is `ref_bin`, the
-    median AFR of people at the CL's experience bin (the opening chart's
-    line). Without it, `ref_all`: the median AFR of everyone with `MIN_CLS`
-    (25) CLs over all of theirs.
-  - *Directories* (`d`, on by default): each CL's lines are split over the
-    3-level directories its landed commit changed, by inserted lines
-    (`unit_fracs`; `cl_dirs` with `dels=False`),
-    and each part gets its directory's factor: two levels (`chrome/browser/`),
-    else one level, else 1, for directories with `MIN_FACTOR_CLS` (300) CLs'
-    worth. A factor is the directory's pooled addressed threads over what
-    the typical rate predicts there.
+- **Feedback index (FI):** a person's AFR over their peers'. Per directory
+  a CL wrote lines in, the addressed threads its peers would have drawn are
+  those lines / 100 × the peers' rate there, and FI = addressed threads /
+  that sum (`unit_expected` in the script, `unitExpected` in
+  `web/src/feedback.ts`). The peers' rate (`rates`, `peer_rate`) is the
+  pooled AFR of everyone's lines in the CL's 3-level directory written at
+  the CL's experience bin; a directory with fewer than `MIN_RATE_CLS` (200)
+  CLs' worth there (each CL split over its directories by inserted lines,
+  `unit_fracs`; `cl_dirs` with `dels=False`) takes its parent's (2 levels,
+  then 1, then all of Chromium), cell by cell. What the peers are (`NORMS`,
+  picked on the page with three checkboxes):
+  - *Experience* (`e`, on by default): rates per experience bin; without
+    it, the rates at any experience (the last entry of each list).
+  - *Directories* (`d`, on by default): rates per directory; without it,
+    all of Chromium's (`rates[""]`).
   - *Organization* (`o`, off by default): a factor per org (the CL's, by
-    `cosh/orgs.py`), computed the same way on top of the other two; orgs
-    with fewer than 300 CLs share one (`*`).
+    `cosh/orgs.py`), its pooled addressed threads over what the other two
+    predict; orgs with fewer than `MIN_FACTOR_CLS` (300) CLs share one (`*`).
 
-  The factors are pooled by lines, so their level is off: low-feedback
-  directories with many lines (configuration, imported third-party code)
-  pull the pooled average down, and before rescaling the median person's
-  index under experience and directories was 0.85 against 0.97 under
-  experience alone. Each factor table is therefore scaled so that the
-  median person's index (people with `MIN_CLS` CLs) is the same with the
-  factor as without it (`rescale` in `rate_model`); only the factors'
-  spread matters. On 2026-11-14 the median index is 0.979 under every norm
-  with experience and 1.000 under every norm without it (the experience
-  bins' medians are over person-bins, the index over people, so they differ
-  slightly).
+  Pooled rates are lower than the typical person's (big CLs draw less per
+  line, and they carry most of the lines), so each norm's expected threads
+  are multiplied by `scale[norm]`, which makes the median person's index
+  (people with `MIN_CLS` CLs) exactly 1; the org factors are scaled the
+  same way. On 2026-11-14 the scales were 0.917 (experience and
+  directories), 1.058 (experience), 1.135 (directories) and 1.311 (none).
+
+  **Why this way** (2026-11-14, replacing a median rate per experience bin
+  times a two-level directory factor). Comparing within each directory and
+  experience bin is what readers expect the index to mean, and the page
+  can show it: everyone's table lists each directory's AFR, and a person's
+  index in a row is their AFR there over the peers' rate on the same lines.
+  Adding up threads and expected threads weighs each directory by the
+  feedback peers draw there, so a parent's index is the same whether it is
+  open or not, and the overall index is the same sum. Weighing directories
+  by lines instead (a lines-weighted mean of per-directory indexes) lets a
+  few threads in a directory that draws almost none (configuration,
+  imported code) swing the index. Measured on the 2,808 people with 25+
+  CLs: the rank correlation of each person's index from their odd and
+  their even CLs was 0.739 with this method (`MIN_RATE_CLS` 200), 0.734 at
+  100, 0.723 at 50, 0.738 at 300, 0.698 weighing by lines, and 0.729 with
+  the old one; ranks under the new and old ones agree closely (Spearman
+  0.96). The spread barely moved: 10th–90th percentile 0.42–1.96 (was
+  0.43–1.91), quartiles 0.68 and 1.42 (0.67 and 1.39).
 
 ## What it shows
 
@@ -101,8 +113,28 @@ on an axis to about 2.6.
 (`fi_dist`: people with `MIN_CLS` CLs, over all the data, under
 experience and directories, `FI_NORM`), smoothed on a log2 grid from 1/8
 to 5.7 (kernel 0.15), with the median and the 10th and 90th percentiles
-marked. On 2026-11-14: 2,808 people, quartiles 0.67 and 1.39, 10th–90th
-percentile 0.43–1.91.
+marked. On 2026-11-14: 2,808 people, quartiles 0.68 and 1.42, 10th–90th
+percentile 0.42–1.96.
+
+Below it, **By directory**: everyone's directory table (`dir_table` in
+`peers.json`, `dirTable` and `tableRows` on the page), with lines,
+feedback (reviewer threads), addressed threads and AFR per directory, the
+AFR shaded from the card (0.25 per 100 lines or less) to dark blue (8 or
+more, `afrShade`). Each CL's lines and threads are split over its
+directories by lines. A directory (1, 2 or 3 levels) gets a row with
+`MIN_DIR_CLS` (100) CLs, under a parent that has one; smaller ones are
+pooled into an "Other (n)" row per level, and a directory with
+subdirectories has a "rest of" row for its own files. Each level shows its
+12 largest directories and an "n more" row for the rest; ▸ opens a row. On
+2026-11-14 the table has 2,953 entries. Once a person is shown, five
+**Yours** columns appear (lines, feedback, addressed, AFR, FI under the
+norm picked in their section) and each level sorts by their lines: each of
+their units goes to its directory and parents, and to "rest of" or that
+level's "Other" where the table has no row for it. A row's FI is its
+addressed threads over its expected ones, so a parent adds up its children
+however they are shown; its tooltip gives the peers' AFR on those lines.
+Rows with fewer than `MIN_CLS` of the person's CLs show no AFR or FI of
+theirs.
 
 **Your feedback** (after an address is found), one section each:
 
@@ -113,7 +145,7 @@ percentile 0.43–1.91.
   lines, addressed threads, the person's AFR and the median AFR of all
   contributors there (`ref_bin`). The last row is all CLs.
 - *Your feedback index:* the checkboxes (experience, directories,
-  organization), tiles for changes landed (and their lines), addressed
+  organization; they also set the Yours FI in everyone's directory table), tiles for changes landed (and their lines), addressed
   threads, AFR, FI (with the share of everyone with `MIN_CLS` CLs whose
   index is lower, from `fi[norm].all`) and the latest doubling (below), then
   the FI per half-year against the 10th–90th percentile, middle half and
@@ -172,9 +204,11 @@ charts are drawn when it opens:
   code directories run 1.2–3.3 (components/autofill/ 3.29, chrome/browser/
   2.61, third_party/blink/ 1.80) while configuration directories draw
   almost none (testing/buildbot/ 0.16, (root)/ 0.15). Org factors with
-  experience run 0.35–1.75 for orgs with 300+ CLs (google.com 1.01,
-  microsoft.com 0.88, igalia.com 0.86), against 0.38–3.25 without it, so
-  orgs differ partly through their contributors' experience.
+  experience run 0.37–1.73 for orgs with 300+ CLs (google.com 1.01,
+  microsoft.com 0.89, igalia.com 0.85), against 0.38–3.25 without it, so
+  orgs differ partly through their contributors' experience; with
+  experience and directories, 0.42–1.71 (google.com 1.01, microsoft.com
+  0.91, igalia.com 0.92).
 - *How it's measured:* the definitions above in prose.
 
 **Dates come from the data**, never from the code. The range runs from the
@@ -296,9 +330,11 @@ Output (default `web/public/review-feedback/`, which Vite copies into the
 site), with `<key>` the hash of the person's address, in three kinds of
 file that the page loads at different times:
 
-- `peers.json` (global, loaded on opening; version 6, about 47 KB): the experience bins (`bins`,
-  `bin_edges`), the index's typical rates and factors (`ref_bin`,
-  `ref_all`, `f_dir`, `f_org`), the spread of AFR per bin (`fr_bins`) and of
+- `peers.json` (global, loaded on opening; version 7, about 214 KB, 59 KB
+  gzipped): the experience bins (`bins`, `bin_edges`), the index's rates,
+  scales and org factors (`rates`, `scale`, `f_org`), the median AFR per
+  bin (`ref_bin`, `ref_all`, for comparisons), everyone's directory table
+  (`dir_table`), the spread of AFR per bin (`fr_bins`) and of
   everyone's index per norm and period (`fi`), and the methodology's data
   (`cohorts`, `growth`, `by_size`, `by_dir`, `by_org`), with the
   minimums the page names.
@@ -322,10 +358,10 @@ The page computes a person's figures from these, the same way the script
 does for the spread of everyone's index: totals, AFR and FI under every norm
 for any period, and the growth rate, with the rounded typical rates and
 factors from `peers.json`. `--check FILE` writes the script's values for 300
-people; on 2026-11-14, after deletions were dropped, the page's
-`buildPerson`, `sums` and `fiOf` matched all 38,225 of them (FI under every
-norm, CLs, addressed threads and lines; the largest difference 0.0005,
-rounding).
+people; on 2026-11-14, after the index moved to per-directory rates, the
+page's `buildPerson`, `sums` and `fiOf` matched all 27,800 of them (FI under
+every norm, CLs, addressed threads and lines; the largest difference
+0.0005, rounding).
 
 So a half-year's files don't change once it is over, as long as the inputs
 don't (the 2023–24 norms, still written though unused, labels, mechanical

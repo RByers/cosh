@@ -57,33 +57,59 @@ class ReviewFeedbackTest(unittest.TestCase):
         self.assertEqual(R.BIN_LABELS[:3] + R.BIN_LABELS[-2:], ["8", "16", "32", "2k", ">2k"])
 
     def test_rate_model(self):
-        # Twenty people with 30 one-directory CLs each: half in ui/ (2 addressed per 100 lines)
-        # and half in base/ (1 per 100 lines), at two levels of experience.
+        # Twenty people with 30 one-directory CLs each: half in ui/a/ (2 addressed per 100 lines)
+        # and half in base/a/ (1 per 100 lines), each doubled at the lower of two levels of experience.
         def row(pid, i):
             d = "ui/a/" if pid % 2 else "base/a/"
             b = 1 if i < 15 else 3
             a = (2 if pid % 2 else 1) * (2 if b == 1 else 1)
-            return R.Row(pid, 0, 100, 8 if b == 1 else 32, b, "google.com" if pid < 15 else "x.com", a, [(d, 1.0, a)], d)
+            return R.Row(pid, 0, 100, 8 if b == 1 else 32, b, "google.com" if pid < 15 else "x.com", a,
+                         [(d, 1.0, a, a + 1)], d)
         rows = [row(pid, i) for pid in range(20) for i in range(30)]
-        old = R.MIN_FACTOR_CLS
-        R.MIN_FACTOR_CLS = 100
+        # Plus a few CLs in a small directory, which takes its parent's rate.
+        rows += [R.Row(0, 0, 100, 8, 1, "google.com", 0, [("ui/b/", 1.0, 0, 0)], "ui/b/")] * 3
+        old = R.MIN_FACTOR_CLS, R.MIN_RATE_CLS
+        R.MIN_FACTOR_CLS = R.MIN_RATE_CLS = 100
         try:
             m = R.rate_model(rows)
         finally:
-            R.MIN_FACTOR_CLS = old
+            R.MIN_FACTOR_CLS, R.MIN_RATE_CLS = old
         self.assertEqual((m["ref_bin"][1], m["ref_bin"][3]), (3.0, 1.5))
         self.assertIsNone(m["ref_bin"][0])
-        # ui/ draws twice what base/ does per line, whatever the experience.
-        f = m["f_dir"]["e"]
-        self.assertAlmostEqual(f["ui/a/"] / f["base/a/"], 2, places=2)
-        # The expected threads of a CL: lines / 100 × the bin's median × the directory's factor.
-        r = rows[1 * 30]          # pid 1 (ui/), bin 1
-        self.assertAlmostEqual(R.expected(r, "e", m), 3.0)
-        self.assertAlmostEqual(R.expected(r, "ed", m), 3.0 * f["ui/a/"])
-        self.assertAlmostEqual(R.expected(r, "", m), m["ref_all"])
+        # Pooled rates per directory and bin, then at any experience; ui/ pools ui/a/ and ui/b/.
+        rates = m["rates"]
+        self.assertEqual([rates["ui/a/"][b] for b in (0, 1, 3, R.ALL_BINS)], [None, 4.0, 2.0, 3.0])
+        self.assertEqual([rates["base/a/"][b] for b in (1, 3)], [2.0, 1.0])
+        self.assertEqual(rates["ui/"][1], R.r3(100 * 600 / 15300))
+        self.assertNotIn("ui/b/", rates)
+        self.assertEqual(R.peer_rate(rates, "ui/b/", 1), rates["ui/"][1])
+        self.assertEqual(R.peer_rate(rates, "net/x/", 1), rates[""][1])
+        self.assertEqual(R.dir_levels("ui/a/b/"), ["ui/a/b/", "ui/a/", "ui/", ""])
+        # In its own directory at its own experience everyone draws what peers do: an index of 1 each,
+        # so no scaling. Without directories ui/ people draw twice what base/ people do.
+        self.assertEqual(m["scale"]["ed"], 1.0)
+        r = rows[1 * 30]          # pid 1 (ui/a/), bin 1
+        self.assertAlmostEqual(R.expected(r, "ed", m), 4.0)
+        self.assertAlmostEqual(R.expected(r, "e", m), 100 / 100 * rates[""][1] * m["scale"]["e"])
+        self.assertAlmostEqual(R.expected(r, "", m), rates[""][R.ALL_BINS] * m["scale"][""])
+        self.assertEqual(R.unit_expected(r, "edo", m), [R.expected(r, "ed", m) * m["f_org"]["ed"]["google.com"]])
         # Orgs: "*" pools those under MIN_FACTOR_CLS (x.com has 150 CLs: its own factor here).
         self.assertIn("x.com", m["f_org"]["ed"])
         self.assertIn("*", m["f_org"]["ed"])
+
+    def test_dir_table(self):
+        # Lines and threads split by lines; small directories pooled per level, with how many.
+        rows = [R.Row(1, 0, 100, 0, 0, "o", 3, [("a/b/c/", 0.75, 2, 3), ("a/", 0.25, 1, 2)], "a/b/c/")] * 150
+        rows += [R.Row(1, 0, 10, 0, 0, "o", 1, [("a/x/", 1.0, 1, 1)], "a/x/")] * 5
+        old = R.MIN_DIR_CLS
+        R.MIN_DIR_CLS = 100
+        try:
+            t = R.dir_table(rows)
+        finally:
+            R.MIN_DIR_CLS = old
+        self.assertEqual(t, [["a/", 0, 15050, 755, 455], ["a/", 1, 3750, 300, 150],
+                             ["a/b/", 0, 11250, 450, 300], ["a/b/c/", 0, 11250, 450, 300],
+                             ["a/", 2, 50, 5, 5, 1]])
 
     def test_quantiles(self):
         q = R.quantiles(range(21))

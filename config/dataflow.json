@@ -1128,9 +1128,9 @@
       "tier": "published",
       "tracked_in_git": true,
       "rebuildable": true,
-      "size": "about 47 KB (15 KB gzipped)",
+      "size": "about 214 KB (59 KB gzipped)",
       "size_as_of": "2026-11-14",
-      "purpose": "Everyone's figures (experience bins, typical rates and factors, spreads, the methodology's charts), loaded on opening.",
+      "purpose": "Everyone's figures (experience bins, peers' rates per directory and experience, everyone's directory table, spreads, the methodology's charts), loaded on opening.",
       "notes": "Rewritten on every run of review-feedback."
     },
     {
@@ -2011,7 +2011,7 @@
         "cosh/people.py",
         "cosh/commits.py"
       ],
-      "purpose": "Writes each person's changes and addressed review comments, as files named by a hash of their address, and the AFRs and index factors the page compares them with.",
+      "purpose": "Writes each person's changes and addressed review comments, as files named by a hash of their address, and the AFRs per directory and experience the page compares them with.",
       "inputs": [
         "data/private/commits.sqlite",
         "data/private/reviews.sqlite",

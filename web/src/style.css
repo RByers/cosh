@@ -2861,6 +2861,42 @@ canvas.rf-pointable {
   --rf-ratio-color: var(--critical);
 }
 
+/* Everyone's directory table (review-feedback.ts, renderAllDirs): the Yours columns show once someone
+ * is looked up, set off by a rule. Directory names as in the person's table, not links. */
+.rf-all-dirs:not(.rf-with-you) .rf-you-col {
+  display: none;
+}
+
+.rf-all-dirs .rf-you-start {
+  border-left: 2px solid var(--border);
+}
+
+.rf-all-dirs thead th[scope='colgroup'] {
+  text-align: center;
+}
+
+.rf-all-dirs td,
+.rf-all-dirs th {
+  padding-left: 6px;
+  padding-right: 6px;
+}
+
+.rf-dir-name {
+  font-family: ui-monospace, monospace;
+  font-size: 0.85rem;
+  overflow-wrap: anywhere;
+}
+
+/* An AFR's shade: from the card (a quarter per 100 lines or less) to dark blue (8 or more), --rf-afr 0..1. */
+.rf-table td.rf-afr {
+  background: color-mix(in srgb, var(--rf-afr-color) calc(var(--rf-afr, 0) * 90%), transparent);
+  --rf-afr-color: #1a4fa0;
+}
+
+.rf-table td.rf-afr-dark {
+  color: #fff;
+}
+
 .rf-more {
   margin: 8px 0 0;
   min-height: 32px;

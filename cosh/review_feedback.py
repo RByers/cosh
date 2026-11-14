@@ -354,13 +354,20 @@ MIN_GROWTH_BINS = 3       # a growth rate needs FRs in this many bins
 COHORT_FROM = 2018
 MIN_CELL_CLS = 10         # a person counts in a size, directory or org bar with this many CLs there
 CHART_DIRS, CHART_ORGS = 12, 10
-# A directory (two levels, else one) or org gets its own factor in the
-# feedback index with this many CLs' worth; others get 1 (directories) or the
-# pooled factor of all smaller orgs ("*").
+# An org gets its own factor in the feedback index with this many CLs; the
+# smaller ones share the pooled factor "*".
 MIN_FACTOR_CLS = 300
-# What the feedback index sets a person's AFR against: the median AFR of people
-# at the same experience ("e"; else everyone's median), adjusted for how much
-# feedback the directory ("d") and the org ("o") draw. Every combination.
+# A directory (3 levels, 2 or 1) has its own peers' AFR at an experience bin
+# with this many CLs' worth there (each CL split over its directories by
+# lines); elsewhere its parent's counts. 200 made people's index the most
+# stable from half their CLs to the other half (docs/review-feedback.md).
+MIN_RATE_CLS = 200
+# A directory gets its own row in everyone's directory table with this many CLs.
+MIN_DIR_CLS = 100
+# What the feedback index sets a person's AFR against: the pooled AFR of
+# everyone's lines in the same directory ("d") at the same experience ("e"),
+# else over all directories or all experience, optionally with a factor for
+# the org ("o"). Every combination.
 NORMS = ["", "e", "d", "ed", "o", "eo", "do", "edo"]
 # The growth chart: a smoothed distribution of people's growth rates, on a
 # grid of log2 of the change per doubling.
@@ -371,6 +378,7 @@ GROWTH_BW = 0.12
 FI_NORM = "ed"
 FI_GRID = [round(-3 + 0.05 * i, 2) for i in range(111)]
 FI_BW = 0.15
+ALL_BINS = len(BIN_LABELS)     # the index of "any experience" in a rate list
 SIZE_LABELS = ["<4", "4–7", "8–15", "16–31", "32–63", "64–127", "128–255", "256–511", "512–1k", "1k+"]
 
 Row = namedtuple("Row", "pid at lines prior bin org addr units main")
@@ -405,12 +413,13 @@ def unit_fracs(units):
 
 def fr_row(c):
     """A CL as the rate measures need it. units: [(3-level directory,
-    fraction of the CL's lines, addressed threads there)], largest share first."""
+    fraction of the CL's lines, addressed threads there, reviewer threads there)], largest share first."""
     order = sorted(c["units"].items(), key=lambda kv: (-kv[1][0], kv[0]))
     per = Counter(t[4] for t in c["thr"] if t[3])
+    every = Counter(t[4] for t in c["thr"])
     fr_ = unit_fracs([(u[0], u[2]) for _, u in order])
     return Row(c["pid"], c["closed_at"], c["lines"], c["prior"], xbin(c["prior"]), c["org"], c["addressed"],
-               [(d, f, per[d]) for (d, _), f in zip(order, fr_)], order[0][0])
+               [(d, f, per[d], every[d]) for (d, _), f in zip(order, fr_)], order[0][0])
 
 
 def person_cells(rows):
@@ -460,15 +469,52 @@ def fr_bins(by_pid):
     return [dict(n=len(xs), q=quantiles(xs) if len(xs) >= MIN_PEERS else None) for xs in bin_frs(by_pid)]
 
 
+def dir_levels(d):
+    """A 3-level directory and its parents, deepest first, then "" (all of them):
+    where `peer_rate` looks for a rate."""
+    p = [x for x in d.split("/") if x]
+    return ["/".join(p[:k]) + "/" for k in range(min(3, len(p)), 0, -1)] + [""]
+
+
+def peer_rate(rates, d, b):
+    """The peers' AFR for lines in directory `d` at experience bin `b` (ALL_BINS:
+    any experience): the directory's pooled AFR at that experience, else its
+    parent's, up to everyone's."""
+    for k in dir_levels(d):
+        v = rates.get(k)
+        if v and v[b] is not None:
+            return v[b]
+    return rates[""][ALL_BINS]
+
+
+def rate_cells(rows):
+    """{directory (3 levels, 2, 1, or "" for all): per experience bin and then
+    any experience (ALL_BINS), [CLs' worth, lines, addressed threads]}, each
+    CL's lines and threads split over its directories by lines."""
+    cells = defaultdict(lambda: [[0.0, 0.0, 0] for _ in range(ALL_BINS + 1)])
+    for r in rows:
+        for d, f, a, _ in r.units:
+            for k in dir_levels(d):
+                c = cells[k]
+                for b in (r.bin, ALL_BINS):
+                    x = c[b]
+                    x[0] += f
+                    x[1] += r.lines * f
+                    x[2] += a
+    return cells
+
+
 def rate_model(rows):
-    """What the feedback index compares with. ref_bin: the median AFR per
-    experience bin (the main chart's line); ref_all: the median AFR of everyone
-    with MIN_CLS CLs over all of theirs. f_dir[e]: per directory (two levels,
-    and one level as the fallback), how much more feedback per line it draws
-    than its CLs' experience predicts (e "e") or than everyone's median
-    (e ""), relative to all directories. f_org[norm without o]: the same per
-    org, on top of the directory factor when "d" is in it; "*" pools the orgs
-    under MIN_FACTOR_CLS. All rounded, as the page uses them."""
+    """What the feedback index compares with. rates: per directory (3 levels,
+    2, 1, and "" for everyone), the pooled AFR of everyone's lines there per
+    experience bin and at any experience (the last), where they come to
+    MIN_RATE_CLS CLs' worth (null elsewhere: `peer_rate` takes the parent's).
+    scale[norm without o]: scales the expected threads so that the median
+    person's index (people with MIN_CLS CLs) is 1. f_org[norm without o]: per
+    org, how much more feedback it draws than that norm predicts; "*" pools
+    the orgs under MIN_FACTOR_CLS. ref_bin (the median AFR per experience bin,
+    the main chart's line) and ref_all (everyone's median) are for the page's
+    comparisons, not the index. All rounded, as the page uses them."""
     by_pid = defaultdict(list)
     for r in rows:
         by_pid[r.pid].append(r)
@@ -478,8 +524,14 @@ def rate_model(rows):
         lines = sum(r.lines for r in rs)
         if len(rs) >= MIN_CLS and lines > 0:
             alls.append(fr(sum(r.addr for r in rs), lines))
-    m = dict(ref_bin=ref_bin, ref_all=r3(st.median(alls)), f_dir={}, f_org={"": {"*": 1.0}, "e": {"*": 1.0},
-                                                                       "d": {"*": 1.0}, "ed": {"*": 1.0}})
+    rates = {}
+    for k, cs in sorted(rate_cells(rows).items()):
+        v = [r3(fr(a, lines)) if (n >= MIN_RATE_CLS or k == "") and lines > 0 else None for n, lines, a in cs]
+        if any(x is not None for x in v):
+            rates[k] = v
+    m = dict(ref_bin=ref_bin, ref_all=r3(st.median(alls)), rates=rates,
+             scale={nm: 1.0 for nm in ("", "e", "d", "ed")},
+             f_org={nm: {"*": 1.0} for nm in ("", "e", "d", "ed")})
 
     big = [rs for rs in by_pid.values() if len(rs) >= MIN_CLS]
 
@@ -491,26 +543,10 @@ def rate_model(rows):
                 xs.append(sum(r.addr for r in rs) / e)
         return st.median(xs)
 
-    def rescale(t, norm, target):
-        """Scales a factor table so the median person's index under `norm`
-        is what it is without that adjustment: the factors are pooled by
-        lines, so only their spread, not their level, is meant."""
-        s = median_fi(norm) / target
-        for k in t:
-            t[k] = r3(t[k] * s)
-
-    for e in ("", "e"):
-        obs, exp, n = defaultdict(float), defaultdict(float), defaultdict(float)
-        for r in rows:
-            b = (m["ref_bin"][r.bin] or m["ref_all"]) if e else m["ref_all"]
-            for d, f, a in r.units:
-                x = r.lines / 100 * b * f
-                for k in {dir2(d), dir1(d)}:
-                    obs[k] += a
-                    exp[k] += x
-                    n[k] += f
-        m["f_dir"][e] = {k: obs[k] / exp[k] for k in sorted(obs) if n[k] >= MIN_FACTOR_CLS and exp[k] > 0}
-        rescale(m["f_dir"][e], e + "d" if e else "d", median_fi(e))
+    # Pooled rates aren't the typical person's (big CLs draw less per line),
+    # so each norm's expected threads are scaled to make the median person's index 1.
+    for nm in ("", "e", "d", "ed"):
+        m["scale"][nm] = round(median_fi(nm), 4)
     for nm in ("", "e", "d", "ed"):
         obs, exp, n = defaultdict(float), defaultdict(float), Counter()
         for r in rows:
@@ -523,23 +559,80 @@ def rate_model(rows):
         t = {o: obs[o] / exp[o] for o in sorted(big_o)}
         t["*"] = so / se if se > 0 else 1.0
         m["f_org"][nm] = t
-        rescale(t, nm.replace("d", "do") if "d" in nm else nm + "o", median_fi(nm))
+        # Org factors are pooled by lines too: scaled so the median index stays 1.
+        s = median_fi(nm + "o")
+        for k in t:
+            t[k] = r3(t[k] * s)
     return m
+
+
+def unit_expected(r, norm, m):
+    """The addressed threads each unit of a CL would draw at its peers' AFR,
+    under norm (see NORMS): its lines / 100 × the peers' rate in its directory
+    ("d") at the CL's experience ("e") × the norm's scale × the org's factor ("o")."""
+    base = norm.replace("o", "")
+    s = m["scale"][base]
+    if "o" in norm:
+        t = m["f_org"][base]
+        s *= t.get(r.org, t["*"])
+    b = r.bin if "e" in norm else ALL_BINS
+    return [r.lines * f / 100 * peer_rate(m["rates"], d if "d" in norm else "", b) * s for d, f, _, _ in r.units]
 
 
 def expected(r, norm, m):
     """The addressed threads a CL would draw at its peers' AFR, under norm (see NORMS)."""
-    base = (m["ref_bin"][r.bin] or m["ref_all"]) if "e" in norm else m["ref_all"]
-    fo = 1.0
-    if "o" in norm:
-        t = m["f_org"][norm.replace("o", "")]
-        fo = t.get(r.org, t["*"])
-    if "d" in norm:
-        t = m["f_dir"]["e" if "e" in norm else ""]
-        share = sum(f * t.get(dir2(d), t.get(dir1(d), 1.0)) for d, f, _ in r.units)
-    else:
-        share = 1.0
-    return r.lines / 100 * base * fo * share
+    return sum(unit_expected(r, norm, m))
+
+
+def dir_table(rows):
+    """Everyone's directory table on the page: [path, kind, lines, reviewer
+    threads, addressed threads(, entries)], each CL's lines and threads split
+    over its directories by lines. Kind 0 is a directory (1, 2 or 3 levels)
+    with MIN_DIR_CLS CLs or more whose parent is listed too; 1 the files
+    directly in a listed directory that also has subdirectories ("rest of");
+    2 the smaller entries under a listed directory, or "" for the top
+    level, pooled into one "Other" row, with how many there are."""
+    node = defaultdict(lambda: [0, 0.0, 0, 0])      # CLs, lines, threads, addressed
+    own = defaultdict(lambda: [0.0, 0, 0])
+    for r in rows:
+        seen = set()
+        for d, f, a, t in r.units:
+            for k in dir_levels(d)[:-1]:
+                x = node[k]
+                if k not in seen:
+                    seen.add(k)
+                    x[0] += 1
+                x[1] += r.lines * f
+                x[2] += t
+                x[3] += a
+            o = own[d]
+            o[0] += r.lines * f
+            o[1] += t
+            o[2] += a
+    kids = defaultdict(list)
+    for k in node:
+        kids[dir_levels(k)[1]].append(k)
+    out = []
+
+    def walk(parent):
+        small = [0.0, 0, 0, 0]
+        for k in sorted(kids.get(parent, ()), key=lambda k: (-node[k][1], k)):
+            n, lines, t, a = node[k]
+            if n >= MIN_DIR_CLS:
+                out.append([k, 0, round(lines), t, a])
+                if kids.get(k) and own.get(k):
+                    o = own[k]
+                    out.append([k, 1, round(o[0]), o[1], o[2]])
+                walk(k)
+            else:
+                small[0] += lines
+                small[1] += t
+                small[2] += a
+                small[3] += 1
+        if small[3]:
+            out.append([parent, 2, round(small[0]), small[1], small[2], small[3]])
+    walk("")
+    return out
 
 
 def cohorts(by_pid, first_year):
@@ -839,12 +932,12 @@ def main():
     # ------------------------------------------------ peers
     dist = lambda xs: dict(n=len(xs), q=quantiles(xs) if len(xs) >= MIN_PEERS else None)
     first_year = {pid: datetime.fromtimestamp(t, timezone.utc).year for pid, t in first.items()}
-    peers = dict(v=6, generated=datetime.now(timezone.utc).strftime("%Y-%m-%d"), periods=allp,
+    peers = dict(v=7, generated=datetime.now(timezone.utc).strftime("%Y-%m-%d"), periods=allp,
                  start=epoch_day(START), end=epoch_day(END), addr_start=epoch_day(ADDR_START),
                  min_peers=MIN_PEERS, min_cls=MIN_CLS, min_bin_cls=MIN_BIN_CLS, min_cell_cls=MIN_CELL_CLS,
                  min_growth_bins=MIN_GROWTH_BINS, fr_floor=FR_FLOOR, bins=BIN_LABELS, bin_edges=BIN_EDGES,
-                 norms=NORMS, **model,
-                 fr_bins=fr_bins(by_pid),
+                 min_rate_cls=MIN_RATE_CLS, min_dir_cls=MIN_DIR_CLS, norms=NORMS, **model,
+                 dir_table=dir_table(rows), fr_bins=fr_bins(by_pid),
                  fi={nm: {p: dist(v.get(p, [])) for p in allp} for nm, v in fi_vals.items()},
                  cohorts=cohorts(by_pid, first_year),
                  size_labels=SIZE_LABELS, by_size=by_size(by_pid), by_dir=by_dir(by_pid), by_org=by_org(by_pid),

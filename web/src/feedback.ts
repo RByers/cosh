@@ -5,9 +5,10 @@
 //
 // The addressed feedback rate (AFR) of a set of changes is their addressed reviewer
 // threads per 100 new or changed lines (insertions). The feedback index (FI) is a person's AFR
-// over their peers': the median AFR at the same experience (earlier commits
-// on main, in power-of-two bins), adjusted for how much feedback the
-// directories and the org draw (`Norm`).
+// over their peers': for each directory a change wrote lines in, the AFR of
+// everyone's lines there at the same experience (CLs landed on main, in
+// power-of-two bins), or the parent directory's where that is too thin,
+// optionally with a factor for the org (`Norm`).
 
 /** What the feedback index compares with: experience (e), directory (d) and org (o), in that order. */
 export type Norm = '' | 'e' | 'd' | 'ed' | 'o' | 'eo' | 'do' | 'edo';
@@ -90,9 +91,14 @@ export interface Dist {
   q: number[] | null;
 }
 
-/** peers.json (cosh/review_feedback.py, version 5). */
+/** One entry of everyone's directory table (cosh/review_feedback.py `dir_table`): [path, kind, lines,
+ * reviewer threads, addressed threads, entries (kind 2)]. Kind 0: a directory; 1: the files directly in
+ * it ("rest of"); 2: the smaller entries under it ("" for the top level), pooled. */
+export type DirTableEntry = [string, 0 | 1 | 2, number, number, number, number?];
+
+/** peers.json (cosh/review_feedback.py, version 7). */
 export interface Peers {
-  v: 5;
+  v: 7;
   generated: string;
   /** The changes covered, as day numbers: from `start` up to (not including) `end`.
    * Only changes from `addr_start` have addressed labels. */
@@ -115,13 +121,24 @@ export interface Peers {
   bins: string[];
   bin_edges: number[];
   norms: Norm[];
-  /** The median AFR per experience bin (null: too few people), and everyone's. */
+  /** The median AFR per experience bin (null: too few people), and everyone's: the opening chart's
+   * line, for comparisons (the index uses `rates`). */
   ref_bin: (number | null)[];
   ref_all: number;
-  /** Directory factors (two levels, one level as the fallback) against experience ("e") or everyone (""). */
-  f_dir: Record<'' | 'e', Record<string, number>>;
+  /** A directory (3 levels, 2, 1, or "" for all) gets its own peers' rate at an experience bin with
+   * this many changes' worth there. */
+  min_rate_cls: number;
+  /** A directory gets a row of its own in everyone's directory table with this many changes. */
+  min_dir_cls: number;
+  /** Per directory, the pooled AFR of everyone's lines there per experience bin, then at any experience
+   * (the last); null where too few (`min_rate_cls`): the parent's counts (`peerRate`). */
+  rates: Record<string, (number | null)[]>;
+  /** Per norm without "o": the expected threads' scale, which makes the median contributor's index 1. */
+  scale: Record<'' | 'e' | 'd' | 'ed', number>;
   /** Org factors per norm without "o"; "*" for the smaller orgs. */
   f_org: Record<'' | 'e' | 'd' | 'ed', Record<string, number>>;
+  /** Everyone's directory table, parents before their children, each level by lines. */
+  dir_table: DirTableEntry[];
   /** Per experience bin, the spread of people's AFR there. */
   fr_bins: Dist[];
   /** Norm -> period -> the spread of people's feedback index. */
@@ -257,24 +274,40 @@ export const addressedOn = (c: ClRow) => c[4].reduce((s, t) => s + addressed(t),
 /** The changes landed in `period` that have addressed labels: the ones every measure counts. */
 export const clsIn = (p: Person, period: string) => p.cls.filter((c) => c[1] >= p.addrStart && inPeriod(c[1], period));
 
-/** The factor a norm gives a directory. */
-function dirFactor(peers: Peers, norm: Norm, d: string): number {
-  if (!norm.includes('d')) return 1;
-  const t = peers.f_dir[norm.includes('e') ? 'e' : ''];
-  return t[dir2(d)] ?? t[dir1(d)] ?? 1;
+/** A 3-level directory and its parents, deepest first, then "" (all of them)
+ * (cosh/review_feedback.py `dir_levels`). */
+export function dirLevels(d: string): string[] {
+  const p = d.split('/').filter(Boolean);
+  const out: string[] = [];
+  for (let k = Math.min(3, p.length); k > 0; k--) out.push(`${p.slice(0, k).join('/')}/`);
+  out.push('');
+  return out;
+}
+
+/** The peers' AFR for lines in directory `d` at experience bin `b` (`bins.length`: any experience): the
+ * directory's, else its parent's, up to everyone's (cosh/review_feedback.py `peer_rate`). */
+export function peerRate(peers: Pick<Peers, 'rates'>, d: string, b: number): number {
+  for (const k of dirLevels(d)) {
+    const v = peers.rates[k]?.[b];
+    if (v !== null && v !== undefined) return v;
+  }
+  const all = peers.rates[''];
+  return all[all.length - 1] ?? 0;
 }
 
 /** The addressed threads each unit of a change would draw at its peers' AFR, under `norm`
- * (cosh/review_feedback.py `expected`, per unit). */
+ * (cosh/review_feedback.py `unit_expected`): its lines / 100 × the peers' rate in its directory ("d")
+ * at the change's experience ("e") × the norm's scale × the org's factor ("o"). */
 export function unitExpected(p: Person, peers: Peers, c: ClRow, norm: Norm): number[] {
-  const base = norm.includes('e') ? peers.ref_bin[xbin(peers.bin_edges, c[6])] ?? peers.ref_all : peers.ref_all;
-  let fo = 1;
+  const base = norm.replace('o', '') as '' | 'e' | 'd' | 'ed';
+  let s = peers.scale[base];
   if (norm.includes('o')) {
-    const t = peers.f_org[norm.replace('o', '') as '' | 'e' | 'd' | 'ed'];
-    fo = t[p.orgs[c[5]]] ?? t['*'] ?? 1;
+    const t = peers.f_org[base];
+    s *= t[p.orgs[c[5]]] ?? t['*'] ?? 1;
   }
+  const b = norm.includes('e') ? xbin(peers.bin_edges, c[6]) : peers.bins.length;
   const fr_ = unitFracs(c[3]);
-  return c[3].map((u, i) => ((c[2] / 100) * base * fo * fr_[i] * dirFactor(peers, norm, p.dirs[u[0]])));
+  return c[3].map((u, i) => (c[2] * fr_[i] / 100) * peerRate(peers, norm.includes('d') ? p.dirs[u[0]] : '', b) * s);
 }
 
 export const expectedOn = (p: Person, peers: Peers, c: ClRow, norm: Norm) =>
@@ -411,6 +444,8 @@ export interface DirStats {
   cls: number;
   /** The changes' lines there: each change's lines times its fraction there. */
   lines: number;
+  /** Reviewer threads there, addressed or not. */
+  threads: number;
   addressed: number;
   /** Addressed threads expected there at the peers' AFR (the norm chosen). */
   expected: number;
@@ -441,16 +476,21 @@ const dirOrder = (a: DirNode, b: DirNode) =>
 export function dirTree(p: Person, peers: Peers, period: string, norm: Norm, bin: number | null = null): DirNode[] {
   const nodes = new Map<string, DirNode>();
   const roots: DirNode[] = [];
-  const stats = (): DirStats => ({ cls: 0, lines: 0, addressed: 0, expected: 0, prior: 0, ids: new Set() });
-  const add = (s: DirStats, lines: number, a: number, exp: number, prior: number) => {
+  const stats = (): DirStats => ({ cls: 0, lines: 0, threads: 0, addressed: 0, expected: 0, prior: 0, ids: new Set() });
+  const add = (s: DirStats, lines: number, a: number, exp: number, prior: number, t: number) => {
     s.lines += lines;
+    s.threads += t;
     s.addressed += a;
     s.expected += exp;
     s.prior = Math.max(s.prior, prior);
   };
   for (const c of clsPicked(p, period, bin)) {
     const per = new Map<number, number>();
-    for (const t of c[4]) per.set(t[4], (per.get(t[4]) ?? 0) + addressed(t));
+    const every = new Map<number, number>();
+    for (const t of c[4]) {
+      per.set(t[4], (per.get(t[4]) ?? 0) + addressed(t));
+      every.set(t[4], (every.get(t[4]) ?? 0) + 1);
+    }
     const fracs = unitFracs(c[3]);
     const exps = unitExpected(p, peers, c, norm);
     const touched = new Set<DirNode>();
@@ -458,6 +498,7 @@ export function dirTree(p: Person, peers: Peers, period: string, norm: Norm, bin
       const path = p.dirs[d];
       const lines = c[2] * fracs[i];
       const a = per.get(d) ?? 0;
+      const all = every.get(d) ?? 0;
       let parent: DirNode | null = null;
       for (let at = 0; at < path.length;) {
         const slash = path.indexOf('/', at);
@@ -468,12 +509,12 @@ export function dirTree(p: Person, peers: Peers, period: string, norm: Norm, bin
           nodes.set(key, (n = { path: key, name: path.slice(at, end), ...stats(), children: [], own: null }));
           (parent ? parent.children : roots).push(n);
         }
-        add(n, lines, a, exps[i], prior);
+        add(n, lines, a, exps[i], prior, all);
         touched.add(n);
         if (end === path.length) {
           n.own ??= stats();
           if (!n.own.ids.has(c[0])) (n.own.cls += 1, n.own.ids.add(c[0]));
-          add(n.own, lines, a, exps[i], prior);
+          add(n.own, lines, a, exps[i], prior, all);
         }
         parent = n;
         at = end;
@@ -555,6 +596,7 @@ export function dirRows(roots: DirNode[], expanded: ReadonlySet<string>, minCls:
         cls: ids.size,
         ids,
         lines: tail.reduce((s, it) => s + it.stats.lines, 0),
+        threads: tail.reduce((s, it) => s + it.stats.threads, 0),
         addressed: tail.reduce((s, it) => s + it.stats.addressed, 0),
         expected: tail.reduce((s, it) => s + it.stats.expected, 0),
         prior: Math.max(...tail.map((it) => it.stats.prior)),
@@ -571,6 +613,157 @@ export function dirRows(roots: DirNode[], expanded: ReadonlySet<string>, minCls:
 export function ratioShade(ratio: number): number {
   if (!(ratio > 0)) return -1;
   return Math.max(-1, Math.min(1, Math.log2(ratio) / 2));
+}
+
+/** An AFR's shade in the directory tables: 0 (a quarter per 100 lines or less) .. 1 (8 or more), on a log scale. */
+export function afrShade(v: number): number {
+  if (!(v > 0)) return 0;
+  return Math.max(0, Math.min(1, Math.log2(v / 0.25) / 5));
+}
+
+// ---- Everyone's directory table
+
+/** Everyone's figures for a row of the directory table. */
+export interface AllStats {
+  lines: number;
+  threads: number;
+  addressed: number;
+}
+
+/** A row of everyone's directory table (`peers.dir_table`): a directory, the files directly in it
+ * ("rest"), or its smaller entries pooled ("other"), with everyone's figures and, once someone is
+ * looked up, theirs. */
+export interface TableNode {
+  /** "d:path", "r:path" or "o:path" (`path` "" for the top level's "Other"). */
+  key: string;
+  kind: 'dir' | 'rest' | 'other';
+  path: string;
+  /** The last part of the path ("browser/"); "" for the others. */
+  name: string;
+  all: AllStats;
+  you: DirStats;
+  /** Entries pooled in an "other" row. */
+  count?: number;
+  children: TableNode[];
+}
+
+const emptyStats = (): DirStats => ({ cls: 0, lines: 0, threads: 0, addressed: 0, expected: 0, prior: 0, ids: new Set() });
+
+/** Everyone's directory table as a tree, with the person's changes in `period` (if any) added under
+ * `norm`: each unit to its directory, its parents, and to "rest of" or a level's "Other" where the
+ * table has no row of its own for it. Parents add up their children, counting each change once, so
+ * the index of a row is its addressed threads over its expected ones whether it is open or not. */
+export function dirTable(peers: Peers, p: Person | null, period: string, norm: Norm): TableNode[] {
+  const roots: TableNode[] = [];
+  const byKey = new Map<string, TableNode>();
+  const name = (path: string) => {
+    const parts = path.split('/').filter(Boolean);
+    return parts.length ? `${parts.at(-1)}/` : path;
+  };
+  for (const [path, kind, lines, threads, addr, count] of peers.dir_table) {
+    const k = kind === 0 ? 'dir' : kind === 1 ? 'rest' : 'other';
+    const n: TableNode = { key: `${k[0]}:${path}`, kind: k, path, name: kind === 0 ? name(path) : '',
+      all: { lines, threads, addressed: addr }, you: emptyStats(), children: [] };
+    if (count !== undefined) n.count = count;
+    byKey.set(n.key, n);
+    const parent = kind === 0 ? dirLevels(path)[1] : path;
+    const into = parent ? byKey.get(`d:${parent}`) : undefined;
+    (into ? into.children : roots).push(n);
+  }
+  if (!p) return roots;
+  const add = (n: TableNode, cl: number, lines: number, threads: number, a: number, exp: number) => {
+    const s = n.you;
+    s.lines += lines;
+    s.threads += threads;
+    s.addressed += a;
+    s.expected += exp;
+    if (!s.ids.has(cl)) (s.ids.add(cl), s.cls += 1);
+  };
+  for (const c of clsIn(p, period)) {
+    const per = new Map<number, [number, number]>();
+    for (const t of c[4]) {
+      const x = per.get(t[4]) ?? [0, 0];
+      x[0] += 1;
+      x[1] += addressed(t);
+      per.set(t[4], x);
+    }
+    const fracs = unitFracs(c[3]);
+    const exps = unitExpected(p, peers, c, norm);
+    c[3].forEach(([d], i) => {
+      const path = p.dirs[d];
+      const [threads, a] = per.get(d) ?? [0, 0];
+      const lines = c[2] * fracs[i];
+      const put = (n: TableNode) => add(n, c[0], lines, threads, a, exps[i]);
+      // Top level first: each level's own row, or that level's "Other", where the walk stops.
+      let parent = '';
+      let last: TableNode | null = null;
+      for (const k of dirLevels(path).slice(0, -1).reverse()) {
+        const n = byKey.get(`d:${k}`);
+        if (!n) {
+          const o = byKey.get(`o:${parent}`);
+          if (o) put(o);
+          last = null;
+          break;
+        }
+        put(n);
+        last = n;
+        parent = k;
+      }
+      // Files directly in a directory that has subdirectories.
+      const rest = last && last.path === path ? byKey.get(`r:${path}`) : undefined;
+      if (rest) put(rest);
+    });
+  }
+  return roots;
+}
+
+/** One visible row of everyone's directory table: a node, or a level's "show more" row (`more`: how many
+ * directories it hides). */
+export interface TableRowView {
+  key: string;
+  node: TableNode | null;
+  more?: number;
+  depth: number;
+  expandable: boolean;
+  expanded: boolean;
+  /** Everyone's AFR; the person's AFR and index there (null under `minCls` of their changes). */
+  fr: number | null;
+  youFr: number | null;
+  youFi: number | null;
+}
+
+/** The rows to show of `dirTable`'s tree, given which are open (`expanded`, by key): each level
+ * by lines, the person's first when `byYou` (then everyone's), with "rest of" and "Other" last. A level
+ * lists its first `shown` directories and a "more" row (key "m:" + the parent's key) that shows the
+ * rest. The person's AFR and index show only with `minCls` of their changes in the row. */
+export function tableRows(roots: TableNode[], expanded: ReadonlySet<string>, byYou: boolean, minCls: number,
+  shown = 12): TableRowView[] {
+  const out: TableRowView[] = [];
+  const rank = (n: TableNode) => (n.kind === 'dir' ? 0 : n.kind === 'rest' ? 1 : 2);
+  const order = (a: TableNode, b: TableNode) => rank(a) - rank(b) || (byYou ? b.you.lines - a.you.lines : 0) ||
+    b.all.lines - a.all.lines || (a.key < b.key ? -1 : 1);
+  const walk = (ns: TableNode[], depth: number, parentKey: string) => {
+    const sorted = [...ns].sort(order);
+    const dirs = sorted.filter((n) => n.kind === 'dir').length;
+    const moreKey = `m:${parentKey}`;
+    const all = dirs <= shown + 1 || expanded.has(moreKey);
+    sorted.forEach((n, i) => {
+      if (!all && i === shown) {
+        out.push({ key: moreKey, node: null, more: dirs - shown, depth, expandable: true, expanded: false,
+          fr: null, youFr: null, youFi: null });
+      }
+      if (!all && i >= shown && n.kind === 'dir') return;
+      const expandable = n.children.length > 0;
+      const open = expandable && expanded.has(n.key);
+      const big = n.you.cls >= minCls;
+      out.push({ key: n.key, node: n, depth, expandable, expanded: open, fr: fr(n.all.addressed, n.all.lines),
+        youFr: big ? fr(n.you.addressed, n.you.lines) : null,
+        youFi: big && n.you.expected > 0 ? n.you.addressed / n.you.expected : null });
+      if (open) walk(n.children, depth + 1, n.key);
+    });
+  };
+  walk(roots, 0, 'root');
+  return out;
 }
 
 // ---- Comments

@@ -1530,13 +1530,20 @@ test('review feedback: the AFR and index, as the script computes them', async ()
   const e = F.sums(person, peers, cs, 'e');
   near(e.expected, 0.4 * 2.5 + 1.2 * 1.7 + 0.1 * 1);
   near(F.fiOf(e), 3 / 3.14);
-  // And the directories: CL 1 in chrome/browser/ (1.2), CL 2 by lines in content/ (0.8, 90 of 118) and
-  // chrome/browser/ (28 of 118), CL 3 in third_party/blink/ (0.5).
+  // And the directories, at the same experience: CL 1 in chrome/browser/ui/, which has no rate at bin 2,
+  // so chrome/browser/'s (3); CL 2 by lines in content/browser/ (content/'s 1.36 at bin 4, 90 of 118)
+  // and chrome/browser/ui/ (2.04, 28 of 118); CL 3 in third_party/blink/renderer/ (third_party/blink/'s 0.5).
   const ed = F.sums(person, peers, cs, 'ed');
-  near(ed.expected, 1 * 1.2 + 2.04 * ((90 / 118) * 0.8 + (28 / 118) * 1.2) + 0.1 * 0.5);
-  // A directory without a factor of its own or of its top level gets 1; the org factor applies to every change.
+  near(ed.expected, 0.4 * 3 + 1.2 * ((90 / 118) * 1.36 + (28 / 118) * 2.04) + 0.1 * 0.5);
+  assert.deepEqual(F.dirLevels('chrome/browser/ui/'), ['chrome/browser/ui/', 'chrome/browser/', 'chrome/', '']);
+  assert.deepEqual(F.dirLevels('(root)/'), ['(root)/', '']);
+  assert.equal(F.peerRate(peers, 'chrome/browser/ui/', 0), 9);
+  assert.equal(F.peerRate(peers, 'net/base/', 3), 2);
+  // Each norm's scale multiplies what's expected; the org factor applies to every change.
+  near(F.sums(person, { ...peers, scale: { ...peers.scale, ed: 0.5 } }, cs, 'ed').expected, ed.expected / 2);
   near(F.sums(person, peers, cs, 'edo').expected, ed.expected * 1.1);
-  near(F.sums(person, peers, cs, 'd').expected, 1.5 * (0.4 * 1.1 + 1.2 * ((90 / 118) * 0.9 + (28 / 118) * 1.1) + 0.1));
+  // At any experience: third_party/blink/ has no such rate, nor has third_party/, so all of Chromium's.
+  near(F.sums(person, peers, cs, 'd').expected, 0.4 * 1.65 + 1.2 * ((90 / 118) * 1.35 + (28 / 118) * 1.65) + 0.1 * 1.5);
   near(F.sums(person, peers, cs, 'o').expected, 1.7 * 1.5 * 0.9);
   // Per bin, and the growth rate: rates 2.5, 0.83 and 10 at bins 2, 4 and 6 fit a line of +41% per doubling.
   const bins = F.binSums(person, peers, 'all', 'e');
@@ -1601,6 +1608,38 @@ test('review feedback: directories, comments and the comments-per-change histogr
   near(rows[0].fr!, 100 / dirs[0].lines);
   near(rows[0].fi!, 1 / dirs[0].expected);
   assert.deepEqual([rows[2].fr, rows[2].fi], [null, null]);
+  // Everyone's directory table, with the person's changes: CL 3 is in third_party/blink/, which is in
+  // third_party/'s "Other"; CL 1 and part of CL 2 in chrome/browser/ui/.
+  const table = F.dirTable(peers, person, 'all', 'ed');
+  assert.deepEqual(table.map((n) => n.key), ['d:third_party/', 'd:chrome/', 'd:content/', 'o:']);
+  const tp = table[0];
+  assert.deepEqual(tp.children.map((n) => [n.key, n.count ?? null, n.you.cls]), [['o:third_party/', 120, 1]]);
+  const chrome = table[1];
+  assert.deepEqual(chrome.children[0].children.map((n) => n.key), ['d:chrome/browser/ui/', 'r:chrome/browser/', 'o:chrome/browser/']);
+  assert.deepEqual([chrome.you.cls, chrome.you.threads, chrome.you.addressed], [2, 2, 1]);
+  near(chrome.you.lines, 40 + (120 * 28) / 118);
+  // A parent's expected comments are its children's, so its index is the same open or closed.
+  near(chrome.you.expected, 0.4 * 3 + (1.2 * 28 / 118) * 2.04);
+  near(chrome.children[0].you.expected, chrome.you.expected);
+  assert.deepEqual(F.dirTable(peers, null, 'all', 'ed')[1].you.cls, 0);
+  // Rows: by everyone's lines, or by yours when someone is shown; "Other" last; rows under minCls
+  // of the person's changes get no AFR or index of theirs.
+  const tview = (open: string[], byYou: boolean, shown?: number) =>
+    F.tableRows(table, new Set(open), byYou, 2, shown).map((r) => `${'  '.repeat(r.depth)}${r.key}${r.more ? ` (${r.more})` : ''}`);
+  assert.deepEqual(tview([], false), ['d:third_party/', 'd:chrome/', 'd:content/', 'o:']);
+  assert.deepEqual(tview([], true), ['d:content/', 'd:chrome/', 'd:third_party/', 'o:']);
+  assert.deepEqual(tview(['d:chrome/', 'd:chrome/browser/'], false),
+    ['d:third_party/', 'd:chrome/', '  d:chrome/browser/', '    d:chrome/browser/ui/', '    r:chrome/browser/',
+      '    o:chrome/browser/', 'd:content/', 'o:']);
+  // A level shows its first directories and a row for the rest, unless that row would hide just one.
+  assert.deepEqual(tview([], false, 1), ['d:third_party/', 'm:root (2)', 'o:']);
+  assert.deepEqual(tview(['m:root'], false, 1), ['d:third_party/', 'd:chrome/', 'd:content/', 'o:']);
+  assert.deepEqual(tview([], false, 2), ['d:third_party/', 'd:chrome/', 'd:content/', 'o:']);
+  const trows = F.tableRows(table, new Set(), false, 2);
+  near(trows[0].fr!, 100 * 40_000 / 6_000_000);
+  near(trows[1].youFi!, 1 / chrome.you.expected);
+  assert.deepEqual([trows[0].youFr, trows[0].youFi], [null, null]);
+  assert.deepEqual([0, 0.25, 1, 8, 100].map(F.afrShade), [0, 0, 0.4, 1, 1]);
   // The index's shade: log scale, white at typical, full at a quarter or four times.
   assert.deepEqual([0, 0.25, 0.5, 1, 2, 4, 8].map(F.ratioShade), [-1, -1, -0.5, 0, 0.5, 1, 1]);
   // Comments: addressed ones only, newest first; under one directory, at any level.
