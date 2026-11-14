@@ -38,6 +38,7 @@ import random
 import sys
 from collections import defaultdict
 from datetime import datetime, timezone
+from operator import mul
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from cosh import balance_publish  # noqa: E402
@@ -123,7 +124,12 @@ def fit(codes, n, y, f=None, tol=1e-6, iters=500):
     observed / expected). codes: per factor, the cells' integer keys; n, y:
     the cells' commits and reverts. f: starting factors (warm start).
     Stops when no factor moves by more than tol (in log). A factor whose
-    cells have no reverts is 0 and stays 0."""
+    cells have no reverts is 0 and stays 0.
+
+    Tuned for speed with the same floating-point operations, in the same
+    order, as the plain loop: levels without reverts are set to 0 once, and
+    cells whose fitted value is 0 after the first iteration (an author
+    without reverts) are dropped, since they stay 0 and only ever add 0."""
     k = [max(c) + 1 for c in codes]
     f = [list(x) for x in f] if f else [[1.0] * m for m in k]
     obs = []
@@ -134,25 +140,38 @@ def fit(codes, n, y, f=None, tol=1e-6, iters=500):
         obs.append(o)
     mu = list(n)                            # fitted reverts per cell
     for c, fc in zip(codes, f):
-        mu = [a * fc[i] for a, i in zip(mu, c)]
-    for _ in range(iters):
+        mu = list(map(mul, mu, map(fc.__getitem__, c)))
+    base = []                               # per factor, the ratio of a level that does not move
+    for fj, oj in zip(f, obs):
+        for i, o in enumerate(oj):
+            if o == 0:
+                fj[i] = 0.0
+        base.append([0.0 if o == 0 else 1.0 for o in oj])
+    act = [[(i, o) for i, o in enumerate(oj) if o != 0] for oj in obs]
+    for it in range(iters):
+        if it == 1:
+            live = [i for i, v in enumerate(mu) if v]
+            if len(live) < len(mu):
+                mu = [mu[i] for i in live]
+                codes = [[c[i] for i in live] for c in codes]
         moved = 0.0
         for j, c in enumerate(codes):
-            fj, oj = f[j], obs[j]
+            fj = f[j]
             ex = [0.0] * k[j]
             for i, v in zip(c, mu):
                 ex[i] += v
-            ratio = [1.0] * k[j]
-            for i in range(k[j]):
-                if oj[i] == 0:
-                    ratio[i] = 0.0
-                    fj[i] = 0.0
-                elif ex[i] > 0:
-                    r = oj[i] / ex[i]          # ex already includes the old factor
+            ratio = base[j][:]
+            rs = []
+            for i, o in act[j]:
+                e = ex[i]
+                if e > 0:
+                    r = o / e                  # ex already includes the old factor
                     ratio[i] = r
                     fj[i] *= r
-                    moved = max(moved, abs(math.log(r)))
-            mu = [v * ratio[i] for v, i in zip(mu, c)]
+                    rs.append(r)
+            if rs:
+                moved = max(moved, max(map(abs, map(math.log, rs))))
+            mu = list(map(mul, mu, map(ratio.__getitem__, c)))
         if moved < tol:
             break
     return f
