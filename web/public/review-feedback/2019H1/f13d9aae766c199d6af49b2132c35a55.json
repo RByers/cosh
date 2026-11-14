@@ -1,1 +1,1 @@
-{"dirs":["components/data_reduction_proxy/core/","services/network/","tools/metrics/histograms/"],"files":[],"orgs":["google.com"],"cls":[[1625489,18038,5,0.248,0.173,[[0,0]],[],0,0],[1630028,18045,101,2.167,1.803,[[1,0.876,0,89],[2,0.124,0,12]],[[21,9],[6,5]],0,1]],"counts":1}
+{"dirs":["services/network/","tools/metrics/histograms/"],"files":[],"orgs":["google.com"],"cls":[[1630028,18045,101,3.008,2.492,[[0,0.876,0,89],[1,0.124,0,12]],[[21,9],[6,5]],0,1]],"counts":1}

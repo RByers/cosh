@@ -1,1 +1,1 @@
-{"dirs":["chrome/browser/chromeos/","components/metrics/call_stacks/","components/metrics/","chrome/browser/"],"files":[],"orgs":["google.com"],"cls":[[6064462,20062,127,2.361,1.866,[[0,0.507,100,585],[1,0.453,0,524],[2,0.025,0,28],[3,0.015,224,14]],[],0,1781]],"counts":1}
+{"dirs":["components/metrics/call_stacks/","components/metrics/","chrome/browser/","chrome/browser/chromeos/"],"files":[],"orgs":["google.com"],"cls":[[6064462,20062,46,1.77,1.388,[[0,0.923,0,524],[1,0.051,0,28],[2,0.016,224,6],[3,0.01,100,0]],[],0,1781]],"counts":1}

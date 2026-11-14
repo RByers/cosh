@@ -1,1 +1,1 @@
-{"dirs":["chrome/browser/enterprise/","components/device_signals/core/","chrome/browser/extensions/","chrome/test/"],"files":[],"orgs":["google.com"],"cls":[[3708568,19166,57,1.341,1.058,[[0,0.486,0,185],[1,0.478,0,182],[2,0.023,0,6],[3,0.013,0,4]],[[2,2],[3,3],[0,0],[0,0]],0,0]],"counts":1}
+{"dirs":["components/device_signals/core/","chrome/browser/extensions/","chrome/browser/enterprise/","chrome/test/"],"files":[],"orgs":["google.com"],"cls":[[3708568,19166,26,1.035,0.792,[[0,0.934,0,181],[1,0.03,0,3],[2,0.02,0,0],[3,0.015,0,2]],[[5,5],[0,0],[0,0],[0,0]],0,0]],"counts":1}

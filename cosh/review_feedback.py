@@ -2,7 +2,7 @@
 docs/review-feedback.md).
 
 The feedback rate (FR) of a set of CLs is their addressed reviewer threads
-per 100 changed lines; the feedback index (FI) is a person's FR over their
+per 100 new or changed lines; the feedback index (FI) is a person's FR over their
 peers' (the median FR at the same experience, adjusted for directories and,
 optionally, org: `rate_model`, `expected`).
 
@@ -231,7 +231,7 @@ def year(t):
 
 
 def size10(lines):
-    """Ten log-spaced size buckets: <4, <8, ..., <1024, 1024+ (changed lines)."""
+    """Ten log-spaced size buckets: <4, <8, ..., <1024, 1024+ (new or changed lines)."""
     return min(9, max(0, int(math.log2(max(lines, 1))) - 1))
 
 
@@ -324,7 +324,7 @@ def norms(use, also=()):
 
 # ---------------------------------------------------------------- feedback rate and index
 # The feedback rate (FR) of a set of CLs: their addressed reviewer threads per
-# 100 changed lines (insertions plus deletions), pooled. Experience is the
+# 100 new or changed lines (Gerrit's insertions), pooled. Experience is the
 # owner's CLs landed on main counting the CL itself (earlier commits + 1), in
 # power-of-two bins named by their top, so each bin is one doubling: "8" is 8
 # or fewer, "16" is 9–16, ..., "2k" is 1,025–2,048, ">2k" more.
@@ -680,10 +680,13 @@ def main():
     for c in cls:
         if c["change_number"] in mech:
             c["status"] = "MECH"
+    # Lines are insertions alone: deletions draw almost no addressed feedback
+    # (docs/review-feedback.md, "Why deletions don't count"), so CLs that only
+    # delete are left out.
     use = [c for c in cls if c["status"] == "MERGED" and c["closed_at"] and c["pid"]
-           and not is_bot_email(c["owner_email"])]
+           and not is_bot_email(c["owner_email"]) and (c["ins"] or 0) > 0]
     for c in use:
-        c["lines"] = (c["ins"] or 0) + (c["dels"] or 0)
+        c["lines"] = c["ins"]
         c["sb"] = size10(c["lines"])
         c["d2"] = top2.get(c["change_number"])
 
@@ -724,7 +727,7 @@ def main():
     print(f"{len(use):,} CLs in range {day_str(START)} .. {day_str(END - DAY)}", file=sys.stderr, flush=True)
 
     cl_dirs = defaultdict(dict)       # by CL, then directory
-    for (n, d), (files, lines) in sorted(F.cl_dirs(git_db(), by_cid, by_n).items()):
+    for (n, d), (files, lines) in sorted(F.cl_dirs(git_db(), by_cid, by_n, dels=False).items()):
         cl_dirs[n][d] = (lines + files, lines)
     del by_cid
     orgs = OrgResolver()
@@ -983,7 +986,7 @@ def shard(cs, text, threads):
     and peers.json's `size_norm` lists them.
 
     Units, largest share first: [directory, line share, earlier commits there,
-    lines changed there], or [directory, earlier commits there] for a CL
+    lines there (insertions)], or [directory, earlier commits there] for a CL
     wholly in one directory (share 1, all of its lines).
 
     With `threads` (half-years that reach into the year with comment text),

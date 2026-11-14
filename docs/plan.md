@@ -218,6 +218,7 @@ value_ratio(O, t) = O's share of Chromium addressed review comments
 | 2026-11-13 | **Addressed labels for 2017 .. 2021** (`cosh classify`, about 408k threads, ~130M Haiku tokens, ~$28 API-equivalent), so the whole review-comment database is classified. `classify --stop-at 0.99 --wait` reads the plan's 5-hour and weekly utilization from `claude -p`'s stream-json `rate_limit_event`, stops starting calls at 99% of either and resumes 5 min after it resets. Runs as the user unit `cosh-classify-2017` (log `data/private/logs/classify-2017-*.log`). The weekly window stood at 68% at the start, so this spans several weekly resets | User's instruction: "Backfill all the addressed comment labels back to 2017 … stop if it reaches 99% of my limit, then restart when the limit is reset". Reverses the 2026-11-09 note that these years get no labels |
 | 2026-11-13 | **Affiliations fetched once, by their own step.** `cosh update-affiliations` is the only fetcher; it now also copies `org-list.txt` from the same chromium/src directory into `config/`. `OrgResolver()` reads the local copy, and `summarize`, `comments-collect`, `review-feedback` and `balance-publish` are offline steps that depend on it in `config/dataflow.json`. `COSH_AFFILIATIONS_OFFLINE` is gone. Reverses 2026-11-12's refresh in every process | User's instruction, after a googlesource 503 on the second of a publish's per-process fetches stopped a rebuild |
 | 2026-11-14 | **Feedback Index redefined: feedback rate and index, no switches.** The **feedback rate (FR)** is addressed reviewer threads per 100 changed lines (pooled over a set of CLs; mechanical and LSC CLs left out). The **feedback index (FI)** is a person's FR over their peers': per CL, its lines × the median FR of people at the same experience × a factor for each directory it changed (two levels, pooled observed/expected, rescaled so the median person's index doesn't move), optionally × an org factor. Experience is changes landed before in power-of-two bins (<8, 8–15, …, 1k–2k, 2k+), so each bin is a doubling. The feedback, adjustment, tenure and peers switches are gone; a person's section picks the FI's peers with three checkboxes (experience and directories on by default, organization off). The opening card shows one chart (median FR by changes landed before, with the middle half and 10th–90th percentile shaded); the person's sections show the FI with everyone's spread over time, their FR on that chart, an experience table with FI and the change per bin, and directories with FR and a shaded FI column. A collapsed "Methodology and details" holds newcomers' FR by start year, the smoothed distribution of each person's growth rate (median −21% per doubling, 10th percentile −47%, 90th +23%), FR and threads per change by size, and FR by directory and by org. The old cohort, histogram, all-vs-addressed and tenure-comparison charts and the count tiles' ranks are gone (`docs/review-feedback.md`) | User request: make the page much simpler and clearer, with fixed definitions and the details collapsed |
+| 2026-11-14 | **Feedback rate counts inserted lines only.** FR and FI are per 100 new or changed lines (Gerrit's insertions); deletions no longer count, CLs that only delete are left out, and the directory split uses the landed commit's insertions (`cl_dirs(dels=False)`). Deleted lines draw almost no addressed feedback (a fitted weight for them is 0; pure deletions draw 0.08 addressed threads per CL against 1.89), and counting them lowered the rate of people who delete a lot and of experienced people, who delete more. The median FR runs 5.40 at <8 earlier changes down to 0.80 at 2k+ (was 3.95 to 0.43); every person's files changed (`docs/review-feedback.md`, "Why deletions don't count"). A deletion-rate dashboard is a later idea (Next steps 9) | User's call after the study |
 
 ## Status
 
@@ -429,6 +430,16 @@ value_ratio(O, t) = O's share of Chromium addressed review comments
    (about an hour of local `--numstat`), and whether authorship also belongs
    on the balance page.
 9. Later:
+   - **Deletion-rate dashboard (idea, 2026-11-14):** a separate page on how
+     much code Chromium deletes over time: deleted lines as a share of
+     changed lines by month, by experience, directory and org, and
+     deletion-heavy CLs (cleanups, removals of features and dead code).
+     Prompted by the Feedback Index study that dropped deletions from its
+     rate: deletions draw almost no addressed review feedback (pure
+     deletions 0.08 addressed threads per CL against 1.89 overall), and
+     the deleted share grows with experience, from 28% of the changed
+     lines of people with fewer than 8 earlier changes to 49% at 2k+.
+     Local data only (`commits.sqlite`, `reviews.sqlite`); nothing to fetch;
    - the OWNER bit;
    - years 2–5 of backfill;
    - other repos and hosts (v8, devtools-frontend and skia are listed in

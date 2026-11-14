@@ -1,1 +1,1 @@
-{"dirs":["testing/variations/","components/password_manager/core/","tools/metrics/histograms/"],"files":[],"orgs":["google.com"],"cls":[[6239613,20125,17,0.198,0.14,[[0,0.842,6,15],[1,0.158,8,2]],[],0,88],[6322988,20152,4,0.157,0.113,[[2,8]],[],0,89]],"counts":1}
+{"dirs":["components/password_manager/core/","testing/variations/","tools/metrics/histograms/"],"files":[],"orgs":["google.com"],"cls":[[6239613,20125,1,0.112,0.081,[[0,0.667,8,1],[1,0.333,6,0]],[],0,88],[6322988,20152,2,0.116,0.083,[[2,8]],[],0,89]],"counts":1}

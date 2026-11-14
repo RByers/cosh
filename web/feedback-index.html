@@ -17,7 +17,7 @@
       fills in the values. The data is one file per person, named by a hash
       of their address, written by cosh/review_feedback.py
       (docs/review-feedback.md). Feedback rate: addressed reviewer threads
-      per 100 changed lines. Feedback index: a person's rate against their
+      per 100 new or changed lines. Feedback index: a person's rate against their
       peers'. Ground rule 5 (docs/plan.md): review tone
       appears only as praise, and orgs get no tone figures. Comment text is
       untrusted and goes into the page only as text.
@@ -47,9 +47,10 @@
           ultimately becoming reviewers themselves to help teach the next generation of contributors.
         </p>
         <p class="rf-def">
-          <strong>Feedback rate</strong>: addressed review comments per 100 lines changed. That is the reviewer
-          comment threads that led to a change in the code, for every 100 lines added or removed, over the changes
-          someone landed. Large-scale changes and other large mechanical changes are left out.
+          <strong>Feedback rate</strong>: addressed review comments per 100 lines written. That is the reviewer
+          comment threads that led to a change in the code, for every 100 new or changed lines, over the changes
+          someone landed. Removed lines don't count, since they draw almost no feedback. Large-scale changes and
+          other large mechanical changes are left out.
         </p>
         <h3>Feedback rate by experience</h3>
         <ul id="rf-main-legend" class="legend rf-line-legend" aria-label="Lines and bands"></ul>
@@ -179,7 +180,7 @@
           <div class="tile" id="rf-tile-fi"><div class="tile-label">Your feedback index</div><div class="tile-value"></div><div class="tile-sub"></div></div>
           <div class="tile" id="rf-tile-growth"><div class="tile-label">Your growth per doubling</div><div class="tile-value"></div><div class="tile-sub"></div></div>
         </div>
-        <template data-msg="tile-lines"><slot name="n"></slot> lines changed</template>
+        <template data-msg="tile-lines"><slot name="n"></slot> lines written</template>
         <template data-msg="tile-fr-sub">addressed comments per 100 lines</template>
         <template data-msg="tile-fi-rank"><slot name="p"></slot> of <slot name="n"></slot> contributors have a lower
           index</template>
@@ -283,7 +284,7 @@
         <div class="table-wrap">
           <table id="rf-dirs" class="rf-table">
             <thead><tr><th scope="col">Directory</th><th scope="col" class="num">Changes</th>
-              <th scope="col" class="num" title="Your changes' lines there: each change's lines added plus removed, times its share there">Lines</th>
+              <th scope="col" class="num" title="Your changes' lines there: each change's new or changed lines, times its share there">Lines</th>
               <th scope="col" class="num">Addressed comments</th><th scope="col" class="num">Feedback rate</th>
               <th scope="col" class="num">Feedback index</th><th scope="col" class="num">Earlier commits</th></tr></thead>
             <tbody></tbody>
@@ -371,13 +372,13 @@
           <div>
             <h3>Addressed comments per change, by change size</h3>
             <div class="chart rf-half-chart">
-              <canvas id="rf-size-cl" role="img" aria-label="Bar chart of the median contributor's addressed comments per change by the number of lines a change changed."></canvas>
+              <canvas id="rf-size-cl" role="img" aria-label="Bar chart of the median contributor's addressed comments per change by the number of lines a change wrote."></canvas>
             </div>
           </div>
           <div>
             <h3>Feedback rate, by change size</h3>
             <div class="chart rf-half-chart">
-              <canvas id="rf-size" role="img" aria-label="Bar chart of the median contributor's feedback rate by the number of lines a change changed."></canvas>
+              <canvas id="rf-size" role="img" aria-label="Bar chart of the median contributor's feedback rate by the number of lines a change wrote."></canvas>
             </div>
           </div>
         </div>
@@ -390,7 +391,7 @@
           draw little feedback per line. Each contributor counts in a bar with <slot name="minCell"></slot> or more
           changes of that size.
         </template>
-        <template data-msg="axis-lines">lines changed</template>
+        <template data-msg="axis-lines">lines written</template>
         <template data-msg="axis-per-cl-median">addressed comments per change</template>
 
         <div class="rf-pair">
@@ -431,7 +432,8 @@
           code). It is addressed when the owner's reply led to a change in the code, as judged by a regular
           expression for “Done”-style replies and by an AI model (Claude Haiku) for the rest (<a target="_blank"
           rel="noopener" href="https://github.com/RByers/cosh/blob/main/docs/comment-classifier.md">how</a>). Lines
-          are those added plus removed, as Gerrit counts them.
+          are the new or changed lines (Gerrit's insertions); removed lines don't count, because they draw almost
+          no feedback, and changes that only remove lines are left out.
         </p>
         <p class="note">
           A feedback rate is pooled: all the addressed comments on a set of changes per 100 of all their lines.

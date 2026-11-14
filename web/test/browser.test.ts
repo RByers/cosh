@@ -3325,7 +3325,7 @@ test('feedback index: the opening card defines the rate and index, with one char
   assert.deepEqual(await page.$$eval('#intro, #index', (ss) => ss.map((s) => s.querySelector('h2')!.textContent)), ['Feedback rate', 'Feedback index']);
   assert.doesNotMatch(await page.$eval('#intro', (e) => e.textContent!), /index/i);
   assert.match(await page.$eval('#intro .rf-def', (e) => e.textContent!.replace(/\s+/g, ' ')),
-    /addressed review comments per 100 lines changed.*Large-scale changes and other large mechanical changes are left out/);
+    /addressed review comments per 100 lines written.*Removed lines don't count.*Large-scale changes and other large mechanical changes are left out/);
   // The x-axis is changes landed before, in doublings; the bands are the middle half and the 10th–90th percentile.
   assert.deepEqual(await axisTitles(page, 'main'), ['experience (CLs landed on main)', 'feedback rate']);
   assert.deepEqual(await page.evaluate(() => window.__rf!.charts.main.data.labels),
@@ -3361,8 +3361,8 @@ test('feedback index: the opening card defines the rate and index, with one char
   assert.match((await page.$eval('#rf-newcomers-note', (e) => e.textContent!)).replace(/\s+/g, ' '),
     /their first 10 CLs on main.*2026 is not over yet\./);
   // Size: per change it climbs, per 100 lines much less; directories and organizations, highest first.
-  assert.deepEqual(await axisTitles(page, 'sizeCl'), ['lines changed', 'addressed comments per change']);
-  assert.deepEqual(await axisTitles(page, 'size'), ['lines changed', 'feedback rate']);
+  assert.deepEqual(await axisTitles(page, 'sizeCl'), ['lines written', 'addressed comments per change']);
+  assert.deepEqual(await axisTitles(page, 'size'), ['lines written', 'feedback rate']);
   assert.match((await page.$eval('#rf-size-note', (e) => e.textContent!)).replace(/\s+/g, ' '),
     /under 4 lines drew 0\.06 addressed comments each, those of 512–1k lines 6\.88\. Per 100 lines.*\(2\.82 against 1\.00\)/);
   assert.deepEqual(await page.evaluate(() => window.__rf!.charts.dirs.data.labels),
@@ -3387,7 +3387,7 @@ test('feedback index: a person\'s index, how their rate compares, directories an
   const sub = (id: string) => page.$eval(`#${id} .tile-sub`, (e) => e.textContent!.replace(/\s+/g, ' ').trim());
   // 3 changes, 170 lines, 3 addressed comments: 1.76 per 100 lines.
   assert.equal(await tile('rf-tile-cls'), '3');
-  assert.equal(await sub('rf-tile-cls'), '170 lines changed');
+  assert.equal(await sub('rf-tile-cls'), '170 lines written');
   assert.equal(await tile('rf-tile-threads'), '3');
   assert.equal(await tile('rf-tile-fr'), '1.76');
   // Against experience and directories by default (3 over 3.08 expected): 31% of 2,800 have a lower index.

@@ -1,1 +1,1 @@
-{"dirs":["chrome/test/data/","components/password_manager/core/","chrome/browser/password_manager/"],"files":[],"orgs":["yandex-team.ru"],"cls":[[725282,17462,119,2.257,1.837,[[0,0.373,1,43],[1,0.317,0,38],[2,0.31,1,38]],[[0,0],[4,4],[0,0]],0,12]],"counts":1}
+{"dirs":["chrome/test/data/","chrome/browser/password_manager/","components/password_manager/core/"],"files":[],"orgs":["yandex-team.ru"],"cls":[[725282,17462,112,2.643,2.172,[[0,0.387,1,42],[1,0.319,1,37],[2,0.294,0,33]],[[0,0],[0,0],[4,4]],0,12]],"counts":1}

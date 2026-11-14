@@ -203,6 +203,8 @@ class ClFactsTest(unittest.TestCase):
         self.assertEqual(by_cid, {7: 20, 9: 10})
         self.assertEqual(dict(balance.cl_dirs(gdb, by_cid)), {(20, "a/b/c/"): [2, 6], (10, "(root)/"): [1, 1]})
         self.assertEqual(dict(balance.cl_dirs(gdb, by_cid, {20})), {(20, "a/b/c/"): [2, 6]})
+        # The Feedback Index's lines: insertions alone.
+        self.assertEqual(dict(balance.cl_dirs(gdb, by_cid, dels=False)), {(20, "a/b/c/"): [2, 4], (10, "(root)/"): [1, 1]})
 
 
 class HoursTest(unittest.TestCase):

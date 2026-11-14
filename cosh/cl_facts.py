@@ -58,17 +58,18 @@ def cl_facts(ddb, gdb):
     return rows, {v[0]: n for n, v in landed.items()}
 
 
-def cl_dirs(gdb, by_cid, numbers=None):
+def cl_dirs(gdb, by_cid, numbers=None, dels=True):
     """The cl_dirs table: {(change_number, 3-level directory): [files, lines]}
     of the landed commits in `by_cid` (from cl_facts), only for the CLs in
-    `numbers` if given."""
+    `numbers` if given. Lines are insertions plus deletions, or insertions
+    alone without `dels` (the Feedback Index's lines)."""
     paths = dict(gdb.execute("SELECT path_id, path FROM paths"))
     agg = defaultdict(lambda: [0, 0])
-    for cid, pid, ins, dels in gdb.execute("SELECT commit_id, path_id, ins, dels FROM gfiles"):
+    for cid, pid, ins, d in gdb.execute("SELECT commit_id, path_id, ins, dels FROM gfiles"):
         n = by_cid.get(cid)
         if n is None or (numbers is not None and n not in numbers):
             continue
         g = agg[(n, dir_of(paths[pid], 3))]
         g[0] += 1
-        g[1] += max(ins, 0) + max(dels, 0)
+        g[1] += max(ins, 0) + (max(d, 0) if dels else 0)
     return agg

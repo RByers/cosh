@@ -1,1 +1,1 @@
-{"dirs":["testing/variations/","components/content_settings/core/","chrome/browser/"],"files":[],"orgs":["google.com"],"cls":[[6152158,20097,17,0.198,0.14,[[0,0.842,10,15],[1,0.158,1,2]],[[0,0],[1,1]],0,112],[6330402,20153,2,0.143,0.09,[[2,17]],[],0,113]],"counts":1}
+{"dirs":["components/content_settings/core/","testing/variations/","chrome/browser/"],"files":[],"orgs":["google.com"],"cls":[[6152158,20097,1,0.112,0.081,[[0,0.667,1,1],[1,0.333,10,0]],[[1,1],[0,0]],0,112],[6330402,20153,1,0.197,0.133,[[2,17]],[],0,113]],"counts":1}

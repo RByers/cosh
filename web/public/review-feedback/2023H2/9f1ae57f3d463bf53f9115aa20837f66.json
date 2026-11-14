@@ -1,1 +1,1 @@
-{"dirs":["chrome/android/javatests/","components/external_intents/android/","chrome/android/java/"],"files":[],"orgs":["google.com"],"cls":[[4716039,19563,156,4.14,3.17,[[0,0.558,77,90],[1,0.352,2,52],[2,0.091,155,14]],[],0,623],[4715381,19563,2,0.13,0.082,[[1,2]],[],0,623]],"counts":1}
+{"dirs":["components/external_intents/android/","chrome/android/javatests/","chrome/android/java/"],"files":[],"orgs":["google.com"],"cls":[[4716039,19563,67,2.968,2.238,[[0,0.618,2,41],[1,0.263,77,18],[2,0.118,155,8]],[],0,623],[4715381,19563,1,0.174,0.115,[[0,2]],[],0,623]],"counts":1}

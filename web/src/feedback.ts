@@ -4,7 +4,7 @@
 // address, and peers.json with what the page compares a person with.
 //
 // The feedback rate (FR) of a set of changes is their addressed reviewer
-// threads per 100 changed lines. The feedback index (FI) is a person's FR
+// threads per 100 new or changed lines (insertions). The feedback index (FI) is a person's FR
 // over their peers': the median FR at the same experience (earlier commits
 // on main, in power-of-two bins), adjusted for how much feedback the
 // directories and the org draw (`Norm`).
@@ -19,10 +19,10 @@ export type Norm = '' | 'e' | 'd' | 'ed' | 'o' | 'eo' | 'do' | 'edo';
  * comment text is collected)]. */
 export type Thread = [string, number, number | null, 0 | 1 | null, number, string?];
 /** [directory index, share of the change (lines + files), the owner's earlier commits there,
- * lines changed there (added + deleted, in the landed commit)]. */
+ * lines there (insertions, in the landed commit)]. */
 export type Unit = [number, number, number, number];
 /** A change, as the page holds it: [change number, day landed (days since
- * 1970), lines (Gerrit's insertions + deletions), units, threads, org index,
+ * 1970), lines (Gerrit's insertions), units, threads, org index,
  * the owner's earlier commits on main]. */
 export type ClRow = [number, number, number, Unit[], Thread[], number, number];
 

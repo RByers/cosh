@@ -1,1 +1,1 @@
-{"dirs":["third_party/blink/web_tests/","tools/perf/page_sets/","tools/perf/"],"files":[],"orgs":["google.com"],"cls":[[1397611,17903,243,2.983,2.275,[[0,1]],[],0,18],[1455937,17939,92,0.406,0.375,[[1,0.887,0,83],[2,0.113,0,9]],[[4,4],[0,0]],0,19]],"counts":1}
+{"dirs":["tools/perf/page_sets/","tools/perf/"],"files":[],"orgs":["google.com"],"cls":[[1455937,17939,88,2.946,2.333,[[0,0.925,0,83],[1,0.075,0,5]],[[4,4],[0,0]],0,19]],"counts":1}

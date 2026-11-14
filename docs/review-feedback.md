@@ -13,9 +13,11 @@ and is intended as a learning guide only". The landing page links to it
 Both are fixed: the page has no switches for them (the user's call,
 2026-11-14).
 
-- **Feedback rate (FR):** addressed reviewer threads per 100 changed lines,
-  pooled over a set of CLs (all their addressed threads × 100 / all their
-  lines). Lines are Gerrit's insertions plus deletions. The CLs are merged,
+- **Feedback rate (FR):** addressed reviewer threads per 100 new or changed
+  lines, pooled over a set of CLs (all their addressed threads × 100 / all
+  their lines). Lines are Gerrit's insertions: a changed line counts once,
+  and deleted lines don't count (since 2026-11-14; see "Why deletions don't
+  count"). CLs that only delete lines are left out. The CLs are merged,
   human-owned CLs on `main` that are neither mechanical nor part of a
   large-scale change (the same CLs as the Review Balance page's feedback
   index, `docs/balance.md` section 4; mechanical and LSC CLs from
@@ -44,7 +46,8 @@ Both are fixed: the page has no switches for them (the user's call,
     line). Without it, `ref_all`: the median FR of everyone with `MIN_CLS`
     (25) CLs over all of theirs.
   - *Directories* (`d`, on by default): each CL's lines are split over the
-    3-level directories its landed commit changed, by lines (`unit_fracs`),
+    3-level directories its landed commit changed, by inserted lines
+    (`unit_fracs`; `cl_dirs` with `dels=False`),
     and each part gets its directory's factor: two levels (`chrome/browser/`),
     else one level, else 1, for directories with `MIN_FACTOR_CLS` (300) CLs'
     worth. A factor is the directory's pooled addressed threads over what
@@ -60,7 +63,7 @@ Both are fixed: the page has no switches for them (the user's call,
   experience alone. Each factor table is therefore scaled so that the
   median person's index (people with `MIN_CLS` CLs) is the same with the
   factor as without it (`rescale` in `rate_model`); only the factors'
-  spread matters. On 2026-11-14 the median index is 0.968 under every norm
+  spread matters. On 2026-11-14 the median index is 0.979 under every norm
   with experience and 1.000 under every norm without it (the experience
   bins' medians are over person-bins, the index over people, so they differ
   slightly).
@@ -72,9 +75,10 @@ the index: the FR's definition, then the FR by experience bin (y-axis
 "feedback rate"): the median of people's FR in each bin (each
 person's CLs in that bin pooled, with `MIN_BIN_CLS` = 5 or more there), with
 the middle half and the 10th–90th percentile shaded (`fr_bins`). On
-2026-11-14: 3.95 at 8, 2.93, 2.48, 1.99, 1.68, 1.30, 0.99, 0.78, 0.59 and
-0.43 at >2k, from 3,442 people in the first bin down to 85 in the last. With
-5, 3 or 8 CLs as the minimum the medians move by at most 0.15. Below it,
+2026-11-14: 5.40 at 8, 4.11, 3.52, 2.86, 2.49, 2.00, 1.64, 1.28, 1.04 and
+0.80 at >2k, from 3,379 people in the first bin down to 71 in the last.
+(With deletions counted they were 3.95 down to 0.43; with 5, 3 or 8 CLs as
+the minimum those medians moved by at most 0.15.) Below it,
 "Distribution of feedback rate change with experience": the growth rates'
 distribution, smoothed (a Gaussian kernel of 0.12 in log2 on a grid from
 −75% to +183%, `growth_dist`), with the median and, when a person is shown,
@@ -82,9 +86,10 @@ their own growth marked.
 
 The FR falls as much as the old index did, though the chart may look
 flatter: the old addressed index adjusted for size and directory fell 5.3×
-from <10 to 1,000+ earlier commits (2.36 → 0.44), the median FR 6.7× from 8
-to 2k CLs (3.95 → 0.59) and 9× to >2k. The bands make the difference: the
-y-axis has to reach the 90th percentile (10.8 in the first bin), so the
+from <10 to 1,000+ earlier commits (2.36 → 0.44), the median FR 5.2× from 8
+to 2k CLs (5.40 → 1.04) and 6.7× to >2k (6.7× and 9× with deletions
+counted). The bands make the difference: the
+y-axis has to reach the 90th percentile (14.3 in the first bin), so the
 median line sits in the bottom third, where the old chart drew medians only
 on an axis to about 2.6.
 
@@ -92,8 +97,8 @@ on an axis to about 2.6.
 (`fi_dist`: people with `MIN_CLS` CLs, over all the data, under
 experience and directories, `FI_NORM`), smoothed on a log2 grid from 1/8
 to 5.7 (kernel 0.15), with the median and the 10th and 90th percentiles
-marked. On 2026-11-14: 2,843 people, quartiles 0.63 and 1.40, 10th–90th
-percentile 0.38–1.94.
+marked. On 2026-11-14: 2,808 people, quartiles 0.67 and 1.39, 10th–90th
+percentile 0.43–1.91.
 
 **Your feedback** (after an address is found), one section each:
 
@@ -115,8 +120,9 @@ percentile 0.38–1.94.
 - *Growth rate:* the % change in FR per doubling of changes landed, from a
   least-squares line through log2 FR by bin, each bin weighted by its CLs,
   over bins with `MIN_BIN_CLS` CLs, needing `MIN_GROWTH_BINS` (3) of them;
-  FRs under `FR_FLOOR` (0.1) count as 0.1 (`growth`). On 2026-11-14 2,547
-  people have one: median −20.9%, 10th percentile −47.4%, 90th +22.7%.
+  FRs under `FR_FLOOR` (0.1) count as 0.1 (`growth`). On 2026-11-14 2,517
+  people have one: median −18.8%, 10th percentile −44.6%, 90th +21.1%
+  (−20.9%, −47.4% and +22.7% with deletions counted).
 - *Addressed comments per change:* the histogram of the person's CLs by
   addressed threads (0, 1–2, 3–5, 6–10, 11–20, 21+), whose columns filter
   the directories and comments.
@@ -138,8 +144,8 @@ charts are drawn when it opens:
   2026-11-14 the medians run 3.73, 4.31, 4.21, 3.75, 4.05, 4.21, 4.31, 3.64
   for 2018–2025 and 2.78 for 2026 (not over).
 - *By change size:* two bar charts per size bucket (`size10`): the median
-  person's addressed threads per CL (0.06 under 4 lines → 6.88 at 512–1k on
-  2026-11-14) and their FR (2.82 → 1.00, 0.23 at 1k+). Per line the
+  person's addressed threads per CL (0.10 under 4 lines → 9.58 at 512–1k on
+  2026-11-14) and their FR (5.54 → 1.40, 0.21 at 1k+). Per line the
   difference is much smaller, which is why the FR counts per line. A person
   counts in a bar with `MIN_CELL_CLS` (10) CLs there; a bar needs
   `MIN_PEERS` people.
@@ -147,12 +153,12 @@ charts are drawn when it opens:
   CLs whose main directory (two levels) is in each of the `CHART_DIRS` (12)
   directories with the most people, and over their CLs from each of the
   `CHART_ORGS` (10) orgs with the most people, highest first. On 2026-11-14
-  code directories run 1.1–2.4 (components/autofill/ 2.43, chrome/browser/
-  1.74, third_party/blink/ 1.16) while configuration directories draw
-  almost none (testing/buildbot/ 0.11, (root)/ 0.09). Org factors with
-  experience run 0.78–1.39 for orgs with 300+ CLs (google.com 1.01,
-  microsoft.com 0.95, igalia.com 0.86), against 0.94–3.06 without it, so
-  orgs differ mostly through their contributors' experience.
+  code directories run 1.2–3.3 (components/autofill/ 3.29, chrome/browser/
+  2.61, third_party/blink/ 1.80) while configuration directories draw
+  almost none (testing/buildbot/ 0.16, (root)/ 0.15). Org factors with
+  experience run 0.35–1.75 for orgs with 300+ CLs (google.com 1.01,
+  microsoft.com 0.88, igalia.com 0.86), against 0.38–3.25 without it, so
+  orgs differ partly through their contributors' experience.
 - *How it's measured:* the definitions above in prose.
 
 **Dates come from the data**, never from the code. The range runs from the
@@ -174,6 +180,36 @@ all-against-addressed and tenure-comparison charts, the count tiles' ranks
 in the latest half-year, and the 2023–24 size and directory norms as a
 measure (the files still carry the expected values, unused, so the
 half-year files didn't change).
+
+## Why deletions don't count
+
+Until 2026-11-14 lines were insertions plus deletions. A study that day
+(913,707 labelled CLs, 2017-07 .. 2026-10; deletions are 40% of their
+changed lines) showed that deleted lines draw almost no addressed feedback:
+
+- At the same total size, addressed threads per CL fall steeply with the
+  deleted share. For 256–1023 lines: 10.3 with under 5% deleted, 5.0 at
+  25–50%, 2.3 at 50–75%, 0.40 at 95% or more. CLs that only delete
+  (41k) drew 0.08 addressed threads each, against 1.89 overall; 6% had any.
+- Fitting addressed ≈ k·(insertions + w·deletions)^p by Poisson deviance,
+  w = 0 fit best for every p tried (0.4 – 0.9), also against w = 0.01.
+  A changed line is already one insertion, so insertions cover what
+  reviewers read.
+- Counting deletions penalised people who delete a lot. Ranks among people
+  with 25+ CLs barely moved overall (Spearman 0.96), but people deleting
+  half their lines or more rose 12 percentile points on average with
+  insertions alone, and those deleting under 20% fell 8.
+- Experienced people delete more (28% of changed lines under 8 earlier
+  changes, 49% at 2k+), so part of the fall of FR with experience was
+  deletions: the drop from <8 to 2k+ is ×6.8 with insertions, ×9.2 with
+  both.
+- With insertions the 2023–24 size norms explain more of the CL-to-CL
+  spread (R² 0.20 against 0.14 for addressed threads), and the spread of
+  people's FI narrows a little (10th–90th percentile 0.43–1.91 against
+  0.38–1.94 under experience and directories).
+
+A dashboard on deletion over time is an idea in `docs/plan.md` (Next
+steps 9).
 
 ## Ground rules
 
@@ -204,7 +240,7 @@ COSH_DATA_DIR=<main>/data/private nice -n 5 python3 -m cosh.review_feedback [--o
 It reads only `reviews.sqlite`, `commits.sqlite`, `addressed.sqlite`, the
 sentiment files and config, never `balance*.sqlite`, so refreshing the page
 needs none of the balance stages (timeline, interdiff, cl). The per-CL facts
-it needs (owner, status, Gerrit insertions and deletions, closing time, the
+it needs (owner, status, Gerrit insertions, closing time, the
 landed commit's sha and files, and its lines and files per 3-level
 directory) come from `cosh.balance.cl_facts` and `cl_dirs`, the functions
 `python3 -m cosh.balance cl` builds `balance.sqlite`'s `cl` and `cl_dirs`
@@ -246,8 +282,10 @@ The page computes a person's figures from these, the same way the script
 does for the spread of everyone's index: totals, FR and FI under every norm
 for any period, and the growth rate, with the rounded typical rates and
 factors from `peers.json`. `--check FILE` writes the script's values for 300
-people; on 2026-11-14 the page's matched all 28,132 of them (the largest
-difference 0.0005, rounding).
+people; on 2026-11-14, after deletions were dropped, the page's
+`buildPerson`, `sums` and `fiOf` matched all 38,225 of them (FI under every
+norm, CLs, addressed threads and lines; the largest difference 0.0005,
+rounding).
 
 So a half-year's files don't change once it is over, as long as the inputs
 don't (the 2023–24 norms, still written though unused, labels, mechanical
@@ -306,7 +344,7 @@ file paths 11 MB, comment uuids 3 MB; each half-year before 2023 about
 - Peer groups mix very different roles, teams and kinds of work. A high or
   low figure is a prompt to look at the comments, not a conclusion.
 - A pooled rate weighs big CLs by their lines, and feedback per line falls
-  with size (2.8 per 100 lines under 4 lines, 1.0 at 512–1k, 0.23 over
+  with size (5.5 per 100 lines under 4 lines, 1.4 at 512–1k, 0.21 over
   1k): someone landing larger changes gets a lower rate at the same care.
   The index doesn't adjust for size.
 - The typical rates cover all the data (2017–2026). If Chromium's feedback
