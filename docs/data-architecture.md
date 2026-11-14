@@ -38,9 +38,9 @@ and the site is built from it.
 The three dashboards other than Review Balance share one concise flow:
 
 ```
-Chromium Gerrit ─ gerrit-fetch ─▶ Fetched Gerrit data ─ derive ─▶ derived.sqlite ─┬─ classify ─▶ labels.sqlite
+Chromium Gerrit ─ gerrit-fetch ─▶ raw.sqlite + notedb/ ─ derive ─▶ derived.sqlite ┬─ classify ─▶ labels.sqlite
 Chromium git ─── fetch-git ───▶ Chromium git clone ── commits ─▶ commits.sqlite  ├─ comments-collect ─▶ Rendered comments
-Affiliations file ─ affiliations ─▶ affiliations.json5                            │     └─ comments-score ─▶ Comment scores
+Affiliations file ─ affiliations ─▶ affiliations.json5                            │     └─ comments-score ─▶ sentiment.sqlite
 Cloudflare Radar ── radar ─▶ Browser shares (Radar)                               │
 Claude (Haiku): classify, comments-score, tone-publish's screening                │
                                                                                   ▼
@@ -80,8 +80,8 @@ system is kept, and the inventory says where a step departs from them.
 4. **Names say who uses them.** A source, step or store is named after an
    analysis (a page's `names`: value, tone, balance, feedback) only when it
    feeds that page alone. Anything shared is named for what it holds:
-   `comments-score` and "Comment scores", not "sentiment", because the
-   Feedback Index reads them too.
+   `comments-score`, not "tone-score", because the Feedback Index reads
+   its scores too.
 5. **Every source is read** by some step.
 6. **One writer per store.** A step that lists a store as both input and
    output resumes from it; that is not a second writer. A store a step
@@ -123,7 +123,10 @@ that spans paths or files), a step's short name, `page-…` for a page.
   `access`, `load_rules` and `coverage` say how we may use it.
 - **`stores[]`**: a database, git repo, directory or family of files.
   `tier` (table above); `name` (a short label for a family or a store
-  that spans paths); `tracked_in_git` and `git_paths` (globs; the path when
+  that spans paths; a database's box always shows its file name, so a
+  database's `name` must contain it, and a file name that doesn't say
+  what the database holds is a reason to rename the file:
+  `docs/planned-renames.md`); `tracked_in_git` and `git_paths` (globs; the path when
   absent) say what to commit; `tables` lists a database's tables or a
   family's members; `never_delete` marks what can't be remade.
 - **`steps[]`**: a command. `inputs` and `outputs` are source and store ids,

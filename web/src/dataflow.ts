@@ -88,7 +88,7 @@ const full = (n: Node) => (n.kind === 'store' ? (n.store!.name ?? n.store!.path)
 function link(id: string, short = false): HTMLElement {
   const n = graph.nodes.get(id);
   if (!n) return el('span', id);
-  const mono = n.kind === 'source' || n.kind === 'page' || n.store?.name ? '' : ' df-mono';
+  const mono = n.kind === 'source' || n.kind === 'page' || (n.store?.name && !n.store.kind.includes('sqlite')) ? '' : ' df-mono';
   const b = el('button', short ? n.label : full(n), `df-link ${tone(n)}${mono}`);
   b.type = 'button';
   b.dataset.node = id;

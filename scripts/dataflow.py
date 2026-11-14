@@ -186,6 +186,9 @@ def check(d, root=ROOT, files=None):
     for s in d["stores"]:
         if s["tier"] not in TIERS:
             problems.append(f"{s['id']}: unknown tier {s['tier']}")
+        dbs = re.findall(r"[^/ +]+\.sqlite\b", s["path"])
+        if s.get("name") and any(db not in s["name"] for db in dbs):
+            problems.append(f"{s['id']}: a database's box is labelled with its file name ({', '.join(dbs)})")
         pats = s.get("git_paths", [s["path"]])
         hits = [f for f in files if any(matches(p, f) for p in pats)]
         if s["tracked_in_git"]:

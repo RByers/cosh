@@ -88,7 +88,7 @@
   "stores": [
     {
       "id": "gerrit-raw",
-      "name": "Fetched Gerrit data",
+      "name": "raw.sqlite + notedb/",
       "path": "data/private/raw.sqlite + data/private/notedb/",
       "kind": "sqlite + git-repo",
       "tier": "raw",
@@ -461,8 +461,7 @@
           "purpose": "Screening verdicts (does a comment identify someone), keyed by comment and screen prompt; written by tone-publish as a cache."
         }
       ],
-      "notes": "Per-comment reasons stay private.",
-      "name": "Comment scores"
+      "notes": "Per-comment reasons stay private."
     },
     {
       "id": "data/private/sentiment/tune",
