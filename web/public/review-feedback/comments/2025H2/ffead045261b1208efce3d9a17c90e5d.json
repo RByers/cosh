@@ -1,0 +1,1 @@
+{"cls":{"7241688":[["b2793d7b_04752b73","Btw, IIUC this also means the following is UB: ``` EXPECT_CALL(mock, Foo); mock.Foo(); EXPECT_CALL(mock, Foo); mock.Foo(); ``` That is, the UB is not limited to VerifyAndClearExpectations(). IIUC the…",0.0]]}}

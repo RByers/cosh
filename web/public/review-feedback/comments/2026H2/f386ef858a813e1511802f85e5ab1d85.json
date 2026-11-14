@@ -1,0 +1,1 @@
+{"cls":{"8176692":[["5793b328_18dfcb99","We can create an xml layout with embedded ComposeViews to better reflect how we do UI in Chromium.",0.0],["a988dd3e_0c35efb7","Let's use another word here.",0.0]],"8207302":[["7862efc2_7f31f194","Would you mark this as @Nullable? Not sure how this is not detected by the checker.",0.0]]}}

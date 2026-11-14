@@ -1,0 +1,1 @@
+{"cls":{"7566532":[["70f29432_bc65689a","Prefer `CHECK` over `DCHECK` in new code. ```suggestion CHECK(device); ```",0.0],["bcfc4d63_5f7cac11","style nit: Please use kConstantStyle instead of MACRO_STYLE for enum values (the GamepadBusType enum was added before the style guide changed).…",0.0]]}}

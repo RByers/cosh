@@ -1,0 +1,1 @@
+{"cls":{"7666143":[["0f0d0638_39726ad8","nit: use wl::get_version_of_object: ``` if (self->fixes_ && wl::get_version_of_object(self->fixes_.get()) >= WL_FIXES_ACK_GLOBAL_REMOVE_SINCE_VERSION) { ```",0.0]]}}

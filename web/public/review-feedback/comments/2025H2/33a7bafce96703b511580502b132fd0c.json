@@ -1,0 +1,1 @@
+{"cls":{"7020409":[["0cfec00f_2f752d7f","I think this belongs to `AutoEnrollmentCheckScreen::MaybeSkip` or do we need to omit the creation of the controller?",0.0],["80251b40_1097d171","As this is repeated in many places it feels like that shall belong either to `OobeBaseTest` as a configuration parameter, or maybe set using…",0.0]]}}

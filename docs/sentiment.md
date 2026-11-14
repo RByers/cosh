@@ -58,6 +58,13 @@ This is `docs/plan.md` ground rule 5 (user's policy, 2026-11-06, relaxed
 - **Otherwise as much as possible is public:** the method, every prompt
   version, the code, the security design, the accuracy figures, the
   aggregate data and the praise views.
+- **These rules cover what can be reached by clicking** (2026-11-14). A view
+  shown only after someone types a person's address (hashed file names, no
+  completions or links) may show more about that person: the Feedback
+  Index's comment list gives each comment's score, negative ones too. The
+  most sensitive detail (improvement reports) needs a verified login and is
+  stored in the repo only lightly obfuscated; with no login yet, it stays
+  in `data/private/`.
 
 Why it matters: the scores are one model's reading of tone, with errors, and
 a negative label on a named person or a company is a public accusation.

@@ -1,0 +1,1 @@
+{"cls":{"7812534":[["62c612a0_be004342","Normally such style change triggers should be in StyleDidChange (called by SetStyle), and fixed position only applies to LayoutBox, so LayoutBox:: StyleDidChange is a better place, under this line:…",0.0],["4eaa42dc_49915eb4","Please don't separate this from it's if below",-0.1]]}}

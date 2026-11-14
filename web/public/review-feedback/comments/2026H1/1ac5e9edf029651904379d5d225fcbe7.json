@@ -1,0 +1,1 @@
+{"cls":{"7925187":[["94c8751c_019d36c9","If there's no window / GWL_USERDATA, we're in a very bad state. When does this happen?",0.0],["9e188db2_2a2b6762","```suggestion // DefWindowProc always returns TRUE for WM_QUERYOPEN; if WndProc swallows the ```",0.0]]}}

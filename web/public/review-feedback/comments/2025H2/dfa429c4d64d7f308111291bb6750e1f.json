@@ -1,0 +1,1 @@
+{"cls":{"7206587":[["a7909081_448ddad8","maybe you can do like: `parent_rect = NSIntersectionRect(parent_rect, [screen visible frame])` and do a little less math here?",0.0]]}}

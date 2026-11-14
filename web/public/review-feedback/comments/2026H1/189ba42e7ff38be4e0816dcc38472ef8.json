@@ -1,0 +1,1 @@
+{"cls":{"7392209":[["6b43e9ca_90fa1bb7","+Erik is there a better way to do this? If the SW decoder supports a particular profile I would imagine it would advertise it rather than this layer assuming this profile is good to go. Especially…",0.0],["a1f9e74e_cc322d0b","Test this logic as well? Otherwise, if someone revert this change, none of the tests will fail.",0.0]]}}

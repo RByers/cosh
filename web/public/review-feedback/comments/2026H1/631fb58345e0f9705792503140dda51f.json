@@ -1,0 +1,1 @@
+{"cls":{"7791462":[["5f51d895_63a25923","Please fix this WARNING reported by autoreview issue finding: If `CreateRectRgn` fails (e.g., due to GDI resource exhaustion), it returns `NULL`. Calling `SelectClipRgn(..., NULL)` actually clears…",0.0]]}}

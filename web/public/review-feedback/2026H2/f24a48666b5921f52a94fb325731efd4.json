@@ -1,1 +1,1 @@
-{"dirs":["content/browser/web_contents/"],"files":["content/browser/web_contents/file_chooser_impl_browsertest.cc"],"orgs":["google.com"],"cls":[[8423160,20714,57,2.105,1.626,[[0,0]],[["9c84052e_6c362a36",0,0,1,"nit: use GTEST_SKIP"]],0,138]]}
+{"dirs":["content/browser/web_contents/"],"files":["content/browser/web_contents/file_chooser_impl_browsertest.cc"],"orgs":["google.com"],"cls":[[8423160,20714,57,2.105,1.626,[[0,0]],[[0,0,1]],0,138]]}

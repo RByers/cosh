@@ -99,5 +99,27 @@ class ReviewFeedbackTest(unittest.TestCase):
         self.assertEqual(R.excerpt(None), "")
 
 
+    def test_comment_file_lines_up_with_shard(self):
+        # Threads [root, path, day, addressed, directory], listed out of order; it landed 2024-10-04.
+        c = dict(change_number=7, closed_at=86400 * 20000, lines=10, exp_td=1.0, exp_ad=0.5, org="google.com",
+                 prior=3, main="a/", units={"a/": [1, 2, 10]},
+                 thr=[["r2", "a/x.cc", "2024-10-04", 1, "a/"], ["r1", "a/y.cc", "2024-10-03", None, "a/"],
+                      ["r3", "a/x.cc", "2024-10-04", 0, "a/"]])
+        sh = R.shard([c], True)
+        # Each thread: [file, days after landing, addressed], in day then root order.
+        self.assertEqual(sh["files"], ["a/y.cc", "a/x.cc"])
+        self.assertEqual(sh["cls"][0][6], [[0, -1, None], [1, 0, 1], [1, 0, 0]])
+        self.assertNotIn("counts", sh)
+        # The thread index lists the same threads in the same order, and the comment file follows it.
+        ids = R.thread_ids([c])
+        self.assertEqual(ids, [[7, ["r1", "r2", "r3"]]])
+        text = {"7/r1": "first", "7/r3": "third"}
+        com = R.comment_file(ids, text, {"7/r3": -0.456})
+        self.assertEqual(com, {"cls": {"7": [["r1", "first"], 0, ["r3", "third", -0.46]]}})
+        self.assertEqual(R.comment_file(ids, {}, {}), {"cls": {}})
+        # Older half-years: counts per unit, and no thread order to match.
+        self.assertEqual(R.shard([c], False)["cls"][0][6], [[3, 1]])
+
+
 if __name__ == "__main__":
     unittest.main()

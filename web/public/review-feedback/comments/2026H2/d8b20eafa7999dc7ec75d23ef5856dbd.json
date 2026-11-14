@@ -1,0 +1,1 @@
+{"cls":{"7882784":[["13dcd47e_698a7084","I think we already have the proper define here: https://source.chromium.org/chromium/chromium/src/+/main:v8/src/base/macros.h;l=232?q=macros.h&ss=chromium",0.0],["7b4124a4_b439202a","All the other uses have `#ifdef V8_USE_SAFE_STACK`",0.0]]}}

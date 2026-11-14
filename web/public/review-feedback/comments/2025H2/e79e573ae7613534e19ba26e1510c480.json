@@ -1,0 +1,1 @@
+{"cls":{"7080912":[["94fcb28e_a5bca72e","We're generally supposed to know when a session is disconnected, through Target.detachedFromTarget event. This would be the right place to resolve all pending callbacks within the session.",0.0],["fc34f275_244a70d2","You can't just send a response to a random session, given that command ids are per-session.",-0.1]]}}

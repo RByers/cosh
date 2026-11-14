@@ -173,8 +173,10 @@ half-year.
 
 **Praise** has no section here: after a lookup, "See also your praise"
 links to the Review Tone page's popup for the address
-(`sentiment.html#person=<address>`). The comment list flags praise comments
-(scored glowing, ≥ +0.4, in the tone year).
+(`sentiment.html#person=<address>`). **Tone** appears only in the comment
+list: each comment whose tone has been scored (`sentiment.sqlite`, current
+prompt) carries a pill with its score from −1 to +1, negative ones too
+(ground rule 5, 2026-11-14).
 
 Removed on 2026-11-14 with the switches: the cohort curves by start year,
 the year-over-year and per-doubling histograms of the old index, the
@@ -215,9 +217,13 @@ steps 9).
 
 ## Ground rules
 
-- **Tone is praise only** (`docs/plan.md`, ground rule 5). Nothing written
-  marks a comment, a person or a group as negative: comments carry an
-  addressed flag and a praise flag, never a score. Orgs get no tone figures.
+- **Tone only in the comment list** (`docs/plan.md`, ground rule 5, as
+  tiered on 2026-11-14). The page shows a person's comments only after
+  someone types their address, so each comment may carry its tone score,
+  negative ones included. Nothing reachable by clicking ranks or lists
+  anyone by tone, no chart or figure uses tone, and orgs get no tone
+  figures. The scores sit in their own files (`comments/`), written by
+  their own step, so tone never feeds the charts.
 - **No completions, no browsing.** The input has `autocomplete="off"`, no
   datalist and no name. Data files are named by
   `sha256("cosh-review-feedback-v1:" + normalised address)[:32]`
@@ -233,14 +239,26 @@ steps 9).
 
 ## Generate
 
-Offline, about 2 minutes (119 s on 2026-11-14) and 3 GB:
+Offline, in two parts: a few minutes and 3 GB for the people part, seconds
+for the comments part (`config/dataflow.json` has the measured times):
 
 ```
-COSH_DATA_DIR=<main>/data/private nice -n 5 python3 -m cosh.review_feedback [--out DIR]
+COSH_DATA_DIR=<main>/data/private nice -n 5 python3 -m cosh.review_feedback --part people [--out DIR]
+COSH_DATA_DIR=<main>/data/private nice -n 5 python3 -m cosh.review_feedback --part comments [--out DIR]
 ```
 
-It reads only `reviews.sqlite`, `commits.sqlite`, `addressed.sqlite`, the
-sentiment files and config, never `balance*.sqlite`, so refreshing the page
+Without `--part` it writes both in one run. The people part
+(`review-feedback`) reads `reviews.sqlite`, `commits.sqlite`,
+`addressed.sqlite` and config, and writes `peers.json`, `u/`, the half-year
+folders and the thread index `data/private/feedback-threads.jsonl` (for
+each person and half-year from 2025H2, the comment ids of its threads in
+the half-year file's order). The comments part (`feedback-comments`) joins
+that index with the collected comment files (`data/private/comments/`) and
+`sentiment.sqlite`, and writes `comments/`. So review tone and comment text
+reach only the comment list, and each comment file lines up with the
+half-year file of the same run by construction (the page still ignores a
+change's comment entries if their count differs). Neither part reads
+`balance*.sqlite`, so refreshing the page
 needs none of the balance stages (timeline, interdiff, cl). The per-CL facts
 it needs (owner, status, Gerrit insertions, closing time, the
 landed commit's sha and files, and its lines and files per 3-level
@@ -261,24 +279,30 @@ quiet for 5 seconds, so a run's files are served shortly after it ends
 old data, and a page change that needs new `peers.json` fields draws nothing.
 
 Output (default `web/public/review-feedback/`, which Vite copies into the
-site), with `<key>` the hash of the person's address:
+site), with `<key>` the hash of the person's address, in three kinds of
+file that the page loads at different times:
 
-- `peers.json` (version 5, about 44 KB): the experience bins (`bins`,
+- `peers.json` (global, loaded on opening; version 5, about 44 KB): the experience bins (`bins`,
   `bin_edges`), the index's typical rates and factors (`ref_bin`,
   `ref_all`, `f_dir`, `f_org`), the spread of FR per bin (`fr_bins`) and of
   everyone's index per norm and period (`fi`), and the methodology's data
   (`newcomers`, `growth`, `by_size`, `by_dir`, `by_org`), with the
-  minimums the page names. It still carries the tone peers' shares, which
-  nothing shows.
-- `u/<key>.json`: first commit, which half-years the person has files for,
-  and praise received. Small (0.8 MB gzipped for everyone) and rewritten on
-  every run. Each other address of the person is a stub `{"see": <key>}`.
-- `<half-year>/<key>.json` (`2017H2` … `2026H2` on 2026-11-12, one per
-  half-year in the range): that half-year's CLs, with
-  their directory splits, threads and excerpts, and the directory, file and
-  org names listed once (`shard` in the script, whose docstring has the
-  layout). Half-years before 2025H2 have thread counts per directory instead
-  of each thread (`"counts": 1`; see "Slimmed before publishing" below).
+  minimums the page names.
+- Per person, loaded once an address is typed:
+  - `u/<key>.json` (version 5): first commit and which half-years the
+    person has files for. Small and rewritten on every run. Each other
+    address of the person is a stub `{"see": <key>}`.
+  - `<half-year>/<key>.json` (`2017H2` … `2026H2`, one per half-year in the
+    range): that half-year's CLs, with their directory splits and reviewer
+    threads (file, day, addressed; no text), and the directory, file and
+    org names listed once (`shard` in the script, whose docstring has the
+    layout). Half-years before 2025H2 (`THREADS_FROM`) have thread counts
+    per directory instead of each thread (`"counts": 1`; see "Slimmed
+    before publishing" below).
+- `comments/<half-year>/<key>.json` (comment list only, from 2025H2): per
+  change, one entry per thread of the half-year file, in its order: 0
+  without text, else the comment id, the excerpt and, where scored, the
+  tone score (`comment_file`).
 
 The page computes a person's figures from these, the same way the script
 does for the spread of everyone's index: totals, FR and FI under every norm
@@ -291,15 +315,15 @@ rounding).
 
 So a half-year's files don't change once it is over, as long as the inputs
 don't (the 2023–24 norms, still written though unused, labels, mechanical
-list, identity merge and collected comment text): git stores them once. Each run rewrites the
-current half-year, `u/` and `peers.json`.
+list, identity merge, and for `comments/`, the collected comment text and
+scores): git stores them once. Each run rewrites the current half-year,
+`u/` and `peers.json`.
 
-Sizes on 2026-11-12 (6,902 people, 122 stubs, 40,023 files), gzipped file
-by file as git stores them: 27.4 MB for the 16 half-years 2017 H2 – 2025 H1
-(about 1.7 MB each), 4.3 MB for 2025 H2, 10.7 and 9.3 MB for 2026 H1 and H2
-(those have the excerpts), 1.5 MB for `u/` and `peers.json`: 53 MB in all,
-126 MB unpacked. The script replaces
-`u/` and every half-year folder on each run.
+Sizes on 2026-11-14 (6,862 people, 122 stubs, 45,231 files), gzipped file
+by file as git stores them: 35.2 MB for the 19 half-year folders, 0.9 MB
+for `u/` and `peers.json`, and 16.7 MB for `comments/` (excerpts and
+scores): 53 MB in all, 122 MB unpacked. The people part replaces `u/` and every half-year folder on each run, the
+comments part `comments/`.
 
 **Committed and published** (the user's call, 2026-11-12):
 `web/public/review-feedback/` is in git, so the GitHub Pages build serves it.

@@ -15,9 +15,10 @@ export type Norm = '' | 'e' | 'd' | 'ed' | 'o' | 'eo' | 'do' | 'edo';
 /** A reviewer thread, as the page holds it: [comment uuid (empty when there's
  * no excerpt: link the change instead), file index (-1: the file isn't kept,
  * in half-years before the comment text), days after the change landed,
- * addressed (null: not labelled), directory index, excerpt (only where
- * comment text is collected)]. */
-export type Thread = [string, number, number | null, 0 | 1 | null, number, string?];
+ * addressed (null: not labelled), directory index, excerpt and tone score
+ * (from the comment files, only where comment text is collected and
+ * scored)]. */
+export type Thread = [string, number, number | null, 0 | 1 | null, number, string?, number?];
 /** [directory index, share of the change (lines + files), the owner's earlier commits there,
  * lines there (insertions, in the landed commit)]. */
 export type Unit = [number, number, number, number];
@@ -31,26 +32,29 @@ export type ClRow = [number, number, number, Unit[], Thread[], number, number];
  * addressed by size and directory (both unused here), units, threads, org
  * index, earlier commits on main]. A unit is [directory, share, earlier
  * commits there, lines], or [directory, earlier commits there] for a change
- * wholly in one directory. Threads are [uuid, file, days after landing,
- * addressed, excerpt?], their directory told by the file; in a file with
- * `counts`, [threads, addressed] per unit instead. */
+ * wholly in one directory. Threads are [file, days after landing,
+ * addressed], their directory told by the file; in a file with `counts`,
+ * [threads, addressed] per unit instead. */
 export type FileRow = [number, number, number, number, number, FileUnit[], FileThread[] | [number, number][], number, number];
 type FileUnit = [number, number] | [number, number, number, number];
-type FileThread = [string, number, number | null, 0 | 1 | null, string?];
-
-type Tone = { received: number; praise: number; share: number | null; ten: string | null; chg: string | null };
-type Praise = [number, string, number, string][];
+type FileThread = [number, number | null, 0 | 1 | null];
 
 /** u/<key>.json: who the person is and which half-year files they have. */
 export interface Top {
-  v: 4;
+  v: 5;
   first: string | null;
   /** First commit on main, as a day number. */
   first_day: number | null;
   halves: string[];
-  tone: Tone;
-  /** [change number, uuid, day, excerpt], newest first. */
-  praise: Praise;
+}
+
+/** comments/<half>/<key>.json, for each half-year file without `counts`, read
+ * only for the comment list (a separate step writes it:
+ * cosh/review_feedback.py --part comments): per change number, one entry per
+ * thread in the half-year file's order: 0 without text, else [comment uuid,
+ * excerpt, tone score (−1 .. +1) where scored]. */
+export interface CommentShard {
+  cls: Record<string, (0 | [string, string] | [string, string, number])[]>;
 }
 
 /** <half>/<key>.json: one half-year's changes, with names listed once. */
@@ -69,8 +73,6 @@ export interface Person {
   addrStart: number;
   first: string | null;
   firstDay: number | null;
-  tone: Tone;
-  praise: Praise;
   dirs: string[];
   files: string[];
   orgs: string[];
@@ -541,7 +543,8 @@ export interface ThreadRow {
   day: number;
   dir: number;
   text: string | null;
-  praise: boolean;
+  /** The comment's tone score, −1 .. +1, where it was scored. */
+  score: number | null;
   /** Set on a row that stands for this many threads in one directory of a
    * change, from a half-year whose files keep only counts (no file or day). */
   count?: number;
@@ -553,7 +556,6 @@ export interface ThreadRow {
  * threads-per-change column `bin`. Threads kept only as counts come as one
  * row per change and directory. */
 export function threadRows(p: Person, period: string, dir: string | null, bin: number | null = null): ThreadRow[] {
-  const praise = new Set(p.praise.map(([n, u]) => `${n}/${u}`));
   const out: ThreadRow[] = [];
   for (const c of clsPicked(p, period, bin)) {
     const groups = new Map<number, ThreadRow>();
@@ -563,11 +565,11 @@ export function threadRows(p: Person, period: string, dir: string | null, bin: n
       if (t[1] < 0) {
         const g = groups.get(t[4]);
         if (g) g.count! += 1;
-        else groups.set(t[4], { cl: c[0], uuid: '', file: p.dirs[t[4]], day: c[1], dir: t[4], text: null, praise: false, count: 1 });
+        else groups.set(t[4], { cl: c[0], uuid: '', file: p.dirs[t[4]], day: c[1], dir: t[4], text: null, score: null, count: 1 });
         continue;
       }
       out.push({ cl: c[0], uuid: t[0], file: p.files[t[1]], day: c[1] + (t[2] ?? 0), dir: t[4],
-        text: t[5] ?? null, praise: praise.has(`${c[0]}/${t[0]}`) });
+        text: t[5] ?? null, score: t[6] ?? null });
     }
     out.push(...groups.values());
   }
@@ -595,8 +597,11 @@ export function dirOf(path: string): string {
   return parts.length ? `${parts.slice(0, 3).join('/')}/` : '(root)/';
 }
 
-/** The half-year files merged into one person, names re-indexed. */
-export function buildPerson(top: Top, shards: Shard[], peers: Pick<Peers, 'addr_start'>): Person {
+/** The half-year files merged into one person, names re-indexed. `comments`
+ * has each shard's comment file, if any (missing ones leave the threads
+ * without text). */
+export function buildPerson(top: Top, shards: Shard[], peers: Pick<Peers, 'addr_start'>,
+  comments: (CommentShard | null)[] = []): Person {
   const tables = { dirs: new Map<string, number>(), files: new Map<string, number>(), orgs: new Map<string, number>() };
   const at = (t: Map<string, number>, name: string) => {
     let i = t.get(name);
@@ -604,7 +609,8 @@ export function buildPerson(top: Top, shards: Shard[], peers: Pick<Peers, 'addr_
     return i;
   };
   const cls: ClRow[] = [];
-  for (const s of shards) {
+  shards.forEach((s, si) => {
+    const com = comments[si]?.cls ?? {};
     const d = s.dirs.map((x) => at(tables.dirs, x));
     const f = s.files.map((x) => at(tables.files, x));
     const o = s.orgs.map((x) => at(tables.orgs, x));
@@ -619,19 +625,26 @@ export function buildPerson(top: Top, shards: Shard[], peers: Pick<Peers, 'addr_
       } else {
         // A thread's directory is its file's, if the change has a unit there, else the first unit's.
         const unitDirs = new Map(fileUnits.map((u) => [s.dirs[u[0]], d[u[0]]]));
-        for (const t of fileThreads as FileThread[]) {
-          const path = s.files[t[1]];
+        // The two files come from separate steps: a change whose thread count differs gets no text.
+        const listed = com[String(n)] ?? [];
+        const texts = listed.length === fileThreads.length ? listed : [];
+        (fileThreads as FileThread[]).forEach((t, ti) => {
+          const path = s.files[t[0]];
           const own = path && !path.startsWith('/') ? unitDirs.get(dirOf(path)) : undefined;
-          const r: Thread = [t[0], f[t[1]], t[2], t[3], own ?? units[0][0]];
-          if (t.length > 4) r.push(t[4]);
+          const c = texts[ti];
+          const r: Thread = [c ? c[0] : '', f[t[0]], t[1], t[2], own ?? units[0][0]];
+          if (c) {
+            r.push(c[1]);
+            if (c.length > 2) r.push(c[2]);
+          }
           threads.push(r);
-        }
+        });
       }
       cls.push([n, day, lines, units, threads, o[org], prior]);
     }
-  }
+  });
   cls.sort((a, b) => a[1] - b[1] || a[0] - b[0]);
-  return { addrStart: peers.addr_start, first: top.first, firstDay: top.first_day, tone: top.tone, praise: top.praise,
+  return { addrStart: peers.addr_start, first: top.first, firstDay: top.first_day,
     dirs: [...tables.dirs.keys()], files: [...tables.files.keys()], orgs: [...tables.orgs.keys()], cls };
 }
 

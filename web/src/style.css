@@ -1716,10 +1716,6 @@ canvas.pointing {
   font-size: 0.875rem;
 }
 
-.quote-praise {
-  --quote: var(--series-3);
-}
-
 /* Popup cards, by the comment's relation to the person: received or given,
  * as change author or as reviewer (the chart's colours). */
 .quote-received-author {
@@ -2910,11 +2906,6 @@ canvas.rf-pointable {
 .rf-tag-on {
   border-color: var(--accent);
   color: var(--accent);
-}
-
-.rf-tag-praise {
-  border-color: var(--series-3);
-  color: var(--series-3);
 }
 
 .rf-text {

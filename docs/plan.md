@@ -65,7 +65,7 @@ value_ratio(O, t) = O's share of Chromium addressed review comments
    repo) exports `CLOUDFLARE_API_TOKEN`. Load it with
    `source ~/.secrets/cosh/secrets.sh`, and never print or commit the token.
 5. **Sentiment: our pages never point fingers** (user's policy, 2026-11-06;
-   relaxed 2026-11-07). Review-comment tone (`cosh.sentiment`,
+   relaxed 2026-11-07; tiered by access 2026-11-14). Review-comment tone (`cosh.sentiment`,
    `docs/sentiment.md`) is a reading of how people behave, so what we
    *publish* about it is held to a stricter rule than ground rule 3. The
    code is not: it may attach identities to any scored comment
@@ -103,6 +103,20 @@ value_ratio(O, t) = O's share of Chromium addressed review comments
    - **Otherwise publish as much as possible:** the method, every prompt
      version, the code, its security design, accuracy figures, the
      aggregate data and the praise views.
+   - **The rules above cover what anyone can reach by browsing** (user's
+     decision, 2026-11-14): pages, links, `summaries/`, docs. Information
+     is tiered by how hard it is to reach:
+     - *Reachable by clicks:* everything above applies.
+     - *Shown only after someone types a person's address* (no
+       completions, files named by a hash, nothing lists or links them,
+       e.g. the Feedback Index): more personal detail about that person
+       is fine, including the tone score of each review comment on their
+       changes, negative ones too. Orgs still get no tone figures.
+     - *The most sensitive detail* (per-person improvement reports, such as
+       `scripts/feedback_coach.py`'s) is for a verified login only, as the
+       person themself. Stored in the repo, it is lightly obfuscated (e.g. a
+       Caesar cipher) so that text search and casual browsing don't surface
+       it. There is no login yet, so these stay in `data/private/`.
 
 ## Decisions log
 
@@ -220,6 +234,7 @@ value_ratio(O, t) = O's share of Chromium addressed review comments
 | 2026-11-14 | **Feedback Index redefined: feedback rate and index, no switches.** The **feedback rate (FR)** is addressed reviewer threads per 100 changed lines (pooled over a set of CLs; mechanical and LSC CLs left out). The **feedback index (FI)** is a person's FR over their peers': per CL, its lines × the median FR of people at the same experience × a factor for each directory it changed (two levels, pooled observed/expected, rescaled so the median person's index doesn't move), optionally × an org factor. Experience is changes landed before in power-of-two bins (<8, 8–15, …, 1k–2k, 2k+), so each bin is a doubling. The feedback, adjustment, tenure and peers switches are gone; a person's section picks the FI's peers with three checkboxes (experience and directories on by default, organization off). The opening card shows one chart (median FR by changes landed before, with the middle half and 10th–90th percentile shaded); the person's sections show the FI with everyone's spread over time, their FR on that chart, an experience table with FI and the change per bin, and directories with FR and a shaded FI column. A collapsed "Methodology and details" holds newcomers' FR by start year, the smoothed distribution of each person's growth rate (median −21% per doubling, 10th percentile −47%, 90th +23%), FR and threads per change by size, and FR by directory and by org. The old cohort, histogram, all-vs-addressed and tenure-comparison charts and the count tiles' ranks are gone (`docs/review-feedback.md`) | User request: make the page much simpler and clearer, with fixed definitions and the details collapsed |
 | 2026-11-14 | **Feedback rate counts inserted lines only.** FR and FI are per 100 new or changed lines (Gerrit's insertions); deletions no longer count, CLs that only delete are left out, and the directory split uses the landed commit's insertions (`cl_dirs(dels=False)`). Deleted lines draw almost no addressed feedback (a fitted weight for them is 0; pure deletions draw 0.08 addressed threads per CL against 1.89), and counting them lowered the rate of people who delete a lot and of experienced people, who delete more. The median FR runs 5.40 at <8 earlier changes down to 0.80 at 2k+ (was 3.95 to 0.43); every person's files changed (`docs/review-feedback.md`, "Why deletions don't count"). A deletion-rate dashboard is a later idea (Next steps 9) | User's call after the study |
 | 2026-11-14 | **`gcommits` / `gfiles` views dropped.** They were aliases from `balance-git.sqlite` (`commits` / `commit_files` with `commit_id > 0`, since 2017-01-01) whose name hid the 2017 cutoff. Readers now query the tables with `commit_id > 0` written out; `cosh commits` drops the views on its next run. Results unchanged (same rows, same order) | Clarity (`docs/commits.md`) |
+| 2026-11-14 | **Ground rule 5 tiered by access; Feedback Index shows each comment's tone.** The no-finger-pointing rules apply to what can be reached by clicking. A view shown only after typing a person's address may show more about them: the Feedback Index's comment list gives each comment's tone score, negative ones included. The most sensitive detail (improvement reports) needs a verified login and is stored in the repo lightly obfuscated (e.g. a Caesar cipher); until a login exists it stays in `data/private/`. `cosh.review_feedback` writes three stores: `peers.json` (global), the per-person files the charts use (no tone, no comment text) and `comments/<half>/<key>.json` (excerpts, comment links, tone scores), the last from its own step (`--part comments`, a join of a private thread index with the comment files and scores), so sentiment feeds only the comment list. The unshown praise counts and tone-peer percentiles are dropped | User's decision: "it applies only to easily accessible information (accessible via clicks). After manually typing an email address, it is permissible to have some more personalized details" |
 
 ## Status
 

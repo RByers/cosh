@@ -63,7 +63,7 @@ class InventoryTest(unittest.TestCase):
         by["feedback-coach"]["refresh"] = "routine"
         problems = "\n".join(dataflow.check(d))
         self.assertIn("review-feedback: writes nothing", problems)
-        self.assertIn("web/public/review-feedback/: read on the way to page-feedback but written by no step", problems)
+        self.assertIn("feedback-people: read on the way to page-feedback but written by no step", problems)
         self.assertIn("feedback-coach: routine but reaches no page", problems)
         # A balance store that feeds another page.
         d = copy.deepcopy(self.d)

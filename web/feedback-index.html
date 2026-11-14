@@ -18,8 +18,9 @@
       of their address, written by cosh/review_feedback.py
       (docs/review-feedback.md). Feedback rate: addressed reviewer threads
       per 100 new or changed lines. Feedback index: a person's rate against their
-      peers'. Ground rule 5 (docs/plan.md): review tone
-      appears only as praise, and orgs get no tone figures. Comment text is
+      peers'. Ground rule 5 (docs/plan.md): each comment
+      shows its tone score, since the list appears only after someone types
+      an address; orgs get no tone figures. Comment text is
       untrusted and goes into the page only as text.
     -->
     <header>
@@ -315,7 +316,8 @@
           name="bin"></slot><span data-if="half">, landed <slot name="half"></slot></span></span><span
           data-if="!bin"><span data-if="half"> on changes landed <slot name="half"></slot></span></span>, newest first, each linked to its review. Text and a link to
           the comment itself are included for comments whose text has been collected (from November 2025 on); the
-          others are in a table at the end. Before July 2025 a change's comments are grouped by directory, without
+          others are in a table at the end. Where a comment's tone has been scored, a pill gives it on a
+          scale from −1 (hostile) to +1 (glowing), as on <a href="sentiment.html">Review Tone</a>. Before July 2025 a change's comments are grouped by directory, without
           their files.
         </template>
         <!-- The same half-year filter as above the directories, together with the directory picker. -->
@@ -338,7 +340,6 @@
         <template data-msg="threads-more">Show <slot name="n"></slot> more</template>
         <template data-msg="threads-none">No addressed comments here.</template>
         <template data-msg="thread-meta"><slot name="date"></slot> · <slot name="file"></slot></template>
-        <template data-msg="thread-praise">praise</template>
         <template data-msg="thread-link">Open in Gerrit</template>
         <div id="rf-notext" hidden>
           <h3>Additional comments without stored text</h3>

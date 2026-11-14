@@ -1,0 +1,1 @@
+{"cls":{"8158742":[["5d5cc6e6_608f426f","Can you please add a descriptive commit message?",0.0],["7455a103_171094d3","What happens if a file: URL does a same-document cross-origin pushState twice? We wouldn't have the file origin on the second call right? Is that ok to reject?",0.0],["08337ef7_89e6fb48","nit: please fix line wrapping",0.0]]}}

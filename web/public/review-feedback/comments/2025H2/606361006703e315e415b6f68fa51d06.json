@@ -1,0 +1,1 @@
+{"cls":{"7234181":[["0e4b7289_7927dff3","This doesn't need to be a static member. Make it a non-static member to prevent state leakage between tests and avoid bloating the application's non-const data section (which is instantiated for all…",0.0],["3796fd92_5fa0ed99","Do you have more context about this? What kind of sandbox?",0.0]]}}

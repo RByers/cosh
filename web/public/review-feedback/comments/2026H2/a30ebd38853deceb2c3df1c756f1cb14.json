@@ -1,0 +1,1 @@
+{"cls":{"8188589":[["14a4705e_7971113e","Seems like this is the call-site we should update? If we're capturing content for a WebContents, we don't need to traverse to the embedder (guest view). Maybe rename the variable to make that clear…",0.0]]}}

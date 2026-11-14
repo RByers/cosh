@@ -1,0 +1,1 @@
+{"cls":{"8061410":[["ce3e3efd_220c870f","IMO we shouldn't define weak_opener at the top level but then not check it before using opener here... WDYT about adding `CHECK(weak_opener);` above this to verify opener is valid in this case as…",0.0]]}}

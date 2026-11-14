@@ -1,0 +1,1 @@
+{"cls":{"8246467":[["dcb28b00_794102a7","Keep the forward declaration instead of using the include in the header for `WebContents`. chromium.googlesource.com/chromium/src/+/HEAD/styleguide/c++/c++.md#forward-declarations-vs_includes While…",0.0]]}}

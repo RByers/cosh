@@ -1,0 +1,1 @@
+{"cls":{"7076497":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,["e36d5f31_f0a9c6f5","Is it a correct algo? For example: \"rm -rf /\" is suspicious due to `rm` as a first token. But `echo $(rm -rf /)` is not, because `rm` is now a second token.",0.0]]}}

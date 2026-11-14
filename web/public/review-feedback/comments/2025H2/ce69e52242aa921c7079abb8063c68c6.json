@@ -1,0 +1,1 @@
+{"cls":{"6842097":[["4e0ce74b_8141b449","It looks like `network::mojom::ConnectionType` and `kConnectionTypeInvalid` are both `int32_t`. Can you replace all the new uses of `int` in this CL with `int32_t`?",0.0]],"7241892":[["bc9c04db_c7a411eb","Are we able to get rid of the base::subtle::Atomic32 and related APIs header?",0.0]]}}

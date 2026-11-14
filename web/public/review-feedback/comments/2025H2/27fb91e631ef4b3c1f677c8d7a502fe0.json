@@ -1,0 +1,1 @@
+{"cls":{"6885895":[0,0,0,0,0,0,["8a840306_8b89721b","Drive-by commment: This should be `uint32_t`. Since this returns 1 mostly, we never hit `kAmdVendorId` case. I'm fixing this as part of my CL:…",0.0]]}}

@@ -1,0 +1,1 @@
+{"cls":{"7099861":[0,["526860b0_a487e0d0","can you either create a count or state enum and split the mouse events into stages, because that's what will happen in the real scenario.",0.0],["edee80f5_5b9b5f73","optional: you can also do WaiitUntil([]() { return !ui_compositor->Is animating(); } )",0.0]],"7099721":[["0c0cafe5_f2fd693e","looks like it's easy to remove this?",0.0]]}}

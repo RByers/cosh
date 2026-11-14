@@ -1,0 +1,1 @@
+{"cls":{"7809408":[["4c9e4e4d_24b04a83","selectionEnabled seems to be unused now, could we remove it?",0.0],["a9f52240_b7424b00","Could we add more details comments for posterity: // If the row is unselected (regardless of whether selection mode is already active // due to another item being selected): -> 500ms select timer ->…",0.0]]}}

@@ -1,0 +1,1 @@
+{"cls":{"7201806":[["aca2e8bf_8eca1e9f","The macOS call is not architecture-specific. I’d prefer to only make this call one time, and use it for all architectures. ``` #if BUILDFLAG(IS_MAC) is_running_in_vm_ = mac::IsVirtualMachine();…",0.0]]}}

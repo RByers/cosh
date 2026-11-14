@@ -1,0 +1,1 @@
+{"cls":{"7245772":[["d7d9bceb_c9427b9e","We can CHECK_GT(num_channels, 1) here and explain this will never be called unless MaybeUpdateNumPreferredCaptureChannels is called with the value 2 or more (see also comments in PS1 of the other CL)…",0.0]]}}

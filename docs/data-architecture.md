@@ -48,8 +48,15 @@ Claude (Haiku): classify, comments-score, tone-publish's screening              
   summarize      ─▶ Value Exchange summaries ─┐
   (+ Radar shares, org_browsers.csv)          ├─▶ Value Exchange
   tone-publish   ─▶ Review Tone summaries ────┼─▶ Review Tone
-  review-feedback (cosh.review_feedback) ─▶ Feedback Index files ─▶ Feedback Index
+  review-feedback   ─▶ Feedback Index global data, per-person files ─┐
+  (cosh.review_feedback --part people)                              ├─▶ Feedback Index
+  feedback-comments ─▶ Feedback Index comment files ────────────────┘
+  (--part comments: review-feedback's thread index + Rendered comments, Comment scores)
 ```
+
+The Feedback Index's charts and tables read only the global and per-person
+files; review tone and comment text reach it only through the comment
+files, which its comment list alone reads.
 
 `reviews.sqlite` (per-CL, per-comment and per-thread facts, no comment
 text) and `commits.sqlite` (main's whole first-parent history) are the two
@@ -93,8 +100,8 @@ system is kept, and the inventory says where a step departs from them.
    `python3 -m cosh.<module>`), with a `run` command that `cosh update` may
    run when the step is free and local. `scripts/` holds analyses.
    Exceptions today are Review Balance's script steps (section 5).
-8. **Date ranges come from the data.** Review Tone and the Feedback Index's
-   tone year are the newest run of up to 52 fully scored weeks
+8. **Date ranges come from the data.** Review Tone's year is the newest
+   run of up to 52 fully scored weeks
    (`cosh.sentiment.scored_weeks`); Review Balance's window ends with the
    newest fetched week (`balance_publish.DATA_END`); Value Exchange covers
    every fetched week. A fixed range is an explicit argument.

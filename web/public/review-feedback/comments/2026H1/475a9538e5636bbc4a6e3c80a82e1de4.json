@@ -1,0 +1,1 @@
+{"cls":{"7977339":[["d16c5bc9_9fbb460f","```suggestion import {{resolve}} from 'node:path'; ```",0.0],["d32e4508_789d8b6c","Nit ```suggestion const in_path_abs = resolve('{in_path_rel}').replace(/\\\\/g, '/'); export default ({{ plugins: [ plugin(in_path_abs, '{bundle_dir_path}', '{host_url}', {exclude_list}, ```",0.0]]}}

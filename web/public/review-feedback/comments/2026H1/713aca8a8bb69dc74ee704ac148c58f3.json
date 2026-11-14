@@ -1,0 +1,1 @@
+{"cls":{"7600563":[["dc28cc37_b946b0a4","the folder that antigravity uses is .agents AFAIK",0.0],["e048725a_34f549fb","Happy to defer to you if that's what you want to do, but that sounds like it might end up being pretty confusing. Maybe we could instead have a .agents/rules/local/ directory that's gitignored, tell…",0.0]]}}

@@ -1,0 +1,1 @@
+{"cls":{"8260570":[["230a608a_7c3ce7f9","this is a bit wacky - how about we just make this: ``` constexpr std::array<uint8_t, crypto::hash::kSha256Size>> kTranslateKitPublicKeySHA256; ``` and remove the static_assert?",-0.1]]}}

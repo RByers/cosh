@@ -1,7 +1,7 @@
 // A made-up person and peer file for the Review Feedback tests, shaped like
-// cosh/review_feedback.py's output: a top file and one file per
-// half-year. The browser tests serve these instead of the committed data.
-import type { Norm, Peers, Shard, Top } from '../src/feedback.ts';
+// cosh/review_feedback.py's output: a top file, one file per half-year and the
+// half-years' comment files. The browser tests serve these instead of the committed data.
+import type { CommentShard, Norm, Peers, Shard, Top } from '../src/feedback.ts';
 
 /** personKey('Test.Person@chromium.org'), as the Python script computes it. */
 export const FIXTURE_EMAIL = 'Test.Person@chromium.org';
@@ -14,29 +14,34 @@ const q = (lo: number, hi: number) => Array.from({ length: 21 }, (_, i) => Math.
 export const day = (s: string) => Math.floor(Date.parse(`${s}T00:00:00Z`) / 86_400_000);
 
 export const top: Top = {
-  v: 4,
+  v: 5,
   first: '2022-03',
   first_day: day('2022-03-01'),
   halves: ['2025H2', '2026H1', '2026H2'],
-  tone: { received: 40, praise: 2, share: 0.05, ten: '2-5y', chg: '50-199' },
-  praise: [[1000003, 'cccc_0003', day('2026-09-02'), 'Really nice cleanup, thanks!'],
-    [1000002, 'bbbb_0002', day('2026-03-10'), 'Great test coverage <img src=x onerror=alert(1)>']],
 };
 
 /** Three changes, one per half-year. Each file lists its own names, in its own order. */
 export const shards: Record<string, Shard> = {
-  // A thread without an excerpt has no comment id. A thread's directory is its file's (or the first unit's).
+  // Threads are [file, days after landing, addressed]. A thread's directory is its file's (or the first unit's).
   '2025H2': { dirs: ['chrome/browser/ui/'], files: ['chrome/browser/ui/view.cc', '/COMMIT_MSG'], orgs: ['google.com'],
     cls: [[1000001, day('2025-10-01'), 40, 2.5, 1.4, [[0, 1, 0, 38]],
-      [['', 0, -1, 1], ['aaaa_0002', 1, 0, 0, 'Please add a test.']], 0, 30]] },
+      [[0, -1, 1], [1, 0, 0]], 0, 30]] },
   '2026H1': { dirs: ['content/browser/', 'chrome/browser/ui/'], files: ['content/browser/frame.cc'], orgs: ['google.com'],
     cls: [[1000002, day('2026-03-11'), 120, 3, 2, [[0, 0.75, 7, 90], [1, 0.25, 1, 28]],
-      [['bbbb_0002', 0, -1, 1, 'Great test coverage <img src=x onerror=alert(1)>']], 0, 80]] },
+      [[0, -1, 1]], 0, 80]] },
   // Wholly in one directory: [directory, earlier commits there].
   '2026H2': { dirs: ['third_party/blink/renderer/'], files: ['third_party/blink/renderer/core/a.cc', '/COMMIT_MSG'],
     orgs: ['google.com'],
     cls: [[1000003, day('2026-09-03'), 10, 1.5, 0.9, [[0, 150]],
-      [['', 0, -2, 1], ['cccc_0003', 1, -1, null, 'Really nice cleanup, thanks!']], 0, 260]] },
+      [[0, -2, 1], [1, -1, null]], 0, 260]] },
+};
+
+/** The comment files: per change, one entry per thread in the half-year file's order,
+ * 0 without text, else [uuid, excerpt, tone score where scored]. */
+export const comments: Record<string, CommentShard> = {
+  '2025H2': { cls: { 1000001: [0, ['aaaa_0002', 'Please add a test.', -0.31]] } },
+  '2026H1': { cls: { 1000002: [['bbbb_0002', 'Great test coverage <img src=x onerror=alert(1)>', 0.72]] } },
+  '2026H2': { cls: { 1000003: [0, ['cccc_0003', 'Really nice cleanup, thanks!']] } },
 };
 
 const periods = ['all', '2023H2', '2024H1', '2024H2', '2025H1', '2025H2', '2026H1', '2026H2'];

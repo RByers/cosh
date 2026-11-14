@@ -1,0 +1,1 @@
+{"cls":{"7768231":[["58cd0227_94903e19","How many spins of the message loop does it take for NetworkHandler to be initialized? This looks like it posts a task for every spin of the loop, which could in theory be a lot. Should this be a…",0.0],["dcac7bf0_71d3479f","Can you leave a comment here explaining why we have to do this, and referencing the crash bug?",0.0]]}}

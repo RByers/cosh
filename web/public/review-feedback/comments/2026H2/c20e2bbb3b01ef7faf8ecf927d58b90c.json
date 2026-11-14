@@ -1,0 +1,1 @@
+{"cls":{"8083460":[["80698e0c_bd4a81a1","```suggestion Bug: 487402230 ```",0.0],["a179adc7_0618d0cc","Is this change necessary as well?",0.0],["e688dc5a_a4331591","```suggestion // To accurately report progress we must request no transport encoding, since that // will affect the value of the \"Content-Length\" header. This doesn't impact // download efficiency…",0.0]]}}

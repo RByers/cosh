@@ -1,0 +1,1 @@
+{"cls":{"7871093":[["efea15d6_6b9c09ba","For this replacing logic, should it be restricted to Windows only?",0.0],["c7cc2462_02d81797","Replacing the extension might make the file name length exceed the limit again. For example, the file name `12636471.download` will be stripped as `12636471`, but if it's `12636471.lnk.download`,…",0.0]]}}

@@ -1,0 +1,1 @@
+{"cls":{"7766673":[["75fe7f8a_8fedc35b","This could be more concisely written as `self._terminal_columns or 80`",0.0]],"7814841":[["e40256e7_7e2131b7","nit: can we wrap these to 80 chars still?",0.0]]}}

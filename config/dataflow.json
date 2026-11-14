@@ -604,7 +604,7 @@
       "purpose": "Review comments rendered with their thread context and who wrote them: the input to scoring, praise and the Feedback Index's excerpts.",
       "notes": "Holds untrusted comment text. One writer (comments-collect).",
       "name": "Rendered comments",
-      "withheld": "Review comments with who wrote them, the input to tone scoring; tone stays unpublished per person (ground rule 5)."
+      "withheld": "Review comments with who wrote them, the input to tone scoring; per-person tone is published only where an address must be typed first (ground rule 5)."
     },
     {
       "id": "data/private/sentiment.sqlite",
@@ -630,7 +630,7 @@
             "ai": "1 if the comment expresses negative feeling about AI in code review, else 0.",
             "why": "The model's short reason for the score."
           },
-          "withheld": "Tone scores and the model's reasons per comment; only praise and anonymous samples are published (ground rule 5)."
+          "withheld": "Tone scores and the model's reasons per comment; published only as praise, anonymous samples and the Feedback Index's comment files, shown after an address is typed (ground rule 5)."
         },
         {
           "name": "prompts",
@@ -1121,18 +1121,63 @@
       "purpose": "Author-level distributions for the page's author charts."
     },
     {
-      "id": "web/public/review-feedback/",
-      "name": "Feedback Index data",
+      "id": "web/public/review-feedback/peers.json",
+      "name": "Feedback Index global data",
+      "path": "web/public/review-feedback/peers.json",
+      "kind": "json",
+      "tier": "published",
+      "tracked_in_git": true,
+      "rebuildable": true,
+      "size": "about 44 KB (15 KB gzipped)",
+      "size_as_of": "2026-11-14",
+      "purpose": "Everyone's figures (experience bins, typical rates and factors, spreads, the methodology's charts), loaded on opening.",
+      "notes": "Rewritten on every run of review-feedback."
+    },
+    {
+      "id": "feedback-people",
+      "name": "Feedback Index per-person files",
       "path": "web/public/review-feedback/",
       "kind": "directory",
       "tier": "published",
       "tracked_in_git": true,
+      "git_paths": [
+        "web/public/review-feedback/u/",
+        "web/public/review-feedback/[0-9][0-9][0-9][0-9]H[12]/*"
+      ],
       "rebuildable": true,
-      "size": "126 MB (53 MB gzipped file by file, as git stores it)",
-      "size_as_of": "2026-11-12",
-      "files": "peers.json, u/<hash>.json (6,902 people, 122 other addresses) and <half-year>/<hash>.json (19 folders, 2017H2 .. 2026H2; before 2025H2 thread counts per directory, not each thread); <hash> is a salted SHA-256 of the e-mail.",
-      "purpose": "Per-person changes and addressed review comments, which the Feedback Index page fetches by a hash of the address typed, and peers.json with the feedback rates and index factors it compares them with.",
-      "notes": "Committed and published on GitHub Pages since 2026-11-12. Finished half-years' files don't change between runs unless their inputs do, so git stores them once; each run rewrites the current half-year, u/ and peers.json. Commit with `git add -A web/public/review-feedback/`."
+      "size": "89 MB (36 MB gzipped file by file, as git stores it): 6,862 people, 122 other addresses, 19 half-years",
+      "size_as_of": "2026-11-14",
+      "files": "u/<hash>.json (who the person is, which half-years they have; a stub per other address) and <half-year>/<hash>.json (their changes and reviewer threads, no text; before 2025H2 thread counts per directory, not each thread); <hash> is a salted SHA-256 of the e-mail.",
+      "purpose": "One person's changes and addressed review comments, which every chart and table uses once an address is typed. No tone, no comment text.",
+      "notes": "Committed and published on GitHub Pages since 2026-11-12. Finished half-years' files don't change between runs unless their inputs do, so git stores them once; each run rewrites the current half-year and u/. Commit with `git add -A web/public/review-feedback/`."
+    },
+    {
+      "id": "data/private/feedback-threads.jsonl",
+      "name": "Feedback Index thread index",
+      "path": "data/private/feedback-threads.jsonl",
+      "kind": "jsonl",
+      "tier": "derived",
+      "tracked_in_git": false,
+      "rebuildable": true,
+      "size": "9 MB (5,570 lines)",
+      "size_as_of": "2026-11-14",
+      "purpose": "Each person's half-year files from 2025H2 with their threads' comment ids in file order, so feedback-comments lines up with them.",
+      "notes": "One line per person and half-year: key, half-year, [change number, [thread root uuids]]. Written last by review-feedback, replacing the old one."
+    },
+    {
+      "id": "web/public/review-feedback/comments/",
+      "name": "Feedback Index comment files",
+      "path": "web/public/review-feedback/comments/",
+      "kind": "directory",
+      "tier": "published",
+      "tracked_in_git": true,
+      "rebuildable": true,
+      "size": "34 MB (17 MB gzipped file by file): 5,570 files, 245k threads with text, all scored",
+      "size_as_of": "2026-11-14",
+      "files": "<half-year>/<hash>.json from 2025H2: per change, each thread's comment id, 200-character excerpt and tone score.",
+      "purpose": "The comment list only: excerpts, comment links and each comment's tone score, shown after an address is typed. No chart reads them.",
+      "withheld": "Per-comment tone, negative scores included, is shown only after someone types the person's address (ground rule 5), never on a page reached by clicks.",
+      "notes": "Holds untrusted comment text; the page renders it only as text. A thread whose text or score arrives later changes its half-year's file."
     },
     {
       "id": "data/private/feedback-coach/",
@@ -1959,7 +2004,7 @@
     },
     {
       "id": "review-feedback",
-      "command": "nice -n 5 python3 -m cosh.review_feedback",
+      "command": "nice -n 5 python3 -m cosh.review_feedback --part people",
       "code": [
         "cosh/review_feedback.py",
         "cosh/cl_facts.py",
@@ -1971,24 +2016,49 @@
         "data/private/commits.sqlite",
         "data/private/reviews.sqlite",
         "data/private/addressed.sqlite",
-        "data/private/sentiment.sqlite",
-        "data/private/comments/",
         "config/bots.txt",
         "config/affiliations.json5"
       ],
       "outputs": [
-        "web/public/review-feedback/"
+        "web/public/review-feedback/peers.json",
+        "feedback-people",
+        "data/private/feedback-threads.jsonl"
       ],
       "network": false,
       "lock": null,
-      "incremental": "Deletes and rewrites every file.",
-      "duration": "about 2 min (119 s on 2026-11-14), 3 GB of memory",
+      "incremental": "Deletes and rewrites peers.json, u/, the half-year folders and the thread index.",
+      "duration": "about 2 min (114 s on 2026-11-14), 3 GB of memory",
       "token_cost": null,
       "cost_source": "docs/review-feedback.md",
       "refresh": "routine",
-      "approval": "Tone is praise only (docs/plan.md, ground rule 5).",
-      "notes": "Computes its per-CL facts (owner, status, Gerrit size, landed commit, lines per directory) from reviews.sqlite and commits.sqlite (cosh.cl_facts). Earlier commits count from 2008. Its tone year is Review Tone's (sentiment.scored_weeks). It refreshes the affiliations file first (its only network use). `npm run serve` picks the new files up a few seconds after the run ends.",
-      "run": "nice -n 5 python3 -m cosh.review_feedback"
+      "notes": "Computes its per-CL facts (owner, status, Gerrit size, landed commit, lines per directory) from reviews.sqlite and commits.sqlite (cosh.cl_facts). Earlier commits count from 2008. It refreshes the affiliations file first (its only network use). `npm run serve` picks the new files up a few seconds after the run ends. Reads no review tone or comment text: feedback-comments adds those.",
+      "run": "nice -n 5 python3 -m cosh.review_feedback --part people"
+    },
+    {
+      "id": "feedback-comments",
+      "command": "nice -n 5 python3 -m cosh.review_feedback --part comments",
+      "code": [
+        "cosh/review_feedback.py"
+      ],
+      "purpose": "Writes each person's comment list for the Feedback Index: excerpts, comment links and tone scores.",
+      "inputs": [
+        "data/private/feedback-threads.jsonl",
+        "data/private/comments/",
+        "data/private/sentiment.sqlite"
+      ],
+      "outputs": [
+        "web/public/review-feedback/comments/"
+      ],
+      "network": false,
+      "lock": null,
+      "incremental": "Deletes and rewrites comments/.",
+      "duration": "seconds (6 s on 2026-11-14)",
+      "token_cost": null,
+      "cost_source": "docs/review-feedback.md",
+      "refresh": "routine",
+      "approval": "Shows each comment's tone, negative ones too, only after an address is typed (docs/plan.md, ground rule 5, 2026-11-14).",
+      "notes": "Joins the thread index with the comment text and tone scores; picks no people or changes itself, so its entries line up with the half-year files of the review-feedback run that wrote the index. The page drops a change's entries if the counts still differ.",
+      "run": "nice -n 5 python3 -m cosh.review_feedback --part comments"
     },
     {
       "id": "feedback-coach",
@@ -2225,7 +2295,9 @@
       "purpose": "Feedback rate (addressed review comments per 100 lines) by experience; type an address to see that person's rate and feedback index against their peers'.",
       "entry_script": "web/src/review-feedback.ts",
       "reads": [
-        "web/public/review-feedback/"
+        "web/public/review-feedback/peers.json",
+        "feedback-people",
+        "web/public/review-feedback/comments/"
       ],
       "sources_line": "Gerrit code review · Chromium git history",
       "notes": "Linked from the landing page since 2026-11-12; carries noindex."

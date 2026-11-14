@@ -1,1 +1,1 @@
-{"dirs":["chrome/browser/first_run/"],"files":["chrome/browser/first_run/bookmark_importer_unittest.cc"],"orgs":["google.com"],"cls":[[7205032,20430,54,1.77,1.388,[[0,0]],[["7229dc99_4c524a22",0,-11,1,"nit: remove this unused variable"]],0,0]]}
+{"dirs":["chrome/browser/first_run/"],"files":["chrome/browser/first_run/bookmark_importer_unittest.cc"],"orgs":["google.com"],"cls":[[7205032,20430,54,1.77,1.388,[[0,0]],[[0,-11,1]],0,0]]}

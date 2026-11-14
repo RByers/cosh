@@ -1,0 +1,1 @@
+{"cls":{"7867332":[["018d1f04_bf3c33b6","nit: it's safer to have this as a dict at the top of the file, so new architectures don't omit this. ``` IS_LITTLE_ENDIAN = { \"amd64\": False, \"i386\": False, \"armhf\": False, \"arm64\": False, \"mipsel\":…",0.0]]}}

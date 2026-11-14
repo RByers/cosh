@@ -60,6 +60,7 @@ import {
   type ToneSamples,
   type ToneTrend,
 } from './tone.ts';
+import { scoreBadge, signed1 } from './score.ts';
 
 Chart.register(Filler);
 
@@ -727,21 +728,6 @@ function drawHappy() {
 }
 
 // ---- comments
-
-/** A comment's score as a small pill: "+0.6" or "−0.8", tinted from neutral
- * toward the glowing or the grumpy colour as the score grows. */
-function scoreBadge(score: number, scale = 1, title = `Score ${signed1(score)} on a scale from −1 to +1`): HTMLElement {
-  const b = el('span', signed1(score), 'score-badge');
-  const m = Math.min(1, Math.abs(score) / scale);
-  b.dataset.pole = score < 0 ? 'neg' : 'pos';
-  b.style.setProperty('--mix', `${Math.round(m * 100)}%`);
-  if (m > 0.6) b.classList.add('score-strong');
-  b.title = title;
-  return b;
-}
-
-const signed1 = (v: number) =>
-  (v > 0 ? '+' : v < 0 ? '−' : '') + fmtNum(Math.abs(v), { minimumFractionDigits: 1, maximumFractionDigits: 1 });
 
 /** A list's items, or one "none" line when there are none. */
 function orNone(items: HTMLElement[]): HTMLElement[] {

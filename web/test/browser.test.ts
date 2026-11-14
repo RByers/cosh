@@ -3254,7 +3254,7 @@ test('a touch anywhere off a chart closes its hover card, on every page with cha
 // person in feedback-fixture.ts, so they don't depend on the committed data.
 
 async function feedbackPage(peersOverride?: Peers, shardsOverride?: Record<string, Shard>): Promise<{ page: Page; errors: string[] }> {
-  const { top, shards: fixtureShards, peers: fixturePeers, FIXTURE_KEY, ALIAS_KEY } = await import('./feedback-fixture.ts');
+  const { top, shards: fixtureShards, comments, peers: fixturePeers, FIXTURE_KEY, ALIAS_KEY } = await import('./feedback-fixture.ts');
   const peers = peersOverride ?? fixturePeers;
   const shards = shardsOverride ?? fixtureShards;
   const page = await browser.newPage();
@@ -3268,6 +3268,8 @@ async function feedbackPage(peersOverride?: Peers, shardsOverride?: Record<strin
     const json = (body: unknown) => void r.respond({ status: 200, contentType: 'application/json', body: JSON.stringify(body) });
     if (path.endsWith('/review-feedback/peers.json')) json(peers);
     else if (path.endsWith(`/review-feedback/u/${FIXTURE_KEY}.json`)) json(top);
+    else if (/\/review-feedback\/comments\/\d{4}H[12]\//.test(path) && path.endsWith(`/${FIXTURE_KEY}.json`))
+      json(comments[path.split('/').at(-2)!]);
     else if (/\/review-feedback\/\d{4}H[12]\//.test(path) && path.endsWith(`/${FIXTURE_KEY}.json`))
       json(shards[path.split('/').at(-2)!]);
     else if (path.endsWith(`/review-feedback/u/${ALIAS_KEY}.json`)) json({ see: FIXTURE_KEY });
@@ -3446,6 +3448,8 @@ test('feedback index: a person\'s index, how their rate compares, directories an
   assert.match(await page.$eval('#comments-sub', (e) => e.textContent!), /^\s*3 addressed review comments, newest first/);
   assert.deepEqual(await page.$$eval('#rf-threads li .rf-text', (ps) => ps.map((p) => p.textContent)),
     ['Great test coverage <img src=x onerror=alert(1)>']);
+  // Each scored comment shows its tone score (from the comment file, not the half-year file).
+  assert.deepEqual(await page.$$eval('#rf-threads li .score-badge', (bs) => bs.map((b) => b.textContent)), ['+0.7']);
   assert.equal(await page.$('#rf-threads img'), null);
   assert.deepEqual(await page.$$eval('#rf-notext-table tbody tr td:first-child', (ts) => ts.map((t) => t.textContent)), ['1000003', '1000001']);
   // Selecting a directory lists its comments.
@@ -3556,7 +3560,7 @@ test('feedback index: selecting a column of the comments-per-change chart filter
   // CL 3 gets three more addressed comments: 4 in all.
   const { FIXTURE_EMAIL, shards } = await import('./feedback-fixture.ts');
   const h2 = structuredClone(shards['2026H2']);
-  (h2.cls[0][6] as [string, number, number | null, 0 | 1 | null][]).push(['', 0, -2, 1], ['', 0, -2, 1], ['', 0, -2, 1]);
+  (h2.cls[0][6] as [number, number | null, 0 | 1 | null][]).push([0, -2, 1], [0, -2, 1], [0, -2, 1]);
   const { page, errors } = await feedbackPage(undefined, { ...shards, '2026H2': h2 });
   await lookUp(page, FIXTURE_EMAIL);
   await page.waitForFunction(() => !document.querySelector<HTMLElement>('#rf-person')!.hidden);

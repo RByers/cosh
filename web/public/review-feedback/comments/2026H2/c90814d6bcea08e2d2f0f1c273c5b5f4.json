@@ -1,0 +1,1 @@
+{"cls":{"8150704":[["908a110e_663dcd30","Any chance this could be rewritten as an inspector-protocol test? We strongly prefer JS tests for CDP when possible, both for readability and for keeping them in one place. Something like this can be…",-0.2]]}}

@@ -1,0 +1,1 @@
+{"cls":{"8322367":[["ef50724f_b43e6486","Could you instead see if switching the VariationsSimulatorParallelTestRunner to use the Xcode16LogParser will resolve these issues? Should be a one line change here:…",0.0]],"8423784":[["76c1218b_cd0aa955","Should we move it to some more generic place, it doesn't seem to be related to downloader specifically.",0.0]]}}

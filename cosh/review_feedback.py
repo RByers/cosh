@@ -6,24 +6,38 @@ per 100 new or changed lines; the feedback index (FI) is a person's FR over thei
 peers' (the median FR at the same experience, adjusted for directories and,
 optionally, org: `rate_model`, `expected`).
 
-Offline; reads reviews.sqlite, commits.sqlite, addressed.sqlite,
-sentiment.sqlite and the sentiment comment files. Writes, under --out
-(default web/public/review-feedback/):
+Offline. Two parts, which `cosh update` runs as two steps so that review
+tone feeds only the comment list (config/dataflow.json):
 
-  peers.json         the experience bins, the index's typical rates and
-                     factors, the spread of FR per bin and of everyone's FI
-                     per norm and period, and the methodology's charts
-  u/<key>.json       one per CL owner: first commit, which half-years they
-                     have files for, praise received
-  u/<key>.json       for each other address of the same person: {"see": key}
-  <half>/<key>.json  that half-year's CLs, with directory splits and the
-                     reviewer threads (excerpts where comment text exists)
+  --part people     reads reviews.sqlite, commits.sqlite and addressed.sqlite;
+                    writes peers.json, u/ and the half-year folders, and the
+                    thread index (data/private/feedback-threads.jsonl: each
+                    half-year file's comment ids, in its order)
+  --part comments   reads the thread index, the collected comment files and
+                    sentiment.sqlite; writes comments/. Takes seconds.
+
+Without --part, both. The files, under --out (default web/public/review-feedback/):
+
+  peers.json         global, loaded on opening: the experience bins, the
+                     index's typical rates and factors, the spread of FR per
+                     bin and of everyone's FI per norm and period, and the
+                     methodology's charts
+  u/<key>.json       per person: first commit, which half-years they have
+                     files for; for each other address of the same person,
+                     {"see": key}
+  <half>/<key>.json  per person and half-year: their CLs, with directory
+                     splits and the reviewer threads (no text)
+  comments/<half>/<key>.json
+                     the comment list only: each thread's comment id,
+                     excerpt and tone score, for the half-years from
+                     THREADS_FROM
 
 <key> is a hash of the normalised address (`key` below; the page computes the
 same), so the folder can't be browsed for names and the page can't offer
-completions. Everything comes from public Gerrit and git data. Review tone
-appears only as praise (docs/plan.md, ground rule 5): nothing written here
-marks a comment, a person or an org as negative, and orgs get no tone figures.
+completions. Everything comes from public Gerrit and git data. Tone appears
+only as each comment's score in the comment files, which a page shows only
+after someone types the person's address (docs/plan.md, ground rule 5); orgs
+get no tone figures.
 
   COSH_DATA_DIR=<main>/data/private nice -n 5 python3 -m cosh.review_feedback [--out DIR]
 """
@@ -56,14 +70,16 @@ DAY = 86400
 YEAR = 365.25 * DAY
 WEEK = 7 * DAY
 ADDR_COVER = 0.95             # the addressed measure starts where every later week has labels for this share
-TONE_WEEKS = []              # the year with comment text and tone scores: set by main (--tone-weeks)
+# Half-years from this one keep each reviewer thread (file, day, addressed) and
+# get a comment file; older ones keep thread counts per directory. Comment text
+# is collected from 2025-W45, so this is the half-year that week falls in.
+THREADS_FROM = "2025H2"
 SALT = "cosh-review-feedback-v1:"
 EXCERPT = 200                 # characters of a comment kept for the drill-down
 # A person's feedback index over a period counts among peers (the spread
 # the page shows) with this many CLs. At 25 CLs its noise is about ±38%
 # (docs/review-feedback.md).
 MIN_CLS = 25
-MIN_RECEIVED = 20             # ... and among tone peers with this many comments received
 QS = [i / 20 for i in range(21)]
 TENURE = ["<1y", "1-2y", "2-5y", "5-10y", "10y+"]
 CHANGES = ["<50", "50-199", "200-499", "500-999", "1000+"]   # the author's earlier commits on main (all of its history)
@@ -620,11 +636,13 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--out", default=OUT)
     ap.add_argument("--check", help="also write some people's per-period values here, to compare with the page's")
-    ap.add_argument("--tone-weeks", help="the weeks with comment text and tone scores, e.g. 2025-W45:2026-W44 "
-                                         "(default: the newest year of fully scored weeks, as Review Tone)")
+    ap.add_argument("--part", choices=("people", "comments"),
+                    help="write only the global and per-person files and the thread index, or only the comment "
+                         "files from that index (default: both)")
     args = ap.parse_args()
-    TONE_WEEKS[:] = sentiment.weeks_in(args.tone_weeks or sentiment.scored_weeks())
-    print(f"tone weeks {TONE_WEEKS[0]} .. {TONE_WEEKS[-1]}", file=sys.stderr, flush=True)
+    if args.part == "comments":
+        write_comments(args.out)
+        return
 
     cls, commits, ids, first, raw_email, by_cid = load(args)
     mech = C.left_out(git_db(), cls)       # mechanical and large-scale-change CLs
@@ -771,51 +789,6 @@ def main():
     if ADDR_START > max(START, datetime(2023, 1, 1, tzinfo=timezone.utc).timestamp()):
         print("warning: 2023-24 isn't all labelled, so the addressed norms are too low", file=sys.stderr)
 
-    # Tone: praise received, and comment text for the excerpts.
-    scores = {}
-    sdb = sentiment.open_scores(store.DATA_DIR)
-    pr = sdb.execute("SELECT prompt_id FROM prompts WHERE sha256=? AND model='haiku'",
-                     (sentiment.prompt_sha(sentiment.load_prompt()),)).fetchone()
-    for i, s in sdb.execute("SELECT id, score FROM scores WHERE prompt_id IN (0, ?)", (pr[0] if pr else -1,)):
-        scores[i] = s
-    roots = {f"{n}/{t[0]}" for n, c in by_n.items() for t in c["thr"]}
-    text = {}
-    received = defaultdict(lambda: defaultdict(int))     # pid -> period -> comments to them on their CLs
-    praise = defaultdict(list)                           # pid -> [(cl, uuid, day, text)]
-    tone_pid = {}
-
-    def pid_of(acct):
-        if acct not in tone_pid:
-            e = acct_email.get(acct)
-            tone_pid[acct] = ids.find(e) if e and not is_bot_email(e) else None
-        return tone_pid[acct]
-    # Excerpts come from every week whose comment text has been collected, so a
-    # half-year's file keeps them on later runs; praise only from the scored year.
-    tone = set(TONE_WEEKS)
-    for path in sorted(glob.glob(os.path.join(sentiment.out_dir(store.DATA_DIR), "comments-*-W*.jsonl"))):
-        w = os.path.basename(path)[len("comments-"):-len(".jsonl")]
-        with open(path) as f:
-            for line in f:
-                r = json.loads(line)
-                i = r["id"]
-                if i in roots:
-                    text[i] = excerpt(r.get("text"))
-                if w not in tone:
-                    continue
-                if sentiment.is_self_note(r) or i not in scores or sentiment._target_kind(r) != "person":
-                    continue
-                if r.get("target") != r.get("owner") or r.get("author") == r.get("owner"):
-                    continue          # only comments to the CL owner from someone else
-                p = pid_of(r["owner"])
-                if not p:
-                    continue
-                received[p]["tone"] += 1
-                if scores[i] >= sentiment.GLOWING:
-                    praise[p].append((r["cl"], r["uuid"], r["written_at"][:10], excerpt(r.get("text"))))
-                    received[p]["praise"] += 1
-    print(f"tone: {len(received):,} people received comments, {sum(len(v) for v in praise.values()):,} praise",
-          file=sys.stderr, flush=True)
-
     # ------------------------------------------------ feedback rate and index
     # Only the labelled CLs count (from ADDR_START, which is START once every
     # week is labelled): the feedback rate is addressed threads per 100 lines.
@@ -856,19 +829,6 @@ def main():
             check_vals[key(pid)] = dict(periods=vals, growth=g)
 
     # ------------------------------------------------ peers
-    tone_end = week_start(TONE_WEEKS[-1]) + WEEK
-
-    def tone_bands(pid):
-        ten = (tone_end - first[pid]) / YEAR if pid in first else None
-        return dict(time=tenure_band(ten),
-                    changes=changes_band(bisect.bisect_left(own_times.get(pid, ()), tone_end)))
-
-    def tone_share(pid):
-        r = received.get(pid)
-        if not r or r["tone"] < MIN_RECEIVED:
-            return None
-        return r["praise"] / r["tone"]
-
     dist = lambda xs: dict(n=len(xs), q=quantiles(xs) if len(xs) >= MIN_PEERS else None)
     first_year = {pid: datetime.fromtimestamp(t, timezone.utc).year for pid, t in first.items()}
     peers = dict(v=5, generated=datetime.now(timezone.utc).strftime("%Y-%m-%d"), periods=allp,
@@ -882,8 +842,7 @@ def main():
                  size_labels=SIZE_LABELS, by_size=by_size(by_pid), by_dir=by_dir(by_pid), by_org=by_org(by_pid),
                  growth=growth_dist(list(growths.values())), fi_norm=FI_NORM,
                  fi_dist=fi_dist(fi_vals[FI_NORM].get("all", [])),
-                 tenure=TENURE, changes=CHANGES, min_received=MIN_RECEIVED,
-                 tone_weeks=[TONE_WEEKS[0], TONE_WEEKS[-1]], tone={})
+                 tenure=TENURE, changes=CHANGES)
     for nm in ("ed", "e", ""):
         q = peers["fi"][nm]["all"]
         print(f"feedback index ({nm or 'none'}): {q['n']:,} people, quartiles "
@@ -895,23 +854,12 @@ def main():
     print("by size: " + " ".join(f"{l} {v}" for l, v in zip(SIZE_LABELS, peers["by_size"])), file=sys.stderr)
     print("by directory: " + ", ".join(f"{d} {v}/{n}" for d, v, n in peers["by_dir"]), file=sys.stderr)
     print("by org: " + ", ".join(f"{d} {v}/{n}" for d, v, n in peers["by_org"]), file=sys.stderr, flush=True)
-    # Tone peers: praise share of comments received in the tone year, by tenure
-    # in years or in earlier commits at its end (no orgs).
-    tone_rows = []
-    for pid in received:
-        s = tone_share(pid)
-        if s is not None:
-            tone_rows.append((tone_bands(pid), s))
-    peers["tone"]["all"] = dict(n=len(tone_rows), q=quantiles([s for _, s in tone_rows]))
-    for by, names in (("time", TENURE), ("changes", CHANGES)):
-        for t in names:
-            xs = [s for b, s in tone_rows if b[by] == t]
-            peers["tone"][f"{by}:{t}"] = dict(n=len(xs), q=quantiles(xs) if len(xs) >= MIN_PEERS else None)
 
     # ------------------------------------------------ write
-    # u/<key>.json: who the person is, which half-years they have, and praise
-    # (it changes on every run). <half>/<key>.json: that half-year's CLs, which
-    # later runs leave unchanged once the half-year is over, so git stores them once.
+    # u/<key>.json: who the person is and which half-years they have.
+    # <half>/<key>.json: that half-year's CLs, which later runs leave unchanged
+    # once the half-year is over, so git stores them once. The thread index
+    # lists each such file's thread ids for the comments part.
     out = args.out
     for name in os.listdir(out) if os.path.isdir(out) else ():
         if name == "u" or HALF.match(name):
@@ -920,10 +868,8 @@ def main():
     with open(os.path.join(out, "peers.json"), "w") as f:
         json.dump(peers, f, separators=(",", ":"))
     written, stubs, size = 0, 0, 0
-    # Half-years that reach into the year with comment text keep each thread;
-    # older ones keep counts per directory.
-    tone_start = week_start(TONE_WEEKS[0])
     taken = {}
+    index = open(threads_path() + ".new", "w")
     for pid, cs in people.items():
         k = key(pid)
         if k in taken:
@@ -935,18 +881,15 @@ def main():
         for c in cs:
             by_half[half(c["closed_at"])].append(c)
         for h, hcs in sorted(by_half.items()):
-            data = json.dumps(shard(hcs, text, half_end(h) > tone_start), separators=(",", ":"), ensure_ascii=False)
+            data = json.dumps(shard(hcs, h >= THREADS_FROM), separators=(",", ":"), ensure_ascii=False)
             os.makedirs(os.path.join(out, h), exist_ok=True)
             with open(os.path.join(out, h, f"{k}.json"), "w") as f:
                 f.write(data)
             size += len(data.encode())
-        r = received.get(pid, {})
-        top = dict(v=4, first=datetime.fromtimestamp(first[pid], timezone.utc).strftime("%Y-%m") if pid in first else None,
-                   first_day=epoch_day(first[pid]) if pid in first else None, halves=sorted(by_half),
-                   tone=dict(received=r.get("tone", 0), praise=r.get("praise", 0), share=tone_share(pid),
-                             ten=tone_bands(pid)["time"], chg=tone_bands(pid)["changes"]),
-                   praise=[[n, u, day_of(day), t] for n, u, day, t in sorted(praise.get(pid, []), key=lambda x: x[2],
-                                                                            reverse=True)])
+            if h >= THREADS_FROM:
+                index.write(json.dumps(dict(k=k, h=h, cls=thread_ids(hcs)), separators=(",", ":")) + "\n")
+        top = dict(v=5, first=datetime.fromtimestamp(first[pid], timezone.utc).strftime("%Y-%m") if pid in first else None,
+                   first_day=epoch_day(first[pid]) if pid in first else None, halves=sorted(by_half))
         data = json.dumps(top, separators=(",", ":"), ensure_ascii=False)
         with open(os.path.join(out, "u", f"{k}.json"), "w") as f:
             f.write(data)
@@ -961,23 +904,106 @@ def main():
             with open(os.path.join(out, "u", f"{k}.json"), "w") as f:
                 f.write(json.dumps(dict(see=key(pid))))
             stubs += 1
+    index.close()
+    os.replace(threads_path() + ".new", threads_path())
     if args.check:
         with open(args.check, "w") as f:
             json.dump(check_vals, f)
     print(f"wrote {written:,} people ({size / 1e6:.1f} MB) and {stubs:,} other addresses to {out}",
           file=sys.stderr)
+    if args.part is None:
+        write_comments(out)
 
 
 HALF = re.compile(r"^\d{4}H[12]$")
 
 
-def half_end(h):
-    """The timestamp a half-year ("2025H2") ends at."""
-    y, second = int(h[:4]), h[5] == "2"
-    return datetime(y + second, 1 if second else 7, 1, tzinfo=timezone.utc).timestamp()
+def thread_order(c):
+    """A CL's reviewer threads in the order the half-year files and the
+    thread index list them."""
+    return sorted(c["thr"], key=lambda t: (t[2], t[0]))
 
 
-def shard(cs, text, threads):
+def tone_scores(ids, data_dir=None):
+    """Thread root id ("<change>/<uuid>") -> tone score, for the `ids` that
+    sentiment.sqlite scored with the current prompt (or as trivial)."""
+    data_dir = data_dir or store.DATA_DIR
+    if not os.path.exists(os.path.join(data_dir, "sentiment.sqlite")):
+        return {}
+    sdb = sentiment.open_scores(data_dir)
+    pr = sdb.execute("SELECT prompt_id FROM prompts WHERE sha256=? AND model='haiku'",
+                     (sentiment.prompt_sha(sentiment.load_prompt()),)).fetchone()
+    return {i: s for i, s in sdb.execute("SELECT id, score FROM scores WHERE prompt_id IN (0, ?)",
+                                         (pr[0] if pr else -1,)) if i in ids}
+
+
+def threads_path(data_dir=None):
+    """The thread index the people part writes and the comments part reads."""
+    return os.path.join(data_dir or store.DATA_DIR, "feedback-threads.jsonl")
+
+
+def thread_ids(cs):
+    """[[change number, [thread root uuids]]] for one person's CLs of one
+    half-year, in the half-year file's order (`shard`)."""
+    return [[c["change_number"], [t[0] for t in thread_order(c)]] for c in cs]
+
+
+def write_comments(out, data_dir=None):
+    """The comment part: comments/<half>/<key>.json for each person and
+    half-year in the thread index. Excerpts come from every week whose
+    comment text has been collected, so a finished half-year's file stays
+    the same on later runs unless its text or scores change."""
+    data_dir = data_dir or store.DATA_DIR
+    with open(threads_path(data_dir)) as f:
+        index = [json.loads(line) for line in f]
+    roots = {f"{n}/{r}" for e in index for n, rs in e["cls"] for r in rs}
+    text, weeks = {}, 0
+    for path in sorted(glob.glob(os.path.join(sentiment.out_dir(data_dir), "comments-*-W*.jsonl"))):
+        weeks += 1
+        with open(path) as f:
+            for line in f:
+                r = json.loads(line)
+                if r["id"] in roots:
+                    text[r["id"]] = excerpt(r.get("text"))
+    scores = tone_scores(text, data_dir)
+    print(f"comment text: {len(text):,} threads from {weeks} weeks, {len(scores):,} with a tone score",
+          file=sys.stderr, flush=True)
+    d = os.path.join(out, "comments")
+    if os.path.isdir(d):
+        shutil.rmtree(d)
+    size = 0
+    for e in index:
+        data = json.dumps(comment_file(e["cls"], text, scores), separators=(",", ":"), ensure_ascii=False)
+        os.makedirs(os.path.join(d, e["h"]), exist_ok=True)
+        with open(os.path.join(d, e["h"], f"{e['k']}.json"), "w") as f:
+            f.write(data)
+        size += len(data.encode())
+    print(f"wrote {len(index):,} comment files ({size / 1e6:.1f} MB) to {d}", file=sys.stderr)
+
+
+def comment_file(cls, text, scores):
+    """One person's comment list for one half-year, from its thread index
+    entry [[change number, [root uuids]]]: {"cls": {change number: entries}},
+    one entry per thread in the half-year file's order, 0 for a thread
+    without text, else [comment uuid, excerpt] or [uuid, excerpt, tone
+    score]. CLs with no text are left out."""
+    out = {}
+    for n, rs in cls:
+        com = []
+        for root in rs:
+            i = f"{n}/{root}"
+            if i not in text:
+                com.append(0)
+            elif i in scores:
+                com.append([root, text[i], round(scores[i], 2)])
+            else:
+                com.append([root, text[i]])
+        if any(com):
+            out[str(n)] = com
+    return dict(cls=out)
+
+
+def shard(cs, threads):
     """One person's CLs of one half-year, oldest first: [change number, day
     landed, lines, expected threads by size and directory, expected addressed
     by size and directory, units, threads, org, the owner's earlier commits on
@@ -989,13 +1015,12 @@ def shard(cs, text, threads):
     lines there (insertions)], or [directory, earlier commits there] for a CL
     wholly in one directory (share 1, all of its lines).
 
-    With `threads` (half-years that reach into the year with comment text),
-    each reviewer thread: [comment uuid, file, days after landing, addressed,
-    excerpt]. The uuid is empty for a thread without an excerpt (the page
-    links its CL instead). A thread's directory is its file's (3 levels) when
-    that is one of the CL's units, else the first unit's. Without `threads`
-    the shard has `counts`: 1 and each CL has [threads, addressed] per unit,
-    in the units' order, or [] when it has no reviewer threads."""
+    With `threads` (half-years from THREADS_FROM), each reviewer thread:
+    [file, days after landing, addressed], in `thread_order`. A thread's
+    directory is its file's (3 levels) when that is one of the CL's units,
+    else the first unit's. Without `threads` the shard has `counts`: 1 and
+    each CL has [threads, addressed] per unit, in the units' order, or []
+    when it has no reviewer threads."""
     files, dirs, orgs = {}, {}, {}
 
     def idx(table, x):
@@ -1013,13 +1038,8 @@ def shard(cs, text, threads):
             units = [[idx(dirs, dd), w, prior, lines] for dd, (w, prior, lines) in order]
         thr = []
         if threads:
-            for root, path, at, addr, dd in sorted(c["thr"], key=lambda t: (t[2], t[0])):
-                ex = text.get(f"{n}/{root}")
-                t = [root if ex is not None else "", idx(files, path), (day_of(at) - d0) if at else None,
-                     None if addr is None else int(bool(addr))]
-                if ex is not None:
-                    t.append(ex)
-                thr.append(t)
+            thr = [[idx(files, path), (day_of(at) - d0) if at else None, None if addr is None else int(bool(addr))]
+                   for _, path, at, addr, _ in thread_order(c)]
         elif c["thr"]:
             per = {dd: [0, 0] for dd, _ in order}
             for _, _, _, addr, dd in c["thr"]:

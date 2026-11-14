@@ -2,7 +2,8 @@
 // this looks a person up by the address typed (never offering completions:
 // the data is one file per person, named by a hash of the address), fills in
 // the values and draws the charts. Comment text is untrusted and goes into the
-// DOM only as text (SECURITY.md). Tone appears only as praise (ground rule 5).
+// DOM only as text (SECURITY.md). Each comment shows its tone score: the list
+// appears only after someone types an address (docs/plan.md, ground rule 5).
 // The address is never put in the URL.
 import { Chart, Filler, type ChartDataset, type ChartEvent, type Plugin } from 'chart.js';
 import { readTheme, withAlpha, type Theme } from './charts.ts';
@@ -39,11 +40,13 @@ import {
   type Norm,
   type Peers,
   type Person,
+  type CommentShard,
   type Shard,
   type ThreadRow,
   type Top,
 } from './feedback.ts';
 import { fmtDay, fmtInt, fmtNum } from './format.ts';
+import { scoreBadge } from './score.ts';
 import { fragment, msg, type Vars } from './text.ts';
 
 Chart.register(Filler);
@@ -220,7 +223,13 @@ async function lookup(raw: string) {
     const shards = top && halvesOk
       ? await Promise.all(top.top.halves.map((h) => getJson<Shard>(`${DATA}${h}/${top.key}.json`)))
       : [];
-    const found = top && peers && halvesOk && shards.every((s) => s) ? buildPerson(top.top, shards as Shard[], peers) : null;
+    // And, for the comment list only, the comment file of each half-year that keeps its threads.
+    const comments = top
+      ? await Promise.all(top.top.halves.map((h, i) => (shards[i] && !shards[i].counts
+        ? getJson<CommentShard>(`${DATA}comments/${h}/${top.key}.json`) : Promise.resolve(null))))
+      : [];
+    const found = top && peers && halvesOk && shards.every((s) => s)
+      ? buildPerson(top.top, shards as Shard[], peers, comments) : null;
     state.peers = peers;
     window.__rf!.peers = peers;
     if (!found || !peers || !clsIn(found, ALL).length) {
@@ -905,11 +914,11 @@ function dirRow(r: DirRowView): HTMLTableRowElement {
 }
 
 function threadItem(r: ThreadRow): HTMLLIElement {
-  const li = el('li', undefined, `quote rf-thread${r.praise ? ' quote-praise' : ''}`);
+  const li = el('li', undefined, 'quote rf-thread');
   const head = el('div', undefined, 'rf-thread-head');
+  if (r.score !== null) head.append(scoreBadge(r.score), ' ');
   head.append(fragment('thread-meta', { date: dayLabel(r.day), file: r.file }));
   const tags = el('span', undefined, 'rf-tags');
-  if (r.praise) tags.append(el('span', msg('thread-praise'), 'rf-tag rf-tag-praise'));
   head.append(tags);
   li.append(head);
   li.append(el('p', r.text!, 'rf-text'));

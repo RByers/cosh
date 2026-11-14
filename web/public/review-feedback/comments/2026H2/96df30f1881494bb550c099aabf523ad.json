@@ -1,0 +1,1 @@
+{"cls":{"8362777":[["ae5a902c_65803903","nit: an extra conversion to `std::string` is not needed, `Base64UrlEncode()` also works with byte arrays ```suggestion return Base64UrlEncode( crypto::hash::Sha256(auth_code.value())); ```",0.0]],"8514657":[["8d65fabd_235a65ae","This change is not topical with the other no-op changes. Please file as a separate CL.",-0.1]]}}

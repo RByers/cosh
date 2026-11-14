@@ -1,0 +1,1 @@
+{"cls":{"6778271":[0,0,["e0dd378a_cd4c2c2e","Could the runtime check perhaps be whether the system GLES driver is ANGLE? If it is, it seems reasonable to infer from that that the system is attempting to be Vulkan-only?",0.0]]}}

@@ -1,0 +1,1 @@
+{"cls":{"7225076":[["76f15b9c_1f7638da","Is `false` intentional here? If so, it should be commented why `scan_stack_for_ads` is not passed instead.",0.0]],"7253855":[["704549c5_21c90177","nit: `kDoNotScanForAds` / `kScanForAds`?",0.0]]}}

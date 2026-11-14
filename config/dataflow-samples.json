@@ -1671,7 +1671,7 @@
    ]
   },
   "data/private/comments/": {
-   "withheld": "Review comments with who wrote them, the input to tone scoring; tone stays unpublished per person (ground rule 5).",
+   "withheld": "Review comments with who wrote them, the input to tone scoring; per-person tone is published only where an address must be typed first (ground rule 5).",
    "parts": []
   },
   "data/private/sentiment.sqlite": {
@@ -1688,7 +1688,7 @@
       "why"
      ],
      "rows": [],
-     "withheld": "Tone scores and the model's reasons per comment; only praise and anonymous samples are published (ground rule 5)."
+     "withheld": "Tone scores and the model's reasons per comment; published only as praise, anonymous samples and the Feedback Index's comment files, shown after an address is typed (ground rule 5)."
     },
     {
      "name": "prompts",
@@ -3060,7 +3060,41 @@
     }
    ]
   },
-  "web/public/review-feedback/": {
+  "web/public/review-feedback/peers.json": {
+   "parts": [
+    {
+     "name": null,
+     "kind": "entries",
+     "columns": [
+      "at",
+      "value"
+     ],
+     "rows": [
+      [
+       "[\"v\"]",
+       "5"
+      ],
+      [
+       "[\"min_bin_cls\"]",
+       "5"
+      ],
+      [
+       "[\"ref_all\"]",
+       "2.371"
+      ],
+      [
+       "[\"size_labels\"]",
+       "[\"<4\",\"4–7\",\"8–15\",\"16–31\",\"32–63\",\"64–127\",\"128–255\",\"256–511\",\"512–1k\",\"1k+\"]"
+      ],
+      [
+       "[\"changes\"]",
+       "[\"<50\",\"50-199\",\"200-499\",\"500-999\",\"1000+\"]"
+      ]
+     ]
+    }
+   ]
+  },
+  "feedback-people": {
    "parts": [
     {
      "name": null,
@@ -3069,31 +3103,69 @@
       "file",
       "bytes"
      ],
-     "total": 40022,
+     "total": 45231,
      "rows": [
       [
        "2017H2/0055f5d94245f0126f2de73cdf3d1392.json",
-       1708
+       1372
       ],
       [
-       "2020H2/c02f1e16daec30078fb0b9c80dab4e9d.json",
-       1947
+       "2021H1/96e42418be64138dc5b52fb209f6324f.json",
+       168
       ],
       [
-       "2023H2/28e6c737b998f8b21b864b07037d0124.json",
-       655
+       "2024H1/9815abbf99ee33c6c716e640cbc76348.json",
+       1021
       ],
       [
-       "2026H1/706d4c3f9fce660208989f4ef285fe45.json",
-       142
+       "comments/2025H2/b4b3bcb977e861dadf3a21edb351f5d1.json",
+       151
       ],
       [
        "u/fff4b5de910e00b00f6dfdc7a8bd0916.json",
-       156
+       72
       ]
      ]
     }
    ]
+  },
+  "data/private/feedback-threads.jsonl": {
+   "parts": [
+    {
+     "name": null,
+     "kind": "lines",
+     "columns": [
+      "line",
+      "text"
+     ],
+     "rows": [
+      [
+       1,
+       "{\"k\":\"1202a9c0d2c2aaefa4462a68c79c2265\",\"h\":\"2025H2\",\"cls\":[[6593311,[\"098770e6_bbce7b1f\",\"a5c5b0c0_abb04bb1\",\"e43f209d_6dbcbe05\"]],[6624818,[]],[6624459,[]],[6624460,[]],[6624101,[]],[6703641,[]],[6632847,[]],[6634358,[]],[6633363,[]],[663…"
+      ],
+      [
+       1393,
+       "{\"k\":\"6f8502afe3657fd5b391eb6ad84d2225\",\"h\":\"2025H2\",\"cls\":[[6812763,[\"a898ae22_22a31be6\"]],[6846025,[\"ce3b9599_0a12c013\"]],[6647309,[\"2268132d_1b7738dc\",\"7c1937a8_3d4702f0\",\"0fdc4cb3_865fa470\",\"2bbb8fc2_cb00f4b9\",\"5ed6b559_0af23f45\"]],[686…"
+      ],
+      [
+       2785,
+       "{\"k\":\"cdfe493fb054258741d705b690dda92a\",\"h\":\"2026H2\",\"cls\":[[8376785,[\"8e974810_73272572\",\"a13b71c1_970aba62\",\"e5afcfdf_129ae770\",\"eb991502_49115367\"]]]}"
+      ],
+      [
+       4178,
+       "{\"k\":\"7fc5912d5c073d4b283c75fc900c4563\",\"h\":\"2026H1\",\"cls\":[[7287018,[\"453c734a_583340b7\"]],[7198720,[\"437ea442_c7d1eb60\",\"ad391af2_e6540025\",\"2c89fbc5_ad503c6b\",\"03112cac_47ef3134\",\"06254531_358206db\",\"8c9ea0b6_02626dbc\",\"c6e3d20c_59d12f0c…"
+      ],
+      [
+       5570,
+       "{\"k\":\"0751b54d3be4358b77a3acd02c66501f\",\"h\":\"2026H2\",\"cls\":[[8693545,[]]]}"
+      ]
+     ]
+    }
+   ]
+  },
+  "web/public/review-feedback/comments/": {
+   "withheld": "Per-comment tone, negative scores included, is shown only after someone types the person's address (ground rule 5), never on a page reached by clicks.",
+   "parts": []
   },
   "data/private/feedback-coach/": {
    "withheld": "Private coaching reports about one person each; never published.",
@@ -3686,7 +3758,7 @@
       ],
       [
        "[\"stores\"]",
-       "[{\"id\": \"gerrit-raw\",\"name\": \"Fetched Gerrit data\",\"path\": \"data/private/raw.sqlite + data/private/notedb/\",\"kind\": \"sqlite + git-repo\",\"tier\": \"raw\",\"tracked_in_git\": false,\"rebuildable\": false,\"never_delete\": true,\"size\": \"2.5 GB + 11.4 G…"
+       "[{\"id\": \"gerrit-raw\",\"name\": \"gerrit.sqlite + notedb/\",\"path\": \"data/private/gerrit.sqlite + data/private/notedb/\",\"kind\": \"sqlite + git-repo\",\"tier\": \"raw\",\"tracked_in_git\": false,\"rebuildable\": false,\"never_delete\": true,\"size\": \"2.5 GB +…"
       ],
       [
        "[\"pages\"]",
