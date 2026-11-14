@@ -1,6 +1,7 @@
 # Feedback Index: addressed feedback rate (AFR) and index
 
-What changes to it are judged by: `docs/goals.md`.
+What changes to it are judged by: `docs/goals.md` (goal 2 is about figures
+for one person).
 
 `web/feedback-index.html` shows how much review feedback Chromium changes
 draw per 100 lines as their authors gain experience, and lets anyone type an

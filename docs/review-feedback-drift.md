@@ -71,10 +71,10 @@ quarter or more, as in the question.
 
 ## Options
 
-All are offline: none costs tokens (goal 4). "Moved" compares with the
+All are offline: none costs tokens (goal 5). "Moved" compares with the
 index now (people with 25+ CLs). Reliability: rank correlation of each
 person's index from their odd and even CLs, and from the older and newer
-half of their CLs (goal 1, `docs/goals.md`).
+half of their CLs (goal 2, `docs/goals.md`).
 
 | | option | odd/even | early/late | Spearman with now | moved >20% |
 |---|---|---|---|---|---|
@@ -116,7 +116,7 @@ What they show:
 
 ## Option G against the goals
 
-**Goal 1 (accuracy).** The most reliable on both tests, and it means what
+**Goal 2 (accuracy).** The most reliable on both tests, and it means what
 readers expect: "compared with people working in the same directory, at
 the same experience, in the same half-year". About a third of people with
 25+ CLs move by more than 20% (13% by more than 50%), a one-time break
@@ -130,7 +130,7 @@ the page should note. What changes in meaning:
   peers. Improvement shows as rising relative to peers, which is what the
   index is for; whether all of Chromium improved is the AFR's job.
 
-**Goal 2 (weekly update).** A finished half-year's rates don't change, so
+**Goal 3 (weekly update).** A finished half-year's rates don't change, so
 past figures stay put; only the current half-year's rates move each week,
 as its per-person files already do. In the first weeks of a half-year its
 cells are thin and fall back to parent directories and to the half-year's
@@ -138,7 +138,7 @@ Chromium-wide rate, so early figures are noisier. A fix if that shows: let
 the current half-year's rates cover the last 26 weeks until it has 13
 weeks of its own. Run time barely changes.
 
-**Goal 3 (repository volume).** Per-person files don't change: the rates
+**Goal 4 (repository volume).** Per-person files don't change: the rates
 live in `peers.json`, which the page loads on opening. Leaving the person
 out needs each cell's sums ([CLs' worth, lines, addressed threads])
 instead of a rate, so the page can subtract the person's own changes
@@ -150,7 +150,7 @@ weekly churn matters, finished half-years' rates can move to frozen files
 (`rates/<half>.json`) that git stores once. The change itself rewrites only
 `peers.json`, not the 35 MB of half-year files.
 
-**Goal 4 (tokens).** None: rates are computed from labels already paid
+**Goal 5 (tokens).** None: rates are computed from labels already paid
 for.
 
 **Cost to build.** `rate_model` and `peer_rate` take a period key (the

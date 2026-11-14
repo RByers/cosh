@@ -12,6 +12,14 @@ implementation and metric definitions, and `docs/comment-classifier.md` for
 Value Exchange's primary metric: addressed review comments, classified by a
 regex plus Claude Haiku (`cosh classify`).
 
+**Consult `docs/goals.md` before creating a new analysis or a major
+component of one** (a page, a metric, a published file family, a step of
+the data flow), and judge the design by it: a clean, simple, constructive
+and fair visualization for the analysis's stated purpose, the rules for
+figures about one person, then the limits on update time, repository
+volume and token cost, and a clean data flow. Write the new analysis's
+purpose near the top of its own doc.
+
 ## Hard rules
 
 - **The 52-week backfill (2025-W45 .. 2026-W44) is approved** and was started
