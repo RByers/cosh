@@ -33,7 +33,7 @@ import time
 from datetime import datetime, timezone
 
 from . import store
-from .cl_facts import CL_FACTS, cl_dirs, cl_facts, dir3, epoch  # noqa: F401 (moved there)
+from .cl_facts import CL_FACTS, cl_dirs, cl_facts, epoch  # noqa: F401 (moved there)
 from .commits import HISTORY_SINCE, MAX_LINES, diff_lines  # noqa: F401 (moved there)
 
 SHARED = os.path.expanduser("~/projects/shared/chromium")

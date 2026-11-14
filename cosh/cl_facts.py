@@ -7,6 +7,8 @@ reads them, and the balance stage `cl` (cosh/balance.py) builds its `cl` and
 from collections import defaultdict
 from datetime import datetime, timezone
 
+from .commits import dir_of
+
 # commits.sqlite's gcommits (commit_id > 0) start here.
 SINCE = "2017-01-01"
 
@@ -21,11 +23,6 @@ def epoch(s):
         except ValueError:
             pass
     return int(datetime.strptime(s, "%Y-%m-%d %H:%M:%S").replace(tzinfo=timezone.utc).timestamp())
-
-
-def dir3(path):
-    parts = path.split("/")[:-1]
-    return "/".join(parts[:3]) + "/" if parts else "(root)/"
 
 
 CL_FACTS = ("change_number", "owner", "owner_email", "status", "created_at", "closed_at", "close_week",
@@ -71,7 +68,7 @@ def cl_dirs(gdb, by_cid, numbers=None):
         n = by_cid.get(cid)
         if n is None or (numbers is not None and n not in numbers):
             continue
-        g = agg[(n, dir3(paths[pid]))]
+        g = agg[(n, dir_of(paths[pid], 3))]
         g[0] += 1
         g[1] += max(ins, 0) + max(dels, 0)
     return agg
