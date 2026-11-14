@@ -21,6 +21,7 @@ import {
   growth,
   halves,
   isoDay,
+  latestDoubling,
   looksLikeEmail,
   percentileOf,
   periodSpan,
@@ -47,7 +48,7 @@ import {
   type Top,
 } from './feedback.ts';
 import { fmtDay, fmtInt, fmtNum } from './format.ts';
-import { scoreBadge } from './score.ts';
+import { scoreBadge, signed1 } from './score.ts';
 import { fragment, msg, type Vars } from './text.ts';
 
 Chart.register(Filler);
@@ -254,14 +255,17 @@ async function lookup(raw: string) {
     if (praise) praise.href = `sentiment.html#person=${encodeURIComponent(raw.trim())}`;
     $('#rf-person').hidden = false;
     render();
-    if (charts.growth) renderGrowth();
+    renderIntro();
     document.body.dataset.person = '1';
   } catch (e) {
     put(note, 'find-error', { error: String(e instanceof Error ? e.message : e) });
   }
 }
 
-// ---- the opening chart (no person needed), and the same with the person's line
+// ---- the opening charts (no person needed), with the person's red line once one is shown
+
+/** The colour of the person's line on the opening charts. */
+const youColor = (t: Theme) => t.series[7];
 
 /** The fan of every contributor's AFR by experience: the 10th–90th percentile and
  * the middle half shaded, the median a line. `grey` draws it all in grey, behind someone's line. */
@@ -282,7 +286,7 @@ function fanDatasets(peers: Peers, t: Theme, grey: boolean): ChartDataset<'line'
 
 function fanLegend(target: Element, t: Theme, grey: boolean, you: boolean) {
   lineLegend(target, [
-    ...(you ? [{ label: msg('legend-you'), color: t.series[0] }] : []),
+    ...(you ? [{ label: msg('legend-you'), color: youColor(t) }] : []),
     { label: msg('legend-median'), color: grey ? t.muted : t.series[0], dash: grey },
     { label: msg('legend-mid'), color: grey ? t.baseline : withAlpha(t.series[0], 0.3), band: true },
     { label: msg('legend-wide'), color: grey ? t.grid : withAlpha(t.series[0], 0.14), band: true },
@@ -320,14 +324,26 @@ function renderIntro() {
   renderFiDist();
   destroy('main');
   const t = theme();
-  fanLegend($('#rf-main-legend'), t, false, false);
+  const p = state.person;
+  // The person's AFR per bin, a rate of 0 drawn at the axis's bottom; hollow under min_bin_cls.
+  const bins = p ? binSums(p, peers, ALL, '') : [];
+  const you = bins.map((s) => (s.cls ? Math.max(frOf(s) ?? 0, FR_MIN) : null));
+  const full = bins.map((s) => s.cls >= peers.min_bin_cls);
+  fanLegend($('#rf-main-legend'), t, false, !!p);
+  $('#rf-main-you').hidden = !p;
   const meds = peers.fr_bins.map((d) => (d.q ? quantile(d.q, 0.5) : null));
   const last = meds.reduce<number>((a, v, i) => (v !== null ? i : a), 0);
   put($('#rf-main-note'), 'main-note', { ...rangeVars(peers), minBin: fmtInt(peers.min_bin_cls), first: fmtFr(meds[0]),
     last: fmtFr(meds[last]), lastBin: peers.bins[last] });
   charts.main = new Chart($<HTMLCanvasElement>('#rf-main'), {
     type: 'line',
-    data: { labels: peers.bins, datasets: fanDatasets(peers, t, false) },
+    data: {
+      labels: peers.bins,
+      datasets: [...fanDatasets(peers, t, false),
+        ...(p ? [{ label: 'you', data: you, borderColor: youColor(t),
+          backgroundColor: full.map((o) => (o ? youColor(t) : t.surface)), pointBorderColor: youColor(t),
+          pointRadius: 4.5, pointHoverRadius: 5.5, borderWidth: 3, tension: 0, spanGaps: true, fill: false, order: 0 }] : [])],
+    },
     options: {
       maintainAspectRatio: false,
       animation: false,
@@ -340,9 +356,15 @@ function renderIntro() {
       plugins: {
         legend: { display: false },
         tooltip: {
-          filter: (i) => i.datasetIndex === 4,
-          callbacks: { title: (items) => binRange(peers, items[0]?.dataIndex ?? 0),
-            label: (i) => fanTooltip(peers, i.dataIndex) },
+          filter: (i) => i.datasetIndex >= 4,
+          callbacks: {
+            title: (items) => binRange(peers, items[0]?.dataIndex ?? 0),
+            label: (i) => {
+              if (i.datasetIndex === 4) return fanTooltip(peers, i.dataIndex);
+              const s = bins[i.dataIndex];
+              return `You: ${fmtFr(frOf(s))} (${fmtInt(s.cls)} ${s.cls === 1 ? 'change' : 'changes'})`;
+            },
+          },
         },
       },
     },
@@ -364,8 +386,12 @@ function renderFiDist() {
   const mark = (x: number, dash: number[]): ChartDataset<'line', { x: number; y: number }[]> =>
     ({ label: '', data: [{ x, y: 0 }, { x, y: top * 1.05 }], borderColor: t.muted, borderWidth: dash.length ? 1.5 : 2,
       borderDash: dash, pointRadius: 0, pointHoverRadius: 0, fill: false });
+  // The person's index over all their changes, under the chart's norm (not the one picked below).
+  const p = state.person;
+  const you = p ? fiOf(sums(p, peers, clsIn(p, ALL), peers.fi_norm)) : null;
   lineLegend($('#rf-fi-legend'), [{ label: msg('legend-fi'), color: t.series[0] },
-    { label: msg('legend-fi-marks'), color: t.muted, dash: true }]);
+    { label: msg('legend-fi-marks'), color: t.muted, dash: true },
+    ...(you !== null ? [{ label: msg('legend-you-value', { v: fmtFi(you) }), color: youColor(t) }] : [])]);
   const ticks = [0.125, 0.25, 0.5, 1, 2, 4];
   charts.fiDist = new Chart($<HTMLCanvasElement>('#rf-fi-dist'), {
     type: 'line',
@@ -374,6 +400,8 @@ function renderFiDist() {
         { label: 'curve', data: d.curve.map(([x, y]) => ({ x, y })), borderColor: t.series[0], borderWidth: 2,
           backgroundColor: withAlpha(t.series[0], 0.18), fill: 'origin', pointRadius: 0, pointHoverRadius: 0, tension: 0.3 },
         mark(q(0.5), [5, 4]), mark(q(0.1), [2, 3]), mark(q(0.9), [2, 3]),
+        ...(you !== null ? [{ ...mark(Math.min(Math.max(you, 0.125), 5.7), []), label: 'you', borderColor: youColor(t),
+          borderWidth: 2.5 }] : []),
       ],
     },
     options: {
@@ -485,7 +513,7 @@ function renderGrowth() {
       borderDash: dash, pointRadius: 0, pointHoverRadius: 0, fill: false });
   lineLegend($('#rf-growth-legend'), [{ label: msg('legend-growth'), color: t.series[0] },
     { label: msg('legend-growth-median'), color: t.muted, dash: true },
-    ...(you !== null ? [{ label: `${msg('legend-you')} (${fmtChange(you)})`, color: t.series[1] }] : [])]);
+    ...(you !== null ? [{ label: msg('legend-you-value', { v: fmtChange(you) }), color: youColor(t) }] : [])]);
   const ticks = [-75, -50, -25, 0, 50, 100, 200];
   charts.growth = new Chart($<HTMLCanvasElement>('#rf-growth'), {
     type: 'line',
@@ -495,7 +523,7 @@ function renderGrowth() {
           backgroundColor: withAlpha(t.series[0], 0.18), fill: 'origin', pointRadius: 0,
           pointHoverRadius: 0, tension: 0.3 },
         marker(g.median, t.muted, 'median', [5, 4]),
-        ...(you !== null ? [marker(you, t.series[1], 'you', [])] : []),
+        ...(you !== null ? [marker(you, youColor(t), 'you', [])] : []),
       ],
     },
     options: {
@@ -557,7 +585,7 @@ function render() {
   window.__rf!.half = state.half;
   renderSummary();
   renderTrend();
-  renderCompare();
+  renderXpTable();
   renderPerCl();
   renderDirs();
   renderThreads();
@@ -568,7 +596,6 @@ function renderNorm() {
   if (!state.person) return;
   renderSummary();
   renderTrend();
-  renderCompare();
   renderDirs();
 }
 
@@ -592,10 +619,12 @@ function renderSummary() {
   const d = peers.fi[state.norm]?.[ALL];
   tile('rf-tile-fi', fmtFi(fi), eligible && d?.q && fi !== null
     ? msg('tile-fi-rank', { p: pct(percentileOf(d.q, fi)), n: fmtInt(d.n) }) : msg('tile-fi-none'));
-  const g = growth(binSums(p, peers, ALL, state.norm), peers);
-  tile('rf-tile-growth', fmtChange(g), g === null
-    ? msg('tile-growth-none', { min: fmtInt(peers.min_bin_cls), bins: fmtInt(peers.min_growth_bins) })
-    : msg('tile-growth-sub', { median: fmtChange(peers.growth.median) }));
+  const g = latestDoubling(p, binSums(p, peers, ALL, ''), peers);
+  const r = g?.reached;
+  tile('rf-tile-growth', fmtChange(g?.change), g === null
+    ? msg('tile-growth-none', { min: fmtInt(peers.min_bin_cls) })
+    : msg('tile-growth-sub', { from: peers.bins[g.from], to: peers.bins[g.to], per: g.steps > 1,
+      day: !r ? '–' : msg(r[1] ? 'tile-growth-on' : 'as-of-by', { day: dayLabel(r[0]) }), typical: fmtChange(g.typical) }));
   const facts = $('#rf-facts');
   const org = usualOrg(p, cs);
   if (p.first && org) put(facts, 'you-facts', { first: monthLabel(p.first), org });
@@ -696,50 +725,11 @@ function renderTrend() {
   });
 }
 
-/** The opening chart in grey with the person's rate per experience bin, and the table below it. */
-function renderCompare() {
-  destroy('compare');
+/** The person's AFR per experience bin, when they reached each, and everyone's median there. */
+function renderXpTable() {
   const p = state.person!;
   const peers = state.peers!;
-  const t = theme();
-  const bins = binSums(p, peers, ALL, state.norm);
-  const you = bins.map((s) => (s.cls ? Math.max(frOf(s) ?? 0, FR_MIN) : null));
-  const full = bins.map((s) => s.cls >= peers.min_bin_cls);
-  fanLegend($('#rf-compare-legend'), t, true, true);
-  charts.compare = new Chart($<HTMLCanvasElement>('#rf-compare'), {
-    type: 'line',
-    data: {
-      labels: peers.bins,
-      datasets: [...fanDatasets(peers, t, true),
-        { label: 'you', data: you, borderColor: t.series[0], backgroundColor: full.map((o) => (o ? t.series[0] : t.surface)),
-          pointBorderColor: t.series[0], pointRadius: 4.5, pointHoverRadius: 5.5, borderWidth: 3, tension: 0, spanGaps: true,
-          fill: false, order: 0 }],
-    },
-    options: {
-      maintainAspectRatio: false,
-      animation: false,
-      interaction: { mode: 'index', intersect: false },
-      font: { family: t.font },
-      scales: {
-        x: { ...axis(t, msg('axis-experience')), grid: { display: false } },
-        y: frLogAxis(t),
-      },
-      plugins: {
-        legend: { display: false },
-        tooltip: {
-          filter: (i) => i.datasetIndex >= 4,
-          callbacks: {
-            title: (items) => binRange(peers, items[0]?.dataIndex ?? 0),
-            label: (i) => {
-              if (i.datasetIndex === 4) return fanTooltip(peers, i.dataIndex);
-              const s = bins[i.dataIndex];
-              return `You: ${fmtFr(frOf(s))} (${fmtInt(s.cls)} ${s.cls === 1 ? 'change' : 'changes'})`;
-            },
-          },
-        },
-      },
-    },
-  });
+  const bins = binSums(p, peers, ALL, '');
   // The table: the bins with changes, when the person reached each, and everyone's median there.
   const body = $('#rf-xp-table tbody');
   body.replaceChildren();
@@ -936,13 +926,22 @@ function dirRow(r: DirRowView): HTMLTableRowElement {
 function threadItem(r: ThreadRow): HTMLLIElement {
   const li = el('li', undefined, 'quote rf-thread');
   const head = el('div', undefined, 'rf-thread-head');
-  if (r.score !== null) head.append(scoreBadge(r.score), ' ');
-  head.append(fragment('thread-meta', { date: dayLabel(r.day), file: r.file }));
-  const tags = el('span', undefined, 'rf-tags');
-  head.append(tags);
+  // The CL number, leftmost, links to the comment in Gerrit, as in the table below.
+  const meta = el('span', undefined, 'rf-thread-meta');
+  meta.append(fragment('thread-meta', { cl: String(Math.trunc(r.cl)), date: dayLabel(r.day), file: r.file }));
+  const cl = meta.querySelector<HTMLAnchorElement>('a.rf-thread-cl')!;
+  cl.href = commentUrl(r.cl, r.uuid);
+  cl.target = '_blank';
+  cl.rel = 'noopener';
+  cl.title = 'Open this comment in Gerrit';
+  head.append(meta);
+  // The tone score, top right.
+  if (r.score !== null) {
+    head.append(scoreBadge(r.score, 1, `Sentiment score ${signed1(r.score)}, from −1 (hostile) to +1 (glowing): `
+      + 'the comment\'s tone, shown for context only and not used in this analysis'));
+  }
   li.append(head);
   li.append(el('p', r.text!, 'rf-text'));
-  li.append(link(commentUrl(r.cl, r.uuid), msg('thread-link')));
   return li;
 }
 
@@ -1049,7 +1048,6 @@ function init() {
     renderMethod();
     if (!state.person) return;
     renderTrend();
-    renderCompare();
     renderPerCl();
   });
   void getJson<Peers>(`${DATA}peers.json`).then((p) => {

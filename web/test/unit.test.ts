@@ -1546,6 +1546,14 @@ test('review feedback: the AFR and index, as the script computes them', async ()
   assert.equal(F.growth(bins, { ...peers, min_bin_cls: 2 }), null);
   // Halving per doubling is -50%; no feedback counts as fr_floor.
   const b = (cls: number, addressed: number, lines: number) => ({ cls, addressed, lines, expected: 0 });
+  // The latest doubling: the last two bins with enough changes, 4 (0.83) and 6 (10), per doubling.
+  const ld = F.latestDoubling(person, bins, peers)!;
+  assert.deepEqual([ld.from, ld.to, ld.steps, ld.change, ld.typical, ld.reached],
+    [4, 6, 2, Math.round(1000 * (Math.sqrt(12) - 1)) / 10, Math.round(1000 * (Math.sqrt(1 / 1.7) - 1)) / 10,
+      [day('2026-09-03'), false]]);
+  assert.equal(F.latestDoubling(person, bins, { ...peers, min_bin_cls: 2 }), null);
+  const two = [b(5, 20, 1000), b(5, 10, 1000), b(0, 0, 0)];
+  assert.deepEqual(F.latestDoubling(person, two, peers)!.change, -50);
   assert.equal(F.growth([b(5, 40, 1000), b(5, 20, 1000), b(5, 10, 1000)], peers), -50);
   assert.equal(F.growth([b(5, 1, 100), b(5, 0, 100), b(5, 0, 100)], peers), Math.round(1000 * (2 ** (-0.5 * Math.log2(10)) - 1)) / 10);
   // A half-year counts only its changes.

@@ -3410,9 +3410,12 @@ test('feedback index: a person\'s index, how their rate compares, directories an
   assert.equal(await sub('rf-tile-fi'), '31% of 2,800 contributors have a lower index');
   assert.match((await page.$eval('#summary-sub', (e) => e.textContent!)).replace(/\s+/g, ' '),
     /against the typical rate of contributors with as many changes landed before and in the same directories, over all your changes from July 2023 to October 2026/);
-  // Rates 2.5, 0.83 and 10 at three doublings apart: a line of +41% per doubling.
-  assert.equal(await tile('rf-tile-growth'), '+41%');
-  assert.match(await sub('rf-tile-growth'), /median −21%$/);
+  // The latest doubling: 0.83 at 128 to 10 at 512, two doublings apart, √12 − 1 per doubling, reached by
+  // the day of the change at 512; typically 1.7 to 1.0.
+  assert.equal(await page.$eval('#rf-tile-growth .tile-label', (e) => e.textContent), 'Your latest doubling');
+  assert.equal(await tile('rf-tile-growth'), '+246%');
+  assert.equal(await sub('rf-tile-growth'),
+    'change in your rate from 128 to 512 CLs landed, per doubling, which you reached by 3 Sept 2026; typical −23%');
   assert.match(await page.$eval('#rf-facts', (e) => e.textContent!.replace(/\s+/g, ' ')),
     /first commit on main was in March 2022, and most of your changes were landed as google.com\./);
   // Experience only, then nothing: the index changes; organization too.
@@ -3431,13 +3434,25 @@ test('feedback index: a person\'s index, how their rate compares, directories an
   // The index over time: half-years from the first change, against everyone's spread.
   assert.deepEqual(await axisTitles(page, 'trend'), ['six months starting', 'feedback index']);
   assert.deepEqual(await page.evaluate(() => window.__rf!.charts.trend.data.labels), ['Jul 2025', 'Jan 2026', 'Jul 2026']);
-  // How the rate compares: the opening chart in grey, with the person's line on top.
-  assert.deepEqual(await axisTitles(page, 'compare'), ['experience (CLs landed on main)', 'addressed feedback rate (AFR)']);
-  const you = await page.evaluate(() => window.__rf!.charts.compare.data.datasets[5].data);
-  assert.deepEqual(you.map((v) => (v === null ? null : Math.round(Number(v) * 100) / 100)),
+  // How the rate compares: a red line on the opening chart, and the table; no chart of its own.
+  assert.equal(await page.$('#compare canvas'), null);
+  assert.equal(await page.evaluate(() => 'compare' in window.__rf!.charts), false);
+  assert.equal(await page.$eval('#compare .sub a', (a) => a.getAttribute('href')), '#intro');
+  const you = await page.evaluate(() => window.__rf!.charts.main.data.datasets[5]);
+  assert.deepEqual(you.data.map((v) => (v === null ? null : Math.round(Number(v) * 100) / 100)),
     [null, null, 2.5, null, 0.83, null, 10, null, null, null]);
-  assert.deepEqual(await page.$$eval('#rf-compare-legend li', (ls) => ls.map((l) => l.textContent)),
+  const red = await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--series-8').trim());
+  assert.equal(you.borderColor, red);
+  assert.deepEqual(await page.$$eval('#rf-main-legend li', (ls) => ls.map((l) => l.textContent)),
     ['You', 'Median', 'Middle half (25th–75th percentile)', '10th–90th percentile']);
+  assert.equal(await page.$eval('#rf-main-you', (e) => (e as HTMLElement).hidden), false);
+  // And on everyone's feedback index, under its own norm (experience and directories): 3 over 3.08.
+  const fiYou = await page.evaluate(() => window.__rf!.charts.fiDist.data.datasets.at(-1)!);
+  assert.equal(fiYou.label, 'you');
+  assert.equal(fiYou.borderColor, red);
+  assert.equal(Math.round(Number((fiYou.data[0] as { x: number }).x) * 100) / 100, 0.98);
+  assert.equal(await page.$eval('#rf-fi-legend li:last-child', (l) => l.textContent), 'You (0.98×)');
+  assert.equal(await page.$eval('#rf-growth-legend li:last-child', (l) => l.textContent), 'You (+41%)');
   const xp = () => page.$$eval('#rf-xp-table tbody tr, #rf-xp-table tfoot tr', (rs) => rs.map((r) =>
     [...r.children].map((c) => c.textContent)));
   assert.deepEqual(await page.$$eval('#rf-xp-table thead th', (ts) => ts.map((t) => t.textContent)),
@@ -3461,8 +3476,23 @@ test('feedback index: a person\'s index, how their rate compares, directories an
     ['Great test coverage <img src=x onerror=alert(1)>']);
   // Each scored comment shows its tone score (from the comment file, not the half-year file).
   assert.deepEqual(await page.$$eval('#rf-threads li .score-badge', (bs) => bs.map((b) => b.textContent)), ['+0.7']);
+  // The pill sits at the head's right, and says it is a sentiment score this analysis doesn't use.
+  assert.equal(await page.$eval('#rf-threads li .rf-thread-head', (h) => h.lastElementChild!.classList.contains('score-badge')), true);
+  assert.match(await page.$eval('#rf-threads li .score-badge', (b) => (b as HTMLElement).title),
+    /^Sentiment score \+0\.7.*not used in this analysis$/);
+  // The CL number, leftmost, links to the comment; there's no separate link.
+  const date = await page.$eval('#rf-threads li .rf-thread-cl', (a) => ({ href: a.getAttribute('href'),
+    target: a.getAttribute('target'), text: a.textContent, first: a.closest('.rf-thread-head')!.textContent!.trim().startsWith(a.textContent!) }));
+  assert.ok(/^\d+$/.test(date.text!) && date.first);
+  assert.match(date.href!, /^https:\/\/chromium-review\.googlesource\.com\/c\/chromium\/src\/\+\/\d+\/comment\/[^/]+\/$/);
+  assert.equal(date.target, '_blank');
+  assert.equal(await page.$$eval('#rf-threads li a', (as) => as.length), 1);
+  assert.doesNotMatch(await page.$eval('#rf-threads', (e) => e.textContent!), /Open in Gerrit/);
   assert.equal(await page.$('#rf-threads img'), null);
   assert.deepEqual(await page.$$eval('#rf-notext-table tbody tr td:first-child', (ts) => ts.map((t) => t.textContent)), ['1000003', '1000001']);
+  // That table is collapsed until opened.
+  assert.deepEqual(await page.$eval('#rf-notext', (d) => [d.localName, (d as HTMLDetailsElement).open, (d as HTMLElement).hidden]),
+    ['details', false, false]);
   // Selecting a directory lists its comments.
   await page.click('#rf-dirs tbody tr .rf-dir-pick');
   assert.equal(await page.$eval('#rf-dir', (s) => (s as HTMLSelectElement).value), 'chrome/');

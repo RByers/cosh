@@ -73,8 +73,7 @@ Both are fixed: the page has no switches for them (the user's call,
 **The opening card**, "AFR" (no person needed), says nothing of
 the index: the AFR's definition, then the AFR by experience bin (y-axis
 "AFR", logarithmic from 0.2 to 20 since 2026-11-14, so the
-steady fall per doubling is a straight line; the person's comparison chart
-uses the same axis and draws a rate of 0 at 0.2): the median of people's AFR in each bin (each
+steady fall per doubling is a straight line): the median of people's AFR in each bin (each
 person's CLs in that bin pooled, with `MIN_BIN_CLS` = 5 or more there), with
 the middle half and the 10th–90th percentile shaded (`fr_bins`). On
 2026-11-14: 5.40 at 8, 4.11, 3.52, 2.86, 2.49, 2.00, 1.64, 1.28, 1.04 and
@@ -83,8 +82,11 @@ the middle half and the 10th–90th percentile shaded (`fr_bins`). On
 the minimum those medians moved by at most 0.15.) Below it,
 "Distribution of AFR change with experience": the growth rates'
 distribution, smoothed (a Gaussian kernel of 0.12 in log2 on a grid from
-−75% to +183%, `growth_dist`), with the median and, when a person is shown,
-their own growth marked.
+−75% to +183%, `growth_dist`), with the median marked. Once a person is
+shown, their own values are drawn in red on all three opening charts:
+their AFR per bin on the first (hollow under `MIN_BIN_CLS`, a rate of 0 at
+0.2), their fitted growth rate on the second and their FI (under
+`FI_NORM`, whatever norm is picked below) on the feedback-index chart.
 
 The AFR falls as much as the old index did, though on a linear axis the
 chart looked flatter (hence the log axis): the old addressed index adjusted for size and directory fell 5.3×
@@ -104,9 +106,8 @@ percentile 0.43–1.91.
 
 **Your feedback** (after an address is found), one section each:
 
-- *Your AFR:* the opening chart in grey with the person's AFR
-  per bin in colour (hollow under `MIN_BIN_CLS`), and a table per bin with
-  CLs: when the person reached the bin ("As of": the first bin on their
+- *Your AFR:* a link to the opening chart (where the person's line is
+  drawn) and a table per bin with CLs: when the person reached the bin ("As of": the first bin on their
   first commit, the others on the day their first CL in it landed, "by"
   that day when that CL wasn't the bin's first commit; `binReached`), CLs,
   lines, addressed threads, the person's AFR and the median AFR of all
@@ -114,13 +115,18 @@ percentile 0.43–1.91.
 - *Your feedback index:* the checkboxes (experience, directories,
   organization), tiles for changes landed (and their lines), addressed
   threads, AFR, FI (with the share of everyone with `MIN_CLS` CLs whose
-  index is lower, from `fi[norm].all`) and the growth rate (below), then
+  index is lower, from `fi[norm].all`) and the latest doubling (below), then
   the FI per half-year against the 10th–90th percentile, middle half and
   median of everyone's index that half-year (`fi[norm][half]`). Dots with
   fewer than `MIN_CLS` CLs are hollow. Selecting a dot filters the
   comments-per-change chart, the directory tree and the comments to that
   half-year, as before.
-- *Growth rate:* the % change in AFR per doubling of changes landed, from a
+- *Latest doubling* (the tile, `latestDoubling`): the % change in AFR from
+  the person's second-newest to their newest bin with `MIN_BIN_CLS` CLs,
+  per doubling when bins in between have too few, with the date they
+  reached the newer bin (`binReached`) and the typical change over the same
+  bins (from `ref_bin`).
+- *Growth rate* (the opening growth chart): the % change in AFR per doubling of changes landed, from a
   least-squares line through log2 AFR by bin, each bin weighted by its CLs,
   over bins with `MIN_BIN_CLS` CLs, needing `MIN_GROWTH_BINS` (3) of them;
   FRs under `FR_FLOOR` (0.1) count as 0.1 (`growth`). On 2026-11-14 2,517
@@ -136,7 +142,11 @@ percentile 0.43–1.91.
   0.25× and 4×) and earlier commits. Rows under `MIN_CLS` CLs show no AFR or
   FI.
 - *The comments:* the addressed threads only, newest first, with the
-  directory, half-year and column filters as before.
+  directory, half-year and column filters as before. Each comment's head
+  starts with its CL number, linked to the comment in Gerrit, then its date
+  and file, with its tone score as a pill at the right (its tooltip says it
+  is a sentiment score this analysis doesn't use). Comments without stored
+  text are in a table in a collapsed `<details>` below the list.
 
 **Methodology and details** is a collapsed `<details>` at the bottom whose
 charts are drawn when it opens:

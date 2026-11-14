@@ -346,6 +346,33 @@ export function growth(bins: Sums[], peers: Pick<Peers, 'min_bin_cls' | 'min_gro
   return Math.round(1000 * (2 ** (sxy / sxx) - 1)) / 10;
 }
 
+/** The person's latest doubling: the change in AFR (%) from their second-newest to their newest
+ * experience bin with `min_bin_cls` changes, per doubling where bins in between have too few
+ * (`steps` > 1), with the typical change over the same bins (the median AFRs, `ref_bin`) and when
+ * they reached the newer bin (`binReached`). AFRs under `fr_floor` count as it. null: fewer than
+ * two such bins. */
+export interface Doubling {
+  from: number;
+  to: number;
+  steps: number;
+  change: number;
+  typical: number | null;
+  reached: [number, boolean] | null;
+}
+
+export function latestDoubling(p: Person, bins: Sums[], peers: Pick<Peers, 'min_bin_cls' | 'fr_floor' | 'ref_bin' | 'bin_edges'>): Doubling | null {
+  const ok = bins.flatMap((s, b) => (s.cls >= peers.min_bin_cls && s.lines > 0 ? [b] : []));
+  if (ok.length < 2) return null;
+  const [from, to] = ok.slice(-2);
+  const steps = to - from;
+  const rate = (b: number) => Math.max(fr(bins[b].addressed, bins[b].lines)!, peers.fr_floor);
+  const pct = (ratio: number) => Math.round(1000 * (ratio ** (1 / steps) - 1)) / 10;
+  const r0 = peers.ref_bin[from];
+  const r1 = peers.ref_bin[to];
+  return { from, to, steps, change: pct(rate(to) / rate(from)),
+    typical: r0 && r1 ? pct(r1 / r0) : null, reached: binReached(p, peers.bin_edges)[to] };
+}
+
 // ---- Threads per change
 
 /** The threads-per-change histogram's columns, by their fewest addressed threads: 0, 1–2, 3–5, 6–10, 11–20, 21+. */

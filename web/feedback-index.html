@@ -61,6 +61,10 @@
           <canvas id="rf-main" role="img" aria-label="Median AFR by experience (CLs landed on main), with the middle half and the 10th to 90th percentile of contributors shaded."></canvas>
         </div>
         <p id="rf-main-note" class="note"></p>
+        <p id="rf-main-you" class="note" hidden>
+          The red line is your AFR. Points with fewer than <span class="rf-min-bin"></span> of your changes are drawn
+          hollow, and a rate of 0 is drawn at the axis's bottom (0.2).
+        </p>
         <template data-msg="main-note">
           Each contributor's AFR over their changes landed with that much experience: the point at 8
           counts their first 8 CLs on main, the point at 16 their 9th to 16th, and so on, each point one doubling,
@@ -94,6 +98,7 @@
         <template data-msg="legend-mid">Middle half (25th–75th percentile)</template>
         <template data-msg="legend-wide">10th–90th percentile</template>
         <template data-msg="legend-you">You</template>
+        <template data-msg="legend-you-value">You (<slot name="v"></slot>)</template>
         <template data-msg="axis-experience">experience (CLs landed on main)</template>
         <template data-msg="axis-fr">addressed feedback rate (AFR)</template>
         <template data-msg="axis-fi">feedback index</template>
@@ -159,18 +164,9 @@
         <a class="card-anchor" href="#compare" aria-label="Link to this section" title="Link to this section">#</a>
         <h2 id="compare-title">Your AFR</h2>
         <p class="sub">
-          Your AFR by how many changes you had landed before, over the opening chart: every contributor's
-          median and spread, in grey.
+          Your AFR by how many changes you had landed, drawn as the red line in
+          <a href="#intro">AFR by experience</a> above.
         </p>
-        <ul id="rf-compare-legend" class="legend rf-line-legend" aria-label="Lines and bands"></ul>
-        <div class="chart">
-          <canvas id="rf-compare" role="img" aria-label="Your AFR by changes landed before, against every contributor's median, middle half and 10th to 90th percentile."></canvas>
-        </div>
-        <p class="note">
-          Points with fewer than <span class="rf-min-bin"></span> of your changes are drawn hollow. The rate's axis
-          is logarithmic; a rate of 0 is drawn at its bottom (0.2).
-        </p>
-        <h3>By your experience</h3>
         <div class="table-wrap">
           <table id="rf-xp-table" class="rf-table">
             <thead><tr><th scope="col">Experience (CLs landed)</th>
@@ -218,17 +214,19 @@
           <div class="tile" id="rf-tile-threads"><div class="tile-label">Addressed comments</div><div class="tile-value"></div></div>
           <div class="tile" id="rf-tile-fr"><div class="tile-label">Your AFR</div><div class="tile-value"></div><div class="tile-sub"></div></div>
           <div class="tile" id="rf-tile-fi"><div class="tile-label">Your feedback index</div><div class="tile-value"></div><div class="tile-sub"></div></div>
-          <div class="tile" id="rf-tile-growth"><div class="tile-label">Your growth per doubling</div><div class="tile-value"></div><div class="tile-sub"></div></div>
+          <div class="tile" id="rf-tile-growth"><div class="tile-label">Your latest doubling</div><div class="tile-value"></div><div class="tile-sub"></div></div>
         </div>
         <template data-msg="tile-lines"><slot name="n"></slot> lines written</template>
         <template data-msg="tile-fr-sub">addressed comments per 100 lines</template>
         <template data-msg="tile-fi-rank"><slot name="p"></slot> of <slot name="n"></slot> contributors have a lower
           index</template>
         <template data-msg="tile-fi-none">Too few changes to rank</template>
-        <template data-msg="tile-growth-sub">change in your rate each time your changes landed doubled; median
-          <slot name="median"></slot></template>
-        <template data-msg="tile-growth-none">Needs <slot name="min"></slot> or more changes in each of
-          <slot name="bins"></slot> experience bins</template>
+        <template data-msg="tile-growth-sub">change in your rate from <slot name="from"></slot> to <slot
+          name="to"></slot> CLs landed<span data-if="per">, per doubling</span>, which you reached <slot
+          name="day"></slot>; typical <slot name="typical"></slot></template>
+        <template data-msg="tile-growth-on">on <slot name="day"></slot></template>
+        <template data-msg="tile-growth-none">Needs <slot name="min"></slot> or more changes in two experience
+          bins</template>
         <template data-msg="you-facts">
           Your first commit on main was in <slot name="first"></slot>, and most of your changes were landed as
           <slot name="org"></slot>.
@@ -315,11 +313,12 @@
           <slot name="n"></slot> addressed review comments<span data-if="dir"> in
           <code><slot name="dir"></slot></code></span><span data-if="bin"> on changes with <slot
           name="bin"></slot><span data-if="half">, landed <slot name="half"></slot></span></span><span
-          data-if="!bin"><span data-if="half"> on changes landed <slot name="half"></slot></span></span>, newest first, each linked to its review. Text and a link to
-          the comment itself are included for comments whose text has been collected (from November 2025 on); the
-          others are in a table at the end. Where a comment's tone has been scored, a pill gives it on a
-          scale from −1 (hostile) to +1 (glowing), as on <a href="sentiment.html">Review Tone</a>. Before July 2025 a change's comments are grouped by directory, without
-          their files.
+          data-if="!bin"><span data-if="half"> on changes landed <slot name="half"></slot></span></span>, newest first.
+          Text is included for comments whose text has been collected (from November 2025 on), each comment's CL
+          number linking to it in Gerrit; the others are in a table at the end. Where a comment's tone has been scored, a
+          pill gives its sentiment score from −1 (hostile) to +1 (glowing), as on <a href="sentiment.html">Review
+          Tone</a>; it is for context only and not used in this analysis. Before July 2025 a change's comments are
+          grouped by directory, without their files.
         </template>
         <!-- The same half-year filter as above the directories, together with the directory picker. -->
         <p id="rf-half-filter-comments" class="rf-filter" hidden>
@@ -340,10 +339,11 @@
         <button type="button" id="rf-threads-more" class="rf-more" hidden></button>
         <template data-msg="threads-more">Show <slot name="n"></slot> more</template>
         <template data-msg="threads-none">No addressed comments here.</template>
-        <template data-msg="thread-meta"><slot name="date"></slot> · <slot name="file"></slot></template>
-        <template data-msg="thread-link">Open in Gerrit</template>
-        <div id="rf-notext" hidden>
-          <h3>Additional comments without stored text</h3>
+        <template data-msg="thread-meta"><a class="rf-thread-cl"><slot name="cl"></slot></a> · <slot
+          name="date"></slot> · <slot name="file"></slot></template>
+        <!-- Collapsed: the list above is what most people read. -->
+        <details id="rf-notext" class="rf-notext" hidden>
+          <summary><h3>Additional comments without stored text</h3></summary>
           <p class="note">Find their text on the change in Gerrit. Before July 2025 a change's comments in a directory
             share one row, with their count, and its date is when the change landed.</p>
           <div class="table-wrap">
@@ -353,7 +353,7 @@
             </table>
           </div>
           <button type="button" id="rf-notext-more" class="rf-more" hidden></button>
-        </div>
+        </details>
         <template data-msg="notext-path-count"><slot name="dir"></slot> (<slot name="n"></slot> <span
           data-if="n=1">comment</span><span data-if="n!=1">comments</span>)</template>
       </section>

@@ -2880,9 +2880,10 @@ canvas.rf-pointable {
   overflow-wrap: anywhere;
 }
 
+/* A comment's CL (linking to the comment in Gerrit), date and file, with its tone score at the top right. */
 .rf-thread-head {
   display: flex;
-  flex-wrap: wrap;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 4px 12px;
   font-size: 0.8rem;
@@ -2890,22 +2891,9 @@ canvas.rf-pointable {
   overflow-wrap: anywhere;
 }
 
-.rf-tags {
-  display: inline-flex;
-  gap: 6px;
-}
-
-.rf-tag {
-  padding: 0 6px;
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  font-size: 0.75rem;
-  white-space: nowrap;
-}
-
-.rf-tag-on {
-  border-color: var(--accent);
-  color: var(--accent);
+.rf-thread-head .score-badge {
+  flex: none;
+  margin-left: auto;
 }
 
 .rf-text {
@@ -2941,13 +2929,15 @@ canvas.rf-pointable {
   content: '✓ ';
 }
 
-/* The methodology: a card that opens, its heading the toggle. */
-details.rf-method > summary {
+/* The methodology, and the comments without text: they open, their heading the toggle. */
+details.rf-method > summary,
+details.rf-notext > summary {
   cursor: pointer;
   list-style-position: inside;
 }
 
-details.rf-method > summary h2 {
+details.rf-method > summary h2,
+details.rf-notext > summary h3 {
   display: inline;
 }
 
