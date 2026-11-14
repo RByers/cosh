@@ -51,14 +51,6 @@ export interface Shard {
   cls: FileRow[];
 }
 
-/** links/<half>/<key>.json, for half-years from `peers.links_from`, loaded when a file's changes are
- * shown (cosh/review_feedback.py `link_file`, written by a separate step): per change number, per file
- * entry (position in that change's files), its addressed threads oldest first, each a comment id or
- * [comment id, tone score (−1 .. +1)]. */
-export interface LinkShard {
-  cls: Record<string, [number, (string | [string, number])[]][]>;
-}
-
 /** A person's files merged. */
 export interface Person {
   /** The first day (days since 1970) of the changes with addressed labels. */
@@ -109,8 +101,6 @@ export interface Peers {
   start: number;
   end: number;
   addr_start: number;
-  /** The first half-year whose addressed comments link to the comment (links/); older ones to the change. */
-  links_from: string;
   /** "all" and the half-years. */
   periods: string[];
   min_peers: number;
@@ -489,14 +479,13 @@ export function threadHistogram(p: Person, period: string): number[] {
   return out;
 }
 
-// ---- Where your feedback comes from
+// ---- Directory figures
 
-/** Figures for one row of the person's directory table. */
+/** The person's figures for one row of the directory table. */
 export interface DirStats {
-  /** Changes in it, each change once however many of its files and directories are below it. */
+  /** Changes in it, each change once however many of its directories are below it. */
   cls: number;
-  /** The changes' lines there: each change's lines times its fraction there (a file's share of the
-   * landed commit's insertions). */
+  /** The changes' lines there: each change's lines times its fraction there. */
   lines: number;
   /** Reviewer threads there, addressed or not. */
   threads: number;
@@ -507,191 +496,12 @@ export interface DirStats {
   ids: Set<number>;
 }
 
-/** One change on a file, for the list under the file's row. */
-export interface FileChange {
-  cl: number;
-  day: number;
-  threads: number;
-  addressed: number;
-  /** The file's position in the change's files: the key into its link file (`LinkShard`). */
-  entry: number;
-}
-
-/** A row of the person's tree: a directory (its own data's 3-level directories, their parents, and
- * the directories between them and the files that drew comments), a file that drew comments, or a
- * directory's "other files" (its lines that drew no comments). */
-export interface DirNode extends DirStats {
-  /** "d:" + path for a directory, "f:" + its directory + "|" + path for a file, "r:" + path for "other files". */
-  key: string;
-  kind: 'dir' | 'file' | 'rest';
-  /** Full path; a file's in full, "other files" its directory's. */
-  path: string;
-  /** What the row shows: the last part of the path ("browser/", "view.cc"). */
-  name: string;
-  children: DirNode[];
-  /** A file's changes, newest first. */
-  changes?: FileChange[];
-}
-
-const stats = (): DirStats => ({ cls: 0, lines: 0, threads: 0, addressed: 0, expected: 0, ids: new Set() });
-
 function addTo(s: DirStats, cl: number, lines: number, threads: number, a: number, exp: number) {
   s.lines += lines;
   s.threads += threads;
   s.addressed += a;
   s.expected += exp;
   if (!s.ids.has(cl)) (s.ids.add(cl), s.cls += 1);
-}
-
-/** Path prefixes of `path` ("a/b/c.cc" -> "a/", "a/b/"), and the last part. */
-function pathParts(path: string): [string[], string] {
-  const parts = path.split('/');
-  const name = parts.pop()!;
-  const dirs: string[] = [];
-  let at = '';
-  for (const x of parts) {
-    if (!x) continue;
-    at += `${x}/`;
-    dirs.push(at);
-  }
-  return [dirs, name];
-}
-
-/** The person's changes in `period` as a tree, each level most changes first: directories down to the
- * files that drew reviewer threads, each directory's other lines in an "other files" row. A change's
- * lines go to its 3-level directories by the landed commit's insertions, and within one to its files
- * the same way; its threads go to their files. Each row's expected threads are its share of its
- * directory's. `bin` keeps only the changes in that threads-per-change column. */
-export function dirTree(p: Person, peers: Peers, period: string, bin: number | null = null): DirNode[] {
-  const nodes = new Map<string, DirNode>();
-  const roots: DirNode[] = [];
-  const node = (key: string, kind: DirNode['kind'], path: string, name: string, parent: DirNode | null) => {
-    let n = nodes.get(key);
-    if (!n) {
-      nodes.set(key, (n = { key, kind, path, name, ...stats(), children: [] }));
-      (parent ? parent.children : roots).push(n);
-    }
-    return n;
-  };
-  const dirNode = (path: string) => {
-    let parent: DirNode | null = null;
-    for (const d of pathParts(path.slice(0, -1) + '/x')[0]) parent = node(`d:${d}`, 'dir', d, pathParts(d.slice(0, -1))[1] + '/', parent);
-    return parent!;
-  };
-  for (const c of clsPicked(p, period, bin)) {
-    const fracs = unitFracs(c[3]);
-    const exps = unitExpected(p, peers, c);
-    c[3].forEach(([d, git], i) => {
-      const dir = p.dirs[d];
-      const lines = c[2] * fracs[i];
-      const [threads, a] = unitCounts(c, i);
-      // The directory and its parents.
-      const top = dirNode(dir);
-      for (const k of dirLevels(dir).slice(0, -1)) addTo(nodes.get(`d:${k}`)!, c[0], lines, threads, a, exps[i]);
-      // Its files that drew comments, under the directories between, and its other lines.
-      let restLines = lines;
-      let restExp = exps[i];
-      c[4].forEach((f, entry) => {
-        if (f[4] !== i) return;
-        const path = p.files[f[0]];
-        const fl = git > 0 ? (lines * f[1]) / git : 0;
-        const fe = git > 0 ? (exps[i] * f[1]) / git : 0;
-        restLines -= fl;
-        restExp -= fe;
-        // A file under its directory keeps its path there; any other (the commit message, a file the
-        // landed commit didn't change) sits directly under the directory, named in full.
-        const under = path.startsWith(dir) && dir !== '(root)/';
-        const rel = under ? path.slice(dir.length) : path;
-        let parent = top;
-        if (under) {
-          for (const sub of pathParts(rel)[0]) {
-            const full = dir + sub;
-            parent = node(`d:${full}`, 'dir', full, pathParts(sub.slice(0, -1))[1] + '/', parent);
-            addTo(parent, c[0], fl, f[2], f[3], fe);
-          }
-        }
-        const leaf = node(`f:${parent.path}|${path}`, 'file', path, under ? pathParts(rel)[1] : path, parent);
-        addTo(leaf, c[0], fl, f[2], f[3], fe);
-        (leaf.changes ??= []).push({ cl: c[0], day: c[1], threads: f[2], addressed: f[3], entry });
-      });
-      if (restLines > 1e-9) addTo(node(`r:${dir}`, 'rest', dir, '', top), c[0], restLines, 0, 0, Math.max(restExp, 0));
-    });
-  }
-  for (const n of nodes.values()) n.changes?.sort((a, b) => b.day - a.day || b.cl - a.cl);
-  return roots;
-}
-
-/** One visible row of the person's directory table: a tree row, a level's smaller entries ("other"), or
- * one change under a file ("change"). */
-export interface DirRowView {
-  key: string;
-  kind: 'dir' | 'file' | 'rest' | 'other' | 'change';
-  depth: number;
-  node?: DirNode;
-  change?: FileChange;
-  stats: DirStats;
-  expandable: boolean;
-  expanded: boolean;
-  /** The AFR and index there, or null where the row has fewer than `minCls` changes (too few to say
-   * much). */
-  fr: number | null;
-  fi: number | null;
-  /** Entries in an "other" row. */
-  count?: number;
-}
-
-/** The rows to show of `dirTree`'s tree, given which rows are open (`expanded`, by row key). Each
- * level lists its directories and files with at least `minCls` changes, most changes first, at most
- * `shown` of them, then "other files", and puts the rest in one "other" row that opens into them; a
- * level where none has `minCls` changes lists its first `shown` entries instead. Every directory
- * opens, and a file opens into its changes. Rows with fewer than `minCls` changes get no rate or index. */
-export function dirRows(roots: DirNode[], expanded: ReadonlySet<string>, minCls: number, shown = 15): DirRowView[] {
-  const out: DirRowView[] = [];
-  const big = (s: DirStats) => s.cls >= minCls;
-  const rate = (s: DirStats) => ({ fr: big(s) ? fr(s.addressed, s.lines) : null,
-    fi: big(s) && s.expected > 0 ? s.addressed / s.expected : null });
-  const order = (a: DirNode, b: DirNode) => (a.kind === 'rest' ? 1 : 0) - (b.kind === 'rest' ? 1 : 0) ||
-    b.cls - a.cls || b.addressed - a.addressed || (a.path < b.path ? -1 : a.path > b.path ? 1 : 0);
-  const emit = (n: DirNode, depth: number) => {
-    const key = n.key;
-    const expandable = n.kind === 'dir' ? n.children.length > 0 : n.kind === 'file';
-    const open = expandable && expanded.has(key);
-    out.push({ key, kind: n.kind, depth, node: n, stats: n, expandable, expanded: open, ...rate(n) });
-    if (!open) return;
-    if (n.kind === 'file') {
-      for (const ch of n.changes ?? []) {
-        out.push({ key: `c:${n.key}:${ch.cl}`, kind: 'change', depth: depth + 1, change: ch, expandable: false,
-          expanded: false, fr: null, fi: null,
-          stats: { cls: 1, lines: 0, threads: ch.threads, addressed: ch.addressed, expected: 0, ids: new Set([ch.cl]) } });
-      }
-      return;
-    }
-    group([...n.children].sort(order), depth + 1, key);
-  };
-  const group = (items: DirNode[], depth: number, parentKey: string) => {
-    const rest = items.filter((n) => n.kind === 'rest');
-    const entries = items.filter((n) => n.kind !== 'rest');
-    const plain = !entries.some(big);
-    const head = (plain ? entries : entries.filter(big)).slice(0, shown);
-    const tail = entries.filter((n) => !head.includes(n));
-    for (const n of head) emit(n, depth);
-    if (tail.length) {
-      const key = `o:${parentKey}`;
-      const open = expanded.has(key);
-      const ids = new Set<number>();
-      for (const n of tail) for (const id of n.ids) ids.add(id);
-      const s: DirStats = { cls: ids.size, ids, lines: tail.reduce((x, n) => x + n.lines, 0),
-        threads: tail.reduce((x, n) => x + n.threads, 0), addressed: tail.reduce((x, n) => x + n.addressed, 0),
-        expected: tail.reduce((x, n) => x + n.expected, 0) };
-      out.push({ key, kind: 'other', depth, stats: s, expandable: true, expanded: open, count: tail.length, ...rate(s) });
-      if (open) {
-        for (const n of tail) emit(n, depth + 1);
-      }
-    }
-    for (const n of rest) emit(n, depth);
-  };
-  group([...roots].sort(order), 0, 'root');
-  return out;
 }
 
 /** The index cell's shade: -1 (a quarter of typical or less) .. 0 (typical) .. 1 (4× or more), on a log scale. */
@@ -833,29 +643,6 @@ export function tableRows(roots: TableNode[], expanded: ReadonlySet<string>, byY
     });
   };
   walk(roots, 0, 'root');
-  return out;
-}
-
-// ---- Links to comments
-
-/** A Gerrit link to one comment (or to the change, without a uuid). The parts
- * come from data, so they are encoded. */
-export function commentUrl(cl: number, uuid?: string): string {
-  const base = `${GERRIT}/c/chromium/src/+/${Math.trunc(cl)}`;
-  return uuid ? `${base}/comment/${encodeURIComponent(uuid)}/` : base;
-}
-
-/** A change's comment links on one file, from the link files: [comment id, tone score or null], oldest
- * first; empty when the half-year has no links (before `links_from`). */
-export function linksOf(links: Map<number, LinkShard['cls'][string]>, cl: number, entry: number): [string, number | null][] {
-  const e = links.get(cl)?.find((x) => x[0] === entry);
-  return e ? e[1].map((x) => (typeof x === 'string' ? [x, null] : [x[0], x[1]])) : [];
-}
-
-/** The link files merged: change number -> its entries. */
-export function mergeLinks(shards: (LinkShard | null)[]): Map<number, LinkShard['cls'][string]> {
-  const out = new Map<number, LinkShard['cls'][string]>();
-  for (const s of shards) for (const [n, e] of Object.entries(s?.cls ?? {})) out.set(Number(n), e);
   return out;
 }
 

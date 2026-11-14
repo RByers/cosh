@@ -3256,7 +3256,7 @@ test('a touch anywhere off a chart closes its hover card, on every page with cha
 // person in feedback-fixture.ts, so they don't depend on the committed data.
 
 async function feedbackPage(peersOverride?: Peers, shardsOverride?: Record<string, Shard>): Promise<{ page: Page; errors: string[] }> {
-  const { top, shards: fixtureShards, links, reviewers, peers: fixturePeers, FIXTURE_KEY, ALIAS_KEY } = await import('./feedback-fixture.ts');
+  const { top, shards: fixtureShards, reviewers, peers: fixturePeers, FIXTURE_KEY, ALIAS_KEY } = await import('./feedback-fixture.ts');
   const peers = peersOverride ?? fixturePeers;
   const shards = shardsOverride ?? fixtureShards;
   const page = await browser.newPage();
@@ -3271,8 +3271,6 @@ async function feedbackPage(peersOverride?: Peers, shardsOverride?: Record<strin
     if (path.endsWith('/review-feedback/peers.json')) json(peers);
     else if (path.endsWith('/review-feedback/reviewers.json')) json(reviewers);
     else if (path.endsWith(`/review-feedback/u/${FIXTURE_KEY}.json`)) json(top);
-    else if (/\/review-feedback\/links\/\d{4}H[12]\//.test(path) && path.endsWith(`/${FIXTURE_KEY}.json`))
-      json(links[path.split('/').at(-2)!]);
     else if (/\/review-feedback\/\d{4}H[12]\//.test(path) && path.endsWith(`/${FIXTURE_KEY}.json`))
       json(shards[path.split('/').at(-2)!]);
     else if (path.endsWith(`/review-feedback/u/${ALIAS_KEY}.json`)) json({ see: FIXTURE_KEY });
@@ -3460,14 +3458,14 @@ test('feedback index: everyone\'s directory table, and the person\'s columns in 
   await page.close();
 });
 
-test('feedback index: a person\'s index, how their rate compares, and their directories', async () => {
+test('feedback index: a person\'s index, and how their rate compares', async () => {
   const { page, errors } = await feedbackPage();
   const { ALIAS_EMAIL } = await import('./feedback-fixture.ts');
   // Another address of the same person finds them.
   await lookUp(page, ALIAS_EMAIL);
   await page.waitForFunction(() => !document.querySelector<HTMLElement>('#rf-person')!.hidden);
   assert.deepEqual(await page.$$eval('#rf-person > section', (ss) => ss.map((s) => s.id)),
-    ['compare', 'summary', 'reviewers', 'per-cl', 'directories']);
+    ['compare', 'summary', 'reviewers', 'per-cl']);
   assert.equal(await page.$('#rf-norm'), null);
   assert.equal(await page.$('#comments'), null);
   assert.equal(await page.$eval('#compare-title', (e) => e.textContent), 'Your AFR');
@@ -3527,75 +3525,12 @@ test('feedback index: a person\'s index, how their rate compares, and their dire
     ['512', 'by 3 Sept 2026', '1', '10', '1', '10.00', '1.00'],
     ['All', '', '3', '170', '3', '1.76', '–'],
   ]);
-  // Directories: chrome/ has 2 changes (the peer minimum here), the others go into "Other".
-  const dirs = () => page.$$eval('#rf-dirs tbody tr', (rs) => rs.map((r) =>
-    [...r.children].map((c) => c.textContent!.replace(/[▸▾]/, '').replace(/\s+/g, ' ').trim())));
-  assert.deepEqual(await page.$$eval('#rf-dirs thead th', (ts) => ts.map((t) => t.textContent)),
-    ['Directory or file', 'Changes', 'Lines', 'Feedback', 'Addressed', 'AFR', 'Feedback index']);
-  // Other: CL 2's content/ lines (1.2 × 1.7 × 0.9 × 90/118) and CL 3 (0.1 × 1 × 0.5): 2 over 1.45.
-  assert.deepEqual(await dirs(), [['chrome/', '2', '68', '2', '1', '1.46', '0.61×'],
-    ['Other (2)', '2', '102', '3', '2', '1.97', '1.38×']]);
-  assert.deepEqual(await page.$$eval('#rf-dirs td.rf-ratio', (ts) => ts.map((t) => t.className.split(' ').at(-1))), ['rf-ratio-lo', 'rf-ratio-hi']);
-  // ▸ opens a directory down to the files that drew comments, and the lines that drew none.
-  const open = async (key: string) => {
-    await page.click(`#rf-dirs tr[data-key="${key}"] .ar-toggle`);
-  };
-  await open('d:chrome/');
-  await open('d:chrome/browser/');
-  await open('d:chrome/browser/ui/');
-  assert.deepEqual((await dirs()).slice(0, 6), [
-    ['chrome/', '2', '68', '2', '1', '1.46', '0.61×'], ['browser/', '2', '68', '2', '1', '1.46', '0.61×'],
-    ['ui/', '2', '68', '2', '1', '1.46', '0.61×'], ['view.cc', '1', '30', '1', '1', '–', '–'],
-    ['commit message', '1', '0', '1', '0', '–', '–'], ['other files', '2', '38', '0', '0', '0.00', '0.00×']]);
-  // No link file is loaded until a file's changes are opened.
-  const linkRequests: string[] = [];
-  page.on('request', (r) => { if (r.url().includes('/review-feedback/links/')) linkRequests.push(new URL(r.url()).pathname.split('/').at(-2)!); });
-  const viewKey = 'f:chrome/browser/ui/|chrome/browser/ui/view.cc';
-  await open(viewKey);
-  await page.waitForSelector(`#rf-dirs tr[data-key="c:${viewKey}:1000001"] .rf-change-comment`);
-  assert.deepEqual(linkRequests.sort(), ['2025H2', '2026H1', '2026H2']);
-  const change = await page.$eval(`#rf-dirs tr[data-key="c:${viewKey}:1000001"]`, (tr) => ({
-    cl: tr.querySelector('th a')!.getAttribute('href'), text: [tr.querySelector('th a')!.textContent, tr.querySelector('.rf-change-day')!.textContent],
-    target: tr.querySelector('th a')!.getAttribute('target'),
-    counts: [...tr.querySelectorAll('td.num')].map((t) => t.textContent),
-    comments: [...tr.querySelectorAll('.rf-change-comment')].map((a) => [a.textContent, a.getAttribute('href'), a.getAttribute('target')]),
-    scores: [...tr.querySelectorAll('.score-badge')].map((b) => b.textContent) }));
-  assert.deepEqual(change, {
-    cl: 'https://chromium-review.googlesource.com/c/chromium/src/+/1000001', text: ['1000001', '1 Oct 2025'], target: '_blank',
-    counts: ['1', '1'],
-    comments: [['#1', 'https://chromium-review.googlesource.com/c/chromium/src/+/1000001/comment/aaaa_0002/', '_blank']],
-    scores: ['−0.3'] });
-  assert.match(await page.$eval(`#rf-dirs tr[data-key="c:${viewKey}:1000001"] .score-badge`, (b) => (b as HTMLElement).title),
-    /^Sentiment score −0\.3.*not used in this analysis$/);
-  // A directory below the 3-level one, down to its file; a comment without a tone score has no pill.
-  await open('o:root');
-  for (const k of ['d:third_party/', 'd:third_party/blink/', 'd:third_party/blink/renderer/', 'd:third_party/blink/renderer/core/'])
-    await open(k);
-  const aKey = 'f:third_party/blink/renderer/core/|third_party/blink/renderer/core/a.cc';
-  await open(aKey);
-  assert.deepEqual(await page.$eval(`#rf-dirs tr[data-key="c:${aKey}:1000003"]`, (tr) =>
-    [[...tr.querySelectorAll('.rf-change-comment')].length, tr.querySelectorAll('.score-badge').length]), [1, 0]);
+  assert.equal(await page.$('#directories, #rf-dirs'), null);
   assert.deepEqual(errors, []);
   await page.close();
 });
 
-test('feedback index: changes before the links begin link to the change only', async () => {
-  const { peers, FIXTURE_EMAIL } = await import('./feedback-fixture.ts');
-  const { page, errors } = await feedbackPage({ ...peers, links_from: '2026H1' });
-  await lookUp(page, FIXTURE_EMAIL);
-  await page.waitForFunction(() => !document.querySelector<HTMLElement>('#rf-person')!.hidden);
-  for (const k of ['d:chrome/', 'd:chrome/browser/', 'd:chrome/browser/ui/', 'f:chrome/browser/ui/|chrome/browser/ui/view.cc'])
-    await page.click(`#rf-dirs tr[data-key="${k}"] .ar-toggle`);
-  const row = 'c:f:chrome/browser/ui/|chrome/browser/ui/view.cc:1000001';
-  await page.waitForSelector(`#rf-dirs tr[data-key="${row}"]`);
-  assert.equal(await page.$eval(`#rf-dirs tr[data-key="${row}"] td.rf-change-links`, (td) => td.textContent!.trim()),
-    'comments linked from 2026 on');
-  assert.match(await page.$eval('#directories .note', (e) => e.textContent!.replace(/\s+/g, ' ')), /for changes from 2026 on/);
-  assert.deepEqual(errors, []);
-  await page.close();
-});
-
-test('feedback index: selecting a dot in the over-time chart filters the directories', async () => {
+test('feedback index: selecting a dot in the over-time chart filters the comments-per-change chart', async () => {
   const { page, errors } = await feedbackPage();
   const { FIXTURE_EMAIL } = await import('./feedback-fixture.ts');
   await lookUp(page, FIXTURE_EMAIL);
@@ -3607,7 +3542,7 @@ test('feedback index: selecting a dot in the over-time chart filters the directo
     const r = chart.canvas.getBoundingClientRect();
     return { x: r.left + pt.x, y: r.top + pt.y };
   }, i);
-  const dirs = () => page.$$eval('#rf-dirs tbody th', (ths) => ths.map((t) => t.textContent!.replace(/[▸▾]/, '')));
+  const counts = () => page.evaluate(() => window.__rf!.charts.perCl.data.datasets[0].data);
   const filterShown = () => page.$eval('#rf-half-filter', (e) => !(e as HTMLElement).hidden);
   // Chart.js handles canvas events on the next animation frame.
   const clickAt = async (x: number, y: number) => {
@@ -3632,16 +3567,17 @@ test('feedback index: selecting a dot in the over-time chart filters the directo
   assert.equal(await filterShown(), true);
   assert.equal(await page.$eval('#rf-half-filter-name', (e) => e.textContent!.trim()),
     'Filter: only changes landed January – June 2026');
-  assert.deepEqual(await dirs(), ['content/', 'chrome/']);
+  assert.deepEqual(await counts(), [0, 1, 0, 0, 0, 0]);
   // Clear empties the filter; selecting the same dot twice does too.
   await page.click('#rf-half-clear');
   assert.equal(await filterShown(), false);
   await page.$eval('#rf-trend', (c) => c.scrollIntoView({ block: 'center' }));
   const last = await dot(2);
   await clickAt(last.x, last.y);
-  assert.deepEqual(await dirs(), ['third_party/']);
+  assert.equal(await page.evaluate(() => window.__rf!.half), '2026H2');
   await clickAt(last.x, last.y);
   assert.equal(await filterShown(), false);
+  assert.deepEqual(await counts(), [0, 3, 0, 0, 0, 0]);
   // A click away from the person's dots changes nothing.
   const box = (await page.$eval('#rf-trend', (c) => { const r = c.getBoundingClientRect(); return { x: r.left, y: r.top }; }));
   await clickAt(box.x + 5, box.y + 5);
@@ -3650,7 +3586,7 @@ test('feedback index: selecting a dot in the over-time chart filters the directo
   await page.close();
 });
 
-test('feedback index: selecting a column of the comments-per-change chart filters the directories', async () => {
+test('feedback index: the comments-per-change chart counts each change\'s addressed comments', async () => {
   // CL 3 gets three more addressed comments on its file: 4 in all.
   const { FIXTURE_EMAIL, shards } = await import('./feedback-fixture.ts');
   const h2 = structuredClone(shards['2026H2']);
@@ -3661,38 +3597,6 @@ test('feedback index: selecting a column of the comments-per-change chart filter
   const counts = () => page.evaluate(() => window.__rf!.charts.perCl.data.datasets[0].data);
   assert.deepEqual(await counts(), [0, 2, 1, 0, 0, 0]);
   assert.deepEqual(await axisTitles(page, 'perCl'), ['addressed comments on the change', 'your changes']);
-  const col = (i: number) => page.evaluate((i) => {
-    const chart = window.__rf!.charts.perCl;
-    const bar = chart.getDatasetMeta(0).data[i];
-    const r = chart.canvas.getBoundingClientRect();
-    return { x: r.left + bar.x, y: r.top + chart.chartArea.top + 5 };
-  }, i);
-  const clickCol = async (i: number) => {
-    await page.$eval('#rf-per-cl', (c) => c.scrollIntoView({ block: 'center' }));
-    const at = await col(i);
-    await page.mouse.click(at.x, at.y);
-    await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
-  };
-  const dirs = () => page.$$eval('#rf-dirs tbody th', (ths) => ths.map((t) => t.textContent!.replace(/[▸▾]/, '')));
-  const filter = () => page.$eval('#rf-bin-filter', (e) =>
-    ((e as HTMLElement).hidden ? null : e.querySelector('.rf-filter-name')!.textContent!.trim()));
-  assert.equal(await filter(), null);
-  await clickCol(1);
-  assert.equal(await page.evaluate(() => window.__rf!.bin), 1);
-  assert.equal(await filter(), 'Filter: only changes with 1–2 addressed comments');
-  assert.deepEqual(await dirs(), ['chrome/', 'Other (1)']);
-  await clickCol(2);
-  assert.equal(await filter(), 'Filter: only changes with 3–5 addressed comments');
-  assert.deepEqual(await dirs(), ['third_party/']);
-  // An empty column can't be selected.
-  await clickCol(0);
-  assert.equal(await page.evaluate(() => window.__rf!.bin), 2);
-  // Clear clears it, and so does selecting the column again.
-  await page.click('#rf-bin-filter .rf-bin-clear');
-  assert.equal(await filter(), null);
-  await clickCol(1);
-  await clickCol(1);
-  assert.equal(await page.evaluate(() => window.__rf!.bin), null);
   assert.deepEqual(errors, []);
   await page.close();
 });

@@ -1213,37 +1213,9 @@
       "rebuildable": true,
       "size": "110 MB (38.6 MB gzipped file by file, as git stores it): 6,862 people, 122 other addresses, 19 half-years",
       "size_as_of": "2026-11-14",
-      "files": "u/<hash>.json (who the person is, their usual org, which half-years they have; a stub per other address) and <half-year>/<hash>.json (their changes: lines per 3-level directory, approvers (Reviewed-by), and the files that drew reviewer threads with each one's lines, threads and addressed threads; no comment ids or text); <hash> is a salted SHA-256 of the e-mail.",
-      "purpose": "One person's changes and review comments by directory and file, which every chart and table uses once an address is typed. No tone, no comment text.",
+      "files": "u/<hash>.json (who the person is, their usual org, which half-years they have; a stub per other address) and <half-year>/<hash>.json (their changes: lines per 3-level directory, approvers (Reviewed-by), and the files that drew reviewer threads with each one's lines, threads and addressed threads (which place the threads in their directories); no comment ids or text); <hash> is a salted SHA-256 of the e-mail.",
+      "purpose": "One person's changes and review comments by directory, which every chart and table about them uses once an address is typed. No tone, no comment text.",
       "notes": "Committed and published on GitHub Pages since 2026-11-12. Finished half-years' files don't change between runs unless their inputs do, so git stores them once; each run rewrites the current half-year and u/. Commit with `git add -A web/public/review-feedback/`."
-    },
-    {
-      "id": "data/private/feedback-links.jsonl",
-      "name": "Feedback Index link index",
-      "path": "data/private/feedback-links.jsonl",
-      "kind": "jsonl",
-      "tier": "derived",
-      "tracked_in_git": false,
-      "rebuildable": true,
-      "size": "20 MB (12,615 lines)",
-      "size_as_of": "2026-11-14",
-      "purpose": "The addressed threads' comment ids of each person's half-year files from 2023H1, by change and file entry, so feedback-links lines up with them.",
-      "notes": "One line per person and half-year with addressed threads: key, half-year, [change number, [[file entry, [thread root uuids]]]]. Written last by review-feedback, replacing the old one."
-    },
-    {
-      "id": "web/public/review-feedback/links/",
-      "name": "Feedback Index link files",
-      "path": "web/public/review-feedback/links/",
-      "kind": "directory",
-      "tier": "published",
-      "tracked_in_git": true,
-      "rebuildable": true,
-      "size": "20 MB (10.3 MB gzipped file by file): 12,615 files, 218k threads with a tone score",
-      "size_as_of": "2026-11-14",
-      "files": "<half-year>/<hash>.json from 2023H1: per change and file entry, each addressed thread's comment id and, where scored, its tone score.",
-      "purpose": "The links from a file's changes to their addressed comments in Gerrit, with each comment's tone score, loaded when a file's changes are opened. No chart reads them.",
-      "withheld": "Per-comment tone, negative scores included, is shown only after someone types the person's address (ground rule 5), never on a page reached by clicks.",
-      "notes": "No comment text. A comment whose score arrives later changes its half-year's file."
     },
     {
       "id": "web/public/review-load/all.json",
@@ -2105,7 +2077,7 @@
     },
     {
       "id": "review-feedback",
-      "command": "nice -n 5 python3 -m cosh.review_feedback --part people",
+      "command": "nice -n 5 python3 -m cosh.review_feedback",
       "code": [
         "cosh/review_feedback.py",
         "cosh/cl_facts.py",
@@ -2123,43 +2095,17 @@
       "outputs": [
         "web/public/review-feedback/peers.json",
         "web/public/review-feedback/reviewers.json",
-        "feedback-people",
-        "data/private/feedback-links.jsonl"
+        "feedback-people"
       ],
       "network": false,
       "lock": null,
-      "incremental": "Deletes and rewrites peers.json, reviewers.json, u/, the half-year folders and the link index.",
+      "incremental": "Deletes and rewrites peers.json, reviewers.json, u/ and the half-year folders.",
       "duration": "about 3 min (2026-11-14), 3 GB of memory",
       "token_cost": null,
       "cost_source": "docs/review-feedback.md",
       "refresh": "routine",
-      "notes": "Computes its per-CL facts (owner, status, Gerrit size, landed commit, lines per directory) from reviews.sqlite and commits.sqlite (cosh.cl_facts). Earlier commits count from 2008. It refreshes the affiliations file first (its only network use). `npm run serve` picks the new files up a few seconds after the run ends. Reads no review tone or comment text: feedback-links adds the tone.",
-      "run": "nice -n 5 python3 -m cosh.review_feedback --part people"
-    },
-    {
-      "id": "feedback-links",
-      "command": "nice -n 5 python3 -m cosh.review_feedback --part links",
-      "code": [
-        "cosh/review_feedback.py"
-      ],
-      "purpose": "Writes each person's comment links for the Feedback Index: addressed comments' ids and tone scores.",
-      "inputs": [
-        "data/private/feedback-links.jsonl",
-        "data/private/sentiment.sqlite"
-      ],
-      "outputs": [
-        "web/public/review-feedback/links/"
-      ],
-      "network": false,
-      "lock": null,
-      "incremental": "Deletes and rewrites links/.",
-      "duration": "seconds (6 s on 2026-11-14)",
-      "token_cost": null,
-      "cost_source": "docs/review-feedback.md",
-      "refresh": "routine",
-      "approval": "Shows each comment's tone, negative ones too, only after an address is typed (docs/plan.md, ground rule 5, 2026-11-14).",
-      "notes": "Joins the link index with the tone scores; picks no people or changes itself, so its entries line up with the half-year files of the review-feedback run that wrote the index.",
-      "run": "nice -n 5 python3 -m cosh.review_feedback --part links"
+      "notes": "Computes its per-CL facts (owner, status, Gerrit size, landed commit, lines per directory) from reviews.sqlite and commits.sqlite (cosh.cl_facts). Earlier commits count from 2008. It refreshes the affiliations file first (its only network use). `npm run serve` picks the new files up a few seconds after the run ends. Reads no review tone or comment text.",
+      "run": "nice -n 5 python3 -m cosh.review_feedback"
     },
     {
       "id": "review-load",
@@ -2429,8 +2375,7 @@
       "reads": [
         "web/public/review-feedback/peers.json",
         "web/public/review-feedback/reviewers.json",
-        "feedback-people",
-        "web/public/review-feedback/links/"
+        "feedback-people"
       ],
       "sources_line": "Gerrit code review · Chromium git history",
       "notes": "Linked from the landing page since 2026-11-12; carries noindex."

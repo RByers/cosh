@@ -1580,66 +1580,13 @@ test('review feedback: the AFR and index, as the script computes them', async ()
   assert.deepEqual(F.clsIn(later, 'all').map((c) => c[0]), [1000002, 1000003]);
 });
 
-test('review feedback: directories down to files and their changes, links and the comments-per-change histogram', async () => {
+test('review feedback: everyone\'s directory table with the person\'s columns, and the comments-per-change histogram', async () => {
   const F = await import('../src/feedback.ts');
-  const { top, shards, links, reviewers, peers, day } = await import('./feedback-fixture.ts');
+  const { top, shards, reviewers, peers, day } = await import('./feedback-fixture.ts');
   const person = F.buildPerson(top, top.halves.map((h) => shards[h]), peers);
   await F.attachReviewers(person, reviewers);
   const near = (a: number, b: number) => assert.ok(Math.abs(a - b) < 1e-9, `${a} vs ${b}`);
-  // The tree: each change's lines split over its directories, then over its files by the landed commit's
-  // lines; a directory's lines that drew no comments in "other files".
-  const tree = F.dirTree(person, peers, 'all');
-  const all = new Map<string, import('../src/feedback.ts').DirNode>();
-  const walk = (ns: import('../src/feedback.ts').DirNode[]) => ns.forEach((n) => (all.set(n.key, n), walk(n.children)));
-  walk(tree);
-  const fig = (k: string) => { const n = all.get(k)!; return [n.kind, n.name, n.cls, n.threads, n.addressed]; };
-  assert.deepEqual(fig('d:chrome/'), ['dir', 'chrome/', 2, 2, 1]);
-  assert.deepEqual(fig('d:chrome/browser/ui/'), ['dir', 'ui/', 2, 2, 1]);
   const ui2 = (120 * 28) / 118;
-  near(all.get('d:chrome/')!.lines, 40 + ui2);
-  near(all.get('d:chrome/')!.expected, 1.2 + (1.2 * 1.7 * 0.9) * 28 / 118);
-  // view.cc: 30 of CL 1's 40 lines there, so 30 lines and 3/4 of its expected comments; the commit message
-  // sits in CL 1's directory with no lines.
-  const view = all.get('f:chrome/browser/ui/|chrome/browser/ui/view.cc')!;
-  assert.deepEqual(fig(view.key), ['file', 'view.cc', 1, 1, 1]);
-  near(view.lines, 30);
-  near(view.expected, 0.9);
-  assert.deepEqual(view.changes, [{ cl: 1000001, day: day('2025-10-01'), threads: 1, addressed: 1, entry: 1 }]);
-  assert.deepEqual(fig('f:chrome/browser/ui/|/COMMIT_MSG'), ['file', '/COMMIT_MSG', 1, 1, 0]);
-  const rest = all.get('r:chrome/browser/ui/')!;
-  assert.deepEqual([rest.kind, rest.cls, rest.threads], ['rest', 2, 0]);
-  near(rest.lines, 10 + ui2);
-  near(rest.expected + view.expected, all.get('d:chrome/browser/ui/')!.expected);
-  // Directories below the 3-level one lead to a file: core/a.cc.
-  assert.deepEqual(fig('d:third_party/blink/renderer/core/'), ['dir', 'core/', 1, 1, 1]);
-  near(all.get('f:third_party/blink/renderer/core/|third_party/blink/renderer/core/a.cc')!.lines, 8);
-  near(all.get('r:third_party/blink/renderer/')!.lines, 2);
-  near(all.get('f:content/browser/|content/browser/frame.cc')!.lines, (120 * 90 / 118) * 50 / 90);
-  // The rows: entries with fewer than `minCls` changes go into one "Other" row per level, which counts
-  // each change once and opens into them; files listed plainly when none of them has `minCls`; "other
-  // files" last; a file opens into its changes. Only rows with `minCls` changes get a rate and index.
-  const rows = (open: string[], min: number, shown?: number) =>
-    F.dirRows(tree, new Set(open), min, shown).map((r) => `${'  '.repeat(r.depth)}${r.key} ${r.stats.cls}/${r.stats.addressed}` +
-      `${r.expandable ? (r.expanded ? ' -' : ' +') : ''}`);
-  assert.deepEqual(rows([], 2), ['d:chrome/ 2/1 +', 'o:root 2/2 +']);
-  assert.deepEqual(rows(['o:root'], 2), ['d:chrome/ 2/1 +', 'o:root 2/2 -', '  d:content/ 1/1 +', '  d:third_party/ 1/1 +']);
-  const viewKey = 'f:chrome/browser/ui/|chrome/browser/ui/view.cc';
-  assert.deepEqual(rows(['d:chrome/', 'd:chrome/browser/', 'd:chrome/browser/ui/', viewKey], 2), [
-    'd:chrome/ 2/1 -', '  d:chrome/browser/ 2/1 -', '    d:chrome/browser/ui/ 2/1 -',
-    `      ${viewKey} 1/1 -`, `        c:${viewKey}:1000001 1/1`,
-    '      f:chrome/browser/ui/|/COMMIT_MSG 1/0 +', '      r:chrome/browser/ui/ 2/0', 'o:root 2/2 +']);
-  assert.deepEqual(rows([], 5, 0), ['o:root 3/3 +']);
-  const top2 = F.dirRows(tree, new Set(), 2);
-  near(top2[0].fr!, 100 / all.get('d:chrome/')!.lines);
-  near(top2[0].fi!, 1 / all.get('d:chrome/')!.expected);
-  const open = F.dirRows(tree, new Set(['d:chrome/', 'd:chrome/browser/', 'd:chrome/browser/ui/']), 2);
-  assert.deepEqual([open[3].fr, open[3].fi], [null, null]);
-  // Links: by change and file entry, oldest first, with tone scores where scored.
-  const lk = F.mergeLinks(top.halves.map((h) => links[h]));
-  assert.deepEqual(F.linksOf(lk, 1000001, 1), [['aaaa_0002', -0.31]]);
-  assert.deepEqual(F.linksOf(lk, 1000003, 1), [['cccc_0003', null]]);
-  assert.deepEqual(F.linksOf(lk, 1000003, 0), []);
-  assert.deepEqual(F.linksOf(new Map(), 1000002, 0), []);
   // Everyone's directory table, with the person's changes: CL 3 is in third_party/blink/, which is in
   // third_party/'s "Other"; CL 1 and part of CL 2 in chrome/browser/ui/.
   const table = F.dirTable(peers, person, 'all');
@@ -1680,11 +1627,6 @@ test('review feedback: directories down to files and their changes, links and th
   assert.deepEqual([0, 1, 2, 3, 4, 5].map(F.threadBinLabel), ['0', '1–2', '3–5', '6–10', '11–20', '21+']);
   const withN = (n: number): import('../src/feedback.ts').ClRow => [0, 0, 0, [], [[0, 0, n, n, 0]], 0, []];
   assert.deepEqual([0, 1, 2, 3, 5, 6, 10, 11, 20, 21, 400].map((n) => F.threadBin(withN(n))), [0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5]);
-  assert.deepEqual(F.dirTree(person, peers, 'all', 0), []);
-  assert.equal(F.dirTree(person, peers, '2026H1').length, 2);
-  // Links are encoded and always go to Gerrit; without a comment id, to the change.
-  assert.equal(F.commentUrl(5, 'a/b'), 'https://chromium-review.googlesource.com/c/chromium/src/+/5/comment/a%2Fb/');
-  assert.equal(F.commentUrl(5, ''), 'https://chromium-review.googlesource.com/c/chromium/src/+/5');
   // Periods are cut to the data's dates.
   assert.deepEqual(F.periodSpan('2026H2', [day('2023-07-01'), day('2026-11-01')]), [day('2026-07-01'), day('2026-11-01')]);
   assert.deepEqual(F.periodSpan('2023', [day('2023-07-01'), day('2026-11-01')]), [day('2023-07-01'), day('2024-01-01')]);

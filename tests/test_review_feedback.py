@@ -1,5 +1,5 @@
 """cosh/review_feedback.py helpers: the address hash the page shares,
-periods, bins, the AFR model, quantiles, the half-year and link files. No data is read."""
+periods, bins, the AFR model, quantiles, the half-year files. No data is read."""
 
 import unittest
 
@@ -140,7 +140,7 @@ class ReviewFeedbackTest(unittest.TestCase):
         self.assertEqual(R.quantiles([5]), [5] * 21)
         self.assertIsNone(R.quantiles([]))
 
-    def test_shard_and_links(self):
+    def test_shard(self):
         # Two CLs, the second wholly in one directory. Threads [root, path (today's name), day,
         # addressed, directory], listed out of order; files that drew none aren't listed.
         c1 = dict(change_number=1007, closed_at=86400 * 20000, lines=12, prior=3,
@@ -164,10 +164,6 @@ class ReviewFeedbackTest(unittest.TestCase):
         # The page puts a file's threads in its directory when that is a unit, else the first.
         self.assertEqual(R.page_dir("a/b/c/d/y.cc", {"a/b/c/": 1}, "x/"), "a/b/c/")
         self.assertEqual(R.page_dir("/COMMIT_MSG", {"a/": 1}, "x/"), "x/")
-        # The link index: addressed threads' roots per CL and file entry (positions in the files list).
-        ids = R.link_ids([c1, c2])
-        self.assertEqual(ids, [[1007, [[1, ["r2"]], [2, ["r4"]]]]])
-        self.assertEqual(R.link_file(ids, {"1007/r4": -0.456}), {"cls": {"1007": [[1, ["r2"]], [2, [["r4", -0.46]]]]}})
 
 
 if __name__ == "__main__":

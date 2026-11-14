@@ -1,24 +1,18 @@
 // The Feedback Index page (feedback-index.html). Wording is in the HTML;
 // this looks a person up by the address typed (never offering completions:
 // the data is one file per person, named by a hash of the address), fills in
-// the values and draws the charts. Comment text is untrusted and goes into the
-// DOM only as text (SECURITY.md). Each comment shows its tone score: the list
-// appears only after someone types an address (docs/plan.md, ground rule 5).
-// The address is never put in the URL.
+// the values and draws the charts. Data goes into the DOM only as text
+// (SECURITY.md). The address is never put in the URL.
 import { Chart, Filler, type ChartDataset, type ChartEvent, type Plugin } from 'chart.js';
 import { readTheme, withAlpha, type Theme } from './charts.ts';
 import {
   afrShade,
   attachReviewers,
-  halfOf,
   binReached,
   binSums,
   buildPerson,
   clsIn,
-  commentUrl,
-  dirRows,
   dirTable,
-  dirTree,
   fiOf,
   fr,
   frOf,
@@ -26,8 +20,6 @@ import {
   halves,
   isoDay,
   latestDoubling,
-  linksOf,
-  mergeLinks,
   looksLikeEmail,
   percentileOf,
   periodSpan,
@@ -38,13 +30,9 @@ import {
   sums,
   tableRows,
   threadBinLabel,
-  threadBinRange,
   threadHistogram,
   THREAD_BINS,
   type Alias,
-  type DirNode,
-  type DirRowView,
-  type LinkShard,
   type Peers,
   type Person,
   type ReviewerTable,
@@ -53,7 +41,6 @@ import {
   type Top,
 } from './feedback.ts';
 import { fmtDay, fmtInt, fmtNum } from './format.ts';
-import { scoreBadge, signed1 } from './score.ts';
 import { fragment, msg, type Vars } from './text.ts';
 
 Chart.register(Filler);
@@ -63,8 +50,7 @@ const put = (target: Element, key: string, vars: Vars = {}) => target.replaceChi
 
 declare global {
   interface Window {
-    __rf?: { person: Person | null; peers: Peers | null; charts: Record<string, Chart>; half: string | null;
-      bin: number | null };
+    __rf?: { person: Person | null; peers: Peers | null; charts: Record<string, Chart>; half: string | null };
   }
 }
 
@@ -78,24 +64,15 @@ const state = {
   peers: null as Peers | null,
   /** reviewers.json, loaded with the first person. */
   reviewers: null as ReviewerTable | null,
-  /** The person's file key and half-years, for their link files. */
-  key: null as string | null,
-  halves: [] as string[],
-  /** Their comment links (links/), once a file's changes have been opened; null until loaded. */
-  links: null as Map<number, LinkShard['cls'][string]> | null,
-  /** The half-year picked in the over-time chart, filtering the directories. */
+  /** The half-year picked in the over-time chart, filtering the comments-per-change chart. */
   half: null as string | null,
-  /** The column picked in the comments-per-change chart (THREAD_BINS), filtering the same. */
-  bin: null as number | null,
   /** The experience bin shown in "How it's changing". */
   cohortBin: 0,
-  /** Keys of the directory rows that are open (see dirRows). */
-  expanded: new Set<string>(),
   /** Keys of everyone's directory table's rows that are open (see tableRows). */
   allExpanded: new Set<string>(),
 };
 const charts: Record<string, Chart> = {};
-window.__rf = { person: null, peers: null, charts, half: null, bin: null };
+window.__rf = { person: null, peers: null, charts, half: null };
 
 async function getJson<T>(url: string): Promise<T | null> {
   const r = await fetch(url);
@@ -175,7 +152,6 @@ function fillStatic(peers: Peers) {
   fill('.rf-min-cls', peers.min_cls);
   fill('.rf-min-bin', peers.min_bin_cls);
   fill('.rf-min-cell', peers.min_cell_cls);
-  for (const e of document.querySelectorAll('.rf-links-from')) e.textContent = peers.links_from.slice(0, 4);
 }
 
 const theme = () => readTheme();
@@ -245,14 +221,8 @@ async function lookup(raw: string) {
     }
     state.person = found;
     window.__rf!.person = found;
-    state.key = top!.key;
-    state.halves = top!.top.halves;
-    state.links = null;
     state.half = null;
     window.__rf!.half = null;
-    state.bin = null;
-    window.__rf!.bin = null;
-    state.expanded = new Set();
     state.allExpanded = new Set();
     const cs = clsIn(found, ALL);
     put(note, 'find-done', { n: fmtInt(cs.length), from: dayLabel(cs[0][1]), to: dayLabel(cs.at(-1)![1]) });
@@ -773,7 +743,6 @@ function render() {
   renderXpTable();
   renderReviewers();
   renderPerCl();
-  renderDirs();
 }
 
 function renderSummary() {
@@ -962,60 +931,35 @@ function fiCell(v: number | null, title?: string): HTMLTableCellElement {
   return td;
 }
 
-/** Filters the directories and comments to the changes landed in half-year `h` (null: all). */
+/** Filters the comments-per-change chart to the changes landed in half-year `h` (null: all). */
 function setHalf(h: string | null) {
   state.half = h;
   window.__rf!.half = h;
   charts.trend?.update('none');
   renderPerCl();
-  renderDirs();
-}
-
-/** Filters the directories and comments to the changes in comments-per-change column `b` (null: all). */
-function setBin(b: number | null) {
-  state.bin = b;
-  window.__rf!.bin = b;
-  renderPerCl();
-  renderDirs();
 }
 
 /** The person's changes by how many addressed comments each drew, for the half-year
- * picked in the over-time chart if any. A column can be selected. */
+ * picked in the over-time chart if any. */
 function renderPerCl() {
   destroy('perCl');
   const p = state.person!;
   const t = theme();
   const counts = threadHistogram(p, state.half ?? ALL);
-  // A column left empty by a new half-year drops its filter.
-  if (state.bin !== null && !counts[state.bin]) {
-    state.bin = null;
-    window.__rf!.bin = null;
-  }
-  put($('#per-cl-sub'), 'per-cl-sub', { half: state.half ? halfName(state.half) : '' });
+  const filter = $('#rf-half-filter');
+  filter.hidden = !state.half;
+  if (state.half) put(filter.querySelector('.rf-filter-name')!, 'half-filter', { half: halfName(state.half) });
   const labels = Array.from({ length: THREAD_BINS }, (_, b) => threadBinLabel(b));
-  // The column under the pointer, anywhere in its height, if it has changes.
-  const colAt = (chart: Chart, e: ChartEvent) => {
-    const hit = chart.getElementsAtEventForMode(e as unknown as Event, 'index', { intersect: false }, false)[0];
-    return hit && counts[hit.index] > 0 ? hit.index : null;
-  };
   charts.perCl = new Chart($<HTMLCanvasElement>('#rf-per-cl'), {
     type: 'bar',
     data: {
       labels,
-      datasets: [{ data: counts, borderWidth: 0, categoryPercentage: 0.9, barPercentage: 1,
-        backgroundColor: counts.map((_, b) => (state.bin === null || state.bin === b ? t.series[0] : t.muted)) }],
+      datasets: [{ data: counts, borderWidth: 0, categoryPercentage: 0.9, barPercentage: 1, backgroundColor: t.series[0] }],
     },
     options: {
       maintainAspectRatio: false,
       animation: false,
       font: { family: t.font },
-      onHover: (e, _els, chart) => {
-        chart.canvas.classList.toggle('rf-pointable', colAt(chart, e) !== null);
-      },
-      onClick: (e, _els, chart) => {
-        const b = colAt(chart, e);
-        if (b !== null) setBin(state.bin === b ? null : b);
-      },
       scales: {
         x: { ...axis(t, msg('axis-per-cl')), grid: { display: false } },
         y: { beginAtZero: true, ...axis(t, msg('axis-your-cls')), ticks: { color: t.text, font: { family: t.font }, precision: 0 } },
@@ -1029,136 +973,6 @@ function renderPerCl() {
   });
 }
 
-/** Column `b` of the comments-per-change chart, in words: "3–5 addressed comments". */
-function binName(b: number): string {
-  const [lo, hi] = threadBinRange(b);
-  return msg('bin-name', { none: hi === 0, one: lo === 1 && hi === 1, more: hi === null,
-    n: hi === null || hi === lo ? fmtInt(lo) : `${fmtInt(lo)}–${fmtInt(hi)}` });
-}
-
-function renderDirs() {
-  const p = state.person!;
-  const peers = state.peers!;
-  showHalfFilter('#rf-half-filter');
-  showBinFilter('#rf-bin-filter');
-  const roots = dirTree(p, peers, state.half ?? ALL, state.bin);
-  $('#rf-dirs tbody').replaceChildren(...dirRows(roots, state.expanded, peers.min_cls).map(dirRow));
-}
-
-/** Loads the person's comment links (links/, half-years from `links_from`) the first time a file's
- * changes are shown. */
-async function loadLinks() {
-  const peers = state.peers!;
-  if (state.links || !state.key) return;
-  const key = state.key;
-  const hs = state.halves.filter((h) => h >= peers.links_from && /^\d{4}H[12]$/.test(h));
-  const shards = await Promise.all(hs.map((h) => getJson<LinkShard>(`${DATA}links/${h}/${key}.json`).catch(() => null)));
-  if (state.key !== key) return;
-  state.links = mergeLinks(shards);
-  renderDirs();
-}
-
-function toggle(key: string, expanded: boolean, file: boolean) {
-  if (expanded) state.expanded.delete(key);
-  else state.expanded.add(key);
-  renderDirs();
-  if (file && !expanded) void loadLinks();
-}
-
-/** A change under a file: its number (linking to the change), the day it landed, its comments on the
- * file and links to the addressed ones, each with its tone score where scored. */
-function changeRow(r: DirRowView): HTMLTableRowElement {
-  const ch = r.change!;
-  const tr = el('tr', undefined, 'rf-dir-row rf-dir-change');
-  tr.dataset.key = r.key;
-  const th = el('th');
-  th.setAttribute('scope', 'row');
-  const label = el('span', undefined, 'rf-dir-label');
-  label.style.setProperty('--depth', String(r.depth));
-  label.append(el('span', undefined, 'ar-toggle-space'), link(commentUrl(ch.cl), String(Math.trunc(ch.cl))),
-    el('span', dayLabel(ch.day), 'rf-change-day'));
-  th.append(label);
-  const linksTd = el('td', undefined, 'rf-change-links');
-  linksTd.colSpan = 2;
-  // The links wrap in a box of their own, so a change with many doesn't widen the table.
-  const box = el('div', undefined, 'rf-change-box');
-  linksTd.append(box);
-  const peers = state.peers!;
-  if (ch.addressed) {
-    if (halfOf(ch.day) < peers.links_from) {
-      box.append(fragment('change-no-links', { year: peers.links_from.slice(0, 4) }));
-    } else if (!state.links) {
-      box.append(fragment('change-loading'));
-    } else {
-      linksOf(state.links, ch.cl, ch.entry).forEach(([uuid, score], i) => {
-        const a = link(commentUrl(ch.cl, uuid), msg('change-comment', { n: fmtInt(i + 1) }));
-        a.className = 'rf-change-comment';
-        a.title = msg('change-comment-title', { n: fmtInt(i + 1) });
-        const span = el('span', undefined, 'rf-change-link');
-        span.append(a);
-        if (score !== null) {
-          span.append(scoreBadge(score, 1, `Sentiment score ${signed1(score)}, from −1 (hostile) to +1 (glowing): `
-            + 'the comment\'s tone, shown for context only and not used in this analysis'));
-        }
-        box.append(span);
-      });
-    }
-  }
-  tr.append(th, el('td'), el('td'), el('td', fmtInt(ch.threads), 'num'), el('td', fmtInt(ch.addressed), 'num'), linksTd);
-  return tr;
-}
-
-function dirRow(r: DirRowView): HTMLTableRowElement {
-  if (r.kind === 'change') return changeRow(r);
-  const tr = el('tr', undefined, `rf-dir-row rf-dir-${r.kind}`);
-  tr.dataset.key = r.key;
-  tr.dataset.depth = String(r.depth);
-  const th = el('th');
-  th.setAttribute('scope', 'row');
-  const label = el('span', undefined, 'rf-dir-label');
-  label.style.setProperty('--depth', String(r.depth));
-  const n = r.node;
-  const name = r.kind === 'other' ? fragment('dirs-other', { n: fmtInt(r.count!) }).textContent!
-    : r.kind === 'rest' ? msg('dirs-other-files') : n!.path === '/COMMIT_MSG' ? msg('dirs-commit-msg') : n!.name;
-  if (r.expandable) {
-    const b = el('button', r.expanded ? '▾' : '▸', 'ar-toggle');
-    b.type = 'button';
-    b.setAttribute('aria-expanded', String(r.expanded));
-    b.setAttribute('aria-label', `${r.expanded ? 'Collapse' : 'Expand'} ${n ? n.path : name}`);
-    b.addEventListener('click', () => toggle(r.key, r.expanded, r.kind === 'file'));
-    label.append(b);
-  } else {
-    label.append(el('span', undefined, 'ar-toggle-space'));
-  }
-  const s = el('span', name, r.kind === 'dir' || r.kind === 'file' ? 'rf-dir-name' : 'rf-dir-group');
-  if (n && r.kind !== 'rest') s.title = n.path;
-  else if (r.kind === 'rest') s.title = `Lines in ${n!.path} that drew no review comments`;
-  else s.title = `${fmtInt(r.count!)} smaller entries`;
-  label.append(s);
-  th.append(label);
-  const st = r.stats;
-  const few = r.fi === null ? msg('dirs-no-ratio', { n: fmtInt(state.peers!.min_cls) }) : undefined;
-  const rate = el('td', fmtFr(r.fr), 'num');
-  if (few) rate.title = few;
-  tr.append(th, el('td', fmtInt(st.cls), 'num'), el('td', fmtInt(Math.round(st.lines)), 'num'),
-    el('td', fmtInt(st.threads), 'num'), el('td', fmtInt(st.addressed), 'num'), rate, fiCell(r.fi, few));
-  return tr;
-}
-
-/** Shows or hides one of the half-year filter lines (above the directories, and above the comments). */
-function showHalfFilter(sel: string) {
-  const filter = $(sel);
-  filter.hidden = !state.half;
-  if (state.half) put(filter.querySelector('.rf-filter-name')!, 'half-filter', { half: halfName(state.half) });
-}
-
-/** Shows or hides one of the comments-per-change filter lines. */
-function showBinFilter(sel: string) {
-  const filter = $(sel);
-  filter.hidden = state.bin === null;
-  if (state.bin !== null) put(filter.querySelector('.rf-filter-name')!, 'bin-filter', { bin: binName(state.bin) });
-}
-
 // ---- wiring
 
 function init() {
@@ -1168,8 +982,7 @@ function init() {
     e.preventDefault();
     void lookup(input.value);
   });
-  for (const b of document.querySelectorAll('#rf-half-clear, .rf-half-clear')) b.addEventListener('click', () => setHalf(null));
-  for (const b of document.querySelectorAll('.rf-bin-clear')) b.addEventListener('click', () => setBin(null));
+  $('#rf-half-clear').addEventListener('click', () => setHalf(null));
   const method = $<HTMLDetailsElement>('#method');
   method.addEventListener('toggle', () => renderMethod());
   $<HTMLSelectElement>('#rf-cohort-bin').addEventListener('change', (e) => {

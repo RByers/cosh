@@ -48,10 +48,8 @@ Claude (Haiku): classify, comments-score, tone-publish's screening              
   summarize      ─▶ Value Exchange summaries ─┐
   (+ Radar shares, org_browsers.csv)          ├─▶ Value Exchange
   tone-publish   ─▶ Review Tone summaries ────┼─▶ Review Tone
-  review-feedback   ─▶ Feedback Index global data, per-person files ─┐
-  (cosh.review_feedback --part people)                              ├─▶ Feedback Index
-  feedback-links    ─▶ Feedback Index link files ───────────────────┘
-  (--part links: review-feedback's link index + Comment scores)
+  review-feedback   ─▶ Feedback Index global data, per-person files ──▶ Feedback Index
+  (cosh.review_feedback)
   review-timeline   ─▶ review-timeline.sqlite ─ review-load ─▶ Review Load files ─▶ Review Load
   (NoteDb + listings + reviews.sqlite)          (+ commits.sqlite)
 ```
@@ -60,9 +58,8 @@ Claude (Haiku): classify, comments-score, tone-publish's screening              
 votes, and each reviewer's wait on it) is shared: Review Load publishes
 from it, and Review Balance's stages read it (`docs/review-load.md`).
 
-The Feedback Index's charts and tables read only the global and per-person
-files; review tone reaches it only through the link files, which only the
-lists of changes under a file read. It publishes no comment text.
+The Feedback Index reads only its global and per-person files. No review
+tone reaches it, and it publishes no comment text.
 
 `reviews.sqlite` (per-CL, per-comment and per-thread facts, no comment
 text) and `commits.sqlite` (main's whole first-parent history) are the two
@@ -95,8 +92,8 @@ system is kept, and the inventory says where a step departs from them.
 4. **Names say who uses them.** A source, step or store is named after an
    analysis (a page's `names`: value, tone, balance, feedback) only when it
    feeds that page alone. Anything shared is named for what it holds:
-   `comments-score`, not "tone-score", because the Feedback Index reads
-   its scores too.
+   `review-timeline.sqlite`, not "load-timeline", because the balance
+   stages read it too.
 5. **Every source is read** by some step.
 6. **One writer per store.** A step that lists a store as both input and
    output resumes from it; that is not a second writer. A store a step

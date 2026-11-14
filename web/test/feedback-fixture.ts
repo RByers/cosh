@@ -1,7 +1,7 @@
 // A made-up person and peer file for the Review Feedback tests, shaped like
-// cosh/review_feedback.py's output: a top file, one file per half-year and the
-// half-years' link files. The browser tests serve these instead of the committed data.
-import type { LinkShard, Peers, ReviewerTable, Shard, Top } from '../src/feedback.ts';
+// cosh/review_feedback.py's output: a top file and one file per half-year. The
+// browser tests serve these instead of the committed data.
+import type { Peers, ReviewerTable, Shard, Top } from '../src/feedback.ts';
 
 /** personKey('Test.Person@chromium.org'), as the Python script computes it. */
 export const FIXTURE_EMAIL = 'Test.Person@chromium.org';
@@ -48,14 +48,6 @@ export const reviewers: ReviewerTable = {
   f: { be7cd94b029a: [1.2, 900], e370b1ea692c: [0.6, 300] },
 };
 
-/** The link files: per change, per file entry (its position in the change's files), the addressed
- * comments' ids, with their tone score where scored. */
-export const links: Record<string, LinkShard> = {
-  '2025H2': { cls: { 1000001: [[1, [['aaaa_0002', -0.31]]]] } },
-  '2026H1': { cls: { 1000002: [[0, [['bbbb_0002', 0.72]]]] } },
-  '2026H2': { cls: { 1000003: [[1, ['cccc_0003']]] } },
-};
-
 const periods = ['all', '2023H2', '2024H1', '2024H2', '2025H1', '2025H2', '2026H1', '2026H2'];
 const refBin = [4, 3, 2.5, 2, 1.7, 1.3, 1, 0.8, 0.6, 0.43];
 // A smoothed bell around -20% per doubling, on the script's grid (log2 -2 .. 1.5 in steps of 0.05).
@@ -70,7 +62,6 @@ export const peers: Peers = {
   start: day('2023-07-01'),
   end: day('2026-11-01'),
   addr_start: day('2023-07-01'),
-  links_from: '2023H1',
   periods,
   min_peers: 10,
   // Small minimums, so the person's three changes count: as many as needed among peers, one per bin.

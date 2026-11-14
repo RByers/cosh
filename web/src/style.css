@@ -2813,7 +2813,7 @@ canvas.rf-pointable {
   cursor: pointer;
 }
 
-/* The directory tree (review-feedback.ts, dirRows): rows indent by their depth
+/* The directory tables (review-feedback.ts, review-load.ts): rows indent by their depth
  * (--depth), with the Value Exchange page's ▸/▾ toggles (.ar-toggle). */
 .rf-dir-label {
   display: flex;
@@ -2844,7 +2844,7 @@ canvas.rf-pointable {
 }
 
 /* Everyone's directory table (review-feedback.ts, renderAllDirs): the Yours columns show once someone
- * is looked up, set off by a rule. Directory names as in the person's table, not links. */
+ * is looked up, set off by a rule. Directory names are not links. */
 .rf-all-dirs:not(.rf-with-you) .rf-you-col {
   display: none;
 }
@@ -2877,31 +2877,6 @@ canvas.rf-pointable {
 
 .rf-table td.rf-afr-dark {
   color: #fff;
-}
-
-/* A change under a file in the person's table: its day after the change number, and its links to the
- * addressed comments, each with its tone score. */
-.rf-change-day {
-  color: var(--text-secondary);
-  font-size: 0.85rem;
-}
-
-.rf-table td.rf-change-links {
-  font-size: 0.85rem;
-}
-
-.rf-change-box {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 2px 10px;
-  max-width: 16rem;
-}
-
-.rf-change-link {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  white-space: nowrap;
 }
 
 /* A definition at the top of the opening cards. */

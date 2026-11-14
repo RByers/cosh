@@ -6,18 +6,9 @@ per 100 new or changed lines; the feedback index (FI) is a person's AFR over the
 peers' (the AFR of everyone else's lines in the same directory and experience
 bin, over all the data: `rate_model`, `peer_rate`, `expected`).
 
-Offline. Two parts, which `cosh update` runs as two steps so that review
-tone feeds only the comment links (config/dataflow.json):
-
-  --part people     reads reviews.sqlite, commits.sqlite and addressed.sqlite;
-                    writes peers.json, u/ and the half-year folders, and the
-                    link index (data/private/feedback-links.jsonl: the
-                    addressed threads' comment ids of each half-year file
-                    from LINKS_FROM, in its order)
-  --part links      reads the link index and sentiment.sqlite; writes links/.
-                    Takes seconds.
-
-Without --part, both. The files, under --out (default web/public/review-feedback/):
+Offline. Reads reviews.sqlite, commits.sqlite and addressed.sqlite (never
+review tone or comment text) and writes, under --out (default
+web/public/review-feedback/):
 
   peers.json         global, loaded on opening: the experience bins, the
                      index's rate sums and scale, everyone's directory table,
@@ -28,18 +19,11 @@ Without --part, both. The files, under --out (default web/public/review-feedback
                      person, {"see": key}
   <half>/<key>.json  per person and half-year: their CLs, with lines per
                      directory and the files that drew reviewer threads
-                     (`shard`; no comment text)
-  links/<half>/<key>.json
-                     loaded when a file's changes are opened: each addressed
-                     thread's comment id and tone score, for the half-years
-                     from LINKS_FROM (`link_file`)
+                     (`shard`; no comment ids or text)
 
 <key> is a hash of the normalised address (`key` below; the page computes the
 same), so the folder can't be browsed for names and the page can't offer
-completions. Everything comes from public Gerrit and git data. Tone appears
-only as each comment's score in the link files, which a page shows only
-after someone types the person's address (docs/plan.md, ground rule 5); orgs
-get no tone figures.
+completions. Everything comes from public Gerrit and git data.
 
   COSH_DATA_DIR=<main>/data/private nice -n 5 python3 -m cosh.review_feedback [--out DIR]
 """
@@ -58,7 +42,7 @@ import sys
 from collections import Counter, defaultdict, namedtuple
 from datetime import datetime, timezone
 
-from . import classify, sentiment, store
+from . import classify, store
 from . import commits as C
 from . import cl_facts as F
 from .cl_facts import CL_FACTS, SINCE, cl_facts
@@ -71,10 +55,6 @@ DAY = 86400
 YEAR = 365.25 * DAY
 WEEK = 7 * DAY
 ADDR_COVER = 0.95             # the addressed measure starts where every later week has labels for this share
-# Addressed threads in half-years from this one link to their comment in
-# Gerrit (links/); older ones link to the change (the user's call, 2026-11-14:
-# comment ids are random, about 1.3 MB gzipped per half-year).
-LINKS_FROM = "2023H1"
 SALT = "cosh-review-feedback-v1:"
 # A person's feedback index over a period counts among peers (the spread
 # the page shows) with this many CLs. At 25 CLs its noise is about ±38%
@@ -895,13 +875,7 @@ def main():
     ap.add_argument("--fi-dump", help="also write each person's index over all CLs and over their odd and even CLs "
                                       "(MIN_CLS CLs or more) here, to compare methods: their spread and split-half "
                                       "consistency (in data/private/scratch/)")
-    ap.add_argument("--part", choices=("people", "links"),
-                    help="write only the global and per-person files and the link index, or only the link "
-                         "files from that index (default: both)")
     args = ap.parse_args()
-    if args.part == "links":
-        write_links(args.out)
-        return
 
     cls, commits, ids, first, raw_email, by_cid = load(args)
     mech = C.left_out(git_db(), cls)       # mechanical and large-scale-change CLs
@@ -1108,7 +1082,6 @@ def main():
     first_year = {pid: datetime.fromtimestamp(t, timezone.utc).year for pid, t in first.items()}
     peers = dict(v=11, generated=datetime.now(timezone.utc).strftime("%Y-%m-%d"), periods=allp,
                  start=epoch_day(START), end=epoch_day(END), addr_start=epoch_day(ADDR_START),
-                 links_from=LINKS_FROM,
                  min_peers=MIN_PEERS, min_cls=MIN_CLS, min_bin_cls=MIN_BIN_CLS, min_cell_cls=MIN_CELL_CLS,
                  min_growth_bins=MIN_GROWTH_BINS, fr_floor=FR_FLOOR, bins=BIN_LABELS, bin_edges=BIN_EDGES,
                  min_dir_cls=MIN_DIR_CLS, min_spread_exp=MIN_SPREAD_EXP,
@@ -1134,11 +1107,10 @@ def main():
     # ------------------------------------------------ write
     # u/<key>.json: who the person is and which half-years they have.
     # <half>/<key>.json: that half-year's CLs, which later runs leave unchanged
-    # once the half-year is over, so git stores them once. The link index
-    # lists each such file's addressed threads' comment ids for the links part.
+    # once the half-year is over, so git stores them once.
     out = args.out
     for name in os.listdir(out) if os.path.isdir(out) else ():
-        if name in ("u", "comments") or HALF.match(name):
+        if name in ("u", "comments", "links") or HALF.match(name):
             shutil.rmtree(os.path.join(out, name))
     os.makedirs(os.path.join(out, "u"), exist_ok=True)
     with open(os.path.join(out, "peers.json"), "w") as f:
@@ -1157,7 +1129,6 @@ def main():
         json.dump(dict(v=1, rev_none=model["rev_none"], f=revs), f, separators=(",", ":"))
     written, stubs, size = 0, 0, 0
     taken = {}
-    index = open(links_path() + ".new", "w")
     for pid, cs in people.items():
         k = key(pid)
         if k in taken:
@@ -1174,10 +1145,6 @@ def main():
             with open(os.path.join(out, h, f"{k}.json"), "w") as f:
                 f.write(data)
             size += len(data.encode())
-            if h >= LINKS_FROM:
-                ids_ = link_ids(hcs)
-                if ids_:
-                    index.write(json.dumps(dict(k=k, h=h, cls=ids_), separators=(",", ":")) + "\n")
         org = Counter(c["org"] for c in cs).most_common(1)
         top = dict(v=6, first=datetime.fromtimestamp(first[pid], timezone.utc).strftime("%Y-%m") if pid in first else None,
                    first_day=epoch_day(first[pid]) if pid in first else None, org=org[0][0] if org else None,
@@ -1196,15 +1163,11 @@ def main():
             with open(os.path.join(out, "u", f"{k}.json"), "w") as f:
                 f.write(json.dumps(dict(see=key(pid))))
             stubs += 1
-    index.close()
-    os.replace(links_path() + ".new", links_path())
     if args.check:
         with open(args.check, "w") as f:
             json.dump(check_vals, f)
     print(f"wrote {written:,} people ({size / 1e6:.1f} MB) and {stubs:,} other addresses to {out}",
           file=sys.stderr)
-    if args.part is None:
-        write_links(out)
 
 
 HALF = re.compile(r"^\d{4}H[12]$")
@@ -1220,14 +1183,13 @@ def page_dir(path, units, main):
 
 def fb_files(c):
     """The files of a CL that drew reviewer threads, in name order: {path:
-    [threads, addressed, [addressed threads' roots, oldest first]]}."""
+    [threads, addressed]}."""
     out = {}
-    for root, path, at, addr, _ in sorted(c["thr"], key=lambda t: (t[2], t[0])):
-        x = out.setdefault(path, [0, 0, []])
+    for _root, path, _at, addr, _ in c["thr"]:
+        x = out.setdefault(path, [0, 0])
         x[0] += 1
         if addr:
             x[1] += 1
-            x[2].append(root)
     return dict(sorted(out.items()))
 
 
@@ -1259,74 +1221,10 @@ def shard(cs):
         row = [n - pn, d0 - pd, c["lines"], c["prior"], units, [idx(revs, v) for v in c.get("revs", ())]]
         fb = fb_files(c)
         if fb:
-            row.append([[idx(files, p), c["flines"].get(p) or 0, t, a] for p, (t, a, _) in fb.items()])
+            row.append([[idx(files, p), c["flines"].get(p) or 0, t, a] for p, (t, a) in fb.items()])
         rows.append(row)
         pn, pd = n, d0
     return dict(dirs=list(dirs), files=list(files), revs=list(revs), cls=rows)
-
-
-def link_ids(cs):
-    """The link index entry of one person's half-year file: [[change number,
-    [[file entry, [addressed threads' roots]], ...]], ...], only for CLs and
-    files with addressed threads; file entries are positions in the CL's
-    files list of `shard`."""
-    out = []
-    for c in cs:
-        ents = [[i, roots] for i, (_, _, roots) in enumerate(fb_files(c).values()) if roots]
-        if ents:
-            out.append([c["change_number"], ents])
-    return out
-
-
-def tone_scores(ids, data_dir=None):
-    """Thread root id ("<change>/<uuid>") -> tone score, for the `ids` that
-    sentiment.sqlite scored with the current prompt (or as trivial)."""
-    data_dir = data_dir or store.DATA_DIR
-    if not os.path.exists(os.path.join(data_dir, "sentiment.sqlite")):
-        return {}
-    sdb = sentiment.open_scores(data_dir)
-    pr = sdb.execute("SELECT prompt_id FROM prompts WHERE sha256=? AND model='haiku'",
-                     (sentiment.prompt_sha(sentiment.load_prompt()),)).fetchone()
-    return {i: s for i, s in sdb.execute("SELECT id, score FROM scores WHERE prompt_id IN (0, ?)",
-                                         (pr[0] if pr else -1,)) if i in ids}
-
-
-def links_path(data_dir=None):
-    """The link index the people part writes and the links part reads."""
-    return os.path.join(data_dir or store.DATA_DIR, "feedback-links.jsonl")
-
-
-def write_links(out, data_dir=None):
-    """The links part: links/<half>/<key>.json for each person and half-year
-    in the link index, with each addressed thread's comment id and, where
-    sentiment.sqlite scored it, its tone score."""
-    data_dir = data_dir or store.DATA_DIR
-    with open(links_path(data_dir)) as f:
-        index = [json.loads(line) for line in f]
-    scores = tone_scores({f"{n}/{r}" for e in index for n, ents in e["cls"] for _, rs in ents for r in rs}, data_dir)
-    print(f"links: {len(index):,} files, {len(scores):,} threads with a tone score", file=sys.stderr, flush=True)
-    d = os.path.join(out, "links")
-    if os.path.isdir(d):
-        shutil.rmtree(d)
-    size = 0
-    for e in index:
-        data = json.dumps(link_file(e["cls"], scores), separators=(",", ":"), ensure_ascii=False)
-        os.makedirs(os.path.join(d, e["h"]), exist_ok=True)
-        with open(os.path.join(d, e["h"], f"{e['k']}.json"), "w") as f:
-            f.write(data)
-        size += len(data.encode())
-    print(f"wrote {len(index):,} link files ({size / 1e6:.1f} MB) to {d}", file=sys.stderr)
-
-
-def link_file(cls, scores):
-    """One person's links for one half-year, from its link index entry:
-    {"cls": {change number: [[file entry, [comment id or [comment id, tone
-    score]], ...]]}}, threads oldest first."""
-    out = {}
-    for n, ents in cls:
-        out[str(n)] = [[i, [[r, round(scores[f"{n}/{r}"], 2)] if f"{n}/{r}" in scores else r for r in rs]]
-                       for i, rs in ents]
-    return dict(cls=out)
 
 
 if __name__ == "__main__":
