@@ -39,19 +39,19 @@ and the site is built from it.
 The three dashboards other than Review Balance share one concise flow:
 
 ```
-Chromium Gerrit ─ gerrit-fetch ─▶ raw.sqlite + notedb/ ─ derive ─▶ derived.sqlite ┬─ classify ─▶ labels.sqlite
-Chromium git ─── fetch-git ───▶ Chromium git clone ── commits ─▶ commits.sqlite  ├─ comments-collect ─▶ Rendered comments
-Affiliations file ─ affiliations ─▶ affiliations.json5                            │     └─ comments-score ─▶ sentiment.sqlite
-Cloudflare Radar ── radar ─▶ Browser shares (Radar)                               │
-Claude (Haiku): classify, comments-score, tone-publish's screening                │
-                                                                                  ▼
+Chromium Gerrit ─ gerrit-fetch ─▶ gerrit.sqlite + notedb/ ─ derive ─▶ reviews.sqlite ─┬─ classify ─▶ addressed.sqlite
+Chromium git ─── fetch-git ───▶ Chromium git clone ── commits ─▶ commits.sqlite       ├─ comments-collect ─▶ Rendered comments
+Affiliations file ─ update-affiliations ─▶ affiliations.json5                         │     └─ comments-score ─▶ sentiment.sqlite
+Cloudflare Radar ── radar ─▶ Browser shares (Radar)                                   │
+Claude (Haiku): classify, comments-score, tone-publish's screening                    │
+                                                                                      ▼
   summarize      ─▶ Value Exchange summaries ─┐
   (+ Radar shares, org_browsers.csv)          ├─▶ Value Exchange
   tone-publish   ─▶ Review Tone summaries ────┼─▶ Review Tone
-  review-feedback (cosh.feedback) ─▶ Feedback Index files ─▶ Feedback Index
+  review-feedback (cosh.review_feedback) ─▶ Feedback Index files ─▶ Feedback Index
 ```
 
-`derived.sqlite` (per-CL, per-comment and per-thread facts, no comment
+`reviews.sqlite` (per-CL, per-comment and per-thread facts, no comment
 text) and `commits.sqlite` (main's whole first-parent history) are the two
 hubs nearly everything reads. Comment text exists only in NoteDb and in
 the rendered comment files, and reaches a model only through
@@ -126,8 +126,8 @@ that spans paths or files), a step's short name, `page-…` for a page.
   `tier` (table above); `name` (a short label for a family or a store
   that spans paths; a database's box always shows its file name, so a
   database's `name` must contain it, and a file name that doesn't say
-  what the database holds is a reason to rename the file:
-  `docs/planned-renames.md`); `tracked_in_git` and `git_paths` (globs; the path when
+  what the database holds is a reason to rename the file (the
+  2026-11-14 renames: `docs/legacy-symlinks.md`); `tracked_in_git` and `git_paths` (globs; the path when
   absent) say what to commit; `tables` lists a database's tables or a
   family's members; `never_delete` marks what can't be remade.
 - **`steps[]`**: a command. `inputs` and `outputs` are source and store ids,
@@ -198,7 +198,7 @@ python3 -m cosh fetch-git
 python3 -m cosh update                                    # derive, commits, collect, summaries
 python3 -m cosh classify --week <week>                    # optional (cost: the inventory)
 python3 -m cosh.sentiment score --week <week>             # optional
-python3 -m cosh update --from data/private/labels.sqlite data/private/sentiment.sqlite
+python3 -m cosh update --from data/private/addressed.sqlite data/private/sentiment.sqlite
 git add summaries config web/public/review-feedback && git commit
 ```
 
@@ -218,7 +218,7 @@ Where things live on disk, beyond the stores:
   older 50-file rule for mechanical CLs, and its stage databases sit loose
   in `data/private/` rather than in a folder of their own. It may be
   deleted rather than fixed.
-- **`derived.sqlite` is rebuilt whole** by a full `derive`. That is simple
+- **`reviews.sqlite` is rebuilt whole** by a full `derive`. That is simple
   and takes minutes; it becomes worth making incremental only if it grows
   much slower.
 - **Optional steps take their weeks by hand** (`classify --week`,

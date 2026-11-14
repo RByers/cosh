@@ -127,7 +127,7 @@ class TrendTest(unittest.TestCase):
         self.assertLess(aug["rolling"]["lo"], 0.03)
 
         with tempfile.TemporaryDirectory() as d:
-            S.write_jsonl(os.path.join(d, "sentiment", "comments-sample-5pct.jsonl"), rows)
+            S.write_jsonl(os.path.join(d, "comments", "comments-sample-5pct.jsonl"), rows)
             db = S.open_scores(d)
             definition = S.load_prompt()
             with db:
@@ -188,9 +188,9 @@ class PraiseTest(unittest.TestCase):
                 "2026-10-26 00:00:00", "2026-11-02 00:00:00", keep=keep, annotate=spy)
 
         with tempfile.TemporaryDirectory() as d:
-            S.write_jsonl(os.path.join(d, "sentiment", "comments-2026-W44.jsonl"), run(comments, annotate=ident()))
+            S.write_jsonl(os.path.join(d, "comments", "comments-2026-W44.jsonl"), run(comments, annotate=ident()))
             import sqlite3
-            db = sqlite3.connect(os.path.join(d, "derived.sqlite"))
+            db = sqlite3.connect(os.path.join(d, "reviews.sqlite"))
             db.execute("CREATE TABLE accounts (host, account_id, email, name)")
             db.executemany("INSERT INTO accounts VALUES (?,?,?,?)",
                            [(h, a, v["email"], v["email"].split("@")[0]) for (h, a), v in ACCTS.items()])
@@ -358,9 +358,9 @@ class SamplesTest(unittest.TestCase):
         scores = {"100/a": (-0.6, False, None), "100/b": (0.5, False, None), "100/g": (-0.8, False, None),
                   "100/u": (-0.6, False, None), "100/m": (0.0, False, None), "100/x": (-0.9, True, None)}
         with tempfile.TemporaryDirectory() as d:
-            S.write_jsonl(os.path.join(d, "sentiment", "comments-2026-W44.jsonl"), run(comments))
+            S.write_jsonl(os.path.join(d, "comments", "comments-2026-W44.jsonl"), run(comments))
             import sqlite3
-            db = sqlite3.connect(os.path.join(d, "derived.sqlite"))
+            db = sqlite3.connect(os.path.join(d, "reviews.sqlite"))
             db.execute("CREATE TABLE accounts (host, account_id, email, name)")
             db.executemany("INSERT INTO accounts VALUES (?,?,?,?)",
                            [(h, a, v["email"], v["email"].split("@")[0].title()) for (h, a), v in ACCTS.items()])
@@ -543,7 +543,7 @@ class AuthorsTest(unittest.TestCase):
 
     def derived(self, d, committers):
         import sqlite3
-        db = sqlite3.connect(os.path.join(d, "derived.sqlite"))
+        db = sqlite3.connect(os.path.join(d, "reviews.sqlite"))
         db.execute("CREATE TABLE changes (host, change_number, owner_account)")
         db.execute("CREATE TABLE comments (host, change_number, comment_id, account_id, written_at)")
         db.execute("CREATE TABLE committers (host, account_id, is_committer, seen_at)")
@@ -580,7 +580,7 @@ class AuthorsTest(unittest.TestCase):
     def test_missing_table_says_to_derive(self):
         with tempfile.TemporaryDirectory() as d:
             import sqlite3
-            sqlite3.connect(os.path.join(d, "derived.sqlite")).close()
+            sqlite3.connect(os.path.join(d, "reviews.sqlite")).close()
             with self.assertRaises(SystemExit):
                 S.by_authors([], "committers", d)
 
@@ -590,10 +590,10 @@ class AuthorsTest(unittest.TestCase):
                     c("p", 2, "Wonderful cleanup, I learned a lot", parent="b")]    # reviewer (not) -> owner
         scores = {"100/b": (0.5, False, None), "100/p": (0.6, False, None)}
         with tempfile.TemporaryDirectory() as d:
-            S.write_jsonl(os.path.join(d, "sentiment", "comments-2026-W44.jsonl"), run(comments, annotate=ident()))
+            S.write_jsonl(os.path.join(d, "comments", "comments-2026-W44.jsonl"), run(comments, annotate=ident()))
             self.derived(d, [(1, 1), (2, 0)])
             import sqlite3
-            db = sqlite3.connect(os.path.join(d, "derived.sqlite"))
+            db = sqlite3.connect(os.path.join(d, "reviews.sqlite"))
             db.execute("CREATE TABLE accounts (host, account_id, email, name)")
             db.executemany("INSERT INTO accounts VALUES (?,?,?,?)",
                            [(h, a, v["email"], v["email"].split("@")[0]) for (h, a), v in ACCTS.items()])

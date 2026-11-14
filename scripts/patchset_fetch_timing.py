@@ -36,7 +36,7 @@ def init():
 
 
 def pick():
-    c = sqlite3.connect(f"file:{DATA}/derived.sqlite?mode=ro", uri=True)
+    c = sqlite3.connect(f"file:{DATA}/reviews.sqlite?mode=ro", uri=True)
     rows = c.execute("select change_number, patchsets from changes where close_week='2026-W44' "
                      "and project='chromium/src' and branch='main' order by change_number").fetchall()
     have = set(int(r.split("/")[2]) for r in git("for-each-ref", "--format=%(refname)", "refs/patchsets").split())

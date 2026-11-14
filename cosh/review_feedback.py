@@ -1,8 +1,8 @@
 """Per-person data for the Review Feedback page (web/feedback-index.html,
 docs/review-feedback.md).
 
-Offline; reads derived.sqlite, commits.sqlite,
-labels.sqlite, sentiment.sqlite and the sentiment comment files. Writes, under --out
+Offline; reads reviews.sqlite, commits.sqlite,
+addressed.sqlite, sentiment.sqlite and the sentiment comment files. Writes, under --out
 (default web/public/review-feedback/):
 
   peers.json       percentiles of every peer group, per period and measure,
@@ -19,7 +19,7 @@ completions. Everything comes from public Gerrit and git data. Review tone
 appears only as praise (docs/plan.md, ground rule 5): nothing written here
 marks a comment, a person or an org as negative, and orgs get no tone figures.
 
-  COSH_DATA_DIR=<main>/data/private nice -n 5 python3 -m cosh.feedback [--out DIR]
+  COSH_DATA_DIR=<main>/data/private nice -n 5 python3 -m cosh.review_feedback [--out DIR]
 """
 
 import argparse
@@ -170,7 +170,7 @@ def data_range(use):
     row = d.execute("SELECT v FROM meta WHERE k = 'fetched_weeks'").fetchone()
     weeks = sorted(json.loads(row[0])) if row else []
     if not weeks:
-        raise SystemExit("derived.sqlite records no fetched weeks")
+        raise SystemExit("reviews.sqlite records no fetched weeks")
     first_cl = min(c["closed_at"] for c in use)
     return trim_start(max(week_start(weeks[0]), monday(first_cl))), trim_end(week_start(weeks[-1]) + WEEK)
 
@@ -436,7 +436,7 @@ def early_commits(before=SINCE):
 
 
 def load(args):
-    """The CLs, with the columns derived.sqlite and commits.sqlite give
+    """The CLs, with the columns reviews.sqlite and commits.sqlite give
     (cosh.cl_facts), owners' addresses normalised; human commits;
     identities; first commits. Also the CLs' raw owner addresses and
     {commit_id: change_number} of their landed commits."""

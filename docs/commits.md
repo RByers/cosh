@@ -16,8 +16,8 @@ Prototype: `scripts/commits_explore.py`.
   date in UTC (when the CQ landed it). The whole range takes **95 s**, all
   local.
 - **CL:** the `Reviewed-on:` footer. Of 570,294 commits, all but 13 map to
-  a merged CL already in `derived.sqlite`.
-- **Bots:** the CL owner's `is_bot` flag from `derived.sqlite`, falling
+  a merged CL already in `reviews.sqlite`.
+- **Bots:** the CL owner's `is_bot` flag from `reviews.sqlite`, falling
   back to `config/bots.txt` on the git author. That leaves 399,261 human
   commits (171,033 bot commits, mostly autorollers).
 - **Org:** `OrgResolver` on the git author email at the commit date, the
@@ -103,7 +103,7 @@ The user chose: credit the git author, count commits (not lines), and add a
 fifth metric button.
 
 - **`python3 -m cosh commits`** (`cosh/commits.py`) reads the local clone,
-  offline. Until 2026-11-12 it rebuilt two tables of `derived.sqlite`
+  offline. Until 2026-11-12 it rebuilt two tables of `reviews.sqlite`
   (`commits` and `commit_dirs`) at the end of every full `derive`; it now
   keeps `data/private/commits.sqlite` up to date instead (next section).
 - **Bots:** a commit is a bot's if its CL is bot-owned *or* its git author
@@ -140,9 +140,9 @@ fifth metric button.
 ## commits.sqlite: one store for main's history (2026-11-12)
 
 Main's history used to be read four times: `cosh commits` into
-`derived.sqlite` (since the oldest fetched week, file names only),
+`reviews.sqlite` (since the oldest fetched week, file names only),
 `python3 -m cosh.balance git` into `balance-git.sqlite` (since 2017, with
-line counts), `cosh.feedback.early_commits` (before 2017, on every run),
+line counts), `cosh.review_feedback.early_commits` (before 2017, on every run),
 and by hand for the balance scripts' `--first-commit`, `--owners-added` and
 `--ai-marked` files, plus `BALANCE_MECH_OUT` for `--mech`. Now one step
 writes one store, and everything reads it:
@@ -156,7 +156,7 @@ every first-parent commit of `main` since 2008, with its first-parent
 diff's files and line counts. It is incremental: a run appends the commits
 landed since the last one (seconds when nothing is new), then their LSC
 tags, OWNERS additions and repetition ratios. Rebuild it by deleting the file and
-rerunning: about 1 h 50 min (1.5 h of `git log`, then 20 min of OWNERS diffs and repetition ratios with 4 processes) from empty, 1.1 GB, against 786 MB for `balance-git.sqlite` plus 442 MB for `derived.sqlite`'s two commits tables.
+rerunning: about 1 h 50 min (1.5 h of `git log`, then 20 min of OWNERS diffs and repetition ratios with 4 processes) from empty, 1.1 GB, against 786 MB for `balance-git.sqlite` plus 442 MB for `reviews.sqlite`'s two commits tables.
 
 | Table | Rows | What |
 |---|---:|---|
@@ -204,7 +204,7 @@ of Google's. The issue has the tables.
 `commits.lsc_cls(db)` gives the tagged CLs and `commits.left_out(db, cls)`
 the mechanical ones plus those. They are left out of:
 
-- the Feedback Index (`cosh/feedback.py`), the balance analyses and the
+- the Feedback Index (`cosh/review_feedback.py`), the balance analyses and the
   review-ROI table (`mech_set` in `scripts/balance_analysis.py`, which
   every script that drops mechanical CLs uses), with the balance page's
   `summary` counting the two kinds apart (`mechanical_cls`, `lsc_cls`);
@@ -215,7 +215,7 @@ the mechanical ones plus those. They are left out of:
 What reads it:
 
 - **`summarize`** (`commit_facts`) and **`feedback_coach.py`**: the commits
-  landed since `derived.sqlite`'s oldest fetched week
+  landed since `reviews.sqlite`'s oldest fetched week
   (`commits.value_commits`, `commits.dirs_of`), with the bot rule above
   applied at read time.
 - **`cosh.balance cl`** and the balance, feedback and review-ROI scripts:
@@ -229,15 +229,15 @@ What reads it:
   repetition of 0.8 or more, plus every LSC CL). The scripts' `--first-commit`,
   `--owners-added`, `--ai-marked` and `--mech` flags still read the old
   files for exploration; without them the store is used.
-- **`cosh/feedback.py`**'s earlier commits: the commits landed before
+- **`cosh/review_feedback.py`**'s earlier commits: the commits landed before
   2017-01-01.
 
-Reproduced against the hand-made files on 2026-11-12: `gcommits`, `gfiles` and `paths` are row for row (ids and order) those of `balance-git.sqlite`; `first_commits` gives the same first commit for all 11,827 well-formed lines of `first_commit.txt`; `owners_added` the same 41,208 additions; `ai_marked` the same 1,002 shas; `mech_set` the same 11,624 CLs (every repetition ratio equal); the earlier commits the same 377,729. The Value window matches `derived.sqlite`'s commits and directories exactly, except the CL number: the store reads the short `Reviewed-on:` form (`chromium-review.googlesource.com/<n>`) that 152,372 commits of 2017-07 .. 2019 use and the old `cosh commits` missed. So `summarize` now credits 6,930 more of those commits to their CL owner's account (when no account has the git author's email) and counts 31 as bots' (bot-owned CLs); nothing after 2019 changes.
+Reproduced against the hand-made files on 2026-11-12: `gcommits`, `gfiles` and `paths` are row for row (ids and order) those of `balance-git.sqlite`; `first_commits` gives the same first commit for all 11,827 well-formed lines of `first_commit.txt`; `owners_added` the same 41,208 additions; `ai_marked` the same 1,002 shas; `mech_set` the same 11,624 CLs (every repetition ratio equal); the earlier commits the same 377,729. The Value window matches `reviews.sqlite`'s commits and directories exactly, except the CL number: the store reads the short `Reviewed-on:` form (`chromium-review.googlesource.com/<n>`) that 152,372 commits of 2017-07 .. 2019 use and the old `cosh commits` missed. So `summarize` now credits 6,930 more of those commits to their CL owner's account (when no account has the git author's email) and counts 31 as bots' (bot-owned CLs); nothing after 2019 changes.
 
 ## The plan before building
 
 1. `cosh commits` (or a step in `derive`): one row per `main` commit into
-   `derived.sqlite`: sha, CL, author email, landed week, bot flag, in-scope
+   `reviews.sqlite`: sha, CL, author email, landed week, bot flag, in-scope
    file count, file count. Local only, under 2 min, rebuildable. The file
    list also gives `derive` the CL's real files (plan, Next steps 9).
 2. `summarize`: `commits` per (week, org) in `org_weekly`, and per author

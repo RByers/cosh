@@ -61,11 +61,11 @@ The years versions:
   (`cohort_from`) whose curve begins at 0 with 3+ points, every other one when
   there are more than five, always keeping the newest (`cohortYears`), so
   2018, 2020, 2022, 2024 and 2025 for all threads. For those, the script also counts the merged, human-owned
-  CLs on `main` from 2018 to June 2023 in `derived.sqlite` (about 494k),
+  CLs on `main` from 2018 to June 2023 in `reviews.sqlite` (about 494k),
   against the same 2023–24 norms; older CLs leave out only those with 100+
   files (the mechanical list covers the CLs the script reads in full, every
-  `main` CL in `derived.sqlite`). Directory experience covers
-  the same years (`derived.sqlite` has CLs from July 2017 since 2026-11-12),
+  `main` CL in `reviews.sqlite`). Directory experience covers
+  the same years (`reviews.sqlite` has CLs from July 2017 since 2026-11-12),
   so its lines start in 2018 too. Addressed labels start at `addr_start`,
   which is the start of the data (July 2017) since every week was labelled
   on 2026-11-13, so addressed lines start in 2018 as well; the page says
@@ -169,7 +169,7 @@ they were 29% of all threads but 2.6% of addressed ones, 2026-11-12). So the
 figures differ from the Balance page's index, which counts them.
 
 - **Dates come from the data**, never from the code. The range runs from
-  the oldest week in `derived.sqlite`'s `fetched_weeks` (but no earlier than
+  the oldest week in `reviews.sqlite`'s `fetched_weeks` (but no earlier than
   the oldest usable CL) to the end of the newest. A range that spills a
   week or less into a month is trimmed to the month, so the page can name
   periods by month without slivers: Sunday 2026-11-01 ends the range at
@@ -195,7 +195,7 @@ The measures:
 - **The measure**, from three switches:
   - *Feedback:* every reviewer thread (a thread started by a human other than
     the owner), or only the threads the owner **addressed** (regex plus the
-    Haiku labels in `labels.sqlite`, `docs/comment-classifier.md`).
+    Haiku labels in `addressed.sqlite`, `docs/comment-classifier.md`).
   - *Adjusted for:* nothing (threads per CL), CL size (÷ the 2023–24 mean for
     the CL's size bucket, 10 log buckets), or size and directory (÷ the
     2023–24 mean for size × top 2-level directory, groups of 30+, else size
@@ -309,7 +309,7 @@ The measures:
   as does a new half-year or measure that leaves the column empty.
 - **Comments**: every reviewer thread, newest first, with file, date and
   addressed or not. Threads whose text has been collected (every week in
-  `data/private/sentiment/comments-*.jsonl`, 2025-W45 on today) get a
+  `data/private/comments/comments-*.jsonl`, 2025-W45 on today) get a
   200-character excerpt and a link to the comment itself. The others go in
   a table at the end, "Additional comments without stored text": CL number
   (linked to the CL; their comment ids would be 29% of the data,
@@ -348,10 +348,10 @@ The measures:
 Offline, about 3 minutes (188 s on 2026-11-12) and 3 GB:
 
 ```
-COSH_DATA_DIR=<main>/data/private nice -n 5 python3 -m cosh.feedback [--out DIR]
+COSH_DATA_DIR=<main>/data/private nice -n 5 python3 -m cosh.review_feedback [--out DIR]
 ```
 
-It reads only `derived.sqlite`, `commits.sqlite`, `labels.sqlite`, the
+It reads only `reviews.sqlite`, `commits.sqlite`, `addressed.sqlite`, the
 sentiment files and config, never `balance*.sqlite`, so refreshing the page
 needs none of the balance stages (timeline, interdiff, cl). The per-CL facts
 it needs (owner, status, Gerrit insertions and deletions, closing time, the
@@ -458,7 +458,7 @@ file paths 11 MB, comment uuids 3 MB; each half-year before 2023 about
 `python3 scripts/feedback_coach.py <email>` writes a private Markdown report
 to `data/private/feedback-coach/<email>.md` (not published, not on the site).
 It takes the author's past year (`--days 365`, up to the newest comment in
-`derived.sqlite`) of reviewer threads on their own `main` CLs: file and
+`reviews.sqlite`) of reviewer threads on their own `main` CLs: file and
 commit-message threads they **addressed** (regex, else the Haiku label), plus
 CL-level threads minus bare approvals. The newest 600 (`--max-threads`) go to
 one call of Claude Opus through `cosh.sandbox.Sandbox` (no tools, bwrap, reply

@@ -3,13 +3,13 @@
 review, how organisations and tenure shape feedback, how new reviewers grow,
 how AI-marked CLs are reviewed, and how review capacity grew and stalled.
 
-Offline: reads balance*.sqlite, derived.sqlite, labels.sqlite,
+Offline: reads balance*.sqlite, reviews.sqlite, addressed.sqlite,
 ai_marked_broad.txt and ai_predict/scores.sqlite, all read-only, plus the
 report inputs of docs/balance.md. No comment text is read; only counts.
 Writes aggregates only (no names, e-mails or IDs); cells under MIN_PEOPLE
 people or MIN_CLS CLs are dropped or pooled into "Other".
 
-  COSH_DATA_DIR=<main>/data/private nice -n 5 python3 scripts/balance_narrative.py \
+  COSH_DATA_DIR=<main>/data/private nice -n 5 python3 scripts/balance_review_load.py \
       [--cache P] [--ai-paired F] [--out datasets.json]
 
 The page's copy comes from `python3 -m cosh.balance_publish` (datasets()).
@@ -26,7 +26,7 @@ A "review" is one (CL, reviewer) pair: a non-bot account other than the
 owner that wrote at least one comment before close, whose person has a first
 commit (so a tenure), exactly as `reviewer_quarters`/`reviewers_by_tenure`.
 Threads are the reviewer threads they started; "addressed" is the
-regex-or-Haiku label (labels.sqlite; every week in range is classified).
+regex-or-Haiku label (addressed.sqlite; every week in range is classified).
 Git datasets use human, non-revert commits on main with a Gerrit CL, and
 Reviewed-by footers (people other than the author) as approvals.
 

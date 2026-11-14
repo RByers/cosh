@@ -1,5 +1,5 @@
 """Exploration (docs/commits.md): per-commit facts for chromium/src main,
-2023-W26 .. 2026-W44, joined to derived.sqlite. Local only, no network.
+2023-W26 .. 2026-W44, joined to reviews.sqlite. Local only, no network.
 Usage, from the repo root: python3 scripts/commits_explore.py OUT.json"""
 import json, os, re, sqlite3, subprocess, sys
 from collections import Counter
@@ -10,7 +10,7 @@ from cosh.bots import _PATTERNS
 from cosh.extract import iso_week_of
 
 REPO = os.path.expanduser("~/projects/shared/chromium")
-DB = "/home/rbagent/projects/cosh/data/private/derived.sqlite"
+DB = "/home/rbagent/projects/cosh/data/private/reviews.sqlite"
 SINCE, UNTIL = "2023-06-26T00:00:00Z", "2026-11-02T00:00:00Z"   # 2023-W26 .. 2026-W44
 REV = re.compile(r"^Reviewed-on: https://chromium-review\.googlesource\.com/c/chromium/src/\+/(\d+)", re.M)
 COAUTH = re.compile(r"^Co-authored-by:.*<([^>]+)>", re.M | re.I)

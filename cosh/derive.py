@@ -1,10 +1,10 @@
-"""Derive derived.sqlite (accounts, committers, changes, comments) from cached raw
+"""Derive reviews.sqlite (accounts, committers, changes, comments) from cached raw
 responses and NoteDb. Each comment is keyed by the week it was written and
 keeps its file path; each CL records its anchor file (cosh/paths.py). Since
 metric_version 6 summarize places patchset-level comments on each reviewer's
 own anchor instead, so changes.anchor_path is informational.
 
-Pure function of raw.sqlite + NoteDb, which it opens read-only: safe to re-run
+Pure function of gerrit.sqlite + NoteDb, which it opens read-only: safe to re-run
 any time, even while an extractor is running; never hits the network."""
 
 import hashlib

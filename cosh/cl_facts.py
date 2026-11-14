@@ -1,6 +1,6 @@
-"""Per-CL facts from derived.sqlite and commits.sqlite alone: owner, status,
+"""Per-CL facts from reviews.sqlite and commits.sqlite alone: owner, status,
 times, Gerrit size, and for a merged CL its landed commit and the lines and
-files it changed per 3-level directory. The Feedback Index (cosh/feedback.py)
+files it changed per 3-level directory. The Feedback Index (cosh/review_feedback.py)
 reads them, and the balance stage `cl` (cosh/balance.py) builds its `cl` and
 `cl_dirs` tables from them, so the two can't drift."""
 
@@ -34,11 +34,11 @@ CL_FACTS = ("change_number", "owner", "owner_email", "status", "created_at", "cl
 
 def cl_facts(ddb, gdb):
     """The first columns of `cl`, CL_FACTS: those that come from
-    derived.sqlite (`ddb`) and commits.sqlite (`gdb`) alone. Tuples in
+    reviews.sqlite (`ddb`) and commits.sqlite (`gdb`) alone. Tuples in
     change-number order, one per human-owned chromium/src `main` CL: the
     owner's address as Gerrit has it, times in unix seconds, and for a merged
     CL its landed commit. Also {commit_id: change_number} of the landed
-    commits, for cl_dirs. The Feedback Index (cosh/feedback.py) reads them, and
+    commits, for cl_dirs. The Feedback Index (cosh/review_feedback.py) reads them, and
     the balance stage `cl` builds on them."""
     emails = dict(ddb.execute("SELECT account_id, email FROM accounts"))
     cls = ddb.execute("""SELECT change_number, owner_account, status, created_at, closed_at, close_week,

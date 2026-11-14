@@ -156,7 +156,7 @@ regex plus Claude Haiku (`cosh classify`).
 - Data lives in `data/private/` next to the code, or in `$COSH_DATA_DIR`. From
   a worktree, point `COSH_DATA_DIR` at the main checkout's `data/private` and
   pass `derive --out` / `summarize --db` a scratch path. `derive` and
-  `summarize` open `raw.sqlite` read-only, so they're safe while an extractor
+  `summarize` open `gerrit.sqlite` read-only, so they're safe while an extractor
   runs.
 - Web UI: `web/` (Vite + TypeScript, Chart.js), one page per dashboard
   (`web/value.html` is Value Exchange) plus the landing page
@@ -184,7 +184,7 @@ regex plus Claude Haiku (`cosh classify`).
     kept in `data/private/git/chromium-src-pilot-refs.txt`. The repo itself
     sits in `data/private/backup-20261113/` until the user deletes it.
   - **Every patch set of every reviewed CL is approved** (2026-11-07),
-    with blobs: CLs in `derived.sqlite` with a comment from a human other
+    with blobs: CLs in `reviews.sqlite` with a comment from a human other
     than the owner, about 282k CLs and 2.0M patch sets, all weeks fetched.
     `python3 -m cosh patchsets --go` (`cosh/patchsets.py`) fetches them
     into `data/private/git/chromium-patchsets.git` (same alternates,
@@ -268,16 +268,16 @@ regex plus Claude Haiku (`cosh classify`).
   are rebuildable from local data with `python3 -m cosh.balance
   timeline|interdiff|cl`, in that order, after `cosh commits` (about 2 h;
   nothing is fetched).
-- `data/private/derived.sqlite` can always be rebuilt with
-  `rm data/private/derived.sqlite && python3 -m cosh derive` (about 9 min
+- `data/private/reviews.sqlite` can always be rebuilt with
+  `rm data/private/reviews.sqlite && python3 -m cosh derive` (about 9 min
   for 666k CLs, 2026-11-04, threads included). It is the only derived DB: older versions (`cosh.sqlite`,
-  metric_versions 1–2; `derived.sqlite` before metric_version 5) were
+  metric_versions 1–2; `reviews.sqlite` before metric_version 5) were
   deleted on 2026-11-04, and `open_derived` refuses a pre-v5 file.
-- Never delete `data/private/raw.sqlite` or `data/private/notedb/`. Those
+- Never delete `data/private/gerrit.sqlite` or `data/private/notedb/`. Those
   hold the fetched data, and re-fetching costs server load.
-- Never delete `data/private/labels.sqlite` either. It holds the
+- Never delete `data/private/addressed.sqlite` either. It holds the
   addressed-comment labels from `python3 -m cosh classify`, and remaking them
-  costs the user's Claude Max usage. Unlike `derived.sqlite`, it is not
+  costs the user's Claude Max usage. Unlike `reviews.sqlite`, it is not
   rebuildable. `classify` is an optional step after `derive`. It runs
   headless `claude -p` (Haiku), `--jobs` calls at once (default 8; this
   talks only to the Claude API, not Gerrit, so the serial-request rule
@@ -300,7 +300,7 @@ regex plus Claude Haiku (`cosh classify`).
   a leaner fetch, is welcome when it still gets what we need. But what does
   come over the wire stays. Never strip, truncate or "slim" the raw stores,
   and never prune a NoteDb repo (`gc --prune`, `prune`). Reduce data only in
-  `derived.sqlite`. Lossless housekeeping (`cosh notedb-maintain`,
+  `reviews.sqlite`. Lossless housekeeping (`cosh notedb-maintain`,
   `repack -a -d` without pruning) is fine.
 
 ## Finishing work

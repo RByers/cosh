@@ -1437,7 +1437,7 @@ test('fmtHoursBin names histogram bins in the low edge\'s unit; fmtQuarterMonth 
 
 // ---- Review Feedback (src/feedback.ts)
 
-test('review feedback: addresses normalise and hash as cosh/feedback.py key() does', async () => {
+test('review feedback: addresses normalise and hash as cosh/review_feedback.py key() does', async () => {
   const { normalizeEmail, personKey, looksLikeEmail } = await import('../src/feedback.ts');
   assert.equal(normalizeEmail('  Foo.Bar@Chromium.org '), 'foo.bar@google.com');
   assert.equal(normalizeEmail('user@chromium.org@0039d316-1c4b-4281-b951-d872f2087c98'), 'user@google.com');
@@ -1836,7 +1836,7 @@ test('dataflow: layout runs top to bottom, sources and config first, pages last,
   const wide = G.layout(real, G.scope(real, ['page-value', 'page-sentiment', 'page-feedback'], false), 2);
   assert.ok(wide.every((p) => p.of <= 2 && p.pos < 2));
   assert.ok(Math.max(...wide.map((p) => p.line)) > Math.max(...wide.map((p) => p.layer)));
-  assert.equal(G.baseName('data/private/derived.sqlite'), 'derived.sqlite');
+  assert.equal(G.baseName('data/private/reviews.sqlite'), 'reviews.sqlite');
   assert.equal(G.baseName('data/private/bugs/raw/'), 'bugs/raw/');
 });
 

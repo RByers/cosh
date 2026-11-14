@@ -2,7 +2,7 @@
 
 Work package 2 of `docs/review-roi.md` (hypotheses H2a–H2e; H2f and H2g
 are separate). Run 2026-11-09. Everything is offline: `balance.sqlite`,
-`balance-git.sqlite`, `derived.sqlite` (thread root accounts only, never
+`balance-git.sqlite`, `reviews.sqlite` (thread root accounts only, never
 comment text), `bugs/bugs.sqlite` and the shared bare Chromium clone
 (read-only, `GIT_NO_LAZY_FETCH=1`). Nothing was fetched or downloaded, and
 no model was called.
@@ -56,7 +56,7 @@ at about 8–15 hours of wall time.
 - **Approvers:** `Reviewed-by` on the landed commit, author excluded,
   identities merged as in `balance_growth` (`Ids`, alias pairs).
 
-## H2a / H2b: directory panels (`scripts/review_roi_part2.py`)
+## H2a / H2b: directory panels (`scripts/review_roi_later_changes.py`)
 
 **Cells:** dir3 × half-year, with periods t = 2023H2 .. 2026H1 and the
 outcome in t+1 (2026H2 is Q3 only). Quarters are the robustness check.
@@ -209,7 +209,7 @@ periods per directory, a lagged outcome under fixed effects has Nickell
 bias of order 1/T. That is why the table reports the FE fit both without
 and with the lag; their signs agree.
 
-## H2c: author dose-response (`review_roi_part2.py`, `h2c`)
+## H2c: author dose-response (`review_roi_later_changes.py`, `h2c`)
 
 **Who:** authors whose first commit over all history is 2023-07-01 ..
 2025-09-30, with at least 5 unit CLs and a summed 2023–24 norm of at least
@@ -469,7 +469,7 @@ step, not a full run.
 export COSH_DATA_DIR=/home/rbagent/projects/cosh/data/private
 I=data/private/review_feedback_inputs
 S=data/private/scratch/review_roi/part2
-python3 scripts/review_roi_part2.py --first-commit $I/first_commit.txt --mech $I/mech.jsonl \
+python3 scripts/review_roi_later_changes.py --first-commit $I/first_commit.txt --mech $I/mech.jsonl \
     --cache $S/cache.pkl --out $S/part2_panels.json          # ~25 s with a warm cache, ~1 min cold
 python3 scripts/review_roi_blame.py szz --cache $S/cache.pkl --n 500 --full-sample 8 --jobs 2 \
     --scratch $S --out $S/blame_szz.json                      # ~30 min
@@ -488,5 +488,5 @@ redoes only the analysis from the saved per-item files. Outputs:
 - `$S/part2_results.json`: the main numbers.
 
 `balance_feedback_predicts.py` (`ols`, `logit`, `cluster_cov`) is on
-`main` but not yet on this worktree's base, so `review_roi_part2.py` falls
+`main` but not yet on this worktree's base, so `review_roi_later_changes.py` falls
 back to importing it from the main checkout.

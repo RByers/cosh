@@ -73,7 +73,7 @@ don't share it. From a worktree, set `COSH_DATA_DIR` to the main checkout's
 
 ```
 # A deterministic 5% sample (by hash of the comment id) over all fetched weeks
-#   -> data/private/sentiment/comments-sample-5pct.jsonl (~2 min, local NoteDb only)
+#   -> data/private/comments/comments-sample-5pct.jsonl (~2 min, local NoteDb only)
 python3 -m cosh.sentiment collect --week 2023-W26:2026-W44 --sample 0.05 --name sample-5pct
 # Haiku via sandboxed claude -p, resumable -> data/private/sentiment.sqlite
 python3 -m cosh.sentiment score --name sample-5pct
@@ -122,7 +122,7 @@ larger rate keeps every id a smaller rate chose, and comments already scored
 
 `score` saves each batch as it lands, so rerunning it resumes. If a call
 fails (a usage limit, say), no new calls start; the ones in flight are
-saved. Like `labels.sqlite`, `sentiment.sqlite` costs Max usage to remake,
+saved. Like `addressed.sqlite`, `sentiment.sqlite` costs Max usage to remake,
 so never delete it. Scores are keyed by prompt (a hash of the prompt text)
 and by the comment's input hash, so editing the prompt means rescoring.
 
@@ -181,7 +181,7 @@ labelled by Claude Opus and spot-checked by hand. They were candidates
 picked across buckets (strong and mild negative, AI frustration,
 neutral, platitudes, specific praise, tricky cases) plus 40 random ones.
 The labels (comment id, score, AI flag) are kept private
-(`data/private/sentiment/gold.jsonl`, ground rule 5).
+(`data/private/comments/gold.jsonl`, ground rule 5).
 `scripts/sentiment_tune.py <version> --runs 2` scores a prompt against them.
 
 | Prompt | MAE | Pearson r | 3-class agreement | AI flag TP / FP / FN |
@@ -434,7 +434,7 @@ the Review Tone page has a "Comments by" switch between them:
 `summary`, `praise`, `samples` and `cosh.sentiment_recent` write all three
 by default (`--authors all`), or one with `--authors committers|everyone|
 noncommitters`. A committer is an account Gerrit lets vote Code-Review, as
-recorded in `derived.sqlite`'s `committers` table (`docs/committers.md`).
+recorded in `reviews.sqlite`'s `committers` table (`docs/committers.md`).
 That is today's status, used for comments of every date: about 1% of last
 year's comments, and 2.5% over three years, may be on the wrong side
 (mostly former committers counted as non-committers). A writer we can't

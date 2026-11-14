@@ -60,12 +60,12 @@ def main(argv=None):
     o.add_argument("--batch-size", type=int, default=200, help="NoteDb refs per git fetch")
     o.add_argument("--max-comment-fetches", type=int, default=None,
                    help="only fetch NoteDb refs for N CLs (for smoke tests)")
-    d = sub.add_parser("derive", help="rebuild derived.sqlite from the raw cache (offline)")
+    d = sub.add_parser("derive", help="rebuild reviews.sqlite from the raw cache (offline)")
     d.add_argument("--week", action="append",
                    help="only CLs in this week's listing (default: every CL)")
     d.add_argument("--source", choices=["auto", "notedb", "rest"], default="auto",
                    help="comment source (auto = NoteDb if fetched, else REST cache)")
-    d.add_argument("--out", help="derived DB path (default: data/private/derived.sqlite)")
+    d.add_argument("--out", help="derived DB path (default: data/private/reviews.sqlite)")
     g = sub.add_parser("commits", help="update commits.sqlite, main's history, from the local Chromium "
                                         "git clone (offline; $COSH_CHROMIUM_GIT)")
     g.add_argument("--db", help="store path (default: $COSH_COMMITS_DB or data/private/commits.sqlite)")
@@ -74,7 +74,7 @@ def main(argv=None):
                                      "~/projects/shared/chromium, under the extract lock")
     c = sub.add_parser("classify",
                        help="label review threads as addressed with Claude Haiku via `claude -p` "
-                            "(uses Max usage; writes data/private/labels.sqlite; optional step)")
+                            "(uses Max usage; writes data/private/addressed.sqlite; optional step)")
     c.add_argument("--week", action="append",
                    help="only threads with a comment written in this ISO week (repeatable; default: all)")
     c.add_argument("--max-threads", type=int, help="label at most N threads this run")
@@ -85,7 +85,7 @@ def main(argv=None):
     c.add_argument("--dry-run", action="store_true", help="count pending threads, call nothing")
     c.add_argument("--sandbox", choices=["auto", "bwrap", "none"], default="auto",
                    help="jail for claude -p (SECURITY.md): auto = bubblewrap if it works here")
-    c.add_argument("--db", help="derived DB path (default: data/private/derived.sqlite)")
+    c.add_argument("--db", help="derived DB path (default: data/private/reviews.sqlite)")
     c.add_argument("--stop-at", type=float, metavar="SHARE",
                    help="stop starting calls once the plan's 5-hour or weekly usage reaches this share "
                         "(e.g. 0.99), as reported by claude -p")
@@ -95,7 +95,7 @@ def main(argv=None):
     s.add_argument("--metric", choices=["comments", "cls", "chars", "addressed", "commits"], default="comments",
                    help="headline share: review comments (default), reviewed CLs, characters, "
                         "or addressed comments")
-    s.add_argument("--db", help="derived DB path (default: data/private/derived.sqlite)")
+    s.add_argument("--db", help="derived DB path (default: data/private/reviews.sqlite)")
     s.add_argument("--out", help="summaries directory (default: summaries/)")
     b = sub.add_parser("backfill", help="extract many weeks newest-first (plan only without --go)")
     b.add_argument("--weeks", type=int, required=True, help="number of weeks to cover")
@@ -133,7 +133,7 @@ def main(argv=None):
     ps.add_argument("--repack-gb", type=float, default=8.0,
                     help="repack after this many GB of new packs (default 8; it also repacks "
                          "when under 25 GB is free, and always at the end)")
-    ps.add_argument("--db", help="derived DB path (default: data/private/derived.sqlite)")
+    ps.add_argument("--db", help="derived DB path (default: data/private/reviews.sqlite)")
     ps.add_argument("--since", default=None,
                     help="CLs closed (or last updated) on or after this date (default and earliest: "
                          "config/approved.json)")

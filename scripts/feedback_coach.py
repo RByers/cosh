@@ -4,10 +4,10 @@
 
 Takes the author's most recent reviewer threads on their own Chromium CLs
 (main branch, human reviewers, the past --days up to the newest comment in
-derived.sqlite):
+reviews.sqlite):
 
 - file and commit-message threads the author **addressed** (the Done-type
-  regex, else the active Haiku label in labels.sqlite, docs/comment-classifier.md);
+  regex, else the active Haiku label in addressed.sqlite, docs/comment-classifier.md);
 - **CL-level** (patch-set-level) threads, addressed or not, minus bare
   approvals ("LGTM", "thanks").
 
@@ -21,9 +21,9 @@ directory, CL-level and commit-message threads for the CL's main directory.
 The model cites threads as [T12]. The script turns those into Gerrit
 comment links and removes every other URL and any HTML the model wrote.
 Output: <data>/feedback-coach/<email>.md (gitignored, like all of
-data/private). Offline apart from the Claude call: reads derived.sqlite,
+data/private). Offline apart from the Claude call: reads reviews.sqlite,
 commits.sqlite (a CL's main directory, from its landed commit's files),
-labels.sqlite and the NoteDb repos.
+addressed.sqlite and the NoteDb repos.
 """
 import argparse
 import datetime as dt
@@ -113,7 +113,7 @@ def load_threads(ddb, ldb, email, days):
     acct = ddb.execute("SELECT account_id, name FROM accounts WHERE host = ? AND lower(email) = ? AND is_bot = 0",
                        (HOST, email.lower())).fetchall()
     if not acct:
-        raise SystemExit(f"no Gerrit account with e-mail {email} in derived.sqlite")
+        raise SystemExit(f"no Gerrit account with e-mail {email} in reviews.sqlite")
     ids = [a for a, _ in acct]
     newest = ddb.execute("SELECT max(written_at) FROM comments WHERE host = ?", (HOST,)).fetchone()[0]
     since = (dt.datetime.fromisoformat(newest) - dt.timedelta(days=days)).strftime("%Y-%m-%d %H:%M:%S")

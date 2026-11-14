@@ -2,7 +2,7 @@
 
 Status: built (2026-11-09). The design is below, then the findings, which
 are on the balance page as the `#roi` section ("What review buys"). Nothing here fetches anything: every input is already on disk
-(`balance*.sqlite`, `derived.sqlite`, `labels.sqlite`, `bugs/bugs.sqlite`, the
+(`balance*.sqlite`, `reviews.sqlite`, `addressed.sqlite`, `bugs/bugs.sqlite`, the
 shared Chromium clone and the patch-set repo). Any LLM pass or new download
 is piloted on a small sample first and costed before it runs at scale.
 
@@ -56,7 +56,7 @@ too, it is picking up confounding, not prevention.
 | `balance.sqlite` `cl_dirs`, `cl_attention` | the landed commit's lines per 3-level directory; each non-owner's attention hours |
 | `balance-timeline.sqlite` `votes` | every Code-Review vote with voter, value, time, patch set: who approved (+2) and when |
 | `balance-git.sqlite` `gcommits`, `gfiles` | 1.30M first-parent commits on `main` since 2017: author, `Reviewed-by`, `reverts_sha`, `is_reland`, `Bot-Commit`, per-file lines. Reviewer and author history per directory comes from here |
-| `derived.sqlite` `threads`, `comments`, `accounts` | thread roots and their authors (who started each thread), `regex_addressed`; `labels.sqlite` for the Haiku labels |
+| `reviews.sqlite` `threads`, `comments`, `accounts` | thread roots and their authors (who started each thread), `regex_addressed`; `addressed.sqlite` for the Haiku labels |
 | `~/projects/shared/chromium` | full `main` history with blobs: revert messages (reasons), blame, later fixes to a CL's lines |
 | `bugs/bugs.sqlite` | 67k fetched bugs; `fixed_by` CLs, type, priority. "Introduced In" is a milestone, so it can't name a CL |
 
@@ -203,8 +203,8 @@ pass is worth its cost.
 | # | Package | Scripts | Findings |
 |---|---|---|---|
 | 0 | Shared inputs (first commits, OWNERS additions, mechanical list) | `scripts/balance_analysis.py mechanical` (with `BALANCE_MECH_OUT`), git log | regenerated 2026-11-09: 11,827 first commits, 36,450 OWNERS additions, 4,875 mechanical CLs (matches `balance.md` §8) |
-| 1 | Per-CL table and Part 1 designs D1–D8 | `scripts/review_roi_table.py`, `scripts/review_roi_part1.py` | `review-roi-part1.md` |
-| 2 | Part 2 panels (H2a–c) and the blame pilot (H2d–e) | `scripts/review_roi_part2.py`, `scripts/review_roi_blame.py` | `review-roi-part2.md` |
+| 1 | Per-CL table and Part 1 designs D1–D8 | `scripts/review_roi_table.py`, `scripts/review_roi_depth.py` | `review-roi-depth.md` |
+| 2 | Part 2 panels (H2a–c) and the blame pilot (H2d–e) | `scripts/review_roi_later_changes.py`, `scripts/review_roi_blame.py` | `review-roi-later-changes.md` |
 | 3 | Revert study | `scripts/review_roi_reverts.py` | `review-roi-reverts.md` |
 | 3b | Substance pilot: what addressed review threads change (H2f, 200 threads through the sandbox) | `scripts/review_roi_substance.py` | `review-roi-substance.md` |
 | 4 | Page section and `summaries/balance.json` datasets | `scripts/review_roi_report.py`, `web/balance.html`, `web/src/balance.ts` | the `#roi` section |
@@ -262,7 +262,7 @@ excluded). 2.67% of them were reverted within 30 days.
    return, and a 2,000-thread sample would make it precise for a few
    minutes of model time.
 
-### Part 1 in more detail (`review-roi-part1.md`)
+### Part 1 in more detail (`review-roi-depth.md`)
 
 | Exposure (30-day revert odds) | Raw OR | Normalized OR (size × dir2 × author practice × half-year) |
 |---|---:|---:|
@@ -292,7 +292,7 @@ excluded). 2.67% of them were reverted within 30 days.
   1,000 CLs at the revert study's mean cost, for about 1,300 extra threads.
   The negative control says the true causal share is probably smaller.
 
-### Part 2 in more detail (`review-roi-part2.md`)
+### Part 2 in more detail (`review-roi-later-changes.md`)
 
 | Hypothesis | Test | Result |
 |---|---|---|
@@ -364,7 +364,7 @@ labels (κ 0.87, would-break 40/40). Shares with 95% Wilson intervals:
 
 ### Part 1 follow-up: an exogenous source of review depth
 
-(`review-roi-part1.md`, "Follow-up"; `scripts/review_roi_part1_followup.py`)
+(`review-roi-depth.md`, "Follow-up"; `scripts/review_roi_depth_followup.py`)
 
 - **Reverts review could plausibly prevent** (crash, functional bug, perf
   or size regression: 1,527 reverts, 4.3 per 1,000 CLs) against CI

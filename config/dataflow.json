@@ -88,8 +88,8 @@
   "stores": [
     {
       "id": "gerrit-raw",
-      "name": "raw.sqlite + notedb/",
-      "path": "data/private/raw.sqlite + data/private/notedb/",
+      "name": "gerrit.sqlite + notedb/",
+      "path": "data/private/gerrit.sqlite + data/private/notedb/",
       "kind": "sqlite + git-repo",
       "tier": "raw",
       "tracked_in_git": false,
@@ -97,8 +97,8 @@
       "never_delete": true,
       "size": "2.5 GB + 11.4 GB in 14 packs",
       "size_as_of": "2026-11-12",
-      "purpose": "Everything fetched from Gerrit, losslessly: raw.sqlite caches every REST response and which weeks are done; notedb/ holds each CL's NoteDb ref, the only copy of comment text and review events.",
-      "files": "raw.sqlite; notedb/chromium_src.git, a bare repo with a ref refs/meta/<CL> per fetched CL (about 716k).",
+      "purpose": "Everything fetched from Gerrit, losslessly: gerrit.sqlite caches every REST response and which weeks are done; notedb/ holds each CL's NoteDb ref, the only copy of comment text and review events.",
+      "files": "gerrit.sqlite; notedb/chromium_src.git, a bare repo with a ref refs/meta/<CL> per fetched CL (about 716k).",
       "tables": [
         {
           "name": "responses",
@@ -185,8 +185,8 @@
       "notes": "Never delete either, never prune or gc notedb/. Lossless repacks only (cosh notedb-maintain, scripts/notedb_chunked_repack.sh). Comment text is untrusted."
     },
     {
-      "id": "data/private/derived.sqlite",
-      "path": "data/private/derived.sqlite",
+      "id": "data/private/reviews.sqlite",
+      "path": "data/private/reviews.sqlite",
       "kind": "sqlite",
       "tier": "derived",
       "tracked_in_git": false,
@@ -290,8 +290,8 @@
       "notes": "Rebuild: rm it, then `python3 -m cosh derive` (about 9 min)."
     },
     {
-      "id": "data/private/labels.sqlite",
-      "path": "data/private/labels.sqlite",
+      "id": "data/private/addressed.sqlite",
+      "path": "data/private/addressed.sqlite",
       "kind": "sqlite",
       "tier": "labels",
       "tracked_in_git": false,
@@ -592,8 +592,8 @@
       }
     },
     {
-      "id": "data/private/sentiment/",
-      "path": "data/private/sentiment/",
+      "id": "data/private/comments/",
+      "path": "data/private/comments/",
       "kind": "directory",
       "tier": "derived",
       "tracked_in_git": false,
@@ -660,9 +660,9 @@
       "notes": "Per-comment reasons stay private."
     },
     {
-      "id": "data/private/sentiment/tune",
+      "id": "data/private/comments/tune",
       "name": "Prompt-tuning results",
-      "path": "data/private/sentiment/{gold.jsonl,tune-*.json}",
+      "path": "data/private/comments/{gold.jsonl,tune-*.json}",
       "kind": "json",
       "tier": "analysis",
       "tracked_in_git": false,
@@ -1390,10 +1390,10 @@
       "cost_source": "docs/extraction-v1.md; docs/plan.md",
       "refresh": "routine",
       "approval": "Only weeks in config/approved.json (2017-W27 .. 2026-W44); the command refuses others. A newer week needs the user's approval, then an edit to that file.",
-      "notes": "backfill --weeks N runs many weeks, newest first; long runs go in a systemd user service (CLAUDE.md). backfill also derives each week it finishes (cosh.derive for that week), so derived.sqlite stays current between full derives. Never run alongside another extractor."
+      "notes": "backfill --weeks N runs many weeks, newest first; long runs go in a systemd user service (CLAUDE.md). backfill also derives each week it finishes (cosh.derive for that week), so reviews.sqlite stays current between full derives. Never run alongside another extractor."
     },
     {
-      "id": "affiliations",
+      "id": "update-affiliations",
       "command": "python3 -m cosh update-affiliations",
       "code": [
         "cosh/orgs.py"
@@ -1428,7 +1428,7 @@
         "config/bots.txt"
       ],
       "outputs": [
-        "data/private/derived.sqlite"
+        "data/private/reviews.sqlite"
       ],
       "network": false,
       "lock": null,
@@ -1437,7 +1437,7 @@
       "token_cost": null,
       "cost_source": "File times of the 2026-11-12 run (upper bound); docs/plan.md, 2026-11-05",
       "refresh": "routine",
-      "notes": "Opens raw.sqlite read-only, so it is safe beside an extractor. Main's commits are in commits.sqlite (step commits), not here.",
+      "notes": "Opens gerrit.sqlite read-only, so it is safe beside an extractor. Main's commits are in commits.sqlite (step commits), not here.",
       "run": "python3 -m cosh derive"
     },
     {
@@ -1449,12 +1449,12 @@
       ],
       "purpose": "Has sandboxed Haiku label the threads the regex doesn't settle as addressed or not.",
       "inputs": [
-        "data/private/derived.sqlite",
+        "data/private/reviews.sqlite",
         "gerrit-raw",
         "claude-model"
       ],
       "outputs": [
-        "data/private/labels.sqlite"
+        "data/private/addressed.sqlite"
       ],
       "network": true,
       "lock": "data/private/classify.lock",
@@ -1476,9 +1476,9 @@
       ],
       "purpose": "Aggregates the facts and labels into the Value Exchange summaries for every fetched week.",
       "inputs": [
-        "data/private/derived.sqlite",
+        "data/private/reviews.sqlite",
         "data/private/commits.sqlite",
-        "data/private/labels.sqlite",
+        "data/private/addressed.sqlite",
         "gerrit-raw",
         "config/paths.txt",
         "config/affiliations.json5"
@@ -1530,8 +1530,8 @@
       ],
       "purpose": "Audits the addressed classifier against Opus, and the earlier research that chose the classifier and the Commits metric.",
       "inputs": [
-        "data/private/derived.sqlite",
-        "data/private/labels.sqlite",
+        "data/private/reviews.sqlite",
+        "data/private/addressed.sqlite",
         "gerrit-raw",
         "claude-model"
       ],
@@ -1607,7 +1607,7 @@
       ],
       "purpose": "Fetches every patch set of reviewed CLs, newest first, into the patch-set repo.",
       "inputs": [
-        "data/private/derived.sqlite",
+        "data/private/reviews.sqlite",
         "gerrit",
         "shared/chromium",
         "config/approved.json"
@@ -1658,12 +1658,12 @@
       ],
       "purpose": "Renders each week's review comments with their thread context and who wrote them, ready for scoring.",
       "inputs": [
-        "data/private/derived.sqlite",
+        "data/private/reviews.sqlite",
         "gerrit-raw",
         "config/affiliations.json5"
       ],
       "outputs": [
-        "data/private/sentiment/"
+        "data/private/comments/"
       ],
       "network": false,
       "lock": null,
@@ -1684,7 +1684,7 @@
       ],
       "purpose": "Has Haiku score each rendered comment's tone and AI friction, in the sandbox.",
       "inputs": [
-        "data/private/sentiment/",
+        "data/private/comments/",
         "scripts/sentiment_prompts/",
         "claude-model"
       ],
@@ -1712,8 +1712,8 @@
       "purpose": "Writes every Review Tone file from the newest year of fully scored weeks.",
       "inputs": [
         "data/private/sentiment.sqlite",
-        "data/private/sentiment/",
-        "data/private/derived.sqlite",
+        "data/private/comments/",
+        "data/private/reviews.sqlite",
         "claude-model",
         "scripts/sentiment_prompts/"
       ],
@@ -1739,12 +1739,12 @@
       ],
       "purpose": "Scores a prompt version against the 261 gold comments, to tune the prompt.",
       "inputs": [
-        "data/private/sentiment/",
+        "data/private/comments/",
         "scripts/sentiment_prompts/",
         "claude-model"
       ],
       "outputs": [
-        "data/private/sentiment/tune"
+        "data/private/comments/tune"
       ],
       "network": true,
       "lock": null,
@@ -1761,7 +1761,7 @@
       ],
       "purpose": "Reads each CL's uploads, attention-set changes and Code-Review votes from NoteDb.",
       "inputs": [
-        "data/private/derived.sqlite",
+        "data/private/reviews.sqlite",
         "gerrit-raw"
       ],
       "outputs": [
@@ -1785,7 +1785,7 @@
       "purpose": "Diffs each patch set against the next to measure rework during review.",
       "inputs": [
         "data/private/balance-timeline.sqlite",
-        "data/private/derived.sqlite",
+        "data/private/reviews.sqlite",
         "data/private/git/chromium-patchsets.git/"
       ],
       "outputs": [
@@ -1808,8 +1808,8 @@
       ],
       "purpose": "Joins the stages into one row per CL.",
       "inputs": [
-        "data/private/derived.sqlite",
-        "data/private/labels.sqlite",
+        "data/private/reviews.sqlite",
+        "data/private/addressed.sqlite",
         "data/private/commits.sqlite",
         "data/private/balance-timeline.sqlite",
         "data/private/balance-interdiff.sqlite"
@@ -1884,7 +1884,7 @@
         "data/private/balance.sqlite",
         "data/private/commits.sqlite",
         "data/private/balance-timeline.sqlite",
-        "data/private/derived.sqlite"
+        "data/private/reviews.sqlite"
       ],
       "outputs": [
         "data/private/balance_clusters/"
@@ -1908,7 +1908,7 @@
         "scripts/balance_analysis.py",
         "scripts/balance_growth.py",
         "scripts/balance_growth_tables.py",
-        "scripts/balance_narrative.py",
+        "scripts/balance_review_load.py",
         "scripts/balance_dirgrowth.py",
         "scripts/balance_histograms.py",
         "scripts/balance_definitions.py",
@@ -1918,7 +1918,9 @@
         "scripts/balance_reverts_experience.py",
         "scripts/balance_feedback_predicts.py",
         "scripts/balance_signals.py",
-        "scripts/balance_page_extras.py",
+        "scripts/balance_clusters.py",
+        "scripts/balance_cluster_map.py",
+        "scripts/chrome_releases.py",
         "scripts/review_roi_report.py",
         "scripts/balance_addressed_value.py",
         "scripts/balance_authors.py"
@@ -1928,8 +1930,8 @@
         "data/private/balance.sqlite",
         "data/private/commits.sqlite",
         "data/private/balance-timeline.sqlite",
-        "data/private/derived.sqlite",
-        "data/private/labels.sqlite",
+        "data/private/reviews.sqlite",
+        "data/private/addressed.sqlite",
         "data/private/ai_marked_broad.txt",
         "data/private/ai_predict/",
         "data/private/balance_clusters/",
@@ -1968,8 +1970,8 @@
         "data/private/balance.sqlite",
         "data/private/commits.sqlite",
         "data/private/balance-timeline.sqlite",
-        "data/private/derived.sqlite",
-        "data/private/labels.sqlite",
+        "data/private/reviews.sqlite",
+        "data/private/addressed.sqlite",
         "data/private/ai_marked_broad.txt",
         "data/private/ai_predict/",
         "shared/chromium",
@@ -1988,9 +1990,9 @@
     },
     {
       "id": "review-feedback",
-      "command": "nice -n 5 python3 -m cosh.feedback",
+      "command": "nice -n 5 python3 -m cosh.review_feedback",
       "code": [
-        "cosh/feedback.py",
+        "cosh/review_feedback.py",
         "cosh/cl_facts.py",
         "cosh/people.py",
         "cosh/commits.py"
@@ -1998,10 +2000,10 @@
       "purpose": "Writes each person's review feedback against their peers, as files named by a hash of their address.",
       "inputs": [
         "data/private/commits.sqlite",
-        "data/private/derived.sqlite",
-        "data/private/labels.sqlite",
+        "data/private/reviews.sqlite",
+        "data/private/addressed.sqlite",
         "data/private/sentiment.sqlite",
-        "data/private/sentiment/",
+        "data/private/comments/",
         "config/bots.txt",
         "config/affiliations.json5"
       ],
@@ -2016,8 +2018,8 @@
       "cost_source": "docs/review-feedback.md",
       "refresh": "routine",
       "approval": "Tone is praise only (docs/plan.md, ground rule 5).",
-      "notes": "Computes its per-CL facts (owner, status, Gerrit size, landed commit, lines per directory) from derived.sqlite and commits.sqlite (cosh.cl_facts). Earlier commits count from 2008. Its tone year is Review Tone's (sentiment.scored_weeks). It refreshes the affiliations file first (its only network use). `npm run serve` picks the new files up a few seconds after the run ends.",
-      "run": "nice -n 5 python3 -m cosh.feedback"
+      "notes": "Computes its per-CL facts (owner, status, Gerrit size, landed commit, lines per directory) from reviews.sqlite and commits.sqlite (cosh.cl_facts). Earlier commits count from 2008. Its tone year is Review Tone's (sentiment.scored_weeks). It refreshes the affiliations file first (its only network use). `npm run serve` picks the new files up a few seconds after the run ends.",
+      "run": "nice -n 5 python3 -m cosh.review_feedback"
     },
     {
       "id": "feedback-coach",
@@ -2028,9 +2030,9 @@
       ],
       "purpose": "Has sandboxed Opus write a private coaching report from one person's recent review threads.",
       "inputs": [
-        "data/private/derived.sqlite",
+        "data/private/reviews.sqlite",
         "data/private/commits.sqlite",
-        "data/private/labels.sqlite",
+        "data/private/addressed.sqlite",
         "gerrit-raw",
         "claude-model"
       ],
@@ -2048,12 +2050,12 @@
     },
     {
       "id": "roi-analysis",
-      "command": "python3 scripts/review_roi_table.py ...; review_roi_part1.py; review_roi_part2.py; review_roi_blame.py; review_roi_reverts.py; review_roi_substance.py",
+      "command": "python3 scripts/review_roi_table.py ...; review_roi_depth.py; review_roi_later_changes.py; review_roi_blame.py; review_roi_reverts.py; review_roi_substance.py",
       "code": [
         "scripts/review_roi_table.py",
-        "scripts/review_roi_part1.py",
-        "scripts/review_roi_part1_followup.py",
-        "scripts/review_roi_part2.py",
+        "scripts/review_roi_depth.py",
+        "scripts/review_roi_depth_followup.py",
+        "scripts/review_roi_later_changes.py",
         "scripts/review_roi_blame.py",
         "scripts/review_roi_reverts.py",
         "scripts/review_roi_substance.py",
@@ -2064,8 +2066,8 @@
         "data/private/balance.sqlite",
         "data/private/commits.sqlite",
         "data/private/balance-timeline.sqlite",
-        "data/private/derived.sqlite",
-        "data/private/labels.sqlite",
+        "data/private/reviews.sqlite",
+        "data/private/addressed.sqlite",
         "data/private/bugs/bugs.sqlite",
         "gerrit-raw",
         "shared/chromium",
@@ -2093,7 +2095,7 @@
       ],
       "purpose": "Early study of which review threads change the CL, behind docs/review-impact.md.",
       "inputs": [
-        "data/private/derived.sqlite",
+        "data/private/reviews.sqlite",
         "gerrit-raw"
       ],
       "outputs": [

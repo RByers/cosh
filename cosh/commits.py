@@ -1,7 +1,7 @@
 """Chromium's main history, in data/private/commits.sqlite (docs/commits.md).
 
 The one store of git history that every step and script reads: the Value
-Exchange commits metric (summarize), the Feedback Index (cosh/feedback.py),
+Exchange commits metric (summarize), the Feedback Index (cosh/review_feedback.py),
 the feedback coach, and the analyses. Its one writer,
 `python3 -m cosh commits` (also run at the end of a full `derive`), reads
 the local bare clone (~/projects/shared/chromium, or $COSH_CHROMIUM_GIT) and
@@ -52,7 +52,7 @@ HISTORY_SINCE = "2017-01-02T02:47:00Z"
 # Toronto time: OWNERS additions from 2012, AI markers from 2023.
 OWNERS_SINCE = "2012-01-01T05:00:00Z"
 AI_SINCE = "2023-01-01T05:00:00Z"
-# Every commit since this week's Monday, if derived.sqlite names no fetched weeks.
+# Every commit since this week's Monday, if reviews.sqlite names no fetched weeks.
 FALLBACK_SINCE = "2023-06-26"
 REP_MIN_FILES = 10     # repetition ratios for commits with a CL and this many files
 
@@ -472,7 +472,7 @@ def window_start(db, since):
 
 
 def derived_since(ddb):
-    """Monday of the oldest week fetched into derived.sqlite (the Value
+    """Monday of the oldest week fetched into reviews.sqlite (the Value
     Exchange window), as 'YYYY-MM-DD'."""
     weeks = [w for (v,) in ddb.execute("SELECT v FROM meta WHERE k = 'fetched_weeks'")
              for w in json.loads(v or "[]")]
@@ -508,7 +508,7 @@ def dirs_of(db, lo, ids=None):
 
 def value_commits(db, ddb):
     """The commits the Value Exchange page counts, newest first: those landed
-    since derived.sqlite's oldest fetched week. Yields (commit_id, CL, author
+    since reviews.sqlite's oldest fetched week. Yields (commit_id, CL, author
     email, landed 'YYYY-MM-DD HH:MM:SS' UTC, is_bot, files). A commit is a
     bot's if its CL's owner is a bot (changes.is_bot_owned) or config/bots.txt
     matches its git author: some bots (e.g. a WebLayer builder) author commits
@@ -553,7 +553,7 @@ def repetition(db):
 
 
 # Per-person queries (cosh.people identities), shared by the Feedback Index
-# (cosh/feedback.py) and the analyses in scripts/.
+# (cosh/review_feedback.py) and the analyses in scripts/.
 
 def first_people(db):
     """{person: unix time of their first human commit on main}, over all of

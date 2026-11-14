@@ -8,7 +8,7 @@ had landed on main before the CL (practice). Then splits authors by how fast
 they landed CLs in their first year, prolific against average, and draws
 each group's curve against both measures.
 
-Offline; reads balance*.sqlite and derived.sqlite through balance_growth.
+Offline; reads balance*.sqlite and reviews.sqlite through balance_growth.
 Writes aggregates only (feedback index and counts per bin), never anything per
 person.
 

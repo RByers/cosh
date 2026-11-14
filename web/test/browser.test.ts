@@ -3880,7 +3880,7 @@ test('the Data flow page draws the chosen pages\' flow, lists the inventory, and
 
   // Without the extras, only what some page needs: no analyses, no maintenance.
   const before = await nodes();
-  assert.ok(before.includes('derive') && before.includes('data/private/derived.sqlite'));
+  assert.ok(before.includes('derive') && before.includes('data/private/reviews.sqlite'));
   assert.ok(!before.includes('notedb-maintain') && !before.includes('feedback-coach'));
   // An analysis whose output a page reads is drawn with where it comes from.
   assert.ok(before.includes('roi-analysis') && before.includes('data/private/review_roi/'));
@@ -3895,8 +3895,8 @@ test('the Data flow page draws the chosen pages\' flow, lists the inventory, and
     await rows('steps-rows') + await rows('pages-rows'), before.length);
 
   // A click on a node shows its facts and lights up its lineage only.
-  await page.click('#graph-box .df-node[data-node="data/private/labels.sqlite"]');
-  assert.equal(await page.$eval('#detail-title', (e) => e.textContent), 'data/private/labels.sqlite');
+  await page.click('#graph-box .df-node[data-node="data/private/addressed.sqlite"]');
+  assert.equal(await page.$eval('#detail-title', (e) => e.textContent), 'data/private/addressed.sqlite');
   assert.match(page.url(), /#n=data%2Fprivate%2Flabels\.sqlite$/);
   const lit = await page.$$eval('#graph-box .df-node.on', (gs) => gs.map((g) => (g as SVGGElement).dataset.node!));
   assert.ok(lit.includes('classify') && lit.includes('summarize') && lit.includes('page-value'), lit.join());

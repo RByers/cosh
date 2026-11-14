@@ -1,7 +1,7 @@
 """Review ROI pilot: what do addressed review threads catch? (docs/review-roi-substance.md)
 
 Samples reviewer-started threads that the owner addressed (regex Done-type,
-or Haiku-labelled addressed in labels.sqlite) on unit CLs (merged,
+or Haiku-labelled addressed in addressed.sqlite) on unit CLs (merged,
 human-owned, not reverts/relands/mechanical/Bot-Commit; the Part 1 per-CL
 table) landed 2025-07-01 .. 2026-09-30, renders each thread the way
 `cosh.classify.render` does (plus file and line), and has Claude Haiku label
@@ -155,7 +155,7 @@ def unit_cls(since, until):
 def addressed_threads(data_dir, cls):
     """[(change_number, root_uuid, input_hash, owner, project, regex)] addressed, human-rooted, on `cls`."""
     db = ro(os.path.join(data_dir, store.DERIVED_FILE))
-    db.execute(f"ATTACH 'file:{os.path.join(data_dir, 'labels.sqlite')}?mode=ro' AS lab")
+    db.execute(f"ATTACH 'file:{os.path.join(data_dir, 'addressed.sqlite')}?mode=ro' AS lab")
     db.execute("CREATE TEMP TABLE want(n INTEGER PRIMARY KEY)")
     db.executemany("INSERT INTO want VALUES (?)", ((n,) for n in cls))
     rows = db.execute("""

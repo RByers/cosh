@@ -5,7 +5,7 @@ gets a score from -1 (very angry or upset) through 0 (neutral) to +1 (very
 positive or grateful), plus a flag for anger or frustration about AI in code
 review. Scores come from Claude Haiku via headless `claude -p` (prompt tuned
 against a sample labelled by Claude Opus, docs/sentiment.md) and are stored in
-data/private/sentiment.sqlite, which, like labels.sqlite, costs Max usage to
+data/private/sentiment.sqlite, which, like addressed.sqlite, costs Max usage to
 remake.
 
 Nothing here names people for negative tone or gives orgs tone figures
@@ -41,7 +41,7 @@ from .bots import is_bot_account
 from .derive import human_text, is_ai_comment, load_comments, prefetch_notedb
 
 SENTIMENT_FILE = "sentiment.sqlite"
-OUT_DIR = "sentiment"
+OUT_DIR = "comments"
 CTX_CHARS, TEXT_CHARS, MAX_CTX = 500, 1500, 4
 
 
@@ -474,13 +474,13 @@ def authors_path(path, authors):
 
 def committer_accounts(data_dir=store.DATA_DIR):
     """{(host, account id)} of committers: accounts Gerrit let vote Code-Review
-    when the listings were fetched (derived.sqlite `committers`,
+    when the listings were fetched (reviews.sqlite `committers`,
     docs/committers.md). Today's status stands in for the status when a
     comment was written."""
     db = sqlite3.connect(f"file:{os.path.join(data_dir, store.DERIVED_FILE)}?mode=ro", uri=True)
     try:
         if not store.has_table(db, "committers"):
-            raise SystemExit("derived.sqlite has no committers table: rerun `python3 -m cosh derive`")
+            raise SystemExit("reviews.sqlite has no committers table: rerun `python3 -m cosh derive`")
         return {(h, a) for h, a in db.execute("SELECT host, account_id FROM committers WHERE is_committer = 1")}
     finally:
         db.close()
@@ -489,7 +489,7 @@ def committer_accounts(data_dir=store.DATA_DIR):
 def committer_rows(rows, data_dir=store.DATA_DIR, committers=None):
     """The ids of the rows written by a committer. The writer is the row's
     `author` (rows collected with identities) or is looked up in
-    derived.sqlite: the CL owner for the owner's comments, else the
+    reviews.sqlite: the CL owner for the owner's comments, else the
     comment's own account. A writer we can't place isn't a committer."""
     committers = committer_accounts(data_dir) if committers is None else committers
     out, need = set(), []
@@ -946,7 +946,7 @@ PUBLISHED_SAMPLE = "sample-5pct"
 
 
 def missing_weeks(data_dir=store.DATA_DIR):
-    """Fetched weeks (derived.sqlite's meta) from the oldest comments-<week>
+    """Fetched weeks (reviews.sqlite's meta) from the oldest comments-<week>
     file on that have no file yet."""
     have = sorted(f[len("comments-"):-len(".jsonl")] for f in os.listdir(out_dir(data_dir))
                   if re.fullmatch(r"comments-\d{4}-W\d{2}\.jsonl", f))
@@ -1023,7 +1023,7 @@ def main(argv):
                     help="summary, praise, samples: whose comments count; 'all' writes one file for each")
     ap.add_argument("--out", default=None)
     ap.add_argument("--missing", action="store_true",
-                    help="collect: every fetched week (derived.sqlite) since the oldest week file that has no "
+                    help="collect: every fetched week (reviews.sqlite) since the oldest week file that has no "
                          "comments-<week>.jsonl yet; what `cosh update` runs")
     a = ap.parse_args(argv)
     if a.out and a.authors == "all":

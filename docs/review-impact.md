@@ -3,7 +3,7 @@
 Status: research (2026-11-04). Its recommendation was built: addressed
 review comments are now the primary metric (metric_version 7;
 `comment-classifier.md`), using the owner-reply regex plus a Haiku pass, as
-phases 1–2 below propose. Everything below comes from data already on disk (`derived.sqlite`
+phases 1–2 below propose. Everything below comes from data already on disk (`reviews.sqlite`
 and the stored NoteDb meta refs). No fetching was done.
 
 ## The question
@@ -257,7 +257,7 @@ Two uses:
 Caveats: model labels need a hand-labelled check set, about 200 threads.
 Labels can drift between model versions, so pin the model and store the
 labels with a version, like `metric_version`. Outputs belong in
-`derived.sqlite`, and the inputs never leave the box except to the model
+`reviews.sqlite`, and the inputs never leave the box except to the model
 API. All of the text is public Gerrit data.
 
 ### 5. Substance and the "value-destructive" side

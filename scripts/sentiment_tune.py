@@ -4,9 +4,9 @@
 
 Prints MAE, Pearson r, 3-class agreement (neg < -0.2 <= neutral <= 0.2 < pos),
 AI-flag precision/recall and the largest errors. Results are saved in
-data/private/sentiment/ as tune-<version>-<n>.json so versions can be compared.
+data/private/comments/ as tune-<version>-<n>.json so versions can be compared.
 The gold labels ({"id", "score", "ai"} per line, no comment text) are kept
-in data/private/sentiment/gold.jsonl, not in git: a list of specific
+in data/private/comments/gold.jsonl, not in git: a list of specific
 comments labelled hostile would point fingers (docs/plan.md, ground rule 5).
 """
 import argparse

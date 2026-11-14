@@ -10,7 +10,7 @@ Two classifiers decide threads:
   - a free regex, computed by `derive` for every thread: the owner's first
     reply starts with a Done-type word ("Done", "Fixed", "Fix applied." ...);
   - Claude Haiku via headless `claude -p`, run by `cosh classify` for the
-    threads the regex doesn't settle. Its labels go to labels.sqlite, which
+    threads the regex doesn't settle. Its labels go to addressed.sqlite, which
     is never deleted (they cost Max usage to make) and keyed by each
     thread's input hash, so a thread that grows is relabelled.
 
@@ -31,7 +31,7 @@ from concurrent.futures import FIRST_COMPLETED, ThreadPoolExecutor, wait
 from . import store
 
 DEF_VERSION = 1
-LABELS_FILE = "labels.sqlite"
+LABELS_FILE = "addressed.sqlite"
 LOCK_FILE = "classify.lock"
 
 DEFINITION = """\
@@ -158,7 +158,7 @@ def thread_row(thread, owner_id):
                 regex_addressed=int(bool(owner_replies) and bool(DONE.match(owner_replies[0][1].strip()))))
 
 
-# ---------------------------------------------------------------- labels.sqlite
+# ---------------------------------------------------------------- addressed.sqlite
 
 LABELS_SCHEMA = """
 CREATE TABLE IF NOT EXISTS classifiers (
@@ -367,7 +367,7 @@ def pending_threads(db, labels_db, weeks):
 
 
 def tokens_per_thread(labels_db, default=330):
-    """Tokens per labelled thread over the finished runs in labels.sqlite
+    """Tokens per labelled thread over the finished runs in addressed.sqlite
     (300 to 360 in production), else `default`."""
     t, n = labels_db.execute("SELECT sum(tokens), sum(threads) FROM runs WHERE finished_at IS NOT NULL "
                              "AND tokens > 0 AND threads > 0").fetchone()

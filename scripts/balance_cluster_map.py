@@ -135,6 +135,14 @@ def main():
     for r in out["rules"]:
         print(f"  rule {r['pattern']:32} recall {r['recall']:.0%} precision {r['precision']:.0%}", file=sys.stderr)
 
+# The Review Balance page's datasets from this script's output; `python3 -m
+# cosh.balance_publish` calls page_datasets.
+
+def page_datasets(m):
+    """The pattern_* datasets, from map.json (binned counts only)."""
+    return {"pattern_cells": m["cells"], "pattern_ellipses": m["ellipses"], "pattern_loadings": m["loadings"],
+            "pattern_rules": m["rules"], "pattern_map_summary": [m["summary"]]}
+
 
 if __name__ == "__main__":
     main()

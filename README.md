@@ -92,7 +92,7 @@ The main visualization plots each organization's value ratio over time.
    first reply ("Done", "Fixed", …) settles about 60% of the threads the
    owner answered, for free. Claude
    Haiku, run headless with `claude -p`, reads the rest in batches. Labels
-   are kept in `data/private/labels.sqlite` and are never deleted. This step
+   are kept in `data/private/addressed.sqlite` and are never deleted. This step
    is optional: everything else works without it.
 4. **Aggregate** the in-scope comments into small per-org, per-period
    summaries (all comments and addressed comments), plus every comment by
@@ -122,7 +122,7 @@ per-org and per-reviewer, go in `summaries/` and are committed.
 ```
 python3 -m cosh extract --week 2026-W44   # throttled Gerrit fetch, cached and resumable
 python3 -m cosh extract-open              # snapshot open CLs and fetch their comments
-python3 -m cosh derive                    # build derived.sqlite from the cache (offline)
+python3 -m cosh derive                    # build reviews.sqlite from the cache (offline)
 python3 -m cosh classify --week 2026-W44  # optional: Haiku labels for threads the regex doesn't settle
 python3 -m cosh summarize                 # write summaries/org_weekly.json and the rest
 python3 -m cosh radar                     # Cloudflare Radar browser share (source ~/.secrets/cosh/secrets.sh first)
@@ -140,7 +140,7 @@ Design documents are in [`docs/`](docs/). Start with
   metric definitions, and open questions before the backfill.
 - [`docs/comment-classifier.md`](docs/comment-classifier.md): the addressed
   comments metric. It covers the classifier, its measured precision and
-  recall, its cost, storage (`labels.sqlite`) and how to run it.
+  recall, its cost, storage (`addressed.sqlite`) and how to run it.
 - [`docs/review-impact.md`](docs/review-impact.md): the research behind it,
   on which review leads to a change and which signals detect that.
 

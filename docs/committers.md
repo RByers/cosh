@@ -5,7 +5,7 @@ drive-by comments come from everyone else, so several analyses
 (`docs/sentiment.md`, "To do: split by committer and non-committer") want
 each review comment tagged as written by a committer or not. The listings we
 already fetched answer that, with no new fetch. `derive` writes the answer to
-the `committers` table in `derived.sqlite` (since 2026-11-07).
+the `committers` table in `reviews.sqlite` (since 2026-11-07).
 
 ## The signal: Gerrit's permitted voting range
 

@@ -1,6 +1,6 @@
 """Review ROI, Part 1: does deeper or more expert review lower the revert
 rate, after normalizing for difficulty? Designs D1-D8 of docs/review-roi.md;
-findings in docs/review-roi-part1.md.
+findings in docs/review-roi-depth.md.
 
 Reads the per-CL table from scripts/review_roi_table.py (and, for D8, the
 revert-reason classes from the revert study). Offline and standard library
@@ -9,12 +9,12 @@ identities).
 
   export COSH_DATA_DIR=/home/rbagent/projects/cosh/data/private
   S=data/private/scratch/review_roi/part1
-  nice -n 5 python3 scripts/review_roi_part1.py --table $S/cl_table.sqlite \
+  nice -n 5 python3 scripts/review_roi_depth.py --table $S/cl_table.sqlite \
       --json $S/part1_results.json [--reasons $S/../reverts/revert_reasons.tsv] \
       [--designs D1,D2,D3,D4,D5,D6,D7,D8] [--frac 0.15] [--reps 200] [--check] > $S/part1_report.txt
-  python3 scripts/review_roi_part1.py --json $S/part1_report.json --summary $S/part1_results.json
+  python3 scripts/review_roi_depth.py --json $S/part1_report.json --summary $S/part1_results.json
 
-The run used for docs/review-roi-part1.md: --frac 1 --reps 200 --check
+The run used for docs/review-roi-depth.md: --frac 1 --reps 200 --check
 --reasons $S/../reverts/revert_reasons.tsv, --json $S/part1_report.json
 (about 40 minutes).
 

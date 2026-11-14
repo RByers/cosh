@@ -4,7 +4,7 @@
       -1s and abandonment by tenure, balanced reviewer/author panels, matched cohorts.
 
 `python3 -m cosh.balance_publish` calls compute() and turns the report into
-the page's signals_*, panels and matched datasets (balance_page_extras).
+the page's signals_*, panels and matched datasets (page_datasets).
 
 Aggregates only: nothing per person is written to the output.
 """
@@ -445,6 +445,50 @@ def main():
     ap.add_argument("--out")
     args = ap.parse_args()
     report(args)
+
+# The Review Balance page's datasets from this script's output; `python3 -m
+# cosh.balance_publish` calls page_datasets.
+
+PAGE_PANEL = [
+    # key in signals.json panels, side, label, raw format
+    ("reviewer_log1p_threads", "reviewer", "Threads started per review"),
+    ("reviewer_neg_vote", "reviewer", "−1/−2 vote rate"),
+    ("author_log1p_threads_received", "author", "Threads received per CL"),
+    ("author_rounds", "author", "Review rounds"),
+    ("author_interdiff_share", "author", "Share of lines changed after review"),
+    ("author_reverted_30d", "author", "Reverted within 30 days"),
+    ("author_abandoned", "author", "Abandoned"),
+    ("author_pre_send_uploads", "author", "Uploads before sending for review"),
+    ("author_neg_received", "author", "Any −1 received"),
+]
+
+
+def page_datasets(sig):
+    """signals_*, panels and matched, from compute()'s report."""
+    out = {}
+    out["signals_era"] = sig["by_era"]
+    out["signals_tenure"] = [
+        {k: r[k] for k in ("era", "tenure_months", "cls", "neg_index", "abandon_index", "neg_share", "abandon_rate",
+                           "after_neg_abandoned")}
+        for r in sig["by_tenure"]]
+    out["signals_familiarity"] = sig["by_familiarity_merged"]
+    p = sig["panels"]
+    rows = []
+    for key, side, label in PAGE_PANEL:
+        v = p[key]
+        rows.append(dict(key=key, side=side, measure=label, change=v["mean"], lo=v["lo"], hi=v["hi"], n=v["n"],
+                         raw_2024=v.get("raw_2024"), raw_2026=v.get("raw_2026")))
+    r24, r26 = p["reviewer_panel_2024"], p["reviewer_panel_2026"]
+    rows[0].update(raw_2024=r24["threads_per_review"], raw_2026=r26["threads_per_review"])
+    rows[1].update(raw_2024=r24["neg_vote_rate"], raw_2026=r26["neg_vote_rate"])
+    out["panels"] = rows
+    m = sig["matched"]
+    out["matched"] = m["months"]
+    out["signals_summary"] = [dict(
+        cls=sig["cls"], votes_cls=sig["votes_cls"], reviewers=r24["reviewers"], reviews_2024=r24["reviews"],
+        reviews_2026=r26["reviews"], authors=p["author_panel_size"], joiners_2025=m["joiners_2025"],
+        joiners_2024=m["joiners_2024"], matched_pairs=m["matched_pairs"])]
+    return out
 
 
 if __name__ == "__main__":

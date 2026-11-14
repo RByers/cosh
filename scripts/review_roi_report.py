@@ -17,8 +17,8 @@ datasets()):
 Inputs, in --dir (default $COSH_DATA_DIR/review_roi, else
 data/private/review_roi of this checkout): part1_results.json,
 part1_report.json, part2_results.json, reverts_results.json and, when it
-exists, substance_results.json. They come from scripts/review_roi_part1.py,
-review_roi_part2.py, review_roi_reverts.py and review_roi_substance.py.
+exists, substance_results.json. They come from scripts/review_roi_depth.py,
+review_roi_later_changes.py, review_roi_reverts.py and review_roi_substance.py.
 
   COSH_DATA_DIR=/home/rbagent/projects/cosh/data/private \\
       python3 scripts/review_roi_report.py [--dir DIR] [--out datasets.json]
@@ -239,7 +239,7 @@ def summary_row(p1, rep, t, cost, sub):
     fu = p1.get("followup")
     if fu:
         # The approver's weekly CL load as an instrument for their thoroughness: the IV estimate
-        # per +1 log1p thread, scaled to the p25 -> p75 gap of the habit (docs/review-roi-part1.md).
+        # per +1 log1p thread, scaled to the p25 -> p75 gap of the habit (docs/review-roi-depth.md).
         iv = fu["approver_weekly_load_instrument"]["load_cls_log2"]["reduced_form"]["rev30"]
         gap = round(habit["p75"] - habit["p25"], 2)  # 0.37, as in the doc
         by = fu["outcome_by_reason_class"]

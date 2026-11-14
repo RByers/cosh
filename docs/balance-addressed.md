@@ -3,7 +3,7 @@
 Part of the Review Balance analysis (`docs/balance.md`), 2026-11-10. Script:
 `scripts/balance_addressed_value.py`. Nothing was fetched and no model was
 run: it reads the review-ROI per-CL table, `balance*.sqlite` and the
-existing addressed labels (`labels.sqlite`, `docs/comment-classifier.md`:
+existing addressed labels (`addressed.sqlite`, `docs/comment-classifier.md`:
 precision 0.98, recall 0.99).
 
 ## The question
@@ -24,7 +24,7 @@ review's value than the feedback index on its own?
 
 Every quarter from 2023 Q3 is fully labelled (no unclassified threads). In
 the unit (356,546 merged, human-owned, non-mechanical CLs landed
-2023-07 .. 2026-09; `docs/review-roi-part1.md`), 58% of 1.07M reviewer
+2023-07 .. 2026-09; `docs/review-roi-depth.md`), 58% of 1.07M reviewer
 threads were addressed; 65% of CLs got a thread and 39% an addressed one.
 
 ## Short answer

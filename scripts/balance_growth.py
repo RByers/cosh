@@ -1,6 +1,6 @@
 """Growth, burden-sharing and AI-era analyses for the balance page
 (docs/balance.md). Offline; reads data/private/balance*.sqlite and
-derived.sqlite. No comment text. Per-person values are computed only to be
+reviews.sqlite. No comment text. Per-person values are computed only to be
 aggregated; nothing here prints anyone's identity.
 
   COSH_DATA_DIR=<main>/data/private python3 scripts/balance_growth.py \

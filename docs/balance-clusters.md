@@ -79,7 +79,7 @@ half-years.
 ## How to regenerate
 
 From a worktree or the main checkout, about 10 minutes and a few GB of RAM.
-It reads `balance*.sqlite`, `commits.sqlite`, `derived.sqlite` and the shared Chromium clone,
+It reads `balance*.sqlite`, `commits.sqlite`, `reviews.sqlite` and the shared Chromium clone,
 and fetches nothing. Its inputs are the same as `balance_report.py`'s
 (`docs/balance.md`), from `commits.sqlite`: the first-commit list, OWNERS additions and the
 mechanical-CL list.

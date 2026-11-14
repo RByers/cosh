@@ -1,4 +1,4 @@
-"""Review ROI, Part 1 follow-up (docs/review-roi-part1.md, "Follow-up"):
+"""Review ROI, Part 1 follow-up (docs/review-roi-depth.md, "Follow-up"):
 
 1. reverts review could plausibly prevent (crash/functional, perf/size) vs
    CI-type reverts (compile/link, test failure) as separate outcomes;
@@ -9,11 +9,11 @@
 4. the rubber-stamp result on CLs with votes on disk only.
 
 Reads the table from scripts/review_roi_table.py (with the load columns)
-and revert_reasons.tsv; reuses the models of scripts/review_roi_part1.py.
+and revert_reasons.tsv; reuses the models of scripts/review_roi_depth.py.
 
   export COSH_DATA_DIR=/home/rbagent/projects/cosh/data/private
   S=data/private/scratch/review_roi/part1
-  nice -n 5 python3 scripts/review_roi_part1_followup.py --table $S/cl_table_f.sqlite \
+  nice -n 5 python3 scripts/review_roi_depth_followup.py --table $S/cl_table_f.sqlite \
       --reasons $S/../reverts/revert_reasons.tsv --json $S/followup.json > $S/followup.txt
 
 About 10 minutes.
@@ -29,7 +29,7 @@ import os
 from collections import defaultdict
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-import review_roi_part1 as P  # noqa: E402
+import review_roi_depth as P  # noqa: E402
 
 say, log = P.say, P.log
 OUT = {}

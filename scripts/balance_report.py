@@ -1,7 +1,7 @@
 """Datasets for the author/reviewer balance report (docs/balance.md).
 
-Offline; reads balance*.sqlite, commits.sqlite, derived.sqlite and
-labels.sqlite. Writes one JSON file of aggregates (no identities, no comment
+Offline; reads balance*.sqlite, commits.sqlite, reviews.sqlite and
+addressed.sqlite. Writes one JSON file of aggregates (no identities, no comment
 text).
 
   COSH_DATA_DIR=<main>/data/private python3 scripts/balance_report.py --out report.json

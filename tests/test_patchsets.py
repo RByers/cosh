@@ -33,7 +33,7 @@ def make_derived(path):
 class PatchsetsTest(unittest.TestCase):
     def test_reviewed_cls_newest_first(self):
         with tempfile.TemporaryDirectory() as d:
-            p = os.path.join(d, "derived.sqlite")
+            p = os.path.join(d, "reviews.sqlite")
             make_derived(p)
             self.assertEqual(patchsets.reviewed_cls(p), [(101, 2), (100, 3), (105, 1)])
             # Only the approved range unless asked: 105 closed before 2026-01-01.
@@ -75,7 +75,7 @@ class PatchsetsTest(unittest.TestCase):
 
     def _run_fake(self, jobs, fail_on=None):
         with tempfile.TemporaryDirectory() as d:
-            db = os.path.join(d, "derived.sqlite")
+            db = os.path.join(d, "reviews.sqlite")
             make_derived(db)
             g = patchsets.init_repo(os.path.join(d, "ps.git"))
             seen = []

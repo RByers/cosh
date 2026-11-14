@@ -10,7 +10,7 @@ commit.
 
   python3 -m cosh update                       # downstream of every source
   python3 -m cosh update --from gerrit         # after a new week was fetched
-  python3 -m cosh update --from data/private/labels.sqlite --dry-run
+  python3 -m cosh update --from data/private/addressed.sqlite --dry-run
 """
 
 import argparse

@@ -1,6 +1,6 @@
 """Return on code review, part 2 (docs/review-roi.md, H2a–H2c): does review
 today make later changes easier and safer? Findings in
-docs/review-roi-part2.md.
+docs/review-roi-later-changes.md.
 
 - H2a/H2b, directory panels: dir3 × half-year cells (quarters as a check).
   Review depth in period t (mean feedback index, addressed threads per 100
@@ -23,13 +23,13 @@ docs/review-roi-part2.md.
 Unit CL: merged, human-owned (not a Bot-Commit, owner not a bot), not
 mechanical, not a revert or reland, landed on main 2023-07-01 .. 2026-09-30.
 
-Offline. Reads balance.sqlite, commits.sqlite and derived.sqlite
+Offline. Reads balance.sqlite, commits.sqlite and reviews.sqlite
 (threads' root accounts only, never comment text) read-only. Prints and
 writes aggregates only; nothing per person or per CL is written.
 
   export COSH_DATA_DIR=/home/rbagent/projects/cosh/data/private
   S=data/private/scratch/review_roi/part2
-  nice -n 5 python3 scripts/review_roi_part2.py --out $S/part2_panels.json [--cache $S/part2_cache.pkl] \\
+  nice -n 5 python3 scripts/review_roi_later_changes.py --out $S/part2_panels.json [--cache $S/part2_cache.pkl] \\
       [--first-commit F] [--mech F]
 
 Tenure starts at the first commit over all of main's history and

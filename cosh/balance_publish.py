@@ -38,10 +38,10 @@ too costly or too private to repeat on every publish:
   ROI per-CL table and blame scratch).
 
 The AI-predict scores (ai_predict/scores.sqlite, Haiku) are read as a store
-by balance_narrative.
+by balance_review_load.
 
 The analysis window ends at DATA_END below, which follows the data: the
-first day of the month in which derived.sqlite's newest fetched week ends
+first day of the month in which reviews.sqlite's newest fetched week ends
 (so new weeks reach the page once a month is complete). The scripts take
 their end of data and last whole quarter from it; their comparison eras
 (2023 H2 - 2024 against the latest four quarters, and so on) are still their
@@ -63,9 +63,9 @@ SUMMARIES = os.path.join(HERE, "summaries")
 # ------------------------------------------------------------------ window
 
 def data_end():
-    """The first day of the month in which derived.sqlite's newest fetched
+    """The first day of the month in which reviews.sqlite's newest fetched
     week ends: 2026-11-01 for data through 2026-W44 (ending 2026-11-02).
-    Without a derived.sqlite (tests), 2026-11-01."""
+    Without a reviews.sqlite (tests), 2026-11-01."""
     if os.environ.get("COSH_BALANCE_DATA_END"):
         return datetime.fromisoformat(os.environ["COSH_BALANCE_DATA_END"]).replace(tzinfo=timezone.utc)
     import sqlite3
@@ -173,7 +173,7 @@ def step_growth(ctx):
 
 def step_narrative(ctx):
     _scripts()
-    import balance_narrative as N
+    import balance_review_load as N
     return N.datasets(N.load_cached(_args()), ctx.result("growth")["ai_paired"])
 
 
@@ -227,25 +227,25 @@ def step_feedback_predicts(ctx):
 
 def step_signals(ctx):
     _scripts()
-    import balance_page_extras
     import balance_signals
     report = json.loads(json.dumps(balance_signals.compute(_args())))   # as the old balance_signals.json held it
-    return balance_page_extras.signals(report)
+    return balance_signals.page_datasets(report)
 
 
 def step_clusters(ctx):
     _scripts()
-    import balance_page_extras as X
+    import balance_cluster_map
+    import balance_clusters
     d = os.path.join(ctx.inputs, "balance_clusters")
-    new = X.clusters(_json(os.path.join(d, "clusters.json")))
-    new.update(X.pattern_map(_json(os.path.join(d, "map.json"))))
+    new = balance_clusters.page_datasets(_json(os.path.join(d, "clusters.json")))
+    new.update(balance_cluster_map.page_datasets(_json(os.path.join(d, "map.json"))))
     return new
 
 
 def step_security(ctx):
     _scripts()
-    import balance_page_extras as X
-    return X.security(_json(os.path.join(ctx.inputs, "chrome_releases", "summary.json")))
+    import chrome_releases
+    return chrome_releases.page_datasets(_json(os.path.join(ctx.inputs, "chrome_releases", "summary.json")))
 
 
 def step_roi(ctx):

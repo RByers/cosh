@@ -1,7 +1,7 @@
 """Author/reviewer balance data (docs/balance.md), in data/private/balance.sqlite.
 
 Offline only: reads commits.sqlite (main's history, cosh/commits.py), the
-patch-set git repo, the NoteDb meta refs and derived.sqlite, and fetches
+patch-set git repo, the NoteDb meta refs and reviews.sqlite, and fetches
 nothing. Every git command runs with GIT_NO_LAZY_FETCH=1. balance.sqlite is
 rebuildable: delete it and rerun.
 
@@ -455,7 +455,7 @@ def stage_cl(db):
     print("cl: loading", flush=True)
     bots = {r[0] for r in db.execute("SELECT account_id FROM d.accounts WHERE is_bot = 1")}
     facts, by_cid = cl_facts(ddb, gdb)
-    # Review from derived.sqlite, as summarize counts it (human non-owners).
+    # Review from reviews.sqlite, as summarize counts it (human non-owners).
     labels = {}
     from . import classify
     lp = classify.labels_path(store.DATA_DIR)

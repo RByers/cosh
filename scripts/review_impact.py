@@ -1,6 +1,6 @@
 """Exploratory: which review threads led to a code change? (docs/review-impact.md)
 
-Offline only. Reads derived.sqlite (read-only) and the stored NoteDb meta refs;
+Offline only. Reads reviews.sqlite (read-only) and the stored NoteDb meta refs;
 fetches nothing. For each sampled CL it rebuilds:
   - the patch-set timeline from the meta ref's commits, with Gerrit's own
     change-kind note on each upload ("Uploaded patch set N." = rework;
@@ -152,7 +152,7 @@ def main():
     ap.add_argument("--out", required=True)
     a = ap.parse_args()
     lo, hi = a.weeks.split(":")
-    db = sqlite3.connect(f"file:{os.path.join(store.DATA_DIR, 'derived.sqlite')}?mode=ro", uri=True)
+    db = sqlite3.connect(f"file:{os.path.join(store.DATA_DIR, 'reviews.sqlite')}?mode=ro", uri=True)
     accts = {aid: (email, bot) for aid, email, bot in db.execute("SELECT account_id, email, is_bot FROM accounts")}
     cls = db.execute("""SELECT change_number, owner_account, status, closed_at, anchor_path, subject,
                                insertions, deletions FROM changes

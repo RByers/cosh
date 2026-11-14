@@ -98,7 +98,7 @@ class ThreadTest(unittest.TestCase):
 
 
 def build_db(d, label_r2=None, stale=False):
-    """derived.sqlite for CHANGE + THREADS, and labels.sqlite with r2's label."""
+    """reviews.sqlite for CHANGE + THREADS, and addressed.sqlite with r2's label."""
     db = store.open_derived(d)
     accounts, ch, rows = derive_change(CHANGE, THREADS)
     with db:

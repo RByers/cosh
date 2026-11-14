@@ -1,6 +1,6 @@
 """Return on code review, part 2: blame pilot for H2d (SZZ-style fix-inducing
 links) and H2e (line survival). docs/review-roi.md; findings in
-docs/review-roi-part2.md.
+docs/review-roi-later-changes.md.
 
 szz: a random sample (fixed seed) of first-parent commits on main since
   2024-01-01 with a `Fixed:` footer naming a bug of type Bug or
@@ -10,7 +10,7 @@ szz: a random sample (fixed seed) of first-parent commits on main since
   are blamed at the parent (`git blame -w -l --porcelain -L ... <parent> --
   <file>`). Blamed commits landed before the bug was filed are the
   "inducing" commits; they map to CLs via gcommits.change_number. Induced
-  unit CLs (review_roi_part2's unit) are compared with the non-induced unit
+  unit CLs (review_roi_later_changes's unit) are compared with the non-induced unit
   CLs of the same size bucket, dir2 and half-year. A subsample is also
   blamed whole-file (no -L), to cost the plain full-file variant.
 survival: a random sample of unit CLs landed in 2024 with 20–500 added
@@ -26,7 +26,7 @@ to --out.
 
   export COSH_DATA_DIR=/home/rbagent/projects/cosh/data/private
   S=data/private/scratch/review_roi/part2
-  # needs review_roi_part2.py's --cache pickle for the unit-CL table
+  # needs review_roi_later_changes.py's --cache pickle for the unit-CL table
   nice -n 5 python3 scripts/review_roi_blame.py szz --cache $S/cache.pkl --n 500 --jobs 2 --full-sample 50 \\
       --scratch $S --out $S/blame_szz.json
   nice -n 5 python3 scripts/review_roi_blame.py survival --cache $S/cache.pkl --n 300 --jobs 2 \\
@@ -54,7 +54,7 @@ from multiprocessing import Pool
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 sys.path.insert(0, os.path.dirname(HERE))
-import review_roi_part2 as P2  # noqa: E402
+import review_roi_later_changes as P2  # noqa: E402
 import balance_growth as G  # noqa: E402
 from cosh import balance, bugs as B, store  # noqa: E402
 

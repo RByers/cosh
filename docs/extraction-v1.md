@@ -28,7 +28,7 @@ file wins.
 ```
 python3 -m cosh extract --week 2026-W44     # network; cached and resumable (NoteDb by default)
 python3 -m cosh extract-open                # network; open-CL snapshot + its NoteDb refs (after the backfill)
-python3 -m cosh derive [--out PATH]         # offline: raw cache -> data/private/derived.sqlite
+python3 -m cosh derive [--out PATH]         # offline: raw cache -> data/private/reviews.sqlite
 python3 -m cosh summarize [--db PATH] [--out DIR]   # offline: -> summaries/ (path scope: config/paths.txt)
 python3 -m cosh radar [--offline]           # Cloudflare Radar; needs `source ~/.secrets/cosh/secrets.sh`
 python3 -m cosh backfill --weeks 52 [--go]  # plan only unless --go (the 52 weeks are approved)
@@ -40,29 +40,29 @@ python3 -m unittest tests.test_derive tests.test_extract tests.test_radar tests.
 ## Pipeline and data flow
 
 ```
-Gerrit REST listing ─► data/private/raw.sqlite ─┐
-NoteDb `git fetch`  ─► data/private/notedb/*.git ┼─ derive ─► data/private/derived.sqlite ─┬─ summarize ─► summaries/
+Gerrit REST listing ─► data/private/gerrit.sqlite ─┐
+NoteDb `git fetch`  ─► data/private/notedb/*.git ┼─ derive ─► data/private/reviews.sqlite ─┬─ summarize ─► summaries/
                                                  │                                          │
-                                                 └─ classify (claude -p, Haiku) ─► data/private/labels.sqlite ─┘
+                                                 └─ classify (claude -p, Haiku) ─► data/private/addressed.sqlite ─┘
 Cloudflare Radar    ─► data/public/radar/raw/ ──── radar ──► data/public/radar_browser_share.csv
 ```
 
-- **`classify` is optional.** It reads `derived.sqlite` (which threads
+- **`classify` is optional.** It reads `reviews.sqlite` (which threads
   need a label) and the comment text from NoteDb or the REST cache. It
-  writes only `labels.sqlite`, which is never deleted: the labels cost Max
+  writes only `addressed.sqlite`, which is never deleted: the labels cost Max
   usage to make.
-- **`summarize` without labels:** it attaches `labels.sqlite` read-only
+- **`summarize` without labels:** it attaches `addressed.sqlite` read-only
   if it exists. Without it, weeks just show as unclassified.
 
 - `data/private/` (gitignored for size; see `storage-design.md` §4) holds the
   raw stores and the derived DB.
-  - `raw.sqlite` and `notedb/` keep **whatever we download, losslessly and
+  - `gerrit.sqlite` and `notedb/` keep **whatever we download, losslessly and
     permanently**, even data no metric uses yet, so nothing is ever fetched
     twice. That doesn't mean downloading everything: a leaner fetch is fine
     if it still gets what we need. See `storage-design.md` §3.8, which also
     covers what NoteDb contains and the size per year.
-  - `derived.sqlite` is derived (one row per comment, with its file path but
-    no text) and can be rebuilt. `derive` opens `raw.sqlite`
+  - `reviews.sqlite` is derived (one row per comment, with its file path but
+    no text) and can be rebuilt. `derive` opens `gerrit.sqlite`
     read-only. It reads NoteDb comments in batches, one listing window
     (~100 CLs) at a time, with a few `git cat-file --batch` processes per
     window (`notedb.read_comments_many`). Starting git costs 2.5–10 ms per
@@ -159,7 +159,7 @@ metric:
   was written no later than the owner's last reply in the thread.
 - **How threads are decided:** by a regex on the owner's first reply in
   `derive`, or by a Haiku label from the optional `cosh classify` step
-  (`labels.sqlite`).
+  (`addressed.sqlite`).
 - **Coverage:** weeks whose threads aren't all decided report
   `pending_comments`, and the UI hides the metric for them.
 
@@ -186,7 +186,7 @@ Versions:
      reviews were bare approvals.
    - **Path scope.** Only comments on the paths that `config/paths.txt`
      includes count (see "Path scope" below).
-6. The current version (summarize only; `derived.sqlite` is unchanged). It
+6. The current version (summarize only; `reviews.sqlite` is unchanged). It
    changes how comments are placed on files:
    - A patchset-level comment is placed on its author's own anchor on the
      CL, the file that reviewer left the most inline comments on, not on
@@ -216,7 +216,7 @@ were counted in W44 but written earlier.
   - `changes`: one row per CL, from its newest listing. `close_week` is NULL
     for open CLs. `anchor_path` is the file with the most inline comments
     on the CL (see "Path scope").
-  - `open_derived` refuses a `derived.sqlite` from before metric_version 5
+  - `open_derived` refuses a `reviews.sqlite` from before metric_version 5
     and says how to rebuild it.
 - **Week of a comment:** the week of its `writtenOn` time in NoteDb (REST:
   `updated`).
@@ -484,7 +484,7 @@ The org is a domain name, evaluated as of the day of the comment:
      googlesource requests), rewriting each only when it changed; commit
      them with the outputs. `cosh update` runs it before the steps that
      attribute orgs, which read the local copy (`OrgResolver()` never
-     fetches). `balance_narrative.py --cache` rebuilds a cache made with a
+     fetches). `balance_review_load.py --cache` rebuilds a cache made with a
      different copy.
    - Dates before a person's earliest `start` fall through to rule 2 or 3.
    - The values `Individual` and `Undisclosed` are kept as-is. Summaries

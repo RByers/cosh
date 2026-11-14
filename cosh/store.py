@@ -1,5 +1,5 @@
-"""SQLite storage: raw.sqlite (response cache + progress, source of truth) and
-derived.sqlite (derived tables, rebuildable). See docs/storage-design.md §3."""
+"""SQLite storage: gerrit.sqlite (response cache + progress, source of truth) and
+reviews.sqlite (derived tables, rebuildable). See docs/storage-design.md §3."""
 
 import fcntl
 import hashlib
@@ -75,10 +75,10 @@ CREATE TABLE IF NOT EXISTS open_changes (
 ) STRICT, WITHOUT ROWID;
 """
 
-DERIVED_FILE = "derived.sqlite"
+DERIVED_FILE = "reviews.sqlite"
 
 # Review activity is keyed by *when it happened*, not by when the CL closed.
-# Rebuildable: `rm data/private/derived.sqlite && python3 -m cosh derive`.
+# Rebuildable: `rm data/private/reviews.sqlite && python3 -m cosh derive`.
 DERIVED_SCHEMA = """
 CREATE TABLE IF NOT EXISTS meta (k TEXT PRIMARY KEY, v TEXT) STRICT;
 
@@ -161,7 +161,7 @@ CREATE TABLE IF NOT EXISTS threads (
   root_account        INTEGER NOT NULL,
   n_comments          INTEGER NOT NULL,   -- every comment in the thread, the owner's included
   last_owner_reply_at TEXT,               -- NULL: the owner never replied (scores nothing)
-  input_hash          INTEGER NOT NULL,   -- of the text a model would see (labels.sqlite key)
+  input_hash          INTEGER NOT NULL,   -- of the text a model would see (addressed.sqlite key)
   regex_addressed     INTEGER NOT NULL,   -- the owner's first reply is Done-type
   PRIMARY KEY (host, change_number, root_uuid)
 ) STRICT, WITHOUT ROWID;
@@ -175,7 +175,7 @@ def now_iso():
 
 def connect(path, schema):
     os.makedirs(os.path.dirname(path), exist_ok=True)
-    # A backfill derives each week into derived.sqlite while a full `derive`
+    # A backfill derives each week into reviews.sqlite while a full `derive`
     # may be writing it too; wait for the other writer instead of failing.
     db = sqlite3.connect(path, timeout=60)
     db.execute("PRAGMA journal_mode=WAL")
@@ -184,13 +184,13 @@ def connect(path, schema):
 
 
 def open_raw(data_dir=DATA_DIR):
-    return connect(os.path.join(data_dir, "raw.sqlite"), RAW_SCHEMA)
+    return connect(os.path.join(data_dir, "gerrit.sqlite"), RAW_SCHEMA)
 
 
 def open_raw_ro(data_dir=DATA_DIR):
-    """raw.sqlite opened read-only without touching its schema. derive and
+    """gerrit.sqlite opened read-only without touching its schema. derive and
     summarize never write to it, so they are safe while an extractor runs."""
-    db = sqlite3.connect(f"file:{os.path.join(data_dir, 'raw.sqlite')}?mode=ro", uri=True)
+    db = sqlite3.connect(f"file:{os.path.join(data_dir, 'gerrit.sqlite')}?mode=ro", uri=True)
     db.execute("PRAGMA query_only=1")
     return db
 

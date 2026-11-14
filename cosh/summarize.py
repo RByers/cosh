@@ -1,4 +1,4 @@
-"""Aggregate derived.sqlite into small summaries for the front end.
+"""Aggregate reviews.sqlite into small summaries for the front end.
 
 Review is measured from comments only (metric_version 5+): published comments
 by non-owner, non-bot accounts on human-owned CLs on main. Reviews with no
@@ -132,7 +132,7 @@ COVERAGE_COMPLETE = 0.99
 
 
 def load_labels(db, data_dir):
-    """Fill temp.lab from labels.sqlite's active classifier (empty if there is
+    """Fill temp.lab from addressed.sqlite's active classifier (empty if there is
     none). Returns the classifier's model id, or None."""
     from . import classify
     db.execute("CREATE TEMP TABLE IF NOT EXISTS lab (change_number INTEGER, root_uuid TEXT, input_hash INTEGER, "
@@ -382,7 +382,7 @@ def write_thread_examples(data_dir, db, picks, weeks, path):
             for _, host, cl, root, fpath in sorted(picks.get(week, {}).get(outcome, []))[:EXAMPLES_PER_OUTCOME]:
                 chosen.append((week, outcome, host, cl, root, fpath))
     out = []
-    if chosen and os.path.exists(os.path.join(data_dir, "raw.sqlite")):
+    if chosen and os.path.exists(os.path.join(data_dir, "gerrit.sqlite")):
         raw = store.open_raw_ro(data_dir)
         repos = {}
         info = {}

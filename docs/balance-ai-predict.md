@@ -297,7 +297,7 @@ python3 scripts/balance_ai_predict.py report
 - **First run (2026-11-08):** Haiku, 2025-07-01 .. 2026-11-07, 171,804 CLs
   in 116 min at 8 calls at once, with no failed calls, $12.60 CLI-reported
   ($0.07 per 1,000). Log `ai_predict/score-20261108T2231.log`.
-- Like the other Claude-made data (`labels.sqlite`, `sentiment.sqlite`),
+- Like the other Claude-made data (`addressed.sqlite`, `sentiment.sqlite`),
   `scores.sqlite` costs Max usage to remake: don't delete it.
 
 **Results (all landed human CLs, Haiku, prompt `3dd3ca1ff755`):**

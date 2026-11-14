@@ -1,7 +1,7 @@
 """Who is who in Chromium's git history and Gerrit: one identity per person
 across the chromium.org and google.com domains and SVN-era addresses, bot
 addresses (config/bots.txt), and owner/author aliases. Shared by the Feedback
-Index (cosh/feedback.py), commits.sqlite's queries and the analyses."""
+Index (cosh/review_feedback.py), commits.sqlite's queries and the analyses."""
 
 from collections import Counter, defaultdict
 from functools import cache

@@ -3,7 +3,7 @@
 Work package 1 of `docs/review-roi.md` (2026-11-09). Does deeper or more
 expert code review lower the revert rate of Chromium CLs, after normalizing
 for difficulty? Scripts: `scripts/review_roi_table.py` (the per-CL table)
-and `scripts/review_roi_part1.py` (designs D1–D8); rerun commands are in
+and `scripts/review_roi_depth.py` (designs D1–D8); rerun commands are in
 their docstrings. Outputs in the job scratch directory `part1/`:
 `cl_table.sqlite` (the table), `part1_report.txt` (every table printed
 below, in full), `part1_report.json` (everything), `part1_results.json`
@@ -59,7 +59,7 @@ Nothing was fetched, no comment text was read and no model was called.
 
 `review_roi_table.py` (67 s, peak RSS 3.6 GB) joins `balance.sqlite` `cl`,
 `cl_attention`, `balance-git.sqlite` (`gcommits`, `gfiles`, `paths`),
-`balance-timeline.sqlite` `votes`, and `derived.sqlite` `accounts` and `comments`
+`balance-timeline.sqlite` `votes`, and `reviews.sqlite` `accounts` and `comments`
 (counts only), plus the shared inputs `first_commit.txt`,
 `owners_added.txt` and `mech.jsonl`.
 
@@ -157,7 +157,7 @@ fewer than 200 CLs join the reference level.
 
 ## Methods as run
 
-`review_roi_part1.py --frac 1 --reps 200 --check` (2,248 s, about 37
+`review_roi_depth.py --frac 1 --reps 200 --check` (2,248 s, about 37
 minutes, niced).
 
 - **Logistic models** (D3, D4, D6c, D7, D8) are fitted on *all* unit CLs
@@ -570,7 +570,7 @@ partly selection.
 
 ## Follow-up (2026-11-09)
 
-`scripts/review_roi_part1_followup.py` on `cl_table_f.sqlite`. That is the
+`scripts/review_roi_depth_followup.py` on `cl_table_f.sqlite`. That is the
 final table plus approval and sent times and the first approver's weekly
 load; the unit and all other columns are unchanged. The run took 603 s.
 Output is in `followup.txt` and `followup.json`, and the main numbers are

@@ -255,7 +255,7 @@ def put_window(raw, key, changes):
 
 
 class DeriveEndToEndTest(unittest.TestCase):
-    """raw.sqlite with a weekly listing and an open-CL snapshot -> derived.sqlite."""
+    """gerrit.sqlite with a weekly listing and an open-CL snapshot -> reviews.sqlite."""
 
     def build(self, d):
         raw = store.open_raw(d)
@@ -286,10 +286,10 @@ class DeriveEndToEndTest(unittest.TestCase):
     def test_derive_and_summarize(self):
         with tempfile.TemporaryDirectory() as d:
             self.build(d)
-            with open(os.path.join(d, "raw.sqlite"), "rb") as fh:
+            with open(os.path.join(d, "gerrit.sqlite"), "rb") as fh:
                 before = hashlib.sha256(fh.read()).hexdigest()
             derive(data_dir=d)
-            with open(os.path.join(d, "raw.sqlite"), "rb") as fh:
+            with open(os.path.join(d, "gerrit.sqlite"), "rb") as fh:
                 self.assertEqual(hashlib.sha256(fh.read()).hexdigest(), before)   # read-only
             db = store.open_derived(d)
             self.assertEqual(db.execute("SELECT change_number, status, close_week FROM changes "
@@ -347,7 +347,7 @@ class DeriveEndToEndTest(unittest.TestCase):
 
 
 def summary_db(d, accounts, comments, close_week="2026-W44", cls=None):
-    """A derived.sqlite with merged CLs (default: CL 100, anchored on
+    """A reviews.sqlite with merged CLs (default: CL 100, anchored on
     content/a.cc) and the given comments [(account, n_human, n_ai,
     n_post_merge)] or [(account, n_human, n_ai, n_post_merge, cl, path)],
     all written in W44 and 10 chars long. cls: {cl: anchor_path}."""
@@ -617,7 +617,7 @@ class SummarizeTest(unittest.TestCase):
     def test_old_derived_db_is_refused(self):
         with tempfile.TemporaryDirectory() as d:
             import sqlite3
-            old = sqlite3.connect(os.path.join(d, "derived.sqlite"))
+            old = sqlite3.connect(os.path.join(d, "reviews.sqlite"))
             old.execute("CREATE TABLE comments (host TEXT, is_inline INTEGER)")
             old.close()
             with self.assertRaises(SystemExit):
@@ -781,7 +781,7 @@ class CommitsTest(unittest.TestCase):
                 with open(os.path.join(out, f"{name}.json")) as fh:
                     files[name] = json.load(fh)
         # Newest first; only since the oldest fetched week's Monday; emails lowercased.
-        # The autoroller's CL isn't in derived.sqlite: its email marks it a bot.
+        # The autoroller's CL isn't in reviews.sqlite: its email marks it a bot.
         self.assertEqual(commits, [(103, "c@intel.com", "2026-W44", 0, 2),
                                    (102, "b@google.com", "2026-W44", 1, 1),
                                    (101, "chromium-autoroll@skia-public.iam.gserviceaccount.com", "2026-W44", 1, 1),

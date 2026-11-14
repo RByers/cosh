@@ -43,12 +43,12 @@ fetched. Run 2026-11-09.
 
 ## Method
 
-**Population.** Reviewer-started threads (`derived.sqlite` `threads`; the
+**Population.** Reviewer-started threads (`reviews.sqlite` `threads`; the
 root's account is not a bot) on unit CLs: the Part 1 per-CL table
 (`part1/cl_table.sqlite`, merged, human-owned, not reverts, relands,
 mechanical or `Bot-Commit` CLs), landed 2025-07-01 .. 2026-09-30 (UTC).
 A thread is addressed if the owner's first reply is Done-type
-(`regex_addressed = 1`) or `labels.sqlite` has `addressed = 1` for its
+(`regex_addressed = 1`) or `addressed.sqlite` has `addressed = 1` for its
 current `input_hash` (Haiku, `cosh classify`). 245,335 threads, 73% by
 the regex.
 

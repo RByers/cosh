@@ -4,8 +4,8 @@
 > mostly as built. Three things changed:
 > - The **headline metric** is addressed review comments (metric_version
 >   7), not the measures weighed in §3.6.
-> - There is a **third local store**, `data/private/labels.sqlite`. It holds
->   the addressed-comment labels from `cosh classify`. Like `raw.sqlite`, it
+> - There is a **third local store**, `data/private/addressed.sqlite`. It holds
+>   the addressed-comment labels from `cosh classify`. Like `gerrit.sqlite`, it
 >   is never deleted, because remaking it costs Claude Max usage.
 >   `comment-classifier.md`, "Design", has its schema, sizes and pipeline.
 > - **`extraction-v1.md` is the authority** on what is implemented.
@@ -18,7 +18,7 @@ only touches the API where it affects storage.
 ## TL;DR
 
 - **Use two SQLite files (stdlib `sqlite3`) plus committed CSV/JSON summaries.**
-  - `data/private/raw.sqlite`: an append-only cache of every Gerrit response,
+  - `data/private/gerrit.sqlite`: an append-only cache of every Gerrit response,
     stored as zlib-compressed JSON blobs keyed by request. It is the source of
     truth, so metrics can be re-derived without touching Gerrit again.
   - `data/private/notedb/*.git`: bare repos holding the fetched NoteDb meta
@@ -26,11 +26,11 @@ only touches the API where it affects storage.
   - **Whatever we download is retained, losslessly and permanently** (§3.8),
     so it never has to be fetched twice. Reduction to counts and lengths
     happens only in derived data.
-  - `data/private/derived.sqlite` (§3.3):
+  - `data/private/reviews.sqlite` (§3.3):
     derived tables (`changes`, `comments`, `accounts`, `meta`, and since
-    metric_version 7 `threads`; `committers`) that can be rebuilt from `raw.sqlite` and
+    metric_version 7 `threads`; `committers`) that can be rebuilt from `gerrit.sqlite` and
     NoteDb at any time.
-  - `data/private/labels.sqlite` (added with metric_version 7): the Haiku
+  - `data/private/addressed.sqlite` (added with metric_version 7): the Haiku
     labels behind addressed comments, keyed by thread and input hash. They
     can't be rebuilt for free, so they are never deleted.
   - `summaries/*.csv` + `summaries/*.json`: per-org per-week and per-month
@@ -83,7 +83,7 @@ Derived volume:
 | `changes` as CSV/SQLite (~110 B without subject, ~170 B with subject) | 1.5M | 160–250 MB | ~50–70 MB gzip |
 | `accounts` | ~30–50k | ~3 MB | <1 MB |
 | **Derived DB total** (incl. indexes) | | **~350–500 MB** | ~120 MB gzip |
-| **`raw.sqlite` cache** (change detail with messages, labels, and detailed accounts at about 20–40 KB JSON, plus `/comments` for the ~47% of CLs that have comments, compressed about 6:1 with zlib) | ~2.3M blobs | ~45–60 GB as JSON | **~6–10 GB on disk** |
+| **`gerrit.sqlite` cache** (change detail with messages, labels, and detailed accounts at about 20–40 KB JSON, plus `/comments` for the ~47% of CLs that have comments, compressed about 6:1 with zlib) | ~2.3M blobs | ~45–60 GB as JSON | **~6–10 GB on disk** |
 | Front-end summaries (see §3.7) | ~10k | ~1 MB | ~150 KB gzip |
 
 One week (the first milestone) is about 6k CLs, 12k reviews rows, about 2 MB
@@ -118,7 +118,7 @@ the level of individual CLs, not just weeks.
   aggregates.
 - Keep raw and derived storage in **separate files**:
   - The 6–10 GB raw cache is precious, expensive to rebuild, and backed up rarely.
-  - `derived.sqlite` is disposable and gets dropped and rebuilt whenever the metric
+  - `reviews.sqlite` is disposable and gets dropped and rebuilt whenever the metric
     definitions change.
   - With separate files, `VACUUM` and schema migrations on the derived DB never touch
     the cache.
@@ -130,7 +130,7 @@ Raw-cache alternatives considered:
 - *one `.jsonl.gz` per week*: compact, but it can't be appended mid-week safely, and
   re-fetching one CL means rewriting the whole week. Rejected as primary storage.
   It is still fine as an **export format** for archiving, e.g.
-  `data/private/archive/2026-W43.jsonl.gz`, generated from `raw.sqlite` once a
+  `data/private/archive/2026-W43.jsonl.gz`, generated from `gerrit.sqlite` once a
   week is closed.
 
 Use SQLite settings `PRAGMA journal_mode=WAL; PRAGMA synchronous=NORMAL;` and
@@ -145,7 +145,7 @@ store with its path, tier and size (drawn at `web/dataflow.html`;
 `docs/data-architecture.md` explains it). This section's original sketch is
 in git history.
 
-### 3.2 `raw.sqlite`: response cache
+### 3.2 `gerrit.sqlite`: response cache
 
 ```sql
 CREATE TABLE responses (
@@ -172,7 +172,7 @@ How the cache behaves:
 - To re-fetch on purpose (for example, to pick up post-merge comments), pass a
   `--refresh-older-than` flag that compares against `fetched_at`.
 
-### 3.3 `derived.sqlite`: derived tables
+### 3.3 `reviews.sqlite`: derived tables
 
 The schema lives in `cosh/store.py` (`DERIVED_SCHEMA`), and the metric
 definitions are in `extraction-v1.md`. Since metric_version 5 (2026-11-04)
@@ -210,7 +210,7 @@ Design notes that still hold:
 - **Multiple hosts and repos** are covered by `host` + `project`, so adding
   e.g. a v8 host needs no migration.
 
-### 3.4 Progress and resumability (in `raw.sqlite`)
+### 3.4 Progress and resumability (in `gerrit.sqlite`)
 
 ```sql
 CREATE TABLE extract_runs (
@@ -244,11 +244,11 @@ How a backfill resumes:
 - The backfill loop walks weeks from newest to oldest, which gives useful data early.
 - For each week it does three steps:
   1. Page the list query, unless `listed_at` is already set.
-  2. Fetch each listed CL that `raw.sqlite` doesn't have yet.
+  2. Fetch each listed CL that `gerrit.sqlite` doesn't have yet.
   3. Derive the week.
 - Killing the process at any point loses at most one in-flight request.
-- These tables live in `raw.sqlite`, so the derived DB is freely deletable:
-  `rm data/private/derived.sqlite && python3 -m cosh derive` is always safe.
+- These tables live in `gerrit.sqlite`, so the derived DB is freely deletable:
+  `rm data/private/reviews.sqlite && python3 -m cosh derive` is always safe.
 
 ### 3.5 Org mapping
 
@@ -285,7 +285,7 @@ Resolution order:
 
 `valid_from`/`valid_to` handle people who change employer but keep their
 chromium.org address. `summarize` reads both files (`cosh/orgs.py`). Nothing
-from them is stored in `derived.sqlite`, so remapping only requires re-running
+from them is stored in `reviews.sqlite`, so remapping only requires re-running
 `summarize`.
 
 `config/org_browsers.csv` maps orgs to Radar browsers:
@@ -380,17 +380,17 @@ What this means in practice:
 
 | Raw store | Contents kept |
 |---|---|
-| `raw.sqlite` `responses` | The full response body (zlib), URL, HTTP status, fetch time and sha256 for every listing, REST `/comments` and `/accounts` response, including 404s |
+| `gerrit.sqlite` `responses` | The full response body (zlib), URL, HTTP status, fetch time and sha256 for every listing, REST `/comments` and `/accounts` response, including 404s |
 | `notedb/<project>.git` | Every object of each fetched `refs/changes/NN/N/meta` ref, i.e. the change's whole NoteDb history, not only the tip comments |
 | `data/public/radar/raw/` | Raw Radar JSON |
 
 - Code only ever *reads* the raw stores to reduce them. `read_comments()` and
   `derive` drop fields (ranges, `submitRequirementResults`, change messages,
   votes) in memory. `parentUuid` and `unresolved` have been kept since
-  metric_version 7, for the review threads. `derived.sqlite` holds one row
+  metric_version 7, for the review threads. `reviews.sqlite` holds one row
   per comment, without its text. Nothing ever strips or rewrites the
   raw stores.
-- Never delete `raw.sqlite` or `notedb/`. Never run `gc --prune=now` or `prune`
+- Never delete `gerrit.sqlite` or `notedb/`. Never run `gc --prune=now` or `prune`
   in a NoteDb repo. Auto-gc and maintenance are disabled there. `repack -a -d`
   is safe, because every object is reachable from a `refs/meta/*` ref.
 - Known small gaps to close: a re-fetch overwrites the previous `responses` row
@@ -432,7 +432,7 @@ downloads its whole history.
 | Store | Per week (W44) | Per year |
 |---|---|---|
 | NoteDb repo, as fetched | 60 MB | about 3.1 GB (about 1.7 GB if repacked once) |
-| `raw.sqlite` listings | 9.7 MB | about 0.5 GB |
+| `gerrit.sqlite` listings | 9.7 MB | about 0.5 GB |
 | **Total raw** | about 70 MB | **about 2.2–3.6 GB** |
 
 The download volume from googlesource is about the same as the as-fetched pack
@@ -457,8 +457,8 @@ What to commit and what to keep local:
   - Radar inputs
   - `summaries/*`, per-org and per-reviewer alike
 - **Keep out of git:** `data/private/`. The reason is size and churn, not
-  privacy: `raw.sqlite` and the NoteDb repos are several GB per year, and
-  `derived.sqlite` can be rebuilt.
+  privacy: `gerrit.sqlite` and the NoteDb repos are several GB per year, and
+  `reviews.sqlite` can be rebuilt.
 - No minimum group size: `org_weekly` reports every org, however few
   reviewers it has. (An earlier rule folded orgs with fewer than 5 reviewers
   into `Other` for privacy; it was dropped with the policy change.)

@@ -1463,8 +1463,9 @@ large "Draft: under development" warning at the top. Its landing-page card
 - the growth, pipeline, mentorship, AI-paired and mechanical tables from
   `balance_growth.py` (via `balance_growth_tables.py`) and
   `balance_analysis.py`;
-- since 2026-11-08, `scripts/balance_page_extras.py`, which turns into
-  datasets the growth signals (−1 votes, abandonment, same-people panels,
+- since 2026-11-08, the `page_datasets()` functions of
+  `balance_signals.py`, `balance_clusters.py`, `balance_cluster_map.py`
+  and `chrome_releases.py`, which turn into datasets the growth signals (−1 votes, abandonment, same-people panels,
   matched cohorts; `docs/balance-signals.md`, from
   `balance_signals.compute()`), the activity patterns
   (`docs/balance-clusters.md`, aggregate shares only, plus the pattern
@@ -1693,7 +1694,7 @@ ground rule 3).
    for review" and attention hours need a fallback definition, used for
    every year.
 
-## Narrative datasets (`scripts/balance_narrative.py`, 2026-11-09)
+## Narrative datasets (`scripts/balance_review_load.py`, 2026-11-09)
 
 For the page's narrative restructure ("Chromium Code Review Load
 Analysis"), one script adds 13 aggregate datasets to
@@ -1750,5 +1751,5 @@ into "Other".
 The page's copy comes from `python3 -m cosh.balance_publish` (step
 `narrative`, after `growth`, whose `ai_paired` it quotes). By hand (about
 1.5 min cold, 10 s with `--cache`; deterministic):
-`COSH_DATA_DIR=<main>/data/private nice -n 5 python3 scripts/balance_narrative.py
+`COSH_DATA_DIR=<main>/data/private nice -n 5 python3 scripts/balance_review_load.py
 [--cache /tmp/…/narrative.pkl] [--ai-paired F] [--out F]`.

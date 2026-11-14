@@ -11,7 +11,7 @@ serial, one connection, at least 5 s between fetches. The default duty_cycle
 1.0 (approved 2026-11-04) runs fetches back to back; 0.5 idles after every
 fetch for as long as it took, so the server sees us at most half the time. Weeks whose
 fetch already completed are skipped, so it's resumable at any point; each
-completed week is derived immediately (into derived.sqlite). Afterwards, run
+completed week is derived immediately (into reviews.sqlite). Afterwards, run
 `extract-open` so comments on CLs that are still open are counted too.
 """
 

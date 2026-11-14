@@ -1,6 +1,6 @@
 """Cohorts of authors and reviewers by PCA and k-means (docs/balance-clusters.md).
 
-Offline; reads balance*.sqlite, derived.sqlite and the shared Chromium clone
+Offline; reads balance*.sqlite, reviews.sqlite and the shared Chromium clone
 (via balance_analysis / balance_growth). Writes private, per-person output
 under data/private/balance_clusters/ and prints aggregate tables that are safe
 to publish (cluster sizes, profiles, transition shares).
@@ -628,6 +628,38 @@ def main():
         json.dump(dict(generated=datetime.now(timezone.utc).strftime("%Y-%m-%d"),
                        git_model=git_model, review_model=rv_model, aggregate=agg), fh, indent=1)
     print(f"\nwrote {out_dir}/people.json ({len(people):,} people) and clusters.json", file=sys.stderr)
+
+# The Review Balance page's datasets from this script's output; `python3 -m
+# cosh.balance_publish` calls page_datasets.
+
+WINDOWS = {"2019H1-2020H2": "2019–20 → a year later", "2021H1-2023H1": "2021–23 → a year later",
+           "2024H1-2024H2": "2024 → 2025", "2025H1": "2025 H1 → 2026 H1"}
+
+
+def page_datasets(c):
+    """patterns, trajectories, joiner_paths and transitions, from clusters.json's
+    aggregate block (shares only; people.json is never read)."""
+    a = c["aggregate"]
+    out = {}
+    (pre_k, pre), (rec_k, rec) = list(a["git_windows"].items())
+    out["patterns"] = [
+        dict(pattern=name, tenure=prof["median_tenure_years"], commits=prof["median_commits_per_half"],
+             approvals=prof["median_approvals_per_half"], owner=prof["owner_share"],
+             share_pre=pre.get(name), share_recent=rec.get(name))
+        for name, prof in sorted(a["git_profiles"].items(), key=lambda kv: -(rec.get(kv[0]) or 0))]
+    total = sum(v for k, v in a["trajectories"].items())
+    out["trajectories"] = [dict(trajectory=k, people=v, share=round(v / total, 3))
+                           for k, v in sorted(a["trajectories"].items(), key=lambda kv: -kv[1])
+                           if k not in ("mixed", "tapering off")]
+    jm = a["joiner_mix"]
+    keys = ["light → reviewer", "ramping up to author", "stays light"]
+    out["joiner_paths"] = [dict(cohort=k.replace("joined ", ""), people=v["people"], **{t: v.get(t) for t in keys})
+                           for k, v in jm.items()]
+    out["transitions"] = [
+        dict(window=WINDOWS.get(w.split(" ->")[0], w.split(" ->")[0]), light_review=t["light"]["review"], light_author=t["light"]["author"],
+             author_review=t["author"]["review"], review_review=t["review"]["review"])
+        for w, t in a["transitions"].items()]
+    return out
 
 
 if __name__ == "__main__":

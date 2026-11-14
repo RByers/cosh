@@ -1,4 +1,4 @@
-"""Fetch one ISO week of merged CLs and their comments into raw.sqlite.
+"""Fetch one ISO week of merged CLs and their comments into gerrit.sqlite.
 
 Listing: per UTC day, merge-time windows of WINDOW_HOURS each (one page of
 n=500 each). A window that overflows is bisected rather than paged with S=,

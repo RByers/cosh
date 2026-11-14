@@ -82,7 +82,7 @@ def refspecs(n):
 
 # The approved range is config/approved.json's "patchsets" (cosh/approved.py):
 # reviewed CLs closed (or, if open, last updated) in [since, until).
-# derived.sqlite reaches back to 2017, and patch sets of older CLs are not
+# reviews.sqlite reaches back to 2017, and patch sets of older CLs are not
 # approved, so a plain rerun must not select them.
 APPROVED_SINCE = "2023-06-26"   # the default for callers that pass none
 
@@ -308,7 +308,7 @@ def run(go=False, derived_path=None, git_dir=None, interval=2.0, max_cls=1000, m
     run at once when the server rate-limits us). When new packs pass `repack_bytes`
     or free space drops under `min_free`, workers finish their fetch and
     stop, the repo is repacked, and fetching continues."""
-    derived_path = derived_path or os.path.join(store.DATA_DIR, "derived.sqlite")
+    derived_path = derived_path or os.path.join(store.DATA_DIR, "reviews.sqlite")
     git_dir = git_dir or default_repo()
     cls = reviewed_cls(derived_path, since=since, until=until)
     done = fetched(git_dir) if os.path.isdir(git_dir) else {}

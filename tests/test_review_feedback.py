@@ -1,9 +1,9 @@
-"""cosh/feedback.py helpers: the address hash the page shares,
+"""cosh/review_feedback.py helpers: the address hash the page shares,
 periods, bands, quantiles and excerpts. No data is read."""
 
 import unittest
 
-from cosh import feedback as R
+from cosh import review_feedback as R
 
 
 class ReviewFeedbackTest(unittest.TestCase):

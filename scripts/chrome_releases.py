@@ -220,6 +220,20 @@ def main():
     if a.cmd in ("join", "all"):
         join()
 
+# The Review Balance page's datasets from this script's output; `python3 -m
+# cosh.balance_publish` calls page_datasets.
+
+def page_datasets(s):
+    """security_years and security_summary, from summary.json."""
+    sev = ["Critical", "High", "Medium", "Low"]
+    rows = []
+    for y, v in sorted(s["cves_by_year"].items()):
+        rows.append(dict(year=int(y), **{k.lower(): v.get(k, 0) for k in sev}, total=sum(v.values()),
+                         matched=s["matched_share_by_year"].get(y)))
+    return {"security_years": rows,
+            "security_summary": [dict(cves=s["cves"], bugs_with_commit=s["bugs_with_commit"],
+                                      fixing_commits=s["fixing_commits"])]}
+
 
 if __name__ == "__main__":
     main()

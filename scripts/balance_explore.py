@@ -1,7 +1,7 @@
 """Exploratory: change complexity, review difficulty and rework per CL
 (docs/balance.md).
 
-Offline only; fetches nothing. Reads derived.sqlite and labels.sqlite
+Offline only; fetches nothing. Reads reviews.sqlite and addressed.sqlite
 (read-only), the NoteDb meta refs, and the patch-set commits that the
 2026-W44 pilot stored as refs/patchsets/<CL>/<ps> in the blob-less
 chromium-src.git clone. Every git command runs with GIT_NO_LAZY_FETCH=1 and

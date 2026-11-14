@@ -1,12 +1,12 @@
 """Per-CL analysis table for the review-ROI study, Part 1 (docs/review-roi.md,
-docs/review-roi-part1.md).
+docs/review-roi-depth.md).
 
 One row per CL in the unit: merged, human-owned, non-mechanical, not a
 revert, not a reland, not a Bot-Commit (Rubber Stamper) approval, landed on
 main 2023-07-01 .. 2026-09-30 and at least 30 days before the newest commit
 in commits.sqlite. Each row has the revert outcomes (7, 30, 90 days),
 the review-depth exposures, the approvers' expertise and habit, and the
-controls. Offline: reads data/private/balance*.sqlite and derived.sqlite
+controls. Offline: reads data/private/balance*.sqlite and reviews.sqlite
 and commits.sqlite read-only (no comment text), and writes one scratch
 SQLite file. Identities appear only as integer ids.
 
@@ -418,7 +418,7 @@ def main():
     # Weeks start Monday 00:00 UTC (ISO weeks). A CL's approval week is its
     # first approver's approving vote, or its landing when approvers come from
     # Reviewed-by. Threads are reviewer-started threads dated by their root
-    # comment, on any CL in derived.sqlite.
+    # comment, on any CL in reviews.sqlite.
     wk = lambda t: (t - 345600) // 604800
     cls_week, thr_week, thr_on = Counter(), Counter(), Counter()
     for c in base:

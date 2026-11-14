@@ -4,7 +4,7 @@ Status: **in production** since metric_version 7 (2026-11-04). Addressed
 review comments are cosh's primary contribution measure.
 - **The pipeline:** a regex on the owner's reply, then Claude Haiku via
   headless `claude -p` for the threads the regex doesn't settle (`cosh
-  classify`, `labels.sqlite`). The section "Design" has the architecture,
+  classify`, `addressed.sqlite`). The section "Design" has the architecture,
   storage, UI behaviour and first run.
 - **How accurate it is in production:** precision 0.98, recall 0.99,
   from an audit of 800 production labels against Opus (see "Production audit"
@@ -374,7 +374,7 @@ Sources for the plan structure:
 2. **Classify the rest with Haiku** in batches of 100 via headless
    `claude -p`, with the definition above.
    - Store `addressed`, `classifier` (`regex` or `haiku-<version>`) and the
-     definition's version per thread, in `derived.sqlite` or a sidecar
+     definition's version per thread, in `reviews.sqlite` or a sidecar
      cache keyed by comment uuid. That way a rerun classifies only new
      threads, and a model change is a versioned rebuild, like
      `metric_version`.
@@ -429,7 +429,7 @@ Defaults still to confirm are marked *(default)*.
   a comment that week; the regex settled the rest). The run took 27 calls
   of 100, about 11 minutes, and 949k Haiku tokens, about 360 per thread,
   against 235 in the evaluation because the model now sees whole threads.
-  That is $0.22 API-equivalent. `labels.sqlite` is 136 KB.
+  That is $0.22 API-equivalent. `addressed.sqlite` is 136 KB.
 - **Result:** 1,423 threads (54%) were labelled addressed. Of W44's 3,405
   in-scope comments, 1,905 (55.9%) are addressed, and none are pending.
   Without labels, other weeks are 60–73% decided, so the UI hides the
@@ -494,9 +494,9 @@ It puts no load on Gerrit.
 ### Pipeline
 
 ```
-derive    (rebuildable)  raw + NoteDb -> derived.sqlite: comments + threads (+ regex result)
-classify  (new, costs Max usage)  pending threads -> claude -p (Haiku, batches of 100, 8 at once) -> labels.sqlite
-summarize (rebuildable)  derived.sqlite + labels.sqlite (read-only ATTACH) -> summaries/
+derive    (rebuildable)  raw + NoteDb -> reviews.sqlite: comments + threads (+ regex result)
+classify  (new, costs Max usage)  pending threads -> claude -p (Haiku, batches of 100, 8 at once) -> addressed.sqlite
+summarize (rebuildable)  reviews.sqlite + addressed.sqlite (read-only ATTACH) -> summaries/
 ```
 
 - **`cosh classify` is a separate command.** It never runs inside `derive`.
@@ -504,7 +504,7 @@ summarize (rebuildable)  derived.sqlite + labels.sqlite (read-only ATTACH) -> su
     doesn't say done, and with no label yet for their current input hash
     and the active classifier.
   - **Rendering:** it renders the pending threads from NoteDb (comment text
-    isn't stored in `derived.sqlite`) and sends them in batches.
+    isn't stored in `reviews.sqlite`) and sends them in batches.
   - **Parallel calls:** `--jobs N` (default 8, at most 16) runs N
     `claude -p` calls at once. Only the calls run in worker threads; the
     main thread reads NoteDb, prepares at most N batches ahead and writes
@@ -527,11 +527,11 @@ summarize (rebuildable)  derived.sqlite + labels.sqlite (read-only ATTACH) -> su
     and goes on, until nothing is pending. The calls in flight can
     overshoot the share slightly (up to `--jobs` batches).
 - **`summarize` without labels is fine:**
-  - with no `labels.sqlite`, or an empty one, it still writes every other
+  - with no `addressed.sqlite`, or an empty one, it still writes every other
     metric, and the addressed metric is just incomplete;
   - it never calls a model.
 
-### `derived.sqlite` additions (rebuildable)
+### `reviews.sqlite` additions (rebuildable)
 
 - **`comments`:** add `parent_uuid TEXT` and `root_uuid TEXT`. The NoteDb
   reader currently drops the reply link.
@@ -548,10 +548,10 @@ summarize (rebuildable)  derived.sqlite + labels.sqlite (read-only ATTACH) -> su
     PRIMARY KEY (host, change_number, root_uuid)) STRICT, WITHOUT ROWID;
   ```
 
-### `data/private/labels.sqlite` (new; never delete, never rebuild)
+### `data/private/addressed.sqlite` (new; never delete, never rebuild)
 
 LLM labels cost Max usage to make, so this file gets the same protection
-as `raw.sqlite`. It only gains rows.
+as `gerrit.sqlite`. It only gains rows.
 
 ```sql
 CREATE TABLE classifiers (classifier_id INTEGER PRIMARY KEY,  -- 1-byte ids in label rows
