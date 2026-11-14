@@ -286,6 +286,13 @@ function binRange(peers: Peers, b: number): string {
   return `${fmtInt(e[b - 1] + 1)}–${fmtInt(e[b])} CLs landed`;
 }
 
+/** The feedback rate charts' y-axis: logarithmic, so a steady fall per doubling is a straight
+ * line and the wide bands don't flatten the median. A rate of 0 is drawn at the bottom. */
+const FR_MIN = 0.2;
+const frLogAxis = (t: Theme) => ({ type: 'logarithmic' as const, min: FR_MIN, max: 20, ...axis(t, msg('axis-fr')),
+  afterBuildTicks: (a: { ticks: { value: number }[] }) => { a.ticks = [0.2, 0.5, 1, 2, 5, 10, 20].map((value) => ({ value })); },
+  ticks: { color: t.text, font: { family: t.font }, callback: (v: string | number) => fmtNum(Number(v)) } });
+
 /** The fan's tooltip line for bin `b`. */
 function fanTooltip(peers: Peers, b: number): string {
   const d = peers.fr_bins[b];
@@ -316,7 +323,7 @@ function renderIntro() {
       font: { family: t.font },
       scales: {
         x: { ...axis(t, msg('axis-experience')), grid: { display: false } },
-        y: { beginAtZero: true, ...axis(t, msg('axis-fr')) },
+        y: frLogAxis(t),
       },
       plugins: {
         legend: { display: false },
@@ -660,7 +667,7 @@ function renderCompare() {
   const peers = state.peers!;
   const t = theme();
   const bins = binSums(p, peers, ALL, state.norm);
-  const you = bins.map((s) => (s.cls ? frOf(s) : null));
+  const you = bins.map((s) => (s.cls ? Math.max(frOf(s) ?? 0, FR_MIN) : null));
   const full = bins.map((s) => s.cls >= peers.min_bin_cls);
   fanLegend($('#rf-compare-legend'), t, true, true);
   charts.compare = new Chart($<HTMLCanvasElement>('#rf-compare'), {
@@ -679,7 +686,7 @@ function renderCompare() {
       font: { family: t.font },
       scales: {
         x: { ...axis(t, msg('axis-experience')), grid: { display: false } },
-        y: { beginAtZero: true, ...axis(t, msg('axis-fr')) },
+        y: frLogAxis(t),
       },
       plugins: {
         legend: { display: false },
@@ -690,7 +697,7 @@ function renderCompare() {
             label: (i) => {
               if (i.datasetIndex === 4) return fanTooltip(peers, i.dataIndex);
               const s = bins[i.dataIndex];
-              return `You: ${fmtFr(i.parsed.y)} (${fmtInt(s.cls)} ${s.cls === 1 ? 'change' : 'changes'})`;
+              return `You: ${fmtFr(frOf(s))} (${fmtInt(s.cls)} ${s.cls === 1 ? 'change' : 'changes'})`;
             },
           },
         },

@@ -72,7 +72,9 @@ Both are fixed: the page has no switches for them (the user's call,
 
 **The opening card**, "Feedback rate" (no person needed), says nothing of
 the index: the FR's definition, then the FR by experience bin (y-axis
-"feedback rate"): the median of people's FR in each bin (each
+"feedback rate", logarithmic from 0.2 to 20 since 2026-11-14, so the
+steady fall per doubling is a straight line; the person's comparison chart
+uses the same axis and draws a rate of 0 at 0.2): the median of people's FR in each bin (each
 person's CLs in that bin pooled, with `MIN_BIN_CLS` = 5 or more there), with
 the middle half and the 10th–90th percentile shaded (`fr_bins`). On
 2026-11-14: 5.40 at 8, 4.11, 3.52, 2.86, 2.49, 2.00, 1.64, 1.28, 1.04 and
@@ -84,8 +86,8 @@ distribution, smoothed (a Gaussian kernel of 0.12 in log2 on a grid from
 −75% to +183%, `growth_dist`), with the median and, when a person is shown,
 their own growth marked.
 
-The FR falls as much as the old index did, though the chart may look
-flatter: the old addressed index adjusted for size and directory fell 5.3×
+The FR falls as much as the old index did, though on a linear axis the
+chart looked flatter (hence the log axis): the old addressed index adjusted for size and directory fell 5.3×
 from <10 to 1,000+ earlier commits (2.36 → 0.44), the median FR 5.2× from 8
 to 2k CLs (5.40 → 1.04) and 6.7× to >2k (6.7× and 9× with deletions
 counted). The bands make the difference: the

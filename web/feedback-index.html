@@ -64,7 +64,8 @@
           wherever they landed <slot name="minBin"></slot> or more such CLs, from <slot name="from"></slot> to
           <slot name="to"></slot>. Most contributors' rate falls steadily as they gain experience: the median falls
           from <slot name="first"></slot> over the first 8 CLs to <slot name="last"></slot> at
-          <slot name="lastBin"></slot>. The bands show how widely contributors differ at the same experience.
+          <slot name="lastBin"></slot>. The bands show how widely contributors differ at the same experience. The
+          rate's axis is logarithmic, so a steady fall per doubling draws a straight line.
         </template>
 
         <h3>Distribution of feedback rate change with experience</h3>
@@ -219,7 +220,8 @@
           <canvas id="rf-compare" role="img" aria-label="Your feedback rate by changes landed before, against every contributor's median, middle half and 10th to 90th percentile."></canvas>
         </div>
         <p class="note">
-          Points with fewer than <span class="rf-min-bin"></span> of your changes are drawn hollow.
+          Points with fewer than <span class="rf-min-bin"></span> of your changes are drawn hollow. The rate's axis
+          is logarithmic; a rate of 0 is drawn at its bottom (0.2).
         </p>
         <h3>By your experience</h3>
         <div class="table-wrap">
