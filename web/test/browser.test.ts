@@ -3363,7 +3363,15 @@ test('feedback index: the opening card defines the rate and index, with one char
   assert.deepEqual(await page.evaluate(() => window.__rf!.charts.newcomers.data.labels),
     ['2018', '2019', '2020', '2021', '2022', '2023', '2024', '2025', '2026']);
   assert.match((await page.$eval('#rf-newcomers-note', (e) => e.textContent!)).replace(/\s+/g, ' '),
-    /their first 10 CLs on main.*2026 is not over yet\./);
+    /when they had 8 or fewer CLs on main.*2026 is not over yet\./);
+  // Its selector offers the experience bins with medians in three or more years, 8 or fewer CLs first.
+  assert.deepEqual(await page.$$eval('#rf-cohort-bin option', (os) => os.map((o) => o.textContent)),
+    ['8 or fewer CLs', '9–16 CLs', '17–32 CLs', '33–64 CLs', '65–128 CLs', '129–256 CLs', '257–512 CLs']);
+  await page.select('#rf-cohort-bin', '2');
+  assert.deepEqual(await page.evaluate(() => window.__rf!.charts.newcomers.data.labels),
+    ['2018', '2019', '2020', '2021', '2022', '2023', '2024']);
+  assert.match((await page.$eval('#rf-newcomers-note', (e) => e.textContent!)).replace(/\s+/g, ' '),
+    /when they had 17–32 CLs on main.*2026 is not over yet\./);
   // Size: per change it climbs, per 100 lines much less; directories and organizations, highest first.
   assert.deepEqual(await axisTitles(page, 'sizeCl'), ['lines written', 'addressed comments per change']);
   assert.deepEqual(await axisTitles(page, 'size'), ['lines written', 'addressed feedback rate (AFR)']);

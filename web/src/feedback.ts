@@ -126,9 +126,8 @@ export interface Peers {
   fr_bins: Dist[];
   /** Norm -> period -> the spread of people's feedback index. */
   fi: Record<string, Record<string, Dist>>;
-  newcomer_cls: number;
-  /** [first-commit year, people, p10, p25, median, p75, p90] of newcomers' AFR. */
-  newcomers: [number, number, number | null, number | null, number | null, number | null, number | null][];
+  /** Per experience bin: [first-commit year, people, p10, p25, median, p75, p90] of people's AFR in that bin. */
+  cohorts: [number, number, number | null, number | null, number | null, number | null, number | null][][];
   size_labels: string[];
   /** Per size bucket: [median AFR, median addressed threads per change, people]. */
   by_size: [number | null, number | null, number][];

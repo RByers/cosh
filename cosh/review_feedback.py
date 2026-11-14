@@ -349,9 +349,9 @@ BIN_LABELS = ["8", "16", "32", "64", "128", "256", "512", "1k", "2k", ">2k"]
 MIN_BIN_CLS = 5           # a person's AFR in one experience bin counts with this many CLs there
 FR_FLOOR = 0.1            # FRs below this count as this in the growth fit (log scale)
 MIN_GROWTH_BINS = 3       # a growth rate needs FRs in this many bins
-# "How it's changing": the AFR over a newcomer's first NEWCOMER_CLS changes, by
-# the year of their first commit on main, from NEWCOMER_FROM.
-NEWCOMER_CLS, NEWCOMER_FROM = 10, 2018
+# "How it's changing": the AFR over people's CLs in one experience bin, by the
+# year of their first commit on main, from COHORT_FROM (Gerrit data starts mid-2017).
+COHORT_FROM = 2018
 MIN_CELL_CLS = 10         # a person counts in a size, directory or org bar with this many CLs there
 CHART_DIRS, CHART_ORGS = 12, 10
 # A directory (two levels, else one) or org gets its own factor in the
@@ -542,23 +542,31 @@ def expected(r, norm, m):
     return r.lines / 100 * base * fo * share
 
 
-def newcomers(by_pid, first_year):
-    """Per year of first commit on main from NEWCOMER_FROM: [year, people,
-    p10, p25, median, p75, p90] of the AFR over their CLs with fewer than
-    NEWCOMER_CLS earlier commits (MIN_BIN_CLS of them or more)."""
-    ys = defaultdict(list)
+def cohorts(by_pid, first_year):
+    """Per experience bin, per year of first commit on main from COHORT_FROM:
+    [year, people, p10, p25, median, p75, p90] of the AFR over their CLs in
+    that bin (MIN_BIN_CLS of them or more)."""
+    ys = [defaultdict(list) for _ in BIN_LABELS]
     for pid, rs in by_pid.items():
         y = first_year.get(pid)
-        if y is None or y < NEWCOMER_FROM:
+        if y is None or y < COHORT_FROM:
             continue
-        cs = [r for r in rs if r.prior < NEWCOMER_CLS]
-        lines = sum(r.lines for r in cs)
-        if len(cs) >= MIN_BIN_CLS and lines > 0:
-            ys[y].append(fr(sum(r.addr for r in cs), lines))
+        cell = defaultdict(lambda: [0, 0, 0])
+        for r in rs:
+            x = cell[r.bin]
+            x[0] += 1
+            x[1] += r.addr
+            x[2] += r.lines
+        for b, (n, a, lines) in cell.items():
+            if n >= MIN_BIN_CLS and lines > 0:
+                ys[b][y].append(fr(a, lines))
     out = []
-    for y in sorted(ys):
-        q = quantiles(ys[y])
-        out.append([y, len(ys[y])] + ([q[2], q[5], q[10], q[15], q[18]] if len(ys[y]) >= MIN_PEERS else [None] * 5))
+    for by_year in ys:
+        rows = []
+        for y in sorted(by_year):
+            q = quantiles(by_year[y])
+            rows.append([y, len(by_year[y])] + ([q[2], q[5], q[10], q[15], q[18]] if len(by_year[y]) >= MIN_PEERS else [None] * 5))
+        out.append(rows)
     return out
 
 
@@ -831,14 +839,14 @@ def main():
     # ------------------------------------------------ peers
     dist = lambda xs: dict(n=len(xs), q=quantiles(xs) if len(xs) >= MIN_PEERS else None)
     first_year = {pid: datetime.fromtimestamp(t, timezone.utc).year for pid, t in first.items()}
-    peers = dict(v=5, generated=datetime.now(timezone.utc).strftime("%Y-%m-%d"), periods=allp,
+    peers = dict(v=6, generated=datetime.now(timezone.utc).strftime("%Y-%m-%d"), periods=allp,
                  start=epoch_day(START), end=epoch_day(END), addr_start=epoch_day(ADDR_START),
                  min_peers=MIN_PEERS, min_cls=MIN_CLS, min_bin_cls=MIN_BIN_CLS, min_cell_cls=MIN_CELL_CLS,
                  min_growth_bins=MIN_GROWTH_BINS, fr_floor=FR_FLOOR, bins=BIN_LABELS, bin_edges=BIN_EDGES,
                  norms=NORMS, **model,
                  fr_bins=fr_bins(by_pid),
                  fi={nm: {p: dist(v.get(p, [])) for p in allp} for nm, v in fi_vals.items()},
-                 newcomer_cls=NEWCOMER_CLS, newcomers=newcomers(by_pid, first_year),
+                 cohorts=cohorts(by_pid, first_year),
                  size_labels=SIZE_LABELS, by_size=by_size(by_pid), by_dir=by_dir(by_pid), by_org=by_org(by_pid),
                  growth=growth_dist(list(growths.values())), fi_norm=FI_NORM,
                  fi_dist=fi_dist(fi_vals[FI_NORM].get("all", [])),
@@ -850,7 +858,8 @@ def main():
     gq = peers["growth"]
     print(f"growth per doubling: {gq['n']:,} people, median {gq['median']}%, "
           f"p10 {gq['q'][2]}% p90 {gq['q'][18]}%" if gq["q"] else "growth: none", file=sys.stderr)
-    print("newcomers: " + " ".join(f"{y}={m}/{n}" for y, n, _, _, m, _, _ in peers["newcomers"]), file=sys.stderr)
+    for b, rows in zip(BIN_LABELS, peers["cohorts"]):
+        print(f"cohorts at {b}: " + " ".join(f"{y}={m}/{n}" for y, n, _, _, m, _, _ in rows), file=sys.stderr)
     print("by size: " + " ".join(f"{l} {v}" for l, v in zip(SIZE_LABELS, peers["by_size"])), file=sys.stderr)
     print("by directory: " + ", ".join(f"{d} {v}/{n}" for d, v, n in peers["by_dir"]), file=sys.stderr)
     print("by org: " + ", ".join(f"{d} {v}/{n}" for d, v, n in peers["by_org"]), file=sys.stderr, flush=True)

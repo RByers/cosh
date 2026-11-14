@@ -79,9 +79,10 @@ export const peers: Peers = {
   fr_bins: refBin.map((r, i) => (i === 9 ? { n: 6, q: null } : { n: 3000 - 300 * i, q: q(r / 4, r * 3) })),
   // Everyone's index runs 0.3 .. 2.5 evenly, in every period and norm; outside that, as noted.
   fi: Object.fromEntries(norms.map((nm) => [nm, Object.fromEntries(periods.map((p) => [p, { n: 2800, q: q(0.3, 2.5) }]))])),
-  newcomer_cls: 10,
-  newcomers: [2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025, 2026].map((y, i) =>
-    [y, 300 + i, 1, 1.8, 3.7 + (i % 3) / 10, 6.5, 10]),
+  // Per experience bin, by start year; from bin 8 on, too few people for a median.
+  cohorts: Array.from({ length: 10 }, (_, b) => [2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025, 2026]
+    .slice(0, 9 - b).map((y, i): [number, number, number | null, number | null, number | null, number | null, number | null] =>
+      (b >= 8 ? [y, 5, null, null, null, null, null] : [y, 300 + i - 30 * b, 1, 1.8, 3.7 + (i % 3) / 10 - b / 4, 6.5, 10]))),
   size_labels: ['<4', '4–7', '8–15', '16–31', '32–63', '64–127', '128–255', '256–511', '512–1k', '1k+'],
   by_size: [[2.82, 0.06, 1694], [2.86, 0.15, 1621], [2.43, 0.27, 1689], [2.14, 0.5, 1850], [2.09, 0.96, 1922],
     [1.97, 1.8, 1960], [1.75, 3.18, 1895], [1.46, 5.22, 1626], [1, 6.88, 1085], [0.23, 4.69, 527]],

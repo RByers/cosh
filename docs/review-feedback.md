@@ -141,11 +141,14 @@ percentile 0.43–1.91.
 **Methodology and details** is a collapsed `<details>` at the bottom whose
 charts are drawn when it opens:
 
-- *How it's changing:* the AFR over newcomers' first 10 CLs
-  (`NEWCOMER_CLS`), by year of first commit on `main` from
-  2018 (people with `MIN_BIN_CLS` such CLs): median and middle half. On
-  2026-11-14 the medians run 3.73, 4.31, 4.21, 3.75, 4.05, 4.21, 4.31, 3.64
-  for 2018–2025 and 2.78 for 2026 (not over).
+- *How it's changing:* people's AFR over their CLs in one experience bin,
+  picked with a selector (default 8 or fewer CLs; it offers the bins with a
+  median in 3 or more years, 8 through 1k on 2026-11-14), by year of first
+  commit on `main` from 2018 (`COHORT_FROM`; people with `MIN_BIN_CLS` CLs
+  in the bin): median and middle half. On 2026-11-14 the medians at 8 or
+  fewer run 5.24, 5.92, 5.89, 5.56, 5.73, 5.57, 6.18, 5.32 for 2018–2025
+  and 3.89 for 2026 (not over); at 129–256 they run 2.53, 2.07, 2.06, 2.14,
+  2.13, 1.91, 1.79, 1.72 for 2018–2025.
 - *By change size:* two bar charts per size bucket (`size10`): the median
   person's addressed threads per CL (0.10 under 4 lines → 9.58 at 512–1k on
   2026-11-14) and their AFR (5.54 → 1.40, 0.21 at 1k+). Per line the
@@ -283,11 +286,11 @@ Output (default `web/public/review-feedback/`, which Vite copies into the
 site), with `<key>` the hash of the person's address, in three kinds of
 file that the page loads at different times:
 
-- `peers.json` (global, loaded on opening; version 5, about 44 KB): the experience bins (`bins`,
+- `peers.json` (global, loaded on opening; version 6, about 47 KB): the experience bins (`bins`,
   `bin_edges`), the index's typical rates and factors (`ref_bin`,
   `ref_all`, `f_dir`, `f_org`), the spread of AFR per bin (`fr_bins`) and of
   everyone's index per norm and period (`fi`), and the methodology's data
-  (`newcomers`, `growth`, `by_size`, `by_dir`, `by_org`), with the
+  (`cohorts`, `growth`, `by_size`, `by_dir`, `by_org`), with the
   minimums the page names.
 - Per person, loaded once an address is typed:
   - `u/<key>.json` (version 5): first commit and which half-years the

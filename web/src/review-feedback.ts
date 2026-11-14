@@ -79,6 +79,8 @@ const state = {
   half: null as string | null,
   /** The column picked in the comments-per-change chart (THREAD_BINS), filtering the same. */
   bin: null as number | null,
+  /** The experience bin shown in "How it's changing". */
+  cohortBin: 0,
   threadsShown: PAGE,
   noTextShown: PAGE,
   /** Keys of the directory rows that are open (see dirRows). */
@@ -398,14 +400,38 @@ function renderMethod() {
   renderSizes();
 }
 
+/** An experience bin's range of CLs landed on main, e.g. "9–16 CLs". */
+function cohortBinName(peers: Peers, b: number): string {
+  const e = peers.bin_edges;
+  return b === 0 ? msg('cohort-bin', { first: true, hi: fmtInt(e[0]) })
+    : msg('cohort-bin', { first: false, lo: fmtInt(e[b - 1] + 1), hi: fmtInt(e[b]) });
+}
+
+/** The experience bins "How it's changing" offers: those with medians in COHORT_MIN_YEARS years or more. */
+const COHORT_MIN_YEARS = 3;
+
+function fillCohortBins(peers: Peers) {
+  const sel = $<HTMLSelectElement>('#rf-cohort-bin');
+  if (sel.options.length) return;
+  peers.cohorts.forEach((rows, b) => {
+    if (b >= peers.bin_edges.length || rows.filter((r) => r[4] !== null).length < COHORT_MIN_YEARS) return;
+    const o = el('option', cohortBinName(peers, b));
+    o.value = String(b);
+    sel.append(o);
+  });
+  sel.value = String(state.cohortBin);
+}
+
 function renderNewcomers() {
   destroy('newcomers');
   const peers = state.peers!;
   const t = theme();
-  const rows = peers.newcomers;
+  fillCohortBins(peers);
+  const rows = peers.cohorts[state.cohortBin] ?? [];
   if (!rows.length) return;
-  put($('#rf-newcomers-note'), 'newcomers-note', { cls: fmtInt(peers.newcomer_cls), minBin: fmtInt(peers.min_bin_cls),
-    people: fmtInt(rows.reduce((a, r) => a + r[1], 0)), lastYear: String(rows.at(-1)![0]) });
+  put($('#rf-newcomers-note'), 'newcomers-note', { bin: cohortBinName(peers, state.cohortBin),
+    minBin: fmtInt(peers.min_bin_cls), people: fmtInt(rows.reduce((a, r) => a + r[1], 0)),
+    lastYear: String(new Date((peers.end - 1) * 86_400_000).getUTCFullYear()) });
   const col = (i: number) => rows.map((r) => r[i] as number | null);
   charts.newcomers = new Chart($<HTMLCanvasElement>('#rf-newcomers'), {
     type: 'line',
@@ -1013,6 +1039,10 @@ function init() {
   });
   const method = $<HTMLDetailsElement>('#method');
   method.addEventListener('toggle', () => renderMethod());
+  $<HTMLSelectElement>('#rf-cohort-bin').addEventListener('change', (e) => {
+    state.cohortBin = Number((e.target as HTMLSelectElement).value);
+    renderNewcomers();
+  });
   if (location.hash === '#method') method.open = true;
   matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
     renderIntro();

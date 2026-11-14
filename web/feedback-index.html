@@ -364,14 +364,23 @@
         <summary><h2>Methodology and details</h2></summary>
 
         <h3>How it's changing</h3>
+        <div class="toggles">
+          <div class="select-toggle">
+            <label for="rf-cohort-bin">Experience</label>
+            <select id="rf-cohort-bin"></select>
+          </div>
+        </div>
+        <template data-msg="cohort-bin"><span data-if="first"><slot name="hi"></slot> or fewer CLs</span><span
+          data-if="!first"><slot name="lo"></slot>–<slot name="hi"></slot> CLs</span></template>
         <div class="chart rf-half-chart">
-          <canvas id="rf-newcomers" role="img" aria-label="Median AFR over contributors' first changes, by the year of their first commit, with the middle half shaded."></canvas>
+          <canvas id="rf-newcomers" role="img" aria-label="Median AFR of contributors at the chosen experience, by the year of their first commit, with the middle half shaded."></canvas>
         </div>
         <p id="rf-newcomers-note" class="note"></p>
         <template data-msg="newcomers-note">
-          The AFR of new contributors over their first <slot name="cls"></slot> CLs on main, by the year of their first commit on main: the median and the
-          middle half of contributors with <slot name="minBin"></slot> or more such changes (<slot
-          name="people"></slot> contributors in all). <slot name="lastYear"></slot> is not over yet.
+          Contributors' AFR over their changes landed when they had <slot name="bin"></slot> on main, by the year of
+          their first commit on main: the median and the middle half of contributors with <slot name="minBin"></slot>
+          or more such changes (<slot name="people"></slot> contributors in all). Recent years count only those who
+          have reached that experience already, and <slot name="lastYear"></slot> is not over yet.
         </template>
 
         <div class="rf-pair">

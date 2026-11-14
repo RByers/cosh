@@ -1128,7 +1128,7 @@
       "tier": "published",
       "tracked_in_git": true,
       "rebuildable": true,
-      "size": "about 44 KB (15 KB gzipped)",
+      "size": "about 47 KB (15 KB gzipped)",
       "size_as_of": "2026-11-14",
       "purpose": "Everyone's figures (experience bins, typical rates and factors, spreads, the methodology's charts), loaded on opening.",
       "notes": "Rewritten on every run of review-feedback."
