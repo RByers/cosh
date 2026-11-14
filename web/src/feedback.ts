@@ -1,50 +1,16 @@
-// The Review Feedback page's data and arithmetic (feedback-index.html,
+// The Feedback Index page's data and arithmetic (feedback-index.html,
 // docs/review-feedback.md), kept apart from the DOM so unit tests can run it.
-// cosh/review_feedback.py writes one file per person, named by `personKey`
-// of their address, and peers.json with every peer group's percentiles.
+// cosh/review_feedback.py writes one file per person, named by `personKey` of their
+// address, and peers.json with what the page compares a person with.
+//
+// The feedback rate (FR) of a set of changes is their addressed reviewer
+// threads per 100 changed lines. The feedback index (FI) is a person's FR
+// over their peers': the median FR at the same experience (earlier commits
+// on main, in power-of-two bins), adjusted for how much feedback the
+// directories and the org draw (`Norm`).
 
-/** What counts (every reviewer thread, or only addressed ones) and what it is
- * set against (n: changes; s: the 2023–24 norm for the size; d: for the size
- * and directory). */
-export type Kind = 't' | 'a';
-export type Corr = 'n' | 's' | 'd';
-export type Metric = `${Kind}${Corr}`;
-
-/** Peers always have the same tenure, by one of three measures: years since
- * the first commit on main, earlier commits on main, or experience in each
- * directory (everyone measured against what authors drew at the same number of
- * earlier commits in the directory). */
-export type TenureBy = 'time' | 'changes' | 'dir';
-/** Which authors of that tenure: everyone, Google, or everyone outside Google. */
-export type PeerOrg = 'all' | 'google' | 'nongoogle';
-
-/** What places a person among peers over a set of changes. */
-export interface Placing {
-  /** Tenure band at the middle of the changes, null if unknown. */
-  ten: string | null;
-  /** Earlier commits on main at the middle of the changes, and its band. */
-  prior: number;
-  chg: string;
-  /** The org most of the changes are attributed to. */
-  org: string;
-}
-
-export interface PeriodVals extends Placing {
-  cls: number;
-  threads: number;
-  /** Changes with addressed labels (landed from peers.json's addr_start), and their addressed threads. */
-  acls: number;
-  addressed: number;
-  /** The placing over the labelled changes only, which the addressed measures' peers use
-   * (null: none labelled). The fields above are over all of the period's changes. */
-  a: Placing | null;
-  /** Enough changes to count among peers; for the addressed measures, enough labelled ones. */
-  ok: boolean;
-  ok_a: boolean;
-  /** The measure; and the same against the directory-experience norm. */
-  v: Record<Metric, number | null>;
-  x: Record<Metric, number | null>;
-}
+/** What the feedback index compares with: experience (e), directory (d) and org (o), in that order. */
+export type Norm = '' | 'e' | 'd' | 'ed' | 'o' | 'eo' | 'do' | 'edo';
 
 /** A reviewer thread, as the page holds it: [comment uuid (empty when there's
  * no excerpt: link the change instead), file index (-1: the file isn't kept,
@@ -52,29 +18,26 @@ export interface PeriodVals extends Placing {
  * addressed (null: not labelled), directory index, excerpt (only where
  * comment text is collected)]. */
 export type Thread = [string, number, number | null, 0 | 1 | null, number, string?];
-/** [directory index, share of the change's lines, the owner's earlier commits there,
+/** [directory index, share of the change (lines + files), the owner's earlier commits there,
  * lines changed there (added + deleted, in the landed commit)]. */
-export type Unit = [number, number, number, number?];
+export type Unit = [number, number, number, number];
 /** A change, as the page holds it: [change number, day landed (days since
- * 1970), lines, expected threads by size, by size and directory, expected
- * addressed by size, by size and directory, units, threads, org index, the
- * owner's earlier commits on main]. */
-export type ClRow = [number, number, number, number, number, number, number, Unit[], Thread[], number, number];
+ * 1970), lines (Gerrit's insertions + deletions), units, threads, org index,
+ * the owner's earlier commits on main]. */
+export type ClRow = [number, number, number, Unit[], Thread[], number, number];
 
 /** A change in a half-year file (cosh/review_feedback.py `shard`): [change
  * number, day landed, lines, expected threads by size and directory, expected
- * addressed by size and directory, units, threads, org index, earlier commits
- * on main]. The expected values by size alone come from peers.json's
- * `size_norm`. A unit is [directory, share, earlier commits there, lines], or
- * [directory, earlier commits there] for a change wholly in one directory.
- * Threads are [uuid, file, days after landing, addressed, excerpt?], their
- * directory told by the file; in a file with `counts`, [threads, addressed]
- * per unit instead. */
+ * addressed by size and directory (both unused here), units, threads, org
+ * index, earlier commits on main]. A unit is [directory, share, earlier
+ * commits there, lines], or [directory, earlier commits there] for a change
+ * wholly in one directory. Threads are [uuid, file, days after landing,
+ * addressed, excerpt?], their directory told by the file; in a file with
+ * `counts`, [threads, addressed] per unit instead. */
 export type FileRow = [number, number, number, number, number, FileUnit[], FileThread[] | [number, number][], number, number];
 type FileUnit = [number, number] | [number, number, number, number];
 type FileThread = [string, number, number | null, 0 | 1 | null, string?];
 
-/** Tone received, with the person's tenure bands at the end of the tone year. */
 type Tone = { received: number; praise: number; share: number | null; ten: string | null; chg: string | null };
 type Praise = [number, string, number, string][];
 
@@ -100,13 +63,12 @@ export interface Shard {
   cls: FileRow[];
 }
 
-/** A person's files merged, with every period's values. */
+/** A person's files merged. */
 export interface Person {
-  /** The first day (days since 1970) of the changes the addressed measures count. */
+  /** The first day (days since 1970) of the changes with addressed labels. */
   addrStart: number;
   first: string | null;
   firstDay: number | null;
-  periods: Record<string, PeriodVals>;
   tone: Tone;
   praise: Praise;
   dirs: string[];
@@ -122,158 +84,59 @@ export interface Alias {
 
 export interface Dist {
   n: number;
-  /** Quantiles at 0, 5, …, 100%; null when nobody is in the group. */
+  /** Quantiles at 0, 5, …, 100%; null when too few are in the group. */
   q: number[] | null;
 }
 
-/** The counts peers.json has percentiles of. */
-export type CountField = 'cls' | 'threads' | 'acls' | 'addressed';
-
-export interface Band extends Dist {
-  /** Everyone's feedback in the band, pooled, and that relative to everyone's overall. */
-  pooled: number | null;
-  rel: number | null;
-}
-
+/** peers.json (cosh/review_feedback.py, version 5). */
 export interface Peers {
+  v: 5;
   generated: string;
-  /** The changes covered, as day numbers: from `start` up to (not including) `end`. The
-   * addressed measures count only changes from `addr_start`, where the labels begin. */
+  /** The changes covered, as day numbers: from `start` up to (not including) `end`.
+   * Only changes from `addr_start` have addressed labels. */
   start: number;
   end: number;
   addr_start: number;
+  /** "all" and the half-years. */
   periods: string[];
-  metrics: Metric[];
-  /** Expected threads (t) and addressed threads (a) per change by size alone, per `size10` bucket. */
-  size_norm: { t: number[]; a: number[] };
-  tenure: string[];
-  changes: string[];
-  xp: string[];
   min_peers: number;
+  /** A feedback index counts among peers with this many changes. */
   min_cls: number;
-  min_exp: number;
-  min_received: number;
-  tone_weeks: [string, string];
-  dist: Record<string, Record<string, Record<Metric, Dist>>>;
-  /** The latest half-year the data covers whole ("2026H1"), which the count tiles rank. */
-  count_half?: string | null;
-  /** Org ("all", "google", "nongoogle") -> changes landed and reviewer threads in
-   * `count_half` of everyone who landed a change then (acls, addressed: labelled
-   * changes and addressed threads, for the addressed measures). */
-  counts_half?: Record<string, Record<CountField, Dist>>;
-  bands: Record<string, Record<Metric, Band[]>>;
-  tone: Record<string, Dist>;
-  /** The opening card. Tenure bins of the cohort curves, in years, and the
-   * fewest people a point stands for. */
-  cohort_step: number;
-  /** The first year whose newcomers have Gerrit data from their start. */
-  cohort_from: number;
-  min_cohort: number;
-  /** Group -> measure -> year of first commit -> [tenure bin start, median, people]. */
-  cohorts: Record<string, Record<Metric, Record<string, [number, number, number][]>>>;
-  /** The histogram's bin edges, as ratios of a year's value to the year
-   * before's, each paired with its reciprocal: len + 1 bins, from below the
-   * first edge to the last edge and up. */
-  change_ratios: number[];
-  /** Group -> measure -> year-over-year changes: counts per bin, and the
-   * median as % less feedback than the year before. */
-  change: Record<string, Record<Metric, { n: number; people: number; median: number | null; counts: number[] }>>;
-  /** A half-year counts towards a cohort curve with this many changes. */
-  min_cohort_cls: number;
-  /** The opening card's bar charts (cosh/review_feedback.py, median_breakdowns):
-   * per "Peers" org and measure, the median contributor's value and how many
-   * contributors, by size bucket (`size_labels`, changed lines) and by directory
-   * (`dir_names`). A contributor counts with `min_cell_cls` changes there. */
-  size_labels?: string[];
-  by_size?: Record<string, Record<Metric, MedianBar[]>>;
-  dir_names?: string[];
-  by_dir?: Record<string, Record<Metric, MedianBar[]>>;
-  min_cell_cls?: number;
-  /** All against addressed feedback by tenure (`kind_labels`, years since the
-   * first commit): per "Peers" org and adjustment, [median of all threads,
-   * median of addressed threads (null: too few), contributor half-years], and
-   * the share of threads addressed per bin (`kind_share`). */
-  kind_labels?: string[];
-  kinds?: Record<string, Record<Corr, [number | null, number | null, number][]>>;
-  kind_share?: Record<string, (number | null)[]>;
-  /** The three tenure measures compared: per "Peers" org and measure, the
-   * pooled feedback per band relative to all bands ([value, changes]), and the
-   * median yearly change in % less feedback, plain (`none`) and against the
-   * same tenure by each measure, over the same `n` pairs of years. */
-  tenure_cmp?: Record<string, Record<Metric, TenureCmp>>;
-  /** The same opening-card charts with tenure in changes landed before (earlier
-   * commits on main), the page's main tenure measure: the bins (`chg_labels`,
-   * fewest first) of the cohort curves (`cohorts_chg`, bin index in place of
-   * years) and of the all-against-addressed chart (`kinds_chg`,
-   * `kind_share_chg`), and the histogram per doubling of changes landed from
-   * `doubling_from` (`change_chg`, each ratio one doubling's value over the one
-   * before). */
-  chg_labels?: string[];
-  cohorts_chg?: Record<string, Record<Metric, Record<string, [number, number, number][]>>>;
-  kinds_chg?: Record<string, Record<Corr, [number | null, number | null, number][]>>;
-  kind_share_chg?: Record<string, (number | null)[]>;
-  doubling_from?: number;
-  change_chg?: Record<string, Record<Metric, { n: number; people: number; median: number | null; counts: number[] }>>;
+  /** A feedback rate in one experience bin counts with this many changes. */
+  min_bin_cls: number;
+  min_cell_cls: number;
+  min_growth_bins: number;
+  /** Feedback rates below this count as this in the growth fit. */
+  fr_floor: number;
+  /** Experience bins by earlier commits on main: their names, and their lower edges from the second on. */
+  bins: string[];
+  bin_edges: number[];
+  norms: Norm[];
+  /** The median FR per experience bin (null: too few people), and everyone's. */
+  ref_bin: (number | null)[];
+  ref_all: number;
+  /** Directory factors (two levels, one level as the fallback) against experience ("e") or everyone (""). */
+  f_dir: Record<'' | 'e', Record<string, number>>;
+  /** Org factors per norm without "o"; "*" for the smaller orgs. */
+  f_org: Record<'' | 'e' | 'd' | 'ed', Record<string, number>>;
+  /** Per experience bin, the spread of people's FR there. */
+  fr_bins: Dist[];
+  /** Norm -> period -> the spread of people's feedback index. */
+  fi: Record<string, Record<string, Dist>>;
+  newcomer_cls: number;
+  /** [first-commit year, people, p10, p25, median, p75, p90] of newcomers' FR. */
+  newcomers: [number, number, number | null, number | null, number | null, number | null, number | null][];
+  size_labels: string[];
+  /** Per size bucket: [median FR, median addressed threads per change, people]. */
+  by_size: [number | null, number | null, number][];
+  /** [directory or org, median FR, people], highest first. */
+  by_dir: [string, number, number][];
+  by_org: [string, number, number][];
+  /** People's growth rates (% change in FR per doubling of changes landed). */
+  growth: { n: number; median: number | null; q: number[] | null; curve: [number, number][] };
 }
 
-export type TenureMeasure = 'time' | 'changes' | 'dir';
-
-export interface TenureCmp {
-  bands: Record<TenureMeasure, [number | null, number][]>;
-  n: number;
-  people: number;
-  none: number | null;
-  time: number | null;
-  changes: number | null;
-  dir: number | null;
-}
-
-/** The tenure measure that leaves the least of each contributor's yearly
- * change unexplained (closest to zero), or null without data. */
-export function bestTenure(c: TenureCmp): TenureMeasure | null {
-  const ms = (['time', 'changes', 'dir'] as const).filter((m) => c[m] !== null);
-  if (!ms.length) return null;
-  return ms.reduce((a, b) => (Math.abs(c[b]!) < Math.abs(c[a]!) ? b : a));
-}
-
-/** [median (null: too few contributors), contributors]. */
-export type MedianBar = [number | null, number];
-
-/** The histogram's bins as words ("fell 60%+", "fell 50–60%" … "grew 152%+"),
- * and whether each is a fall. */
-export function ratioBins(edges: number[]): { label: string; fell: boolean }[] {
-  const p = (x: number) => Math.round(Math.abs(x) * 100);
-  return Array.from({ length: edges.length + 1 }, (_, i) => {
-    const lo = i === 0 ? 0 : edges[i - 1];
-    const hi = i === edges.length ? Infinity : edges[i];
-    if (hi <= 1) return { fell: true, label: i === 0 ? `fell ${p(1 - hi)}%+` : `fell ${p(1 - hi)}–${p(1 - lo)}%` };
-    return { fell: false, label: i === edges.length ? `grew ${p(lo - 1)}%+` : `grew ${p(lo - 1)}–${p(hi - 1)}%` };
-  });
-}
-
-/** The opening card's group: the "Peers" org, measured against directory
- * experience when tenure is by directory. Years and changes both show plain
- * values (the card's axis is `introAxis`). */
-export function trendGroup(by: TenureBy, org: PeerOrg): string {
-  return by === 'dir' ? `dir:${org}` : org;
-}
-
-/** The opening card's tenure axis: years only when "Same tenure by" is years,
- * changes landed before otherwise (directory experience has no axis of its own). */
-export function introAxis(by: TenureBy): 'time' | 'changes' {
-  return by === 'time' ? 'time' : 'changes';
-}
-
-/** The first-commit years the opening card draws: those from `from` on whose
- * curve starts at tenure 0 and has 3 or more points, every other one from the
- * oldest when there are more than `max`, always keeping the newest. */
-export function cohortYears(curves: Record<string, [number, number, number][]>, from: number, max = 5): number[] {
-  const ys = Object.keys(curves).map(Number).filter((y) => y >= from && curves[y].length >= 3 && curves[y][0][0] === 0)
-    .sort((a, b) => a - b);
-  return ys.length > max ? ys.filter((_, i) => i % 2 === 0 || i === ys.length - 1) : ys;
-}
-
-export const GERRIT ='https://chromium-review.googlesource.com';
+export const GERRIT = 'https://chromium-review.googlesource.com';
 const SALT = 'cosh-review-feedback-v1:';
 const DAY_MS = 86_400_000;
 
@@ -300,8 +163,6 @@ export async function personKey(raw: string): Promise<string> {
   return Array.from(hash, (b) => b.toString(16).padStart(2, '0')).join('').slice(0, 32);
 }
 
-export const metricOf = (kind: Kind, corr: Corr): Metric => `${kind}${corr}`;
-
 /** A day number (days since 1970-01-01) as 'YYYY-MM-DD'. */
 export const isoDay = (day: number) => new Date(day * DAY_MS).toISOString().slice(0, 10);
 
@@ -324,10 +185,6 @@ export function periodSpan(period: string, range: [number, number]): [number, nu
   const to = Date.UTC(y, m1, 1) / DAY_MS;
   return [Math.max(from, range[0]), Math.min(to, range[1])];
 }
-
-/** The days a measure of `kind` covers: the addressed ones start where the labels do. */
-export const rangeOf = (peers: Peers, kind: Kind): [number, number] =>
-  [kind === 'a' ? peers.addr_start : peers.start, peers.end];
 
 /** The share of a group whose value is below `v`, read off its quantiles. */
 export function percentileOf(q: number[], v: number): number {
@@ -354,73 +211,124 @@ export function quantile(q: number[], p: number): number {
   return q[lo] + (q[hi] - q[lo]) * (i - lo);
 }
 
-/** The person's tenure band in a period by one measure (null: unknown, or by directory). */
-export function bandOf(by: TenureBy, vals: PeriodVals | undefined): string | null {
-  if (!vals) return null;
-  return by === 'time' ? vals.ten : by === 'changes' ? vals.chg : null;
+/** Half-year periods in order, from peers.json's list. */
+export const halves = (periods: string[]) => periods.filter((p) => /^\d{4}H[12]$/.test(p)).sort();
+
+// ---- Feedback rate and index
+
+/** The experience bin (index in `peers.bins`) of `n` earlier commits on main. */
+export function xbin(edges: number[], n: number): number {
+  let b = 0;
+  while (b < edges.length && n >= edges[b]) b++;
+  return b;
 }
 
-/** The peer group's key in peers.json, given the person's period values. */
-export function groupKey(by: TenureBy, org: PeerOrg, vals: PeriodVals | undefined): string | null {
-  if (by === 'dir') return `dir:${org}`;
-  const band = bandOf(by, vals);
-  return band ? `${by}:${band}:${org}` : null;
+/** Addressed threads per 100 lines (null without lines). */
+export const fr = (addressed: number, lines: number) => (lines > 0 ? (100 * addressed) / lines : null);
+
+/** A 3-level directory's first two levels, and its first. */
+export function dir2(d: string): string {
+  const p = d.split('/').filter(Boolean);
+  return p.length ? `${p.slice(0, 2).join('/')}/` : d;
+}
+export function dir1(d: string): string {
+  const p = d.split('/').filter(Boolean);
+  return p.length ? `${p[0]}/` : d;
 }
 
-/** The peer group for each of the half-years `hs`, including those the person landed no
- * changes in: their tenure is known then too, so the trend's peer band covers them all.
- * Years since the first commit at the half-year's middle, or the earlier commits on main
- * there (one more than at their last change before it, else as many as at their first
- * change after it). Null before they started contributing (the half-years that end
- * before their first commit, else their first change), and for tenure in years when the
- * first commit is unknown. */
-export function halfGroups(by: TenureBy, org: PeerOrg, p: Pick<Person, 'periods' | 'firstDay' | 'cls'>,
-  hs: string[], kind: Kind = 't'): (string | null)[] {
-  const cls = [...p.cls].sort((a, b) => a[1] - b[1]);
-  const start = p.firstDay ?? cls[0]?.[1] ?? Infinity;
-  return hs.map((h) => {
-    const [a, b] = periodSpan(h, [-Infinity, Infinity]);
-    if (b <= start && !p.periods[h]) return null;
-    if (by === 'dir') return `dir:${org}`;
-    let band = bandOf(by, forKind(p.periods[h], kind));
-    const mid = (a + b) / 2;
-    if (!band && by === 'time' && p.firstDay !== null) band = tenureBand(Math.max(0, mid - p.firstDay) / 365.25);
-    if (!band && by === 'changes') {
-      const before = cls.filter((c) => c[1] < mid).pop();
-      const after = cls.find((c) => c[1] >= mid);
-      band = before ? changesBand(before[10] + 1) : after ? changesBand(after[10]) : null;
-    }
-    return band ? `${by}:${band}:${org}` : null;
-  });
+/** Each unit's fraction of its change's lines: by the lines there, or by share
+ * where the landed commit changed none (cosh/review_feedback.py `unit_fracs`). */
+export function unitFracs(units: Unit[]): number[] {
+  const s = units.reduce((a, u) => a + u[3], 0);
+  return units.map((u) => (s > 0 ? u[3] / s : u[1]));
 }
 
-/** The person's value to set against a peer group's distribution. */
-export const valueFor = (by: TenureBy, vals: PeriodVals | undefined, m: Metric) =>
-  vals ? (by === 'dir' ? vals.x[m] : vals.v[m]) ?? null : null;
+/** Whether a thread counts as addressed. */
+const addressed = (t: Thread) => (t[3] ? 1 : 0);
+/** The addressed threads on a change. */
+export const addressedOn = (c: ClRow) => c[4].reduce((s, t) => s + addressed(t), 0);
 
-/** Earlier-commit bands, as cosh/review_feedback.py `changes_band`. */
-export const changesBand = (n: number) =>
-  n < 50 ? '<50' : n < 200 ? '50-199' : n < 500 ? '200-499' : n < 1000 ? '500-999' : '1000+';
+/** The changes landed in `period` that have addressed labels: the ones every measure counts. */
+export const clsIn = (p: Person, period: string) => p.cls.filter((c) => c[1] >= p.addrStart && inPeriod(c[1], period));
 
-/** Directory-experience bands, by earlier commits in the directory. */
-export const xpBand = (prior: number) => (prior === 0 ? 0 : prior < 5 ? 1 : prior < 20 ? 2 : prior < 100 ? 3 : 4);
+/** The factor a norm gives a directory. */
+function dirFactor(peers: Peers, norm: Norm, d: string): number {
+  if (!norm.includes('d')) return 1;
+  const t = peers.f_dir[norm.includes('e') ? 'e' : ''];
+  return t[dir2(d)] ?? t[dir1(d)] ?? 1;
+}
 
-const expected = (c: ClRow, m: Metric) => {
-  const [, , , ts, td, as, ad] = c;
-  if (m[1] === 'n') return 1;
-  return m === 'ts' ? ts : m === 'td' ? td : m === 'as' ? as : ad;
-};
+/** The addressed threads each unit of a change would draw at its peers' FR, under `norm`
+ * (cosh/review_feedback.py `expected`, per unit). */
+export function unitExpected(p: Person, peers: Peers, c: ClRow, norm: Norm): number[] {
+  const base = norm.includes('e') ? peers.ref_bin[xbin(peers.bin_edges, c[6])] ?? peers.ref_all : peers.ref_all;
+  let fo = 1;
+  if (norm.includes('o')) {
+    const t = peers.f_org[norm.replace('o', '') as '' | 'e' | 'd' | 'ed'];
+    fo = t[p.orgs[c[5]]] ?? t['*'] ?? 1;
+  }
+  const fr_ = unitFracs(c[3]);
+  return c[3].map((u, i) => ((c[2] / 100) * base * fo * fr_[i] * dirFactor(peers, norm, p.dirs[u[0]])));
+}
 
-const counts = (t: Thread, kind: Kind) => (kind === 't' ? 1 : t[3] ? 1 : 0);
+export const expectedOn = (p: Person, peers: Peers, c: ClRow, norm: Norm) =>
+  unitExpected(p, peers, c, norm).reduce((a, b) => a + b, 0);
 
-/** The changes landed in `period`. */
-export const clsIn = (p: Person, period: string) => p.cls.filter((c) => inPeriod(c[1], period));
-/** The changes landed in `period` that a measure of `kind` counts: the addressed ones need labels. */
-export const clsFor = (p: Person, period: string, kind: Kind) =>
-  clsIn(p, period).filter((c) => kind === 't' || c[1] >= p.addrStart);
+export interface Sums {
+  cls: number;
+  addressed: number;
+  lines: number;
+  expected: number;
+}
 
-/** The threads-per-change histogram's columns, by their fewest threads: 0, 1–2, 3–5, 6–10,
- * 11–20, 21+. Over all changes since July 2023 they hold 56, 23, 10, 6, 3 and 2% (2026-11-12). */
+/** Totals over `cs`, with the expected addressed threads under `norm`. */
+export function sums(p: Person, peers: Peers, cs: ClRow[], norm: Norm): Sums {
+  const s = { cls: 0, addressed: 0, lines: 0, expected: 0 };
+  for (const c of cs) {
+    s.cls += 1;
+    s.addressed += addressedOn(c);
+    s.lines += c[2];
+    s.expected += expectedOn(p, peers, c, norm);
+  }
+  return s;
+}
+
+/** The feedback index of some totals (null: nothing expected). */
+export const fiOf = (s: Sums) => (s.expected > 0 ? s.addressed / s.expected : null);
+export const frOf = (s: Sums) => fr(s.addressed, s.lines);
+
+/** Totals per experience bin of the person's labelled changes in `period`. */
+export function binSums(p: Person, peers: Peers, period: string, norm: Norm): Sums[] {
+  const out = peers.bins.map(() => ({ cls: 0, addressed: 0, lines: 0, expected: 0 }));
+  for (const c of clsIn(p, period)) {
+    const s = out[xbin(peers.bin_edges, c[6])];
+    s.cls += 1;
+    s.addressed += addressedOn(c);
+    s.lines += c[2];
+    s.expected += expectedOn(p, peers, c, norm);
+  }
+  return out;
+}
+
+/** A growth rate: the % change in FR per doubling of changes landed, from a
+ * least-squares line through log2 FR (floored) by bin, weighted by changes, over
+ * the bins with `min_bin_cls` changes; null with fewer than `min_growth_bins`
+ * (cosh/review_feedback.py `growth`). */
+export function growth(bins: Sums[], peers: Pick<Peers, 'min_bin_cls' | 'min_growth_bins' | 'fr_floor'>): number | null {
+  const pts = bins.flatMap((s, b) => (s.cls >= peers.min_bin_cls && s.lines > 0
+    ? [[b, Math.log2(Math.max(fr(s.addressed, s.lines)!, peers.fr_floor)), s.cls]] : []));
+  if (pts.length < peers.min_growth_bins) return null;
+  const w = pts.reduce((a, [, , n]) => a + n, 0);
+  const mx = pts.reduce((a, [b, , n]) => a + b * n, 0) / w;
+  const my = pts.reduce((a, [, y, n]) => a + y * n, 0) / w;
+  const sxx = pts.reduce((a, [b, , n]) => a + n * (b - mx) ** 2, 0);
+  const sxy = pts.reduce((a, [b, y, n]) => a + n * (b - mx) * (y - my), 0);
+  return Math.round(1000 * (2 ** (sxy / sxx) - 1)) / 10;
+}
+
+// ---- Threads per change
+
+/** The threads-per-change histogram's columns, by their fewest addressed threads: 0, 1–2, 3–5, 6–10, 11–20, 21+. */
 export const THREAD_BIN_FROM = [0, 1, 3, 6, 11, 21];
 export const THREAD_BINS = THREAD_BIN_FROM.length;
 /** Column `b`'s fewest and most threads (null: no upper end). */
@@ -430,78 +338,34 @@ export function threadBinLabel(b: number): string {
   const [lo, hi] = threadBinRange(b);
   return hi === null ? `${lo}+` : lo === hi ? String(lo) : `${lo}–${hi}`;
 }
-/** The reviewer threads on a change that a measure of `kind` counts. */
-export const threadsOn = (c: ClRow, kind: Kind) => c[8].reduce((s, t) => s + counts(t, kind), 0);
-export function threadBin(c: ClRow, kind: Kind): number {
-  const n = threadsOn(c, kind);
+export function threadBin(c: ClRow): number {
+  const n = addressedOn(c);
   let b = 0;
   while (b + 1 < THREAD_BINS && n >= THREAD_BIN_FROM[b + 1]) b++;
   return b;
 }
 
-/** The changes `clsFor` gives, only those in histogram column `bin` (null: all). */
-const clsPicked = (p: Person, period: string, kind: Kind, bin: number | null) =>
-  clsFor(p, period, kind).filter((c) => bin === null || threadBin(c, kind) === bin);
+/** The changes `clsIn` gives, only those in histogram column `bin` (null: all). */
+const clsPicked = (p: Person, period: string, bin: number | null) =>
+  clsIn(p, period).filter((c) => bin === null || threadBin(c) === bin);
 
-/** The person's changes landed in `period` by how many reviewer threads each drew. */
-export function threadHistogram(p: Person, period: string, kind: Kind): number[] {
+/** The person's changes landed in `period` by how many addressed threads each drew. */
+export function threadHistogram(p: Person, period: string): number[] {
   const out = new Array<number>(THREAD_BINS).fill(0);
-  for (const c of clsFor(p, period, kind)) out[threadBin(c, kind)] += 1;
+  for (const c of clsIn(p, period)) out[threadBin(c)] += 1;
   return out;
 }
 
-/** Whether the person counts among peers for a measure of `kind`. */
-export const okFor = (vals: PeriodVals | undefined, kind: Kind) => (kind === 't' ? vals?.ok : vals?.ok_a) ?? false;
-/** The changes a measure of `kind` counts. */
-export const clsOf = (vals: PeriodVals | undefined, kind: Kind) => (kind === 't' ? vals?.cls : vals?.acls) ?? 0;
-
-export interface Sums {
-  /** Changes, counted by their share of lines (whole changes for a person's total). */
-  cls: number;
-  obs: number;
-  den: number;
-}
-
-/** Feedback by directory-experience band: what each band's share of the
- * person's changes drew, against the metric's denominator. */
-export function xpBreakdown(p: Person, period: string, m: Metric): Sums[] {
-  const out = Array.from({ length: 5 }, () => ({ cls: 0, obs: 0, den: 0 }));
-  for (const c of clsFor(p, period, m[0] as Kind)) {
-    const per = new Map<number, number>();
-    for (const t of c[8]) per.set(t[4], (per.get(t[4]) ?? 0) + counts(t, m[0] as Kind));
-    for (const [d, w, prior] of c[7]) {
-      const b = out[xpBand(prior)];
-      b.cls += w;
-      b.obs += per.get(d) ?? 0;
-      b.den += w * expected(c, m);
-    }
-  }
-  return out;
-}
-
-/** Feedback by changes landed before: what the person's changes drew in each
- * of `labels` (peers.json's `changes`, the `changesBand` bands), by the earlier
- * commits on main each change had, against the metric's denominator. */
-export function chgBreakdown(p: Person, period: string, m: Metric, labels: string[]): Sums[] {
-  const out = labels.map(() => ({ cls: 0, obs: 0, den: 0 }));
-  for (const c of clsFor(p, period, m[0] as Kind)) {
-    const b = out[labels.indexOf(changesBand(c[10]))];
-    if (!b) continue;
-    b.cls += 1;
-    b.obs += threadsOn(c, m[0] as Kind);
-    b.den += expected(c, m);
-  }
-  return out;
-}
+// ---- Directories
 
 /** Figures for one directory, or for a directory's own files ("rest of"). */
 export interface DirStats {
   /** Changes touching it, each change once however many directories below it the change touches. */
   cls: number;
-  /** Lines changed there (added + deleted), summed over the changes. */
+  /** The changes' lines there: each change's lines times its fraction there. */
   lines: number;
-  threads: number;
-  /** Expected threads there (size and directory norm, by line share). */
+  addressed: number;
+  /** Addressed threads expected there at the peers' FR (the norm chosen). */
   expected: number;
   /** The person's earlier commits there before their latest change in the period:
    * for a parent, the most in any one directory below it. */
@@ -522,31 +386,31 @@ export interface DirNode extends DirStats {
 }
 
 const dirOrder = (a: DirNode, b: DirNode) =>
-  b.cls - a.cls || b.threads - a.threads || (a.path < b.path ? -1 : a.path > b.path ? 1 : 0);
+  b.cls - a.cls || b.addressed - a.addressed || (a.path < b.path ? -1 : a.path > b.path ? 1 : 0);
 
 /** The person's directories in `period` as a tree, each level most changes
  * first. A parent adds up its subdirectories (and own files), counting each
  * change once. `bin` keeps only the changes in that threads-per-change column. */
-export function dirTree(p: Person, period: string, kind: Kind, bin: number | null = null): DirNode[] {
+export function dirTree(p: Person, peers: Peers, period: string, norm: Norm, bin: number | null = null): DirNode[] {
   const nodes = new Map<string, DirNode>();
   const roots: DirNode[] = [];
-  const stats = (): DirStats => ({ cls: 0, lines: 0, threads: 0, expected: 0, prior: 0, ids: new Set() });
-  const add = (s: DirStats, lines: number, threads: number, exp: number, prior: number) => {
+  const stats = (): DirStats => ({ cls: 0, lines: 0, addressed: 0, expected: 0, prior: 0, ids: new Set() });
+  const add = (s: DirStats, lines: number, a: number, exp: number, prior: number) => {
     s.lines += lines;
-    s.threads += threads;
+    s.addressed += a;
     s.expected += exp;
     s.prior = Math.max(s.prior, prior);
   };
-  const m: Metric = `${kind}d`;
-  for (const c of clsPicked(p, period, kind, bin)) {
+  for (const c of clsPicked(p, period, bin)) {
     const per = new Map<number, number>();
-    for (const t of c[8]) per.set(t[4], (per.get(t[4]) ?? 0) + counts(t, kind));
+    for (const t of c[4]) per.set(t[4], (per.get(t[4]) ?? 0) + addressed(t));
+    const fracs = unitFracs(c[3]);
+    const exps = unitExpected(p, peers, c, norm);
     const touched = new Set<DirNode>();
-    for (const [d, w, prior, dirLines] of c[7]) {
+    c[3].forEach(([d, , prior], i) => {
       const path = p.dirs[d];
-      const lines = dirLines ?? Math.round(w * c[2]);
-      const threads = per.get(d) ?? 0;
-      const exp = w * expected(c, m);
+      const lines = c[2] * fracs[i];
+      const a = per.get(d) ?? 0;
       let parent: DirNode | null = null;
       for (let at = 0; at < path.length;) {
         const slash = path.indexOf('/', at);
@@ -557,17 +421,17 @@ export function dirTree(p: Person, period: string, kind: Kind, bin: number | nul
           nodes.set(key, (n = { path: key, name: path.slice(at, end), ...stats(), children: [], own: null }));
           (parent ? parent.children : roots).push(n);
         }
-        add(n, lines, threads, exp, prior);
+        add(n, lines, a, exps[i], prior);
         touched.add(n);
         if (end === path.length) {
           n.own ??= stats();
           if (!n.own.ids.has(c[0])) (n.own.cls += 1, n.own.ids.add(c[0]));
-          add(n.own, lines, threads, exp, prior);
+          add(n.own, lines, a, exps[i], prior);
         }
         parent = n;
         at = end;
       }
-    }
+    });
     for (const n of touched) (n.cls += 1, n.ids.add(c[0]));
   }
   for (const n of nodes.values()) {
@@ -588,9 +452,10 @@ export interface DirRowView {
   stats: DirStats;
   expandable: boolean;
   expanded: boolean;
-  /** Threads over typical, or null where the row has fewer than `minCls`
-   * changes (too few for the ratio to say much) or nothing typical. */
-  ratio: number | null;
+  /** The feedback rate and index there, or null where the row has fewer than
+   * `minCls` changes (too few to say much). */
+  fr: number | null;
+  fi: number | null;
   /** Entries in an "Other" row. */
   count?: number;
 }
@@ -600,16 +465,17 @@ type DirItem = { kind: 'dir' | 'rest'; node: DirNode; stats: DirStats };
 /** The rows to show of `dirTree`'s tree, given which rows are open
  * (`expanded`, by row key). Each level lists its entries with at least
  * `minCls` changes, at most `shown` of them, and puts the rest in one "Other"
- * row that opens into them, `shown` at a time; a level where none has
- * `minCls` changes lists its first `shown` entries instead. Any directory
- * with subdirectories opens (into them plus a "rest of" row for its own
- * files), however small. Rows with fewer than `minCls` changes get no ratio. */
+ * row that opens into them; a level where none has `minCls` changes lists
+ * its first `shown` entries instead. Any directory with subdirectories opens
+ * (into them plus a "rest of" row for its own files), however small. Rows with
+ * fewer than `minCls` changes get no rate or index. */
 export function dirRows(roots: DirNode[], expanded: ReadonlySet<string>, minCls: number, shown = 15): DirRowView[] {
   const out: DirRowView[] = [];
   const big = (s: DirStats) => s.cls >= minCls;
-  const ratio = (s: DirStats) => (big(s) && s.expected > 0 ? s.threads / s.expected : null);
-  const row = (r: Omit<DirRowView, 'ratio'>): DirRowView => ({ ...r, ratio: ratio(r.stats) });
-  const order = (a: DirItem, b: DirItem) => b.stats.cls - a.stats.cls || b.stats.threads - a.stats.threads ||
+  const row = (r: Omit<DirRowView, 'fr' | 'fi'>): DirRowView => ({ ...r,
+    fr: big(r.stats) ? fr(r.stats.addressed, r.stats.lines) : null,
+    fi: big(r.stats) && r.stats.expected > 0 ? r.stats.addressed / r.stats.expected : null });
+  const order = (a: DirItem, b: DirItem) => b.stats.cls - a.stats.cls || b.stats.addressed - a.stats.addressed ||
     (a.kind === b.kind ? (a.node.path < b.node.path ? -1 : 1) : a.kind === 'dir' ? -1 : 1);
   const emit = (it: DirItem, depth: number) => {
     if (it.kind === 'rest') {
@@ -642,7 +508,7 @@ export function dirRows(roots: DirNode[], expanded: ReadonlySet<string>, minCls:
         cls: ids.size,
         ids,
         lines: tail.reduce((s, it) => s + it.stats.lines, 0),
-        threads: tail.reduce((s, it) => s + it.stats.threads, 0),
+        addressed: tail.reduce((s, it) => s + it.stats.addressed, 0),
         expected: tail.reduce((s, it) => s + it.stats.expected, 0),
         prior: Math.max(...tail.map((it) => it.stats.prior)),
       },
@@ -654,11 +520,13 @@ export function dirRows(roots: DirNode[], expanded: ReadonlySet<string>, minCls:
   return out;
 }
 
-/** The ratio cell's shade: -1 (a quarter of typical or less) .. 0 (typical) .. 1 (4× or more), on a log scale. */
+/** The index cell's shade: -1 (a quarter of typical or less) .. 0 (typical) .. 1 (4× or more), on a log scale. */
 export function ratioShade(ratio: number): number {
   if (!(ratio > 0)) return -1;
   return Math.max(-1, Math.min(1, Math.log2(ratio) / 2));
 }
+
+// ---- Comments
 
 export interface ThreadRow {
   cl: number;
@@ -666,7 +534,6 @@ export interface ThreadRow {
   file: string;
   /** Day the thread started, or the change landed when unknown. */
   day: number;
-  addressed: 0 | 1 | null;
   dir: number;
   text: string | null;
   praise: boolean;
@@ -675,28 +542,26 @@ export interface ThreadRow {
   count?: number;
 }
 
-/** Reviewer threads on the changes landed in `period`, newest first,
- * optionally only addressed ones, only in directories under `dir` (a
- * path prefix such as "chrome/" or "chrome/browser/ui/"), and only on the
- * changes in threads-per-change column `bin`. Threads kept only as counts
- * come as one row per change, directory and addressed or not. */
-export function threadRows(p: Person, period: string, kind: Kind, dir: string | null, bin: number | null = null): ThreadRow[] {
+/** Addressed reviewer threads on the changes landed in `period`, newest
+ * first, optionally only in directories under `dir` (a path prefix such as
+ * "chrome/" or "chrome/browser/ui/"), and only on the changes in
+ * threads-per-change column `bin`. Threads kept only as counts come as one
+ * row per change and directory. */
+export function threadRows(p: Person, period: string, dir: string | null, bin: number | null = null): ThreadRow[] {
   const praise = new Set(p.praise.map(([n, u]) => `${n}/${u}`));
   const out: ThreadRow[] = [];
-  for (const c of clsPicked(p, period, kind, bin)) {
-    const groups = new Map<string, ThreadRow>();
-    for (const t of c[8]) {
-      if (kind === 'a' && !t[3]) continue;
+  for (const c of clsPicked(p, period, bin)) {
+    const groups = new Map<number, ThreadRow>();
+    for (const t of c[4]) {
+      if (!t[3]) continue;
       if (dir !== null && !p.dirs[t[4]].startsWith(dir)) continue;
       if (t[1] < 0) {
-        const k = `${t[4]}/${t[3]}`;
-        const g = groups.get(k);
+        const g = groups.get(t[4]);
         if (g) g.count! += 1;
-        else groups.set(k, { cl: c[0], uuid: '', file: p.dirs[t[4]], day: c[1], addressed: t[3], dir: t[4],
-          text: null, praise: false, count: 1 });
+        else groups.set(t[4], { cl: c[0], uuid: '', file: p.dirs[t[4]], day: c[1], dir: t[4], text: null, praise: false, count: 1 });
         continue;
       }
-      out.push({ cl: c[0], uuid: t[0], file: p.files[t[1]], day: c[1] + (t[2] ?? 0), addressed: t[3], dir: t[4],
+      out.push({ cl: c[0], uuid: t[0], file: p.files[t[1]], day: c[1] + (t[2] ?? 0), dir: t[4],
         text: t[5] ?? null, praise: praise.has(`${c[0]}/${t[0]}`) });
     }
     out.push(...groups.values());
@@ -714,10 +579,7 @@ export function commentUrl(cl: number, uuid?: string): string {
   return uuid ? `${base}/comment/${encodeURIComponent(uuid)}/` : base;
 }
 
-/** Half-year periods in order, from peers.json's list. */
-export const halves = (periods: string[]) => periods.filter((p) => /^\d{4}H[12]$/.test(p)).sort();
-
-// ---- Merging a person's files, and their values per period
+// ---- Merging a person's files
 
 /** balance_growth.size10: ten log-spaced size buckets of changed lines, <4, <8, …, <1024, 1024+. */
 export const size10 = (lines: number) => Math.min(9, Math.max(0, 30 - Math.clz32(Math.max(lines, 1))));
@@ -728,9 +590,8 @@ export function dirOf(path: string): string {
   return parts.length ? `${parts.slice(0, 3).join('/')}/` : '(root)/';
 }
 
-/** The half-year files merged into one person, names re-indexed. `norm` is
- * peers.json's `size_norm`, for the expected values by size alone. */
-export function mergePerson(top: Top, shards: Shard[], norm: Peers['size_norm']): Omit<Person, 'periods' | 'addrStart'> {
+/** The half-year files merged into one person, names re-indexed. */
+export function buildPerson(top: Top, shards: Shard[], peers: Pick<Peers, 'addr_start'>): Person {
   const tables = { dirs: new Map<string, number>(), files: new Map<string, number>(), orgs: new Map<string, number>() };
   const at = (t: Map<string, number>, name: string) => {
     let i = t.get(name);
@@ -742,13 +603,13 @@ export function mergePerson(top: Top, shards: Shard[], norm: Peers['size_norm'])
     const d = s.dirs.map((x) => at(tables.dirs, x));
     const f = s.files.map((x) => at(tables.files, x));
     const o = s.orgs.map((x) => at(tables.orgs, x));
-    for (const [n, day, lines, td, ad, fileUnits, fileThreads, org, prior] of s.cls) {
+    for (const [n, day, lines, , , fileUnits, fileThreads, org, prior] of s.cls) {
       const units = fileUnits.map((u): Unit => (u.length === 2 ? [d[u[0]], 1, u[1], lines] : [d[u[0]], u[1], u[2], u[3]]));
       const threads: Thread[] = [];
       if (s.counts) {
         // Counts per unit: as many threads in each directory, without their files or days.
-        (fileThreads as [number, number][]).forEach(([all, addressed], i) => {
-          for (let k = 0; k < all; k++) threads.push(['', -1, null, k < addressed ? 1 : 0, units[i][0]]);
+        (fileThreads as [number, number][]).forEach(([all, addr], i) => {
+          for (let k = 0; k < all; k++) threads.push(['', -1, null, k < addr ? 1 : 0, units[i][0]]);
         });
       } else {
         // A thread's directory is its file's, if the change has a unit there, else the first unit's.
@@ -761,96 +622,19 @@ export function mergePerson(top: Top, shards: Shard[], norm: Peers['size_norm'])
           threads.push(r);
         }
       }
-      const sb = size10(lines);
-      cls.push([n, day, lines, norm.t[sb], td, norm.a[sb], ad, units, threads, o[org], prior]);
+      cls.push([n, day, lines, units, threads, o[org], prior]);
     }
   }
   cls.sort((a, b) => a[1] - b[1] || a[0] - b[0]);
-  return { first: top.first, firstDay: top.first_day, tone: top.tone, praise: top.praise,
+  return { addrStart: peers.addr_start, first: top.first, firstDay: top.first_day, tone: top.tone, praise: top.praise,
     dirs: [...tables.dirs.keys()], files: [...tables.files.keys()], orgs: [...tables.orgs.keys()], cls };
 }
 
-const r3 = (x: number) => Math.round(x * 1000) / 1000;
-const METRICS: Metric[] = ['tn', 'ts', 'td', 'an', 'as', 'ad'];
-
-function median(xs: number[]): number {
-  const s = [...xs].sort((a, b) => a - b);
-  const m = s.length >> 1;
-  return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2;
-}
-
-export const tenureBand = (y: number) => (y < 1 ? '<1y' : y < 2 ? '1-2y' : y < 5 ? '2-5y' : y < 10 ? '5-10y' : '10y+');
-
-/** Tenure and org over `cs`, as cosh/review_feedback.py `placed`. */
-function placing(p: Omit<Person, 'periods'>, cs: ClRow[]): Placing {
-  // Most common org; ties go to the one seen first (Python's Counter.most_common).
-  const orgCount = new Map<number, number>();
-  for (const c of cs) orgCount.set(c[9], (orgCount.get(c[9]) ?? 0) + 1);
-  let org = cs[0][9];
-  for (const [o, n] of orgCount) if (n > orgCount.get(org)!) org = o;
-  const ten = p.firstDay === null ? null : tenureBand(median(cs.map((c) => (c[1] - p.firstDay!) / 365.25)));
-  const prior = median(cs.map((c) => c[10]));
-  return { ten, prior, chg: changesBand(prior), org: p.orgs[org] };
-}
-
-/** The period values with the placing a measure of `kind` sets against peers: for the
- * addressed measures, over the labelled changes. */
-export const forKind = (vals: PeriodVals | undefined, kind: Kind): PeriodVals | undefined =>
-  vals && kind === 'a' && vals.a ? { ...vals, ...vals.a } : vals;
-
-/** A person's values for one period, as cosh/review_feedback.py
- * `person_period` computes them for the peer groups: totals, tenure (years
- * and earlier commits) at the median change, the most common org, whether they count among peers, the
- * measures, and the same measures against everyone's feedback at the same
- * directory experience (peers.json's pooled `rel` per band). */
-export function periodVals(p: Omit<Person, 'periods'>, peers: Peers, period: string): PeriodVals | undefined {
-  const cs = clsIn(p as Person, period);
-  if (!cs.length) return undefined;
-  let threads = 0;
-  let addressed = 0;
-  let acls = 0;
-  // Expected threads; tdA: expected threads on the labelled changes, for ok_a.
-  const exp = { ts: 0, td: 0, as: 0, ad: 0, tdA: 0 };
-  const labelled =(c: ClRow) => c[1] >= p.addrStart;
-  for (const c of cs) {
-    threads += c[8].length;
-    exp.ts += c[3];
-    exp.td += c[4];
-    if (labelled(c)) {
-      acls += 1;
-      addressed += c[8].filter((t) => t[3]).length;
-      exp.as += c[5];
-      exp.ad += c[6];
-      exp.tdA += c[4];
-    }
-  }
-  const lab = cs.filter(labelled);
-  const v ={} as Record<Metric, number | null>;
-  const x = {} as Record<Metric, number | null>;
-  const bands = peers.bands[period];
-  for (const m of METRICS) {
-    const isT = m[0] === 't';
-    const num = isT ? threads : addressed;
-    const den = m[1] === 'n' ? (isT ? cs.length : acls) : exp[m as 'ts' | 'td' | 'as' | 'ad'];
-    v[m] = den ? r3(num / den) : null;
-    let xe = 0;
-    for (const c of cs) {
-      if (!isT && !labelled(c)) continue;
-      for (const [, w, prior] of c[7]) xe += (m[1] === 'n' ? w : w * expected(c, m)) * (bands?.[m]?.[xpBand(prior)]?.rel ?? 1);
-    }
-    x[m] = xe ? r3(num / xe) : null;
-  }
-  return { cls: cs.length, threads, acls, addressed, ...placing(p, cs), a: lab.length ? placing(p, lab) : null,
-    ok:cs.length >= peers.min_cls && exp.td >= peers.min_exp, ok_a: acls >= peers.min_cls && exp.tdA >= peers.min_exp, v, x };
-}
-
-/** A person ready for the page: merged, with values for every period they have changes in. */
-export function buildPerson(top: Top, shards: Shard[], peers: Peers): Person {
-  const base = { ...mergePerson(top, shards, peers.size_norm), addrStart: peers.addr_start };
-  const periods: Record<string, PeriodVals> = {};
-  for (const period of peers.periods) {
-    const vals = periodVals(base, peers, period);
-    if (vals) periods[period] = vals;
-  }
-  return { ...base, periods };
+/** The org most of `cs` are attributed to (ties: the first seen). */
+export function usualOrg(p: Person, cs: ClRow[]): string | null {
+  const n = new Map<number, number>();
+  for (const c of cs) n.set(c[5], (n.get(c[5]) ?? 0) + 1);
+  let best: number | null = null;
+  for (const [o, k] of n) if (best === null || k > n.get(best)!) best = o;
+  return best === null ? null : p.orgs[best];
 }

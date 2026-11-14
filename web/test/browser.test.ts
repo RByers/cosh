@@ -3250,7 +3250,7 @@ test('a touch anywhere off a chart closes its hover card, on every page with cha
   }
 });
 
-// ---- Review Feedback (feedback-index.html). These tests serve the made-up
+// ---- Feedback Index (feedback-index.html). These tests serve the made-up
 // person in feedback-fixture.ts, so they don't depend on the committed data.
 
 async function feedbackPage(peersOverride?: Peers, shardsOverride?: Record<string, Shard>): Promise<{ page: Page; errors: string[] }> {
@@ -3276,11 +3276,6 @@ async function feedbackPage(peersOverride?: Peers, shardsOverride?: Record<strin
   });
   await page.goto(baseUrl + 'feedback-index.html', { waitUntil: 'load' });
   await page.waitForSelector('body[data-ready]');
-  // Addressed only comes first and is the default; the tests below start from all threads.
-  assert.deepEqual(await page.$$eval('input[name="rf-kind"]', (is) => is.map((i) => [i.value, (i as HTMLInputElement).checked])),
-    [['a', true], ['t', false]]);
-  assert.equal(await page.$eval('#rf-tenure option[value="dir"]', (o) => o.textContent), 'Changes in each directory');
-  await page.click('input[name="rf-kind"][value="t"]');
   return { page, errors };
 }
 
@@ -3292,7 +3287,13 @@ async function lookUp(page: Page, email: string) {
   await page.waitForFunction(() => !/Looking/.test(document.querySelector('#rf-find-note')!.textContent ?? ''));
 }
 
-test('review feedback: the caveat, a lookup field that offers no completions, and an unknown address', async () => {
+/** A chart's axis titles, x first. */
+const axisTitles = (page: Page, name: string) => page.evaluate((name) => {
+  const c = window.__rf!.charts[name];
+  return ['x', 'y'].map((k) => (c.options.scales![k] as { title: { text: string } }).title.text);
+}, name);
+
+test('feedback index: the caveat, a lookup field that offers no completions, and an unknown address', async () => {
   const { page, errors } = await feedbackPage();
   assert.equal(await page.title(), 'Feedback Index - Chromium Open Source Health');
   assert.equal(await page.$eval('.rf-disclaimer', (e) => e.textContent!.trim()),
@@ -3306,7 +3307,7 @@ test('review feedback: the caveat, a lookup field that offers no completions, an
   // The dates come from peers.json.
   assert.match(await page.$eval('#rf-find-note', (e) => e.textContent!),
     /No changes owned by that address landed between July 2023 and October 2026\./);
-  assert.match(await page.$eval('#find', (e) => e.textContent!), /every change you landed since July 2023,/);
+  assert.match(await page.$eval('#find', (e) => e.textContent!), /changes you landed since\s+July 2023,/);
   assert.equal(await page.$eval('#rf-person', (m) => (m as HTMLElement).hidden), true);
   // The landing page links to it.
   const home = await browser.newPage();
@@ -3317,326 +3318,138 @@ test('review feedback: the caveat, a lookup field that offers no completions, an
   await page.close();
 });
 
-test('review feedback: the opening card explains the index before any address is typed', async () => {
+test('feedback index: the opening card defines the rate and index, with one chart and no switches', async () => {
   const { page, errors } = await feedbackPage();
-  // The switches and the card come first, then the address field.
-  const order = await page.$$eval('.rf-bar, #intro, #rf-find, #rf-person', (es) => es.map((e) => e.id || e.className));
-  assert.deepEqual(order, ['metric-bar rf-bar', 'intro', 'rf-find', 'rf-person']);
-  assert.equal(await page.$eval('#rf-person', (m) => (m as HTMLElement).hidden), true);
-  assert.equal(await page.$('.lede'), null);
-  assert.match(await page.$eval('#intro', (e) => e.textContent!), /tool\s+for learning/);
-  await page.waitForFunction(() => !!window.__rf!.charts.cohorts && !!window.__rf!.charts.change);
-  // Tenure is by changes landed before by default, and the first three charts follow it.
-  assert.equal(await page.$eval('#rf-tenure', (s) => (s as HTMLSelectElement).value), 'changes');
-  const xAxis = () => page.evaluate(() => ['cohorts', 'change', 'kinds'].map((k) =>
-    (window.__rf!.charts[k].options.scales!.x as { title: { text: string } }).title.text));
-  assert.deepEqual(await xAxis(), ['changes landed before (earlier commits on main)',
-    'change in feedback index from the doubling before', 'changes landed before (earlier commits on main)']);
-  assert.deepEqual(await page.$$eval('#rf-cohort-legend li', (ls) => ls.map((l) => l.textContent)),
-    ['started in 2018', 'started in 2023']);
-  // One point per bin of earlier changes, labelled by the bin.
-  assert.deepEqual(await page.evaluate(() => {
-    const c = window.__rf!.charts.cohorts;
-    const tick = (c.options.scales!.x as { ticks: { callback: (v: number) => string } }).ticks.callback;
-    return [c.data.datasets[0].data.map((p) => (p as { x: number }).x), tick(0), tick(7)];
-  }), [[0, 1, 2, 3], '<10', '1,000+']);
-  assert.match(await page.$eval('#rf-cohorts-note', (e) => e.textContent!), /how many changes they had landed before/);
-  assert.match(await page.$eval('#rf-change-title', (e) => e.textContent!), /as their changes landed double/);
-  assert.match(await page.$eval('#rf-change-note', (e) => e.textContent!),
-    /from the changes they landed with 32–63 earlier commits.*4,100 doublings from 1,500 contributors;\s+doublings begun from 2018 on\).*median doubling, feedback fell by\s+21%/s);
-  assert.match(await page.$eval('#rf-kinds-title', (e) => e.textContent!), /by changes landed before/);
-  assert.equal(await page.evaluate(() => (window.__rf!.charts.kinds.data.labels as string[]).join(' ')),
-    '<10 10–24 25–49 50–99 100–199 200–499 500–999 1,000+');
-  assert.equal((await page.$eval('#rf-kinds-note', (e) => e.textContent!)).replace(/\s+/g, ' ').trim(),
-    'Addressed feedback shows growth better: it falls 6 times from fewer than 10 earlier changes to 1,000 or more, '
-    + 'against 4.2 times for all feedback.');
-  // Directory experience keeps the changes axis.
-  await page.select('#rf-tenure', 'dir');
-  assert.equal((await xAxis())[0], 'changes landed before (earlier commits on main)');
-  // Years since the first commit remains a choice.
-  await page.select('#rf-tenure', 'time');
-  assert.deepEqual(await xAxis(), ['years since first commit on main', 'change in feedback index from the year before',
-    'years since first commit on main']);
-  assert.match(await page.$eval('#rf-change-title', (e) => e.textContent!), /falls per year/);
-  // One line per first-commit year whose curve starts at tenure 0. There is no date selector: the page
-  // covers all the data.
-  assert.deepEqual(await page.$$eval('#rf-cohort-legend li', (ls) => ls.map((l) => l.textContent)),
-    ['started in 2019', 'started in 2024']);
-  assert.equal(await page.evaluate(() => (window.__rf!.charts.cohorts.options.scales!.y as { title: { text: string } })
-    .title.text), 'feedback index');
-  assert.equal(await page.$('#rf-period'), null);
-  assert.match(await page.$eval('#rf-cohorts-note', (e) => e.textContent!), /from that first commit\s+to October 2026:/);
-  // Two bar charts side by side: the median contributor by change size, and by directory, highest first.
-  const bars = (key: string) => page.evaluate((key) => {
-    const c = window.__rf!.charts[key];
-    const s = c.options.scales as Record<string, { title?: { text?: string } }>;
-    return { type: (c.config as { type: string }).type, index: c.options.indexAxis ?? 'x', labels: c.data.labels,
-      rotation: (c.options.scales!.x as { ticks: { minRotation?: number } }).ticks.minRotation,
-      data: c.data.datasets[0].data, axes: [s.x.title?.text, s.y.title?.text] };
-  }, key);
-  // Two pairs side by side: all against addressed and the tenure measures, then size and directory.
-  const pairs = await page.$$eval('.rf-pair', (ps) => ps.map((p) => [...p.children].map((d) => {
-    const r = d.getBoundingClientRect();
-    return [Math.round(r.width), Math.round(r.top), d.querySelector('canvas')!.id];
-  })));
-  assert.deepEqual(pairs.map((p) => p.map(([, , id]) => id)), [['rf-kinds', 'rf-tenures'], ['rf-size', 'rf-dir-chart']]);
-  for (const [[w0, top0], [w1, top1]] of pairs) {
-    assert.ok(Math.abs(Number(w0) - Number(w1)) <= 1, String(pairs));
-    assert.equal(top0, top1);
-  }
-  let sz = await bars('size');
-  assert.equal(sz.type, 'bar');
-  // Columns with the labels at 45°, like the year-over-year histogram; smallest size first.
-  assert.equal(sz.index, 'x');
-  assert.equal(sz.rotation, 45);
-  assert.deepEqual(sz.axes, ['lines changed', 'feedback index']);
-  assert.equal((sz.labels as string[])[0], '<4');
-  assert.equal((sz.labels as string[]).length, 10);
-  assert.deepEqual(sz.data.slice(0, 2), [0.68, 0.79]);
-  const dirChart = await bars('dirs');
-  assert.equal(dirChart.index, 'x');
-  assert.equal(dirChart.rotation, 45);
-  assert.deepEqual(dirChart.axes, ['directory', 'feedback index']);
-  assert.deepEqual(dirChart.labels, ['third_party/blink/', 'tools/', 'chrome/browser/', 'ios/']);
-  assert.deepEqual(dirChart.data, [1.05, 0.95, 0.93, null]);
-  assert.match(await page.$eval('#rf-breakdown-note', (e) => e.textContent!), /The median contributor's feedback, from July 2023 to October 2026:.*10 or more such changes/s);
-  // Unadjusted: per change, and the directories re-sort.
-  await page.click('input[name="rf-corr"][value="n"]');
-  sz = await bars('size');
-  assert.deepEqual(sz.data.slice(0, 2), [0.09, 0.19]);
-  assert.deepEqual((await bars('dirs')).labels, ['chrome/browser/', 'third_party/blink/', 'tools/', 'ios/']);
-  assert.match(await page.$eval('#rf-breakdown-note', (e) => e.textContent!), /feedback per\s+change/);
-  // Addressed threads: their own figures; a size with too few contributors has no bar.
-  await page.click('input[name="rf-kind"][value="a"]');
-  assert.equal((await bars('size')).data.at(-1), null);
-  assert.match(await page.$eval('#rf-breakdown-note', (e) => e.textContent!), /median contributor's addressed feedback/);
-  await page.click('input[name="rf-kind"][value="t"]');
-  await page.click('input[name="rf-corr"][value="d"]');
-  // Peers: Google only has no directory figures here, so only the size chart is drawn.
-  await page.select('#rf-org', 'google');
-  assert.deepEqual(await page.evaluate(() => [!!window.__rf!.charts.size, !!window.__rf!.charts.dirs]), [true, false]);
-  await page.select('#rf-org', 'all');
-  // The histogram counts contributor-years from 2018 on.
-  assert.match(await page.$eval('#rf-change-note', (e) => e.textContent!),
-    /5,300 year-to-year changes from 1,900 contributors;\s+from\s+2018 on\).*fell by\s+16%/s);
-  // All against addressed feedback by tenure, with each line's norm dashed.
-  assert.deepEqual(await page.$$eval('#rf-kinds-legend li', (ls) => ls.map((l) => l.textContent)),
-    ['All reviewer threads', 'Addressed threads only', "Each line's 2023–24 norm"]);
-  const kindsNote = () => page.$eval('#rf-kinds-note', (e) => e.textContent!);
-  // One sentence: which shows growth better, and by how much.
-  assert.equal(await kindsNote(), 'Addressed feedback shows growth better: it falls 4.1 times from the first three '
-    + 'months to ten years, against 3.5 times for all feedback.');
-  // The three tenure measures, one line each, and which leaves the least of the yearly fall.
-  assert.deepEqual(await page.$$eval('#rf-tenures-legend li', (ls) => ls.map((l) => l.textContent)),
-    ['Changes landed before', 'Years since first commit', 'Earlier commits in the directory']);
-  const tenuresNote = () => page.$eval('#rf-tenures-note', (e) => e.textContent!);
-  assert.equal(await tenuresNote(), "Experience measured by changes landed accounts for the most growth: 96% of a contributor's "
-    + 'yearly fall in feedback, against 64% by years since the first commit and 30% by earlier commits in the directory.');
-  // It follows the switches: outside Google has one line, and a median that grew.
-  await page.select('#rf-org', 'nongoogle');
-  assert.match(await kindsNote(), /^All feedback shows growth better here: it falls 2\.3 times .* against 2 times for addressed/);
-  // Changes landed overshoots (+4.9%), which counts against it like a shortfall.
-  assert.match(await tenuresNote(), /^Experience measured by years since the first commit accounts for the most growth: 97% .* against 64% by changes landed and 45% by earlier commits in the directory\.$/);
-  assert.deepEqual(await page.$$eval('#rf-cohort-legend li', (ls) => ls.map((l) => l.textContent)), ['started in 2024']);
-  assert.match(await page.$eval('#rf-change-note', (e) => e.textContent!), /came from outside Google;.*grew by\s+5%/s);
-  await page.click('input[name="rf-kind"][value="a"]');
-  assert.match(await page.$eval('#rf-cohorts-note', (e) => e.textContent!), /their addressed feedback/);
-  assert.match(await page.$eval('#rf-change-note', (e) => e.textContent!), /whole years from \d{4} on/);
+  // Fixed definitions: nothing to switch before a person is shown.
+  assert.equal(await page.$('#rf-kind, #rf-corr, #rf-tenure, #rf-org, .rf-bar'), null);
+  assert.deepEqual(await page.$$eval('#intro dt', (ds) => ds.map((d) => d.textContent)), ['Feedback rate (FR)', 'Feedback index (FI)']);
+  assert.match(await page.$eval('#intro dd', (e) => e.textContent!.replace(/\s+/g, ' ')),
+    /Addressed review comments per 100 lines changed.*Large-scale changes and other large mechanical changes are left out/);
+  // The x-axis is changes landed before, in doublings; the bands are the middle half and the 10th–90th percentile.
+  assert.deepEqual(await axisTitles(page, 'main'), ['changes landed before (earlier commits on main)', 'addressed comments per 100 lines']);
+  assert.deepEqual(await page.evaluate(() => window.__rf!.charts.main.data.labels),
+    ['<8', '8–15', '16–31', '32–63', '64–127', '128–255', '256–511', '512–1k', '1k–2k', '2k+']);
+  assert.deepEqual(await page.$$eval('#rf-main-legend li', (ls) => ls.map((l) => l.textContent)),
+    ['Median', 'Middle half (25th–75th percentile)', '10th–90th percentile']);
+  const median = await page.evaluate(() => window.__rf!.charts.main.data.datasets[4].data);
+  // The fixture's median is 1.625 × its reference rate; the last bin has too few people.
+  assert.equal(median[0], 6.5);
+  assert.equal(median[9], null);
+  assert.match((await page.$eval('#rf-main-note', (e) => e.textContent!)).replace(/\s+/g, ' '),
+    /each bin is one doubling.*1 or more such changes, from July 2023 to October 2026.*falls from 6\.50 at fewer than 8 earlier changes to 0\.9\d at 1k–2k\./);
+  // The methodology is collapsed, and draws its charts when opened.
+  assert.equal(await page.$eval('#method', (d) => (d as HTMLDetailsElement).open), false);
+  assert.equal(await page.evaluate(() => 'growth' in window.__rf!.charts), false);
+  await page.click('#method summary');
+  await page.waitForFunction(() => 'growth' in window.__rf!.charts);
+  assert.deepEqual(await page.evaluate(() => Object.keys(window.__rf!.charts).sort()),
+    ['dirs', 'growth', 'main', 'newcomers', 'orgs', 'size', 'sizeCl'].sort());
+  assert.deepEqual(await page.evaluate(() => window.__rf!.charts.newcomers.data.labels),
+    ['2018', '2019', '2020', '2021', '2022', '2023', '2024', '2025', '2026']);
+  assert.match((await page.$eval('#rf-newcomers-note', (e) => e.textContent!)).replace(/\s+/g, ' '),
+    /fewer than 10 earlier changes.*2026 is not over yet\./);
+  // The growth chart: a smoothed curve, with the median marked, on an axis of % change per doubling.
+  assert.deepEqual(await axisTitles(page, 'growth'), ['change in feedback rate per doubling of changes landed', 'contributors (smoothed)']);
+  assert.equal(await page.evaluate(() => window.__rf!.charts.growth.data.datasets.length), 2);
+  assert.match((await page.$eval('#rf-growth-note', (e) => e.textContent!)).replace(/\s+/g, ' '),
+    /2,547 contributors\)\. The median contributor's rate falls by 21% per doubling.*one in ten fell by 57% or more, while one in ten grew by 47% or more/);
+  // Size: per change it climbs, per 100 lines much less; directories and organizations, highest first.
+  assert.deepEqual(await axisTitles(page, 'sizeCl'), ['lines changed', 'addressed comments per change']);
+  assert.deepEqual(await axisTitles(page, 'size'), ['lines changed', 'addressed comments per 100 lines']);
+  assert.match((await page.$eval('#rf-size-note', (e) => e.textContent!)).replace(/\s+/g, ' '),
+    /under 4 lines drew 0\.06 addressed comments each, those of 512–1k lines 6\.88\. Per 100 lines.*\(2\.82 against 1\.00\)/);
+  assert.deepEqual(await page.evaluate(() => window.__rf!.charts.dirs.data.labels),
+    ['components/autofill/', 'chrome/browser/', 'third_party/blink/', 'testing/buildbot/']);
+  assert.deepEqual(await page.evaluate(() => window.__rf!.charts.orgs.data.labels), ['microsoft.com', 'google.com', 'igalia.com']);
+  assert.match(await page.$eval('#method', (e) => e.textContent!), /in bins that double: under 8, 8–15, 16–31/);
   assert.deepEqual(errors, []);
   await page.close();
 });
 
-test('review feedback: a person, the measures, peer groups, directories and comments', async () => {
+test('feedback index: a person\'s index, how their rate compares, directories and comments', async () => {
   const { page, errors } = await feedbackPage();
   const { ALIAS_EMAIL } = await import('./feedback-fixture.ts');
-  // Another address of the same person finds them too.
+  // Another address of the same person finds them.
   await lookUp(page, ALIAS_EMAIL);
   await page.waitForFunction(() => !document.querySelector<HTMLElement>('#rf-person')!.hidden);
-  // The lookup note links to the person's praise on the Review Tone page, in the same tab.
-  const praise = await page.$eval('#rf-find-note .rf-praise-link', (a) => [(a as HTMLAnchorElement).getAttribute('href'),
-    (a as HTMLAnchorElement).target, a.textContent]);
-  assert.deepEqual(praise, [`sentiment.html#person=${encodeURIComponent(ALIAS_EMAIL)}`, '', 'See also your praise']);
-  assert.equal(await page.$('#praise'), null);
+  assert.deepEqual(await page.$$eval('#rf-person > section', (ss) => ss.map((s) => s.id)),
+    ['summary', 'compare', 'per-cl', 'directories', 'comments']);
+  const praise = await page.$eval('#rf-find-note .rf-praise-link', (a) => (a as HTMLAnchorElement).getAttribute('href'));
+  assert.equal(praise, 'sentiment.html#person=tp%40example.com');
   const tile = (id: string) => page.$eval(`#${id} .tile-value`, (e) => e.textContent);
+  const sub = (id: string) => page.$eval(`#${id} .tile-sub`, (e) => e.textContent!.replace(/\s+/g, ' ').trim());
+  // 3 changes, 170 lines, 3 addressed comments: 1.76 per 100 lines.
   assert.equal(await tile('rf-tile-cls'), '3');
-  assert.equal(await tile('rf-tile-threads'), '5');
-  const sub = (id: string) => page.$eval(`#${id} .tile-sub`, (e) => e.textContent);
-  // Ranked in the latest whole half-year only, among every author of the chosen org then.
-  assert.equal(await sub('rf-tile-cls'), '1 in January – June 2026: 5th percentile of all authors');
-  assert.equal(await sub('rf-tile-threads'), '1 in January – June 2026: 5th percentile of all authors');
-  await page.select('#rf-org', 'google');
-  assert.equal(await sub('rf-tile-cls'), '1 in January – June 2026: 10th percentile of Google authors');
-  await page.select('#rf-org', 'all');
-  assert.deepEqual(await page.$$eval('#rf-tile-you .tile-label, #rf-tile-peers .tile-label', (es) => es.map((e) => e.textContent)),
-    ['Your feedback index', "Peers' feedback index"]);
-  // Every chart's value axis is labelled.
-  assert.deepEqual(await page.evaluate(() => Object.fromEntries(Object.entries(window.__rf!.charts).map(([k, c]) => {
-    const s = c.options.scales as Record<string, { title?: { text?: string } }>;
-    return [k, [s.x.title?.text, s.y.title?.text]];
-  }))), {
-    cohorts: ['changes landed before (earlier commits on main)', 'feedback index'],
-    change: ['change in feedback index from the doubling before', 'doublings of changes landed'],
-    kinds: ['changes landed before (earlier commits on main)', 'feedback index'],
-    tenures: ['experience band: changes landed before / years / earlier commits in the directory', 'feedback index'],
-    trend: ['six months starting', 'feedback index'],
-    xp: ['your changes landed before (earlier commits on main)', 'feedback index'],
-    perCl: ['reviewer threads on the change', 'your changes'],
-    size: ['lines changed', 'feedback index'],
-    dirs: ['directory', 'feedback index'],
-  });
-  // The experience card: by changes landed before, against peers with as many (only 'changes:50-199'
-  // has percentiles: 0.5..2.8 evenly, median 1.65); per directory on the toggle.
-  const xpRows = () => page.$$eval('#rf-xp-table tr', (rs) => rs.map((r) => [...r.children].map((c) => c.textContent)));
-  assert.equal(await page.$eval('#experience-title', (e) => e.textContent), 'By your experience');
-  assert.equal(await page.$eval('input[name="rf-xp-by"]:checked', (e) => (e as HTMLInputElement).value), 'all');
-  assert.deepEqual((await xpRows()).slice(0, 3), [
-    ['Your changes landed before', 'Your changes', 'Threads', 'You', 'Peers'],
-    ['under 50', '1', '2', '0.80×', '–'],
-    ['50–199', '1', '1', '0.33×', '1.65×'],
-  ]);
-  await page.click('input[name="rf-xp-by"][value="dir"]');
-  assert.deepEqual((await xpRows()).slice(0, 2), [
-    ['Your earlier commits in the directory', 'Your changes', 'Threads', 'You', 'All authors'],
-    ['0', '1', '2', '0.80×', '2.10×'],
-  ]);
-  assert.equal(await page.evaluate(() => (window.__rf!.charts.xp.options.scales as Record<string, { title?: { text?: string } }>).x.title?.text),
-    'your earlier commits in the directory');
-  assert.match(await page.$eval('#experience-sub', (e) => e.textContent!), /^\s*Each change is split across the directories/);
-  await page.click('input[name="rf-xp-by"][value="all"]');
-  // The page computes the values from the half-year files (unit tests check the arithmetic).
-  assert.equal(await tile('rf-tile-you'), '0.71×');
-  // Peers are all authors with the same number of changes landed before, by default.
-  assert.equal(await page.$eval('#rf-tenure', (s) => (s as HTMLSelectElement).value), 'changes');
-  assert.equal(await page.$eval('#rf-org', (s) => (s as HTMLSelectElement).value), 'all');
-  assert.match(await page.$eval('#rf-tile-peers .tile-sub', (e) => e.textContent!), /^All authors, 50–199 earlier changes/);
-  // The same years since their first commit:
-  await page.select('#rf-tenure', 'time');
-  assert.match(await page.$eval('#rf-tile-peers .tile-sub', (e) => e.textContent!),
-    /^All authors, 2–5 years since their first commit: 120 authors,/);
-  // Peers 'time:2-5y:all': quantiles 0.4..3 evenly, so the median is 1.7 and 0.714 sits at 12%.
-  assert.equal(await tile('rf-tile-peers'), '1.70×');
-  assert.equal(await tile('rf-tile-rank'), '12%');
-  assert.ok(await page.evaluate(() => !!window.__rf!.charts.trend && !!window.__rf!.charts.xp));
-  // The experience chart's hover card points at the person's dot, not at the average of every series there.
-  await page.$eval('#rf-xp', (c) => c.scrollIntoView({ block: 'center' }));
-  const xpDot = await page.evaluate(() => {
-    const chart = window.__rf!.charts.xp;
-    const i = (chart.data.datasets[3].data as (number | null)[]).findIndex((v) => v !== null);
-    const pt = chart.getDatasetMeta(3).data[i];
-    const r = chart.canvas.getBoundingClientRect();
-    return { x: r.left + pt.x, y: r.top + pt.y };
-  });
-  await page.mouse.move(xpDot.x, xpDot.y);
-  await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
-  const xpCaret = await page.evaluate(() => {
-    const chart = window.__rf!.charts.xp;
-    const r = chart.canvas.getBoundingClientRect();
-    return { x: r.left + chart.tooltip!.caretX, y: r.top + chart.tooltip!.caretY };
-  });
-  assert.ok(Math.abs(xpCaret.x - xpDot.x) < 1 && Math.abs(xpCaret.y - xpDot.y) < 1, JSON.stringify({ xpCaret, xpDot }));
-  // Addressed only, per change.
-  await page.click('input[name="rf-kind"][value="a"]');
-  await page.click('input[name="rf-corr"][value="n"]');
+  assert.equal(await sub('rf-tile-cls'), '170 lines changed');
   assert.equal(await tile('rf-tile-threads'), '3');
-  assert.equal(await tile('rf-tile-you'), '1.00');
-  assert.match(await page.$eval('#summary-sub', (e) => e.textContent!), /you addressed per change you landed/);
-  assert.equal(await page.$eval('#comments-sub', (e) => e.textContent!.split(' ')[0]), '3');
-  await page.click('input[name="rf-kind"][value="t"]');
-  await page.click('input[name="rf-corr"][value="d"]');
-  // Experience per directory reads the adjusted value; outside Google there are too few peers of the
-  // person's years for this measure, and orgs get no tone figures.
-  const peersSub = () => page.$eval('#rf-tile-peers .tile-sub', (e) => e.textContent!);
-  await page.select('#rf-tenure', 'dir');
-  assert.equal(await tile('rf-tile-you'), '0.49×');
-  assert.match(await peersSub(), /^All authors, by experience in each directory/);
-  await page.select('#rf-tenure', 'changes');
-  assert.match(await peersSub(), /^All authors, 50–199 earlier changes/);
-  assert.equal(await tile('rf-tile-peers'), '1.65×');
-  await page.select('#rf-tenure', 'time');
-  await page.select('#rf-org', 'nongoogle');
-  assert.equal(await tile('rf-tile-peers'), '–');
-  await page.select('#rf-org', 'google');
-  assert.match(await peersSub(), /^Google authors, 2–5 years since their first commit/);
-  // Directories: a tree, top level first; ▸ opens a directory into its subdirectories.
-  const dirNames = () => page.$$eval('#rf-dirs tbody th', (ths) => ths.map((t) => t.textContent!.replace(/[▸▾]/, '')));
-  assert.deepEqual(await dirNames(), ['chrome/', 'third_party/', 'content/']);
-  // Changes, then lines changed there.
-  assert.deepEqual(await page.$$eval('#rf-dirs tbody tr:first-child td', (tds) => tds.slice(0, 2).map((t) => t.textContent)),
-    ['2', '66']);
-  // Every directory with subdirectories opens, but rows with fewer than min_cls (6) changes show no
-  // ratio. With a minimum of 1, every row has one.
-  assert.equal(await page.$$eval('#rf-dirs .ar-toggle', (ts) => ts.length), 3);
-  assert.deepEqual(await page.$$eval('#rf-dirs td.rf-ratio', (tds) => tds.map((t) => t.textContent)), ['–', '–', '–']);
-  assert.match(await page.$eval('#rf-dirs td.rf-ratio', (t) => (t as HTMLElement).title), /^Fewer than 6 changes/);
-  await page.evaluate(() => { window.__rf!.peers!.min_cls = 1; });
-  await page.click('input[name="rf-kind"][value="a"]');
-  await page.click('input[name="rf-kind"][value="t"]');
-  assert.ok(!(await page.$$eval('#rf-dirs td.rf-ratio', (tds) => tds.map((t) => t.textContent))).includes('–'));
-  await page.click('#rf-dirs tbody tr[data-key="d:third_party/"] .ar-toggle');
-  await page.click('#rf-dirs tbody tr[data-key="d:third_party/blink/"] .ar-toggle');
-  assert.deepEqual(await dirNames(), ['chrome/', 'third_party/', 'blink/', 'renderer/', 'content/']);
-  assert.deepEqual(await page.$$eval('#rf-dirs tbody tr', (trs) => trs.map((t) => (t as HTMLElement).dataset.depth)),
-    ['0', '0', '1', '2', '0']);
-  // The ratio is shaded green below typical and red above, more strongly further from it.
-  const shades = await page.$$eval('#rf-dirs td.rf-ratio', (tds) => tds.map((t) =>
-    [t.className, (t as HTMLElement).style.getPropertyValue('--rf-shade'), getComputedStyle(t).backgroundColor]));
-  for (const [cls, shade, bg] of shades) {
-    if (!/rf-ratio-(lo|hi)/.test(cls)) continue;
-    assert.ok(Number(shade) >= 0 && Number(shade) <= 1, shade);
-    if (Number(shade) > 0) assert.notEqual(bg, 'rgba(0, 0, 0, 0)');
-  }
-  // Selecting a directory, at any level, lists only the comments under it; the addressed filter applies too.
-  // Threads with text are listed; those without are rows of a table at the end.
-  const split = () => page.evaluate(() => [
-    document.querySelector<HTMLElement>('#rf-threads')!.hidden ? 0 : document.querySelectorAll('#rf-threads li').length,
-    document.querySelector<HTMLElement>('#rf-notext')!.hidden ? 0 : document.querySelectorAll('#rf-notext-table tbody tr').length]);
-  await page.click('#rf-dirs tbody tr[data-key="d:third_party/"] .rf-dir-pick');
-  assert.deepEqual(await split(), [1, 1]);
-  assert.equal(await page.$eval('#rf-dir', (s) => (s as HTMLSelectElement).value), 'third_party/');
-  await page.click('input[name="rf-kind"][value="a"]');
-  assert.deepEqual(await split(), [0, 1]);
-  await page.click('input[name="rf-kind"][value="t"]');
-  await page.select('#rf-dir', 'third_party/blink/renderer/');
-  assert.equal(await page.$eval('#rf-dirs tr[aria-selected="true"]', (t) => (t as HTMLElement).dataset.key),
-    'd:third_party/blink/renderer/');
-  assert.deepEqual(await split(), [1, 1]);
-  await page.select('#rf-dir', '');
-  assert.deepEqual(await split(), [3, 2]);
-  assert.equal(await page.$eval('#rf-notext h3', (e) => e.textContent), 'Additional comments without stored text');
-  // Each row: the change number, linked to it in Gerrit in a new tab; the date; the path.
-  assert.deepEqual(await page.$$eval('#rf-notext-table tbody tr', (trs) => trs.map((tr) => {
-    const a = tr.querySelector('a')!;
-    return [a.textContent, a.getAttribute('href'), a.getAttribute('target'),
-      ...[...tr.querySelectorAll('td')].slice(1).map((td) => td.textContent)];
-  })), [
-    ['1000003', 'https://chromium-review.googlesource.com/c/chromium/src/+/1000003', '_blank', '1 Sept 2026',
-      'third_party/blink/renderer/core/a.cc'],
-    ['1000001', 'https://chromium-review.googlesource.com/c/chromium/src/+/1000001', '_blank', '30 Sept 2025',
-      'chrome/browser/ui/view.cc'],
+  assert.equal(await tile('rf-tile-fr'), '1.76');
+  // Against experience and directories by default (3 over 3.08 expected): 31% of 2,800 have a lower index.
+  assert.deepEqual(await page.$$eval('#rf-norm input', (is) => is.map((i) => [(i as HTMLInputElement).value,
+    (i as HTMLInputElement).checked])), [['e', true], ['d', true], ['o', false]]);
+  assert.equal(await tile('rf-tile-fi'), '0.98×');
+  assert.equal(await sub('rf-tile-fi'), '31% of 2,800 contributors have a lower index');
+  assert.match((await page.$eval('#summary-sub', (e) => e.textContent!)).replace(/\s+/g, ' '),
+    /against the typical rate of contributors with as many changes landed before and in the same directories, over all your changes from July 2023 to October 2026/);
+  // Rates 2.5, 0.83 and 10 at three doublings apart: a line of +41% per doubling.
+  assert.equal(await tile('rf-tile-growth'), '+41%');
+  assert.match(await sub('rf-tile-growth'), /median −21%$/);
+  assert.match(await page.$eval('#rf-facts', (e) => e.textContent!.replace(/\s+/g, ' ')),
+    /first commit on main was in March 2022, and most of your changes were landed as google.com\./);
+  // Experience only, then nothing: the index changes; organization too.
+  await page.click('#rf-norm input[value="d"]');
+  assert.equal(await tile('rf-tile-fi'), '0.96×');
+  await page.click('#rf-norm input[value="e"]');
+  assert.equal(await tile('rf-tile-fi'), '1.18×');
+  assert.match(await page.$eval('#summary-sub', (e) => e.textContent!), /typical rate of all contributors/);
+  await page.click('#rf-norm input[value="o"]');
+  assert.equal(await tile('rf-tile-fi'), '1.31×');
+  assert.equal(await page.evaluate(() => window.__rf!.norm), 'o');
+  await page.click('#rf-norm input[value="o"]');
+  await page.click('#rf-norm input[value="e"]');
+  await page.click('#rf-norm input[value="d"]');
+  assert.equal(await page.evaluate(() => window.__rf!.norm), 'ed');
+  // The index over time: half-years from the first change, against everyone's spread.
+  assert.deepEqual(await axisTitles(page, 'trend'), ['six months starting', 'feedback index']);
+  assert.deepEqual(await page.evaluate(() => window.__rf!.charts.trend.data.labels), ['Jul 2025', 'Jan 2026', 'Jul 2026']);
+  // How the rate compares: the opening chart in grey, with the person's line on top.
+  assert.deepEqual(await axisTitles(page, 'compare'), ['changes landed before (earlier commits on main)', 'addressed comments per 100 lines']);
+  const you = await page.evaluate(() => window.__rf!.charts.compare.data.datasets[5].data);
+  assert.deepEqual(you.map((v) => (v === null ? null : Math.round(Number(v) * 100) / 100)),
+    [null, null, 2.5, null, 0.83, null, 10, null, null, null]);
+  assert.deepEqual(await page.$$eval('#rf-compare-legend li', (ls) => ls.map((l) => l.textContent)),
+    ['You', 'Median', 'Middle half (25th–75th percentile)', '10th–90th percentile']);
+  const xp = () => page.$$eval('#rf-xp-table tbody tr, #rf-xp-table tfoot tr', (rs) => rs.map((r) =>
+    [...r.children].map((c) => c.textContent)));
+  assert.deepEqual(await xp(), [
+    ['16–31', '1', '40', '1', '2.50', '2.50', '0.83×', '–'],
+    ['64–127', '1', '120', '1', '0.83', '1.70', '0.55×', '–'],
+    ['256–511', '1', '10', '1', '10.00', '1.00', '20.00×', '–'],
+    ['All', '3', '170', '3', '1.76', '–', '0.98×', '+41%'],
   ]);
-  // There is no praise-only filter; praise is tagged in the list. Comment text stays text, and each
-  // comment links to Gerrit in a new tab.
-  assert.equal(await page.$('#rf-show'), null);
-  assert.equal(await page.$$eval('#rf-threads .rf-tag-praise', (ls) => ls.length), 2);
+  // The index cells are shaded: green below 1, red above.
+  assert.deepEqual(await page.$$eval('#rf-xp-table td.rf-ratio', (ts) => ts.map((t) => t.className.split(' ').at(-1))),
+    ['rf-ratio-lo', 'rf-ratio-lo', 'rf-ratio-hi', 'rf-ratio-lo']);
+  // Directories: chrome/ has 2 changes (the peer minimum here), the others go into "Other".
+  const dirs = () => page.$$eval('#rf-dirs tbody tr', (rs) => rs.map((r) => [...r.children].map((c) => c.textContent!.replace(/[▸▾]/, ''))));
+  assert.deepEqual(await page.$$eval('#rf-dirs thead th', (ts) => ts.map((t) => t.textContent)),
+    ['Directory', 'Changes', 'Lines', 'Addressed comments', 'Feedback rate', 'Feedback index', 'Earlier commits']);
+  assert.deepEqual(await dirs(), [['chrome/', '2', '68', '1', '1.46', '0.56×', '1'], ['Other (2)', '2', '102', '2', '1.97', '1.54×', '150']]);
+  assert.deepEqual(await page.$$eval('#rf-dirs td.rf-ratio', (ts) => ts.map((t) => t.className.split(' ').at(-1))), ['rf-ratio-lo', 'rf-ratio-hi']);
+  // Comments: addressed ones only; text where it was collected, the rest in the table.
+  assert.match(await page.$eval('#comments-sub', (e) => e.textContent!), /^\s*3 addressed review comments, newest first/);
+  assert.deepEqual(await page.$$eval('#rf-threads li .rf-text', (ps) => ps.map((p) => p.textContent)),
+    ['Great test coverage <img src=x onerror=alert(1)>']);
   assert.equal(await page.$('#rf-threads img'), null);
-  assert.ok((await page.$eval('#rf-threads', (e) => e.textContent!)).includes('<img src=x onerror=alert(1)>'));
-  const links = await page.$$eval('#rf-threads a', (as) => as.map((a) => [a.getAttribute('href'), a.getAttribute('target')]));
-  assert.equal(links.length, 3);
-  for (const [href, target] of links) {
-    assert.match(href!, /^https:\/\/chromium-review\.googlesource\.com\/c\/chromium\/src\/\+\/\d+\/comment\/[\w%]+\/$/);
-    assert.equal(target, '_blank');
-  }
-  // The over-time chart has every half-year of the data, named by the month each starts in.
-  assert.deepEqual(await page.evaluate(() => window.__rf!.charts.trend.data.labels),
-    ['Jul 2023', 'Jan 2024', 'Jul 2024', 'Jan 2025', 'Jul 2025', 'Jan 2026', 'Jul 2026']);
-  assert.match(await page.$eval('#method', (e) => e.textContent!), /from\s+July 2023 to October 2026,.*from July 2023, where/s);
-  const text = await page.$eval('body', (b) => b.innerText);
-  assert.doesNotMatch(text, /\b\d{4}-W\d{2}\b/);
+  assert.deepEqual(await page.$$eval('#rf-notext-table tbody tr td:first-child', (ts) => ts.map((t) => t.textContent)), ['1000003', '1000001']);
+  // Selecting a directory lists its comments.
+  await page.click('#rf-dirs tbody tr .rf-dir-pick');
+  assert.equal(await page.$eval('#rf-dir', (s) => (s as HTMLSelectElement).value), 'chrome/');
+  assert.match(await page.$eval('#comments-sub', (e) => e.textContent!), /^\s*1 addressed review comments in\s+chrome\//);
   assert.deepEqual(errors, []);
   await page.close();
 });
 
-test('review feedback: threads kept only as counts list as one row per change and directory', async () => {
+test('feedback index: comments kept only as counts list as one row per change and directory', async () => {
   // CL 1's half-year as an older file has it: 3 threads in its directory, 1 addressed.
   const { FIXTURE_EMAIL, shards } = await import('./feedback-fixture.ts');
   const h2: Shard = { ...shards['2025H2'], files: [], counts: 1,
@@ -3644,18 +3457,16 @@ test('review feedback: threads kept only as counts list as one row per change an
   const { page, errors } = await feedbackPage(undefined, { ...shards, '2025H2': h2 });
   await lookUp(page, FIXTURE_EMAIL);
   await page.waitForFunction(() => !document.querySelector<HTMLElement>('#rf-person')!.hidden);
-  const rows = () => page.$$eval('#rf-notext-table tbody tr', (trs) => trs.map((tr) => ({
+  const rows = await page.$$eval('#rf-notext-table tbody tr', (trs) => trs.map((tr) => ({
     path: tr.querySelector('td:last-child')!.textContent!.replace(/\s+/g, ' ').trim(),
     link: tr.querySelector('a')!.getAttribute('href') })));
-  const grouped = (await rows()).filter((r) => r.link!.endsWith('/1000001'));
-  assert.deepEqual(grouped.map((r) => r.path), ['chrome/browser/ui/ (1 thread)', 'chrome/browser/ui/ (2 threads)']);
-  // The caption counts threads, not rows: 3 + 1 + 2.
-  assert.match(await page.$eval('#comments-sub', (e) => e.textContent!), /^\s*6 reviewer threads/);
+  assert.deepEqual(rows.filter((r) => r.link!.endsWith('/1000001')).map((r) => r.path), ['chrome/browser/ui/ (1 comment)']);
+  assert.match(await page.$eval('#comments-sub', (e) => e.textContent!), /^\s*3 addressed review comments/);
   assert.deepEqual(errors, []);
   await page.close();
 });
 
-test('review feedback: selecting a dot in the over-time chart filters the directories and comments', async () => {
+test('feedback index: selecting a dot in the over-time chart filters the directories and comments', async () => {
   const { page, errors } = await feedbackPage();
   const { FIXTURE_EMAIL } = await import('./feedback-fixture.ts');
   await lookUp(page, FIXTURE_EMAIL);
@@ -3668,7 +3479,7 @@ test('review feedback: selecting a dot in the over-time chart filters the direct
     return { x: r.left + pt.x, y: r.top + pt.y };
   }, i);
   const dirs = () => page.$$eval('#rf-dirs tbody th', (ths) => ths.map((t) => t.textContent!.replace(/[▸▾]/, '')));
-  // Threads listed with their text, plus the table of those without.
+  // Comments listed with their text, plus the table of those without.
   const threads = () => page.$$eval('#rf-threads li, #rf-notext-table tbody tr', (ls) => ls.length);
   // The filter line shows above the directories and above the comments alike.
   const filterShown = async () => {
@@ -3682,11 +3493,10 @@ test('review feedback: selecting a dot in the over-time chart filters the direct
     await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
   };
   assert.equal(await filterShown(), false);
-  assert.equal(await dirs().then((d) => d.length), 3);
-  assert.equal(await threads(), 5);
-  // Half-years from July 2023: the person's first dot is the fifth, 2025 H2; 2026 H1 is the sixth.
+  assert.equal(await threads(), 3);
+  // The person's dots: 2025 H2, 2026 H1, 2026 H2.
   await page.$eval('#rf-trend', (c) => c.scrollIntoView({ block: 'center' }));
-  const at = await dot(5);
+  const at = await dot(1);
   // The hover card points at the person's dot, not at the average of every series there.
   await page.mouse.move(at.x, at.y);
   await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
@@ -3701,34 +3511,27 @@ test('review feedback: selecting a dot in the over-time chart filters the direct
   assert.equal(await filterShown(), true);
   assert.equal(await page.$eval('#rf-half-filter-name', (e) => e.textContent!.trim()),
     'Filter: only changes landed January – June 2026');
-  assert.equal(await page.$eval('#rf-half-filter-comments .rf-filter-name', (e) => e.textContent!.trim()),
-    'Filter: only changes landed January – June 2026');
   assert.deepEqual(await dirs(), ['content/', 'chrome/']);
   assert.equal(await threads(), 1);
-  assert.match(await page.$eval('#comments-sub', (e) => e.textContent!), /^1 reviewer threads on changes landed January – June 2026,/);
-  // Together with a directory filter: that half-year's threads in the directory.
+  assert.match(await page.$eval('#comments-sub', (e) => e.textContent!), /^\s*1 addressed review comments on changes landed January – June 2026,/);
+  // Together with a directory filter: that half-year's comments in the directory.
   await page.select('#rf-dir', 'chrome/');
-  assert.equal(await threads(), 1);
-  assert.match(await page.$eval('#rf-threads li', (e) => e.textContent!), /No reviewer threads here/);
-  assert.match(await page.$eval('#comments-sub', (e) => e.textContent!), /^0 reviewer threads in\s+chrome\/ on changes landed January – June 2026,/);
+  assert.match(await page.$eval('#rf-threads li', (e) => e.textContent!), /No addressed comments here/);
   await page.select('#rf-dir', '');
-  // The ring stays through a redraw of the chart (a change of adjustment).
-  await page.click('input[name="rf-corr"][value="n"]');
+  // The filter stays through a redraw of the chart (a change of norm).
+  await page.click('#rf-norm input[value="o"]');
   assert.equal(await page.evaluate(() => window.__rf!.half), '2026H1');
   assert.equal(await filterShown(), true);
   // Clear empties the filter; selecting the same dot twice does too.
   await page.click('#rf-half-clear');
   assert.equal(await filterShown(), false);
-  assert.equal(await page.evaluate(() => window.__rf!.half), null);
-  assert.equal(await threads(), 5);
+  assert.equal(await threads(), 3);
   await page.$eval('#rf-trend', (c) => c.scrollIntoView({ block: 'center' }));
-  const last = await dot(6);
+  const last = await dot(2);
   await clickAt(last.x, last.y);
   assert.deepEqual(await dirs(), ['third_party/']);
-  // The comments' Clear button clears it as well.
   await page.click('#rf-half-filter-comments .rf-half-clear');
   assert.equal(await filterShown(), false);
-  assert.equal(await threads(), 5);
   await page.$eval('#rf-trend', (c) => c.scrollIntoView({ block: 'center' }));
   await clickAt(last.x, last.y);
   assert.equal(await filterShown(), true);
@@ -3742,22 +3545,17 @@ test('review feedback: selecting a dot in the over-time chart filters the direct
   await page.close();
 });
 
-test('review feedback: selecting a column of the threads-per-change chart filters the directories and comments', async () => {
-  // CL 3 gets three more threads, none addressed: 5 in all.
+test('feedback index: selecting a column of the comments-per-change chart filters the directories and comments', async () => {
+  // CL 3 gets three more addressed comments: 4 in all.
   const { FIXTURE_EMAIL, shards } = await import('./feedback-fixture.ts');
   const h2 = structuredClone(shards['2026H2']);
-  (h2.cls[0][6] as [string, number, number | null, 0 | 1 | null][]).push(['', 0, -2, 0], ['', 0, -2, 0], ['', 0, -2, 0]);
+  (h2.cls[0][6] as [string, number, number | null, 0 | 1 | null][]).push(['', 0, -2, 1], ['', 0, -2, 1], ['', 0, -2, 1]);
   const { page, errors } = await feedbackPage(undefined, { ...shards, '2026H2': h2 });
   await lookUp(page, FIXTURE_EMAIL);
   await page.waitForFunction(() => !document.querySelector<HTMLElement>('#rf-person')!.hidden);
-  // It comes right after the directory-experience card.
-  assert.deepEqual(await page.$$eval('#rf-person > section', (ss) => ss.map((s) => s.id).slice(1, 4)),
-    ['experience', 'per-cl', 'directories']);
   const counts = () => page.evaluate(() => window.__rf!.charts.perCl.data.datasets[0].data);
-  // CL 1 drew 2 threads, CL 2 one, CL 3 five.
   assert.deepEqual(await counts(), [0, 2, 1, 0, 0, 0]);
-  assert.deepEqual(await page.evaluate(() => window.__rf!.charts.perCl.data.labels), ['0', '1–2', '3–5', '6–10', '11–20', '21+']);
-  // Where column i's middle is on the page (half its height, so even a short column can be hit).
+  assert.deepEqual(await axisTitles(page, 'perCl'), ['addressed comments on the change', 'your changes']);
   const col = (i: number) => page.evaluate((i) => {
     const chart = window.__rf!.charts.perCl;
     const bar = chart.getDatasetMeta(0).data[i];
@@ -3771,54 +3569,26 @@ test('review feedback: selecting a column of the threads-per-change chart filter
     await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
   };
   const dirs = () => page.$$eval('#rf-dirs tbody th', (ths) => ths.map((t) => t.textContent!.replace(/[▸▾]/, '')));
-  // Threads listed with their text, plus the table of those without.
   const threads = () => page.$$eval('#rf-threads li, #rf-notext-table tbody tr', (ls) => ls.length);
   const filters = () => page.$$eval('#rf-bin-filter, #rf-bin-filter-comments', (es) =>
     es.map((e) => ((e as HTMLElement).hidden ? null : e.querySelector('.rf-filter-name')!.textContent!.trim())));
   assert.deepEqual(await filters(), [null, null]);
-  // Above the column's top: still that column.
   await clickCol(1);
   assert.equal(await page.evaluate(() => window.__rf!.bin), 1);
-  assert.deepEqual(await filters(), Array(2).fill('Filter: only changes with 1–2 reviewer threads'));
-  assert.deepEqual(await dirs(), ['chrome/', 'content/']);
-  assert.equal(await threads(), 3);
-  assert.match(await page.$eval('#comments-sub', (e) => e.textContent!), /^3 reviewer threads on changes with 1–2 reviewer threads, newest/);
+  assert.deepEqual(await filters(), Array(2).fill('Filter: only changes with 1–2 addressed comments'));
+  assert.deepEqual(await dirs(), ['chrome/', 'Other (1)']);
+  assert.equal(await threads(), 2);
   await clickCol(2);
-  assert.deepEqual(await filters(), Array(2).fill('Filter: only changes with 3–5 reviewer threads'));
+  assert.deepEqual(await filters(), Array(2).fill('Filter: only changes with 3–5 addressed comments'));
   assert.deepEqual(await dirs(), ['third_party/']);
-  assert.equal(await threads(), 5);
-  // Together with a half-year, which the chart follows too.
-  await page.$eval('#rf-trend', (c) => c.scrollIntoView({ block: 'center' }));
-  const dot = await page.evaluate(() => {
-    const chart = window.__rf!.charts.trend;
-    const pt = chart.getDatasetMeta(5).data[6];
-    const r = chart.canvas.getBoundingClientRect();
-    return { x: r.left + pt.x, y: r.top + pt.y };
-  });
-  await page.mouse.click(dot.x, dot.y);
-  await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
-  assert.equal(await page.evaluate(() => window.__rf!.half), '2026H2');
-  assert.deepEqual(await counts(), [0, 0, 1, 0, 0, 0]);
-  assert.match(await page.$eval('#per-cl-sub', (e) => e.textContent!), /drew, for the changes landed July – October 2026\./);
-  assert.equal(await page.evaluate(() => window.__rf!.bin), 2);
-  assert.deepEqual(await dirs(), ['third_party/']);
-  assert.match(await page.$eval('#comments-sub', (e) => e.textContent!),
-    /^5 reviewer threads on changes with 3–5 reviewer threads, landed July – October 2026, newest/);
+  assert.equal(await threads(), 4);
+  assert.match(await page.$eval('#comments-sub', (e) => e.textContent!), /^\s*4 addressed review comments on changes with 3–5 addressed comments, newest/);
   // An empty column can't be selected.
   await clickCol(0);
   assert.equal(await page.evaluate(() => window.__rf!.bin), 2);
-  await page.click('#rf-half-clear');
-  // The addressed measure: every change drew one addressed thread, so column 2 empties and its filter goes.
-  await page.click('input[name="rf-kind"][value="a"]');
-  assert.deepEqual(await counts(), [0, 3, 0, 0, 0, 0]);
-  assert.equal(await page.evaluate(() => window.__rf!.bin), null);
-  assert.deepEqual(await filters(), [null, null]);
-  await clickCol(1);
-  assert.deepEqual(await filters(), Array(2).fill('Filter: only changes with 1–2 addressed reviewer threads'));
   // Either Clear button clears it, and so does selecting the column again.
   await page.click('#rf-bin-filter-comments .rf-bin-clear');
   assert.deepEqual(await filters(), [null, null]);
-  assert.equal(await threads(), 3);
   await clickCol(1);
   await page.click('#rf-bin-filter .rf-bin-clear');
   assert.equal(await page.evaluate(() => window.__rf!.bin), null);
@@ -3829,23 +3599,16 @@ test('review feedback: selecting a column of the threads-per-change chart filter
   await page.close();
 });
 
-test('review feedback: the addressed measure covers only the labelled dates', async () => {
+test('feedback index: only changes with addressed labels count', async () => {
   const { peers, day, FIXTURE_EMAIL } = await import('./feedback-fixture.ts');
   const { page, errors } = await feedbackPage({ ...peers, addr_start: day('2026-01-01') });
   await lookUp(page, FIXTURE_EMAIL);
   await page.waitForFunction(() => !document.querySelector<HTMLElement>('#rf-person')!.hidden);
   const tile = (id: string) => page.$eval(`#${id} .tile-value`, (e) => e.textContent);
-  assert.equal(await page.evaluate(() => window.__rf!.charts.trend.data.labels!.length), 7);
-  await page.click('input[name="rf-kind"][value="a"]');
-  // Before 2026 there are no labels: the addressed figures count CLs 2 and 3, and the chart starts in 2026.
   assert.equal(await tile('rf-tile-cls'), '2');
   assert.equal(await tile('rf-tile-threads'), '2');
-  assert.equal(await page.$eval('#comments-sub', (e) => e.textContent!.split(' ')[0]), '2');
   assert.equal(await page.evaluate(() => window.__rf!.charts.trend.data.labels!.length), 2);
-  assert.match(await page.$eval('#method', (e) => e.textContent!), /from January 2026, where/);
-  await page.click('input[name="rf-kind"][value="t"]');
-  assert.equal(await page.evaluate(() => window.__rf!.charts.trend.data.labels!.length), 7);
-  assert.equal(await tile('rf-tile-cls'), '3');
+  assert.match(await page.$eval('#rf-find-note', (e) => e.textContent!), /Showing 2 changes/);
   assert.deepEqual(errors, []);
   await page.close();
 });
@@ -3938,7 +3701,7 @@ test('the Data flow page draws the chosen pages\' flow, lists the inventory, and
   s = await sample();
   assert.ok(s.open && s.rows === 0 && s.cols.length > 0 && /Not published/.test(s.note), JSON.stringify(s));
   await page.click('#sample-close');
-  await page.evaluate(() => (location.hash = '#n=data%2Fprivate%2Flabels.sqlite'));
+  await page.evaluate(() => (location.hash = '#n=data%2Fprivate%2Faddressed.sqlite'));
   await page.waitForFunction(() => document.querySelector('#detail-title')!.textContent === 'data/private/addressed.sqlite');
   // Names in the facts are links to the other items.
   await page.click('#detail-facts [data-field="made_by"] button');

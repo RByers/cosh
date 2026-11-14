@@ -1,5 +1,5 @@
 """cosh/review_feedback.py helpers: the address hash the page shares,
-periods, bands, quantiles and excerpts. No data is read."""
+periods, bins, the feedback rate model, quantiles and excerpts. No data is read."""
 
 import unittest
 
@@ -17,7 +17,6 @@ class ReviewFeedbackTest(unittest.TestCase):
     def test_periods_and_bands(self):
         t = 1767225600 + 200 * 86400          # 2026-07-20
         self.assertEqual(R.periods_of(t), ("all", "2026H2"))
-        self.assertEqual([R.xp_band(n) for n in (0, 1, 4, 5, 19, 20, 99, 100)], [0, 1, 1, 2, 2, 3, 3, 4])
         self.assertEqual([R.tenure_band(y) for y in (0.5, 1, 3, 7, 12, None)],
                          ["<1y", "1-2y", "2-5y", "5-10y", "10y+", None])
         self.assertEqual([R.changes_band(n) for n in (0, 49, 50, 199, 200, 499, 500, 999, 1000, None)],
@@ -25,128 +24,66 @@ class ReviewFeedbackTest(unittest.TestCase):
         self.assertEqual(R.day_of("1970-01-02 03:00:00"), 1)
         self.assertEqual(R.epoch_day(86400 * 3 + 5), 3)
 
+    def test_experience_bins(self):
+        # Doublings of earlier commits: <8, 8–15, 16–31, ..., 1k–2k, 2k+.
+        self.assertEqual([R.xbin(n) for n in (0, 7, 8, 15, 16, 1023, 1024, 2047, 2048, 50000)],
+                         [0, 0, 1, 1, 2, 7, 8, 8, 9, 9])
+        self.assertEqual(len(R.BIN_LABELS), len(R.BIN_EDGES) + 1)
+        self.assertEqual((R.dir2("chrome/browser/ui/"), R.dir1("chrome/browser/ui/")), ("chrome/browser/", "chrome/"))
+        self.assertEqual((R.dir2("(root)/"), R.dir1("ui/")), ("(root)/", "ui/"))
+        # By lines, or by share where the landed commit changed none.
+        self.assertEqual(R.unit_fracs([(0.6, 30), (0.4, 10)]), [0.75, 0.25])
+        self.assertEqual(R.unit_fracs([(0.6, 0), (0.4, 0)]), [0.6, 0.4])
+
+    def test_growth(self):
+        # Halving per bin (doubling of changes landed): -50%.
+        cells = {1: (10, 40, 1000), 2: (10, 20, 1000), 3: (10, 10, 1000)}
+        self.assertEqual(R.growth(cells), -50.0)
+        # Bins with too few CLs don't count, and two bins aren't enough.
+        self.assertIsNone(R.growth({1: (10, 40, 1000), 2: (10, 20, 1000), 3: (R.MIN_BIN_CLS - 1, 10, 1000)}))
+        # Zero feedback counts as FR_FLOOR (0.1 per 100 lines): 1.0 -> 0.1 -> 0.1, weighted by CLs.
+        g = R.growth({0: (5, 10, 1000), 1: (5, 0, 1000), 2: (5, 0, 1000)})
+        self.assertAlmostEqual(g, round(100 * (2 ** (-0.5 * R.math.log2(10)) - 1), 1))
+        d = R.growth_dist([-50.0, -20.0, 0.0, 10.0])
+        self.assertEqual((d["n"], d["median"]), (4, -10.0))
+        self.assertEqual(len(d["curve"]), len(R.GROWTH_GRID))
+        # The smoothed curve sums to about 100% over steps of 0.05 (it is per 0.1 of log2).
+        self.assertAlmostEqual(sum(y for _, y in d["curve"]) / 2, 100, delta=1)
+
+    def test_rate_model(self):
+        # Twenty people with 30 one-directory CLs each: half in ui/ (2 addressed per 100 lines)
+        # and half in base/ (1 per 100 lines), at two levels of experience.
+        def row(pid, i):
+            d = "ui/a/" if pid % 2 else "base/a/"
+            b = 1 if i < 15 else 3
+            a = (2 if pid % 2 else 1) * (2 if b == 1 else 1)
+            return R.Row(pid, 0, 100, 8 if b == 1 else 32, b, "google.com" if pid < 15 else "x.com", a, [(d, 1.0, a)], d)
+        rows = [row(pid, i) for pid in range(20) for i in range(30)]
+        old = R.MIN_FACTOR_CLS
+        R.MIN_FACTOR_CLS = 100
+        try:
+            m = R.rate_model(rows)
+        finally:
+            R.MIN_FACTOR_CLS = old
+        self.assertEqual((m["ref_bin"][1], m["ref_bin"][3]), (3.0, 1.5))
+        self.assertIsNone(m["ref_bin"][0])
+        # ui/ draws twice what base/ does per line, whatever the experience.
+        f = m["f_dir"]["e"]
+        self.assertAlmostEqual(f["ui/a/"] / f["base/a/"], 2, places=2)
+        # The expected threads of a CL: lines / 100 × the bin's median × the directory's factor.
+        r = rows[1 * 30]          # pid 1 (ui/), bin 1
+        self.assertAlmostEqual(R.expected(r, "e", m), 3.0)
+        self.assertAlmostEqual(R.expected(r, "ed", m), 3.0 * f["ui/a/"])
+        self.assertAlmostEqual(R.expected(r, "", m), m["ref_all"])
+        # Orgs: "*" pools those under MIN_FACTOR_CLS (x.com has 150 CLs: its own factor here).
+        self.assertIn("x.com", m["f_org"]["ed"])
+        self.assertIn("*", m["f_org"]["ed"])
+
     def test_quantiles(self):
         q = R.quantiles(range(21))
         self.assertEqual(q, [float(i) for i in range(21)])
         self.assertEqual(R.quantiles([5]), [5] * 21)
         self.assertIsNone(R.quantiles([]))
-
-    def test_last_whole_half(self):
-        t = lambda s: R.datetime.fromisoformat(s + "T00:00:00+00:00").timestamp()
-        start = t("2017-07-03")
-        self.assertEqual(R.last_whole_half(start, t("2026-11-01")), "2026H1")
-        self.assertEqual(R.last_whole_half(start, t("2026-07-01")), "2026H1")
-        self.assertEqual(R.last_whole_half(start, t("2026-06-30")), "2025H2")
-        self.assertEqual(R.last_whole_half(t("2017-07-01"), t("2027-01-01")), "2026H2")
-        self.assertIsNone(R.last_whole_half(t("2026-03-01"), t("2026-11-01")))
-
-    def test_count_peers(self):
-        t = lambda s: R.datetime.fromisoformat(s + "T00:00:00+00:00").timestamp()
-        row = lambda cls, thr, acls, org: dict(cls=cls, threads=thr, acls=acls, addressed=acls // 2, org=org)
-        # 12 Googlers and 3 others in 2026H1, whatever their tenure; 2026H2 isn't whole yet,
-        # and one person was active only in 2025H2.
-        per = {f"g{i}": {"2026H1": row(i + 1, 10 * i, i, "google.com"), "2026H2": row(99, 99, 99, "google.com")}
-               for i in range(12)}
-        per.update({f"o{i}": {"2026H1": row(1, 1, 0, "igalia.com")} for i in range(3)})
-        per["old"] = {"2025H2": row(500, 500, 500, "google.com")}
-        out = R.count_peers(per, t("2017-07-03"), t("2026-11-01"), t("2023-07-01"))
-        self.assertEqual(out["count_half"], "2026H1")
-        c = out["counts_half"]
-        self.assertEqual((c["all"]["cls"]["n"], c["google"]["cls"]["n"], c["nongoogle"]["cls"]["n"]), (15, 12, 3))
-        self.assertEqual((c["google"]["cls"]["q"][0], c["google"]["cls"]["q"][-1]), (1, 12))
-        self.assertIsNone(c["nongoogle"]["cls"]["q"])          # fewer than MIN_PEERS
-        # Labelled counts: only people with labelled changes (g0 has none).
-        self.assertEqual(c["all"]["acls"]["n"], 11)
-        # Labels that start after the half-year began give no addressed peers.
-        late = R.count_peers(per, t("2017-07-03"), t("2026-11-01"), t("2026-02-01"))["counts_half"]
-        self.assertEqual((late["all"]["cls"]["n"], late["all"]["acls"]["n"]), (15, 0))
-
-    def test_yearly_changes(self):
-        none = {k: None for k in R.METRICS}
-        val = lambda td, ad=None: {**none, "td": td, "ad": ad}
-        years = {
-            # 2022 -> 2024 isn't consecutive, so it gives no value.
-            "p1": {2018: ("google.com", val(4.0), none), 2019: ("google.com", val(2.0), none),
-                   2020: ("google.com", val(3.0), none), 2021: ("google.com", val(1.0), none),
-                   2022: ("google.com", val(0.5), none), 2024: ("google.com", val(0.25, 1.0), none),
-                   2025: ("igalia.com", val(0.25, 0.5), val(2.0)), 2026: ("igalia.com", val(0.0, 1.0), val(1.0))},
-        }
-        groups = {"all": lambda o: True, "nongoogle": lambda o: o != "google.com", "dir:all": lambda o: True}
-        ch = R.yearly_changes(years, groups)
-        # 2018->19 (50%), 2019->20 (-50%), 2020->21 (67%), 2021->22 (50%), 2024->25 (0%),
-        # 2025->26 (0.25 -> 0 counts as FLOOR: 80%).
-        self.assertEqual(ch["all"]["td"]["n"], 6)
-        self.assertEqual(ch["all"]["td"]["people"], 1)
-        self.assertEqual(ch["all"]["td"]["median"], 50.0)
-        # Addressed: 2024->25 (50% less), 2025->26 (100% more).
-        self.assertEqual(ch["all"]["ad"]["n"], 2)
-        self.assertEqual(ch["all"]["ad"]["median"], -25.0)
-        # Groups go by the later year's org; "dir:" reads the directory-experience values.
-        self.assertEqual(ch["nongoogle"]["td"]["n"], 2)
-        self.assertEqual(ch["dir:all"]["td"]["n"], 1)
-        self.assertEqual(ch["dir:all"]["td"]["median"], 50.0)
-        # Ratios 0.5, 1.5, 1/3, 0.5, 1, 0.2 in the bins below 0.397, [0.397, 0.5), [0.5, 0.63), ... from 2.52 on.
-        self.assertEqual(ch["all"]["td"]["counts"], [2, 0, 2, 0, 0, 1, 1, 0, 0, 0])
-
-    def test_matched_changes(self):
-        none = {k: None for k in R.METRICS}
-        val = lambda td: {**none, "td": td}
-        y = lambda org, plain, time, changes, d: (org, dict(none=val(plain), time=val(time), changes=val(changes),
-                                                            dir=val(d)))
-        years = {
-            "p1": {2024: y("google.com", 2.0, 1.0, 1.0, 1.0), 2025: y("google.com", 1.0, 0.8, 1.0, 1.5)},
-            # 2025 -> 26 lacks a value by directory experience, so it isn't counted for any measure.
-            "p2": {2024: y("igalia.com", 1.0, 1.0, 1.0, 1.0), 2025: y("igalia.com", 0.5, 1.0, 1.0, 0.5),
-                   2026: y("igalia.com", 0.25, 1.0, 1.0, None)},
-        }
-        ch = R.matched_changes(years, {"all": lambda o: True, "nongoogle": lambda o: o != "google.com"})
-        a = ch["all"]["td"]
-        self.assertEqual((a["n"], a["people"]), (2, 2))
-        # Medians of the two ratios each, as % less: plain 0.5 and 0.5; time 0.8 and 1; changes 1 and 1;
-        # directory 1.5 and 0.5.
-        self.assertEqual((a["none"], a["time"], a["changes"], a["dir"]), (50.0, 10.0, 0.0, 0.0))
-        self.assertEqual(ch["nongoogle"]["td"]["n"], 1)
-        self.assertIsNone(ch["all"]["ad"]["none"])
-
-    def test_histogram(self):
-        self.assertEqual(R.histogram([0.1, 0.5, 1, 2, 5], [0.5, 1, 2]), [1, 1, 1, 2])
-        # The ratio bins pair each edge with its reciprocal.
-        self.assertEqual([round(1 / r, 6) for r in reversed(R.CHANGE_RATIOS)], [round(r, 6) for r in R.CHANGE_RATIOS])
-
-    def test_tenure_trends(self):
-        m = {k: 1.0 for k in R.METRICS}
-        half_m = {k: 0.5 for k in R.METRICS}
-        # Twenty people who started in 2020, at 3, 3.5 and 4 years, halving each year.
-        pts = [[(2020, 3.2, "google.com", m, m), (2020, 3.7, "google.com", m, m), (2020, 4.2, "google.com", half_m, m)]
-               for _ in range(R.MIN_COHORT)]
-        pts.append([(2021, 1.0, "igalia.com", m, m)])
-        cohorts = R.tenure_trends(pts, {"all": lambda o: True, "org:igalia": lambda o: o == "igalia.com"})
-        self.assertEqual(cohorts["all"]["td"]["2020"], [[3.0, 1.0, 20], [3.5, 1.0, 20], [4.0, 0.5, 20]])
-        self.assertEqual(cohorts["all"]["td"]["2021"], [])           # one person: too few for a point
-        self.assertEqual(cohorts["org:igalia"]["td"], {"2021": []})
-
-    def test_changes_bins(self):
-        # Bins of earlier changes for the cohort curves and the all-against-addressed chart.
-        self.assertEqual([R.chg_bin(n) for n in (0, 9, 10, 24, 25, 99, 100, 499, 500, 999, 1000, 5000)],
-                         [0, 0, 1, 1, 2, 3, 4, 5, 6, 6, 7, 7])
-        self.assertEqual(len(R.CHG_LABELS), len(R.CHG_EDGES) + 1)
-        # Doublings for the histogram start at DOUBLING_FROM.
-        self.assertEqual([R.doubling(n) for n in (0, 31, 32, 63, 64, 127, 128, 1024, 2047, 2048)],
-                         [None, None, 0, 0, 1, 1, 2, 5, 5, 6])
-        m = {k: 1.0 for k in R.METRICS}
-        pts = [[(2020, 5, "google.com", m, m), (2020, 30, "google.com", m, m)] for _ in range(R.MIN_COHORT)]
-        cohorts = R.tenure_trends(pts, {"all": lambda o: True}, R.chg_bin)
-        self.assertEqual(cohorts["all"]["td"]["2020"], [[0, 1.0, 20], [2, 1.0, 20]])
-
-    def test_tenure_trends_older_points(self):
-        m = {k: 1.0 for k in R.METRICS}
-        none = {k: None for k in R.METRICS}
-        # Older half-years have only the all-threads measures.
-        pts = [[(2018, 0.2, "google.com", {**none, "td": 2.0}, none, True),
-                (2018, 5.2, "google.com", m, m), (2018, 5.7, "google.com", m, m)] for _ in range(R.MIN_COHORT)]
-        cohorts = R.tenure_trends(pts, {"all": lambda o: True})
-        self.assertEqual(cohorts["all"]["td"]["2018"], [[0.0, 2.0, 20], [5.0, 1.0, 20], [5.5, 1.0, 20]])
-        self.assertEqual(cohorts["all"]["ad"]["2018"], [[5.0, 1.0, 20], [5.5, 1.0, 20]])
 
     def test_excerpt(self):
         self.assertEqual(R.excerpt("  a \n b "), "a b")

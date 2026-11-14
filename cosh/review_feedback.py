@@ -1,17 +1,23 @@
-"""Per-person data for the Review Feedback page (web/feedback-index.html,
+"""Per-person data for the Feedback Index page (web/feedback-index.html,
 docs/review-feedback.md).
 
-Offline; reads reviews.sqlite, commits.sqlite,
-addressed.sqlite, sentiment.sqlite and the sentiment comment files. Writes, under --out
+The feedback rate (FR) of a set of CLs is their addressed reviewer threads
+per 100 changed lines; the feedback index (FI) is a person's FR over their
+peers' (the median FR at the same experience, adjusted for directories and,
+optionally, org: `rate_model`, `expected`).
+
+Offline; reads reviews.sqlite, commits.sqlite, addressed.sqlite,
+sentiment.sqlite and the sentiment comment files. Writes, under --out
 (default web/public/review-feedback/):
 
-  peers.json       percentiles of every peer group, per period and measure,
-                   and of the CLs landed and reviewer threads of everyone
-                   active in the latest whole half-year (count_peers)
-  u/<key>.json     one file per CL owner: their CLs, the reviewer threads on
-                   them (with excerpts for the year that has comment text),
-                   praise received, and their values per period and measure
-  u/<key>.json     for each other address of the same person: {"see": key}
+  peers.json         the experience bins, the index's typical rates and
+                     factors, the spread of FR per bin and of everyone's FI
+                     per norm and period, and the methodology's charts
+  u/<key>.json       one per CL owner: first commit, which half-years they
+                     have files for, praise received
+  u/<key>.json       for each other address of the same person: {"see": key}
+  <half>/<key>.json  that half-year's CLs, with directory splits and the
+                     reviewer threads (excerpts where comment text exists)
 
 <key> is a hash of the normalised address (`key` below; the page computes the
 same), so the folder can't be browsed for names and the page can't offer
@@ -34,7 +40,7 @@ import shutil
 import sqlite3
 import statistics as st
 import sys
-from collections import Counter, defaultdict
+from collections import Counter, defaultdict, namedtuple
 from datetime import datetime, timezone
 
 from . import classify, sentiment, store
@@ -50,66 +56,19 @@ DAY = 86400
 YEAR = 365.25 * DAY
 WEEK = 7 * DAY
 ADDR_COVER = 0.95             # the addressed measure starts where every later week has labels for this share
-# The opening card's cohort curves reach back to 2018 (the first whole year of
-# Gerrit data; reviews before mid-2017 were on Rietveld), all threads only.
-HISTORY_ISO = "2018-01-01"
 TONE_WEEKS = []              # the year with comment text and tone scores: set by main (--tone-weeks)
 SALT = "cosh-review-feedback-v1:"
 EXCERPT = 200                 # characters of a comment kept for the drill-down
-# Any one person's figure that is ranked among peers or goes into the
-# histogram rests on at least this many CLs and expected threads, whatever its
-# period (half-year, year or all the data): a figure's noise depends on how
-# many CLs it has, not how long the period is. At 25 CLs it is about ±38%
+# A person's feedback index over a period counts among peers (the spread
+# the page shows) with this many CLs. At 25 CLs its noise is about ±38%
 # (docs/review-feedback.md).
-MIN_CLS, MIN_EXP = 25, 12.0
+MIN_CLS = 25
 MIN_RECEIVED = 20             # ... and among tone peers with this many comments received
 QS = [i / 20 for i in range(21)]
 TENURE = ["<1y", "1-2y", "2-5y", "5-10y", "10y+"]
 CHANGES = ["<50", "50-199", "200-499", "500-999", "1000+"]   # the author's earlier commits on main (all of its history)
-XP = ["0", "1-4", "5-19", "20-99", "100+"]       # the author's earlier commits in the directory
-# Peers are always the same tenure, by one of three measures: years since the
-# first commit on main ("time"), earlier commits on main ("changes"), or
-# experience in each directory ("dir"). Within that: all authors, Google, or
-# everyone outside Google.
-ORGS = {"all": lambda o: True, "google": lambda o: o == "google.com", "nongoogle": lambda o: o != "google.com"}
-MIN_PEERS = 10                # fewer peers than this get no percentiles
-# Measures: what counts (every reviewer thread, or only those the owner
-# addressed) over what it is compared with (CLs, or the 2023-24 norm for CLs
-# of that size, or of that size and top 2-level directory).
-KINDS = ("t", "a")
-CORR = ("n", "s", "d")
-METRICS = [f"{k}{c}" for k in KINDS for c in CORR]
-# The page's opening card: how feedback falls with tenure, per first-commit
-# year, and how fast it falls for each person.
-STEP = 0.5                    # tenure bins of the cohort curves, in years
-MIN_COHORT = 20               # people per point of a cohort curve
-# A person's half-year counts towards a cohort curve with fewer CLs: noise
-# barely moves a median, and a higher bar would keep only the most prolific
-# newcomers in the early points.
-MIN_COHORT_CLS, MIN_COHORT_EXP = 6, 3.0
-# The histogram: one value per contributor and pair of consecutive calendar
-# years both counted (MIN_CLS), the ratio of the later year's value to the
-# earlier's, in bins of equal width on a ratio scale (steps of ×2^(1/3), so
-# halved and doubled are edges): noise spreads evenly both ways and bar
-# heights compare.
-CHANGE_RATIOS = [2 ** (k / 3) for k in range(-4, 5)]
-# All against addressed feedback by tenure (the opening card): the bins of the
-# Balance page's "acted on or not" chart, in years since the first commit.
-KIND_EDGES = [0.25, 0.5, 1, 2, 5, 10]
-KIND_LABELS = ["0–3 months", "3–6 months", "6–12 months", "1–2 years", "2–5 years", "5–10 years", "10+ years"]
-# The same by tenure in changes landed before (earlier commits on main over
-# all of its history, reverts left out), the page's main tenure measure: the cohort curves'
-# and the all-against-addressed chart's bins, below 10 up to 1,000 and more.
-CHG_EDGES = [10, 25, 50, 100, 200, 500, 1000]
-CHG_LABELS = ["<10", "10–24", "25–49", "50–99", "100–199", "200–499", "500–999", "1,000+"]
-# The histogram by changes landed: one value per contributor and doubling of
-# their changes landed before (32–63, 64–127, ... earlier commits), the ratio
-# of one doubling's value to the one before. A doubling counts with MIN_CLS
-# like a year; it starts at 32 so its 32-odd commits leave 25 changes after
-# mechanical ones and reverts.
-DOUBLING_FROM = 32
+MIN_PEERS = 10                # fewer people than this get no percentiles
 PATCHSET_LEVEL = "/PATCHSET_LEVEL"   # the path of a general comment's thread: not counted
-FLOOR = 0.05                  # values below this count as this in a ratio
 
 
 def key(email):
@@ -125,10 +84,6 @@ def tenure_band(years):
 def changes_band(n):
     return None if n is None else "<50" if n < 50 else "50-199" if n < 200 else "200-499" if n < 500 \
         else "500-999" if n < 1000 else "1000+"
-
-
-def xp_band(n):
-    return 0 if n == 0 else 1 if n < 5 else 2 if n < 20 else 3 if n < 100 else 4
 
 
 def week_start(w):
@@ -227,135 +182,6 @@ def quantiles(xs):
         hi = min(lo + 1, len(xs) - 1)
         out.append(round(xs[lo] + (xs[hi] - xs[lo]) * (i - lo), 3))
     return out
-
-
-def count_peers(per, start, end, addr_start):
-    """The count tiles' peers: changes landed and reviewer threads on them (acls,
-    addressed: labelled changes and addressed threads) in the latest half-year the
-    data covers whole, among everyone who landed a change then, per "Peers" org
-    (each person by their org that half-year). No tenure band: one chosen by
-    changes landed would rank changes landed against itself (issue #1), and one by
-    years would mix a half-year's newcomers with whole careers. Only that one
-    half-year: the next takes its place once the data covers it whole. The
-    addressed counts need labels from the half-year's start."""
-    h = last_whole_half(start, end)
-    if h is None:
-        return dict(count_half=None, counts_half={})
-    labelled = addr_start <= half_span(h)[0]
-    rows = [pp[h] for pp in per.values() if h in pp and pp[h]["cls"] > 0]
-    out = {}
-    for g, f in ORGS.items():
-        out[g] = {}
-        for fld, need in (("cls", "cls"), ("threads", "cls"), ("acls", "acls"), ("addressed", "acls")):
-            xs = [x[fld] for x in rows if x[need] > 0 and f(x["org"])] if labelled or need == "cls" else []
-            out[g][fld] = dict(n=len(xs), q=quantiles(xs) if len(xs) >= MIN_PEERS else None)
-    return dict(count_half=h, counts_half=out)
-
-
-def yearly_changes(years, groups):
-    """The histogram of year-over-year change. years: per person, {calendar
-    year: (org, {metric: value or None}, {metric: value against directory
-    experience or None})}, None where the year doesn't count for that
-    measure. groups: name -> test of an org ("dir:" names use the second
-    dict). Each pair of consecutive counted years gives one ratio, later /
-    earlier (values under FLOOR counted as FLOOR), in the group of the later
-    year's org. Returns {group: {metric: {n, people, median (% less feedback
-    than the year before, from the median ratio), counts (per CHANGE_RATIOS
-    bin, smallest ratio first)}}}."""
-    xs = {g: {m: [] for m in METRICS} for g in groups}
-    who = {g: {m: set() for m in METRICS} for g in groups}
-    for pid, ys in years.items():
-        for y in sorted(ys):
-            if y + 1 not in ys:
-                continue
-            (_, v0, x0), (org, v1, x1) = ys[y], ys[y + 1]
-            for g, f in groups.items():
-                if not f(org):
-                    continue
-                a, b = (x0, x1) if g.startswith("dir:") else (v0, v1)
-                for m in METRICS:
-                    if a[m] is None or b[m] is None:
-                        continue
-                    xs[g][m].append(max(b[m], FLOOR) / max(a[m], FLOOR))
-                    who[g][m].add(pid)
-    return {g: {m: dict(n=len(v), people=len(who[g][m]),
-                        median=round(-100 * (st.median(v) - 1), 1) if v else None,
-                        counts=histogram(v, CHANGE_RATIOS)) for m, v in gm.items()} for g, gm in xs.items()}
-
-
-def matched_changes(years, groups):
-    """How much each person's feedback still falls a year once it is set
-    against the pooled rate of authors with the same tenure, by each tenure
-    measure. years: per person, {calendar year: (org, {by: {metric: value or
-    None}})} with by "none" (the plain value), "time", "changes" and "dir".
-    Only pairs of consecutive years with all four values count, so every
-    measure is over the same pairs; a pair counts by the later year's org.
-    Returns {group: {metric: {n, people, <by>: median % less feedback than
-    the year before}}}."""
-    bys = ("none", "time", "changes", "dir")
-    xs = {g: {m: {b: [] for b in bys} for m in METRICS} for g in groups}
-    who = {g: {m: set() for m in METRICS} for g in groups}
-    for pid, ys in years.items():
-        for y in sorted(ys):
-            if y + 1 not in ys:
-                continue
-            (_, a), (org, b) = ys[y], ys[y + 1]
-            for g, f in groups.items():
-                if not f(org):
-                    continue
-                for m in METRICS:
-                    if any(a[k][m] is None or b[k][m] is None for k in bys):
-                        continue
-                    for k in bys:
-                        xs[g][m][k].append(max(b[k][m], FLOOR) / max(a[k][m], FLOOR))
-                    who[g][m].add(pid)
-    return {g: {m: dict(n=len(v["none"]), people=len(who[g][m]),
-                        **{k: round(-100 * (st.median(v[k]) - 1), 1) if v[k] else None for k in bys})
-                for m, v in gm.items()} for g, gm in xs.items()}
-
-
-def histogram(xs, edges):
-    """Counts per bin between sorted edges: below edges[0], [edges[i],
-    edges[i+1]), and from edges[-1] on (len(edges) + 1 bins)."""
-    out = [0] * (len(edges) + 1)
-    for x in xs:
-        out[bisect.bisect_right(edges, x)] += 1
-    return out
-
-
-def year_bin(years):
-    return math.floor(years / STEP) * STEP
-
-
-def chg_bin(n):
-    """The index of earlier changes `n` in CHG_LABELS."""
-    return bisect.bisect_right(CHG_EDGES, n)
-
-
-def doubling(n):
-    """Which doubling of changes landed before `n` falls in: 0 for
-    DOUBLING_FROM up to twice that, 1 for the next, ...; None below it."""
-    return None if n < DOUBLING_FROM else int(math.log2(n / DOUBLING_FROM))
-
-
-def tenure_trends(points, groups, bin_of=year_bin):
-    """The opening card's data. points: per person, their counted half-years
-    as (first-commit year, tenure, org, {metric: value}, {metric: value
-    against directory experience}). groups: name -> test of an org; names
-    starting "dir:" use the values against directory experience. Returns
-    the cohort curves (median value per first-commit year and tenure bin,
-    `bin_of(tenure)`: STEP years by default, MIN_COHORT people or more), per
-    group and measure. A half-year counts for a group by its org."""
-    curves = {g: {m: defaultdict(lambda: defaultdict(list)) for m in METRICS} for g in groups}
-    for pts in points:
-        for g, f in groups.items():
-            xk = 4 if g.startswith("dir:") else 3
-            for m in METRICS:
-                for p in pts:
-                    if f(p[2]) and p[1] is not None and p[xk][m] is not None:
-                        curves[g][m][p[0]][bin_of(p[1])].append(p[xk][m])
-    return {g: {m: {str(y): [[b, r3(st.median(v)), len(v)] for b, v in sorted(bs.items()) if len(v) >= MIN_COHORT]
-                    for y, bs in sorted(per_m.items())} for m, per_m in gm.items()} for g, gm in curves.items()}
 
 
 def r3(x):
@@ -496,102 +322,275 @@ def norms(use, also=()):
               file=sys.stderr, flush=True)
 
 
-# The opening card's size chart: ten log-spaced buckets of changed lines.
-SIZE_LABELS = ["<4", "4–7", "8–15", "16–31", "32–63", "64–127", "128–255", "256–511", "512–1,023", "1,024+"]
+# ---------------------------------------------------------------- feedback rate and index
+# The feedback rate (FR) of a set of CLs: their addressed reviewer threads per
+# 100 changed lines (insertions plus deletions), pooled. Experience is the
+# owner's earlier commits on main when a CL landed, in power-of-two bins, so
+# each bin is one doubling: <8, 8–15, 16–31, ..., 1k–2k, 2k+.
+BIN_EDGES = [8 * 2 ** k for k in range(9)]          # 8, 16, ..., 2048
+BIN_LABELS = ["<8", "8–15", "16–31", "32–63", "64–127", "128–255", "256–511", "512–1k", "1k–2k", "2k+"]
+MIN_BIN_CLS = 5           # a person's FR in one experience bin counts with this many CLs there
+FR_FLOOR = 0.1            # FRs below this count as this in the growth fit (log scale)
+MIN_GROWTH_BINS = 3       # a growth rate needs FRs in this many bins
+# "How it's changing": the FR over a newcomer's first NEWCOMER_CLS changes, by
+# the year of their first commit on main, from NEWCOMER_FROM.
+NEWCOMER_CLS, NEWCOMER_FROM = 10, 2018
+MIN_CELL_CLS = 10         # a person counts in a size, directory or org bar with this many CLs there
+CHART_DIRS, CHART_ORGS = 12, 10
+# A directory (two levels, else one) or org gets its own factor in the
+# feedback index with this many CLs' worth; others get 1 (directories) or the
+# pooled factor of all smaller orgs ("*").
+MIN_FACTOR_CLS = 300
+# What the feedback index sets a person's FR against: the median FR of people
+# at the same experience ("e"; else everyone's median), adjusted for how much
+# feedback the directory ("d") and the org ("o") draw. Every combination.
+NORMS = ["", "e", "d", "ed", "o", "eo", "do", "edo"]
+# The growth chart: a smoothed distribution of people's growth rates, on a
+# grid of log2 of the change per doubling.
+GROWTH_GRID = [round(-2 + 0.05 * i, 2) for i in range(71)]
+GROWTH_BW = 0.12
+SIZE_LABELS = ["<4", "4–7", "8–15", "16–31", "32–63", "64–127", "128–255", "256–511", "512–1k", "1k+"]
+
+Row = namedtuple("Row", "pid at lines prior bin org addr units main")
 
 
-# A cell (an author's CLs of one size, or their share of one directory) counts
-# toward a bar's median with this many CLs and expected threads.
-MIN_CELL_CLS, MIN_CELL_EXP = 10, 3.0
-# A top-level directory with more than this share of all reviewer threads is
-# split into its second-level directories for the directory chart.
-SPLIT_SHARE = 0.10
-TOP_DIRS = 10
+def xbin(n):
+    """The experience bin (index in BIN_LABELS) of n earlier commits."""
+    return bisect.bisect_right(BIN_EDGES, n)
 
 
-def chart_dirs(cs):
-    """The directory chart's directories: first-level ones, those holding more
-    than SPLIT_SHARE of all reviewer threads split into their second level,
-    the TOP_DIRS with the most threads. Returns (names, key of a 3-level path)."""
-    def parts(path):
-        p = [x for x in path.split("/") if x]
-        return p[0] + "/", (p[0] + "/" + p[1] + "/") if len(p) > 1 else None
-    l1, l2 = Counter(), Counter()
-    for c in cs:
-        for t in c["thr"]:
-            a, b = parts(t[4])
-            l1[a] += 1
-            if b:
-                l2[b] += 1
-    total = sum(l1.values()) or 1
-    split = {d for d, n in l1.items() if n / total > SPLIT_SHARE}
-    vol = Counter({d: n for d, n in l1.items() if d not in split})
-    vol.update({d: n for d, n in l2.items() if parts(d)[0] in split})
-    names = [d for d, _ in vol.most_common(TOP_DIRS)]
-    chosen = set(names)
-
-    def key(path):
-        a, b = parts(path)
-        k = b if a in split else a
-        return k if k in chosen else None
-    return names, key
+def fr(addressed, lines):
+    return 100 * addressed / lines if lines > 0 else None
 
 
-def median_breakdowns(cs, size10):
-    """The opening card's bar charts: the median author's feedback index by CL
-    size bucket (whole CLs) and by directory (each CL's share in it, and the
-    threads on its files), per "Peers" org group and measure. An author counts
-    in a bar with MIN_CELL_CLS CLs there and MIN_CELL_EXP expected threads
-    (size and directory norm); a bar needs MIN_PEERS authors. Addressed
-    measures count only CLs with labels. Returns (by_size, dir names, by_dir),
-    each bar as [median or None, authors]."""
-    names, dkey = chart_dirs(cs)
-    # (org, chart, bar, pid, kind) -> [CLs, threads, den n, den s, den d]
-    cell = defaultdict(lambda: [0, 0.0, 0.0, 0.0, 0.0])
+def dir2(d):
+    """A 3-level directory's first two levels ("chrome/browser/")."""
+    p = [x for x in d.split("/") if x]
+    return "/".join(p[:2]) + "/" if p else d
 
-    def add(c, chart, bar, w, t, a):
-        for o, of in ORGS.items():
-            if not of(c["org"]):
-                continue
-            for k, x in (("t", t), ("a", a)):
-                if k == "a" and not c["acov"]:
-                    continue
-                v = cell[(o, chart, bar, c["pid"], k)]
-                v[0] += 1
-                v[1] += x
-                v[2] += w
-                v[3] += w * c[f"exp_{k}s"]
-                v[4] += w * c[f"exp_{k}d"]
 
-    for c in cs:
-        add(c, "size", size10(c["lines"]), 1, c["threads"], c["addressed"])
-        per = defaultdict(lambda: [0, 0])
-        for t in c["thr"]:
-            per[t[4]][0] += 1
-            per[t[4]][1] += 1 if t[3] else 0
-        by = defaultdict(lambda: [0.0, 0, 0])
-        for d, (w, *_) in c["units"].items():
-            k = dkey(d)
-            if k is not None:
-                by[k][0] += w
-                by[k][1] += per[d][0]
-                by[k][2] += per[d][1]
-        for k, (w, t, a) in by.items():
-            add(c, "dir", k, w, t, a)
-    vals = defaultdict(list)       # (org, chart, bar, metric) -> authors' values
-    for (o, chart, bar, pid, k), (n, x, dn, ds, dd) in cell.items():
-        if n < MIN_CELL_CLS or dd < MIN_CELL_EXP:
+def dir1(d):
+    p = [x for x in d.split("/") if x]
+    return p[0] + "/" if p else d
+
+
+def unit_fracs(units):
+    """Each directory's fraction of a CL's lines, from [(share, lines there)]:
+    by lines, or by share where the landed commit changed no lines."""
+    s = sum(lines for _, lines in units)
+    return [lines / s if s > 0 else w for w, lines in units]
+
+
+def fr_row(c):
+    """A CL as the rate measures need it. units: [(3-level directory,
+    fraction of the CL's lines, addressed threads there)], largest share first."""
+    order = sorted(c["units"].items(), key=lambda kv: (-kv[1][0], kv[0]))
+    per = Counter(t[4] for t in c["thr"] if t[3])
+    fr_ = unit_fracs([(u[0], u[2]) for _, u in order])
+    return Row(c["pid"], c["closed_at"], c["lines"], c["prior"], xbin(c["prior"]), c["org"], c["addressed"],
+               [(d, f, per[d]) for (d, _), f in zip(order, fr_)], order[0][0])
+
+
+def person_cells(rows):
+    """{experience bin: [CLs, addressed threads, lines]} of one person's rows."""
+    out = defaultdict(lambda: [0, 0, 0])
+    for r in rows:
+        x = out[r.bin]
+        x[0] += 1
+        x[1] += r.addr
+        x[2] += r.lines
+    return dict(out)
+
+
+def growth(cells):
+    """A person's growth rate: the % change in their FR per doubling of changes
+    landed, from a least-squares line through log2 FR (floored at FR_FLOOR)
+    by experience bin, each bin weighted by its CLs. Needs MIN_GROWTH_BINS
+    bins with MIN_BIN_CLS CLs. None otherwise."""
+    pts = [(b, math.log2(max(fr(a, lines), FR_FLOOR)), n) for b, (n, a, lines) in cells.items()
+           if n >= MIN_BIN_CLS and lines > 0]
+    if len(pts) < MIN_GROWTH_BINS:
+        return None
+    w = sum(n for _, _, n in pts)
+    mx = sum(b * n for b, _, n in pts) / w
+    my = sum(y * n for _, y, n in pts) / w
+    sxx = sum(n * (b - mx) ** 2 for b, _, n in pts)
+    sxy = sum(n * (b - mx) * (y - my) for b, y, n in pts)
+    return round(100 * (2 ** (sxy / sxx) - 1), 1)
+
+
+def median_or_none(xs):
+    return r3(st.median(xs)) if len(xs) >= MIN_PEERS else None
+
+
+def bin_frs(by_pid):
+    """Per experience bin, every person's FR there (MIN_BIN_CLS CLs or more)."""
+    out = [[] for _ in BIN_LABELS]
+    for rs in by_pid.values():
+        for b, (n, a, lines) in person_cells(rs).items():
+            if n >= MIN_BIN_CLS and lines > 0:
+                out[b].append(fr(a, lines))
+    return out
+
+
+def fr_bins(by_pid):
+    """The main chart: per experience bin, the spread of people's FR there."""
+    return [dict(n=len(xs), q=quantiles(xs) if len(xs) >= MIN_PEERS else None) for xs in bin_frs(by_pid)]
+
+
+def rate_model(rows):
+    """What the feedback index compares with. ref_bin: the median FR per
+    experience bin (the main chart's line); ref_all: the median FR of everyone
+    with MIN_CLS CLs over all of theirs. f_dir[e]: per directory (two levels,
+    and one level as the fallback), how much more feedback per line it draws
+    than its CLs' experience predicts (e "e") or than everyone's median
+    (e ""), relative to all directories. f_org[norm without o]: the same per
+    org, on top of the directory factor when "d" is in it; "*" pools the orgs
+    under MIN_FACTOR_CLS. All rounded, as the page uses them."""
+    by_pid = defaultdict(list)
+    for r in rows:
+        by_pid[r.pid].append(r)
+    ref_bin = [median_or_none(xs) for xs in bin_frs(by_pid)]
+    alls = []
+    for rs in by_pid.values():
+        lines = sum(r.lines for r in rs)
+        if len(rs) >= MIN_CLS and lines > 0:
+            alls.append(fr(sum(r.addr for r in rs), lines))
+    m = dict(ref_bin=ref_bin, ref_all=r3(st.median(alls)), f_dir={}, f_org={"": {"*": 1.0}, "e": {"*": 1.0},
+                                                                       "d": {"*": 1.0}, "ed": {"*": 1.0}})
+
+    big = [rs for rs in by_pid.values() if len(rs) >= MIN_CLS]
+
+    def median_fi(norm):
+        xs = []
+        for rs in big:
+            e = sum(expected(r, norm, m) for r in rs)
+            if e > 0:
+                xs.append(sum(r.addr for r in rs) / e)
+        return st.median(xs)
+
+    def rescale(t, norm, target):
+        """Scales a factor table so the median person's index under `norm`
+        is what it is without that adjustment: the factors are pooled by
+        lines, so only their spread, not their level, is meant."""
+        s = median_fi(norm) / target
+        for k in t:
+            t[k] = r3(t[k] * s)
+
+    for e in ("", "e"):
+        obs, exp, n = defaultdict(float), defaultdict(float), defaultdict(float)
+        for r in rows:
+            b = (m["ref_bin"][r.bin] or m["ref_all"]) if e else m["ref_all"]
+            for d, f, a in r.units:
+                x = r.lines / 100 * b * f
+                for k in {dir2(d), dir1(d)}:
+                    obs[k] += a
+                    exp[k] += x
+                    n[k] += f
+        m["f_dir"][e] = {k: obs[k] / exp[k] for k in sorted(obs) if n[k] >= MIN_FACTOR_CLS and exp[k] > 0}
+        rescale(m["f_dir"][e], e + "d" if e else "d", median_fi(e))
+    for nm in ("", "e", "d", "ed"):
+        obs, exp, n = defaultdict(float), defaultdict(float), Counter()
+        for r in rows:
+            obs[r.org] += r.addr
+            exp[r.org] += expected(r, nm, m)
+            n[r.org] += 1
+        big_o = {o for o in n if n[o] >= MIN_FACTOR_CLS and exp[o] > 0}
+        so = sum(v for o, v in obs.items() if o not in big_o)
+        se = sum(v for o, v in exp.items() if o not in big_o)
+        t = {o: obs[o] / exp[o] for o in sorted(big_o)}
+        t["*"] = so / se if se > 0 else 1.0
+        m["f_org"][nm] = t
+        rescale(t, nm.replace("d", "do") if "d" in nm else nm + "o", median_fi(nm))
+    return m
+
+
+def expected(r, norm, m):
+    """The addressed threads a CL would draw at its peers' FR, under norm (see NORMS)."""
+    base = (m["ref_bin"][r.bin] or m["ref_all"]) if "e" in norm else m["ref_all"]
+    fo = 1.0
+    if "o" in norm:
+        t = m["f_org"][norm.replace("o", "")]
+        fo = t.get(r.org, t["*"])
+    if "d" in norm:
+        t = m["f_dir"]["e" if "e" in norm else ""]
+        share = sum(f * t.get(dir2(d), t.get(dir1(d), 1.0)) for d, f, _ in r.units)
+    else:
+        share = 1.0
+    return r.lines / 100 * base * fo * share
+
+
+def newcomers(by_pid, first_year):
+    """Per year of first commit on main from NEWCOMER_FROM: [year, people,
+    p10, p25, median, p75, p90] of the FR over their CLs with fewer than
+    NEWCOMER_CLS earlier commits (MIN_BIN_CLS of them or more)."""
+    ys = defaultdict(list)
+    for pid, rs in by_pid.items():
+        y = first_year.get(pid)
+        if y is None or y < NEWCOMER_FROM:
             continue
-        for corr, den in (("n", dn), ("s", ds), ("d", dd)):
-            if den:
-                vals[(o, chart, bar, k + corr)].append(x / den)
+        cs = [r for r in rs if r.prior < NEWCOMER_CLS]
+        lines = sum(r.lines for r in cs)
+        if len(cs) >= MIN_BIN_CLS and lines > 0:
+            ys[y].append(fr(sum(r.addr for r in cs), lines))
+    out = []
+    for y in sorted(ys):
+        q = quantiles(ys[y])
+        out.append([y, len(ys[y])] + ([q[2], q[5], q[10], q[15], q[18]] if len(ys[y]) >= MIN_PEERS else [None] * 5))
+    return out
 
-    def bar(o, chart, b, m):
-        xs = vals.get((o, chart, b, m), [])
-        return [r3(st.median(xs)) if len(xs) >= MIN_PEERS else None, len(xs)]
-    by_size = {o: {m: [bar(o, "size", b, m) for b in range(len(SIZE_LABELS))] for m in METRICS} for o in ORGS}
-    by_dir = {o: {m: [bar(o, "dir", d, m) for d in names] for m in METRICS} for o in ORGS}
-    return by_size, names, by_dir
+
+def cell_medians(by_pid, key_of):
+    """{key: (median of people's FR, median of their addressed threads per CL,
+    people)} over people with MIN_CELL_CLS CLs under one key; MIN_PEERS people
+    or more."""
+    vals = defaultdict(list)
+    for rs in by_pid.values():
+        cell = defaultdict(lambda: [0, 0, 0])
+        for r in rs:
+            x = cell[key_of(r)]
+            x[0] += 1
+            x[1] += r.addr
+            x[2] += r.lines
+        for k, (n, a, lines) in cell.items():
+            if k is not None and n >= MIN_CELL_CLS and lines > 0:
+                vals[k].append((fr(a, lines), a / n))
+    return {k: (r3(st.median(v[0] for v in xs)), r3(st.median(v[1] for v in xs)), len(xs))
+            for k, xs in vals.items() if len(xs) >= MIN_PEERS}
+
+
+def by_size(by_pid):
+    """Per size bucket (SIZE_LABELS): [median FR, median addressed threads per CL, people]."""
+    m = cell_medians(by_pid, lambda r: size10(r.lines))
+    return [list(m.get(b, (None, None, 0))) for b in range(len(SIZE_LABELS))]
+
+
+def by_dir(by_pid):
+    """The CHART_DIRS two-level directories with the most people (each CL by
+    its main directory), highest median FR first: [directory, median FR, people]."""
+    m = cell_medians(by_pid, lambda r: dir2(r.main))
+    top = sorted(m.items(), key=lambda kv: (-kv[1][2], kv[0]))[:CHART_DIRS]
+    return [[k, v[0], v[2]] for k, v in sorted(top, key=lambda kv: (-kv[1][0], kv[0]))]
+
+
+def by_org(by_pid):
+    """The CHART_ORGS orgs with the most people: [org, median FR, people], highest first."""
+    m = cell_medians(by_pid, lambda r: r.org)
+    top = sorted(m.items(), key=lambda kv: (-kv[1][2], kv[0]))[:CHART_ORGS]
+    return [[k, v[0], v[2]] for k, v in sorted(top, key=lambda kv: (-kv[1][0], kv[0]))]
+
+
+def growth_dist(gs):
+    """People's growth rates: how many, the median and quantiles (% per
+    doubling), and a smoothed curve: [% change per doubling, % of people per
+    0.1 of log2] on GROWTH_GRID (a Gaussian kernel of GROWTH_BW in log2)."""
+    if not gs:
+        return dict(n=0, median=None, q=None, curve=[])
+    ls = [math.log2(1 + g / 100) for g in gs]
+    k = 1 / (len(ls) * GROWTH_BW * math.sqrt(2 * math.pi))
+    curve = [[round(100 * (2 ** x - 1), 1),
+              round(10 * k * sum(math.exp(-0.5 * ((x - v) / GROWTH_BW) ** 2) for v in ls), 3)] for x in GROWTH_GRID]
+    return dict(n=len(gs), median=round(st.median(gs), 1), q=quantiles(gs), curve=curve)
 
 
 # ---------------------------------------------------------------- building
@@ -649,33 +648,12 @@ def main():
     for c in cls:
         if c["pid"]:
             emails_of[c["pid"]].add(c["owner_email"])
-    big = {c["n"] for c in commits if c["n"] and (c["files"] or 0) >= 100}
     del commits
 
-    # Older merged CLs (HISTORY_ISO up to the oldest of `cls`), for the
-    # opening card's cohort curves only: all reviewer threads against the same
-    # 2023-24 norms. Addressed labels and directory experience exist only from
-    # START on.
     ddb = ro(os.path.join(store.DATA_DIR, store.DERIVED_FILE))
     bots = {a for a, in ddb.execute("SELECT account_id FROM accounts WHERE is_bot = 1")}
     acct_email = dict(ddb.execute("SELECT account_id, email FROM accounts WHERE host = "
                                 "'chromium-review.googlesource.com'"))
-    cls_from = datetime.fromtimestamp(min(c["closed_at"] for c in cls if c["closed_at"]), timezone.utc)
-    old = []
-    for n, acct, closed, ins, dels in ddb.execute(
-            "SELECT change_number, owner_account, closed_at, insertions, deletions FROM changes "
-            "WHERE host = 'chromium-review.googlesource.com' AND project = 'chromium/src' "
-            "AND branch IN ('main', 'master') AND status = 'MERGED' AND NOT is_bot_owned "
-            "AND closed_at >= ? AND closed_at < ?", (HISTORY_ISO, cls_from.strftime("%Y-%m-%d %H:%M:%S"))):
-        e = acct_email.get(acct)
-        if not e or acct in bots or is_bot_email(person(e)) or n in big or n in mech:
-            continue
-        t = datetime.strptime(closed[:19], "%Y-%m-%d %H:%M:%S").replace(tzinfo=timezone.utc).timestamp()
-        lines = (ins or 0) + (dels or 0)
-        pid = ids.find(person(e))
-        old.append(dict(change_number=n, pid=pid, email=e, closed_at=t, lines=lines,
-                        sb=size10(lines), d2=top2.get(n), threads=0, addressed=0,
-                        prior=bisect.bisect_left(own_times.get(pid, ()), landed_at.get(n, t))))
 
     # Merged, human-owned CLs, neither mechanical nor LSC (the review-ROI analyses' rule).
     for c in cls:
@@ -699,7 +677,6 @@ def main():
         labels = {(n, rt, h): a for n, rt, h, a in ldb.execute(
             "SELECT change_number, root_uuid, input_hash, addressed FROM labels WHERE classifier_id = ?", (act[0],))}
     use_n = {c["change_number"]: c for c in use}
-    old_n = {c["change_number"]: c for c in old}
     thr = defaultdict(list)          # change number -> [root, path, day, addressed]
     for c in use:
         c["threads"] = c["addressed"] = 0
@@ -710,18 +687,14 @@ def main():
             "WHERE t.host = 'chromium-review.googlesource.com'"):
         if acct in bots or path == PATCHSET_LEVEL:
             continue
-        if n in old_n:
-            old_n[n]["threads"] += 1
-        elif n in use_n:
+        if n in use_n:
             addressed = 0 if reply is None else 1 if rx else labels.get((n, root, h))
             thr[n].append([root, path or "", (at or "")[:10], addressed, reply is not None and not rx])
             use_n[n]["threads"] += 1
             use_n[n]["addressed"] += 1 if addressed else 0
-    del use_n, old_n
-    norms(use, old)
+    del use_n
+    norms(use)
     START, END = data_range(use)
-    old = [c for c in old if c["closed_at"] < START]
-    print(f"{len(old):,} older CLs for the cohort curves", file=sys.stderr, flush=True)
     use = [c for c in use if START <= c["closed_at"] < END]
     for c in use:           # the page sums the rounded values, so compute with them here too
         for k in ("exp_ts", "exp_td", "exp_as", "exp_ad"):
@@ -819,354 +792,44 @@ def main():
     print(f"tone: {len(received):,} people received comments, {sum(len(v) for v in praise.values()):,} praise",
           file=sys.stderr, flush=True)
 
-    # ------------------------------------------------ per person and period
+    # ------------------------------------------------ feedback rate and index
+    # Only the labelled CLs count (from ADDR_START, which is START once every
+    # week is labelled): the feedback rate is addressed threads per 100 lines.
     people = defaultdict(list)
     for c in use:
         people[c["pid"]].append(c)
-    zero = lambda: dict(cls=0, t=0, a=0, ts=0.0, td=0.0, as_=0.0, ad=0.0)
-
-    def sums(cs):
-        s = zero()
-        for c in cs:
-            s["cls"] += 1
-            s["t"] += c["threads"]
-            s["a"] += c["addressed"]
-            s["ts"] += c["exp_ts"]
-            s["td"] += c["exp_td"]
-            s["as_"] += c["exp_as"]
-            s["ad"] += c["exp_ad"]
-        return s
-
-    def value(s, m):
-        num = s[m[0]]
-        if m[1] == "n":
-            den = s["cls"]
-        elif m[0] == "t":
-            den = s["ts"] if m[1] == "s" else s["td"]
-        else:
-            den = s["as_"] if m[1] == "s" else s["ad"]
-        return num / den if den else None
-
-    def unit_rows(cs):
-        """(threads, addressed, CL share, band, c) per CL and directory."""
-        for c in cs:
-            per = defaultdict(lambda: [0, 0])
-            for t in c["thr"]:
-                per[t[4]][0] += 1
-                per[t[4]][1] += 1 if t[3] else 0
-            for dd, (w, prior, _) in c["units"].items():
-                yield per[dd][0], per[dd][1], w, xp_band(prior), c
-
-    def denom(m, c, w):
-        if m[1] == "n":
-            return w
-        return w * c[f"exp_{m[0]}{m[1]}"]
-
-    # Pooled rate per experience band, per period and measure (everyone).
-    pool = defaultdict(lambda: [0.0, 0.0])
-    for pid, cs in people.items():
-        for o, a_, w, b, c in unit_rows(cs):
-            for p in periods_of(c["closed_at"]):
-                for m in METRICS:
-                    if m[0] == "a" and not c["acov"]:
-                        continue
-                    pool[(p, m, b)][0] += o if m[0] == "t" else a_
-                    pool[(p, m, b)][1] += denom(m, c, w)
-    allp = sorted({p for c in use for p in periods_of(c["closed_at"])}, key=lambda p: (p != "all", p))
-    rate = {(p, m, b): (v[0] / v[1] if v[1] else None) for (p, m, b), v in pool.items()}
-    # Pooled overall rate, so a band's rate reads relative to everyone (1.0 = typical).
-    overall = {}
-    for p in allp:
-        for m in METRICS:
-            o = sum(pool[(p, m, b)][0] for b in range(5))
-            e = sum(pool[(p, m, b)][1] for b in range(5))
-            overall[(p, m)] = o / e if e else None
-
-    # The same per CL for tenure in years and in earlier commits (each CL by its
-    # own band), so a person's value can be set against either tenure the way it
-    # is against directory experience. Per "Peers" org too, for the opening
-    # card's comparison of the three ("all" period only).
-    def cl_band(by, c):
-        if by == "time":
-            return None if c["ten"] is None else TENURE.index(tenure_band(c["ten"]))
-        return CHANGES.index(changes_band(c["prior"]))
-    tpool = defaultdict(lambda: [0.0, 0.0])
-    cmp_pool = defaultdict(lambda: [0.0, 0.0, 0])            # (org, m, by, band) -> obs, denominator, CLs
-    for c in use:
-        cgs = [o for o, f in ORGS.items() if f(c["org"])]
-        for by in ("time", "changes"):
-            b = cl_band(by, c)
-            if b is None:
-                continue
-            for m in METRICS:
-                if m[0] == "a" and not c["acov"]:
-                    continue
-                ob, dn = c["threads"] if m[0] == "t" else c["addressed"], denom(m, c, 1)
-                for p in periods_of(c["closed_at"]):
-                    tpool[(p, m, by, b)][0] += ob
-                    tpool[(p, m, by, b)][1] += dn
-                for o in cgs:
-                    q = cmp_pool[(o, m, by, b)]
-                    q[0] += ob
-                    q[1] += dn
-                    q[2] += 1
-        for o_, a_, w, b, _ in unit_rows([c]):
-            for m in METRICS:
-                if m[0] == "a" and not c["acov"]:
-                    continue
-                for o in cgs:
-                    q = cmp_pool[(o, m, "dir", b)]
-                    q[0] += o_ if m[0] == "t" else a_
-                    q[1] += denom(m, c, w)
-                    q[2] += w
-    trel = {}
-    for (p, m, by, b), (o, e) in tpool.items():
-        ov = overall.get((p, m))
-        trel[(p, m, by, b)] = r3(o / e / ov) if e and o and ov else None
-
-    def person_period(pid, cs, p):
-        s = sums(cs)
-        sa = sums([c for c in cs if c["acov"]])          # the addressed measures' CLs
-        def placed(cs):
-            """Tenure in years and in earlier commits at the middle of `cs`, and their
-            usual org: what places a person among peers."""
-            ten = [c["ten"] for c in cs if c["ten"] is not None]
-            return dict(ten=tenure_band(st.median(ten)) if ten else None,
-                        chg=changes_band(st.median([c["prior"] for c in cs])),
-                        org=Counter(c["org"] for c in cs).most_common(1)[0][0])
-        acs = [c for c in cs if c["acov"]]
-        out = dict(cls=s["cls"], threads=s["t"], acls=sa["cls"], addressed=sa["a"], **placed(cs),
-                   # The same over the addressed measures' CLs only, which start years
-                   # later: over all of "all", a grown author's band was lower than over
-                   # the CLs measured, setting them against less experienced peers.
-                   lab=placed(acs) if acs else None,
-                   ok=s["cls"] >= MIN_CLS and s["td"] >= MIN_EXP,
-                   ok_a=sa["cls"] >= MIN_CLS and sa["td"] >= MIN_EXP, v={}, x={}, bands={},
-                   # The lower bar for a cohort curve's medians (not on the page).
-                   curve=s["cls"] >= MIN_COHORT_CLS and s["td"] >= MIN_COHORT_EXP,
-                   curve_a=sa["cls"] >= MIN_COHORT_CLS and sa["td"] >= MIN_COHORT_EXP)
-        bo = defaultdict(lambda: [0.0, 0.0, 0.0])      # (m, band) -> obs, own denominator, CL share
-        xe = defaultdict(float)
-        for o, a_, w, b, c in unit_rows(cs):
-            for m in METRICS:
-                if m[0] == "a" and not c["acov"]:
-                    continue
-                ob = o if m[0] == "t" else a_
-                dn = denom(m, c, w)
-                bo[(m, b)][0] += ob
-                bo[(m, b)][1] += dn
-                bo[(m, b)][2] += w
-                rb, ov = rate.get((p, m, b)), overall.get((p, m))
-                xe[m] += dn * (r3(rb / ov) if rb and ov else 1.0)     # peers.json's `rel`
-        # Against the pooled rate of the same tenure in years and in earlier commits.
-        te = {by: defaultdict(float) for by in ("time", "changes")}
-        for c in cs:
-            for by in te:
-                b = cl_band(by, c)
-                for m in METRICS:
-                    if m[0] == "a" and not c["acov"]:
-                        continue
-                    te[by][m] += denom(m, c, 1) * ((b is not None and trel.get((p, m, by, b))) or 1.0)
-        for m in METRICS:
-            num = (s if m[0] == "t" else sa)[m[0]]
-            out.setdefault("xt", {})[m] = r3(num / te["time"][m]) if te["time"][m] else None
-            out.setdefault("xc", {})[m] = r3(num / te["changes"][m]) if te["changes"][m] else None
-        for m in METRICS:
-            sm = s if m[0] == "t" else sa
-            v = value(sm, m)
-            out["v"][m] = None if v is None else r3(v)
-            num = sm[m[0]]
-            out["x"][m] = r3(num / xe[m]) if xe[m] else None
-            out["bands"][m] = [[r3(bo[(m, b)][0]), r3(bo[(m, b)][1]), r3(bo[(m, b)][2])] for b in range(5)]
-        return out
-
-    per = {}
-    for pid, cs in people.items():
+    rows = [fr_row(c) for c in use if c["acov"]]
+    model = rate_model(rows)
+    print(f"feedback rate by experience: " + " ".join(f"{l}={v}" for l, v in zip(BIN_LABELS, model["ref_bin"]))
+          + f"; everyone {model['ref_all']}", file=sys.stderr, flush=True)
+    by_pid = defaultdict(list)
+    for r in rows:
+        by_pid[r.pid].append(r)
+    allp = sorted({p for r in rows for p in periods_of(r.at)}, key=lambda p: (p != "all", p))
+    fi_vals = {nm: defaultdict(list) for nm in NORMS}
+    growths = {}
+    check_vals = {}
+    for pid, rs in by_pid.items():
+        exps = [[expected(r, nm, model) for nm in NORMS] for r in rs]
         byp = defaultdict(list)
-        for c in cs:
-            for p in periods_of(c["closed_at"]):
-                byp[p].append(c)
-        per[pid] = {p: person_period(pid, v, p) for p, v in byp.items()}
-
-    # ------------------------------------------------ the opening card
-    # Older half-years: all reviewer threads only, counted like the recent ones.
-    old_pts = defaultdict(list)
-    old_pts_chg = defaultdict(list)          # the same with tenure in changes landed before
-    old_by = defaultdict(lambda: defaultdict(list))
-    for c in old:
-        c["org"] = orgs(c["email"], day_str(c["closed_at"]))
-        if c["pid"] in first:
-            old_by[c["pid"]][half(c["closed_at"])].append(c)
-    for pid, byh in old_by.items():
-        for h, cs in byh.items():
-            ts, td = sum(r3(c["exp_ts"]) for c in cs), sum(r3(c["exp_td"]) for c in cs)
-            if len(cs) < MIN_COHORT_CLS or td < MIN_COHORT_EXP:
-                continue
-            t = sum(c["threads"] for c in cs)
-            v = {m: None for m in METRICS}
-            v.update(tn=r3(t / len(cs)), ts=r3(t / ts) if ts else None, td=r3(t / td) if td else None)
-            ten = st.median((epoch_day(c["closed_at"]) - epoch_day(first[pid])) / 365.25 for c in cs)
-            orgc = Counter(c["org"] for c in cs)
-            pt = (datetime.fromtimestamp(first[pid], timezone.utc).year, ten,
-                  orgc.most_common(1)[0][0], v, {m: None for m in METRICS}, True)
-            old_pts[pid].append(pt)
-            old_pts_chg[pid].append((pt[0], st.median(c["prior"] for c in cs), *pt[2:]))
-    trend_pts, trend_pts_chg = [], []
-    # by -> org -> tenure bin -> [{corr: all values}, {corr: addressed values}, threads, addressed]
-    kind_bins = {by: {o: [[defaultdict(list), defaultdict(list), 0, 0] for _ in labels] for o in ORGS}
-                 for by, labels in (("time", KIND_LABELS), ("changes", CHG_LABELS))}
-    for pid in set(people) | set(old_pts):
-        if pid not in first:
-            continue
-        y0 = datetime.fromtimestamp(first[pid], timezone.utc).year
-        byh = defaultdict(list)
-        priors = defaultdict(list)
-        for c in people.get(pid, ()):
-            byh[half(c["closed_at"])].append(c["ten"])
-            priors[half(c["closed_at"])].append(c["prior"])
-        # A half-year counts for the addressed measures only with enough labelled CLs.
-        def counted(vals, pp):
-            return {m: v if m[0] == "t" or pp["curve_a"] else None for m, v in vals.items()}
-        hs = [(h, pp) for h, pp in per.get(pid, {}).items() if HALF.match(h) and pp["curve"]]
-        pts = old_pts.get(pid, []) + [(y0, st.median(byh[h]), pp["org"], counted(pp["v"], pp), counted(pp["x"], pp))
-                                      for h, pp in hs]
-        if pts:
-            trend_pts.append(pts)
-            trend_pts_chg.append(old_pts_chg.get(pid, []) + [
-                (y0, st.median(priors[h]), pp["org"], counted(pp["v"], pp), counted(pp["x"], pp)) for h, pp in hs])
-        # All against addressed threads: the same half-years for both, those whose
-        # CLs are all labelled, with enough of them for a cohort curve.
-        for h, pp in per.get(pid, {}).items():
-            if not (HALF.match(h) and pp["curve_a"] and pp["acls"] == pp["cls"] and byh[h]):
-                continue
-            for by, b in (("time", bisect.bisect_right(KIND_EDGES, st.median(byh[h]))),
-                          ("changes", chg_bin(st.median(priors[h])))):
-                for o, f in ORGS.items():
-                    if not f(pp["org"]):
-                        continue
-                    kb = kind_bins[by][o][b]
-                    kb[2] += pp["threads"]
-                    kb[3] += pp["addressed"]
-                    for c in CORR:
-                        if pp["v"][f"t{c}"] is not None and pp["v"][f"a{c}"] is not None:
-                            kb[0][c].append(pp["v"][f"t{c}"])
-                            kb[1][c].append(pp["v"][f"a{c}"])
-    # The page's "Peers" choice, and the same against directory experience ("dir:").
-    trend_groups = {**ORGS, **{f"dir:{o}": of for o, of in ORGS.items()}}
-    cohorts = tenure_trends(trend_pts, trend_groups)
-    cohorts_chg = tenure_trends(trend_pts_chg, trend_groups, chg_bin)
-
-    # Person-years for the histogram. All reviewer threads: every CL of the
-    # calendar year, older and recent. Addressed and directory experience:
-    # whole years from their start (ADDR_START, START) only.
-    years = defaultdict(dict)
-    matched = defaultdict(dict)          # the same years against each tenure measure (matched_changes)
-    by_year = defaultdict(list)
-    for c in old + use:
-        by_year[(c["pid"], int(day_str(c["closed_at"])[:4]))].append(c)
-    none = {m: None for m in METRICS}
-    for (pid, y), cs in by_year.items():
-        s = sums(cs)
-        ok = s["cls"] >= MIN_CLS and s["td"] >= MIN_EXP
-        v = dict(none)
-        if ok:
-            v.update(tn=r3(s["t"] / s["cls"]), ts=r3(s["t"] / s["ts"]) if s["ts"] else None,
-                     td=r3(s["t"] / s["td"]) if s["td"] else None)
-        x = dict(none)
-        # Whole years in range: the same values the page's periods have, against
-        # the rates of all the data ("all").
-        jan1 = datetime(y, 1, 1, tzinfo=timezone.utc).timestamp()
-        recent = [c for c in cs if "thr" in c]
-        pp = person_period(pid, recent, "all") if jan1 >= START and recent else None
-        if pp and ok:
-            ok_a = jan1 >= ADDR_START and pp["ok_a"]
-            for m in METRICS:
-                if m[0] == "a" and ok_a:
-                    v[m] = pp["v"][m]
-                if jan1 >= START and (m[0] == "t" or ok_a):
-                    x[m] = pp["x"][m]
-        org = Counter(c["org"] for c in cs).most_common(1)[0][0]
-        years[pid][y] = (org, v, x)
-        if pp and ok and jan1 >= START:
-            xm = {"none": {m: pp["v"][m] if (m[0] == "t" or ok_a) else None for m in METRICS}}
-            for k, src in (("time", "xt"), ("changes", "xc"), ("dir", "x")):
-                xm[k] = {m: pp[src][m] if (m[0] == "t" or ok_a) else None for m in METRICS}
-            matched[pid][y] = (org, xm)
-    change = yearly_changes(years, trend_groups)
-    # The same per doubling of changes landed before: a doubling counts from
-    # the day its first commit landed, where the measure's data begins (2018
-    # for all threads, START for directory experience, ADDR_START addressed).
-    hist_from = datetime.fromisoformat(HISTORY_ISO).replace(tzinfo=timezone.utc).timestamp()
-    by_dbl = defaultdict(list)
-    for c in old + use:
-        k = doubling(c["prior"])
-        if k is not None:
-            by_dbl[(c["pid"], k)].append(c)
-    steps = defaultdict(dict)
-    for (pid, k), cs in by_dbl.items():
-        ts_ = own_times.get(pid, ())
-        lo = DOUBLING_FROM * 2 ** k
-        begun = ts_[lo] if lo < len(ts_) else min(c["closed_at"] for c in cs)
-        if begun < hist_from:
-            continue
-        s = sums(cs)
-        if not (s["cls"] >= MIN_CLS and s["td"] >= MIN_EXP):
-            continue
-        v = dict(none)
-        v.update(tn=r3(s["t"] / s["cls"]), ts=r3(s["t"] / s["ts"]) if s["ts"] else None,
-                 td=r3(s["t"] / s["td"]) if s["td"] else None)
-        x = dict(none)
-        recent = [c for c in cs if "thr" in c]
-        if begun >= START and recent:
-            pp = person_period(pid, recent, "all")
-            ok_a = begun >= ADDR_START and pp["ok_a"]
-            for m in METRICS:
-                if m[0] == "a" and ok_a:
-                    v[m] = pp["v"][m]
-                if m[0] == "t" or ok_a:
-                    x[m] = pp["x"][m]
-        steps[pid][k] = (Counter(c["org"] for c in cs).most_common(1)[0][0], v, x)
-    change_chg = yearly_changes(steps, trend_groups)
-    drops = matched_changes(matched, ORGS)
-    kinds, kind_share = ({by: {o: {c: [[r3(st.median(t[c])) if len(t[c]) >= MIN_COHORT else None,
-                                        r3(st.median(a[c])) if len(a[c]) >= MIN_COHORT else None, len(t[c])]
-                                       for t, a, _, _ in bins] for c in CORR} for o, bins in kb.items()}
-                          for by, kb in kind_bins.items()},
-                         {by: {o: [r3(ad / th) if th else None for _, _, th, ad in bins] for o, bins in kb.items()}
-                          for by, kb in kind_bins.items()})
-    def band_rel(o, m, by):
-        """[pooled rate relative to all bands', CLs] per band."""
-        qs = [cmp_pool[(o, m, by, b)] for b in range(5)]
-        ob, dn = sum(q[0] for q in qs), sum(q[1] for q in qs)
-        return [[r3(q[0] / q[1] / (ob / dn)) if q[0] and q[1] else None, round(q[2])] for q in qs]
-    tenure_cmp = {o: {m: dict(bands={by: band_rel(o, m, by) for by in ("time", "changes", "dir")}, **drops[o][m])
-                      for m in METRICS} for o in ORGS}
-    for m in ("td", "ad"):
-        d = drops["all"][m]
-        for by in ("changes", "time"):
-            print(f"kinds by {by} ({m[1]}): " + " ".join(f"{t}/{a}/{n}" for t, a, n in kinds[by]["all"][m[1]]),
-                  file=sys.stderr)
-        print(f"tenure bands ({m}): " + "; ".join(f"{by} " + " ".join(str(v) for v, _ in tenure_cmp["all"][m]["bands"][by])
-                                                 for by in ("time", "changes", "dir")), file=sys.stderr)
-        print(f"yearly drop matched ({m}, {d['n']} pairs from {d['people']}): none {d['none']}% time {d['time']}% "
-              f"changes {d['changes']}% dir {d['dir']}%", file=sys.stderr, flush=True)
-    for by in ("changes", "time"):
-        print(f"addressed share by {by}: " + " ".join(str(x) for x in kind_share[by]["all"]), file=sys.stderr)
-    by_size, dir_names, by_dir = median_breakdowns(use, size10)
-    for m in ("tn", "ts", "td", "ad"):
-        print(f"median by size ({m}): " + " ".join(f"{v}/{n}" for v, n in by_size["all"][m]), file=sys.stderr)
-        print(f"median by directory ({m}): " + ", ".join(f"{d} {v}/{n}" for d, (v, n) in zip(dir_names, by_dir["all"][m])),
-              file=sys.stderr, flush=True)
-    print(f"opening card: {len(trend_pts):,} people; {change['all']['td']['n']:,} year-over-year changes from "
-          f"{change['all']['td']['people']:,} people (median {change['all']['td']['median']}% less), "
-          f"{change['all']['ad']['n']:,} addressed", file=sys.stderr, flush=True)
-    for m in ("td", "ad"):
-        ch = change_chg["all"][m]
-        print(f"per doubling of changes ({m}): {ch['n']:,} from {ch['people']:,} people, median {ch['median']}% less; "
-              f"bins {ch['counts']}", file=sys.stderr)
-    for by, cs_ in (("changes", cohorts_chg), ("time", cohorts)):
-        print(f"cohorts by {by} (td): " + "; ".join(f"{y}: " + " ".join(f"{b}={v}" for b, v, _ in pts)
-                                                   for y, pts in cs_["all"]["td"].items() if pts), file=sys.stderr)
+        for r, e in zip(rs, exps):
+            for p in periods_of(r.at):
+                byp[p].append((r, e))
+        g = growth(person_cells(rs))
+        if g is not None:
+            growths[pid] = g
+        vals = {}
+        for p, pr in byp.items():
+            n, a, lines = len(pr), sum(r.addr for r, _ in pr), sum(r.lines for r, _ in pr)
+            fis = {}
+            for i, nm in enumerate(NORMS):
+                e = sum(x[i] for _, x in pr)
+                fis[nm] = r3(a / e) if e > 0 else None
+                if n >= MIN_CLS and e > 0:
+                    fi_vals[nm][p].append(a / e)
+            vals[p] = dict(cls=n, addressed=a, lines=lines, fr=r3(fr(a, lines)) if lines else None, fi=fis)
+        if args.check and len(check_vals) < 300:
+            check_vals[key(pid)] = dict(periods=vals, growth=g)
 
     # ------------------------------------------------ peers
     tone_end = week_start(TONE_WEEKS[-1]) + WEEK
@@ -1182,61 +845,31 @@ def main():
             return None
         return r["praise"] / r["tone"]
 
-    # Groups: "<by>:<band>:<org>" for tenure in years ("time") or in earlier
-    # commits ("changes"), and "dir:<org>", measured against directory experience.
-    groups = {}
-    for o, of in ORGS.items():
-        for t in TENURE:
-            groups[f"time:{t}:{o}"] = (lambda t, of: lambda pp: pp["ten"] == t and of(pp["org"]))(t, of)
-        for t in CHANGES:
-            groups[f"changes:{t}:{o}"] = (lambda t, of: lambda pp: pp["chg"] == t and of(pp["org"]))(t, of)
-        groups[f"dir:{o}"] = (lambda of: lambda pp: of(pp["org"]))(of)
-    # The norms by size alone (expected threads and addressed threads per
-    # size10 bucket): the files leave them out and the page looks them up.
-    size_norm = {"t": [1.0] * 10, "a": [1.0] * 10}
-    for c in use:
-        size_norm["t"][c["sb"]], size_norm["a"][c["sb"]] = c["exp_ts"], c["exp_as"]
-    if any((size_norm["t"][c["sb"]], size_norm["a"][c["sb"]]) != (c["exp_ts"], c["exp_as"]) for c in use):
-        sys.exit("the size norms differ within a size bucket")
-    peers = dict(generated=datetime.now(timezone.utc).strftime("%Y-%m-%d"), periods=allp, metrics=METRICS,
-                 size_norm=size_norm,
+    dist = lambda xs: dict(n=len(xs), q=quantiles(xs) if len(xs) >= MIN_PEERS else None)
+    first_year = {pid: datetime.fromtimestamp(t, timezone.utc).year for pid, t in first.items()}
+    peers = dict(v=5, generated=datetime.now(timezone.utc).strftime("%Y-%m-%d"), periods=allp,
                  start=epoch_day(START), end=epoch_day(END), addr_start=epoch_day(ADDR_START),
-                 tenure=TENURE, changes=CHANGES, xp=XP, min_peers=MIN_PEERS, qs=len(QS), min_cls=MIN_CLS, min_exp=MIN_EXP, min_received=MIN_RECEIVED,
-                 tone_weeks=[TONE_WEEKS[0], TONE_WEEKS[-1]], dist={}, bands={}, tone={},
-                 cohort_step=STEP, cohort_from=int(HISTORY_ISO[:4]), min_cohort=MIN_COHORT, cohorts=cohorts,
-                 change_ratios=[round(r, 4) for r in CHANGE_RATIOS], change=change, min_cohort_cls=MIN_COHORT_CLS,
-                 size_labels=SIZE_LABELS, by_size=by_size, dir_names=dir_names, by_dir=by_dir,
-                 min_cell_cls=MIN_CELL_CLS, kind_labels=KIND_LABELS, kinds=kinds["time"],
-                 kind_share=kind_share["time"], tenure_cmp=tenure_cmp,
-                 # The same by changes landed before (the page's main tenure measure).
-                 chg_labels=CHG_LABELS, cohorts_chg=cohorts_chg, kinds_chg=kinds["changes"],
-                 kind_share_chg=kind_share["changes"], doubling_from=DOUBLING_FROM, change_chg=change_chg)
-    peers.update(count_peers(per, START, END, ADDR_START))
-    for p in allp:
-        # Peers per kind: the addressed measures count people by their labelled CLs.
-        # Each placed by the CLs its measures count (`lab` for the addressed ones).
-        rows = {k: [(pid, {**pp[p], **(pp[p]["lab"] or {})} if k == "a" else pp[p])
-                    for pid, pp in per.items() if p in pp and pp[p][ok]]
-                for k, ok in (("t", "ok"), ("a", "ok_a"))}
-        dp = peers["dist"][p] = {}
-        for g, f in groups.items():
-            dp[g] = {}
-            for m in METRICS:
-                xs = [x["x" if g.startswith("dir:") else "v"][m] for _, x in rows[m[0]] if f(x)]
-                xs = [v for v in xs if v is not None]
-                dp[g][m] = dict(n=len(xs), q=quantiles(xs) if len(xs) >= MIN_PEERS else None)
-        # Per experience band: the pooled rate relative to everyone, and the spread of people
-        # with enough CL share in the band (1.5 CLs' worth or more).
-        bp = peers["bands"][p] = {}
-        for m in METRICS:
-            ov = overall.get((p, m))
-            bp[m] = []
-            for b in range(5):
-                xs = [x["bands"][m][b][0] / x["bands"][m][b][1] for _, x in rows[m[0]]
-                      if x["bands"][m][b][2] >= 1.5 and x["bands"][m][b][1] > 0]
-                bp[m].append(dict(pooled=r3(rate[(p, m, b)]) if rate.get((p, m, b)) is not None else None,
-                                  rel=r3(rate[(p, m, b)] / ov) if rate.get((p, m, b)) and ov else None,
-                                  n=len(xs), q=quantiles(xs)))
+                 min_peers=MIN_PEERS, min_cls=MIN_CLS, min_bin_cls=MIN_BIN_CLS, min_cell_cls=MIN_CELL_CLS,
+                 min_growth_bins=MIN_GROWTH_BINS, fr_floor=FR_FLOOR, bins=BIN_LABELS, bin_edges=BIN_EDGES,
+                 norms=NORMS, **model,
+                 fr_bins=fr_bins(by_pid),
+                 fi={nm: {p: dist(v.get(p, [])) for p in allp} for nm, v in fi_vals.items()},
+                 newcomer_cls=NEWCOMER_CLS, newcomers=newcomers(by_pid, first_year),
+                 size_labels=SIZE_LABELS, by_size=by_size(by_pid), by_dir=by_dir(by_pid), by_org=by_org(by_pid),
+                 growth=growth_dist(list(growths.values())),
+                 tenure=TENURE, changes=CHANGES, min_received=MIN_RECEIVED,
+                 tone_weeks=[TONE_WEEKS[0], TONE_WEEKS[-1]], tone={})
+    for nm in ("ed", "e", ""):
+        q = peers["fi"][nm]["all"]
+        print(f"feedback index ({nm or 'none'}): {q['n']:,} people, quartiles "
+              f"{[round(x, 2) for x in q['q'][5::5]] if q['q'] else None}", file=sys.stderr)
+    gq = peers["growth"]
+    print(f"growth per doubling: {gq['n']:,} people, median {gq['median']}%, "
+          f"p10 {gq['q'][2]}% p90 {gq['q'][18]}%" if gq["q"] else "growth: none", file=sys.stderr)
+    print("newcomers: " + " ".join(f"{y}={m}/{n}" for y, n, _, _, m, _, _ in peers["newcomers"]), file=sys.stderr)
+    print("by size: " + " ".join(f"{l} {v}" for l, v in zip(SIZE_LABELS, peers["by_size"])), file=sys.stderr)
+    print("by directory: " + ", ".join(f"{d} {v}/{n}" for d, v, n in peers["by_dir"]), file=sys.stderr)
+    print("by org: " + ", ".join(f"{d} {v}/{n}" for d, v, n in peers["by_org"]), file=sys.stderr, flush=True)
     # Tone peers: praise share of comments received in the tone year, by tenure
     # in years or in earlier commits at its end (no orgs).
     tone_rows = []
@@ -1266,7 +899,6 @@ def main():
     # older ones keep counts per directory.
     tone_start = week_start(TONE_WEEKS[0])
     taken = {}
-    check = {}
     for pid, cs in people.items():
         k = key(pid)
         if k in taken:
@@ -1295,8 +927,6 @@ def main():
             f.write(data)
         size += len(data.encode())
         written += 1
-        if args.check and len(check) < 300:
-            check[k] = {p: {x: v for x, v in pp.items() if x not in ("bands", "curve", "curve_a", "xt", "xc")} for p, pp in per[pid].items()}
     for pid in people:
         for e in emails_of.get(pid, ()):
             k = key(e)
@@ -1308,7 +938,7 @@ def main():
             stubs += 1
     if args.check:
         with open(args.check, "w") as f:
-            json.dump(check, f)
+            json.dump(check_vals, f)
     print(f"wrote {written:,} people ({size / 1e6:.1f} MB) and {stubs:,} other addresses to {out}",
           file=sys.stderr)
 

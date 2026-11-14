@@ -2923,23 +2923,67 @@ canvas.rf-pointable {
   overflow-wrap: anywhere;
 }
 
-.rf-bar {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: end;
-  gap: 8px 16px;
+/* The two definitions in the opening card. */
+.rf-defs {
+  max-width: 75ch;
+  margin: 12px 0 16px;
 }
 
-.rf-bar .select-toggle {
-  min-width: 0;
+.rf-defs dt {
+  font-weight: 600;
 }
 
-/* The opening card's cohort legend: line keys in each line's --color. */
+.rf-defs dd {
+  margin: 2px 0 10px;
+}
+
+/* What the feedback index compares with: independent checkboxes, so each is a
+ * chip of its own with a tick when on, not one joined segmented control. */
+.segmented.rf-norm {
+  gap: 6px;
+  margin: 4px 0 12px;
+}
+
+.segmented.rf-norm legend {
+  width: 100%;
+}
+
+.segmented.rf-norm label,
+.segmented.rf-norm label + label {
+  margin-left: 0;
+  border-radius: 999px;
+}
+
+.segmented.rf-norm label:has(input:checked)::before {
+  content: '✓ ';
+}
+
+/* The methodology: a card that opens, its heading the toggle. */
+details.rf-method > summary {
+  cursor: pointer;
+  list-style-position: inside;
+}
+
+details.rf-method > summary h2 {
+  display: inline;
+}
+
+details.rf-method[open] > summary {
+  margin-bottom: 8px;
+}
+
+/* Chart legends: line and band keys in each one's --color. */
 .rf-line-legend .swatch {
   width: 14px;
   height: 3px;
   border-radius: 1px;
   background: var(--color);
+}
+
+/* A shaded band. */
+.rf-line-legend .swatch-band {
+  height: 10px;
+  border-radius: 2px;
 }
 
 /* A reference line, drawn dashed in the chart. */
@@ -2949,7 +2993,7 @@ canvas.rf-pointable {
   border-top: 2px dashed var(--color);
 }
 
-/* The opening card's two bar charts, side by side; stacked on narrow screens. */
+/* Two half-width charts, side by side; stacked on narrow screens. */
 .rf-pair {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr));

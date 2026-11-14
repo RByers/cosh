@@ -1,6 +1,6 @@
 {
   "schema_version": 2,
-  "updated": "2026-11-13",
+  "updated": "2026-11-14",
   "about": "Every external source, data store, processing step and page of cosh, and the flows between them. Read by web/dataflow.html, scripts/dataflow.py (check, plan) and `python3 -m cosh update`. Field meanings and the flow rules: docs/data-architecture.md. Keep it current: CLAUDE.md, Conventions. Building and deploying the site (npm run build; the Pages workflow on push) is not a data step and isn't listed.",
   "sources": [
     {
@@ -1162,7 +1162,7 @@
       "size": "126 MB (53 MB gzipped file by file, as git stores it)",
       "size_as_of": "2026-11-12",
       "files": "peers.json, u/<hash>.json (6,902 people, 122 other addresses) and <half-year>/<hash>.json (19 folders, 2017H2 .. 2026H2; before 2025H2 thread counts per directory, not each thread); <hash> is a salted SHA-256 of the e-mail.",
-      "purpose": "Per-person review feedback against peers, which the Feedback Index page fetches by a hash of the address typed.",
+      "purpose": "Per-person changes and addressed review comments, which the Feedback Index page fetches by a hash of the address typed, and peers.json with the feedback rates and index factors it compares them with.",
       "notes": "Committed and published on GitHub Pages since 2026-11-12. Finished half-years' files don't change between runs unless their inputs do, so git stores them once; each run rewrites the current half-year, u/ and peers.json. Commit with `git add -A web/public/review-feedback/`."
     },
     {
@@ -1997,7 +1997,7 @@
         "cosh/people.py",
         "cosh/commits.py"
       ],
-      "purpose": "Writes each person's review feedback against their peers, as files named by a hash of their address.",
+      "purpose": "Writes each person's changes and addressed review comments, as files named by a hash of their address, and the feedback rates and index factors the page compares them with.",
       "inputs": [
         "data/private/commits.sqlite",
         "data/private/reviews.sqlite",
@@ -2013,7 +2013,7 @@
       "network": false,
       "lock": null,
       "incremental": "Deletes and rewrites every file.",
-      "duration": "about 3 min (188 s on 2026-11-12), 3 GB of memory",
+      "duration": "about 2 min (119 s on 2026-11-14), 3 GB of memory",
       "token_cost": null,
       "cost_source": "docs/review-feedback.md",
       "refresh": "routine",
@@ -2253,7 +2253,7 @@
       ],
       "path": "web/feedback-index.html",
       "title": "Feedback Index",
-      "purpose": "Type an address to see the review feedback on that person's changes against their peers'.",
+      "purpose": "Feedback rate (addressed review comments per 100 lines) by experience; type an address to see that person's rate and feedback index against their peers'.",
       "entry_script": "web/src/review-feedback.ts",
       "reads": [
         "web/public/review-feedback/"

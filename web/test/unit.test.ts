@@ -1455,38 +1455,6 @@ test('review feedback: addresses normalise and hash as cosh/review_feedback.py k
   assert.ok(!looksLikeEmail('a@b'));
 });
 
-test('review feedback: the histogram names its ratio bins as falls and rises', async () => {
-  const { ratioBins } = await import('../src/feedback.ts');
-  // Edges as peers.json rounds them; each pairs with its reciprocal.
-  const bins = ratioBins([0.3969, 0.5, 0.63, 0.7937, 1, 1.2599, 1.5874, 2, 2.5198]);
-  assert.deepEqual(bins.map((b) => b.label), ['fell 60%+', 'fell 50–60%', 'fell 37–50%', 'fell 21–37%', 'fell 0–21%',
-    'grew 0–26%', 'grew 26–59%', 'grew 59–100%', 'grew 100–152%', 'grew 152%+']);
-  assert.deepEqual(bins.map((b) => b.fell), [true, true, true, true, true, false, false, false, false, false]);
-});
-
-test('review feedback: the tenure measure that leaves the least yearly change unexplained', async () => {
-  const { bestTenure } = await import('../src/feedback.ts');
-  const c = { bands: { time: [], changes: [], dir: [] }, n: 10, people: 5, none: 16 };
-  assert.equal(bestTenure({ ...c, time: 5.9, changes: 0.6, dir: 11.3 }), 'changes');
-  // Overshooting (feedback grows once matched) counts by its size.
-  assert.equal(bestTenure({ ...c, time: 0.4, changes: -4.9, dir: 7.6 }), 'time');
-  assert.equal(bestTenure({ ...c, time: null, changes: null, dir: 3 }), 'dir');
-  assert.equal(bestTenure({ ...c, time: null, changes: null, dir: null }), null);
-});
-
-test('review feedback: the opening card draws start years whose curve begins at tenure 0', async () => {
-  const { cohortYears } = await import('../src/feedback.ts');
-  const curve = (b0: number): [number, number, number][] => [[b0, 2, 30], [b0 + 0.5, 1.5, 30], [b0 + 1, 1, 30]];
-  const curves: Record<string, [number, number, number][]> = { '2016': curve(0), '2017': curve(0.5) };
-  for (let y = 2018; y <= 2025; y++) curves[y] = curve(0);
-  curves['2026'] = [[0, 1.4, 260], [0.5, 1, 30]];
-  // From 2018 on, at least three points, every other one when there are more than five, plus the newest.
-  assert.deepEqual(cohortYears(curves, 2018), [2018, 2020, 2022, 2024, 2025]);
-  delete curves['2025'];
-  assert.deepEqual(cohortYears(curves, 2018), [2018, 2020, 2022, 2024]);
-  assert.deepEqual(cohortYears({ '2022': curve(0.5), '2023': curve(0), '2024': curve(0) }, 2018), [2023, 2024]);
-});
-
 test('review feedback: percentiles and quantiles read off 21 quantiles', async () => {
   const { percentileOf, quantile } = await import('../src/feedback.ts');
   const q = Array.from({ length: 21 }, (_, i) => i / 10);       // 0 .. 2 evenly
@@ -1509,211 +1477,142 @@ test('review feedback: older half-years keep thread counts per directory, and th
     [900001, day('2024-02-01'), 40, 2.5, 1.4, [[0, 0.6, 3, 30], [1, 0.4, 0, 10]], [[3, 1], [1, 0]], 0, 12],
     [900002, day('2024-03-01'), 10, 1.5, 0.9, [[1, 4]], [], 0, 13]] };
   const p = F.buildPerson({ ...top, halves: ['2024H1'] }, [old], peers);
-  assert.deepEqual(p.cls.map((c) => c[8].length), [4, 0]);
-  assert.deepEqual(p.cls[0][8].map((t) => [p.dirs[t[4]], t[3], t[1]]),
+  assert.deepEqual(p.cls.map((c) => c[4].length), [4, 0]);
+  assert.deepEqual(p.cls[0][4].map((t) => [p.dirs[t[4]], t[3], t[1]]),
     [['ui/', 1, -1], ['ui/', 0, -1], ['ui/', 0, -1], ['base/', 0, -1]]);
-  assert.deepEqual(p.cls[1][7], [[1, 1, 4, 10]]);
-  assert.deepEqual([p.periods.all.threads, p.periods.all.addressed], [4, 1]);
-  const rows = F.threadRows(p, 'all', 't', null);
-  assert.deepEqual(rows.map((r) => [r.cl, r.file, r.addressed, r.count]),
-    [[900001, 'ui/', 1, 1], [900001, 'ui/', 0, 2], [900001, 'base/', 0, 1]]);
-  assert.equal(F.threadsIn(rows), 4);
-  assert.deepEqual(F.threadRows(p, 'all', 'a', 'ui/').map((r) => r.count), [1]);
+  assert.deepEqual(p.cls[1][3], [[1, 1, 4, 10]]);
+  assert.deepEqual(p.cls.map(F.addressedOn), [1, 0]);
+  // Only addressed comments are listed: one row per change and directory.
+  const rows = F.threadRows(p, 'all', null);
+  assert.deepEqual(rows.map((r) => [r.cl, r.file, r.count]), [[900001, 'ui/', 1]]);
+  assert.equal(F.threadsIn(rows), 1);
+  assert.deepEqual(F.threadRows(p, 'all', 'base/'), []);
   // Sizes and directories as balance_growth.size10 and balance_analysis.dir_of(path, 3) give them.
   assert.deepEqual([0, 1, 3, 4, 7, 8, 1023, 1024, 50000].map(F.size10), [0, 0, 0, 1, 1, 2, 8, 9, 9]);
   assert.deepEqual(['a.cc', 'ui/a.cc', 'a/b/c/d/e.cc'].map(F.dirOf), ['(root)/', 'ui/', 'a/b/c/']);
 });
 
-test('review feedback: half-year files merge, and every period gets the values the script computes', async () => {
+test('review feedback: the feedback rate and index, as the script computes them', async () => {
   const F = await import('../src/feedback.ts');
   const { top, shards, peers, day } = await import('./feedback-fixture.ts');
   const person = F.buildPerson(top, top.halves.map((h) => shards[h]), peers);
-  // Names re-indexed across files.
+  // Names re-indexed across files; a change wholly in one directory gets share 1 and all its lines.
   assert.deepEqual(person.dirs, ['chrome/browser/ui/', 'content/browser/', 'third_party/blink/renderer/']);
-  assert.deepEqual(person.cls.map((c) => c[7].map(([d]) => person.dirs[d])),
-    [['chrome/browser/ui/'], ['content/browser/', 'chrome/browser/ui/'], ['third_party/blink/renderer/']]);
-  assert.deepEqual(person.cls[2][8].map((t) => person.files[t[1]]), ['third_party/blink/renderer/core/a.cc', '/COMMIT_MSG']);
-  // The expected values by size alone come from size_norm; a change wholly in one directory
-  // gets share 1 and all of its lines there; each thread the directory of its file.
-  assert.deepEqual(person.cls.map((c) => c.slice(2, 7)), [[40, 2, 2.5, 1.2, 1.4], [120, 3, 3, 2, 2], [10, 1, 1.5, 0.6, 0.9]]);
-  assert.deepEqual(person.cls[2][7], [[2, 1, 150, 10]]);
-  assert.deepEqual(person.cls[1][8].map((t) => person.dirs[t[4]]), ['content/browser/']);
-  // Everything, and the half-years with changes (the over-time chart).
-  assert.deepEqual(Object.keys(person.periods).sort(), ['2025H2', '2026H1', '2026H2', 'all']);
-  const all = person.periods.all;
-  assert.deepEqual([all.cls, all.threads, all.addressed, all.ten, all.org, all.ok], [3, 5, 3, '2-5y', 'google.com', false]);
-  // Earlier commits on main at the median change: 30, 80, 260.
-  assert.deepEqual([all.prior, all.chg], [80, '50-199']);
-  // Over two changes, the middle of 80 and 260 (any period peers.json lists gets values).
-  const y = F.buildPerson(top, top.halves.map((h) => shards[h]), { ...peers, periods: [...peers.periods, '2026'] });
-  assert.deepEqual([y.periods['2026'].prior, y.periods['2026'].chg, y.periods['2026'].cls], [170, '50-199', 2]);
-  // 5 threads over 3 CLs, over 2.5 + 3 + 1.5 expected; 3 addressed over 1.4 + 2 + 0.9.
-  assert.deepEqual([all.v.tn, all.v.td, all.v.an, all.v.ad], [1.667, 0.714, 1, 0.698]);
-  // Against the band rates: 2.5 × 2.1 + 0.75 × 3 × 1.2 + 0.25 × 3 × 1.6 + 1.5 × 0.7 = 10.2.
-  assert.equal(all.x.td, 0.49);
-  assert.equal(person.periods['2026H1'].v.td, 0.333);
-  // Six CLs with three expected threads count among peers.
-  const six = F.buildPerson(top, [{ ...shards['2026H1'], cls: Array(6).fill(shards['2026H1'].cls[0]) }], peers);
-  assert.equal(six.periods.all.ok, true);
-  assert.deepEqual(['<1y', '1-2y', '2-5y', '5-10y', '10y+'], [0.5, 1.5, 4.9, 5, 12].map(F.tenureBand));
-  assert.deepEqual([0, 49, 50, 199, 200, 499, 500, 999, 1000].map(F.changesBand),
-    ['<50', '<50', '50-199', '50-199', '200-499', '200-499', '500-999', '500-999', '1000+']);
-  // Addressed labels from 2026: the addressed measures count only CLs 2 and 3 (2 addressed threads,
-  // over 2 + 0.9 expected); the thread measures still count all three.
-  const later = F.buildPerson(top, top.halves.map((h) => shards[h]), { ...peers, addr_start: day('2026-01-01') });
-  const la = later.periods.all;
-  assert.deepEqual([la.cls, la.threads, la.acls, la.addressed, la.ok_a], [3, 5, 2, 2, false]);
-  assert.deepEqual([la.v.tn, la.v.an, la.v.ad], [1.667, 1, 0.69]);
-  // The addressed measures' peers place them by those two CLs: earlier commits 80 and 260 there.
-  assert.deepEqual([la.prior, la.a?.prior, la.a?.chg], [80, 170, '50-199']);
-  assert.equal(F.forKind(la, 'a')?.prior, 170);
-  assert.equal(F.forKind(la, 't')?.prior, 80);
-  assert.equal(F.forKind({ ...la, a: { ...la.a!, chg: '200-499' } }, 'a')?.chg, '200-499');
-  assert.equal(later.periods['2025H2'].a, null);
-  assert.equal(later.periods['2025H2'].v.an, null);
-  assert.equal(later.periods['2025H2'].acls, 0);
-  assert.deepEqual(F.threadRows(later, 'all', 'a', null).map((r) => r.cl), [1000003, 1000002]);
-  assert.deepEqual(F.xpBreakdown(later, 'all', 'ad').map((b) => b.obs), [0, 0, 1, 0, 1]);
-  assert.deepEqual(F.dirTree(later, 'all', 'a').map((d) => d.path), ['content/', 'third_party/', 'chrome/']);
-  assert.equal(F.dirTree(later, 'all', 'a')[2].cls, 1);
+  assert.deepEqual(person.cls.map((c) => [c[0], c[2], c[6]]), [[1000001, 40, 30], [1000002, 120, 80], [1000003, 10, 260]]);
+  assert.deepEqual(person.cls[2][3], [[2, 1, 150, 10]]);
+  assert.deepEqual(person.cls[1][4].map((t) => person.dirs[t[4]]), ['content/browser/']);
+  // Experience bins double: <8, 8–15, ..., 2k+ (cosh/review_feedback.py xbin).
+  assert.deepEqual([0, 7, 8, 15, 16, 1023, 1024, 2047, 2048, 50000].map((n) => F.xbin(peers.bin_edges, n)),
+    [0, 0, 1, 1, 2, 7, 8, 8, 9, 9]);
+  assert.deepEqual([F.dir2('chrome/browser/ui/'), F.dir1('chrome/browser/ui/'), F.dir2('(root)/')],
+    ['chrome/browser/', 'chrome/', '(root)/']);
+  assert.deepEqual(F.unitFracs([[0, 0.6, 0, 30], [1, 0.4, 0, 10]]), [0.75, 0.25]);
+  assert.deepEqual(F.unitFracs([[0, 0.6, 0, 0], [1, 0.4, 0, 0]]), [0.6, 0.4]);
+  // Three addressed comments over 170 lines.
+  const cs = F.clsIn(person, 'all');
+  const near = (a: number | null, b: number) => assert.ok(a !== null && Math.abs(a - b) < 1e-9, `${a} vs ${b}`);
+  const plain = F.sums(person, peers, cs, '');
+  assert.deepEqual([plain.cls, plain.addressed, plain.lines], [3, 3, 170]);
+  near(F.frOf(plain), 300 / 170);
+  // Against everyone's median (1.5 per 100 lines): 1.7 × 1.5 expected.
+  near(plain.expected, 1.7 * 1.5);
+  // Against the median of the same experience: bins 2, 4 and 6 (2.5, 1.7 and 1 per 100 lines).
+  const e = F.sums(person, peers, cs, 'e');
+  near(e.expected, 0.4 * 2.5 + 1.2 * 1.7 + 0.1 * 1);
+  near(F.fiOf(e), 3 / 3.14);
+  // And the directories: CL 1 in chrome/browser/ (1.2), CL 2 by lines in content/ (0.8, 90 of 118) and
+  // chrome/browser/ (28 of 118), CL 3 in third_party/blink/ (0.5).
+  const ed = F.sums(person, peers, cs, 'ed');
+  near(ed.expected, 1 * 1.2 + 2.04 * ((90 / 118) * 0.8 + (28 / 118) * 1.2) + 0.1 * 0.5);
+  // A directory without a factor of its own or of its top level gets 1; the org factor applies to every change.
+  near(F.sums(person, peers, cs, 'edo').expected, ed.expected * 1.1);
+  near(F.sums(person, peers, cs, 'd').expected, 1.5 * (0.4 * 1.1 + 1.2 * ((90 / 118) * 0.9 + (28 / 118) * 1.1) + 0.1));
+  near(F.sums(person, peers, cs, 'o').expected, 1.7 * 1.5 * 0.9);
+  // Per bin, and the growth rate: rates 2.5, 0.83 and 10 at bins 2, 4 and 6 fit a line of +41% per doubling.
+  const bins = F.binSums(person, peers, 'all', 'e');
+  assert.deepEqual(bins.map((b) => b.cls), [0, 0, 1, 0, 1, 0, 1, 0, 0, 0]);
+  assert.equal(F.growth(bins, peers), 41.4);
+  assert.equal(F.growth(bins, { ...peers, min_growth_bins: 4 }), null);
+  assert.equal(F.growth(bins, { ...peers, min_bin_cls: 2 }), null);
+  // Halving per doubling is -50%; no feedback counts as fr_floor.
+  const b = (cls: number, addressed: number, lines: number) => ({ cls, addressed, lines, expected: 0 });
+  assert.equal(F.growth([b(5, 40, 1000), b(5, 20, 1000), b(5, 10, 1000)], peers), -50);
+  assert.equal(F.growth([b(5, 1, 100), b(5, 0, 100), b(5, 0, 100)], peers), Math.round(1000 * (2 ** (-0.5 * Math.log2(10)) - 1)) / 10);
+  // A half-year counts only its changes.
+  assert.deepEqual(F.clsIn(person, '2026H1').map((c) => c[0]), [1000002]);
+  // Before the addressed labels begin, nothing counts.
+  const later = F.buildPerson(top, top.halves.map((h) => shards[h]), { addr_start: day('2026-01-01') });
+  assert.deepEqual(F.clsIn(later, 'all').map((c) => c[0]), [1000002, 1000003]);
+  assert.equal(F.usualOrg(person, cs), 'google.com');
+});
+
+test('review feedback: directories, comments and the comments-per-change histogram', async () => {
+  const F = await import('../src/feedback.ts');
+  const { top, shards, peers, day } = await import('./feedback-fixture.ts');
+  const person = F.buildPerson(top, top.halves.map((h) => shards[h]), peers);
+  // A tree from the top level down to the data's 3-level directories, with each change's lines and
+  // comments split by lines.
+  const dirs = F.dirTree(person, peers, 'all', 'e');
+  assert.deepEqual(dirs.map((d) => [d.path, d.cls, d.addressed, d.prior]),
+    [['chrome/', 2, 1, 1], ['content/', 1, 1, 7], ['third_party/', 1, 1, 150]]);
+  const near = (a: number, b: number) => assert.ok(Math.abs(a - b) < 1e-9, `${a} vs ${b}`);
+  near(dirs[0].lines, 40 + (120 * 28) / 118);
+  near(dirs[1].lines, (120 * 90) / 118);
+  near(dirs[0].expected, 1 + (2.04 * 28) / 118);
+  const ui = dirs[0].children[0].children[0];
+  assert.deepEqual([dirs[0].children[0].name, ui.name, ui.path, ui.cls, ui.children, ui.own],
+    ['browser/', 'ui/', 'chrome/browser/ui/', 2, [], null]);
+  // A parent counts a change once; a directory with files of its own and subdirectories keeps its own
+  // files apart ("rest of").
+  const nested = F.dirTree({ ...person, dirs: person.dirs.map((d) => (d === 'content/browser/' ? 'chrome/browser/' : d)) },
+    peers, 'all', 'e');
+  assert.deepEqual(nested.map((d) => [d.path, d.cls, d.addressed, d.prior]), [['chrome/', 2, 2, 7], ['third_party/', 1, 1, 150]]);
+  const browser = nested[0].children[0];
+  assert.deepEqual([browser.cls, browser.addressed, browser.own?.cls, browser.own?.addressed], [2, 2, 1, 1]);
+  // The table's rows: entries with fewer than `minCls` changes go into one "Other" row per level,
+  // which counts each change once and opens into them; only rows with `minCls` changes get a rate and index.
+  const view = (roots: typeof dirs, open: string[], min: number, shown?: number) =>
+    F.dirRows(roots, new Set(open), min, shown).map((r) =>
+      `${'  '.repeat(r.depth)}${r.kind === 'other' ? `other(${r.count})` : r.kind === 'rest' ? `rest ${r.node!.path}` : r.node!.path}` +
+      ` ${r.stats.cls}/${r.stats.addressed}${r.expandable ? (r.expanded ? ' -' : ' +') : ''}`);
+  assert.deepEqual(view(dirs, [], 2), ['chrome/ 2/1 +', 'other(2) 2/2 +']);
+  assert.deepEqual(view(dirs, ['o:root'], 2), ['chrome/ 2/1 +', 'other(2) 2/2 -', '  content/ 1/1 +', '  third_party/ 1/1 +']);
+  assert.deepEqual(view(dirs, [], 5), ['chrome/ 2/1 +', 'content/ 1/1 +', 'third_party/ 1/1 +']);
+  assert.deepEqual(view(dirs, [], 5, 0), ['other(3) 3/3 +']);
+  const rows = F.dirRows(dirs, new Set(['o:root']), 2);
+  near(rows[0].fr!, 100 / dirs[0].lines);
+  near(rows[0].fi!, 1 / dirs[0].expected);
+  assert.deepEqual([rows[2].fr, rows[2].fi], [null, null]);
+  // The index's shade: log scale, white at typical, full at a quarter or four times.
+  assert.deepEqual([0, 0.25, 0.5, 1, 2, 4, 8].map(F.ratioShade), [-1, -1, -0.5, 0, 0.5, 1, 1]);
+  // Comments: addressed ones only, newest first; under one directory, at any level.
+  assert.deepEqual(F.threadRows(person, 'all', null).map((r) => `${r.cl}/${r.uuid}`), ['1000003/', '1000002/bbbb_0002', '1000001/']);
+  assert.equal(F.isoDay(F.threadRows(person, 'all', null)[0].day), '2026-09-01');
+  assert.deepEqual(F.threadRows(person, 'all', null).map((r) => r.praise), [false, true, false]);
+  assert.deepEqual(F.threadRows(person, '2026H1', null).map((r) => r.uuid), ['bbbb_0002']);
+  assert.deepEqual(F.threadRows(person, 'all', 'third_party/').map((r) => r.cl), [1000003]);
+  assert.deepEqual(F.threadRows(person, 'all', 'chrome/browser/').map((r) => r.cl), [1000001]);
+  // Comments per change: each drew one addressed comment.
+  assert.deepEqual(F.threadHistogram(person, 'all'), [0, 3, 0, 0, 0, 0]);
+  assert.deepEqual(F.threadHistogram(person, '2026H1'), [0, 1, 0, 0, 0, 0]);
+  assert.deepEqual([0, 1, 2, 3, 4, 5].map(F.threadBinLabel), ['0', '1–2', '3–5', '6–10', '11–20', '21+']);
+  const withN = (n: number): import('../src/feedback.ts').ClRow =>
+    [0, 0, 0, [], Array.from({ length: n }, (): [string, number, number, 1, number] => ['', 0, 0, 1, 0]), 0, 0];
+  assert.deepEqual([0, 1, 2, 3, 5, 6, 10, 11, 20, 21, 400].map((n) => F.threadBin(withN(n))), [0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5]);
+  assert.equal(F.threadRows(person, 'all', null, 1).length, 3);
+  assert.deepEqual(F.threadRows(person, 'all', null, 2), []);
+  assert.deepEqual(F.dirTree(person, peers, 'all', 'e', 0), []);
+  // Links are encoded and always go to Gerrit; without a comment id, to the change.
+  assert.equal(F.commentUrl(5, 'a/b'), 'https://chromium-review.googlesource.com/c/chromium/src/+/5/comment/a%2Fb/');
+  assert.equal(F.commentUrl(5, ''), 'https://chromium-review.googlesource.com/c/chromium/src/+/5');
   // Periods are cut to the data's dates.
   assert.deepEqual(F.periodSpan('2026H2', [day('2023-07-01'), day('2026-11-01')]), [day('2026-07-01'), day('2026-11-01')]);
   assert.deepEqual(F.periodSpan('2023', [day('2023-07-01'), day('2026-11-01')]), [day('2023-07-01'), day('2024-01-01')]);
   assert.deepEqual(F.periodSpan('all', [1, 2]), [1, 2]);
-  assert.deepEqual(F.rangeOf({ ...peers, addr_start: day('2024-01-01') }, 'a'), [day('2024-01-01'), day('2026-11-01')]);
-
   assert.ok(F.inPeriod(day('2026-03-11'), '2026H1'));
   assert.ok(!F.inPeriod(day('2026-07-01'), '2026H1'));
   assert.ok(F.inPeriod(day('2026-07-01'), '2026'));
   assert.ok(F.inPeriod(day('2020-01-01'), 'all'));
-  assert.equal(F.isoDay(day('2026-03-11')), '2026-03-11');
-  assert.deepEqual([0, 1, 4, 5, 19, 20, 99, 100].map(F.xpBand), [0, 1, 1, 2, 2, 3, 3, 4]);
-  // Experience bands: CL 1 (no earlier commits, 2 threads in its one directory), CL 2 (7 earlier
-  // in content/: 0.75 of it and its thread; 1 earlier in chrome/: 0.25), CL 3 (150 earlier: 2 threads).
-  const xp = F.xpBreakdown(person, 'all', 'td');
-  assert.deepEqual(xp.map((b) => b.cls), [1, 0.25, 0.75, 0, 1]);
-  assert.deepEqual(xp.map((b) => b.obs), [2, 0, 1, 0, 2]);
-  assert.ok(Math.abs(xp[2].den - 0.75 * 3) < 1e-9);
-  assert.deepEqual(F.xpBreakdown(person, 'all', 'ad').map((b) => b.obs), [1, 0, 1, 0, 1]);
-  assert.deepEqual(F.xpBreakdown(person, 'all', 'tn').map((b) => b.den), [1, 0.25, 0.75, 0, 1]);
-  // By changes landed before: CL 1 (30 earlier on main: 2 threads over 2.5 expected), CL 2 (80: 1 over 3),
-  // CL 3 (260: 2 over 1.5); whole changes, whatever their directories.
-  const chg = F.chgBreakdown(person, 'all', 'td', peers.changes);
-  assert.deepEqual(chg.map((b) => [b.cls, b.obs, b.den]), [[1, 2, 2.5], [1, 1, 3], [1, 2, 1.5], [0, 0, 0], [0, 0, 0]]);
-  assert.deepEqual(F.chgBreakdown(person, 'all', 'ad', peers.changes).map((b) => b.obs), [1, 1, 1, 0, 0]);
-  assert.deepEqual(F.chgBreakdown(later, 'all', 'tn', peers.changes).map((b) => b.cls), [1, 1, 1, 0, 0]);
-  assert.deepEqual(F.chgBreakdown(later, 'all', 'an', peers.changes).map((b) => b.cls), [0, 1, 1, 0, 0]);
-  // Directories: a tree from the top level down to the data's 3-level directories.
-  const dirs = F.dirTree(person, 'all', 't');
-  assert.deepEqual(dirs.map((d) => [d.path, d.cls, d.threads, d.prior]),
-    [['chrome/', 2, 2, 1], ['third_party/', 1, 2, 150], ['content/', 1, 1, 7]]);
-  const ui = dirs[0].children[0].children[0];
-  assert.deepEqual([dirs[0].children[0].name, ui.name, ui.path, ui.cls, ui.children, ui.own], ['browser/', 'ui/',
-    'chrome/browser/ui/', 2, [], null]);
-  assert.ok(Math.abs(ui.expected - (2.5 + 0.25 * 3)) < 1e-9);
-  assert.ok(Math.abs(dirs[0].expected - ui.expected) < 1e-9);
-  // A parent counts a change once, however many directories below it the change touched; a
-  // directory with files of its own and subdirectories keeps its own files apart ("rest of").
-  const nested = F.dirTree({ ...person, dirs: person.dirs.map((d) => (d === 'content/browser/' ? 'chrome/browser/' : d)) },
-    'all', 't');
-  assert.deepEqual(nested.map((d) => [d.path, d.cls, d.threads, d.prior]), [['chrome/', 2, 3, 7], ['third_party/', 1, 2, 150]]);
-  const browser = nested[0].children[0];
-  assert.deepEqual([browser.cls, browser.threads, browser.own], [2, 3,
-    { cls: 1, lines: 90, threads: 1, expected: browser.own!.expected, prior: 7, ids: new Set([1000002]) }]);
-  assert.deepEqual(browser.children.map((d) => [d.name, d.cls]), [['ui/', 2]]);
-  // Lines changed: each directory's own (CL 2: 90 in content/, 28 in chrome/), summed up the tree; a
-  // unit without them (older files) takes its share of the change's lines (CL 3: all 10).
-  assert.deepEqual(dirs.map((d) => [d.path, d.lines]), [['chrome/', 66], ['third_party/', 10], ['content/', 90]]);
-  assert.equal(nested[0].lines, 156);
-  // The table's rows: entries with fewer than `minCls` changes go into one "Other" row per level,
-  // which counts each change once and opens into them.
-  const view = (roots: typeof dirs, open: string[], min: number, shown?: number) =>
-    F.dirRows(roots, new Set(open), min, shown).map((r) =>
-      `${'  '.repeat(r.depth)}${r.kind === 'other' ? `other(${r.count})` : r.kind === 'rest' ? `rest ${r.node!.path}` : r.node!.path}` +
-      ` ${r.stats.cls}/${r.stats.lines}/${r.stats.threads}${r.expandable ? (r.expanded ? ' -' : ' +') : ''}`);
-  // Any directory with subdirectories opens, however small, and an opened "Other" lists its
-  // entries whatever their size.
-  assert.deepEqual(view(dirs, [], 2), ['chrome/ 2/66/2 +', 'other(2) 2/100/3 +']);
-  assert.deepEqual(view(dirs, ['o:root'], 2), ['chrome/ 2/66/2 +', 'other(2) 2/100/3 -',
-    '  third_party/ 1/10/2 +', '  content/ 1/90/1 +']);
-  // A level with nothing big enough lists its entries.
-  assert.deepEqual(view(dirs, ['o:root', 'd:third_party/'], 2).slice(2, 4),
-    ['  third_party/ 1/10/2 -', '    third_party/blink/ 1/10/2 +']);
-  // Below the top level, a single small entry ("rest of" too) goes into "Other" when something there is big.
-  assert.deepEqual(view(nested, ['d:chrome/', 'd:chrome/browser/'], 2), ['chrome/ 2/156/3 -', '  chrome/browser/ 2/156/3 -',
-    '    chrome/browser/ui/ 2/66/2','    other(1) 1/90/1 +', 'other(1) 1/10/2 +']);
-  // A top level with nothing big enough lists its first entries instead; they still open.
-  assert.deepEqual(view(dirs, [], 5), ['chrome/ 2/66/2 +', 'third_party/ 1/10/2 +', 'content/ 1/90/1 +']);
-  assert.deepEqual(view(nested, [], 3), ['chrome/ 2/156/3 +', 'third_party/ 1/10/2 +']);
-  assert.deepEqual(view(dirs, [], 5, 2), ['chrome/ 2/66/2 +', 'third_party/ 1/10/2 +', 'other(1) 1/90/1 +']);
-  // A change in two grouped entries counts once (CL 2, in chrome/ and content/).
-  assert.deepEqual(view(dirs, [], 5, 0), ['other(3) 3/166/5 +']);
-  // Only rows with `minCls` changes get a ratio.
-  const ratios = F.dirRows(dirs, new Set(['o:root']), 2).map((r) => r.ratio);
-  assert.ok(Math.abs(ratios[0]! - 2 / dirs[0].expected) < 1e-9);
-  assert.deepEqual(ratios.slice(2), [null, null]);
-  assert.ok(ratios[1] !== null);
-  // The ratio's shade: log scale, white at typical, full at a quarter or four times.
-  assert.deepEqual([0, 0.25, 0.5, 1, 2, 4, 8].map(F.ratioShade), [-1, -1, -0.5, 0, 0.5, 1, 1]);
-  // Comments: newest first; addressed only; under one directory, at any level.
-  const rows = F.threadRows(person, 'all', 't', null);
-  assert.deepEqual(rows.map((r) => `${r.cl}/${r.uuid}`),
-    ['1000003/cccc_0003', '1000003/', '1000002/bbbb_0002', '1000001/aaaa_0002', '1000001/']);
-  assert.equal(rows[0].file, '/COMMIT_MSG');
-  assert.equal(F.isoDay(rows[1].day), '2026-09-01');
-  assert.deepEqual(F.threadRows(person, 'all', 'a', null).map((r) => r.cl), [1000003, 1000002, 1000001]);
-  assert.deepEqual(F.threadRows(person, '2026H1', 't', null).map((r) => r.uuid), ['bbbb_0002']);
-  assert.deepEqual(F.threadRows(person, 'all', 't', 'third_party/blink/renderer/').map((r) => r.uuid), ['cccc_0003', '']);
-  assert.deepEqual(F.threadRows(person, 'all', 't', 'third_party/').map((r) => r.uuid), ['cccc_0003', '']);
-  assert.deepEqual(F.threadRows(person, 'all', 't', 'chrome/browser/').map((r) => r.cl), [1000001, 1000001]);
-  // The directory filter and the addressed filter together.
-  assert.deepEqual(F.threadRows(person, 'all', 'a', 'third_party/').map((r) => r.uuid), ['']);
-  // Threads per change: CLs 1 and 3 drew 2 threads, CL 2 one; each drew one addressed thread.
-  assert.deepEqual(F.threadHistogram(person, 'all', 't'), [0, 3, 0, 0, 0, 0]);
-  assert.deepEqual(F.threadHistogram(person, 'all', 'a'), [0, 3, 0, 0, 0, 0]);
-  assert.deepEqual(F.threadHistogram(person, '2026H1', 't'), [0, 1, 0, 0, 0, 0]);
-  assert.deepEqual([0, 1, 2, 3, 4, 5].map(F.threadBinLabel), ['0', '1–2', '3–5', '6–10', '11–20', '21+']);
-  assert.deepEqual([0, 1, 2, 3, 5, 6, 10, 11, 20, 21, 400].map((n) =>
-    F.threadBin([0, 0, 0, 0, 0, 0, 0, [], Array.from({ length: n }, (): [string, number, number, 1, number] => ['', 0, 0, 1, 0]), 0, 0], 't')),
-  [0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5]);
-  // A column filters the comments and the directories, together with the other filters.
-  assert.equal(F.threadRows(person, 'all', 't', null, 1).length, 5);
-  assert.deepEqual(F.threadRows(person, 'all', 't', null, 2).map((r) => r.cl), []);
-  assert.deepEqual(F.threadRows(person, 'all', 't', 'chrome/', 1).map((r) => r.cl), [1000001, 1000001]);
-  assert.deepEqual(F.threadRows(person, '2026H2', 't', null, 1).map((r) => r.cl), [1000003, 1000003]);
-  assert.deepEqual(F.dirTree(person, 'all', 't', 1).map((d) => [d.path, d.cls]), [['chrome/', 2], ['third_party/', 1], ['content/', 1]]);
-  assert.deepEqual(F.dirTree(person, 'all', 't', 0), []);
-  // Links are encoded and always go to Gerrit; without a comment id, to the change.
-  assert.equal(F.commentUrl(5, 'a/b'), 'https://chromium-review.googlesource.com/c/chromium/src/+/5/comment/a%2Fb/');
-  assert.equal(F.commentUrl(5, ''), 'https://chromium-review.googlesource.com/c/chromium/src/+/5');
-  // Peer groups: always the same tenure, by years or earlier changes (which need a band), or by
-  // directory experience, which reads the adjusted value.
-  assert.equal(F.groupKey('time', 'all', all), 'time:2-5y:all');
-  assert.equal(F.groupKey('changes', 'nongoogle', all), 'changes:50-199:nongoogle');
-  assert.equal(F.groupKey('dir', 'google', all), 'dir:google');
-  assert.equal(F.groupKey('time', 'all', { ...all, ten: null }), null);
-  // The trend's peer band covers half-years without the person's changes too.
-  const hs = ['2023H2', '2024H1', '2025H2', '2026H1'];
-  // Their tenure is known when they landed nothing: years since the first commit, and earlier
-  // commits as at their first change after, or one more than at their last change before.
-  const ymd = (y: number, m: number) => Date.UTC(y, m, 1) / 86_400_000;
-  const row = (d: number, prior: number): import('../src/feedback.ts').ClRow => [1, d, 10, 0, 0, 0, 0, [], [], 0, prior];
-  const only = { periods: { '2025H2': all }, firstDay: ymd(2023, 0),
-    cls: [row(ymd(2025, 10), 49), row(ymd(2025, 7), 40)] };
-  assert.deepEqual(F.halfGroups('time', 'all', only, hs),
-    ['time:<1y:all', 'time:1-2y:all', 'time:2-5y:all', 'time:2-5y:all']);
-  assert.deepEqual(F.halfGroups('changes', 'google', only, hs),
-    ['changes:<50:google', 'changes:<50:google', 'changes:50-199:google', 'changes:50-199:google']);
-  assert.deepEqual(F.halfGroups('dir', 'all', only, hs), Array(4).fill('dir:all'));
-  assert.deepEqual(F.halfGroups('time', 'all', { ...only, firstDay: null }, hs), [null, null, 'time:2-5y:all', null]);
-  // No peers before they started: from the half-year of the first commit, else of the first change.
-  const late = { ...only, firstDay: ymd(2024, 2) };
-  assert.deepEqual(F.halfGroups('time', 'all', late, hs), [null, 'time:<1y:all', 'time:2-5y:all', 'time:2-5y:all']);
-  assert.deepEqual(F.halfGroups('dir', 'all', late, hs), [null, 'dir:all', 'dir:all', 'dir:all']);
-  assert.deepEqual(F.halfGroups('changes', 'all', { ...only, firstDay: null }, hs),
-    [null, null, 'changes:50-199:all', 'changes:50-199:all']);
-  assert.equal(F.valueFor('dir', all, 'td'), 0.49);
-  assert.equal(F.valueFor('time', all, 'ad'), 0.698);
   assert.deepEqual(F.halves(['all', '2026H2', '2025', '2023H2']), ['2023H2', '2026H2']);
 });
 

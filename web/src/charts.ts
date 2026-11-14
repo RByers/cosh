@@ -890,7 +890,7 @@ export function renderReviewerChart(
 }
 
 /** `#rrggbb` with an alpha; other colour formats are returned unchanged. */
-function withAlpha(color: string, alpha: number): string {
+export function withAlpha(color: string, alpha: number): string {
   const m = /^#([0-9a-f]{6})$/i.exec(color.trim());
   if (!m) return color;
   const n = parseInt(m[1], 16);

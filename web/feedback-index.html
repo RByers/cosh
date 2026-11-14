@@ -7,7 +7,7 @@
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M8 1.5 13.6 4.75v6.5L8 14.5 2.4 11.25v-6.5Z' fill='%231a5fd0'/%3E%3Ccircle cx='8' cy='8' r='2.3' fill='%23fff'/%3E%3C/svg%3E" />
     <title>Feedback Index - Chromium Open Source Health</title>
     <link rel="stylesheet" href="/src/style.css" />
-    <meta name="description" content="Study the review feedback on your own Chromium changes and compare it with your peers'." />
+    <meta name="description" content="Your feedback rate on Chromium changes (addressed review comments per 100 lines) and your feedback index against your peers." />
     <meta name="robots" content="noindex" />
   </head>
   <body>
@@ -16,7 +16,9 @@
       comment has the <template data-msg> syntax); src/review-feedback.ts
       fills in the values. The data is one file per person, named by a hash
       of their address, written by cosh/review_feedback.py
-      (docs/review-feedback.md). Ground rule 5 (docs/plan.md): review tone
+      (docs/review-feedback.md). Feedback rate: addressed reviewer threads
+      per 100 changed lines. Feedback index: a person's rate against their
+      peers'. Ground rule 5 (docs/plan.md): review tone
       appears only as praise, and orgs get no tone figures. Comment text is
       untrusted and goes into the page only as text.
     -->
@@ -24,206 +26,69 @@
       <nav class="crumb"><a href="./">← Chromium Open Source Health</a></nav>
       <h1>Chromium Open Source Health - Feedback Index</h1>
       <p class="rf-summary">
-        Analyzes individual contributors' change in code review feedback patterns over time in the Chromium repository.
+        How much code review feedback Chromium contributors receive as they gain experience, and how yours compares.
       </p>
       <p class="rf-disclaimer" role="note">This analysis is imperfect and is intended as a learning guide only.</p>
     </header>
 
     <main>
-      <!-- What every section below counts, and whom it compares with. -->
-      <div class="metric-bar rf-bar">
-        <fieldset id="rf-kind" class="segmented">
-          <legend>Feedback</legend>
-          <label><input type="radio" name="rf-kind" value="a" checked />Addressed only</label>
-          <label><input type="radio" name="rf-kind" value="t" />All reviewer threads</label>
-        </fieldset>
-        <fieldset id="rf-corr" class="segmented">
-          <legend>Adjusted for</legend>
-          <label><input type="radio" name="rf-corr" value="n" />Nothing</label>
-          <label><input type="radio" name="rf-corr" value="s" />Change size</label>
-          <label><input type="radio" name="rf-corr" value="d" checked />Size and directory</label>
-        </fieldset>
-        <div class="select-toggle">
-          <label for="rf-tenure">Same experience by</label>
-          <select id="rf-tenure">
-            <option value="changes" selected>Changes landed before</option>
-            <option value="time">Years since first commit</option>
-            <option value="dir">Changes in each directory</option>
-          </select>
-        </div>
-        <div class="select-toggle select-short">
-          <label for="rf-org">Peers</label>
-          <select id="rf-org">
-            <option value="all">All authors</option>
-            <option value="google">Google</option>
-            <option value="nongoogle">Outside Google</option>
-          </select>
-        </div>
-      </div>
-      <!-- Half-years in the over-time chart, cut to the dates the measure covers (the addressed one starts later). -->
+      <!-- Half-years in the over-time chart, cut to the dates the data covers. -->
       <template data-msg="period-half1">January – June <slot name="year"></slot></template>
       <template data-msg="period-half2">July – December <slot name="year"></slot></template>
       <template data-msg="period-part"><slot name="from"></slot> – <slot name="to"></slot> <slot name="year"></slot></template>
 
       <section id="intro" class="card" aria-labelledby="intro-title">
         <a class="card-anchor" href="#intro" aria-label="Link to this section" title="Link to this section">#</a>
-        <h2 id="intro-title">The feedback index</h2>
+        <h2 id="intro-title">Feedback rate and feedback index</h2>
         <p>
           One of the primary reasons a complex open source project like Chromium relies on code review is as a tool
           for learning, to help newer contributors learn the engineering practices of the community. When the
           project is healthy, contributors learn from their reviewers, reducing the need for their review and
           ultimately becoming reviewers themselves to help teach the next generation of contributors.
         </p>
-        <p>
-          The feedback index is a measure of how many comments a change receives in code review, with 1.00× being
-          the average, optionally adjusted for the change's size and directory (since changes vary in complexity). Over time, most Chromium contributors see a steep drop in their feedback
-          index (especially for addressed comments: those which ultimately lead to a change in the code),
-          suggesting they are learning to anticipate reviewer requests and become capable of perpetuating the
-          project's engineering culture themselves.
-        </p>
-        <p>
-          The feedback index is an imperfect metric and can't account for all variables in project complexity and
-          contributor style. Use this page as a guide to help you explore possible opportunities for learning and
-          increasing your positive impact on the Chromium project.
-        </p>
-        <h3>By experience, for contributors who started in different years</h3>
-        <ul id="rf-cohort-legend" class="legend rf-line-legend" aria-label="First commit on main in"></ul>
+        <dl class="rf-defs">
+          <dt>Feedback rate (FR)</dt>
+          <dd>
+            Addressed review comments per 100 lines changed: the reviewer comment threads that led to a change in
+            the code, for every 100 lines added or removed, over the changes someone landed. Large-scale changes
+            and other large mechanical changes are left out.
+          </dd>
+          <dt>Feedback index (FI)</dt>
+          <dd>
+            Your feedback rate compared with your peers': the typical (median) rate of contributors who had landed
+            as many changes before, adjusted for the directories you worked in. 1.00× is typical; below 1 you
+            draw less feedback than your peers, above 1 more.
+          </dd>
+        </dl>
+        <h3>Feedback rate by changes landed before</h3>
+        <ul id="rf-main-legend" class="legend rf-line-legend" aria-label="Lines and bands"></ul>
         <div class="chart">
-          <canvas id="rf-cohorts" role="img" aria-label="Median feedback index by a contributor's experience (changes landed before, or years since the first commit), one line per year of first commit."></canvas>
+          <canvas id="rf-main" role="img" aria-label="Median feedback rate by how many changes a contributor had landed before, with the middle half and the 10th to 90th percentile of contributors shaded."></canvas>
         </div>
-        <p id="rf-cohorts-note" class="note"></p>
-        <template data-msg="cohorts-note">
-          Each line follows the contributors whose first commit on main was in one year, from that first commit
-          to <slot name="to"></slot>: the median of their<span data-if="kind=a"> addressed</span> feedback<span data-if="corr=n"> per
-          change</span> in each half-year, by <span data-if="chg">how many changes they had landed before (their
-          earlier commits on main)</span><span data-if="!chg">how long they had been contributing then</span><span data-if="dirxp">,
-          measured against authors with the same experience in each directory</span><span data-if="org"> (only
-          half-years in which most of their changes came from <slot name="org"></slot>)</span>. Points stand for
-          <slot name="min"></slot> or more contributors who landed <slot name="minCohortCls"></slot> or more changes in
-          the half-year. Reviewer threads are counted from 2018 on<span data-if="limited">, but
-          addressed threads only from
-          <slot name="from"></slot>, so only the newest start years can be followed from the beginning</span>. Whenever they started,
-          contributors draw less feedback <span data-if="chg">the more changes they have landed</span><span
-          data-if="!chg">the longer they have been contributing</span>.
+        <p id="rf-main-note" class="note"></p>
+        <template data-msg="main-note">
+          Each contributor's feedback rate over their changes landed with that many earlier changes on main (each
+          bin is one doubling), wherever they landed <slot name="minBin"></slot> or more such changes, from
+          <slot name="from"></slot> to <slot name="to"></slot>. Most contributors' rate falls steadily as they gain
+          experience: the median falls from <slot name="first"></slot> at fewer than 8 earlier changes to
+          <slot name="last"></slot> at <slot name="lastBin"></slot>. The bands show how widely contributors differ
+          at the same experience.
         </template>
-        <h3 id="rf-change-title">How fast each contributor's feedback falls</h3>
-        <template data-msg="change-title-chg">How much each contributor's feedback falls as their changes landed double</template>
-        <template data-msg="change-title-time">How fast each contributor's feedback falls per year</template>
-        <div class="chart">
-          <canvas id="rf-change" role="img" aria-label="Histogram of how much contributors' feedback index changed each time their changes landed doubled, or from one year to the next."></canvas>
-        </div>
-        <p id="rf-change-note" class="note"></p>
-        <template data-msg="change-note">
-          <span data-if="chg">Each time a contributor's changes landed doubled: the change in their feedback index
-          from the changes they landed with <slot name="doublingFrom"></slot>–63 earlier commits on main to those
-          with 64–127, from 64–127 to 128–255, and so on, wherever they landed <slot name="minCls"></slot> or more
-          changes in both (<slot name="n"></slot> doublings from <slot name="people"></slot> contributors<span
-          data-if="org">, counted where most of the later doubling's changes came from <slot name="org"></slot></span>;
-          <span data-if="limited">doublings begun from <slot name="from"></slot> on</span><span
-          data-if="!limited">doublings begun from 2018 on</span>).
-          In the median doubling, feedback <span data-if="fell">fell</span><span data-if="!fell">grew</span> by
-          <slot name="median"></slot>; bars on the right are doublings in which it grew.</span><span
-          data-if="!chg">Every contributor-year: the change in a contributor's feedback index from one calendar year to the
-          next, wherever they landed <slot name="minCls"></slot> or more changes in both
-          (<slot name="n"></slot> year-to-year changes from <slot name="people"></slot> contributors<span
-          data-if="org">, counted where most of the later year's changes came from <slot name="org"></slot></span>;
-          <span data-if="limited">whole years from <slot name="fromYear"></slot> on</span><span data-if="!limited">from
-          2018 on</span>).
-          In the median year, feedback <span data-if="fell">fell</span><span data-if="!fell">grew</span> by
-          <slot name="median"></slot>; bars on the right are years in which it grew.</span>
-        </template>
-        <template data-msg="axis-change-chg">change in feedback index from the doubling before</template>
-        <template data-msg="axis-change-time">change in feedback index from the year before</template>
-        <template data-msg="axis-steps-chg">doublings of changes landed</template>
-        <template data-msg="axis-steps-time">contributor-years</template>
-        <!-- Two half-width line charts, side by side on wide screens, each with its own note. -->
-        <div class="rf-pair">
-        <div>
-        <h3 id="rf-kinds-title">All feedback or only addressed feedback, by experience</h3>
-        <template data-msg="kinds-title-chg">All feedback or only addressed feedback, by changes landed before</template>
-        <template data-msg="kinds-title-time">All feedback or only addressed feedback, by years since the first commit</template>
-        <ul id="rf-kinds-legend" class="legend rf-line-legend" aria-label="Lines"></ul>
-        <div class="chart rf-half-chart">
-          <canvas id="rf-kinds" role="img" aria-label="Median feedback index by a contributor's experience, for all reviewer threads and for addressed threads only."></canvas>
-        </div>
-        <p id="rf-kinds-note" class="note"></p>
-        <template data-msg="kinds-all">All reviewer threads</template>
-        <template data-msg="kinds-addressed">Addressed threads only</template>
-        <template data-msg="kinds-norm">Each line's 2023–24 norm</template>
-        <template data-msg="kinds-note">
-          <span data-if="steeper">Addressed feedback shows growth better: it falls <slot name="aFall"></slot>
-          times <span data-if="chg">from fewer than 10 earlier changes to 1,000 or more</span><span
-          data-if="!chg">from the first three months to ten years</span>, against <slot name="tFall"></slot> times
-          for all feedback.</span><span data-if="!steeper">All feedback shows growth better here: it falls
-          <slot name="tFall"></slot> times <span data-if="chg">from fewer than 10 earlier changes to 1,000 or
-          more</span><span data-if="!chg">from the first three months to ten years</span>, against
-          <slot name="aFall"></slot> times for addressed feedback.</span>
-        </template>
-        </div>
-        <div>
-        <h3>Which measure of experience explains the fall</h3>
-        <ul id="rf-tenures-legend" class="legend rf-line-legend" aria-label="Experience measured by"></ul>
-        <div class="chart rf-half-chart">
-          <canvas id="rf-tenures" role="img" aria-label="Feedback in each of five experience bands, least experienced first, for experience measured in changes landed before, years since the first commit, and earlier commits in the directory."></canvas>
-        </div>
-        <p id="rf-tenures-note" class="note"></p>
-        <template data-msg="tenure-time">Years since first commit</template>
-        <template data-msg="tenure-changes">Changes landed before</template>
-        <template data-msg="tenure-dir">Earlier commits in the directory</template>
-        <template data-msg="tenure-name-time">years since the first commit</template>
-        <template data-msg="tenure-name-changes">changes landed</template>
-        <template data-msg="tenure-name-dir">earlier commits in the directory</template>
-        <template data-msg="axis-tenure-band">experience band: changes landed before / years / earlier commits in the directory</template>
+        <template data-msg="legend-median">Median</template>
+        <template data-msg="legend-mid">Middle half (25th–75th percentile)</template>
+        <template data-msg="legend-wide">10th–90th percentile</template>
+        <template data-msg="legend-you">You</template>
         <template data-msg="axis-changes-before">changes landed before (earlier commits on main)</template>
-        <template data-msg="axis-years-since">years since first commit on main</template>
-        <template data-msg="tenures-note">
-          Experience measured by <slot name="best"></slot> accounts for the most growth: <slot name="bestShare"></slot> of a
-          contributor's yearly fall in feedback, against <slot name="share2"></slot> by
-          <slot name="name2"></slot> and <slot name="share3"></slot> by <slot name="name3"></slot>.
-        </template>
-        </div>
-        </div>
-        <p class="note">
-          The first three charts measure experience as “Same experience by” is set: in changes landed before (also for
-          experience in each directory), or in years since the first commit.
-        </p>
-        <!-- Two half-width bar charts: the median author's feedback index by change size and by directory. -->
-        <div class="rf-pair">
-          <div>
-            <h3>By change size</h3>
-            <div class="chart rf-half-chart">
-              <canvas id="rf-size" role="img" aria-label="Bar chart of the median contributor's feedback index by the number of lines a change changed."></canvas>
-            </div>
-          </div>
-          <div>
-            <h3>By directory</h3>
-            <div class="chart rf-half-chart">
-              <canvas id="rf-dir-chart" role="img" aria-label="Bar chart of the median contributor's feedback index in each of the ten directories with the most reviewer threads, highest first."></canvas>
-            </div>
-          </div>
-        </div>
-        <p id="rf-breakdown-note" class="note"></p>
-        <template data-msg="breakdown-note">
-          The median contributor's<span data-if="kind=a"> addressed</span> feedback<span data-if="corr=n"> per
-          change</span>, from <slot name="from"></slot> to <slot name="to"></slot><span data-if="org">, counting
-          only changes from <slot name="org"></slot></span>: each contributor's value from their changes of one size
-          (lines added plus removed), or from their share of the changes in one directory and the reviewer threads on
-          its files, wherever they landed <slot name="minCls"></slot> or more such changes. <span
-          data-if="corr=n">Unadjusted, bigger changes draw far more feedback; “Adjusted for” takes that out.</span><span
-          data-if="!corr=n">With the adjustment, sizes and directories come out much closer together.</span> The
-          directories are the ten with the most reviewer threads, the largest top-level ones split into their
-          subdirectories; bars stand for 10 or more contributors.
-        </template>
-        <template data-msg="org-name-google">Google</template>
-        <template data-msg="org-name-nongoogle">outside Google</template>
+        <template data-msg="axis-fr">addressed comments per 100 lines</template>
+        <template data-msg="axis-fi">feedback index</template>
+        <template data-msg="axis-half">six months starting</template>
       </section>
 
       <section id="find" class="card" aria-labelledby="find-title">
-        <h2 id="find-title">Your review feedback</h2>
+        <h2 id="find-title">Your feedback</h2>
         <p class="sub">
-          Type your email address to see the reviewer threads on every change you landed since <span data-rf-range="from"></span>, set
-          against authors with the same experience: the same number of changes landed before, the same years since
-          their first commit, or the same experience in each directory you changed.
+          Type your email address to see your feedback rate and index on the changes you landed since
+          <span data-rf-range="from"></span>, and where your feedback came from.
         </p>
         <form id="rf-find" class="person-find rf-find" autocomplete="off">
           <label for="rf-email">Your email address</label>
@@ -241,193 +106,157 @@
           and <slot name="to"></slot>. <a class="rf-praise-link" href="sentiment.html">See also your praise</a>.</template>
       </section>
 
-      <!-- Everything below is about the person whose address was typed. -->
+      <!-- Everything below, up to the methodology, is about the person whose address was typed. -->
       <div id="rf-person" hidden>
 
       <section id="summary" class="card" aria-labelledby="summary-title">
         <a class="card-anchor" href="#summary" aria-label="Link to this section" title="Link to this section">#</a>
-        <h2 id="summary-title">How your feedback index compares to your peers</h2>
+        <h2 id="summary-title">Your feedback index</h2>
         <p id="summary-sub" class="sub"></p>
         <template data-msg="summary-sub">
-          <span data-if="corr=n">Reviewer threads<span data-if="kind=a"> you addressed</span> per change you
-          landed.</span><span data-if="corr=s">Reviewer threads<span data-if="kind=a"> you addressed</span> on your
-          changes, against the 2023–24 average for changes of the same size: 1.00× is typical.</span><span
-          data-if="corr=d">Reviewer threads<span data-if="kind=a"> you addressed</span> on your changes, against the
-          2023–24 average for changes of the same size in the same top-level directory: 1.00× is typical.</span>
-          <span data-if="tenure=dir">Here both you and your peers are measured against authors with the same
-          number of earlier commits in each directory, so 1.00× is typical for that experience.</span>
-          These figures cover all your changes landed from <slot name="from"></slot> to <slot name="to"></slot><span
-          data-if="kind=a"> (when the addressed labels begin)</span>. Your peers are the authors with
-          <slot name="minCls"></slot> or more changes in that time<span data-if="tenure!=dir"> and the same
-          experience at the middle of them</span>; “peers with less feedback than you” is the share of them whose index is below yours, so a low
-          share means less feedback than most.
-          <span data-if="!eligible">You landed too few changes to be placed among peers
-          (<slot name="minCls"></slot> or more are needed), so treat your figure with care.</span>
+          Your feedback rate against the typical rate of<span data-if="none"> all contributors</span><span
+          data-if="!none"> contributors <slot name="peers"></slot></span>, over all your changes from
+          <slot name="from"></slot> to <slot name="to"></slot>. 1.00× is typical.
+          <span data-if="!eligible">You landed fewer than <slot name="minCls"></slot> changes, too few to be
+          ranked among peers, so treat your figures with care.</span>
         </template>
+        <template data-msg="peers-e">with as many changes landed before</template>
+        <template data-msg="peers-d">in the same directories</template>
+        <template data-msg="peers-o">in the same organization</template>
+        <template data-msg="peers-and">and</template>
+        <template data-msg="peers-all">of any experience, anywhere</template>
+        <fieldset id="rf-norm" class="segmented rf-norm">
+          <legend>Compare with contributors who have the same</legend>
+          <label><input type="checkbox" value="e" checked />Experience</label>
+          <label><input type="checkbox" value="d" checked />Directories</label>
+          <label><input type="checkbox" value="o" />Organization</label>
+        </fieldset>
         <div class="tiles">
           <div class="tile" id="rf-tile-cls"><div class="tile-label">Changes landed</div><div class="tile-value"></div><div class="tile-sub"></div></div>
-          <div class="tile" id="rf-tile-threads"><div class="tile-label">Reviewer threads</div><div class="tile-value"></div><div class="tile-sub"></div></div>
-          <div class="tile" id="rf-tile-you"><div class="tile-label">Your feedback index</div><div class="tile-value"></div></div>
-          <div class="tile" id="rf-tile-peers"><div class="tile-label">Peers' feedback index</div><div class="tile-value"></div><div class="tile-sub"></div></div>
-          <div class="tile" id="rf-tile-rank"><div class="tile-label">Peers with less feedback than you</div><div class="tile-value"></div></div>
+          <div class="tile" id="rf-tile-threads"><div class="tile-label">Addressed comments</div><div class="tile-value"></div></div>
+          <div class="tile" id="rf-tile-fr"><div class="tile-label">Your feedback rate</div><div class="tile-value"></div><div class="tile-sub"></div></div>
+          <div class="tile" id="rf-tile-fi"><div class="tile-label">Your feedback index</div><div class="tile-value"></div><div class="tile-sub"></div></div>
+          <div class="tile" id="rf-tile-growth"><div class="tile-label">Your growth per doubling</div><div class="tile-value"></div><div class="tile-sub"></div></div>
         </div>
-        <template data-msg="tile-count-rank"><span data-if="p"><slot name="n"></slot> in <slot name="half"></slot>:
-          <slot name="p"></slot> percentile of <span data-if="org=all">all authors</span><span
-          data-if="org=google">Google authors</span><span data-if="org=nongoogle">authors outside
-          Google</span></span><span data-if="!p">None in <slot name="half"></slot></span></template>
-        <template data-msg="axis-feedback">feedback index</template>
-        <template data-msg="axis-lines">lines changed</template>
-        <template data-msg="axis-dir">directory</template>
-        <template data-msg="axis-half">six months starting</template>
-        <template data-msg="tile-threads-a">Addressed reviewer threads</template>
-        <template data-msg="tile-threads-t">Reviewer threads</template>
-        <template data-msg="tile-peers-sub"><slot name="group"></slot>: <slot name="n"></slot> authors, middle half
-          <slot name="lo"></slot> – <slot name="hi"></slot></template>
-        <template data-msg="org-all">All authors</template>
-        <template data-msg="org-google">Google authors</template>
-        <template data-msg="org-nongoogle">Authors outside Google</template>
-        <template data-msg="group-time"><slot name="org"></slot>, <slot name="band"></slot> since their first
-          commit</template>
-        <template data-msg="group-changes"><slot name="org"></slot>, <slot name="band"></slot> earlier
-          changes</template>
-        <template data-msg="group-dir"><slot name="org"></slot>, by experience in each directory</template>
-        <template data-msg="group-none">Experience unknown</template>
+        <template data-msg="tile-lines"><slot name="n"></slot> lines changed</template>
+        <template data-msg="tile-fr-sub">addressed comments per 100 lines</template>
+        <template data-msg="tile-fi-rank"><slot name="p"></slot> of <slot name="n"></slot> contributors have a lower
+          index</template>
+        <template data-msg="tile-fi-none">Too few changes to rank</template>
+        <template data-msg="tile-growth-sub">change in your rate each time your changes landed doubled; median
+          <slot name="median"></slot></template>
+        <template data-msg="tile-growth-none">Needs <slot name="min"></slot> or more changes in each of
+          <slot name="bins"></slot> experience bins</template>
         <template data-msg="you-facts">
-          Your first commit on main was in <slot name="first"></slot>. At the middle of your
-          changes you were <slot name="ten"></slot> in, with about <slot name="prior"></slot> earlier changes on main, and most
-          of your changes were landed as <slot name="org"></slot>.
+          Your first commit on main was in <slot name="first"></slot>, and most of your changes were landed as
+          <slot name="org"></slot>.
         </template>
         <p id="rf-facts" class="note"></p>
         <h3>Over time</h3>
         <div class="chart">
-          <canvas id="rf-trend" role="img" aria-label="Your feedback per six months against your peers' median, middle half and 10th to 90th percentile."></canvas>
+          <canvas id="rf-trend" role="img" aria-label="Your feedback index per six months, against the middle half and the 10th to 90th percentile of all contributors' index."></canvas>
         </div>
         <p class="note">
-          Each point covers the six months from its month (January to June, or July to December), from the
-          half-year you started contributing. The line is you; the shaded bands are the
-          middle half and the 10th–90th percentile of your peers, and the dashed line their median. Points with few
-          of your changes are drawn hollow. Select one of your dots to see where that half-year's feedback came
-          from, below.
+          Each point covers the six months from its month (January to June, or July to December). The line is your
+          feedback index; the shaded bands are the middle half and the 10th–90th percentile of everyone's index
+          that half-year (contributors with <span class="rf-min-cls"></span> or more changes in it), and the dashed
+          line their median. Points with fewer of your changes are drawn hollow. Select one of your dots to
+          see where that half-year's feedback came from, below.
         </p>
       </section>
 
-      <section id="experience" class="card" aria-labelledby="experience-title">
-        <a class="card-anchor" href="#experience" aria-label="Link to this section" title="Link to this section">#</a>
-        <h2 id="experience-title">By your experience</h2>
-        <p id="experience-sub" class="sub"></p>
-        <template data-msg="experience-sub-all">
-          Your feedback by how many changes you had landed before each change (your earlier commits on main),
-          against peers with as many: the dashed line is their median<span data-if="org">
-          (<slot name="org"></slot> only)</span>, the shaded band their middle half.
-        </template>
-        <template data-msg="experience-sub-dir">
-          Each change is split across the directories it changed (three levels deep, weighted by lines), and each
-          reviewer thread goes to the directory of its file. Experience is how many of your commits had landed in
-          that directory before the change. People who work across more of the codebase spend more of their time
-          in directories they know less, so they draw more feedback for the same skill; this view sets that apart.
-        </template>
-        <div class="toggles">
-          <fieldset id="rf-xp-by" class="segmented chart-toggle">
-            <legend>Experience</legend>
-            <label><input type="radio" name="rf-xp-by" value="all" checked />All your changes</label>
-            <label><input type="radio" name="rf-xp-by" value="dir" />Per directory</label>
-          </fieldset>
-        </div>
+      <section id="compare" class="card" aria-labelledby="compare-title">
+        <a class="card-anchor" href="#compare" aria-label="Link to this section" title="Link to this section">#</a>
+        <h2 id="compare-title">How your feedback rate compares to your peers</h2>
+        <p class="sub">
+          Your feedback rate by how many changes you had landed before, over the opening chart: every contributor's
+          median and spread, in grey.
+        </p>
+        <ul id="rf-compare-legend" class="legend rf-line-legend" aria-label="Lines and bands"></ul>
         <div class="chart">
-          <canvas id="rf-xp" role="img" aria-label="Your feedback by your experience, against other authors' median and middle half."></canvas>
+          <canvas id="rf-compare" role="img" aria-label="Your feedback rate by changes landed before, against every contributor's median, middle half and 10th to 90th percentile."></canvas>
         </div>
+        <p class="note">
+          Points with fewer than <span class="rf-min-bin"></span> of your changes are drawn hollow.
+        </p>
+        <h3>By your experience</h3>
         <div class="table-wrap">
           <table id="rf-xp-table" class="rf-table">
-            <thead><tr><th scope="col" id="rf-xp-head"></th><th scope="col" class="num">Your changes</th><th scope="col" class="num">Threads</th><th scope="col" class="num">You</th><th scope="col" class="num" id="rf-xp-head-peers"></th></tr></thead>
+            <thead><tr><th scope="col">Changes landed before</th><th scope="col" class="num">Your changes</th>
+              <th scope="col" class="num">Lines</th><th scope="col" class="num">Addressed comments</th>
+              <th scope="col" class="num">Your rate</th><th scope="col" class="num">Peers' median rate</th>
+              <th scope="col" class="num">Feedback index</th><th scope="col" class="num" title="How much your rate changed from the bin before">Change</th></tr></thead>
             <tbody></tbody>
+            <tfoot><tr><th scope="row">All</th><td class="num"></td><td class="num"></td><td class="num"></td><td class="num"></td><td class="num"></td><td class="num"></td><td class="num"></td></tr></tfoot>
           </table>
         </div>
         <p id="rf-xp-note" class="note"></p>
-        <template data-msg="experience-note-all">
-          “Peers” is the median of authors whose typical change came after as many earlier changes, over all
-          their changes<span data-if="org"> (<slot name="org"></slot> only)</span>; bands with fewer than
-          <slot name="min"></slot> such authors are left out. Earlier commits count from the start of main's history (2008).
+        <template data-msg="experience-note">
+          The feedback index here compares with contributors <slot name="peers"></slot>, as chosen above. “Change” is
+          how much your rate changed from the bin before, where both have
+          <slot name="minBin"></slot> or more of your changes; each bin is one doubling of your changes landed. The
+          last row's change is your growth rate: a line fitted through your rates in every such bin.
         </template>
-        <template data-msg="experience-note-dir">
-          “Your changes” counts each change in proportion to its lines in those directories. “All authors” is
-          everyone's feedback in that band pooled; the shaded band is the middle half of authors with at least
-          one and a half changes in the band. Earlier commits count from the start of main's history (2008).
-        </template>
-        <template data-msg="experience-head-all">Your changes landed before</template>
-        <template data-msg="experience-head-dir">Your earlier commits in the directory</template>
-        <template data-msg="experience-peers-all">Peers</template>
-        <template data-msg="experience-peers-dir">All authors</template>
-        <template data-msg="axis-xp-all">your changes landed before (earlier commits on main)</template>
-        <template data-msg="axis-xp-dir">your earlier commits in the directory</template>
       </section>
 
       <section id="per-cl" class="card" aria-labelledby="per-cl-title">
         <a class="card-anchor" href="#per-cl" aria-label="Link to this section" title="Link to this section">#</a>
-        <h2 id="per-cl-title">Reviewer threads per change</h2>
+        <h2 id="per-cl-title">Addressed comments per change</h2>
         <p id="per-cl-sub" class="sub"></p>
         <template data-msg="per-cl-sub">
-          How many reviewer threads<span data-if="kind=a"> you addressed</span> each of your changes
-          drew<span data-if="half">, for the changes landed <slot name="half"></slot></span>. Select a column to
-          see only those changes in the directories and comments below; select it again to clear the filter.
+          How many addressed review comments each of your changes drew<span data-if="half">, for the changes landed
+          <slot name="half"></slot></span>. Select a column to see only those changes in the directories and
+          comments below; select it again to clear the filter.
         </template>
         <div class="chart">
-          <canvas id="rf-per-cl" role="img" aria-label="Histogram of your changes by how many reviewer threads each drew."></canvas>
+          <canvas id="rf-per-cl" role="img" aria-label="Histogram of your changes by how many addressed review comments each drew."></canvas>
         </div>
-        <template data-msg="axis-per-cl-t">reviewer threads on the change</template>
-        <template data-msg="axis-per-cl-a">addressed reviewer threads on the change</template>
+        <template data-msg="axis-per-cl">addressed comments on the change</template>
         <template data-msg="axis-your-cls">your changes</template>
       </section>
 
       <section id="directories" class="card" aria-labelledby="directories-title">
         <a class="card-anchor" href="#directories" aria-label="Link to this section" title="Link to this section">#</a>
         <h2 id="directories-title">Where your feedback comes from</h2>
-        <p id="directories-sub" class="sub"></p>
-        <template data-msg="directories-sub">
-          The directories you changed most, with the reviewer threads in each. “Typical” is what a typical change
-          of the same size and place drew in 2023–24<span data-if="corr=n"> (shown while nothing is adjusted for,
-          too)</span>, and the ratio is shaded from green (fewer threads than typical) through white (typical) to red
+        <p class="sub">
+          The directories you changed most, with your feedback rate in each and your feedback index there (against
+          the peers chosen above), shaded from green (less feedback than your peers) through white (typical) to red
           (more). ▸ opens a directory; select one to list its comments below.
-        </template>
+        </p>
         <!-- Set by selecting a dot in the over-time chart; filters this table and the comments. -->
         <p id="rf-half-filter" class="rf-filter" hidden>
           <span id="rf-half-filter-name" class="rf-filter-name"></span>
           <button type="button" id="rf-half-clear">Clear</button>
         </p>
         <template data-msg="half-filter">Filter: only changes landed <slot name="half"></slot></template>
-        <!-- Set by selecting a column of the threads-per-change chart; filters this table and the comments. -->
+        <!-- Set by selecting a column of the comments-per-change chart; filters this table and the comments. -->
         <p id="rf-bin-filter" class="rf-filter" hidden>
           <span class="rf-filter-name"></span>
           <button type="button" class="rf-bin-clear">Clear</button>
         </p>
         <template data-msg="bin-filter">Filter: only changes with <slot name="bin"></slot></template>
-        <!-- A column of the threads-per-change chart, in the filter lines and the comments' caption. -->
+        <!-- A column of the comments-per-change chart, in the filter lines and the comments' caption. -->
         <template data-msg="bin-name"><span data-if="none">no</span><span data-if="!none"><slot
-          name="n"></slot></span><span data-if="kind=a"> addressed</span> reviewer <span
-          data-if="one">thread</span><span data-if="!one">threads</span><span data-if="more"> or more</span></template>
+          name="n"></slot></span> addressed <span data-if="one">comment</span><span data-if="!one">comments</span><span
+          data-if="more"> or more</span></template>
         <div class="table-wrap">
           <table id="rf-dirs" class="rf-table">
-            <thead><tr><th scope="col">Directory</th><th scope="col" class="num">Changes</th><th scope="col" class="num" title="Lines changed there (added plus deleted), summed over your changes">Lines</th><th scope="col" class="num">Threads</th><th scope="col" class="num" id="rf-dirs-typical">Typical</th><th scope="col" class="num">Ratio</th><th scope="col" class="num">Earlier commits</th></tr></thead>
+            <thead><tr><th scope="col">Directory</th><th scope="col" class="num">Changes</th>
+              <th scope="col" class="num" title="Your changes' lines there: each change's lines added plus removed, times its share there">Lines</th>
+              <th scope="col" class="num">Addressed comments</th><th scope="col" class="num">Feedback rate</th>
+              <th scope="col" class="num">Feedback index</th><th scope="col" class="num">Earlier commits</th></tr></thead>
             <tbody></tbody>
           </table>
         </div>
-        <template data-msg="dirs-typical-t">The reviewer threads typical changes like yours would have drawn here: for
-          each of your changes in this directory, the 2023–24 average number of reviewer threads for changes of the
-          same size in the change's main two-level directory (or of that size anywhere, where fewer than 30 such
-          changes landed), times the change's share in this directory (by lines and files), summed.</template>
-        <template data-msg="dirs-typical-a">The addressed reviewer threads typical changes like yours would have
-          drawn here: for each of your changes in this directory, the 2023–24 average number of addressed reviewer
-          threads for changes of the same size in the change's main two-level directory (or of that size anywhere,
-          where fewer than 30 such changes landed), times the change's share in this directory (by lines and files),
-          summed.</template>
         <template data-msg="dirs-other">Other (<slot name="n"></slot>)</template>
         <template data-msg="dirs-rest">rest of <slot name="dir"></slot></template>
-        <template data-msg="dirs-no-ratio">Fewer than <slot name="n"></slot> changes: too few for a ratio</template>
+        <template data-msg="dirs-no-ratio">Fewer than <slot name="n"></slot> changes: too few for a rate</template>
         <p class="note">A directory's changes count each change once, however many of its subdirectories the change
           touched; “Other” counts each change once too, and lists, at each level, the directories with fewer than
-          <span id="rf-dirs-min">25</span> of your changes (▸ opens it). That is too few for a ratio to say much, so
-          those rows show none. “Lines”
-          are the lines changed there, added plus deleted. “Earlier commits” are yours in that directory before your latest change there; for a directory
-          that opens, the most in any one directory below it.</p>
+          <span class="rf-min-cls"></span> of your changes (▸ opens it). That is too few for a rate to say much, so
+          those rows show none. A change's lines and comments are split across the directories it changed, by
+          lines; each comment goes to the directory of its file. “Earlier commits” are yours in that directory
+          before your latest change there; for a directory that opens, the most in any one directory below it.</p>
       </section>
 
       <section id="comments" class="card" aria-labelledby="comments-title">
@@ -435,12 +264,12 @@
         <h2 id="comments-title">The comments</h2>
         <p id="comments-sub" class="sub"></p>
         <template data-msg="comments-sub">
-          <slot name="n"></slot> reviewer threads<span data-if="kind=a"> you addressed</span><span data-if="dir"> in
+          <slot name="n"></slot> addressed review comments<span data-if="dir"> in
           <code><slot name="dir"></slot></code></span><span data-if="bin"> on changes with <slot
           name="bin"></slot><span data-if="half">, landed <slot name="half"></slot></span></span><span
           data-if="!bin"><span data-if="half"> on changes landed <slot name="half"></slot></span></span>, newest first, each linked to its review. Text and a link to
-          the comment itself are included for threads whose text has been collected (from November 2025 on); the
-          others are in a table at the end. Before July 2025 a change's threads are grouped by directory, without
+          the comment itself are included for comments whose text has been collected (from November 2025 on); the
+          others are in a table at the end. Before July 2025 a change's comments are grouped by directory, without
           their files.
         </template>
         <!-- The same half-year filter as above the directories, together with the directory picker. -->
@@ -461,14 +290,13 @@
         <ul id="rf-threads" class="quotes rf-threads"></ul>
         <button type="button" id="rf-threads-more" class="rf-more" hidden></button>
         <template data-msg="threads-more">Show <slot name="n"></slot> more</template>
-        <template data-msg="threads-none">No reviewer threads here.</template>
+        <template data-msg="threads-none">No addressed comments here.</template>
         <template data-msg="thread-meta"><slot name="date"></slot> · <slot name="file"></slot></template>
-        <template data-msg="thread-addressed">addressed</template>
         <template data-msg="thread-praise">praise</template>
         <template data-msg="thread-link">Open in Gerrit</template>
         <div id="rf-notext" hidden>
           <h3>Additional comments without stored text</h3>
-          <p class="note">Find their text on the change in Gerrit. Before July 2025 a change's threads in a directory
+          <p class="note">Find their text on the change in Gerrit. Before July 2025 a change's comments in a directory
             share one row, with their count, and its date is when the change landed.</p>
           <div class="table-wrap">
             <table id="rf-notext-table" class="rf-table">
@@ -479,42 +307,128 @@
           <button type="button" id="rf-notext-more" class="rf-more" hidden></button>
         </div>
         <template data-msg="notext-path-count"><slot name="dir"></slot> (<slot name="n"></slot> <span
-          data-if="n=1">thread</span><span data-if="n!=1">threads</span>)</template>
+          data-if="n=1">comment</span><span data-if="n!=1">comments</span>)</template>
       </section>
+      </div>
 
+      <!-- Collapsed: how the measures are built, and the charts that back the choices. -->
+      <details id="method" class="card rf-method">
+        <summary><h2>Methodology and details</h2></summary>
 
-      <section id="method" class="card" aria-labelledby="method-title">
-        <a class="card-anchor" href="#method" aria-label="Link to this section" title="Link to this section">#</a>
-        <h2 id="method-title">How it's measured</h2>
+        <h3>How it's changing</h3>
+        <div class="chart rf-half-chart">
+          <canvas id="rf-newcomers" role="img" aria-label="Median feedback rate over contributors' first changes, by the year of their first commit, with the middle half shaded."></canvas>
+        </div>
+        <p id="rf-newcomers-note" class="note"></p>
+        <template data-msg="newcomers-note">
+          The feedback rate of new contributors over their changes landed with fewer than
+          <slot name="cls"></slot> earlier changes, by the year of their first commit on main: the median and the
+          middle half of contributors with <slot name="minBin"></slot> or more such changes (<slot
+          name="people"></slot> contributors in all). <slot name="lastYear"></slot> is not over yet.
+        </template>
+
+        <h3>How much each contributor's feedback rate falls</h3>
+        <ul id="rf-growth-legend" class="legend rf-line-legend" aria-label="Lines"></ul>
+        <div class="chart rf-half-chart">
+          <canvas id="rf-growth" role="img" aria-label="Smoothed distribution of contributors' growth rates: the change in their feedback rate per doubling of their changes landed."></canvas>
+        </div>
+        <p id="rf-growth-note" class="note"></p>
+        <template data-msg="growth-note">
+          Each contributor's growth rate: how much their feedback rate changed each time their changes landed
+          doubled, from a line fitted through their rates in the experience bins above where they landed
+          <slot name="minBin"></slot> or more changes (<slot name="bins"></slot> bins or more:
+          <slot name="n"></slot> contributors). The median contributor's rate falls by <slot name="median"></slot>
+          per doubling, but contributors differ widely: one in ten fell by <slot name="p10"></slot> or more, while
+          one in ten grew by <slot name="p90"></slot> or more. Some of that spread is noise: a rate over a few
+          changes varies a lot.
+        </template>
+        <template data-msg="axis-growth">change in feedback rate per doubling of changes landed</template>
+        <template data-msg="axis-growth-share">contributors (smoothed)</template>
+        <template data-msg="legend-growth">Contributors</template>
+        <template data-msg="legend-growth-median">Median</template>
+
+        <div class="rf-pair">
+          <div>
+            <h3>Addressed comments per change, by change size</h3>
+            <div class="chart rf-half-chart">
+              <canvas id="rf-size-cl" role="img" aria-label="Bar chart of the median contributor's addressed comments per change by the number of lines a change changed."></canvas>
+            </div>
+          </div>
+          <div>
+            <h3>Feedback rate, by change size</h3>
+            <div class="chart rf-half-chart">
+              <canvas id="rf-size" role="img" aria-label="Bar chart of the median contributor's feedback rate by the number of lines a change changed."></canvas>
+            </div>
+          </div>
+        </div>
+        <p id="rf-size-note" class="note"></p>
+        <template data-msg="size-note">
+          Bigger changes draw far more feedback: the median contributor's changes of under 4 lines drew
+          <slot name="clFirst"></slot> addressed comments each, those of 512–1k lines <slot name="clBig"></slot>.
+          Per 100 lines, the difference is much smaller (<slot name="frFirst"></slot> against
+          <slot name="frBig"></slot>), which is why the feedback rate counts per line. Changes of over 1,000 lines
+          draw little feedback per line. Each contributor counts in a bar with <slot name="minCell"></slot> or more
+          changes of that size.
+        </template>
+        <template data-msg="axis-lines">lines changed</template>
+        <template data-msg="axis-per-cl-median">addressed comments per change</template>
+
+        <div class="rf-pair">
+          <div>
+            <h3>By directory</h3>
+            <div class="chart rf-half-chart">
+              <canvas id="rf-dir-chart" role="img" aria-label="Bar chart of the median contributor's feedback rate in the two-level directories with the most contributors, highest first."></canvas>
+            </div>
+          </div>
+          <div>
+            <h3>By organization</h3>
+            <div class="chart rf-half-chart">
+              <canvas id="rf-org-chart" role="img" aria-label="Bar chart of the median contributor's feedback rate in the organizations with the most contributors, highest first."></canvas>
+            </div>
+          </div>
+        </div>
+        <p class="note">
+          The median contributor's feedback rate over their changes whose main directory (two levels) is in each
+          directory, and over their changes from each organization, for the directories and organizations with
+          the most contributors (<span class="rf-min-cell"></span> or more changes each). Directories matter much less
+          than experience or size, except that imported third-party code and configuration directories (such as
+          <code>third_party/libvpx/</code> or <code>testing/buildbot/</code>) draw almost no feedback per line. Organizations differ,
+          but mostly through their contributors' experience. The feedback index adjusts for directories by default,
+          and for organization if you choose it.
+        </p>
+        <template data-msg="axis-dir">directory</template>
+        <template data-msg="axis-org">organization</template>
+
+        <h3>How it's measured</h3>
         <p class="note">
           Changes are the merged, human-owned Chromium changes on main that landed from
           <span data-rf-range="from"></span> to <span data-rf-range="to"></span>,
           leaving out mechanical ones (100 or more files, or mostly repeated lines) and large-scale changes (CLs
           whose commit message cites Chromium's LSC process, or that <code>git cl split</code> uploaded), as on the
-          <a href="balance.html">Review Balance</a> page. A reviewer thread is a comment thread on Gerrit started by
+          <a href="balance.html">Review Balance</a> page. A review comment is a comment thread on Gerrit started by
           someone other than the change's owner, bots left out, on a file or the commit message (general comments
           on the whole change aren't counted: they can't be tied to a directory, and few lead to a change in the
-          code). It is addressed when the owner's reply led to a
-          change in the code, as judged by a regular expression for “Done”-style replies and by an AI model (Claude
-          Haiku) for the rest (<a target="_blank" rel="noopener"
-          href="https://github.com/RByers/cosh/blob/main/docs/comment-classifier.md">how</a>). Counting only
-          addressed threads covers the changes from <span data-rf-range="addr-from"></span>, where those labels
-          begin.
+          code). It is addressed when the owner's reply led to a change in the code, as judged by a regular
+          expression for “Done”-style replies and by an AI model (Claude Haiku) for the rest (<a target="_blank"
+          rel="noopener" href="https://github.com/RByers/cosh/blob/main/docs/comment-classifier.md">how</a>). Lines
+          are those added plus removed, as Gerrit counts them.
         </p>
         <p class="note">
-          Adjusting for size compares each change with the 2023–24 average for changes in the same of ten size
-          bands (by lines changed); adjusting for directory as well uses the average for that size in the same
-          two-level directory, where there are 30 or more such changes. Peers are the authors who landed
-          <span id="rf-min-cls"></span> or more changes, always with the same experience, taken at the middle of
-          their changes. Experience in changes, the main measure, counts their earlier commits on main since 2008
-          (reverts left out), in bands of under 50, 50–199, 200–499, 500–999 and 1,000 or more. Experience in years
-          counts from a person's first commit on main. Experience in each directory divides
-          everyone's feedback by what all authors drew at the same number of earlier commits in that directory.
-          An author's organization is the one most of their changes are attributed to. Groups of
-          fewer than ten peers get no comparison. The changes landed and reviewer threads are ranked differently:
-          over the latest whole half-year only, among every author of the same organization who landed a change
-          in it, whatever their experience, since a group chosen by changes landed would rank them against
-          themselves.
+          A feedback rate is pooled: all the addressed comments on a set of changes per 100 of all their lines.
+          Experience is the number of changes the owner had landed on main before (their earlier commits since
+          2008, reverts left out), in bins that double: under 8, 8–15, 16–31 and so on up to 2k or more. A
+          contributor's rate in a bin counts with <span class="rf-min-bin"></span> or more changes there.
+        </p>
+        <p class="note">
+          The feedback index divides the addressed comments on your changes by the number your peers would have
+          drawn on the same lines: for each change, its lines times the median rate of the opening chart at your
+          experience then, times a factor for each directory it changed (by how much more or less feedback per
+          line the directory draws than its changes' experience predicts), and, if chosen, a factor for your
+          organization. Directories with fewer than 300 changes take their top-level directory's factor (or none),
+          and smaller organizations share one factor. The factors are scaled so that the median contributor's index
+          doesn't change by adding them. Without experience, the typical rate is the median of everyone with
+          <span class="rf-min-cls"></span> or more changes. The spread of everyone's index (the tiles and the
+          over-time chart) counts contributors with <span class="rf-min-cls"></span> or more changes in the period.
         </p>
         <p class="note">
           Addresses are matched as in the Review Balance page: chromium.org and google.com addresses with the same
@@ -523,8 +437,7 @@
           whose address you already know. Everything comes from public Gerrit and git data. Code and method:
           <a target="_blank" rel="noopener" href="https://github.com/RByers/cosh/blob/main/docs/review-feedback.md">docs/review-feedback.md</a>.
         </p>
-      </section>
-      </div>
+      </details>
     </main>
     <script type="module" src="/src/review-feedback.ts"></script>
   </body>
