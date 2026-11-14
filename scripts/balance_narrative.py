@@ -723,7 +723,6 @@ def load_cached(args):
     S = None
     if args.cache and os.path.exists(args.cache):
         S = pickle.load(open(args.cache, "rb"))
-        orgs.refresh_affiliations()
         if S.get("affiliations") != orgs.affiliations_digest():
             print(f"{args.cache} was built with another affiliations file; reloading", file=sys.stderr)
             S = None

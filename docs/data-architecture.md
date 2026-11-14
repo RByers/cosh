@@ -106,10 +106,9 @@ system is kept, and the inventory says where a step departs from them.
     refuse anything outside it. Widening a range needs the user's approval
     and an edit to that file, logged in `docs/plan.md`. CLAUDE.md keeps the
     reasons and the load rules.
-11. **A step is offline unless the inventory says it fetches.** The one
-    deliberate exception: every command that attributes orgs refreshes the
-    affiliations file first (`COSH_AFFILIATIONS_OFFLINE=1` skips it), so no
-    analysis runs on a stale copy.
+11. **A step is offline unless the inventory says it fetches.** The
+    affiliations files too: only `update-affiliations` fetches them, and the
+    steps that attribute orgs read the local copy.
 12. **Keep whatever we download, download only what we need**
     (`docs/storage-design.md` §3.8). Raw stores are never slimmed or pruned;
     data is reduced only in derived stores.

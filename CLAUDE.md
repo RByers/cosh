@@ -110,10 +110,13 @@ regex plus Claude Haiku (`cosh classify`).
 ## Conventions
 
 - Python standard library only. Run with `python3 -m cosh <cmd>`.
-- `config/affiliations.json5` (org attribution) refreshes itself: every
-  `OrgResolver()` fetches it from chromium/src `main` once per process (cheap,
-  no approval needed) and rewrites it only on a change. Commit it with the
-  outputs when it changes. `COSH_AFFILIATIONS_OFFLINE=1` skips the fetch.
+- `config/affiliations.json5` (org attribution) and `config/org-list.txt`
+  are copies of the files in chromium/src's
+  `third_party/blink/tools/commit_stats/`. `python3 -m cosh
+  update-affiliations` is the one step that fetches them (two small
+  requests, no approval needed), and `cosh update` runs it before the steps
+  that attribute orgs; `OrgResolver()` only reads the local copy. Commit
+  them with the outputs when they change.
 - **`config/dataflow.json` is the inventory of the data flow. Keep it up to
   date.** It lists every external source, every store (database with its
   tables, git repo, directory, published file), every processing step

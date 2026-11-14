@@ -138,7 +138,7 @@ def main(argv=None):
                     help="CLs closed (or last updated) on or after this date (default and earliest: "
                          "config/approved.json)")
     sub.add_parser("status", help="show extraction progress")
-    sub.add_parser("update-affiliations", help="refresh config/affiliations.json5 from chromium/src")
+    sub.add_parser("update-affiliations", help="refresh config/affiliations.json5 and config/org-list.txt from chromium/src")
     r = sub.add_parser("radar", help="fetch Cloudflare Radar browser share (needs CLOUDFLARE_API_TOKEN) "
                                      "and write data/public/radar_browser_share.csv")
     r.add_argument("--start", default="2020-09-01", help="earliest date to request (YYYY-MM-DD)")
@@ -271,8 +271,9 @@ def main(argv=None):
                   file=sys.stderr)
     elif a.cmd == "update-affiliations":
         from .orgs import update_affiliations, load_affiliations
-        update_affiliations()
-        print(f"{len(load_affiliations())} affiliation entries")
+        changed = update_affiliations()
+        print(f"{len(load_affiliations())} affiliation entries; "
+              + (f"updated {', '.join(changed)}: commit with the outputs" if changed else "both files unchanged"))
     elif a.cmd == "radar":
         if a.interval < 1.0:
             p.error("--interval below 1.0s is not allowed")

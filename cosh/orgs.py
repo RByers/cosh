@@ -12,12 +12,12 @@ Rules (in order), evaluated at the CL's submit date:
 The "org" is therefore a domain name (or "Individual"/"Undisclosed" when the
 affiliations file says so).
 
-OrgResolver() (no arguments, as every analysis uses it) first refreshes
-config/affiliations.json5 from chromium/src main, once per process: one small
-request to googlesource, so no analysis runs on a stale copy. The file is
-rewritten only when it changed, with a note on stderr to commit it alongside
-the outputs. A failed fetch is an error; COSH_AFFILIATIONS_OFFLINE=1 uses the
-local copy as it is.
+OrgResolver() reads the local config/affiliations.json5 and never fetches.
+`python3 -m cosh update-affiliations` (update_affiliations) is the one step
+that refreshes it, together with config/org-list.txt from the same directory
+of chromium/src main: two small requests to googlesource. `cosh update` runs
+it before the steps that attribute orgs (config/dataflow.json). A file is
+rewritten only when it changed; commit it with the outputs.
 """
 
 import hashlib
@@ -31,8 +31,10 @@ from .contact import http_headers
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 AFFILIATIONS_PATH = os.path.join(ROOT, "config", "affiliations.json5")
-AFFILIATIONS_URL = ("https://chromium.googlesource.com/chromium/src/+/main/"
-                    "third_party/blink/tools/commit_stats/affiliations.json5")
+ORG_LIST_PATH = os.path.join(ROOT, "config", "org-list.txt")
+SOURCE_DIR_URL = ("https://chromium.googlesource.com/chromium/src/+/main/"
+                  "third_party/blink/tools/commit_stats/")
+AFFILIATIONS_URL = SOURCE_DIR_URL + "affiliations.json5"
 NO_EMAIL = "(no email)"
 # Former domain -> the org's current one. Meta employees used @fb.com addresses.
 DOMAIN_ALIASES = {"fb.com": "meta.com"}
@@ -79,29 +81,9 @@ def affiliations_digest(path=AFFILIATIONS_PATH):
         return hashlib.sha256(f.read()).hexdigest()[:16]
 
 
-_refreshed = set()
-
-
-def refresh_affiliations(path=AFFILIATIONS_PATH):
-    """Fetch the current file from chromium/src main, once per process per path.
-    COSH_AFFILIATIONS_OFFLINE=1 skips it; a failed fetch raises SystemExit."""
-    if path in _refreshed or os.environ.get("COSH_AFFILIATIONS_OFFLINE") == "1":
-        return
-    try:
-        changed = update_affiliations(path)
-    except Exception as e:
-        raise SystemExit(f"cosh.orgs: could not refresh {path} from {AFFILIATIONS_URL}: {e}\n"
-                         "Set COSH_AFFILIATIONS_OFFLINE=1 to use the local copy as it is.")
-    _refreshed.add(path)
-    if changed:
-        print(f"cosh.orgs: {os.path.relpath(path)} was out of date and has been updated; "
-              "commit it with the outputs", file=sys.stderr)
-
-
 class OrgResolver:
     def __init__(self, affiliations=None):
         if affiliations is None:
-            refresh_affiliations()
             affiliations = load_affiliations()
         self.aff = affiliations
 
@@ -119,28 +101,39 @@ class OrgResolver:
         return DOMAIN_ALIASES.get(domain, domain)
 
 
-def update_affiliations(path=AFFILIATIONS_PATH):
-    """Fetch the file from chromium/src main; rewrite it (and the source note)
-    only if its content changed. -> True if it changed."""
+def _fetch(name):
     import base64
-    from datetime import datetime, timezone
-    req = urllib.request.Request(AFFILIATIONS_URL + "?format=TEXT",
-                                 headers=http_headers())
+    req = urllib.request.Request(SOURCE_DIR_URL + name + "?format=TEXT", headers=http_headers())
     with urllib.request.urlopen(req, timeout=60) as r:
-        text = base64.b64decode(r.read()).decode("utf-8")
-    parse_json5(text)                       # validate before replacing
-    try:
-        with open(path) as f:
-            if f.read() == text:
-                return False
-    except FileNotFoundError:
-        pass
-    with open(path + ".tmp", "w") as f:     # atomic: analyses may run side by side
-        f.write(text)
-    os.replace(path + ".tmp", path)
-    with open(os.path.join(os.path.dirname(path), "affiliations.source.txt"), "w") as f:
-        f.write(f"config/affiliations.json5 is a verbatim copy of\n{AFFILIATIONS_URL}\n"
-                f"fetched {datetime.now(timezone.utc):%Y-%m-%dT%H:%M:%SZ}. "
-                "Every OrgResolver() refreshes it (cosh/orgs.py); by hand: "
-                "python3 -m cosh update-affiliations\n")
-    return True
+        return base64.b64decode(r.read()).decode("utf-8")
+
+
+def update_affiliations(config_dir=os.path.dirname(AFFILIATIONS_PATH)):
+    """Fetch affiliations.json5 and org-list.txt from chromium/src main into
+    `config_dir`, rewriting each (and the source note) only if its content
+    changed. Both are fetched before either is written, so a failed fetch
+    changes nothing. -> the names of the files that changed."""
+    from datetime import datetime, timezone
+    names = ("affiliations.json5", "org-list.txt")
+    texts = {n: _fetch(n) for n in names}
+    parse_json5(texts["affiliations.json5"])      # validate before replacing
+    changed = []
+    for n in names:
+        path = os.path.join(config_dir, n)
+        try:
+            with open(path) as f:
+                if f.read() == texts[n]:
+                    continue
+        except FileNotFoundError:
+            pass
+        with open(path + ".tmp", "w") as f:       # atomic: analyses may read it meanwhile
+            f.write(texts[n])
+        os.replace(path + ".tmp", path)
+        changed.append(n)
+    if changed:
+        with open(os.path.join(config_dir, "affiliations.source.txt"), "w") as f:
+            f.write(f"config/affiliations.json5 and config/org-list.txt are verbatim copies of the files\n"
+                    f"of the same names in {SOURCE_DIR_URL}\n"
+                    f"fetched {datetime.now(timezone.utc):%Y-%m-%dT%H:%M:%SZ} by "
+                    "python3 -m cosh update-affiliations (cosh/orgs.py).\n")
+    return changed
