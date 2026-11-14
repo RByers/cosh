@@ -113,7 +113,7 @@ const monthLabel = (ym: string) =>
   new Intl.DateTimeFormat('en-GB', { month: 'long', year: 'numeric', timeZone: 'UTC' }).format(new Date(`${ym}-01T00:00:00Z`));
 
 const ok = (v: number | null | undefined): v is number => v !== null && v !== undefined && Number.isFinite(v);
-/** A feedback rate: addressed comments per 100 lines. */
+/** An AFR: addressed comments per 100 lines. */
 const fmtFr = (v: number | null | undefined) => (ok(v) ? fmtNum(v, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '–');
 /** A feedback index. */
 const fmtFi = (v: number | null | undefined) => (ok(v) ? `${fmtNum(v, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}×` : '–');
@@ -260,7 +260,7 @@ async function lookup(raw: string) {
 
 // ---- the opening chart (no person needed), and the same with the person's line
 
-/** The fan of every contributor's feedback rate by experience: the 10th–90th percentile and
+/** The fan of every contributor's AFR by experience: the 10th–90th percentile and
  * the middle half shaded, the median a line. `grey` draws it all in grey, behind someone's line. */
 function fanDatasets(peers: Peers, t: Theme, grey: boolean): ChartDataset<'line', (number | null)[]>[] {
   const q = (f: number) => peers.fr_bins.map((d) => (d.q ? quantile(d.q, f) : null));
@@ -295,7 +295,7 @@ function binRange(peers: Peers, b: number): string {
   return `${fmtInt(e[b - 1] + 1)}–${fmtInt(e[b])} CLs landed`;
 }
 
-/** The feedback rate charts' y-axis: logarithmic, so a steady fall per doubling is a straight
+/** The AFR charts' y-axis: logarithmic, so a steady fall per doubling is a straight
  * line and the wide bands don't flatten the median. A rate of 0 is drawn at the bottom. */
 const FR_MIN = 0.2;
 const frLogAxis = (t: Theme) => ({ type: 'logarithmic' as const, min: FR_MIN, max: 20, ...axis(t, msg('axis-fr')),

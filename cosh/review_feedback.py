@@ -1,9 +1,9 @@
 """Per-person data for the Feedback Index page (web/feedback-index.html,
 docs/review-feedback.md).
 
-The feedback rate (FR) of a set of CLs is their addressed reviewer threads
-per 100 new or changed lines; the feedback index (FI) is a person's FR over their
-peers' (the median FR at the same experience, adjusted for directories and,
+The addressed feedback rate (AFR) of a set of CLs is their addressed reviewer threads
+per 100 new or changed lines; the feedback index (FI) is a person's AFR over their
+peers' (the median AFR at the same experience, adjusted for directories and,
 optionally, org: `rate_model`, `expected`).
 
 Offline. Two parts, which `cosh update` runs as two steps so that review
@@ -19,7 +19,7 @@ tone feeds only the comment list (config/dataflow.json):
 Without --part, both. The files, under --out (default web/public/review-feedback/):
 
   peers.json         global, loaded on opening: the experience bins, the
-                     index's typical rates and factors, the spread of FR per
+                     index's typical rates and factors, the spread of AFR per
                      bin and of everyone's FI per norm and period, and the
                      methodology's charts
   u/<key>.json       per person: first commit, which half-years they have
@@ -338,18 +338,18 @@ def norms(use, also=()):
               file=sys.stderr, flush=True)
 
 
-# ---------------------------------------------------------------- feedback rate and index
-# The feedback rate (FR) of a set of CLs: their addressed reviewer threads per
+# ---------------------------------------------------------------- AFR and index
+# The addressed feedback rate (AFR) of a set of CLs: their addressed reviewer threads per
 # 100 new or changed lines (Gerrit's insertions), pooled. Experience is the
 # owner's CLs landed on main counting the CL itself (earlier commits + 1), in
 # power-of-two bins named by their top, so each bin is one doubling: "8" is 8
 # or fewer, "16" is 9–16, ..., "2k" is 1,025–2,048, ">2k" more.
 BIN_EDGES = [8 * 2 ** k for k in range(9)]          # 8, 16, ..., 2048
 BIN_LABELS = ["8", "16", "32", "64", "128", "256", "512", "1k", "2k", ">2k"]
-MIN_BIN_CLS = 5           # a person's FR in one experience bin counts with this many CLs there
+MIN_BIN_CLS = 5           # a person's AFR in one experience bin counts with this many CLs there
 FR_FLOOR = 0.1            # FRs below this count as this in the growth fit (log scale)
 MIN_GROWTH_BINS = 3       # a growth rate needs FRs in this many bins
-# "How it's changing": the FR over a newcomer's first NEWCOMER_CLS changes, by
+# "How it's changing": the AFR over a newcomer's first NEWCOMER_CLS changes, by
 # the year of their first commit on main, from NEWCOMER_FROM.
 NEWCOMER_CLS, NEWCOMER_FROM = 10, 2018
 MIN_CELL_CLS = 10         # a person counts in a size, directory or org bar with this many CLs there
@@ -358,7 +358,7 @@ CHART_DIRS, CHART_ORGS = 12, 10
 # feedback index with this many CLs' worth; others get 1 (directories) or the
 # pooled factor of all smaller orgs ("*").
 MIN_FACTOR_CLS = 300
-# What the feedback index sets a person's FR against: the median FR of people
+# What the feedback index sets a person's AFR against: the median AFR of people
 # at the same experience ("e"; else everyone's median), adjusted for how much
 # feedback the directory ("d") and the org ("o") draw. Every combination.
 NORMS = ["", "e", "d", "ed", "o", "eo", "do", "edo"]
@@ -425,8 +425,8 @@ def person_cells(rows):
 
 
 def growth(cells):
-    """A person's growth rate: the % change in their FR per doubling of changes
-    landed, from a least-squares line through log2 FR (floored at FR_FLOOR)
+    """A person's growth rate: the % change in their AFR per doubling of changes
+    landed, from a least-squares line through log2 AFR (floored at FR_FLOOR)
     by experience bin, each bin weighted by its CLs. Needs MIN_GROWTH_BINS
     bins with MIN_BIN_CLS CLs. None otherwise."""
     pts = [(b, math.log2(max(fr(a, lines), FR_FLOOR)), n) for b, (n, a, lines) in cells.items()
@@ -446,7 +446,7 @@ def median_or_none(xs):
 
 
 def bin_frs(by_pid):
-    """Per experience bin, every person's FR there (MIN_BIN_CLS CLs or more)."""
+    """Per experience bin, every person's AFR there (MIN_BIN_CLS CLs or more)."""
     out = [[] for _ in BIN_LABELS]
     for rs in by_pid.values():
         for b, (n, a, lines) in person_cells(rs).items():
@@ -456,13 +456,13 @@ def bin_frs(by_pid):
 
 
 def fr_bins(by_pid):
-    """The main chart: per experience bin, the spread of people's FR there."""
+    """The main chart: per experience bin, the spread of people's AFR there."""
     return [dict(n=len(xs), q=quantiles(xs) if len(xs) >= MIN_PEERS else None) for xs in bin_frs(by_pid)]
 
 
 def rate_model(rows):
-    """What the feedback index compares with. ref_bin: the median FR per
-    experience bin (the main chart's line); ref_all: the median FR of everyone
+    """What the feedback index compares with. ref_bin: the median AFR per
+    experience bin (the main chart's line); ref_all: the median AFR of everyone
     with MIN_CLS CLs over all of theirs. f_dir[e]: per directory (two levels,
     and one level as the fallback), how much more feedback per line it draws
     than its CLs' experience predicts (e "e") or than everyone's median
@@ -528,7 +528,7 @@ def rate_model(rows):
 
 
 def expected(r, norm, m):
-    """The addressed threads a CL would draw at its peers' FR, under norm (see NORMS)."""
+    """The addressed threads a CL would draw at its peers' AFR, under norm (see NORMS)."""
     base = (m["ref_bin"][r.bin] or m["ref_all"]) if "e" in norm else m["ref_all"]
     fo = 1.0
     if "o" in norm:
@@ -544,7 +544,7 @@ def expected(r, norm, m):
 
 def newcomers(by_pid, first_year):
     """Per year of first commit on main from NEWCOMER_FROM: [year, people,
-    p10, p25, median, p75, p90] of the FR over their CLs with fewer than
+    p10, p25, median, p75, p90] of the AFR over their CLs with fewer than
     NEWCOMER_CLS earlier commits (MIN_BIN_CLS of them or more)."""
     ys = defaultdict(list)
     for pid, rs in by_pid.items():
@@ -563,7 +563,7 @@ def newcomers(by_pid, first_year):
 
 
 def cell_medians(by_pid, key_of):
-    """{key: (median of people's FR, median of their addressed threads per CL,
+    """{key: (median of people's AFR, median of their addressed threads per CL,
     people)} over people with MIN_CELL_CLS CLs under one key; MIN_PEERS people
     or more."""
     vals = defaultdict(list)
@@ -582,21 +582,21 @@ def cell_medians(by_pid, key_of):
 
 
 def by_size(by_pid):
-    """Per size bucket (SIZE_LABELS): [median FR, median addressed threads per CL, people]."""
+    """Per size bucket (SIZE_LABELS): [median AFR, median addressed threads per CL, people]."""
     m = cell_medians(by_pid, lambda r: size10(r.lines))
     return [list(m.get(b, (None, None, 0))) for b in range(len(SIZE_LABELS))]
 
 
 def by_dir(by_pid):
     """The CHART_DIRS two-level directories with the most people (each CL by
-    its main directory), highest median FR first: [directory, median FR, people]."""
+    its main directory), highest median AFR first: [directory, median AFR, people]."""
     m = cell_medians(by_pid, lambda r: dir2(r.main))
     top = sorted(m.items(), key=lambda kv: (-kv[1][2], kv[0]))[:CHART_DIRS]
     return [[k, v[0], v[2]] for k, v in sorted(top, key=lambda kv: (-kv[1][0], kv[0]))]
 
 
 def by_org(by_pid):
-    """The CHART_ORGS orgs with the most people: [org, median FR, people], highest first."""
+    """The CHART_ORGS orgs with the most people: [org, median AFR, people], highest first."""
     m = cell_medians(by_pid, lambda r: r.org)
     top = sorted(m.items(), key=lambda kv: (-kv[1][2], kv[0]))[:CHART_ORGS]
     return [[k, v[0], v[2]] for k, v in sorted(top, key=lambda kv: (-kv[1][0], kv[0]))]
@@ -789,15 +789,15 @@ def main():
     if ADDR_START > max(START, datetime(2023, 1, 1, tzinfo=timezone.utc).timestamp()):
         print("warning: 2023-24 isn't all labelled, so the addressed norms are too low", file=sys.stderr)
 
-    # ------------------------------------------------ feedback rate and index
+    # ------------------------------------------------ AFR and index
     # Only the labelled CLs count (from ADDR_START, which is START once every
-    # week is labelled): the feedback rate is addressed threads per 100 lines.
+    # week is labelled): the AFR is addressed threads per 100 lines.
     people = defaultdict(list)
     for c in use:
         people[c["pid"]].append(c)
     rows = [fr_row(c) for c in use if c["acov"]]
     model = rate_model(rows)
-    print(f"feedback rate by experience: " + " ".join(f"{l}={v}" for l, v in zip(BIN_LABELS, model["ref_bin"]))
+    print(f"AFR by experience: " + " ".join(f"{l}={v}" for l, v in zip(BIN_LABELS, model["ref_bin"]))
           + f"; everyone {model['ref_all']}", file=sys.stderr, flush=True)
     by_pid = defaultdict(list)
     for r in rows:

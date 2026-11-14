@@ -7,7 +7,7 @@
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M8 1.5 13.6 4.75v6.5L8 14.5 2.4 11.25v-6.5Z' fill='%231a5fd0'/%3E%3Ccircle cx='8' cy='8' r='2.3' fill='%23fff'/%3E%3C/svg%3E" />
     <title>Feedback Index - Chromium Open Source Health</title>
     <link rel="stylesheet" href="/src/style.css" />
-    <meta name="description" content="Your feedback rate on Chromium changes (addressed review comments per 100 lines) and your feedback index against your peers." />
+    <meta name="description" content="Your addressed feedback rate (AFR) on Chromium changes (addressed review comments per 100 lines) and your feedback index against your peers." />
     <meta name="robots" content="noindex" />
   </head>
   <body>
@@ -16,7 +16,7 @@
       comment has the <template data-msg> syntax); src/review-feedback.ts
       fills in the values. The data is one file per person, named by a hash
       of their address, written by cosh/review_feedback.py
-      (docs/review-feedback.md). Feedback rate: addressed reviewer threads
+      (docs/review-feedback.md). Addressed feedback rate (AFR): addressed reviewer threads
       per 100 new or changed lines. Feedback index: a person's rate against their
       peers'. Ground rule 5 (docs/plan.md): each comment
       shows its tone score, since the list appears only after someone types
@@ -42,7 +42,7 @@
 
       <section id="intro" class="card" aria-labelledby="intro-title">
         <a class="card-anchor" href="#intro" aria-label="Link to this section" title="Link to this section">#</a>
-        <h2 id="intro-title">Feedback rate</h2>
+        <h2 id="intro-title">Addressed feedback rate (AFR)</h2>
         <p>
           One of the primary reasons a complex open source project like Chromium relies on code review is as a tool
           for learning, to help newer contributors learn the engineering practices of the community. When the
@@ -50,19 +50,19 @@
           ultimately becoming reviewers themselves to help teach the next generation of contributors.
         </p>
         <p class="rf-def">
-          <strong>Feedback rate</strong>: addressed review comments per 100 lines written. That is the reviewer
+          <strong>Addressed feedback rate (AFR)</strong>: addressed review comments per 100 lines written. That is the reviewer
           comment threads that led to a change in the code, for every 100 new or changed lines, over the changes
           someone landed. Removed lines don't count, since they draw almost no feedback. Large-scale changes and
           other large mechanical changes are left out.
         </p>
-        <h3>Feedback rate by experience</h3>
+        <h3>AFR by experience</h3>
         <ul id="rf-main-legend" class="legend rf-line-legend" aria-label="Lines and bands"></ul>
         <div class="chart">
-          <canvas id="rf-main" role="img" aria-label="Median feedback rate by experience (CLs landed on main), with the middle half and the 10th to 90th percentile of contributors shaded."></canvas>
+          <canvas id="rf-main" role="img" aria-label="Median AFR by experience (CLs landed on main), with the middle half and the 10th to 90th percentile of contributors shaded."></canvas>
         </div>
         <p id="rf-main-note" class="note"></p>
         <template data-msg="main-note">
-          Each contributor's feedback rate over their changes landed with that much experience: the point at 8
+          Each contributor's AFR over their changes landed with that much experience: the point at 8
           counts their first 8 CLs on main, the point at 16 their 9th to 16th, and so on, each point one doubling,
           wherever they landed <slot name="minBin"></slot> or more such CLs, from <slot name="from"></slot> to
           <slot name="to"></slot>. Most contributors' rate falls steadily as they gain experience: the median falls
@@ -71,14 +71,14 @@
           rate's axis is logarithmic, so a steady fall per doubling draws a straight line.
         </template>
 
-        <h3>Distribution of feedback rate change with experience</h3>
+        <h3>Distribution of AFR change with experience</h3>
         <ul id="rf-growth-legend" class="legend rf-line-legend" aria-label="Lines"></ul>
         <div class="chart rf-half-chart">
-          <canvas id="rf-growth" role="img" aria-label="Smoothed distribution of contributors' growth rates: the change in their feedback rate each time their CLs landed doubled."></canvas>
+          <canvas id="rf-growth" role="img" aria-label="Smoothed distribution of contributors' growth rates: the change in their AFR each time their CLs landed doubled."></canvas>
         </div>
         <p id="rf-growth-note" class="note"></p>
         <template data-msg="growth-note">
-          Each contributor's growth rate: how much their feedback rate changed each time their CLs landed
+          Each contributor's growth rate: how much their AFR changed each time their CLs landed
           doubled, from a line fitted through their rates in the experience bins above where they landed
           <slot name="minBin"></slot> or more CLs (<slot name="bins"></slot> bins or more:
           <slot name="n"></slot> contributors). The median contributor's rate falls by <slot name="median"></slot>
@@ -86,7 +86,7 @@
           one in ten grew by <slot name="p90"></slot> or more. Some of that spread is noise: a rate over a few
           changes varies a lot.
         </template>
-        <template data-msg="axis-growth">change in feedback rate per doubling of CLs landed</template>
+        <template data-msg="axis-growth">change in AFR per doubling of CLs landed</template>
         <template data-msg="axis-growth-share">contributors (smoothed)</template>
         <template data-msg="legend-growth">Contributors</template>
         <template data-msg="legend-growth-median">Median</template>
@@ -95,7 +95,7 @@
         <template data-msg="legend-wide">10th–90th percentile</template>
         <template data-msg="legend-you">You</template>
         <template data-msg="axis-experience">experience (CLs landed on main)</template>
-        <template data-msg="axis-fr">feedback rate</template>
+        <template data-msg="axis-fr">addressed feedback rate (AFR)</template>
         <template data-msg="axis-fi">feedback index</template>
         <template data-msg="axis-half">six months starting</template>
       </section>
@@ -105,7 +105,7 @@
         <a class="card-anchor" href="#index" aria-label="Link to this section" title="Link to this section">#</a>
         <h2 id="index-title">Feedback index</h2>
         <p class="rf-def">
-          <strong>Feedback index</strong>: a contributor's feedback rate compared with their peers'. The peers'
+          <strong>Feedback index</strong>: a contributor's AFR compared with their peers'. The peers'
           rate is the median rate of contributors with the same experience (the line in the chart above),
           adjusted for how much feedback per line the directories they worked in draw. 1.00× is typical; below 1
           means less feedback than peers, above 1 more. Because it compares each change with others at the same
@@ -133,7 +133,7 @@
       <section id="find" class="card" aria-labelledby="find-title">
         <h2 id="find-title">Your feedback</h2>
         <p class="sub">
-          Type your email address to see your feedback rate and index on the changes you landed since
+          Type your email address to see your AFR and index on the changes you landed since
           <span data-rf-range="from"></span>, and where your feedback came from.
         </p>
         <form id="rf-find" class="person-find rf-find" autocomplete="off">
@@ -160,7 +160,7 @@
         <h2 id="summary-title">Your feedback index</h2>
         <p id="summary-sub" class="sub"></p>
         <template data-msg="summary-sub">
-          Your feedback rate against the typical rate of<span data-if="none"> all contributors</span><span
+          Your AFR against the typical rate of<span data-if="none"> all contributors</span><span
           data-if="!none"> contributors <slot name="peers"></slot></span>, over all your changes from
           <slot name="from"></slot> to <slot name="to"></slot>. 1.00× is typical.
           <span data-if="!eligible">You landed fewer than <slot name="minCls"></slot> changes, too few to be
@@ -180,7 +180,7 @@
         <div class="tiles">
           <div class="tile" id="rf-tile-cls"><div class="tile-label">Changes landed</div><div class="tile-value"></div><div class="tile-sub"></div></div>
           <div class="tile" id="rf-tile-threads"><div class="tile-label">Addressed comments</div><div class="tile-value"></div></div>
-          <div class="tile" id="rf-tile-fr"><div class="tile-label">Your feedback rate</div><div class="tile-value"></div><div class="tile-sub"></div></div>
+          <div class="tile" id="rf-tile-fr"><div class="tile-label">Your AFR</div><div class="tile-value"></div><div class="tile-sub"></div></div>
           <div class="tile" id="rf-tile-fi"><div class="tile-label">Your feedback index</div><div class="tile-value"></div><div class="tile-sub"></div></div>
           <div class="tile" id="rf-tile-growth"><div class="tile-label">Your growth per doubling</div><div class="tile-value"></div><div class="tile-sub"></div></div>
         </div>
@@ -213,14 +213,14 @@
 
       <section id="compare" class="card" aria-labelledby="compare-title">
         <a class="card-anchor" href="#compare" aria-label="Link to this section" title="Link to this section">#</a>
-        <h2 id="compare-title">How your feedback rate compares to your peers</h2>
+        <h2 id="compare-title">How your AFR compares to your peers</h2>
         <p class="sub">
-          Your feedback rate by how many changes you had landed before, over the opening chart: every contributor's
+          Your AFR by how many changes you had landed before, over the opening chart: every contributor's
           median and spread, in grey.
         </p>
         <ul id="rf-compare-legend" class="legend rf-line-legend" aria-label="Lines and bands"></ul>
         <div class="chart">
-          <canvas id="rf-compare" role="img" aria-label="Your feedback rate by changes landed before, against every contributor's median, middle half and 10th to 90th percentile."></canvas>
+          <canvas id="rf-compare" role="img" aria-label="Your AFR by changes landed before, against every contributor's median, middle half and 10th to 90th percentile."></canvas>
         </div>
         <p class="note">
           Points with fewer than <span class="rf-min-bin"></span> of your changes are drawn hollow. The rate's axis
@@ -266,7 +266,7 @@
         <a class="card-anchor" href="#directories" aria-label="Link to this section" title="Link to this section">#</a>
         <h2 id="directories-title">Where your feedback comes from</h2>
         <p class="sub">
-          The directories you changed most, with your feedback rate in each and your feedback index there (against
+          The directories you changed most, with your AFR in each and your feedback index there (against
           the peers chosen above), shaded from green (less feedback than your peers) through white (typical) to red
           (more). ▸ opens a directory; select one to list its comments below.
         </p>
@@ -290,7 +290,7 @@
           <table id="rf-dirs" class="rf-table">
             <thead><tr><th scope="col">Directory</th><th scope="col" class="num">Changes</th>
               <th scope="col" class="num" title="Your changes' lines there: each change's new or changed lines, times its share there">Lines</th>
-              <th scope="col" class="num">Addressed comments</th><th scope="col" class="num">Feedback rate</th>
+              <th scope="col" class="num">Addressed comments</th><th scope="col" class="num">AFR</th>
               <th scope="col" class="num">Feedback index</th><th scope="col" class="num">Earlier commits</th></tr></thead>
             <tbody></tbody>
           </table>
@@ -364,11 +364,11 @@
 
         <h3>How it's changing</h3>
         <div class="chart rf-half-chart">
-          <canvas id="rf-newcomers" role="img" aria-label="Median feedback rate over contributors' first changes, by the year of their first commit, with the middle half shaded."></canvas>
+          <canvas id="rf-newcomers" role="img" aria-label="Median AFR over contributors' first changes, by the year of their first commit, with the middle half shaded."></canvas>
         </div>
         <p id="rf-newcomers-note" class="note"></p>
         <template data-msg="newcomers-note">
-          The feedback rate of new contributors over their first <slot name="cls"></slot> CLs on main, by the year of their first commit on main: the median and the
+          The AFR of new contributors over their first <slot name="cls"></slot> CLs on main, by the year of their first commit on main: the median and the
           middle half of contributors with <slot name="minBin"></slot> or more such changes (<slot
           name="people"></slot> contributors in all). <slot name="lastYear"></slot> is not over yet.
         </template>
@@ -381,9 +381,9 @@
             </div>
           </div>
           <div>
-            <h3>Feedback rate, by change size</h3>
+            <h3>AFR, by change size</h3>
             <div class="chart rf-half-chart">
-              <canvas id="rf-size" role="img" aria-label="Bar chart of the median contributor's feedback rate by the number of lines a change wrote."></canvas>
+              <canvas id="rf-size" role="img" aria-label="Bar chart of the median contributor's AFR by the number of lines a change wrote."></canvas>
             </div>
           </div>
         </div>
@@ -392,7 +392,7 @@
           Bigger changes draw far more feedback: the median contributor's changes of under 4 lines drew
           <slot name="clFirst"></slot> addressed comments each, those of 512–1k lines <slot name="clBig"></slot>.
           Per 100 lines, the difference is much smaller (<slot name="frFirst"></slot> against
-          <slot name="frBig"></slot>), which is why the feedback rate counts per line. Changes of over 1,000 lines
+          <slot name="frBig"></slot>), which is why the AFR counts per line. Changes of over 1,000 lines
           draw little feedback per line. Each contributor counts in a bar with <slot name="minCell"></slot> or more
           changes of that size.
         </template>
@@ -403,18 +403,18 @@
           <div>
             <h3>By directory</h3>
             <div class="chart rf-half-chart">
-              <canvas id="rf-dir-chart" role="img" aria-label="Bar chart of the median contributor's feedback rate in the two-level directories with the most contributors, highest first."></canvas>
+              <canvas id="rf-dir-chart" role="img" aria-label="Bar chart of the median contributor's AFR in the two-level directories with the most contributors, highest first."></canvas>
             </div>
           </div>
           <div>
             <h3>By organization</h3>
             <div class="chart rf-half-chart">
-              <canvas id="rf-org-chart" role="img" aria-label="Bar chart of the median contributor's feedback rate in the organizations with the most contributors, highest first."></canvas>
+              <canvas id="rf-org-chart" role="img" aria-label="Bar chart of the median contributor's AFR in the organizations with the most contributors, highest first."></canvas>
             </div>
           </div>
         </div>
         <p class="note">
-          The median contributor's feedback rate over their changes whose main directory (two levels) is in each
+          The median contributor's AFR over their changes whose main directory (two levels) is in each
           directory, and over their changes from each organization, for the directories and organizations with
           the most contributors (<span class="rf-min-cell"></span> or more changes each). Directories matter much less
           than experience or size, except that imported third-party code and configuration directories (such as
@@ -441,7 +441,7 @@
           no feedback, and changes that only remove lines are left out.
         </p>
         <p class="note">
-          A feedback rate is pooled: all the addressed comments on a set of changes per 100 of all their lines.
+          An AFR is pooled: all the addressed comments on a set of changes per 100 of all their lines.
           Experience is the number of CLs the owner had landed on main, counting the change itself (their commits
           since 2008, reverts left out), in bins that double: 8 or fewer, 9–16, 17–32 and so on up to 2k and more. A
           contributor's rate in a bin counts with <span class="rf-min-bin"></span> or more changes there.

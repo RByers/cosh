@@ -3,9 +3,9 @@
 // cosh/review_feedback.py writes one file per person, named by `personKey` of their
 // address, and peers.json with what the page compares a person with.
 //
-// The feedback rate (FR) of a set of changes is their addressed reviewer
-// threads per 100 new or changed lines (insertions). The feedback index (FI) is a person's FR
-// over their peers': the median FR at the same experience (earlier commits
+// The addressed feedback rate (AFR) of a set of changes is their addressed reviewer
+// threads per 100 new or changed lines (insertions). The feedback index (FI) is a person's AFR
+// over their peers': the median AFR at the same experience (earlier commits
 // on main, in power-of-two bins), adjusted for how much feedback the
 // directories and the org draw (`Norm`).
 
@@ -104,38 +104,38 @@ export interface Peers {
   min_peers: number;
   /** A feedback index counts among peers with this many changes. */
   min_cls: number;
-  /** A feedback rate in one experience bin counts with this many changes. */
+  /** An AFR in one experience bin counts with this many changes. */
   min_bin_cls: number;
   min_cell_cls: number;
   min_growth_bins: number;
-  /** Feedback rates below this count as this in the growth fit. */
+  /** AFRs below this count as this in the growth fit. */
   fr_floor: number;
   /** Experience bins by CLs landed on main, counting the change itself ("8": 8 or fewer, "16": 9–16, …),
    * and their edges in earlier commits (a change with `bin_edges[b]` earlier commits is in bin b + 1). */
   bins: string[];
   bin_edges: number[];
   norms: Norm[];
-  /** The median FR per experience bin (null: too few people), and everyone's. */
+  /** The median AFR per experience bin (null: too few people), and everyone's. */
   ref_bin: (number | null)[];
   ref_all: number;
   /** Directory factors (two levels, one level as the fallback) against experience ("e") or everyone (""). */
   f_dir: Record<'' | 'e', Record<string, number>>;
   /** Org factors per norm without "o"; "*" for the smaller orgs. */
   f_org: Record<'' | 'e' | 'd' | 'ed', Record<string, number>>;
-  /** Per experience bin, the spread of people's FR there. */
+  /** Per experience bin, the spread of people's AFR there. */
   fr_bins: Dist[];
   /** Norm -> period -> the spread of people's feedback index. */
   fi: Record<string, Record<string, Dist>>;
   newcomer_cls: number;
-  /** [first-commit year, people, p10, p25, median, p75, p90] of newcomers' FR. */
+  /** [first-commit year, people, p10, p25, median, p75, p90] of newcomers' AFR. */
   newcomers: [number, number, number | null, number | null, number | null, number | null, number | null][];
   size_labels: string[];
-  /** Per size bucket: [median FR, median addressed threads per change, people]. */
+  /** Per size bucket: [median AFR, median addressed threads per change, people]. */
   by_size: [number | null, number | null, number][];
-  /** [directory or org, median FR, people], highest first. */
+  /** [directory or org, median AFR, people], highest first. */
   by_dir: [string, number, number][];
   by_org: [string, number, number][];
-  /** People's growth rates (% change in FR per doubling of changes landed). */
+  /** People's growth rates (% change in AFR per doubling of changes landed). */
   growth: { n: number; median: number | null; q: number[] | null; curve: [number, number][] };
   /** Everyone's feedback index under `fi_norm` over all the data: how many, quantiles, and a
    * smoothed curve of [index, % of people per 0.1 of log2]. */
@@ -221,7 +221,7 @@ export function quantile(q: number[], p: number): number {
 /** Half-year periods in order, from peers.json's list. */
 export const halves = (periods: string[]) => periods.filter((p) => /^\d{4}H[12]$/.test(p)).sort();
 
-// ---- Feedback rate and index
+// ---- AFR and index
 
 /** The experience bin (index in `peers.bins`) of `n` earlier commits on main. */
 export function xbin(edges: number[], n: number): number {
@@ -265,7 +265,7 @@ function dirFactor(peers: Peers, norm: Norm, d: string): number {
   return t[dir2(d)] ?? t[dir1(d)] ?? 1;
 }
 
-/** The addressed threads each unit of a change would draw at its peers' FR, under `norm`
+/** The addressed threads each unit of a change would draw at its peers' AFR, under `norm`
  * (cosh/review_feedback.py `expected`, per unit). */
 export function unitExpected(p: Person, peers: Peers, c: ClRow, norm: Norm): number[] {
   const base = norm.includes('e') ? peers.ref_bin[xbin(peers.bin_edges, c[6])] ?? peers.ref_all : peers.ref_all;
@@ -317,8 +317,8 @@ export function binSums(p: Person, peers: Peers, period: string, norm: Norm): Su
   return out;
 }
 
-/** A growth rate: the % change in FR per doubling of changes landed, from a
- * least-squares line through log2 FR (floored) by bin, weighted by changes, over
+/** A growth rate: the % change in AFR per doubling of changes landed, from a
+ * least-squares line through log2 AFR (floored) by bin, weighted by changes, over
  * the bins with `min_bin_cls` changes; null with fewer than `min_growth_bins`
  * (cosh/review_feedback.py `growth`). */
 export function growth(bins: Sums[], peers: Pick<Peers, 'min_bin_cls' | 'min_growth_bins' | 'fr_floor'>): number | null {
@@ -372,7 +372,7 @@ export interface DirStats {
   /** The changes' lines there: each change's lines times its fraction there. */
   lines: number;
   addressed: number;
-  /** Addressed threads expected there at the peers' FR (the norm chosen). */
+  /** Addressed threads expected there at the peers' AFR (the norm chosen). */
   expected: number;
   /** The person's earlier commits there before their latest change in the period:
    * for a parent, the most in any one directory below it. */
@@ -459,7 +459,7 @@ export interface DirRowView {
   stats: DirStats;
   expandable: boolean;
   expanded: boolean;
-  /** The feedback rate and index there, or null where the row has fewer than
+  /** The AFR and index there, or null where the row has fewer than
    * `minCls` changes (too few to say much). */
   fr: number | null;
   fi: number | null;

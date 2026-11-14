@@ -1,5 +1,5 @@
 """cosh/review_feedback.py helpers: the address hash the page shares,
-periods, bins, the feedback rate model, quantiles and excerpts. No data is read."""
+periods, bins, the AFR model, quantiles and excerpts. No data is read."""
 
 import unittest
 

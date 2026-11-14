@@ -1492,7 +1492,7 @@ test('review feedback: older half-years keep thread counts per directory, and th
   assert.deepEqual(['a.cc', 'ui/a.cc', 'a/b/c/d/e.cc'].map(F.dirOf), ['(root)/', 'ui/', 'a/b/c/']);
 });
 
-test('review feedback: the feedback rate and index, as the script computes them', async () => {
+test('review feedback: the AFR and index, as the script computes them', async () => {
   const F = await import('../src/feedback.ts');
   const { top, shards, peers, day } = await import('./feedback-fixture.ts');
   const person = F.buildPerson(top, top.halves.map((h) => shards[h]), peers);

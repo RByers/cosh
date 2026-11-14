@@ -2011,7 +2011,7 @@
         "cosh/people.py",
         "cosh/commits.py"
       ],
-      "purpose": "Writes each person's changes and addressed review comments, as files named by a hash of their address, and the feedback rates and index factors the page compares them with.",
+      "purpose": "Writes each person's changes and addressed review comments, as files named by a hash of their address, and the AFRs and index factors the page compares them with.",
       "inputs": [
         "data/private/commits.sqlite",
         "data/private/reviews.sqlite",
@@ -2292,7 +2292,7 @@
       ],
       "path": "web/feedback-index.html",
       "title": "Feedback Index",
-      "purpose": "Feedback rate (addressed review comments per 100 lines) by experience; type an address to see that person's rate and feedback index against their peers'.",
+      "purpose": "Addressed feedback rate (AFR, addressed review comments per 100 lines) by experience; type an address to see that person's rate and feedback index against their peers'.",
       "entry_script": "web/src/review-feedback.ts",
       "reads": [
         "web/public/review-feedback/peers.json",

@@ -1,8 +1,8 @@
-# Feedback Index: feedback rate and index
+# Feedback Index: addressed feedback rate (AFR) and index
 
 `web/feedback-index.html` shows how much review feedback Chromium changes
 draw per 100 lines as their authors gain experience, and lets anyone type an
-email address to see that person's feedback rate and index against their
+email address to see that person's AFR and index against their
 peers'. It is
 a learning guide, and the page says so at the top: "This analysis is imperfect
 and is intended as a learning guide only". The landing page links to it
@@ -13,7 +13,7 @@ and is intended as a learning guide only". The landing page links to it
 Both are fixed: the page has no switches for them (the user's call,
 2026-11-14).
 
-- **Feedback rate (FR):** addressed reviewer threads per 100 new or changed
+- **Addressed feedback rate (AFR):** addressed reviewer threads per 100 new or changed
   lines, pooled over a set of CLs (all their addressed threads × 100 / all
   their lines). Lines are Gerrit's insertions: a changed line counts once,
   and deleted lines don't count (since 2026-11-14; see "Why deletions don't
@@ -36,14 +36,14 @@ Both are fixed: the page has no switches for them (the user's call,
   >2k (`BIN_EDGES` on earlier commits, `xbin`, `BIN_LABELS`; the names
   changed from "<8, 8–15, …" on 2026-11-14, the bins didn't). The page's
   axis says "experience (CLs landed on main)".
-- **Feedback index (FI):** a person's FR over their peers'. For each CL, the
+- **Feedback index (FI):** a person's AFR over their peers'. For each CL, the
   addressed threads its peers would have drawn are its lines / 100 × a
   typical rate × factors, and FI = addressed threads / that sum
   (`expected` in the script, `unitExpected` in `web/src/feedback.ts`). What
   the peers are (`NORMS`, picked on the page with three checkboxes):
   - *Experience* (`e`, on by default): the typical rate is `ref_bin`, the
-    median FR of people at the CL's experience bin (the opening chart's
-    line). Without it, `ref_all`: the median FR of everyone with `MIN_CLS`
+    median AFR of people at the CL's experience bin (the opening chart's
+    line). Without it, `ref_all`: the median AFR of everyone with `MIN_CLS`
     (25) CLs over all of theirs.
   - *Directories* (`d`, on by default): each CL's lines are split over the
     3-level directories its landed commit changed, by inserted lines
@@ -70,25 +70,25 @@ Both are fixed: the page has no switches for them (the user's call,
 
 ## What it shows
 
-**The opening card**, "Feedback rate" (no person needed), says nothing of
-the index: the FR's definition, then the FR by experience bin (y-axis
-"feedback rate", logarithmic from 0.2 to 20 since 2026-11-14, so the
+**The opening card**, "AFR" (no person needed), says nothing of
+the index: the AFR's definition, then the AFR by experience bin (y-axis
+"AFR", logarithmic from 0.2 to 20 since 2026-11-14, so the
 steady fall per doubling is a straight line; the person's comparison chart
-uses the same axis and draws a rate of 0 at 0.2): the median of people's FR in each bin (each
+uses the same axis and draws a rate of 0 at 0.2): the median of people's AFR in each bin (each
 person's CLs in that bin pooled, with `MIN_BIN_CLS` = 5 or more there), with
 the middle half and the 10th–90th percentile shaded (`fr_bins`). On
 2026-11-14: 5.40 at 8, 4.11, 3.52, 2.86, 2.49, 2.00, 1.64, 1.28, 1.04 and
 0.80 at >2k, from 3,379 people in the first bin down to 71 in the last.
 (With deletions counted they were 3.95 down to 0.43; with 5, 3 or 8 CLs as
 the minimum those medians moved by at most 0.15.) Below it,
-"Distribution of feedback rate change with experience": the growth rates'
+"Distribution of AFR change with experience": the growth rates'
 distribution, smoothed (a Gaussian kernel of 0.12 in log2 on a grid from
 −75% to +183%, `growth_dist`), with the median and, when a person is shown,
 their own growth marked.
 
-The FR falls as much as the old index did, though on a linear axis the
+The AFR falls as much as the old index did, though on a linear axis the
 chart looked flatter (hence the log axis): the old addressed index adjusted for size and directory fell 5.3×
-from <10 to 1,000+ earlier commits (2.36 → 0.44), the median FR 5.2× from 8
+from <10 to 1,000+ earlier commits (2.36 → 0.44), the median AFR 5.2× from 8
 to 2k CLs (5.40 → 1.04) and 6.7× to >2k (6.7× and 9× with deletions
 counted). The bands make the difference: the
 y-axis has to reach the 90th percentile (14.3 in the first bin), so the
@@ -106,21 +106,21 @@ percentile 0.43–1.91.
 
 - *Your feedback index:* the checkboxes (experience, directories,
   organization), tiles for changes landed (and their lines), addressed
-  threads, FR, FI (with the share of everyone with `MIN_CLS` CLs whose
+  threads, AFR, FI (with the share of everyone with `MIN_CLS` CLs whose
   index is lower, from `fi[norm].all`) and the growth rate (below), then
   the FI per half-year against the 10th–90th percentile, middle half and
   median of everyone's index that half-year (`fi[norm][half]`). Dots with
   fewer than `MIN_CLS` CLs are hollow. Selecting a dot filters the
   comments-per-change chart, the directory tree and the comments to that
   half-year, as before.
-- *How your feedback rate compares to your peers:* the opening chart in grey
-  with the person's FR per bin in colour (hollow under `MIN_BIN_CLS`), and
-  a table per bin with CLs: CLs, lines, addressed threads, the person's FR,
-  the median FR there, the FI over those CLs (shaded, only with
-  `MIN_BIN_CLS` CLs), and the change in FR from the bin before (where both
+- *How your AFR compares to your peers:* the opening chart in grey
+  with the person's AFR per bin in colour (hollow under `MIN_BIN_CLS`), and
+  a table per bin with CLs: CLs, lines, addressed threads, the person's AFR,
+  the median AFR there, the FI over those CLs (shaded, only with
+  `MIN_BIN_CLS` CLs), and the change in AFR from the bin before (where both
   have `MIN_BIN_CLS`). The last row is all CLs, with the growth rate.
-- *Growth rate:* the % change in FR per doubling of changes landed, from a
-  least-squares line through log2 FR by bin, each bin weighted by its CLs,
+- *Growth rate:* the % change in AFR per doubling of changes landed, from a
+  least-squares line through log2 AFR by bin, each bin weighted by its CLs,
   over bins with `MIN_BIN_CLS` CLs, needing `MIN_GROWTH_BINS` (3) of them;
   FRs under `FR_FLOOR` (0.1) count as 0.1 (`growth`). On 2026-11-14 2,517
   people have one: median −18.8%, 10th percentile −44.6%, 90th +21.1%
@@ -130,9 +130,9 @@ percentile 0.43–1.91.
   the directories and comments.
 - *Where your feedback comes from:* the directory tree as before (top level
   first, "Other" for entries under `MIN_CLS` CLs, any directory opens), with
-  CLs, lines (each CL's lines × its fraction there), addressed threads, FR,
+  CLs, lines (each CL's lines × its fraction there), addressed threads, AFR,
   FI under the chosen norm (shaded green below 1, red above, saturating at
-  0.25× and 4×) and earlier commits. Rows under `MIN_CLS` CLs show no FR or
+  0.25× and 4×) and earlier commits. Rows under `MIN_CLS` CLs show no AFR or
   FI.
 - *The comments:* the addressed threads only, newest first, with the
   directory, half-year and column filters as before.
@@ -140,18 +140,18 @@ percentile 0.43–1.91.
 **Methodology and details** is a collapsed `<details>` at the bottom whose
 charts are drawn when it opens:
 
-- *How it's changing:* the FR over newcomers' first 10 CLs
+- *How it's changing:* the AFR over newcomers' first 10 CLs
   (`NEWCOMER_CLS`), by year of first commit on `main` from
   2018 (people with `MIN_BIN_CLS` such CLs): median and middle half. On
   2026-11-14 the medians run 3.73, 4.31, 4.21, 3.75, 4.05, 4.21, 4.31, 3.64
   for 2018–2025 and 2.78 for 2026 (not over).
 - *By change size:* two bar charts per size bucket (`size10`): the median
   person's addressed threads per CL (0.10 under 4 lines → 9.58 at 512–1k on
-  2026-11-14) and their FR (5.54 → 1.40, 0.21 at 1k+). Per line the
-  difference is much smaller, which is why the FR counts per line. A person
+  2026-11-14) and their AFR (5.54 → 1.40, 0.21 at 1k+). Per line the
+  difference is much smaller, which is why the AFR counts per line. A person
   counts in a bar with `MIN_CELL_CLS` (10) CLs there; a bar needs
   `MIN_PEERS` people.
-- *By directory* and *by organization:* the median person's FR over their
+- *By directory* and *by organization:* the median person's AFR over their
   CLs whose main directory (two levels) is in each of the `CHART_DIRS` (12)
   directories with the most people, and over their CLs from each of the
   `CHART_ORGS` (10) orgs with the most people, highest first. On 2026-11-14
@@ -204,7 +204,7 @@ changed lines) showed that deleted lines draw almost no addressed feedback:
   half their lines or more rose 12 percentile points on average with
   insertions alone, and those deleting under 20% fell 8.
 - Experienced people delete more (28% of changed lines under 8 earlier
-  changes, 49% at 2k+), so part of the fall of FR with experience was
+  changes, 49% at 2k+), so part of the fall of AFR with experience was
   deletions: the drop from <8 to 2k+ is ×6.8 with insertions, ×9.2 with
   both.
 - With insertions the 2023–24 size norms explain more of the CL-to-CL
@@ -284,7 +284,7 @@ file that the page loads at different times:
 
 - `peers.json` (global, loaded on opening; version 5, about 44 KB): the experience bins (`bins`,
   `bin_edges`), the index's typical rates and factors (`ref_bin`,
-  `ref_all`, `f_dir`, `f_org`), the spread of FR per bin (`fr_bins`) and of
+  `ref_all`, `f_dir`, `f_org`), the spread of AFR per bin (`fr_bins`) and of
   everyone's index per norm and period (`fi`), and the methodology's data
   (`newcomers`, `growth`, `by_size`, `by_dir`, `by_org`), with the
   minimums the page names.
@@ -305,7 +305,7 @@ file that the page loads at different times:
   tone score (`comment_file`).
 
 The page computes a person's figures from these, the same way the script
-does for the spread of everyone's index: totals, FR and FI under every norm
+does for the spread of everyone's index: totals, AFR and FI under every norm
 for any period, and the growth rate, with the rounded typical rates and
 factors from `peers.json`. `--check FILE` writes the script's values for 300
 people; on 2026-11-14, after deletions were dropped, the page's

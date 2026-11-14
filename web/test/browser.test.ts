@@ -3298,8 +3298,10 @@ const axisTitles = (page: Page, name: string) => page.evaluate((name) => {
 test('feedback index: the caveat, a lookup field that offers no completions, and an unknown address', async () => {
   const { page, errors } = await feedbackPage();
   assert.equal(await page.title(), 'Feedback Index - Chromium Open Source Health');
-  assert.equal(await page.$eval('.rf-disclaimer', (e) => e.textContent!.trim()),
-    'This analysis is imperfect and is intended as a learning guide only.');
+  assert.equal(await page.$eval('.rf-disclaimer', (e) => e.textContent!.replace(/\s+/g, ' ').trim()),
+    'This analysis is imperfect and is intended as a learning guide only. Please report any issues.');
+  assert.equal(await page.$eval('.rf-disclaimer a', (a) => (a as HTMLAnchorElement).href),
+    'https://github.com/RByers/cosh/issues/new?labels=feedback-index');
   const input = await page.$eval('#rf-email', (i) => ({ ac: i.getAttribute('autocomplete'), list: i.getAttribute('list'),
     type: i.getAttribute('type'), name: i.getAttribute('name'), form: i.closest('form')!.getAttribute('autocomplete') }));
   assert.deepEqual(input, { ac: 'off', list: null, type: 'text', name: null, form: 'off' });
@@ -3324,12 +3326,12 @@ test('feedback index: the opening card defines the rate and index, with one char
   const { page, errors } = await feedbackPage();
   // Fixed definitions: nothing to switch before a person is shown.
   assert.equal(await page.$('#rf-kind, #rf-corr, #rf-tenure, #rf-org, .rf-bar'), null);
-  assert.deepEqual(await page.$$eval('#intro, #index', (ss) => ss.map((s) => s.querySelector('h2')!.textContent)), ['Feedback rate', 'Feedback index']);
+  assert.deepEqual(await page.$$eval('#intro, #index', (ss) => ss.map((s) => s.querySelector('h2')!.textContent)), ['Addressed feedback rate (AFR)', 'Feedback index']);
   assert.doesNotMatch(await page.$eval('#intro', (e) => e.textContent!), /index/i);
   assert.match(await page.$eval('#intro .rf-def', (e) => e.textContent!.replace(/\s+/g, ' ')),
     /addressed review comments per 100 lines written.*Removed lines don't count.*Large-scale changes and other large mechanical changes are left out/);
   // The x-axis is changes landed before, in doublings; the bands are the middle half and the 10th–90th percentile.
-  assert.deepEqual(await axisTitles(page, 'main'), ['experience (CLs landed on main)', 'feedback rate']);
+  assert.deepEqual(await axisTitles(page, 'main'), ['experience (CLs landed on main)', 'addressed feedback rate (AFR)']);
   assert.deepEqual(await page.evaluate(() => window.__rf!.charts.main.data.labels),
     ['8', '16', '32', '64', '128', '256', '512', '1k', '2k', '>2k']);
   assert.deepEqual(await page.$$eval('#rf-main-legend li', (ls) => ls.map((l) => l.textContent)),
@@ -3341,8 +3343,8 @@ test('feedback index: the opening card defines the rate and index, with one char
   assert.match((await page.$eval('#rf-main-note', (e) => e.textContent!)).replace(/\s+/g, ' '),
     /the point at 8\s+counts their first 8 CLs on main.*1 or more such CLs, from July 2023 to October 2026.*falls from 6\.50 over the first 8 CLs to 0\.9\d at 2k\./);
   // Below it, how much each contributor's rate falls: a smoothed curve, with the median marked.
-  assert.match(await page.$eval('#intro', (e) => e.textContent!), /Distribution of feedback rate change with experience/);
-  assert.deepEqual(await axisTitles(page, 'growth'), ['change in feedback rate per doubling of CLs landed', 'contributors (smoothed)']);
+  assert.match(await page.$eval('#intro', (e) => e.textContent!), /Distribution of AFR change with experience/);
+  assert.deepEqual(await axisTitles(page, 'growth'), ['change in AFR per doubling of CLs landed', 'contributors (smoothed)']);
   assert.equal(await page.evaluate(() => window.__rf!.charts.growth.data.datasets.length), 2);
   assert.match((await page.$eval('#rf-growth-note', (e) => e.textContent!)).replace(/\s+/g, ' '),
     /2,547 contributors\)\. The median contributor's rate falls by 21% per doubling.*one in ten fell by 57% or more, while one in ten grew by 47% or more/);
@@ -3364,7 +3366,7 @@ test('feedback index: the opening card defines the rate and index, with one char
     /their first 10 CLs on main.*2026 is not over yet\./);
   // Size: per change it climbs, per 100 lines much less; directories and organizations, highest first.
   assert.deepEqual(await axisTitles(page, 'sizeCl'), ['lines written', 'addressed comments per change']);
-  assert.deepEqual(await axisTitles(page, 'size'), ['lines written', 'feedback rate']);
+  assert.deepEqual(await axisTitles(page, 'size'), ['lines written', 'addressed feedback rate (AFR)']);
   assert.match((await page.$eval('#rf-size-note', (e) => e.textContent!)).replace(/\s+/g, ' '),
     /under 4 lines drew 0\.06 addressed comments each, those of 512–1k lines 6\.88\. Per 100 lines.*\(2\.82 against 1\.00\)/);
   assert.deepEqual(await page.evaluate(() => window.__rf!.charts.dirs.data.labels),
@@ -3421,7 +3423,7 @@ test('feedback index: a person\'s index, how their rate compares, directories an
   assert.deepEqual(await axisTitles(page, 'trend'), ['six months starting', 'feedback index']);
   assert.deepEqual(await page.evaluate(() => window.__rf!.charts.trend.data.labels), ['Jul 2025', 'Jan 2026', 'Jul 2026']);
   // How the rate compares: the opening chart in grey, with the person's line on top.
-  assert.deepEqual(await axisTitles(page, 'compare'), ['experience (CLs landed on main)', 'feedback rate']);
+  assert.deepEqual(await axisTitles(page, 'compare'), ['experience (CLs landed on main)', 'addressed feedback rate (AFR)']);
   const you = await page.evaluate(() => window.__rf!.charts.compare.data.datasets[5].data);
   assert.deepEqual(you.map((v) => (v === null ? null : Math.round(Number(v) * 100) / 100)),
     [null, null, 2.5, null, 0.83, null, 10, null, null, null]);
@@ -3441,7 +3443,7 @@ test('feedback index: a person\'s index, how their rate compares, directories an
   // Directories: chrome/ has 2 changes (the peer minimum here), the others go into "Other".
   const dirs = () => page.$$eval('#rf-dirs tbody tr', (rs) => rs.map((r) => [...r.children].map((c) => c.textContent!.replace(/[▸▾]/, ''))));
   assert.deepEqual(await page.$$eval('#rf-dirs thead th', (ts) => ts.map((t) => t.textContent)),
-    ['Directory', 'Changes', 'Lines', 'Addressed comments', 'Feedback rate', 'Feedback index', 'Earlier commits']);
+    ['Directory', 'Changes', 'Lines', 'Addressed comments', 'AFR', 'Feedback index', 'Earlier commits']);
   assert.deepEqual(await dirs(), [['chrome/', '2', '68', '1', '1.46', '0.56×', '1'], ['Other (2)', '2', '102', '2', '1.97', '1.54×', '150']]);
   assert.deepEqual(await page.$$eval('#rf-dirs td.rf-ratio', (ts) => ts.map((t) => t.className.split(' ').at(-1))), ['rf-ratio-lo', 'rf-ratio-hi']);
   // Comments: addressed ones only; text where it was collected, the rest in the table.
