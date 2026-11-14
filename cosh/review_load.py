@@ -16,7 +16,7 @@ of the address), so the page finds a person only when their address is typed.
 
 Whole quarters only: the last one is the newest that both the fetched Gerrit
 weeks and main's history cover, so a week of new data changes nothing until
-it completes a quarter (docs/goals.md, goals 2 and 3).
+it completes a quarter (docs/goals.md, goals 3 and 4).
 
 Population. Commits: main's first-parent history from 2017-07-01. "Reviewed"
 commits: by a person (not a bot), not a revert, not part of a large-scale

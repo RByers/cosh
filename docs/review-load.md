@@ -5,7 +5,7 @@ reviewers, how long changes wait for them, and where. Its purpose is to
 show how overloaded reviewers are and to help spread the load: where
 existing reviewers could take more, where more reviewers are needed, and
 (not built yet) where people who aren't OWNERS could give the second +1 a
-non-committer's change needs. It is judged by `docs/goals.md`, goals 2–5.
+non-committer's change needs. It is judged by `docs/goals.md`.
 
 Kept current, like `docs/data-architecture.md`: this describes the page as
 it is. Decisions are logged in `docs/plan.md`.
@@ -107,19 +107,29 @@ or ranks people.
 
 ## Against the goals (`docs/goals.md`)
 
-- **Weekly update (goal 2).** The timeline step reads only CLs and listings
+- **A clean, constructive page (goal 1).** Four charts and one table. The
+  page shows load and waits as aggregates; it lists and ranks nobody, and a
+  wait is described as time a change waited, not as a reviewer's fault.
+- **Figures about an individual (goal 2).** A reviewer's figures appear
+  only after their address is typed, and the page computes them from the
+  published files. The table compares like with like (their hours per
+  change against everyone's in the same directory). The charts don't yet:
+  their lines and waits are drawn against all of Chromium's mean, whatever
+  directories they review in, and nothing has been measured about how
+  reproducible a reviewer's quarterly figures are.
+- **Weekly update (goal 3).** The timeline step reads only CLs and listings
   that are new or changed, then rebuilds `cl_reviewers` (about 1.5 min in
   all when little is new); `review-load` takes 30 s and 1.5 GB. Because
   only whole quarters are published, past figures don't move and a new
   week changes no file until it completes a quarter.
-- **Repository volume (goal 3).** 7.6 MB in 23,774 files on 2026-11-14
+- **Repository volume (goal 4).** 7.6 MB in 23,774 files on 2026-11-14
   (`all.json` 93 KB, 38 KB gzipped). A year's files are frozen once the
   year ends; a completed quarter rewrites that year's files for the
   reviewers active in it (about 2,200 files of about 100 bytes) and adds
   one folder of directory files (about 1,400 files, 1.6 MB), while the
   oldest directory folder is removed.
-- **Tokens (goal 4).** None: no model calls.
-- **Data flow (goal 5).** One shared store (`review-timeline.sqlite`), one
+- **Tokens (goal 5).** None: no model calls.
+- **Data flow (goal 6).** One shared store (`review-timeline.sqlite`), one
   publish step, two published stores.
 
 ## Not done yet
