@@ -277,6 +277,15 @@ function fanLegend(target: Element, t: Theme, grey: boolean, you: boolean) {
   ]);
 }
 
+/** Experience bin `b` as a range of CLs landed, counting the change itself: "8 or fewer CLs
+ * landed", "9–16 CLs landed", "more than 2,048 CLs landed". */
+function binRange(peers: Peers, b: number): string {
+  const e = peers.bin_edges;
+  if (b === 0) return `${fmtInt(e[0])} or fewer CLs landed`;
+  if (b >= e.length) return `more than ${fmtInt(e.at(-1)!)} CLs landed`;
+  return `${fmtInt(e[b - 1] + 1)}–${fmtInt(e[b])} CLs landed`;
+}
+
 /** The fan's tooltip line for bin `b`. */
 function fanTooltip(peers: Peers, b: number): string {
   const d = peers.fr_bins[b];
@@ -288,6 +297,8 @@ function fanTooltip(peers: Peers, b: number): string {
 function renderIntro() {
   const peers = state.peers;
   if (!peers?.fr_bins) return;
+  renderGrowth();
+  renderFiDist();
   destroy('main');
   const t = theme();
   fanLegend($('#rf-main-legend'), t, false, false);
@@ -304,17 +315,59 @@ function renderIntro() {
       interaction: { mode: 'index', intersect: false },
       font: { family: t.font },
       scales: {
-        x: { ...axis(t, msg('axis-changes-before')), grid: { display: false } },
+        x: { ...axis(t, msg('axis-experience')), grid: { display: false } },
         y: { beginAtZero: true, ...axis(t, msg('axis-fr')) },
       },
       plugins: {
         legend: { display: false },
         tooltip: {
           filter: (i) => i.datasetIndex === 4,
-          callbacks: { title: (items) => `${peers.bins[items[0]?.dataIndex ?? 0]} earlier changes`,
+          callbacks: { title: (items) => binRange(peers, items[0]?.dataIndex ?? 0),
             label: (i) => fanTooltip(peers, i.dataIndex) },
         },
       },
+    },
+  });
+}
+
+/** Everyone's feedback index: a smoothed distribution on a log scale, with the median and the
+ * 10th and 90th percentiles marked. */
+function renderFiDist() {
+  destroy('fiDist');
+  const peers = state.peers!;
+  const d = peers.fi_dist;
+  if (!d?.curve?.length || !d.q) return;
+  const t = theme();
+  const q = (f: number) => quantile(d.q!, f);
+  put($('#rf-fi-note'), 'fi-note', { ...rangeVars(peers), minCls: fmtInt(peers.min_cls), n: fmtInt(d.n),
+    p10: fmtFi(q(0.1)), p25: fmtFi(q(0.25)), p75: fmtFi(q(0.75)), p90: fmtFi(q(0.9)) });
+  const top = Math.max(...d.curve.map(([, y]) => y));
+  const mark = (x: number, dash: number[]): ChartDataset<'line', { x: number; y: number }[]> =>
+    ({ label: '', data: [{ x, y: 0 }, { x, y: top * 1.05 }], borderColor: t.muted, borderWidth: dash.length ? 1.5 : 2,
+      borderDash: dash, pointRadius: 0, pointHoverRadius: 0, fill: false });
+  lineLegend($('#rf-fi-legend'), [{ label: msg('legend-fi'), color: t.series[0] },
+    { label: msg('legend-fi-marks'), color: t.muted, dash: true }]);
+  const ticks = [0.125, 0.25, 0.5, 1, 2, 4];
+  charts.fiDist = new Chart($<HTMLCanvasElement>('#rf-fi-dist'), {
+    type: 'line',
+    data: {
+      datasets: [
+        { label: 'curve', data: d.curve.map(([x, y]) => ({ x, y })), borderColor: t.series[0], borderWidth: 2,
+          backgroundColor: withAlpha(t.series[0], 0.18), fill: 'origin', pointRadius: 0, pointHoverRadius: 0, tension: 0.3 },
+        mark(q(0.5), [5, 4]), mark(q(0.1), [2, 3]), mark(q(0.9), [2, 3]),
+      ],
+    },
+    options: {
+      maintainAspectRatio: false,
+      animation: false,
+      font: { family: t.font },
+      scales: {
+        x: { type: 'logarithmic', min: 0.125, max: 5.7, ...axis(t, msg('axis-fi')),
+          afterBuildTicks: (a) => { a.ticks = ticks.map((v) => ({ value: v })); },
+          ticks: { color: t.text, font: { family: t.font }, callback: (v) => fmtFi(Number(v)) } },
+        y: { beginAtZero: true, ...axis(t, msg('axis-fi-share')), ticks: { display: false } },
+      },
+      plugins: { legend: { display: false }, tooltip: { enabled: false } },
     },
   });
 }
@@ -325,7 +378,6 @@ function renderMethod() {
   const peers = state.peers;
   if (!peers?.fr_bins || !$<HTMLDetailsElement>('#method').open) return;
   renderNewcomers();
-  renderGrowth();
   renderSizes();
 }
 
@@ -626,7 +678,7 @@ function renderCompare() {
       interaction: { mode: 'index', intersect: false },
       font: { family: t.font },
       scales: {
-        x: { ...axis(t, msg('axis-changes-before')), grid: { display: false } },
+        x: { ...axis(t, msg('axis-experience')), grid: { display: false } },
         y: { beginAtZero: true, ...axis(t, msg('axis-fr')) },
       },
       plugins: {
@@ -634,7 +686,7 @@ function renderCompare() {
         tooltip: {
           filter: (i) => i.datasetIndex >= 4,
           callbacks: {
-            title: (items) => `${peers.bins[items[0]?.dataIndex ?? 0]} earlier changes`,
+            title: (items) => binRange(peers, items[0]?.dataIndex ?? 0),
             label: (i) => {
               if (i.datasetIndex === 4) return fanTooltip(peers, i.dataIndex);
               const s = bins[i.dataIndex];

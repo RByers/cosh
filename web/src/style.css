@@ -2923,18 +2923,10 @@ canvas.rf-pointable {
   overflow-wrap: anywhere;
 }
 
-/* The two definitions in the opening card. */
-.rf-defs {
+/* A definition at the top of the opening cards. */
+.rf-def {
   max-width: 75ch;
   margin: 12px 0 16px;
-}
-
-.rf-defs dt {
-  font-weight: 600;
-}
-
-.rf-defs dd {
-  margin: 2px 0 10px;
 }
 
 /* What the feedback index compares with: independent checkboxes, so each is a

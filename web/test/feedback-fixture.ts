@@ -62,7 +62,7 @@ export const peers: Peers = {
   min_cell_cls: 10,
   min_growth_bins: 3,
   fr_floor: 0.1,
-  bins: ['<8', '8–15', '16–31', '32–63', '64–127', '128–255', '256–511', '512–1k', '1k–2k', '2k+'],
+  bins: ['8', '16', '32', '64', '128', '256', '512', '1k', '2k', '>2k'],
   bin_edges: [8, 16, 32, 64, 128, 256, 512, 1024, 2048],
   norms,
   ref_bin: refBin,
@@ -84,4 +84,10 @@ export const peers: Peers = {
     ['testing/buildbot/', 0.11, 161]],
   by_org: [['microsoft.com', 2.24, 225], ['google.com', 1.72, 3168], ['igalia.com', 1.2, 50]],
   growth: { n: 2547, median: -20.9, q: q(-70, 60), curve },
+  fi_norm: 'ed',
+  // A bell around 1 on a log scale, on the script's grid (log2 -3 .. 2.5).
+  fi_dist: { n: 2843, q: q(0.3, 2.5), curve: Array.from({ length: 111 }, (_, i): [number, number] => {
+    const x = -3 + 0.05 * i;
+    return [Math.round(1000 * 2 ** x) / 1000, Math.round(1000 * 4 * Math.exp(-0.5 * (x / 0.8) ** 2)) / 1000];
+  }) },
 };

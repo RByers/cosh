@@ -39,49 +39,90 @@
 
       <section id="intro" class="card" aria-labelledby="intro-title">
         <a class="card-anchor" href="#intro" aria-label="Link to this section" title="Link to this section">#</a>
-        <h2 id="intro-title">Feedback rate and feedback index</h2>
+        <h2 id="intro-title">Feedback rate</h2>
         <p>
           One of the primary reasons a complex open source project like Chromium relies on code review is as a tool
           for learning, to help newer contributors learn the engineering practices of the community. When the
           project is healthy, contributors learn from their reviewers, reducing the need for their review and
           ultimately becoming reviewers themselves to help teach the next generation of contributors.
         </p>
-        <dl class="rf-defs">
-          <dt>Feedback rate (FR)</dt>
-          <dd>
-            Addressed review comments per 100 lines changed: the reviewer comment threads that led to a change in
-            the code, for every 100 lines added or removed, over the changes someone landed. Large-scale changes
-            and other large mechanical changes are left out.
-          </dd>
-          <dt>Feedback index (FI)</dt>
-          <dd>
-            Your feedback rate compared with your peers': the typical (median) rate of contributors who had landed
-            as many changes before, adjusted for the directories you worked in. 1.00× is typical; below 1 you
-            draw less feedback than your peers, above 1 more.
-          </dd>
-        </dl>
-        <h3>Feedback rate by changes landed before</h3>
+        <p class="rf-def">
+          <strong>Feedback rate</strong>: addressed review comments per 100 lines changed. That is the reviewer
+          comment threads that led to a change in the code, for every 100 lines added or removed, over the changes
+          someone landed. Large-scale changes and other large mechanical changes are left out.
+        </p>
+        <h3>Feedback rate by experience</h3>
         <ul id="rf-main-legend" class="legend rf-line-legend" aria-label="Lines and bands"></ul>
         <div class="chart">
-          <canvas id="rf-main" role="img" aria-label="Median feedback rate by how many changes a contributor had landed before, with the middle half and the 10th to 90th percentile of contributors shaded."></canvas>
+          <canvas id="rf-main" role="img" aria-label="Median feedback rate by experience (CLs landed on main), with the middle half and the 10th to 90th percentile of contributors shaded."></canvas>
         </div>
         <p id="rf-main-note" class="note"></p>
         <template data-msg="main-note">
-          Each contributor's feedback rate over their changes landed with that many earlier changes on main (each
-          bin is one doubling), wherever they landed <slot name="minBin"></slot> or more such changes, from
-          <slot name="from"></slot> to <slot name="to"></slot>. Most contributors' rate falls steadily as they gain
-          experience: the median falls from <slot name="first"></slot> at fewer than 8 earlier changes to
-          <slot name="last"></slot> at <slot name="lastBin"></slot>. The bands show how widely contributors differ
-          at the same experience.
+          Each contributor's feedback rate over their changes landed with that much experience: the point at 8
+          counts their first 8 CLs on main, the point at 16 their 9th to 16th, and so on, each point one doubling,
+          wherever they landed <slot name="minBin"></slot> or more such CLs, from <slot name="from"></slot> to
+          <slot name="to"></slot>. Most contributors' rate falls steadily as they gain experience: the median falls
+          from <slot name="first"></slot> over the first 8 CLs to <slot name="last"></slot> at
+          <slot name="lastBin"></slot>. The bands show how widely contributors differ at the same experience.
         </template>
+
+        <h3>Distribution of feedback rate change with experience</h3>
+        <ul id="rf-growth-legend" class="legend rf-line-legend" aria-label="Lines"></ul>
+        <div class="chart rf-half-chart">
+          <canvas id="rf-growth" role="img" aria-label="Smoothed distribution of contributors' growth rates: the change in their feedback rate each time their CLs landed doubled."></canvas>
+        </div>
+        <p id="rf-growth-note" class="note"></p>
+        <template data-msg="growth-note">
+          Each contributor's growth rate: how much their feedback rate changed each time their CLs landed
+          doubled, from a line fitted through their rates in the experience bins above where they landed
+          <slot name="minBin"></slot> or more CLs (<slot name="bins"></slot> bins or more:
+          <slot name="n"></slot> contributors). The median contributor's rate falls by <slot name="median"></slot>
+          per doubling, but contributors differ widely: one in ten fell by <slot name="p10"></slot> or more, while
+          one in ten grew by <slot name="p90"></slot> or more. Some of that spread is noise: a rate over a few
+          changes varies a lot.
+        </template>
+        <template data-msg="axis-growth">change in feedback rate per doubling of CLs landed</template>
+        <template data-msg="axis-growth-share">contributors (smoothed)</template>
+        <template data-msg="legend-growth">Contributors</template>
+        <template data-msg="legend-growth-median">Median</template>
         <template data-msg="legend-median">Median</template>
         <template data-msg="legend-mid">Middle half (25th–75th percentile)</template>
         <template data-msg="legend-wide">10th–90th percentile</template>
         <template data-msg="legend-you">You</template>
-        <template data-msg="axis-changes-before">changes landed before (earlier commits on main)</template>
-        <template data-msg="axis-fr">addressed comments per 100 lines</template>
+        <template data-msg="axis-experience">experience (CLs landed on main)</template>
+        <template data-msg="axis-fr">feedback rate</template>
         <template data-msg="axis-fi">feedback index</template>
         <template data-msg="axis-half">six months starting</template>
+      </section>
+
+
+      <section id="index" class="card" aria-labelledby="index-title">
+        <a class="card-anchor" href="#index" aria-label="Link to this section" title="Link to this section">#</a>
+        <h2 id="index-title">Feedback index</h2>
+        <p class="rf-def">
+          <strong>Feedback index</strong>: a contributor's feedback rate compared with their peers'. The peers'
+          rate is the median rate of contributors with the same experience (the line in the chart above),
+          adjusted for how much feedback per line the directories they worked in draw. 1.00× is typical; below 1
+          means less feedback than peers, above 1 more. Because it compares each change with others at the same
+          experience, the index doesn't fall as someone gains experience the way the rate does: it shows how
+          someone's feedback compares with their peers' at every stage.
+        </p>
+        <h3>Everyone's feedback index</h3>
+        <ul id="rf-fi-legend" class="legend rf-line-legend" aria-label="Lines"></ul>
+        <div class="chart rf-half-chart">
+          <canvas id="rf-fi-dist" role="img" aria-label="Smoothed distribution of every contributor's feedback index, on a log scale, with the median and the 10th and 90th percentiles marked."></canvas>
+        </div>
+        <p id="rf-fi-note" class="note"></p>
+        <template data-msg="fi-note">
+          The feedback index of every contributor with <slot name="minCls"></slot> or more CLs from
+          <slot name="from"></slot> to <slot name="to"></slot> (<slot name="n"></slot> contributors), over all
+          their CLs. Half of them fall between <slot name="p25"></slot> and <slot name="p75"></slot>, and four in
+          five between <slot name="p10"></slot> and <slot name="p90"></slot>: at the same experience and in the same
+          directories, some contributors draw several times as much feedback per line as others.
+        </template>
+        <template data-msg="axis-fi-share">contributors (smoothed)</template>
+        <template data-msg="legend-fi">Contributors</template>
+        <template data-msg="legend-fi-marks">Median, and 10th and 90th percentiles</template>
       </section>
 
       <section id="find" class="card" aria-labelledby="find-title">
@@ -182,7 +223,7 @@
         <h3>By your experience</h3>
         <div class="table-wrap">
           <table id="rf-xp-table" class="rf-table">
-            <thead><tr><th scope="col">Changes landed before</th><th scope="col" class="num">Your changes</th>
+            <thead><tr><th scope="col">Experience (CLs landed)</th><th scope="col" class="num">Your changes</th>
               <th scope="col" class="num">Lines</th><th scope="col" class="num">Addressed comments</th>
               <th scope="col" class="num">Your rate</th><th scope="col" class="num">Peers' median rate</th>
               <th scope="col" class="num">Feedback index</th><th scope="col" class="num" title="How much your rate changed from the bin before">Change</th></tr></thead>
@@ -321,31 +362,10 @@
         </div>
         <p id="rf-newcomers-note" class="note"></p>
         <template data-msg="newcomers-note">
-          The feedback rate of new contributors over their changes landed with fewer than
-          <slot name="cls"></slot> earlier changes, by the year of their first commit on main: the median and the
+          The feedback rate of new contributors over their first <slot name="cls"></slot> CLs on main, by the year of their first commit on main: the median and the
           middle half of contributors with <slot name="minBin"></slot> or more such changes (<slot
           name="people"></slot> contributors in all). <slot name="lastYear"></slot> is not over yet.
         </template>
-
-        <h3>How much each contributor's feedback rate falls</h3>
-        <ul id="rf-growth-legend" class="legend rf-line-legend" aria-label="Lines"></ul>
-        <div class="chart rf-half-chart">
-          <canvas id="rf-growth" role="img" aria-label="Smoothed distribution of contributors' growth rates: the change in their feedback rate per doubling of their changes landed."></canvas>
-        </div>
-        <p id="rf-growth-note" class="note"></p>
-        <template data-msg="growth-note">
-          Each contributor's growth rate: how much their feedback rate changed each time their changes landed
-          doubled, from a line fitted through their rates in the experience bins above where they landed
-          <slot name="minBin"></slot> or more changes (<slot name="bins"></slot> bins or more:
-          <slot name="n"></slot> contributors). The median contributor's rate falls by <slot name="median"></slot>
-          per doubling, but contributors differ widely: one in ten fell by <slot name="p10"></slot> or more, while
-          one in ten grew by <slot name="p90"></slot> or more. Some of that spread is noise: a rate over a few
-          changes varies a lot.
-        </template>
-        <template data-msg="axis-growth">change in feedback rate per doubling of changes landed</template>
-        <template data-msg="axis-growth-share">contributors (smoothed)</template>
-        <template data-msg="legend-growth">Contributors</template>
-        <template data-msg="legend-growth-median">Median</template>
 
         <div class="rf-pair">
           <div>
@@ -415,8 +435,8 @@
         </p>
         <p class="note">
           A feedback rate is pooled: all the addressed comments on a set of changes per 100 of all their lines.
-          Experience is the number of changes the owner had landed on main before (their earlier commits since
-          2008, reverts left out), in bins that double: under 8, 8–15, 16–31 and so on up to 2k or more. A
+          Experience is the number of CLs the owner had landed on main, counting the change itself (their commits
+          since 2008, reverts left out), in bins that double: 8 or fewer, 9–16, 17–32 and so on up to 2k and more. A
           contributor's rate in a bin counts with <span class="rf-min-bin"></span> or more changes there.
         </p>
         <p class="note">

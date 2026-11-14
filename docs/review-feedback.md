@@ -27,10 +27,13 @@ Both are fixed: the page has no switches for them (the user's call,
   July 2020, they can't be tied to a directory, and only 5% are addressed.
   A thread is **addressed** by the regex or the Haiku label in
   `addressed.sqlite` (`docs/comment-classifier.md`).
-- **Experience** is the owner's earlier commits on `main` when the CL landed
-  (from the start of main's history in 2008, reverts left out), in
-  power-of-two bins so each bin is one doubling: <8, 8–15, 16–31, 32–63,
-  64–127, 128–255, 256–511, 512–1k, 1k–2k, 2k+ (`BIN_EDGES`, `xbin`).
+- **Experience** is the owner's CLs landed on `main`, counting the CL itself
+  (their earlier commits from the start of main's history in 2008, reverts
+  left out, plus one), in power-of-two bins named by their top, so each bin
+  is one doubling: 8 (8 or fewer), 16 (9–16), 32, …, 1k, 2k (1,025–2,048),
+  >2k (`BIN_EDGES` on earlier commits, `xbin`, `BIN_LABELS`; the names
+  changed from "<8, 8–15, …" on 2026-11-14, the bins didn't). The page's
+  axis says "experience (CLs landed on main)".
 - **Feedback index (FI):** a person's FR over their peers'. For each CL, the
   addressed threads its peers would have drawn are its lines / 100 × a
   typical rate × factors, and FI = addressed threads / that sum
@@ -64,13 +67,33 @@ Both are fixed: the page has no switches for them (the user's call,
 
 ## What it shows
 
-**The opening card** (no person needed): the two definitions, then one
-chart, the FR by experience bin: the median of people's FR in each bin (each
+**The opening card**, "Feedback rate" (no person needed), says nothing of
+the index: the FR's definition, then the FR by experience bin (y-axis
+"feedback rate"): the median of people's FR in each bin (each
 person's CLs in that bin pooled, with `MIN_BIN_CLS` = 5 or more there), with
 the middle half and the 10th–90th percentile shaded (`fr_bins`). On
-2026-11-14: 3.95 at <8, 2.93, 2.48, 1.99, 1.68, 1.30, 0.99, 0.78, 0.59 and
-0.43 at 2k+, from 3,442 people in the first bin down to 85 in the last. With
-5, 3 or 8 CLs as the minimum the medians move by at most 0.15.
+2026-11-14: 3.95 at 8, 2.93, 2.48, 1.99, 1.68, 1.30, 0.99, 0.78, 0.59 and
+0.43 at >2k, from 3,442 people in the first bin down to 85 in the last. With
+5, 3 or 8 CLs as the minimum the medians move by at most 0.15. Below it,
+"Distribution of feedback rate change with experience": the growth rates'
+distribution, smoothed (a Gaussian kernel of 0.12 in log2 on a grid from
+−75% to +183%, `growth_dist`), with the median and, when a person is shown,
+their own growth marked.
+
+The FR falls as much as the old index did, though the chart may look
+flatter: the old addressed index adjusted for size and directory fell 5.3×
+from <10 to 1,000+ earlier commits (2.36 → 0.44), the median FR 6.7× from 8
+to 2k CLs (3.95 → 0.59) and 9× to >2k. The bands make the difference: the
+y-axis has to reach the 90th percentile (10.8 in the first bin), so the
+median line sits in the bottom third, where the old chart drew medians only
+on an axis to about 2.6.
+
+**The second card**, "Feedback index": its definition, and everyone's index
+(`fi_dist`: people with `MIN_CLS` CLs, over all the data, under
+experience and directories, `FI_NORM`), smoothed on a log2 grid from 1/8
+to 5.7 (kernel 0.15), with the median and the 10th and 90th percentiles
+marked. On 2026-11-14: 2,843 people, quartiles 0.63 and 1.40, 10th–90th
+percentile 0.38–1.94.
 
 **Your feedback** (after an address is found), one section each:
 
@@ -109,17 +132,11 @@ the middle half and the 10th–90th percentile shaded (`fr_bins`). On
 **Methodology and details** is a collapsed `<details>` at the bottom whose
 charts are drawn when it opens:
 
-- *How it's changing:* the FR over newcomers' CLs with fewer than 10
-  earlier commits (`NEWCOMER_CLS`), by year of first commit on `main` from
+- *How it's changing:* the FR over newcomers' first 10 CLs
+  (`NEWCOMER_CLS`), by year of first commit on `main` from
   2018 (people with `MIN_BIN_CLS` such CLs): median and middle half. On
   2026-11-14 the medians run 3.73, 4.31, 4.21, 3.75, 4.05, 4.21, 4.31, 3.64
   for 2018–2025 and 2.78 for 2026 (not over).
-- *How much each contributor's feedback rate falls:* the growth rates'
-  distribution, smoothed (a Gaussian kernel of 0.12 in log2 on a grid from
-  −75% to +183%, `growth_dist`), with the median and, when a person is
-  shown, their own growth marked. Per pair of consecutive bins (the
-  first version considered) the spread is similar (10th–90th percentile
-  ×0.31 to ×2.3), but noisier.
 - *By change size:* two bar charts per size bucket (`size10`): the median
   person's addressed threads per CL (0.06 under 4 lines → 6.88 at 512–1k on
   2026-11-14) and their FR (2.82 → 1.00, 0.23 at 1k+). Per line the

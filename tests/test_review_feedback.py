@@ -49,6 +49,12 @@ class ReviewFeedbackTest(unittest.TestCase):
         self.assertEqual(len(d["curve"]), len(R.GROWTH_GRID))
         # The smoothed curve sums to about 100% over steps of 0.05 (it is per 0.1 of log2).
         self.assertAlmostEqual(sum(y for _, y in d["curve"]) / 2, 100, delta=1)
+        # Everyone's index: on a log2 grid, indexes under 1/8 counted as 1/8.
+        f = R.fi_dist([0.0, 0.5, 1.0, 1.0, 2.0])
+        self.assertEqual((f["n"], f["q"][10]), (5, 1.0))
+        self.assertEqual((f["curve"][0][0], f["curve"][60][0]), (0.125, 1.0))
+        self.assertEqual(max(f["curve"], key=lambda c: c[1])[0], 1.0)
+        self.assertEqual(R.BIN_LABELS[:3] + R.BIN_LABELS[-2:], ["8", "16", "32", "2k", ">2k"])
 
     def test_rate_model(self):
         # Twenty people with 30 one-directory CLs each: half in ui/ (2 addressed per 100 lines)

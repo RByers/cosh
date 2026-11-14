@@ -108,7 +108,8 @@ export interface Peers {
   min_growth_bins: number;
   /** Feedback rates below this count as this in the growth fit. */
   fr_floor: number;
-  /** Experience bins by earlier commits on main: their names, and their lower edges from the second on. */
+  /** Experience bins by CLs landed on main, counting the change itself ("8": 8 or fewer, "16": 9–16, …),
+   * and their edges in earlier commits (a change with `bin_edges[b]` earlier commits is in bin b + 1). */
   bins: string[];
   bin_edges: number[];
   norms: Norm[];
@@ -134,6 +135,10 @@ export interface Peers {
   by_org: [string, number, number][];
   /** People's growth rates (% change in FR per doubling of changes landed). */
   growth: { n: number; median: number | null; q: number[] | null; curve: [number, number][] };
+  /** Everyone's feedback index under `fi_norm` over all the data: how many, quantiles, and a
+   * smoothed curve of [index, % of people per 0.1 of log2]. */
+  fi_norm: Norm;
+  fi_dist: { n: number; q: number[] | null; curve: [number, number][] };
 }
 
 export const GERRIT = 'https://chromium-review.googlesource.com';

@@ -325,10 +325,11 @@ def norms(use, also=()):
 # ---------------------------------------------------------------- feedback rate and index
 # The feedback rate (FR) of a set of CLs: their addressed reviewer threads per
 # 100 changed lines (insertions plus deletions), pooled. Experience is the
-# owner's earlier commits on main when a CL landed, in power-of-two bins, so
-# each bin is one doubling: <8, 8–15, 16–31, ..., 1k–2k, 2k+.
+# owner's CLs landed on main counting the CL itself (earlier commits + 1), in
+# power-of-two bins named by their top, so each bin is one doubling: "8" is 8
+# or fewer, "16" is 9–16, ..., "2k" is 1,025–2,048, ">2k" more.
 BIN_EDGES = [8 * 2 ** k for k in range(9)]          # 8, 16, ..., 2048
-BIN_LABELS = ["<8", "8–15", "16–31", "32–63", "64–127", "128–255", "256–511", "512–1k", "1k–2k", "2k+"]
+BIN_LABELS = ["8", "16", "32", "64", "128", "256", "512", "1k", "2k", ">2k"]
 MIN_BIN_CLS = 5           # a person's FR in one experience bin counts with this many CLs there
 FR_FLOOR = 0.1            # FRs below this count as this in the growth fit (log scale)
 MIN_GROWTH_BINS = 3       # a growth rate needs FRs in this many bins
@@ -349,6 +350,11 @@ NORMS = ["", "e", "d", "ed", "o", "eo", "do", "edo"]
 # grid of log2 of the change per doubling.
 GROWTH_GRID = [round(-2 + 0.05 * i, 2) for i in range(71)]
 GROWTH_BW = 0.12
+# The feedback index's chart: everyone's index (experience and directories),
+# smoothed the same way, on a grid of log2 of the index (1/8 .. 5.7).
+FI_NORM = "ed"
+FI_GRID = [round(-3 + 0.05 * i, 2) for i in range(111)]
+FI_BW = 0.15
 SIZE_LABELS = ["<4", "4–7", "8–15", "16–31", "32–63", "64–127", "128–255", "256–511", "512–1k", "1k+"]
 
 Row = namedtuple("Row", "pid at lines prior bin org addr units main")
@@ -580,17 +586,32 @@ def by_org(by_pid):
     return [[k, v[0], v[2]] for k, v in sorted(top, key=lambda kv: (-kv[1][0], kv[0]))]
 
 
+def kde(ls, grid, bw):
+    """A Gaussian kernel density of the log2 values `ls` on `grid`, as % of
+    them per 0.1 of log2."""
+    k = 1 / (len(ls) * bw * math.sqrt(2 * math.pi))
+    return [round(10 * k * sum(math.exp(-0.5 * ((x - v) / bw) ** 2) for v in ls), 3) for x in grid]
+
+
 def growth_dist(gs):
     """People's growth rates: how many, the median and quantiles (% per
     doubling), and a smoothed curve: [% change per doubling, % of people per
     0.1 of log2] on GROWTH_GRID (a Gaussian kernel of GROWTH_BW in log2)."""
     if not gs:
         return dict(n=0, median=None, q=None, curve=[])
-    ls = [math.log2(1 + g / 100) for g in gs]
-    k = 1 / (len(ls) * GROWTH_BW * math.sqrt(2 * math.pi))
-    curve = [[round(100 * (2 ** x - 1), 1),
-              round(10 * k * sum(math.exp(-0.5 * ((x - v) / GROWTH_BW) ** 2) for v in ls), 3)] for x in GROWTH_GRID]
+    ys = kde([math.log2(1 + g / 100) for g in gs], GROWTH_GRID, GROWTH_BW)
+    curve = [[round(100 * (2 ** x - 1), 1), y] for x, y in zip(GROWTH_GRID, ys)]
     return dict(n=len(gs), median=round(st.median(gs), 1), q=quantiles(gs), curve=curve)
+
+
+def fi_dist(xs):
+    """Everyone's feedback index: how many, quantiles, and a smoothed curve
+    [index, % of people per 0.1 of log2] on FI_GRID (indexes under 1/8 count
+    as 1/8)."""
+    if not xs:
+        return dict(n=0, q=None, curve=[])
+    ys = kde([math.log2(max(x, 0.125)) for x in xs], FI_GRID, FI_BW)
+    return dict(n=len(xs), q=quantiles(xs), curve=[[round(2 ** x, 3), y] for x, y in zip(FI_GRID, ys)])
 
 
 # ---------------------------------------------------------------- building
@@ -856,7 +877,8 @@ def main():
                  fi={nm: {p: dist(v.get(p, [])) for p in allp} for nm, v in fi_vals.items()},
                  newcomer_cls=NEWCOMER_CLS, newcomers=newcomers(by_pid, first_year),
                  size_labels=SIZE_LABELS, by_size=by_size(by_pid), by_dir=by_dir(by_pid), by_org=by_org(by_pid),
-                 growth=growth_dist(list(growths.values())),
+                 growth=growth_dist(list(growths.values())), fi_norm=FI_NORM,
+                 fi_dist=fi_dist(fi_vals[FI_NORM].get("all", [])),
                  tenure=TENURE, changes=CHANGES, min_received=MIN_RECEIVED,
                  tone_weeks=[TONE_WEEKS[0], TONE_WEEKS[-1]], tone={})
     for nm in ("ed", "e", ""):
