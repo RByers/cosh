@@ -1,1 +1,1 @@
-{"dirs":["components/tpcd/metadata/","components/component_updater/installer_policies/","tools/metrics/histograms/"],"files":["/COMMIT_MSG"],"cls":[[7262285,20440,4,145,[[0,3],[1,1],[2,0]],[[0,0,1,1]]]]}
+{"dirs":["components/tpcd/metadata/","components/component_updater/installer_policies/","tools/metrics/histograms/"],"files":["/COMMIT_MSG"],"revs":["cthomp@google.com","liu@google.com","waffles@google.com"],"cls":[[7262285,20440,4,145,[[0,3],[1,1],[2,0]],[0,1,2],[[0,0,1,1]]]]}

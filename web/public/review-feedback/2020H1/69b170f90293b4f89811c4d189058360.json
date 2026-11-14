@@ -1,1 +1,1 @@
-{"dirs":["build/config/compiler/","build/","tools/mb/","tools/clang/blink_gc_plugin/"],"files":["tools/mb/mb.py"],"cls":[[2003921,18277,7,363,0],[9593,6,1,364,1],[20116,13,3,365,2,[[0,3,2,0]]],[55007,30,31,367,3],[33608,21,1,368,3]]}
+{"dirs":["build/config/compiler/","build/","tools/mb/","tools/clang/blink_gc_plugin/"],"files":["tools/mb/mb.py"],"revs":["hans@google.com","thakis@google.com"],"cls":[[2003921,18277,7,363,0,[]],[9593,6,1,364,1,[0]],[20116,13,3,365,2,[1],[[0,3,2,0]]],[55007,30,31,367,3,[]],[33608,21,1,368,3,[1]]]}

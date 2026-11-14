@@ -1,1 +1,1 @@
-{"dirs":["third_party/nearby/","infra/config/generated/","infra/config/subprojects/"],"files":["/COMMIT_MSG","third_party/nearby/BUILD.gn"],"cls":[[3133769,18872,8,0,0,[[0,0,4,4],[1,8,6,4]]],[21810,83,27,1,0],[158109,8,10,2,[[1,6],[2,4]]]]}
+{"dirs":["third_party/nearby/","infra/config/generated/","infra/config/subprojects/"],"files":["/COMMIT_MSG","third_party/nearby/BUILD.gn"],"revs":["linxinan@google.com","nohle@google.com","gbeaty@google.com"],"cls":[[3133769,18872,8,0,0,[0,1],[[0,0,4,4],[1,8,6,4]]],[21810,83,27,1,0,[1]],[158109,8,10,2,[[1,6],[2,4]],[2]]]}

@@ -1,1 +1,1 @@
-{"dirs":["mojo/public/tools/","base/","base/test/"],"files":["/COMMIT_MSG","mojo/public/tools/bindings/generators/java_templates/data_types_definition.tmpl"],"cls":[[1158702,17746,4,13,0,[[0,0,1,1],[1,4,1,1]]],[3225,3,1,14,1],[87561,52,1,15,2]]}
+{"dirs":["mojo/public/tools/","base/","base/test/"],"files":["/COMMIT_MSG","mojo/public/tools/bindings/generators/java_templates/data_types_definition.tmpl"],"revs":["lhchavez@google.com","rockot@google.com","gab@google.com"],"cls":[[1158702,17746,4,13,0,[0,1],[[0,0,1,1],[1,4,1,1]]],[3225,3,1,14,1,[2]],[87561,52,1,15,2,[2,0]]]}

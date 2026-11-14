@@ -1,1 +1,1 @@
-{"dirs":["docs/transcripts/","docs/","chrome/browser/ash/","tools/metrics/histograms/"],"files":["chrome/browser/ash/fusebox/fusebox_server.cc"],"cls":[[6166405,20099,1010,547,[[0,1008],[1,2]]],[-9969,4,9,548,[[2,9],[3,0]],[[0,9,9,0]]]]}
+{"dirs":["docs/transcripts/","docs/","chrome/browser/ash/","tools/metrics/histograms/"],"files":["chrome/browser/ash/fusebox/fusebox_server.cc"],"revs":["yangsharon@google.com","fdegros@google.com"],"cls":[[6166405,20099,1010,547,[[0,1008],[1,2]],[0]],[-9969,4,9,548,[[2,9],[3,0]],[1],[[0,9,9,0]]]]}

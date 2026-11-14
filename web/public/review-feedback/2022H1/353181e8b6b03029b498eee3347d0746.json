@@ -1,1 +1,1 @@
-{"dirs":["chrome/browser/extensions/","chrome/common/"],"files":["chrome/browser/extensions/component_loader.cc","content/public/common/content_switches.cc"],"cls":[[3689889,19156,20,0,[[0,15],[1,5]],[[0,15,7,7],[1,0,2,2]]]]}
+{"dirs":["chrome/browser/extensions/","chrome/common/"],"files":["chrome/browser/extensions/component_loader.cc","content/public/common/content_switches.cc"],"revs":["amusbach@google.com","dbertoni@google.com","xiyuan@google.com"],"cls":[[3689889,19156,20,0,[[0,15],[1,5]],[0,1,2],[[0,15,7,7],[1,0,2,2]]]]}

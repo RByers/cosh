@@ -1,1 +1,1 @@
-{"dirs":["chrome/browser/devtools/","tools/metrics/histograms/"],"files":["tools/metrics/histograms/metadata/dev/histograms.xml"],"cls":[[8214901,20672,9,8,0],[41948,6,48,9,1,[[0,48,4,4]]]]}
+{"dirs":["chrome/browser/devtools/","tools/metrics/histograms/"],"files":["tools/metrics/histograms/metadata/dev/histograms.xml"],"revs":["alexrudenko@google.com","wolfi@google.com","dsv@google.com","yulunz@google.com"],"cls":[[8214901,20672,9,8,0,[0,1]],[41948,6,48,9,1,[2,3],[[0,48,4,4]]]]}

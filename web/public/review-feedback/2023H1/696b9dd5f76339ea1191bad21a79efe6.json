@@ -1,1 +1,1 @@
-{"dirs":["chromecast/browser/android/","chromecast/common/","chromecast/app/android/"],"files":["/COMMIT_MSG","chromecast/common/user_agent.h"],"cls":[[4310792,19424,32,36,0,[[0,0,1,1]]],[104133,34,121,37,1,[[1,4,1,1]]],[244751,80,2,38,2]]}
+{"dirs":["chromecast/browser/android/","chromecast/common/","chromecast/app/android/"],"files":["/COMMIT_MSG","chromecast/common/user_agent.h"],"revs":["sanfin@google.com","halliwell@google.com"],"cls":[[4310792,19424,32,36,0,[0],[[0,0,1,1]]],[104133,34,121,37,1,[1],[[1,4,1,1]]],[244751,80,2,38,2,[0]]]}

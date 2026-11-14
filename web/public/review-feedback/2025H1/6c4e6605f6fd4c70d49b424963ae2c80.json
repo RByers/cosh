@@ -1,1 +1,1 @@
-{"dirs":["tools/metrics/histograms/","base/trace_event/"],"files":["tools/metrics/histograms/metadata/update_engine/histograms.xml"],"cls":[[6227745,20131,38,73,0,[[0,38,31,31]]],[391342,113,1,74,1]]}
+{"dirs":["tools/metrics/histograms/","base/trace_event/"],"files":["tools/metrics/histograms/metadata/update_engine/histograms.xml"],"revs":["mpolzer@google.com","poromov@google.com","neis@google.com","ssid@google.com"],"cls":[[6227745,20131,38,73,0,[0,1],[[0,38,31,31]]],[391342,113,1,74,1,[2,3]]]}

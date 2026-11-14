@@ -1,1 +1,1 @@
-{"dirs":["ash/system/power/","ui/events/ozone/"],"files":["ash/system/power/peripheral_battery_listener.cc","ui/events/ozone/evdev/event_device_info.cc"],"cls":[[3731057,19191,45,0,0,[[0,6,1,1]]],[131687,43,1,1,1,[[1,1,1,1]]]]}
+{"dirs":["ash/system/power/","ui/events/ozone/"],"files":["ash/system/power/peripheral_battery_listener.cc","ui/events/ozone/evdev/event_device_info.cc"],"revs":["amehfooz@google.com","kenalba@google.com","seobrien@google.com"],"cls":[[3731057,19191,45,0,0,[0,1],[[0,6,1,1]]],[131687,43,1,1,1,[2],[[1,1,1,1]]]]}

@@ -1,1 +1,1 @@
-{"dirs":["ui/wm/core/","ui/base/cursor/","ui/base/resource/","gpu/command_buffer/service/"],"files":["ui/wm/core/cursor_loader.cc"],"cls":[[967376,17611,12,1,[[0,7],[1,5]],[[0,7,2,0]]],[21584,12,2,2,2],[82049,52,17,3,3]]}
+{"dirs":["ui/wm/core/","ui/base/cursor/","ui/base/resource/","gpu/command_buffer/service/"],"files":["ui/wm/core/cursor_loader.cc"],"revs":["derat@google.com","rjkroege@google.com","sky@google.com","spang@google.com","zmo@google.com"],"cls":[[967376,17611,12,1,[[0,7],[1,5]],[0,1,2,3],[[0,7,2,0]]],[21584,12,2,2,2,[2]],[82049,52,17,3,3,[4]]]}

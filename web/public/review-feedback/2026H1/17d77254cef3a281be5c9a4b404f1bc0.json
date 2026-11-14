@@ -1,1 +1,1 @@
-{"dirs":["tools/metrics/histograms/"],"files":["tools/metrics/histograms/metadata/platform/histograms.xml"],"cls":[[7398316,20460,12,23,0],[18071,3,59,24,0],[-16832,3,6,25,0,[[0,6,1,1]]]]}
+{"dirs":["tools/metrics/histograms/"],"files":["tools/metrics/histograms/metadata/platform/histograms.xml"],"revs":["hcyang@google.com","rkaplow@google.com","nikhilcn@google.com","toyoshim@google.com"],"cls":[[7398316,20460,12,23,0,[0,1]],[18071,3,59,24,0,[2,3]],[-16832,3,6,25,0,[0,1],[[0,6,1,1]]]]}

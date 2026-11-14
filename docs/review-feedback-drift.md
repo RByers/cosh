@@ -8,6 +8,12 @@ many changes there in 2025–26 gets a high index for something that isn't
 theirs. How big is that bias, and can we correct it within the goals in
 `docs/goals.md`?
 
+**Since 2026-11-14 the index compares by reviewer, not directory**
+(`docs/review-feedback-reviewers.md`). With reviewers and authors
+accounted for, feedback was steady until 2026H1 (0.96–1.07 of expected per
+half-year, size-adjusted) and drew 0.81 of expected in 2026H2; the page's
+methodology shows it. The study below compared directory-based rates.
+
 Short answer: the drift is real, mostly because all of Chromium drew
 about a quarter less feedback per line in 2026, but no time correction we
 tried makes the peers' rates better. Judged by how well they predict the

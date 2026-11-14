@@ -1,1 +1,1 @@
-{"dirs":["chrome/browser/google/","chrome/updater/policy/"],"files":["chrome/browser/google/google_update_policy_fetcher.cc"],"cls":[[8260760,20683,70,1,[[0,66],[1,4]],[[0,14,1,0]]]]}
+{"dirs":["chrome/browser/google/","chrome/updater/policy/"],"files":["chrome/browser/google/google_update_policy_fetcher.cc"],"revs":["noahrose@google.com","zmin@google.com"],"cls":[[8260760,20683,70,1,[[0,66],[1,4]],[0,1],[[0,14,1,0]]]]}

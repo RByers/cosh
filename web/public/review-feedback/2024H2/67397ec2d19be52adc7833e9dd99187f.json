@@ -1,1 +1,1 @@
-{"dirs":["components/metrics/","components/metrics/net/","components/metrics/structured/"],"files":["components/metrics/machine_id_provider_win.cc"],"cls":[[6048203,20056,10,0,[[0,4],[1,4],[2,2]],[[0,2,1,1]]]]}
+{"dirs":["components/metrics/","components/metrics/net/","components/metrics/structured/"],"files":["components/metrics/machine_id_provider_win.cc"],"revs":["asvitkine@google.com","blundell@google.com"],"cls":[[6048203,20056,10,0,[[0,4],[1,4],[2,2]],[0,1],[[0,2,1,1]]]]}

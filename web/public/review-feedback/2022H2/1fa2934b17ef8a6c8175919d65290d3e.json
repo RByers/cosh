@@ -1,1 +1,1 @@
-{"dirs":["chrome/browser/signin/","chrome/test/"],"files":["/COMMIT_MSG","chrome/browser/signin/e2e_tests/signin_util.cc","chrome/browser/signin/e2e_tests/signin_util.h"],"cls":[[4032400,19317,573,0,[[0,565],[1,8]],[[0,0,1,0],[1,117,2,2],[2,63,3,3]]]]}
+{"dirs":["chrome/browser/signin/","chrome/test/"],"files":["/COMMIT_MSG","chrome/browser/signin/e2e_tests/signin_util.cc","chrome/browser/signin/e2e_tests/signin_util.h"],"revs":["alexilin@google.com"],"cls":[[4032400,19317,573,0,[[0,565],[1,8]],[0],[[0,0,1,0],[1,117,2,2],[2,63,3,3]]]]}

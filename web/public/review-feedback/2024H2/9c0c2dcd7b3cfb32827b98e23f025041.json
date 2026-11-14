@@ -1,1 +1,1 @@
-{"dirs":["content/browser/android/","components/password_manager/core/"],"files":["content/browser/android/gesture_listener_manager.cc"],"cls":[[6012419,20048,33,15,0,[[0,28,3,3]]],[85516,26,1,16,1]]}
+{"dirs":["content/browser/android/","components/password_manager/core/"],"files":["content/browser/android/gesture_listener_manager.cc"],"revs":["boliu@google.com","yfriedman@google.com","mamir@google.com","vasilii@google.com"],"cls":[[6012419,20048,33,15,0,[0,1],[[0,28,3,3]]],[85516,26,1,16,1,[2,3]]]}

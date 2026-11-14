@@ -1,1 +1,1 @@
-{"dirs":["chrome/browser/ash/","tools/metrics/histograms/"],"files":["chrome/browser/ash/dbus/org.chromium.MojoConnectionService.conf"],"cls":[[3450052,19037,6,61,0,[[0,6,1,1]]],[50285,29,71,62,0],[107252,44,4,63,1]]}
+{"dirs":["chrome/browser/ash/","tools/metrics/histograms/"],"files":["chrome/browser/ash/dbus/org.chromium.MojoConnectionService.conf"],"revs":["hashimoto@google.com","kerrnel@google.com","thanhdng@google.com","jorgelo@google.com"],"cls":[[3450052,19037,6,61,0,[0,1],[[0,6,1,1]]],[50285,29,71,62,0,[2]],[107252,44,4,63,1,[3]]]}

@@ -1,1 +1,1 @@
-{"dirs":["chrome/browser/sync/","(root)/"],"files":["/COMMIT_MSG","chrome/browser/sync/test/integration/apps_helper.cc","chrome/browser/sync/test/integration/apps_helper.h"],"cls":[[2794044,18719,7,0,[[0,6],[1,1]],[[0,0,1,1],[1,6,1,1],[2,0,1,1]]]]}
+{"dirs":["chrome/browser/sync/","(root)/"],"files":["/COMMIT_MSG","chrome/browser/sync/test/integration/apps_helper.cc","chrome/browser/sync/test/integration/apps_helper.h"],"revs":["ericwilligers@google.com","mmoskvitin@google.com"],"cls":[[2794044,18719,7,0,[[0,6],[1,1]],[0,1],[[0,0,1,1],[1,6,1,1],[2,0,1,1]]]]}

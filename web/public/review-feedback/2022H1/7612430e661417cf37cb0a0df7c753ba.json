@@ -1,1 +1,1 @@
-{"dirs":["components/optimization_guide/core/"],"files":["components/optimization_guide/core/inference/model_executor.h","components/optimization_guide/core/inference/tflite_model_executor.h"],"cls":[[3416678,19023,73,0,0,[[0,14,1,1],[1,18,1,1]]]]}
+{"dirs":["components/optimization_guide/core/"],"files":["components/optimization_guide/core/inference/model_executor.h","components/optimization_guide/core/inference/tflite_model_executor.h"],"revs":["robertogden@google.com","sophiechang@google.com"],"cls":[[3416678,19023,73,0,0,[0,1],[[0,14,1,1],[1,18,1,1]]]]}

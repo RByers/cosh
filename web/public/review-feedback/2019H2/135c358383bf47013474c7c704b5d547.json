@@ -1,1 +1,1 @@
-{"dirs":["chrome/credential_provider/gaiacp/"],"files":["chrome/credential_provider/gaiacp/dllmain.cc","chrome/credential_provider/gaiacp/gaia_credential_base.cc"],"cls":[[1825909,18165,35,0,0,[[0,23,4,1],[1,12,3,0]]]]}
+{"dirs":["chrome/credential_provider/gaiacp/"],"files":["chrome/credential_provider/gaiacp/dllmain.cc","chrome/credential_provider/gaiacp/gaia_credential_base.cc"],"revs":["tienmai@google.com"],"cls":[[1825909,18165,35,0,0,[0],[[0,23,4,1],[1,12,3,0]]]]}

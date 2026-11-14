@@ -1,1 +1,1 @@
-{"dirs":["tools/mb/mb_config_expectations/","tools/mb/","testing/libfuzzer/"],"files":["testing/libfuzzer/getting_started.md"],"cls":[[3750376,19199,103,3,[[0,60],[1,29],[2,14]],[[0,14,1,1]]]]}
+{"dirs":["tools/mb/mb_config_expectations/","tools/mb/","testing/libfuzzer/"],"files":["testing/libfuzzer/getting_started.md"],"revs":["bookholt@google.com","kimstephanie@google.com","metzman@google.com"],"cls":[[3750376,19199,103,3,[[0,60],[1,29],[2,14]],[0,1,2],[[0,14,1,1]]]]}

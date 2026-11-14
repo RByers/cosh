@@ -312,12 +312,21 @@ MIN_GROWTH_BINS = 3       # a growth rate needs FRs in this many bins
 COHORT_FROM = 2018
 MIN_CELL_CLS = 10         # a person counts in a size, directory or org bar with this many CLs there
 CHART_DIRS, CHART_ORGS = 12, 10
-# A directory (3 levels, 2 or 1) has its own peers' AFR at an experience bin
-# with this many CLs' worth there without the person's own (each CL split over
-# its directories by lines); elsewhere its parent's counts. 50 predicted other
-# people's addressed threads best (25 as well; 10, 100 and 200 worse:
-# docs/review-feedback-drift.md).
+# The methodology's comparison of peer groups only (`method_compare`): a
+# directory (3 levels, 2 or 1) has its own AFR at an experience bin with this
+# many CLs' worth there without the person's own; elsewhere its parent's
+# counts. 50 predicted other people's addressed threads best
+# (docs/review-feedback-drift.md).
 MIN_RATE_CLS = 50
+# Reviewer and author factors (`two_way`): each is shrunk toward 1 with this
+# many expected addressed threads, and the two are fitted in turn this many
+# times. A reviewer is an approver in the landed commit's Reviewed-by trailers
+# (docs/review-feedback-reviewers.md).
+FACTOR_SHRINK = 50
+FACTOR_ITERS = 10
+# A reviewer counts in a directory on the methodology's chart of reviewers
+# within directories (`dir_reviewers`) with this many expected threads there.
+MIN_SPREAD_EXP = 50
 # A directory gets its own row in everyone's directory table with this many CLs.
 MIN_DIR_CLS = 100
 # The growth chart: a smoothed distribution of people's growth rates, on a
@@ -329,7 +338,8 @@ FI_GRID = [round(-3 + 0.05 * i, 2) for i in range(111)]
 FI_BW = 0.15
 SIZE_LABELS = ["<4", "4–7", "8–15", "16–31", "32–63", "64–127", "128–255", "256–511", "512–1k", "1k+"]
 
-Row = namedtuple("Row", "pid at lines prior bin org addr units main")
+# revs: the CL's approvers (addresses as identities), sorted; () when it has none.
+Row = namedtuple("Row", "pid at lines prior bin org addr units main revs", defaults=((),))
 
 
 def xbin(n):
@@ -376,7 +386,7 @@ def fr_row(c):
     every = Counter(t[4] for t in c["thr"])
     fr_ = unit_fracs([x for _, x in order])
     return Row(c["pid"], c["closed_at"], c["lines"], c["prior"], xbin(c["prior"]), c["org"], c["addressed"],
-               [(d, f, per[d], every[d]) for (d, _), f in zip(order, fr_)], order[0][0])
+               [(d, f, per[d], every[d]) for (d, _), f in zip(order, fr_)], order[0][0], tuple(c.get("revs", ())))
 
 
 def person_cells(rows):
@@ -450,9 +460,9 @@ def cell_rate(rates, own, k, b, need=True):
 
 
 def peer_rate(rates, own, d, b):
-    """The peers' AFR for lines in directory `d` at experience bin `b`, the
-    person's own lines left out: the directory's pooled AFR over all the data,
-    else its parent's, up to everyone's."""
+    """For `method_compare`: the peers' AFR for lines in directory `d` at
+    experience bin `b`, the person's own lines left out: the directory's
+    pooled AFR over all the data, else its parent's, up to everyone's."""
     for k in dir_levels(d)[:-1]:
         v = cell_rate(rates, own, k, b)
         if v is not None:
@@ -476,18 +486,50 @@ def rate_cells(rows):
     return cells
 
 
+def rev_factor(r, f, none):
+    """A CL's reviewer factor: the mean of its approvers' factors (`f`), in
+    their order, or `none` for a CL without approvers."""
+    return sum(f[v] for v in r.revs) / len(r.revs) if r.revs else none
+
+
+def two_way(rows, base):
+    """Author and reviewer factors fitted together: a CL is expected to draw
+    base × its author's factor × its reviewers' mean factor addressed
+    threads, so a reviewer's factor doesn't take on the authors they review,
+    nor an author's the reviewers they pick. Each factor is (observed +
+    FACTOR_SHRINK) / (expected + FACTOR_SHRINK) given the other; a CL with
+    several approvers counts a share in each, and CLs without approvers form
+    the group "". Returns ({author: factor}, {reviewer: factor})."""
+    fa, fr_ = defaultdict(lambda: 1.0), defaultdict(lambda: 1.0)
+    for _ in range(FACTOR_ITERS):
+        obs, exp = defaultdict(float), defaultdict(float)
+        for r, e in zip(rows, base):
+            obs[r.pid] += r.addr
+            exp[r.pid] += e * rev_factor(r, fr_, fr_[""])
+        fa = defaultdict(lambda: 1.0, {p: (obs[p] + FACTOR_SHRINK) / (exp[p] + FACTOR_SHRINK) for p in obs})
+        obs, exp = defaultdict(float), defaultdict(float)
+        for r, e in zip(rows, base):
+            vs = r.revs or ("",)
+            for v in vs:
+                obs[v] += r.addr / len(vs)
+                exp[v] += e * fa[r.pid] / len(vs)
+        fr_ = defaultdict(lambda: 1.0, {v: (obs[v] + FACTOR_SHRINK) / (exp[v] + FACTOR_SHRINK) for v in obs})
+    return fa, fr_
+
+
 def rate_model(rows):
-    """What the feedback index compares with. rates: per directory (3 levels,
-    2, 1, and "" for everyone), the sums of everyone's lines there over all
-    the data [CLs' worth, lines, addressed threads] per experience bin, where
-    they come to MIN_RATE_CLS CLs' worth (null elsewhere, and "" always): the
-    peers' rate is these sums less the person's own (`peer_rate`). scale:
-    multiplies the expected threads so that the median person's index
-    (people with MIN_CLS CLs) is 1. ref_bin (the median AFR per experience
-    bin, the main chart's line) and ref_all (everyone's median) are for the
-    page's comparisons, not the index. All rounded, as the page uses them.
-    Keys starting with "_" aren't published: `_ue` holds each row's expected
-    threads per unit before scaling."""
+    """What the feedback index compares with: everyone's pooled AFR per
+    experience bin (`rate_bin`) times the CL's reviewer factor (its
+    approvers' mean factor from `two_way`, `rev_factors`; CLs without
+    approvers take `rev_none`). Factors are scaled so that, over all CLs,
+    they leave the expected threads' total unchanged: 1.0 is the typical
+    reviewer. scale: multiplies the expected threads so that the median
+    person's index (people with MIN_CLS CLs) is 1. ref_bin (the median AFR
+    per experience bin, the main chart's line) and ref_all (everyone's
+    median) are for the page's comparisons. All rounded, as the page uses
+    them. Keys starting with "_" aren't published: `_ue` holds each row's
+    expected threads per unit before scaling, `_fa` the author factors,
+    `_rev_cls` each reviewer's CLs."""
     by_pid = defaultdict(list)
     for r in rows:
         by_pid[r.pid].append(r)
@@ -497,25 +539,24 @@ def rate_model(rows):
         lines = sum(r.lines for r in rs)
         if len(rs) >= MIN_CLS and lines > 0:
             alls.append(fr(sum(r.addr for r in rs), lines))
-    rates = {}
-    for k, cs in sorted(rate_cells(rows).items()):
-        v = [[round(n, 2), round(lines, 1), a] if n >= MIN_RATE_CLS or k == "" else None for n, lines, a in cs]
-        if any(x is not None for x in v):
-            rates[k] = v
-    # Each row's expected threads per unit before scaling, at its peers'
-    # rates without the person's own lines.
+    cells = [[0, 0] for _ in BIN_LABELS]
+    for r in rows:
+        cells[r.bin][0] += r.lines
+        cells[r.bin][1] += r.addr
+    rate_bin = [r3(fr(a, lines)) if lines else 0.0 for lines, a in cells]
+    base = [r.lines / 100 * rate_bin[r.bin] for r in rows]
+    fa, raw = two_way(rows, base)
+    # 1.0 is the typical reviewer: over all CLs the factors leave the total unchanged.
+    norm = sum(e * rev_factor(r, raw, raw[""]) for r, e in zip(rows, base)) / sum(base)
+    rev_none = r3(raw[""] / norm)
+    rev_factors = {v: r3(x / norm) for v, x in raw.items() if v}
+    rev_cls = Counter(v for r in rows for v in r.revs)
     ue = {}
-    for rs in by_pid.values():
-        own = rate_cells(rs)
-        memo = {}
-
-        def rate(d, b):
-            if (d, b) not in memo:
-                memo[(d, b)] = peer_rate(rates, own, d, b)
-            return memo[(d, b)]
-        for r in rs:
-            ue[id(r)] = [r.lines * f / 100 * rate(d, r.bin) for d, f, _, _ in r.units]
-    m = dict(ref_bin=ref_bin, ref_all=r3(st.median(alls)), rates=rates, scale=1.0, _ue=ue)
+    for r in rows:
+        g = rev_factor(r, rev_factors, rev_none)
+        ue[id(r)] = [r.lines * f / 100 * rate_bin[r.bin] * g for _, f, _, _ in r.units]
+    m = dict(ref_bin=ref_bin, ref_all=r3(st.median(alls)), rate_bin=rate_bin, rev_none=rev_none, scale=1.0,
+             _ue=ue, _fa=fa, _rev_factors=rev_factors, _rev_cls=rev_cls)
     # Pooled rates aren't the typical person's (big CLs draw less per line),
     # so the expected threads are scaled to make the median person's index 1.
     xs = []
@@ -529,16 +570,172 @@ def rate_model(rows):
 
 
 def unit_expected(r, m):
-    """The addressed threads each unit of a CL would draw at its peers' AFR:
-    its lines / 100 × the peers' rate (`peer_rate`: the same directory and
-    experience bin over all the data, the person's own lines left out) × the
+    """The addressed threads each unit of a CL would draw: its lines / 100 ×
+    everyone's AFR at the CL's experience × the CL's reviewer factor × the
     scale."""
     return [x * m["scale"] for x in m["_ue"][id(r)]]
 
 
 def expected(r, m):
-    """The addressed threads a CL would draw at its peers' AFR."""
+    """The addressed threads a CL would draw, given its experience and reviewers."""
     return sum(unit_expected(r, m))
+
+
+def size_deviance(rows, ex):
+    """Poisson deviance of each CL's addressed threads against `ex`, after a
+    factor per size bucket (powers of two of lines) so that size, which no
+    model here has, doesn't swamp the rest."""
+    sb = [min(int(math.log2(max(r.lines, 1))), 10) for r in rows]
+    oa, oe = defaultdict(float), defaultdict(float)
+    for b, r, e in zip(sb, rows, ex):
+        oa[b] += r.addr
+        oe[b] += e
+    d = 0.0
+    for b, r, e in zip(sb, rows, ex):
+        mu = max(e * oa[b] / oe[b], 1e-9) if oe[b] > 0 else 1e-9
+        d += 2 * ((r.addr * math.log(r.addr / mu) if r.addr > 0 else 0) - (r.addr - mu))
+    return d
+
+
+def method_compare(rows):
+    """The methodology's comparison of peer groups: how well each predicts the
+    addressed threads other people's CLs drew. Every CL is predicted from
+    other people's CLs (its owner's own left out of every rate and factor),
+    and scored by `size_deviance`. Models: everyone's AFR by experience
+    ("e"); by directory and experience ("d", MIN_RATE_CLS); "e" × the
+    approvers' factor ("r"); "d" × the approvers' factor ("dr"); "d" × the
+    approvers' factor per 2-level directory, shrunk toward their overall one
+    ("rd"). Reviewer factors here are each reviewer's addressed threads over
+    the model's expected on their CLs, without the owner's, shrunk toward 1
+    with FACTOR_SHRINK. Returns [[model, deviance, % of "e"'s deviance
+    removed], ...]."""
+    by_pid = defaultdict(list)
+    for r in rows:
+        by_pid[r.pid].append(r)
+    rates = {k: [[n, lines, a] for n, lines, a in v] for k, v in rate_cells(rows).items()}
+
+    def unit_exp(dirs):
+        out = {}
+        for rs in by_pid.values():
+            own = rate_cells(rs)
+            memo = {}
+            for r in rs:
+                us = []
+                for d, f, _, _ in r.units:
+                    k = (d if dirs else "", r.bin)
+                    if k not in memo:
+                        memo[k] = peer_rate(rates, own, k[0], r.bin)
+                    us.append(r.lines * f / 100 * memo[k])
+                out[id(r)] = us
+        return out
+
+    def with_reviewers(ue, by_dir=False):
+        o, e, op, ep = defaultdict(float), defaultdict(float), defaultdict(float), defaultdict(float)
+        for r in rows:
+            for v in r.revs:
+                for (d, _, a, _), x in zip(r.units, ue[id(r)]):
+                    for k in ((v,), (v, dir2(d))) if by_dir else ((v,),):
+                        o[k] += a
+                        e[k] += x
+                        op[k + (r.pid,)] += a
+                        ep[k + (r.pid,)] += x
+        ex = []
+        for r in rows:
+            us = ue[id(r)]
+            if not r.revs:
+                ex.append(sum(us))
+                continue
+            tot = 0.0
+            for v in r.revs:
+                k = (v,)
+                g = (o[k] - op[k + (r.pid,)] + FACTOR_SHRINK) / (e[k] - ep[k + (r.pid,)] + FACTOR_SHRINK)
+                if by_dir:
+                    for (d, _, _, _), x in zip(r.units, us):
+                        kd = (v, dir2(d))
+                        od, ed = o[kd] - op[kd + (r.pid,)], e[kd] - ep[kd + (r.pid,)]
+                        tot += x * (od + 2 * FACTOR_SHRINK * g) / (ed + 2 * FACTOR_SHRINK)
+                else:
+                    tot += sum(us) * g
+            ex.append(tot / len(r.revs))
+        return ex
+
+    ue_e, ue_d = unit_exp(False), unit_exp(True)
+    devs = dict(e=size_deviance(rows, [sum(ue_e[id(r)]) for r in rows]),
+                d=size_deviance(rows, [sum(ue_d[id(r)]) for r in rows]),
+                r=size_deviance(rows, with_reviewers(ue_e)),
+                dr=size_deviance(rows, with_reviewers(ue_d)),
+                rd=size_deviance(rows, with_reviewers(ue_d, by_dir=True)))
+    return [[k, round(v), round(100 * (1 - v / devs["e"]), 2)] for k, v in devs.items()]
+
+
+def dir_reviewers(rows):
+    """The methodology's view of reviewers within directories: for the
+    CHART_DIRS 2-level directories with the most CLs (and MIN_PEERS reviewers
+    there or more), [directory, its factor, reviewers, the 10th, 25th, 50th,
+    75th and 90th percentiles of its reviewers' factors there]. A factor is
+    addressed threads over what everyone's AFR by experience expects, not
+    shrunk (a few expected threads shrunk toward 1 would lift reviewers in
+    directories that draw almost nothing); a reviewer counts in a directory
+    where their approved CLs there expect MIN_SPREAD_EXP threads or more (a
+    CL with several approvers counts a share for each)."""
+    cells = [[0, 0] for _ in BIN_LABELS]
+    for r in rows:
+        cells[r.bin][0] += r.lines
+        cells[r.bin][1] += r.addr
+    rate = [fr(a, lines) or 0 for lines, a in cells]
+    od, ed, orv, erv, n = defaultdict(float), defaultdict(float), defaultdict(float), defaultdict(float), Counter()
+    for r in rows:
+        for d, f, a, _ in r.units:
+            k = dir2(d)
+            x = r.lines * f / 100 * rate[r.bin]
+            od[k] += a
+            ed[k] += x
+            n[k] += f
+            for v in r.revs:
+                orv[(k, v)] += a / len(r.revs)
+                erv[(k, v)] += x / len(r.revs)
+    by_dir = defaultdict(list)
+    for (k, v), e in erv.items():
+        if e >= MIN_SPREAD_EXP:
+            by_dir[k].append(orv[(k, v)] / e)
+    out = []
+    for k, _ in n.most_common():
+        xs = by_dir.get(k, [])
+        if len(xs) < MIN_PEERS:
+            continue
+        q = quantiles(xs)
+        out.append([k, r3(od[k] / ed[k]), len(xs), [q[i] for i in (2, 5, 10, 15, 18)]])
+        if len(out) == CHART_DIRS:
+            break
+    return out
+
+
+def drift_series(rows, m):
+    """Per half-year: [half-year, CLs, everyone's addressed threads over what
+    experience and size expect, the same over what experience, size, the
+    reviewers' factors and the authors' factors expect]. 1.0 is no drift;
+    the second shows what is left once reviewers and authors are accounted
+    for. Size is a factor per size bucket (powers of two of lines), fitted
+    over all the data, so a few huge CLs don't swing a half-year."""
+    sb = [min(int(math.log2(max(r.lines, 1))), 10) for r in rows]
+
+    def sized(ex):
+        oa, oe = defaultdict(float), defaultdict(float)
+        for b, r, e in zip(sb, rows, ex):
+            oa[b] += r.addr
+            oe[b] += e
+        return [e * oa[b] / oe[b] for b, e in zip(sb, ex)]
+    base = [r.lines / 100 * m["rate_bin"][r.bin] for r in rows]
+    full = sized([e * rev_factor(r, m["_rev_factors"], m["rev_none"]) * m["_fa"][r.pid] for r, e in zip(rows, base)])
+    base = sized(base)
+    acc = defaultdict(lambda: [0, 0, 0.0, 0.0])
+    for r, e0, e1 in zip(rows, base, full):
+        x = acc[half(r.at)]
+        x[0] += 1
+        x[1] += r.addr
+        x[2] += e0
+        x[3] += e1
+    return [[h, n, r3(a / e0), r3(a / e1)] for h, (n, a, e0, e1) in sorted(acc.items())]
 
 
 def dir_table(rows):
@@ -807,6 +1004,14 @@ def main():
     for (n, d), (_, lines) in sorted(F.cl_dirs(git_db(), by_cid, by_n, dels=False, current=current,
                                                files=want, moved=moved).items()):
         cl_dirs[n][d] = lines
+    # Each CL's reviewers: the approvers in its landed commit's Reviewed-by
+    # trailers (those who voted Code-Review), as identities, the owner left out.
+    for cid, rb in git_db().execute("SELECT commit_id, reviewed_by FROM commits "
+                                    "WHERE commit_id > 0 AND reviewed_by IS NOT NULL"):
+        c = by_n.get(by_cid.get(cid))
+        if c is not None:
+            c["revs"] = sorted({ids.find(e) for e in json.loads(rb)} - {c["pid"]})
+    print(f"CLs with approvers: {sum(1 for c in use if c.get('revs')):,}", file=sys.stderr, flush=True)
     del by_cid, current, moved
     orgs = OrgResolver()
     for c in use:
@@ -848,7 +1053,14 @@ def main():
     rows = [fr_row(c) for c in use if c["acov"]]
     model = rate_model(rows)
     print(f"AFR by experience: " + " ".join(f"{l}={v}" for l, v in zip(BIN_LABELS, model["ref_bin"]))
-          + f"; everyone {model['ref_all']}; scale {model['scale']}", file=sys.stderr, flush=True)
+          + f"; everyone {model['ref_all']}; scale {model['scale']}; {len(model['_rev_factors']):,} reviewers, "
+          f"no approver {model['rev_none']}", file=sys.stderr, flush=True)
+    method = method_compare(rows)
+    print("peer groups (deviance, % removed): " + ", ".join(f"{k} {d:,} {p}%" for k, d, p in method),
+          file=sys.stderr, flush=True)
+    drift = drift_series(rows, model)
+    print("drift (experience only, with reviewers and authors): "
+          + " ".join(f"{h[2:]}:{a}/{b}" for h, _, a, b in drift), file=sys.stderr, flush=True)
     by_pid = defaultdict(list)
     for r in rows:
         by_pid[r.pid].append(r)
@@ -893,13 +1105,14 @@ def main():
     # ------------------------------------------------ peers
     dist = lambda xs: dict(n=len(xs), q=quantiles(xs) if len(xs) >= MIN_PEERS else None)
     first_year = {pid: datetime.fromtimestamp(t, timezone.utc).year for pid, t in first.items()}
-    peers = dict(v=10, generated=datetime.now(timezone.utc).strftime("%Y-%m-%d"), periods=allp,
+    peers = dict(v=11, generated=datetime.now(timezone.utc).strftime("%Y-%m-%d"), periods=allp,
                  start=epoch_day(START), end=epoch_day(END), addr_start=epoch_day(ADDR_START),
                  links_from=LINKS_FROM,
                  min_peers=MIN_PEERS, min_cls=MIN_CLS, min_bin_cls=MIN_BIN_CLS, min_cell_cls=MIN_CELL_CLS,
                  min_growth_bins=MIN_GROWTH_BINS, fr_floor=FR_FLOOR, bins=BIN_LABELS, bin_edges=BIN_EDGES,
-                 min_rate_cls=MIN_RATE_CLS, min_dir_cls=MIN_DIR_CLS,
+                 min_dir_cls=MIN_DIR_CLS, min_spread_exp=MIN_SPREAD_EXP,
                  **{k: v for k, v in model.items() if not k.startswith("_")},
+                 method=method, dir_revs=dir_reviewers(rows), drift=drift,
                  dir_table=dir_table(rows), fr_bins=fr_bins(by_pid),
                  fi={p: dist(fi_vals.get(p, [])) for p in allp},
                  cohorts=cohorts(by_pid, first_year),
@@ -929,6 +1142,18 @@ def main():
     os.makedirs(os.path.join(out, "u"), exist_ok=True)
     with open(os.path.join(out, "peers.json"), "w") as f:
         json.dump(peers, f, separators=(",", ":"))
+    # reviewers.json: each reviewer's factor and CLs approved, by the first 12
+    # hex digits of `key` of their address, so the file lists no addresses;
+    # the page loads it with a person and looks up their reviewers.
+    revs = {}
+    for v, x in sorted(model["_rev_factors"].items()):
+        k = key(v)[:12]
+        if k in revs:
+            print("reviewer key collision, kept the first", file=sys.stderr)
+            continue
+        revs[k] = [x, model["_rev_cls"][v]]
+    with open(os.path.join(out, "reviewers.json"), "w") as f:
+        json.dump(dict(v=1, rev_none=model["rev_none"], f=revs), f, separators=(",", ":"))
     written, stubs, size = 0, 0, 0
     taken = {}
     index = open(links_path() + ".new", "w")
@@ -1010,16 +1235,17 @@ def shard(cs):
     file names listed once (`dirs`, `files`). Each CL: [change number less
     the previous CL's (the first: itself), day landed less the previous
     CL's (the first: days since 1970), lines (Gerrit's insertions), the
-    owner's earlier commits on main, units(, files)].
+    owner's earlier commits on main, units, reviewers(, files)].
 
     Units: the landed commit's inserted lines per 3-level directory, as
     [[directory, lines], ...] in `unit_order`, or the directory alone for a
-    CL wholly in one directory. Files: only those that drew reviewer threads,
+    CL wholly in one directory. Reviewers: the approvers, as indexes in
+    `revs` (their addresses), sorted by address; [] for none. Files: only those that drew reviewer threads,
     in name order, as [file, lines there (the landed commit's insertions; 0
     for the commit message or a file it didn't change), threads, addressed];
     left out when there are none. A file's threads count in its 3-level
     directory when that is one of the units, else in the first unit."""
-    files, dirs = {}, {}
+    files, dirs, revs = {}, {}, {}
 
     def idx(table, x):
         return table.setdefault(x, len(table))
@@ -1029,13 +1255,13 @@ def shard(cs):
         n, d0 = c["change_number"], epoch_day(c["closed_at"])
         order = unit_order(c["units"])
         units = idx(dirs, order[0][0]) if len(order) == 1 else [[idx(dirs, d), x] for d, x in order]
-        row = [n - pn, d0 - pd, c["lines"], c["prior"], units]
+        row = [n - pn, d0 - pd, c["lines"], c["prior"], units, [idx(revs, v) for v in c.get("revs", ())]]
         fb = fb_files(c)
         if fb:
             row.append([[idx(files, p), c["flines"].get(p) or 0, t, a] for p, (t, a, _) in fb.items()])
         rows.append(row)
         pn, pd = n, d0
-    return dict(dirs=list(dirs), files=list(files), cls=rows)
+    return dict(dirs=list(dirs), files=list(files), revs=list(revs), cls=rows)
 
 
 def link_ids(cs):

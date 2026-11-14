@@ -1,1 +1,1 @@
-{"dirs":["net/quic/"],"files":["net/quic/quic_network_transaction_unittest.cc"],"cls":[[5421688,19816,130,1245,0,[[0,130,5,4]]],[-1144,0,63,1246,0],[1424,0,52,1247,0,[[0,50,1,1]]]]}
+{"dirs":["net/quic/"],"files":["net/quic/quic_network_transaction_unittest.cc"],"revs":["mmenke@google.com","renjietang@google.com"],"cls":[[5421688,19816,130,1245,0,[0],[[0,130,5,4]]],[-1144,0,63,1246,0,[1]],[1424,0,52,1247,0,[1],[[0,50,1,1]]]]}

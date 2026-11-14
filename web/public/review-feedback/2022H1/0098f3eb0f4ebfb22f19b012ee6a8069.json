@@ -1,1 +1,1 @@
-{"dirs":["chrome/browser/resources/","chrome/test/data/"],"files":["chrome/browser/resources/print_preview/ui/pin_settings.ts","chrome/test/data/webui/print_preview/pin_settings_test.ts"],"cls":[[3359450,19006,8,6,0,[[0,8,1,1]]],[53626,105,15,7,1,[[1,15,3,3]]]]}
+{"dirs":["chrome/browser/resources/","chrome/test/data/"],"files":["chrome/browser/resources/print_preview/ui/pin_settings.ts","chrome/test/data/webui/print_preview/pin_settings_test.ts"],"revs":["rbpotter@google.com"],"cls":[[3359450,19006,8,6,0,[0],[[0,8,1,1]]],[53626,105,15,7,1,[0],[[1,15,3,3]]]]}

@@ -1,1 +1,1 @@
-{"dirs":["third_party/wayland-protocols/","(root)/","components/exo/wayland/"],"files":[],"cls":[[5397883,19810,3,32,[[0,2],[1,1]]],[-589780,19,15,33,2],[701100,27,15,34,2]]}
+{"dirs":["third_party/wayland-protocols/","(root)/","components/exo/wayland/"],"files":[],"revs":["fangzhoug@google.com","nickdiego@igalia.com","oshima@google.com"],"cls":[[5397883,19810,3,32,[[0,2],[1,1]],[0,1]],[-589780,19,15,33,2,[0,2]],[701100,27,15,34,2,[0,2]]]}

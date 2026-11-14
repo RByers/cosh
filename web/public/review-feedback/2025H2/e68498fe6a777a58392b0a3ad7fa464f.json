@@ -1,1 +1,1 @@
-{"dirs":["chrome/browser/ui/","tools/ininja/"],"files":["tools/ininja/ininja.py"],"cls":[[6803186,20299,8,685,0],[16558,7,243,686,1,[[0,226,25,23]]]]}
+{"dirs":["chrome/browser/ui/","tools/ininja/"],"files":["tools/ininja/ininja.py"],"revs":["estalin@google.com","jessemckenna@google.com","kuanhuang@google.com"],"cls":[[6803186,20299,8,685,0,[0]],[16558,7,243,686,1,[1,2],[[0,226,25,23]]]]}

@@ -1,1 +1,1 @@
-{"dirs":["tools/metrics/histograms/","components/network_session_configurator/browser/","components/cronet/","net/quic/"],"files":[],"cls":[[3834200,19222,1,174,0],[125778,61,10,176,[[1,5],[2,4],[3,1]]]]}
+{"dirs":["tools/metrics/histograms/","components/network_session_configurator/browser/","components/cronet/","net/quic/"],"files":[],"revs":["dschinazi@google.com","rch@google.com"],"cls":[[3834200,19222,1,174,0,[0]],[125778,61,10,176,[[1,5],[2,4],[3,1]],[1]]]}

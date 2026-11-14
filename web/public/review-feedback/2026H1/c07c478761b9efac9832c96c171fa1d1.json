@@ -1,1 +1,1 @@
-{"dirs":["net/dns/","third_party/blink/renderer/"],"files":["third_party/blink/renderer/platform/image-decoders/image_decoder.cc"],"cls":[[7704855,20538,6,5944,[[0,4],[1,2]],[[0,2,1,0]]]]}
+{"dirs":["net/dns/","third_party/blink/renderer/"],"files":["third_party/blink/renderer/platform/image-decoders/image_decoder.cc"],"revs":["mmenke@google.com","wtc@google.com"],"cls":[[7704855,20538,6,5944,[[0,4],[1,2]],[0,1],[[0,2,1,0]]]]}

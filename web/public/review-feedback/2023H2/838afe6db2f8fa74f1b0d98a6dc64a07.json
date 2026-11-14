@@ -1,1 +1,1 @@
-{"dirs":["net/dns/","net/dns/public/","net/log/"],"files":["net/dns/host_resolver_cache.cc","net/dns/host_cache.h"],"cls":[[4851682,19615,494,349,[[0,446],[1,44]],[[0,164,1,1]]],[92156,33,68,350,[[0,68],[2,0]],[[1,5,1,1]]],[8140,1,68,351,[[0,68],[2,0]]]]}
+{"dirs":["net/dns/","net/dns/public/","net/log/"],"files":["net/dns/host_resolver_cache.cc","net/dns/host_cache.h"],"revs":["horo@google.com"],"cls":[[4851682,19615,494,349,[[0,446],[1,44]],[0],[[0,164,1,1]]],[92156,33,68,350,[[0,68],[2,0]],[0],[[1,5,1,1]]],[8140,1,68,351,[[0,68],[2,0]],[0]]]}

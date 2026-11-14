@@ -1,1 +1,1 @@
-{"dirs":["ios/chrome/browser/"],"files":["ios/chrome/browser/page_info/ui/page_info_view_controller.mm","ios/chrome/browser/shared/ui/table_view/chrome_table_view_controller.mm"],"cls":[[4576363,19520,50,0,0,[[0,2,1,0],[1,13,1,1]]],[53473,11,3,2,0]]}
+{"dirs":["ios/chrome/browser/"],"files":["ios/chrome/browser/page_info/ui/page_info_view_controller.mm","ios/chrome/browser/shared/ui/table_view/chrome_table_view_controller.mm"],"revs":["ewannpv@google.com","sczs@google.com","gambard@google.com"],"cls":[[4576363,19520,50,0,0,[0,1],[[0,2,1,0],[1,13,1,1]]],[53473,11,3,2,0,[2]]]}

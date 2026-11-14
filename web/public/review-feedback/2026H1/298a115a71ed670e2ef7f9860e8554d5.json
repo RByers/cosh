@@ -1,1 +1,1 @@
-{"dirs":["testing/libfuzzer/","testing/","base/"],"files":["/COMMIT_MSG"],"cls":[[7749717,20563,17,0,[[0,10],[1,6],[2,2]],[[0,0,1,0]]]]}
+{"dirs":["testing/libfuzzer/","testing/","base/"],"files":["/COMMIT_MSG"],"revs":["bpastene@google.com","titouan@google.com"],"cls":[[7749717,20563,17,0,[[0,10],[1,6],[2,2]],[0,1],[[0,0,1,0]]]]}

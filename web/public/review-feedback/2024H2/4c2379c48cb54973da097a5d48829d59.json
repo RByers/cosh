@@ -1,1 +1,1 @@
-{"dirs":["(root)/","tools/clang/scripts/","build/config/compiler/"],"files":["/COMMIT_MSG","build/config/compiler/BUILD.gn"],"cls":[[5715836,19942,134,35,[[0,80],[1,54]]],[57755,5,88,35,[[0,80],[2,6],[1,2]],[[0,0,1,1],[1,6,1,1]]],[10944,2,19,36,2]]}
+{"dirs":["(root)/","tools/clang/scripts/","build/config/compiler/"],"files":["/COMMIT_MSG","build/config/compiler/BUILD.gn"],"revs":["hans@google.com","thakis@google.com"],"cls":[[5715836,19942,134,35,[[0,80],[1,54]],[0,1]],[57755,5,88,35,[[0,80],[2,6],[1,2]],[0,1],[[0,0,1,1],[1,6,1,1]]],[10944,2,19,36,2,[0,1]]]}

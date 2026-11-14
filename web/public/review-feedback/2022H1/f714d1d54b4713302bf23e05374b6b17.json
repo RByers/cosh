@@ -1,1 +1,1 @@
-{"dirs":["tools/metrics/histograms/"],"files":["tools/metrics/histograms/metadata/platform/histograms.xml"],"cls":[[3577656,19092,31,3,0],[6170,9,7,4,0],[6427,22,82,5,0,[[0,82,2,0]]]]}
+{"dirs":["tools/metrics/histograms/"],"files":["tools/metrics/histograms/metadata/platform/histograms.xml"],"revs":["rkaplow@google.com","mpearson@google.com","mutexlox@google.com"],"cls":[[3577656,19092,31,3,0,[0]],[6170,9,7,4,0,[1]],[6427,22,82,5,0,[2],[[0,82,2,0]]]]}

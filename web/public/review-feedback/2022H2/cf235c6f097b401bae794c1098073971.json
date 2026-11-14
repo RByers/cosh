@@ -1,1 +1,1 @@
-{"dirs":["third_party/blink/web_tests/","third_party/blink/renderer/"],"files":["third_party/blink/renderer/core/inspector/inspector_highlight.cc"],"cls":[[3747759,19180,3,10,0],[49198,26,2,10,0],[-48859,1,4,11,0],[278889,105,93,11,1,[[0,5,2,2]]]]}
+{"dirs":["third_party/blink/web_tests/","third_party/blink/renderer/"],"files":["third_party/blink/renderer/core/inspector/inspector_highlight.cc"],"revs":["bmeurer@google.com","alexrudenko@google.com"],"cls":[[3747759,19180,3,10,0,[]],[49198,26,2,10,0,[0]],[-48859,1,4,11,0,[]],[278889,105,93,11,1,[1],[[0,5,2,2]]]]}

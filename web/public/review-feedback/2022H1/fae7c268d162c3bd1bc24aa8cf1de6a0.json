@@ -1,1 +1,1 @@
-{"dirs":["components/omnibox/browser/","components/omnibox/common/"],"files":["components/omnibox/browser/clipboard_provider.cc","components/omnibox/browser/zero_suggest_provider.cc"],"cls":[[3723308,19172,2,0,[[0,2],[1,0]],[[0,1,1,1],[1,1,1,1]]]]}
+{"dirs":["components/omnibox/browser/","components/omnibox/common/"],"files":["components/omnibox/browser/clipboard_provider.cc","components/omnibox/browser/zero_suggest_provider.cc"],"revs":["jdonnelly@google.com"],"cls":[[3723308,19172,2,0,[[0,2],[1,0]],[0],[[0,1,1,1],[1,1,1,1]]]]}

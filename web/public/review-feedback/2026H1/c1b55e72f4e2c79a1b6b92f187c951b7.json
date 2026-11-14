@@ -1,1 +1,1 @@
-{"dirs":["third_party/blink/"],"files":["third_party/blink/API_OWNERS"],"cls":[[7763107,20560,1,40,0,[[0,1,1,0]]]]}
+{"dirs":["third_party/blink/"],"files":["third_party/blink/API_OWNERS"],"revs":["daniec@microsoft.com","rbyers@google.com","yoavweiss@google.com"],"cls":[[7763107,20560,1,40,0,[0,1,2],[[0,1,1,0]]]]}

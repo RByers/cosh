@@ -1,1 +1,1 @@
-{"dirs":["build/","cc/trees/"],"files":["build/vs_toolchain.py"],"cls":[[1855966,18183,13,3,0,[[0,13,1,1]]],[16024,11,2,4,0],[75738,42,25,5,1]]}
+{"dirs":["build/","cc/trees/"],"files":["build/vs_toolchain.py"],"revs":["dpranke@google.com","brucedawson@google.com","kylechar@google.com","samans@google.com"],"cls":[[1855966,18183,13,3,0,[0],[[0,13,1,1]]],[16024,11,2,4,0,[1,0]],[75738,42,25,5,1,[2,3]]]}

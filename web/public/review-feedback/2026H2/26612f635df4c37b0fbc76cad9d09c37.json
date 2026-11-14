@@ -1,1 +1,1 @@
-{"dirs":["tools/metrics/histograms/","chrome/browser/"],"files":["tools/metrics/histograms/metadata/web_rtc/histograms.xml"],"cls":[[8250765,20685,4,20,0,[[0,4,1,0]]],[329338,55,2,21,1]]}
+{"dirs":["tools/metrics/histograms/","chrome/browser/"],"files":["tools/metrics/histograms/metadata/web_rtc/histograms.xml"],"revs":["kron@google.com","saza@google.com","barrerap@google.com"],"cls":[[8250765,20685,4,20,0,[0,1],[[0,4,1,0]]],[329338,55,2,21,1,[2,1]]]}

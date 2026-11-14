@@ -1,1 +1,1 @@
-{"dirs":["infra/config/generated/","infra/config/dev/","tools/mb/","testing/buildbot/"],"files":["infra/config/dev/subprojects/chromium/ci.star"],"cls":[[2246006,18429,52,0,[[0,38],[1,13],[2,1]],[[0,12,1,1]]],[-582,0,220,0,3]]}
+{"dirs":["infra/config/generated/","infra/config/dev/","tools/mb/","testing/buildbot/"],"files":["infra/config/dev/subprojects/chromium/ci.star"],"revs":["tikuta@google.com"],"cls":[[2246006,18429,52,0,[[0,38],[1,13],[2,1]],[0],[[0,12,1,1]]],[-582,0,220,0,3,[0]]]}

@@ -1,1 +1,1 @@
-{"dirs":["testing/libfuzzer/fuzzers/"],"files":["/COMMIT_MSG","testing/libfuzzer/fuzzers/dicts/javascript_parser_proto.dict"],"cls":[[8597787,20745,414,443,0,[[0,0,1,1],[1,416,2,2]]]]}
+{"dirs":["testing/libfuzzer/fuzzers/"],"files":["/COMMIT_MSG","testing/libfuzzer/fuzzers/dicts/javascript_parser_proto.dict"],"revs":["rizvis@google.com"],"cls":[[8597787,20745,414,443,0,[0],[[0,0,1,1],[1,416,2,2]]]]}

@@ -1,1 +1,1 @@
-{"dirs":["tools/metrics/histograms/","chrome/common/extensions/"],"files":["chrome/common/extensions/docs/templates/articles/devtools.html"],"cls":[[2279303,18446,1,0,0],[1664,3,1,1,0],[90980,50,1,2,1,[[0,1,1,1]]]]}
+{"dirs":["tools/metrics/histograms/","chrome/common/extensions/"],"files":["chrome/common/extensions/docs/templates/articles/devtools.html"],"revs":["bcwhite@google.com","mathias@google.com","rdevlin.cronin@google.com","yangguo@google.com"],"cls":[[2279303,18446,1,0,0,[0]],[1664,3,1,1,0,[1]],[90980,50,1,2,1,[2,3],[[0,1,1,1]]]]}

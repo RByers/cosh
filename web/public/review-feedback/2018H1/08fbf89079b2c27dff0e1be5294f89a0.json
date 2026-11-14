@@ -1,1 +1,1 @@
-{"dirs":["chrome/browser/ash/"],"files":["chrome/browser/ash/arc/policy/arc_policy_bridge.cc","chrome/browser/ash/arc/policy/arc_policy_bridge_unittest.cc"],"cls":[[804315,17549,57,26,0,[[0,12,4,4],[1,45,3,3]]]]}
+{"dirs":["chrome/browser/ash/"],"files":["chrome/browser/ash/arc/policy/arc_policy_bridge.cc","chrome/browser/ash/arc/policy/arc_policy_bridge_unittest.cc"],"revs":["bartfab@google.com","hidehiko@google.com"],"cls":[[804315,17549,57,26,0,[0,1],[[0,12,4,4],[1,45,3,3]]]]}

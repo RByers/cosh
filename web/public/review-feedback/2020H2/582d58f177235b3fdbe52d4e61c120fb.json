@@ -1,1 +1,1 @@
-{"dirs":["content/browser/appcache/","tools/metrics/histograms/","docs/mac/"],"files":["tools/metrics/histograms/histograms.xml"],"cls":[[2347968,18485,1,307,0],[2220,3,333,308,[[0,323],[1,10]],[[0,10,2,2]]],[9393,3,2,309,2]]}
+{"dirs":["content/browser/appcache/","tools/metrics/histograms/","docs/mac/"],"files":["tools/metrics/histograms/histograms.xml"],"revs":["enne@google.com","mek@google.com","isherman@google.com","ellyjones@google.com"],"cls":[[2347968,18485,1,307,0,[0,1]],[2220,3,333,308,[[0,323],[1,10]],[0,2,1],[[0,10,2,2]]],[9393,3,2,309,2,[3]]]}

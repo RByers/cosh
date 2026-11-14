@@ -1,1 +1,1 @@
-{"dirs":["components/exo/wayland/","chrome/browser/ash/"],"files":["/COMMIT_MSG","chrome/browser/ash/arc/tracing/arc_tracing_event.cc"],"cls":[[1474684,17942,1,16,0,[[0,0,1,0]]],[138015,89,10,16,1],[3626,2,138,17,1,[[1,8,1,0]]]]}
+{"dirs":["components/exo/wayland/","chrome/browser/ash/"],"files":["/COMMIT_MSG","chrome/browser/ash/arc/tracing/arc_tracing_event.cc"],"revs":["tbarzic@google.com","khmel@google.com","yusukes@google.com"],"cls":[[1474684,17942,1,16,0,[0],[[0,0,1,0]]],[138015,89,10,16,1,[1,2]],[3626,2,138,17,1,[1],[[1,8,1,0]]]]}

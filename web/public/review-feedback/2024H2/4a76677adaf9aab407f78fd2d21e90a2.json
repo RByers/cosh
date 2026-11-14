@@ -1,1 +1,1 @@
-{"dirs":["third_party/blink/renderer/"],"files":["/COMMIT_MSG","third_party/blink/renderer/platform/widget/input/scroll_predictor.cc"],"cls":[[6022430,20052,35,2,0,[[0,0,1,1],[1,4,1,1]]]]}
+{"dirs":["third_party/blink/renderer/"],"files":["/COMMIT_MSG","third_party/blink/renderer/platform/widget/input/scroll_predictor.cc"],"revs":["flackr@google.com","jonross@google.com","skobes@google.com"],"cls":[[6022430,20052,35,2,0,[0,1,2],[[0,0,1,1],[1,4,1,1]]]]}

@@ -1,1 +1,1 @@
-{"dirs":["(root)/","third_party/google_benchmark/"],"files":["/COMMIT_MSG","third_party/google_benchmark/BUILD.gn"],"cls":[[4131525,19431,11,0,0,[[0,0,2,0]]],[204956,0,22,1,[[1,21],[0,1]],[[1,18,1,1]]],[23391,7,3,1,0]]}
+{"dirs":["(root)/","third_party/google_benchmark/"],"files":["/COMMIT_MSG","third_party/google_benchmark/BUILD.gn"],"revs":["tikuta@google.com","asully@google.com","lizeb@google.com","machenbach@google.com"],"cls":[[4131525,19431,11,0,0,[0],[[0,0,2,0]]],[204956,0,22,1,[[1,21],[0,1]],[1],[[1,18,1,1]]],[23391,7,3,1,0,[2,3]]]}

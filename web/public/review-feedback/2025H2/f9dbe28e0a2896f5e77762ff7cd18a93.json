@@ -1,1 +1,1 @@
-{"dirs":["third_party/abseil-cpp/absl/","third_party/abseil-cpp/","third_party/abseil-cpp/CMake/"],"files":["third_party/abseil-cpp/absl/debugging/failure_signal_handler.cc"],"cls":[[7118939,20396,113,129,[[0,78],[1,29],[2,6]],[[0,2,1,0]]]]}
+{"dirs":["third_party/abseil-cpp/absl/","third_party/abseil-cpp/","third_party/abseil-cpp/CMake/"],"files":["third_party/abseil-cpp/absl/debugging/failure_signal_handler.cc"],"revs":["danilchap@google.com","hans@google.com"],"cls":[[7118939,20396,113,129,[[0,78],[1,29],[2,6]],[0,1],[[0,2,1,0]]]]}

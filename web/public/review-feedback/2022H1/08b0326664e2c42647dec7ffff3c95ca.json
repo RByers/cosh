@@ -1,1 +1,1 @@
-{"dirs":["infra/config/generated/","infra/config/subprojects/","build/chromeos/","build/config/chromeos/","testing/"],"files":[],"cls":[[3485526,19046,2,62,[[0,1],[1,1]]],[48992,23,174,63,[[2,108],[3,67],[4,1]]]]}
+{"dirs":["infra/config/generated/","infra/config/subprojects/","build/chromeos/","build/config/chromeos/","testing/"],"files":[],"revs":["gatong@google.com","bpastene@google.com","sshrimp@google.com","tikuta@google.com"],"cls":[[3485526,19046,2,62,[[0,1],[1,1]],[0]],[48992,23,174,63,[[2,108],[3,67],[4,1]],[1,2,3]]]}

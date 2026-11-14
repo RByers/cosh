@@ -1,1 +1,1 @@
-{"dirs":["net/http/","services/network/","content/browser/browsing_data/"],"files":["net/http/http_auth_cache.cc","net/http/http_auth_cache_unittest.cc"],"cls":[[6163789,20102,65,25,[[0,59],[1,6]],[[0,9,1,1],[1,46,2,2]]],[21293,7,1,26,2]]}
+{"dirs":["net/http/","services/network/","content/browser/browsing_data/"],"files":["net/http/http_auth_cache.cc","net/http/http_auth_cache_unittest.cc"],"revs":["nidhijaju@google.com","ricea@google.com","dullweber@google.com"],"cls":[[6163789,20102,65,25,[[0,59],[1,6]],[0,1],[[0,9,1,1],[1,46,2,2]]],[21293,7,1,26,2,[2,0]]]}

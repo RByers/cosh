@@ -1,1 +1,1 @@
-{"dirs":["chrome/browser/ui/","chrome/browser/","(root)/"],"files":["chrome/app/chrome_main_delegate.cc","chrome/browser/ui/views/process_singleton_dialog_linux.cc"],"cls":[[8040202,20661,128,0,[[0,125],[1,2],[2,1]],[[0,0,1,1],[1,0,17,17]]]]}
+{"dirs":["chrome/browser/ui/","chrome/browser/","(root)/"],"files":["chrome/app/chrome_main_delegate.cc","chrome/browser/ui/views/process_singleton_dialog_linux.cc"],"revs":["grt@google.com","thomasanderson@google.com"],"cls":[[8040202,20661,128,0,[[0,125],[1,2],[2,1]],[0,1],[[0,0,1,1],[1,0,17,17]]]]}

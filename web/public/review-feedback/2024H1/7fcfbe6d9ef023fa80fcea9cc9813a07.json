@@ -1,1 +1,1 @@
-{"dirs":["base/hash/","(root)/","base/strings/"],"files":["/COMMIT_MSG","base/hash/md5_unittest.cc","base/strings/safe_sprintf_unittest.cc"],"cls":[[5331859,19787,43,0,[[0,42],[1,1]],[[0,0,1,1],[1,42,15,11]]],[42916,20,7,1,2,[[2,7,1,1]]]]}
+{"dirs":["base/hash/","(root)/","base/strings/"],"files":["/COMMIT_MSG","base/hash/md5_unittest.cc","base/strings/safe_sprintf_unittest.cc"],"revs":["thestig@google.com","tsepez@google.com","fdoray@google.com"],"cls":[[5331859,19787,43,0,[[0,42],[1,1]],[0,1],[[0,0,1,1],[1,42,15,11]]],[42916,20,7,1,2,[2,0],[[2,7,1,1]]]]}

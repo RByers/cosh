@@ -58,13 +58,19 @@ quality of their engineering work against their peers', and track how it
 changes as they improve.
 
 - **Their own work, not where or when they worked.** Differences that come
-  from the directory (its reviewers and norms), the period (Chromium-wide
-  shifts in how much feedback changes draw) or the stage of a career are
-  not the person's, so a comparison is with peers doing similar work: the
-  same directory and experience, and the same time where that measurably
-  helps (for the Feedback Index it hasn't yet: rates from narrower periods
-  predicted peers' feedback worse, `docs/review-feedback-drift.md`). What
-  remains should be about the person.
+  from the directory, its reviewers and their norms, the period
+  (Chromium-wide shifts in how much feedback changes draw) or the stage of
+  a career are not the person's, so a comparison is with similar work: in
+  the Feedback Index, the same experience and the same reviewers (each
+  reviewer's factor carries their directory's norms too, and predicts
+  feedback better than the directory: `docs/review-feedback-reviewers.md`),
+  and the same time where that measurably helps (it hasn't yet:
+  `docs/review-feedback-drift.md`). What remains should be about the
+  person.
+- **No reward for gaming.** A person shouldn't be able to improve their
+  figure by something other than better work, such as picking lenient
+  reviewers; the Feedback Index compares each change with what its own
+  reviewers' approvals draw for that reason.
 - **Improvement over time is visible.** A person's figures for different
   periods must be comparable, so a better or worse half-year shows as one.
   In the Feedback Index, the addressed feedback rate (AFR) is absolute (it
@@ -147,6 +153,12 @@ This goal is about committed files only: data on disk that isn't committed
   Feedback Index each rewrites about 35–50 MB of compressed data. Prefer
   changes that touch the small global files over changes to the per-person
   files.
+- **Large files go to Cloudflare R2, not GitHub** (the user's decision,
+  2026-11-14). Large or fast-churning published data, such as the
+  per-person files, will be stored in Cloudflare R2 and served from there,
+  and GitHub will keep the code, docs and small data. Not set up yet: until
+  it is, the published data stays committed under the limits above, and
+  moving it is planned work (`docs/plan.md`).
 
 ## 5. Moderately low token costs for each weekly update
 

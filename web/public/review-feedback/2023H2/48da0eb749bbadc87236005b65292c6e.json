@@ -1,1 +1,1 @@
-{"dirs":["content/browser/android/","(root)/"],"files":["/COMMIT_MSG","content/browser/android/java/gin_java_bridge_dispatcher_host.cc"],"cls":[[4861403,19641,43,0,[[0,45],[1,1]],[[0,0,1,0],[1,43,2,2]]],[96679,22,49,1,[[0,51],[1,1]],[[1,41,1,1]]]]}
+{"dirs":["content/browser/android/","(root)/"],"files":["/COMMIT_MSG","content/browser/android/java/gin_java_bridge_dispatcher_host.cc"],"revs":["alexmos@google.com","torne@google.com","dtapuska@google.com"],"cls":[[4861403,19641,43,0,[[0,45],[1,1]],[0,1],[[0,0,1,0],[1,43,2,2]]],[96679,22,49,1,[[0,51],[1,1]],[2,1],[[1,41,1,1]]]]}

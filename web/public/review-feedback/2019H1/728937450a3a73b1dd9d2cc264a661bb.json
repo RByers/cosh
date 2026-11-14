@@ -1,1 +1,1 @@
-{"dirs":["services/device/public/","services/device/serial/","chrome/test/","testing/buildbot/","testing/"],"files":["testing/rendering_perf_tests/BUILD.gn"],"cls":[[1571701,18009,16,7,[[0,15],[1,1]]],[64111,43,20,8,[[2,19],[3,1],[4,0]],[[0,0,1,1]]]]}
+{"dirs":["services/device/public/","services/device/serial/","chrome/test/","testing/buildbot/","testing/"],"files":["testing/rendering_perf_tests/BUILD.gn"],"revs":["reillyg@google.com","dpranke@google.com","kbr@google.com"],"cls":[[1571701,18009,16,7,[[0,15],[1,1]],[0]],[64111,43,20,8,[[2,19],[3,1],[4,0]],[1,2],[[0,0,1,1]]]]}

@@ -1,1 +1,1 @@
-{"dirs":["third_party/blink/renderer/"],"files":["/COMMIT_MSG","third_party/blink/renderer/core/BUILD.gn","third_party/blink/renderer/core/testing/core_unit_test_helper.h"],"cls":[[914213,17610,74,34,0,[[0,0,2,2],[1,2,1,1],[2,3,1,0]]]]}
+{"dirs":["third_party/blink/renderer/"],"files":["/COMMIT_MSG","third_party/blink/renderer/core/BUILD.gn","third_party/blink/renderer/core/testing/core_unit_test_helper.h"],"revs":["dmazzoni@google.com","flackr@google.com","haraken@google.com","mstensho@google.com"],"cls":[[914213,17610,74,34,0,[0,1,2,3],[[0,0,2,2],[1,2,1,1],[2,3,1,0]]]]}

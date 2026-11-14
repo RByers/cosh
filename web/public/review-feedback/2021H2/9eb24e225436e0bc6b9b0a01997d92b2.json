@@ -1,1 +1,1 @@
-{"dirs":["chrome/common/","chrome/browser/ash/","tools/metrics/histograms/"],"files":["/COMMIT_MSG","tools/metrics/histograms/metadata/browser/histograms.xml"],"cls":[[3343208,18984,32,0,[[0,16],[1,14],[2,2]],[[0,0,2,2],[1,2,1,0]]]]}
+{"dirs":["chrome/common/","chrome/browser/ash/","tools/metrics/histograms/"],"files":["/COMMIT_MSG","tools/metrics/histograms/metadata/browser/histograms.xml"],"revs":["alemate@google.com","mutexlox@google.com","yashard@google.com"],"cls":[[3343208,18984,32,0,[[0,16],[1,14],[2,2]],[0,1,2],[[0,0,2,2],[1,2,1,0]]]]}

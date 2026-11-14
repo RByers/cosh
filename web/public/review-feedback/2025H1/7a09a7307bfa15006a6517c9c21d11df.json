@@ -1,1 +1,1 @@
-{"dirs":["third_party/blink/web_tests/","third_party/blink/renderer/","(root)/"],"files":["third_party/blink/renderer/core/layout/mathml/math_operator_layout_algorithm.cc"],"cls":[[6420323,20194,117,2,[[0,95],[1,21],[2,1]],[[0,20,1,1]]]]}
+{"dirs":["third_party/blink/web_tests/","third_party/blink/renderer/","(root)/"],"files":["third_party/blink/renderer/core/layout/mathml/math_operator_layout_algorithm.cc"],"revs":["fwang@igalia.com","ikilpatrick@google.com"],"cls":[[6420323,20194,117,2,[[0,95],[1,21],[2,1]],[0,1],[[0,20,1,1]]]]}

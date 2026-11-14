@@ -1,1 +1,1 @@
-{"dirs":["infra/config/"],"files":["infra/config/cr-buildbucket.cfg"],"cls":[[1529449,17974,6,20,0],[2274,1,1,21,0,[[0,1,1,0]]],[3540,2,1,22,0],[119015,83,5,25,0]]}
+{"dirs":["infra/config/"],"files":["infra/config/cr-buildbucket.cfg"],"revs":["hinoka@google.com","thakis@google.com","jbudorick@google.com"],"cls":[[1529449,17974,6,20,0,[0]],[2274,1,1,21,0,[0],[[0,1,1,0]]],[3540,2,1,22,0,[1]],[119015,83,5,25,0,[2]]]}

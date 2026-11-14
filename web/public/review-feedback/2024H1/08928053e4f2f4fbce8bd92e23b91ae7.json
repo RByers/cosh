@@ -1,1 +1,1 @@
-{"dirs":["tools/json_schema_compiler/test/"],"files":["/COMMIT_MSG","tools/json_schema_compiler/test/converted_schemas/document_scan.idl"],"cls":[[5372730,19801,315,1,0,[[0,0,1,1],[1,315,5,5]]]]}
+{"dirs":["tools/json_schema_compiler/test/"],"files":["/COMMIT_MSG","tools/json_schema_compiler/test/converted_schemas/document_scan.idl"],"revs":["bmgordon@google.com","tjudkins@google.com"],"cls":[[5372730,19801,315,1,0,[0,1],[[0,0,1,1],[1,315,5,5]]]]}

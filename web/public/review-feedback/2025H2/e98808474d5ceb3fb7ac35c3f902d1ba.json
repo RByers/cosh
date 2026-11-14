@@ -1,1 +1,1 @@
-{"dirs":["content/test/gpu/"],"files":["content/test/gpu/gpu_tests/test_expectations/webgl_conformance_expectations.txt","/COMMIT_MSG"],"cls":[[6937051,20346,10,7,0,[[0,8,2,2]]],[40554,9,4,8,0,[[1,0,2,2]]]]}
+{"dirs":["content/test/gpu/"],"files":["content/test/gpu/gpu_tests/test_expectations/webgl_conformance_expectations.txt","/COMMIT_MSG"],"revs":["bsheedy@google.com","syoussefi@google.com","zijiehe@google.com"],"cls":[[6937051,20346,10,7,0,[0,1],[[0,8,2,2]]],[40554,9,4,8,0,[0,2],[[1,0,2,2]]]]}

@@ -1,1 +1,1 @@
-{"dirs":["base/","build/fuchsia/fidlgen_js/"],"files":["/COMMIT_MSG","base/logging_unittest.cc"],"cls":[[1696995,18094,42,0,0,[[0,0,1,1],[1,42,2,2]]],[22469,13,1,1,1]]}
+{"dirs":["base/","build/fuchsia/fidlgen_js/"],"files":["/COMMIT_MSG","base/logging_unittest.cc"],"revs":["sergeyu@google.com","wez@google.com"],"cls":[[1696995,18094,42,0,0,[0,1],[[0,0,1,1],[1,42,2,2]]],[22469,13,1,1,1,[1]]]}

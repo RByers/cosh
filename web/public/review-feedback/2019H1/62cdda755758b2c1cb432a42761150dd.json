@@ -1,1 +1,1 @@
-{"dirs":["build/toolchain/win/","chrome/browser/browser_switcher/"],"files":["build/toolchain/win/midl.gni"],"cls":[[1666483,18072,20,0,[[0,16],[1,4]],[[0,13,2,0]]]]}
+{"dirs":["build/toolchain/win/","chrome/browser/browser_switcher/"],"files":["build/toolchain/win/midl.gni"],"revs":["dpranke@google.com","nicolaso@google.com","pastarmovj@google.com"],"cls":[[1666483,18072,20,0,[[0,16],[1,4]],[0,1,2],[[0,13,2,0]]]]}

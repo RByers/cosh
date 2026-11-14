@@ -1,1 +1,1 @@
-{"dirs":["tools/perf/core/","testing/buildbot/","docs/speed/"],"files":["tools/perf/core/bot_platforms.py","tools/perf/core/shard_maps/android-pixel6-perf-pgo_map.json"],"cls":[[4976189,19655,33,24,[[0,29],[1,2],[2,1]],[[0,10,1,1],[1,19,1,1]]]]}
+{"dirs":["tools/perf/core/","testing/buildbot/","docs/speed/"],"files":["tools/perf/core/bot_platforms.py","tools/perf/core/shard_maps/android-pixel6-perf-pgo_map.json"],"revs":["johnchen@google.com","wenbinzhang@google.com"],"cls":[[4976189,19655,33,24,[[0,29],[1,2],[2,1]],[0,1],[[0,10,1,1],[1,19,1,1]]]]}

@@ -1,1 +1,1 @@
-{"dirs":["third_party/libvpx/source/","(root)/","third_party/libvpx/","third_party/libaom/source/","third_party/libaom/"],"files":["/COMMIT_MSG"],"cls":[[8479377,20726,6,7,[[0,4],[1,1],[2,1]]],[41685,7,6,8,[[3,4],[1,1],[4,1]],[[0,0,1,1]]]]}
+{"dirs":["third_party/libvpx/source/","(root)/","third_party/libvpx/","third_party/libaom/source/","third_party/libaom/"],"files":["/COMMIT_MSG"],"revs":["jzern@google.com","marpan@google.com","wtc@google.com"],"cls":[[8479377,20726,6,7,[[0,4],[1,1],[2,1]],[0,1]],[41685,7,6,8,[[3,4],[1,1],[4,1]],[1,2],[[0,0,1,1]]]]}

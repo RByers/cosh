@@ -1,1 +1,1 @@
-{"dirs":["chrome/browser/resources/","chrome/browser/ash/"],"files":["chrome/browser/resources/chromeos/login/screens/oobe/welcome.html","ui/webui/resources/css/dialogs.css"],"cls":[[2534290,18591,59,0,[[0,35],[1,24]],[[0,17,1,1],[1,0,1,1]]]]}
+{"dirs":["chrome/browser/resources/","chrome/browser/ash/"],"files":["chrome/browser/resources/chromeos/login/screens/oobe/welcome.html","ui/webui/resources/css/dialogs.css"],"revs":["antrim@google.com","drcrash@google.com"],"cls":[[2534290,18591,59,0,[[0,35],[1,24]],[0,1],[[0,17,1,1],[1,0,1,1]]]]}

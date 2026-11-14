@@ -1,1 +1,1 @@
-{"dirs":["content/browser/usb/","content/test/"],"files":["content/browser/usb/web_usb_service_impl.cc","content/browser/usb/web_usb_service_impl_unittest.cc"],"cls":[[7771051,20634,38,0,[[0,37],[1,1]],[[0,7,1,0],[1,30,1,1]]]]}
+{"dirs":["content/browser/usb/","content/test/"],"files":["content/browser/usb/web_usb_service_impl.cc","content/browser/usb/web_usb_service_impl_unittest.cc"],"revs":["brandm@microsoft.com","reillyg@google.com"],"cls":[[7771051,20634,38,0,[[0,37],[1,1]],[0,1],[[0,7,1,0],[1,30,1,1]]]]}

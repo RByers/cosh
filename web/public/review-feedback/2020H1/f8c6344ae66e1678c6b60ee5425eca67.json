@@ -1,1 +1,1 @@
-{"dirs":["chrome/browser/ash/","build/"],"files":["/COMMIT_MSG","chrome/browser/ash/arc/session/arc_session_manager.cc"],"cls":[[1981519,18269,14,41,0,[[0,0,1,0],[1,14,2,2]]],[252805,156,1,42,1]]}
+{"dirs":["chrome/browser/ash/","build/"],"files":["/COMMIT_MSG","chrome/browser/ash/arc/session/arc_session_manager.cc"],"revs":["yusukes@google.com","thomasanderson@google.com"],"cls":[[1981519,18269,14,41,0,[0],[[0,0,1,0],[1,14,2,2]]],[252805,156,1,42,1,[1]]]}

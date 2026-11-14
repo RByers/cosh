@@ -1,1 +1,1 @@
-{"dirs":["build/config/compiler/","tools/metrics/histograms/"],"files":["tools/metrics/histograms/extract_histograms.py","tools/metrics/histograms/merge_xml.py"],"cls":[[1792702,18150,1,2,0],[79350,44,127,3,1,[[0,117,32,15],[1,5,1,0]]]]}
+{"dirs":["build/config/compiler/","tools/metrics/histograms/"],"files":["tools/metrics/histograms/extract_histograms.py","tools/metrics/histograms/merge_xml.py"],"revs":["thakis@google.com","asvitkine@google.com"],"cls":[[1792702,18150,1,2,0,[0]],[79350,44,127,3,1,[1],[[0,117,32,15],[1,5,1,0]]]]}

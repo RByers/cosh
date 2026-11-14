@@ -1,1 +1,1 @@
-{"dirs":["components/cronet/gn2bp/","components/cronet/tools/"],"files":["components/cronet/gn2bp/gen_android_bp.py"],"cls":[[7186506,20417,2,196,0],[18375,1,5,197,1],[-115,0,56,198,0,[[0,56,1,0]]]]}
+{"dirs":["components/cronet/gn2bp/","components/cronet/tools/"],"files":["components/cronet/gn2bp/gen_android_bp.py"],"revs":["edechamps@google.com","stefanoduo@google.com","aymanm@google.com"],"cls":[[7186506,20417,2,196,0,[0,1]],[18375,1,5,197,1,[0]],[-115,0,56,198,0,[2],[[0,56,1,0]]]]}

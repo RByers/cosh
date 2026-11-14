@@ -54,45 +54,62 @@ class ReviewFeedbackTest(unittest.TestCase):
         self.assertEqual(R.BIN_LABELS[:3] + R.BIN_LABELS[-2:], ["8", "16", "32", "2k", ">2k"])
 
     def test_rate_model(self):
-        # Twenty people with 30 one-directory CLs each: half in ui/a/ (2 addressed per 100 lines)
-        # and half in base/a/ (1 per 100 lines), each doubled at the lower of two levels of experience.
+        # Twenty people with 40 CLs of 100 lines each, all in ui/a/ at one experience: half approved by a
+        # strict reviewer (4 addressed threads), half by an easy one (2), every person alike; then 10 CLs
+        # each without an approver, which draw nothing.
         def row(pid, i):
-            d = "ui/a/" if pid % 2 else "base/a/"
-            b = 1 if i < 15 else 3
-            a = (2 if pid % 2 else 1) * (2 if b == 1 else 1)
-            return R.Row(pid, 0, 100, 8 if b == 1 else 32, b, "google.com" if pid < 15 else "x.com", a,
-                         [(d, 1.0, a, a + 1)], d)
-        rows = [row(pid, i) for pid in range(20) for i in range(30)]
-        # Plus a few CLs in a small directory, which takes its parent's rate.
-        rows += [R.Row(0, 0, 100, 8, 1, "google.com", 0, [("ui/b/", 1.0, 0, 0)], "ui/b/")] * 3
-        old = R.MIN_RATE_CLS
-        R.MIN_RATE_CLS = 100
-        try:
-            m = R.rate_model(rows)
-        finally:
-            R.MIN_RATE_CLS = old
-        self.assertEqual((m["ref_bin"][1], m["ref_bin"][3]), (3.0, 1.5))
-        self.assertIsNone(m["ref_bin"][0])
+            if i >= 40:
+                return R.Row(pid, 0, 100, 8, 1, "o", 0, [("ui/a/", 1.0, 0, 0)], "ui/a/", ())
+            strict = i % 2 == 0
+            a = 4 if strict else 2
+            return R.Row(pid, 0, 100, 8, 1, "o", a, [("ui/a/", 1.0, a, a)], "ui/a/",
+                         ("strict@x.com",) if strict else ("easy@x.com",))
+        rows = [row(pid, i) for pid in range(20) for i in range(50)]
+        m = R.rate_model(rows)
         self.assertNotIn("_ue", {k for k in m if not k.startswith("_")})
-        # Sums over all the data per directory and bin ([CLs' worth, lines, addressed]); ui/ pools ui/a/
-        # and ui/b/, which is too small for its own.
-        rates = m["rates"]
-        self.assertEqual(len(rates["ui/a/"]), len(R.BIN_LABELS))
-        self.assertEqual([rates["ui/a/"][b] for b in (0, 1, 3)], [None, [150, 15000, 600], [150, 15000, 300]])
-        self.assertEqual(rates["ui/"][1], [153, 15300, 600])
-        self.assertNotIn("ui/b/", rates)
-        self.assertEqual(R.dir_levels("ui/a/b/"), ["ui/a/b/", "ui/a/", "ui/", ""])
-        # Everyone's lines, or without the person's own: pid 0's three ui/b/ CLs come off ui/.
-        old = R.MIN_RATE_CLS
-        R.MIN_RATE_CLS = 100
+        self.assertNotIn("rates", m)
+        # Everyone's AFR at experience bin 1: 20 × 120 threads over 20 × 5,000 lines.
+        self.assertEqual(m["rate_bin"][1], 2.4)
+        # Reviewers: strict draws twice what easy does; over all CLs the factors average to 1, and CLs
+        # without an approver, which drew nothing, take a factor near 0.
+        f = m["_rev_factors"]
+        # (a little under 2: each factor is shrunk toward 1 with FACTOR_SHRINK expected threads).
+        self.assertAlmostEqual(f["strict@x.com"] / f["easy@x.com"], 2.0, delta=0.08)
+        self.assertGreater(f["strict@x.com"] / f["easy@x.com"], 1.9)
+        self.assertLess(m["rev_none"], 0.1)
+        total = sum(r.lines / 100 * m["rate_bin"][r.bin] for r in rows)
+        weighted = sum(r.lines / 100 * m["rate_bin"][r.bin] * R.rev_factor(r, f, m["rev_none"]) for r in rows)
+        self.assertAlmostEqual(weighted / total, 1.0, delta=0.002)
+        # Everyone is alike, so every index is 1 after scaling, and each CL's expected threads are its
+        # lines / 100 × the rate × its reviewer's factor × the scale.
+        r = rows[0]
+        self.assertAlmostEqual(R.expected(r, m), 100 / 100 * 2.4 * f["strict@x.com"] * m["scale"])
+        self.assertEqual(R.unit_expected(r, m), [R.expected(r, m)])
+        ex = [R.expected(x, m) for x in rows if x.pid == 3]
+        self.assertAlmostEqual(sum(x.addr for x in rows if x.pid == 3) / sum(ex), 1.0, places=3)
+        # The methodology: a size factor per bucket, the peer groups compared, drift per half-year.
+        meth = R.method_compare(rows)
+        self.assertEqual([k for k, _, _ in meth], ["e", "d", "r", "dr", "rd"])
+        self.assertEqual(meth[0][2], 0.0)
+        # Everyone works in ui/a/, so the directory explains nothing and the reviewer a lot.
+        self.assertAlmostEqual(meth[1][2], 0.0, places=1)
+        self.assertGreater(meth[2][2], 20)
+        drift = R.drift_series(rows, m)
+        self.assertEqual([d[0] for d in drift], ["1970H1"])
+        self.assertAlmostEqual(drift[0][2], 1.0, places=3)
+        self.assertEqual(R.size_deviance(rows[:1], [4.0]), 0.0)
+        # Reviewers within directories (2 levels): ui/a/ has only two reviewers, too few to list.
+        self.assertEqual(R.dir_reviewers(rows), [])
+        old = R.MIN_PEERS
+        R.MIN_PEERS = 2
         try:
-            own0 = R.rate_cells([r for r in rows if r.pid == 0])
-            self.assertEqual(R.peer_rate(m["rates"], None, "ui/b/", 1), 100 * 600 / 15300)
-            self.assertEqual(R.peer_rate(m["rates"], own0, "ui/b/", 1), 4.0)
-            self.assertEqual(R.peer_rate(m["rates"], None, "net/x/", 1), 100 * 900 / 30300)
-            self.assertEqual(R.peer_rate(m["rates"], None, "net/x/", 3), 100 * 450 / 30000)
+            dr = R.dir_reviewers(rows)
         finally:
-            R.MIN_RATE_CLS = old
+            R.MIN_PEERS = old
+        self.assertEqual([(d[0], d[2]) for d in dr], [("ui/a/", 2)])
+        self.assertAlmostEqual(dr[0][1], 1.0, delta=0.01)
+
+    def test_peer_rate_for_the_methodology(self):
         # A directory left under the minimum without the person falls back to its parent, then to
         # everyone's, however few.
         cells = lambda x: [list(x) for _ in R.BIN_LABELS]
@@ -102,13 +119,6 @@ class ReviewFeedbackTest(unittest.TestCase):
         self.assertEqual(R.peer_rate(small, None, "ui/x/", 0), 3.0)
         self.assertEqual(R.peer_rate(small, mine(20), "ui/x/", 0), 2.5)
         self.assertEqual(R.peer_rate(small, mine(60), "ui/x/", 0), 1.0)
-        # In its own directory at its own experience everyone draws what peers do: an index of 1 each,
-        # so no scaling.
-        self.assertEqual(m["scale"], 1.0)
-        r = rows[1 * 30]          # pid 1 (ui/a/), bin 1: 15 CLs there of 100 lines with 4 addressed
-        self.assertAlmostEqual(R.expected(r, m), 4.0)
-        self.assertEqual(R.unit_expected(r, m), [R.expected(r, m)])
-        self.assertNotIn("f_org", m)
 
     def test_dir_table(self):
         # Lines and threads split by lines; small directories pooled per level, with how many.
@@ -135,6 +145,7 @@ class ReviewFeedbackTest(unittest.TestCase):
         # addressed, directory], listed out of order; files that drew none aren't listed.
         c1 = dict(change_number=1007, closed_at=86400 * 20000, lines=12, prior=3,
                   units={"a/b/c/": 9, "a/": 3}, main="a/b/c/", flines={"a/b/c/x.cc": 6, "a/z.cc": 3},
+                  revs=["a@x.com", "b@x.com"],
                   thr=[["r2", "a/b/c/x.cc", "2024-10-04", 1, "a/b/c/"],
                        ["r1", "/COMMIT_MSG", "2024-10-03", None, "a/b/c/"],
                        ["r3", "a/b/c/x.cc", "2024-10-04", 0, "a/b/c/"],
@@ -144,10 +155,12 @@ class ReviewFeedbackTest(unittest.TestCase):
         sh = R.shard([c1, c2])
         self.assertEqual(sh["dirs"], ["a/b/c/", "a/"])
         self.assertEqual(sh["files"], ["/COMMIT_MSG", "a/b/c/x.cc", "a/z.cc"])
-        # [change number delta, day delta, lines, earlier commits, units(, files)]; a file:
+        self.assertEqual(sh["revs"], ["a@x.com", "b@x.com"])
+        # [change number delta, day delta, lines, earlier commits, units, reviewers(, files)]; a file:
         # [file, lines there, threads, addressed], by name.
-        self.assertEqual(sh["cls"], [[1007, 20000, 12, 3, [[0, 9], [1, 3]], [[0, 0, 1, 0], [1, 6, 2, 1], [2, 3, 1, 1]]],
-                                     [3, 3, 5, 4, 1]])
+        self.assertEqual(sh["cls"], [[1007, 20000, 12, 3, [[0, 9], [1, 3]], [0, 1],
+                                      [[0, 0, 1, 0], [1, 6, 2, 1], [2, 3, 1, 1]]],
+                                     [3, 3, 5, 4, 1, []]])
         # The page puts a file's threads in its directory when that is a unit, else the first.
         self.assertEqual(R.page_dir("a/b/c/d/y.cc", {"a/b/c/": 1}, "x/"), "a/b/c/")
         self.assertEqual(R.page_dir("/COMMIT_MSG", {"a/": 1}, "x/"), "x/")

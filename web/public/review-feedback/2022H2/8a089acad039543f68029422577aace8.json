@@ -1,1 +1,1 @@
-{"dirs":["base/task/sequence_manager/","base/allocator/partition_allocator/"],"files":[],"cls":[[3755484,19184,2,10,0],[2731,2,58,11,1]]}
+{"dirs":["base/task/sequence_manager/","base/allocator/partition_allocator/"],"files":[],"revs":["altimin@google.com","cfroussios@google.com"],"cls":[[3755484,19184,2,10,0,[0]],[2731,2,58,11,1,[1]]]}

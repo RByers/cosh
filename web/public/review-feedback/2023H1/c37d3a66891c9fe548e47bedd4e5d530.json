@@ -1,1 +1,1 @@
-{"dirs":["chrome/browser/ash/"],"files":["/COMMIT_MSG","chrome/browser/ash/system_logs/reven_log_source.cc","chrome/browser/ash/system_logs/reven_log_source_unittest.cc"],"cls":[[4226932,19424,510,3,0,[[0,0,1,0],[1,206,3,2],[2,306,1,1]]]]}
+{"dirs":["chrome/browser/ash/"],"files":["/COMMIT_MSG","chrome/browser/ash/system_logs/reven_log_source.cc","chrome/browser/ash/system_logs/reven_log_source_unittest.cc"],"revs":["xiangdongkong@google.com"],"cls":[[4226932,19424,510,3,0,[0],[[0,0,1,0],[1,206,3,2],[2,306,1,1]]]]}

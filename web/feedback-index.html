@@ -110,15 +110,14 @@
         <a class="card-anchor" href="#index" aria-label="Link to this section" title="Link to this section">#</a>
         <h2 id="index-title">Feedback index</h2>
         <p class="rf-def">
-          <strong>Feedback index</strong>: a contributor's AFR compared with their peers'. In each directory, the
-          peers' rate is the AFR of everyone else's changes there that were landed with the same experience,
-          over all the data (a directory with too few such changes takes its parent directory's rate). A contributor's index in a
-          directory is their AFR there over their peers', and their overall index is all their addressed comments
-          over the number their peers would have drawn on the same lines, so directories count by how much
-          feedback peers draw there. 1.00× is typical (the median contributor); below 1 means less feedback than
-          peers, above 1 more. Because it compares each change with others at the same experience, the index
-          doesn't fall as someone gains experience the way the rate does: it shows how someone's feedback
-          compares with their peers' at every stage.
+          <strong>Feedback index</strong>: a contributor's addressed comments over the number their changes would
+          be expected to draw: everyone's AFR at the same experience, times how much feedback the changes'
+          reviewers' approvals usually draw (their reviewer factor: 1.00× for the typical reviewer). Comparing by
+          reviewer predicts feedback better than comparing by directory, and it means picking a lenient reviewer
+          doesn't lower anyone's index (see the methodology below). 1.00× is typical (the median contributor);
+          below 1 means less feedback than expected, above 1 more. Because it compares each change with others at
+          the same experience, the index doesn't fall as someone gains experience the way the rate does: it
+          shows how someone's feedback compares at every stage.
         </p>
         <h3>Everyone's feedback index</h3>
         <ul id="rf-fi-legend" class="legend rf-line-legend" aria-label="Lines"></ul>
@@ -130,8 +129,8 @@
           The feedback index of every contributor with <slot name="minCls"></slot> or more CLs from
           <slot name="from"></slot> to <slot name="to"></slot> (<slot name="n"></slot> contributors), over all
           their CLs. Half of them fall between <slot name="p25"></slot> and <slot name="p75"></slot>, and four in
-          five between <slot name="p10"></slot> and <slot name="p90"></slot>: at the same experience and in the same
-          directories, some contributors draw several times as much feedback per line as others.
+          five between <slot name="p10"></slot> and <slot name="p90"></slot>: at the same experience and with the same
+          reviewers, some contributors draw several times as much feedback per line as others.
         </template>
         <template data-msg="axis-fi-share">contributors (smoothed)</template>
 
@@ -155,7 +154,7 @@
           </table>
         </div>
         <template data-msg="dirs-more"><slot name="n"></slot> more</template>
-        <template data-msg="dirs-peers">Your peers' AFR on your lines there: <slot name="v"></slot></template>
+        <template data-msg="dirs-peers">The AFR expected on your lines there, for your experience and reviewers: <slot name="v"></slot></template>
         <p id="rf-all-dirs-note" class="note"></p>
         <template data-msg="all-dirs-note">
           Everyone's changes from <slot name="from"></slot> to <slot name="to"></slot> by directory, with each
@@ -228,8 +227,9 @@
         <h2 id="summary-title">Your feedback index</h2>
         <p id="summary-sub" class="sub"></p>
         <template data-msg="summary-sub">
-          Your AFR against your peers': everyone else in the same directories at the same experience, over all
-          your changes from <slot name="from"></slot> to <slot name="to"></slot>. 1.00× is typical.
+          Your addressed comments against what your changes would be expected to draw, for your experience and
+          your reviewers, over all your changes from <slot name="from"></slot> to <slot name="to"></slot>. 1.00×
+          is typical.
           <span data-if="!eligible">You landed fewer than <slot name="minCls"></slot> changes, too few to be
           ranked among peers, so treat your figures with care.</span>
         </template>
@@ -267,6 +267,37 @@
           line their median. Points with fewer of your changes are drawn hollow. Select one of your dots to
           see where that half-year's feedback came from, below.
         </p>
+      </section>
+
+      <section id="reviewers" class="card" aria-labelledby="reviewers-title">
+        <a class="card-anchor" href="#reviewers" aria-label="Link to this section" title="Link to this section">#</a>
+        <h2 id="reviewers-title">Your reviewers</h2>
+        <p class="sub">
+          Who approved your changes, and how much feedback their approvals usually draw. Your index compares
+          each change with what its reviewers' approvals draw on everyone's changes.
+        </p>
+        <div class="table-wrap">
+          <table id="rf-revs" class="rf-table">
+            <thead><tr><th scope="col">Reviewer</th>
+              <th scope="col" class="num" title="Your changes they approved">Your changes</th>
+              <th scope="col" class="num" title="Addressed comments on those changes, from anyone">Addressed</th>
+              <th scope="col" class="num" title="Your addressed comments per 100 lines on those changes">Your AFR</th>
+              <th scope="col" class="num" title="How much feedback changes they approve draw, against what experience predicts: 1.00× is typical">Reviewer factor</th>
+              <th scope="col" class="num" title="Everyone's changes they approved">Approved overall</th>
+              <th scope="col" class="num" title="Your feedback index on the changes they approved">Your index</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <p id="rf-revs-note" class="note"></p>
+        <template data-msg="revs-note">
+          <slot name="n"></slot> reviewers approved your changes, from their Reviewed-by lines (those who voted
+          Code-Review). A change with several counts under each, and its reviewer factor is their mean. A
+          reviewer factor is fitted together with every author's own factor, so a reviewer who mostly approves
+          newcomers' changes isn't counted as strict for that.<span data-if="hasNone"> <slot name="none"></slot>
+          of your changes had no approver; such changes draw almost no feedback, and their factor is
+          <slot name="noneF"></slot>.</span> Rows with fewer than <slot name="min"></slot> of your changes show no
+          AFR or index.
+        </template>
       </section>
 
       <section id="per-cl" class="card" aria-labelledby="per-cl-title">
@@ -345,6 +376,70 @@
       <details id="method" class="card rf-method">
         <summary><h2>Methodology and details</h2></summary>
 
+        <h3>Why compare by reviewer, not directory</h3>
+        <div class="rf-pair">
+          <div>
+            <h3>What each comparison predicts</h3>
+            <div class="chart rf-half-chart">
+              <canvas id="rf-method-chart" role="img" aria-label="Bar chart of how much of the change-to-change spread in addressed comments each way of comparing predicts, beyond experience and size: directory, reviewer, both, and reviewer within each directory."></canvas>
+            </div>
+          </div>
+          <div>
+            <h3>Reviewers within a directory</h3>
+            <div class="chart rf-half-chart">
+              <canvas id="rf-spread-chart" role="img" aria-label="For the busiest directories, the 10th to 90th percentile and middle half of their reviewers' factors, with the directory's own factor marked: how much feedback changes draw against what experience predicts, on a log scale."></canvas>
+            </div>
+          </div>
+        </div>
+        <p id="rf-method-note" class="note"></p>
+        <template data-msg="method-note">
+          Each way of comparing predicts every change's addressed comments from other contributors' changes
+          (the change's owner left out), and the chart shows how much of the error of predicting by experience and
+          size alone it removes. Knowing the directory removes <slot name="d"></slot>; knowing who approved the
+          change removes <slot name="r"></slot>. Adding the directory to the reviewer barely helps
+          (<slot name="dr"></slot>): reviewers mostly work in a few directories, so the reviewer already carries
+          what the directory said, plus how strict that reviewer is. A factor per reviewer and directory does a
+          little better (<slot name="rd"></slot>) but needs far more data. Comparing by reviewer also means that
+          choosing a lenient reviewer doesn't lower anyone's index.
+        </template>
+        <template data-msg="model-d">Directory</template>
+        <template data-msg="model-r">Reviewer</template>
+        <template data-msg="model-dr">Reviewer and directory</template>
+        <template data-msg="model-rd">Reviewer per directory</template>
+        <template data-msg="axis-method">% of the prediction error removed</template>
+        <p id="rf-spread-note" class="note"></p>
+        <template data-msg="spread-note">
+          Within each of the <slot name="n"></slot> busiest directories (two levels), reviewers differ a lot: in
+          <code><slot name="dir"></slot></code>, whose changes draw <slot name="dirF"></slot> what experience
+          predicts, the middle four in five reviewers' approved changes draw <slot name="lo"></slot> to
+          <slot name="hi"></slot>. A directory's own factor (the mark) sits in the middle of its reviewers', so the
+          reviewer tells you what the directory does, and how strict that reviewer is besides. The light bars are
+          the 10th–90th percentile of the reviewers with <slot name="min"></slot> or more expected addressed
+          comments there, the dark ones the middle half.
+        </template>
+        <template data-msg="axis-factor">factor (against experience alone)</template>
+
+        <h3>Drift over time</h3>
+        <ul id="rf-drift-legend" class="legend rf-line-legend" aria-label="Lines"></ul>
+        <div class="chart rf-half-chart">
+          <canvas id="rf-drift-chart" role="img" aria-label="Line chart per half-year of everyone's addressed comments against what is expected: by experience and size alone, and by experience, size, reviewers and authors."></canvas>
+        </div>
+        <p id="rf-drift-note" class="note"></p>
+        <template data-msg="drift-note">
+          Everyone's addressed comments each half-year against what was expected, where 1.00× is no drift. The
+          index compares with factors fitted over all the years, so a change in how much feedback Chromium draws
+          would move everyone's index together. Once reviewers and authors are accounted for, feedback has
+          been steady: <slot name="lo"></slot> to <slot name="hi"></slot> of what was expected each half-year up to
+          <slot name="upTo"></slot>, a little steadier than by experience and size alone. So comparing with factors
+          over all the years is sound. <slot name="last"></slot> is the exception: changes drew
+          <slot name="lastFull"></slot> of what was expected even with the same reviewers and authors
+          (<slot name="lastRaw"></slot> by experience and size alone), so indexes for it run low for everyone. The over-time chart in your section shows everyone's
+          spread each half-year, so compare your line with that.
+        </template>
+        <template data-msg="drift-raw">By experience and size</template>
+        <template data-msg="drift-full">And reviewers and authors</template>
+        <template data-msg="axis-drift">addressed against expected</template>
+
         <h3>How it's changing</h3>
         <div class="toggles">
           <div class="select-toggle">
@@ -411,8 +506,8 @@
           the most contributors (<span class="rf-min-cell"></span> or more changes each). Directories matter much less
           than experience or size, except that imported third-party code and configuration directories (such as
           <code>third_party/libvpx/</code> or <code>testing/buildbot/</code>) draw almost no feedback per line. Organizations differ,
-          but mostly through their contributors' experience. The feedback index compares within directories, not
-          organizations.
+          but mostly through their contributors' experience. The feedback index compares by reviewer, which
+          carries most of what the directory says (see above), and not by organization.
         </p>
         <template data-msg="axis-dir">directory</template>
         <template data-msg="axis-org">organization</template>
@@ -439,22 +534,19 @@
           contributor's rate in a bin counts with <span class="rf-min-bin"></span> or more changes there.
         </p>
         <p class="note">
-          The feedback index divides the addressed comments on your changes by the number your peers would have
-          drawn on the same lines. For each directory a change wrote lines in (three levels deep, such as
-          <code>chrome/browser/ui/</code>), those lines times the AFR of everyone else's lines in that directory
-          from changes landed at the same experience, over all the data (pooled: all their addressed comments
-          per 100 of all their lines). Your own changes are left out, so you never set the rate you are compared
-          with. Where a directory has fewer than <span class="rf-min-rate"></span> changes' worth at that
-          experience without yours, its parent's rate counts instead (<code>chrome/browser/</code>, then
-          <code>chrome/</code>, then all of Chromium). The rates cover every year: feedback per line does drift
-          (all of Chromium drew about a quarter less per line in 2026), but rates from a narrower period predicted
-          other contributors' feedback worse, because fewer directories then have enough changes of their own.
-          Pooled rates are lower than the typical contributor's (big changes draw less feedback per line),
-          so the expected comments are scaled to make the median contributor's index 1.00×. Adding up comments
-          and expected comments weighs each directory by the feedback peers would draw there: weighing by lines
-          instead lets a few comments in a directory that draws almost none (configuration, imported code) swing
-          the index, and made it less consistent between halves of each contributor's changes. The spread of
-          everyone's index (the tiles and the over-time chart) counts contributors with
+          The feedback index divides the addressed comments on your changes by the number they would be expected
+          to draw: each change's lines times everyone's AFR at the change's experience (pooled: all their
+          addressed comments per 100 of all their lines), times its reviewer factor. A change's reviewers are
+          its approvers (the Reviewed-by lines of the landed commit, those who voted Code-Review), and its
+          factor is their mean. Each reviewer's factor is fitted together with a factor for every author: a
+          change is expected to draw experience × author × reviewer, each factor is what it must be given the
+          others, and each is pulled toward 1.00× until it has enough changes behind it. So a reviewer isn't
+          counted as strict because they mostly approve newcomers, and your own changes don't set your
+          reviewers' factors. The factors cover every year (see “Drift over time” above). Pooled rates are lower
+          than the typical contributor's (big changes draw less feedback per line), so the expected comments are
+          scaled to make the median contributor's index 1.00×. A directory's index in the tables is its
+          addressed comments over the expected ones on the lines there, so it adds up to the overall index. The
+          spread of everyone's index (the tiles and the over-time chart) counts contributors with
           <span class="rf-min-cls"></span> or more changes in the period.
         </p>
         <p class="note">

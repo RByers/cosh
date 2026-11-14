@@ -1,1 +1,1 @@
-{"dirs":["tools/metrics/histograms/"],"files":["/COMMIT_MSG","tools/metrics/histograms/histograms.xml"],"cls":[[1592346,18019,72,3,0],[9586,38,44,4,0,[[0,0,1,1],[1,13,3,3]]],[61108,8,2,5,0]]}
+{"dirs":["tools/metrics/histograms/"],"files":["/COMMIT_MSG","tools/metrics/histograms/histograms.xml"],"revs":["alexilin@google.com","schenney@google.com","isherman@google.com"],"cls":[[1592346,18019,72,3,0,[0]],[9586,38,44,4,0,[1],[[0,0,1,1],[1,13,3,3]]],[61108,8,2,5,0,[2]]]}

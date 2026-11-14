@@ -1,1 +1,1 @@
-{"dirs":["chrome/app/","build/config/siso/"],"files":["/COMMIT_MSG","chrome/app/BUILD.gn","build/config/siso/clang_all.star"],"cls":[[8128344,20664,10,2,0,[[0,0,2,2],[1,10,2,2]]],[343087,61,5,3,1,[[2,5,2,1]]]]}
+{"dirs":["chrome/app/","build/config/siso/"],"files":["/COMMIT_MSG","chrome/app/BUILD.gn","build/config/siso/clang_all.star"],"revs":["grt@google.com","mark@google.com","jwata@google.com","tikuta@google.com"],"cls":[[8128344,20664,10,2,0,[0,1],[[0,0,2,2],[1,10,2,2]]],[343087,61,5,3,1,[2,3],[[2,5,2,1]]]]}

@@ -73,74 +73,62 @@ Both are fixed: the page has no switches for them (the user's call,
   SD of log index 0.806), the split-half rank correlation went from 0.775
   to 0.774, and 27 of 2,792 people moved by more than 5% (24 up, 3 down;
   9 up by more than 10%). Gerrit's counts already left most moves out.
-- **Feedback index (FI):** a person's AFR over their peers'. Per directory
-  a CL wrote lines in, the addressed threads its peers would have drawn are
-  those lines / 100 × the peers' rate there, and FI = addressed threads /
-  that sum (`unit_expected` in the script, `unitExpected` in
-  `web/src/feedback.ts`). The peers' rate (`rates`, `peer_rate`,
-  `peerRate`) is the pooled AFR of everyone else's lines in the CL's
-  3-level directory at its experience bin, over all the data: the
-  person's own CLs are left out (`rates` holds each cell's sums, [CLs'
-  worth, lines, addressed threads], and the script and page subtract the
-  person's own, `rate_cells` and `ownCells`). A directory with fewer than
-  `MIN_RATE_CLS` (50) CLs' worth there without them (each CL split over
-  its directories by inserted lines, `unit_fracs`; `cl_dirs` with
-  `dels=False`) takes its parent's (2 levels, then 1, then all of
-  Chromium), cell by cell. The comparison is
-  fixed: the page has no choice of peers (the experience, directory and
-  organization checkboxes went on 2026-11-14, see "One comparison" below).
+- **Feedback index (FI):** a person's addressed threads over the number
+  their CLs would be expected to draw, given their experience and their
+  reviewers. A CL is expected to draw its lines / 100 × everyone's pooled
+  AFR at its experience bin (`rate_bin`) × its reviewer factor × `scale`,
+  split over its directories by inserted lines (`unit_expected` in the
+  script, `unitExpected` in `web/src/feedback.ts`); FI = addressed threads
+  / that sum. The comparison is fixed: the page has no choice of peers.
+- **Reviewers** are a CL's approvers: the addresses in its landed commit's
+  `Reviewed-by` trailers (those who voted Code-Review; `commits.sqlite`
+  `reviewed_by`), as identities (`Ids.find`), the owner left out. 835,086
+  of the 872,196 CLs (96%) have at least one. A CL's **reviewer factor** is
+  its approvers' mean factor (`rev_factor`, `revFactor`); a CL without an
+  approver takes `rev_none` (0.018 on 2026-11-14: such CLs draw almost
+  nothing). Factors are fitted together with a factor for every author
+  (`two_way`): a CL is expected to draw base × author × reviewers' mean,
+  each factor is (observed + `FACTOR_SHRINK`) / (expected +
+  `FACTOR_SHRINK`) given the others (50 expected threads; a CL with
+  several approvers counts a share for each), alternating
+  `FACTOR_ITERS` (10) times. So a reviewer isn't counted as strict for
+  approving newcomers' or one weaker team's CLs, and a person's own CLs
+  don't set their reviewers' factors (the authors' factors take them).
+  Factors are then scaled so that over all CLs they leave the expected
+  total unchanged: 1.0 is the typical reviewer. 2,708 reviewers on
+  2026-11-14, their factors in `reviewers.json` by hashed address.
 
   Pooled rates are lower than the typical person's (big CLs draw less per
   line, and they carry most of the lines), so the expected threads are
   multiplied by `scale`, which makes the median person's index (people
-  with `MIN_CLS` CLs) exactly 1: 0.901 on 2026-11-14.
+  with `MIN_CLS` CLs) exactly 1: 0.978 on 2026-11-14.
 
-  **Why this way** (2026-11-14, replacing a median rate per experience bin
-  times a two-level directory factor). Comparing within each directory and
-  experience bin is what readers expect the index to mean, and the page
-  can show it: everyone's table lists each directory's AFR, and a person's
-  index in a row is their AFR there over the peers' rate on the same lines.
-  Adding up threads and expected threads weighs each directory by the
-  feedback peers draw there, so a parent's index is the same whether it is
-  open or not, and the overall index is the same sum. Weighing directories
-  by lines instead (a lines-weighted mean of per-directory indexes) lets a
-  few threads in a directory that draws almost none (configuration,
-  imported code) swing the index. Measured on the 2,808 people with 25+
-  CLs: the rank correlation of each person's index from their odd and
-  their even CLs was 0.739 with this method (`MIN_RATE_CLS` 200), 0.734 at
-  100, 0.723 at 50, 0.738 at 300, 0.698 weighing by lines, and 0.729 with
-  the old one; ranks under the new and old ones agree closely (Spearman
-  0.96). The spread barely moved: 10th–90th percentile 0.42–1.96 (was
-  0.43–1.91), quartiles 0.68 and 1.42 (0.67 and 1.39).
+  **By reviewer, not directory** (2026-11-14, the user's call, replacing
+  per-directory rates). Who approved a CL predicts its addressed threads
+  much better than its directory: each CL predicted from other people's
+  CLs (owner left out), scored by Poisson deviance with a factor per size
+  bucket, the directory removes 5.6% of the error of experience alone,
+  the reviewer 10.0%, both 10.2%, and a factor per reviewer and 2-level
+  directory 11.0% (`method_compare`, on the page as "What each comparison
+  predicts"). Reviewers mostly work in a few directories, so the reviewer
+  carries what the directory says, and within a busy directory reviewers
+  differ a lot (in `chrome/browser/`, whose CLs draw 1.26× what experience
+  predicts, the middle four in five reviewers' approved CLs draw 0.61× to
+  1.91×; `dir_reviewers`). It also means nobody improves their index by
+  picking lenient reviewers (`docs/goals.md`). The overall factor was
+  chosen over the per-directory one: a fifth more of the gain for a much
+  larger table. `docs/review-feedback-reviewers.md` has the study. A
+  fifth of people with 25+ CLs moved by more than 20%; quartiles 0.67 and
+  1.42 (were 0.68 and 1.44), 10th–90th percentile 0.41–1.87 (0.43–1.96).
 
-  **Without the person, over all the data, minimum 50** (2026-11-14).
-  A person's own CLs no longer set the rate they are compared with: in a
-  directory one person dominates, they pulled their index toward 1. For
-  a few hours that day the rates were per half-year, because feedback per
-  line drifts (all of Chromium drew 26% less than the all-time rates
-  expect in 2026; some directories moved 1.5–2.4×). That was judged by
-  how consistent each person's index was between halves of their CLs,
-  which turned out to reward coarser comparisons (no directories at all
-  scored highest). Judged instead by how well the peers' rates predict
-  other people's addressed threads (Poisson deviance per CL with a factor
-  per size bucket, each CL's owner left out), all-time rates beat every
-  time-local variant: per half-year (2.97M against 2.84M), widening each
-  directory's window back over earlier half-years until it has enough
-  CLs (2.91M), or both ways (2.86M), and all-time rates times a
-  Chromium-wide factor per half-year (2.89M). Directory detail matters
-  more than time, and lowering the minimum from 200 to 50 helped (2.82M;
-  25 the same, 10 and 100 worse). `docs/review-feedback-drift.md` has
-  the study. The spread: quartiles 0.68 and 1.44, 10th–90th percentile
-  0.43–1.96. The per-person files didn't change; `peers.json` holds 862
-  directories' sums (41 KB of its 83 KB gzipped).
-
-  **One comparison** (2026-11-14). The checkboxes that picked the peers
-  (experience and directories on, organization off) are gone, and with
-  them the organization factors: the goals (`docs/goals.md`) define the
-  index as a comparison within the same directory and experience, and
-  every other combination needed its own rate sums in `peers.json`
-  once the person is left out of their own peers. Organizations remain in
-  the methodology's chart.
+  **Before, the same day:** rates per 3-level directory and experience
+  bin (falling back to the parent under `MIN_RATE_CLS` CLs' worth),
+  replacing a median rate per experience bin times a two-level directory
+  factor; for a few hours rates per half-year, then all-time rates with the
+  person left out and a minimum of 50 (`docs/review-feedback-drift.md`).
+  The directory code stays for the methodology's comparison
+  (`rate_cells`, `peer_rate`). The experience, directory and organization
+  checkboxes went the same day: the index has one comparison.
 
 ## What it shows
 
@@ -174,8 +162,8 @@ on an axis to about 2.6.
 **The second card**, "Feedback index": its definition, and everyone's index
 (`fi_dist`: people with `MIN_CLS` CLs, over all the data), smoothed on a log2 grid from 1/8
 to 5.7 (kernel 0.15), with the median and the 10th and 90th percentiles
-marked. On 2026-11-14: 2,808 people, quartiles 0.65 and 1.44, 10th–90th
-percentile 0.35–2.04.
+marked. On 2026-11-14: 2,808 people, quartiles 0.67 and 1.42, 10th–90th
+percentile 0.41–1.87.
 
 Below it, **By directory**: everyone's directory table (`dir_table` in
 `peers.json`, `dirTable` and `tableRows` on the page), with lines,
@@ -193,7 +181,8 @@ level sorts by their lines: each of
 their units goes to its directory and parents, and to "rest of" or that
 level's "Other" where the table has no row for it. A row's FI is its
 addressed threads over its expected ones, so a parent adds up its children
-however they are shown; its tooltip gives the peers' AFR on those lines.
+however they are shown; its tooltip gives the AFR expected on those lines
+for the person's experience and reviewers.
 Rows with fewer than `MIN_CLS` of the person's CLs show no AFR or FI of
 theirs.
 
@@ -212,6 +201,13 @@ theirs.
   middle half and median of everyone's index that half-year (`fi[half]`).
   Dots with fewer than `MIN_CLS` CLs are hollow. Selecting a dot filters
   the comments-per-change chart and the directory tree to that half-year.
+- *Your reviewers* (`reviewerRows`): everyone who approved one of the
+  person's CLs, most CLs first: the person's CLs they approved, addressed
+  threads on them, the person's AFR there, the reviewer's factor, everyone's
+  CLs they approved, and the person's FI on those CLs. A CL with several
+  approvers counts under each. Rows under `MIN_BIN_CLS` of the person's CLs
+  show no AFR or FI. The note says how many of the person's CLs had no
+  approver, and `rev_none`.
 - *Latest doubling* (the tile, `latestDoubling`): the % change in AFR from
   the person's second-newest to their newest bin with `MIN_BIN_CLS` CLs,
   per doubling when bins in between have too few, with the date they
@@ -249,6 +245,27 @@ theirs.
 
 **Methodology and details** is a collapsed `<details>` at the bottom whose
 charts are drawn when it opens:
+
+- *Why compare by reviewer, not directory:* what each comparison predicts
+  (`method`: % of the experience-only deviance removed by directory,
+  reviewer, both, and reviewer per directory), and reviewers within the
+  `CHART_DIRS` (12) busiest 2-level directories (`dir_revs`: each
+  directory's factor against experience alone as a mark, its reviewers'
+  10th–90th percentile and middle half, for reviewers expecting
+  `MIN_SPREAD_EXP` (50) threads there; not shrunk, since a few expected
+  threads shrunk toward 1 would lift reviewers in directories that draw
+  almost nothing). On 2026-11-14 every directory's mark sits within its
+  reviewers' range.
+- *Drift over time* (`drift`): per half-year, everyone's addressed threads
+  over what experience and size expect, and over what experience, size,
+  reviewers and authors expect (size by a factor per size bucket over all
+  the data, so a few huge CLs don't swing a half-year). On 2026-11-14 the
+  second runs 0.96–1.07 from 2017H2 to 2026H1 (the first 0.85–1.13), so
+  factors over all the years are sound, but 2026H2 is 0.81 (0.70 by
+  experience and size): CLs drew less feedback even with the same
+  reviewers and authors, falling month by month (0.91 in July to 0.75 in
+  October, size-adjusted), as the median CL grew from about 26 to 43
+  lines. Everyone's 2026H2 index runs low.
 
 - *How it's changing:* people's AFR over their CLs in one experience bin,
   picked with a selector (default 8 or fewer CLs; it offers the bins with a
@@ -394,14 +411,22 @@ Output (default `web/public/review-feedback/`, which Vite copies into the
 site), with `<key>` the hash of the person's address, in four kinds of file
 that the page loads at different times:
 
-- `peers.json` (global, loaded on opening; version 10, about 252 KB, 83 KB
-  gzipped): the experience bins (`bins`, `bin_edges`), the index's rate
-  sums per directory and bin (`rates`) and its `scale`, the
+- `peers.json` (global, loaded on opening; version 11, about 134 KB, 42 KB
+  gzipped): the experience bins (`bins`, `bin_edges`), the index's rates
+  per bin (`rate_bin`), `rev_none` and `scale`, the methodology's
+  comparison, reviewers within directories and drift (`method`,
+  `dir_revs`, `drift`), the
   median AFR per bin (`ref_bin`, `ref_all`, for comparisons), everyone's
   directory table (`dir_table`), the spread of AFR per bin (`fr_bins`) and
   of everyone's index per period (`fi`), the first half-year with comment
   links (`links_from`), and the methodology's data (`cohorts`, `growth`,
   `by_size`, `by_dir`, `by_org`), with the minimums the page names.
+- `reviewers.json` (loaded with the first person; about 71 KB, 34 KB
+  gzipped): `rev_none` and, per reviewer by the first 12 hex digits of
+  `key` of their address (so it lists no addresses), [factor, CLs
+  approved]. The page hashes each of the person's approvers to look them
+  up (`attachReviewers`); every figure about the person needs them.
+  Rewritten on every run.
 - Per person, loaded once an address is typed:
   - `u/<key>.json` (version 6): first commit, the org most of their CLs
     were landed as, and which half-years the person has files for. Small
@@ -411,10 +436,11 @@ that the page loads at different times:
     range; `shard` in the script, whose docstring has the layout): that
     half-year's CLs, each [change number and day landed, each less the
     previous CL's; Gerrit's inserted lines; earlier commits on main; the
-    landed commit's inserted lines per 3-level directory; and the files
-    that drew reviewer threads, each with its inserted lines, threads and
-    addressed threads], with directory and file names (today's) listed
-    once. Nothing else per CL: no org, no expected values, no per-thread
+    landed commit's inserted lines per 3-level directory; its approvers;
+    and the files that drew reviewer threads, each with its inserted
+    lines, threads and addressed threads], with directory and file names
+    (today's) and approvers' addresses listed once (`dirs`, `files`,
+    `revs`). Nothing else per CL: no org, no expected values, no per-thread
     data. A file's threads count in its 3-level directory when that is one
     of the CL's, else in the CL's main directory (the commit message, files
     the landed commit didn't change).
@@ -424,21 +450,26 @@ that the page loads at different times:
 
 The page computes a person's figures from these, the same way the script
 does for the spread of everyone's index: totals, AFR and FI for any period,
-and the growth rate, from the rounded rate sums in `peers.json`. `--check
-FILE` writes the script's values for 300 people; on 2026-11-14, with
-all-time rate sums and the person left out, the page's `buildPerson`,
-`sums` and `fiOf` matched all 3,475 of them exactly (FI, CLs, addressed
-threads and lines per period).
+and the growth rate, from the rounded rates and factors in `peers.json` and
+`reviewers.json`. `--check FILE` writes the script's values for 300
+people; on 2026-11-14, with reviewer factors, the page's `buildPerson`,
+`attachReviewers`, `sums` and `fiOf` matched all 3,475 of them exactly
+(FI, CLs, addressed threads and lines per period), every approver found
+by hashed address.
 
 So a half-year's files don't change once it is over, as long as the inputs
 don't (labels, mechanical list, identity merge, today's names of moved
-paths, and for `links/`, the tone scores): git stores them once. Each run
-rewrites the current half-year, `u/` and `peers.json`.
+paths, approvers, and for `links/`, the tone scores): git stores them
+once. Reviewer factors live in `reviewers.json`, not in these files, so
+they can change every week without rewriting a finished half-year. Each
+run rewrites the current half-year, `u/`, `peers.json` and
+`reviewers.json`.
 
 Sizes on 2026-11-14 (6,862 people, 122 stubs), gzipped file by file as git
-stores them: 31.8 MB for the 19 half-year folders (32,676 files), 0.7 MB
-for `u/`, 66 KB for `peers.json` and 10.3 MB for `links/` (12,615 files):
-43 MB in all, 117 MB unpacked. The people part replaces `u/` and every
+stores them: 37.6 MB for the 19 half-year folders (32,676 files; 31.8 MB
+before approvers were added, the same day), 1.0 MB for `u/`, 42 KB for
+`peers.json`, 34 KB for `reviewers.json` and 10.3 MB for `links/` (12,615
+files): 49 MB in all, 130 MB unpacked. The people part replaces `u/` and every
 half-year folder on each run, the links part `links/`.
 
 **Committed and published** (the user's call, 2026-11-12):
@@ -475,18 +506,22 @@ half-year, so they start in 2023 (23 MB for all years; the user's call).
   drive-by and gardening comments, as the feedback index does.
 - Peer groups mix very different roles, teams and kinds of work. A high or
   low figure is a prompt to look at the comments, not a conclusion.
+- Who reviews a CL isn't wholly independent of the CL: harder changes may
+  go to stricter, more senior reviewers, and the reviewer factor then
+  credits the author for that. Reviewers' habits change over the years,
+  which a factor over all the data averages. CLs without an approver
+  (4%) are expected to draw almost nothing.
 - A pooled rate weighs big CLs by their lines, and feedback per line falls
   with size (5.5 per 100 lines under 4 lines, 1.4 at 512–1k, 0.21 over
   1k): someone landing larger changes gets a lower rate at the same care.
   The index doesn't adjust for size.
-- The rates cover all the data (2017–2026), and feedback per line
-  drifts: all of Chromium drew about a quarter less per line in 2026,
-  partly because its CLs got bigger, and some directories moved 1.5–2.4×
-  between 2017–22 and 2025–26. Every time correction tried predicted
-  peers' feedback worse (`docs/review-feedback-drift.md`); one that
-  accounts for CL size might not. The over-time chart shows everyone's
-  median index per half-year (0.76 for 2026H2, about 1.0–1.17 before
-  2025), so the drift is visible there.
+- The rates and factors cover all the data (2017–2026). With reviewers
+  and authors accounted for, feedback was steady until 2026H1 (0.96–1.07
+  of expected per half-year), but 2026H2 drew 0.81 of expected, so
+  everyone's index for it runs low (the methodology's drift chart; the
+  over-time chart shows everyone's spread per half-year). Every time
+  correction tried before reviewers predicted peers' feedback worse
+  (`docs/review-feedback-drift.md`).
 - Each run's new CLs change every rate a little, so past figures move
   slightly from week to week.
 - A rate over a few CLs is noisy, so part of the spread in each bin and in

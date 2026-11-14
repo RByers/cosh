@@ -1,1 +1,1 @@
-{"dirs":["base/synchronization/"],"files":["/COMMIT_MSG","base/synchronization/lock_subtle.h"],"cls":[[7859129,20601,8,39,0,[[0,0,1,1],[1,6,2,2]]]]}
+{"dirs":["base/synchronization/"],"files":["/COMMIT_MSG","base/synchronization/lock_subtle.h"],"revs":["anandrv@google.com","thestig@google.com"],"cls":[[7859129,20601,8,39,0,[0,1],[[0,0,1,1],[1,6,2,2]]]]}

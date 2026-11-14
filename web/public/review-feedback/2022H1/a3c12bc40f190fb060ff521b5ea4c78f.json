@@ -1,1 +1,1 @@
-{"dirs":["chromecast/device/bluetooth/","chromecast/public/bluetooth/"],"files":["/COMMIT_MSG","chromecast/device/bluetooth/le/BUILD.gn"],"cls":[[3561591,19081,12,15,0,[[0,0,1,1],[1,12,1,1]]],[27581,19,23,16,[[0,18],[1,5]]]]}
+{"dirs":["chromecast/device/bluetooth/","chromecast/public/bluetooth/"],"files":["/COMMIT_MSG","chromecast/device/bluetooth/le/BUILD.gn"],"revs":["juke@google.com","seantopping@google.com"],"cls":[[3561591,19081,12,15,0,[0],[[0,0,1,1],[1,12,1,1]]],[27581,19,23,16,[[0,18],[1,5]],[1]]]}

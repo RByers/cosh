@@ -1,1 +1,1 @@
-{"dirs":["tools/metrics/histograms/"],"files":["tools/metrics/histograms/enums.xml"],"cls":[[4902779,19628,1,6,0],[528,1,7,7,0],[85732,32,2,8,0,[[0,2,1,0]]],[97866,37,2,9,0]]}
+{"dirs":["tools/metrics/histograms/"],"files":["tools/metrics/histograms/enums.xml"],"revs":["asvitkine@google.com","jwd@google.com","caitlinfischer@google.com","mpearson@google.com"],"cls":[[4902779,19628,1,6,0,[0]],[528,1,7,7,0,[1]],[85732,32,2,8,0,[2],[[0,2,1,0]]],[97866,37,2,9,0,[0,3]]]}

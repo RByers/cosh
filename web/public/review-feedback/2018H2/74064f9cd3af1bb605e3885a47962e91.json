@@ -1,1 +1,1 @@
-{"dirs":["cloud_print/","chrome/browser/ash/","chrome/browser/"],"files":["chrome/browser/flag-metadata.json"],"cls":[[1130461,17723,2,146,0],[81519,58,32,147,1],[133567,75,3,148,2],[-120,10,6,149,2,[[0,6,2,1]]]]}
+{"dirs":["cloud_print/","chrome/browser/ash/","chrome/browser/"],"files":["chrome/browser/flag-metadata.json"],"revs":["pastarmovj@google.com","thestig@google.com","xdai@google.com","ellyjones@google.com","rbpotter@google.com"],"cls":[[1130461,17723,2,146,0,[0,1]],[81519,58,32,147,1,[2]],[133567,75,3,148,2,[3]],[-120,10,6,149,2,[3,4],[[0,6,2,1]]]]}

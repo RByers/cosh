@@ -1,1 +1,1 @@
-{"dirs":["chrome/browser/media/","chrome/app/","testing/"],"files":["chrome/app/chrome.cml","chrome/browser/media/webrtc/native_desktop_media_list.cc"],"cls":[[3662261,19143,5,0,[[0,4],[1,1]],[[0,1,1,0],[1,4,1,1]]],[-21391,0,3,1,2]]}
+{"dirs":["chrome/browser/media/","chrome/app/","testing/"],"files":["chrome/app/chrome.cml","chrome/browser/media/webrtc/native_desktop_media_list.cc"],"revs":["sergeyu@google.com","wez@google.com","bpastene@google.com","johnchen@google.com"],"cls":[[3662261,19143,5,0,[[0,4],[1,1]],[0,1],[[0,1,1,0],[1,4,1,1]]],[-21391,0,3,1,2,[2,3]]]}

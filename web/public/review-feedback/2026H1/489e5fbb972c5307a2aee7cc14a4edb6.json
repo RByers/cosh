@@ -1,1 +1,1 @@
-{"dirs":["net/dns/"],"files":["/COMMIT_MSG","net/dns/dns_query.cc","net/dns/dns_query_unittest.cc","net/dns/dns_transaction.cc"],"cls":[[7472657,20482,237,2,0,[[0,0,2,2],[1,27,2,2],[2,182,4,4],[3,18,2,1]]]]}
+{"dirs":["net/dns/"],"files":["/COMMIT_MSG","net/dns/dns_query.cc","net/dns/dns_query_unittest.cc","net/dns/dns_transaction.cc"],"revs":["awillia@google.com","mattm@google.com"],"cls":[[7472657,20482,237,2,0,[0,1],[[0,0,2,2],[1,27,2,2],[2,182,4,4],[3,18,2,1]]]]}

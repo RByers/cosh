@@ -1,1 +1,1 @@
-{"dirs":["tools/metrics/histograms/","chrome/browser/ash/"],"files":["tools/metrics/histograms/histograms.xml"],"cls":[[1704757,18094,2,0,0],[3080,2,25,1,0],[2554,0,4,2,0],[-1680,13,4,3,[[0,4],[1,0]],[[0,4,1,1]]],[215624,116,1,4,0]]}
+{"dirs":["tools/metrics/histograms/","chrome/browser/ash/"],"files":["tools/metrics/histograms/histograms.xml"],"revs":["asvitkine@google.com","bcwhite@google.com","emaxx@google.com"],"cls":[[1704757,18094,2,0,0,[0]],[3080,2,25,1,0,[0]],[2554,0,4,2,0,[0]],[-1680,13,4,3,[[0,4],[1,0]],[1,2],[[0,4,1,1]]],[215624,116,1,4,0,[0]]]}

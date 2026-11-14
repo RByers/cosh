@@ -1,1 +1,1 @@
-{"dirs":["ui/events/fuchsia/"],"files":["ui/events/fuchsia/pointer_events_handler.cc","ui/events/fuchsia/pointer_events_handler.h"],"cls":[[3406385,19016,103,2,0,[[0,82,8,7],[1,9,2,2]]]]}
+{"dirs":["ui/events/fuchsia/"],"files":["ui/events/fuchsia/pointer_events_handler.cc","ui/events/fuchsia/pointer_events_handler.h"],"revs":["emircan@google.com","sergeyu@google.com"],"cls":[[3406385,19016,103,2,0,[0,1],[[0,82,8,7],[1,9,2,2]]]]}

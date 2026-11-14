@@ -1,1 +1,1 @@
-{"dirs":["media/gpu/chromeos/","chrome/browser/ash/"],"files":["media/gpu/chromeos/vd_video_decode_accelerator.cc","chrome/browser/ash/arc/bluetooth/arc_bluetooth_bridge.cc"],"cls":[[4154075,19369,11,816,0,[[0,5,1,0]]],[15933,4,3,816,1,[[1,3,2,0]]]]}
+{"dirs":["media/gpu/chromeos/","chrome/browser/ash/"],"files":["media/gpu/chromeos/vd_video_decode_accelerator.cc","chrome/browser/ash/arc/bluetooth/arc_bluetooth_bridge.cc"],"revs":["hiroh@google.com","yhanada@google.com"],"cls":[[4154075,19369,11,816,0,[0],[[0,5,1,0]]],[15933,4,3,816,1,[1],[[1,3,2,0]]]]}

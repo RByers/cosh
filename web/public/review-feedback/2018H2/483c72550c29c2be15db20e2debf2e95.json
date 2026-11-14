@@ -1,1 +1,1 @@
-{"dirs":["chrome/browser/sync/","components/sync/engine/"],"files":["/COMMIT_MSG","chrome/browser/sync/test/integration/local_sync_test.cc"],"cls":[[1290981,17823,17,5,[[0,16],[1,1]],[[0,0,1,1],[1,16,2,2]]]]}
+{"dirs":["chrome/browser/sync/","components/sync/engine/"],"files":["/COMMIT_MSG","chrome/browser/sync/test/integration/local_sync_test.cc"],"revs":["treib@google.com"],"cls":[[1290981,17823,17,5,[[0,16],[1,1]],[0],[[0,0,1,1],[1,16,2,2]]]]}

@@ -1,1 +1,1 @@
-{"dirs":["infra/config/generated/","tools/mb/mb_config_expectations/","tools/mb/","infra/config/subprojects/"],"files":["infra/config/subprojects/chromium/try/tryserver.chromium.linux.star"],"cls":[[4781347,19592,115,27,[[0,101],[1,10],[2,3],[3,1]],[[0,1,1,1]]]]}
+{"dirs":["infra/config/generated/","tools/mb/mb_config_expectations/","tools/mb/","infra/config/subprojects/"],"files":["infra/config/subprojects/chromium/try/tryserver.chromium.linux.star"],"revs":["gbeaty@google.com"],"cls":[[4781347,19592,115,27,[[0,101],[1,10],[2,3],[3,1]],[0],[[0,1,1,1]]]]}

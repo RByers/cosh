@@ -1,1 +1,1 @@
-{"dirs":["tools/metrics/histograms/"],"files":["/COMMIT_MSG","tools/metrics/histograms/metadata/memory/histograms.xml"],"cls":[[4455094,19468,1,0,0,[[0,0,1,1],[1,1,1,1]]],[126253,41,3,1,0]]}
+{"dirs":["tools/metrics/histograms/"],"files":["/COMMIT_MSG","tools/metrics/histograms/metadata/memory/histograms.xml"],"revs":["etienneb@google.com","joenotcharles@google.com"],"cls":[[4455094,19468,1,0,0,[0,1],[[0,0,1,1],[1,1,1,1]]],[126253,41,3,1,0,[1]]]}

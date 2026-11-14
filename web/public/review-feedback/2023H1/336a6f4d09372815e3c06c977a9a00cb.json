@@ -1,1 +1,1 @@
-{"dirs":["third_party/blink/renderer/","third_party/blink/perf_tests/"],"files":["/COMMIT_MSG","third_party/blink/renderer/core/css/selector_checker.cc"],"cls":[[4477813,19474,80,109,[[0,48],[1,32]],[[0,0,2,2],[1,12,2,0]]]]}
+{"dirs":["third_party/blink/renderer/","third_party/blink/perf_tests/"],"files":["/COMMIT_MSG","third_party/blink/renderer/core/css/selector_checker.cc"],"revs":["andruud@google.com"],"cls":[[4477813,19474,80,109,[[0,48],[1,32]],[0],[[0,0,2,2],[1,12,2,0]]]]}

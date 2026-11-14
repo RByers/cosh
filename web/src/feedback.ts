@@ -6,10 +6,10 @@
 //
 // The addressed feedback rate (AFR) of a set of changes is their addressed reviewer
 // threads per 100 new or changed lines (insertions). The feedback index (FI) is a person's AFR
-// over their peers': for each directory a change wrote lines in, the AFR of
-// everyone else's lines there at the same experience (CLs landed on main, in
-// power-of-two bins) over all the data, or the parent directory's where that is
-// too thin.
+// over what their changes would be expected to draw: everyone's AFR at the same
+// experience (CLs landed on main, in power-of-two bins), times the change's
+// reviewer factor (how much feedback its approvers' approvals usually draw; the
+// factors are in reviewers.json, loaded with the person).
 
 /** A change's lines in one 3-level directory: [directory index, the landed commit's inserted lines there]. */
 export type Unit = [number, number];
@@ -18,16 +18,18 @@ export type Unit = [number, number];
  * (index in the change's units)]. */
 export type FileFb = [number, number, number, number, number];
 /** A change, as the page holds it: [change number, day landed (days since 1970), lines (Gerrit's
- * insertions), units, files that drew threads, the owner's earlier commits on main]. */
-export type ClRow = [number, number, number, Unit[], FileFb[], number];
+ * insertions), units, files that drew threads, the owner's earlier commits on main, its approvers
+ * (indexes in `Person.revs`)]. */
+export type ClRow = [number, number, number, Unit[], FileFb[], number, number[]];
 
 /** A change in a half-year file (cosh/review_feedback.py `shard`): [change number less the previous
  * change's (the first: itself), day landed less the previous change's (the first: days since 1970),
- * lines, earlier commits on main, units(, files)]. Units are [[directory, lines], ...], or the directory
- * alone for a change wholly in one. Files are [file, lines, threads, addressed]: only those that drew
- * reviewer threads; a file's threads count in its 3-level directory when that is one of the units, else
- * in the first. */
-export type FileRow = [number, number, number, number, number | [number, number][], [number, number, number, number][]?];
+ * lines, earlier commits on main, units, approvers(, files)]. Units are [[directory, lines], ...], or the
+ * directory alone for a change wholly in one. Approvers are indexes in the file's `revs`. Files are
+ * [file, lines, threads, addressed]: only those that drew reviewer threads; a file's threads count in its
+ * 3-level directory when that is one of the units, else in the first. */
+export type FileRow = [number, number, number, number, number | [number, number][], number[],
+  [number, number, number, number][]?];
 
 /** u/<key>.json: who the person is and which half-year files they have. */
 export interface Top {
@@ -44,6 +46,8 @@ export interface Top {
 export interface Shard {
   dirs: string[];
   files: string[];
+  /** The approvers' addresses. */
+  revs: string[];
   cls: FileRow[];
 }
 
@@ -64,7 +68,20 @@ export interface Person {
   org: string | null;
   dirs: string[];
   files: string[];
+  /** Everyone who approved one of the person's changes (Reviewed-by), and each one's reviewer factor and
+   * changes approved over all the data (from reviewers.json, `attachReviewers`; 1 and 0 until then). */
+  revs: string[];
+  revF: number[];
+  revCls: number[];
   cls: ClRow[];
+}
+
+/** reviewers.json: per reviewer, by the first 12 hex digits of `personKey` of their address, [their
+ * factor, changes they approved]; `rev_none` is the factor of changes without an approver. */
+export interface ReviewerTable {
+  v: 1;
+  rev_none: number;
+  f: Record<string, [number, number]>;
 }
 
 /** Another address of someone: their file's key. */
@@ -83,12 +100,9 @@ export interface Dist {
  * it ("rest of"); 2: the smaller entries under it ("" for the top level), pooled. */
 export type DirTableEntry = [string, 0 | 1 | 2, number, number, number, number?];
 
-/** A rate cell's sums: [changes' worth, lines, addressed threads]. */
-export type RateCell = [number, number, number];
-
-/** peers.json (cosh/review_feedback.py, version 9). */
+/** peers.json (cosh/review_feedback.py, version 11). */
 export interface Peers {
-  v: 10;
+  v: 11;
   generated: string;
   /** The changes covered, as day numbers: from `start` up to (not including) `end`.
    * Only changes from `addr_start` have addressed labels. */
@@ -113,18 +127,28 @@ export interface Peers {
   bins: string[];
   bin_edges: number[];
   /** The median AFR per experience bin (null: too few people), and everyone's: the opening chart's
-   * line, for comparisons (the index uses `rates`). */
+   * line, for comparisons (the index uses `rate_bin`). */
   ref_bin: (number | null)[];
   ref_all: number;
-  /** A directory (3 levels, 2, 1, or "" for all) gets its own peers' rate at an experience bin with
-   * this many changes' worth there. */
-  min_rate_cls: number;
   /** A directory gets a row of its own in everyone's directory table with this many changes. */
   min_dir_cls: number;
-  /** Per directory, the sums of everyone's lines there over all the data per experience bin; null where
-   * too few (`min_rate_cls`; "" always has them). The peers' rate is these less the person's own
-   * (`peerRate`). */
-  rates: Record<string, (RateCell | null)[]>;
+  /** Everyone's pooled AFR per experience bin: what a change is expected to draw, before its reviewer
+   * factor. */
+  rate_bin: number[];
+  /** The reviewer factor of changes without an approver. */
+  rev_none: number;
+  /** The methodology's comparison of peer groups: [model, deviance, % of the experience-only model's
+   * deviance removed]; models "e" (experience), "d" (directory), "r" (reviewer), "dr" (both), "rd"
+   * (reviewer per directory). */
+  method: [string, number, number][];
+  /** Reviewers within the busiest directories (2 levels): [directory, its factor, reviewers, their
+   * factors there at the 10th, 25th, 50th, 75th and 90th percentiles]; factors against experience alone. */
+  dir_revs: [string, number, number, [number, number, number, number, number]][];
+  /** A reviewer counts in a directory in `dir_revs` with this many expected addressed comments there. */
+  min_spread_exp: number;
+  /** Per half-year: [half-year, changes, addressed over what experience and size expect, the same over
+   * what experience, size, reviewers and authors expect]. */
+  drift: [string, number, number, number][];
   /** The expected threads' scale, which makes the median contributor's index 1. */
   scale: number;
   /** Everyone's directory table, parents before their children, each level by lines. */
@@ -285,75 +309,59 @@ export function halfOf(day: number): string {
   return `${d.getUTCFullYear()}H${d.getUTCMonth() < 6 ? 1 : 2}`;
 }
 
-/** A person's own sums in the rate cells, per directory and experience bin (cosh/review_feedback.py
- * `rate_cells` of their rows): what their peers' rates leave out. */
-export type OwnCells = Map<string, RateCell[]>;
-
-const ownCache = new WeakMap<Person, OwnCells>();
-
-/** The person's own sums over their labelled changes, each change's lines and addressed threads
- * split over its directories by lines. */
-export function ownCells(p: Person, peers: Pick<Peers, 'bin_edges' | 'bins'>): OwnCells {
-  let own = ownCache.get(p);
-  if (own) return own;
-  own = new Map();
-  const nb = peers.bins.length;
-  for (const c of p.cls) {
-    if (c[1] < p.addrStart) continue;
-    const b = xbin(peers.bin_edges, c[5]);
-    const fracs = unitFracs(c[3]);
-    c[3].forEach((u, i) => {
-      const a = unitCounts(c, i)[1];
-      for (const k of dirLevels(p.dirs[u[0]])) {
-        let v = own!.get(k);
-        if (!v) own!.set(k, (v = Array.from({ length: nb }, (): RateCell => [0, 0, 0])));
-        const x = v[b];
-        x[0] += fracs[i];
-        x[1] += c[2] * fracs[i];
-        x[2] += a;
-      }
-    });
-  }
-  ownCache.set(p, own);
-  return own;
+/** A change's reviewer factor: its approvers' mean factor, or `rev_none` without one
+ * (cosh/review_feedback.py `rev_factor`). */
+export function revFactor(p: Person, peers: Pick<Peers, 'rev_none'>, c: ClRow): number {
+  const r = c[6];
+  return r.length ? r.reduce((a, i) => a + p.revF[i], 0) / r.length : peers.rev_none;
 }
 
-/** The AFR of everyone's lines in directory `k` at bin `b` less the person's own, where that leaves
- * `min_rate_cls` changes' worth (always, without `need`; cosh/review_feedback.py `cell_rate`). */
-function cellRate(peers: Pick<Peers, 'rates' | 'min_rate_cls'>, own: OwnCells | null, k: string, b: number,
-  need = true): number | null {
-  const x = peers.rates[k]?.[b];
-  if (!x) return null;
-  let [n, lines, a] = x;
-  const o = own?.get(k);
-  if (o) {
-    n -= o[b][0];
-    lines -= o[b][1];
-    a -= o[b][2];
-  }
-  return (n >= peers.min_rate_cls || !need) && lines > 0 ? 100 * a / lines : null;
-}
-
-/** The peers' AFR for lines in directory `d` at experience bin `b`, the person's own (`own`) left out:
- * the directory's over all the data, else its parent's, up to everyone's (cosh/review_feedback.py
- * `peer_rate`). */
-export function peerRate(peers: Pick<Peers, 'rates' | 'min_rate_cls'>, own: OwnCells | null, d: string,
-  b: number): number {
-  for (const k of dirLevels(d).slice(0, -1)) {
-    const v = cellRate(peers, own, k, b);
-    if (v !== null) return v;
-  }
-  return cellRate(peers, own, '', b, false) ?? 0;
-}
-
-/** The addressed threads each unit of a change would draw at its peers' AFR (cosh/review_feedback.py
- * `unit_expected`): its lines / 100 × the peers' rate (`peerRate`: the same directory and experience
- * over all the data, the person's own lines left out) × the scale. */
+/** The addressed threads each unit of a change would draw (cosh/review_feedback.py `unit_expected`):
+ * its lines / 100 × everyone's AFR at the change's experience × its reviewer factor × the scale. */
 export function unitExpected(p: Person, peers: Peers, c: ClRow): number[] {
-  const b = xbin(peers.bin_edges, c[5]);
-  const own = ownCells(p, peers);
+  const rate = peers.rate_bin[xbin(peers.bin_edges, c[5])];
+  const g = revFactor(p, peers, c);
   const fr_ = unitFracs(c[3]);
-  return c[3].map((u, i) => (c[2] * fr_[i] / 100) * peerRate(peers, own, p.dirs[u[0]], b) * peers.scale);
+  return c[3].map((_, i) => (c[2] * fr_[i] / 100) * rate * g * peers.scale);
+}
+
+/** Looks up the person's approvers in reviewers.json (by `personKey`'s first 12 hex digits). */
+export async function attachReviewers(p: Person, table: ReviewerTable): Promise<void> {
+  const keys = await Promise.all(p.revs.map((e) => personKey(e)));
+  p.revF = keys.map((k) => table.f[k.slice(0, 12)]?.[0] ?? 1);
+  p.revCls = keys.map((k) => table.f[k.slice(0, 12)]?.[1] ?? 0);
+}
+
+/** One of the person's approvers, over the person's labelled changes in a period. */
+export interface ReviewerRow {
+  email: string;
+  factor: number;
+  /** Changes they approved, of everyone's. */
+  approved: number;
+  cls: number;
+  lines: number;
+  addressed: number;
+  expected: number;
+}
+
+/** The person's approvers in `period`, most of the person's changes first (a change with several
+ * approvers counts for each). */
+export function reviewerRows(p: Person, peers: Peers, period: string): ReviewerRow[] {
+  const rows = new Map<number, ReviewerRow>();
+  for (const c of clsIn(p, period)) {
+    const e = expectedOn(p, peers, c);
+    const a = addressedOn(c);
+    for (const i of c[6]) {
+      let r = rows.get(i);
+      if (!r) rows.set(i, (r = { email: p.revs[i], factor: p.revF[i], approved: p.revCls[i], cls: 0, lines: 0,
+        addressed: 0, expected: 0 }));
+      r.cls += 1;
+      r.lines += c[2];
+      r.addressed += a;
+      r.expected += e;
+    }
+  }
+  return [...rows.values()].sort((x, y) => y.cls - x.cls || y.lines - x.lines || x.email.localeCompare(y.email));
 }
 
 export const expectedOn = (p: Person, peers: Peers, c: ClRow) => unitExpected(p, peers, c).reduce((a, b) => a + b, 0);
@@ -864,7 +872,7 @@ export function dirOf(path: string): string {
 
 /** The half-year files merged into one person, names re-indexed and deltas undone. */
 export function buildPerson(top: Top, shards: Shard[], peers: Pick<Peers, 'addr_start'>): Person {
-  const tables = { dirs: new Map<string, number>(), files: new Map<string, number>() };
+  const tables = { dirs: new Map<string, number>(), files: new Map<string, number>(), revs: new Map<string, number>() };
   const at = (t: Map<string, number>, name: string) => {
     let i = t.get(name);
     if (i === undefined) t.set(name, (i = t.size));
@@ -874,9 +882,10 @@ export function buildPerson(top: Top, shards: Shard[], peers: Pick<Peers, 'addr_
   for (const s of shards) {
     const d = s.dirs.map((x) => at(tables.dirs, x));
     const f = s.files.map((x) => at(tables.files, x));
+    const r = (s.revs ?? []).map((x) => at(tables.revs, x));
     let n = 0;
     let day = 0;
-    for (const [dn, dd, lines, prior, fileUnits, fileFb] of s.cls) {
+    for (const [dn, dd, lines, prior, fileUnits, fileRevs, fileFb] of s.cls) {
       n += dn;
       day += dd;
       const local: [number, number][] = typeof fileUnits === 'number' ? [[fileUnits, lines]] : fileUnits;
@@ -888,10 +897,11 @@ export function buildPerson(top: Top, shards: Shard[], peers: Pick<Peers, 'addr_
         const own = path && !path.startsWith('/') ? pos.get(dirOf(path)) : undefined;
         return [f[fi], fl, t, a, own ?? 0];
       });
-      cls.push([n, day, lines, units, files, prior]);
+      cls.push([n, day, lines, units, files, prior, fileRevs.map((i) => r[i])]);
     }
   }
   cls.sort((a, b) => a[1] - b[1] || a[0] - b[0]);
   return { addrStart: peers.addr_start, first: top.first, firstDay: top.first_day, org: top.org,
-    dirs: [...tables.dirs.keys()], files: [...tables.files.keys()], cls };
+    dirs: [...tables.dirs.keys()], files: [...tables.files.keys()], revs: [...tables.revs.keys()],
+    revF: [...tables.revs.keys()].map(() => 1), revCls: [...tables.revs.keys()].map(() => 0), cls };
 }

@@ -1,1 +1,1 @@
-{"dirs":["media/capture/video/","content/browser/renderer_host/"],"files":["/COMMIT_MSG","content/browser/renderer_host/media/service_video_capture_device_launcher.cc"],"cls":[[1420459,17914,12,62,[[0,7],[1,5]],[[0,0,2,0],[1,5,1,0]]]]}
+{"dirs":["media/capture/video/","content/browser/renderer_host/"],"files":["/COMMIT_MSG","content/browser/renderer_host/media/service_video_capture_device_launcher.cc"],"revs":["chfremer@google.com","jcliang@google.com"],"cls":[[1420459,17914,12,62,[[0,7],[1,5]],[0,1],[[0,0,2,0],[1,5,1,0]]]]}

@@ -1,1 +1,1 @@
-{"dirs":["third_party/usrsctp/","(root)/","chrome/test/data/"],"files":["third_party/usrsctp/BUILD.gn"],"cls":[[2613956,18634,4,55,[[0,3],[1,1]]],[-1572,0,5,56,[[0,4],[1,1]],[[0,2,1,0]]],[4828,1,5,56,[[0,4],[1,1]]],[366117,167,2,57,2]]}
+{"dirs":["third_party/usrsctp/","(root)/","chrome/test/data/"],"files":["third_party/usrsctp/BUILD.gn"],"revs":["hta@google.com","mbonadei@google.com","hbos@google.com"],"cls":[[2613956,18634,4,55,[[0,3],[1,1]],[0]],[-1572,0,5,56,[[0,4],[1,1]],[0,1],[[0,2,1,0]]],[4828,1,5,56,[[0,4],[1,1]],[0,1]],[366117,167,2,57,2,[2]]]}

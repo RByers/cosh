@@ -1,1 +1,1 @@
-{"dirs":["chrome/browser/ui/","chrome/common/extensions/"],"files":["chrome/common/extensions/api/url_handlers/url_handlers_parser.cc"],"cls":[[6256017,20137,4,382,0],[28490,7,1,383,[[0,1],[1,0]],[[0,0,1,1]]]]}
+{"dirs":["chrome/browser/ui/","chrome/common/extensions/"],"files":["chrome/common/extensions/api/url_handlers/url_handlers_parser.cc"],"revs":["dmurph@google.com","rdevlin.cronin@google.com"],"cls":[[6256017,20137,4,382,0,[0]],[28490,7,1,383,[[0,1],[1,0]],[1],[[0,0,1,1]]]]}

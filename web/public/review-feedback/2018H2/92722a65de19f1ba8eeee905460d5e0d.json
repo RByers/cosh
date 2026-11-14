@@ -1,1 +1,1 @@
-{"dirs":["tools/metrics/histograms/","chrome/app/"],"files":["tools/metrics/histograms/enums.xml","/COMMIT_MSG","chrome/app/chromeos_strings.grdp"],"cls":[[1179968,17773,121,0,0,[[0,101,1,0]]],[58510,26,5,1,1,[[1,0,1,1],[2,5,1,0]]]]}
+{"dirs":["tools/metrics/histograms/","chrome/app/"],"files":["tools/metrics/histograms/enums.xml","/COMMIT_MSG","chrome/app/chromeos_strings.grdp"],"revs":["mpearson@google.com","jamescook@google.com","stevenjb@google.com"],"cls":[[1179968,17773,121,0,0,[0],[[0,101,1,0]]],[58510,26,5,1,1,[1,2],[[1,0,1,1],[2,5,1,0]]]]}

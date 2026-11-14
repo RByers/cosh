@@ -3256,7 +3256,7 @@ test('a touch anywhere off a chart closes its hover card, on every page with cha
 // person in feedback-fixture.ts, so they don't depend on the committed data.
 
 async function feedbackPage(peersOverride?: Peers, shardsOverride?: Record<string, Shard>): Promise<{ page: Page; errors: string[] }> {
-  const { top, shards: fixtureShards, links, peers: fixturePeers, FIXTURE_KEY, ALIAS_KEY } = await import('./feedback-fixture.ts');
+  const { top, shards: fixtureShards, links, reviewers, peers: fixturePeers, FIXTURE_KEY, ALIAS_KEY } = await import('./feedback-fixture.ts');
   const peers = peersOverride ?? fixturePeers;
   const shards = shardsOverride ?? fixtureShards;
   const page = await browser.newPage();
@@ -3269,6 +3269,7 @@ async function feedbackPage(peersOverride?: Peers, shardsOverride?: Record<strin
     const path = new URL(r.url()).pathname;
     const json = (body: unknown) => void r.respond({ status: 200, contentType: 'application/json', body: JSON.stringify(body) });
     if (path.endsWith('/review-feedback/peers.json')) json(peers);
+    else if (path.endsWith('/review-feedback/reviewers.json')) json(reviewers);
     else if (path.endsWith(`/review-feedback/u/${FIXTURE_KEY}.json`)) json(top);
     else if (/\/review-feedback\/links\/\d{4}H[12]\//.test(path) && path.endsWith(`/${FIXTURE_KEY}.json`))
       json(links[path.split('/').at(-2)!]);
@@ -3361,7 +3362,7 @@ test('feedback index: the opening card defines the rate and index, with one char
   await page.click('#method summary');
   await page.waitForFunction(() => 'newcomers' in window.__rf!.charts);
   assert.deepEqual(await page.evaluate(() => Object.keys(window.__rf!.charts).sort()),
-    ['dirs', 'fiDist', 'growth', 'main', 'newcomers', 'orgs', 'size', 'sizeCl'].sort());
+    ['dirs', 'drift', 'fiDist', 'growth', 'main', 'method', 'newcomers', 'orgs', 'size', 'sizeCl', 'spread'].sort());
   assert.deepEqual(await page.evaluate(() => window.__rf!.charts.newcomers.data.labels),
     ['2018', '2019', '2020', '2021', '2022', '2023', '2024', '2025', '2026']);
   assert.match((await page.$eval('#rf-newcomers-note', (e) => e.textContent!)).replace(/\s+/g, ' '),
@@ -3383,6 +3384,37 @@ test('feedback index: the opening card defines the rate and index, with one char
     ['components/autofill/', 'chrome/browser/', 'third_party/blink/', 'testing/buildbot/']);
   assert.deepEqual(await page.evaluate(() => window.__rf!.charts.orgs.data.labels), ['microsoft.com', 'google.com', 'igalia.com']);
   assert.match(await page.$eval('#method', (e) => e.textContent!), /in bins that double: 8 or fewer, 9–16, 17–32/);
+  // Why reviewers: what each peer group predicts (the experience-only baseline is left out), how widely
+  // directories and reviewers differ, and drift with and without reviewers and authors.
+  assert.deepEqual(await page.evaluate(() => [window.__rf!.charts.method.data.labels,
+    window.__rf!.charts.method.data.datasets[0].data]),
+  [['Directory', 'Reviewer', 'Reviewer and directory', 'Reviewer per directory'], [5.6, 10, 10.2, 11]]);
+  assert.match((await page.$eval('#rf-method-note', (e) => e.textContent!)).replace(/\s+/g, ' '),
+    /Knowing the directory removes 5\.6%; knowing who approved the change removes 10%\. Adding the directory to the reviewer barely helps \(10\.2%\)/);
+  assert.deepEqual(await page.evaluate(() => window.__rf!.charts.spread.data.labels), ['chrome/browser/', 'third_party/blink/']);
+  assert.deepEqual(await page.evaluate(() => window.__rf!.charts.spread.data.datasets[0].data), [[0.72, 1.72], [0.47, 1.5]]);
+  assert.equal(await page.evaluate(() => window.__rf!.charts.spread.options.scales!.x!.type), 'logarithmic');
+  assert.match((await page.$eval('#rf-spread-note', (e) => e.textContent!)).replace(/\s+/g, ' '),
+    /Within each of the 2 busiest directories .* in chrome\/browser\/, whose changes draw 1\.26× .* draw 0\.72× to 1\.72×\. .* 50 or more expected/);
+  assert.deepEqual(await page.evaluate(() => window.__rf!.charts.drift.data.datasets.slice(0, 2).map((d) => d.data)),
+    [[1.05, 0.98, 0.9, 0.77], [1.01, 0.98, 0.96, 0.81]]);
+  assert.match((await page.$eval('#rf-drift-note', (e) => e.textContent!)).replace(/\s+/g, ' '),
+    /steady: 0\.96× to 1\.01× of what was expected each half-year up to January – June 2026.*July – October 2026 is the exception: changes drew 0\.81× .* \(0\.77× by experience and size alone\)/);
+  assert.deepEqual(errors, []);
+  await page.close();
+});
+
+test('feedback index: a person\'s reviewers, with their factors', async () => {
+  const { page, errors } = await feedbackPage();
+  const { FIXTURE_EMAIL } = await import('./feedback-fixture.ts');
+  await lookUp(page, FIXTURE_EMAIL);
+  await page.waitForFunction(() => !document.querySelector<HTMLElement>('#rf-person')!.hidden);
+  // Alice approved CLs 1 and 2 (160 lines, 2 addressed: 1 + 1.836 expected), Bob CL 2 (1 over 1.836).
+  assert.deepEqual(await page.$$eval('#rf-revs tbody tr', (rs) => rs.map((r) => [...r.children].map((c) => c.textContent))),
+    [['alice@google.com', '2', '2', '1.25', '1.20×', '900', '0.66×'],
+      ['bob@igalia.com', '1', '1', '0.83', '0.60×', '300', '0.54×']]);
+  assert.match((await page.$eval('#rf-revs-note', (e) => e.textContent!)).replace(/\s+/g, ' '),
+    /2 reviewers approved your changes.* 1 of your changes had no approver; .* their factor is 0\.50×\./);
   assert.deepEqual(errors, []);
   await page.close();
 });
@@ -3415,11 +3447,12 @@ test('feedback index: everyone\'s directory table, and the person\'s columns in 
   assert.equal(await youShown(), true);
   const r = await rows();
   assert.deepEqual(r.map((x) => x[0]), ['▸content/', '▸chrome/', '▸third_party/', 'Other (30)']);
-  // chrome/: 40 + 28.5 lines, 2 comments, 1 addressed: 1.46 per 100 lines, 1 over 1.78 expected
-  // (0.4 × 3 + 0.285 × 2.04), which is 2.60 per 100 lines.
-  assert.deepEqual(r[1].slice(5), ['68', '2', '1', '1.46', '0.56×']);
+  // chrome/: 40 + 28.5 lines, 2 comments, 1 addressed: 1.46 per 100 lines, 1 over 1.64 expected
+  // (CL 1: 0.4 × 2.5 × Alice's 1.2; CL 2's 28 of 118 lines: 1.2 × 1.7 × 0.9, Alice's and Bob's mean),
+  // which is 2.39 per 100 lines.
+  assert.deepEqual(r[1].slice(5), ['68', '2', '1', '1.46', '0.61×']);
   assert.match(await page.$eval('#rf-all-dirs tr[data-key="d:chrome/"] td:last-child', (e) => (e as HTMLElement).title),
-    /^Your peers' AFR on your lines there: 2\.60$/);
+    /^The AFR expected on your lines there, for your experience and reviewers: 2\.39$/);
   // Rows with fewer of the person's changes than the minimum show no rate; rows without any show nothing.
   assert.deepEqual(r[2].slice(5), ['10', '2', '1', '–', '–']);
   assert.deepEqual(r[3].slice(5), ['', '', '', '', '']);
@@ -3434,7 +3467,7 @@ test('feedback index: a person\'s index, how their rate compares, and their dire
   await lookUp(page, ALIAS_EMAIL);
   await page.waitForFunction(() => !document.querySelector<HTMLElement>('#rf-person')!.hidden);
   assert.deepEqual(await page.$$eval('#rf-person > section', (ss) => ss.map((s) => s.id)),
-    ['compare', 'summary', 'per-cl', 'directories']);
+    ['compare', 'summary', 'reviewers', 'per-cl', 'directories']);
   assert.equal(await page.$('#rf-norm'), null);
   assert.equal(await page.$('#comments'), null);
   assert.equal(await page.$eval('#compare-title', (e) => e.textContent), 'Your AFR');
@@ -3447,12 +3480,12 @@ test('feedback index: a person\'s index, how their rate compares, and their dire
   assert.equal(await sub('rf-tile-cls'), '170 lines written');
   assert.equal(await tile('rf-tile-threads'), '3');
   assert.equal(await tile('rf-tile-fr'), '1.76');
-  // Against peers in the same directories and experience (3 over 3.08 expected): 31% of 2,800
-  // have a lower index.
-  assert.equal(await tile('rf-tile-fi'), '0.98×');
+  // Against what experience and reviewers expect (3 over 3.086: 0.4 × 2.5 × 1.2 + 1.2 × 1.7 × 0.9 +
+  // 0.1 × 1 × 0.5): 31% of 2,800 have a lower index.
+  assert.equal(await tile('rf-tile-fi'), '0.97×');
   assert.equal(await sub('rf-tile-fi'), '31% of 2,800 contributors have a lower index');
   assert.match((await page.$eval('#summary-sub', (e) => e.textContent!)).replace(/\s+/g, ' '),
-    /Your AFR against your peers': everyone else in the same directories at the same experience, over all your changes from July 2023 to October 2026/);
+    /Your addressed comments against what your changes would be expected to draw, for your experience and your reviewers, over all your changes from July 2023 to October 2026/);
   // The latest doubling: 0.83 at 128 to 10 at 512, two doublings apart, √12 − 1 per doubling, reached by
   // the day of the change at 512; typically 1.7 to 1.0.
   assert.equal(await page.$eval('#rf-tile-growth .tile-label', (e) => e.textContent), 'Your latest doubling');
@@ -3476,12 +3509,12 @@ test('feedback index: a person\'s index, how their rate compares, and their dire
   assert.deepEqual(await page.$$eval('#rf-main-legend li', (ls) => ls.map((l) => l.textContent)),
     ['You', 'Median', 'Middle half (25th–75th percentile)', '10th–90th percentile']);
   assert.equal(await page.$eval('#rf-main-you', (e) => (e as HTMLElement).hidden), false);
-  // And on everyone's feedback index: 3 over 3.08.
+  // And on everyone's feedback index: 3 over 3.086.
   const fiYou = await page.evaluate(() => window.__rf!.charts.fiDist.data.datasets.at(-1)!);
   assert.equal(fiYou.label, 'you');
   assert.equal(fiYou.borderColor, red);
-  assert.equal(Math.round(Number((fiYou.data[0] as { x: number }).x) * 100) / 100, 0.98);
-  assert.equal(await page.$eval('#rf-fi-legend li:last-child', (l) => l.textContent), 'You (0.98×)');
+  assert.equal(Math.round(Number((fiYou.data[0] as { x: number }).x) * 100) / 100, 0.97);
+  assert.equal(await page.$eval('#rf-fi-legend li:last-child', (l) => l.textContent), 'You (0.97×)');
   assert.equal(await page.$eval('#rf-growth-legend li:last-child', (l) => l.textContent), 'You (+41%)');
   const xp = () => page.$$eval('#rf-xp-table tbody tr, #rf-xp-table tfoot tr', (rs) => rs.map((r) =>
     [...r.children].map((c) => c.textContent)));
@@ -3499,8 +3532,9 @@ test('feedback index: a person\'s index, how their rate compares, and their dire
     [...r.children].map((c) => c.textContent!.replace(/[▸▾]/, '').replace(/\s+/g, ' ').trim())));
   assert.deepEqual(await page.$$eval('#rf-dirs thead th', (ts) => ts.map((t) => t.textContent)),
     ['Directory or file', 'Changes', 'Lines', 'Feedback', 'Addressed', 'AFR', 'Feedback index']);
-  assert.deepEqual(await dirs(), [['chrome/', '2', '68', '2', '1', '1.46', '0.56×'],
-    ['Other (2)', '2', '102', '3', '2', '1.97', '1.54×']]);
+  // Other: CL 2's content/ lines (1.2 × 1.7 × 0.9 × 90/118) and CL 3 (0.1 × 1 × 0.5): 2 over 1.45.
+  assert.deepEqual(await dirs(), [['chrome/', '2', '68', '2', '1', '1.46', '0.61×'],
+    ['Other (2)', '2', '102', '3', '2', '1.97', '1.38×']]);
   assert.deepEqual(await page.$$eval('#rf-dirs td.rf-ratio', (ts) => ts.map((t) => t.className.split(' ').at(-1))), ['rf-ratio-lo', 'rf-ratio-hi']);
   // ▸ opens a directory down to the files that drew comments, and the lines that drew none.
   const open = async (key: string) => {
@@ -3510,8 +3544,8 @@ test('feedback index: a person\'s index, how their rate compares, and their dire
   await open('d:chrome/browser/');
   await open('d:chrome/browser/ui/');
   assert.deepEqual((await dirs()).slice(0, 6), [
-    ['chrome/', '2', '68', '2', '1', '1.46', '0.56×'], ['browser/', '2', '68', '2', '1', '1.46', '0.56×'],
-    ['ui/', '2', '68', '2', '1', '1.46', '0.56×'], ['view.cc', '1', '30', '1', '1', '–', '–'],
+    ['chrome/', '2', '68', '2', '1', '1.46', '0.61×'], ['browser/', '2', '68', '2', '1', '1.46', '0.61×'],
+    ['ui/', '2', '68', '2', '1', '1.46', '0.61×'], ['view.cc', '1', '30', '1', '1', '–', '–'],
     ['commit message', '1', '0', '1', '0', '–', '–'], ['other files', '2', '38', '0', '0', '0.00', '0.00×']]);
   // No link file is loaded until a file's changes are opened.
   const linkRequests: string[] = [];
@@ -3620,7 +3654,7 @@ test('feedback index: selecting a column of the comments-per-change chart filter
   // CL 3 gets three more addressed comments on its file: 4 in all.
   const { FIXTURE_EMAIL, shards } = await import('./feedback-fixture.ts');
   const h2 = structuredClone(shards['2026H2']);
-  h2.cls[0][5]![1] = [1, 8, 4, 4];
+  h2.cls[0][6]![1] = [1, 8, 4, 4];
   const { page, errors } = await feedbackPage(undefined, { ...shards, '2026H2': h2 });
   await lookUp(page, FIXTURE_EMAIL);
   await page.waitForFunction(() => !document.querySelector<HTMLElement>('#rf-person')!.hidden);

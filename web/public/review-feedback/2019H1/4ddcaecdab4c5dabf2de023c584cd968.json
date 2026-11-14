@@ -1,1 +1,1 @@
-{"dirs":["chrome/browser/ash/"],"files":["chrome/browser/ash/assistant/assistant_util.cc"],"cls":[[1562117,17997,1,1,0],[646,0,5,2,0,[[0,5,1,1]]],[1883,4,6,3,0],[6170,2,2,4,0],[18302,12,3,5,0],[81233,53,6,6,0]]}
+{"dirs":["chrome/browser/ash/"],"files":["chrome/browser/ash/assistant/assistant_util.cc"],"revs":["xiaohuic@google.com","wutao@google.com"],"cls":[[1562117,17997,1,1,0,[0]],[646,0,5,2,0,[0],[[0,5,1,1]]],[1883,4,6,3,0,[1]],[6170,2,2,4,0,[1]],[18302,12,3,5,0,[0]],[81233,53,6,6,0,[1]]]}

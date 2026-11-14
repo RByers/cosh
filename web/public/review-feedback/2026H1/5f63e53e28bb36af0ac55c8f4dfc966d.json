@@ -1,1 +1,1 @@
-{"dirs":["third_party/blink/renderer/"],"files":["third_party/blink/renderer/modules/webgl/webgl_rendering_context_webgpu_base.cc"],"cls":[[7317007,20460,6,4,0,[[0,6,1,1]]]]}
+{"dirs":["third_party/blink/renderer/"],"files":["third_party/blink/renderer/modules/webgl/webgl_rendering_context_webgpu_base.cc"],"revs":["cwallez@google.com","geofflang@google.com"],"cls":[[7317007,20460,6,4,0,[0,1],[[0,6,1,1]]]]}

@@ -1,1 +1,1 @@
-{"dirs":["media/gpu/v4l2/","components/chromeos_camera/"],"files":["media/gpu/v4l2/v4l2_mjpeg_decode_accelerator.cc"],"cls":[[8424685,20718,54,50,[[0,38],[1,16]],[[0,38,1,0]]]]}
+{"dirs":["media/gpu/v4l2/","components/chromeos_camera/"],"files":["media/gpu/v4l2/v4l2_mjpeg_decode_accelerator.cc"],"revs":["jchinlee@google.com","nhebert@google.com","thakis@google.com"],"cls":[[8424685,20718,54,50,[[0,38],[1,16]],[0,1,2],[[0,38,1,0]]]]}

@@ -1,1 +1,1 @@
-{"dirs":["content/test/fuzzer/","(root)/","content/browser/"],"files":["content/test/fuzzer/clipboard_host_mojolpm_fuzzer.cc"],"cls":[[3572047,19097,321,0,[[0,319],[1,1],[2,1]],[[0,249,1,1]]]]}
+{"dirs":["content/test/fuzzer/","(root)/","content/browser/"],"files":["content/test/fuzzer/clipboard_host_mojolpm_fuzzer.cc"],"revs":["bookholt@google.com","metzman@google.com"],"cls":[[3572047,19097,321,0,[[0,319],[1,1],[2,1]],[0,1],[[0,249,1,1]]]]}

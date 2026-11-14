@@ -1,1 +1,1 @@
-{"dirs":["base/system/","chrome/browser/chromeos/","chrome/browser/feedback/"],"files":["base/system/sys_info.h","base/system/sys_info_chromeos.cc"],"cls":[[1217344,17800,4,0,[[0,4],[1,0],[2,0]],[[0,1,3,1],[1,3,1,0]]]]}
+{"dirs":["base/system/","chrome/browser/chromeos/","chrome/browser/feedback/"],"files":["base/system/sys_info.h","base/system/sys_info_chromeos.cc"],"revs":["afakhry@google.com","dcjansen@google.com","derat@google.com","thestig@google.com","vapier@google.com"],"cls":[[1217344,17800,4,0,[[0,4],[1,0],[2,0]],[0,1,2,3,4],[[0,1,3,1],[1,3,1,0]]]]}

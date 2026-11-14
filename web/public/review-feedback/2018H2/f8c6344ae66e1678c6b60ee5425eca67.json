@@ -1,1 +1,1 @@
-{"dirs":["docs/linux/","extensions/common/"],"files":["docs/linux/minidump_to_core.md","/COMMIT_MSG","extensions/common/url_pattern.cc"],"cls":[[1111747,17716,36,39,0,[[0,36,8,5]]],[12454,5,6,40,1,[[1,0,2,2],[2,6,2,2]]]]}
+{"dirs":["docs/linux/","extensions/common/"],"files":["docs/linux/minidump_to_core.md","/COMMIT_MSG","extensions/common/url_pattern.cc"],"revs":["derat@google.com","rdevlin.cronin@google.com"],"cls":[[1111747,17716,36,39,0,[0],[[0,36,8,5]]],[12454,5,6,40,1,[1],[[1,0,2,2],[2,6,2,2]]]]}

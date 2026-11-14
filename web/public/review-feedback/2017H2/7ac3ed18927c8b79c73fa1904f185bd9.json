@@ -1,1 +1,1 @@
-{"dirs":["remoting/protocol/","third_party/opus/"],"files":["breakpad/src"],"cls":[[640380,17422,1,4,0],[41323,33,37,5,1],[43676,2,2,6,1,[[0,0,1,0]]]]}
+{"dirs":["remoting/protocol/","third_party/opus/"],"files":["breakpad/src"],"revs":["jamiewalch@google.com","henrika@google.com"],"cls":[[640380,17422,1,4,0,[0]],[41323,33,37,5,1,[1]],[43676,2,2,6,1,[1],[[0,0,1,0]]]]}

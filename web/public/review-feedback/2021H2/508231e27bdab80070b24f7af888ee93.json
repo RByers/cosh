@@ -1,1 +1,1 @@
-{"dirs":["chrome/browser/ash/","base/threading/"],"files":["chrome/browser/ash/crosapi/browser_manager.cc"],"cls":[[3016220,18820,18,5,[[0,14],[1,4]],[[0,14,2,2]]]]}
+{"dirs":["chrome/browser/ash/","base/threading/"],"files":["chrome/browser/ash/crosapi/browser_manager.cc"],"revs":["danakj@google.com","erikchen@google.com"],"cls":[[3016220,18820,18,5,[[0,14],[1,4]],[0,1],[[0,14,2,2]]]]}

@@ -1,1 +1,1 @@
-{"dirs":["net/url_request/","tools/metrics/histograms/","services/network/"],"files":["tools/metrics/histograms/metadata/net/histograms.xml"],"cls":[[5017056,19670,25,444,[[0,12],[1,10],[2,3]],[[0,10,1,0]]]]}
+{"dirs":["net/url_request/","tools/metrics/histograms/","services/network/"],"files":["tools/metrics/histograms/metadata/net/histograms.xml"],"revs":["csharrison@google.com","johnidel@google.com","morlovich@google.com"],"cls":[[5017056,19670,25,444,[[0,12],[1,10],[2,3]],[0,1,2],[[0,10,1,0]]]]}

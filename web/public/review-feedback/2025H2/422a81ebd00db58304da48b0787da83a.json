@@ -1,1 +1,1 @@
-{"dirs":["testing/libfuzzer/research/"],"files":["testing/libfuzzer/research/fuzzilli_idl_fuzzing/OWNERS"],"cls":[[6759951,20285,3,362,0],[134483,43,4,363,0,[[0,4,1,0]]]]}
+{"dirs":["testing/libfuzzer/research/"],"files":["testing/libfuzzer/research/fuzzilli_idl_fuzzing/OWNERS"],"revs":["ahaas@google.com","ahijazi@google.com","titouan@google.com"],"cls":[[6759951,20285,3,362,0,[0,1]],[134483,43,4,363,0,[2],[[0,4,1,0]]]]}

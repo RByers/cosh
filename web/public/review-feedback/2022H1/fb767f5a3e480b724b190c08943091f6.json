@@ -1,1 +1,1 @@
-{"dirs":["services/network/public/","net/base/"],"files":["/COMMIT_MSG","net/base/is_potentially_trustworthy.cc"],"cls":[[3403867,19013,14,3,[[0,8],[1,6]],[[0,0,1,1],[1,6,3,3]]]]}
+{"dirs":["services/network/public/","net/base/"],"files":["/COMMIT_MSG","net/base/is_potentially_trustworthy.cc"],"revs":["lukasza@google.com","mmenke@google.com"],"cls":[[3403867,19013,14,3,[[0,8],[1,6]],[0,1],[[0,0,1,1],[1,6,3,3]]]]}

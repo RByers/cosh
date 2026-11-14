@@ -1,1 +1,1 @@
-{"dirs":["skia/","gpu/config/"],"files":["skia/features.gni"],"cls":[[6222165,20122,4,11,0,[[0,4,1,1]]],[29332,8,1,12,1]]}
+{"dirs":["skia/","gpu/config/"],"files":["skia/features.gni"],"revs":["egdaniel@google.com","kylechar@google.com","vasilyt@google.com"],"cls":[[6222165,20122,4,11,0,[0,1],[[0,4,1,1]]],[29332,8,1,12,1,[0,2]]]}

@@ -1,1 +1,1 @@
-{"dirs":["base/trace_event/"],"files":["/COMMIT_MSG","base/trace_event/trace_logging_minimal_win.cc"],"cls":[[3764893,19188,3,10,0,[[0,0,1,1],[1,3,2,2]]]]}
+{"dirs":["base/trace_event/"],"files":["/COMMIT_MSG","base/trace_event/trace_logging_minimal_win.cc"],"revs":["brucedawson@google.com","pbos@google.com"],"cls":[[3764893,19188,3,10,0,[0,1],[[0,0,1,1],[1,3,2,2]]]]}

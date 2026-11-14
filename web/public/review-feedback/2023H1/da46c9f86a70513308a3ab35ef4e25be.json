@@ -1,1 +1,1 @@
-{"dirs":["tools/metrics/histograms/","chrome/browser/ash/"],"files":["chrome/browser/ash/login/demo_mode/demo_setup_browsertest.cc"],"cls":[[4148848,19366,4,3,0],[70631,25,1,4,1,[[0,1,1,1]]],[78902,26,1,5,1]]}
+{"dirs":["tools/metrics/histograms/","chrome/browser/ash/"],"files":["chrome/browser/ash/login/demo_mode/demo_setup_browsertest.cc"],"revs":["jacksontadie@google.com","reillyg@google.com"],"cls":[[4148848,19366,4,3,0,[0,1]],[70631,25,1,4,1,[0],[[0,1,1,1]]],[78902,26,1,5,1,[0]]]}

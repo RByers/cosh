@@ -1,1 +1,1 @@
-{"dirs":["components/exo/wayland/","chromeos/ash/experiences/"],"files":["chromeos/ash/experiences/arc/mojom/ime_mojom_traits.cc"],"cls":[[3752273,19185,5,167,0],[116506,52,11,169,1,[[0,3,1,1]]]]}
+{"dirs":["components/exo/wayland/","chromeos/ash/experiences/"],"files":["chromeos/ash/experiences/arc/mojom/ime_mojom_traits.cc"],"revs":["oshima@google.com","hidehiko@google.com","sammc@google.com"],"cls":[[3752273,19185,5,167,0,[0]],[116506,52,11,169,1,[1,2],[[0,3,1,1]]]]}

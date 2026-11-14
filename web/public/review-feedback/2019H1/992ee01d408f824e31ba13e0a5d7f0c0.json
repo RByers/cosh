@@ -1,1 +1,1 @@
-{"dirs":["ui/events/ozone/","chrome/browser/ui/"],"files":["/COMMIT_MSG","ui/events/ozone/evdev/event_device_info.cc"],"cls":[[1479635,17948,111,0,[[0,110],[1,1]],[[0,0,1,1],[1,20,2,1]]]]}
+{"dirs":["ui/events/ozone/","chrome/browser/ui/"],"files":["/COMMIT_MSG","ui/events/ozone/evdev/event_device_info.cc"],"revs":["jdufault@google.com","malaykeshav@google.com","spang@google.com"],"cls":[[1479635,17948,111,0,[[0,110],[1,1]],[0,1,2],[[0,0,1,1],[1,20,2,1]]]]}

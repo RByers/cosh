@@ -1,1 +1,1 @@
-{"dirs":["chrome/browser/ui/","ui/webui/resources/"],"files":["/COMMIT_MSG","ui/webui/resources/cr_elements/cr_toolbar/cr_toolbar_search_field.css"],"cls":[[6634727,20252,1,0,0],[660,11,1,1,1,[[0,0,1,1],[1,1,2,2]]]]}
+{"dirs":["chrome/browser/ui/","ui/webui/resources/"],"files":["/COMMIT_MSG","ui/webui/resources/cr_elements/cr_toolbar/cr_toolbar_search_field.css"],"revs":["dljames@google.com","iclelland@google.com","temao@google.com"],"cls":[[6634727,20252,1,0,0,[0,1]],[660,11,1,1,1,[0,2],[[0,0,1,1],[1,1,2,2]]]]}

@@ -1,1 +1,1 @@
-{"dirs":["third_party/blink/web_tests/","third_party/blink/renderer/"],"files":["/COMMIT_MSG","third_party/blink/renderer/platform/loader/cors/cors.cc"],"cls":[[3369724,19004,2,2,0,[[0,0,6,6]]],[41367,21,2,3,0],[11115,1,40,3,[[1,40],[0,0]],[[1,28,2,2]]]]}
+{"dirs":["third_party/blink/web_tests/","third_party/blink/renderer/"],"files":["/COMMIT_MSG","third_party/blink/renderer/platform/loader/cors/cors.cc"],"revs":["toyoshim@google.com"],"cls":[[3369724,19004,2,2,0,[0],[[0,0,6,6]]],[41367,21,2,3,0,[0]],[11115,1,40,3,[[1,40],[0,0]],[0],[[1,28,2,2]]]]}

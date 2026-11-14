@@ -1,1 +1,1 @@
-{"dirs":["chrome/browser/","ash/constants/","tools/metrics/histograms/"],"files":["chrome/browser/flag-metadata.json"],"cls":[[5906362,20005,8,1,0,[[0,8,1,1]]],[118,5,23,2,[[0,15],[1,6],[2,2]],[[0,5,1,1]]]]}
+{"dirs":["chrome/browser/","ash/constants/","tools/metrics/histograms/"],"files":["chrome/browser/flag-metadata.json"],"revs":["drmasquatch@google.com","joelhockey@google.com","uekawa@google.com"],"cls":[[5906362,20005,8,1,0,[0,1,2],[[0,8,1,1]]],[118,5,23,2,[[0,15],[1,6],[2,2]],[0,2],[[0,5,1,1]]]]}

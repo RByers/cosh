@@ -1,1 +1,1 @@
-{"dirs":["components/policy/core/","components/sync/engine/"],"files":["/COMMIT_MSG","components/sync/engine/cryptographer.cc","components/sync/engine/engine_util.cc"],"cls":[[1034942,17653,3,209,0],[5383,2,9,210,1,[[0,0,1,1],[1,7,3,3],[2,1,1,0]]]]}
+{"dirs":["components/policy/core/","components/sync/engine/"],"files":["/COMMIT_MSG","components/sync/engine/cryptographer.cc","components/sync/engine/engine_util.cc"],"revs":["emaxx@google.com","mastiz@google.com"],"cls":[[1034942,17653,3,209,0,[0]],[5383,2,9,210,1,[1],[[0,0,1,1],[1,7,3,3],[2,1,1,0]]]]}

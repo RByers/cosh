@@ -1,1 +1,1 @@
-{"dirs":["third_party/metrics_proto/","chromecast/public/"],"files":["third_party/metrics_proto/cast_logs.proto","chromecast/public/cast_sys_info.h"],"cls":[[901958,17570,14,0,0,[[0,14,4,3]]],[196428,131,3,1,1,[[1,3,1,0]]]]}
+{"dirs":["third_party/metrics_proto/","chromecast/public/"],"files":["third_party/metrics_proto/cast_logs.proto","chromecast/public/cast_sys_info.h"],"revs":["asvitkine@google.com","halliwell@google.com"],"cls":[[901958,17570,14,0,0,[0],[[0,14,4,3]]],[196428,131,3,1,1,[1],[[1,3,1,0]]]]}

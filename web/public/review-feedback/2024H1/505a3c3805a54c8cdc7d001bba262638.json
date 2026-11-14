@@ -1,1 +1,1 @@
-{"dirs":["third_party/fuchsia-gn-sdk/src/","fuchsia_web/runners/cast/"],"files":["fuchsia_web/runners/cast/fidl/application_config.fidl"],"cls":[[5241664,19752,4,1,0],[179987,66,2,2,1,[[0,2,1,1]]]]}
+{"dirs":["third_party/fuchsia-gn-sdk/src/","fuchsia_web/runners/cast/"],"files":["fuchsia_web/runners/cast/fidl/application_config.fidl"],"revs":["wez@google.com","zijiehe@google.com","ddorwin@google.com"],"cls":[[5241664,19752,4,1,0,[0,1]],[179987,66,2,2,1,[2,1],[[0,2,1,1]]]]}

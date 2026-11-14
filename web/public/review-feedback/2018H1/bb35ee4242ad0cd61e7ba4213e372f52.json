@@ -1,1 +1,1 @@
-{"dirs":["tools/fuchsia/","build/fuchsia/"],"files":["tools/fuchsia/local-sdk.py"],"cls":[[930125,17584,9,831,0,[[0,9,1,0]]],[21512,13,4,832,0],[573,0,4,833,1]]}
+{"dirs":["tools/fuchsia/","build/fuchsia/"],"files":["tools/fuchsia/local-sdk.py"],"revs":["kmarshall@google.com","wez@google.com"],"cls":[[930125,17584,9,831,0,[0],[[0,9,1,0]]],[21512,13,4,832,0,[1]],[573,0,4,833,1,[1]]]}

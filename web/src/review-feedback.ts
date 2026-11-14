@@ -9,6 +9,7 @@ import { Chart, Filler, type ChartDataset, type ChartEvent, type Plugin } from '
 import { readTheme, withAlpha, type Theme } from './charts.ts';
 import {
   afrShade,
+  attachReviewers,
   halfOf,
   binReached,
   binSums,
@@ -33,6 +34,7 @@ import {
   personKey,
   quantile,
   ratioShade,
+  reviewerRows,
   sums,
   tableRows,
   threadBinLabel,
@@ -45,6 +47,7 @@ import {
   type LinkShard,
   type Peers,
   type Person,
+  type ReviewerTable,
   type Shard,
   type TableRowView,
   type Top,
@@ -73,6 +76,8 @@ const ALL = 'all';
 const state = {
   person: null as Person | null,
   peers: null as Peers | null,
+  /** reviewers.json, loaded with the first person. */
+  reviewers: null as ReviewerTable | null,
   /** The person's file key and half-years, for their link files. */
   key: null as string | null,
   halves: [] as string[],
@@ -170,7 +175,6 @@ function fillStatic(peers: Peers) {
   fill('.rf-min-cls', peers.min_cls);
   fill('.rf-min-bin', peers.min_bin_cls);
   fill('.rf-min-cell', peers.min_cell_cls);
-  fill('.rf-min-rate', peers.min_rate_cls);
   for (const e of document.querySelectorAll('.rf-links-from')) e.textContent = peers.links_from.slice(0, 4);
 }
 
@@ -205,8 +209,9 @@ async function lookup(raw: string) {
   }
   put(note, 'find-loading');
   try {
-    const [peers, top] = await Promise.all([
+    const [peers, reviewers, top] = await Promise.all([
       state.peers ? Promise.resolve(state.peers) : getJson<Peers>(`${DATA}peers.json`),
+      state.reviewers ? Promise.resolve(state.reviewers) : getJson<ReviewerTable>(`${DATA}reviewers.json`),
       (async () => {
         let k = await personKey(raw);
         for (let hops = 0; hops < 2; hops++) {
@@ -227,9 +232,12 @@ async function lookup(raw: string) {
     const shards = top && halvesOk
       ? await Promise.all(top.top.halves.map((h) => getJson<Shard>(`${DATA}${h}/${top.key}.json`)))
       : [];
-    const found = top && peers && halvesOk && shards.every((s) => s)
+    const found = top && peers && reviewers && halvesOk && shards.every((s) => s)
       ? buildPerson(top.top, shards as Shard[], peers) : null;
+    // Every figure about the person needs their reviewers' factors.
+    if (found) await attachReviewers(found, reviewers!);
     state.peers = peers;
+    state.reviewers = reviewers;
     window.__rf!.peers = peers;
     if (!found || !peers || !clsIn(found, ALL).length) {
       put(note, 'find-none', rangeVars(peers));
@@ -503,8 +511,106 @@ function allDirRow(r: TableRowView, you: boolean): HTMLTableRowElement {
 function renderMethod() {
   const peers = state.peers;
   if (!peers?.fr_bins || !$<HTMLDetailsElement>('#method').open) return;
+  renderPeerGroups();
   renderNewcomers();
   renderSizes();
+}
+
+/** The methodology's case for comparing by reviewer: how much of the change-to-change spread in
+ * feedback each peer group predicts, how widely directories and reviewers differ, and what drift is
+ * left once reviewers and authors are accounted for. */
+function renderPeerGroups() {
+  for (const c of ['method', 'spread', 'drift']) destroy(c);
+  const peers = state.peers!;
+  const t = theme();
+  const m = new Map(peers.method.map(([k, , p]) => [k, p]));
+  const keys = ['d', 'r', 'dr', 'rd'].filter((k) => m.has(k));
+  const pctLabel = (v: number) => `${fmtNum(v, { maximumFractionDigits: 1 })}%`;
+  put($('#rf-method-note'), 'method-note', { d: pctLabel(m.get('d') ?? 0), r: pctLabel(m.get('r') ?? 0),
+    dr: pctLabel(m.get('dr') ?? 0), rd: pctLabel(m.get('rd') ?? 0) });
+  charts.method = new Chart($<HTMLCanvasElement>('#rf-method-chart'), {
+    type: 'bar',
+    data: { labels: keys.map((k) => msg(`model-${k}`)),
+      datasets: [{ data: keys.map((k) => m.get(k)!), borderWidth: 0, categoryPercentage: 0.8, barPercentage: 1,
+        backgroundColor: keys.map((k) => (k === 'r' ? t.series[0] : withAlpha(t.series[0], 0.45))) }] },
+    options: {
+      indexAxis: 'y',
+      maintainAspectRatio: false,
+      animation: false,
+      font: { family: t.font },
+      scales: { x: { beginAtZero: true, ...axis(t, msg('axis-method')) }, y: { ...axis(t, ''), grid: { display: false },
+        title: { display: false } } },
+      plugins: { legend: { display: false }, tooltip: { callbacks: { label: (i) => pctLabel(i.parsed.x ?? 0) } } },
+    },
+  });
+
+  // Reviewers within each busy directory: their factors' 10th–90th percentile and middle half, and the
+  // directory's own factor as a mark.
+  const dr = peers.dir_revs;
+  const first = dr[0];
+  put($('#rf-spread-note'), 'spread-note', { n: fmtInt(dr.length), min: fmtInt(peers.min_spread_exp),
+    dir: first?.[0] ?? '', dirF: fmtFi(first?.[1]), lo: fmtFi(first?.[3][0]), hi: fmtFi(first?.[3][4]) });
+  const mark = (f: number) => [f / 1.04, f * 1.04] as [number, number];
+  // Ticks at a few round factors only.
+  const roundTick = (v: string | number) => ([0.01, 0.03, 0.1, 0.3, 1, 3].includes(Number(v)) ? fmtFi(Number(v)) : '');
+  charts.spread = new Chart($<HTMLCanvasElement>('#rf-spread-chart'), {
+    type: 'bar',
+    data: { labels: dr.map((r) => r[0]), datasets: [
+      // A lower `order` draws on top: the directory's mark over the middle half over the 10th–90th.
+      { data: dr.map((r) => [r[3][0], r[3][4]] as [number, number]), backgroundColor: withAlpha(t.series[0], 0.3),
+        borderWidth: 0, grouped: false, categoryPercentage: 0.8, barPercentage: 1, order: 2 },
+      { data: dr.map((r) => [r[3][1], r[3][3]] as [number, number]), backgroundColor: withAlpha(t.series[0], 0.7),
+        borderWidth: 0, grouped: false, categoryPercentage: 0.8, barPercentage: 1, order: 1 },
+      { data: dr.map((r) => mark(r[1])), backgroundColor: t.series[1], borderWidth: 0, grouped: false,
+        categoryPercentage: 0.8, barPercentage: 1, order: 0 },
+    ] },
+    options: {
+      indexAxis: 'y',
+      maintainAspectRatio: false,
+      animation: false,
+      font: { family: t.font },
+      scales: { x: { type: 'logarithmic', min: 0.01, max: 4, ...axis(t, msg('axis-factor')),
+        ticks: { color: t.text, autoSkip: false, maxRotation: 0, callback: roundTick } },
+      y: { grid: { display: false }, ticks: { color: t.text, autoSkip: false } } },
+      plugins: { legend: { display: false }, tooltip: { callbacks: { label: (i) => {
+        const r = dr[i.dataIndex];
+        return [`10th–90th percentile of ${fmtInt(r[2])} reviewers ${fmtFi(r[3][0])} – ${fmtFi(r[3][4])}`,
+          `middle half ${fmtFi(r[3][1])} – ${fmtFi(r[3][3])}, median ${fmtFi(r[3][2])}`,
+          `the directory ${fmtFi(r[1])}`][i.datasetIndex];
+      } } } },
+    },
+  });
+
+  // Drift: per half-year, everyone's addressed comments over what experience and size expect, and over
+  // what experience, size, reviewers and authors expect.
+  const d = peers.drift;
+  const last = d.at(-1);
+  const steady = d.slice(0, -1).map((r) => r[3]);
+  put($('#rf-drift-note'), 'drift-note', { lo: fmtFi(Math.min(...steady)), hi: fmtFi(Math.max(...steady)),
+    upTo: halfName(d.at(-2)?.[0] ?? ''), last: halfName(last?.[0] ?? ''), lastRaw: fmtFi(last?.[2]),
+    lastFull: fmtFi(last?.[3]) });
+  lineLegend($('#rf-drift-legend'), [{ label: msg('drift-raw'), color: t.series[1] },
+    { label: msg('drift-full'), color: t.series[0] }]);
+  charts.drift = new Chart($<HTMLCanvasElement>('#rf-drift-chart'), {
+    type: 'line',
+    data: { labels: d.map((r) => shortMonth(Date.UTC(+r[0].slice(0, 4), r[0].endsWith('1') ? 0 : 6, 1) / 86_400_000)), datasets: [
+      { data: d.map((r) => r[2]), borderColor: t.series[1], backgroundColor: t.series[1], borderWidth: 2, pointRadius: 2 },
+      { data: d.map((r) => r[3]), borderColor: t.series[0], backgroundColor: t.series[0], borderWidth: 2.5, pointRadius: 3 },
+      { data: d.map(() => 1), borderColor: t.grid, borderDash: [4, 4], borderWidth: 1, pointRadius: 0, pointHoverRadius: 0 },
+    ] },
+    options: {
+      maintainAspectRatio: false,
+      animation: false,
+      interaction: { mode: 'index', intersect: false },
+      font: { family: t.font },
+      scales: { x: { ...axis(t, ''), grid: { display: false }, title: { display: false } },
+        y: { min: 0.6, max: 1.4, ...axis(t, msg('axis-drift')), ticks: { color: t.text, callback: (v) => fmtFi(Number(v)) } } },
+      plugins: { legend: { display: false }, tooltip: {
+        filter: (i) => i.datasetIndex < 2,
+        callbacks: { title: (items) => halfName(d[items[0].dataIndex][0]),
+          label: (i) => `${msg(i.datasetIndex ? 'drift-full' : 'drift-raw')}: ${fmtFi(i.parsed.y)}` } } },
+    },
+  });
 }
 
 /** An experience bin's range of CLs landed on main, e.g. "9–16 CLs". */
@@ -665,6 +771,7 @@ function render() {
   renderSummary();
   renderTrend();
   renderXpTable();
+  renderReviewers();
   renderPerCl();
   renderDirs();
 }
@@ -817,6 +924,30 @@ function renderXpTable() {
   const cells = ['', fmtInt(tot.cls), fmtInt(tot.lines), fmtInt(tot.addressed), fmtFr(frOf(tot)), '–'];
   $('#rf-xp-table tfoot tr').querySelectorAll('td').forEach((td, i) => (td.textContent = cells[i]));
   put($('#rf-xp-note'), 'experience-note');
+}
+
+/** The person's approvers: their changes each approved, the feedback on them, the reviewer's factor
+ * (how much feedback their approvals draw, everyone's changes counted) and the person's index on them. */
+function renderReviewers() {
+  const p = state.person!;
+  const peers = state.peers!;
+  const rows = reviewerRows(p, peers, ALL);
+  const body = $('#rf-revs tbody');
+  body.replaceChildren();
+  for (const r of rows) {
+    const tr = el('tr');
+    const th = el('th', r.email);
+    th.setAttribute('scope', 'row');
+    const few = r.cls < peers.min_bin_cls;
+    tr.append(th, el('td', fmtInt(r.cls), 'num'), el('td', fmtInt(r.addressed), 'num'),
+      el('td', few ? '–' : fmtFr(fr(r.addressed, r.lines)), 'num'),
+      el('td', fmtFi(r.factor), 'num'), el('td', fmtInt(r.approved), 'num'),
+      few ? el('td', '–', 'num') : fiCell(r.expected > 0 ? r.addressed / r.expected : null));
+    body.append(tr);
+  }
+  const none = clsIn(p, ALL).filter((c) => !c[6].length).length;
+  put($('#rf-revs-note'), 'revs-note', { n: fmtInt(rows.length), none: fmtInt(none), hasNone: none > 0,
+    noneF: fmtFi(peers.rev_none), min: fmtInt(peers.min_bin_cls) });
 }
 
 /** A table cell for a feedback index, shaded green below 1 and red above. */

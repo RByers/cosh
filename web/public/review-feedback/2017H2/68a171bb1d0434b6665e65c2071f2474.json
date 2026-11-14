@@ -1,1 +1,1 @@
-{"dirs":["device/vr/","chrome/browser/","device/vr/buildflags/"],"files":["device/vr/buildflags/buildflags.gni"],"cls":[[738842,17465,4,20,[[0,2],[1,1],[2,1]],[[0,1,4,1]]],[1845,4,11,21,[[2,8],[0,2],[1,1]],[[0,8,6,5]]]]}
+{"dirs":["device/vr/","chrome/browser/","device/vr/buildflags/"],"files":["device/vr/buildflags/buildflags.gni"],"revs":["bajones@google.com","mthiesse@google.com","ddorwin@google.com"],"cls":[[738842,17465,4,20,[[0,2],[1,1],[2,1]],[0,1],[[0,1,4,1]]],[1845,4,11,21,[[2,8],[0,2],[1,1]],[2,1],[[0,8,6,5]]]]}

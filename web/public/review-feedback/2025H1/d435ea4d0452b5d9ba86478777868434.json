@@ -1,1 +1,1 @@
-{"dirs":["components/trusted_vault/","components/trusted_vault/test/","(root)/"],"files":["AUTHORS","components/trusted_vault/trusted_vault_connection.h"],"cls":[[6388520,20192,59,0,[[0,56],[1,2],[2,1]],[[0,1,2,0],[1,3,2,2]]]]}
+{"dirs":["components/trusted_vault/","components/trusted_vault/test/","(root)/"],"files":["AUTHORS","components/trusted_vault/trusted_vault_connection.h"],"revs":["mastiz@google.com","nsatragno@google.com"],"cls":[[6388520,20192,59,0,[[0,56],[1,2],[2,1]],[0,1],[[0,1,2,0],[1,3,2,2]]]]}

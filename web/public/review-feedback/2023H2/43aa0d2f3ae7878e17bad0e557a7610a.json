@@ -1,1 +1,1 @@
-{"dirs":["chrome/browser/extensions/"],"files":["chrome/browser/extensions/extension_tab_util.cc","chrome/browser/extensions/extension_tab_util_unittest.cc"],"cls":[[4904248,19635,13,1,0,[[0,5,2,2],[1,8,1,1]]]]}
+{"dirs":["chrome/browser/extensions/"],"files":["chrome/browser/extensions/extension_tab_util.cc","chrome/browser/extensions/extension_tab_util_unittest.cc"],"revs":["rdevlin.cronin@google.com","reillyg@google.com"],"cls":[[4904248,19635,13,1,0,[0,1],[[0,5,2,2],[1,8,1,1]]]]}

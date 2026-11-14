@@ -1,1 +1,1 @@
-{"dirs":["chromecast/device/bluetooth/"],"files":["chromecast/device/bluetooth/le/ble_types.h","chromecast/public/DEPS","chromecast/public/bluetooth/bluetooth_types.h"],"cls":[[2159574,18374,3,3,0],[532,1,24,4,0],[-533,1,128,5,0,[[0,24,1,1],[1,0,1,0],[2,0,2,1]]]]}
+{"dirs":["chromecast/device/bluetooth/"],"files":["chromecast/device/bluetooth/le/ble_types.h","chromecast/public/DEPS","chromecast/public/bluetooth/bluetooth_types.h"],"revs":["halliwell@google.com"],"cls":[[2159574,18374,3,3,0,[0]],[532,1,24,4,0,[0]],[-533,1,128,5,0,[0],[[0,24,1,1],[1,0,1,0],[2,0,2,1]]]]}

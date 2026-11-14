@@ -1,1 +1,1 @@
-{"dirs":["media/capture/video/"],"files":["/COMMIT_MSG","media/capture/video/win/video_capture_device_mf_win.cc","media/capture/video/win/video_capture_device_mf_win_unittest.cc"],"cls":[[2238879,18432,151,0,0,[[0,0,1,1],[1,58,13,7],[2,90,9,4]]]]}
+{"dirs":["media/capture/video/"],"files":["/COMMIT_MSG","media/capture/video/win/video_capture_device_mf_win.cc","media/capture/video/win/video_capture_device_mf_win_unittest.cc"],"revs":["brucedawson@google.com","guidou@google.com"],"cls":[[2238879,18432,151,0,0,[0,1],[[0,0,1,1],[1,58,13,7],[2,90,9,4]]]]}

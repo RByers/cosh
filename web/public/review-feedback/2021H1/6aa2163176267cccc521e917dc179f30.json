@@ -1,1 +1,1 @@
-{"dirs":["build/config/fuchsia/","testing/"],"files":["/COMMIT_MSG","build/config/fuchsia/generate_runner_scripts.gni"],"cls":[[2917714,18787,6,0,[[0,5],[1,1]],[[0,0,3,3],[1,5,2,1]]]]}
+{"dirs":["build/config/fuchsia/","testing/"],"files":["/COMMIT_MSG","build/config/fuchsia/generate_runner_scripts.gni"],"revs":["chonggu@google.com","dpranke@google.com","kmarshall@google.com"],"cls":[[2917714,18787,6,0,[[0,5],[1,1]],[0,1,2],[[0,0,3,3],[1,5,2,1]]]]}

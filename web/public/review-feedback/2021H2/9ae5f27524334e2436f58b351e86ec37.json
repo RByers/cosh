@@ -1,1 +1,1 @@
-{"dirs":["net/dns/"],"files":["net/dns/dns_config_service_win.cc","net/dns/serial_worker.cc","net/dns/serial_worker.h","net/dns/serial_worker_unittest.cc"],"cls":[[3036528,18832,236,13,0,[[0,5,2,2],[1,52,6,5],[2,22,6,6],[3,144,3,3]]],[22275,6,34,14,0]]}
+{"dirs":["net/dns/"],"files":["net/dns/dns_config_service_win.cc","net/dns/serial_worker.cc","net/dns/serial_worker.h","net/dns/serial_worker_unittest.cc"],"revs":["ericorth@google.com"],"cls":[[3036528,18832,236,13,0,[0],[[0,5,2,2],[1,52,6,5],[2,22,6,6],[3,144,3,3]]],[22275,6,34,14,0,[0]]]}

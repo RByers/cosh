@@ -1,1 +1,1 @@
-{"dirs":["chrome/browser/ash/","chrome/browser/ui/"],"files":["/COMMIT_MSG","chrome/browser/ash/arc/intent_helper/arc_settings_service.cc"],"cls":[[697344,17449,73,11,[[0,46],[1,27]]],[14331,14,24,13,0,[[0,0,3,2],[1,24,6,4]]]]}
+{"dirs":["chrome/browser/ash/","chrome/browser/ui/"],"files":["/COMMIT_MSG","chrome/browser/ash/arc/intent_helper/arc_settings_service.cc"],"revs":["shuchen@google.com","yhanada@google.com","hidehiko@google.com","khmel@google.com","xiyuan@google.com"],"cls":[[697344,17449,73,11,[[0,46],[1,27]],[0,1]],[14331,14,24,13,0,[2,3,4],[[0,0,3,2],[1,24,6,4]]]]}

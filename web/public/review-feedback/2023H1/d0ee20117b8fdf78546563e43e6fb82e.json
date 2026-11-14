@@ -1,1 +1,1 @@
-{"dirs":["build/","components/update_client/","third_party/blink/renderer/","base/process/","base/allocator/partition_allocator/"],"files":[],"cls":[[4563818,19502,16,2,0],[9516,7,21,3,[[1,8],[2,8],[3,3],[4,2],[0,0]]]]}
+{"dirs":["build/","components/update_client/","third_party/blink/renderer/","base/process/","base/allocator/partition_allocator/"],"files":[],"revs":["cwallez@google.com","sdefresne@google.com","danakj@google.com","kbr@google.com"],"cls":[[4563818,19502,16,2,0,[0,1]],[9516,7,21,3,[[1,8],[2,8],[3,3],[4,2],[0,0]],[0,2,3,1]]]}

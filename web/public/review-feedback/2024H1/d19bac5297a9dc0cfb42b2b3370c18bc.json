@@ -1,1 +1,1 @@
-{"dirs":["ui/base/ime/","base/profiler/"],"files":["ui/base/ime/win/input_method_win_tsf.cc"],"cls":[[5420831,19818,20,697,0,[[0,20,1,1]]],[155784,53,1,698,1]]}
+{"dirs":["ui/base/ime/","base/profiler/"],"files":["ui/base/ime/win/input_method_win_tsf.cc"],"revs":["siliu@microsoft.com","snianu@microsoft.com","yukawa@google.com","wittman@google.com"],"cls":[[5420831,19818,20,697,0,[0,1,2],[[0,20,1,1]]],[155784,53,1,698,1,[3]]]}

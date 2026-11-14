@@ -1,1 +1,1 @@
-{"dirs":["chrome/browser/sessions/"],"files":["chrome/browser/sessions/session_restore.cc","chrome/browser/sessions/session_restore_browsertest.cc"],"cls":[[3192233,18906,54,0,0,[[0,1,2,2],[1,53,2,1]]]]}
+{"dirs":["chrome/browser/sessions/"],"files":["chrome/browser/sessions/session_restore.cc","chrome/browser/sessions/session_restore_browsertest.cc"],"revs":["sky@google.com"],"cls":[[3192233,18906,54,0,0,[0],[[0,1,2,2],[1,53,2,1]]]]}

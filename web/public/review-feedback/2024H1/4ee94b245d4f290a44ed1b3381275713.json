@@ -1,1 +1,1 @@
-{"dirs":["chromeos/ash/components/","chrome/browser/","tools/metrics/histograms/"],"files":[],"cls":[[5256562,19755,265,43,0],[182952,68,1,43,1],[2278,0,23,44,[[1,19],[2,4]]],[14043,6,21,45,[[1,17],[2,4]]],[56838,20,18,46,[[1,16],[2,2]]]]}
+{"dirs":["chromeos/ash/components/","chrome/browser/","tools/metrics/histograms/"],"files":[],"revs":["yuhsuan@google.com","liberato@google.com","whalechang@google.com"],"cls":[[5256562,19755,265,43,0,[0]],[182952,68,1,43,1,[1]],[2278,0,23,44,[[1,19],[2,4]],[0]],[14043,6,21,45,[[1,17],[2,4]],[0]],[56838,20,18,46,[[1,16],[2,2]],[2]]]}

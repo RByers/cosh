@@ -1,1 +1,1 @@
-{"dirs":["tools/"],"files":["tools/bisect-builds.py","tools/bisect_test.py"],"cls":[[6593672,20243,77,50,0,[[0,17,4,4],[1,60,5,5]]]]}
+{"dirs":["tools/"],"files":["tools/bisect-builds.py","tools/bisect_test.py"],"revs":["kuanhuang@google.com","ntfschr@google.com"],"cls":[[6593672,20243,77,50,0,[0,1],[[0,17,4,4],[1,60,5,5]]]]}

@@ -1,1 +1,1 @@
-{"dirs":["chrome/browser/upgrade_detector/"],"files":["chrome/browser/upgrade_detector/installed_version_updater_chromeos.cc","chrome/browser/upgrade_detector/upgrade_detector_chromeos.cc"],"cls":[[3021581,18828,70,15,0,[[0,7,1,1],[1,10,3,3]]]]}
+{"dirs":["chrome/browser/upgrade_detector/"],"files":["chrome/browser/upgrade_detector/installed_version_updater_chromeos.cc","chrome/browser/upgrade_detector/upgrade_detector_chromeos.cc"],"revs":["grt@google.com","xiyuan@google.com"],"cls":[[3021581,18828,70,15,0,[0,1],[[0,7,1,1],[1,10,3,3]]]]}

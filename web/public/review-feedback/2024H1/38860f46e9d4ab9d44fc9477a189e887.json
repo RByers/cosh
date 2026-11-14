@@ -1,1 +1,1 @@
-{"dirs":["chromeos/ash/experiences/"],"files":["chromeos/ash/experiences/arc/arc_features.cc","chromeos/ash/experiences/arc/session/arc_vm_client_adapter.cc"],"cls":[[5463547,19835,8,2,0,[[0,5,1,1],[1,2,1,1]]]]}
+{"dirs":["chromeos/ash/experiences/"],"files":["chromeos/ash/experiences/arc/arc_features.cc","chromeos/ash/experiences/arc/session/arc_vm_client_adapter.cc"],"revs":["raging@google.com","yhanada@google.com"],"cls":[[5463547,19835,8,2,0,[0,1],[[0,5,1,1],[1,2,1,1]]]]}

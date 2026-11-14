@@ -1,1 +1,1 @@
-{"dirs":["tools/metrics/histograms/"],"files":["tools/metrics/histograms/metadata/fingerprint/histograms.xml"],"cls":[[5860318,19983,2,0,0,[[0,2,2,2]]],[9551,1,1,1,0],[50640,26,4,2,0]]}
+{"dirs":["tools/metrics/histograms/"],"files":["tools/metrics/histograms/metadata/fingerprint/histograms.xml"],"revs":["hcyang@google.com","rkaplow@google.com"],"cls":[[5860318,19983,2,0,0,[0,1],[[0,2,2,2]]],[9551,1,1,1,0,[0,1]],[50640,26,4,2,0,[0,1]]]}

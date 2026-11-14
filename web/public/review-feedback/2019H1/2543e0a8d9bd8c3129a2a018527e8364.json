@@ -1,1 +1,1 @@
-{"dirs":["tools/metrics/histograms/","third_party/blink/renderer/"],"files":["third_party/blink/renderer/devtools/front_end/Runtime.js","tools/metrics/histograms/histograms.xml"],"cls":[[1610460,18044,18,0,[[0,10],[1,8]],[[0,8,3,2],[1,10,3,1]]]]}
+{"dirs":["tools/metrics/histograms/","third_party/blink/renderer/"],"files":["third_party/blink/renderer/devtools/front_end/Runtime.js","tools/metrics/histograms/histograms.xml"],"revs":["alexilin@google.com","einbinder@google.com"],"cls":[[1610460,18044,18,0,[[0,10],[1,8]],[0,1],[[0,8,3,2],[1,10,3,1]]]]}

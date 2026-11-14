@@ -1,1 +1,1 @@
-{"dirs":["third_party/blink/common/","third_party/blink/public/","tools/metrics/histograms/","third_party/blink/renderer/"],"files":[],"cls":[[8308313,20693,8,14,[[0,4],[1,2],[2,2]]],[44994,13,27,15,[[3,11],[1,6],[2,6],[0,4]]]]}
+{"dirs":["third_party/blink/common/","third_party/blink/public/","tools/metrics/histograms/","third_party/blink/renderer/"],"files":[],"revs":["foolip@google.com","mmocny@google.com","shaseley@google.com"],"cls":[[8308313,20693,8,14,[[0,4],[1,2],[2,2]],[0,1]],[44994,13,27,15,[[3,11],[1,6],[2,6],[0,4]],[1,2]]]}

@@ -1,1 +1,1 @@
-{"dirs":["tools/metrics/histograms/"],"files":["tools/metrics/histograms/metadata/cryptohome/histograms.xml"],"cls":[[3711969,19186,72,2,0,[[0,72,5,5]]],[-9011,8,26,3,0,[[0,26,6,6]]],[212346,68,24,4,0,[[0,24,3,3]]]]}
+{"dirs":["tools/metrics/histograms/"],"files":["tools/metrics/histograms/metadata/cryptohome/histograms.xml"],"revs":["jorgelo@google.com","holte@google.com"],"cls":[[3711969,19186,72,2,0,[0],[[0,72,5,5]]],[-9011,8,26,3,0,[0],[[0,26,6,6]]],[212346,68,24,4,0,[1],[[0,24,3,3]]]]}

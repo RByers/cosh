@@ -1,1 +1,1 @@
-{"dirs":["third_party/blink/renderer/","(root)/","content/test/gpu/"],"files":["third_party/blink/renderer/modules/webgpu/gpu_shader_module.cc"],"cls":[[4226653,19395,28,734,0,[[0,5,1,1]]],[279238,86,1,735,1],[96797,36,44,735,2]]}
+{"dirs":["third_party/blink/renderer/","(root)/","content/test/gpu/"],"files":["third_party/blink/renderer/modules/webgpu/gpu_shader_module.cc"],"revs":["cwallez@google.com","enga@google.com","cmfcmf@google.com","bsheedy@google.com"],"cls":[[4226653,19395,28,734,0,[0,1],[[0,5,1,1]]],[279238,86,1,735,1,[2]],[96797,36,44,735,2,[3]]]}

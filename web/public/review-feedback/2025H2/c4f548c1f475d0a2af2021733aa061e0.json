@@ -1,1 +1,1 @@
-{"dirs":["tools/metrics/histograms/","chrome/android/features/","chrome/browser/flags/","chrome/browser/ui/"],"files":["/COMMIT_MSG"],"cls":[[7023924,20370,3,124,0],[-320,1,1,125,[[1,1],[2,0],[3,0]],[[0,0,2,2]]]]}
+{"dirs":["tools/metrics/histograms/","chrome/android/features/","chrome/browser/flags/","chrome/browser/ui/"],"files":["/COMMIT_MSG"],"revs":["jsaul@google.com","schwering@google.com"],"cls":[[7023924,20370,3,124,0,[0]],[-320,1,1,125,[[1,1],[2,0],[3,0]],[0,1],[[0,0,2,2]]]]}

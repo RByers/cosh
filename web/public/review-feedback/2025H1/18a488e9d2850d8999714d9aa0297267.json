@@ -1,1 +1,1 @@
-{"dirs":["third_party/blink/web_tests/","third_party/blink/renderer/","ui/gfx/","skia/ext/","ui/base/wayland/"],"files":[],"cls":[[6202302,20119,87,379,[[0,72],[1,8],[2,5],[3,1],[4,1]]],[138328,39,13,382,[[0,12],[1,1]]]]}
+{"dirs":["third_party/blink/web_tests/","third_party/blink/renderer/","ui/gfx/","skia/ext/","ui/base/wayland/"],"files":[],"revs":["thakis@google.com","wangxianzhu@google.com"],"cls":[[6202302,20119,87,379,[[0,72],[1,8],[2,5],[3,1],[4,1]],[0]],[138328,39,13,382,[[0,12],[1,1]],[1]]]}

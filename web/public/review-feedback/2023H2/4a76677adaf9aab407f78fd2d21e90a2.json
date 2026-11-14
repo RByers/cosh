@@ -1,1 +1,1 @@
-{"dirs":["gpu/ipc/service/"],"files":["gpu/ipc/service/gpu_channel_manager.cc"],"cls":[[4668290,19550,8,1,0,[[0,8,1,0]]]]}
+{"dirs":["gpu/ipc/service/"],"files":["gpu/ipc/service/gpu_channel_manager.cc"],"revs":["vasilyt@google.com","vikassoni@google.com"],"cls":[[4668290,19550,8,1,0,[0,1],[[0,8,1,0]]]]}

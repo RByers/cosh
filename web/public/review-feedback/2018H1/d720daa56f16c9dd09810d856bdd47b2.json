@@ -1,1 +1,1 @@
-{"dirs":["device/fido/hid/","device/fido/"],"files":["device/fido/fido_device.cc","device/fido/hid/fido_hid_device_unittest.cc"],"cls":[[894894,17563,97,13,[[0,80],[1,17]],[[0,14,1,1],[1,80,2,2]]]]}
+{"dirs":["device/fido/hid/","device/fido/"],"files":["device/fido/fido_device.cc","device/fido/hid/fido_hid_device_unittest.cc"],"revs":["jdoerrie@google.com","juanlang@google.com"],"cls":[[894894,17563,97,13,[[0,80],[1,17]],[0,1],[[0,14,1,1],[1,80,2,2]]]]}

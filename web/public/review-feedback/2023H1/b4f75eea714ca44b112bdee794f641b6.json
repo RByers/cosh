@@ -1,1 +1,1 @@
-{"dirs":["(root)/","tools/checklicenses/","docs/","tools/clang/plugins/","third_party/","tools/vim/"],"files":["/COMMIT_MSG"],"cls":[[4553897,19500,17,5,[[0,5],[1,5],[2,3],[3,2],[4,1],[5,1]],[[0,0,1,1]]],[13329,3,8,6,[[2,3],[0,1],[4,1],[1,1],[3,1],[5,1]]]]}
+{"dirs":["(root)/","tools/checklicenses/","docs/","tools/clang/plugins/","third_party/","tools/vim/"],"files":["/COMMIT_MSG"],"revs":["thakis@google.com"],"cls":[[4553897,19500,17,5,[[0,5],[1,5],[2,3],[3,2],[4,1],[5,1]],[0],[[0,0,1,1]]],[13329,3,8,6,[[2,3],[0,1],[4,1],[1,1],[3,1],[5,1]],[0]]]}

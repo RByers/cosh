@@ -1,1 +1,1 @@
-{"dirs":["tools/metrics/histograms/","chromeos/ash/experiences/"],"files":["tools/metrics/histograms/metadata/arc/histograms.xml","/COMMIT_MSG"],"cls":[[6689063,20270,41,93,0,[[0,41,6,6]]],[104966,27,7,94,0],[9393,2,2,95,1,[[1,0,1,1]]]]}
+{"dirs":["tools/metrics/histograms/","chromeos/ash/experiences/"],"files":["tools/metrics/histograms/metadata/arc/histograms.xml","/COMMIT_MSG"],"revs":["batoon@google.com","mpdenton@google.com","vraheja@google.com"],"cls":[[6689063,20270,41,93,0,[0],[[0,41,6,6]]],[104966,27,7,94,0,[0]],[9393,2,2,95,1,[0,1,2],[[1,0,1,1]]]]}

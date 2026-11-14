@@ -1,1 +1,1 @@
-{"dirs":["build/android/gradle/","build/android/gyp/"],"files":["build/android/gradle/android.jinja","build/android/gyp/compile_java.py"],"cls":[[7793814,20594,12,6,[[0,6],[1,6]],[[0,3,1,1],[1,2,1,0]]]]}
+{"dirs":["build/android/gradle/","build/android/gyp/"],"files":["build/android/gradle/android.jinja","build/android/gyp/compile_java.py"],"revs":["agrieve@google.com","wnwen@google.com"],"cls":[[7793814,20594,12,6,[[0,6],[1,6]],[0,1],[[0,3,1,1],[1,2,1,0]]]]}

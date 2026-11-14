@@ -1,1 +1,1 @@
-{"dirs":["device/bluetooth/floss/","tools/metrics/histograms/"],"files":["tools/metrics/histograms/metadata/network/histograms.xml"],"cls":[[8114226,20655,48,0,0],[460972,98,96,1,1,[[0,96,3,3]]]]}
+{"dirs":["device/bluetooth/floss/","tools/metrics/histograms/"],"files":["tools/metrics/histograms/metadata/network/histograms.xml"],"revs":["chharry@google.com","michaelfsun@google.com","jiajunz@google.com","khorimoto@google.com"],"cls":[[8114226,20655,48,0,0,[0,1]],[460972,98,96,1,1,[2,3],[[0,96,3,3]]]]}

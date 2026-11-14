@@ -1,1 +1,1 @@
-{"dirs":["third_party/blink/web_tests/","content/browser/devtools/"],"files":["content/browser/devtools/protocol/devtools_protocol_browsertest.cc"],"cls":[[8150704,20665,75,0,[[0,62],[1,13]],[[0,0,1,1]]]]}
+{"dirs":["third_party/blink/web_tests/","content/browser/devtools/"],"files":["content/browser/devtools/protocol/devtools_protocol_browsertest.cc"],"revs":["caseq@google.com","toyoshim@google.com"],"cls":[[8150704,20665,75,0,[[0,62],[1,13]],[0,1],[[0,0,1,1]]]]}

@@ -1,1 +1,1 @@
-{"dirs":["chrome/browser/devtools/"],"files":["chrome/browser/devtools/aida_service_handler.cc","chrome/browser/devtools/devtools_http_service_handler.cc"],"cls":[[7046201,20383,80,0,0,[[0,7,1,1],[1,6,2,2]]],[16529,2,1,1,0]]}
+{"dirs":["chrome/browser/devtools/"],"files":["chrome/browser/devtools/aida_service_handler.cc","chrome/browser/devtools/devtools_http_service_handler.cc"],"revs":["alexrudenko@google.com","ergunsh@google.com","mkwst@google.com","nvitkov@google.com"],"cls":[[7046201,20383,80,0,0,[0,1],[[0,7,1,1],[1,6,2,2]]],[16529,2,1,1,0,[0,2,3]]]}

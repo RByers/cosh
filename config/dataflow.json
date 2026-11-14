@@ -1181,9 +1181,22 @@
       "tier": "published",
       "tracked_in_git": true,
       "rebuildable": true,
-      "size": "about 252 KB (83 KB gzipped)",
+      "size": "about 134 KB (42 KB gzipped)",
       "size_as_of": "2026-11-14",
-      "purpose": "Everyone's figures (experience bins, peers' rate sums per directory and experience, everyone's directory table, spreads, the methodology's charts), loaded on opening.",
+      "purpose": "Everyone's figures (AFR per experience bin, the directory table, spreads, the methodology's charts), loaded on opening.",
+      "notes": "Rewritten on every run of review-feedback."
+    },
+    {
+      "id": "web/public/review-feedback/reviewers.json",
+      "name": "Feedback Index reviewer factors",
+      "path": "web/public/review-feedback/reviewers.json",
+      "kind": "json",
+      "tier": "published",
+      "tracked_in_git": true,
+      "rebuildable": true,
+      "size": "about 71 KB (34 KB gzipped): 2,708 reviewers",
+      "size_as_of": "2026-11-14",
+      "purpose": "Each reviewer's factor (feedback their approvals draw against what experience predicts), by hashed address, which the index uses; loaded with a person.",
       "notes": "Rewritten on every run of review-feedback."
     },
     {
@@ -1198,9 +1211,9 @@
         "web/public/review-feedback/[0-9][0-9][0-9][0-9]H[12]/*"
       ],
       "rebuildable": true,
-      "size": "97 MB (32.5 MB gzipped file by file, as git stores it): 6,862 people, 122 other addresses, 19 half-years",
+      "size": "110 MB (38.6 MB gzipped file by file, as git stores it): 6,862 people, 122 other addresses, 19 half-years",
       "size_as_of": "2026-11-14",
-      "files": "u/<hash>.json (who the person is, their usual org, which half-years they have; a stub per other address) and <half-year>/<hash>.json (their changes: lines per 3-level directory, and the files that drew reviewer threads with each one's lines, threads and addressed threads; no comment ids or text); <hash> is a salted SHA-256 of the e-mail.",
+      "files": "u/<hash>.json (who the person is, their usual org, which half-years they have; a stub per other address) and <half-year>/<hash>.json (their changes: lines per 3-level directory, approvers (Reviewed-by), and the files that drew reviewer threads with each one's lines, threads and addressed threads; no comment ids or text); <hash> is a salted SHA-256 of the e-mail.",
       "purpose": "One person's changes and review comments by directory and file, which every chart and table uses once an address is typed. No tone, no comment text.",
       "notes": "Committed and published on GitHub Pages since 2026-11-12. Finished half-years' files don't change between runs unless their inputs do, so git stores them once; each run rewrites the current half-year and u/. Commit with `git add -A web/public/review-feedback/`."
     },
@@ -2099,7 +2112,7 @@
         "cosh/people.py",
         "cosh/commits.py"
       ],
-      "purpose": "Writes each person's changes and addressed review comments, as files named by a hash of their address, and the AFRs per directory and experience the page compares them with.",
+      "purpose": "Writes each person's changes, approvers and addressed comments (files named by hashed address), the AFR per experience bin and each reviewer's factor.",
       "inputs": [
         "data/private/commits.sqlite",
         "data/private/reviews.sqlite",
@@ -2109,12 +2122,13 @@
       ],
       "outputs": [
         "web/public/review-feedback/peers.json",
+        "web/public/review-feedback/reviewers.json",
         "feedback-people",
         "data/private/feedback-links.jsonl"
       ],
       "network": false,
       "lock": null,
-      "incremental": "Deletes and rewrites peers.json, u/, the half-year folders and the link index.",
+      "incremental": "Deletes and rewrites peers.json, reviewers.json, u/, the half-year folders and the link index.",
       "duration": "about 3 min (2026-11-14), 3 GB of memory",
       "token_cost": null,
       "cost_source": "docs/review-feedback.md",
@@ -2414,6 +2428,7 @@
       "entry_script": "web/src/review-feedback.ts",
       "reads": [
         "web/public/review-feedback/peers.json",
+        "web/public/review-feedback/reviewers.json",
         "feedback-people",
         "web/public/review-feedback/links/"
       ],

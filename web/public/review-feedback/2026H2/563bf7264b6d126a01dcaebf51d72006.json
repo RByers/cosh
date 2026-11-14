@@ -1,1 +1,1 @@
-{"dirs":["third_party/blink/renderer/"],"files":["third_party/blink/renderer/core/html/media/lazy_load_media_observer.cc"],"cls":[[8162411,20664,25,3,0,[[0,5,1,1]]]]}
+{"dirs":["third_party/blink/renderer/"],"files":["third_party/blink/renderer/core/html/media/lazy_load_media_observer.cc"],"revs":["dalecurtis@google.com","masonf@google.com","piet.schouten@microsoft.com"],"cls":[[8162411,20664,25,3,0,[0,1,2],[[0,5,1,1]]]]}

@@ -1,1 +1,1 @@
-{"dirs":["(root)/","tools/mb/","build/fuchsia/"],"files":["build/fuchsia/update_sdk.py"],"cls":[[642011,17407,2,41,0],[-2098,0,7,42,1],[190344,108,11,43,2,[[0,11,1,0]]]]}
+{"dirs":["(root)/","tools/mb/","build/fuchsia/"],"files":["build/fuchsia/update_sdk.py"],"revs":["maruel@google.com","dpranke@google.com","nodir@google.com","kbr@google.com","sergeyu@google.com"],"cls":[[642011,17407,2,41,0,[0]],[-2098,0,7,42,1,[1,2]],[190344,108,11,43,2,[3,4],[[0,11,1,0]]]]}

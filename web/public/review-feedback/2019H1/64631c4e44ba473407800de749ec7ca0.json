@@ -1,1 +1,1 @@
-{"dirs":["chromeos/ash/experiences/"],"files":["chromeos/ash/experiences/arc/bluetooth/bluetooth_type_converters.cc"],"cls":[[1395896,17903,1,39,0],[26521,18,72,41,0,[[0,36,2,1]]],[13289,3,19,42,0,[[0,19,2,2]]],[15044,8,1,43,0]]}
+{"dirs":["chromeos/ash/experiences/"],"files":["chromeos/ash/experiences/arc/bluetooth/bluetooth_type_converters.cc"],"revs":["hidehiko@google.com","kerrnel@google.com","yusukes@google.com"],"cls":[[1395896,17903,1,39,0,[0,1]],[26521,18,72,41,0,[1,2],[[0,36,2,1]]],[13289,3,19,42,0,[0,1],[[0,19,2,2]]],[15044,8,1,43,0,[1]]]}

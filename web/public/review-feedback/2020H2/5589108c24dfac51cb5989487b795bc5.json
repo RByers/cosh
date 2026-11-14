@@ -1,1 +1,1 @@
-{"dirs":["third_party/nearby/","(root)/","chrome/browser/nearby_sharing/"],"files":["chrome/browser/nearby_sharing/nearby_sharing_service_impl.cc"],"cls":[[2466166,18548,10,0,[[0,9],[1,1]]],[77377,35,10,1,2,[[0,10,1,0]]]]}
+{"dirs":["third_party/nearby/","(root)/","chrome/browser/nearby_sharing/"],"files":["chrome/browser/nearby_sharing/nearby_sharing_service_impl.cc"],"revs":["vecore@google.com","hansberry@google.com"],"cls":[[2466166,18548,10,0,[[0,9],[1,1]],[0]],[77377,35,10,1,2,[1,0],[[0,10,1,0]]]]}

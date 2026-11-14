@@ -1,1 +1,1 @@
-{"dirs":["tools/flags/","third_party/tflite/","infra/config/subprojects/","infra/config/generated/"],"files":[],"cls":[[3854423,19234,75,83,0],[65657,29,2,84,1],[6033,2,9,84,[[2,5],[3,4]]],[5145,1,2,85,1],[-1748,4,32,85,[[3,32],[2,0]]]]}
+{"dirs":["tools/flags/","third_party/tflite/","infra/config/subprojects/","infra/config/generated/"],"files":[],"revs":["thakis@google.com","robertogden@google.com","bpastene@google.com"],"cls":[[3854423,19234,75,83,0,[0]],[65657,29,2,84,1,[1]],[6033,2,9,84,[[2,5],[3,4]],[2]],[5145,1,2,85,1,[1]],[-1748,4,32,85,[[3,32],[2,0]],[2]]]}

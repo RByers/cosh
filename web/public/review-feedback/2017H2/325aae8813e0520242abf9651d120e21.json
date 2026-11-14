@@ -1,1 +1,1 @@
-{"dirs":["tools/luci-go/linux64/","tools/luci-go/mac64/","tools/luci-go/win64/","infra/config/"],"files":["infra/config/cq.cfg"],"cls":[[611616,17389,3,25,[[0,1],[1,1],[2,1]]],[105419,62,5,26,3,[[0,5,1,0]]],[701,1,1,27,3]]}
+{"dirs":["tools/luci-go/linux64/","tools/luci-go/mac64/","tools/luci-go/win64/","infra/config/"],"files":["infra/config/cq.cfg"],"revs":["dpranke@google.com","tandrii@google.com"],"cls":[[611616,17389,3,25,[[0,1],[1,1],[2,1]],[0]],[105419,62,5,26,3,[0,1],[[0,5,1,0]]],[701,1,1,27,3,[]]]}

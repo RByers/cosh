@@ -1,1 +1,1 @@
-{"dirs":["chrome/browser/ui/","chrome/browser/extensions/"],"files":["/COMMIT_MSG","chrome/browser/extensions/webstore_reinstaller_browsertest.cc"],"cls":[[6927290,20348,130,2,[[0,128],[1,2]],[[0,0,1,1],[1,0,5,5]]]]}
+{"dirs":["chrome/browser/ui/","chrome/browser/extensions/"],"files":["/COMMIT_MSG","chrome/browser/extensions/webstore_reinstaller_browsertest.cc"],"revs":["rdevlin.cronin@google.com","sorajdev@microsoft.com"],"cls":[[6927290,20348,130,2,[[0,128],[1,2]],[0,1],[[0,0,1,1],[1,0,5,5]]]]}

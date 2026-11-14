@@ -1,1 +1,1 @@
-{"dirs":["ui/accessibility/platform/","chromeos/"],"files":["chromeos/tast_control_disabled_tests.txt"],"cls":[[7793837,20570,45,253,0],[8494,2,45,254,0],[34593,13,6,255,1,[[0,6,1,1]]],[5482,0,4,256,1]]}
+{"dirs":["ui/accessibility/platform/","chromeos/"],"files":["chromeos/tast_control_disabled_tests.txt"],"revs":["dtseng@google.com","andrescj@google.com","kyungjunlee@google.com"],"cls":[[7793837,20570,45,253,0,[0]],[8494,2,45,254,0,[0]],[34593,13,6,255,1,[1],[[0,6,1,1]]],[5482,0,4,256,1,[2]]]}

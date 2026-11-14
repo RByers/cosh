@@ -1,1 +1,1 @@
-{"dirs":["tools/metrics/histograms/"],"files":["tools/metrics/histograms/metadata/platform/histograms.xml","/COMMIT_MSG"],"cls":[[3588874,19107,68,8,0,[[0,32,1,0]]],[62853,25,38,9,0,[[1,0,1,0],[0,19,1,1]]]]}
+{"dirs":["tools/metrics/histograms/"],"files":["tools/metrics/histograms/metadata/platform/histograms.xml","/COMMIT_MSG"],"revs":["mutexlox@google.com"],"cls":[[3588874,19107,68,8,0,[0],[[0,32,1,0]]],[62853,25,38,9,0,[0],[[1,0,1,0],[0,19,1,1]]]]}

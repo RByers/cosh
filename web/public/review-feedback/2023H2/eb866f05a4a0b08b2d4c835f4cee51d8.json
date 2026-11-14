@@ -1,1 +1,1 @@
-{"dirs":["chrome/browser/ip_protection/","net/base/"],"files":["chrome/browser/ip_protection/ip_protection_core_host.cc"],"cls":[[5054703,19697,64,0,[[0,48],[1,16]],[[0,18,1,1]]]]}
+{"dirs":["chrome/browser/ip_protection/","net/base/"],"files":["chrome/browser/ip_protection/ip_protection_core_host.cc"],"revs":["brgoldstein@google.com","dschinazi@google.com"],"cls":[[5054703,19697,64,0,[[0,48],[1,16]],[0,1],[[0,18,1,1]]]]}

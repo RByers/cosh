@@ -1,1 +1,1 @@
-{"dirs":["ui/gfx/win/","chrome/browser/ui/","ui/aura/","ui/gfx/"],"files":["chrome/browser/ui/views/frame/browser_view.cc","ui/gfx/win/hwnd_util.cc"],"cls":[[3783127,19200,24,45,[[0,13],[1,5],[2,5],[3,1]],[[0,5,1,1],[1,8,1,1]]]]}
+{"dirs":["ui/gfx/win/","chrome/browser/ui/","ui/aura/","ui/gfx/"],"files":["chrome/browser/ui/views/frame/browser_view.cc","ui/gfx/win/hwnd_util.cc"],"revs":["davidbienvenu@google.com","sky@google.com"],"cls":[[3783127,19200,24,45,[[0,13],[1,5],[2,5],[3,1]],[0,1],[[0,5,1,1],[1,8,1,1]]]]}

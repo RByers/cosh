@@ -1,1 +1,1 @@
-{"dirs":["dbus/"],"files":["dbus/object_manager.cc","dbus/object_proxy.cc"],"cls":[[1733111,18114,38,0,0,[[0,17,1,1],[1,13,2,1]]]]}
+{"dirs":["dbus/"],"files":["dbus/object_manager.cc","dbus/object_proxy.cc"],"revs":["hashimoto@google.com"],"cls":[[1733111,18114,38,0,0,[0],[[0,17,1,1],[1,13,2,1]]]]}

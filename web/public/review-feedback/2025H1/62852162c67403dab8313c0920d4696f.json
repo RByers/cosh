@@ -1,1 +1,1 @@
-{"dirs":["chrome/browser/","ash/constants/","testing/variations/","tools/metrics/histograms/"],"files":[],"cls":[[6172094,20102,1,45,0],[181935,64,1,46,[[1,1],[2,0]]],[61966,12,22,47,[[2,21],[1,1]]],[274405,91,2,47,3]]}
+{"dirs":["chrome/browser/","ash/constants/","testing/variations/","tools/metrics/histograms/"],"files":[],"revs":["linben@google.com","batoon@google.com"],"cls":[[6172094,20102,1,45,0,[0]],[181935,64,1,46,[[1,1],[2,0]],[0]],[61966,12,22,47,[[2,21],[1,1]],[]],[274405,91,2,47,3,[1]]]}

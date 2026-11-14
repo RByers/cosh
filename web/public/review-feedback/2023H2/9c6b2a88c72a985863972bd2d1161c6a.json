@@ -1,1 +1,1 @@
-{"dirs":["testing/variations/","chrome/browser/"],"files":["chrome/browser/flag-metadata.json"],"cls":[[4721637,19565,19,81,0],[3972,0,20,82,0],[14084,5,9,83,0],[35102,14,2,84,0],[147316,55,3,85,1,[[0,3,1,1]]]]}
+{"dirs":["testing/variations/","chrome/browser/"],"files":["chrome/browser/flag-metadata.json"],"revs":["jdonnelly@google.com"],"cls":[[4721637,19565,19,81,0,[0]],[3972,0,20,82,0,[0]],[14084,5,9,83,0,[0]],[35102,14,2,84,0,[0]],[147316,55,3,85,1,[0],[[0,3,1,1]]]]}

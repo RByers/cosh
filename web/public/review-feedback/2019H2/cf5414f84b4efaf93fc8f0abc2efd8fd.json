@@ -1,1 +1,1 @@
-{"dirs":["tools/licenses/","build/fuchsia/"],"files":["tools/licenses/licenses.py","build/fuchsia/update_sdk.py"],"cls":[[1699729,18089,5,15,0],[-715,3,14,16,0,[[0,14,2,2]]],[18173,17,37,17,1,[[1,37,6,6]]]]}
+{"dirs":["tools/licenses/","build/fuchsia/"],"files":["tools/licenses/licenses.py","build/fuchsia/update_sdk.py"],"revs":["thakis@google.com","kmarshall@google.com"],"cls":[[1699729,18089,5,15,0,[0]],[-715,3,14,16,0,[0],[[0,14,2,2]]],[18173,17,37,17,1,[1],[[1,37,6,6]]]]}

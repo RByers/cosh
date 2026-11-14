@@ -1,1 +1,1 @@
-{"dirs":["tools/metrics/histograms/","base/trace_event/"],"files":["tools/metrics/histograms/metadata/v8/histograms.xml"],"cls":[[4675870,19549,14,46,0,[[0,14,1,1]]],[117787,44,6,47,1],[164823,57,15,48,0],[69874,25,5,49,0]]}
+{"dirs":["tools/metrics/histograms/","base/trace_event/"],"files":["tools/metrics/histograms/metadata/v8/histograms.xml"],"revs":["mlippautz@google.com","eseckler@google.com"],"cls":[[4675870,19549,14,46,0,[0],[[0,14,1,1]]],[117787,44,6,47,1,[1,0]],[164823,57,15,48,0,[0]],[69874,25,5,49,0,[0]]]}

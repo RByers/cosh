@@ -1,1 +1,1 @@
-{"dirs":["third_party/blink/renderer/"],"files":["/COMMIT_MSG","third_party/blink/renderer/core/style/computed_style_diff_functions.json5"],"cls":[[4979956,19668,46,0,0,[[0,0,1,1],[1,1,1,0]]]]}
+{"dirs":["third_party/blink/renderer/"],"files":["/COMMIT_MSG","third_party/blink/renderer/core/style/computed_style_diff_functions.json5"],"revs":["andruud@google.com","futhark@google.com"],"cls":[[4979956,19668,46,0,0,[0,1],[[0,0,1,1],[1,1,1,0]]]]}

@@ -1,1 +1,1 @@
-{"dirs":["third_party/libjingle_xmpp/","tools/mb/","tools/mb/mb_config_expectations/"],"files":["tools/mb/mb_config.pyl"],"cls":[[8157411,20664,1,13,0],[455962,84,8,14,[[1,6],[2,2]],[[0,6,1,0]]]]}
+{"dirs":["third_party/libjingle_xmpp/","tools/mb/","tools/mb/mb_config_expectations/"],"files":["tools/mb/mb_config.pyl"],"revs":["joedow@google.com","mbonadei@google.com","bjoyce@google.com","bpastene@google.com","jleconte@google.com"],"cls":[[8157411,20664,1,13,0,[0,1]],[455962,84,8,14,[[1,6],[2,2]],[2,3,4],[[0,6,1,0]]]]}

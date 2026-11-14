@@ -1,1 +1,1 @@
-{"dirs":["infra/config/subprojects/","infra/config/generated/","infra/archive_config/"],"files":["infra/config/subprojects/chromium/ci/chromium.android.star"],"cls":[[3735820,19180,25,3,[[0,14],[1,11]],[[0,3,1,1]]],[229049,103,10,4,2]]}
+{"dirs":["infra/config/subprojects/","infra/config/generated/","infra/archive_config/"],"files":["infra/config/subprojects/chromium/ci/chromium.android.star"],"revs":["gatong@google.com","bpastene@google.com"],"cls":[[3735820,19180,25,3,[[0,14],[1,11]],[0],[[0,3,1,1]]],[229049,103,10,4,2,[1]]]}

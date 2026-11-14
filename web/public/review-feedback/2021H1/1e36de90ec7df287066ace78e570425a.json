@@ -1,1 +1,1 @@
-{"dirs":["build/fuchsia/","build/config/fuchsia/"],"files":["/COMMIT_MSG","build/fuchsia/device_target.py"],"cls":[[2719091,18705,26,1,[[0,26],[1,1]],[[0,0,1,1],[1,26,3,2]]],[55098,0,36,2,[[0,36],[1,1]]]]}
+{"dirs":["build/fuchsia/","build/config/fuchsia/"],"files":["/COMMIT_MSG","build/fuchsia/device_target.py"],"revs":["chonggu@google.com","wez@google.com"],"cls":[[2719091,18705,26,1,[[0,26],[1,1]],[0,1],[[0,0,1,1],[1,26,3,2]]],[55098,0,36,2,[[0,36],[1,1]],[0]]]}

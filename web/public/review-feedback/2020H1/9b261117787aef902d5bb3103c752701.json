@@ -1,1 +1,1 @@
-{"dirs":["chrome/browser/extensions/","ui/display/","ash/display/","ui/ozone/platform/"],"files":["ui/ozone/platform/drm/gpu/OWNERS"],"cls":[[1981138,18263,2,0,0],[-19,5,1,1,1],[-2,0,1,2,2],[23,3,2,3,3,[[0,0,1,1]]]]}
+{"dirs":["chrome/browser/extensions/","ui/display/","ash/display/","ui/ozone/platform/"],"files":["ui/ozone/platform/drm/gpu/OWNERS"],"revs":["stevenjb@google.com","oshima@google.com","afakhry@google.com","spang@google.com"],"cls":[[1981138,18263,2,0,0,[0]],[-19,5,1,1,1,[1]],[-2,0,1,2,2,[2]],[23,3,2,3,3,[3],[[0,0,1,1]]]]}

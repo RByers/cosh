@@ -1,1 +1,1 @@
-{"dirs":["chrome/updater/win/"],"files":["chrome/updater/win/installer_api.cc","chrome/updater/win/installer_api.h","chrome/updater/win/installer_api_unittest.cc"],"cls":[[6383637,20178,189,5,0,[[0,100,17,14],[1,11,4,3],[2,78,4,4]]]]}
+{"dirs":["chrome/updater/win/"],"files":["chrome/updater/win/installer_api.cc","chrome/updater/win/installer_api.h","chrome/updater/win/installer_api_unittest.cc"],"revs":["ganesh@google.com","sorin@google.com","waffles@google.com"],"cls":[[6383637,20178,189,5,0,[0,1,2],[[0,100,17,14],[1,11,4,3],[2,78,4,4]]]]}

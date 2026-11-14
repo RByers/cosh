@@ -1,1 +1,1 @@
-{"dirs":["content/public/browser/","chrome/browser/ash/","tools/perf/benchmarks/"],"files":["content/public/browser/arc_tracing_agent.cc"],"cls":[[596970,17385,24,0,[[0,19],[1,5]],[[0,18,2,0]]],[142858,80,2,1,2]]}
+{"dirs":["content/public/browser/","chrome/browser/ash/","tools/perf/benchmarks/"],"files":["content/public/browser/arc_tracing_agent.cc"],"revs":["alexmos@google.com","lhchavez@google.com","nednguyen@google.com","vmiura@google.com"],"cls":[[596970,17385,24,0,[[0,19],[1,5]],[0,1],[[0,18,2,0]]],[142858,80,2,1,2,[2,3]]]}

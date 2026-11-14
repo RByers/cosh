@@ -1,1 +1,1 @@
-{"dirs":["third_party/blink/renderer/"],"files":["third_party/blink/renderer/devtools/front_end/help/ReleaseNoteText.js"],"cls":[[1196023,17773,38,13,0,[[0,38,1,0]]],[79104,42,28,14,0],[72321,48,2,15,0],[6503,0,30,16,0]]}
+{"dirs":["third_party/blink/renderer/"],"files":["third_party/blink/renderer/devtools/front_end/help/ReleaseNoteText.js"],"revs":["luoe@google.com","dgozman@google.com","hayato@google.com","tkent@google.com","pfeldman@google.com"],"cls":[[1196023,17773,38,13,0,[0],[[0,38,1,0]]],[79104,42,28,14,0,[1]],[72321,48,2,15,0,[2,3]],[6503,0,30,16,0,[4]]]}

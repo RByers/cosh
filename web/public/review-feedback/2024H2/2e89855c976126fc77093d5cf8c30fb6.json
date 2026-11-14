@@ -1,1 +1,1 @@
-{"dirs":["(root)/","third_party/jni_zero/","third_party/jni_zero/test/","chrome/android/expectations/","components/cronet/android/","third_party/jni_zero/java/"],"files":[],"cls":[[5731314,19926,1,4,0],[-279,0,14,4,[[1,7],[2,7],[3,0],[4,0],[5,0]]]]}
+{"dirs":["(root)/","third_party/jni_zero/","third_party/jni_zero/test/","chrome/android/expectations/","components/cronet/android/","third_party/jni_zero/java/"],"files":[],"revs":["govind@google.com","smaier@google.com"],"cls":[[5731314,19926,1,4,0,[]],[-279,0,14,4,[[1,7],[2,7],[3,0],[4,0],[5,0]],[0,1]]]}

@@ -1,1 +1,1 @@
-{"dirs":["chrome/browser/ash/","chromeos/ash/components/"],"files":["chromeos/ash/components/network/policy_applicator.cc"],"cls":[[7623253,20520,516,546,[[0,349],[1,167]],[[0,133,4,3]]]]}
+{"dirs":["chrome/browser/ash/","chromeos/ash/components/"],"files":["chromeos/ash/components/network/policy_applicator.cc"],"revs":["nikhilcn@google.com","olsa@google.com","ust@google.com"],"cls":[[7623253,20520,516,546,[[0,349],[1,167]],[0,1,2],[[0,133,4,3]]]]}

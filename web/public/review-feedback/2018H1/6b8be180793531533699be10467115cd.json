@@ -1,1 +1,1 @@
-{"dirs":["gpu/config/","third_party/blink/renderer/","(root)/"],"files":["gpu/config/gpu_driver_bug_list.json"],"cls":[[846639,17537,23,0,[[0,15],[1,7],[2,1]],[[0,13,2,1]]]]}
+{"dirs":["gpu/config/","third_party/blink/renderer/","(root)/"],"files":["gpu/config/gpu_driver_bug_list.json"],"revs":["kbr@google.com"],"cls":[[846639,17537,23,0,[[0,15],[1,7],[2,1]],[0],[[0,13,2,1]]]]}

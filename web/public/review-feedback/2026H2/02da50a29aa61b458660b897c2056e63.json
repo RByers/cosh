@@ -1,1 +1,1 @@
-{"dirs":["components/autofill/content/"],"files":["components/autofill/content/renderer/html_based_username_detector.cc","components/autofill/content/renderer/html_based_username_detector_browsertest.cc"],"cls":[[8491771,20727,20,1,0,[[0,2,3,3],[1,18,3,3]]]]}
+{"dirs":["components/autofill/content/"],"files":["components/autofill/content/renderer/html_based_username_detector.cc","components/autofill/content/renderer/html_based_username_detector_browsertest.cc"],"revs":["friedrichh@google.com","jkeitel@google.com"],"cls":[[8491771,20727,20,1,0,[0,1],[[0,2,3,3],[1,18,3,3]]]]}

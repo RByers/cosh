@@ -1,1 +1,1 @@
-{"dirs":["build/fuchsia/cipd/"],"files":["/COMMIT_MSG","build/fuchsia/cipd/BUILD.gn"],"cls":[[1737726,18117,9,0,0,[[0,0,2,2],[1,9,3,3]]]]}
+{"dirs":["build/fuchsia/cipd/"],"files":["/COMMIT_MSG","build/fuchsia/cipd/BUILD.gn"],"revs":["fdegans@google.com","kmarshall@google.com"],"cls":[[1737726,18117,9,0,0,[0,1],[[0,0,2,2],[1,9,3,3]]]]}

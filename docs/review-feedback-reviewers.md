@@ -2,8 +2,8 @@
 
 Purpose: decide whether the Feedback Index should compare each change
 with what its own reviewers' approvals usually draw, instead of (or as
-well as) what its directory draws. Analysis only (2026-11-14); nothing on
-the page uses reviewers yet.
+well as) what its directory draws. Analysed and built on 2026-11-14: the
+index now compares by experience and reviewer (below, "What was built").
 
 The question: rather than correcting for drift over time
 (`docs/review-feedback-drift.md`), correct for the reviewer. Is the
@@ -134,13 +134,19 @@ test rewards coarser comparisons), so it doesn't argue against the change.
   the trailers after `cosh commits`. A two-way fit adds seconds. No model
   calls.
 
-## Suggested next steps
+## What was built (2026-11-14)
 
-1. Decide how reviewer factors may be shown (above).
-2. Build directory × author-purged reviewer factor (the simpler overall
-   factor first; the per-directory one adds about a fifth more of the
-   gain for a larger table), with the person left out on the page as now.
-3. Check it on the page against the script, as with the rates.
+The user's call: "I definitely don't want to reward people for picking
+less strict reviewers, so let's switch from using directories to using
+reviewers." The index is everyone's AFR at the CL's experience × the CL's
+approvers' mean factor, the factors from the author-and-reviewer fit
+(`two_way` in `cosh/review_feedback.py`; directory left out: it added
+little once the reviewer is known). Reviewer factors are shown only after
+someone types an address: the person's reviewers, each with their factor
+("Your reviewers"), looked up in `reviewers.json` by hashed address. The
+methodology shows why (what each comparison predicts, reviewers within
+the busiest directories) and the drift that remains
+(`docs/review-feedback.md`).
 
 Not tried: reviewers who commented but didn't approve, a reviewer factor
 per period, and per 3-level directory.

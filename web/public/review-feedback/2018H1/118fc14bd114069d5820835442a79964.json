@@ -1,1 +1,1 @@
-{"dirs":["third_party/blink/renderer/","chrome/test/base/"],"files":["chrome/test/base/ash/web_ui_test_handler.cc","chrome/test/base/ash/web_ui_test_handler.h"],"cls":[[920991,17578,1,0,0],[-54484,34,18,1,1,[[0,15,3,3],[1,3,2,2]]]]}
+{"dirs":["third_party/blink/renderer/","chrome/test/base/"],"files":["chrome/test/base/ash/web_ui_test_handler.cc","chrome/test/base/ash/web_ui_test_handler.h"],"revs":["mlamouri@google.com","steimel@google.com","tommycli@google.com"],"cls":[[920991,17578,1,0,0,[0,1]],[-54484,34,18,1,1,[2],[[0,15,3,3],[1,3,2,2]]]]}

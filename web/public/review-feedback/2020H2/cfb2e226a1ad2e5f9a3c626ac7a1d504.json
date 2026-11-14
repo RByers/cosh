@@ -1,1 +1,1 @@
-{"dirs":["ui/linux/","(root)/","ui/views/focus/","chrome/browser/ui/"],"files":["chrome/browser/ui/views/intent_picker_bubble_view.cc"],"cls":[[2341022,18481,8,0,[[0,7],[1,1]]],[1310,1,32,1,2],[28730,15,4,2,3,[[0,4,1,1]]]]}
+{"dirs":["ui/linux/","(root)/","ui/views/focus/","chrome/browser/ui/"],"files":["chrome/browser/ui/views/intent_picker_bubble_view.cc"],"revs":["kylixrd@google.com","thomasanderson@google.com","ellyjones@google.com","pkasting@google.com"],"cls":[[2341022,18481,8,0,[[0,7],[1,1]],[0,1]],[1310,1,32,1,2,[2]],[28730,15,4,2,3,[3],[[0,4,1,1]]]]}

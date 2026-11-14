@@ -1,1 +1,1 @@
-{"dirs":["tools/metrics/histograms/","chrome/utility/importer/","(root)/"],"files":["chrome/utility/importer/firefox_importer.cc","tools/metrics/histograms/histograms.xml"],"cls":[[744061,17480,29,0,[[0,22],[1,6],[2,1]],[[0,6,6,4],[1,22,4,3]]]]}
+{"dirs":["tools/metrics/histograms/","chrome/utility/importer/","(root)/"],"files":["chrome/utility/importer/firefox_importer.cc","tools/metrics/histograms/histograms.xml"],"revs":["isherman@google.com","vabr@google.com"],"cls":[[744061,17480,29,0,[[0,22],[1,6],[2,1]],[0,1],[[0,6,6,4],[1,22,4,3]]]]}

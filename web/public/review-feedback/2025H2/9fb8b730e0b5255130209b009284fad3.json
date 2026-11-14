@@ -1,1 +1,1 @@
-{"dirs":["chrome/browser/","ash/constants/","chromeos/ash/components/","tools/metrics/histograms/"],"files":["chromeos/ash/components/fwupd/firmware_update_manager.cc"],"cls":[[6694712,20271,1,53,0],[285040,86,1,54,1],[176264,52,38,55,[[2,37],[3,1]],[[0,6,1,0]]]]}
+{"dirs":["chrome/browser/","ash/constants/","chromeos/ash/components/","tools/metrics/histograms/"],"files":["chromeos/ash/components/fwupd/firmware_update_manager.cc"],"revs":["jimmyxgong@google.com"],"cls":[[6694712,20271,1,53,0,[0]],[285040,86,1,54,1,[0]],[176264,52,38,55,[[2,37],[3,1]],[0],[[0,6,1,0]]]]}

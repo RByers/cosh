@@ -1,1 +1,1 @@
-{"dirs":["chrome/browser/extensions/"],"files":["/COMMIT_MSG","chrome/browser/extensions/api/image_writer_private/write_from_url_operation.cc"],"cls":[[8083460,20648,5,1,0,[[0,0,1,1],[1,4,2,2]]]]}
+{"dirs":["chrome/browser/extensions/"],"files":["/COMMIT_MSG","chrome/browser/extensions/api/image_writer_private/write_from_url_operation.cc"],"revs":["kelvinjiang@google.com","reillyg@google.com"],"cls":[[8083460,20648,5,1,0,[0,1],[[0,0,1,1],[1,4,2,2]]]]}

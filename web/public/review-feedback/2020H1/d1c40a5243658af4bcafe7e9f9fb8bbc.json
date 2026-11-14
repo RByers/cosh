@@ -1,1 +1,1 @@
-{"dirs":["base/profiler/","base/message_loop/"],"files":["base/profiler/stack_copier.cc"],"cls":[[2260657,18436,1,0,0,[[0,0,1,1]]],[9400,3,1,1,1]]}
+{"dirs":["base/profiler/","base/message_loop/"],"files":["base/profiler/stack_copier.cc"],"revs":["mbonadei@google.com","wittman@google.com","dcheng@google.com"],"cls":[[2260657,18436,1,0,0,[0,1],[[0,0,1,1]]],[9400,3,1,1,1,[2,0]]]}

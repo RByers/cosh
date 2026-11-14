@@ -1,1 +1,1 @@
-{"dirs":["testing/variations/","gpu/command_buffer/service/"],"files":["gpu/command_buffer/service/sync_point_manager.cc","gpu/command_buffer/service/sync_point_manager.h"],"cls":[[4163705,19370,17,10,0],[-40313,27,150,11,1,[[0,80,6,4],[1,70,4,3]]]]}
+{"dirs":["testing/variations/","gpu/command_buffer/service/"],"files":["gpu/command_buffer/service/sync_point_manager.cc","gpu/command_buffer/service/sync_point_manager.h"],"revs":["vmiura@google.com","rockot@google.com","sunnyps@google.com"],"cls":[[4163705,19370,17,10,0,[0]],[-40313,27,150,11,1,[1,2],[[0,80,6,4],[1,70,4,3]]]]}

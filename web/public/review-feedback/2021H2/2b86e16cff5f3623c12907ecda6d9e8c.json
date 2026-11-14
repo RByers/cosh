@@ -1,1 +1,1 @@
-{"dirs":["build/toolchain/","build/config/aix/","build/config/gcc/"],"files":["build/config/gcc/BUILD.gn"],"cls":[[3104387,18863,40,1,[[0,26],[1,12],[2,2]],[[0,2,1,1]]]]}
+{"dirs":["build/toolchain/","build/config/aix/","build/config/gcc/"],"files":["build/config/gcc/BUILD.gn"],"revs":["dpranke@google.com"],"cls":[[3104387,18863,40,1,[[0,26],[1,12],[2,2]],[0],[[0,2,1,1]]]]}

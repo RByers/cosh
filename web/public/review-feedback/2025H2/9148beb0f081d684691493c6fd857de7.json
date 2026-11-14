@@ -1,1 +1,1 @@
-{"dirs":["chrome/test/data/","content/browser/devtools/"],"files":["content/browser/devtools/protocol/target_handler.cc"],"cls":[[6996767,20360,48,597,[[0,48],[1,0]]],[18123,9,46,598,[[0,39],[1,7]],[[0,7,1,1]]]]}
+{"dirs":["chrome/test/data/","content/browser/devtools/"],"files":["content/browser/devtools/protocol/target_handler.cc"],"revs":["caseq@google.com","dgozman@google.com"],"cls":[[6996767,20360,48,597,[[0,48],[1,0]],[0]],[18123,9,46,598,[[0,39],[1,7]],[0,1],[[0,7,1,1]]]]}

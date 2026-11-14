@@ -1,1 +1,1 @@
-{"dirs":["chromeos/ash/components/","chrome/browser/ash/"],"files":["chromeos/ash/components/network/device_state.cc","chrome/browser/ash/login/chrome_restart_request.cc"],"cls":[[2663828,18661,5,8,0,[[0,5,1,0]]],[253126,111,1,9,1,[[1,1,1,0]]]]}
+{"dirs":["chromeos/ash/components/","chrome/browser/ash/"],"files":["chromeos/ash/components/network/device_state.cc","chrome/browser/ash/login/chrome_restart_request.cc"],"revs":["stevenjb@google.com","xiyuan@google.com"],"cls":[[2663828,18661,5,8,0,[0],[[0,5,1,0]]],[253126,111,1,9,1,[1],[[1,1,1,0]]]]}

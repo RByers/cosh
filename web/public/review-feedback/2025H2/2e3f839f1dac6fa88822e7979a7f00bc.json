@@ -1,1 +1,1 @@
-{"dirs":["chrome/browser/download/"],"files":["chrome/browser/download/download_target_determiner.cc","chrome/browser/download/download_target_determiner_unittest.cc"],"cls":[[6990751,20392,25,1,0,[[0,5,5,5],[1,20,1,1]]]]}
+{"dirs":["chrome/browser/download/"],"files":["chrome/browser/download/download_target_determiner.cc","chrome/browser/download/download_target_determiner_unittest.cc"],"revs":["qinmin@google.com","xinghuilu@google.com"],"cls":[[6990751,20392,25,1,0,[0,1],[[0,5,5,5],[1,20,1,1]]]]}

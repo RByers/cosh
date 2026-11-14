@@ -1,1 +1,1 @@
-{"dirs":["chrome/browser/","chrome/browser/ui/","content/common/"],"files":["chrome/browser/chrome_content_browser_client.cc","/COMMIT_MSG"],"cls":[[6634915,20251,28,3,0,[[0,5,2,1]]],[17753,7,2,4,[[1,1],[2,1]],[[1,0,1,1]]]]}
+{"dirs":["chrome/browser/","chrome/browser/ui/","content/common/"],"files":["chrome/browser/chrome_content_browser_client.cc","/COMMIT_MSG"],"revs":["dmurph@google.com","luhua@microsoft.com","rob.paveza@microsoft.com","dtapuska@google.com"],"cls":[[6634915,20251,28,3,0,[0,1,2],[[0,5,2,1]]],[17753,7,2,4,[[1,1],[2,1]],[0,3,2],[[1,0,1,1]]]]}

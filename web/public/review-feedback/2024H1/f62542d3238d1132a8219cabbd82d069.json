@@ -1,1 +1,1 @@
-{"dirs":["third_party/blink/web_tests/","tools/metrics/histograms/"],"files":[],"cls":[[5242736,19751,3,16,0],[1938,1,4,17,1],[74,0,1,18,1]]}
+{"dirs":["third_party/blink/web_tests/","tools/metrics/histograms/"],"files":[],"revs":["bmeurer@google.com","changhaohan@google.com","pfaffe@google.com"],"cls":[[5242736,19751,3,16,0,[0,1,2]],[1938,1,4,17,1,[0,2]],[74,0,1,18,1,[0,1,2]]]}

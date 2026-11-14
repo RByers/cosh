@@ -1,1 +1,1 @@
-{"dirs":["chrome/browser/ui/","tools/metrics/histograms/"],"files":["chrome/browser/ui/webui/ash/settings/pages/device/inputs_section.cc"],"cls":[[6693291,20277,14,96,0,[[0,13,1,1]]],[289311,83,123,97,1]]}
+{"dirs":["chrome/browser/ui/","tools/metrics/histograms/"],"files":["chrome/browser/ui/webui/ash/settings/pages/device/inputs_section.cc"],"revs":["wesokuhara@google.com","shend@google.com"],"cls":[[6693291,20277,14,96,0,[0],[[0,13,1,1]]],[289311,83,123,97,1,[1]]]}

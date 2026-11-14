@@ -1,1 +1,1 @@
-{"dirs":["(root)/","chrome/browser/ash/","chrome/common/"],"files":["chrome/browser/ash/dbus/chrome_features_service_provider.cc"],"cls":[[1383441,17884,1,8,0],[-9043,0,50,9,[[1,46],[2,4]],[[0,35,1,1]]],[10810,1,24,10,1]]}
+{"dirs":["(root)/","chrome/browser/ash/","chrome/common/"],"files":["chrome/browser/ash/dbus/chrome_features_service_provider.cc"],"revs":["derat@google.com","vapier@google.com"],"cls":[[1383441,17884,1,8,0,[0,1]],[-9043,0,50,9,[[1,46],[2,4]],[0],[[0,35,1,1]]],[10810,1,24,10,1,[0]]]}

@@ -1,1 +1,1 @@
-{"dirs":["chrome/test/chromedriver/","chrome/browser/ash/","chromeos/ash/experiences/"],"files":["/COMMIT_MSG"],"cls":[[6785949,20299,6,10,0],[297097,86,15,11,[[1,10],[2,5]],[[0,0,1,0]]]]}
+{"dirs":["chrome/test/chromedriver/","chrome/browser/ash/","chromeos/ash/experiences/"],"files":["/COMMIT_MSG"],"revs":["alexnj@google.com","yfriedman@google.com","khmel@google.com","wfh@google.com"],"cls":[[6785949,20299,6,10,0,[0,1]],[297097,86,15,11,[[1,10],[2,5]],[2,3],[[0,0,1,0]]]]}

@@ -1,1 +1,1 @@
-{"dirs":["chrome/browser/ash/"],"files":["/COMMIT_MSG","chrome/browser/ash/arc/notification/arc_vm_data_migration_notifier.h","chrome/browser/ash/login/session/chrome_session_manager.cc"],"cls":[[7978100,20629,14,109,0,[[0,0,2,2],[1,6,1,1],[2,6,1,0]]]]}
+{"dirs":["chrome/browser/ash/"],"files":["/COMMIT_MSG","chrome/browser/ash/arc/notification/arc_vm_data_migration_notifier.h","chrome/browser/ash/login/session/chrome_session_manager.cc"],"revs":["hidehiko@google.com","youkichihosoi@google.com"],"cls":[[7978100,20629,14,109,0,[0,1],[[0,0,2,2],[1,6,1,1],[2,6,1,0]]]]}

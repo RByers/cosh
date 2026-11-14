@@ -1,1 +1,1 @@
-{"dirs":["build/fuchsia/test/"],"files":["build/fuchsia/test/serve_repo.py","build/fuchsia/sdk_override.txt","build/fuchsia/test/isolate_daemon.py"],"cls":[[5949685,20048,136,1,0,[[0,38,8,7]]],[122161,35,190,2,0,[[1,0,1,1],[2,31,7,6],[0,53,5,5]]]]}
+{"dirs":["build/fuchsia/test/"],"files":["build/fuchsia/test/serve_repo.py","build/fuchsia/sdk_override.txt","build/fuchsia/test/isolate_daemon.py"],"revs":["wintermelons@google.com","zijiehe@google.com"],"cls":[[5949685,20048,136,1,0,[0,1],[[0,38,8,7]]],[122161,35,190,2,0,[0,1],[[1,0,1,1],[2,31,7,6],[0,53,5,5]]]]}

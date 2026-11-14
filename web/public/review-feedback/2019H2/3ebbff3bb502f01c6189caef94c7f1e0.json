@@ -1,1 +1,1 @@
-{"dirs":["extensions/renderer/api/","extensions/common/api/"],"files":["extensions/common/api/i18n.json","extensions/renderer/api/i18n_hooks_delegate.cc"],"cls":[[1728572,18148,37,6,[[0,25],[1,12]],[[0,12,4,4],[1,15,2,2]]]]}
+{"dirs":["extensions/renderer/api/","extensions/common/api/"],"files":["extensions/common/api/i18n.json","extensions/renderer/api/i18n_hooks_delegate.cc"],"revs":["rdevlin.cronin@google.com"],"cls":[[1728572,18148,37,6,[[0,25],[1,12]],[0],[[0,12,4,4],[1,15,2,2]]]]}

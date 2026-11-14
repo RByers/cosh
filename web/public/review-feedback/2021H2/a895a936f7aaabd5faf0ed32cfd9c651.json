@@ -1,1 +1,1 @@
-{"dirs":["device/bluetooth/","dbus/"],"files":["/COMMIT_MSG","dbus/bus.h"],"cls":[[3209833,18907,6,21,0],[-4439,4,1,22,1,[[0,0,1,1],[1,1,2,1]]]]}
+{"dirs":["device/bluetooth/","dbus/"],"files":["/COMMIT_MSG","dbus/bus.h"],"revs":["rockot@google.com","stevenjb@google.com"],"cls":[[3209833,18907,6,21,0,[0]],[-4439,4,1,22,1,[1],[[0,0,1,1],[1,1,2,1]]]]}

@@ -1,1 +1,1 @@
-{"dirs":["ui/events/ozone/"],"files":["ui/events/ozone/device/device_manager_manual.cc","ui/events/ozone/device/device_manager_manual.h"],"cls":[[1285053,17827,46,1,0,[[0,34,5,3],[1,12,2,2]]]]}
+{"dirs":["ui/events/ozone/"],"files":["ui/events/ozone/device/device_manager_manual.cc","ui/events/ozone/device/device_manager_manual.h"],"revs":["rjkroege@google.com","spang@google.com"],"cls":[[1285053,17827,46,1,0,[0,1],[[0,34,5,3],[1,12,2,2]]]]}

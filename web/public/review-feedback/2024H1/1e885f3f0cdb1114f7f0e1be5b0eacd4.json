@@ -1,1 +1,1 @@
-{"dirs":["chrome/browser/ash/","tools/json_schema_compiler/test/"],"files":["chrome/browser/ash/arc/arc_util.cc"],"cls":[[5148378,19731,6,818,[[0,4],[1,2]]],[218522,63,19,819,0,[[0,18,1,1]]]]}
+{"dirs":["chrome/browser/ash/","tools/json_schema_compiler/test/"],"files":["chrome/browser/ash/arc/arc_util.cc"],"revs":["tbarzic@google.com","niwa@google.com","yhanada@google.com"],"cls":[[5148378,19731,6,818,[[0,4],[1,2]],[0]],[218522,63,19,819,0,[1,2],[[0,18,1,1]]]]}

@@ -1,1 +1,1 @@
-{"dirs":["testing/buildbot/","infra/config/generated/","infra/config/subprojects/"],"files":["infra/config/generated/luci/project.cfg"],"cls":[[5186494,19732,2,45,0],[83156,28,2,46,[[1,1],[2,1]],[[0,0,1,1]]],[22953,7,2,47,[[1,1],[2,1]]]]}
+{"dirs":["testing/buildbot/","infra/config/generated/","infra/config/subprojects/"],"files":["infra/config/generated/luci/project.cfg"],"revs":["kimstephanie@google.com","kuanhuang@google.com","gbeaty@google.com"],"cls":[[5186494,19732,2,45,0,[0]],[83156,28,2,46,[[1,1],[2,1]],[1],[[0,0,1,1]]],[22953,7,2,47,[[1,1],[2,1]],[2]]]}

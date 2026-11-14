@@ -1,1 +1,1 @@
-{"dirs":["third_party/blink/renderer/","(root)/"],"files":["third_party/blink/renderer/core/streams/stream_promise_resolver.cc","third_party/blink/renderer/core/streams/writable_stream_default_writer.cc"],"cls":[[3002072,18817,40,0,[[0,39],[1,1]],[[0,17,1,1],[1,9,1,1]]]]}
+{"dirs":["third_party/blink/renderer/","(root)/"],"files":["third_party/blink/renderer/core/streams/stream_promise_resolver.cc","third_party/blink/renderer/core/streams/writable_stream_default_writer.cc"],"revs":["ricea@google.com"],"cls":[[3002072,18817,40,0,[[0,39],[1,1]],[0],[[0,17,1,1],[1,9,1,1]]]]}

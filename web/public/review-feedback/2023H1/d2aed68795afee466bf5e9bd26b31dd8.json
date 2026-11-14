@@ -1,1 +1,1 @@
-{"dirs":["tools/metrics/histograms/","content/browser/android/"],"files":["tools/metrics/histograms/metadata/notifications/histograms.xml"],"cls":[[4110805,19376,50,787,0,[[0,50,3,3]]],[180186,36,2,788,1],[346952,119,3,789,0]]}
+{"dirs":["tools/metrics/histograms/","content/browser/android/"],"files":["tools/metrics/histograms/metadata/notifications/histograms.xml"],"revs":["mpearson@google.com","pbos@google.com","peconn@google.com","torne@google.com","mthiesse@google.com"],"cls":[[4110805,19376,50,787,0,[0],[[0,50,3,3]]],[180186,36,2,788,1,[1,2,3]],[346952,119,3,789,0,[4]]]}

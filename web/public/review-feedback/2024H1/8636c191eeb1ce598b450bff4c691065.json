@@ -1,1 +1,1 @@
-{"dirs":["infra/config/","infra/config/generated/"],"files":["infra/config/luci-analysis.cfg"],"cls":[[5202676,19739,10,43,[[0,5],[1,5]],[[0,5,1,1]]],[63364,19,2,44,[[0,1],[1,1]],[[0,1,1,0]]],[7914,7,6,46,[[0,3],[1,3]]]]}
+{"dirs":["infra/config/","infra/config/generated/"],"files":["infra/config/luci-analysis.cfg"],"revs":["nqmtuan@google.com","tikuta@google.com","kimstephanie@google.com"],"cls":[[5202676,19739,10,43,[[0,5],[1,5]],[0],[[0,5,1,1]]],[63364,19,2,44,[[0,1],[1,1]],[1],[[0,1,1,0]]],[7914,7,6,46,[[0,3],[1,3]],[2]]]}

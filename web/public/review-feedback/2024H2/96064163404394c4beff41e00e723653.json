@@ -1,1 +1,1 @@
-{"dirs":["net/android/java/","net/android/javatests/"],"files":["/COMMIT_MSG","net/android/java/src/org/chromium/net/NetworkChangeNotifierAutoDetect.java"],"cls":[[5670233,19916,8,1,[[0,6],[1,2]],[[0,0,1,1],[1,6,1,1]]]]}
+{"dirs":["net/android/java/","net/android/javatests/"],"files":["/COMMIT_MSG","net/android/java/src/org/chromium/net/NetworkChangeNotifierAutoDetect.java"],"revs":["bashi@google.com","oksamyt@google.com"],"cls":[[5670233,19916,8,1,[[0,6],[1,2]],[0,1],[[0,0,1,1],[1,6,1,1]]]]}

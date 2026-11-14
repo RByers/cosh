@@ -1,1 +1,1 @@
-{"dirs":["android_webview/java/src/","testing/variations/"],"files":["android_webview/java/src/org/chromium/android_webview/common/ProductionSupportedFlagList.java"],"cls":[[5838715,19972,4,0,0,[[0,4,1,1]]],[32207,12,24,1,1]]}
+{"dirs":["android_webview/java/src/","testing/variations/"],"files":["android_webview/java/src/org/chromium/android_webview/common/ProductionSupportedFlagList.java"],"revs":["anthonyvd@google.com","etienneb@google.com"],"cls":[[5838715,19972,4,0,0,[0,1],[[0,4,1,1]]],[32207,12,24,1,1,[0,1]]]}

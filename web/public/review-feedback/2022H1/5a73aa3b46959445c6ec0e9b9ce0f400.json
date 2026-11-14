@@ -1,1 +1,1 @@
-{"dirs":["services/device/usb/","(root)/"],"files":["services/device/usb/webusb_descriptors.cc","services/device/usb/webusb_descriptors_unittest.cc"],"cls":[[3518965,19068,20,0,[[0,19],[1,1]],[[0,3,2,0],[1,16,1,1]]]]}
+{"dirs":["services/device/usb/","(root)/"],"files":["services/device/usb/webusb_descriptors.cc","services/device/usb/webusb_descriptors_unittest.cc"],"revs":["reillyg@google.com"],"cls":[[3518965,19068,20,0,[[0,19],[1,1]],[0],[[0,3,2,0],[1,16,1,1]]]]}

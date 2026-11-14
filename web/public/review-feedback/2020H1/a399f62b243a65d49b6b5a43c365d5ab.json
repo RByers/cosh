@@ -1,1 +1,1 @@
-{"dirs":["(root)/","chromeos/resources/","tools/gritsettings/"],"files":["DEPS","chromeos/resources/BUILD.gn"],"cls":[[2182702,18396,15,0,[[0,12],[1,2],[2,1]],[[0,11,5,4],[1,2,3,3]]],[47857,26,15,1,[[0,12],[1,2],[2,1]]]]}
+{"dirs":["(root)/","chromeos/resources/","tools/gritsettings/"],"files":["DEPS","chromeos/resources/BUILD.gn"],"revs":["carpenterr@google.com","mmoss@google.com","tapted@google.com","yfriedman@google.com"],"cls":[[2182702,18396,15,0,[[0,12],[1,2],[2,1]],[0,1,2,3],[[0,11,5,4],[1,2,3,3]]],[47857,26,15,1,[[0,12],[1,2],[2,1]],[2,3]]]}

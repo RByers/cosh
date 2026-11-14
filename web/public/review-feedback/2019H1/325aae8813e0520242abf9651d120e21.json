@@ -1,1 +1,1 @@
-{"dirs":["infra/config/global/","infra/config/"],"files":["testing/buildbot/generate_buildbot_json.py","infra/config/luci-milo.cfg"],"cls":[[1396492,17901,2,114,0,[[0,0,1,0]]],[112862,65,104,115,1,[[1,104,2,2]]]]}
+{"dirs":["infra/config/global/","infra/config/"],"files":["testing/buildbot/generate_buildbot_json.py","infra/config/luci-milo.cfg"],"revs":["efoo@google.com","thakis@google.com","dpranke@google.com"],"cls":[[1396492,17901,2,114,0,[0,1],[[0,0,1,0]]],[112862,65,104,115,1,[2],[[1,104,2,2]]]]}

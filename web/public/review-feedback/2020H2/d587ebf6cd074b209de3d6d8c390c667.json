@@ -1,1 +1,1 @@
-{"dirs":["tools/protoc_wrapper/","third_party/protobuf/"],"files":["third_party/protobuf/proto_library.gni","tools/protoc_wrapper/protoc_wrapper.py"],"cls":[[2440887,18537,30,99,[[0,23],[1,7]],[[0,7,1,0],[1,23,1,1]]]]}
+{"dirs":["tools/protoc_wrapper/","third_party/protobuf/"],"files":["third_party/protobuf/proto_library.gni","tools/protoc_wrapper/protoc_wrapper.py"],"revs":["brucedawson@google.com","eseckler@google.com"],"cls":[[2440887,18537,30,99,[[0,23],[1,7]],[0,1],[[0,7,1,0],[1,23,1,1]]]]}

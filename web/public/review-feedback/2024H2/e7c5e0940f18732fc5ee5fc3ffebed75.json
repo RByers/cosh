@@ -1,1 +1,1 @@
-{"dirs":["ash/webui/diagnostics_ui/"],"files":["/COMMIT_MSG","ash/webui/diagnostics_ui/resources/mojo_interface_provider.ts"],"cls":[[5982153,20032,6,0,0,[[0,0,2,2],[1,6,3,2]]],[16977,1,4,1,0,[[0,0,1,1]]]]}
+{"dirs":["ash/webui/diagnostics_ui/"],"files":["/COMMIT_MSG","ash/webui/diagnostics_ui/resources/mojo_interface_provider.ts"],"revs":["byronlee@google.com","yycheng@google.com","dennyh@google.com"],"cls":[[5982153,20032,6,0,0,[0,1],[[0,0,2,2],[1,6,3,2]]],[16977,1,4,1,0,[0,2],[[0,0,1,1]]]]}

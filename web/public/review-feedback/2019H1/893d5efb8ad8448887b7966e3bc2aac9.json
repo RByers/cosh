@@ -1,1 +1,1 @@
-{"dirs":["components/certificate_transparency/data/"],"files":["components/certificate_transparency/data/log_list.json"],"cls":[[1391872,17904,51,2,0,[[0,51,1,0]]],[26521,10,3,3,0],[63213,35,3,4,0],[3411,1,40,5,0],[159881,102,34,6,0]]}
+{"dirs":["components/certificate_transparency/data/"],"files":["components/certificate_transparency/data/log_list.json"],"revs":["rsleevi@google.com","awhalley@google.com","nharper@google.com"],"cls":[[1391872,17904,51,2,0,[0],[[0,51,1,0]]],[26521,10,3,3,0,[0]],[63213,35,3,4,0,[1,2]],[3411,1,40,5,0,[2]],[159881,102,34,6,0,[0]]]}

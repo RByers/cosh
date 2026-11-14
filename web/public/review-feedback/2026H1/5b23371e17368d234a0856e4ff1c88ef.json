@@ -1,1 +1,1 @@
-{"dirs":["components/sync/base/","chrome/browser/ui/","tools/metrics/histograms/","third_party/blink/web_tests/"],"files":[],"cls":[[7583356,20501,49,481,[[0,28],[1,21],[2,0]]],[262,0,1,481,3],[327787,112,1,482,2]]}
+{"dirs":["components/sync/base/","chrome/browser/ui/","tools/metrics/histograms/","third_party/blink/web_tests/"],"files":[],"revs":["dpapad@google.com","zmin@google.com"],"cls":[[7583356,20501,49,481,[[0,28],[1,21],[2,0]],[]],[262,0,1,481,3,[0]],[327787,112,1,482,2,[1]]]}

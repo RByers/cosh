@@ -1,1 +1,1 @@
-{"dirs":["chrome/browser/component_updater/"],"files":["chrome/browser/component_updater/pki_metadata_component_installer_browsertest.cc"],"cls":[[6658107,20277,286,663,0,[[0,286,18,16]]],[127981,17,33,664,0,[[0,33,3,3]]],[1209,0,13,665,0,[[0,13,1,1]]]]}
+{"dirs":["chrome/browser/component_updater/"],"files":["chrome/browser/component_updater/pki_metadata_component_installer_browsertest.cc"],"revs":["mattm@google.com","sorin@google.com"],"cls":[[6658107,20277,286,663,0,[0,1],[[0,286,18,16]]],[127981,17,33,664,0,[1],[[0,33,3,3]]],[1209,0,13,665,0,[1],[[0,13,1,1]]]]}

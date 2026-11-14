@@ -1,1 +1,1 @@
-{"dirs":["third_party/libjingle_xmpp/xmpp/","third_party/blink/renderer/"],"files":["third_party/libjingle_xmpp/xmpp/xmpplogintask_unittest.cc"],"cls":[[897495,17563,21,20,0,[[0,21,1,0]]],[146609,92,6,21,1]]}
+{"dirs":["third_party/libjingle_xmpp/xmpp/","third_party/blink/renderer/"],"files":["third_party/libjingle_xmpp/xmpp/xmpplogintask_unittest.cc"],"revs":["tommi@google.com","maxmorin@google.com"],"cls":[[897495,17563,21,20,0,[0],[[0,21,1,0]]],[146609,92,6,21,1,[1]]]}

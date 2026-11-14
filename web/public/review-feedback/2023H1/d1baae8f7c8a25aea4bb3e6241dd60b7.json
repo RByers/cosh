@@ -1,1 +1,1 @@
-{"dirs":["tools/perf/core/","testing/buildbot/"],"files":["tools/perf/core/perf_data_generator.py"],"cls":[[4602516,19517,97,0,[[0,57],[1,40]],[[0,57,1,1]]]]}
+{"dirs":["tools/perf/core/","testing/buildbot/"],"files":["tools/perf/core/perf_data_generator.py"],"revs":["bsheedy@google.com","chonggu@google.com","zijiehe@google.com"],"cls":[[4602516,19517,97,0,[[0,57],[1,40]],[0,1,2],[[0,57,1,1]]]]}

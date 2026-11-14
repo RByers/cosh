@@ -1,1 +1,1 @@
-{"dirs":["components/omnibox/browser/"],"files":["components/omnibox/browser/remote_suggestions_service.cc","components/omnibox/browser/remote_suggestions_service_unittest.cc"],"cls":[[1333017,17862,77,3,0,[[0,3,3,1],[1,73,2,2]]]]}
+{"dirs":["components/omnibox/browser/"],"files":["components/omnibox/browser/remote_suggestions_service.cc","components/omnibox/browser/remote_suggestions_service_unittest.cc"],"revs":["mpearson@google.com"],"cls":[[1333017,17862,77,3,0,[0],[[0,3,3,1],[1,73,2,2]]]]}

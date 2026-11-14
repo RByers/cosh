@@ -1,1 +1,1 @@
-{"dirs":["base/fuchsia/","base/test/data/"],"files":["/COMMIT_MSG","base/test/data/tzdata/revision.txt"],"cls":[[2480891,18555,2,4,[[0,1],[1,1]],[[0,0,3,3],[1,1,1,0]]]]}
+{"dirs":["base/fuchsia/","base/test/data/"],"files":["/COMMIT_MSG","base/test/data/tzdata/revision.txt"],"revs":["ddorwin@google.com","wez@google.com"],"cls":[[2480891,18555,2,4,[[0,1],[1,1]],[0,1],[[0,0,3,3],[1,1,1,0]]]]}

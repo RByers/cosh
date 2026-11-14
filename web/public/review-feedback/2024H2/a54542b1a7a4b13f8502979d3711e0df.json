@@ -1,1 +1,1 @@
-{"dirs":["tools/grit/grit/","third_party/jni_zero/","build/android/gyp/","google_apis/"],"files":["/COMMIT_MSG"],"cls":[[5747065,19934,4,2,0],[85746,41,6,3,[[1,4],[2,1],[3,1]],[[0,0,1,1]]]]}
+{"dirs":["tools/grit/grit/","third_party/jni_zero/","build/android/gyp/","google_apis/"],"files":["/COMMIT_MSG"],"revs":["agrieve@google.com","thestig@google.com","msarda@google.com"],"cls":[[5747065,19934,4,2,0,[0,1]],[85746,41,6,3,[[1,4],[2,1],[3,1]],[0,2],[[0,0,1,1]]]]}

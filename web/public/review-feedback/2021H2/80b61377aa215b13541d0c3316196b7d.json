@@ -1,1 +1,1 @@
-{"dirs":["third_party/blink/renderer/"],"files":["third_party/blink/renderer/modules/webgpu/gpu_texture.cc"],"cls":[[3146980,18883,13,51,0,[[0,5,1,1]]],[12219,2,10,53,0,[[0,8,1,0]]]]}
+{"dirs":["third_party/blink/renderer/"],"files":["third_party/blink/renderer/modules/webgpu/gpu_texture.cc"],"revs":["cwallez@google.com"],"cls":[[3146980,18883,13,51,0,[0],[[0,5,1,1]]],[12219,2,10,53,0,[0],[[0,8,1,0]]]]}

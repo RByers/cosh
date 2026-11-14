@@ -1,1 +1,1 @@
-{"dirs":["infra/config/","infra/config/generated/"],"files":["/COMMIT_MSG","infra/config/generated/luci/testhaus.cfg","infra/config/testhaus.cfg"],"cls":[[5370699,19807,19,2,[[0,13],[1,6]],[[0,0,1,1],[1,6,1,1],[2,6,2,1]]]]}
+{"dirs":["infra/config/","infra/config/generated/"],"files":["/COMMIT_MSG","infra/config/generated/luci/testhaus.cfg","infra/config/testhaus.cfg"],"revs":["bpastene@google.com","sshrimp@google.com"],"cls":[[5370699,19807,19,2,[[0,13],[1,6]],[0,1],[[0,0,1,1],[1,6,1,1],[2,6,2,1]]]]}

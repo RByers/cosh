@@ -1,1 +1,1 @@
-{"dirs":["build/config/","base/system/"],"files":["build/config/riscv.gni"],"cls":[[4681803,19551,1,6,0],[292376,109,11,7,0,[[0,11,2,2]]],[80005,25,2,8,1]]}
+{"dirs":["build/config/","base/system/"],"files":["build/config/riscv.gni"],"revs":["agrieve@google.com","dpranke@google.com","dcheng@google.com","fdoray@google.com","kylechar@google.com"],"cls":[[4681803,19551,1,6,0,[0]],[292376,109,11,7,0,[1],[[0,11,2,2]]],[80005,25,2,8,1,[2,3,4]]]}

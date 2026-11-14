@@ -1,1 +1,1 @@
-{"dirs":["testing/","build/config/fuchsia/"],"files":["build/config/fuchsia/test/minimum.shard.test-cml","testing/test.gni"],"cls":[[6164108,20103,13,2,[[0,8],[1,5]],[[0,5,2,2],[1,8,2,2]]]]}
+{"dirs":["testing/","build/config/fuchsia/"],"files":["build/config/fuchsia/test/minimum.shard.test-cml","testing/test.gni"],"revs":["bpastene@google.com","wez@google.com"],"cls":[[6164108,20103,13,2,[[0,8],[1,5]],[0,1],[[0,5,2,2],[1,8,2,2]]]]}
