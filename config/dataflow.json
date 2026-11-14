@@ -1497,7 +1497,7 @@
       "network": false,
       "lock": null,
       "incremental": "Recomputes everything; --steps a,b reruns only those steps and reuses the others' results in data/private/scratch/balance-publish/steps/.",
-      "duration": "about 14 min (revert_experience 5.5 of them, measured 2026-11-13), about 5 GB of memory at most (one step at a time)",
+      "duration": "about 10 min (revert_experience 3 of them, measured 2026-11-13 at nice 5), about 5 GB of memory at most (one step at a time)",
       "token_cost": null,
       "cost_source": "data/private/scratch/balance-publish/publish.log",
       "refresh": "routine",

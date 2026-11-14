@@ -12,8 +12,15 @@ SINCE = "2017-01-01"
 
 
 def epoch(s):
-    return int(datetime.strptime(s[:19].replace("T", " "), "%Y-%m-%d %H:%M:%S")
-               .replace(tzinfo=timezone.utc).timestamp())
+    """Seconds since 1970 of 'YYYY-MM-DD HH:MM:SS' (or with a T), UTC; the
+    rest of the string is ignored."""
+    s = s[:19].replace("T", " ")
+    if len(s) == 19 and s[4] == s[7] == "-" and s[13] == s[16] == ":" and s[10] == " " and s.isascii():
+        try:                     # fromisoformat is much faster; same result for this form
+            return int(datetime.fromisoformat(s).replace(tzinfo=timezone.utc).timestamp())
+        except ValueError:
+            pass
+    return int(datetime.strptime(s, "%Y-%m-%d %H:%M:%S").replace(tzinfo=timezone.utc).timestamp())
 
 
 def dir3(path):

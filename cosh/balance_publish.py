@@ -16,10 +16,10 @@ their main() for exploration, and no longer write into summaries/.
 Each step runs in its own process (the scripts set module globals, and each
 loads several GB), one at a time, and leaves its result as JSON in the work
 directory ($COSH_DATA_DIR/scratch/balance-publish/steps by default) with a
-log of what it printed. A full run takes about 14 min (2026-11-12, at
-nice 10, plus revert_experience's 5.5 min added 2026-11-13; the other slow
-steps are report 1.5 min, signals 1 min, narrative 1 min); most of the rest
-is the same loading of balance.sqlite and commits.sqlite in each step.
+log of what it printed. A full run takes about 10 min (2026-11-13, at
+nice 5): revert_experience 3 min, report 1 min, signals, narrative and
+growth under 1 min each; most of the rest is the same loading of
+balance.sqlite and commits.sqlite in each step.
 
 Everything is computed from the stores except these inputs, read from fixed
 paths under $COSH_DATA_DIR (or --inputs). Each is an analysis too slow,

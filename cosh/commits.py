@@ -632,14 +632,14 @@ def commit_dirs(db, depth=3):
     def done():
         if cur is not None and acc:
             out[cur] = (max(acc, key=acc.get), frozenset(acc))
-    for cid, pid, ins, dels in db.execute("SELECT commit_id, path_id, ins, dels FROM gfiles"):
+    for cid, pid, w in db.execute("SELECT commit_id, path_id, max(ins, 0) + max(dels, 0) + 1 FROM gfiles"):
         if cid != cur:
             done()
             cur, acc = cid, {}
         d = cache.get(pid)
         if d is None:
             d = cache[pid] = sys.intern(dir_of(paths[pid], depth))
-        acc[d] = acc.get(d, 0) + max(ins, 0) + max(dels, 0) + 1
+        acc[d] = acc.get(d, 0) + w
     done()
     return out
 

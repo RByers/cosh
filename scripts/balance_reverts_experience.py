@@ -25,7 +25,7 @@ The directory chart holds overall practice fixed too (its band is another
 factor), so it shows what experience in the directory adds beyond
 experience on main.
 
-Offline; reads commits.sqlite only (about 3 min, 3 GB). Writes aggregates
+Offline; reads commits.sqlite only (about 3 min, 3 GB; most of it the fits). Writes aggregates
 only, never anything per person.
 
   COSH_DATA_DIR=<main>/data/private nice -n 5 python3 scripts/balance_reverts_experience.py [--out F]
@@ -85,10 +85,10 @@ def load(db):
     for pid, p in db.execute("SELECT path_id, path FROM paths"):
         paths[pid] = sys.intern(dir2(p))
     dirs = defaultdict(dict)               # commit_id -> {dir2: weight}
-    for cid, pid, ins, dels in db.execute("SELECT commit_id, path_id, ins, dels FROM commit_files"):
+    for cid, pid, w in db.execute("SELECT commit_id, path_id, max(ins, 0) + max(dels, 0) + 1 FROM commit_files"):
         d = dirs[cid]
         k = paths[pid]
-        d[k] = d.get(k, 0) + max(ins, 0) + max(dels, 0) + 1
+        d[k] = d.get(k, 0) + w
     del paths
     rows = db.execute("SELECT commit_id, sha, author_email, landed_at, is_bot, reverts_sha, is_revert, files, "
                       "ins + dels, is_lsc, change_number FROM commits ORDER BY commit_id").fetchall()

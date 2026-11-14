@@ -4,10 +4,12 @@ addresses (config/bots.txt), and owner/author aliases. Shared by the Feedback
 Index (cosh/feedback.py), commits.sqlite's queries and the analyses."""
 
 from collections import Counter, defaultdict
+from functools import cache
 
 from .bots import _PATTERNS
 
 
+@cache            # pure, and called millions of times per analysis
 def person(e):
     """One identity per person across Chromium's two common domains: many
     people author as user@chromium.org and review as user@google.com."""
@@ -18,6 +20,7 @@ def person(e):
     return f"{local}@google.com" if dom in ("chromium.org", "google.com") else e
 
 
+@cache
 def is_bot_email(e):
     """True for a missing address or one config/bots.txt matches."""
     return not e or any(p.search(e) for p in _PATTERNS)

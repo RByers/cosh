@@ -110,8 +110,9 @@ def ro(path):
 
 def load_cl():
     db = ro(os.environ.get("BALANCE_CL") or balance.db_path("cl"))
-    db.row_factory = sqlite3.Row
-    out = [dict(r) for r in db.execute("SELECT * FROM cl")]
+    cur = db.execute("SELECT * FROM cl")
+    cols = [d[0] for d in cur.description]
+    out = [dict(zip(cols, r)) for r in cur]
     for c in out:
         c["owner_email"] = person(c["owner_email"]) if c["owner_email"] else None
     return out
@@ -273,16 +274,15 @@ def commit_main_dirs(depth=3):
         if cur is None or not files:
             return
         acc = {}
-        for parts, w in files:
-            d = dir_of_parts(parts, depth)
+        for _, d, _, w in files:
             acc[d] = acc.get(d, 0) + w
         top = max(acc, key=acc.get)
-        here = next(p[:depth] for p, _ in files if dir_of_parts(p, depth) == top)
+        here = next(pre for _, d, pre, _ in files if d == top)
         if len(here) < depth:          # files directly in a shallower directory
             out[cur] = top
             return
+        sub = [(p, w) for p, _, pre, w in files if pre == here]
         here = list(here)
-        sub = [(p, w) for p, w in files if p[:depth] == tuple(here)]
         while True:
             k, acc = len(here), {}
             for p, w in sub:
@@ -294,14 +294,15 @@ def commit_main_dirs(depth=3):
             here.append(best)
             sub = [(p, w) for p, w in sub if len(p) > k and p[k] == best]
         out[cur] = sys.intern("/".join(here) + "/")
-    for cid, pid, ins, dels in db.execute("SELECT commit_id, path_id, ins, dels FROM gfiles"):
+    for cid, pid, w in db.execute("SELECT commit_id, path_id, max(ins, 0) + max(dels, 0) + 1 FROM gfiles"):
         if cid != cur:
             done()
             cur, files = cid, []
-        parts = cache.get(pid)
-        if parts is None:
-            parts = cache[pid] = tuple(paths[pid].split("/")[:-1])
-        files.append((parts, max(ins, 0) + max(dels, 0) + 1))
+        f = cache.get(pid)
+        if f is None:                  # (directories, depth-level dir, its first `depth` parts)
+            parts = tuple(paths[pid].split("/")[:-1])
+            f = cache[pid] = (parts, sys.intern(dir_of_parts(parts, depth)), parts[:depth])
+        files.append(f + (w,))
     done()
     return out
 
