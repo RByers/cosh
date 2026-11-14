@@ -192,6 +192,8 @@ function box(id: string, x: number, y: number, w: number, chip = false): SVGGEle
   const n = graph.nodes.get(base)!;
   const g = svg('g', { class: `df-node ${tone(n)}${chip ? ' df-chip' : ''}`, transform: `translate(${x} ${y})` });
   g.dataset.node = base;
+  // A copy (`splitShared`) stands for its link to one reader.
+  if (id !== base) g.dataset.reader = id.slice(base.length + 1);
   const title = svg('title');
   title.textContent = `${full(n)}: ${(n.source ?? n.store ?? n.step ?? n.page)!.purpose}`;
   const round = n.kind === 'step' ? NODE_H / 2 : n.kind === 'store' ? 3 : 6;
@@ -339,14 +341,17 @@ function highlight(): void {
   const up = on ? reach(graph, [selected!], 'in') : null;
   const down = on ? reach(graph, [selected!], 'out') : null;
   root.classList.toggle('has-sel', !!on);
+  // An edge is lit only when it lies on a path through the selection.
+  const lit = (from: string, to: string) => !!((up?.has(from) && up.has(to)) || (down?.has(from) && down.has(to)));
   for (const g of root.querySelectorAll<SVGGElement>('.df-node')) {
-    g.classList.toggle('on', !!on?.has(g.dataset.node!));
-    g.classList.toggle('sel', g.dataset.node === selected);
+    const { node, reader } = g.dataset;
+    // A copy of a shared input is lit only when its link to its reader is,
+    // so the other copies stay dim.
+    g.classList.toggle('on', reader ? lit(node!, reader) : !!on?.has(node!));
+    g.classList.toggle('sel', node === selected);
   }
   for (const p of root.querySelectorAll<SVGPathElement>('.df-edge')) {
-    const { from, to } = p.dataset;
-    // An edge is lit only when it lies on a path through the selection.
-    p.classList.toggle('on', !!((up?.has(from!) && up.has(to!)) || (down?.has(from!) && down.has(to!))));
+    p.classList.toggle('on', lit(p.dataset.from!, p.dataset.to!));
   }
 }
 

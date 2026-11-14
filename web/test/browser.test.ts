@@ -3901,6 +3901,11 @@ test('the Data flow page draws the chosen pages\' flow, lists the inventory, and
   const lit = await page.$$eval('#graph-box .df-node.on', (gs) => gs.map((g) => (g as SVGGElement).dataset.node!));
   assert.ok(lit.includes('classify') && lit.includes('summarize') && lit.includes('page-value'), lit.join());
   assert.ok(!lit.includes('radar') && !lit.includes('cloudflare-radar'), lit.join());
+  // Of the model's copies, only the one beside classify is on the flow.
+  const model = await page.$$eval('#graph-box .df-node[data-node="claude-model"]', (gs) =>
+    gs.map((g) => [(g as SVGGElement).dataset.reader, g.classList.contains('on')]));
+  assert.ok(model.length > 1, JSON.stringify(model));
+  assert.deepEqual(model.filter(([, on]) => on), [['classify', true]]);
   assert.match(await page.$eval('#detail-facts [data-field="rebuild"] dd', (e) => e.textContent!), /never delete/);
   assert.equal(await page.$$eval('#detail-tables tr', (trs) => trs.length), 3);
   // Names in the facts are links to the other items.
