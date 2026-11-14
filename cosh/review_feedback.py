@@ -301,9 +301,10 @@ def load(args):
 # 100 new or changed lines (Gerrit's insertions), pooled. Experience is the
 # owner's CLs landed on main counting the CL itself (earlier commits + 1), in
 # power-of-two bins named by their top, so each bin is one doubling: "8" is 8
-# or fewer, "16" is 9–16, ..., "2k" is 1,025–2,048, ">2k" more.
-BIN_EDGES = [8 * 2 ** k for k in range(9)]          # 8, 16, ..., 2048
-BIN_LABELS = ["8", "16", "32", "64", "128", "256", "512", "1k", "2k", ">2k"]
+# or fewer, "16" is 9–16, ..., "4k" is 2,049–4,096, ">4k" more. The top bin
+# stops at 4k because only one person has passed 8k (2026-11-14).
+BIN_EDGES = [8 * 2 ** k for k in range(10)]         # 8, 16, ..., 4096
+BIN_LABELS = ["8", "16", "32", "64", "128", "256", "512", "1k", "2k", "4k", ">4k"]
 MIN_BIN_CLS = 5           # a person's AFR in one experience bin counts with this many CLs there
 FR_FLOOR = 0.1            # FRs below this count as this in the growth fit (log scale)
 MIN_GROWTH_BINS = 3       # a growth rate needs FRs in this many bins

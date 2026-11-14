@@ -50,8 +50,11 @@ Both are fixed: the page has no switches for them (the user's call,
   (their earlier commits from the start of main's history in 2008, reverts
   left out, plus one), in power-of-two bins named by their top, so each bin
   is one doubling: 8 (8 or fewer), 16 (9–16), 32, …, 1k, 2k (1,025–2,048),
-  >2k (`BIN_EDGES` on earlier commits, `xbin`, `BIN_LABELS`; the names
-  changed from "<8, 8–15, …" on 2026-11-14, the bins didn't). The page's
+  4k (2,049–4,096), >4k (`BIN_EDGES` on earlier commits, `xbin`,
+  `BIN_LABELS`; the names changed from "<8, 8–15, …" on 2026-11-14, the
+  bins didn't). The top bin was >2k until 2026-11-14; it was split because
+  71 people have passed 2k and 16 have passed 4k, but only one has passed
+  8k, too few for a bin of its own. The page's
   axis says "experience (CLs landed on main)".
 - **Directories** are named as they are at main's tip
   (`commits.current_paths`, `docs/commits.md`), for CLs' lines, comment
@@ -138,8 +141,9 @@ the index: the AFR's definition, then the AFR by experience bin (y-axis
 steady fall per doubling is a straight line): the median of people's AFR in each bin (each
 person's CLs in that bin pooled, with `MIN_BIN_CLS` = 5 or more there), with
 the middle half and the 10th–90th percentile shaded (`fr_bins`). On
-2026-11-14: 5.40 at 8, 4.11, 3.52, 2.86, 2.49, 2.00, 1.64, 1.28, 1.04 and
-0.80 at >2k, from 3,379 people in the first bin down to 71 in the last.
+2026-11-14: 5.40 at 8, 4.11, 3.52, 2.87, 2.51, 2.00, 1.65, 1.28, 1.04,
+0.81 at 4k and 0.53 at >4k, from 3,379 people in the first bin down to 69
+at 4k and 16 at >4k (before the >2k bin was split: 0.80 there, 71 people).
 (With deletions counted they were 3.95 down to 0.43; with 5, 3 or 8 CLs as
 the minimum those medians moved by at most 0.15.) Below it,
 "Distribution of AFR change with experience": the growth rates'
@@ -153,8 +157,8 @@ feedback-index chart.
 The AFR falls as much as the old index did, though on a linear axis the
 chart looked flatter (hence the log axis): the old addressed index adjusted for size and directory fell 5.3×
 from <10 to 1,000+ earlier commits (2.36 → 0.44), the median AFR 5.2× from 8
-to 2k CLs (5.40 → 1.04) and 6.7× to >2k (6.7× and 9× with deletions
-counted). The bands make the difference: the
+to 2k CLs (5.40 → 1.04), 6.7× to 4k and 10× to >4k (before the split, 6.7×
+to >2k, and 9× with deletions counted). The bands make the difference: the
 y-axis has to reach the 90th percentile (14.3 in the first bin), so the
 median line sits in the bottom third, where the old chart drew medians only
 on an axis to about 2.6.

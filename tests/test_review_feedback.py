@@ -21,9 +21,9 @@ class ReviewFeedbackTest(unittest.TestCase):
         self.assertEqual(R.epoch_day(86400 * 3 + 5), 3)
 
     def test_experience_bins(self):
-        # Doublings of earlier commits: <8, 8–15, 16–31, ..., 1k–2k, 2k+.
-        self.assertEqual([R.xbin(n) for n in (0, 7, 8, 15, 16, 1023, 1024, 2047, 2048, 50000)],
-                         [0, 0, 1, 1, 2, 7, 8, 8, 9, 9])
+        # Doublings of earlier commits: <8, 8–15, 16–31, ..., 2k–4k, 4k+.
+        self.assertEqual([R.xbin(n) for n in (0, 7, 8, 15, 16, 1023, 1024, 2047, 2048, 4095, 4096, 50000)],
+                         [0, 0, 1, 1, 2, 7, 8, 8, 9, 9, 10, 10])
         self.assertEqual(len(R.BIN_LABELS), len(R.BIN_EDGES) + 1)
         self.assertEqual((R.dir2("chrome/browser/ui/"), R.dir1("chrome/browser/ui/")), ("chrome/browser/", "chrome/"))
         self.assertEqual((R.dir2("(root)/"), R.dir1("ui/")), ("(root)/", "ui/"))
@@ -51,7 +51,7 @@ class ReviewFeedbackTest(unittest.TestCase):
         self.assertEqual((f["n"], f["q"][10]), (5, 1.0))
         self.assertEqual((f["curve"][0][0], f["curve"][60][0]), (0.125, 1.0))
         self.assertEqual(max(f["curve"], key=lambda c: c[1])[0], 1.0)
-        self.assertEqual(R.BIN_LABELS[:3] + R.BIN_LABELS[-2:], ["8", "16", "32", "2k", ">2k"])
+        self.assertEqual(R.BIN_LABELS[:3] + R.BIN_LABELS[-2:], ["8", "16", "32", "4k", ">4k"])
 
     def test_rate_model(self):
         # Twenty people with 40 CLs of 100 lines each, all in ui/a/ at one experience: half approved by a
