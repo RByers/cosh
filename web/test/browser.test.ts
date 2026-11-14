@@ -3919,7 +3919,7 @@ test('the Data flow page draws the chosen pages\' flow, lists the inventory, and
   }));
   await page.click('#detail-tables button[data-sample]');
   let s = await sample();
-  assert.ok(s.open && s.title === 'data/private/labels.sqlite: labels', JSON.stringify(s));
+  assert.ok(s.open && s.title === 'data/private/addressed.sqlite: labels', JSON.stringify(s));
   assert.ok(s.rows > 0 && s.rows <= 5 && s.cells === s.cols.length, JSON.stringify(s));
   assert.deepEqual(s.cols.filter(([, title]) => !title), []);
   await page.click('#sample-close');
@@ -3939,7 +3939,7 @@ test('the Data flow page draws the chosen pages\' flow, lists the inventory, and
   assert.ok(s.open && s.rows === 0 && s.cols.length > 0 && /Not published/.test(s.note), JSON.stringify(s));
   await page.click('#sample-close');
   await page.evaluate(() => (location.hash = '#n=data%2Fprivate%2Flabels.sqlite'));
-  await page.waitForFunction(() => document.querySelector('#detail-title')!.textContent === 'data/private/labels.sqlite');
+  await page.waitForFunction(() => document.querySelector('#detail-title')!.textContent === 'data/private/addressed.sqlite');
   // Names in the facts are links to the other items.
   await page.click('#detail-facts [data-field="made_by"] button');
   assert.equal(await page.$eval('#detail-title', (e) => e.textContent), 'classify');

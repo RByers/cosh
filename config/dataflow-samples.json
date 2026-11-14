@@ -348,7 +348,7 @@
     }
    ]
   },
-  "data/private/derived.sqlite": {
+  "data/private/reviews.sqlite": {
    "parts": [
     {
      "name": "changes",
@@ -754,7 +754,7 @@
     }
    ]
   },
-  "data/private/labels.sqlite": {
+  "data/private/addressed.sqlite": {
    "parts": [
     {
      "name": "labels",
@@ -1670,7 +1670,7 @@
     }
    ]
   },
-  "data/private/sentiment/": {
+  "data/private/comments/": {
    "withheld": "Review comments with who wrote them, the input to tone scoring; tone stays unpublished per person (ground rule 5).",
    "parts": []
   },
@@ -1725,7 +1725,7 @@
     }
    ]
   },
-  "data/private/sentiment/tune": {
+  "data/private/comments/tune": {
    "withheld": "The hand-labelled gold sets stay private.",
    "parts": []
   },

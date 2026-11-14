@@ -46,13 +46,13 @@ class InventoryTest(unittest.TestCase):
         scores["rows"] = [[1] * len(scores["columns"])]
         req = next(p for p in by["data/private/bugs/bugs.sqlite"]["parts"] if p["name"] == "requests")
         req["rows"] = [["x"] * len(req["columns"])]
-        labels = next(p for p in by["data/private/labels.sqlite"]["parts"] if p["name"] == "labels")
+        labels = next(p for p in by["data/private/addressed.sqlite"]["parts"] if p["name"] == "labels")
         labels["columns"].append("new_column")
         problems = "\n".join(dataflow.sample_problems(self.d, bad))
         self.assertIn("data/private/feedback-coach/: withheld, but the samples have its rows", problems)
         self.assertIn("data/private/sentiment.sqlite scores: withheld, but the samples have its rows", problems)
         self.assertIn("data/private/bugs/bugs.sqlite requests: column headers is redacted, but the samples show it", problems)
-        self.assertIn("data/private/labels.sqlite labels: column new_column has no meaning", problems)
+        self.assertIn("data/private/addressed.sqlite labels: column new_column has no meaning", problems)
 
     def test_flow_rules(self):
         d = copy.deepcopy(self.d)
