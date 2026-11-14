@@ -3283,3 +3283,34 @@ canvas.rf-pointable {
     margin-bottom: 6px;
   }
 }
+
+/* The data flow page's sample popup: wider than the name popup, for rows. */
+.df-sample {
+  width: min(1100px, calc(100vw - 32px));
+}
+
+.df-sample-table td {
+  min-width: 4rem;
+  max-width: 28rem;
+  /* Break inside a word only when it can't fit at all. */
+  overflow-wrap: break-word;
+  font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+  font-size: 0.8rem;
+}
+
+/* A column name with its meaning as a hover title. */
+.df-tip {
+  text-decoration: underline dotted;
+  text-underline-offset: 3px;
+  cursor: help;
+}
+
+.df-sample-link {
+  font-size: 0.8rem;
+}
+
+/* A long path wraps rather than pushing the close button out of view. */
+.df-sample h2 {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}

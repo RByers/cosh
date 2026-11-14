@@ -1,5 +1,6 @@
 """config/dataflow.json stays true to the repository, and the planner works."""
 import copy
+import json
 import os
 import sys
 import unittest
@@ -31,6 +32,27 @@ class InventoryTest(unittest.TestCase):
         self.assertIn("summaries/balance_authors.json: committed data file that no store lists", problems)
         self.assertIn("web/dataflow.html: page that the inventory doesn't list", problems)
         self.assertIn("config/dataflow.json: imported by a page script but in no page's reads", problems)
+
+    def test_samples_keep_out_what_is_withheld(self):
+        # The published samples hold no rows of a withheld store or table,
+        # no redacted value, and every column shown has a meaning.
+        with open(dataflow.SAMPLES, encoding="utf-8") as f:
+            samples = json.load(f)
+        self.assertEqual(dataflow.sample_problems(self.d, samples), [])
+        bad = copy.deepcopy(samples)
+        by = bad["stores"]
+        by["data/private/feedback-coach/"]["parts"] = [{"name": None, "kind": "files", "columns": ["file"], "rows": [["x"]]}]
+        scores = next(p for p in by["data/private/sentiment.sqlite"]["parts"] if p["name"] == "scores")
+        scores["rows"] = [[1] * len(scores["columns"])]
+        req = next(p for p in by["data/private/bugs/bugs.sqlite"]["parts"] if p["name"] == "requests")
+        req["rows"] = [["x"] * len(req["columns"])]
+        labels = next(p for p in by["data/private/labels.sqlite"]["parts"] if p["name"] == "labels")
+        labels["columns"].append("new_column")
+        problems = "\n".join(dataflow.sample_problems(self.d, bad))
+        self.assertIn("data/private/feedback-coach/: withheld, but the samples have its rows", problems)
+        self.assertIn("data/private/sentiment.sqlite scores: withheld, but the samples have its rows", problems)
+        self.assertIn("data/private/bugs/bugs.sqlite requests: column headers is redacted, but the samples show it", problems)
+        self.assertIn("data/private/labels.sqlite labels: column new_column has no meaning", problems)
 
     def test_flow_rules(self):
         d = copy.deepcopy(self.d)

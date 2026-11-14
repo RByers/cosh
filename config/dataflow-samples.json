@@ -1,0 +1,3838 @@
+{
+ "generated": "2026-11-14",
+ "stores": {
+  "gerrit-raw": {
+   "parts": [
+    {
+     "name": "responses",
+     "kind": "rows",
+     "columns": [
+      "host",
+      "kind",
+      "key",
+      "url",
+      "fetched_at",
+      "http_status",
+      "body_zlib",
+      "body_sha256"
+     ],
+     "rows": [
+      [
+       "chromium-review.googlesource.com",
+       "account",
+       "1000042",
+       "https://chromium-review.googlesource.com/accounts/1000042",
+       "2026-11-11T19:39:08Z",
+       200,
+       "<219 bytes>",
+       "60f309b3cf2998710b843fc5c9a51f208e209fe0cd5e5fe31a7a96894cf86f58"
+      ],
+      [
+       "chromium-review.googlesource.com",
+       "list_window",
+       "chromium/src@main|abandoned|2023-05-29T12:00:00|2023-05-29T18:00:00",
+       "https://chromium-review.googlesource.com/changes/?q=project:chromium/src+branch:main+status:abandoned+after:\"2023-05-29+12:00:00+%2B0000\"+before:\"2023-05-29+18:00:00+%2B0000\"&n=500&o=DETAILED_ACCOUNTS&o=DETAILED_LABELS",
+       "2026-11-08T14:53:57Z",
+       200,
+       "<11,201 bytes>",
+       "c05a3f99d08f997bd21c7a4f0f59724941c4b8026ec30eb38f96a7389bcaae53"
+      ],
+      [
+       "chromium-review.googlesource.com",
+       "list_window",
+       "chromium/src@main|merged|2020-11-21T06:00:00|2020-11-21T12:00:00",
+       "https://chromium-review.googlesource.com/changes/?q=project:chromium/src+branch:main+status:merged+mergedafter:\"2020-11-21+06:00:00+%2B0000\"+mergedbefore:\"2020-11-21+12:00:00+%2B0000\"&n=500&o=DETAILED_ACCOUNTS&o=DETAILED_LABELS",
+       "2026-11-10T15:08:44Z",
+       200,
+       "<11 bytes>",
+       "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570"
+      ],
+      [
+       "chromium-review.googlesource.com",
+       "list_window",
+       "chromium/src@master|abandoned|2018-03-10T06:00:00|2018-03-10T12:00:00",
+       "https://chromium-review.googlesource.com/changes/?q=project:chromium/src+branch:master+status:abandoned+after:\"2018-03-10+06:00:00+%2B0000\"+before:\"2018-03-10+12:00:00+%2B0000\"&n=500&o=DETAILED_ACCOUNTS&o=DETAILED_LABELS",
+       "2026-11-12T01:20:17Z",
+       200,
+       "<2,334 bytes>",
+       "b825e07a25adfc1f3c803189fceff98b807f1eee8e225cf293a7e374f151f19d"
+      ],
+      [
+       "chromium-review.googlesource.com",
+       "list_window",
+       "chromium/src@master|merged|2021-04-11T18:00:00|2021-04-12T00:00:00",
+       "https://chromium-review.googlesource.com/changes/?q=project:chromium/src+branch:master+status:merged+mergedafter:\"2021-04-11+18:00:00+%2B0000\"+mergedbefore:\"2021-04-12+00:00:00+%2B0000\"&n=500&o=DETAILED_ACCOUNTS&o=DETAILED_LABELS",
+       "2026-11-11T11:39:22Z",
+       200,
+       "<11 bytes>",
+       "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570"
+      ]
+     ]
+    },
+    {
+     "name": "week_progress",
+     "kind": "rows",
+     "columns": [
+      "host",
+      "project",
+      "iso_week",
+      "listed_at",
+      "cl_count",
+      "fetched_at",
+      "last_run_id"
+     ],
+     "rows": [
+      [
+       "chromium-review.googlesource.com",
+       "chromium/src",
+       "2026-W44",
+       "2026-11-03T13:16:14Z",
+       7648,
+       "2026-11-03T13:44:51Z",
+       5
+      ],
+      [
+       "chromium-review.googlesource.com",
+       "chromium/src",
+       "2024-W27",
+       "2026-11-04T20:17:21Z",
+       3013,
+       "2026-11-04T20:19:49Z",
+       130
+      ],
+      [
+       "chromium-review.googlesource.com",
+       "chromium/src",
+       "2022-W09",
+       "2026-11-09T11:34:07Z",
+       3088,
+       "2026-11-09T11:37:55Z",
+       255
+      ],
+      [
+       "chromium-review.googlesource.com",
+       "chromium/src",
+       "2019-W45",
+       "2026-11-11T18:40:44Z",
+       2450,
+       "2026-11-11T18:43:21Z",
+       573
+      ],
+      [
+       "chromium-review.googlesource.com",
+       "chromium/src",
+       "2017-W27",
+       "2026-11-12T05:08:37Z",
+       900,
+       "2026-11-12T05:10:33Z",
+       695
+      ]
+     ]
+    },
+    {
+     "name": "week_changes",
+     "kind": "rows",
+     "columns": [
+      "host",
+      "project",
+      "iso_week",
+      "change_number",
+      "window_key"
+     ],
+     "rows": [
+      [
+       "chromium-review.googlesource.com",
+       "chromium/src",
+       "2017-W27",
+       389032,
+       "chromium/src@master|abandoned|2017-07-06T00:00:00|2017-07-06T06:00:00"
+      ],
+      [
+       "chromium-review.googlesource.com",
+       "chromium/src",
+       "2020-W41",
+       2460976,
+       "chromium/src@master|merged|2020-10-10T00:00:00|2020-10-10T06:00:00"
+      ],
+      [
+       "chromium-review.googlesource.com",
+       "chromium/src",
+       "2023-W12",
+       4295314,
+       "chromium/src@main|merged|2023-03-22T18:00:00|2023-03-23T00:00:00"
+      ],
+      [
+       "chromium-review.googlesource.com",
+       "chromium/src",
+       "2025-W12",
+       6384290,
+       "chromium/src@main|abandoned|2025-03-21T18:00:00|2025-03-22T00:00:00"
+      ],
+      [
+       "chromium-review.googlesource.com",
+       "chromium/src",
+       "2026-W44",
+       8699537,
+       "chromium/src@main|merged|2026-11-01T18:00:00|2026-11-02T00:00:00"
+      ]
+     ]
+    },
+    {
+     "name": "open_listings",
+     "kind": "rows",
+     "columns": [
+      "host",
+      "project",
+      "listed_at",
+      "since",
+      "closed_since",
+      "cl_count",
+      "fetched_at",
+      "last_run_id"
+     ],
+     "rows": [
+      [
+       "chromium-review.googlesource.com",
+       "chromium/src",
+       "2026-11-04T09:50:05Z",
+       "2025-11-03T00:00:00Z",
+       "2026-11-02T00:00:00Z",
+       28117,
+       "2026-11-04T10:37:30Z",
+       57
+      ],
+      [
+       "chromium-review.googlesource.com",
+       "chromium/src",
+       "2026-11-05T04:21:09Z",
+       "2023-06-26T00:00:00Z",
+       "2026-11-02T00:00:00Z",
+       47329,
+       "2026-11-05T04:47:26Z",
+       185
+      ]
+     ]
+    },
+    {
+     "name": "open_changes",
+     "kind": "rows",
+     "columns": [
+      "host",
+      "project",
+      "listed_at",
+      "change_number",
+      "window_key"
+     ],
+     "rows": [
+      [
+       "chromium-review.googlesource.com",
+       "chromium/src",
+       "2026-11-04T09:50:05Z",
+       532294,
+       "chromium/src@main|open|2026-11-02T00:00:00|2026-11-02T14:27:31|snap=2026-11-04T09:50:05Z"
+      ],
+      [
+       "chromium-review.googlesource.com",
+       "chromium/src",
+       "2026-11-04T09:50:05Z",
+       8599652,
+       "chromium/src@main|open|2026-10-15T12:00:00|2026-10-19T00:00:00|snap=2026-11-04T09:50:05Z"
+      ],
+      [
+       "chromium-review.googlesource.com",
+       "chromium/src",
+       "2026-11-05T04:21:09Z",
+       5808214,
+       "chromium/src@main|open|2024-08-19T00:00:00|2024-08-26T00:00:00|snap=2026-11-05T04:21:09Z"
+      ],
+      [
+       "chromium-review.googlesource.com",
+       "chromium/src",
+       "2026-11-05T04:21:09Z",
+       8025481,
+       "chromium/src@main|open|2026-06-29T00:00:00|2026-07-06T00:00:00|snap=2026-11-05T04:21:09Z"
+      ],
+      [
+       "chromium-review.googlesource.com",
+       "chromium/src",
+       "2026-11-05T04:21:09Z",
+       8739741,
+       "chromium/src@main|open|2026-11-05T04:21:09|2026-11-05T04:29:22|snap=2026-11-05T04:21:09Z"
+      ]
+     ]
+    },
+    {
+     "name": "extract_runs",
+     "kind": "rows",
+     "columns": [
+      "run_id",
+      "started_at",
+      "finished_at",
+      "command",
+      "requests",
+      "status"
+     ],
+     "rows": [
+      [
+       1,
+       "2026-11-03T12:49:53Z",
+       "2026-11-03T12:49:53Z",
+       "/home/rbagent/projects/cosh/cosh/__main__.py extract --week 2026-W44 --max-comment-fetches 5",
+       1,
+       "failed"
+      ],
+      [
+       174,
+       "2026-11-05T02:09:06Z",
+       "2026-11-05T02:14:20Z",
+       "/home/rbagent/projects/cosh/cosh/__main__.py backfill --weeks 175 --newest 2026-W44 --go",
+       56,
+       "ok"
+      ],
+      [
+       348,
+       "2026-11-10T15:43:26Z",
+       "2026-11-10T15:44:45Z",
+       "/home/rbagent/projects/cosh/cosh/__main__.py backfill --weeks 312 --newest 2023-W25 --jobs 1 --go",
+       56,
+       "ok"
+      ],
+      [
+       521,
+       "2026-11-11T14:10:54Z",
+       "2026-11-11T14:16:19Z",
+       "/home/rbagent/projects/cosh/cosh/__main__.py backfill --weeks 312 --newest 2023-W25 --jobs 1 --go",
+       56,
+       "ok"
+      ],
+      [
+       695,
+       "2026-11-12T05:07:20Z",
+       "2026-11-12T05:10:33Z",
+       "/home/rbagent/projects/cosh/cosh/__main__.py backfill --weeks 312 --newest 2023-W25 --jobs 1 --go",
+       56,
+       "ok"
+      ]
+     ]
+    },
+    {
+     "name": "data/private/notedb/",
+     "kind": "files",
+     "columns": [
+      "file",
+      "bytes"
+     ],
+     "total": 9,
+     "rows": [
+      [
+       "repack-20261112/before.sorted",
+       194973
+      ],
+      [
+       "repack-20261112/done-src.txt",
+       194973
+      ],
+      [
+       "repack-20261112/new.ids",
+       1178206750
+      ],
+      [
+       "repack-20261112/old.ids",
+       1178206750
+      ],
+      [
+       "repack-20261112/same.txt",
+       0
+      ]
+     ]
+    }
+   ]
+  },
+  "data/private/derived.sqlite": {
+   "parts": [
+    {
+     "name": "changes",
+     "kind": "rows",
+     "columns": [
+      "host",
+      "change_number",
+      "project",
+      "branch",
+      "change_id",
+      "owner_account",
+      "status",
+      "created_at",
+      "updated_at",
+      "submitted_at",
+      "closed_at",
+      "close_week",
+      "insertions",
+      "deletions",
+      "patchsets",
+      "total_comment_count",
+      "is_bot_owned",
+      "subject",
+      "anchor_path"
+     ],
+     "rows": [
+      [
+       "chromium-review.googlesource.com",
+       2805227,
+       "chromium/src",
+       "main",
+       "Id91e038babe91b9fe7c6db5efdcc5d70f9a3a68a",
+       1302611,
+       "ABANDONED",
+       "2021-04-06 20:48:19",
+       "2021-04-06 22:31:21",
+       null,
+       "2021-04-06 22:31:21",
+       "2021-W14",
+       1,
+       1,
+       2,
+       0,
+       1,
+       "Roll Open Screen from 5acd0d59800d to 6f3efdbca7c6 (1 revision)",
+       null
+      ],
+      [
+       "chromium-review.googlesource.com",
+       3836937,
+       "chromium/src",
+       "main",
+       "I2d5de4a869bff777a4af4ce1bbf39ee03eaf0773",
+       1302612,
+       "MERGED",
+       "2022-08-17 19:20:39",
+       "2022-08-17 21:23:42",
+       "2022-08-17 21:23:42",
+       "2022-08-17 21:23:42",
+       "2022-W33",
+       1,
+       1,
+       3,
+       0,
+       1,
+       "Roll src-internal from f0e9eeb81399 to 266a1641a0fa (8 revisions)",
+       null
+      ],
+      [
+       "chromium-review.googlesource.com",
+       6388717,
+       "chromium/src",
+       "main",
+       "I813df9615e6cb5b4584adb6b030fec7e4761f82b",
+       1467227,
+       "MERGED",
+       "2025-03-25 03:14:01",
+       "2025-03-26 13:02:56",
+       "2025-03-26 13:02:56",
+       "2025-03-26 13:02:56",
+       "2025-W13",
+       23,
+       23,
+       5,
+       6,
+       0,
+       "Remove usages of base::ExpectDict* under //components/sync",
+       "components/sync/engine/cycle/sync_cycle_snapshot_unittest.cc"
+      ],
+      [
+       "chromium-review.googlesource.com",
+       2518994,
+       "chromium/src",
+       "main",
+       "I83717d3d708f09807670cc4005d2ea18bd09fe74",
+       1302612,
+       "ABANDONED",
+       "2020-11-04 03:38:53",
+       "2020-11-04 06:29:53",
+       null,
+       "2020-11-04 06:29:53",
+       "2020-W45",
+       1,
+       1,
+       2,
+       0,
+       1,
+       "Roll src-internal from bc186f0ead79 to 50f7d14999e2 (28 revisions)",
+       null
+      ],
+      [
+       "chromium-review.googlesource.com",
+       2803479,
+       "chromium/src",
+       "main",
+       "I115526e9f65cd45f6874b8b5c03ea3a95c93ec8e",
+       1166470,
+       "MERGED",
+       "2021-04-02 23:23:29",
+       "2021-04-06 18:24:02",
+       "2021-04-06 18:24:02",
+       "2021-04-06 18:24:02",
+       "2021-W14",
+       207,
+       83,
+       6,
+       5,
+       0,
+       "Remove usage of GTK_VERSION in GtkUi",
+       "ui/gtk/gtk_types.h"
+      ]
+     ]
+    },
+    {
+     "name": "comments",
+     "kind": "rows",
+     "columns": [
+      "host",
+      "change_number",
+      "comment_id",
+      "account_id",
+      "written_at",
+      "iso_week",
+      "path",
+      "chars",
+      "is_ai",
+      "after_close",
+      "root_uuid"
+     ],
+     "rows": [
+      [
+       "chromium-review.googlesource.com",
+       425878,
+       "97884e74_f1a46859",
+       1003156,
+       "2017-01-06 18:23:26",
+       "2017-W01",
+       "skia/config/SkUserConfig.h",
+       157,
+       0,
+       0,
+       "97884e74_f1a46859"
+      ],
+      [
+       "chromium-review.googlesource.com",
+       2288949,
+       "46549d5d_c900741b",
+       1001928,
+       "2020-07-09 14:28:48",
+       "2020-W28",
+       "tools/android/dependency_analysis/js/vue_components/class_graph_page.js",
+       24,
+       0,
+       0,
+       "46549d5d_c900741b"
+      ],
+      [
+       "chromium-review.googlesource.com",
+       3894513,
+       "c466884c_d2881b1d",
+       1117405,
+       "2022-09-15 19:34:24",
+       "2022-W37",
+       "/PATCHSET_LEVEL",
+       14,
+       0,
+       0,
+       "c466884c_d2881b1d"
+      ],
+      [
+       "chromium-review.googlesource.com",
+       5840697,
+       "241558a7_02154c75",
+       1161144,
+       "2024-09-30 09:24:19",
+       "2024-W40",
+       "chrome/browser/ui/ash/focus_mode/certificate_manager_unittest.cc",
+       11,
+       0,
+       1,
+       "241558a7_02154c75"
+      ],
+      [
+       "chromium-review.googlesource.com",
+       8738882,
+       "259957c4_6873d97f",
+       1546379,
+       "2026-11-05 04:14:16",
+       "2026-W45",
+       "/PATCHSET_LEVEL",
+       7,
+       0,
+       0,
+       "259957c4_6873d97f"
+      ]
+     ]
+    },
+    {
+     "name": "threads",
+     "kind": "rows",
+     "columns": [
+      "host",
+      "change_number",
+      "root_uuid",
+      "root_account",
+      "n_comments",
+      "last_owner_reply_at",
+      "input_hash",
+      "regex_addressed"
+     ],
+     "rows": [
+      [
+       "chromium-review.googlesource.com",
+       425878,
+       "97884e74_f1a46859",
+       1003156,
+       1,
+       null,
+       "7554751695882611064",
+       0
+      ],
+      [
+       "chromium-review.googlesource.com",
+       2261592,
+       "bd2673ca_85cca27e",
+       1291291,
+       4,
+       "2020-06-26 04:56:25",
+       "2578549536631824286",
+       0
+      ],
+      [
+       "chromium-review.googlesource.com",
+       3872465,
+       "5d4875c1_d2ad333b",
+       1134915,
+       1,
+       null,
+       "6462387381274524240",
+       0
+      ],
+      [
+       "chromium-review.googlesource.com",
+       5840722,
+       "d19c0360_9be5fb35",
+       1348395,
+       1,
+       null,
+       "903120980741599148",
+       0
+      ],
+      [
+       "chromium-review.googlesource.com",
+       8738882,
+       "259957c4_6873d97f",
+       1546379,
+       1,
+       null,
+       "-5043437837196241425",
+       0
+      ]
+     ]
+    },
+    {
+     "name": "accounts",
+     "kind": "rows",
+     "columns": [
+      "host",
+      "account_id",
+      "email",
+      "name",
+      "is_bot"
+     ],
+     "rows": [
+      [
+       "chromium-review.googlesource.com",
+       1000042,
+       "derat@chromium.org",
+       "Dan Erat",
+       0
+      ],
+      [
+       "chromium-review.googlesource.com",
+       1300333,
+       "yfa@chromium.org",
+       "Yi Fan",
+       0
+      ],
+      [
+       "chromium-review.googlesource.com",
+       1543682,
+       "derek.basehore@gmail.com",
+       "Derek Basehore",
+       0
+      ],
+      [
+       "chromium-review.googlesource.com",
+       1601462,
+       "aditya.kumar@sjsu.edu",
+       "Aditya Kumar",
+       0
+      ],
+      [
+       "chromium-review.googlesource.com",
+       1176904,
+       "jegalzz88@gmail.com",
+       "Sunwoo Nam",
+       0
+      ]
+     ]
+    },
+    {
+     "name": "committers",
+     "kind": "rows",
+     "columns": [
+      "host",
+      "account_id",
+      "is_committer",
+      "seen_at"
+     ],
+     "rows": [
+      [
+       "chromium-review.googlesource.com",
+       1302611,
+       0,
+       "2026-11-11T23:17:13Z"
+      ],
+      [
+       "chromium-review.googlesource.com",
+       1427116,
+       1,
+       "2026-11-09T12:00:49Z"
+      ],
+      [
+       "chromium-review.googlesource.com",
+       3509834,
+       0,
+       "2026-11-04T17:21:54Z"
+      ],
+      [
+       "chromium-review.googlesource.com",
+       5252553,
+       0,
+       "2026-11-04T09:53:28Z"
+      ],
+      [
+       "chromium-review.googlesource.com",
+       1293772,
+       0,
+       "2026-11-11T11:40:42Z"
+      ]
+     ]
+    },
+    {
+     "name": "meta",
+     "kind": "rows",
+     "columns": [
+      "k",
+      "v"
+     ],
+     "rows": [
+      [
+       "metric_version",
+       "7"
+      ],
+      [
+       "derived_at",
+       "2026-11-12T05:59:41Z"
+      ],
+      [
+       "fetched_weeks",
+       "[\"2017-W27\", \"2017-W28\", \"2017-W29\", \"2017-W30\", \"2017-W31\", \"2017-W32\", \"2017-W33\", \"2017-W34\", \"2017-W35\", \"2017-W36\", \"2017-W37\", \"2017-W38\", \"2017-W39\", \"2017-W40\", \"2017-W41\", \"2017-W42\", \"2017-W43\", \"2017-W44\", \"2017-W45\", \"2017-W46\",…"
+      ],
+      [
+       "open_snapshot_at",
+       "2026-11-05T04:21:09Z"
+      ],
+      [
+       "commits_since",
+       "2017-07-03"
+      ]
+     ]
+    }
+   ]
+  },
+  "data/private/labels.sqlite": {
+   "parts": [
+    {
+     "name": "labels",
+     "kind": "rows",
+     "columns": [
+      "change_number",
+      "root_uuid",
+      "classifier_id",
+      "input_hash",
+      "addressed",
+      "run_id"
+     ],
+     "rows": [
+      [
+       461722,
+       "04831a40_59586d9f",
+       1,
+       "-5485783489201674074",
+       1,
+       18
+      ],
+      [
+       1443012,
+       "cc20be01_badb2aab",
+       1,
+       "1942186621592273097",
+       1,
+       20
+      ],
+      [
+       2255311,
+       "850166a8_bbdc09e7",
+       1,
+       "-6117892098821049336",
+       1,
+       20
+      ],
+      [
+       3171351,
+       "16d2b208_91f6c005",
+       1,
+       "8122767933928055894",
+       1,
+       20
+      ],
+      [
+       4117917,
+       "bcd5db94_a4f789c0",
+       1,
+       "-4577628700964513253",
+       0,
+       16
+      ]
+     ]
+    },
+    {
+     "name": "classifiers",
+     "kind": "rows",
+     "columns": [
+      "classifier_id",
+      "model",
+      "definition_version",
+      "prompt_sha256",
+      "created_at"
+     ],
+     "rows": [
+      [
+       1,
+       "claude-haiku-5-5",
+       1,
+       "fc2466b9d937410b0f605aaaaf3366ee3e8a27146d10da11b7d5783c5d38c5e5",
+       "2026-11-05T00:19:04Z"
+      ]
+     ]
+    },
+    {
+     "name": "runs",
+     "kind": "rows",
+     "columns": [
+      "run_id",
+      "classifier_id",
+      "started_at",
+      "finished_at",
+      "weeks",
+      "threads",
+      "calls",
+      "tokens",
+      "usd_equiv",
+      "seconds"
+     ],
+     "rows": [
+      [
+       1,
+       1,
+       "2026-11-05T00:18:44Z",
+       "2026-11-05T00:29:41Z",
+       "[\"2026-W44\"]",
+       2626,
+       27,
+       949223,
+       0.216694,
+       655.363
+      ],
+      [
+       6,
+       1,
+       "2026-11-05T01:27:02Z",
+       "2026-11-05T01:37:38Z",
+       "[\"2026-W39\"]",
+       2699,
+       27,
+       866289,
+       0.199505,
+       633.802
+      ],
+      [
+       11,
+       1,
+       "2026-11-05T02:51:44Z",
+       "2026-11-05T02:51:49Z",
+       "[\"2025-W45\", \"2025-W46\", \"2025-W47\", \"2025-W48\", \"2025-W49\", \"2025-W50\", \"2025-W51\", \"2025-W52\", \"2026-W01\", \"2026-W02\", \"2026-W03\", \"2026-W04\", \"2026-W05\", \"2026-W06\", \"2026-W07\", \"2026-W08\", \"2026-W09\", \"2026-W10\", \"2026-W11\", \"2026-W12\",…",
+       2,
+       1,
+       2586,
+       0.0005667,
+       4.33083
+      ],
+      [
+       16,
+       1,
+       "2026-11-11T12:20:52Z",
+       "2026-11-11T13:15:43Z",
+       "[\"2022-W01\", \"2022-W02\", \"2022-W03\", \"2022-W04\", \"2022-W05\", \"2022-W06\", \"2022-W07\", \"2022-W08\", \"2022-W09\", \"2022-W10\", \"2022-W11\", \"2022-W12\", \"2022-W13\", \"2022-W14\", \"2022-W15\", \"2022-W16\", \"2022-W17\", \"2022-W18\", \"2022-W19\", \"2022-W20\",…",
+       152222,
+       1537,
+       51053136,
+       10.482,
+       26142.9
+      ],
+      [
+       21,
+       1,
+       "2026-11-14T00:40:33Z",
+       "2026-11-14T00:42:05Z",
+       null,
+       3482,
+       35,
+       992360,
+       0.223152,
+       607.731
+      ]
+     ]
+    }
+   ]
+  },
+  "config/approved.json": {
+   "parts": [
+    {
+     "name": null,
+     "kind": "entries",
+     "columns": [
+      "at",
+      "value"
+     ],
+     "rows": [
+      [
+       "[\"about\"]",
+       "\"What the user has approved fetching. Fetchers read this file (cosh/approved.py) and refuse anything outside it, so a plain rerun can't exceed an approval. Widen a range only after the user approves, in the same commit as a line in docs/pla…"
+      ],
+      [
+       "[\"gerrit_weeks\"]",
+       "{\"from\": \"2017-W27\",\"to\": \"2026-W44\",\"used_by\": \"cosh extract, cosh backfill (closed CLs of chromium/src main, NoteDb refs)\",\"approved\": \"2026-11-03 (2025-W45..2026-W44), 2026-11-04 (from 2023-W26), 2026-11-08 (from 2020-W27), 2026-11-09 (f…"
+      ],
+      [
+       "[\"patchsets\"]",
+       "{\"since\": \"2023-06-26\",\"until\": \"2026-11-02\",\"used_by\": \"cosh patchsets: every patch set of CLs with a human non-owner comment, closed (or, if open, last updated) in [since, until)\",\"approved\": \"2026-11-07\"}"
+      ],
+      [
+       "[\"bug_footers\"]",
+       "{\"since\": \"2023-07-01\",\"used_by\": \"cosh.bugs ids: Bug:/Fixed: footers of commits on main landed since this date, plus Chrome Releases security bugs\",\"approved\": \"2026-11-08\"}"
+      ]
+     ]
+    }
+   ]
+  },
+  "config/affiliations.json5": {
+   "parts": [
+    {
+     "name": null,
+     "kind": "lines",
+     "columns": [
+      "line",
+      "text"
+     ],
+     "rows": [
+      [
+       1,
+       "/* Copyright 2021 The Chromium Authors"
+      ],
+      [
+       191,
+       "    affiliations: ["
+      ],
+      [
+       380,
+       "    affiliations: ["
+      ],
+      [
+       569,
+       "    affiliations: ["
+      ],
+      [
+       758,
+       "}"
+      ]
+     ]
+    }
+   ]
+  },
+  "config/bots.txt": {
+   "parts": [
+    {
+     "name": null,
+     "kind": "lines",
+     "columns": [
+      "line",
+      "text"
+     ],
+     "rows": [
+      [
+       1,
+       "# Regexes matched against account email (case-insensitive). Backstop for"
+      ],
+      [
+       3,
+       "gserviceaccount\\.com$"
+      ],
+      [
+       6,
+       "^autoroll"
+      ],
+      [
+       9,
+       "^chromium-internal-autoroll@"
+      ],
+      [
+       11,
+       "^mdb\\.chrome-release-translation-dump@"
+      ]
+     ]
+    }
+   ]
+  },
+  "config/paths.txt": {
+   "parts": [
+    {
+     "name": null,
+     "kind": "lines",
+     "columns": [
+      "line",
+      "text"
+     ],
+     "rows": [
+      [
+       1,
+       "# Which chromium/src paths the review metrics cover. Read by cosh/paths.py."
+      ],
+      [
+       15,
+       "# ChromeOS). Review there is mostly Google reviewing Google's product code, so"
+      ],
+      [
+       29,
+       "# webnn_internals/ and chrome/browser/ui/webui/webnn_internals/ (Intel and"
+      ],
+      [
+       44,
+       "include components/viz/"
+      ],
+      [
+       60,
+       "area third_party/blink/"
+      ]
+     ]
+    }
+   ]
+  },
+  "summaries/value-exchange": {
+   "parts": [
+    {
+     "name": "org_weekly.json",
+     "kind": "entries",
+     "columns": [
+      "at",
+      "value"
+     ],
+     "rows": [
+      [
+       "[\"rows\"][0]",
+       "{\"iso_week\": \"2017-W27\",\"org\": \"google.com\",\"share\": 0.996,\"reviewers\": 200,\"reviewed_cls\": 202,\"comments\": 1492,\"review_chars\": 188530,\"ai_comments\": 0,\"post_merge_comments\": 4,\"addressed_comments\": 1034,\"pending_comments\": 0,\"commits\": 75…"
+      ],
+      [
+       "[\"rows\"][1905]",
+       "{\"iso_week\": \"2020-W02\",\"org\": \"Other\",\"share\": 0.015,\"reviewers\": 3,\"reviewed_cls\": 3,\"comments\": 37,\"review_chars\": 3010,\"ai_comments\": 0,\"post_merge_comments\": 0,\"addressed_comments\": 32,\"pending_comments\": 0,\"commits\": 1,\"authors\": 1,\"s…"
+      ],
+      [
+       "[\"rows\"][3810]",
+       "{\"iso_week\": \"2022-W22\",\"org\": \"samsung.com\",\"share\": 0.0,\"reviewers\": 0,\"reviewed_cls\": 0,\"comments\": 0,\"review_chars\": 0,\"ai_comments\": 0,\"post_merge_comments\": 0,\"addressed_comments\": 0,\"pending_comments\": 0,\"commits\": 1,\"authors\": 1,\"sh…"
+      ],
+      [
+       "[\"rows\"][5716]",
+       "{\"iso_week\": \"2024-W40\",\"org\": \"google.com\",\"share\": 0.9189,\"reviewers\": 287,\"reviewed_cls\": 377,\"comments\": 2402,\"review_chars\": 391422,\"ai_comments\": 0,\"post_merge_comments\": 15,\"addressed_comments\": 1392,\"pending_comments\": 0,\"commits\": …"
+      ],
+      [
+       "[\"rows\"][7621]",
+       "{\"iso_week\": \"2026-W44\",\"org\": \"yandex-team.ru\",\"share\": 0.0,\"reviewers\": 0,\"reviewed_cls\": 0,\"comments\": 0,\"review_chars\": 0,\"ai_comments\": 0,\"post_merge_comments\": 0,\"addressed_comments\": 0,\"pending_comments\": 0,\"commits\": 4,\"authors\": 3,…"
+      ]
+     ]
+    },
+    {
+     "name": "weekly_totals.csv",
+     "kind": "rows",
+     "columns": [
+      "iso_week",
+      "main_cls",
+      "merged_cls",
+      "abandoned_cls",
+      "human_cls",
+      "bot_cls",
+      "human_cls_with_comments"
+     ],
+     "rows": [
+      [
+       "2017-W27",
+       "900",
+       "771",
+       "129",
+       "886",
+       "14",
+       "343"
+      ],
+      [
+       "2019-W45",
+       "2450",
+       "2089",
+       "361",
+       "2030",
+       "420",
+       "832"
+      ],
+      [
+       "2022-W09",
+       "3088",
+       "2502",
+       "586",
+       "1971",
+       "1117",
+       "1148"
+      ],
+      [
+       "2024-W26",
+       "3644",
+       "3069",
+       "575",
+       "2431",
+       "1213",
+       "1499"
+      ],
+      [
+       "2026-W44",
+       "7645",
+       "5823",
+       "1822",
+       "5426",
+       "2219",
+       "2778"
+      ]
+     ]
+    },
+    {
+     "name": "reviewer_weekly.json",
+     "kind": "entries",
+     "columns": [
+      "at",
+      "value"
+     ],
+     "rows": [
+      [
+       "[\"meta\"]",
+       "{\"generated_at\": \"2026-11-14T03:26:30Z\",\"columns\": [\"account_id\",\"org\",\"comments\",\"cls\",\"chars\",\"addressed\"],\"fold_into_other\": [\"Undisclosed\",\"gmail.com\"],\"scope\": \"every reviewer, one row per (week, account, org); same scope and weeks as …"
+      ],
+      [
+       "[\"orgs\"]",
+       "[\"Undisclosed\",\"accenture.com\",\"agilebits.com\",\"akamai.com\",\"alibaba-inc.com\",\"allautopartstore.com\",\"amazon.com\",\"amd.com\",\"amd.corp-partner.google.com\",\"arm.com\",\"audiopump.co\",\"bayramyilmaz.org\",\"bbc.co.uk\",\"brave.com\",\"bytedance.com\",\"c…"
+      ],
+      [
+       "[\"accounts\"]",
+       "{\"1000014\": \"Anton Vayvod\",\"1000015\": \"Sean Paul\",\"1000018\": \"Daniel Kurtz\",\"1000022\": \"Elly\",\"1000023\": \"Avi Drissman\",\"1000028\": \"Luigi Semenzato\",\"1000034\": \"Grant Grundler\",\"1000039\": \"Vadim Bendebury\",\"1000042\": \"Dan Erat\",\"1000045\": \"…"
+      ],
+      [
+       "[\"emails\"]",
+       "{\"1000014\": \"avayvod@chromium.org\",\"1000015\": \"seanpaul@chromium.org\",\"1000018\": \"djkurtz@chromium.org\",\"1000022\": \"ellyjones@chromium.org\",\"1000023\": \"avi@chromium.org\",\"1000028\": \"semenzato@chromium.org\",\"1000034\": \"grundler@chromium.org\"…"
+      ],
+      [
+       "[\"weeks\"]",
+       "{\"2017-W27\": [[1115876,29,77,5,5772,53],[1000887,29,74,6,8880,50],[1126674,29,73,3,10482,67],[1000128,29,68,7,8327,56],[1115976,29,47,8,4372,24],[1001472,29,41,7,4939,30],[1002725,29,35,2,3844,27],[1002854,29,31,4,4989,29],[1002871,29,31,3,…"
+      ]
+     ]
+    },
+    {
+     "name": "author_weekly.json",
+     "kind": "entries",
+     "columns": [
+      "at",
+      "value"
+     ],
+     "rows": [
+      [
+       "[\"meta\"]",
+       "{\"generated_at\": \"2026-11-14T03:26:30Z\",\"columns\": [\"account_id\",\"org\",\"commits\",\"files\"],\"fold_into_other\": [\"Undisclosed\",\"gmail.com\"],\"scope\": \"every commit author, one row per (week, account, org): human commits on main touching an in-s…"
+      ],
+      [
+       "[\"orgs\"]",
+       "[\"(no email)\",\".chromium.org\",\"0.me.uk\",\"0039d316-1c4b-4281-b951-d872f2087c98\",\"163.com\",\"1stprinciple.org\",\"360.cn\",\"Undisclosed\",\"a32f553a54.dev\",\"accenture.com\",\"acoomans.com\",\"adalogics.com\",\"adamyi.com\",\"addaleax.net\",\"agilebits.com\",\"…"
+      ],
+      [
+       "[\"accounts\"]",
+       "{\"1000014\": \"Anton Vayvod\",\"1000015\": \"Sean Paul\",\"1000022\": \"Elly\",\"1000023\": \"Avi Drissman\",\"1000028\": \"Luigi Semenzato\",\"1000039\": \"Vadim Bendebury\",\"1000042\": \"Dan Erat\",\"1000045\": \"James Cook\",\"1000046\": \"Albert Wong\",\"1000050\": \"Peng …"
+      ],
+      [
+       "[\"emails\"]",
+       "{\"1000014\": \"avayvod@chromium.org\",\"1000015\": \"seanpaul@chromium.org\",\"1000022\": \"ellyjones@chromium.org\",\"1000023\": \"avi@chromium.org\",\"1000028\": \"semenzato@chromium.org\",\"1000039\": \"vbendeb@google.com\",\"1000042\": \"derat@chromium.org\",\"100…"
+      ],
+      [
+       "[\"weeks\"]",
+       "{\"2017-W27\": [[1002258,104,23,44],[1115791,104,22,22],[1136504,104,17,17],[1166479,104,14,14],[1116070,104,12,45],[1115976,104,11,59],[1000023,104,10,1865],[1128431,104,10,23],[1115924,104,9,28],[1116047,104,9,154],[1211034,104,9,45],[11579…"
+      ]
+     ]
+    },
+    {
+     "name": "area_weekly.json",
+     "kind": "entries",
+     "columns": [
+      "at",
+      "value"
+     ],
+     "rows": [
+      [
+       "[\"nodes\"][0]",
+       "[-1,\"(no file)\",0]"
+      ],
+      [
+       "[\"nodes\"][3463]",
+       "[1182,\"layout/\",0]"
+      ],
+      [
+       "[\"nodes\"][6926]",
+       "[4433,\"policy/\",0]"
+      ],
+      [
+       "[\"nodes\"][10389]",
+       "[8462,\"app-history-entry/\",1]"
+      ],
+      [
+       "[\"nodes\"][13852]",
+       "[13837,\"webid/\",0]"
+      ]
+     ]
+    },
+    {
+     "name": "area_reviewers.json",
+     "kind": "entries",
+     "columns": [
+      "at",
+      "value"
+     ],
+     "rows": [
+      [
+       "[\"weeks\"][\"2017-W27\"]",
+       "[[0,114,1001472,2,1001934,2,1140584,2,1176519,2,1115949,1,1116027,1,1116046,1,1128432,1],[1,114,1000098,2,1003232,1,1141499,1],[13,114,1002725,1,1147299,1],[15,114,1000887,1,1001380,1],[16,114,1002691,5,1002513,3,1003325,2],[22,114,1000887,…"
+      ],
+      [
+       "[\"weeks\"][\"2019-W45\"]",
+       "[[0,114,1144344,6,1001934,4,1118421,4,1000763,3,1274627,3,1000023,2,1000623,2,1001470,2,1002681,2,1115893,2,1116059,2,1131764,2,1178124,2,1181219,2,1211509,2,1211592,2,1000111,1,1000158,1,1000164,1,1000191,1,1000193,1,1000303,1,1000640,1,10…"
+      ],
+      [
+       "[\"weeks\"][\"2022-W09\"]",
+       "[[0,64,1537267,1],[0,114,1115916,24,1001168,19,1000101,16,1115958,14,1186534,13,1001529,12,1115745,11,1160859,10,1499972,10,1105344,9,1196199,9,1306173,9,1001629,8,1110037,8,1161814,8,1180589,8,1000023,7,1000119,7,1001934,7,1002603,7,111597…"
+      ],
+      [
+       "[\"weeks\"][\"2024-W26\"]",
+       "[[0,7,1196635,2],[0,114,1113941,29,1001934,26,1285054,25,1116027,20,1357502,20,1000887,19,1115863,18,1122966,17,1001168,13,1000101,12,1110037,12,1125479,12,1002340,11,1115916,11,1115976,11,1385869,11,1413245,11,1128431,10,1537007,10,1109584…"
+      ],
+      [
+       "[\"weeks\"][\"2026-W44\"]",
+       "[[0,7,1002525,3,1002481,2,1231371,2,1161294,1,3395304,1],[0,114,1285054,66,1357502,61,1113941,49,1128431,31,1000045,25,1160859,24,1001168,21,1110037,20,1000022,19,1115919,18,1116027,17,1241393,17,1001216,16,1001934,16,1115958,16,1524878,16,…"
+      ]
+     ]
+    },
+    {
+     "name": "area_commits.json",
+     "kind": "entries",
+     "columns": [
+      "at",
+      "value"
+     ],
+     "rows": [
+      [
+       "[\"weeks\"][\"2017-W27\"]",
+       "[[1,114,72],[1,142,2],[1,188,1],[13,114,3],[15,114,7],[16,114,6],[19,114,2],[19,228,1],[22,114,3],[23,114,6],[23,142,3],[28,114,1],[32,114,12],[40,142,2],[41,114,8],[48,114,3],[51,114,1],[52,114,1],[54,114,2],[55,114,4],[57,114,2],[58,114,3…"
+      ],
+      [
+       "[\"weeks\"][\"2019-W45\"]",
+       "[[1,65,1],[1,114,49],[1,136,1],[13,114,3],[15,114,13],[16,114,9],[19,114,8],[19,136,1],[23,114,3],[28,114,2],[29,114,3],[32,114,8],[41,114,7],[42,114,2],[51,114,3],[58,114,3],[61,114,8],[63,114,1],[66,114,3],[68,114,2],[75,114,6],[80,114,2]…"
+      ],
+      [
+       "[\"weeks\"][\"2022-W09\"]",
+       "[[1,7,1],[1,114,26],[1,136,2],[1,320,1],[13,114,3],[14,114,1],[15,114,17],[15,136,1],[16,114,8],[22,114,4],[23,114,2],[28,114,2],[29,114,16],[29,136,1],[32,114,17],[32,317,1],[35,114,1],[37,114,1],[39,317,1],[41,114,5],[48,114,2],[51,114,2]…"
+      ],
+      [
+       "[\"weeks\"][\"2024-W26\"]",
+       "[[1,48,1],[1,114,52],[1,137,1],[1,142,1],[13,114,4],[15,114,23],[15,208,2],[16,114,10],[16,147,1],[19,114,4],[19,197,1],[22,114,1],[23,114,6],[23,197,1],[28,114,1],[29,114,9],[32,114,28],[32,197,1],[37,114,3],[40,114,1],[41,114,1],[48,114,1…"
+      ],
+      [
+       "[\"weeks\"][\"2026-W44\"]",
+       "[[1,7,3],[1,114,37],[1,136,4],[1,197,1],[12,114,6],[13,114,7],[15,114,8],[16,114,15],[16,197,3],[19,114,7],[19,146,2],[20,114,2],[21,114,1],[22,114,4],[23,114,5],[28,114,3],[29,114,5],[32,7,1],[32,114,45],[34,114,1],[37,114,6],[39,114,1],[4…"
+      ]
+     ]
+    },
+    {
+     "name": "area_authors.json",
+     "kind": "entries",
+     "columns": [
+      "at",
+      "value"
+     ],
+     "rows": [
+      [
+       "[\"weeks\"][\"2017-W27\"]",
+       "[[1,114,1115791,22,1136504,17,1166479,14,1115987,4,4778721,2,1000023,1,1002100,1,1003189,1,1105284,1,1105344,1,1106294,1,1115903,1,1118354,1,1119849,1,1123275,1,1126674,1,1157930,1,1167909,1],[1,142,1112153,1,1177311,1],[13,114,1126674,1,11…"
+      ],
+      [
+       "[\"weeks\"][\"2019-W45\"]",
+       "[[1,65,1353839,1],[1,114,1118373,13,1116066,2,1141154,2,1167961,2,1286313,2,1000045,1,1000602,1,1000763,1,1001385,1,1001604,1,1002092,1,1002927,1,1003006,1,1115523,1,1115878,1,1115884,1,1117479,1,1119600,1,1119849,1,1126674,1,1130679,1,1161…"
+      ],
+      [
+       "[\"weeks\"][\"2022-W09\"]",
+       "[[1,7,1535307,1],[1,114,1001562,4,1001168,2,1163599,2,1300147,2,1306173,2,1000768,1,1002481,1,1129860,1,1139659,1,1160861,1,1163549,1,1167961,1,1174099,1,1175332,1,1215804,1,1237531,1,1286337,1,1395206,1,1519855,1],[1,136,1244248,1,1484492,…"
+      ],
+      [
+       "[\"weeks\"][\"2024-W26\"]",
+       "[[1,48,1479859,1],[1,114,1001562,3,1001939,3,1002219,3,1000097,2,1116070,2,1126674,2,1453423,2,1534027,2,1577372,2,1000781,1,1000887,1,1001168,1,1001604,1,1001934,1,1002174,1,1003214,1,1115868,1,1115876,1,1116294,1,1121230,1,1147264,1,11587…"
+      ],
+      [
+       "[\"weeks\"][\"2026-W44\"]",
+       "[[1,7,5223930,1,5244621,1,5252619,1],[1,114,1128431,3,1001939,2,1126674,2,1526357,2,3539884,2,4982778,2,1001168,1,1001250,1,1001934,1,1002219,1,1002340,1,1115893,1,1116294,1,1126910,1,1130134,1,1133074,1,1160944,1,1166470,1,1171061,1,131307…"
+      ]
+     ]
+    },
+    {
+     "name": "thread_examples.json",
+     "kind": "entries",
+     "columns": [
+      "at",
+      "value"
+     ],
+     "rows": [
+      [
+       "[\"threads\"][0]",
+       "{\"week\": \"2025-W45\",\"outcome\": \"done_reply\",\"cl\": 7064531,\"root\": \"9a8a18f9_547c8078\",\"path\": \"third_party/blink/renderer/core/html/forms/text_input_type.cc\",\"more\": 0,\"messages\": [[\"reviewer\",\"Is it correct at this stage that this only app…"
+      ],
+      [
+       "[\"threads\"][156]",
+       "{\"week\": \"2026-W06\",\"outcome\": \"done_reply\",\"cl\": 7534424,\"root\": \"1e28c430_ecb5e32d\",\"path\": \"net/disk_cache/sql/entry_db_handle.cc\",\"more\": 0,\"messages\": [[\"reviewer\",\"Given it's not threadsafe refcounted and not expected to be passed alo…"
+      ],
+      [
+       "[\"threads\"][312]",
+       "{\"week\": \"2026-W19\",\"outcome\": \"done_reply\",\"cl\": 7796683,\"root\": \"c9a9e0ec_83e02537\",\"path\": \"tools/metrics/histograms/metadata/glic/histograms.xml\",\"more\": 0,\"messages\": [[\"reviewer\",\"Ditto above\"],[\"owner\",\"Done\"]]}"
+      ],
+      [
+       "[\"threads\"][467]",
+       "{\"week\": \"2026-W31\",\"outcome\": \"no_reply\",\"cl\": 8170921,\"root\": \"44dcb669_7264a51f\",\"path\": \"/PATCHSET_LEVEL\",\"more\": 0,\"messages\": [[\"reviewer\",\"lgtm w/ nit\"]]}"
+      ],
+      [
+       "[\"threads\"][623]",
+       "{\"week\": \"2026-W44\",\"outcome\": \"no_reply\",\"cl\": 8614132,\"root\": \"48d11739_b30152a4\",\"path\": \"build/knowledge_base/avoid-overriding-variables-with-transformed-results.md\",\"more\": 0,\"messages\": [[\"reviewer\",\"This seems too verbose for what sh…"
+      ]
+     ]
+    },
+    {
+     "name": "classifier_prompt.json",
+     "kind": "entries",
+     "columns": [
+      "at",
+      "value"
+     ],
+     "rows": [
+      [
+       "[\"model\"]",
+       "\"haiku\""
+      ],
+      [
+       "[\"system\"]",
+       "\"You are a precise classifier of code-review threads.\""
+      ],
+      [
+       "[\"prompt\"]",
+       "\"Each item is a Gerrit code-review thread on a Chromium CL. REVIEWER wrote the\\nfirst comment; OWNER is the CL's author; OTHER is anyone else. Decide whether\\nthe feedback in the thread led the owner to change the CL itself, in this CL:\\n\\n…"
+      ]
+     ]
+    }
+   ]
+  },
+  "docs/audits/": {
+   "parts": [
+    {
+     "name": null,
+     "kind": "files",
+     "columns": [
+      "file",
+      "bytes"
+     ],
+     "total": 2,
+     "rows": [
+      [
+       "classifier-2026-11-04-threads.jsonl",
+       488965
+      ],
+      [
+       "classifier-2026-11-04.jsonl",
+       258379
+      ]
+     ]
+    }
+   ]
+  },
+  "data/private/git/chromium-patchsets.git/": {
+   "parts": [
+    {
+     "name": null,
+     "kind": "refs",
+     "columns": [
+      "ref",
+      "object"
+     ],
+     "total": 2018759,
+     "rows": [
+      [
+       "refs/patchsets/1006660/1",
+       "d741da3026577"
+      ],
+      [
+       "refs/patchsets/5506743/11",
+       "45fea6f352a72"
+      ],
+      [
+       "refs/patchsets/6503075/1",
+       "3ab2bf43e11e3"
+      ],
+      [
+       "refs/patchsets/7703252/4",
+       "791b0fa0346c9"
+      ],
+      [
+       "refs/patchsets/994543/1",
+       "8b5cf63f80356"
+      ]
+     ]
+    }
+   ]
+  },
+  "data/public/radar/raw/": {
+   "parts": [
+    {
+     "name": null,
+     "kind": "files",
+     "columns": [
+      "file",
+      "bytes"
+     ],
+     "total": 43,
+     "rows": [
+      [
+       "browser_all_1d_2023-07-01_2023-10-01.json",
+       63323
+      ],
+      [
+       "browser_all_1d_2026-01-01_2026-04-01.json",
+       63504
+      ],
+      [
+       "browser_ios_all_1d_2025-01-01_2025-04-01.json",
+       39069
+      ],
+      [
+       "os_all_1d_2024-04-01_2024-07-01.json",
+       14826
+      ],
+      [
+       "os_all_1d_2026-10-01_2026-11-04.json",
+       6272
+      ]
+     ]
+    }
+   ]
+  },
+  "data/public/radar/adhoc/": {
+   "parts": [
+    {
+     "name": null,
+     "kind": "files",
+     "columns": [
+      "file",
+      "bytes"
+     ],
+     "total": 119,
+     "rows": [
+      [
+       "2026-11-04-chromederivative/an.py",
+       2270
+      ],
+      [
+       "2026-11-04-chromederivative/gb_loc_PL.json",
+       13663
+      ],
+      [
+       "2026-11-04-chromederivative/ignored/s_DEVICE_TYPE_Safari_post.json",
+       584
+      ],
+      [
+       "2026-11-04-chromederivative/ignored/v_Firefox.json",
+       2137
+      ],
+      [
+       "2026-11-04-chromederivative/vw_ALL.json",
+       2949
+      ]
+     ]
+    }
+   ]
+  },
+  "data/public/radar_browser_share.csv": {
+   "parts": [
+    {
+     "name": null,
+     "kind": "rows",
+     "columns": [
+      "period",
+      "period_start",
+      "period_end",
+      "granularity",
+      "device",
+      "browser",
+      "is_chromium",
+      "kind",
+      "days",
+      "raw_share",
+      "chromium_share"
+     ],
+     "rows": [
+      [
+       "2023-W26",
+       "2023-06-26",
+       "2023-07-02",
+       "week",
+       "all",
+       "ChromeMobile",
+       "1",
+       "browser",
+       "2",
+       "0.368168",
+       "0.405943"
+      ],
+      [
+       "2024-W28",
+       "2024-07-08",
+       "2024-07-14",
+       "week",
+       "all",
+       "Safari",
+       "0",
+       "browser",
+       "7",
+       "0.038265",
+       ""
+      ],
+      [
+       "2025-W30",
+       "2025-07-21",
+       "2025-07-27",
+       "week",
+       "all",
+       "FirefoxMobile",
+       "0",
+       "browser",
+       "7",
+       "0.000000",
+       ""
+      ],
+      [
+       "2026-W32",
+       "2026-08-03",
+       "2026-08-09",
+       "week",
+       "all",
+       "ChromeHeadless",
+       "1",
+       "bot",
+       "7",
+       "0.000005",
+       ""
+      ],
+      [
+       "2026-11",
+       "2026-11-01",
+       "2026-11-30",
+       "month",
+       "all",
+       "Flipboard",
+       "1",
+       "in_app",
+       "3",
+       "0.000000",
+       "0.000000"
+      ]
+     ]
+    }
+   ]
+  },
+  "config/browsers.csv": {
+   "parts": [
+    {
+     "name": null,
+     "kind": "rows",
+     "columns": [
+      "browser",
+      "is_chromium",
+      "kind",
+      "notes"
+     ],
+     "rows": [
+      [
+       "Chrome",
+       "1",
+       "browser",
+       "Chrome desktop. Absorbs Chromium forks that send Chrome's UA and Client Hints (Vivaldi, Arc, most Brave traffic)."
+      ],
+      [
+       "Brave",
+       "1",
+       "browser",
+       "Brave sends Chrome's UA (it names itself only in Sec-CH-UA), so Radar counts it as Chrome; this row is about 0.002%. brave.com is excluded from the ratio."
+      ],
+      [
+       "Facebook",
+       "1",
+       "in_app",
+       "Facebook in-app browser (Android WebView; the iOS WKWebView part is excluded with the rest of iOS). Credited to meta.com."
+      ],
+      [
+       "Safari",
+       "0",
+       "browser",
+       "WebKit."
+      ],
+      [
+       "Other",
+       "0",
+       "other",
+       "Radar's remainder bucket beyond limitPerGroup; never counted as Chromium."
+      ]
+     ]
+    }
+   ]
+  },
+  "config/org_browsers.csv": {
+   "parts": [
+    {
+     "name": null,
+     "kind": "rows",
+     "columns": [
+      "org_domain",
+      "browser",
+      "notes"
+     ],
+     "rows": [
+      [
+       "google.com",
+       "Chrome",
+       "Desktop Chrome."
+      ],
+      [
+       "samsung.com",
+       "SamsungInternet",
+       ""
+      ],
+      [
+       "meta.com",
+       "Instagram",
+       "Instagram app's in-app browser (Android; iOS excluded)."
+      ],
+      [
+       "amazon.com",
+       "Silk",
+       ""
+      ],
+      [
+       "alibaba-inc.com",
+       "UCBrowserMobile",
+       ""
+      ]
+     ]
+    }
+   ]
+  },
+  "data/private/sentiment/": {
+   "withheld": "Review comments with who wrote them, the input to tone scoring; tone stays unpublished per person (ground rule 5).",
+   "parts": []
+  },
+  "data/private/sentiment.sqlite": {
+   "parts": [
+    {
+     "name": "scores",
+     "kind": "rows",
+     "columns": [
+      "id",
+      "prompt_id",
+      "input_hash",
+      "score",
+      "ai",
+      "why"
+     ],
+     "rows": [],
+     "withheld": "Tone scores and the model's reasons per comment; only praise and anonymous samples are published (ground rule 5)."
+    },
+    {
+     "name": "prompts",
+     "kind": "rows",
+     "columns": [
+      "prompt_id",
+      "version",
+      "sha256",
+      "model",
+      "text",
+      "created_at"
+     ],
+     "rows": [
+      [
+       1,
+       "v3",
+       "4d6a6691ab18790fb7aec34e525fe3d524e45107ba24fd9626ed1203c42249df",
+       "haiku",
+       "Each item is one comment from a Chromium Gerrit code review, with earlier\ncomments of its thread for context. AUTHOR is the CL's owner, REVIEWER a\nreviewer, AI an automated AI reviewer or agent. Rate the emotional tone of the\ncomment marked…",
+       "2026-11-05T15:56:42Z"
+      ]
+     ]
+    },
+    {
+     "name": "screens",
+     "kind": "rows",
+     "columns": [
+      "id",
+      "screen_sha",
+      "flagged"
+     ],
+     "rows": [],
+     "withheld": "Screening verdicts on negative comments (ground rule 5)."
+    }
+   ]
+  },
+  "data/private/sentiment/tune": {
+   "withheld": "The hand-labelled gold sets stay private.",
+   "parts": []
+  },
+  "scripts/sentiment_prompts/": {
+   "parts": [
+    {
+     "name": null,
+     "kind": "files",
+     "columns": [
+      "file",
+      "bytes"
+     ],
+     "total": 3,
+     "rows": [
+      [
+       "v1.txt",
+       2118
+      ],
+      [
+       "v2.txt",
+       3038
+      ],
+      [
+       "v3.txt",
+       3744
+      ]
+     ]
+    }
+   ]
+  },
+  "summaries/sentiment": {
+   "parts": [
+    {
+     "name": "sentiment_monthly*.json",
+     "kind": "entries",
+     "columns": [
+      "at",
+      "value"
+     ],
+     "rows": [
+      [
+       "[\"generated_at\"]",
+       "\"2026-11-10T22:33:03Z\""
+      ],
+      [
+       "[\"sample\"]",
+       "\"sample-5pct\""
+      ],
+      [
+       "[\"authors\"]",
+       "\"everyone\""
+      ],
+      [
+       "[\"months\"]",
+       "[{\"m\": \"2023-07\",\"full\": false,\"month\": {\"n\": 2313,\"mean\": 0.0144,\"lo\": 0.0105,\"hi\": 0.0184,\"glowing\": 0.0091,\"glowing_ci\": [0.00595,0.01384],\"angry\": 0.0108,\"angry_ci\": [0.00733,0.01591],\"ai\": 0.0,\"ai_ci\": [0,0.00166]},\"span\": [\"2023-07\",\"…"
+      ],
+      [
+       "[\"missing\"]",
+       "0"
+      ]
+     ]
+    },
+    {
+     "name": "sentiment_praise*.json",
+     "kind": "entries",
+     "columns": [
+      "at",
+      "value"
+     ],
+     "rows": [
+      [
+       "[\"generated_at\"]",
+       "\"2026-11-10T22:51:51Z\""
+      ],
+      [
+       "[\"weeks\"]",
+       "[\"2025-W45\",\"2026-W44\"]"
+      ],
+      [
+       "[\"angry\"]",
+       "-0.3"
+      ],
+      [
+       "[\"coverage\"]",
+       "[{\"week\": \"2025-W45\",\"unscored\": 0},{\"week\": \"2025-W46\",\"unscored\": 0},{\"week\": \"2025-W47\",\"unscored\": 0},{\"week\": \"2025-W48\",\"unscored\": 0},{\"week\": \"2025-W49\",\"unscored\": 0},{\"week\": \"2025-W50\",\"unscored\": 0},{\"week\": \"2025-W51\",\"unscored…"
+      ],
+      [
+       "[\"net\"]",
+       "{\"all\": {\"given\": [{\"email\": \"myuu@google.com\",\"name\": \"Menghan Yang\",\"score\": 31.0,\"praise\": 71},{\"email\": \"tjudkins@chromium.org\",\"name\": \"Tim\",\"score\": 28.7,\"praise\": 68},{\"email\": \"creis@chromium.org\",\"name\": \"Charlie Reis\",\"score\": 23.…"
+      ]
+     ]
+    },
+    {
+     "name": "sentiment_samples*.json",
+     "kind": "entries",
+     "columns": [
+      "at",
+      "value"
+     ],
+     "rows": [
+      [
+       "[\"generated_at\"]",
+       "\"2026-11-10T22:39:53Z\""
+      ],
+      [
+       "[\"weeks\"]",
+       "[\"2025-W45\",\"2026-W44\"]"
+      ],
+      [
+       "[\"authors\"]",
+       "\"everyone\""
+      ],
+      [
+       "[\"praise_min\"]",
+       "0.5"
+      ],
+      [
+       "[\"periods\"]",
+       "{\"all\": {\"praise\": [{\"text\": \"@futhark@chromium.org, best sample of making complicated things look easy, thanks for properly fixing it, amazing to watch/learn! 🥰\",\"score\": 0.9,\"date\": \"2026-08-20\",\"writer\": \"Helmut Januschka\",\"recipient\": \"…"
+      ]
+     ]
+    },
+    {
+     "name": "sentiment_{recent,comments}*.json",
+     "kind": "entries",
+     "columns": [
+      "at",
+      "value"
+     ],
+     "rows": [
+      [
+       "[\"generated_at\"]",
+       "\"2026-11-10T22:38:10Z\""
+      ],
+      [
+       "[\"weeks\"]",
+       "[\"2025-W45\",\"2026-W44\"]"
+      ],
+      [
+       "[\"thresholds\"]",
+       "{\"glowing\": 0.4,\"angry\": -0.3}"
+      ],
+      [
+       "[\"weekly\"]",
+       "[{\"week\": \"2025-W45\",\"n\": 10025,\"mean\": 0.0103,\"glowing\": 0.0082,\"angry\": 0.0143,\"ai\": 9},{\"week\": \"2025-W46\",\"n\": 9098,\"mean\": 0.0089,\"glowing\": 0.0076,\"angry\": 0.0147,\"ai\": 2},{\"week\": \"2025-W47\",\"n\": 10140,\"mean\": 0.0119,\"glowing\": 0.009…"
+      ],
+      [
+       "[\"periods\"]",
+       "{\"all\": {\"weeks\": [\"2025-W45\",\"2026-W44\"],\"n_trivial\": 200154,\"total\": {\"n\": 590046,\"mean\": 0.0107,\"glowing\": 0.0081,\"angry\": 0.0154,\"ai\": 1384},\"dist\": [[-1.0,7],[-0.9,13],[-0.8,14],[-0.7,25],[-0.6,310],[-0.5,306],[-0.4,730],[-0.3,7664],[-…"
+      ]
+     ]
+    },
+    {
+     "name": "sentiment_people.json",
+     "kind": "entries",
+     "columns": [
+      "at",
+      "value"
+     ],
+     "rows": [
+      [
+       "[\"people\"][\"1071013773@qq.com\"]",
+       "\"lin huang\""
+      ],
+      [
+       "[\"people\"][\"elormcoch@microsoft.com\"]",
+       "\"Sylvester Elorm Coch\""
+      ],
+      [
+       "[\"people\"][\"lalday@google.com\"]",
+       "\"Laura Lucas Alday (xWF)\""
+      ],
+      [
+       "[\"people\"][\"ruoxih@google.com\"]",
+       "\"Ruoxi He\""
+      ],
+      [
+       "[\"people\"][\"zzslipyx@gmail.com\"]",
+       "\"Joseph Thornton\""
+      ]
+     ]
+    }
+   ]
+  },
+  "shared/chromium": {
+   "parts": [
+    {
+     "name": null,
+     "kind": "commits",
+     "columns": [
+      "commit",
+      "landed",
+      "subject"
+     ],
+     "rows": [
+      [
+       "733ab8429e3a5",
+       "2026-11-07T07:48:45-08:00",
+       "Roll Help App from daGlMaPDWGLGHgEAZ... to Sh0_-mb11IJ5d1kb1..."
+      ],
+      [
+       "14e55558ce646",
+       "2026-11-07T07:41:30-08:00",
+       "Roll ChromeOS Bigcore AFDO profile from 159-8117.0-1793589435-benchmark-159.0.8139.0_pre1732578-r1 to 159-8117.0-1793589435-benchmark-159.0.8148.0_pre1738230-r1"
+      ],
+      [
+       "2f7f6a03169ab",
+       "2026-11-07T07:20:55-08:00",
+       "Roll WebView ARM64 Orderfile from dECF5Jq_W-Xjyt0lA... to 2Xa2bYszS1uMNFLPz..."
+      ],
+      [
+       "8229683bb7738",
+       "2026-11-07T07:20:33-08:00",
+       "[CT] Automatic update from google3"
+      ],
+      [
+       "a9c91a92a3350",
+       "2026-11-07T07:18:54-08:00",
+       "Roll Chrome Win32 PGO Profile"
+      ]
+     ]
+    }
+   ]
+  },
+  "data/private/commits.sqlite": {
+   "parts": [
+    {
+     "name": "commits",
+     "kind": "rows",
+     "columns": [
+      "commit_id",
+      "sha",
+      "author_email",
+      "author_name",
+      "authored_at",
+      "landed_at",
+      "change_number",
+      "is_bot",
+      "reviewed_by",
+      "reverts_sha",
+      "is_revert",
+      "is_reland",
+      "ai_marker",
+      "files",
+      "ins",
+      "dels",
+      "is_lsc"
+     ],
+     "rows": [
+      [
+       -379310,
+       "c14d891d44f0afff64e56ed7c9702df1d807b1ee",
+       "initial.commit@0039d316-1c4b-4281-b951-d872f2087c98",
+       "initial.commit",
+       1217095513,
+       1217095513,
+       null,
+       0,
+       null,
+       null,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0
+      ],
+      [
+       39878,
+       "9ebd37eb06f548f94cab9719b07ad4615b4725cd",
+       "moshayedi@chromium.org",
+       "moshayedi",
+       1497989777,
+       1497989777,
+       null,
+       0,
+       null,
+       null,
+       0,
+       0,
+       0,
+       1,
+       1,
+       7,
+       0
+      ],
+      [
+       459066,
+       "0fd949cccacd5addf9c51c8db7bd9b419d2c8abb",
+       "chromium-internal-autoroll@skia-corp.google.com.iam.gserviceaccount.com",
+       "chromium-internal-autoroll",
+       1625860863,
+       1625860863,
+       3018117,
+       1,
+       "[\"petewil@chromium.org\"]",
+       null,
+       0,
+       0,
+       0,
+       1,
+       1,
+       1,
+       0
+      ],
+      [
+       878254,
+       "7f752f40bff48fa66dd027ceaa4db118f67c4292",
+       "rockot@google.com",
+       "Ken Rockot",
+       1719340401,
+       1719340401,
+       5655251,
+       0,
+       "[\"oksamyt@chromium.org\"]",
+       null,
+       0,
+       0,
+       0,
+       1,
+       3,
+       0,
+       0
+      ],
+      [
+       1297442,
+       "733ab8429e3a5f881e2fd576f01942849cae7aef",
+       "chromium-internal-autoroll@skia-corp.google.com.iam.gserviceaccount.com",
+       "chromium-internal-autoroll@skia-corp.google.com.iam.gserviceaccount.com",
+       1794066525,
+       1794066525,
+       8760981,
+       1,
+       null,
+       null,
+       0,
+       0,
+       0,
+       1,
+       1,
+       1,
+       0
+      ]
+     ]
+    },
+    {
+     "name": "commit_files",
+     "kind": "rows",
+     "columns": [
+      "commit_id",
+      "path_id",
+      "ins",
+      "dels"
+     ],
+     "rows": [
+      [
+       -379309,
+       78962,
+       -1,
+       -1
+      ],
+      [
+       3292,
+       36885,
+       5,
+       0
+      ],
+      [
+       357818,
+       634829,
+       0,
+       5
+      ],
+      [
+       796053,
+       1003293,
+       176,
+       0
+      ],
+      [
+       1297442,
+       8,
+       1,
+       1
+      ]
+     ]
+    },
+    {
+     "name": "paths",
+     "kind": "rows",
+     "columns": [
+      "path_id",
+      "path"
+     ],
+     "rows": [
+      [
+       1,
+       "third_party/WebKit/LayoutTests/http/tests/inspector-protocol/request-referrer-policy-expected.txt"
+      ],
+      [
+       410653,
+       "third_party/WebKit/LayoutTests/editing/selection/paragraph-with-ruby.html"
+      ],
+      [
+       821306,
+       "third_party/blink/web_tests/wpt_internal/css/css-conditional/container-queries/at-container-007.html"
+      ],
+      [
+       1231959,
+       "chrome/browser/resources/chromeos/accessibility/chromevox/mv2/background/event/base_automation_handler.ts"
+      ],
+      [
+       1642612,
+       "chrome/browser/chrome_frame.h"
+      ]
+     ]
+    },
+    {
+     "name": "owners_added",
+     "kind": "rows",
+     "columns": [
+      "commit_id",
+      "seq",
+      "email",
+      "path"
+     ],
+     "rows": [
+      [
+       -324573,
+       0,
+       "ben@chromium.org",
+       "ui/OWNERS"
+      ],
+      [
+       -81445,
+       5,
+       "dglazkov@chromium.org",
+       "extensions/browser/guest_view/extension_view/whitelist/OWNERS"
+      ],
+      [
+       191786,
+       0,
+       "dpranke@chromium.org",
+       "buildtools/OWNERS"
+      ],
+      [
+       610052,
+       1,
+       "bfranz@chromium.org",
+       "ash/curtain/OWNERS"
+      ],
+      [
+       1296925,
+       2,
+       "hitarthkothari@google.com",
+       "chrome/browser/tab_ui/android/java/src/org/chromium/chrome/browser/tab_ui/undo_tab_close_snackbar/OWNERS"
+      ]
+     ]
+    },
+    {
+     "name": "repetition",
+     "kind": "rows",
+     "columns": [
+      "commit_id",
+      "ratio"
+     ],
+     "rows": [
+      [
+       11816,
+       0.769324
+      ],
+      [
+       333226,
+       0.334862
+      ],
+      [
+       654623,
+       0.39165
+      ],
+      [
+       976043,
+       0.129187
+      ],
+      [
+       1297428,
+       0.265517
+      ]
+     ]
+    },
+    {
+     "name": "gcommits",
+     "kind": "rows",
+     "columns": [
+      "commit_id",
+      "sha",
+      "author_email",
+      "authored_at",
+      "landed_at",
+      "change_number",
+      "is_bot",
+      "reviewed_by",
+      "reverts_sha",
+      "is_reland",
+      "files",
+      "ins",
+      "dels"
+     ],
+     "rows": [
+      [
+       1,
+       "dfc503bbe19442dba1645b811133defa7e1224f4",
+       "jochen@chromium.org",
+       1483348018,
+       1483348239,
+       null,
+       0,
+       null,
+       null,
+       0,
+       7,
+       136,
+       1
+      ],
+      [
+       2,
+       "92fbcaa2af3176e2966fff662183613c37e83396",
+       "v8-autoroll@chromium.org",
+       1483349214,
+       1483349402,
+       null,
+       0,
+       null,
+       null,
+       0,
+       1,
+       1,
+       1
+      ],
+      [
+       3,
+       "2c2151e5750018db70f98d773494d41b711f9ff7",
+       "msarda@chromium.org",
+       1483349614,
+       1483349842,
+       null,
+       0,
+       null,
+       null,
+       0,
+       2,
+       0,
+       10
+      ],
+      [
+       4,
+       "6fa6a26d7a19515787ae8fdfe6baaee3a6905b6f",
+       "perkj@chromium.org",
+       1483350870,
+       1483351053,
+       null,
+       0,
+       null,
+       null,
+       0,
+       1,
+       1,
+       1
+      ],
+      [
+       5,
+       "22b65df274844b3a459a8dd02cce8f8eaa655a7f",
+       "olivierrobin@chromium.org",
+       1483351844,
+       1483352056,
+       null,
+       0,
+       null,
+       null,
+       0,
+       1,
+       18,
+       0
+      ]
+     ]
+    },
+    {
+     "name": "gfiles",
+     "kind": "rows",
+     "columns": [
+      "commit_id",
+      "path_id",
+      "ins",
+      "dels"
+     ],
+     "rows": [
+      [
+       1,
+       1,
+       9,
+       0
+      ],
+      [
+       1,
+       2,
+       60,
+       0
+      ],
+      [
+       1,
+       3,
+       36,
+       0
+      ],
+      [
+       1,
+       4,
+       2,
+       1
+      ],
+      [
+       1,
+       5,
+       11,
+       0
+      ]
+     ]
+    }
+   ]
+  },
+  "data/private/balance-timeline.sqlite": {
+   "parts": [
+    {
+     "name": "uploads",
+     "kind": "rows",
+     "columns": [
+      "change_number",
+      "ps",
+      "at",
+      "uploader",
+      "kind",
+      "sha"
+     ],
+     "rows": [
+      [
+       360520,
+       1,
+       1468519575,
+       1160910,
+       "initial",
+       "84f364ef7d88d10ba4a5cb1e5c1505300bb16052"
+      ],
+      [
+       2495696,
+       3,
+       1603498252,
+       1116284,
+       "rework",
+       "aa17ca5669b2d7b812443e933b5f672e0004bd30"
+      ],
+      [
+       4314162,
+       5,
+       1678193690,
+       1367901,
+       "rework",
+       "5409dbf4270f577b85d2bade2504e41442804f98"
+      ],
+      [
+       6368814,
+       21,
+       1743001550,
+       1512158,
+       "rework",
+       "fd3424695eceb9d2f35f1082b07d60488a7a391e"
+      ],
+      [
+       8739321,
+       2,
+       1793851686,
+       1000175,
+       "rework",
+       "a40f8166cc5fcf09fb2796d5b68c34a9309bdbc2"
+      ]
+     ]
+    },
+    {
+     "name": "attention",
+     "kind": "rows",
+     "columns": [
+      "change_number",
+      "account_id",
+      "start_at",
+      "end_at"
+     ],
+     "rows": [
+      [
+       532294,
+       1001815,
+       1593877182,
+       1603356253
+      ],
+      [
+       3645073,
+       1527289,
+       1652904902,
+       1652942956
+      ],
+      [
+       4971177,
+       1357502,
+       1698163969,
+       1698254538
+      ],
+      [
+       6624773,
+       1123071,
+       1749148283,
+       1749148582
+      ],
+      [
+       8739321,
+       1528762,
+       1793851738,
+       1793853609
+      ]
+     ]
+    },
+    {
+     "name": "votes",
+     "kind": "rows",
+     "columns": [
+      "change_number",
+      "voter",
+      "value",
+      "at",
+      "ps"
+     ],
+     "rows": [
+      [
+       360520,
+       1160910,
+       0,
+       1475007914,
+       2
+      ],
+      [
+       2583012,
+       1002897,
+       1,
+       1610039424,
+       4
+      ],
+      [
+       4300773,
+       1512652,
+       1,
+       1677767914,
+       1
+      ],
+      [
+       6222782,
+       1001168,
+       1,
+       1738626051,
+       5
+      ],
+      [
+       8738882,
+       1546379,
+       1,
+       1793853677,
+       2
+      ]
+     ]
+    },
+    {
+     "name": "timeline_done",
+     "kind": "rows",
+     "columns": [
+      "change_number",
+      "tip"
+     ],
+     "rows": [
+      [
+       360520,
+       "fdacc0ad41541a0dd632d3bbef662ed0cda7ab4a"
+      ],
+      [
+       2455246,
+       "6d9596858203949ffa7506ad539ec9bd0454c34c"
+      ],
+      [
+       4549943,
+       "679a2bcfcc5885815f64e93259f34ccd3af42bf5"
+      ],
+      [
+       6644620,
+       "61a1476370c698158dc96267fbb396e873381a9e"
+      ],
+      [
+       8739321,
+       "817ea6ae2c8f8e739d80d68c8ff2983e20af65d8"
+      ]
+     ]
+    }
+   ]
+  },
+  "data/private/balance-interdiff.sqlite": {
+   "parts": [
+    {
+     "name": "interdiff",
+     "kind": "rows",
+     "columns": [
+      "change_number",
+      "seen_ps",
+      "final_ps",
+      "lines_seen",
+      "lines_final",
+      "lines_changed",
+      "files_changed",
+      "files_added",
+      "files_dropped",
+      "status"
+     ],
+     "rows": [
+      [
+       532294,
+       1,
+       18,
+       300,
+       169,
+       255,
+       18,
+       0,
+       12,
+       "ok"
+      ],
+      [
+       2585085,
+       2,
+       2,
+       null,
+       null,
+       0,
+       0,
+       0,
+       0,
+       "ok"
+      ],
+      [
+       4636058,
+       1,
+       2,
+       40,
+       40,
+       0,
+       0,
+       0,
+       0,
+       "ok"
+      ],
+      [
+       6687255,
+       4,
+       13,
+       107,
+       127,
+       100,
+       4,
+       3,
+       4,
+       "ok"
+      ],
+      [
+       8738882,
+       1,
+       2,
+       4,
+       4,
+       0,
+       0,
+       0,
+       0,
+       "ok"
+      ]
+     ]
+    }
+   ]
+  },
+  "data/private/balance.sqlite": {
+   "parts": [
+    {
+     "name": "cl",
+     "kind": "rows",
+     "columns": [
+      "change_number",
+      "owner",
+      "owner_email",
+      "status",
+      "created_at",
+      "closed_at",
+      "close_week",
+      "ins",
+      "dels",
+      "patchsets",
+      "sha",
+      "files",
+      "git_lines",
+      "is_revert",
+      "is_reland",
+      "reverted_at",
+      "comments",
+      "chars",
+      "reviewers",
+      "threads",
+      "addressed",
+      "pending",
+      "first_review_at",
+      "sent_at",
+      "rework_after",
+      "rounds",
+      "reviewer_wait_h",
+      "reviewer_wait_wd_h",
+      "owner_wait_h",
+      "seen_ps",
+      "lines_seen",
+      "lines_final",
+      "lines_changed",
+      "files_changed",
+      "files_added",
+      "interdiff_status"
+     ],
+     "rows": [
+      [
+       333699,
+       1141609,
+       "mbjorge@google.com",
+       "ABANDONED",
+       1458344770,
+       1617766156,
+       "2021-W14",
+       4,
+       1,
+       1,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null
+      ],
+      [
+       2435224,
+       1448557,
+       "paulavidas@google.com",
+       "MERGED",
+       1601283404,
+       1601384608,
+       "2020-W40",
+       96,
+       29,
+       8,
+       "42c3de9893b25e970bdf64b76e54296a8b70311f",
+       4,
+       125,
+       0,
+       0,
+       null,
+       18,
+       3028,
+       2,
+       16,
+       9,
+       0,
+       1601288787,
+       1601286884,
+       5,
+       3,
+       6.70639,
+       6.70639,
+       25.2611,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null
+      ],
+      [
+       4536755,
+       1529917,
+       "greengrape@google.com",
+       "MERGED",
+       1684227437,
+       1684238883,
+       "2023-W20",
+       7,
+       10,
+       3,
+       "fc27ea80df4a62627524749a5aeff2d3c5d81a36",
+       2,
+       17,
+       0,
+       0,
+       null,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null
+      ],
+      [
+       6638256,
+       1000022,
+       "ellyjones@chromium.org",
+       "MERGED",
+       1749748787,
+       1749765020,
+       "2025-W24",
+       1,
+       1,
+       2,
+       "2803c03e8725aa387ba9cde5362dcb3e3599be6b",
+       1,
+       2,
+       0,
+       0,
+       null,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       null,
+       1749748832,
+       null,
+       0,
+       0.0269444,
+       0.0269444,
+       4.46972,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null
+      ],
+      [
+       8739741,
+       1257237,
+       "fqj@chromium.org",
+       "NEW",
+       1793852692,
+       null,
+       null,
+       3556,
+       5453,
+       1,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null
+      ]
+     ]
+    },
+    {
+     "name": "cl_attention",
+     "kind": "rows",
+     "columns": [
+      "change_number",
+      "account_id",
+      "hours",
+      "weekday_hours"
+     ],
+     "rows": [
+      [
+       532294,
+       1119849,
+       2633.08,
+       1880.74
+      ],
+      [
+       3594260,
+       1115906,
+       13.1942,
+       13.1942
+      ],
+      [
+       5041717,
+       1001629,
+       310.353,
+       214.352
+      ],
+      [
+       6677583,
+       1545147,
+       4.59056,
+       4.59056
+      ],
+      [
+       8739321,
+       1528762,
+       0.519722,
+       0.519722
+      ]
+     ]
+    },
+    {
+     "name": "cl_dirs",
+     "kind": "rows",
+     "columns": [
+      "change_number",
+      "dir",
+      "files",
+      "lines"
+     ],
+     "rows": [
+      [
+       423110,
+       "third_party/WebKit/LayoutTests/",
+       2,
+       9
+      ],
+      [
+       2245626,
+       "buildtools/",
+       1,
+       2
+      ],
+      [
+       4120997,
+       "chrome/browser/ui/",
+       3,
+       25
+      ],
+      [
+       6192592,
+       "chrome/build/",
+       1,
+       2
+      ],
+      [
+       8766517,
+       "chrome/",
+       1,
+       2
+      ]
+     ]
+    }
+   ]
+  },
+  "data/private/ai_marked_broad.txt": {
+   "parts": [
+    {
+     "name": null,
+     "kind": "lines",
+     "columns": [
+      "line",
+      "text"
+     ],
+     "rows": [
+      [
+       1,
+       "b6575bdaf76d9000000b9e5cc7e45ba3114d90a7 8749563 agent"
+      ],
+      [
+       633,
+       "2920d9638d212836e7c72f9f74dba1c562383012 8500930 trailer"
+      ],
+      [
+       1264,
+       "6bb9207fe1893aca3dd73d2b1033e50245fc54db 7793260 trailer"
+      ],
+      [
+       1895,
+       "274315c941a5ac703196f89bc09e9f6d5fecdae2 7202566 campaign"
+      ],
+      [
+       2527,
+       "4db45f38aee33fbb9b50fc9f8cbc44f6a89cbc37 5215045 phrase"
+      ]
+     ]
+    }
+   ]
+  },
+  "data/private/ai_predict/": {
+   "parts": [
+    {
+     "name": "scores",
+     "kind": "rows",
+     "columns": [
+      "sha",
+      "model",
+      "prompt",
+      "t",
+      "label",
+      "chars",
+      "p",
+      "scored_at"
+     ],
+     "rows": [],
+     "withheld": "The model's guess, per CL, of whether its description was AI-written; only aggregates are published."
+    },
+    {
+     "name": "runs",
+     "kind": "rows",
+     "columns": [
+      "started_at",
+      "model",
+      "prompt",
+      "since",
+      "until_",
+      "todo",
+      "done",
+      "usd",
+      "finished_at",
+      "stopped"
+     ],
+     "rows": [
+      [
+       1794195082,
+       "haiku",
+       "3dd3ca1ff755",
+       "2025-07-01",
+       null,
+       80,
+       80,
+       0.00913316,
+       1794195088,
+       null
+      ],
+      [
+       1794195096,
+       "haiku",
+       "3dd3ca1ff755",
+       "2025-07-01",
+       null,
+       171724,
+       171724,
+       12.5959,
+       1794202041,
+       null
+      ]
+     ]
+    },
+    {
+     "name": "data/private/ai_predict/",
+     "kind": "files",
+     "columns": [
+      "file",
+      "bytes"
+     ],
+     "total": 18,
+     "rows": [
+      [
+       "descs.jsonl",
+       192189992
+      ],
+      [
+       "haiku-marked-pre-notopic-n150-s1.jsonl",
+       37265
+      ],
+      [
+       "haiku-pre-n100-s1.jsonl",
+       24848
+      ],
+      [
+       "model-sonnet-marked-2026Q2-pre-n80-s3.jsonl",
+       19878
+      ],
+      [
+       "trend-n150-s1.jsonl",
+       162965
+      ]
+     ]
+    }
+   ]
+  },
+  "data/private/balance_clusters/": {
+   "parts": [
+    {
+     "name": null,
+     "kind": "files",
+     "columns": [
+      "file",
+      "bytes"
+     ],
+     "total": 3,
+     "rows": [
+      [
+       "clusters.json",
+       15392
+      ],
+      [
+       "map.json",
+       144281
+      ],
+      [
+       "people.json",
+       13717477
+      ]
+     ]
+    }
+   ]
+  },
+  "data/private/balance_people/": {
+   "withheld": "Private per-person drafts.",
+   "parts": []
+  },
+  "summaries/balance.json": {
+   "parts": [
+    {
+     "name": null,
+     "kind": "entries",
+     "columns": [
+      "at",
+      "value"
+     ],
+     "rows": [
+      [
+       "[\"datasets\"][\"exchange\"]",
+       "[{\"q\": \"2023Q3\",\"cls\": 26955,\"authors\": 1652,\"cls_per_author\": 16.32,\"cls_per_author_p5\": 1,\"cls_per_author_p10\": 1,\"cls_per_author_p25\": 3,\"cls_per_author_p50\": 9,\"cls_per_author_p75\": 22,\"cls_per_author_p90\": 40,\"cls_per_author_p95\": 53,\"…"
+      ],
+      [
+       "[\"datasets\"][\"org_review_value\"]",
+       "[{\"org\": \"google.com\",\"reviewers\": 2319,\"reviews\": 342877,\"threads_per_review\": 3.0,\"addressed_per_review\": 1.75,\"addressed_share\": 0.583,\"comments_per_review\": 3.65},{\"org\": \"microsoft.com\",\"reviewers\": 173,\"reviews\": 5876,\"threads_per_rev…"
+      ],
+      [
+       "[\"datasets\"][\"ftr_hist_summary\"]",
+       "[{\"now_from\": \"2025Q4\",\"now_to\": \"2026Q3\",\"then_from\": \"2023Q3\",\"then_to\": \"2024Q4\",\"now_cls\": 57113,\"then_cls\": 76234}]"
+      ],
+      [
+       "[\"datasets\"][\"signals_tenure\"]",
+       "[{\"era\": \"2023H2-2024\",\"tenure_months\": \"0-3\",\"cls\": 3406,\"neg_index\": 2.835,\"abandon_index\": 1.284,\"neg_share\": 0.0153,\"abandon_rate\": 0.0752,\"after_neg_abandoned\": 0.3654},{\"era\": \"2023H2-2024\",\"tenure_months\": \"3-6\",\"cls\": 1406,\"neg_inde…"
+      ],
+      [
+       "[\"datasets\"][\"addr_compare\"]",
+       "[{\"measure\": \"steep_tenure_2023H2-2024\",\"feedback\": 3.558,\"addressed\": 5.12,\"unaddressed\": 2.252,\"ratio\": 1.439,\"ratio_lo\": 1.355,\"ratio_hi\": 1.533},{\"measure\": \"steep_practice_2023H2-2024\",\"feedback\": 2.53,\"addressed\": 3.043,\"unaddressed\":…"
+      ]
+     ]
+    }
+   ]
+  },
+  "summaries/balance_dirs.json": {
+   "parts": [
+    {
+     "name": null,
+     "kind": "entries",
+     "columns": [
+      "at",
+      "value"
+     ],
+     "rows": [
+      [
+       "[\"dirs\"][0]",
+       "{\"path\": \"(root)/\",\"cls\": 10124,\"q\": [[218,0.96,4.48,1.9,0.147,0.0,4.0,11.62],[200,0.79,3.62,2.44,0.055,0.0,4.0,9.37],[245,1.18,10.34,2.96,0.065,0.02,4,13.02],[305,0.96,5.08,2.27,0.036,0.02,4,9.9],[309,0.8,4.52,3.0,0.039,0.3,4,19.86],[224,0…"
+      ],
+      [
+       "[\"dirs\"][185]",
+       "{\"path\": \"chrome/browser/profiles/\",\"cls\": 1116,\"q\": [[27,0.69,4.06,1.38,0.074,0.22,33,13.65],[14,1.57,14.05,5.19,0.071,0.0,7.5,19.47],[20,1.0,4.04,1.24,0.1,0.0,18.5,1.06],[19,0.64,3.36,7.92,0.0,0.41,19,24.56],[40,1.07,7.66,7.82,0.075,0.13,…"
+      ],
+      [
+       "[\"dirs\"][370]",
+       "{\"path\": \"components/reporting/\",\"cls\": 463,\"q\": [[24,0.76,3.44,0.76,0.042,0.33,35.0,3.62],[36,0.47,2.62,1.27,0.028,0.02,16.0,17.28],[10,1.11,6.42,2.03,0.1,1.0,16.0,89.23],[16,0.41,2.25,2.9,0.0,0.0,38.0,5.2],[4,0.12,0.02,null,0.0,null,2454.…"
+      ],
+      [
+       "[\"dirs\"][554]",
+       "{\"path\": \"net/disk_cache/\",\"cls\": 601,\"q\": [[4,0.81,5.14,12.39,0.0,1.0,21.5,12.87],[15,0.76,6.41,6.2,0.0,0.29,24,24.28],[7,0.96,4.58,21.85,0.0,0.0,39,393.27],[2,0.51,0.0,0.24,0.0,0.5,62.0,0.24],[1,0.0,0.0,null,0.0,null,310,null],[13,0.6,2.8…"
+      ],
+      [
+       "[\"dirs\"][739]",
+       "{\"path\": \"weblayer/browser/java/\",\"cls\": 368,\"q\": [[2,0.88,1.19,97.47,0.5,1.18,207.5,155.59],null,null,null,null,null,null,null,null,null,null,null,null]}"
+      ]
+     ]
+    }
+   ]
+  },
+  "summaries/balance_authors.json": {
+   "parts": [
+    {
+     "name": null,
+     "kind": "entries",
+     "columns": [
+      "at",
+      "value"
+     ],
+     "rows": [
+      [
+       "[\"generated\"]",
+       "\"2026-11-14T03:49:46Z\""
+      ],
+      [
+       "[\"end\"]",
+       "\"2026-10-31\""
+      ],
+      [
+       "[\"min_reviewed\"]",
+       "10"
+      ],
+      [
+       "[\"summary\"]",
+       "{\"abandon_authors\": 1152,\"abandon_pooled\": 0.0694,\"abandon_p50\": 0.0625,\"abandon_p90\": 0.1719,\"abandon_zero\": 181,\"abandon_p50_under2\": 0.0625,\"abandon_p50_10plus\": 0.0645,\"rho_tenure_abandon\": 0.03,\"authors\": 1313,\"dirs_p50\": 28,\"dirs_p90\"…"
+      ],
+      [
+       "[\"authors\"]",
+       "[[\"aadarshb@google.com\",33,20,1.141,0.45],[\"aakallam@chromium.org\",80,112,0.349,3.92],[\"aaronmoss@google.com\",45,33,1.367,1.39],[\"aashnas@google.com\",83,31,1.399,4.3],[\"aattar@google.com\",65,52,1.008,4.66],[\"abdoeed@google.com\",46,38,0.919,…"
+      ]
+     ]
+    }
+   ]
+  },
+  "web/public/review-feedback/": {
+   "parts": [
+    {
+     "name": null,
+     "kind": "files",
+     "columns": [
+      "file",
+      "bytes"
+     ],
+     "total": 40022,
+     "rows": [
+      [
+       "2017H2/0055f5d94245f0126f2de73cdf3d1392.json",
+       1708
+      ],
+      [
+       "2020H2/c02f1e16daec30078fb0b9c80dab4e9d.json",
+       1947
+      ],
+      [
+       "2023H2/28e6c737b998f8b21b864b07037d0124.json",
+       655
+      ],
+      [
+       "2026H1/706d4c3f9fce660208989f4ef285fe45.json",
+       142
+      ],
+      [
+       "u/fff4b5de910e00b00f6dfdc7a8bd0916.json",
+       156
+      ]
+     ]
+    }
+   ]
+  },
+  "data/private/feedback-coach/": {
+   "withheld": "Private coaching reports about one person each; never published.",
+   "parts": []
+  },
+  "data/private/review_roi/": {
+   "parts": [
+    {
+     "name": null,
+     "kind": "files",
+     "columns": [
+      "file",
+      "bytes"
+     ],
+     "total": 8,
+     "rows": [
+      [
+       "addressed_blame.json",
+       606
+      ],
+      [
+       "addressed_people.json",
+       5292
+      ],
+      [
+       "part1_results.json",
+       59792
+      ],
+      [
+       "part2_results.json",
+       78455
+      ],
+      [
+       "substance_results.json",
+       5516
+      ]
+     ]
+    }
+   ]
+  },
+  "data/private/scratch/": {
+   "withheld": "Unreviewed scratch output of analyses.",
+   "parts": []
+  },
+  "data/private/bugs/raw/": {
+   "parts": [
+    {
+     "name": null,
+     "kind": "files",
+     "columns": [
+      "file",
+      "bytes"
+     ],
+     "total": 24173,
+     "rows": [
+      [
+       "list/2026-11/0000001.json.gz",
+       314441
+      ],
+      [
+       "monorail/2026-11/0004660.html.gz",
+       365
+      ],
+      [
+       "monorail/2026-11/0011281.html.gz",
+       365
+      ],
+      [
+       "monorail/2026-11/0017747.html.gz",
+       365
+      ],
+      [
+       "monorail/2026-11/0023790.html.gz",
+       365
+      ]
+     ]
+    }
+   ]
+  },
+  "data/private/bugs/bugs.sqlite": {
+   "parts": [
+    {
+     "name": "wanted",
+     "kind": "rows",
+     "columns": [
+      "id",
+      "bug_commits",
+      "fixed_commits",
+      "security",
+      "first_commit",
+      "last_commit"
+     ],
+     "rows": [
+      [
+       100114,
+       1,
+       0,
+       0,
+       "2024-01-04T23:50:28Z",
+       "2024-01-04T23:50:28Z"
+      ],
+      [
+       3199057647,
+       1,
+       0,
+       0,
+       "2025-01-28T14:01:24-08:00",
+       "2025-01-28T14:01:24-08:00"
+      ],
+      [
+       4189805451,
+       1,
+       0,
+       0,
+       "2025-05-20T07:58:21-07:00",
+       "2025-05-20T07:58:21-07:00"
+      ],
+      [
+       5459212800,
+       1,
+       0,
+       0,
+       "2024-12-09T22:43:53Z",
+       "2024-12-09T22:43:53Z"
+      ],
+      [
+       101600,
+       33,
+       0,
+       0,
+       "2023-09-22T18:34:10Z",
+       "2023-11-03T17:58:24Z"
+      ]
+     ]
+    },
+    {
+     "name": "asked",
+     "kind": "rows",
+     "columns": [
+      "id",
+      "visible",
+      "first_asked",
+      "last_asked",
+      "times",
+      "request_seq"
+     ],
+     "rows": [
+      [
+       1864587,
+       0,
+       "2026-11-08T18:24:29Z",
+       "2026-11-08T18:24:29Z",
+       1,
+       16445
+      ],
+      [
+       3199057647,
+       0,
+       "2026-11-08T17:22:07Z",
+       "2026-11-08T17:22:07Z",
+       1,
+       1
+      ],
+      [
+       4189805451,
+       0,
+       "2026-11-08T17:22:07Z",
+       "2026-11-08T17:22:07Z",
+       1,
+       1
+      ],
+      [
+       5459212800,
+       0,
+       "2026-11-08T17:22:07Z",
+       "2026-11-08T17:22:07Z",
+       1,
+       1
+      ],
+      [
+       3232381,
+       0,
+       "2026-11-08T18:24:29Z",
+       "2026-11-08T18:24:29Z",
+       1,
+       16445
+      ]
+     ]
+    },
+    {
+     "name": "monorail_map",
+     "kind": "rows",
+     "columns": [
+      "old_id",
+      "new_id",
+      "http_status",
+      "fetched_at",
+      "request_seq"
+     ],
+     "rows": [
+      [
+       100114,
+       40097576,
+       200,
+       "2026-11-08T18:31:15Z",
+       23790
+      ],
+      [
+       8520313,
+       null,
+       404,
+       "2026-11-08T17:22:24Z",
+       8
+      ],
+      [
+       9962888,
+       null,
+       404,
+       "2026-11-08T17:22:19Z",
+       6
+      ],
+      [
+       101600,
+       40031409,
+       200,
+       "2026-11-08T18:31:15Z",
+       23789
+      ],
+      [
+       106682,
+       40124704,
+       200,
+       "2026-11-08T18:31:15Z",
+       23788
+      ]
+     ]
+    },
+    {
+     "name": "requests",
+     "kind": "rows",
+     "columns": [
+      "seq",
+      "kind",
+      "started_at",
+      "elapsed_s",
+      "http_status",
+      "final_url",
+      "headers",
+      "request_body",
+      "wire_bytes",
+      "body_bytes",
+      "file",
+      "n_asked",
+      "n_returned",
+      "outcome"
+     ],
+     "rows": [
+      [
+       1,
+       "list",
+       "2026-11-08T17:22:07Z",
+       0.567,
+       200,
+       "https://issues.chromium.org/action/issues/list",
+       "(withheld)",
+       "(withheld)",
+       314441,
+       1660518,
+       "raw/list/2026-11/0000001.json.gz",
+       50,
+       17,
+       "ok"
+      ],
+      [
+       6044,
+       "monorail",
+       "2026-11-08T18:15:17Z",
+       0.181,
+       200,
+       "https://bugs.chromium.org/p/chromium/issues/detail?id=1500950",
+       "(withheld)",
+       null,
+       364,
+       572,
+       "raw/monorail/2026-11/0006044.html.gz",
+       null,
+       null,
+       "ok"
+      ],
+      [
+       12087,
+       "monorail",
+       "2026-11-08T18:20:36Z",
+       0.21,
+       200,
+       "https://bugs.chromium.org/p/chromium/issues/detail?id=1476725",
+       "(withheld)",
+       null,
+       365,
+       572,
+       "raw/monorail/2026-11/0012087.html.gz",
+       null,
+       null,
+       "ok"
+      ],
+      [
+       18130,
+       "monorail",
+       "2026-11-08T18:26:05Z",
+       0.184,
+       200,
+       "https://bugs.chromium.org/p/chromium/issues/detail?id=1440817",
+       "(withheld)",
+       null,
+       366,
+       572,
+       "raw/monorail/2026-11/0018130.html.gz",
+       null,
+       null,
+       "ok"
+      ],
+      [
+       24173,
+       "list",
+       "2026-11-08T18:35:34Z",
+       0.797,
+       200,
+       "https://issues.chromium.org/action/issues/list",
+       "(withheld)",
+       "(withheld)",
+       559071,
+       2955426,
+       "raw/list/2026-11/0024173.json.gz",
+       32,
+       30,
+       "ok"
+      ]
+     ]
+    },
+    {
+     "name": "bugs",
+     "kind": "rows",
+     "columns": [
+      "id",
+      "tracker",
+      "component_id",
+      "component_path",
+      "type",
+      "type_name",
+      "status",
+      "status_name",
+      "priority",
+      "severity",
+      "title",
+      "created",
+      "modified",
+      "resolved",
+      "verified",
+      "cve",
+      "introduced_in",
+      "milestone",
+      "security_release",
+      "os",
+      "labels",
+      "found_in",
+      "hotlists",
+      "fixed_by",
+      "fixed_by_field",
+      "regression",
+      "custom",
+      "raw_file",
+      "fetched_at"
+     ],
+     "rows": [
+      [
+       40031409,
+       157,
+       1457173,
+       "Internals, Tools>LLVM",
+       1,
+       "Bug",
+       3,
+       "Accepted",
+       "P2",
+       "S4",
+       "Turn on -Wexit-time-destructors",
+       "2011-10-25T22:47:34Z",
+       "2026-11-03T21:14:51Z",
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       "clang, Hotlist-Recharge-Cold",
+       null,
+       null,
+       "[\"chromium/chromium/src/6306943\", \"chromium/chromium/src/6702521\", \"chromium/chromium/src/6703737\", \"chromium/chromium/src/6709804\", \"chromium/chromium/src/6720976\", \"chromium/chromium/src/6719627\", \"chromium/chromium/src/6720977\", \"chromiu…",
+       null,
+       0,
+       "{\"Chromium Labels\": \"clang, Hotlist-Recharge-Cold\", \"Component Ancestor Tags\": \"Internals, Tools, Tools>LLVM\", \"Component Tags\": \"Internals, Tools>LLVM\", \"Merge\": \"Merged-1084\"}",
+       "raw/list/2026-11/0016425.json.gz",
+       "2026-11-08T18:24:28Z"
+      ],
+      [
+       188484091,
+       157,
+       1456317,
+       "Internals>Metrics>UMA",
+       1,
+       "Bug",
+       5,
+       "Verified",
+       "P2",
+       "S2",
+       "tools/metrics/histograms/enums.xml is too big for codesearch",
+       "2021-05-18T03:53:11Z",
+       "2025-01-28T22:23:52Z",
+       "2025-01-27T22:15:44Z",
+       "2025-01-27T22:15:44Z",
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       "[3273350]",
+       "[\"chromium/chromium/src/6202901\", \"chromium/chromium/src/6204222\", \"chromium/chromium/src/6204541\", \"chromium/chromium/src/6204201\", \"chromium/chromium/src/6205466\"]",
+       null,
+       0,
+       "{\"Component Ancestor Tags\": \"Internals, Internals>Metrics, Internals>Metrics>UMA\", \"Component Tags\": \"Internals>Metrics>UMA\"}",
+       "raw/list/2026-11/0013816.json.gz",
+       "2026-11-08T18:22:11Z"
+      ],
+      [
+       314694812,
+       157,
+       1456799,
+       "Blink>Input>PointerLock",
+       10,
+       null,
+       11,
+       null,
+       "P2",
+       "S2",
+       "Permissions for keyboard lock and pointer lock",
+       "2023-12-04T03:48:23Z",
+       "2026-10-21T21:58:39Z",
+       "2026-10-21T21:58:39Z",
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       "[\"chromium/chromium/src/5668922\", \"chromium/chromium/src/5728054\", \"chromium/chromium/src/5740033\", \"chromium/chromium/src/5858577\", \"chromium/chromium/src/5858578\", \"chromium/chromium/src/5899679\", \"chromium/chromium/src/5917070\", \"chromiu…",
+       null,
+       0,
+       "{\"Component Ancestor Tags\": \"Blink, Blink>Input, Blink>Input>PointerLock\", \"Component Tags\": \"Blink>Input>PointerLock\"}",
+       "raw/list/2026-11/0013693.json.gz",
+       "2026-11-08T18:22:05Z"
+      ],
+      [
+       447248185,
+       157,
+       1457018,
+       "Internals>Preload",
+       15,
+       null,
+       2,
+       "Assigned",
+       "P2",
+       "S2",
+       "Investigate the reason why removing CacheAliasLoader causes regression",
+       "2025-09-25T07:01:19Z",
+       "2026-05-12T12:01:05Z",
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       "[\"chromium/chromium/src/6981124\", \"chromium/chromium/src/7116477\"]",
+       null,
+       0,
+       "{\"Component Ancestor Tags\": \"Internals, Internals>Preload\", \"Component Tags\": \"Internals>Preload\"}",
+       "raw/list/2026-11/0001068.json.gz",
+       "2026-11-08T18:07:29Z"
+      ],
+      [
+       582957123,
+       157,
+       1456721,
+       "Blink>Layout",
+       1,
+       "Bug",
+       4,
+       "Fixed",
+       "P3",
+       "S4",
+       "[WPT] New failures introduced in external/wpt/css/css-overflow by import https://crrev.com/c/8763685",
+       "2026-11-07T05:21:59Z",
+       "2026-11-07T19:23:17Z",
+       "2026-11-07T19:23:17Z",
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       "[\"chromium/chromium/src/8764377\", \"chromium/chromium/src/8766897\"]",
+       null,
+       0,
+       "{\"Component Ancestor Tags\": \"Blink, Blink>Layout\", \"Component Tags\": \"Blink>Layout\"}",
+       "raw/list/2026-11/0000001.json.gz",
+       "2026-11-08T17:22:07Z"
+      ]
+     ]
+    }
+   ]
+  },
+  "data/private/chrome_releases/": {
+   "parts": [
+    {
+     "name": null,
+     "kind": "files",
+     "columns": [
+      "file",
+      "bytes"
+     ],
+     "total": 29,
+     "rows": [
+      [
+       "fixing_commits.json",
+       1549664
+      ],
+      [
+       "raw/page-0006.json",
+       929368
+      ],
+      [
+       "raw/page-0013.json",
+       996616
+      ],
+      [
+       "raw/page-0020.json",
+       959785
+      ],
+      [
+       "summary.json",
+       3174
+      ]
+     ]
+    }
+   ]
+  },
+  "config/dataflow.json": {
+   "parts": [
+    {
+     "name": null,
+     "kind": "entries",
+     "columns": [
+      "at",
+      "value"
+     ],
+     "rows": [
+      [
+       "[\"schema_version\"]",
+       "2"
+      ],
+      [
+       "[\"about\"]",
+       "\"Every external source, data store, processing step and page of cosh, and the flows between them. Read by web/dataflow.html, scripts/dataflow.py (check, plan) and `python3 -m cosh update`. Field meanings and the flow rules: docs/data-archit…"
+      ],
+      [
+       "[\"sources\"]",
+       "[{\"id\": \"gerrit\",\"name\": \"Chromium Gerrit\",\"kind\": \"rest-api + git\",\"url\": \"https://chromium-review.googlesource.com\",\"purpose\": \"Code review of chromium/src: CL listings over REST, each CL's review comments and events as its NoteDb ref, an…"
+      ],
+      [
+       "[\"stores\"]",
+       "[{\"id\": \"gerrit-raw\",\"name\": \"Fetched Gerrit data\",\"path\": \"data/private/raw.sqlite + data/private/notedb/\",\"kind\": \"sqlite + git-repo\",\"tier\": \"raw\",\"tracked_in_git\": false,\"rebuildable\": false,\"never_delete\": true,\"size\": \"2.5 GB + 11.4 G…"
+      ],
+      [
+       "[\"pages\"]",
+       "[{\"id\": \"page-index\",\"path\": \"web/index.html\",\"title\": \"Landing page\",\"purpose\": \"One card per dashboard; reads no data.\",\"entry_script\": null,\"reads\": [],\"sources_line\": null},{\"id\": \"page-404\",\"path\": \"web/404.html\",\"title\": \"Page not fou…"
+      ]
+     ]
+    }
+   ]
+  }
+ }
+}

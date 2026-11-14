@@ -23,6 +23,12 @@ export interface TableInfo {
   rows?: number | null;
   rows_approx?: boolean;
   purpose: string;
+  /** What each column holds, for the sample popup's column tooltips. */
+  columns?: Record<string, string>;
+  /** Why its rows are left out of the published samples. */
+  withheld?: string;
+  /** Columns whose sample values are left out. */
+  redact?: string[];
 }
 
 export interface Store {
@@ -41,6 +47,12 @@ export interface Store {
   size_as_of?: string;
   tables?: TableInfo[];
   files?: string;
+  /** A single-file table's (a CSV's) column meanings. */
+  columns?: Record<string, string>;
+  /** Why the store's samples are left out entirely. */
+  withheld?: string;
+  /** The database that holds `tables`, when `path` is a directory. */
+  database?: string;
   purpose: string;
   notes?: string;
 }

@@ -3908,6 +3908,38 @@ test('the Data flow page draws the chosen pages\' flow, lists the inventory, and
   assert.deepEqual(model.filter(([, on]) => on), [['classify', true]]);
   assert.match(await page.$eval('#detail-facts [data-field="rebuild"] dd', (e) => e.textContent!), /never delete/);
   assert.equal(await page.$$eval('#detail-tables tr', (trs) => trs.length), 3);
+  // A table's name opens a popup of sample rows, each column titled with its meaning.
+  const sample = () => page.$eval('#sample-dialog', (d) => ({
+    open: (d as HTMLDialogElement).open,
+    title: d.querySelector('#sample-title')!.textContent,
+    note: d.querySelector('#sample-note')!.textContent!,
+    cols: [...d.querySelectorAll('#sample-head th')].map((th) => [th.textContent, (th as HTMLElement).title]),
+    rows: d.querySelectorAll('#sample-rows tr').length,
+    cells: [...d.querySelectorAll('#sample-rows tr:first-child td')].length,
+  }));
+  await page.click('#detail-tables button[data-sample]');
+  let s = await sample();
+  assert.ok(s.open && s.title === 'data/private/labels.sqlite: labels', JSON.stringify(s));
+  assert.ok(s.rows > 0 && s.rows <= 5 && s.cells === s.cols.length, JSON.stringify(s));
+  assert.deepEqual(s.cols.filter(([, title]) => !title), []);
+  await page.click('#sample-close');
+  assert.equal((await sample()).open, false);
+  // A store that isn't a database: sample lines of a text file.
+  await page.evaluate(() => (location.hash = '#n=config%2Fbots.txt'));
+  await page.waitForFunction(() => document.querySelector('#detail-title')!.textContent === 'config/bots.txt');
+  await page.click('#detail-facts [data-field="samples"] button');
+  s = await sample();
+  assert.ok(s.open && s.rows === 5 && /lines/.test(s.note), JSON.stringify(s));
+  await page.keyboard.press('Escape');
+  // What the ground rules keep private has columns but no rows.
+  await page.evaluate(() => (location.hash = '#n=data%2Fprivate%2Fsentiment.sqlite'));
+  await page.waitForFunction(() => document.querySelector('#detail-title')!.textContent === 'Comment scores');
+  await page.click('#detail-tables button[data-sample="0"]');
+  s = await sample();
+  assert.ok(s.open && s.rows === 0 && s.cols.length > 0 && /Not published/.test(s.note), JSON.stringify(s));
+  await page.click('#sample-close');
+  await page.evaluate(() => (location.hash = '#n=data%2Fprivate%2Flabels.sqlite'));
+  await page.waitForFunction(() => document.querySelector('#detail-title')!.textContent === 'data/private/labels.sqlite');
   // Names in the facts are links to the other items.
   await page.click('#detail-facts [data-field="made_by"] button');
   assert.equal(await page.$eval('#detail-title', (e) => e.textContent), 'classify');

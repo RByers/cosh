@@ -13,7 +13,8 @@ times and costs. They live there and only there; this document and the
 other docs point to it rather than repeat its figures.
 
 - `web/dataflow.html` draws it: the flow of the pages you pick, top to
-  bottom, the facts of any item, a planner, and tables.
+  bottom, the facts of any item with sample entries of each store, a
+  planner, and tables.
 - `python3 scripts/dataflow.py check` verifies it against the repository
   and the flow rules below (run by `tests.test_dataflow`).
 - `python3 scripts/dataflow.py plan <id> ...` prints what to rerun after
@@ -149,6 +150,28 @@ that spans paths or files), a step's short name, `page-…` for a page.
 
 Building and deploying the site (`npm run build`; the Pages workflow on
 push) is not a data step and isn't listed.
+
+**Samples.** The page shows five sample entries of every store: rows of
+each table, lines, CSV rows, JSON entries, files of a directory, refs of a
+repo. `python3 scripts/dataflow_samples.py` takes them from the local
+stores (read-only, nothing fetched) into `config/dataflow-samples.json`,
+which is committed and so published; rerun it when a store's layout
+changes. It is metadata about the inventory, not a step of the flow, so
+it isn't drawn. Fields that steer it, on a store or a table:
+
+- `columns`: what each column holds, shown as the column names' hover
+  titles. A table's, or a single-file store's (a CSV).
+- `withheld`: why a store's or a table's rows aren't published. Used for
+  what the ground rules keep private: tone scores and model reasons
+  (ground rule 5), gold sets, coaching reports, per-person drafts, and the
+  AI-written guesses per CL.
+- `redact`: columns whose values are left out (request headers that carry
+  the contact address).
+- `database`: the file that holds `tables`, when the store is a directory.
+
+`check` fails when a withheld or redacted value is in the samples, or when
+a sampled table has a column without a meaning (or a meaning for a column
+it lacks).
 
 `check` also fails when an id is unknown or duplicated, the graph has a
 loop, a step's code file or a page doesn't exist, a committed file under

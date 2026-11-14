@@ -103,32 +103,83 @@
         {
           "name": "responses",
           "rows": 40243,
-          "purpose": "Every REST response, compressed, keyed by host, kind and key."
+          "purpose": "Every REST response, compressed, keyed by host, kind and key.",
+          "columns": {
+            "host": "Gerrit host name, e.g. chromium-review.googlesource.com",
+            "kind": "What was fetched: list_window (a CL listing), comments (one CL's review data), or account (one user).",
+            "key": "Identifies the request: the listing window spec, or the change or account number.",
+            "url": "The URL that was requested.",
+            "fetched_at": "When it was fetched, UTC time, ISO 8601.",
+            "http_status": "HTTP status code of the response.",
+            "body_zlib": "The response body, zlib-compressed, with Gerrit's XSSI prefix removed.",
+            "body_sha256": "SHA-256 hash of the response body, to detect changes."
+          }
         },
         {
           "name": "week_progress",
           "rows": 487,
-          "purpose": "Per ISO week: when it was listed and when all its NoteDb refs were fetched."
+          "purpose": "Per ISO week: when it was listed and when all its NoteDb refs were fetched.",
+          "columns": {
+            "host": "Gerrit host name, e.g. chromium-review.googlesource.com",
+            "project": "Gerrit project, e.g. chromium/src.",
+            "iso_week": "The ISO week, e.g. 2026-W44, whose closed CLs were listed.",
+            "listed_at": "When the week's CL listing finished, UTC time, ISO 8601; empty until listed.",
+            "cl_count": "Number of CLs listed for the week.",
+            "fetched_at": "When all of the week's review data finished downloading, UTC time, ISO 8601; empty if not done.",
+            "last_run_id": "The extract_runs.run_id of the latest run that worked on this week."
+          }
         },
         {
           "name": "week_changes",
           "rows": 1560147,
-          "purpose": "Which listing response holds each CL of each week."
+          "purpose": "Which listing response holds each CL of each week.",
+          "columns": {
+            "host": "Gerrit host name, e.g. chromium-review.googlesource.com",
+            "project": "Gerrit project, e.g. chromium/src.",
+            "iso_week": "The ISO week the CL closed in.",
+            "change_number": "Gerrit CL (change) number.",
+            "window_key": "Key of the responses row (kind list_window) whose JSON holds this CL."
+          }
         },
         {
           "name": "open_listings",
           "rows": 2,
-          "purpose": "Open-CL snapshots and their progress."
+          "purpose": "Open-CL snapshots and their progress.",
+          "columns": {
+            "host": "Gerrit host name, e.g. chromium-review.googlesource.com",
+            "project": "Gerrit project, e.g. chromium/src.",
+            "listed_at": "When this snapshot of open CLs started, UTC time, ISO 8601; identifies the snapshot.",
+            "since": "The snapshot includes open CLs updated at or after this time, UTC, ISO 8601.",
+            "closed_since": "The snapshot also includes CLs closed at or after this time, UTC, ISO 8601.",
+            "cl_count": "Number of CLs in the snapshot.",
+            "fetched_at": "When all of the snapshot's review data finished downloading, UTC time, ISO 8601; empty if not done.",
+            "last_run_id": "The extract_runs.run_id of the latest run that worked on this snapshot."
+          }
         },
         {
           "name": "open_changes",
           "rows": 75446,
-          "purpose": "Which listing response holds each CL of an open snapshot."
+          "purpose": "Which listing response holds each CL of an open snapshot.",
+          "columns": {
+            "host": "Gerrit host name, e.g. chromium-review.googlesource.com",
+            "project": "Gerrit project, e.g. chromium/src.",
+            "listed_at": "The open_listings.listed_at snapshot this CL belongs to.",
+            "change_number": "Gerrit CL (change) number.",
+            "window_key": "Key of the responses row (kind list_window) whose JSON holds this CL."
+          }
         },
         {
           "name": "extract_runs",
           "rows": 695,
-          "purpose": "One row per extractor run: arguments, times, request count."
+          "purpose": "One row per extractor run: arguments, times, request count.",
+          "columns": {
+            "run_id": "Sequential number of the extraction run.",
+            "started_at": "When the run started, UTC time, ISO 8601.",
+            "finished_at": "When the run ended, UTC time, ISO 8601; empty while running.",
+            "command": "The command line that was run.",
+            "requests": "Number of requests the run sent to Gerrit.",
+            "status": "Outcome: running, ok, partial, failed or interrupted."
+          }
         }
       ],
       "notes": "Never delete either, never prune or gc notedb/. Lossless repacks only (cosh notedb-maintain, scripts/notedb_chunked_repack.sh). Comment text is untrusted."
@@ -147,32 +198,93 @@
         {
           "name": "changes",
           "rows": 1607484,
-          "purpose": "One row per CL: branch, owner, status, times, close week, size, bot flag."
+          "purpose": "One row per CL: branch, owner, status, times, close week, size, bot flag.",
+          "columns": {
+            "host": "Gerrit host name, e.g. chromium-review.googlesource.com",
+            "change_number": "Gerrit CL (change) number.",
+            "project": "Gerrit project, e.g. chromium/src.",
+            "branch": "Target branch, e.g. main (master before 2021).",
+            "change_id": "Gerrit Change-Id, the I-prefixed hash from the commit message footer.",
+            "owner_account": "Account number of the CL's author; joins accounts.account_id.",
+            "status": "MERGED, ABANDONED, or NEW (still open).",
+            "created_at": "When the CL was created, UTC, YYYY-MM-DD HH:MM:SS.",
+            "updated_at": "When the CL last changed, UTC, YYYY-MM-DD HH:MM:SS.",
+            "submitted_at": "When the CL merged, UTC, YYYY-MM-DD HH:MM:SS; empty unless merged.",
+            "closed_at": "Merge time, or last update time if abandoned, UTC; empty if open.",
+            "close_week": "ISO week of closed_at, e.g. 2026-W44; empty if open.",
+            "insertions": "Lines added by the CL.",
+            "deletions": "Lines removed by the CL.",
+            "patchsets": "Number of patch sets (uploaded revisions) of the CL.",
+            "total_comment_count": "Total inline comments on the CL, as Gerrit reports it.",
+            "is_bot_owned": "1 if a bot account owns the CL, else 0.",
+            "subject": "First line of the CL description.",
+            "anchor_path": "File with the most inline comments on the CL; empty if none."
+          }
         },
         {
           "name": "comments",
           "rows": 3728137,
-          "purpose": "One row per published comment by someone other than the owner on a human-owned CL: week, path, length, AI flag."
+          "purpose": "One row per published comment by someone other than the owner on a human-owned CL: week, path, length, AI flag.",
+          "columns": {
+            "host": "Gerrit host name, e.g. chromium-review.googlesource.com",
+            "change_number": "Gerrit CL the comment is on.",
+            "comment_id": "Gerrit's unique id (UUID) of the comment.",
+            "account_id": "Account number of the commenter; joins accounts.account_id.",
+            "written_at": "When the comment was written, UTC, YYYY-MM-DD HH:MM:SS.",
+            "iso_week": "ISO week of written_at, e.g. 2026-W44.",
+            "path": "File the comment is on, or /PATCHSET_LEVEL or /COMMIT_MSG for general comments.",
+            "chars": "Comment length in characters, not counting quoted lines.",
+            "is_ai": "1 if written by an AI reviewer (AI flag or autogenerated tag), else 0.",
+            "after_close": "1 if written after the CL merged or was abandoned, else 0.",
+            "root_uuid": "Id of the first comment in this comment's thread."
+          }
         },
         {
           "name": "threads",
           "rows": 3062560,
-          "purpose": "Reviewer-started threads: size, owner's last reply, the regex verdict and the hash that keys labels."
+          "purpose": "Reviewer-started threads: size, owner's last reply, the regex verdict and the hash that keys labels.",
+          "columns": {
+            "host": "Gerrit host name, e.g. chromium-review.googlesource.com",
+            "change_number": "Gerrit CL the thread is on.",
+            "root_uuid": "Id of the thread's first comment.",
+            "root_account": "Account number of the reviewer who started the thread.",
+            "n_comments": "Number of comments in the thread, including the author's replies.",
+            "last_owner_reply_at": "When the CL author last replied in the thread, UTC; empty if never.",
+            "input_hash": "Hash of the thread text a model would see; matches labels.input_hash.",
+            "regex_addressed": "1 if the author's first reply is a 'Done'-style answer, else 0."
+          }
         },
         {
           "name": "accounts",
           "rows": 15566,
-          "purpose": "Gerrit accounts: e-mail, name, bot flag."
+          "purpose": "Gerrit accounts: e-mail, name, bot flag.",
+          "columns": {
+            "host": "Gerrit host name, e.g. chromium-review.googlesource.com",
+            "account_id": "Gerrit account number.",
+            "email": "The account's email address.",
+            "name": "The account's display name.",
+            "is_bot": "1 if the account is a bot, else 0."
+          }
         },
         {
           "name": "committers",
           "rows": 6570,
-          "purpose": "Which accounts may vote Code-Review, as of the newest listing."
+          "purpose": "Which accounts may vote Code-Review, as of the newest listing.",
+          "columns": {
+            "host": "Gerrit host name, e.g. chromium-review.googlesource.com",
+            "account_id": "Gerrit account number; joins accounts.account_id.",
+            "is_committer": "1 if the account may vote Code-Review in chromium/src, else 0.",
+            "seen_at": "When Gerrit reported this status, UTC time, ISO 8601."
+          }
         },
         {
           "name": "meta",
           "rows": 6,
-          "purpose": "Metric version, fetched weeks, when it was derived."
+          "purpose": "Metric version, fetched weeks, when it was derived.",
+          "columns": {
+            "k": "Name of the setting, e.g. metric_version, derived_at, fetched_weeks.",
+            "v": "Its value, as text."
+          }
         }
       ],
       "notes": "Rebuild: rm it, then `python3 -m cosh derive` (about 9 min)."
@@ -192,17 +304,44 @@
         {
           "name": "labels",
           "rows": 517058,
-          "purpose": "Addressed 0/1 per thread, classifier and input hash."
+          "purpose": "Addressed 0/1 per thread, classifier and input hash.",
+          "columns": {
+            "change_number": "Gerrit CL the thread is on.",
+            "root_uuid": "Id of the thread's first comment.",
+            "classifier_id": "Which classifier made the label; joins classifiers.classifier_id.",
+            "input_hash": "Hash of the thread text that was classified; matches threads.input_hash.",
+            "addressed": "1 if the thread's comment was addressed by the author, else 0.",
+            "run_id": "The runs.run_id of the run that produced this label."
+          }
         },
         {
           "name": "classifiers",
           "rows": 1,
-          "purpose": "Model, definition version and prompt hash; the newest matching the code is active."
+          "purpose": "Model, definition version and prompt hash; the newest matching the code is active.",
+          "columns": {
+            "classifier_id": "Sequential id of this classifier setup.",
+            "model": "Claude model that classifies, e.g. claude-haiku-5-5.",
+            "definition_version": "Version number of the 'addressed' definition and prompt.",
+            "prompt_sha256": "SHA-256 hash of the prompt text.",
+            "created_at": "When the classifier was first used, UTC time, ISO 8601."
+          }
         },
         {
           "name": "runs",
           "rows": 17,
-          "purpose": "Each classify run's weeks, threads, calls, tokens and cost."
+          "purpose": "Each classify run's weeks, threads, calls, tokens and cost.",
+          "columns": {
+            "run_id": "Sequential number of the classification run.",
+            "classifier_id": "Classifier used; joins classifiers.classifier_id.",
+            "started_at": "When the run started, UTC time, ISO 8601.",
+            "finished_at": "When the run ended, UTC time, ISO 8601; empty if unfinished.",
+            "weeks": "JSON list of the ISO weeks the run covered.",
+            "threads": "Number of threads labelled in the run.",
+            "calls": "Number of model calls made.",
+            "tokens": "Total tokens used by the model calls.",
+            "usd_equiv": "Equivalent cost in US dollars at API prices; actual use is on a subscription.",
+            "seconds": "Total time spent in model calls, in seconds."
+          }
         }
       ],
       "notes": "Covers every week, 2017-W27 .. 2026-W44 (2017 .. 2021 labelled 2026-11-13)."
@@ -288,7 +427,16 @@
         },
         {
           "name": "weekly_totals.csv",
-          "purpose": "Per week: CLs merged, abandoned, by humans and bots."
+          "purpose": "Per week: CLs merged, abandoned, by humans and bots.",
+          "columns": {
+            "iso_week": "Week the CLs closed, ISO week label like 2025-W45 (Monday to Sunday)",
+            "main_cls": "CLs on branch main that closed (merged or abandoned) that week",
+            "merged_cls": "Of those, number that were merged",
+            "abandoned_cls": "Of those, number that were abandoned",
+            "human_cls": "Of those, number owned by a person rather than a bot",
+            "bot_cls": "Of those, number owned by a bot account",
+            "human_cls_with_comments": "Human-owned CLs that got at least one review comment from a non-bot"
+          }
         },
         {
           "name": "reviewer_weekly.json",
@@ -395,7 +543,20 @@
       "rebuildable": true,
       "size": "636 KB, 8,233 rows",
       "size_as_of": "2026-11-12",
-      "purpose": "Each browser's weekly and monthly share of requests, with iOS removed and renormalised among Chromium browsers."
+      "purpose": "Each browser's weekly and monthly share of requests, with iOS removed and renormalised among Chromium browsers.",
+      "columns": {
+        "period": "Week (like 2025-W45) or month (like 2025-11) the share covers",
+        "period_start": "First day of the period, UTC, YYYY-MM-DD",
+        "period_end": "Last day of the period, UTC, YYYY-MM-DD",
+        "granularity": "Period type: week or month",
+        "device": "Device class the share covers; currently all (non-iOS devices combined)",
+        "browser": "Browser name as Cloudflare Radar reports it",
+        "is_chromium": "1 if the browser is Chromium-based, 0 if not; empty if unclassified",
+        "kind": "Client type: browser, webview, in_app, tv, bot or other; empty if unclassified",
+        "days": "Number of daily data points in the period (fewer than a full week or month at the edges)",
+        "raw_share": "Share of human, non-iOS requests from this browser, mean of daily shares, 0-1",
+        "chromium_share": "Browser's share among counted Chromium browsers only, 0-1; empty if not counted"
+      }
     },
     {
       "id": "config/browsers.csv",
@@ -406,7 +567,13 @@
       "rebuildable": false,
       "size": "under 4 KB",
       "size_as_of": "2026-11-12",
-      "purpose": "Hand-kept list of Radar's browser names: which are Chromium-based and which count in the usage denominator."
+      "purpose": "Hand-kept list of Radar's browser names: which are Chromium-based and which count in the usage denominator.",
+      "columns": {
+        "browser": "Browser name as Cloudflare Radar reports it",
+        "is_chromium": "1 if the browser is built on Chromium, else 0",
+        "kind": "Client type: browser, webview, in_app, tv, bot or other",
+        "notes": "Short explanation of how the browser is classified"
+      }
     },
     {
       "id": "config/org_browsers.csv",
@@ -417,7 +584,12 @@
       "rebuildable": false,
       "size": "under 4 KB",
       "size_as_of": "2026-11-12",
-      "purpose": "Hand-kept map from each organisation to the browsers credited to it; the page joins usage to orgs with it."
+      "purpose": "Hand-kept map from each organisation to the browsers credited to it; the page joins usage to orgs with it.",
+      "columns": {
+        "org_domain": "Organization's domain, as used in affiliations",
+        "browser": "Radar browser name that the organization ships",
+        "notes": "Short explanation of why this browser is attributed to the organization"
+      }
     },
     {
       "id": "data/private/sentiment/",
@@ -431,7 +603,8 @@
       "files": "comments-<week>.jsonl (52 weeks) and comments-sample-5pct.jsonl, with identities.",
       "purpose": "Review comments rendered with their thread context and who wrote them: the input to scoring, praise and the Feedback Index's excerpts.",
       "notes": "Holds untrusted comment text. One writer (comments-collect).",
-      "name": "Rendered comments"
+      "name": "Rendered comments",
+      "withheld": "Review comments with who wrote them, the input to tone scoring; tone stays unpublished per person (ground rule 5)."
     },
     {
       "id": "data/private/sentiment.sqlite",
@@ -448,17 +621,40 @@
         {
           "name": "scores",
           "rows": 1019335,
-          "purpose": "Score, AI flag and the model's reason per comment, prompt and input hash."
+          "purpose": "Score, AI flag and the model's reason per comment, prompt and input hash.",
+          "columns": {
+            "id": "Comment id: Gerrit CL number, a slash, then the comment UUID.",
+            "prompt_id": "Which prompt scored it; joins prompts.prompt_id. 0 means a bare acknowledgement scored without a model.",
+            "input_hash": "Hash of the text the model saw.",
+            "score": "Tone of the comment from -1 (hostile) through 0 (neutral) to +1 (strong gratitude).",
+            "ai": "1 if the comment expresses negative feeling about AI in code review, else 0.",
+            "why": "The model's short reason for the score."
+          },
+          "withheld": "Tone scores and the model's reasons per comment; only praise and anonymous samples are published (ground rule 5)."
         },
         {
           "name": "prompts",
           "rows": 1,
-          "purpose": "The prompt version, hash and model the scores were made with."
+          "purpose": "The prompt version, hash and model the scores were made with.",
+          "columns": {
+            "prompt_id": "Sequential id of the scoring prompt.",
+            "version": "Prompt version label, e.g. v3.",
+            "sha256": "SHA-256 hash of the prompt text.",
+            "model": "Model that scores with this prompt, e.g. haiku.",
+            "text": "The full prompt text.",
+            "created_at": "When the prompt was first used, UTC time, ISO 8601."
+          }
         },
         {
           "name": "screens",
           "rows": null,
-          "purpose": "Screening verdicts (does a comment identify someone), keyed by comment and screen prompt; written by tone-publish as a cache."
+          "purpose": "Screening verdicts (does a comment identify someone), keyed by comment and screen prompt; written by tone-publish as a cache.",
+          "columns": {
+            "id": "Comment id: Gerrit CL number, a slash, then the comment UUID.",
+            "screen_sha": "SHA-256 hash of the screening prompt used.",
+            "flagged": "1 if the screen found identifying details in the comment, else 0."
+          },
+          "withheld": "Screening verdicts on negative comments (ground rule 5)."
         }
       ],
       "notes": "Per-comment reasons stay private."
@@ -474,7 +670,8 @@
       "size": "under 1 MB",
       "size_as_of": "2026-11-12",
       "purpose": "The 261 hand-labelled gold comments (ids and scores, no text) and each prompt version's scores against them.",
-      "notes": "gold.jsonl is hand-made and not rebuildable; it stays private (docs/sentiment.md)."
+      "notes": "gold.jsonl is hand-made and not rebuildable; it stays private (docs/sentiment.md).",
+      "withheld": "The hand-labelled gold sets stay private."
     },
     {
       "id": "scripts/sentiment_prompts/",
@@ -574,37 +771,97 @@
         {
           "name": "commits",
           "rows": 1676752,
-          "purpose": "Commits: author, times, CL, Reviewed-by, reverts, relands, Bot-Commit, AI-marker and LSC (large-scale change) flags, files and lines. commit_id counts up from 1 at 2017-01-01 and down from -1 before."
+          "purpose": "Commits: author, times, CL, Reviewed-by, reverts, relands, Bot-Commit, AI-marker and LSC (large-scale change) flags, files and lines. commit_id counts up from 1 at 2017-01-01 and down from -1 before.",
+          "columns": {
+            "commit_id": "Landing order on main, from 1 (first commit since 2017-01-01).",
+            "sha": "Git commit hash (40 hex characters).",
+            "author_email": "Git author email address, lowercased.",
+            "authored_at": "When the commit was authored, Unix seconds.",
+            "landed_at": "When the commit landed (committer date), Unix seconds.",
+            "change_number": "Gerrit CL number from the Reviewed-on footer; empty if none.",
+            "is_bot": "1 if the commit has a Bot-Commit footer, else 0.",
+            "reviewed_by": "JSON list of lowercased emails from Reviewed-by footers; empty if none.",
+            "reverts_sha": "Hash of the commit this one reverts, from its This reverts commit line.",
+            "is_reland": "1 if the subject starts with Reland, else 0.",
+            "files": "Number of files changed in the commit's first-parent diff.",
+            "ins": "Text lines added (binary files count 0).",
+            "dels": "Text lines deleted (binary files count 0).",
+            "author_name": "Git author name.",
+            "is_revert": "1 if a message line starts This reverts commit, else 0.",
+            "ai_marker": "1 if the commit message carries an AI-assistance marker, else 0.",
+            "is_lsc": "1 if the commit is part of a large-scale change, found by its message, else 0."
+          }
         },
         {
           "name": "commit_files",
           "rows": 13556620,
-          "purpose": "Files per commit with line counts."
+          "purpose": "Files per commit with line counts.",
+          "columns": {
+            "commit_id": "Foreign key to commits.commit_id.",
+            "path_id": "Foreign key to paths.path_id.",
+            "ins": "Lines added in this file; -1 for a binary file.",
+            "dels": "Lines deleted in this file."
+          }
         },
         {
           "name": "paths",
           "rows": 1642612,
-          "purpose": "Path dictionary for commit_files."
+          "purpose": "Path dictionary for commit_files.",
+          "columns": {
+            "path_id": "Integer id of a file path, used by commit_files.",
+            "path": "File path within the Chromium repository, relative to its root."
+          }
         },
         {
           "name": "owners_added",
           "rows": 42496,
-          "purpose": "Each address on a line added to an OWNERS file."
+          "purpose": "Each address on a line added to an OWNERS file.",
+          "columns": {
+            "commit_id": "Foreign key to commits.commit_id (the commit that added the owner).",
+            "seq": "Order of the addition within the commit's diff.",
+            "email": "Email added to an OWNERS file, lowercased.",
+            "path": "The OWNERS file the address was added to."
+          }
         },
         {
           "name": "repetition",
           "rows": 173608,
-          "purpose": "Repetition ratio of each commit with a CL and 10 or more files (mechanical CLs)."
+          "purpose": "Repetition ratio of each commit with a CL and 10 or more files (mechanical CLs).",
+          "columns": {
+            "commit_id": "Foreign key to commits.commit_id.",
+            "ratio": "1 minus distinct changed lines over changed lines; near 1 means the same edit repeated. Empty if too large."
+          }
         },
         {
           "name": "gcommits",
           "rows": 1297442,
-          "purpose": "View: the commits since 2017-01-01 (commit_id > 0), the per-CL window."
+          "purpose": "View: the commits since 2017-01-01 (commit_id > 0), the per-CL window.",
+          "columns": {
+            "commit_id": "Landing order of the commit on main (1 = first commit since 2017-01-01).",
+            "sha": "Git commit hash (40 hex characters).",
+            "author_email": "Git author email address, lowercased.",
+            "authored_at": "When the commit was authored, Unix seconds.",
+            "landed_at": "When the commit landed (committer date), Unix seconds.",
+            "change_number": "Gerrit CL number from the Reviewed-on footer; empty if none.",
+            "is_bot": "1 if the commit has a Bot-Commit footer, else 0.",
+            "reviewed_by": "JSON list of lowercased emails from Reviewed-by footers; empty if none.",
+            "reverts_sha": "Hash of the commit this one reverts, from its This reverts commit line.",
+            "is_reland": "1 if the subject starts with Reland, else 0.",
+            "files": "Number of files changed in the commit's first-parent diff.",
+            "ins": "Text lines added (binary files count 0).",
+            "dels": "Text lines deleted (binary files count 0)."
+          }
         },
         {
           "name": "gfiles",
           "rows": 10216159,
-          "purpose": "View: their files."
+          "purpose": "View: their files.",
+          "columns": {
+            "commit_id": "Foreign key to gcommits.commit_id (the commit).",
+            "path_id": "Foreign key to paths.path_id (the changed file).",
+            "ins": "Lines added in this file; -1 for a binary file.",
+            "dels": "Lines deleted in this file."
+          }
         }
       ],
       "notes": "Rebuildable: delete it and rerun (about 1 h 50 min). $COSH_COMMITS_DB overrides the path (docs/commits.md)."
@@ -623,22 +880,47 @@
         {
           "name": "uploads",
           "rows": 4682336,
-          "purpose": "One row per uploaded patch set: who and when."
+          "purpose": "One row per uploaded patch set: who and when.",
+          "columns": {
+            "change_number": "Gerrit CL number.",
+            "ps": "Patch set number within the CL.",
+            "at": "When the patch set was uploaded, Unix seconds.",
+            "uploader": "Gerrit account id of the uploader.",
+            "kind": "Upload type: initial, rework, rebase, message_only or no_change.",
+            "sha": "Git commit hash of the patch set."
+          }
         },
         {
           "name": "attention",
           "rows": 3698365,
-          "purpose": "Attention-set changes: whose turn it was and when."
+          "purpose": "Attention-set changes: whose turn it was and when.",
+          "columns": {
+            "change_number": "Gerrit CL number.",
+            "account_id": "Gerrit account id of the person in the attention set.",
+            "start_at": "When the account entered the attention set, Unix seconds.",
+            "end_at": "When it left, or the CL closed or was last updated, Unix seconds."
+          }
         },
         {
           "name": "votes",
           "rows": 2250353,
-          "purpose": "Code-Review vote events: who, when, value, patch set."
+          "purpose": "Code-Review vote events: who, when, value, patch set.",
+          "columns": {
+            "change_number": "Gerrit CL number.",
+            "voter": "Gerrit account id of the voter.",
+            "value": "Code-Review vote from -2 to +2; 0 means the vote was removed.",
+            "at": "When the vote was cast, Unix seconds.",
+            "ps": "Patch set the vote applied to."
+          }
         },
         {
           "name": "timeline_done",
           "rows": 715564,
-          "purpose": "CLs read, with their meta ref's tip then; a CL whose tip moved is read again."
+          "purpose": "CLs read, with their meta ref's tip then; a CL whose tip moved is read again.",
+          "columns": {
+            "change_number": "Gerrit CL number already processed.",
+            "tip": "Hash of the CL's NoteDb meta ref when read; CL is reread if it changes."
+          }
         }
       ]
     },
@@ -656,7 +938,19 @@
         {
           "name": "interdiff",
           "rows": 273754,
-          "purpose": "Per CL and patch-set pair: lines added and deleted, files."
+          "purpose": "Per CL and patch-set pair: lines added and deleted, files.",
+          "columns": {
+            "change_number": "Gerrit CL number.",
+            "seen_ps": "Patch set the reviewer first saw (the one reviewed).",
+            "final_ps": "Last patch set of the CL.",
+            "lines_seen": "Changed lines in the reviewed patch set's diff.",
+            "lines_final": "Changed lines in the final patch set's diff.",
+            "lines_changed": "Changed lines present in one diff but not the other; rebases count 0.",
+            "files_changed": "Number of files whose diff differs between the two patch sets.",
+            "files_added": "Files in the final diff but not the reviewed one.",
+            "files_dropped": "Files in the reviewed diff but not the final one.",
+            "status": "ok, missing (patch sets not stored locally) or too_big (diff too large to compare)."
+          }
         }
       ]
     },
@@ -674,17 +968,67 @@
         {
           "name": "cl",
           "rows": 1140563,
-          "purpose": "Per CL: 36 columns of size, timing, review and outcome facts."
+          "purpose": "Per CL: 36 columns of size, timing, review and outcome facts.",
+          "columns": {
+            "change_number": "Gerrit CL number.",
+            "owner": "Gerrit account id of the CL owner.",
+            "owner_email": "Owner's email address, if known.",
+            "status": "CL state: MERGED, ABANDONED or NEW.",
+            "created_at": "When the CL was created, Unix seconds.",
+            "closed_at": "When the CL was merged or abandoned, Unix seconds; empty while open.",
+            "close_week": "Week in which the CL closed, as an ISO week label such as 2021-W14.",
+            "ins": "Lines added in the final patch set, per Gerrit (renames detected).",
+            "dels": "Lines deleted in the final patch set, per Gerrit.",
+            "patchsets": "Number of patch sets uploaded.",
+            "sha": "Hash of the commit that landed on main; empty if not landed.",
+            "files": "Number of files in the landed commit.",
+            "git_lines": "Lines added plus deleted in the landed commit (no rename detection).",
+            "is_revert": "1 if the landed commit is a revert, else 0.",
+            "is_reland": "1 if the landed commit is a Reland, else 0.",
+            "reverted_at": "When the first commit reverting the landed commit landed, Unix seconds.",
+            "comments": "Number of review comments by non-bot accounts before close.",
+            "chars": "Total characters in those comments.",
+            "reviewers": "Number of distinct accounts that commented.",
+            "threads": "Number of comment threads started by non-bot accounts.",
+            "addressed": "Threads whose comment the owner addressed, per the regex and Claude classifier.",
+            "pending": "Threads not yet classified as addressed or not.",
+            "first_review_at": "First substantive review (inline comment or answered reviewer thread), Unix seconds.",
+            "sent_at": "First time a non-owner entered the attention set, Unix seconds.",
+            "rework_after": "Rework uploads after the first review.",
+            "rounds": "Owner rework uploads after sending that follow a new reviewer-started thread.",
+            "reviewer_wait_h": "Hours some non-owner human was in the attention set.",
+            "reviewer_wait_wd_h": "Same as reviewer_wait_h, leaving out Saturdays and Sundays (UTC).",
+            "owner_wait_h": "Hours the owner was in the attention set.",
+            "seen_ps": "Patch set the reviewer first saw, as in the interdiff table.",
+            "lines_seen": "Changed lines in the reviewed patch set's diff.",
+            "lines_final": "Changed lines in the final patch set's diff.",
+            "lines_changed": "Changed lines present in one diff but not the other.",
+            "files_changed": "Files whose diff differs between reviewed and final patch sets.",
+            "files_added": "Files in the final diff but not the reviewed one.",
+            "interdiff_status": "Interdiff result: ok, missing or too_big."
+          }
         },
         {
           "name": "cl_attention",
           "rows": 1049334,
-          "purpose": "Per CL and person: time in the attention set."
+          "purpose": "Per CL and person: time in the attention set.",
+          "columns": {
+            "change_number": "Gerrit CL number.",
+            "account_id": "Gerrit account id of a non-owner human.",
+            "hours": "Hours that account was in the CL's attention set.",
+            "weekday_hours": "The same hours with Saturdays and Sundays (UTC) left out."
+          }
         },
         {
           "name": "cl_dirs",
           "rows": 2462386,
-          "purpose": "Directories each CL touches."
+          "purpose": "Directories each CL touches.",
+          "columns": {
+            "change_number": "Gerrit CL number.",
+            "dir": "Directory of the landed commit, cut to three levels, with trailing slash.",
+            "files": "Files of the landed commit in that directory.",
+            "lines": "Lines changed by the landed commit in that directory."
+          }
         }
       ]
     },
@@ -715,15 +1059,39 @@
         {
           "name": "scores",
           "rows": 171804,
-          "purpose": "In scores.sqlite: one score per CL description."
+          "purpose": "In scores.sqlite: one score per CL description.",
+          "columns": {
+            "sha": "Git commit hash of the Chromium change that was scored",
+            "model": "Model that scored the description, e.g. haiku",
+            "prompt": "Short hash identifying the scoring prompt version",
+            "t": "Commit time, Unix seconds",
+            "label": "Marker class of the description: marked (AI-marked), unmarked, mid, or pre (before AI tools)",
+            "chars": "Length of the description in characters, footers stripped",
+            "p": "Model's probability that an AI agent wrote the description, 0-1",
+            "scored_at": "Time of scoring, Unix seconds"
+          },
+          "withheld": "The model's guess, per CL, of whether its description was AI-written; only aggregates are published."
         },
         {
           "name": "runs",
           "rows": 2,
-          "purpose": "In scores.sqlite: each scoring run's cost."
+          "purpose": "In scores.sqlite: each scoring run's cost.",
+          "columns": {
+            "started_at": "Time the scoring run started, Unix seconds",
+            "model": "Model used for the run",
+            "prompt": "Short hash identifying the prompt version used",
+            "since": "Earliest commit date scored, YYYY-MM-DD",
+            "until_": "Latest commit date scored; empty means no limit",
+            "todo": "Number of commits the run planned to score",
+            "done": "Number of commits scored so far",
+            "usd": "API cost of the run in US dollars",
+            "finished_at": "Time the run ended, Unix seconds; empty while running",
+            "stopped": "Reason the run stopped early, if it did; empty otherwise"
+          }
         }
       ],
-      "notes": "Only scores.sqlite costs tokens to remake; the rest is rebuildable."
+      "notes": "Only scores.sqlite costs tokens to remake; the rest is rebuildable.",
+      "database": "data/private/ai_predict/scores.sqlite"
     },
     {
       "id": "data/private/balance_clusters/",
@@ -746,7 +1114,8 @@
       "rebuildable": true,
       "size": "760 KB",
       "size_as_of": "2026-11-12",
-      "purpose": "Per-person career reports for a few exemplar contributors; private drafts behind docs/balance-person.md."
+      "purpose": "Per-person career reports for a few exemplar contributors; private drafts behind docs/balance-person.md.",
+      "withheld": "Private per-person drafts."
     },
     {
       "id": "summaries/balance.json",
@@ -806,7 +1175,8 @@
       "size": "96 KB",
       "size_as_of": "2026-11-12",
       "files": "<e-mail>.md and <e-mail>.reply.json per report.",
-      "purpose": "Private coaching reports that Opus writes from one person's review threads; never published."
+      "purpose": "Private coaching reports that Opus writes from one person's review threads; never published.",
+      "withheld": "Private coaching reports about one person each; never published."
     },
     {
       "id": "data/private/review_roi/",
@@ -829,7 +1199,8 @@
       "tracked_in_git": false,
       "rebuildable": true,
       "size": null,
-      "purpose": "Scratch output of analysis scripts, one folder per topic; safe to delete."
+      "purpose": "Scratch output of analysis scripts, one folder per topic; safe to delete.",
+      "withheld": "Unreviewed scratch output of analyses."
     },
     {
       "id": "data/private/bugs/raw/",
@@ -860,27 +1231,101 @@
         {
           "name": "wanted",
           "rows": 147407,
-          "purpose": "Bug IDs to ask for, with how many commits name each. Recomputed."
+          "purpose": "Bug IDs to ask for, with how many commits name each. Recomputed.",
+          "columns": {
+            "id": "Bug ID as written in a commit's Bug:/Fixed: footer or a Chrome Releases security post",
+            "bug_commits": "Number of main-branch commits naming this ID in a Bug: footer",
+            "fixed_commits": "Number of main-branch commits naming this ID in a Fixed: footer",
+            "security": "1 if the ID appears in Chrome Releases security fixes, else 0",
+            "first_commit": "Committer date of the earliest commit that names this ID, ISO 8601",
+            "last_commit": "Committer date of the latest commit that names this ID, ISO 8601"
+          }
         },
         {
           "name": "asked",
           "rows": 145278,
-          "purpose": "Per ID: whether it was visible and when it was asked. Fetch history."
+          "purpose": "Per ID: whether it was visible and when it was asked. Fetch history.",
+          "columns": {
+            "id": "Issue-tracker bug ID we requested",
+            "visible": "1 if the tracker returned the bug, 0 if it was restricted or absent",
+            "first_asked": "Time of the first request that asked for this ID, UTC ISO 8601",
+            "last_asked": "Time of the most recent request that asked for this ID, UTC ISO 8601",
+            "times": "How many requests have asked for this ID",
+            "request_seq": "Sequence number of the last request that asked for this ID"
+          }
         },
         {
           "name": "monorail_map",
           "rows": 21267,
-          "purpose": "Old Monorail ID to new tracker ID. Fetch history."
+          "purpose": "Old Monorail ID to new tracker ID. Fetch history.",
+          "columns": {
+            "old_id": "Old Monorail-era bug ID that we looked up",
+            "new_id": "Issue-tracker ID the old ID redirects to; empty if the stub names no issue",
+            "http_status": "HTTP status code of the lookup reply",
+            "fetched_at": "Time of the lookup, UTC ISO 8601",
+            "request_seq": "Sequence number of the request that did the lookup"
+          }
         },
         {
           "name": "requests",
           "rows": 24173,
-          "purpose": "One row per HTTP request and its outcome. Fetch history."
+          "purpose": "One row per HTTP request and its outcome. Fetch history.",
+          "columns": {
+            "seq": "Request sequence number, counting up from 1",
+            "kind": "Request type: list (batch of issue IDs) or monorail (old-ID lookup)",
+            "started_at": "Time the request started, UTC ISO 8601",
+            "elapsed_s": "Round-trip time in seconds",
+            "http_status": "HTTP status code of the reply; -1 means a network error",
+            "final_url": "URL answered after any redirects",
+            "headers": "Response headers, as JSON",
+            "request_body": "What we sent: the bug IDs asked for",
+            "wire_bytes": "Bytes received over the network (compressed)",
+            "body_bytes": "Size of the reply body in bytes after decompression",
+            "file": "Path of the saved gzip copy of the reply, under bugs/raw/",
+            "n_asked": "Number of bug IDs the request asked for",
+            "n_returned": "Number of bugs the reply contained",
+            "outcome": "Result class: ok, http (error status), shape (unexpected reply), blocked, or net (network error)"
+          },
+          "redact": [
+            "headers",
+            "request_body"
+          ]
         },
         {
           "name": "bugs",
           "rows": 67347,
-          "purpose": "Parsed metadata of each visible bug. Rebuildable from raw/ with `parse`."
+          "purpose": "Parsed metadata of each visible bug. Rebuildable from raw/ with `parse`.",
+          "columns": {
+            "id": "Issue-tracker bug ID",
+            "tracker": "Numeric ID of the tracker the issue lives in (157 is Chromium); sometimes empty",
+            "component_id": "Numeric ID of the bug's component",
+            "component_path": "Component name path, e.g. a slash-separated hierarchy",
+            "type": "Numeric bug type (1 Bug, 2 Feature request, 6 Vulnerability, ...)",
+            "type_name": "Name of the bug type; empty for unknown codes",
+            "status": "Numeric status (1 New ... 4 Fixed, 5 Verified, 10 Duplicate)",
+            "status_name": "Name of the status, e.g. New, Assigned, Fixed",
+            "priority": "Priority, P0 (highest) to P4",
+            "severity": "Severity, S0 (worst) to S4",
+            "title": "Bug title (untrusted text from the tracker)",
+            "created": "Time the bug was filed, UTC ISO 8601",
+            "modified": "Time of the last change to the bug, UTC ISO 8601",
+            "resolved": "Time the bug was closed, UTC ISO 8601; empty if open",
+            "verified": "Time the fix was verified, UTC ISO 8601; only on Verified bugs",
+            "cve": "CVE identifier assigned to the bug, if any",
+            "introduced_in": "Version or milestone where the bug was introduced (custom field)",
+            "milestone": "Chrome milestone the bug targets or was fixed in (custom field)",
+            "security_release": "Security release the fix shipped in (custom field)",
+            "os": "Operating systems the bug affects (custom field)",
+            "labels": "Chromium labels on the bug, comma-separated (untrusted text)",
+            "found_in": "Chrome milestones the bug was found in, as a JSON list",
+            "hotlists": "IDs of hotlists containing the bug, as a JSON list",
+            "fixed_by": "Code changes that fixed the bug, as a JSON list of host/project/change",
+            "fixed_by_field": "Display text of the Fixed By Code Changes custom field",
+            "regression": "1 if labelled regression or Introduced In is set, else 0 (rough heuristic)",
+            "custom": "All custom fields as a JSON map of name to value (untrusted text)",
+            "raw_file": "Saved raw reply file this record was parsed from",
+            "fetched_at": "Time the record was fetched, UTC ISO 8601"
+          }
         }
       ],
       "notes": "Mixes fetch history that can't be rebuilt with two tables that can."
@@ -909,7 +1354,11 @@
       "size": "about 60 KB",
       "size_as_of": "2026-11-12",
       "purpose": "This inventory, kept by hand whenever a source, store, step or page changes.",
-      "notes": "`python3 scripts/dataflow.py check` verifies it against the repository."
+      "notes": "`python3 scripts/dataflow.py check` verifies it against the repository.",
+      "git_paths": [
+        "config/dataflow.json",
+        "config/dataflow-samples.json"
+      ]
     }
   ],
   "steps": [

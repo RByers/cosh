@@ -6,6 +6,7 @@
 // DOM as text or attributes (the CSP forbids HTML sinks), and scripts set
 // classes and custom properties, never styles.
 import dataUrl from '../../config/dataflow.json?url';
+import samplesUrl from '../../config/dataflow-samples.json?url';
 import {
   baseId,
   buildGraph,
@@ -22,8 +23,9 @@ import {
   type Node,
   type Step,
   type Store,
+  type TableInfo,
 } from './dataflow-graph.ts';
-import { fill } from './text.ts';
+import { fill, msg } from './text.ts';
 
 const SVG = 'http://www.w3.org/2000/svg';
 const REPO = 'https://github.com/RByers/cosh/blob/main/';
@@ -65,7 +67,25 @@ function svg<K extends keyof SVGElementTagNameMap>(tag: K, attrs: Record<string,
   return e;
 }
 
+/** A few entries of a store or one of its tables (scripts/dataflow_samples.py). */
+interface SamplePart {
+  /** The table or member file; null for a single-file store. */
+  name: string | null;
+  kind: 'rows' | 'lines' | 'entries' | 'files' | 'refs' | 'commits';
+  columns: string[];
+  rows: (string | number | null)[][];
+  total?: number;
+  withheld?: string;
+  missing?: boolean;
+}
+
+interface Samples {
+  generated: string;
+  stores: Record<string, { withheld?: string; parts: SamplePart[] }>;
+}
+
 let data: Dataflow;
+let samples: Samples | null = null;
 let graph: Graph;
 let selected: string | null = null;
 /** What the page filter and the extras box leave in view. */
@@ -396,6 +416,18 @@ function showDetail(): void {
   } else fact('code', null);
   fact('size', s.size ? `${s.size}${s.size_as_of ? ` (${s.size_as_of})` : ''}` : null);
   fact('files', s.files);
+  const parts = (n.store && samples?.stores[n.id]) || null;
+  // The samples that aren't of a listed table: a file, a directory, a repo.
+  const extra = el('ul', null, 'df-links');
+  if (parts?.withheld) {
+    extra.appendChild(el('li')).append(sampleButton(n.id, -1, msg('sample-withheld-button')));
+  } else {
+    parts?.parts.forEach((p, k) => {
+      if (s.tables?.some((t) => t.name === p.name)) return;
+      extra.appendChild(el('li')).append(sampleButton(n.id, k, msg('sample-button', { kind: p.kind, name: p.name ?? '' })));
+    });
+  }
+  fact('samples', extra.children.length ? extra : null);
   fact('git', n.store ? (s.tracked_in_git ? msgOf('git-yes', { paths: (s.git_paths ?? []).join(', ') }) : msgOf('git-no')) : null);
   fact('rebuild', n.store ? (s.rebuildable ? msgOf('rebuild-yes') : msgOf('rebuild-no', { keep: !!s.never_delete })) : null);
   fact('coverage', n.source?.coverage);
@@ -424,13 +456,70 @@ function showDetail(): void {
   tbody.replaceChildren();
   for (const tb of s.tables ?? []) {
     const tr = el('tr');
-    const th = el('th', tb.name, 'df-mono');
+    const th = el('th', null, 'df-mono');
     th.scope = 'row';
+    const k = parts?.parts.findIndex((p) => p.name === tb.name) ?? -1;
+    th.append(k >= 0 || parts?.withheld ? sampleButton(n.id, k, tb.name) : tb.name);
     const rows = tb.rows == null ? '' : `${tb.rows_approx ? '~' : ''}${tb.rows.toLocaleString('en')}`;
     tr.append(th, el('td', rows, 'num'), el('td', tb.purpose));
     tbody.append(tr);
   }
   $('#detail-tables-box').hidden = !s.tables?.length;
+}
+
+/** A button that opens the sample popup for part `k` of a store's samples
+ * (-1: the store's reason for having none). */
+function sampleButton(store: string, k: number, text: string): HTMLButtonElement {
+  const b = el('button', text, 'df-link df-mono df-sample-link');
+  b.type = 'button';
+  b.dataset.sample = `${k}`;
+  b.dataset.store = store;
+  return b;
+}
+
+/** The popup: a part's columns (with their meanings as hover titles) and rows. */
+function showSample(store: string, k: number): void {
+  const n = graph.nodes.get(store);
+  const got = samples?.stores[store];
+  if (!n?.store || !got) return;
+  const s = n.store;
+  const part: SamplePart | undefined = got.parts[k];
+  const table: TableInfo | undefined = s.tables?.find((t) => t.name === part?.name);
+  const meanings = (table ? table.columns : part && part.name === null ? s.columns : undefined) ?? {};
+  $('#sample-title').textContent = part?.name ? `${full(n)}: ${part.name}` : full(n);
+  $('#sample-purpose').textContent = table?.purpose ?? s.purpose;
+  const withheld = got.withheld ?? part?.withheld ?? '';
+  const cols = part?.columns ?? [];
+  const tips = cols.some((c) => meanings[c]);
+  const total = part?.total ?? (table?.rows != null ? `${table.rows_approx ? '~' : ''}${table.rows.toLocaleString('en')}` : '');
+  fill($('#sample-note'), {
+    withheld, missing: !!part?.missing, kind: part?.kind ?? '', total: typeof total === 'number' ? total.toLocaleString('en') : total,
+    generated: samples!.generated, tips,
+  });
+  const head = $('#sample-head');
+  head.replaceChildren();
+  for (const c of cols) {
+    const th = el('th', c, meanings[c] ? 'df-tip' : undefined);
+    th.scope = 'col';
+    if (meanings[c]) th.title = meanings[c];
+    head.append(th);
+  }
+  const body = $('#sample-rows');
+  body.replaceChildren();
+  for (const r of part?.rows ?? []) {
+    const tr = el('tr');
+    for (const v of r) {
+      const td = el('td');
+      if (v === null) td.append(el('span', msg('sample-null'), 'df-dim'));
+      else td.textContent = String(v);
+      if (typeof v === 'number') td.classList.add('num');
+      tr.append(td);
+    }
+    body.append(tr);
+  }
+  $('#sample-box').hidden = !cols.length;
+  const dialog = $<HTMLDialogElement>('#sample-dialog');
+  if (!dialog.open) dialog.showModal();
 }
 
 function select(id: string | null, scroll: boolean): void {
@@ -519,7 +608,20 @@ function controls(): void {
   pick.addEventListener('change', refilter);
   $('#find').addEventListener('input', filterTables);
   $('#show-analysis').addEventListener('change', refilter);
+  const dialog = $<HTMLDialogElement>('#sample-dialog');
+  // Escape closes it by itself; so does a click on the backdrop.
+  dialog.addEventListener('click', (e) => {
+    const r = dialog.getBoundingClientRect();
+    const inside = e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom;
+    if (e.target === dialog && !inside) dialog.close();
+  });
+  $('#sample-close').addEventListener('click', () => dialog.close());
   document.addEventListener('click', (e) => {
+    const sample = (e.target as Element).closest<HTMLElement>('[data-sample]');
+    if (sample) {
+      showSample(sample.dataset.store!, Number(sample.dataset.sample));
+      return;
+    }
     const hit = (e.target as Element).closest<HTMLElement | SVGElement>('[data-node]');
     if (!hit || hit.localName === 'tr') return;
     const id = hit.dataset.node!;
@@ -547,7 +649,12 @@ function fromHash(): void {
 }
 
 async function main(): Promise<void> {
+  // The samples are an extra: the page works without them.
+  const gotSamples = fetch(samplesUrl)
+    .then((r) => (r.ok ? (r.json() as Promise<Samples>) : null))
+    .catch(() => null);
   data = (await (await fetch(dataUrl)).json()) as Dataflow;
+  samples = await gotSamples;
   graph = buildGraph(data);
   for (const p of graph.problems) console.error(`config/dataflow.json: ${p}`);
   fill($('#counts'), {

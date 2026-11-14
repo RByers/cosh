@@ -96,6 +96,7 @@
           <div data-field="code"><dt>Code</dt><dd></dd></div>
           <div data-field="size"><dt>Size</dt><dd></dd></div>
           <div data-field="files"><dt>Files</dt><dd></dd></div>
+          <div data-field="samples"><dt>Samples</dt><dd></dd></div>
           <div data-field="git"><dt>In git</dt><dd></dd></div>
           <div data-field="rebuild"><dt>If lost</dt><dd></dd></div>
           <div data-field="coverage"><dt>Coverage</dt><dd></dd></div>
@@ -124,8 +125,14 @@
         <template data-msg="rebuild-no">Not rebuildable locally<span data-if="keep">; never delete</span></template>
         <template data-msg="network-yes">Fetches from the network</template>
         <template data-msg="network-no">Offline</template>
+        <template data-msg="sample-button">Show <span data-if="kind=rows">5 sample rows</span><span
+          data-if="kind=lines">5 sample lines</span><span data-if="kind=entries">5 sample entries</span><span
+          data-if="kind=files">5 sample files</span><span data-if="kind=refs">5 sample refs</span><span
+          data-if="kind=commits">the 5 newest commits</span><span data-if="name"> of <slot name="name"></slot></span></template>
+        <template data-msg="sample-withheld-button">Why there are no samples</template>
         <div id="detail-tables-box" hidden>
           <h3>Tables</h3>
+          <p class="note">Click a table for 5 sample rows.</p>
           <div class="table-wrap" tabindex="0" role="region" aria-labelledby="detail-title">
             <table class="df-table">
               <thead><tr><th scope="col">Table</th><th scope="col" class="num">Rows</th><th scope="col">Purpose</th></tr></thead>
@@ -249,6 +256,38 @@
           </table>
         </div>
       </section>
+
+      <!-- The sample popup (src/dataflow.ts): a few entries of a store or table,
+           from config/dataflow-samples.json (scripts/dataflow_samples.py). Values
+           are untrusted text and go in as text only. -->
+      <dialog id="sample-dialog" class="person-dialog df-sample" aria-labelledby="sample-title">
+        <div class="person-head">
+          <h2 id="sample-title" class="df-mono"></h2>
+          <button type="button" id="sample-close" class="person-close" aria-label="Close">×</button>
+        </div>
+        <p id="sample-purpose" class="sub"></p>
+        <p id="sample-note" class="note"></p>
+        <div id="sample-box" class="table-wrap" tabindex="0" role="region" aria-labelledby="sample-title">
+          <table class="df-table df-sample-table">
+            <thead><tr id="sample-head"></tr></thead>
+            <tbody id="sample-rows"></tbody>
+          </table>
+        </div>
+      </dialog>
+      <template data-msg="sample-note">
+        <span data-if="withheld">Not published: <slot name="withheld"></slot></span>
+        <span data-if="missing">There was nothing at this path when the samples were taken.</span>
+        <span data-if="!withheld"><span data-if="!missing">
+          <span data-if="kind=rows">Five rows spread over the table<span data-if="total"> of <slot name="total"></slot></span>,</span>
+          <span data-if="kind=lines">Five lines spread over the file (blank lines skipped),</span>
+          <span data-if="kind=entries">Five entries spread over the file,</span>
+          <span data-if="kind=files">Five files spread over the <slot name="total"></slot> here, with their sizes,</span>
+          <span data-if="kind=refs">Five refs spread over the <slot name="total"></slot> here,</span>
+          <span data-if="kind=commits">The newest commits on main</span>
+          as of <slot name="generated"></slot>. Long values are cut short.</span></span>
+        <span data-if="tips">Hover over a column name for what it holds.</span>
+      </template>
+      <template data-msg="sample-null">null</template>
 
       <p id="no-match" class="note" hidden>Nothing in the tables matches.</p>
     </main>

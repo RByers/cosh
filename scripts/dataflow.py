@@ -15,7 +15,9 @@
   python3 scripts/dataflow.py list [sources|stores|steps|pages]
       The ids, with one line each.
 
-web/dataflow.html draws the same file (web/src/dataflow-graph.ts has the
+`python3 scripts/dataflow_samples.py` writes config/dataflow-samples.json,
+the sample entries the page shows, and `check` verifies them against the
+inventory too. web/dataflow.html draws the same file (web/src/dataflow-graph.ts has the
 same graph rules). Field meanings: docs/data-architecture.md.
 """
 import argparse
@@ -28,6 +30,7 @@ import sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 PATH = os.path.join(ROOT, "config", "dataflow.json")
+SAMPLES = os.path.join(ROOT, "config", "dataflow-samples.json")
 
 TIERS = ("raw", "labels", "derived", "analysis", "published", "config")
 REFRESHES = ("routine", "optional", "one-off", "analysis", "maintenance")
@@ -225,7 +228,47 @@ def check(d, root=ROOT, files=None):
         if not any(matches(p, imp) for p in read):
             problems.append(f"{imp}: imported by a page script but in no page's reads")
     problems += flow_problems(d, g)
+    samples_path = os.path.join(root, "config", "dataflow-samples.json")
+    if os.path.exists(samples_path):
+        with open(samples_path, encoding="utf-8") as f:
+            problems += sample_problems(d, json.load(f))
     return problems
+
+
+def sample_problems(d, samples):
+    """The published samples (scripts/dataflow_samples.py) against the
+    inventory: nothing withheld or redacted got in, and every column shown
+    has a meaning, and every meaning a column."""
+    out = []
+    for s in d["stores"]:
+        got = samples["stores"].get(s["id"])
+        if got is None:
+            out.append(f"{s['id']}: no samples (rerun scripts/dataflow_samples.py)")
+            continue
+        if s.get("withheld") and got["parts"]:
+            out.append(f"{s['id']}: withheld, but the samples have its rows")
+        tables = {t["name"]: t for t in s.get("tables", [])}
+        for part in got["parts"]:
+            t = tables.get(part["name"])
+            if t and t.get("withheld") and part["rows"]:
+                out.append(f"{s['id']} {part['name']}: withheld, but the samples have its rows")
+            for c in (t or {}).get("redact", []):
+                if c in part["columns"]:
+                    k = part["columns"].index(c)
+                    if any(r[k] not in (None, "(withheld)") for r in part["rows"]):
+                        out.append(f"{s['id']} {part['name']}: column {c} is redacted, but the samples show it")
+            meanings = t.get("columns") if t else s.get("columns") if part["name"] is None else None
+            if part["kind"] != "rows" or (meanings is None and not t and part["name"] is not None):
+                continue
+            where = f"{s['id']}" + (f" {part['name']}" if part["name"] else "")
+            meanings = meanings or {}
+            for c in part["columns"]:
+                if c not in meanings:
+                    out.append(f"{where}: column {c} has no meaning in the inventory's columns")
+            for c in meanings:
+                if c not in part["columns"] and not part.get("missing"):
+                    out.append(f"{where}: columns lists {c}, which the table doesn't have")
+    return out
 
 
 def flow_problems(d, g):
