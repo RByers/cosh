@@ -2,11 +2,11 @@
 
 This is what changes to the Feedback Index (`web/feedback-index.html`,
 `docs/review-feedback.md`) are judged by. The project's overall goal is in
-`docs/plan.md`; goals 2–4 here hold for the whole repository too, since
-every dashboard shares the weekly update, the git history and the token
-budget.
+`docs/plan.md`; goals 2–5 here hold for the whole repository too, since
+every dashboard shares the weekly update, the git history, the token
+budget and the data flow.
 
-The goals are in priority order. Goal 1 is what the page is for; goals 2–4
+The goals are in priority order. Goal 1 is what the page is for; goals 2–5
 are constraints on how we get there. A change that makes the index
 noticeably more accurate may cost some update time, repository volume or
 tokens, but each of those has a ceiling, and staying within them is part
@@ -65,7 +65,15 @@ Adding a new week of Gerrit data and refreshing the page should be routine:
 
 ## 3. Repository volume well under 1 GB, without history explosion
 
-Everything the site reads is committed, so git keeps every version of it:
+Everything the site reads is committed, so git keeps every version of it.
+This goal is about committed files only: data on disk that isn't committed
+(`data/private/`) costs nothing here (goal 5).
+
+- **Publish the minimum the pages need.** A committed file holds only what
+  a page reads, in the leanest form that keeps it reproducible (goal 1):
+  no unused fields, no values a page can compute from others it already
+  loads, nothing kept "in case". Whatever else is useful for analysis
+  stays in uncommitted stores.
 
 - **The whole repository stays well under 1 GB** packed, history included
   (338 MB on 2026-11-14, of which the Feedback Index's history is about
@@ -93,3 +101,24 @@ Everything the site reads is committed, so git keeps every version of it:
 - Labels and scores already paid for are kept (`addressed.sqlite`,
   `sentiment.sqlite`), so a change of method that can reuse them is
   preferred over one that needs them remade.
+
+## 5. A clean data flow; intermediate data on disk is fine
+
+- **Intermediate data on disk is fine, in any amount.** Uncommitted
+  stores in `data/private/` (caches, derived databases, scratch, run logs)
+  cost nothing against the goals above, as long as the disk holds them.
+  Keeping a large intermediate store is better than re-fetching, re-paying
+  model calls or rebuilding slowly (and `CLAUDE.md` asks us to keep
+  whatever we download).
+- **What matters is a data flow that is easy to reason about and update.**
+  `config/dataflow.json` (drawn by `web/dataflow.html`, explained in
+  `docs/data-architecture.md`) should stay small and clear: few stores and
+  steps, each with one evident purpose and a name that says who uses it,
+  every flow tracing back to a source and ending in something a page
+  reads. Prefer one well-named intermediate store that several steps read
+  over each step deriving its own copy, and remove stores and steps that
+  nothing reads any more.
+- So an extra intermediate store is a good trade when it makes the
+  published files smaller (goal 3), the weekly update faster (goal 2) or
+  the flow simpler, and a poor one when it only adds another box to the
+  graph.
