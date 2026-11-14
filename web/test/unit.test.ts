@@ -1764,10 +1764,11 @@ test('dataflow: layout runs top to bottom, sources and config first, pages last,
 test('dataflow: the routed drawing of each page has no crossings (bar known ones) and no edge behind a box', () => {
   const real = G.buildGraph(flow);
   const size = { nodeW: 128, chipW: 112, chipGap: 10, laneW: 6, gap: 16 }; // as dataflow.ts
-  // The Feedback Index allows 2: review-feedback and comments-collect both read reviews.sqlite
+  // The Feedback Index allows 5. 2: review-feedback and comments-collect both read reviews.sqlite
   // and the affiliations file, and since tone was split off (2026-11-14) neither feeds the
-  // other, so those four edges can't all be kept apart.
-  const allowed: Record<string, number> = { 'page-feedback': 2 };
+  // other, so those four edges can't all be kept apart. 3 more since the comment download
+  // (2026-11-14): review-threads reads NoteDb, reviews.sqlite and addressed.sqlite beside them.
+  const allowed: Record<string, number> = { 'page-feedback': 5 };
   for (const pages of [['page-feedback'], ['page-value'], ['page-sentiment']]) {
     const split = G.splitShared(real, G.scope(real, pages, false));
     const r = G.route(split.g, split.keep, size);
@@ -1846,4 +1847,38 @@ test('review load: quarter figures, a reviewer\'s files and the directory tree',
   assert.equal(L.dirRows(L.dirTree(many, null), new Set(['m:root']), false).length, 20);
   // Shade: half the typical wait or less is fully green, twice or more fully red.
   assert.deepEqual([L.waitShade(10, 20), L.waitShade(20, 20), L.waitShade(80, 20), L.waitShade(null, 20), L.waitShade(5, null)], [-1, 0, 1, 0, 0]);
+});
+
+test('feedback index download: half-year ranges, URLs and the Markdown of threads', async () => {
+  const F = await import('../src/feedback.ts');
+  assert.deepEqual(F.halvesBetween(['2026H1', '2025H1', '2025H2'], '2026H1', '2025H2'), ['2025H2', '2026H1']);
+  assert.equal(F.threadsUrl('0123456789abcdef0123456789abcdef', '2026H1', 20400.5),
+    'https://cosh-data.rbyers.ca/review-feedback/threads/2026H1/0123456789abcdef0123456789abcdef.json?v=20400');
+  assert.throws(() => F.threadsUrl('../x', '2026H1', 1));
+  const file: import('../src/feedback.ts').ThreadFile = {
+    v: 1, half: '2026H1', people: ['Rev Iewer', 'Own Er'],
+    cls: [
+      { n: 2, project: 'chromium/src', subject: 'Later\nchange', landed: '2026-03-01', lines: 5, owner: 1, threads: [
+        { id: 'b', path: '/PATCHSET_LEVEL', line: null, ps: 1, addressed: null, resolved: true,
+          comments: [[0, '2026-02-28T10:00Z', 'Please add a test.']] }] },
+      { n: 1, project: 'chromium/src', subject: 'First', landed: '2026-01-02', lines: null, owner: 1, threads: [
+        { id: 'a/1', path: 'a`b.cc', line: 12, ps: 3, addressed: true, resolved: false,
+          comments: [[0, '2026-01-01T09:00Z', 'Rename this.\n\n## not a heading'], [1, '2026-01-01T10:00Z', 'Done']] }] },
+      { n: 3, project: 'chromium/src', subject: 'No comments', landed: '2026-04-01', lines: 1, owner: 1, threads: [] },
+    ],
+  };
+  const l = { owner: 'me', addressed: 'addressed', notAddressed: 'not addressed', unresolved: 'unresolved', change: 'Change',
+    commitMsg: 'commit message', line: (n: number) => `line ${n}`, patchSet: (n: number) => `patch set ${n}`,
+    landed: (d: string, n: string) => `landed ${d}, ${n} lines` };
+  const { md, cls, threads } = F.threadsMarkdown([file], l);
+  assert.deepEqual([cls, threads], [2, 2]);
+  assert.equal(md, [
+    '## First', '', '[Change 1](https://chromium-review.googlesource.com/c/chromium/src/+/1) · landed 2026-01-02, ? lines', '',
+    '### `` a`b.cc `` · line 12 · patch set 3 · addressed · unresolved · [Gerrit](https://chromium-review.googlesource.com/c/chromium/src/+/1/comment/a%2F1/)', '',
+    '**Rev Iewer**, 2026-01-01:', '', '> Rename this.\n>\n> ## not a heading', '',
+    '**Own Er (me)**, 2026-01-01:', '', '> Done', '',
+    '## Later change', '', '[Change 2](https://chromium-review.googlesource.com/c/chromium/src/+/2) · landed 2026-03-01, 5 lines', '',
+    '### Change · patch set 1 · [Gerrit](https://chromium-review.googlesource.com/c/chromium/src/+/2/comment/b/)', '',
+    '**Rev Iewer**, 2026-02-28:', '', '> Please add a test.', '',
+  ].join('\n'));
 });

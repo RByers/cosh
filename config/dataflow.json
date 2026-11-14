@@ -1218,6 +1218,36 @@
       "notes": "Committed and published on GitHub Pages since 2026-11-12. Finished half-years' files don't change between runs unless their inputs do, so git stores them once; each run rewrites the current half-year and u/. Commit with `git add -A web/public/review-feedback/`."
     },
     {
+      "id": "data/private/review-threads/",
+      "name": "Feedback Index full threads",
+      "path": "data/private/review-threads/",
+      "kind": "directory",
+      "tier": "derived",
+      "tracked_in_git": false,
+      "rebuildable": true,
+      "size": "400 MB gzipped: 32,676 files (19 half-years, about 1,300 to 2,000 people each), 2.78M threads",
+      "size_as_of": "2026-11-14",
+      "files": "<half-year>/<hash>.json.gz: per person and half-year, every thread a human reviewer other than the owner started on their merged changes, with each comment's full text, author, time, file, line and patch set, and whether it was addressed (cosh/review_threads.py has the format).",
+      "purpose": "The comment download's files, kept locally so that the upload sends only those that changed.",
+      "notes": "Too big for git; cosh.r2 publishes them. Written byte for byte the same when nothing changed.",
+      "withheld": "Comment text, negative comments included, belongs only behind a typed address (ground rule 5); the samples page is reached by clicks."
+    },
+    {
+      "id": "r2:review-feedback/threads/",
+      "name": "Feedback Index threads in R2",
+      "path": "r2:review-feedback/threads/",
+      "kind": "directory",
+      "tier": "published",
+      "tracked_in_git": false,
+      "rebuildable": true,
+      "size": "400 MB, 32,676 objects (stored gzipped)",
+      "size_as_of": "2026-11-14",
+      "files": "review-feedback/threads/<half-year>/<hash>.json in the R2 bucket `cosh`, served gzipped at https://cosh-data.rbyers.ca/ (README.md).",
+      "purpose": "What the Feedback Index fetches when someone downloads their review comments.",
+      "withheld": "Comment text, negative comments included, is reachable only by typing the person's address (hashed file names, no listing), as ground rule 5 allows since 2026-11-14.",
+      "notes": "Uploads are recorded in data/private/r2-manifest.json (key -> sha256), so a sync never lists the bucket. The bucket's CORS policy allows the site's origin."
+    },
+    {
       "id": "web/public/review-load/all.json",
       "name": "Review Load global data",
       "path": "web/public/review-load/all.json",
@@ -2108,6 +2138,57 @@
       "run": "nice -n 5 python3 -m cosh.review_feedback"
     },
     {
+      "id": "review-threads",
+      "command": "nice -n 5 python3 -m cosh.review_threads [--half 2026H2]",
+      "code": [
+        "cosh/review_threads.py",
+        "cosh/notedb.py"
+      ],
+      "purpose": "Writes every reviewer thread on each person's changes, full text included, per person and half-year, for the comment download.",
+      "inputs": [
+        "feedback-people",
+        "data/private/reviews.sqlite",
+        "data/private/addressed.sqlite",
+        "gerrit-raw"
+      ],
+      "outputs": [
+        "data/private/review-threads/"
+      ],
+      "network": false,
+      "lock": null,
+      "incremental": "Rewrites only files whose content changed, and removes those of people or half-years no longer published; --half limits it to some half-years.",
+      "duration": "about 5 min for all 19 half-years, 20 s for one (2026-11-14), 650 MB of memory",
+      "token_cost": null,
+      "cost_source": "docs/review-feedback.md",
+      "refresh": "routine",
+      "notes": "Takes its people and changes from the published half-year files, so run it after review-feedback.",
+      "run": "nice -n 5 python3 -m cosh.review_threads"
+    },
+    {
+      "id": "r2-threads",
+      "command": "python3 -m cosh.r2 sync data/private/review-threads review-feedback/threads",
+      "code": [
+        "cosh/r2.py"
+      ],
+      "purpose": "Uploads the changed thread files to the R2 bucket and deletes those that are gone.",
+      "inputs": [
+        "data/private/review-threads/"
+      ],
+      "outputs": [
+        "r2:review-feedback/threads/"
+      ],
+      "network": true,
+      "lock": null,
+      "incremental": "Uploads only files whose sha256 differs from the manifest's (data/private/r2-manifest.json).",
+      "duration": "to be measured",
+      "token_cost": null,
+      "cost_source": "docs/review-feedback.md",
+      "refresh": "routine",
+      "approval": "Writes to the user's Cloudflare R2 bucket with the bucket-scoped token in ~/.secrets/cosh/r2.json; refuses more than 50,000 objects in one run or 5 GB in all.",
+      "notes": "Run from the main checkout, after review-threads. Standard library only (AWS SigV4).",
+      "run": "python3 -m cosh.r2 sync data/private/review-threads review-feedback/threads"
+    },
+    {
       "id": "review-load",
       "command": "nice -n 5 python3 -m cosh.review_load",
       "code": [
@@ -2375,7 +2456,8 @@
       "reads": [
         "web/public/review-feedback/peers.json",
         "web/public/review-feedback/reviewers.json",
-        "feedback-people"
+        "feedback-people",
+        "r2:review-feedback/threads/"
       ],
       "sources_line": "Gerrit code review · Chromium git history",
       "notes": "Linked from the landing page since 2026-11-12; carries noindex."

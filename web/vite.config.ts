@@ -57,7 +57,8 @@ export const CSP = [
   "style-src 'self'",
   // The favicons are data: URLs.
   "img-src 'self' data:",
-  "connect-src 'self'",
+  // The comment download's threads (cosh/r2.py, README.md).
+  "connect-src 'self' https://cosh-data.rbyers.ca",
   "base-uri 'none'",
   "form-action 'none'",
   "require-trusted-types-for 'script'",

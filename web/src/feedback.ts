@@ -692,3 +692,115 @@ export function buildPerson(top: Top, shards: Shard[], peers: Pick<Peers, 'addr_
     dirs: [...tables.dirs.keys()], files: [...tables.files.keys()], revs: [...tables.revs.keys()],
     revF: [...tables.revs.keys()].map(() => 1), revCls: [...tables.revs.keys()].map(() => 0), cls };
 }
+
+// ---- downloading your comments (cosh/review_threads.py, served from the R2 bucket)
+
+/** Where the full threads are served: one gzipped JSON file per person and half-year, too big for git
+ * (README.md). The page fetches them only when someone asks to download their comments. */
+export const THREADS_BASE = 'https://cosh-data.rbyers.ca/review-feedback/threads/';
+
+/** review-feedback/threads/<half>/<key>.json (cosh/review_threads.py, version 1). Comment text is
+ * untrusted: it goes only into the downloaded file, never into the page. */
+export interface ThreadFile {
+  v: 1;
+  half: string;
+  /** Names (else addresses), indexed by `owner` and each comment's first element. */
+  people: string[];
+  cls: ThreadCl[];
+}
+
+export interface ThreadCl {
+  n: number;
+  project: string;
+  subject: string;
+  /** YYYY-MM-DD. */
+  landed: string;
+  lines: number | null;
+  owner: number;
+  threads: Thread[];
+}
+
+export interface Thread {
+  /** The first comment's uuid. */
+  id: string;
+  /** A file, "/COMMIT_MSG" or "/PATCHSET_LEVEL" (a comment on the whole change). */
+  path: string;
+  line: number | null;
+  ps: number | null;
+  /** Whether the owner changed the change in response; null for change-level threads and threads
+   * not yet labelled. */
+  addressed: boolean | null;
+  resolved: boolean;
+  /** [people index, "YYYY-MM-DDTHH:MMZ", text]. */
+  comments: [number, string, string][];
+}
+
+/** The URL of one person's threads for one half-year; `v` (the data's end) skips cached older copies. */
+export function threadsUrl(key: string, half: string, v: number): string {
+  if (!/^[0-9a-f]{32}$/.test(key) || !/^\d{4}H[12]$/.test(half)) throw new Error('bad key or half-year');
+  return `${THREADS_BASE}${half}/${key}.json?v=${Math.trunc(v)}`;
+}
+
+/** A Gerrit link to a thread, by its change's project. */
+export function threadUrl(project: string, cl: number, uuid: string): string {
+  return `${GERRIT}/c/${project.split('/').map(encodeURIComponent).join('/')}/+/${Math.trunc(cl)}/comment/${encodeURIComponent(uuid)}/`;
+}
+
+/** The half-years from `from` to `to` (inclusive) among `have`, in order. */
+export function halvesBetween(have: string[], from: string, to: string): string[] {
+  const [a, b] = from <= to ? [from, to] : [to, from];
+  return [...have].sort().filter((h) => h >= a && h <= b);
+}
+
+/** Every comment line of `text` quoted for Markdown. */
+const quoted = (text: string) => text.replace(/\r\n?/g, '\n').trim().split('\n').map((l) => (l ? `> ${l}` : '>')).join('\n');
+/** Inline code that survives backticks in the content. */
+const code = (s: string) => {
+  const ticks = '`'.repeat(Math.max(0, ...(s.match(/`+/g) ?? []).map((t) => t.length)) + 1);
+  return `${ticks}${ticks.length > 1 ? ' ' : ''}${s}${ticks.length > 1 ? ' ' : ''}${ticks}`;
+};
+/** One line of untrusted text for a heading: no line breaks, no leading Markdown markers. */
+const oneLine = (s: string) => s.replace(/\s+/g, ' ').trim();
+
+/** Labels the Markdown uses, from the page's templates. */
+export interface MdLabels {
+  owner: string;
+  addressed: string;
+  notAddressed: string;
+  unresolved: string;
+  change: string;
+  commitMsg: string;
+  line: (n: number) => string;
+  patchSet: (n: number) => string;
+  landed: (day: string, lines: string) => string;
+}
+
+/** The threads as Markdown: one section per change, oldest first, each thread with where it was
+ * left, whether it was addressed, a link to it in Gerrit, and every comment quoted. */
+export function threadsMarkdown(files: ThreadFile[], l: MdLabels): { md: string; cls: number; threads: number } {
+  const out: string[] = [];
+  let cls = 0;
+  let threads = 0;
+  const all = files.flatMap((f) => f.cls.map((c) => ({ f, c }))).sort((x, y) => x.c.landed.localeCompare(y.c.landed) || x.c.n - y.c.n);
+  for (const { f, c } of all) {
+    if (!c.threads.length) continue;
+    cls++;
+    out.push(`## ${oneLine(c.subject) || `${l.change} ${c.n}`}`, '',
+      `[${l.change} ${c.n}](${GERRIT}/c/${c.project.split('/').map(encodeURIComponent).join('/')}/+/${c.n}) · ${l.landed(c.landed, c.lines === null ? '?' : String(c.lines))}`, '');
+    for (const t of c.threads) {
+      threads++;
+      const where = t.path === '/PATCHSET_LEVEL' ? l.change : t.path === '/COMMIT_MSG' ? l.commitMsg : code(t.path);
+      const bits = [where];
+      if (t.line) bits.push(l.line(t.line));
+      if (t.ps) bits.push(l.patchSet(t.ps));
+      if (t.addressed !== null) bits.push(t.addressed ? l.addressed : l.notAddressed);
+      if (!t.resolved) bits.push(l.unresolved);
+      out.push(`### ${bits.join(' · ')} · [Gerrit](${threadUrl(c.project, c.n, t.id)})`, '');
+      for (const [who, at, text] of t.comments) {
+        const name = oneLine(f.people[who] ?? '?');
+        out.push(`**${name}${who === c.owner ? ` (${l.owner})` : ''}**, ${at.slice(0, 10)}:`, '', quoted(text), '');
+      }
+    }
+  }
+  return { md: out.join('\n'), cls, threads };
+}

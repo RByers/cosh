@@ -4026,6 +4026,14 @@
      ]
     }
    ]
+  },
+  "data/private/review-threads/": {
+   "withheld": "Comment text, negative comments included, belongs only behind a typed address (ground rule 5); the samples page is reached by clicks.",
+   "parts": []
+  },
+  "r2:review-feedback/threads/": {
+   "withheld": "Comment text, negative comments included, is reachable only by typing the person's address (hashed file names, no listing), as ground rule 5 allows since 2026-11-14.",
+   "parts": []
   }
  }
 }

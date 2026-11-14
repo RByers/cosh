@@ -25,14 +25,15 @@ other docs point to it rather than repeat its figures.
 
 Data moves down through five tiers. The first three live in `data/private/`
 (gitignored because of size, not privacy), the published tier is committed,
-and the site is built from it.
+and the site is built from it, apart from files too big for git, which go
+to the Cloudflare R2 bucket `cosh` (`cosh.r2 sync`; README.md).
 
 | Tier | What | If lost |
 |---|---|---|
 | `raw` | fetched from outside, kept losslessly | refetch: server load, maybe approval |
 | `labels` | model output (Haiku scores and labels) | pay Claude usage again |
 | `derived` | computed from local data | rerun a step |
-| `published` | what a page reads, committed | rerun and commit |
+| `published` | what a page reads, committed (or uploaded to R2) | rerun and commit (or sync) |
 | `config` | hand-kept input in git | can't be regenerated |
 | `analysis` | scratch behind a doc, off every page's flow | rerun a script, or nothing |
 
@@ -48,8 +49,10 @@ Claude (Haiku): classify, comments-score, tone-publish's screening              
   summarize      ─▶ Value Exchange summaries ─┐
   (+ Radar shares, org_browsers.csv)          ├─▶ Value Exchange
   tone-publish   ─▶ Review Tone summaries ────┼─▶ Review Tone
-  review-feedback   ─▶ Feedback Index global data, per-person files ──▶ Feedback Index
-  (cosh.review_feedback)
+  review-feedback   ─▶ Feedback Index global data, per-person files ─┬─▶ Feedback Index
+  (cosh.review_feedback)                                            │
+  review-threads ─▶ full threads ─ r2-threads ─▶ threads in R2 ─────┘
+  (per-person files + NoteDb + reviews.sqlite + addressed.sqlite)
   review-timeline   ─▶ review-timeline.sqlite ─ review-load ─▶ Review Load files ─▶ Review Load
   (NoteDb + listings + reviews.sqlite)          (+ commits.sqlite)
 ```
@@ -58,13 +61,16 @@ Claude (Haiku): classify, comments-score, tone-publish's screening              
 votes, and each reviewer's wait on it) is shared: Review Load publishes
 from it, and Review Balance's stages read it (`docs/review-load.md`).
 
-The Feedback Index reads only its global and per-person files. No review
-tone reaches it, and it publishes no comment text.
+The Feedback Index's charts and tables read only its global and per-person
+files. No review tone reaches it. Comment text reaches it only through the
+threads in R2, fetched when someone downloads their comments, and goes only
+into the downloaded file.
 
 `reviews.sqlite` (per-CL, per-comment and per-thread facts, no comment
 text) and `commits.sqlite` (main's whole first-parent history) are the two
-hubs nearly everything reads. Comment text exists only in NoteDb and in
-the rendered comment files, and reaches a model only through
+hubs nearly everything reads. Comment text exists only in NoteDb, the
+rendered comment files and the comment download's thread files, and
+reaches a model of ours only through
 `cosh.sandbox.Sandbox`.
 
 **Review Balance** is a separate flow on top of the same hubs and the

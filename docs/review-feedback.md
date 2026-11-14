@@ -465,6 +465,51 @@ as differences 1.5 MB. Naming every file of every CL would have cost
 threads are named. Comment ids are random and cost about 1.3 MB per
 half-year, so they start in 2023 (23 MB for all years; the user's call).
 
+## Downloading your comments
+
+Once an address is typed, the page's last card, "Download your review
+comments", saves one file with every comment thread a reviewer started on
+that person's landed changes, each reply in full, for the half-years they
+pick (by default the latest two). Markdown (one section per change, each
+thread with its file, line, patch set, whether it was addressed, a Gerrit
+link and every comment quoted), optionally headed by instructions for an AI
+coach (the same task as `scripts/feedback_coach.py`'s, in the page's
+`dl-prompt` template), or JSON (the files as fetched). The file is built in
+the browser; comment text never goes into the page itself. This hands the
+coaching report to the person's own assistant instead of spending our
+model usage on it.
+
+The threads are too big for git (400 MB gzipped: 32,676 files, 2.78M threads, 2026-11-14), so they live in the Cloudflare
+R2 bucket `cosh` and are served gzipped from
+`https://cosh-data.rbyers.ca/review-feedback/threads/<half>/<key>.json`,
+fetched only when someone downloads (`?v=` is the data's end, so a new week
+isn't hidden by the day-long cache). Same hashed keys as the per-person
+files, so like them they are reachable only by typing an address (ground
+rule 5 allows comment text there, negative comments included).
+
+```
+COSH_DATA_DIR=<main>/data/private nice -n 5 python3 -m cosh.review_threads [--half 2026H2]
+python3 -m cosh.r2 sync data/private/review-threads review-feedback/threads   # from the main checkout
+```
+
+`cosh.review_threads` (step `review-threads`, after `review-feedback`) reads
+the published half-year files for each person's changes, `reviews.sqlite`
+(subjects, owners, accounts, which threads were addressed), `addressed.sqlite`
+and the NoteDb repos (comment text, file, line, patch set, resolved), and
+writes `data/private/review-threads/<half>/<key>.json.gz`, byte for byte
+the same when nothing changed (the module's docstring has the format).
+Threads by bots and AI reviewers, and threads the owner started, are left
+out; "addressed" is the Feedback Index's own measure, null for
+change-level threads. About 5 minutes for all 19 half-years, 20 s for one.
+
+`cosh.r2 sync` (step `r2-threads`) uploads the files whose sha256 differs
+from `data/private/r2-manifest.json`, deletes objects whose file is gone,
+and never lists the bucket. It refuses more than 50,000 objects in a run or
+5 GB in all (`--max-objects`, `--max-total-gb`). Credentials:
+`~/.secrets/cosh/r2.json` (endpoint, bucket, access key, secret, public
+base), a token that can only read and write this bucket. Weekly, only the
+current half-year's files change.
+
 ## Caveats
 
 - Tenure in years counts from the first commit on `main`, and earlier

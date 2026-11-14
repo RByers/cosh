@@ -2760,6 +2760,29 @@ button.term:focus-visible {
   font-weight: 600;
 }
 
+/* The comment download: its choices on one line where they fit. */
+.rf-dl {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
+  margin: 16px 0 8px;
+}
+
+.rf-dl select {
+  margin-left: 4px;
+  font: inherit;
+}
+
+.rf-dl button {
+  font: inherit;
+}
+
+.rf-dl .sub {
+  flex-basis: 100%;
+  margin: 0;
+}
+
 .rf-table td.num,
 .rf-table th.num {
   text-align: right;

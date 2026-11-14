@@ -223,6 +223,8 @@ def _comments_from_notes(contents):
                   "message": c.get("message", "")}
             if c.get("parentUuid"):
                 rc["in_reply_to"] = c["parentUuid"]   # REST name for the reply link
+            if c.get("lineNbr"):
+                rc["line"] = c["lineNbr"]
             if "unresolved" in c:
                 rc["unresolved"] = bool(c["unresolved"])
             if c.get("isAi"):

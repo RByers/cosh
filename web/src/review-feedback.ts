@@ -18,6 +18,7 @@ import {
   frOf,
   growth,
   halves,
+  halvesBetween,
   isoDay,
   latestDoubling,
   looksLikeEmail,
@@ -31,6 +32,8 @@ import {
   tableRows,
   threadBinLabel,
   threadHistogram,
+  threadsMarkdown,
+  threadsUrl,
   THREAD_BINS,
   type Alias,
   type Peers,
@@ -38,6 +41,7 @@ import {
   type ReviewerTable,
   type Shard,
   type TableRowView,
+  type ThreadFile,
   type Top,
 } from './feedback.ts';
 import { fmtDay, fmtInt, fmtNum } from './format.ts';
@@ -230,6 +234,7 @@ async function lookup(raw: string) {
     const praise = note.querySelector<HTMLAnchorElement>('.rf-praise-link');
     if (praise) praise.href = `sentiment.html#person=${encodeURIComponent(raw.trim())}`;
     $('#rf-person').hidden = false;
+    setupDownload();
     render();
     renderIntro();
     document.body.dataset.person = '1';
