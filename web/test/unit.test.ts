@@ -1504,6 +1504,16 @@ test('review feedback: the AFR and index, as the script computes them', async ()
   // Experience bins double: <8, 8–15, ..., 2k+ (cosh/review_feedback.py xbin).
   assert.deepEqual([0, 7, 8, 15, 16, 1023, 1024, 2047, 2048, 50000].map((n) => F.xbin(peers.bin_edges, n)),
     [0, 0, 1, 1, 2, 7, 8, 8, 9, 9]);
+  // When each bin was reached: the first bin on the first commit, the others by their first change's day,
+  // exact only when that change was the bin's first commit.
+  const reached = F.binReached(person, peers.bin_edges);
+  assert.deepEqual([reached[0], reached[2], reached[4], reached[6]],
+    [null, [day('2025-10-01'), false], [day('2026-03-11'), false], [day('2026-09-03'), false]]);
+  const at = (prior: number, firstDay: number | null) =>
+    F.binReached({ ...person, firstDay, cls: [[...person.cls[0].slice(0, 6), prior] as typeof person.cls[0]] }, peers.bin_edges);
+  assert.deepEqual(at(16, null)[2], [day('2025-10-01'), true]);
+  assert.deepEqual(at(3, day('2022-03-01'))[0], [day('2022-03-01'), true]);
+  assert.deepEqual(at(3, null)[0], [day('2025-10-01'), false]);
   assert.deepEqual([F.dir2('chrome/browser/ui/'), F.dir1('chrome/browser/ui/'), F.dir2('(root)/')],
     ['chrome/browser/', 'chrome/', '(root)/']);
   assert.deepEqual(F.unitFracs([[0, 0.6, 0, 30], [1, 0.4, 0, 10]]), [0.75, 0.25]);

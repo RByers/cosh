@@ -104,6 +104,13 @@ percentile 0.43–1.91.
 
 **Your feedback** (after an address is found), one section each:
 
+- *Your AFR:* the opening chart in grey with the person's AFR
+  per bin in colour (hollow under `MIN_BIN_CLS`), and a table per bin with
+  CLs: when the person reached the bin ("As of": the first bin on their
+  first commit, the others on the day their first CL in it landed, "by"
+  that day when that CL wasn't the bin's first commit; `binReached`), CLs,
+  lines, addressed threads, the person's AFR and the median AFR of all
+  contributors there (`ref_bin`). The last row is all CLs.
 - *Your feedback index:* the checkboxes (experience, directories,
   organization), tiles for changes landed (and their lines), addressed
   threads, AFR, FI (with the share of everyone with `MIN_CLS` CLs whose
@@ -113,12 +120,6 @@ percentile 0.43–1.91.
   fewer than `MIN_CLS` CLs are hollow. Selecting a dot filters the
   comments-per-change chart, the directory tree and the comments to that
   half-year, as before.
-- *How your AFR compares to your peers:* the opening chart in grey
-  with the person's AFR per bin in colour (hollow under `MIN_BIN_CLS`), and
-  a table per bin with CLs: CLs, lines, addressed threads, the person's AFR,
-  the median AFR there, the FI over those CLs (shaded, only with
-  `MIN_BIN_CLS` CLs), and the change in AFR from the bin before (where both
-  have `MIN_BIN_CLS`). The last row is all CLs, with the growth rate.
 - *Growth rate:* the % change in AFR per doubling of changes landed, from a
   least-squares line through log2 AFR by bin, each bin weighted by its CLs,
   over bins with `MIN_BIN_CLS` CLs, needing `MIN_GROWTH_BINS` (3) of them;

@@ -3384,7 +3384,8 @@ test('feedback index: a person\'s index, how their rate compares, directories an
   await lookUp(page, ALIAS_EMAIL);
   await page.waitForFunction(() => !document.querySelector<HTMLElement>('#rf-person')!.hidden);
   assert.deepEqual(await page.$$eval('#rf-person > section', (ss) => ss.map((s) => s.id)),
-    ['summary', 'compare', 'per-cl', 'directories', 'comments']);
+    ['compare', 'summary', 'per-cl', 'directories', 'comments']);
+  assert.equal(await page.$eval('#compare-title', (e) => e.textContent), 'Your AFR');
   const praise = await page.$eval('#rf-find-note .rf-praise-link', (a) => (a as HTMLAnchorElement).getAttribute('href'));
   assert.equal(praise, 'sentiment.html#person=tp%40example.com');
   const tile = (id: string) => page.$eval(`#${id} .tile-value`, (e) => e.textContent);
@@ -3431,15 +3432,15 @@ test('feedback index: a person\'s index, how their rate compares, directories an
     ['You', 'Median', 'Middle half (25th–75th percentile)', '10th–90th percentile']);
   const xp = () => page.$$eval('#rf-xp-table tbody tr, #rf-xp-table tfoot tr', (rs) => rs.map((r) =>
     [...r.children].map((c) => c.textContent)));
+  assert.deepEqual(await page.$$eval('#rf-xp-table thead th', (ts) => ts.map((t) => t.textContent)),
+    ['Experience (CLs landed)', 'As of', 'Your changes', 'Lines', 'Addressed comments', 'Your rate', 'Median']);
+  // Each change is past its bin's first commit (30 earlier commits in the bin from 17), so "by" its day.
   assert.deepEqual(await xp(), [
-    ['32', '1', '40', '1', '2.50', '2.50', '0.83×', '–'],
-    ['128', '1', '120', '1', '0.83', '1.70', '0.55×', '–'],
-    ['512', '1', '10', '1', '10.00', '1.00', '20.00×', '–'],
-    ['All', '3', '170', '3', '1.76', '–', '0.98×', '+41%'],
+    ['32', 'by 1 Oct 2025', '1', '40', '1', '2.50', '2.50'],
+    ['128', 'by 11 Mar 2026', '1', '120', '1', '0.83', '1.70'],
+    ['512', 'by 3 Sept 2026', '1', '10', '1', '10.00', '1.00'],
+    ['All', '', '3', '170', '3', '1.76', '–'],
   ]);
-  // The index cells are shaded: green below 1, red above.
-  assert.deepEqual(await page.$$eval('#rf-xp-table td.rf-ratio', (ts) => ts.map((t) => t.className.split(' ').at(-1))),
-    ['rf-ratio-lo', 'rf-ratio-lo', 'rf-ratio-hi', 'rf-ratio-lo']);
   // Directories: chrome/ has 2 changes (the peer minimum here), the others go into "Other".
   const dirs = () => page.$$eval('#rf-dirs tbody tr', (rs) => rs.map((r) => [...r.children].map((c) => c.textContent!.replace(/[▸▾]/, ''))));
   assert.deepEqual(await page.$$eval('#rf-dirs thead th', (ts) => ts.map((t) => t.textContent)),

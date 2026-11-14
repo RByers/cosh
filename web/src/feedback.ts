@@ -317,6 +317,20 @@ export function binSums(p: Person, peers: Peers, period: string, norm: Norm): Su
   return out;
 }
 
+/** When the person reached each experience bin, as [day, exact]: the first bin on their first
+ * commit on main, the others when their first change in the bin landed. Exact when that change
+ * was the bin's first commit; otherwise they got there earlier (commits outside the data), by
+ * that day. null: no change of theirs in the bin. */
+export function binReached(p: Person, edges: number[]): ([number, boolean] | null)[] {
+  const out: ([number, boolean] | null)[] = Array.from({ length: edges.length + 1 }, () => null);
+  for (const c of p.cls) {
+    const b = xbin(edges, c[6]);
+    if (out[b]) continue;
+    out[b] = b === 0 && p.firstDay !== null ? [p.firstDay, true] : [c[1], c[6] === (b ? edges[b - 1] : 0)];
+  }
+  return out;
+}
+
 /** A growth rate: the % change in AFR per doubling of changes landed, from a
  * least-squares line through log2 AFR (floored) by bin, weighted by changes, over
  * the bins with `min_bin_cls` changes; null with fewer than `min_growth_bins`

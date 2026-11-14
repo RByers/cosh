@@ -155,6 +155,42 @@
       <!-- Everything below, up to the methodology, is about the person whose address was typed. -->
       <div id="rf-person" hidden>
 
+      <section id="compare" class="card" aria-labelledby="compare-title">
+        <a class="card-anchor" href="#compare" aria-label="Link to this section" title="Link to this section">#</a>
+        <h2 id="compare-title">Your AFR</h2>
+        <p class="sub">
+          Your AFR by how many changes you had landed before, over the opening chart: every contributor's
+          median and spread, in grey.
+        </p>
+        <ul id="rf-compare-legend" class="legend rf-line-legend" aria-label="Lines and bands"></ul>
+        <div class="chart">
+          <canvas id="rf-compare" role="img" aria-label="Your AFR by changes landed before, against every contributor's median, middle half and 10th to 90th percentile."></canvas>
+        </div>
+        <p class="note">
+          Points with fewer than <span class="rf-min-bin"></span> of your changes are drawn hollow. The rate's axis
+          is logarithmic; a rate of 0 is drawn at its bottom (0.2).
+        </p>
+        <h3>By your experience</h3>
+        <div class="table-wrap">
+          <table id="rf-xp-table" class="rf-table">
+            <thead><tr><th scope="col">Experience (CLs landed)</th>
+              <th scope="col" title="When you reached this experience">As of</th><th scope="col" class="num">Your changes</th>
+              <th scope="col" class="num">Lines</th><th scope="col" class="num">Addressed comments</th>
+              <th scope="col" class="num">Your rate</th>
+              <th scope="col" class="num" title="The median AFR of all contributors with this experience">Median</th></tr></thead>
+            <tbody></tbody>
+            <tfoot><tr><th scope="row">All</th><td></td><td class="num"></td><td class="num"></td><td class="num"></td><td class="num"></td><td class="num"></td></tr></tfoot>
+          </table>
+        </div>
+        <p id="rf-xp-note" class="note"></p>
+        <template data-msg="experience-note">
+          Each bin is one doubling of your changes landed. “As of” is when you reached it: the day your first
+          change in it landed (your first commit for the first bin), or “by” that day when you got there with
+          commits outside this data. “Median” is the median AFR of all contributors with that experience.
+        </template>
+        <template data-msg="as-of-by">by <slot name="day"></slot></template>
+      </section>
+
       <section id="summary" class="card" aria-labelledby="summary-title">
         <a class="card-anchor" href="#summary" aria-label="Link to this section" title="Link to this section">#</a>
         <h2 id="summary-title">Your feedback index</h2>
@@ -209,41 +245,6 @@
           line their median. Points with fewer of your changes are drawn hollow. Select one of your dots to
           see where that half-year's feedback came from, below.
         </p>
-      </section>
-
-      <section id="compare" class="card" aria-labelledby="compare-title">
-        <a class="card-anchor" href="#compare" aria-label="Link to this section" title="Link to this section">#</a>
-        <h2 id="compare-title">How your AFR compares to your peers</h2>
-        <p class="sub">
-          Your AFR by how many changes you had landed before, over the opening chart: every contributor's
-          median and spread, in grey.
-        </p>
-        <ul id="rf-compare-legend" class="legend rf-line-legend" aria-label="Lines and bands"></ul>
-        <div class="chart">
-          <canvas id="rf-compare" role="img" aria-label="Your AFR by changes landed before, against every contributor's median, middle half and 10th to 90th percentile."></canvas>
-        </div>
-        <p class="note">
-          Points with fewer than <span class="rf-min-bin"></span> of your changes are drawn hollow. The rate's axis
-          is logarithmic; a rate of 0 is drawn at its bottom (0.2).
-        </p>
-        <h3>By your experience</h3>
-        <div class="table-wrap">
-          <table id="rf-xp-table" class="rf-table">
-            <thead><tr><th scope="col">Experience (CLs landed)</th><th scope="col" class="num">Your changes</th>
-              <th scope="col" class="num">Lines</th><th scope="col" class="num">Addressed comments</th>
-              <th scope="col" class="num">Your rate</th><th scope="col" class="num">Peers' median rate</th>
-              <th scope="col" class="num">Feedback index</th><th scope="col" class="num" title="How much your rate changed from the bin before">Change</th></tr></thead>
-            <tbody></tbody>
-            <tfoot><tr><th scope="row">All</th><td class="num"></td><td class="num"></td><td class="num"></td><td class="num"></td><td class="num"></td><td class="num"></td><td class="num"></td></tr></tfoot>
-          </table>
-        </div>
-        <p id="rf-xp-note" class="note"></p>
-        <template data-msg="experience-note">
-          The feedback index here compares with contributors <slot name="peers"></slot>, as chosen above. “Change” is
-          how much your rate changed from the bin before, where both have
-          <slot name="minBin"></slot> or more of your changes; each bin is one doubling of your changes landed. The
-          last row's change is your growth rate: a line fitted through your rates in every such bin.
-        </template>
       </section>
 
       <section id="per-cl" class="card" aria-labelledby="per-cl-title">

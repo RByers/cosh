@@ -8,6 +8,7 @@
 import { Chart, Filler, type ChartDataset, type ChartEvent, type Plugin } from 'chart.js';
 import { readTheme, withAlpha, type Theme } from './charts.ts';
 import {
+  binReached,
   binSums,
   buildPerson,
   clsIn,
@@ -713,32 +714,25 @@ function renderCompare() {
       },
     },
   });
-  // The table: the bins with changes; the change from the bin before where both have enough.
+  // The table: the bins with changes, when the person reached each, and everyone's median there.
   const body = $('#rf-xp-table tbody');
   body.replaceChildren();
-  const enough = (s: { cls: number; lines: number }) => s.cls >= peers.min_bin_cls && s.lines > 0;
+  const reached = binReached(p, peers.bin_edges);
   bins.forEach((s, b) => {
     if (!s.cls) return;
-    const prev = bins[b - 1];
-    const change = prev && enough(prev) && enough(s) && fr(prev.addressed, prev.lines)! > 0
-      ? 100 * (frOf(s)! / frOf(prev)! - 1) : null;
+    const r = reached[b];
+    const asOf = !r ? '–' : r[1] ? dayLabel(r[0]) : msg('as-of-by', { day: dayLabel(r[0]) });
     const tr = el('tr');
     const th = el('th', peers.bins[b]);
     th.setAttribute('scope', 'row');
-    tr.append(th, el('td', fmtInt(s.cls), 'num'), el('td', fmtInt(s.lines), 'num'), el('td', fmtInt(s.addressed), 'num'),
-      el('td', fmtFr(frOf(s)), 'num'), el('td', fmtFr(peers.ref_bin[b]), 'num'), fiCell(enough(s) ? fiOf(s) : null),
-      el('td', fmtChange(change), 'num'));
+    tr.append(th, el('td', asOf), el('td', fmtInt(s.cls), 'num'), el('td', fmtInt(s.lines), 'num'),
+      el('td', fmtInt(s.addressed), 'num'), el('td', fmtFr(frOf(s)), 'num'), el('td', fmtFr(peers.ref_bin[b]), 'num'));
     body.append(tr);
   });
   const tot = sums(p, peers, clsIn(p, ALL), state.norm);
-  const foot = $('#rf-xp-table tfoot tr');
-  const cells = [fmtInt(tot.cls), fmtInt(tot.lines), fmtInt(tot.addressed), fmtFr(frOf(tot)), '–'];
-  const tds = foot.querySelectorAll('td');
-  cells.forEach((v, i) => (tds[i].textContent = v));
-  tds[5].replaceWith(fiCell(fiOf(tot)));
-  foot.querySelectorAll('td')[6].textContent = fmtChange(growth(bins, peers));
-  put($('#rf-xp-note'), 'experience-note', { peers: state.norm ? peersName(state.norm) : msg('peers-all'),
-    minBin: fmtInt(peers.min_bin_cls) });
+  const cells = ['', fmtInt(tot.cls), fmtInt(tot.lines), fmtInt(tot.addressed), fmtFr(frOf(tot)), '–'];
+  $('#rf-xp-table tfoot tr').querySelectorAll('td').forEach((td, i) => (td.textContent = cells[i]));
+  put($('#rf-xp-note'), 'experience-note');
 }
 
 /** A table cell for a feedback index, shaded green below 1 and red above. */
