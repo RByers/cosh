@@ -76,22 +76,44 @@ class ReviewFeedbackTest(unittest.TestCase):
             R.MIN_FACTOR_CLS, R.MIN_RATE_CLS = old
         self.assertEqual((m["ref_bin"][1], m["ref_bin"][3]), (3.0, 1.5))
         self.assertIsNone(m["ref_bin"][0])
-        # Pooled rates per directory and bin, then at any experience; ui/ pools ui/a/ and ui/b/.
-        rates = m["rates"]
-        self.assertEqual([rates["ui/a/"][b] for b in (0, 1, 3, R.ALL_BINS)], [None, 4.0, 2.0, 3.0])
-        self.assertEqual([rates["base/a/"][b] for b in (1, 3)], [2.0, 1.0])
-        self.assertEqual(rates["ui/"][1], R.r3(100 * 600 / 15300))
+        self.assertNotIn("_ue", {k for k in m if not k.startswith("_")})
+        # Sums per half-year, directory and bin, then at any experience ([CLs' worth, lines, addressed]);
+        # ui/ pools ui/a/ and ui/b/, which is too small for its own.
+        self.assertEqual(list(m["rates"]), ["1970H1"])
+        rates = m["rates"]["1970H1"]
+        self.assertEqual([rates["ui/a/"][b] for b in (0, 1, 3, R.ALL_BINS)],
+                         [None, [150, 15000, 600], [150, 15000, 300], [300, 30000, 900]])
+        self.assertEqual(rates["ui/"][1], [153, 15300, 600])
         self.assertNotIn("ui/b/", rates)
-        self.assertEqual(R.peer_rate(rates, "ui/b/", 1), rates["ui/"][1])
-        self.assertEqual(R.peer_rate(rates, "net/x/", 1), rates[""][1])
         self.assertEqual(R.dir_levels("ui/a/b/"), ["ui/a/b/", "ui/a/", "ui/", ""])
+        # Everyone's lines, or without the person's own: pid 0's three ui/b/ CLs come off ui/.
+        old = R.MIN_RATE_CLS
+        R.MIN_RATE_CLS = 100
+        try:
+            own0 = R.rate_cells([r for r in rows if r.pid == 0])
+            self.assertEqual(R.peer_rate(m["rates"], None, "1970H1", "ui/b/", 1), 100 * 600 / 15300)
+            self.assertEqual(R.peer_rate(m["rates"], own0, "1970H1", "ui/b/", 1), 4.0)
+            self.assertEqual(R.peer_rate(m["rates"], None, "1970H1", "net/x/", 1), 100 * 900 / 30300)
+        finally:
+            R.MIN_RATE_CLS = old
+        # A directory left under the minimum without the person falls back to its parent, then to
+        # everyone's that half-year, then everyone's in an earlier half-year, else that half-year's anyway.
+        cells = lambda x: [list(x) for _ in range(R.ALL_BINS + 1)]
+        small = {"2025H2": {"": cells([1000, 10000, 200])},
+                 "2026H1": {"": cells([150, 3000, 30]), "ui/": cells([300, 5000, 150])}}
+        mine = lambda n: {("2026H1", "ui/"): cells([n, 1000, 50])}
+        self.assertEqual(R.MIN_RATE_CLS, 200)
+        self.assertEqual(R.peer_rate(small, None, "2026H1", "ui/x/", 0), 3.0)
+        self.assertEqual(R.peer_rate(small, mine(50), "2026H1", "ui/x/", 0), 2.5)
+        self.assertEqual(R.peer_rate(small, mine(120), "2026H1", "ui/x/", 0), 2.0)
+        self.assertEqual(R.peer_rate({"2026H1": small["2026H1"]}, mine(120), "2026H1", "ui/x/", 0), 1.0)
         # In its own directory at its own experience everyone draws what peers do: an index of 1 each,
         # so no scaling. Without directories ui/ people draw twice what base/ people do.
         self.assertEqual(m["scale"]["ed"], 1.0)
-        r = rows[1 * 30]          # pid 1 (ui/a/), bin 1
+        r = rows[1 * 30]          # pid 1 (ui/a/), bin 1: 15 CLs there of 100 lines with 4 addressed
         self.assertAlmostEqual(R.expected(r, "ed", m), 4.0)
-        self.assertAlmostEqual(R.expected(r, "e", m), 100 / 100 * rates[""][1] * m["scale"]["e"])
-        self.assertAlmostEqual(R.expected(r, "", m), rates[""][R.ALL_BINS] * m["scale"][""])
+        self.assertAlmostEqual(R.expected(r, "e", m), 100 * (900 - 60) / (30300 - 1500) * m["scale"]["e"])
+        self.assertAlmostEqual(R.expected(r, "", m), 100 * (1350 - 90) / (60300 - 3000) * m["scale"][""])
         self.assertEqual(R.unit_expected(r, "edo", m), [R.expected(r, "ed", m) * m["f_org"]["ed"]["google.com"]])
         # Orgs: "*" pools those under MIN_FACTOR_CLS (x.com has 150 CLs: its own factor here).
         self.assertIn("x.com", m["f_org"]["ed"])

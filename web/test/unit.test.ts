@@ -1550,8 +1550,30 @@ test('review feedback: the AFR and index, as the script computes them', async ()
   near(ed.expected, 0.4 * 3 + 1.2 * ((90 / 118) * 1.36 + (28 / 118) * 2.04) + 0.1 * 0.5);
   assert.deepEqual(F.dirLevels('chrome/browser/ui/'), ['chrome/browser/ui/', 'chrome/browser/', 'chrome/', '']);
   assert.deepEqual(F.dirLevels('(root)/'), ['(root)/', '']);
-  assert.equal(F.peerRate(peers, 'chrome/browser/ui/', 0), 9);
-  assert.equal(F.peerRate(peers, 'net/base/', 3), 2);
+  near(F.peerRate(peers, null, '2026H1', 'chrome/browser/ui/', 0), 9);
+  near(F.peerRate(peers, null, '2026H1', 'net/base/', 3), 2);
+  // The person's own sums per half-year and directory: CL 2 (2026H1, bin 4) has 90 of its 118 lines'
+  // share and its one addressed thread in content/browser/.
+  const own = F.ownCells(person, peers);
+  const c2 = own.get('2026H1|content/')!;
+  near(c2[4][0], 90 / 118);
+  near(c2[4][1], (120 * 90) / 118);
+  assert.equal(c2[4][2], 1);
+  assert.deepEqual(c2[10], c2[4]);
+  assert.equal(own.get('2025H2|content/'), undefined);
+  // Leaving the person out: their sums come off everyone's before the rate and the minimum (200).
+  const all11 = (x: [number, number, number]) => Array.from({ length: 11 }, (): [number, number, number] => [...x]);
+  const small = { ...peers, rates: {
+    '2025H2': { '': all11([1000, 10000, 200]) },
+    '2026H1': { '': all11([150, 3000, 30]), 'ui/': all11([300, 5000, 150]) },
+  } };
+  const mine = (n: number): Map<string, [number, number, number][]> => new Map([['2026H1|ui/', all11([n, 1000, 50])]]);
+  near(F.peerRate(small, null, '2026H1', 'ui/x/', 0), 3);
+  near(F.peerRate(small, mine(50), '2026H1', 'ui/x/', 0), 2.5);
+  // Under 200 without them: everyone's that half-year has too few too, so the half-year before's.
+  near(F.peerRate(small, mine(120), '2026H1', 'ui/x/', 0), 2);
+  // With no earlier half-year, that half-year's anyway.
+  near(F.peerRate({ ...small, rates: { '2026H1': small.rates['2026H1'] } }, mine(120), '2026H1', 'ui/x/', 0), 1);
   // Each norm's scale multiplies what's expected; the org factor applies to every change.
   near(F.sums(person, { ...peers, scale: { ...peers.scale, ed: 0.5 } }, cs, 'ed').expected, ed.expected / 2);
   near(F.sums(person, peers, cs, 'edo').expected, ed.expected * 1.1);

@@ -1146,9 +1146,9 @@
       "tier": "published",
       "tracked_in_git": true,
       "rebuildable": true,
-      "size": "about 214 KB (59 KB gzipped)",
+      "size": "about 318 KB (93 KB gzipped)",
       "size_as_of": "2026-11-14",
-      "purpose": "Everyone's figures (experience bins, peers' rates per directory and experience, everyone's directory table, spreads, the methodology's charts), loaded on opening.",
+      "purpose": "Everyone's figures (experience bins, peers' rate sums per half-year, directory and experience, everyone's directory table, spreads, the methodology's charts), loaded on opening.",
       "notes": "Rewritten on every run of review-feedback."
     },
     {

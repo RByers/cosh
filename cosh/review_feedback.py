@@ -3,8 +3,8 @@ docs/review-feedback.md).
 
 The addressed feedback rate (AFR) of a set of CLs is their addressed reviewer threads
 per 100 new or changed lines; the feedback index (FI) is a person's AFR over their
-peers' (the median AFR at the same experience, adjusted for directories and,
-optionally, org: `rate_model`, `expected`).
+peers' (the AFR of everyone else's lines in the same directory, half-year and
+experience bin and, optionally, org: `rate_model`, `peer_rate`, `expected`).
 
 Offline. Two parts, which `cosh update` runs as two steps so that review
 tone feeds only the comment list (config/dataflow.json):
@@ -477,26 +477,50 @@ def dir_levels(d):
     return ["/".join(p[:k]) + "/" for k in range(min(3, len(p)), 0, -1)] + [""]
 
 
-def peer_rate(rates, d, b):
-    """The peers' AFR for lines in directory `d` at experience bin `b` (ALL_BINS:
-    any experience): the directory's pooled AFR at that experience, else its
-    parent's, up to everyone's."""
-    for k in dir_levels(d):
-        v = rates.get(k)
-        if v and v[b] is not None:
-            return v[b]
-    return rates[""][ALL_BINS]
+def cell_rate(rates, own, h, k, b, need=True):
+    """The AFR of everyone's lines in half-year `h`, directory `k` and
+    experience bin `b`, without the person's own (`own`, from `rate_cells` of
+    their rows), where that leaves MIN_RATE_CLS CLs' worth (always, without
+    `need`). None where it doesn't, or nothing is left."""
+    v = rates.get(h, {}).get(k)
+    x = v[b] if v else None
+    if x is None:
+        return None
+    n, lines, a = x
+    o = own.get((h, k)) if own else None
+    if o:
+        n, lines, a = n - o[b][0], lines - o[b][1], a - o[b][2]
+    return 100 * a / lines if (n >= MIN_RATE_CLS or not need) and lines > 0 else None
+
+
+def peer_rate(rates, own, h, d, b):
+    """The peers' AFR for lines in directory `d` landed in half-year `h` at
+    experience bin `b` (ALL_BINS: any experience), the person's own lines left
+    out: the directory's pooled AFR, else its parent's, up to everyone's in
+    that half-year, else everyone's in the nearest earlier half-year with
+    enough (the first weeks of a half-year), else that half-year's anyway."""
+    for k in dir_levels(d)[:-1]:
+        v = cell_rate(rates, own, h, k, b)
+        if v is not None:
+            return v
+    for hh in sorted((x for x in rates if x <= h), reverse=True):
+        v = cell_rate(rates, own, hh, "", b)
+        if v is not None:
+            return v
+    v = cell_rate(rates, own, h, "", b, need=False)
+    return v if v is not None else 0.0
 
 
 def rate_cells(rows):
-    """{directory (3 levels, 2, 1, or "" for all): per experience bin and then
-    any experience (ALL_BINS), [CLs' worth, lines, addressed threads]}, each
-    CL's lines and threads split over its directories by lines."""
+    """{(half-year, directory (3 levels, 2, 1, or "" for all)): per experience
+    bin and then any experience (ALL_BINS), [CLs' worth, lines, addressed
+    threads]}, each CL's lines and threads split over its directories by lines."""
     cells = defaultdict(lambda: [[0.0, 0.0, 0] for _ in range(ALL_BINS + 1)])
     for r in rows:
+        h = half(r.at)
         for d, f, a, _ in r.units:
             for k in dir_levels(d):
-                c = cells[k]
+                c = cells[(h, k)]
                 for b in (r.bin, ALL_BINS):
                     x = c[b]
                     x[0] += f
@@ -506,16 +530,19 @@ def rate_cells(rows):
 
 
 def rate_model(rows):
-    """What the feedback index compares with. rates: per directory (3 levels,
-    2, 1, and "" for everyone), the pooled AFR of everyone's lines there per
-    experience bin and at any experience (the last), where they come to
-    MIN_RATE_CLS CLs' worth (null elsewhere: `peer_rate` takes the parent's).
-    scale[norm without o]: scales the expected threads so that the median
-    person's index (people with MIN_CLS CLs) is 1. f_org[norm without o]: per
-    org, how much more feedback it draws than that norm predicts; "*" pools
-    the orgs under MIN_FACTOR_CLS. ref_bin (the median AFR per experience bin,
-    the main chart's line) and ref_all (everyone's median) are for the page's
-    comparisons, not the index. All rounded, as the page uses them."""
+    """What the feedback index compares with. rates: per half-year, per
+    directory (3 levels, 2, 1, and "" for everyone), the sums of everyone's
+    lines there [CLs' worth, lines, addressed threads] per experience bin and
+    at any experience (the last), where they come to MIN_RATE_CLS CLs' worth
+    (null elsewhere, and "" always): the peers' rate is these sums less the
+    person's own (`peer_rate`). scale[norm without o]: scales the expected
+    threads so that the median person's index (people with MIN_CLS CLs) is 1.
+    f_org[norm without o]: per org, how much more feedback it draws than that
+    norm predicts; "*" pools the orgs under MIN_FACTOR_CLS. ref_bin (the
+    median AFR per experience bin, the main chart's line) and ref_all
+    (everyone's median) are for the page's comparisons, not the index. All
+    rounded, as the page uses them. Keys starting with "_" aren't published:
+    `_ue` holds each row's expected threads per unit before scaling."""
     by_pid = defaultdict(list)
     for r in rows:
         by_pid[r.pid].append(r)
@@ -525,14 +552,30 @@ def rate_model(rows):
         lines = sum(r.lines for r in rs)
         if len(rs) >= MIN_CLS and lines > 0:
             alls.append(fr(sum(r.addr for r in rs), lines))
-    rates = {}
-    for k, cs in sorted(rate_cells(rows).items()):
-        v = [r3(fr(a, lines)) if (n >= MIN_RATE_CLS or k == "") and lines > 0 else None for n, lines, a in cs]
+    rates = defaultdict(dict)
+    for (h, k), cs in sorted(rate_cells(rows).items()):
+        v = [[round(n, 2), round(lines, 1), a] if n >= MIN_RATE_CLS or k == "" else None for n, lines, a in cs]
         if any(x is not None for x in v):
-            rates[k] = v
+            rates[h][k] = v
+    rates = dict(rates)
+    # Each row's expected threads per unit and norm before scaling, at its
+    # peers' rates without the person's own lines.
+    ue = {}
+    for rs in by_pid.values():
+        own = rate_cells(rs)
+        memo = {}
+
+        def rate(h, d, b):
+            if (h, d, b) not in memo:
+                memo[(h, d, b)] = peer_rate(rates, own, h, d, b)
+            return memo[(h, d, b)]
+        for r in rs:
+            h = half(r.at)
+            ue[id(r)] = {nm: [r.lines * f / 100 * rate(h, d if "d" in nm else "", r.bin if "e" in nm else ALL_BINS)
+                              for d, f, _, _ in r.units] for nm in ("", "e", "d", "ed")}
     m = dict(ref_bin=ref_bin, ref_all=r3(st.median(alls)), rates=rates,
              scale={nm: 1.0 for nm in ("", "e", "d", "ed")},
-             f_org={nm: {"*": 1.0} for nm in ("", "e", "d", "ed")})
+             f_org={nm: {"*": 1.0} for nm in ("", "e", "d", "ed")}, _ue=ue, _rows=rows)
 
     big = [rs for rs in by_pid.values() if len(rs) >= MIN_CLS]
 
@@ -569,15 +612,15 @@ def rate_model(rows):
 
 def unit_expected(r, norm, m):
     """The addressed threads each unit of a CL would draw at its peers' AFR,
-    under norm (see NORMS): its lines / 100 × the peers' rate in its directory
+    under norm (see NORMS): its lines / 100 × the peers' rate (`peer_rate`:
+    the same half-year, the person's own lines left out) in its directory
     ("d") at the CL's experience ("e") × the norm's scale × the org's factor ("o")."""
     base = norm.replace("o", "")
     s = m["scale"][base]
     if "o" in norm:
         t = m["f_org"][base]
         s *= t.get(r.org, t["*"])
-    b = r.bin if "e" in norm else ALL_BINS
-    return [r.lines * f / 100 * peer_rate(m["rates"], d if "d" in norm else "", b) * s for d, f, _, _ in r.units]
+    return [x * s for x in m["_ue"][id(r)][base]]
 
 
 def expected(r, norm, m):
@@ -938,11 +981,12 @@ def main():
     # ------------------------------------------------ peers
     dist = lambda xs: dict(n=len(xs), q=quantiles(xs) if len(xs) >= MIN_PEERS else None)
     first_year = {pid: datetime.fromtimestamp(t, timezone.utc).year for pid, t in first.items()}
-    peers = dict(v=7, generated=datetime.now(timezone.utc).strftime("%Y-%m-%d"), periods=allp,
+    peers = dict(v=8, generated=datetime.now(timezone.utc).strftime("%Y-%m-%d"), periods=allp,
                  start=epoch_day(START), end=epoch_day(END), addr_start=epoch_day(ADDR_START),
                  min_peers=MIN_PEERS, min_cls=MIN_CLS, min_bin_cls=MIN_BIN_CLS, min_cell_cls=MIN_CELL_CLS,
                  min_growth_bins=MIN_GROWTH_BINS, fr_floor=FR_FLOOR, bins=BIN_LABELS, bin_edges=BIN_EDGES,
-                 min_rate_cls=MIN_RATE_CLS, min_dir_cls=MIN_DIR_CLS, norms=NORMS, **model,
+                 min_rate_cls=MIN_RATE_CLS, min_dir_cls=MIN_DIR_CLS, norms=NORMS,
+                 **{k: v for k, v in model.items() if not k.startswith("_")},
                  dir_table=dir_table(rows), fr_bins=fr_bins(by_pid),
                  fi={nm: {p: dist(v.get(p, [])) for p in allp} for nm, v in fi_vals.items()},
                  cohorts=cohorts(by_pid, first_year),

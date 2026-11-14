@@ -14,7 +14,7 @@ feedback per line in 2026. Comparing each change with peer rates from the
 **same half-year**, with the person's own changes left out of their peers'
 rates, removes it, makes the index more reliable on both tests below, and
 costs no tokens, no per-person files and about 50 KB more in `peers.json`.
-Not built yet.
+Built the same day (below, "Built").
 
 ## How it was measured
 
@@ -169,3 +169,17 @@ unchanged. `docs/review-feedback.md` and `config/dataflow.json`
 - Smoothing over time (a kernel over neighbouring half-years) instead of
   hard half-year cells.
 - Months or quarters (cells too thin at 200 CLs' worth).
+
+## Built (2026-11-14)
+
+Option G, as `rate_model`, `cell_rate` and `peer_rate` in
+`cosh/review_feedback.py` and `ownCells` and `peerRate` in
+`web/src/feedback.ts` (`docs/review-feedback.md`, Definitions). Where all
+of Chromium has fewer than 200 CLs' worth in a half-year and bin without
+the person (the first weeks of a half-year), the nearest earlier
+half-year's counts, rather than a 26-week window. With the published data:
+the per-person files didn't change, `peers.json` went from 59 to 93 KB
+gzipped, the run took the same 2 min, and the page matched the script's
+values for 300 people exactly. Quartiles of everyone's index 0.65 and 1.44
+(were 0.68 and 1.42), 10th–90th percentile 0.35–2.04 (0.42–1.96);
+everyone's median per half-year 0.96–1.14 (0.75–1.16).

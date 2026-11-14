@@ -1,7 +1,7 @@
 // A made-up person and peer file for the Review Feedback tests, shaped like
 // cosh/review_feedback.py's output: a top file, one file per half-year and the
 // half-years' comment files. The browser tests serve these instead of the committed data.
-import type { CommentShard, Norm, Peers, Shard, Top } from '../src/feedback.ts';
+import type { CommentShard, Norm, Peers, RateCell, Shard, Top } from '../src/feedback.ts';
 
 /** personKey('Test.Person@chromium.org'), as the Python script computes it. */
 export const FIXTURE_EMAIL = 'Test.Person@chromium.org';
@@ -53,8 +53,14 @@ const curve = Array.from({ length: 71 }, (_, i): [number, number] => {
   return [Math.round(1000 * (2 ** x - 1)) / 10, Math.round(1000 * 5 * Math.exp(-0.5 * ((x + 0.32) / 0.5) ** 2)) / 1000];
 });
 
+/** Rate cells ([changes' worth, lines, addressed]) with these rates per 100 lines. */
+export function rateCells(rates: Record<string, (number | null)[]>): Record<string, (RateCell | null)[]> {
+  return Object.fromEntries(Object.entries(rates).map(([k, v]) =>
+    [k, v.map((r): RateCell | null => (r === null ? null : [1e9, 1e14, r * 1e12]))]));
+}
+
 export const peers: Peers = {
-  v: 7,
+  v: 8,
   generated: '2026-11-14',
   start: day('2023-07-01'),
   end: day('2026-11-01'),
@@ -74,16 +80,17 @@ export const peers: Peers = {
   ref_all: 1.5,
   min_rate_cls: 200,
   min_dir_cls: 100,
-  // Everyone's rate per bin, then at any experience; 1.2, 0.8 and 0.5 times all of Chromium's in three
-  // directories. chrome/browser/ui/ has a rate of its own only at the first bin, and third_party/blink/
-  // none at any experience: their parents' count instead.
-  rates: {
+  // Everyone's rate per bin, then at any experience, the same in every half-year; 1.2, 0.8 and 0.5
+  // times all of Chromium's in three directories. chrome/browser/ui/ has a rate of its own only at the
+  // first bin, and third_party/blink/ none at any experience: their parents' count instead. The cells are
+  // so large that leaving the person's own lines out moves no rate by more than about 1e-11.
+  rates: Object.fromEntries(periods.filter((h) => h !== 'all').map((h) => [h, rateCells({
     '': [...refBin, 1.5],
     'chrome/browser/': [4.8, 3.6, 3, 2.4, 2.04, 1.56, 1.2, 0.96, 0.72, null, 1.65],
     'chrome/browser/ui/': [9, null, null, null, null, null, null, null, null, null, null],
     'content/': [3.2, 2.4, 2, 1.6, 1.36, 1.04, 0.8, 0.64, 0.48, null, 1.35],
     'third_party/blink/': [2, 1.5, 1.25, 1, 0.85, 0.65, 0.5, 0.4, 0.3, null, null],
-  },
+  })])),
   scale: { '': 1, e: 1, d: 1, ed: 1 },
   // Everyone's directory table: third_party/blink/ is among third_party/'s smaller entries.
   dir_table: [

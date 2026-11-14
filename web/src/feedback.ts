@@ -6,9 +6,9 @@
 // The addressed feedback rate (AFR) of a set of changes is their addressed reviewer
 // threads per 100 new or changed lines (insertions). The feedback index (FI) is a person's AFR
 // over their peers': for each directory a change wrote lines in, the AFR of
-// everyone's lines there at the same experience (CLs landed on main, in
-// power-of-two bins), or the parent directory's where that is too thin,
-// optionally with a factor for the org (`Norm`).
+// everyone else's lines there in the same half-year at the same experience (CLs
+// landed on main, in power-of-two bins), or the parent directory's where that is
+// too thin, optionally with a factor for the org (`Norm`).
 
 /** What the feedback index compares with: experience (e), directory (d) and org (o), in that order. */
 export type Norm = '' | 'e' | 'd' | 'ed' | 'o' | 'eo' | 'do' | 'edo';
@@ -97,9 +97,12 @@ export interface Dist {
  * it ("rest of"); 2: the smaller entries under it ("" for the top level), pooled. */
 export type DirTableEntry = [string, 0 | 1 | 2, number, number, number, number?];
 
-/** peers.json (cosh/review_feedback.py, version 7). */
+/** A rate cell's sums: [changes' worth, lines, addressed threads]. */
+export type RateCell = [number, number, number];
+
+/** peers.json (cosh/review_feedback.py, version 8). */
 export interface Peers {
-  v: 7;
+  v: 8;
   generated: string;
   /** The changes covered, as day numbers: from `start` up to (not including) `end`.
    * Only changes from `addr_start` have addressed labels. */
@@ -131,9 +134,10 @@ export interface Peers {
   min_rate_cls: number;
   /** A directory gets a row of its own in everyone's directory table with this many changes. */
   min_dir_cls: number;
-  /** Per directory, the pooled AFR of everyone's lines there per experience bin, then at any experience
-   * (the last); null where too few (`min_rate_cls`): the parent's counts (`peerRate`). */
-  rates: Record<string, (number | null)[]>;
+  /** Per half-year, per directory, the sums of everyone's lines there per experience bin, then at any
+   * experience (the last); null where too few (`min_rate_cls`; "" always has them). The peers' rate is
+   * these less the person's own (`peerRate`). */
+  rates: Record<string, Record<string, (RateCell | null)[]>>;
   /** Per norm without "o": the expected threads' scale, which makes the median contributor's index 1. */
   scale: Record<'' | 'e' | 'd' | 'ed', number>;
   /** Org factors per norm without "o"; "*" for the smaller orgs. */
@@ -285,20 +289,90 @@ export function dirLevels(d: string): string[] {
   return out;
 }
 
-/** The peers' AFR for lines in directory `d` at experience bin `b` (`bins.length`: any experience): the
- * directory's, else its parent's, up to everyone's (cosh/review_feedback.py `peer_rate`). */
-export function peerRate(peers: Pick<Peers, 'rates'>, d: string, b: number): number {
-  for (const k of dirLevels(d)) {
-    const v = peers.rates[k]?.[b];
-    if (v !== null && v !== undefined) return v;
+/** The half-year ("2026H2") of a day number. */
+export function halfOf(day: number): string {
+  const d = new Date(day * DAY_MS);
+  return `${d.getUTCFullYear()}H${d.getUTCMonth() < 6 ? 1 : 2}`;
+}
+
+/** A person's own sums in the rate cells, keyed `half|directory`, per experience bin and then at any
+ * experience (cosh/review_feedback.py `rate_cells` of their rows): what their peers' rates leave out. */
+export type OwnCells = Map<string, RateCell[]>;
+
+const ownCache = new WeakMap<Person, OwnCells>();
+
+/** The person's own sums over their labelled changes, each change's lines and addressed threads
+ * split over its directories by lines. */
+export function ownCells(p: Person, peers: Pick<Peers, 'bin_edges' | 'bins'>): OwnCells {
+  let own = ownCache.get(p);
+  if (own) return own;
+  own = new Map();
+  const nb = peers.bins.length;
+  for (const c of p.cls) {
+    if (c[1] < p.addrStart) continue;
+    const h = halfOf(c[1]);
+    const b = xbin(peers.bin_edges, c[6]);
+    const fracs = unitFracs(c[3]);
+    c[3].forEach((u, i) => {
+      const a = c[4].reduce((s, t) => s + (t[4] === u[0] ? addressed(t) : 0), 0);
+      for (const k of dirLevels(p.dirs[u[0]])) {
+        const key = `${h}|${k}`;
+        let v = own!.get(key);
+        if (!v) own!.set(key, (v = Array.from({ length: nb + 1 }, (): RateCell => [0, 0, 0])));
+        for (const x of [v[b], v[nb]]) {
+          x[0] += fracs[i];
+          x[1] += c[2] * fracs[i];
+          x[2] += a;
+        }
+      }
+    });
   }
-  const all = peers.rates[''];
-  return all[all.length - 1] ?? 0;
+  ownCache.set(p, own);
+  return own;
+}
+
+/** The AFR of everyone's lines in half-year `h`, directory `k` and bin `b` less the person's own, where
+ * that leaves `min_rate_cls` changes' worth (always, without `need`; cosh/review_feedback.py
+ * `cell_rate`). */
+function cellRate(peers: Pick<Peers, 'rates' | 'min_rate_cls'>, own: OwnCells | null, h: string, k: string,
+  b: number, need = true): number | null {
+  const x = peers.rates[h]?.[k]?.[b];
+  if (!x) return null;
+  let [n, lines, a] = x;
+  const o = own?.get(`${h}|${k}`);
+  if (o) {
+    n -= o[b][0];
+    lines -= o[b][1];
+    a -= o[b][2];
+  }
+  return (n >= peers.min_rate_cls || !need) && lines > 0 ? 100 * a / lines : null;
+}
+
+const halvesCache = new WeakMap<object, string[]>();
+
+/** The peers' AFR for lines in directory `d` landed in half-year `h` at experience bin `b`
+ * (`bins.length`: any experience), the person's own (`own`) left out: the directory's, else its
+ * parent's, up to everyone's that half-year, else everyone's in the nearest earlier half-year with
+ * enough, else that half-year's anyway (cosh/review_feedback.py `peer_rate`). */
+export function peerRate(peers: Pick<Peers, 'rates' | 'min_rate_cls'>, own: OwnCells | null, h: string,
+  d: string, b: number): number {
+  for (const k of dirLevels(d).slice(0, -1)) {
+    const v = cellRate(peers, own, h, k, b);
+    if (v !== null) return v;
+  }
+  let hs = halvesCache.get(peers.rates);
+  if (!hs) halvesCache.set(peers.rates, (hs = Object.keys(peers.rates).sort().reverse()));
+  for (const hh of hs.filter((x) => x <= h)) {
+    const v = cellRate(peers, own, hh, '', b);
+    if (v !== null) return v;
+  }
+  return cellRate(peers, own, h, '', b, false) ?? 0;
 }
 
 /** The addressed threads each unit of a change would draw at its peers' AFR, under `norm`
- * (cosh/review_feedback.py `unit_expected`): its lines / 100 × the peers' rate in its directory ("d")
- * at the change's experience ("e") × the norm's scale × the org's factor ("o"). */
+ * (cosh/review_feedback.py `unit_expected`): its lines / 100 × the peers' rate (`peerRate`: the same
+ * half-year, the person's own lines left out) in its directory ("d") at the change's experience ("e")
+ * × the norm's scale × the org's factor ("o"). */
 export function unitExpected(p: Person, peers: Peers, c: ClRow, norm: Norm): number[] {
   const base = norm.replace('o', '') as '' | 'e' | 'd' | 'ed';
   let s = peers.scale[base];
@@ -307,8 +381,10 @@ export function unitExpected(p: Person, peers: Peers, c: ClRow, norm: Norm): num
     s *= t[p.orgs[c[5]]] ?? t['*'] ?? 1;
   }
   const b = norm.includes('e') ? xbin(peers.bin_edges, c[6]) : peers.bins.length;
+  const own = ownCells(p, peers);
+  const h = halfOf(c[1]);
   const fr_ = unitFracs(c[3]);
-  return c[3].map((u, i) => (c[2] * fr_[i] / 100) * peerRate(peers, norm.includes('d') ? p.dirs[u[0]] : '', b) * s);
+  return c[3].map((u, i) => (c[2] * fr_[i] / 100) * peerRate(peers, own, h, norm.includes('d') ? p.dirs[u[0]] : '', b) * s);
 }
 
 export const expectedOn = (p: Person, peers: Peers, c: ClRow, norm: Norm) =>
