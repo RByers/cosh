@@ -835,11 +835,13 @@
         {
           "name": "renames",
           "rows": 615936,
-          "purpose": "Files git finds renamed (-M) in a commit's first-parent diff, so directories can be followed across renames (commits.current_paths, the Feedback Index).",
+          "purpose": "Files git finds renamed (-M) in a commit's first-parent diff, with the lines changed between the names, so directories can be followed across renames and moves don't count as new lines (commits.current_paths and moved_lines, the Feedback Index).",
           "columns": {
             "commit_id": "Foreign key to commits.commit_id (the commit that renamed the file).",
             "old_path_id": "Foreign key to paths.path_id: the name before.",
-            "new_path_id": "Foreign key to paths.path_id: the name after."
+            "new_path_id": "Foreign key to paths.path_id: the name after.",
+            "ins": "Lines added between the two names (0 for a plain move); -1 for a binary file.",
+            "dels": "Lines deleted between the two names; -1 for a binary file."
           }
         },
         {

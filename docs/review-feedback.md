@@ -19,7 +19,12 @@ Both are fixed: the page has no switches for them (the user's call,
   lines, pooled over a set of CLs (all their addressed threads × 100 / all
   their lines). Lines are Gerrit's insertions: a changed line counts once,
   and deleted lines don't count (since 2026-11-14; see "Why deletions don't
-  count"). CLs that only delete lines are left out. The CLs are merged,
+  count"). Moved files count by the lines changed, not as new: Gerrit's
+  counts mostly leave moves out already, and where Gerrit missed one (381k
+  lines in 1,141 CLs, 0.24% of all lines), the landed commit's insertions
+  with renamed files counted by their edits cap the CL's lines
+  (`move_free_ins`). CLs that only delete lines, or only move files, are
+  left out. The CLs are merged,
   human-owned CLs on `main` that are neither mechanical nor part of a
   large-scale change (the same CLs as the Review Balance page's feedback
   index, `docs/balance.md` section 4; mechanical and LSC CLs from
@@ -48,7 +53,17 @@ Both are fixed: the page has no switches for them (the user's call,
   before its directory moved takes the directory's new name. In the
   per-thread files, a thread on a file that has moved since names its unit
   (`[file, days, addressed, unit]`), since the page can't tell it from
-  the file.
+  the file. A CL's lines are split over directories by git's line counts
+  with each renamed file counted by its edit (`commits.moved_lines`), so a
+  CL that moves 600 lines and edits 3 elsewhere is priced where the 3 are.
+
+  **Moves barely move the index** (measured 2026-11-14 with `--fi-dump`,
+  which writes each person's index over all their CLs and over their odd
+  and even CLs): counting moves by their edits, in the split and in the
+  cap above, left the spread unchanged (10th–90th percentile 0.38–2.05,
+  SD of log index 0.806), the split-half rank correlation went from 0.775
+  to 0.774, and 27 of 2,792 people moved by more than 5% (24 up, 3 down;
+  9 up by more than 10%). Gerrit's counts already left most moves out.
 - **Feedback index (FI):** a person's AFR over their peers'. Per directory
   a CL wrote lines in, the addressed threads its peers would have drawn are
   those lines / 100 × the peers' rate there, and FI = addressed threads /

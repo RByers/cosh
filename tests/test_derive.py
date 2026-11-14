@@ -768,6 +768,7 @@ class CommitsStoreTest(unittest.TestCase):
             write("old/web/src/gone.cc", "gone\n")
             write("keep/x.cc", "x\n" * 3 + "keep x\n")
             write("keep/y.cc", "keep y\n")
+            write("keep/café.txt", "".join(f"café {i}\n" for i in range(10)))
             git("add", "-A")
             git("commit", "-qm", "Add")
             git("rm", "-q", "old/web/src/gone.cc")
@@ -776,26 +777,50 @@ class CommitsStoreTest(unittest.TestCase):
             git("mv", "old/web/src", "new/blink/renderer")
             os.makedirs(os.path.join(repo, "other"))
             git("mv", "keep/x.cc", "other/x.cc")
-            git("commit", "-qm", "The great mv", date="2018-03-01T00:00:00Z")
+            git("mv", "keep/café.txt", "other/café.txt")
+            with open(os.path.join(repo, "new/blink/renderer/core/a.cc"), "a") as fh:
+                fh.write("one more line\n")         # moved and edited
+            git("add", "-A")
+            git("commit", "-qm", "The great mv\n\nReviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/9",
+                date="2018-03-01T00:00:00Z")
             path = os.path.join(d, "commits.sqlite")
             commits.update(path, repo, jobs=1)
             db = sqlite3.connect(path)
-            self.assertEqual(db.execute("SELECT count(*) FROM renames WHERE commit_id = 3").fetchone(), (7,))
+            self.assertEqual(db.execute("SELECT count(*) FROM renames WHERE commit_id = 3").fetchone(), (8,))
+            # Each rename with the lines changed between the names: a.cc gained one, the rest moved as they were.
+            self.assertEqual(db.execute("SELECT sum(ins), sum(dels), count(*) FROM renames").fetchone(), (1, 0, 8))
+            pid = dict(db.execute("SELECT path, path_id FROM paths"))
+            self.assertIn(pid['"keep/caf\\303\\251.txt"'], {r[0] for r in db.execute("SELECT old_path_id FROM renames")})
+            moved = commits.moved_lines(db)
+            self.assertEqual(moved[(3, pid["new/blink/renderer/core/a.cc"])], (1, 0))
+            self.assertEqual(moved[(3, pid["old/web/src/core/a.cc"])], (0, 0))
+            # The Feedback Index's cap on a CL's lines: the moves count by their one edited line.
+            from cosh import review_feedback
+            self.assertEqual(review_feedback.move_free_ins(db), {9: 1})
+            # commit_files has the whole file deleted and added; by moved_lines, the move weighs 1 line + 1.
+            self.assertEqual(commits.commit_dirs(db, 3)[3][0], "new/blink/renderer/")
+            self.assertEqual(commits.commit_dirs(db, 3, None, moved)[3][0], "new/blink/renderer/")
             cur = commits.current_paths(db)
             self.assertEqual(cur["old/web/src/core/a.cc"], "new/blink/renderer/core/a.cc")
             self.assertEqual(cur["old/web/src/gone.cc"], "new/blink/renderer/gone.cc")
             self.assertEqual(cur["keep/x.cc"], "other/x.cc")
             self.assertNotIn("keep/y.cc", cur)
             self.assertNotIn("new/blink/renderer/core/a.cc", cur)
-            self.assertEqual(commits.commit_dirs(db, 3)[1][1], {"old/web/src/", "keep/"})
-            self.assertEqual(commits.commit_dirs(db, 3, cur)[1][1], {"new/blink/renderer/", "keep/", "other/"})
+            # (A C-quoted path's directory keeps its quote: '"keep/'.)
+            self.assertEqual(commits.commit_dirs(db, 3)[1][1], {"old/web/src/", "keep/", '"keep/'})
+            self.assertEqual(commits.commit_dirs(db, 3, cur)[1][1], {"new/blink/renderer/", "keep/", "other/", '"other/'})
             # An incremental run looks only at the new commits, and refreshes the tip.
             write("new/blink/renderer/core/a.cc", "changed\n")
             git("commit", "-qam", "Edit", date="2018-04-01T00:00:00Z")
             commits.update(path, repo, jobs=1)
-            self.assertEqual(db.execute("SELECT count(*) FROM renames").fetchone(), (7,))
+            self.assertEqual(db.execute("SELECT count(*) FROM renames").fetchone(), (8,))
             self.assertEqual(db.execute("SELECT v FROM meta WHERE k = 'renames_through'").fetchone(), ("4",))
-            self.assertEqual(db.execute("SELECT count(*) FROM tip_paths").fetchone(), (8,))
+            self.assertEqual(db.execute("SELECT count(*) FROM tip_paths").fetchone(), (9,))
+            # Renames from before the line counts get them on the next run.
+            db.execute("UPDATE renames SET ins = NULL, dels = NULL")
+            db.commit()
+            commits.update(path, repo, jobs=1)
+            self.assertEqual(db.execute("SELECT sum(ins), count(*) FROM renames").fetchone(), (1, 8))
             db.close()
 
 

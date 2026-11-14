@@ -163,7 +163,7 @@ rerunning: about 1 h 50 min (1.5 h of `git log`, then 20 min of OWNERS diffs and
 | `commits` | 1,676,752 | sha, git author (lowercased) and name, authored and landed (committer) time, CL (`Reviewed-on:`), `Bot-Commit:` flag, `Reviewed-by:` approvers, the commit it reverts, reland flag, AI-marker flag, files and lines, LSC flag (`is_lsc`) |
 | `commit_files`, `paths` | 13,556,620 / 1,642,612 | each file of its first-parent diff, with lines added and deleted (`-1` binary) |
 | `owners_added` | 42,496 | each address on a line added to an OWNERS file (the first on the line) |
-| `renames`, `tip_paths` | 615,936 / 517,788 | each file git finds renamed in a commit (old and new path); the files at main's tip (below) |
+| `renames`, `tip_paths` | 615,936 / 517,788 | each file git finds renamed in a commit (old and new path, lines changed between them); the files at main's tip (below) |
 | `repetition` | 173,608 | 1 − distinct changed lines ÷ changed lines, for commits with a CL and 10 or more files (NULL over 50,000 lines) |
 
 `commit_id` is landing order: 1 is the first commit since 2017-01-01,
@@ -207,12 +207,23 @@ deletion and an addition, so a directory's history stops at a rename:
 2018-04-07 ("The Great Blink mv for source files"), and
 `third_party/WebKit/LayoutTests` became `third_party/blink/web_tests` on
 2018-11-25. The `renames` table holds every file `git diff-tree -M`
-(`-l5000`) finds renamed, old and new path ids, for the commits that could
+(`-l5000`) finds renamed, old and new path ids and the lines added and
+deleted between the two (0 and 0 for a plain move; 356k of the 616k), for
+the commits that could
 hold one (by line counts, a file with nothing added and one with nothing
 deleted, or two binary or empty files: `RENAME_CANDIDATES`, 147k of 1.68M).
 `tip_paths` lists the files at main's tip, refreshed on every run.
 `meta.renames_through` is the newest commit looked at; the first run takes
-about 3 min and found 615,936 renamed files in 37,179 commits.
+about 3 min and found 615,936 renamed files in 37,179 commits. Paths come
+from `diff-tree -z --numstat`, raw, and are matched to `paths` (C-quoted
+when unusual, as plain `--numstat` prints them) by `unquote_path`. Rows
+from before the line counts (`ins` NULL) are redone on the next run.
+
+`commits.moved_lines(db)` replaces `commit_files`' counts for renamed
+files: the new name gets the lines changed between the two, the old name
+none. `commit_dirs` and `cl_facts.cl_dirs` take it as `moved`. In ordinary
+CLs (a CL, under 100 files, not LSC) since 2017, renamed files hold 15.3M
+of `commit_files`' 121M added lines, but only 0.9M lines of edits.
 
 `commits.current_paths(db)` gives each path its name at the tip:
 

@@ -1,1 +1,1 @@
-{"dirs":["tools/metrics/histograms/","components/metrics/","third_party/metrics_proto/"],"files":[],"orgs":["google.com"],"cls":[[2872766,18751,11,0.534,0.426,[[0,6]],[[1,1]],0,37],[2826490,18752,39,1.64,1.27,[[1,0.578,6,23],[2,0.422,3,16]],[[3,2],[1,1]],0,38]],"counts":1}
+{"dirs":["tools/metrics/histograms/","components/metrics/","third_party/metrics_proto/"],"files":[],"orgs":["google.com"],"cls":[[2872766,18751,11,0.534,0.426,[[0,6]],[[1,1]],0,37],[2826490,18752,39,1.64,1.269,[[1,0.578,6,23],[2,0.422,3,16]],[[3,2],[1,1]],0,38]],"counts":1}

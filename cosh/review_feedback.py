@@ -278,6 +278,16 @@ def early_commits(before=SINCE, current=None):
     return out
 
 
+def move_free_ins(gdb):
+    """{change_number: insertions of its landed commit with each renamed file
+    counted by the lines changed between its names (commits.moved_lines)},
+    for the CLs since 2017 whose landed commit renamed files."""
+    return dict(gdb.execute(
+        "SELECT c.change_number, max(c.ins - sum(max(f.ins, 0) - max(r.ins, 0)), 0) FROM renames r "
+        "JOIN commits c USING (commit_id) JOIN commit_files f ON f.commit_id = r.commit_id AND f.path_id = r.new_path_id "
+        "WHERE r.commit_id > 0 AND r.ins IS NOT NULL AND c.change_number IS NOT NULL GROUP BY r.commit_id"))
+
+
 def load(args):
     """The CLs, with the columns reviews.sqlite and commits.sqlite give
     (cosh.cl_facts), owners' addresses normalised; human commits;
@@ -781,6 +791,9 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--out", default=OUT)
     ap.add_argument("--check", help="also write some people's per-period values here, to compare with the page's")
+    ap.add_argument("--fi-dump", help="also write each person's index over all CLs and over their odd and even CLs "
+                                      "(FI_NORM, MIN_CLS CLs or more) here, to compare methods: their spread and "
+                                      "split-half consistency (in data/private/scratch/)")
     ap.add_argument("--part", choices=("people", "comments"),
                     help="write only the global and per-person files and the thread index, or only the comment "
                          "files from that index (default: both)")
@@ -796,7 +809,10 @@ def main():
     # third_party/blink/renderer).
     current = C.current_paths(git_db())
     print(f"{len(current):,} paths named as they are today", file=sys.stderr, flush=True)
-    dirs3 = C.commit_dirs(git_db(), 3, current)
+    # A renamed file counts by the lines changed between its names, as
+    # Gerrit's line counts (each CL's total) do, not as wholly new.
+    moved = C.moved_lines(git_db())
+    dirs3 = C.commit_dirs(git_db(), 3, current, moved)
     top2 = {}
     for c in commits:
         d = dirs3.get(c["cid"])
@@ -851,10 +867,18 @@ def main():
     # Lines are insertions alone: deletions draw almost no addressed feedback
     # (docs/review-feedback.md, "Why deletions don't count"), so CLs that only
     # delete are left out.
+    # Moved files count by the lines changed, not as new: Gerrit's counts
+    # mostly do that already, and where they don't (Gerrit missed the move),
+    # the landed commit's count with renamed files by their edits is the cap.
+    # CLs that only move files are left out with those that only delete.
+    cap = move_free_ins(git_db())
+    for c in cls:
+        n = c["change_number"]
+        c["lines"] = min(c["ins"], cap[n]) if c["ins"] is not None and n in cap else c["ins"]
     use = [c for c in cls if c["status"] == "MERGED" and c["closed_at"] and c["pid"]
-           and not is_bot_email(c["owner_email"]) and (c["ins"] or 0) > 0]
+           and not is_bot_email(c["owner_email"]) and (c["lines"] or 0) > 0]
+    del cap
     for c in use:
-        c["lines"] = c["ins"]
         c["sb"] = size10(c["lines"])
         c["d2"] = top2.get(c["change_number"])
 
@@ -895,9 +919,9 @@ def main():
     print(f"{len(use):,} CLs in range {day_str(START)} .. {day_str(END - DAY)}", file=sys.stderr, flush=True)
 
     cl_dirs = defaultdict(dict)       # by CL, then directory
-    for (n, d), (files, lines) in sorted(F.cl_dirs(git_db(), by_cid, by_n, dels=False, current=current).items()):
+    for (n, d), (files, lines) in sorted(F.cl_dirs(git_db(), by_cid, by_n, dels=False, current=current, moved=moved).items()):
         cl_dirs[n][d] = (lines + files, lines)
-    del by_cid
+    del by_cid, moved
     orgs = OrgResolver()
     for c in use:
         n = c["change_number"]
@@ -956,8 +980,16 @@ def main():
     fi_vals = {nm: defaultdict(list) for nm in NORMS}
     growths = {}
     check_vals = {}
+    dump = {}
+    fi_i = NORMS.index(FI_NORM)
     for pid, rs in by_pid.items():
         exps = [[expected(r, nm, model) for nm in NORMS] for r in rs]
+        if args.fi_dump and len(rs) >= MIN_CLS:
+            def fi_of(ix):
+                e = sum(exps[i][fi_i] for i in ix)
+                return sum(rs[i].addr for i in ix) / e if e > 0 else None
+            order = sorted(range(len(rs)), key=lambda i: rs[i].at)
+            dump[key(pid)] = [fi_of(order), fi_of(order[0::2]), fi_of(order[1::2]), len(rs)]
         byp = defaultdict(list)
         for r, e in zip(rs, exps):
             for p in periods_of(r.at):
@@ -977,6 +1009,11 @@ def main():
             vals[p] = dict(cls=n, addressed=a, lines=lines, fr=r3(fr(a, lines)) if lines else None, fi=fis)
         if args.check and len(check_vals) < 300:
             check_vals[key(pid)] = dict(periods=vals, growth=g)
+
+    if args.fi_dump:
+        with open(args.fi_dump, "w") as f:
+            json.dump(dump, f)
+        del dump
 
     # ------------------------------------------------ peers
     dist = lambda xs: dict(n=len(xs), q=quantiles(xs) if len(xs) >= MIN_PEERS else None)

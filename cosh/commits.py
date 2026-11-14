@@ -106,6 +106,8 @@ CREATE TABLE IF NOT EXISTS renames (
   commit_id   INTEGER NOT NULL,
   old_path_id INTEGER NOT NULL,
   new_path_id INTEGER NOT NULL,
+  ins         INTEGER,                  -- lines added and deleted between the two (the edit, without the move);
+  dels        INTEGER,                  -- -1 for binary; NULL in rows from before the columns
   PRIMARY KEY (commit_id, old_path_id)
 ) STRICT, WITHOUT ROWID;
 -- The files at main's tip as of the last run (path ids of commit_files' paths).
@@ -153,6 +155,10 @@ def connect(path=None):
     if "is_lsc" not in {r[1] for r in db.execute("PRAGMA table_info(commits)")}:
         with db:                    # a store from before is_lsc: _lsc tags its commits on the next update
             db.execute("ALTER TABLE commits ADD COLUMN is_lsc INTEGER NOT NULL DEFAULT 0")
+    if "ins" not in {r[1] for r in db.execute("PRAGMA table_info(renames)")}:
+        with db:                    # renames from before the line counts: _renames redoes their commits
+            db.execute("ALTER TABLE renames ADD COLUMN ins INTEGER")
+            db.execute("ALTER TABLE renames ADD COLUMN dels INTEGER")
     return db
 
 
@@ -346,13 +352,43 @@ RENAME_CANDIDATES = """SELECT f.commit_id, c.sha FROM commit_files f JOIN commit
 RENAME_LIMIT = 5000
 
 
+_C_ESCAPES = {"a": 7, "b": 8, "t": 9, "n": 10, "v": 11, "f": 12, "r": 13, '"': 34, "\\": 92}
+
+
+def unquote_path(p):
+    """A path as git prints it without -z (C-quoted when it has non-ASCII
+    bytes or special characters, as commit_files' paths are) as raw text."""
+    if not (len(p) >= 2 and p[0] == '"' and p[-1] == '"'):
+        return p
+    out, i, s = bytearray(), 0, p[1:-1]
+    while i < len(s):
+        ch = s[i]
+        if ch == "\\" and i + 1 < len(s):
+            nx = s[i + 1]
+            if len(s) >= i + 4 and all(c in "01234567" for c in s[i + 1:i + 4]):
+                out.append(int(s[i + 1:i + 4], 8))
+                i += 4
+                continue
+            if nx in _C_ESCAPES:
+                out.append(_C_ESCAPES[nx])
+                i += 2
+                continue
+        out += ch.encode("utf-8", "surrogateescape")
+        i += 1
+    return out.decode("utf-8", "surrogateescape")
+
+
 def _renames(db, repo):
-    """Appends renames for the commits after the last run's (all of history on
-    the first run), from one `git diff-tree --stdin -M` process."""
+    """Appends renames, with the lines changed between the two names, for the
+    commits after the last run's (all of history on the first run), and
+    redoes commits whose renames have no line counts yet; from one
+    `git diff-tree --stdin -z -M --numstat` process."""
     import threading
     done = db.execute("SELECT v FROM meta WHERE k = 'renames_through'").fetchone()
     lo = int(done[0]) if done else -(1 << 62)
     todo = db.execute(RENAME_CANDIDATES, (lo,)).fetchall()
+    todo += db.execute("SELECT DISTINCT r.commit_id, c.sha FROM renames r JOIN commits c USING (commit_id) "
+                       "WHERE r.ins IS NULL").fetchall()
     top = db.execute("SELECT max(commit_id) FROM commits").fetchone()[0]
     ids = {sha: cid for cid, sha in todo}
     if not ids:
@@ -360,29 +396,43 @@ def _renames(db, repo):
             with db:
                 db.execute("INSERT OR REPLACE INTO meta VALUES ('renames_through', ?)", (str(top),))
         return 0
-    pid = dict(db.execute("SELECT path, path_id FROM paths"))
-    p = subprocess.Popen(["git", "--git-dir", repo, "diff-tree", "--stdin", "-r", "-M", f"-l{RENAME_LIMIT}",
-                          "--diff-filter=R", "--name-status"],
+    # commit_files has paths as `--numstat` prints them without -z (C-quoted
+    # when unusual); -z prints them raw.
+    pid = {unquote_path(x): i for x, i in db.execute("SELECT path, path_id FROM paths")}
+    p = subprocess.Popen(["git", "--git-dir", repo, "diff-tree", "--stdin", "-z", "-r", "-M", f"-l{RENAME_LIMIT}",
+                          "--diff-filter=R", "--numstat"],
                          stdin=subprocess.PIPE, stdout=subprocess.PIPE, env=ENV)
     w = threading.Thread(target=lambda: (p.stdin.write("".join(s + "\n" for s in ids).encode()), p.stdin.close()))
     w.start()
     rows, cid, n = [], None, 0
+
+    def tokens():
+        buf = b""
+        for chunk in iter(lambda: p.stdout.read(1 << 20), b""):
+            buf += chunk
+            *done, buf = buf.split(b"\0")
+            yield from done
+        if buf:
+            yield buf
     with p:
-        for line in p.stdout:
-            line = line.decode("utf-8", "replace").rstrip("\n")
-            if line in ids:
-                cid = ids[line]
+        it = tokens()
+        for t in it:
+            t = t.decode("utf-8", "surrogateescape").lstrip("\n")
+            if t in ids:
+                cid = ids[t]
                 continue
-            f = line.split("\t")
-            if cid is None or len(f) != 3 or not f[0].startswith("R"):
+            f = t.split("\t")              # "<added>\t<deleted>\t", then the old and new paths
+            if len(f) != 3 or f[2]:
                 continue
-            a, b = pid.get(f[1]), pid.get(f[2])     # numstat quotes paths as name-status does
-            if a is not None and b is not None:
-                rows.append((cid, a, b))
+            old = next(it, b"").decode("utf-8", "surrogateescape")
+            new = next(it, b"").decode("utf-8", "surrogateescape")
+            a, b = pid.get(old), pid.get(new)
+            if cid is not None and a is not None and b is not None:
+                rows.append((cid, a, b, -1 if f[0] == "-" else int(f[0]), -1 if f[1] == "-" else int(f[1])))
             if len(rows) >= 50_000:
                 n += len(rows)
                 with db:
-                    db.executemany("INSERT OR IGNORE INTO renames VALUES (?,?,?)", rows)
+                    db.executemany("INSERT OR REPLACE INTO renames VALUES (?,?,?,?,?)", rows)
                 rows = []
     rc = p.wait()
     w.join()
@@ -390,7 +440,8 @@ def _renames(db, repo):
         raise SystemExit(f"git diff-tree exited {rc}; rerun to resume")
     n += len(rows)
     with db:
-        db.executemany("INSERT OR IGNORE INTO renames VALUES (?,?,?)", rows)
+        db.executemany("INSERT OR REPLACE INTO renames VALUES (?,?,?,?,?)", rows)
+        db.execute("DELETE FROM renames WHERE ins IS NULL")    # redone above, and no longer found
         if top is not None:
             db.execute("INSERT OR REPLACE INTO meta VALUES ('renames_through', ?)", (str(top),))
     return n
@@ -800,10 +851,25 @@ def current_paths(db):
     return out
 
 
-def commit_dirs(db, depth=3, current=None):
+def moved_lines(db):
+    """{(commit_id, path_id): (ins, dels)} replacing commit_files' counts for
+    files a commit renamed: the new name gets the lines changed between the
+    two (0 and 0 for a plain move), the old name none. commit_files, without
+    rename detection, has the whole file deleted and added. Renames from
+    before their line counts are left out."""
+    out = {}
+    for cid, a, b, ins, dels in db.execute("SELECT commit_id, old_path_id, new_path_id, ins, dels FROM renames "
+                                           "WHERE ins IS NOT NULL"):
+        out[(cid, a)] = (0, 0)
+        out[(cid, b)] = (ins, dels)
+    return out
+
+
+def commit_dirs(db, depth=3, current=None, moved=None):
     """{commit_id: (top dir by lines, frozenset of dirs)} of the commits since
     2017 (commit_id > 0). With `current` (current_paths), each file counts
-    in the directory it's in today."""
+    in the directory it's in today; with `moved` (moved_lines), a renamed
+    file by the lines changed, not moved."""
     paths = dict(db.execute("SELECT path_id, path FROM paths"))
     if current:
         paths = {k: current.get(v, v) for k, v in paths.items()}
@@ -813,6 +879,10 @@ def commit_dirs(db, depth=3, current=None):
         if cur is not None and acc:
             out[cur] = (max(acc, key=acc.get), frozenset(acc))
     for cid, pid, w in db.execute("SELECT commit_id, path_id, max(ins, 0) + max(dels, 0) + 1 FROM commit_files WHERE commit_id > 0"):
+        if moved:
+            m = moved.get((cid, pid))
+            if m is not None:
+                w = max(m[0], 0) + max(m[1], 0) + 1
         if cid != cur:
             done()
             cur, acc = cid, {}
