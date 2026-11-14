@@ -1,5 +1,7 @@
 # Feedback Index: addressed feedback rate (AFR) and index
 
+What changes to it are judged by: `docs/goals.md`.
+
 `web/feedback-index.html` shows how much review feedback Chromium changes
 draw per 100 lines as their authors gain experience, and lets anyone type an
 email address to see that person's AFR and index against their
@@ -423,10 +425,13 @@ file paths 11 MB, comment uuids 3 MB; each half-year before 2023 about
   with size (5.5 per 100 lines under 4 lines, 1.4 at 512–1k, 0.21 over
   1k): someone landing larger changes gets a lower rate at the same care.
   The index doesn't adjust for size.
-- The typical rates cover all the data (2017–2026). If Chromium's feedback
-  per line drifts over the years, a half-year's index drifts with it; the
-  over-time chart shows everyone's median index per half-year, so a drift
-  is visible there.
+- The typical rates cover all the data (2017–2026), so drift over time
+  biases the index: all of Chromium drew 26% less feedback per line than
+  they expect in 2026, and some directories moved 1.5–2.4× from 2017–22 to
+  2025–26. `docs/review-feedback-drift.md` measures it and recommends
+  per-half-year rates with each person left out of their own peers'
+  (not built yet). The over-time chart shows everyone's median index per
+  half-year, so the Chromium-wide part is visible there.
 - A rate over a few CLs is noisy, so part of the spread in each bin and in
   the growth rates is noise, not people.
 
