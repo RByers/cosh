@@ -56,3 +56,21 @@ copy, and picks up the new names when it rebases):
    ```
 3. Delete this file and its pointer in `docs/data-architecture.md`, and
    the reminder in the auto-memory.
+
+## Added 2026-11-14: the review timeline
+
+`data/private/balance-timeline.sqlite` is now a symlink to
+`data/private/review-timeline.sqlite` (the NoteDb timeline left Review
+Balance when the Review Load page began to read it; `python3 -m
+cosh.review_timeline` writes it, with three more tables). The file as it
+was before the move is in `data/private/backup-20261114/`, until a person
+deletes it. Code renamed with it: `python3 -m cosh.balance timeline` is
+`python3 -m cosh.review_timeline`, step `balance-timeline` is
+`review-timeline`, and `COSH_BALANCE_TIMELINE` is `COSH_REVIEW_TIMELINE`.
+
+Remove the symlink with the others, after the same checks (also grep the
+open branches for `balance-timeline`):
+
+```bash
+rm data/private/balance-timeline.sqlite
+```

@@ -21,8 +21,8 @@ averaged and are never written out.
   on chromium/src `main`, human-owned, mechanical CLs left out (the
   repetition rule in `docs/balance.md`). Eras: 2023 H2–2024, 2025, and
   2026 (to October).
-- **Votes** (table `votes` in `data/private/balance-timeline.sqlite`,
-  written by `python3 -m cosh.balance timeline` in the same NoteDb walk as
+- **Votes** (table `votes` in `data/private/review-timeline.sqlite`,
+  written by `python3 -m cosh.review_timeline` in the same NoteDb walk as
   the uploads and attention set; until 2026-11-12 a separate
   `balance_signals.py votes` pass wrote `balance-votes.sqlite`):
   - Every `Label: Code-Review=<v>` line in a CL's NoteDb meta history, with
@@ -51,7 +51,7 @@ averaged and are never written out.
   3-level directory (merged CLs only, as abandoned ones have no landed
   directory).
 - **Uploads before sending:** owner rework uploads before the CL was first
-  sent for review (`sent_at`), from `balance-timeline.sqlite`.
+  sent for review (`sent_at`), from `review-timeline.sqlite`.
 
 ### Balanced panels (arriving better equipped vs easing off)
 
@@ -110,18 +110,18 @@ averaged and are never written out.
 ```bash
 cd ~/projects/cosh   # or a worktree; data comes from the main checkout
 export COSH_DATA_DIR=/home/rbagent/projects/cosh/data/private
-nice -n 5 python3 -m cosh.balance timeline              # votes, uploads, attention (below)
+nice -n 5 python3 -m cosh.review_timeline               # votes, uploads, attention (below)
 nice -n 5 python3 scripts/balance_signals.py report --out signals.json   # ~4 min
 ```
 
-The `timeline` stage reads every CL with a NoteDb meta ref (716k of the
+The timeline step reads every CL with a NoteDb meta ref (716k of the
 1.14M after the 2017 backfill; see `docs/balance.md` for its time). It
-lists `refs/meta/` once with each ref's tip (`cosh.balance.meta_refs`);
+lists `refs/meta/` once with each ref's tip (`cosh.review_timeline.meta_refs`);
 passing each batch's 2,000 refnames to `for-each-ref` as patterns cost
 54 s a batch at 715k refs. With 3,198 packs outside a stale index the
 reads ran at 14–34 CLs/s; `cosh notedb-maintain` fixes that, and
 `backfill` now runs it every 20 weeks and at the end.
-`COSH_BALANCE_TIMELINE=<path>` points the stage and its readers at another
+`COSH_REVIEW_TIMELINE=<path>` points the step and its readers at another
 file, for a scratch run.
 
 Its inputs (first commits, OWNERS additions, AI markers, mechanical CLs)

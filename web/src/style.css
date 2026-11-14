@@ -2960,6 +2960,13 @@ details.rf-method[open] > summary {
   height: 300px;
 }
 
+/* ---- Review Load page (review-load.html) ---- */
+
+/* The directory table's column groups (four quarters each) are set off by a rule. */
+.rl-dirs .rl-group {
+  border-left: 1px solid var(--border);
+}
+
 /* ---- Data flow page (dataflow.html) ---- */
 
 /* A node's colour, by kind (or a store's tier): the graph's boxes, the

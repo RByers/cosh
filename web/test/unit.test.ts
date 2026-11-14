@@ -1855,3 +1855,49 @@ test('dataflow: the routed drawing of each page has no crossings (bar known ones
   const r = G.route(all.g, all.keep, size);
   assert.equal(r.nodes.size + r.chips.size, all.keep.size);
 });
+
+// ---- Review Load (src/load.ts)
+
+test('review load: quarter figures, a reviewer\'s files and the directory tree', async () => {
+  const L = await import('../src/load.ts');
+  assert.equal(L.quarterLabel('2026Q3'), 'Q3 2026');
+  assert.deepEqual(L.yearsOf(['2025Q4', '2026Q1', '2026Q2']), ['2025', '2026']);
+  assert.deepEqual(L.meanLines({ reviewed_lines: [100, 0], reviewers: [4, 0] }), [25, null]);
+  assert.equal(L.change(120, 100)! > 0.199 && L.change(120, 100)! < 0.201, true);
+  assert.equal(L.change(5, 0), null);
+  assert.equal(L.change(null, 3), null);
+  const all = { quarters: ['2025Q4', '2026Q1', '2026Q2'], table_quarters: ['2025Q4', '2026Q1', '2026Q2'],
+    dirs: [['a/', [10, 20, 40], [30, 90], [3, 3]], ['a/b/', [10, 15, 30], [30, 60], [3, 1]], ['z/', [5, 5, 5], [8, 8], [4, 4]]] as import('../src/load.ts').DirEntry[] };
+  // A malformed quarter is dropped; no quarters at all is nobody.
+  assert.equal(L.buildPerson(all, new Map([['2026', { q: { 1: [1, 2] as unknown as import('../src/load.ts').PersonQuarter } }]]), new Map()), null);
+  const p = L.buildPerson(all, new Map([['2026', { q: { 1: [1, 50, 12, 2, 6, 2], 2: [2, 70, 0, 0, 0, 0] } }]]),
+    new Map([['2026Q2', [['a/b/', 40, 6, 1], ['a/c/', 20, 2, 1], ['y/', 10, 4, 1]]], ['2025Q4', [['z/', 99, 0, 0]]]]))!;
+  assert.deepEqual([...p.quarters.keys()], ['2026Q1', '2026Q2']);
+  assert.deepEqual([...p.dirs.keys()], ['2026Q2']);            // the first table quarter has no directories
+  assert.deepEqual(L.personSeries(p, all.quarters, (v) => L.ratio(v[4], v[5])), [null, 3, null]);
+  const roots = L.dirTree(all, p);
+  const flat = new Map<string, import('../src/load.ts').DirNode>();
+  const walk = (ns: import('../src/load.ts').DirNode[]) => ns.forEach((n) => (flat.set(n.key, n), walk(n.children)));
+  walk(roots);
+  assert.deepEqual([...flat.keys()], ['d:a/', 'd:a/b/', 'o:a/', 'd:z/', 'o:']);
+  // "Other in a/" is what a/b/ doesn't cover; the reviewer's unlisted a/c/ counts there, y/ in the root's.
+  assert.deepEqual(flat.get('o:a/')!.lines, [0, 5, 10]);
+  assert.deepEqual(flat.get('o:a/')!.turns, [0, 2]);
+  assert.deepEqual(flat.get('d:a/')!.you, { lines: 60, hours: 8, turns: 2 });
+  assert.deepEqual(flat.get('d:a/b/')!.you, { lines: 40, hours: 6, turns: 1 });
+  assert.deepEqual(flat.get('o:a/')!.you, { lines: 20, hours: 2, turns: 1 });
+  assert.deepEqual(flat.get('o:')!.you, { lines: 10, hours: 4, turns: 1 });
+  assert.equal(L.totalLines(flat.get('d:a/')!), 60);
+  assert.deepEqual(L.meanHours(flat.get('d:a/b/')!, 2), [10, null]);
+  assert.deepEqual(L.overallHours(roots, 3), [38 / 7, 14]);
+  // Rows: by lines, the reviewer's first when asked; "Other" last; children only when open.
+  assert.deepEqual(L.dirRows(L.dirTree(all, null), new Set(), false).map((r) => r.key), ['d:a/', 'd:z/']);
+  assert.deepEqual(L.dirRows(roots, new Set(['d:a/']), true).map((r) => [r.key, r.depth]),
+    [['d:a/', 0], ['d:a/b/', 1], ['o:a/', 1], ['d:z/', 0], ['o:', 0]]);
+  const many = { table_quarters: ['q0', 'q1'], dirs: Array.from({ length: 20 }, (_, i) => [`d${String(i).padStart(2, '0')}/`, [0, 100 - i], [0], [0]]) as import('../src/load.ts').DirEntry[] };
+  const rows = L.dirRows(L.dirTree(many, null), new Set(), false);
+  assert.deepEqual([rows.length, rows.at(-1)!.key, rows.at(-1)!.more], [13, 'm:root', 8]);
+  assert.equal(L.dirRows(L.dirTree(many, null), new Set(['m:root']), false).length, 20);
+  // Shade: half the typical wait or less is fully green, twice or more fully red.
+  assert.deepEqual([L.waitShade(10, 20), L.waitShade(20, 20), L.waitShade(80, 20), L.waitShade(null, 20), L.waitShade(5, null)], [-1, 0, 1, 0, 0]);
+});

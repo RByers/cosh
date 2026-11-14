@@ -2288,6 +2288,7 @@ test('the landing page links to the Value Exchange dashboard', async () => {
     { href: 'sentiment.html', title: 'Review Tone' },
     { href: 'balance.html', title: 'Review Balance' },
     { href: 'feedback-index.html', title: 'Feedback Index' },
+    { href: 'review-load.html', title: 'Review Load' },
   ]);
   // Only the draft dashboard's card has the yellow "In development" box.
   const warnings = await page.$$eval('.card-warning', (ws) => ws.map((w) => ({
@@ -3116,7 +3117,8 @@ test('an unknown URL gets the 404 page with status 404; real pages still load', 
 });
 
 test('every page carries the Content Security Policy, breaks none of it, and it blocks injected markup', async () => {
-  for (const path of ['', 'value.html', 'sentiment.html', 'balance.html', 'feedback-index.html', 'dataflow.html', '404.html']) {
+  for (const path of ['', 'value.html', 'sentiment.html', 'balance.html', 'feedback-index.html', 'review-load.html', 'dataflow.html',
+    '404.html']) {
     // The landing page and the 404 page have no script to mark them ready.
     const scripted = path !== '' && path !== '404.html';
     const page = await browser.newPage();
@@ -3693,7 +3695,8 @@ test('the Data flow page draws the chosen pages\' flow, lists the inventory, and
 
   // A checkbox per page that reads fetched data, all ticked.
   const picks = await page.$$eval('#pages-pick input', (is) => is.map((i) => [(i as HTMLInputElement).value, (i as HTMLInputElement).checked]));
-  assert.deepEqual(picks, [['page-value', true], ['page-sentiment', true], ['page-balance', true], ['page-feedback', true]]);
+  assert.deepEqual(picks, [['page-value', true], ['page-sentiment', true], ['page-balance', true], ['page-feedback', true],
+    ['page-review-load', true]]);
 
   // The graph is drawn down the page, as wide as its box: no scrolling inside it.
   // The items drawn, once each (a config file shows as a chip beside each reader).
@@ -3775,7 +3778,7 @@ test('the Data flow page draws the chosen pages\' flow, lists the inventory, and
   assert.match(await page.$eval('#plan-commit', (e) => e.textContent!), /radar_browser_share\.csv/);
   assert.equal(await page.$eval('#plan-pages', (e) => e.textContent), 'Pages that change: Value Exchange.');
 
-  // Narrowing to the three pages that aren't Review Balance drops all of it.
+  // Narrowing to the pages that aren't Review Balance drops all of it.
   await page.click('#pages-pick input[value="page-balance"]');
   const three = await nodes();
   assert.ok(three.length < before.length);
@@ -3783,12 +3786,12 @@ test('the Data flow page draws the chosen pages\' flow, lists the inventory, and
   assert.equal(await page.$eval('#steps-rows', (e) => e.textContent!.includes('balance-publish')), true);
   assert.equal(await page.$eval('#steps-rows tr[data-node="balance-publish"]', (e) => (e as HTMLElement).hidden), true);
   // Only Radar's own page left: Radar is still in, Gerrit's steps are not.
-  for (const id of ['page-sentiment', 'page-feedback']) await page.click(`#pages-pick input[value="${id}"]`);
+  for (const id of ['page-sentiment', 'page-feedback', 'page-review-load']) await page.click(`#pages-pick input[value="${id}"]`);
   await page.click('#pages-pick input[value="page-value"]');
   assert.deepEqual(await nodes(), []);
   await page.click('#pages-pick input[value="page-value"]');
   assert.ok((await nodes()).includes('cloudflare-radar'));
-  for (const id of ['page-sentiment', 'page-balance', 'page-feedback']) await page.click(`#pages-pick input[value="${id}"]`);
+  for (const id of ['page-sentiment', 'page-balance', 'page-feedback', 'page-review-load']) await page.click(`#pages-pick input[value="${id}"]`);
 
   // The search box narrows the tables.
   await page.type('#find', 'haiku friction score');
@@ -3823,5 +3826,110 @@ test('the Data flow page draws the chosen pages\' flow, lists the inventory, and
     .map((a) => ({ href: a.href, target: a.target })));
   assert.ok(offsite.length >= 2);
   for (const l of offsite) assert.equal(l.target, '_blank', l.href);
+  await page.close();
+});
+
+// ---- Review Load (review-load.html). These tests serve made-up data, so they
+// don't depend on the committed files.
+
+const loadAll = {
+  quarters: ['2025Q3', '2025Q4', '2026Q1', '2026Q2', '2026Q3'], attention_from: '2025Q4', min_dir_lines: 100,
+  commits: [100, 110, 120, 130, 150], human: [80, 85, 90, 95, 120], reviewed: [70, 75, 80, 85, 100],
+  reviewed_lines: [7000, 8000, 9000, 9000, 12000], reviewers: [10, 10, 10, 9, 10],
+  first: { mean: [30, 32, 31, 35, 40], median: [8, 8, 9, 9, 12], n: [70, 75, 80, 85, 100] },
+  reply: { mean: [null, 16, 15, 17, 18], median: [null, 3, 3, 4, 4], n: [0, 60, 70, 70, 90] },
+  attention: { hours: [null, 2000, 2200, 2400, 3000], turns: [null, 80, 85, 90, 100], reviewers: [null, 10, 10, 10, 10] },
+  table_quarters: ['2025Q3', '2025Q4', '2026Q1', '2026Q2', '2026Q3'],
+  dirs: [['a/', [1000, 1100, 1200, 1300, 2600], [400, 420, 440, 1200], [20, 20, 20, 20]],
+    ['a/b/', [800, 800, 800, 800, 1600], [300, 300, 300, 1000], [10, 10, 10, 10]],
+    ['z/', [1000, 1000, 1000, 1000, 500], [100, 100, 100, 100], [20, 20, 20, 20]]],
+};
+
+async function loadPage(): Promise<{ page: Page; errors: string[]; requests: string[] }> {
+  const { personKey } = await import('../src/feedback.ts');
+  const k = await personKey('rev@chromium.org');
+  const page = await browser.newPage();
+  await page.setViewport({ width: 1100, height: 900 });
+  const errors: string[] = [];
+  const requests: string[] = [];
+  page.on('console', (m) => m.type() === 'error' && !/404/.test(m.text()) && errors.push(m.text()));
+  page.on('pageerror', (e) => errors.push(String(e)));
+  await page.setRequestInterception(true);
+  page.on('request', (r: HTTPRequest) => {
+    const path = new URL(r.url()).pathname;
+    const json = (body: unknown) => void r.respond({ status: 200, contentType: 'application/json', body: JSON.stringify(body) });
+    if (!path.includes('/review-load/')) return void r.continue();
+    requests.push(path.split('/review-load/')[1]);
+    if (path.endsWith('/review-load/all.json')) json(loadAll);
+    else if (path.endsWith(`/review-load/2026/${k}.json`)) json({ q: { 2: [5, 900, 60, 6, 48, 6], 3: [9, 3000, 400, 8, 80, 8] } });
+    else if (path.endsWith(`/review-load/dirs/2026Q3/${k}.json`)) json([['a/b/', 2000, 300, 6], ['q/r/', 1000, 100, 2]]);
+    else void r.respond({ status: 404, body: 'not found' });
+  });
+  await page.goto(baseUrl + 'review-load.html', { waitUntil: 'load' });
+  await page.waitForSelector('body[data-ready]');
+  return { page, errors, requests };
+}
+
+const loadRows = (page: Page) => page.$$eval('#rl-dirs tbody tr', (trs) => trs.map((tr) =>
+  [...tr.children].filter((c) => getComputedStyle(c).display !== 'none').map((c) => c.textContent!.replace(/[▸▾]/g, '').trim())));
+
+test('review load: four charts over the quarters and a directory table that opens, shaded by wait', async () => {
+  const { page, errors } = await loadPage();
+  assert.equal(await page.title(), 'Review Load - Chromium Open Source Health');
+  const charts = await page.evaluate(() => Object.fromEntries(Object.entries(window.__rl!.charts).map(([k, c]) =>
+    [k, { labels: c.data.labels, sets: c.data.datasets.map((d) => d.label) }])));
+  assert.deepEqual(Object.keys(charts).sort(), ['attention', 'commits', 'first', 'lines']);
+  assert.deepEqual(charts.commits.labels, ['Q3 2025', 'Q4 2025', 'Q1 2026', 'Q2 2026', 'Q3 2026']);
+  assert.deepEqual(charts.commits.sets, ['All commits', 'Written by people']);
+  assert.deepEqual(charts.lines.sets, ['Mean per reviewer']);
+  // Mean lines per reviewer: 12,000 over 10 reviewers, a fifth more than the quarter before (9,000 over 9).
+  assert.deepEqual(await page.evaluate(() => window.__rl!.charts.lines.data.datasets[0].data), [700, 800, 900, 1000, 1200]);
+  assert.match(await page.$eval('#rl-lines-note', (e) => e.textContent!), /the mean was\s+1,200 lines across 10 reviewers:\s+\+20% on the quarter before and \+71% on a year before/);
+  assert.match(await page.$eval('#rl-first-note', (e) => e.textContent!), /the mean was 40 h and the median\s+12 h/);
+  assert.match(await page.$eval('#rl-attention-note', (e) => e.textContent!), /3,000 hours in all, a mean of 300 hours each and\s+30 hours per change and reviewer/);
+  assert.deepEqual(await page.$$eval('#rl-dirs-quarters th', (ths) => ths.slice(0, 4).map((t) => t.textContent)),
+    ['Q4 2025', 'Q1 2026', 'Q2 2026', 'Q3 2026']);
+  // Biggest first; the Yours columns are hidden until someone is looked up.
+  assert.deepEqual(await loadRows(page), [
+    ['a/', '6.2K', '+10%', '+9%', '+8%', '+100%', '20', '21', '22', '60'],
+    ['z/', '3.5K', '+0%', '+0%', '+0%', '−50%', '5', '5', '5', '5'],
+  ]);
+  // Q3 2026: 1,300 hours over 40 turns is 32.5 a turn; a/ waits 60 (red), z/ 5 (green).
+  const shade = (row: number) => page.$eval(`#rl-dirs tbody tr:nth-child(${row}) td:nth-child(10)`, (td) => td.className);
+  assert.match(await shade(1), /rf-ratio-hi/);
+  assert.match(await shade(2), /rf-ratio-lo/);
+  await page.click('#rl-dirs tbody tr:first-child .ar-toggle');
+  assert.deepEqual((await loadRows(page)).map((r) => r[0]), ['a/', 'b/', 'Other in a/', 'z/']);
+  assert.deepEqual(errors, []);
+  await page.close();
+});
+
+test('review load: an address adds that reviewer to the charts and the table, with no completions', async () => {
+  const { page, errors, requests } = await loadPage();
+  const input = await page.$eval('#rl-email', (i) => ({ ac: i.getAttribute('autocomplete'), list: i.getAttribute('list'),
+    name: i.getAttribute('name') }));
+  assert.deepEqual(input, { ac: 'off', list: null, name: null });
+  const lookUp = async (email: string) => {
+    await page.click('#rl-email', { count: 3 });
+    await page.keyboard.press('Backspace');
+    await page.type('#rl-email', email);
+    await page.click('#rl-find button');
+    await page.waitForFunction(() => !/Looking/.test(document.querySelector('#rl-find-note')!.textContent ?? ''));
+  };
+  await lookUp('nobody@example.com');
+  assert.match(await page.$eval('#rl-find-note', (e) => e.textContent!), /No reviews by that address between Q3 2025 and Q3 2026\./);
+  // google.com and chromium.org are one person; the address stays out of the URL and the requests.
+  await lookUp('Rev@google.com');
+  assert.match(await page.$eval('#rl-find-note', (e) => e.textContent!),
+    /Showing your reviews in 2 quarters, from Q2 2026 to Q3 2026: 14 commits and 3,900 lines reviewed\./);
+  assert.equal(new URL(page.url()).hash, '');
+  assert.ok(requests.every((r) => !/rev|google/i.test(r)), requests.join(' '));
+  const you = await page.evaluate(() => Object.fromEntries(Object.entries(window.__rl!.charts).map(([k, c]) =>
+    [k, c.data.datasets.at(-1)!.data])));
+  assert.deepEqual(you, { commits: [null, null, null, 5, 9], lines: [null, null, null, 900, 3000],
+    first: [null, null, null, 8, 10], attention: [null, null, null, 60, 400] });
+  // Their directories first; one that isn't listed counts in "Other".
+  assert.deepEqual((await loadRows(page)).map((r) => [r[0], r[10], r[11]]), [['a/', '2K', '50'], ['z/', '', ''], ['Other', '1K', '']]);
+  assert.deepEqual(errors, []);
   await page.close();
 });

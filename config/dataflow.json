@@ -856,15 +856,15 @@
       "notes": "Rebuildable: delete it and rerun (about 1 h 50 min). $COSH_COMMITS_DB overrides the path (docs/commits.md)."
     },
     {
-      "id": "data/private/balance-timeline.sqlite",
-      "path": "data/private/balance-timeline.sqlite",
+      "id": "data/private/review-timeline.sqlite",
+      "path": "data/private/review-timeline.sqlite",
       "kind": "sqlite",
       "tier": "derived",
       "tracked_in_git": false,
       "rebuildable": true,
-      "size": "530 MB",
-      "size_as_of": "2026-11-12",
-      "purpose": "Each CL's patch-set uploads, attention-set changes and Code-Review votes, read from its NoteDb event log in one walk.",
+      "size": "about 640 MB",
+      "size_as_of": "2026-11-14",
+      "purpose": "Each CL's review timeline: uploads, attention-set changes and votes from NoteDb and the listings, and when each reviewer was asked and answered. Shared by Review Load and Review Balance.",
       "tables": [
         {
           "name": "uploads",
@@ -909,6 +909,39 @@
           "columns": {
             "change_number": "Gerrit CL number already processed.",
             "tip": "Hash of the CL's NoteDb meta ref when read; CL is reread if it changes."
+          }
+        },
+        {
+          "name": "listing_votes",
+          "rows": 328836,
+          "purpose": "The Code-Review votes standing on closed CLs that have no comments (and so no local NoteDb ref), from the listing each was fetched with.",
+          "columns": {
+            "change_number": "Gerrit CL number.",
+            "voter": "Gerrit account id of the voter.",
+            "value": "Code-Review vote from -2 to +2, never 0.",
+            "at": "When the vote was cast, Unix seconds."
+          }
+        },
+        {
+          "name": "listing_done",
+          "rows": 26769,
+          "purpose": "Listings read, with the hash of their body; a refetched listing is read again.",
+          "columns": {
+            "window_key": "The listing's key in gerrit.sqlite's responses.",
+            "body_sha256": "Hash of the listing's body when read."
+          }
+        },
+        {
+          "name": "cl_reviewers",
+          "rows": 1612006,
+          "purpose": "One row per CL and human reviewer (not the owner, not a bot): asked, first answer, attention-set hours. Rebuilt whole on each run.",
+          "columns": {
+            "change_number": "Gerrit CL number.",
+            "account_id": "Gerrit account id of the reviewer.",
+            "asked_at": "First time in the attention set, Unix seconds; empty if never.",
+            "responded_at": "First Code-Review vote or comment before the CL closed, Unix seconds; empty if none.",
+            "attention_h": "Hours in the attention set between the CL's creation and close.",
+            "attention_weekday_h": "The same without Saturdays and Sundays (UTC)."
           }
         }
       ]
@@ -1198,6 +1231,37 @@
       "purpose": "The links from a file's changes to their addressed comments in Gerrit, with each comment's tone score, loaded when a file's changes are opened. No chart reads them.",
       "withheld": "Per-comment tone, negative scores included, is shown only after someone types the person's address (ground rule 5), never on a page reached by clicks.",
       "notes": "No comment text. A comment whose score arrives later changes its half-year's file."
+    },
+    {
+      "id": "web/public/review-load/all.json",
+      "name": "Review Load global data",
+      "path": "web/public/review-load/all.json",
+      "kind": "json",
+      "tier": "published",
+      "tracked_in_git": true,
+      "rebuildable": true,
+      "size": "93 KB (38 KB gzipped)",
+      "size_as_of": "2026-11-14",
+      "purpose": "Every whole quarter since 2017Q3 (commits, reviewed lines, reviewers, time to first review, attention-set hours) and the directory table's five quarters.",
+      "notes": "Changes only when a quarter completes or an input is corrected."
+    },
+    {
+      "id": "review-load-people",
+      "name": "Review Load per-reviewer files",
+      "path": "web/public/review-load/",
+      "kind": "directory",
+      "tier": "published",
+      "tracked_in_git": true,
+      "git_paths": [
+        "web/public/review-load/[0-9][0-9][0-9][0-9]/*",
+        "web/public/review-load/dirs/"
+      ],
+      "rebuildable": true,
+      "size": "7.5 MB in 23,773 files: 5,116 reviewers, 10 years, 4 quarters of directories",
+      "size_as_of": "2026-11-14",
+      "files": "<year>/<hash>.json (a reviewer's quarters that year: commits and lines reviewed, weekday attention-set hours and turns, hours from asked to first answer) and dirs/<quarter>/<hash>.json (their lines and attention per 3-level directory, for the table's four quarters only); <hash> is the Feedback Index's salted SHA-256 of the e-mail.",
+      "purpose": "One reviewer's figures, drawn over the page's charts and in the directory table's Yours columns once their address is typed.",
+      "notes": "A finished year's files don't change, and each quarter's directory files are written once; when a quarter completes, the oldest of the four directory folders is removed. Commit with `git add -A web/public/review-load/`."
     },
     {
       "id": "data/private/feedback-coach/",
@@ -1788,27 +1852,30 @@
       "refresh": "analysis"
     },
     {
-      "id": "balance-timeline",
-      "command": "python3 -m cosh.balance timeline",
+      "id": "review-timeline",
+      "command": "python3 -m cosh.review_timeline",
       "code": [
-        "cosh/balance.py"
+        "cosh/review_timeline.py",
+        "cosh/cl_facts.py",
+        "cosh/bots.py"
       ],
-      "purpose": "Reads each CL's uploads, attention-set changes and Code-Review votes from NoteDb.",
+      "purpose": "Reads each CL's uploads, attention-set changes and Code-Review votes from NoteDb and the listings, then when each reviewer was asked, first answered, and their attention-set hours.",
       "inputs": [
         "data/private/reviews.sqlite",
         "gerrit-raw"
       ],
       "outputs": [
-        "data/private/balance-timeline.sqlite"
+        "data/private/review-timeline.sqlite"
       ],
       "network": false,
       "lock": null,
-      "incremental": "Reads CLs not yet read and CLs whose meta ref's tip moved since (replacing their rows); CLs without a ref are looked for again next time.",
-      "duration": "35.5 min (330 CLs/s, sharing the box with another git walk) for 716k CLs from empty",
+      "incremental": "Reads CLs not yet read and CLs whose meta ref's tip moved since (replacing their rows), and listings whose body is new; CLs without a ref are looked for again next time. The per-reviewer table is rebuilt whole (about 1 min).",
+      "duration": "35.5 min (330 CLs/s, sharing the box with another git walk) for 716k CLs from empty, plus 4 min for 26,769 listings from empty; about 1.5 min when nothing is new (the per-reviewer table)",
       "token_cost": null,
-      "cost_source": "data/private/scratch/timeline/walk.log",
+      "cost_source": "data/private/scratch/timeline/walk.log; the listings and reviewers on 2026-11-14",
       "refresh": "routine",
-      "run": "python3 -m cosh.balance timeline"
+      "run": "python3 -m cosh.review_timeline",
+      "notes": "Was the Review Balance stage `cosh.balance timeline` until 2026-11-14; Review Load reads it too, so it is its own step and the balance stages consume it. $COSH_REVIEW_TIMELINE points it and its readers at another file."
     },
     {
       "id": "balance-interdiff",
@@ -1818,7 +1885,7 @@
       ],
       "purpose": "Diffs each patch set against the next to measure rework during review.",
       "inputs": [
-        "data/private/balance-timeline.sqlite",
+        "data/private/review-timeline.sqlite",
         "data/private/reviews.sqlite",
         "data/private/git/chromium-patchsets.git/"
       ],
@@ -1838,14 +1905,15 @@
       "id": "balance-cl",
       "command": "python3 -m cosh.balance cl",
       "code": [
-        "cosh/balance.py"
+        "cosh/balance.py",
+        "cosh/review_timeline.py"
       ],
-      "purpose": "Joins the stages into one row per CL.",
+      "purpose": "Joins the review timeline and the interdiff with review threads and landed commits into one row per CL.",
       "inputs": [
         "data/private/reviews.sqlite",
         "data/private/addressed.sqlite",
         "data/private/commits.sqlite",
-        "data/private/balance-timeline.sqlite",
+        "data/private/review-timeline.sqlite",
         "data/private/balance-interdiff.sqlite"
       ],
       "outputs": [
@@ -1917,7 +1985,7 @@
       "inputs": [
         "data/private/balance.sqlite",
         "data/private/commits.sqlite",
-        "data/private/balance-timeline.sqlite",
+        "data/private/review-timeline.sqlite",
         "data/private/reviews.sqlite"
       ],
       "outputs": [
@@ -1963,7 +2031,7 @@
       "inputs": [
         "data/private/balance.sqlite",
         "data/private/commits.sqlite",
-        "data/private/balance-timeline.sqlite",
+        "data/private/review-timeline.sqlite",
         "data/private/reviews.sqlite",
         "data/private/addressed.sqlite",
         "data/private/ai_marked_broad.txt",
@@ -2003,7 +2071,7 @@
       "inputs": [
         "data/private/balance.sqlite",
         "data/private/commits.sqlite",
-        "data/private/balance-timeline.sqlite",
+        "data/private/review-timeline.sqlite",
         "data/private/reviews.sqlite",
         "data/private/addressed.sqlite",
         "data/private/ai_marked_broad.txt",
@@ -2080,6 +2148,37 @@
       "run": "nice -n 5 python3 -m cosh.review_feedback --part links"
     },
     {
+      "id": "review-load",
+      "command": "nice -n 5 python3 -m cosh.review_load",
+      "code": [
+        "cosh/review_load.py",
+        "cosh/review_timeline.py",
+        "cosh/commits.py",
+        "cosh/people.py",
+        "cosh/review_feedback.py"
+      ],
+      "purpose": "Writes the Review Load page's files: each whole quarter's commits, lines reviewed, review waits and attention-set hours, the directory table, and each reviewer's figures in hashed files.",
+      "inputs": [
+        "data/private/commits.sqlite",
+        "data/private/reviews.sqlite",
+        "data/private/review-timeline.sqlite",
+        "config/bots.txt"
+      ],
+      "outputs": [
+        "web/public/review-load/all.json",
+        "review-load-people"
+      ],
+      "network": false,
+      "lock": null,
+      "incremental": "Deletes and rewrites all.json, the year folders and dirs/. Whole quarters only, so the files change when a quarter completes, not with each week.",
+      "duration": "30 s, 1.5 GB of memory (2026-11-14)",
+      "token_cost": null,
+      "cost_source": "docs/review-load.md",
+      "refresh": "routine",
+      "notes": "Reads no comment text and no tone. A reviewer's file is named as the Feedback Index's (cosh.review_feedback.key).",
+      "run": "nice -n 5 python3 -m cosh.review_load"
+    },
+    {
       "id": "feedback-coach",
       "command": "python3 scripts/feedback_coach.py <email> [--dry-run]",
       "code": [
@@ -2123,7 +2222,7 @@
       "inputs": [
         "data/private/balance.sqlite",
         "data/private/commits.sqlite",
-        "data/private/balance-timeline.sqlite",
+        "data/private/review-timeline.sqlite",
         "data/private/reviews.sqlite",
         "data/private/addressed.sqlite",
         "data/private/bugs/bugs.sqlite",
@@ -2320,6 +2419,22 @@
       ],
       "sources_line": "Gerrit code review · Chromium git history",
       "notes": "Linked from the landing page since 2026-11-12; carries noindex."
+    },
+    {
+      "id": "page-review-load",
+      "names": [
+        "review-load"
+      ],
+      "path": "web/review-load.html",
+      "title": "Review Load",
+      "purpose": "How much review lands on reviewers, how long changes wait for them and in which directories; type an address to overlay one reviewer.",
+      "entry_script": "web/src/review-load.ts",
+      "reads": [
+        "web/public/review-load/all.json",
+        "review-load-people"
+      ],
+      "sources_line": "Gerrit code review · Chromium git history",
+      "notes": "Linked from the landing page since 2026-11-14; carries noindex."
     },
     {
       "id": "page-dataflow",

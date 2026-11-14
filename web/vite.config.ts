@@ -140,6 +140,7 @@ export default defineConfig({
         sentiment: page('sentiment.html'),
         balance: page('balance.html'),
         'feedback-index': page('feedback-index.html'),
+        'review-load': page('review-load.html'),
         dataflow: page('dataflow.html'),
         // Served for unknown URLs by GitHub Pages, and by preview (notFound above).
         '404': page('404.html'),

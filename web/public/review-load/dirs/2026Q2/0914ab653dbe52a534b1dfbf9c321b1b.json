@@ -1,0 +1,1 @@
+[["(root)/",2,0.0,0.33],["agents/skills/fuzzing/",52,28.2,1.0],["chrome/renderer/searchbox/",15,8.0,0.88],["chrome/test/",2,1.1,0.12],["content/test/fuzzer/",5,23.3,0.23],["testing/android/native_test/",5,60.1,0.45],["testing/libfuzzer/",273,125.6,1.77],["third_party/libFuzzer/",6,72.2,0.55],["third_party/libprotobuf-mutator/",4,0.1,0.67],["tools/code_coverage/",431,163.7,1.0]]

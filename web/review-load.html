@@ -1,0 +1,233 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light dark" />
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M8 1.5 13.6 4.75v6.5L8 14.5 2.4 11.25v-6.5Z' fill='%231a5fd0'/%3E%3Ccircle cx='8' cy='8' r='2.3' fill='%23fff'/%3E%3C/svg%3E" />
+    <title>Review Load - Chromium Open Source Health</title>
+    <link rel="stylesheet" href="/src/style.css" />
+    <meta name="description" content="How much code review lands on Chromium's reviewers, how long changes wait for them, and where the load is heaviest." />
+    <meta name="robots" content="noindex" />
+  </head>
+  <body>
+    <!--
+      The page's wording is in this file, like value.html (whose opening
+      comment has the <template data-msg> syntax); src/review-load.ts fills
+      in the values and draws the charts. The data is all.json plus, per
+      reviewer, files named by a hash of their address, written by
+      cosh/review_load.py (docs/review-load.md). A reviewer's figures appear
+      only after someone types their address; nothing here ranks or lists
+      people.
+    -->
+    <header>
+      <nav class="crumb"><a href="./">← Chromium Open Source Health</a></nav>
+      <h1>Chromium Open Source Health - Review Load</h1>
+      <p class="rf-summary">
+        How much code review lands on Chromium's reviewers, how long changes wait for them, and where the load is
+        heaviest.
+      </p>
+      <p class="rf-disclaimer" role="note">This analysis is imperfect and is intended as a guide to where review
+        help is needed, not as a measure of any reviewer.
+        Please <a href="https://github.com/RByers/cosh/issues/new?labels=review-load" target="_blank" rel="noopener">report</a>
+        any issues.</p>
+    </header>
+
+    <main>
+      <template data-msg="legend-you">You</template>
+      <template data-msg="axis-quarter">quarter</template>
+
+      <section id="you" class="card" aria-labelledby="you-title">
+        <a class="card-anchor" href="#you" aria-label="Link to this section" title="Link to this section">#</a>
+        <h2 id="you-title">Your review load</h2>
+        <p>
+          Type the address you review with to add your own figures to every chart and to the directory table below.
+        </p>
+        <form id="rl-find" class="person-find rf-find" autocomplete="off">
+          <label for="rl-email">Your email address</label>
+          <input id="rl-email" type="text" inputmode="email" autocomplete="off" autocapitalize="off" autocorrect="off"
+            spellcheck="false" data-1p-ignore="" data-lpignore="true" data-form-type="other" />
+          <button type="submit">Show</button>
+          <p id="rl-find-note" class="sub" aria-live="polite"></p>
+        </form>
+        <template data-msg="find-loading">Looking…</template>
+        <template data-msg="find-none">No reviews by that address<span data-if="from"> between
+          <slot name="from"></slot> and <slot name="to"></slot></span>.
+          Try the address you use in Gerrit; chromium.org and google.com addresses are the same here.</template>
+        <template data-msg="find-error">Couldn't load the data: <slot name="error"></slot></template>
+        <template data-msg="find-done">Showing your reviews in <slot name="n"></slot> quarters, from
+          <slot name="from"></slot> to <slot name="to"></slot>: <slot name="commits"></slot> commits and
+          <slot name="lines"></slot> lines reviewed. Your figures are the red lines and the Yours columns.</template>
+      </section>
+
+      <section id="volume" class="card" aria-labelledby="volume-title">
+        <a class="card-anchor" href="#volume" aria-label="Link to this section" title="Link to this section">#</a>
+        <h2 id="volume-title">How much there is to review</h2>
+        <h3>Commits landed per quarter</h3>
+        <ul id="rl-commits-legend" class="legend rf-line-legend" aria-label="Lines"></ul>
+        <div class="chart rf-half-chart">
+          <canvas id="rl-commits" role="img" aria-label="Commits landed on Chromium's main branch per quarter: all commits, and those written by people."></canvas>
+        </div>
+        <p id="rl-commits-note" class="note"></p>
+        <template data-msg="commits-note">
+          Every commit on Chromium's main branch from <slot name="from"></slot> to <slot name="to"></slot>, by
+          the quarter it landed, and those written by people rather than bots (rolls of dependencies and other
+          automated commits). In <slot name="last"></slot>, <slot name="n"></slot> commits landed,
+          <slot name="human"></slot> of them written by people: <slot name="change"></slot> than in the same
+          quarter a year before.<span data-if="you"> Your line is the commits you reviewed, on the right-hand
+          axis.</span>
+        </template>
+        <template data-msg="legend-commits">All commits</template>
+        <template data-msg="legend-human">Written by people</template>
+        <template data-msg="legend-you-commits">Commits you reviewed (right axis)</template>
+        <template data-msg="axis-commits">commits landed</template>
+        <template data-msg="axis-you-commits">commits you reviewed</template>
+        <template data-msg="more">more</template>
+        <template data-msg="fewer">fewer</template>
+
+        <h3>Lines reviewed per reviewer</h3>
+        <ul id="rl-lines-legend" class="legend rf-line-legend" aria-label="Lines"></ul>
+        <div class="chart rf-half-chart">
+          <canvas id="rl-lines" role="img" aria-label="Mean lines reviewed per reviewer in each quarter."></canvas>
+        </div>
+        <p id="rl-lines-note" class="note"></p>
+        <template data-msg="lines-note">
+          The mean number of changed lines each reviewer reviewed in a quarter: for every commit written by a
+          person, its added and removed lines count once for each reviewer in its Reviewed-by footers, and the
+          quarter's total is divided by the number of people who reviewed anything in it. Reverts, large-scale
+          changes and other large mechanical commits are left out. In <slot name="last"></slot> the mean was
+          <slot name="mean"></slot> lines across <slot name="reviewers"></slot> reviewers:
+          <slot name="qoq"></slot> on the quarter before and <slot name="yoy"></slot> on a year before
+          (<slot name="first"></slot> lines in <slot name="firstQ"></slot>). Hover over a quarter for its change.
+        </template>
+        <template data-msg="legend-mean-lines">Mean per reviewer</template>
+        <template data-msg="axis-lines">lines reviewed per reviewer</template>
+      </section>
+
+      <section id="latency" class="card" aria-labelledby="latency-title">
+        <a class="card-anchor" href="#latency" aria-label="Link to this section" title="Link to this section">#</a>
+        <h2 id="latency-title">How long changes wait for review</h2>
+        <p class="rf-def">
+          All times here leave out Saturdays and Sundays (UTC), so a change sent on Friday evening and reviewed on
+          Monday morning waited hours, not days. They are elapsed time, not time spent reviewing.
+        </p>
+        <h3>Time to first review</h3>
+        <ul id="rl-first-legend" class="legend rf-line-legend" aria-label="Lines"></ul>
+        <div class="chart rf-half-chart">
+          <canvas id="rl-first" role="img" aria-label="Mean and median weekday hours from a change's upload to its first review, per quarter, and from a reviewer's turn to their first answer."></canvas>
+        </div>
+        <p id="rl-first-note" class="note"></p>
+        <template data-msg="first-note">
+          <strong>Upload to first review</strong>: from a change's first upload to the first Code-Review vote or
+          comment by someone other than its owner, over the changes landed in the quarter that got one. It
+          includes any time the owner took before asking for review, which Gerrit didn't record before the
+          attention set. In <slot name="last"></slot> the mean was <slot name="mean"></slot> and the median
+          <slot name="median"></slot>: most changes are reviewed within hours, and the mean is pulled up by the
+          few that wait for weeks. <strong>Reviewer's turn to first answer</strong> (from
+          <slot name="attFrom"></slot>, when the attention set arrived): from a reviewer entering a change's
+          attention set to their own first vote or comment, a mean of <slot name="reply"></slot> in
+          <slot name="last"></slot>.<span data-if="you"> Your line is your own turns: the mean time from
+          entering the attention set to your first answer.</span>
+        </template>
+        <template data-msg="legend-first-mean">Upload to first review, mean</template>
+        <template data-msg="legend-first-median">Upload to first review, median</template>
+        <template data-msg="legend-reply-mean">Reviewer's turn to first answer, mean</template>
+        <template data-msg="axis-hours">weekday hours</template>
+
+        <h3>Reviewers' time in the attention set</h3>
+        <ul id="rl-attention-legend" class="legend rf-line-legend" aria-label="Bars and lines"></ul>
+        <div class="chart rf-half-chart">
+          <canvas id="rl-attention" role="img" aria-label="Total weekday hours changes spent in reviewers' attention sets per quarter, and the mean per reviewer."></canvas>
+        </div>
+        <p id="rl-attention-note" class="note"></p>
+        <template data-msg="attention-note">
+          Gerrit's attention set says whose turn it is on a change. The bars add up the weekday hours that
+          changes landed in the quarter spent in a reviewer's attention set (anyone but the owner), from
+          <slot name="attFrom"></slot>; the line divides that by the number of reviewers. In
+          <slot name="last"></slot>, <slot name="reviewers"></slot> reviewers had changes waiting on them for
+          <slot name="total"></slot> hours in all, a mean of <slot name="mean"></slot> hours each and
+          <slot name="turn"></slot> hours per change and reviewer. Changes with no comments at all (about one in
+          five) are not counted: their attention-set history wasn't fetched.<span data-if="you"> Your line is
+          the hours changes spent in your attention set.</span>
+        </template>
+        <template data-msg="legend-attention-total">All reviewers, total (left axis)</template>
+        <template data-msg="legend-attention-mean">Mean per reviewer (right axis)</template>
+        <template data-msg="legend-you-right">You (right axis)</template>
+        <template data-msg="axis-attention-total">weekday hours, all reviewers</template>
+        <template data-msg="axis-attention-mean">weekday hours per reviewer</template>
+      </section>
+
+      <section id="dirs" class="card" aria-labelledby="dirs-title">
+        <a class="card-anchor" href="#dirs" aria-label="Link to this section" title="Link to this section">#</a>
+        <h2 id="dirs-title">Where the load is</h2>
+        <div class="table-wrap">
+          <table id="rl-dirs" class="rf-table rf-all-dirs rl-dirs">
+            <thead>
+              <tr><th scope="col" rowspan="2">Directory</th>
+                <th scope="col" rowspan="2" class="num" title="Changed lines of the commits there, counted once per reviewer, over the four quarters">Lines reviewed</th>
+                <th scope="colgroup" colspan="4" class="rl-group" title="Lines reviewed in the quarter against the quarter before">Change in lines reviewed</th>
+                <th scope="colgroup" colspan="4" class="rl-group" title="Mean weekday hours a change there spent in one reviewer's attention set">Reviewer's attention-set hours per change</th>
+                <th scope="colgroup" colspan="2" class="rf-you-col rf-you-start">Yours</th></tr>
+              <tr id="rl-dirs-quarters"></tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <template data-msg="dirs-more"><slot name="n"></slot> more</template>
+        <template data-msg="dirs-other">Other</template>
+        <template data-msg="dirs-other-in">Other in <slot name="dir"></slot></template>
+        <template data-msg="col-you-lines">Lines</template>
+        <template data-msg="col-you-hours">Hours</template>
+        <template data-msg="title-you-lines">Lines you reviewed there over the four quarters</template>
+        <template data-msg="title-you-hours">Mean weekday hours a change there spent in your attention set</template>
+        <p id="rl-dirs-note" class="note"></p>
+        <template data-msg="dirs-note">
+          Review of the commits landed from <slot name="from"></slot> to <slot name="to"></slot>, by the
+          directory of the lines changed (as the directories are named today; a commit that spans several
+          counts in each by its lines). The change columns compare each quarter's lines reviewed with the quarter
+          before. The hours are the mean weekday time a change spent in one reviewer's attention set, shaded
+          against all of Chromium in the same quarter: red where changes wait longer on reviewers (twice as long
+          or more is the deepest red), green where they wait less. Long waits where the lines reviewed are
+          growing point at directories that need more reviewers. Directories with fewer than
+          <slot name="minLines"></slot> lines reviewed are pooled in “Other”, and cells with fewer than
+          <slot name="minTurns"></slot> reviewer turns are left empty. ▸ opens a directory.<span data-if="you">
+          The Yours columns are the lines you reviewed and the hours changes spent in your attention set,
+          shaded against everyone's in that directory; your directories come first.</span>
+        </template>
+      </section>
+
+      <details id="method" class="card rf-method">
+        <summary><h2>How this is measured</h2></summary>
+        <p class="note">
+          <strong>Commits</strong> are the first-parent history of Chromium's main branch from July 2017, when
+          Chromium's code review moved to Gerrit and commits began to carry Reviewed-by footers. Only whole
+          quarters are shown, so the page changes when a quarter completes.
+        </p>
+        <p class="note">
+          <strong>Lines reviewed</strong> come from git alone: a commit's added plus removed lines (a renamed
+          file counts by the lines changed in it, a binary file as none), once for each person in its
+          Reviewed-by footers other than its author. Commits by bots, reverts, large-scale changes and
+          mechanical commits (100 or more files, or 10 or more that repeat the same edit) are left out, since
+          nobody reads those line by line. A commit with two reviewers counts twice: the measure is review
+          work, not code. Reviewed-by names those who approved; reviewers who only commented are not counted
+          here.
+        </p>
+        <p class="note">
+          <strong>Review times</strong> come from Gerrit, for the same commits' changes. A reviewer is anyone
+          but the change's owner, bots left out; an answer is a Code-Review vote or a comment before the change
+          closed. For changes with no comments, only the votes standing when the change closed are known. The
+          attention set exists from late 2020; its hours are counted from <span id="rl-att-from"></span>, from
+          the change's creation to its close, overlapping turns once.
+        </p>
+        <p class="note">
+          Addresses are matched as in the Feedback Index: chromium.org and google.com addresses with the same
+          name are one person. A reviewer's data is in files named by a one-way hash of their address, so this
+          page can only show someone whose address you already know. Everything comes from public Gerrit and
+          git data. Code and method:
+          <a target="_blank" rel="noopener" href="https://github.com/RByers/cosh/blob/main/docs/review-load.md">docs/review-load.md</a>.
+        </p>
+      </details>
+    </main>
+    <script type="module" src="/src/review-load.ts"></script>
+  </body>
+</html>

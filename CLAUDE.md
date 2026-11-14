@@ -163,7 +163,7 @@ purpose near the top of its own doc.
   decision.
 - Run logs and PID files of long runs go in `data/private/logs/`;
   analysis scratch in `data/private/scratch/<topic>/`.
-- Tests: `python3 -m unittest tests.test_derive tests.test_extract tests.test_radar tests.test_classify tests.test_sentiment tests.test_patchsets tests.test_balance tests.test_bugs tests.test_review_feedback tests.test_balance_signals tests.test_balance_publish tests.test_notedb_repack tests.test_dataflow tests.test_approved`.
+- Tests: `python3 -m unittest tests.test_derive tests.test_extract tests.test_radar tests.test_classify tests.test_sentiment tests.test_patchsets tests.test_balance tests.test_bugs tests.test_review_feedback tests.test_balance_signals tests.test_balance_publish tests.test_notedb_repack tests.test_dataflow tests.test_approved tests.test_review_timeline tests.test_review_load`.
   These run in a single process, which complies with the global limit of 4
   test workers. `tests.test_extract` uses a fake Gerrit and never touches the
   network.
@@ -278,10 +278,16 @@ purpose near the top of its own doc.
   since its last run (offline: it never fetches; `docs/commits.md`); run it
   after the shared clone gains commits. Rebuildable: delete it and rerun
   (about 1 h 50 min).
-- `data/private/balance*.sqlite` (author/reviewer balance, `docs/balance.md`)
-  are rebuildable from local data with `python3 -m cosh.balance
-  timeline|interdiff|cl`, in that order, after `cosh commits` (about 2 h;
+- `data/private/review-timeline.sqlite` (each CL's uploads, attention set,
+  votes and reviewers' waits, from NoteDb and the listings) is shared by
+  the Review Load page (`docs/review-load.md`, `python3 -m
+  cosh.review_load`) and the balance stages. `python3 -m
+  cosh.review_timeline` updates it (incremental; about 40 min from empty;
   nothing is fetched).
+- `data/private/balance*.sqlite` (author/reviewer balance, `docs/balance.md`)
+  are rebuildable from local data with `python3 -m cosh.review_timeline`,
+  then `python3 -m cosh.balance interdiff|cl`, in that order, after `cosh
+  commits` (about 2 h; nothing is fetched).
 - `data/private/reviews.sqlite` can always be rebuilt with
   `rm data/private/reviews.sqlite && python3 -m cosh derive` (about 9 min
   for 666k CLs, 2026-11-04, threads included). It is the only derived DB: older versions (`cosh.sqlite`,

@@ -36,7 +36,7 @@ and the site is built from it.
 | `config` | hand-kept input in git | can't be regenerated |
 | `analysis` | scratch behind a doc, off every page's flow | rerun a script, or nothing |
 
-The three dashboards other than Review Balance share one concise flow:
+The dashboards other than Review Balance share one concise flow:
 
 ```
 Chromium Gerrit ─ gerrit-fetch ─▶ gerrit.sqlite + notedb/ ─ derive ─▶ reviews.sqlite ─┬─ classify ─▶ addressed.sqlite
@@ -52,7 +52,13 @@ Claude (Haiku): classify, comments-score, tone-publish's screening              
   (cosh.review_feedback --part people)                              ├─▶ Feedback Index
   feedback-links    ─▶ Feedback Index link files ───────────────────┘
   (--part links: review-feedback's link index + Comment scores)
+  review-timeline   ─▶ review-timeline.sqlite ─ review-load ─▶ Review Load files ─▶ Review Load
+  (NoteDb + listings + reviews.sqlite)          (+ commits.sqlite)
 ```
+
+`review-timeline.sqlite` (each CL's uploads, attention-set changes and
+votes, and each reviewer's wait on it) is shared: Review Load publishes
+from it, and Review Balance's stages read it (`docs/review-load.md`).
 
 The Feedback Index's charts and tables read only the global and per-person
 files; review tone reaches it only through the link files, which only the
@@ -64,11 +70,12 @@ hubs nearly everything reads. Comment text exists only in NoteDb and in
 the rendered comment files, and reaches a model only through
 `cosh.sandbox.Sandbox`.
 
-**Review Balance** is a separate flow on top of the same hubs: its stage
-databases (`balance-timeline`, `balance-interdiff`, `balance.sqlite`), the
+**Review Balance** is a separate flow on top of the same hubs and the
+review timeline: its stage
+databases (`balance-interdiff`, `balance.sqlite`), the
 AI-marker and AI-prediction stores, the clusters, the review-ROI results
 and `python3 -m cosh.balance_publish`. Everything named "balance" feeds only
-that page, and none of the other three pages depends on any of it (the
+that page, and none of the other pages depends on any of it (the
 naming rule below checks this), so it can be changed or deleted on its own.
 
 ## 2. Flow rules
@@ -105,8 +112,8 @@ system is kept, and the inventory says where a step departs from them.
    (`cosh.sentiment.scored_weeks`); Review Balance's window ends with the
    newest fetched week (`balance_publish.DATA_END`); Value Exchange covers
    every fetched week. A fixed range is an explicit argument.
-9. **Incremental steps key on content, not on the CL number.** The NoteDb
-   timeline keeps each CL's meta-ref tip, and the patch-set fetch keeps
+9. **Incremental steps key on content, not on the CL number.** The review
+   timeline keeps each CL's meta-ref tip and each listing's body hash, and the patch-set fetch keeps
    each CL's patch-set count; a CL whose marker no longer matches is read
    again.
 10. **Approvals are data.** `config/approved.json` gives each fetcher its
@@ -202,11 +209,11 @@ A new week of data:
 python3 -m cosh backfill --weeks 1 --newest <week> --go
 python3 -m cosh extract-open
 python3 -m cosh fetch-git
-python3 -m cosh update                                    # derive, commits, collect, summaries
+python3 -m cosh update                                    # derive, commits, collect, timeline, summaries
 python3 -m cosh classify --week <week>                    # optional (cost: the inventory)
 python3 -m cosh.sentiment score --week <week>             # optional
 python3 -m cosh update --from data/private/addressed.sqlite data/private/sentiment.sqlite
-git add summaries config web/public/review-feedback && git commit
+git add summaries config web/public/review-feedback web/public/review-load && git commit
 ```
 
 Where things live on disk, beyond the stores:

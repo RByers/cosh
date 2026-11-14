@@ -349,16 +349,19 @@ commits`, `docs/commits.md`): its `commits`, `commit_files` and `paths`
 with `commit_id > 0` are first-parent `main` since 2017-01-01 (author, dates, CL from `Reviewed-on`,
 `Reviewed-by` approvers, reverts, relands, per-file line counts; 1.30M
 commits), as the former `balance-git.sqlite` (stage `git`, retired
-2026-11-12) had them. `python3 -m cosh.balance <stage>` (offline, `GIT_NO_LAZY_FETCH=1`) writes
+2026-11-12) had them. Each CL's NoteDb timeline comes from
+`data/private/review-timeline.sqlite` (`python3 -m cosh.review_timeline`,
+`docs/review-load.md`): it was the stage `timeline` here until 2026-11-14,
+and is shared with the Review Load page now. `python3 -m cosh.balance <stage>` (offline, `GIT_NO_LAZY_FETCH=1`) writes
 the other rebuildable files in `data/private/`, each holding only its own stage's
 tables (`COSH_BALANCE_<STAGE>=<path>` points a stage, and everything that
-reads it, at another file):
+reads it, at another file; `COSH_REVIEW_TIMELINE=<path>` the timeline):
 
 | Stage | Output | What | Time |
 |---|---|---|---|
-| `timeline` | `balance-timeline.sqlite` | per CL from NoteDb, in one walk of its meta ref: uploads with Gerrit's change kind (`uploads`), attention-set intervals per account (`attention`) and every Code-Review vote (`votes`); 716k CLs (CLs with no comments have no local meta ref). `timeline_done` keeps each CL's meta-ref tip, so a rerun rereads (and replaces) only CLs whose NoteDb log grew, such as open CLs refreshed by `extract-open` | ~35 min from empty |
+| (`cosh.review_timeline`) | `review-timeline.sqlite` | per CL from NoteDb, in one walk of its meta ref: uploads with Gerrit's change kind (`uploads`), attention-set intervals per account (`attention`) and every Code-Review vote (`votes`); 716k CLs (CLs with no comments have no local meta ref). `timeline_done` keeps each CL's meta-ref tip, so a rerun rereads (and replaces) only CLs whose NoteDb log grew, such as open CLs refreshed by `extract-open`. Also `cl_reviewers`: per CL and reviewer, when they were asked, when they first answered and their attention-set hours | ~35 min from empty |
 | `interdiff` | `balance-interdiff.sqlite` | per reviewed CL: the first reviewed patch set's diff against the final one, as multisets of added and removed lines, so a rebase changes nothing; 275k CLs | ~25 min with `--shard i/3` |
-| `cl` | `balance.sqlite` | one row per human-owned CL joining all of the above with review threads and labels (`cl`), per-reviewer attention (`cl_attention`), lines per directory (`cl_dirs`) | ~1 min |
+| `cl` | `balance.sqlite` | one row per human-owned CL joining all of the above with review threads and labels (`cl`), per-reviewer attention (`cl_attention`, copied from the timeline's `cl_reviewers`), lines per directory (`cl_dirs`) | ~1 min |
 
 Definitions in `cl`:
 

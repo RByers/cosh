@@ -73,7 +73,7 @@ class InventoryTest(unittest.TestCase):
 
     def test_non_balance_pages_need_nothing_named_balance(self):
         g = dataflow.Graph(self.d)
-        for pid in ("page-value", "page-sentiment", "page-feedback"):
+        for pid in ("page-value", "page-sentiment", "page-feedback", "page-review-load"):
             up = g.reach_back([pid])
             self.assertEqual([i for i in up if "balance" in i], [], pid)
 
@@ -81,7 +81,7 @@ class InventoryTest(unittest.TestCase):
         p = dataflow.plan(self.d, ["gerrit"])
         ids = [s["id"] for s in p["steps"]]
         for a, b in (("gerrit-fetch", "derive"), ("derive", "classify"), ("classify", "summarize"),
-                     ("derive", "balance-timeline"), ("comments-collect", "review-feedback"),
+                     ("derive", "review-timeline"), ("review-timeline", "review-load"), ("review-timeline", "balance-cl"), ("comments-collect", "review-feedback"),
                      ("comments-score", "tone-publish")):
             self.assertLess(ids.index(a), ids.index(b), f"{a} before {b}")
         # Analysis scripts and maintenance are never part of an update.
