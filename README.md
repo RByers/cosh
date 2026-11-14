@@ -5,6 +5,11 @@ source project: how it works, who sustains it, and how the organizations that
 depend on it give back. Each dashboard is a page of one static site
 (`web/`), and a landing page (`web/index.html`) links to them all.
 
+The site is served at **https://cosh.rbyers.ca** (GitHub Pages). Files too
+large for git go in the Cloudflare R2 bucket `cosh`, whose CORS policy
+allows that origin. Its credentials are in `~/.secrets/cosh/r2.json`, never
+in the repo.
+
 ## Dashboards
 
 | Dashboard | Page | Question | Data sources |
