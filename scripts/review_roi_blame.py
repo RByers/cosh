@@ -9,7 +9,7 @@ szz: a random sample (fixed seed) of first-parent commits on main since
   at most 20k lines at the parent), the deleted or modified non-blank lines
   are blamed at the parent (`git blame -w -l --porcelain -L ... <parent> --
   <file>`). Blamed commits landed before the bug was filed are the
-  "inducing" commits; they map to CLs via gcommits.change_number. Induced
+  "inducing" commits; they map to CLs via commits.change_number. Induced
   unit CLs (review_roi_later_changes's unit) are compared with the non-induced unit
   CLs of the same size bucket, dir2 and half-year. A subsample is also
   blamed whole-file (no -L), to cost the plain full-file variant.
@@ -129,7 +129,7 @@ def eligible_fixes():
     bug = {i: (t, c) for i, t, c in bdb.execute("SELECT id, type_name, created FROM bugs")}
     gdb = sqlite3.connect(f"file:{balance.db_path('git')}?mode=ro", uri=True)
     g = {sha: (files, rv is not None or rl, bot) for sha, files, rv, rl, bot in gdb.execute(
-        "SELECT sha, files, reverts_sha, is_reland, is_bot FROM gcommits WHERE landed_at >= ?",
+        "SELECT sha, files, reverts_sha, is_reland, is_bot FROM commits WHERE commit_id > 0 AND landed_at >= ?",
         (datetime(2023, 12, 1, tzinfo=timezone.utc).timestamp(),))}
     stats = Counter()
     out = []
@@ -299,7 +299,7 @@ def szz(args):
     gdb = sqlite3.connect(f"file:{balance.db_path('git')}?mode=ro", uri=True)
     want = {s for r in res for s in r["blamed"]}
     gmap = {}
-    for sha, n, at in gdb.execute("SELECT sha, change_number, landed_at FROM gcommits"):
+    for sha, n, at in gdb.execute("SELECT sha, change_number, landed_at FROM commits WHERE commit_id > 0"):
         if sha in want:
             gmap[sha] = (n, at)
     units = load_units(args.cache)
@@ -414,10 +414,10 @@ def survival(args):
     gdb = sqlite3.connect(f"file:{balance.db_path('git')}?mode=ro", uri=True)
     lo = datetime(2024, 1, 1, tzinfo=timezone.utc).timestamp()
     hi = datetime(2025, 1, 1, tzinfo=timezone.utc).timestamp()
-    fp = sorted(gdb.execute("SELECT landed_at, sha FROM gcommits"))
+    fp = sorted(gdb.execute("SELECT landed_at, sha FROM commits WHERE commit_id > 0"))
     fp_t = [t for t, _ in fp]
     g = {n: (sha, ins) for n, sha, ins in gdb.execute(
-        "SELECT change_number, sha, ins FROM gcommits WHERE landed_at >= ? AND landed_at < ? AND change_number "
+        "SELECT change_number, sha, ins FROM commits WHERE commit_id > 0 AND landed_at >= ? AND landed_at < ? AND change_number "
         "IS NOT NULL", (lo, hi))}
     elig = [u for u in units if lo <= u["at"] < hi and u["n"] in g and 20 <= g[u["n"]][1] <= 500]
     # Feedback-index terciles over all eligible CLs (the index is already relative to size × dir2).

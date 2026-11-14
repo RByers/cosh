@@ -9,7 +9,7 @@ from datetime import datetime, timezone
 
 from .commits import dir_of
 
-# commits.sqlite's gcommits (commit_id > 0) start here.
+# commits.sqlite's commit_id > 0 starts here.
 SINCE = "2017-01-01"
 
 
@@ -44,10 +44,10 @@ def cl_facts(ddb, gdb):
     landed = {}
     for cid, n, sha, files, ins, dels, rv, rl in gdb.execute(
             "SELECT commit_id, change_number, sha, files, ins, dels, reverts_sha IS NOT NULL, is_reland "
-            "FROM gcommits WHERE change_number IS NOT NULL"):
+            "FROM commits WHERE commit_id > 0 AND change_number IS NOT NULL"):
         landed[n] = (cid, sha, files, ins + dels, rv, rl)
     reverted = {}
-    for target, at in gdb.execute("SELECT reverts_sha, landed_at FROM gcommits WHERE reverts_sha IS NOT NULL"):
+    for target, at in gdb.execute("SELECT reverts_sha, landed_at FROM commits WHERE commit_id > 0 AND reverts_sha IS NOT NULL"):
         reverted[target] = min(at, reverted.get(target, at))
     rows = []
     for n, owner, status, created, closed, cweek, ins, dels, nps in sorted(cls):
@@ -65,7 +65,7 @@ def cl_dirs(gdb, by_cid, numbers=None, dels=True):
     alone without `dels` (the Feedback Index's lines)."""
     paths = dict(gdb.execute("SELECT path_id, path FROM paths"))
     agg = defaultdict(lambda: [0, 0])
-    for cid, pid, ins, d in gdb.execute("SELECT commit_id, path_id, ins, dels FROM gfiles"):
+    for cid, pid, ins, d in gdb.execute("SELECT commit_id, path_id, ins, dels FROM commit_files WHERE commit_id > 0"):
         n = by_cid.get(cid)
         if n is None or (numbers is not None and n not in numbers):
             continue

@@ -14,13 +14,13 @@ interdiff needs timeline's uploads; each writes data/private/balance-<stage>.sql
              reviewed patch set and the final one, comparing diffs, not files,
              so rebases don't count
   cl         one row per CL joining all of the above with review threads and
-             the landed commits (commits.sqlite's gcommits and gfiles: main
-             since 2017-01-01)
+             the landed commits (commits.sqlite's commits and commit_files with
+             commit_id > 0: main since 2017-01-01)
 
   python3 -m cosh.balance timeline|interdiff|cl [--db PATH]
 
-db_path("git") is commits.sqlite, whose gcommits, gfiles and paths the
-scripts read as they read the former balance-git.sqlite.
+db_path("git") is commits.sqlite. The per-CL scripts read its commits and
+commit_files with commit_id > 0 (since 2017-01-01), and paths.
 """
 
 import argparse
@@ -40,7 +40,7 @@ SHARED = os.path.expanduser("~/projects/shared/chromium")
 PATCHSETS = os.path.join(store.DATA_DIR, "git", "chromium-patchsets.git")
 NOTEDB = os.path.join(store.DATA_DIR, "notedb", "chromium_src.git")
 ENV = {**os.environ, "GIT_NO_LAZY_FETCH": "1"}
-SINCE = "2017-01-01"     # gcommits (commits.sqlite) starts here
+SINCE = "2017-01-01"     # commit_id > 0 in commits.sqlite starts here
 
 # Each stage's file holds only its own tables; `cl` makes its own (CL_SCHEMA).
 SCHEMA = {}

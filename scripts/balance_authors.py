@@ -57,7 +57,7 @@ def raw_emails(ids):
     """{person id: the commit author address they used most in the year}, as written (not merged)."""
     db = A.ro(balance.db_path("git"))
     cnt = defaultdict(Counter)
-    for e, bot in db.execute("SELECT author_email, is_bot FROM gcommits WHERE change_number IS NOT NULL "
+    for e, bot in db.execute("SELECT author_email, is_bot FROM commits WHERE commit_id > 0 AND change_number IS NOT NULL "
                              "AND landed_at >= ? AND landed_at < ?", (START, END)):
         if not bot and not A.is_bot_email(e):
             e = e.lower()

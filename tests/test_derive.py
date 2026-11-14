@@ -684,8 +684,8 @@ class CommitsStoreTest(unittest.TestCase):
             # Landing order: 1 up from 2017-01-01, the older history down from -1.
             self.assertEqual(rows, [(-2, "old@chromium.org", None, 0, 0, 1), (-1, "x@chromium.org", None, 1, 0, 1),
                                     (1, "old@chromium.org", 5, 0, 1, 2), (2, "y@chromium.org", 6, 0, 0, 1)])
-            self.assertEqual([r[0] for r in db.execute("SELECT commit_id FROM gcommits")], [1, 2])
             self.assertEqual([r[0] for r in db.execute("SELECT commit_id FROM commits WHERE is_revert")], [-1])
+            self.assertEqual(db.execute("SELECT name FROM sqlite_master WHERE type = 'view'").fetchall(), [])
             self.assertEqual(commits.first_commits(db), {"old@chromium.org": (1480550400, 0),
                                                           "x@chromium.org": (1480636800, 0),
                                                           "y@chromium.org": (1677628800, 0)})

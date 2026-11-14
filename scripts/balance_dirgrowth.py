@@ -378,7 +378,7 @@ def inflow(commits, cdir, first, authored, start):
     from cosh import balance, orgs
     resolve = orgs.OrgResolver()
     db = sqlite3.connect(f"file:{balance.db_path('git')}?mode=ro", uri=True)
-    raw = dict(db.execute("SELECT commit_id, author_email FROM gcommits"))
+    raw = dict(db.execute("SELECT commit_id, author_email FROM commits WHERE commit_id > 0"))
     ats = {}
     active = defaultdict(lambda: defaultdict(Counter))     # d -> half -> pid -> commits
     goog_half = {}

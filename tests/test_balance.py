@@ -183,14 +183,14 @@ class ClFactsTest(unittest.TestCase):
               (40, 1, 'MERGED', '2026-11-02 10:00:00', '2026-11-03 10:00:00', '2026-W45', 1, 1, 1, 0, 'chromium/src', 'other');
         """)
         gdb.executescript("""
-            CREATE TABLE gcommits (commit_id INTEGER, change_number INTEGER, sha TEXT, files INTEGER, ins INTEGER,
+            CREATE TABLE commits (commit_id INTEGER, change_number INTEGER, sha TEXT, files INTEGER, ins INTEGER,
               dels INTEGER, reverts_sha TEXT, is_reland INTEGER, landed_at INTEGER);
             CREATE TABLE paths (path_id INTEGER, path TEXT);
-            CREATE TABLE gfiles (commit_id INTEGER, path_id INTEGER, ins INTEGER, dels INTEGER);
-            INSERT INTO gcommits VALUES (7, 20, 'abc', 2, 4, 2, NULL, 0, 100), (8, NULL, 'def', 1, 0, 4, 'abc', 0, 150),
+            CREATE TABLE commit_files (commit_id INTEGER, path_id INTEGER, ins INTEGER, dels INTEGER);
+            INSERT INTO commits VALUES (7, 20, 'abc', 2, 4, 2, NULL, 0, 100), (8, NULL, 'def', 1, 0, 4, 'abc', 0, 150),
               (9, 10, 'ghi', 1, 1, 0, NULL, 0, 90);
             INSERT INTO paths VALUES (1, 'a/b/c/d.cc'), (2, 'a/b/c/e/f.cc'), (3, 'top.txt');
-            INSERT INTO gfiles VALUES (7, 1, 3, 1), (7, 2, 1, 1), (8, 3, 0, 4), (9, 3, 1, 0);
+            INSERT INTO commit_files VALUES (7, 1, 3, 1), (7, 2, 1, 1), (8, 3, 0, 4), (9, 3, 1, 0);
         """)
         rows, by_cid = balance.cl_facts(ddb, gdb)
         facts = [dict(zip(balance.CL_FACTS, r)) for r in rows]

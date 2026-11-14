@@ -239,7 +239,7 @@ def size10(lines):
 
 def early_commits(before=SINCE):
     """Main's first-parent commits that landed before `before`, where
-    gcommits starts (commits.sqlite): [(author email, unix time landed,
+    the per-CL window starts (commit_id > 0 in commits.sqlite): [(author email, unix time landed,
     frozenset of 3-level directories)], reverts left out (`is_revert`: SVN-era
     reverts may name no sha).
     With them, earlier commits count from the start of main's history
@@ -646,7 +646,7 @@ def main():
         if d:
             for x in d[1]:
                 xp_times[(c["pid"], x)].append(c["at"])
-    # gcommits starts in 2017: earlier commits come from the rest of commits.sqlite.
+    # The per-CL window starts in 2017: earlier commits come from the rest of commits.sqlite.
     early = 0
     for email, at, ds in early_commits():
         if is_bot_email(person(email)):

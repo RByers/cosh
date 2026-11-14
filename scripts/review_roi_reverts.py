@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Revert study for docs/review-roi.md (work package 3): reasons, timing, relands, cost.
 
-Reads (all read-only): commits.sqlite (gcommits), balance.sqlite (cl, cl_attention),
+Reads (all read-only): commits.sqlite (commits since 2017), balance.sqlite (cl, cl_attention),
 the shared Chromium clone (revert and reland messages; `main` first-parent only, no fetch).
 Writes only under the scratch directory S (never under data/private).
 
@@ -152,7 +152,7 @@ def load_reverts(out):
             byrev[d["sha"]] = d
     meta = {}
     for sha, em, la, cn, bot, rb, rs, rl in g.execute(
-            "SELECT sha, author_email, landed_at, change_number, is_bot, reviewed_by, reverts_sha, is_reland FROM gcommits"):
+            "SELECT sha, author_email, landed_at, change_number, is_bot, reviewed_by, reverts_sha, is_reland FROM commits WHERE commit_id > 0"):
         meta[sha] = dict(sha=sha, email=em, landed=la, cn=cn, bot=bot, rb=json.loads(rb) if rb else [], rs=rs, rl=rl)
     rows = {}
     for sha, d in sorted(byrev.items(), key=lambda kv: meta.get(kv[0], {}).get("landed", 0)):
@@ -415,7 +415,7 @@ def cmd_timing(a):
         c: round(sum(1 for r in w30 if r["cls"] == c and r["h"] <= 24) / max(sum(1 for r in w30 if r["cls"] == c), 1), 3) for c in CLASSES}
     g = sqlite3.connect(f"file:{commits.db_path(DATA)}?mode=ro", uri=True)
     land = Counter()
-    for (la,) in g.execute("SELECT landed_at FROM gcommits WHERE reverts_sha IS NULL AND is_bot = 0 AND landed_at >= ?", (SINCE_TS,)):
+    for (la,) in g.execute("SELECT landed_at FROM commits WHERE commit_id > 0 AND reverts_sha IS NULL AND is_bot = 0 AND landed_at >= ?", (SINCE_TS,)):
         land[dt.datetime.fromtimestamp(la, utc).year] += 1
     out["by_year"] = {}
     strict = {"flaky_or_unrelated", "dependent_or_requested"}

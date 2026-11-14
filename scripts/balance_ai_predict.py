@@ -380,7 +380,7 @@ def diff_sizes(shas):
     import sqlite3
     db = sqlite3.connect(f"file:{commits.db_path()}?mode=ro", uri=True)
     out = {}
-    for sha, files, ins, dels in db.execute("SELECT sha, files, ins, dels FROM gcommits WHERE landed_at >= ?",
+    for sha, files, ins, dels in db.execute("SELECT sha, files, ins, dels FROM commits WHERE commit_id > 0 AND landed_at >= ?",
                                             (1688169600,)):            # 2023-07-01
         if sha in shas:
             out[sha] = (files, max(0, ins) + max(0, dels))

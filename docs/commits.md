@@ -164,7 +164,6 @@ rerunning: about 1 h 50 min (1.5 h of `git log`, then 20 min of OWNERS diffs and
 | `commit_files`, `paths` | 13,556,620 / 1,642,612 | each file of its first-parent diff, with lines added and deleted (`-1` binary) |
 | `owners_added` | 42,496 | each address on a line added to an OWNERS file (the first on the line) |
 | `repetition` | 173,608 | 1 − distinct changed lines ÷ changed lines, for commits with a CL and 10 or more files (NULL over 50,000 lines) |
-| views `gcommits`, `gfiles` | | the commits since 2017-01-01, the balance analyses' window |
 
 `commit_id` is landing order: 1 is the first commit since 2017-01-01,
 counting up, and the older history counts down from −1. So `commit_id > 0`
@@ -219,8 +218,8 @@ What reads it:
   (`commits.value_commits`, `commits.dirs_of`), with the bot rule above
   applied at read time.
 - **`cosh.balance cl`** and the balance, feedback and review-ROI scripts:
-  `balance.db_path("git")` is this file, read through `gcommits`, `gfiles`
-  and `paths` as before.
+  `balance.db_path("git")` is this file, read through `commits`,
+  `commit_files` (`commit_id > 0`) and `paths`.
 - **The former hand-made inputs** are queries (`cosh/commits.py`, loaded by
   `scripts/balance_analysis.py`): `first_commits` (each author's first
   commit over all history), `owners_added` (since 2012), `ai_marked`

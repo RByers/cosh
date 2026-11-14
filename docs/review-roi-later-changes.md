@@ -36,7 +36,7 @@ at about 8–15 hours of wall time.
 ## Unit and definitions
 
 - **Unit CL:** merged, human-owned (not a `Bot-Commit`, owner not a bot),
-  not a revert or reland (`cl` and `gcommits` flags), not mechanical,
+  not a revert or reland (`cl` and `commits` flags), not mechanical,
   landed on `main` 2023-07-01 .. 2026-09-30. That's 356,546 CLs.
   Mechanical: `inputs/mech.jsonl` (≥ 100 files, or ≥ 10 files with
   repetition ≥ 0.8; `balance.md` §8). Tenure starts at the first commit
@@ -324,7 +324,7 @@ they're missing.
 3. blame those lines at the parent:
    `git blame -w -l --porcelain -L a,b … <parent> -- <file>`;
 4. keep blamed commits landed before the bug was filed (`bugs.created`)
-   and map them to CLs via `gcommits.change_number`.
+   and map them to CLs via `commits.change_number`.
 
 On 8 fix commits the whole file was also blamed without `-L`, to cost the
 plain variant.

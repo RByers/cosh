@@ -43,9 +43,9 @@ fetched; the one LLM pilot was not needed (see Methods, step 5).
 
 ## Methods
 
-1. **Population.** `balance-git.sqlite` `gcommits`: every first-parent commit
+1. **Population.** `commits.sqlite` `commits` since 2017: every first-parent commit
    whose message has `This reverts commit <sha>` and which landed on or after
-   2023-07-01, whose target is also in `gcommits`. One row per reverted commit
+   2023-07-01, whose target also landed in 2017 or later. One row per reverted commit
    (the first revert wins; 26 reverted again). Messages come from one pass of
    `git log main --first-parent` over the shared bare clone (12 s), read-only,
    `GIT_NO_LAZY_FETCH=1`, niced. 14,352 revert commits in the window; 14,286
@@ -73,7 +73,7 @@ fetched; the one LLM pilot was not needed (see Methods, step 5).
    names the reverted sha (or the revert's sha) in that sentence, 4,002; else
    names the reverted CL number, 108; else a title `Reland "X"` of `Revert "X"`
    by the same author within 90 days, 294. The first such commit after the
-   revert is the reland. `is_reland` in `gcommits` is only "subject starts with
+   revert is the reland. `is_reland` in `commits` is only "subject starts with
    Reland" (`cosh/balance.py`), so it was used as a candidate filter, not as
    the link. A reland is "reverted again" if its sha is itself a reverted sha in
    the table. Reverts of reverts (17.3% of the reverted commits are themselves
@@ -231,7 +231,7 @@ is thus noisy toward "preventable", which makes it a conservative control.
 - Classes come from regexes on a sheriff's one-line reason, not from root cause
   analysis. The 21% unknown includes 230 empty reasons.
 - Only the first revert of each commit is kept; reverts whose target landed
-  before 2017 (not in `gcommits`) are dropped, with the 26 repeat reverts (66 of 14,352 revert commits found).
+  before 2017 (outside the per-CL window) are dropped, with the 26 repeat reverts (66 of 14,352 revert commits found).
 - Reland detection depends on the reland message naming the original; manual
   relands under another title are missed, so 30.8% is a lower bound.
 - `reverter_role` `bot` is by address pattern; a human authoring a revert through

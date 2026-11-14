@@ -95,7 +95,7 @@ def load(args):
     g_by_sha, n_email = {}, {}
     for sha, email, at, n, bot, rb, rv, rl, files in gdb.execute(
             "SELECT sha, author_email, landed_at, change_number, is_bot, reviewed_by, reverts_sha, is_reland, files "
-            "FROM gcommits"):
+            "FROM commits WHERE commit_id > 0"):
         human = not bot and not A.is_bot_email(email)
         if human:
             e = A.person(email)

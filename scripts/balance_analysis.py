@@ -257,7 +257,7 @@ dir_of = commit_store.dir_of
 
 
 def commit_dirs(depth=3):
-    """{commit_id: (top dir by lines, frozenset of dirs)} from gfiles."""
+    """{commit_id: (top dir by lines, frozenset of dirs)} of the commits since 2017."""
     return commit_store.commit_dirs(git_db(), depth)
 
 
@@ -294,7 +294,7 @@ def commit_main_dirs(depth=3):
             here.append(best)
             sub = [(p, w) for p, w in sub if len(p) > k and p[k] == best]
         out[cur] = sys.intern("/".join(here) + "/")
-    for cid, pid, w in db.execute("SELECT commit_id, path_id, max(ins, 0) + max(dels, 0) + 1 FROM gfiles"):
+    for cid, pid, w in db.execute("SELECT commit_id, path_id, max(ins, 0) + max(dels, 0) + 1 FROM commit_files WHERE commit_id > 0"):
         if cid != cur:
             done()
             cur, files = cid, []

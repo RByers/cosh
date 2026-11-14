@@ -14,8 +14,6 @@ Tables (SCHEMA below has the columns):
                 diff's per-file line counts in commit_files (paths in paths)
   owners_added  each email address added to an OWNERS file
   repetition    the repetition ratio of commits with a CL and 10+ files
-  gcommits, gfiles  views: the commits landed since 2017-01-01 (the
-                window per-CL analyses use; Gerrit starts in 2017)
 
 commit_id is landing order: 1 is the first commit landed since 2017-01-01
 (HISTORY_SINCE), counting up to the newest, and the older history counts
@@ -99,10 +97,9 @@ CREATE TABLE IF NOT EXISTS owners_added (
 -- 1 - distinct changed lines / changed lines of the commit's diff (near 1:
 -- the same edit in many places). ratio NULL: over MAX_LINES lines.
 CREATE TABLE IF NOT EXISTS repetition (commit_id INTEGER PRIMARY KEY, ratio REAL) STRICT;
-CREATE VIEW IF NOT EXISTS gcommits AS
-  SELECT commit_id, sha, author_email, authored_at, landed_at, change_number, is_bot, reviewed_by,
-         reverts_sha, is_reland, files, ins, dels FROM commits WHERE commit_id > 0;
-CREATE VIEW IF NOT EXISTS gfiles AS SELECT commit_id, path_id, ins, dels FROM commit_files WHERE commit_id > 0;
+-- Compatibility views of balance-git.sqlite, retired 2026-11-14: readers say commit_id > 0.
+DROP VIEW IF EXISTS gcommits;
+DROP VIEW IF EXISTS gfiles;
 """
 
 REVIEWED_ON = re.compile(r"chromium-review\.googlesource\.com/(?:c/)?(?:chromium/src/\+/)?(\d+)$")
@@ -568,13 +565,13 @@ def first_people(db):
 
 
 def human_commits(db):
-    """Human commits on main since 2017 (gcommits) as dicts: cid, sha, email
+    """Human commits on main since 2017 (commit_id > 0) as dicts: cid, sha, email
     (cosh.people.person), at, n (CL), rb (Reviewed-by people), is_revert,
     reland, files, lines, reverted_at."""
     import json
     from .people import is_bot_email, person
     rows = db.execute("SELECT commit_id, sha, author_email, landed_at, change_number, is_bot, reviewed_by, "
-                      "reverts_sha, is_reland, files, ins + dels FROM gcommits").fetchall()
+                      "reverts_sha, is_reland, files, ins + dels FROM commits WHERE commit_id > 0").fetchall()
     reverted = {}
     for r in rows:
         if r[7]:
@@ -625,14 +622,14 @@ def dir_of(path, depth):
 
 
 def commit_dirs(db, depth=3):
-    """{commit_id: (top dir by lines, frozenset of dirs)} of gcommits, from gfiles."""
+    """{commit_id: (top dir by lines, frozenset of dirs)} of the commits since 2017 (commit_id > 0)."""
     paths = dict(db.execute("SELECT path_id, path FROM paths"))
     cache, out, cur, acc = {}, {}, None, None
 
     def done():
         if cur is not None and acc:
             out[cur] = (max(acc, key=acc.get), frozenset(acc))
-    for cid, pid, w in db.execute("SELECT commit_id, path_id, max(ins, 0) + max(dels, 0) + 1 FROM gfiles"):
+    for cid, pid, w in db.execute("SELECT commit_id, path_id, max(ins, 0) + max(dels, 0) + 1 FROM commit_files WHERE commit_id > 0"):
         if cid != cur:
             done()
             cur, acc = cid, {}

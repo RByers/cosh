@@ -18,7 +18,7 @@ person.
 The page's copy (era "then") comes from `python3 -m cosh.balance_publish`.
 
 Only authors whose first commit is on or after 2017-01-01 are used, since
-gcommits starts then and earlier commits are not counted here. CLs are
+commits.sqlite's per-CL window starts then and earlier commits are not counted here. CLs are
 merged and non-mechanical, closed 2023Q3 .. 2024Q4 (the pre-AI baseline the
 page's other era charts use) unless --era says otherwise.
 """

@@ -338,8 +338,8 @@ Counts it found were spot-checked (27 `AGENTS.md`, 23 `GEMINI.md` and 620
 ## Data and how it's built
 
 Main's history comes from `data/private/commits.sqlite` (`python3 -m cosh
-commits`, `docs/commits.md`): its `gcommits`, `gfiles` and `paths` are
-first-parent `main` since 2017-01-01 (author, dates, CL from `Reviewed-on`,
+commits`, `docs/commits.md`): its `commits`, `commit_files` and `paths`
+with `commit_id > 0` are first-parent `main` since 2017-01-01 (author, dates, CL from `Reviewed-on`,
 `Reviewed-by` approvers, reverts, relands, per-file line counts; 1.30M
 commits), as the former `balance-git.sqlite` (stage `git`, retired
 2026-11-12) had them. `python3 -m cosh.balance <stage>` (offline, `GIT_NO_LAZY_FETCH=1`) writes
@@ -657,7 +657,7 @@ size (10 buckets) and top 2-level directory in 2023–24 (1.00 = the
 
 `scripts/balance_learning.py` (2026-11-08) asks whether review need falls
 with months on the project or with CLs landed. Authors whose first commit
-is in 2017 or later (so `gcommits` holds all their commits);
+is in 2017 or later (so the per-CL window, `commit_id > 0`, holds all their commits);
 merged, non-mechanical CLs of 2023Q3–2024Q4 (112,615 CLs, 2,158 people).
 "Practice" is the author's commits on `main` before the CL.
 

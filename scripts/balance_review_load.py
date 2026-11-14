@@ -212,7 +212,7 @@ def load(args):
     print(f"{len(pairs):,} reviews", file=sys.stderr, flush=True)
 
     # ---- git, light
-    graw = dict(A.ro(balance.db_path("git")).execute("SELECT commit_id, author_email FROM gcommits"))
+    graw = dict(A.ro(balance.db_path("git")).execute("SELECT commit_id, author_email FROM commits WHERE commit_id > 0"))
     G_ = []
     for c in commits:
         if not c["n"] or c["is_revert"]:

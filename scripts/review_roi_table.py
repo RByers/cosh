@@ -18,8 +18,8 @@ SQLite file. Identities appear only as integer ids.
 Tenure is from the first commit over all of main's history, OWNERS from the
 OWNERS additions, mechanical CLs from the repetition ratios, all in
 commits.sqlite; the flags read the old hand-made files instead. An author
-missing from the first commits falls back to their first authored commit in
-gcommits. The `meta` table records which inputs were used and the exclusion
+missing from the first commits falls back to their first authored commit since
+2017 in commits.sqlite. The `meta` table records which inputs were used and the exclusion
 counts. About 2 minutes and 3.5 GB.
 """
 
@@ -97,10 +97,10 @@ def main():
 
     # ---------------------------------------------------------------- git
     g = ro(balance.db_path("git"))
-    newest = g.execute("SELECT max(landed_at) FROM gcommits").fetchone()[0]
+    newest = g.execute("SELECT max(landed_at) FROM commits WHERE commit_id > 0").fetchone()[0]
     meta["newest_commit"] = newest
     commits = g.execute("SELECT commit_id, sha, author_email, landed_at, change_number, is_bot, reviewed_by, "
-                        "reverts_sha, is_reland FROM gcommits ORDER BY landed_at, commit_id").fetchall()
+                        "reverts_sha, is_reland FROM commits WHERE commit_id > 0 ORDER BY landed_at, commit_id").fetchall()
     log(f"{len(commits):,} commits")
     reverted = {}                       # sha -> (first revert landed_at, revert sha)
     for cid, sha, e, at, n, bot, rb, rv, rl in commits:
@@ -161,7 +161,7 @@ def main():
         if cur in cand_cids:
             # heaviest file within the main dir3: its full directory (for OWNERS coverage)
             cinfo[cur] = (heavy[main3][1], tests, nfiles)
-    for cid, pid_, ins, dels in g.execute("SELECT commit_id, path_id, ins, dels FROM gfiles"):
+    for cid, pid_, ins, dels in g.execute("SELECT commit_id, path_id, ins, dels FROM commit_files WHERE commit_id > 0"):
         if cid != cur:
             flush()
             cur, acc, heavy, tests, nfiles = cid, {}, {}, 0, 0
