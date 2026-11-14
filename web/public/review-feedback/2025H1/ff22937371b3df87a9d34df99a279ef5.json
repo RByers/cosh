@@ -1,1 +1,1 @@
-{"dirs":["build/fuchsia/","third_party/fuchsia-gn-sdk/src/"],"files":[],"orgs":["google.com"],"cls":[[6415955,20179,134,5.313,4.273,[[0,0]],[],0,252],[6429804,20181,5,0.354,0.253,[[1,0]],[],0,253],[6431676,20186,140,5.313,4.273,[[0,1]],[[1,1]],0,254]],"counts":1}
+{"dirs":["build/fuchsia/","third_party/fuchsia-gn-sdk/src/"],"files":["build/fuchsia/gen_build_defs.py"],"cls":[[6415955,20179,134,252,0],[13849,2,5,253,1],[1872,5,140,254,0,[[0,140,1,1]]]]}

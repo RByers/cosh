@@ -1,1 +1,1 @@
-{"dirs":["ui/gl/","content/browser/renderer_host/"],"files":[],"orgs":["yandex-team.ru"],"cls":[[3393829,19039,4,0.622,0.533,[[0,0.667,0,3],[1,0.333,0,1]],[[5,5],[0,0]],0,0]],"counts":1}
+{"dirs":["ui/gl/","content/browser/renderer_host/"],"files":["/COMMIT_MSG","ui/gl/gl_context_egl.cc"],"cls":[[3393829,19039,4,0,[[0,3],[1,1]],[[0,0,4,4],[1,3,1,1]]]]}

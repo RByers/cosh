@@ -1,1 +1,1 @@
-{"dirs":["testing/libfuzzer/proto/"],"files":[],"orgs":["google.com"],"cls":[[2103349,18337,1,0.065,0.032,[[0,9]],[[1,0]],0,175]],"counts":1}
+{"dirs":["testing/libfuzzer/proto/"],"files":["testing/libfuzzer/proto/skia_image_filter_proto_converter.cc"],"cls":[[2103349,18337,1,175,0,[[0,1,1,0]]]]}

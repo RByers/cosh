@@ -1,1 +1,1 @@
-{"dirs":["chrome/browser/optimization_guide/"],"files":[],"orgs":["google.com"],"cls":[[4718495,19570,39,1.769,1.384,[[0,0]],[[5,4]],0,29]],"counts":1}
+{"dirs":["chrome/browser/optimization_guide/"],"files":["chrome/browser/optimization_guide/chrome_hints_manager.cc","chrome/browser/optimization_guide/optimization_guide_web_contents_observer.cc","chrome/browser/optimization_guide/optimization_guide_web_contents_observer.h"],"cls":[[4718495,19570,39,29,0,[[0,0,1,1],[1,35,3,3],[2,1,1,0]]]]}

@@ -1,1 +1,1 @@
-{"dirs":["third_party/blink/public/","third_party/blink/renderer/","tools/metrics/histograms/"],"files":[],"orgs":["google.com"],"cls":[[3657493,19133,2,0.169,0.112,[[0,0.333,9,1],[1,0.333,93,0],[2,0.333,12,1]],[],0,870]],"counts":1}
+{"dirs":["third_party/blink/public/","tools/metrics/histograms/","third_party/blink/renderer/"],"files":[],"cls":[[3657493,19133,2,870,[[0,1],[1,1],[2,0]]]]}

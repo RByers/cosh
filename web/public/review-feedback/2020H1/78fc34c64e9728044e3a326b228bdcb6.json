@@ -1,1 +1,1 @@
-{"dirs":["tools/metrics/histograms/"],"files":[],"orgs":["google.com"],"cls":[[2011582,18310,18,1.071,0.865,[[0,0]],[[1,0]],0,2],[2156329,18410,42,1.659,1.333,[[0,1]],[[3,2]],0,3]],"counts":1}
+{"dirs":["tools/metrics/histograms/"],"files":["tools/metrics/histograms/histograms.xml","tools/metrics/histograms/enums.xml"],"cls":[[2011582,18310,18,2,0,[[0,18,1,0]]],[144747,100,42,3,0,[[1,12,1,0],[0,30,2,2]]]]}

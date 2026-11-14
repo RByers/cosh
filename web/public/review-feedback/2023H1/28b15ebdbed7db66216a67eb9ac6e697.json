@@ -1,1 +1,1 @@
-{"dirs":["chrome/browser/ash/"],"files":[],"orgs":["google.com"],"cls":[[4585687,19513,1,0.195,0.13,[[0,0]],[[1,0]],0,1]],"counts":1}
+{"dirs":["chrome/browser/ash/"],"files":["chrome/browser/ash/borealis/borealis_token_hardware_checker.cc"],"cls":[[4585687,19513,1,1,0,[[0,1,1,0]]]]}

@@ -1,1 +1,0 @@
-{"cls":{"7210820":[["91c78bd8_396f8470","Just want to check that you've confirmed this runs on the bots just fine? iirc, it should be running per this entry:…",0.0],["e180e2f7_3528ad70","I'm seeing this file losing the executable bit. Is that intended? Also, the shebang comment should still be kept if it's executable.",0.0]]}}

@@ -1,1 +1,1 @@
-{"dirs":["gin/"],"files":[],"orgs":["google.com"],"cls":[[4203868,19388,15,0.469,0.375,[[0,0]],[[2,2]],0,16]],"counts":1}
+{"dirs":["gin/"],"files":["content/public/common/content_features.cc","content/renderer/render_process_impl.cc"],"cls":[[4203868,19388,15,16,0,[[0,0,1,1],[1,0,1,1]]]]}

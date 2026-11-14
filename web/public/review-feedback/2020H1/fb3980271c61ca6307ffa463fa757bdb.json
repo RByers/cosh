@@ -1,1 +1,1 @@
-{"dirs":["chrome/browser/","chrome/browser/ui/","content/browser/renderer_host/","content/test/"],"files":[],"orgs":["gmail.com"],"cls":[[2138564,18367,22,1.03,0.788,[[0,0.88,0,20],[1,0.12,0,2]],[[5,4],[0,0]],0,6],[2135187,18367,57,2.078,1.601,[[2,0.833,0,48],[3,0.167,0,9]],[],0,7]],"counts":1}
+{"dirs":["chrome/browser/","chrome/browser/ui/","content/browser/renderer_host/","content/test/"],"files":["chrome/browser/certificate_manager_model.h"],"cls":[[2138564,18367,22,6,[[0,20],[1,2]],[[0,12,5,4]]],[-3377,0,57,7,[[2,48],[3,9]]]]}

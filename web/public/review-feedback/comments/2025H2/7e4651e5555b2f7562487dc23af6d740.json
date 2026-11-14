@@ -1,1 +1,0 @@
-{"cls":{"7123961":[["0267e1cb_fc9eeeda","Is this guard needed?",0.0],["ac649f6d_cdda1263","This seems okay since `IsEncoderBuiltInVideoType()` above will already return false for vp8 always, vp9 depending on high bit depth, and av1 depending on profile. Even though OpenH264 reports support…",0.0]]}}

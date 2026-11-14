@@ -1,1 +1,1 @@
-{"dirs":["net/cert/","net/url_request/","services/cert_verifier/integration_tests/"],"files":["net/cert/cert_verify_proc_ios.cc","net/cert/cert_verify_proc_unittest.cc"],"orgs":["yandex-team.ru"],"cls":[[7062035,20386,25,0.939,0.709,[[0,0.586,0,15],[1,0.31,0,8],[2,0.103,0,2]],[[0,-5,1],[1,-2,1],[1,-2,1]],0,0]]}
+{"dirs":["net/cert/","net/url_request/","services/cert_verifier/integration_tests/"],"files":["net/cert/cert_verify_proc_ios.cc","net/cert/cert_verify_proc_unittest.cc"],"cls":[[7062035,20386,25,0,[[0,15],[1,8],[2,2]],[[0,10,1,1],[1,5,2,2]]]]}

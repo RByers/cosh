@@ -1,1 +1,1 @@
-{"dirs":["ash/webui/eche_app_ui/"],"files":[],"orgs":["google.com"],"cls":[[2706482,18681,6,0.406,0.315,[[0,0]],[[1,1]],0,46],[2732334,18690,4,0.019,0.007,[[0,1]],[],0,47]],"counts":1}
+{"dirs":["ash/webui/eche_app_ui/"],"files":["ash/webui/eche_app_ui/eche_notification_click_handler.cc"],"cls":[[2706482,18681,6,46,0,[[0,2,1,1]]],[25852,9,4,47,0]]}

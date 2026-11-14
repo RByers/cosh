@@ -1,1 +1,0 @@
-{"cls":{"7771051":[["4240fc38_d9e59245","The other ReportBadMessage calls in this file (lines 172, 187) return early without invoking the callback. Should we do the same?",0.0],["c62751ca_28b40ab7","Is the platform check intentional? I've only checked the modified function itself, so if it's only called in a non-Android context, this may be correct.",0.0]]}}

@@ -1,1 +1,0 @@
-{"cls":{"7511404":[["380e0d5e_b961f58f","Why is this being removed?",0.0]],"7865415":[["3116d7aa_bf4ed319","LGTM. Maybe adding a comment about this being supported in Clang, and on GCC since version 13? Anyway, not strictly important to me honestly. Ideally we would want build to already complain if…",0.0]]}}

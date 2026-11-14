@@ -1,1 +1,1 @@
-{"dirs":["chrome/browser/resources/","ui/webui/resources/"],"files":[],"orgs":["yandex-team.ru"],"cls":[[1878070,18194,19,1.03,0.788,[[0,0.929,8,19],[1,0.071,5,0]],[[1,1],[0,0]],0,14]],"counts":1}
+{"dirs":["chrome/browser/resources/","ui/webui/resources/"],"files":["chrome/browser/resources/bluetooth_internals/node_utils.html"],"cls":[[1878070,18194,19,14,[[0,19],[1,0]],[[0,2,1,1]]]]}

@@ -1,1 +1,1 @@
-{"dirs":["ash/app_list/views/","ash/system/tray/","chromeos/ash/components/"],"files":[],"orgs":["google.com"],"cls":[[861088,17543,8,0.343,0.314,[[0,41]],[[1,1]],0,376],[907181,17570,7,0.419,0.314,[[1,57]],[],0,377],[1087749,17688,1,0.261,0.173,[[2,59]],[],0,378]],"counts":1}
+{"dirs":["ash/app_list/views/","ash/system/tray/","chromeos/ash/components/"],"files":["ash/app_list/views/apps_grid_view.cc"],"cls":[[861088,17543,8,376,0,[[0,0,1,1]]],[46093,27,7,377,1],[180568,118,1,378,2]]}

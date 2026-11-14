@@ -1,1 +1,1 @@
-{"dirs":["third_party/blink/renderer/","(root)/"],"files":[],"orgs":["gmail.com"],"cls":[[784770,17502,70,2.279,1.719,[[0,0.972,0,69],[1,0.028,0,1]],[[14,12],[0,0]],0,0]],"counts":1}
+{"dirs":["third_party/blink/renderer/","(root)/"],"files":["third_party/blink/renderer/devtools/front_end/network/NetworkLogView.js"],"cls":[[784770,17502,70,0,[[0,69],[1,1]],[[0,69,14,12]]]]}

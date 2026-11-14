@@ -1,1 +1,1 @@
-{"dirs":["mojo/public/rust/","(root)/"],"files":["mojo/public/rust/bindings/receiver.rs","mojo/public/rust/bindings/remote.rs"],"orgs":["gmail.com"],"cls":[[7657705,20536,46,0.974,0.821,[[0,0.959,0,45],[1,0.041,0,1]],[[0,-13,1],[0,-13,0],[0,-13,1],[1,-13,1],[0,-13,1],[0,-13,1],[0,-13,1],[0,-13,1],[0,-13,0],[0,-13,1],[1,-12,1]],0,0]]}
+{"dirs":["mojo/public/rust/","(root)/"],"files":["mojo/public/rust/bindings/receiver.rs","mojo/public/rust/bindings/remote.rs"],"cls":[[7657705,20536,46,0,[[0,45],[1,1]],[[0,24,9,7],[1,21,2,2]]]]}

@@ -1,1 +1,1 @@
-{"dirs":["components/policy/resources/"],"files":[],"orgs":["google.com"],"cls":[[4859721,19613,4,0.783,0.624,[[0,0]],[[11,6]],0,1]],"counts":1}
+{"dirs":["components/policy/resources/"],"files":["/COMMIT_MSG","components/policy/resources/templates/policy_definitions/Signin/DeviceEphemeralUsersEnabled.yaml"],"cls":[[4859721,19613,4,1,0,[[0,0,2,2],[1,4,9,4]]]]}

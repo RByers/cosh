@@ -1,7 +1,7 @@
 // A made-up person and peer file for the Review Feedback tests, shaped like
 // cosh/review_feedback.py's output: a top file, one file per half-year and the
-// half-years' comment files. The browser tests serve these instead of the committed data.
-import type { CommentShard, Norm, Peers, RateCell, Shard, Top } from '../src/feedback.ts';
+// half-years' link files. The browser tests serve these instead of the committed data.
+import type { LinkShard, Peers, RateCell, Shard, Top } from '../src/feedback.ts';
 
 /** personKey('Test.Person@chromium.org'), as the Python script computes it. */
 export const FIXTURE_EMAIL = 'Test.Person@chromium.org';
@@ -14,38 +14,36 @@ const q = (lo: number, hi: number) => Array.from({ length: 21 }, (_, i) => Math.
 export const day = (s: string) => Math.floor(Date.parse(`${s}T00:00:00Z`) / 86_400_000);
 
 export const top: Top = {
-  v: 5,
+  v: 6,
   first: '2022-03',
   first_day: day('2022-03-01'),
+  org: 'google.com',
   halves: ['2025H2', '2026H1', '2026H2'],
 };
 
-/** Three changes, one per half-year. Each file lists its own names, in its own order. */
+/** Three changes, one per half-year. Each file lists its own names, in its own order. A change is
+ * [number less the previous one's (the first: itself), day likewise, lines, earlier commits on main,
+ * units, files that drew comments]; units are [[directory, the landed commit's lines there], ...] or the
+ * directory alone; files are [file, lines there, threads, addressed], by name. */
 export const shards: Record<string, Shard> = {
-  // Threads are [file, days after landing, addressed]. A thread's directory is its file's (or the first unit's).
-  '2025H2': { dirs: ['chrome/browser/ui/'], files: ['chrome/browser/ui/view.cc', '/COMMIT_MSG'], orgs: ['google.com'],
-    cls: [[1000001, day('2025-10-01'), 40, 2.5, 1.4, [[0, 1, 0, 38]],
-      [[0, -1, 1], [1, 0, 0]], 0, 30]] },
-  '2026H1': { dirs: ['content/browser/', 'chrome/browser/ui/'], files: ['content/browser/frame.cc'], orgs: ['google.com'],
-    cls: [[1000002, day('2026-03-11'), 120, 3, 2, [[0, 0.75, 7, 90], [1, 0.25, 1, 28]],
-      [[0, -1, 1]], 0, 80]] },
-  // Wholly in one directory: [directory, earlier commits there].
-  '2026H2': { dirs: ['third_party/blink/renderer/'], files: ['third_party/blink/renderer/core/a.cc', '/COMMIT_MSG'],
-    orgs: ['google.com'],
-    cls: [[1000003, day('2026-09-03'), 10, 1.5, 0.9, [[0, 150]],
-      [[0, -2, 1], [1, -1, null]], 0, 260]] },
+  '2025H2': { dirs: ['chrome/browser/ui/'], files: ['/COMMIT_MSG', 'chrome/browser/ui/view.cc'],
+    cls: [[1000001, day('2025-10-01'), 40, 30, 0, [[0, 0, 1, 0], [1, 30, 1, 1]]]] },
+  '2026H1': { dirs: ['content/browser/', 'chrome/browser/ui/'], files: ['content/browser/frame.cc'],
+    cls: [[1000002, day('2026-03-11'), 120, 80, [[0, 90], [1, 28]], [[0, 50, 1, 1]]]] },
+  // A file in a subdirectory of its 3-level directory, and an unlabelled thread on the commit message.
+  '2026H2': { dirs: ['third_party/blink/renderer/'], files: ['/COMMIT_MSG', 'third_party/blink/renderer/core/a.cc'],
+    cls: [[1000003, day('2026-09-03'), 10, 260, 0, [[0, 0, 1, 0], [1, 8, 1, 1]]]] },
 };
 
-/** The comment files: per change, one entry per thread in the half-year file's order,
- * 0 without text, else [uuid, excerpt, tone score where scored]. */
-export const comments: Record<string, CommentShard> = {
-  '2025H2': { cls: { 1000001: [0, ['aaaa_0002', 'Please add a test.', -0.31]] } },
-  '2026H1': { cls: { 1000002: [['bbbb_0002', 'Great test coverage <img src=x onerror=alert(1)>', 0.72]] } },
-  '2026H2': { cls: { 1000003: [0, ['cccc_0003', 'Really nice cleanup, thanks!']] } },
+/** The link files: per change, per file entry (its position in the change's files), the addressed
+ * comments' ids, with their tone score where scored. */
+export const links: Record<string, LinkShard> = {
+  '2025H2': { cls: { 1000001: [[1, [['aaaa_0002', -0.31]]]] } },
+  '2026H1': { cls: { 1000002: [[0, [['bbbb_0002', 0.72]]]] } },
+  '2026H2': { cls: { 1000003: [[1, ['cccc_0003']]] } },
 };
 
 const periods = ['all', '2023H2', '2024H1', '2024H2', '2025H1', '2025H2', '2026H1', '2026H2'];
-const norms: Norm[] = ['', 'e', 'd', 'ed', 'o', 'eo', 'do', 'edo'];
 const refBin = [4, 3, 2.5, 2, 1.7, 1.3, 1, 0.8, 0.6, 0.43];
 // A smoothed bell around -20% per doubling, on the script's grid (log2 -2 .. 1.5 in steps of 0.05).
 const curve = Array.from({ length: 71 }, (_, i): [number, number] => {
@@ -60,11 +58,12 @@ export function rateCells(rates: Record<string, (number | null)[]>): Record<stri
 }
 
 export const peers: Peers = {
-  v: 8,
+  v: 9,
   generated: '2026-11-14',
   start: day('2023-07-01'),
   end: day('2026-11-01'),
   addr_start: day('2023-07-01'),
+  links_from: '2023H1',
   periods,
   min_peers: 10,
   // Small minimums, so the person's three changes count: as many as needed among peers, one per bin.
@@ -75,23 +74,22 @@ export const peers: Peers = {
   fr_floor: 0.1,
   bins: ['8', '16', '32', '64', '128', '256', '512', '1k', '2k', '>2k'],
   bin_edges: [8, 16, 32, 64, 128, 256, 512, 1024, 2048],
-  norms,
   ref_bin: refBin,
   ref_all: 1.5,
   min_rate_cls: 200,
   min_dir_cls: 100,
-  // Everyone's rate per bin, then at any experience, the same in every half-year; 1.2, 0.8 and 0.5
-  // times all of Chromium's in three directories. chrome/browser/ui/ has a rate of its own only at the
-  // first bin, and third_party/blink/ none at any experience: their parents' count instead. The cells are
-  // so large that leaving the person's own lines out moves no rate by more than about 1e-11.
+  // Everyone's rate per bin, the same in every half-year; 1.2, 0.8 and 0.5 times all of Chromium's in
+  // three directories. chrome/browser/ui/ has a rate of its own only at the first bin: its parent's counts
+  // instead. The cells are so large that leaving the person's own lines out moves no rate by more than
+  // about 1e-11.
   rates: Object.fromEntries(periods.filter((h) => h !== 'all').map((h) => [h, rateCells({
-    '': [...refBin, 1.5],
-    'chrome/browser/': [4.8, 3.6, 3, 2.4, 2.04, 1.56, 1.2, 0.96, 0.72, null, 1.65],
-    'chrome/browser/ui/': [9, null, null, null, null, null, null, null, null, null, null],
-    'content/': [3.2, 2.4, 2, 1.6, 1.36, 1.04, 0.8, 0.64, 0.48, null, 1.35],
-    'third_party/blink/': [2, 1.5, 1.25, 1, 0.85, 0.65, 0.5, 0.4, 0.3, null, null],
+    '': refBin,
+    'chrome/browser/': [4.8, 3.6, 3, 2.4, 2.04, 1.56, 1.2, 0.96, 0.72, null],
+    'chrome/browser/ui/': [9, null, null, null, null, null, null, null, null, null],
+    'content/': [3.2, 2.4, 2, 1.6, 1.36, 1.04, 0.8, 0.64, 0.48, null],
+    'third_party/blink/': [2, 1.5, 1.25, 1, 0.85, 0.65, 0.5, 0.4, 0.3, null],
   })])),
-  scale: { '': 1, e: 1, d: 1, ed: 1 },
+  scale: 1,
   // Everyone's directory table: third_party/blink/ is among third_party/'s smaller entries.
   dir_table: [
     ['third_party/', 0, 6_000_000, 50_000, 40_000],
@@ -105,12 +103,10 @@ export const peers: Peers = {
     ['content/browser/', 0, 2_000_000, 70_000, 50_000],
     ['', 2, 1_000, 10, 5, 30],
   ],
-  f_org: { '': { 'google.com': 0.9, '*': 1.3 }, e: { 'google.com': 1, '*': 1.05 }, d: { 'google.com': 0.95, '*': 1.2 },
-    ed: { 'google.com': 1.1, '*': 1 } },
   // The spread of everyone's rate per bin: a quarter to three times the median.
   fr_bins: refBin.map((r, i) => (i === 9 ? { n: 6, q: null } : { n: 3000 - 300 * i, q: q(r / 4, r * 3) })),
-  // Everyone's index runs 0.3 .. 2.5 evenly, in every period and norm; outside that, as noted.
-  fi: Object.fromEntries(norms.map((nm) => [nm, Object.fromEntries(periods.map((p) => [p, { n: 2800, q: q(0.3, 2.5) }]))])),
+  // Everyone's index runs 0.3 .. 2.5 evenly, in every period; outside that, as noted.
+  fi: Object.fromEntries(periods.map((p) => [p, { n: 2800, q: q(0.3, 2.5) }])),
   // Per experience bin, by start year; from bin 8 on, too few people for a median.
   cohorts: Array.from({ length: 10 }, (_, b) => [2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025, 2026]
     .slice(0, 9 - b).map((y, i): [number, number, number | null, number | null, number | null, number | null, number | null] =>
@@ -122,7 +118,6 @@ export const peers: Peers = {
     ['testing/buildbot/', 0.11, 161]],
   by_org: [['microsoft.com', 2.24, 225], ['google.com', 1.72, 3168], ['igalia.com', 1.2, 50]],
   growth: { n: 2547, median: -20.9, q: q(-70, 60), curve },
-  fi_norm: 'ed',
   // A bell around 1 on a log scale, on the script's grid (log2 -3 .. 2.5).
   fi_dist: { n: 2843, q: q(0.3, 2.5), curve: Array.from({ length: 111 }, (_, i): [number, number] => {
     const x = -3 + 0.05 * i;

@@ -1,1 +1,1 @@
-{"dirs":["(root)/","chromeos/ash/components/"],"files":[],"orgs":["google.com"],"cls":[[3437155,19027,1,0.063,0.041,[[0,0]],[],0,0],[3428205,19031,21,1.098,0.836,[[1,0]],[[5,5]],0,1]],"counts":1}
+{"dirs":["(root)/","chromeos/ash/components/"],"files":["chromeos/ash/components/network/auto_connect_handler.cc","chromeos/ash/components/network/auto_connect_handler.h","chromeos/ash/components/network/auto_connect_handler_unittest.cc"],"cls":[[3437155,19027,1,0,0],[-8950,4,21,1,1,[[0,9,3,3],[1,2,1,1],[2,0,1,1]]]]}

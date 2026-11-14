@@ -1,1 +1,1 @@
-{"dirs":["gpu/command_buffer/service/","gpu/command_buffer/tests/"],"files":[],"orgs":["yandex-team.ru"],"cls":[[3838129,19226,8,0.488,0.318,[[0,0]],[[3,3]],0,0],[3939466,19277,2,0.152,0.066,[[1,0]],[],0,1]],"counts":1}
+{"dirs":["gpu/command_buffer/service/","gpu/command_buffer/tests/"],"files":["/COMMIT_MSG","gpu/command_buffer/service/shared_image/gl_image_native_pixmap.cc"],"cls":[[3838129,19226,8,0,0,[[0,0,2,2],[1,8,1,1]]],[101337,51,2,1,1]]}

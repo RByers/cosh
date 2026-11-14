@@ -1,1 +1,1 @@
-{"dirs":["tools/metrics/histograms/"],"files":[],"orgs":["google.com"],"cls":[[4603648,19521,10,0.534,0.426,[[0,0]],[[1,1]],0,0]],"counts":1}
+{"dirs":["tools/metrics/histograms/"],"files":["tools/metrics/histograms/metadata/borealis/histograms.xml"],"cls":[[4603648,19521,10,0,0,[[0,10,1,1]]]]}

@@ -1,1 +1,1 @@
-{"dirs":["tools/json_schema_compiler/test/"],"files":[],"orgs":["google.com"],"cls":[[2271062,18450,3,0.387,0.323,[[0,0]],[[1,0]],0,1]],"counts":1}
+{"dirs":["tools/json_schema_compiler/test/"],"files":["tools/json_schema_compiler/test/converted_schemas/declarative_net_request.idl"],"cls":[[2271062,18450,3,1,0,[[0,3,1,0]]]]}

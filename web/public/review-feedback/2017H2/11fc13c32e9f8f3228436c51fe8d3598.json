@@ -1,1 +1,1 @@
-{"dirs":["content/renderer/"],"files":[],"orgs":["yandex-team.ru"],"cls":[[620652,17421,4,0.352,0.204,[[0,0]],[[14,3]],0,0]],"counts":1}
+{"dirs":["content/renderer/"],"files":["chrome/browser/ui/find_bar/find_bar_host_browsertest.cc","chrome/browser/ui/views/find_bar_host.cc","components/find_in_page/find_tab_helper.cc"],"cls":[[620652,17421,4,0,0,[[0,0,4,2],[1,0,8,1],[2,0,2,0]]]]}

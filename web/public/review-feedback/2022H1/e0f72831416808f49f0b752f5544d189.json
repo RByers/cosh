@@ -1,1 +1,1 @@
-{"dirs":["ash/system/","ash/system/tray/"],"files":[],"orgs":["google.com"],"cls":[[3689249,19146,44,1.534,1.249,[[0,0.872,0,39],[1,0.128,0,5]],[[1,0],[0,0]],0,4],[3688765,19150,18,1.415,1.188,[[1,0.571,1,11],[0,0.429,1,7]],[[2,2],[0,0]],0,5]],"counts":1}
+{"dirs":["ash/system/","ash/system/tray/"],"files":["ash/system/status_area_widget.cc","ash/system/tray/tray_background_view_unittest.cc"],"cls":[[3689249,19146,44,4,[[0,39],[1,5]],[[0,31,1,0]]],[-484,4,18,5,[[1,11],[0,7]],[[1,11,2,2]]]]}

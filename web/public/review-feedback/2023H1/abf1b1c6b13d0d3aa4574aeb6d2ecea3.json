@@ -1,1 +1,1 @@
-{"dirs":["device/bluetooth/floss/"],"files":[],"orgs":["google.com"],"cls":[[4323239,19425,46,2.439,2.146,[[0,3]],[[1,1]],0,3]],"counts":1}
+{"dirs":["device/bluetooth/floss/"],"files":["device/bluetooth/floss/bluetooth_remote_gatt_characteristic_floss.cc"],"cls":[[4323239,19425,46,3,0,[[0,10,1,1]]]]}

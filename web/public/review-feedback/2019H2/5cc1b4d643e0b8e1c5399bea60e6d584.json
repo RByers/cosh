@@ -1,1 +1,1 @@
-{"dirs":["tools/metrics/histograms/"],"files":[],"orgs":["google.com"],"cls":[[1686637,18080,59,1.659,1.333,[[0,0]],[[2,2]],0,9],[1685688,18086,37,1.659,1.333,[[0,1]],[[2,2]],0,10]],"counts":1}
+{"dirs":["tools/metrics/histograms/"],"files":["tools/metrics/histograms/histograms.xml"],"cls":[[1686637,18080,59,9,0,[[0,59,2,2]]],[-949,6,37,10,0,[[0,37,2,2]]]]}

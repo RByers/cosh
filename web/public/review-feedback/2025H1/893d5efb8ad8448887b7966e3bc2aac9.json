@@ -1,1 +1,1 @@
-{"dirs":["net/cert/"],"files":[],"orgs":["google.com"],"cls":[[6440022,20188,17,0.939,0.709,[[0,0]],[[2,1]],0,78]],"counts":1}
+{"dirs":["net/cert/"],"files":["net/cert/root_store.proto"],"cls":[[6440022,20188,17,78,0,[[0,17,2,1]]]]}

@@ -1,1 +1,1 @@
-{"dirs":["net/android/java/","(root)/"],"files":[],"orgs":["xiaomi.com"],"cls":[[1600726,18033,42,1.64,1.269,[[0,0.955,0,41],[1,0.045,0,1]],[[2,2],[0,0]],0,0]],"counts":1}
+{"dirs":["net/android/java/","(root)/"],"files":["net/android/java/src/org/chromium/net/AndroidNetworkLibrary.java"],"cls":[[1600726,18033,42,0,[[0,41],[1,1]],[[0,41,2,2]]]]}

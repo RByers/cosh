@@ -1,1 +1,1 @@
-{"dirs":["chrome/test/base/","third_party/blink/web_tests/","mojo/public/js/"],"files":[],"orgs":["yandex-team.ru"],"cls":[[947944,17604,10,0.528,0.375,[[0,0]],[[1,1]],0,1],[1082991,17704,23,1.154,0.692,[[1,0.64,0,15],[2,0.36,0,8]],[],0,2]],"counts":1}
+{"dirs":["chrome/test/base/","third_party/blink/web_tests/","mojo/public/js/"],"files":["chrome/test/base/ash/javascript_browser_test.cc"],"cls":[[947944,17604,10,1,0,[[0,9,1,1]]],[135047,100,23,2,[[1,15],[2,8]]]]}

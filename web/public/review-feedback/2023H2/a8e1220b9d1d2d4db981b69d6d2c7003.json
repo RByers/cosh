@@ -1,1 +1,1 @@
-{"dirs":["chrome/browser/ui/","(root)/","ui/views/widget/"],"files":[],"orgs":["gmail.com"],"cls":[[4944757,19654,8,0.591,0.428,[[0,0.8,0,7],[1,0.2,0,1]],[[1,1],[0,0]],0,0],[5012552,19670,2,0.168,0.101,[[2,0]],[],0,1]],"counts":1}
+{"dirs":["chrome/browser/ui/","(root)/","ui/views/widget/"],"files":["chrome/browser/ui/thumbnails/thumbnail_image.cc"],"cls":[[4944757,19654,8,0,[[0,7],[1,1]],[[0,7,1,1]]],[67795,16,2,1,2]]}

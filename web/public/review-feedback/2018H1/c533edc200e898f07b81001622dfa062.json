@@ -1,1 +1,1 @@
-{"dirs":["(root)/","components/ntp_snippets/"],"files":[],"orgs":["samsung.com"],"cls":[[989383,17641,1,0.174,0.115,[[0,0.667,0,1],[1,0.333,0,0]],[[8,0],[3,0]],0,0]],"counts":1}
+{"dirs":["(root)/","components/ntp_snippets/"],"files":["/COMMIT_MSG","chrome/browser/ui/webui/snippets_internals/snippets_internals_message_handler.cc","components/ntp_snippets/features.cc","components/ntp_snippets/features.h"],"cls":[[989383,17641,1,0,[[0,1],[1,0]],[[0,0,7,0],[1,0,1,0],[2,0,2,0],[3,0,1,0]]]]}

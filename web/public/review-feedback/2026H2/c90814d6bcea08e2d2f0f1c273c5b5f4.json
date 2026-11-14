@@ -1,1 +1,1 @@
-{"dirs":["third_party/blink/web_tests/","content/browser/devtools/"],"files":["content/browser/devtools/protocol/devtools_protocol_browsertest.cc"],"orgs":["microsoft.com"],"cls":[[8150704,20665,75,2.279,1.719,[[0,0.823,0,62],[1,0.177,0,13]],[[0,-3,1]],0,0]]}
+{"dirs":["third_party/blink/web_tests/","content/browser/devtools/"],"files":["content/browser/devtools/protocol/devtools_protocol_browsertest.cc"],"cls":[[8150704,20665,75,0,[[0,62],[1,13]],[[0,0,1,1]]]]}

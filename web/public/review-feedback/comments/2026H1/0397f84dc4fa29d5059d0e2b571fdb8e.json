@@ -1,1 +1,0 @@
-{"cls":{"7735238":[["0772d817_81ad143c","perfect!",0.3],["228fa366_e3a281f5","Because `ToastParams` is no longer copyable the compiler automatically enforces the use of `std::move` (as I understand things) even if the parameter is `ToastParams` by value. For that reason, I…",0.0]]}}

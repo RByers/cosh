@@ -1,1 +1,0 @@
-{"cls":{"8597787":[["5f147809_be697e56","QQ for my own knowledge: The fuzzer only compiles and never runs the script, so the code inside these eval strings is never parsed, right?",0.0],["de840f62_4affe9bf","This would cause token IDs to get renumbered and reset the corpus, correct? If so, let's add that to the CL description.",0.0],["e6043b5c_9ce5a8f2","nit: incomplete?",0.0]]}}

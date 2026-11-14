@@ -1,1 +1,1 @@
-{"dirs":["chrome/browser/ui/","chrome/browser/importer/"],"files":[],"orgs":["vivaldi.com"],"cls":[[4479370,19822,34,1.769,1.384,[[0,0.73,2,25],[1,0.27,0,9]],[[2,2],[3,3]],0,36]],"counts":1}
+{"dirs":["chrome/browser/ui/","chrome/browser/importer/"],"files":["chrome/browser/importer/importer_lock_dialog.h","chrome/browser/ui/views/importer/import_lock_dialog_view.h"],"cls":[[4479370,19822,34,36,[[0,25],[1,9]],[[0,9,3,3],[1,9,2,2]]]]}

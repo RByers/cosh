@@ -1,1 +1,1 @@
-{"dirs":["chrome/browser/ash/"],"files":[],"orgs":["google.com"],"cls":[[2550722,18598,100,3.058,2.445,[[0,19]],[[3,3]],0,28]],"counts":1}
+{"dirs":["chrome/browser/ash/"],"files":["/COMMIT_MSG","chrome/browser/ash/arc/policy/arc_policy_bridge_unittest.cc"],"cls":[[2550722,18598,100,28,0,[[0,0,2,2],[1,97,1,1]]]]}

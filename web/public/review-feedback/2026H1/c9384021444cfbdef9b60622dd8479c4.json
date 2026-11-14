@@ -1,1 +1,1 @@
-{"dirs":["ui/base/clipboard/","(root)/"],"files":["ui/base/clipboard/clipboard_win.cc","ui/base/clipboard/clipboard_win_unittest.cc","AUTHORS"],"orgs":["icloud.com"],"cls":[[7651276,20536,154,5.2,4.044,[[0,0.987,0,153],[1,0.013,0,1]],[[0,-13,1],[1,-13,1],[0,-13,1],[1,-13,1],[1,-13,1],[2,-11,0],[1,-11,1]],0,0]]}
+{"dirs":["ui/base/clipboard/","(root)/"],"files":["AUTHORS","ui/base/clipboard/clipboard_win.cc","ui/base/clipboard/clipboard_win_unittest.cc"],"cls":[[7651276,20536,154,0,[[0,153],[1,1]],[[0,1,1,0],[1,21,2,2],[2,132,4,4]]]]}

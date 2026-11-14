@@ -1,1 +1,1 @@
-{"dirs":["chrome/browser/profiles/","chrome/common/","chrome/browser/ui/"],"files":[],"orgs":["yandex-team.ru"],"cls":[[1135137,17756,38,1.769,1.384,[[0,0.867,0,35],[1,0.089,0,2],[2,0.044,0,1]],[[2,1],[0,0],[0,0]],0,0]],"counts":1}
+{"dirs":["chrome/browser/profiles/","chrome/common/","chrome/browser/ui/"],"files":["chrome/browser/profiles/gaia_info_update_service.cc","chrome/browser/profiles/gaia_info_update_service_unittest.cc"],"cls":[[1135137,17756,38,0,[[0,35],[1,2],[2,1]],[[0,6,1,1],[1,23,1,0]]]]}

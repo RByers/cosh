@@ -1,1 +1,0 @@
-{"cls":{"7843085":[["a47915f0_60eaa49c","I don't know how much effort this is, but disabling all the tests seems like a really big hammer. Ideally we could have a list of disabled tests in `build_bindgen.py`, similar to `EXCLUDED_TESTS`…",0.0]]}}

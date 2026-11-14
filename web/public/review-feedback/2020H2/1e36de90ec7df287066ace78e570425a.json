@@ -1,1 +1,1 @@
-{"dirs":["build/fuchsia/","(root)/"],"files":[],"orgs":["google.com"],"cls":[[2469049,18551,29,0.939,0.709,[[0,0.727,0,21],[1,0.273,0,8]],[[8,8],[3,3]],0,0]],"counts":1}
+{"dirs":["build/fuchsia/","(root)/"],"files":["DEPS","build/fuchsia/update_images.py","build/fuchsia/update_sdk.py"],"cls":[[2469049,18551,29,0,[[0,21],[1,8]],[[0,8,3,3],[1,8,4,4],[2,13,4,4]]]]}

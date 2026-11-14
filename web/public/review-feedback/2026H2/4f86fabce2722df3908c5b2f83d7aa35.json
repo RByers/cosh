@@ -1,1 +1,1 @@
-{"dirs":["third_party/blink/renderer/","ui/base/clipboard/"],"files":["ui/base/clipboard/clipboard_util_win_unittest.cc","ui/base/clipboard/clipboard_util_win.cc"],"orgs":["microsoft.com"],"cls":[[8006866,20635,101,2.279,1.719,[[0,25]],[],0,42],[8016986,20636,112,2.491,2.035,[[1,9]],[[0,-1,1],[1,-1,1],[1,-1,1]],0,43]]}
+{"dirs":["third_party/blink/renderer/","ui/base/clipboard/"],"files":["ui/base/clipboard/clipboard_util_win.cc","ui/base/clipboard/clipboard_util_win_unittest.cc"],"cls":[[8006866,20635,101,42,0],[10120,1,112,43,1,[[0,43,2,2],[1,69,1,1]]]]}

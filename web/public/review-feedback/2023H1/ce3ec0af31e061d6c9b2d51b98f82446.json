@@ -1,1 +1,1 @@
-{"dirs":["chrome/browser/","tools/metrics/histograms/"],"files":[],"orgs":["google.com"],"cls":[[4375977,19444,1,0.195,0.13,[[0,0]],[[1,1]],0,0],[4375603,19446,18,1.071,0.865,[[1,0]],[[5,3]],0,1]],"counts":1}
+{"dirs":["chrome/browser/","tools/metrics/histograms/"],"files":["/COMMIT_MSG","tools/metrics/histograms/metadata/gpu/histograms.xml"],"cls":[[4375977,19444,1,0,0,[[0,0,1,1]]],[-374,2,18,1,1,[[0,0,4,2],[1,18,1,1]]]]}

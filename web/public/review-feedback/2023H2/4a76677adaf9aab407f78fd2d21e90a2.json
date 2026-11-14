@@ -1,1 +1,1 @@
-{"dirs":["gpu/ipc/service/"],"files":[],"orgs":["samsung.com"],"cls":[[4668290,19550,8,0.526,0.316,[[0,1]],[[1,0]],0,1]],"counts":1}
+{"dirs":["gpu/ipc/service/"],"files":["gpu/ipc/service/gpu_channel_manager.cc"],"cls":[[4668290,19550,8,1,0,[[0,8,1,0]]]]}

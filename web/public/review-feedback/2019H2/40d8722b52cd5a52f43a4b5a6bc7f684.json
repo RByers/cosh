@@ -1,1 +1,1 @@
-{"dirs":["chrome/browser/","(root)/","third_party/blink/renderer/","content/child/","third_party/blink/common/","third_party/blink/public/"],"files":[],"orgs":["gmail.com"],"cls":[[1903132,18213,1,0.195,0.13,[[0,0.3,0,0],[1,0.2,0,1],[2,0.2,0,0],[3,0.1,0,0],[4,0.1,0,0],[5,0.1,0,0]],[],0,0]],"counts":1}
+{"dirs":["(root)/","chrome/browser/","content/child/","third_party/blink/common/","third_party/blink/public/","third_party/blink/renderer/"],"files":[],"cls":[[1903132,18213,1,0,[[0,1],[1,0],[2,0],[3,0],[4,0],[5,0]]]]}

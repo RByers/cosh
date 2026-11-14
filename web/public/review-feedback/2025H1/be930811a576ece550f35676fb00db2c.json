@@ -1,1 +1,1 @@
-{"dirs":["chrome/browser/android/","chrome/browser/"],"files":[],"orgs":["Undisclosed"],"cls":[[6253438,20131,29,1.03,0.788,[[0,0.774,0,23],[1,0.226,17,6]],[[1,1],[0,0]],0,145],[6333920,20157,2,0.195,0.13,[[0,1]],[],0,146]],"counts":1}
+{"dirs":["chrome/browser/android/","chrome/browser/"],"files":["chrome/browser/android/public/tab_features_android.h"],"cls":[[6253438,20131,29,145,[[0,23],[1,6]],[[0,0,1,1]]],[80482,26,2,146,0]]}

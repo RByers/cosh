@@ -1,1 +1,1 @@
-{"dirs":["buildtools/reclient_cfgs/","(root)/"],"files":[],"orgs":["google.com"],"cls":[[5237877,19754,3,0.174,0.115,[[0,0]],[[1,0]],0,5],[5274012,19765,3,0.174,0.115,[[0,1]],[[1,0]],0,6],[5288235,19765,1,0.063,0.041,[[1,2]],[],0,7]],"counts":1}
+{"dirs":["buildtools/reclient_cfgs/","(root)/"],"files":["buildtools/reclient_cfgs/configure_reclient_cfgs.py"],"cls":[[5237877,19754,3,5,0,[[0,3,1,0]]],[36135,11,3,6,0,[[0,3,1,0]]],[14223,0,1,7,1]]}

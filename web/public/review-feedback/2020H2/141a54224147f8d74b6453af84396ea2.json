@@ -1,1 +1,1 @@
-{"dirs":["chrome/browser/ui/"],"files":[],"orgs":["google.com"],"cls":[[2447035,18586,48,1.769,1.384,[[0,0]],[[4,3]],0,144]],"counts":1}
+{"dirs":["chrome/browser/ui/"],"files":["/COMMIT_MSG","chrome/browser/ui/views/extensions/extensions_menu_view.cc","chrome/browser/ui/views/extensions/extensions_menu_view.h","chrome/browser/ui/views/extensions/extensions_menu_view_browsertest.cc"],"cls":[[2447035,18586,48,144,0,[[0,0,1,1],[1,15,1,1],[2,5,1,0],[3,28,1,1]]]]}

@@ -50,13 +50,13 @@ Claude (Haiku): classify, comments-score, tone-publish's screening              
   tone-publish   ─▶ Review Tone summaries ────┼─▶ Review Tone
   review-feedback   ─▶ Feedback Index global data, per-person files ─┐
   (cosh.review_feedback --part people)                              ├─▶ Feedback Index
-  feedback-comments ─▶ Feedback Index comment files ────────────────┘
-  (--part comments: review-feedback's thread index + Rendered comments, Comment scores)
+  feedback-links    ─▶ Feedback Index link files ───────────────────┘
+  (--part links: review-feedback's link index + Comment scores)
 ```
 
 The Feedback Index's charts and tables read only the global and per-person
-files; review tone and comment text reach it only through the comment
-files, which its comment list alone reads.
+files; review tone reaches it only through the link files, which only the
+lists of changes under a file read. It publishes no comment text.
 
 `reviews.sqlite` (per-CL, per-comment and per-thread facts, no comment
 text) and `commits.sqlite` (main's whole first-parent history) are the two

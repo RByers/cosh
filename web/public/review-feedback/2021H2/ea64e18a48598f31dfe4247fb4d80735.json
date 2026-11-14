@@ -1,1 +1,1 @@
-{"dirs":["styleguide/","docs/fuchsia/","(root)/"],"files":[],"orgs":["google.com"],"cls":[[3198385,18901,25,0.939,0.709,[[0,0]],[],0,0],[3198801,18901,45,1.64,1.269,[[1,0.83,0,38],[2,0.17,0,7]],[[3,3],[0,0]],0,1]],"counts":1}
+{"dirs":["styleguide/","docs/fuchsia/","(root)/"],"files":["docs/fuchsia/build_instructions.md","styleguide/styleguide.md"],"cls":[[3198385,18901,25,0,0],[416,0,45,1,[[1,38],[2,7]],[[0,38,1,1],[1,0,2,2]]]]}

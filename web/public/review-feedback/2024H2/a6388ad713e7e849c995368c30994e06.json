@@ -1,1 +1,1 @@
-{"dirs":["third_party/metrics_proto/","third_party/metrics_proto/ukm/","chrome/browser/metrics/"],"files":[],"orgs":["google.com"],"cls":[[5979254,20027,8,0.573,0.414,[[0,0.818,6,7],[1,0.182,4,1]],[],0,172],[5980728,20032,60,1.769,1.384,[[2,24]],[[1,1]],0,173]],"counts":1}
+{"dirs":["third_party/metrics_proto/","third_party/metrics_proto/ukm/","chrome/browser/metrics/"],"files":["chrome/browser/metrics/chrome_browser_sampling_trials.cc"],"cls":[[5979254,20027,8,172,[[0,7],[1,1]]],[1474,5,60,173,2,[[0,60,1,1]]]]}

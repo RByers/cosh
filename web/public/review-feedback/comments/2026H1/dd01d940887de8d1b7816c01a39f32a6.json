@@ -1,1 +1,0 @@
-{"cls":{"7960240":[["767540dd_ebc55306","nit: ```suggestion return OAuthConsumer( /*name=*/kContextContainersServiceName, /*scopes=*/{GaiaConstants::kGoogleUserInfoEmail}); ``` to match the rest of this file's style.",0.0]]}}

@@ -1,1 +1,1 @@
-{"dirs":["device/bluetooth/","base/win/"],"files":[],"orgs":["logitech.com"],"cls":[[1414850,17927,18,1.561,1.39,[[0,0]],[[2,1]],0,8],[1557019,17996,116,2.954,2.339,[[1,0]],[[10,8]],0,9]],"counts":1}
+{"dirs":["device/bluetooth/","base/win/"],"files":["/COMMIT_MSG","device/bluetooth/bluetooth_gatt_discoverer_winrt.cc","base/win/vector.h","base/win/vector_unittest.cc"],"cls":[[1414850,17927,18,8,0,[[0,0,1,0],[1,18,1,1]]],[142169,69,116,9,1,[[2,70,8,8],[3,46,2,0]]]]}

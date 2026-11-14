@@ -1,1 +1,1 @@
-{"dirs":["chromeos/ash/experiences/"],"files":[],"orgs":["google.com"],"cls":[[2578560,18607,13,0.847,0.668,[[0,2]],[[1,1]],0,10]],"counts":1}
+{"dirs":["chromeos/ash/experiences/"],"files":["chromeos/ash/experiences/arc/power/arc_power_bridge.cc"],"cls":[[2578560,18607,13,10,0,[[0,8,1,1]]]]}

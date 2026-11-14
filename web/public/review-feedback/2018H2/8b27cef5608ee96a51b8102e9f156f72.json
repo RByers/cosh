@@ -1,1 +1,1 @@
-{"dirs":["tools/metrics/histograms/"],"files":[],"orgs":["google.com"],"cls":[[1297282,17886,28,1.071,0.865,[[0,0]],[[7,3]],0,0]],"counts":1}
+{"dirs":["tools/metrics/histograms/"],"files":["/COMMIT_MSG","tools/metrics/histograms/histograms.xml"],"cls":[[1297282,17886,28,0,0,[[0,0,1,0],[1,28,6,3]]]]}

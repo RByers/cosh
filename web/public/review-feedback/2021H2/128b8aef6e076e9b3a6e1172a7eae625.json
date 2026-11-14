@@ -1,1 +1,1 @@
-{"dirs":["chrome/browser/password_manager/","chrome/browser/browsing_data/","components/password_manager/core/","components/browser_sync/","chrome/browser/sync/"],"files":[],"orgs":["google.com"],"cls":[[3062850,18838,84,0.042,0.023,[[0,0.371,2,32],[1,0.247,8,23],[2,0.155,1,12],[3,0.124,3,10],[4,0.103,6,8]],[],0,345]],"counts":1}
+{"dirs":["chrome/browser/password_manager/","chrome/browser/browsing_data/","components/password_manager/core/","components/browser_sync/","chrome/browser/sync/"],"files":[],"cls":[[3062850,18838,84,345,[[0,32],[1,23],[2,12],[3,10],[4,8]]]]}

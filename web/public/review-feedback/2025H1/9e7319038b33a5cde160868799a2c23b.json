@@ -1,1 +1,1 @@
-{"dirs":["content/web_test/common/","third_party/blink/common/","tools/metrics/histograms/"],"files":[],"orgs":["google.com"],"cls":[[6156855,20096,5,0.354,0.253,[[0,0.571,0,3],[1,0.429,3,2]],[],0,57],[6565345,20228,5,0.287,0.203,[[2,15]],[],0,58]],"counts":1}
+{"dirs":["content/web_test/common/","third_party/blink/common/","tools/metrics/histograms/"],"files":[],"cls":[[6156855,20096,5,57,[[0,3],[1,2]]],[408490,132,5,58,2]]}

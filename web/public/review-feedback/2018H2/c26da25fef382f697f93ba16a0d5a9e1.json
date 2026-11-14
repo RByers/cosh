@@ -1,1 +1,1 @@
-{"dirs":["build/android/gradle/"],"files":[],"orgs":["yandex-team.ru"],"cls":[[1117077,17717,18,0.824,0.676,[[0,0]],[[2,1]],0,0]],"counts":1}
+{"dirs":["build/android/gradle/"],"files":["build/android/gradle/generate_gradle.py"],"cls":[[1117077,17717,18,0,0,[[0,18,2,1]]]]}

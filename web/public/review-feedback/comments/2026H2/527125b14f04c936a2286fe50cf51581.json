@@ -1,1 +1,0 @@
-{"cls":{"7759798":[["bab2ac9a_c7f5cde1","This was already working but I added a test for it for good measure.",0.0],["4d385db4_502b144a","testharness.js provides a cleaner way to do this: ```suggestion await t.step_wait(async () => { const response = await fetch(`../resources/stash-take.py?key=${stateKey}`); const json = await…",0.0]]}}

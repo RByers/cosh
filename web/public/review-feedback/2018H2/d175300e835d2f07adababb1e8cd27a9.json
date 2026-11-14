@@ -1,1 +1,1 @@
-{"dirs":["chrome/browser/","content/public/common/","content/renderer/","tools/metrics/histograms/"],"files":[],"orgs":["google.com"],"cls":[[1268200,17820,22,1.03,0.788,[[0,0.448,0,10],[1,0.241,0,5],[2,0.207,0,5],[3,0.103,0,2]],[[1,1],[2,2],[1,0],[0,0]],0,0]],"counts":1}
+{"dirs":["chrome/browser/","content/public/common/","content/renderer/","tools/metrics/histograms/"],"files":["/COMMIT_MSG","content/public/common/content_features.cc","content/renderer/render_process_impl.cc"],"cls":[[1268200,17820,22,0,[[0,10],[1,5],[2,5],[3,2]],[[0,0,1,1],[1,4,2,2],[2,5,1,0]]]]}

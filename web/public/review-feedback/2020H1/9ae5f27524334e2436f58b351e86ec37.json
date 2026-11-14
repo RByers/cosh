@@ -1,1 +1,1 @@
-{"dirs":["net/base/registry_controlled_domains/","net/tools/tld_cleanup/","tools/metrics/histograms/"],"files":[],"orgs":["microsoft.com"],"cls":[[2064776,18312,90,2.954,2.339,[[0,0.925,0,84],[1,0.075,0,6]],[],0,10],[2216703,18409,10,0.534,0.426,[[2,0]],[],0,11]],"counts":1}
+{"dirs":["net/base/registry_controlled_domains/","net/tools/tld_cleanup/","tools/metrics/histograms/"],"files":[],"cls":[[2064776,18312,90,10,[[0,84],[1,6]]],[151927,97,10,11,2]]}

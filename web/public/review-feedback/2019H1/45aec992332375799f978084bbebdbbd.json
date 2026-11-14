@@ -1,1 +1,1 @@
-{"dirs":["components/policy/resources/","components/policy/proto/"],"files":[],"orgs":["google.com"],"cls":[[1609709,18045,2,0.34,0.231,[[0,0.75,0,2],[1,0.25,0,0]],[[1,0],[0,0]],0,0]],"counts":1}
+{"dirs":["components/policy/resources/","components/policy/proto/"],"files":["components/policy/resources/policy_templates.json"],"cls":[[1609709,18045,2,0,[[0,2],[1,0]],[[0,2,1,0]]]]}

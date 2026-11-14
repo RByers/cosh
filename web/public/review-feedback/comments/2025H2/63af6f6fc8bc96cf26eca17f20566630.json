@@ -1,1 +1,0 @@
-{"cls":{"7138020":[["62dfd9de_dc49cb14","Nit: Maybe add `caret-animation: manual` to ensure the caret is painted and avoid flakiness.",0.0],["a88a391e_5af1aa30","I think this can be done simply by `InputMethodController::HasComposition()`, however the current code is also ok.",0.0]]}}

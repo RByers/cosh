@@ -1,1 +1,1 @@
-{"dirs":["components/policy/test/","components/enterprise/browser/"],"files":[],"orgs":["google.com"],"cls":[[4943654,19648,3,0.34,0.231,[[0,0.6,0,2],[1,0.4,0,1]],[[1,1],[0,0]],0,143]],"counts":1}
+{"dirs":["components/policy/test/","components/enterprise/browser/"],"files":["components/policy/test/data/policy_test_cases.json"],"cls":[[4943654,19648,3,143,[[0,2],[1,1]],[[0,2,1,1]]]]}

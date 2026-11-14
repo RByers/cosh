@@ -1,1 +1,1 @@
-{"dirs":["chromeos/ash/experiences/","tools/metrics/histograms/"],"files":[],"orgs":["google.com"],"cls":[[1491232,17956,37,1.659,1.333,[[0,0.525,2,19],[1,0.475,2,18]],[[0,0],[2,2]],0,35]],"counts":1}
+{"dirs":["chromeos/ash/experiences/","tools/metrics/histograms/"],"files":["tools/metrics/histograms/histograms.xml"],"cls":[[1491232,17956,37,35,[[0,19],[1,18]],[[0,18,2,2]]]]}

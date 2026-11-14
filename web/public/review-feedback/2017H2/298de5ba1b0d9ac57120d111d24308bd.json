@@ -1,1 +1,1 @@
-{"dirs":["extensions/browser/api/","chrome/browser/extensions/"],"files":[],"orgs":["intel.com"],"cls":[[586467,17375,22,1.241,0.964,[[0,0.889,0,20],[1,0.111,0,2]],[[3,2],[0,0]],0,7]],"counts":1}
+{"dirs":["extensions/browser/api/","chrome/browser/extensions/"],"files":["extensions/browser/api/system_storage/storage_info_provider.cc","extensions/browser/api/system_storage/system_storage_api.cc"],"cls":[[586467,17375,22,7,[[0,20],[1,2]],[[0,1,1,0],[1,15,2,2]]]]}

@@ -1,1 +1,1 @@
-{"dirs":["build/rust/gni_impl/"],"files":[],"orgs":["google.com"],"cls":[[5316018,19776,9,0.573,0.414,[[0,0]],[[1,1]],0,16]],"counts":1}
+{"dirs":["build/rust/gni_impl/"],"files":["build/rust/gni_impl/run_bindgen.py"],"cls":[[5316018,19776,9,16,0,[[0,9,1,1]]]]}

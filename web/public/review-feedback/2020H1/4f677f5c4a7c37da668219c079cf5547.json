@@ -1,1 +1,1 @@
-{"dirs":["testing/libfuzzer/","pdf/pdfium/fuzzers/"],"files":[],"orgs":["google.com"],"cls":[[2111391,18341,9,0.573,0.414,[[0,2]],[[1,0]],0,79],[2113077,18341,2,0.174,0.115,[[1,0]],[],0,80]],"counts":1}
+{"dirs":["testing/libfuzzer/","pdf/pdfium/fuzzers/"],"files":["testing/libfuzzer/fuzzer_test.gni"],"cls":[[2111391,18341,9,79,0,[[0,6,1,0]]],[1686,0,2,80,1]]}

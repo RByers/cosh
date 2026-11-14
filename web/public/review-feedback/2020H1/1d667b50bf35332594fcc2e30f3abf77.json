@@ -1,1 +1,1 @@
-{"dirs":["skia/config/","components/viz/service/","ui/ozone/demo/","gpu/command_buffer/service/"],"files":[],"orgs":["google.com"],"cls":[[2261229,18437,3,0,0,[[0,0]],[],0,0],[2269958,18442,25,0.929,0.643,[[1,0.606,0,17],[2,0.273,0,6],[3,0.091,0,2],[0,0.03,1,0]],[[1,1],[0,0],[0,0],[0,0]],0,1]],"counts":1}
+{"dirs":["skia/config/","components/viz/service/","ui/ozone/demo/","gpu/command_buffer/service/"],"files":["/COMMIT_MSG"],"cls":[[2261229,18437,3,0,0],[8729,5,25,1,[[1,17],[2,6],[3,2],[0,0]],[[0,0,1,1]]]]}

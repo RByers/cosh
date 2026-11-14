@@ -1,1 +1,1 @@
-{"dirs":["components/policy/resources/"],"files":[],"orgs":["microsoft.com"],"cls":[[5878879,19991,3,0.34,0.231,[[0,1]],[[1,0]],0,2]],"counts":1}
+{"dirs":["components/policy/resources/"],"files":["components/policy/resources/templates/policy_definitions/Miscellaneous/WebAppInstallForceList.yaml"],"cls":[[5878879,19991,3,2,0,[[0,3,1,0]]]]}

@@ -1,1 +1,1 @@
-{"dirs":["chromeos/ash/experiences/"],"files":[],"orgs":["google.com"],"cls":[[2379331,18530,85,3.348,2.615,[[0,1.0,0,84]],[[22,19]],0,0],[2505708,18584,25,1.098,0.836,[[0,1]],[[1,1]],0,1]],"counts":1}
+{"dirs":["chromeos/ash/experiences/"],"files":["chromeos/ash/experiences/arc/crash_collector/arc_crash_collector_bridge.cc","chromeos/ash/experiences/arc/crash_collector/arc_crash_collector_bridge.h","chromeos/ash/experiences/arc/mojom/crash_collector.mojom"],"cls":[[2379331,18530,85,0,0,[[0,67,18,15],[1,9,4,4]]],[126377,54,25,1,0,[[2,5,1,1]]]]}

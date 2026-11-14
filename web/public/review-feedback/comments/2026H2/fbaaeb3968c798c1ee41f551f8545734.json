@@ -1,1 +1,0 @@
-{"cls":{"7890279":[["28f5051e_68fb1f8d","I'm no template wizard, but my agent tells me that using concepts will yield better errors from the compiler: ``` template <typename T> requires (!std::is_reference_v<T> &&…",0.0]]}}

@@ -1,1 +1,1 @@
-{"dirs":["chromeos/ash/experiences/","ash/constants/","testing/variations/"],"files":["chromeos/ash/experiences/arc/mojom/net.mojom"],"orgs":["google.com"],"cls":[[7534431,20488,4,0.402,0.321,[[0,30]],[[0,-1,1],[0,-1,1],[0,-1,1]],0,80],[7641452,20523,1,0.112,0.081,[[1,0.667,9,1],[2,0.333,2,0]],[],0,81]]}
+{"dirs":["chromeos/ash/experiences/","ash/constants/","testing/variations/"],"files":["chromeos/ash/experiences/arc/mojom/net.mojom"],"cls":[[7534431,20488,4,80,0,[[0,4,3,3]]],[107021,35,1,81,[[1,1],[2,0]]]]}

@@ -1,1 +1,1 @@
-{"dirs":["components/policy/resources/"],"files":[],"orgs":["google.com"],"cls":[[6596836,20236,9,1.02,0.696,[[0,14]],[[2,0]],0,123]],"counts":1}
+{"dirs":["components/policy/resources/"],"files":["components/policy/resources/templates/policy_definitions/Crostini/CrostiniArcAdbSideloadingAllowed.yaml","components/policy/resources/templates/policy_definitions/Crostini/DeviceCrostiniArcAdbSideloadingAllowed.yaml"],"cls":[[6596836,20236,9,123,0,[[0,2,1,0],[1,2,1,0]]]]}

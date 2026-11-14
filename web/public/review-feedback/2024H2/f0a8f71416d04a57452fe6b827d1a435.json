@@ -1,1 +1,1 @@
-{"dirs":["chrome/updater/test/","chrome/updater/policy/"],"files":[],"orgs":["dropbox.com"],"cls":[[5962279,20054,5,0.19,0.127,[[0,0.571,0,3],[1,0.429,0,2]],[[0,0],[3,3]],0,0]],"counts":1}
+{"dirs":["chrome/updater/test/","chrome/updater/policy/"],"files":["chrome/updater/policy/mac/managed_preference_policy_manager.mm"],"cls":[[5962279,20054,5,0,[[0,3],[1,2]],[[0,2,3,3]]]]}

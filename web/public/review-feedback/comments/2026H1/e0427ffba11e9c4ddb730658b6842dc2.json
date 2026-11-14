@@ -1,1 +1,0 @@
-{"cls":{"7924726":[["16c20371_c15fa60f","trivial nit: `GetTabStripModel()` (the `Browser::tab_strip_model()` will go away soon)",0.0],["7707dc18_777fa90f","nit: Could you add a comment that briefly explains why it's important to re-query the tab index here?",0.0],["af039f86_4344c194","Can we CHECK this?",0.0]]}}

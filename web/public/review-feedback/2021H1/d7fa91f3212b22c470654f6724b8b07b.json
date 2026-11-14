@@ -1,1 +1,1 @@
-{"dirs":["chrome/browser/ui/","chrome/browser/web_applications/"],"files":[],"orgs":["microsoft.com"],"cls":[[2828476,18739,52,1.769,1.384,[[0,0.518,0,28],[1,0.482,0,24]],[[0,0],[2,1]],0,1]],"counts":1}
+{"dirs":["chrome/browser/ui/","chrome/browser/web_applications/"],"files":["chrome/browser/web_applications/web_app.h","chrome/browser/web_applications/web_app_install_finalizer.cc"],"cls":[[2828476,18739,52,1,[[0,28],[1,24]],[[0,9,1,1],[1,11,1,0]]]]}

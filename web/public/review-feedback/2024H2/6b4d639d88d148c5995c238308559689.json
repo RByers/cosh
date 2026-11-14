@@ -1,1 +1,1 @@
-{"dirs":["components/metrics/dwa/"],"files":[],"orgs":["google.com"],"cls":[[5893456,20013,134,8.073,6.439,[[0,0]],[[28,24]],0,0]],"counts":1}
+{"dirs":["components/metrics/dwa/"],"files":["components/metrics/dwa/dwa_pref_names.cc","components/metrics/dwa/dwa_pref_names.h","components/metrics/dwa/dwa_service.cc","components/metrics/dwa/dwa_service.h","components/metrics/dwa/dwa_service_unittest.cc"],"cls":[[5893456,20013,134,0,0,[[0,4,1,1],[1,11,1,1],[2,31,16,13],[3,13,2,2],[4,75,8,7]]]]}

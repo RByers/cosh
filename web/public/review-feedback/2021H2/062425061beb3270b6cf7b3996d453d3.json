@@ -1,1 +1,1 @@
-{"dirs":["build/config/fuchsia/"],"files":[],"orgs":["google.com"],"cls":[[3195173,18921,7,0.436,0.265,[[0,1]],[[1,1]],0,5]],"counts":1}
+{"dirs":["build/config/fuchsia/"],"files":["build/config/fuchsia/test/minimum_capabilities.test-cmx"],"cls":[[3195173,18921,7,5,0,[[0,2,1,1]]]]}

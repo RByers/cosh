@@ -1,1 +1,0 @@
-{"cls":{"7732642":[["f1702b08_2e2e7aa2","Is this clearing of timestamps needed? The default implementation of interactionFunc doesn't do it it seems. --- Also, does the default `interactionFunc` (which calls `test_driver.click()`) not…",0.0]]}}

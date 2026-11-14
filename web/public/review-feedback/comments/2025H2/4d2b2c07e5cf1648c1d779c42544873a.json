@@ -1,1 +1,0 @@
-{"cls":{"7099679":[["083fbb0e_7d291579","This saves the redundant hash/lookup but always hits the allocator. Consider: ``` auto [it, inserted] = observers_.try_emplace(event_hashes, nullptr); if (inserted) { *(it->second) =…",0.0]]}}

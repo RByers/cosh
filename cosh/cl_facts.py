@@ -58,14 +58,16 @@ def cl_facts(ddb, gdb):
     return rows, {v[0]: n for n, v in landed.items()}
 
 
-def cl_dirs(gdb, by_cid, numbers=None, dels=True, current=None, moved=None):
+def cl_dirs(gdb, by_cid, numbers=None, dels=True, current=None, files=None, moved=None):
     """The cl_dirs table: {(change_number, 3-level directory): [files, lines]}
     of the landed commits in `by_cid` (from cl_facts), only for the CLs in
     `numbers` if given. Lines are insertions plus deletions, or insertions
     alone without `dels` (the Feedback Index's lines). With `current`
     (commits.current_paths), files count in today's directories; with
     `moved` (commits.moved_lines), a renamed file by the lines changed
-    between its two names, as Gerrit counts a CL's lines."""
+    between its two names, as Gerrit counts a CL's lines. With `files`
+    ({change_number: {path: None}}, today's names), also fills in those
+    files' lines."""
     paths = dict(gdb.execute("SELECT path_id, path FROM paths"))
     if current:
         paths = {k: current.get(v, v) for k, v in paths.items()}
@@ -76,7 +78,13 @@ def cl_dirs(gdb, by_cid, numbers=None, dels=True, current=None, moved=None):
             continue
         if moved:
             ins, d = moved.get((cid, pid), (ins, d))
-        g = agg[(n, dir_of(paths[pid], 3))]
+        path = paths[pid]
+        g = agg[(n, dir_of(path, 3))]
         g[0] += 1
-        g[1] += max(ins, 0) + (max(d, 0) if dels else 0)
+        lines = max(ins, 0) + (max(d, 0) if dels else 0)
+        g[1] += lines
+        if files is not None:
+            want = files.get(n)
+            if want is not None and path in want:
+                want[path] = (want[path] or 0) + lines
     return agg

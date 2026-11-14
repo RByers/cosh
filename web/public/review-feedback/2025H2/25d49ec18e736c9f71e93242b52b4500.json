@@ -1,1 +1,1 @@
-{"dirs":["chromeos/ash/components/","tools/metrics/histograms/","chrome/browser/ash/"],"files":["chrome/browser/ash/login/signin/token_handle_util.cc"],"orgs":["google.com"],"cls":[[7011736,20368,10,0.847,0.668,[[0,5]],[],0,509],[7041744,20381,13,0.534,0.426,[[1,10]],[],0,510],[7261702,20437,3,0.195,0.13,[[2,169]],[[0,1,0],[0,2,0]],0,511]]}
+{"dirs":["chromeos/ash/components/","tools/metrics/histograms/","chrome/browser/ash/"],"files":["chrome/browser/ash/login/signin/token_handle_util.cc"],"cls":[[7011736,20368,10,509,0],[30008,13,13,510,1],[219958,56,3,511,2,[[0,3,2,0]]]]}

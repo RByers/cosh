@@ -1,1 +1,1 @@
-{"dirs":["tools/metrics/histograms/","chromeos/ash/components/"],"files":[],"orgs":["google.com"],"cls":[[4369044,19440,2,0.116,0.083,[[0,1]],[],0,10],[4382233,19446,12,0.847,0.668,[[1,0]],[[10,10]],0,11]],"counts":1}
+{"dirs":["tools/metrics/histograms/","chromeos/ash/components/"],"files":["/COMMIT_MSG","chromeos/ash/components/tether/host_scan_cache.h","chromeos/ash/components/tether/top_level_host_scan_cache.cc","chromeos/ash/components/tether/top_level_host_scan_cache.h"],"cls":[[4369044,19440,2,10,0],[13189,6,12,11,1,[[0,0,3,3],[1,0,1,1],[2,10,5,5],[3,2,1,1]]]]}

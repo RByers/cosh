@@ -1,1 +1,1 @@
-{"dirs":["tools/metrics/histograms/","chrome/browser/ash/"],"files":[],"orgs":["google.com"],"cls":[[3596400,19109,3,0.195,0.13,[[0,0.8,6,3],[1,0.2,50,0]],[],0,107],[3604653,19110,16,1.03,0.788,[[1,0.579,51,10],[0,0.421,7,6]],[[1,1],[2,2]],0,108]],"counts":1}
+{"dirs":["tools/metrics/histograms/","chrome/browser/ash/"],"files":["chrome/browser/ash/platform_keys/key_permissions/key_permissions_manager_impl.cc","tools/metrics/histograms/metadata/chromeos/histograms.xml"],"cls":[[3596400,19109,3,107,[[0,3],[1,0]]],[8253,1,16,108,[[1,10],[0,6]],[[0,10,1,1],[1,5,2,2]]]]}

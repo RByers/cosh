@@ -1,1 +1,1 @@
-{"dirs":["ios/web_view/internal/","ios/web_view/public/"],"files":["ios/web/public/web_state_delegate_bridge.h","/COMMIT_MSG"],"orgs":["google.com"],"cls":[[8179001,20672,17,0.939,0.709,[[0,0.571,0,10],[1,0.429,0,7]],[[0,-3,1],[1,-2,1]],0,0]]}
+{"dirs":["ios/web_view/internal/","ios/web_view/public/"],"files":["/COMMIT_MSG","ios/web/public/web_state_delegate_bridge.h"],"cls":[[8179001,20672,17,0,[[0,10],[1,7]],[[0,0,1,1],[1,0,1,1]]]]}

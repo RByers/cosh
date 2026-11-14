@@ -1,1 +1,1 @@
-{"dirs":["ios/chrome/browser/"],"files":[],"orgs":["google.com"],"cls":[[6108102,20095,75,2.863,2.312,[[0,0]],[[4,3]],0,9]],"counts":1}
+{"dirs":["ios/chrome/browser/"],"files":["ios/chrome/browser/metrics/model/ios_chrome_metrics_service_client.mm","ios/chrome/browser/metrics/model/ios_chrome_metrics_service_client_unittest.mm"],"cls":[[6108102,20095,75,9,0,[[0,43,2,1],[1,21,2,2]]]]}

@@ -9,6 +9,7 @@ import { Chart, Filler, type ChartDataset, type ChartEvent, type Plugin } from '
 import { readTheme, withAlpha, type Theme } from './charts.ts';
 import {
   afrShade,
+  halfOf,
   binReached,
   binSums,
   buildPerson,
@@ -24,6 +25,8 @@ import {
   halves,
   isoDay,
   latestDoubling,
+  linksOf,
+  mergeLinks,
   looksLikeEmail,
   percentileOf,
   periodSpan,
@@ -35,20 +38,15 @@ import {
   threadBinLabel,
   threadBinRange,
   threadHistogram,
-  threadRows,
-  threadsIn,
   THREAD_BINS,
-  usualOrg,
   type Alias,
   type DirNode,
   type DirRowView,
-  type Norm,
+  type LinkShard,
   type Peers,
   type Person,
-  type CommentShard,
   type Shard,
   type TableRowView,
-  type ThreadRow,
   type Top,
 } from './feedback.ts';
 import { fmtDay, fmtInt, fmtNum } from './format.ts';
@@ -63,38 +61,36 @@ const put = (target: Element, key: string, vars: Vars = {}) => target.replaceChi
 declare global {
   interface Window {
     __rf?: { person: Person | null; peers: Peers | null; charts: Record<string, Chart>; half: string | null;
-      bin: number | null; norm: Norm };
+      bin: number | null };
   }
 }
 
 const $ = <T extends Element = HTMLElement>(sel: string) => document.querySelector<T>(sel)!;
 const DATA = 'review-feedback/';
-const PAGE = 50;
 /** The page's figures cover all the data; only the over-time chart splits it, by half-year. */
 const ALL = 'all';
 
 const state = {
   person: null as Person | null,
   peers: null as Peers | null,
-  /** What the feedback index compares with (experience, directories, org). */
-  norm: 'ed' as Norm,
-  /** The selected directory's path; comments are listed from it and below. */
-  dir: null as string | null,
-  /** The half-year picked in the over-time chart, filtering the directories and comments. */
+  /** The person's file key and half-years, for their link files. */
+  key: null as string | null,
+  halves: [] as string[],
+  /** Their comment links (links/), once a file's changes have been opened; null until loaded. */
+  links: null as Map<number, LinkShard['cls'][string]> | null,
+  /** The half-year picked in the over-time chart, filtering the directories. */
   half: null as string | null,
   /** The column picked in the comments-per-change chart (THREAD_BINS), filtering the same. */
   bin: null as number | null,
   /** The experience bin shown in "How it's changing". */
   cohortBin: 0,
-  threadsShown: PAGE,
-  noTextShown: PAGE,
   /** Keys of the directory rows that are open (see dirRows). */
   expanded: new Set<string>(),
   /** Keys of everyone's directory table's rows that are open (see tableRows). */
   allExpanded: new Set<string>(),
 };
 const charts: Record<string, Chart> = {};
-window.__rf = { person: null, peers: null, charts, half: null, bin: null, norm: state.norm };
+window.__rf = { person: null, peers: null, charts, half: null, bin: null };
 
 async function getJson<T>(url: string): Promise<T | null> {
   const r = await fetch(url);
@@ -175,12 +171,7 @@ function fillStatic(peers: Peers) {
   fill('.rf-min-bin', peers.min_bin_cls);
   fill('.rf-min-cell', peers.min_cell_cls);
   fill('.rf-min-rate', peers.min_rate_cls);
-}
-
-/** Who the feedback index compares with, in words ("with as many changes landed before and in the same directories"). */
-function peersName(norm: Norm): string {
-  const parts = [...norm].map((k) => msg(`peers-${k}`));
-  return parts.length <= 1 ? parts.join('') : `${parts.slice(0, -1).join(', ')} ${msg('peers-and')} ${parts.at(-1)}`;
+  for (const e of document.querySelectorAll('.rf-links-from')) e.textContent = peers.links_from.slice(0, 4);
 }
 
 const theme = () => readTheme();
@@ -236,13 +227,8 @@ async function lookup(raw: string) {
     const shards = top && halvesOk
       ? await Promise.all(top.top.halves.map((h) => getJson<Shard>(`${DATA}${h}/${top.key}.json`)))
       : [];
-    // And, for the comment list only, the comment file of each half-year that keeps its threads.
-    const comments = top
-      ? await Promise.all(top.top.halves.map((h, i) => (shards[i] && !shards[i].counts
-        ? getJson<CommentShard>(`${DATA}comments/${h}/${top.key}.json`) : Promise.resolve(null))))
-      : [];
     const found = top && peers && halvesOk && shards.every((s) => s)
-      ? buildPerson(top.top, shards as Shard[], peers, comments) : null;
+      ? buildPerson(top.top, shards as Shard[], peers) : null;
     state.peers = peers;
     window.__rf!.peers = peers;
     if (!found || !peers || !clsIn(found, ALL).length) {
@@ -251,7 +237,9 @@ async function lookup(raw: string) {
     }
     state.person = found;
     window.__rf!.person = found;
-    state.dir = null;
+    state.key = top!.key;
+    state.halves = top!.top.halves;
+    state.links = null;
     state.half = null;
     window.__rf!.half = null;
     state.bin = null;
@@ -337,7 +325,7 @@ function renderIntro() {
   const t = theme();
   const p = state.person;
   // The person's AFR per bin, a rate of 0 drawn at the axis's bottom; hollow under min_bin_cls.
-  const bins = p ? binSums(p, peers, ALL, '') : [];
+  const bins = p ? binSums(p, peers, ALL) : [];
   const you = bins.map((s) => (s.cls ? Math.max(frOf(s) ?? 0, FR_MIN) : null));
   const full = bins.map((s) => s.cls >= peers.min_bin_cls);
   fanLegend($('#rf-main-legend'), t, false, !!p);
@@ -397,9 +385,9 @@ function renderFiDist() {
   const mark = (x: number, dash: number[]): ChartDataset<'line', { x: number; y: number }[]> =>
     ({ label: '', data: [{ x, y: 0 }, { x, y: top * 1.05 }], borderColor: t.muted, borderWidth: dash.length ? 1.5 : 2,
       borderDash: dash, pointRadius: 0, pointHoverRadius: 0, fill: false });
-  // The person's index over all their changes, under the chart's norm (not the one picked below).
+  // The person's index over all their changes.
   const p = state.person;
-  const you = p ? fiOf(sums(p, peers, clsIn(p, ALL), peers.fi_norm)) : null;
+  const you = p ? fiOf(sums(p, peers, clsIn(p, ALL))) : null;
   lineLegend($('#rf-fi-legend'), [{ label: msg('legend-fi'), color: t.series[0] },
     { label: msg('legend-fi-marks'), color: t.muted, dash: true },
     ...(you !== null ? [{ label: msg('legend-you-value', { v: fmtFi(you) }), color: youColor(t) }] : [])]);
@@ -449,7 +437,7 @@ function renderAllDirs() {
   const p = state.person;
   const table = $('#rf-all-dirs');
   table.classList.toggle('rf-with-you', !!p);
-  const rows = tableRows(dirTable(peers, p, ALL, state.norm), state.allExpanded, !!p, peers.min_cls);
+  const rows = tableRows(dirTable(peers, p, ALL), state.allExpanded, !!p, peers.min_cls);
   $('#rf-all-dirs tbody').replaceChildren(...rows.map((r) => allDirRow(r, !!p)));
   put($('#rf-all-dirs-note'), 'all-dirs-note', { ...rangeVars(peers), minDir: fmtInt(peers.min_dir_cls), you: !!p,
     minCls: fmtInt(peers.min_cls) });
@@ -598,7 +586,7 @@ function renderGrowth() {
   put($('#rf-growth-note'), 'growth-note', { minBin: fmtInt(peers.min_bin_cls), bins: fmtInt(peers.min_growth_bins),
     n: fmtInt(g.n), median: fmtAbs(g.median), p10: fmtAbs(q(0.1)), p90: fmtAbs(q(0.9)) });
   const top = Math.max(...g.curve.map(([, y]) => y));
-  const you = state.person ? growth(binSums(state.person, peers, ALL, ''), peers) : null;
+  const you = state.person ? growth(binSums(state.person, peers, ALL), peers) : null;
   const marker = (x: number, color: string, label: string, dash: number[]): ChartDataset<'line', { x: number; y: number }[]> =>
     ({ label, data: [{ x: growthX(x), y: 0 }, { x: growthX(x), y: top * 1.05 }], borderColor: color, borderWidth: 2,
       borderDash: dash, pointRadius: 0, pointHoverRadius: 0, fill: false });
@@ -679,27 +667,16 @@ function render() {
   renderXpTable();
   renderPerCl();
   renderDirs();
-  renderThreads();
-}
-
-/** Re-renders what depends on the norm. */
-function renderNorm() {
-  if (!state.person) return;
-  renderAllDirs();
-  renderSummary();
-  renderTrend();
-  renderDirs();
 }
 
 function renderSummary() {
   const p = state.person!;
   const peers = state.peers!;
   const cs = clsIn(p, ALL);
-  const s = sums(p, peers, cs, state.norm);
+  const s = sums(p, peers, cs);
   const fi = fiOf(s);
   const eligible = s.cls >= peers.min_cls;
-  put($('#summary-sub'), 'summary-sub', { ...rangeVars(peers), none: state.norm === '', peers: peersName(state.norm),
-    eligible, minCls: fmtInt(peers.min_cls) });
+  put($('#summary-sub'), 'summary-sub', { ...rangeVars(peers), eligible, minCls: fmtInt(peers.min_cls) });
   const tile = (id: string, text: string, sub = '') => {
     $(`#${id} .tile-value`).textContent = text;
     const e = document.querySelector(`#${id} .tile-sub`);
@@ -708,18 +685,17 @@ function renderSummary() {
   tile('rf-tile-cls', fmtInt(s.cls), msg('tile-lines', { n: fmtInt(s.lines) }));
   tile('rf-tile-threads', fmtInt(s.addressed));
   tile('rf-tile-fr', fmtFr(frOf(s)), msg('tile-fr-sub'));
-  const d = peers.fi[state.norm]?.[ALL];
+  const d = peers.fi[ALL];
   tile('rf-tile-fi', fmtFi(fi), eligible && d?.q && fi !== null
     ? msg('tile-fi-rank', { p: pct(percentileOf(d.q, fi)), n: fmtInt(d.n) }) : msg('tile-fi-none'));
-  const g = latestDoubling(p, binSums(p, peers, ALL, ''), peers);
+  const g = latestDoubling(p, binSums(p, peers, ALL), peers);
   const r = g?.reached;
   tile('rf-tile-growth', fmtChange(g?.change), g === null
     ? msg('tile-growth-none', { min: fmtInt(peers.min_bin_cls) })
     : msg('tile-growth-sub', { from: peers.bins[g.from], to: peers.bins[g.to], per: g.steps > 1,
       day: !r ? '–' : msg(r[1] ? 'tile-growth-on' : 'as-of-by', { day: dayLabel(r[0]) }), typical: fmtChange(g.typical) }));
   const facts = $('#rf-facts');
-  const org = usualOrg(p, cs);
-  if (p.first && org) put(facts, 'you-facts', { first: monthLabel(p.first), org });
+  if (p.first && p.org) put(facts, 'you-facts', { first: monthLabel(p.first), org: p.org });
   else facts.replaceChildren();
 }
 
@@ -734,10 +710,10 @@ function renderTrend() {
   // From the half-year of their first change in the data.
   const firstDay = clsIn(p, ALL)[0][1];
   const hs = all.filter((h) => periodSpan(h, range)[1] > firstDay);
-  const per = hs.map((h) => sums(p, peers, clsIn(p, h), state.norm));
+  const per = hs.map((h) => sums(p, peers, clsIn(p, h)));
   const you = per.map((s) => (s.cls ? fiOf(s) : null));
   const full = per.map((s) => s.cls >= peers.min_cls);
-  const q = (h: string, f: number) => { const d = peers.fi[state.norm]?.[h]; return d?.q ? quantile(d.q, f) : null; };
+  const q = (h: string, f: number) => { const d = peers.fi[h]; return d?.q ? quantile(d.q, f) : null; };
   const band = (f: number) => ({ data: hs.map((h) => q(h, f)), borderWidth: 0, pointRadius: 0, pointHoverRadius: 0,
     tension: 0, spanGaps: true });
   const datasets: ChartDataset<'line', (number | null)[]>[] = [
@@ -821,7 +797,7 @@ function renderTrend() {
 function renderXpTable() {
   const p = state.person!;
   const peers = state.peers!;
-  const bins = binSums(p, peers, ALL, '');
+  const bins = binSums(p, peers, ALL);
   // The table: the bins with changes, when the person reached each, and everyone's median there.
   const body = $('#rf-xp-table tbody');
   body.replaceChildren();
@@ -837,7 +813,7 @@ function renderXpTable() {
       el('td', fmtInt(s.addressed), 'num'), el('td', fmtFr(frOf(s)), 'num'), el('td', fmtFr(peers.ref_bin[b]), 'num'));
     body.append(tr);
   });
-  const tot = sums(p, peers, clsIn(p, ALL), state.norm);
+  const tot = sums(p, peers, clsIn(p, ALL));
   const cells = ['', fmtInt(tot.cls), fmtInt(tot.lines), fmtInt(tot.addressed), fmtFr(frOf(tot)), '–'];
   $('#rf-xp-table tfoot tr').querySelectorAll('td').forEach((td, i) => (td.textContent = cells[i]));
   put($('#rf-xp-note'), 'experience-note');
@@ -859,23 +835,17 @@ function fiCell(v: number | null, title?: string): HTMLTableCellElement {
 function setHalf(h: string | null) {
   state.half = h;
   window.__rf!.half = h;
-  state.threadsShown = PAGE;
-  state.noTextShown = PAGE;
   charts.trend?.update('none');
   renderPerCl();
   renderDirs();
-  renderThreads();
 }
 
 /** Filters the directories and comments to the changes in comments-per-change column `b` (null: all). */
 function setBin(b: number | null) {
   state.bin = b;
   window.__rf!.bin = b;
-  state.threadsShown = PAGE;
-  state.noTextShown = PAGE;
   renderPerCl();
   renderDirs();
-  renderThreads();
 }
 
 /** The person's changes by how many addressed comments each drew, for the half-year
@@ -940,112 +910,107 @@ function renderDirs() {
   const peers = state.peers!;
   showHalfFilter('#rf-half-filter');
   showBinFilter('#rf-bin-filter');
-  const roots = dirTree(p, peers, state.half ?? ALL, state.norm, state.bin);
-  const body = $('#rf-dirs tbody');
-  body.replaceChildren(...dirRows(roots, state.expanded, peers.min_cls).map(dirRow));
-  // The comment section's directory picker lists every directory in the tree, in path order.
-  const paths: string[] = [];
-  const walk = (ns: DirNode[]) => ns.forEach((n) => (paths.push(n.path), walk(n.children)));
-  walk(roots);
-  paths.sort();
-  const sel = $<HTMLSelectElement>('#rf-dir');
-  sel.replaceChildren(sel.options[0] ?? el('option'));
-  sel.options[0].value = '';
-  for (const path of paths) {
-    const o = el('option', path);
-    o.value = path;
-    sel.append(o);
-  }
-  sel.value = state.dir ?? '';
-  if (state.dir !== null && sel.value === '') state.dir = null;
+  const roots = dirTree(p, peers, state.half ?? ALL, state.bin);
+  $('#rf-dirs tbody').replaceChildren(...dirRows(roots, state.expanded, peers.min_cls).map(dirRow));
 }
 
-function selectDir(path: string) {
-  state.dir = state.dir === path ? null : path;
-  state.threadsShown = PAGE;
-  state.noTextShown = PAGE;
+/** Loads the person's comment links (links/, half-years from `links_from`) the first time a file's
+ * changes are shown. */
+async function loadLinks() {
+  const peers = state.peers!;
+  if (state.links || !state.key) return;
+  const key = state.key;
+  const hs = state.halves.filter((h) => h >= peers.links_from && /^\d{4}H[12]$/.test(h));
+  const shards = await Promise.all(hs.map((h) => getJson<LinkShard>(`${DATA}links/${h}/${key}.json`).catch(() => null)));
+  if (state.key !== key) return;
+  state.links = mergeLinks(shards);
   renderDirs();
-  renderThreads();
-  if (state.dir !== null) $('#comments').scrollIntoView({ block: 'start' });
 }
 
-function dirRow(r: DirRowView): HTMLTableRowElement {
-  const tr = el('tr', undefined, `rf-dir-row rf-dir-${r.kind}`);
+function toggle(key: string, expanded: boolean, file: boolean) {
+  if (expanded) state.expanded.delete(key);
+  else state.expanded.add(key);
+  renderDirs();
+  if (file && !expanded) void loadLinks();
+}
+
+/** A change under a file: its number (linking to the change), the day it landed, its comments on the
+ * file and links to the addressed ones, each with its tone score where scored. */
+function changeRow(r: DirRowView): HTMLTableRowElement {
+  const ch = r.change!;
+  const tr = el('tr', undefined, 'rf-dir-row rf-dir-change');
   tr.dataset.key = r.key;
-  tr.dataset.depth = String(r.depth);
-  if (r.kind === 'dir' && state.dir === r.node!.path) tr.setAttribute('aria-selected', 'true');
   const th = el('th');
   th.setAttribute('scope', 'row');
   const label = el('span', undefined, 'rf-dir-label');
   label.style.setProperty('--depth', String(r.depth));
+  label.append(el('span', undefined, 'ar-toggle-space'), link(commentUrl(ch.cl), String(Math.trunc(ch.cl))),
+    el('span', dayLabel(ch.day), 'rf-change-day'));
+  th.append(label);
+  const linksTd = el('td', undefined, 'rf-change-links');
+  linksTd.colSpan = 2;
+  // The links wrap in a box of their own, so a change with many doesn't widen the table.
+  const box = el('div', undefined, 'rf-change-box');
+  linksTd.append(box);
+  const peers = state.peers!;
+  if (ch.addressed) {
+    if (halfOf(ch.day) < peers.links_from) {
+      box.append(fragment('change-no-links', { year: peers.links_from.slice(0, 4) }));
+    } else if (!state.links) {
+      box.append(fragment('change-loading'));
+    } else {
+      linksOf(state.links, ch.cl, ch.entry).forEach(([uuid, score], i) => {
+        const a = link(commentUrl(ch.cl, uuid), msg('change-comment', { n: fmtInt(i + 1) }));
+        a.className = 'rf-change-comment';
+        a.title = msg('change-comment-title', { n: fmtInt(i + 1) });
+        const span = el('span', undefined, 'rf-change-link');
+        span.append(a);
+        if (score !== null) {
+          span.append(scoreBadge(score, 1, `Sentiment score ${signed1(score)}, from −1 (hostile) to +1 (glowing): `
+            + 'the comment\'s tone, shown for context only and not used in this analysis'));
+        }
+        box.append(span);
+      });
+    }
+  }
+  tr.append(th, el('td'), el('td'), el('td', fmtInt(ch.threads), 'num'), el('td', fmtInt(ch.addressed), 'num'), linksTd);
+  return tr;
+}
+
+function dirRow(r: DirRowView): HTMLTableRowElement {
+  if (r.kind === 'change') return changeRow(r);
+  const tr = el('tr', undefined, `rf-dir-row rf-dir-${r.kind}`);
+  tr.dataset.key = r.key;
+  tr.dataset.depth = String(r.depth);
+  const th = el('th');
+  th.setAttribute('scope', 'row');
+  const label = el('span', undefined, 'rf-dir-label');
+  label.style.setProperty('--depth', String(r.depth));
+  const n = r.node;
   const name = r.kind === 'other' ? fragment('dirs-other', { n: fmtInt(r.count!) }).textContent!
-    : r.kind === 'rest' ? fragment('dirs-rest', { dir: r.node!.name }).textContent! : r.node!.name;
+    : r.kind === 'rest' ? msg('dirs-other-files') : n!.path === '/COMMIT_MSG' ? msg('dirs-commit-msg') : n!.name;
   if (r.expandable) {
     const b = el('button', r.expanded ? '▾' : '▸', 'ar-toggle');
     b.type = 'button';
     b.setAttribute('aria-expanded', String(r.expanded));
-    b.setAttribute('aria-label', `${r.expanded ? 'Collapse' : 'Expand'} ${r.kind === 'dir' ? r.node!.path : name}`);
-    b.addEventListener('click', () => {
-      if (state.expanded.has(r.key)) state.expanded.delete(r.key);
-      else state.expanded.add(r.key);
-      renderDirs();
-    });
+    b.setAttribute('aria-label', `${r.expanded ? 'Collapse' : 'Expand'} ${n ? n.path : name}`);
+    b.addEventListener('click', () => toggle(r.key, r.expanded, r.kind === 'file'));
     label.append(b);
   } else {
     label.append(el('span', undefined, 'ar-toggle-space'));
   }
-  if (r.kind === 'dir') {
-    const b = el('button', name, 'rf-dir-pick');
-    b.type = 'button';
-    b.title = `${r.node!.path}: list its comments below`;
-    b.addEventListener('click', () => selectDir(r.node!.path));
-    label.append(b);
-  } else {
-    const s = el('span', name, 'rf-dir-group');
-    s.title = r.kind === 'rest' ? `Files directly in ${r.node!.path}` : `${fmtInt(r.count!)} smaller entries`;
-    label.append(s);
-  }
+  const s = el('span', name, r.kind === 'dir' || r.kind === 'file' ? 'rf-dir-name' : 'rf-dir-group');
+  if (n && r.kind !== 'rest') s.title = n.path;
+  else if (r.kind === 'rest') s.title = `Lines in ${n!.path} that drew no review comments`;
+  else s.title = `${fmtInt(r.count!)} smaller entries`;
+  label.append(s);
   th.append(label);
-  const s = r.stats;
+  const st = r.stats;
   const few = r.fi === null ? msg('dirs-no-ratio', { n: fmtInt(state.peers!.min_cls) }) : undefined;
   const rate = el('td', fmtFr(r.fr), 'num');
   if (few) rate.title = few;
-  tr.append(th, el('td', fmtInt(s.cls), 'num'), el('td', fmtInt(Math.round(s.lines)), 'num'), el('td', fmtInt(s.addressed), 'num'),
-    rate, fiCell(r.fi, few), el('td', fmtInt(s.prior), 'num'));
-  return tr;
-}
-
-function threadItem(r: ThreadRow): HTMLLIElement {
-  const li = el('li', undefined, 'quote rf-thread');
-  const head = el('div', undefined, 'rf-thread-head');
-  // The CL number, leftmost, links to the comment in Gerrit, as in the table below.
-  const meta = el('span', undefined, 'rf-thread-meta');
-  meta.append(fragment('thread-meta', { cl: String(Math.trunc(r.cl)), date: dayLabel(r.day), file: r.file }));
-  const cl = meta.querySelector<HTMLAnchorElement>('a.rf-thread-cl')!;
-  cl.href = commentUrl(r.cl, r.uuid);
-  cl.target = '_blank';
-  cl.rel = 'noopener';
-  cl.title = 'Open this comment in Gerrit';
-  head.append(meta);
-  // The tone score, top right.
-  if (r.score !== null) {
-    head.append(scoreBadge(r.score, 1, `Sentiment score ${signed1(r.score)}, from −1 (hostile) to +1 (glowing): `
-      + 'the comment\'s tone, shown for context only and not used in this analysis'));
-  }
-  li.append(head);
-  li.append(el('p', r.text!, 'rf-text'));
-  return li;
-}
-
-/** A comment without stored text, as a row of the table below the list: the change, linked to the
- * comment where its id is known, the date and the file (or directory and count). */
-function noTextRow(r: ThreadRow): HTMLTableRowElement {
-  const tr = el('tr');
-  const cl = el('td', undefined, 'num');
-  cl.append(link(commentUrl(r.cl, r.uuid), String(Math.trunc(r.cl))));
-  const path = el('td', undefined, 'rf-notext-path');
-  path.append(r.count === undefined ? r.file : fragment('notext-path-count', { dir: r.file, n: fmtInt(r.count) }));
-  tr.append(cl, el('td', dayLabel(r.day), 'num'), path);
+  tr.append(th, el('td', fmtInt(st.cls), 'num'), el('td', fmtInt(Math.round(st.lines)), 'num'),
+    el('td', fmtInt(st.threads), 'num'), el('td', fmtInt(st.addressed), 'num'), rate, fiCell(r.fi, few));
   return tr;
 }
 
@@ -1063,38 +1028,7 @@ function showBinFilter(sel: string) {
   if (state.bin !== null) put(filter.querySelector('.rf-filter-name')!, 'bin-filter', { bin: binName(state.bin) });
 }
 
-function renderThreads() {
-  const p = state.person!;
-  showHalfFilter('#rf-half-filter-comments');
-  showBinFilter('#rf-bin-filter-comments');
-  const rows = threadRows(p, state.half ?? ALL, state.dir, state.bin);
-  put($('#comments-sub'), 'comments-sub', { n: fmtInt(threadsIn(rows)), dir: state.dir ?? '',
-    half: state.half ? halfName(state.half) : '', bin: state.bin === null ? '' : binName(state.bin) });
-  // Comments with text are listed; the rest go in a table at the end, each paged on its own.
-  const withText = rows.filter((r) => r.text);
-  const noText = rows.filter((r) => !r.text);
-  const list = $('#rf-threads');
-  list.replaceChildren(...withText.slice(0, state.threadsShown).map(threadItem));
-  if (!rows.length) list.append(el('li', msg('threads-none'), 'quote-none'));
-  list.hidden = !withText.length && noText.length > 0;
-  showMore($<HTMLButtonElement>('#rf-threads-more'), withText.length, state.threadsShown);
-  $('#rf-notext').hidden = !noText.length;
-  $('#rf-notext-table tbody').replaceChildren(...noText.slice(0, state.noTextShown).map(noTextRow));
-  showMore($<HTMLButtonElement>('#rf-notext-more'), noText.length, state.noTextShown);
-}
-
-function showMore(more: HTMLButtonElement, total: number, shown: number) {
-  more.hidden = total <= shown;
-  put(more, 'threads-more', { n: fmtInt(Math.min(PAGE, total - shown)) });
-}
-
 // ---- wiring
-
-/** The norm the checkboxes pick, in the order e, d, o. */
-function readNorm(): Norm {
-  const on = new Set([...document.querySelectorAll<HTMLInputElement>('#rf-norm input:checked')].map((i) => i.value));
-  return (['e', 'd', 'o'] as const).filter((k) => on.has(k)).join('') as Norm;
-}
 
 function init() {
   const form = $<HTMLFormElement>('#rf-find');
@@ -1105,29 +1039,6 @@ function init() {
   });
   for (const b of document.querySelectorAll('#rf-half-clear, .rf-half-clear')) b.addEventListener('click', () => setHalf(null));
   for (const b of document.querySelectorAll('.rf-bin-clear')) b.addEventListener('click', () => setBin(null));
-  for (const i of document.querySelectorAll<HTMLInputElement>('#rf-norm input')) {
-    i.addEventListener('change', () => {
-      state.norm = readNorm();
-      window.__rf!.norm = state.norm;
-      renderNorm();
-    });
-  }
-  $<HTMLSelectElement>('#rf-dir').addEventListener('change', (e) => {
-    const v = (e.target as HTMLSelectElement).value;
-    state.dir = v === '' ? null : v;
-    state.threadsShown = PAGE;
-    state.noTextShown = PAGE;
-    renderDirs();
-    renderThreads();
-  });
-  $('#rf-threads-more').addEventListener('click', () => {
-    state.threadsShown += PAGE;
-    renderThreads();
-  });
-  $('#rf-notext-more').addEventListener('click', () => {
-    state.noTextShown += PAGE;
-    renderThreads();
-  });
   const method = $<HTMLDetailsElement>('#method');
   method.addEventListener('toggle', () => renderMethod());
   $<HTMLSelectElement>('#rf-cohort-bin').addEventListener('change', (e) => {

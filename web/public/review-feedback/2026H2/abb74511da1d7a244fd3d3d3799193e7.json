@@ -1,1 +1,1 @@
-{"dirs":["chromecast/cast_core/runtime/","chromecast/common/"],"files":["chromecast/cast_core/runtime/browser/runtime_application_service_impl.cc"],"orgs":["google.com"],"cls":[[8085240,20662,12,0.573,0.414,[[0,0.6,0,8],[1,0.4,1,4]],[[0,-15,1],[0,-14,1]],0,1],[8173691,20669,3,0.174,0.115,[[1,0.667,2,2],[0,0.333,1,1]],[],0,2]]}
+{"dirs":["chromecast/cast_core/runtime/","chromecast/common/"],"files":["chromecast/cast_core/runtime/browser/runtime_application_service_impl.cc"],"cls":[[8085240,20662,12,1,[[0,8],[1,4]],[[0,8,2,2]]],[88451,7,3,2,[[1,2],[0,1]]]]}

@@ -1,1 +1,1 @@
-{"dirs":["sandbox/linux/seccomp-bpf-helpers/","sandbox/linux/bpf_dsl/"],"files":[],"orgs":["yandex-team.ru"],"cls":[[1856160,18183,7,0.354,0.253,[[0,0.667,0,5],[1,0.333,0,2]],[[1,1],[0,0]],0,18]],"counts":1}
+{"dirs":["sandbox/linux/seccomp-bpf-helpers/","sandbox/linux/bpf_dsl/"],"files":["sandbox/linux/seccomp-bpf-helpers/baseline_policy_android_unittest.cc"],"cls":[[1856160,18183,7,18,[[0,5],[1,2]],[[0,5,1,1]]]]}

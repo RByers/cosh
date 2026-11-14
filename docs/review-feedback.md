@@ -50,10 +50,9 @@ Both are fixed: the page has no switches for them (the user's call,
   `third_party/blink/renderer/core/`, so a directory's AFR, its peers'
   rate and a person's experience there follow it across renames. A file
   that moved to another directory counts where it is now; one deleted
-  before its directory moved takes the directory's new name. In the
-  per-thread files, a thread on a file that has moved since names its unit
-  (`[file, days, addressed, unit]`), since the page can't tell it from
-  the file. A CL's lines are split over directories by git's line counts
+  before its directory moved takes the directory's new name. The half-year
+  files name files as they are today too, so the page puts a file's
+  threads in its directory from its name alone. A CL's lines are split over directories by git's line counts
   with each renamed file counted by its edit (`commits.moved_lines`), so a
   CL that moves 600 lines and edits 3 elsewhere is priced where the 3 are.
 
@@ -79,23 +78,14 @@ Both are fixed: the page has no switches for them (the user's call,
   `dels=False`) takes its parent's (2 levels, then 1, then all of
   Chromium that half-year), cell by cell; where all of Chromium has too
   few (the first weeks of a half-year), the nearest earlier half-year's
-  with enough counts, else that half-year's anyway. What the peers are (`NORMS`,
-  picked on the page with three checkboxes):
-  - *Experience* (`e`, on by default): rates per experience bin; without
-    it, the rates at any experience (the last entry of each list).
-  - *Directories* (`d`, on by default): rates per directory; without it,
-    all of Chromium's (`rates[half][""]`).
-  - Every norm compares within the CL's half-year, without the person.
-  - *Organization* (`o`, off by default): a factor per org (the CL's, by
-    `cosh/orgs.py`), its pooled addressed threads over what the other two
-    predict; orgs with fewer than `MIN_FACTOR_CLS` (300) CLs share one (`*`).
+  with enough counts, else that half-year's anyway. The comparison is
+  fixed: the page has no choice of peers (the experience, directory and
+  organization checkboxes went on 2026-11-14, see "One comparison" below).
 
   Pooled rates are lower than the typical person's (big CLs draw less per
-  line, and they carry most of the lines), so each norm's expected threads
-  are multiplied by `scale[norm]`, which makes the median person's index
-  (people with `MIN_CLS` CLs) exactly 1; the org factors are scaled the
-  same way. On 2026-11-14 the scales were 0.923 (experience and
-  directories), 1.038 (experience), 1.133 (directories) and 1.331 (none).
+  line, and they carry most of the lines), so the expected threads are
+  multiplied by `scale`, which makes the median person's index (people
+  with `MIN_CLS` CLs) exactly 1: 0.923 on 2026-11-14.
 
   **Why this way** (2026-11-14, replacing a median rate per experience bin
   times a two-level directory factor). Comparing within each directory and
@@ -136,6 +126,14 @@ Both are fixed: the page has no switches for them (the user's call,
   change. The spread: quartiles 0.65 and 1.44, 10th–90th percentile
   0.35–2.04.
 
+  **One comparison** (2026-11-14). The checkboxes that picked the peers
+  (experience and directories on, organization off) are gone, and with
+  them the organization factors: the goals (`docs/goals.md`) define the
+  index as a comparison within the same directory, experience and time,
+  and every other combination needed its own rate sums in `peers.json`
+  once the person is left out of their own peers. Organizations remain in
+  the methodology's chart.
+
 ## What it shows
 
 **The opening card**, "AFR" (no person needed), says nothing of
@@ -153,8 +151,8 @@ distribution, smoothed (a Gaussian kernel of 0.12 in log2 on a grid from
 −75% to +183%, `growth_dist`), with the median marked. Once a person is
 shown, their own values are drawn in red on all three opening charts:
 their AFR per bin on the first (hollow under `MIN_BIN_CLS`, a rate of 0 at
-0.2), their fitted growth rate on the second and their FI (under
-`FI_NORM`, whatever norm is picked below) on the feedback-index chart.
+0.2), their fitted growth rate on the second and their FI on the
+feedback-index chart.
 
 The AFR falls as much as the old index did, though on a linear axis the
 chart looked flatter (hence the log axis): the old addressed index adjusted for size and directory fell 5.3×
@@ -166,8 +164,7 @@ median line sits in the bottom third, where the old chart drew medians only
 on an axis to about 2.6.
 
 **The second card**, "Feedback index": its definition, and everyone's index
-(`fi_dist`: people with `MIN_CLS` CLs, over all the data, under
-experience and directories, `FI_NORM`), smoothed on a log2 grid from 1/8
+(`fi_dist`: people with `MIN_CLS` CLs, over all the data), smoothed on a log2 grid from 1/8
 to 5.7 (kernel 0.15), with the median and the 10th and 90th percentiles
 marked. On 2026-11-14: 2,808 people, quartiles 0.65 and 1.44, 10th–90th
 percentile 0.35–2.04.
@@ -183,8 +180,8 @@ pooled into an "Other (n)" row per level, and a directory with
 subdirectories has a "rest of" row for its own files. Each level shows its
 12 largest directories and an "n more" row for the rest; ▸ opens a row. On
 2026-11-14 the table has 2,938 entries. Once a person is shown, five
-**Yours** columns appear (lines, feedback, addressed, AFR, FI under the
-norm picked in their section) and each level sorts by their lines: each of
+**Yours** columns appear (lines, feedback, addressed, AFR, FI) and each
+level sorts by their lines: each of
 their units goes to its directory and parents, and to "rest of" or that
 level's "Other" where the table has no row for it. A row's FI is its
 addressed threads over its expected ones, so a parent adds up its children
@@ -200,15 +197,13 @@ theirs.
   that day when that CL wasn't the bin's first commit; `binReached`), CLs,
   lines, addressed threads, the person's AFR and the median AFR of all
   contributors there (`ref_bin`). The last row is all CLs.
-- *Your feedback index:* the checkboxes (experience, directories,
-  organization; they also set the Yours FI in everyone's directory table), tiles for changes landed (and their lines), addressed
-  threads, AFR, FI (with the share of everyone with `MIN_CLS` CLs whose
-  index is lower, from `fi[norm].all`) and the latest doubling (below), then
-  the FI per half-year against the 10th–90th percentile, middle half and
-  median of everyone's index that half-year (`fi[norm][half]`). Dots with
-  fewer than `MIN_CLS` CLs are hollow. Selecting a dot filters the
-  comments-per-change chart, the directory tree and the comments to that
-  half-year, as before.
+- *Your feedback index:* tiles for changes landed (and their lines),
+  addressed threads, AFR, FI (with the share of everyone with `MIN_CLS`
+  CLs whose index is lower, from `fi.all`) and the latest doubling
+  (below), then the FI per half-year against the 10th–90th percentile,
+  middle half and median of everyone's index that half-year (`fi[half]`).
+  Dots with fewer than `MIN_CLS` CLs are hollow. Selecting a dot filters
+  the comments-per-change chart and the directory tree to that half-year.
 - *Latest doubling* (the tile, `latestDoubling`): the % change in AFR from
   the person's second-newest to their newest bin with `MIN_BIN_CLS` CLs,
   per doubling when bins in between have too few, with the date they
@@ -222,19 +217,27 @@ theirs.
   (−20.9%, −47.4% and +22.7% with deletions counted).
 - *Addressed comments per change:* the histogram of the person's CLs by
   addressed threads (0, 1–2, 3–5, 6–10, 11–20, 21+), whose columns filter
-  the directories and comments.
-- *Where your feedback comes from:* the directory tree as before (top level
-  first, "Other" for entries under `MIN_CLS` CLs, any directory opens), with
-  CLs, lines (each CL's lines × its fraction there), addressed threads, AFR,
-  FI under the chosen norm (shaded green below 1, red above, saturating at
-  0.25× and 4×) and earlier commits. Rows under `MIN_CLS` CLs show no AFR or
-  FI.
-- *The comments:* the addressed threads only, newest first, with the
-  directory, half-year and column filters as before. Each comment's head
-  starts with its CL number, linked to the comment in Gerrit, then its date
-  and file, with its tone score as a pill at the right (its tooltip says it
-  is a sentiment score this analysis doesn't use). Comments without stored
-  text are in a table in a collapsed `<details>` below the list.
+  the directory tree.
+- *Where your feedback comes from* (`dirTree`, `dirRows`): the person's
+  directories from the top level down to their 3-level directories, then
+  down through any deeper directories to the files that drew reviewer
+  threads, with changes, lines, feedback (reviewer threads), addressed
+  threads, AFR and FI (shaded green below 1, red above, saturating at
+  0.25× and 4×). Each level lists its entries with `MIN_CLS` CLs (all of
+  them, up to 15, when none has that many) and pools the rest in "Other";
+  rows under `MIN_CLS` CLs show no AFR or FI. A CL's lines go to its
+  3-level directories and then to its files by the landed commit's
+  inserted lines (times the CL's Gerrit lines, so the AFR's definition
+  holds); a directory's lines that drew no threads are its "other files"
+  row, and a file's expected threads are its share of its directory's. The
+  commit message counts as a file of the CL's main directory. A file opens
+  into its CLs, newest first: the change number linking to the change in
+  Gerrit, the day it landed, its threads and addressed threads on the file,
+  and for CLs from `links_from` (2023H1) a link to each addressed comment,
+  with its tone score as a pill where it was scored (its tooltip says it is
+  a sentiment score this analysis doesn't use). The links load when a file
+  is first opened. The page has no comment text: a feedback report will
+  take that role (the user's call, 2026-11-14).
 
 **Methodology and details** is a collapsed `<details>` at the bottom whose
 charts are drawn when it opens:
@@ -277,9 +280,10 @@ half-year.
 
 **Praise** has no section here: after a lookup, "See also your praise"
 links to the Review Tone page's popup for the address
-(`sentiment.html#person=<address>`). **Tone** appears only in the comment
-list: each comment whose tone has been scored (`sentiment.sqlite`, current
-prompt) carries a pill with its score from −1 to +1, negative ones too
+(`sentiment.html#person=<address>`). **Tone** appears only beside the
+comment links in a file's list of CLs: each addressed comment whose tone
+has been scored (`sentiment.sqlite`, current prompt; mostly from
+mid-2025) carries a pill with its score from −1 to +1, negative ones too
 (ground rule 5, 2026-11-14).
 
 Removed on 2026-11-14 with the switches: the cohort curves by start year,
@@ -321,13 +325,13 @@ steps 9).
 
 ## Ground rules
 
-- **Tone only in the comment list** (`docs/plan.md`, ground rule 5, as
-  tiered on 2026-11-14). The page shows a person's comments only after
-  someone types their address, so each comment may carry its tone score,
-  negative ones included. Nothing reachable by clicking ranks or lists
-  anyone by tone, no chart or figure uses tone, and orgs get no tone
-  figures. The scores sit in their own files (`comments/`), written by
-  their own step, so tone never feeds the charts.
+- **Tone only beside each comment's link** (`docs/plan.md`, ground rule 5, as
+  tiered on 2026-11-14). The page shows a person's comment links only after
+  someone types their address, so each may carry its tone score, negative
+  ones included. Nothing reachable by clicking ranks or lists anyone by
+  tone, no chart or figure uses tone, and orgs get no tone figures. The
+  scores sit in their own files (`links/`), written by their own step, so
+  tone never feeds the charts.
 - **No completions, no browsing.** The input has `autocomplete="off"`, no
   datalist and no name. Data files are named by
   `sha256("cosh-review-feedback-v1:" + normalised address)[:32]`
@@ -338,40 +342,36 @@ steps 9).
   Other addresses of the same person (from the identity merge) get a stub
   `{"see": <key>}`. The address never goes into the URL.
 - Everything comes from public Gerrit and git data, so per-person files may be
-  published (ground rule 3). Comment text is untrusted: the script copies it
-  without a model seeing it, and the page renders it only as text.
+  published (ground rule 3). No comment text is published (since
+  2026-11-14); file paths come from git and Gerrit and the page renders
+  them only as text.
 
 ## Generate
 
 Offline, in two parts: a few minutes and 3 GB for the people part, seconds
-for the comments part (`config/dataflow.json` has the measured times):
+for the links part (`config/dataflow.json` has the measured times):
 
 ```
 COSH_DATA_DIR=<main>/data/private nice -n 5 python3 -m cosh.review_feedback --part people [--out DIR]
-COSH_DATA_DIR=<main>/data/private nice -n 5 python3 -m cosh.review_feedback --part comments [--out DIR]
+COSH_DATA_DIR=<main>/data/private nice -n 5 python3 -m cosh.review_feedback --part links [--out DIR]
 ```
 
 Without `--part` it writes both in one run. The people part
 (`review-feedback`) reads `reviews.sqlite`, `commits.sqlite`,
 `addressed.sqlite` and config, and writes `peers.json`, `u/`, the half-year
-folders and the thread index `data/private/feedback-threads.jsonl` (for
-each person and half-year from 2025H2, the comment ids of its threads in
-the half-year file's order). The comments part (`feedback-comments`) joins
-that index with the collected comment files (`data/private/comments/`) and
-`sentiment.sqlite`, and writes `comments/`. So review tone and comment text
-reach only the comment list, and each comment file lines up with the
-half-year file of the same run by construction (the page still ignores a
-change's comment entries if their count differs). Neither part reads
-`balance*.sqlite`, so refreshing the page
+folders and the link index `data/private/feedback-links.jsonl` (for each
+person and half-year from `LINKS_FROM`, 2023H1, the comment ids of the
+addressed threads by CL and file entry, `link_ids`). The links part
+(`feedback-links`) joins that index with `sentiment.sqlite` and writes
+`links/`. So review tone reaches only the CL lists under a file, and each
+link file lines up with the half-year file of the same run by
+construction. Neither part reads `balance*.sqlite`, so refreshing the page
 needs none of the balance stages (timeline, interdiff, cl). The per-CL facts
-it needs (owner, status, Gerrit insertions, closing time, the
-landed commit's sha and files, and its lines and files per 3-level
-directory) come from `cosh.balance.cl_facts` and `cl_dirs`, the functions
-`python3 -m cosh.balance cl` builds `balance.sqlite`'s `cl` and `cl_dirs`
-from, so the two can't drift (2026-11-12; before, it read them from
-`balance.sqlite`). First commits and mechanical CLs come from
-`commits.sqlite` (`docs/commits.md`); `--first-commit F` and `--mech F` read
-the old hand-made files instead.
+it needs (owner, status, Gerrit insertions, closing time, the landed
+commit's sha, and its lines per 3-level directory and in the files that
+drew threads, under today's names) come from `cosh.cl_facts` (`cl_facts`,
+and `cl_dirs` with `files`). First commits and mechanical CLs come from
+`commits.sqlite` (`docs/commits.md`).
 
 To take in an older backfill (back to 2017-07), let it finish, then run a
 full `derive` (which ends with `python3 -m cosh commits`), then this
@@ -383,54 +383,55 @@ quiet for 5 seconds, so a run's files are served shortly after it ends
 old data, and a page change that needs new `peers.json` fields draws nothing.
 
 Output (default `web/public/review-feedback/`, which Vite copies into the
-site), with `<key>` the hash of the person's address, in three kinds of
-file that the page loads at different times:
+site), with `<key>` the hash of the person's address, in four kinds of file
+that the page loads at different times:
 
-- `peers.json` (global, loaded on opening; version 8, about 318 KB, 93 KB
+- `peers.json` (global, loaded on opening; version 9, about 206 KB, 66 KB
   gzipped): the experience bins (`bins`, `bin_edges`), the index's rate
-  sums per half-year and directory (`rates`, about 150 KB, 39 KB gzipped),
-  scales and org factors (`scale`, `f_org`), the median AFR per
-  bin (`ref_bin`, `ref_all`, for comparisons), everyone's directory table
-  (`dir_table`), the spread of AFR per bin (`fr_bins`) and of
-  everyone's index per norm and period (`fi`), and the methodology's data
-  (`cohorts`, `growth`, `by_size`, `by_dir`, `by_org`), with the
-  minimums the page names.
+  sums per half-year, directory and bin (`rates`) and its `scale`, the
+  median AFR per bin (`ref_bin`, `ref_all`, for comparisons), everyone's
+  directory table (`dir_table`), the spread of AFR per bin (`fr_bins`) and
+  of everyone's index per period (`fi`), the first half-year with comment
+  links (`links_from`), and the methodology's data (`cohorts`, `growth`,
+  `by_size`, `by_dir`, `by_org`), with the minimums the page names.
 - Per person, loaded once an address is typed:
-  - `u/<key>.json` (version 5): first commit and which half-years the
-    person has files for. Small and rewritten on every run. Each other
-    address of the person is a stub `{"see": <key>}`.
+  - `u/<key>.json` (version 6): first commit, the org most of their CLs
+    were landed as, and which half-years the person has files for. Small
+    and rewritten on every run. Each other address of the person is a
+    stub `{"see": <key>}`.
   - `<half-year>/<key>.json` (`2017H2` … `2026H2`, one per half-year in the
-    range): that half-year's CLs, with their directory splits and reviewer
-    threads (file, day, addressed; no text), and the directory, file and
-    org names listed once (`shard` in the script, whose docstring has the
-    layout). Half-years before 2025H2 (`THREADS_FROM`) have thread counts
-    per directory instead of each thread (`"counts": 1`; see "Slimmed
-    before publishing" below).
-- `comments/<half-year>/<key>.json` (comment list only, from 2025H2): per
-  change, one entry per thread of the half-year file, in its order: 0
-  without text, else the comment id, the excerpt and, where scored, the
-  tone score (`comment_file`).
+    range; `shard` in the script, whose docstring has the layout): that
+    half-year's CLs, each [change number and day landed, each less the
+    previous CL's; Gerrit's inserted lines; earlier commits on main; the
+    landed commit's inserted lines per 3-level directory; and the files
+    that drew reviewer threads, each with its inserted lines, threads and
+    addressed threads], with directory and file names (today's) listed
+    once. Nothing else per CL: no org, no expected values, no per-thread
+    data. A file's threads count in its 3-level directory when that is one
+    of the CL's, else in the CL's main directory (the commit message, files
+    the landed commit didn't change).
+- `links/<half-year>/<key>.json` (from 2023H1, loaded when a file's CLs are
+  first opened): per CL and file entry, the addressed threads' comment ids,
+  oldest first, each with its tone score where scored (`link_file`).
 
 The page computes a person's figures from these, the same way the script
-does for the spread of everyone's index: totals, AFR and FI under every norm
-for any period, and the growth rate, with the rounded typical rates and
-factors from `peers.json`. `--check FILE` writes the script's values for 300
-people; on 2026-11-14, after the index moved to per-half-year rates without
-the person, the page's `buildPerson`, `sums` and `fiOf` matched all 27,800
-of them exactly (FI under every norm, CLs, addressed threads and lines):
-both subtract the person's own sums from the same rounded cells.
+does for the spread of everyone's index: totals, AFR and FI for any period,
+and the growth rate, from the rounded rate sums in `peers.json`. `--check
+FILE` writes the script's values for 300 people; on 2026-11-14, with this
+layout, the page's `buildPerson`, `sums` and `fiOf` matched all 3,475 of
+them (FI, CLs, addressed threads and lines per period; the largest FI
+difference 0.0005, rounding).
 
 So a half-year's files don't change once it is over, as long as the inputs
-don't (the 2023–24 norms, still written though unused, labels, mechanical
-list, identity merge, and for `comments/`, the collected comment text and
-scores): git stores them once. Each run rewrites the current half-year,
-`u/` and `peers.json`.
+don't (labels, mechanical list, identity merge, today's names of moved
+paths, and for `links/`, the tone scores): git stores them once. Each run
+rewrites the current half-year, `u/` and `peers.json`.
 
-Sizes on 2026-11-14 (6,862 people, 122 stubs, 45,231 files), gzipped file
-by file as git stores them: 35.2 MB for the 19 half-year folders, 0.9 MB
-for `u/` and `peers.json`, and 16.7 MB for `comments/` (excerpts and
-scores): 53 MB in all, 122 MB unpacked. The people part replaces `u/` and every half-year folder on each run, the
-comments part `comments/`.
+Sizes on 2026-11-14 (6,862 people, 122 stubs), gzipped file by file as git
+stores them: 31.8 MB for the 19 half-year folders (32,676 files), 0.7 MB
+for `u/`, 66 KB for `peers.json` and 10.3 MB for `links/` (12,615 files):
+43 MB in all, 117 MB unpacked. The people part replaces `u/` and every
+half-year folder on each run, the links part `links/`.
 
 **Committed and published** (the user's call, 2026-11-12):
 `web/public/review-feedback/` is in git, so the GitHub Pages build serves it.
@@ -440,29 +441,19 @@ removed). The browser tests serve a made-up person
 (`web/test/feedback-fixture.ts`), so they don't depend on the data. The
 script's inputs (`data/private/*.sqlite`) aren't published.
 
-**Slimmed before publishing** (2026-11-12, file format v4): 197 MB → 126 MB,
-68 → 53 MB gzipped file by file. Nothing the page computes changed: every
-person's values and changes matched the v3 files', except that CLs whose
-two largest directories tie on rounded share now always take the first by
-name as their main directory (8 of 2.2M threads moved, a few rates moved by
-0.001). What changed:
-
-- Half-years before the one that reaches the comment-text year (before
-  2025H2) keep [threads, addressed] per directory of each CL instead of
-  each thread. The comments list shows those as one row per change and
-  directory ("3 threads in ui/views/"), linked to the change, without
-  files or dates. (The user's call: the alternatives were shorter excerpts,
-  dropping 2017–19, or dropping the per-directory data.)
-- The expected threads by size alone (`exp_ts`, `exp_as`) depend only on
-  the size bucket, so they left the files (`peers.json` listed them as
-  `size_norm` until 2026-11-14, when the page stopped using norms).
-- A thread's directory isn't stored: it is its file's (3 levels) when the
-  CL has a unit there, else the CL's first unit.
-- A CL wholly in one directory stores [directory, earlier commits there].
-
-Measured then (gzipped): comment excerpts 13 MB, per-directory data 17 MB,
-file paths 11 MB, comment uuids 3 MB; each half-year before 2023 about
-1.7 MB.
+**The lean layout** (2026-11-14, files v6, replacing v4 and the comment
+list; the goals' "publish the minimum", `docs/goals.md`). Before, 34 MB of
+half-year files (gzipped) kept each thread's file, day and label from 2025H2
+(per-directory counts before), two unused expected values, each
+directory's share and earlier commits, and the org of each CL, and 16 MB of
+comment files kept 200-character excerpts. Measured one step at a time
+(gzipped): dropping the unused expected values saved 3.0 MB, keeping only
+lines per directory 5.9 MB, keeping thread counts per file instead of each
+thread 2.6 MB, the org per CL 0.6 MB, and storing change numbers and days
+as differences 1.5 MB. Naming every file of every CL would have cost
+58 MB (6.1 files per CL, 1.1 with threads), so only the files that drew
+threads are named. Comment ids are random and cost about 1.3 MB per
+half-year, so they start in 2023 (23 MB for all years; the user's call).
 
 ## Caveats
 

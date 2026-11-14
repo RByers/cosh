@@ -1,1 +1,0 @@
-{"cls":{"7246330":[["16b71cd1_f76b479a","Can we change `AXVirtualViewTest` to be a parameterized test (`TEST_P`, etc) with 1.0 and 2.0 scales? That way, all the tests will get run under multiple scale factors.",0.0]]}}

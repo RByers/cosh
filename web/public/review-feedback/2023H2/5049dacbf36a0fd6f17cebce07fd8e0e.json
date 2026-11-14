@@ -1,1 +1,1 @@
-{"dirs":["chrome/updater/win/"],"files":[],"orgs":["dropbox.com"],"cls":[[5113853,19704,139,3.25,2.63,[[0,0]],[[6,6]],0,0]],"counts":1}
+{"dirs":["chrome/updater/win/"],"files":["chrome/updater/win/installer/installer.cc","chrome/updater/win/installer/installer_win_unittest.cc"],"cls":[[5113853,19704,139,0,0,[[0,20,2,2],[1,111,4,4]]]]}

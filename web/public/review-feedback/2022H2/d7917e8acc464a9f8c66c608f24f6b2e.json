@@ -1,1 +1,1 @@
-{"dirs":["chrome/browser/","ui/gl/","tools/metrics/histograms/","(root)/"],"files":[],"orgs":["gmail.com"],"cls":[[3731607,19193,77,3.058,2.445,[[0,0.523,0,41],[1,0.419,0,33],[2,0.035,0,2],[3,0.023,0,1]],[[4,4],[0,0],[0,0],[0,0]],0,0]],"counts":1}
+{"dirs":["chrome/browser/","ui/gl/","tools/metrics/histograms/","(root)/"],"files":["/COMMIT_MSG","chrome/browser/about_flags.cc","chrome/browser/flag-metadata.json"],"cls":[[3731607,19193,77,0,[[0,41],[1,33],[2,2],[3,1]],[[0,0,1,1],[1,25,2,2],[2,5,1,1]]]]}

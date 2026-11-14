@@ -1,1 +1,1 @@
-{"dirs":["chrome/android/junit/","chrome/android/java/"],"files":[],"orgs":["amazon.com"],"cls":[[5714497,19922,393,9.29,7.04,[[0,0.693,0,273],[1,0.307,1,120]],[[0,0],[3,2]],0,12]],"counts":1}
+{"dirs":["chrome/android/junit/","chrome/android/java/"],"files":["chrome/android/java/src/org/chromium/chrome/browser/compositor/overlays/strip/StripLayoutHelper.java"],"cls":[[5714497,19922,393,12,[[0,273],[1,120]],[[0,77,3,2]]]]}

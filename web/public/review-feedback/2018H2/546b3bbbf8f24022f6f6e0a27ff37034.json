@@ -1,1 +1,1 @@
-{"dirs":["chrome/browser/ui/","(root)/","chrome/browser/resources/"],"files":[],"orgs":["gmail.com"],"cls":[[1123890,17715,4,0.385,0.278,[[0,0.667,0,3],[1,0.333,0,1]],[],0,0],[1127488,17727,26,1.03,0.788,[[0,0.929,1,25],[2,0.071,0,1]],[[9,9],[1,1]],0,1]],"counts":1}
+{"dirs":["chrome/browser/ui/","(root)/","chrome/browser/resources/"],"files":["/COMMIT_MSG","chrome/browser/resources/local_ntp/local_ntp.css","chrome/browser/ui/views/omnibox/omnibox_view_views.cc"],"cls":[[1123890,17715,4,0,[[0,3],[1,1]]],[3598,12,26,1,[[0,25],[2,1]],[[0,0,3,3],[1,1,1,1],[2,25,6,6]]]]}

@@ -1,1 +1,1 @@
-{"dirs":["chrome/browser/metrics/","testing/variations/","tools/metrics/histograms/","components/metrics/"],"files":[],"orgs":["google.com"],"cls":[[2639165,18652,2,0.195,0.13,[[0,0.75,50,2],[1,0.25,5,0]],[],0,261],[2744714,18695,1,0.116,0.083,[[2,24]],[],0,262],[2743400,18702,3,0.297,0.162,[[2,0.667,25,3],[3,0.333,59,0]],[],0,263]],"counts":1}
+{"dirs":["chrome/browser/metrics/","testing/variations/","tools/metrics/histograms/","components/metrics/"],"files":[],"cls":[[2639165,18652,2,261,[[0,2],[1,0]]],[105549,43,1,262,2],[-1314,7,3,263,[[2,3],[3,0]]]]}

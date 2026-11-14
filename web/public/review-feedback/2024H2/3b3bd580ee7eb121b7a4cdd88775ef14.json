@@ -1,1 +1,1 @@
-{"dirs":["third_party/blink/renderer/"],"files":[],"orgs":["igalia.com"],"cls":[[5569367,19927,29,0.723,0.518,[[0,5]],[[8,6]],0,71]],"counts":1}
+{"dirs":["third_party/blink/renderer/"],"files":["third_party/blink/renderer/core/dom/element.cc","third_party/blink/renderer/core/scroll/scroll_types.h","third_party/blink/renderer/core/scroll/scrollable_area.cc"],"cls":[[5569367,19927,29,71,0,[[0,3,1,1],[1,11,4,2],[2,3,3,3]]]]}

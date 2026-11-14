@@ -1,1 +1,1 @@
-{"dirs":["components/safe_browsing/content/"],"files":[],"orgs":["yandex-team.ru"],"cls":[[5812389,19962,5,0.446,0.429,[[0,3]],[],0,33],[5816737,19963,8,0.735,0.614,[[0,4]],[],0,34],[5875904,19998,41,1.396,1.176,[[0,5]],[[2,0]],0,35]],"counts":1}
+{"dirs":["components/safe_browsing/content/"],"files":["components/safe_browsing/content/browser/client_side_detection_service.cc"],"cls":[[5812389,19962,5,33,0],[4348,1,8,34,0],[59167,35,41,35,0,[[0,31,2,0]]]]}

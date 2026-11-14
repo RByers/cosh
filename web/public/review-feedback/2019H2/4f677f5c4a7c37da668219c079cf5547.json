@@ -1,1 +1,1 @@
-{"dirs":["ui/gfx/","content/browser/indexed_db/","build/config/sanitizers/"],"files":[],"orgs":["google.com"],"cls":[[1874687,18192,65,3.385,2.744,[[0,0]],[[10,6]],0,75],[1875516,18192,1,0.216,0.122,[[1,0]],[],0,76],[1906905,18212,3,0.246,0.175,[[2,1]],[[1,1]],0,77]],"counts":1}
+{"dirs":["ui/gfx/","content/browser/indexed_db/","build/config/sanitizers/"],"files":["ui/gfx/BUILD.gn","ui/gfx/color_analysis_fuzzer.cc","build/config/sanitizers/BUILD.gn"],"cls":[[1874687,18192,65,75,0,[[0,10,2,0],[1,52,8,6]]],[829,0,1,76,1],[31389,20,3,77,2,[[2,3,1,1]]]]}

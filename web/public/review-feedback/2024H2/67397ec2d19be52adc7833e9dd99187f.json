@@ -1,1 +1,1 @@
-{"dirs":["components/metrics/","components/metrics/net/","components/metrics/structured/"],"files":[],"orgs":["google.com"],"cls":[[6048203,20056,10,1.031,0.75,[[0,0.429,0,4],[1,0.357,0,4],[2,0.214,0,2]],[[1,1],[0,0],[0,0]],0,0]],"counts":1}
+{"dirs":["components/metrics/","components/metrics/net/","components/metrics/structured/"],"files":["components/metrics/machine_id_provider_win.cc"],"cls":[[6048203,20056,10,0,[[0,4],[1,4],[2,2]],[[0,2,1,1]]]]}

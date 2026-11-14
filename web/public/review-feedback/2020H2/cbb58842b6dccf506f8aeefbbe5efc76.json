@@ -1,1 +1,1 @@
-{"dirs":["tools/metrics/histograms/","chrome/browser/devtools/"],"files":[],"orgs":["microsoft.com"],"cls":[[2579564,18604,1,0.116,0.083,[[0,0]],[],0,25],[2410650,18605,23,1.071,0.865,[[0,0.808,1,19],[1,0.192,0,4]],[[1,1],[1,0]],0,26]],"counts":1}
+{"dirs":["tools/metrics/histograms/","chrome/browser/devtools/"],"files":["chrome/browser/devtools/devtools_ui_bindings.cc","tools/metrics/histograms/enums.xml"],"cls":[[2579564,18604,1,25,0],[-168914,1,23,26,[[0,19],[1,4]],[[0,4,1,0],[1,7,1,1]]]]}

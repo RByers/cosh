@@ -1,1 +1,1 @@
-{"dirs":["third_party/blink/public/","third_party/blink/web_tests/"],"files":[],"orgs":["google.com"],"cls":[[2401043,18514,1,0.169,0.112,[[0,0]],[[1,0]],0,6],[2550029,18585,3,0.169,0.112,[[1,6]],[],0,7],[2546760,18585,2,0.169,0.112,[[1,7]],[],0,8]],"counts":1}
+{"dirs":["third_party/blink/public/","third_party/blink/web_tests/"],"files":["third_party/blink/public/devtools_protocol/browser_protocol.pdl"],"cls":[[2401043,18514,1,6,0,[[0,1,1,0]]],[148986,71,3,7,1],[-3269,0,2,8,1]]}

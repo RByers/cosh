@@ -1,1 +1,1 @@
-{"dirs":["tools/metrics/histograms/","components/invalidation/"],"files":["components/invalidation/invalidation_listener_impl.cc"],"orgs":["google.com"],"cls":[[7613491,20510,1,0.116,0.083,[[0,37]],[],0,375],[7619311,20514,1,0.116,0.083,[[0,38]],[],0,376],[7907722,20612,7,0.354,0.253,[[1,29]],[[0,0,1]],0,377]]}
+{"dirs":["tools/metrics/histograms/","components/invalidation/"],"files":["components/invalidation/invalidation_listener_impl.cc"],"cls":[[7613491,20510,1,375,0],[5820,4,1,376,0],[288411,98,7,377,1,[[0,7,1,1]]]]}

@@ -1,1 +1,1 @@
-{"dirs":["content/browser/usb/"],"files":[],"orgs":["google.com"],"cls":[[2961148,18793,41,2.078,1.601,[[0,0]],[[1,1]],0,2]],"counts":1}
+{"dirs":["content/browser/usb/"],"files":["content/browser/usb/web_usb_service_impl.cc"],"cls":[[2961148,18793,41,2,0,[[0,41,1,1]]]]}

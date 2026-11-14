@@ -1,1 +1,0 @@
-{"cls":{"7806338":[["eaca8814_382b1285","`gfx::Point::x` and `y` are functions that return an `int`, so using `bit_cast` seems sus. Would a normal `static_cast<>` work?",0.0]]}}

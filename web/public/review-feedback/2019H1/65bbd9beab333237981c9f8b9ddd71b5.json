@@ -1,1 +1,1 @@
-{"dirs":["base/android/java/"],"files":[],"orgs":["navercorp.com"],"cls":[[1569375,18004,2,0.4,0.309,[[0,0]],[[1,0]],0,1]],"counts":1}
+{"dirs":["base/android/java/"],"files":["base/android/java/src/org/chromium/base/process_launcher/ChildConnectionAllocator.java"],"cls":[[1569375,18004,2,1,0,[[0,2,1,0]]]]}

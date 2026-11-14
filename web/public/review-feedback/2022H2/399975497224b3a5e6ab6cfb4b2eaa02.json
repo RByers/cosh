@@ -1,1 +1,1 @@
-{"dirs":["chrome/browser/resources/","ash/system/phonehub/"],"files":[],"orgs":["google.com"],"cls":[[3766854,19192,23,1.03,0.788,[[0,3]],[[3,3]],0,17],[3836858,19229,8,0.645,0.531,[[1,11]],[[7,5]],0,18]],"counts":1}
+{"dirs":["chrome/browser/resources/","ash/system/phonehub/"],"files":["/COMMIT_MSG","chrome/browser/resources/ash/settings/multidevice_page/multidevice_subpage.ts","ash/system/phonehub/multidevice_feature_opt_in_view.cc"],"cls":[[3766854,19192,23,17,0,[[0,0,1,1],[1,20,2,2]]],[70004,37,8,18,1,[[0,0,1,0],[2,7,6,5]]]]}

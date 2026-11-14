@@ -1,1 +1,1 @@
-{"dirs":["components/policy/resources/"],"files":["components/policy/resources/templates/policy_definitions/Network/HttpHeaderInjection.yaml"],"orgs":["google.com"],"cls":[[8584536,20745,4,0.783,0.624,[[0,0]],[[0,-4,1],[0,-4,1],[0,-3,0]],0,1]]}
+{"dirs":["components/policy/resources/"],"files":["components/policy/resources/templates/policy_definitions/Network/HttpHeaderInjection.yaml"],"cls":[[8584536,20745,4,1,0,[[0,4,3,2]]]]}

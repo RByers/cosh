@@ -1,1 +1,1 @@
-{"dirs":["tools/determinism/","build/toolchain/","build/"],"files":[],"orgs":["google.com"],"cls":[[2061575,18323,13,0.573,0.414,[[0,0]],[[3,3]],0,379],[2106326,18374,48,1.64,1.269,[[1,0.961,0,47],[2,0.039,4,1]],[[18,10],[0,0]],0,380]],"counts":1}
+{"dirs":["tools/determinism/","build/toolchain/","build/"],"files":["/COMMIT_MSG","tools/determinism/compare_build_artifacts.py","build/toolchain/get_goma_dir.py","build/toolchain/goma.gni"],"cls":[[2061575,18323,13,379,0,[[0,0,1,1],[1,13,2,2]]],[44751,51,48,380,[[1,47],[2,1]],[[0,0,4,2],[2,41,13,8],[3,6,1,0]]]]}

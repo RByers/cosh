@@ -1,1 +1,1 @@
-{"dirs":["tools/metrics/histograms/"],"files":[],"orgs":["microsoft.com"],"cls":[[3466856,19041,2,0.116,0.083,[[0,0]],[[1,0]],0,0],[3725737,19173,18,1.071,0.865,[[0,1]],[[11,11]],0,1]],"counts":1}
+{"dirs":["tools/metrics/histograms/"],"files":["tools/metrics/histograms/metadata/profile/histograms.xml","tools/metrics/histograms/metadata/settings/histograms.xml"],"cls":[[3466856,19041,2,0,0,[[0,2,1,0]]],[258881,132,18,1,0,[[1,18,11,11]]]]}

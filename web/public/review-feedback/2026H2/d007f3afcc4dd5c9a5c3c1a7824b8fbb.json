@@ -1,1 +1,1 @@
-{"dirs":["chrome/browser/extensions/"],"files":["chrome/browser/extensions/back_forward_cache_browsertest.cc","/COMMIT_MSG"],"orgs":["yandex-team.ru"],"cls":[[8353948,20705,18,1.03,0.788,[[0,0]],[[0,-5,1],[0,-5,1],[0,-5,1],[0,-5,1],[1,-5,1],[0,-5,1]],0,0]]}
+{"dirs":["chrome/browser/extensions/"],"files":["/COMMIT_MSG","chrome/browser/extensions/back_forward_cache_browsertest.cc"],"cls":[[8353948,20705,18,0,0,[[0,0,1,1],[1,18,5,5]]]]}

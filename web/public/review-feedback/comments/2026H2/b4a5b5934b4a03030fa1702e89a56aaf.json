@@ -1,1 +1,0 @@
-{"cls":{"8579118":[["5c9e7e69_39f41825","The feature could be read once in the constructor and kept in a const member, instead of being checked twice on every check.",0.0],["64b60e3d_d2534eaa","\"Kill switch disabled\" reads backwards, because disabling the feature turns the kill switch on. \"Feature disabled\" would be clearer.",0.0]]}}

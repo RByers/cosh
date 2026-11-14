@@ -1,1 +1,1 @@
-{"dirs":["components/variations/service/","chrome/android/java/"],"files":[],"orgs":["google.com"],"cls":[[6171495,20103,11,0.573,0.414,[[0,0.538,0,6],[1,0.462,0,5]],[[1,1],[1,1]],0,2]],"counts":1}
+{"dirs":["components/variations/service/","chrome/android/java/"],"files":["chrome/android/java/src/org/chromium/chrome/browser/init/AsyncInitTaskRunner.java","components/variations/service/variations_service_client.cc"],"cls":[[6171495,20103,11,2,[[0,6],[1,5]],[[0,5,1,1],[1,6,1,1]]]]}

@@ -1,1 +1,1 @@
-{"dirs":["gpu/command_buffer/service/","gpu/config/"],"files":[],"orgs":["intel.com"],"cls":[[4830443,19601,2,0.169,0.123,[[0,0.5,28,1],[1,0.5,5,1]],[],0,73],[5098525,19699,5,0.354,0.253,[[1,6]],[[1,1]],0,76]],"counts":1}
+{"dirs":["gpu/command_buffer/service/","gpu/config/"],"files":["gpu/config/gpu_info_collector.cc"],"cls":[[4830443,19601,2,73,[[0,1],[1,1]]],[268082,98,5,76,1,[[0,5,1,1]]]]}

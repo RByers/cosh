@@ -1,1 +1,1 @@
-{"dirs":["chrome/test/data/","chrome/browser/resources/","chrome/browser/ui/"],"files":[],"orgs":["google.com"],"cls":[[4609220,19524,62,1.437,1.129,[[0,0.629,6,43],[1,0.329,6,22],[2,0.043,10,2]],[[6,5],[2,2],[0,0]],0,17]],"counts":1}
+{"dirs":["chrome/test/data/","chrome/browser/resources/","chrome/browser/ui/"],"files":["/COMMIT_MSG","chrome/browser/resources/ash/settings/internet_page/cellular_networks_list.ts","chrome/test/data/webui/chromeos/settings/cellular_networks_list_test.js"],"cls":[[4609220,19524,62,17,[[0,43],[1,22],[2,2]],[[0,0,3,3],[1,22,2,2],[2,43,3,2]]]]}

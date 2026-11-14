@@ -1,1 +1,1 @@
-{"dirs":["(root)/","chrome/browser/"],"files":[],"orgs":["samsung.com"],"cls":[[3192883,18900,1,0.195,0.13,[[0,0.667,0,1],[1,0.333,0,0]],[[1,0],[1,0]],0,0]],"counts":1}
+{"dirs":["(root)/","chrome/browser/"],"files":["AUTHORS","chrome/browser/flag-metadata.json"],"cls":[[3192883,18900,1,0,[[0,1],[1,0]],[[0,1,1,0],[1,0,1,0]]]]}

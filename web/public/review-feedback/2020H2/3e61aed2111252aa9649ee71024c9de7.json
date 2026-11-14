@@ -1,1 +1,1 @@
-{"dirs":["chromeos/ash/components/"],"files":[],"orgs":["google.com"],"cls":[[2579931,18611,293,8.351,6.961,[[0,1]],[[5,5]],0,5]],"counts":1}
+{"dirs":["chromeos/ash/components/"],"files":["chromeos/ash/components/audio/cras_audio_handler.cc","chromeos/ash/components/audio/cras_audio_handler.h","chromeos/ash/components/dbus/audio/fake_cras_audio_client.cc"],"cls":[[2579931,18611,293,5,0,[[0,51,1,1],[1,33,3,3],[2,6,1,1]]]]}

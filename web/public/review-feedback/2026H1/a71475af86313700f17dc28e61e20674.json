@@ -1,1 +1,1 @@
-{"dirs":["testing/variations/"],"files":["testing/variations/fieldtrial_testing_config.json","/COMMIT_MSG","gin/v8_initializer.cc"],"orgs":["google.com"],"cls":[[7767456,20559,21,0.25,0.18,[[0,0]],[[0,0,1],[1,0,1],[2,0,1]],0,43]]}
+{"dirs":["testing/variations/"],"files":["/COMMIT_MSG","gin/v8_initializer.cc","testing/variations/fieldtrial_testing_config.json"],"cls":[[7767456,20559,21,43,0,[[0,0,1,1],[1,0,1,1],[2,21,1,1]]]]}

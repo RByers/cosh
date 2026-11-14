@@ -1,1 +1,1 @@
-{"dirs":["chrome/common/extensions/","chrome/browser/extensions/"],"files":[],"orgs":["google.com"],"cls":[[3582234,19124,5,0.393,0.357,[[0,0.75,0,4],[1,0.25,1,1]],[[0,0],[1,1]],0,2]],"counts":1}
+{"dirs":["chrome/common/extensions/","chrome/browser/extensions/"],"files":["chrome/browser/extensions/extension_keeplist_ash.cc"],"cls":[[3582234,19124,5,2,[[0,4],[1,1]],[[0,1,1,1]]]]}

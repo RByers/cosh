@@ -1,1 +1,1 @@
-{"dirs":["chrome/browser/ash/"],"files":[],"orgs":["google.com"],"cls":[[5293469,19768,10,0.591,0.428,[[0,7]],[[1,0]],0,42]],"counts":1}
+{"dirs":["chrome/browser/ash/"],"files":["chrome/browser/ash/arc/screen_capture/arc_screen_capture_session.cc"],"cls":[[5293469,19768,10,42,0,[[0,10,1,0]]]]}

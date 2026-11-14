@@ -1,1 +1,1 @@
-{"dirs":["tools/metrics/histograms/"],"files":["tools/metrics/histograms/metadata/power/histograms.xml"],"orgs":["google.com"],"cls":[[7172601,20417,16,1.071,0.865,[[0,2]],[[0,-5,1]],0,9],[7206570,20418,1,0.116,0.083,[[0,3]],[],0,10],[7206946,20425,7,0.287,0.203,[[0,4]],[[0,-7,1],[0,-7,1]],0,11]]}
+{"dirs":["tools/metrics/histograms/"],"files":["tools/metrics/histograms/metadata/power/histograms.xml"],"cls":[[7172601,20417,16,9,0,[[0,16,1,1]]],[33969,1,1,10,0],[376,7,7,11,0,[[0,7,2,2]]]]}

@@ -1,1 +1,1 @@
-{"dirs":["chrome/browser/enterprise/"],"files":[],"orgs":["google.com"],"cls":[[3076184,18864,67,3.058,2.445,[[0,0]],[[4,4]],0,0]],"counts":1}
+{"dirs":["chrome/browser/enterprise/"],"files":["chrome/browser/enterprise/connectors/file_system/account_info_utils.h","chrome/browser/enterprise/connectors/file_system/signin_dialog_delegate.cc","chrome/browser/enterprise/connectors/file_system/signin_dialog_delegate.h","chrome/browser/enterprise/connectors/file_system/signin_experience.cc"],"cls":[[3076184,18864,67,0,0,[[0,16,1,1],[1,5,1,1],[2,2,1,1],[3,14,1,1]]]]}

@@ -1,1 +1,1 @@
-{"dirs":["chrome/browser/google/","chrome/installer/setup/","tools/metrics/histograms/"],"files":[],"orgs":["google.com"],"cls":[[5881914,19990,7,0.385,0.278,[[0,0.7,3,5],[1,0.3,8,2]],[],0,490],[6055538,20054,1,0.116,0.083,[[2,39]],[],0,491],[6065409,20060,4,0.287,0.203,[[2,40]],[],0,492]],"counts":1}
+{"dirs":["chrome/browser/google/","chrome/installer/setup/","tools/metrics/histograms/"],"files":[],"cls":[[5881914,19990,7,490,[[0,5],[1,2]]],[173624,64,1,491,2],[9871,6,4,492,2]]}

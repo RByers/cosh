@@ -1,1 +1,1 @@
-{"dirs":["chrome/browser/ash/"],"files":[],"orgs":["google.com"],"cls":[[4808635,19612,82,3.058,2.445,[[0,8]],[[10,6]],0,13]],"counts":1}
+{"dirs":["chrome/browser/ash/"],"files":["chrome/browser/ash/policy/uploading/system_log_uploader.cc","chrome/browser/ash/policy/uploading/system_log_uploader.h","chrome/browser/ash/policy/uploading/system_log_uploader_unittest.cc"],"cls":[[4808635,19612,82,13,0,[[0,12,5,4],[1,0,1,0],[2,70,4,2]]]]}

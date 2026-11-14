@@ -1,1 +1,1 @@
-{"dirs":["chrome/browser/ash/","chrome/browser/policy/"],"files":[],"orgs":["google.com"],"cls":[[5372858,19807,24,1.03,0.788,[[0,3]],[],0,6],[5388187,19808,34,1.769,1.384,[[0,4]],[],0,7],[5434994,19824,1,0.195,0.13,[[1,0]],[[1,0]],0,8]],"counts":1}
+{"dirs":["chrome/browser/ash/","chrome/browser/policy/"],"files":["chrome/browser/policy/messaging_layer/upload/encrypted_reporting_client.cc"],"cls":[[5372858,19807,24,6,0],[15329,1,34,7,0],[46807,16,1,8,1,[[0,1,1,0]]]]}

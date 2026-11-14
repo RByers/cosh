@@ -1,1 +1,0 @@
-{"cls":{"7703717":[["17d5586d_26b1fccb","nit: This can just be ``` BrowserWindowInterface* devtools_browser = devtools_testing->browser(); EXPECT_EQ(devtools_browser->GetType(), BrowserWindowInterface::Type::TYPE_DEVTOOLS) ```…",0.0]]}}

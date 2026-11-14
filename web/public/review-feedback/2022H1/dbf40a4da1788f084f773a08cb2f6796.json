@@ -1,1 +1,1 @@
-{"dirs":["components/affiliations/core/"],"files":[],"orgs":["google.com"],"cls":[[3613275,19117,43,1.64,1.269,[[0,0]],[[6,5]],0,0]],"counts":1}
+{"dirs":["components/affiliations/core/"],"files":["/COMMIT_MSG","components/affiliations/core/browser/lookup_affiliation_response_parser.cc"],"cls":[[3613275,19117,43,0,0,[[0,0,1,1],[1,12,5,4]]]]}

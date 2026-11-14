@@ -1,1 +1,1 @@
-{"dirs":["components/content_settings/core/"],"files":[],"orgs":["google.com"],"cls":[[1475189,17949,20,0.939,0.709,[[0,0]],[[2,2]],0,0]],"counts":1}
+{"dirs":["components/content_settings/core/"],"files":["components/content_settings/core/common/content_settings_pattern_parser.cc"],"cls":[[1475189,17949,20,0,0,[[0,10,2,2]]]]}

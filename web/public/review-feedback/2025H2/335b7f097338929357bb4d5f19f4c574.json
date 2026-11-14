@@ -1,1 +1,1 @@
-{"dirs":["third_party/blink/web_tests/","third_party/blink/renderer/"],"files":["third_party/blink/renderer/core/layout/svg/layout_svg_inline_text.cc","/COMMIT_MSG"],"orgs":["bytedance.com"],"cls":[[6473830,20336,62,1.328,0.98,[[0,0.571,0,36],[1,0.429,0,26]],[[0,-8,1],[1,-8,0]],0,0],[6933761,20341,6,0.281,0.198,[[0,1]],[],0,1]]}
+{"dirs":["third_party/blink/web_tests/","third_party/blink/renderer/"],"files":["/COMMIT_MSG","third_party/blink/renderer/core/layout/svg/layout_svg_inline_text.cc"],"cls":[[6473830,20336,62,0,[[0,36],[1,26]],[[0,0,1,0],[1,8,1,1]]],[459931,5,6,1,0]]}

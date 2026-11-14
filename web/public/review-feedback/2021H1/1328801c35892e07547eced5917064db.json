@@ -1,1 +1,1 @@
-{"dirs":["third_party/blink/web_tests/","chrome/browser/devtools/","chrome/test/data/"],"files":[],"orgs":["google.com"],"cls":[[2725524,18687,6,0.281,0.198,[[0,0.625,5,4],[1,0.375,0,2]],[],0,5],[2726913,18687,143,0.053,0.029,[[2,1.0,0,140]],[],0,6],[2736815,18690,2,0.169,0.112,[[0,6]],[],0,6]],"counts":1}
+{"dirs":["third_party/blink/web_tests/","chrome/browser/devtools/","chrome/test/data/"],"files":[],"cls":[[2725524,18687,6,5,[[0,4],[1,2]]],[1389,0,143,6,2],[9902,3,2,6,0]]}

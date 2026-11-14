@@ -1,1 +1,1 @@
-{"dirs":["chrome/browser/commerce/"],"files":[],"orgs":["google.com"],"cls":[[6625496,20249,4,0.385,0.278,[[0,0]],[[1,1]],0,0],[6635112,20249,5,0.385,0.278,[[0,1]],[[2,0]],0,1]],"counts":1}
+{"dirs":["chrome/browser/commerce/"],"files":["chrome/browser/commerce/price_tracking/android/java/src/org/chromium/chrome/browser/price_tracking/PriceTrackingBottomSheetContentProperties.java","chrome/browser/commerce/price_tracking/android/java/res/layout/price_tracking_layout_v2.xml"],"cls":[[6625496,20249,4,0,0,[[0,4,1,1]]],[9616,0,5,1,0,[[1,1,2,0]]]]}

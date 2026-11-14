@@ -1,1 +1,1 @@
-{"dirs":["components/feedback/redaction_tool/"],"files":[],"orgs":["google.com"],"cls":[[4879370,19626,21,0.939,0.709,[[0,0]],[[4,4]],0,0]],"counts":1}
+{"dirs":["components/feedback/redaction_tool/"],"files":["components/feedback/redaction_tool/redaction_tool.cc","components/feedback/redaction_tool/redaction_tool_unittest.cc"],"cls":[[4879370,19626,21,0,0,[[0,12,3,3],[1,9,1,1]]]]}

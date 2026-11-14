@@ -1,1 +1,1 @@
-{"dirs":["device/fido/hid/","device/fido/"],"files":[],"orgs":["google.com"],"cls":[[894894,17563,97,1.765,1.559,[[0,0.802,7,80],[1,0.198,13,17]],[[2,2],[1,1]],0,13]],"counts":1}
+{"dirs":["device/fido/hid/","device/fido/"],"files":["device/fido/fido_device.cc","device/fido/hid/fido_hid_device_unittest.cc"],"cls":[[894894,17563,97,13,[[0,80],[1,17]],[[0,14,1,1],[1,80,2,2]]]]}

@@ -1,1 +1,1 @@
-{"dirs":["content/browser/devtools/","third_party/blink/web_tests/"],"files":[],"orgs":["microsoft.com"],"cls":[[5301994,19768,33,2.078,1.601,[[0,75]],[],0,595],[5294049,19770,135,5.758,4.687,[[0,0.536,76,74],[1,0.464,42,61]],[[4,3],[0,0]],0,596]],"counts":1}
+{"dirs":["content/browser/devtools/","third_party/blink/web_tests/"],"files":["content/browser/devtools/devtools_url_loader_interceptor.cc"],"cls":[[5301994,19768,33,595,0],[-7945,2,135,596,[[0,74],[1,61]],[[0,74,4,3]]]]}

@@ -1,1 +1,1 @@
-{"dirs":["third_party/metrics_proto/","chrome/browser/metrics/"],"files":[],"orgs":["google.com"],"cls":[[5027726,19675,13,0.573,0.414,[[0,7]],[],0,27],[5034966,19677,8,0.591,0.428,[[1,16]],[[1,0]],0,28]],"counts":1}
+{"dirs":["third_party/metrics_proto/","chrome/browser/metrics/"],"files":["chrome/browser/metrics/perf/process_type_collector.cc"],"cls":[[5027726,19675,13,27,0],[7240,2,8,28,1,[[0,4,1,0]]]]}

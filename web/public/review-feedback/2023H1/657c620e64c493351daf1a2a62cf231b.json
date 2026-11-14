@@ -1,1 +1,1 @@
-{"dirs":["content/test/gpu/","third_party/webgpu-cts/","third_party/blink/web_tests/","(root)/"],"files":[],"orgs":["google.com"],"cls":[[4142900,19363,1,0.12,0.062,[[0,0]],[[1,1]],0,9],[4336317,19429,81,0.042,0.023,[[1,0.882,1,73],[2,0.094,3,7],[3,0.024,3,1]],[],0,10]],"counts":1}
+{"dirs":["content/test/gpu/","third_party/webgpu-cts/","third_party/blink/web_tests/","(root)/"],"files":["content/test/gpu/gpu_tests/webgpu_cts_integration_test.py"],"cls":[[4142900,19363,1,9,0,[[0,1,1,1]]],[193417,66,81,10,[[1,73],[2,7],[3,1]]]]}

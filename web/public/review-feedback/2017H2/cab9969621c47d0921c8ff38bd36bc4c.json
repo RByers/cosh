@@ -1,1 +1,1 @@
-{"dirs":["ui/base/ime/","ui/events/keycodes/"],"files":[],"orgs":["google.com"],"cls":[[538920,17351,2002,13.97,11.383,[[0,0.993,10,1989],[1,0.007,34,13]],[[2,2],[0,0]],0,115]],"counts":1}
+{"dirs":["ui/base/ime/","ui/events/keycodes/"],"files":["ui/base/ime/character_composer_sequences.txt","ui/base/ime/character_composer_unittest.cc"],"cls":[[538920,17351,2002,115,[[0,1989],[1,13]],[[0,61,1,1],[1,23,1,1]]]]}

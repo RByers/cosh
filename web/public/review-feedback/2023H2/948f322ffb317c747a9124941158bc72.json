@@ -1,1 +1,1 @@
-{"dirs":["third_party/blink/web_tests/","third_party/blink/renderer/"],"files":[],"orgs":["google.com"],"cls":[[4667306,19544,12,0.04,0.017,[[0,62]],[],0,72],[4714688,19563,3,0.169,0.112,[[0,62]],[],0,73],[4998868,19668,15,0.537,0.373,[[1,29]],[[1,0]],0,74]],"counts":1}
+{"dirs":["third_party/blink/web_tests/","third_party/blink/renderer/"],"files":["/COMMIT_MSG"],"cls":[[4667306,19544,12,72,0],[47382,19,3,73,0],[284180,105,15,74,1,[[0,0,1,0]]]]}

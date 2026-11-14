@@ -1,1 +1,1 @@
-{"dirs":["components/safe_browsing/core/","chrome/browser/safe_browsing/","tools/metrics/histograms/","chrome/browser/ui/"],"files":[],"orgs":["google.com"],"cls":[[7988374,20627,127,0.042,0.023,[[0,0.385,0,48],[1,0.311,0,40],[2,0.304,22,40]],[],0,153],[8007836,20630,4,0.385,0.278,[[3,39]],[],0,153]]}
+{"dirs":["components/safe_browsing/core/","chrome/browser/safe_browsing/","tools/metrics/histograms/","chrome/browser/ui/"],"files":[],"cls":[[7988374,20627,127,153,[[0,48],[1,40],[2,40]]],[19462,3,4,153,3]]}

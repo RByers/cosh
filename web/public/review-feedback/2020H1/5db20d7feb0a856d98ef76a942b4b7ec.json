@@ -1,1 +1,1 @@
-{"dirs":["components/embedder_support/android/","(root)/"],"files":[],"orgs":["samsung.com"],"cls":[[1895270,18281,53,1.64,1.269,[[0,0.964,0,52],[1,0.036,0,1]],[[7,1],[0,0]],0,0]],"counts":1}
+{"dirs":["components/embedder_support/android/","(root)/"],"files":["/COMMIT_MSG","components/embedder_support/android/java/src/org/chromium/components/embedder_support/view/ContentViewRenderView.java"],"cls":[[1895270,18281,53,0,[[0,52],[1,1]],[[0,0,2,0],[1,52,5,1]]]]}

@@ -1,1 +1,1 @@
-{"dirs":["chrome/browser/ash/"],"files":[],"orgs":["google.com"],"cls":[[2903692,18785,84,3.058,2.445,[[0,0]],[[23,20]],0,0]],"counts":1}
+{"dirs":["chrome/browser/ash/"],"files":["/COMMIT_MSG","chrome/browser/ash/policy/status_collector/device_status_collector.cc","chrome/browser/ash/policy/status_collector/device_status_collector.h","chrome/browser/ash/policy/status_collector/device_status_collector_unittest.cc","chrome/test/data/extensions/theme/Cached Theme.pak"],"cls":[[2903692,18785,84,0,0,[[0,0,2,2],[1,68,16,14],[2,2,2,1],[3,14,2,2],[4,0,1,1]]]]}

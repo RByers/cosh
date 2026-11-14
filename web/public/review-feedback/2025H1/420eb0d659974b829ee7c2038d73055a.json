@@ -1,1 +1,1 @@
-{"dirs":["ui/gl/"],"files":[],"orgs":["amd.com"],"cls":[[6377725,20187,23,1.192,0.865,[[0,0]],[[5,4]],0,1]],"counts":1}
+{"dirs":["ui/gl/"],"files":["ui/gl/vsync_provider_win_dcomp.cc","ui/gl/vsync_provider_win_dcomp.h"],"cls":[[6377725,20187,23,1,0,[[0,19,4,3],[1,4,1,1]]]]}

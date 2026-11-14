@@ -1,1 +1,1 @@
-{"dirs":["ui/gfx/geometry/","ui/base/ime/","ui/accessibility/platform/"],"files":["ui/base/ime/character_composer.h","ui/base/ime/character_composer.cc"],"orgs":["gmail.com"],"cls":[[7827695,20581,4,0.548,0.355,[[0,0]],[],0,1],[7868571,20601,21,1.016,0.787,[[1,0]],[[0,-6,1],[1,-6,1]],0,2],[7891756,20607,15,0.593,0.389,[[2,0]],[],0,3]]}
+{"dirs":["ui/gfx/geometry/","ui/base/ime/","ui/accessibility/platform/"],"files":["ui/base/ime/character_composer.cc","ui/base/ime/character_composer.h"],"cls":[[7827695,20581,4,1,0],[40876,20,21,2,1,[[0,6,1,1],[1,2,1,1]]],[23185,6,15,3,2]]}

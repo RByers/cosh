@@ -1,1 +1,1 @@
-{"dirs":["content/renderer/media/","content/renderer/"],"files":[],"orgs":["yandex-team.ru"],"cls":[[3205616,18907,9,0.809,0.681,[[0,0]],[[1,1]],0,3],[3330283,18983,2,0.228,0.158,[[1,0]],[[1,0]],0,5]],"counts":1}
+{"dirs":["content/renderer/media/","content/renderer/"],"files":["content/renderer/media/android/stream_texture_wrapper_impl.cc","content/renderer/render_thread_impl.cc"],"cls":[[3205616,18907,9,3,0,[[0,6,1,1]]],[124667,76,2,5,1,[[1,2,1,0]]]]}

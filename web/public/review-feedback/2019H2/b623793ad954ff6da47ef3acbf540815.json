@@ -1,1 +1,1 @@
-{"dirs":["content/browser/tracing/"],"files":[],"orgs":["yandex-team.ru"],"cls":[[1735458,18116,109,3.596,2.876,[[0,0]],[[4,4]],0,9]],"counts":1}
+{"dirs":["content/browser/tracing/"],"files":["content/browser/tracing/background_tracing_config_impl.cc","content/browser/tracing/background_tracing_manager_browsertest.cc"],"cls":[[1735458,18116,109,9,0,[[0,38,3,3],[1,69,1,1]]]]}

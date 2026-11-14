@@ -1,1 +1,1 @@
-{"dirs":["ui/views/win/","tools/metrics/histograms/","ui/gfx/"],"files":[],"orgs":["google.com"],"cls":[[905270,17588,32,2.184,1.704,[[0,0.611,10,20],[1,0.333,3,11],[2,0.056,4,1]],[[8,6],[3,2],[1,1]],0,87]],"counts":1}
+{"dirs":["ui/views/win/","tools/metrics/histograms/","ui/gfx/"],"files":["tools/metrics/histograms/histograms.xml","ui/gfx/sequential_id_generator.h","ui/views/win/hwnd_message_handler.cc"],"cls":[[905270,17588,32,87,[[0,20],[1,11],[2,1]],[[0,11,3,2],[1,0,1,1],[2,19,8,6]]]]}

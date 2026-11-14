@@ -1,1 +1,1 @@
-{"dirs":["tools/chrome_proxy/webdriver/"],"files":[],"orgs":["google.com"],"cls":[[1560454,18005,25,0.939,0.709,[[0,1]],[[6,3]],0,8]],"counts":1}
+{"dirs":["tools/chrome_proxy/webdriver/"],"files":["tools/chrome_proxy/webdriver/common.py","tools/chrome_proxy/webdriver/lite_page.py","tools/chrome_proxy/webdriver/lofi.py","tools/chrome_proxy/webdriver/variations_combinations.py"],"cls":[[1560454,18005,25,8,0,[[0,16,3,2],[1,5,1,1],[2,0,1,0],[3,0,1,0]]]]}

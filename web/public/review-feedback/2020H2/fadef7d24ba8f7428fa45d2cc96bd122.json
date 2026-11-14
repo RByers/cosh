@@ -1,1 +1,1 @@
-{"dirs":["chrome/browser/ui/"],"files":[],"orgs":["yandex-team.ru"],"cls":[[2479166,18605,109,3.058,2.445,[[0,0]],[[8,8]],0,1]],"counts":1}
+{"dirs":["chrome/browser/ui/"],"files":["/COMMIT_MSG","chrome/browser/autocomplete/chrome_autocomplete_scheme_classifier.cc","chrome/browser/ui/views/omnibox/omnibox_view_views.cc","chrome/browser/ui/views/omnibox/omnibox_view_views_interactive_uitest.cc"],"cls":[[2479166,18605,109,1,0,[[0,0,3,3],[1,0,1,1],[2,13,2,2],[3,91,2,2]]]]}

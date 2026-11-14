@@ -1,1 +1,1 @@
-{"dirs":["tools/mb/","tools/mb/mb_config_expectations/","tools/metrics/histograms/"],"files":[],"orgs":["google.com"],"cls":[[5140066,19724,8,0.04,0.017,[[0,0.636,0,6],[1,0.364,0,2]],[],0,11],[5158987,19727,7,0.287,0.203,[[2,7]],[[1,0]],0,11]],"counts":1}
+{"dirs":["tools/mb/","tools/mb/mb_config_expectations/","tools/metrics/histograms/"],"files":["/COMMIT_MSG"],"cls":[[5140066,19724,8,11,[[0,6],[1,2]]],[18921,3,7,11,2,[[0,0,1,0]]]]}

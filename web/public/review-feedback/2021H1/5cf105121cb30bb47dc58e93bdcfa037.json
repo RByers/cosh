@@ -1,1 +1,1 @@
-{"dirs":["media/capture/video/","(root)/"],"files":[],"orgs":["poly.com"],"cls":[[2785554,18711,63,1.826,1.413,[[0,0.97,0,62],[1,0.03,0,1]],[[1,1],[0,0]],0,0]],"counts":1}
+{"dirs":["media/capture/video/","(root)/"],"files":["media/capture/video/android/java/src/org/chromium/media/VideoCaptureCamera2.java"],"cls":[[2785554,18711,63,0,[[0,62],[1,1]],[[0,56,1,1]]]]}

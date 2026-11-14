@@ -1,1 +1,0 @@
-{"cls":{"7548765":[["db97aa4a_a9040d0e","This statement is redundant since energy is always >= 0. Removing it seems to me like a more explicit way of not requiring anything of the right channel output. Is there any other reason for keeping…",0.0]]}}

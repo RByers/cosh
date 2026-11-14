@@ -1,1 +1,1 @@
-{"dirs":["tools/chrome_proxy/webdriver/"],"files":[],"orgs":["google.com"],"cls":[[1048726,17660,29,0.939,0.709,[[0,0]],[[2,1]],0,7]],"counts":1}
+{"dirs":["tools/chrome_proxy/webdriver/"],"files":["tools/chrome_proxy/webdriver/lite_page.py"],"cls":[[1048726,17660,29,7,0,[[0,29,2,1]]]]}

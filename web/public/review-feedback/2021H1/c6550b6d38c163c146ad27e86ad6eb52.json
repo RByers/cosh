@@ -1,1 +1,1 @@
-{"dirs":["chrome/browser/ui/"],"files":[],"orgs":["yandex-team.ru"],"cls":[[2797356,18724,67,3.058,2.445,[[0,0]],[[4,4]],0,1]],"counts":1}
+{"dirs":["chrome/browser/ui/"],"files":["chrome/browser/ui/passwords/password_generation_popup_view.h","chrome/browser/ui/passwords/password_generation_popup_view_browsertest.cc","chrome/browser/ui/views/passwords/password_generation_popup_view_views.h"],"cls":[[2797356,18724,67,1,0,[[0,9,1,1],[1,19,2,2],[2,2,1,1]]]]}

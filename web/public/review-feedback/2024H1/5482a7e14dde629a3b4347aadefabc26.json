@@ -1,1 +1,1 @@
-{"dirs":["chrome/browser/metrics/","tools/metrics/histograms/"],"files":[],"orgs":["google.com"],"cls":[[5155347,19732,162,5.633,4.543,[[0,56]],[[3,3]],0,242],[5246630,19751,1,0.116,0.083,[[1,12]],[],0,243]],"counts":1}
+{"dirs":["chrome/browser/metrics/","tools/metrics/histograms/"],"files":["chrome/browser/metrics/perf/metric_provider.h","chrome/browser/metrics/perf/profile_provider_chromeos.cc","chrome/browser/metrics/perf/profile_provider_chromeos_unittest.cc"],"cls":[[5155347,19732,162,242,0,[[0,15,1,1],[1,22,1,1],[2,79,1,1]]],[91283,19,1,243,1]]}

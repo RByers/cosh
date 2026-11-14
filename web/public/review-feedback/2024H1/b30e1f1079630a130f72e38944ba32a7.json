@@ -1,1 +1,1 @@
-{"dirs":["chromeos/ash/experiences/","chromeos/ash/components/"],"files":[],"orgs":["google.com"],"cls":[[5417737,19818,61,1.633,1.314,[[0,0.676,0,43],[1,0.324,1,18]],[[4,4],[1,1]],0,41]],"counts":1}
+{"dirs":["chromeos/ash/experiences/","chromeos/ash/components/"],"files":["chromeos/ash/components/dbus/patchpanel/patchpanel_client.cc","chromeos/ash/experiences/arc/session/arc_vm_client_adapter.cc"],"cls":[[5417737,19818,61,41,[[0,43],[1,18]],[[0,6,1,1],[1,38,4,4]]]]}

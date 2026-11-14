@@ -1,1 +1,1 @@
-{"dirs":["third_party/protobuf/"],"files":[],"orgs":["google.com"],"cls":[[724424,17472,8,0.573,0.414,[[0,0]],[[1,1]],0,10]],"counts":1}
+{"dirs":["third_party/protobuf/"],"files":["third_party/protobuf/BUILD.gn"],"cls":[[724424,17472,8,10,0,[[0,8,1,1]]]]}

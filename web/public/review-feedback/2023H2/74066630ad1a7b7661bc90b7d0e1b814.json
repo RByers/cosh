@@ -1,1 +1,1 @@
-{"dirs":["testing/variations/"],"files":[],"orgs":["google.com"],"cls":[[4686440,19557,19,0.25,0.18,[[0,5]],[[1,0]],0,5],[4763025,19579,19,0.25,0.18,[[0,6]],[[1,1]],0,6]],"counts":1}
+{"dirs":["testing/variations/"],"files":["testing/variations/fieldtrial_testing_config.json","/COMMIT_MSG"],"cls":[[4686440,19557,19,5,0,[[0,19,1,0]]],[76585,22,19,6,0,[[1,0,1,1]]]]}

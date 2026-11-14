@@ -1,1 +1,0 @@
-{"cls":{"7126998":[["2d96222b_594c64cd","Note: I expect these will be moved to prefetch browser tests in a follow-up CL (not high priority)",0.0],["bb5368f4_e7ef9177","Can we assert that the service worker is not registered when this function is called to avoid the case where a different service worker handles a request and it passes tests in an unexpected way? ```…",0.0]]}}

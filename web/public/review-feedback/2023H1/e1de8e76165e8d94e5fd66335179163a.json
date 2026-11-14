@@ -1,1 +1,1 @@
-{"dirs":["chrome/browser/sync/","components/sync/engine/"],"files":[],"orgs":["google.com"],"cls":[[4030462,19376,156,5.633,4.543,[[0,0.969,1,152],[1,0.031,12,4]],[[9,0],[0,0]],0,15]],"counts":1}
+{"dirs":["chrome/browser/sync/","components/sync/engine/"],"files":["/COMMIT_MSG","chrome/browser/sync/test/integration/single_client_sync_invalidations_test.cc"],"cls":[[4030462,19376,156,15,[[0,152],[1,4]],[[0,0,1,0],[1,147,8,0]]]]}

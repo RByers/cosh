@@ -1,1 +1,1 @@
-{"dirs":["components/test/data/","components/password_manager/core/"],"files":[],"orgs":["google.com"],"cls":[[3347993,18988,175,5.313,4.273,[[0,0.817,0,145],[1,0.183,0,30]],[[1,1],[0,0]],0,0]],"counts":1}
+{"dirs":["components/test/data/","components/password_manager/core/"],"files":["components/test/data/password_manager/login_db_v32.sql"],"cls":[[3347993,18988,175,0,[[0,145],[1,30]],[[0,144,1,1]]]]}

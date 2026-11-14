@@ -1,1 +1,1 @@
-{"dirs":["chrome/browser/extensions/","chrome/services/file_util/","chrome/test/data/"],"files":[],"orgs":["google.com"],"cls":[[3406497,19020,52,1.769,1.384,[[0,0.787,0,42],[1,0.18,0,10],[2,0.033,0,0]],[[3,3],[0,0],[0,0]],0,42]],"counts":1}
+{"dirs":["chrome/browser/extensions/","chrome/services/file_util/","chrome/test/data/"],"files":["chrome/browser/extensions/api/image_writer_private/single_file_tar_reader.cc","chrome/browser/extensions/api/image_writer_private/xz_extractor.cc"],"cls":[[3406497,19020,52,42,[[0,42],[1,10],[2,0]],[[0,8,2,2],[1,1,1,1]]]]}

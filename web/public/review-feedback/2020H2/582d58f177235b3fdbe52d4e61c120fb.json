@@ -1,1 +1,1 @@
-{"dirs":["content/browser/appcache/","tools/metrics/histograms/","docs/mac/"],"files":[],"orgs":["google.com"],"cls":[[2347968,18485,1,0.216,0.122,[[0,26]],[],0,307],[2350188,18488,333,10.178,8.365,[[0,0.968,27,323],[1,0.032,8,10]],[[0,0],[2,2]],0,308],[2359581,18491,2,0.174,0.115,[[2,0]],[],0,309]],"counts":1}
+{"dirs":["content/browser/appcache/","tools/metrics/histograms/","docs/mac/"],"files":["tools/metrics/histograms/histograms.xml"],"cls":[[2347968,18485,1,307,0],[2220,3,333,308,[[0,323],[1,10]],[[0,10,2,2]]],[9393,3,2,309,2]]}

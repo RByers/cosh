@@ -1,1 +1,1 @@
-{"dirs":["components/safe_browsing/core/","components/policy/resources/"],"files":[],"orgs":["google.com"],"cls":[[1786138,18144,2,0.226,0.208,[[0,0]],[],0,340],[1822878,18165,16,2.478,1.944,[[1,6]],[[11,5]],0,341]],"counts":1}
+{"dirs":["components/safe_browsing/core/","components/policy/resources/"],"files":["components/policy/resources/policy_templates.json"],"cls":[[1786138,18144,2,340,0],[36740,21,16,341,1,[[0,16,11,5]]]]}

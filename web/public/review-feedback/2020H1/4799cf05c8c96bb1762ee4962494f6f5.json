@@ -1,1 +1,1 @@
-{"dirs":["components/sync/nigori/"],"files":[],"orgs":["yandex-team.ru"],"cls":[[2056479,18309,9,0.819,0.542,[[0,0]],[[5,5]],0,0]],"counts":1}
+{"dirs":["components/sync/nigori/"],"files":["components/sync/nigori/keystore_keys_cryptographer_unittest.cc","components/sync/nigori/nigori_sync_bridge_impl_unittest.cc"],"cls":[[2056479,18309,9,0,0,[[0,0,2,2],[1,9,3,3]]]]}

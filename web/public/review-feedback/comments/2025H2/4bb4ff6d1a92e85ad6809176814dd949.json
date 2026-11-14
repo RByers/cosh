@@ -1,1 +1,0 @@
-{"cls":{"7149563":[["3fbedf7f_cd2ba44e","`BOOL` constants are `YES` and `NO`. Either say “Returns YES if events are handled”, etc, or go the generic boolean route of “Returns true if events are handled”, etc.",0.0],["6cc555e2_a54bf96f","What is `FALSE`?",-0.1],["dd319365_16a3c355","Isn't it good to mention bug 411452047 as well?",0.0]]}}

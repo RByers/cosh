@@ -1,1 +1,1 @@
-{"dirs":["chromeos/ash/services/"],"files":[],"orgs":["google.com"],"cls":[[4613090,19529,50,1.633,1.314,[[0,0]],[[4,4]],0,0]],"counts":1}
+{"dirs":["chromeos/ash/services/"],"files":["chromeos/ash/services/secure_channel/ble_scanner_impl.cc","chromeos/ash/services/secure_channel/ble_scanner_impl_unittest.cc"],"cls":[[4613090,19529,50,0,0,[[0,20,2,2],[1,28,2,2]]]]}

@@ -1,1 +1,1 @@
-{"dirs":["chrome/browser/ui/"],"files":[],"orgs":["microsoft.com"],"cls":[[4154077,19380,79,3.058,2.445,[[0,0]],[[5,4]],0,0],[4195975,19388,56,1.769,1.384,[[0,1]],[[1,1]],0,1]],"counts":1}
+{"dirs":["chrome/browser/ui/"],"files":["/COMMIT_MSG","chrome/browser/ui/web_applications/app_browser_controller.cc","chrome/browser/ui/web_applications/app_browser_controller_browsertest.cc"],"cls":[[4154077,19380,79,0,0,[[0,0,2,1],[1,7,2,2],[2,71,1,1]]],[41898,8,56,1,0,[[0,0,1,1]]]]}

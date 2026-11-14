@@ -93,7 +93,7 @@ This goal is about committed files only: data on disk that isn't committed
 
 - The weekly loop's model calls are the addressed labels (`cosh classify`,
   about 1M Haiku tokens a week, $0.22 API-equivalent) and the tone scores
-  the comment list shows. Anything added to the weekly loop should keep it
+  the comment links show. Anything added to the weekly loop should keep it
   within a few million Haiku-class tokens a week, run on the Max plan.
 - Computing the index itself is offline: no model calls.
 - Per-person model calls (`scripts/feedback_coach.py`, 115–150k Opus

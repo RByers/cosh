@@ -1,1 +1,1 @@
-{"dirs":["components/password_manager/core/","tools/metrics/histograms/"],"files":[],"orgs":["google.com"],"cls":[[5957056,20020,78,4.443,3.465,[[0,0.964,0,76],[1,0.036,0,2]],[[1,1],[0,0]],0,0]],"counts":1}
+{"dirs":["components/password_manager/core/","tools/metrics/histograms/"],"files":["/COMMIT_MSG"],"cls":[[5957056,20020,78,0,[[0,76],[1,2]],[[0,0,1,1]]]]}

@@ -1,1 +1,1 @@
-{"dirs":["chrome/browser/ash/"],"files":[],"orgs":["google.com"],"cls":[[1339089,17857,8,0.591,0.428,[[0,0]],[[7,6]],0,0]],"counts":1}
+{"dirs":["chrome/browser/ash/"],"files":["chrome/browser/ash/app_list/app_list_client_impl.h","chrome/browser/ash/app_list/internal_app/internal_app_metadata.cc"],"cls":[[1339089,17857,8,0,0,[[0,0,2,2],[1,8,5,4]]]]}

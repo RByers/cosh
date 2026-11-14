@@ -1,1 +1,1 @@
-{"dirs":["chrome/browser/ash/","(root)/"],"files":[],"orgs":["gmail.com"],"cls":[[4107488,19343,5,0.385,0.278,[[0,0.714,0,4],[1,0.286,0,1]],[[1,1],[0,0]],0,0]],"counts":1}
+{"dirs":["chrome/browser/ash/","(root)/"],"files":["chrome/browser/ash/login/session/user_session_manager.cc"],"cls":[[4107488,19343,5,0,[[0,4],[1,1]],[[0,4,1,1]]]]}

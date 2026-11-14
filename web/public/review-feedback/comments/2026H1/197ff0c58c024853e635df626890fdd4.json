@@ -1,1 +1,0 @@
-{"cls":{"7595224":[["fac4863e_f7cd0c3f","Removing this might allow for STEREO capture instead of MONO capture. This might have unintended consequences (capturing/processing 2x data, sending 2x data over the network). I'm not sure if we…",0.0]]}}

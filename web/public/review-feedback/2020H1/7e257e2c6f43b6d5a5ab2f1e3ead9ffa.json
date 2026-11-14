@@ -1,1 +1,1 @@
-{"dirs":["chrome/browser/ui/"],"files":[],"orgs":["yandex-team.ru"],"cls":[[2199056,18396,46,1.769,1.384,[[0,0]],[[2,2]],0,0]],"counts":1}
+{"dirs":["chrome/browser/ui/"],"files":["chrome/browser/ui/views/settings_reset_prompt_dialog.cc"],"cls":[[2199056,18396,46,0,0,[[0,21,2,2]]]]}

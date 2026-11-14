@@ -1,1 +1,1 @@
-{"dirs":["jingle/notifier/communicator/","(root)/"],"files":[],"orgs":["samsung.com"],"cls":[[773767,17499,8,0.573,0.414,[[0,0.818,0,7],[1,0.182,0,1]],[[1,0],[0,0]],0,0],[808547,17506,3,0.174,0.115,[[0,1]],[],0,1]],"counts":1}
+{"dirs":["jingle/notifier/communicator/","(root)/"],"files":["jingle/notifier/communicator/login.cc"],"cls":[[773767,17499,8,0,[[0,7],[1,1]],[[0,4,1,0]]],[34780,7,3,1,0]]}

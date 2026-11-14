@@ -1,1 +1,1 @@
-{"dirs":["chrome/browser/ui/"],"files":[],"orgs":["google.com"],"cls":[[3330592,18977,68,3.058,2.445,[[0,5]],[[2,1]],0,125],[3322105,18981,16,1.03,0.788,[[0,6]],[[1,1]],0,126]],"counts":1}
+{"dirs":["chrome/browser/ui/"],"files":["/COMMIT_MSG","chrome/browser/ui/android/omnibox/java/src/org/chromium/chrome/browser/omnibox/AutocompleteEditTextUnitTest.java","chrome/browser/ui/android/omnibox/java/src/org/chromium/chrome/browser/omnibox/SpannableAutocompleteEditTextModel.java"],"cls":[[3330592,18977,68,125,0,[[0,0,1,0],[1,68,1,1]]],[-8487,4,16,126,0,[[2,6,1,1]]]]}

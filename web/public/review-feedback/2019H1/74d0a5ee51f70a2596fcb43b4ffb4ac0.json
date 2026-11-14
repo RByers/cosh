@@ -1,1 +1,1 @@
-{"dirs":["tools/fuchsia/"],"files":[],"orgs":["google.com"],"cls":[[1534179,17982,5,0.354,0.253,[[0,0]],[[2,2]],0,0]],"counts":1}
+{"dirs":["tools/fuchsia/"],"files":["tools/fuchsia/local-sdk.py"],"cls":[[1534179,17982,5,0,0,[[0,5,2,2]]]]}

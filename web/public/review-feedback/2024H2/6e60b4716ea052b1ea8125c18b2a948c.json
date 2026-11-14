@@ -1,1 +1,1 @@
-{"dirs":["chrome/browser/ash/","ash/webui/help_app_ui/"],"files":[],"orgs":["google.com"],"cls":[[5921627,20011,2,0.195,0.13,[[0,76]],[],0,188],[5938771,20020,62,1.769,1.384,[[0,0.746,77,49],[1,0.254,0,13]],[[0,0],[1,1]],0,189]],"counts":1}
+{"dirs":["chrome/browser/ash/","ash/webui/help_app_ui/"],"files":["ash/webui/help_app_ui/resources/browser_proxy.ts"],"cls":[[5921627,20011,2,188,0],[17144,9,62,189,[[0,49],[1,13]],[[0,5,1,1]]]]}

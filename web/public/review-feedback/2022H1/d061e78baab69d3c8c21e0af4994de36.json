@@ -1,1 +1,1 @@
-{"dirs":["third_party/blink/renderer/"],"files":[],"orgs":["intel.com"],"cls":[[3653304,19136,4,0.281,0.198,[[0,0]],[[1,1]],0,0]],"counts":1}
+{"dirs":["third_party/blink/renderer/"],"files":["third_party/blink/renderer/modules/webgpu/gpu_supported_features.idl"],"cls":[[3653304,19136,4,0,0,[[0,2,1,1]]]]}

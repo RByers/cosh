@@ -1,1 +1,1 @@
-{"dirs":["content/public/android/"],"files":[],"orgs":["opera.com"],"cls":[[4432610,19471,7,0.518,0.412,[[0,0]],[[3,2]],0,1]],"counts":1}
+{"dirs":["content/public/android/"],"files":["content/public/android/java/src/org/chromium/content/browser/selection/SelectionPopupControllerImpl.java"],"cls":[[4432610,19471,7,1,0,[[0,7,3,2]]]]}

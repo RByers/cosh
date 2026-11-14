@@ -1,1 +1,1 @@
-{"dirs":["ash/quick_answers/ui/","chrome/browser/ui/"],"files":[],"orgs":["google.com"],"cls":[[2288504,18453,14,0.573,0.414,[[0,0.5,8,7],[1,0.5,27,7]],[[1,1],[1,1]],0,40],[2291261,18453,7,0.354,0.253,[[0,9]],[[1,1]],0,41],[2293259,18453,2,0.174,0.115,[[0,10]],[],0,42]],"counts":1}
+{"dirs":["ash/quick_answers/ui/","chrome/browser/ui/"],"files":["ash/quick_answers/ui/user_notice_view.cc","chrome/browser/ui/ash/quick_answers/ui/quick_answers_view.cc"],"cls":[[2288504,18453,14,40,[[0,7],[1,7]],[[0,7,1,1],[1,7,1,1]]],[2757,0,7,41,0,[[0,7,1,1]]],[1998,0,2,42,0]]}

@@ -1,1 +1,1 @@
-{"dirs":["build/fuchsia/cipd/"],"files":[],"orgs":["google.com"],"cls":[[2934043,18780,2,0.182,0.152,[[0,0]],[[3,3]],0,842]],"counts":1}
+{"dirs":["build/fuchsia/cipd/"],"files":["/COMMIT_MSG","build/fuchsia/cipd/README.md"],"cls":[[2934043,18780,2,842,0,[[0,0,1,1],[1,2,2,2]]]]}

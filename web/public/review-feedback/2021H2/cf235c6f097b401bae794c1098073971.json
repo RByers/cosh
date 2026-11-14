@@ -1,1 +1,1 @@
-{"dirs":["content/renderer/","third_party/blink/web_tests/"],"files":[],"orgs":["google.com"],"cls":[[3063235,18843,8,0.809,0.681,[[0,0]],[[1,1]],0,5],[3150017,18879,6,0.281,0.198,[[1,5]],[],0,6]],"counts":1}
+{"dirs":["content/renderer/","third_party/blink/web_tests/"],"files":["content/renderer/render_frame_impl.cc"],"cls":[[3063235,18843,8,5,0,[[0,8,1,1]]],[86782,36,6,6,1]]}

@@ -1,1 +1,1 @@
-{"dirs":["base/fuchsia/","fuchsia_web/runners/common/"],"files":[],"orgs":["google.com"],"cls":[[1808192,18166,17,0.939,0.709,[[0,0]],[[10,10]],0,0],[1868934,18187,5,0.354,0.253,[[1,0]],[[1,1]],0,1]],"counts":1}
+{"dirs":["base/fuchsia/","fuchsia_web/runners/common/"],"files":["/COMMIT_MSG","base/fuchsia/scoped_service_binding_unittest.cc","fuchsia_web/runners/common/modular/fake_component_context.cc"],"cls":[[1808192,18166,17,0,0,[[0,0,3,3],[1,16,7,7]]],[60742,21,5,1,1,[[2,5,1,1]]]]}

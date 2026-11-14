@@ -1,1 +1,1 @@
-{"dirs":["chrome/browser/resource_coordinator/"],"files":[],"orgs":["google.com"],"cls":[[1212246,17794,34,1.769,1.384,[[0,0]],[[9,4]],0,0]],"counts":1}
+{"dirs":["chrome/browser/resource_coordinator/"],"files":["chrome/browser/resource_coordinator/tab_lifecycle_unit.cc","chrome/browser/resource_coordinator/tab_manager_delegate_chromeos.cc","chrome/browser/resource_coordinator/utils.cc","chrome/browser/resource_coordinator/utils.h"],"cls":[[1212246,17794,34,0,0,[[0,1,2,0],[1,3,2,2],[2,24,3,1],[3,4,2,1]]]]}

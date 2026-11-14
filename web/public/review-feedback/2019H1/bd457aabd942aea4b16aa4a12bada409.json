@@ -1,1 +1,1 @@
-{"dirs":["components/sync/engine/","components/sync/service/","chrome/browser/profiles/"],"files":[],"orgs":["yandex-team.ru"],"cls":[[1386787,17910,31,1.723,1.188,[[0,0.947,0,31],[1,0.053,0,1]],[[3,3],[0,0]],0,6],[1530917,17976,2,0.195,0.13,[[2,0]],[],0,7]],"counts":1}
+{"dirs":["components/sync/engine/","components/sync/service/","chrome/browser/profiles/"],"files":["components/sync/engine/sync_scheduler.h","components/sync/engine/sync_scheduler_impl.h"],"cls":[[1386787,17910,31,6,[[0,31],[1,1]],[[0,0,1,1],[1,7,2,2]]],[144130,66,2,7,2]]}

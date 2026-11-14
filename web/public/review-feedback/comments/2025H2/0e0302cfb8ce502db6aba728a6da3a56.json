@@ -1,1 +1,0 @@
-{"cls":{"7124102":[["0016f7bc_7a26857f","I think we want optional number and not any?",0.0],["f0ac757f_fbeabc19","let's use the different pattern to set it like the if below: ``` if (std::isfinite(iterations)) { animation_object.setIterations(iterations) } ```",0.0]]}}

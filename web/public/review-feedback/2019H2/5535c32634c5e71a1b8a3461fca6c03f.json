@@ -1,1 +1,1 @@
-{"dirs":["extensions/browser/"],"files":[],"orgs":["yandex-team.ru"],"cls":[[1879258,18200,8,0.557,0.377,[[0,5]],[[7,5]],0,13]],"counts":1}
+{"dirs":["extensions/browser/"],"files":["/COMMIT_MSG","extensions/browser/extension_function_dispatcher.cc"],"cls":[[1879258,18200,8,13,0,[[0,0,5,4],[1,8,2,1]]]]}

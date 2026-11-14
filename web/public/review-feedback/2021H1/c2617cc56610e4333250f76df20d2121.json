@@ -1,1 +1,1 @@
-{"dirs":["chrome/browser/","chrome/browser/policy/"],"files":[],"orgs":["opera.com"],"cls":[[2745146,18701,59,1.769,1.384,[[0,0.82,0,49],[1,0.18,0,10]],[[7,2],[0,0]],0,0]],"counts":1}
+{"dirs":["chrome/browser/","chrome/browser/policy/"],"files":["chrome/browser/chrome_content_browser_client.cc"],"cls":[[2745146,18701,59,0,[[0,49],[1,10]],[[0,49,7,2]]]]}

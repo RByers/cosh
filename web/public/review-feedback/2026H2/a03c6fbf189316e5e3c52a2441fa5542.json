@@ -1,1 +1,1 @@
-{"dirs":["third_party/blink/renderer/","(root)/","third_party/blink/web_tests/"],"files":["third_party/blink/renderer/core/css/css_style_sheet.cc","AUTHORS"],"orgs":["gmail.com"],"cls":[[8442216,20735,13,0.537,0.373,[[0,0.824,0,12],[1,0.118,0,1],[2,0.059,0,0]],[[0,-4,1],[1,0,0]],0,0]]}
+{"dirs":["third_party/blink/renderer/","(root)/","third_party/blink/web_tests/"],"files":["AUTHORS","third_party/blink/renderer/core/css/css_style_sheet.cc"],"cls":[[8442216,20735,13,0,[[0,12],[1,1],[2,0]],[[0,1,1,0],[1,6,1,1]]]]}

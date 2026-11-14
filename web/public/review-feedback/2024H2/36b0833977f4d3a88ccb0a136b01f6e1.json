@@ -1,1 +1,1 @@
-{"dirs":["chrome/browser/ash/","(root)/"],"files":[],"orgs":["exalt.ps"],"cls":[[5909436,20032,3,0.195,0.13,[[0,0.6,0,2],[1,0.4,0,1]],[[8,6],[0,0]],0,0]],"counts":1}
+{"dirs":["chrome/browser/ash/","(root)/"],"files":["/COMMIT_MSG","chrome/browser/ash/scanning/lorgnette_notification_controller.cc"],"cls":[[5909436,20032,3,0,[[0,2],[1,1]],[[0,0,5,4],[1,2,3,2]]]]}

@@ -1,1 +1,1 @@
-{"dirs":["extensions/browser/","third_party/blink/common/"],"files":[],"orgs":["yandex-team.ru"],"cls":[[3757674,19187,11,0.557,0.377,[[0,2]],[[1,0]],0,40],[3996832,19305,51,1.328,0.98,[[1,0]],[[5,4]],0,41]],"counts":1}
+{"dirs":["extensions/browser/","third_party/blink/common/"],"files":["extensions/browser/blocklist.cc","third_party/blink/common/loader/throttling_url_loader_unittest.cc"],"cls":[[3757674,19187,11,40,0,[[0,11,1,0]]],[239158,118,51,41,1,[[1,46,5,4]]]]}

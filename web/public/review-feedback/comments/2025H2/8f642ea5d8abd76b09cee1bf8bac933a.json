@@ -1,1 +1,0 @@
-{"cls":{"7262334":[["03e5fd5f_6548471a","memo/ IIRC, kinuko@ asked me to use delegate pattern for this to allow embedders to process candidates before content/. Now it does not seem necessary? (after prefetch impl is moved to content/)?",0.0],["7d777e75_8b5f0fac","Can we reorder these?",0.0]]}}

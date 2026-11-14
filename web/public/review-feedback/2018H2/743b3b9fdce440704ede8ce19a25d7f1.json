@@ -1,1 +1,1 @@
-{"dirs":["third_party/blink/renderer/"],"files":[],"orgs":["yandex-team.ru"],"cls":[[1120176,17714,22,0.723,0.518,[[0,34]],[],0,59],[1125935,17722,39,1.328,0.98,[[0,35]],[[4,1]],0,60]],"counts":1}
+{"dirs":["third_party/blink/renderer/"],"files":["third_party/blink/renderer/bindings/core/v8/to_v8_for_core.h","third_party/blink/renderer/platform/bindings/dom_wrapper_map.h"],"cls":[[1120176,17714,22,59,0],[5759,8,39,60,0,[[0,0,3,0],[1,0,1,1]]]]}

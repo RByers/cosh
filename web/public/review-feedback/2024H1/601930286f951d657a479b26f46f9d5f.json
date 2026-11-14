@@ -1,1 +1,1 @@
-{"dirs":["components/policy/","chrome/browser/ash/","components/policy/resources/"],"files":[],"orgs":["google.com"],"cls":[[5224209,19745,2,0.34,0.231,[[0,1]],[[1,0]],0,878],[5450068,19829,14,0.591,0.428,[[1,260]],[],0,879],[5616390,19885,8,1.02,0.696,[[2,15]],[],0,880]],"counts":1}
+{"dirs":["components/policy/","chrome/browser/ash/","components/policy/resources/"],"files":["/COMMIT_MSG"],"cls":[[5224209,19745,2,878,0,[[0,0,1,0]]],[225859,84,14,879,1],[166322,56,8,880,2]]}

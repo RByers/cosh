@@ -1,1 +1,1 @@
-{"dirs":["chrome/browser/","media/capture/video/","ash/constants/","ash/system/camera/","tools/metrics/histograms/"],"files":[],"orgs":["google.com"],"cls":[[5974677,20034,69,3,2.353,[[0,0.474,0,33],[1,0.321,0,24],[2,0.128,0,8],[3,0.038,0,2],[4,0.038,0,2]],[[0,0],[1,1],[0,0],[0,0],[0,0]],0,4]],"counts":1}
+{"dirs":["chrome/browser/","media/capture/video/","ash/constants/","ash/system/camera/","tools/metrics/histograms/"],"files":["media/capture/video/chromeos/mojom/effects_pipeline.mojom"],"cls":[[5974677,20034,69,4,[[0,33],[1,24],[2,8],[3,2],[4,2]],[[0,24,1,1]]]]}

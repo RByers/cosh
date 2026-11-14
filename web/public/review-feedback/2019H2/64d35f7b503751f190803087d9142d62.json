@@ -1,1 +1,1 @@
-{"dirs":["testing/libfuzzer/fuzzers/"],"files":[],"orgs":["google.com"],"cls":[[1931653,18248,167,5.313,4.273,[[0,0]],[[18,13]],0,0]],"counts":1}
+{"dirs":["testing/libfuzzer/fuzzers/"],"files":["/COMMIT_MSG","testing/libfuzzer/fuzzers/libyuv_fuzzer.cc","testing/libfuzzer/fuzzers/libyuv_scale_fuzzer.cc"],"cls":[[1931653,18248,167,0,0,[[0,0,1,1],[1,0,12,11],[2,157,5,1]]]]}

@@ -1,1 +1,1 @@
-{"dirs":["ui/gl/"],"files":["ui/gl/vsync_thread_win_dcomp.cc","ui/gl/direct_composition_support.cc","gpu/ipc/service/BUILD.gn"],"orgs":["amd.com"],"cls":[[7489863,20481,33,1.692,1.256,[[0,1]],[[0,-11,1],[1,-11,1],[2,-11,1],[1,-11,1],[0,-8,1],[0,-8,1]],0,2]]}
+{"dirs":["ui/gl/"],"files":["gpu/ipc/service/BUILD.gn","ui/gl/direct_composition_support.cc","ui/gl/vsync_thread_win_dcomp.cc"],"cls":[[7489863,20481,33,2,0,[[0,0,1,1],[1,19,2,2],[2,14,3,3]]]]}

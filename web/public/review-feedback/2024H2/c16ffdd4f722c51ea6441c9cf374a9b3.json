@@ -1,1 +1,1 @@
-{"dirs":["docs/updater/","chrome/browser/component_updater/"],"files":[],"orgs":["google.com"],"cls":[[5835647,19970,13,0.573,0.414,[[0,0.688,2,9],[1,0.312,0,4]],[[1,1],[0,0]],0,5]],"counts":1}
+{"dirs":["docs/updater/","chrome/browser/component_updater/"],"files":["docs/updater/protocol_4.md"],"cls":[[5835647,19970,13,5,[[0,9],[1,4]],[[0,6,1,1]]]]}

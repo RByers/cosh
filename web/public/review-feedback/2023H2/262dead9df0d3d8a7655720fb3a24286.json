@@ -1,1 +1,1 @@
-{"dirs":["third_party/blink/renderer/"],"files":[],"orgs":["intel.com"],"cls":[[4871457,19622,6,0.281,0.198,[[0,5]],[[1,1]],0,6],[5092349,19709,6,0.281,0.198,[[0,6]],[[1,0]],0,7],[5129439,19710,2,0.169,0.112,[[0,7]],[[1,1]],0,8]],"counts":1}
+{"dirs":["third_party/blink/renderer/"],"files":["third_party/blink/renderer/core/html/parser/html_document_parser_fastpath.cc","third_party/blink/renderer/core/html/forms/html_input_element.cc","/COMMIT_MSG"],"cls":[[4871457,19622,6,6,0,[[0,6,1,1]]],[220892,87,6,7,0,[[1,5,1,0]]],[37090,1,2,8,0,[[2,0,1,1]]]]}

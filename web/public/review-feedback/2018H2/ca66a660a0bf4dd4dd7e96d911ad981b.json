@@ -1,1 +1,1 @@
-{"dirs":["components/safe_browsing/core/"],"files":[],"orgs":["yandex-team.ru"],"cls":[[1119908,17730,89,2.159,1.85,[[0,1]],[[1,0]],0,14],[1180884,17764,36,1.396,1.176,[[0,2]],[],0,15],[1182802,17764,1,0.226,0.208,[[0,3]],[],0,16],[1270735,17815,1,0.226,0.208,[[0,4]],[],0,17]],"counts":1}
+{"dirs":["components/safe_browsing/core/"],"files":["components/safe_browsing/core/browser/db/v4_get_hash_protocol_manager_unittest.cc"],"cls":[[1119908,17730,89,14,0,[[0,86,1,0]]],[60976,34,36,15,0],[1918,0,1,16,0],[87933,51,1,17,0]]}

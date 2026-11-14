@@ -1,1 +1,1 @@
-{"dirs":["chrome/browser/ui/","tools/metrics/histograms/"],"files":[],"orgs":["google.com"],"cls":[[2337679,18489,44,1.769,1.384,[[0,0.745,2,33],[1,0.255,2,11]],[[6,4],[1,1]],0,4]],"counts":1}
+{"dirs":["chrome/browser/ui/","tools/metrics/histograms/"],"files":["chrome/browser/ui/views/frame/browser_view.cc","chrome/browser/ui/views/frame/browser_view.h","tools/metrics/histograms/histograms.xml"],"cls":[[2337679,18489,44,4,[[0,33],[1,11]],[[0,21,1,0],[1,12,5,4],[2,11,1,1]]]]}

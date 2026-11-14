@@ -1,1 +1,1 @@
-{"dirs":["chrome/renderer/safe_browsing/","components/safe_browsing/content/","components/safe_browsing/core/"],"files":["chrome/renderer/safe_browsing/phishing_classifier_browsertest.cc"],"orgs":["google.com"],"cls":[[8032273,20649,72,2.523,1.849,[[0,0.923,1,70],[1,0.051,23,2],[2,0.026,17,0]],[[0,-9,1],[0,-9,1]],0,126]]}
+{"dirs":["chrome/renderer/safe_browsing/","components/safe_browsing/content/","components/safe_browsing/core/"],"files":["chrome/renderer/safe_browsing/phishing_classifier_browsertest.cc"],"cls":[[8032273,20649,72,126,[[0,70],[1,2],[2,0]],[[0,21,2,2]]]]}

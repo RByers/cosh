@@ -1,1 +1,1 @@
-{"dirs":["build/config/","testing/libfuzzer/research/"],"files":[],"orgs":["google.com"],"cls":[[6798147,20299,7,0.019,0.007,[[0,0]],[],0,27],[6858814,20322,3,0.065,0.032,[[1,0]],[],0,27]]}
+{"dirs":["build/config/","testing/libfuzzer/research/"],"files":[],"cls":[[6798147,20299,7,27,0],[60667,23,3,27,1]]}

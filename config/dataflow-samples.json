@@ -3129,44 +3129,6 @@
     }
    ]
   },
-  "data/private/feedback-threads.jsonl": {
-   "parts": [
-    {
-     "name": null,
-     "kind": "lines",
-     "columns": [
-      "line",
-      "text"
-     ],
-     "rows": [
-      [
-       1,
-       "{\"k\":\"1202a9c0d2c2aaefa4462a68c79c2265\",\"h\":\"2025H2\",\"cls\":[[6593311,[\"098770e6_bbce7b1f\",\"a5c5b0c0_abb04bb1\",\"e43f209d_6dbcbe05\"]],[6624818,[]],[6624459,[]],[6624460,[]],[6624101,[]],[6703641,[]],[6632847,[]],[6634358,[]],[6633363,[]],[663…"
-      ],
-      [
-       1393,
-       "{\"k\":\"6f8502afe3657fd5b391eb6ad84d2225\",\"h\":\"2025H2\",\"cls\":[[6812763,[\"a898ae22_22a31be6\"]],[6846025,[\"ce3b9599_0a12c013\"]],[6647309,[\"2268132d_1b7738dc\",\"7c1937a8_3d4702f0\",\"0fdc4cb3_865fa470\",\"2bbb8fc2_cb00f4b9\",\"5ed6b559_0af23f45\"]],[686…"
-      ],
-      [
-       2785,
-       "{\"k\":\"cdfe493fb054258741d705b690dda92a\",\"h\":\"2026H2\",\"cls\":[[8376785,[\"8e974810_73272572\",\"a13b71c1_970aba62\",\"e5afcfdf_129ae770\",\"eb991502_49115367\"]]]}"
-      ],
-      [
-       4178,
-       "{\"k\":\"7fc5912d5c073d4b283c75fc900c4563\",\"h\":\"2026H1\",\"cls\":[[7287018,[\"453c734a_583340b7\"]],[7198720,[\"437ea442_c7d1eb60\",\"ad391af2_e6540025\",\"2c89fbc5_ad503c6b\",\"03112cac_47ef3134\",\"06254531_358206db\",\"8c9ea0b6_02626dbc\",\"c6e3d20c_59d12f0c…"
-      ],
-      [
-       5570,
-       "{\"k\":\"0751b54d3be4358b77a3acd02c66501f\",\"h\":\"2026H2\",\"cls\":[[8693545,[]]]}"
-      ]
-     ]
-    }
-   ]
-  },
-  "web/public/review-feedback/comments/": {
-   "withheld": "Per-comment tone, negative scores included, is shown only after someone types the person's address (ground rule 5), never on a page reached by clicks.",
-   "parts": []
-  },
   "data/private/feedback-coach/": {
    "withheld": "Private coaching reports about one person each; never published.",
    "parts": []
@@ -3763,6 +3725,44 @@
       [
        "[\"pages\"]",
        "[{\"id\": \"page-index\",\"path\": \"web/index.html\",\"title\": \"Landing page\",\"purpose\": \"One card per dashboard; reads no data.\",\"entry_script\": null,\"reads\": [],\"sources_line\": null},{\"id\": \"page-404\",\"path\": \"web/404.html\",\"title\": \"Page not fou…"
+      ]
+     ]
+    }
+   ]
+  },
+  "web/public/review-feedback/links/": {
+   "withheld": "Per-comment tone, negative scores included, is shown only after someone types the person's address (ground rule 5), never on a page reached by clicks.",
+   "parts": []
+  },
+  "data/private/feedback-links.jsonl": {
+   "parts": [
+    {
+     "name": null,
+     "kind": "lines",
+     "columns": [
+      "line",
+      "text"
+     ],
+     "rows": [
+      [
+       1,
+       "{\"k\":\"1202a9c0d2c2aaefa4462a68c79c2265\",\"h\":\"2023H1\",\"cls\":[[4131407,[[0,[\"89d1dd89_f7b9b440\"]],[1,[\"1e3cbe21_9f78de3f\",\"bdaacfa0_90403305\"]]]],[4154583,[[0,[\"b1ff6401_8014e833\"]]]],[4070030,[[0,[\"09b29879_20e55944\",\"c1a6eed3_2ac617ad\"]]]],[4181330,[…"
+      ],
+      [
+       3154,
+       "{\"k\":\"094394c727253bc44972a4495f854cc2\",\"h\":\"2023H1\",\"cls\":[[4204867,[[0,[\"2c445bac_3e23fc44\"]],[1,[\"4d43d8ae_1f76e911\",\"6dbbe01b_c3b2cb97\"]]]],[4223231,[[0,[\"45cd0828_29abef23\"]],[1,[\"0c728202_510890f0\"]]]],[4295759,[[0,[\"46339293_34240e2d\",\"4b9b239…"
+      ],
+      [
+       6308,
+       "{\"k\":\"f157cf519aea3164432264f4db0c4150\",\"h\":\"2025H2\",\"cls\":[[6769566,[[0,[\"1bc4d816_be4b259e\",\"2d44c529_b351508c\"]],[1,[\"033ac0c5_824c74e9\"]]]],[6829003,[[0,[\"4a5243c9_807155ca\"]],[1,[\"2f373751_c2487163\"]]]],[6872274,[[0,[\"d718580c_9a9f8ab4\"]]]],[716…"
+      ],
+      [
+       9462,
+       "{\"k\":\"280dbd98bfe5facc4bdf4066c1beb228\",\"h\":\"2025H2\",\"cls\":[[7030724,[[0,[\"5bc13228_cbc80875\"]]]]]}"
+      ],
+      [
+       12615,
+       "{\"k\":\"8e87da53846c28886a47435fcb849f48\",\"h\":\"2026H2\",\"cls\":[[8648509,[[0,[\"0d52d694_cd0a83b4\"]]]]]}"
       ]
      ]
     }

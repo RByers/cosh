@@ -1,1 +1,1 @@
-{"dirs":["testing/libfuzzer/fuzzers/","tools/ipc_fuzzer/"],"files":[],"orgs":["google.com"],"cls":[[3054371,18834,1,0.065,0.032,[[0,16]],[],0,179],[3110915,18859,5,0.354,0.253,[[1,0]],[],0,180]],"counts":1}
+{"dirs":["testing/libfuzzer/fuzzers/","tools/ipc_fuzzer/"],"files":[],"cls":[[3054371,18834,1,179,0],[56544,25,5,180,1]]}

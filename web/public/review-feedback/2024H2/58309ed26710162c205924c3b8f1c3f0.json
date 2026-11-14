@@ -1,1 +1,1 @@
-{"dirs":["chrome/common/","ui/android/java/","ui/android/javatests/"],"files":[],"orgs":["google.com"],"cls":[[5685953,19920,6,0.393,0.357,[[0,0]],[[1,1]],0,5],[6089616,20073,26,1.081,0.676,[[1,0.643,0,17],[2,0.357,0,9]],[],0,6]],"counts":1}
+{"dirs":["chrome/common/","ui/android/java/","ui/android/javatests/"],"files":["chrome/common/BUILD.gn"],"cls":[[5685953,19920,6,5,0,[[0,5,1,1]]],[403663,153,26,6,[[1,17],[2,9]]]]}

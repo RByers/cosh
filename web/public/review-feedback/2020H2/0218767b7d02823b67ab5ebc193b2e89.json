@@ -1,1 +1,1 @@
-{"dirs":["chrome/browser/ash/","chromeos/ash/services/","components/policy/proto/"],"files":[],"orgs":["google.com"],"cls":[[2506010,18570,14,0.591,0.428,[[0,0.667,0,10],[1,0.167,0,2],[2,0.167,0,2]],[[0,0],[0,0],[1,0]],0,0],[2536150,18579,5,0.385,0.278,[[0,0.714,1,4],[1,0.286,1,1]],[],0,1]],"counts":1}
+{"dirs":["chrome/browser/ash/","chromeos/ash/services/","components/policy/proto/"],"files":["components/policy/proto/device_management_backend.proto"],"cls":[[2506010,18570,14,0,[[0,10],[1,2],[2,2]],[[0,2,1,0]]],[30140,9,5,1,[[0,4],[1,1]]]]}

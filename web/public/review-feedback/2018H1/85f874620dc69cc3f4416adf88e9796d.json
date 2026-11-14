@@ -1,1 +1,1 @@
-{"dirs":["chrome/browser/ui/","chrome/browser/","ash/constants/","tools/metrics/histograms/"],"files":[],"orgs":["google.com"],"cls":[[1092238,17690,5,0.385,0.278,[[0,8]],[[1,0]],0,62],[1092192,17691,18,1.03,0.788,[[1,0.583,1,11],[2,0.292,0,5],[3,0.125,0,2]],[],0,63]],"counts":1}
+{"dirs":["chrome/browser/ui/","chrome/browser/","ash/constants/","tools/metrics/histograms/"],"files":["chrome/browser/ui/webui/settings/settings_localized_strings_provider.cc"],"cls":[[1092238,17690,5,62,0,[[0,5,1,0]]],[-46,1,18,63,[[1,11],[2,5],[3,2]]]]}

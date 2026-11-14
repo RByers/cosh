@@ -1,1 +1,1 @@
-{"dirs":["chromeos/services/chromebox_for_meetings/"],"files":[],"orgs":["google.com"],"cls":[[5783962,19951,13,0.573,0.414,[[0,0]],[[1,1]],0,0]],"counts":1}
+{"dirs":["chromeos/services/chromebox_for_meetings/"],"files":["chromeos/services/chromebox_for_meetings/public/proto/logs_payload.proto"],"cls":[[5783962,19951,13,0,0,[[0,4,1,1]]]]}

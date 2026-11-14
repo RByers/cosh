@@ -1,1 +1,1 @@
-{"dirs":["chrome/browser/ui/"],"files":[],"orgs":["google.com"],"cls":[[2356424,18492,6,0.385,0.278,[[0,0]],[[1,1]],0,1]],"counts":1}
+{"dirs":["chrome/browser/ui/"],"files":["chrome/browser/ui/webui/ash/login/management_transition_screen_handler.cc"],"cls":[[2356424,18492,6,1,0,[[0,6,1,1]]]]}

@@ -1,1 +1,1 @@
-{"dirs":["chromeos/ash/components/","chrome/browser/ash/"],"files":[],"orgs":["google.com"],"cls":[[5553244,19893,32,1.633,1.314,[[0,0.684,0,22],[1,0.316,0,10]],[[0,0],[2,2]],0,0],[5641645,19895,16,1.03,0.788,[[1,1]],[],0,1],[5624394,19898,16,1.03,0.788,[[1,2]],[],0,2]],"counts":1}
+{"dirs":["chromeos/ash/components/","chrome/browser/ash/"],"files":["chrome/browser/ash/login/session/user_session_initializer.cc","chrome/browser/ash/login/session/user_session_manager.cc"],"cls":[[5553244,19893,32,0,[[0,22],[1,10]],[[0,9,1,1],[1,0,1,1]]],[88401,2,16,1,1],[-17251,3,16,2,1]]}

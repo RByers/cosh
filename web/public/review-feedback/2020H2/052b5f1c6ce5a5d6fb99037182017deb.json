@@ -1,1 +1,1 @@
-{"dirs":["chrome/browser/ash/"],"files":[],"orgs":["google.com"],"cls":[[2547500,18589,261,10.175,8.321,[[0,0]],[[10,9]],0,7],[2568375,18597,4,0.385,0.278,[[0,1]],[],0,8]],"counts":1}
+{"dirs":["chrome/browser/ash/"],"files":["chrome/browser/ash/system_logs/single_log_file_log_source.cc","chrome/browser/ash/system_logs/single_log_file_log_source.h","chrome/browser/ash/system_logs/single_log_file_log_source_unittest.cc"],"cls":[[2547500,18589,261,7,0,[[0,78,3,3],[1,24,2,2],[2,159,5,4]]],[20875,8,4,8,0]]}

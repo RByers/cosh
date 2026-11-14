@@ -165,8 +165,7 @@
           light (little feedback per line) to dark blue (a lot). Directories with fewer than
           <slot name="minDir"></slot> changes are pooled in “Other”, and “rest of” is the files directly in a
           directory. ▸ opens a directory.<span data-if="you"> The Yours columns are your changes, sorted by your
-          lines, with your feedback index in each directory against the peers chosen under
-          <a href="#summary">Your feedback index</a>. A directory's index adds up its subdirectories the same way
+          lines, with your feedback index in each directory. A directory's index adds up its subdirectories the same way
           the overall index does, so it is the same whether the directory is open or not. Rows with fewer than
           <slot name="minCls"></slot> of your changes show no AFR or index.</span>
         </template>
@@ -231,23 +230,11 @@
         <h2 id="summary-title">Your feedback index</h2>
         <p id="summary-sub" class="sub"></p>
         <template data-msg="summary-sub">
-          Your AFR against the typical rate of<span data-if="none"> all contributors</span><span
-          data-if="!none"> contributors <slot name="peers"></slot></span>, over all your changes from
-          <slot name="from"></slot> to <slot name="to"></slot>. 1.00× is typical.
+          Your AFR against your peers': everyone else in the same directories, half-year and experience, over all
+          your changes from <slot name="from"></slot> to <slot name="to"></slot>. 1.00× is typical.
           <span data-if="!eligible">You landed fewer than <slot name="minCls"></slot> changes, too few to be
           ranked among peers, so treat your figures with care.</span>
         </template>
-        <template data-msg="peers-e">with as many changes landed before</template>
-        <template data-msg="peers-d">in the same directories</template>
-        <template data-msg="peers-o">in the same organization</template>
-        <template data-msg="peers-and">and</template>
-        <template data-msg="peers-all">of any experience, anywhere</template>
-        <fieldset id="rf-norm" class="segmented rf-norm">
-          <legend>Compare with contributors who have the same</legend>
-          <label><input type="checkbox" value="e" checked />Experience</label>
-          <label><input type="checkbox" value="d" checked />Directories</label>
-          <label><input type="checkbox" value="o" />Organization</label>
-        </fieldset>
         <div class="tiles">
           <div class="tile" id="rf-tile-cls"><div class="tile-label">Changes landed</div><div class="tile-value"></div><div class="tile-sub"></div></div>
           <div class="tile" id="rf-tile-threads"><div class="tile-label">Addressed comments</div><div class="tile-value"></div></div>
@@ -290,8 +277,8 @@
         <p id="per-cl-sub" class="sub"></p>
         <template data-msg="per-cl-sub">
           How many addressed review comments each of your changes drew<span data-if="half">, for the changes landed
-          <slot name="half"></slot></span>. Select a column to see only those changes in the directories and
-          comments below; select it again to clear the filter.
+          <slot name="half"></slot></span>. Select a column to see only those changes in the directories
+          below; select it again to clear the filter.
         </template>
         <div class="chart">
           <canvas id="rf-per-cl" role="img" aria-label="Histogram of your changes by how many addressed review comments each drew."></canvas>
@@ -304,98 +291,56 @@
         <a class="card-anchor" href="#directories" aria-label="Link to this section" title="Link to this section">#</a>
         <h2 id="directories-title">Where your feedback comes from</h2>
         <p class="sub">
-          The directories you changed most, with your AFR in each and your feedback index there (against
-          the peers chosen above), shaded from green (less feedback than your peers) through white (typical) to red
-          (more). ▸ opens a directory; select one to list its comments below.
+          The directories you changed most, with your AFR in each and your feedback index there, shaded from green
+          (less feedback than your peers) through white (typical) to red (more). ▸ opens a directory, down to the
+          files that drew review comments, and a file into its changes, with links to the addressed comments.
         </p>
-        <!-- Set by selecting a dot in the over-time chart; filters this table and the comments. -->
+        <!-- Set by selecting a dot in the over-time chart; filters this table. -->
         <p id="rf-half-filter" class="rf-filter" hidden>
           <span id="rf-half-filter-name" class="rf-filter-name"></span>
           <button type="button" id="rf-half-clear">Clear</button>
         </p>
         <template data-msg="half-filter">Filter: only changes landed <slot name="half"></slot></template>
-        <!-- Set by selecting a column of the comments-per-change chart; filters this table and the comments. -->
+        <!-- Set by selecting a column of the comments-per-change chart; filters this table. -->
         <p id="rf-bin-filter" class="rf-filter" hidden>
           <span class="rf-filter-name"></span>
           <button type="button" class="rf-bin-clear">Clear</button>
         </p>
         <template data-msg="bin-filter">Filter: only changes with <slot name="bin"></slot></template>
-        <!-- A column of the comments-per-change chart, in the filter lines and the comments' caption. -->
+        <!-- A column of the comments-per-change chart, in the filter line. -->
         <template data-msg="bin-name"><span data-if="none">no</span><span data-if="!none"><slot
           name="n"></slot></span> addressed <span data-if="one">comment</span><span data-if="!one">comments</span><span
           data-if="more"> or more</span></template>
         <div class="table-wrap">
           <table id="rf-dirs" class="rf-table">
-            <thead><tr><th scope="col">Directory</th><th scope="col" class="num">Changes</th>
+            <thead><tr><th scope="col">Directory or file</th><th scope="col" class="num">Changes</th>
               <th scope="col" class="num" title="Your changes' lines there: each change's new or changed lines, times its share there">Lines</th>
-              <th scope="col" class="num">Addressed comments</th><th scope="col" class="num">AFR</th>
-              <th scope="col" class="num">Feedback index</th><th scope="col" class="num">Earlier commits</th></tr></thead>
+              <th scope="col" class="num" title="Review comments: comment threads started by reviewers">Feedback</th>
+              <th scope="col" class="num" title="Review comments that led to a change in the code">Addressed</th>
+              <th scope="col" class="num">AFR</th><th scope="col" class="num">Feedback index</th></tr></thead>
             <tbody></tbody>
           </table>
         </div>
         <template data-msg="dirs-other">Other (<slot name="n"></slot>)</template>
         <template data-msg="dirs-rest">rest of <slot name="dir"></slot></template>
+        <template data-msg="dirs-other-files">other files</template>
+        <template data-msg="dirs-commit-msg">commit message</template>
+        <template data-msg="change-comment">#<slot name="n"></slot></template>
+        <template data-msg="change-comment-title">Open addressed comment <slot name="n"></slot> on this file in Gerrit</template>
+        <template data-msg="change-loading">Loading…</template>
+        <template data-msg="change-no-links">comments linked from <slot name="year"></slot> on</template>
         <template data-msg="dirs-no-ratio">Fewer than <slot name="n"></slot> changes: too few for a rate</template>
-        <p class="note">A directory's changes count each change once, however many of its subdirectories the change
-          touched; “Other” counts each change once too, and lists, at each level, the directories with fewer than
-          <span class="rf-min-cls"></span> of your changes (▸ opens it). That is too few for a rate to say much, so
-          those rows show none. A change's lines and comments are split across the directories it changed, by
-          lines; each comment goes to the directory of its file. “Earlier commits” are yours in that directory
-          before your latest change there; for a directory that opens, the most in any one directory below it.</p>
+        <p class="note">A row's changes count each change once, however many of its files and subdirectories the
+          change touched; “Other” counts each change once too, and lists, at each level, the entries with fewer
+          than <span class="rf-min-cls"></span> of your changes (▸ opens it). That is too few for a rate to say
+          much, so those rows show none. A change's lines are split across the directories and files it changed,
+          by the lines it inserted in each; each comment goes to its file. Only the files that drew review
+          comments are listed; “other files” are a directory's lines that drew none. A file's changes link to the
+          change in Gerrit, with links to its addressed comments on the file (for changes from <span class="rf-links-from"></span> on) and, where
+          a comment's tone has been scored, its sentiment score from −1 (hostile) to +1 (glowing), as on
+          <a href="sentiment.html">Review Tone</a>: for context only, not used in this analysis.</p>
       </section>
 
-      <section id="comments" class="card" aria-labelledby="comments-title">
-        <a class="card-anchor" href="#comments" aria-label="Link to this section" title="Link to this section">#</a>
-        <h2 id="comments-title">The comments</h2>
-        <p id="comments-sub" class="sub"></p>
-        <template data-msg="comments-sub">
-          <slot name="n"></slot> addressed review comments<span data-if="dir"> in
-          <code><slot name="dir"></slot></code></span><span data-if="bin"> on changes with <slot
-          name="bin"></slot><span data-if="half">, landed <slot name="half"></slot></span></span><span
-          data-if="!bin"><span data-if="half"> on changes landed <slot name="half"></slot></span></span>, newest first.
-          Text is included for comments whose text has been collected (from November 2025 on), each comment's CL
-          number linking to it in Gerrit; the others are in a table at the end. Where a comment's tone has been scored, a
-          pill gives its sentiment score from −1 (hostile) to +1 (glowing), as on <a href="sentiment.html">Review
-          Tone</a>; it is for context only and not used in this analysis. Before July 2025 a change's comments are
-          grouped by directory, without their files.
-        </template>
-        <!-- The same half-year filter as above the directories, together with the directory picker. -->
-        <p id="rf-half-filter-comments" class="rf-filter" hidden>
-          <span class="rf-filter-name"></span>
-          <button type="button" class="rf-half-clear">Clear</button>
-        </p>
-        <p id="rf-bin-filter-comments" class="rf-filter" hidden>
-          <span class="rf-filter-name"></span>
-          <button type="button" class="rf-bin-clear">Clear</button>
-        </p>
-        <div class="toggles">
-          <div class="select-toggle">
-            <label for="rf-dir">Directory</label>
-            <select id="rf-dir"><option value="">All</option></select>
-          </div>
-        </div>
-        <ul id="rf-threads" class="quotes rf-threads"></ul>
-        <button type="button" id="rf-threads-more" class="rf-more" hidden></button>
-        <template data-msg="threads-more">Show <slot name="n"></slot> more</template>
-        <template data-msg="threads-none">No addressed comments here.</template>
-        <template data-msg="thread-meta"><a class="rf-thread-cl"><slot name="cl"></slot></a> · <slot
-          name="date"></slot> · <slot name="file"></slot></template>
-        <!-- Collapsed: the list above is what most people read. -->
-        <details id="rf-notext" class="rf-notext" hidden>
-          <summary><h3>Additional comments without stored text</h3></summary>
-          <p class="note">Find their text on the change in Gerrit. Before July 2025 a change's comments in a directory
-            share one row, with their count, and its date is when the change landed.</p>
-          <div class="table-wrap">
-            <table id="rf-notext-table" class="rf-table">
-              <thead><tr><th scope="col">CL</th><th scope="col">Date</th><th scope="col">Path</th></tr></thead>
-              <tbody></tbody>
-            </table>
-          </div>
-          <button type="button" id="rf-notext-more" class="rf-more" hidden></button>
-        </details>
-        <template data-msg="notext-path-count"><slot name="dir"></slot> (<slot name="n"></slot> <span
-          data-if="n=1">comment</span><span data-if="n!=1">comments</span>)</template>
-      </section>
       </div>
 
       <!-- Collapsed: how the measures are built, and the charts that back the choices. -->
@@ -468,8 +413,8 @@
           the most contributors (<span class="rf-min-cell"></span> or more changes each). Directories matter much less
           than experience or size, except that imported third-party code and configuration directories (such as
           <code>third_party/libvpx/</code> or <code>testing/buildbot/</code>) draw almost no feedback per line. Organizations differ,
-          but mostly through their contributors' experience. The feedback index compares within directories by
-          default, and adjusts for organization if you choose it.
+          but mostly through their contributors' experience. The feedback index compares within directories, not
+          organizations.
         </p>
         <template data-msg="axis-dir">directory</template>
         <template data-msg="axis-org">organization</template>
@@ -506,9 +451,7 @@
           then <code>chrome/</code>, then all of Chromium that half-year, or in the first weeks of a half-year,
           the half-year before). Comparing within the half-year matters: feedback per line in a directory can
           change a lot over the years (with new owners, say), and all of Chromium drew about a quarter less per
-          line in 2026 than before. Without experience, the rates cover changes at any experience; without
-          directories, all of Chromium. If chosen, a factor for your organization multiplies it, and smaller organizations share one
-          factor. Pooled rates are lower than the typical contributor's (big changes draw less feedback per line),
+          line in 2026 than before. Pooled rates are lower than the typical contributor's (big changes draw less feedback per line),
           so the expected comments are scaled to make the median contributor's index 1.00×. Adding up comments
           and expected comments weighs each directory by the feedback peers would draw there: weighing by lines
           instead lets a few comments in a directory that draws almost none (configuration, imported code) swing

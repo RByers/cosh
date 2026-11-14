@@ -1,1 +1,1 @@
-{"dirs":["tools/perf/benchmarks/","testing/","testing/scripts/","tools/perf/","tools/perf/core/"],"files":[],"orgs":["yandex-team.ru"],"cls":[[3492196,19051,17,0.394,0.303,[[0,1]],[],0,1],[3595879,19107,8,0.573,0.414,[[1,0.6,0,5],[2,0.4,0,3]],[],0,2],[3695412,19153,9,0.573,0.414,[[3,0.727,0,7],[4,0.273,0,2]],[],0,3]],"counts":1}
+{"dirs":["tools/perf/benchmarks/","testing/","testing/scripts/","tools/perf/","tools/perf/core/"],"files":[],"cls":[[3492196,19051,17,1,0],[103683,56,8,2,[[1,5],[2,3]]],[99533,46,9,3,[[3,7],[4,2]]]]}

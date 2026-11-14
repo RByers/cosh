@@ -1,1 +1,1 @@
-{"dirs":["chrome/test/","content/test/"],"files":[],"orgs":["yandex-team.ru"],"cls":[[4836152,19606,6,0.251,0.187,[[0,0.875,0,6],[1,0.125,0,0]],[[5,5],[0,0]],0,2]],"counts":1}
+{"dirs":["chrome/test/","content/test/"],"files":["/COMMIT_MSG","chrome/test/BUILD.gn"],"cls":[[4836152,19606,6,2,[[0,6],[1,0]],[[0,0,3,3],[1,6,2,2]]]]}

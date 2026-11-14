@@ -1,1 +1,1 @@
-{"dirs":["components/omnibox/browser/"],"files":["chrome/browser/ui/android/omnibox/java/src/org/chromium/chrome/browser/omnibox/geo/partner_location_descriptor.proto","/COMMIT_MSG"],"orgs":["google.com"],"cls":[[5897038,20328,7,0.385,0.231,[[0,0]],[[0,-332,0],[1,-332,1]],0,0],[6895416,20329,25,1.138,0.771,[[0,1]],[[0,-1,1],[0,-1,0],[0,-1,1]],0,1]]}
+{"dirs":["components/omnibox/browser/"],"files":["/COMMIT_MSG","components/omnibox/browser/proto/partner_location_descriptor.proto"],"cls":[[5897038,20328,7,0,0,[[0,0,1,1],[1,7,1,0]]],[998378,1,25,1,0,[[1,25,3,2]]]]}

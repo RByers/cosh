@@ -1,1 +1,1 @@
-{"dirs":["build/config/"],"files":[],"orgs":["iscas.ac.cn"],"cls":[[4293162,19418,19,1.057,0.732,[[0,1]],[[1,1]],0,5]],"counts":1}
+{"dirs":["build/config/"],"files":["build/config/riscv.gni"],"cls":[[4293162,19418,19,5,0,[[0,19,1,1]]]]}

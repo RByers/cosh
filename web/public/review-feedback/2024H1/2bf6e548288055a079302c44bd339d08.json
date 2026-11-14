@@ -1,1 +1,1 @@
-{"dirs":["tools/traffic_annotation/summary/","chrome/browser/ash/","chrome/browser/ui/"],"files":[],"orgs":["google.com"],"cls":[[5389060,19821,4,0.354,0.253,[[0,10]],[[3,3]],0,20],[5517729,19849,7,0.385,0.278,[[1,4]],[],0,21],[5543242,19859,4,0.385,0.278,[[2,1]],[],0,22]],"counts":1}
+{"dirs":["tools/traffic_annotation/summary/","chrome/browser/ash/","chrome/browser/ui/"],"files":["tools/traffic_annotation/summary/TRAFFIC_ANNOTATION_OWNERS"],"cls":[[5389060,19821,4,20,0,[[0,4,3,3]]],[128669,28,7,21,1],[25513,10,4,22,2]]}

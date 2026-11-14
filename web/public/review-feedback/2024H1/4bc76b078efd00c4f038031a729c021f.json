@@ -1,1 +1,1 @@
-{"dirs":["components/ip_protection/common/"],"files":[],"orgs":["google.com"],"cls":[[5660718,19900,1,0.174,0.115,[[0,0]],[[1,0]],0,0]],"counts":1}
+{"dirs":["components/ip_protection/common/"],"files":["components/ip_protection/common/masked_domain_list_manager.h"],"cls":[[5660718,19900,1,0,0,[[0,1,1,0]]]]}

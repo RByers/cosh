@@ -1,1 +1,1 @@
-{"dirs":["chrome/browser/ash/"],"files":[],"orgs":["google.com"],"cls":[[3179531,18905,60,1.769,1.384,[[0,0]],[[4,3]],0,0]],"counts":1}
+{"dirs":["chrome/browser/ash/"],"files":["/COMMIT_MSG","chrome/browser/ash/app_list/search/app_search_provider.cc","chrome/browser/ash/app_list/search/app_search_provider_unittest.cc"],"cls":[[3179531,18905,60,0,0,[[0,0,1,1],[1,12,2,1],[2,43,1,1]]]]}

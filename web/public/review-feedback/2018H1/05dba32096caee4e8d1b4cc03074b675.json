@@ -1,1 +1,1 @@
-{"dirs":["tools/battor_agent/"],"files":[],"orgs":["google.com"],"cls":[[836850,17560,151,5.313,4.273,[[0,1.0,5,145]],[[6,6]],0,9],[908252,17579,296,9,7.323,[[0,1.0,6,294]],[[3,2]],0,10]],"counts":1}
+{"dirs":["tools/battor_agent/"],"files":["tools/battor_agent/battor_agent.cc","tools/battor_agent/battor_connection_impl_unittest.cc"],"cls":[[836850,17560,151,9,0,[[0,33,2,2],[1,56,4,4]]],[71402,19,296,10,0,[[0,55,3,2]]]]}

@@ -1,1 +1,1 @@
-{"dirs":["chromeos/ash/services/","chrome/browser/ui/","chromeos/ash/components/","chrome/browser/ash/"],"files":[],"orgs":["google.com"],"cls":[[4790549,19587,50,0.025,0.014,[[0,0.533,0,27],[1,0.333,65,17],[2,0.1,7,5],[3,0.033,243,1]],[],0,817],[4938259,19646,2,0.195,0.13,[[3,243]],[],0,817]],"counts":1}
+{"dirs":["chromeos/ash/services/","chrome/browser/ui/","chromeos/ash/components/","chrome/browser/ash/"],"files":[],"cls":[[4790549,19587,50,817,[[0,27],[1,17],[2,5],[3,1]]],[147710,59,2,817,3]]}

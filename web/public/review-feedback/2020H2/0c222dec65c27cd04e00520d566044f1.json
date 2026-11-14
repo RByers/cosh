@@ -1,1 +1,1 @@
-{"dirs":["components/translate/content/","chrome/browser/ui/"],"files":[],"orgs":["google.com"],"cls":[[2283657,18450,7,0.354,0.253,[[0,12]],[],0,271],[2297817,18459,5,0.385,0.278,[[1,11]],[[1,1]],0,272]],"counts":1}
+{"dirs":["components/translate/content/","chrome/browser/ui/"],"files":["chrome/browser/ui/android/infobars/translate_compact_infobar.cc"],"cls":[[2283657,18450,7,271,0],[14160,9,5,272,1,[[0,5,1,1]]]]}

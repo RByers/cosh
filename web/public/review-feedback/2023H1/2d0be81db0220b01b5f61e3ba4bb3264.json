@@ -1,1 +1,1 @@
-{"dirs":["chrome/browser/","ash/constants/","tools/metrics/histograms/"],"files":[],"orgs":["google.com"],"cls":[[4633619,19530,31,1.03,0.788,[[0,0.605,0,19],[1,0.316,0,10],[2,0.079,0,2]],[[5,5],[0,0],[0,0]],0,0]],"counts":1}
+{"dirs":["chrome/browser/","ash/constants/","tools/metrics/histograms/"],"files":["/COMMIT_MSG","chrome/browser/flag-metadata.json","chrome/browser/flag_descriptions.cc"],"cls":[[4633619,19530,31,0,[[0,19],[1,10],[2,2]],[[0,0,1,1],[1,5,1,1],[2,6,3,3]]]]}

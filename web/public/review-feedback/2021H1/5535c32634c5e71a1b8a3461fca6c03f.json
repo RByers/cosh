@@ -1,1 +1,1 @@
-{"dirs":["extensions/common/","chrome/common/extensions/"],"files":[],"orgs":["yandex-team.ru"],"cls":[[2813038,18740,106,2.954,2.339,[[0,0.642,1,68],[1,0.358,0,38]],[[3,2],[0,0]],0,15]],"counts":1}
+{"dirs":["extensions/common/","chrome/common/extensions/"],"files":["/COMMIT_MSG","extensions/common/extension_api.cc"],"cls":[[2813038,18740,106,15,[[0,68],[1,38]],[[0,0,2,1],[1,54,1,1]]]]}

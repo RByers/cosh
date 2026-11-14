@@ -1,1 +1,1 @@
-{"dirs":["tools/metrics/histograms/"],"files":[],"orgs":["google.com"],"cls":[[5199867,19774,58,1.659,1.333,[[0,1]],[[7,7]],0,9]],"counts":1}
+{"dirs":["tools/metrics/histograms/"],"files":["/COMMIT_MSG","tools/metrics/histograms/metadata/cras/enums.xml","tools/metrics/histograms/metadata/cras/histograms.xml"],"cls":[[5199867,19774,58,9,0,[[0,0,2,2],[1,35,3,3],[2,23,2,2]]]]}

@@ -1,1 +1,1 @@
-{"dirs":["components/translate/core/","(root)/","tools/metrics/histograms/"],"files":[],"orgs":["gmail.com"],"cls":[[2894265,18785,52,1.64,1.269,[[0,0.934,0,50],[1,0.033,0,1],[2,0.033,0,1]],[[2,2],[0,0],[0,0]],0,0]],"counts":1}
+{"dirs":["components/translate/core/","(root)/","tools/metrics/histograms/"],"files":["components/translate/core/browser/translate_manager.cc"],"cls":[[2894265,18785,52,0,[[0,50],[1,1],[2,1]],[[0,18,2,2]]]]}

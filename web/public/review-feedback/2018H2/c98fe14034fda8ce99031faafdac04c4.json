@@ -1,1 +1,1 @@
-{"dirs":["ash/display/","ui/display/manager/","ui/events/ozone/"],"files":[],"orgs":["google.com"],"cls":[[1084419,17733,33,1.64,1.269,[[0,0.622,0,21],[1,0.378,0,12]],[[7,7],[5,4]],0,0],[1385701,17888,15,0.573,0.414,[[2,0]],[],0,1]],"counts":1}
+{"dirs":["ash/display/","ui/display/manager/","ui/events/ozone/"],"files":["ash/display/display_prefs.cc","ash/display/display_prefs_unittest.cc","ui/display/manager/display_configurator.h"],"cls":[[1084419,17733,33,0,[[0,21],[1,12]],[[0,14,6,6],[1,7,1,1],[2,8,5,4]]],[301282,155,15,1,2]]}

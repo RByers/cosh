@@ -1,1 +1,1 @@
-{"dirs":["chrome/renderer/resources/","chrome/test/data/"],"files":[],"orgs":["google.com"],"cls":[[6311046,20146,92,2.523,1.849,[[0,0.968,7,90],[1,0.032,9,2]],[[1,0],[0,0]],0,384]],"counts":1}
+{"dirs":["chrome/renderer/resources/","chrome/test/data/"],"files":["chrome/renderer/resources/controlled_frame/html_controlled_frame_element.js"],"cls":[[6311046,20146,92,384,[[0,90],[1,2]],[[0,90,1,0]]]]}

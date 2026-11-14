@@ -1,1 +1,1 @@
-{"dirs":["sandbox/win/src/"],"files":[],"orgs":["gmail.com"],"cls":[[1264197,17814,57,1.64,1.269,[[0,3]],[[1,1]],0,3],[1275845,17820,51,1.64,1.269,[[0,1.0,4,53]],[[3,0]],0,4]],"counts":1}
+{"dirs":["sandbox/win/src/"],"files":["sandbox/win/src/sandbox_nt_util.h","sandbox/win/src/registry_interception.cc"],"cls":[[1264197,17814,57,3,0,[[0,8,1,1]]],[11648,6,51,4,0,[[1,36,3,0]]]]}

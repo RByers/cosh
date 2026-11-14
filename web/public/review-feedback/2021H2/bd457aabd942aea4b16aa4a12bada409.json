@@ -1,1 +1,1 @@
-{"dirs":["services/tracing/perfetto/"],"files":[],"orgs":["yandex-team.ru"],"cls":[[3311071,18976,6,0.424,0.303,[[0,0]],[[2,0]],0,8]],"counts":1}
+{"dirs":["services/tracing/perfetto/"],"files":["/COMMIT_MSG","services/tracing/perfetto/consumer_host_unittest.cc"],"cls":[[3311071,18976,6,8,0,[[0,0,1,0],[1,6,1,0]]]]}

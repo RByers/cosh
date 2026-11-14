@@ -1,1 +1,1 @@
-{"dirs":["chrome/browser/ui/","chrome/browser/web_applications/"],"files":[],"orgs":["microsoft.com"],"cls":[[6619606,20259,49,1.769,1.384,[[0,0.962,0,48],[1,0.038,0,1]],[[8,8],[0,0]],0,0]],"counts":1}
+{"dirs":["chrome/browser/ui/","chrome/browser/web_applications/"],"files":["chrome/browser/ui/web_applications/web_app_browser_controller.cc","chrome/browser/ui/web_applications/web_app_browser_controller.h","chrome/browser/ui/web_applications/web_app_browsertest.cc"],"cls":[[6619606,20259,49,0,[[0,48],[1,1]],[[0,4,3,3],[1,0,2,2],[2,44,3,3]]]]}

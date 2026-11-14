@@ -1,1 +1,0 @@
-{"cls":{"8375521":[["d7bc698b_67404101","there's no way these `memcpy()`s are necessary, right? it seems like we can (and you should, since you are here): ```c++ base::SpanWriter<uint8_t> writer(signed_message);…",-0.2],["344d1411_6b593fea","`Write` returns a bool indicating success. These should never fail, but it would be worth wrapping them in `CHECK`s.",0.0]]}}

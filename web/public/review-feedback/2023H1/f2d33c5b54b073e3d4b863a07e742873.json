@@ -1,1 +1,1 @@
-{"dirs":["extensions/browser/","extensions/common/","extensions/renderer/","extensions/browser/service_worker/","extensions/common/mojom/"],"files":[],"orgs":["google.com"],"cls":[[4333756,19429,111,0.042,0.023,[[0,0.644,0,74],[1,0.305,0,35],[2,0.025,0,2],[3,0.017,0,0],[4,0.008,0,0]],[],0,8]],"counts":1}
+{"dirs":["extensions/browser/","extensions/common/","extensions/renderer/","extensions/browser/service_worker/","extensions/common/mojom/"],"files":[],"cls":[[4333756,19429,111,8,[[0,74],[1,35],[2,2],[3,0],[4,0]]]]}

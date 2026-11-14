@@ -1,1 +1,1 @@
-{"dirs":["tools/metrics/histograms/"],"files":[],"orgs":["google.com"],"cls":[[2797011,18723,8,0.534,0.426,[[0,0]],[[1,1]],0,0]],"counts":1}
+{"dirs":["tools/metrics/histograms/"],"files":["tools/metrics/histograms/metadata/histogram_suffixes_list.xml"],"cls":[[2797011,18723,8,0,0,[[0,8,1,1]]]]}

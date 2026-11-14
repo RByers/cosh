@@ -1,1 +1,1 @@
-{"dirs":["components/password_manager/core/","testing/variations/","tools/metrics/histograms/"],"files":[],"orgs":["google.com"],"cls":[[6239613,20125,1,0.112,0.081,[[0,0.667,8,1],[1,0.333,6,0]],[],0,88],[6322988,20152,2,0.116,0.083,[[2,8]],[],0,89]],"counts":1}
+{"dirs":["components/password_manager/core/","testing/variations/","tools/metrics/histograms/"],"files":[],"cls":[[6239613,20125,1,88,[[0,1],[1,0]]],[83375,27,2,89,2]]}

@@ -1,1 +1,1 @@
-{"dirs":["chromeos/ash/experiences/","ash/components/arc/","chrome/browser/ash/"],"files":[],"orgs":["google.com"],"cls":[[3795719,19214,1,0.174,0.115,[[0,0.611,5,1],[1,0.333,3,0],[2,0.056,7,0]],[],0,11],[3820524,19230,1,0.261,0.173,[[0,5]],[[3,3]],0,11]],"counts":1}
+{"dirs":["chromeos/ash/experiences/","ash/components/arc/","chrome/browser/ash/"],"files":["/COMMIT_MSG","chromeos/ash/experiences/arc/mojom/ime.mojom"],"cls":[[3795719,19214,1,11,[[0,1],[1,0],[2,0]]],[24805,16,1,11,0,[[0,0,2,2],[1,1,1,1]]]]}

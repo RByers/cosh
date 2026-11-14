@@ -1,1 +1,1 @@
-{"dirs":["chrome/browser/ash/"],"files":[],"orgs":["intel.com"],"cls":[[4568749,19555,13,0.591,0.428,[[0,0]],[[8,2]],0,0]],"counts":1}
+{"dirs":["chrome/browser/ash/"],"files":["/COMMIT_MSG","chrome/browser/ash/arc/adbd/arc_adbd_monitor_bridge.cc"],"cls":[[4568749,19555,13,0,0,[[0,0,2,2],[1,13,6,0]]]]}

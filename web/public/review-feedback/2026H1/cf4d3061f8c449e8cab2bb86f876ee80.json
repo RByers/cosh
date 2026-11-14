@@ -1,1 +1,1 @@
-{"dirs":["components/policy/resources/","chrome/browser/extensions/","extensions/browser/","chrome/browser/policy/","components/policy/test/"],"files":["/COMMIT_MSG"],"orgs":["google.com"],"cls":[[7261069,20462,7,0.385,0.278,[[0,0.467,0,5],[1,0.267,29,2],[2,0.133,7,0],[3,0.067,1,0],[4,0.067,0,0]],[[0,0,1]],0,136]]}
+{"dirs":["components/policy/resources/","chrome/browser/extensions/","chrome/browser/policy/","components/policy/test/","extensions/browser/"],"files":["/COMMIT_MSG"],"cls":[[7261069,20462,7,136,[[0,5],[1,2],[2,0],[3,0],[4,0]],[[0,0,1,1]]]]}

@@ -1,1 +1,1 @@
-{"dirs":["build/cipd/","build/fuchsia/cipd/"],"files":[],"orgs":["google.com"],"cls":[[2135186,18364,174,5.313,4.273,[[0,0.605,0,105],[1,0.395,0,69]],[[8,7],[1,0]],0,0]],"counts":1}
+{"dirs":["build/cipd/","build/fuchsia/cipd/"],"files":["/COMMIT_MSG","build/cipd/cipd.gni","build/cipd/prep_cipd_archive.py","build/fuchsia/cipd/BUILD.gn"],"cls":[[2135186,18364,174,0,[[0,105],[1,69]],[[0,0,1,1],[1,26,5,4],[2,0,2,2],[3,69,1,0]]]]}

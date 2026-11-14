@@ -1,1 +1,1 @@
-{"dirs":["content/browser/bluetooth/","docs/","tools/metrics/histograms/"],"files":[],"orgs":["google.com"],"cls":[[3381241,19003,17,1.128,0.863,[[0,37]],[],0,536],[3430636,19031,7,0.396,0.283,[[1,4]],[[1,1]],0,537],[3605889,19109,12,0.534,0.426,[[2,27]],[[3,0]],0,538]],"counts":1}
+{"dirs":["content/browser/bluetooth/","docs/","tools/metrics/histograms/"],"files":["docs/get_the_code.md","/COMMIT_MSG","tools/metrics/histograms/metadata/bluetooth/histograms.xml"],"cls":[[3381241,19003,17,536,0],[49395,28,7,537,1,[[0,7,1,1]]],[175253,78,12,538,2,[[1,0,2,0],[2,12,1,0]]]]}

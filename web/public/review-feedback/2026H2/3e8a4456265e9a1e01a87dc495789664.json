@@ -1,1 +1,1 @@
-{"dirs":["third_party/blink/web_tests/","third_party/blink/renderer/"],"files":["third_party/blink/web_tests/external/wpt/css/css-text/text-fit/shrink-consistent-crash.html"],"orgs":["google.com"],"cls":[[8010518,20642,18,0.723,0.518,[[0,0.619,0,12],[1,0.381,0,6]],[[0,-1,1]],0,0]]}
+{"dirs":["third_party/blink/web_tests/","third_party/blink/renderer/"],"files":["third_party/blink/web_tests/external/wpt/css/css-text/text-fit/shrink-consistent-crash.html"],"cls":[[8010518,20642,18,0,[[0,12],[1,6]],[[0,12,1,1]]]]}

@@ -1,1 +1,1 @@
-{"dirs":["services/device/geolocation/","chrome/browser/"],"files":[],"orgs":["microsoft.com"],"cls":[[2132287,18354,34,1.781,1.5,[[0,0.944,2,33],[1,0.056,1,1]],[[6,6],[0,0]],0,2]],"counts":1}
+{"dirs":["services/device/geolocation/","chrome/browser/"],"files":["services/device/geolocation/win/system_location_settings_status_provider_winrt.cc","services/device/geolocation/win/system_location_settings_status_provider_winrt.h"],"cls":[[2132287,18354,34,2,[[0,33],[1,1]],[[0,0,5,5],[1,0,1,1]]]]}

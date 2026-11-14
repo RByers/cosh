@@ -1,1 +1,1 @@
-{"dirs":["chromeos/ash/services/"],"files":[],"orgs":["google.com"],"cls":[[1695933,18089,539,14.084,11.916,[[0,11]],[[43,42]],0,105]],"counts":1}
+{"dirs":["chromeos/ash/services/"],"files":["chromeos/ash/services/secure_channel/ble_characteristics_finder.cc","chromeos/ash/services/secure_channel/ble_characteristics_finder.h","chromeos/ash/services/secure_channel/ble_characteristics_finder_unittest.cc","chromeos/ash/services/secure_channel/fake_background_eid_generator.cc"],"cls":[[1695933,18089,539,105,0,[[0,146,25,24],[1,41,4,4],[2,326,13,13],[3,7,1,1]]]]}

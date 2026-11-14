@@ -1,1 +1,1 @@
-{"dirs":["components/sessions/core/","chrome/browser/sessions/"],"files":[],"orgs":["opera.com"],"cls":[[3641863,19131,98,2.954,2.339,[[0,0.699,0,68],[1,0.301,0,30]],[[3,3],[0,0]],0,1]],"counts":1}
+{"dirs":["components/sessions/core/","chrome/browser/sessions/"],"files":["components/sessions/core/base_session_service_commands.cc","components/sessions/core/tab_restore_service_impl.cc"],"cls":[[3641863,19131,98,1,[[0,68],[1,30]],[[0,31,2,2],[1,21,1,1]]]]}

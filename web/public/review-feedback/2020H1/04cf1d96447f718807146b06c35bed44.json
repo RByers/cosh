@@ -1,1 +1,1 @@
-{"dirs":["chrome/browser/devtools/"],"files":[],"orgs":["google.com"],"cls":[[2169462,18385,47,1.769,1.384,[[0,0]],[[1,1]],0,0]],"counts":1}
+{"dirs":["chrome/browser/devtools/"],"files":["chrome/browser/devtools/device/devtools_device_discovery.cc"],"cls":[[2169462,18385,47,0,0,[[0,6,1,1]]]]}

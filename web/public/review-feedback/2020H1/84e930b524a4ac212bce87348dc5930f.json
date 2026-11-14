@@ -1,1 +1,1 @@
-{"dirs":["tools/metrics/histograms/","third_party/blink/renderer/"],"files":[],"orgs":["google.com"],"cls":[[1993401,18270,56,1.659,1.333,[[0,7]],[],0,257],[2017042,18284,11,0.537,0.373,[[1,173]],[[1,1]],0,258],[2105614,18337,1,0.169,0.112,[[1,174]],[],0,259],[2152886,18368,2,0.169,0.112,[[1,175]],[],0,260]],"counts":1}
+{"dirs":["tools/metrics/histograms/","third_party/blink/renderer/"],"files":["third_party/blink/renderer/platform/graphics/canvas_2d_layer_bridge.cc"],"cls":[[1993401,18270,56,257,0],[23641,14,11,258,1,[[0,11,1,1]]],[88572,53,1,259,1],[47272,31,2,260,1]]}

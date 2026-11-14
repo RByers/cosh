@@ -1,1 +1,1 @@
-{"dirs":["third_party/blink/renderer/"],"files":[],"orgs":["google.com"],"cls":[[2303394,18466,96,2.279,1.719,[[0,0]],[[2,1]],0,0]],"counts":1}
+{"dirs":["third_party/blink/renderer/"],"files":["third_party/blink/renderer/modules/webgpu/gpu_queue.cc","third_party/blink/renderer/modules/webgpu/gpu_queue.h"],"cls":[[2303394,18466,96,0,0,[[0,43,1,0],[1,28,1,1]]]]}

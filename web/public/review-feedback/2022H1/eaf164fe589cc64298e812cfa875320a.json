@@ -1,1 +1,1 @@
-{"dirs":["chrome/browser/ui/"],"files":[],"orgs":["google.com"],"cls":[[3726856,19172,115,3.058,2.445,[[0,0]],[[6,6]],0,1]],"counts":1}
+{"dirs":["chrome/browser/ui/"],"files":["chrome/browser/ui/views/side_panel/side_panel_coordinator.cc","chrome/browser/ui/views/side_panel/side_panel_coordinator.h","chrome/browser/ui/views/side_panel/side_panel_coordinator_browsertest.cc"],"cls":[[3726856,19172,115,1,0,[[0,22,2,2],[1,8,1,1],[2,65,3,3]]]]}

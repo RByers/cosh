@@ -1,1 +1,1 @@
-{"dirs":["tools/metrics/histograms/","tools/metrics/structured/","components/metrics/structured/"],"files":[],"orgs":["google.com"],"cls":[[6569791,20228,42,1.659,1.333,[[0,0.837,11,37],[1,0.122,22,4],[2,0.041,87,1]],[],0,176]],"counts":1}
+{"dirs":["tools/metrics/histograms/","tools/metrics/structured/","components/metrics/structured/"],"files":[],"cls":[[6569791,20228,42,176,[[0,37],[1,4],[2,1]]]]}

@@ -1,1 +1,1 @@
-{"dirs":["content/test/gpu/"],"files":[],"orgs":["google.com"],"cls":[[5527792,19852,2,0.12,0.062,[[0,6]],[],0,2830],[5530222,19852,2,0.12,0.062,[[0,7]],[],0,2831],[5527427,19852,1,0.12,0.062,[[0,8]],[[1,0]],0,2832]],"counts":1}
+{"dirs":["content/test/gpu/"],"files":["content/test/gpu/gpu_tests/test_expectations/expected_color_expectations.txt"],"cls":[[5527792,19852,2,2830,0],[2430,0,2,2831,0],[-2795,0,1,2832,0,[[0,1,1,0]]]]}

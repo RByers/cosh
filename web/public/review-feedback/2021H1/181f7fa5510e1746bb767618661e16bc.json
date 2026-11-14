@@ -1,1 +1,1 @@
-{"dirs":["chromeos/ash/components/","chrome/browser/ash/"],"files":[],"orgs":["google.com"],"cls":[[2663828,18661,5,0.402,0.321,[[0,1]],[[1,0]],0,8],[2916954,18772,1,0.195,0.13,[[1,3]],[[1,0]],0,9]],"counts":1}
+{"dirs":["chromeos/ash/components/","chrome/browser/ash/"],"files":["chromeos/ash/components/network/device_state.cc","chrome/browser/ash/login/chrome_restart_request.cc"],"cls":[[2663828,18661,5,8,0,[[0,5,1,0]]],[253126,111,1,9,1,[[1,1,1,0]]]]}

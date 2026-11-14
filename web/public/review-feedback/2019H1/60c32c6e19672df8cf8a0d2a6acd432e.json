@@ -1,1 +1,1 @@
-{"dirs":["chrome/browser/resources/","chrome/browser/ui/","chrome/browser/"],"files":[],"orgs":["google.com"],"cls":[[1469288,17940,168,5.633,4.543,[[0,0.608,0,101],[1,0.368,0,62],[2,0.023,0,3]],[[4,4],[1,1],[0,0]],0,2]],"counts":1}
+{"dirs":["chrome/browser/resources/","chrome/browser/ui/","chrome/browser/"],"files":["chrome/browser/resources/about_sys/about_sys.ts","chrome/browser/ui/webui/system/system_info_ui.cc"],"cls":[[1469288,17940,168,2,[[0,101],[1,62],[2,3]],[[0,82,4,4],[1,62,1,1]]]]}

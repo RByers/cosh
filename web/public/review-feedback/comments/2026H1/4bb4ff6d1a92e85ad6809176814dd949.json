@@ -1,1 +1,0 @@
-{"cls":{"7509424":[["3870e586_15d225a0","One quick question: should we check whether web_contents exists here? Since web_contents is added in the Shell constructor[1], I’m wondering if the check is necessary. [1]…",0.0]]}}

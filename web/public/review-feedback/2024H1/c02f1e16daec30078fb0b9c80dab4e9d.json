@@ -1,1 +1,1 @@
-{"dirs":["testing/buildbot/","infra/config/generated/","infra/config/subprojects/"],"files":[],"orgs":["google.com"],"cls":[[5186494,19732,2,0.125,0.071,[[0,19]],[],0,45],[5269650,19760,2,0.197,0.129,[[1,0.5,34,1],[2,0.5,28,1]],[[1,1],[0,0]],0,46],[5292603,19767,2,0.197,0.129,[[1,0.5,35,1],[2,0.5,29,1]],[],0,47]],"counts":1}
+{"dirs":["testing/buildbot/","infra/config/generated/","infra/config/subprojects/"],"files":["infra/config/generated/luci/project.cfg"],"cls":[[5186494,19732,2,45,0],[83156,28,2,46,[[1,1],[2,1]],[[0,0,1,1]]],[22953,7,2,47,[[1,1],[2,1]]]]}

@@ -1,1 +1,1 @@
-{"dirs":["chrome/browser/apps/","chrome/android/java/","chrome/browser/webshare/","third_party/blink/public/"],"files":[],"orgs":["google.com"],"cls":[[4770357,19580,2,0.195,0.13,[[0,28]],[],0,818],[4770916,19580,1,0.195,0.13,[[0,29]],[],0,819],[4728843,19621,3,0.195,0.13,[[1,0.333,19,1],[2,0.333,8,1],[3,0.333,20,1]],[],0,820]],"counts":1}
+{"dirs":["chrome/browser/apps/","chrome/android/java/","chrome/browser/webshare/","third_party/blink/public/"],"files":[],"cls":[[4770357,19580,2,818,0],[559,0,1,819,0],[-42073,41,3,820,[[1,1],[2,1],[3,1]]]]}

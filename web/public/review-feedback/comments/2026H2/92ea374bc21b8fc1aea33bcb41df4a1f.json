@@ -1,1 +1,0 @@
-{"cls":{"8496734":[0,0,["536e1d2e_ffce9e03","can you bind the start time directly into a completion callback instead of adding a var here? Optional alternative: maybe check what i did for UpstreamRequestLog and see if we want/need to create a…",0.0]]}}

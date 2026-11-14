@@ -1,1 +1,0 @@
-{"cls":{"6493158":[0,0,0,0,0,["230b2d29_471fc54f","nit: remove new lines",0.0],["870d7f5b_7c7b687a","Shouldn't this be done somewhere in the base class/test init code? What if someone write a new test that assume the cursor exists w/o knowing this?",0.0]]}}

@@ -1,1 +1,1 @@
-{"dirs":["third_party/blink/tools/","testing/"],"files":[],"orgs":["google.com"],"cls":[[5847019,19978,12,0.537,0.373,[[0,0]],[[5,5]],0,171],[5891664,19992,9,0.573,0.414,[[1,0]],[],0,172]],"counts":1}
+{"dirs":["third_party/blink/tools/","testing/"],"files":["third_party/blink/tools/blinkpy/w3c/wpt_manifest.py"],"cls":[[5847019,19978,12,171,0,[[0,12,5,5]]],[44645,14,9,172,1]]}

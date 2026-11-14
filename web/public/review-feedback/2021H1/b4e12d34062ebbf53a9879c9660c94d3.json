@@ -1,1 +1,1 @@
-{"dirs":["tools/metrics/histograms/"],"files":[],"orgs":["google.com"],"cls":[[2582040,18696,28,1.071,0.865,[[0,0]],[[6,5]],0,0],[2910416,18795,21,1.071,0.865,[[0,1]],[[1,0]],0,1]],"counts":1}
+{"dirs":["tools/metrics/histograms/"],"files":["tools/metrics/histograms/enums.xml","tools/metrics/histograms/metadata/cryptohome/histograms.xml"],"cls":[[2582040,18696,28,0,0,[[0,9,4,3],[1,19,2,2]]],[328376,99,21,1,0,[[1,21,1,0]]]]}

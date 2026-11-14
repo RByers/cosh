@@ -1,1 +1,0 @@
-{"cls":{"7818342":[["fb46b893_5e88be1c","this function does its best to coerce the result into wide chars so it will probably produce something valid even when you give it bogus input (which might be why your test is broken)",0.0]]}}

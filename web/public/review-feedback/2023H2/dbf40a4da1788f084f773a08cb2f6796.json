@@ -1,1 +1,1 @@
-{"dirs":["chromeos/ash/components/"],"files":[],"orgs":["google.com"],"cls":[[5019407,19685,58,1.633,1.314,[[0,1.0,0,59]],[[6,6]],0,20]],"counts":1}
+{"dirs":["chromeos/ash/components/"],"files":["chromeos/ash/components/chaps_util/chaps_slot_session.cc"],"cls":[[5019407,19685,58,20,0,[[0,59,6,6]]]]}

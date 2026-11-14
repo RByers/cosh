@@ -1,1 +1,1 @@
-{"dirs":["build/config/linux/","build/config/","build/config/android/"],"files":[],"orgs":["arm.com"],"cls":[[3060740,18838,22,1.057,0.732,[[0,0.44,0,10],[1,0.28,0,6],[2,0.28,0,6]],[[0,0],[2,1],[1,0]],0,53],[3087633,18849,5,0.436,0.265,[[1,0.75,1,5],[2,0.125,1,0],[0,0.125,1,0]],[],0,54]],"counts":1}
+{"dirs":["build/config/linux/","build/config/","build/config/android/"],"files":["build/config/android/BUILD.gn","build/config/arm.gni"],"cls":[[3060740,18838,22,53,[[0,10],[1,6],[2,6]],[[0,6,1,0],[1,6,2,1]]],[26893,11,5,54,[[1,5],[2,0],[0,0]]]]}

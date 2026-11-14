@@ -1,1 +1,1 @@
-{"dirs":["build/config/win/","content/shell/app/"],"files":[],"orgs":["gmail.com"],"cls":[[5196054,19749,3,0.246,0.175,[[0,0]],[[2,1]],0,1],[5505003,19852,8,0.573,0.414,[[1,0]],[[1,0]],0,2]],"counts":1}
+{"dirs":["build/config/win/","content/shell/app/"],"files":["build/config/win/BUILD.gn","content/shell/app/content_shell.ico"],"cls":[[5196054,19749,3,1,0,[[0,3,2,1]]],[308949,103,8,2,1,[[1,0,1,0]]]]}

@@ -1,1 +1,1 @@
-{"dirs":["chrome/browser/google/","components/google/core/","testing/variations/"],"files":[],"orgs":["google.com"],"cls":[[1657920,18072,14,0.189,0.114,[[0,0.667,3,5],[1,0.222,2,1],[2,0.111,1,0]],[[0,0],[0,0],[1,0]],0,9]],"counts":1}
+{"dirs":["chrome/browser/google/","components/google/core/","testing/variations/"],"files":["testing/variations/fieldtrial_testing_config.json"],"cls":[[1657920,18072,14,9,[[0,5],[1,1],[2,0]],[[0,0,1,0]]]]}

@@ -1,1 +1,1 @@
-{"dirs":["build/fuchsia/","chrome/updater/test/"],"files":[],"orgs":["google.com"],"cls":[[4343711,19432,1,0.182,0.152,[[0,0]],[[1,1]],0,2],[4368384,19443,2,0.085,0.051,[[1,0]],[],0,3]],"counts":1}
+{"dirs":["build/fuchsia/","chrome/updater/test/"],"files":["/COMMIT_MSG"],"cls":[[4343711,19432,1,2,0,[[0,0,1,1]]],[24673,11,2,3,1]]}

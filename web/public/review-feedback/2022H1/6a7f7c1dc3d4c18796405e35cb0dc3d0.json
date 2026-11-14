@@ -1,1 +1,1 @@
-{"dirs":["chrome/browser/","media/capture/video/"],"files":[],"orgs":["google.com"],"cls":[[3498142,19053,2,0.195,0.13,[[0,5]],[],0,97],[3652671,19132,5,0.312,0.25,[[1,54]],[[1,0]],0,98]],"counts":1}
+{"dirs":["chrome/browser/","media/capture/video/"],"files":["media/capture/video/chromeos/camera_hal_delegate.cc"],"cls":[[3498142,19053,2,97,0],[154529,79,5,98,1,[[0,5,1,0]]]]}

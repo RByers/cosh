@@ -1,1 +1,1 @@
-{"dirs":["tools/metrics/histograms/","chrome/browser/","chrome/browser/upgrade_detector/"],"files":[],"orgs":["google.com"],"cls":[[4995844,19668,46,1.659,1.333,[[0,13]],[[1,0]],0,67],[5090786,19698,1,0.195,0.13,[[1,0.667,4,0],[2,0.333,0,1]],[[1,1],[0,0]],0,68]],"counts":1}
+{"dirs":["tools/metrics/histograms/","chrome/browser/upgrade_detector/","chrome/browser/"],"files":["tools/metrics/histograms/metadata/update_engine/histograms.xml","/COMMIT_MSG"],"cls":[[4995844,19668,46,67,0,[[0,46,1,0]]],[94942,30,1,68,[[1,1],[2,0]],[[1,0,1,1]]]]}

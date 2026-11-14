@@ -1,1 +1,1 @@
-{"dirs":["(root)/","chromeos/ash/experiences/"],"files":[],"orgs":["google.com"],"cls":[[1915652,18214,1,0.063,0.041,[[0,0]],[],0,0],[1916523,18218,85,3.348,2.615,[[1,0]],[[13,12]],0,1]],"counts":1}
+{"dirs":["(root)/","chromeos/ash/experiences/"],"files":["/COMMIT_MSG","chromeos/ash/experiences/arc/session/arc_vm_client_adapter.cc"],"cls":[[1915652,18214,1,0,0],[871,4,85,1,1,[[0,0,2,2],[1,43,11,10]]]]}

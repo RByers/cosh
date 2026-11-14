@@ -1,1 +1,1 @@
-{"dirs":["testing/libfuzzer/"],"files":[],"orgs":["google.com"],"cls":[[2080865,18332,13,0.573,0.414,[[0,0]],[[12,11]],0,1]],"counts":1}
+{"dirs":["testing/libfuzzer/"],"files":["testing/libfuzzer/fuzzer_test.gni","testing/libfuzzer/gen_grammar_config.py"],"cls":[[2080865,18332,13,1,0,[[0,7,4,4],[1,0,8,7]]]]}

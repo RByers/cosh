@@ -1,1 +1,1 @@
-{"dirs":["net/dns/","chrome/browser/net/"],"files":[],"orgs":["google.com"],"cls":[[3673858,19144,26,0.939,0.709,[[0,0]],[[5,2]],0,0],[3688600,19160,58,1.769,1.384,[[1,0]],[[14,11]],0,1]],"counts":1}
+{"dirs":["net/dns/","chrome/browser/net/"],"files":["/COMMIT_MSG","net/dns/host_resolver.h","net/dns/mock_host_resolver.h","net/socket/transport_connect_job.h","chrome/browser/net/stub_resolver_config_reader_browsertest.cc"],"cls":[[3673858,19144,26,0,0,[[0,0,1,1],[1,2,2,1],[2,5,1,0],[3,0,1,0]]],[14742,16,58,1,1,[[0,0,1,1],[4,58,13,10]]]]}

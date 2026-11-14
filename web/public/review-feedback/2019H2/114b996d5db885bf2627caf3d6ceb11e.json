@@ -1,1 +1,1 @@
-{"dirs":["chrome/browser/ui/","chrome/browser/sessions/"],"files":[],"orgs":["yandex-team.ru"],"cls":[[1742155,18122,109,3.058,2.445,[[0,0.544,0,60],[1,0.456,0,51]],[[3,3],[1,1]],0,0]],"counts":1}
+{"dirs":["chrome/browser/ui/","chrome/browser/sessions/"],"files":["chrome/browser/sessions/session_restore_browsertest.cc","chrome/browser/ui/startup/startup_browser_creator_impl.cc"],"cls":[[1742155,18122,109,0,[[0,60],[1,51]],[[0,51,1,1],[1,42,3,3]]]]}

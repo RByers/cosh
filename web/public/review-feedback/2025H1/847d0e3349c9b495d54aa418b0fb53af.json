@@ -1,1 +1,1 @@
-{"dirs":["chrome/browser/ui/","chrome/browser/page_load_metrics/","ash/webui/recorder_app_ui/"],"files":[],"orgs":["microsoft.com"],"cls":[[6593794,20238,62,1.769,1.384,[[0,0.844,0,52],[1,0.133,0,9],[2,0.022,0,1]],[],0,0],[6605278,20238,10,0.591,0.428,[[0,1]],[[1,1]],0,1]],"counts":1}
+{"dirs":["chrome/browser/ui/","chrome/browser/page_load_metrics/","ash/webui/recorder_app_ui/"],"files":["chrome/browser/ui/webui/internals/internals_ui.cc"],"cls":[[6593794,20238,62,0,[[0,52],[1,9],[2,1]]],[11484,0,10,1,0,[[0,6,1,1]]]]}

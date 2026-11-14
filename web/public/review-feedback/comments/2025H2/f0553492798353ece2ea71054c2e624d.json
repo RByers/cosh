@@ -1,1 +1,0 @@
-{"cls":{"7099183":[["9a612116_ae7682b4","A suggestion: instead of styling by id, you could create css classes that are \"white-background-box\", \"light-gray-box\", etc. Then, for ids you could give them more significant names like…",0.0],["e0021e86_715d67a7","You should probably also link bug 1266821, since you are removing one of it's entries in the disabled test list.",0.0]]}}

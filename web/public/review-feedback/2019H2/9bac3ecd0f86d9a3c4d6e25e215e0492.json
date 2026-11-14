@@ -1,1 +1,1 @@
-{"dirs":["base/","build/fuchsia/fidlgen_js/"],"files":[],"orgs":["google.com"],"cls":[[1696995,18094,42,2,1.303,[[0,0]],[[3,3]],0,0],[1719464,18107,1,0.182,0.152,[[1,0]],[],0,1]],"counts":1}
+{"dirs":["base/","build/fuchsia/fidlgen_js/"],"files":["/COMMIT_MSG","base/logging_unittest.cc"],"cls":[[1696995,18094,42,0,0,[[0,0,1,1],[1,42,2,2]]],[22469,13,1,1,1]]}

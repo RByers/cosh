@@ -1,1 +1,1 @@
-{"dirs":["components/history/core/"],"files":[],"orgs":["yandex-team.ru"],"cls":[[1647890,18073,72,3.967,3.6,[[0,0]],[[6,3]],0,0]],"counts":1}
+{"dirs":["components/history/core/"],"files":["/COMMIT_MSG","components/history/core/browser/history_backend.cc","components/history/core/browser/history_service.cc"],"cls":[[1647890,18073,72,0,0,[[0,0,2,0],[1,47,1,1],[2,25,3,2]]]]}

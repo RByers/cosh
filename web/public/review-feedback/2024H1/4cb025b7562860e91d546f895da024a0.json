@@ -1,1 +1,1 @@
-{"dirs":["third_party/libavif/"],"files":[],"orgs":["google.com"],"cls":[[5388659,19866,5,0.354,0.253,[[0,0]],[[3,2]],0,5]],"counts":1}
+{"dirs":["third_party/libavif/"],"files":["/COMMIT_MSG","third_party/libavif/BUILD.gn"],"cls":[[5388659,19866,5,5,0,[[0,0,1,0],[1,5,2,2]]]]}

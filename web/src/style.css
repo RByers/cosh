@@ -2813,24 +2813,6 @@ canvas.rf-pointable {
   cursor: pointer;
 }
 
-/* A directory name that filters the comment list: looks like a link. */
-.rf-dir-pick {
-  padding: 0;
-  border: 0;
-  background: none;
-  color: var(--accent);
-  font: inherit;
-  font-family: ui-monospace, monospace;
-  font-size: 0.85rem;
-  text-align: left;
-  cursor: pointer;
-  overflow-wrap: anywhere;
-}
-
-.rf-dir-pick:hover {
-  text-decoration: underline;
-}
-
 /* The directory tree (review-feedback.ts, dirRows): rows indent by their depth
  * (--depth), with the Value Exchange page's ▸/▾ toggles (.ar-toggle). */
 .rf-dir-label {
@@ -2897,45 +2879,29 @@ canvas.rf-pointable {
   color: #fff;
 }
 
-.rf-more {
-  margin: 8px 0 0;
-  min-height: 32px;
-  padding: 4px 12px;
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  background: var(--surface-1);
-  color: var(--text-primary);
-  font: inherit;
-  cursor: pointer;
-}
-
-/* The table of threads without stored text, below the comment list. */
-.rf-notext-path {
-  font-family: ui-monospace, monospace;
-  font-size: 0.85rem;
-  overflow-wrap: anywhere;
-}
-
-/* A comment's CL (linking to the comment in Gerrit), date and file, with its tone score at the top right. */
-.rf-thread-head {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 4px 12px;
-  font-size: 0.8rem;
+/* A change under a file in the person's table: its day after the change number, and its links to the
+ * addressed comments, each with its tone score. */
+.rf-change-day {
   color: var(--text-secondary);
-  overflow-wrap: anywhere;
+  font-size: 0.85rem;
 }
 
-.rf-thread-head .score-badge {
-  flex: none;
-  margin-left: auto;
+.rf-table td.rf-change-links {
+  font-size: 0.85rem;
 }
 
-.rf-text {
-  margin: 4px 0;
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
+.rf-change-box {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 10px;
+  max-width: 16rem;
+}
+
+.rf-change-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
 }
 
 /* A definition at the top of the opening cards. */
@@ -2944,36 +2910,13 @@ canvas.rf-pointable {
   margin: 12px 0 16px;
 }
 
-/* What the feedback index compares with: independent checkboxes, so each is a
- * chip of its own with a tick when on, not one joined segmented control. */
-.segmented.rf-norm {
-  gap: 6px;
-  margin: 4px 0 12px;
-}
-
-.segmented.rf-norm legend {
-  width: 100%;
-}
-
-.segmented.rf-norm label,
-.segmented.rf-norm label + label {
-  margin-left: 0;
-  border-radius: 999px;
-}
-
-.segmented.rf-norm label:has(input:checked)::before {
-  content: '✓ ';
-}
-
-/* The methodology, and the comments without text: they open, their heading the toggle. */
-details.rf-method > summary,
-details.rf-notext > summary {
+/* The methodology: it opens, its heading the toggle. */
+details.rf-method > summary {
   cursor: pointer;
   list-style-position: inside;
 }
 
-details.rf-method > summary h2,
-details.rf-notext > summary h3 {
+details.rf-method > summary h2 {
   display: inline;
 }
 

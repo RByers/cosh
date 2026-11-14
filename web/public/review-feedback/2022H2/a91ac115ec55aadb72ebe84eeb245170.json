@@ -1,1 +1,1 @@
-{"dirs":["ash/system/power/","ui/events/ozone/"],"files":[],"orgs":["google.com"],"cls":[[3731057,19191,45,1.534,1.249,[[0,0]],[[1,1]],0,0],[3862744,19234,1,0.314,0.275,[[1,0]],[[1,1]],0,1]],"counts":1}
+{"dirs":["ash/system/power/","ui/events/ozone/"],"files":["ash/system/power/peripheral_battery_listener.cc","ui/events/ozone/evdev/event_device_info.cc"],"cls":[[3731057,19191,45,0,0,[[0,6,1,1]]],[131687,43,1,1,1,[[1,1,1,1]]]]}

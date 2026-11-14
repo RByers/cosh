@@ -1,1 +1,1 @@
-{"dirs":["components/policy/resources/","chrome/browser/content_settings/"],"files":[],"orgs":["google.com"],"cls":[[3796948,19208,2,0.34,0.231,[[0,0]],[[1,1]],0,0],[3975696,19299,57,1.769,1.384,[[1,0]],[[3,3]],0,1]],"counts":1}
+{"dirs":["components/policy/resources/","chrome/browser/content_settings/"],"files":["components/policy/resources/policy_templates.json","/COMMIT_MSG","chrome/browser/content_settings/content_settings_policy_provider_unittest.cc"],"cls":[[3796948,19208,2,0,0,[[0,2,1,1]]],[178748,91,57,1,1,[[1,0,1,1],[2,57,2,2]]]]}

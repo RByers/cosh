@@ -1,1 +1,1 @@
-{"dirs":["tools/licenses/","tools/licenses/test_dir/","tools/licenses/tests/"],"files":[],"orgs":["google.com"],"cls":[[4596479,19522,162,5.313,4.273,[[0,0]],[[13,10]],0,0],[4634961,19534,202,5.313,4.273,[[0,0.913,1,186],[1,0.078,0,15],[2,0.01,0,1]],[[2,1],[0,0],[0,0]],0,1]],"counts":1}
+{"dirs":["tools/licenses/","tools/licenses/test_dir/","tools/licenses/tests/"],"files":["/COMMIT_MSG","tools/licenses/.style.yapf","tools/licenses/licenses.py"],"cls":[[4596479,19522,162,0,0,[[0,0,2,1],[1,7,2,1],[2,141,9,8]]],[38482,12,202,1,[[0,186],[1,15],[2,1]],[[2,125,2,1]]]]}

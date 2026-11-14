@@ -1,1 +1,0 @@
-{"cls":{"7106464":[["26b111ae_946ee6b5","We generally try to have consistentry across WebUIs. Overriding the default styles of web components in cr_elements/ creates inconsistencies and should be avoided where posible. Just because a UX…",-0.2],["2e10a345_4ba437f7","This is not the proper way to refer to internal bugs. ```suggestion Bug: b:407740382 ```",-0.1]]}}

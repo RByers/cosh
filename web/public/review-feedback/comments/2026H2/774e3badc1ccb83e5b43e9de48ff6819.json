@@ -1,1 +1,0 @@
-{"cls":{"8253448":[["3ac4f16c_56d2c525","Would returning an empty {} vector be enough here?",0.0],["3dcb1fb5_bdf80d31","Why so complex.. shouldn't this be something like: ``` if (context_->render_frame_host()->IsSandboxed(...) && std::ranges::any_of(permissions, [](const auto& permission) { return permission.name ==…",-0.3]]}}

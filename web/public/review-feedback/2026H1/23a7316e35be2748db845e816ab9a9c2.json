@@ -1,1 +1,1 @@
-{"dirs":["components/viz/service/","(root)/","ui/gfx/"],"files":["ui/gfx/gpu_fence.cc"],"orgs":["bytedance.com"],"cls":[[7867519,20605,91,2.856,2.105,[[0,0.979,0,90],[1,0.021,0,1]],[],0,0],[7989773,20630,5,0.548,0.355,[[2,0]],[[0,-1,1]],0,1]]}
+{"dirs":["components/viz/service/","(root)/","ui/gfx/"],"files":["ui/gfx/gpu_fence.cc"],"cls":[[7867519,20605,91,0,[[0,90],[1,1]]],[122254,25,5,1,2,[[0,5,1,1]]]]}

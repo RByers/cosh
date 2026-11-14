@@ -1,1 +1,1 @@
-{"dirs":["chrome/services/sharing/","(root)/","third_party/nearby/"],"files":[],"orgs":["google.com"],"cls":[[3990952,19329,17,0.73,0.514,[[0,0.8,0,15],[1,0.1,0,1],[2,0.1,0,1]],[[2,2],[0,0],[0,0]],0,0]],"counts":1}
+{"dirs":["chrome/services/sharing/","(root)/","third_party/nearby/"],"files":["chrome/services/sharing/nearby/platform.cc"],"cls":[[3990952,19329,17,0,[[0,15],[1,1],[2,1]],[[0,15,2,2]]]]}

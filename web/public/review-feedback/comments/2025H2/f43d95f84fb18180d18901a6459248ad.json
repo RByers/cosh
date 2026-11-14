@@ -1,1 +1,0 @@
-{"cls":{"7148067":[["16709af3_ecaa5de3","nit: extra whitespace (in docstring too)",0.0],["98cb1a6a_18a2e33e","How bout `LOGGER.debug('Runtime %s has state %s and should be deleted.\\nRuntime object:\\n%s' % (value['build'], value['state'], value))` Should probably update lines 552 and 555 to be similar as well.",0.0]]}}

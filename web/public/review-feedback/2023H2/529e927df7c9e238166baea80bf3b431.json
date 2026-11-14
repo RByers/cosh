@@ -1,1 +1,1 @@
-{"dirs":["infra/config/","infra/config/generated/"],"files":[],"orgs":["google.com"],"cls":[[4975636,19655,211,1.12,0.895,[[0,0.55,1,115],[1,0.45,1,96]],[[3,3],[0,0]],0,1],[4996657,19667,32,0.484,0.38,[[0,0.5,2,16],[1,0.5,2,16]],[],0,2]],"counts":1}
+{"dirs":["infra/config/","infra/config/generated/"],"files":["/COMMIT_MSG","infra/config/OWNERS","infra/config/luci-bisection.cfg"],"cls":[[4975636,19655,211,1,[[0,115],[1,96]],[[0,0,1,1],[1,5,1,1],[2,48,1,1]]],[21021,12,32,2,[[0,16],[1,16]]]]}

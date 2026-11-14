@@ -1,1 +1,1 @@
-{"dirs":["components/policy/proto/","components/policy/tools/"],"files":[],"orgs":["google.com"],"cls":[[3264128,18941,16,2.478,1.944,[[0,0.545,0,8],[1,0.455,0,8]],[[2,2],[3,3]],0,0]],"counts":1}
+{"dirs":["components/policy/proto/","components/policy/tools/"],"files":["/COMMIT_MSG","components/policy/proto/chrome_device_policy.proto","components/policy/tools/generate_policy_source.py"],"cls":[[3264128,18941,16,0,[[0,8],[1,8]],[[0,0,1,1],[1,2,1,1],[2,4,3,3]]]]}
