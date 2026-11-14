@@ -1,5 +1,12 @@
 # Feedback Index: addressed feedback rate (AFR) and index
 
+**Purpose of the Feedback Index** (`web/feedback-index.html`). The page
+answers: how much review feedback do Chromium changes get per 100 lines,
+and how fast does it fall with experience? It is for individual
+contributors: anyone can type an email address to see that person's
+figures against their peers' and how they change over time, as a learning
+guide, not a ranking.
+
 What changes to it are judged by: `docs/goals.md` (goal 2 is about figures
 for one person).
 

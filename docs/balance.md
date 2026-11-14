@@ -1,5 +1,12 @@
 # Author/reviewer balance: design notes and findings
 
+**Purpose of Review Balance** (`web/balance.html`; what changes to it are
+judged by: `docs/goals.md`). The page answers: how is Chromium's work
+split between authors and reviewers, how do people grow into reviewers,
+and what changed as AI tools arrived? It is for the people who look after
+Chromium's review process and reviewer capacity. "The question" below has
+it in full.
+
 Status: analysis done over all the data (2026-11-08); the page
 (`web/balance.html`) is not built yet. Nothing was fetched for this:
 everything comes from data already on disk (Gerrit 2023-07 .. 2026-10,

@@ -1,5 +1,13 @@
 # Review-comment sentiment
 
+**Purpose of Review Tone** (`web/sentiment.html`; what changes to it are
+judged by: `docs/goals.md`). The page answers: is Chromium's code review
+getting warmer or harsher, and how do people feel about AI in review? It
+is for everyone who writes or reviews Chromium changes. It tracks the
+tone of the whole project's review comments over time and recognises the
+people who give and receive the most praise; it never points at anyone
+for negative tone ("The principle" below).
+
 `cosh.sentiment` scores the tone of human review comments on Chromium's
 Gerrit. The Review Tone dashboard (`web/sentiment.html`) shows:
 

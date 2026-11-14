@@ -1,5 +1,14 @@
 # Extraction v1: what is implemented
 
+**Purpose of Value Exchange** (`web/value.html`; what changes to it are
+judged by: `docs/goals.md`). The page answers one question: how does each
+organization's investment in Chromium compare with the value it gets out
+of it? It is for the organizations that build on Chromium and the people
+who decide what they invest. It compares each organization's share of the
+code review that changed Chromium's shared engine (addressed review
+comments) with its browsers' share of Chromium-based browser usage, week
+by week (`docs/plan.md`, "First dashboard").
+
 Status (2026-11-03): **2026-W44** (Mon 2026-10-26 to Sun 2026-11-01 UTC) was
 extracted and validated first. The approved one-year backfill (2025-W45 ..
 2026-W44) and an open-CL snapshot for the same year (`extract-open`) follow
