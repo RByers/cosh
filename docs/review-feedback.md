@@ -77,23 +77,21 @@ Both are fixed: the page has no switches for them (the user's call,
   that sum (`unit_expected` in the script, `unitExpected` in
   `web/src/feedback.ts`). The peers' rate (`rates`, `peer_rate`,
   `peerRate`) is the pooled AFR of everyone else's lines in the CL's
-  3-level directory, landed in the CL's half-year at its experience bin:
-  the person's own CLs are left out (`rates` holds each cell's sums,
-  [CLs' worth, lines, addressed threads], and the script and page subtract
-  the person's own, `rate_cells` and `ownCells`). A directory with fewer
-  than `MIN_RATE_CLS` (200) CLs' worth there without them (each CL split
-  over its directories by inserted lines, `unit_fracs`; `cl_dirs` with
+  3-level directory at its experience bin, over all the data: the
+  person's own CLs are left out (`rates` holds each cell's sums, [CLs'
+  worth, lines, addressed threads], and the script and page subtract the
+  person's own, `rate_cells` and `ownCells`). A directory with fewer than
+  `MIN_RATE_CLS` (50) CLs' worth there without them (each CL split over
+  its directories by inserted lines, `unit_fracs`; `cl_dirs` with
   `dels=False`) takes its parent's (2 levels, then 1, then all of
-  Chromium that half-year), cell by cell; where all of Chromium has too
-  few (the first weeks of a half-year), the nearest earlier half-year's
-  with enough counts, else that half-year's anyway. The comparison is
+  Chromium), cell by cell. The comparison is
   fixed: the page has no choice of peers (the experience, directory and
   organization checkboxes went on 2026-11-14, see "One comparison" below).
 
   Pooled rates are lower than the typical person's (big CLs draw less per
   line, and they carry most of the lines), so the expected threads are
   multiplied by `scale`, which makes the median person's index (people
-  with `MIN_CLS` CLs) exactly 1: 0.923 on 2026-11-14.
+  with `MIN_CLS` CLs) exactly 1: 0.901 on 2026-11-14.
 
   **Why this way** (2026-11-14, replacing a median rate per experience bin
   times a two-level directory factor). Comparing within each directory and
@@ -113,32 +111,32 @@ Both are fixed: the page has no switches for them (the user's call,
   0.96). The spread barely moved: 10th–90th percentile 0.42–1.96 (was
   0.43–1.91), quartiles 0.68 and 1.42 (0.67 and 1.39).
 
-  **Per half-year, without the person** (2026-11-14, replacing rates over
-  all the data that included the person's own CLs). Feedback per line
-  drifts: all of Chromium drew 26% less than the all-time rates expect in
-  2026, and some directories moved 1.5–2.4× between 2017–22 and 2025–26
-  (`net/http/`, `third_party/blink/web_tests/`), others down to 0.56×.
-  With all-time rates, someone working mostly in 2025–26 was compared with
-  other eras' norms (the median such person's index was 13% low), and in a
-  directory one person dominates, their own CLs set the norm and pulled
-  their index toward 1. Comparing within the half-year without the person
-  made the index more consistent within each person: the rank correlation
-  of the index from odd and even CLs rose from 0.748 to 0.776, and from
-  the older and the newer half of their CLs from 0.522 to 0.555 (yearly
-  rates, every-two-years rates, a factor per directory and year, and a
-  trailing two-year window all did worse; `docs/review-feedback-drift.md`).
-  About a third of people with 25+ CLs moved by more than 20%. The index
-  no longer shows Chromium-wide shifts (everyone's median per half-year
-  runs 0.96–1.14, against 0.75–1.16 before); the AFR charts do. It cost
-  `peers.json` 34 KB gzipped and nothing else: the per-person files didn't
-  change. The spread: quartiles 0.65 and 1.44, 10th–90th percentile
-  0.35–2.04.
+  **Without the person, over all the data, minimum 50** (2026-11-14).
+  A person's own CLs no longer set the rate they are compared with: in a
+  directory one person dominates, they pulled their index toward 1. For
+  a few hours that day the rates were per half-year, because feedback per
+  line drifts (all of Chromium drew 26% less than the all-time rates
+  expect in 2026; some directories moved 1.5–2.4×). That was judged by
+  how consistent each person's index was between halves of their CLs,
+  which turned out to reward coarser comparisons (no directories at all
+  scored highest). Judged instead by how well the peers' rates predict
+  other people's addressed threads (Poisson deviance per CL with a factor
+  per size bucket, each CL's owner left out), all-time rates beat every
+  time-local variant: per half-year (2.97M against 2.84M), widening each
+  directory's window back over earlier half-years until it has enough
+  CLs (2.91M), or both ways (2.86M), and all-time rates times a
+  Chromium-wide factor per half-year (2.89M). Directory detail matters
+  more than time, and lowering the minimum from 200 to 50 helped (2.82M;
+  25 the same, 10 and 100 worse). `docs/review-feedback-drift.md` has
+  the study. The spread: quartiles 0.68 and 1.44, 10th–90th percentile
+  0.43–1.96. The per-person files didn't change; `peers.json` holds 862
+  directories' sums (41 KB of its 83 KB gzipped).
 
   **One comparison** (2026-11-14). The checkboxes that picked the peers
   (experience and directories on, organization off) are gone, and with
   them the organization factors: the goals (`docs/goals.md`) define the
-  index as a comparison within the same directory, experience and time,
-  and every other combination needed its own rate sums in `peers.json`
+  index as a comparison within the same directory and experience, and
+  every other combination needed its own rate sums in `peers.json`
   once the person is left out of their own peers. Organizations remain in
   the methodology's chart.
 
@@ -274,8 +272,8 @@ charts are drawn when it opens:
   experience run 0.37–1.73 for orgs with 300+ CLs (google.com 1.01,
   microsoft.com 0.89, igalia.com 0.85), against 0.38–3.25 without it, so
   orgs differ partly through their contributors' experience; with
-  experience and directories (per half-year, without the person),
-  0.39–1.97 (google.com 1.00, microsoft.com 0.95, igalia.com 0.91).
+  experience and directories (per half-year, without the person; the
+  index no longer has org factors), 0.39–1.97 (google.com 1.00, microsoft.com 0.95, igalia.com 0.91).
 - *How it's measured:* the definitions above in prose.
 
 **Dates come from the data**, never from the code. The range runs from the
@@ -394,9 +392,9 @@ Output (default `web/public/review-feedback/`, which Vite copies into the
 site), with `<key>` the hash of the person's address, in four kinds of file
 that the page loads at different times:
 
-- `peers.json` (global, loaded on opening; version 9, about 206 KB, 66 KB
+- `peers.json` (global, loaded on opening; version 10, about 252 KB, 83 KB
   gzipped): the experience bins (`bins`, `bin_edges`), the index's rate
-  sums per half-year, directory and bin (`rates`) and its `scale`, the
+  sums per directory and bin (`rates`) and its `scale`, the
   median AFR per bin (`ref_bin`, `ref_all`, for comparisons), everyone's
   directory table (`dir_table`), the spread of AFR per bin (`fr_bins`) and
   of everyone's index per period (`fi`), the first half-year with comment
@@ -425,10 +423,10 @@ that the page loads at different times:
 The page computes a person's figures from these, the same way the script
 does for the spread of everyone's index: totals, AFR and FI for any period,
 and the growth rate, from the rounded rate sums in `peers.json`. `--check
-FILE` writes the script's values for 300 people; on 2026-11-14, with this
-layout, the page's `buildPerson`, `sums` and `fiOf` matched all 3,475 of
-them (FI, CLs, addressed threads and lines per period; the largest FI
-difference 0.0005, rounding).
+FILE` writes the script's values for 300 people; on 2026-11-14, with
+all-time rate sums and the person left out, the page's `buildPerson`,
+`sums` and `fiOf` matched all 3,475 of them exactly (FI, CLs, addressed
+threads and lines per period).
 
 So a half-year's files don't change once it is over, as long as the inputs
 don't (labels, mechanical list, identity merge, today's names of moved
@@ -479,14 +477,16 @@ half-year, so they start in 2023 (23 MB for all years; the user's call).
   with size (5.5 per 100 lines under 4 lines, 1.4 at 512–1k, 0.21 over
   1k): someone landing larger changes gets a lower rate at the same care.
   The index doesn't adjust for size.
-- The index compares within each half-year, so it doesn't show whether
-  all of Chromium draws more or less feedback over time (it drew about a
-  quarter less per line in 2026); the AFR does. Per half-year, fewer
-  directories have 200 CLs' worth (55–88 at 1, 2 or 3 levels, against 712
-  over all the data), so more lines take a parent directory's rate.
-- In the first weeks of a half-year its rates rest on few CLs, so a
-  person's index for the current half-year is provisional; finished
-  half-years' rates don't change.
+- The rates cover all the data (2017–2026), and feedback per line
+  drifts: all of Chromium drew about a quarter less per line in 2026,
+  partly because its CLs got bigger, and some directories moved 1.5–2.4×
+  between 2017–22 and 2025–26. Every time correction tried predicted
+  peers' feedback worse (`docs/review-feedback-drift.md`); one that
+  accounts for CL size might not. The over-time chart shows everyone's
+  median index per half-year (0.76 for 2026H2, about 1.0–1.17 before
+  2025), so the drift is visible there.
+- Each run's new CLs change every rate a little, so past figures move
+  slightly from week to week.
 - A rate over a few CLs is noisy, so part of the spread in each bin and in
   the growth rates is noise, not people.
 

@@ -8,13 +8,24 @@ many changes there in 2025–26 gets a high index for something that isn't
 theirs. How big is that bias, and can we correct it within the goals in
 `docs/goals.md`?
 
-Short answer: the bias is real and larger than the directory example
-suggests, mostly because all of Chromium drew about a quarter less
-feedback per line in 2026. Comparing each change with peer rates from the
-**same half-year**, with the person's own changes left out of their peers'
-rates, removes it, makes the index more reliable on both tests below, and
-costs no tokens, no per-person files and about 50 KB more in `peers.json`.
-Built the same day (below, "Built").
+Short answer: the drift is real, mostly because all of Chromium drew
+about a quarter less feedback per line in 2026, but no time correction we
+tried makes the peers' rates better. Judged by how well they predict the
+feedback other people's changes drew, rates over all the data beat rates
+per half-year, per-directory windows that widen over earlier (or later)
+half-years until they have enough changes, and all-time rates times a
+Chromium-wide factor per half-year: directory detail matters more than
+time, and every narrower period costs directories their own rate. What
+did help is leaving each person out of their own peers' rates and
+lowering the minimum per directory from 200 to 50 changes' worth. That is
+what the index uses since 2026-11-14 (below, "What we built").
+
+A first round of this study, judged by how consistent each person's index
+is between halves of their changes, recommended per-half-year rates, and
+they were live for a few hours. That test rewards coarser comparisons
+(comparing with no directories at all scores highest), so it can't choose
+the peer groups; the sections "Options judged by consistency" and "Why
+consistency misled" keep that round for the record.
 
 ## How it was measured
 
@@ -69,7 +80,7 @@ So the current index understates the typical recent contributor by about
 13%, mostly through 2026, while for one in ten it overstates them by a
 quarter or more, as in the question.
 
-## Options
+## Options judged by consistency (superseded)
 
 All are offline: none costs tokens (goal 5). "Moved" compares with the
 index now (people with 25+ CLs). Reliability: rank correlation of each
@@ -114,53 +125,52 @@ What they show:
   signal; a bias shared by a person's odd and even CLs would, if anything,
   have propped up the old figure.
 
-## Option G against the goals
+## Why consistency misled
 
-**Goal 2 (accuracy).** The most reliable on both tests, and it means what
-readers expect: "compared with people working in the same directory, at
-the same experience, in the same half-year". About a third of people with
-25+ CLs move by more than 20% (13% by more than 50%), a one-time break
-the page should note. What changes in meaning:
+Varying only the minimum per directory, per half-year: odd/even 0.776 at
+200, 0.782 at 400, 0.784 at 800, 0.786 at 1,600 and 0.787 with no
+directories at all; older/newer half 0.555 up to 0.574. Where someone
+works is a stable part of their index, so the coarser the comparison, the
+more of it the person carries from one half of their changes to the
+other. Per-half-year rates looked better partly because only 55–88
+directories per half-year have 200 changes' worth (712 over all the
+data), so most lines took a parent's rate. Widening each directory's
+window backwards, which keeps more directories, looked worse for the same
+reason (odd/even 0.767 widening up to a year, 0.754 without limit).
 
-- Everyone's median index per half-year sits near 1 by construction, so
-  the index no longer shows Chromium-wide shifts like 2026's. The AFR
-  charts (absolute) do, and the page should say so where the index over
-  time is drawn.
-- A person's index across half-years compares them with each half-year's
-  peers. Improvement shows as rising relative to peers, which is what the
-  index is for; whether all of Chromium improved is the AFR's job.
+## Judged by prediction
 
-**Goal 3 (weekly update).** A finished half-year's rates don't change, so
-past figures stay put; only the current half-year's rates move each week,
-as its per-person files already do. In the first weeks of a half-year its
-cells are thin and fall back to parent directories and to the half-year's
-Chromium-wide rate, so early figures are noisier. A fix if that shows: let
-the current half-year's rates cover the last 26 weeks until it has 13
-weeks of its own. Run time barely changes.
+What the index needs from its peers' rates is a good estimate of what
+other people's changes draw on the same lines. So each variant predicts
+every CL's addressed threads from everyone else's CLs (the owner left
+out), scaled by a factor per size bucket (powers of two of inserted
+lines; without it, size swamps everything: small CLs drew 2.3× more than
+predicted in 2026 and the largest a quarter), and is scored by Poisson
+deviance over the 872,196 CLs (lower is better):
 
-**Goal 4 (repository volume).** Per-person files don't change: the rates
-live in `peers.json`, which the page loads on opening. Leaving the person
-out needs each cell's sums ([CLs' worth, lines, addressed threads])
-instead of a rate, so the page can subtract the person's own changes
-(which it already loads, every half-year). The sums for all 19
-half-years measured 153 KB, 39 KB gzipped (the all-time rates now: 59 KB,
-11 KB gzipped), so `peers.json` grows from 59 to about 90 KB gzipped,
-rewritten weekly. If that
-weekly churn matters, finished half-years' rates can move to frozen files
-(`rates/<half>.json`) that git stores once. The change itself rewrites only
-`peers.json`, not the 35 MB of half-year files.
+| peers' rates | deviance |
+|---|---|
+| all-time, minimum 50 (built) | **2,819,561** |
+| all-time, minimum 25 | 2,820,743 |
+| all-time, minimum 100 | 2,833,787 |
+| all-time, minimum 200 (before 2026-11-14) | 2,843,113 |
+| all-time, minimum 10 | 2,846,445 |
+| widen each directory both ways over half-years until 200 | 2,859,702 |
+| all-time min 50 × Chromium's factor per half-year | 2,871,139 |
+| all-time × Chromium's factor per half-year | 2,891,810 |
+| all-time × the 2-level directory's factor per half-year | 2,897,234 |
+| widen each directory both ways until 1,000 | 2,898,869 |
+| widen each directory back over earlier half-years until 200 | 2,906,493 |
+| per half-year, minimum 50 | 2,944,119 |
+| widen back until 1,000 | 2,964,440 |
+| per half-year, minimum 200 (live for a few hours) | 2,974,124 |
 
-**Goal 5 (tokens).** None: rates are computed from labels already paid
-for.
-
-**Cost to build.** `rate_model` and `peer_rate` take a period key (the
-CL's half-year) and keep sums; the script and `web/src/feedback.ts`
-subtract the person's own cell sums before the 200-CL test (the script for
-everyone's spread, the page for the person shown); the scales are
-recomputed as now; the `--check` comparison must match again; the directory
-table's "peers' AFR" tooltip already sums expected threads, so it works
-unchanged. `docs/review-feedback.md` and `config/dataflow.json`
-(`peers.json`'s size) change with it.
+Without the size factor the order is much the same (all-time minimum 50
+3.13M, 100 3.18M, 200 3.21M; per half-year 3.51M). Year by year, Chromium's factor per half-year helps in
+2026 (351.6k → 339.0k without the size factor) and hurts in every other
+year: a factor from pooled lines follows how many big CLs landed, so it
+misjudges small ones. A time correction that accounts for size might
+help; that is untried.
 
 ## Not tried
 
@@ -170,16 +180,16 @@ unchanged. `docs/review-feedback.md` and `config/dataflow.json`
   hard half-year cells.
 - Months or quarters (cells too thin at 200 CLs' worth).
 
-## Built (2026-11-14)
+## What we built (2026-11-14)
 
-Option G, as `rate_model`, `cell_rate` and `peer_rate` in
-`cosh/review_feedback.py` and `ownCells` and `peerRate` in
-`web/src/feedback.ts` (`docs/review-feedback.md`, Definitions). Where all
-of Chromium has fewer than 200 CLs' worth in a half-year and bin without
-the person (the first weeks of a half-year), the nearest earlier
-half-year's counts, rather than a 26-week window. With the published data:
-the per-person files didn't change, `peers.json` went from 59 to 93 KB
-gzipped, the run took the same 2 min, and the page matched the script's
-values for 300 people exactly. Quartiles of everyone's index 0.65 and 1.44
-(were 0.68 and 1.42), 10th–90th percentile 0.35–2.04 (0.42–1.96);
-everyone's median per half-year 0.96–1.14 (0.75–1.16).
+All-time rate sums per directory and experience bin in `peers.json`,
+with the person's own subtracted before the minimum of 50 (`rate_model`,
+`cell_rate` and `peer_rate` in `cosh/review_feedback.py`, `ownCells` and
+`peerRate` in `web/src/feedback.ts`; `docs/review-feedback.md`,
+Definitions). The per-person files didn't change; `peers.json` is 83 KB
+gzipped (59 KB with all-time rates before, 93 KB per half-year), and the
+page matched the script's values for 300 people exactly. Quartiles of
+everyone's index 0.68 and 1.44, 10th–90th percentile 0.43–1.96;
+everyone's median per half-year still shows the drift (0.76 for 2026H2).
+Scripts: `data/private/scratch/feedback-drift/` (`widen*.py`,
+`minrate.py`, `deviance.py`, `dev2.py` to `dev5.py`, with their `.out`).

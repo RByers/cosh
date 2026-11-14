@@ -1524,37 +1524,32 @@ test('review feedback: the AFR and index, as the script computes them', async ()
   const s = F.sums(person, peers, cs);
   assert.deepEqual([s.cls, s.addressed, s.lines], [3, 3, 170]);
   near(F.frOf(s), 300 / 170);
-  // Peers in the same directory, half-year and experience: CL 1 in chrome/browser/ui/, which has no rate
-  // at bin 2, so chrome/browser/'s (3); CL 2 by lines in content/browser/ (content/'s 1.36 at bin 4, 90 of
-  // 118) and chrome/browser/ui/ (2.04, 28 of 118); CL 3 in third_party/blink/renderer/ (third_party/blink/'s 0.5).
+  // Peers in the same directory and experience: CL 1 in chrome/browser/ui/, which has no rate at bin 2, so
+  // chrome/browser/'s (3); CL 2 by lines in content/browser/ (content/'s 1.36 at bin 4, 90 of 118) and
+  // chrome/browser/ui/ (2.04, 28 of 118); CL 3 in third_party/blink/renderer/ (third_party/blink/'s 0.5).
   near(s.expected, 0.4 * 3 + 1.2 * ((90 / 118) * 1.36 + (28 / 118) * 2.04) + 0.1 * 0.5);
   near(F.fiOf(s), 3 / s.expected);
   assert.deepEqual(F.dirLevels('chrome/browser/ui/'), ['chrome/browser/ui/', 'chrome/browser/', 'chrome/', '']);
   assert.deepEqual(F.dirLevels('(root)/'), ['(root)/', '']);
-  near(F.peerRate(peers, null, '2026H1', 'chrome/browser/ui/', 0), 9);
-  near(F.peerRate(peers, null, '2026H1', 'net/base/', 3), 2);
-  // The person's own sums per half-year and directory: CL 2 (2026H1, bin 4) has 90 of its 118 lines'
-  // share and its one addressed thread in content/browser/.
+  near(F.peerRate(peers, null, 'chrome/browser/ui/', 0), 9);
+  near(F.peerRate(peers, null, 'net/base/', 3), 2);
+  // The person's own sums per directory: CL 2 (bin 4) has 90 of its 118 lines' share and its one
+  // addressed thread in content/browser/.
   const own = F.ownCells(person, peers);
-  const c2 = own.get('2026H1|content/')!;
+  const c2 = own.get('content/')!;
   assert.equal(c2.length, peers.bins.length);
   near(c2[4][0], 90 / 118);
   near(c2[4][1], (120 * 90) / 118);
   assert.equal(c2[4][2], 1);
-  assert.equal(own.get('2025H2|content/'), undefined);
-  // Leaving the person out: their sums come off everyone's before the rate and the minimum (200).
+  assert.equal(own.get('net/'), undefined);
+  // Leaving the person out: their sums come off everyone's before the rate and the minimum (200 here).
   const all10 = (x: [number, number, number]) => Array.from({ length: 10 }, (): [number, number, number] => [...x]);
-  const small = { ...peers, rates: {
-    '2025H2': { '': all10([1000, 10000, 200]) },
-    '2026H1': { '': all10([150, 3000, 30]), 'ui/': all10([300, 5000, 150]) },
-  } };
-  const mine = (n: number): Map<string, [number, number, number][]> => new Map([['2026H1|ui/', all10([n, 1000, 50])]]);
-  near(F.peerRate(small, null, '2026H1', 'ui/x/', 0), 3);
-  near(F.peerRate(small, mine(50), '2026H1', 'ui/x/', 0), 2.5);
-  // Under 200 without them: everyone's that half-year has too few too, so the half-year before's.
-  near(F.peerRate(small, mine(120), '2026H1', 'ui/x/', 0), 2);
-  // With no earlier half-year, that half-year's anyway.
-  near(F.peerRate({ ...small, rates: { '2026H1': small.rates['2026H1'] } }, mine(120), '2026H1', 'ui/x/', 0), 1);
+  const small = { ...peers, rates: { '': all10([150, 3000, 30]), 'ui/': all10([300, 5000, 150]) } };
+  const mine = (n: number): Map<string, [number, number, number][]> => new Map([['ui/', all10([n, 1000, 50])]]);
+  near(F.peerRate(small, null, 'ui/x/', 0), 3);
+  near(F.peerRate(small, mine(50), 'ui/x/', 0), 2.5);
+  // Under 200 without them: everyone's, even with few.
+  near(F.peerRate(small, mine(120), 'ui/x/', 0), 1);
   // The scale multiplies what's expected.
   near(F.sums(person, { ...peers, scale: 0.5 }, cs).expected, s.expected / 2);
   // Per bin, and the growth rate: rates 2.5, 0.83 and 10 at bins 2, 4 and 6 fit a line of +41% per doubling.

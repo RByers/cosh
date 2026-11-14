@@ -58,7 +58,7 @@ export function rateCells(rates: Record<string, (number | null)[]>): Record<stri
 }
 
 export const peers: Peers = {
-  v: 9,
+  v: 10,
   generated: '2026-11-14',
   start: day('2023-07-01'),
   end: day('2026-11-01'),
@@ -78,17 +78,16 @@ export const peers: Peers = {
   ref_all: 1.5,
   min_rate_cls: 200,
   min_dir_cls: 100,
-  // Everyone's rate per bin, the same in every half-year; 1.2, 0.8 and 0.5 times all of Chromium's in
-  // three directories. chrome/browser/ui/ has a rate of its own only at the first bin: its parent's counts
-  // instead. The cells are so large that leaving the person's own lines out moves no rate by more than
-  // about 1e-11.
-  rates: Object.fromEntries(periods.filter((h) => h !== 'all').map((h) => [h, rateCells({
+  // Everyone's rate per bin; 1.2, 0.8 and 0.5 times all of Chromium's in three directories.
+  // chrome/browser/ui/ has a rate of its own only at the first bin: its parent's counts instead. The
+  // cells are so large that leaving the person's own lines out moves no rate by more than about 1e-11.
+  rates: rateCells({
     '': refBin,
     'chrome/browser/': [4.8, 3.6, 3, 2.4, 2.04, 1.56, 1.2, 0.96, 0.72, null],
     'chrome/browser/ui/': [9, null, null, null, null, null, null, null, null, null],
     'content/': [3.2, 2.4, 2, 1.6, 1.36, 1.04, 0.8, 0.64, 0.48, null],
     'third_party/blink/': [2, 1.5, 1.25, 1, 0.85, 0.65, 0.5, 0.4, 0.3, null],
-  })])),
+  }),
   scale: 1,
   // Everyone's directory table: third_party/blink/ is among third_party/'s smaller entries.
   dir_table: [

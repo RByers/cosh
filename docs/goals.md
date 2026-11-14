@@ -60,23 +60,34 @@ changes as they improve.
   from the directory (its reviewers and norms), the period (Chromium-wide
   shifts in how much feedback changes draw) or the stage of a career are
   not the person's, so a comparison is with peers doing similar work: the
-  same directory, experience and time. What remains should be about the
-  person.
+  same directory and experience, and the same time where that measurably
+  helps (for the Feedback Index it hasn't yet: rates from narrower periods
+  predicted peers' feedback worse, `docs/review-feedback-drift.md`). What
+  remains should be about the person.
 - **Improvement over time is visible.** A person's figures for different
   periods must be comparable, so a better or worse half-year shows as one.
   In the Feedback Index, the addressed feedback rate (AFR) is absolute (it
   moves when all of Chromium does); the feedback index (FI) is relative to
-  the peers of the time.
+  peers.
 - **Reasonably accurate, not precise.** A figure about a person is a
   learning guide, not a ranking for performance review. It is good enough
   when it is reproducible from different samples of the person's own work,
   and when a high or low figure points at something real worth looking at
   (in the Feedback Index, comments worth reading). We judge that, lacking
   ground truth, by:
+  - the peers' norm predicting peers: what a comparison expects of a CL
+    should predict what other people's CLs actually drew, scored on every
+    CL with its owner left out (in the Feedback Index, the Poisson
+    deviance of each CL's addressed threads, with a factor per size
+    bucket so that size doesn't swamp the rest). This is the test for how
+    fine the peer groups should be (directories, periods, minimums);
   - split-half reliability: the rank correlation of each person's figure
     from their odd and from their even CLs (people with 25+ CLs);
   - early/late consistency: the same from the older and the newer half of
-    their CLs, which a bias that changes over time lowers;
+    their CLs. Both of these reward coarser comparisons, since where
+    someone works is a stable part of their figure (comparing with no
+    directories at all scores highest), so they can't choose the peer
+    groups; they help with noise, such as how a figure is pooled;
   - robustness: a few data points in a quiet corner (a few threads in a
     quiet directory) shouldn't swing the figure, and no person's own
     changes should set the norm they are compared with;

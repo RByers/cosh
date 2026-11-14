@@ -3445,12 +3445,12 @@ test('feedback index: a person\'s index, how their rate compares, and their dire
   assert.equal(await sub('rf-tile-cls'), '170 lines written');
   assert.equal(await tile('rf-tile-threads'), '3');
   assert.equal(await tile('rf-tile-fr'), '1.76');
-  // Against peers in the same directories, half-year and experience (3 over 3.08 expected): 31% of 2,800
+  // Against peers in the same directories and experience (3 over 3.08 expected): 31% of 2,800
   // have a lower index.
   assert.equal(await tile('rf-tile-fi'), '0.98×');
   assert.equal(await sub('rf-tile-fi'), '31% of 2,800 contributors have a lower index');
   assert.match((await page.$eval('#summary-sub', (e) => e.textContent!)).replace(/\s+/g, ' '),
-    /Your AFR against your peers': everyone else in the same directories, half-year and experience, over all your changes from July 2023 to October 2026/);
+    /Your AFR against your peers': everyone else in the same directories at the same experience, over all your changes from July 2023 to October 2026/);
   // The latest doubling: 0.83 at 128 to 10 at 512, two doublings apart, √12 − 1 per doubling, reached by
   // the day of the change at 512; typically 1.7 to 1.0.
   assert.equal(await page.$eval('#rf-tile-growth .tile-label', (e) => e.textContent), 'Your latest doubling');

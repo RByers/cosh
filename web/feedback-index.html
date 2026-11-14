@@ -111,16 +111,14 @@
         <h2 id="index-title">Feedback index</h2>
         <p class="rf-def">
           <strong>Feedback index</strong>: a contributor's AFR compared with their peers'. In each directory, the
-          peers' rate is the AFR of everyone else's changes there that were landed in the same half-year with the
-          same experience (a directory with too few such changes takes its parent directory's rate). A contributor's index in a
+          peers' rate is the AFR of everyone else's changes there that were landed with the same experience,
+          over all the data (a directory with too few such changes takes its parent directory's rate). A contributor's index in a
           directory is their AFR there over their peers', and their overall index is all their addressed comments
           over the number their peers would have drawn on the same lines, so directories count by how much
           feedback peers draw there. 1.00× is typical (the median contributor); below 1 means less feedback than
           peers, above 1 more. Because it compares each change with others at the same experience, the index
           doesn't fall as someone gains experience the way the rate does: it shows how someone's feedback
-          compares with their peers' at every stage. And because it compares with the same half-year, it doesn't
-          move when all of Chromium draws more or less feedback (in 2026, about a quarter less per line): the AFR
-          shows that.
+          compares with their peers' at every stage.
         </p>
         <h3>Everyone's feedback index</h3>
         <ul id="rf-fi-legend" class="legend rf-line-legend" aria-label="Lines"></ul>
@@ -230,7 +228,7 @@
         <h2 id="summary-title">Your feedback index</h2>
         <p id="summary-sub" class="sub"></p>
         <template data-msg="summary-sub">
-          Your AFR against your peers': everyone else in the same directories, half-year and experience, over all
+          Your AFR against your peers': everyone else in the same directories at the same experience, over all
           your changes from <slot name="from"></slot> to <slot name="to"></slot>. 1.00× is typical.
           <span data-if="!eligible">You landed fewer than <slot name="minCls"></slot> changes, too few to be
           ranked among peers, so treat your figures with care.</span>
@@ -444,14 +442,14 @@
           The feedback index divides the addressed comments on your changes by the number your peers would have
           drawn on the same lines. For each directory a change wrote lines in (three levels deep, such as
           <code>chrome/browser/ui/</code>), those lines times the AFR of everyone else's lines in that directory
-          from changes landed in the same half-year at the same experience (pooled: all their addressed comments
+          from changes landed at the same experience, over all the data (pooled: all their addressed comments
           per 100 of all their lines). Your own changes are left out, so you never set the rate you are compared
           with. Where a directory has fewer than <span class="rf-min-rate"></span> changes' worth at that
-          experience and half-year without yours, its parent's rate counts instead (<code>chrome/browser/</code>,
-          then <code>chrome/</code>, then all of Chromium that half-year, or in the first weeks of a half-year,
-          the half-year before). Comparing within the half-year matters: feedback per line in a directory can
-          change a lot over the years (with new owners, say), and all of Chromium drew about a quarter less per
-          line in 2026 than before. Pooled rates are lower than the typical contributor's (big changes draw less feedback per line),
+          experience without yours, its parent's rate counts instead (<code>chrome/browser/</code>, then
+          <code>chrome/</code>, then all of Chromium). The rates cover every year: feedback per line does drift
+          (all of Chromium drew about a quarter less per line in 2026), but rates from a narrower period predicted
+          other contributors' feedback worse, because fewer directories then have enough changes of their own.
+          Pooled rates are lower than the typical contributor's (big changes draw less feedback per line),
           so the expected comments are scaled to make the median contributor's index 1.00×. Adding up comments
           and expected comments weighs each directory by the feedback peers would draw there: weighing by lines
           instead lets a few comments in a directory that draws almost none (configuration, imported code) swing
