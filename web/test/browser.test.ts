@@ -3660,7 +3660,7 @@ test('the Data flow page draws the chosen pages\' flow, lists the inventory, and
   // A click on a node shows its facts and lights up its lineage only.
   await page.click('#graph-box .df-node[data-node="data/private/addressed.sqlite"]');
   assert.equal(await page.$eval('#detail-title', (e) => e.textContent), 'data/private/addressed.sqlite');
-  assert.match(page.url(), /#n=data%2Fprivate%2Flabels\.sqlite$/);
+  assert.match(page.url(), /#n=data%2Fprivate%2Faddressed\.sqlite$/);
   const lit = await page.$$eval('#graph-box .df-node.on', (gs) => gs.map((g) => (g as SVGGElement).dataset.node!));
   assert.ok(lit.includes('classify') && lit.includes('summarize') && lit.includes('page-value'), lit.join());
   assert.ok(!lit.includes('radar') && !lit.includes('cloudflare-radar'), lit.join());
@@ -3696,7 +3696,7 @@ test('the Data flow page draws the chosen pages\' flow, lists the inventory, and
   await page.keyboard.press('Escape');
   // What the ground rules keep private has columns but no rows.
   await page.evaluate(() => (location.hash = '#n=data%2Fprivate%2Fsentiment.sqlite'));
-  await page.waitForFunction(() => document.querySelector('#detail-title')!.textContent === 'Comment scores');
+  await page.waitForFunction(() => document.querySelector('#detail-title')!.textContent === 'data/private/sentiment.sqlite');
   await page.click('#detail-tables button[data-sample="0"]');
   s = await sample();
   assert.ok(s.open && s.rows === 0 && s.cols.length > 0 && /Not published/.test(s.note), JSON.stringify(s));
