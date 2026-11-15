@@ -334,10 +334,8 @@ oldest usable CL) to the end of the newest, trimmed to whole months
 every figure covers all of it, and only the over-time chart splits it, by
 half-year.
 
-**Praise** has no section here: after a lookup, "See also your praise"
-links to the Review Tone page's popup for the address
-(`sentiment.html#person=<address>`). **Tone** doesn't appear on the
-page.
+**Praise** and **tone** don't appear on the page (the "See also your
+praise" link to the Review Tone page was removed on 2026-11-14).
 
 Removed on 2026-11-14 with the switches: the cohort curves by start year,
 the year-over-year and per-doubling histograms of the old index, the

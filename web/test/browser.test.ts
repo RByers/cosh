@@ -3531,8 +3531,7 @@ test('feedback index: a person\'s index, and how their rate compares', async () 
   assert.equal(await page.$('#rf-norm'), null);
   assert.equal(await page.$('#comments'), null);
   assert.equal(await page.$eval('#compare-title', (e) => e.textContent), 'Your AFR');
-  const praise = await page.$eval('#rf-find-note .rf-praise-link', (a) => (a as HTMLAnchorElement).getAttribute('href'));
-  assert.equal(praise, 'sentiment.html#person=tp%40example.com');
+  assert.equal(await page.$('#rf-find-note a'), null);
   const tile = (id: string) => page.$eval(`#${id} .tile-value`, (e) => e.textContent);
   const sub = (id: string) => page.$eval(`#${id} .tile-sub`, (e) => e.textContent!.replace(/\s+/g, ' ').trim());
   // 3 changes, 170 lines, 3 addressed comments: 1.76 per 100 lines.

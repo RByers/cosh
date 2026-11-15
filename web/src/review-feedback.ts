@@ -243,9 +243,6 @@ async function lookup(raw: string) {
     state.allExpanded = new Set();
     const cs = clsIn(found, ALL);
     put(note, 'find-done', { n: fmtInt(cs.length), from: dayLabel(cs[0][1]), to: dayLabel(cs.at(-1)![1]) });
-    // The person's praise is on the Review Tone page, which opens their popup from the hash.
-    const praise = note.querySelector<HTMLAnchorElement>('.rf-praise-link');
-    if (praise) praise.href = `sentiment.html#person=${encodeURIComponent(raw.trim())}`;
     $('#rf-person').hidden = false;
     setupDownload();
     render();
