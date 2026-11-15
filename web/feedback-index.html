@@ -448,6 +448,18 @@
           comments there, the dark ones the middle half.
         </template>
         <template data-msg="axis-factor">factor (against experience alone)</template>
+        <h3>Why approvers, not commenters</h3>
+        <p class="note">
+          The reviewers are the people who approved the change (its <code>Reviewed-by</code> lines), not the people
+          who commented on it. Who commented is part of the outcome being measured: only about half of changes draw a
+          reviewer comment at all, and a change nobody commented on has no addressed feedback by definition. Comparing
+          by commenters would seem to predict much better, but only because it already knows the answer. It would
+          expect almost nothing of a change that needed no fixes, taking away the credit that change earns, and expect
+          more of a change because it drew many comments, cancelling part of the feedback it should count. The
+          attention set has the same problem, since commenting puts a reviewer back in it. Nearly every change (96%)
+          has an approver, whether or not they commented. The cost is that a reviewer who commented without approving
+          doesn't count toward the comparison.
+        </p>
 
         <h3>Drift over time</h3>
         <ul id="rf-drift-legend" class="legend rf-line-legend" aria-label="Lines"></ul>

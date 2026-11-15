@@ -262,5 +262,20 @@ person's own CLs are left out").
 sums, which "Which files did each approver review?" above found as good
 as crediting by OWNERS.
 
-Not tried: reviewers who commented but didn't approve, a reviewer factor
-per period, and per 3-level directory.
+Not tried: a reviewer factor per period, and per 3-level directory.
+
+### Why not commenters (2026-11-14)
+
+Using the reviewers who commented, instead of the approvers, looks far more
+predictive (deviance 1,692,333 against 2,622,964 for approvers and
+2,984,772 for experience alone), but it leaks the outcome: only 46% of CLs
+have a reviewer thread, and a CL with no commenter has no addressed
+feedback by definition. It would expect about nothing of clean changes
+(removing their credit) and more of changes because they drew comments.
+People's ranks would also shift more (rank correlation with the
+experience-only index 0.77, against 0.88 for approvers). The attention set
+leaks the same way, since commenting puts a reviewer back in it. Reviewers
+added to a CL (NoteDb `Reviewer:` events), whether or not they commented,
+would avoid the leak but weren't tried: the user doubted they'd do better.
+The page's methodology explains the choice ("Why approvers, not
+commenters"). Script: `data/private/scratch/feedback-drift/commenters.py`.
