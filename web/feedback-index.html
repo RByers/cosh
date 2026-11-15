@@ -50,8 +50,8 @@
           ultimately becoming reviewers themselves to help teach the next generation of contributors.
         </p>
         <p class="rf-def">
-          <strong>Addressed feedback rate (AFR)</strong>: addressed review comments per 100 lines written. That is the reviewer
-          comment threads that led to a change in the code, for every 100 new or changed lines, over the changes
+          <strong>Addressed feedback rate (AFR)</strong>: addressed review comments per 100 lines written. That is the comment threads
+          <button type="button" class="term" popovertarget="def-commenter" title="Commenter: anyone but the change's owner who started a comment thread on it, approver or not">commenters</button> started that led to a change in the code, for every 100 new or changed lines, over the changes
           someone landed. Removed lines don't count, since they draw almost no feedback. Large-scale changes and
           other large mechanical changes are left out.
         </p>
@@ -113,10 +113,11 @@
         <p class="rf-def">
           <strong>Feedback index</strong>: a contributor's addressed comments over the number their changes would
           be expected to draw: everyone else's AFR at the same experience, times how much feedback the changes'
-          reviewers' approvals usually draw on everyone else's changes (their reviewer factor: 1.00× for the
+          <button type="button" class="term" popovertarget="def-reviewer" title="Reviewer: someone who approved the change (its Reviewed-by lines)">reviewers'</button> approvals usually draw on everyone else's changes (their reviewer factor: 1.00× for the
           typical reviewer). Comparing by
           reviewer predicts feedback better than comparing by directory, and it means picking a lenient reviewer
-          doesn't lower anyone's index (see the methodology below). 1.00× is typical (the median contributor);
+          doesn't lower anyone's index (see the methodology below). A change's reviewers are those who approved it,
+          not those who commented on it: a commenter may not have approved it, and a reviewer may not have commented. 1.00× is typical (the median contributor);
           below 1 means less feedback than expected, above 1 more. Because it compares each change with others at
           the same experience, the index doesn't fall as someone gains experience the way the rate does: it
           shows how someone's feedback compares at every stage.
@@ -143,7 +144,7 @@
               <tr><th scope="col" rowspan="2">Directory</th><th scope="colgroup" colspan="4">Everyone</th>
                 <th scope="colgroup" colspan="5" class="rf-you-col rf-you-start">Yours</th></tr>
               <tr><th scope="col" class="num" title="New or changed lines: each change's lines times its share in the directory">Lines</th>
-                <th scope="col" class="num" title="Review comments: comment threads started by reviewers, on a file or the commit message">Feedback</th>
+                <th scope="col" class="num" title="Review comments: comment threads started by commenters (anyone but the change's owner, bots left out), on a file or the commit message">Feedback</th>
                 <th scope="col" class="num" title="Review comments that led to a change in the code">Addressed</th>
                 <th scope="col" class="num" title="Addressed feedback rate: addressed comments per 100 lines">AFR</th>
                 <th scope="col" class="num rf-you-col rf-you-start" title="Your new or changed lines there">Lines</th>
@@ -282,7 +283,7 @@
         <p class="sub">
           Who approved your changes, and how much feedback their approvals usually draw. Your index compares
           each change with what its reviewers' approvals draw on everyone else's changes. ▸ lists the addressed
-          comments a reviewer started on your changes, newest first: the day, the change (linking to the
+          comments that reviewer started themselves on your changes (as a commenter), newest first: the day, the change (linking to the
           comment in Gerrit) and the file.
         </p>
         <!-- Set by selecting a dot in the over-time chart; filters this table. -->
@@ -302,9 +303,9 @@
         <template data-msg="dir-filter-other-top">the smaller top-level directories</template>
         <div class="table-wrap">
           <table id="rf-revs" class="rf-table">
-            <thead><tr><th scope="col">Reviewer</th>
+            <thead><tr><th scope="col" title="Someone who approved your changes (their Reviewed-by lines), whether or not they commented">Reviewer</th>
               <th scope="col" class="num" title="Your changes they approved">Your changes</th>
-              <th scope="col" class="num" title="Addressed comments on those changes, from anyone">Addressed</th>
+              <th scope="col" class="num" title="Addressed comments on those changes, from any commenter, not only this reviewer">Addressed</th>
               <th scope="col" class="num" title="Your addressed comments per 100 lines on those changes">Your AFR</th>
               <th scope="col" class="num" title="How much feedback other people's changes they approve draw, against what experience predicts: 1.00× is typical">Reviewer factor</th>
               <th scope="col" class="num" title="Everyone's changes they approved">Approved overall</th>
@@ -336,7 +337,7 @@
         <a class="card-anchor" href="#download" aria-label="Link to this section" title="Link to this section">#</a>
         <h2 id="download-title">Download your review comments</h2>
         <p class="sub">
-          Every comment thread a reviewer started on your landed changes, with each reply in full, as one file:
+          Every comment thread someone else started on your landed changes, with each reply in full, as one file:
           to keep, to search, or to give an AI assistant to find the patterns in your feedback. Made in your
           browser from the same public Gerrit data; nothing is sent anywhere.
         </p>
@@ -359,7 +360,7 @@
         <template data-msg="dl-error">Couldn't fetch the comments: <slot name="error"></slot></template>
         <template data-msg="dl-title"># Review comments on my Chromium changes, <slot name="from"></slot> to <slot
           name="to"></slot></template>
-        <template data-msg="dl-about">Every comment thread a reviewer started on my changes that landed then, from
+        <template data-msg="dl-about">Every comment thread someone else started on my changes that landed then, from
           Chromium's Gerrit (comments by bots and AI reviewers left out). “Addressed” means I changed the code in
           response, as the Feedback Index counts it. Downloaded <slot name="day"></slot>.</template>
         <template data-msg="dl-owner">me</template>
@@ -561,7 +562,7 @@
           leaving out mechanical ones (100 or more files, or mostly repeated lines) and large-scale changes (CLs
           whose commit message cites Chromium's LSC process, or that <code>git cl split</code> uploaded), as on the
           <a href="balance.html">Review Balance</a> page. A review comment is a comment thread on Gerrit started by
-          someone other than the change's owner, bots left out, on a file or the commit message (general comments
+          someone other than the change's owner (its commenter), bots left out, on a file or the commit message (general comments
           on the whole change aren't counted: they can't be tied to a directory, and few lead to a change in the
           code). It is addressed when the owner's reply led to a change in the code, as judged by a regular
           expression for “Done”-style replies and by an AI model (Claude Haiku) for the rest (<a target="_blank"
@@ -603,6 +604,17 @@
           <a target="_blank" rel="noopener" href="https://github.com/RByers/cosh/blob/main/docs/review-feedback.md">docs/review-feedback.md</a>.
         </p>
       </details>
+      <div id="def-reviewer" class="term-pop" popover role="note" aria-label="Reviewer">
+        <p><strong>Reviewer:</strong> someone who approved the change: named in the landed commit's
+          <code>Reviewed-by</code> lines (they voted Code-Review), whether or not they commented. The index compares
+          by reviewer.</p>
+        <p><a href="#method">Why approvers</a></p>
+      </div>
+      <div id="def-commenter" class="term-pop" popover role="note" aria-label="Commenter">
+        <p><strong>Commenter:</strong> anyone but the change's owner (bots left out) who started a comment thread
+          on it, whether or not they approved it. Feedback is counted from commenters.</p>
+        <p><a href="#method">Why not compare by commenter</a></p>
+      </div>
     </main>
     <script type="module" src="/src/review-feedback.ts"></script>
   </body>

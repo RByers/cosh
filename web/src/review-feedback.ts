@@ -50,6 +50,7 @@ import {
 } from './feedback.ts';
 import { fmtDay, fmtInt, fmtNum } from './format.ts';
 import { FEEDBACK_PEOPLE, r2Url } from './r2.ts';
+import { initTerms } from './terms.ts';
 import { fragment, msg, type Vars } from './text.ts';
 
 Chart.register(Filler);
@@ -1188,6 +1189,9 @@ function init() {
     renderNewcomers();
   });
   if (location.hash === '#method') method.open = true;
+  // A term bubble's link to the methodology opens it.
+  addEventListener('hashchange', () => { if (location.hash === '#method') method.open = true; });
+  initTerms();
   matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
     renderIntro();
     renderMethod();
