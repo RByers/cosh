@@ -93,8 +93,8 @@
         </div>
         <p id="rl-lines-note" class="note"></p>
         <template data-msg="lines-note">
-          The mean number of changed lines each reviewer reviewed in a quarter: for every commit written by a
-          person, its added and removed lines count once for each reviewer in its Reviewed-by footers, and the
+          The mean number of changed lines each reviewer reviewed in a quarter: for every commit not made
+          by a bot, its added and removed lines count once for each reviewer in its Reviewed-by footers, and the
           quarter's total is divided by the number of people who reviewed anything in it. Reverts, large-scale
           changes and other large mechanical commits are left out. In <slot name="last"></slot> the mean was
           <slot name="mean"></slot> lines across <slot name="reviewers"></slot> reviewers:

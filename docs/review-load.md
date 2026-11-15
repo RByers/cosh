@@ -43,7 +43,7 @@ and hours per CL in each directory, shaded against everyone's there).
 
 ## Definitions
 
-- **Reviewed commit**: by a person, not a revert, not part of a large-scale
+- **Reviewed commit**: not by a bot, not a revert, not part of a large-scale
   change (`is_lsc`), not mechanical (100+ files, or 10+ files with a
   repetition ratio of 0.8+, as `commits.mechanical`), with a `Reviewed-by`
   footer naming a person other than the author.
