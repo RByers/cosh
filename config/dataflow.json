@@ -1826,12 +1826,12 @@
       "network": true,
       "lock": "data/private/extract.lock",
       "incremental": "Resumable. A CL is fetched again when Gerrit has more patch sets than were fetched (cosh-fetched.txt records the count).",
-      "duration": "72 s per 1,000 CLs",
+      "duration": "72 s per 1,000 CLs, plus the end-of-run repack of the small packs (at most 2 GB of packs read, about 1 GB of memory; skipped when fewer than 2 small packs). A whole-repo repack of the 18 GB of packs grew to 7 GB and was OOM-killed (2026-11-15)",
       "token_cost": null,
-      "cost_source": "docs/plan.md, 2026-11-07",
+      "cost_source": "docs/plan.md, 2026-11-07 and 2026-11-15",
       "refresh": "optional",
       "approval": "Only reviewed CLs in config/approved.json's range (closed 2023-06-26 .. 2026-11-02); the command refuses an earlier --since. Up to 7 fetches at once (approved 2026-11-07).",
-      "notes": "Repack afterwards in groups with the two scripts; never prune."
+      "notes": "Each repack (at the end, or after --repack-gb of new packs) rolls up only the smallest packs, up to --repack-max-gb (default 2) in all, with `repack --geometric=2 -d -l` under the shared memory cap (cosh.memcap); bigger packs are passed as --keep-pack and left alone, and a failed final repack only warns. Merge the big packs by hand in groups with the two scripts when there are many; never prune."
     },
     {
       "id": "radar",

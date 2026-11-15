@@ -87,7 +87,7 @@ class PatchsetsTest(unittest.TestCase):
                 seen.append([n for n, _ in cls])
                 return 0.0
 
-            patchsets.fetch_batch, patchsets.repack = fake_fetch, lambda g: 0.0
+            patchsets.fetch_batch, patchsets.repack = fake_fetch, lambda g, m=None: 0.0
             try:
                 patchsets.run(go=True, derived_path=db, git_dir=g, interval=0, max_cls=1, min_free=0,
                               jobs=jobs)
@@ -102,6 +102,54 @@ class PatchsetsTest(unittest.TestCase):
     def test_failure_stops_run(self):
         with self.assertRaises(SystemExit):
             self._run_fake(jobs=2, fail_on=100)
+
+    def test_repack_plan_rolls_up_only_small_packs(self):
+        packs = [(7.1e9, "a.pack"), (0.12e9, "new.pack"), (2.9e9, "b.pack"), (0.5e9, "c.pack")]
+        self.assertEqual(patchsets.repack_plan(packs, 2e9), (["new.pack", "c.pack"], ["b.pack", "a.pack"]))
+        # Smallest first, stopping at the first that doesn't fit: never a
+        # big pack after a skipped one.
+        self.assertEqual(patchsets.repack_plan([(1.5e9, "x"), (0.6e9, "y"), (0.1e9, "z")], 2e9),
+                         (["z", "y"], ["x"]))
+        self.assertEqual(patchsets.repack_plan([(3e9, "x")], 2e9), ([], ["x"]))
+
+    def test_repack_keeps_big_packs_and_loses_nothing(self):
+        env = {**os.environ, "COSH_MEMCAP": "off"}
+        with tempfile.TemporaryDirectory() as d:
+            g = os.path.join(d, "r.git")
+            subprocess.run(["git", "init", "-q", "--bare", g], check=True)
+            oids = []
+            for i, n in enumerate([400, 100, 100, 100]):  # one big pack, three small
+                data = "".join(f"blob {i}-{j} {'x' * (j % 7)}\n" for j in range(n))
+                ids = []
+                for line in data.splitlines():
+                    ids.append(subprocess.run(["git", "-C", g, "hash-object", "-w", "--stdin"], input=line,
+                                              text=True, capture_output=True, check=True).stdout.strip())
+                subprocess.run(["git", "-C", g, "pack-objects", "-q", "objects/pack/pack"],
+                               input="\n".join(ids) + "\n", text=True, capture_output=True, check=True)
+                subprocess.run(["git", "-C", g, "prune-packed"], check=True)
+                oids += ids
+            packs = patchsets._packs(g)
+            big = packs[-1]
+            small_total = sum(s for s, _ in packs[:-1])
+            orig = os.environ.get("COSH_MEMCAP")
+            os.environ["COSH_MEMCAP"] = "off"
+            try:
+                self.assertIsNotNone(patchsets.repack(g, max_bytes=small_total))
+                after = patchsets._packs(g)
+                # The big pack is untouched; the three small ones became one.
+                self.assertIn(big, after)
+                self.assertEqual(len(after), 2)
+                # Nothing to do now: one small pack, no loose objects.
+                self.assertIsNone(patchsets.repack(g, max_bytes=small_total))
+            finally:
+                if orig is None:
+                    del os.environ["COSH_MEMCAP"]
+                else:
+                    os.environ["COSH_MEMCAP"] = orig
+            missing = subprocess.run(["git", "-C", g, "cat-file", "--batch-check"], input="\n".join(oids) + "\n",
+                                     text=True, capture_output=True, check=True, env=env).stdout
+            self.assertNotIn("missing", missing)
+            self.assertEqual(len(missing.splitlines()), len(oids))
 
     def test_throttle_shrinks_on_429_and_grows_back(self):
         now = [0.0]

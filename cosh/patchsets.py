@@ -15,7 +15,9 @@ by id, GIT_NO_LAZY_FETCH=1.
 The server excludes only what is in each patch set's parent tree, so it also
 re-sends blobs and trees that landed on `main` later. `repack --geometric -l`
 drops those copies (they stay in the shared clone, so nothing is lost) and
-runs every few GB so the disk doesn't fill.
+runs every few GB so the disk doesn't fill. It rolls up only packs that
+together stay under REPACK_MAX_BYTES, so its memory stays bounded; the big
+packs are merged by hand in groups (scripts/patchsets_chunked_repack.sh).
 """
 
 import os
@@ -286,15 +288,69 @@ def fetch_batch(git_dir, cls, retries=4, throttle=None, max_rate_limited=20):
         attempt += 1
 
 
-def repack(git_dir):
-    """Lossless: roll up packs geometrically and drop objects the shared
-    clone already holds (-l). Never prunes."""
+# The end-of-run repack rolls up only packs that together stay under this
+# size. Its memory grows with the objects it reads: on 2026-11-15 a
+# geometric repack of the whole repo (18 GB of packs) grew to 7 GB and was
+# OOM-killed. Bigger packs are passed as --keep-pack and left alone; merge
+# them by hand in groups (scripts/patchsets_chunked_repack.sh).
+REPACK_MAX_BYTES = 2e9
+
+
+def _packs(git_dir):
+    """(size, file name) of each pack, smallest first."""
+    d = os.path.join(git_dir, "objects", "pack")
+    out = []
+    for f in os.listdir(d):
+        if f.endswith(".pack"):
+            try:
+                out.append((os.path.getsize(os.path.join(d, f)), f))
+            except FileNotFoundError:
+                pass
+    return sorted(out)
+
+
+def _loose_objects(git_dir):
+    for line in git(git_dir, "count-objects", "-v").stdout.splitlines():
+        if line.startswith("count:"):
+            return int(line.split()[1])
+    return 0
+
+
+def repack_plan(packs, max_bytes=REPACK_MAX_BYTES):
+    """Split (size, name) packs into those to roll up (the smallest, while
+    their total stays within max_bytes) and those to keep."""
+    roll, keep, total = [], [], 0
+    for size, name in sorted(packs):
+        if not keep and total + size <= max_bytes:
+            roll.append(name)
+            total += size
+        else:
+            keep.append(name)
+    return roll, keep
+
+
+def repack(git_dir, max_bytes=REPACK_MAX_BYTES):
+    """Lossless: roll up the small packs geometrically and drop objects the
+    shared clone already holds (-l). Packs past max_bytes are kept as they
+    are, so memory stays bounded. Never prunes. Returns seconds taken, or
+    None when there was nothing worth doing (under 2 small packs, no loose
+    objects)."""
+    roll, keep = repack_plan(_packs(git_dir), max_bytes)
+    if len(roll) < 2 and not _loose_objects(git_dir):
+        return None
     t0 = time.time()
     # One thread: with 4, pack-objects reached 8 GB and aborted (exit 134)
-    # on 65 GB of packs, 2026-11-07.
-    p = git(git_dir, "-c", "pack.threads=1", "-c", "pack.windowMemory=1g",
-            "-c", "pack.deltaCacheSize=128m", "repack", "--geometric=2", "-d", "-l", "-q",
-            check=False)
+    # on 65 GB of packs, 2026-11-07. Run in the shared memory cap
+    # (cosh.memcap), so if it still grows too big only it is killed.
+    root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    env = {**os.environ, "GIT_NO_LAZY_FETCH": "1",
+           "PYTHONPATH": os.pathsep.join(filter(None, [root, os.environ.get("PYTHONPATH")]))}
+    p = subprocess.run(
+        [sys.executable, "-m", "cosh.memcap", "nice", "-n", "5",
+         "git", "-C", git_dir, "-c", "pack.threads=1", "-c", "pack.windowMemory=512m",
+         "-c", "pack.deltaCacheSize=128m", "repack", "--geometric=2", "-d", "-l", "-q",
+         *[f"--keep-pack={k}" for k in keep]],
+        text=True, capture_output=True, env=env)
     if p.returncode != 0:
         raise SystemExit(f"repack failed (exit {p.returncode}); old packs are untouched:\n"
                          f"{p.stderr.strip()[-2000:]}")
@@ -302,7 +358,7 @@ def repack(git_dir):
 
 
 def run(go=False, derived_path=None, git_dir=None, interval=2.0, max_cls=1000, max_ps=5000,
-        repack_bytes=8e9, min_free=25e9, max_batches=None, jobs=1, since=APPROVED_SINCE, until="9999"):
+        repack_bytes=8e9, repack_max_bytes=REPACK_MAX_BYTES, min_free=25e9, max_batches=None, jobs=1, since=APPROVED_SINCE, until="9999"):
     """Fetch the plan with up to `jobs` workers sharing the repo (each waits
     `interval` between its own fetches; a shared Throttle lowers how many
     run at once when the server rate-limits us). When new packs pass `repack_bytes`
@@ -369,12 +425,21 @@ def run(go=False, derived_path=None, git_dir=None, interval=2.0, max_cls=1000, m
             raise SystemExit(st["error"])
         if st["stop"] == "repack":
             print("  repacking ...", flush=True)
-            s = repack(git_dir)
+            s = repack(git_dir, repack_max_bytes)
             free = shutil.disk_usage(git_dir).free
-            print(f"  repacked in {s:.0f}s; packs {_pack_bytes(git_dir) / 1e9:.2f} GB, "
+            print(f"  repacked in {s or 0:.0f}s; packs {_pack_bytes(git_dir) / 1e9:.2f} GB, "
                   f"{free / 1e9:.0f} GB free", flush=True)
             if free < min_free:
                 raise SystemExit(f"stopping: only {free / 1e9:.0f} GB free")
             st["stop"], st["base"] = None, _pack_bytes(git_dir)
-    s = repack(git_dir)
-    print(f"done; final repack {s:.0f}s, packs {_pack_bytes(git_dir) / 1e9:.2f} GB", flush=True)
+    # The fetch is done; a failed repack only leaves more packs (the next
+    # run tries again), so it warns rather than fails the run.
+    try:
+        s = repack(git_dir, repack_max_bytes)
+    except SystemExit as e:
+        print(f"warning: final {e}", file=sys.stderr, flush=True)
+        s = "failed"
+    else:
+        s = "skipped (few small packs)" if s is None else f"{s:.0f}s"
+    print(f"done; final repack {s}, {len(_packs(git_dir))} packs "
+          f"{_pack_bytes(git_dir) / 1e9:.2f} GB", flush=True)

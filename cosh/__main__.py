@@ -135,6 +135,10 @@ def main(argv=None):
     ps.add_argument("--repack-gb", type=float, default=8.0,
                     help="repack after this many GB of new packs (default 8; it also repacks "
                          "when under 25 GB is free, and always at the end)")
+    ps.add_argument("--repack-max-gb", type=float, default=2.0,
+                    help="each repack rolls up only the smallest packs, up to this many GB "
+                         "in all, and keeps bigger ones as they are, so its memory stays "
+                         "bounded (default 2; a whole-repo repack runs out of memory)")
     ps.add_argument("--db", help="derived DB path (default: data/private/reviews.sqlite)")
     ps.add_argument("--since", default=None,
                     help="CLs closed (or last updated) on or after this date (default and earliest: "
@@ -259,7 +263,8 @@ def main(argv=None):
         since, until = patchsets_range(a.since)
         kw = dict(derived_path=a.db, interval=a.interval, max_cls=a.max_cls,
                   max_ps=a.max_patchsets, max_batches=a.max_batches,
-                  repack_bytes=a.repack_gb * 1e9, jobs=max(1, min(a.jobs, 8)),
+                  repack_bytes=a.repack_gb * 1e9,
+                  repack_max_bytes=a.repack_max_gb * 1e9, jobs=max(1, min(a.jobs, 8)),
                   since=since, until=until)
         if a.go:
             with store.extract_lock():

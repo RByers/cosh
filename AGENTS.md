@@ -239,7 +239,10 @@ purpose near the top of its own doc.
     `python3 -m cosh patchsets --go --repack-gb 1000 --jobs 7` from the main
     checkout. It repacks with `repack --geometric=2 -d -l` at the end (or
     when under 25 GB is free), which is lossless because the objects it
-    drops are in the shared clone. The fetch is done and the repo was
+    drops are in the shared clone. That repack rolls up only the smallest
+    packs, up to `--repack-max-gb` (default 2) in all, under `cosh.memcap`,
+    and keeps the bigger ones as they are (a whole-repo one was OOM-killed
+    on 2026-11-15). The fetch is done and the repo was
     repacked on 2026-11-09 (19 GB, 4 packs). A whole-repo repack runs out
     of memory on argus, so repack in groups and keep old packs until
     checked: `scripts/patchsets_chunked_repack.sh`, then
