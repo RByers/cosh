@@ -13,7 +13,7 @@ nothing else on the box suffers.
     python3 -m cosh.memcap CMD [ARG ...]       # or wrap any command
 
 Join before loading: memory already allocated stays charged to the old
-cgroup. `review_feedback.load` joins by itself. `COSH_MEMCAP=off` skips
+cgroup. `cosh.review_feedback` joins by itself. `COSH_MEMCAP=off` skips
 it. Without systemd (macOS) or without the slice's unit file it warns and
 runs uncapped.
 """

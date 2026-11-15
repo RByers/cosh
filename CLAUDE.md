@@ -177,7 +177,7 @@ purpose near the top of its own doc.
   analysis scratch in `data/private/scratch/<topic>/`.
 - **Run memory-heavy analysis under the shared cap.** A script that loads
   every CL or commit into memory (anything over about 1 GB: a
-  `review_feedback.load`, a big pickle, `fetchall` on a whole table) starts
+  `cosh.review_feedback` run, a big pickle, `fetchall` on a whole table) starts
   with `from cosh import memcap; memcap.join()`, or is run as `python3 -m
   cosh.memcap python3 script.py`. All such runs, from every session, then
   share 5 GB (`cosh/memcap.py`). A run that prints only "Killed" (exit 137)

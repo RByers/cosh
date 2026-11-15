@@ -432,8 +432,8 @@ across `chromium.org` and `google.com`.
 
 ## Generate
 
-Offline: a few minutes and 3 GB (`config/dataflow.json` has the measured
-times):
+Offline: about 2 minutes and 1.5 GB at its peak (`config/dataflow.json`
+has the measured times; see "Memory" below):
 
 ```
 COSH_DATA_DIR=<main>/data/private nice -n 5 python3 -m cosh.review_feedback [--out DIR]
@@ -574,6 +574,33 @@ of newcomers' addressed feedback but 6% of experts', and would let an
 author lower their index by choosing who approves. So a CL's threads still
 count equally for each of its approvers. Scripts and results:
 `data/private/scratch/feedback-edges/`.
+
+### Memory
+
+The build holds every labelled CL in memory at once (about 870k on
+2026-11-14), because the reviewer and author factors are fitted over all
+of them together (`two_way`, ten passes), each person's comparison takes
+their own CLs away from everyone's sums (`own_factors`), and a person's
+file needs all of their CLs. So memory grows with the data, by about
+0.8 KB per CL: about 80 MB a year at Chromium's rate of 95k CLs, with the
+data already back to Gerrit's start in 2017.
+
+To keep that small (4.8 GB peak before 2026-11-14, 1.5 GB after, the
+files unchanged byte for byte), a CL is a `Row` with slots rather than a
+dict, and the same object serves the rate model and the per-person files;
+CLs are read one at a time (`cl_facts.iter_cl_facts`) and only the merged,
+human, line-inserting ones are kept; each thread keeps only its root and
+the index of the directory it counts in, with per-directory counts on the
+CL; addressed labels are joined in SQLite rather than held in a dict;
+directory names are shared strings; and expected threads per unit
+(`_ue`, `method_compare`) sit in flat `array("d")`s, with
+`method_compare`'s leave-one-out sums built one person at a time.
+
+Processing in chunks (say by half-year) would bound memory, but only by
+re-reading every chunk for each pass of the global fit (about 15), which
+would make the build several times slower. If memory ever matters again,
+the next step is columnar rows (`array`s per field, about 150 bytes per CL)
+rather than chunks.
 
 ## Downloading your comments
 

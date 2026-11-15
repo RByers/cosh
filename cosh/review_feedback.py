@@ -46,6 +46,7 @@ Gerrit and git data.
 
 import argparse
 import bisect
+from array import array
 import re
 import hashlib
 import json
@@ -55,13 +56,13 @@ import shutil
 import sqlite3
 import statistics as st
 import sys
-from collections import Counter, defaultdict, namedtuple
+from collections import Counter, defaultdict
 from datetime import datetime, timezone
 
 from . import classify, memcap, r2, review_timeline, store
 from . import commits as C
 from . import cl_facts as F
-from .cl_facts import CL_FACTS, SINCE, cl_facts
+from .cl_facts import SINCE, iter_cl_facts
 from .orgs import OrgResolver
 from .people import address, exact_identities, is_bot_email
 
@@ -140,7 +141,7 @@ def data_range(use):
     weeks = sorted(json.loads(row[0])) if row else []
     if not weeks:
         raise SystemExit("reviews.sqlite records no fetched weeks")
-    first_cl = min(c["closed_at"] for c in use)
+    first_cl = min(c.at for c in use)
     return trim_start(max(week_start(weeks[0]), monday(first_cl))), trim_end(week_start(weeks[-1]) + WEEK)
 
 
@@ -242,61 +243,40 @@ def size10(lines):
 
 # ---------------------------------------------------------------- loading
 
-def early_commits(before=SINCE, current=None):
+def early_commits(before=SINCE):
     """Main's first-parent commits that landed before `before`, where
-    the per-CL window starts (commit_id > 0 in commits.sqlite): [(author email, unix time landed,
-    frozenset of 3-level directories)], reverts left out (`is_revert`: SVN-era
-    reverts may name no sha). With `current` (commits.current_paths),
-    directories are today's names.
-    With them, earlier commits count from the start of main's history
-    (2008), not from 2017."""
+    the per-CL window starts (commit_id > 0 in commits.sqlite): [(author
+    email, unix time landed)], reverts left out (`is_revert`: SVN-era
+    reverts may name no sha). With them, earlier commits count from the
+    start of main's history (2008), not from 2017."""
     cut = datetime.fromisoformat(before).replace(tzinfo=timezone.utc).timestamp()
-    out, cur = [], None
-    for cid, email, at, path in git_db().execute(
-            "SELECT c.commit_id, c.author_email, c.landed_at, p.path FROM commits c "
-            "LEFT JOIN commit_files f USING (commit_id) LEFT JOIN paths p USING (path_id) "
-            "WHERE c.landed_at < ? AND NOT c.is_revert ORDER BY c.commit_id", (cut,)):
-        if cur is None or cur[0] != cid:
-            if cur:
-                out.append((cur[1], cur[2], frozenset(cur[3])))
-            cur = (cid, email, at, set())
-        if path is not None:
-            cur[3].add(C.dir_of(current.get(path, path) if current else path, 3))
-    if cur:
-        out.append((cur[1], cur[2], frozenset(cur[3])))
-    return out
+    return git_db().execute("SELECT author_email, landed_at FROM commits WHERE landed_at < ? AND NOT is_revert "
+                            "ORDER BY commit_id", (cut,)).fetchall()
 
 
-def load(args):
-    """The CLs, with the columns reviews.sqlite and commits.sqlite give
-    (cosh.cl_facts), owners' addresses normalised; human commits;
-    identities; first commits. Also the CLs' raw owner addresses and
-    {commit_id: change_number} of their landed commits. Several GB, so the
-    process first joins the shared memory budget (cosh.memcap)."""
-    memcap.join()
-    facts, by_cid = cl_facts(ro(os.path.join(store.DATA_DIR, store.DERIVED_FILE)), git_db())
-    raw_email = {f[0]: f[2] for f in facts}
-    cls = [dict(zip(CL_FACTS, f)) for f in facts]
-    del facts
-    for c in cls:
-        c["owner_email"] = address(c["owner_email"]) if c["owner_email"] else None
-    commits = C.human_commits(git_db(), norm=address)
-    # Exact identities (people.exact_identities): addresses merge only on
-    # evidence, never by domain, the same way as Review Load's.
-    ids = exact_identities(ro(os.path.join(store.DATA_DIR, store.DERIVED_FILE)), git_db(),
-                           ro(review_timeline.db_path()))
-    for c in commits:
-        c["pid"] = ids.find(c["email"])
-    for c in cls:
-        c["pid"] = ids.find(c["owner_email"]) if c["owner_email"] else None
-    first = {}
-    for e, t in C.first_people(git_db(), norm=address).items():
-        k = ids.find(e)
-        first[k] = min(t, first.get(k, t))
-    print(f"loaded {len(cls):,} CLs, {len(commits):,} commits", file=sys.stderr, flush=True)
-    return cls, commits, ids, first, raw_email, by_cid
+def human_commit_times(db):
+    """What the Feedback Index needs of `commits.human_commits` (the same
+    commits, in the same order): (address, unix time landed, change number
+    or None, is a revert)."""
+    for email, at, n, bot, rv in db.execute("SELECT author_email, landed_at, change_number, is_bot, "
+                                            "reverts_sha IS NOT NULL FROM commits WHERE commit_id > 0"):
+        if not (bot or is_bot_email(email)):
+            yield address(email), at, n, rv
 
 
+class Cand:
+    """A CL while it is being loaded, before it becomes a `Row`: change
+    number, owner (identity), when it closed, Gerrit's insertions, the
+    owner's address as Gerrit has it, when its commit landed, its approvers;
+    then its directories in `unit_order` with their lines, and per directory
+    its reviewer and addressed threads, and its threads' roots with the
+    index of the directory each counts in."""
+    __slots__ = ("n", "pid", "at", "ins", "raw", "landed", "revs", "dirs", "ulines",
+                 "uthr", "uaddr", "roots", "rdir")
+
+    def __init__(self, n, pid, at, ins, raw):
+        self.n, self.pid, self.at, self.ins, self.raw = n, pid, at, ins, raw
+        self.landed, self.revs, self.dirs = None, (), None
 
 
 # ---------------------------------------------------------------- AFR and index
@@ -342,8 +322,27 @@ FI_GRID = [round(-3 + 0.05 * i, 2) for i in range(111)]
 FI_BW = 0.15
 SIZE_LABELS = ["<4", "4–7", "8–15", "16–31", "32–63", "64–127", "128–255", "256–511", "512–1k", "1k+"]
 
-# revs: the CL's approvers (addresses as identities), sorted; () when it has none.
-Row = namedtuple("Row", "pid at lines prior bin org addr units main revs", defaults=((),))
+class Row:
+    """A merged CL as every measure and file needs it. pid: its owner (an
+    identity); at: when it closed; lines: the landed commit's inserted
+    lines; prior: the owner's earlier commits; bin: `xbin(prior)`; org;
+    addr: its addressed reviewer threads; units: [(3-level directory,
+    fraction of the CL's lines, addressed threads there, reviewer threads
+    there)] in `unit_order`; main: the first unit's directory; revs: its
+    approvers (identities), sorted, () when it has none. For the per-person
+    files also n (change number), ulines (each unit's lines), acov (in the
+    addressed measure's range) and its threads: roots, and rdir, the index
+    in units of the directory each counts in. ui: set by `rate_model`, where
+    the CL's expected threads start in its `_ue`. Slots, not a dict, to keep
+    the ~900k of them small (docs/review-feedback.md, "Memory")."""
+    __slots__ = ("pid", "at", "lines", "prior", "bin", "org", "addr", "units", "main", "revs",
+                 "n", "ulines", "acov", "roots", "rdir", "ui")
+
+    def __init__(self, pid, at, lines, prior, bin, org, addr, units, main, revs=(), n=None, ulines=None,
+                 acov=True, roots=(), rdir=()):
+        self.pid, self.at, self.lines, self.prior, self.bin, self.org = pid, at, lines, prior, bin, org
+        self.addr, self.units, self.main, self.revs = addr, units, main, revs
+        self.n, self.ulines, self.acov, self.roots, self.rdir = n, ulines, acov, roots, rdir
 
 
 def xbin(n):
@@ -379,18 +378,6 @@ def unit_order(units):
     half-year files list them in; the first takes the threads outside every
     unit (the commit message, files the landed commit didn't touch)."""
     return sorted(units.items(), key=lambda kv: (-kv[1], kv[0]))
-
-
-def fr_row(c):
-    """A CL as the rate measures need it. units: [(3-level directory,
-    fraction of the CL's lines, addressed threads there, reviewer threads
-    there)], in `unit_order`."""
-    order = unit_order(c["units"])
-    per = Counter(t[4] for t in c["thr"] if t[3])
-    every = Counter(t[4] for t in c["thr"])
-    fr_ = unit_fracs([x for _, x in order])
-    return Row(c["pid"], c["closed_at"], c["lines"], c["prior"], xbin(c["prior"]), c["org"], c["addressed"],
-               [(d, f, per[d], every[d]) for (d, _), f in zip(order, fr_)], order[0][0], tuple(c.get("revs", ())))
 
 
 def person_cells(rows):
@@ -535,8 +522,9 @@ def rate_model(rows):
     (everyone's median) are for the page's comparisons. All rounded, as the
     page uses them. rate_sums: per experience bin, [lines, addressed
     threads], from which the page takes away the person's own. Keys
-    starting with "_" aren't published here: `_ue` holds each row's expected
-    threads per unit before scaling, `_fa` the author factors, `_rev_cls`
+    starting with "_" aren't published here: `_ue` holds every row's expected
+    threads per unit before scaling, in one flat array (a row's start is
+    its `ui`), `_fa` the author factors, `_rev_cls`
     each reviewer's CLs, `_norm`, `_rev_sums` and `_own` are from
     `own_model` (the first two go in reviewers.json)."""
     by_pid = defaultdict(list)
@@ -563,11 +551,12 @@ def rate_model(rows):
     norm = round(norm, 4)
     rate_sums = [[lines, a] for lines, a in cells]
     rev_sums, own = own_model(rows, rate_sums, rate_bin, rev_factors, rev_none, norm)
-    ue = {}
+    ue = array("d")                  # every unit's expected threads, row after row (`unit_expected`)
     for r in rows:
         o = own[r.pid]
         g = rev_factor(r, o["f"], o["rev_none"])
-        ue[id(r)] = [r.lines * f / 100 * o["rate_bin"][r.bin] * g for _, f, _, _ in r.units]
+        r.ui = len(ue)
+        ue.extend(r.lines * f / 100 * o["rate_bin"][r.bin] * g for _, f, _, _ in r.units)
     m = dict(ref_bin=ref_bin, ref_all=r3(st.median(alls)), rate_bin=rate_bin, rate_sums=rate_sums,
              rev_none=rev_none, scale=1.0, _ue=ue, _fa=fa, _rev_factors=rev_factors, _rev_cls=rev_cls,
              _norm=norm, _rev_sums=rev_sums, _own=own)
@@ -652,7 +641,7 @@ def unit_expected(r, m):
     everyone else's AFR at the CL's experience × the CL's reviewer factor
     from everyone else's CLs × the scale (the owner's CLs left out of both,
     `own_factors`)."""
-    return [x * m["scale"] for x in m["_ue"][id(r)]]
+    return [x * m["scale"] for x in m["_ue"][r.ui:r.ui + len(r.units)]]
 
 
 def expected(r, m):
@@ -688,59 +677,78 @@ def method_compare(rows):
     the model's expected on their CLs, without the owner's, shrunk toward 1
     with FACTOR_SHRINK. Returns [[model, deviance, % of "e"'s deviance
     removed], ...]."""
-    by_pid = defaultdict(list)
-    for r in rows:
-        by_pid[r.pid].append(r)
+    by_pid = defaultdict(list)       # person -> indexes of their rows
+    for i, r in enumerate(rows):
+        by_pid[r.pid].append(i)
     rates = {k: [[n, lines, a] for n, lines, a in v] for k, v in rate_cells(rows).items()}
+    # Each model's expected threads per unit sit in one flat array, row
+    # after row: row i's units are at off[i]:off[i + 1].
+    off = array("q", [0])
+    for r in rows:
+        off.append(off[-1] + len(r.units))
 
     def unit_exp(dirs):
-        out = {}
-        for rs in by_pid.values():
-            own = rate_cells(rs)
+        out = array("d", bytes(8 * off[-1]))
+        for ix in by_pid.values():
+            own = rate_cells([rows[i] for i in ix])
             memo = {}
-            for r in rs:
-                us = []
-                for d, f, _, _ in r.units:
+            for i in ix:
+                r = rows[i]
+                for j, (d, f, _, _) in enumerate(r.units):
                     k = (d if dirs else "", r.bin)
                     if k not in memo:
                         memo[k] = peer_rate(rates, own, k[0], r.bin)
-                    us.append(r.lines * f / 100 * memo[k])
-                out[id(r)] = us
+                    out[off[i] + j] = r.lines * f / 100 * memo[k]
         return out
 
     def with_reviewers(ue, by_dir=False):
-        o, e, op, ep = defaultdict(float), defaultdict(float), defaultdict(float), defaultdict(float)
-        for r in rows:
+        # Everyone's sums per reviewer (and directory), then one person at a
+        # time: their own sums, taken away from everyone's for their rows.
+        def keys(v, d):
+            return ((v,), (v, dir2(d))) if by_dir else ((v,),)
+        o, e = defaultdict(float), defaultdict(float)
+        for i, r in enumerate(rows):
             for v in r.revs:
-                for (d, _, a, _), x in zip(r.units, ue[id(r)]):
-                    for k in ((v,), (v, dir2(d))) if by_dir else ((v,),):
+                for (d, _, a, _), x in zip(r.units, ue[off[i]:off[i + 1]]):
+                    for k in keys(v, d):
                         o[k] += a
                         e[k] += x
-                        op[k + (r.pid,)] += a
-                        ep[k + (r.pid,)] += x
-        ex = []
-        for r in rows:
-            us = ue[id(r)]
-            if not r.revs:
-                ex.append(sum(us))
-                continue
-            tot = 0.0
-            for v in r.revs:
-                k = (v,)
-                g = (o[k] - op[k + (r.pid,)] + FACTOR_SHRINK) / (e[k] - ep[k + (r.pid,)] + FACTOR_SHRINK)
-                if by_dir:
-                    for (d, _, _, _), x in zip(r.units, us):
-                        kd = (v, dir2(d))
-                        od, ed = o[kd] - op[kd + (r.pid,)], e[kd] - ep[kd + (r.pid,)]
-                        tot += x * (od + 2 * FACTOR_SHRINK * g) / (ed + 2 * FACTOR_SHRINK)
-                else:
-                    tot += sum(us) * g
-            ex.append(tot / len(r.revs))
+        ex = array("d", bytes(8 * len(rows)))
+        for ix in by_pid.values():
+            op, ep = defaultdict(float), defaultdict(float)
+            for i in ix:
+                r = rows[i]
+                for v in r.revs:
+                    for (d, _, a, _), x in zip(r.units, ue[off[i]:off[i + 1]]):
+                        for k in keys(v, d):
+                            op[k] += a
+                            ep[k] += x
+            for i in ix:
+                r = rows[i]
+                us = ue[off[i]:off[i + 1]]
+                if not r.revs:
+                    ex[i] = sum(us)
+                    continue
+                tot = 0.0
+                for v in r.revs:
+                    k = (v,)
+                    g = (o[k] - op[k] + FACTOR_SHRINK) / (e[k] - ep[k] + FACTOR_SHRINK)
+                    if by_dir:
+                        for (d, _, _, _), x in zip(r.units, us):
+                            kd = (v, dir2(d))
+                            od, ed = o[kd] - op[kd], e[kd] - ep[kd]
+                            tot += x * (od + 2 * FACTOR_SHRINK * g) / (ed + 2 * FACTOR_SHRINK)
+                    else:
+                        tot += sum(us) * g
+                ex[i] = tot / len(r.revs)
         return ex
 
+    def totals(ue):
+        return [sum(ue[off[i]:off[i + 1]]) for i in range(len(rows))]
+
     ue_e, ue_d = unit_exp(False), unit_exp(True)
-    devs = dict(e=size_deviance(rows, [sum(ue_e[id(r)]) for r in rows]),
-                d=size_deviance(rows, [sum(ue_d[id(r)]) for r in rows]),
+    devs = dict(e=size_deviance(rows, totals(ue_e)),
+                d=size_deviance(rows, totals(ue_d)),
                 r=size_deviance(rows, with_reviewers(ue_e)),
                 dr=size_deviance(rows, with_reviewers(ue_d)),
                 rd=size_deviance(rows, with_reviewers(ue_d, by_dir=True)))
@@ -978,24 +986,71 @@ def main():
                                       "consistency (in data/private/scratch/)")
     args = ap.parse_args()
 
-    cls, commits, ids, first, raw_email, by_cid = load(args)
-    mech = C.left_out(git_db(), cls)       # mechanical and large-scale-change CLs
+    # Over a GB while loading, so the process first joins the shared memory
+    # budget (cosh.memcap), before it allocates any of it.
+    memcap.join()
+    ddb = ro(os.path.join(store.DATA_DIR, store.DERIVED_FILE))
+    gdb = git_db()
+    # Exact identities (people.exact_identities): addresses merge only on
+    # evidence, never by domain, the same way as Review Load's.
+    ids = exact_identities(ddb, gdb, ro(review_timeline.db_path()))
+    emails_of = defaultdict(set)         # pid -> addresses (people.address)
+    for pid, es in ids.groups().items():
+        emails_of[pid] |= es
+    # Merged, human-owned CLs that inserted lines (`Cand`), read one at a
+    # time (cosh.cl_facts) so that only what they need stays in memory.
+    # Lines are the landed commit's insertions (set below, with its lines per
+    # directory): deletions draw almost no addressed feedback
+    # (docs/review-feedback.md, "Why deletions don't count"), and renamed
+    # files count by the lines changed between their names. CLs that only
+    # delete or only move files are left out.
+    facts, by_cid = iter_cl_facts(ddb, gdb)
+    cands, big, n_cls = {}, [], 0
+    for n, _, raw, status, _, closed, _, ins, _, _, sha, files, *_ in facts:
+        n_cls += 1
+        e = address(raw) if raw else None
+        pid = ids.find(e) if e else None
+        if pid:
+            emails_of[pid].add(e)
+        if status != "MERGED":
+            continue
+        if files is not None and files >= 10:     # may be mechanical (commits.mechanical)
+            big.append(dict(change_number=n, status=status, sha=sha, files=files))
+        if closed and pid and not is_bot_email(e) and (ins or 0) > 0:
+            cands[n] = Cand(n, pid, closed, ins, raw)
+    del facts
+    # Neither mechanical nor LSC (the review-ROI analyses' rule).
+    for n in C.left_out(gdb, big):
+        cands.pop(n, None)
+    del big
+    # Earlier commits per person, for experience (reverts left out), and
+    # when each CL's commit landed.
+    own_times = defaultdict(list)
+    n_commits = 0
+    for e, at, n, rv in human_commit_times(gdb):
+        n_commits += 1
+        pid = ids.find(e)
+        emails_of[pid].add(e)
+        if not rv:
+            own_times[pid].append(at)
+        if n and n in cands:
+            cands[n].landed = at
+    first = {}
+    for e, t in C.first_people(gdb, norm=address).items():
+        k = ids.find(e)
+        first[k] = min(t, first.get(k, t))
+    print(f"loaded {n_cls:,} CLs, {n_commits:,} commits", file=sys.stderr, flush=True)
     # Every path under its name at main's tip, so a directory's history
     # follows it across renames (third_party/WebKit/Source is
     # third_party/blink/renderer).
-    current = C.current_paths(git_db())
+    current = C.current_paths(gdb)
     print(f"{len(current):,} paths named as they are today", file=sys.stderr, flush=True)
     # A renamed file counts by the lines changed between its names, as
     # Gerrit's line counts (each CL's total) do, not as wholly new.
-    moved = C.moved_lines(git_db())
-    # Earlier commits per person, for experience (reverts left out).
-    own_times = defaultdict(list)
-    for c in commits:
-        if not c["is_revert"]:
-            own_times[c["pid"]].append(c["at"])
+    moved = C.moved_lines(gdb)
     # The per-CL window starts in 2017: earlier commits come from the rest of commits.sqlite.
     early = 0
-    for email, at, _ in early_commits(current=current):
+    for email, at in early_commits():
         if is_bot_email(address(email)):
             continue
         own_times[ids.find(email)].append(at)
@@ -1003,124 +1058,103 @@ def main():
     print(f"{early:,} human commits before {SINCE} counted as earlier commits", file=sys.stderr, flush=True)
     for v in own_times.values():
         v.sort()
-    landed_at = {c["n"]: c["at"] for c in commits if c["n"]}
-    emails_of = defaultdict(set)         # pid -> addresses (people.address)
-    for pid, es in ids.groups().items():
-        emails_of[pid] |= es
-    for c in commits:
-        emails_of[c["pid"]].add(c["email"])
-    for c in cls:
-        if c["pid"]:
-            emails_of[c["pid"]].add(c["owner_email"])
-    del commits
-
-    ddb = ro(os.path.join(store.DATA_DIR, store.DERIVED_FILE))
     bots = {a for a, in ddb.execute("SELECT account_id FROM accounts WHERE is_bot = 1")}
 
-    # Merged, human-owned CLs, neither mechanical nor LSC (the review-ROI analyses' rule).
-    for c in cls:
-        if c["change_number"] in mech:
-            c["status"] = "MECH"
-    # Lines are the landed commit's insertions (set below, with its lines per
-    # directory): deletions draw almost no addressed feedback
-    # (docs/review-feedback.md, "Why deletions don't count"), and renamed
-    # files count by the lines changed between their names. CLs that only
-    # delete or only move files are left out.
-    use = [c for c in cls if c["status"] == "MERGED" and c["closed_at"] and c["pid"]
-           and not is_bot_email(c["owner_email"]) and (c["ins"] or 0) > 0]
+    START, END = data_range(cands.values())
+    by_n = {n: c for n, c in cands.items() if START <= c.at < END}      # in change-number order
+    del cands
+    print(f"{len(by_n):,} CLs in range {day_str(START)} .. {day_str(END - DAY)}", file=sys.stderr, flush=True)
+
+    # The landed commit's lines per 3-level directory, under today's names.
+    for (n, d), (_, lines) in F.cl_dirs(gdb, by_cid, by_n, dels=False, current=current, moved=moved).items():
+        c = by_n[n]
+        if c.dirs is None:
+            c.dirs = {}
+        c.dirs[d] = lines
+    # Each CL's reviewers: the approvers in its landed commit's Reviewed-by
+    # trailers (those who voted Code-Review), as identities, the owner left out.
+    for cid, rb in gdb.execute("SELECT commit_id, reviewed_by FROM commits "
+                               "WHERE commit_id > 0 AND reviewed_by IS NOT NULL"):
+        c = by_n.get(by_cid.get(cid))
+        if c is not None:
+            c.revs = tuple(sorted({ids.find(e) for e in json.loads(rb)} - {c.pid}))
+    print(f"CLs with approvers: {sum(1 for c in by_n.values() if c.revs):,}", file=sys.stderr, flush=True)
+    del by_cid, moved
+    for c in by_n.values():
+        # Gerrit's count where the commit isn't known.
+        order = unit_order(c.dirs or {"(root)/": c.ins})
+        c.dirs, c.ulines = tuple(d for d, _ in order), tuple(x for _, x in order)
+        c.uthr, c.uaddr, c.roots, c.rdir = [0] * len(order), [0] * len(order), [], []
+    by_n = {n: c for n, c in by_n.items() if sum(c.ulines) > 0}
 
     # Reviewer threads: threads not started by a bot, on a file or the commit
     # message. Patch-set-level threads are left out: Gerrit has recorded
     # general comments as threads only since July 2020, they can't be tied to
-    # a directory, and few lead to a change in the code.
-    labels = {}
-    ldb = sqlite3.connect(f"file:{classify.labels_path(store.DATA_DIR)}?mode=ro", uri=True)
+    # a directory, and few lead to a change in the code. Each goes to the
+    # directory of its file (under today's name) when the landed commit
+    # changed lines there; commit-message threads and the rest to the CL's
+    # main directory (`page_dir`). Addressed labels come from
+    # addressed.sqlite, joined in SQLite rather than held in a dict.
+    lpath = classify.labels_path(store.DATA_DIR)
+    ldb = sqlite3.connect(f"file:{lpath}?mode=ro", uri=True)
     act = classify.active_classifier(ldb)
-    if act:
-        labels = {(n, rt, h): a for n, rt, h, a in ldb.execute(
-            "SELECT change_number, root_uuid, input_hash, addressed FROM labels WHERE classifier_id = ?", (act[0],))}
-    use_n = {c["change_number"]: c for c in use}
-    thr = defaultdict(list)          # change number -> [root, path, day, addressed, needs a label]
-    for c in use:
-        c["threads"] = c["addressed"] = 0
-    for n, root, reply, rx, h, acct, at, path in ddb.execute(
-            "SELECT t.change_number, t.root_uuid, t.last_owner_reply_at, t.regex_addressed, t.input_hash, "
-            "t.root_account, c.written_at, c.path FROM threads t LEFT JOIN comments c ON c.host = t.host "
+    ldb.close()
+    ddb.execute("ATTACH DATABASE ? AS lab", (f"file:{lpath}?mode=ro",))
+    need, have = defaultdict(int), defaultdict(int)      # week start -> threads needing a label, labelled
+    n_thr = 0
+    for n, root, replied, rx, acct, path, label in ddb.execute(
+            "SELECT t.change_number, t.root_uuid, t.last_owner_reply_at IS NOT NULL, t.regex_addressed, "
+            "t.root_account, c.path, l.addressed FROM threads t LEFT JOIN comments c ON c.host = t.host "
             "AND c.change_number = t.change_number AND c.comment_id = t.root_uuid "
-            "WHERE t.host = 'chromium-review.googlesource.com'"):
+            "LEFT JOIN lab.labels l ON l.change_number = t.change_number AND l.root_uuid = t.root_uuid "
+            "AND l.classifier_id = ? AND l.input_hash = t.input_hash "
+            "WHERE t.host = 'chromium-review.googlesource.com'", (act[0] if act else -1,)):
         if acct in bots or path == PATCHSET_LEVEL:
             continue
-        if n in use_n:
-            addressed = 0 if reply is None else 1 if rx else labels.get((n, root, h))
-            thr[n].append([root, path or "", (at or "")[:10], addressed, reply is not None and not rx])
-            use_n[n]["threads"] += 1
-            use_n[n]["addressed"] += 1 if addressed else 0
-    del use_n, labels
-    START, END = data_range(use)
-    use = [c for c in use if START <= c["closed_at"] < END]
-    by_n = {c["change_number"]: c for c in use}
-    print(f"{len(use):,} CLs in range {day_str(START)} .. {day_str(END - DAY)}", file=sys.stderr, flush=True)
-
-    # Each thread's file under today's name ("/COMMIT_MSG" for the commit
-    # message); the landed commit's lines per 3-level directory.
-    for n, ts in thr.items():
-        if n in by_n:
-            for t in ts:
-                t[1] = current.get(t[1], t[1]) if t[1] and not t[1].startswith("/") else t[1] or "/COMMIT_MSG"
-    cl_dirs = defaultdict(dict)       # by CL, then directory
-    for (n, d), (_, lines) in sorted(F.cl_dirs(git_db(), by_cid, by_n, dels=False, current=current,
-                                               moved=moved).items()):
-        cl_dirs[n][d] = lines
-    # Each CL's reviewers: the approvers in its landed commit's Reviewed-by
-    # trailers (those who voted Code-Review), as identities, the owner left out.
-    for cid, rb in git_db().execute("SELECT commit_id, reviewed_by FROM commits "
-                                    "WHERE commit_id > 0 AND reviewed_by IS NOT NULL"):
-        c = by_n.get(by_cid.get(cid))
-        if c is not None:
-            c["revs"] = sorted({ids.find(e) for e in json.loads(rb)} - {c["pid"]})
-    print(f"CLs with approvers: {sum(1 for c in use if c.get('revs')):,}", file=sys.stderr, flush=True)
-    del by_cid, current, moved
-    orgs = OrgResolver()
-    for c in use:
-        n = c["change_number"]
-        day = datetime.fromtimestamp(c["closed_at"], timezone.utc).strftime("%Y-%m-%d")
-        c["org"] = orgs(raw_email.get(n), day)
-        # The landed commit's inserted lines per 3-level directory (Gerrit's
-        # count where the commit isn't known).
-        c["units"] = cl_dirs.get(n) or {"(root)/": c["ins"]}
-        c["lines"] = sum(c["units"].values())
-        c["main"] = unit_order(c["units"])[0][0]
-        c["prior"] = bisect.bisect_left(own_times.get(c["pid"], ()), landed_at.get(n, c["closed_at"]))
-    del cl_dirs, own_times
-    use = [c for c in use if c["lines"] > 0]
-
-    # Each thread goes to the directory of its file when the landed commit
-    # changed lines there; commit-message threads and the rest to the CL's
-    # main directory.
-    need, have = defaultdict(int), defaultdict(int)      # week start -> threads needing a label, labelled
-    for c in use:
-        c["thr"] = []
-        for root, path, at, addressed, needs_label in thr.get(c["change_number"], ()):
-            if needs_label:
-                w = monday(c["closed_at"])
-                need[w] += 1
-                have[w] += addressed is not None
-            c["thr"].append([root, path, at, addressed, page_dir(path, c["units"], c["main"])])
-    del thr
-    print(f"threads: {sum(c['threads'] for c in use):,}", file=sys.stderr, flush=True)
+        c = by_n.get(n)
+        if c is None:
+            continue
+        n_thr += 1
+        addressed = 0 if not replied else 1 if rx else label
+        path = current.get(path, path) if path and not path.startswith("/") else path or "/COMMIT_MSG"
+        i = c.dirs.index(page_dir(path, c.dirs, c.dirs[0]))
+        c.roots.append(root)
+        c.rdir.append(i)
+        c.uthr[i] += 1
+        if addressed:
+            c.uaddr[i] += 1
+        if replied and not rx:
+            w = monday(c.at)
+            need[w] += 1
+            have[w] += addressed is not None
+    ddb.execute("DETACH DATABASE lab")
+    del current
+    print(f"threads: {n_thr:,}", file=sys.stderr, flush=True)
     # The addressed measure covers only the CLs with labels.
     ADDR_START = trim_start(addressed_start(need, have, START, END))
-    for c in use:
-        c["acov"] = c["closed_at"] >= ADDR_START
     print(f"addressed from {day_str(ADDR_START)}", file=sys.stderr, flush=True)
+
+    # Each CL as a `Row`, the loading state dropped as it goes.
+    orgs, names = OrgResolver(), {}
+    use = []
+    for n in list(by_n):
+        c = by_n.pop(n)
+        day = datetime.fromtimestamp(c.at, timezone.utc).strftime("%Y-%m-%d")
+        org = orgs(c.raw, day)
+        prior = bisect.bisect_left(own_times.get(c.pid, ()), c.landed if c.landed is not None else c.at)
+        use.append(Row(c.pid, c.at, sum(c.ulines), prior, xbin(prior), names.setdefault(org, org), sum(c.uaddr),
+                       tuple(zip(c.dirs, unit_fracs(c.ulines), c.uaddr, c.uthr)), c.dirs[0], c.revs,
+                       n=c.n, ulines=c.ulines, acov=c.at >= ADDR_START, roots=tuple(c.roots), rdir=tuple(c.rdir)))
+    del by_n, own_times
 
     # ------------------------------------------------ AFR and index
     # Only the labelled CLs count (from ADDR_START, which is START once every
     # week is labelled): the AFR is addressed threads per 100 lines.
     people = defaultdict(list)
-    for c in use:
-        people[c["pid"]].append(c)
-    rows = [fr_row(c) for c in use if c["acov"]]
+    for r in use:
+        people[r.pid].append(r)
+    rows = [r for r in use if r.acov]
+    del use
     model = rate_model(rows)
     print(f"AFR by experience: " + " ".join(f"{l}={v}" for l, v in zip(BIN_LABELS, model["ref_bin"]))
           + f"; everyone {model['ref_all']}; scale {model['scale']}; {len(model['_rev_factors']):,} reviewers, "
@@ -1240,8 +1274,8 @@ def main():
             print("two people with one file name, skipped one", file=sys.stderr)
             continue
         taken[k] = pid
-        cs.sort(key=lambda c: (c["closed_at"], c["change_number"]))
-        org = Counter(c["org"] for c in cs).most_common(1)
+        cs.sort(key=lambda c: (c.at, c.n))
+        org = Counter(c.org for c in cs).most_common(1)
         doc = person_doc(cs, first.get(pid), org[0][0] if org else None)
         p = os.path.join(pout, f"{k}.json.gz")
         size += r2.write_gz(p, json.dumps(doc, separators=(",", ":"), ensure_ascii=False))[0]
@@ -1281,8 +1315,8 @@ def cl_index(cs, dirs):
     directories."""
     out = defaultdict(list)
     for c in cs:
-        out[half(c["closed_at"])].append([c["change_number"], list(c.get("revs", ())),
-                                          {t[0]: dirs.setdefault(t[4], len(dirs)) for t in c["thr"]}])
+        out[half(c.at)].append([c.n, list(c.revs),
+                                {t: dirs.setdefault(c.units[i][0], len(dirs)) for t, i in zip(c.roots, c.rdir)}])
     return dict(out)
 
 
@@ -1317,20 +1351,18 @@ def half_cells(cs):
     directory when the CL inserted lines there, else in the CL's main
     directory (`page_dir`). Cells are sorted, so the file stays the same
     when the CLs do."""
-    dirs = sorted({d for c in cs for d in c["units"]})
-    revs = sorted({v for c in cs for v in c.get("revs", ())})
+    dirs = sorted({u[0] for c in cs for u in c.units})
+    revs = sorted({v for c in cs for v in c.revs})
     di, ri = {d: i for i, d in enumerate(dirs)}, {v: i for i, v in enumerate(revs)}
     agg = defaultdict(lambda: [0, 0, 0, 0])
     for c in cs:
-        order = unit_order(c["units"])
-        thr, addr = Counter(t[4] for t in c["thr"]), Counter(t[4] for t in c["thr"] if t[3])
-        vs = tuple(sorted(ri[v] for v in c.get("revs", ())))
-        for (d, lines), m in zip(order, milli_fracs([x for _, x in order])):
-            x = agg[(xbin(c["prior"]), di[d], vs)]
+        vs = tuple(sorted(ri[v] for v in c.revs))
+        for (d, _, a, t), lines, m in zip(c.units, c.ulines, milli_fracs(list(c.ulines))):
+            x = agg[(c.bin, di[d], vs)]
             x[0] += m
             x[1] += lines
-            x[2] += thr[d]
-            x[3] += addr[d]
+            x[2] += t
+            x[3] += a
     return dict(dirs=dirs, revs=revs, cells=[[b, d, list(vs), *x] for (b, d, vs), x in sorted(agg.items())])
 
 
@@ -1342,10 +1374,10 @@ def bins_reached(cs, first_day):
     commits outside the data). `cs`: their CLs, oldest first."""
     out = [None] * len(BIN_LABELS)
     for c in cs:
-        b = xbin(c["prior"])
+        b = c.bin
         if out[b] is None:
             out[b] = ([first_day, True] if b == 0 and first_day is not None
-                      else [epoch_day(c["closed_at"]), c["prior"] == (BIN_EDGES[b - 1] if b else 0)])
+                      else [epoch_day(c.at), c.prior == (BIN_EDGES[b - 1] if b else 0)])
     return out
 
 
@@ -1355,13 +1387,13 @@ def person_doc(cs, first_t, org):
     their labelled CLs as cells (`half_cells`). `cs`: all their CLs,
     oldest first."""
     first_day = epoch_day(first_t) if first_t is not None else None
-    lab = [c for c in cs if c["acov"]]
+    lab = [c for c in cs if c.acov]
     by_half = defaultdict(list)
     for c in lab:
-        by_half[half(c["closed_at"])].append(c)
+        by_half[half(c.at)].append(c)
     return dict(v=8, first=datetime.fromtimestamp(first_t, timezone.utc).strftime("%Y-%m") if first_t is not None else None,
                 first_day=first_day, org=org, reached=bins_reached(cs, first_day),
-                days=[epoch_day(lab[0]["closed_at"]), epoch_day(lab[-1]["closed_at"])] if lab else None,
+                days=[epoch_day(lab[0].at), epoch_day(lab[-1].at)] if lab else None,
                 halves={h: half_cells(hcs) for h, hcs in sorted(by_half.items())})
 
 

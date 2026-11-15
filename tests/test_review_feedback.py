@@ -173,21 +173,17 @@ class ReviewFeedbackTest(unittest.TestCase):
 
     def test_person_file(self):
         # Three CLs: the first in two directories with two approvers, the second wholly in one
-        # directory with none, the third in a later half-year. Threads [root, path (today's name),
-        # day, addressed, the directory it counts in].
-        c1 = dict(change_number=1007, closed_at=86400 * 20000, lines=12, prior=0, acov=True,
-                  units={"a/b/c/": 9, "a/": 3}, main="a/b/c/", revs=["b@x.com", "a@x.com"],
-                  thr=[["r2", "a/b/c/x.cc", "2024-10-04", 1, "a/b/c/"],
-                       ["r1", "/COMMIT_MSG", "2024-10-03", None, "a/b/c/"],
-                       ["r3", "a/b/c/x.cc", "2024-10-04", 0, "a/b/c/"],
-                       ["r4", "a/z.cc", "2024-10-05", 1, "a/"]])
-        c2 = dict(change_number=1010, closed_at=86400 * 20003, lines=5, prior=8, acov=True, units={"a/": 5},
-                  main="a/", thr=[["r5", "a/y.cc", "2024-10-07", 1, "a/"]])
-        c3 = dict(change_number=1020, closed_at=86400 * 20300, lines=4, prior=9, acov=True, units={"a/": 4},
-                  main="a/", revs=["a@x.com"], thr=[])
+        # directory with none, the third in a later half-year. Units [directory, fraction of lines,
+        # addressed threads, threads]; each thread's root and the unit it counts in.
+        def cl(n, day, prior, units, ulines, revs=(), roots=(), rdir=(), acov=True):
+            return R.Row("p", 86400 * day, sum(ulines), prior, R.xbin(prior), "x.com", sum(u[2] for u in units),
+                         units, units[0][0], revs, n=n, ulines=ulines, acov=acov, roots=roots, rdir=rdir)
+        c1 = cl(1007, 20000, 0, (("a/b/c/", 0.75, 1, 3), ("a/", 0.25, 1, 1)), (9, 3), ("b@x.com", "a@x.com"),
+                ("r2", "r1", "r3", "r4"), (0, 0, 0, 1))
+        c2 = cl(1010, 20003, 8, (("a/", 1.0, 1, 1),), (5,), roots=("r5",), rdir=(0,))
+        c3 = cl(1020, 20300, 9, (("a/", 1.0, 0, 0),), (4,), ("a@x.com",))
         # An unlabelled CL counts for when a bin was reached, not in the cells or the days.
-        c4 = dict(change_number=1030, closed_at=86400 * 20400, lines=7, prior=300, acov=False, units={"a/": 7},
-                  main="a/", thr=[["r6", "a/w.cc", "2025-11-08", None, "a/"]])
+        c4 = cl(1030, 20400, 300, (("a/", 1.0, 0, 1),), (7,), roots=("r6",), rdir=(0,), acov=False)
         doc = R.person_doc([c1, c2, c3, c4], 86400 * 19000, "x.com")
         self.assertEqual(doc["reached"][6], [20400, False])
         self.assertEqual((doc["v"], doc["first"], doc["first_day"], doc["org"]), (8, "2022-01", 19000, "x.com"))

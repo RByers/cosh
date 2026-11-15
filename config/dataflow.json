@@ -2181,7 +2181,7 @@
       "network": false,
       "lock": "data/private/r2.lock",
       "incremental": "Rewrites peers.json and reviewers.json; writes each per-person file only if it changed and removes those no longer written.",
-      "duration": "about 3 min (2026-11-14), 3 GB of memory",
+      "duration": "about 2 min (2026-11-14), 1.5 GB of memory at its peak",
       "token_cost": null,
       "cost_source": "docs/review-feedback.md",
       "refresh": "routine",

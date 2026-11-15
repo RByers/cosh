@@ -35,12 +35,21 @@ def cl_facts(ddb, gdb):
     change-number order, one per human-owned chromium/src `main` CL: the
     owner's address as Gerrit has it, times in unix seconds, and for a merged
     CL its landed commit. Also {commit_id: change_number} of the landed
-    commits, for cl_dirs. The Feedback Index (cosh/review_feedback.py) reads them, and
-    the balance stage `cl` builds on them."""
+    commits, for cl_dirs. The balance stage `cl` builds on them;
+    the Feedback Index (cosh/review_feedback.py) reads them one at a time
+    (`iter_cl_facts`)."""
+    rows, by_cid = iter_cl_facts(ddb, gdb)
+    return list(rows), by_cid
+
+
+def iter_cl_facts(ddb, gdb):
+    """`cl_facts`, the tuples as an iterator, so a caller that keeps a few
+    of their columns never holds them all (a million CLs)."""
     emails = dict(ddb.execute("SELECT account_id, email FROM accounts"))
     cls = ddb.execute("""SELECT change_number, owner_account, status, created_at, closed_at, close_week,
                                 insertions, deletions, patchsets FROM changes
                          WHERE is_bot_owned = 0 AND project = 'chromium/src' AND branch = 'main'""").fetchall()
+    cls.sort()
     landed = {}
     for cid, n, sha, files, ins, dels, rv, rl in gdb.execute(
             "SELECT commit_id, change_number, sha, files, ins, dels, reverts_sha IS NOT NULL, is_reland "
@@ -49,13 +58,15 @@ def cl_facts(ddb, gdb):
     reverted = {}
     for target, at in gdb.execute("SELECT reverts_sha, landed_at FROM commits WHERE commit_id > 0 AND reverts_sha IS NOT NULL"):
         reverted[target] = min(at, reverted.get(target, at))
-    rows = []
-    for n, owner, status, created, closed, cweek, ins, dels, nps in sorted(cls):
-        lg = landed.get(n) if status == "MERGED" else None
-        rows.append((n, owner, emails.get(owner), status, epoch(created), epoch(closed) if closed else None,
-                     cweek, ins, dels, nps, *(lg[1:] if lg else (None,) * 5),
-                     reverted.get(lg[1]) if lg else None))
-    return rows, {v[0]: n for n, v in landed.items()}
+    by_cid = {v[0]: n for n, v in landed.items()}
+
+    def rows():
+        for n, owner, status, created, closed, cweek, ins, dels, nps in cls:
+            lg = landed.get(n) if status == "MERGED" else None
+            yield (n, owner, emails.get(owner), status, epoch(created), epoch(closed) if closed else None,
+                   cweek, ins, dels, nps, *(lg[1:] if lg else (None,) * 5),
+                   reverted.get(lg[1]) if lg else None)
+    return rows(), by_cid
 
 
 def cl_dirs(gdb, by_cid, numbers=None, dels=True, current=None, moved=None):
@@ -66,9 +77,12 @@ def cl_dirs(gdb, by_cid, numbers=None, dels=True, current=None, moved=None):
     (commits.current_paths), files count in today's directories; with
     `moved` (commits.moved_lines), a renamed file by the lines changed
     between its two names, as Gerrit counts a CL's lines."""
-    paths = dict(gdb.execute("SELECT path_id, path FROM paths"))
-    if current:
-        paths = {k: current.get(v, v) for k, v in paths.items()}
+    # Each path's directory, worked out once and shared by every row there.
+    dirs, uniq = {}, {}
+    for k, v in gdb.execute("SELECT path_id, path FROM paths"):
+        d = dir_of(current.get(v, v) if current else v, 3)
+        dirs[k] = uniq.setdefault(d, d)
+    del uniq
     agg = defaultdict(lambda: [0, 0])
     for cid, pid, ins, d in gdb.execute("SELECT commit_id, path_id, ins, dels FROM commit_files WHERE commit_id > 0"):
         n = by_cid.get(cid)
@@ -76,8 +90,7 @@ def cl_dirs(gdb, by_cid, numbers=None, dels=True, current=None, moved=None):
             continue
         if moved:
             ins, d = moved.get((cid, pid), (ins, d))
-        path = paths[pid]
-        g = agg[(n, dir_of(path, 3))]
+        g = agg[(n, dirs[pid])]
         g[0] += 1
         lines = max(ins, 0) + (max(d, 0) if dels else 0)
         g[1] += lines
