@@ -51,6 +51,7 @@ import { fmtDay, fmtInt, fmtNum } from './format.ts';
 import { FEEDBACK_PEOPLE, r2Url } from './r2.ts';
 import { initTerms } from './terms.ts';
 import { fragment, msg, type Vars } from './text.ts';
+import { showDataSpan } from './data-span.ts';
 
 Chart.register(Filler);
 
@@ -1180,6 +1181,7 @@ function init() {
     state.peers = p;
     window.__rf!.peers = p;
     if (!p) return;
+    showDataSpan(p.data_span);
     fillStatic(p);
     renderIntro();
     renderMethod();

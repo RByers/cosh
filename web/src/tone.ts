@@ -4,6 +4,7 @@
 // names, links or dates finer than a month.
 import { addWeeks, weekMonday, weekMonth, weekSunday } from './data.ts';
 import { fmtDay } from './format.ts';
+import type { DataSpan } from './data-span.ts';
 
 export type Interval = [number, number];
 
@@ -26,6 +27,8 @@ export type Authors = (typeof AUTHORS)[number];
 
 /** summaries/sentiment_monthly.json */
 export interface ToneTrend {
+  /** The dates the data covers (cosh.data_span). */
+  data_span?: DataSpan;
   rate: number | null;
   window: number;
   thresholds: { glowing: number; angry: number };

@@ -71,7 +71,7 @@ import os
 import sqlite3
 from collections import defaultdict
 
-from . import commits as commit_store, store
+from . import commits as commit_store, data_span, store
 from .extract import iso_week_of
 from .derive import METRIC_VERSION
 from .orgs import OrgResolver
@@ -510,6 +510,7 @@ def summarize(data_dir=store.DATA_DIR, out_dir=os.path.join(ROOT, "summaries"), 
     coverage = {w: round(1 - totals[w]["pending"] / totals[w]["comments"], 4)
                 for w in all_weeks if totals[w]["comments"]}
     meta = dict(generated_at=store.now_iso(), weeks=all_weeks,
+                data_span=data_span.of_data(data_dir=data_dir, ddb=db),
                 headline_metric=metric, headline_column="share",
                 metric_version=METRIC_VERSION,
                 derived_metric_version=meta_kv.get("metric_version"),

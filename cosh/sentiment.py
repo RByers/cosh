@@ -36,7 +36,7 @@ import time
 from collections import defaultdict
 from datetime import date
 
-from . import store
+from . import data_span, store
 from .bots import is_bot_account
 from .derive import human_text, is_ai_comment, load_comments, prefetch_notedb
 
@@ -654,6 +654,22 @@ def trend_rows(name, weeks=(), data_dir=store.DATA_DIR, cache=None):
     return sample, rows, months
 
 
+def trend_span(t, weeks, data_dir):
+    """The page's data span (cosh.data_span): from the trend's first
+    month to the end of the newest fully scored week (or of the trend's
+    last month, with no such week)."""
+    months = [x["m"] for x in t["months"]]
+    if not months and not weeks:
+        return None
+    first = f"{months[0]}-01" if months else week_bounds(weeks[0])[0]
+    if weeks:
+        end = week_bounds(weeks[-1])[1]
+    else:
+        y, m = map(int, months[-1].split("-"))
+        end = f"{y + m // 12}-{m % 12 + 1:02d}-01"
+    return data_span.of_data(first, end, sources=("gerrit",), data_dir=data_dir)
+
+
 def write_summary(name, data_dir=store.DATA_DIR, version=None, out=None, authors=DEFAULT_AUTHORS,
                   weeks=(), loaded=None, scores=None, committers=None):
     """summaries/sentiment_monthly.json (or its .<authors> version) from a
@@ -668,7 +684,7 @@ def write_summary(name, data_dir=store.DATA_DIR, version=None, out=None, authors
               rate=rate or 1.0, full_rows=by_authors(rows, authors, data_dir, committers), full=months)
     doc = dict(generated_at=store.now_iso(), prompt=version or PROMPT_VERSION, model="haiku", sample=name,
                rate=rate, full_weeks=[weeks[0], weeks[-1]] if weeks else None, authors=authors,
-               thresholds=dict(glowing=GLOWING, angry=ANGRY), **t)
+               thresholds=dict(glowing=GLOWING, angry=ANGRY), **t, data_span=trend_span(t, weeks, data_dir))
     out = out or authors_path(SUMMARY, authors)
     os.makedirs(os.path.dirname(out), exist_ok=True)
     with open(out, "w") as f:

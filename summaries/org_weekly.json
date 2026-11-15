@@ -1,6 +1,6 @@
 {
  "meta": {
-  "generated_at": "2026-11-15T05:19:51Z",
+  "generated_at": "2026-11-15T12:24:52Z",
   "weeks": [
    "2017-W27",
    "2017-W28",
@@ -490,6 +490,14 @@
    "2026-W43",
    "2026-W44"
   ],
+  "data_span": {
+   "first": "2017-07-03",
+   "last": "2026-11-01",
+   "sources": [
+    "gerrit",
+    "git"
+   ]
+  },
   "headline_metric": "comments",
   "headline_column": "share",
   "metric_version": "7",

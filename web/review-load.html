@@ -24,6 +24,9 @@
     <header>
       <nav class="crumb"><a href="./">← Chromium Open Source Health</a></nav>
       <h1>Chromium Open Source Health - Review Load</h1>
+      <!-- The dates the data covers (src/data-span.ts), shown once the data has loaded. -->
+      <p id="data-span" class="data-span" hidden></p>
+      <template data-msg="data-span">Based on Chromium Gerrit and git data from <slot name="first"></slot> to <slot name="last"></slot></template>
       <p class="rf-summary">
         How much code review lands on Chromium's reviewers, how long changes wait for them, and where the load is
         heaviest.

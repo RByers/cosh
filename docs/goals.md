@@ -138,6 +138,9 @@ routine:
   those that the change affects (as `derive`'s per-CL fingerprint does), so
   nothing published mixes old and new logic, and nothing is recomputed for
   a change that can't affect it.
+- Each page says, under its title, what dates its data covers, and the
+  update keeps that current with no hand edits: the step that publishes
+  the data stamps it (`docs/data-architecture.md`, "Data spans").
 
 ## 4. A small GitHub repository; large data in R2, changed compatibly
 

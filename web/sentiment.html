@@ -20,6 +20,9 @@
     <header>
       <nav class="crumb"><a href="./">← Chromium Open Source Health</a></nav>
       <h1>Chromium Open Source Health - Review Tone</h1>
+      <!-- The dates the data covers (src/data-span.ts), shown once the data has loaded. -->
+      <p id="data-span" class="data-span" hidden></p>
+      <template data-msg="data-span">Based on Chromium Gerrit data from <slot name="first"></slot> to <slot name="last"></slot></template>
       <div class="lede">
         <p>
           Code review is where most of Chromium's collaboration happens, and its tone shapes how welcome

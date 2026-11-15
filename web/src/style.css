@@ -161,6 +161,14 @@ h1 {
   margin: 0 0 4px;
 }
 
+/* The subtitle under an analysis page's title: the dates its data covers
+   (src/data-span.ts). Quieter than the title, but above the fold. */
+.data-span {
+  margin: 0 0 12px;
+  font-size: 0.95rem;
+  color: var(--text-secondary);
+}
+
 h2 {
   font-size: 1.1rem;
   margin: 0 0 2px;

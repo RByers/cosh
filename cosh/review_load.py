@@ -46,7 +46,7 @@ from collections import defaultdict
 from datetime import datetime, timezone
 
 from . import commits as C
-from . import owners, r2, review_timeline, store
+from . import data_span, owners, r2, review_timeline, store
 from .people import exact_identities, is_bot_email
 from .review_feedback import file_name
 from .review_timeline import weekday_seconds
@@ -345,7 +345,10 @@ def compute(gdb, ddb, tdb, owners_at=None):
                 for j in range(len(table_qs)):
                     t[k][j] += v[k][j]
     listed = sorted((d, v) for d, v in tree.items() if sum(v[0][1:]) >= MIN_DIR_LINES)
+    y, n = int(last[:4]), int(last[-1])
     data = dict(
+        # cosh.data_span: Gerrit's first week to the end of the last whole quarter
+        data_span=data_span.of_data(end=f"{y + n // 4}-{n % 4 * 3 + 1:02d}-01", ddb=ddb, cdb=gdb),
         quarters=qs, attention_from=ATTENTION_FROM, min_dir_lines=MIN_DIR_LINES,
         commits=n_commits, human=n_human,
         reviewed=rev_commits, reviewed_lines=rev_lines, reviewers=[len(s) for s in people_q],

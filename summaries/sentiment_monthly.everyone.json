@@ -1,5 +1,5 @@
 {
- "generated_at": "2026-11-15T05:23:15Z",
+ "generated_at": "2026-11-15T12:25:27Z",
  "prompt": "v3",
  "model": "haiku",
  "sample": "sample-5pct",
@@ -2058,5 +2058,12 @@
  ],
  "n": 617625,
  "n_trivial": 210031,
- "missing": 0
+ "missing": 0,
+ "data_span": {
+  "first": "2023-07-01",
+  "last": "2026-11-01",
+  "sources": [
+   "gerrit"
+  ]
+ }
 }

@@ -2,6 +2,7 @@
 // hashed assets at build time, so the site always reads the committed data.
 import type { PointStyle } from 'chart.js';
 import { fmtDay, fmtInt, fmtNum } from './format.ts';
+import { type DataSpan, showDataSpan } from './data-span.ts';
 import summaryUrl from '../../summaries/org_weekly.json?url';
 import totalsUrl from '../../summaries/weekly_totals.csv?url';
 import radarUrl from '../../data/public/radar_browser_share.csv?url';
@@ -265,6 +266,12 @@ async function load(): Promise<Data> {
     fetchText(areaUrl).then((t) => JSON.parse(t) as DirBoard),
   ]);
   summary.meta.weeks.sort(compareWeeks);
+  // The subtitle: the summaries' span (Gerrit and git), cut short where Radar's weeks end.
+  const radarWeeks = [...radar.keys()].sort(compareWeeks);
+  const isoDay = (d: Date) => d.toISOString().slice(0, 10);
+  showDataSpan(summary.meta.data_span as DataSpan | undefined, radarWeeks.length ? {
+    first: isoDay(weekMonday(radarWeeks[0])), last: isoDay(weekSunday(radarWeeks[radarWeeks.length - 1])), sources: ['radar'],
+  } : null);
   const ranges = dataRanges(summary.meta.weeks, [...radar.keys()]);
   return { summary, totals, radar, orgBrowsers, reviewers, areas, ranges };
 }

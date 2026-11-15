@@ -12,12 +12,15 @@ import { readTheme, type Theme } from './charts.ts';
 import { fmtHoursBin, fmtNum, fmtQuarterMonth } from './format.ts';
 import { fill, msg } from './text.ts';
 import { initTerms } from './terms.ts';
+import { type DataSpan, showDataSpan } from './data-span.ts';
 
 Chart.register(Filler, BubbleController);
 
 type Row = Record<string, string | number | null>;
 interface BalanceData {
   generated: string;
+  /** The dates the data covers (cosh.data_span). */
+  data_span?: DataSpan;
   datasets: Record<string, Row[]>;
 }
 
@@ -2162,6 +2165,7 @@ async function main() {
     const [data, dirs, authors] = await Promise.all([
       get<BalanceData>(balanceUrl), get<DirData>(dirsUrl), get<AuthorData>(authorsUrl)]);
     data.datasets.authors_summary = [authors.summary];
+    showDataSpan(data.data_span);
     authorRows = authors.authors;
     initEmailSetting();
     render(data);

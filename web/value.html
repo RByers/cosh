@@ -29,6 +29,9 @@
     <header>
       <nav class="crumb"><a href="./">← Chromium Open Source Health</a></nav>
       <h1>Chromium Open Source Health - Value Exchange</h1>
+      <!-- The dates the data covers (src/data-span.ts), shown once the data has loaded. -->
+      <p id="data-span" class="data-span" hidden></p>
+      <template data-msg="data-span">Based on Chromium Gerrit and git data and Cloudflare Radar browser usage from <slot name="first"></slot> to <slot name="last"></slot></template>
       <div class="lede">
         <p>
           One way to judge the health and stability of an open source project is to look at the relationship between each stakeholder's

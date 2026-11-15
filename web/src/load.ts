@@ -4,6 +4,8 @@
 // directory table) and, per reviewer, a file per year and one per quarter of
 // the table, named by the Feedback Index's `personKey` of their address.
 
+import type { DataSpan } from './data-span.ts';
+
 /** A mean, median, 90th percentile and count per quarter (null where there is no data). */
 export interface Series {
   mean: (number | null)[];
@@ -22,6 +24,8 @@ export type DirEntry = [string, number[], number[], number[], OwnFigures?];
 export type OwnFigures = [number, number, number, number, number, number, number];
 
 export interface All {
+  /** The dates the data covers (cosh.data_span). */
+  data_span?: DataSpan;
   quarters: string[];
   /** The first quarter with attention-set figures. */
   attention_from: string;

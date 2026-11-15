@@ -186,7 +186,7 @@ purpose near the top of its own doc.
   one process at a time). Don't work around the cap. Uncapped, two such
   runs at once took argus out of memory on 2026-11-14 and the kernel
   killed the site server and other sessions' processes instead.
-- Tests: `python3 -m unittest tests.test_derive tests.test_extract tests.test_radar tests.test_classify tests.test_sentiment tests.test_patchsets tests.test_balance tests.test_bugs tests.test_review_feedback tests.test_balance_signals tests.test_balance_publish tests.test_notedb_repack tests.test_dataflow tests.test_approved tests.test_review_timeline tests.test_review_load tests.test_review_threads tests.test_update`.
+- Tests: `python3 -m unittest tests.test_derive tests.test_extract tests.test_radar tests.test_classify tests.test_sentiment tests.test_patchsets tests.test_balance tests.test_bugs tests.test_review_feedback tests.test_balance_signals tests.test_balance_publish tests.test_notedb_repack tests.test_dataflow tests.test_approved tests.test_review_timeline tests.test_review_load tests.test_review_threads tests.test_update tests.test_data_span`.
   These run in a single process, which complies with the global limit of 4
   test workers. `tests.test_extract` uses a fake Gerrit and never touches the
   network.
@@ -277,6 +277,12 @@ purpose near the top of its own doc.
   styles. The UI names weeks by their dates, never as `2026-W44` or "ISO
   week", and captions don't repeat the selected range. Details:
   `web/README.md`, "Text and styling".
+- **Every analysis page shows the dates its data covers** in a subtitle
+  under its title ("Based on Chromium Gerrit and git data from … to …"),
+  from a `data_span` that the publishing step writes into the page's
+  first file (`cosh.data_span`, `web/src/data-span.ts`;
+  `docs/data-architecture.md`, "Data spans"). Never type those dates by
+  hand; a new analysis page stamps its data and adds the subtitle.
 - **Every link off the site opens in a new tab** (Gerrit, GitHub, Radar,
   sample-comment links …): `target="_blank" rel="noopener"` on static links
   in the HTML, and `a.target = '_blank'` on links the scripts build (SVG

@@ -131,6 +131,43 @@ system is kept, and the inventory says where a step departs from them.
 12. **Keep whatever we download, download only what we need**
     (`docs/storage-design.md` §3.8). Raw stores are never slimmed or pruned;
     data is reduced only in derived stores.
+13. **Every analysis page says what dates its data covers, from the data
+    itself** (below, "Data spans").
+
+### Data spans
+
+Each analysis page shows a subtitle under its title, "Based on Chromium
+Gerrit and git data from 3 Jul 2017 to 1 Nov 2026". Its dates are never
+typed by hand: the step that publishes the page's data writes a
+`data_span` into the first file the page loads, in the same run and from
+the same inputs as the figures, so the two can't disagree:
+
+    "data_span": {"first": "2017-07-03", "last": "2026-11-01", "sources": ["gerrit", "git"]}
+
+`cosh.data_span.of_data` makes it. `first` and `last` are UTC days, both
+included. `last` is the oldest of the step's own end (a whole quarter or
+month, for pages that show those) and every source's end, so a page built
+from Gerrit through 1 Nov and git through 7 Nov is current to 1 Nov:
+Gerrit ends with the newest week `derive` recorded as fetched
+(reviews.sqlite's `fetched_weeks`), git on the day the newest commit in
+commits.sqlite landed. `web/src/data-span.ts` renders it into the page's
+`<p id="data-span">` with the page's `<template data-msg="data-span">`,
+which names the sources; a page reading several stamps (Value Exchange
+adds Radar's weeks) shows the earliest `last`.
+
+| Page | Stamped file | Written by |
+|---|---|---|
+| Value Exchange | `summaries/org_weekly.json` (`meta.data_span`), with Radar's weeks | `summarize` |
+| Review Tone | `summaries/sentiment_monthly*.json` | `tone-publish` (its `summary` step) |
+| Review Balance | `summaries/balance.json` | `balance-publish` |
+| Feedback Index | `web/public/review-feedback/peers.json` | `review-feedback` |
+| Review Load | `web/public/review-load/all.json` | `review-load` |
+
+Because the stamp is written with the data, `cosh update` keeps every
+subtitle current by itself: rerunning a page's steps after new data
+rewrites both. A new analysis page stamps its first file the same way and
+adds the subtitle; the browser tests check that every analysis page shows
+one.
 
 ## 3. The inventory
 

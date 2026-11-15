@@ -150,6 +150,17 @@ Over a range:
 - Leaderboard totals are exact sums from the same file. A reviewer's org is
   the one most of their comments in the range resolve to.
 
+## Data span subtitle
+
+Each analysis page has a subtitle under its title saying which data it is
+based on and the dates it covers: `<p id="data-span" hidden>` plus a
+`<template data-msg="data-span">` with the wording (which names the
+sources) and `first` and `last` slots. `src/data-span.ts`'s
+`showDataSpan()` fills it from the `data_span` the publishing step wrote
+into the page's first file, combining several by their earliest end (Value
+Exchange adds Radar's weeks). The dates follow the data; see
+`docs/data-architecture.md`, "Data spans".
+
 ## Text and styling
 
 The page's wording lives in each page's HTML (`value.html`, `index.html`), so it can be reviewed and tweaked

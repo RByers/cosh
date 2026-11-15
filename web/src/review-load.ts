@@ -33,6 +33,7 @@ import {
 } from './load.ts';
 import { LOAD_PEOPLE, r2Url } from './r2.ts';
 import { fragment, msg, type Vars } from './text.ts';
+import { showDataSpan } from './data-span.ts';
 
 declare global {
   interface Window {
@@ -447,6 +448,7 @@ function init() {
   void getJson<All>(`${DATA}all.json`).then((a) => {
     state.all = a;
     window.__rl!.all = a;
+    if (a) showDataSpan(a.data_span);
     render();
   }).catch(() => {}).finally(() => {
     document.body.dataset.ready = '1';

@@ -61,6 +61,7 @@ import {
   type ToneTrend,
 } from './tone.ts';
 import { scoreBadge, signed1 } from './score.ts';
+import { showDataSpan } from './data-span.ts';
 
 Chart.register(Filler);
 
@@ -800,6 +801,7 @@ async function show(authors: Authors, token: number) {
   praiseData = praise;
   recentData = recent;
   loaded = { trend, samples };
+  showDataSpan(trend.data_span);
   fillPeriods();
   fillPeople();
   draw();

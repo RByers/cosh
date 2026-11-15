@@ -365,7 +365,11 @@ def assemble(ctx):
         res = ctx.result(step.name)
         for k in step.gives:
             (files if k in FILES else datasets)[k] = res[k]
-    files["balance.json"] = {"generated": datetime.now(timezone.utc).strftime("%Y-%m-%d"), "datasets": datasets}
+    from cosh import data_span
+    files["balance.json"] = {"generated": datetime.now(timezone.utc).strftime("%Y-%m-%d"),
+                             # cosh.data_span: Gerrit's first week up to DATA_END, cut short where a source ends
+                             "data_span": data_span.of_data(end=DATA_END, data_dir=ctx.inputs),
+                             "datasets": datasets}
     return files
 
 

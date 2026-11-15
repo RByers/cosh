@@ -2788,8 +2788,8 @@ test('the Review Balance page: a draft warning first, every figure, chart and ta
   await page.goto(baseUrl + 'balance.html', { waitUntil: 'load' });
   await page.waitForSelector('body[data-ready]');
   assert.equal(await page.title(), 'Review Balance: code review load - Chromium Open Source Health');
-  // The draft warning comes right after the title, before any content.
-  const warning = await page.$eval('header h1 + .draft-warning', (w) => ({
+  // The draft warning comes right after the title and its data-dates subtitle, before any content.
+  const warning = await page.$eval('header h1 + #data-span + template + .draft-warning', (w) => ({
     text: w.textContent!, bg: getComputedStyle(w).backgroundColor, top: w.getBoundingClientRect().top }));
   assert.match(warning.text, /Draft: under development/);
   assert.ok(warning.top < 200, String(warning.top));
@@ -3115,6 +3115,34 @@ test('an unknown URL gets the 404 page with status 404; real pages still load', 
   await Promise.all([page.waitForNavigation(), page.click('main.not-found a')]);
   assert.equal(new URL(page.url()).pathname, new URL(baseUrl).pathname + 'index.html');
   await page.close();
+});
+
+test('every analysis page says, under its title, what dates its data covers', async () => {
+  // From the data_span its publishing step wrote (docs/data-architecture.md, "Data spans").
+  const read = (path: string) => JSON.parse(readFileSync(fileURLToPath(new URL(`../../${path}`, import.meta.url)), 'utf8'));
+  const day = (iso: string) => new Date(`${iso}T00:00:00Z`).toLocaleDateString('en-GB',
+    { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });
+  const pages: [string, { first: string; last: string }][] = [
+    ['value.html', summary.meta.data_span as { first: string; last: string }],
+    ['sentiment.html', read('summaries/sentiment_monthly.json').data_span],
+    ['balance.html', read('summaries/balance.json').data_span],
+    ['feedback-index.html', read('web/public/review-feedback/peers.json').data_span],
+    ['review-load.html', read('web/public/review-load/all.json').data_span],
+  ];
+  for (const [path, span] of pages) {
+    assert.ok(span?.first && span.last, `${path}: its data has no data_span`);
+    const page = await browser.newPage();
+    await page.goto(baseUrl + path, { waitUntil: 'load' });
+    await page.waitForSelector('#data-span:not([hidden])');
+    const { text, afterTitle } = await page.$eval('#data-span', (e) =>
+      ({ text: e.textContent!.replace(/\s+/g, ' ').trim(), afterTitle: e.previousElementSibling?.localName }));
+    assert.equal(afterTitle, 'h1', path);
+    assert.match(text, /^Based on Chromium Gerrit .*data.* from \d{1,2} \w{3,4} \d{4} to \d{1,2} \w{3,4} \d{4}$/, path);
+    assert.ok(text.includes(`from ${day(span.first)} to `), `${path}: ${text}`);
+    // Value Exchange is cut short where Radar ends, if that's earlier.
+    if (path !== 'value.html') assert.ok(text.endsWith(` to ${day(span.last)}`), `${path}: ${text}`);
+    await page.close();
+  }
 });
 
 test('every page carries the Content Security Policy, breaks none of it, and it blocks injected markup', async () => {

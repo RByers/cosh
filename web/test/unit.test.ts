@@ -5,6 +5,7 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { test } from 'vitest';
 import * as G from '../src/dataflow-graph.ts';
+import { combineSpans } from '../src/data-span.ts';
 import {
   authorBoard,
   commitBoard,
@@ -1918,4 +1919,15 @@ test('feedback index: a reviewer\'s addressed comments, by the approver each com
   // A half-year keeps only the threads on changes counted in it.
   assert.deepEqual(F.reviewerComments(files, 'rev@google.com', null, '2025H2').map((c) => c.id), ['a']);
   assert.deepEqual(F.reviewerComments(files, 'rev@google.com', new Set(['ui/']), '2026H1'), []);
+});
+
+test('a page built from several sources is only as current as the oldest', () => {
+  const gerritGit = { first: '2017-07-03', last: '2026-11-01', sources: ['gerrit', 'git'] };
+  const radar = { first: '2023-06-26', last: '2026-11-08', sources: ['radar'] };
+  assert.deepEqual(combineSpans([gerritGit, radar]),
+    { first: '2017-07-03', last: '2026-11-01', sources: ['gerrit', 'git', 'radar'] });
+  assert.equal(combineSpans([gerritGit, { ...radar, last: '2026-10-25' }])!.last, '2026-10-25');
+  // A file published before the stamp existed has none: the subtitle stays hidden.
+  assert.equal(combineSpans([undefined, null]), null);
+  assert.deepEqual(combineSpans([undefined, gerritGit]), gerritGit);
 });

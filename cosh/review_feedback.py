@@ -59,7 +59,7 @@ import sys
 from collections import Counter, defaultdict
 from datetime import datetime, timezone
 
-from . import classify, memcap, r2, review_timeline, store
+from . import classify, data_span, memcap, r2, review_timeline, store
 from . import commits as C
 from . import cl_facts as F
 from .cl_facts import SINCE, iter_cl_facts
@@ -1211,6 +1211,7 @@ def main():
     first_year = {pid: datetime.fromtimestamp(t, timezone.utc).year for pid, t in first.items()}
     peers = dict(v=12, generated=datetime.now(timezone.utc).strftime("%Y-%m-%d"), periods=allp,
                  start=epoch_day(START), end=epoch_day(END), addr_start=epoch_day(ADDR_START),
+                 data_span=data_span.of_data(START, END, ddb=ddb, cdb=gdb),
                  min_peers=MIN_PEERS, min_cls=MIN_CLS, min_bin_cls=MIN_BIN_CLS, min_cell_cls=MIN_CELL_CLS,
                  min_growth_bins=MIN_GROWTH_BINS, fr_floor=FR_FLOOR, bins=BIN_LABELS, bin_edges=BIN_EDGES,
                  min_dir_cls=MIN_DIR_CLS, min_spread_exp=MIN_SPREAD_EXP,

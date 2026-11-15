@@ -16,6 +16,7 @@
 // all every figure needs.
 
 import { r2Url, THREADS } from './r2.ts';
+import type { DataSpan } from './data-span.ts';
 
 /** A cell of a half-year (cosh/review_feedback.py `half_cells`): every change's share in one experience
  * bin, 3-level directory and set of approvers, as [bin, directory (index in `dirs`), approvers (indexes in
@@ -110,6 +111,8 @@ export type DirTableEntry = [string, 0 | 1 | 2, number, number, number, number?]
 export interface Peers {
   v: 12;
   generated: string;
+  /** The dates the data covers (cosh.data_span). */
+  data_span?: DataSpan;
   /** The changes covered, as day numbers: from `start` up to (not including) `end`.
    * Only changes from `addr_start` have addressed labels. */
   start: number;
