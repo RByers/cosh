@@ -156,7 +156,7 @@
           become unmanageable.
         </p>
         <h3>Nine years of approvals</h3>
-        <p class="note">From <code>Reviewed-by</code> footers of human commits with a CL on <code>main</code>: CLs
+        <p class="note">From <code>Reviewed-by</code> footers of non-bot commits with a CL on <code>main</code>: CLs
           each approver approved in the quarter, and their changed lines. Log scale.</p>
         <div class="panels">
           <figure class="panel"><h3>CLs approved per approver</h3>
@@ -241,7 +241,7 @@
 
         <h3>Direct: defects stopped before landing</h3>
         <figure class="panel"><h3>Reverted within 30 days, since 2017</h3>
-          <p class="note">Share of human commits with a CL on <code>main</code> that a later commit reverted within
+          <p class="note">Share of non-bot commits with a CL on <code>main</code> that a later commit reverted within
             30 days, by the quarter they landed.</p>
           <div class="chart chart-short"><canvas id="n-c-git-reverted" role="img" aria-label="Share of commits reverted within 30 days, per quarter since 2017."></canvas></div></figure>
         <p class="sub">
@@ -839,7 +839,7 @@
 
         <h3>Before AI: capacity scaled with the project</h3>
         <p class="note">
-          From the authors and <code>Reviewed-by</code> footers of human commits with a CL on <code>main</code>.
+          From the authors and <code>Reviewed-by</code> footers of non-bot commits with a CL on <code>main</code>.
           Active means at least one commit or approval in the year; 2017 is July to December and 2026 (marked *) January to September.
         </p>
         <figure class="panel"><h3>Active authors and approvers, and approvals per month</h3>
@@ -863,7 +863,7 @@
           far fewer newcomers arrived. This section follows that through.
         </p>
         <p class="note">
-          Per year, from git history: human commits with a CL on <code>main</code> and their
+          Per year, from git history: non-bot commits with a CL on <code>main</code> and their
           <code>Reviewed-by</code> approvers. 2017 is July to December and 2026 (marked *) January to September, so counts in
           those years are partial; rates per month compare across them. A new regular reviewer gives 60 or more
           approvals in a calendar year for the first time.
@@ -1386,7 +1386,7 @@
           a 2026 CL gets about a third less review feedback than one in 2023.
         </p>
         <h3>Nine years of git history</h3>
-        <p class="note">Human commits with a CL on <code>main</code>, per quarter.</p>
+        <p class="note">Non-bot commits with a CL on <code>main</code>, per quarter.</p>
         <div class="panels">
           <figure class="panel"><h3>Commits per author per month</h3>
             <div class="chart"><canvas id="c-longrun" role="img" aria-label="Commits per active author per month for each quarter since 2017: median, middle half, 5th to 95th percentile and mean."></canvas></div></figure>
@@ -3052,7 +3052,7 @@
         <a class="card-anchor" href="#revert-experience" aria-label="Link to this section" title="Link to this section">#</a>
         <h2 id="revert-experience-title">Do authors get reverted less as they gain experience?</h2>
         <p class="sub">
-          Every human commit with a CL on <code>main</code> from July 2017 to September 2026
+          Every non-bot commit with a CL on <code>main</code> from July 2017 to September 2026
           (<b data-src="revert_practice_summary" data-field="commits" data-fmt="n0">–</b> commits, not counting reverts or mass edits),
           by how many commits the author had landed on <code>main</code> before it. A commit counts as reverted
           if a later commit reverted it within 30 days:
