@@ -1192,6 +1192,8 @@ def main():
     # byte for byte unchanged once the half-year is over, so the R2 sync
     # uploads them once.
     out = args.out
+    if args.people_out is None:
+        r2.hold()
     pout = args.people_out or r2.local_dir("feedback-people")
     os.makedirs(out, exist_ok=True)
     for name in os.listdir(out):       # per-person folders from before they moved to R2

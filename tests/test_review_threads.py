@@ -75,6 +75,22 @@ class R2Test(unittest.TestCase):
         self.assertEqual(r2.local_dir("feedback-people", "/d"), "/d/feedback-people")
         self.assertRaises(ValueError, r2.local_dir, "../x", "/d")
 
+    def test_hold_waits_for_another_process(self):
+        import subprocess, sys, time
+        with tempfile.TemporaryDirectory() as d:
+            code = ("import sys,time; from cosh import r2; r2.hold(sys.argv[1]); print('held', flush=True); "
+                    "time.sleep(1.5)")
+            other = subprocess.Popen([sys.executable, "-c", code, d], stdout=subprocess.PIPE, text=True,
+                                     cwd=os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+            self.assertEqual(other.stdout.readline().strip(), "held")
+            t = time.monotonic()
+            with mock.patch("sys.stderr"):
+                f = r2.hold(d)
+            self.assertGreater(time.monotonic() - t, 0.5)
+            other.wait()
+            r2._held.remove(f)
+            f.close()
+
     def test_prune(self):
         with tempfile.TemporaryDirectory() as d:
             keep = os.path.join(d, "a", "k.json.gz")

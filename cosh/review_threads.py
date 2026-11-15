@@ -164,6 +164,8 @@ def main(argv=None):
     ap.add_argument("--shards", help="the Feedback Index's per-person files (default <data>/feedback-people)")
     ap.add_argument("--out", help="default <data>/review-threads")
     a = ap.parse_args(argv)
+    if a.out is None:
+        r2.hold()
     out = a.out or out_dir()
     a.shards = a.shards or r2.local_dir("feedback-people")
 

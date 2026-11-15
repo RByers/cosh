@@ -289,6 +289,8 @@ def write(out, data, people, person_dirs, people_out=None):
             shutil.rmtree(os.path.join(out, name))
     with open(os.path.join(out, "all.json"), "w") as f:
         f.write(dumps(data))
+    if people_out is None:
+        r2.hold()
     pout = people_out or r2.local_dir("review-load-people")
     keep = set()
     for p, years in people.items():

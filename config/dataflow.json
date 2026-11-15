@@ -2159,7 +2159,7 @@
         "feedback-people"
       ],
       "network": false,
-      "lock": null,
+      "lock": "data/private/r2.lock",
       "incremental": "Rewrites peers.json and reviewers.json; writes each per-person file only if it changed and removes those no longer written.",
       "duration": "about 3 min (2026-11-14), 3 GB of memory",
       "token_cost": null,
@@ -2187,7 +2187,7 @@
         "data/private/review-threads/"
       ],
       "network": false,
-      "lock": null,
+      "lock": "data/private/r2.lock",
       "incremental": "Rewrites only files whose content changed, and removes those of people or half-years no longer published; --half limits it to some half-years.",
       "duration": "about 5 min for all 19 half-years, 20 s for one (2026-11-14), 650 MB of memory",
       "token_cost": null,
@@ -2213,7 +2213,7 @@
         "r2:review-feedback/people/v1/"
       ],
       "network": true,
-      "lock": null,
+      "lock": "data/private/r2.lock",
       "incremental": "Uploads only files whose sha256 differs from the manifest's (data/private/r2-manifest.json).",
       "duration": "45 min for the first full upload of the threads (32,676 files, 400 MB, 2026-11-14); a weekly run sends only the current half-year's changed files",
       "token_cost": null,
@@ -2238,7 +2238,7 @@
         "r2:review-load/people/v1/"
       ],
       "network": true,
-      "lock": null,
+      "lock": "data/private/r2.lock",
       "incremental": "Uploads only files whose sha256 differs from the manifest's (data/private/r2-manifest.json).",
       "duration": "a few minutes for the first upload (23,773 small files); after that only when a quarter completes",
       "token_cost": null,
@@ -2270,7 +2270,7 @@
         "review-load-people"
       ],
       "network": false,
-      "lock": null,
+      "lock": "data/private/r2.lock",
       "incremental": "Rewrites all.json; writes each per-reviewer file only if it changed and removes those no longer written. Whole quarters only, so the files change when a quarter completes, not with each week.",
       "duration": "30 s, 1.5 GB of memory (2026-11-14)",
       "token_cost": null,

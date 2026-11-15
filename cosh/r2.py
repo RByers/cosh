@@ -28,6 +28,7 @@ requests are signed with AWS Signature Version 4, as R2's S3 API expects.
 
 import argparse
 import datetime as dt
+import fcntl
 import gzip
 import hashlib
 import hmac
@@ -59,6 +60,26 @@ def local_dir(name, data_dir=None):
     if name not in config()["prefixes"].values():
         raise ValueError(f"{name}: not a folder in {CONFIG}")
     return os.path.join(data_dir or store.DATA_DIR, name)
+
+
+_held = []
+
+
+def hold(data_dir=None):
+    """Takes data/private/r2.lock for the rest of this process (waiting if
+    another holds it): `publish` holds it while uploading, and the steps that
+    write the published folders hold it while writing, so an upload never
+    reads a folder that a step is rewriting. Writing to a scratch folder
+    (--people-out, --out) needs no lock."""
+    f = open(os.path.join(data_dir or store.DATA_DIR, "r2.lock"), "a")
+    try:
+        fcntl.flock(f, fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except BlockingIOError:
+        print("waiting for data/private/r2.lock (an R2 publish or a step writing its folders)",
+              file=sys.stderr, flush=True)
+        fcntl.flock(f, fcntl.LOCK_EX)
+    _held.append(f)
+    return f
 
 
 def write_gz(path, text):
@@ -285,6 +306,8 @@ def main(argv=None):
         sync(a.local, a.prefix, a.dry_run, a.jobs, a.max_objects, a.max_total_gb)
         return
     known = config()["prefixes"]
+    if not a.dry_run:
+        hold()
     for prefix in a.prefixes:
         if prefix not in known:
             raise SystemExit(f"{prefix}: not a prefix in {CONFIG} ({', '.join(known)})")
