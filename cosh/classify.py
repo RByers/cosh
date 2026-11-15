@@ -203,6 +203,30 @@ def active_classifier(labels_db):
     return row
 
 
+def threads_labeled(db, cols, data_dir=store.DATA_DIR):
+    """Rows of `SELECT <cols>, label FROM threads` in the reviews DB `db`
+    (opened with uri=True), label being the active classifier's addressed
+    label of the thread, or None. The labels are joined in SQLite, with
+    addressed.sqlite attached read-only for the query, so no table of them
+    (about a million) is held in memory."""
+    path = labels_path(data_dir)
+    sel = ", ".join(f"t.{c}" for c in cols)
+    if not os.path.exists(path):
+        yield from (r + (None,) for r in db.execute(f"SELECT {sel} FROM threads t"))
+        return
+    db.execute("ATTACH DATABASE ? AS lab", (f"file:{path}?mode=ro",))
+    try:
+        act = db.execute("""SELECT classifier_id FROM lab.classifiers
+                            WHERE definition_version = ? AND prompt_sha256 = ?
+                            ORDER BY classifier_id DESC LIMIT 1""", (DEF_VERSION, PROMPT_SHA)).fetchone()
+        yield from db.execute(
+            f"SELECT {sel}, l.addressed FROM threads t LEFT JOIN lab.labels l "
+            "ON l.change_number = t.change_number AND l.root_uuid = t.root_uuid "
+            "AND l.classifier_id = ? AND l.input_hash = t.input_hash", (act[0] if act else -1,))
+    finally:
+        db.execute("DETACH DATABASE lab")
+
+
 # ---------------------------------------------------------------- claude -p
 
 SCHEMA = {"type": "object", "properties": {"labels": {"type": "array", "items": {

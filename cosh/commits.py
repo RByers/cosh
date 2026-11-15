@@ -840,24 +840,29 @@ def first_people(db, norm=None):
     return first
 
 
-def human_commits(db, norm=None):
+HUMAN_COMMIT_FIELDS = ("cid", "sha", "email", "at", "n", "rb", "is_revert", "reland", "files", "lines", "reverted_at")
+
+
+def human_commits(db, norm=None, row=dict):
     """Human commits on main since 2017 (commit_id > 0) as dicts: cid, sha, email
     (through `norm`, default cosh.people.person), at, n (CL), rb (Reviewed-by
-    people), is_revert, reland, files, lines, reverted_at."""
+    people), is_revert, reland, files, lines, reverted_at (HUMAN_COMMIT_FIELDS).
+    `row` makes each one from those keywords (a cosh.records type for less
+    memory)."""
     import json
     from .people import is_bot_email, person
     norm = norm or person
-    rows = db.execute("SELECT commit_id, sha, author_email, landed_at, change_number, is_bot, reviewed_by, "
-                      "reverts_sha, is_reland, files, ins + dels FROM commits WHERE commit_id > 0").fetchall()
-    reverted = {}
-    for r in rows:
-        if r[7]:
-            reverted[r[7]] = min(r[3], reverted.get(r[7]) or r[3])
+    # Streamed, not fetched whole: the first revert of each sha comes from SQL.
+    reverted = dict(db.execute("SELECT reverts_sha, min(landed_at) FROM commits "
+                               "WHERE commit_id > 0 AND reverts_sha IS NOT NULL AND reverts_sha != '' "
+                               "GROUP BY reverts_sha"))
     out = []
-    for cid, sha, email, at, n, bot, rb, rv, rl, files, lines in rows:
+    for cid, sha, email, at, n, bot, rb, rv, rl, files, lines in db.execute(
+            "SELECT commit_id, sha, author_email, landed_at, change_number, is_bot, reviewed_by, "
+            "reverts_sha, is_reland, files, ins + dels FROM commits WHERE commit_id > 0"):
         if bot or is_bot_email(email):
             continue
-        out.append(dict(cid=cid, sha=sha, email=norm(email), at=at, n=n,
+        out.append(row(cid=cid, sha=sha, email=norm(email), at=at, n=n,
                         rb=[norm(x) for x in json.loads(rb)] if rb else [],
                         is_revert=rv is not None, reland=rl, files=files, lines=lines,
                         reverted_at=reverted.get(sha)))
@@ -1003,14 +1008,20 @@ def commit_dirs(db, depth=3, current=None, moved=None):
     2017 (commit_id > 0). With `current` (current_paths), each file counts
     in the directory it's in today; with `moved` (moved_lines), a renamed
     file by the lines changed, not moved."""
-    paths = dict(db.execute("SELECT path_id, path FROM paths"))
-    if current:
-        paths = {k: current.get(v, v) for k, v in paths.items()}
-    cache, out, cur, acc = {}, {}, None, None
+    # Each path's directory, interned: 1.6M paths but about 116k directories,
+    # so no path string is kept. Equal results are shared too: most commits
+    # touch a directory set some other commit already did.
+    cache = {}
+    for pid, path in db.execute("SELECT path_id, path FROM paths"):
+        if current:
+            path = current.get(path, path)
+        cache[pid] = sys.intern(dir_of(path, depth))
+    shared, out, cur, acc = {}, {}, None, None
 
     def done():
         if cur is not None and acc:
-            out[cur] = (max(acc, key=acc.get), frozenset(acc))
+            v = (max(acc, key=acc.get), frozenset(acc))
+            out[cur] = shared.setdefault(v, v)
     for cid, pid, w in db.execute("SELECT commit_id, path_id, max(ins, 0) + max(dels, 0) + 1 FROM commit_files WHERE commit_id > 0"):
         if moved:
             m = moved.get((cid, pid))
@@ -1019,9 +1030,7 @@ def commit_dirs(db, depth=3, current=None, moved=None):
         if cid != cur:
             done()
             cur, acc = cid, {}
-        d = cache.get(pid)
-        if d is None:
-            d = cache[pid] = sys.intern(dir_of(paths[pid], depth))
+        d = cache[pid]
         acc[d] = acc.get(d, 0) + w
     done()
     return out

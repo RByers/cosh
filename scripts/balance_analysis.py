@@ -28,7 +28,7 @@ from collections import Counter, defaultdict
 from datetime import datetime, timezone
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from cosh import balance, store  # noqa: E402
+from cosh import balance, records, store  # noqa: E402
 from cosh import commits as commit_store  # noqa: E402
 from cosh.people import is_bot_email, person  # noqa: E402,F401 (shared with the Feedback Index)
 
@@ -108,19 +108,39 @@ def ro(path):
     return sqlite3.connect(f"file:{path}?mode=ro", uri=True)
 
 
+# Keys the scripts add to every CL or commit (load_all, cl_residuals and the
+# report): slots, so they don't each need a per-record dict (cosh.records).
+CL_EXTRAS = ("pid", "lines", "sb", "d2", "qt", "lt", "ish", "r_threads", "r_ish", "r_rounds", "exp24", "q", "ten",
+             "ftr", "rep", "tb", "ai")
+COMMIT_EXTRAS = ("pid", "rbp")
+Commit = records.record_type("Commit", commit_store.HUMAN_COMMIT_FIELDS, COMMIT_EXTRAS)
+
+
 def load_cl():
+    """Every row of balance.sqlite's cl as a record (cosh.records): about
+    1.1M, a third of the memory dicts would take."""
     db = ro(os.environ.get("BALANCE_CL") or balance.db_path("cl"))
     cur = db.execute("SELECT * FROM cl")
     cols = [d[0] for d in cur.description]
-    out = [dict(zip(cols, r)) for r in cur]
-    for c in out:
-        c["owner_email"] = person(c["owner_email"]) if c["owner_email"] else None
+    CL = records.record_type("CL", cols, CL_EXTRAS)
+    # Repeated strings shared (a few statuses, ~470 weeks) and owners normalized
+    # as they arrive, so 1.1M CLs keep no copy of each.
+    shared = [i for i, k in enumerate(cols) if k in ("status", "close_week", "interdiff_status")]
+    oe = cols.index("owner_email")
+    memo, out = {}, []
+    for r in cur:
+        r = list(r)
+        for i in shared:
+            r[i] = memo.setdefault(r[i], r[i])
+        r[oe] = person(r[oe]) if r[oe] else None
+        out.append(CL(*r))
     return out
 
 
 def load_commits():
-    """Human commits on main since 2017 with a Gerrit CL (commits.human_commits)."""
-    return commit_store.human_commits(git_db())
+    """Human commits on main since 2017 with a Gerrit CL (commits.human_commits),
+    as records (cosh.records)."""
+    return commit_store.human_commits(git_db(), row=Commit)
 
 
 # ------------------------------------------------------------------ mechanical
@@ -267,8 +287,19 @@ def commit_main_dirs(depth=3):
     steps down into the subdirectory with the most lines for as long as it
     outweighs the files directly in the current directory."""
     db = git_db()
-    paths = dict(db.execute("SELECT path_id, path FROM paths"))
-    cache, out, cur, files = {}, {}, None, []
+    # path_id -> (directories, depth-level dir, its first `depth` parts),
+    # one tuple per directory (about 116k) shared by its files (1.6M paths):
+    # no path string or split path is kept per file.
+    by_dir, cache = {}, {}
+    for pid, path in db.execute("SELECT path_id, path FROM paths"):
+        head, sep, _ = path.rpartition("/")
+        f = by_dir.get(head if sep else None)
+        if f is None:
+            parts = tuple(sys.intern(x) for x in head.split("/")) if sep else ()
+            f = by_dir[head if sep else None] = (parts, sys.intern(dir_of_parts(parts, depth)), parts[:depth])
+        cache[pid] = f
+    del by_dir
+    out, cur, files = {}, None, []
 
     def done():
         if cur is None or not files:
@@ -298,11 +329,7 @@ def commit_main_dirs(depth=3):
         if cid != cur:
             done()
             cur, files = cid, []
-        f = cache.get(pid)
-        if f is None:                  # (directories, depth-level dir, its first `depth` parts)
-            parts = tuple(paths[pid].split("/")[:-1])
-            f = cache[pid] = (parts, sys.intern(dir_of_parts(parts, depth)), parts[:depth])
-        files.append(f + (w,))
+        files.append(cache[pid] + (w,))
     done()
     return out
 

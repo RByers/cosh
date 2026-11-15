@@ -69,6 +69,31 @@ class ClFactsTest(unittest.TestCase):
         self.assertEqual(dict(balance.cl_dirs(gdb, by_cid, {20})), {(20, "a/b/c/"): [2, 6]})
         # The Feedback Index's lines: insertions alone.
         self.assertEqual(dict(balance.cl_dirs(gdb, by_cid, dels=False)), {(20, "a/b/c/"): [2, 4], (10, "(root)/"): [1, 1]})
+        # Streamed, one landed commit at a time, as the stage `cl` writes them.
+        self.assertEqual(sorted(balance.iter_cl_dirs(gdb, by_cid)), [(10, "(root)/", 1, 1), (20, "a/b/c/", 2, 6)])
+
+    def test_by_cl_merge(self):
+        rows = balance._ByCL([(1, "a"), (3, "b"), (3, "c"), (5, "d")])
+        self.assertEqual(rows.take(2), [])
+        self.assertEqual(rows.take(3), [(3, "b"), (3, "c")])
+        self.assertEqual(rows.take(6), [])          # 5 skipped: no CL asked for it
+        self.assertEqual(rows.take(7), [])
+
+
+class RecordTest(unittest.TestCase):
+    def test_reads_and_writes_like_a_dict(self):
+        from cosh.records import record_type
+        R = record_type("R", ("a", "b"), ("x",))
+        r = R(1, b=2)
+        self.assertEqual((r["a"], r["b"], r.get("x"), r.get("y", 9)), (1, 2, None, 9))
+        self.assertNotIn("x", r)
+        r["x"] = 3
+        r["y"] = 4                                 # neither field nor extra: a per-record dict
+        r["a"] += 1
+        self.assertEqual((r["a"], r["x"], r["y"]), (2, 3, 4))
+        self.assertIn("y", r)
+        with self.assertRaises(AttributeError):
+            r["z"]
 
 
 class HoursTest(unittest.TestCase):

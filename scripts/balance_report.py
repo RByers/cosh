@@ -208,20 +208,13 @@ def compute(args):
                                  "WHERE after_close = 0 GROUP BY 1, 2"):
         if n in cl_by_n and acct not in bots:
             first_c[(n, acct)] = balance.epoch(at)
-    labels = {}
-    lp = classify.labels_path(store.DATA_DIR)
-    ldb = sqlite3.connect(f"file:{lp}?mode=ro", uri=True)
-    act = classify.active_classifier(ldb)
-    if act:
-        labels = {(n, rt, h): a for n, rt, h, a in ldb.execute(
-            "SELECT change_number, root_uuid, input_hash, addressed FROM labels WHERE classifier_id = ?", (act[0],))}
     thr = defaultdict(lambda: [0, 0])
-    for n, rt, reply, rx, h, acct in d.execute("SELECT change_number, root_uuid, last_owner_reply_at, "
-                                               "regex_addressed, input_hash, root_account FROM threads"):
+    for n, reply, rx, acct, lab in classify.threads_labeled(
+            d, ("change_number", "last_owner_reply_at", "regex_addressed", "root_account")):
         if n in cl_by_n and acct not in bots:
             t = thr[(n, acct)]
             t[0] += 1
-            t[1] += (0 if reply is None else 1 if rx else labels.get((n, rt, h)) or 0)
+            t[1] += (0 if reply is None else 1 if rx else lab or 0)
     tl = A.ro(balance.db_path("timeline"))
     added = {}
     for n, acct, s in tl.execute("SELECT change_number, account_id, min(start_at) FROM attention GROUP BY 1, 2"):

@@ -69,6 +69,31 @@ def iter_cl_facts(ddb, gdb):
     return rows(), by_cid
 
 
+def iter_cl_dirs(gdb, by_cid):
+    """cl_dirs(gdb, by_cid) as (change_number, directory, files, lines)
+    rows, one landed commit at a time: commit_files is read in commit order
+    and each CL has one landed commit, so nothing but the path map is held."""
+    dirs, uniq = {}, {}
+    for k, v in gdb.execute("SELECT path_id, path FROM paths"):
+        d = dir_of(v, 3)
+        dirs[k] = uniq.setdefault(d, d)
+    del uniq
+    cur, agg = None, {}
+    for cid, pid, ins, d in gdb.execute("SELECT commit_id, path_id, ins, dels FROM commit_files WHERE commit_id > 0 "
+                                        "ORDER BY commit_id"):
+        if cid != cur:
+            yield from ((by_cid[cur], k, f, l) for k, (f, l) in agg.items())
+            cur, agg = cid, {}
+        if cid not in by_cid:
+            continue
+        g = agg.get(dirs[pid])
+        if g is None:
+            g = agg[dirs[pid]] = [0, 0]
+        g[0] += 1
+        g[1] += max(ins, 0) + max(d, 0)
+    yield from ((by_cid[cur], k, f, l) for k, (f, l) in agg.items())
+
+
 def cl_dirs(gdb, by_cid, numbers=None, dels=True, current=None, moved=None):
     """The cl_dirs table: {(change_number, 3-level directory): [files, lines]}
     of the landed commits in `by_cid` (from cl_facts), only for the CLs in

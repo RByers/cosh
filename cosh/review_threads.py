@@ -122,8 +122,10 @@ def cl_threads(comments, owner, bots, addressed_of):
 def addressed_lookup(ddb, labels, n):
     """root uuid -> True/False/None (None: owner replied, no label yet), as
     the Feedback Index counts it: no owner reply is not addressed, the
-    Done-type regex is, else the active Haiku label."""
+    Done-type regex is, else the active Haiku label. labels(n) gives the
+    CL's labels as {(root uuid, input hash): addressed}."""
     got = {}
+    labels = labels(n)
     for root, reply, rx, h in ddb.execute(
             "SELECT root_uuid, last_owner_reply_at, regex_addressed, input_hash FROM threads "
             "WHERE host = ? AND change_number = ?", (HOST, n)):
@@ -132,7 +134,7 @@ def addressed_lookup(ddb, labels, n):
         elif rx:
             got[root] = True
         else:
-            a = labels.get((n, root, h))
+            a = labels.get((root, h))
             got[root] = None if a is None else bool(a)
     return lambda root: got.get(root)
 
@@ -205,10 +207,10 @@ def main(argv=None):
     ddb = ro(os.path.join(store.DATA_DIR, store.DERIVED_FILE))
     ldb = ro(classify.labels_path(store.DATA_DIR))
     act = classify.active_classifier(ldb)
-    labels = {}
-    if act:
-        labels = {(n, r, h): x for n, r, h, x in ldb.execute(
-            "SELECT change_number, root_uuid, input_hash, addressed FROM labels WHERE classifier_id = ?", (act[0],))}
+    def labels(n):           # one CL's at a time, not all million
+        return {(r, h): x for r, h, x in ldb.execute(
+            "SELECT root_uuid, input_hash, addressed FROM labels WHERE change_number = ? AND classifier_id = ?",
+            (n, act[0]))} if act else {}
     accounts = {aid: (name or email or f"account {aid}", bool(bot), email or None) for aid, name, email, bot in ddb.execute(
         "SELECT account_id, name, email, is_bot FROM accounts WHERE host = ?", (HOST,))}
     bots = {aid for aid, (_, bot, _) in accounts.items() if bot}

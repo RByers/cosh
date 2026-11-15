@@ -851,7 +851,7 @@ writes `data/private/review-threads/<name>.json.gz`, byte for byte
 the same when nothing changed (the module's docstring has the format).
 Threads by bots and AI reviewers, and threads the owner started, are left
 out; "addressed" is the Feedback Index's own measure, null for
-change-level threads. About 70 seconds, 1.4 GB of memory (2026-11-14).
+change-level threads. About 60 seconds, 1.1 GB of memory (2026-11-15).
 
 `cosh.r2 publish` (step `r2-feedback`, with the per-person files) runs
 only when deploying, before the push (`docs/r2.md`, "Deploying"). It

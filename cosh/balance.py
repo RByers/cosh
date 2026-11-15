@@ -32,7 +32,7 @@ import subprocess
 import time
 
 from . import codefp, review_timeline, store
-from .cl_facts import CL_FACTS, cl_dirs, cl_facts, epoch  # noqa: F401 (moved there)
+from .cl_facts import CL_FACTS, cl_dirs, cl_facts, epoch, iter_cl_dirs, iter_cl_facts  # noqa: F401 (moved there)
 from .commits import HISTORY_SINCE, MAX_LINES, diff_lines  # noqa: F401 (moved there)
 from .review_timeline import union_spans, weekday_seconds  # noqa: F401 (moved there)
 
@@ -266,110 +266,132 @@ def union_hours(spans, lo, hi):
     return tot / 3600
 
 
+class _ByCL:
+    """The rows of a query ordered by change number (its first column),
+    handed out one CL at a time to a caller going through CLs in increasing
+    order: a merge join, so no table is held in memory."""
+
+    def __init__(self, cur):
+        self.it = iter(cur)
+        self.row = next(self.it, None)
+
+    def take(self, n):
+        out = []
+        while self.row is not None and self.row[0] < n:
+            self.row = next(self.it, None)
+        while self.row is not None and self.row[0] == n:
+            out.append(self.row)
+            self.row = next(self.it, None)
+        return out
+
+
 def stage_cl(db):
-    from collections import defaultdict
     db.executescript(CL_SCHEMA)
     derived = os.path.join(store.DATA_DIR, store.DERIVED_FILE)
-    db.execute(f"ATTACH 'file:{derived}?mode=ro' AS d")
+    # Every input is read in change-number order on its own connection and
+    # merged with the CLs one at a time (_ByCL): about 1.1M CLs and their
+    # comments, threads, uploads and attention never sit in memory together.
+    rd = sqlite3.connect(f"file:{derived}?mode=ro", uri=True)
     for st in ("timeline", "interdiff"):
-        db.execute(f"ATTACH 'file:{db_path(st)}?mode=ro' AS {st[0]}{st[1:3]}")
-    ddb = sqlite3.connect(f"file:{derived}?mode=ro", uri=True)
+        rd.execute(f"ATTACH 'file:{db_path(st)}?mode=ro' AS {st[0]}{st[1:3]}")
     gdb = sqlite3.connect(f"file:{db_path('git')}?mode=ro", uri=True)
     print("cl: loading", flush=True)
-    bots = {r[0] for r in db.execute("SELECT account_id FROM d.accounts WHERE is_bot = 1")}
-    facts, by_cid = cl_facts(ddb, gdb)
-    # Review from reviews.sqlite, as summarize counts it (human non-owners).
-    labels = {}
+    bots = {r[0] for r in rd.execute("SELECT account_id FROM accounts WHERE is_bot = 1")}
+    facts, by_cid = iter_cl_facts(rd, gdb)
+    # Review from reviews.sqlite, as summarize counts it (human non-owners);
+    # the active classifier's addressed labels joined in SQLite.
     from . import classify
     lp = classify.labels_path(store.DATA_DIR)
+    label, active = "NULL", None
     if os.path.exists(lp):
-        ldb = sqlite3.connect(f"file:{lp}?mode=ro", uri=True)
-        active = classify.active_classifier(ldb)
+        rd.execute(f"ATTACH 'file:{lp}?mode=ro' AS lab")
+        active = classify.active_classifier(
+            sqlite3.connect(f"file:{lp}?mode=ro", uri=True))
         if active:
-            labels = {(n, r, h): a for n, r, h, a in ldb.execute(
-                "SELECT change_number, root_uuid, input_hash, addressed FROM labels WHERE classifier_id = ?",
-                (active[0],))}
-    rev = defaultdict(lambda: [0, 0, set(), [], None])   # comments, chars, reviewers, times, first inline
-    for n, acct, at, path, chars in db.execute(
-            "SELECT change_number, account_id, written_at, path, chars FROM d.comments WHERE after_close = 0"):
-        if acct in bots:
-            continue
-        r = rev[n]
-        t = epoch(at)
-        r[0] += 1
-        r[1] += chars
-        r[2].add(acct)
-        r[3].append(t)
-        if path != "/PATCHSET_LEVEL" and (r[4] is None or t < r[4]):
-            r[4] = t
-    thr = defaultdict(lambda: [0, 0, 0])
-    roots = defaultdict(list)    # CL -> [(root time, owner replied)]
-    for n, root, reply, rx, h, acct, at in db.execute(
-            "SELECT t.change_number, t.root_uuid, t.last_owner_reply_at, t.regex_addressed, t.input_hash, "
-            "t.root_account, c.written_at FROM d.threads t LEFT JOIN d.comments c ON c.host = t.host "
-            "AND c.change_number = t.change_number AND c.comment_id = t.root_uuid"):
-        if acct in bots:
-            continue
-        if at:
-            roots[n].append((epoch(at), reply is not None))
-        t = thr[n]
-        t[0] += 1
-        pt = 0 if reply is None else 1 if rx else labels.get((n, root, h))
-        t[1] += pt or 0
-        t[2] += pt is None
-    ups = defaultdict(list)
-    for n, ps, at, who, kind in db.execute("SELECT change_number, ps, at, uploader, kind FROM tim.uploads"):
-        ups[n].append((at, kind, who))
-    att = defaultdict(list)
-    for n, acct, s, e in db.execute("SELECT change_number, account_id, start_at, end_at FROM tim.attention"):
-        att[n].append((acct, s, e))
-    idf = {r[0]: r[1:] for r in db.execute(
-        "SELECT change_number, seen_ps, lines_seen, lines_final, lines_changed, files_changed, files_added, "
-        "status FROM int.interdiff")}
-    sent_at = dict(db.execute("SELECT change_number, min(asked_at) FROM tim.cl_reviewers GROUP BY 1"))
-    print(f"cl: joining {len(facts):,} CLs", flush=True)
-    rows = []
-    for fact in facts:
-        n, owner, c0, c1 = fact[0], fact[1], fact[4], fact[5]
-        r = rev.get(n)
-        engaged = [t for t, replied in roots.get(n, []) if replied]
-        first = (r[4] if r else None) or (min(engaged) if engaged else None)
-        u = sorted(ups.get(n, []))
-        rework_after = sum(1 for at, k, _ in u if first and at > first and k == "rework") if u and first else None
-        a = att.get(n, [])
-        hi = c1 or max([e for _, _, e in a] or [c0])
-        others = [(s, e) for acct, s, e in a if acct != owner and acct not in bots]
-        sent = sent_at.get(n)
-        rounds = None
-        if u:
-            ev = sorted([(t, 0) for t, _ in roots.get(n, [])] +
-                        [(at, 1) for at, k, who in u if k == "rework" and who == owner and (sent is None or at > sent)])
-            rounds, waiting = 0, False
-            for _, kind in ev:
-                if kind == 0:
-                    waiting = True
-                elif waiting:
-                    rounds += 1
-                    waiting = False
-        ous = union_spans(others, c0, hi)
-        t = thr.get(n, [0, 0, 0])
-        i = idf.get(n, (None,) * 7)
-        rows.append((*fact,
-                     r[0] if r else 0, r[1] if r else 0, len(r[2]) if r else 0, t[0], t[1], t[2],
-                     first, sent, rework_after, rounds,
-                     union_hours(others, c0, hi) if a else None,
-                     sum(weekday_seconds(s_, e_) for s_, e_ in ous) / 3600 if a else None,
-                     union_hours([(s, e) for acct, s, e in a if acct == owner], c0, hi) if a else None,
-                     *(i if first else (None,) * 7)))
-    db.executemany(f"INSERT INTO cl VALUES ({','.join('?' * 36)})", rows)
+            label = "l.addressed"
+    lab_join = ("LEFT JOIN lab.labels l ON l.change_number = t.change_number AND l.root_uuid = t.root_uuid "
+                "AND l.classifier_id = ? AND l.input_hash = t.input_hash") if active else ""
+    q = lambda sql, *a: _ByCL(rd.execute(sql, a))
+    comments = q("SELECT change_number, account_id, written_at, path, chars FROM comments WHERE after_close = 0 "
+                 "ORDER BY change_number")
+    threads = q("SELECT t.change_number, t.last_owner_reply_at, t.regex_addressed, t.root_account, c.written_at, "
+                f"{label} FROM threads t LEFT JOIN comments c ON c.host = t.host "
+                f"AND c.change_number = t.change_number AND c.comment_id = t.root_uuid {lab_join} "
+                "ORDER BY t.change_number", *([active[0]] if active else []))
+    uploads = q("SELECT change_number, at, kind, uploader FROM tim.uploads ORDER BY change_number")
+    attention = q("SELECT change_number, account_id, start_at, end_at FROM tim.attention ORDER BY change_number")
+    interdiff = q("SELECT change_number, seen_ps, lines_seen, lines_final, lines_changed, files_changed, "
+                  "files_added, status FROM int.interdiff ORDER BY change_number")
+    asked = q("SELECT change_number, min(asked_at) FROM tim.cl_reviewers GROUP BY 1 ORDER BY 1")
+
+    def rows():
+        for fact in facts:
+            n, owner, c0, c1 = fact[0], fact[1], fact[4], fact[5]
+            r = None      # comments, chars, reviewers, first inline
+            for _, acct, at, path, chars in comments.take(n):
+                if acct in bots:
+                    continue
+                if r is None:
+                    r = [0, 0, set(), None]
+                t = epoch(at)
+                r[0] += 1
+                r[1] += chars
+                r[2].add(acct)
+                if path != "/PATCHSET_LEVEL" and (r[3] is None or t < r[3]):
+                    r[3] = t
+            th, roots = [0, 0, 0], []      # threads, addressed, unlabelled; [(root time, owner replied)]
+            for _, reply, rx, acct, at, lab in threads.take(n):
+                if acct in bots:
+                    continue
+                if at:
+                    roots.append((epoch(at), reply is not None))
+                th[0] += 1
+                pt = 0 if reply is None else 1 if rx else lab
+                th[1] += pt or 0
+                th[2] += pt is None
+            engaged = [t for t, replied in roots if replied]
+            first = (r[3] if r else None) or (min(engaged) if engaged else None)
+            u = sorted(x[1:] for x in uploads.take(n))
+            rework_after = sum(1 for at, k, _ in u if first and at > first and k == "rework") if u and first else None
+            a = [x[1:] for x in attention.take(n)]
+            hi = c1 or max([e for _, _, e in a] or [c0])
+            others = [(s, e) for acct, s, e in a if acct != owner and acct not in bots]
+            sent = asked.take(n)
+            sent = sent[0][1] if sent else None
+            rounds = None
+            if u:
+                ev = sorted([(t, 0) for t, _ in roots] +
+                            [(at, 1) for at, k, who in u if k == "rework" and who == owner and (sent is None or at > sent)])
+                rounds, waiting = 0, False
+                for _, kind in ev:
+                    if kind == 0:
+                        waiting = True
+                    elif waiting:
+                        rounds += 1
+                        waiting = False
+            ous = union_spans(others, c0, hi)
+            i = interdiff.take(n)
+            i = i[0][1:] if i else (None,) * 7
+            yield (*fact,
+                   r[0] if r else 0, r[1] if r else 0, len(r[2]) if r else 0, th[0], th[1], th[2],
+                   first, sent, rework_after, rounds,
+                   union_hours(others, c0, hi) if a else None,
+                   sum(weekday_seconds(s_, e_) for s_, e_ in ous) / 3600 if a else None,
+                   union_hours([(s, e) for acct, s, e in a if acct == owner], c0, hi) if a else None,
+                   *(i if first else (None,) * 7))
+    print("cl: joining", flush=True)
+    before = db.total_changes
+    db.executemany(f"INSERT INTO cl VALUES ({','.join('?' * 36)})", rows())
+    ncl = db.total_changes - before
+    db.execute(f"ATTACH 'file:{db_path('timeline')}?mode=ro' AS tim")
     db.execute("INSERT INTO cl_attention SELECT r.change_number, r.account_id, r.attention_h, "
                "r.attention_weekday_h FROM tim.cl_reviewers r JOIN cl USING (change_number) "
                "WHERE r.attention_h IS NOT NULL")
     print("cl: directories", flush=True)
-    agg = cl_dirs(gdb, by_cid)
-    db.executemany("INSERT INTO cl_dirs VALUES (?,?,?,?)", ((n, d, f, l) for (n, d), (f, l) in agg.items()))
+    before = db.total_changes
+    db.executemany("INSERT INTO cl_dirs VALUES (?,?,?,?)", iter_cl_dirs(gdb, by_cid))
     db.commit()
-    print(f"cl: done, {len(rows):,} CLs, {len(agg):,} CL directories", flush=True)
+    print(f"cl: done, {ncl:,} CLs, {db.total_changes - before:,} CL directories", flush=True)
 
 
 def main(argv=None):

@@ -85,13 +85,19 @@ def load(args):
     acct_pid = {a: ids.find(e) for a, e in emails.items() if e and not A.is_bot_email(e) and a not in bots}
     # Code-Review votes (by non-owner humans, filtered below) and uploads
     # before the CL was sent for review (the author polishing alone).
+    # Only the CLs closed in the window are annotated, so only theirs are kept.
     tl = A.ro(balance.db_path("timeline"))
+    win = {c["change_number"] for c in cls if c["closed_at"] and FIRST_TS <= c["closed_at"] < END_TS}
+    votes_cls = tl.execute("SELECT count(DISTINCT change_number) FROM votes").fetchone()[0]
     votes = defaultdict(list)
     for n, voter, value, at in tl.execute("SELECT change_number, voter, value, at FROM votes"):
-        votes[n].append((voter, value, at))
-    uploads = defaultdict(list)
+        if n in win:
+            votes[n].append((voter, value, at))
+    uploads, kinds = defaultdict(list), {}
     for n, at, who, kind in tl.execute("SELECT change_number, at, uploader, kind FROM uploads"):
-        uploads[n].append((at, who, kind))
+        if n in win:
+            uploads[n].append((at, who, kinds.setdefault(kind, kind)))
+    del win
     top2, top3 = {}, {}
     dirs3 = A.commit_dirs(3)
     cid_of = {}
@@ -113,7 +119,7 @@ def load(args):
             fam[c["n"]] = seen[(c["pid"], dd[0])]
         seen[(c["pid"], dd[0])] += 1
     return dict(cls=cls, commits=commits, ids=ids, first=first, mech=mech, emails=emails, bots=bots,
-                acct_pid=acct_pid, votes=votes, uploads=uploads, top2=top2, top3=top3, fam=fam, d=d)
+                acct_pid=acct_pid, votes=votes, votes_cls=votes_cls, uploads=uploads, top2=top2, top3=top3, fam=fam, d=d)
 
 
 def annotate(L):
@@ -421,7 +427,7 @@ def compute(args):
         c["exp24"] = m["exp24"] if m else None
         c["r_threads"] = m["r_threads"] if m else None
     out = dict(generated=time.strftime("%Y-%m-%d"), window="2023-W26 .. 2026-W44 (closed CLs)",
-               cls=len(use), votes_cls=len(L["votes"]))
+               cls=len(use), votes_cls=L["votes_cls"])
     out.update(neg_abandon_tables(use))
     out["panels"] = panels(L, use)
     out["matched"] = matched_cohorts(L, use)

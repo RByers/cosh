@@ -13,8 +13,9 @@ their main() for exploration, and no longer write into summaries/.
   ... python3 -m cosh.balance_publish --steps a,b      # rerun only these steps, reuse the others' results
   python3 -m cosh.balance_publish compare DIR_A DIR_B  # the three files, dataset by dataset
 
-Each step runs in its own process (the scripts set module globals, and each
-loads several GB), one at a time, and leaves its result as JSON in the work
+Each step runs in its own process (the scripts set module globals, and most
+load every CL and commit: up to about 3 GB, 2026-11-15, with the CLs and
+commits as cosh.records rather than dicts), one at a time, and leaves its result as JSON in the work
 directory ($COSH_DATA_DIR/scratch/balance-publish/steps by default) with a
 log of what it printed. A full run takes about 10 min (2026-11-13, at
 nice 5): revert_experience 3 min, report 1 min, signals, narrative and
