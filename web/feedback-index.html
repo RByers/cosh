@@ -87,8 +87,10 @@
           <slot name="minBin"></slot> or more CLs (<slot name="bins"></slot> bins or more:
           <slot name="n"></slot> contributors). The median contributor's rate falls by <slot name="median"></slot>
           per doubling, but contributors differ widely: one in ten fell by <slot name="p10"></slot> or more, while
-          one in ten grew by <slot name="p90"></slot> or more. Some of that spread is noise: a rate over a few
-          changes varies a lot.
+          one in ten grew by <slot name="p90"></slot> or more. Much of that spread is noise, and it comes mostly
+          from contributors with only three or four bins: their line spans few doublings, so a little noise in each
+          bin's rate swings its slope a lot. The longer someone's history, the narrower the spread, and most
+          contributors with many bins see their rate fall.
         </template>
         <template data-msg="axis-growth">change in AFR per doubling of CLs landed</template>
         <template data-msg="axis-growth-share">contributors (smoothed)</template>
