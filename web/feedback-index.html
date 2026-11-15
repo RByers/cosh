@@ -14,8 +14,8 @@
     <!--
       The page's wording is in this file, like value.html (whose opening
       comment has the <template data-msg> syntax); src/review-feedback.ts
-      fills in the values. The data is one file per person, named by a hash
-      of their address, written by cosh/review_feedback.py
+      fills in the values. The data is one file per person, named by their
+      address in a bucket that can't be listed, written by cosh/review_feedback.py
       (docs/review-feedback.md). Addressed feedback rate (AFR): addressed reviewer threads
       per 100 new or changed lines. Feedback index: a person's rate against their
       peers'. Ground rule 5 (docs/plan.md): each comment
@@ -586,8 +586,8 @@
         <p class="note">
           Addresses are matched as in the Review Balance page: chromium.org and google.com addresses with the same
           name are one person, and so is a Gerrit owner with the git author of the same changes. The data has
-          one file per person, named by a one-way hash of their address, so this page can only find someone
-          whose address you already know. Everything comes from public Gerrit and git data. Code and method:
+          one file per person, named by their address in storage that can't be listed, so this page can only
+          find someone whose address you already know. Everything comes from public Gerrit and git data. Code and method:
           <a target="_blank" rel="noopener" href="https://github.com/RByers/cosh/blob/main/docs/review-feedback.md">docs/review-feedback.md</a>.
         </p>
       </details>

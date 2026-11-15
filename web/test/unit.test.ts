@@ -1437,19 +1437,24 @@ test('fmtHoursBin names histogram bins in the low edge\'s unit; fmtQuarterMonth 
 
 // ---- Review Feedback (src/feedback.ts)
 
-test('review feedback: addresses normalise and hash as cosh/review_feedback.py key() does', async () => {
-  const { normalizeEmail, personKey, looksLikeEmail } = await import('../src/feedback.ts');
+test('review feedback: addresses normalise and name files as cosh/review_feedback.py does', async () => {
+  const { normalizeEmail, personFile, isPersonFile, reviewerKey, looksLikeEmail } = await import('../src/feedback.ts');
   assert.equal(normalizeEmail('  Foo.Bar@Chromium.org '), 'foo.bar@google.com');
   assert.equal(normalizeEmail('user@chromium.org@0039d316-1c4b-4281-b951-d872f2087c98'), 'user@google.com');
   assert.equal(normalizeEmail('a@Microsoft.com'), 'a@microsoft.com');
-  // Values printed by the Python script's key().
-  assert.equal(await personKey('Foo.Bar@Chromium.org'), 'fb3b9e32f56a8f89c2ea38de91844541');
-  assert.equal(await personKey('foo.bar@google.com'), 'fb3b9e32f56a8f89c2ea38de91844541');
-  assert.equal(await personKey('  someone@microsoft.com '), '5005b7c30306573a80bf031dd778435d');
-  assert.equal(await personKey('user@chromium.org@0039d316-1c4b-4281-b951-d872f2087c98'), 'aa541a61ff13d7a7b67c4ed4ed491ce4');
+  // Values printed by the Python script's file_name() and reviewer_key().
+  assert.equal(personFile('Foo.Bar@Chromium.org'), 'foo.bar@google.com');
+  assert.equal(personFile('  someone@Microsoft.com '), 'someone@microsoft.com');
+  assert.equal(personFile('a+b/c@x.org'), 'a~2bb~2fc@x.org');
+  assert.equal(personFile('é~@x.org'), '~c3~a9~7e@x.org');
+  assert.ok(isPersonFile('a~2bb@x.org'));
+  for (const bad of ['../x', 'a/b@x.org', 'x.org', 'A@x.org']) assert.ok(!isPersonFile(bad), bad);
+  assert.equal(await reviewerKey('Foo.Bar@Chromium.org'), 'fb3b9e32f56a');
+  assert.equal(await reviewerKey('foo.bar@google.com'), 'fb3b9e32f56a');
+  assert.equal(await reviewerKey('  someone@microsoft.com '), '5005b7c30306');
   const { FIXTURE_EMAIL, FIXTURE_KEY, ALIAS_EMAIL, ALIAS_KEY } = await import('./feedback-fixture.ts');
-  assert.equal(await personKey(FIXTURE_EMAIL), FIXTURE_KEY);
-  assert.equal(await personKey(ALIAS_EMAIL), ALIAS_KEY);
+  assert.equal(personFile(FIXTURE_EMAIL), FIXTURE_KEY);
+  assert.equal(personFile(ALIAS_EMAIL), ALIAS_KEY);
   assert.ok(looksLikeEmail('a@b.org'));
   assert.ok(!looksLikeEmail('alice'));
   assert.ok(!looksLikeEmail('a@b'));
@@ -1472,7 +1477,7 @@ test('review feedback: percentiles and quantiles read off 21 quantiles', async (
 test('review feedback: half-year files, merged into one person', async () => {
   const F = await import('../src/feedback.ts');
   const { top, shards, peers, day } = await import('./feedback-fixture.ts');
-  const person = F.buildPerson(top, top.halves.map((h) => shards[h]), peers);
+  const person = F.buildPerson(top, F.shardsOf(top), peers);
   // Names re-indexed across files, change numbers and days added up; a change wholly in one directory
   // has all its lines there.
   assert.deepEqual(person.dirs, ['chrome/browser/ui/', 'content/browser/', 'third_party/blink/renderer/']);
@@ -1492,7 +1497,7 @@ test('review feedback: half-year files, merged into one person', async () => {
   assert.deepEqual(person.cls.map((c) => c[6]), [[0], [0, 1], []]);
   assert.deepEqual(person.revF, [1, 1]);
   // A file whose 3-level directory isn't one of the change's units counts in the first unit.
-  const moved = F.buildPerson({ ...top, halves: ['2025H2'] }, [{ dirs: ['ui/', 'base/'], files: ['gone/b.cc', 'base/x.cc'],
+  const moved = F.buildPerson(top, [{ dirs: ['ui/', 'base/'], files: ['gone/b.cc', 'base/x.cc'],
     revs: [], cls: [[900003, day('2025-08-01'), 40, 12, [[0, 30], [1, 10]], [], [[0, 0, 1, 1], [1, 10, 2, 0]]]] }], peers);
   assert.deepEqual(moved.cls[0][4].map((f) => f[4]), [0, 1]);
   // Sizes and directories as balance_growth.size10 and balance_analysis.dir_of(path, 3) give them.
@@ -1503,7 +1508,7 @@ test('review feedback: half-year files, merged into one person', async () => {
 test('review feedback: the AFR and index, as the script computes them', async () => {
   const F = await import('../src/feedback.ts');
   const { top, shards, reviewers, peers, day } = await import('./feedback-fixture.ts');
-  const person = F.buildPerson(top, top.halves.map((h) => shards[h]), peers);
+  const person = F.buildPerson(top, F.shardsOf(top), peers);
   await F.attachReviewers(person, reviewers, peers);
   // Experience bins double: <8, 8–15, ..., 2k+ (cosh/review_feedback.py xbin).
   assert.deepEqual([0, 7, 8, 15, 16, 1023, 1024, 2047, 2048, 50000].map((n) => F.xbin(peers.bin_edges, n)),
@@ -1552,7 +1557,7 @@ test('review feedback: the AFR and index, as the script computes them', async ()
   near(rv[0].expected, 0.4 * 2.5 * 1.2 + 1.2 * 1.7 * 0.9);
   assert.deepEqual(F.reviewerRows(person, peers, '2026H2'), []);
   // A reviewer missing from reviewers.json counts as typical.
-  const p2 = F.buildPerson(top, top.halves.map((h) => shards[h]), peers);
+  const p2 = F.buildPerson(top, F.shardsOf(top), peers);
   await F.attachReviewers(p2, { ...reviewers, f: {} }, peers);
   assert.deepEqual(p2.revF, [1, 1]);
   // The person's own changes are left out of what theirs are compared with. Here Alice approved nothing
@@ -1560,7 +1565,7 @@ test('review feedback: the AFR and index, as the script computes them', async ()
   // only the person has lines, so its rate stays everyone's; in bin 4 everyone else drew 20 addressed
   // comments on 1,000 lines.
   const sums4 = peers.rate_sums.map((x, b): [number, number] => (b === 2 ? [40, 1] : b === 4 ? [1120, 21] : x));
-  const own = F.buildPerson(top, top.halves.map((h) => shards[h]), peers);
+  const own = F.buildPerson(top, F.shardsOf(top), peers);
   await F.attachReviewers(own, { ...reviewers, norm: 0.8, none: [0.4e12, 1e12],
     f: { be7cd94b029a: [1.2, 900, 0, 0], e370b1ea692c: [0.6, 300, 0.48e12, 1e12] } }, { ...peers, rate_sums: sums4 });
   near(own.revF[0], 1.25);
@@ -1592,14 +1597,14 @@ test('review feedback: the AFR and index, as the script computes them', async ()
   // A half-year counts only its changes.
   assert.deepEqual(F.clsIn(person, '2026H1').map((c) => c[0]), [1000002]);
   // Before the addressed labels begin, nothing counts.
-  const later = F.buildPerson(top, top.halves.map((h) => shards[h]), { addr_start: day('2026-01-01') });
+  const later = F.buildPerson(top, F.shardsOf(top), { addr_start: day('2026-01-01') });
   assert.deepEqual(F.clsIn(later, 'all').map((c) => c[0]), [1000002, 1000003]);
 });
 
 test('review feedback: everyone\'s directory table with the person\'s columns', async () => {
   const F = await import('../src/feedback.ts');
   const { top, shards, reviewers, peers, day } = await import('./feedback-fixture.ts');
-  const person = F.buildPerson(top, top.halves.map((h) => shards[h]), peers);
+  const person = F.buildPerson(top, F.shardsOf(top), peers);
   await F.attachReviewers(person, reviewers, peers);
   const near = (a: number, b: number) => assert.ok(Math.abs(a - b) < 1e-9, `${a} vs ${b}`);
   const ui2 = (120 * 28) / 118;
@@ -1874,18 +1879,18 @@ test('review load: quarter figures, a reviewer\'s files and the directory tree',
 test('feedback index download: half-year ranges, URLs and the Markdown of threads', async () => {
   const F = await import('../src/feedback.ts');
   assert.deepEqual(F.halvesBetween(['2026H1', '2025H1', '2025H2'], '2026H1', '2025H2'), ['2025H2', '2026H1']);
-  assert.equal(F.threadsUrl('0123456789abcdef0123456789abcdef', '2026H1', 20400.5, 'cosh.rbyers.ca'),
-    'https://cosh-data.rbyers.ca/review-feedback/threads/2026H1/0123456789abcdef0123456789abcdef.json?v=20400');
+  assert.equal(F.threadsUrl('a.b@google.com', '2026H1', 20400.5, 'cosh.rbyers.ca'),
+    'https://cosh-data.rbyers.ca/review-feedback/threads/v2/2026H1/a.b@google.com.json?v=20400');
   assert.throws(() => F.threadsUrl('../x', '2026H1', 1, 'cosh.rbyers.ca'));
   // From this machine, the local copies (web/vite.config.ts serves them).
-  assert.equal(F.threadsUrl('0123456789abcdef0123456789abcdef', '2026H1', 1, 'localhost'),
-    'r2/review-feedback/threads/2026H1/0123456789abcdef0123456789abcdef.json?v=1');
+  assert.equal(F.threadsUrl('a.b@google.com', '2026H1', 1, 'localhost'),
+    'r2/review-feedback/threads/v2/2026H1/a.b@google.com.json?v=1');
   const R = await import('../src/r2.ts');
-  const k = '0123456789abcdef0123456789abcdef';
-  assert.equal(R.r2Url(R.LOAD_PEOPLE, `dirs/2026Q3/${k}.json`, '2026Q3', 'cosh.rbyers.ca'),
-    `https://cosh-data.rbyers.ca/review-load/people/v1/dirs/2026Q3/${k}.json?v=2026Q3`);
-  assert.equal(R.r2Url(R.FEEDBACK_PEOPLE, `u/${k}.json`, 20400, '127.0.0.1'), `r2/review-feedback/people/v1/u/${k}.json?v=20400`);
-  for (const bad of [`../${k}.json`, `u/x/y/${k}.json`, 'u/abc.json', `u/${k}.json.gz`])
+  const k = 'a~2bb@x.org';
+  assert.equal(R.r2Url(R.LOAD_PEOPLE, `${k}.json`, '2026Q3', 'cosh.rbyers.ca'),
+    `https://cosh-data.rbyers.ca/review-load/people/v2/${k}.json?v=2026Q3`);
+  assert.equal(R.r2Url(R.FEEDBACK_PEOPLE, `${k}.json`, 20400, '127.0.0.1'), `r2/review-feedback/people/v2/${k}.json?v=20400`);
+  for (const bad of [`../${k}.json`, `u/${k}.json`, '2026H1/x/y@z.json', 'abc.json', `${k}.json.gz`, 'A@b.json'])
     assert.throws(() => R.r2Url(R.FEEDBACK_PEOPLE, bad, 1, 'localhost'), bad);
   const file: import('../src/feedback.ts').ThreadFile = {
     v: 1, half: '2026H1', people: ['Rev Iewer', 'Own Er'],

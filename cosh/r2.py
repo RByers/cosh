@@ -262,10 +262,22 @@ def live_since(prefix, publishes, pushed):
     return max(ts) if ts else None
 
 
-def plan(local, prefix, manifest, live=None):
+def owns(prefix, key, nested=()):
+    """Whether <key> is under <prefix> and not under one of the <nested>
+    prefixes inside it (a retired 'a/threads' doesn't own 'a/threads/v2/x')."""
+    return key.startswith(prefix.strip("/") + "/") and not any(key.startswith(n.strip("/") + "/") for n in nested)
+
+
+def nested_in(prefix, prefixes):
+    """The prefixes among <prefixes> inside <prefix>."""
+    return [p for p in prefixes if p.strip("/").startswith(prefix.strip("/") + "/")]
+
+
+def plan(local, prefix, manifest, live=None, nested=()):
     """What a publish does to <prefix>: (uploads [(key, path, sha256, gz)],
     deletes [key], kept [key], present [key]). <local> None means the prefix
-    is retired (no longer in config/r2.json) and has no files.
+    is retired (no longer in config/r2.json) and has no files. Objects under
+    the <nested> prefixes belong to those, not to this one.
 
     An object whose file is gone is deleted only if the live site can't need
     it: it was last seen (present locally at a publish) before <live>, the
@@ -280,16 +292,15 @@ def plan(local, prefix, manifest, live=None):
             key, gz = object_key(prefix, os.path.relpath(p, local))
             with open(p, "rb") as f:
                 want[key] = (p, hashlib.sha256(f.read()).hexdigest(), gz)
-    pre = prefix.strip("/") + "/"
     ups = [(k, p, h, gz) for k, (p, h, gz) in sorted(want.items()) if manifest.get(k, {}).get("sha256") != h]
-    gone = sorted(k for k in manifest if k.startswith(pre) and k not in want)
+    gone = sorted(k for k in manifest if owns(prefix, k, nested) and k not in want)
     dels = [k for k in gone if live is not None and manifest[k].get("seen", 0) < live]
     kept = [k for k in gone if k not in set(dels)]
     return ups, dels, kept, sorted(want)
 
 
 def sync(local, prefix, dry_run=False, jobs=16, max_objects=50_000, max_total_gb=5.0, data_dir=None,
-         cred=None, stamp=None, live=None):
+         cred=None, stamp=None, live=None, nested=()):
     """Makes <prefix> in the bucket hold <local>'s files, keeping objects the
     live site may still read (plan()). Each object present locally is marked
     seen at <stamp>, this publish's start time. Returns how many objects are
@@ -300,7 +311,7 @@ def sync(local, prefix, dry_run=False, jobs=16, max_objects=50_000, max_total_gb
     if os.path.exists(mpath):
         with open(mpath) as f:
             manifest = json.load(f)
-    ups, dels, kept, present = plan(local, prefix, manifest, live)
+    ups, dels, kept, present = plan(local, prefix, manifest, live, nested)
     sizes = {k: os.path.getsize(p) if os.path.exists(p) else 0 for k, p, _, _ in ups}
     total = sum(v["bytes"] for k, v in manifest.items() if k not in sizes and k not in dels) + sum(sizes.values())
     print(f"{prefix}: {len(ups):,} to upload ({sum(sizes.values()) / 1e6:.1f} MB), {len(dels):,} to delete"
@@ -368,7 +379,7 @@ def sync(local, prefix, dry_run=False, jobs=16, max_objects=50_000, max_total_gb
         save()
     print(f"{prefix}: uploaded {len(ups) - len(skipped):,}, deleted {len(dels):,}"
           + (f"; {len(skipped):,} files vanished during the sync, run it again" if skipped else ""), file=sys.stderr)
-    return sum(1 for k in manifest if k.startswith(prefix.strip("/") + "/"))
+    return sum(1 for k in manifest if owns(prefix, k, nested))
 
 
 def main(argv=None):
@@ -409,6 +420,9 @@ def main(argv=None):
         # once the live site no longer reads it.
         old = {x for pub in pubs for x in pub["prefixes"]} - set(known)
         todo += [(prefix, None) for prefix in sorted(old)]
+    # A prefix may sit inside another (review-feedback/threads/v2 inside the
+    # retired review-feedback/threads): each object belongs to the innermost.
+    all_prefixes = set(known) | {x for pub in pubs for x in pub["prefixes"]} | {prefix for prefix, _ in todo}
     if pushed is None:
         print("can't tell when main was last pushed (origin/main's reflog); deleting nothing",
               file=sys.stderr, flush=True)
@@ -416,7 +430,7 @@ def main(argv=None):
     synced = []
     for prefix, local in todo:
         left = sync(local, prefix, a.dry_run, a.jobs, a.max_objects, a.max_total_gb, stamp=stamp,
-                    live=live_since(prefix, pubs, pushed))
+                    live=live_since(prefix, pubs, pushed), nested=nested_in(prefix, all_prefixes))
         if local is not None or left:
             synced.append(prefix)
     if not a.dry_run:

@@ -38,12 +38,19 @@ export interface All {
 /** A reviewer's quarter: [commits reviewed, lines reviewed, weekday hours in the attention set, turns in it,
  * weekday hours from asked to first answer (summed), answers]. */
 export type PersonQuarter = [number, number, number, number, number, number];
-/** A reviewer's year file: its quarters by number ("1".."4"). */
+/** A reviewer's year: its quarters by number ("1".."4"). */
 export interface PersonYear {
   q: Record<string, PersonQuarter>;
 }
 /** A reviewer's directories in one quarter: [3-level directory, lines reviewed, attention hours, turns]. */
 export type PersonDir = [string, number, number, number];
+/** <name>.json (cosh/review_load.py): one reviewer's years, and their directories in the table's
+ * quarters. */
+export interface PersonFile {
+  v: 2;
+  years: Record<string, PersonYear>;
+  dirs: Record<string, PersonDir[]>;
+}
 
 export interface Person {
   /** By quarter ("2026Q3"). */

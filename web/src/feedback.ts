@@ -1,8 +1,8 @@
 // The Feedback Index page's data and arithmetic (feedback-index.html,
 // docs/review-feedback.md), kept apart from the DOM so unit tests can run it.
-// cosh/review_feedback.py writes one file per person and half-year, named by
-// `personKey` of their address and served from the R2 bucket (r2.ts), and
-// peers.json with what the page compares a person with.
+// cosh/review_feedback.py writes one file per person, named by `personFile` of
+// their address (the normalised address) and served from the R2 bucket (r2.ts),
+// and peers.json with what the page compares a person with.
 //
 // The addressed feedback rate (AFR) of a set of changes is their addressed reviewer
 // threads per 100 new or changed lines (insertions). The feedback index (FI) is a person's AFR
@@ -34,18 +34,27 @@ export type ClRow = [number, number, number, Unit[], FileFb[], number, number[]]
 export type FileRow = [number, number, number, number, number | [number, number][], number[],
   [number, number, number, number][]?];
 
-/** u/<key>.json: who the person is and which half-year files they have. */
-export interface Top {
-  v: 6;
+/** <name>.json: who the person is and their changes, per half-year. */
+export interface PersonFile {
+  v: 7;
   first: string | null;
   /** First commit on main, as a day number. */
   first_day: number | null;
   /** The org most of their changes were landed as. */
   org: string | null;
-  halves: string[];
+  /** Each half-year ("2026H1") they landed changes in: those changes. */
+  halves: Record<string, Shard>;
 }
 
-/** <half>/<key>.json: one half-year's changes, with names listed once. */
+/** Who the person is, without their changes. */
+export type Top = Pick<PersonFile, 'first' | 'first_day' | 'org'>;
+
+/** The half-years a person's file has, oldest first. */
+export const halvesOf = (f: PersonFile) => Object.keys(f.halves).sort();
+/** A person's half-year shards, oldest first. */
+export const shardsOf = (f: PersonFile) => halvesOf(f).map((h) => f.halves[h]);
+
+/** One half-year's changes, with names listed once. */
 export interface Shard {
   dirs: string[];
   files: string[];
@@ -76,7 +85,7 @@ export interface Person {
   cls: ClRow[];
 }
 
-/** reviewers.json: per reviewer, by the first 12 hex digits of `personKey` of their address, [their
+/** reviewers.json: per reviewer, by `reviewerKey` of their address, [their
  * factor, changes they approved, their observed and expected addressed threads]; `rev_none` is the factor
  * of changes without an approver, `none` their observed and expected threads. A factor is (observed +
  * `shrink`) / (expected + `shrink`) / `norm` (cosh/review_feedback.py `own_model`). */
@@ -89,7 +98,7 @@ export interface ReviewerTable {
   f: Record<string, [number, number, number, number]>;
 }
 
-/** Another address of someone: their file's key. */
+/** Another address of someone: their file's name. */
 export interface Alias {
   see: string;
 }
@@ -196,11 +205,22 @@ export function normalizeEmail(raw: string): string {
 /** Whether `raw` looks enough like an address to look up. */
 export const looksLikeEmail = (raw: string) => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(raw.trim());
 
-/** The data file's name for an address (cosh/review_feedback.py `key`). */
-export async function personKey(raw: string): Promise<string> {
+/** The per-person file's name for an address (cosh/review_feedback.py `file_name`): the
+ * normalised address, each byte of any character outside a-z 0-9 . _ @ - written as ~xx. */
+export function personFile(raw: string): string {
+  return Array.from(normalizeEmail(raw), (c) => (/^[a-z0-9._@-]$/.test(c) ? c
+    : Array.from(new TextEncoder().encode(c), (b) => `~${b.toString(16).padStart(2, '0')}`).join(''))).join('');
+}
+
+/** Whether `s` is a name `personFile` can give (so it is safe in a URL path). */
+export const isPersonFile = (s: string) => /^[a-z0-9._~-]+@[a-z0-9._@~-]+$/.test(s);
+
+/** A reviewer's key in reviewers.json (cosh/review_feedback.py `reviewer_key`): a salted hash of the
+ * normalised address, so the committed file lists no addresses. */
+export async function reviewerKey(raw: string): Promise<string> {
   const bytes = new TextEncoder().encode(SALT + normalizeEmail(raw));
   const hash = new Uint8Array(await crypto.subtle.digest('SHA-256', bytes));
-  return Array.from(hash, (b) => b.toString(16).padStart(2, '0')).join('').slice(0, 32);
+  return Array.from(hash.slice(0, 6), (b) => b.toString(16).padStart(2, '0')).join('');
 }
 
 /** A day number (days since 1970-01-01) as 'YYYY-MM-DD'. */
@@ -332,11 +352,11 @@ export function unitExpected(p: Person, peers: Peers, c: ClRow): number[] {
   return c[3].map((_, i) => (c[2] * fr_[i] / 100) * rate * g * peers.scale);
 }
 
-/** Looks up the person's approvers in reviewers.json (by `personKey`'s first 12 hex digits), then
+/** Looks up the person's approvers in reviewers.json (by `reviewerKey`), then
  * leaves the person's own changes out of what theirs are compared with (`leaveOut`). */
 export async function attachReviewers(p: Person, table: ReviewerTable, peers: Peers): Promise<void> {
-  const keys = await Promise.all(p.revs.map((e) => personKey(e)));
-  const rows = keys.map((k) => table.f[k.slice(0, 12)]);
+  const keys = await Promise.all(p.revs.map((e) => reviewerKey(e)));
+  const rows = keys.map((k) => table.f[k]);
   p.revF = rows.map((r) => r?.[0] ?? 1);
   p.revCls = rows.map((r) => r?.[1] ?? 0);
   leaveOut(p, peers, table, rows);
@@ -722,7 +742,7 @@ export function dirOf(path: string): string {
   return parts.length ? `${parts.slice(0, 3).join('/')}/` : '(root)/';
 }
 
-/** The half-year files merged into one person, names re-indexed and deltas undone. */
+/** A person's half-year shards (`shardsOf`) merged, names re-indexed and deltas undone. */
 export function buildPerson(top: Top, shards: Shard[], peers: Pick<Peers, 'addr_start'>): Person {
   const tables = { dirs: new Map<string, number>(), files: new Map<string, number>(), revs: new Map<string, number>() };
   const at = (t: Map<string, number>, name: string) => {
@@ -802,10 +822,10 @@ export interface Thread {
 
 /** The URL of one person's threads for one half-year: one gzipped JSON file per person and
  * half-year in the R2 bucket (too big for git), fetched only when someone asks to download their
- * comments. `v` (the data's end) skips cached older copies. */
-export function threadsUrl(key: string, half: string, v: number, host?: string): string {
-  if (!/^[0-9a-f]{32}$/.test(key) || !/^\d{4}H[12]$/.test(half)) throw new Error('bad key or half-year');
-  return r2Url(THREADS, `${half}/${key}.json`, v, host);
+ * comments. `name` is their `personFile`; `v` (the data's end) skips cached older copies. */
+export function threadsUrl(name: string, half: string, v: number, host?: string): string {
+  if (!isPersonFile(name) || !/^\d{4}H[12]$/.test(half)) throw new Error('bad name or half-year');
+  return r2Url(THREADS, `${half}/${name}.json`, v, host);
 }
 
 /** A Gerrit link to a thread, by its change's project. */

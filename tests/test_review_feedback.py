@@ -1,4 +1,4 @@
-"""cosh/review_feedback.py helpers: the address hash the page shares,
+"""cosh/review_feedback.py helpers: the file names and reviewer keys the page shares,
 periods, bins, the AFR model, quantiles, the half-year files. No data is read."""
 
 import unittest
@@ -7,12 +7,15 @@ from cosh import review_feedback as R
 
 
 class ReviewFeedbackTest(unittest.TestCase):
-    def test_key_matches_the_page(self):
-        # web/test/unit.test.ts checks personKey() against these same values.
-        self.assertEqual(R.key("Foo.Bar@Chromium.org"), "fb3b9e32f56a8f89c2ea38de91844541")
-        self.assertEqual(R.key("foo.bar@google.com"), R.key("Foo.Bar@Chromium.org"))
-        self.assertEqual(R.key("  someone@microsoft.com "), "5005b7c30306573a80bf031dd778435d")
-        self.assertEqual(len(R.key("x@y.z")), 32)
+    def test_names_match_the_page(self):
+        # web/test/unit.test.ts checks personFile() and reviewerKey() against these same values.
+        self.assertEqual(R.file_name("Foo.Bar@Chromium.org"), "foo.bar@google.com")
+        self.assertEqual(R.file_name("  someone@Microsoft.com "), "someone@microsoft.com")
+        self.assertEqual(R.file_name("a+b/c@x.org"), "a~2bb~2fc@x.org")
+        self.assertEqual(R.file_name("é~@x.org"), "~c3~a9~7e@x.org")
+        self.assertEqual(R.reviewer_key("Foo.Bar@Chromium.org"), "fb3b9e32f56a")
+        self.assertEqual(R.reviewer_key("foo.bar@google.com"), R.reviewer_key("Foo.Bar@Chromium.org"))
+        self.assertEqual(R.reviewer_key("  someone@microsoft.com "), "5005b7c30306")
 
     def test_periods_and_bands(self):
         t = 1767225600 + 200 * 86400          # 2026-07-20

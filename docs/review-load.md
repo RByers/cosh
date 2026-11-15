@@ -96,18 +96,21 @@ commits.sqlite, reviews.sqlite ────────────────�
 
 Published files: `all.json` in `web/public/review-load/` (committed), and
 the per-reviewer files, written gzipped to `data/private/review-load-people/`
-and uploaded, when deploying, by `python3 -m cosh.r2 publish review-load/people/v1` to the
+and uploaded, when deploying, by `python3 -m cosh.r2 publish review-load/people/v2` to the
 R2 bucket (`docs/r2.md`; until 2026-11-14 they were committed next to
 `all.json`). On localhost the page reads the local copies:
 
 | File | Holds |
 |---|---|
 | `all.json` | per quarter: commits, reviewed commits and lines, reviewers, both waits (mean, median, count), attention hours, turns and reviewers; the table's directories at every level with five quarters of lines and four of attention |
-| `<year>/<hash>.json` | one reviewer's quarters of that year: `[commits reviewed, lines reviewed, attention weekday hours, turns, asked-to-answer hours (summed), answers]` |
-| `dirs/<quarter>/<hash>.json` | their 3-level directories that quarter: `[directory, lines, attention hours, turns]`, for the table's four quarters |
+| `<name>.json` | one reviewer, in one file (version 2), fetched in one request: `years`, by year, `{"q": {quarter number: [commits reviewed, lines reviewed, attention weekday hours, turns, asked-to-answer hours (summed), answers]}}`; and `dirs`, by quarter (the table's four), their 3-level directories `[directory, lines, attention hours, turns]` |
 
-`<hash>` is the Feedback Index's (`cosh.review_feedback.key`), so a
-reviewer is found only by typing their address. Nothing on the page lists
+`<name>` is the normalised address, as the Feedback Index names its files
+(`cosh.review_feedback.file_name`). The bucket can't be listed, so a
+reviewer is found only by typing their address. Until 2026-11-14 a
+reviewer's data was one file per year and per table quarter
+(`review-load/people/v1/`, named by a salted hash), up to 14 requests of
+about 100 bytes each for one lookup. Nothing on the page lists
 or ranks people.
 
 ## Against the goals (`docs/goals.md`)

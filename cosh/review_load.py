@@ -9,11 +9,13 @@ read-only, and fetches nothing. No comment text is read.
 
 Writes web/public/review-load/all.json (committed): every quarter's figures
 and the directory table. Under data/private/review-load-people/, gzipped,
-which `python3 -m cosh.r2 publish` uploads to the R2 bucket (docs/r2.md):
-  <year>/<hash>.json.gz         one reviewer's figures for that year's quarters
-  dirs/<quarter>/<hash>.json.gz their directories, for the table's four quarters
-<hash> is the Feedback Index's (cosh.review_feedback.key: a salted SHA-256
-of the address), so the page finds a person only when their address is typed.
+which `python3 -m cosh.r2 publish` uploads to the R2 bucket (docs/r2.md),
+one file per reviewer, <name>.json.gz:
+  {"v": 2, "years": {year: {"q": {quarter of the year: figures}}},
+   "dirs": {quarter: their directories, for the table's four quarters}}
+<name> is the Feedback Index's (cosh.review_feedback.file_name: the
+normalised address). The bucket can't be listed, so the page finds a person
+only when their address is typed.
 
 Whole quarters only: the last one is the newest that both the fetched Gerrit
 weeks and main's history cover, so a week of new data changes nothing until
@@ -46,7 +48,7 @@ from . import commits as C
 from . import r2, review_timeline, store
 from .cl_facts import epoch
 from .people import is_bot_email, person
-from .review_feedback import key
+from .review_feedback import file_name
 from .review_timeline import weekday_seconds
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -293,17 +295,11 @@ def write(out, data, people, person_dirs, people_out=None):
         r2.hold()
     pout = people_out or r2.local_dir("review-load-people")
     keep = set()
-    for p, years in people.items():
-        for y, q in years.items():
-            path = os.path.join(pout, y, f"{key(p)}.json.gz")
-            r2.write_gz(path, dumps(dict(q=q)))
-            keep.add(path)
-    for q, byp in person_dirs.items():
-        for p, rows in byp.items():
-            if rows:
-                path = os.path.join(pout, "dirs", q, f"{key(p)}.json.gz")
-                r2.write_gz(path, dumps(rows))
-                keep.add(path)
+    for p in sorted(set(people) | {p for byp in person_dirs.values() for p, rows in byp.items() if rows}):
+        dirs = {q: byp[p] for q, byp in sorted(person_dirs.items()) if byp.get(p)}
+        path = os.path.join(pout, f"{file_name(p)}.json.gz")
+        r2.write_gz(path, dumps(dict(v=2, years={y: dict(q=q) for y, q in people.get(p, {}).items()}, dirs=dirs)))
+        keep.add(path)
     os.makedirs(pout, exist_ok=True)
     r2.prune(pout, keep)
     return len(keep)

@@ -16,20 +16,21 @@ web/public/review-feedback/, committed):
                      the spread of AFR per bin and of everyone's FI per
                      period, and the methodology's charts
   reviewers.json     each reviewer's factor, by a short hash of the address
+                     (`reviewer_key`), so the committed file lists no one
 
 and, gzipped, under --people-out (default data/private/feedback-people/,
 which `python3 -m cosh.r2 publish` uploads to the R2 bucket, docs/r2.md):
 
-  u/<key>.json.gz       per person: first commit, usual org, which half-years
-                     they have files for; for each other address of the same
-                     person, {"see": key}
-  <half>/<key>.json.gz  per person and half-year: their CLs, with lines per
-                     directory and the files that drew reviewer threads
-                     (`shard`; no comment ids or text)
+  <name>.json.gz     per person, one file: first commit, usual org, and per
+                     half-year their CLs, with lines per directory and the
+                     files that drew reviewer threads (`shard`; no comment
+                     ids or text); for each other address of the same
+                     person, {"see": name}
 
-<key> is a hash of the normalised address (`key` below; the page computes the
-same), so the folder can't be browsed for names and the page can't offer
-completions. Everything comes from public Gerrit and git data.
+<name> is the normalised address (`file_name` below; the page computes the
+same). The bucket can't be listed, so a person is found only by typing their
+address and the page offers no completions. Everything comes from public
+Gerrit and git data.
 
   COSH_DATA_DIR=<main>/data/private nice -n 5 python3 -m cosh.review_feedback [--out DIR] [--people-out DIR]
 """
@@ -71,9 +72,23 @@ MIN_PEERS = 10                # fewer people than this get no percentiles
 PATCHSET_LEVEL = "/PATCHSET_LEVEL"   # the path of a general comment's thread: not counted
 
 
-def key(email):
-    """The file name for an address: the page normalises and hashes the same way."""
-    return hashlib.sha256((SALT + person(email.strip())).encode()).hexdigest()[:32]
+FILE_SAFE = frozenset("abcdefghijklmnopqrstuvwxyz0123456789._@-")
+
+
+def file_name(email):
+    """The per-person file's name for an address (without .json.gz): the
+    normalised address, each byte of any other character written as ~xx, so
+    it is safe in a file name and a URL. The page computes the same
+    (web/src/feedback.ts `personFile`)."""
+    return "".join(c if c in FILE_SAFE else "".join(f"~{b:02x}" for b in c.encode())
+                   for c in person(email.strip()))
+
+
+def reviewer_key(email):
+    """A reviewer's key in the committed reviewers.json: a salted hash of the
+    normalised address, so the file in git lists no addresses. The page
+    hashes the same way (web/src/feedback.ts `reviewerKey`)."""
+    return hashlib.sha256((SALT + person(email.strip())).encode()).hexdigest()[:12]
 
 
 def week_start(w):
@@ -1134,7 +1149,7 @@ def main():
                 e = sum(ex[i] for i in ix)
                 return sum(rs[i].addr for i in ix) / e if e > 0 else None
             order = sorted(range(len(rs)), key=lambda i: rs[i].at)
-            dump[key(pid)] = [fi_of(order), fi_of(order[0::2]), fi_of(order[1::2]), len(rs)]
+            dump[file_name(pid)] = [fi_of(order), fi_of(order[0::2]), fi_of(order[1::2]), len(rs)]
         byp = defaultdict(list)
         for r in rs:
             e = expected(r, model)
@@ -1152,7 +1167,7 @@ def main():
             vals[p] = dict(cls=n, addressed=a, lines=lines, fr=r3(fr(a, lines)) if lines else None,
                            fi=r3(a / e) if e > 0 else None)
         if args.check and len(check_vals) < 300:
-            check_vals[key(pid)] = dict(periods=vals, growth=g)
+            check_vals[file_name(pid)] = dict(periods=vals, growth=g)
 
     if args.fi_dump:
         with open(args.fi_dump, "w") as f:
@@ -1187,10 +1202,9 @@ def main():
     print("by org: " + ", ".join(f"{d} {v}/{n}" for d, v, n in peers["by_org"]), file=sys.stderr, flush=True)
 
     # ------------------------------------------------ write
-    # u/<key>.json.gz: who the person is and which half-years they have.
-    # <half>/<key>.json.gz: that half-year's CLs, which later runs leave
-    # byte for byte unchanged once the half-year is over, so the R2 sync
-    # uploads them once.
+    # <name>.json.gz: who the person is and their CLs, one file per person
+    # so the page makes one request. Each weekly run rewrites the files of
+    # people with CLs in the current half-year; the R2 sync uploads only those.
     out = args.out
     if args.people_out is None:
         r2.hold()
@@ -1204,13 +1218,13 @@ def main():
         json.dump(peers, f, separators=(",", ":"))
     # reviewers.json: each reviewer's factor, CLs approved, and observed and
     # expected addressed threads (from which the page takes away the
-    # person's own: `own_factors`), by the first 12 hex digits of `key` of
-    # their address, so the file lists no addresses; the page loads it with
-    # a person and looks up their reviewers.
+    # person's own: `own_factors`), by `reviewer_key` of their address, so
+    # the committed file lists no addresses; the page loads it with a
+    # person and looks up their reviewers.
     revs = {}
     rs_ = model["_rev_sums"]
     for v, x in sorted(model["_rev_factors"].items()):
-        k = key(v)[:12]
+        k = reviewer_key(v)
         if k in revs:
             print("reviewer key collision, kept the first", file=sys.stderr)
             continue
@@ -1221,35 +1235,31 @@ def main():
     written, stubs, size = 0, 0, 0
     taken = {}
     for pid, cs in people.items():
-        k = key(pid)
+        k = file_name(pid)
         if k in taken:
-            print("hash collision, skipped one person", file=sys.stderr)
+            print("two people with one file name, skipped one", file=sys.stderr)
             continue
         taken[k] = pid
         cs.sort(key=lambda c: (c["closed_at"], c["change_number"]))
         by_half = defaultdict(list)
         for c in cs:
             by_half[half(c["closed_at"])].append(c)
-        for h, hcs in sorted(by_half.items()):
-            p = os.path.join(pout, h, f"{k}.json.gz")
-            size += r2.write_gz(p, json.dumps(shard(hcs), separators=(",", ":"), ensure_ascii=False))[0]
-            keep.add(p)
         org = Counter(c["org"] for c in cs).most_common(1)
-        top = dict(v=6, first=datetime.fromtimestamp(first[pid], timezone.utc).strftime("%Y-%m") if pid in first else None,
+        doc = dict(v=7, first=datetime.fromtimestamp(first[pid], timezone.utc).strftime("%Y-%m") if pid in first else None,
                    first_day=epoch_day(first[pid]) if pid in first else None, org=org[0][0] if org else None,
-                   halves=sorted(by_half))
-        p = os.path.join(pout, "u", f"{k}.json.gz")
-        size += r2.write_gz(p, json.dumps(top, separators=(",", ":"), ensure_ascii=False))[0]
+                   halves={h: shard(hcs) for h, hcs in sorted(by_half.items())})
+        p = os.path.join(pout, f"{k}.json.gz")
+        size += r2.write_gz(p, json.dumps(doc, separators=(",", ":"), ensure_ascii=False))[0]
         keep.add(p)
         written += 1
     for pid in people:
         for e in emails_of.get(pid, ()):
-            k = key(e)
+            k = file_name(e)
             if k in taken:
                 continue
             taken[k] = pid
-            p = os.path.join(pout, "u", f"{k}.json.gz")
-            r2.write_gz(p, json.dumps(dict(see=key(pid))))
+            p = os.path.join(pout, f"{k}.json.gz")
+            r2.write_gz(p, json.dumps(dict(see=file_name(pid))))
             keep.add(p)
             stubs += 1
     removed = r2.prune(pout, keep)

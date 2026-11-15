@@ -116,8 +116,8 @@ function dataDir(): string {
   return join(repo, 'data', 'private');
 }
 
-/** A file's path under its prefix, as web/src/r2.ts builds it. */
-const R2_PATH = /^([0-9A-Za-z]+(?:\/[0-9A-Za-z]+)?\/[0-9a-f]{32})\.json$/;
+/** A file's path under its prefix, as web/src/r2.ts builds it (`R2_PATH`). */
+const R2_PATH = /^((?:\d{4}H[12]\/)?[a-z0-9._~-]+@[a-z0-9._@~-]+)\.json$/;
 
 /** Pages on localhost read the bucket's files from r2/ (web/src/r2.ts): this serves them
  * from their local folders (config/r2.json), gzipped as the bucket serves them, so new files
@@ -132,7 +132,12 @@ const r2Local = (): Plugin => {
   const data = dataDir();
   const serve = (middlewares: { use: (fn: (req: any, res: any, next: () => void) => void) => void }) =>
     middlewares.use((req, res, next) => {
-      const path = (req.url ?? '/').split(/[?#]/)[0];
+      let path = (req.url ?? '/').split(/[?#]/)[0];
+      try {
+        path = decodeURIComponent(path);     // a browser may send @ as %40
+      } catch {
+        return next();
+      }
       const prefix = Object.keys(r2.prefixes).find((p) => path.startsWith(`/r2/${p}/`));
       const m = prefix ? R2_PATH.exec(path.slice(`/r2/${prefix}/`.length)) : null;
       if (!prefix || !m) return next();

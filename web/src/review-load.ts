@@ -1,11 +1,11 @@
 // The Review Load page (review-load.html). Wording is in the HTML; this
 // loads all.json, draws the charts and the directory table, and looks a
 // reviewer up by the address typed (never offering completions: their data
-// is in files named by a hash of the address) to add their figures. The
+// is in a bucket that can't be listed) to add their figures. The
 // address is never put in the URL.
 import { Chart, type ChartDataset } from 'chart.js';
 import { readTheme, type Theme } from './charts.ts';
-import { looksLikeEmail, personKey } from './feedback.ts';
+import { looksLikeEmail, personFile } from './feedback.ts';
 import { fmtInt, fmtNum } from './format.ts';
 import {
   buildPerson,
@@ -26,6 +26,7 @@ import {
   type DirRow,
   type Person,
   type PersonDir,
+  type PersonFile,
   type PersonYear,
 } from './load.ts';
 import { LOAD_PEOPLE, r2Url } from './r2.ts';
@@ -343,19 +344,14 @@ async function lookup(raw: string) {
   }
   put(note, 'find-loading');
   try {
-    const k = await personKey(raw);
     const years = yearsOf(all.quarters);
     const tq = all.table_quarters.slice(1);
-    // The per-reviewer files live in the R2 bucket; they change only when a quarter
-    // completes, so the newest quarter names their copies.
-    const v = all.quarters.at(-1)!;
-    const [ys, ds] = await Promise.all([
-      Promise.all(years.map((y) => getJson<PersonYear>(r2Url(LOAD_PEOPLE, `${y}/${k}.json`, v)))),
-      Promise.all(tq.map((q) => getJson<PersonDir[]>(r2Url(LOAD_PEOPLE, `dirs/${q}/${k}.json`, v)))),
-    ]);
-    const found = buildPerson(all,
-      new Map(years.flatMap((y, i) => (ys[i] ? [[y, ys[i]!] as [string, PersonYear]] : []))),
-      new Map(tq.flatMap((q, i) => (ds[i] ? [[q, ds[i]!] as [string, PersonDir[]]] : []))));
+    // The per-reviewer files live in the R2 bucket, one per reviewer; they change only when a
+    // quarter completes, so the newest quarter names their copies.
+    const f = await getJson<PersonFile>(r2Url(LOAD_PEOPLE, `${personFile(raw)}.json`, all.quarters.at(-1)!));
+    const found = f ? buildPerson(all,
+      new Map(years.flatMap((y) => (f.years?.[y] ? [[y, f.years[y]] as [string, PersonYear]] : []))),
+      new Map(tq.flatMap((q) => (f.dirs?.[q] ? [[q, f.dirs[q]] as [string, PersonDir[]]] : [])))) : null;
     if (!found) {
       put(note, 'find-none', range);
       return;

@@ -1207,7 +1207,7 @@
       "rebuildable": true,
       "size": "about 105 KB (51 KB gzipped): 2,708 reviewers",
       "size_as_of": "2026-11-14",
-      "purpose": "Each reviewer's factor (feedback their approvals draw against what experience predicts) and its sums, by hashed address, from which the page leaves out the person's own changes.",
+      "purpose": "Each reviewer's factor (feedback their approvals draw against what experience predicts) and its sums, by hashed address (the file is committed, so it lists no addresses), from which the page leaves out the person's own changes.",
       "notes": "Rewritten on every run of review-feedback."
     },
     {
@@ -1218,25 +1218,27 @@
       "tier": "derived",
       "tracked_in_git": false,
       "rebuildable": true,
-      "size": "37 MB gzipped in 39,660 files: 6,862 people, 122 other addresses, 19 half-years",
+      "size": "29 MB gzipped in 6,984 files: 6,862 people and 122 other addresses",
       "size_as_of": "2026-11-14",
-      "files": "u/<hash>.json.gz (who the person is, their usual org, which half-years they have; a stub per other address) and <half-year>/<hash>.json.gz (their changes: lines per 3-level directory, approvers (Reviewed-by), and the files that drew reviewer threads with each one's lines, threads and addressed threads (which place the threads in their directories); no comment ids or text); <hash> is a salted SHA-256 of the e-mail.",
+      "files": "<name>.json.gz, one per person (who the person is, their usual org, and per half-year their changes: lines per 3-level directory, approvers (Reviewed-by), and the files that drew reviewer threads with each one's lines, threads and addressed threads (which place the threads in their directories); no comment ids or text), and a stub {\"see\": <name>} per other address; <name> is the normalised e-mail address (cosh.review_feedback.file_name).",
       "purpose": "The local copy of what the Feedback Index fetches from R2 about one person, so the upload sends only files that changed; served under r2/ when the page runs on localhost.",
-      "notes": "Was committed under web/public/review-feedback/ from 2026-11-12 to 2026-11-14. Written byte for byte the same when nothing changed: finished half-years don't change between runs unless their inputs do, and each run rewrites the current half-year and u/."
+      "notes": "Was committed under web/public/review-feedback/ from 2026-11-12 to 2026-11-14, then in R2 as u/ plus one file per half-year, named by a salted hash, until the same day. Written byte for byte the same when nothing changed: each run rewrites the files of people with changes in the current half-year.",
+      "withheld": "File names are people's addresses: reachable only by typing one (ground rule 5), so no samples are listed."
     },
     {
-      "id": "r2:review-feedback/people/v1/",
+      "id": "r2:review-feedback/people/v2/",
       "name": "Feedback Index per-person files in R2",
-      "path": "r2:review-feedback/people/v1/",
+      "path": "r2:review-feedback/people/v2/",
       "kind": "directory",
       "tier": "published",
       "tracked_in_git": false,
       "rebuildable": true,
-      "size": "37 MB, 39,660 objects (stored gzipped)",
+      "size": "29 MB, 6,984 objects (stored gzipped)",
       "size_as_of": "2026-11-14",
-      "files": "review-feedback/people/v1/u/<hash>.json and <half-year>/<hash>.json in the R2 bucket `cosh`, served gzipped at https://cosh-data.rbyers.ca/ (docs/r2.md).",
+      "files": "review-feedback/people/v2/<name>.json, one per person (and a stub per other address), in the R2 bucket `cosh`, served gzipped at https://cosh-data.rbyers.ca/ (docs/r2.md); <name> is the normalised e-mail address.",
       "purpose": "One person's changes and review comments by directory, which every chart and table about them uses once an address is typed. No tone, no comment text.",
-      "notes": "v1 is the format: weekly data and added fields stay under it; a change the published page can't read goes to v2 (config/r2.json, docs/r2.md)."
+      "notes": "v2 is the format (one file per person, named by address, since 2026-11-14; v1 was u/ plus one file per half-year, named by a hash): weekly data and added fields stay under it; a change the published page can't read goes to v3 (config/r2.json, docs/r2.md).",
+      "withheld": "File names are people's addresses: reachable only by typing one (ground rule 5), so no samples are listed."
     },
     {
       "id": "data/private/review-threads/",
@@ -1248,25 +1250,25 @@
       "rebuildable": true,
       "size": "400 MB gzipped: 32,676 files (19 half-years, about 1,300 to 2,000 people each), 2.78M threads",
       "size_as_of": "2026-11-14",
-      "files": "<half-year>/<hash>.json.gz: per person and half-year, every thread a human reviewer other than the owner started on their merged changes, with each comment's full text, author (name, and which of the person's approvers they are), time, file, line and patch set, and whether it was addressed (cosh/review_threads.py has the format).",
+      "files": "<half-year>/<name>.json.gz: per person and half-year, every thread a human reviewer other than the owner started on their merged changes, with each comment's full text, author (name, and which of the person's approvers they are), time, file, line and patch set, and whether it was addressed (cosh/review_threads.py has the format). <name> is the normalised e-mail address, as feedback-people's.",
       "purpose": "The comment download's files, kept locally so that the upload sends only those that changed.",
       "notes": "Too big for git; cosh.r2 publishes them. Written byte for byte the same when nothing changed.",
       "withheld": "Comment text, negative comments included, belongs only behind a typed address (ground rule 5); the samples page is reached by clicks."
     },
     {
-      "id": "r2:review-feedback/threads/",
+      "id": "r2:review-feedback/threads/v2/",
       "name": "Feedback Index threads in R2",
-      "path": "r2:review-feedback/threads/",
+      "path": "r2:review-feedback/threads/v2/",
       "kind": "directory",
       "tier": "published",
       "tracked_in_git": false,
       "rebuildable": true,
       "size": "400 MB, 32,676 objects (stored gzipped)",
       "size_as_of": "2026-11-14",
-      "files": "review-feedback/threads/<half-year>/<hash>.json in the R2 bucket `cosh`, served gzipped at https://cosh-data.rbyers.ca/ (README.md).",
+      "files": "review-feedback/threads/v2/<half-year>/<name>.json in the R2 bucket `cosh`, served gzipped at https://cosh-data.rbyers.ca/ (docs/r2.md); <name> is the normalised e-mail address.",
       "purpose": "What the Feedback Index fetches when someone downloads their review comments, or opens a reviewer in Your feedback (which lists that reviewer's addressed threads, without their text).",
-      "withheld": "Comment text, negative comments included, is reachable only by typing the person's address (hashed file names, no listing), as ground rule 5 allows since 2026-11-14.",
-      "notes": "Uploads are recorded in data/private/r2-manifest.json (key -> sha256), so a sync never lists the bucket. The bucket's CORS policy allows the site's origin."
+      "withheld": "Comment text, negative comments included, is reachable only by typing the person's address (the bucket can't be listed, no completions), as ground rule 5 allows since 2026-11-14.",
+      "notes": "Uploads are recorded in data/private/r2-manifest.json (key -> sha256), so a sync never lists the bucket. The bucket's CORS policy allows the site's origin. v2 (since 2026-11-14) names files by address; the retired review-feedback/threads/ named them by a hash."
     },
     {
       "id": "web/public/review-load/all.json",
@@ -1289,25 +1291,27 @@
       "tier": "derived",
       "tracked_in_git": false,
       "rebuildable": true,
-      "size": "2.5 MB gzipped in 23,773 files: 5,116 reviewers, 10 years, 4 quarters of directories",
+      "size": "2.8 MB gzipped in 5,116 files: one per reviewer",
       "size_as_of": "2026-11-14",
-      "files": "<year>/<hash>.json.gz (a reviewer's quarters that year: commits and lines reviewed, weekday attention-set hours and turns, hours from asked to first answer) and dirs/<quarter>/<hash>.json.gz (their lines and attention per 3-level directory, for the table's four quarters only); <hash> is the Feedback Index's salted SHA-256 of the e-mail.",
+      "files": "<name>.json.gz, one per reviewer: years, by year, the reviewer's quarters (commits and lines reviewed, weekday attention-set hours and turns, hours from asked to first answer), and dirs, by the table's four quarters, their lines and attention per 3-level directory; <name> is the Feedback Index's (the normalised e-mail address).",
       "purpose": "The local copy of what Review Load fetches from R2 about one reviewer, so the upload sends only files that changed; served under r2/ when the page runs on localhost.",
-      "notes": "Was committed under web/public/review-load/ until 2026-11-14. A finished year's files don't change, and each quarter's directory files are written once; when a quarter completes, the oldest of the four directory folders is removed."
+      "notes": "Was committed under web/public/review-load/ until 2026-11-14, then in R2 as one file per year and per table quarter, named by a hash, until the same day. A reviewer's file changes only when a quarter completes.",
+      "withheld": "File names are people's addresses: reachable only by typing one (ground rule 5), so no samples are listed."
     },
     {
-      "id": "r2:review-load/people/v1/",
+      "id": "r2:review-load/people/v2/",
       "name": "Review Load per-reviewer files in R2",
-      "path": "r2:review-load/people/v1/",
+      "path": "r2:review-load/people/v2/",
       "kind": "directory",
       "tier": "published",
       "tracked_in_git": false,
       "rebuildable": true,
-      "size": "2.5 MB, 23,773 objects (stored gzipped)",
+      "size": "2.8 MB, 5,116 objects (stored gzipped)",
       "size_as_of": "2026-11-14",
-      "files": "review-load/people/v1/<year>/<hash>.json and dirs/<quarter>/<hash>.json in the R2 bucket `cosh`, served gzipped at https://cosh-data.rbyers.ca/ (docs/r2.md).",
+      "files": "review-load/people/v2/<name>.json, one per reviewer, in the R2 bucket `cosh`, served gzipped at https://cosh-data.rbyers.ca/ (docs/r2.md); <name> is the normalised e-mail address.",
       "purpose": "One reviewer's figures, drawn over the page's charts and in the directory table's Yours columns once their address is typed.",
-      "notes": "v1 is the format: new quarters and added fields stay under it; a change the published page can't read goes to v2 (config/r2.json, docs/r2.md)."
+      "notes": "v2 is the format (one file per reviewer, named by address, since 2026-11-14; v1 was one file per year and per table quarter, named by a hash): new quarters and added fields stay under it; a change the published page can't read goes to v3 (config/r2.json, docs/r2.md).",
+      "withheld": "File names are people's addresses: reachable only by typing one (ground rule 5), so no samples are listed."
     },
     {
       "id": "data/private/feedback-coach/",
@@ -2145,7 +2149,7 @@
         "cosh/people.py",
         "cosh/commits.py"
       ],
-      "purpose": "Writes each person's changes, approvers and addressed comments (files named by hashed address), the AFR per experience bin and each reviewer's factor.",
+      "purpose": "Writes each person's changes, approvers and addressed comments (one file per person, named by address), the AFR per experience bin and each reviewer's factor.",
       "inputs": [
         "data/private/commits.sqlite",
         "data/private/reviews.sqlite",
@@ -2193,12 +2197,12 @@
       "token_cost": null,
       "cost_source": "docs/review-feedback.md",
       "refresh": "routine",
-      "notes": "Takes its people and changes from the per-person half-year files (data/private/feedback-people/), so run it after review-feedback.",
+      "notes": "Takes its people and changes from the per-person files (data/private/feedback-people/), so run it after review-feedback.",
       "run": "nice -n 5 python3 -m cosh.review_threads"
     },
     {
       "id": "r2-feedback",
-      "command": "python3 -m cosh.r2 publish review-feedback/threads review-feedback/people/v1",
+      "command": "python3 -m cosh.r2 publish review-feedback/threads/v2 review-feedback/people/v2",
       "code": [
         "cosh/r2.py"
       ],
@@ -2209,13 +2213,13 @@
         "feedback-people"
       ],
       "outputs": [
-        "r2:review-feedback/threads/",
-        "r2:review-feedback/people/v1/"
+        "r2:review-feedback/threads/v2/",
+        "r2:review-feedback/people/v2/"
       ],
       "network": true,
       "lock": "data/private/r2.lock",
       "incremental": "Uploads only files whose sha256 differs from the manifest's (data/private/r2-manifest.json).",
-      "duration": "45 min for the first full upload of the threads (32,676 files, 400 MB, 2026-11-14); a weekly run sends only the current half-year's changed files",
+      "duration": "45 min for a full upload of the threads (32,676 files, 400 MB, 2026-11-14; again once for v2); a weekly run sends only the current half-year's changed threads and the files of people with changes in it (about 1,900 each, 18 MB of per-person files)",
       "token_cost": null,
       "cost_source": "docs/r2.md",
       "refresh": "deploy",
@@ -2224,7 +2228,7 @@
     },
     {
       "id": "r2-review-load",
-      "command": "python3 -m cosh.r2 publish review-load/people/v1",
+      "command": "python3 -m cosh.r2 publish review-load/people/v2",
       "code": [
         "cosh/r2.py"
       ],
@@ -2234,7 +2238,7 @@
         "review-load-people"
       ],
       "outputs": [
-        "r2:review-load/people/v1/"
+        "r2:review-load/people/v2/"
       ],
       "network": true,
       "lock": "data/private/r2.lock",
@@ -2256,7 +2260,7 @@
         "cosh/people.py",
         "cosh/review_feedback.py"
       ],
-      "purpose": "Writes the Review Load page's files: each whole quarter's commits, lines reviewed, review waits and attention-set hours, the directory table, and each reviewer's figures in hashed files.",
+      "purpose": "Writes the Review Load page's files: each whole quarter's commits, lines reviewed, review waits and attention-set hours, the directory table, and each reviewer's figures in one file per reviewer.",
       "inputs": [
         "data/private/commits.sqlite",
         "data/private/reviews.sqlite",
@@ -2274,7 +2278,7 @@
       "token_cost": null,
       "cost_source": "docs/review-load.md",
       "refresh": "routine",
-      "notes": "Reads no comment text and no tone. A reviewer's file is named as the Feedback Index's (cosh.review_feedback.key).",
+      "notes": "Reads no comment text and no tone. A reviewer's file is named as the Feedback Index's (cosh.review_feedback.file_name: the normalised address).",
       "run": "nice -n 5 python3 -m cosh.review_load"
     },
     {
@@ -2514,8 +2518,8 @@
       "reads": [
         "web/public/review-feedback/peers.json",
         "web/public/review-feedback/reviewers.json",
-        "r2:review-feedback/people/v1/",
-        "r2:review-feedback/threads/"
+        "r2:review-feedback/people/v2/",
+        "r2:review-feedback/threads/v2/"
       ],
       "sources_line": "Gerrit code review · Chromium git history",
       "notes": "Linked from the landing page since 2026-11-12; carries noindex."
@@ -2531,7 +2535,7 @@
       "entry_script": "web/src/review-load.ts",
       "reads": [
         "web/public/review-load/all.json",
-        "r2:review-load/people/v1/"
+        "r2:review-load/people/v2/"
       ],
       "sources_line": "Gerrit code review · Chromium git history",
       "notes": "Linked from the landing page since 2026-11-14; carries noindex."

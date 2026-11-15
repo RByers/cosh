@@ -103,7 +103,8 @@ purpose near the top of its own doc.
   publish negative ones. Gold sets and per-comment model reasons stay in
   `data/private/`. These rules cover what can be reached by clicking
   (2026-11-14): a view shown only after someone types a person's address
-  (hashed file names, no completions or links, e.g. the Feedback Index)
+  (files in an R2 bucket that can't be listed, no completions or links,
+  e.g. the Feedback Index)
   may show more about that person, including each comment's tone score.
   The most sensitive detail (improvement reports) needs a verified login
   and goes in the repo only lightly obfuscated (e.g. a Caesar cipher); with

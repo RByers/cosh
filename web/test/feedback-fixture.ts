@@ -1,25 +1,18 @@
 // A made-up person and peer file for the Review Feedback tests, shaped like
-// cosh/review_feedback.py's output: a top file and one file per half-year. The
+// cosh/review_feedback.py's output: one file per person, by half-year. The
 // browser tests serve these instead of the committed data.
-import type { Peers, ReviewerTable, Shard, Top } from '../src/feedback.ts';
+import type { PersonFile, Peers, ReviewerTable, Shard } from '../src/feedback.ts';
 
-/** personKey('Test.Person@chromium.org'), as the Python script computes it. */
+/** personFile('Test.Person@chromium.org'), as the Python script computes it. */
 export const FIXTURE_EMAIL = 'Test.Person@chromium.org';
-export const FIXTURE_KEY = '2da4ec431edc6e08b535984c029f9a9d';
+export const FIXTURE_KEY = 'test.person@google.com';
 /** Another address of the same person, whose file points at FIXTURE_KEY. */
 export const ALIAS_EMAIL = 'tp@example.com';
-export const ALIAS_KEY = 'bbf27d6626ae4d5f589d68403ed10bab';
+export const ALIAS_KEY = 'tp@example.com';
 
 const q = (lo: number, hi: number) => Array.from({ length: 21 }, (_, i) => Math.round((lo + ((hi - lo) * i) / 20) * 1000) / 1000);
 export const day = (s: string) => Math.floor(Date.parse(`${s}T00:00:00Z`) / 86_400_000);
 
-export const top: Top = {
-  v: 6,
-  first: '2022-03',
-  first_day: day('2022-03-01'),
-  org: 'google.com',
-  halves: ['2025H2', '2026H1', '2026H2'],
-};
 
 /** Three changes, one per half-year. Each file lists its own names, in its own order. A change is
  * [number less the previous one's (the first: itself), day likewise, lines, earlier commits on main,
@@ -40,8 +33,17 @@ export const shards: Record<string, Shard> = {
     cls: [[1000003, day('2026-09-03'), 10, 260, 0, [], [[0, 0, 1, 0], [1, 8, 1, 1]]]] },
 };
 
+/** The person's file: who they are and the three half-years above. */
+export const top: PersonFile = {
+  v: 7,
+  first: '2022-03',
+  first_day: day('2022-03-01'),
+  org: 'google.com',
+  halves: shards,
+};
+
 /** reviewers.json: Alice's approvals draw 1.2× what experience predicts, Bob's 0.6×, and changes
- * without an approver 0.5×; keyed by the first 12 hex digits of personKey of their addresses. Their sums
+ * without an approver 0.5×; keyed by reviewerKey of their addresses. Their sums
  * are so large that leaving the person's three changes out moves no factor by more than 1e-9. */
 export const reviewers: ReviewerTable = {
   v: 2,

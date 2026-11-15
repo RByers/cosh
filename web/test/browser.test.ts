@@ -3273,11 +3273,10 @@ async function feedbackPage(peersOverride?: Peers, shardsOverride?: Record<strin
     if (path.endsWith('/review-feedback/peers.json')) json(peers);
     else if (path.endsWith('/review-feedback/reviewers.json')) json(reviewers);
     // The per-person files come from the bucket's prefix, served locally under /r2/ (web/src/r2.ts).
-    else if (path === `/r2/review-feedback/people/v1/u/${FIXTURE_KEY}.json`) json(top);
-    else if (/^\/r2\/review-feedback\/people\/v1\/\d{4}H[12]\//.test(path) && path.endsWith(`/${FIXTURE_KEY}.json`))
-      json(shards[path.split('/').at(-2)!]);
-    else if (path === `/r2/review-feedback/people/v1/u/${ALIAS_KEY}.json`) json({ see: FIXTURE_KEY });
-    else if (path.startsWith('/r2/review-feedback/people/v1/u/')) void r.respond({ status: 404, body: 'not found' });
+    // One file per person, named by the address; another address of theirs points at it.
+    else if (path === `/r2/review-feedback/people/v2/${FIXTURE_KEY}.json`) json({ ...top, halves: shards });
+    else if (path === `/r2/review-feedback/people/v2/${ALIAS_KEY}.json`) json({ see: FIXTURE_KEY });
+    else if (path.startsWith('/r2/review-feedback/people/')) void r.respond({ status: 404, body: 'not found' });
     else void r.continue();
   });
   await page.goto(baseUrl + 'feedback-index.html', { waitUntil: 'load' });
@@ -3293,7 +3292,7 @@ test('feedback index: downloading your comments builds a file from the R2 thread
     if (!u.pathname.startsWith('/r2/review-feedback/threads/')) return false;
     asked.push(u.pathname);
     const cors = { 'Access-Control-Allow-Origin': '*' };
-    if (u.pathname === `/r2/review-feedback/threads/2026H2/${FIXTURE_KEY}.json`) {
+    if (u.pathname === `/r2/review-feedback/threads/v2/2026H2/${FIXTURE_KEY}.json`) {
       void r.respond({ status: 200, contentType: 'application/json', headers: cors, body: JSON.stringify({
         v: 1, half: '2026H2', people: ['A Reviewer', 'Test Person'], cls: [{ n: 77, project: 'chromium/src',
           subject: 'Fix <b>it</b>', landed: '2026-08-01', lines: 9, owner: 1, threads: [{ id: 'x1', path: 'a/b.cc',
@@ -3322,7 +3321,7 @@ test('feedback index: downloading your comments builds a file from the R2 thread
   await page.click('#rf-dl button');
   await page.waitForFunction(() => /Downloaded|Couldn/.test(document.querySelector('#rf-dl-note')!.textContent ?? ''));
   assert.match(await page.$eval('#rf-dl-note', (e) => e.textContent!), /Downloaded 1 comment threads on 1 changes/);
-  assert.deepEqual(asked.sort(), [`/r2/review-feedback/threads/2026H1/${FIXTURE_KEY}.json`, `/r2/review-feedback/threads/2026H2/${FIXTURE_KEY}.json`]);
+  assert.deepEqual(asked.sort(), [`/r2/review-feedback/threads/v2/2026H1/${FIXTURE_KEY}.json`, `/r2/review-feedback/threads/v2/2026H2/${FIXTURE_KEY}.json`]);
   const [name, text] = await page.evaluate(async () => {
     const d = (window as unknown as { __dl: { name: string; blob: Blob } }).__dl;
     return [d.name, await d.blob.text()];
@@ -3942,8 +3941,8 @@ const loadAll = {
 };
 
 async function loadPage(): Promise<{ page: Page; errors: string[]; requests: string[] }> {
-  const { personKey } = await import('../src/feedback.ts');
-  const k = await personKey('rev@chromium.org');
+  const { personFile } = await import('../src/feedback.ts');
+  const k = personFile('rev@chromium.org');
   const page = await browser.newPage();
   await page.setViewport({ width: 1100, height: 900 });
   const errors: string[] = [];
@@ -3957,8 +3956,9 @@ async function loadPage(): Promise<{ page: Page; errors: string[]; requests: str
     if (!path.includes('/review-load/')) return void r.continue();
     requests.push(path.split('/review-load/')[1]);
     if (path.endsWith('/review-load/all.json')) json(loadAll);
-    else if (path === `/r2/review-load/people/v1/2026/${k}.json`) json({ q: { 2: [5, 900, 60, 6, 48, 6], 3: [9, 3000, 400, 8, 80, 8] } });
-    else if (path === `/r2/review-load/people/v1/dirs/2026Q3/${k}.json`) json([['a/b/', 2000, 300, 6], ['q/r/', 1000, 100, 2]]);
+    else if (path === `/r2/review-load/people/v2/${k}.json`) json({ v: 2,
+      years: { 2026: { q: { 2: [5, 900, 60, 6, 48, 6], 3: [9, 3000, 400, 8, 80, 8] } } },
+      dirs: { '2026Q3': [['a/b/', 2000, 300, 6], ['q/r/', 1000, 100, 2]] } });
     else void r.respond({ status: 404, body: 'not found' });
   });
   await page.goto(baseUrl + 'review-load.html', { waitUntil: 'load' });
@@ -4014,12 +4014,12 @@ test('review load: an address adds that reviewer to the charts and the table, wi
   };
   await lookUp('nobody@example.com');
   assert.match(await page.$eval('#rl-find-note', (e) => e.textContent!), /No reviews by that address between Q3 2025 and Q3 2026\./);
-  // google.com and chromium.org are one person; the address stays out of the URL and the requests.
+  // google.com and chromium.org are one person, fetched as one file; the address stays out of the page's URL.
   await lookUp('Rev@google.com');
   assert.match(await page.$eval('#rl-find-note', (e) => e.textContent!),
     /Showing your reviews in 2 quarters, from Q2 2026 to Q3 2026: 14 commits and 3,900 lines reviewed\./);
   assert.equal(new URL(page.url()).hash, '');
-  assert.ok(requests.every((r) => !/rev|google/i.test(r)), requests.join(' '));
+  assert.deepEqual(requests.filter((r) => r.startsWith('people/')), ['people/v2/nobody@example.com.json', 'people/v2/rev@google.com.json']);
   const you = await page.evaluate(() => Object.fromEntries(Object.entries(window.__rl!.charts).map(([k, c]) =>
     [k, c.data.datasets.at(-1)!.data])));
   assert.deepEqual(you, { commits: [null, null, null, 5, 9], lines: [null, null, null, 900, 3000],

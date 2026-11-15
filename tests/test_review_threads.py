@@ -23,6 +23,15 @@ class ThreadsTest(unittest.TestCase):
     def test_shard_cls(self):
         self.assertEqual(RT.shard_cls({"cls": [[100, 5], [3, 1], [10, 0]]}), [100, 103, 113])
 
+    def test_read_people_skips_other_addresses(self):
+        with tempfile.TemporaryDirectory() as d:
+            for name, doc in (("a@google.com", {"v": 7, "halves": {"2026H1": {"cls": []}}}),
+                              ("a@x.org", {"see": "a@google.com"})):
+                with gzip.open(os.path.join(d, f"{name}.json.gz"), "wt") as f:
+                    json.dump(doc, f)
+            open(os.path.join(d, "a@google.com.json.gz.tmp"), "w").close()
+            self.assertEqual(RT.read_people(d), {"a@google.com": {"2026H1": {"cls": []}}})
+
     def test_shard_revs_and_approver_of(self):
         shard = {"revs": ["a@google.com", "b@x.org"], "cls": [[5, 0, 1, 0, 0, [0, 1]], [2, 0, 1, 0, 0, []]]}
         self.assertEqual(RT.shard_revs(shard), [(5, ["a@google.com", "b@x.org"]), (7, [])])
@@ -215,6 +224,14 @@ class R2Test(unittest.TestCase):
                 self.assertEqual(calls, [])
                 self.assertEqual(r2.sync(None, "p", data_dir=data, cred={}, jobs=1, stamp=60, live=50), 0)
                 self.assertEqual(calls, [("DELETE", "p/a.json")])
+
+    def test_a_retired_prefix_leaves_a_prefix_inside_it_alone(self):
+        manifest = {"a/t/x.json": {"sha256": "1", "seen": 1}, "a/t/v2/x.json": {"sha256": "2", "seen": 1}}
+        self.assertEqual(r2.nested_in("a/t", ["a/t", "a/t/v2", "a/tv"]), ["a/t/v2"])
+        ups, dels, kept, present = r2.plan(None, "a/t", manifest, live=5, nested=["a/t/v2"])
+        self.assertEqual((ups, dels, kept, present), ([], ["a/t/x.json"], [], []))
+        self.assertTrue(r2.owns("a/t/v2", "a/t/v2/x.json"))
+        self.assertFalse(r2.owns("a/t", "a/t/v2/x.json", ["a/t/v2"]))
 
     def test_live_since_is_the_newest_publish_before_the_push(self):
         pubs = [dict(time=10, prefixes=["p", "q"]), dict(time=20, prefixes=["q"]), dict(time=30, prefixes=["p"])]

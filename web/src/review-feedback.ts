@@ -1,6 +1,6 @@
 // The Feedback Index page (feedback-index.html). Wording is in the HTML;
 // this looks a person up by the address typed (never offering completions:
-// the data is one file per person, named by a hash of the address), fills in
+// the data is one file per person in a bucket that cannot be listed), fills in
 // the values and draws the charts. Data goes into the DOM only as text
 // (SECURITY.md). The address is never put in the URL.
 import { Chart, Filler, type ChartDataset, type ChartEvent, type Plugin } from 'chart.js';
@@ -26,7 +26,11 @@ import {
   noneFactor,
   percentileOf,
   periodSpan,
-  personKey,
+  personFile,
+  isPersonFile,
+  halvesOf,
+  shardsOf,
+  type PersonFile,
   quantile,
   ratioShade,
   reviewerRows,
@@ -43,11 +47,9 @@ import {
   type Person,
   type ReviewerComment,
   type ReviewerTable,
-  type Shard,
   type TableNode,
   type TableRowView,
   type ThreadFile,
-  type Top,
 } from './feedback.ts';
 import { fmtDay, fmtInt, fmtNum } from './format.ts';
 import { FEEDBACK_PEOPLE, r2Url } from './r2.ts';
@@ -216,27 +218,23 @@ async function lookup(raw: string) {
       (async () => {
         const p = await peersP;
         if (!p) return null;
-        let k = await personKey(raw);
+        let k = personFile(raw);
         for (let hops = 0; hops < 2; hops++) {
-          const d = await getJson<Top | Alias>(person(`u/${k}.json`, p.end));
+          const d = await getJson<PersonFile | Alias>(person(`${k}.json`, p.end));
           if (!d) return null;
           if ('see' in d) {
-            if (!/^[0-9a-f]{32}$/.test(d.see)) return null;
+            if (!isPersonFile(d.see)) return null;
             k = d.see;
             continue;
           }
-          return { key: k, top: d };
+          return { key: k, file: d };
         }
         return null;
       })(),
     ]);
-    // One file per half-year the person landed changes in.
-    const halvesOk = top?.top.halves.every((h) => /^\d{4}H[12]$/.test(h));
-    const shards = top && halvesOk
-      ? await Promise.all(top.top.halves.map((h) => getJson<Shard>(person(`${h}/${top.key}.json`, peers!.end))))
-      : [];
-    const found = top && peers && reviewers && halvesOk && shards.every((s) => s)
-      ? buildPerson(top.top, shards as Shard[], peers) : null;
+    // One file per person, with every half-year they landed changes in.
+    const halvesOk = top ? halvesOf(top.file).every((h) => /^\d{4}H[12]$/.test(h)) : false;
+    const found = top && peers && reviewers && halvesOk ? buildPerson(top.file, shardsOf(top.file), peers) : null;
     // Every figure about the person needs their reviewers' factors.
     if (found) await attachReviewers(found, reviewers!, peers!);
     state.peers = peers;
@@ -249,7 +247,7 @@ async function lookup(raw: string) {
     state.person = found;
     window.__rf!.person = found;
     state.key = top!.key;
-    state.halves = top!.top.halves;
+    state.halves = halvesOf(top!.file);
     state.threads = new Map();
     state.revOpen = new Set();
     state.half = null;

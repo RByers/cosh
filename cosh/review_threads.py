@@ -2,15 +2,17 @@
 download (web/feedback-index.html, docs/review-feedback.md, "Downloading
 your comments").
 
-For every per-person half-year file the Feedback Index publishes
-(data/private/feedback-people/<half>/<key>.json.gz, the person's merged CLs
-of that half-year, which cosh.r2 publishes), writes data/private/review-threads/<half>/<key>.json.gz:
+For every person and half-year in the Feedback Index's per-person files
+(data/private/feedback-people/<name>.json.gz, the person's merged CLs by
+half-year, which cosh.r2 publishes), writes data/private/review-threads/<half>/<name>.json.gz:
 every thread a human reviewer other than the owner started on those CLs,
 with the full text of every comment in it. The files are too big for git
 (400 MB gzipped for all half-years, 2026-11-14), so `cosh.r2 sync` puts
 them in the R2 bucket, where the page fetches them only when someone asks
-to download their comments. Same keys as the Feedback Index, so they can be
-found only by typing the person's address (docs/plan.md, ground rule 5).
+to download their comments, one half-year at a time. Same names as the
+Feedback Index's (the normalised address); the bucket can't be listed, so
+they can be found only by typing the person's address (docs/plan.md,
+ground rule 5).
 
 Format (v 2), JSON:
 
@@ -57,11 +59,24 @@ HOST = "chromium-review.googlesource.com"
 PATCHSET_LEVEL = "/PATCHSET_LEVEL"
 VERSION = 2
 HALF = re.compile(r"^\d{4}H[12]$")
-KEY = re.compile(r"^[0-9a-f]{32}\.json\.gz$")
+NAME = re.compile(r"^[a-z0-9._@~-]+\.json\.gz$")
 
 
 def out_dir(data_dir=None):
     return r2.local_dir("review-threads", data_dir)
+
+
+def read_people(shards):
+    """The Feedback Index's per-person files in <shards>: {name: {half:
+    shard}}, leaving out the stubs of other addresses ({"see": name})."""
+    out = {}
+    for name in sorted(os.listdir(shards)):
+        if NAME.match(name):
+            with gzip.open(os.path.join(shards, name), "rt") as f:
+                doc = json.load(f)
+            if "halves" in doc:
+                out[name[:-8]] = doc["halves"]
+    return out
 
 
 def shard_cls(shard):
@@ -186,12 +201,11 @@ def main(argv=None):
 
     # Each person's approvers over all their half-years, tied to Gerrit
     # accounts through the Reviewed-by addresses (`approver_of`).
+    shards = read_people(a.shards)
     person_cls = defaultdict(list)
-    for h in sorted(x for x in os.listdir(a.shards) if HALF.match(x)):
-        for name in sorted(os.listdir(os.path.join(a.shards, h))):
-            if KEY.match(name):
-                with gzip.open(os.path.join(a.shards, h, name), "rt") as f:
-                    person_cls[name[:-8]].extend(x for x in shard_revs(json.load(f)) if x[1])
+    for k, by_half in shards.items():
+        for h in sorted(by_half):
+            person_cls[k].extend(x for x in shard_revs(by_half[h]) if x[1])
     want = {n for cls in person_cls.values() for n, _ in cls}
     reviewed_by = {}
     for n, rb in ro(C.db_path()).execute("SELECT change_number, reviewed_by FROM commits "
@@ -199,17 +213,14 @@ def main(argv=None):
         if n in want:
             reviewed_by[n] = json.loads(rb)
 
-    halves = sorted(h for h in os.listdir(a.shards) if HALF.match(h) and (not a.half or h in a.half))
+    have = sorted({h for by_half in shards.values() for h in by_half})
+    halves = [h for h in have if not a.half or h in a.half]
     repos = {}
     keep = set()
     t0 = time.time()
     files = changed = size = threads = 0
     for h in halves:
-        todo = {}
-        for name in sorted(os.listdir(os.path.join(a.shards, h))):
-            if KEY.match(name):
-                with gzip.open(os.path.join(a.shards, h, name), "rt") as f:
-                    todo[name[:-8]] = shard_cls(json.load(f))
+        todo = {k: shard_cls(by_half[h]) for k, by_half in shards.items() if h in by_half}
         info = {}
         ns = sorted({n for cls in todo.values() for n in cls})
         for i in range(0, len(ns), 900):

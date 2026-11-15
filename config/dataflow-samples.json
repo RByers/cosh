@@ -1028,7 +1028,7 @@
       ],
       [
        "[\"prefixes\"]",
-       "{\"review-feedback/threads\": \"review-threads\",\"review-feedback/people/v1\": \"feedback-people\",\"review-load/people/v1\": \"review-load-people\"}"
+       "{\"review-feedback/threads/v2\": \"review-threads\",\"review-feedback/people/v2\": \"feedback-people\",\"review-load/people/v2\": \"review-load-people\"}"
       ]
      ]
     }
@@ -3353,81 +3353,19 @@
    ]
   },
   "feedback-people": {
-   "parts": [
-    {
-     "name": null,
-     "kind": "files",
-     "columns": [
-      "file",
-      "bytes"
-     ],
-     "total": 39660,
-     "rows": [
-      [
-       "2017H2/0055f5d94245f0126f2de73cdf3d1392.json.gz",
-       820
-      ],
-      [
-       "2020H2/bec1e094f2dccc5d0885fedead43820b.json.gz",
-       919
-      ],
-      [
-       "2023H2/28ea8b88d5444652679b9f22b394c05b.json.gz",
-       1124
-      ],
-      [
-       "2026H1/7246e05ce3bb0d07e8fe7f5f90516017.json.gz",
-       769
-      ],
-      [
-       "u/fff4b5de910e00b00f6dfdc7a8bd0916.json.gz",
-       97
-      ]
-     ]
-    }
-   ]
+   "withheld": "File names are people's addresses: reachable only by typing one (ground rule 5), so no samples are listed.",
+   "parts": []
   },
-  "r2:review-feedback/people/v1/": {
-   "parts": [
-    {
-     "name": null,
-     "kind": "files",
-     "columns": [
-      "file",
-      "bytes"
-     ],
-     "total": 39660,
-     "rows": [
-      [
-       "2017H2/0055f5d94245f0126f2de73cdf3d1392.json.gz",
-       820
-      ],
-      [
-       "2020H2/bec1e094f2dccc5d0885fedead43820b.json.gz",
-       919
-      ],
-      [
-       "2023H2/28ea8b88d5444652679b9f22b394c05b.json.gz",
-       1124
-      ],
-      [
-       "2026H1/7246e05ce3bb0d07e8fe7f5f90516017.json.gz",
-       769
-      ],
-      [
-       "u/fff4b5de910e00b00f6dfdc7a8bd0916.json.gz",
-       97
-      ]
-     ]
-    }
-   ]
+  "r2:review-feedback/people/v2/": {
+   "withheld": "File names are people's addresses: reachable only by typing one (ground rule 5), so no samples are listed.",
+   "parts": []
   },
   "data/private/review-threads/": {
    "withheld": "Comment text, negative comments included, belongs only behind a typed address (ground rule 5); the samples page is reached by clicks.",
    "parts": []
   },
-  "r2:review-feedback/threads/": {
-   "withheld": "Comment text, negative comments included, is reachable only by typing the person's address (hashed file names, no listing), as ground rule 5 allows since 2026-11-14.",
+  "r2:review-feedback/threads/v2/": {
+   "withheld": "Comment text, negative comments included, is reachable only by typing the person's address (the bucket can't be listed, no completions), as ground rule 5 allows since 2026-11-14.",
    "parts": []
   },
   "web/public/review-load/all.json": {
@@ -3465,74 +3403,12 @@
    ]
   },
   "review-load-people": {
-   "parts": [
-    {
-     "name": null,
-     "kind": "files",
-     "columns": [
-      "file",
-      "bytes"
-     ],
-     "total": 23773,
-     "rows": [
-      [
-       "2017/0055f5d94245f0126f2de73cdf3d1392.json.gz",
-       62
-      ],
-      [
-       "2022/02f79254f5766300b86dee0a66b64556.json.gz",
-       112
-      ],
-      [
-       "2024/8e4ba01075c880e7dd9ad6ddeba51469.json.gz",
-       71
-      ],
-      [
-       "dirs/2025Q4/51a2d51b62944543dc332d35208cfe45.json.gz",
-       560
-      ],
-      [
-       "dirs/2026Q3/ffead045261b1208efce3d9a17c90e5d.json.gz",
-       1533
-      ]
-     ]
-    }
-   ]
+   "withheld": "File names are people's addresses: reachable only by typing one (ground rule 5), so no samples are listed.",
+   "parts": []
   },
-  "r2:review-load/people/v1/": {
-   "parts": [
-    {
-     "name": null,
-     "kind": "files",
-     "columns": [
-      "file",
-      "bytes"
-     ],
-     "total": 23773,
-     "rows": [
-      [
-       "2017/0055f5d94245f0126f2de73cdf3d1392.json.gz",
-       62
-      ],
-      [
-       "2022/02f79254f5766300b86dee0a66b64556.json.gz",
-       112
-      ],
-      [
-       "2024/8e4ba01075c880e7dd9ad6ddeba51469.json.gz",
-       71
-      ],
-      [
-       "dirs/2025Q4/51a2d51b62944543dc332d35208cfe45.json.gz",
-       560
-      ],
-      [
-       "dirs/2026Q3/ffead045261b1208efce3d9a17c90e5d.json.gz",
-       1533
-      ]
-     ]
-    }
-   ]
+  "r2:review-load/people/v2/": {
+   "withheld": "File names are people's addresses: reachable only by typing one (ground rule 5), so no samples are listed.",
+   "parts": []
   },
   "data/private/feedback-coach/": {
    "withheld": "Private coaching reports about one person each; never published.",

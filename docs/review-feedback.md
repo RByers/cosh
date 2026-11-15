@@ -122,7 +122,8 @@ Both are fixed: the page has no switches for them (the user's call,
   at all for their own index: see below).
   Factors are then scaled so that over all CLs they leave the expected
   total unchanged: 1.0 is the typical reviewer. 2,708 reviewers on
-  2026-11-14, their factors in `reviewers.json` by hashed address.
+  2026-11-14, their factors in `reviewers.json` by hashed address
+  (`reviewer_key`; the file is committed, so it lists no addresses).
 
   Pooled rates are lower than the typical person's (big CLs draw less per
   line, and they carry most of the lines), so the expected threads are
@@ -385,14 +386,16 @@ steps 9).
 - **No tone** (`docs/plan.md`, ground rule 5): the script reads no review
   tone, so no chart, figure or file of the page carries it.
 - **No completions, no browsing.** The input has `autocomplete="off"`, no
-  datalist and no name. Data files are named by
-  `sha256("cosh-review-feedback-v1:" + normalised address)[:32]`
-  (`key` in the script, `personKey` in `web/src/feedback.ts`; unit tests check
-  they agree), so the folder lists no addresses and the page finds only
-  someone whose address you type. Normalising follows
+  datalist and no name. Per-person files are named by the normalised
+  address (`file_name` in the script, `personFile` in `web/src/feedback.ts`;
+  unit tests check they agree), with each byte of a character outside
+  `a-z 0-9 . _ @ -` written as `~xx`. They live in the R2 bucket, which
+  can't be listed, so the page finds only someone whose address you type.
+  (Until 2026-11-14 they were named by a salted hash, which kept the
+  addresses out of git while the files were committed.) Normalising follows
   `balance_analysis.person`: lower case, `chromium.org` = `google.com`.
   Other addresses of the same person (from the identity merge) get a stub
-  `{"see": <key>}`. The address never goes into the URL.
+  `{"see": <name>}`. The address never goes into the page's URL.
 - Everything comes from public Gerrit and git data, so per-person files may be
   published (ground rule 3). No comment text is published (since
   2026-11-14); file paths come from git and Gerrit and the page renders
@@ -427,12 +430,12 @@ quiet for 5 seconds, so a run's files are served shortly after it ends
 (`web/serve.mjs`, 2026-11-12). Until that build finishes, the pages keep the
 old data, and a page change that needs new `peers.json` fields draws nothing.
 
-Output, with `<key>` the hash of the person's address, in three kinds of
+Output, with `<name>` the person's normalised address, in three kinds of
 file that the page loads at different times: `peers.json` and
 `reviewers.json` in `web/public/review-feedback/` (`--out`, committed, which
 Vite copies into the site), and the per-person files, gzipped, in
 `data/private/feedback-people/` (`--people-out`), which `python3 -m cosh.r2
-publish` uploads to the R2 bucket under `review-feedback/people/v1/`
+publish` uploads to the R2 bucket under `review-feedback/people/v2/`
 (`docs/r2.md`):
 
 - `peers.json` (global, loaded on opening; version 12, about 134 KB, 42 KB
@@ -448,29 +451,32 @@ publish` uploads to the R2 bucket under `review-feedback/people/v1/`
 - `reviewers.json` (version 2, loaded with the first person; about 105
   KB, 51 KB gzipped): `rev_none`, `none` (the observed and expected
   threads of CLs without an approver), `norm`, `shrink` and, per reviewer
-  by the first 12 hex digits of `key` of their address (so it lists no
-  addresses), [factor, CLs approved, observed and expected addressed
-  threads]. The page hashes each of the person's approvers to look them
+  by `reviewer_key` of their address (the first 12 hex digits of
+  `sha256("cosh-review-feedback-v1:" + normalised address)`, so the
+  committed file lists no addresses), [factor, CLs approved, observed and
+  expected addressed threads]. The page hashes each of the person's
+  approvers (`reviewerKey`) to look them
   up (`attachReviewers`) and takes the person's CLs out of the sums
   (`leaveOut`); every figure about the person needs them.
   Rewritten on every run.
-- Per person, loaded once an address is typed:
-  - `u/<key>.json` (version 6): first commit, the org most of their CLs
-    were landed as, and which half-years the person has files for. Small
-    and rewritten on every run. Each other address of the person is a
-    stub `{"see": <key>}`.
-  - `<half-year>/<key>.json` (`2017H2` … `2026H2`, one per half-year in the
-    range; `shard` in the script, whose docstring has the layout): that
-    half-year's CLs, each [change number and day landed, each less the
-    previous CL's; Gerrit's inserted lines; earlier commits on main; the
-    landed commit's inserted lines per 3-level directory; its approvers;
-    and the files that drew reviewer threads, each with its inserted
-    lines, threads and addressed threads], with directory and file names
-    (today's) and approvers' addresses listed once (`dirs`, `files`,
-    `revs`). Nothing else per CL: no org, no expected values, no per-thread
-    data. A file's threads count in its 3-level directory when that is one
-    of the CL's, else in the CL's main directory (the commit message, files
-    the landed commit didn't change).
+- `<name>.json` (version 7), one file per person, loaded once an address
+  is typed (one request): first commit (`first`, `first_day`), the org
+  most of their CLs were landed as, and `halves`, by half-year (`2017H2` …
+  `2026H2`) that half-year's CLs (`shard` in the script, whose docstring
+  has the layout). Each other address of the person is a stub
+  `{"see": <name>}`. Until 2026-11-14 this was a top file `u/<key>.json`
+  and one file per half-year (`review-feedback/people/v1/`), up to 20
+  requests of a few hundred bytes each for one lookup. A half-year's
+  CLs are each [change number and day landed, each less the previous
+  CL's; Gerrit's inserted lines; earlier commits on main; the landed
+  commit's inserted lines per 3-level directory; its approvers; and the
+  files that drew reviewer threads, each with its inserted lines, threads
+  and addressed threads], with directory and file names (today's) and
+  approvers' addresses listed once per half-year (`dirs`, `files`,
+  `revs`). Nothing else per CL: no org, no expected values, no per-thread
+  data. A file's threads count in its 3-level directory when that is one
+  of the CL's, else in the CL's main directory (the commit message, files
+  the landed commit didn't change).
 
 The page computes a person's figures from these, the same way the script
 does for the spread of everyone's index: totals, AFR and FI for any period,
@@ -479,15 +485,15 @@ and the growth rate, from the rounded rates and factors in `peers.json` and
 people; on 2026-11-14, with the person's own CLs left out, the page's
 `buildPerson`, `attachReviewers`, `sums` and `fiOf` matched all 3,475 of them exactly
 (FI, CLs, addressed threads and lines per period), every approver found
-by hashed address.
+by `reviewerKey`.
 
-So a half-year's files don't change once it is over, as long as the inputs
-don't (labels, mechanical list, identity merge, today's names of moved
-paths, approvers): git stores them
-once. Reviewer factors live in `reviewers.json`, not in these files, so
-they can change every week without rewriting a finished half-year. Each
-run rewrites the current half-year, `u/`, `peers.json` and
-`reviewers.json`.
+So a person's file changes only when they land a CL (or an input changes:
+labels, mechanical list, identity merge, today's names of moved paths,
+approvers). Reviewer factors live in `reviewers.json`, not in these files,
+so they can change every week without rewriting anyone's file. Each run
+rewrites `peers.json` and `reviewers.json` and the files of people with
+CLs in the current half-year (about 1,900 files, 18 MB gzipped in
+2026H2), which the next publish uploads.
 
 Sizes on 2026-11-14 (6,862 people, 122 stubs), gzipped file by file as git
 stores them: 37.6 MB for the 19 half-year folders (32,676 files; 31.8 MB
@@ -537,24 +543,28 @@ model usage on it.
 
 The threads are too big for git (400 MB gzipped: 32,676 files, 2.78M threads, 2026-11-14), so they live in the Cloudflare
 R2 bucket `cosh` and are served gzipped from
-`https://cosh-data.rbyers.ca/review-feedback/threads/<half>/<key>.json`,
+`https://cosh-data.rbyers.ca/review-feedback/threads/v2/<half>/<name>.json`,
 fetched only when someone downloads or opens a reviewer in Your feedback
 (`?v=` is the data's end, so a new week
-isn't hidden by the day-long cache). Same hashed keys as the per-person
-files, so like them they are reachable only by typing an address (ground
-rule 5 allows comment text there, negative comments included).
+isn't hidden by the day-long cache). Named like the per-person files, so
+like them they are reachable only by typing an address (ground rule 5
+allows comment text there, negative comments included). They stay one
+file per half-year, unlike the per-person files: they are large (median 6
+KB, up to 216 KB gzipped) and a reviewer's comments load only the
+half-year picked, so joining them would make each weekly publish upload
+every active person's whole history (hundreds of MB) for little gain.
 
 ```
 COSH_DATA_DIR=<main>/data/private nice -n 5 python3 -m cosh.review_threads [--half 2026H2]
-python3 -m cosh.r2 sync data/private/review-threads review-feedback/threads   # from the main checkout
+python3 -m cosh.r2 publish review-feedback/threads/v2   # from the main checkout, when deploying
 ```
 
 `cosh.review_threads` (step `review-threads`, after `review-feedback`) reads
-the per-person half-year files (`data/private/feedback-people/`) for each
+the per-person files (`data/private/feedback-people/`) for each
 person's changes, `reviews.sqlite`
 (subjects, owners, accounts, which threads were addressed), `addressed.sqlite`
 and the NoteDb repos (comment text, file, line, patch set, resolved), and
-writes `data/private/review-threads/<half>/<key>.json.gz`, byte for byte
+writes `data/private/review-threads/<half>/<name>.json.gz`, byte for byte
 the same when nothing changed (the module's docstring has the format).
 Threads by bots and AI reviewers, and threads the owner started, are left
 out; "addressed" is the Feedback Index's own measure, null for
