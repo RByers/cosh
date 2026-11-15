@@ -971,7 +971,7 @@ function renderReviewers() {
     // Under a directory filter a reviewer's changes are shares there; shown whole.
     tr.append(th, el('td', fmtInt(Math.round(r.cls)), 'num'), el('td', fmtInt(r.addressed), 'num'),
       el('td', few ? '–' : fmtFr(fr(r.addressed, r.lines)), 'num'),
-      el('td', fmtFi(r.factor), 'num'), el('td', fmtInt(r.approved), 'num'),
+      el('td', fmtFi(r.factor), 'num'),
       few ? el('td', '–', 'num') : fiCell(r.expected > 0 ? r.addressed / r.expected : null));
     body.append(tr);
     if (open) body.append(reviewerCommentsRow(r.email));
@@ -1014,7 +1014,7 @@ function loadThreads(): Promise<ThreadFile | null> {
 function reviewerCommentsRow(email: string): HTMLTableRowElement {
   const tr = el('tr', undefined, 'rf-rev-comments');
   const cell = el('td');
-  cell.colSpan = 7;
+  cell.colSpan = 6;
   // The box takes the width the columns already have, so opening a reviewer doesn't resize them.
   const td = el('div', undefined, 'rf-rev-box');
   cell.append(td);

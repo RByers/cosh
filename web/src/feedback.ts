@@ -67,11 +67,9 @@ export interface Person {
   halves: string[];
   dirs: string[];
   /** Everyone who approved one of the person's changes (Reviewed-by), and each one's reviewer factor
-   * (from everyone else's changes) and changes approved over all the data (`attachReviewers`; 1 and 0 until
-   * then). */
+   * (from everyone else's changes; `attachReviewers`, 1 until then). */
   revs: string[];
   revF: number[];
-  revCls: number[];
   /** Everyone else's pooled AFR per experience bin and the factor of the person's changes without an
    * approver, the person's own changes left out (`leaveOut`; null until then: everyone's). */
   rateBin: number[] | null;
@@ -80,7 +78,7 @@ export interface Person {
 }
 
 /** reviewers.json: per reviewer, by `reviewerKey` of their address, [their
- * factor, changes they approved, their observed and expected addressed threads]; `rev_none` is the factor
+ * factor, changes they approved (not shown), their observed and expected addressed threads]; `rev_none` is the factor
  * of changes without an approver, `none` their observed and expected threads. A factor is (observed +
  * `shrink`) / (expected + `shrink`) / `norm` (cosh/review_feedback.py `own_model`). */
 export interface ReviewerTable {
@@ -311,7 +309,6 @@ export async function attachReviewers(p: Person, table: ReviewerTable, peers: Pe
   const keys = await Promise.all(p.revs.map((e) => reviewerKey(e)));
   const rows = keys.map((k) => table.f[k]);
   p.revF = rows.map((r) => r?.[0] ?? 1);
-  p.revCls = rows.map((r) => r?.[1] ?? 0);
   leaveOut(p, peers, table, rows);
 }
 
@@ -355,8 +352,6 @@ export function leaveOut(p: Person, peers: Peers, table: ReviewerTable,
 export interface ReviewerRow {
   email: string;
   factor: number;
-  /** Changes they approved, of everyone's. */
-  approved: number;
   /** The person's changes they approved (with a directory filter, the share of them in it). */
   cls: number;
   lines: number;
@@ -379,7 +374,7 @@ export function reviewerRows(p: Person, peers: Peers, period: string, dir?: DirF
     const e = cellExpected(p, peers, c);
     for (const i of c[3]) {
       let r = rows.get(i);
-      if (!r) rows.set(i, (r = { email: p.revs[i], factor: p.revF[i], approved: p.revCls[i], cls: 0, milli: 0,
+      if (!r) rows.set(i, (r = { email: p.revs[i], factor: p.revF[i], cls: 0, milli: 0,
         lines: 0, addressed: 0, expected: 0 }));
       r.milli += c[4];
       r.lines += c[5];
@@ -654,7 +649,7 @@ export function buildPerson(file: PersonFile): Person {
   });
   return { first: file.first, firstDay: file.first_day, org: file.org, reached: file.reached, days: file.days,
     halves: hs, dirs: [...dirs.keys()], revs: [...revs.keys()], revF: [...revs.keys()].map(() => 1),
-    revCls: [...revs.keys()].map(() => 0), rateBin: null, revNone: null, cells };
+    rateBin: null, revNone: null, cells };
 }
 
 // ---- downloading your comments (cosh/review_threads.py, served from the R2 bucket)

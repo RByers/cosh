@@ -1515,7 +1515,6 @@ test('review feedback: the AFR and index, as the script computes them', async ()
   // mean factor, or rev_none without one.
   near(person.revF[0], 1.2);
   near(person.revF[1], 0.6);
-  assert.deepEqual(person.revCls, [900, 300]);
   cs.map((c) => F.revFactor(person, peers, c)).forEach((g, i) => near(g, [1.2, 0.9, 0.9, 0.5][i]));
   // Expected: lines / 100 × everyone's AFR at the experience × the reviewer factor. CL 1 at bin 2 (2.5),
   // CL 2 at bin 4 (1.7), CL 3 at bin 6 (1).
@@ -1527,8 +1526,8 @@ test('review feedback: the AFR and index, as the script computes them', async ()
   assert.deepEqual(F.dirLevels('(root)/'), ['(root)/', '']);
   // The person's reviewers: Alice approved CLs 1 and 2, Bob CL 2; most changes first.
   const rv = F.reviewerRows(person, peers, 'all');
-  assert.deepEqual(rv.map((r) => [r.email, Math.round(r.factor * 1000) / 1000, r.approved, r.cls, r.lines, r.addressed]),
-    [['alice@google.com', 1.2, 900, 2, 158, 2], ['bob@igalia.com', 0.6, 300, 1, 118, 1]]);
+  assert.deepEqual(rv.map((r) => [r.email, Math.round(r.factor * 1000) / 1000, r.cls, r.lines, r.addressed]),
+    [['alice@google.com', 1.2, 2, 158, 2], ['bob@igalia.com', 0.6, 1, 118, 1]]);
   near(rv[0].expected, 0.4 * 2.5 * 1.2 + 1.18 * 1.7 * 0.9);
   assert.deepEqual(F.reviewerRows(person, peers, '2026H2'), []);
   assert.equal(F.noApproverCls(person, 'all'), 1);

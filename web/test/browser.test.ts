@@ -3465,8 +3465,8 @@ test('feedback index: a person\'s reviewers, with their factors', async () => {
   await page.waitForFunction(() => !document.querySelector<HTMLElement>('#rf-person')!.hidden);
   // Alice approved CLs 1 and 2 (158 lines, 2 addressed: 1.2 + 1.805 expected), Bob CL 2 (118 lines, 1 over 1.805).
   assert.deepEqual(await page.$$eval('#rf-revs tbody tr', (rs) => rs.map((r) => [...r.children].map((c) => c.textContent!.replace(/[▸▾]/, '')))),
-    [['alice@google.com', '2', '2', '1.27', '1.20×', '900', '0.67×'],
-      ['bob@igalia.com', '1', '1', '0.85', '0.60×', '300', '0.55×']]);
+    [['alice@google.com', '2', '2', '1.27', '1.20×', '0.67×'],
+      ['bob@igalia.com', '1', '1', '0.85', '0.60×', '0.55×']]);
   assert.match((await page.$eval('#rf-revs-note', (e) => e.textContent!)).replace(/\s+/g, ' '),
     /2 reviewers approved your changes.* 1 of your changes had no approver; .* their factor is 0\.50×\./);
   assert.deepEqual(errors, []);
