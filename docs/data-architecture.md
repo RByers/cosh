@@ -153,7 +153,8 @@ Gerrit ends with the newest week `derive` recorded as fetched
 commits.sqlite landed. `web/src/data-span.ts` renders it into the page's
 `<p id="data-span">` with the page's `<template data-msg="data-span">`,
 which names the sources; a page reading several stamps (Value Exchange
-adds Radar's weeks) shows the earliest `last`.
+adds Radar's weeks) shows the window they all cover: the latest `first`
+to the earliest `last`.
 
 | Page | Stamped file | Written by |
 |---|---|---|

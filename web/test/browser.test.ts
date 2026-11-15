@@ -3138,9 +3138,12 @@ test('every analysis page says, under its title, what dates its data covers', as
       ({ text: e.textContent!.replace(/\s+/g, ' ').trim(), afterTitle: e.previousElementSibling?.localName }));
     assert.equal(afterTitle, 'h1', path);
     assert.match(text, /^Based on Chromium Gerrit .*data.* from \d{1,2} \w{3,4} \d{4} to \d{1,2} \w{3,4} \d{4}$/, path);
-    assert.ok(text.includes(`from ${day(span.first)} to `), `${path}: ${text}`);
-    // Value Exchange is cut short where Radar ends, if that's earlier.
-    if (path !== 'value.html') assert.ok(text.endsWith(` to ${day(span.last)}`), `${path}: ${text}`);
+    // Value Exchange shows only the window Radar covers too (it starts in 2023).
+    if (path === 'value.html') assert.ok(!text.includes(`from ${day(span.first)} to `), `${path}: ${text}`);
+    else {
+      assert.ok(text.includes(`from ${day(span.first)} to `), `${path}: ${text}`);
+      assert.ok(text.endsWith(` to ${day(span.last)}`), `${path}: ${text}`);
+    }
     await page.close();
   }
 });

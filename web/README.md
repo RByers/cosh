@@ -157,8 +157,8 @@ based on and the dates it covers: `<p id="data-span" hidden>` plus a
 `<template data-msg="data-span">` with the wording (which names the
 sources) and `first` and `last` slots. `src/data-span.ts`'s
 `showDataSpan()` fills it from the `data_span` the publishing step wrote
-into the page's first file, combining several by their earliest end (Value
-Exchange adds Radar's weeks). The dates follow the data; see
+into the page's first file, combining several into the window they all
+cover, latest start to earliest end (Value Exchange adds Radar's weeks). The dates follow the data; see
 `docs/data-architecture.md`, "Data spans".
 
 ## Feedback links

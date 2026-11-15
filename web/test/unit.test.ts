@@ -1953,11 +1953,11 @@ test('feedback index: a reviewer\'s addressed comments, by the approver each com
   assert.deepEqual(F.reviewerComments(files, 'rev@google.com', new Set(['ui/']), '2026H1'), []);
 });
 
-test('a page built from several sources is only as current as the oldest', () => {
+test('a page built from several sources covers only the window they share', () => {
   const gerritGit = { first: '2017-07-03', last: '2026-11-01', sources: ['gerrit', 'git'] };
   const radar = { first: '2023-06-26', last: '2026-11-08', sources: ['radar'] };
   assert.deepEqual(combineSpans([gerritGit, radar]),
-    { first: '2017-07-03', last: '2026-11-01', sources: ['gerrit', 'git', 'radar'] });
+    { first: '2023-06-26', last: '2026-11-01', sources: ['gerrit', 'git', 'radar'] });
   assert.equal(combineSpans([gerritGit, { ...radar, last: '2026-10-25' }])!.last, '2026-10-25');
   // A file published before the stamp existed has none: the subtitle stays hidden.
   assert.equal(combineSpans([undefined, null]), null);

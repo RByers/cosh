@@ -266,7 +266,7 @@ async function load(): Promise<Data> {
     fetchText(areaUrl).then((t) => JSON.parse(t) as DirBoard),
   ]);
   summary.meta.weeks.sort(compareWeeks);
-  // The subtitle: the summaries' span (Gerrit and git), cut short where Radar's weeks end.
+  // The subtitle: the window both the summaries (Gerrit and git) and Radar's weeks cover.
   const radarWeeks = [...radar.keys()].sort(compareWeeks);
   const isoDay = (d: Date) => d.toISOString().slice(0, 10);
   showDataSpan(summary.meta.data_span as DataSpan | undefined, radarWeeks.length ? {
