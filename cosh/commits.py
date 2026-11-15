@@ -989,15 +989,17 @@ def current_paths(db):
     return out
 
 
-def moved_lines(db):
+def moved_lines(db, first=None, last=None):
     """{(commit_id, path_id): (ins, dels)} replacing commit_files' counts for
     files a commit renamed: the new name gets the lines changed between the
     two (0 and 0 for a plain move), the old name none. commit_files, without
     rename detection, has the whole file deleted and added. Renames from
-    before their line counts are left out."""
+    before their line counts are left out. `first` and `last` limit it to
+    those commit_ids (both included)."""
     out = {}
+    lo, hi = (first, last) if first is not None else (-2 ** 62, 2 ** 62)
     for cid, a, b, ins, dels in db.execute("SELECT commit_id, old_path_id, new_path_id, ins, dels FROM renames "
-                                           "WHERE ins IS NOT NULL"):
+                                           "WHERE ins IS NOT NULL AND commit_id BETWEEN ? AND ?", (lo, hi)):
         out[(cid, a)] = (0, 0)
         out[(cid, b)] = (ins, dels)
     return out

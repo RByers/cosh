@@ -22,9 +22,16 @@ NAME = re.compile(r"(^|/)[^/]*OWNERS[^/]*$")
 def read(repo, rev):
     """{path: text} of the OWNERS files (and the files they may include,
     such as FOO_OWNERS) in `rev`'s tree."""
-    names = [n for n in subprocess.run(["git", "--git-dir", repo, "ls-tree", "-r", "--name-only", "-z", rev],
-                                       stdout=subprocess.PIPE, env=C.ENV, check=True).stdout.decode("utf-8", "replace")
-             .split("\0") if NAME.search(n)]
+    names = []
+    # Streamed: the tree has about 500k paths, and only the OWNERS files are kept.
+    with subprocess.Popen(["git", "--git-dir", repo, "ls-tree", "-r", "--name-only", "-z", rev],
+                          stdout=subprocess.PIPE, env=C.ENV) as p:
+        rest = b""
+        for chunk in iter(lambda: p.stdout.read(1 << 20), b""):
+            *done, rest = (rest + chunk).split(b"\0")
+            names += [n for n in (x.decode("utf-8", "replace") for x in done) if NAME.search(n)]
+    if p.returncode:
+        raise subprocess.CalledProcessError(p.returncode, p.args)
     out = subprocess.run(["git", "--git-dir", repo, "cat-file", "--batch"], stdout=subprocess.PIPE, env=C.ENV, check=True,
                          input="".join(f"{rev}:{n}\n" for n in names).encode()).stdout
     files, pos = {}, 0

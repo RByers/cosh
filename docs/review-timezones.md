@@ -14,7 +14,7 @@ cosh.review_timezones` (`cosh/review_timezones.py`).
    landed in the last four whole quarters, by how many working hours the
    author and the reviewer share (none, 1–2, 3–4, 5–6, 7–8), drawn as the
    median, middle half and 10th–90th percentile of the wait in the
-   author's working hours. On 2025Q4 .. 2026Q3 (268,746 turns): median
+   author's working hours. On 2025Q4 .. 2026Q3 (268,637 turns): median
    3.2 h with no overlap, 2.1 h with 1–2 h, 1.7 h, 1.2 h, and 0.9 h with 7–8
    shared hours; 20% of turns had 2 h or less in common.
 2. **Who reviews whom**: the same turns by the author's and the reviewer's
@@ -75,8 +75,9 @@ of the day (UTC), 24 numbers per person-quarter, so memory stays small
 windows in `work_windows` and gives each row of `cl_turns` two working-hours
 figures: `work_h`, in the reviewer's window (the turn as the reviewer's
 working time), and `owner_work_h`, in the CL owner's (the wait as the
-author saw it). This page uses `owner_work_h`. The stage took 50 s and
-2.1 GB on 2026-11-15, the windows a few seconds of it.
+author saw it). This page uses `owner_work_h`. The stage took 35 s and
+2.1 GB on 2026-11-15 (the memory is the stage's attention-set history; the
+windows take about 9 s and 70 MB of it).
 
 On the turns of the CLs landed in 2026Q3 (82,209), the median turn was 2.7
 weekday hours (UTC weekends left out, as Review Load counts) but 1.1 of the
@@ -93,13 +94,15 @@ weekday hours against 11 working hours.
 - **Overlap**: the hours two 8-hour windows share, 0 to 8, from the
   author's and the reviewer's windows in the quarter the turn started.
 - **OWNERS directory of a change**: the nearest directory at or above each
-  changed file that has an OWNERS file (today's paths, at the end of the
-  last quarter shown); the change counts, whole, in the one with most of
-  its changed lines.
+  changed file that has an OWNERS file (at the end of the last quarter
+  shown); the change counts, whole, in the one with most of its changed
+  lines. A file renamed since the first quarter shown counts under its last
+  name; older renames aren't followed, as they don't touch these commits.
 - **Owners at work**: the addresses in that directory's own OWNERS file
   (and the files it includes with `file://`), not those inherited from
-  above, matched to Gerrit accounts as the Feedback Index matches people
-  (`cosh.people.exact_identities`), counted when their window in the last
+  above, matched to Gerrit accounts by each account's own address and by
+  the git author address of each CL shown with the account that owned it
+  (most often), counted when their window in the last
   quarter was fitted to that quarter (10 or more events). Inherited owners
   can approve too, but are left out so that the column says what this
   OWNERS file covers; `per-file` rules aren't read.
@@ -127,8 +130,15 @@ weekday hours against 11 working hours.
   with a single owner, which is derived from public timestamps and isn't
   a negative figure (ground rule 3). The windows themselves stay in
   `review-timeline.sqlite` and are withheld from the data flow's samples.
-- **Weekly update (goal 3).** The windows add seconds to the timeline's
-  `reviewers` stage; `review-timezones` takes 32 s and 1.1 GB. Whole
+- **Weekly update (goal 3).** The windows add about 9 s to the timeline's
+  `reviewers` stage (counting each person's activity by quarter and hour:
+  SQL groups 12M comments, votes and uploads, with each day's quarter
+  joined from a small table, since SQLite's date functions per row took
+  25–75 s). `review-timezones` takes 7 s and 200 MB: it reads only the
+  four quarters' commits, file changes, CLs (by key) and turns, streams the
+  tree listing when reading OWNERS, and matches OWNERS addresses without
+  the Feedback Index's identities, which load all of history (24 s and
+  1.1 GB; they matched 949 active owners' addresses, this 946). Whole
   quarters only, so the file changes when a quarter completes.
 - **Repository volume (goal 4).** `all.json` is 16 KB.
 - **Tokens (goal 5).** None.

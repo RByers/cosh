@@ -16,8 +16,8 @@ person did up to that quarter's end, however little, and failing that to
 everything they did at all.
 
 Memory and time stay small: SQL counts events per (person, quarter, hour),
-24 numbers per person-quarter (about 50k rows for 2021..2026), and a fit is
-a scan of 24 sums.
+24 numbers per person-quarter (about 72k person-quarters for 2017..2026),
+and a fit is a scan of 24 sums.
 """
 
 from collections import defaultdict
@@ -120,20 +120,26 @@ class Windows:
                 yield a, q, s, basis, sum(c) if c else 0
 
 
-QUARTER_SQL = "strftime('%Y', {t}, 'unixepoch') || 'Q' || ((CAST(strftime('%m', {t}, 'unixepoch') AS INTEGER) + 2) / 3)"
-
-
 def activity_counts(tdb, ddb):
     """{(account, quarter): 24 hourly counts} of comments (reviews.sqlite,
     `ddb`, written by people, not AI) and votes and uploads
-    (review-timeline.sqlite, `tdb`)."""
+    (review-timeline.sqlite, `tdb`). The quarter comes from the comment's
+    text date, or for a vote or upload by joining its day to a small temporary
+    table of days' quarters: SQLite's date functions on every row took
+    several times as long (25 to 75 s for the three tables on 2026-11-15)."""
     out = defaultdict(lambda: [0] * 24)
-    t = "unixepoch(written_at)"
+    lo, hi = tdb.execute("SELECT min(m) / 86400, max(x) / 86400 FROM (SELECT min(at) m, max(at) x FROM uploads "
+                         "UNION ALL SELECT min(at), max(at) FROM votes)").fetchone()
+    tdb.execute("CREATE TEMP TABLE IF NOT EXISTS qday (day INTEGER PRIMARY KEY, q TEXT NOT NULL)")
+    tdb.execute("DELETE FROM temp.qday")
+    if lo is not None:
+        tdb.executemany("INSERT INTO temp.qday VALUES (?, ?)", [(d, quarter(d * DAY)) for d in range(lo, hi + 1)])
     queries = (
-        (ddb, f"SELECT account_id, {QUARTER_SQL.format(t=t)}, {t} % 86400 / 3600, count(*) FROM comments "
-              "WHERE is_ai = 0 GROUP BY 1, 2, 3"),
-        (tdb, f"SELECT voter, {QUARTER_SQL.format(t='at')}, at % 86400 / 3600, count(*) FROM votes GROUP BY 1, 2, 3"),
-        (tdb, f"SELECT uploader, {QUARTER_SQL.format(t='at')}, at % 86400 / 3600, count(*) FROM uploads GROUP BY 1, 2, 3"),
+        (ddb, "SELECT account_id, substr(written_at, 1, 4) || 'Q' || ((CAST(substr(written_at, 6, 2) AS INTEGER) + 2) / 3), "
+              "CAST(substr(written_at, 12, 2) AS INTEGER), count(*) FROM comments WHERE is_ai = 0 GROUP BY 1, 2, 3"),
+        (tdb, "SELECT voter, q, at % 86400 / 3600, count(*) FROM votes JOIN temp.qday ON day = at / 86400 GROUP BY 1, 2, 3"),
+        (tdb, "SELECT uploader, q, at % 86400 / 3600, count(*) FROM uploads JOIN temp.qday ON day = at / 86400 "
+              "GROUP BY 1, 2, 3"),
     )
     for db, sql in queries:
         for a, q, h, n in db.execute(sql):

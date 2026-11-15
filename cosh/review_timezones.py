@@ -9,6 +9,9 @@ per file), reviews.sqlite (CL owners, accounts), review-timeline.sqlite
 (cl_turns with their working hours, work_windows) and the OWNERS files in
 the shared clone at the end of the last quarter shown. Writes all.json,
 which holds only aggregates: no file names a person or their hours.
+
+It reads only the year it shows (and the year before, for who is who), so
+time and memory stay flat as history grows: about 10 s and 200 MB.
 """
 
 import argparse
@@ -21,7 +24,6 @@ from . import commits as C
 from . import data_span, owners, review_timeline, store
 from . import review_load as RL
 from . import work_hours as WH
-from .people import exact_identities
 
 OUT = os.path.join(RL.ROOT, "web", "public", "review-timezones")
 QUARTERS = 4                      # the last whole quarters shown
@@ -49,34 +51,79 @@ def owners_dir(own, d):
     return d
 
 
-def file_dir_lines(gdb, cids):
-    """{commit_id: {file's directory (today's name): lines}} of the commits in `cids`."""
-    current, moved = C.current_paths(gdb), C.moved_lines(gdb)
-    path_dir = {}
-    out = defaultdict(lambda: defaultdict(int))
-    for cid, pid, ins, dels in gdb.execute("SELECT commit_id, path_id, ins, dels FROM commit_files WHERE commit_id > 0"):
+class Plain:
+    """Who is who by address alone (lower case), for review_load.load_commits: whether a commit
+    had a reviewer other than its author doesn't need the Feedback Index's identities."""
+    find = staticmethod(str.lower)
+
+
+def cl_owners_dirs(gdb, own, cids):
+    """{commit_id: the OWNERS directory holding most of its changed lines} of the commits in `cids`,
+    a renamed file counted by the lines changed in it. Files take the name of their last rename
+    since the first of these commits (renames of renames followed), so a directory moved during
+    the year counts under the name its OWNERS file has now; unlike commits.current_paths, older
+    renames and whole-directory moves of deleted files aren't read, which history doesn't need here."""
+    if not cids:
+        return {}
+    moved = C.moved_lines(gdb, min(cids), max(cids))
+    final = {}
+    for a, b in gdb.execute("SELECT o.path, n.path FROM renames r JOIN paths o ON o.path_id = r.old_path_id "
+                            "JOIN paths n ON n.path_id = r.new_path_id WHERE r.commit_id >= ? "
+                            "ORDER BY r.commit_id DESC", (min(cids),)):
+        final[a] = final.get(b, b)          # newest first: b's later names are known
+    memo = {}
+    per = defaultdict(Counter)
+    for cid, pid, path, ins, dels in gdb.execute(
+            "SELECT f.commit_id, f.path_id, p.path, f.ins, f.dels FROM commit_files f JOIN paths p USING (path_id) "
+            "WHERE f.commit_id BETWEEN ? AND ?", (min(cids), max(cids))):
         if cid in cids:
-            if pid not in path_dir:
-                path, = gdb.execute("SELECT path FROM paths WHERE path_id = ?", (pid,)).fetchone()
-                path_dir[pid] = os.path.dirname(current.get(path, path))
+            d = os.path.dirname(final.get(path, path))
+            if d not in memo:
+                memo[d] = owners_dir(own, d)
             ins, dels = moved.get((cid, pid), (ins, dels))
-            out[cid][path_dir[pid]] += max(ins, 0) + max(dels, 0)
+            per[cid][memo[d]] += max(ins, 0) + max(dels, 0)
+    return {cid: c.most_common(1)[0][0] for cid, c in per.items() if c}
+
+
+def account_addresses(ddb, author_cl_owner):
+    """{address: Gerrit accounts}: each account's own address, and each git author address with the
+    account that owned most of their CLs among `author_cl_owner`, [(author address, CL owner)]
+    (people often list one address in OWNERS and use another in Gerrit). On 2026-11-15, over the
+    four quarters' reviewed commits, this matched 946 of the 949 OWNERS addresses that the Feedback
+    Index's identities match to an active account."""
+    out = defaultdict(set)
+    for a, e in ddb.execute("SELECT account_id, email FROM accounts WHERE email IS NOT NULL"):
+        out[e.lower()].add(a)
+    seen = defaultdict(Counter)
+    for e, o in author_cl_owner:
+        seen[e][o] += 1
+    for e, c in seen.items():
+        out[e].add(c.most_common(1)[0][0])
     return out
 
 
-def owner_windows(own, ddb, tdb, ids, last_q):
+def by_change(db, sql, numbers, chunk=500):
+    """The rows of `sql`, whose "?" list is filled with chunks of `numbers`: lookups by key, so only
+    the CLs shown are read, not a whole table."""
+    numbers = sorted(numbers)
+    for i in range(0, len(numbers), chunk):
+        part = numbers[i:i + chunk]
+        yield from db.execute(sql.replace("(?)", f"({','.join('?' * len(part))})"), part)
+
+
+def owner_windows(own, addresses, tdb, last_q):
     """{OWNERS directory: [window start of each owner listed in it who was active in `last_q`]}:
     the addresses in the directory's own OWNERS file (and the files it includes), not those
-    inherited from above; an owner is active with a window fitted to that quarter."""
-    acct_person = {a: ids.find(e) for a, e in ddb.execute("SELECT account_id, email FROM accounts") if e}
-    best = {}                                   # person -> (events, start) of their busiest account
-    for a, start, events in tdb.execute(
-            "SELECT account_id, start_h, events FROM work_windows WHERE quarter = ? AND basis = 'quarter'", (last_q,)):
-        p = acct_person.get(a)
-        if p is not None and events > best.get(p, (0, None))[0]:
-            best[p] = (events, start)
-    return {d: [best[p][1] for p in {ids.find(e) for e in addrs} if p in best]
-            for d, (addrs, _, _) in own.direct.items()}
+    inherited from above; an owner is active with a window fitted to that quarter (of their
+    busiest account, if they have several)."""
+    active = {a: (events, start) for a, start, events in tdb.execute(
+        "SELECT account_id, start_h, events FROM work_windows WHERE quarter = ? AND basis = 'quarter'", (last_q,))}
+
+    def start(e):
+        found = [active[a] for a in addresses.get(e, ()) if a in active]
+        return max(found)[1] if found else None
+    starts = {e: start(e) for addrs, _, _ in own.direct.values() for e in addrs}
+    return {d: [starts[e] for e in addrs if starts[e] is not None] for d, (addrs, _, _) in own.direct.items()}
 
 
 def compute(gdb, ddb, tdb, owners_at):
@@ -86,31 +133,28 @@ def compute(gdb, ddb, tdb, owners_at):
     if len(qs) < QUARTERS or qs[0] < RL.ATTENTION_FROM:
         raise SystemExit(f"need {QUARTERS} whole quarters from {RL.ATTENTION_FROM} (data ends {RL.quarter(end)})")
     lo, hi = RL.quarter_start(qs[0]), RL.quarter_start(RL.next_quarter(last))
-    ids = exact_identities(ddb, gdb, tdb)
-    _, reviewed = RL.load_commits(gdb, lo, hi, ids)
+    _, reviewed = RL.load_commits(gdb, lo, hi, Plain)
     by_cl = {c["n"]: cid for cid, c in reviewed.items() if c["n"] is not None}
     print(f"review-timezones: {qs[0]}..{last}, {len(reviewed):,} reviewed commits", flush=True)
     sha, = gdb.execute("SELECT sha FROM commits WHERE landed_at < ? ORDER BY landed_at DESC LIMIT 1", (hi,)).fetchone()
     own = owners_at(sha)
-    lines = file_dir_lines(gdb, set(reviewed))
-    cl_dir = {}
-    for n, cid in by_cl.items():
-        per = Counter()
-        for d, ln in lines.get(cid, {}).items():
-            per[owners_dir(own, d)] += ln
-        if per:
-            cl_dir[n] = per.most_common(1)[0][0]
-    merged = {n: o for n, o in ddb.execute(
-        "SELECT change_number, owner_account FROM changes WHERE status = 'MERGED' AND is_bot_owned = 0") if n in by_cl}
+    commit_dir = cl_owners_dirs(gdb, own, set(reviewed))
+    cl_dir = {n: commit_dir[cid] for n, cid in by_cl.items() if cid in commit_dir}
+    merged = dict(by_change(ddb, "SELECT change_number, owner_account FROM changes WHERE host = "
+                                 "'chromium-review.googlesource.com' AND change_number IN (?) "
+                                 "AND status = 'MERGED' AND is_bot_owned = 0", by_cl))
     win = defaultdict(dict)                     # quarter -> account -> window start
-    for a, q, s in tdb.execute("SELECT account_id, quarter, start_h FROM work_windows WHERE quarter <= ?", (last,)):
+    for a, q, s in tdb.execute("SELECT account_id, quarter, start_h FROM work_windows WHERE quarter >= ? AND quarter <= ?",
+                               (RL.quarter(lo - 366 * 86400), last)):
         win[q][a] = s
-    owner_win = owner_windows(own, ddb, tdb, ids, last)
+    owner_win = owner_windows(own, account_addresses(
+        ddb, [(c["author"], merged[c["n"]]) for c in reviewed.values() if c["n"] in merged]), tdb, last)
 
     by_overlap = [[] for _ in OVERLAP_BINS]
     pair = defaultdict(list)                    # (author region, reviewer region) -> waits
     dirs = defaultdict(lambda: ([], [], Counter()))     # dir -> (covered waits, uncovered waits, uncovered regions)
-    for n, acct, s, wait in tdb.execute("SELECT change_number, account_id, start_at, owner_work_h FROM cl_turns"):
+    for n, acct, s, wait in by_change(
+            tdb, "SELECT change_number, account_id, start_at, owner_work_h FROM cl_turns WHERE change_number IN (?)", merged):
         if n not in merged or wait is None:
             continue
         w = win.get(WH.quarter(s), {})
