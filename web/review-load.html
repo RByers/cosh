@@ -135,36 +135,51 @@
         <template data-msg="legend-reply-mean">Mean</template>
         <template data-msg="axis-hours">weekday hours</template>
 
-        <h3>Reviewers' time in the attention set</h3>
-        <ul id="rl-attention-legend" class="legend rf-line-legend" aria-label="Lines"></ul>
+        <h3>Reviewer response time</h3>
+        <ul id="rl-turns-legend" class="legend rf-line-legend" aria-label="Lines"></ul>
         <div class="chart rf-half-chart">
-          <canvas id="rl-attention" role="img" aria-label="Mean weekday hours changes spent in each reviewer's attention set per quarter."></canvas>
+          <canvas id="rl-turns" role="img" aria-label="Median weekday hours of a reviewer's turn in a change's attention set per quarter, with the middle half and the 10th to 90th percentile shaded."></canvas>
         </div>
-        <p id="rl-attention-note" class="note"></p>
-        <template data-msg="attention-note">
-          Gerrit's attention set says whose turn it is on a change. The line adds up the weekday hours that
-          changes landed in the quarter spent in a reviewer's attention set (anyone but the owner) and divides
-          that by the number of reviewers. In <slot name="last"></slot>, <slot name="reviewers"></slot>
-          reviewers had changes waiting on them for a mean of <slot name="mean"></slot> hours each. A turn (one
-          stay in the attention set) lasted <slot name="turn"></slot> hours on average, counting the turns that
-          ended before the change closed. Changes with no comments at all (about one in
-          five) are not counted: their attention-set history wasn't fetched.<span data-if="you"> Your line is
-          the hours changes spent in your attention set.</span>
+        <p id="rl-turns-note" class="note"></p>
+        <template data-msg="turns-note">
+          Gerrit's attention set says whose turn it is on a change. Every time a change enters a reviewer's
+          attention set (anyone but the owner) starts a turn, which ends when they leave it: most often by
+          answering with a vote or a comment (about five in six turns), sometimes because the owner or someone
+          else took them out. A change that goes back and forth has several turns. Turns still open when the
+          change closed are left out: it didn't wait on them. In <slot name="last"></slot>, over
+          <slot name="n"></slot> turns on changes landed in the quarter, the median turn lasted
+          <slot name="median"></slot>, the middle half <slot name="p25"></slot> to <slot name="p75"></slot> and
+          four in five <slot name="p10"></slot> to <slot name="p90"></slot>; the mean was
+          <slot name="mean"></slot>, pulled up by the few turns that last for weeks. Changes with no comments at
+          all (about one in five) are not counted: their attention-set history wasn't fetched.<span
+          data-if="you"> Your line is the median of your own turns.</span>
         </template>
-        <template data-msg="legend-attention-mean">Mean per reviewer</template>
-        <template data-msg="axis-attention-mean">weekday hours per reviewer</template>
+        <template data-msg="legend-median">Median</template>
+        <template data-msg="legend-mid">Middle half (25th–75th percentile)</template>
+        <template data-msg="legend-wide">10th–90th percentile</template>
+        <template data-msg="legend-you-median">Your median</template>
+        <template data-msg="tip-p10">10th percentile</template>
+        <template data-msg="tip-p25">25th percentile</template>
+        <template data-msg="tip-p75">75th percentile</template>
+        <template data-msg="tip-p90">90th percentile</template>
       </section>
 
       <section id="dirs" class="card" aria-labelledby="dirs-title">
         <a class="card-anchor" href="#dirs" aria-label="Link to this section" title="Link to this section">#</a>
         <h2 id="dirs-title">Where the load is</h2>
+        <fieldset id="rl-pct" class="segmented rl-pct">
+          <legend>Response time</legend>
+          <label><input type="radio" name="rl-pct" value="p50" />Median</label>
+          <label><input type="radio" name="rl-pct" value="p75" />75th percentile</label>
+          <label><input type="radio" name="rl-pct" value="p90" checked />90th percentile</label>
+        </fieldset>
         <div class="table-wrap">
           <table id="rl-dirs" class="rf-table rf-all-dirs rl-dirs">
             <thead>
               <tr><th scope="col" rowspan="2">Directory</th>
                 <th scope="col" rowspan="2" class="num" title="Changed lines of the commits there, counted once per reviewer, over the four quarters">Lines reviewed</th>
                 <th scope="colgroup" colspan="4" class="rl-group" title="Lines reviewed in the quarter against the quarter before">Change in lines reviewed</th>
-                <th scope="colgroup" colspan="4" class="rl-group" title="Mean weekday hours of a reviewer's turn there: one stay in a change's attention set">Hours per reviewer turn</th>
+                <th scope="colgroup" colspan="4" class="rl-group" title="Weekday hours of a reviewer's turn there (one stay in a change's attention set), at the percentile chosen above">Reviewer response time (hours)</th>
                 <th scope="colgroup" colspan="2" class="rf-you-col rf-you-start">Yours</th></tr>
               <tr id="rl-dirs-quarters"></tr>
             </thead>
@@ -177,24 +192,26 @@
         <template data-msg="col-you-lines">Lines</template>
         <template data-msg="col-you-hours">Hours</template>
         <template data-msg="title-you-lines">Lines you reviewed there over the four quarters</template>
-        <template data-msg="title-you-hours">Mean weekday hours of your turns there</template>
+        <template data-msg="title-you-hours">Weekday hours of your turns there over the four quarters, at the percentile chosen above</template>
+        <template data-msg="pct-p50">median</template>
+        <template data-msg="pct-p75">75th percentile</template>
+        <template data-msg="pct-p90">90th percentile</template>
         <p id="rl-dirs-note" class="note"></p>
         <template data-msg="dirs-note">
           Review of the commits landed from <slot name="from"></slot> to <slot name="to"></slot>, by the
           directory of the lines changed (as the directories are named today; a commit that spans several
           counts in each by its lines). The change columns compare each quarter's lines reviewed with the quarter
           before. Lines reviewed are shaded on a log scale, from white for the fewest to dark blue for the
-          most. The hours are the mean weekday length of a reviewer's turn: one stay in a change's attention
-          set, from being added to leaving it (usually by answering). A change that goes back and forth has
-          several turns, so a directory isn't marked slow for needing more rounds. Turns still open when the
-          change closed are left out: the change didn't wait on them. The hours are shaded against all of
-          Chromium in the same quarter: red where reviewers' turns last longer (twice as long or more is the
-          deepest red), green where they are shorter. Long waits where the lines reviewed are
+          most. The response times are the <slot name="pct"></slot> of reviewers' turns there, in weekday
+          hours, as in the chart above: a change's turns count in each directory by its share of lines there.
+          They are shaded against all of Chromium's <slot name="pct"></slot> in the same quarter: red where
+          reviewers' turns last longer (twice as long or more is the deepest red), green where they are
+          shorter. Long waits where the lines reviewed are
           growing point at directories that need more reviewers. Directories with fewer than
           <slot name="minLines"></slot> lines reviewed are pooled in “Other”, and cells with fewer than
           <slot name="minTurns"></slot> reviewer turns are left empty. ▸ opens a directory.<span data-if="you">
-          The Yours columns are the lines you reviewed and the mean hours of your turns, shaded against
-          everyone's in that directory; your directories come first.</span>
+          The Yours columns are the lines you reviewed and the <slot name="pct"></slot> of your turns over the
+          four quarters, shaded against everyone's in that directory; your directories come first.</span>
         </template>
       </section>
 

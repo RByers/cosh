@@ -3,8 +3,8 @@
 // reviewer up by the address typed (never offering completions: their data
 // is in a bucket that can't be listed) to add their figures. The
 // address is never put in the URL.
-import { Chart, type ChartDataset } from 'chart.js';
-import { readTheme, type Theme } from './charts.ts';
+import { Chart, Filler, type ChartDataset } from 'chart.js';
+import { readTheme, withAlpha, type Theme } from './charts.ts';
 import { isPersonFile, looksLikeEmail, personFile } from './feedback.ts';
 import { fmtInt, fmtNum } from './format.ts';
 import {
@@ -13,11 +13,11 @@ import {
   dirRows,
   dirTree,
   logShade,
-  meanAttention,
-  meanHours,
   meanLines,
-  overallHours,
+  overallPct,
   ownRow,
+  PCT_KEYS,
+  pctHours,
   personSeries,
   quarterLabel,
   ratio,
@@ -26,6 +26,7 @@ import {
   yearsOf,
   type All,
   type DirRow,
+  type PctKey,
   type Person,
   type PersonDir,
   type PersonFile,
@@ -41,9 +42,11 @@ declare global {
   }
 }
 
+Chart.register(Filler);
+
 const $ = <T extends Element = HTMLElement>(sel: string) => document.querySelector<T>(sel)!;
 const DATA = 'review-load/';
-/** A table cell needs this many reviewer turns to show a mean. */
+/** A table cell needs this many reviewer turns to show a percentile. */
 const MIN_TURNS = 5;
 /** The OWNERS table shows a share of non-committers' lines from this many. */
 const MIN_NEW_LINES = 1000;
@@ -53,6 +56,8 @@ const state = {
   person: null as Person | null,
   expanded: new Set<string>(),
   ownersExpanded: new Set<string>(),
+  /** The table's percentile. */
+  pct: 'p90' as PctKey,
 };
 const charts: Record<string, Chart> = {};
 window.__rl = { all: null, person: null, charts };
@@ -219,24 +224,37 @@ function renderReply() {
     p90: fmtHours(all.reply.p90[i]), you: !!p });
 }
 
-function renderAttention() {
+/** Reviewer response time: every turn's weekday hours, as the Feedback Index draws a spread: the
+ * 10th–90th percentile and the middle half shaded, the median a line. */
+function renderTurns() {
   const all = state.all!;
   const p = state.person;
   const t = theme();
   const { i, q } = lastOf(all);
-  const mean = meanAttention(all);
-  const keys: Key[] = [{ label: msg('legend-attention-mean'), color: t.series[0] }];
-  const datasets: Line[] = [line(keys[0].label, mean, keys[0].color, { pointRadius: 2 })];
+  const s = all.turns;
+  const wide = withAlpha(t.series[0], 0.14);
+  const mid = withAlpha(t.series[0], 0.3);
+  const band = (label: string, data: (number | null)[], more: object): Line =>
+    line(label, data, 'transparent', { borderWidth: 0, pointHoverRadius: 0, tension: 0.3, ...more });
+  const datasets: Line[] = [
+    band(msg('tip-p90'), s.p90, { backgroundColor: wide, fill: '+1', order: 4 }),
+    band(msg('tip-p10'), s.p10, { fill: false, order: 4 }),
+    band(msg('tip-p75'), s.p75, { backgroundColor: mid, fill: '+1', order: 3 }),
+    band(msg('tip-p25'), s.p25, { fill: false, order: 3 }),
+    line(msg('legend-median'), s.p50, t.series[0], { borderWidth: 2.5, tension: 0.3, fill: false, order: 1 }),
+  ];
+  const keys: Key[] = [{ label: msg('legend-median'), color: t.series[0] },
+    { label: msg('legend-mid'), color: mid, band: true }, { label: msg('legend-wide'), color: wide, band: true }];
   if (p) {
-    keys.push({ label: msg('legend-you'), color: youColor(t) });
-    datasets.push(youLine(t, personSeries(p, all.quarters, (v) => (v[3] ? v[2] : null))));
+    keys.unshift({ label: msg('legend-you-median'), color: youColor(t) });
+    datasets.push(youLine(t, all.quarters.map((x) => p.turns.get(x)?.[0] ?? null), { label: msg('legend-you-median') }));
   }
-  legend($('#rl-attention-legend'), keys);
-  draw('attention', datasets, t, { y: { ...axis(t, msg('axis-attention-mean')), beginAtZero: true } },
+  legend($('#rl-turns-legend'), keys);
+  draw('turns', datasets, t, { y: { ...axis(t, msg('axis-hours')), beginAtZero: true } },
     (v) => fmtHours(v), undefined, attFrom(all));
-  put($('#rl-attention-note'), 'attention-note', { last: q,
-    reviewers: fmtInt(all.attention.reviewers[i] ?? 0), mean: fmtInt(Math.round(mean[i] ?? 0)),
-    turn: fmtNum(ratio(all.attention.turn_hours[i], all.attention.turns[i]) ?? 0, { maximumFractionDigits: 1 }), you: !!p });
+  put($('#rl-turns-note'), 'turns-note', { last: q, n: fmtInt(s.n[i] ?? 0), median: fmtHours(s.p50[i]),
+    p25: fmtHours(s.p25[i]), p75: fmtHours(s.p75[i]), p10: fmtHours(s.p10[i]), p90: fmtHours(s.p90[i]),
+    mean: fmtHours(s.mean[i]), you: !!p });
 }
 
 // ---- the directory table
@@ -308,12 +326,12 @@ function dirRow(r: DirRow, typical: (number | null)[], you: boolean, lo: number,
     const c = v + n.lines[i] >= state.all!.min_dir_lines / 4 ? change(v, n.lines[i]) : null;
     tr.append(el('td', ok(c) ? fmtChange(c) : '', i ? 'num' : 'num rl-group'));
   });
-  meanHours(n, MIN_TURNS).forEach((v, i) => tr.append(waitCell(v, typical[i], i ? 'num' : 'num rl-group')));
+  pctHours(n, state.pct, MIN_TURNS).forEach((v, i) => tr.append(waitCell(v, typical[i], i ? 'num' : 'num rl-group')));
   if (you) {
-    const y = n.you;
-    const all4 = ratio(n.hours.reduce((a, b) => a + b, 0), n.turns.reduce((a, b) => a + b, 0));
-    tr.append(el('td', y.lines ? fmtBig(y.lines) : '', 'num rf-you-col rf-you-start'),
-      waitCell(y.turns >= MIN_TURNS ? y.hours / y.turns : null, all4, 'num rf-you-col'));
+    const y = n.you.row;
+    const k = PCT_KEYS.indexOf(state.pct);
+    tr.append(el('td', n.you.lines ? fmtBig(n.you.lines) : '', 'num rf-you-col rf-you-start'),
+      waitCell(y && y[3] >= MIN_TURNS ? y[k] : null, n.all4?.[k] ?? null, 'num rf-you-col'));
   }
   return tr;
 }
@@ -335,14 +353,14 @@ function renderDirs() {
     th(msg('col-you-lines'), 'num rf-you-col rf-you-start', msg('title-you-lines')),
     th(msg('col-you-hours'), 'num rf-you-col', msg('title-you-hours')));
   const roots = dirTree(all, p);
-  const typical = overallHours(roots, all.table_quarters.length);
+  const typical = overallPct(all, state.pct);
   // The heat map's scale: from the table's threshold to its biggest directory.
   const lo = all.min_dir_lines;
   const hi = Math.max(lo * 10, ...roots.map(totalLines));
   $('#rl-dirs').classList.toggle('rf-with-you', !!p);
   $('#rl-dirs tbody').replaceChildren(...dirRows(roots, state.expanded, !!p).map((r) => dirRow(r, typical, !!p, lo, hi)));
   put($('#rl-dirs-note'), 'dirs-note', { from: quarterLabel(tq[0]), to: quarterLabel(tq.at(-1)!),
-    minLines: fmtInt(all.min_dir_lines), minTurns: fmtInt(MIN_TURNS), you: !!p });
+    minLines: fmtInt(all.min_dir_lines), minTurns: fmtInt(MIN_TURNS), you: !!p, pct: msg(`pct-${state.pct}`) });
 }
 
 // ---- the OWNERS table
@@ -388,7 +406,7 @@ function render() {
   renderCommits();
   renderLines();
   renderReply();
-  renderAttention();
+  renderTurns();
   renderDirs();
   renderOwners();
   for (const id of ['#rl-att-from', '#rl-att-from-2']) $(id).textContent = quarterLabel(state.all.attention_from);
@@ -417,7 +435,7 @@ async function lookup(raw: string) {
     if (f && 'see' in f) f = null;
     const found = f ? buildPerson(all,
       new Map(years.flatMap((y) => (f.years?.[y] ? [[y, f.years[y]] as [string, PersonYear]] : []))),
-      new Map(tq.flatMap((q) => (f.dirs?.[q] ? [[q, f.dirs[q]] as [string, PersonDir[]]] : [])))) : null;
+      new Map(tq.flatMap((q) => (f.dirs?.[q] ? [[q, f.dirs[q]] as [string, PersonDir[]]] : []))), f.turns, f.rows) : null;
     if (!found) {
       put(note, 'find-none', range);
       return;
@@ -445,6 +463,12 @@ function init() {
     void lookup(input.value);
   });
   matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => render());
+  $('#rl-pct').addEventListener('change', (e) => {
+    const v = (e.target as HTMLInputElement).value as PctKey;
+    if (!PCT_KEYS.includes(v)) return;
+    state.pct = v;
+    if (state.all) renderDirs();
+  });
   void getJson<All>(`${DATA}all.json`).then((a) => {
     state.all = a;
     window.__rl!.all = a;

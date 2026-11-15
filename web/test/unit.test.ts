@@ -1806,41 +1806,55 @@ test('review load: quarter figures, a reviewer\'s files and the directory tree',
   // A log scale: 1,000 is halfway from 100 to 10,000; out of range clamps; nothing to shade is null.
   assert.equal(L.logShade(1000, 100, 10000)!.toFixed(6), '0.500000');
   assert.deepEqual([L.logShade(50, 100, 10000), L.logShade(1e6, 100, 10000), L.logShade(0, 100, 10000)], [0, 1, null]);
+  type D = import('../src/load.ts').DirEntry;
   const all = { quarters: ['2025Q4', '2026Q1', '2026Q2'], table_quarters: ['2025Q4', '2026Q1', '2026Q2'],
-    dirs: [['a/', [10, 20, 40], [30, 90], [3, 3]], ['a/b/', [10, 15, 30], [30, 60], [3, 1]], ['z/', [5, 5, 5], [8, 8], [4, 4]]] as import('../src/load.ts').DirEntry[] };
+    turns: { p10: [null, 1, 2], p25: [null, 3, 4], p50: [null, 5, 8], p75: [null, 9, 12], p90: [null, 20, 30],
+      mean: [null, 9, 11], n: [0, 10, 12] },
+    dirs: [['a/', [10, 20, 40], [[5, 9, 20], [6, 10, 30]], [3, 3], [5, 9, 25]],
+      ['a/b/', [10, 15, 30], [[4, 8, 16], null], [3, 1], [4, 8, 16]],
+      ['z/', [5, 5, 5], [[2, 3, 4], [2, 3, 4]], [4, 4], [2, 3, 4]]] as D[],
+    others: [['a/', [[7, 8, 9], [1, 2, 3]], [0, 2], [1, 2, 3]]] as import('../src/load.ts').OtherEntry[] };
   // A malformed quarter is dropped; no quarters at all is nobody.
   assert.equal(L.buildPerson(all, new Map([['2026', { q: { 1: [1, 2] as unknown as import('../src/load.ts').PersonQuarter } }]]), new Map()), null);
   const p = L.buildPerson(all, new Map([['2026', { q: { 1: [1, 50, 12, 2, 6, 2], 2: [2, 70, 0, 0, 0, 0] } }]]),
-    new Map([['2026Q2', [['a/b/', 40, 6, 1], ['a/c/', 20, 2, 1], ['y/', 10, 4, 1]]], ['2025Q4', [['z/', 99, 0, 0]]]]))!;
+    new Map([['2026Q2', [['a/b/', 40], ['a/c/', 20], ['y/', 10]]], ['2025Q4', [['z/', 99]]]]) as Map<string, import('../src/load.ts').PersonDir[]>,
+    { '2026Q1': [3, 4], '2026Q2': ['x', 1] }, { 'd:a/': [1, 2, 3, 6], 'o:': [4, 5, 6, 1], bad: [1] })!;
   assert.deepEqual([...p.quarters.keys()], ['2026Q1', '2026Q2']);
   assert.deepEqual([...p.dirs.keys()], ['2026Q2']);            // the first table quarter has no directories
+  assert.deepEqual([...p.turns.keys()], ['2026Q1']);           // malformed figures are dropped
+  assert.deepEqual([...p.rows.keys()], ['d:a/', 'o:']);
   assert.deepEqual(L.personSeries(p, all.quarters, (v) => L.ratio(v[4], v[5])), [null, 3, null]);
   const roots = L.dirTree(all, p);
   const flat = new Map<string, import('../src/load.ts').DirNode>();
   const walk = (ns: import('../src/load.ts').DirNode[]) => ns.forEach((n) => (flat.set(n.key, n), walk(n.children)));
   walk(roots);
   assert.deepEqual([...flat.keys()], ['d:a/', 'd:a/b/', 'o:a/', 'd:z/', 'o:']);
-  // "Other in a/" is what a/b/ doesn't cover; the reviewer's unlisted a/c/ counts there, y/ in the root's.
+  // "Other in a/": the lines a/b/ doesn't cover; its percentiles as published. The reviewer's
+  // unlisted a/c/ counts there, y/ in the root's; their percentiles are their file's rows.
   assert.deepEqual(flat.get('o:a/')!.lines, [0, 5, 10]);
-  assert.deepEqual(flat.get('o:a/')!.turns, [0, 2]);
-  assert.deepEqual(flat.get('d:a/')!.you, { lines: 60, hours: 8, turns: 2 });
-  assert.deepEqual(flat.get('d:a/b/')!.you, { lines: 40, hours: 6, turns: 1 });
-  assert.deepEqual(flat.get('o:a/')!.you, { lines: 20, hours: 2, turns: 1 });
-  assert.deepEqual(flat.get('o:')!.you, { lines: 10, hours: 4, turns: 1 });
+  assert.deepEqual([flat.get('o:a/')!.pcts, flat.get('o:a/')!.turns, flat.get('o:a/')!.all4], [[[7, 8, 9], [1, 2, 3]], [0, 2], [1, 2, 3]]);
+  assert.deepEqual(flat.get('d:a/')!.you, { lines: 60, row: [1, 2, 3, 6] });
+  assert.deepEqual(flat.get('d:a/b/')!.you, { lines: 40, row: null });
+  assert.deepEqual(flat.get('o:a/')!.you, { lines: 20, row: null });
+  assert.deepEqual(flat.get('o:')!.you, { lines: 10, row: [4, 5, 6, 1] });
   assert.equal(L.totalLines(flat.get('d:a/')!), 60);
-  assert.deepEqual(L.meanHours(flat.get('d:a/b/')!, 2), [10, null]);
-  assert.deepEqual(L.overallHours(roots, 3), [38 / 7, 14]);
+  // A percentile per quarter, empty under the minimum turns or without turns.
+  assert.deepEqual(L.pctHours(flat.get('d:a/b/')!, 'p75', 2), [8, null]);
+  assert.deepEqual(L.pctHours(flat.get('d:a/')!, 'p90', 5), [null, null]);
+  assert.deepEqual(L.pctHours(flat.get('d:a/')!, 'p90', 3), [20, 30]);
+  assert.deepEqual(L.overallPct(all, 'p50'), [5, 8]);
   // Rows: by lines, the reviewer's first when asked; "Other" last; children only when open.
   assert.deepEqual(L.dirRows(L.dirTree(all, null), new Set(), false).map((r) => r.key), ['d:a/', 'd:z/']);
   assert.deepEqual(L.dirRows(roots, new Set(['d:a/']), true).map((r) => [r.key, r.depth]),
     [['d:a/', 0], ['d:a/b/', 1], ['o:a/', 1], ['d:z/', 0], ['o:', 0]]);
-  const many = { table_quarters: ['q0', 'q1'], dirs: Array.from({ length: 20 }, (_, i) => [`d${String(i).padStart(2, '0')}/`, [0, 100 - i], [0], [0]]) as import('../src/load.ts').DirEntry[] };
+  const many = { table_quarters: ['q0', 'q1'], others: [],
+    dirs: Array.from({ length: 20 }, (_, i) => [`d${String(i).padStart(2, '0')}/`, [0, 100 - i], [null], [0], null]) as D[] };
   const rows = L.dirRows(L.dirTree(many, null), new Set(), false);
   assert.deepEqual([rows.length, rows.at(-1)!.key, rows.at(-1)!.more], [13, 'm:root', 8]);
   assert.equal(L.dirRows(L.dirTree(many, null), new Set(['m:root']), false).length, 20);
   // OWNERS figures: a directory's as published; its "Other" has what the listed children leave, lines only.
-  const owned = { table_quarters: ['q0', 'q1'], dirs: [['a/', [0, 100], [0], [0], [9, 2, 6, 4, 80, 40, 30]],
-    ['a/b/', [0, 60], [0], [0], [5, 1, 3, 3, 50, 10, 10]]] as import('../src/load.ts').DirEntry[] };
+  const owned = { table_quarters: ['q0', 'q1'], others: [], dirs: [['a/', [0, 100], [null], [0], null, [9, 2, 6, 4, 80, 40, 30]],
+    ['a/b/', [0, 60], [null], [0], null, [5, 1, 3, 3, 50, 10, 10]]] as D[] };
   const [a] = L.dirTree(owned, null);
   assert.deepEqual(a.own, { reviewers: 9, half: 2, listed: 6, active: 4, ownerLines: 80, newLines: 40, newTwo: 30 });
   assert.deepEqual(a.children.map((c) => c.own), [

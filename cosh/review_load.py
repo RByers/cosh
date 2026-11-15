@@ -36,6 +36,7 @@ Feedback Index's: addresses merge only on evidence, never by domain.
 """
 
 import argparse
+import functools
 import json
 import os
 import re
@@ -111,6 +112,46 @@ def summary(xs):
         return None, None, None, 0
     p90 = statistics.quantiles(xs, n=10, method="inclusive")[8] if len(xs) > 1 else xs[0]
     return round(statistics.fmean(xs), 2), round(statistics.median(xs), 2), round(p90, 2), len(xs)
+
+
+def table_rows(d, listed, parents):
+    """The keys of the table rows a 3-level directory's turns count in, as the page's tree has them:
+    "d:<dir>" for each listed directory it is in; "o:<dir>" for the "Other" of the deepest one when that
+    has listed children (files directly in it count there too); "o:" when none is listed (shown only
+    for a looked-up reviewer)."""
+    up = [x for x in dir_levels(d) if x in listed]
+    if not up:
+        return ("o:",)
+    return (*(f"d:{x}" for x in up), *((f"o:{up[-1]}",) if up[-1] in parents else ()))
+
+
+PCTS = (0.5, 0.75, 0.9)
+
+
+def weighted_pcts(hw, fs=PCTS):
+    """The weighted percentiles `fs` of [(hours, weight)], rounded; None without any."""
+    hw = sorted(x for x in hw if x[1] > 0)
+    if not hw:
+        return None
+    tot, out, acc, k = sum(w for _, w in hw), [], 0.0, 0
+    for f in fs:
+        while k < len(hw) - 1 and acc + hw[k][1] < f * tot - 1e-9:
+            acc += hw[k][1]
+            k += 1
+        out.append(r1(hw[k][0]))
+    return out
+
+
+def turn_series(lists, shown):
+    """Percentiles (10th, 25th, 50th, 75th, 90th), mean and count of each quarter's turn hours."""
+    out = {k: [] for k in ("p10", "p25", "p50", "p75", "p90", "mean", "n")}
+    for xs, ok in zip(lists, shown):
+        qs = statistics.quantiles(xs, n=20, method="inclusive") if ok and len(xs) > 1 else None
+        for k, i in (("p10", 1), ("p25", 4), ("p50", 9), ("p75", 14), ("p90", 17)):
+            out[k].append(round(qs[i], 2) if qs else None)
+        out["mean"].append(round(statistics.fmean(xs), 2) if ok and xs else None)
+        out["n"].append(len(xs) if ok else 0)
+    return out
 
 
 def dir_levels(d):
@@ -263,8 +304,8 @@ def compute(gdb, ddb, tdb, owners_at=None):
     rev_lines, rev_commits = [0] * nq, [0] * nq
     per = defaultdict(lambda: defaultdict(lambda: [0, 0, 0.0, 0, 0.0, 0]))   # person -> quarter -> figures
     people_q = [set() for _ in qs]
-    dirs = defaultdict(lambda: [[0] * len(table_qs), [0.0] * len(table_qs), [0.0] * len(table_qs)])
-    pdirs = defaultdict(lambda: defaultdict(lambda: defaultdict(lambda: [0, 0.0, 0.0])))  # quarter -> person -> dir
+    dirs = defaultdict(lambda: [0] * len(table_qs))           # 3-level directory -> lines per table quarter
+    pdirs = defaultdict(lambda: defaultdict(lambda: defaultdict(int)))  # quarter -> person -> directory -> lines
     by_cl = {}
     for cid, c in reviewed.items():
         q = quarter(c["at"])
@@ -284,67 +325,76 @@ def compute(gdb, ddb, tdb, owners_at=None):
             if q in ti:
                 for d, n in dl.items():
                     if n:
-                        dirs[d][0][ti[q]] += n
+                        dirs[d][ti[q]] += n
                         if q != table_qs[0]:
-                            pdirs[q][p][d][0] += n
+                            pdirs[q][p][d] += n
+    # The directory tree: every level's lines; listed with MIN_DIR_LINES in the table's four quarters.
+    tree = defaultdict(lambda: [0] * len(table_qs))
+    for d, v in dirs.items():
+        for level in dir_levels(d):
+            for j in range(len(table_qs)):
+                tree[level][j] += v[j]
+    listed = {d for d, v in tree.items() if sum(v[1:]) >= MIN_DIR_LINES}
+    parents = {dir_levels(d)[-2] for d in listed if len(dir_levels(d)) > 1} & listed
+    rows_of = functools.lru_cache(maxsize=None)(lambda d: table_rows(d, listed, parents))
     # Gerrit: the same commits' CLs.
     emails = dict(ddb.execute("SELECT account_id, email FROM accounts"))
     merged = {n for (n,) in ddb.execute(
         "SELECT change_number FROM changes WHERE is_bot_owned = 0 AND status = 'MERGED'") if n in by_cl}
     reply_h = [[] for _ in qs]
-    att_hours, att_people = [0.0] * nq, [set() for _ in qs]
-    turn_hours, turns = [0.0] * nq, [0] * nq
-    for n, acct, asked, responded, wd, nt, th in tdb.execute(
-            "SELECT change_number, account_id, asked_at, responded_at, attention_weekday_h, turns, turn_weekday_h "
-            "FROM cl_reviewers"):
+    for n, acct, asked, responded, wd in tdb.execute(
+            "SELECT change_number, account_id, asked_at, responded_at, attention_weekday_h FROM cl_reviewers"):
         c = by_cl.get(n)
         if c is None or n not in merged or not emails.get(acct):
             continue
         q, p = c["q"], ids.find(emails[acct])
-        i = qi[q]
         x = per[p][q]
         if asked is not None and q >= ATTENTION_FROM:
-            att_hours[i] += wd
-            att_people[i].add(p)
-            turn_hours[i] += th
-            turns[i] += nt
             x[2] += wd
             x[3] += 1
             if responded is not None and responded >= asked:
                 h = weekday_seconds(asked, responded) / 3600
-                reply_h[i].append(h)
+                reply_h[qi[q]].append(h)
                 x[4] += h
                 x[5] += 1
-            if q in ti and c["lines"]:
-                for d, ln in c["dirs"].items():
-                    if ln:
-                        w = ln / c["lines"]
-                        dirs[d][1][ti[q]] += th * w
-                        dirs[d][2][ti[q]] += nt * w
-                        if q != table_qs[0]:
-                            y = pdirs[q][p][d]
-                            y[1] += th * w
-                            y[2] += nt * w
+    # Reviewers' turns: every one per quarter; in the table, per row and quarter, weighted by the CL's
+    # share of lines there.
+    turn_h = [[] for _ in qs]
+    pturns = defaultdict(lambda: defaultdict(list))                       # person -> quarter -> hours
+    ntq = len(table_qs) - 1
+    row_t = defaultdict(lambda: [[] for _ in range(ntq)])                 # row -> table quarter -> [(hours, weight)]
+    prow_t = defaultdict(lambda: defaultdict(list))                       # person -> row -> [(hours, weight)]
+    for n, acct, h in tdb.execute("SELECT change_number, account_id, weekday_h FROM cl_turns"):
+        c = by_cl.get(n)
+        if c is None or n not in merged or not emails.get(acct) or c["q"] < ATTENTION_FROM:
+            continue
+        q, p = c["q"], ids.find(emails[acct])
+        turn_h[qi[q]].append(h)
+        pturns[p][q].append(h)
+        if q in ti and q != table_qs[0] and c["lines"]:
+            ws = defaultdict(float)
+            for d, ln in c["dirs"].items():
+                for k in rows_of(d) if ln else ():
+                    ws[k] += ln / c["lines"]
+            for k, w in ws.items():
+                if k != "o:":
+                    row_t[k][ti[q] - 1].append((h, w))
+                prow_t[p][k].append((h, w))
 
     def series(lists, since=qs[0]):
         mm = [summary(x) if q >= since else (None, None, None, 0) for q, x in zip(qs, lists)]
         return dict(mean=[m[0] for m in mm], median=[m[1] for m in mm], p90=[m[2] for m in mm], n=[m[3] for m in mm])
-    att = [q >= ATTENTION_FROM for q in qs]
+
+    def row(k):
+        """A table row's percentiles per quarter, its turns per quarter, and its percentiles over the four."""
+        t = row_t.get(k, [[] for _ in range(ntq)])
+        return [weighted_pcts(x) for x in t], [round(sum(w for _, w in x), 2) for x in t], weighted_pcts(sum(t, []))
     # OWNERS as they stood at the last quarter's last commit, so the figures move only with a new quarter.
     own, own_at = {}, None
     if owners_at:
         sha, own_at = gdb.execute("SELECT sha, landed_at FROM commits WHERE landed_at < ? ORDER BY landed_at DESC, "
                                   "commit_id DESC LIMIT 1", (quarter_start(next_quarter(last)),)).fetchone()
         own = owner_figures(table_commits, file_lines, owners_at(sha), ids, committer_since(tdb, emails, ids, reviewed))
-    # The directory tree: every level's sums; listed with MIN_DIR_LINES in the table's four quarters.
-    tree = defaultdict(lambda: [[0] * len(table_qs), [0.0] * len(table_qs), [0.0] * len(table_qs)])
-    for d, v in dirs.items():
-        for level in dir_levels(d):
-            t = tree[level]
-            for k in range(3):
-                for j in range(len(table_qs)):
-                    t[k][j] += v[k][j]
-    listed = sorted((d, v) for d, v in tree.items() if sum(v[0][1:]) >= MIN_DIR_LINES)
     y, n = int(last[:4]), int(last[-1])
     data = dict(
         # cosh.data_span: Gerrit's first week to the end of the last whole quarter
@@ -353,17 +403,16 @@ def compute(gdb, ddb, tdb, owners_at=None):
         commits=n_commits, human=n_human,
         reviewed=rev_commits, reviewed_lines=rev_lines, reviewers=[len(s) for s in people_q],
         reply=series(reply_h, ATTENTION_FROM),
-        # Weekday hours in reviewers' attention sets and the reviewers, for the mean per reviewer; and the
-        # turns that ended before their CL closed, with their hours, for the mean per turn.
-        attention=dict(hours=[round(h) if a else None for h, a in zip(att_hours, att)],
-                       reviewers=[len(s) if a else None for s, a in zip(att_people, att)],
-                       turn_hours=[round(h) if a else None for h, a in zip(turn_hours, att)],
-                       turns=[t if a else None for t, a in zip(turns, att)]),
+        # Reviewers' turns: percentiles, mean and count per quarter.
+        turns=turn_series(turn_h, [q >= ATTENTION_FROM for q in qs]),
         table_quarters=table_qs,
-        # [directory, lines reviewed per table quarter (5), turns' weekday hours and turns per quarter (the last 4),
+        # [directory, lines reviewed per table quarter (5), its turns' [50th, 75th, 90th percentile] hours per
+        #  quarter (the last 4; null without turns), turns per quarter, the percentiles over the four quarters,
         #  with OWNERS: owner_figures' seven over the last 4]
-        dirs=[[d, v[0], [r1(x) for x in v[1][1:]], [round(x, 2) for x in v[2][1:]], *([own[d]] if d in own else [])]
-              for d, v in listed],
+        dirs=[[d, tree[d], *row(f"d:{d}"), *([own[d]] if d in own else [])] for d in sorted(listed)],
+        # Each listed directory with listed children: its "Other" row's [directory, percentiles per quarter,
+        # turns per quarter, percentiles over the four].
+        others=[[d, *row(f"o:{d}")] for d in sorted(parents)],
         # The OWNERS figures of everything, and the day of the OWNERS files read.
         owners=dict(at=datetime.fromtimestamp(own_at, timezone.utc).strftime("%Y-%m-%d"), all=own[""]) if own else None,
     )
@@ -372,22 +421,30 @@ def compute(gdb, ddb, tdb, owners_at=None):
         years = defaultdict(dict)
         for q, x in byq.items():
             if x[0] or x[3]:
-                # [commits reviewed, lines reviewed, attention weekday hours, turns, asked-to-answer hours, answers]
+                # [commits reviewed, lines reviewed, attention weekday hours, CLs counted in them,
+                #  asked-to-answer hours, answers]
                 years[q[:4]][q[5]] = [x[0], x[1], r1(x[2]), x[3], r1(x[4]), x[5]]
         if years:
             people[p] = years
-    person_dirs = {q: {p: sorted([d, v[0], r1(v[1]), round(v[2], 2)] for d, v in ds.items() if v[0] or v[2] >= 0.005)
-                       for p, ds in byp.items()} for q, byp in pdirs.items()}
+    person_dirs = {q: {p: sorted([d, v] for d, v in ds.items() if v) for p, ds in byp.items()}
+                   for q, byp in pdirs.items()}
+    # Each reviewer's turns: {quarter: [median hours, turns]}; and their table rows over the four
+    # quarters: {row key: [50th, 75th, 90th percentile, turns]}.
+    person_more = defaultdict(dict)
+    for p, byq in pturns.items():
+        person_more[p]["turns"] = {q: [r1(statistics.median(t)), len(t)] for q, t in sorted(byq.items())}
+    for p, rs in prow_t.items():
+        person_more[p]["rows"] = {k: [*weighted_pcts(x), round(sum(w for _, w in x), 2)] for k, x in sorted(rs.items())}
     # Each reviewer's other addresses, for the page's lookup stubs (never in all.json).
     aliases = {e: p for p, es in ids.groups().items() if p in people for e in es if e != p}
-    return data, people, person_dirs, aliases
+    return data, people, person_dirs, aliases, dict(person_more)
 
 
 def dumps(x):
     return json.dumps(x, separators=(",", ":"), ensure_ascii=False, sort_keys=True)
 
 
-def write(out, data, people, person_dirs, people_out=None, aliases=None):
+def write(out, data, people, person_dirs, people_out=None, aliases=None, person_more=None):
     """Writes all.json to out and the per-reviewer files, gzipped, to
     people_out, with a {"see": name} file for each other address of a
     reviewer (`aliases`: address -> identity), removing the ones no longer
@@ -403,10 +460,12 @@ def write(out, data, people, person_dirs, people_out=None, aliases=None):
         r2.hold()
     pout = people_out or r2.local_dir("review-load-people")
     keep = set()
-    for p in sorted(set(people) | {p for byp in person_dirs.values() for p, rows in byp.items() if rows}):
+    person_more = person_more or {}
+    for p in sorted(set(people) | {p for byp in person_dirs.values() for p, rows in byp.items() if rows} | set(person_more)):
         dirs = {q: byp[p] for q, byp in sorted(person_dirs.items()) if byp.get(p)}
         path = os.path.join(pout, f"{file_name(p)}.json.gz")
-        r2.write_gz(path, dumps(dict(v=2, years={y: dict(q=q) for y, q in people.get(p, {}).items()}, dirs=dirs)))
+        r2.write_gz(path, dumps(dict(v=2, years={y: dict(q=q) for y, q in people.get(p, {}).items()}, dirs=dirs,
+                                     **person_more.get(p, {}))))
         keep.add(path)
     for e, p in sorted((aliases or {}).items()):
         path = os.path.join(pout, f"{file_name(e)}.json.gz")
@@ -425,12 +484,12 @@ def main(argv=None):
     ap.add_argument("--no-people", action="store_true", help="write all.json only")
     args = ap.parse_args(argv)
     ro = lambda p: sqlite3.connect(f"file:{p}?mode=ro", uri=True)   # noqa: E731
-    data, people, person_dirs, aliases = compute(ro(C.db_path()), ro(os.path.join(store.DATA_DIR, store.DERIVED_FILE)),
-                                                 review_timeline.open_ro(),
-                                                 lambda sha: owners.Owners(owners.read(C.repo_path(), sha)))
+    data, people, person_dirs, aliases, person_more = compute(
+        ro(C.db_path()), ro(os.path.join(store.DATA_DIR, store.DERIVED_FILE)), review_timeline.open_ro(),
+        lambda sha: owners.Owners(owners.read(C.repo_path(), sha)))
     if args.no_people:
-        people, person_dirs, aliases = {}, {}, {}
-    files = write(args.out, data, people, person_dirs, args.people_out, aliases)
+        people, person_dirs, aliases, person_more = {}, {}, {}, {}
+    files = write(args.out, data, people, person_dirs, args.people_out, aliases, person_more)
     print(f"review-load: wrote all.json ({len(data['dirs']):,} directories) to {args.out} and {files:,} files of "
           f"{len(people):,} reviewers to {args.people_out or r2.local_dir('review-load-people')}", flush=True)
 

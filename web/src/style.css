@@ -3009,6 +3009,10 @@ details.rf-method[open] > summary {
 /* ---- Review Load page (review-load.html) ---- */
 
 /* The directory table's column groups (four quarters each) are set off by a rule. */
+.rl-pct {
+  margin: 0 0 12px;
+}
+
 .rl-dirs .rl-group {
   border-left: 1px solid var(--border);
 }

@@ -22,9 +22,9 @@ One run does three things, in order:
              not a bot): when they were first asked (entered the attention
              set), when they first answered (a Code-Review vote or a comment)
              and their hours in the attention set, also with Saturdays and
-             Sundays (UTC) left out; and their turns (overlapping intervals
-             merged) that ended before the CL closed, with those turns'
-             weekday hours. Rebuilt whole, from the tables above.
+             Sundays (UTC) left out; and cl_turns, each of their turns
+             (overlapping intervals merged) that ended before the CL closed,
+             with its weekday hours. Rebuilt whole, from the tables above.
 
 $COSH_REVIEW_TIMELINE points the step and its readers at another file.
 """
@@ -103,10 +103,16 @@ CREATE TABLE cl_reviewers (       -- each human other than the owner who was ask
   responded_at        INTEGER,    -- first Code-Review vote or comment before the CL closed; NULL if none
   attention_h         REAL,       -- hours in the attention set, from the CL's creation to its close
   attention_weekday_h REAL,       -- the same, Saturdays and Sundays (UTC) left out
-  turns               INTEGER,    -- turns in the attention set (overlapping intervals merged) that ended before
-                                  -- the CL closed: the ones still open then are left out (the CL didn't wait on them)
-  turn_weekday_h      REAL,       -- those turns' hours, Saturdays and Sundays (UTC) left out
   PRIMARY KEY (change_number, account_id)
+) STRICT, WITHOUT ROWID;
+DROP TABLE IF EXISTS cl_turns;
+CREATE TABLE cl_turns (           -- each turn of those reviewers in the attention set (overlapping intervals merged)
+  change_number INTEGER NOT NULL, -- that ended before the CL closed: one still open then is left out (the CL
+  account_id    INTEGER NOT NULL, -- didn't wait on it)
+  start_at      INTEGER NOT NULL,
+  end_at        INTEGER NOT NULL,
+  weekday_h     REAL    NOT NULL, -- its hours, Saturdays and Sundays (UTC) left out
+  PRIMARY KEY (change_number, account_id, start_at)
 ) STRICT, WITHOUT ROWID;
 """
 
@@ -402,15 +408,15 @@ TURN_OPEN_AT_CLOSE = 60   # seconds: a turn ending this close to the CL's close 
 
 
 def reviewer_rows(cls, bots, attention, responses):
-    """cl_reviewers' rows. cls: [(change_number, owner, created, closed or
+    """cl_reviewers' rows and cl_turns' rows. cls: [(change_number, owner, created, closed or
     None)] in unix seconds; attention: {CL: [(account, start, end)]};
     responses: {CL: {account: first answer}}. Bots and the owner are left
     out. Attention is clipped to the CL's life (to its last interval's end
     while it is open), and overlapping intervals count once, as one turn.
     A turn still open at the CL's close (ending within TURN_OPEN_AT_CLOSE
-    of it) isn't counted in `turns`: the CL landed or was abandoned without
+    of it) isn't a row of cl_turns: the CL landed or was abandoned without
     waiting on it."""
-    rows = []
+    rows, turns = [], []
     for n, owner, c0, c1 in cls:
         a = attention.get(n, ())
         hi = c1 or max([e for _, _, e in a] or [c0])
@@ -424,11 +430,11 @@ def reviewer_rows(cls, bots, attention, responses):
             if sp:
                 us = union_spans(sp, c0, hi)
                 wd = [weekday_seconds(s, e) / 3600 for s, e in us]
-                done = [h for (_, e), h in zip(us, wd) if e < hi - TURN_OPEN_AT_CLOSE]
-                hours = (sum(e - s for s, e in us) / 3600, sum(wd), len(done), sum(done))
+                hours = (sum(e - s for s, e in us) / 3600, sum(wd))
+                turns += [(n, acct, s, e, h) for (s, e), h in zip(us, wd) if e < hi - TURN_OPEN_AT_CLOSE]
             rows.append((n, acct, min(s for s, _ in sp) if sp else None, resp.get(acct),
-                         *(hours if sp else (None,) * 4)))
-    return rows
+                         *(hours if sp else (None, None))))
+    return rows, turns
 
 
 def stage_reviewers(db, ddb=None):
@@ -459,9 +465,10 @@ def stage_reviewers(db, ddb=None):
     attention = defaultdict(list)
     for n, acct, s, e in db.execute("SELECT change_number, account_id, start_at, end_at FROM attention"):
         attention[n].append((acct, s, e))
-    rows = reviewer_rows(cls, bots, attention, responses)
+    rows, turns = reviewer_rows(cls, bots, attention, responses)
     db.executescript(REVIEWERS_SCHEMA)
-    db.executemany("INSERT INTO cl_reviewers VALUES (?,?,?,?,?,?,?,?)", rows)
+    db.executemany("INSERT INTO cl_reviewers VALUES (?,?,?,?,?,?)", rows)
+    db.executemany("INSERT INTO cl_turns VALUES (?,?,?,?,?)", turns)
     db.commit()
     print(f"reviewers: done, {len(rows):,} reviewers of {len({r[0] for r in rows}):,} CLs", flush=True)
 

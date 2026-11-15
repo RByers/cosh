@@ -3946,12 +3946,16 @@ const loadAll = {
   commits: [100, 110, 120, 130, 150], human: [80, 85, 90, 95, 120], reviewed: [70, 75, 80, 85, 100],
   reviewed_lines: [7000, 8000, 9000, 9000, 12000], reviewers: [10, 10, 10, 9, 10],
   reply: { mean: [null, 16, 15, 17, 18], median: [null, 3, 3, 4, 4], p90: [null, 40, 38, 42, 45], n: [0, 60, 70, 70, 90] },
-  attention: { hours: [null, 2000, 2200, 2400, 3000], reviewers: [null, 10, 10, 10, 10],
-    turn_hours: [null, 1600, 1800, 2000, 2500], turns: [null, 80, 85, 90, 100] },
+  turns: { p10: [null, 1, 1, 1, 1], p25: [null, 2, 2, 2, 3], p50: [null, 4, 4, 5, 6], p75: [null, 10, 11, 12, 14],
+    p90: [null, 30, 32, 34, 40], mean: [null, 12, 13, 14, 16], n: [0, 80, 85, 90, 100] },
   table_quarters: ['2025Q3', '2025Q4', '2026Q1', '2026Q2', '2026Q3'],
-  dirs: [['a/', [1000, 1100, 1200, 1300, 2600], [400, 420, 440, 1200], [20, 20, 20, 20], [8, 2, 5, 4, 4650, 2000, 1500]],
-    ['a/b/', [800, 800, 800, 800, 1600], [300, 300, 300, 1000], [10, 10, 10, 10], [4, 1, 2, 2, 4000, 1200, 1200]],
-    ['z/', [1000, 1000, 1000, 1000, 500], [100, 100, 100, 100], [20, 20, 20, 20], [3, 1, 6, 2, 1750, 400, 100]]],
+  dirs: [['a/', [1000, 1100, 1200, 1300, 2600], [[5, 12, 40], [5, 12, 40], [6, 13, 42], [12, 30, 90]], [20, 20, 20, 20],
+    [7, 15, 50], [8, 2, 5, 4, 4650, 2000, 1500]],
+  ['a/b/', [800, 800, 800, 800, 1600], [[4, 10, 30], [4, 10, 30], [4, 10, 30], [10, 25, 80]], [10, 10, 10, 10],
+    [6, 14, 45], [4, 1, 2, 2, 4000, 1200, 1200]],
+  ['z/', [1000, 1000, 1000, 1000, 500], [[1, 3, 10], [1, 3, 10], [1, 3, 10], [1, 3, 10]], [20, 20, 20, 20],
+    [1, 3, 10], [3, 1, 6, 2, 1750, 400, 100]]],
+  others: [['a/', [[6, 14, 50], [6, 14, 50], [6, 14, 50], [14, 35, 100]], [10, 10, 10, 10], [8, 20, 60]]],
   owners: { at: '2026-09-30', all: [10, 3, 12, 6, 6400, 2400, 1600] },
 };
 
@@ -3974,7 +3978,8 @@ async function loadPage(): Promise<{ page: Page; errors: string[]; requests: str
     else if (path === `/r2/review-load/people/v2/${personFile('rev@google.com')}.json`) json({ see: k });
     else if (path === `/r2/review-load/people/v2/${k}.json`) json({ v: 2,
       years: { 2026: { q: { 2: [5, 900, 60, 6, 48, 6], 3: [9, 3000, 400, 8, 80, 8] } } },
-      dirs: { '2026Q3': [['a/b/', 2000, 300, 6], ['q/r/', 1000, 100, 2]] } });
+      dirs: { '2026Q3': [['a/b/', 2000], ['q/r/', 1000]] },
+      turns: { '2026Q2': [7, 6], '2026Q3': [9, 8] }, rows: { 'd:a/': [8, 20, 70, 6], 'o:': [3, 4, 5, 2] } });
     else void r.respond({ status: 404, body: 'not found' });
   });
   await page.goto(baseUrl + 'review-load.html', { waitUntil: 'load' });
@@ -3990,12 +3995,15 @@ test('review load: four charts over the quarters and a directory table that open
   assert.equal(await page.title(), 'Review Load - Chromium Open Source Health');
   const charts = await page.evaluate(() => Object.fromEntries(Object.entries(window.__rl!.charts).map(([k, c]) =>
     [k, { labels: c.data.labels, sets: c.data.datasets.map((d) => d.label) }])));
-  assert.deepEqual(Object.keys(charts).sort(), ['attention', 'commits', 'lines', 'reply']);
+  assert.deepEqual(Object.keys(charts).sort(), ['commits', 'lines', 'reply', 'turns']);
   // The wait charts start with the attention set.
   assert.deepEqual(charts.reply.labels, ['Q4 2025', 'Q1 2026', 'Q2 2026', 'Q3 2026']);
   assert.deepEqual(charts.reply.sets, ['Median', '90th percentile', 'Mean']);
-  assert.deepEqual(charts.attention.labels, charts.reply.labels);
-  assert.deepEqual(charts.attention.sets, ['Mean per reviewer']);
+  assert.deepEqual(charts.turns.labels, charts.reply.labels);
+  // The Feedback Index's spread: two shaded bands and the median.
+  assert.deepEqual(charts.turns.sets, ['90th percentile', '10th percentile', '75th percentile', '25th percentile', 'Median']);
+  assert.deepEqual(await page.evaluate(() => window.__rl!.charts.turns.data.datasets.map((d) => (d as { fill?: unknown }).fill)),
+    ['+1', false, '+1', false, false]);
   assert.deepEqual(charts.commits.labels, ['Q3 2025', 'Q4 2025', 'Q1 2026', 'Q2 2026', 'Q3 2026']);
   assert.deepEqual(charts.commits.sets, ['All commits', 'Excluding bots']);
   assert.deepEqual(charts.lines.sets, ['Mean per reviewer']);
@@ -4003,18 +4011,26 @@ test('review load: four charts over the quarters and a directory table that open
   assert.deepEqual(await page.evaluate(() => window.__rl!.charts.lines.data.datasets[0].data), [700, 800, 900, 1000, 1200]);
   assert.match(await page.$eval('#rl-lines-note', (e) => e.textContent!), /the mean was\s+1,200 lines across 10 reviewers:\s+\+20% on the quarter before and \+71% on a year before/);
   assert.match(await page.$eval('#rl-reply-note', (e) => e.textContent!), /the median was\s+4 h, one in ten waited 45 h or more, and the mean was\s+18 h/);
-  assert.match(await page.$eval('#rl-attention-note', (e) => e.textContent!), /a mean of 300 hours each\. A turn \(one\s+stay in the attention set\) lasted 25 hours on average/);
+  assert.match(await page.$eval('#rl-turns-note', (e) => e.textContent!.replace(/\s+/g, ' ')),
+    /over 100 turns on changes landed in the quarter, the median turn lasted 6 h, the middle half 3 h to 14 h and four in five 1 h to 40 h; the mean was 16 h/);
   assert.deepEqual(await page.$$eval('#rl-dirs-quarters th', (ths) => ths.slice(0, 4).map((t) => t.textContent)),
     ['Q4 2025', 'Q1 2026', 'Q2 2026', 'Q3 2026']);
-  // Biggest first; the Yours columns are hidden until someone is looked up.
+  // Biggest first; the 90th percentile; the Yours columns are hidden until someone is looked up.
   assert.deepEqual(await loadRows(page), [
-    ['a/', '6.2K', '+10%', '+9%', '+8%', '+100%', '20', '21', '22', '60'],
-    ['z/', '3.5K', '+0%', '+0%', '+0%', '−50%', '5', '5', '5', '5'],
+    ['a/', '6.2K', '+10%', '+9%', '+8%', '+100%', '40', '40', '42', '90'],
+    ['z/', '3.5K', '+0%', '+0%', '+0%', '−50%', '10', '10', '10', '10'],
   ]);
-  // Q3 2026: 1,300 hours over 40 turns is 32.5 a turn; a/ waits 60 (red), z/ 5 (green).
+  // Q3 2026's 90th percentile is 40 h: a/'s 90 is red, z/'s 10 green.
   const shade = (row: number) => page.$eval(`#rl-dirs tbody tr:nth-child(${row}) td:nth-child(10)`, (td) => td.className);
   assert.match(await shade(1), /rf-ratio-hi/);
   assert.match(await shade(2), /rf-ratio-lo/);
+  assert.match(await page.$eval('#rl-dirs-note', (e) => e.textContent!.replace(/\s+/g, ' ')), /are the 90th percentile of reviewers' turns/);
+  // The median instead: against Chromium's 6 h.
+  await page.click('#rl-pct input[value="p50"]');
+  assert.deepEqual((await loadRows(page)).map((r) => r.slice(6)), [['5', '5', '6', '12'], ['1', '1', '1', '1']]);
+  assert.match(await shade(1), /rf-ratio-hi/);
+  assert.match(await page.$eval('#rl-dirs-note', (e) => e.textContent!.replace(/\s+/g, ' ')), /are the median of reviewers' turns/);
+  await page.click('#rl-pct input[value="p90"]');
   // Lines reviewed on a log scale from 100 (the threshold) to a/'s 6,200: z/'s 3,500 is dark, white text.
   const heat = (row: number) => page.$eval(`#rl-dirs tbody tr:nth-child(${row}) td:nth-child(2)`, (td) =>
     [(td as HTMLElement).style.getPropertyValue('--rl-heat'), td.classList.contains('rl-heat-dark')]);
@@ -4069,9 +4085,10 @@ test('review load: an address adds that reviewer to the charts and the table, wi
   const you = await page.evaluate(() => Object.fromEntries(Object.entries(window.__rl!.charts).map(([k, c]) =>
     [k, c.data.datasets.at(-1)!.data])));
   assert.deepEqual(you, { commits: [null, null, null, 5, 9], lines: [null, null, null, 900, 3000],
-    reply: [null, null, 8, 10], attention: [null, null, 60, 400] });
-  // Their directories first; one that isn't listed counts in "Other".
-  assert.deepEqual((await loadRows(page)).map((r) => [r[0], r[10], r[11]]), [['a/', '2K', '50'], ['z/', '', ''], ['Other', '1K', '']]);
+    reply: [null, null, 8, 10], turns: [null, null, 7, 9] });
+  // Their directories first; one that isn't listed counts in "Other"; their 90th percentile there,
+  // left out under 5 turns.
+  assert.deepEqual((await loadRows(page)).map((r) => [r[0], r[10], r[11]]), [['a/', '2K', '70'], ['z/', '', ''], ['Other', '1K', '']]);
   assert.deepEqual(errors, []);
   await page.close();
 });
