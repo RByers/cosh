@@ -16,8 +16,9 @@ regex plus Claude Haiku (`cosh classify`).
 component of one** (a page, a metric, a published file family, a step of
 the data flow), and judge the design by it: a clean, simple, constructive
 and fair visualization for the analysis's stated purpose, the rules for
-figures about one person, then the limits on update time, repository
-volume and token cost, and a clean data flow. Write the new analysis's
+figures about one person, then the limits on update time, a small
+GitHub repository with large data in R2 that changes compatibly, token
+cost, and a clean data flow. Write the new analysis's
 purpose near the top of its own doc.
 
 ## Hard rules

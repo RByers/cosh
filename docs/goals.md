@@ -16,7 +16,7 @@ page. The goals here are what every analysis shares.
 
 The goals are in priority order. Goals 1 and 2 are what a page is for;
 goals 3–6 are constraints on how we get there. A change that makes a page
-noticeably more useful or accurate may cost some update time, repository
+noticeably more useful or accurate may cost some update time, published
 volume or tokens, but each of those has a ceiling, and staying within them
 is part of the job.
 
@@ -127,38 +127,52 @@ routine:
 - Nothing needs a full rebuild of the raw stores or a re-run of model
   calls over past data.
 
-## 4. Repository volume well under 1 GB, without history explosion
+## 4. A small GitHub repository; large data in R2, changed compatibly
 
-Everything the site reads is committed, so git keeps every version of it.
-This goal is about committed files only: data on disk that isn't committed
+GitHub keeps the code, the docs and small published data. Anything large,
+or rewritten often, is published to the Cloudflare R2 bucket `cosh`
+(`docs/r2.md`, the user's decision of 2026-11-14) and fetched by the
+pages from `cosh-data.rbyers.ca`. Data on disk that isn't published
 (`data/private/`) costs nothing here (goal 6).
 
-- **Publish the minimum the pages need.** A committed file holds only what
-  a page reads, in the leanest form that keeps it reproducible (goal 2):
-  no unused fields, no values a page can compute from others it already
-  loads, nothing kept "in case". Whatever else is useful for analysis
-  stays in uncommitted stores.
-- **The whole repository stays well under 1 GB** packed, history included
-  (338 MB on 2026-11-14, of which the Feedback Index's history is about
-  196 MB after a few days of format changes).
-- **A weekly update adds little.** Summaries per week or month grow by a
-  few rows. Per-person data is the large part: the Feedback Index aims for
-  well under 2 MB of packed growth per week (under 100 MB a year), mostly
-  the current half-year's files of the people active that week.
-- **Finished periods are frozen.** Per-person data is split by period
-  (half-years in the Feedback Index) so that git stores a finished period
-  once. Global files a page reads that are rewritten each week
-  (`peers.json`) stay small (about 60 KB gzipped).
-- **Format changes that rewrite every file are rare and batched**: in the
-  Feedback Index each rewrites about 35–50 MB of compressed data. Prefer
-  changes that touch the small global files over changes to the per-person
-  files.
-- **Large files go to Cloudflare R2, not GitHub** (the user's decision,
-  2026-11-14). Large or fast-churning published data, such as the
-  per-person files, will be stored in Cloudflare R2 and served from there,
-  and GitHub will keep the code, docs and small data. Not set up yet: until
-  it is, the published data stays committed under the limits above, and
-  moving it is planned work (`docs/plan.md`).
+- **Publish the minimum the pages need**, in git and in R2 alike. A
+  published file holds only what a page reads, in the leanest form that
+  keeps it reproducible (goal 2): no unused fields, no values a page can
+  compute from others it already loads, nothing kept "in case". Whatever
+  else is useful for analysis stays in uncommitted stores.
+- **GitHub stays very small: ideally under 50 MB.** Git keeps every
+  version of a committed file, so committed data is limited to small files
+  that change little: summaries a page needs at once, global files such as
+  `peers.json` (about 60 KB gzipped), configuration. Per-person,
+  per-directory and other large file families go to R2. A weekly update
+  should add almost nothing to git's history. (On 2026-11-14 the
+  repository was 351 MB packed, history included, and its tree held
+  224 MB, mostly `web/public/` and `summaries/`; those move to R2 as
+  planned work in `docs/plan.md`. Pushed history is never rewritten, so
+  what is already in it stays.)
+- **R2 data evolves compatibly.** The site (GitHub Pages) and the bucket
+  update separately, and browsers may run an older build of a page, so
+  new data in R2 must never break JavaScript that is already deployed:
+  - *Add, don't change.* New data is something older pages ignore: new
+    fields, or new weeks and periods outside the dates a page asks for
+    (pages always filter by date, never take "everything in the file").
+    Existing fields keep their names and meanings.
+  - *A breaking change gets a new name*, such as a version prefix
+    (`.../v2/...`) or a new file name, written alongside the old files.
+    The old ones stay until no deployed page reads them. Breaking changes
+    are rare and batched, since each rewrites a whole family.
+  - *Data before code.* Upload new R2 data first, then deploy the page
+    that reads it; a page copes with an object that is missing (a person
+    or period with no data yet) rather than failing.
+- **Incremental updates are fast and cheap.** Files in R2 are laid out so
+  that a week of new data changes few of them: split by period
+  (half-years in the Feedback Index) so finished periods are written once
+  and never again, and keyed so that only the people, directories or
+  periods touched that week change. `cosh.r2 sync` uploads only changed
+  files (about 2,000 writes a week of the threads' 32,676), well inside
+  R2's free tier. A format that rewrites every object each week, or a
+  step that has to regenerate a whole family to add a week, fails this
+  goal.
 
 ## 5. Moderately low token costs for each weekly update
 
