@@ -1,0 +1,24 @@
+{
+ "complete": false,
+ "fetched_at": "2026-11-15T14:18:30+00:00",
+ "request": {
+  "aggInterval": "1d",
+  "botClass": "LIKELY_HUMAN",
+  "dateEnd": "2020-10-01T00:00:00Z",
+  "dateStart": "2020-09-01T00:00:00Z",
+  "endpoint": "/radar/http/timeseries_groups/OS",
+  "format": "JSON",
+  "normalization": "PERCENTAGE"
+ },
+ "response": {
+  "errors": [
+   {
+    "code": 2001,
+    "message": "1 validation error: start_time must be equal to or later than 2021-12-27 (got 2020-09-01 00:00:00+00:00)"
+   }
+  ],
+  "result": {},
+  "success": false
+ },
+ "status": 400
+}
