@@ -1262,27 +1262,27 @@
       "tier": "derived",
       "tracked_in_git": false,
       "rebuildable": true,
-      "size": "400 MB gzipped: 32,676 files (19 half-years, about 1,300 to 2,000 people each), 2.78M threads",
+      "size": "52 MB gzipped: 2,384 files (one per person with reviewer threads on changes landed in the past 52 weeks), 349k threads",
       "size_as_of": "2026-11-14",
-      "files": "<half-year>/<name>.json.gz: per person and half-year, every thread a human reviewer other than the owner started on their merged changes, with each comment's full text, author (name, and which of the person's approvers they are), time, file, line and patch set, whether it was addressed, and the directory the Feedback Index counts it in (cosh/review_threads.py has the format, version 3). <name> is the normalised e-mail address, as feedback-people's.",
+      "files": "<name>.json.gz: per person, every thread a human reviewer other than the owner started on their changes that landed in the 52 weeks up to the data's end, with each comment's full text, author (name, and which of the person's approvers they are), time, file, line and patch set, whether it was addressed, and the directory the Feedback Index counts it in (cosh/review_threads.py has the format, version 4). <name> is the normalised e-mail address, as feedback-people's.",
       "purpose": "The comment download's files, kept locally so that the upload sends only those that changed.",
       "notes": "Too big for git; cosh.r2 publishes them. Written byte for byte the same when nothing changed.",
       "withheld": "Comment text, negative comments included, belongs only behind a typed address (ground rule 5); the samples page is reached by clicks."
     },
     {
-      "id": "r2:review-feedback/threads/v2/",
+      "id": "r2:review-feedback/threads/v3/",
       "name": "Feedback Index threads in R2",
-      "path": "r2:review-feedback/threads/v2/",
+      "path": "r2:review-feedback/threads/v3/",
       "kind": "directory",
       "tier": "published",
       "tracked_in_git": false,
       "rebuildable": true,
-      "size": "400 MB, 32,676 objects (stored gzipped)",
+      "size": "52 MB, 2,384 objects (stored gzipped)",
       "size_as_of": "2026-11-14",
-      "files": "review-feedback/threads/v2/<half-year>/<name>.json in the R2 bucket `cosh`, served gzipped at https://cosh-data.rbyers.ca/ (docs/r2.md); <name> is the e-mail address as typed, lower case (no domains merged).",
+      "files": "review-feedback/threads/v3/<name>.json in the R2 bucket `cosh`, served gzipped at https://cosh-data.rbyers.ca/ (docs/r2.md); <name> is the e-mail address as typed, lower case (no domains merged).",
       "purpose": "What the Feedback Index fetches when someone downloads their review comments, or opens a reviewer in Your feedback (which lists that reviewer's addressed threads, without their text).",
       "withheld": "Comment text, negative comments included, is reachable only by typing the person's address (the bucket can't be listed, no completions), as ground rule 5 allows since 2026-11-14.",
-      "notes": "Uploads are recorded in data/private/r2-manifest.json (key -> sha256), so a sync never lists the bucket. The bucket's CORS policy allows the site's origin. v2 (since 2026-11-14) names files by address; the retired review-feedback/threads/ named them by a hash."
+      "notes": "Uploads are recorded in data/private/r2-manifest.json (key -> sha256), so a sync never lists the bucket. The bucket's CORS policy allows the site's origin. v3 (2026-11-14) is one file per person, by address, for the past year only; the retired review-feedback/threads/ had every half-year since 2017, named by a hash (its objects need deleting by hand, docs/r2.md)."
     },
     {
       "id": "web/public/review-load/all.json",
@@ -2190,13 +2190,13 @@
     },
     {
       "id": "review-threads",
-      "command": "nice -n 5 python3 -m cosh.review_threads [--half 2026H2]",
+      "command": "nice -n 5 python3 -m cosh.review_threads",
       "code": [
         "cosh/review_threads.py",
         "cosh/notedb.py",
         "cosh/people.py"
       ],
-      "purpose": "Writes every reviewer thread on each person's changes, full text included, per person and half-year, for the comment download and the reviewers' comment lists.",
+      "purpose": "Writes every reviewer thread on each person's changes of the past year, full text included, one file per person, for the comment download and the reviewers' comment lists.",
       "inputs": [
         "data/private/feedback-cls.json.gz",
         "data/private/reviews.sqlite",
@@ -2210,8 +2210,8 @@
       ],
       "network": false,
       "lock": "data/private/r2.lock",
-      "incremental": "Rewrites only files whose content changed, and removes those of people or half-years no longer published; --half limits it to some half-years.",
-      "duration": "about 5 min for all 19 half-years, 34 s for one (2026-11-14), 650 MB of memory",
+      "incremental": "Rewrites only files whose content changed, and removes those of people no longer published.",
+      "duration": "about 70 s (2026-11-14), 1.4 GB of memory",
       "token_cost": null,
       "cost_source": "docs/review-feedback.md",
       "refresh": "routine",
@@ -2220,7 +2220,7 @@
     },
     {
       "id": "r2-feedback",
-      "command": "python3 -m cosh.r2 publish review-feedback/threads/v2 review-feedback/people/v2",
+      "command": "python3 -m cosh.r2 publish review-feedback/threads/v3 review-feedback/people/v2",
       "code": [
         "cosh/r2.py"
       ],
@@ -2231,13 +2231,13 @@
         "feedback-people"
       ],
       "outputs": [
-        "r2:review-feedback/threads/v2/",
+        "r2:review-feedback/threads/v3/",
         "r2:review-feedback/people/v2/"
       ],
       "network": true,
       "lock": "data/private/r2.lock",
       "incremental": "Uploads only files whose sha256 differs from the manifest's (data/private/r2-manifest.json).",
-      "duration": "45 min for a full upload of the threads (32,676 files, 400 MB, 2026-11-14; again once for v2); a weekly run sends only the current half-year's changed threads and the files of people with changes in it (about 1,900 each, 8.8 MB of per-person files)",
+      "duration": "a few minutes for a full upload (2,384 thread files, 52 MB, and 7,945 per-person files, at about 65 objects a second; estimated, not yet run); a weekly run sends the thread files and per-person files of people with changes that week (about 1,900 each: most of the threads' 52 MB, 8.8 MB of per-person files)",
       "token_cost": null,
       "cost_source": "docs/r2.md",
       "refresh": "deploy",
@@ -2539,7 +2539,7 @@
         "web/public/review-feedback/peers.json",
         "web/public/review-feedback/reviewers.json",
         "r2:review-feedback/people/v2/",
-        "r2:review-feedback/threads/v2/"
+        "r2:review-feedback/threads/v3/"
       ],
       "sources_line": "Gerrit code review · Chromium git history",
       "notes": "Linked from the landing page since 2026-11-12; carries noindex."

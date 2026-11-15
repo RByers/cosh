@@ -659,11 +659,14 @@ export function buildPerson(file: PersonFile): Person {
 
 // ---- downloading your comments (cosh/review_threads.py, served from the R2 bucket)
 
-/** review-feedback/threads/<half>/<key>.json (cosh/review_threads.py, version 3). Comment text is
- * untrusted: it goes only into the downloaded file, never into the page. */
+/** review-feedback/threads/v3/<key>.json (cosh/review_threads.py, version 4): the threads on the
+ * person's changes that landed in the past year. Comment text is untrusted: it goes only into the
+ * downloaded file, never into the page. */
 export interface ThreadFile {
-  v: 3;
-  half: string;
+  v: 4;
+  /** The changes' landing days, YYYY-MM-DD, inclusive: the 52 weeks up to the data's end. */
+  from: string;
+  to: string;
   /** Names (else addresses), indexed by `owner` and each comment's first element. */
   people: string[];
   /** Which approver each of them is, as the person's file names approvers (`Person.revs`,
@@ -674,6 +677,8 @@ export interface ThreadFile {
 
 export interface ThreadCl {
   n: number;
+  /** The half-year the Feedback Index counts it in ("2026H1"). */
+  half: string;
   project: string;
   subject: string;
   /** YYYY-MM-DD. */
@@ -700,23 +705,17 @@ export interface Thread {
   comments: [number, string, string][];
 }
 
-/** The URL of one person's threads for one half-year: one gzipped JSON file per person and
- * half-year in the R2 bucket (too big for git), fetched only when someone asks to download their
- * comments. `name` is their `personFile`; `v` (the data's end) skips cached older copies. */
-export function threadsUrl(name: string, half: string, v: number, host?: string): string {
-  if (!isPersonFile(name) || !/^\d{4}H[12]$/.test(half)) throw new Error('bad name or half-year');
-  return r2Url(THREADS, `${half}/${name}.json`, v, host);
+/** The URL of one person's threads of the past year: one gzipped JSON file per person in the R2
+ * bucket (too big for git), fetched only when someone downloads their comments or opens a
+ * reviewer. `name` is their `personFile`; `v` (the data's end) skips cached older copies. */
+export function threadsUrl(name: string, v: number, host?: string): string {
+  if (!isPersonFile(name)) throw new Error('bad name');
+  return r2Url(THREADS, `${name}.json`, v, host);
 }
 
 /** A Gerrit link to a thread, by its change's project. */
 export function threadUrl(project: string, cl: number, uuid: string): string {
   return `${GERRIT}/c/${project.split('/').map(encodeURIComponent).join('/')}/+/${Math.trunc(cl)}/comment/${encodeURIComponent(uuid)}/`;
-}
-
-/** The half-years from `from` to `to` (inclusive) among `have`, in order. */
-export function halvesBetween(have: string[], from: string, to: string): string[] {
-  const [a, b] = from <= to ? [from, to] : [to, from];
-  return [...have].sort().filter((h) => h >= a && h <= b);
 }
 
 /** Every comment line of `text` quoted for Markdown. */
@@ -784,14 +783,15 @@ export interface ReviewerComment {
 }
 
 /** The addressed threads approver `rev` (a `ReviewerRow.email`) started on the person's changes in
- * `files`, newest first, only those counted in `dir`'s row if given. A thread counts when its first
- * comment's author is that approver (`ThreadFile.reviewers`). */
-export function reviewerComments(files: ThreadFile[], rev: string, dir?: DirFilter | null): ReviewerComment[] {
+ * `files`, newest first, only those counted in `dir`'s row and on changes of half-year `half` if
+ * given. A thread counts when its first comment's author is that approver (`ThreadFile.reviewers`). */
+export function reviewerComments(files: ThreadFile[], rev: string, dir?: DirFilter | null, half?: string | null): ReviewerComment[] {
   const out: ReviewerComment[] = [];
   for (const f of files) {
     const mine = new Set(f.reviewers.flatMap((r, i) => (r === rev ? [i] : [])));
     if (!mine.size) continue;
     for (const c of f.cls) {
+      if (half && c.half !== half) continue;
       for (const t of c.threads) {
         const first = t.comments[0];
         if (t.addressed === true && first && mine.has(first[0]) && (!dir || (t.dir !== null && dir.has(t.dir))))

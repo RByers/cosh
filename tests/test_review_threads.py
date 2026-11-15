@@ -49,9 +49,49 @@ class ThreadsTest(unittest.TestCase):
         ])
         self.assertEqual(RT.cl_threads(None, owner, set(), {}.get), [])
 
+    def test_window_is_52_weeks(self):
+        self.assertEqual(RT.window("2026-10-30"), "2025-11-01")
+        self.assertEqual((dt.date(2026, 10, 30) - dt.date(2025, 11, 1)).days + 1, 364)
+
+    def test_person_doc(self):
+        # [project, subject, owner, closed_at, insertions] per CL; 5 landed before the window, 6 has no
+        # reviewer threads, 9 isn't in reviews.sqlite.
+        info = {5: ("chromium/src", "Old", 1, "2025-10-31 23:00:00", 3),
+                6: ("chromium/src", "Quiet", 1, "2026-02-01 00:00:00", 4),
+                7: ("chromium/src", None, 1, "2026-07-02 10:00:00", 50),
+                8: ("chromium/src", "Earlier", 1, "2025-11-01 09:00:00", None)}
+        th = lambda root, who: dict(id=root, path="a.cc", line=1, ps=1, addressed=True, resolved=True,
+                                    comments=[[who, "2026-01-01T00:00Z", "x"], [1, "2026-01-01T01:00Z", "Done"]])
+        per_cl = {5: [th("r5", 2)], 6: [], 7: [th("r7", 2), th("r7b", 3)], 8: [th("r8", 3)]}
+        accounts = {1: ("Own Er", False, "o@x.org"), 2: ("Rev", False, "rev@google.com")}
+        ident = {1: "o@x.org", 2: "rev@google.com", 3: "other@x.org"}
+        cls = [("2025H2", 5, {}), ("2026H1", 6, {}), ("2026H2", 7, {"r7": "ui/"}), ("2025H2", 8, {"r8": "base/"}),
+               ("2026H2", 9, {})]
+        doc = RT.person_doc(cls, info, per_cl, accounts, ident, {"rev@google.com"}, "2025-11-01", "2026-10-30")
+        self.assertEqual({k: doc[k] for k in ("v", "from", "to", "people", "reviewers")}, {
+            "v": 4, "from": "2025-11-01", "to": "2026-10-30", "people": ["Own Er", "account 3", "Rev"],
+            "reviewers": [None, None, "rev@google.com"]})
+        # Oldest first, each with the half-year the Feedback Index counts it in.
+        self.assertEqual([(c["n"], c["half"], c["landed"], c["subject"], c["lines"], c["owner"]) for c in doc["cls"]],
+                         [(8, "2025H2", "2025-11-01", "Earlier", None, 0), (7, "2026H2", "2026-07-02", "", 50, 0)])
+        self.assertEqual([(t["id"], t["dir"], t["comments"][0][0]) for t in doc["cls"][1]["threads"]],
+                         [("r7", "ui/", 2), ("r7b", None, 1)])
+        # Nothing in the window: no file.
+        self.assertIsNone(RT.person_doc(cls[:2], info, per_cl, accounts, ident, set(), "2025-11-01", "2026-10-30"))
+
+    def test_prune_removes_old_files_and_half_year_folders(self):
+        with tempfile.TemporaryDirectory() as d:
+            keep = os.path.join(d, "a@x.org.json.gz")
+            other = os.path.join(d, "notes.txt")
+            for p in (keep, other, os.path.join(d, "gone@x.org.json.gz"), os.path.join(d, "2026H1", "a@x.org.json.gz")):
+                os.makedirs(os.path.dirname(p), exist_ok=True)
+                open(p, "w").close()
+            self.assertEqual(RT.prune(d, {keep}), 2)
+            self.assertEqual(sorted(os.listdir(d)), ["a@x.org.json.gz", "notes.txt"])
+
     def test_write_is_stable(self):
         with tempfile.TemporaryDirectory() as d:
-            p = os.path.join(d, "2026H1", "k.json.gz")
+            p = os.path.join(d, "k.json.gz")
             doc = {"v": 1, "cls": [{"subject": "é"}]}
             self.assertTrue(RT.write(p, doc)[1])
             with open(p, "rb") as f:
@@ -109,6 +149,23 @@ class R2Test(unittest.TestCase):
     def test_object_key(self):
         self.assertEqual(r2.object_key("/a/b/", os.path.join("2026H1", "k.json.gz")), ("a/b/2026H1/k.json", True))
         self.assertEqual(r2.object_key("a", "x.json"), ("a/x.json", False))
+
+    def test_sync_refuses_an_emptied_folder(self):
+        with tempfile.TemporaryDirectory() as d:
+            local, data = os.path.join(d, "files"), os.path.join(d, "data")
+            os.makedirs(local)
+            os.makedirs(data)
+            with open(os.path.join(local, "a.json.gz"), "wb") as f:
+                f.write(b"A")
+            calls = []
+            with mock.patch.object(r2, "request", lambda *a, **k: calls.append(a[1:3]) or 200), mock.patch("sys.stderr"):
+                r2.sync(local, "p", data_dir=data, cred={}, jobs=1, stamp=1)
+                os.remove(os.path.join(local, "a.json.gz"))
+                calls.clear()
+                with self.assertRaises(SystemExit) as e:
+                    r2.sync(local, "p", data_dir=data, cred={}, jobs=1, stamp=5, live=2)
+                self.assertIn("has no files", str(e.exception))
+                self.assertEqual(calls, [])
 
     def test_sync_uploads_changes_and_deletes_and_keeps_a_manifest(self):
         with tempfile.TemporaryDirectory() as d:

@@ -254,8 +254,9 @@ files).
   opens a reviewer into the addressed threads they started on the person's
   CLs (`reviewerComments`), newest first: the day of the first comment, the
   change number linking to the thread in Gerrit, and the file ("commit
-  message" for `/COMMIT_MSG`). They come from the thread files in R2
-  ("Downloading your comments"), fetched the first time a reviewer is
+  message" for `/COMMIT_MSG`). They come from the person's thread file in R2
+  ("Downloading your comments"), so only for changes landed in the past
+  year, fetched the first time a reviewer is
   opened. A commenter is a reviewer when their Gerrit account's address
   belongs to that approver's identity ("Who is who", below);
   `cosh.review_threads` records which approver each commenter is
@@ -810,32 +811,35 @@ rather than chunks.
 
 Once an address is typed, the page's last card, "Download your review
 comments", saves one file with every comment thread a reviewer started on
-that person's landed changes, each reply in full, for the half-years they
-pick (by default the latest two). Markdown (one section per change, each
+that person's changes that landed in the past year (the 52 weeks up to
+the data's end), each reply in full. Markdown (one section per change, each
 thread with its file, line, patch set, whether it was addressed, a Gerrit
 link and every comment quoted), optionally headed by instructions for an AI
 coach (the same task as `scripts/feedback_coach.py`'s, in the page's
-`dl-prompt` template), or JSON (the files as fetched). The file is built in
+`dl-prompt` template), or JSON (the file as fetched). The file is built in
 the browser; comment text never goes into the page itself. This hands the
 coaching report to the person's own assistant instead of spending our
 model usage on it.
 
-The threads are too big for git (400 MB gzipped: 32,676 files, 2.78M threads, 2026-11-14), so they live in the Cloudflare
+The threads are too big for git (52 MB gzipped: 2,384 files, 349k threads, 2026-11-14), so they live in the Cloudflare
 R2 bucket `cosh` and are served gzipped from
-`https://cosh-data.rbyers.ca/review-feedback/threads/v2/<half>/<name>.json`,
+`https://cosh-data.rbyers.ca/review-feedback/threads/v3/<name>.json`,
 fetched only when someone downloads or opens a reviewer in Your feedback
 (`?v=` is the data's end, so a new week
 isn't hidden by the day-long cache). Named like the per-person files, so
 like them they are reachable only by typing an address (ground rule 5
-allows comment text there, negative comments included). They stay one
-file per half-year, unlike the per-person files: they are large (median 6
-KB, up to 216 KB gzipped) and a reviewer's comments load only the
-half-year picked, so joining them would make each weekly publish upload
-every active person's whole history (hundreds of MB) for little gain.
+allows comment text there, negative comments included). One file per
+person (median 8 KB, up to 412 KB gzipped), and only the past year: every
+year back to 2017, one file per half-year, was 33,015 files and 407 MB,
+far more than the download's purpose (recent feedback for the person's
+own assistant) needs (the user's call, 2026-11-14). A person with no such
+thread in the year has no file, which the page reads as "no comments".
+Each weekly publish uploads the files of people with changes that week
+(about 1,900 of them, most of the 52 MB).
 
 ```
-COSH_DATA_DIR=<main>/data/private nice -n 5 python3 -m cosh.review_threads [--half 2026H2]
-python3 -m cosh.r2 publish review-feedback/threads/v2   # from the main checkout, when deploying
+COSH_DATA_DIR=<main>/data/private nice -n 5 python3 -m cosh.review_threads
+python3 -m cosh.r2 publish review-feedback/threads/v3   # from the main checkout, when deploying
 ```
 
 `cosh.review_threads` (step `review-threads`, after `review-feedback`) reads
@@ -843,11 +847,11 @@ the CL index (`data/private/feedback-cls.json.gz`) for each person's
 changes and the directory each thread counts in, `reviews.sqlite`
 (subjects, owners, accounts, which threads were addressed), `addressed.sqlite`
 and the NoteDb repos (comment text, file, line, patch set, resolved), and
-writes `data/private/review-threads/<half>/<name>.json.gz`, byte for byte
+writes `data/private/review-threads/<name>.json.gz`, byte for byte
 the same when nothing changed (the module's docstring has the format).
 Threads by bots and AI reviewers, and threads the owner started, are left
 out; "addressed" is the Feedback Index's own measure, null for
-change-level threads. About 5 minutes for all 19 half-years, 20 s for one.
+change-level threads. About 70 seconds, 1.4 GB of memory (2026-11-14).
 
 `cosh.r2 publish` (step `r2-feedback`, with the per-person files) runs
 only when deploying, before the push (`docs/r2.md`, "Deploying"). It

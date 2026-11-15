@@ -211,7 +211,7 @@ def request(cred, method, key, body=b"", headers=None, tries=5):
 
 
 def object_key(prefix, rel):
-    """'review-feedback/threads' + '2026H1/abc.json.gz' -> (key without .gz, gzipped?)."""
+    """'review-feedback/threads' + 'sub/abc.json.gz' -> (key without .gz, gzipped?)."""
     gz = rel.endswith(".gz")
     rel = rel[:-3] if gz else rel
     return f"{prefix.strip('/')}/{rel.replace(os.sep, '/')}", gz
@@ -319,6 +319,10 @@ def sync(local, prefix, dry_run=False, jobs=16, max_objects=50_000, max_total_gb
           + f"; bucket total after {total / 1e9:.2f} GB", file=sys.stderr, flush=True)
     if len(ups) + len(dels) > max_objects:
         raise SystemExit(f"refusing: {len(ups) + len(dels):,} objects is over --max-objects {max_objects:,}")
+    if local is not None and not present and (dels or kept):
+        # A folder emptied by a failed or half-done step, not a prefix that was retired.
+        raise SystemExit(f"refusing: {local} has no files but the bucket has {len(dels) + len(kept):,} under "
+                         f"{prefix}; rerun the step that writes it")
     if total > max_total_gb * 1e9:
         raise SystemExit(f"refusing: {total / 1e9:.2f} GB is over --max-total-gb {max_total_gb}")
     left = len(present) + len(kept)
@@ -420,7 +424,7 @@ def main(argv=None):
         # once the live site no longer reads it.
         old = {x for pub in pubs for x in pub["prefixes"]} - set(known)
         todo += [(prefix, None) for prefix in sorted(old)]
-    # A prefix may sit inside another (review-feedback/threads/v2 inside the
+    # A prefix may sit inside another (review-feedback/threads/v3 inside the
     # retired review-feedback/threads): each object belongs to the innermost.
     all_prefixes = set(known) | {x for pub in pubs for x in pub["prefixes"]} | {prefix for prefix, _ in todo}
     if pushed is None:

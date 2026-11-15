@@ -283,7 +283,7 @@
         <p class="sub">
           Who approved your changes, and how much feedback their approvals usually draw. Your index compares
           each change with what its reviewers' approvals draw on everyone else's changes. ▸ lists the addressed
-          comments that reviewer started themselves on your changes (as a commenter), newest first: the day, the change (linking to the
+          comments that reviewer started themselves on your changes of the past year (as a commenter), newest first: the day, the change (linking to the
           comment in Gerrit) and the file.
         </p>
         <!-- Set by selecting a dot in the over-time chart; filters this table. -->
@@ -327,7 +327,7 @@
         </template>
         <template data-msg="rev-loading">Loading…</template>
         <template data-msg="rev-none">No addressed comments from them on your changes<span data-if="half"> landed
-          <slot name="half"></slot></span><span data-if="dir"> in <slot name="dir"></slot></span>.</template>
+          <slot name="half"></slot></span><span data-if="dir"> in <slot name="dir"></slot></span> in the past year.</template>
         <template data-msg="rev-error">Couldn't load the comments: <slot name="error"></slot></template>
         <template data-msg="rev-comment-title">Open this comment in Gerrit</template>
         <template data-msg="rev-commit-msg">commit message</template>
@@ -337,14 +337,12 @@
         <a class="card-anchor" href="#download" aria-label="Link to this section" title="Link to this section">#</a>
         <h2 id="download-title">Download your review comments</h2>
         <p class="sub">
-          Every comment thread someone else started on your landed changes, with each reply in full, as one file:
+          Every comment thread someone else started on your changes that landed in the past year, with each reply in full, as one file:
           to keep, to search, or to give an AI assistant to find the patterns in your feedback. Made in your
           browser from the same public Gerrit data; nothing is sent anywhere.
         </p>
         <form id="rf-dl" class="rf-dl">
-          <label>From <select id="rf-dl-from"></select></label>
-          <label>to <select id="rf-dl-to"></select></label>
-          <label>as <select id="rf-dl-format">
+          <label>As <select id="rf-dl-format">
             <option value="md">Markdown</option>
             <option value="json">JSON</option>
           </select></label>
@@ -353,10 +351,10 @@
           <button type="submit">Download</button>
           <p id="rf-dl-note" class="sub" aria-live="polite"></p>
         </form>
-        <template data-msg="dl-loading">Fetching <slot name="n"></slot> half-years…</template>
+        <template data-msg="dl-loading">Fetching…</template>
         <template data-msg="dl-done">Downloaded <slot name="threads"></slot> comment threads on <slot
           name="cls"></slot> changes.</template>
-        <template data-msg="dl-none">No review comments on your changes in those half-years.</template>
+        <template data-msg="dl-none">No review comments on your changes in the past year.</template>
         <template data-msg="dl-error">Couldn't fetch the comments: <slot name="error"></slot></template>
         <template data-msg="dl-title"># Review comments on my Chromium changes, <slot name="from"></slot> to <slot
           name="to"></slot></template>

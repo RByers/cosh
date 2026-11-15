@@ -171,7 +171,7 @@ pages from `cosh-data.rbyers.ca`. Data on disk that isn't published
   (half-years in the Feedback Index) so finished periods are written once
   and never again, and keyed so that only the people, directories or
   periods touched that week change. `cosh.r2 sync` uploads only changed
-  files (about 2,000 writes a week of the threads' 32,676), well inside
+  files (about 2,000 thread files a week), well inside
   R2's free tier. A format that rewrites every object each week, or a
   step that has to regenerate a whole family to add a week, fails this
   goal.

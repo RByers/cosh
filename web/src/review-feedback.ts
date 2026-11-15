@@ -17,7 +17,6 @@ import {
   frOf,
   growth,
   halves,
-  halvesBetween,
   isoDay,
   latestDoubling,
   looksLikeEmail,
@@ -989,29 +988,29 @@ function toggleReviewer(email: string) {
   $(`#rf-revs tr.rf-rev-row[data-email="${CSS.escape(email)}"] .ar-toggle`).focus();
 }
 
-/** One half-year of the person's threads (R2), fetched once. */
-function loadThreads(h: string): Promise<ThreadFile | null> {
-  let got = state.threads.get(h);
+/** The person's threads of the past year (R2), fetched once; null when they have none. */
+function loadThreads(): Promise<ThreadFile | null> {
+  const key = state.key!;
+  let got = state.threads.get(key);
   if (!got) {
-    const key = state.key!;
     got = (async () => {
-      const r = await fetch(threadsUrl(key, h, state.peers!.end));
+      const r = await fetch(threadsUrl(key, state.peers!.end));
       if (r.status === 404) return null;
-      if (!r.ok) throw new Error(`${h}: ${r.status}`);
+      if (!r.ok) throw new Error(String(r.status));
       const f = (await r.json()) as ThreadFile;
-      if (f?.v !== 3 || f.half !== h || !Array.isArray(f.cls)) throw new Error(`${h}: unexpected file`);
+      if (f?.v !== 4 || !Array.isArray(f.cls)) throw new Error('unexpected file');
       return f;
     })();
     // A failed fetch is tried again next time.
-    got.catch(() => state.threads.delete(h));
-    state.threads.set(h, got);
+    got.catch(() => state.threads.delete(key));
+    state.threads.set(key, got);
   }
   return got;
 }
 
 /** The row under an opened reviewer: the addressed comments they started on the person's changes
- * (in the picked half-year, if any), newest first, each with its day, its change linking to the
- * comment in Gerrit, and its file. Loaded from the thread files the first time; no comment text. */
+ * of the past year (in the picked half-year, if any), newest first, each with its day, its change linking to the
+ * comment in Gerrit, and its file. Loaded from the thread file the first time; no comment text. */
 function reviewerCommentsRow(email: string): HTMLTableRowElement {
   const tr = el('tr', undefined, 'rf-rev-comments');
   const cell = el('td');
@@ -1024,11 +1023,9 @@ function reviewerCommentsRow(email: string): HTMLTableRowElement {
   const key = state.key;
   const half = state.half;
   const dir = state.dir;
-  const hs = half ? [half] : state.halves;
-  void Promise.all(hs.map(loadThreads)).then((files) => {
+  void loadThreads().then((file) => {
     if (state.key !== key || state.half !== half || state.dir !== dir || !td.isConnected) return;
-    const fs = files.filter((f): f is ThreadFile => f !== null);
-    const list = reviewerComments(fs, email, dir?.dirs);
+    const list = reviewerComments(file ? [file] : [], email, dir?.dirs, half);
     if (!list.length) {
       put(td, 'rev-none', { half: half ? halfName(half) : '', dir: dir?.name ?? '' });
       return;
@@ -1082,28 +1079,8 @@ function setDir(d: typeof state.dir) {
 /** A template as one line of text (the HTML wraps long ones). */
 const line = (key: string, vars: Vars = {}) => msg(key, vars).replace(/\s+/g, ' ').trim();
 
-/** The first and last month a half-year's changes can be from ("July 2025", "October 2026"),
- * cut to the dates the data covers. */
-function halfMonths(h: string): [string, string] {
-  const peers = state.peers!;
-  const [from, to] = periodSpan(h, [peers.start, peers.end]);
-  return [monthOf(from, true), monthOf(toMonth(to), true)];
-}
-
-/** The download's half-year choices: every half-year the person has changes in, "from" named by
- * its first month and "to" by its last; by default the latest two (about the past year). */
+/** A new person: the download's note is cleared. */
 function setupDownload() {
-  const from = $<HTMLSelectElement>('#rf-dl-from');
-  const to = $<HTMLSelectElement>('#rf-dl-to');
-  for (const [sel, end] of [[from, 0], [to, 1]] as const) {
-    sel.replaceChildren(...state.halves.map((h) => {
-      const o = el('option', halfMonths(h)[end]);
-      o.value = h;
-      return o;
-    }));
-  }
-  from.value = state.halves.at(-2) ?? state.halves[0] ?? '';
-  to.value = state.halves.at(-1) ?? '';
   $('#rf-dl-note').replaceChildren();
 }
 
@@ -1119,22 +1096,20 @@ function promptMarkdown(): string {
   return out.join('\n').trim();
 }
 
-/** Fetches the person's threads for the chosen half-years and saves them as one file. Comment text
+/** Fetches the person's threads of the past year and saves them as one file. Comment text
  * goes only into that file, never into the page. */
 async function download() {
   const note = $('#rf-dl-note');
   const key = state.key;
   const peers = state.peers;
   if (!key || !peers) return;
-  const from = $<HTMLSelectElement>('#rf-dl-from').value;
-  const to = $<HTMLSelectElement>('#rf-dl-to').value;
   const json = $<HTMLSelectElement>('#rf-dl-format').value === 'json';
   const prompt = $<HTMLInputElement>('#rf-dl-prompt').checked;
-  const hs = halvesBetween(state.halves, from, to);
-  put(note, 'dl-loading', { n: fmtInt(hs.length) });
+  put(note, 'dl-loading');
   try {
-    const files = (await Promise.all(hs.map(loadThreads))).filter((f): f is ThreadFile => f !== null);
-    const md = threadsMarkdown(files, {
+    const file = await loadThreads();
+    if (state.key !== key) return;
+    const md = threadsMarkdown(file ? [file] : [], {
       owner: line('dl-owner'),
       addressed: line('dl-addressed'),
       notAddressed: line('dl-not-addressed'),
@@ -1145,21 +1120,21 @@ async function download() {
       patchSet: (n) => line('dl-patch-set', { n: String(n) }),
       landed: (day, lines) => line('dl-landed', { day, lines }),
     });
-    if (!md.threads) {
+    if (!file || !md.threads) {
       put(note, 'dl-none');
       return;
     }
-    const [a, b] = from <= to ? [from, to] : [to, from];
+    const day = (d: string) => fmtDay(new Date(`${d}T00:00:00Z`));
     const today = new Date().toISOString().slice(0, 10);
     const body = json
-      ? JSON.stringify({ v: 1, downloaded: today, files }, null, 1)
-      : [line('dl-title', { from: halfMonths(a)[0], to: halfMonths(b)[1] }), '', line('dl-about', { day: today }), '',
+      ? JSON.stringify({ downloaded: today, ...file }, null, 1)
+      : [line('dl-title', { from: day(file.from), to: day(file.to) }), '', line('dl-about', { day: today }), '',
         ...(prompt ? [promptMarkdown(), ''] : []), md.md].join('\n');
     const blob = new Blob([body], { type: json ? 'application/json' : 'text/markdown' });
     const url = URL.createObjectURL(blob);
     const link = el('a');
     link.href = url;
-    link.download = `chromium-review-comments-${a}-${b}.${json ? 'json' : 'md'}`;
+    link.download = `chromium-review-comments-${file.from}-to-${file.to}.${json ? 'json' : 'md'}`;
     document.body.append(link);
     link.click();
     link.remove();
