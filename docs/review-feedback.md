@@ -332,6 +332,8 @@ charts are drawn when it opens:
   orgs differ partly through their contributors' experience; with
   experience and directories (per half-year, without the person; the
   index no longer has org factors), 0.39–1.97 (google.com 1.00, microsoft.com 0.95, igalia.com 0.91).
+  Whether the index should compare by organization: "Google and other
+  organizations" below.
 - *How it's measured:* the definitions above in prose.
 
 **Dates come from the data**, never from the code. The range runs from the
@@ -381,6 +383,91 @@ changed lines) showed that deleted lines draw almost no addressed feedback:
 
 A dashboard on deletion over time is an idea in `docs/plan.md` (Next
 steps 9).
+
+## Google and other organizations
+
+**The question** (2026-11-14): does the index favour people at Google, who
+have experts nearby to help before a CL reaches Gerrit and are mostly
+reviewed by colleagues? Should it compare within an organization, or have
+an organization filter again? **No:** nothing in the data shows non-Googlers
+drawing more feedback or tougher reviews than Googlers, if anything the
+opposite, and an organization factor moves people without predicting
+better. The index stays without one.
+
+Measured on 872,193 CLs and the 2,834 people with `MIN_CLS` CLs. A person's
+org is the one most of their CLs landed as (`OrgResolver`, per CL at its
+close day); an unlisted `chromium.org` address counts as Google, and
+`config/affiliations.json5` lists the non-Google ones (refreshed
+2026-11-12). Lower means less addressed feedback than expected.
+
+| Group | People | Index: 10th pct. | Quartile | Median (95% CI) | Quartile | 90th pct. |
+|---|---|---|---|---|---|---|
+| Google | 2,503 | 0.40 | 0.68 | 1.02 (0.99–1.04) | 1.44 | 1.91 |
+| of them, `google.com` addresses | 1,014 | 0.38 | 0.67 | 0.97 (0.92–1.04) | 1.44 | 1.93 |
+| Outside Google | 331 | 0.35 | 0.56 | 0.86 (0.78–0.98) | 1.32 | 1.84 |
+| microsoft.com | 142 | 0.35 | 0.56 | 0.85 (0.71–0.98) | 1.29 | 1.85 |
+| gmail.com | 42 | 0.36 | 0.66 | 1.10 (0.98–1.27) | 1.73 | 2.38 |
+| igalia.com | 40 | 0.35 | 0.54 | 0.87 (0.62–1.03) | 1.20 | 1.53 |
+
+- **The gap runs the other way, and is small.** Googlers' median is 1.18
+  times (1.06–1.32) that of people outside Google. A random Googler's index
+  is above a random non-Googler's 56% of the time. The gap in mean log
+  index (0.14) is a fifth of the spread between people (SD 0.68) and half
+  of one person's own noise (0.27, from odd and even CLs; split-half rank
+  correlation 0.76 for Google, 0.67 outside).
+- **Newcomers show it most.** Pooled addressed threads over expected, in
+  the first 8 CLs: Google 1.08, outside 0.89 (ratio 1.22, 1.07–1.38); CLs
+  9–16, 1.06 and 0.85; 17–32, 1.01 and 0.65. Help before upload would
+  show as the opposite. From 128 CLs up the ratio's interval includes 1
+  (few people outside Google have that many).
+- **Half of it is where people work.** Pooled over CLs, Google's observed
+  over expected is 1.20 times (1.08–1.35) the others'; with a factor per
+  directory, 1.07; with CL size, directory, period and no-approver
+  together, 1.08 (1.02–1.15). By period, with those controls: 1.21 in
+  2017–20, 1.05 in 2021–23, 1.01 in 2024–26.
+- **Reviewers don't treat outsiders differently.** 80% of non-Googlers'
+  CLs are approved only by Googlers (95% of Googlers' are). For the 800
+  Google reviewers with at least 5 expected threads on each side, addressed
+  threads over the full fit's expected (author and reviewer factors both
+  in) on outsiders' CLs are 1.01 times (0.97–1.04) those on colleagues',
+  and half the reviewers are on each side of 1. By cell, the same measure
+  is 1.00 for Google authors with Google approvers and 0.96 (0.95–0.98)
+  for other authors with Google approvers. No period differs.
+- **An organization factor moves people without predicting better.** A
+  factor for Google or not (1.006 and 0.839, fitted like a reviewer's, the
+  person left out) raises all 331 non-Googlers, by 18% at the median, and
+  removes 12.14% of the error of experience alone where the index removes
+  12.10% (`method_compare`'s deviance, owner left out). A factor per org
+  moves 284 people by more than 10% and predicts slightly worse (12.02%).
+  `docs/goals.md` chooses peer groups by prediction.
+
+What does differ, for everyone alike:
+
+- **Familiar pairs draw less.** An approver's first approval of an
+  author's CL draws 1.18 times the full fit's expected threads, 1.05 after
+  1–4 earlier ones, 0.99 after 5–19 and 0.91 after 20 or more (Google
+  pairs; for non-Googlers with other orgs' approvers 1.07 → 0.89, with
+  their own org's 1.23 → 0.92). Googlers get 36% of their expected threads
+  from pairs of 20 or more, others 19%: by that mix alone Googlers would
+  sit about 4% lower. The reviewer factor carries none of this.
+- **More approvers, more feedback.** A CL with two or more approvers
+  draws about 1.5 times what one with a single approver does (1.18 against
+  0.79 of the fit's expected, Google pairs), and the index takes the
+  approvers' mean factor. 48% of non-Googlers' CLs have two or more, 29%
+  of Googlers'.
+
+Either could go into the expected count if it passes `method_compare`;
+neither has been tried.
+
+Limits. Googlers are 88% of the people, so they set the median and the
+rates: help that every Googler gets off Gerrit can't be seen in any of
+this. The other group is small and mostly Microsoft and Igalia. The org
+factor was fitted on top of the index's expected count, not together with
+the author and reviewer factors. Which reviewer sees which CL isn't
+random. Scripts and full tables are scratch, not in git:
+`data/private/scratch/fi-org-bias/` (`capture.py` and `pairs_capture.py`
+run `cosh.review_feedback` up to its rate model and write nothing;
+`analyze.py`, `pairs_analyze.py`, `pairs_mix.py`).
 
 ## Ground rules
 
