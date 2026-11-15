@@ -68,6 +68,9 @@ const state = {
   peers: null as Peers | null,
   /** reviewers.json, loaded with the first person. */
   reviewers: null as ReviewerTable | null,
+  /** The person's file key and half-years, for the comment download. */
+  key: null as string | null,
+  halves: [] as string[],
   /** The half-year picked in the over-time chart, filtering the comments-per-change chart. */
   half: null as string | null,
   /** The experience bin shown in "How it's changing". */
@@ -225,6 +228,8 @@ async function lookup(raw: string) {
     }
     state.person = found;
     window.__rf!.person = found;
+    state.key = top!.key;
+    state.halves = top!.top.halves;
     state.half = null;
     window.__rf!.half = null;
     state.allExpanded = new Set();
@@ -978,6 +983,98 @@ function renderPerCl() {
   });
 }
 
+// ---- downloading the comments
+
+/** A template as one line of text (the HTML wraps long ones). */
+const line = (key: string, vars: Vars = {}) => msg(key, vars).replace(/\s+/g, ' ').trim();
+
+/** The download's half-year choices: every half-year the person has changes in; by default the
+ * latest two (about the past year). */
+function setupDownload() {
+  const from = $<HTMLSelectElement>('#rf-dl-from');
+  const to = $<HTMLSelectElement>('#rf-dl-to');
+  for (const sel of [from, to]) {
+    sel.replaceChildren(...state.halves.map((h) => {
+      const o = el('option', halfName(h));
+      o.value = h;
+      return o;
+    }));
+  }
+  from.value = state.halves.at(-2) ?? state.halves[0] ?? '';
+  to.value = state.halves.at(-1) ?? '';
+  $('#rf-dl-note').replaceChildren();
+}
+
+/** The coach's instructions (the dl-prompt template) as Markdown. */
+function promptMarkdown(): string {
+  const out: string[] = [];
+  const text = (e: Element) => (e.textContent ?? '').replace(/\s+/g, ' ').trim();
+  for (const e of fragment('dl-prompt').children) {
+    if (e.localName === 'h2') out.push(`## ${text(e)}`, '');
+    else if (e.localName === 'ul') out.push(...[...e.children].map((li) => `- ${text(li)}`), '');
+    else out.push(text(e), '');
+  }
+  return out.join('\n').trim();
+}
+
+/** Fetches the person's threads for the chosen half-years and saves them as one file. Comment text
+ * goes only into that file, never into the page. */
+async function download() {
+  const note = $('#rf-dl-note');
+  const key = state.key;
+  const peers = state.peers;
+  if (!key || !peers) return;
+  const from = $<HTMLSelectElement>('#rf-dl-from').value;
+  const to = $<HTMLSelectElement>('#rf-dl-to').value;
+  const json = $<HTMLSelectElement>('#rf-dl-format').value === 'json';
+  const prompt = $<HTMLInputElement>('#rf-dl-prompt').checked;
+  const hs = halvesBetween(state.halves, from, to);
+  put(note, 'dl-loading', { n: fmtInt(hs.length) });
+  try {
+    const files = (await Promise.all(hs.map(async (h) => {
+      const r = await fetch(threadsUrl(key, h, peers.end));
+      if (r.status === 404) return null;
+      if (!r.ok) throw new Error(`${h}: ${r.status}`);
+      const f = (await r.json()) as ThreadFile;
+      if (f?.v !== 1 || f.half !== h || !Array.isArray(f.cls)) throw new Error(`${h}: unexpected file`);
+      return f;
+    }))).filter((f): f is ThreadFile => f !== null);
+    const md = threadsMarkdown(files, {
+      owner: line('dl-owner'),
+      addressed: line('dl-addressed'),
+      notAddressed: line('dl-not-addressed'),
+      unresolved: line('dl-unresolved'),
+      change: line('dl-change'),
+      commitMsg: line('dl-commit-msg'),
+      line: (n) => line('dl-line', { n: String(n) }),
+      patchSet: (n) => line('dl-patch-set', { n: String(n) }),
+      landed: (day, lines) => line('dl-landed', { day, lines }),
+    });
+    if (!md.threads) {
+      put(note, 'dl-none');
+      return;
+    }
+    const [a, b] = from <= to ? [from, to] : [to, from];
+    const today = new Date().toISOString().slice(0, 10);
+    const body = json
+      ? JSON.stringify({ v: 1, downloaded: today, files }, null, 1)
+      : [line('dl-title', { from: halfName(a), to: halfName(b) }), '', line('dl-about', { day: today }), '',
+        ...(prompt ? [promptMarkdown(), ''] : []), md.md].join('\n');
+    const blob = new Blob([body], { type: json ? 'application/json' : 'text/markdown' });
+    const url = URL.createObjectURL(blob);
+    const link = el('a');
+    link.href = url;
+    link.download = `chromium-review-comments-${a}-${b}.${json ? 'json' : 'md'}`;
+    document.body.append(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 60_000);
+    put(note, 'dl-done', { threads: fmtInt(md.threads), cls: fmtInt(md.cls) });
+  } catch (e) {
+    put(note, 'dl-error', { error: String(e instanceof Error ? e.message : e) });
+  }
+}
+
 // ---- wiring
 
 function init() {
@@ -986,6 +1083,10 @@ function init() {
   form.addEventListener('submit', (e) => {
     e.preventDefault();
     void lookup(input.value);
+  });
+  $<HTMLFormElement>('#rf-dl').addEventListener('submit', (e) => {
+    e.preventDefault();
+    void download();
   });
   $('#rf-half-clear').addEventListener('click', () => setHalf(null));
   const method = $<HTMLDetailsElement>('#method');

@@ -1764,11 +1764,10 @@ test('dataflow: layout runs top to bottom, sources and config first, pages last,
 test('dataflow: the routed drawing of each page has no crossings (bar known ones) and no edge behind a box', () => {
   const real = G.buildGraph(flow);
   const size = { nodeW: 128, chipW: 112, chipGap: 10, laneW: 6, gap: 16 }; // as dataflow.ts
-  // The Feedback Index allows 5. 2: review-feedback and comments-collect both read reviews.sqlite
+  // The Feedback Index allows 2: review-feedback and comments-collect both read reviews.sqlite
   // and the affiliations file, and since tone was split off (2026-11-14) neither feeds the
-  // other, so those four edges can't all be kept apart. 3 more since the comment download
-  // (2026-11-14): review-threads reads NoteDb, reviews.sqlite and addressed.sqlite beside them.
-  const allowed: Record<string, number> = { 'page-feedback': 5 };
+  // other, so those four edges can't all be kept apart.
+  const allowed: Record<string, number> = { 'page-feedback': 2 };
   for (const pages of [['page-feedback'], ['page-value'], ['page-sentiment']]) {
     const split = G.splitShared(real, G.scope(real, pages, false));
     const r = G.route(split.g, split.keep, size);
