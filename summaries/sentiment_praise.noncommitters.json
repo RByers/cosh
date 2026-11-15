@@ -1,5 +1,5 @@
 {
- "generated_at": "2026-11-10T23:03:07Z",
+ "generated_at": "2026-11-15T05:32:31Z",
  "prompt": "v3",
  "model": "haiku",
  "weeks": [
@@ -341,8 +341,8 @@
   "andruud@chromium.org": "Anders Hartvoll Ruud",
   "pskevin@google.com": "Kevin Puthusseri",
   "battre@chromium.org": "Dominic Battré",
-  "pmonette@chromium.org": "Patrick Monette",
   "gqueen@chromium.org": "Gabriella Queen",
+  "pmonette@chromium.org": "Patrick Monette",
   "schwering@google.com": "Christoph Schwering",
   "jiawei.chen@dolby.com": "Jiawei Chen",
   "dalecurtis@chromium.org": "Dale Curtis",

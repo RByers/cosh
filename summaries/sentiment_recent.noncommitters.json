@@ -1,5 +1,5 @@
 {
- "generated_at": "2026-11-10T22:38:30Z",
+ "generated_at": "2026-11-15T05:38:46Z",
  "prompt": "v3",
  "weeks": [
   "2025-W45",
@@ -1188,12 +1188,6 @@
      "role": "reviewer"
     },
     {
-     "text": "Gemini should have updated the unit test to have coverage of this.",
-     "score": -0.3,
-     "month": "2026-05",
-     "role": "author"
-    },
-    {
      "text": "AI generated comments actually make sense this time",
      "score": -0.3,
      "month": "2026-10",
@@ -1249,7 +1243,7 @@
     }
    ],
    "ai_left_out": {
-    "screened": 14,
+    "screened": 15,
     "long_or_linked": 4
    }
   },
@@ -2013,12 +2007,6 @@
      "role": "reviewer"
     },
     {
-     "text": "Gemini should have updated the unit test to have coverage of this.",
-     "score": -0.3,
-     "month": "2026-05",
-     "role": "author"
-    },
-    {
      "text": "AI generated comments actually make sense this time",
      "score": -0.3,
      "month": "2026-10",
@@ -2068,7 +2056,7 @@
     }
    ],
    "ai_left_out": {
-    "screened": 12,
+    "screened": 13,
     "long_or_linked": 2
    }
   },
@@ -2490,16 +2478,9 @@
     "authors": [],
     "reviewers": []
    },
-   "ai": [
-    {
-     "text": "Gemini should have updated the unit test to have coverage of this.",
-     "score": -0.3,
-     "month": "2026-05",
-     "role": "author"
-    }
-   ],
+   "ai": [],
    "ai_left_out": {
-    "screened": 1,
+    "screened": 2,
     "long_or_linked": 0
    }
   },

@@ -1,5 +1,5 @@
 {
- "generated_at": "2026-11-10T22:33:03Z",
+ "generated_at": "2026-11-15T05:23:15Z",
  "prompt": "v3",
  "model": "haiku",
  "sample": "sample-5pct",
@@ -2108,6 +2108,6 @@
   }
  ],
  "n": 24047,
- "n_trivial": 18254,
+ "n_trivial": 18253,
  "missing": 0
 }

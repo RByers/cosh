@@ -1,5 +1,5 @@
 {
- "generated_at": "2026-11-10T22:39:38Z",
+ "generated_at": "2026-11-15T05:33:44Z",
  "prompt": "v3",
  "weeks": [
   "2025-W45",
@@ -270,12 +270,12 @@
      "month": "2025-12"
     },
     {
-     "text": "I'm afraid I'm not comfortable with this change landing before it was completed.\n\nMoving forward please don't rush submitting changes before collecting all approvals.",
+     "text": "Next time, could you please put some details into answers to review comments? I asked a question, \"done\" isn't an answer.",
      "score": -0.6,
      "month": "2025-12"
     },
     {
-     "text": "Next time, could you please put some details into answers to review comments? I asked a question, \"done\" isn't an answer.",
+     "text": "Ack, I took a look again but you did not address the question I asked above after I wrote this comment...",
      "score": -0.6,
      "month": "2025-12"
     }
@@ -497,11 +497,6 @@
      "month": "2025-12"
     },
     {
-     "text": "I'm afraid I'm not comfortable with this change landing before it was completed.\n\nMoving forward please don't rush submitting changes before collecting all approvals.",
-     "score": -0.6,
-     "month": "2025-12"
-    },
-    {
      "text": "Next time, could you please put some details into answers to review comments? I asked a question, \"done\" isn't an answer.",
      "score": -0.6,
      "month": "2025-12"
@@ -633,6 +628,11 @@
      "month": "2026-07"
     },
     {
+     "text": "same comment as previous CLs.  (And please make sure to apply it to any future CLs)",
+     "score": -0.6,
+     "month": "2026-10"
+    },
+    {
      "text": "How can it be that neither the author nor any reviewer saw that a change in indentation has created havoc in this file?",
      "score": -0.6,
      "month": "2026-04"
@@ -641,11 +641,6 @@
      "text": "This CL isn't urgent, is it? Please normally don't resolve comments and land CLs if there are open questions.\n\nThe use of Object.equals() does not address that this is a footgun and, AFAICT, not idiomatic (Chromium-style) Java.",
      "score": -0.6,
      "month": "2026-08"
-    },
-    {
-     "text": "This CL doesn't even begin to implement the semantics that would be needed to approach what the spec says, so it seems quite unfinished.",
-     "score": -0.6,
-     "month": "2026-10"
     }
    ]
   },
@@ -961,11 +956,6 @@
    ],
    "grumpy": [
     {
-     "text": "WHO REVIEWED THESE TESTS? THEY DIDNT EVEN CHECK THESE IN THE ORIGINAL\n\n(not that it excuses me from not adding the checks back in)",
-     "score": -0.6,
-     "month": "2026-03"
-    },
-    {
      "text": "This is not a bug but an intended behavior controlled by an experimental flag, `#confirmation-button-swap-order`. The difference between channels or builds probably has to do with which experiment group you're being placed in.\n\nPlease don't try to work around this – instead, test your feature with that flag enabled/disabled and ensure you are consistent with the rest of the app.",
      "score": -0.6,
      "month": "2026-03"
@@ -1007,6 +997,11 @@
     },
     {
      "text": "Does your patch **compile**? I was pointing out it doesn't.\n\nPlease don't skip trying to compile locally and then running the CQ.\n\n---\n\nAbout my comment, I just meant:\n```\n[leading_byte, in] = in.split<kChunkSize>();\nbase::byte_span_from_ref(v).copy_from(leading_byte);\n```\n\nThen \"in\" will be reassigned to what's left of the buffer and `leading_byte`",
+     "score": -0.6,
+     "month": "2026-03"
+    },
+    {
+     "text": "It looks like I did the same suggestion 2-3 times already:\n\nWe don't want \"GetSpanIncludePath\", because other project aren't going to use a \"span\" class. Instead, it should be its full path.",
      "score": -0.6,
      "month": "2026-03"
     }
@@ -1234,11 +1229,6 @@
     },
     {
      "text": "This is still open. Please actually address comments before sending a CL for the next round of review!",
-     "score": -0.6,
-     "month": "2026-05"
-    },
-    {
-     "text": "This obviously makes this function inconsistent in box ordering. Could you please explain what you're trying to do here instead of sending arbitrary code that seemingly fixes the bug?",
      "score": -0.6,
      "month": "2026-05"
     },
@@ -1525,11 +1515,6 @@
      "month": "2026-06"
     },
     {
-     "text": "i understand this, but for review, you dont need the same change in this cl and the other cl, like i said. if that is true, then you should A) chain it, or B), dont have me review this cl yet",
-     "score": -0.6,
-     "month": "2026-07"
-    },
-    {
      "text": "Sigh, time for everyone to reapprove",
      "score": -0.6,
      "month": "2026-07"
@@ -1627,11 +1612,6 @@
     },
     {
      "text": "This CL isn't urgent, is it? Please normally don't resolve comments and land CLs if there are open questions.\n\nThe use of Object.equals() does not address that this is a footgun and, AFAICT, not idiomatic (Chromium-style) Java.",
-     "score": -0.6,
-     "month": "2026-08"
-    },
-    {
-     "text": "Important: in the future, please **don't bypass owners / go to broad area owners for code reviews**.",
      "score": -0.6,
      "month": "2026-08"
     },
@@ -1745,11 +1725,6 @@
      "text": "Sigh... So many programmers get window hooks so wrong... or just do stupid things.",
      "score": -0.6,
      "month": "2026-09"
-    },
-    {
-     "text": "Please actually add it back.",
-     "score": -0.6,
-     "month": "2026-09"
     }
    ]
   },
@@ -1843,6 +1818,11 @@
      "month": "2026-10"
     },
     {
+     "text": "same comment as previous CLs.  (And please make sure to apply it to any future CLs)",
+     "score": -0.6,
+     "month": "2026-10"
+    },
+    {
      "text": "This CL doesn't even begin to implement the semantics that would be needed to approach what the spec says, so it seems quite unfinished.",
      "score": -0.6,
      "month": "2026-10"
@@ -1879,11 +1859,6 @@
     },
     {
      "text": "Why are we landing an ugly hack instead of properly fixing? We don't land hacks and expect 'owners of this file' to fix them later.\n\nPlease fix this properly.",
-     "score": -0.6,
-     "month": "2026-10"
-    },
-    {
-     "text": "It's not acceptable.  Please fix the crash first, or drop this test.",
      "score": -0.6,
      "month": "2026-10"
     }
