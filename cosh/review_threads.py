@@ -198,6 +198,7 @@ def main(argv=None):
     ap.add_argument("--end", help="the window's last day, YYYY-MM-DD (default: the newest CL's landing day)")
     ap.add_argument("--cls", help="the Feedback Index's CL index (default <data>/feedback-cls.json.gz)")
     ap.add_argument("--out", help="default <data>/review-threads")
+    ap.add_argument("--weeks", type=int, default=WEEKS, help=f"the window's length (default {WEEKS})")
     a = ap.parse_args(argv)
     if a.out is None:
         r2.hold()
@@ -222,8 +223,8 @@ def main(argv=None):
     person_revs = {k: {r for cls in by_half.values() for _, revs, _ in cls for r in revs}
                    for k, by_half in shards.items()}
 
-    # The window spans at most three half-years: only their CLs can be in it.
-    recent = sorted({h for by_half in shards.values() for h in by_half})[-3:]
+    # The window spans at most weeks / 26 + 2 half-years: only their CLs can be in it.
+    recent = sorted({h for by_half in shards.values() for h in by_half})[-(a.weeks // 26 + 2):]
     cand = {k: [(h, n, tdirs) for h in recent for n, _, tdirs in by_half.get(h, ())] for k, by_half in shards.items()}
     info = {}
     ns = sorted({n for cls in cand.values() for _, n, _ in cls})
@@ -234,7 +235,7 @@ def main(argv=None):
                 f"WHERE host = ? AND change_number IN ({','.join('?' * len(part))})", (HOST, *part)):
             info[row[0]] = row[1:]
     end = a.end or max((v[3] or "")[:10] for v in info.values())
-    start = window(end)
+    start = window(end, a.weeks)
     todo = {k: [c for c in cls if c[1] in info and start <= (info[c[1]][3] or "")[:10] <= end] for k, cls in cand.items()}
     todo = {k: cls for k, cls in todo.items() if cls}
     print(f"CLs landed {start} .. {end}: {len(todo):,} people, {sum(map(len, todo.values())):,} CLs",

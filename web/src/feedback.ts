@@ -703,6 +703,9 @@ export interface Thread {
   comments: [number, string, string][];
 }
 
+/** The days a thread file covers, up to the data's end (cosh/review_threads.py WEEKS). */
+export const THREAD_DAYS = 52 * 7;
+
 /** The URL of one person's threads of the past year: one gzipped JSON file per person in the R2
  * bucket (too big for git), fetched only when someone downloads their comments or opens a
  * reviewer. `name` is their `personFile`; `v` (the data's end) skips cached older copies. */

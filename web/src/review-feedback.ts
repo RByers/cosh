@@ -24,6 +24,7 @@ import {
   noneFactor,
   percentileOf,
   periodSpan,
+  THREAD_DAYS,
   personFile,
   isPersonFile,
   halvesOf,
@@ -1028,7 +1029,13 @@ function reviewerCommentsRow(email: string): HTMLTableRowElement {
     if (state.key !== key || state.half !== half || state.dir !== dir || !td.isConnected) return;
     const list = reviewerComments(file ? [file] : [], email, dir?.dirs, half);
     if (!list.length) {
-      put(td, 'rev-none', { half: half ? halfName(half) : '', dir: dir?.name ?? '' });
+      // The thread files hold only the past year: say where they start, unless the picked
+      // half-year lies wholly inside it. A missing file (no threads) starts where it would have.
+      const from = file?.from ?? isoDay(state.peers!.end - THREAD_DAYS);
+      const [h0, h1] = half ? periodSpan(half, [-Infinity, Infinity]).map(isoDay) : [null, null];
+      const since = fmtDay(new Date(`${from}T00:00:00Z`));
+      if (h1 !== null && h1 <= from) put(td, 'rev-none-before', { half: halfName(half!), since });
+      else put(td, 'rev-none', { half: half ? halfName(half) : '', dir: dir?.name ?? '', since: h0 === null || h0 < from ? since : '' });
       return;
     }
     const ul = el('ul', undefined, 'rf-rev-list');

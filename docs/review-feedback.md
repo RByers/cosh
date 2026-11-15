@@ -843,6 +843,14 @@ year back to 2017, one file per half-year, was 33,015 files and 407 MB,
 far more than the download's purpose (recent feedback for the person's
 own assistant) needs (the user's call, 2026-11-14). A person with no such
 thread in the year has no file, which the page reads as "no comments".
+A reviewer row that lists nothing says where the year starts when the
+picked half-year begins before it ("since 10 Nov 2025, where the comment
+list starts"), and that the list has none at all for a half-year wholly
+before it. `--weeks` sets the window's length: two years (`--weeks 104`)
+measured 3,125 files, 644k threads and 92 MB gzipped, built in 109 s
+(2026-11-15), against 2,388 files and 52 MB in 60 s for one; the page
+would need `THREAD_DAYS` (`web/src/feedback.ts`) and its wording changed
+with it.
 Each weekly publish uploads the files of people with changes that week
 (about 1,900 of them, most of the 52 MB).
 

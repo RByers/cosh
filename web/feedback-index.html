@@ -329,7 +329,10 @@
         </template>
         <template data-msg="rev-loading">Loading…</template>
         <template data-msg="rev-none">No addressed comments from them on your changes<span data-if="half"> landed
-          <slot name="half"></slot></span><span data-if="dir"> in <slot name="dir"></slot></span> in the past year.</template>
+          <slot name="half"></slot></span><span data-if="dir"> in <slot name="dir"></slot></span><span
+          data-if="since"> since <slot name="since"></slot>, where the comment list starts</span>.</template>
+        <template data-msg="rev-none-before">The comment list covers only the past year, changes landed since
+          <slot name="since"></slot>, so it has none from <slot name="half"></slot>.</template>
         <template data-msg="rev-error">Couldn't load the comments: <slot name="error"></slot></template>
         <template data-msg="rev-comment-title">Open this comment in Gerrit</template>
         <template data-msg="rev-commit-msg">commit message</template>
