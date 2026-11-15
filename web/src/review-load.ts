@@ -155,7 +155,7 @@ function renderCommits() {
   const p = state.person;
   const t = theme();
   const { i, q } = lastOf(all);
-  const keys: Key[] = [{ label: msg('legend-commits'), color: t.series[0] }, { label: msg('legend-human'), color: t.series[1] }];
+  const keys: Key[] = [{ label: msg('legend-commits'), color: t.series[0] }, { label: msg('legend-human'), color: t.series[2] }];
   const datasets: Line[] = [line(keys[0].label, all.commits, keys[0].color), line(keys[1].label, all.human, keys[1].color)];
   const scales: Record<string, object> = { y: { ...axis(t, msg('axis-commits')), beginAtZero: true } };
   if (p) {
