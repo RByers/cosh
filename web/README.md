@@ -161,6 +161,19 @@ into the page's first file, combining several by their earliest end (Value
 Exchange adds Radar's weeks). The dates follow the data; see
 `docs/data-architecture.md`, "Data spans".
 
+## Feedback links
+
+Every page links to a new GitHub issue labelled with the page's name, so
+reports arrive sorted: `https://github.com/RByers/cosh/issues/new?labels=<page>`,
+where `<page>` is the HTML file's name without `.html` (`home` for the
+landing page; `404.html` has none). Put it with the page's caveat or intro
+("Please report any issues"), with `target="_blank" rel="noopener"`.
+GitHub silently drops a label that doesn't exist in the repository, so a new
+page needs its label created first (by the user; agents can't):
+`gh label create <page> -R RByers/cosh --description "Feedback on the <title> page"`.
+A unit test (`test/unit.test.ts`) fails for a page whose link is missing or
+names another label.
+
 ## Text and styling
 
 The page's wording lives in each page's HTML (`value.html`, `index.html`), so it can be reviewed and tweaked

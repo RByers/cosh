@@ -1352,6 +1352,21 @@ test('no script parses strings as HTML or code', async () => {
   }
 });
 
+// Every page links to a new GitHub issue that carries the page's own label: the HTML file's
+// name, or "home" for the landing page (web/README.md, "Feedback links"). The label must exist
+// in the repository, or GitHub drops it.
+test('every page has a feedback link with its own label', async () => {
+  const { readdirSync } = await import('node:fs');
+  const web = fileURLToPath(new URL('../', import.meta.url));
+  const pages = readdirSync(web).filter((f) => f.endsWith('.html') && f !== '404.html');
+  assert.ok(pages.length >= 7, pages.join());
+  for (const f of pages) {
+    const label = f === 'index.html' ? 'home' : f.replace(/\.html$/, '');
+    const links = readFileSync(web + f, 'utf8').match(/https:\/\/github\.com\/RByers\/cosh\/issues\/new[^"]*/g) ?? [];
+    assert.deepEqual(links, [`https://github.com/RByers/cosh/issues/new?labels=${label}`], f);
+  }
+});
+
 test('Gerrit links stay on Gerrit whatever the data says', () => {
   const evil = 'javascript:alert(1)//"><img src=x onerror=alert(1)>';
   for (const url of [

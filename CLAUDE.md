@@ -198,7 +198,9 @@ purpose near the top of its own doc.
 - Web UI: `web/` (Vite + TypeScript, Chart.js), one page per dashboard
   (`web/value.html` is Value Exchange) plus the landing page
   `web/index.html`, which has a card for each one. A new dashboard needs a
-  page, an `input` entry in `web/vite.config.ts` and a card. Each card's
+  page, an `input` entry in `web/vite.config.ts`, a card, and a feedback
+  link labelled with the page's file name (ask the user to create the
+  GitHub label; `web/README.md`, "Feedback links"). Each card's
   sources line lists every data source its page uses: when a page starts
   or stops using one (git history, Radar …; not models like Haiku), update the card in the
   same change. `cd web && npm test` builds
