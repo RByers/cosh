@@ -627,6 +627,15 @@ across `chromium.org` and `google.com`.
   CLs and half of its CLs (`vote_links`, from `review-timeline.sqlite`):
   136 of 169 such addresses, 88% of their uses, 49 of them under another
   username.
+- **Name.** A person is named by the address they used most recently
+  (`Ids` with `latest`, set by `exact_identities`): git authorship and
+  Reviewed-by footers count at their landing time, and an account's
+  address, which Gerrit gives as it is now, at its owned CLs' last update
+  and its newest vote. Someone who changed their address is never named by
+  the old one (docs/goals.md, goal 2); the old one gets a `{"see": <name>}`
+  file. Before 2026-11-15 the alphabetically first address named the
+  identity, which picked a person's old address for 61 of the 102
+  identities whose addresses differ in more than domain.
 - Gerrit's public data gives only each account's preferred address, not
   the ones linked to it, so two accounts of one person with no such
   evidence stay two people. Before 2026-11-14 the Feedback Index folded

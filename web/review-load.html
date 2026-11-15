@@ -271,8 +271,15 @@
           Reviewed-by footers other than its author. Commits by bots, reverts, large-scale changes and
           mechanical commits (100 or more files, or 10 or more that repeat the same edit) are left out, since
           nobody reads those line by line. A commit with two reviewers counts twice: the measure is review
-          work, not code. Reviewed-by names those who approved; reviewers who only commented are not counted
-          here.
+          work, not code.
+        </p>
+        <p class="note">
+          <strong>Reviewers here are approvers.</strong> Gerrit writes a Reviewed-by footer for each positive
+          Code-Review vote standing on the patch set that lands, so a reviewer who was added to a change but
+          never voted, or whose vote a later patch set cleared, isn't in it. In 2025, 99.8% of Reviewed-by names
+          had such a vote (the rest voted under another address), while 16% of the reviewers added to changes
+          weren't named, nearly all of them never having voted: another reviewer approved first. Reviewers who
+          only commented aren't counted in lines reviewed.
         </p>
         <p id="rl-split-note" class="note"></p>
         <template data-msg="split-note">
@@ -298,8 +305,8 @@
         <template data-msg="axis-split">reviewers</template>
         <p class="note">
           <strong>Review times</strong> come from Gerrit, for the same commits' changes. A reviewer is anyone
-          but the change's owner, bots left out; an answer is a Code-Review vote or a comment before the change
-          closed. For changes with no comments, only the votes standing when the change closed are known. The
+          but the change's owner, bots left out, whether or not they approved: being asked is load even when
+          someone else answers first. An answer is a Code-Review vote or a comment before the change closed. For changes with no comments, only the votes standing when the change closed are known. The
           attention set exists from late 2020; its hours are counted from <span id="rl-att-from"></span>, from
           the change's creation to its close, overlapping turns once.
         </p>
@@ -315,7 +322,8 @@
         <p class="note">
           Addresses are matched as in the Feedback Index, only on evidence: a Gerrit owner and the git author
           of the same changes, or a reviewer's address and the account that cast the vote. Sharing a name across
-          chromium.org and google.com isn't enough. A reviewer's data is in a file named by their address in storage that can't be
+          chromium.org and google.com isn't enough. Someone with several addresses is named by the one they used
+          most recently, so a person who changed theirs is called by their current one. A reviewer's data is in a file named by their address in storage that can't be
           listed, so this page can only show someone whose address you already know. Everything comes from public Gerrit and
           git data. Code and method:
           <a target="_blank" rel="noopener" href="https://github.com/RByers/cosh/blob/main/docs/review-load.md">docs/review-load.md</a>.

@@ -12,7 +12,9 @@
 
 Also bot addresses (config/bots.txt)."""
 
+import calendar
 import json
+import time
 from collections import Counter, defaultdict
 from functools import cache
 
@@ -49,11 +51,18 @@ def is_bot_email(e):
 class Ids:
     """Union-find over emails, each normalised by `norm` first: `person`
     (Chromium's two domains merged; the default, for scripts/) or `address`
-    (exact). Callers union the aliases they have evidence for."""
+    (exact). Callers union the aliases they have evidence for.
 
-    def __init__(self, norm=person):
+    An identity is named by one of its addresses (`find`): with `latest`
+    (address -> when it was last used), the most recently used one, so
+    someone who changed their address is always called by their current
+    one, never the one they left behind (docs/goals.md, goal 2); without
+    it, or on a tie, the alphabetically first."""
+
+    def __init__(self, norm=person, latest=None):
         self.p = {}
         self.norm = norm
+        self.latest = latest or {}
 
     def find(self, e):
         e = self.norm(e)
@@ -66,7 +75,8 @@ class Ids:
     def union(self, a, b):
         ra, rb = self.find(a), self.find(b)
         if ra != rb:
-            self.p[max(ra, rb)] = min(ra, rb)
+            keep = min((ra, rb), key=lambda e: (-self.latest.get(e, 0), e))
+            self.p[rb if keep == ra else ra] = keep
 
     def groups(self):
         """{identity: every address merged into it}, over the addresses seen."""
@@ -140,15 +150,37 @@ def exact_identities(ddb, gdb, tdb=None, host="chromium-review.googlesource.com"
     owners = [dict(change_number=n, owner_email=account_email.get(o)) for n, o in ddb.execute(
         "SELECT change_number, owner_account FROM changes WHERE host = ? AND status = 'MERGED' "
         "AND is_bot_owned = 0 AND project = 'chromium/src' AND branch = 'main'", (host,))]
+    # When each address was last used, to name an identity by its newest
+    # (`Ids`): git authorship and Reviewed-by trailers by landing time; an
+    # account's address by its owned CLs' last update and its newest
+    # Code-Review vote (Gerrit reports only an account's current address, so
+    # it carries the account's whole history).
+    latest = defaultdict(int)
+
+    def used(e, at):
+        if e and at:
+            e = address(e)
+            latest[e] = max(latest[e], int(at))
     authors, reviewed_by = [], []
-    for n, email, bot, rb in gdb.execute(
-            "SELECT change_number, author_email, is_bot, reviewed_by FROM commits "
+    for n, email, bot, rb, at in gdb.execute(
+            "SELECT change_number, author_email, is_bot, reviewed_by, landed_at FROM commits "
             "WHERE commit_id > 0 AND change_number IS NOT NULL"):
         if not bot and not is_bot_email(email):
             authors.append(dict(n=n, email=email))
+            used(email, at)
         if rb:
             reviewed_by.append((n, json.loads(rb)))
-    ids = Ids(address)
+            for e in reviewed_by[-1][1]:
+                used(e, at)
+    for o, at in ddb.execute("SELECT owner_account, max(updated_at) FROM changes WHERE host = ? "
+                             "GROUP BY owner_account", (host,)):
+        if at:
+            used(account_email.get(o), calendar.timegm(time.strptime(at[:19], "%Y-%m-%d %H:%M:%S")))
+    if tdb is not None:
+        for table in ("votes", "listing_votes"):
+            for v, at in tdb.execute(f"SELECT voter, max(at) FROM {table} GROUP BY voter"):
+                used(account_email.get(v), at)
+    ids = Ids(address, latest)
     for a, b in alias_pairs(owners, authors, norm=address):
         ids.union(a, b)
     if tdb is not None:

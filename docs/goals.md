@@ -110,6 +110,13 @@ changes as they improve.
   well. What is less flattering about someone is shown only to a reader
   who typed that person's address, never in a list or ranking that can be
   reached by clicking (`CLAUDE.md`, "Sentiment").
+- **Never deadname anyone.** People change their name and their address.
+  A person with several addresses is one person, named everywhere we
+  publish (file names, labels, lookups' results) by the address they used
+  most recently, never by one they have left behind; their older addresses
+  only lead to it. `people.Ids` names identities this way. A new analysis
+  that names people uses it, and docs and examples never cite a real
+  person's old and new address.
 
 ## 3. An efficient weekly update
 

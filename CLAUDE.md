@@ -135,6 +135,11 @@ purpose near the top of its own doc.
 
 ## Conventions
 
+- **Never deadname anyone.** A person with several addresses is named by
+  the one they used most recently (`cosh.people.Ids`, `exact_identities`),
+  never an old one (`docs/goals.md`, goal 2). Never cite a real person's
+  old and new address in docs, tests, examples or commit messages.
+
 - Python standard library only. Run with `python3 -m cosh <cmd>`.
 - `config/affiliations.json5` (org attribution) and `config/org-list.txt`
   are copies of the files in chromium/src's

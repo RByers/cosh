@@ -71,7 +71,7 @@ class ComputeTest(unittest.TestCase):
             CREATE TABLE meta (k TEXT, v TEXT);
             CREATE TABLE accounts (host TEXT DEFAULT 'chromium-review.googlesource.com', account_id INTEGER, email TEXT);
             CREATE TABLE changes (host TEXT DEFAULT 'chromium-review.googlesource.com', change_number INTEGER,
-                                  created_at TEXT, is_bot_owned INTEGER, status TEXT, owner_account INTEGER DEFAULT 6,
+                                  created_at TEXT, updated_at TEXT, is_bot_owned INTEGER, status TEXT, owner_account INTEGER DEFAULT 6,
                                   project TEXT DEFAULT 'chromium/src', branch TEXT DEFAULT 'main');
             INSERT INTO meta VALUES ('fetched_weeks', '["2026-W18", "2026-W44"]');
             INSERT INTO accounts (account_id, email) VALUES (6, 'author@chromium.org'), (7, 'rev@chromium.org'),
@@ -84,6 +84,9 @@ class ComputeTest(unittest.TestCase):
         t.executescript(rt.SCHEMA + rt.REVIEWERS_SCHEMA)
         # Account 7 approved every CL whose Reviewed-by names rev@google.com.
         t.executemany("INSERT INTO votes VALUES (?,?,?,?,?)", [(n, 7, 1, 0, 1) for n in (101, 104, 105, 106, 108, 109, 110)])
+        # Its newest vote, on a CL outside the data, is after rev@google.com's last footer: rev@chromium.org
+        # is the address in use now, which names the identity.
+        t.execute("INSERT INTO votes VALUES (111, 7, 1, ?, 1)", (ts("2026-10-06 12:00"),))
         fri = ts("2026-07-31 12:00")
         t.executemany("INSERT INTO cl_reviewers VALUES (?,?,?,?,?,?)", [
             (101, 7, None, ts("2026-05-04 10:00"), None, None),            # before the attention set: 2 h to first review
@@ -209,6 +212,19 @@ class IdentityTest(unittest.TestCase):
         self.assertNotEqual(ids.find("a@chromium.org"), ids.find("a@google.com"))
         ids.union("a@google.com", "b@x.org")
         self.assertEqual(ids.groups()["a@google.com"], {"a@google.com", "b@x.org"})
+
+    def test_named_by_newest_address(self):
+        from cosh import people as P
+        # Someone who changed their address is named by the newer one, never
+        # the alphabetically first, however the merges chain.
+        ids = P.Ids(P.address, {"old@x.org": 100, "new@x.org": 300, "mid@chromium.org": 200})
+        ids.union("old@x.org", "mid@chromium.org")
+        self.assertEqual(ids.find("old@x.org"), "mid@chromium.org")
+        ids.union("new@x.org", "OLD@x.org")
+        self.assertEqual({ids.find(e) for e in ("old@x.org", "mid@chromium.org", "new@x.org")}, {"new@x.org"})
+        # An address never seen in use falls back to alphabetical order.
+        ids.union("b@y.org", "a@y.org")
+        self.assertEqual(ids.find("b@y.org"), "a@y.org")
 
     def test_vote_links(self):
         from cosh import people as P

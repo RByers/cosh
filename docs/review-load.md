@@ -59,11 +59,29 @@ quarters, shaded against everyone's there).
   change (`is_lsc`), not mechanical (100+ files, or 10+ files with a
   repetition ratio of 0.8+, as `commits.mechanical`), with a `Reviewed-by`
   footer naming a person other than the author.
+- **Approver**: a person in a commit's `Reviewed-by` footers. Gerrit
+  writes one footer for each positive Code-Review vote (+1 or +2) standing
+  on the patch set that is submitted, so the footers are the approvers,
+  not everyone added as a reviewer: someone added who never voted is left
+  out, and so is someone whose vote a later patch set cleared. Checked on
+  2026-11-15 against `review-timeline.sqlite`'s votes, for human commits
+  (no reverts or large-scale changes) landed in 2018, 2021 and 2025: 99.4%,
+  99.1% and 99.8% of footer names had a positive vote standing at submit;
+  every sampled exception voted under another address (a changed address,
+  or an account with no address in Gerrit's data). Of the
+  reviewers added to those changes (`cl_reviewers`), 5%, 15% and 16% are
+  in no footer, and 93%, 97% and 81% of those never voted: it is common
+  for one reviewer to approve before another gets to the change. Counting
+  every +1 ever cast instead would have added at most 4% more names in
+  2025, people
+  whose vote a new patch set cleared; the footers are kept. Lines reviewed
+  and the owner figures use approvers; the Gerrit review times count
+  everyone asked, approver or not, since being asked is load.
 - **Lines reviewed**: a reviewed commit's insertions plus deletions (a
   renamed file by the lines changed in it, a binary file 0), once for each
   such reviewer. A commit with two reviewers counts twice: the measure is
   review work. Reviewers who commented without approving are not in
-  `Reviewed-by` and don't count here. Each reviewer is credited with all
+  `Reviewed-by` and don't count here (see **Approver**). Each reviewer is credited with all
   of the commit's lines: nothing records how reviewers split a change's
   files. The page bounds the error with a chart in "How this is measured":
   reviewers per reviewed commit, weighted by lines (`reviewed_lines` over
@@ -114,8 +132,10 @@ quarters, shaded against everyone's there).
 - **People**: exact identities, the Feedback Index's
   (`cosh.people.exact_identities`; docs/review-feedback.md, "Who is who"):
   addresses merge only on evidence, never by domain. Gerrit accounts map
-  through their address. Each other address of a reviewer gets a
-  `{"see": <name>}` file, so typing any of them finds them.
+  through their address. A person is named by the address they used most
+  recently, never one they left behind (docs/goals.md, goal 2). Each other
+  address of a reviewer gets a `{"see": <name>}` file, so typing any of
+  them finds them.
 
 ## OWNERS and second approvals
 
