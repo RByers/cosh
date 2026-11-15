@@ -17,7 +17,7 @@ mid-2017) to the newest quarter that both the fetched Gerrit weeks and
 main's history cover.
 
 1. **Commits landed per quarter**: every first-parent commit on `main`, and
-   those written by people (no `Bot-Commit` footer, author not in
+   those excluding bots (no `Bot-Commit` footer, author not in
    `config/bots.txt`).
 2. **Lines reviewed per reviewer**: the quarter's reviewed lines over the
    people who reviewed anything in it. The tooltip gives each quarter's

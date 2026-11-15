@@ -72,14 +72,14 @@
         <p id="rl-commits-note" class="note"></p>
         <template data-msg="commits-note">
           Every commit on Chromium's main branch from <slot name="from"></slot> to <slot name="to"></slot>, by
-          the quarter it landed, and those written by people rather than bots (rolls of dependencies and other
-          automated commits). In <slot name="last"></slot>, <slot name="n"></slot> commits landed,
-          <slot name="human"></slot> of them written by people: <slot name="change"></slot> than in the same
+          the quarter it landed, and the same excluding bots (rolls of dependencies and other automated
+          commits). In <slot name="last"></slot>, <slot name="n"></slot> commits landed,
+          <slot name="human"></slot> of them excluding bots: <slot name="change"></slot> than in the same
           quarter a year before.<span data-if="you"> Your line is the commits you reviewed, on the right-hand
           axis.</span>
         </template>
         <template data-msg="legend-commits">All commits</template>
-        <template data-msg="legend-human">Written by people</template>
+        <template data-msg="legend-human">Excluding bots</template>
         <template data-msg="legend-you-commits">Commits you reviewed (right axis)</template>
         <template data-msg="axis-commits">commits landed</template>
         <template data-msg="axis-you-commits">commits you reviewed</template>

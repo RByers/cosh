@@ -3977,7 +3977,7 @@ test('review load: four charts over the quarters and a directory table that open
     [k, { labels: c.data.labels, sets: c.data.datasets.map((d) => d.label) }])));
   assert.deepEqual(Object.keys(charts).sort(), ['attention', 'commits', 'first', 'lines']);
   assert.deepEqual(charts.commits.labels, ['Q3 2025', 'Q4 2025', 'Q1 2026', 'Q2 2026', 'Q3 2026']);
-  assert.deepEqual(charts.commits.sets, ['All commits', 'Written by people']);
+  assert.deepEqual(charts.commits.sets, ['All commits', 'Excluding bots']);
   assert.deepEqual(charts.lines.sets, ['Mean per reviewer']);
   // Mean lines per reviewer: 12,000 over 10 reviewers, a fifth more than the quarter before (9,000 over 9).
   assert.deepEqual(await page.evaluate(() => window.__rl!.charts.lines.data.datasets[0].data), [700, 800, 900, 1000, 1200]);
