@@ -3470,7 +3470,7 @@ test('feedback index: a person\'s reviewers, with their factors', async () => {
   await lookUp(page, FIXTURE_EMAIL);
   await page.waitForFunction(() => !document.querySelector<HTMLElement>('#rf-person')!.hidden);
   // Alice approved CLs 1 and 2 (160 lines, 2 addressed: 1 + 1.836 expected), Bob CL 2 (1 over 1.836).
-  assert.deepEqual(await page.$$eval('#rf-revs tbody tr', (rs) => rs.map((r) => [...r.children].map((c) => c.textContent))),
+  assert.deepEqual(await page.$$eval('#rf-revs tbody tr', (rs) => rs.map((r) => [...r.children].map((c) => c.textContent!.replace(/[▸▾]/, '')))),
     [['alice@google.com', '2', '2', '1.25', '1.20×', '900', '0.66×'],
       ['bob@igalia.com', '1', '1', '0.83', '0.60×', '300', '0.54×']]);
   assert.match((await page.$eval('#rf-revs-note', (e) => e.textContent!)).replace(/\s+/g, ' '),
@@ -3527,7 +3527,7 @@ test('feedback index: a person\'s index, and how their rate compares', async () 
   await lookUp(page, ALIAS_EMAIL);
   await page.waitForFunction(() => !document.querySelector<HTMLElement>('#rf-person')!.hidden);
   assert.deepEqual(await page.$$eval('#rf-person > section', (ss) => ss.map((s) => s.id)),
-    ['compare', 'summary', 'reviewers', 'per-cl', 'download']);
+    ['compare', 'summary', 'feedback', 'download']);
   assert.equal(await page.$('#rf-norm'), null);
   assert.equal(await page.$('#comments'), null);
   assert.equal(await page.$eval('#compare-title', (e) => e.textContent), 'Your AFR');
@@ -3592,7 +3592,7 @@ test('feedback index: a person\'s index, and how their rate compares', async () 
   await page.close();
 });
 
-test('feedback index: selecting a dot in the over-time chart filters the comments-per-change chart', async () => {
+test('feedback index: selecting a dot in the over-time chart filters Your feedback', async () => {
   const { page, errors } = await feedbackPage();
   const { FIXTURE_EMAIL } = await import('./feedback-fixture.ts');
   await lookUp(page, FIXTURE_EMAIL);
@@ -3604,7 +3604,9 @@ test('feedback index: selecting a dot in the over-time chart filters the comment
     const r = chart.canvas.getBoundingClientRect();
     return { x: r.left + pt.x, y: r.top + pt.y };
   }, i);
-  const counts = () => page.evaluate(() => window.__rf!.charts.perCl.data.datasets[0].data);
+  // Each reviewer row: address and the person's changes they approved.
+  const revs = () => page.$$eval('#rf-revs tr.rf-rev-row', (rs) => rs.map((r) =>
+    [(r as HTMLElement).dataset.email, r.children[1].textContent]));
   const filterShown = () => page.$eval('#rf-half-filter', (e) => !(e as HTMLElement).hidden);
   // Chart.js handles canvas events on the next animation frame.
   const clickAt = async (x: number, y: number) => {
@@ -3629,7 +3631,7 @@ test('feedback index: selecting a dot in the over-time chart filters the comment
   assert.equal(await filterShown(), true);
   assert.equal(await page.$eval('#rf-half-filter-name', (e) => e.textContent!.trim()),
     'Filter: only changes landed January – June 2026');
-  assert.deepEqual(await counts(), [0, 1, 0, 0, 0, 0]);
+  assert.deepEqual(await revs(), [['alice@google.com', '1'], ['bob@igalia.com', '1']]);
   // Clear empties the filter; selecting the same dot twice does too.
   await page.click('#rf-half-clear');
   assert.equal(await filterShown(), false);
@@ -3637,9 +3639,12 @@ test('feedback index: selecting a dot in the over-time chart filters the comment
   const last = await dot(2);
   await clickAt(last.x, last.y);
   assert.equal(await page.evaluate(() => window.__rf!.half), '2026H2');
+  // No one approved that half-year's change.
+  assert.deepEqual(await revs(), []);
+  assert.match(await page.$eval('#rf-revs-note', (e) => e.textContent!.replace(/\s+/g, ' ')), /0 reviewers .* 1 of your changes had no approver/);
   await clickAt(last.x, last.y);
   assert.equal(await filterShown(), false);
-  assert.deepEqual(await counts(), [0, 3, 0, 0, 0, 0]);
+  assert.deepEqual(await revs(), [['alice@google.com', '2'], ['bob@igalia.com', '1']]);
   // A click away from the person's dots changes nothing.
   const box = (await page.$eval('#rf-trend', (c) => { const r = c.getBoundingClientRect(); return { x: r.left, y: r.top }; }));
   await clickAt(box.x + 5, box.y + 5);
@@ -3648,17 +3653,72 @@ test('feedback index: selecting a dot in the over-time chart filters the comment
   await page.close();
 });
 
-test('feedback index: the comments-per-change chart counts each change\'s addressed comments', async () => {
-  // CL 3 gets three more addressed comments on its file: 4 in all.
-  const { FIXTURE_EMAIL, shards } = await import('./feedback-fixture.ts');
-  const h2 = structuredClone(shards['2026H2']);
-  h2.cls[0][6]![1] = [1, 8, 4, 4];
-  const { page, errors } = await feedbackPage(undefined, { ...shards, '2026H2': h2 });
+test('feedback index: a reviewer opens into the addressed comments they started, from the R2 threads', async () => {
+  const { FIXTURE_EMAIL, FIXTURE_KEY } = await import('./feedback-fixture.ts');
+  const asked: string[] = [];
+  const thread = (id: string, path: string, addressed: boolean | null, who: number, at: string) =>
+    ({ id, path, line: 3, ps: 1, addressed, resolved: true, comments: [[who, at, '<img src=x onerror=alert(1)> secret text']] });
+  // Each file says which approver each commenter is; Alice's unaddressed thread and Bob's aren't hers.
+  const files: Record<string, unknown> = {
+    '2025H2': { v: 2, half: '2025H2', people: ['Test Person', 'Alice'], reviewers: [null, 'alice@google.com'],
+      cls: [{ n: 1000001, project: 'chromium/src', subject: 's', landed: '2025-10-01', lines: 40, owner: 0,
+        threads: [thread('a1', 'chrome/browser/ui/view.cc', true, 1, '2025-09-20T10:00Z'),
+          thread('a2', '/COMMIT_MSG', false, 1, '2025-09-21T10:00Z')] }] },
+    '2026H1': { v: 2, half: '2026H1', people: ['Test Person', 'Alice', 'Bob'],
+      reviewers: [null, 'alice@google.com', 'bob@igalia.com'],
+      cls: [{ n: 1000002, project: 'chromium/src', subject: 's', landed: '2026-03-11', lines: 120, owner: 0,
+        threads: [thread('a3', '/COMMIT_MSG', true, 1, '2026-03-02T10:00Z'),
+          thread('b1', 'content/browser/frame.cc', true, 2, '2026-03-03T10:00Z')] }] },
+  };
+  const { page, errors } = await feedbackPage(undefined, undefined, (r: HTTPRequest) => {
+    const u = new URL(r.url());
+    if (u.host !== 'cosh-data.rbyers.ca') return false;
+    asked.push(u.pathname.split('/').at(-2)!);
+    const h = u.pathname.split('/').at(-2)!;
+    const cors = { 'Access-Control-Allow-Origin': '*' };
+    if (u.pathname.endsWith(`/${FIXTURE_KEY}.json`) && files[h])
+      void r.respond({ status: 200, contentType: 'application/json', headers: cors, body: JSON.stringify(files[h]) });
+    else void r.respond({ status: 404, headers: cors, body: 'not found' });
+    return true;
+  });
   await lookUp(page, FIXTURE_EMAIL);
   await page.waitForFunction(() => !document.querySelector<HTMLElement>('#rf-person')!.hidden);
-  const counts = () => page.evaluate(() => window.__rf!.charts.perCl.data.datasets[0].data);
-  assert.deepEqual(await counts(), [0, 2, 1, 0, 0, 0]);
-  assert.deepEqual(await axisTitles(page, 'perCl'), ['addressed comments on the change', 'your changes']);
+  assert.equal(await page.$eval('#feedback-title', (e) => e.textContent), 'Your feedback');
+  assert.equal(await page.$('#per-cl, #rf-per-cl'), null);
+  // Nothing is fetched until a reviewer is opened.
+  assert.deepEqual(asked, []);
+  const items = () => page.$$eval('#rf-revs tr.rf-rev-comments li', (ls) => ls.map((l) =>
+    [...l.children].map((c) => c.textContent)));
+  const toggle = (email: string) => page.click(`#rf-revs tr.rf-rev-row[data-email="${email}"] .ar-toggle`);
+  await toggle('alice@google.com');
+  await page.waitForSelector('#rf-revs tr.rf-rev-comments li');
+  assert.deepEqual(asked.sort(), ['2025H2', '2026H1', '2026H2']);
+  assert.deepEqual(await items(), [['2 Mar 2026', '1000002', 'commit message'], ['20 Sept 2025', '1000001', 'chrome/browser/ui/view.cc']]);
+  const a = await page.$eval('#rf-revs tr.rf-rev-comments a', (x) => [x.getAttribute('href'), x.getAttribute('target')]);
+  assert.deepEqual(a, ['https://chromium-review.googlesource.com/c/chromium/src/+/1000002/comment/a3/', '_blank']);
+  assert.equal(await page.$eval(`#rf-revs tr.rf-rev-row[data-email="alice@google.com"] .ar-toggle`, (b) => b.getAttribute('aria-expanded')), 'true');
+  // The comment text never reaches the page.
+  assert.equal(await page.evaluate(() => document.body.innerHTML.includes('secret text')), false);
+  // Bob's list; then a reviewer with nothing addressed in the picked half-year.
+  await toggle('bob@igalia.com');
+  await page.waitForFunction(() => document.querySelectorAll('#rf-revs tr.rf-rev-comments li').length === 3);
+  await toggle('alice@google.com');
+  assert.deepEqual(await items(), [['3 Mar 2026', '1000002', 'content/browser/frame.cc']]);
+  // The over-time chart's half-year filters the lists too, from files already fetched.
+  await toggle('alice@google.com');
+  await page.$eval('#rf-trend', (c) => c.scrollIntoView({ block: 'center' }));
+  const at = await page.evaluate(() => {
+    const chart = window.__rf!.charts.trend;
+    const pt = chart.getDatasetMeta(5).data[0];
+    const r = chart.canvas.getBoundingClientRect();
+    return { x: r.left + pt.x, y: r.top + pt.y };
+  });
+  await page.mouse.click(at.x, at.y);
+  await page.waitForFunction(() => window.__rf!.half === '2025H2');
+  await page.waitForFunction(() => !/Loading/.test(document.querySelector('#rf-revs')!.textContent ?? ''));
+  assert.deepEqual(await page.$$eval('#rf-revs tr.rf-rev-row', (rs) => rs.map((r) => (r as HTMLElement).dataset.email)), ['alice@google.com']);
+  assert.deepEqual(await items(), [['20 Sept 2025', '1000001', 'chrome/browser/ui/view.cc']]);
+  assert.equal(asked.length, 3);
   assert.deepEqual(errors, []);
   await page.close();
 });

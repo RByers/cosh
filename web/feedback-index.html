@@ -105,7 +105,6 @@
         <template data-msg="axis-half">six months starting</template>
       </section>
 
-
       <section id="index" class="card" aria-labelledby="index-title">
         <a class="card-anchor" href="#index" aria-label="Link to this section" title="Link to this section">#</a>
         <h2 id="index-title">Feedback index</h2>
@@ -269,17 +268,25 @@
           feedback index; the shaded bands are the middle half and the 10th–90th percentile of everyone's index
           that half-year (contributors with <span class="rf-min-cls"></span> or more changes in it), and the dashed
           line their median. Points with fewer of your changes are drawn hollow. Select one of your dots to
-          see that half-year's changes in the chart below.
+          see only that half-year's changes in Your feedback, below.
         </p>
       </section>
 
-      <section id="reviewers" class="card" aria-labelledby="reviewers-title">
-        <a class="card-anchor" href="#reviewers" aria-label="Link to this section" title="Link to this section">#</a>
-        <h2 id="reviewers-title">Your reviewers</h2>
+      <section id="feedback" class="card" aria-labelledby="feedback-title">
+        <a class="card-anchor" href="#feedback" aria-label="Link to this section" title="Link to this section">#</a>
+        <h2 id="feedback-title">Your feedback</h2>
         <p class="sub">
           Who approved your changes, and how much feedback their approvals usually draw. Your index compares
-          each change with what its reviewers' approvals draw on everyone else's changes.
+          each change with what its reviewers' approvals draw on everyone else's changes. ▸ lists the addressed
+          comments a reviewer started on your changes, newest first: the day, the change (linking to the
+          comment in Gerrit) and the file.
         </p>
+        <!-- Set by selecting a dot in the over-time chart; filters this table. -->
+        <p id="rf-half-filter" class="rf-filter" hidden>
+          <span id="rf-half-filter-name" class="rf-filter-name"></span>
+          <button type="button" id="rf-half-clear">Clear</button>
+        </p>
+        <template data-msg="half-filter">Filter: only changes landed <slot name="half"></slot></template>
         <div class="table-wrap">
           <table id="rf-revs" class="rf-table">
             <thead><tr><th scope="col">Reviewer</th>
@@ -303,23 +310,14 @@
           <slot name="noneF"></slot>.</span> Rows with fewer than <slot name="min"></slot> of your changes show no
           AFR or index.
         </template>
-      </section>
-
-      <section id="per-cl" class="card" aria-labelledby="per-cl-title">
-        <a class="card-anchor" href="#per-cl" aria-label="Link to this section" title="Link to this section">#</a>
-        <h2 id="per-cl-title">Addressed comments per change</h2>
-        <p class="sub">How many addressed review comments each of your changes drew.</p>
-        <!-- Set by selecting a dot in the over-time chart; filters this chart. -->
-        <p id="rf-half-filter" class="rf-filter" hidden>
-          <span id="rf-half-filter-name" class="rf-filter-name"></span>
-          <button type="button" id="rf-half-clear">Clear</button>
-        </p>
-        <template data-msg="half-filter">Filter: only changes landed <slot name="half"></slot></template>
-        <div class="chart">
-          <canvas id="rf-per-cl" role="img" aria-label="Histogram of your changes by how many addressed review comments each drew."></canvas>
-        </div>
-        <template data-msg="axis-per-cl">addressed comments on the change</template>
-        <template data-msg="axis-your-cls">your changes</template>
+        <template data-msg="rev-loading">Loading…</template>
+        <template data-msg="rev-none">No addressed comments from them on your changes<span data-if="half"> landed
+          <slot name="half"></slot></span>.</template>
+        <template data-msg="rev-error">Couldn't load the comments: <slot name="error"></slot></template>
+        <template data-msg="rev-no-emails">The comment files don't name reviewers by address yet, so they can't be
+          listed here.</template>
+        <template data-msg="rev-comment-title">Open this comment in Gerrit</template>
+        <template data-msg="rev-commit-msg">commit message</template>
       </section>
 
       <section id="download" class="card" aria-labelledby="download-title">

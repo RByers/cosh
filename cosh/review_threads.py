@@ -12,10 +12,14 @@ them in the R2 bucket, where the page fetches them only when someone asks
 to download their comments. Same keys as the Feedback Index, so they can be
 found only by typing the person's address (docs/plan.md, ground rule 5).
 
-Format (v 1), JSON:
+Format (v 2), JSON:
 
-  {"v": 1, "half": "2026H1",
+  {"v": 2, "half": "2026H1",
    "people": [name, ...],             names (else addresses), indexed below
+   "reviewers": [approver or null, ...]  per person, same order (v 2): the
+                                      approver, as the person's half-year
+                                      files name approvers (`revs`), that
+                                      this Gerrit account is (`approver_of`)
    "cls": [{"n": change number, "project": ..., "subject": ...,
             "landed": "YYYY-MM-DD", "lines": Gerrit's insertions,
             "owner": people index,
@@ -27,8 +31,8 @@ Format (v 1), JSON:
                                        text], ...]}, ...]}, ...]}
 
 CLs oldest first, threads by their first comment. Offline: reads the
-published half-year files, reviews.sqlite, addressed.sqlite and the NoteDb
-repos. Files are written byte for byte the same when nothing changed, so
+published half-year files, reviews.sqlite, addressed.sqlite, commits.sqlite
+(Reviewed-by) and the NoteDb repos. Files are written byte for byte the same when nothing changed, so
 `cosh.r2 sync` uploads only what did.
 
   COSH_DATA_DIR=<main>/data/private nice -n 5 python3 -m cosh.review_threads [--half 2026H2 ...]
@@ -45,13 +49,15 @@ import time
 from collections import defaultdict
 
 from . import classify, store
+from . import commits as C
+from .people import person
 from .derive import prefetch_notedb
 
 HOST = "chromium-review.googlesource.com"
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SHARDS = os.path.join(ROOT, "web", "public", "review-feedback")
 PATCHSET_LEVEL = "/PATCHSET_LEVEL"
-VERSION = 1
+VERSION = 2
 HALF = re.compile(r"^\d{4}H[12]$")
 KEY = re.compile(r"^[0-9a-f]{32}\.json$")
 
@@ -68,6 +74,36 @@ def shard_cls(shard):
         n += row[0]
         out.append(n)
     return out
+
+
+def shard_revs(shard):
+    """(change number, its approvers as the file names them) per CL of a
+    published half-year file."""
+    return [(n, [shard["revs"][i] for i in row[5]]) for n, row in zip(shard_cls(shard), shard["cls"])]
+
+
+def approver_of(person_cls, reviewed_by, by_email):
+    """Gerrit account id -> approver, for one person's changes: an account
+    is the approver whose Reviewed-by address on one of those changes is
+    exactly its Gerrit address (Gerrit writes the voter's preferred address
+    there). `person_cls`: [(change number, approvers as the half-year files
+    name them)]; `reviewed_by`: change number -> its raw Reviewed-by
+    addresses; `by_email`: lowercased Gerrit address -> account ids.
+
+    The half-year files name approvers by the Feedback Index's identities,
+    which `people.person` folds across chromium.org and google.com; an
+    address is tied to the approver it folds to, on that change only, so
+    the link to the account stays exact. An account tied to two approvers
+    is left out."""
+    out = {}
+    for n, revs in person_cls:
+        for e in reviewed_by.get(n, ()):
+            rev = person(e)
+            if rev not in revs:
+                continue
+            for aid in by_email.get(e.lower(), ()):
+                out[aid] = rev if out.get(aid, rev) == rev else None
+    return {aid: rev for aid, rev in out.items() if rev is not None}
 
 
 def ro(path):
@@ -150,9 +186,28 @@ def main(argv=None):
     if act:
         labels = {(n, r, h): x for n, r, h, x in ldb.execute(
             "SELECT change_number, root_uuid, input_hash, addressed FROM labels WHERE classifier_id = ?", (act[0],))}
-    accounts = {aid: (name or email or f"account {aid}", bool(bot)) for aid, name, email, bot in ddb.execute(
+    accounts = {aid: (name or email or f"account {aid}", bool(bot), email or None) for aid, name, email, bot in ddb.execute(
         "SELECT account_id, name, email, is_bot FROM accounts WHERE host = ?", (HOST,))}
-    bots = {aid for aid, (_, bot) in accounts.items() if bot}
+    bots = {aid for aid, (_, bot, _) in accounts.items() if bot}
+    by_email = defaultdict(list)
+    for aid, (_, _, email) in accounts.items():
+        if email:
+            by_email[email.lower()].append(aid)
+
+    # Each person's approvers over all their half-years, tied to Gerrit
+    # accounts through the Reviewed-by addresses (`approver_of`).
+    person_cls = defaultdict(list)
+    for h in sorted(x for x in os.listdir(a.shards) if HALF.match(x)):
+        for name in sorted(os.listdir(os.path.join(a.shards, h))):
+            if KEY.match(name):
+                with open(os.path.join(a.shards, h, name)) as f:
+                    person_cls[name[:-5]].extend(x for x in shard_revs(json.load(f)) if x[1])
+    want = {n for cls in person_cls.values() for n, _ in cls}
+    reviewed_by = {}
+    for n, rb in ro(C.db_path()).execute("SELECT change_number, reviewed_by FROM commits "
+                                         "WHERE change_number IS NOT NULL AND reviewed_by IS NOT NULL"):
+        if n in want:
+            reviewed_by[n] = json.loads(rb)
 
     halves = sorted(h for h in os.listdir(a.shards) if HALF.match(h) and (not a.half or h in a.half))
     repos = {}
@@ -182,12 +237,14 @@ def main(argv=None):
                 project, _, owner, _, _ = info[n]
                 per_cl[n] = cl_threads(notes.get(n), owner, bots, addressed_lookup(ddb, labels, n))
         for k, cls in todo.items():
-            people, idx = [], {}
+            people, revs, idx = [], [], {}
+            approvers = approver_of(person_cls.get(k, ()), reviewed_by, by_email)
 
             def who(aid):
                 if aid not in idx:
                     idx[aid] = len(people)
-                    people.append(accounts.get(aid, (f"account {aid}", False))[0])
+                    people.append(accounts.get(aid, (f"account {aid}", False, None))[0])
+                    revs.append(approvers.get(aid))
                 return idx[aid]
             doc_cls = []
             for n in cls:
@@ -201,7 +258,7 @@ def main(argv=None):
                                     lines=ins, owner=who(owner), threads=ths))
             path = os.path.join(out, h, f"{k}.json.gz")
             keep.add(path)
-            n_bytes, did = write(path, dict(v=VERSION, half=h, people=people, cls=doc_cls))
+            n_bytes, did = write(path, dict(v=VERSION, half=h, people=people, reviewers=revs, cls=doc_cls))
             files += 1
             changed += did
             size += n_bytes

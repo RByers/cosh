@@ -1227,7 +1227,7 @@
       "rebuildable": true,
       "size": "400 MB gzipped: 32,676 files (19 half-years, about 1,300 to 2,000 people each), 2.78M threads",
       "size_as_of": "2026-11-14",
-      "files": "<half-year>/<hash>.json.gz: per person and half-year, every thread a human reviewer other than the owner started on their merged changes, with each comment's full text, author, time, file, line and patch set, and whether it was addressed (cosh/review_threads.py has the format).",
+      "files": "<half-year>/<hash>.json.gz: per person and half-year, every thread a human reviewer other than the owner started on their merged changes, with each comment's full text, author (name, and which of the person's approvers they are), time, file, line and patch set, and whether it was addressed (cosh/review_threads.py has the format).",
       "purpose": "The comment download's files, kept locally so that the upload sends only those that changed.",
       "notes": "Too big for git; cosh.r2 publishes them. Written byte for byte the same when nothing changed.",
       "withheld": "Comment text, negative comments included, belongs only behind a typed address (ground rule 5); the samples page is reached by clicks."
@@ -1243,7 +1243,7 @@
       "size": "400 MB, 32,676 objects (stored gzipped)",
       "size_as_of": "2026-11-14",
       "files": "review-feedback/threads/<half-year>/<hash>.json in the R2 bucket `cosh`, served gzipped at https://cosh-data.rbyers.ca/ (README.md).",
-      "purpose": "What the Feedback Index fetches when someone downloads their review comments.",
+      "purpose": "What the Feedback Index fetches when someone downloads their review comments, or opens a reviewer in Your feedback (which lists that reviewer's addressed threads, without their text).",
       "withheld": "Comment text, negative comments included, is reachable only by typing the person's address (hashed file names, no listing), as ground rule 5 allows since 2026-11-14.",
       "notes": "Uploads are recorded in data/private/r2-manifest.json (key -> sha256), so a sync never lists the bucket. The bucket's CORS policy allows the site's origin."
     },
@@ -2144,12 +2144,13 @@
         "cosh/review_threads.py",
         "cosh/notedb.py"
       ],
-      "purpose": "Writes every reviewer thread on each person's changes, full text included, per person and half-year, for the comment download.",
+      "purpose": "Writes every reviewer thread on each person's changes, full text included, per person and half-year, for the comment download and the reviewers' comment lists.",
       "inputs": [
         "feedback-people",
         "data/private/reviews.sqlite",
         "data/private/addressed.sqlite",
-        "gerrit-raw"
+        "gerrit-raw",
+        "data/private/commits.sqlite"
       ],
       "outputs": [
         "data/private/review-threads/"

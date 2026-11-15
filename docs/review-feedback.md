@@ -227,15 +227,32 @@ theirs.
   (below), then the FI per half-year against the 10th–90th percentile,
   middle half and median of everyone's index that half-year (`fi[half]`).
   Dots with fewer than `MIN_CLS` CLs are hollow. Selecting a dot filters
-  the comments-per-change chart to that half-year.
-- *Your reviewers* (`reviewerRows`): everyone who approved one of the
-  person's CLs, most CLs first: the person's CLs they approved, addressed
-  threads on them, the person's AFR there, the reviewer's factor without
-  the person's CLs (so it can differ a little from what others see),
-  everyone's CLs they approved, and the person's FI on those CLs. A CL with several
-  approvers counts under each. Rows under `MIN_BIN_CLS` of the person's CLs
-  show no AFR or FI. The note says how many of the person's CLs had no
-  approver, and their factor (`rev_none` without the person's CLs).
+  Your feedback to the CLs landed that half-year.
+- *Your feedback* (`reviewerRows`): everyone who approved one of the
+  person's CLs (in the picked half-year, if any), most CLs first: the
+  person's CLs they approved, addressed threads on them, the person's AFR
+  there, the reviewer's factor without the person's CLs (so it can differ
+  a little from what others see), everyone's CLs they approved, and the
+  person's FI on those CLs. A CL with several approvers counts under each.
+  Rows under `MIN_BIN_CLS` of the person's CLs show no AFR or FI. The note
+  says how many of the person's CLs had no approver, and their factor
+  (`rev_none` without the person's CLs). ▸
+  opens a reviewer into the addressed threads they started on the person's
+  CLs (`reviewerComments`), newest first: the day of the first comment, the
+  change number linking to the thread in Gerrit, and the file ("commit
+  message" for `/COMMIT_MSG`). They come from the thread files in R2
+  ("Downloading your comments"), fetched the first time a reviewer is
+  opened. A commenter is a reviewer when their Gerrit account's address is
+  exactly an address in a Reviewed-by trailer of one of the person's CLs
+  (Gerrit writes the voter's preferred address there); `cosh.review_threads`
+  records which approver each commenter is (`reviewers`, `approver_of`).
+  Gerrit's public data gives only each account's preferred address, not its
+  linked ones, so an account whose address changed after its approvals
+  isn't linked. No comment text and no tone. Threads from someone who never
+  approved one of the person's CLs aren't listed, having no row. The rows
+  themselves are the Feedback Index's identities, which fold
+  `chromium.org` into `google.com` (`people.person`), so one row can be two
+  people who share a username across the domains.
 - *Latest doubling* (the tile, `latestDoubling`): the % change in AFR from
   the person's second-newest to their newest bin with `MIN_BIN_CLS` CLs,
   per doubling when bins in between have too few, with the date they
@@ -247,16 +264,15 @@ theirs.
   FRs under `FR_FLOOR` (0.1) count as 0.1 (`growth`). On 2026-11-14 2,517
   people have one: median −18.8%, 10th percentile −44.6%, 90th +21.1%
   (−20.9%, −47.4% and +22.7% with deletions counted).
-- *Addressed comments per change:* the histogram of the person's CLs by
-  addressed threads (0, 1–2, 3–5, 6–10, 11–20, 21+).
 
 The person's directories are the Yours columns of everyone's directory
 table (`dirTable`, `tableRows`), in the Feedback index card. A
 per-person directory tree down to files and their CLs, with links to each
 addressed comment and its tone score, was removed on 2026-11-14 as
 redundant with those columns (the user's call), and its link files with it.
-The page has no comment text: a feedback report will take that role (the
-user's call, 2026-11-14).
+The page shows no comment text: the download takes that role. The
+histogram of addressed comments per CL was removed the same day (the
+user's call).
 
 **Methodology and details** is a collapsed `<details>` at the bottom whose
 charts are drawn when it opens:
@@ -511,7 +527,8 @@ model usage on it.
 The threads are too big for git (400 MB gzipped: 32,676 files, 2.78M threads, 2026-11-14), so they live in the Cloudflare
 R2 bucket `cosh` and are served gzipped from
 `https://cosh-data.rbyers.ca/review-feedback/threads/<half>/<key>.json`,
-fetched only when someone downloads (`?v=` is the data's end, so a new week
+fetched only when someone downloads or opens a reviewer in Your feedback
+(`?v=` is the data's end, so a new week
 isn't hidden by the day-long cache). Same hashed keys as the per-person
 files, so like them they are reachable only by typing an address (ground
 rule 5 allows comment text there, negative comments included).

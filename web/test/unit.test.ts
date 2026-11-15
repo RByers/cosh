@@ -1596,7 +1596,7 @@ test('review feedback: the AFR and index, as the script computes them', async ()
   assert.deepEqual(F.clsIn(later, 'all').map((c) => c[0]), [1000002, 1000003]);
 });
 
-test('review feedback: everyone\'s directory table with the person\'s columns, and the comments-per-change histogram', async () => {
+test('review feedback: everyone\'s directory table with the person\'s columns', async () => {
   const F = await import('../src/feedback.ts');
   const { top, shards, reviewers, peers, day } = await import('./feedback-fixture.ts');
   const person = F.buildPerson(top, top.halves.map((h) => shards[h]), peers);
@@ -1637,12 +1637,6 @@ test('review feedback: everyone\'s directory table with the person\'s columns, a
   assert.deepEqual([0, 0.25, 1, 8, 100].map(F.afrShade), [0, 0, 0.4, 1, 1]);
   // The index's shade: log scale, white at typical, full at a quarter or four times.
   assert.deepEqual([0, 0.25, 0.5, 1, 2, 4, 8].map(F.ratioShade), [-1, -1, -0.5, 0, 0.5, 1, 1]);
-  // Comments per change: each drew one addressed comment.
-  assert.deepEqual(F.threadHistogram(person, 'all'), [0, 3, 0, 0, 0, 0]);
-  assert.deepEqual(F.threadHistogram(person, '2026H1'), [0, 1, 0, 0, 0, 0]);
-  assert.deepEqual([0, 1, 2, 3, 4, 5].map(F.threadBinLabel), ['0', '1–2', '3–5', '6–10', '11–20', '21+']);
-  const withN = (n: number): import('../src/feedback.ts').ClRow => [0, 0, 0, [], [[0, 0, n, n, 0]], 0, []];
-  assert.deepEqual([0, 1, 2, 3, 5, 6, 10, 11, 20, 21, 400].map((n) => F.threadBin(withN(n))), [0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5]);
   // Periods are cut to the data's dates.
   assert.deepEqual(F.periodSpan('2026H2', [day('2023-07-01'), day('2026-11-01')]), [day('2026-07-01'), day('2026-11-01')]);
   assert.deepEqual(F.periodSpan('2023', [day('2023-07-01'), day('2026-11-01')]), [day('2023-07-01'), day('2024-01-01')]);
@@ -1780,10 +1774,11 @@ test('dataflow: layout runs top to bottom, sources and config first, pages last,
 test('dataflow: the routed drawing of each page has no crossings (bar known ones) and no edge behind a box', () => {
   const real = G.buildGraph(flow);
   const size = { nodeW: 128, chipW: 112, chipGap: 10, laneW: 6, gap: 16 }; // as dataflow.ts
-  // The Feedback Index allows 2: review-feedback and comments-collect both read reviews.sqlite
-  // and the affiliations file, and since tone was split off (2026-11-14) neither feeds the
-  // other, so those four edges can't all be kept apart.
-  const allowed: Record<string, number> = { 'page-feedback': 2 };
+  // The Feedback Index allows 3: review-feedback and review-threads both read reviews.sqlite and
+  // commits.sqlite (review-threads for the Reviewed-by addresses that tie commenters to
+  // approvers, 2026-11-14), and review-threads also reads review-feedback's files, so those
+  // edges can't all be kept apart.
+  const allowed: Record<string, number> = { 'page-feedback': 3 };
   for (const pages of [['page-feedback'], ['page-value'], ['page-sentiment']]) {
     const split = G.splitShared(real, G.scope(real, pages, false));
     const r = G.route(split.g, split.keep, size);
@@ -1896,4 +1891,26 @@ test('feedback index download: half-year ranges, URLs and the Markdown of thread
     '### Change · patch set 1 · [Gerrit](https://chromium-review.googlesource.com/c/chromium/src/+/2/comment/b/)', '',
     '**Rev Iewer**, 2026-02-28:', '', '> Please add a test.', '',
   ].join('\n'));
+});
+
+test('feedback index: a reviewer\'s addressed comments, by the approver each commenter is', async () => {
+  const F = await import('../src/feedback.ts');
+  const t = (id: string, addressed: boolean | null, who: number, at: string, path = 'a.cc') =>
+    ({ id, path, line: 1, ps: 1, addressed, resolved: true, comments: [[who, at, 'x'], [0, at, 'y']] as [number, string, string][] });
+  const f = (half: string, reviewers: (string | null)[] | undefined, n: number, threads: ReturnType<typeof t>[]):
+    import('../src/feedback.ts').ThreadFile =>
+    ({ v: reviewers ? 2 : 1, half, people: ['Own Er', 'Rev', 'Other'], ...(reviewers ? { reviewers } : {}),
+      cls: [{ n, project: 'chromium/src', subject: '', landed: '', lines: 1, owner: 0, threads }] });
+  const files = [
+    // Started by the reviewer and addressed: listed; not addressed, CL-level or started by someone else: not.
+    f('2025H2', [null, 'rev@google.com', null], 10, [t('a', true, 1, '2025-08-01T10:00Z'), t('b', false, 1, '2025-08-02T10:00Z'),
+      t('c', null, 1, '2025-08-03T10:00Z', '/PATCHSET_LEVEL'), t('d', true, 2, '2025-08-04T10:00Z')]),
+    f('2026H1', [null, 'rev@google.com', 'other@google.com'], 11, [t('e', true, 1, '2026-02-01T10:00Z', '/COMMIT_MSG')]),
+    // A version-1 file names no one by address.
+    f('2026H2', undefined, 12, [t('f', true, 1, '2026-08-01T10:00Z')]),
+  ];
+  assert.deepEqual(F.reviewerComments(files, 'rev@google.com'), [
+    { cl: 11, project: 'chromium/src', id: 'e', day: '2026-02-01', path: '/COMMIT_MSG' },
+    { cl: 10, project: 'chromium/src', id: 'a', day: '2025-08-01', path: 'a.cc' }]);
+  assert.deepEqual(F.reviewerComments(files, 'rev@chromium.org'), []);
 });

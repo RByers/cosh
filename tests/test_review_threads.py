@@ -21,6 +21,19 @@ class ThreadsTest(unittest.TestCase):
     def test_shard_cls(self):
         self.assertEqual(RT.shard_cls({"cls": [[100, 5], [3, 1], [10, 0]]}), [100, 103, 113])
 
+    def test_shard_revs_and_approver_of(self):
+        shard = {"revs": ["a@google.com", "b@x.org"], "cls": [[5, 0, 1, 0, 0, [0, 1]], [2, 0, 1, 0, 0, []]]}
+        self.assertEqual(RT.shard_revs(shard), [(5, ["a@google.com", "b@x.org"]), (7, [])])
+        # Account 1's Gerrit address is the chromium.org one written in Reviewed-by: it is that approver.
+        # Account 2 (a@google.com, a different account) never appears in a Reviewed-by line: no link.
+        # Account 3 has b's address; account 4's address names an approver on no change of this person.
+        by_email = {"a@chromium.org": [1], "a@google.com": [2], "b@x.org": [3], "c@y.org": [4]}
+        got = RT.approver_of([(5, ["a@google.com", "b@x.org"])], {5: ["a@chromium.org", "B@x.org", "c@y.org"]}, by_email)
+        self.assertEqual(got, {1: "a@google.com", 3: "b@x.org"})
+        # An account tied to two approvers is left out.
+        self.assertEqual(RT.approver_of([(5, ["a@google.com"]), (6, ["b@x.org"])],
+                                        {5: ["a@chromium.org"], 6: ["b@x.org"]}, {"a@chromium.org": [1], "b@x.org": [1]}), {})
+
     def test_cl_threads(self):
         owner, rev, bot, other = 1, 2, 9, 3
         comments = {

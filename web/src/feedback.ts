@@ -505,36 +505,6 @@ export function latestDoubling(p: Person, bins: Sums[], peers: Pick<Peers, 'min_
     typical: r0 && r1 ? pct(r1 / r0) : null, reached: binReached(p, peers.bin_edges)[to] };
 }
 
-// ---- Threads per change
-
-/** The threads-per-change histogram's columns, by their fewest addressed threads: 0, 1–2, 3–5, 6–10, 11–20, 21+. */
-export const THREAD_BIN_FROM = [0, 1, 3, 6, 11, 21];
-export const THREAD_BINS = THREAD_BIN_FROM.length;
-/** Column `b`'s fewest and most threads (null: no upper end). */
-export const threadBinRange = (b: number): [number, number | null] =>
-  [THREAD_BIN_FROM[b], b + 1 < THREAD_BINS ? THREAD_BIN_FROM[b + 1] - 1 : null];
-export function threadBinLabel(b: number): string {
-  const [lo, hi] = threadBinRange(b);
-  return hi === null ? `${lo}+` : lo === hi ? String(lo) : `${lo}–${hi}`;
-}
-export function threadBin(c: ClRow): number {
-  const n = addressedOn(c);
-  let b = 0;
-  while (b + 1 < THREAD_BINS && n >= THREAD_BIN_FROM[b + 1]) b++;
-  return b;
-}
-
-/** The changes `clsIn` gives, only those in histogram column `bin` (null: all). */
-const clsPicked = (p: Person, period: string, bin: number | null) =>
-  clsIn(p, period).filter((c) => bin === null || threadBin(c) === bin);
-
-/** The person's changes landed in `period` by how many addressed threads each drew. */
-export function threadHistogram(p: Person, period: string): number[] {
-  const out = new Array<number>(THREAD_BINS).fill(0);
-  for (const c of clsIn(p, period)) out[threadBin(c)] += 1;
-  return out;
-}
-
 // ---- Directory figures
 
 /** The person's figures for one row of the directory table. */
@@ -756,13 +726,16 @@ export function buildPerson(top: Top, shards: Shard[], peers: Pick<Peers, 'addr_
  * (README.md). The page fetches them only when someone asks to download their comments. */
 export const THREADS_BASE = 'https://cosh-data.rbyers.ca/review-feedback/threads/';
 
-/** review-feedback/threads/<half>/<key>.json (cosh/review_threads.py, version 1). Comment text is
+/** review-feedback/threads/<half>/<key>.json (cosh/review_threads.py, version 2). Comment text is
  * untrusted: it goes only into the downloaded file, never into the page. */
 export interface ThreadFile {
-  v: 1;
+  v: 1 | 2;
   half: string;
   /** Names (else addresses), indexed by `owner` and each comment's first element. */
   people: string[];
+  /** Version 2: which approver each of them is, as the half-year files name approvers (`Person.revs`,
+   * `ReviewerRow.email`), tied to their Gerrit account by the Reviewed-by addresses; null for others. */
+  reviewers?: (string | null)[];
   cls: ThreadCl[];
 }
 
@@ -860,4 +833,34 @@ export function threadsMarkdown(files: ThreadFile[], l: MdLabels): { md: string;
     }
   }
   return { md: out.join('\n'), cls, threads };
+}
+
+/** One addressed comment under a reviewer in "Your feedback": a thread they started. */
+export interface ReviewerComment {
+  cl: number;
+  project: string;
+  /** The thread's first comment's uuid. */
+  id: string;
+  /** YYYY-MM-DD of that comment. */
+  day: string;
+  path: string;
+}
+
+/** The addressed threads approver `rev` (a `ReviewerRow.email`) started on the person's changes in
+ * `files`, newest first. A thread counts when its first comment's author is that approver
+ * (`ThreadFile.reviewers`); a version-1 file, without them, gives none. */
+export function reviewerComments(files: ThreadFile[], rev: string): ReviewerComment[] {
+  const out: ReviewerComment[] = [];
+  for (const f of files) {
+    const mine = new Set((f.reviewers ?? []).flatMap((r, i) => (r === rev ? [i] : [])));
+    if (!mine.size) continue;
+    for (const c of f.cls) {
+      for (const t of c.threads) {
+        const first = t.comments[0];
+        if (t.addressed === true && first && mine.has(first[0]))
+          out.push({ cl: c.n, project: c.project, id: t.id, day: first[1].slice(0, 10), path: t.path });
+      }
+    }
+  }
+  return out.sort((x, y) => y.day.localeCompare(x.day) || y.cl - x.cl || x.id.localeCompare(y.id));
 }

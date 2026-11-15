@@ -31,14 +31,14 @@ import {
   reviewerRows,
   sums,
   tableRows,
-  threadBinLabel,
-  threadHistogram,
+  reviewerComments,
   threadsMarkdown,
   threadsUrl,
-  THREAD_BINS,
+  threadUrl,
   type Alias,
   type Peers,
   type Person,
+  type ReviewerComment,
   type ReviewerTable,
   type Shard,
   type TableRowView,
@@ -69,11 +69,16 @@ const state = {
   peers: null as Peers | null,
   /** reviewers.json, loaded with the first person. */
   reviewers: null as ReviewerTable | null,
-  /** The person's file key and half-years, for the comment download. */
+  /** The person's file key and half-years, for their thread files. */
   key: null as string | null,
   halves: [] as string[],
-  /** The half-year picked in the over-time chart, filtering the comments-per-change chart. */
+  /** The half-year picked in the over-time chart, filtering "Your feedback". */
   half: null as string | null,
+  /** The person's thread files (R2) by half-year, fetched when a reviewer is first opened or for the
+   * download; null for a half-year with none. */
+  threads: new Map<string, Promise<ThreadFile | null>>(),
+  /** Addresses of the reviewers opened in "Your feedback". */
+  revOpen: new Set<string>(),
   /** The experience bin shown in "How it's changing". */
   cohortBin: 0,
   /** Keys of everyone's directory table's rows that are open (see tableRows). */
@@ -231,6 +236,8 @@ async function lookup(raw: string) {
     window.__rf!.person = found;
     state.key = top!.key;
     state.halves = top!.top.halves;
+    state.threads = new Map();
+    state.revOpen = new Set();
     state.half = null;
     window.__rf!.half = null;
     state.allExpanded = new Set();
@@ -753,7 +760,6 @@ function render() {
   renderTrend();
   renderXpTable();
   renderReviewers();
-  renderPerCl();
 }
 
 function renderSummary() {
@@ -911,23 +917,107 @@ function renderXpTable() {
 function renderReviewers() {
   const p = state.person!;
   const peers = state.peers!;
-  const rows = reviewerRows(p, peers, ALL);
+  const period = state.half ?? ALL;
+  const filter = $('#rf-half-filter');
+  filter.hidden = !state.half;
+  if (state.half) put(filter.querySelector('.rf-filter-name')!, 'half-filter', { half: halfName(state.half) });
+  const rows = reviewerRows(p, peers, period);
   const body = $('#rf-revs tbody');
   body.replaceChildren();
   for (const r of rows) {
-    const tr = el('tr');
-    const th = el('th', r.email);
+    const tr = el('tr', undefined, 'rf-rev-row');
+    tr.dataset.email = r.email;
+    const th = el('th');
     th.setAttribute('scope', 'row');
+    const label = el('span', undefined, 'rf-dir-label');
+    const open = state.revOpen.has(r.email);
+    const b = el('button', open ? '▾' : '▸', 'ar-toggle');
+    b.type = 'button';
+    b.setAttribute('aria-expanded', String(open));
+    b.setAttribute('aria-label', `${open ? 'Hide' : 'Show'} the addressed comments ${r.email} left on your changes`);
+    b.addEventListener('click', () => toggleReviewer(r.email));
+    label.append(b, el('span', r.email));
+    th.append(label);
     const few = r.cls < peers.min_bin_cls;
     tr.append(th, el('td', fmtInt(r.cls), 'num'), el('td', fmtInt(r.addressed), 'num'),
       el('td', few ? '–' : fmtFr(fr(r.addressed, r.lines)), 'num'),
       el('td', fmtFi(r.factor), 'num'), el('td', fmtInt(r.approved), 'num'),
       few ? el('td', '–', 'num') : fiCell(r.expected > 0 ? r.addressed / r.expected : null));
     body.append(tr);
+    if (open) body.append(reviewerCommentsRow(r.email));
   }
-  const none = clsIn(p, ALL).filter((c) => !c[6].length).length;
+  const none = clsIn(p, period).filter((c) => !c[6].length).length;
   put($('#rf-revs-note'), 'revs-note', { n: fmtInt(rows.length), none: fmtInt(none), hasNone: none > 0,
     noneF: fmtFi(noneFactor(p, peers)), min: fmtInt(peers.min_bin_cls) });
+}
+
+function toggleReviewer(email: string) {
+  if (state.revOpen.has(email)) state.revOpen.delete(email);
+  else state.revOpen.add(email);
+  renderReviewers();
+  $(`#rf-revs tr.rf-rev-row[data-email="${CSS.escape(email)}"] .ar-toggle`).focus();
+}
+
+/** One half-year of the person's threads (R2), fetched once. */
+function loadThreads(h: string): Promise<ThreadFile | null> {
+  let got = state.threads.get(h);
+  if (!got) {
+    const key = state.key!;
+    got = (async () => {
+      const r = await fetch(threadsUrl(key, h, state.peers!.end));
+      if (r.status === 404) return null;
+      if (!r.ok) throw new Error(`${h}: ${r.status}`);
+      const f = (await r.json()) as ThreadFile;
+      if ((f?.v !== 1 && f?.v !== 2) || f.half !== h || !Array.isArray(f.cls)) throw new Error(`${h}: unexpected file`);
+      return f;
+    })();
+    // A failed fetch is tried again next time.
+    got.catch(() => state.threads.delete(h));
+    state.threads.set(h, got);
+  }
+  return got;
+}
+
+/** The row under an opened reviewer: the addressed comments they started on the person's changes
+ * (in the picked half-year, if any), newest first, each with its day, its change linking to the
+ * comment in Gerrit, and its file. Loaded from the thread files the first time; no comment text. */
+function reviewerCommentsRow(email: string): HTMLTableRowElement {
+  const tr = el('tr', undefined, 'rf-rev-comments');
+  const td = el('td');
+  td.colSpan = 7;
+  tr.append(td);
+  put(td, 'rev-loading');
+  const key = state.key;
+  const half = state.half;
+  const hs = half ? [half] : state.halves;
+  void Promise.all(hs.map(loadThreads)).then((files) => {
+    if (state.key !== key || state.half !== half || !td.isConnected) return;
+    const fs = files.filter((f): f is ThreadFile => f !== null);
+    if (fs.length && fs.every((f) => !f.reviewers)) {
+      put(td, 'rev-no-emails');
+      return;
+    }
+    const list = reviewerComments(fs, email);
+    if (!list.length) {
+      put(td, 'rev-none', { half: half ? halfName(half) : '' });
+      return;
+    }
+    const ul = el('ul', undefined, 'rf-rev-list');
+    ul.append(...list.map(commentItem));
+    td.replaceChildren(ul);
+  }).catch((e) => {
+    if (td.isConnected) put(td, 'rev-error', { error: String(e instanceof Error ? e.message : e) });
+  });
+  return tr;
+}
+
+function commentItem(c: ReviewerComment): HTMLLIElement {
+  const li = el('li');
+  const a = link(threadUrl(c.project, c.cl, c.id), String(Math.trunc(c.cl)));
+  a.title = msg('rev-comment-title');
+  const where = c.path === '/COMMIT_MSG' ? el('span', msg('rev-commit-msg'), 'rf-rev-msg') : el('span', c.path, 'rf-dir-name');
+  li.append(el('span', fmtDay(new Date(`${c.day}T00:00:00Z`)), 'rf-rev-day'), a, where);
+  return li;
 }
 
 /** A table cell for a feedback index, shaded green below 1 and red above. */
@@ -942,46 +1032,12 @@ function fiCell(v: number | null, title?: string): HTMLTableCellElement {
   return td;
 }
 
-/** Filters the comments-per-change chart to the changes landed in half-year `h` (null: all). */
+/** Filters "Your feedback" to the changes landed in half-year `h` (null: all). */
 function setHalf(h: string | null) {
   state.half = h;
   window.__rf!.half = h;
   charts.trend?.update('none');
-  renderPerCl();
-}
-
-/** The person's changes by how many addressed comments each drew, for the half-year
- * picked in the over-time chart if any. */
-function renderPerCl() {
-  destroy('perCl');
-  const p = state.person!;
-  const t = theme();
-  const counts = threadHistogram(p, state.half ?? ALL);
-  const filter = $('#rf-half-filter');
-  filter.hidden = !state.half;
-  if (state.half) put(filter.querySelector('.rf-filter-name')!, 'half-filter', { half: halfName(state.half) });
-  const labels = Array.from({ length: THREAD_BINS }, (_, b) => threadBinLabel(b));
-  charts.perCl = new Chart($<HTMLCanvasElement>('#rf-per-cl'), {
-    type: 'bar',
-    data: {
-      labels,
-      datasets: [{ data: counts, borderWidth: 0, categoryPercentage: 0.9, barPercentage: 1, backgroundColor: t.series[0] }],
-    },
-    options: {
-      maintainAspectRatio: false,
-      animation: false,
-      font: { family: t.font },
-      scales: {
-        x: { ...axis(t, msg('axis-per-cl')), grid: { display: false } },
-        y: { beginAtZero: true, ...axis(t, msg('axis-your-cls')), ticks: { color: t.text, font: { family: t.font }, precision: 0 } },
-      },
-      plugins: {
-        legend: { display: false },
-        tooltip: { intersect: false, mode: 'index',
-          callbacks: { label: (i) => `${fmtInt(i.parsed.y ?? 0)} ${i.parsed.y === 1 ? 'change' : 'changes'}` } },
-      },
-    },
-  });
+  renderReviewers();
 }
 
 // ---- downloading the comments
@@ -1040,14 +1096,7 @@ async function download() {
   const hs = halvesBetween(state.halves, from, to);
   put(note, 'dl-loading', { n: fmtInt(hs.length) });
   try {
-    const files = (await Promise.all(hs.map(async (h) => {
-      const r = await fetch(threadsUrl(key, h, peers.end));
-      if (r.status === 404) return null;
-      if (!r.ok) throw new Error(`${h}: ${r.status}`);
-      const f = (await r.json()) as ThreadFile;
-      if (f?.v !== 1 || f.half !== h || !Array.isArray(f.cls)) throw new Error(`${h}: unexpected file`);
-      return f;
-    }))).filter((f): f is ThreadFile => f !== null);
+    const files = (await Promise.all(hs.map(loadThreads))).filter((f): f is ThreadFile => f !== null);
     const md = threadsMarkdown(files, {
       owner: line('dl-owner'),
       addressed: line('dl-addressed'),
@@ -1110,7 +1159,6 @@ function init() {
     renderMethod();
     if (!state.person) return;
     renderTrend();
-    renderPerCl();
   });
   void getJson<Peers>(`${DATA}peers.json`).then((p) => {
     state.peers = p;
