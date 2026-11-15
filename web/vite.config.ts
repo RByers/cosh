@@ -122,11 +122,13 @@ const R2_PATH = /^([0-9A-Za-z]+(?:\/[0-9A-Za-z]+)?\/[0-9a-f]{32})\.json$/;
 /** Pages on localhost read the bucket's files from r2/ (web/src/r2.ts): this serves them
  * from their local folders (config/r2.json), gzipped as the bucket serves them, so new files
  * can be checked before they are uploaded. Only names of the bucket's form under its known
- * prefixes are served (the same files anyone can fetch from the bucket by name); a file not
- * on this machine is redirected to the bucket. Both the dev server and preview use it. */
+ * prefixes are served (the same files anyone can fetch from the bucket by name). A file not on
+ * this machine is a 404, never fetched from the bucket: a local page reads only local data, so a
+ * local file that is missing or stale shows up instead of being masked by the published copy.
+ * Both the dev server and preview use it. */
 const r2Local = (): Plugin => {
   const r2 = JSON.parse(readFileSync(new URL('../config/r2.json', import.meta.url), 'utf8')) as
-    { public_base: string; prefixes: Record<string, string> };
+    { prefixes: Record<string, string> };
   const data = dataDir();
   const serve = (middlewares: { use: (fn: (req: any, res: any, next: () => void) => void) => void }) =>
     middlewares.use((req, res, next) => {
@@ -136,9 +138,10 @@ const r2Local = (): Plugin => {
       if (!prefix || !m) return next();
       const file = join(data, r2.prefixes[prefix], `${m[1]}.json.gz`);
       if (!existsSync(file)) {
-        res.statusCode = 302;
-        res.setHeader('Location', `${r2.public_base}${prefix}/${m[1]}.json`);
-        return res.end();
+        res.statusCode = 404;
+        res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+        res.setHeader('Cache-Control', 'no-cache');
+        return res.end(`not in ${r2.prefixes[prefix]}/ of the local data directory`);
       }
       res.setHeader('Content-Type', 'application/json');
       res.setHeader('Content-Encoding', 'gzip');
