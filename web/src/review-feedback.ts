@@ -1014,9 +1014,12 @@ function loadThreads(h: string): Promise<ThreadFile | null> {
  * comment in Gerrit, and its file. Loaded from the thread files the first time; no comment text. */
 function reviewerCommentsRow(email: string): HTMLTableRowElement {
   const tr = el('tr', undefined, 'rf-rev-comments');
-  const td = el('td');
-  td.colSpan = 7;
-  tr.append(td);
+  const cell = el('td');
+  cell.colSpan = 7;
+  // The box takes the width the columns already have, so opening a reviewer doesn't resize them.
+  const td = el('div', undefined, 'rf-rev-box');
+  cell.append(td);
+  tr.append(cell);
   put(td, 'rev-loading');
   const key = state.key;
   const half = state.half;

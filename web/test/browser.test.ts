@@ -3690,10 +3690,11 @@ test('feedback index: a reviewer opens into the addressed comments they started,
     ({ id, path, line: 3, ps: 1, addressed, resolved: true, dir, comments: [[who, at, '<img src=x onerror=alert(1)> secret text']] });
   // Each file says which approver each commenter is, and which directory each thread counts in (a commit
   // message: the change's main one); Alice's unaddressed thread and Bob's aren't hers.
+  const LONG = `chrome/browser/ui/${'very_long_directory_name/'.repeat(12)}view.cc`;
   const files: Record<string, unknown> = {
     '2025H2': { v: 3, half: '2025H2', people: ['Test Person', 'Alice'], reviewers: [null, 'alice@google.com'],
       cls: [{ n: 1000001, project: 'chromium/src', subject: 's', landed: '2025-10-01', lines: 40, owner: 0,
-        threads: [thread('a1', 'chrome/browser/ui/view.cc', true, 1, '2025-09-20T10:00Z', 'chrome/browser/ui/'),
+        threads: [thread('a1', LONG, true, 1, '2025-09-20T10:00Z', 'chrome/browser/ui/'),
           thread('a2', '/COMMIT_MSG', false, 1, '2025-09-21T10:00Z', 'chrome/browser/ui/')] }] },
     '2026H1': { v: 3, half: '2026H1', people: ['Test Person', 'Alice', 'Bob'],
       reviewers: [null, 'alice@google.com', 'bob@igalia.com'],
@@ -3721,10 +3722,14 @@ test('feedback index: a reviewer opens into the addressed comments they started,
   const items = () => page.$$eval('#rf-revs tr.rf-rev-comments li', (ls) => ls.map((l) =>
     [...l.children].map((c) => c.textContent)));
   const toggle = (email: string) => page.click(`#rf-revs tr.rf-rev-row[data-email="${email}"] .ar-toggle`);
+  // Opening a reviewer doesn't resize the columns, even for a path wider than the table.
+  const widths = () => page.$$eval('#rf-revs thead th', (hs) => hs.map((h) => Math.round(h.getBoundingClientRect().width)));
+  const before = await widths();
   await toggle('alice@google.com');
   await page.waitForSelector('#rf-revs tr.rf-rev-comments li');
+  assert.deepEqual(await widths(), before);
   assert.deepEqual(asked.sort(), ['2025H2', '2026H1', '2026H2']);
-  assert.deepEqual(await items(), [['2 Mar 2026', '1000002', 'commit message'], ['20 Sept 2025', '1000001', 'chrome/browser/ui/view.cc']]);
+  assert.deepEqual(await items(), [['2 Mar 2026', '1000002', 'commit message'], ['20 Sept 2025', '1000001', LONG]]);
   const a = await page.$eval('#rf-revs tr.rf-rev-comments a', (x) => [x.getAttribute('href'), x.getAttribute('target')]);
   assert.deepEqual(a, ['https://chromium-review.googlesource.com/c/chromium/src/+/1000002/comment/a3/', '_blank']);
   assert.equal(await page.$eval(`#rf-revs tr.rf-rev-row[data-email="alice@google.com"] .ar-toggle`, (b) => b.getAttribute('aria-expanded')), 'true');
@@ -3748,14 +3753,14 @@ test('feedback index: a reviewer opens into the addressed comments they started,
   await page.waitForFunction(() => window.__rf!.half === '2025H2');
   await page.waitForFunction(() => !/Loading/.test(document.querySelector('#rf-revs')!.textContent ?? ''));
   assert.deepEqual(await page.$$eval('#rf-revs tr.rf-rev-row', (rs) => rs.map((r) => (r as HTMLElement).dataset.email)), ['alice@google.com']);
-  assert.deepEqual(await items(), [['20 Sept 2025', '1000001', 'chrome/browser/ui/view.cc']]);
+  assert.deepEqual(await items(), [['20 Sept 2025', '1000001', LONG]]);
   assert.equal(asked.length, 3);
   // A directory filter keeps only the comments counted there: CL 2's commit message counts in its main
   // directory, content/browser/, so under chrome/ Alice keeps only CL 1's.
   await page.click('#rf-half-clear');
   await page.click('#rf-all-dirs tr[data-key="d:chrome/"] a.rf-dir-filter-link');
   await page.waitForFunction(() => !/Loading/.test(document.querySelector('#rf-revs')!.textContent ?? ''));
-  assert.deepEqual(await items(), [['20 Sept 2025', '1000001', 'chrome/browser/ui/view.cc']]);
+  assert.deepEqual(await items(), [['20 Sept 2025', '1000001', LONG]]);
   await page.click('#rf-dir-clear');
   // Bob, still open, is back too.
   await page.waitForFunction(() => document.querySelectorAll('#rf-revs tr.rf-rev-comments li').length === 3);

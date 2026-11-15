@@ -2805,6 +2805,12 @@ button.term:focus-visible {
   font-size: 0.85rem;
 }
 
+/* Contained so its long paths don't widen the table's columns: it wraps within their width. */
+.rf-rev-box {
+  contain: inline-size;
+  overflow-wrap: anywhere;
+}
+
 .rf-rev-list {
   display: grid;
   gap: 2px;
