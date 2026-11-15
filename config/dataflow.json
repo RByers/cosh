@@ -2180,7 +2180,7 @@
       "network": true,
       "lock": null,
       "incremental": "Uploads only files whose sha256 differs from the manifest's (data/private/r2-manifest.json).",
-      "duration": "to be measured",
+      "duration": "45 min for the first full upload (32,676 files, 400 MB, 2026-11-14); a weekly sync sends only the current half-year's changed files",
       "token_cost": null,
       "cost_source": "docs/review-feedback.md",
       "refresh": "routine",

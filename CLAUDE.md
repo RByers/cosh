@@ -110,6 +110,12 @@ purpose near the top of its own doc.
 - **The Radar token** is loaded with `source ~/.secrets/cosh/secrets.sh`
   (outside the repo; argus keeps no secrets under `~/projects`). Never print
   or commit it.
+- **The R2 token** (`~/.secrets/cosh/r2.json`, outside the repo) lets
+  `python3 -m cosh.r2 sync` write the Cloudflare R2 bucket `cosh`, which
+  serves published files too big for git at `cosh-data.rbyers.ca`
+  (`docs/r2.md`). Never print it or put its values on a command line.
+  Upload only rebuildable published data; a new prefix is a new published
+  store in `config/dataflow.json`.
 - **The contact e-mail** sent with every request lives in the gitignored
   `data/private/settings.json` (`{"contact_email": ...}`) of the main
   checkout, which worktrees find on their own. `COSH_CONTACT` overrides it.

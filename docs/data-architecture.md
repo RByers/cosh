@@ -26,7 +26,7 @@ other docs point to it rather than repeat its figures.
 Data moves down through five tiers. The first three live in `data/private/`
 (gitignored because of size, not privacy), the published tier is committed,
 and the site is built from it, apart from files too big for git, which go
-to the Cloudflare R2 bucket `cosh` (`cosh.r2 sync`; README.md).
+to the Cloudflare R2 bucket `cosh` (`cosh.r2 sync`; `docs/r2.md`).
 
 | Tier | What | If lost |
 |---|---|---|

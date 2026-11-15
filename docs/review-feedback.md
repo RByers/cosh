@@ -505,7 +505,8 @@ change-level threads. About 5 minutes for all 19 half-years, 20 s for one.
 `cosh.r2 sync` (step `r2-threads`) uploads the files whose sha256 differs
 from `data/private/r2-manifest.json`, deletes objects whose file is gone,
 and never lists the bucket. It refuses more than 50,000 objects in a run or
-5 GB in all (`--max-objects`, `--max-total-gb`). Credentials:
+5 GB in all (`--max-objects`, `--max-total-gb`). The bucket's setup
+(domain, CORS, caching, costs, the token) is in `docs/r2.md`. Credentials:
 `~/.secrets/cosh/r2.json` (endpoint, bucket, access key, secret, public
 base), a token that can only read and write this bucket. Weekly, only the
 current half-year's files change.
