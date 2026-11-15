@@ -161,7 +161,7 @@ rerunning: about 1 h 50 min (1.5 h of `git log`, then 20 min of OWNERS diffs and
 | Table | Rows | What |
 |---|---:|---|
 | `commits` | 1,676,752 | sha, git author (lowercased) and name, authored and landed (committer) time, CL (`Reviewed-on:`), `Bot-Commit:` flag, `Reviewed-by:` approvers, the commit it reverts, reland flag, AI-marker flag, files and lines, LSC flag (`is_lsc`) |
-| `commit_files`, `paths` | 13,556,620 / 1,642,612 | each file of its first-parent diff, with lines added and deleted (`-1` binary) |
+| `commit_files`, `paths` | 13,556,620 / 1,642,612 | each file of its first-parent diff, with lines added and deleted (`-1` binary); paths raw (below) |
 | `owners_added` | 42,496 | each address on a line added to an OWNERS file (the first on the line) |
 | `renames`, `tip_paths` | 615,936 / 517,788 | each file git finds renamed in a commit (old and new path, lines changed between them); the files at main's tip (below) |
 | `repetition` | 173,608 | 1 − distinct changed lines ÷ changed lines, for commits with a CL and 10 or more files (NULL over 50,000 lines) |
@@ -201,6 +201,14 @@ too and stay in: they drew 55–70% of other CLs' comments at the same
 size, and keyword tagging would drop 23% of Opera's commits against 7.6%
 of Google's. The issue has the tables.
 
+**Paths are raw** (2026-11-14): git C-quotes a path with non-ASCII or
+special characters when it prints one without `-z`
+(`"dir/caf\303\251.txt"`), and the store used to keep that form, so such a
+file's directory started with a quote (`"dir/`). `commits.unquote_path`
+now undoes it on the way in (`--numstat`, `ls-tree`), and a store from
+before is converted when opened (`meta.paths_raw`): 13 paths, Blink file-API
+test files with emoji in their names, in 3 commits since 2017.
+
 **Renames** (2026-11-14): `--no-renames` records a moved file as a
 deletion and an addition, so a directory's history stops at a rename:
 `third_party/WebKit/Source` became `third_party/blink/renderer` on
@@ -215,8 +223,7 @@ deleted, or two binary or empty files: `RENAME_CANDIDATES`, 147k of 1.68M).
 `tip_paths` lists the files at main's tip, refreshed on every run.
 `meta.renames_through` is the newest commit looked at; the first run takes
 about 3 min and found 615,936 renamed files in 37,179 commits. Paths come
-from `diff-tree -z --numstat`, raw, and are matched to `paths` (C-quoted
-when unusual, as plain `--numstat` prints them) by `unquote_path`. Rows
+from `diff-tree -z --numstat`, raw, as `paths` keeps them. Rows
 from before the line counts (`ins` NULL) are redone on the next run.
 
 `commits.moved_lines(db)` replaces `commit_files`' counts for renamed

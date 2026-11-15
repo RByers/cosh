@@ -59,6 +59,7 @@ REP_MIN_FILES = 10     # repetition ratios for commits with a CL and this many f
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS meta (k TEXT PRIMARY KEY, v TEXT) STRICT;
+-- Paths raw (git's C-quoting of unusual names undone: unquote_path).
 CREATE TABLE IF NOT EXISTS paths (path_id INTEGER PRIMARY KEY, path TEXT NOT NULL UNIQUE) STRICT;
 CREATE TABLE IF NOT EXISTS commits (
   commit_id     INTEGER PRIMARY KEY,    -- landing order; > 0 from HISTORY_SINCE on
@@ -155,6 +156,11 @@ def connect(path=None):
     if "is_lsc" not in {r[1] for r in db.execute("PRAGMA table_info(commits)")}:
         with db:                    # a store from before is_lsc: _lsc tags its commits on the next update
             db.execute("ALTER TABLE commits ADD COLUMN is_lsc INTEGER NOT NULL DEFAULT 0")
+    if not db.execute("SELECT 1 FROM meta WHERE k = 'paths_raw'").fetchone():
+        with db:                    # paths stored C-quoted, as git printed them (before 2026-11-14): unquote
+            for pid, p in db.execute("SELECT path_id, path FROM paths WHERE path LIKE '\"%\"'").fetchall():
+                db.execute("UPDATE paths SET path = ? WHERE path_id = ?", (unquote_path(p), pid))
+            db.execute("INSERT OR REPLACE INTO meta VALUES ('paths_raw', '1')")
     if "ins" not in {r[1] for r in db.execute("PRAGMA table_info(renames)")}:
         with db:                    # renames from before the line counts: _renames redoes their commits
             db.execute("ALTER TABLE renames ADD COLUMN ins INTEGER")
@@ -230,6 +236,7 @@ def _ingest(db, repo, revs, ids, paths, label):
             if len(f) != 3 or not (f[0].isdigit() or f[0] == "-"):
                 continue
             a, d, path = f
+            path = unquote_path(path)           # git C-quotes unusual paths; the store keeps them raw
             a, d = (-1, -1) if a == "-" else (int(a), int(d))
             pid = paths.get(path)
             if pid is None:
@@ -357,7 +364,7 @@ _C_ESCAPES = {"a": 7, "b": 8, "t": 9, "n": 10, "v": 11, "f": 12, "r": 13, '"': 3
 
 def unquote_path(p):
     """A path as git prints it without -z (C-quoted when it has non-ASCII
-    bytes or special characters, as commit_files' paths are) as raw text."""
+    bytes or special characters) as raw text, as the paths table keeps it."""
     if not (len(p) >= 2 and p[0] == '"' and p[-1] == '"'):
         return p
     out, i, s = bytearray(), 0, p[1:-1]
@@ -396,9 +403,7 @@ def _renames(db, repo):
             with db:
                 db.execute("INSERT OR REPLACE INTO meta VALUES ('renames_through', ?)", (str(top),))
         return 0
-    # commit_files has paths as `--numstat` prints them without -z (C-quoted
-    # when unusual); -z prints them raw.
-    pid = {unquote_path(x): i for x, i in db.execute("SELECT path, path_id FROM paths")}
+    pid = dict(db.execute("SELECT path, path_id FROM paths"))    # raw, as -z prints them
     p = subprocess.Popen(["git", "--git-dir", repo, "diff-tree", "--stdin", "-z", "-r", "-M", f"-l{RENAME_LIMIT}",
                           "--diff-filter=R", "--numstat"],
                          stdin=subprocess.PIPE, stdout=subprocess.PIPE, env=ENV)
@@ -453,7 +458,7 @@ def _tip_paths(db, repo, tip):
     p = subprocess.run(["git", "--git-dir", repo, "ls-tree", "-r", "--name-only", tip],
                        env=ENV, capture_output=True, check=True)
     pid = dict(db.execute("SELECT path, path_id FROM paths"))
-    have = [(pid[x],) for x in p.stdout.decode("utf-8", "replace").splitlines() if x in pid]
+    have = [(pid[x],) for x in map(unquote_path, p.stdout.decode("utf-8", "replace").splitlines()) if x in pid]
     with db:
         db.execute("DELETE FROM tip_paths")
         db.executemany("INSERT INTO tip_paths VALUES (?)", have)

@@ -820,7 +820,7 @@
           "purpose": "Path dictionary for commit_files.",
           "columns": {
             "path_id": "Integer id of a file path, used by commit_files.",
-            "path": "File path within the Chromium repository, relative to its root."
+            "path": "File path within the Chromium repository, relative to its root, raw (git's C-quoting of unusual names undone)."
           }
         },
         {

@@ -790,7 +790,8 @@ class CommitsStoreTest(unittest.TestCase):
             # Each rename with the lines changed between the names: a.cc gained one, the rest moved as they were.
             self.assertEqual(db.execute("SELECT sum(ins), sum(dels), count(*) FROM renames").fetchone(), (1, 0, 8))
             pid = dict(db.execute("SELECT path, path_id FROM paths"))
-            self.assertIn(pid['"keep/caf\\303\\251.txt"'], {r[0] for r in db.execute("SELECT old_path_id FROM renames")})
+            # Paths are raw: git's C-quoting ("keep/caf\\303\\251.txt") is undone.
+            self.assertIn(pid["keep/café.txt"], {r[0] for r in db.execute("SELECT old_path_id FROM renames")})
             moved = commits.moved_lines(db)
             self.assertEqual(moved[(3, pid["new/blink/renderer/core/a.cc"])], (1, 0))
             self.assertEqual(moved[(3, pid["old/web/src/core/a.cc"])], (0, 0))
@@ -806,9 +807,8 @@ class CommitsStoreTest(unittest.TestCase):
             self.assertEqual(cur["keep/x.cc"], "other/x.cc")
             self.assertNotIn("keep/y.cc", cur)
             self.assertNotIn("new/blink/renderer/core/a.cc", cur)
-            # (A C-quoted path's directory keeps its quote: '"keep/'.)
-            self.assertEqual(commits.commit_dirs(db, 3)[1][1], {"old/web/src/", "keep/", '"keep/'})
-            self.assertEqual(commits.commit_dirs(db, 3, cur)[1][1], {"new/blink/renderer/", "keep/", "other/", '"other/'})
+            self.assertEqual(commits.commit_dirs(db, 3)[1][1], {"old/web/src/", "keep/"})
+            self.assertEqual(commits.commit_dirs(db, 3, cur)[1][1], {"new/blink/renderer/", "keep/", "other/"})
             # An incremental run looks only at the new commits, and refreshes the tip.
             write("new/blink/renderer/core/a.cc", "changed\n")
             git("commit", "-qam", "Edit", date="2018-04-01T00:00:00Z")
@@ -821,6 +821,13 @@ class CommitsStoreTest(unittest.TestCase):
             db.commit()
             commits.update(path, repo, jobs=1)
             self.assertEqual(db.execute("SELECT sum(ins), count(*) FROM renames").fetchone(), (1, 8))
+            # A store from before raw paths gets them when opened.
+            db.execute("UPDATE paths SET path = ? WHERE path = ?", ('"other/caf\\303\\251.txt"', "other/café.txt"))
+            db.execute("DELETE FROM meta WHERE k = 'paths_raw'")
+            db.commit()
+            commits.connect(path).close()
+            self.assertEqual(db.execute("SELECT count(*) FROM paths WHERE path = 'other/café.txt'").fetchone(), (1,))
+            self.assertEqual(db.execute("SELECT count(*) FROM paths WHERE path LIKE '\"%'").fetchone(), (0,))
             db.close()
 
 
