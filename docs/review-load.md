@@ -22,16 +22,18 @@ main's history cover.
 2. **Lines reviewed per reviewer**: the quarter's reviewed lines over the
    people who reviewed anything in it. The tooltip gives each quarter's
    change on the quarter before and on a year before.
-3. **Time to first review**, weekends left out:
-   - *upload to first review* (mean and median, all quarters): a CL's
-     creation to the first Code-Review vote or comment by a human other
-     than its owner, over the CLs that got one;
-   - *reviewer's turn to first answer* (mean, from 2021Q1): a reviewer
-     entering the attention set to their own first vote or comment.
-4. **Reviewers' time in the attention set** (from 2021Q1), weekends left
-   out: the total over all reviewers, and the mean per reviewer.
+3. **Reviewer's turn to first answer** (median, 90th percentile and mean,
+   from 2021Q1, weekends left out): a reviewer entering the attention set
+   to their own first vote or comment. The chart starts in 2021Q1. (Upload
+   to first review was dropped on 2026-11-14: its clock includes the
+   owner's own time before asking for review.)
+4. **Reviewers' time in the attention set** (from 2021Q1, weekends left
+   out): the mean per reviewer, the quarter's total over the number of
+   reviewers. The chart starts in 2021Q1.
 5. **Where the load is**: a table by directory (three levels, opened level
-   by level) for the last four quarters: lines reviewed, each quarter's
+   by level) for the last four quarters: lines reviewed (shaded on a log
+   scale, white to dark blue, from the listing threshold to the biggest
+   top-level directory), each quarter's
    change in lines reviewed on the quarter before, and each quarter's mean
    attention-set hours per CL and reviewer, shaded against all of Chromium
    in that quarter (red: twice as long or more; green: half or less).
@@ -105,7 +107,7 @@ R2 bucket (`docs/r2.md`; until 2026-11-14 they were committed next to
 
 | File | Holds |
 |---|---|
-| `all.json` | per quarter: commits, reviewed commits and lines, reviewers, both waits (mean, median, count), attention hours, turns and reviewers; the table's directories at every level with five quarters of lines and four of attention |
+| `all.json` | per quarter: commits, reviewed commits and lines, reviewers, the reviewer's turn to first answer (mean, median, 90th percentile, count), attention hours, turns and reviewers; the table's directories at every level with five quarters of lines and four of attention |
 | `<name>.json` | one reviewer, in one file (version 2), fetched in one request: `years`, by year, `{"q": {quarter number: [commits reviewed, lines reviewed, attention weekday hours, turns, asked-to-answer hours (summed), answers]}}`; and `dirs`, by quarter (the table's four), their 3-level directories `[directory, lines, attention hours, turns]` |
 
 `<name>` is the address as typed, lower case, as the Feedback Index names its files
@@ -152,8 +154,8 @@ or ranks people.
   (`reviews.sqlite` has `committers`; the votes are in the timeline).
 - How unevenly a directory's review is spread over its reviewers.
 - When review was requested before the attention set (2017–2020): NoteDb
-  records reviewer additions, which the walk doesn't read, so the long
-  series starts its clock at the CL's first upload.
+  records reviewer additions, which the walk doesn't read, so the wait
+  charts start in 2021Q1.
 
 Tests: `tests.test_review_timeline`, `tests.test_review_load`; the page's
 in `web/test/` ("review load").

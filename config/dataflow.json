@@ -1280,7 +1280,7 @@
       "rebuildable": true,
       "size": "93 KB (38 KB gzipped)",
       "size_as_of": "2026-11-14",
-      "purpose": "Every whole quarter since 2017Q3 (commits, reviewed lines, reviewers, time to first review, attention-set hours) and the directory table's five quarters.",
+      "purpose": "Every whole quarter since 2017Q3 (commits, reviewed lines, reviewers, reviewer's turn to first answer, attention-set hours) and the directory table's five quarters.",
       "notes": "Changes only when a quarter completes or an input is corrected."
     },
     {

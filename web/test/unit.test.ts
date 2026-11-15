@@ -1840,6 +1840,9 @@ test('review load: quarter figures, a reviewer\'s files and the directory tree',
   assert.equal(L.change(120, 100)! > 0.199 && L.change(120, 100)! < 0.201, true);
   assert.equal(L.change(5, 0), null);
   assert.equal(L.change(null, 3), null);
+  // A log scale: 1,000 is halfway from 100 to 10,000; out of range clamps; nothing to shade is null.
+  assert.equal(L.logShade(1000, 100, 10000)!.toFixed(6), '0.500000');
+  assert.deepEqual([L.logShade(50, 100, 10000), L.logShade(1e6, 100, 10000), L.logShade(0, 100, 10000)], [0, 1, null]);
   const all = { quarters: ['2025Q4', '2026Q1', '2026Q2'], table_quarters: ['2025Q4', '2026Q1', '2026Q2'],
     dirs: [['a/', [10, 20, 40], [30, 90], [3, 3]], ['a/b/', [10, 15, 30], [30, 60], [3, 1]], ['z/', [5, 5, 5], [8, 8], [4, 4]]] as import('../src/load.ts').DirEntry[] };
   // A malformed quarter is dropped; no quarters at all is nobody.

@@ -12,6 +12,7 @@ import {
   change,
   dirRows,
   dirTree,
+  logShade,
   meanAttention,
   meanHours,
   meanLines,
@@ -107,15 +108,17 @@ const line = (label: string, data: (number | null)[], color: string, more: objec
 const youLine = (t: Theme, data: (number | null)[], more: object = {}): Line =>
   line(msg('legend-you'), data, youColor(t), { borderWidth: 3, pointRadius: 2.5, spanGaps: true, order: 0, ...more });
 
-/** A chart over the quarters; `format` writes a tooltip line's value, `extra` adds to it. */
+/** A chart over the quarters from index `from`; `format` writes a tooltip line's value, `extra`
+ * adds to it (given the index into all the quarters). */
 function draw(name: string, datasets: Line[], t: Theme,
   scales: Record<string, object>, format: (v: number, dataset: number) => string,
-  extra?: (dataset: number, i: number) => string) {
+  extra?: (dataset: number, i: number) => string, from = 0) {
   destroy(name);
   const all = state.all!;
+  for (const d of datasets) d.data = d.data.slice(from);
   charts[name] = new Chart<'bar' | 'line', (number | null)[], string>($<HTMLCanvasElement>(`#rl-${name}`), {
     type: 'line',
-    data: { labels: all.quarters.map(quarterLabel), datasets },
+    data: { labels: all.quarters.slice(from).map(quarterLabel), datasets },
     options: {
       maintainAspectRatio: false,
       animation: false,
@@ -129,7 +132,7 @@ function draw(name: string, datasets: Line[], t: Theme,
             label: (i) => {
               const v = i.parsed.y;
               if (!ok(v)) return '';
-              return `${i.dataset.label}: ${format(v, i.datasetIndex)}${extra?.(i.datasetIndex, i.dataIndex) ?? ''}`;
+              return `${i.dataset.label}: ${format(v, i.datasetIndex)}${extra?.(i.datasetIndex, i.dataIndex + from) ?? ''}`;
             },
           },
         },
@@ -140,6 +143,8 @@ function draw(name: string, datasets: Line[], t: Theme,
 
 /** The newest quarter and its index. */
 const lastOf = (all: All) => ({ i: all.quarters.length - 1, q: quarterLabel(all.quarters.at(-1)!) });
+/** The index of the first quarter with attention-set data. */
+const attFrom = (all: All) => Math.max(0, all.quarters.indexOf(all.attention_from));
 
 function renderCommits() {
   const all = state.all!;
@@ -187,25 +192,26 @@ function renderLines() {
     first: fmtInt(Math.round(mean[0] ?? 0)), firstQ: quarterLabel(all.quarters[0]) });
 }
 
-function renderFirst() {
+function renderReply() {
   const all = state.all!;
   const p = state.person;
   const t = theme();
   const { i, q } = lastOf(all);
-  const keys: Key[] = [{ label: msg('legend-first-mean'), color: t.series[0] },
-    { label: msg('legend-first-median'), color: t.series[0], dash: true },
+  const keys: Key[] = [{ label: msg('legend-reply-median'), color: t.series[0] },
+    { label: msg('legend-reply-p90'), color: t.series[0], dash: true },
     { label: msg('legend-reply-mean'), color: t.series[2] }];
-  const datasets: Line[] = [line(keys[0].label, all.first.mean, keys[0].color),
-    line(keys[1].label, all.first.median, keys[1].color, { borderDash: [5, 4], borderWidth: 1.5 }),
+  const datasets: Line[] = [line(keys[0].label, all.reply.median, keys[0].color),
+    line(keys[1].label, all.reply.p90, keys[1].color, { borderDash: [5, 4], borderWidth: 1.5 }),
     line(keys[2].label, all.reply.mean, keys[2].color)];
   if (p) {
     keys.push({ label: msg('legend-you'), color: youColor(t) });
     datasets.push(youLine(t, personSeries(p, all.quarters, (v) => ratio(v[4], v[5]))));
   }
-  legend($('#rl-first-legend'), keys);
-  draw('first', datasets, t, { y: { ...axis(t, msg('axis-hours')), beginAtZero: true } }, (v) => fmtHours(v));
-  put($('#rl-first-note'), 'first-note', { last: q, mean: fmtHours(all.first.mean[i]), median: fmtHours(all.first.median[i]),
-    reply: fmtHours(all.reply.mean[i]), attFrom: quarterLabel(all.attention_from), you: !!p });
+  legend($('#rl-reply-legend'), keys);
+  draw('reply', datasets, t, { y: { ...axis(t, msg('axis-hours')), beginAtZero: true } }, (v) => fmtHours(v),
+    undefined, attFrom(all));
+  put($('#rl-reply-note'), 'reply-note', { last: q, mean: fmtHours(all.reply.mean[i]), median: fmtHours(all.reply.median[i]),
+    p90: fmtHours(all.reply.p90[i]), you: !!p });
 }
 
 function renderAttention() {
@@ -214,25 +220,18 @@ function renderAttention() {
   const t = theme();
   const { i, q } = lastOf(all);
   const mean = meanAttention(all);
-  const keys: Key[] = [{ label: msg('legend-attention-total'), color: t.grid, band: true },
-    { label: msg('legend-attention-mean'), color: t.series[0] }];
-  const datasets: Line[] = [
-    { type: 'bar', label: keys[0].label, data: all.attention.hours, backgroundColor: t.grid, yAxisID: 'y', order: 2 },
-    line(keys[1].label, mean, keys[1].color, { yAxisID: 'each', pointRadius: 2, order: 1 })];
+  const keys: Key[] = [{ label: msg('legend-attention-mean'), color: t.series[0] }];
+  const datasets: Line[] = [line(keys[0].label, mean, keys[0].color, { pointRadius: 2 })];
   if (p) {
-    keys.push({ label: msg('legend-you-right'), color: youColor(t) });
-    datasets.push(youLine(t, personSeries(p, all.quarters, (v) => (v[3] ? v[2] : null)), { yAxisID: 'each' }));
+    keys.push({ label: msg('legend-you'), color: youColor(t) });
+    datasets.push(youLine(t, personSeries(p, all.quarters, (v) => (v[3] ? v[2] : null))));
   }
   legend($('#rl-attention-legend'), keys);
-  draw('attention', datasets, t, {
-    y: { ...axis(t, msg('axis-attention-total')), beginAtZero: true, grid: { display: false },
-      ticks: { color: t.text, font: { family: t.font }, callback: (v: number | string) => fmtBig(Number(v)) } },
-    each: { ...axis(t, msg('axis-attention-mean')), position: 'right', beginAtZero: true },
-  }, (v, d) => (d === 0 ? `${fmtInt(Math.round(v))} h` : fmtHours(v)));
-  put($('#rl-attention-note'), 'attention-note', { last: q, attFrom: quarterLabel(all.attention_from),
-    reviewers: fmtInt(all.attention.reviewers[i] ?? 0), total: fmtInt(all.attention.hours[i] ?? 0),
-    mean: fmtInt(Math.round(mean[i] ?? 0)), turn: fmtNum(ratio(all.attention.hours[i], all.attention.turns[i]) ?? 0,
-      { maximumFractionDigits: 1 }), you: !!p });
+  draw('attention', datasets, t, { y: { ...axis(t, msg('axis-attention-mean')), beginAtZero: true } },
+    (v) => fmtHours(v), undefined, attFrom(all));
+  put($('#rl-attention-note'), 'attention-note', { last: q,
+    reviewers: fmtInt(all.attention.reviewers[i] ?? 0), mean: fmtInt(Math.round(mean[i] ?? 0)),
+    turn: fmtNum(ratio(all.attention.hours[i], all.attention.turns[i]) ?? 0, { maximumFractionDigits: 1 }), you: !!p });
 }
 
 // ---- the directory table
@@ -248,7 +247,16 @@ function waitCell(v: number | null, typical: number | null, cls = 'num'): HTMLTa
   return td;
 }
 
-function dirRow(r: DirRow, typical: (number | null)[], you: boolean): HTMLTableRowElement {
+/** The lines-reviewed cell, shaded white to dark blue on a log scale from `lo` to `hi` lines. */
+function heatCell(v: number, lo: number, hi: number): HTMLTableCellElement {
+  const td = el('td', fmtBig(v), 'num rl-heat');
+  const shade = logShade(v, lo, hi) ?? 0;
+  td.style.setProperty('--rl-heat', shade.toFixed(3));
+  td.classList.toggle('rl-heat-dark', shade > 0.5);
+  return td;
+}
+
+function dirRow(r: DirRow, typical: (number | null)[], you: boolean, lo: number, hi: number): HTMLTableRowElement {
   const n = r.node;
   const tr = el('tr', undefined, `rf-dir-row rf-dir-${n ? n.kind : 'more'}`);
   tr.dataset.key = r.key;
@@ -283,7 +291,7 @@ function dirRow(r: DirRow, typical: (number | null)[], you: boolean): HTMLTableR
     tr.append(td);
     return tr;
   }
-  tr.append(el('td', fmtBig(totalLines(n)), 'num'));
+  tr.append(heatCell(totalLines(n), lo, hi));
   n.lines.slice(1).forEach((v, i) => {
     const c = v + n.lines[i] >= state.all!.min_dir_lines / 4 ? change(v, n.lines[i]) : null;
     tr.append(el('td', ok(c) ? fmtChange(c) : '', i ? 'num' : 'num rl-group'));
@@ -316,8 +324,11 @@ function renderDirs() {
     th(msg('col-you-hours'), 'num rf-you-col', msg('title-you-hours')));
   const roots = dirTree(all, p);
   const typical = overallHours(roots, all.table_quarters.length);
+  // The heat map's scale: from the table's threshold to its biggest directory.
+  const lo = all.min_dir_lines;
+  const hi = Math.max(lo * 10, ...roots.map(totalLines));
   $('#rl-dirs').classList.toggle('rf-with-you', !!p);
-  $('#rl-dirs tbody').replaceChildren(...dirRows(roots, state.expanded, !!p).map((r) => dirRow(r, typical, !!p)));
+  $('#rl-dirs tbody').replaceChildren(...dirRows(roots, state.expanded, !!p).map((r) => dirRow(r, typical, !!p, lo, hi)));
   put($('#rl-dirs-note'), 'dirs-note', { from: quarterLabel(tq[0]), to: quarterLabel(tq.at(-1)!),
     minLines: fmtInt(all.min_dir_lines), minTurns: fmtInt(MIN_TURNS), you: !!p });
 }
@@ -326,10 +337,10 @@ function render() {
   if (!state.all) return;
   renderCommits();
   renderLines();
-  renderFirst();
+  renderReply();
   renderAttention();
   renderDirs();
-  $('#rl-att-from').textContent = quarterLabel(state.all.attention_from);
+  for (const id of ['#rl-att-from', '#rl-att-from-2']) $(id).textContent = quarterLabel(state.all.attention_from);
 }
 
 // ---- lookup

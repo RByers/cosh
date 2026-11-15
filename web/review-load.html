@@ -110,51 +110,44 @@
         <h2 id="latency-title">How long changes wait for review</h2>
         <p class="rf-def">
           All times here leave out Saturdays and Sundays (UTC), so a change sent on Friday evening and reviewed on
-          Monday morning waited hours, not days. They are elapsed time, not time spent reviewing.
+          Monday morning waited hours, not days. They are elapsed time, not time spent reviewing. Both charts
+          start in <span id="rl-att-from-2"></span>, the first whole quarter with Gerrit's attention set.
         </p>
-        <h3>Time to first review</h3>
-        <ul id="rl-first-legend" class="legend rf-line-legend" aria-label="Lines"></ul>
+        <h3>Reviewer's turn to first answer</h3>
+        <ul id="rl-reply-legend" class="legend rf-line-legend" aria-label="Lines"></ul>
         <div class="chart rf-half-chart">
-          <canvas id="rl-first" role="img" aria-label="Mean and median weekday hours from a change's upload to its first review, per quarter, and from a reviewer's turn to their first answer."></canvas>
+          <canvas id="rl-reply" role="img" aria-label="Median, 90th percentile and mean weekday hours from a reviewer entering a change's attention set to their first answer, per quarter."></canvas>
         </div>
-        <p id="rl-first-note" class="note"></p>
-        <template data-msg="first-note">
-          <strong>Upload to first review</strong>: from a change's first upload to the first Code-Review vote or
-          comment by someone other than its owner, over the changes landed in the quarter that got one. It
-          includes any time the owner took before asking for review, which Gerrit didn't record before the
-          attention set. In <slot name="last"></slot> the mean was <slot name="mean"></slot> and the median
-          <slot name="median"></slot>: most changes are reviewed within hours, and the mean is pulled up by the
-          few that wait for weeks. <strong>Reviewer's turn to first answer</strong> (from
-          <slot name="attFrom"></slot>, when the attention set arrived): from a reviewer entering a change's
-          attention set to their own first vote or comment, a mean of <slot name="reply"></slot> in
-          <slot name="last"></slot>.<span data-if="you"> Your line is your own turns: the mean time from
-          entering the attention set to your first answer.</span>
+        <p id="rl-reply-note" class="note"></p>
+        <template data-msg="reply-note">
+          From a reviewer entering a change's attention set (their turn) to their own first Code-Review vote or
+          comment, over the changes landed in the quarter. In <slot name="last"></slot> the median was
+          <slot name="median"></slot>, one in ten waited <slot name="p90"></slot> or more, and the mean was
+          <slot name="mean"></slot>: most turns are answered within hours, and the mean is pulled up by the few
+          that wait for weeks.<span data-if="you"> Your line is your own turns: the mean time from entering the
+          attention set to your first answer.</span>
         </template>
-        <template data-msg="legend-first-mean">Upload to first review, mean</template>
-        <template data-msg="legend-first-median">Upload to first review, median</template>
-        <template data-msg="legend-reply-mean">Reviewer's turn to first answer, mean</template>
+        <template data-msg="legend-reply-median">Median</template>
+        <template data-msg="legend-reply-p90">90th percentile</template>
+        <template data-msg="legend-reply-mean">Mean</template>
         <template data-msg="axis-hours">weekday hours</template>
 
         <h3>Reviewers' time in the attention set</h3>
-        <ul id="rl-attention-legend" class="legend rf-line-legend" aria-label="Bars and lines"></ul>
+        <ul id="rl-attention-legend" class="legend rf-line-legend" aria-label="Lines"></ul>
         <div class="chart rf-half-chart">
-          <canvas id="rl-attention" role="img" aria-label="Total weekday hours changes spent in reviewers' attention sets per quarter, and the mean per reviewer."></canvas>
+          <canvas id="rl-attention" role="img" aria-label="Mean weekday hours changes spent in each reviewer's attention set per quarter."></canvas>
         </div>
         <p id="rl-attention-note" class="note"></p>
         <template data-msg="attention-note">
-          Gerrit's attention set says whose turn it is on a change. The bars add up the weekday hours that
-          changes landed in the quarter spent in a reviewer's attention set (anyone but the owner), from
-          <slot name="attFrom"></slot>; the line divides that by the number of reviewers. In
-          <slot name="last"></slot>, <slot name="reviewers"></slot> reviewers had changes waiting on them for
-          <slot name="total"></slot> hours in all, a mean of <slot name="mean"></slot> hours each and
+          Gerrit's attention set says whose turn it is on a change. The line adds up the weekday hours that
+          changes landed in the quarter spent in a reviewer's attention set (anyone but the owner) and divides
+          that by the number of reviewers. In <slot name="last"></slot>, <slot name="reviewers"></slot>
+          reviewers had changes waiting on them for a mean of <slot name="mean"></slot> hours each, and
           <slot name="turn"></slot> hours per change and reviewer. Changes with no comments at all (about one in
           five) are not counted: their attention-set history wasn't fetched.<span data-if="you"> Your line is
           the hours changes spent in your attention set.</span>
         </template>
-        <template data-msg="legend-attention-total">All reviewers, total (left axis)</template>
-        <template data-msg="legend-attention-mean">Mean per reviewer (right axis)</template>
-        <template data-msg="legend-you-right">You (right axis)</template>
-        <template data-msg="axis-attention-total">weekday hours, all reviewers</template>
+        <template data-msg="legend-attention-mean">Mean per reviewer</template>
         <template data-msg="axis-attention-mean">weekday hours per reviewer</template>
       </section>
 
@@ -186,7 +179,8 @@
           Review of the commits landed from <slot name="from"></slot> to <slot name="to"></slot>, by the
           directory of the lines changed (as the directories are named today; a commit that spans several
           counts in each by its lines). The change columns compare each quarter's lines reviewed with the quarter
-          before. The hours are the mean weekday time a change spent in one reviewer's attention set, shaded
+          before. Lines reviewed are shaded on a log scale, from white for the fewest to dark blue for the
+          most. The hours are the mean weekday time a change spent in one reviewer's attention set, shaded
           against all of Chromium in the same quarter: red where changes wait longer on reviewers (twice as long
           or more is the deepest red), green where they wait less. Long waits where the lines reviewed are
           growing point at directories that need more reviewers. Directories with fewer than

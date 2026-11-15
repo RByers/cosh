@@ -47,7 +47,6 @@ from datetime import datetime, timezone
 
 from . import commits as C
 from . import r2, review_timeline, store
-from .cl_facts import epoch
 from .people import exact_identities, is_bot_email
 from .review_feedback import file_name
 from .review_timeline import weekday_seconds
@@ -106,8 +105,12 @@ def r1(x):
     return round(x, 1)
 
 
-def mean_median(xs):
-    return (round(statistics.fmean(xs), 2), round(statistics.median(xs), 2), len(xs)) if xs else (None, None, 0)
+def summary(xs):
+    """(mean, median, 90th percentile, count) of `xs`."""
+    if not xs:
+        return None, None, None, 0
+    p90 = statistics.quantiles(xs, n=10, method="inclusive")[8] if len(xs) > 1 else xs[0]
+    return round(statistics.fmean(xs), 2), round(statistics.median(xs), 2), round(p90, 2), len(xs)
 
 
 def dir_levels(d):
@@ -200,20 +203,17 @@ def compute(gdb, ddb, tdb):
                             pdirs[q][p][d][0] += n
     # Gerrit: the same commits' CLs.
     emails = dict(ddb.execute("SELECT account_id, email FROM accounts"))
-    created = {n: epoch(t) for n, t in ddb.execute(
-        "SELECT change_number, created_at FROM changes WHERE is_bot_owned = 0 AND status = 'MERGED'") if n in by_cl}
-    first = defaultdict(lambda: None)
-    first_h, reply_h = [[] for _ in qs], [[] for _ in qs]
+    merged = {n for (n,) in ddb.execute(
+        "SELECT change_number FROM changes WHERE is_bot_owned = 0 AND status = 'MERGED'") if n in by_cl}
+    reply_h = [[] for _ in qs]
     att_hours, att_turns, att_people = [0.0] * nq, [0] * nq, [set() for _ in qs]
     for n, acct, asked, responded, wd in tdb.execute(
             "SELECT change_number, account_id, asked_at, responded_at, attention_weekday_h FROM cl_reviewers"):
         c = by_cl.get(n)
-        if c is None or n not in created or not emails.get(acct):
+        if c is None or n not in merged or not emails.get(acct):
             continue
         q, p = c["q"], ids.find(emails[acct])
         i = qi[q]
-        if responded is not None and (first[n] is None or responded < first[n]):
-            first[n] = responded
         x = per[p][q]
         if asked is not None and q >= ATTENTION_FROM:
             att_hours[i] += wd
@@ -236,13 +236,10 @@ def compute(gdb, ddb, tdb):
                             y = pdirs[q][p][d]
                             y[1] += wd * w
                             y[2] += w
-    for n, t in first.items():
-        if t is not None:
-            first_h[qi[by_cl[n]["q"]]].append(weekday_seconds(created[n], t) / 3600)
 
     def series(lists, since=qs[0]):
-        mm = [mean_median(x) if q >= since else (None, None, 0) for q, x in zip(qs, lists)]
-        return dict(mean=[m[0] for m in mm], median=[m[1] for m in mm], n=[m[2] for m in mm])
+        mm = [summary(x) if q >= since else (None, None, None, 0) for q, x in zip(qs, lists)]
+        return dict(mean=[m[0] for m in mm], median=[m[1] for m in mm], p90=[m[2] for m in mm], n=[m[3] for m in mm])
     att = [q >= ATTENTION_FROM for q in qs]
     # The directory tree: every level's sums; listed with MIN_DIR_LINES in the table's four quarters.
     tree = defaultdict(lambda: [[0] * len(table_qs), [0.0] * len(table_qs), [0.0] * len(table_qs)])
@@ -257,7 +254,7 @@ def compute(gdb, ddb, tdb):
         quarters=qs, attention_from=ATTENTION_FROM, min_dir_lines=MIN_DIR_LINES,
         commits=n_commits, human=n_human,
         reviewed=rev_commits, reviewed_lines=rev_lines, reviewers=[len(s) for s in people_q],
-        first=series(first_h), reply=series(reply_h, ATTENTION_FROM),
+        reply=series(reply_h, ATTENTION_FROM),
         attention=dict(hours=[round(h) if a else None for h, a in zip(att_hours, att)],
                        turns=[t if a else None for t, a in zip(att_turns, att)],
                        reviewers=[len(s) if a else None for s, a in zip(att_people, att)]),

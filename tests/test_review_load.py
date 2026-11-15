@@ -105,10 +105,9 @@ class ComputeTest(unittest.TestCase):
         # The author's own footer and the bot's don't count; two reviewers count the lines twice.
         self.assertEqual(data["reviewed_lines"], [40, 160])
         self.assertEqual(data["reviewers"], [1, 2])
-        # Upload to first review, weekends out: 2 h; Friday 12:00 to Monday 12:00 is 24 weekday hours.
-        self.assertEqual(data["first"], dict(mean=[2.0, 24.0], median=[2.0, 24.0], n=[1, 1]))
+        self.assertNotIn("first", data)
         # Asked Friday 13:00, answered Monday 12:00: 23 weekday hours. Nothing before the attention set.
-        self.assertEqual(data["reply"], dict(mean=[None, 23.0], median=[None, 23.0], n=[0, 1]))
+        self.assertEqual(data["reply"], dict(mean=[None, 23.0], median=[None, 23.0], p90=[None, 23.0], n=[0, 1]))
         self.assertEqual(data["attention"], dict(hours=[None, 40], turns=[None, 2], reviewers=[None, 2]))
         self.assertEqual(data["table_quarters"], ["2026Q2", "2026Q3"])
         # Each level's sums; the CL's attention is split by its lines (60 of 80 in a/b/c/, 20 in a/b/).

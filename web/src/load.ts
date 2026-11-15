@@ -4,10 +4,11 @@
 // directory table) and, per reviewer, a file per year and one per quarter of
 // the table, named by the Feedback Index's `personKey` of their address.
 
-/** A mean, median and count per quarter (null where there is no data). */
+/** A mean, median, 90th percentile and count per quarter (null where there is no data). */
 export interface Series {
   mean: (number | null)[];
   median: (number | null)[];
+  p90: (number | null)[];
   n: number[];
 }
 
@@ -25,8 +26,6 @@ export interface All {
   reviewed: number[];
   reviewed_lines: number[];
   reviewers: number[];
-  /** A change's upload to its first review, in weekday hours. */
-  first: Series;
   /** A reviewer's wait: entering the attention set to their first answer, in weekday hours. */
   reply: Series;
   attention: { hours: (number | null)[]; turns: (number | null)[]; reviewers: (number | null)[] };
@@ -92,6 +91,12 @@ export const meanLines = (all: Pick<All, 'reviewed_lines' | 'reviewers'>) =>
 /** Mean weekday hours in the attention set per reviewer, per quarter. */
 export const meanAttention = (all: Pick<All, 'attention'>) =>
   all.attention.hours.map((v, i) => ratio(v, all.attention.reviewers[i]));
+
+/** `v`'s place on a log scale from `lo` (0) to `hi` (1), clamped; null without a positive `v`. */
+export function logShade(v: number, lo: number, hi: number): number | null {
+  if (!(v > 0) || !(lo > 0) || !(hi > lo)) return null;
+  return Math.min(1, Math.max(0, Math.log(v / lo) / Math.log(hi / lo)));
+}
 
 /** The change from `prev` to `v`, as a fraction (0.1: 10% more); null without both. */
 export const change = (v: number | null | undefined, prev: number | null | undefined) =>

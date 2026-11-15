@@ -2999,6 +2999,34 @@ details.rf-method[open] > summary {
   border-left: 1px solid var(--border);
 }
 
+/* The lines-reviewed heat map: --rl-heat (0..1, a log scale set by review-load.ts) mixes white
+ * (fewest lines) into dark blue (most); the darkest half takes white text. In dark mode the low end
+ * is the card, so the table doesn't glare. */
+.rl-dirs {
+  --rl-heat-lo: #fff;
+  --rl-heat-hi: #0b3a82;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) .rl-dirs {
+    --rl-heat-lo: var(--surface-1);
+    --rl-heat-hi: #1d5bb8;
+  }
+}
+
+:root[data-theme='dark'] .rl-dirs {
+  --rl-heat-lo: var(--surface-1);
+  --rl-heat-hi: #1d5bb8;
+}
+
+.rl-dirs td.rl-heat {
+  background: color-mix(in oklab, var(--rl-heat-hi) calc(var(--rl-heat, 0) * 100%), var(--rl-heat-lo));
+}
+
+.rl-dirs td.rl-heat.rl-heat-dark {
+  color: #fff;
+}
+
 /* ---- Data flow page (dataflow.html) ---- */
 
 /* A node's colour, by kind (or a store's tier): the graph's boxes, the

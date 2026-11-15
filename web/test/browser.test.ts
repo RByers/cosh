@@ -3932,8 +3932,7 @@ const loadAll = {
   quarters: ['2025Q3', '2025Q4', '2026Q1', '2026Q2', '2026Q3'], attention_from: '2025Q4', min_dir_lines: 100,
   commits: [100, 110, 120, 130, 150], human: [80, 85, 90, 95, 120], reviewed: [70, 75, 80, 85, 100],
   reviewed_lines: [7000, 8000, 9000, 9000, 12000], reviewers: [10, 10, 10, 9, 10],
-  first: { mean: [30, 32, 31, 35, 40], median: [8, 8, 9, 9, 12], n: [70, 75, 80, 85, 100] },
-  reply: { mean: [null, 16, 15, 17, 18], median: [null, 3, 3, 4, 4], n: [0, 60, 70, 70, 90] },
+  reply: { mean: [null, 16, 15, 17, 18], median: [null, 3, 3, 4, 4], p90: [null, 40, 38, 42, 45], n: [0, 60, 70, 70, 90] },
   attention: { hours: [null, 2000, 2200, 2400, 3000], turns: [null, 80, 85, 90, 100], reviewers: [null, 10, 10, 10, 10] },
   table_quarters: ['2025Q3', '2025Q4', '2026Q1', '2026Q2', '2026Q3'],
   dirs: [['a/', [1000, 1100, 1200, 1300, 2600], [400, 420, 440, 1200], [20, 20, 20, 20]],
@@ -3971,20 +3970,25 @@ async function loadPage(): Promise<{ page: Page; errors: string[]; requests: str
 const loadRows = (page: Page) => page.$$eval('#rl-dirs tbody tr', (trs) => trs.map((tr) =>
   [...tr.children].filter((c) => getComputedStyle(c).display !== 'none').map((c) => c.textContent!.replace(/[▸▾]/g, '').trim())));
 
-test('review load: four charts over the quarters and a directory table that opens, shaded by wait', async () => {
+test('review load: four charts over the quarters and a directory table that opens, shaded by size and wait', async () => {
   const { page, errors } = await loadPage();
   assert.equal(await page.title(), 'Review Load - Chromium Open Source Health');
   const charts = await page.evaluate(() => Object.fromEntries(Object.entries(window.__rl!.charts).map(([k, c]) =>
     [k, { labels: c.data.labels, sets: c.data.datasets.map((d) => d.label) }])));
-  assert.deepEqual(Object.keys(charts).sort(), ['attention', 'commits', 'first', 'lines']);
+  assert.deepEqual(Object.keys(charts).sort(), ['attention', 'commits', 'lines', 'reply']);
+  // The wait charts start with the attention set.
+  assert.deepEqual(charts.reply.labels, ['Q4 2025', 'Q1 2026', 'Q2 2026', 'Q3 2026']);
+  assert.deepEqual(charts.reply.sets, ['Median', '90th percentile', 'Mean']);
+  assert.deepEqual(charts.attention.labels, charts.reply.labels);
+  assert.deepEqual(charts.attention.sets, ['Mean per reviewer']);
   assert.deepEqual(charts.commits.labels, ['Q3 2025', 'Q4 2025', 'Q1 2026', 'Q2 2026', 'Q3 2026']);
   assert.deepEqual(charts.commits.sets, ['All commits', 'Excluding bots']);
   assert.deepEqual(charts.lines.sets, ['Mean per reviewer']);
   // Mean lines per reviewer: 12,000 over 10 reviewers, a fifth more than the quarter before (9,000 over 9).
   assert.deepEqual(await page.evaluate(() => window.__rl!.charts.lines.data.datasets[0].data), [700, 800, 900, 1000, 1200]);
   assert.match(await page.$eval('#rl-lines-note', (e) => e.textContent!), /the mean was\s+1,200 lines across 10 reviewers:\s+\+20% on the quarter before and \+71% on a year before/);
-  assert.match(await page.$eval('#rl-first-note', (e) => e.textContent!), /the mean was 40 h and the median\s+12 h/);
-  assert.match(await page.$eval('#rl-attention-note', (e) => e.textContent!), /3,000 hours in all, a mean of 300 hours each and\s+30 hours per change and reviewer/);
+  assert.match(await page.$eval('#rl-reply-note', (e) => e.textContent!), /the median was\s+4 h, one in ten waited 45 h or more, and the mean was\s+18 h/);
+  assert.match(await page.$eval('#rl-attention-note', (e) => e.textContent!), /a mean of 300 hours each, and\s+30 hours per change and reviewer/);
   assert.deepEqual(await page.$$eval('#rl-dirs-quarters th', (ths) => ths.slice(0, 4).map((t) => t.textContent)),
     ['Q4 2025', 'Q1 2026', 'Q2 2026', 'Q3 2026']);
   // Biggest first; the Yours columns are hidden until someone is looked up.
@@ -3996,6 +4000,11 @@ test('review load: four charts over the quarters and a directory table that open
   const shade = (row: number) => page.$eval(`#rl-dirs tbody tr:nth-child(${row}) td:nth-child(10)`, (td) => td.className);
   assert.match(await shade(1), /rf-ratio-hi/);
   assert.match(await shade(2), /rf-ratio-lo/);
+  // Lines reviewed on a log scale from 100 (the threshold) to a/'s 6,200: z/'s 3,500 is dark, white text.
+  const heat = (row: number) => page.$eval(`#rl-dirs tbody tr:nth-child(${row}) td:nth-child(2)`, (td) =>
+    [(td as HTMLElement).style.getPropertyValue('--rl-heat'), td.classList.contains('rl-heat-dark')]);
+  assert.deepEqual(await heat(1), ['1.000', true]);
+  assert.deepEqual(await heat(2), [(Math.log(35) / Math.log(62)).toFixed(3), true]);
   await page.click('#rl-dirs tbody tr:first-child .ar-toggle');
   assert.deepEqual((await loadRows(page)).map((r) => r[0]), ['a/', 'b/', 'Other in a/', 'z/']);
   assert.deepEqual(errors, []);
@@ -4026,7 +4035,7 @@ test('review load: an address adds that reviewer to the charts and the table, wi
   const you = await page.evaluate(() => Object.fromEntries(Object.entries(window.__rl!.charts).map(([k, c]) =>
     [k, c.data.datasets.at(-1)!.data])));
   assert.deepEqual(you, { commits: [null, null, null, 5, 9], lines: [null, null, null, 900, 3000],
-    first: [null, null, null, 8, 10], attention: [null, null, null, 60, 400] });
+    reply: [null, null, 8, 10], attention: [null, null, 60, 400] });
   // Their directories first; one that isn't listed counts in "Other".
   assert.deepEqual((await loadRows(page)).map((r) => [r[0], r[10], r[11]]), [['a/', '2K', '50'], ['z/', '', ''], ['Other', '1K', '']]);
   assert.deepEqual(errors, []);
