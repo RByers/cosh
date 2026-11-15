@@ -9,7 +9,7 @@ class ApprovedTest(unittest.TestCase):
         r = approved.load()["gerrit_weeks"]
         approved.check_weeks([r["from"], r["to"], "2024-W01"])
         with self.assertRaises(approved.NotApproved):
-            approved.check_weeks(["2026-W45"])
+            approved.check_weeks(["2026-W46"])
         with self.assertRaises(approved.NotApproved):
             approved.check_weeks(["2017-W26"])
 

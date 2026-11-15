@@ -251,7 +251,7 @@ purpose near the top of its own doc.
   - Both repos (the shared clone and `chromium-patchsets.git`) set
     `log.mailmap false`, `gc.auto 0` and `maintenance.auto false`. Never
     delete or prune either one. Fetching other branches,
-    other repos, or patch sets beyond 2026-W44 needs approval.
+    other repos, or patch sets beyond 2026-W45 (approved 2026-11-15, `config/approved.json`) needs approval.
   - Every fetch into either repo takes the extract lock
     (`flock data/private/extract.lock` in the main checkout), like any
     other extractor.
