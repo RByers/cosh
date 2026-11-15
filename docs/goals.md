@@ -126,6 +126,18 @@ routine:
   period is provisional.
 - Nothing needs a full rebuild of the raw stores or a re-run of model
   calls over past data.
+- **Commits and CLs are processed incrementally, never all at once.** No
+  step holds data from every commit (or every CL) in memory together: it
+  streams the git log, works week by week or in batches, or leaves the
+  whole-history work to SQLite queries. Memory then stays flat as history
+  grows, and steps can run next to other sessions on the shared box.
+- **A full rebuild after a code change is reliable, yet does only the work
+  the change needs.** A step reruns when any code or config it reads
+  changes, not only when its listed files do, and an incremental store
+  notices that its earlier rows came from older code and recomputes just
+  those that the change affects (as `derive`'s per-CL fingerprint does), so
+  nothing published mixes old and new logic, and nothing is recomputed for
+  a change that can't affect it.
 
 ## 4. A small GitHub repository; large data in R2, changed compatibly
 

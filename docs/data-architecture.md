@@ -209,17 +209,34 @@ approval, and model calls, which cost usage) with their measured cost, then
 the files to commit.
 
 It skips a step when nothing it depends on changed since it last ran here:
-its `run` command, the content of its `code` files, the files of its
-`inputs` (sizes and modification times; a git repo by its refs) and of its
-`outputs` (a missing or changed output runs it again). A step that reads an
-external data source always runs (it fetches); a model source counts as
-unchanged, since the steps cache its answers. The record is
-`data/private/update-state.json`, written after each step succeeds. So with
+its `run` command, the content of its code, the files of its `inputs`
+(sizes and modification times; a git repo by its refs) and of its
+`outputs` (a missing or changed output runs it again). Its code is its
+`code` files plus every Python module under `cosh/` and `scripts/` and every
+`config/` file that its processes loaded or opened on its last run:
+`cosh update` runs each step with `cosh/steptrace/` on `PYTHONPATH`, whose
+`usercustomize.py` records them. So a change to a module the step imports,
+or to a config file it reads, runs it again even when `code` doesn't name
+it; a run that left no trace counts every code and config file. A step that
+reads an external data source always runs (it fetches); a model source
+counts as unchanged, since the steps cache its answers. The record is
+`data/private/update-state.json`, written after each step succeeds, with
+the files traced, the run's time and its peak memory (the largest
+process's resident set, which includes git's memory-mapped packs). So with
 nothing fetched, `cosh update` takes seconds, and after a fetch only what is
 downstream of the changed stores runs. `--force` runs every planned step;
 `--record` marks them done without running them (after running them by
-hand). This relies on each step's `code`, `inputs` and `outputs` being
-complete: a step that reads a file it doesn't list may be skipped wrongly.
+hand; a recorded step has no trace until it next runs). This relies on each
+step's `inputs` and `outputs` being complete: a step that reads a data file
+it doesn't list may be skipped wrongly.
+
+Rerunning a step is not enough when the step is incremental within itself
+and its code changed: it must notice that its earlier rows came from older
+code. `derive` does (each CL's fingerprint includes a hash of its code
+files, `derive.CODE_FILES`); stores that only append or skip what they hold
+(`commits.sqlite`, `review-timeline.sqlite`, `balance interdiff`) don't
+yet, so after a change to how they compute rows, delete or reset what it
+affects (docs/goals.md, goal 3).
 
 A new week of data:
 
