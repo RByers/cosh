@@ -1439,17 +1439,17 @@ test('fmtHoursBin names histogram bins in the low edge\'s unit; fmtQuarterMonth 
 
 test('review feedback: addresses normalise and name files as cosh/review_feedback.py does', async () => {
   const { normalizeEmail, personFile, isPersonFile, reviewerKey, looksLikeEmail } = await import('../src/feedback.ts');
-  assert.equal(normalizeEmail('  Foo.Bar@Chromium.org '), 'foo.bar@google.com');
-  assert.equal(normalizeEmail('user@chromium.org@0039d316-1c4b-4281-b951-d872f2087c98'), 'user@google.com');
+  assert.equal(normalizeEmail('  Foo.Bar@Chromium.org '), 'foo.bar@chromium.org');
+  assert.equal(normalizeEmail('user@chromium.org@0039d316-1c4b-4281-b951-d872f2087c98'), 'user@chromium.org');
   assert.equal(normalizeEmail('a@Microsoft.com'), 'a@microsoft.com');
   // Values printed by the Python script's file_name() and reviewer_key().
-  assert.equal(personFile('Foo.Bar@Chromium.org'), 'foo.bar@google.com');
+  assert.equal(personFile('Foo.Bar@Chromium.org'), 'foo.bar@chromium.org');
   assert.equal(personFile('  someone@Microsoft.com '), 'someone@microsoft.com');
   assert.equal(personFile('a+b/c@x.org'), 'a~2bb~2fc@x.org');
   assert.equal(personFile('é~@x.org'), '~c3~a9~7e@x.org');
   assert.ok(isPersonFile('a~2bb@x.org'));
   for (const bad of ['../x', 'a/b@x.org', 'x.org', 'A@x.org']) assert.ok(!isPersonFile(bad), bad);
-  assert.equal(await reviewerKey('Foo.Bar@Chromium.org'), 'fb3b9e32f56a');
+  assert.equal(await reviewerKey('Foo.Bar@Chromium.org'), '197146830d20');
   assert.equal(await reviewerKey('foo.bar@google.com'), 'fb3b9e32f56a');
   assert.equal(await reviewerKey('  someone@microsoft.com '), '5005b7c30306');
   const { FIXTURE_EMAIL, FIXTURE_KEY, ALIAS_EMAIL, ALIAS_KEY } = await import('./feedback-fixture.ts');
@@ -1791,11 +1791,11 @@ test('dataflow: layout runs top to bottom, sources and config first, pages last,
 test('dataflow: the routed drawing of each page has no crossings (bar known ones) and no edge behind a box', () => {
   const real = G.buildGraph(flow);
   const size = { nodeW: 128, chipW: 112, chipGap: 10, laneW: 6, gap: 16 }; // as dataflow.ts
-  // The Feedback Index allows 3: review-feedback and review-threads both read reviews.sqlite and
-  // commits.sqlite (review-threads for the Reviewed-by addresses that tie commenters to
-  // approvers, 2026-11-14), and review-threads also reads review-feedback's files, so those
-  // edges can't all be kept apart.
-  const allowed: Record<string, number> = { 'page-feedback': 3 };
+  // The Feedback Index allows 7: review-feedback and review-threads both read reviews.sqlite,
+  // commits.sqlite and review-timeline.sqlite (the exact identities, people.exact_identities,
+  // 2026-11-14), and review-threads also reads review-feedback's files, so those edges can't all
+  // be kept apart.
+  const allowed: Record<string, number> = { 'page-feedback': 7 };
   for (const pages of [['page-feedback'], ['page-value'], ['page-sentiment']]) {
     const split = G.splitShared(real, G.scope(real, pages, false));
     const r = G.route(split.g, split.keep, size);

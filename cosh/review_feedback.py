@@ -27,8 +27,10 @@ which `python3 -m cosh.r2 publish` uploads to the R2 bucket, docs/r2.md):
                      ids or text); for each other address of the same
                      person, {"see": name}
 
-<name> is the normalised address (`file_name` below; the page computes the
-same). The bucket can't be listed, so a person is found only by typing their
+<name> is the address as typed, lower case (`file_name` below; the page
+computes the same). No domains are merged: a person is an exact identity
+(`people.exact_identities`), and each of their other addresses gets a
+{"see": name} file. The bucket can't be listed, so a person is found only by typing their
 address and the page offers no completions. Everything comes from public
 Gerrit and git data.
 
@@ -49,12 +51,12 @@ import sys
 from collections import Counter, defaultdict, namedtuple
 from datetime import datetime, timezone
 
-from . import classify, r2, store
+from . import classify, r2, review_timeline, store
 from . import commits as C
 from . import cl_facts as F
 from .cl_facts import CL_FACTS, SINCE, cl_facts
 from .orgs import OrgResolver
-from .people import Ids, alias_pairs, is_bot_email, person
+from .people import address, exact_identities, is_bot_email
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT = os.path.join(ROOT, "web", "public", "review-feedback")
@@ -81,14 +83,14 @@ def file_name(email):
     it is safe in a file name and a URL. The page computes the same
     (web/src/feedback.ts `personFile`)."""
     return "".join(c if c in FILE_SAFE else "".join(f"~{b:02x}" for b in c.encode())
-                   for c in person(email.strip()))
+                   for c in address(email))
 
 
 def reviewer_key(email):
     """A reviewer's key in the committed reviewers.json: a salted hash of the
     normalised address, so the file in git lists no addresses. The page
     hashes the same way (web/src/feedback.ts `reviewerKey`)."""
-    return hashlib.sha256((SALT + person(email.strip())).encode()).hexdigest()[:12]
+    return hashlib.sha256((SALT + address(email)).encode()).hexdigest()[:12]
 
 
 def week_start(w):
@@ -278,17 +280,18 @@ def load(args):
     cls = [dict(zip(CL_FACTS, f)) for f in facts]
     del facts
     for c in cls:
-        c["owner_email"] = person(c["owner_email"]) if c["owner_email"] else None
-    commits = C.human_commits(git_db())
-    ids = Ids()
-    for a, b in alias_pairs(cls, commits):
-        ids.union(a, b)
+        c["owner_email"] = address(c["owner_email"]) if c["owner_email"] else None
+    commits = C.human_commits(git_db(), norm=address)
+    # Exact identities (people.exact_identities): addresses merge only on
+    # evidence, never by domain, the same way as Review Load's.
+    ids = exact_identities(ro(os.path.join(store.DATA_DIR, store.DERIVED_FILE)), git_db(),
+                           ro(review_timeline.db_path()))
     for c in commits:
         c["pid"] = ids.find(c["email"])
     for c in cls:
         c["pid"] = ids.find(c["owner_email"]) if c["owner_email"] else None
     first = {}
-    for e, t in C.first_people(git_db()).items():
+    for e, t in C.first_people(git_db(), norm=address).items():
         k = ids.find(e)
         first[k] = min(t, first.get(k, t))
     print(f"loaded {len(cls):,} CLs, {len(commits):,} commits", file=sys.stderr, flush=True)
@@ -992,7 +995,7 @@ def main():
     # The per-CL window starts in 2017: earlier commits come from the rest of commits.sqlite.
     early = 0
     for email, at, _ in early_commits(current=current):
-        if is_bot_email(person(email)):
+        if is_bot_email(address(email)):
             continue
         own_times[ids.find(email)].append(at)
         early += 1
@@ -1000,7 +1003,9 @@ def main():
     for v in own_times.values():
         v.sort()
     landed_at = {c["n"]: c["at"] for c in commits if c["n"]}
-    emails_of = defaultdict(set)         # pid -> normalised addresses
+    emails_of = defaultdict(set)         # pid -> addresses (people.address)
+    for pid, es in ids.groups().items():
+        emails_of[pid] |= es
     for c in commits:
         emails_of[c["pid"]].add(c["email"])
     for c in cls:

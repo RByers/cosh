@@ -5,7 +5,7 @@ import type { PersonFile, Peers, ReviewerTable, Shard } from '../src/feedback.ts
 
 /** personFile('Test.Person@chromium.org'), as the Python script computes it. */
 export const FIXTURE_EMAIL = 'Test.Person@chromium.org';
-export const FIXTURE_KEY = 'test.person@google.com';
+export const FIXTURE_KEY = 'test.person@chromium.org';
 /** Another address of the same person, whose file points at FIXTURE_KEY. */
 export const ALIAS_EMAIL = 'tp@example.com';
 export const ALIAS_KEY = 'tp@example.com';

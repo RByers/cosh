@@ -5,7 +5,7 @@
 // address is never put in the URL.
 import { Chart, type ChartDataset } from 'chart.js';
 import { readTheme, type Theme } from './charts.ts';
-import { looksLikeEmail, personFile } from './feedback.ts';
+import { isPersonFile, looksLikeEmail, personFile } from './feedback.ts';
 import { fmtInt, fmtNum } from './format.ts';
 import {
   buildPerson,
@@ -348,7 +348,11 @@ async function lookup(raw: string) {
     const tq = all.table_quarters.slice(1);
     // The per-reviewer files live in the R2 bucket, one per reviewer; they change only when a
     // quarter completes, so the newest quarter names their copies.
-    const f = await getJson<PersonFile>(r2Url(LOAD_PEOPLE, `${personFile(raw)}.json`, all.quarters.at(-1)!));
+    const v = all.quarters.at(-1)!;
+    let f = await getJson<PersonFile | { see: string }>(r2Url(LOAD_PEOPLE, `${personFile(raw)}.json`, v));
+    // Another address of the reviewer points at their file (cosh/review_load.py).
+    if (f && 'see' in f) f = isPersonFile(f.see) ? await getJson<PersonFile>(r2Url(LOAD_PEOPLE, `${f.see}.json`, v)) : null;
+    if (f && 'see' in f) f = null;
     const found = f ? buildPerson(all,
       new Map(years.flatMap((y) => (f.years?.[y] ? [[y, f.years[y]] as [string, PersonYear]] : []))),
       new Map(tq.flatMap((q) => (f.dirs?.[q] ? [[q, f.dirs[q]] as [string, PersonDir[]]] : [])))) : null;

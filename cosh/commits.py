@@ -701,24 +701,27 @@ def repetition(db):
 # Per-person queries (cosh.people identities), shared by the Feedback Index
 # (cosh/review_feedback.py) and the analyses in scripts/.
 
-def first_people(db):
+def first_people(db, norm=None):
     """{person: unix time of their first human commit on main}, over all of
-    its history."""
+    its history. Addresses go through `norm` (default cosh.people.person;
+    the pages pass cosh.people.address)."""
     from .people import is_bot_email, person
+    norm = norm or person
     first = {}
     for e, (t, bot) in first_commits(db).items():
         if not bot and not is_bot_email(e):
-            e = person(e)
+            e = norm(e)
             first[e] = min(t, first.get(e, t))
     return first
 
 
-def human_commits(db):
+def human_commits(db, norm=None):
     """Human commits on main since 2017 (commit_id > 0) as dicts: cid, sha, email
-    (cosh.people.person), at, n (CL), rb (Reviewed-by people), is_revert,
-    reland, files, lines, reverted_at."""
+    (through `norm`, default cosh.people.person), at, n (CL), rb (Reviewed-by
+    people), is_revert, reland, files, lines, reverted_at."""
     import json
     from .people import is_bot_email, person
+    norm = norm or person
     rows = db.execute("SELECT commit_id, sha, author_email, landed_at, change_number, is_bot, reviewed_by, "
                       "reverts_sha, is_reland, files, ins + dels FROM commits WHERE commit_id > 0").fetchall()
     reverted = {}
@@ -729,8 +732,8 @@ def human_commits(db):
     for cid, sha, email, at, n, bot, rb, rv, rl, files, lines in rows:
         if bot or is_bot_email(email):
             continue
-        out.append(dict(cid=cid, sha=sha, email=person(email), at=at, n=n,
-                        rb=[person(x) for x in json.loads(rb)] if rb else [],
+        out.append(dict(cid=cid, sha=sha, email=norm(email), at=at, n=n,
+                        rb=[norm(x) for x in json.loads(rb)] if rb else [],
                         is_revert=rv is not None, reland=rl, files=files, lines=lines,
                         reverted_at=reverted.get(sha)))
     return out

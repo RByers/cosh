@@ -189,17 +189,12 @@ export const GERRIT = 'https://chromium-review.googlesource.com';
 const SALT = 'cosh-review-feedback-v1:';
 const DAY_MS = 86_400_000;
 
-/** One identity per person, as scripts/balance_analysis.py `person` makes it:
- * lower case, an SVN-era `user@domain@uuid` cut to `user@domain`, and
- * chromium.org merged into google.com. */
+/** An address as cosh/people.py `address` writes it: lower case, an SVN-era `user@domain@uuid` cut
+ * to `user@domain`. No domains are merged: a person's other addresses find them through the
+ * {"see": name} files the scripts write for every address of their identity (`Alias`). */
 export function normalizeEmail(raw: string): string {
-  let e = raw.trim().toLowerCase();
-  if ((e.match(/@/g) ?? []).length > 1) e = e.slice(0, e.lastIndexOf('@'));
-  const at = e.indexOf('@');
-  if (at < 0) return e;
-  const local = e.slice(0, at);
-  const dom = e.slice(at + 1);
-  return dom === 'chromium.org' || dom === 'google.com' ? `${local}@google.com` : e;
+  const e = raw.trim().toLowerCase();
+  return (e.match(/@/g) ?? []).length > 1 ? e.slice(0, e.lastIndexOf('@')) : e;
 }
 
 /** Whether `raw` looks enough like an address to look up. */

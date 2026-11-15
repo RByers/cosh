@@ -249,17 +249,11 @@ file counts in one of those units (`unitOfPath`).
   change number linking to the thread in Gerrit, and the file ("commit
   message" for `/COMMIT_MSG`). They come from the thread files in R2
   ("Downloading your comments"), fetched the first time a reviewer is
-  opened. A commenter is a reviewer when their Gerrit account's address is
-  exactly an address in a Reviewed-by trailer of one of the person's CLs
-  (Gerrit writes the voter's preferred address there); `cosh.review_threads`
-  records which approver each commenter is (`reviewers`, `approver_of`).
-  Gerrit's public data gives only each account's preferred address, not its
-  linked ones, so an account whose address changed after its approvals
-  isn't linked. No comment text and no tone. Threads from someone who never
-  approved one of the person's CLs aren't listed, having no row. The rows
-  themselves are the Feedback Index's identities, which fold
-  `chromium.org` into `google.com` (`people.person`), so one row can be two
-  people who share a username across the domains.
+  opened. A commenter is a reviewer when their Gerrit account's address
+  belongs to that approver's identity ("Who is who", below);
+  `cosh.review_threads` records which approver each commenter is
+  (`reviewers`). No comment text and no tone. Threads from someone who
+  never approved one of the person's CLs aren't listed, having no row.
 - *Latest doubling* (the tile, `latestDoubling`): the % change in AFR from
   the person's second-newest to their newest bin with `MIN_BIN_CLS` CLs,
   per doubling when bins in between have too few, with the date they
@@ -386,20 +380,48 @@ steps 9).
 - **No tone** (`docs/plan.md`, ground rule 5): the script reads no review
   tone, so no chart, figure or file of the page carries it.
 - **No completions, no browsing.** The input has `autocomplete="off"`, no
-  datalist and no name. Per-person files are named by the normalised
-  address (`file_name` in the script, `personFile` in `web/src/feedback.ts`;
+  datalist and no name. Per-person files are named by the address as
+  typed, lower case (`file_name` in the script, `personFile` in `web/src/feedback.ts`;
   unit tests check they agree), with each byte of a character outside
   `a-z 0-9 . _ @ -` written as `~xx`. They live in the R2 bucket, which
   can't be listed, so the page finds only someone whose address you type.
   (Until 2026-11-14 they were named by a salted hash, which kept the
-  addresses out of git while the files were committed.) Normalising follows
-  `balance_analysis.person`: lower case, `chromium.org` = `google.com`.
-  Other addresses of the same person (from the identity merge) get a stub
-  `{"see": <name>}`. The address never goes into the page's URL.
+  addresses out of git while the files were committed.) Normalising is
+  `people.address`: lower case, an SVN-era `user@domain@uuid` cut to
+  `user@domain`, and no domains merged. Every other address of the
+  person's identity ("Who is who") gets a stub `{"see": <name>}`. The
+  address never goes into the page's URL.
 - Everything comes from public Gerrit and git data, so per-person files may be
   published (ground rule 3). No comment text is published (since
   2026-11-14); file paths come from git and Gerrit and the page renders
   them only as text.
+
+## Who is who
+
+A person is an exact identity (`people.exact_identities`, shared with
+Review Load and the thread files, the user's call on 2026-11-14):
+addresses merge only on evidence, never because they share a username
+across `chromium.org` and `google.com`.
+
+- **Owner and author.** A git author address and the Gerrit owner address
+  of most of their CLs (3 or more CLs and half of the author's) are one
+  person (`alias_pairs` on exact addresses). This covers 98.6% of the
+  68,805 merged CLs whose owner and author differ only in domain.
+- **Reviewer.** A Reviewed-by address is the Gerrit account's whose
+  address it is (Gerrit writes the voter's preferred address there; 97.4%
+  of 1.41M Reviewed-by addresses). One that is no account's address (the
+  reviewer changed their preferred address since) is tied to the account
+  that cast the CL's approving vote when that is unambiguous on 2 or more
+  CLs and half of its CLs (`vote_links`, from `review-timeline.sqlite`):
+  136 of 169 such addresses, 88% of their uses, 49 of them under another
+  username.
+- Gerrit's public data gives only each account's preferred address, not
+  the ones linked to it, so two accounts of one person with no such
+  evidence stay two people. Before 2026-11-14 the Feedback Index folded
+  `chromium.org` into `google.com` (`people.person`, which scripts/ still
+  use); of the 1,162 usernames with an account in each domain, about five
+  look like different people. Exact identities give 7,142 people and 803
+  other addresses (6,862 and 122 with the domains folded).
 
 ## Generate
 

@@ -1207,7 +1207,7 @@
       "rebuildable": true,
       "size": "about 105 KB (51 KB gzipped): 2,708 reviewers",
       "size_as_of": "2026-11-14",
-      "purpose": "Each reviewer's factor (feedback their approvals draw against what experience predicts) and its sums, by hashed address (the file is committed, so it lists no addresses), from which the page leaves out the person's own changes.",
+      "purpose": "Each reviewer's factor and its sums, by hashed address (the file is committed, so it lists no addresses), from which the page leaves out the person's own changes.",
       "notes": "Rewritten on every run of review-feedback."
     },
     {
@@ -1235,7 +1235,7 @@
       "rebuildable": true,
       "size": "29 MB, 6,984 objects (stored gzipped)",
       "size_as_of": "2026-11-14",
-      "files": "review-feedback/people/v2/<name>.json, one per person (and a stub per other address), in the R2 bucket `cosh`, served gzipped at https://cosh-data.rbyers.ca/ (docs/r2.md); <name> is the normalised e-mail address.",
+      "files": "review-feedback/people/v2/<name>.json, one per person (and a stub per other address), in the R2 bucket `cosh`, served gzipped at https://cosh-data.rbyers.ca/ (docs/r2.md); <name> is the e-mail address as typed, lower case (no domains merged).",
       "purpose": "One person's changes and review comments by directory, which every chart and table about them uses once an address is typed. No tone, no comment text.",
       "notes": "v2 is the format (one file per person, named by address, since 2026-11-14; v1 was u/ plus one file per half-year, named by a hash): weekly data and added fields stay under it; a change the published page can't read goes to v3 (config/r2.json, docs/r2.md).",
       "withheld": "File names are people's addresses: reachable only by typing one (ground rule 5), so no samples are listed."
@@ -1265,7 +1265,7 @@
       "rebuildable": true,
       "size": "400 MB, 32,676 objects (stored gzipped)",
       "size_as_of": "2026-11-14",
-      "files": "review-feedback/threads/v2/<half-year>/<name>.json in the R2 bucket `cosh`, served gzipped at https://cosh-data.rbyers.ca/ (docs/r2.md); <name> is the normalised e-mail address.",
+      "files": "review-feedback/threads/v2/<half-year>/<name>.json in the R2 bucket `cosh`, served gzipped at https://cosh-data.rbyers.ca/ (docs/r2.md); <name> is the e-mail address as typed, lower case (no domains merged).",
       "purpose": "What the Feedback Index fetches when someone downloads their review comments, or opens a reviewer in Your feedback (which lists that reviewer's addressed threads, without their text).",
       "withheld": "Comment text, negative comments included, is reachable only by typing the person's address (the bucket can't be listed, no completions), as ground rule 5 allows since 2026-11-14.",
       "notes": "Uploads are recorded in data/private/r2-manifest.json (key -> sha256), so a sync never lists the bucket. The bucket's CORS policy allows the site's origin. v2 (since 2026-11-14) names files by address; the retired review-feedback/threads/ named them by a hash."
@@ -1308,7 +1308,7 @@
       "rebuildable": true,
       "size": "2.8 MB, 5,116 objects (stored gzipped)",
       "size_as_of": "2026-11-14",
-      "files": "review-load/people/v2/<name>.json, one per reviewer, in the R2 bucket `cosh`, served gzipped at https://cosh-data.rbyers.ca/ (docs/r2.md); <name> is the normalised e-mail address.",
+      "files": "review-load/people/v2/<name>.json, one per reviewer (and a {\"see\": name} stub per other address), in the R2 bucket `cosh`, served gzipped at https://cosh-data.rbyers.ca/ (docs/r2.md); <name> is the e-mail address as typed, lower case (no domains merged).",
       "purpose": "One reviewer's figures, drawn over the page's charts and in the directory table's Yours columns once their address is typed.",
       "notes": "v2 is the format (one file per reviewer, named by address, since 2026-11-14; v1 was one file per year and per table quarter, named by a hash): new quarters and added fields stay under it; a change the published page can't read goes to v3 (config/r2.json, docs/r2.md).",
       "withheld": "File names are people's addresses: reachable only by typing one (ground rule 5), so no samples are listed."
@@ -2155,7 +2155,8 @@
         "data/private/reviews.sqlite",
         "data/private/addressed.sqlite",
         "config/bots.txt",
-        "config/affiliations.json5"
+        "config/affiliations.json5",
+        "data/private/review-timeline.sqlite"
       ],
       "outputs": [
         "web/public/review-feedback/peers.json",
@@ -2177,7 +2178,8 @@
       "command": "nice -n 5 python3 -m cosh.review_threads [--half 2026H2]",
       "code": [
         "cosh/review_threads.py",
-        "cosh/notedb.py"
+        "cosh/notedb.py",
+        "cosh/people.py"
       ],
       "purpose": "Writes every reviewer thread on each person's changes, full text included, per person and half-year, for the comment download and the reviewers' comment lists.",
       "inputs": [
@@ -2185,7 +2187,8 @@
         "data/private/reviews.sqlite",
         "data/private/addressed.sqlite",
         "gerrit-raw",
-        "data/private/commits.sqlite"
+        "data/private/commits.sqlite",
+        "data/private/review-timeline.sqlite"
       ],
       "outputs": [
         "data/private/review-threads/"

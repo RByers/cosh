@@ -13,9 +13,10 @@ which `python3 -m cosh.r2 publish` uploads to the R2 bucket (docs/r2.md),
 one file per reviewer, <name>.json.gz:
   {"v": 2, "years": {year: {"q": {quarter of the year: figures}}},
    "dirs": {quarter: their directories, for the table's four quarters}}
-<name> is the Feedback Index's (cosh.review_feedback.file_name: the
-normalised address). The bucket can't be listed, so the page finds a person
-only when their address is typed.
+and {"see": <name>} for each other address of a reviewer, so typing any of
+them finds them. <name> is the Feedback Index's (cosh.review_feedback.file_name:
+the address as typed, lower case). The bucket can't be listed, so the page
+finds a person only when their address is typed.
 
 Whole quarters only: the last one is the newest that both the fetched Gerrit
 weeks and main's history cover, so a week of new data changes nothing until
@@ -30,8 +31,8 @@ renamed file counts by the lines changed, binary files 0), so a commit with
 two reviewers counts its lines twice: the page measures review work.
 Gerrit figures cover the same commits' CLs, by the quarter they landed.
 
-People are one identity per address across chromium.org and google.com
-(cosh.people.person).
+People are exact identities (cosh.people.exact_identities), the same as the
+Feedback Index's: addresses merge only on evidence, never by domain.
 """
 
 import argparse
@@ -47,7 +48,7 @@ from datetime import datetime, timezone
 from . import commits as C
 from . import r2, review_timeline, store
 from .cl_facts import epoch
-from .people import is_bot_email, person
+from .people import exact_identities, is_bot_email
 from .review_feedback import file_name
 from .review_timeline import weekday_seconds
 
@@ -115,7 +116,7 @@ def dir_levels(d):
     return ["/".join(parts[:i]) + "/" for i in range(1, len(parts) + 1)]
 
 
-def load_commits(gdb, start, end):
+def load_commits(gdb, start, end, ids):
     """(every commit's (landed_at, by a person), the reviewed commits
     {commit_id: dict(at, n, reviewers)}) of [start, end)."""
     rep = dict(gdb.execute("SELECT commit_id, ratio FROM repetition"))
@@ -129,8 +130,8 @@ def load_commits(gdb, start, end):
         if not human or revert or lsc or not rb or files >= MECH_FILES \
                 or (files >= MECH_REP_FILES and (rep.get(cid) or 0) >= MECH_REP):
             continue
-        author = person(email)
-        who = sorted({person(x) for x in json.loads(rb) if not is_bot_email(x)} - {author})
+        author = ids.find(email)
+        who = sorted({ids.find(x) for x in json.loads(rb) if not is_bot_email(x)} - {author})
         if who:
             reviewed[cid] = dict(at=at, n=n, reviewers=who)
     return landed, reviewed
@@ -159,7 +160,8 @@ def compute(gdb, ddb, tdb):
     nq = len(qs)
     table_qs = qs[-(TABLE_QUARTERS + 1):]
     ti = {q: i for i, q in enumerate(table_qs)}
-    landed, reviewed = load_commits(gdb, quarter_start(qs[0]), quarter_start(next_quarter(last)))
+    ids = exact_identities(ddb, gdb, tdb)
+    landed, reviewed = load_commits(gdb, quarter_start(qs[0]), quarter_start(next_quarter(last)), ids)
     print(f"review-load: {qs[0]}..{last}, {len(landed):,} commits, {len(reviewed):,} reviewed", flush=True)
     dir_lines = commit_dir_lines(gdb, reviewed.keys())
 
@@ -208,7 +210,7 @@ def compute(gdb, ddb, tdb):
         c = by_cl.get(n)
         if c is None or n not in created or not emails.get(acct):
             continue
-        q, p = c["q"], person(emails[acct])
+        q, p = c["q"], ids.find(emails[acct])
         i = qi[q]
         if responded is not None and (first[n] is None or responded < first[n]):
             first[n] = responded
@@ -274,16 +276,20 @@ def compute(gdb, ddb, tdb):
             people[p] = years
     person_dirs = {q: {p: sorted([d, v[0], r1(v[1]), round(v[2], 2)] for d, v in ds.items() if v[0] or v[2] >= 0.005)
                        for p, ds in byp.items()} for q, byp in pdirs.items()}
-    return data, people, person_dirs
+    # Each reviewer's other addresses, for the page's lookup stubs (never in all.json).
+    aliases = {e: p for p, es in ids.groups().items() if p in people for e in es if e != p}
+    return data, people, person_dirs, aliases
 
 
 def dumps(x):
     return json.dumps(x, separators=(",", ":"), ensure_ascii=False, sort_keys=True)
 
 
-def write(out, data, people, person_dirs, people_out=None):
+def write(out, data, people, person_dirs, people_out=None, aliases=None):
     """Writes all.json to out and the per-reviewer files, gzipped, to
-    people_out, removing the ones no longer written. Unchanged files keep
+    people_out, with a {"see": name} file for each other address of a
+    reviewer (`aliases`: address -> identity), removing the ones no longer
+    written. Unchanged files keep
     their bytes, so the R2 sync uploads only what changed."""
     os.makedirs(out, exist_ok=True)
     for name in os.listdir(out):       # per-reviewer folders from before they moved to R2
@@ -300,6 +306,11 @@ def write(out, data, people, person_dirs, people_out=None):
         path = os.path.join(pout, f"{file_name(p)}.json.gz")
         r2.write_gz(path, dumps(dict(v=2, years={y: dict(q=q) for y, q in people.get(p, {}).items()}, dirs=dirs)))
         keep.add(path)
+    for e, p in sorted((aliases or {}).items()):
+        path = os.path.join(pout, f"{file_name(e)}.json.gz")
+        if path not in keep:
+            r2.write_gz(path, dumps(dict(see=file_name(p))))
+            keep.add(path)
     os.makedirs(pout, exist_ok=True)
     r2.prune(pout, keep)
     return len(keep)
@@ -312,11 +323,11 @@ def main(argv=None):
     ap.add_argument("--no-people", action="store_true", help="write all.json only")
     args = ap.parse_args(argv)
     ro = lambda p: sqlite3.connect(f"file:{p}?mode=ro", uri=True)   # noqa: E731
-    data, people, person_dirs = compute(ro(C.db_path()), ro(os.path.join(store.DATA_DIR, store.DERIVED_FILE)),
-                                        review_timeline.open_ro())
+    data, people, person_dirs, aliases = compute(ro(C.db_path()), ro(os.path.join(store.DATA_DIR, store.DERIVED_FILE)),
+                                                 review_timeline.open_ro())
     if args.no_people:
-        people, person_dirs = {}, {}
-    files = write(args.out, data, people, person_dirs, args.people_out)
+        people, person_dirs, aliases = {}, {}, {}
+    files = write(args.out, data, people, person_dirs, args.people_out, aliases)
     print(f"review-load: wrote all.json ({len(data['dirs']):,} directories) to {args.out} and {files:,} files of "
           f"{len(people):,} reviewers to {args.people_out or r2.local_dir('review-load-people')}", flush=True)
 

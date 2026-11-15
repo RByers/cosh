@@ -21,7 +21,10 @@ Format (v 2), JSON:
    "reviewers": [approver or null, ...]  per person, same order (v 2): the
                                       approver, as the person's half-year
                                       files name approvers (`revs`), that
-                                      this Gerrit account is (`approver_of`)
+                                      this Gerrit account is: one whose
+                                      address belongs to that approver's
+                                      exact identity (people.exact_identities,
+                                      the Feedback Index's)
    "cls": [{"n": change number, "project": ..., "subject": ...,
             "landed": "YYYY-MM-DD", "lines": Gerrit's insertions,
             "owner": people index,
@@ -34,7 +37,8 @@ Format (v 2), JSON:
 
 CLs oldest first, threads by their first comment. Offline: reads the
 published half-year files, reviews.sqlite, addressed.sqlite, commits.sqlite
-(Reviewed-by) and the NoteDb repos. Files are written byte for byte the same when nothing changed, so
+and review-timeline.sqlite (for people.exact_identities) and the NoteDb
+repos. Files are written byte for byte the same when nothing changed, so
 `cosh.r2 sync` uploads only what did.
 
   COSH_DATA_DIR=<main>/data/private nice -n 5 python3 -m cosh.review_threads [--half 2026H2 ...]
@@ -48,11 +52,11 @@ import re
 import sqlite3
 import sys
 import time
-from collections import defaultdict
 
 from . import classify, r2, store
 from . import commits as C
-from .people import person
+from . import review_timeline
+from .people import exact_identities
 from .derive import prefetch_notedb
 
 HOST = "chromium-review.googlesource.com"
@@ -87,36 +91,6 @@ def shard_cls(shard):
         n += row[0]
         out.append(n)
     return out
-
-
-def shard_revs(shard):
-    """(change number, its approvers as the file names them) per CL of a
-    published half-year file."""
-    return [(n, [shard["revs"][i] for i in row[5]]) for n, row in zip(shard_cls(shard), shard["cls"])]
-
-
-def approver_of(person_cls, reviewed_by, by_email):
-    """Gerrit account id -> approver, for one person's changes: an account
-    is the approver whose Reviewed-by address on one of those changes is
-    exactly its Gerrit address (Gerrit writes the voter's preferred address
-    there). `person_cls`: [(change number, approvers as the half-year files
-    name them)]; `reviewed_by`: change number -> its raw Reviewed-by
-    addresses; `by_email`: lowercased Gerrit address -> account ids.
-
-    The half-year files name approvers by the Feedback Index's identities,
-    which `people.person` folds across chromium.org and google.com; an
-    address is tied to the approver it folds to, on that change only, so
-    the link to the account stays exact. An account tied to two approvers
-    is left out."""
-    out = {}
-    for n, revs in person_cls:
-        for e in reviewed_by.get(n, ()):
-            rev = person(e)
-            if rev not in revs:
-                continue
-            for aid in by_email.get(e.lower(), ()):
-                out[aid] = rev if out.get(aid, rev) == rev else None
-    return {aid: rev for aid, rev in out.items() if rev is not None}
 
 
 def ro(path):
@@ -194,24 +168,12 @@ def main(argv=None):
     accounts = {aid: (name or email or f"account {aid}", bool(bot), email or None) for aid, name, email, bot in ddb.execute(
         "SELECT account_id, name, email, is_bot FROM accounts WHERE host = ?", (HOST,))}
     bots = {aid for aid, (_, bot, _) in accounts.items() if bot}
-    by_email = defaultdict(list)
-    for aid, (_, _, email) in accounts.items():
-        if email:
-            by_email[email.lower()].append(aid)
-
-    # Each person's approvers over all their half-years, tied to Gerrit
-    # accounts through the Reviewed-by addresses (`approver_of`).
+    # Each account's exact identity, the Feedback Index's (people.exact_identities),
+    # and each person's approvers over all their half-years.
+    ids = exact_identities(ddb, ro(C.db_path()), ro(review_timeline.db_path()))
+    ident = {aid: ids.find(email) for aid, (_, _, email) in accounts.items() if email}
     shards = read_people(a.shards)
-    person_cls = defaultdict(list)
-    for k, by_half in shards.items():
-        for h in sorted(by_half):
-            person_cls[k].extend(x for x in shard_revs(by_half[h]) if x[1])
-    want = {n for cls in person_cls.values() for n, _ in cls}
-    reviewed_by = {}
-    for n, rb in ro(C.db_path()).execute("SELECT change_number, reviewed_by FROM commits "
-                                         "WHERE change_number IS NOT NULL AND reviewed_by IS NOT NULL"):
-        if n in want:
-            reviewed_by[n] = json.loads(rb)
+    person_revs = {k: {r for sh in by_half.values() for r in sh["revs"]} for k, by_half in shards.items()}
 
     have = sorted({h for by_half in shards.values() for h in by_half})
     halves = [h for h in have if not a.half or h in a.half]
@@ -239,13 +201,14 @@ def main(argv=None):
                 per_cl[n] = cl_threads(notes.get(n), owner, bots, addressed_lookup(ddb, labels, n))
         for k, cls in todo.items():
             people, revs, idx = [], [], {}
-            approvers = approver_of(person_cls.get(k, ()), reviewed_by, by_email)
+            mine = person_revs.get(k, set())
 
             def who(aid):
                 if aid not in idx:
                     idx[aid] = len(people)
                     people.append(accounts.get(aid, (f"account {aid}", False, None))[0])
-                    revs.append(approvers.get(aid))
+                    r = ident.get(aid)
+                    revs.append(r if r in mine else None)
                 return idx[aid]
             doc_cls = []
             for n in cls:

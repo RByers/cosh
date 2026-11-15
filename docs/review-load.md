@@ -69,8 +69,11 @@ and hours per CL in each directory, shaded against everyone's there).
   there; a CL's attention-set hours are split the same way. A directory is
   listed with 5,000 lines reviewed in the four quarters; the rest of its
   parent is "Other".
-- **People**: one identity per address across chromium.org and google.com
-  (`cosh.people.person`). Gerrit accounts map through their address.
+- **People**: exact identities, the Feedback Index's
+  (`cosh.people.exact_identities`; docs/review-feedback.md, "Who is who"):
+  addresses merge only on evidence, never by domain. Gerrit accounts map
+  through their address. Each other address of a reviewer gets a
+  `{"see": <name>}` file, so typing any of them finds them.
 
 ## Data flow
 
@@ -105,7 +108,7 @@ R2 bucket (`docs/r2.md`; until 2026-11-14 they were committed next to
 | `all.json` | per quarter: commits, reviewed commits and lines, reviewers, both waits (mean, median, count), attention hours, turns and reviewers; the table's directories at every level with five quarters of lines and four of attention |
 | `<name>.json` | one reviewer, in one file (version 2), fetched in one request: `years`, by year, `{"q": {quarter number: [commits reviewed, lines reviewed, attention weekday hours, turns, asked-to-answer hours (summed), answers]}}`; and `dirs`, by quarter (the table's four), their 3-level directories `[directory, lines, attention hours, turns]` |
 
-`<name>` is the normalised address, as the Feedback Index names its files
+`<name>` is the address as typed, lower case, as the Feedback Index names its files
 (`cosh.review_feedback.file_name`). The bucket can't be listed, so a
 reviewer is found only by typing their address. Until 2026-11-14 a
 reviewer's data was one file per year and per table quarter

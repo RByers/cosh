@@ -9,12 +9,13 @@ from cosh import review_feedback as R
 class ReviewFeedbackTest(unittest.TestCase):
     def test_names_match_the_page(self):
         # web/test/unit.test.ts checks personFile() and reviewerKey() against these same values.
-        self.assertEqual(R.file_name("Foo.Bar@Chromium.org"), "foo.bar@google.com")
+        # No domains are merged (people.address): a person's other addresses get {"see"} files.
+        self.assertEqual(R.file_name("Foo.Bar@Chromium.org"), "foo.bar@chromium.org")
         self.assertEqual(R.file_name("  someone@Microsoft.com "), "someone@microsoft.com")
         self.assertEqual(R.file_name("a+b/c@x.org"), "a~2bb~2fc@x.org")
         self.assertEqual(R.file_name("é~@x.org"), "~c3~a9~7e@x.org")
-        self.assertEqual(R.reviewer_key("Foo.Bar@Chromium.org"), "fb3b9e32f56a")
-        self.assertEqual(R.reviewer_key("foo.bar@google.com"), R.reviewer_key("Foo.Bar@Chromium.org"))
+        self.assertEqual(R.reviewer_key("Foo.Bar@Chromium.org"), "197146830d20")
+        self.assertEqual(R.reviewer_key("foo.bar@google.com"), "fb3b9e32f56a")
         self.assertEqual(R.reviewer_key("  someone@microsoft.com "), "5005b7c30306")
 
     def test_periods_and_bands(self):

@@ -3956,6 +3956,7 @@ async function loadPage(): Promise<{ page: Page; errors: string[]; requests: str
     if (!path.includes('/review-load/')) return void r.continue();
     requests.push(path.split('/review-load/')[1]);
     if (path.endsWith('/review-load/all.json')) json(loadAll);
+    else if (path === `/r2/review-load/people/v2/${personFile('rev@google.com')}.json`) json({ see: k });
     else if (path === `/r2/review-load/people/v2/${k}.json`) json({ v: 2,
       years: { 2026: { q: { 2: [5, 900, 60, 6, 48, 6], 3: [9, 3000, 400, 8, 80, 8] } } },
       dirs: { '2026Q3': [['a/b/', 2000, 300, 6], ['q/r/', 1000, 100, 2]] } });
@@ -4014,12 +4015,13 @@ test('review load: an address adds that reviewer to the charts and the table, wi
   };
   await lookUp('nobody@example.com');
   assert.match(await page.$eval('#rl-find-note', (e) => e.textContent!), /No reviews by that address between Q3 2025 and Q3 2026\./);
-  // google.com and chromium.org are one person, fetched as one file; the address stays out of the page's URL.
+  // Another address of the same person finds them through its {"see"} file; the address stays out of
+  // the page's URL.
   await lookUp('Rev@google.com');
   assert.match(await page.$eval('#rl-find-note', (e) => e.textContent!),
     /Showing your reviews in 2 quarters, from Q2 2026 to Q3 2026: 14 commits and 3,900 lines reviewed\./);
   assert.equal(new URL(page.url()).hash, '');
-  assert.deepEqual(requests.filter((r) => r.startsWith('people/')), ['people/v2/nobody@example.com.json', 'people/v2/rev@google.com.json']);
+  assert.deepEqual(requests.filter((r) => r.startsWith('people/')), ['people/v2/nobody@example.com.json', 'people/v2/rev@google.com.json', 'people/v2/rev@chromium.org.json']);
   const you = await page.evaluate(() => Object.fromEntries(Object.entries(window.__rl!.charts).map(([k, c]) =>
     [k, c.data.datasets.at(-1)!.data])));
   assert.deepEqual(you, { commits: [null, null, null, 5, 9], lines: [null, null, null, 900, 3000],
