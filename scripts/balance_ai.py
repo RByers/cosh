@@ -125,17 +125,38 @@ NEAR = re.compile(r"\b(?:gemini|claude|copilot|ai[- ]generated|ai[- ]assisted|ll
 REVIEWED_ON = re.compile(r"^Reviewed-on: https://chromium-review\.googlesource\.com/(?:c/)?(?:chromium/src/\+/)?(\d+)\s*$", re.M)
 
 
+def git_log(since, until=None, head="%H %ct"):
+    """Yields (head line, body) of each commit on main's first-parent history
+    since `since` (and until `until`), where the head line is the `head`
+    format. Streams the log one commit at a time: read whole, the messages
+    since 2024 (about 460 MB, 4 bytes a character once one emoji appears) and
+    a split copy took 4.7 GB."""
+    cmd = ["git", "-C", SHARED, "log", "--first-parent", f"--since={since}", "main",
+           f"--format=%x01%x02{head}%n%B"]
+    if until:
+        cmd.insert(5, f"--until={until}")
+    p = subprocess.Popen(cmd, stdout=subprocess.PIPE, text=True, errors="replace",
+                         env={**os.environ, "GIT_NO_LAZY_FETCH": "1"})
+    first, lines = None, []
+    for line in p.stdout:
+        if line.startswith("\x01\x02"):
+            if first is not None:
+                yield first, "".join(lines)
+            first, lines = line[2:].rstrip("\n"), []
+        elif first is not None:
+            lines.append(line)
+    if first is not None:
+        yield first, "".join(lines)
+    p.stdout.close()
+    if p.wait():
+        raise subprocess.CalledProcessError(p.returncode, cmd)
+
+
 def git_messages(since="2024-01-01"):
-    """[(sha, unix commit time, subject, body)] of main's first-parent history since `since`."""
-    out = subprocess.run(["git", "-C", SHARED, "log", "--first-parent", f"--since={since}", "main",
-                          "--format=%x01%x02%H %ct%n%B"], capture_output=True, text=True, check=True,
-                         env={**os.environ, "GIT_NO_LAZY_FETCH": "1"}, errors="replace").stdout
-    res = []
-    for rec in out.split("\x01\x02")[1:]:
-        head, _, body = rec.partition("\n")
-        sha, ct = head.split()
-        res.append((sha, int(ct), body))
-    return res
+    """Yields (sha, unix commit time, body) of main's first-parent history since `since`."""
+    for first, body in git_log(since):
+        sha, ct = first.split()
+        yield sha, int(ct), body
 
 
 def is_revert(body):
@@ -152,8 +173,9 @@ def markers(args):
         n = int(m.group(1)) if m else None
         if rule:
             rows.append((sha, n, rule, ct))
-            samples.append(matched_line(body))
-        else:
+            if args.sample:
+                samples.append(matched_line(body))
+        elif args.sample:
             for line in body.splitlines():
                 if NEAR.search(line) and not line.lstrip().startswith(">"):
                     near.append(line.strip())

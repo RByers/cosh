@@ -22,7 +22,8 @@ python3 scripts/balance_ai.py did
 python3 scripts/balance_ai.py footers
 ```
 
-`markers` takes about a minute. Each of the others loads every CL and commit,
+`markers` takes about a minute and streams the git log, so it needs only
+about 15 MB (2026-11-15; reading the log whole took 4.7 GB). Each of the others loads every CL and commit,
 which takes 3–5 min and several GB of RAM, so run them one at a time.
 `footers` streams nine years of commit messages. The person-level results use
 the fixed identity merging in `balance_growth.alias_pairs` (2026-11-08), and

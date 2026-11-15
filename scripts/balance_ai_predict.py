@@ -73,15 +73,8 @@ def strip(msg):
 
 
 def log(since, until):
-    cmd = ["git", "-C", ba.SHARED, "log", "--first-parent", f"--since={since}", "main",
-           "--format=%x01%x02%H %ct %ae%n%B"]
-    if until:
-        cmd.insert(5, f"--until={until}")
-    out = subprocess.run(cmd, capture_output=True, text=True, check=True, errors="replace",
-                         env={**os.environ, "GIT_NO_LAZY_FETCH": "1"}).stdout
-    for rec in out.split("\x01\x02")[1:]:
-        head, _, body = rec.partition("\n")
-        sha, ct, email = head.split(" ", 2)
+    for first, body in ba.git_log(since, until, head="%H %ct %ae"):
+        sha, ct, email = first.split(" ", 2)
         yield sha, int(ct), email.strip().lower(), body
 
 

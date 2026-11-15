@@ -2013,7 +2013,7 @@
       ],
       "network": false,
       "lock": null,
-      "duration": "about 1 min",
+      "duration": "about 1 min, about 15 MB of memory (streams the log; 2026-11-15)",
       "token_cost": null,
       "cost_source": "docs/balance-ai.md",
       "refresh": "routine",
