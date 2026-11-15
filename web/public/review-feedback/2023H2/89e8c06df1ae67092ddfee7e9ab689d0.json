@@ -1,1 +1,0 @@
-{"dirs":["gin/","chrome/browser/","third_party/blink/web_tests/"],"files":["gin/gin_features.cc","gin/v8_initializer.cc"],"revs":["adamk@google.com","cbruni@google.com","masonf@google.com"],"cls":[[4867595,19615,12,29,0,[0],[[0,5,1,1],[1,6,1,1]]],[55771,25,1,30,1,[0]],[-241,0,2,31,1,[0]],[80388,27,2,32,0,[0,1]],[107315,37,2,35,2,[2]],[31464,7,8,36,0,[0]]]}

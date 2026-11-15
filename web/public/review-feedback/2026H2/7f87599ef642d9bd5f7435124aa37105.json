@@ -1,1 +1,0 @@
-{"dirs":["services/device/generic_sensor/","(root)/"],"files":["services/device/generic_sensor/platform_sensor_reader_winrt.h","services/device/generic_sensor/platform_sensor_reader_winrt_unittest.cc"],"revs":["robpitkin@google.com","scheib@google.com"],"cls":[[8505517,20738,49,0,[[0,48],[1,1]],[0,1],[[0,4,1,1],[1,44,1,1]]]]}

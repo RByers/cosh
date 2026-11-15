@@ -1,1 +1,0 @@
-{"dirs":["build/config/","build/fuchsia/","build/config/fuchsia/"],"files":["/COMMIT_MSG","build/fuchsia/qemu_target.py","build/fuchsia/target.py","build/config/fuchsia/tests.cmx"],"revs":["wez@google.com","sergeyu@google.com"],"cls":[[1146031,17733,3,0,[[0,2],[1,1]],[0]],[30406,26,6,1,1,[0],[[0,0,1,1],[1,1,1,0],[2,5,2,1]]],[1790,0,4,2,2,[1],[[0,0,1,0],[3,2,1,1]]]]}

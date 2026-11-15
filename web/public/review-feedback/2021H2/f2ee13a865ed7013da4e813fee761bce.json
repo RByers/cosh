@@ -1,1 +1,0 @@
-{"dirs":["components/policy/proto/","components/policy/tools/"],"files":["/COMMIT_MSG","components/policy/proto/chrome_device_policy.proto","components/policy/tools/generate_policy_source.py"],"revs":["amraboelkher@google.com","emaxx@google.com","mpolzer@google.com","ydago@google.com"],"cls":[[3264128,18941,16,0,[[0,8],[1,8]],[0,1,2,3],[[0,0,1,1],[1,2,1,1],[2,4,3,3]]]]}

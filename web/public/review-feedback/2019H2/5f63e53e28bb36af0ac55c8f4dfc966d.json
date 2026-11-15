@@ -1,1 +1,0 @@
-{"dirs":["third_party/sqlite/fuzz/","third_party/sqlite/","(root)/"],"files":["AUTHORS","third_party/sqlite/BUILD.gn","third_party/sqlite/fuzz/shadow_table_fuzzer.cc"],"revs":["huangdarwin@google.com","mmoroz@google.com","mpdenton@google.com"],"cls":[[1924174,18226,630,0,[[0,616],[1,13],[2,1]],[0,1,2],[[0,1,1,0],[1,13,2,2],[2,616,34,29]]]]}

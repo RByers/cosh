@@ -3,8 +3,8 @@ download (web/feedback-index.html, docs/review-feedback.md, "Downloading
 your comments").
 
 For every per-person half-year file the Feedback Index publishes
-(web/public/review-feedback/<half>/<key>.json, the person's merged CLs of
-that half-year), writes data/private/review-threads/<half>/<key>.json.gz:
+(data/private/feedback-people/<half>/<key>.json.gz, the person's merged CLs
+of that half-year, which cosh.r2 publishes), writes data/private/review-threads/<half>/<key>.json.gz:
 every thread a human reviewer other than the owner started on those CLs,
 with the full text of every comment in it. The files are too big for git
 (400 MB gzipped for all half-years, 2026-11-14), so `cosh.r2 sync` puts
@@ -48,22 +48,20 @@ import sys
 import time
 from collections import defaultdict
 
-from . import classify, store
+from . import classify, r2, store
 from . import commits as C
 from .people import person
 from .derive import prefetch_notedb
 
 HOST = "chromium-review.googlesource.com"
-ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-SHARDS = os.path.join(ROOT, "web", "public", "review-feedback")
 PATCHSET_LEVEL = "/PATCHSET_LEVEL"
 VERSION = 2
 HALF = re.compile(r"^\d{4}H[12]$")
-KEY = re.compile(r"^[0-9a-f]{32}\.json$")
+KEY = re.compile(r"^[0-9a-f]{32}\.json\.gz$")
 
 
 def out_dir(data_dir=None):
-    return os.path.join(data_dir or store.DATA_DIR, "review-threads")
+    return r2.local_dir("review-threads", data_dir)
 
 
 def shard_cls(shard):
@@ -157,27 +155,17 @@ def addressed_lookup(ddb, labels, n):
 
 def write(path, doc):
     """Writes gzipped JSON, byte for byte the same for the same doc."""
-    data = gzip.compress(json.dumps(doc, separators=(",", ":"), ensure_ascii=False).encode(), mtime=0)
-    os.makedirs(os.path.dirname(path), exist_ok=True)
-    old = None
-    if os.path.exists(path):
-        with open(path, "rb") as f:
-            old = f.read()
-    if old != data:
-        tmp = path + ".tmp"
-        with open(tmp, "wb") as f:
-            f.write(data)
-        os.replace(tmp, path)
-    return len(data), old != data
+    return r2.write_gz(path, json.dumps(doc, separators=(",", ":"), ensure_ascii=False))
 
 
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("--half", action="append", help="only these half-years (default: all)")
-    ap.add_argument("--shards", default=SHARDS, help="the Feedback Index's published files")
+    ap.add_argument("--shards", help="the Feedback Index's per-person files (default <data>/feedback-people)")
     ap.add_argument("--out", help="default <data>/review-threads")
     a = ap.parse_args(argv)
     out = a.out or out_dir()
+    a.shards = a.shards or r2.local_dir("feedback-people")
 
     ddb = ro(os.path.join(store.DATA_DIR, store.DERIVED_FILE))
     ldb = ro(classify.labels_path(store.DATA_DIR))
@@ -218,8 +206,8 @@ def main(argv=None):
         todo = {}
         for name in sorted(os.listdir(os.path.join(a.shards, h))):
             if KEY.match(name):
-                with open(os.path.join(a.shards, h, name)) as f:
-                    todo[name[:-5]] = shard_cls(json.load(f))
+                with gzip.open(os.path.join(a.shards, h, name), "rt") as f:
+                    todo[name[:-8]] = shard_cls(json.load(f))
         info = {}
         ns = sorted({n for cls in todo.values() for n in cls})
         for i in range(0, len(ns), 900):

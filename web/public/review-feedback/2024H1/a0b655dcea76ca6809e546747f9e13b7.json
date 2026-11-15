@@ -1,1 +1,0 @@
-{"dirs":["sandbox/linux/seccomp-bpf-helpers/","sandbox/policy/","chrome/test/data/","chrome/browser/extensions/","net/quic/"],"files":["net/quic/quic_chromium_client_session.cc"],"revs":["rsesek@google.com","reillyg@google.com","bashi@google.com"],"cls":[[5177869,19731,19,74,0,[0]],[4565,0,2,76,1,[0]],[56020,21,4,77,[[2,3],[3,1]],[1]],[30410,22,2,78,4,[2],[[0,2,1,1]]]]}

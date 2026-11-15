@@ -46,6 +46,7 @@ import {
   type Top,
 } from './feedback.ts';
 import { fmtDay, fmtInt, fmtNum } from './format.ts';
+import { FEEDBACK_PEOPLE, r2Url } from './r2.ts';
 import { fragment, msg, type Vars } from './text.ts';
 
 Chart.register(Filler);
@@ -198,13 +199,19 @@ async function lookup(raw: string) {
   }
   put(note, 'find-loading');
   try {
+    // The per-person files live in the R2 bucket; peers.end (the data's end) names
+    // this week's copies, so peers.json comes first.
+    const peersP = state.peers ? Promise.resolve(state.peers) : getJson<Peers>(`${DATA}peers.json`);
+    const person = (path: string, end: number) => r2Url(FEEDBACK_PEOPLE, path, end);
     const [peers, reviewers, top] = await Promise.all([
-      state.peers ? Promise.resolve(state.peers) : getJson<Peers>(`${DATA}peers.json`),
+      peersP,
       state.reviewers ? Promise.resolve(state.reviewers) : getJson<ReviewerTable>(`${DATA}reviewers.json`),
       (async () => {
+        const p = await peersP;
+        if (!p) return null;
         let k = await personKey(raw);
         for (let hops = 0; hops < 2; hops++) {
-          const d = await getJson<Top | Alias>(`${DATA}u/${k}.json`);
+          const d = await getJson<Top | Alias>(person(`u/${k}.json`, p.end));
           if (!d) return null;
           if ('see' in d) {
             if (!/^[0-9a-f]{32}$/.test(d.see)) return null;
@@ -219,7 +226,7 @@ async function lookup(raw: string) {
     // One file per half-year the person landed changes in.
     const halvesOk = top?.top.halves.every((h) => /^\d{4}H[12]$/.test(h));
     const shards = top && halvesOk
-      ? await Promise.all(top.top.halves.map((h) => getJson<Shard>(`${DATA}${h}/${top.key}.json`)))
+      ? await Promise.all(top.top.halves.map((h) => getJson<Shard>(person(`${h}/${top.key}.json`, peers!.end))))
       : [];
     const found = top && peers && reviewers && halvesOk && shards.every((s) => s)
       ? buildPerson(top.top, shards as Shard[], peers) : null;

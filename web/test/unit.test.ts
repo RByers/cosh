@@ -1862,9 +1862,19 @@ test('review load: quarter figures, a reviewer\'s files and the directory tree',
 test('feedback index download: half-year ranges, URLs and the Markdown of threads', async () => {
   const F = await import('../src/feedback.ts');
   assert.deepEqual(F.halvesBetween(['2026H1', '2025H1', '2025H2'], '2026H1', '2025H2'), ['2025H2', '2026H1']);
-  assert.equal(F.threadsUrl('0123456789abcdef0123456789abcdef', '2026H1', 20400.5),
+  assert.equal(F.threadsUrl('0123456789abcdef0123456789abcdef', '2026H1', 20400.5, 'cosh.rbyers.ca'),
     'https://cosh-data.rbyers.ca/review-feedback/threads/2026H1/0123456789abcdef0123456789abcdef.json?v=20400');
-  assert.throws(() => F.threadsUrl('../x', '2026H1', 1));
+  assert.throws(() => F.threadsUrl('../x', '2026H1', 1, 'cosh.rbyers.ca'));
+  // From this machine, the local copies (web/vite.config.ts serves them).
+  assert.equal(F.threadsUrl('0123456789abcdef0123456789abcdef', '2026H1', 1, 'localhost'),
+    'r2/review-feedback/threads/2026H1/0123456789abcdef0123456789abcdef.json?v=1');
+  const R = await import('../src/r2.ts');
+  const k = '0123456789abcdef0123456789abcdef';
+  assert.equal(R.r2Url(R.LOAD_PEOPLE, `dirs/2026Q3/${k}.json`, '2026Q3', 'cosh.rbyers.ca'),
+    `https://cosh-data.rbyers.ca/review-load/people/v1/dirs/2026Q3/${k}.json?v=2026Q3`);
+  assert.equal(R.r2Url(R.FEEDBACK_PEOPLE, `u/${k}.json`, 20400, '127.0.0.1'), `r2/review-feedback/people/v1/u/${k}.json?v=20400`);
+  for (const bad of [`../${k}.json`, `u/x/y/${k}.json`, 'u/abc.json', `u/${k}.json.gz`])
+    assert.throws(() => R.r2Url(R.FEEDBACK_PEOPLE, bad, 1, 'localhost'), bad);
   const file: import('../src/feedback.ts').ThreadFile = {
     v: 1, half: '2026H1', people: ['Rev Iewer', 'Own Er'],
     cls: [

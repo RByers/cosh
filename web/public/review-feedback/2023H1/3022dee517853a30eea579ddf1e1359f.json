@@ -1,1 +1,0 @@
-{"dirs":["tools/metrics/histograms/","third_party/metrics_proto/","chrome/browser/metrics/"],"files":["third_party/metrics_proto/ukm/source.proto"],"revs":["gavinwill@google.com","gmx@google.com","isherman@google.com"],"cls":[[4149639,19368,1,24,0,[0,1]],[26234,13,9,25,1,[2],[[0,0,1,1]]],[221069,70,3,26,2,[1]],[138454,42,2,27,2,[1]]]}

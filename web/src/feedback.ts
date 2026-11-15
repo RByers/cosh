@@ -1,8 +1,8 @@
 // The Feedback Index page's data and arithmetic (feedback-index.html,
 // docs/review-feedback.md), kept apart from the DOM so unit tests can run it.
 // cosh/review_feedback.py writes one file per person and half-year, named by
-// `personKey` of their address, and peers.json with what the page compares a
-// person with.
+// `personKey` of their address and served from the R2 bucket (r2.ts), and
+// peers.json with what the page compares a person with.
 //
 // The addressed feedback rate (AFR) of a set of changes is their addressed reviewer
 // threads per 100 new or changed lines (insertions). The feedback index (FI) is a person's AFR
@@ -11,6 +11,8 @@
 // reviewer factor (how much feedback its approvers' approvals usually draw), both
 // from everyone else's changes: `leaveOut` takes the person's own changes out of
 // the sums in peers.json and reviewers.json (loaded with the person).
+
+import { r2Url, THREADS } from './r2.ts';
 
 /** A change's lines in one 3-level directory: [directory index, the landed commit's inserted lines there]. */
 export type Unit = [number, number];
@@ -722,11 +724,15 @@ export function buildPerson(top: Top, shards: Shard[], peers: Pick<Peers, 'addr_
 
 // ---- downloading your comments (cosh/review_threads.py, served from the R2 bucket)
 
+<<<<<<< HEAD
 /** Where the full threads are served: one gzipped JSON file per person and half-year, too big for git
  * (README.md). The page fetches them only when someone asks to download their comments. */
 export const THREADS_BASE = 'https://cosh-data.rbyers.ca/review-feedback/threads/';
 
 /** review-feedback/threads/<half>/<key>.json (cosh/review_threads.py, version 2). Comment text is
+=======
+/** review-feedback/threads/<half>/<key>.json (cosh/review_threads.py, version 1). Comment text is
+>>>>>>> 619d2520eb (Per-person files of the Feedback Index and Review Load move from git to R2)
  * untrusted: it goes only into the downloaded file, never into the page. */
 export interface ThreadFile {
   v: 1 | 2;
@@ -765,10 +771,12 @@ export interface Thread {
   comments: [number, string, string][];
 }
 
-/** The URL of one person's threads for one half-year; `v` (the data's end) skips cached older copies. */
-export function threadsUrl(key: string, half: string, v: number): string {
+/** The URL of one person's threads for one half-year: one gzipped JSON file per person and
+ * half-year in the R2 bucket (too big for git), fetched only when someone asks to download their
+ * comments. `v` (the data's end) skips cached older copies. */
+export function threadsUrl(key: string, half: string, v: number, host?: string): string {
   if (!/^[0-9a-f]{32}$/.test(key) || !/^\d{4}H[12]$/.test(half)) throw new Error('bad key or half-year');
-  return `${THREADS_BASE}${half}/${key}.json?v=${Math.trunc(v)}`;
+  return r2Url(THREADS, `${half}/${key}.json`, v, host);
 }
 
 /** A Gerrit link to a thread, by its change's project. */

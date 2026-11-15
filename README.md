@@ -6,7 +6,8 @@ depend on it give back. Each dashboard is a page of one static site
 (`web/`), and a landing page (`web/index.html`) links to them all.
 
 The site is served at **https://cosh.rbyers.ca** (GitHub Pages). Files too
-large for git go in the Cloudflare R2 bucket `cosh`, whose CORS policy
+large for git (the per-person files and the comment download; the prefixes
+are in `config/r2.json`) go in the Cloudflare R2 bucket `cosh`, whose CORS policy
 allows that origin, served at https://cosh-data.rbyers.ca. Its credentials
 are in `~/.secrets/cosh/r2.json`, never in the repo. `docs/r2.md` has the
 whole setup: bucket, domain, caching, costs, and how to revoke the token.

@@ -49,12 +49,12 @@ Claude (Haiku): classify, comments-score, tone-publish's screening              
   summarize      ─▶ Value Exchange summaries ─┐
   (+ Radar shares, org_browsers.csv)          ├─▶ Value Exchange
   tone-publish   ─▶ Review Tone summaries ────┼─▶ Review Tone
-  review-feedback   ─▶ Feedback Index global data, per-person files ─┬─▶ Feedback Index
-  (cosh.review_feedback)                                            │
-  review-threads ─▶ full threads ─ r2-threads ─▶ threads in R2 ─────┘
+  review-feedback   ─▶ Feedback Index global data ─────────────────────┬─▶ Feedback Index
+  (cosh.review_feedback) ─▶ per-person files ─ r2-feedback ─▶ in R2 ──┤
+  review-threads ─▶ full threads ─ r2-feedback ─▶ threads in R2 ──────┘
   (per-person files + NoteDb + reviews.sqlite + addressed.sqlite)
-  review-timeline   ─▶ review-timeline.sqlite ─ review-load ─▶ Review Load files ─▶ Review Load
-  (NoteDb + listings + reviews.sqlite)          (+ commits.sqlite)
+  review-timeline   ─▶ review-timeline.sqlite ─ review-load ─▶ all.json ─────────────────▶ Review Load
+  (NoteDb + listings + reviews.sqlite)          (+ commits.sqlite) └▶ per-reviewer files ─ r2-review-load ─▶ in R2 ─┘
 ```
 
 `review-timeline.sqlite` (each CL's uploads, attention-set changes and
@@ -216,6 +216,7 @@ python3 -m cosh update                                    # derive, commits, col
 python3 -m cosh classify --week <week>                    # optional (cost: the inventory)
 python3 -m cosh.sentiment score --week <week>             # optional
 python3 -m cosh update --from data/private/addressed.sqlite data/private/sentiment.sqlite
+python3 -m cosh.r2 publish                                # per-person files and threads to R2, before pushing
 git add summaries config web/public/review-feedback web/public/review-load && git commit
 ```
 

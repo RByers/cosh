@@ -1,1 +1,0 @@
-{"dirs":["testing/libfuzzer/fuzzers/"],"files":["/COMMIT_MSG","testing/libfuzzer/fuzzers/libyuv_fuzzer.cc","testing/libfuzzer/fuzzers/libyuv_scale_fuzzer.cc"],"revs":["mbarbella@google.com"],"cls":[[1931653,18248,167,0,0,[0],[[0,0,1,1],[1,0,12,11],[2,157,5,1]]]]}

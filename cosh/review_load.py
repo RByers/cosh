@@ -5,12 +5,13 @@ for them, and where.
 Offline: reads commits.sqlite, reviews.sqlite and review-timeline.sqlite,
 read-only, and fetches nothing. No comment text is read.
 
-  nice -n 5 python3 -m cosh.review_load [--out DIR] [--no-people]
+  nice -n 5 python3 -m cosh.review_load [--out DIR] [--people-out DIR] [--no-people]
 
-Writes, under web/public/review-load/:
-  all.json                   every quarter's figures and the directory table
-  <year>/<hash>.json         one reviewer's figures for that year's quarters
-  dirs/<quarter>/<hash>.json their directories, for the table's four quarters
+Writes web/public/review-load/all.json (committed): every quarter's figures
+and the directory table. Under data/private/review-load-people/, gzipped,
+which `python3 -m cosh.r2 publish` uploads to the R2 bucket (docs/r2.md):
+  <year>/<hash>.json.gz         one reviewer's figures for that year's quarters
+  dirs/<quarter>/<hash>.json.gz their directories, for the table's four quarters
 <hash> is the Feedback Index's (cosh.review_feedback.key: a salted SHA-256
 of the address), so the page finds a person only when their address is typed.
 
@@ -42,7 +43,7 @@ from collections import defaultdict
 from datetime import datetime, timezone
 
 from . import commits as C
-from . import review_timeline, store
+from . import r2, review_timeline, store
 from .cl_facts import epoch
 from .people import is_bot_email, person
 from .review_feedback import key
@@ -278,38 +279,38 @@ def dumps(x):
     return json.dumps(x, separators=(",", ":"), ensure_ascii=False, sort_keys=True)
 
 
-def write(out, data, people, person_dirs):
-    """Replaces the page's files: all.json, the year folders and dirs/."""
+def write(out, data, people, person_dirs, people_out=None):
+    """Writes all.json to out and the per-reviewer files, gzipped, to
+    people_out, removing the ones no longer written. Unchanged files keep
+    their bytes, so the R2 sync uploads only what changed."""
     os.makedirs(out, exist_ok=True)
-    for name in os.listdir(out):
+    for name in os.listdir(out):       # per-reviewer folders from before they moved to R2
         if re.fullmatch(r"\d{4}|dirs", name):
             shutil.rmtree(os.path.join(out, name))
     with open(os.path.join(out, "all.json"), "w") as f:
         f.write(dumps(data))
-    files = 0
-    by_year = defaultdict(dict)
+    pout = people_out or r2.local_dir("review-load-people")
+    keep = set()
     for p, years in people.items():
         for y, q in years.items():
-            by_year[y][key(p)] = dict(q=q)
-    for y, ks in by_year.items():
-        os.makedirs(os.path.join(out, y), exist_ok=True)
-        for k, v in ks.items():
-            with open(os.path.join(out, y, f"{k}.json"), "w") as f:
-                f.write(dumps(v))
-            files += 1
+            path = os.path.join(pout, y, f"{key(p)}.json.gz")
+            r2.write_gz(path, dumps(dict(q=q)))
+            keep.add(path)
     for q, byp in person_dirs.items():
-        os.makedirs(os.path.join(out, "dirs", q), exist_ok=True)
         for p, rows in byp.items():
             if rows:
-                with open(os.path.join(out, "dirs", q, f"{key(p)}.json"), "w") as f:
-                    f.write(dumps(rows))
-                files += 1
-    return files
+                path = os.path.join(pout, "dirs", q, f"{key(p)}.json.gz")
+                r2.write_gz(path, dumps(rows))
+                keep.add(path)
+    os.makedirs(pout, exist_ok=True)
+    r2.prune(pout, keep)
+    return len(keep)
 
 
 def main(argv=None):
     ap = argparse.ArgumentParser(prog="cosh.review_load")
-    ap.add_argument("--out", default=OUT)
+    ap.add_argument("--out", default=OUT, help="all.json (committed)")
+    ap.add_argument("--people-out", help="the per-reviewer files, published to R2 (default <data>/review-load-people)")
     ap.add_argument("--no-people", action="store_true", help="write all.json only")
     args = ap.parse_args(argv)
     ro = lambda p: sqlite3.connect(f"file:{p}?mode=ro", uri=True)   # noqa: E731
@@ -317,9 +318,9 @@ def main(argv=None):
                                         review_timeline.open_ro())
     if args.no_people:
         people, person_dirs = {}, {}
-    files = write(args.out, data, people, person_dirs)
-    print(f"review-load: wrote all.json ({len(data['dirs']):,} directories) and {files:,} files of "
-          f"{len(people):,} reviewers to {args.out}", flush=True)
+    files = write(args.out, data, people, person_dirs, args.people_out)
+    print(f"review-load: wrote all.json ({len(data['dirs']):,} directories) to {args.out} and {files:,} files of "
+          f"{len(people):,} reviewers to {args.people_out or r2.local_dir('review-load-people')}", flush=True)
 
 
 if __name__ == "__main__":

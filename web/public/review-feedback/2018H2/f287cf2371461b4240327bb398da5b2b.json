@@ -1,1 +1,0 @@
-{"dirs":["net/tools/quic/","net/"],"files":["net/tools/quic/quic_http_proxy_backend.cc","net/tools/quic/quic_http_proxy_backend.h","net/tools/quic/quic_http_proxy_backend_stream.cc"],"revs":["rch@google.com"],"cls":[[1128323,17736,1523,1,[[0,1517],[1,6]],[0],[[0,191,2,2],[1,110,2,2],[2,401,2,2]]]]}

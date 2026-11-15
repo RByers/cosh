@@ -1,1 +1,0 @@
-{"dirs":["tools/metrics/histograms/","chrome/browser/ash/"],"files":["chrome/browser/ash/platform_keys/key_permissions/key_permissions_manager_impl.cc","tools/metrics/histograms/metadata/chromeos/histograms.xml"],"revs":["azeemarshad@google.com","pmarko@google.com"],"cls":[[3596400,19109,3,107,[[0,3],[1,0]],[0,1]],[8253,1,16,108,[[1,10],[0,6]],[0,1],[[0,10,1,1],[1,5,2,2]]]]}

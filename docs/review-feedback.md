@@ -421,9 +421,13 @@ quiet for 5 seconds, so a run's files are served shortly after it ends
 (`web/serve.mjs`, 2026-11-12). Until that build finishes, the pages keep the
 old data, and a page change that needs new `peers.json` fields draws nothing.
 
-Output (default `web/public/review-feedback/`, which Vite copies into the
-site), with `<key>` the hash of the person's address, in three kinds of file
-that the page loads at different times:
+Output, with `<key>` the hash of the person's address, in three kinds of
+file that the page loads at different times: `peers.json` and
+`reviewers.json` in `web/public/review-feedback/` (`--out`, committed, which
+Vite copies into the site), and the per-person files, gzipped, in
+`data/private/feedback-people/` (`--people-out`), which `python3 -m cosh.r2
+publish` uploads to the R2 bucket under `review-feedback/people/v1/`
+(`docs/r2.md`):
 
 - `peers.json` (global, loaded on opening; version 12, about 134 KB, 42 KB
   gzipped): the experience bins (`bins`, `bin_edges`), the index's rates
@@ -484,13 +488,16 @@ stores them: 37.6 MB for the 19 half-year folders (32,676 files; 31.8 MB
 before approvers were added, the same day), 1.0 MB for `u/`, 42 KB for
 `peers.json` and 34 KB for `reviewers.json` (51 KB once it gained each
 reviewer's sums): 39 MB in all, 110 MB
-unpacked. Each run replaces `u/` and every half-year folder.
+unpacked. Each run writes only the per-person files that changed and
+removes those no longer written.
 
-**Committed and published** (the user's call, 2026-11-12):
-`web/public/review-feedback/` is in git, so the GitHub Pages build serves it.
-After regenerating, commit the folder with the change that needed it
-(`git add -A web/public/review-feedback/`, which also drops files the run
-removed). The browser tests serve a made-up person
+**Published** (the user's call, 2026-11-12): from 2026-11-12 to 2026-11-15
+the whole folder was committed and served by GitHub Pages; since then
+`peers.json` and `reviewers.json` are committed and the per-person files
+are in R2 (`docs/plan.md`, 2026-11-15). After regenerating, run `python3
+-m cosh.r2 publish` before pushing the change that needed the new files.
+On localhost (`npm run serve`) the page reads the local copies at once,
+with no upload. The browser tests serve a made-up person
 (`web/test/feedback-fixture.ts`), so they don't depend on the data. The
 script's inputs (`data/private/*.sqlite`) aren't published.
 
@@ -537,7 +544,8 @@ python3 -m cosh.r2 sync data/private/review-threads review-feedback/threads   # 
 ```
 
 `cosh.review_threads` (step `review-threads`, after `review-feedback`) reads
-the published half-year files for each person's changes, `reviews.sqlite`
+the per-person half-year files (`data/private/feedback-people/`) for each
+person's changes, `reviews.sqlite`
 (subjects, owners, accounts, which threads were addressed), `addressed.sqlite`
 and the NoteDb repos (comment text, file, line, patch set, resolved), and
 writes `data/private/review-threads/<half>/<key>.json.gz`, byte for byte
@@ -546,10 +554,10 @@ Threads by bots and AI reviewers, and threads the owner started, are left
 out; "addressed" is the Feedback Index's own measure, null for
 change-level threads. About 5 minutes for all 19 half-years, 20 s for one.
 
-`cosh.r2 sync` (step `r2-threads`) uploads the files whose sha256 differs
+`cosh.r2 publish` (step `r2-feedback`, with the per-person files) uploads the files whose sha256 differs
 from `data/private/r2-manifest.json`, deletes objects whose file is gone,
 and never lists the bucket. It refuses more than 50,000 objects in a run or
-5 GB in all (`--max-objects`, `--max-total-gb`). The bucket's setup
+5 GB in all (`--max-objects`, `--max-total-gb`; the first is per prefix). The bucket's setup
 (domain, CORS, caching, costs, the token) is in `docs/r2.md`. Credentials:
 `~/.secrets/cosh/r2.json` (endpoint, bucket, access key, secret, public
 base), a token that can only read and write this bucket. Weekly, only the

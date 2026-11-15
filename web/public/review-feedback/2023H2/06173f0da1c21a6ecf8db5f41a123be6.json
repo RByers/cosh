@@ -1,1 +1,0 @@
-{"dirs":["gpu/command_buffer/service/","third_party/blink/renderer/"],"files":["third_party/blink/renderer/modules/webgpu/gpu_command_encoder.cc"],"revs":["cwallez@google.com","kbr@google.com","kainino@google.com"],"cls":[[4977720,19659,2,20,0,[0,1]],[-15689,52,36,21,1,[0,2],[[0,35,4,3]]],[180408,1,3,22,1,[0,2]]]}

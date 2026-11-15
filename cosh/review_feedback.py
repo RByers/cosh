@@ -9,16 +9,21 @@ the data (`rate_model`, `own_factors`, `expected`).
 
 Offline. Reads reviews.sqlite, commits.sqlite and addressed.sqlite (never
 review tone or comment text) and writes, under --out (default
-web/public/review-feedback/):
+web/public/review-feedback/, committed):
 
   peers.json         global, loaded on opening: the experience bins, the
                      index's rate sums and scale, everyone's directory table,
                      the spread of AFR per bin and of everyone's FI per
                      period, and the methodology's charts
-  u/<key>.json       per person: first commit, usual org, which half-years
+  reviewers.json     each reviewer's factor, by a short hash of the address
+
+and, gzipped, under --people-out (default data/private/feedback-people/,
+which `python3 -m cosh.r2 publish` uploads to the R2 bucket, docs/r2.md):
+
+  u/<key>.json.gz       per person: first commit, usual org, which half-years
                      they have files for; for each other address of the same
                      person, {"see": key}
-  <half>/<key>.json  per person and half-year: their CLs, with lines per
+  <half>/<key>.json.gz  per person and half-year: their CLs, with lines per
                      directory and the files that drew reviewer threads
                      (`shard`; no comment ids or text)
 
@@ -26,7 +31,7 @@ web/public/review-feedback/):
 same), so the folder can't be browsed for names and the page can't offer
 completions. Everything comes from public Gerrit and git data.
 
-  COSH_DATA_DIR=<main>/data/private nice -n 5 python3 -m cosh.review_feedback [--out DIR]
+  COSH_DATA_DIR=<main>/data/private nice -n 5 python3 -m cosh.review_feedback [--out DIR] [--people-out DIR]
 """
 
 import argparse
@@ -43,7 +48,7 @@ import sys
 from collections import Counter, defaultdict, namedtuple
 from datetime import datetime, timezone
 
-from . import classify, store
+from . import classify, r2, store
 from . import commits as C
 from . import cl_facts as F
 from .cl_facts import CL_FACTS, SINCE, cl_facts
@@ -946,7 +951,8 @@ def fi_dist(xs):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--out", default=OUT)
+    ap.add_argument("--out", default=OUT, help="peers.json and reviewers.json (committed)")
+    ap.add_argument("--people-out", help="the per-person files, published to R2 (default <data>/feedback-people)")
     ap.add_argument("--check", help="also write some people's per-period values here, to compare with the page's")
     ap.add_argument("--fi-dump", help="also write each person's index over all CLs and over their odd and even CLs "
                                       "(MIN_CLS CLs or more) here, to compare methods: their spread and split-half "
@@ -1181,14 +1187,17 @@ def main():
     print("by org: " + ", ".join(f"{d} {v}/{n}" for d, v, n in peers["by_org"]), file=sys.stderr, flush=True)
 
     # ------------------------------------------------ write
-    # u/<key>.json: who the person is and which half-years they have.
-    # <half>/<key>.json: that half-year's CLs, which later runs leave unchanged
-    # once the half-year is over, so git stores them once.
+    # u/<key>.json.gz: who the person is and which half-years they have.
+    # <half>/<key>.json.gz: that half-year's CLs, which later runs leave
+    # byte for byte unchanged once the half-year is over, so the R2 sync
+    # uploads them once.
     out = args.out
-    for name in os.listdir(out) if os.path.isdir(out) else ():
+    pout = args.people_out or r2.local_dir("feedback-people")
+    os.makedirs(out, exist_ok=True)
+    for name in os.listdir(out):       # per-person folders from before they moved to R2
         if name in ("u", "comments", "links") or HALF.match(name):
             shutil.rmtree(os.path.join(out, name))
-    os.makedirs(os.path.join(out, "u"), exist_ok=True)
+    keep = set()
     with open(os.path.join(out, "peers.json"), "w") as f:
         json.dump(peers, f, separators=(",", ":"))
     # reviewers.json: each reviewer's factor, CLs approved, and observed and
@@ -1220,19 +1229,16 @@ def main():
         for c in cs:
             by_half[half(c["closed_at"])].append(c)
         for h, hcs in sorted(by_half.items()):
-            data = json.dumps(shard(hcs), separators=(",", ":"), ensure_ascii=False)
-            os.makedirs(os.path.join(out, h), exist_ok=True)
-            with open(os.path.join(out, h, f"{k}.json"), "w") as f:
-                f.write(data)
-            size += len(data.encode())
+            p = os.path.join(pout, h, f"{k}.json.gz")
+            size += r2.write_gz(p, json.dumps(shard(hcs), separators=(",", ":"), ensure_ascii=False))[0]
+            keep.add(p)
         org = Counter(c["org"] for c in cs).most_common(1)
         top = dict(v=6, first=datetime.fromtimestamp(first[pid], timezone.utc).strftime("%Y-%m") if pid in first else None,
                    first_day=epoch_day(first[pid]) if pid in first else None, org=org[0][0] if org else None,
                    halves=sorted(by_half))
-        data = json.dumps(top, separators=(",", ":"), ensure_ascii=False)
-        with open(os.path.join(out, "u", f"{k}.json"), "w") as f:
-            f.write(data)
-        size += len(data.encode())
+        p = os.path.join(pout, "u", f"{k}.json.gz")
+        size += r2.write_gz(p, json.dumps(top, separators=(",", ":"), ensure_ascii=False))[0]
+        keep.add(p)
         written += 1
     for pid in people:
         for e in emails_of.get(pid, ()):
@@ -1240,14 +1246,16 @@ def main():
             if k in taken:
                 continue
             taken[k] = pid
-            with open(os.path.join(out, "u", f"{k}.json"), "w") as f:
-                f.write(json.dumps(dict(see=key(pid))))
+            p = os.path.join(pout, "u", f"{k}.json.gz")
+            r2.write_gz(p, json.dumps(dict(see=key(pid))))
+            keep.add(p)
             stubs += 1
+    removed = r2.prune(pout, keep)
     if args.check:
         with open(args.check, "w") as f:
             json.dump(check_vals, f)
-    print(f"wrote {written:,} people ({size / 1e6:.1f} MB) and {stubs:,} other addresses to {out}",
-          file=sys.stderr)
+    print(f"wrote {written:,} people ({size / 1e6:.1f} MB gzipped) and {stubs:,} other addresses to {pout}, "
+          f"removed {removed:,} files", file=sys.stderr)
 
 
 HALF = re.compile(r"^\d{4}H[12]$")

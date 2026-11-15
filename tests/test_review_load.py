@@ -1,3 +1,4 @@
+import gzip
 import json
 import os
 import sqlite3
@@ -112,19 +113,26 @@ class ComputeTest(unittest.TestCase):
 
     def test_files(self):
         data, people, pdirs = L.compute(self.gdb, self.ddb, self.tdb)
-        with tempfile.TemporaryDirectory() as out:
-            os.makedirs(os.path.join(out, "2019"))               # a stale year folder goes
+        with tempfile.TemporaryDirectory() as out, tempfile.TemporaryDirectory() as pout:
+            os.makedirs(os.path.join(out, "2019"))               # a per-reviewer folder from before R2 goes
             open(os.path.join(out, "2019", "old.json"), "w").close()
-            n = L.write(out, data, people, pdirs)
+            os.makedirs(os.path.join(pout, "2019"))              # so does a stale year's file
+            open(os.path.join(pout, "2019", "old.json.gz"), "w").close()
+            n = L.write(out, data, people, pdirs, pout)
             k = key("rev@google.com")                             # one person across the two domains
             self.assertEqual(n, 4)
-            self.assertEqual(sorted(os.listdir(out)), ["2026", "all.json", "dirs"])
-            self.assertEqual(read(out, "2026", f"{k}.json"),
+            self.assertEqual(sorted(os.listdir(out)), ["all.json"])
+            self.assertEqual(sorted(os.listdir(pout)), ["2026", "dirs"])
+            gz = lambda *p: json.loads(gzip.decompress(open(os.path.join(pout, *p), "rb").read()))
+            self.assertEqual(gz("2026", f"{k}.json.gz"),
                              {"q": {"2": [1, 40, 0.0, 0, 0.0, 0], "3": [1, 80, 30.0, 1, 23.0, 1]}})
-            self.assertEqual(read(out, "dirs", "2026Q3", f"{k}.json"),
+            self.assertEqual(gz("dirs", "2026Q3", f"{k}.json.gz"),
                              [["a/b/", 20, 7.5, 0.25], ["a/b/c/", 60, 22.5, 0.75]])
             self.assertEqual(read(out, "all.json")["reviewed_lines"], [40, 160])
-
+            # A second run leaves unchanged files' bytes alone.
+            before = open(os.path.join(pout, "2026", f"{k}.json.gz"), "rb").read()
+            L.write(out, data, people, pdirs, pout)
+            self.assertEqual(open(os.path.join(pout, "2026", f"{k}.json.gz"), "rb").read(), before)
 
 if __name__ == "__main__":
     unittest.main()

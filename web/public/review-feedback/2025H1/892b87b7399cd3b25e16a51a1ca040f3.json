@@ -1,1 +1,0 @@
-{"dirs":["third_party/blink/renderer/","content/renderer/java/"],"files":["content/renderer/java/gin_java_function_invocation_helper.cc","third_party/blink/renderer/modules/remote_objects/remote_object.cc"],"revs":["dcheng@google.com","torne@google.com"],"cls":[[6637169,20252,24,5,[[0,13],[1,11]],[0,1],[[0,11,1,0],[1,13,1,1]]]]}

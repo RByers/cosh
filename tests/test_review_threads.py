@@ -67,6 +67,22 @@ class ThreadsTest(unittest.TestCase):
 
 
 class R2Test(unittest.TestCase):
+    def test_config_and_local_dirs(self):
+        c = r2.config()
+        self.assertTrue(c["public_base"].startswith("https://") and c["public_base"].endswith("/"))
+        self.assertEqual(sorted(c["prefixes"].values()), ["feedback-people", "review-load-people", "review-threads"])
+        self.assertEqual(r2.local_dir("feedback-people", "/d"), "/d/feedback-people")
+        self.assertRaises(ValueError, r2.local_dir, "../x", "/d")
+
+    def test_prune(self):
+        with tempfile.TemporaryDirectory() as d:
+            keep = os.path.join(d, "a", "k.json.gz")
+            for p in (keep, os.path.join(d, "a", "old.json.gz"), os.path.join(d, "b", "gone.json.gz")):
+                os.makedirs(os.path.dirname(p), exist_ok=True)
+                open(p, "w").close()
+            self.assertEqual(r2.prune(d, {keep}), 2)
+            self.assertEqual([os.listdir(d), os.listdir(os.path.join(d, "a"))], [["a"], ["k.json.gz"]])
+
     def test_sign_matches_aws_example(self):
         # The GET Object example of AWS's "Signature Version 4 (header-based)" S3 docs.
         cred = {"access_key_id": "AKIAIOSFODNN7EXAMPLE",

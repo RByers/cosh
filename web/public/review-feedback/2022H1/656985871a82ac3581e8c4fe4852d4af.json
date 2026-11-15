@@ -1,1 +1,0 @@
-{"dirs":["third_party/blink/renderer/","third_party/blink/web_tests/","chrome/credential_provider/gaiacp/"],"files":["chrome/credential_provider/gaiacp/dllmain.cc","chrome/credential_provider/gaiacp/reauth_credential.cc"],"revs":["nsatragno@google.com","yusufsn@google.com"],"cls":[[3402997,19012,21,31,[[0,21],[1,0]],[0]],[191216,92,32,31,2,[1],[[0,6,1,1],[1,7,1,1]]]]}

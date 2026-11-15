@@ -1,1 +1,0 @@
-{"dirs":["chrome/browser/devtools/","chrome/test/"],"files":["chrome/browser/devtools/devtools_http_service_handler.cc","chrome/browser/devtools/devtools_http_service_registry.cc","chrome/browser/devtools/devtools_ui_bindings.cc"],"revs":["alexrudenko@google.com","arthursonzogni@google.com"],"cls":[[7321863,20465,640,97,[[0,639],[1,1]],[0,1],[[0,106,3,2],[1,50,2,2],[2,56,3,2]]]]}

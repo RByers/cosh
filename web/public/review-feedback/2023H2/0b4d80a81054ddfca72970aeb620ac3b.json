@@ -1,1 +1,0 @@
-{"dirs":["tools/metrics/histograms/","chrome/browser/"],"files":["tools/metrics/histograms/metadata/ash/histograms.xml","chrome/browser/flag-metadata.json"],"revs":["gavinwill@google.com","anasr@google.com","bzielinski@google.com"],"cls":[[4811162,19595,13,7,0,[0],[[0,13,1,1]]],[253280,95,16,8,[[1,14],[0,2]],[1,2],[[1,5,1,1]]]]}

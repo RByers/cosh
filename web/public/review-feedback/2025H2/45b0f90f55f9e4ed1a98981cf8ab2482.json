@@ -1,1 +1,0 @@
-{"dirs":["net/cert/","net/url_request/","services/cert_verifier/integration_tests/"],"files":["net/cert/cert_verify_proc_ios.cc","net/cert/cert_verify_proc_unittest.cc"],"revs":["davidben@google.com","mattm@google.com"],"cls":[[7062035,20386,25,0,[[0,15],[1,8],[2,2]],[0,1],[[0,10,1,1],[1,5,2,2]]]]}

@@ -1,1 +1,0 @@
-{"dirs":["tools/metrics/histograms/","chrome/browser/ash/"],"files":["tools/metrics/histograms/metadata/login/histograms.xml","chrome/browser/ash/login/saml/saml_browsertest.cc"],"revs":["rsorokin@google.com","jorgelo@google.com","emaxx@google.com"],"cls":[[3398117,19010,18,50,[[0,11],[1,7]],[0],[[0,11,2,2]]],[157553,70,5,51,0,[1]],[121307,70,19,52,1,[2,0],[[1,19,3,0]]]]}

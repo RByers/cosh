@@ -1,1 +1,0 @@
-{"dirs":["third_party/sqlite/patches/","third_party/sqlite/patched/","third_party/sqlite/amalgamation/","(root)/"],"files":["/COMMIT_MSG","AUTHORS","third_party/sqlite/patches/0007-The-nodeReaderInit-function-in-FTS3-may-not-assume-t.patch"],"revs":["huangdarwin@google.com"],"cls":[[1835704,18178,232,0,[[0,164],[1,63],[2,4],[3,1]],[0],[[0,0,2,1],[1,1,1,0],[2,40,1,0]]]]}

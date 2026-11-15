@@ -28,6 +28,7 @@ import {
   type PersonDir,
   type PersonYear,
 } from './load.ts';
+import { LOAD_PEOPLE, r2Url } from './r2.ts';
 import { fragment, msg, type Vars } from './text.ts';
 
 declare global {
@@ -345,9 +346,12 @@ async function lookup(raw: string) {
     const k = await personKey(raw);
     const years = yearsOf(all.quarters);
     const tq = all.table_quarters.slice(1);
+    // The per-reviewer files live in the R2 bucket; they change only when a quarter
+    // completes, so the newest quarter names their copies.
+    const v = all.quarters.at(-1)!;
     const [ys, ds] = await Promise.all([
-      Promise.all(years.map((y) => getJson<PersonYear>(`${DATA}${y}/${k}.json`))),
-      Promise.all(tq.map((q) => getJson<PersonDir[]>(`${DATA}dirs/${q}/${k}.json`))),
+      Promise.all(years.map((y) => getJson<PersonYear>(r2Url(LOAD_PEOPLE, `${y}/${k}.json`, v)))),
+      Promise.all(tq.map((q) => getJson<PersonDir[]>(r2Url(LOAD_PEOPLE, `dirs/${q}/${k}.json`, v)))),
     ]);
     const found = buildPerson(all,
       new Map(years.flatMap((y, i) => (ys[i] ? [[y, ys[i]!] as [string, PersonYear]] : []))),

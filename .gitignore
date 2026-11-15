@@ -10,3 +10,8 @@ secrets*
 *.pyc
 
 .claude/worktrees
+
+# Per-person files live in data/private and the R2 bucket (config/r2.json, docs/r2.md);
+# never commit them here again
+web/public/review-feedback/*/
+web/public/review-load/*/

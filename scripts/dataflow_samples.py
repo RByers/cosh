@@ -52,7 +52,11 @@ def data_dir():
 
 
 def local(path):
-    """A store path on disk."""
+    """A store path on disk; an R2 prefix (r2:...) is its local folder (config/r2.json)."""
+    if path.startswith("r2:"):
+        with open(os.path.join(ROOT, "config", "r2.json")) as f:
+            prefixes = json.load(f)["prefixes"]
+        return os.path.join(data_dir(), prefixes[path[3:].rstrip("/")])
     if path.startswith("data/private/"):
         return os.path.join(data_dir(), path[len("data/private/"):])
     if path.startswith("~"):

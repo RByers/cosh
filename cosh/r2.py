@@ -1,7 +1,12 @@
 """Publishes large files to the Cloudflare R2 bucket the site fetches from
 (README.md; served at the `public_base` of ~/.secrets/cosh/r2.json).
 
+  python3 -m cosh.r2 publish [<prefix> ...] [--dry-run]
   python3 -m cosh.r2 sync <local dir> <prefix> [--dry-run]
+
+`publish` syncs the given prefixes of config/r2.json (default: all) from
+their folders under the data directory (data/private); `sync` does any one
+folder.
 
 uploads every file under <local dir> to <prefix>/<relative path> (a
 trailing `.gz` is dropped from the key and the object is served with
@@ -23,6 +28,7 @@ requests are signed with AWS Signature Version 4, as R2's S3 API expects.
 
 import argparse
 import datetime as dt
+import gzip
 import hashlib
 import hmac
 import json
@@ -38,8 +44,54 @@ from concurrent.futures import ThreadPoolExecutor
 from . import store
 
 CREDENTIALS = os.path.expanduser("~/.secrets/cosh/r2.json")
+CONFIG = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "config", "r2.json")
 CACHE_CONTROL = "public, max-age=86400"
 TYPES = {".json": "application/json", ".md": "text/markdown; charset=utf-8", ".txt": "text/plain; charset=utf-8"}
+
+
+def config():
+    with open(CONFIG) as f:
+        return json.load(f)
+
+
+def local_dir(name, data_dir=None):
+    """The folder under the data directory that holds a published R2 prefix's files,
+    by the folder's name in config/r2.json ('feedback-people')."""
+    if name not in config()["prefixes"].values():
+        raise ValueError(f"{name}: not a folder in {CONFIG}")
+    return os.path.join(data_dir or store.DATA_DIR, name)
+
+
+def write_gz(path, text):
+    """Writes text gzipped, byte for byte the same for the same text (so a sync
+    uploads only what changed), and only if it changed. Returns
+    (gzipped size, whether it changed)."""
+    data = gzip.compress(text.encode(), mtime=0)
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    old = None
+    if os.path.exists(path):
+        with open(path, "rb") as f:
+            old = f.read()
+    if old != data:
+        tmp = path + ".tmp"
+        with open(tmp, "wb") as f:
+            f.write(data)
+        os.replace(tmp, path)
+    return len(data), old != data
+
+
+def prune(root, keep):
+    """Removes the files under root that aren't in keep (paths), and folders left empty."""
+    removed = 0
+    for d, _, names in os.walk(root, topdown=False):
+        for name in names:
+            p = os.path.join(d, name)
+            if p not in keep:
+                os.remove(p)
+                removed += 1
+        if d != root and not os.listdir(d):
+            os.rmdir(d)
+    return removed
 
 
 def manifest_path(data_dir=None):
@@ -196,8 +248,27 @@ def main(argv=None):
     s.add_argument("--jobs", type=int, default=4, help="requests in flight (default 4)")
     s.add_argument("--max-objects", type=int, default=50_000)
     s.add_argument("--max-total-gb", type=float, default=5.0)
+    p = sub.add_parser("publish", help="sync prefixes of config/r2.json (default all) from their folders in the data directory")
+    p.add_argument("prefixes", nargs="*")
+    p.add_argument("--dry-run", action="store_true")
+    p.add_argument("--jobs", type=int, default=4, help="requests in flight (default 4)")
+    p.add_argument("--max-objects", type=int, default=50_000, help="per prefix")
+    p.add_argument("--max-total-gb", type=float, default=5.0)
     a = ap.parse_args(argv)
-    sync(a.local, a.prefix, a.dry_run, a.jobs, a.max_objects, a.max_total_gb)
+    if a.cmd == "sync":
+        sync(a.local, a.prefix, a.dry_run, a.jobs, a.max_objects, a.max_total_gb)
+        return
+    known = config()["prefixes"]
+    for prefix in a.prefixes:
+        if prefix not in known:
+            raise SystemExit(f"{prefix}: not a prefix in {CONFIG} ({', '.join(known)})")
+    for prefix, name in known.items():
+        if a.prefixes and prefix not in a.prefixes:
+            continue
+        local = local_dir(name)
+        if not os.path.isdir(local):
+            raise SystemExit(f"{local}: missing; run the step that writes it first (config/dataflow.json)")
+        sync(local, prefix, a.dry_run, a.jobs, a.max_objects, a.max_total_gb)
 
 
 if __name__ == "__main__":

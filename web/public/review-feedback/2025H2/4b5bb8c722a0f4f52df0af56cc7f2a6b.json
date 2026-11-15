@@ -1,1 +1,0 @@
-{"dirs":["third_party/blink/renderer/","third_party/blink/web_tests/"],"files":["third_party/blink/renderer/platform/loader/fetch/resource_fetcher.cc","third_party/blink/web_tests/external/wpt/resource-timing/render-blocking-status-link.html"],"revs":["nrosenthal@google.com","yoavweiss@google.com"],"cls":[[7112285,20397,51,4,[[0,28],[1,23]],[0,1],[[0,27,4,4],[1,23,1,1]]]]}

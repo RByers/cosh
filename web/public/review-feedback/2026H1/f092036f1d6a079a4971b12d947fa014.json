@@ -1,1 +1,0 @@
-{"dirs":["services/webnn/ort/"],"files":["/COMMIT_MSG","services/webnn/ort/context_impl_ort.cc","services/webnn/ort/graph_builder_ort.cc","services/webnn/ort/graph_impl_ort.cc"],"revs":["ningxin.hu@intel.com","rafael.cintron@microsoft.com"],"cls":[[7255415,20495,32,0,0,[0,1],[[0,0,4,4],[1,2,2,2],[2,30,9,8],[3,0,1,1]]],[302362,19,3,1,0,[0,1],[[0,0,1,1],[2,3,1,0]]]]}

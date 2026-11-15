@@ -112,11 +112,14 @@ purpose near the top of its own doc.
   (outside the repo; argus keeps no secrets under `~/projects`). Never print
   or commit it.
 - **The R2 token** (`~/.secrets/cosh/r2.json`, outside the repo) lets
-  `python3 -m cosh.r2 sync` write the Cloudflare R2 bucket `cosh`, which
+  `python3 -m cosh.r2 publish` write the Cloudflare R2 bucket `cosh`, which
   serves published files too big for git at `cosh-data.rbyers.ca`
-  (`docs/r2.md`). Never print it or put its values on a command line.
+  (`docs/r2.md`): the Feedback Index's and Review Load's per-person files
+  and the comment download, from `data/private/` folders listed in
+  `config/r2.json`. Never print it or put its values on a command line.
   Upload only rebuildable published data; a new prefix is a new published
-  store in `config/dataflow.json`.
+  store in `config/dataflow.json`. Weekly data and added fields keep their
+  prefix; only a change the live page can't read moves to a new one (v2).
 - **The contact e-mail** sent with every request lives in the gitignored
   `data/private/settings.json` (`{"contact_email": ...}`) of the main
   checkout, which worktrees find on their own. `COSH_CONTACT` overrides it.
@@ -347,3 +350,8 @@ worktree branch), land it on `main` automatically, without asking:
    the main checkout block it, stop and report instead of touching them.
 
 Never delete worktrees or branches that belong to other sessions.
+
+**Pushing** (only when the user says to push): first run `python3 -m
+cosh.r2 publish` from the main checkout and wait for it to finish, then
+`git push` `main`, which deploys GitHub Pages. The site must never go live
+before the R2 files it reads (`docs/r2.md`, "Upload first, then push").

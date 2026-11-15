@@ -147,9 +147,10 @@ pages from `cosh-data.rbyers.ca`. Data on disk that isn't published
   per-directory and other large file families go to R2. A weekly update
   should add almost nothing to git's history. (On 2026-11-14 the
   repository was 351 MB packed, history included, and its tree held
-  224 MB, mostly `web/public/` and `summaries/`; those move to R2 as
-  planned work in `docs/plan.md`. Pushed history is never rewritten, so
-  what is already in it stays.)
+  224 MB, mostly `web/public/` and `summaries/`. The Feedback Index's and
+  Review Load's per-person files moved to R2 on 2026-11-15 (`config/r2.json`,
+  `docs/r2.md`); `summaries/` is still to do (`docs/plan.md`). Pushed
+  history is never rewritten, so what is already in it stays.)
 - **R2 data evolves compatibly.** The site (GitHub Pages) and the bucket
   update separately, and browsers may run an older build of a page, so
   new data in R2 must never break JavaScript that is already deployed:

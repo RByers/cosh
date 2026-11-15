@@ -1,1 +1,0 @@
-{"dirs":["ui/gl/"],"files":["gpu/ipc/service/BUILD.gn","ui/gl/direct_composition_support.cc","ui/gl/vsync_thread_win_dcomp.cc"],"revs":["magchen@google.com","rafael.cintron@microsoft.com","zmo@google.com"],"cls":[[7489863,20481,33,2,0,[0,1,2],[[0,0,1,1],[1,19,2,2],[2,14,3,3]]]]}

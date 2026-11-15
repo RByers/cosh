@@ -1,0 +1,9 @@
+{
+  "about": "What the site reads from the Cloudflare R2 bucket (docs/r2.md): each prefix in the bucket and the folder under the data directory (data/private) it is uploaded from. `python3 -m cosh.r2 publish` syncs them all; the pages build their URLs from this file, and on localhost Vite serves the local folders under r2/ instead (web/vite.config.ts). A format change the published page can't read goes to a new prefix (people/v2 ...), uploaded before the page that reads it is deployed.",
+  "public_base": "https://cosh-data.rbyers.ca/",
+  "prefixes": {
+    "review-feedback/threads": "review-threads",
+    "review-feedback/people/v1": "feedback-people",
+    "review-load/people/v1": "review-load-people"
+  }
+}

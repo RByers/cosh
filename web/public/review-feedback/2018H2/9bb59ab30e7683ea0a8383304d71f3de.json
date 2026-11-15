@@ -1,1 +1,0 @@
-{"dirs":["third_party/leveldatabase/"],"files":["third_party/leveldatabase/BUILD.gn","third_party/leveldatabase/leveldb_put_and_get_fuzzer.cc","third_party/leveldatabase/leveldb_put_get_delete_fuzzer.cc"],"revs":["mmoroz@google.com","pwnall@google.com"],"cls":[[1356225,17866,91,0,0,[0,1],[[0,12,1,0],[1,0,1,0],[2,79,2,0]]]]}

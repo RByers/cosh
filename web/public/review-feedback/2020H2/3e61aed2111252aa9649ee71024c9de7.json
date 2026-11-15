@@ -1,1 +1,0 @@
-{"dirs":["chromeos/ash/components/"],"files":["chromeos/ash/components/audio/cras_audio_handler.cc","chromeos/ash/components/audio/cras_audio_handler.h","chromeos/ash/components/dbus/audio/fake_cras_audio_client.cc"],"revs":["hychao@google.com","lxj@google.com"],"cls":[[2579931,18611,293,5,0,[0,1],[[0,51,1,1],[1,33,3,3],[2,6,1,1]]]]}

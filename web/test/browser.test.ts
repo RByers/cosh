@@ -3272,11 +3272,12 @@ async function feedbackPage(peersOverride?: Peers, shardsOverride?: Record<strin
     if (other?.(r)) return;
     if (path.endsWith('/review-feedback/peers.json')) json(peers);
     else if (path.endsWith('/review-feedback/reviewers.json')) json(reviewers);
-    else if (path.endsWith(`/review-feedback/u/${FIXTURE_KEY}.json`)) json(top);
-    else if (/\/review-feedback\/\d{4}H[12]\//.test(path) && path.endsWith(`/${FIXTURE_KEY}.json`))
+    // The per-person files come from the bucket's prefix, served locally under /r2/ (web/src/r2.ts).
+    else if (path === `/r2/review-feedback/people/v1/u/${FIXTURE_KEY}.json`) json(top);
+    else if (/^\/r2\/review-feedback\/people\/v1\/\d{4}H[12]\//.test(path) && path.endsWith(`/${FIXTURE_KEY}.json`))
       json(shards[path.split('/').at(-2)!]);
-    else if (path.endsWith(`/review-feedback/u/${ALIAS_KEY}.json`)) json({ see: FIXTURE_KEY });
-    else if (path.includes('/review-feedback/u/')) void r.respond({ status: 404, body: 'not found' });
+    else if (path === `/r2/review-feedback/people/v1/u/${ALIAS_KEY}.json`) json({ see: FIXTURE_KEY });
+    else if (path.startsWith('/r2/review-feedback/people/v1/u/')) void r.respond({ status: 404, body: 'not found' });
     else void r.continue();
   });
   await page.goto(baseUrl + 'feedback-index.html', { waitUntil: 'load' });
@@ -3289,10 +3290,10 @@ test('feedback index: downloading your comments builds a file from the R2 thread
   const asked: string[] = [];
   const { page, errors } = await feedbackPage(undefined, undefined, (r: HTTPRequest) => {
     const u = new URL(r.url());
-    if (u.host !== 'cosh-data.rbyers.ca') return false;
+    if (!u.pathname.startsWith('/r2/review-feedback/threads/')) return false;
     asked.push(u.pathname);
     const cors = { 'Access-Control-Allow-Origin': '*' };
-    if (u.pathname === `/review-feedback/threads/2026H2/${FIXTURE_KEY}.json`) {
+    if (u.pathname === `/r2/review-feedback/threads/2026H2/${FIXTURE_KEY}.json`) {
       void r.respond({ status: 200, contentType: 'application/json', headers: cors, body: JSON.stringify({
         v: 1, half: '2026H2', people: ['A Reviewer', 'Test Person'], cls: [{ n: 77, project: 'chromium/src',
           subject: 'Fix <b>it</b>', landed: '2026-08-01', lines: 9, owner: 1, threads: [{ id: 'x1', path: 'a/b.cc',
@@ -3321,7 +3322,7 @@ test('feedback index: downloading your comments builds a file from the R2 thread
   await page.click('#rf-dl button');
   await page.waitForFunction(() => /Downloaded|Couldn/.test(document.querySelector('#rf-dl-note')!.textContent ?? ''));
   assert.match(await page.$eval('#rf-dl-note', (e) => e.textContent!), /Downloaded 1 comment threads on 1 changes/);
-  assert.deepEqual(asked.sort(), [`/review-feedback/threads/2026H1/${FIXTURE_KEY}.json`, `/review-feedback/threads/2026H2/${FIXTURE_KEY}.json`]);
+  assert.deepEqual(asked.sort(), [`/r2/review-feedback/threads/2026H1/${FIXTURE_KEY}.json`, `/r2/review-feedback/threads/2026H2/${FIXTURE_KEY}.json`]);
   const [name, text] = await page.evaluate(async () => {
     const d = (window as unknown as { __dl: { name: string; blob: Blob } }).__dl;
     return [d.name, await d.blob.text()];
@@ -3920,8 +3921,8 @@ async function loadPage(): Promise<{ page: Page; errors: string[]; requests: str
     if (!path.includes('/review-load/')) return void r.continue();
     requests.push(path.split('/review-load/')[1]);
     if (path.endsWith('/review-load/all.json')) json(loadAll);
-    else if (path.endsWith(`/review-load/2026/${k}.json`)) json({ q: { 2: [5, 900, 60, 6, 48, 6], 3: [9, 3000, 400, 8, 80, 8] } });
-    else if (path.endsWith(`/review-load/dirs/2026Q3/${k}.json`)) json([['a/b/', 2000, 300, 6], ['q/r/', 1000, 100, 2]]);
+    else if (path === `/r2/review-load/people/v1/2026/${k}.json`) json({ q: { 2: [5, 900, 60, 6, 48, 6], 3: [9, 3000, 400, 8, 80, 8] } });
+    else if (path === `/r2/review-load/people/v1/dirs/2026Q3/${k}.json`) json([['a/b/', 2000, 300, 6], ['q/r/', 1000, 100, 2]]);
     else void r.respond({ status: 404, body: 'not found' });
   });
   await page.goto(baseUrl + 'review-load.html', { waitUntil: 'load' });

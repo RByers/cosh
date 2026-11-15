@@ -1,6 +1,6 @@
 {
   "schema_version": 2,
-  "updated": "2026-11-14",
+  "updated": "2026-11-15",
   "about": "Every external source, data store, processing step and page of cosh, and the flows between them. Read by web/dataflow.html, scripts/dataflow.py (check, plan) and `python3 -m cosh update`. Field meanings and the flow rules: docs/data-architecture.md. Keep it current: CLAUDE.md, Conventions. Building and deploying the site (npm run build; the Pages workflow on push) is not a data step and isn't listed.",
   "sources": [
     {
@@ -1202,20 +1202,30 @@
     {
       "id": "feedback-people",
       "name": "Feedback Index per-person files",
-      "path": "web/public/review-feedback/",
+      "path": "data/private/feedback-people/",
+      "kind": "directory",
+      "tier": "derived",
+      "tracked_in_git": false,
+      "rebuildable": true,
+      "size": "37 MB gzipped in 39,660 files: 6,862 people, 122 other addresses, 19 half-years",
+      "size_as_of": "2026-11-15",
+      "files": "u/<hash>.json.gz (who the person is, their usual org, which half-years they have; a stub per other address) and <half-year>/<hash>.json.gz (their changes: lines per 3-level directory, approvers (Reviewed-by), and the files that drew reviewer threads with each one's lines, threads and addressed threads (which place the threads in their directories); no comment ids or text); <hash> is a salted SHA-256 of the e-mail.",
+      "purpose": "The local copy of what the Feedback Index fetches from R2 about one person, so the upload sends only files that changed; served under r2/ when the page runs on localhost.",
+      "notes": "Was committed under web/public/review-feedback/ from 2026-11-12 to 2026-11-15. Written byte for byte the same when nothing changed: finished half-years don't change between runs unless their inputs do, and each run rewrites the current half-year and u/."
+    },
+    {
+      "id": "r2:review-feedback/people/v1/",
+      "name": "Feedback Index per-person files in R2",
+      "path": "r2:review-feedback/people/v1/",
       "kind": "directory",
       "tier": "published",
-      "tracked_in_git": true,
-      "git_paths": [
-        "web/public/review-feedback/u/",
-        "web/public/review-feedback/[0-9][0-9][0-9][0-9]H[12]/*"
-      ],
+      "tracked_in_git": false,
       "rebuildable": true,
-      "size": "110 MB (38.6 MB gzipped file by file, as git stores it): 6,862 people, 122 other addresses, 19 half-years",
-      "size_as_of": "2026-11-14",
-      "files": "u/<hash>.json (who the person is, their usual org, which half-years they have; a stub per other address) and <half-year>/<hash>.json (their changes: lines per 3-level directory, approvers (Reviewed-by), and the files that drew reviewer threads with each one's lines, threads and addressed threads (which place the threads in their directories); no comment ids or text); <hash> is a salted SHA-256 of the e-mail.",
+      "size": "37 MB, 39,660 objects (stored gzipped)",
+      "size_as_of": "2026-11-15",
+      "files": "review-feedback/people/v1/u/<hash>.json and <half-year>/<hash>.json in the R2 bucket `cosh`, served gzipped at https://cosh-data.rbyers.ca/ (docs/r2.md).",
       "purpose": "One person's changes and review comments by directory, which every chart and table about them uses once an address is typed. No tone, no comment text.",
-      "notes": "Committed and published on GitHub Pages since 2026-11-12. Finished half-years' files don't change between runs unless their inputs do, so git stores them once; each run rewrites the current half-year and u/. Commit with `git add -A web/public/review-feedback/`."
+      "notes": "v1 is the format: weekly data and added fields stay under it; a change the published page can't read goes to v2 (config/r2.json, docs/r2.md)."
     },
     {
       "id": "data/private/review-threads/",
@@ -1263,20 +1273,30 @@
     {
       "id": "review-load-people",
       "name": "Review Load per-reviewer files",
-      "path": "web/public/review-load/",
+      "path": "data/private/review-load-people/",
+      "kind": "directory",
+      "tier": "derived",
+      "tracked_in_git": false,
+      "rebuildable": true,
+      "size": "2.5 MB gzipped in 23,773 files: 5,116 reviewers, 10 years, 4 quarters of directories",
+      "size_as_of": "2026-11-15",
+      "files": "<year>/<hash>.json.gz (a reviewer's quarters that year: commits and lines reviewed, weekday attention-set hours and turns, hours from asked to first answer) and dirs/<quarter>/<hash>.json.gz (their lines and attention per 3-level directory, for the table's four quarters only); <hash> is the Feedback Index's salted SHA-256 of the e-mail.",
+      "purpose": "The local copy of what Review Load fetches from R2 about one reviewer, so the upload sends only files that changed; served under r2/ when the page runs on localhost.",
+      "notes": "Was committed under web/public/review-load/ until 2026-11-15. A finished year's files don't change, and each quarter's directory files are written once; when a quarter completes, the oldest of the four directory folders is removed."
+    },
+    {
+      "id": "r2:review-load/people/v1/",
+      "name": "Review Load per-reviewer files in R2",
+      "path": "r2:review-load/people/v1/",
       "kind": "directory",
       "tier": "published",
-      "tracked_in_git": true,
-      "git_paths": [
-        "web/public/review-load/[0-9][0-9][0-9][0-9]/*",
-        "web/public/review-load/dirs/"
-      ],
+      "tracked_in_git": false,
       "rebuildable": true,
-      "size": "7.5 MB in 23,773 files: 5,116 reviewers, 10 years, 4 quarters of directories",
-      "size_as_of": "2026-11-14",
-      "files": "<year>/<hash>.json (a reviewer's quarters that year: commits and lines reviewed, weekday attention-set hours and turns, hours from asked to first answer) and dirs/<quarter>/<hash>.json (their lines and attention per 3-level directory, for the table's four quarters only); <hash> is the Feedback Index's salted SHA-256 of the e-mail.",
+      "size": "2.5 MB, 23,773 objects (stored gzipped)",
+      "size_as_of": "2026-11-15",
+      "files": "review-load/people/v1/<year>/<hash>.json and dirs/<quarter>/<hash>.json in the R2 bucket `cosh`, served gzipped at https://cosh-data.rbyers.ca/ (docs/r2.md).",
       "purpose": "One reviewer's figures, drawn over the page's charts and in the directory table's Yours columns once their address is typed.",
-      "notes": "A finished year's files don't change, and each quarter's directory files are written once; when a quarter completes, the oldest of the four directory folders is removed. Commit with `git add -A web/public/review-load/`."
+      "notes": "v1 is the format: new quarters and added fields stay under it; a change the published page can't read goes to v2 (config/r2.json, docs/r2.md)."
     },
     {
       "id": "data/private/feedback-coach/",
@@ -2129,12 +2149,12 @@
       ],
       "network": false,
       "lock": null,
-      "incremental": "Deletes and rewrites peers.json, reviewers.json, u/ and the half-year folders.",
+      "incremental": "Rewrites peers.json and reviewers.json; writes each per-person file only if it changed and removes those no longer written.",
       "duration": "about 3 min (2026-11-14), 3 GB of memory",
       "token_cost": null,
       "cost_source": "docs/review-feedback.md",
       "refresh": "routine",
-      "notes": "Computes its per-CL facts (owner, status, Gerrit size, landed commit, lines per directory) from reviews.sqlite and commits.sqlite (cosh.cl_facts). Earlier commits count from 2008. It refreshes the affiliations file first (its only network use). `npm run serve` picks the new files up a few seconds after the run ends. Reads no review tone or comment text.",
+      "notes": "Computes its per-CL facts (owner, status, Gerrit size, landed commit, lines per directory) from reviews.sqlite and commits.sqlite (cosh.cl_facts). Earlier commits count from 2008. It refreshes the affiliations file first (its only network use). `npm run serve` picks up the new peers.json a few seconds after the run ends, and on localhost the per-person files from data/private at once; the site sees them after `cosh.r2 publish`. Reads no review tone or comment text.",
       "run": "nice -n 5 python3 -m cosh.review_feedback"
     },
     {
@@ -2162,32 +2182,60 @@
       "token_cost": null,
       "cost_source": "docs/review-feedback.md",
       "refresh": "routine",
-      "notes": "Takes its people and changes from the published half-year files, so run it after review-feedback.",
+      "notes": "Takes its people and changes from the per-person half-year files (data/private/feedback-people/), so run it after review-feedback.",
       "run": "nice -n 5 python3 -m cosh.review_threads"
     },
     {
-      "id": "r2-threads",
-      "command": "python3 -m cosh.r2 sync data/private/review-threads review-feedback/threads",
+      "id": "r2-feedback",
+      "command": "python3 -m cosh.r2 publish review-feedback/threads review-feedback/people/v1",
       "code": [
-        "cosh/r2.py"
+        "cosh/r2.py",
+        "config/r2.json"
       ],
-      "purpose": "Uploads the changed thread files to the R2 bucket and deletes those that are gone.",
+      "purpose": "Uploads the Feedback Index's changed files (the comment download's threads and the per-person files) to the R2 bucket and deletes those that are gone.",
       "inputs": [
-        "data/private/review-threads/"
+        "data/private/review-threads/",
+        "feedback-people"
       ],
       "outputs": [
-        "r2:review-feedback/threads/"
+        "r2:review-feedback/threads/",
+        "r2:review-feedback/people/v1/"
       ],
       "network": true,
       "lock": null,
       "incremental": "Uploads only files whose sha256 differs from the manifest's (data/private/r2-manifest.json).",
-      "duration": "45 min for the first full upload (32,676 files, 400 MB, 2026-11-14); a weekly sync sends only the current half-year's changed files",
+      "duration": "45 min for the first full upload of the threads (32,676 files, 400 MB, 2026-11-14); a weekly run sends only the current half-year's changed files",
       "token_cost": null,
-      "cost_source": "docs/review-feedback.md",
+      "cost_source": "docs/r2.md",
       "refresh": "routine",
-      "approval": "Writes to the user's Cloudflare R2 bucket with the bucket-scoped token in ~/.secrets/cosh/r2.json; refuses more than 50,000 objects in one run or 5 GB in all.",
-      "notes": "Run from the main checkout, after review-threads. Standard library only (AWS SigV4).",
-      "run": "python3 -m cosh.r2 sync data/private/review-threads review-feedback/threads"
+      "approval": "Writes to the user's Cloudflare R2 bucket with the bucket-scoped token in ~/.secrets/cosh/r2.json; refuses more than 50,000 objects per prefix in one run or 5 GB in all.",
+      "notes": "Run from the main checkout after review-feedback and review-threads, and before pushing: the site deployed by the push reads what this uploaded (docs/r2.md). `python3 -m cosh.r2 publish` with no prefixes does this and r2-review-load. Standard library only (AWS SigV4).",
+      "run": "python3 -m cosh.r2 publish review-feedback/threads review-feedback/people/v1"
+    },
+    {
+      "id": "r2-review-load",
+      "command": "python3 -m cosh.r2 publish review-load/people/v1",
+      "code": [
+        "cosh/r2.py",
+        "config/r2.json"
+      ],
+      "purpose": "Uploads Review Load's changed per-reviewer files to the R2 bucket and deletes those that are gone.",
+      "inputs": [
+        "review-load-people"
+      ],
+      "outputs": [
+        "r2:review-load/people/v1/"
+      ],
+      "network": true,
+      "lock": null,
+      "incremental": "Uploads only files whose sha256 differs from the manifest's (data/private/r2-manifest.json).",
+      "duration": "a few minutes for the first upload (23,773 small files); after that only when a quarter completes",
+      "token_cost": null,
+      "cost_source": "docs/r2.md",
+      "refresh": "routine",
+      "approval": "Writes to the user's Cloudflare R2 bucket with the bucket-scoped token in ~/.secrets/cosh/r2.json; refuses more than 50,000 objects per prefix in one run or 5 GB in all.",
+      "notes": "Run from the main checkout after review-load, and before pushing (docs/r2.md). Standard library only (AWS SigV4).",
+      "run": "python3 -m cosh.r2 publish review-load/people/v1"
     },
     {
       "id": "review-load",
@@ -2212,7 +2260,7 @@
       ],
       "network": false,
       "lock": null,
-      "incremental": "Deletes and rewrites all.json, the year folders and dirs/. Whole quarters only, so the files change when a quarter completes, not with each week.",
+      "incremental": "Rewrites all.json; writes each per-reviewer file only if it changed and removes those no longer written. Whole quarters only, so the files change when a quarter completes, not with each week.",
       "duration": "30 s, 1.5 GB of memory (2026-11-14)",
       "token_cost": null,
       "cost_source": "docs/review-load.md",
@@ -2457,7 +2505,7 @@
       "reads": [
         "web/public/review-feedback/peers.json",
         "web/public/review-feedback/reviewers.json",
-        "feedback-people",
+        "r2:review-feedback/people/v1/",
         "r2:review-feedback/threads/"
       ],
       "sources_line": "Gerrit code review · Chromium git history",
@@ -2474,7 +2522,7 @@
       "entry_script": "web/src/review-load.ts",
       "reads": [
         "web/public/review-load/all.json",
-        "review-load-people"
+        "r2:review-load/people/v1/"
       ],
       "sources_line": "Gerrit code review · Chromium git history",
       "notes": "Linked from the landing page since 2026-11-14; carries noindex."

@@ -1,1 +1,0 @@
-{"dirs":["chrome/browser/extensions/","chrome/services/file_util/","chrome/test/data/"],"files":["chrome/browser/extensions/api/image_writer_private/single_file_tar_reader.cc","chrome/browser/extensions/api/image_writer_private/xz_extractor.cc"],"revs":["reillyg@google.com","tetsui@google.com"],"cls":[[3406497,19020,52,42,[[0,42],[1,10],[2,0]],[0,1],[[0,8,2,2],[1,1,1,1]]]]}

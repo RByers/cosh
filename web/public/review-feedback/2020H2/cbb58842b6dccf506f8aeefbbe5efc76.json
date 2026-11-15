@@ -1,1 +1,0 @@
-{"dirs":["tools/metrics/histograms/","chrome/browser/devtools/"],"files":["chrome/browser/devtools/devtools_ui_bindings.cc","tools/metrics/histograms/enums.xml"],"revs":["alexrudenko@google.com","bcwhite@google.com","caseq@google.com"],"cls":[[2579564,18604,1,25,0,[0]],[-168914,1,23,26,[[0,19],[1,4]],[1,2],[[0,4,1,0],[1,7,1,1]]]]}

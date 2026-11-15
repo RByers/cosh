@@ -1,1 +1,0 @@
-{"dirs":["extensions/browser/","extensions/common/","chrome/browser/extensions/"],"files":["chrome/browser/extensions/pack_extension_job.cc","extensions/browser/extension_creator.cc","extensions/browser/extension_creator_unittest.cc"],"revs":["finnur@google.com","rdevlin.cronin@google.com"],"cls":[[4684175,19585,87,3,[[0,82],[1,5],[2,0]],[0,1],[[0,0,1,0],[1,12,1,1],[2,68,2,1]]]]}

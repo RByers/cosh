@@ -1,1 +1,0 @@
-{"dirs":["infra/config/generated/","content/test/gpu/","gpu/config/"],"files":["content/test/gpu/gpu_tests/webgl2_conformance_expectations.py","/COMMIT_MSG","gpu/config/gpu_test_config.cc"],"revs":["kbr@google.com","jmadill@google.com"],"cls":[[927201,17582,120,0,[[0,119],[1,1]],[0]],[28915,17,2,1,1,[1,0],[[0,2,1,0]]],[1194,0,2,2,2,[1,0],[[1,0,1,1],[2,2,1,0]]]]}

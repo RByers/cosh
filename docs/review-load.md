@@ -77,7 +77,8 @@ and hours per CL in each directory, shaded against everyone's there).
 ```
 gerrit.sqlite + notedb/ ─┐
 reviews.sqlite ──────────┴─ review-timeline ─▶ review-timeline.sqlite ─┬─▶ balance-interdiff, balance-cl, …
-commits.sqlite, reviews.sqlite ───────────────────────────────────────┴─ review-load ─▶ web/public/review-load/
+commits.sqlite, reviews.sqlite ───────────────────────────────────────┴─ review-load ─▶ web/public/review-load/all.json
+                                                                                     └▶ data/private/review-load-people/ ─ r2 publish ─▶ R2
 ```
 
 - `python3 -m cosh.review_timeline` (`cosh/review_timeline.py`) writes
@@ -93,7 +94,11 @@ commits.sqlite, reviews.sqlite ────────────────�
 - `nice -n 5 python3 -m cosh.review_load` (`cosh/review_load.py`) writes
   the page's files. `python3 -m cosh update` runs both.
 
-Published files (`web/public/review-load/`):
+Published files: `all.json` in `web/public/review-load/` (committed), and
+the per-reviewer files, written gzipped to `data/private/review-load-people/`
+and uploaded by `python3 -m cosh.r2 publish review-load/people/v1` to the
+R2 bucket (`docs/r2.md`; until 2026-11-15 they were committed next to
+`all.json`). On localhost the page reads the local copies:
 
 | File | Holds |
 |---|---|

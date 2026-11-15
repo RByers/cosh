@@ -1,1 +1,0 @@
-{"dirs":["chromecast/crash/linux/","chromecast/app/linux/","components/crash/core/"],"files":["chromecast/app/linux/cast_crash_reporter_client.cc","chromecast/crash/linux/crash_util.cc"],"revs":["halliwell@google.com","rsesek@google.com"],"cls":[[1589010,18019,36,42,[[0,19],[1,12],[2,5]],[0,1],[[0,8,1,0],[1,8,1,1]]]]}

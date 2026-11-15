@@ -1,1 +1,0 @@
-{"dirs":["media/gpu/v4l2/","components/nacl/loader/"],"files":["media/gpu/v4l2/legacy/v4l2_video_decode_accelerator.h","components/nacl/loader/BUILD.gn"],"revs":["dalecurtis@google.com","thakis@google.com","dpranke@google.com","dschuff@google.com","vapier@google.com"],"cls":[[583571,17371,13,0,0,[0,1],[[0,6,1,1]]],[75386,49,6,1,1,[2,3,4],[[1,6,1,1]]]]}

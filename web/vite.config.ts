@@ -1,5 +1,6 @@
+import { execFileSync } from 'node:child_process';
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { basename, dirname, join } from 'node:path';
 import { getPriority, setPriority } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import type { Plugin } from 'vite';
@@ -57,7 +58,7 @@ export const CSP = [
   "style-src 'self'",
   // The favicons are data: URLs.
   "img-src 'self' data:",
-  // The comment download's threads (cosh/r2.py, README.md).
+  // Per-person files and the comment download's threads, from the R2 bucket (config/r2.json).
   "connect-src 'self' https://cosh-data.rbyers.ca",
   "base-uri 'none'",
   "form-action 'none'",
@@ -100,8 +101,64 @@ const notFound = (): Plugin => ({
   },
 });
 
+/** The data directory (data/private) whose folders config/r2.json uploads to the bucket:
+ * COSH_DATA_DIR, else the main checkout's, also from a git worktree (as cosh/contact.py). */
+function dataDir(): string {
+  if (process.env.COSH_DATA_DIR) return process.env.COSH_DATA_DIR;
+  const repo = fileURLToPath(new URL('..', import.meta.url));
+  try {
+    const common = execFileSync('git', ['-C', repo, 'rev-parse', '--path-format=absolute', '--git-common-dir'],
+      { encoding: 'utf8' }).trim();
+    if (basename(common) === '.git') return join(dirname(common), 'data', 'private');
+  } catch {
+    // Not a git checkout.
+  }
+  return join(repo, 'data', 'private');
+}
+
+/** A file's path under its prefix, as web/src/r2.ts builds it. */
+const R2_PATH = /^([0-9A-Za-z]+(?:\/[0-9A-Za-z]+)?\/[0-9a-f]{32})\.json$/;
+
+/** Pages on localhost read the bucket's files from r2/ (web/src/r2.ts): this serves them
+ * from their local folders (config/r2.json), gzipped as the bucket serves them, so new files
+ * can be checked before they are uploaded. Only names of the bucket's form under its known
+ * prefixes are served (the same files anyone can fetch from the bucket by name); a file not
+ * on this machine is redirected to the bucket. Both the dev server and preview use it. */
+const r2Local = (): Plugin => {
+  const r2 = JSON.parse(readFileSync(new URL('../config/r2.json', import.meta.url), 'utf8')) as
+    { public_base: string; prefixes: Record<string, string> };
+  const data = dataDir();
+  const serve = (middlewares: { use: (fn: (req: any, res: any, next: () => void) => void) => void }) =>
+    middlewares.use((req, res, next) => {
+      const path = (req.url ?? '/').split(/[?#]/)[0];
+      const prefix = Object.keys(r2.prefixes).find((p) => path.startsWith(`/r2/${p}/`));
+      const m = prefix ? R2_PATH.exec(path.slice(`/r2/${prefix}/`.length)) : null;
+      if (!prefix || !m) return next();
+      const file = join(data, r2.prefixes[prefix], `${m[1]}.json.gz`);
+      if (!existsSync(file)) {
+        res.statusCode = 302;
+        res.setHeader('Location', `${r2.public_base}${prefix}/${m[1]}.json`);
+        return res.end();
+      }
+      res.setHeader('Content-Type', 'application/json');
+      res.setHeader('Content-Encoding', 'gzip');
+      res.setHeader('Cache-Control', 'no-cache');
+      res.end(readFileSync(file));
+    });
+  return {
+    name: 'cosh-r2-local',
+    // Before Vite's own middlewares; returning nothing, as a returned function would run after them.
+    configureServer(server) {
+      serve(server.middlewares);
+    },
+    configurePreviewServer(server) {
+      serve(server.middlewares);
+    },
+  };
+};
+
 export default defineConfig({
-  plugins: [csp(), notFound()],
+  plugins: [csp(), notFound(), r2Local()],
   // Separate pages, not a single-page app: an unknown URL is a 404, not index.html.
   appType: 'mpa',
   // Relative asset URLs, so the site works from any GitHub Pages path.

@@ -1,1 +1,0 @@
-{"dirs":["third_party/blink/renderer/","gpu/command_buffer/service/"],"files":["third_party/blink/renderer/modules/webgpu/gpu_query_set.cc","third_party/blink/renderer/modules/webgpu/gpu_query_set_descriptor.idl"],"revs":["cwallez@google.com","haraken@google.com"],"cls":[[2415572,18528,248,6,[[0,244],[1,4]],[0,1],[[0,59,4,4],[1,25,1,1]]]]}

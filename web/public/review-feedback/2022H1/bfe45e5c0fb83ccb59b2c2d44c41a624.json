@@ -1,1 +1,0 @@
-{"dirs":["ui/gl/","base/power_monitor/"],"files":["ui/gl/vsync_thread_win.cc","ui/gl/vsync_thread_win.h","base/power_monitor/power_monitor_device_source_win.cc"],"revs":["etienneb@google.com","sunnyps@google.com","fdoray@google.com"],"cls":[[3641042,19124,50,65,0,[0,1],[[0,39,2,2],[1,10,1,1]]],[-25210,5,36,66,1,[0,2],[[2,33,7,7]]]]}

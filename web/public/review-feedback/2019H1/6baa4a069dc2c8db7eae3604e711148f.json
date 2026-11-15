@@ -1,1 +1,0 @@
-{"dirs":["media/capture/video/","components/chromeos_camera/"],"files":["media/capture/video/chromeos/stream_buffer_manager.cc","components/chromeos_camera/mojo_mjpeg_decode_accelerator_service.cc"],"revs":["jcliang@google.com"],"cls":[[1414734,17913,3,8,0,[0],[[0,3,1,0]]],[222277,153,1,9,0,[0]],[42679,9,12,10,1,[0],[[1,12,1,1]]]]}
