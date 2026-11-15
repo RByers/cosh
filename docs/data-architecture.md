@@ -211,8 +211,9 @@ the files to commit.
 It skips a step when nothing it depends on changed since it last ran here:
 its `run` command, the content of its `code` files, the files of its
 `inputs` (sizes and modification times; a git repo by its refs) and of its
-`outputs` (a missing or changed output runs it again). Sources have no local
-files and count as unchanged; `network` steps always run. The record is
+`outputs` (a missing or changed output runs it again). A step that reads an
+external data source always runs (it fetches); a model source counts as
+unchanged, since the steps cache its answers. The record is
 `data/private/update-state.json`, written after each step succeeds. So with
 nothing fetched, `cosh update` takes seconds, and after a fetch only what is
 downstream of the changed stores runs. `--force` runs every planned step;

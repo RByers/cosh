@@ -12,7 +12,8 @@ A step is skipped when nothing it depends on changed since it last ran:
 its command, the content of its code files, the files of its input stores
 (sizes and modification times; a git repo by its refs) and of its outputs
 here (a missing or changed output runs it again). The record is
-data/private/update-state.json. Steps that fetch (`network`) always run.
+data/private/update-state.json. A step that reads an external data source
+(not a model, whose answers the steps cache) always runs: that is a fetch.
 --force runs every planned step; --record marks them as done without
 running them (after running the steps by hand).
 
@@ -179,6 +180,7 @@ def main(argv=None):
         cost = "; ".join(x for x in (s["duration"], s["token_cost"]) if x)
         print(f"  by hand [{s['refresh']}] {s['id']}: {s['command']}" + (f" ({cost})" if cost else ""))
     steps = {s["id"]: s for s in d["steps"]}
+    fetched = {s["id"] for s in d["sources"] if s.get("kind") != "model"}
     state = _load_state()
 
     def unchanged(s):
@@ -186,7 +188,7 @@ def main(argv=None):
         full = steps[s["id"]]
         sig = step_inputs_sig(d, full)
         rec = state.get(s["id"], {})
-        same = (not a.force and not full.get("network") and rec.get("inputs") == sig
+        same = (not a.force and not fetched & set(full.get("inputs", [])) and rec.get("inputs") == sig
                 and rec.get("outputs") == step_outputs_sig(d, full))
         return sig, same
 

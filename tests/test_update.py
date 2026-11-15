@@ -10,9 +10,9 @@ from unittest import mock
 from cosh import store, update
 
 
-def fake_dataflow(data_dir):
+def fake_dataflow(data_dir, source_kind="model"):
     out = os.path.join(data_dir, "out.txt")
-    d = {"sources": [{"id": "src"}],
+    d = {"sources": [{"id": "src", "kind": source_kind}],
          "stores": [{"id": "in", "path": "data/private/in.txt"},
                     {"id": "out", "path": "data/private/out.txt"}],
          "steps": [{"id": "step", "run": f"echo x >> {out}", "code": ["cosh/update.py"],
@@ -23,10 +23,10 @@ def fake_dataflow(data_dir):
 
 
 class UpdateSkipTest(unittest.TestCase):
-    def run_update(self, d, *args):
+    def run_update(self, d, *args, source_kind="model"):
         buf = io.StringIO()
         with mock.patch.object(store, "DATA_DIR", d), \
-                mock.patch.object(update, "_dataflow", lambda: fake_dataflow(d)), \
+                mock.patch.object(update, "_dataflow", lambda: fake_dataflow(d, source_kind)), \
                 contextlib.redirect_stdout(buf):
             self.assertEqual(update.main(list(args)), 0)
         with open(os.path.join(d, "out.txt")) as f:
@@ -51,6 +51,13 @@ class UpdateSkipTest(unittest.TestCase):
             later = time.time() + 5
             os.utime(os.path.join(d, "out.txt"), (later, later))
             self.assertEqual(self.run_update(d)[1], 4)
+
+    def test_a_step_reading_a_fetched_source_always_runs(self):
+        with tempfile.TemporaryDirectory() as d:
+            with open(os.path.join(d, "in.txt"), "w") as f:
+                f.write("a")
+            self.assertEqual(self.run_update(d, source_kind="file")[1], 1)
+            self.assertEqual(self.run_update(d, source_kind="file")[1], 2)
 
     def test_record_marks_done_without_running(self):
         with tempfile.TemporaryDirectory() as d:
