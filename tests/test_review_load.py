@@ -110,6 +110,7 @@ class ComputeTest(unittest.TestCase):
         self.assertEqual(data["reply"], dict(mean=[None, 23.0], median=[None, 23.0], p90=[None, 23.0], n=[0, 1]))
         self.assertEqual(data["attention"], dict(hours=[None, 40], turns=[None, 2], reviewers=[None, 2]))
         self.assertEqual(data["table_quarters"], ["2026Q2", "2026Q3"])
+        self.assertIsNone(data["owners"])
         # Each level's sums; the CL's attention is split by its lines (60 of 80 in a/b/c/, 20 in a/b/).
         self.assertEqual(data["dirs"], [["a/", [40, 160], [40.0], [2.0]], ["a/b/", [40, 160], [40.0], [2.0]],
                                         ["a/b/c/", [40, 120], [30.0], [1.5]]])
@@ -121,6 +122,34 @@ class ComputeTest(unittest.TestCase):
         # Directories only for the table's quarters after the first.
         self.assertEqual(pdirs, {"2026Q3": {rev: [["a/b/", 20, 7.5, 0.25], ["a/b/c/", 60, 22.5, 0.75]],
                                             "two@x.org": [["a/b/", 20, 2.5, 0.25], ["a/b/c/", 60, 7.5, 0.75]]}})
+
+    def test_owners(self):
+        from cosh.owners import Owners
+        # A third commit: by new@x.org, who has never voted, approved by rev and two@x.org.
+        self.gdb.execute("INSERT INTO commits VALUES (11,'sha11','new@x.org','n',?,?,111,0,?,NULL,0,0,0,1,0,0,0)",
+                         (ts("2026-08-04 12:00"),) * 2 + (json.dumps(["rev@chromium.org", "two@x.org"]),))
+        self.gdb.execute("INSERT INTO commit_files VALUES (11, 1, 10, 0), (11, 2, 10, 0)")
+        seen = []
+        own = Owners({"OWNERS": "root@x.org\n", "a/OWNERS": "rev@google.com  # an alias of rev\nidle@x.org\n",
+                      "a/b/c/OWNERS": "set noparent\nfile://a/b/C_OWNERS\nper-file x.cc=nobody@x.org\n",
+                      "a/b/C_OWNERS": "two@x.org\n", "a/b/c/d/e/OWNERS": "deep@x.org\n"})
+        self.assertEqual(own.of("a/b"), ({"root@x.org", "rev@google.com", "idle@x.org"}, False))
+        self.assertEqual(own.of("a/b/c"), ({"two@x.org"}, False))
+        self.assertEqual(own.of("gone/dir"), ({"root@x.org"}, False))
+        data, *_ = L.compute(self.gdb, self.ddb, self.tdb, lambda sha: seen.append(sha) or own)
+        self.assertEqual(seen, ["sha11"])                 # the last quarter's last commit
+        self.assertEqual(data["owners"]["at"], "2026-08-04")
+        # Q3: commit 2 (rev, two: 60 lines in a/b/c, 20 in a/b) and commit 11 (rev, two: 10 and 10).
+        # a/b/c is two's alone, a/b is rev's. author@ has voted nowhere but landed commit 1 with one
+        # reviewer, so only new@x.org's commit needed two approvals, and no file had two owners.
+        figures = {d[0]: d[4] for d in data["dirs"]}
+        self.assertEqual(figures["a/b/c/"], [2, 1, 2, 1, 70, 10, 0])
+        self.assertEqual(figures["a/b/"], [2, 1, 2, 1, 100, 20, 0])
+        self.assertEqual(figures["a/"], [2, 1, 4, 2, 100, 20, 0])
+        self.assertEqual(data["owners"]["all"], [2, 1, 5, 2, 100, 20, 0])
+        self.assertEqual(L.half_by([5, 1, 1, 1]), 1)
+        self.assertEqual(L.half_by([2, 2, 2, 2]), 2)
+        self.assertEqual(L.half_by([]), 0)
 
     def test_files(self):
         data, people, pdirs, aliases = L.compute(self.gdb, self.ddb, self.tdb)

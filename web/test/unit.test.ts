@@ -1838,6 +1838,15 @@ test('review load: quarter figures, a reviewer\'s files and the directory tree',
   const rows = L.dirRows(L.dirTree(many, null), new Set(), false);
   assert.deepEqual([rows.length, rows.at(-1)!.key, rows.at(-1)!.more], [13, 'm:root', 8]);
   assert.equal(L.dirRows(L.dirTree(many, null), new Set(['m:root']), false).length, 20);
+  // OWNERS figures: a directory's as published; its "Other" has what the listed children leave, lines only.
+  const owned = { table_quarters: ['q0', 'q1'], dirs: [['a/', [0, 100], [0], [0], [9, 2, 6, 4, 80, 40, 30]],
+    ['a/b/', [0, 60], [0], [0], [5, 1, 3, 3, 50, 10, 10]]] as import('../src/load.ts').DirEntry[] };
+  const [a] = L.dirTree(owned, null);
+  assert.deepEqual(a.own, { reviewers: 9, half: 2, listed: 6, active: 4, ownerLines: 80, newLines: 40, newTwo: 30 });
+  assert.deepEqual(a.children.map((c) => c.own), [
+    { reviewers: 5, half: 1, listed: 3, active: 3, ownerLines: 50, newLines: 10, newTwo: 10 },
+    { reviewers: null, half: null, listed: null, active: null, ownerLines: 30, newLines: 30, newTwo: 20 }]);
+  assert.equal(flat.get('d:a/')!.own, null);
   // Shade: half the typical wait or less is fully green, twice or more fully red.
   assert.deepEqual([L.waitShade(10, 20), L.waitShade(20, 20), L.waitShade(80, 20), L.waitShade(null, 20), L.waitShade(5, null)], [-1, 0, 1, 0, 0]);
 });

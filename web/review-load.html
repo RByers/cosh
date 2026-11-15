@@ -191,6 +191,44 @@
         </template>
       </section>
 
+      <section id="owners" class="card" aria-labelledby="owners-title" hidden>
+        <a class="card-anchor" href="#owners" aria-label="Link to this section" title="Link to this section">#</a>
+        <h2 id="owners-title">Who could share the load</h2>
+        <div class="table-wrap">
+          <table id="rl-owners" class="rf-table rf-all-dirs rl-dirs">
+            <thead>
+              <tr><th scope="col">Directory</th>
+                <th scope="col" class="num" title="Changed lines of the commits there, counted once per reviewer, over the four quarters">Lines reviewed</th>
+                <th scope="col" class="num" title="The fewest reviewers who together reviewed half of the lines there, of everyone who reviewed there">Half the review done by</th>
+                <th scope="col" class="num" title="People listed in an OWNERS file in the directory or below who reviewed a commit there, of all those listed">Owners who reviewed</th>
+                <th scope="col" class="num" title="Share of the lines reviewed whose reviewer is an owner of the file">Reviewed by an owner</th>
+                <th scope="col" class="num rl-group" title="Changed lines of commits by people who weren't committers yet, which need two committers' approval">Lines needing two approvals</th>
+                <th scope="col" class="num" title="Share of those lines that two owners of the file approved, where one owner and any other committer would do">Both approvals by owners</th></tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <template data-msg="own-of"><slot name="n"></slot> of <slot name="of"></slot></template>
+        <p id="rl-owners-note" class="note"></p>
+        <template data-msg="owners-note">
+          The same commits and directories, <slot name="from"></slot> to <slot name="to"></slot>, against the
+          OWNERS files as they stood on <slot name="at"></slot>. <strong>Half the review done by</strong> is the
+          fewest reviewers who together reviewed half of the lines: across Chromium, <slot name="half"></slot> of
+          <slot name="reviewers"></slot> reviewers. Where a few people carry half, others there could take
+          more. <strong>Owners who reviewed</strong> counts the people listed in an OWNERS file in the directory
+          or below who reviewed anything there: <slot name="active"></slot> of <slot name="listed"></slot>
+          across Chromium; the other <slot name="idle"></slot> approved no commit there in these four quarters.
+          <strong>Reviewed by an owner</strong> is the share of lines whose reviewer owns the file
+          (<slot name="owner"></slot> overall); where it is close to all and the waits above are long, the
+          directory needs more owners. A change by someone who isn't a committer yet needs approval from two
+          committers, and only one of them has to be an owner. Such changes came to
+          <slot name="newLines"></slot> lines, and two owners approved <slot name="two"></slot> of them
+          (<slot name="twoLines"></slot> lines): those second approvals are review that any committer who
+          knows the code could give in an owner's place. Shares of fewer than <slot name="minNew"></slot>
+          lines are left empty.
+        </template>
+      </section>
+
       <details id="method" class="card rf-method">
         <summary><h2>How this is measured</h2></summary>
         <p class="note">
@@ -213,6 +251,15 @@
           closed. For changes with no comments, only the votes standing when the change closed are known. The
           attention set exists from late 2020; its hours are counted from <span id="rl-att-from"></span>, from
           the change's creation to its close, overlapping turns once.
+        </p>
+        <p class="note">
+          <strong>Owners</strong> are read from the OWNERS files on main at the end of the last quarter shown:
+          a file's owners are the people listed in its directory's OWNERS file and in those of the directories
+          above (up to one that says <code>set noparent</code>), with <code>file://</code> includes followed.
+          Rules for single files (<code>per-file</code>) are not read, and a directory where anyone may approve
+          (<code>*</code>) counts every reviewer as an owner. Someone counts as a <strong>committer</strong>
+          from their first Code-Review vote in Gerrit, or from their first commit that landed with one
+          reviewer; a commit by anyone else that has two or more reviewers is one that needed two approvals.
         </p>
         <p class="note">
           Addresses are matched as in the Feedback Index: chromium.org and google.com addresses with the same

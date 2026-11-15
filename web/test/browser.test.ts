@@ -3925,9 +3925,10 @@ const loadAll = {
   reply: { mean: [null, 16, 15, 17, 18], median: [null, 3, 3, 4, 4], p90: [null, 40, 38, 42, 45], n: [0, 60, 70, 70, 90] },
   attention: { hours: [null, 2000, 2200, 2400, 3000], turns: [null, 80, 85, 90, 100], reviewers: [null, 10, 10, 10, 10] },
   table_quarters: ['2025Q3', '2025Q4', '2026Q1', '2026Q2', '2026Q3'],
-  dirs: [['a/', [1000, 1100, 1200, 1300, 2600], [400, 420, 440, 1200], [20, 20, 20, 20]],
-    ['a/b/', [800, 800, 800, 800, 1600], [300, 300, 300, 1000], [10, 10, 10, 10]],
-    ['z/', [1000, 1000, 1000, 1000, 500], [100, 100, 100, 100], [20, 20, 20, 20]]],
+  dirs: [['a/', [1000, 1100, 1200, 1300, 2600], [400, 420, 440, 1200], [20, 20, 20, 20], [8, 2, 5, 4, 4650, 2000, 1500]],
+    ['a/b/', [800, 800, 800, 800, 1600], [300, 300, 300, 1000], [10, 10, 10, 10], [4, 1, 2, 2, 4000, 1200, 1200]],
+    ['z/', [1000, 1000, 1000, 1000, 500], [100, 100, 100, 100], [20, 20, 20, 20], [3, 1, 6, 2, 1750, 400, 100]]],
+  owners: { at: '2026-09-30', all: [10, 3, 12, 6, 6400, 2400, 1600] },
 };
 
 async function loadPage(): Promise<{ page: Page; errors: string[]; requests: string[] }> {
@@ -3997,6 +3998,25 @@ test('review load: four charts over the quarters and a directory table that open
   assert.deepEqual(await heat(2), [(Math.log(35) / Math.log(62)).toFixed(3), true]);
   await page.click('#rl-dirs tbody tr:first-child .ar-toggle');
   assert.deepEqual((await loadRows(page)).map((r) => r[0]), ['a/', 'b/', 'Other in a/', 'z/']);
+  // The OWNERS table: who carries half, owners who reviewed, lines by an owner, and non-committers'
+  // lines with the share two owners approved (z/ has under 1,000 such lines: no share).
+  const ownRows = () => page.$$eval('#rl-owners tbody tr', (trs) => trs.map((tr) =>
+    [...tr.children].map((c) => c.textContent!.replace(/[▸▾]/g, '').trim())));
+  assert.deepEqual(await ownRows(), [
+    ['a/', '6.2K', '2 of 8', '4 of 5', '75%', '2K', '75%'],
+    ['z/', '3.5K', '1 of 3', '2 of 6', '50%', '400', ''],
+  ]);
+  // It opens on its own; a directory's rest has only the figures that add up.
+  await page.click('#rl-owners tbody tr:first-child .ar-toggle');
+  assert.deepEqual(await ownRows(), [
+    ['a/', '6.2K', '2 of 8', '4 of 5', '75%', '2K', '75%'],
+    ['b/', '4K', '1 of 4', '2 of 2', '100%', '1.2K', '100%'],
+    ['Other in a/', '2.2K', '', '', '30%', '800', ''],
+    ['z/', '3.5K', '1 of 3', '2 of 6', '50%', '400', ''],
+  ]);
+  assert.equal((await loadRows(page)).length, 4);
+  assert.match(await page.$eval('#rl-owners-note', (e) => e.textContent!.replace(/\s+/g, ' ')),
+    /as they stood on September 30, 2026.*across Chromium, 3 of 10 reviewers.*6 of 12 across Chromium; the other 6 .*\(17% overall\).*came to 2.4K lines, and two owners approved 67% of them \(1.6K lines\)/);
   assert.deepEqual(errors, []);
   await page.close();
 });

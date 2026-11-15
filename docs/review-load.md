@@ -77,12 +77,57 @@ and hours per CL in each directory, shaded against everyone's there).
   through their address. Each other address of a reviewer gets a
   `{"see": <name>}` file, so typing any of them finds them.
 
+## OWNERS and second approvals
+
+The second table, "Who could share the load", covers the same four
+quarters and directories. It is there to show where reviewers who are
+already present could take more, where a directory depends on its owners
+alone, and how much of the review of newcomers' changes owners do that
+any committer could.
+
+- **OWNERS files** are read from the shared clone (`cosh/owners.py`,
+  offline) at the last commit of the last quarter shown, so the figures
+  move only when a quarter completes. A file's owners are the addresses in
+  its directory's `OWNERS` and in those of the directories above, up to one
+  with `set noparent`; `file://` and `include` lines are followed; `*`
+  makes everyone an owner; `per-file` rules are not read. Directories are
+  today's names, and the OWNERS are one snapshot: someone made an owner in
+  the last quarter counts as one for all four.
+- **Half the review done by**: the fewest reviewers whose lines reviewed
+  there add up to half of the directory's, next to how many reviewed there
+  at all.
+- **Owners who reviewed**: of the people listed in an OWNERS file in the
+  directory or below (owners inherited from above aren't counted as
+  listed there), how many are among its reviewers.
+- **Reviewed by an owner**: the share of lines reviewed whose reviewer
+  owns the file.
+- **Lines needing two approvals**: a change by someone who is not a
+  committer needs two committers' approval, one of them an owner. A person
+  counts as a committer from their first Code-Review vote (the timeline's
+  `votes` and `listing_votes`) or their first commit that landed with one
+  reviewer, whichever is first; `reviews.sqlite`'s `committers` table is not
+  used, because it is today's status. A commit by anyone else with two or
+  more reviewers counts here, its lines once. With votes alone, over the
+  four quarters to 2026Q3, 996 of 13,400 commits by such authors had landed
+  with a single reviewer, 933 of them by people who can vote today
+  (committers who hadn't voted yet): hence the single-reviewer rule.
+- **Both approvals by owners**: the share of those lines that two or more
+  owners of the file approved. The second of those approvals didn't have to
+  come from an owner.
+
+On 2026-11-14, for 2025Q4 .. 2026Q3: 1,556 reviewers, 122 of whom did half
+the review; 1,126 of 1,386 listed owners reviewed something; 66% of lines
+were reviewed by an owner of the file; non-committers' changes came to 1.41M
+lines, 48% of them approved by two owners.
+
+Nothing here is per person: no file names an owner or says what one did.
+
 ## Data flow
 
 ```
 gerrit.sqlite + notedb/ ─┐
 reviews.sqlite ──────────┴─ review-timeline ─▶ review-timeline.sqlite ─┬─▶ balance-interdiff, balance-cl, …
-commits.sqlite, reviews.sqlite ───────────────────────────────────────┴─ review-load ─▶ web/public/review-load/all.json
+commits.sqlite, reviews.sqlite, OWNERS in shared/chromium ────────────┴─ review-load ─▶ web/public/review-load/all.json
                                                                                      └▶ data/private/review-load-people/ ─ r2 publish ─▶ R2
 ```
 
@@ -107,7 +152,7 @@ R2 bucket (`docs/r2.md`; until 2026-11-14 they were committed next to
 
 | File | Holds |
 |---|---|
-| `all.json` | per quarter: commits, reviewed commits and lines, reviewers, the reviewer's turn to first answer (mean, median, 90th percentile, count), attention hours, turns and reviewers; the table's directories at every level with five quarters of lines and four of attention |
+| `all.json` | per quarter: commits, reviewed commits and lines, reviewers, the reviewer's turn to first answer (mean, median, 90th percentile, count), attention hours, turns and reviewers; the table's directories at every level with five quarters of lines and four of attention; with OWNERS, each directory's seven figures (reviewers, how many did half, owners listed, owners who reviewed, lines reviewed by an owner, non-committers' lines, those two owners approved) and `owners`: the same for everything and the day of the OWNERS files |
 | `<name>.json` | one reviewer, in one file (version 2), fetched in one request: `years`, by year, `{"q": {quarter number: [commits reviewed, lines reviewed, attention weekday hours, turns, asked-to-answer hours (summed), answers]}}`; and `dirs`, by quarter (the table's four), their 3-level directories `[directory, lines, attention hours, turns]` |
 
 `<name>` is the address as typed, lower case, as the Feedback Index names its files
@@ -136,7 +181,7 @@ or ranks people.
   only whole quarters are published, past figures don't move and a new
   week changes no file until it completes a quarter.
 - **Repository volume (goal 4).** 7.6 MB in 23,774 files on 2026-11-14
-  (`all.json` 93 KB, 38 KB gzipped). A year's files are frozen once the
+  (`all.json` 114 KB, 48 KB gzipped, with the OWNERS figures). A year's files are frozen once the
   year ends; a completed quarter rewrites that year's files for the
   reviewers active in it (about 2,200 files of about 100 bytes) and adds
   one folder of directory files (about 1,400 files, 1.6 MB), while the
@@ -147,12 +192,9 @@ or ranks people.
 
 ## Not done yet
 
-- OWNERS: which reviewers are owners of what they review, and how much of
-  a directory's review its owners carry (`commits.sqlite` has
-  `owners_added`).
-- Second +1s for non-committers' changes by people who aren't OWNERS
-  (`reviews.sqlite` has `committers`; the votes are in the timeline).
-- How unevenly a directory's review is spread over its reviewers.
+- The OWNERS figures for one reviewer after their address is typed: what
+  they own and review, and the second approvals they gave as a non-owner.
+- `per-file` OWNERS rules, and OWNERS as they stood when each commit landed.
 - When review was requested before the attention set (2017–2020): NoteDb
   records reviewer additions, which the walk doesn't read, so the wait
   charts start in 2021Q1.

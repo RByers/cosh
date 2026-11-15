@@ -17,6 +17,7 @@ import {
   meanHours,
   meanLines,
   overallHours,
+  ownRow,
   personSeries,
   quarterLabel,
   ratio,
@@ -43,11 +44,14 @@ const $ = <T extends Element = HTMLElement>(sel: string) => document.querySelect
 const DATA = 'review-load/';
 /** A table cell needs this many reviewer turns to show a mean. */
 const MIN_TURNS = 5;
+/** The OWNERS table shows a share of non-committers' lines from this many. */
+const MIN_NEW_LINES = 1000;
 
 const state = {
   all: null as All | null,
   person: null as Person | null,
   expanded: new Set<string>(),
+  ownersExpanded: new Set<string>(),
 };
 const charts: Record<string, Chart> = {};
 window.__rl = { all: null, person: null, charts };
@@ -256,7 +260,8 @@ function heatCell(v: number, lo: number, hi: number): HTMLTableCellElement {
   return td;
 }
 
-function dirRow(r: DirRow, typical: (number | null)[], you: boolean, lo: number, hi: number): HTMLTableRowElement {
+/** A row with its directory cell: the name, indented, and the button that opens it (in `expanded`). */
+function dirHead(r: DirRow, expanded: Set<string>, rerender: () => void, span: number): HTMLTableRowElement {
   const n = r.node;
   const tr = el('tr', undefined, `rf-dir-row rf-dir-${n ? n.kind : 'more'}`);
   tr.dataset.key = r.key;
@@ -272,9 +277,9 @@ function dirRow(r: DirRow, typical: (number | null)[], you: boolean, lo: number,
     b.setAttribute('aria-expanded', String(r.expanded));
     b.setAttribute('aria-label', `${r.expanded ? 'Collapse' : 'Expand'} ${n?.kind === 'dir' ? n.path : name}`);
     b.addEventListener('click', () => {
-      if (state.expanded.has(r.key)) state.expanded.delete(r.key);
-      else state.expanded.add(r.key);
-      renderDirs();
+      if (expanded.has(r.key)) expanded.delete(r.key);
+      else expanded.add(r.key);
+      rerender();
     });
     label.append(b);
   } else {
@@ -287,10 +292,16 @@ function dirRow(r: DirRow, typical: (number | null)[], you: boolean, lo: number,
   tr.append(th);
   if (!n) {
     const td = el('td');
-    td.colSpan = you ? 11 : 9;
+    td.colSpan = span;
     tr.append(td);
-    return tr;
   }
+  return tr;
+}
+
+function dirRow(r: DirRow, typical: (number | null)[], you: boolean, lo: number, hi: number): HTMLTableRowElement {
+  const n = r.node;
+  const tr = dirHead(r, state.expanded, renderDirs, you ? 11 : 9);
+  if (!n) return tr;
   tr.append(heatCell(totalLines(n), lo, hi));
   n.lines.slice(1).forEach((v, i) => {
     const c = v + n.lines[i] >= state.all!.min_dir_lines / 4 ? change(v, n.lines[i]) : null;
@@ -333,6 +344,44 @@ function renderDirs() {
     minLines: fmtInt(all.min_dir_lines), minTurns: fmtInt(MIN_TURNS), you: !!p });
 }
 
+// ---- the OWNERS table
+
+const fmtShare = (a: number, b: number, min: number) =>
+  (b >= min ? fmtNum(a / b, { style: 'percent', maximumFractionDigits: 0 }) : '');
+
+function ownersRow(r: DirRow): HTMLTableRowElement {
+  const n = r.node;
+  const tr = dirHead(r, state.ownersExpanded, renderOwners, 6);
+  if (!n) return tr;
+  const o = n.own;
+  const lines = totalLines(n);
+  const of = (a: number | null, b: number | null) => (ok(a) && ok(b) && b ? msg('own-of', { n: fmtInt(a), of: fmtInt(b) }) : '');
+  tr.append(el('td', fmtBig(lines), 'num'),
+    el('td', o ? of(o.half, o.reviewers) : '', 'num'),
+    el('td', o ? of(o.active, o.listed) : '', 'num'),
+    el('td', o ? fmtShare(o.ownerLines, lines, 1) : '', 'num'),
+    el('td', o && o.newLines ? fmtBig(o.newLines) : '', 'num rl-group'),
+    el('td', o ? fmtShare(o.newTwo, o.newLines, MIN_NEW_LINES) : '', 'num'));
+  return tr;
+}
+
+function renderOwners() {
+  const all = state.all!;
+  const section = $('#owners');
+  section.hidden = !all.owners;
+  if (!all.owners) return;
+  const tq = all.table_quarters.slice(1);
+  const o = ownRow(all.owners.all);
+  const lines = all.reviewed_lines.slice(-tq.length).reduce((a, b) => a + b, 0);
+  $('#rl-owners tbody').replaceChildren(...dirRows(dirTree(all, null), state.ownersExpanded, false).map(ownersRow));
+  const pct = (a: number, b: number) => fmtNum(b ? a / b : 0, { style: 'percent', maximumFractionDigits: 0 });
+  put($('#rl-owners-note'), 'owners-note', { from: quarterLabel(tq[0]), to: quarterLabel(tq.at(-1)!),
+    at: new Date(`${all.owners.at}T00:00:00Z`).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric', timeZone: 'UTC' }),
+    reviewers: fmtInt(o.reviewers ?? 0), half: fmtInt(o.half ?? 0), listed: fmtInt(o.listed ?? 0), active: fmtInt(o.active ?? 0),
+    idle: fmtInt((o.listed ?? 0) - (o.active ?? 0)), owner: pct(o.ownerLines, lines),
+    newLines: fmtBig(o.newLines), two: pct(o.newTwo, o.newLines), twoLines: fmtBig(o.newTwo), minNew: fmtInt(MIN_NEW_LINES) });
+}
+
 function render() {
   if (!state.all) return;
   renderCommits();
@@ -340,6 +389,7 @@ function render() {
   renderReply();
   renderAttention();
   renderDirs();
+  renderOwners();
   for (const id of ['#rl-att-from', '#rl-att-from-2']) $(id).textContent = quarterLabel(state.all.attention_from);
 }
 

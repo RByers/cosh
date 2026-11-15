@@ -46,7 +46,7 @@ from collections import defaultdict
 from datetime import datetime, timezone
 
 from . import commits as C
-from . import r2, review_timeline, store
+from . import owners, r2, review_timeline, store
 from .people import exact_identities, is_bot_email
 from .review_feedback import file_name
 from .review_timeline import weekday_seconds
@@ -136,24 +136,109 @@ def load_commits(gdb, start, end, ids):
         author = ids.find(email)
         who = sorted({ids.find(x) for x in json.loads(rb) if not is_bot_email(x)} - {author})
         if who:
-            reviewed[cid] = dict(at=at, n=n, reviewers=who)
+            reviewed[cid] = dict(at=at, n=n, reviewers=who, author=author)
     return landed, reviewed
 
 
-def commit_dir_lines(gdb, ids):
+def commit_dir_lines(gdb, ids, detail=()):
     """{commit_id: {3-level directory: lines}} of the commits in `ids`, in
-    today's directories, a renamed file counted by the lines changed."""
+    today's directories, a renamed file counted by the lines changed; and,
+    for the commits in `detail`, {commit_id: {file's directory: lines}}."""
     current, moved = C.current_paths(gdb), C.moved_lines(gdb)
     dirs = {pid: C.dir_of(current.get(p, p), 3) for pid, p in gdb.execute("SELECT path_id, path FROM paths")}
-    out = defaultdict(lambda: defaultdict(int))
+    full = {}
+    out, files = defaultdict(lambda: defaultdict(int)), defaultdict(lambda: defaultdict(int))
     for cid, pid, ins, dels in gdb.execute("SELECT commit_id, path_id, ins, dels FROM commit_files WHERE commit_id > 0"):
         if cid in ids:
             ins, dels = moved.get((cid, pid), (ins, dels))
             out[cid][dirs[pid]] += max(ins, 0) + max(dels, 0)
-    return out
+            if cid in detail:
+                if pid not in full:
+                    path, = gdb.execute("SELECT path FROM paths WHERE path_id = ?", (pid,)).fetchone()
+                    full[pid] = os.path.dirname(current.get(path, path))
+                files[cid][full[pid]] += max(ins, 0) + max(dels, 0)
+    return out, files
 
 
-def compute(gdb, ddb, tdb):
+def committer_since(tdb, emails, ids, reviewed):
+    """{person: when they could first be seen to approve changes}: their
+    first Code-Review vote, or their first commit that landed with a single
+    reviewer (a non-committer's needs two). Before that, and for people with
+    neither, they count as not yet a committer."""
+    since = {}
+    for table in ("votes", "listing_votes"):
+        for acct, t in tdb.execute(f"SELECT voter, min(at) FROM {table} WHERE value != 0 GROUP BY voter"):
+            if emails.get(acct):
+                p = ids.find(emails[acct])
+                since[p] = min(t, since.get(p, t))
+    for c in reviewed.values():
+        if len(c["reviewers"]) == 1:
+            since[c["author"]] = min(c["at"], since.get(c["author"], c["at"]))
+    return since
+
+
+def half_by(lines):
+    """How many of the biggest values make up half the total."""
+    need, n = sum(lines) / 2, 0
+    for v in sorted(lines, reverse=True):
+        if need <= 0:
+            break
+        need -= v
+        n += 1
+    return n
+
+
+def owner_figures(commits, files, own, ids, since):
+    """Who reviewed `commits` (the table's four quarters), against the OWNERS
+    files `own`: per directory level and "" for everything,
+    [reviewers, how many of them did half the review, people listed in an
+    OWNERS file there or below, how many of those reviewed there, lines
+    reviewed by an owner of the file, lines of changes by people not yet
+    committers (two approvals needed), those lines that two owners approved]."""
+    people = {}
+
+    def owns(p, d):
+        if d not in people:
+            addresses, anyone = own.of(d)
+            people[d] = ({ids.find(e) for e in addresses}, anyone)
+        return people[d][1] or p in people[d][0]
+    by = defaultdict(lambda: defaultdict(int))        # 3-level directory -> reviewer -> lines
+    sums = defaultdict(lambda: [0, 0, 0])             # 3-level directory -> [by an owner, non-committers', two owners]
+    for cid, c in commits.items():
+        two = len(c["reviewers"]) >= 2 and since.get(c["author"], float("inf")) > c["at"]
+        for d, n in files.get(cid, {}).items():
+            if not n:
+                continue
+            d3 = C.dir_of(d + "/x" if d else "x", 3)
+            owners = [p for p in c["reviewers"] if owns(p, d)]
+            for p in c["reviewers"]:
+                by[d3][p] += n
+            s = sums[d3]
+            s[0] += n * len(owners)
+            if two:
+                s[1] += n
+                s[2] += n * (len(owners) >= 2)
+    listed = defaultdict(set)
+    for d, (addresses, _, _) in own.direct.items():
+        who = {ids.find(e) for e in addresses}
+        listed[""] |= who
+        if d:
+            for level in dir_levels(C.dir_of(d + "/x", 3)):
+                listed[level] |= who
+    tree_by, tree = defaultdict(lambda: defaultdict(int)), defaultdict(lambda: [0, 0, 0])
+    for d3, ps in by.items():
+        for level in [""] + dir_levels(d3):
+            for p, n in ps.items():
+                tree_by[level][p] += n
+            for k in range(3):
+                tree[level][k] += sums[d3][k]
+    return {level: [len(ps), half_by(ps.values()), len(listed[level]), len(listed[level] & ps.keys()), *tree[level]]
+            for level, ps in tree_by.items()}
+
+
+def compute(gdb, ddb, tdb, owners_at=None):
+    """`owners_at(sha)` gives the cosh.owners.Owners of that commit's tree;
+    without it the OWNERS figures are left out."""
     end = data_end(ddb, gdb)
     last = last_whole_quarter(end)
     qs = quarters(FIRST_QUARTER, last)
@@ -166,7 +251,8 @@ def compute(gdb, ddb, tdb):
     ids = exact_identities(ddb, gdb, tdb)
     landed, reviewed = load_commits(gdb, quarter_start(qs[0]), quarter_start(next_quarter(last)), ids)
     print(f"review-load: {qs[0]}..{last}, {len(landed):,} commits, {len(reviewed):,} reviewed", flush=True)
-    dir_lines = commit_dir_lines(gdb, reviewed.keys())
+    table_commits = {cid: c for cid, c in reviewed.items() if quarter(c["at"]) in table_qs[1:]} if owners_at else {}
+    dir_lines, file_lines = commit_dir_lines(gdb, reviewed.keys(), table_commits.keys())
 
     n_commits, n_human = [0] * nq, [0] * nq
     for at, human in landed:
@@ -241,6 +327,12 @@ def compute(gdb, ddb, tdb):
         mm = [summary(x) if q >= since else (None, None, None, 0) for q, x in zip(qs, lists)]
         return dict(mean=[m[0] for m in mm], median=[m[1] for m in mm], p90=[m[2] for m in mm], n=[m[3] for m in mm])
     att = [q >= ATTENTION_FROM for q in qs]
+    # OWNERS as they stood at the last quarter's last commit, so the figures move only with a new quarter.
+    own, own_at = {}, None
+    if owners_at:
+        sha, own_at = gdb.execute("SELECT sha, landed_at FROM commits WHERE landed_at < ? ORDER BY landed_at DESC, "
+                                  "commit_id DESC LIMIT 1", (quarter_start(next_quarter(last)),)).fetchone()
+        own = owner_figures(table_commits, file_lines, owners_at(sha), ids, committer_since(tdb, emails, ids, reviewed))
     # The directory tree: every level's sums; listed with MIN_DIR_LINES in the table's four quarters.
     tree = defaultdict(lambda: [[0] * len(table_qs), [0.0] * len(table_qs), [0.0] * len(table_qs)])
     for d, v in dirs.items():
@@ -259,8 +351,12 @@ def compute(gdb, ddb, tdb):
                        turns=[t if a else None for t, a in zip(att_turns, att)],
                        reviewers=[len(s) if a else None for s, a in zip(att_people, att)]),
         table_quarters=table_qs,
-        # [directory, lines reviewed per table quarter (5), attention weekday hours and turns per quarter (the last 4)]
-        dirs=[[d, v[0], [r1(x) for x in v[1][1:]], [round(x, 2) for x in v[2][1:]]] for d, v in listed],
+        # [directory, lines reviewed per table quarter (5), attention weekday hours and turns per quarter (the last 4),
+        #  with OWNERS: owner_figures' seven over the last 4]
+        dirs=[[d, v[0], [r1(x) for x in v[1][1:]], [round(x, 2) for x in v[2][1:]], *([own[d]] if d in own else [])]
+              for d, v in listed],
+        # The OWNERS figures of everything, and the day of the OWNERS files read.
+        owners=dict(at=datetime.fromtimestamp(own_at, timezone.utc).strftime("%Y-%m-%d"), all=own[""]) if own else None,
     )
     people = {}
     for p, byq in per.items():
@@ -321,7 +417,8 @@ def main(argv=None):
     args = ap.parse_args(argv)
     ro = lambda p: sqlite3.connect(f"file:{p}?mode=ro", uri=True)   # noqa: E731
     data, people, person_dirs, aliases = compute(ro(C.db_path()), ro(os.path.join(store.DATA_DIR, store.DERIVED_FILE)),
-                                                 review_timeline.open_ro())
+                                                 review_timeline.open_ro(),
+                                                 lambda sha: owners.Owners(owners.read(C.repo_path(), sha)))
     if args.no_people:
         people, person_dirs, aliases = {}, {}, {}
     files = write(args.out, data, people, person_dirs, args.people_out, aliases)

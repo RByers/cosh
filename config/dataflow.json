@@ -1292,9 +1292,9 @@
       "tier": "published",
       "tracked_in_git": true,
       "rebuildable": true,
-      "size": "93 KB (38 KB gzipped)",
+      "size": "114 KB (48 KB gzipped)",
       "size_as_of": "2026-11-14",
-      "purpose": "Every whole quarter since 2017Q3 (commits, reviewed lines, reviewers, reviewer's turn to first answer, attention-set hours) and the directory table's five quarters.",
+      "purpose": "Every whole quarter since 2017Q3 (commits, reviewed lines, reviewers, reviewer's turn to first answer, attention-set hours), the directory table's five quarters and its OWNERS figures.",
       "notes": "Changes only when a quarter completes or an input is corrected."
     },
     {
@@ -2273,13 +2273,15 @@
       "command": "nice -n 5 python3 -m cosh.review_load",
       "code": [
         "cosh/review_load.py",
+        "cosh/owners.py",
         "cosh/review_timeline.py",
         "cosh/commits.py",
         "cosh/people.py",
         "cosh/review_feedback.py"
       ],
-      "purpose": "Writes the Review Load page's files: each whole quarter's commits, lines reviewed, review waits and attention-set hours, the directory table, and each reviewer's figures in one file per reviewer.",
+      "purpose": "Writes the Review Load page's files: each whole quarter's commits, lines reviewed, waits and attention hours, the directory tables (with OWNERS figures), and one file per reviewer.",
       "inputs": [
+        "shared/chromium",
         "data/private/commits.sqlite",
         "data/private/reviews.sqlite",
         "data/private/review-timeline.sqlite",

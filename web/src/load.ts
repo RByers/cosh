@@ -14,7 +14,11 @@ export interface Series {
 
 /** A directory of the table: [path, lines reviewed in each of `table_quarters`,
  * reviewers' weekday attention-set hours and turns in each of the last four]. */
-export type DirEntry = [string, number[], number[], number[]];
+export type DirEntry = [string, number[], number[], number[], OwnFigures?];
+/** Who reviewed, against the OWNERS files, over the table's four quarters: [reviewers, how many of them did
+ * half the review, people listed in an OWNERS file there or below, how many of those reviewed there, lines
+ * reviewed by an owner of the file, lines of changes by people not yet committers, those two owners approved]. */
+export type OwnFigures = [number, number, number, number, number, number, number];
 
 export interface All {
   quarters: string[];
@@ -32,6 +36,8 @@ export interface All {
   /** The table's quarters, oldest first: the one before its first, then its four. */
   table_quarters: string[];
   dirs: DirEntry[];
+  /** Everything's OWNERS figures and the day of the OWNERS files read; null when they weren't. */
+  owners?: { at: string; all: OwnFigures } | null;
 }
 
 /** A reviewer's quarter: [commits reviewed, lines reviewed, weekday hours in the attention set, turns in it,
@@ -130,7 +136,25 @@ export interface DirNode extends DirStats {
   children: DirNode[];
   /** The looked-up reviewer's lines and attention there, over the last four quarters. */
   you: { lines: number; hours: number; turns: number };
+  /** The OWNERS figures; an "Other" row has only the lines (its head counts are null). */
+  own: OwnRow | null;
 }
+
+/** A row of the OWNERS table. */
+export interface OwnRow {
+  reviewers: number | null;
+  half: number | null;
+  listed: number | null;
+  active: number | null;
+  /** Lines reviewed by an owner of the file. */
+  ownerLines: number;
+  /** Lines of changes by people not yet committers, and those two owners approved. */
+  newLines: number;
+  newTwo: number;
+}
+
+export const ownRow = (f: OwnFigures): OwnRow => ({ reviewers: f[0], half: f[1], listed: f[2], active: f[3],
+  ownerLines: f[4], newLines: f[5], newTwo: f[6] });
 
 const zeros = (n: number) => Array.from({ length: n }, () => 0);
 const parentOf = (path: string) => path.replace(/[^/]+\/$/, '');
@@ -145,7 +169,7 @@ export function dirTree(all: Pick<All, 'dirs' | 'table_quarters'>, p: Person | n
   const node = (key: string, kind: DirNode['kind'], path: string, s?: DirEntry): DirNode => ({ key, kind, path,
     name: kind === 'other' ? '' : path.replace(/^(?:.*\/)?([^/]+\/)$/, '$1'), children: [],
     lines: s ? [...s[1]] : zeros(nq), hours: s ? [...s[2]] : zeros(nq - 1), turns: s ? [...s[3]] : zeros(nq - 1),
-    you: { lines: 0, hours: 0, turns: 0 } });
+    you: { lines: 0, hours: 0, turns: 0 }, own: s?.[4] ? ownRow(s[4]) : null });
   for (const e of all.dirs) nodes.set(e[0], node(`d:${e[0]}`, 'dir', e[0], e));
   const roots: DirNode[] = [];
   for (const n of nodes.values()) {
@@ -160,6 +184,11 @@ export function dirTree(all: Pick<All, 'dirs' | 'table_quarters'>, p: Person | n
     o.lines = n.lines.map((v, i) => Math.max(0, v - n.children.reduce((s, c) => s + c.lines[i], 0)));
     o.hours = n.hours.map((v, i) => Math.max(0, v - n.children.reduce((s, c) => s + c.hours[i], 0)));
     o.turns = n.turns.map((v, i) => Math.max(0, v - n.children.reduce((s, c) => s + c.turns[i], 0)));
+    if (n.own && n.children.every((c) => c.own)) {
+      const left = (f: (r: OwnRow) => number) => Math.max(0, f(n.own!) - n.children.reduce((s, c) => s + f(c.own!), 0));
+      o.own = { reviewers: null, half: null, listed: null, active: null, ownerLines: left((r) => r.ownerLines),
+        newLines: left((r) => r.newLines), newTwo: left((r) => r.newTwo) };
+    }
     others.set(n.path, o);
   }
   if (p) {
