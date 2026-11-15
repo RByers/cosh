@@ -36,7 +36,7 @@ import time
 from collections import Counter
 from datetime import date, datetime, timezone
 
-from . import store
+from . import codefp, store
 from .bots import _PATTERNS
 
 DEFAULT_REPO = os.path.expanduser("~/projects/shared/chromium")
@@ -129,6 +129,7 @@ AI_MARKER = re.compile(r"^Agent-Generated:|[Gg]enerated (by|with|using) (Gemini|
 # comments per CL against 3.67, a quarter to a fifth at any size, which skews
 # per-person review measures (GitHub issue #3, docs/commits.md). A Perl
 # regex for `git log -i -P --grep`, matched line by line.
+REVERT_GREP = "^This reverts commit"     # _reverts: `git log --grep`
 LSC_GREP = r"\bLSC\b|large[- ]scale (code )?change|^This CL was uploaded by git cl split"
 OWNER_EMAIL = re.compile(rb"[A-Za-z0-9._%-][A-Za-z0-9._%+-]*@[A-Za-z0-9.-]+\.[a-z]+")
 EMAIL = re.compile(r"<([^>]+)>")
@@ -207,12 +208,15 @@ def fetch_main(repo=None):
 
 # ------------------------------------------------------------------ writing
 
+INGEST_ARGS = ["log", "--first-parent", "--no-renames", "--numstat"]
+
+
 def _ingest(db, repo, revs, ids, paths, label):
     """Reads `git log --first-parent --numstat` of `revs` in one process and
     inserts each commit not yet stored, numbering them from the iterator
     `ids` in the order git lists them."""
-    p = subprocess.Popen(["git", "--git-dir", repo, "log", "--first-parent", "--no-renames", "--numstat",
-                          f"--format={FMT}", *revs], stdout=subprocess.PIPE, env=ENV)
+    p = subprocess.Popen(["git", "--git-dir", repo, *INGEST_ARGS, f"--format={FMT}", *revs],
+                         stdout=subprocess.PIPE, env=ENV)
     buf, n, t0 = b"", 0, time.time()
 
     def flush(rec):
@@ -222,35 +226,22 @@ def _ingest(db, repo, revs, ids, paths, label):
         if len(parts) < 10 or not re.fullmatch(r"[0-9a-f]{40}", parts[0]):
             print(f"commits: skipped a malformed record: {head[:60]!r}", flush=True)
             return
-        sha, email, name, at, ct, subj, ron, rby, bot, body = parts[:10]
+        sha, email, name, at, ct = parts[:5]
         if db.execute("SELECT 1 FROM commits WHERE sha = ?", (sha,)).fetchone():
             return
-        m = REVIEWED_ON.search(ron.split("\x1f")[0].strip()) if ron else None
-        rb = [e.lower() for v in rby.split("\x1f") if v for e in EMAIL.findall(v)]
-        rv = REVERTS.search(body)
-        files, ins, dels = [], 0, 0
-        for line in stat.decode("utf-8", "replace").splitlines():
-            if not line.strip():
-                continue
-            f = line.split("\t", 2)
-            if len(f) != 3 or not (f[0].isdigit() or f[0] == "-"):
-                continue
-            a, d, path = f
-            path = unquote_path(path)           # git C-quotes unusual paths; the store keeps them raw
-            a, d = (-1, -1) if a == "-" else (int(a), int(d))
+        cl, is_bot, rb, rv, reland, ai = _message_fields(*parts[5:10])
+        files = []
+        for path, a, d in _numstat(stat):
             pid = paths.get(path)
             if pid is None:
                 pid = paths[path] = db.execute("INSERT INTO paths(path) VALUES (?)", (path,)).lastrowid
             files.append((pid, a, d))
-            ins += max(a, 0)
-            dels += max(d, 0)
         cid = next(ids)
         db.execute("INSERT INTO commits VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
-                   (cid, sha, email.lower(), name, int(at), int(ct), int(m.group(1)) if m else None,
-                    int(bool(bot.strip())), json.dumps(rb) if rb else None, rv.group(1) if rv else None,
+                   (cid, sha, email.lower(), name, int(at), int(ct), cl, is_bot, rb, rv,
                     0,                                  # is_revert: set by _reverts
-                    int(subj.lower().startswith("reland")), int(bool(AI_MARKER.search(subj + "\n" + body))),
-                    len(files), ins, dels,
+                    reland, ai, len(files),
+                    sum(max(a, 0) for _, a, _ in files), sum(max(d, 0) for _, _, d in files),
                     0))                                 # is_lsc: set by _lsc
         db.executemany("INSERT OR IGNORE INTO commit_files VALUES (?,?,?,?)", [(cid, *f) for f in files])
         n += 1
@@ -276,6 +267,61 @@ def _ingest(db, repo, revs, ids, paths, label):
     return n
 
 
+def _message_fields(subj, ron, rby, bot, body):
+    """(change_number, is_bot, reviewed_by, reverts_sha, is_reland,
+    ai_marker) of a commit, from FMT's subject, trailers and body."""
+    m = REVIEWED_ON.search(ron.split("\x1f")[0].strip()) if ron else None
+    rb = [e.lower() for v in rby.split("\x1f") if v for e in EMAIL.findall(v)]
+    rv = REVERTS.search(body)
+    return (int(m.group(1)) if m else None, int(bool(bot.strip())), json.dumps(rb) if rb else None,
+            rv.group(1) if rv else None, int(subj.lower().startswith("reland")),
+            int(bool(AI_MARKER.search(subj + "\n" + body))))
+
+
+def _numstat(stat):
+    """[(raw path, added, deleted)] of a commit's `--numstat` lines (bytes);
+    -1 and -1 for a binary file."""
+    out = []
+    for line in stat.decode("utf-8", "replace").splitlines():
+        if not line.strip():
+            continue
+        f = line.split("\t", 2)
+        if len(f) != 3 or not (f[0].isdigit() or f[0] == "-"):
+            continue
+        a, d, path = f
+        out.append((unquote_path(path),             # git C-quotes unusual paths; the store keeps them raw
+                    *((-1, -1) if a == "-" else (int(a), int(d)))))
+    return out
+
+
+def _remessage(db, repo, tip):
+    """Recomputes _message_fields for every stored commit, from one
+    `git log` of messages only, in one transaction (part "messages")."""
+    p = subprocess.Popen(["git", "--git-dir", repo, "log", "--first-parent", f"--format={FMT}", tip],
+                         stdout=subprocess.PIPE, env=ENV)
+    rows, buf = [], b""
+
+    def take(rec):
+        parts = rec.split(b"\x02")[0].decode("utf-8", "replace").split(SEP)
+        if len(parts) >= 10 and re.fullmatch(r"[0-9a-f]{40}", parts[0]):
+            rows.append((*_message_fields(*parts[5:10]), parts[0]))
+    with p:
+        for chunk in iter(lambda: p.stdout.read(1 << 20), b""):
+            buf += chunk
+            recs = buf.split(b"\x01\x02\x03")
+            buf = recs.pop()
+            for rec in recs:
+                if rec.strip():
+                    take(rec)
+        if buf.strip():
+            take(buf)
+    if p.wait():
+        raise SystemExit("git log failed; rerun to retry")
+    db.executemany("UPDATE commits SET change_number = ?, is_bot = ?, reviewed_by = ?, reverts_sha = ?, "
+                   "is_reland = ?, ai_marker = ? WHERE sha = ?", rows)
+    return len(rows)
+
+
 def _count_from(start, step):
     while True:
         yield start
@@ -288,7 +334,7 @@ def _reverts(db, repo, tip):
     the subject's paragraph too)."""
     done = db.execute("SELECT v FROM meta WHERE k = 'reverts_through'").fetchone()
     revs = [f"{done[0]}..{tip}"] if done else [tip]
-    shas = _git(repo, "log", "--first-parent", "--grep=^This reverts commit", "--format=%H", *revs).split()
+    shas = _git(repo, "log", "--first-parent", f"--grep={REVERT_GREP}", "--format=%H", *revs).split()
     with db:
         db.executemany("UPDATE commits SET is_revert = 1 WHERE sha = ?", [(s,) for s in shas])
         db.execute("INSERT OR REPLACE INTO meta VALUES ('reverts_through', ?)", (tip,))
@@ -527,10 +573,12 @@ def ratios(repo, shas):
     return out
 
 
+REPETITION_TODO = """SELECT c.commit_id, c.sha FROM commits c LEFT JOIN repetition r USING (commit_id)
+  WHERE c.change_number IS NOT NULL AND c.files >= ? AND r.commit_id IS NULL ORDER BY c.commit_id"""
+
+
 def _repetition(db, repo, jobs):
-    todo = db.execute("SELECT c.commit_id, c.sha FROM commits c LEFT JOIN repetition r USING (commit_id) "
-                      "WHERE c.change_number IS NOT NULL AND c.files >= ? AND r.commit_id IS NULL "
-                      "ORDER BY c.commit_id", (REP_MIN_FILES,)).fetchall()
+    todo = db.execute(REPETITION_TODO, (REP_MIN_FILES,)).fetchall()
     if not todo:
         return 0
     from concurrent.futures import ProcessPoolExecutor
@@ -549,10 +597,80 @@ def _repetition(db, repo, jobs):
     return n
 
 
-def update(path=None, repo=None, jobs=4):
+# ------------------------------------------------------- code fingerprints
+#
+# Each part of the store keeps a fingerprint of the code that computed it
+# (cosh/codefp.py, meta rows 'code_fp:<part>'). When one changes, update()
+# redoes that part alone: it resets the part's rows and marker in the same
+# transaction that records the new fingerprint, then the part's step
+# recomputes all of history. "messages" is recomputed in place from one
+# `git log` of messages (a minute or two). "core" (the commits, their
+# numstat and paths, which every other part hangs off) is the whole store:
+# update() refuses to run until called with rebuild=True (`cosh commits
+# --rebuild`, about 1 h 55 min). Bump a part's version for a change its
+# fingerprint can't see (a git flag in update(), say). tip_paths is
+# rebuilt on every run, so it needs none.
+PART_VERSIONS = {"core": 1, "messages": 1, "reverts": 1, "lsc": 1, "owners": 1, "repetition": 1, "renames": 1}
+
+
+def part_fingerprints():
+    v = PART_VERSIONS
+    fp = codefp.fingerprint
+    return {
+        "core": fp(v["core"], INGEST_ARGS, FMT, SEP, HISTORY_SINCE, _numstat, unquote_path, _count_from),
+        "messages": fp(v["messages"], FMT, SEP, _message_fields, REVIEWED_ON, REVERTS, AI_MARKER, EMAIL),
+        "reverts": fp(v["reverts"], _reverts, REVERT_GREP),
+        "lsc": fp(v["lsc"], _lsc, LSC_GREP),
+        "owners": fp(v["owners"], _owners, _owner_rows, OWNER_EMAIL),
+        "repetition": fp(v["repetition"], REPETITION_TODO, REP_MIN_FILES, MAX_LINES, ratios, diff_lines),
+        "renames": fp(v["renames"], _renames, RENAME_CANDIDATES, RENAME_LIMIT),
+    }
+
+
+def _forget(*keys):
+    return lambda db: db.executemany("DELETE FROM meta WHERE k = ?", [(k,) for k in keys])
+
+
+def _reset_all(db):
+    for t in ("commits", "commit_files", "paths", "owners_added", "repetition", "renames", "tip_paths"):
+        db.execute(f"DELETE FROM {t}")
+    db.execute("DELETE FROM meta WHERE k != 'paths_raw'")
+
+
+PART_RESETS = {
+    "core": _reset_all,
+    "messages": None,                   # recomputed in place by _remessage
+    "reverts": lambda db: (db.execute("UPDATE commits SET is_revert = 0 WHERE is_revert"),
+                           _forget("reverts_through")(db)),
+    "lsc": lambda db: (db.execute("UPDATE commits SET is_lsc = 0 WHERE is_lsc"), _forget("lsc_through")(db)),
+    "owners": lambda db: (db.execute("DELETE FROM owners_added"), _forget("owners_through")(db)),
+    "repetition": lambda db: db.execute("DELETE FROM repetition"),
+    "renames": lambda db: (db.execute("DELETE FROM renames"), _forget("renames_through")(db)),
+}
+
+
+def check_parts(db, rebuild=False, fps=None):
+    """Compares each part's stored fingerprint with the code's and resets
+    the parts that changed. Returns {part: "same" | "new" | "changed"}."""
+    fps = fps or part_fingerprints()
+    old = codefp.stored(db, "core")
+    if old is not None and old != fps["core"] and not rebuild:
+        raise SystemExit("commits: the code that reads commits and their files changed (part \"core\"); "
+                         "rerun with --rebuild to rebuild the store from empty (about 1 h 55 min)")
+    out = {"core": codefp.check(db, "core", fps["core"], PART_RESETS["core"])}
+    for part, fp in fps.items():
+        if part != "core":
+            out[part] = codefp.check(db, part, fp, PART_RESETS[part])
+            if out[part] == "changed":
+                print(f"commits: the code of part {part!r} changed: recomputing it", file=sys.stderr, flush=True)
+    return out
+
+
+def update(path=None, repo=None, jobs=4, rebuild=False):
     """Brings the store up to date with the clone's main: new commits, then
     (on the first runs) the history before HISTORY_SINCE, then OWNERS
-    additions and repetition ratios for whatever is new. Resumable."""
+    additions and repetition ratios for whatever is new, after redoing the
+    parts whose code changed (check_parts). Resumable."""
     repo = repo or repo_path()
     if not os.path.isdir(repo):
         raise SystemExit(f"no Chromium git repo at {repo} (set COSH_CHROMIUM_GIT)")
@@ -563,6 +681,8 @@ def update(path=None, repo=None, jobs=4):
     try:
         repo = _git(repo, "rev-parse", "--absolute-git-dir")    # a bare clone, or a test's work tree
         tip = _git(repo, "rev-parse", "--verify", "main^{commit}")
+        fps = part_fingerprints()
+        parts = check_parts(db, rebuild, fps)
         paths = dict(db.execute("SELECT path, path_id FROM paths"))
         top = db.execute("SELECT max(commit_id), min(commit_id) FROM commits").fetchone()
         if top[0] is None or top[0] < 1:
@@ -583,6 +703,11 @@ def update(path=None, repo=None, jobs=4):
             with db:
                 db.execute("INSERT OR REPLACE INTO meta VALUES ('history_complete', ?)", (store.now_iso(),))
         del paths
+        if parts["messages"] == "changed":
+            with db:
+                k = _remessage(db, repo, tip)
+                codefp.record(db, "messages", fps["messages"])
+            print(f"commits: {k:,} messages read again", file=sys.stderr, flush=True)
         k = _reverts(db, repo, tip)
         print(f"commits: {k:,} reverts", file=sys.stderr, flush=True)
         k = _lsc(db, repo, tip)
@@ -907,5 +1032,7 @@ def main(argv=None):
     ap = argparse.ArgumentParser(prog="cosh commits")
     ap.add_argument("--db", help=f"store path (default: $COSH_COMMITS_DB or data/private/{COMMITS_FILE})")
     ap.add_argument("--jobs", type=int, default=4, help="git diff processes for the repetition ratios")
+    ap.add_argument("--rebuild", action="store_true",
+                    help="rebuild from empty if the core code changed (about 1 h 55 min; it refuses without)")
     a = ap.parse_args(argv)
-    update(a.db, jobs=max(1, min(a.jobs, 4)))
+    update(a.db, jobs=max(1, min(a.jobs, 4)), rebuild=a.rebuild)

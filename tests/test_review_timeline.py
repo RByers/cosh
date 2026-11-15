@@ -7,6 +7,7 @@ import subprocess
 import tempfile
 import unittest
 import zlib
+from unittest import mock
 from datetime import datetime, timezone
 
 from cosh import review_timeline as rt
@@ -149,7 +150,22 @@ class StageTimelineTest(unittest.TestCase):
 
     def test_tables(self):
         tables = {r[0] for r in self.rows("SELECT name FROM sqlite_master WHERE type = 'table'")}
-        self.assertEqual(tables, {"uploads", "attention", "votes", "timeline_done", "listing_votes", "listing_done"})
+        self.assertEqual(tables, {"uploads", "attention", "votes", "timeline_done", "listing_votes", "listing_done",
+                                  "meta"})
+
+    def test_code_change_reads_every_cl_again(self):
+        self.run_stage()
+        self.db.execute("UPDATE votes SET value = 9")          # as if older code had made them
+        self.db.commit()
+        self.assertIn("0 CLs to read", self.run_stage())
+        self.assertEqual(self.rows("SELECT DISTINCT value FROM votes"), [(9,)])
+        with mock.patch.object(rt, "WALK_VERSION", 2):
+            out = self.run_stage()
+            self.assertIn("code that reads meta refs changed", out)
+            self.assertIn("2 CLs to read (0 of them updated", out)
+            self.assertEqual(self.rows("SELECT change_number, value FROM votes ORDER BY 1"), [(101, -1), (102, 2)])
+            self.assertIn("0 CLs to read", self.run_stage())
+            self.assertEqual(self.rows("SELECT k, v FROM meta"), [("code_fp:walk", rt.walk_fingerprint())])
 
 
 class ListingTest(unittest.TestCase):
@@ -183,6 +199,15 @@ class ListingTest(unittest.TestCase):
         self.assertEqual(db.execute("SELECT * FROM listing_votes").fetchall(), [(1, 7, 1, ts("2018-03-05 10:00"))])
         self.assertIn("listing: 1 listings to read (0 done)", out.getvalue())
         self.assertIn("listing: 0 listings to read (1 done)", out.getvalue())
+        db.execute("UPDATE listing_votes SET value = 9")
+        with contextlib.redirect_stdout(io.StringIO()):
+            rt.stage_listing(db, raw)
+        self.assertEqual(db.execute("SELECT value FROM listing_votes").fetchall(), [(9,)])
+        out = io.StringIO()
+        with contextlib.redirect_stdout(out), mock.patch.object(rt, "LISTING_VERSION", 2):
+            rt.stage_listing(db, raw)
+        self.assertIn("listing: 1 listings to read (0 done)", out.getvalue())
+        self.assertEqual(db.execute("SELECT * FROM listing_votes").fetchall(), [(1, 7, 1, ts("2018-03-05 10:00"))])
 
 
 class ReviewersTest(unittest.TestCase):

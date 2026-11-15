@@ -156,7 +156,10 @@ commits.sqlite, reviews.sqlite, OWNERS in shared/chromium ───────�
   `cl_reviewers` (per CL and reviewer: `asked_at`, `responded_at`,
   attention hours, and the turns that ended before the close with their
   hours; rebuilt whole). Balance's `cl` stage takes `sent_at` and
-  `cl_attention` from `cl_reviewers`.
+  `cl_attention` from `cl_reviewers`. The walk and the listing stages each
+  keep a fingerprint of their code in `meta` (`walk_fingerprint`,
+  `listing_fingerprint`; `cosh/codefp.py`): when it changes, that stage's
+  rows are deleted and it reads every CL or listing again.
 - `nice -n 5 python3 -m cosh.review_load` (`cosh/review_load.py`) writes
   the page's files. `python3 -m cosh update` runs both.
 

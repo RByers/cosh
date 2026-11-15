@@ -269,11 +269,32 @@ it doesn't list may be skipped wrongly.
 
 Rerunning a step is not enough when the step is incremental within itself
 and its code changed: it must notice that its earlier rows came from older
-code. `derive` does (each CL's fingerprint includes a hash of its code
-files, `derive.CODE_FILES`); stores that only append or skip what they hold
-(`commits.sqlite`, `review-timeline.sqlite`, `balance interdiff`) don't
-yet, so after a change to how they compute rows, delete or reset what it
-affects (docs/goals.md, goal 3).
+code, and recompute them without mixing old and new (docs/goals.md, goal
+3). Each such store keeps a code fingerprint per part (`cosh/codefp.py`: a
+hash of the functions, regexes and constants that compute the part, a
+version to bump by hand for anything else, and whole files where a part is
+coarse) and redoes only the parts whose fingerprint changed:
+
+- `derive`: each CL's fingerprint (`derive_inputs`) includes the hash of
+  `derive.CODE_FILES` and `METRIC_VERSION`, so a code change re-derives
+  every CL (about 9 min).
+- `commits.sqlite`: one fingerprint per part in `meta` (`code_fp:<part>`).
+  A changed part (reverts, LSC tags, OWNERS additions, repetition ratios,
+  renames) has its rows and `*_through` marker reset in the transaction
+  that records the new fingerprint, and the run recomputes it over all of
+  history; message fields (CL, approvers, reland, AI marker) are reread in
+  place from one `git log`. A change to the core (commits and their
+  files, which every part hangs off) makes `cosh commits` refuse until
+  rerun with `--rebuild` (about 1 h 55 min). docs/commits.md.
+- `review-timeline.sqlite`: the walk and the listing stages each keep one
+  in `meta`; a change deletes that stage's rows and it reads everything
+  again (walk about 35 min). `cl_reviewers` is rebuilt every run.
+- `balance-interdiff.sqlite`: one in `meta`; a change deletes every row
+  and the stage compares every CL again (about 25 min with 3 shards).
+
+A store without a fingerprint yet adopts the current code's, keeping its
+rows. Keep logging out of the hashed functions: any edit to their source
+counts as a change.
 
 A new week of data:
 

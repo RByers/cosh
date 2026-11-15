@@ -40,7 +40,7 @@ import zlib
 from collections import defaultdict
 from datetime import datetime, timezone
 
-from . import store
+from . import codefp, store
 from .bots import is_bot_account
 from .cl_facts import epoch
 
@@ -90,6 +90,8 @@ CREATE TABLE IF NOT EXISTS listing_votes (
 ) STRICT, WITHOUT ROWID;
 -- The listings read, by the hash of their body: a refetched listing is read again.
 CREATE TABLE IF NOT EXISTS listing_done (window_key TEXT PRIMARY KEY, body_sha256 TEXT NOT NULL) STRICT;
+-- The code fingerprints of walk and listing ('code_fp:<stage>', cosh/codefp.py).
+CREATE TABLE IF NOT EXISTS meta (k TEXT PRIMARY KEY, v TEXT) STRICT;
 """
 
 REVIEWERS_SCHEMA = """
@@ -227,6 +229,8 @@ def stage_timeline(db, numbers=None, batch=2000):
         numbers = [r[0] for r in reviews_ro().execute(
             "SELECT change_number FROM changes WHERE is_bot_owned = 0 AND project = ? AND branch = 'main'",
             (PROJECT,))]
+    if codefp.check(db, "walk", walk_fingerprint(), reset_walk) == "changed":
+        print("timeline: the code that reads meta refs changed: every CL is read again", flush=True)
     done = dict(db.execute("SELECT change_number, tip FROM timeline_done"))
     have = meta_refs()
     numbers = set(numbers)
@@ -240,44 +244,79 @@ def stage_timeline(db, numbers=None, batch=2000):
     t0 = time.time()
     for i in range(0, len(todo), batch):
         part = todo[i:i + batch]
-        p = subprocess.run(["git", "--git-dir", NOTEDB, "log", "--decorate=full", "--decorate-refs=refs/meta/",
-                            "--format=%x01%x02%x03%H%x00%P%x00%D%x00%at%x00%an%x00%B", *[f"refs/meta/{n}" for n in part]],
-                           capture_output=True, env=ENV)
-        if p.returncode:
-            raise SystemExit(f"git log failed: {p.stderr[:500]!r}")
-        commits, tips = {}, {}
-        for rec in p.stdout.split(b"\x01\x02\x03")[1:]:
-            fields = rec.decode("utf-8", "replace").split("\x00", 5)
-            if len(fields) < 6:
-                continue
-            sha, parent, refs, at, an, body = fields
-            who = re.match(r"Gerrit User (\d+)", an)
-            commits[sha] = (parent.split()[0] if parent else None, int(at), int(who.group(1)) if who else 0, body)
-            for m in re.finditer(r"refs/meta/(\d+)", refs):
-                tips[int(m.group(1))] = sha
-        del p
-        for n, tip in tips.items():
-            ents, sha = [], tip
-            while sha in commits:
-                parent, at, who, body = commits[sha]
-                ents.append((at, who, body))
-                sha = parent
-            ents.reverse()
-            ups, spans = parse_meta_log(ents)
-            if n in done:
-                for t in ("uploads", "attention", "votes"):
-                    db.execute(f"DELETE FROM {t} WHERE change_number = ?", (n,))
-            db.executemany("INSERT OR REPLACE INTO uploads VALUES (?,?,?,?,?,?)",
-                           [(n, ps, at, who, kind, sha) for ps, at, who, kind, sha in ups])
-            db.executemany("INSERT OR REPLACE INTO attention VALUES (?,?,?,?)",
-                           [(n, a, s, e) for a, s, e in spans])
-            db.executemany("INSERT OR IGNORE INTO votes VALUES (?,?,?,?,?)",
-                           [(n, *v) for v in parse_votes(ents)])
-            # The tip actually walked, which is newer than `have` if the ref moved meanwhile.
-            db.execute("INSERT OR REPLACE INTO timeline_done VALUES (?,?)", (n, tip))
+        _walk(db, part, done)
         db.commit()
         k = i + len(part)
         print(f"timeline: {k:,}/{len(todo):,} ({k / (time.time() - t0):.0f} CLs/s)", flush=True)
+
+
+def _walk(db, part, done):
+    """Reads the meta refs of the CLs `part` (one `git log`) and replaces
+    their uploads, attention and votes rows (uncommitted)."""
+    p = subprocess.run(["git", "--git-dir", NOTEDB, "log", "--decorate=full", "--decorate-refs=refs/meta/",
+                        "--format=%x01%x02%x03%H%x00%P%x00%D%x00%at%x00%an%x00%B", *[f"refs/meta/{n}" for n in part]],
+                       capture_output=True, env=ENV)
+    if p.returncode:
+        raise SystemExit(f"git log failed: {p.stderr[:500]!r}")
+    commits, tips = {}, {}
+    for rec in p.stdout.split(b"\x01\x02\x03")[1:]:
+        fields = rec.decode("utf-8", "replace").split("\x00", 5)
+        if len(fields) < 6:
+            continue
+        sha, parent, refs, at, an, body = fields
+        who = re.match(r"Gerrit User (\d+)", an)
+        commits[sha] = (parent.split()[0] if parent else None, int(at), int(who.group(1)) if who else 0, body)
+        for m in re.finditer(r"refs/meta/(\d+)", refs):
+            tips[int(m.group(1))] = sha
+    del p
+    for n, tip in tips.items():
+        ents, sha = [], tip
+        while sha in commits:
+            parent, at, who, body = commits[sha]
+            ents.append((at, who, body))
+            sha = parent
+        ents.reverse()
+        ups, spans = parse_meta_log(ents)
+        if n in done:
+            for t in ("uploads", "attention", "votes"):
+                db.execute(f"DELETE FROM {t} WHERE change_number = ?", (n,))
+        db.executemany("INSERT OR REPLACE INTO uploads VALUES (?,?,?,?,?,?)",
+                       [(n, ps, at, who, kind, sha) for ps, at, who, kind, sha in ups])
+        db.executemany("INSERT OR REPLACE INTO attention VALUES (?,?,?,?)",
+                       [(n, a, s, e) for a, s, e in spans])
+        db.executemany("INSERT OR IGNORE INTO votes VALUES (?,?,?,?,?)",
+                       [(n, *v) for v in parse_votes(ents)])
+        # The tip actually walked, which is newer than `have` if the ref moved meanwhile.
+        db.execute("INSERT OR REPLACE INTO timeline_done VALUES (?,?)", (n, tip))
+
+
+# What each incremental stage's rows are a function of besides its inputs
+# (cosh/codefp.py). When one changes, the stage's rows are deleted and it
+# reads everything again (walk about 35 min, listing a few minutes); the
+# reviewers stage is rebuilt whole on every run anyway. Bump a version for
+# a change the fingerprint can't see.
+WALK_VERSION = 1
+LISTING_VERSION = 1
+
+
+def walk_fingerprint():
+    return codefp.fingerprint(WALK_VERSION, _walk, parse_meta_log, kind_of, parse_votes,
+                              ATTN, GERRIT_USER, LABEL, PATCH_SET)
+
+
+def listing_fingerprint():
+    return codefp.fingerprint(LISTING_VERSION, stage_listing_rows, listing_votes, epoch,
+                              files=["cosh/bots.py", "config/bots.txt"])
+
+
+def reset_walk(db):
+    for t in ("uploads", "attention", "votes", "timeline_done"):
+        db.execute(f"DELETE FROM {t}")
+
+
+def reset_listing(db):
+    for t in ("listing_votes", "listing_done"):
+        db.execute(f"DELETE FROM {t}")
 
 
 # ------------------------------------------------------------------ listing
@@ -293,11 +332,29 @@ def listing_votes(change):
     return out
 
 
+def stage_listing_rows(db, changes):
+    """Replaces listing_votes of the CLs in one listing that have no
+    comments (uncommitted). Returns how many."""
+    n_cls = 0
+    for c in changes:
+        if c.get("project") != PROJECT or c.get("total_comment_count", 0) > 0 \
+                or is_bot_account(c.get("owner", {})):
+            continue
+        n = c["_number"]
+        db.execute("DELETE FROM listing_votes WHERE change_number = ?", (n,))
+        db.executemany("INSERT OR REPLACE INTO listing_votes VALUES (?,?,?,?)",
+                       [(n, *v) for v in listing_votes(c)])
+        n_cls += 1
+    return n_cls
+
+
 def stage_listing(db, raw=None):
     """Votes of the closed CLs that have no comments, from the weekly
     listings in gerrit.sqlite. A CL with comments has a meta ref, whose votes
     stage_timeline reads in full."""
     raw = raw or store.open_raw_ro()
+    if codefp.check(db, "listing", listing_fingerprint(), reset_listing) == "changed":
+        print("listing: the code that reads listings changed: every listing is read again", flush=True)
     done = dict(db.execute("SELECT window_key, body_sha256 FROM listing_done"))
     keys = [(h, k, sha) for h, k, sha in raw.execute(
         "SELECT host, key, body_sha256 FROM responses WHERE kind = 'list_window' AND http_status = 200 "
@@ -307,15 +364,7 @@ def stage_listing(db, raw=None):
     for i, (host, key, sha) in enumerate(keys):
         body = raw.execute("SELECT body_zlib FROM responses WHERE host = ? AND kind = 'list_window' AND key = ?",
                            (host, key)).fetchone()[0]
-        for c in json.loads(zlib.decompress(body)):
-            if c.get("project") != PROJECT or c.get("total_comment_count", 0) > 0 \
-                    or is_bot_account(c.get("owner", {})):
-                continue
-            n = c["_number"]
-            db.execute("DELETE FROM listing_votes WHERE change_number = ?", (n,))
-            db.executemany("INSERT OR REPLACE INTO listing_votes VALUES (?,?,?,?)",
-                           [(n, *v) for v in listing_votes(c)])
-            n_cls += 1
+        n_cls += stage_listing_rows(db, json.loads(zlib.decompress(body)))
         db.execute("INSERT OR REPLACE INTO listing_done VALUES (?,?)", (key, sha))
         if i % 200 == 199:
             db.commit()

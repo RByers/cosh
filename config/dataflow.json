@@ -1588,7 +1588,8 @@
         "cosh/classify.py",
         "cosh/paths.py",
         "cosh/notedb.py",
-        "cosh/extract.py"
+        "cosh/extract.py",
+        "cosh/codefp.py"
       ],
       "purpose": "Reduces every CL's listing and NoteDb comments to facts.",
       "inputs": [
@@ -1744,7 +1745,8 @@
       "code": [
         "cosh/commits.py",
         "cosh/bots.py",
-        "cosh/paths.py"
+        "cosh/paths.py",
+        "cosh/codefp.py"
       ],
       "purpose": "Appends main's new commits, with their files, line counts, LSC tags, OWNERS additions, repetition ratios and renamed files, to the commits store, and records the files at the tip.",
       "inputs": [
@@ -1756,7 +1758,7 @@
       ],
       "network": false,
       "lock": "data/private/commits.sqlite.lock",
-      "incremental": "Appends the commits landed since its last run; seconds when nothing is new.",
+      "incremental": "Appends the commits landed since its last run; seconds when nothing is new. Each part keeps a code fingerprint in meta (cosh/codefp.py): a part whose code changed is reset and recomputed over all of history (reverts and LSC tags a minute or so, OWNERS additions and repetition ratios about 20 min, renames about 12 min; message fields reread in place in about 1.5 min). A change to the core (commits, files, paths) stops the step until it is rerun with --rebuild (about 1 h 55 min).",
       "duration": "about 1 h 55 min from empty (1.5 h of git log, then 20 min of OWNERS diffs and repetition ratios with 4 processes, 3 min of rename detection); seconds when nothing is new",
       "token_cost": null,
       "cost_source": "Build of 2026-11-12 (docs/commits.md)",
@@ -1927,7 +1929,8 @@
       "code": [
         "cosh/review_timeline.py",
         "cosh/cl_facts.py",
-        "cosh/bots.py"
+        "cosh/bots.py",
+        "cosh/codefp.py"
       ],
       "purpose": "Reads each CL's uploads, attention-set changes and Code-Review votes from NoteDb and the listings, then when each reviewer was asked, first answered, and their attention-set hours.",
       "inputs": [
@@ -1939,7 +1942,7 @@
       ],
       "network": false,
       "lock": null,
-      "incremental": "Reads CLs not yet read and CLs whose meta ref's tip moved since (replacing their rows), and listings whose body is new; CLs without a ref are looked for again next time. The per-reviewer table is rebuilt whole (about 1 min).",
+      "incremental": "Reads CLs not yet read and CLs whose meta ref's tip moved since (replacing their rows), and listings whose body is new; CLs without a ref are looked for again next time. The walk and the listing stages each keep a code fingerprint in meta (cosh/codefp.py): when one changes, that stage's rows are deleted and it reads everything again (walk about 35 min, listings about 4 min). The per-reviewer table is rebuilt whole (about 1 min).",
       "duration": "35.5 min (330 CLs/s, sharing the box with another git walk) for 716k CLs from empty, plus 4 min for 26,769 listings from empty; about 1.5 min when nothing is new (the per-reviewer table)",
       "token_cost": null,
       "cost_source": "data/private/scratch/timeline/walk.log; the listings and reviewers on 2026-11-14",
@@ -1951,7 +1954,8 @@
       "id": "balance-interdiff",
       "command": "python3 -m cosh.balance interdiff [--shard i/3]",
       "code": [
-        "cosh/balance.py"
+        "cosh/balance.py",
+        "cosh/codefp.py"
       ],
       "purpose": "Diffs each patch set against the next to measure rework during review.",
       "inputs": [
@@ -1964,7 +1968,7 @@
       ],
       "network": false,
       "lock": null,
-      "incremental": "Only CLs without a result; CLs whose patch sets aren't fetched get none.",
+      "incremental": "Only CLs without a result; CLs whose patch sets aren't fetched get none. A changed code fingerprint (meta, cosh/codefp.py) deletes every row, so all CLs are compared again (about 25 min as three shards).",
       "duration": "about 25 min as three shards",
       "token_cost": null,
       "cost_source": "docs/balance.md",

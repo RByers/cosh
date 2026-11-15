@@ -360,7 +360,7 @@ reads it, at another file; `COSH_REVIEW_TIMELINE=<path>` the timeline):
 | Stage | Output | What | Time |
 |---|---|---|---|
 | (`cosh.review_timeline`) | `review-timeline.sqlite` | per CL from NoteDb, in one walk of its meta ref: uploads with Gerrit's change kind (`uploads`), attention-set intervals per account (`attention`) and every Code-Review vote (`votes`); 716k CLs (CLs with no comments have no local meta ref). `timeline_done` keeps each CL's meta-ref tip, so a rerun rereads (and replaces) only CLs whose NoteDb log grew, such as open CLs refreshed by `extract-open`. Also `cl_reviewers`: per CL and reviewer, when they were asked, when they first answered and their attention-set hours | ~35 min from empty |
-| `interdiff` | `balance-interdiff.sqlite` | per reviewed CL: the first reviewed patch set's diff against the final one, as multisets of added and removed lines, so a rebase changes nothing; 275k CLs | ~25 min with `--shard i/3` |
+| `interdiff` | `balance-interdiff.sqlite` | per reviewed CL: the first reviewed patch set's diff against the final one, as multisets of added and removed lines, so a rebase changes nothing; 275k CLs. Compares only CLs without a row, unless its code fingerprint (`meta`, `interdiff_fingerprint`) changed: then every row is deleted and compared again | ~25 min with `--shard i/3` |
 | `cl` | `balance.sqlite` | one row per human-owned CL joining all of the above with review threads and labels (`cl`), per-reviewer attention (`cl_attention`, copied from the timeline's `cl_reviewers`), lines per directory (`cl_dirs`) | ~1 min |
 
 Definitions in `cl`:

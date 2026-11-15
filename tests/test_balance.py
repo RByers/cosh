@@ -1,5 +1,10 @@
+import contextlib
+import io
+import os
 import sqlite3
+import tempfile
 import unittest
+from unittest import mock
 from collections import Counter
 from datetime import datetime, timezone
 
@@ -74,6 +79,55 @@ class HoursTest(unittest.TestCase):
     def test_weekdays(self):
         # 2026-11-06 is a Friday: Friday 12:00 to Monday 12:00 has 24 weekday hours.
         self.assertEqual(balance.weekday_seconds(ts("2026-11-06 12:00"), ts("2026-11-09 12:00")), 24 * 3600)
+
+
+class InterdiffFingerprintTest(unittest.TestCase):
+    """stage_interdiff compares a CL once, and every CL again when its code
+    changes."""
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        tl = os.path.join(self.tmp.name, "timeline.sqlite")
+        t = sqlite3.connect(tl)
+        t.executescript("CREATE TABLE uploads (change_number INTEGER, ps INTEGER, at INTEGER, sha TEXT);"
+                        "INSERT INTO uploads VALUES (5, 1, 100, NULL), (6, 1, 100, NULL), (6, 2, 300, NULL);")
+        t.commit()
+        t.close()
+        with open(os.path.join(self.tmp.name, "cosh-fetched.txt"), "w") as f:
+            f.write("5\n6\n")
+        self.patches = [mock.patch.dict(os.environ, {"COSH_BALANCE_TIMELINE": tl}),
+                        mock.patch.object(balance, "PATCHSETS", self.tmp.name),
+                        mock.patch.object(balance, "first_review_times", lambda: {5: 200, 6: 200}),
+                        mock.patch.object(balance, "diff_lines", lambda git_dir, shas: {})]
+        for p in self.patches:
+            p.start()
+        self.db = balance.connect(os.path.join(self.tmp.name, "interdiff.sqlite"), "interdiff")
+
+    def tearDown(self):
+        for p in self.patches:
+            p.stop()
+        self.db.close()
+        self.tmp.cleanup()
+
+    def run_stage(self):
+        out = io.StringIO()
+        with contextlib.redirect_stdout(out):
+            balance.stage_interdiff(self.db)
+        return out.getvalue()
+
+    def test_recomputed_only_when_code_changes(self):
+        self.assertIn("2 CLs to compare (0 done)", self.run_stage())
+        good = self.db.execute("SELECT * FROM interdiff ORDER BY 1").fetchall()
+        self.assertEqual([r[-1] for r in good], ["ok", "missing"])
+        self.db.execute("UPDATE interdiff SET status = 'stale'")
+        self.db.commit()
+        self.assertIn("0 CLs to compare (2 done)", self.run_stage())
+        with mock.patch.object(balance, "INTERDIFF_VERSION", 2):
+            out = self.run_stage()
+            self.assertIn("its code changed", out)
+            self.assertIn("2 CLs to compare (0 done)", out)
+            self.assertEqual(self.db.execute("SELECT * FROM interdiff ORDER BY 1").fetchall(), good)
+            self.assertIn("0 CLs to compare (2 done)", self.run_stage())
 
 
 if __name__ == "__main__":

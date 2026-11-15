@@ -31,7 +31,7 @@ import sqlite3
 import subprocess
 import time
 
-from . import review_timeline, store
+from . import codefp, review_timeline, store
 from .cl_facts import CL_FACTS, cl_dirs, cl_facts, epoch  # noqa: F401 (moved there)
 from .commits import HISTORY_SINCE, MAX_LINES, diff_lines  # noqa: F401 (moved there)
 from .review_timeline import union_spans, weekday_seconds  # noqa: F401 (moved there)
@@ -57,6 +57,8 @@ CREATE TABLE IF NOT EXISTS interdiff (
   files_dropped INTEGER,
   status        TEXT NOT NULL          -- ok | missing (patch sets not local) | too_big
 ) STRICT;
+-- The stage's code fingerprint ('code_fp:interdiff', cosh/codefp.py).
+CREATE TABLE IF NOT EXISTS meta (k TEXT PRIMARY KEY, v TEXT) STRICT;
 """
 
 
@@ -133,40 +135,66 @@ def compare(d0, d1):
 def stage_interdiff(db, batch=300, shard=(0, 1)):
     tl = sqlite3.connect(f"file:{db_path('timeline')}?mode=ro", uri=True)
     fetched = os.path.join(PATCHSETS, "cosh-fetched.txt")
-    have = {int(x) for x in open(fetched).read().split() if x.isdigit()}
+    with open(fetched) as f:
+        have = {int(x) for x in f.read().split() if x.isdigit()}
     first = first_review_times()
+    if codefp.check(db, "interdiff", interdiff_fingerprint(), reset_interdiff) == "changed":
+        print("interdiff: its code changed: every CL is compared again", flush=True)
     done = {r[0] for r in db.execute("SELECT change_number FROM interdiff")}
     ups = {}
     for n, ps, at, sha in tl.execute("SELECT change_number, ps, at, sha FROM uploads ORDER BY change_number, ps"):
         ups.setdefault(n, []).append((ps, at, sha))
+    tl.close()
     todo = sorted(n for n in have & first.keys() & ups.keys() if n not in done and n % shard[1] == shard[0])
     print(f"interdiff: {len(todo):,} CLs to compare ({len(done):,} done)", flush=True)
     t0 = time.time()
     for i in range(0, len(todo), batch):
-        rows, pairs = [], {}
-        for n in todo[i:i + batch]:
-            u = ups[n]
-            final = u[-1]
-            seen = max((x for x in u if x[1] <= first[n]), default=u[0])
-            if seen[0] == final[0]:
-                rows.append((n, seen[0], final[0], None, None, 0, 0, 0, 0, "ok"))
-            elif seen[2] and final[2]:
-                pairs[n] = (seen, final)
-            else:
-                rows.append((n, seen[0], final[0], None, None, None, None, None, None, "missing"))
-        diffs = diff_lines(PATCHSETS, [x[2] for s, f in pairs.values() for x in (s, f)])
-        for n, (seen, final) in pairs.items():
-            d0, d1 = diffs.get(seen[2], {}), diffs.get(final[2], {})
-            if seen[2] not in diffs or final[2] not in diffs:
-                rows.append((n, seen[0], final[0], None, None, None, None, None, None, "missing"))
-            elif d0 is None or d1 is None:
-                rows.append((n, seen[0], final[0], None, None, None, None, None, None, "too_big"))
-            else:
-                rows.append((n, seen[0], final[0], *compare(d0, d1), "ok"))
-        db.executemany("INSERT OR REPLACE INTO interdiff VALUES (?,?,?,?,?,?,?,?,?,?)", rows)
+        db.executemany("INSERT OR REPLACE INTO interdiff VALUES (?,?,?,?,?,?,?,?,?,?)",
+                       interdiff_rows(todo[i:i + batch], ups, first))
         db.commit()
         k = i + batch
         print(f"interdiff: {min(k, len(todo)):,}/{len(todo):,} ({k / (time.time() - t0):.0f} CLs/s)", flush=True)
+
+
+# What interdiff's rows are a function of besides their inputs
+# (cosh/codefp.py): when it changes, every row is deleted and compared again.
+# Bump the version for a change the fingerprint can't see.
+INTERDIFF_VERSION = 1
+
+
+def interdiff_fingerprint():
+    return codefp.fingerprint(INTERDIFF_VERSION, interdiff_rows, compare, first_review_times, diff_lines,
+                              MAX_LINES, epoch)
+
+
+def reset_interdiff(db):
+    db.execute("DELETE FROM interdiff")
+
+
+def interdiff_rows(cls, ups, first):
+    """interdiff's rows for the CLs `cls`, from their uploads
+    {CL: [(ps, at, sha)]} and first review times."""
+    rows, pairs = [], {}
+    for n in cls:
+        u = ups[n]
+        final = u[-1]
+        seen = max((x for x in u if x[1] <= first[n]), default=u[0])
+        if seen[0] == final[0]:
+            rows.append((n, seen[0], final[0], None, None, 0, 0, 0, 0, "ok"))
+        elif seen[2] and final[2]:
+            pairs[n] = (seen, final)
+        else:
+            rows.append((n, seen[0], final[0], None, None, None, None, None, None, "missing"))
+    diffs = diff_lines(PATCHSETS, [x[2] for s, f in pairs.values() for x in (s, f)])
+    for n, (seen, final) in pairs.items():
+        d0, d1 = diffs.get(seen[2], {}), diffs.get(final[2], {})
+        if seen[2] not in diffs or final[2] not in diffs:
+            rows.append((n, seen[0], final[0], None, None, None, None, None, None, "missing"))
+        elif d0 is None or d1 is None:
+            rows.append((n, seen[0], final[0], None, None, None, None, None, None, "too_big"))
+        else:
+            rows.append((n, seen[0], final[0], *compare(d0, d1), "ok"))
+    return rows
 
 
 # ----------------------------------------------------------------- cl stage

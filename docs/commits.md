@@ -155,7 +155,23 @@ python3 -m cosh commits [--jobs 4]      # offline; GIT_NO_LAZY_FETCH=1
 every first-parent commit of `main` since 2008, with its first-parent
 diff's files and line counts. It is incremental: a run appends the commits
 landed since the last one (seconds when nothing is new), then their LSC
-tags, OWNERS additions and repetition ratios. Rebuild it by deleting the file and
+tags, OWNERS additions and repetition ratios.
+
+Each part keeps a fingerprint of the code that computed it in `meta`
+(`code_fp:<part>`, `commits.part_fingerprints()`, `cosh/codefp.py`): the
+part's functions by source, its regexes and constants (`REVERT_GREP`,
+`LSC_GREP`, `OWNER_EMAIL`, `RENAME_CANDIDATES`, `REP_MIN_FILES`, ...) and a
+version in `PART_VERSIONS` to bump for a change the hash can't see. When a
+part's fingerprint changes, the next run redoes that part alone:
+`reverts` and `lsc` clear their flags and markers and grep all of history
+again (a minute or so); `owners` (all OWNERS diffs), `repetition` (every
+ratio) and `renames` (about 12 min) delete their rows and recompute;
+`messages` (CL, `Bot-Commit:`, approvers, reverted sha, reland and AI
+marker, `_message_fields`) is reread in place from one `git log` in one
+transaction. `core` (how commits, their files and paths are read) is the
+whole store: `cosh commits` then stops and asks for `--rebuild`, which
+empties the store and rebuilds it. A store from before fingerprints adopts
+the current ones. Rebuild it by deleting the file (or `--rebuild`) and
 rerunning: about 1 h 50 min (1.5 h of `git log`, then 20 min of OWNERS diffs and repetition ratios with 4 processes) from empty, 1.1 GB, against 786 MB for `balance-git.sqlite` plus 442 MB for `reviews.sqlite`'s two commits tables.
 
 | Table | Rows | What |

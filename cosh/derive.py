@@ -13,7 +13,7 @@ import os
 import sys
 import zlib
 from collections import defaultdict
-from . import store
+from . import codefp, store
 from .bots import is_bot_account
 from .extract import closed_ts, iso_week_of, parse_gerrit_ts
 from .classify import build_threads, thread_row
@@ -199,13 +199,7 @@ CODE_FILES = ["cosh/derive.py", "cosh/bots.py", "cosh/classify.py", "cosh/paths.
 
 
 def code_fingerprint(source):
-    h = hashlib.sha256(f"{METRIC_VERSION}|{source}".encode())
-    root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    for f in CODE_FILES:
-        h.update(f.encode())
-        with open(os.path.join(root, f), "rb") as fh:
-            h.update(hashlib.sha256(fh.read()).digest())
-    return h.hexdigest()[:16]
+    return codefp.fingerprint(METRIC_VERSION, source, files=CODE_FILES)
 
 
 def cl_fingerprint(code, window_key, listed_at, window_sha, tip, rest_sha):
