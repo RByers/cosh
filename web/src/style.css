@@ -3110,6 +3110,16 @@ details.rf-method[open] > summary {
   white-space: nowrap;
 }
 
+/* Some sizes are a sentence ("52 MB gzipped: 2,384 files (one per
+   person …)"): cap those so they wrap instead of widening the column.
+   Short sizes stay on one line, right-aligned. */
+.df-table td > .num {
+  display: inline-block;
+  max-width: 11rem;
+  white-space: normal;
+  text-align: left;
+}
+
 .df-table tbody th {
   min-width: 11rem;
 }
