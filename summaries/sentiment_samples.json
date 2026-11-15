@@ -1,9 +1,9 @@
 {
- "generated_at": "2026-11-15T05:33:44Z",
+ "generated_at": "2026-11-15T15:36:18Z",
  "prompt": "v3",
  "weeks": [
-  "2025-W45",
-  "2026-W44"
+  "2025-W46",
+  "2026-W45"
  ],
  "authors": "committers",
  "praise_min": 0.5,
@@ -94,11 +94,6 @@
    ],
    "grumpy": [
     {
-     "text": "bs",
-     "score": -0.8,
-     "month": "2025-11"
-    },
-    {
      "text": "Sorry, but this submission isn't anywhere near the quality we'd expect from a contributor :(.",
      "score": -0.8,
      "month": "2026-08"
@@ -142,6 +137,11 @@
      "text": "We should not erase tab from closed list on new navigation. I tried to explain this a few times in previous comments. Please let me know if this is causing some problem I'm not seeing",
      "score": -0.6,
      "month": "2025-12"
+    },
+    {
+     "text": "same comment as previous CLs.  (And please make sure to apply it to any future CLs)",
+     "score": -0.6,
+     "month": "2026-10"
     }
    ]
   },
@@ -230,11 +230,6 @@
    ],
    "grumpy": [
     {
-     "text": "bs",
-     "score": -0.8,
-     "month": "2025-11"
-    },
-    {
      "text": "Remove \"All\", and move up to after the class. I've pointed this out at least 3 times now, please pay attention.",
      "score": -0.7,
      "month": "2025-11"
@@ -251,11 +246,6 @@
     },
     {
      "text": "Please don't arbitrarily resolve this thread. It tracks an action item for the CL author. Just marking it as done won't advance the CL.",
-     "score": -0.6,
-     "month": "2025-11"
-    },
-    {
-     "text": "This is faililng on all the bots? Did you check the results?",
      "score": -0.6,
      "month": "2025-11"
     },
@@ -278,6 +268,11 @@
      "text": "Ack, I took a look again but you did not address the question I asked above after I wrote this comment...",
      "score": -0.6,
      "month": "2025-12"
+    },
+    {
+     "text": "what was 'Done'. This was a question.",
+     "score": -0.6,
+     "month": "2025-11"
     }
    ]
   },
@@ -356,20 +351,15 @@
      "url": "https://chromium-review.googlesource.com/c/chromium/src/+/7138558/comment/3bdf3dce_b17c5b81/"
     },
     {
-     "text": "This looks pretty good to me! \n\nI left some minor comments and improvement suggestions.\n\nThank you for adding an extensive suite of tests!",
+     "text": "Great - I like this simplification very much.\n\n\nI am not an expert, but IIUC `RUSTC_BOOTSTRAP` is required when building the compiler itself.  And therefore I think/hope that it is likely to remain supported.",
      "score": 0.5,
-     "date": "2025-11-06",
-     "writer": "Alex Ilin",
-     "recipient": "Konstantin Andrikopoulos",
-     "url": "https://chromium-review.googlesource.com/c/chromium/src/+/7115078/comment/94e841c2_a392bf75/"
+     "date": "2025-11-13",
+     "writer": "Łukasz Anforowicz",
+     "recipient": "Milad Farazmand",
+     "url": "https://chromium-review.googlesource.com/c/chromium/src/+/7153321/comment/5197b0cd_683c2c84/"
     }
    ],
    "grumpy": [
-    {
-     "text": "bs",
-     "score": -0.8,
-     "month": "2025-11"
-    },
     {
      "text": "Remove \"All\", and move up to after the class. I've pointed this out at least 3 times now, please pay attention.",
      "score": -0.7,
@@ -377,11 +367,6 @@
     },
     {
      "text": "Please don't arbitrarily resolve this thread. It tracks an action item for the CL author. Just marking it as done won't advance the CL.",
-     "score": -0.6,
-     "month": "2025-11"
-    },
-    {
-     "text": "This is faililng on all the bots? Did you check the results?",
      "score": -0.6,
      "month": "2025-11"
     },
@@ -1861,6 +1846,97 @@
      "text": "Why are we landing an ugly hack instead of properly fixing? We don't land hacks and expect 'owners of this file' to fix them later.\n\nPlease fix this properly.",
      "score": -0.6,
      "month": "2026-10"
+    }
+   ]
+  },
+  "2026-11": {
+   "praise": [
+    {
+     "text": "Thanks a lot for the context! You already provided tons of great insight on the initial CL, and it was also kind of you to try to balance the feedback on it 😊 (That being said, please don't hesitate to mention things like this or nitpick next time though—I really appreciate learning from your feedback! 😃 🙏)",
+     "score": 0.6,
+     "date": "2026-11-04",
+     "writer": "Menghan Yang",
+     "recipient": "Ryan Sultanem",
+     "url": "https://chromium-review.googlesource.com/c/chromium/src/+/8714618/comment/c91bfdf4_657e073c/"
+    },
+    {
+     "text": "This is awesome. How do you find these? Are you like deflaking one specific test, and see a mistake, and then sweep for the mistake elsewhere? or is the process something else?",
+     "score": 0.5,
+     "date": "2026-11-04",
+     "writer": "Sky Malice",
+     "recipient": "Henrique Nakashima",
+     "url": "https://chromium-review.googlesource.com/c/chromium/src/+/8734722/comment/a3932de2_ef0aefbc/"
+    },
+    {
+     "text": "I see.  Yes, I suppose we should go with that order, even if it means the CL we're merging is more complicated than if we removed the flag first.  It's definitely easier to understand now that the conditionals have been restructured though-- thanks for that!  I also agree with not merging the CL to remove the flag.",
+     "score": 0.5,
+     "date": "2026-11-05",
+     "writer": "Charlie Reis",
+     "recipient": "Rakina Zata Amni",
+     "url": "https://chromium-review.googlesource.com/c/chromium/src/+/8658238/comment/004a17e3_254d76ef/"
+    },
+    {
+     "text": "Thanks for the explanation! The offset calculation and caching approach make sense to me.",
+     "score": 0.5,
+     "date": "2026-11-06",
+     "writer": "Sean Li",
+     "recipient": "Simon Taylor",
+     "url": "https://chromium-review.googlesource.com/c/chromium/src/+/8725548/comment/b2a94c83_328670da/"
+    },
+    {
+     "text": "lgtm, thanks, and forgot to say, Score 0.2% improvement is awesome, thank you so much.",
+     "score": 0.5,
+     "date": "2026-11-06",
+     "writer": "Koji Ishii",
+     "recipient": "Zhou, Shuangshuang",
+     "url": "https://chromium-review.googlesource.com/c/chromium/src/+/8737281/comment/83a192ee_724815a4/"
+    },
+    {
+     "text": "yea generlaly agree - thanks for tracking it down more!",
+     "score": 0.5,
+     "date": "2026-11-04",
+     "writer": "Sophie Chang",
+     "recipient": "Alex Turner",
+     "url": "https://chromium-review.googlesource.com/c/chromium/src/+/8701441/comment/50fcf1b5_5d9f7963/"
+    },
+    {
+     "text": "Amazing! Thanks for the work you're doing here 😊\nnit: do you have an android impl design doc you could add here?",
+     "score": 0.5,
+     "date": "2026-11-05",
+     "writer": "Alexander Kyereboah",
+     "recipient": "Rob Pitkin",
+     "url": "https://chromium-review.googlesource.com/c/chromium/src/+/8526477/comment/69cd4af9_b19fc88a/"
+    },
+    {
+     "text": "Thanks!\n\nYeah, this unlocks a bunch of opportunities for batching+AutoReset, using Public Transit in these tests, and being more thorough in testing cases like CCT with lower effort :)\n\nYou got close to finishing these while batching, I'm just finishing the job :D",
+     "score": 0.5,
+     "date": "2026-11-02",
+     "writer": "Henrique Nakashima",
+     "recipient": "Calder Kitagawa",
+     "url": "https://chromium-review.googlesource.com/c/chromium/src/+/8703187/comment/41497ea7_222e98c3/"
+    },
+    {
+     "text": "Good catch, and thanks for adding the unit tests for `kOther` and `kDeeplink`!",
+     "score": 0.5,
+     "date": "2026-11-05",
+     "writer": "Jérôme Lebel",
+     "recipient": "Menghan Yang",
+     "url": "https://chromium-review.googlesource.com/c/chromium/src/+/8630934/comment/1bc3f5e2_d4b57168/"
+    },
+    {
+     "text": "Thanks for finding and fixing the gap between Android and desktop platforms. Approving based on steimel@'s LGTM (who is the expert in PiP here) modulo a few minor asks.",
+     "score": 0.5,
+     "date": "2026-11-04",
+     "writer": "Mustaq Ahmed",
+     "recipient": "Phil Yan",
+     "url": "https://chromium-review.googlesource.com/c/chromium/src/+/8711938/comment/1af46305_3a06def2/"
+    }
+   ],
+   "grumpy": [
+    {
+     "text": "Seriously...? The whole point of wrapping the the ByteBuffer in a span and an IOBuffer was that the stream_->Read call could write directly into it, so why in the world would we want this code to exist o_O?\n\nAnyway, we're probably not going with this approach in any case.",
+     "score": -0.6,
+     "month": "2026-11"
     }
    ]
   }

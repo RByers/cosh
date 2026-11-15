@@ -1,9 +1,9 @@
 {
- "generated_at": "2026-11-15T05:38:46Z",
+ "generated_at": "2026-11-15T15:36:59Z",
  "prompt": "v3",
  "weeks": [
-  "2025-W45",
-  "2026-W44"
+  "2025-W46",
+  "2026-W45"
  ],
  "authors": "noncommitters",
  "thresholds": {
@@ -13,14 +13,6 @@
  "min_counterparts": 6,
  "missing": 0,
  "weekly": [
-  {
-   "week": "2025-W45",
-   "n": 293,
-   "mean": 0.0307,
-   "glowing": 0.0137,
-   "angry": 0.0034,
-   "ai": 0
-  },
   {
    "week": "2025-W46",
    "n": 266,
@@ -63,9 +55,9 @@
   },
   {
    "week": "2025-W51",
-   "n": 254,
-   "mean": 0.0335,
-   "glowing": 0.0197,
+   "n": 253,
+   "mean": 0.0336,
+   "glowing": 0.0198,
    "angry": 0.0,
    "ai": 0
   },
@@ -87,10 +79,10 @@
   },
   {
    "week": "2026-W02",
-   "n": 360,
-   "mean": 0.0386,
-   "glowing": 0.0306,
-   "angry": 0.0083,
+   "n": 358,
+   "mean": 0.038,
+   "glowing": 0.0307,
+   "angry": 0.0084,
    "ai": 0
   },
   {
@@ -103,18 +95,18 @@
   },
   {
    "week": "2026-W04",
-   "n": 315,
+   "n": 314,
    "mean": 0.0248,
    "glowing": 0.0159,
-   "angry": 0.0095,
+   "angry": 0.0096,
    "ai": 0
   },
   {
    "week": "2026-W05",
-   "n": 413,
-   "mean": 0.023,
-   "glowing": 0.0169,
-   "angry": 0.0242,
+   "n": 412,
+   "mean": 0.0231,
+   "glowing": 0.017,
+   "angry": 0.0243,
    "ai": 0
   },
   {
@@ -183,34 +175,34 @@
   },
   {
    "week": "2026-W14",
-   "n": 531,
-   "mean": 0.0136,
-   "glowing": 0.0075,
-   "angry": 0.0075,
+   "n": 525,
+   "mean": 0.0128,
+   "glowing": 0.0076,
+   "angry": 0.0076,
    "ai": 1
   },
   {
    "week": "2026-W15",
-   "n": 305,
-   "mean": 0.0134,
+   "n": 303,
+   "mean": 0.0135,
    "glowing": 0.0066,
    "angry": 0.0033,
    "ai": 0
   },
   {
    "week": "2026-W16",
-   "n": 341,
-   "mean": 0.0208,
-   "glowing": 0.0117,
-   "angry": 0.0205,
+   "n": 337,
+   "mean": 0.019,
+   "glowing": 0.0119,
+   "angry": 0.0208,
    "ai": 0
   },
   {
    "week": "2026-W17",
-   "n": 410,
-   "mean": 0.0346,
-   "glowing": 0.022,
-   "angry": 0.0073,
+   "n": 406,
+   "mean": 0.0342,
+   "glowing": 0.0222,
+   "angry": 0.0074,
    "ai": 0
   },
   {
@@ -231,10 +223,10 @@
   },
   {
    "week": "2026-W20",
-   "n": 353,
-   "mean": 0.0314,
-   "glowing": 0.017,
-   "angry": 0.0113,
+   "n": 351,
+   "mean": 0.0299,
+   "glowing": 0.0171,
+   "angry": 0.0114,
    "ai": 2
   },
   {
@@ -255,178 +247,186 @@
   },
   {
    "week": "2026-W23",
-   "n": 403,
-   "mean": 0.0114,
+   "n": 401,
+   "mean": 0.0112,
    "glowing": 0.0,
-   "angry": 0.0074,
+   "angry": 0.0075,
    "ai": 1
   },
   {
    "week": "2026-W24",
-   "n": 519,
-   "mean": 0.0129,
+   "n": 515,
+   "mean": 0.013,
    "glowing": 0.0058,
-   "angry": 0.0096,
+   "angry": 0.0097,
    "ai": 1
   },
   {
    "week": "2026-W25",
-   "n": 407,
-   "mean": 0.0174,
-   "glowing": 0.0123,
-   "angry": 0.0123,
+   "n": 403,
+   "mean": 0.0169,
+   "glowing": 0.0124,
+   "angry": 0.0124,
    "ai": 0
   },
   {
    "week": "2026-W26",
-   "n": 556,
-   "mean": 0.0214,
-   "glowing": 0.0054,
-   "angry": 0.0054,
+   "n": 542,
+   "mean": 0.0207,
+   "glowing": 0.0055,
+   "angry": 0.0055,
    "ai": 2
   },
   {
    "week": "2026-W27",
-   "n": 374,
-   "mean": 0.0235,
-   "glowing": 0.0107,
-   "angry": 0.008,
+   "n": 370,
+   "mean": 0.023,
+   "glowing": 0.0108,
+   "angry": 0.0081,
    "ai": 1
   },
   {
    "week": "2026-W28",
-   "n": 510,
-   "mean": 0.0288,
-   "glowing": 0.0098,
-   "angry": 0.0039,
+   "n": 498,
+   "mean": 0.0281,
+   "glowing": 0.01,
+   "angry": 0.004,
    "ai": 1
   },
   {
    "week": "2026-W29",
-   "n": 384,
-   "mean": 0.0167,
+   "n": 375,
+   "mean": 0.0157,
    "glowing": 0.0,
-   "angry": 0.0026,
+   "angry": 0.0027,
    "ai": 3
   },
   {
    "week": "2026-W30",
-   "n": 436,
-   "mean": 0.0232,
-   "glowing": 0.0069,
+   "n": 397,
+   "mean": 0.0249,
+   "glowing": 0.0076,
    "angry": 0.0,
    "ai": 0
   },
   {
    "week": "2026-W31",
-   "n": 429,
+   "n": 421,
    "mean": 0.0214,
-   "glowing": 0.007,
-   "angry": 0.0047,
+   "glowing": 0.0071,
+   "angry": 0.0024,
    "ai": 0
   },
   {
    "week": "2026-W32",
-   "n": 509,
-   "mean": 0.0173,
-   "glowing": 0.0098,
-   "angry": 0.0059,
+   "n": 477,
+   "mean": 0.0184,
+   "glowing": 0.0105,
+   "angry": 0.0063,
    "ai": 1
   },
   {
    "week": "2026-W33",
-   "n": 460,
-   "mean": 0.0307,
-   "glowing": 0.0087,
-   "angry": 0.0043,
+   "n": 449,
+   "mean": 0.031,
+   "glowing": 0.0089,
+   "angry": 0.0045,
    "ai": 0
   },
   {
    "week": "2026-W34",
-   "n": 479,
-   "mean": 0.0378,
-   "glowing": 0.0125,
-   "angry": 0.0063,
+   "n": 457,
+   "mean": 0.0394,
+   "glowing": 0.0131,
+   "angry": 0.0066,
    "ai": 0
   },
   {
    "week": "2026-W35",
-   "n": 442,
-   "mean": 0.0276,
-   "glowing": 0.0136,
+   "n": 437,
+   "mean": 0.0272,
+   "glowing": 0.0137,
    "angry": 0.0023,
    "ai": 2
   },
   {
    "week": "2026-W36",
-   "n": 459,
-   "mean": 0.019,
+   "n": 454,
+   "mean": 0.0192,
    "glowing": 0.0022,
-   "angry": 0.0087,
+   "angry": 0.0088,
    "ai": 0
   },
   {
    "week": "2026-W37",
-   "n": 455,
-   "mean": 0.0193,
+   "n": 454,
+   "mean": 0.0194,
    "glowing": 0.011,
    "angry": 0.0088,
    "ai": 0
   },
   {
    "week": "2026-W38",
-   "n": 504,
-   "mean": 0.019,
-   "glowing": 0.0099,
-   "angry": 0.0119,
+   "n": 501,
+   "mean": 0.0184,
+   "glowing": 0.01,
+   "angry": 0.012,
    "ai": 1
   },
   {
    "week": "2026-W39",
-   "n": 464,
+   "n": 459,
    "mean": 0.0425,
-   "glowing": 0.0194,
+   "glowing": 0.0196,
    "angry": 0.0022,
    "ai": 2
   },
   {
    "week": "2026-W40",
-   "n": 522,
-   "mean": 0.0285,
-   "glowing": 0.0134,
-   "angry": 0.0096,
+   "n": 513,
+   "mean": 0.0271,
+   "glowing": 0.0136,
+   "angry": 0.0097,
    "ai": 1
   },
   {
    "week": "2026-W41",
-   "n": 494,
-   "mean": 0.0233,
-   "glowing": 0.0182,
+   "n": 493,
+   "mean": 0.0231,
+   "glowing": 0.0183,
    "angry": 0.0162,
    "ai": 2
   },
   {
    "week": "2026-W42",
-   "n": 479,
-   "mean": 0.0175,
+   "n": 477,
+   "mean": 0.0172,
    "glowing": 0.0021,
    "angry": 0.0021,
    "ai": 0
   },
   {
    "week": "2026-W43",
-   "n": 766,
-   "mean": 0.0257,
-   "glowing": 0.0131,
-   "angry": 0.0026,
+   "n": 733,
+   "mean": 0.0258,
+   "glowing": 0.0136,
+   "angry": 0.0027,
    "ai": 2
   },
   {
    "week": "2026-W44",
-   "n": 580,
-   "mean": 0.0271,
-   "glowing": 0.0069,
-   "angry": 0.0034,
+   "n": 527,
+   "mean": 0.0237,
+   "glowing": 0.0076,
+   "angry": 0.0038,
+   "ai": 0
+  },
+  {
+   "week": "2026-W45",
+   "n": 590,
+   "mean": 0.0142,
+   "glowing": 0.0017,
+   "angry": 0.0102,
    "ai": 0
   }
  ],
@@ -434,13 +434,13 @@
   {
    "month": "2025-11",
    "weeks": [
-    "2025-W45",
+    "2025-W46",
     "2025-W48"
    ],
-   "n": 1201,
-   "mean": 0.0279,
-   "glowing": 0.0125,
-   "angry": 0.0083,
+   "n": 908,
+   "mean": 0.027,
+   "glowing": 0.0121,
+   "angry": 0.0099,
    "ai": 5
   },
   {
@@ -449,7 +449,7 @@
     "2025-W49",
     "2025-W52"
    ],
-   "n": 982,
+   "n": 981,
    "mean": 0.0276,
    "glowing": 0.0173,
    "angry": 0.0112,
@@ -461,8 +461,8 @@
     "2026-W01",
     "2026-W05"
    ],
-   "n": 1560,
-   "mean": 0.0287,
+   "n": 1556,
+   "mean": 0.0285,
    "glowing": 0.0199,
    "angry": 0.0122,
    "ai": 0
@@ -497,10 +497,10 @@
     "2026-W14",
     "2026-W18"
    ],
-   "n": 1976,
-   "mean": 0.0212,
-   "glowing": 0.0132,
-   "angry": 0.0116,
+   "n": 1960,
+   "mean": 0.0206,
+   "glowing": 0.0133,
+   "angry": 0.0117,
    "ai": 3
   },
   {
@@ -509,8 +509,8 @@
     "2026-W19",
     "2026-W22"
    ],
-   "n": 1381,
-   "mean": 0.0261,
+   "n": 1379,
+   "mean": 0.0257,
    "glowing": 0.0087,
    "angry": 0.0094,
    "ai": 2
@@ -521,10 +521,10 @@
     "2026-W23",
     "2026-W26"
    ],
-   "n": 1885,
-   "mean": 0.0161,
-   "glowing": 0.0058,
-   "angry": 0.0085,
+   "n": 1861,
+   "mean": 0.0157,
+   "glowing": 0.0059,
+   "angry": 0.0086,
    "ai": 4
   },
   {
@@ -533,10 +533,10 @@
     "2026-W27",
     "2026-W31"
    ],
-   "n": 2133,
-   "mean": 0.0231,
-   "glowing": 0.007,
-   "angry": 0.0038,
+   "n": 2061,
+   "mean": 0.023,
+   "glowing": 0.0073,
+   "angry": 0.0034,
    "ai": 5
   },
   {
@@ -545,10 +545,10 @@
     "2026-W32",
     "2026-W35"
    ],
-   "n": 1890,
-   "mean": 0.0281,
-   "glowing": 0.0111,
-   "angry": 0.0048,
+   "n": 1820,
+   "mean": 0.0289,
+   "glowing": 0.0115,
+   "angry": 0.0049,
    "ai": 3
   },
   {
@@ -557,9 +557,9 @@
     "2026-W36",
     "2026-W39"
    ],
-   "n": 1882,
-   "mean": 0.0249,
-   "glowing": 0.0106,
+   "n": 1868,
+   "mean": 0.0247,
+   "glowing": 0.0107,
    "angry": 0.008,
    "ai": 3
   },
@@ -569,25 +569,37 @@
     "2026-W40",
     "2026-W44"
    ],
-   "n": 2841,
-   "mean": 0.0247,
-   "glowing": 0.0109,
-   "angry": 0.0063,
+   "n": 2743,
+   "mean": 0.0237,
+   "glowing": 0.0113,
+   "angry": 0.0066,
    "ai": 5
+  },
+  {
+   "month": "2026-11",
+   "weeks": [
+    "2026-W45",
+    "2026-W45"
+   ],
+   "n": 590,
+   "mean": 0.0142,
+   "glowing": 0.0017,
+   "angry": 0.0102,
+   "ai": 0
   }
  ],
  "periods": {
   "all": {
    "weeks": [
-    "2025-W45",
-    "2026-W44"
+    "2025-W46",
+    "2026-W45"
    ],
-   "n_trivial": 200154,
+   "n_trivial": 201476,
    "total": {
-    "n": 20801,
-    "mean": 0.0232,
-    "glowing": 0.0112,
-    "angry": 0.0094,
+    "n": 20797,
+    "mean": 0.0226,
+    "glowing": 0.011,
+    "angry": 0.0096,
     "ai": 30
    },
    "dist": [
@@ -609,19 +621,19 @@
     ],
     [
      -0.6,
-     14
+     15
     ],
     [
      -0.5,
-     14
+     15
     ],
     [
      -0.4,
-     16
+     17
     ],
     [
      -0.3,
-     126
+     127
     ],
     [
      -0.2,
@@ -629,23 +641,23 @@
     ],
     [
      -0.1,
-     397
+     409
     ],
     [
      0.0,
-     16765
+     16801
     ],
     [
      0.1,
-     1640
+     1606
     ],
     [
      0.2,
-     433
+     422
     ],
     [
      0.3,
-     950
+     942
     ],
     [
      0.4,
@@ -653,7 +665,7 @@
     ],
     [
      0.5,
-     132
+     129
     ],
     [
      0.6,
@@ -671,7 +683,7 @@
       "email": "ender@google.com",
       "glowing": 2,
       "happy": 2,
-      "counterparts": 8
+      "counterparts": 9
      },
      {
       "name": "Christoph Schwering",
@@ -764,28 +776,28 @@
       "email": "dpapad@chromium.org",
       "glowing": 3,
       "happy": 3,
-      "counterparts": 16
+      "counterparts": 15
      },
      {
       "name": "Greg Thompson",
       "email": "grt@chromium.org",
       "glowing": 3,
       "happy": 3,
-      "counterparts": 29
+      "counterparts": 31
      },
      {
       "name": "Hidehiko Abe",
       "email": "hidehiko@chromium.org",
       "glowing": 3,
       "happy": 3,
-      "counterparts": 32
+      "counterparts": 31
      },
      {
       "name": "Mike West",
       "email": "mkwst@chromium.org",
       "glowing": 3,
       "happy": 3,
-      "counterparts": 10
+      "counterparts": 9
      },
      {
       "name": "Takashi Toyoshima",
@@ -799,7 +811,7 @@
       "email": "andreaorru@chromium.org",
       "glowing": 3,
       "happy": 2,
-      "counterparts": 9
+      "counterparts": 10
      },
      {
       "name": "Christoph Schwering",
@@ -827,7 +839,7 @@
       "email": "dalecurtis@chromium.org",
       "glowing": 2,
       "happy": 2,
-      "counterparts": 27
+      "counterparts": 28
      },
      {
       "name": "Darryl James",
@@ -855,14 +867,14 @@
       "email": "mark@chromium.org",
       "glowing": 2,
       "happy": 2,
-      "counterparts": 15
+      "counterparts": 14
      },
      {
       "name": "Mason Freed",
       "email": "masonf@chromium.org",
       "glowing": 2,
       "happy": 2,
-      "counterparts": 21
+      "counterparts": 20
      },
      {
       "name": "Mike Wasserman",
@@ -876,7 +888,7 @@
       "email": "dibyapal@chromium.org",
       "glowing": 2,
       "happy": 1,
-      "counterparts": 7
+      "counterparts": 6
      },
      {
       "name": "Mitsuru Oshima",
@@ -884,6 +896,13 @@
       "glowing": 2,
       "happy": 1,
       "counterparts": 18
+     },
+     {
+      "name": "Scott Haseley",
+      "email": "shaseley@chromium.org",
+      "glowing": 2,
+      "happy": 1,
+      "counterparts": 6
      },
      {
       "name": "Scott Yoder",
@@ -897,7 +916,7 @@
       "email": "tluk@chromium.org",
       "glowing": 2,
       "happy": 1,
-      "counterparts": 24
+      "counterparts": 25
      },
      {
       "name": "Vasiliy Telezhnikov",
@@ -905,13 +924,6 @@
       "glowing": 2,
       "happy": 1,
       "counterparts": 8
-     },
-     {
-      "name": "Alex Rudenko",
-      "email": "alexrudenko@chromium.org",
-      "glowing": 1,
-      "happy": 1,
-      "counterparts": 13
      },
      {
       "name": "Alexei Svitkine",
@@ -932,7 +944,7 @@
       "email": "arthursonzogni@chromium.org",
       "glowing": 1,
       "happy": 1,
-      "counterparts": 19
+      "counterparts": 17
      },
      {
       "name": "Bo Liu",
@@ -946,14 +958,14 @@
       "email": "bajones@chromium.org",
       "glowing": 1,
       "happy": 1,
-      "counterparts": 8
+      "counterparts": 7
      },
      {
       "name": "Brian Sheedy",
       "email": "bsheedy@chromium.org",
       "glowing": 1,
       "happy": 1,
-      "counterparts": 11
+      "counterparts": 12
      },
      {
       "name": "Chris Fredrickson",
@@ -967,14 +979,14 @@
       "email": "blundell@chromium.org",
       "glowing": 1,
       "happy": 1,
-      "counterparts": 17
+      "counterparts": 16
      },
      {
       "name": "Dan Clark",
       "email": "daniec@microsoft.com",
       "glowing": 1,
       "happy": 1,
-      "counterparts": 9
+      "counterparts": 8
      },
      {
       "name": "David Tseng",
@@ -1002,7 +1014,7 @@
       "email": "fs@opera.com",
       "glowing": 1,
       "happy": 1,
-      "counterparts": 16
+      "counterparts": 15
      },
      {
       "name": "Gabriel Charette",
@@ -1012,18 +1024,11 @@
       "counterparts": 10
      },
      {
-      "name": "Hongchan Choi",
-      "email": "hongchan@google.com",
-      "glowing": 1,
-      "happy": 1,
-      "counterparts": 9
-     },
-     {
       "name": "Jacques Newman",
       "email": "janewman@microsoft.com",
       "glowing": 1,
       "happy": 1,
-      "counterparts": 9
+      "counterparts": 10
      },
      {
       "name": "Joey Arhar",
@@ -1044,7 +1049,7 @@
       "email": "tkent@chromium.org",
       "glowing": 1,
       "happy": 1,
-      "counterparts": 20
+      "counterparts": 19
      },
      {
       "name": "Keren Zhu",
@@ -1058,7 +1063,7 @@
       "email": "kojii@chromium.org",
       "glowing": 1,
       "happy": 1,
-      "counterparts": 16
+      "counterparts": 15
      },
      {
       "name": "Kramer Ge",
@@ -1072,7 +1077,7 @@
       "email": "thestig@chromium.org",
       "glowing": 1,
       "happy": 1,
-      "counterparts": 37
+      "counterparts": 38
      },
      {
       "name": "Marc Treib",
@@ -1100,7 +1105,7 @@
       "email": "mstensho@chromium.org",
       "glowing": 1,
       "happy": 1,
-      "counterparts": 9
+      "counterparts": 8
      },
      {
       "name": "Nate Chapin",
@@ -1114,14 +1119,14 @@
       "email": "ntfschr@chromium.org",
       "glowing": 1,
       "happy": 1,
-      "counterparts": 11
+      "counterparts": 9
      },
      {
       "name": "Olga Sharonova",
       "email": "olka@chromium.org",
       "glowing": 1,
       "happy": 1,
-      "counterparts": 8
+      "counterparts": 9
      },
      {
       "name": "Rafael Cintron",
@@ -1135,7 +1140,7 @@
       "email": "rbyers@chromium.org",
       "glowing": 1,
       "happy": 1,
-      "counterparts": 12
+      "counterparts": 13
      },
      {
       "name": "Sorin Jianu",
@@ -1163,7 +1168,7 @@
       "email": "mmenke@chromium.org",
       "glowing": 1,
       "happy": 1,
-      "counterparts": 7
+      "counterparts": 8
      },
      {
       "name": "Łukasz Anforowicz",
@@ -1249,15 +1254,15 @@
   },
   "2025": {
    "weeks": [
-    "2025-W45",
+    "2025-W46",
     "2025-W52"
    ],
-   "n_trivial": 24309,
+   "n_trivial": 20610,
    "total": {
-    "n": 2183,
-    "mean": 0.0278,
-    "glowing": 0.0147,
-    "angry": 0.0096,
+    "n": 1889,
+    "mean": 0.0273,
+    "glowing": 0.0148,
+    "angry": 0.0106,
     "ai": 5
    },
    "dist": [
@@ -1283,31 +1288,31 @@
     ],
     [
      -0.3,
-     13
+     12
     ],
     [
      -0.2,
-     17
+     16
     ],
     [
      -0.1,
-     42
+     41
     ],
     [
      0.0,
-     1704
+     1470
     ],
     [
      0.1,
-     210
+     173
     ],
     [
      0.2,
-     63
+     54
     ],
     [
      0.3,
-     94
+     87
     ],
     [
      0.4,
@@ -1315,25 +1320,18 @@
     ],
     [
      0.5,
-     22
+     18
     ]
    ],
    "happy": {
     "authors": [],
     "reviewers": [
      {
-      "name": "Thomas Lukaszewicz",
-      "email": "tluk@chromium.org",
-      "glowing": 2,
-      "happy": 1,
-      "counterparts": 6
-     },
-     {
       "name": "Hidehiko Abe",
       "email": "hidehiko@chromium.org",
       "glowing": 1,
       "happy": 1,
-      "counterparts": 9
+      "counterparts": 6
      }
     ]
    },
@@ -1352,15 +1350,15 @@
   },
   "2025-11": {
    "weeks": [
-    "2025-W45",
+    "2025-W46",
     "2025-W48"
    ],
-   "n_trivial": 13195,
+   "n_trivial": 9496,
    "total": {
-    "n": 1201,
-    "mean": 0.0279,
-    "glowing": 0.0125,
-    "angry": 0.0083,
+    "n": 908,
+    "mean": 0.027,
+    "glowing": 0.0121,
+    "angry": 0.0099,
     "ai": 5
    },
    "dist": [
@@ -1382,31 +1380,31 @@
     ],
     [
      -0.3,
-     6
+     5
     ],
     [
      -0.2,
-     13
+     12
     ],
     [
      -0.1,
-     19
+     18
     ],
     [
      0.0,
-     929
+     696
     ],
     [
      0.1,
-     130
+     93
     ],
     [
      0.2,
-     38
+     29
     ],
     [
      0.3,
-     47
+     40
     ],
     [
      0.4,
@@ -1414,20 +1412,12 @@
     ],
     [
      0.5,
-     13
+     9
     ]
    ],
    "happy": {
     "authors": [],
-    "reviewers": [
-     {
-      "name": "Hidehiko Abe",
-      "email": "hidehiko@chromium.org",
-      "glowing": 1,
-      "happy": 1,
-      "counterparts": 7
-     }
-    ]
+    "reviewers": []
    },
    "ai": [
     {
@@ -1449,7 +1439,7 @@
    ],
    "n_trivial": 11114,
    "total": {
-    "n": 982,
+    "n": 981,
     "mean": 0.0276,
     "glowing": 0.0173,
     "angry": 0.0112,
@@ -1482,7 +1472,7 @@
     ],
     [
      0.0,
-     775
+     774
     ],
     [
      0.1,
@@ -1518,14 +1508,14 @@
   "2026": {
    "weeks": [
     "2026-W01",
-    "2026-W44"
+    "2026-W45"
    ],
-   "n_trivial": 175845,
+   "n_trivial": 180866,
    "total": {
-    "n": 18618,
-    "mean": 0.0227,
-    "glowing": 0.0107,
-    "angry": 0.0094,
+    "n": 18908,
+    "mean": 0.0221,
+    "glowing": 0.0106,
+    "angry": 0.0095,
     "ai": 25
    },
    "dist": [
@@ -1547,43 +1537,43 @@
     ],
     [
      -0.6,
-     13
+     14
     ],
     [
      -0.5,
-     13
+     14
     ],
     [
      -0.4,
-     13
+     14
     ],
     [
      -0.3,
-     113
+     115
     ],
     [
      -0.2,
-     171
+     172
     ],
     [
      -0.1,
-     355
+     368
     ],
     [
      0.0,
-     15061
+     15331
     ],
     [
      0.1,
-     1430
+     1433
     ],
     [
      0.2,
-     370
+     368
     ],
     [
      0.3,
-     856
+     855
     ],
     [
      0.4,
@@ -1591,7 +1581,7 @@
     ],
     [
      0.5,
-     110
+     111
     ],
     [
      0.6,
@@ -1609,7 +1599,7 @@
       "email": "ender@google.com",
       "glowing": 2,
       "happy": 2,
-      "counterparts": 8
+      "counterparts": 9
      },
      {
       "name": "Etienne Pierre-Doray",
@@ -1681,7 +1671,7 @@
       "email": "grt@chromium.org",
       "glowing": 3,
       "happy": 3,
-      "counterparts": 26
+      "counterparts": 28
      },
      {
       "name": "Takashi Toyoshima",
@@ -1695,7 +1685,7 @@
       "email": "andreaorru@chromium.org",
       "glowing": 3,
       "happy": 2,
-      "counterparts": 9
+      "counterparts": 10
      },
      {
       "name": "Christoph Schwering",
@@ -1723,7 +1713,7 @@
       "email": "dalecurtis@chromium.org",
       "glowing": 2,
       "happy": 2,
-      "counterparts": 25
+      "counterparts": 26
      },
      {
       "name": "Darryl James",
@@ -1737,14 +1727,14 @@
       "email": "dpapad@chromium.org",
       "glowing": 2,
       "happy": 2,
-      "counterparts": 15
+      "counterparts": 14
      },
      {
       "name": "Hidehiko Abe",
       "email": "hidehiko@chromium.org",
       "glowing": 2,
       "happy": 2,
-      "counterparts": 24
+      "counterparts": 26
      },
      {
       "name": "Kelvin Jiang",
@@ -1765,7 +1755,7 @@
       "email": "mkwst@chromium.org",
       "glowing": 2,
       "happy": 2,
-      "counterparts": 9
+      "counterparts": 8
      },
      {
       "name": "Mitsuru Oshima",
@@ -1814,7 +1804,7 @@
       "email": "daniec@microsoft.com",
       "glowing": 1,
       "happy": 1,
-      "counterparts": 9
+      "counterparts": 8
      },
      {
       "name": "David Tseng",
@@ -1835,7 +1825,7 @@
       "email": "dibyapal@chromium.org",
       "glowing": 1,
       "happy": 1,
-      "counterparts": 7
+      "counterparts": 6
      },
      {
       "name": "Dominik Röttsches",
@@ -1849,7 +1839,7 @@
       "email": "fs@opera.com",
       "glowing": 1,
       "happy": 1,
-      "counterparts": 16
+      "counterparts": 15
      },
      {
       "name": "Gabriel Charette",
@@ -1863,7 +1853,7 @@
       "email": "janewman@microsoft.com",
       "glowing": 1,
       "happy": 1,
-      "counterparts": 7
+      "counterparts": 8
      },
      {
       "name": "Joey Arhar",
@@ -1877,7 +1867,7 @@
       "email": "tkent@chromium.org",
       "glowing": 1,
       "happy": 1,
-      "counterparts": 20
+      "counterparts": 19
      },
      {
       "name": "Keren Zhu",
@@ -1891,7 +1881,7 @@
       "email": "thestig@chromium.org",
       "glowing": 1,
       "happy": 1,
-      "counterparts": 36
+      "counterparts": 37
      },
      {
       "name": "Marc Treib",
@@ -1912,7 +1902,7 @@
       "email": "masonf@chromium.org",
       "glowing": 1,
       "happy": 1,
-      "counterparts": 20
+      "counterparts": 19
      },
      {
       "name": "Michael Thiessen",
@@ -1933,7 +1923,7 @@
       "email": "mstensho@chromium.org",
       "glowing": 1,
       "happy": 1,
-      "counterparts": 8
+      "counterparts": 7
      },
      {
       "name": "Nate Chapin",
@@ -1947,14 +1937,14 @@
       "email": "ntfschr@chromium.org",
       "glowing": 1,
       "happy": 1,
-      "counterparts": 8
+      "counterparts": 7
      },
      {
       "name": "Olga Sharonova",
       "email": "olka@chromium.org",
       "glowing": 1,
       "happy": 1,
-      "counterparts": 7
+      "counterparts": 8
      },
      {
       "name": "Rafael Cintron",
@@ -1982,7 +1972,7 @@
       "email": "mmenke@chromium.org",
       "glowing": 1,
       "happy": 1,
-      "counterparts": 6
+      "counterparts": 7
      },
      {
       "name": "Łukasz Anforowicz",
@@ -2067,8 +2057,8 @@
    ],
    "n_trivial": 14870,
    "total": {
-    "n": 1560,
-    "mean": 0.0287,
+    "n": 1556,
+    "mean": 0.0285,
     "glowing": 0.0199,
     "angry": 0.0122,
     "ai": 0
@@ -2104,7 +2094,7 @@
     ],
     [
      0.0,
-     1194
+     1191
     ],
     [
      0.1,
@@ -2116,7 +2106,7 @@
     ],
     [
      0.3,
-     87
+     86
     ],
     [
      0.4,
@@ -2322,10 +2312,10 @@
    ],
    "n_trivial": 19233,
    "total": {
-    "n": 1976,
-    "mean": 0.0212,
-    "glowing": 0.0132,
-    "angry": 0.0116,
+    "n": 1960,
+    "mean": 0.0206,
+    "glowing": 0.0133,
+    "angry": 0.0117,
     "ai": 3
    },
    "dist": [
@@ -2367,19 +2357,19 @@
     ],
     [
      0.0,
-     1588
+     1581
     ],
     [
      0.1,
-     159
+     154
     ],
     [
      0.2,
-     30
+     28
     ],
     [
      0.3,
-     90
+     88
     ],
     [
      0.4,
@@ -2426,8 +2416,8 @@
    ],
    "n_trivial": 16064,
    "total": {
-    "n": 1381,
-    "mean": 0.0261,
+    "n": 1379,
+    "mean": 0.0257,
     "glowing": 0.0087,
     "angry": 0.0094,
     "ai": 2
@@ -2463,7 +2453,7 @@
     ],
     [
      0.3,
-     67
+     65
     ],
     [
      0.4,
@@ -2491,10 +2481,10 @@
    ],
    "n_trivial": 16738,
    "total": {
-    "n": 1885,
-    "mean": 0.0161,
-    "glowing": 0.0058,
-    "angry": 0.0085,
+    "n": 1861,
+    "mean": 0.0157,
+    "glowing": 0.0059,
+    "angry": 0.0086,
     "ai": 4
    },
    "dist": [
@@ -2528,11 +2518,11 @@
     ],
     [
      0.0,
-     1608
+     1589
     ],
     [
      0.1,
-     110
+     108
     ],
     [
      0.2,
@@ -2540,7 +2530,7 @@
     ],
     [
      0.3,
-     76
+     73
     ],
     [
      0.4,
@@ -2589,10 +2579,10 @@
    ],
    "n_trivial": 20413,
    "total": {
-    "n": 2133,
-    "mean": 0.0231,
-    "glowing": 0.007,
-    "angry": 0.0038,
+    "n": 2061,
+    "mean": 0.023,
+    "glowing": 0.0073,
+    "angry": 0.0034,
     "ai": 5
    },
    "dist": [
@@ -2606,7 +2596,7 @@
     ],
     [
      -0.3,
-     5
+     4
     ],
     [
      -0.2,
@@ -2618,19 +2608,19 @@
     ],
     [
      0.0,
-     1780
+     1720
     ],
     [
      0.1,
-     162
+     157
     ],
     [
      0.2,
-     32
+     31
     ],
     [
      0.3,
-     95
+     90
     ],
     [
      0.4,
@@ -2671,10 +2661,10 @@
    ],
    "n_trivial": 17572,
    "total": {
-    "n": 1890,
-    "mean": 0.0281,
-    "glowing": 0.0111,
-    "angry": 0.0048,
+    "n": 1820,
+    "mean": 0.0289,
+    "glowing": 0.0115,
+    "angry": 0.0049,
     "ai": 3
    },
    "dist": [
@@ -2708,19 +2698,19 @@
     ],
     [
      0.0,
-     1521
+     1454
     ],
     [
      0.1,
-     138
+     137
     ],
     [
      0.2,
-     42
+     41
     ],
     [
      0.3,
-     109
+     108
     ],
     [
      0.4,
@@ -2767,9 +2757,9 @@
    ],
    "n_trivial": 16799,
    "total": {
-    "n": 1882,
-    "mean": 0.0249,
-    "glowing": 0.0106,
+    "n": 1868,
+    "mean": 0.0247,
+    "glowing": 0.0107,
     "angry": 0.008,
     "ai": 3
    },
@@ -2792,7 +2782,7 @@
     ],
     [
      0.0,
-     1499
+     1488
     ],
     [
      0.1,
@@ -2800,7 +2790,7 @@
     ],
     [
      0.2,
-     37
+     34
     ],
     [
      0.3,
@@ -2860,10 +2850,10 @@
    ],
    "n_trivial": 21389,
    "total": {
-    "n": 2841,
-    "mean": 0.0247,
-    "glowing": 0.0109,
-    "angry": 0.0063,
+    "n": 2743,
+    "mean": 0.0237,
+    "glowing": 0.0113,
+    "angry": 0.0066,
     "ai": 5
    },
    "dist": [
@@ -2893,19 +2883,19 @@
     ],
     [
      0.0,
-     2303
+     2238
     ],
     [
      0.1,
-     223
+     201
     ],
     [
      0.2,
-     67
+     65
     ],
     [
      0.3,
-     123
+     114
     ],
     [
      0.4,
@@ -2966,6 +2956,75 @@
    "ai_left_out": {
     "screened": 2,
     "long_or_linked": 1
+   }
+  },
+  "2026-11": {
+   "weeks": [
+    "2026-W45",
+    "2026-W45"
+   ],
+   "n_trivial": 5021,
+   "total": {
+    "n": 590,
+    "mean": 0.0142,
+    "glowing": 0.0017,
+    "angry": 0.0102,
+    "ai": 0
+   },
+   "dist": [
+    [
+     -0.6,
+     1
+    ],
+    [
+     -0.5,
+     1
+    ],
+    [
+     -0.4,
+     1
+    ],
+    [
+     -0.3,
+     3
+    ],
+    [
+     -0.2,
+     1
+    ],
+    [
+     -0.1,
+     13
+    ],
+    [
+     0.0,
+     502
+    ],
+    [
+     0.1,
+     38
+    ],
+    [
+     0.2,
+     7
+    ],
+    [
+     0.3,
+     22
+    ],
+    [
+     0.5,
+     1
+    ]
+   ],
+   "happy": {
+    "authors": [],
+    "reviewers": []
+   },
+   "ai": [],
+   "ai_left_out": {
+    "screened": 0,
+    "long_or_linked": 0
    }
   }
  }

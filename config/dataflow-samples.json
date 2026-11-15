@@ -30,19 +30,19 @@
       [
        "chromium-review.googlesource.com",
        "list_window",
-       "chromium/src@main|abandoned|2023-05-29T12:00:00|2023-05-29T18:00:00",
-       "https://chromium-review.googlesource.com/changes/?q=project:chromium/src+branch:main+status:abandoned+after:\"2023-05-29+12:00:00+%2B0000\"+before:\"2023-05-29+18:00:00+%2B0000\"&n=500&o=DETAILED_ACCOUNTS&o=DETAILED_LABELS",
-       "2026-11-08T14:53:57Z",
+       "chromium/src@main|abandoned|2023-05-27T18:00:00|2023-05-28T00:00:00",
+       "https://chromium-review.googlesource.com/changes/?q=project:chromium/src+branch:main+status:abandoned+after:\"2023-05-27+18:00:00+%2B0000\"+before:\"2023-05-28+00:00:00+%2B0000\"&n=500&o=DETAILED_ACCOUNTS&o=DETAILED_LABELS",
+       "2026-11-08T14:57:36Z",
        200,
-       "<11,201 bytes>",
-       "c05a3f99d08f997bd21c7a4f0f59724941c4b8026ec30eb38f96a7389bcaae53"
+       "<14,357 bytes>",
+       "8441f01da3183c57beedfe738b034f3e98292c3dade194d2ea55bf3052a957f9"
       ],
       [
        "chromium-review.googlesource.com",
        "list_window",
-       "chromium/src@main|merged|2020-11-21T06:00:00|2020-11-21T12:00:00",
-       "https://chromium-review.googlesource.com/changes/?q=project:chromium/src+branch:main+status:merged+mergedafter:\"2020-11-21+06:00:00+%2B0000\"+mergedbefore:\"2020-11-21+12:00:00+%2B0000\"&n=500&o=DETAILED_ACCOUNTS&o=DETAILED_LABELS",
-       "2026-11-10T15:08:44Z",
+       "chromium/src@main|merged|2020-11-10T12:00:00|2020-11-10T18:00:00",
+       "https://chromium-review.googlesource.com/changes/?q=project:chromium/src+branch:main+status:merged+mergedafter:\"2020-11-10+12:00:00+%2B0000\"+mergedbefore:\"2020-11-10+18:00:00+%2B0000\"&n=500&o=DETAILED_ACCOUNTS&o=DETAILED_LABELS",
+       "2026-11-10T15:09:45Z",
        200,
        "<11 bytes>",
        "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570"
@@ -50,22 +50,22 @@
       [
        "chromium-review.googlesource.com",
        "list_window",
-       "chromium/src@master|abandoned|2018-03-10T06:00:00|2018-03-10T12:00:00",
-       "https://chromium-review.googlesource.com/changes/?q=project:chromium/src+branch:master+status:abandoned+after:\"2018-03-10+06:00:00+%2B0000\"+before:\"2018-03-10+12:00:00+%2B0000\"&n=500&o=DETAILED_ACCOUNTS&o=DETAILED_LABELS",
-       "2026-11-12T01:20:17Z",
+       "chromium/src@master|abandoned|2017-09-26T00:00:00|2017-09-26T06:00:00",
+       "https://chromium-review.googlesource.com/changes/?q=project:chromium/src+branch:master+status:abandoned+after:\"2017-09-26+00:00:00+%2B0000\"+before:\"2017-09-26+06:00:00+%2B0000\"&n=500&o=DETAILED_ACCOUNTS&o=DETAILED_LABELS",
+       "2026-11-12T04:10:24Z",
        200,
-       "<2,334 bytes>",
-       "b825e07a25adfc1f3c803189fceff98b807f1eee8e225cf293a7e374f151f19d"
+       "<12,371 bytes>",
+       "d9581dfb6d11ee05793b9e3b8e1431f1c18150fd08de847c2752f5fc351ffc80"
       ],
       [
        "chromium-review.googlesource.com",
        "list_window",
-       "chromium/src@master|merged|2021-04-11T18:00:00|2021-04-12T00:00:00",
-       "https://chromium-review.googlesource.com/changes/?q=project:chromium/src+branch:master+status:merged+mergedafter:\"2021-04-11+18:00:00+%2B0000\"+mergedbefore:\"2021-04-12+00:00:00+%2B0000\"&n=500&o=DETAILED_ACCOUNTS&o=DETAILED_LABELS",
-       "2026-11-11T11:39:22Z",
+       "chromium/src@master|merged|2020-10-28T12:00:00|2020-10-28T18:00:00",
+       "https://chromium-review.googlesource.com/changes/?q=project:chromium/src+branch:master+status:merged+mergedafter:\"2020-10-28+12:00:00+%2B0000\"+mergedbefore:\"2020-10-28+18:00:00+%2B0000\"&n=500&o=DETAILED_ACCOUNTS&o=DETAILED_LABELS",
+       "2026-11-11T14:16:45Z",
        200,
-       "<11 bytes>",
-       "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570"
+       "<202,837 bytes>",
+       "92bd2e1ff0b5b7d08bbc0323813eba22e25de10943515445a34ec611e469735c"
       ]
      ]
     },
@@ -112,20 +112,20 @@
       [
        "chromium-review.googlesource.com",
        "chromium/src",
-       "2019-W45",
-       "2026-11-11T18:40:44Z",
-       2450,
-       "2026-11-11T18:43:21Z",
-       573
+       "2019-W44",
+       "2026-11-11T18:45:16Z",
+       2573,
+       "2026-11-11T18:47:49Z",
+       574
       ],
       [
        "chromium-review.googlesource.com",
        "chromium/src",
-       "2017-W27",
-       "2026-11-12T05:08:37Z",
-       900,
-       "2026-11-12T05:10:33Z",
-       695
+       "2026-W45",
+       "2026-11-15T13:31:00Z",
+       8391,
+       "2026-11-15T13:37:01Z",
+       696
       ]
      ]
     },
@@ -210,6 +210,16 @@
        47329,
        "2026-11-05T04:47:26Z",
        185
+      ],
+      [
+       "chromium-review.googlesource.com",
+       "chromium/src",
+       "2026-11-15T13:37:36Z",
+       "2017-07-03T00:00:00Z",
+       "2026-11-09T00:00:00Z",
+       61783,
+       "2026-11-15T14:14:16Z",
+       697
       ]
      ]
     },
@@ -282,35 +292,35 @@
        "failed"
       ],
       [
-       174,
-       "2026-11-05T02:09:06Z",
-       "2026-11-05T02:14:20Z",
+       175,
+       "2026-11-05T02:14:24Z",
+       "2026-11-05T02:23:00Z",
        "/home/rbagent/projects/cosh/cosh/__main__.py backfill --weeks 175 --newest 2026-W44 --go",
        56,
        "ok"
       ],
       [
-       348,
-       "2026-11-10T15:43:26Z",
-       "2026-11-10T15:44:45Z",
+       349,
+       "2026-11-10T15:44:46Z",
+       "2026-11-10T15:46:02Z",
        "/home/rbagent/projects/cosh/cosh/__main__.py backfill --weeks 312 --newest 2023-W25 --jobs 1 --go",
        56,
        "ok"
       ],
       [
-       521,
-       "2026-11-11T14:10:54Z",
-       "2026-11-11T14:16:19Z",
+       523,
+       "2026-11-11T14:25:11Z",
+       "2026-11-11T14:31:14Z",
        "/home/rbagent/projects/cosh/cosh/__main__.py backfill --weeks 312 --newest 2023-W25 --jobs 1 --go",
        56,
        "ok"
       ],
       [
-       695,
-       "2026-11-12T05:07:20Z",
-       "2026-11-12T05:10:33Z",
-       "/home/rbagent/projects/cosh/cosh/__main__.py backfill --weeks 312 --newest 2023-W25 --jobs 1 --go",
-       56,
+       697,
+       "2026-11-15T13:37:36Z",
+       "2026-11-15T14:14:16Z",
+       "/home/rbagent/projects/cosh/cosh/__main__.py extract-open",
+       605,
        "ok"
       ]
      ]
@@ -377,108 +387,108 @@
      "rows": [
       [
        "chromium-review.googlesource.com",
-       2704953,
+       6071947,
        "chromium/src",
        "main",
-       "Iac716bc84307fc8d33e09597c744b6dda377a98a",
-       1360310,
+       "If66387524c87c15dfab9855fdd3f4f4ec96ca4de",
+       1166470,
        "ABANDONED",
-       "2021-02-18 22:48:46",
-       "2021-04-06 22:16:38",
+       "2024-12-06 01:14:53",
+       "2026-11-02 04:11:24",
        null,
-       "2021-04-06 22:16:38",
-       "2021-W14",
-       2,
-       1,
-       1,
-       0,
-       0,
-       "name",
-       null
-      ],
-      [
-       "chromium-review.googlesource.com",
-       3834793,
-       "chromium/src",
-       "main",
-       "I45ff6cb5d03ff4c1f648e32d8986a28baea31655",
-       1172235,
-       "MERGED",
-       "2022-08-17 19:03:24",
-       "2022-08-17 20:52:34",
-       "2022-08-17 20:52:34",
-       "2022-08-17 20:52:34",
-       "2022-W33",
-       3,
-       589,
-       2,
-       0,
-       0,
-       "Clean up WebGPUExpectations file",
-       null
-      ],
-      [
-       "chromium-review.googlesource.com",
-       6395138,
-       "chromium/src",
-       "main",
-       "If3d7e1304c752dc256ea4700e8e51f981ea4a08f",
-       1523322,
-       "MERGED",
-       "2025-03-26 10:58:05",
-       "2025-03-26 16:47:25",
-       "2025-03-26 16:47:25",
-       "2025-03-26 16:47:25",
-       "2025-W13",
-       72,
-       74,
+       "2026-11-02 04:11:24",
+       "2026-W45",
+       16,
        5,
-       3,
+       1,
        0,
-       "[AutofillAi] Upload strings screenshots and enable translation",
+       0,
+       "[Do not land] [Linux Packaging] Rename desktop file",
        null
       ],
       [
        "chromium-review.googlesource.com",
-       2519390,
+       3812402,
        "chromium/src",
        "main",
-       "I988a13b6c5571c763f42228e87609c728099d71b",
+       "I5c91ad73f138e7690c099a4f9162caffe113fbc5",
+       1512447,
+       "MERGED",
+       "2022-08-05 14:01:43",
+       "2022-08-08 18:25:32",
+       "2022-08-08 18:25:32",
+       "2022-08-08 18:25:32",
+       "2022-W32",
+       1,
+       1,
+       6,
+       1,
+       0,
+       "[CodeHealth] Use `is_chromeos` in Grit files (/chrome/browser/resources/signin)",
+       null
+      ],
+      [
+       "chromium-review.googlesource.com",
+       6414811,
+       "chromium/src",
+       "main",
+       "I352d11c2b56c4c009f7deb31a057ea5d63cf31fa",
+       1302611,
+       "MERGED",
+       "2025-03-31 10:56:34",
+       "2025-03-31 13:54:25",
+       "2025-03-31 13:54:25",
+       "2025-03-31 13:54:25",
+       "2025-W14",
+       1,
+       1,
+       3,
+       0,
+       1,
+       "Roll Chrome Win64 PGO Profile",
+       null
+      ],
+      [
+       "chromium-review.googlesource.com",
+       2336302,
+       "chromium/src",
+       "main",
+       "I628da8cc167f21e6c75880bb4421151f1be715d6",
        1302611,
        "ABANDONED",
-       "2020-11-04 08:01:56",
-       "2020-11-04 10:52:55",
+       "2020-08-04 19:42:29",
+       "2020-08-04 22:49:22",
        null,
-       "2020-11-04 10:52:55",
-       "2020-W45",
-       1,
-       1,
+       "2020-08-04 22:49:22",
+       "2020-W32",
        2,
+       2,
+       1,
        0,
        1,
-       "Roll SPIRV-Tools from f7da52775714 to bcf5b211db92 (5 revisions)",
+       "Roll Perfetto Trace Processor Mac from 7176f54720e6 to 06e30bae5cbf",
        null
       ],
       [
        "chromium-review.googlesource.com",
-       2806414,
+       2803074,
        "chromium/src",
        "main",
-       "I0290134c148b25af98c51808134a0ee9d939f8ee",
-       1115745,
+       "Icab4e2aef501ab1e7d195747cc8c4d4d7a56a7b1",
+       1274728,
        "MERGED",
-       "2021-04-06 00:11:02",
-       "2021-04-06 19:19:24",
-       "2021-04-06 19:19:24",
-       "2021-04-06 19:19:24",
+       "2021-04-02 22:30:09",
+       "2021-04-06 18:19:48",
+       "2021-04-06 18:19:48",
+       "2021-04-06 18:19:48",
        "2021-W14",
-       14,
-       1901,
-       4,
-       8,
+       744,
        0,
-       "[Extensions UI] Stop creating the BrowserActionsContainer",
-       "chrome/browser/ui/views/extensions/extension_action_test_helper_views.cc"
+       5,
+       26,
+       0,
+       "Create NsswitchReader",
+       "net/dns/nsswitch_reader.cc"
       ]
      ]
     },
@@ -514,55 +524,55 @@
       ],
       [
        "chromium-review.googlesource.com",
-       2288949,
-       "46549d5d_c900741b",
-       1001928,
-       "2020-07-09 14:28:48",
-       "2020-W28",
-       "tools/android/dependency_analysis/js/vue_components/class_graph_page.js",
-       24,
+       2288633,
+       "0acf3e43_10562988",
+       1282737,
+       "2020-08-15 03:46:34",
+       "2020-W33",
+       "media/gpu/vaapi/vaapi_picture_native_pixmap_angle.cc",
+       138,
        0,
        0,
-       "46549d5d_c900741b"
+       "0acf3e43_10562988"
       ],
       [
        "chromium-review.googlesource.com",
-       3894513,
-       "c466884c_d2881b1d",
-       1117405,
-       "2022-09-15 19:34:24",
-       "2022-W37",
+       3885740,
+       "00ab45ac_b653b875",
+       1163549,
+       "2022-09-09 19:54:17",
+       "2022-W36",
+       "content/test/gpu/gpu_tests/webgpu_cts_integration_test.py",
+       73,
+       0,
+       0,
+       "00ab45ac_b653b875"
+      ],
+      [
+       "chromium-review.googlesource.com",
+       5826000,
+       "d79bb7e6_31879337",
+       1453272,
+       "2024-09-04 17:59:04",
+       "2024-W36",
        "/PATCHSET_LEVEL",
-       14,
+       105,
        0,
        0,
-       "c466884c_d2881b1d"
+       "d79bb7e6_31879337"
       ],
       [
        "chromium-review.googlesource.com",
-       5840697,
-       "241558a7_02154c75",
-       1161144,
-       "2024-09-30 09:24:19",
-       "2024-W40",
-       "chrome/browser/ui/ash/focus_mode/certificate_manager_unittest.cc",
-       11,
-       0,
-       1,
-       "241558a7_02154c75"
-      ],
-      [
-       "chromium-review.googlesource.com",
-       8738882,
-       "259957c4_6873d97f",
-       1546379,
-       "2026-11-05 04:14:16",
-       "2026-W45",
-       "/PATCHSET_LEVEL",
-       7,
+       8661938,
+       "00659e14_4edd6a7e",
+       4559923,
+       "2026-10-26 21:52:05",
+       "2026-W44",
+       "chrome/browser/actor/tools/observation_delay_controller.h",
+       178,
        0,
        0,
-       "259957c4_6873d97f"
+       "00659e14_4edd6a7e"
       ]
      ]
     },
@@ -592,42 +602,42 @@
       ],
       [
        "chromium-review.googlesource.com",
-       2261592,
-       "bd2673ca_85cca27e",
-       1291291,
-       4,
-       "2020-06-26 04:56:25",
-       "2578549536631824286",
+       2261152,
+       "1b89dbfb_2fb15902",
+       1180589,
+       2,
+       "2020-06-25 11:08:39",
+       "-1958142870732265200",
+       1
+      ],
+      [
+       "chromium-review.googlesource.com",
+       3865501,
+       "4182283d_fdff59af",
+       1150969,
+       3,
+       "2022-09-11 19:59:00",
+       "-5342148465842086382",
        0
       ],
       [
        "chromium-review.googlesource.com",
-       3872465,
-       "5d4875c1_d2ad333b",
-       1134915,
+       5826327,
+       "01834ca3_f7245216",
+       1357502,
        1,
        null,
-       "6462387381274524240",
+       "936851900402543962",
        0
       ],
       [
        "chromium-review.googlesource.com",
-       5840722,
-       "d19c0360_9be5fb35",
-       1348395,
+       8665140,
+       "2c1d5929_bbe3430c",
+       1182404,
        1,
        null,
-       "903120980741599148",
-       0
-      ],
-      [
-       "chromium-review.googlesource.com",
-       8738882,
-       "259957c4_6873d97f",
-       1546379,
-       1,
-       null,
-       "-5043437837196241425",
+       "-6822699323798947529",
        0
       ]
      ]
@@ -652,30 +662,30 @@
       ],
       [
        "chromium-review.googlesource.com",
-       1300333,
-       "yfa@chromium.org",
-       "Yi Fan",
+       1382066,
+       "alex313031@gmail.com",
+       "Alex Frick",
        0
       ],
       [
        "chromium-review.googlesource.com",
-       1543682,
-       "derek.basehore@gmail.com",
-       "Derek Basehore",
+       1549978,
+       "violettfaid@google.com",
+       "Violetta Fedotova",
        0
       ],
       [
        "chromium-review.googlesource.com",
-       1601462,
-       "aditya.kumar@sjsu.edu",
-       "Aditya Kumar",
+       3700023,
+       "steve@stevestoffer.com",
+       "Steve Stoffer",
        0
       ],
       [
        "chromium-review.googlesource.com",
-       1176904,
-       "jegalzz88@gmail.com",
-       "Sunwoo Nam",
+       4609213,
+       "penghuang@google.com",
+       "Peng Huang",
        0
       ]
      ]
@@ -694,31 +704,31 @@
        "chromium-review.googlesource.com",
        1302611,
        0,
-       "2026-11-11T23:17:13Z"
+       "2026-11-15T13:54:27Z"
       ],
       [
        "chromium-review.googlesource.com",
-       1427116,
+       1153089,
        1,
-       "2026-11-09T12:00:49Z"
+       "2026-11-12T05:03:16Z"
       ],
       [
        "chromium-review.googlesource.com",
-       3509834,
+       1163584,
        0,
-       "2026-11-04T17:21:54Z"
+       "2026-11-12T05:08:21Z"
       ],
       [
        "chromium-review.googlesource.com",
-       5252553,
+       1176943,
        0,
-       "2026-11-04T09:53:28Z"
+       "2026-11-12T05:04:07Z"
       ],
       [
        "chromium-review.googlesource.com",
-       1293772,
+       3891888,
        0,
-       "2026-11-11T11:40:42Z"
+       "2026-11-15T13:52:45Z"
       ]
      ]
     },
@@ -735,20 +745,20 @@
        "2026-11-12T06:02:16Z"
       ],
       [
-       "commits_since",
-       "2017-07-03"
-      ],
-      [
        "metric_version",
        "7"
       ],
       [
-       "derived_at",
-       "2026-11-15T05:16:00Z"
+       "open_snapshot_at",
+       "2026-11-15T13:37:36Z"
       ],
       [
-       "open_snapshot_at",
-       "2026-11-05T04:21:09Z"
+       "commits_since",
+       "2017-07-03"
+      ],
+      [
+       "derived_at",
+       "2026-11-15T15:30:16Z"
       ]
      ]
     }
@@ -895,16 +905,16 @@
        26142.9
       ],
       [
-       21,
+       22,
        1,
-       "2026-11-14T00:40:33Z",
-       "2026-11-14T00:42:05Z",
-       null,
-       3482,
-       35,
-       992360,
-       0.223152,
-       607.731
+       "2026-11-15T15:20:34Z",
+       "2026-11-15T15:21:36Z",
+       "[\"2026-W45\"]",
+       1823,
+       19,
+       901536,
+       0.163949,
+       364.062
       ]
      ]
     }
@@ -926,11 +936,11 @@
       ],
       [
        "[\"gerrit_weeks\"]",
-       "{\"from\": \"2017-W27\",\"to\": \"2026-W44\",\"used_by\": \"cosh extract, cosh backfill (closed CLs of chromium/src main, NoteDb refs)\",\"approved\": \"2026-11-03 (2025-W45..2026-W44), 2026-11-04 (from 2023-W26), 2026-11-08 (from 2020-W27), 2026-11-09 (f…"
+       "{\"from\": \"2017-W27\",\"to\": \"2026-W45\",\"used_by\": \"cosh extract, cosh backfill (closed CLs of chromium/src main, NoteDb refs)\",\"approved\": \"2026-11-03 (2025-W45..2026-W44), 2026-11-04 (from 2023-W26), 2026-11-08 (from 2020-W27), 2026-11-09 (f…"
       ],
       [
        "[\"patchsets\"]",
-       "{\"since\": \"2023-06-26\",\"until\": \"2026-11-02\",\"used_by\": \"cosh patchsets: every patch set of CLs with a human non-owner comment, closed (or, if open, last updated) in [since, until)\",\"approved\": \"2026-11-07\"}"
+       "{\"since\": \"2023-06-26\",\"until\": \"2026-11-09\",\"used_by\": \"cosh patchsets: every patch set of CLs with a human non-owner comment, closed (or, if open, last updated) in [since, until)\",\"approved\": \"2026-11-07; to 2026-11-09 (through 2026-W45) …"
       ],
       [
        "[\"bug_footers\"]",
@@ -1083,20 +1093,20 @@
        "{\"iso_week\": \"2017-W27\",\"org\": \"google.com\",\"share\": 0.996,\"reviewers\": 200,\"reviewed_cls\": 202,\"comments\": 1492,\"review_chars\": 188530,\"ai_comments\": 0,\"post_merge_comments\": 4,\"addressed_comments\": 1034,\"pending_comments\": 0,\"commits\": 75…"
       ],
       [
-       "[\"rows\"][1905]",
-       "{\"iso_week\": \"2020-W02\",\"org\": \"Other\",\"share\": 0.015,\"reviewers\": 3,\"reviewed_cls\": 3,\"comments\": 37,\"review_chars\": 3010,\"ai_comments\": 0,\"post_merge_comments\": 0,\"addressed_comments\": 32,\"pending_comments\": 0,\"commits\": 1,\"authors\": 1,\"s…"
+       "[\"rows\"][1911]",
+       "{\"iso_week\": \"2020-W02\",\"org\": \"yandex-team.ru\",\"share\": 0.0,\"reviewers\": 0,\"reviewed_cls\": 0,\"comments\": 0,\"review_chars\": 0,\"ai_comments\": 0,\"post_merge_comments\": 0,\"addressed_comments\": 0,\"pending_comments\": 0,\"commits\": 1,\"authors\": 1,…"
       ],
       [
-       "[\"rows\"][3810]",
-       "{\"iso_week\": \"2022-W22\",\"org\": \"samsung.com\",\"share\": 0.0,\"reviewers\": 0,\"reviewed_cls\": 0,\"comments\": 0,\"review_chars\": 0,\"ai_comments\": 0,\"post_merge_comments\": 0,\"addressed_comments\": 0,\"pending_comments\": 0,\"commits\": 1,\"authors\": 1,\"sh…"
+       "[\"rows\"][3822]",
+       "{\"iso_week\": \"2022-W23\",\"org\": \"nvidia.com\",\"share\": 0.0006,\"reviewers\": 1,\"reviewed_cls\": 0,\"comments\": 2,\"review_chars\": 30,\"ai_comments\": 0,\"post_merge_comments\": 0,\"addressed_comments\": 0,\"pending_comments\": 0,\"commits\": 0,\"authors\": 0,…"
       ],
       [
-       "[\"rows\"][5716]",
-       "{\"iso_week\": \"2024-W40\",\"org\": \"google.com\",\"share\": 0.9189,\"reviewers\": 287,\"reviewed_cls\": 377,\"comments\": 2402,\"review_chars\": 391422,\"ai_comments\": 0,\"post_merge_comments\": 15,\"addressed_comments\": 1392,\"pending_comments\": 0,\"commits\": …"
+       "[\"rows\"][5733]",
+       "{\"iso_week\": \"2024-W40\",\"org\": \"tencent.com\",\"share\": 0.0,\"reviewers\": 0,\"reviewed_cls\": 0,\"comments\": 0,\"review_chars\": 0,\"ai_comments\": 0,\"post_merge_comments\": 0,\"addressed_comments\": 0,\"pending_comments\": 0,\"commits\": 3,\"authors\": 2,\"sh…"
       ],
       [
-       "[\"rows\"][7621]",
-       "{\"iso_week\": \"2026-W44\",\"org\": \"yandex-team.ru\",\"share\": 0.0,\"reviewers\": 0,\"reviewed_cls\": 0,\"comments\": 0,\"review_chars\": 0,\"ai_comments\": 0,\"post_merge_comments\": 0,\"addressed_comments\": 0,\"pending_comments\": 0,\"commits\": 4,\"authors\": 3,…"
+       "[\"rows\"][7644]",
+       "{\"iso_week\": \"2026-W45\",\"org\": \"yandex-team.ru\",\"share\": 0.0,\"reviewers\": 0,\"reviewed_cls\": 0,\"comments\": 0,\"review_chars\": 0,\"ai_comments\": 0,\"post_merge_comments\": 0,\"addressed_comments\": 0,\"pending_comments\": 0,\"commits\": 3,\"authors\": 2,…"
       ]
      ]
     },
@@ -1132,31 +1142,31 @@
        "832"
       ],
       [
-       "2022-W09",
-       "3088",
-       "2502",
-       "586",
-       "1971",
-       "1117",
-       "1148"
+       "2022-W10",
+       "2726",
+       "2285",
+       "441",
+       "1837",
+       "889",
+       "1175"
       ],
       [
-       "2024-W26",
-       "3644",
-       "3069",
-       "575",
-       "2431",
-       "1213",
-       "1499"
+       "2024-W27",
+       "3013",
+       "2496",
+       "517",
+       "1865",
+       "1148",
+       "1124"
       ],
       [
-       "2026-W44",
-       "7645",
-       "5823",
-       "1822",
-       "5426",
-       "2219",
-       "2778"
+       "2026-W45",
+       "8396",
+       "6200",
+       "2196",
+       "5838",
+       "2558",
+       "3153"
       ]
      ]
     },
@@ -1170,7 +1180,7 @@
      "rows": [
       [
        "[\"meta\"]",
-       "{\"generated_at\": \"2026-11-15T05:19:53Z\",\"columns\": [\"account_id\",\"org\",\"comments\",\"cls\",\"chars\",\"addressed\"],\"fold_into_other\": [\"Undisclosed\",\"gmail.com\"],\"scope\": \"every reviewer, one row per (week, account, org); same scope and weeks as …"
+       "{\"generated_at\": \"2026-11-15T15:32:31Z\",\"columns\": [\"account_id\",\"org\",\"comments\",\"cls\",\"chars\",\"addressed\"],\"fold_into_other\": [\"Undisclosed\",\"gmail.com\"],\"scope\": \"every reviewer, one row per (week, account, org); same scope and weeks as …"
       ],
       [
        "[\"orgs\"]",
@@ -1200,7 +1210,7 @@
      "rows": [
       [
        "[\"meta\"]",
-       "{\"generated_at\": \"2026-11-15T05:19:53Z\",\"columns\": [\"account_id\",\"org\",\"commits\",\"files\"],\"fold_into_other\": [\"Undisclosed\",\"gmail.com\"],\"scope\": \"every commit author, one row per (week, account, org): human commits on main touching an in-s…"
+       "{\"generated_at\": \"2026-11-15T15:32:31Z\",\"columns\": [\"account_id\",\"org\",\"commits\",\"files\"],\"fold_into_other\": [\"Undisclosed\",\"gmail.com\"],\"scope\": \"every commit author, one row per (week, account, org): human commits on main touching an in-s…"
       ],
       [
        "[\"orgs\"]",
@@ -1233,20 +1243,20 @@
        "[-1,\"(no file)\",0]"
       ],
       [
-       "[\"nodes\"][3463]",
-       "[1181,\"raw/\",0]"
+       "[\"nodes\"][3466]",
+       "[1189,\"javatests/\",0]"
       ],
       [
-       "[\"nodes\"][6926]",
-       "[4432,\"privacy_sandbox/\",0]"
+       "[\"nodes\"][6931]",
+       "[4429,\"profiles/\",0]"
       ],
       [
-       "[\"nodes\"][10388]",
-       "[8461,\"app-history-entry/\",1]"
+       "[\"nodes\"][10396]",
+       "[8454,\"resources/\",1]"
       ],
       [
-       "[\"nodes\"][13851]",
-       "[13836,\"webid/\",0]"
+       "[\"nodes\"][13862]",
+       "[13847,\"webid/\",0]"
       ]
      ]
     },
@@ -1267,16 +1277,16 @@
        "[[0,114,1144344,6,1001934,4,1118421,4,1000763,3,1274627,3,1000023,2,1000623,2,1001470,2,1002681,2,1115893,2,1116059,2,1131764,2,1178124,2,1181219,2,1211509,2,1211592,2,1000111,1,1000158,1,1000164,1,1000191,1,1000193,1,1000303,1,1000640,1,10…"
       ],
       [
-       "[\"weeks\"][\"2022-W09\"]",
-       "[[0,64,1537267,1],[0,114,1115916,24,1001168,19,1000101,16,1115958,14,1186534,13,1001529,12,1115745,11,1160859,10,1499972,10,1105344,9,1196199,9,1306173,9,1001629,8,1110037,8,1161814,8,1180589,8,1000023,7,1000119,7,1001934,7,1002603,7,111597…"
+       "[\"weeks\"][\"2022-W10\"]",
+       "[[0,7,1535252,1],[0,82,1117029,1],[0,114,1186534,18,1115916,17,1316409,17,1001629,13,1001934,13,1125479,12,1499972,12,1000101,11,1000763,10,1110037,10,1166499,10,1001168,9,1150969,9,1290431,9,1453272,9,1116027,8,1194993,8,1000023,7,1289180,…"
       ],
       [
-       "[\"weeks\"][\"2024-W26\"]",
-       "[[0,7,1196635,2],[0,114,1113941,29,1001934,26,1285054,25,1116027,20,1357502,20,1000887,19,1115863,18,1122966,17,1001168,13,1000101,12,1110037,12,1125479,12,1002340,11,1115916,11,1115976,11,1385869,11,1413245,11,1128431,10,1537007,10,1109584…"
+       "[\"weeks\"][\"2024-W27\"]",
+       "[[0,7,1354899,1],[0,114,1000887,49,1113941,24,1357502,23,1128431,21,1115863,14,1115919,14,1228344,14,1537007,14,1115916,13,1001168,12,1002500,12,1285054,12,1000101,10,1113896,10,1453272,10,1000022,9,1116027,9,1490842,9,1002340,8,1160212,8,1…"
       ],
       [
-       "[\"weeks\"][\"2026-W44\"]",
-       "[[0,7,1002525,3,1002481,2,1231371,2,1161294,1,3395304,1],[0,114,1285054,66,1357502,61,1113941,49,1128431,31,1000045,25,1160859,24,1001168,21,1110037,20,1000022,19,1115919,18,1116027,17,1241393,17,1001216,16,1001934,16,1115958,16,1524878,16,…"
+       "[\"weeks\"][\"2026-W45\"]",
+       "[[0,7,3556263,2,1196635,1,1222584,1,1583582,1],[0,114,1285054,91,1113941,48,1357502,43,1546412,32,1546379,28,1374169,25,1537007,24,1001168,23,1116027,23,1524878,23,1000023,21,1115893,21,1153420,21,1000022,19,1180589,19,4034803,19,1113896,18…"
       ]
      ]
     },
@@ -1297,16 +1307,16 @@
        "[[1,65,1],[1,114,49],[1,136,1],[12,114,3],[14,114,13],[15,114,9],[18,114,8],[18,136,1],[22,114,3],[27,114,2],[28,114,3],[31,114,8],[40,114,7],[41,114,2],[50,114,3],[57,114,3],[60,114,8],[62,114,1],[65,114,3],[67,114,2],[74,114,6],[79,114,2]…"
       ],
       [
-       "[\"weeks\"][\"2022-W09\"]",
-       "[[1,7,1],[1,114,26],[1,136,2],[1,320,1],[12,114,3],[13,114,1],[14,114,17],[14,136,1],[15,114,8],[21,114,4],[22,114,2],[27,114,2],[28,114,16],[28,136,1],[31,114,17],[31,317,1],[34,114,1],[36,114,1],[38,317,1],[40,114,5],[47,114,2],[50,114,2]…"
+       "[\"weeks\"][\"2022-W10\"]",
+       "[[1,31,1],[1,48,1],[1,114,22],[1,136,1],[1,320,2],[12,114,4],[13,114,1],[14,114,26],[15,114,9],[18,114,2],[22,114,5],[27,114,2],[28,114,13],[31,114,15],[39,114,1],[40,114,1],[41,114,1],[52,114,1],[62,114,4],[64,114,7],[65,114,1],[73,114,1],…"
       ],
       [
-       "[\"weeks\"][\"2024-W26\"]",
-       "[[1,48,1],[1,114,52],[1,137,1],[1,142,1],[12,114,4],[14,114,23],[14,208,2],[15,114,10],[15,147,1],[18,114,4],[18,197,1],[21,114,1],[22,114,6],[22,197,1],[27,114,1],[28,114,9],[31,114,28],[31,197,1],[36,114,3],[39,114,1],[40,114,1],[47,114,1…"
+       "[\"weeks\"][\"2024-W27\"]",
+       "[[1,44,1],[1,114,30],[12,114,1],[14,114,24],[15,114,12],[18,114,2],[21,114,2],[22,114,8],[27,114,1],[28,114,8],[31,114,17],[36,114,1],[40,7,1],[40,114,5],[41,114,2],[47,114,5],[50,114,1],[52,114,4],[53,114,3],[59,114,3],[60,114,9],[70,114,1…"
       ],
       [
-       "[\"weeks\"][\"2026-W44\"]",
-       "[[1,7,3],[1,114,37],[1,136,4],[1,197,1],[11,114,6],[12,114,7],[14,114,8],[15,114,15],[15,197,3],[18,114,7],[18,146,2],[19,114,2],[20,114,1],[21,114,4],[22,114,5],[27,114,3],[28,114,5],[31,7,1],[31,114,45],[33,114,1],[36,114,6],[38,114,1],[4…"
+       "[\"weeks\"][\"2026-W45\"]",
+       "[[1,7,5],[1,114,53],[1,207,1],[7,197,1],[11,114,2],[12,114,2],[14,114,11],[14,136,3],[15,114,16],[18,114,5],[19,114,2],[20,114,3],[21,114,3],[22,114,8],[27,114,1],[28,114,11],[31,7,1],[31,114,32],[33,114,1],[36,114,5],[38,114,3],[40,114,1],…"
       ]
      ]
     },
@@ -1327,16 +1337,16 @@
        "[[1,65,1353839,1],[1,114,1118373,13,1116066,2,1141154,2,1167961,2,1286313,2,1000045,1,1000602,1,1000763,1,1001385,1,1001604,1,1002092,1,1002927,1,1003006,1,1115523,1,1115878,1,1115884,1,1117479,1,1119600,1,1119849,1,1126674,1,1130679,1,1161…"
       ],
       [
-       "[\"weeks\"][\"2022-W09\"]",
-       "[[1,7,1535307,1],[1,114,1001562,4,1001168,2,1163599,2,1300147,2,1306173,2,1000768,1,1002481,1,1129860,1,1139659,1,1160861,1,1163549,1,1167961,1,1174099,1,1175332,1,1215804,1,1237531,1,1286337,1,1395206,1,1519855,1],[1,136,1244248,1,1484492,…"
+       "[\"weeks\"][\"2022-W10\"]",
+       "[[1,31,1247893,1],[1,48,1536182,1],[1,114,1126674,2,1144624,2,1167961,2,1171444,2,1360310,2,1000158,1,1000768,1,1001562,1,1129860,1,1139659,1,1163595,1,1186107,1,1215804,1,1327479,1,1398847,1,1520327,1,4778721,1],[1,136,1484492,1],[1,320,15…"
       ],
       [
-       "[\"weeks\"][\"2024-W26\"]",
-       "[[1,48,1479859,1],[1,114,1001562,3,1001939,3,1002219,3,1000097,2,1116070,2,1126674,2,1453423,2,1534027,2,1577372,2,1000781,1,1000887,1,1001168,1,1001604,1,1001934,1,1002174,1,1003214,1,1115868,1,1115876,1,1116294,1,1121230,1,1147264,1,11587…"
+       "[\"weeks\"][\"2024-W27\"]",
+       "[[1,44,1587162,1],[1,114,1000887,3,1001562,3,1549027,3,1115893,2,1178124,2,1001168,1,1001191,1,1001939,1,1002927,1,1115868,1,1116491,1,1139834,1,1162075,1,1163595,1,1286337,1,1293547,1,1303352,1,1453423,1,1527467,1,1529447,1,1534027,1,15577…"
       ],
       [
-       "[\"weeks\"][\"2026-W44\"]",
-       "[[1,7,5223930,1,5244621,1,5252619,1],[1,114,1128431,3,1001939,2,1126674,2,1526357,2,3539884,2,4982778,2,1001168,1,1001250,1,1001934,1,1002219,1,1002340,1,1115893,1,1116294,1,1126910,1,1130134,1,1133074,1,1160944,1,1166470,1,1171061,1,131307…"
+       "[\"weeks\"][\"2026-W45\"]",
+       "[[1,7,5220621,1,5273065,1,5280975,1,5281929,1,5292223,1],[1,114,1116047,3,3787127,3,1001939,2,1002854,2,1103654,2,1116294,2,1123071,2,1130134,2,1516597,2,1552902,2,1001562,1,1001934,1,1002054,1,1002120,1,1002237,1,1002340,1,1002888,1,100332…"
       ]
      ]
     },
@@ -1366,7 +1376,7 @@
       ],
       [
        "[\"threads\"][623]",
-       "{\"week\": \"2026-W44\",\"outcome\": \"no_reply\",\"cl\": 8614132,\"root\": \"48d11739_b30152a4\",\"path\": \"build/knowledge_base/avoid-overriding-variables-with-transformed-results.md\",\"more\": 0,\"messages\": [[\"reviewer\",\"This seems too verbose for what sh…"
+       "{\"week\": \"2026-W45\",\"outcome\": \"no_reply\",\"cl\": 8713301,\"root\": \"504dfb5c_6a46b127\",\"path\": \"/PATCHSET_LEVEL\",\"more\": 0,\"messages\": [[\"reviewer\",\"Also, looking at the associated bug, it seems like the root cause is that `IsApplicationInstal…"
       ]
      ]
     },
@@ -1426,23 +1436,23 @@
       "ref",
       "object"
      ],
-     "total": 2018759,
+     "total": 2023421,
      "rows": [
       [
        "refs/patchsets/1006660/1",
        "d741da3026577"
       ],
       [
-       "refs/patchsets/5506743/11",
-       "45fea6f352a72"
+       "refs/patchsets/5508932/1",
+       "14a85c430f45a"
       ],
       [
-       "refs/patchsets/6503075/1",
-       "3ab2bf43e11e3"
+       "refs/patchsets/6507110/7",
+       "3b9078ffd8c6c"
       ],
       [
-       "refs/patchsets/7703252/4",
-       "791b0fa0346c9"
+       "refs/patchsets/7706920/10",
+       "4183573a8ee2f"
       ],
       [
        "refs/patchsets/994543/1",
@@ -1794,7 +1804,7 @@
      "rows": [
       [
        "[\"generated_at\"]",
-       "\"2026-11-15T05:23:15Z\""
+       "\"2026-11-15T15:36:06Z\""
       ],
       [
        "[\"sample\"]",
@@ -1805,12 +1815,12 @@
        "\"everyone\""
       ],
       [
-       "[\"months\"]",
-       "[{\"m\": \"2023-07\",\"full\": false,\"month\": {\"n\": 2313,\"mean\": 0.0144,\"lo\": 0.0105,\"hi\": 0.0184,\"glowing\": 0.0091,\"glowing_ci\": [0.00595,0.01384],\"angry\": 0.0108,\"angry_ci\": [0.00733,0.01591],\"ai\": 0.0,\"ai_ci\": [0,0.00166]},\"span\": [\"2023-07\",\"…"
+       "[\"n\"]",
+       "617625"
       ],
       [
-       "[\"missing\"]",
-       "0"
+       "[\"data_span\"]",
+       "{\"first\": \"2023-07-01\",\"last\": \"2026-11-08\",\"sources\": [\"gerrit\"]}"
       ]
      ]
     },
@@ -1824,11 +1834,11 @@
      "rows": [
       [
        "[\"generated_at\"]",
-       "\"2026-11-15T05:29:27Z\""
+       "\"2026-11-15T15:36:11Z\""
       ],
       [
        "[\"weeks\"]",
-       "[\"2025-W45\",\"2026-W44\"]"
+       "[\"2025-W46\",\"2026-W45\"]"
       ],
       [
        "[\"angry\"]",
@@ -1836,11 +1846,11 @@
       ],
       [
        "[\"coverage\"]",
-       "[{\"week\": \"2025-W45\",\"unscored\": 0},{\"week\": \"2025-W46\",\"unscored\": 0},{\"week\": \"2025-W47\",\"unscored\": 0},{\"week\": \"2025-W48\",\"unscored\": 0},{\"week\": \"2025-W49\",\"unscored\": 0},{\"week\": \"2025-W50\",\"unscored\": 0},{\"week\": \"2025-W51\",\"unscored…"
+       "[{\"week\": \"2025-W46\",\"unscored\": 0},{\"week\": \"2025-W47\",\"unscored\": 0},{\"week\": \"2025-W48\",\"unscored\": 0},{\"week\": \"2025-W49\",\"unscored\": 0},{\"week\": \"2025-W50\",\"unscored\": 0},{\"week\": \"2025-W51\",\"unscored\": 0},{\"week\": \"2025-W52\",\"unscored…"
       ],
       [
        "[\"net\"]",
-       "{\"all\": {\"given\": [{\"email\": \"myuu@google.com\",\"name\": \"Menghan Yang\",\"score\": 31.0,\"praise\": 71},{\"email\": \"tjudkins@chromium.org\",\"name\": \"Tim\",\"score\": 28.7,\"praise\": 68},{\"email\": \"creis@chromium.org\",\"name\": \"Charlie Reis\",\"score\": 23.…"
+       "{\"all\": {\"given\": [{\"email\": \"myuu@google.com\",\"name\": \"Menghan Yang\",\"score\": 30.8,\"praise\": 70},{\"email\": \"tjudkins@chromium.org\",\"name\": \"Tim\",\"score\": 27.7,\"praise\": 66},{\"email\": \"creis@chromium.org\",\"name\": \"Charlie Reis\",\"score\": 24.…"
       ]
      ]
     },
@@ -1854,11 +1864,11 @@
      "rows": [
       [
        "[\"generated_at\"]",
-       "\"2026-11-15T05:33:59Z\""
+       "\"2026-11-15T15:36:22Z\""
       ],
       [
        "[\"weeks\"]",
-       "[\"2025-W45\",\"2026-W44\"]"
+       "[\"2025-W46\",\"2026-W45\"]"
       ],
       [
        "[\"authors\"]",
@@ -1884,11 +1894,11 @@
      "rows": [
       [
        "[\"generated_at\"]",
-       "\"2026-11-15T05:38:25Z\""
+       "\"2026-11-15T15:36:55Z\""
       ],
       [
        "[\"weeks\"]",
-       "[\"2025-W45\",\"2026-W44\"]"
+       "[\"2025-W46\",\"2026-W45\"]"
       ],
       [
        "[\"thresholds\"]",
@@ -1896,11 +1906,11 @@
       ],
       [
        "[\"weekly\"]",
-       "[{\"week\": \"2025-W45\",\"n\": 10025,\"mean\": 0.0103,\"glowing\": 0.0082,\"angry\": 0.0143,\"ai\": 9},{\"week\": \"2025-W46\",\"n\": 9098,\"mean\": 0.0089,\"glowing\": 0.0076,\"angry\": 0.0147,\"ai\": 2},{\"week\": \"2025-W47\",\"n\": 10140,\"mean\": 0.0119,\"glowing\": 0.009…"
+       "[{\"week\": \"2025-W46\",\"n\": 9098,\"mean\": 0.0089,\"glowing\": 0.0076,\"angry\": 0.0147,\"ai\": 2},{\"week\": \"2025-W47\",\"n\": 10140,\"mean\": 0.0119,\"glowing\": 0.009,\"angry\": 0.0128,\"ai\": 12},{\"week\": \"2025-W48\",\"n\": 7779,\"mean\": 0.0103,\"glowing\": 0.01,\"…"
       ],
       [
        "[\"periods\"]",
-       "{\"all\": {\"weeks\": [\"2025-W45\",\"2026-W44\"],\"n_trivial\": 200154,\"total\": {\"n\": 590046,\"mean\": 0.0107,\"glowing\": 0.0081,\"angry\": 0.0154,\"ai\": 1384},\"dist\": [[-1.0,7],[-0.9,13],[-0.8,14],[-0.7,25],[-0.6,310],[-0.5,306],[-0.4,730],[-0.3,7664],[-…"
+       "{\"all\": {\"weeks\": [\"2025-W46\",\"2026-W45\"],\"n_trivial\": 201476,\"total\": {\"n\": 596075,\"mean\": 0.0107,\"glowing\": 0.008,\"angry\": 0.0154,\"ai\": 1462},\"dist\": [[-1.0,7],[-0.9,13],[-0.8,13],[-0.7,25],[-0.6,316],[-0.5,317],[-0.4,739],[-0.3,7754],[-0…"
       ]
      ]
     },
@@ -1917,16 +1927,16 @@
        "\"lin huang\""
       ],
       [
-       "[\"people\"][\"elormcoch@microsoft.com\"]",
-       "\"Sylvester Elorm Coch\""
+       "[\"people\"][\"ellyjones@chromium.org\"]",
+       "\"Elly\""
       ],
       [
-       "[\"people\"][\"lalday@google.com\"]",
-       "\"Laura Lucas Alday (xWF)\""
+       "[\"people\"][\"lagarwal@microsoft.com\"]",
+       "\"Lipika Agarwal\""
       ],
       [
-       "[\"people\"][\"ruoxih@google.com\"]",
-       "\"Ruoxi He\""
+       "[\"people\"][\"rulongchen@live.com\"]",
+       "\"Rulong Chen\""
       ],
       [
        "[\"people\"][\"zzslipyx@gmail.com\"]",
@@ -1948,29 +1958,29 @@
      ],
      "rows": [
       [
-       "733ab8429e3a5",
-       "2026-11-07T07:48:45-08:00",
-       "Roll Help App from daGlMaPDWGLGHgEAZ... to Sh0_-mb11IJ5d1kb1..."
+       "0e1828b212693",
+       "2026-11-15T06:02:13-08:00",
+       "Roll Chrome Android ARM32 Orderfile from UkHnZbAVbvGeIMtnp... to 3ICNs03G_DWObjNVN..."
       ],
       [
-       "14e55558ce646",
-       "2026-11-07T07:41:30-08:00",
-       "Roll ChromeOS Bigcore AFDO profile from 159-8117.0-1793589435-benchmark-159.0.8139.0_pre1732578-r1 to 159-8117.0-1793589435-benchmark-159.0.8148.0_pre1738230-r1"
+       "f58df7b5bd979",
+       "2026-11-15T05:51:12-08:00",
+       "Roll ios_internal from a1d3fed5fe8a to d13b8a6e2b46"
       ],
       [
-       "2f7f6a03169ab",
-       "2026-11-07T07:20:55-08:00",
-       "Roll WebView ARM64 Orderfile from dECF5Jq_W-Xjyt0lA... to 2Xa2bYszS1uMNFLPz..."
+       "8c31362f865ce",
+       "2026-11-15T05:47:19-08:00",
+       "Roll Chrome Mac Arm PGO Profile"
       ],
       [
-       "8229683bb7738",
-       "2026-11-07T07:20:33-08:00",
-       "[CT] Automatic update from google3"
+       "aa345ede3fb87",
+       "2026-11-15T05:40:27-08:00",
+       "Roll WebView ARM Orderfile from _1zYT6tSvHqu3-z4c... to 3xiN1u23mFhgr0tSF..."
       ],
       [
-       "a9c91a92a3350",
-       "2026-11-07T07:18:54-08:00",
-       "Roll Chrome Win32 PGO Profile"
+       "1f6b4fe00cad6",
+       "2026-11-15T05:24:39-08:00",
+       "Roll Chrome Android ARM64 Orderfile from 8r7k-rbLJZdXlHBiX... to z9Adec2tQa7umGK7l..."
       ]
      ]
     }
@@ -2021,34 +2031,15 @@
        0
       ],
       [
-       39878,
-       "9ebd37eb06f548f94cab9719b07ad4615b4725cd",
-       "moshayedi@chromium.org",
-       "moshayedi",
-       1497989777,
-       1497989777,
-       null,
+       41533,
+       "fd14deaa64e224be52fd0bf77ef3f5a450404da5",
+       "jzfeng@chromium.org",
+       "Jianzhou Feng",
+       1498552431,
+       1498555340,
+       549838,
        0,
-       null,
-       null,
-       0,
-       0,
-       0,
-       1,
-       1,
-       7,
-       0
-      ],
-      [
-       459066,
-       "0fd949cccacd5addf9c51c8db7bd9b419d2c8abb",
-       "chromium-internal-autoroll@skia-corp.google.com.iam.gserviceaccount.com",
-       "chromium-internal-autoroll",
-       1625860863,
-       1625860863,
-       3018117,
-       1,
-       "[\"petewil@chromium.org\"]",
+       "[\"eseckler@chromium.org\"]",
        null,
        0,
        0,
@@ -2059,32 +2050,51 @@
        0
       ],
       [
-       878254,
-       "7f752f40bff48fa66dd027ceaa4db118f67c4292",
-       "rockot@google.com",
-       "Ken Rockot",
-       1719340401,
-       1719340401,
-       5655251,
-       0,
-       "[\"oksamyt@chromium.org\"]",
+       462377,
+       "3e748747801c12b2a2b6c3f3badf9328f0142235",
+       "chromium-autoroll@skia-public.iam.gserviceaccount.com",
+       "chromium-autoroll",
+       1626783433,
+       1626783433,
+       3040060,
+       1,
+       null,
        null,
        0,
        0,
        0,
        1,
+       1,
+       1,
+       0
+      ],
+      [
+       883221,
+       "f0682225158d667654a1ad0bf2068952ab175ea4",
+       "skavuluru@google.com",
+       "Sirisha Kavuluru",
+       1720455279,
+       1720455279,
+       5677369,
+       0,
+       "[\"nemco@google.com\", \"twellington@chromium.org\"]",
+       null,
+       0,
+       0,
+       0,
        3,
-       0,
+       14,
+       34,
        0
       ],
       [
-       1297442,
-       "733ab8429e3a5f881e2fd576f01942849cae7aef",
-       "chromium-internal-autoroll@skia-corp.google.com.iam.gserviceaccount.com",
-       "chromium-internal-autoroll@skia-corp.google.com.iam.gserviceaccount.com",
-       1794066525,
-       1794066525,
-       8760981,
+       1304065,
+       "0e1828b21269313d143271d8a950f5ec5482c48b",
+       "chromium-autoroll@skia-public.iam.gserviceaccount.com",
+       "chromium-autoroll@skia-public.iam.gserviceaccount.com",
+       1794751333,
+       1794751333,
+       8813769,
        1,
        null,
        null,
@@ -2153,20 +2163,20 @@
        "third_party/WebKit/LayoutTests/http/tests/inspector-protocol/request-referrer-policy-expected.txt"
       ],
       [
-       410653,
-       "third_party/WebKit/LayoutTests/editing/selection/paragraph-with-ruby.html"
+       412063,
+       "third_party/WebKit/LayoutTests/fast/body-propagation/overflow/005.html"
       ],
       [
-       821306,
-       "third_party/blink/web_tests/wpt_internal/css/css-conditional/container-queries/at-container-007.html"
+       824125,
+       "third_party/blink/web_tests/flag-specific/highdpi/virtual/layout_ng_printing/printing/fixed-positioned-headers-and-footers-absolute-covering-some-pages-expected.png"
       ],
       [
-       1231959,
-       "chrome/browser/resources/chromeos/accessibility/chromevox/mv2/background/event/base_automation_handler.ts"
+       1236187,
+       "third_party/rust/chromium_crates_io/vendor/icu_capi-v2/bindings/c/DateTime.h"
       ],
       [
-       1642612,
-       "chrome/browser/chrome_frame.h"
+       1648250,
+       "components/sync_sessions/fake_session_sync_service.h"
       ]
      ]
     },
@@ -2225,20 +2235,20 @@
        0.769324
       ],
       [
-       333226,
-       0.334862
+       334877,
+       0.259067
       ],
       [
-       654623,
-       0.39165
+       657933,
+       0.275862
       ],
       [
-       976043,
-       0.129187
+       980976,
+       0.709887
       ],
       [
-       1297428,
-       0.265517
+       1304030,
+       0.0
       ]
      ]
     },
@@ -2301,16 +2311,16 @@
        8
       ],
       [
-       392033
+       448165
       ],
       [
-       779986
+       824174
       ],
       [
-       1170027
+       1236189
       ],
       [
-       1559965
+       1648250
       ]
      ]
     }
@@ -2339,36 +2349,36 @@
        "84f364ef7d88d10ba4a5cb1e5c1505300bb16052"
       ],
       [
-       2495696,
+       2494283,
        3,
-       1603498252,
-       1116284,
+       1603503226,
+       1395698,
        "rework",
-       "aa17ca5669b2d7b812443e933b5f672e0004bd30"
+       "1d8ca006b3e491b235744e69ffd3ca668c481ec5"
       ],
       [
-       4314162,
-       5,
-       1678193690,
-       1367901,
-       "rework",
-       "5409dbf4270f577b85d2bade2504e41442804f98"
-      ],
-      [
-       6368814,
-       21,
-       1743001550,
-       1512158,
-       "rework",
-       "fd3424695eceb9d2f35f1082b07d60488a7a391e"
-      ],
-      [
-       8739321,
+       4296143,
        2,
-       1793851686,
-       1000175,
+       1677682633,
+       1559282,
        "rework",
-       "a40f8166cc5fcf09fb2796d5b68c34a9309bdbc2"
+       "b6d35d337db70a2fec851b3c4cf1bf52ca2c9fd5"
+      ],
+      [
+       6344951,
+       26,
+       1742402727,
+       1575712,
+       "rework",
+       "2cb9f904e8cc2a803548a511590b9c649506bc63"
+      ],
+      [
+       8669560,
+       10,
+       1793377274,
+       1113941,
+       "rebase",
+       "95141d496756450d3538c7b4dcfdf863460627e4"
       ]
      ]
     },
@@ -2389,28 +2399,28 @@
        1603356253
       ],
       [
-       3645073,
-       1527289,
-       1652904902,
-       1652942956
+       3639165,
+       1523712,
+       1652219686,
+       1652285702
       ],
       [
-       4971177,
-       1357502,
-       1698163969,
-       1698254538
+       4953786,
+       1170419,
+       1701970979,
+       1701973532
       ],
       [
-       6624773,
-       1123071,
-       1749148283,
-       1749148582
+       6606457,
+       1323871,
+       1756112365,
+       1756877225
       ],
       [
-       8739321,
-       1528762,
-       1793851738,
-       1793853609
+       8672859,
+       1001250,
+       1793250220,
+       1793291025
       ]
      ]
     },
@@ -2433,31 +2443,31 @@
        2
       ],
       [
-       2583012,
-       1002897,
+       2582814,
+       1001385,
        1,
-       1610039424,
-       4
-      ],
-      [
-       4300773,
-       1512652,
-       1,
-       1677767914,
+       1607967953,
        1
       ],
       [
-       6222782,
-       1001168,
+       4298063,
+       1115907,
        1,
-       1738626051,
+       1678144411,
        5
       ],
       [
-       8738882,
-       1546379,
+       6219635,
+       1512447,
        1,
-       1793853677,
+       1738343665,
+       4
+      ],
+      [
+       8690876,
+       1000023,
+       1,
+       1793665424,
        2
       ]
      ]
@@ -2475,20 +2485,20 @@
        "fdacc0ad41541a0dd632d3bbef662ed0cda7ab4a"
       ],
       [
-       2455246,
-       "6d9596858203949ffa7506ad539ec9bd0454c34c"
+       2475754,
+       "3ebd3e8abed13f0578e425cbd878b8ebc0b24206"
       ],
       [
-       4549943,
-       "679a2bcfcc5885815f64e93259f34ccd3af42bf5"
+       4590994,
+       "e6c4733a520a23acd30f16b6c01fd0b978cc9830"
       ],
       [
-       6644620,
-       "61a1476370c698158dc96267fbb396e873381a9e"
+       6706277,
+       "e1b55bfa18a0e45b64c21243ce96986fe7a77520"
       ],
       [
-       8739321,
-       "817ea6ae2c8f8e739d80d68c8ff2983e20af65d8"
+       8821425,
+       "d81f46f1edc1cc122d4b827918af1bf694ee3313"
       ]
      ]
     },
@@ -2521,16 +2531,16 @@
        1585763216
       ],
       [
-       5120039,
-       1000763,
+       5120036,
+       1427802,
        1,
-       1702493181
+       1702490560
       ],
       [
-       8389866,
-       1109505,
+       8388657,
+       1148126,
        1,
-       1789389841
+       1789144662
       ]
      ]
     },
@@ -2547,20 +2557,20 @@
        "7746eb41354edd1172dd110ac1e0a8e669676ac2405eb34c9f0eea4ea09b1f73"
       ],
       [
-       "chromium/src@main|abandoned|2025-11-03T12:00:00|2025-11-03T18:00:00",
-       "85163f3e450afafe819603b6a33667a01f3bf103256e650ffcc439529cd7816d"
+       "chromium/src@main|abandoned|2025-11-07T00:00:00|2025-11-07T06:00:00",
+       "8aa77c5d4a6a78ac9cc6aef2ffebf04658ddbd784e9be71c07ba3d3faaa7bda2"
       ],
       [
-       "chromium/src@main|merged|2024-11-14T18:00:00|2024-11-15T00:00:00",
-       "5e610293de40a1ae33e5996a3fed5c66dafe748577906a0d54846f7444dbb0a2"
+       "chromium/src@main|merged|2024-11-21T18:00:00|2024-11-22T00:00:00",
+       "879ef7aede8a5dbfd8fb1d613b69852497e038b0d0d376a1448458f5017fed17"
       ],
       [
-       "chromium/src@master|abandoned|2020-05-24T00:00:00|2020-05-24T06:00:00",
-       "98fc36f7fc39a28acc6be44f8235bfbfa341e3d7ced49089f1ad618959755983"
+       "chromium/src@master|abandoned|2020-06-03T18:00:00|2020-06-04T00:00:00",
+       "6b4df1f8f98a4e46aa6c0409d98ebb272499863d80e30b3e73f6efa5af5e2bb4"
       ],
       [
-       "chromium/src@master|merged|2021-04-06T18:00:00|2021-04-07T00:00:00",
-       "b75993fb50577ea55f25488fa824f4971b931b2e505365971558e90587f7f4c1"
+       "chromium/src@main|merged|2026-11-08T18:00:00|2026-11-09T00:00:00",
+       "318c9562971a78af5a524d75c33f43bf675a1ef8df18f1b941eba3b265d6568a"
       ]
      ]
     },
@@ -2573,9 +2583,7 @@
       "asked_at",
       "responded_at",
       "attention_h",
-      "attention_weekday_h",
-      "turns",
-      "turn_weekday_h"
+      "attention_weekday_h"
      ],
      "rows": [
       [
@@ -2584,49 +2592,73 @@
        null,
        1483727006,
        null,
+       null
+      ],
+      [
+       2343319,
+       1001529,
+       1596831473,
+       1596831533,
+       1.11417,
+       1.11417
+      ],
+      [
+       4125537,
+       1449594,
        null,
+       1672151975,
        null,
        null
       ],
       [
-       2343783,
-       1276881,
-       1597077900,
-       1597085394,
-       27.2558,
-       27.2558,
-       2,
-       24.1461
+       6171924,
+       1525643,
+       1736812708,
+       1736815231,
+       2.04,
+       2.04
       ],
       [
-       4135204,
-       1288347,
-       1672941299,
-       1672962103,
-       5.77889,
-       5.77889,
-       1,
-       5.77889
+       8685621,
+       1163549,
+       1793730095,
+       1793732783,
+       0.746667,
+       0.746667
+      ]
+     ]
+    },
+    {
+     "name": "cl_turns",
+     "kind": "rows",
+     "columns": [
+      "change_number",
+      "account_id",
+      "start_at",
+      "end_at",
+      "weekday_h"
+     ],
+     "rows": [
+      [
+       532595,
+       1001472,
+       1597198817,
+       1603356766,
+       1230.54
       ],
       [
-       6181537,
-       1000175,
-       1737272228,
-       1737348452,
-       21.1733,
-       4.79222,
-       1,
-       4.79222
+       4688705,
+       1413373,
+       1689653826,
+       1689661136,
+       2.03056
       ],
       [
-       8739321,
-       1528762,
-       1793851738,
-       null,
-       0.519722,
-       0.519722,
-       0,
-       0.0
+       7682505,
+       1146978,
+       1774319442,
+       1774386253,
+       18.5586
       ]
      ]
     }
@@ -2663,47 +2695,47 @@
        "ok"
       ],
       [
-       2585085,
-       2,
-       2,
-       null,
-       null,
-       0,
-       0,
-       0,
-       0,
-       "ok"
-      ],
-      [
-       4636058,
+       2593369,
        1,
        2,
-       40,
-       40,
-       0,
-       0,
+       7,
+       14,
+       7,
+       1,
        0,
        0,
        "ok"
       ],
       [
-       6687255,
+       4647812,
        4,
-       13,
-       107,
-       127,
-       100,
-       4,
+       7,
+       2189,
+       2195,
+       34,
+       2,
+       2,
+       2,
+       "ok"
+      ],
+      [
+       6705593,
+       1,
        3,
-       4,
+       32,
+       32,
+       2,
+       1,
+       0,
+       0,
        "ok"
       ],
       [
-       8738882,
-       1,
-       2,
-       4,
-       4,
+       8763286,
+       10,
+       11,
+       324,
+       324,
        0,
        0,
        0,
@@ -2797,59 +2829,21 @@
        null
       ],
       [
-       2435224,
-       1448557,
-       "paulavidas@google.com",
-       "MERGED",
-       1601283404,
-       1601384608,
-       "2020-W40",
-       96,
-       29,
-       8,
-       "42c3de9893b25e970bdf64b76e54296a8b70311f",
-       4,
-       125,
-       0,
-       0,
-       null,
-       18,
-       3028,
-       2,
-       16,
-       9,
-       0,
-       1601288787,
-       1601286884,
-       5,
-       3,
-       6.70639,
-       6.70639,
-       25.2611,
-       null,
-       null,
-       null,
-       null,
-       null,
-       null,
-       null
-      ],
-      [
-       4536755,
-       1529917,
-       "greengrape@google.com",
-       "MERGED",
-       1684227437,
-       1684238883,
-       "2023-W20",
+       2455766,
+       1115924,
+       "hiroshige@chromium.org",
+       "ABANDONED",
+       1602069279,
+       1627775516,
+       "2021-W30",
+       199,
        7,
-       10,
        3,
-       "fc27ea80df4a62627524749a5aeff2d3c5d81a36",
-       2,
-       17,
-       0,
-       0,
+       null,
+       null,
+       null,
+       null,
+       null,
        null,
        0,
        0,
@@ -2873,35 +2867,35 @@
        null
       ],
       [
-       6638256,
-       1000022,
-       "ellyjones@chromium.org",
+       4577817,
+       1316082,
+       "rkgibson@google.com",
        "MERGED",
-       1749748787,
-       1749765020,
-       "2025-W24",
-       1,
+       1685562659,
+       1685571103,
+       "2023-W22",
+       0,
+       2,
+       2,
+       "5ad9f189e7ddcdd883c3675da2c5f089ff99af2a",
        1,
        2,
-       "2803c03e8725aa387ba9cde5362dcb3e3599be6b",
+       0,
+       0,
+       null,
+       2,
+       105,
        1,
        2,
        0,
        0,
        null,
-       0,
-       0,
-       0,
-       0,
-       0,
-       0,
-       null,
-       1749748832,
+       1685562722,
        null,
        0,
-       0.0269444,
-       0.0269444,
-       4.46972,
+       0.864722,
+       0.864722,
+       1.46333,
        null,
        null,
        null,
@@ -2911,16 +2905,54 @@
        null
       ],
       [
-       8739741,
-       1257237,
-       "fqj@chromium.org",
-       "NEW",
-       1793852692,
-       null,
-       null,
-       3556,
-       5453,
+       6699948,
+       1116015,
+       "senorblanco@chromium.org",
+       "MERGED",
+       1751465045,
+       1751488932,
+       "2025-W27",
+       4,
        1,
+       3,
+       "be2a4b2377ba018cc849dd7810632aa2f4bc9ef2",
+       1,
+       5,
+       0,
+       0,
+       null,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       null,
+       1751468391,
+       null,
+       0,
+       5.70583,
+       5.70583,
+       0.0511111,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null
+      ],
+      [
+       8821905,
+       1000140,
+       "satorux@google.com",
+       "NEW",
+       1794742898,
+       null,
+       null,
+       114,
+       27,
+       2,
        null,
        null,
        null,
@@ -2967,28 +2999,28 @@
        1880.74
       ],
       [
-       3594260,
-       1115906,
-       13.1942,
-       13.1942
+       3587144,
+       1293668,
+       47.7025,
+       47.7025
       ],
       [
-       5041717,
-       1001629,
-       310.353,
-       214.352
+       5030578,
+       1546412,
+       15.7211,
+       15.7211
       ],
       [
-       6677583,
-       1545147,
-       4.59056,
-       4.59056
+       6656712,
+       1384868,
+       70.15,
+       22.15
       ],
       [
-       8739321,
-       1528762,
-       0.519722,
-       0.519722
+       8688210,
+       1175471,
+       56.7472,
+       14.3222
       ]
      ]
     },
@@ -3025,6 +3057,12 @@
        "testing/buildbot/filters/",
        2,
        13
+      ],
+      [
+       8738032,
+       "third_party/vulkan-loader/",
+       2,
+       4
       ]
      ]
     }
@@ -3042,22 +3080,22 @@
      "rows": [
       [
        1,
-       "b6575bdaf76d9000000b9e5cc7e45ba3114d90a7 8749563 agent"
+       "bf891958a1dddf9b2b15ca25a89286ac7145b989 8813428 phrase"
       ],
       [
-       633,
-       "2920d9638d212836e7c72f9f74dba1c562383012 8500930 trailer"
+       650,
+       "82dac662ef1e38fb1d7c869ab4e53876c5970073 8525288 phrase"
       ],
       [
-       1264,
-       "6bb9207fe1893aca3dd73d2b1033e50245fc54db 7793260 trailer"
+       1299,
+       "5f6a45a35760c99719e71c7178d439acc51959c0 7812245 phrase"
       ],
       [
-       1895,
-       "274315c941a5ac703196f89bc09e9f6d5fecdae2 7202566 campaign"
+       1948,
+       "5ce084530a33d84cb02ffd4e8cd0d483dd19340d 7206235 campaign"
       ],
       [
-       2527,
+       2597,
        "4db45f38aee33fbb9b50fc9f8cbc44f6a89cbc37 5215045 phrase"
       ]
      ]
@@ -3170,15 +3208,15 @@
      "rows": [
       [
        "clusters.json",
-       15380
+       15371
       ],
       [
        "map.json",
-       142563
+       144113
       ],
       [
        "people.json",
-       13717707
+       13737786
       ]
      ]
     }
@@ -3204,7 +3242,7 @@
       ],
       [
        "[\"datasets\"][\"org_review_value\"]",
-       "[{\"org\": \"google.com\",\"reviewers\": 2319,\"reviews\": 342877,\"threads_per_review\": 3.0,\"addressed_per_review\": 1.75,\"addressed_share\": 0.583,\"comments_per_review\": 3.65},{\"org\": \"microsoft.com\",\"reviewers\": 173,\"reviews\": 5876,\"threads_per_rev…"
+       "[{\"org\": \"google.com\",\"reviewers\": 2320,\"reviews\": 342878,\"threads_per_review\": 3.0,\"addressed_per_review\": 1.75,\"addressed_share\": 0.583,\"comments_per_review\": 3.65},{\"org\": \"microsoft.com\",\"reviewers\": 173,\"reviews\": 5876,\"threads_per_rev…"
       ],
       [
        "[\"datasets\"][\"ftr_hist_summary\"]",
@@ -3268,7 +3306,7 @@
      "rows": [
       [
        "[\"generated\"]",
-       "\"2026-11-15T05:53:37Z\""
+       "\"2026-11-15T15:52:56Z\""
       ],
       [
        "[\"end\"]",
@@ -3310,15 +3348,15 @@
       ],
       [
        "[\"ref_all\"]",
-       "2.366"
+       "2.349"
       ],
       [
-       "[\"fr_bins\"]",
-       "[{\"n\": 3505,\"q\": [0.0,0.236,0.986,1.492,2.082,2.591,3.084,3.59,4.035,4.611,5.273,5.882,6.584,7.238,8.116,9.159,10.319,11.802,14.133,18.932,100.0]},{\"n\": 2696,\"q\": [0.0,0.077,0.656,1.141,1.597,1.982,2.313,2.754,3.201,3.609,4.061,4.534,5.05,5…"
+       "[\"dir_table\"]",
+       "[[\"chrome/\",0,26444116,732393,581904],[\"chrome/\",1,10222,313,235],[\"chrome/browser/\",0,20085460,588586,470371],[\"chrome/browser/\",1,374625,14218,11311],[\"chrome/browser/ui/\",0,5779550,174029,137374],[\"chrome/browser/ash/\",0,2484024,80333,65…"
       ],
       [
        "[\"fi_dist\"]",
-       "{\"n\": 2834,\"q\": [0.0,0.237,0.386,0.506,0.592,0.661,0.73,0.794,0.86,0.926,1.0,1.069,1.147,1.226,1.32,1.433,1.556,1.71,1.902,2.32,17.167],\"curve\": [[0.125,0.801],[0.129,0.803],[0.134,0.741],[0.139,0.64],[0.144,0.529],[0.149,0.431],[0.154,0.35…"
+       "{\"n\": 2837,\"q\": [0.0,0.234,0.388,0.507,0.592,0.661,0.73,0.792,0.86,0.926,1.0,1.07,1.145,1.227,1.322,1.432,1.555,1.712,1.904,2.323,17.179],\"curve\": [[0.125,0.792],[0.129,0.791],[0.134,0.727],[0.139,0.625],[0.144,0.515],[0.149,0.422],[0.154,0…"
       ]
      ]
     }
@@ -3344,7 +3382,7 @@
       ],
       [
        "[\"none\"]",
-       "[677.0,40695.98]"
+       "[677.0,40687.58]"
       ],
       [
        "[\"shrink\"]",
@@ -3352,7 +3390,7 @@
       ],
       [
        "[\"f\"]",
-       "{\"7b285e7b7c9d\": [0.988,1,2.0,1.51],\"05bc6f86c92f\": [1.005,6,9.0,7.5],\"5137144170f4\": [0.974,1,0.0,0.28],\"cd19a83cb367\": [0.979,1,0.0,0.01],\"c4d31762ec01\": [1.016,69,66.05,61.59],\"c20d21be7a32\": [0.738,319,231.75,322.38],\"e8b639f1a9f3\": [0.…"
+       "{\"7b285e7b7c9d\": [0.989,1,2.0,1.51],\"05bc6f86c92f\": [1.005,6,9.0,7.49],\"5137144170f4\": [0.974,1,0.0,0.28],\"cd19a83cb367\": [0.979,1,0.0,0.01],\"c4d31762ec01\": [1.021,70,66.05,61.02],\"c20d21be7a32\": [0.738,319,231.75,322.09],\"e8b639f1a9f3\": [0…"
       ]
      ]
     }
@@ -3389,24 +3427,24 @@
      ],
      "rows": [
       [
-       "[\"attention\"]",
-       "{\"hours\": [null,null,null,null,null,null,null,null,null,null,null,null,null,null,1176723,1138226,1144129,1073042,1352263,1220395,1462696,1497935,1611253,1346026,1458708,1357029,1494996,1400884,1164414,1042018,1017226,895617,982071,957945,13…"
+       "[\"attention_from\"]",
+       "\"2021Q1\""
       ],
       [
-       "[\"dirs\"]",
-       "[[\"(root)/\",[7493,7077,6854,5762,12594],[1107.1,1953.7,1880.0,2488.6],[121.04,197.84,193.23,230.24],[565,5,0,0,7140,1414,1]],[\"agents/\",[29735,16043,8819,44449,62626],[950.0,1382.6,3315.3,7126.7],[120.2,104.77,284.52,232.59],[70,6,82,44,887…"
+       "[\"human\"]",
+       "[21079,20315,19366,22107,20838,19932,22480,22566,23196,22056,22635,23889,22983,21557,21491,22084,22291,19632,23353,22247,24568,24309,26185,27415,27156,26121,27933,28713,27736,25630,25491,26477,27712,25684,30060,32177,38513]"
       ],
       [
-       "[\"owners\"]",
-       "{\"all\": [1556,122,1386,1126,20385070,1413653,683865],\"at\": \"2026-09-30\"}"
+       "[\"quarters\"]",
+       "[\"2017Q3\",\"2017Q4\",\"2018Q1\",\"2018Q2\",\"2018Q3\",\"2018Q4\",\"2019Q1\",\"2019Q2\",\"2019Q3\",\"2019Q4\",\"2020Q1\",\"2020Q2\",\"2020Q3\",\"2020Q4\",\"2021Q1\",\"2021Q2\",\"2021Q3\",\"2021Q4\",\"2022Q1\",\"2022Q2\",\"2022Q3\",\"2022Q4\",\"2023Q1\",\"2023Q2\",\"2023Q3\",\"2023Q4\",\"2024…"
       ],
       [
-       "[\"reviewed\"]",
-       "[16917,16924,16747,19327,18290,17416,19843,20192,20569,19348,19401,21475,20707,19446,20490,21022,21621,18934,22279,21479,23309,23100,25001,26386,25983,25353,27245,27906,26713,24423,24558,25436,27000,24881,29217,31221,37522]"
+       "[\"reviewer_lines\"]",
+       "{\"mean\": [7781.56,7802.22,7698.22,9780.73,9066.79,7496.32,10136.76,9381.73,8436.05,6578.53,8835.03,8723.38,6123.28,6683.96,5860.08,5862.62,6058.99,6556.36,5733.03,5838.62,7273.79,6546.02,5802.8,5761.2,4738.67,5787.13,5584.45,7206.91,5205.77…"
       ],
       [
-       "[\"table_quarters\"]",
-       "[\"2025Q3\",\"2025Q4\",\"2026Q1\",\"2026Q2\",\"2026Q3\"]"
+       "[\"turns\"]",
+       "{\"mean\": [null,null,null,null,null,null,null,null,null,null,null,null,null,null,20.89,19.37,18.75,20.13,23.98,20.25,21.53,21.76,22.04,18.09,20.2,18.96,20.52,19.02,16.38,15.86,15.56,13.58,14.44,15.09,17.85,15.84,15.92],\"n\": [0,0,0,0,0,0,0,0,…"
       ]
      ]
     }

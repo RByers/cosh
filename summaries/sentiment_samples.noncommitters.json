@@ -1,9 +1,9 @@
 {
- "generated_at": "2026-11-15T05:34:07Z",
+ "generated_at": "2026-11-15T15:36:23Z",
  "prompt": "v3",
  "weeks": [
-  "2025-W45",
-  "2026-W44"
+  "2025-W46",
+  "2026-W45"
  ],
  "authors": "noncommitters",
  "praise_min": 0.5,
@@ -196,14 +196,6 @@
      "url": "https://chromium-review.googlesource.com/c/chromium/src/+/7096798/comment/92a1a0ce_4c5975d3/"
     },
     {
-     "text": "Thanks a lot. This is exactly what I want. A local build to try is great.",
-     "score": 0.5,
-     "date": "2025-11-03",
-     "writer": "Lucy Chang",
-     "recipient": "David Tseng",
-     "url": "https://chromium-review.googlesource.com/c/chromium/src/+/7103558/comment/ed0ea6df_4689ee17/"
-    },
-    {
      "text": "Ah, that's a great explanation, thank you Vinny!",
      "score": 0.5,
      "date": "2025-11-20",
@@ -226,6 +218,14 @@
      "writer": "Qikai Zhong",
      "recipient": "Thomas Lukaszewicz",
      "url": "https://chromium-review.googlesource.com/c/chromium/src/+/7089811/comment/1a89e461_752d3db0/"
+    },
+    {
+     "text": "👍 Seems okay to me Mingming, with minor feedback, plus other's comments. It's nice that you were able to create a workaround to enable graph execution to finish (but I'll also be happy to see this workaround go away in the future 😉).",
+     "score": 0.5,
+     "date": "2025-12-16",
+     "writer": "Dwayne Robinson",
+     "recipient": "Xu, Mingming1",
+     "url": "https://chromium-review.googlesource.com/c/chromium/src/+/7245170/comment/9f711749_89f6fa8d/"
     }
    ],
    "grumpy": [
@@ -271,14 +271,6 @@
      "url": "https://chromium-review.googlesource.com/c/chromium/src/+/7096798/comment/92a1a0ce_4c5975d3/"
     },
     {
-     "text": "Thanks a lot. This is exactly what I want. A local build to try is great.",
-     "score": 0.5,
-     "date": "2025-11-03",
-     "writer": "Lucy Chang",
-     "recipient": "David Tseng",
-     "url": "https://chromium-review.googlesource.com/c/chromium/src/+/7103558/comment/ed0ea6df_4689ee17/"
-    },
-    {
      "text": "Ah, that's a great explanation, thank you Vinny!",
      "score": 0.5,
      "date": "2025-11-20",
@@ -293,14 +285,6 @@
      "writer": "Jaewon Jung",
      "recipient": "Hidehiko Abe",
      "url": "https://chromium-review.googlesource.com/c/chromium/src/+/7138132/comment/cb6839a7_f4876ddf/"
-    },
-    {
-     "text": "You're right, thanks for catching that! Promise.all() loses the ordering guarantee. I updated the test to verify that startRendering() resolves before oncomplete fires, as the original test did.",
-     "score": 0.5,
-     "date": "2025-11-06",
-     "writer": "Punith Nayak",
-     "recipient": "Hongchan Choi",
-     "url": "https://chromium-review.googlesource.com/c/chromium/src/+/7055525/comment/0144b8d3_85d560c9/"
     },
     {
      "text": "Done. To make the review easier, I split this out into crrev.com/c/7210913.\n\nSuch a great idea. Thank you!",
@@ -1225,6 +1209,19 @@
      "writer": "Laura Lucas Alday (xWF)",
      "recipient": "Krishna Kurapati",
      "url": "https://chromium-review.googlesource.com/c/chromium/src/+/8489491/comment/6de7e056_aad374b5/"
+    }
+   ],
+   "grumpy": []
+  },
+  "2026-11": {
+   "praise": [
+    {
+     "text": "LGTM\n\nThat's exactly what I meant, thank you very much for pursuing this refactor. \nThanks to this chain of CLs, we have service logic much cleaner and business focused. \nMoreover, removal of the RedirecMetricsRecorder will be a plain sailing, as it'll simply require removal of lines where its methods are called.",
+     "score": 0.5,
+     "date": "2026-11-02",
+     "writer": "Jakub Kudzia",
+     "recipient": "Yerassyl Kutylbek",
+     "url": "https://chromium-review.googlesource.com/c/chromium/src/+/8598446/comment/5812ccbd_1aa08f5e/"
     }
    ],
    "grumpy": []
