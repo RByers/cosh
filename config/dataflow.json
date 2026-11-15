@@ -387,6 +387,17 @@
       "purpose": "Hand-kept e-mail patterns that mark bot accounts and bot commit authors."
     },
     {
+      "id": "config/r2.json",
+      "path": "config/r2.json",
+      "kind": "json",
+      "tier": "config",
+      "tracked_in_git": true,
+      "rebuildable": false,
+      "size": "under 1 KB",
+      "size_as_of": "2026-11-15",
+      "purpose": "The R2 bucket's public address and each prefix with the data/private folder it is uploaded from; read by cosh.r2, the pages' URLs (web/src/r2.ts) and Vite's local copies on localhost."
+    },
+    {
       "id": "config/paths.txt",
       "path": "config/paths.txt",
       "kind": "text",
@@ -2189,11 +2200,11 @@
       "id": "r2-feedback",
       "command": "python3 -m cosh.r2 publish review-feedback/threads review-feedback/people/v1",
       "code": [
-        "cosh/r2.py",
-        "config/r2.json"
+        "cosh/r2.py"
       ],
       "purpose": "Uploads the Feedback Index's changed files (the comment download's threads and the per-person files) to the R2 bucket and deletes those that are gone.",
       "inputs": [
+        "config/r2.json",
         "data/private/review-threads/",
         "feedback-people"
       ],
@@ -2216,11 +2227,11 @@
       "id": "r2-review-load",
       "command": "python3 -m cosh.r2 publish review-load/people/v1",
       "code": [
-        "cosh/r2.py",
-        "config/r2.json"
+        "cosh/r2.py"
       ],
       "purpose": "Uploads Review Load's changed per-reviewer files to the R2 bucket and deletes those that are gone.",
       "inputs": [
+        "config/r2.json",
         "review-load-people"
       ],
       "outputs": [

@@ -724,15 +724,7 @@ export function buildPerson(top: Top, shards: Shard[], peers: Pick<Peers, 'addr_
 
 // ---- downloading your comments (cosh/review_threads.py, served from the R2 bucket)
 
-<<<<<<< HEAD
-/** Where the full threads are served: one gzipped JSON file per person and half-year, too big for git
- * (README.md). The page fetches them only when someone asks to download their comments. */
-export const THREADS_BASE = 'https://cosh-data.rbyers.ca/review-feedback/threads/';
-
 /** review-feedback/threads/<half>/<key>.json (cosh/review_threads.py, version 2). Comment text is
-=======
-/** review-feedback/threads/<half>/<key>.json (cosh/review_threads.py, version 1). Comment text is
->>>>>>> 619d2520eb (Per-person files of the Feedback Index and Review Load move from git to R2)
  * untrusted: it goes only into the downloaded file, never into the page. */
 export interface ThreadFile {
   v: 1 | 2;

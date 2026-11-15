@@ -3672,7 +3672,7 @@ test('feedback index: a reviewer opens into the addressed comments they started,
   };
   const { page, errors } = await feedbackPage(undefined, undefined, (r: HTTPRequest) => {
     const u = new URL(r.url());
-    if (u.host !== 'cosh-data.rbyers.ca') return false;
+    if (!u.pathname.startsWith('/r2/review-feedback/threads/')) return false;
     asked.push(u.pathname.split('/').at(-2)!);
     const h = u.pathname.split('/').at(-2)!;
     const cors = { 'Access-Control-Allow-Origin': '*' };

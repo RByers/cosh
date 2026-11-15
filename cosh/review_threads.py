@@ -188,8 +188,8 @@ def main(argv=None):
     for h in sorted(x for x in os.listdir(a.shards) if HALF.match(x)):
         for name in sorted(os.listdir(os.path.join(a.shards, h))):
             if KEY.match(name):
-                with open(os.path.join(a.shards, h, name)) as f:
-                    person_cls[name[:-5]].extend(x for x in shard_revs(json.load(f)) if x[1])
+                with gzip.open(os.path.join(a.shards, h, name), "rt") as f:
+                    person_cls[name[:-8]].extend(x for x in shard_revs(json.load(f)) if x[1])
     want = {n for cls in person_cls.values() for n, _ in cls}
     reviewed_by = {}
     for n, rb in ro(C.db_path()).execute("SELECT change_number, reviewed_by FROM commits "
