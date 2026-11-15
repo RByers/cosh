@@ -471,7 +471,38 @@ export function route(g: Graph, keep: Set<string>, size: RouteSizes): Routed {
     for (let l = 0; l + 1 < nLayers; l++) n += crossBetween(l);
     return n;
   };
-  const local = (l: number) => (l > 0 ? crossBetween(l - 1) : 0) + (l + 1 < nLayers ? crossBetween(l) : 0);
+  // Crossings between the edges of u and those of v (both in layer l, so
+  // to the layers above and below) when u is left of v, for every pair in
+  // the layer. Moving items within a layer changes only these, so transpose
+  // and sift weigh each move by them instead of recounting the layers
+  // around it. The layers above and below don't move meanwhile.
+  const pairCross = (l: number) => {
+    const row = rows[l];
+    const n = row.length;
+    const at = new Map(row.map((id, i) => [id, i]));
+    const near = row.map((id) => [up, down].map((m) => (m.get(id) ?? []).map((o) => pos.get(o)!)));
+    // Filled as needed: transpose asks only about neighbours.
+    const c = new Int32Array(n * n).fill(-1);
+    return (u: string, v: string) => {
+      const i = at.get(u)!;
+      const j = at.get(v)!;
+      if (c[i * n + j] < 0) {
+        let ij = 0;
+        let ji = 0;
+        for (let side = 0; side < 2; side++) {
+          for (const p of near[i][side]) {
+            for (const q of near[j][side]) {
+              if (p > q) ij++;
+              else if (q > p) ji++;
+            }
+          }
+        }
+        c[i * n + j] = ij;
+        c[j * n + i] = ji;
+      }
+      return c[i * n + j];
+    };
+  };
   const sweep = (l: number, near: Map<string, string[]>) => {
     const row = rows[l];
     const want = new Map<string, number>();
@@ -488,14 +519,12 @@ export function route(g: Graph, keep: Set<string>, size: RouteSizes): Routed {
       better = false;
       for (let l = 0; l < nLayers; l++) {
         const row = rows[l];
+        const cross = pairCross(l);
         for (let i = 0; i + 1 < row.length; i++) {
-          const before = local(l);
-          [row[i], row[i + 1]] = [row[i + 1], row[i]];
-          number(row);
-          if (local(l) < before) better = true;
-          else {
+          if (cross(row[i + 1], row[i]) < cross(row[i], row[i + 1])) {
             [row[i], row[i + 1]] = [row[i + 1], row[i]];
             number(row);
+            better = true;
           }
         }
       }
@@ -507,20 +536,22 @@ export function route(g: Graph, keep: Set<string>, size: RouteSizes): Routed {
       better = false;
       for (let l = 0; l < nLayers; l++) {
         const row = rows[l];
+        const cross = pairCross(l);
         for (const id of [...row]) {
           const from = row.indexOf(id);
           row.splice(from, 1);
+          // Crossings at each place, less those not involving id: at 0 it
+          // is left of all the others; each step right passes one of them.
+          let c = 0;
+          for (const o of row) c += cross(id, o);
           let bestAt = from;
           let bestC = Infinity;
           for (let at = 0; at <= row.length; at++) {
-            row.splice(at, 0, id);
-            number(row);
-            const c = local(l);
+            if (at) c += cross(row[at - 1], id) - cross(id, row[at - 1]);
             if (c < bestC || (c === bestC && at === from)) {
               bestC = c;
               bestAt = at;
             }
-            row.splice(at, 1);
           }
           row.splice(bestAt, 0, id);
           number(row);
