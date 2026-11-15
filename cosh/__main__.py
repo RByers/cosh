@@ -66,6 +66,8 @@ def main(argv=None):
     d.add_argument("--source", choices=["auto", "notedb", "rest"], default="auto",
                    help="comment source (auto = NoteDb if fetched, else REST cache)")
     d.add_argument("--out", help="derived DB path (default: data/private/reviews.sqlite)")
+    d.add_argument("--full", action="store_true",
+                   help="re-derive every CL, even those whose inputs are unchanged")
     g = sub.add_parser("commits", help="update commits.sqlite, main's history, from the local Chromium "
                                         "git clone (offline; $COSH_CHROMIUM_GIT)")
     g.add_argument("--db", help="store path (default: $COSH_COMMITS_DB or data/private/commits.sqlite)")
@@ -192,7 +194,7 @@ def main(argv=None):
                          max_comment_fetches=a.max_comment_fetches)
     elif a.cmd == "derive":
         from .derive import derive
-        derive(weeks=a.week, source=a.source, out_path=a.out)
+        derive(weeks=a.week, source=a.source, out_path=a.out, full=a.full)
     elif a.cmd == "commits":
         from .commits import update
         update(a.db, jobs=max(1, min(a.jobs, 4)))

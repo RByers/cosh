@@ -37,7 +37,7 @@ file wins.
 ```
 python3 -m cosh extract --week 2026-W44     # network; cached and resumable (NoteDb by default)
 python3 -m cosh extract-open                # network; open-CL snapshot + its NoteDb refs (after the backfill)
-python3 -m cosh derive [--out PATH]         # offline: raw cache -> data/private/reviews.sqlite
+python3 -m cosh derive [--out PATH] [--full] # offline: raw cache -> data/private/reviews.sqlite (changed CLs only)
 python3 -m cosh summarize [--db PATH] [--out DIR]   # offline: -> summaries/ (path scope: config/paths.txt)
 python3 -m cosh radar [--offline]           # Cloudflare Radar; needs `source ~/.secrets/cosh/secrets.sh`
 python3 -m cosh backfill --weeks 52 [--go]  # plan only unless --go (the 52 weeks are approved)
@@ -77,7 +77,12 @@ Cloudflare Radar    ─► data/public/radar/raw/ ──── radar ──► d
     window (`notedb.read_comments_many`). Starting git costs 2.5–10 ms per
     process in a repo of hundreds of packs, so the earlier two processes per
     CL took most of the run time: a full rebuild of 332k CLs fell from about
-    20 min to 3.5 min (2026-11-04).
+    20 min to 3.5 min (2026-11-04). It is incremental (2026-11-15): table
+    `derive_inputs` keeps each CL's fingerprint (derive code, chosen listing
+    and its fetch time and body hash, NoteDb meta ref tip, REST comments'
+    hash), and a CL whose fingerprint is unchanged is skipped. A change to
+    the derive code (`derive.CODE_FILES`) re-derives every CL; `--full`
+    forces that.
 - `data/public/`, `summaries/`, `config/`, code and docs are committed.
 
 ## What we fetch from Gerrit, and how gently

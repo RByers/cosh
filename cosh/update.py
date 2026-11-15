@@ -8,6 +8,14 @@ model calls that cost Max usage) are listed for a person to run, with their
 measured cost. It stops at the first failure and ends with the files to
 commit. It never uploads to R2 or pushes: that is deploying (docs/r2.md).
 
+A step is skipped when nothing it depends on changed since it last ran:
+its command, the content of its code files, the files of its input stores
+(sizes and modification times; a git repo by its refs) and of its outputs
+here (a missing or changed output runs it again). The record is
+data/private/update-state.json. Steps that fetch (`network`) always run.
+--force runs every planned step; --record marks them as done without
+running them (after running the steps by hand).
+
   python3 -m cosh update                       # downstream of every source
   python3 -m cosh update --from gerrit         # after a new week was fetched
   python3 -m cosh update --from data/private/addressed.sqlite --dry-run
@@ -15,7 +23,11 @@ commit. It never uploads to R2 or pushes: that is deploying (docs/r2.md).
 
 import argparse
 import fcntl
+import glob
+import hashlib
+import json
 import os
+import re
 import subprocess
 import sys
 import time
@@ -31,6 +43,116 @@ def _dataflow():
     return dataflow
 
 
+STATE_FILE = "update-state.json"
+
+
+def _paths(store_path):
+    """The local files and directories a store's `path` names: ' + ' joins
+    several, braces and globs expand, data/private/ is store.DATA_DIR. An
+    r2: path has none."""
+    out = []
+    for p in store_path.split(" + "):
+        p = p.strip()
+        if p.startswith("r2:"):
+            continue
+        m = re.match(r"(.*)\{([^}]*)\}(.*)", p)
+        alts = [m.group(1) + x + m.group(3) for x in m.group(2).split(",")] if m else [p]
+        for a in alts:
+            a = os.path.expanduser(a)
+            if a.startswith("data/private/") or a == "data/private":
+                a = os.path.join(store.DATA_DIR, a[len("data/private/"):])
+            a = os.path.join(ROOT, a)
+            hits = sorted(glob.glob(a)) if glob.has_magic(a) else [a]
+            out.extend(hits or [a])
+    return out
+
+
+def _git_refs(d):
+    """A git repo by its refs, not its objects: cheap however big it is."""
+    out = []
+    for f in ("HEAD", "packed-refs", "reftable/tables.list"):
+        fp = os.path.join(d, f)
+        if os.path.exists(fp):
+            st = os.stat(fp)
+            out.append((f, st.st_size, st.st_mtime_ns))
+    for top, _, files in os.walk(os.path.join(d, "refs")):
+        for f in files:
+            st = os.stat(os.path.join(top, f))
+            out.append((os.path.relpath(os.path.join(top, f), d), st.st_size, st.st_mtime_ns))
+    return out
+
+
+def _is_git(d):
+    return os.path.isfile(os.path.join(d, "HEAD")) and os.path.isdir(os.path.join(d, "objects"))
+
+
+def signature(path):
+    """[(name, size, mtime_ns), ...] for a file or a directory tree; None if missing."""
+    if not os.path.exists(path):
+        return None
+    if os.path.isfile(path):
+        out = []
+        for f in (path, path + "-wal"):    # an SQLite file's writes may sit in its WAL
+            if os.path.exists(f):
+                st = os.stat(f)
+                out.append((os.path.basename(f), st.st_size, st.st_mtime_ns))
+        return out
+    if _is_git(path):
+        return _git_refs(path)
+    out = []
+    for top, dirs, files in os.walk(path):
+        for d in list(dirs):
+            if _is_git(os.path.join(top, d)):
+                dirs.remove(d)
+                out.append((os.path.relpath(os.path.join(top, d), path), _git_refs(os.path.join(top, d))))
+        dirs.sort()
+        for f in sorted(files):
+            st = os.stat(os.path.join(top, f))
+            out.append((os.path.relpath(os.path.join(top, f), path), st.st_size, st.st_mtime_ns))
+    return out
+
+
+def _digest(obj):
+    return hashlib.sha256(json.dumps(obj, sort_keys=True).encode()).hexdigest()[:20]
+
+
+def _stores_sig(stores, ids):
+    return _digest({i: [(p, signature(p)) for p in _paths(stores[i]["path"])]
+                    for i in ids if i in stores})   # sources (not stores) have no local files
+
+
+def step_inputs_sig(d, step):
+    stores = {s["id"]: s for s in d["stores"]}
+    code = []
+    for c in step.get("code", []):
+        f = os.path.join(ROOT, c)
+        if os.path.isfile(f):
+            with open(f, "rb") as fh:
+                code.append((c, hashlib.sha256(fh.read()).hexdigest()))
+    return _digest({"run": step["run"], "code": code,
+                    "inputs": _stores_sig(stores, step.get("inputs", []))})
+
+
+def step_outputs_sig(d, step):
+    stores = {s["id"]: s for s in d["stores"]}
+    return _stores_sig(stores, step.get("outputs", []))
+
+
+def _load_state():
+    try:
+        with open(os.path.join(store.DATA_DIR, STATE_FILE)) as f:
+            return json.load(f)
+    except (FileNotFoundError, json.JSONDecodeError):
+        return {}
+
+
+def _save_state(state):
+    path = os.path.join(store.DATA_DIR, STATE_FILE)
+    with open(path + ".tmp", "w") as f:
+        json.dump(state, f, indent=1, sort_keys=True)
+    os.replace(path + ".tmp", path)
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser(prog="python3 -m cosh update", description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -39,6 +161,10 @@ def main(argv=None):
     ap.add_argument("--with-optional", action="store_true",
                     help="also run optional steps that have a run command")
     ap.add_argument("--dry-run", action="store_true", help="print the plan, run nothing")
+    ap.add_argument("--force", action="store_true",
+                    help="run every planned step, even those whose inputs are unchanged")
+    ap.add_argument("--record", action="store_true",
+                    help="run nothing; record the planned steps as done with their inputs as they are now")
     a = ap.parse_args(argv)
     df = _dataflow()
     d = df.load()
@@ -52,9 +178,21 @@ def main(argv=None):
     for s in manual:
         cost = "; ".join(x for x in (s["duration"], s["token_cost"]) if x)
         print(f"  by hand [{s['refresh']}] {s['id']}: {s['command']}" + (f" ({cost})" if cost else ""))
+    steps = {s["id"]: s for s in d["steps"]}
+    state = _load_state()
+
+    def unchanged(s):
+        """The step's inputs signature now, and whether it can be skipped."""
+        full = steps[s["id"]]
+        sig = step_inputs_sig(d, full)
+        rec = state.get(s["id"], {})
+        same = (not a.force and not full.get("network") and rec.get("inputs") == sig
+                and rec.get("outputs") == step_outputs_sig(d, full))
+        return sig, same
+
     if a.dry_run:
         for s in todo:
-            print(f"  would run {s['id']}: {s['run']}")
+            print(f"  would {'skip (unchanged)' if unchanged(s)[1] else 'run'} {s['id']}: {s['run']}")
         return 0
     os.makedirs(store.DATA_DIR, exist_ok=True)
     with open(os.path.join(store.DATA_DIR, "update.lock"), "w") as lock:
@@ -62,7 +200,20 @@ def main(argv=None):
             fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
         except BlockingIOError:
             raise SystemExit("another `cosh update` is running")
+        if a.record:
+            for s in todo:
+                full = steps[s["id"]]
+                state[s["id"]] = {"inputs": step_inputs_sig(d, full),
+                                  "outputs": step_outputs_sig(d, full), "at": store.now_iso()}
+            _save_state(state)
+            print(f"recorded {len(todo)} steps as done")
+            return 0
         for n, s in enumerate(todo, 1):
+            sig, same = unchanged(s)
+            if same:
+                print(f"[{n}/{len(todo)}] {s['id']}: unchanged since {state[s['id']]['at']}, skipped",
+                      flush=True)
+                continue
             print(f"[{n}/{len(todo)}] {s['id']}: {s['run']}", flush=True)
             t0 = time.time()
             r = subprocess.run(s["run"], shell=True, cwd=ROOT)
@@ -71,6 +222,9 @@ def main(argv=None):
                 print(f"{s['id']} failed (exit {r.returncode}); not run: {left}", file=sys.stderr)
                 return r.returncode
             print(f"  done in {time.time() - t0:.0f}s", flush=True)
+            state[s["id"]] = {"inputs": sig, "outputs": step_outputs_sig(d, steps[s["id"]]),
+                              "at": store.now_iso()}
+            _save_state(state)
     print("Commit what changed. To deploy, upload to R2 and then push main "
           "(python3 -m cosh.r2 publish; docs/r2.md, \"Deploying\"):")
     for f in p["commit"]:

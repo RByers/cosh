@@ -186,7 +186,7 @@ purpose near the top of its own doc.
   one process at a time). Don't work around the cap. Uncapped, two such
   runs at once took argus out of memory on 2026-11-14 and the kernel
   killed the site server and other sessions' processes instead.
-- Tests: `python3 -m unittest tests.test_derive tests.test_extract tests.test_radar tests.test_classify tests.test_sentiment tests.test_patchsets tests.test_balance tests.test_bugs tests.test_review_feedback tests.test_balance_signals tests.test_balance_publish tests.test_notedb_repack tests.test_dataflow tests.test_approved tests.test_review_timeline tests.test_review_load tests.test_review_threads`.
+- Tests: `python3 -m unittest tests.test_derive tests.test_extract tests.test_radar tests.test_classify tests.test_sentiment tests.test_patchsets tests.test_balance tests.test_bugs tests.test_review_feedback tests.test_balance_signals tests.test_balance_publish tests.test_notedb_repack tests.test_dataflow tests.test_approved tests.test_review_timeline tests.test_review_load tests.test_review_threads tests.test_update`.
   These run in a single process, which complies with the global limit of 4
   test workers. `tests.test_extract` uses a fake Gerrit and never touches the
   network.
@@ -316,7 +316,8 @@ purpose near the top of its own doc.
   commits` (about 2 h; nothing is fetched).
 - `data/private/reviews.sqlite` can always be rebuilt with
   `rm data/private/reviews.sqlite && python3 -m cosh derive` (about 9 min
-  for 666k CLs, 2026-11-04, threads included). It is the only derived DB: older versions (`cosh.sqlite`,
+  for 666k CLs, 2026-11-04, threads included; a plain `derive` re-derives
+  only CLs whose inputs changed). It is the only derived DB: older versions (`cosh.sqlite`,
   metric_versions 1–2; `reviews.sqlite` before metric_version 5) were
   deleted on 2026-11-04, and `open_derived` refuses a pre-v5 file.
 - Never delete `data/private/gerrit.sqlite` or `data/private/notedb/`. Those

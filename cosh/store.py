@@ -165,6 +165,17 @@ CREATE TABLE IF NOT EXISTS threads (
   regex_addressed     INTEGER NOT NULL,   -- the owner's first reply is Done-type
   PRIMARY KEY (host, change_number, root_uuid)
 ) STRICT, WITHOUT ROWID;
+
+-- What each CL's rows were derived from (cosh/derive.py, cl_fingerprint): the
+-- derive code, the chosen listing (fetch time and body hash), the NoteDb meta ref's
+-- tip and the REST comments' body hash. `derive` skips a CL whose
+-- fingerprint is unchanged.
+CREATE TABLE IF NOT EXISTS derive_inputs (
+  host          TEXT    NOT NULL,
+  change_number INTEGER NOT NULL,
+  fingerprint   TEXT    NOT NULL,
+  PRIMARY KEY (host, change_number)
+) STRICT, WITHOUT ROWID;
 """
 # Commits on main live in commits.sqlite (cosh/commits.py), not here.
 

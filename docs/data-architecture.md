@@ -208,6 +208,18 @@ failure, and lists the steps left for a person (fetches, which need
 approval, and model calls, which cost usage) with their measured cost, then
 the files to commit.
 
+It skips a step when nothing it depends on changed since it last ran here:
+its `run` command, the content of its `code` files, the files of its
+`inputs` (sizes and modification times; a git repo by its refs) and of its
+`outputs` (a missing or changed output runs it again). Sources have no local
+files and count as unchanged; `network` steps always run. The record is
+`data/private/update-state.json`, written after each step succeeds. So with
+nothing fetched, `cosh update` takes seconds, and after a fetch only what is
+downstream of the changed stores runs. `--force` runs every planned step;
+`--record` marks them done without running them (after running them by
+hand). This relies on each step's `code`, `inputs` and `outputs` being
+complete: a step that reads a file it doesn't list may be skipped wrongly.
+
 A new week of data:
 
 ```

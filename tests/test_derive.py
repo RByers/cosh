@@ -1,3 +1,5 @@
+import io
+import contextlib
 import hashlib
 import json
 import os
@@ -331,6 +333,35 @@ class DeriveEndToEndTest(unittest.TestCase):
             derive(data_dir=d)
             rows = summarize(data_dir=d, out_dir=os.path.join(d, "s"))
         self.assertEqual({r["iso_week"] for r in rows}, {"2026-W44"})
+
+    def test_rerun_skips_unchanged_cls(self):
+        with tempfile.TemporaryDirectory() as d:
+            self.build(d)
+            derive(data_dir=d)
+            buf = io.StringIO()
+            with contextlib.redirect_stderr(buf):
+                derive(data_dir=d)
+            self.assertIn("derived 0 changes", buf.getvalue())
+            self.assertIn("3 unchanged", buf.getvalue())
+            # New comments on CL 200: only it is derived again, and the result
+            # is what a full run gives.
+            raw = store.open_raw(d)
+            with raw:
+                store.put_response(raw, H, "comments", "200", "u", 200, json.dumps({}))
+            raw.close()
+            buf = io.StringIO()
+            with contextlib.redirect_stderr(buf):
+                derive(data_dir=d)
+            self.assertIn("derived 1 changes", buf.getvalue())
+            full = os.path.join(d, "full.sqlite")
+            derive(data_dir=d, out_path=full, full=True)
+            a, b = store.open_derived(d), store.open_derived(path=full)
+            for q in ("SELECT * FROM comments ORDER BY 1, 2, 3", "SELECT * FROM changes ORDER BY 1, 2",
+                      "SELECT * FROM threads ORDER BY 1, 2, 3", "SELECT * FROM derive_inputs ORDER BY 1, 2"):
+                self.assertEqual(a.execute(q).fetchall(), b.execute(q).fetchall(), q)
+            self.assertEqual(a.execute("SELECT count(*) FROM comments WHERE change_number=200").fetchone(), (0,))
+            a.close()
+            b.close()
 
     def test_incremental_week_derive_matches_full(self):
         with tempfile.TemporaryDirectory() as d:

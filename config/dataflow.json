@@ -1,6 +1,6 @@
 {
   "schema_version": 2,
-  "updated": "2026-11-14",
+  "updated": "2026-11-15",
   "about": "Every external source, data store, processing step and page of cosh, and the flows between them. Read by web/dataflow.html, scripts/dataflow.py (check, plan) and `python3 -m cosh update`. Field meanings and the flow rules: docs/data-architecture.md. Keep it current: CLAUDE.md, Conventions. Building and deploying the site (npm run build; the Pages workflow on push) is not a data step and isn't listed.",
   "sources": [
     {
@@ -1584,7 +1584,11 @@
       "command": "python3 -m cosh derive",
       "code": [
         "cosh/derive.py",
-        "cosh/bots.py"
+        "cosh/bots.py",
+        "cosh/classify.py",
+        "cosh/paths.py",
+        "cosh/notedb.py",
+        "cosh/extract.py"
       ],
       "purpose": "Reduces every CL's listing and NoteDb comments to facts.",
       "inputs": [
@@ -1596,7 +1600,7 @@
       ],
       "network": false,
       "lock": null,
-      "incremental": "Not incremental: a full run re-reads every CL. `--week W` does one week.",
+      "incremental": "Re-derives only CLs whose inputs changed since (their listing's fetch time and content, NoteDb meta ref tip, REST comments, and the derive code: table derive_inputs); a change to the code re-derives every CL. `--full` re-derives all, `--week W` one week.",
       "duration": "under 52 min for 1.6M CLs; 11.5 min for 775k",
       "token_cost": null,
       "cost_source": "File times of the 2026-11-12 run (upper bound); docs/plan.md, 2026-11-05",

@@ -183,12 +183,37 @@ def derive_threads(change, comments):
 
 
 def notedb_repo(repos, project):
-    """(repo path, set of change numbers fetched) for a project, cached in `repos`."""
+    """(repo path, {change number: meta ref tip} of the CLs fetched) for a
+    project, cached in `repos`."""
     from . import notedb
     if project not in repos:
         path = notedb.default_repo(project)
-        repos[project] = (path, notedb.fetched_numbers(path)) if os.path.isdir(path) else (None, set())
+        repos[project] = (path, notedb.meta_tips(path)) if os.path.isdir(path) else (None, {})
     return repos[project]
+
+
+# What a CL's rows depend on besides its own inputs: this code, the modules it
+# uses and their config. A change to any of them re-derives every CL.
+CODE_FILES = ["cosh/derive.py", "cosh/bots.py", "cosh/classify.py", "cosh/paths.py",
+              "cosh/notedb.py", "cosh/extract.py", "config/bots.txt", "config/paths.txt"]
+
+
+def code_fingerprint(source):
+    h = hashlib.sha256(f"{METRIC_VERSION}|{source}".encode())
+    root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    for f in CODE_FILES:
+        h.update(f.encode())
+        with open(os.path.join(root, f), "rb") as fh:
+            h.update(hashlib.sha256(fh.read()).digest())
+    return h.hexdigest()[:16]
+
+
+def cl_fingerprint(code, window_key, listed_at, window_sha, tip, rest_sha):
+    """Everything one CL's derived rows are a function of (see derive_inputs):
+    the listing by its fetch time (committers.seen_at) and content
+    (body_sha256, as times have one-second resolution), REST comments by
+    content, NoteDb by the meta ref's tip."""
+    return f"{code}|{window_key}|{listed_at}|{window_sha}|{tip or ''}|{rest_sha or ''}"
 
 
 def prefetch_notedb(repos, cls, source):
@@ -269,9 +294,13 @@ def choose_listings(raw, idx, wanted):
     return best
 
 
-def derive(data_dir=store.DATA_DIR, weeks=None, source="auto", out_path=None):
-    """Rebuild rows for every CL (default), or only for CLs in the given
-    weekly listings (`weeks`, used by backfill after each week)."""
+def derive(data_dir=store.DATA_DIR, weeks=None, source="auto", out_path=None, full=False):
+    """Derive rows for every CL (default), or only for CLs in the given
+    weekly listings (`weeks`, used by backfill after each week).
+
+    Incremental: a CL whose inputs (cl_fingerprint) are what they were when its
+    rows were last derived is skipped, so a run after a new week re-reads only
+    the CLs it changed. `full` re-derives every CL in scope regardless."""
     raw = store.open_raw_ro(data_dir)
     db = store.open_derived(data_dir, out_path)
     with db:   # accounts resolved via /accounts/{id} (ids seen only in NoteDb)
@@ -302,14 +331,33 @@ def derive(data_dir=store.DATA_DIR, weeks=None, source="auto", out_path=None):
         by_window[(cl[0], k)].append(cl)
 
     repos, sources = {}, defaultdict(int)
-    n_changes = n_comments = 0
+    n_changes = n_comments = n_same = 0
+    code = code_fingerprint(source)
+    listed = {(h, k): (t, sha) for h, k, t, sha in raw.execute(
+        "SELECT host, key, fetched_at, body_sha256 FROM responses WHERE kind='list_window'")}
+    rest = {}
+    if source in ("auto", "rest"):
+        rest = {(h, int(k)): sha for h, k, sha in raw.execute(
+            "SELECT host, key, body_sha256 FROM responses WHERE kind='comments' AND http_status=200")}
+    done = {} if full else {(h, n): f for h, n, f in db.execute(
+        "SELECT host, change_number, fingerprint FROM derive_inputs")}
+
+    def fingerprint(host, k, project, number):
+        tip = notedb_repo(repos, project)[1].get(number) if source in ("auto", "notedb") else None
+        return cl_fingerprint(code, k, *listed[(host, k)], tip, rest.get((host, number)))
+
     for (host, k), cls in sorted(by_window.items()):
+        fps = {cl: fingerprint(host, k, cl[1], cl[2]) for cl in cls}
+        cls = [cl for cl in cls if done.get((host, cl[2])) != fps[cl]]
+        n_same += len(fps) - len(cls)
+        if not cls:
+            continue
         win = _window(raw, host, k)    # one window in memory at a time
-        listed_at = raw.execute("SELECT fetched_at FROM responses WHERE host=? AND "
-                                "kind='list_window' AND key=?", (host, k)).fetchone()[0]
+        listed_at = listed[(host, k)][0]
         notes = prefetch_notedb(repos, cls, source)
         with db:
-            for _, project, number in cls:
+            for cl in cls:
+                _, project, number = cl
                 change = win[number]
                 comments, used = load_comments(raw, repos, host, project, number, source, notes)
                 sources[used] += 1
@@ -337,6 +385,8 @@ def derive(data_dir=store.DATA_DIR, weeks=None, source="auto", out_path=None):
                     [(host, number, t["root_uuid"], t["root_account"], t["n_comments"],
                       t["last_owner_reply_at"], t["input_hash"], t["regex_addressed"])
                      for t in derive_threads(change, comments)])
+                db.execute("INSERT OR REPLACE INTO derive_inputs VALUES (?,?,?)",
+                           (host, number, fps[cl]))
                 n_changes += 1
                 n_comments += len(rows)
 
@@ -345,7 +395,7 @@ def derive(data_dir=store.DATA_DIR, weeks=None, source="auto", out_path=None):
         for k, v in [("metric_version", METRIC_VERSION), ("derived_at", store.now_iso()),
                      ("fetched_weeks", json.dumps(fetched_weeks)), ("open_snapshot_at", snapshot)]:
             db.execute("INSERT OR REPLACE INTO meta VALUES (?, ?)", (k, v))
-    print(f"derived {n_changes} changes, {n_comments} comments; "
+    print(f"derived {n_changes} changes, {n_comments} comments ({n_same} unchanged, skipped); "
           f"comment source per CL: {dict(sources)}; {n_emailless} accounts without email "
           f"marked as bots", file=sys.stderr)
     raw.close()

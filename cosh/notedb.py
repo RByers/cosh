@@ -82,6 +82,14 @@ def fetched_numbers(git_dir):
     return {int(x) for x in out.split()}
 
 
+def meta_tips(git_dir):
+    """{change number: sha of the local meta ref's tip}, from one listing."""
+    out = git(git_dir, "for-each-ref", "--format=%(refname:strip=2) %(objectname)",
+              "refs/meta/").stdout
+    return {int(n): sha for n, sha in (line.split() for line in out.splitlines() if line)
+            if n.isdigit()}
+
+
 def tip_times(git_dir):
     """{change number: unix time of the local meta ref's tip commit}. The tip's
     committer time equals the listing's `updated` (checked on all 3,429 W44
