@@ -812,8 +812,8 @@ function renderTrend() {
     { ...band(0.75), label: '', backgroundColor: t.baseline, fill: '+1', order: 3 },
     { ...band(0.25), label: '', fill: false, order: 3 },
     { ...band(0.5), label: 'peers', borderColor: t.muted, borderWidth: 1.5, borderDash: [5, 4], fill: false, order: 1 },
-    { label: 'you', data: you, borderColor: t.series[0], backgroundColor: full.map((o) => (o ? t.series[0] : t.surface)),
-      pointBorderColor: t.series[0], pointRadius: 4, pointHoverRadius: 5, pointHitRadius: 10, borderWidth: 2, tension: 0,
+    { label: 'you', data: you, borderColor: youColor(t), backgroundColor: full.map((o) => (o ? youColor(t) : t.surface)),
+      pointBorderColor: youColor(t), pointRadius: 4, pointHoverRadius: 5, pointHitRadius: 10, borderWidth: 2, tension: 0,
       spanGaps: true, fill: false, order: 0 },
   ];
   const names = hs.map((h) => shortMonth(periodSpan(h, range)[0]));
@@ -835,7 +835,7 @@ function renderTrend() {
       ctx.beginPath();
       ctx.arc(pt.x, pt.y, 9, 0, 2 * Math.PI);
       ctx.lineWidth = 2;
-      ctx.strokeStyle = t.series[0];
+      ctx.strokeStyle = youColor(t);
       ctx.stroke();
       ctx.restore();
     },
