@@ -15,7 +15,9 @@ by id, GIT_NO_LAZY_FETCH=1.
 The server excludes only what is in each patch set's parent tree, so it also
 re-sends blobs and trees that landed on `main` later. `repack --geometric -l`
 drops those copies (they stay in the shared clone, so nothing is lost) and
-runs every few GB so the disk doesn't fill. It rolls up only packs that
+runs every few GB during a big fetch so the disk doesn't fill (never at the
+end of a run: routine weekly packs are kept as fetched and merged by hand
+once a year). It rolls up only packs that
 together stay under REPACK_MAX_BYTES, so its memory stays bounded; the big
 packs are merged by hand in groups (scripts/patchsets_chunked_repack.sh).
 """
@@ -294,6 +296,9 @@ def fetch_batch(git_dir, cls, retries=4, throttle=None, max_rate_limited=20):
 # OOM-killed. Bigger packs are passed as --keep-pack and left alone; merge
 # them by hand in groups (scripts/patchsets_chunked_repack.sh).
 REPACK_MAX_BYTES = 2e9
+# Routine runs don't repack at all (one new pack a week); past this many
+# packs the run reminds you of the yearly repack by hand.
+YEARLY_REPACK_PACKS = 60
 
 
 def _packs(git_dir):
@@ -363,7 +368,8 @@ def run(go=False, derived_path=None, git_dir=None, interval=2.0, max_cls=1000, m
     `interval` between its own fetches; a shared Throttle lowers how many
     run at once when the server rate-limits us). When new packs pass `repack_bytes`
     or free space drops under `min_free`, workers finish their fetch and
-    stop, the repo is repacked, and fetching continues."""
+    stop, the repo is repacked, and fetching continues. There is no repack
+    at the end."""
     derived_path = derived_path or os.path.join(store.DATA_DIR, "reviews.sqlite")
     git_dir = git_dir or default_repo()
     cls = reviewed_cls(derived_path, since=since, until=until)
@@ -432,14 +438,11 @@ def run(go=False, derived_path=None, git_dir=None, interval=2.0, max_cls=1000, m
             if free < min_free:
                 raise SystemExit(f"stopping: only {free / 1e9:.0f} GB free")
             st["stop"], st["base"] = None, _pack_bytes(git_dir)
-    # The fetch is done; a failed repack only leaves more packs (the next
-    # run tries again), so it warns rather than fails the run.
-    try:
-        s = repack(git_dir, repack_max_bytes)
-    except SystemExit as e:
-        print(f"warning: final {e}", file=sys.stderr, flush=True)
-        s = "failed"
-    else:
-        s = "skipped (few small packs)" if s is None else f"{s:.0f}s"
-    print(f"done; final repack {s}, {len(_packs(git_dir))} packs "
-          f"{_pack_bytes(git_dir) / 1e9:.2f} GB", flush=True)
+    # No repack at the end: each weekly pack is kept as fetched (about 50 a
+    # year, a few GB of copies of main's objects). The packs are merged by
+    # hand once a year, in groups (scripts/patchsets_chunked_repack.sh).
+    n = len(_packs(git_dir))
+    print(f"done; {n} packs, {_pack_bytes(git_dir) / 1e9:.2f} GB", flush=True)
+    if n >= YEARLY_REPACK_PACKS:
+        print(f"note: {n} packs; time for the yearly repack in groups "
+              "(scripts/patchsets_chunked_repack.sh, AGENTS.md)", flush=True)

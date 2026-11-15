@@ -1826,12 +1826,12 @@
       "network": true,
       "lock": "data/private/extract.lock",
       "incremental": "Resumable. A CL is fetched again when Gerrit has more patch sets than were fetched (cosh-fetched.txt records the count).",
-      "duration": "72 s per 1,000 CLs, plus the end-of-run repack of the small packs (at most 2 GB of packs read, about 1 GB of memory; skipped when fewer than 2 small packs). A whole-repo repack of the 18 GB of packs grew to 7 GB and was OOM-killed (2026-11-15)",
+      "duration": "72 s per 1,000 CLs; no repack at the end (a weekly run adds one pack, 120 MB for 759 CLs on 2026-11-15). A repack during a big fetch reads at most 2 GB of packs, about 1 GB of memory; a whole-repo repack of 18 GB of packs grew to 7 GB and was OOM-killed (2026-11-15)",
       "token_cost": null,
       "cost_source": "docs/plan.md, 2026-11-07 and 2026-11-15",
       "refresh": "optional",
       "approval": "Only reviewed CLs in config/approved.json's range (closed 2023-06-26 .. 2026-11-02); the command refuses an earlier --since. Up to 7 fetches at once (approved 2026-11-07).",
-      "notes": "Each repack (at the end, or after --repack-gb of new packs) rolls up only the smallest packs, up to --repack-max-gb (default 2) in all, with `repack --geometric=2 -d -l` under the shared memory cap (cosh.memcap); bigger packs are passed as --keep-pack and left alone, and a failed final repack only warns. Merge the big packs by hand in groups with the two scripts when there are many; never prune."
+      "notes": "Routine runs keep each fetched pack as it is (about 50 a year, roughly 4 GB a year of copies of main's objects). Only during a big fetch (after --repack-gb of new packs, or under 25 GB free) does it repack, rolling up only the smallest packs, up to --repack-max-gb (default 2), with `repack --geometric=2 -d -l` under cosh.memcap. Once a year (next November 2027, or when a run notes 60+ packs) merge the packs by hand in groups with the two scripts. Never prune."
     },
     {
       "id": "radar",

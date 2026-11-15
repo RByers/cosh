@@ -134,7 +134,7 @@ def main(argv=None):
                          "the user's approval, AGENTS.md)")
     ps.add_argument("--repack-gb", type=float, default=8.0,
                     help="repack after this many GB of new packs (default 8; it also repacks "
-                         "when under 25 GB is free, and always at the end)")
+                         "when under 25 GB is free; never at the end: merge packs by hand once a year)")
     ps.add_argument("--repack-max-gb", type=float, default=2.0,
                     help="each repack rolls up only the smallest packs, up to this many GB "
                          "in all, and keeps bigger ones as they are, so its memory stays "

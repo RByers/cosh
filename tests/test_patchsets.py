@@ -73,7 +73,7 @@ class PatchsetsTest(unittest.TestCase):
             # A CL that gained patch sets since its fetch is fetched again.
             self.assertEqual(patchsets.todo_cls([(7, 5), (9, 3), (42, 2), (50, 1)], done), [(42, 2), (50, 1)])
 
-    def _run_fake(self, jobs, fail_on=None):
+    def _run_fake(self, jobs, fail_on=None, keep_repack=False):
         with tempfile.TemporaryDirectory() as d:
             db = os.path.join(d, "reviews.sqlite")
             make_derived(db)
@@ -87,7 +87,9 @@ class PatchsetsTest(unittest.TestCase):
                 seen.append([n for n, _ in cls])
                 return 0.0
 
-            patchsets.fetch_batch, patchsets.repack = fake_fetch, lambda g, m=None: 0.0
+            patchsets.fetch_batch = fake_fetch
+            if not keep_repack:
+                patchsets.repack = lambda g, m=None: 0.0
             try:
                 patchsets.run(go=True, derived_path=db, git_dir=g, interval=0, max_cls=1, min_free=0,
                               jobs=jobs)
@@ -98,6 +100,16 @@ class PatchsetsTest(unittest.TestCase):
     def test_parallel_fetches_each_batch_once(self):
         self.assertEqual(self._run_fake(jobs=3), [[100], [101], [105]])
         self.assertEqual(self._run_fake(jobs=1), [[100], [101], [105]])
+
+    def test_run_does_not_repack_at_the_end(self):
+        calls = []
+        orig = patchsets.repack
+        patchsets.repack = lambda g, m=None: calls.append(g) or 0.0
+        try:
+            self._run_fake(jobs=1, keep_repack=True)
+        finally:
+            patchsets.repack = orig
+        self.assertEqual(calls, [])
 
     def test_failure_stops_run(self):
         with self.assertRaises(SystemExit):
