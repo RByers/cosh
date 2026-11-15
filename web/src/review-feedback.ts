@@ -988,14 +988,22 @@ function renderPerCl() {
 /** A template as one line of text (the HTML wraps long ones). */
 const line = (key: string, vars: Vars = {}) => msg(key, vars).replace(/\s+/g, ' ').trim();
 
-/** The download's half-year choices: every half-year the person has changes in; by default the
- * latest two (about the past year). */
+/** The first and last month a half-year's changes can be from ("July 2025", "October 2026"),
+ * cut to the dates the data covers. */
+function halfMonths(h: string): [string, string] {
+  const peers = state.peers!;
+  const [from, to] = periodSpan(h, [peers.start, peers.end]);
+  return [monthOf(from, true), monthOf(toMonth(to), true)];
+}
+
+/** The download's half-year choices: every half-year the person has changes in, "from" named by
+ * its first month and "to" by its last; by default the latest two (about the past year). */
 function setupDownload() {
   const from = $<HTMLSelectElement>('#rf-dl-from');
   const to = $<HTMLSelectElement>('#rf-dl-to');
-  for (const sel of [from, to]) {
+  for (const [sel, end] of [[from, 0], [to, 1]] as const) {
     sel.replaceChildren(...state.halves.map((h) => {
-      const o = el('option', halfName(h));
+      const o = el('option', halfMonths(h)[end]);
       o.value = h;
       return o;
     }));
@@ -1058,7 +1066,7 @@ async function download() {
     const today = new Date().toISOString().slice(0, 10);
     const body = json
       ? JSON.stringify({ v: 1, downloaded: today, files }, null, 1)
-      : [line('dl-title', { from: halfName(a), to: halfName(b) }), '', line('dl-about', { day: today }), '',
+      : [line('dl-title', { from: halfMonths(a)[0], to: halfMonths(b)[1] }), '', line('dl-about', { day: today }), '',
         ...(prompt ? [promptMarkdown(), ''] : []), md.md].join('\n');
     const blob = new Blob([body], { type: json ? 'application/json' : 'text/markdown' });
     const url = URL.createObjectURL(blob);
