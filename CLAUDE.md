@@ -357,10 +357,12 @@ worktree branch), land it on `main` automatically, without asking:
 1. Rebase the branch onto the current `main` from the worktree:
    `git rebase main`. Resolve any conflicts and rerun the relevant tests if
    the rebase changed anything.
-2. Leave the worktree (ExitWorktree with `keep`), then fast-forward `main`
-   from the main checkout (`/home/rbagent/projects/cosh`):
-   `git merge --ff-only <branch>`. A worktree session can't run git against
-   the main checkout, so this step has to happen after exiting.
+2. Still from the worktree, fast-forward `main` in the main checkout:
+   `git -C /home/rbagent/projects/cosh merge --ff-only <branch>`. Use
+   `git -C`, not `cd`; a worktree session can run git against the main
+   checkout, and the "Shell cwd was reset" note afterwards is harmless. Don't
+   look for `ExitWorktree`: app sessions don't have it, and this step
+   doesn't need it.
 3. Only fast-forward. Never create a merge commit. If the fast-forward fails
    because `main` moved, rebase again and retry. If uncommitted changes in
    the main checkout block it, stop and report instead of touching them.
