@@ -160,10 +160,11 @@ pages from `cosh-data.rbyers.ca`. Data on disk that isn't published
     Existing fields keep their names and meanings.
   - *A breaking change gets a new name*, such as a version prefix
     (`.../v2/...`) or a new file name, written alongside the old files.
-    The old ones stay until no deployed page reads them. Breaking changes
+    The old ones stay until no deployed page reads them (`cosh.r2
+    publish` deletes them only then). Breaking changes
     are rare and batched, since each rewrites a whole family.
-  - *Data before code.* Upload new R2 data first, then deploy the page
-    that reads it; a page copes with an object that is missing (a person
+  - *Data before code.* A deploy uploads new R2 data first, then pushes
+    the page that reads it; a page copes with an object that is missing (a person
     or period with no data yet) rather than failing.
 - **Incremental updates are fast and cheap.** Files in R2 are laid out so
   that a week of new data changes few of them: split by period

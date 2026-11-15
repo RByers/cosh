@@ -117,7 +117,8 @@ purpose near the top of its own doc.
   (`docs/r2.md`): the Feedback Index's and Review Load's per-person files
   and the comment download, from `data/private/` folders listed in
   `config/r2.json`. Never print it or put its values on a command line.
-  Upload only rebuildable published data; a new prefix is a new published
+  Upload only rebuildable published data, and only when deploying (see
+  "Deploying" below); a new prefix is a new published
   store in `config/dataflow.json`. Weekly data and added fields keep their
   prefix; only a change the live page can't read moves to a new one (v2).
 - **The contact e-mail** sent with every request lives in the gitignored
@@ -354,7 +355,10 @@ worktree branch), land it on `main` automatically, without asking:
 
 Never delete worktrees or branches that belong to other sessions.
 
-**Pushing** (only when the user says to push): first run `python3 -m
-cosh.r2 publish` from the main checkout and wait for it to finish, then
-`git push` `main`, which deploys GitHub Pages. The site must never go live
-before the R2 files it reads (`docs/r2.md`, "Upload first, then push").
+**Deploying** (only when the user says to push or deploy) is two steps:
+upload to R2, then push to GitHub Pages. First run `python3 -m cosh.r2
+publish` from the main checkout and wait for it to finish, then `git push`
+`main`, which deploys GitHub Pages. The site must never go live before the
+R2 files it reads (`docs/r2.md`, "Deploying"). Nothing else uploads to R2:
+`cosh update` doesn't. The upload keeps the files the live site reads and
+deletes older ones.

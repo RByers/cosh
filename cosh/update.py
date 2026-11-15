@@ -6,7 +6,7 @@ command: the free, local steps (and with --with-optional the optional ones
 that have one). Steps without a `run` (fetches, which need approval, and
 model calls that cost Max usage) are listed for a person to run, with their
 measured cost. It stops at the first failure and ends with the files to
-commit.
+commit. It never uploads to R2 or pushes: that is deploying (docs/r2.md).
 
   python3 -m cosh update                       # downstream of every source
   python3 -m cosh update --from gerrit         # after a new week was fetched
@@ -71,7 +71,8 @@ def main(argv=None):
                 print(f"{s['id']} failed (exit {r.returncode}); not run: {left}", file=sys.stderr)
                 return r.returncode
             print(f"  done in {time.time() - t0:.0f}s", flush=True)
-    print("Commit what changed (and push; the Pages workflow publishes the site):")
+    print("Commit what changed. To deploy, upload to R2 and then push main "
+          "(python3 -m cosh.r2 publish; docs/r2.md, \"Deploying\"):")
     for f in p["commit"]:
         print(f"  {f}")
     return 0

@@ -93,7 +93,8 @@ system is kept, and the inventory says where a step departs from them.
 2. **Every flow has a final output.** Every step that runs as part of an
    update (`routine` or `optional`) leads to something a page reads. A step
    whose output reaches no page is an `analysis` (its output goes into a
-   doc), `one-off` or `maintenance`, and never runs in an update.
+   doc), `one-off` or `maintenance`, and never runs in an update. Uploads
+   to R2 are `deploy`: they reach pages, but run only when deploying.
 3. **Every step writes something.**
 4. **Names say who uses them.** A source, step or store is named after an
    analysis (a page's `names`: value, tone, balance, feedback) only when it
@@ -159,14 +160,16 @@ that spans paths or files), a step's short name, `page-…` for a page.
   | `one-off` | a setup that is finished |
   | `analysis` | exploratory; its output goes into a doc, not the site |
   | `maintenance` | lossless housekeeping of a store in place |
+  | `deploy` | uploads published files to R2; run only when deploying (`python3 -m cosh.r2 publish`, then push main: docs/r2.md), never in an update |
 
   `duration`, `token_cost` and `cost_source` are measured figures and
   where each was measured; `null` means nobody has measured it.
 - **`pages[]`**: a page of the site, the stores it `reads`, and the `names`
   of its analysis for rule 4.
 
-Building and deploying the site (`npm run build`; the Pages workflow on
-push) is not a data step and isn't listed.
+Building the site (`npm run build`; the Pages workflow on push) is not a
+data step and isn't listed. Deploying is two steps: upload to R2 (the
+`deploy` steps), then push main, which deploys GitHub Pages.
 
 **Samples.** The page shows five sample entries of every store: rows of
 each table, lines, CSV rows, JSON entries, files of a directory, refs of a

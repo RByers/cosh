@@ -560,8 +560,10 @@ Threads by bots and AI reviewers, and threads the owner started, are left
 out; "addressed" is the Feedback Index's own measure, null for
 change-level threads. About 5 minutes for all 19 half-years, 20 s for one.
 
-`cosh.r2 publish` (step `r2-feedback`, with the per-person files) uploads the files whose sha256 differs
-from `data/private/r2-manifest.json`, deletes objects whose file is gone,
+`cosh.r2 publish` (step `r2-feedback`, with the per-person files) runs
+only when deploying, before the push (`docs/r2.md`, "Deploying"). It
+uploads the files whose sha256 differs from `data/private/r2-manifest.json`,
+deletes objects whose file is gone once the live site no longer reads them,
 and never lists the bucket. It refuses more than 50,000 objects in a run or
 5 GB in all (`--max-objects`, `--max-total-gb`; the first is per prefix). The bucket's setup
 (domain, CORS, caching, costs, the token) is in `docs/r2.md`. Credentials:

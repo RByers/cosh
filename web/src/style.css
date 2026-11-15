@@ -3173,6 +3173,10 @@ details.rf-method[open] > summary {
   --color: var(--series-1);
 }
 
+.df-tag.r-deploy {
+  --color: var(--series-2);
+}
+
 .df-controls {
   display: flex;
   flex-wrap: wrap;

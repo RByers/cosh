@@ -4,7 +4,7 @@
 // scripts/dataflow.py does the same checks and planning for the command line.
 
 export type Tier = 'raw' | 'labels' | 'derived' | 'analysis' | 'published' | 'config';
-export type Refresh = 'routine' | 'optional' | 'one-off' | 'analysis' | 'maintenance';
+export type Refresh = 'routine' | 'optional' | 'one-off' | 'analysis' | 'maintenance' | 'deploy';
 
 export interface Source {
   id: string;
@@ -124,7 +124,7 @@ export interface Graph {
 }
 
 export const TIERS: Tier[] = ['raw', 'labels', 'derived', 'analysis', 'published', 'config'];
-export const REFRESHES: Refresh[] = ['routine', 'optional', 'one-off', 'analysis', 'maintenance'];
+export const REFRESHES: Refresh[] = ['routine', 'optional', 'one-off', 'analysis', 'maintenance', 'deploy'];
 
 /** A path's last segment. A directory keeps its trailing slash and its
  * parent, so data/public/radar/raw/ and data/private/bugs/raw/ differ. */
@@ -238,8 +238,8 @@ export interface Plan {
 
 /** What to rerun, in order, when the nodes in `changed` have new data, and
  * what that changes in git. Routine and optional steps carry the change on;
- * one-off backfills, analysis scripts and maintenance don't run as part of
- * an update. */
+ * one-off backfills, analysis scripts, maintenance and deploy uploads don't
+ * run as part of an update. */
 export function plan(g: Graph, changed: Iterable<string>): Plan {
   const runs = (n: Node, optional: boolean) =>
     n.kind !== 'step' || n.step!.refresh === 'routine' || (optional && n.step!.refresh === 'optional');

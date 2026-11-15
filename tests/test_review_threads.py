@@ -4,6 +4,7 @@ import gzip
 import hashlib
 import json
 import os
+import subprocess
 import tempfile
 import unittest
 from unittest import mock
@@ -130,18 +131,18 @@ class R2Test(unittest.TestCase):
                 calls.append((method, key, body, headers))
                 return 200
             with mock.patch.object(r2, "request", fake):
-                r2.sync(local, "p", data_dir=data, cred={}, jobs=1)
+                r2.sync(local, "p", data_dir=data, cred={}, jobs=1, stamp=1)
                 self.assertEqual(sorted((m, k, b) for m, k, b, _ in calls),
                                  [("PUT", "p/H/a.json", b"A"), ("PUT", "p/H/b.json", b"B")])
                 self.assertEqual(calls[0][3]["content-encoding"], "gzip")
                 self.assertEqual(calls[0][3]["content-type"], "application/json")
                 calls.clear()
-                r2.sync(local, "p", data_dir=data, cred={}, jobs=1)
+                r2.sync(local, "p", data_dir=data, cred={}, jobs=1, stamp=1)
                 self.assertEqual(calls, [])
                 with open(os.path.join(local, "H", "a.json.gz"), "wb") as f:
                     f.write(b"A2")
                 os.remove(os.path.join(local, "H", "b.json.gz"))
-                r2.sync(local, "p", data_dir=data, cred={}, jobs=1)
+                r2.sync(local, "p", data_dir=data, cred={}, jobs=1, stamp=2, live=2)
                 self.assertEqual([(m, k) for m, k, _, _ in calls], [("PUT", "p/H/a.json"), ("DELETE", "p/H/b.json")])
                 with open(r2.manifest_path(data)) as f:
                     self.assertEqual(sorted(json.load(f)), ["p/H/a.json"])
@@ -179,7 +180,60 @@ class R2Test(unittest.TestCase):
             self.assertEqual(sent, [("p/H/b.json", b"new")])
             with open(r2.manifest_path(data)) as f:
                 m = json.load(f)
-            self.assertEqual(m, {"p/H/b.json": {"sha256": hashlib.sha256(b"new").hexdigest(), "bytes": 3}})
+            self.assertEqual(m, {"p/H/b.json": {"sha256": hashlib.sha256(b"new").hexdigest(), "bytes": 3,
+                                                "seen": m["p/H/b.json"]["seen"]}})
+
+    def test_sync_keeps_what_the_live_site_reads(self):
+        # Publish 1 at t=10 has a and b, and is deployed. Publish 2 at t=20
+        # drops b: the live site (publish 1) still reads it, so it stays. Once
+        # publish 2 is deployed, publish 3 deletes it.
+        with tempfile.TemporaryDirectory() as d:
+            local, data = os.path.join(d, "files"), os.path.join(d, "data")
+            os.makedirs(local)
+            os.makedirs(data)
+            for name in ("a.json", "b.json"):
+                with open(os.path.join(local, name), "w") as f:
+                    f.write(name)
+            calls = []
+            with mock.patch.object(r2, "request", lambda c, m, k, body=b"", headers=None: calls.append((m, k))):
+                self.assertEqual(r2.sync(local, "p", data_dir=data, cred={}, jobs=1, stamp=10, live=None), 2)
+                os.remove(os.path.join(local, "b.json"))
+                calls.clear()
+                self.assertEqual(r2.sync(local, "p", data_dir=data, cred={}, jobs=1, stamp=20, live=10), 2)
+                self.assertEqual(calls, [])
+                with open(r2.manifest_path(data)) as f:
+                    m = json.load(f)
+                self.assertEqual((m["p/a.json"]["seen"], m["p/b.json"]["seen"]), (20, 10))
+                # Not deployed yet: the live site still reads publish 1.
+                r2.sync(local, "p", data_dir=data, cred={}, jobs=1, stamp=30, live=10)
+                self.assertEqual(calls, [])
+                self.assertEqual(r2.sync(local, "p", data_dir=data, cred={}, jobs=1, stamp=40, live=30), 1)
+                self.assertEqual(calls, [("DELETE", "p/b.json")])
+                # A retired prefix (local None) loses everything the live site doesn't read.
+                calls.clear()
+                self.assertEqual(r2.sync(None, "p", data_dir=data, cred={}, jobs=1, stamp=50, live=40), 1)
+                self.assertEqual(calls, [])
+                self.assertEqual(r2.sync(None, "p", data_dir=data, cred={}, jobs=1, stamp=60, live=50), 0)
+                self.assertEqual(calls, [("DELETE", "p/a.json")])
+
+    def test_live_since_is_the_newest_publish_before_the_push(self):
+        pubs = [dict(time=10, prefixes=["p", "q"]), dict(time=20, prefixes=["q"]), dict(time=30, prefixes=["p"])]
+        self.assertEqual(r2.live_since("p", pubs, 25), 10)
+        self.assertEqual(r2.live_since("q", pubs, 25), 20)
+        self.assertEqual(r2.live_since("p", pubs, 30), 30)
+        self.assertIsNone(r2.live_since("p", pubs, 5))
+        self.assertIsNone(r2.live_since("p", pubs, None))
+        self.assertIsNone(r2.live_since("r", pubs, 99))
+
+    def test_last_push_reads_origin_mains_reflog(self):
+        with tempfile.TemporaryDirectory() as d:
+            self.assertIsNone(r2.last_push(d))
+            env = dict(os.environ, GIT_COMMITTER_DATE="1700000000 +0000", GIT_AUTHOR_DATE="1700000000 +0000")
+            run = lambda *a: subprocess.run(["git", "-C", d, *a], check=True, capture_output=True, env=env)  # noqa: E731
+            run("init", "-q")
+            run("-c", "user.name=t", "-c", "user.email=t@example.com", "commit", "-q", "--allow-empty", "-m", "x")
+            run("update-ref", "--create-reflog", "-m", "update by push", "refs/remotes/origin/main", "HEAD")
+            self.assertEqual(r2.last_push(d), 1700000000)
 
 
 if __name__ == "__main__":

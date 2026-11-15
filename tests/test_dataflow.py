@@ -87,6 +87,9 @@ class InventoryTest(unittest.TestCase):
         # Analysis scripts and maintenance are never part of an update.
         self.assertNotIn("roi-analysis", ids)
         self.assertNotIn("notedb-maintain", ids)
+        # Uploads to R2 happen only when deploying, never in an update.
+        self.assertNotIn("r2-feedback", ids)
+        self.assertNotIn("r2-review-load", ids)
         by_id = {s["id"]: s for s in p["steps"]}
         self.assertEqual(by_id["classify"]["refresh"], "optional")
         self.assertFalse(by_id["summarize"]["after_optional"])

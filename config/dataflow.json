@@ -2202,7 +2202,7 @@
       "code": [
         "cosh/r2.py"
       ],
-      "purpose": "Uploads the Feedback Index's changed files (the comment download's threads and the per-person files) to the R2 bucket and deletes those that are gone.",
+      "purpose": "Uploads the Feedback Index's changed files (the comment download's threads and the per-person files) to the R2 bucket and deletes those that are gone and that the live site no longer reads.",
       "inputs": [
         "config/r2.json",
         "data/private/review-threads/",
@@ -2218,10 +2218,9 @@
       "duration": "45 min for the first full upload of the threads (32,676 files, 400 MB, 2026-11-14); a weekly run sends only the current half-year's changed files",
       "token_cost": null,
       "cost_source": "docs/r2.md",
-      "refresh": "routine",
+      "refresh": "deploy",
       "approval": "Writes to the user's Cloudflare R2 bucket with the bucket-scoped token in ~/.secrets/cosh/r2.json; refuses more than 50,000 objects per prefix in one run or 5 GB in all.",
-      "notes": "Run from the main checkout after review-feedback and review-threads, and before pushing: the site deployed by the push reads what this uploaded (docs/r2.md). `python3 -m cosh.r2 publish` with no prefixes does this and r2-review-load. Standard library only (AWS SigV4).",
-      "run": "python3 -m cosh.r2 publish review-feedback/threads review-feedback/people/v1"
+      "notes": "The first half of a deploy (docs/r2.md, \"Deploying\"): run from the main checkout before pushing main, never in `cosh update`; the site the push deploys reads what this uploaded. Objects whose file is gone are kept while the live site may read them and deleted after a newer publish is deployed. `python3 -m cosh.r2 publish` with no prefixes does this and r2-review-load. Standard library only (AWS SigV4)."
     },
     {
       "id": "r2-review-load",
@@ -2229,7 +2228,7 @@
       "code": [
         "cosh/r2.py"
       ],
-      "purpose": "Uploads Review Load's changed per-reviewer files to the R2 bucket and deletes those that are gone.",
+      "purpose": "Uploads Review Load's changed per-reviewer files to the R2 bucket and deletes those that are gone and that the live site no longer reads.",
       "inputs": [
         "config/r2.json",
         "review-load-people"
@@ -2243,10 +2242,9 @@
       "duration": "a few minutes for the first upload (23,773 small files); after that only when a quarter completes",
       "token_cost": null,
       "cost_source": "docs/r2.md",
-      "refresh": "routine",
+      "refresh": "deploy",
       "approval": "Writes to the user's Cloudflare R2 bucket with the bucket-scoped token in ~/.secrets/cosh/r2.json; refuses more than 50,000 objects per prefix in one run or 5 GB in all.",
-      "notes": "Run from the main checkout after review-load, and before pushing (docs/r2.md). Standard library only (AWS SigV4).",
-      "run": "python3 -m cosh.r2 publish review-load/people/v1"
+      "notes": "The first half of a deploy (docs/r2.md, \"Deploying\"): run from the main checkout before pushing main, never in `cosh update`. Objects whose file is gone are kept while the live site may read them. Standard library only (AWS SigV4)."
     },
     {
       "id": "review-load",

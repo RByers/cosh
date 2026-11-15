@@ -33,7 +33,7 @@ PATH = os.path.join(ROOT, "config", "dataflow.json")
 SAMPLES = os.path.join(ROOT, "config", "dataflow-samples.json")
 
 TIERS = ("raw", "labels", "derived", "analysis", "published", "config")
-REFRESHES = ("routine", "optional", "one-off", "analysis", "maintenance")
+REFRESHES = ("routine", "optional", "one-off", "analysis", "maintenance", "deploy")
 # Steps that carry new data on towards the pages, in plans and `cosh update`.
 FLOWING = ("routine", "optional")
 # Directories where every committed file must belong to a store.

@@ -4,17 +4,30 @@
   python3 -m cosh.r2 publish [<prefix> ...] [--dry-run]
   python3 -m cosh.r2 sync <local dir> <prefix> [--dry-run]
 
-`publish` syncs the given prefixes of config/r2.json (default: all) from
-their folders under the data directory (data/private); `sync` does any one
-folder.
+Uploading is the first half of a deploy: publish, then push main, whose
+Pages workflow deploys the site that reads what was uploaded (docs/r2.md).
+`cosh update` never runs it.
 
-uploads every file under <local dir> to <prefix>/<relative path> (a
-trailing `.gz` is dropped from the key and the object is served with
-`Content-Encoding: gzip`, so browsers unpack it), skipping files whose
-content is unchanged since the last upload, and deletes objects under
-<prefix> whose local file is gone. What was uploaded is recorded in a
-manifest (data/private/r2-manifest.json: key -> sha256), so a sync never
-lists the bucket.
+`publish` syncs the given prefixes of config/r2.json (default: all, plus
+retired prefixes still in the bucket) from their folders under the data
+directory (data/private); `sync` does any one folder. A sync uploads every
+file under <local dir> to <prefix>/<relative path> (a trailing `.gz` is
+dropped from the key and the object is served with `Content-Encoding:
+gzip`, so browsers unpack it), skipping files whose content is unchanged
+since the last upload.
+
+An object whose local file is gone is kept while the live site may still
+read it, and deleted otherwise: the site live now was deployed by the last
+push, which reads the newest publish that began before that push (its time
+comes from origin/main's reflog). An object last seen locally before that
+publish is deleted; one still there at it is kept until a newer publish is
+deployed. So a publish never breaks the live site, and the bucket holds at
+most the live site's files and the new ones.
+
+What was uploaded is recorded in a manifest (data/private/r2-manifest.json:
+key -> sha256, size, and when it was last seen locally), so a sync never
+lists the bucket; data/private/r2-publishes.json lists each publish's start
+time and prefixes.
 
 Limits guard against runaway uploads (a bug, a wrong directory): a sync
 refuses to leave more than --max-total-gb in the manifest or to write or
@@ -35,16 +48,21 @@ import hmac
 import http.client
 import json
 import os
+import re
+import subprocess
 import sys
 import threading
 import time
 import urllib.parse
 from concurrent.futures import ThreadPoolExecutor
+from zoneinfo import ZoneInfo
 
 from . import store
 
 CREDENTIALS = os.path.expanduser("~/.secrets/cosh/r2.json")
-CONFIG = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "config", "r2.json")
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+CONFIG = os.path.join(ROOT, "config", "r2.json")
+TORONTO = ZoneInfo("America/Toronto")
 CACHE_CONTROL = "public, max-age=86400"
 TYPES = {".json": "application/json", ".md": "text/markdown; charset=utf-8", ".txt": "text/plain; charset=utf-8"}
 
@@ -199,10 +217,62 @@ def object_key(prefix, rel):
     return f"{prefix.strip('/')}/{rel.replace(os.sep, '/')}", gz
 
 
-def plan(local, prefix, manifest):
-    """(uploads [(key, path, sha256, gz)], deletes [key]) to make <prefix> match <local>."""
+def publishes_path(data_dir=None):
+    return os.path.join(data_dir or store.DATA_DIR, "r2-publishes.json")
+
+
+def load_publishes(data_dir=None):
+    """Past publishes, oldest first: [{time, when, prefixes}]."""
+    p = publishes_path(data_dir)
+    if not os.path.exists(p):
+        return []
+    with open(p) as f:
+        return json.load(f)
+
+
+def record_publish(stamp, prefixes, data_dir=None, keep=100):
+    pubs = load_publishes(data_dir) + [dict(
+        time=stamp, prefixes=sorted(prefixes),
+        when=dt.datetime.fromtimestamp(stamp, TORONTO).strftime("%Y-%m-%d %H:%M %Z"))]
+    p = publishes_path(data_dir)
+    with open(p + ".tmp", "w") as f:
+        json.dump(pubs[-keep:], f, indent=1)
+    os.replace(p + ".tmp", p)
+
+
+def last_push(root=ROOT):
+    """When this checkout's origin/main last moved (a push of main, which deploys
+    the site, or a fetch of one), from its reflog; None if that can't be told."""
+    try:
+        r = subprocess.run(["git", "reflog", "show", "--date=unix", "--format=%gd", "-n1",
+                            "refs/remotes/origin/main"], cwd=root, capture_output=True, text=True)
+    except OSError:
+        return None
+    m = re.search(r"@\{(\d+)\}", r.stdout)
+    return int(m.group(1)) if r.returncode == 0 and m else None
+
+
+def live_since(prefix, publishes, pushed):
+    """The start time of the publish of <prefix> that the live site reads: the
+    newest one that began before the last push (upload first, then push).
+    None when there is none or the push time is unknown."""
+    if pushed is None:
+        return None
+    ts = [p["time"] for p in publishes if prefix in p["prefixes"] and p["time"] <= pushed]
+    return max(ts) if ts else None
+
+
+def plan(local, prefix, manifest, live=None):
+    """What a publish does to <prefix>: (uploads [(key, path, sha256, gz)],
+    deletes [key], kept [key], present [key]). <local> None means the prefix
+    is retired (no longer in config/r2.json) and has no files.
+
+    An object whose file is gone is deleted only if the live site can't need
+    it: it was last seen (present locally at a publish) before <live>, the
+    publish the live site reads. Otherwise it is kept for the live site until
+    a newer publish is deployed. With live None nothing is deleted."""
     want = {}
-    for d, _, names in os.walk(local):
+    for d, _, names in os.walk(local) if local else ():
         for name in sorted(names):
             if name.endswith(".tmp"):
                 continue
@@ -212,29 +282,37 @@ def plan(local, prefix, manifest):
                 want[key] = (p, hashlib.sha256(f.read()).hexdigest(), gz)
     pre = prefix.strip("/") + "/"
     ups = [(k, p, h, gz) for k, (p, h, gz) in sorted(want.items()) if manifest.get(k, {}).get("sha256") != h]
-    dels = sorted(k for k in manifest if k.startswith(pre) and k not in want)
-    return ups, dels
+    gone = sorted(k for k in manifest if k.startswith(pre) and k not in want)
+    dels = [k for k in gone if live is not None and manifest[k].get("seen", 0) < live]
+    kept = [k for k in gone if k not in set(dels)]
+    return ups, dels, kept, sorted(want)
 
 
 def sync(local, prefix, dry_run=False, jobs=16, max_objects=50_000, max_total_gb=5.0, data_dir=None,
-         cred=None):
+         cred=None, stamp=None, live=None):
+    """Makes <prefix> in the bucket hold <local>'s files, keeping objects the
+    live site may still read (plan()). Each object present locally is marked
+    seen at <stamp>, this publish's start time. Returns how many objects are
+    left under <prefix>."""
+    stamp = time.time() if stamp is None else stamp
     mpath = manifest_path(data_dir)
     manifest = {}
     if os.path.exists(mpath):
         with open(mpath) as f:
             manifest = json.load(f)
-    ups, dels = plan(local, prefix, manifest)
+    ups, dels, kept, present = plan(local, prefix, manifest, live)
     sizes = {k: os.path.getsize(p) if os.path.exists(p) else 0 for k, p, _, _ in ups}
     total = sum(v["bytes"] for k, v in manifest.items() if k not in sizes and k not in dels) + sum(sizes.values())
-    print(f"{prefix}: {len(ups):,} to upload ({sum(sizes.values()) / 1e6:.1f} MB), {len(dels):,} to delete; "
-          f"bucket total after {total / 1e9:.2f} GB", file=sys.stderr, flush=True)
+    print(f"{prefix}: {len(ups):,} to upload ({sum(sizes.values()) / 1e6:.1f} MB), {len(dels):,} to delete"
+          + (f", {len(kept):,} gone locally but kept for the live site" if kept else "")
+          + f"; bucket total after {total / 1e9:.2f} GB", file=sys.stderr, flush=True)
     if len(ups) + len(dels) > max_objects:
         raise SystemExit(f"refusing: {len(ups) + len(dels):,} objects is over --max-objects {max_objects:,}")
     if total > max_total_gb * 1e9:
         raise SystemExit(f"refusing: {total / 1e9:.2f} GB is over --max-total-gb {max_total_gb}")
-    if dry_run or not (ups or dels):
-        return
-    cred = cred or load_credentials()
+    left = len(present) + len(kept)
+    if dry_run:
+        return left
     lock = threading.Lock()
     done = [0]
 
@@ -244,6 +322,13 @@ def sync(local, prefix, dry_run=False, jobs=16, max_objects=50_000, max_total_gb
             json.dump(manifest, f, sort_keys=True, separators=(",", ":"))
         os.replace(tmp, mpath)
 
+    for k in present:
+        if k in manifest:
+            manifest[k]["seen"] = stamp
+    if not (ups or dels):
+        save()
+        return left
+    cred = cred or load_credentials()
     skipped = []
 
     def put(item):
@@ -264,7 +349,7 @@ def sync(local, prefix, dry_run=False, jobs=16, max_objects=50_000, max_total_gb
             headers["content-encoding"] = "gzip"
         request(cred, "PUT", key, body, headers)
         with lock:
-            manifest[key] = dict(sha256=sha, bytes=len(body))
+            manifest[key] = dict(sha256=sha, bytes=len(body), seen=stamp)
             done[0] += 1
             if done[0] % 500 == 0:
                 save()
@@ -283,41 +368,60 @@ def sync(local, prefix, dry_run=False, jobs=16, max_objects=50_000, max_total_gb
         save()
     print(f"{prefix}: uploaded {len(ups) - len(skipped):,}, deleted {len(dels):,}"
           + (f"; {len(skipped):,} files vanished during the sync, run it again" if skipped else ""), file=sys.stderr)
+    return sum(1 for k in manifest if k.startswith(prefix.strip("/") + "/"))
 
 
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     sub = ap.add_subparsers(dest="cmd", required=True)
-    s = sub.add_parser("sync", help="make <prefix> in the bucket match <local dir>")
+    s = sub.add_parser("sync", help="make <prefix> in the bucket hold <local dir>'s files")
     s.add_argument("local")
     s.add_argument("prefix")
     s.add_argument("--dry-run", action="store_true")
     s.add_argument("--jobs", type=int, default=16, help="requests in flight (default 16)")
     s.add_argument("--max-objects", type=int, default=50_000)
     s.add_argument("--max-total-gb", type=float, default=5.0)
-    p = sub.add_parser("publish", help="sync prefixes of config/r2.json (default all) from their folders in the data directory")
+    p = sub.add_parser("publish", help="sync prefixes of config/r2.json (default all, and retired ones) "
+                                       "from their folders in the data directory")
     p.add_argument("prefixes", nargs="*")
     p.add_argument("--dry-run", action="store_true")
     p.add_argument("--jobs", type=int, default=16, help="requests in flight (default 16)")
     p.add_argument("--max-objects", type=int, default=50_000, help="per prefix")
     p.add_argument("--max-total-gb", type=float, default=5.0)
     a = ap.parse_args(argv)
-    if a.cmd == "sync":
-        sync(a.local, a.prefix, a.dry_run, a.jobs, a.max_objects, a.max_total_gb)
-        return
     known = config()["prefixes"]
+    if a.cmd == "sync":
+        todo = [(a.prefix, a.local)]
+    else:
+        for prefix in a.prefixes:
+            if prefix not in known:
+                raise SystemExit(f"{prefix}: not a prefix in {CONFIG} ({', '.join(known)})")
+        todo = [(prefix, local_dir(name)) for prefix, name in known.items()
+                if not a.prefixes or prefix in a.prefixes]
+        for _, local in todo:
+            if not os.path.isdir(local):
+                raise SystemExit(f"{local}: missing; run the step that writes it first (config/dataflow.json)")
     if not a.dry_run:
         hold()
-    for prefix in a.prefixes:
-        if prefix not in known:
-            raise SystemExit(f"{prefix}: not a prefix in {CONFIG} ({', '.join(known)})")
-    for prefix, name in known.items():
-        if a.prefixes and prefix not in a.prefixes:
-            continue
-        local = local_dir(name)
-        if not os.path.isdir(local):
-            raise SystemExit(f"{local}: missing; run the step that writes it first (config/dataflow.json)")
-        sync(local, prefix, a.dry_run, a.jobs, a.max_objects, a.max_total_gb)
+    pubs, pushed = load_publishes(), last_push()
+    if a.cmd == "publish" and not a.prefixes:
+        # A prefix dropped from config/r2.json (a format moved to v2) is emptied
+        # once the live site no longer reads it.
+        old = {x for pub in pubs for x in pub["prefixes"]} - set(known)
+        todo += [(prefix, None) for prefix in sorted(old)]
+    if pushed is None:
+        print("can't tell when main was last pushed (origin/main's reflog); deleting nothing",
+              file=sys.stderr, flush=True)
+    stamp = time.time()
+    synced = []
+    for prefix, local in todo:
+        left = sync(local, prefix, a.dry_run, a.jobs, a.max_objects, a.max_total_gb, stamp=stamp,
+                    live=live_since(prefix, pubs, pushed))
+        if local is not None or left:
+            synced.append(prefix)
+    if not a.dry_run:
+        record_publish(stamp, synced)
+        print("Uploaded. Now push main to deploy the site that reads it (docs/r2.md).", file=sys.stderr)
 
 
 if __name__ == "__main__":
