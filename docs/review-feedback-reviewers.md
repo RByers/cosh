@@ -105,6 +105,111 @@ people was who reviewed them. Odd/even consistency falls, as expected when
 a stable part of where someone works is taken out (`docs/goals.md`: that
 test rewards coarser comparisons), so it doesn't argue against the change.
 
+## Which files did each approver review? (2026-11-14)
+
+The analysis above credits every approver with the whole CL. Gerrit can't
+say which files a reviewer read: the per-file "Reviewed" checkbox is
+private to each account and isn't in NoteDb. The worry: reviewers who
+often approve one file of a large CL get a factor made of other people's
+reviews. Prototyped with OWNERS as the stand-in for "the files this
+approver was there for".
+
+**How.** `git log -p -- '*OWNERS'` over main's history (offline, 3 min)
+gives every OWNERS line with the dates it was there, so each CL is judged
+by the OWNERS of the day it landed: owners and `per-file` rules from the
+file's directory up, `set noparent`, `file://` and `include`. An approver
+covers a file they owned; a file none of the CL's approvers owned (5.3%
+of the lines of CLs with several approvers) is covered by all of them.
+Threads on the commit message or a file the landed commit didn't change
+go by the approver's share of the directory's lines. The reviewer factor
+then counts only covered lines and their addressed threads. Same test as
+above (owner left out, m = 50).
+
+**How common.** 30% of CLs have two or more approvers, and they hold 52%
+of the expected and 65% of the addressed threads. Of their approver-CL
+pairs, 33% own every file, 14% none, 53% some. Approvals of one file (or
+under 20% of the lines) of a CL of 5+ files that someone else also
+approved are 8.4% of approvals and those CLs carry 20% of approvers'
+expected threads. Among the 1,657 reviewers with 50+ approvals, the share
+of expected threads that comes from such CLs is 18% at the median, 43% at
+the 90th percentile; 382 reviewers are at 30% or more and 98 at 50% or
+more. So the outliers exist.
+
+**But approvers don't comment by OWNERS.** From `reviews.sqlite`, each
+approver's own threads on CLs with several approvers:
+
+| the approver owns | approver-CLs | start a file thread | threads per CL | of those threads, on files they own | if spread by lines |
+|---|---|---|---|---|---|
+| no file | 86,377 | 37% | 1.27 | – | – |
+| under 5% of the lines | 54,838 | 35% | 1.67 | 6% | 2% |
+| 5–20% | 56,019 | 38% | 1.37 | 27% | 11% |
+| 20–50% | 60,479 | 43% | 1.55 | 50% | 34% |
+| 50–80% | 63,308 | 47% | 1.94 | 71% | 67% |
+| 80–100% | 103,014 | 56% | 3.09 | 92% | 94% |
+| every file | 208,241 | 39% | 1.54 | – | – |
+
+An approver who owns a sliver of a CL comments a little less often and
+about half as much as its main owner, and 94% of what they write is on
+files they don't own. They lean toward their own files (6% against 2% by
+lines) but mostly review the rest of the CL too.
+
+**Prediction** (deviance over the 835,056 CLs with an approver; lower is
+better):
+
+| reviewer factors computed from | all | one approver (570,161) | several (264,895) |
+|---|---|---|---|
+| no reviewer factor | 2,751,586 | 1,305,593 | 1,445,993 |
+| the whole CL, each approver in full (above) | 2,619,343 | 1,254,722 | 1,364,621 |
+| the files each owned | 2,616,782 | 1,251,924 | 1,364,858 |
+| the whole CL, split equally among its approvers | 2,615,605 | 1,250,915 | 1,364,690 |
+| only CLs they approved alone | 2,657,115 | 1,262,870 | 1,394,245 |
+
+- Each CL here is predicted with the plain mean of its approvers'
+  factors. Weighting that mean by who owns which file is clearly worse
+  (several approvers: 1,379,612 with owned-file factors, 1,380,904 with
+  whole-CL ones), as the comment table suggests.
+- One-approver CLs are the clean test, since nothing about them is
+  attributed: factors from owned files predict them better than
+  whole-CL factors (by 2,798, 5% of the reviewer factor's gain there),
+  and for the 382 outlier reviewers' own one-approver CLs the gain grows
+  from 3,313 to 4,663. So the worry is real: whole-CL credit does blur
+  those reviewers' factors.
+- **Splitting each CL equally among its approvers does as well as
+  OWNERS, or a little better, and needs no OWNERS data.** A reviewer's
+  factor is then weighted toward the CLs where they were the only or the
+  main reviewer.
+- Factors from CLs approved alone are much worse: too little data, and
+  not the same kind of CL.
+- (With the 37,140 CLs without an approver, which take factor 1, the
+  totals are 2,686,484 whole, 2,687,390 owned files, 2,689,287 split:
+  the factors' average level shifts and those CLs don't follow it. That
+  is calibration, not ranking.)
+
+**Reviewers and people.** Of the 1,944 reviewers with 50+ expected
+threads, the owned-file factor over the whole-CL factor is 0.94 at the
+median, 0.75–1.13 at the 10th–90th percentile and 0.52–1.77 at the
+1st–99th (rank correlation 0.865); for the 98 strongest outliers
+0.69–1.47. People's indexes barely notice: against the whole-CL reviewer
+factor, owned-file factors move 5.6% of people by more than 10% and 0.9%
+by more than 20% (rank correlation 0.996); the equal split 2.3% and
+0.3% (0.998).
+
+**Conclusion.** Don't attribute files by OWNERS: it isn't how approvers
+review, and it would add a step (OWNERS history) for no gain. Share each
+CL equally among its approvers in each reviewer's sums, and predict a CL
+with the mean of its approvers' factors. That is what was built
+(`two_way`, below), so nothing changes.
+
+Limits: OWNERS says who could approve a file, not who did. A file's owner
+by a `per-file` rule in an included file isn't found (`include` brings in
+only global owners). Not tried: weighting approvers by their own comment
+counts (it would leak the outcome into the predictor), and Gerrit's
+attention set or reviewer-added times as a sign of who was asked to
+review what.
+
+Scripts: `data/private/scratch/feedback-reviewer-files/` (`owners_hist.py`,
+`load_cov.py`, `measure.py`, `check_comments.py` and their `.out`).
+
 ## Against the goals
 
 - **Accuracy (goal: their own work, not where they worked).** The best
@@ -152,6 +257,10 @@ Later the same day the person's own CLs were left out of their index's
 rate and reviewer factors, so a reviewer who approves only one author
 counts as typical for that author (`docs/review-feedback.md`, "The
 person's own CLs are left out").
+
+`two_way` shares each CL equally among its approvers in the reviewers'
+sums, which "Which files did each approver review?" above found as good
+as crediting by OWNERS.
 
 Not tried: reviewers who commented but didn't approve, a reviewer factor
 per period, and per 3-level directory.
