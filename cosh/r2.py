@@ -31,14 +31,13 @@ import datetime as dt
 import gzip
 import hashlib
 import hmac
+import http.client
 import json
 import os
 import sys
 import threading
 import time
-import urllib.error
 import urllib.parse
-import urllib.request
 from concurrent.futures import ThreadPoolExecutor
 
 from . import store
@@ -135,22 +134,38 @@ def object_url(cred, key):
     return f"{cred['endpoint'].rstrip('/')}/{cred['bucket']}/{urllib.parse.quote(key, safe='/')}"
 
 
+_conns = threading.local()
+
+
+def _connection(host, fresh=False):
+    """This thread's open HTTPS connection to host: reused across requests, so
+    each one costs a round trip rather than a new TCP and TLS handshake."""
+    c = getattr(_conns, "c", None)
+    if fresh or c is None or c.host != host:
+        if c is not None:
+            c.close()
+        c = _conns.c = http.client.HTTPSConnection(host, timeout=60)
+    return c
+
+
 def request(cred, method, key, body=b"", headers=None, tries=5):
-    """One signed request; retries 429s, 5xx and network errors with backoff."""
+    """One signed request on this thread's kept-alive connection; retries 429s,
+    5xx and network errors with backoff, on a new connection."""
     url = object_url(cred, key)
+    u = urllib.parse.urlsplit(url)
     payload = hashlib.sha256(body).hexdigest()
     for attempt in range(tries):
-        req = urllib.request.Request(url, data=body if method == "PUT" else None, method=method,
-                                     headers=sign(method, url, headers or {}, payload, cred))
+        h = sign(method, url, headers or {}, payload, cred)
         try:
-            with urllib.request.urlopen(req, timeout=60) as r:
+            c = _connection(u.netloc, fresh=attempt > 0)
+            c.request(method, u.path, body=body if method == "PUT" else None, headers=h)
+            r = c.getresponse()
+            data = r.read()
+            if r.status < 300 or (r.status == 404 and method == "DELETE"):
                 return r.status
-        except urllib.error.HTTPError as e:
-            if e.code == 404 and method == "DELETE":
-                return 404
-            if e.code != 429 and e.code < 500 or attempt == tries - 1:
-                raise SystemExit(f"R2 {method} {key}: HTTP {e.code} {e.read()[:300]!r}")
-        except (urllib.error.URLError, TimeoutError, ConnectionError) as e:
+            if r.status != 429 and r.status < 500 or attempt == tries - 1:
+                raise SystemExit(f"R2 {method} {key}: HTTP {r.status} {data[:300]!r}")
+        except (http.client.HTTPException, OSError) as e:
             if attempt == tries - 1:
                 raise SystemExit(f"R2 {method} {key}: {e}")
         time.sleep(2 ** attempt)
@@ -180,7 +195,7 @@ def plan(local, prefix, manifest):
     return ups, dels
 
 
-def sync(local, prefix, dry_run=False, jobs=4, max_objects=50_000, max_total_gb=5.0, data_dir=None,
+def sync(local, prefix, dry_run=False, jobs=16, max_objects=50_000, max_total_gb=5.0, data_dir=None,
          cred=None):
     mpath = manifest_path(data_dir)
     manifest = {}
@@ -256,13 +271,13 @@ def main(argv=None):
     s.add_argument("local")
     s.add_argument("prefix")
     s.add_argument("--dry-run", action="store_true")
-    s.add_argument("--jobs", type=int, default=4, help="requests in flight (default 4)")
+    s.add_argument("--jobs", type=int, default=16, help="requests in flight (default 16)")
     s.add_argument("--max-objects", type=int, default=50_000)
     s.add_argument("--max-total-gb", type=float, default=5.0)
     p = sub.add_parser("publish", help="sync prefixes of config/r2.json (default all) from their folders in the data directory")
     p.add_argument("prefixes", nargs="*")
     p.add_argument("--dry-run", action="store_true")
-    p.add_argument("--jobs", type=int, default=4, help="requests in flight (default 4)")
+    p.add_argument("--jobs", type=int, default=16, help="requests in flight (default 16)")
     p.add_argument("--max-objects", type=int, default=50_000, help="per prefix")
     p.add_argument("--max-total-gb", type=float, default=5.0)
     a = ap.parse_args(argv)
