@@ -469,6 +469,123 @@ random. Scripts and full tables are scratch, not in git:
 run `cosh.review_feedback` up to its rate model and write nothing;
 `analyze.py`, `pairs_analyze.py`, `pairs_mix.py`).
 
+## Working across many directories
+
+**The question** (2026-11-14): does the index penalise people who work
+across many directories? Experience counts CLs landed anywhere on `main`,
+so someone who keeps moving to code new to them keeps ramping up while
+their experience bin says "veteran". **Per change, yes; per person, no.**
+A CL in a directory new to its author draws about 1.2 times what the index
+expects. But people who do much of that work don't have a higher index,
+and a correction for it moves almost nobody. The index stays as it is.
+
+Measured on 872,193 CLs and the 2,834 people with `MIN_CLS` CLs, with the
+index's own expected threads (owner left out). A unit's **familiarity** is
+the owner's earlier commits on `main` (from 2008, reverts left out,
+today's names) that touched the same 3-level directory. A **new**
+directory has fewer than 4 of them.
+
+- **Per change, unfamiliarity costs about one or two doublings.** Adjusted
+  for size (a factor per size bucket) and directory (a factor per 2-level
+  directory), a CL whose main directory is one its author never committed
+  to draws 1.19 times (1.15–1.21) the expected threads (81k CLs). After 64
+  or more commits there it draws 0.87–0.89 times. Veterans pay more in a
+  new directory: 1.15 at 64 CLs or fewer, 1.21 at 65–256, 1.28 at 257–1k
+  and 1.47 above 1k. By rate per line, a 257–1k author in a new directory
+  draws like a 65–256 one, not like a newcomer.
+- **It fades with commits there.** For veterans (more than 256 CLs), by
+  earlier commits in the 3-level directory: 1.29 at 0, 1.20 at 1, 1.13 at
+  2–3, 1.08 at 8–15, 1.00 at 16–31 and 0.85–0.89 from 64 up. Returning
+  after a year away costs about half the effect (1.16, against 0.95 with a
+  commit in the last year).
+- **It holds within each person.** For 817 people with 10 or more CLs on
+  each side in the same experience bin, CLs in a never-touched directory
+  draw a median 1.23 times (1.17–1.29) what their CLs in directories with
+  16+ earlier commits do. 64% are above 1. It holds within every size
+  group and every era, though it has shrunk (veterans in new directories:
+  1.51 in 2017–20, 1.29 in 2021–23, 1.17 in 2024–26). Reviewers aren't
+  stricter there (mean reviewer factor about 1.14 either way). Most of the
+  excess is on CLs spanning several directories: single-directory CLs in
+  new directories draw about what the index expects.
+- **The index as published barely penalises it, because big CLs cancel
+  it.** The index doesn't adjust for size, and 843 CLs of over 1,024 lines
+  whose main directory is new to the author (imports, new components) draw
+  0.20 of their expected threads while carrying a third of that group's.
+  With all CLs pooled, lines in new directories draw 1.01 of expected and
+  familiar ones 0.98. Without the huge CLs, a new main directory draws 1.44
+  and a familiar one 1.17. So someone whose new-directory work is small
+  edits looks a little worse, and someone landing large code drops looks
+  better.
+- **Broad people don't have a higher index.** The **unfamiliar share** is
+  the share of a person's expected threads in new directories. It has a
+  rank correlation of about 0 with the index within bands of CL count
+  (25–63, 64–255, 256–1,023, 1,024+): −0.02 to +0.08, and +0.09 for the
+  489 people with 512+ CLs. The broadest fifth's median index is 0.91, the
+  narrowest fifth's 0.92. It is mostly a newcomer's measure: its median
+  falls from 0.47 at 25–63 CLs to 0.13 at 1,024+, and only 12 people with
+  512+ CLs have over half their work in new directories.
+- **Spread, as distinct from newness, goes with a higher index.** People
+  whose lines are spread evenly over many 3-level directories (the
+  exponential of the entropy of their lines) have a higher index. The
+  median by fifth, within bands of CL count, runs from 0.77 for the most
+  concentrated to 1.13 for the most spread (rank correlation +0.21; +0.16
+  between odd CLs' spread and even CLs' index). The unfamiliar share
+  explains none of it, so it isn't ramping up. A likely cause, not tested:
+  concentrated people more often work where little feedback is drawn
+  (tests, generated or configuration files), which the reviewer factor
+  takes in only in part.
+
+**Corrections tried.** Each was fitted on a random half of people and
+applied to the other half, both ways, then rescaled to a median index of
+1. "Error removed" is the Poisson deviance of per-CL addressed threads,
+with a factor per size bucket, as a share of the index's own.
+
+| Correction | Error removed | Split-half (0.754 now) | Moved > 10% (> 20%) | Broadest fifth's median |
+|---|---|---|---|---|
+| A factor per familiarity bucket (0, 1–3, 4–15, 16–63, 64+), fitted over all CLs | +0.25% | 0.756 | 8 (0) | ×0.99 |
+| A rate per experience bin and familiarity bucket | −0.23% | 0.756 | 303 (32) | ×0.98 |
+| Experience in the 3-level directory instead of on `main` | −8.7% | 0.775 | 2,200 (1,647) | ×1.10 |
+| A familiarity factor fitted with a factor per author (like `two_way`) | +0.60% | 0.761 | 283 (0) | ×0.94 |
+
+The last is the only one that predicts better and is more consistent. Its
+factors are 1.18, 1.08, 1.02, 0.95 and 0.87 by familiarity bucket. But it
+gains little next to the reviewer factor (which removed 10% of the error
+of experience alone, "By reviewer, not directory"), moves nobody by more
+than 20%, and lowers broad people's index by 6%, not raises it. It would
+also reward moving between directories a little (by at most about 17%)
+and read as punishing depth. Global experience predicts clearly better
+than any count within a directory.
+
+**A broad contributor, for example.** One of the broadest people in the
+data has 738 CLs since late 2023, in 354 2-level and 733 3-level
+directories. 44% of their expected threads are in new directories (95th
+percentile of their CL-count band, whose median is 19%). Their index is
+1.52. In new directories it is 1.26 (AFR 2.45), in familiar ones 1.72
+(2.66): the opposite of the typical pattern. Their CLs of over 1,024
+lines in new directories drew no addressed threads against 86 expected.
+Without them, new directories give 1.48 against 1.97 familiar. With the
+within-person correction their index would be 1.49 (78th percentile to
+77th). Ramping up doesn't explain this person's index: their higher
+figures are in their home directories.
+
+**What could be shown instead.** If the question keeps coming up, the
+page could split a person's AFR and index between new and familiar
+directories, next to what peers' new-directory work typically draws.
+That needs a familiarity bucket in the per-person cells (about 17% more
+cells, measured without approvers in the key) and five numbers in
+`peers.json`. The by-directory table could also show the person's earlier
+commits in each directory. Not built.
+
+Limits. Familiarity counts only commits landed on `main`, under today's
+directory names: work on other projects, or reviewing in a directory,
+doesn't count. A new directory may also mean a new project, a new team or
+owners from elsewhere, which the data can't tell apart from the author's
+learning. Scripts and full tables are scratch, not in git:
+`data/private/scratch/feedback-breadth/` (`capture.py` runs
+`cosh.review_feedback` up to its rate model and writes `breadth.sqlite`,
+per CL and per CL × 3-level directory with the owner's earlier commits
+there; `cl-level/`, `person-level/` and `correction/` hold the analyses).
+
 ## Ground rules
 
 - **No tone** (`docs/plan.md`, ground rule 5): the script reads no review
