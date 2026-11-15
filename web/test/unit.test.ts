@@ -1617,6 +1617,18 @@ test('review feedback: everyone\'s directory table with the person\'s columns', 
   near(chrome.you.expected, 0.4 * 2.5 * 1.2 + (1.2 * 1.7 * 0.9) * 28 / 118);
   near(chrome.children[0].you.expected, chrome.you.expected);
   assert.deepEqual(F.dirTable(peers, null, 'all')[1].you.cls, 0);
+  // A row's changes and their units there filter the reviewers to its lines and comments: in chrome/,
+  // CL 1 whole and CL 2's second unit, where Bob's approval drew nothing addressed.
+  assert.deepEqual([...chrome.you.units], [[1000001, [0]], [1000002, [1]]]);
+  const rv = F.reviewerRows(person, peers, 'all', chrome.you.units);
+  assert.deepEqual(rv.map((r) => [r.email, r.cls, r.addressed]), [['alice@google.com', 2, 1], ['bob@igalia.com', 1, 0]]);
+  near(rv[0].lines, 40 + ui2);
+  near(rv[0].expected, chrome.you.expected);
+  assert.equal(F.clsInDir(person, 'all', chrome.you.units).length, 2);
+  // A thread counts in its file's unit, else its directory's, else the first (the commit message).
+  const cl2 = person.cls[1];
+  assert.deepEqual(['content/browser/frame.cc', 'chrome/browser/ui/x.cc', 'chrome/browser/ui/sub/y.cc', '/COMMIT_MSG', 'net/z.cc']
+    .map((path) => F.unitOfPath(person, cl2, path)), [0, 1, 1, 0, 0]);
   // Rows: by everyone's lines, or by yours when someone is shown; "Other" last; rows under minCls
   // of the person's changes get no AFR or index of theirs.
   const tview = (o: string[], byYou: boolean, shown?: number) =>
@@ -1923,4 +1935,6 @@ test('feedback index: a reviewer\'s addressed comments, by the approver each com
     { cl: 11, project: 'chromium/src', id: 'e', day: '2026-02-01', path: '/COMMIT_MSG' },
     { cl: 10, project: 'chromium/src', id: 'a', day: '2025-08-01', path: 'a.cc' }]);
   assert.deepEqual(F.reviewerComments(files, 'rev@chromium.org'), []);
+  // A directory filter keeps only the threads it accepts.
+  assert.deepEqual(F.reviewerComments(files, 'rev@google.com', (cl, path) => cl === 10 && path === 'a.cc').map((c) => c.id), ['a']);
 });

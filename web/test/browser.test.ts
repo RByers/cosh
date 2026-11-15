@@ -3592,6 +3592,33 @@ test('feedback index: a person\'s index, and how their rate compares', async () 
   await page.close();
 });
 
+test('feedback index: a Yours Feedback count in the directory table filters Your feedback to it', async () => {
+  const { page, errors } = await feedbackPage();
+  const { FIXTURE_EMAIL } = await import('./feedback-fixture.ts');
+  await lookUp(page, FIXTURE_EMAIL);
+  await page.waitForFunction(() => !document.querySelector<HTMLElement>('#rf-person')!.hidden);
+  const revs = () => page.$$eval('#rf-revs tr.rf-rev-row', (rs) => rs.map((r) =>
+    [...r.children].slice(0, 3).map((c) => c.textContent!.replace(/[▸▾]/, ''))));
+  const filterShown = () => page.$eval('#rf-dir-filter', (e) => !(e as HTMLElement).hidden);
+  assert.equal(await filterShown(), false);
+  // chrome/: CL 1 whole and CL 2's lines there; Bob's approval drew nothing addressed there, so he isn't listed.
+  const a = await page.$('#rf-all-dirs tr[data-key="d:chrome/"] a.rf-dir-filter-link');
+  assert.ok(a);
+  assert.deepEqual(await a.evaluate((x) => [x.getAttribute('href'), x.getAttribute('target'), x.textContent]), ['#feedback', null, '2']);
+  await a.click();
+  assert.equal(await filterShown(), true);
+  assert.equal(await page.$eval('#rf-dir-filter-name', (e) => e.textContent!.trim()), 'Filter: only feedback in chrome/');
+  assert.deepEqual(await revs(), [['alice@google.com', '2', '1']]);
+  assert.match(await page.$eval('#rf-revs-note', (e) => e.textContent!.replace(/\s+/g, ' ')), /^1 reviewers approved your changes that drew addressed comments there/);
+  await page.click('#rf-dir-clear');
+  assert.equal(await filterShown(), false);
+  assert.deepEqual(await revs(), [['alice@google.com', '2', '2'], ['bob@igalia.com', '1', '1']]);
+  // A row without feedback of yours has no link.
+  assert.equal(await page.$('#rf-all-dirs tr[data-key="o:"] a.rf-dir-filter-link'), null);
+  assert.deepEqual(errors, []);
+  await page.close();
+});
+
 test('feedback index: selecting a dot in the over-time chart filters Your feedback', async () => {
   const { page, errors } = await feedbackPage();
   const { FIXTURE_EMAIL } = await import('./feedback-fixture.ts');
@@ -3719,6 +3746,15 @@ test('feedback index: a reviewer opens into the addressed comments they started,
   assert.deepEqual(await page.$$eval('#rf-revs tr.rf-rev-row', (rs) => rs.map((r) => (r as HTMLElement).dataset.email)), ['alice@google.com']);
   assert.deepEqual(await items(), [['20 Sept 2025', '1000001', 'chrome/browser/ui/view.cc']]);
   assert.equal(asked.length, 3);
+  // A directory filter keeps only the comments there: CL 2's commit message counts in its first
+  // directory, content/browser/, so under chrome/ Alice keeps only CL 1's.
+  await page.click('#rf-half-clear');
+  await page.click('#rf-all-dirs tr[data-key="d:chrome/"] a.rf-dir-filter-link');
+  await page.waitForFunction(() => !/Loading/.test(document.querySelector('#rf-revs')!.textContent ?? ''));
+  assert.deepEqual(await items(), [['20 Sept 2025', '1000001', 'chrome/browser/ui/view.cc']]);
+  await page.click('#rf-dir-clear');
+  // Bob, still open, is back too.
+  await page.waitForFunction(() => document.querySelectorAll('#rf-revs tr.rf-rev-comments li').length === 3);
   assert.deepEqual(errors, []);
   await page.close();
 });

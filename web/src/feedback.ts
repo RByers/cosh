@@ -392,19 +392,53 @@ export interface ReviewerRow {
   expected: number;
 }
 
+/** A filter to one row of the directory table (`DirStats.units`): per change number, the indexes of
+ * its units counted there. */
+export type DirFilter = ReadonlyMap<number, readonly number[]>;
+
+/** A change's lines, addressed threads and expected ones: all of them, or only those of `units`. */
+export function clShare(p: Person, peers: Peers, c: ClRow, units?: readonly number[]): { lines: number; addressed: number; expected: number } {
+  if (!units) return { lines: c[2], addressed: addressedOn(c), expected: expectedOn(p, peers, c) };
+  const fracs = unitFracs(c[3]);
+  const exps = unitExpected(p, peers, c);
+  let lines = 0;
+  let addressed = 0;
+  let expected = 0;
+  for (const i of units) {
+    lines += c[2] * fracs[i];
+    addressed += unitCounts(c, i)[1];
+    expected += exps[i];
+  }
+  return { lines, addressed, expected };
+}
+
+/** The changes landed in `period` with addressed labels, only those in `dir`'s row when one is given. */
+export const clsInDir = (p: Person, period: string, dir?: DirFilter | null) =>
+  clsIn(p, period).filter((c) => !dir || dir.has(c[0]));
+
+/** The unit a thread on `path` counts in, as `buildPerson` assigns files: the file's own unit when the
+ * change lists it, else the unit of the file's 3-level directory, else the first (the commit message). */
+export function unitOfPath(p: Person, c: ClRow, path: string): number {
+  const f = c[4].find((x) => p.files[x[0]] === path);
+  if (f) return f[4];
+  if (path.startsWith('/')) return 0;
+  const d = dirOf(path);
+  const i = c[3].findIndex((u) => p.dirs[u[0]] === d);
+  return i < 0 ? 0 : i;
+}
+
 /** The person's approvers in `period`, most of the person's changes first (a change with several
- * approvers counts for each). */
-export function reviewerRows(p: Person, peers: Peers, period: string): ReviewerRow[] {
+ * approvers counts for each); with `dir`, only the changes' lines and threads in that directory row. */
+export function reviewerRows(p: Person, peers: Peers, period: string, dir?: DirFilter | null): ReviewerRow[] {
   const rows = new Map<number, ReviewerRow>();
-  for (const c of clsIn(p, period)) {
-    const e = expectedOn(p, peers, c);
-    const a = addressedOn(c);
+  for (const c of clsInDir(p, period, dir)) {
+    const { lines, addressed: a, expected: e } = clShare(p, peers, c, dir?.get(c[0]));
     for (const i of c[6]) {
       let r = rows.get(i);
       if (!r) rows.set(i, (r = { email: p.revs[i], factor: p.revF[i], approved: p.revCls[i], cls: 0, lines: 0,
         addressed: 0, expected: 0 }));
       r.cls += 1;
-      r.lines += c[2];
+      r.lines += lines;
       r.addressed += a;
       r.expected += e;
     }
@@ -520,16 +554,19 @@ export interface DirStats {
   addressed: number;
   /** Addressed threads expected there at the peers' AFR. */
   expected: number;
-  /** The changes counted in `cls`, so that a group of entries can count each change once. */
-  ids: Set<number>;
+  /** The changes counted in `cls`, each with the indexes of its units counted here: so that a group of
+   * entries counts each change once, and to filter "Your feedback" to this row (`DirFilter`). */
+  units: Map<number, number[]>;
 }
 
-function addTo(s: DirStats, cl: number, lines: number, threads: number, a: number, exp: number) {
+function addTo(s: DirStats, cl: number, unit: number, lines: number, threads: number, a: number, exp: number) {
   s.lines += lines;
   s.threads += threads;
   s.addressed += a;
   s.expected += exp;
-  if (!s.ids.has(cl)) (s.ids.add(cl), s.cls += 1);
+  const us = s.units.get(cl);
+  if (us) us.push(unit);
+  else (s.units.set(cl, [unit]), s.cls += 1);
 }
 
 /** The index cell's shade: -1 (a quarter of typical or less) .. 0 (typical) .. 1 (4× or more), on a log scale. */
@@ -570,7 +607,7 @@ export interface TableNode {
   children: TableNode[];
 }
 
-const emptyStats = (): DirStats => ({ cls: 0, lines: 0, threads: 0, addressed: 0, expected: 0, ids: new Set() });
+const emptyStats = (): DirStats => ({ cls: 0, lines: 0, threads: 0, addressed: 0, expected: 0, units: new Map() });
 
 /** Everyone's directory table as a tree, with the person's changes in `period` (if any) added: each
  * unit to its directory, its parents, and to "rest of" or a level's "Other" where the table has no row
@@ -601,7 +638,7 @@ export function dirTable(peers: Peers, p: Person | null, period: string): TableN
       const path = p.dirs[d];
       const [threads, a] = unitCounts(c, i);
       const lines = c[2] * fracs[i];
-      const put = (n: TableNode) => addTo(n.you, c[0], lines, threads, a, exps[i]);
+      const put = (n: TableNode) => addTo(n.you, c[0], i, lines, threads, a, exps[i]);
       // Top level first: each level's own row, or that level's "Other", where the walk stops.
       let parent = '';
       let last: TableNode | null = null;
@@ -847,9 +884,11 @@ export interface ReviewerComment {
 }
 
 /** The addressed threads approver `rev` (a `ReviewerRow.email`) started on the person's changes in
- * `files`, newest first. A thread counts when its first comment's author is that approver
- * (`ThreadFile.reviewers`); a version-1 file, without them, gives none. */
-export function reviewerComments(files: ThreadFile[], rev: string): ReviewerComment[] {
+ * `files`, newest first, those `keep` (change number, path) accepts if given. A thread counts when its
+ * first comment's author is that approver (`ThreadFile.reviewers`); a version-1 file, without them, gives
+ * none. */
+export function reviewerComments(files: ThreadFile[], rev: string,
+  keep?: (cl: number, path: string) => boolean): ReviewerComment[] {
   const out: ReviewerComment[] = [];
   for (const f of files) {
     const mine = new Set((f.reviewers ?? []).flatMap((r, i) => (r === rev ? [i] : [])));
@@ -857,7 +896,7 @@ export function reviewerComments(files: ThreadFile[], rev: string): ReviewerComm
     for (const c of f.cls) {
       for (const t of c.threads) {
         const first = t.comments[0];
-        if (t.addressed === true && first && mine.has(first[0]))
+        if (t.addressed === true && first && mine.has(first[0]) && (!keep || keep(c.n, t.path)))
           out.push({ cl: c.n, project: c.project, id: t.id, day: first[1].slice(0, 10), path: t.path });
       }
     }

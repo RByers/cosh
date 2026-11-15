@@ -157,6 +157,7 @@
         <template data-msg="dirs-other">Other (<slot name="n"></slot>)</template>
         <template data-msg="dirs-rest">rest of <slot name="dir"></slot></template>
         <template data-msg="dirs-no-ratio">Fewer than <slot name="n"></slot> changes: too few for a rate</template>
+        <template data-msg="dirs-filter-title">Show only your addressed feedback in this directory, in Your feedback below</template>
         <template data-msg="dirs-peers">The AFR expected on your lines there, for your experience and reviewers: <slot name="v"></slot></template>
         <p id="rf-all-dirs-note" class="note"></p>
         <template data-msg="all-dirs-note">
@@ -165,7 +166,8 @@
           light (little feedback per line) to dark blue (a lot). Directories with fewer than
           <slot name="minDir"></slot> changes are pooled in “Other”, and “rest of” is the files directly in a
           directory. ▸ opens a directory.<span data-if="you"> The Yours columns are your changes, sorted by your
-          lines, with your feedback index in each directory. A directory's index adds up its subdirectories the same way
+          lines, with your feedback index in each directory. Select your Feedback count in a row to see only the
+          comments there in Your feedback, below. A directory's index adds up its subdirectories the same way
           the overall index does, so it is the same whether the directory is open or not. Rows with fewer than
           <slot name="minCls"></slot> of your changes show no AFR or index.</span>
         </template>
@@ -286,7 +288,16 @@
           <span id="rf-half-filter-name" class="rf-filter-name"></span>
           <button type="button" id="rf-half-clear">Clear</button>
         </p>
+        <!-- Set by selecting a Feedback count in the directory table's Yours columns. -->
+        <p id="rf-dir-filter" class="rf-filter" hidden>
+          <span id="rf-dir-filter-name" class="rf-filter-name"></span>
+          <button type="button" id="rf-dir-clear">Clear</button>
+        </p>
         <template data-msg="half-filter">Filter: only changes landed <slot name="half"></slot></template>
+        <template data-msg="dir-filter">Filter: only feedback in <slot name="dir"></slot></template>
+        <template data-msg="dir-filter-rest">the files directly in <slot name="dir"></slot></template>
+        <template data-msg="dir-filter-other">the smaller directories in <slot name="dir"></slot></template>
+        <template data-msg="dir-filter-other-top">the smaller top-level directories</template>
         <div class="table-wrap">
           <table id="rf-revs" class="rf-table">
             <thead><tr><th scope="col">Reviewer</th>
@@ -301,8 +312,9 @@
         </div>
         <p id="rf-revs-note" class="note"></p>
         <template data-msg="revs-note">
-          <slot name="n"></slot> reviewers approved your changes, from their Reviewed-by lines (those who voted
-          Code-Review). A change with several counts under each, and its reviewer factor is their mean. A
+          <slot name="n"></slot> reviewers approved your changes that drew addressed comments<span data-if="dir">
+          there</span>, from their Reviewed-by lines (those who voted Code-Review); reviewers whose approvals drew
+          none aren't listed. A change with several counts under each, and its reviewer factor is their mean. A
           reviewer factor is fitted together with every author's own factor, so a reviewer who mostly approves
           newcomers' changes isn't counted as strict for that, and it leaves your changes out: a reviewer who
           approves few changes but yours counts as typical.<span data-if="hasNone"> <slot name="none"></slot>
@@ -312,7 +324,7 @@
         </template>
         <template data-msg="rev-loading">Loading…</template>
         <template data-msg="rev-none">No addressed comments from them on your changes<span data-if="half"> landed
-          <slot name="half"></slot></span>.</template>
+          <slot name="half"></slot></span><span data-if="dir"> in <slot name="dir"></slot></span>.</template>
         <template data-msg="rev-error">Couldn't load the comments: <slot name="error"></slot></template>
         <template data-msg="rev-no-emails">The comment files don't name reviewers by address yet, so they can't be
           listed here.</template>

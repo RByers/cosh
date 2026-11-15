@@ -12,6 +12,7 @@ import {
   binSums,
   buildPerson,
   clsIn,
+  clsInDir,
   dirTable,
   fiOf,
   fr,
@@ -31,16 +32,19 @@ import {
   reviewerRows,
   sums,
   tableRows,
+  unitOfPath,
   reviewerComments,
   threadsMarkdown,
   threadsUrl,
   threadUrl,
   type Alias,
+  type DirFilter,
   type Peers,
   type Person,
   type ReviewerComment,
   type ReviewerTable,
   type Shard,
+  type TableNode,
   type TableRowView,
   type ThreadFile,
   type Top,
@@ -75,6 +79,9 @@ const state = {
   halves: [] as string[],
   /** The half-year picked in the over-time chart, filtering "Your feedback". */
   half: null as string | null,
+  /** The directory-table row picked by its Yours Feedback count, filtering "Your feedback": its key, its
+   * name for the filter's text, and its changes' units there. */
+  dir: null as { key: string; name: string; units: DirFilter } | null,
   /** The person's thread files (R2) by half-year, fetched when a reviewer is first opened or for the
    * download; null for a half-year with none. */
   threads: new Map<string, Promise<ThreadFile | null>>(),
@@ -247,6 +254,7 @@ async function lookup(raw: string) {
     state.revOpen = new Set();
     state.half = null;
     window.__rf!.half = null;
+    state.dir = null;
     state.allExpanded = new Set();
     const cs = clsIn(found, ALL);
     put(note, 'find-done', { n: fmtInt(cs.length), from: dayLabel(cs[0][1]), to: dayLabel(cs.at(-1)![1]) });
@@ -488,7 +496,9 @@ function allDirRow(r: TableRowView, you: boolean): HTMLTableRowElement {
     const few = y.cls && r.youFi === null ? msg('dirs-no-ratio', { n: fmtInt(state.peers!.min_cls) }) : undefined;
     const peersFr = y.lines > 0 ? fmtFr((100 * y.expected) / y.lines) : '–';
     const cell = (v: string, cls = 'num rf-you-col') => el('td', y.cls ? v : '', cls);
-    tr.append(cell(fmtInt(Math.round(y.lines)), 'num rf-you-col rf-you-start'), cell(fmtInt(y.threads)), cell(fmtInt(y.addressed)));
+    const threads = cell(fmtInt(y.threads));
+    if (y.threads > 0) threads.replaceChildren(dirFilterLink(n, fmtInt(y.threads)));
+    tr.append(cell(fmtInt(Math.round(y.lines)), 'num rf-you-col rf-you-start'), threads, cell(fmtInt(y.addressed)));
     const fr_ = y.cls ? afrCell(r.youFr, few) : el('td');
     const fi = y.cls ? fiCell(r.youFi, few ?? msg('dirs-peers', { v: peersFr })) : el('td');
     fr_.classList.add('rf-you-col');
@@ -496,6 +506,22 @@ function allDirRow(r: TableRowView, you: boolean): HTMLTableRowElement {
     tr.append(fr_, fi);
   }
   return tr;
+}
+
+/** A Yours Feedback count as a link to "Your feedback", filtered to that row's changes there. */
+function dirFilterLink(n: TableNode, text: string): HTMLAnchorElement {
+  const a = el('a', text, 'rf-dir-filter-link');
+  a.href = '#feedback';
+  a.title = msg('dirs-filter-title');
+  a.addEventListener('click', () => setDir({ key: n.key, name: dirFilterName(n), units: n.you.units }));
+  return a;
+}
+
+/** A directory-table row's name in the filter's text. */
+function dirFilterName(n: TableNode): string {
+  if (n.kind === 'dir') return n.path;
+  if (n.kind === 'rest') return line('dir-filter-rest', { dir: n.path });
+  return n.path ? line('dir-filter-other', { dir: n.path }) : line('dir-filter-other-top');
 }
 
 // ---- the methodology (rendered when opened)
@@ -925,7 +951,12 @@ function renderReviewers() {
   const filter = $('#rf-half-filter');
   filter.hidden = !state.half;
   if (state.half) put(filter.querySelector('.rf-filter-name')!, 'half-filter', { half: halfName(state.half) });
-  const rows = reviewerRows(p, peers, period);
+  const dir = state.dir;
+  const dirFilter = $('#rf-dir-filter');
+  dirFilter.hidden = !dir;
+  if (dir) put(dirFilter.querySelector('.rf-filter-name')!, 'dir-filter', { dir: dir.name });
+  // Only reviewers whose approvals drew addressed comments: the comments are what this lists.
+  const rows = reviewerRows(p, peers, period, dir?.units).filter((r) => r.addressed > 0);
   const body = $('#rf-revs tbody');
   body.replaceChildren();
   for (const r of rows) {
@@ -950,8 +981,8 @@ function renderReviewers() {
     body.append(tr);
     if (open) body.append(reviewerCommentsRow(r.email));
   }
-  const none = clsIn(p, period).filter((c) => !c[6].length).length;
-  put($('#rf-revs-note'), 'revs-note', { n: fmtInt(rows.length), none: fmtInt(none), hasNone: none > 0,
+  const none = clsInDir(p, period, dir?.units).filter((c) => !c[6].length).length;
+  put($('#rf-revs-note'), 'revs-note', { n: fmtInt(rows.length), dir: !!dir, none: fmtInt(none), hasNone: none > 0,
     noneF: fmtFi(noneFactor(p, peers)), min: fmtInt(peers.min_bin_cls) });
 }
 
@@ -993,17 +1024,25 @@ function reviewerCommentsRow(email: string): HTMLTableRowElement {
   put(td, 'rev-loading');
   const key = state.key;
   const half = state.half;
+  const dir = state.dir;
   const hs = half ? [half] : state.halves;
   void Promise.all(hs.map(loadThreads)).then((files) => {
-    if (state.key !== key || state.half !== half || !td.isConnected) return;
+    if (state.key !== key || state.half !== half || state.dir !== dir || !td.isConnected) return;
     const fs = files.filter((f): f is ThreadFile => f !== null);
     if (fs.length && fs.every((f) => !f.reviewers)) {
       put(td, 'rev-no-emails');
       return;
     }
-    const list = reviewerComments(fs, email);
+    const p = state.person!;
+    const byCl = new Map(p.cls.map((c) => [c[0], c]));
+    const keep = dir ? (cl: number, path: string) => {
+      const units = dir.units.get(cl);
+      const c = byCl.get(cl);
+      return !!units && !!c && units.includes(unitOfPath(p, c, path));
+    } : undefined;
+    const list = reviewerComments(fs, email, keep);
     if (!list.length) {
-      put(td, 'rev-none', { half: half ? halfName(half) : '' });
+      put(td, 'rev-none', { half: half ? halfName(half) : '', dir: dir?.name ?? '' });
       return;
     }
     const ul = el('ul', undefined, 'rf-rev-list');
@@ -1041,6 +1080,12 @@ function setHalf(h: string | null) {
   state.half = h;
   window.__rf!.half = h;
   charts.trend?.update('none');
+  renderReviewers();
+}
+
+/** Filters "Your feedback" to a directory-table row (null: all). */
+function setDir(d: typeof state.dir) {
+  state.dir = d;
   renderReviewers();
 }
 
@@ -1151,6 +1196,7 @@ function init() {
     void download();
   });
   $('#rf-half-clear').addEventListener('click', () => setHalf(null));
+  $('#rf-dir-clear').addEventListener('click', () => setDir(null));
   const method = $<HTMLDetailsElement>('#method');
   method.addEventListener('toggle', () => renderMethod());
   $<HTMLSelectElement>('#rf-cohort-bin').addEventListener('change', (e) => {

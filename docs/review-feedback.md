@@ -211,7 +211,11 @@ addressed threads over its expected ones, so a parent adds up its children
 however they are shown; its tooltip gives the AFR expected on those lines
 for the person's experience and reviewers.
 Rows with fewer than `MIN_CLS` of the person's CLs show no AFR or FI of
-theirs.
+theirs. A row's Yours Feedback count links to Your feedback, filtered to
+that row: only the person's CLs with units counted there
+(`DirStats.units`), and only those units' lines, addressed threads and
+expected threads (`clShare`); a reviewer's listed threads are those whose
+file counts in one of those units (`unitOfPath`).
 
 **Your feedback** (after an address is found), one section each:
 
@@ -229,7 +233,9 @@ theirs.
   Dots with fewer than `MIN_CLS` CLs are hollow. Selecting a dot filters
   Your feedback to the CLs landed that half-year.
 - *Your feedback* (`reviewerRows`): everyone who approved one of the
-  person's CLs (in the picked half-year, if any), most CLs first: the
+  person's CLs (in the picked half-year and directory, if any) whose
+  approvals drew addressed threads (rows with none are left out), most
+  CLs first: the
   person's CLs they approved, addressed threads on them, the person's AFR
   there, the reviewer's factor without the person's CLs (so it can differ
   a little from what others see), everyone's CLs they approved, and the
