@@ -106,14 +106,6 @@ def r1(x):
     return round(x, 1)
 
 
-def summary(xs):
-    """(mean, median, 90th percentile, count) of `xs`."""
-    if not xs:
-        return None, None, None, 0
-    p90 = statistics.quantiles(xs, n=10, method="inclusive")[8] if len(xs) > 1 else xs[0]
-    return round(statistics.fmean(xs), 2), round(statistics.median(xs), 2), round(p90, 2), len(xs)
-
-
 def table_rows(d, listed, parents):
     """The keys of the table rows a 3-level directory's turns count in, as the page's tree has them:
     "d:<dir>" for each listed directory it is in; "o:<dir>" for the "Other" of the deepest one when that
@@ -142,11 +134,13 @@ def weighted_pcts(hw, fs=PCTS):
     return out
 
 
-def turn_series(lists, shown):
-    """Percentiles (10th, 25th, 50th, 75th, 90th), mean and count of each quarter's turn hours."""
+def spread(lists, shown=None):
+    """Percentiles (10th, 25th, 50th, 75th, 90th), mean and count of each quarter's values (all
+    None where `shown` is false)."""
+    shown = shown or [True] * len(lists)
     out = {k: [] for k in ("p10", "p25", "p50", "p75", "p90", "mean", "n")}
     for xs, ok in zip(lists, shown):
-        qs = statistics.quantiles(xs, n=20, method="inclusive") if ok and len(xs) > 1 else None
+        qs = (statistics.quantiles(xs, n=20, method="inclusive") if len(xs) > 1 else xs * 19) if ok and xs else None
         for k, i in (("p10", 1), ("p25", 4), ("p50", 9), ("p75", 14), ("p90", 17)):
             out[k].append(round(qs[i], 2) if qs else None)
         out["mean"].append(round(statistics.fmean(xs), 2) if ok and xs else None)
@@ -381,10 +375,6 @@ def compute(gdb, ddb, tdb, owners_at=None):
                     row_t[k][ti[q] - 1].append((h, w))
                 prow_t[p][k].append((h, w))
 
-    def series(lists, since=qs[0]):
-        mm = [summary(x) if q >= since else (None, None, None, 0) for q, x in zip(qs, lists)]
-        return dict(mean=[m[0] for m in mm], median=[m[1] for m in mm], p90=[m[2] for m in mm], n=[m[3] for m in mm])
-
     def row(k):
         """A table row's percentiles per quarter, its turns per quarter, and its percentiles over the four."""
         t = row_t.get(k, [[] for _ in range(ntq)])
@@ -402,9 +392,12 @@ def compute(gdb, ddb, tdb, owners_at=None):
         quarters=qs, attention_from=ATTENTION_FROM, min_dir_lines=MIN_DIR_LINES,
         commits=n_commits, human=n_human,
         reviewed=rev_commits, reviewed_lines=rev_lines, reviewers=[len(s) for s in people_q],
-        reply=series(reply_h, ATTENTION_FROM),
+        # Lines reviewed per reviewer: the spread over the people who reviewed anything in the quarter.
+        reviewer_lines=spread([[byq[q][1] for byq in per.values() if q in byq and byq[q][0]] for q in qs]),
+        # A reviewer's turn to first answer and every turn's hours: their spread per quarter.
+        reply=spread(reply_h, [q >= ATTENTION_FROM for q in qs]),
         # Reviewers' turns: percentiles, mean and count per quarter.
-        turns=turn_series(turn_h, [q >= ATTENTION_FROM for q in qs]),
+        turns=spread(turn_h, [q >= ATTENTION_FROM for q in qs]),
         table_quarters=table_qs,
         # [directory, lines reviewed per table quarter (5), its turns' [50th, 75th, 90th percentile] hours per
         #  quarter (the last 4; null without turns), turns per quarter, the percentiles over the four quarters,

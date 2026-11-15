@@ -110,7 +110,11 @@ class ComputeTest(unittest.TestCase):
         self.assertEqual(data["reviewers"], [1, 2])
         self.assertNotIn("first", data)
         # Asked Friday 13:00, answered Monday 12:00: 23 weekday hours. Nothing before the attention set.
-        self.assertEqual(data["reply"], dict(mean=[None, 23.0], median=[None, 23.0], p90=[None, 23.0], n=[0, 1]))
+        self.assertEqual(data["reply"], dict(p10=[None, 23.0], p25=[None, 23.0], p50=[None, 23.0], p75=[None, 23.0],
+                                             p90=[None, 23.0], mean=[None, 23.0], n=[0, 1]))
+        # Lines per reviewer: rev's 40 in Q2; rev's and two@x.org's 80 each in Q3.
+        q = [40, 80]
+        self.assertEqual(data["reviewer_lines"], dict(p10=q, p25=q, p50=q, p75=q, p90=q, mean=q, n=[1, 2]))
         # Reviewer 7's turns of 20 and 4 hours.
         self.assertEqual(data["turns"], dict(p10=[None, 5.6], p25=[None, 8.0], p50=[None, 12.0], p75=[None, 16.0],
                                              p90=[None, 18.4], mean=[None, 12.0], n=[0, 2]))

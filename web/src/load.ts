@@ -6,14 +6,6 @@
 
 import type { DataSpan } from './data-span.ts';
 
-/** A mean, median, 90th percentile and count per quarter (null where there is no data). */
-export interface Series {
-  mean: (number | null)[];
-  median: (number | null)[];
-  p90: (number | null)[];
-  n: number[];
-}
-
 /** A reviewer turn's weekday hours at the 50th, 75th and 90th percentile. */
 export type Pcts = [number, number, number];
 /** A directory of the table: [path, lines reviewed in each of `table_quarters`, the percentiles of
@@ -23,8 +15,8 @@ export type DirEntry = [string, number[], (Pcts | null)[], number[], Pcts | null
 /** A listed directory's "Other" row (what its listed children don't cover): [path, percentiles per
  * quarter, turns per quarter, percentiles over the four]. */
 export type OtherEntry = [string, (Pcts | null)[], number[], Pcts | null];
-/** Reviewers' turns per quarter: percentiles, mean and count of their weekday hours. */
-export interface TurnSeries {
+/** A spread per quarter: percentiles, mean and count (null where there is no data). */
+export interface Spread {
   p10: (number | null)[];
   p25: (number | null)[];
   p50: (number | null)[];
@@ -50,10 +42,12 @@ export interface All {
   reviewed: number[];
   reviewed_lines: number[];
   reviewers: number[];
+  /** Lines reviewed per reviewer, over the people who reviewed anything in the quarter. */
+  reviewer_lines: Spread;
   /** A reviewer's wait: entering the attention set to their first answer, in weekday hours. */
-  reply: Series;
+  reply: Spread;
   /** Reviewers' turns that ended before their change closed. */
-  turns: TurnSeries;
+  turns: Spread;
   /** The table's quarters, oldest first: the one before its first, then its four. */
   table_quarters: string[];
   dirs: DirEntry[];

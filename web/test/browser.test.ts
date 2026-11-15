@@ -3945,7 +3945,10 @@ const loadAll = {
   quarters: ['2025Q3', '2025Q4', '2026Q1', '2026Q2', '2026Q3'], attention_from: '2025Q4', min_dir_lines: 100,
   commits: [100, 110, 120, 130, 150], human: [80, 85, 90, 95, 120], reviewed: [70, 75, 80, 85, 100],
   reviewed_lines: [7000, 8000, 9000, 9000, 12000], reviewers: [10, 10, 10, 9, 10],
-  reply: { mean: [null, 16, 15, 17, 18], median: [null, 3, 3, 4, 4], p90: [null, 40, 38, 42, 45], n: [0, 60, 70, 70, 90] },
+  reviewer_lines: { p10: [10, 10, 10, 10, 20], p25: [50, 60, 70, 80, 100], p50: [200, 250, 300, 300, 360],
+    p75: [600, 700, 800, 800, 900], p90: [2000, 2200, 2400, 2500, 3000], mean: [700, 800, 900, 1000, 1200], n: [10, 10, 10, 9, 10] },
+  reply: { p10: [null, 0.1, 0.1, 0.2, 0.2], p25: [null, 1, 1, 1, 1.5], p50: [null, 3, 3, 4, 4], p75: [null, 15, 14, 16, 17],
+    p90: [null, 40, 38, 42, 45], mean: [null, 16, 15, 17, 18], n: [0, 60, 70, 70, 90] },
   turns: { p10: [null, 1, 1, 1, 1], p25: [null, 2, 2, 2, 3], p50: [null, 4, 4, 5, 6], p75: [null, 10, 11, 12, 14],
     p90: [null, 30, 32, 34, 40], mean: [null, 12, 13, 14, 16], n: [0, 80, 85, 90, 100] },
   table_quarters: ['2025Q3', '2025Q4', '2026Q1', '2026Q2', '2026Q3'],
@@ -3998,7 +4001,10 @@ test('review load: four charts over the quarters and a directory table that open
   assert.deepEqual(Object.keys(charts).sort(), ['commits', 'lines', 'reply', 'turns']);
   // The wait charts start with the attention set.
   assert.deepEqual(charts.reply.labels, ['Q4 2025', 'Q1 2026', 'Q2 2026', 'Q3 2026']);
-  assert.deepEqual(charts.reply.sets, ['Median', '90th percentile', 'Mean']);
+  // All three spreads are drawn as the Feedback Index draws one: two shaded bands and the median.
+  const fanSets = ['90th percentile', '10th percentile', '75th percentile', '25th percentile', 'Median'];
+  assert.deepEqual(charts.reply.sets, fanSets);
+  assert.deepEqual(charts.lines.sets, fanSets);
   assert.deepEqual(charts.turns.labels, charts.reply.labels);
   // The Feedback Index's spread: two shaded bands and the median.
   assert.deepEqual(charts.turns.sets, ['90th percentile', '10th percentile', '75th percentile', '25th percentile', 'Median']);
@@ -4006,11 +4012,12 @@ test('review load: four charts over the quarters and a directory table that open
     ['+1', false, '+1', false, false]);
   assert.deepEqual(charts.commits.labels, ['Q3 2025', 'Q4 2025', 'Q1 2026', 'Q2 2026', 'Q3 2026']);
   assert.deepEqual(charts.commits.sets, ['All commits', 'Excluding bots']);
-  assert.deepEqual(charts.lines.sets, ['Mean per reviewer']);
+
   // Mean lines per reviewer: 12,000 over 10 reviewers, a fifth more than the quarter before (9,000 over 9).
-  assert.deepEqual(await page.evaluate(() => window.__rl!.charts.lines.data.datasets[0].data), [700, 800, 900, 1000, 1200]);
-  assert.match(await page.$eval('#rl-lines-note', (e) => e.textContent!), /the mean was\s+1,200 lines across 10 reviewers:\s+\+20% on the quarter before and \+71% on a year before/);
-  assert.match(await page.$eval('#rl-reply-note', (e) => e.textContent!), /the median was\s+4 h, one in ten waited 45 h or more, and the mean was\s+18 h/);
+  assert.deepEqual(await page.evaluate(() => window.__rl!.charts.lines.data.datasets[4].data), [200, 250, 300, 300, 360]);
+  const norm = (sel: string) => page.$eval(sel, (e) => e.textContent!.replace(/\s+/g, ' '));
+  assert.match(await norm('#rl-lines-note'), /across 10 reviewers, the median reviewer reviewed 360 lines \(\+20% on the quarter before and \+80% on a year before\), the middle half 100 to 900 and four in five 20 to 3,000\. The mean was 1,200 \(\+71% on a year before\)/);
+  assert.match(await norm('#rl-reply-note'), /over 90 first answers, the median was 4 h, the middle half 1\.5 h to 17 h and four in five 0\.2 h to 45 h; the mean was 18 h/);
   assert.match(await page.$eval('#rl-turns-note', (e) => e.textContent!.replace(/\s+/g, ' ')),
     /over 100 turns on changes landed in the quarter, the median turn lasted 6 h, the middle half 3 h to 14 h and four in five 1 h to 40 h; the mean was 16 h/);
   assert.deepEqual(await page.$$eval('#rl-dirs-quarters th', (ths) => ths.slice(0, 4).map((t) => t.textContent)),

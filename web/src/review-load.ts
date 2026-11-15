@@ -28,6 +28,7 @@ import {
   type DirRow,
   type PctKey,
   type Person,
+  type Spread,
   type PersonDir,
   type PersonFile,
   type PersonYear,
@@ -177,29 +178,58 @@ function renderCommits() {
     change: ok(yoy) ? `${fmtNum(Math.abs(yoy), { style: 'percent', maximumFractionDigits: 0 })} ${msg(yoy >= 0 ? 'more' : 'fewer')}` : '–' });
 }
 
+/** The datasets of a spread drawn as the Feedback Index draws one: the 10th–90th percentile and the
+ * middle half shaded, the median a line (datasets 0–4); and its legend. */
+function fan(sp: Spread, t: Theme): { datasets: Line[]; keys: Key[] } {
+  const wide = withAlpha(t.series[0], 0.14);
+  const mid = withAlpha(t.series[0], 0.3);
+  const band = (label: string, data: (number | null)[], more: object): Line =>
+    line(label, data, 'transparent', { borderWidth: 0, pointHoverRadius: 0, tension: 0.3, ...more });
+  return {
+    datasets: [
+      band(msg('tip-p90'), sp.p90, { backgroundColor: wide, fill: '+1', order: 4 }),
+      band(msg('tip-p10'), sp.p10, { fill: false, order: 4 }),
+      band(msg('tip-p75'), sp.p75, { backgroundColor: mid, fill: '+1', order: 3 }),
+      band(msg('tip-p25'), sp.p25, { fill: false, order: 3 }),
+      line(msg('legend-median'), sp.p50, t.series[0], { borderWidth: 2.5, tension: 0.3, fill: false, order: 1 }),
+    ],
+    keys: [{ label: msg('legend-median'), color: t.series[0] },
+      { label: msg('legend-mid'), color: mid, band: true }, { label: msg('legend-wide'), color: wide, band: true }],
+  };
+}
+
+/** A fan with the looked-up reviewer's line (`you`, labelled `youKey`) on top. */
+function fanWithYou(sp: Spread, t: Theme, you: (number | null)[] | null, youKey: string) {
+  const f = fan(sp, t);
+  if (you) {
+    f.keys.unshift({ label: msg(youKey), color: youColor(t) });
+    f.datasets.push(youLine(t, you, { label: msg(youKey) }));
+  }
+  return f;
+}
+
 function renderLines() {
   const all = state.all!;
   const p = state.person;
   const t = theme();
   const { i, q } = lastOf(all);
   const mean = meanLines(all);
-  const keys: Key[] = [{ label: msg('legend-mean-lines'), color: t.series[0] }];
-  const datasets: Line[] = [line(keys[0].label, mean, keys[0].color, { pointRadius: 2 })];
-  if (p) {
-    keys.push({ label: msg('legend-you'), color: youColor(t) });
-    datasets.push(youLine(t, personSeries(p, all.quarters, (v) => v[1])));
-  }
+  const s = all.reviewer_lines;
+  const { datasets, keys } = fanWithYou(s, t, p ? personSeries(p, all.quarters, (v) => v[1]) : null, 'legend-you');
   legend($('#rl-lines-legend'), keys);
-  // The growth: each quarter against the one before and against a year before.
+  // The median's and the reviewer's growth: each quarter against the one before and against a year before.
   const growth = (d: number, k: number) => {
-    const s = datasets[d].data;
-    const parts = [k >= 1 ? fmtChange(change(s[k], s[k - 1])) : '–', k >= 4 ? fmtChange(change(s[k], s[k - 4])) : '–'];
+    if (d < 4) return '';
+    const v = datasets[d].data;
+    const parts = [k >= 1 ? fmtChange(change(v[k], v[k - 1])) : '–', k >= 4 ? fmtChange(change(v[k], v[k - 4])) : '–'];
     return ` (${parts[0]} on the quarter before, ${parts[1]} on a year before)`;
   };
   draw('lines', datasets, t, { y: { ...axis(t, msg('axis-lines')), beginAtZero: true } }, (v) => fmtInt(Math.round(v)), growth);
-  put($('#rl-lines-note'), 'lines-note', { last: q, mean: fmtInt(Math.round(mean[i] ?? 0)), reviewers: fmtInt(all.reviewers[i]),
-    qoq: fmtChange(change(mean[i], mean[i - 1])), yoy: fmtChange(change(mean[i], mean[i - 4])),
-    first: fmtInt(Math.round(mean[0] ?? 0)), firstQ: quarterLabel(all.quarters[0]) });
+  const lines = (v: number | null | undefined) => fmtInt(Math.round(v ?? 0));
+  put($('#rl-lines-note'), 'lines-note', { last: q, reviewers: fmtInt(all.reviewers[i]), median: lines(s.p50[i]),
+    p25: lines(s.p25[i]), p75: lines(s.p75[i]), p10: lines(s.p10[i]), p90: lines(s.p90[i]),
+    qoq: fmtChange(change(s.p50[i], s.p50[i - 1])), yoy: fmtChange(change(s.p50[i], s.p50[i - 4])),
+    mean: lines(mean[i]), meanYoy: fmtChange(change(mean[i], mean[i - 4])), you: !!p });
 }
 
 function renderReply() {
@@ -207,48 +237,26 @@ function renderReply() {
   const p = state.person;
   const t = theme();
   const { i, q } = lastOf(all);
-  const keys: Key[] = [{ label: msg('legend-reply-median'), color: t.series[0] },
-    { label: msg('legend-reply-p90'), color: t.series[0], dash: true },
-    { label: msg('legend-reply-mean'), color: t.series[2] }];
-  const datasets: Line[] = [line(keys[0].label, all.reply.median, keys[0].color),
-    line(keys[1].label, all.reply.p90, keys[1].color, { borderDash: [5, 4], borderWidth: 1.5 }),
-    line(keys[2].label, all.reply.mean, keys[2].color)];
-  if (p) {
-    keys.push({ label: msg('legend-you'), color: youColor(t) });
-    datasets.push(youLine(t, personSeries(p, all.quarters, (v) => ratio(v[4], v[5]))));
-  }
+  const s = all.reply;
+  const { datasets, keys } = fanWithYou(s, t, p ? personSeries(p, all.quarters, (v) => ratio(v[4], v[5])) : null,
+    'legend-you-mean');
   legend($('#rl-reply-legend'), keys);
   draw('reply', datasets, t, { y: { ...axis(t, msg('axis-hours')), beginAtZero: true } }, (v) => fmtHours(v),
     undefined, attFrom(all));
-  put($('#rl-reply-note'), 'reply-note', { last: q, mean: fmtHours(all.reply.mean[i]), median: fmtHours(all.reply.median[i]),
-    p90: fmtHours(all.reply.p90[i]), you: !!p });
+  put($('#rl-reply-note'), 'reply-note', { last: q, n: fmtInt(s.n[i] ?? 0), median: fmtHours(s.p50[i]),
+    p25: fmtHours(s.p25[i]), p75: fmtHours(s.p75[i]), p10: fmtHours(s.p10[i]), p90: fmtHours(s.p90[i]),
+    mean: fmtHours(s.mean[i]), you: !!p });
 }
 
-/** Reviewer response time: every turn's weekday hours, as the Feedback Index draws a spread: the
- * 10th–90th percentile and the middle half shaded, the median a line. */
+/** Reviewer response time: every turn's weekday hours. */
 function renderTurns() {
   const all = state.all!;
   const p = state.person;
   const t = theme();
   const { i, q } = lastOf(all);
   const s = all.turns;
-  const wide = withAlpha(t.series[0], 0.14);
-  const mid = withAlpha(t.series[0], 0.3);
-  const band = (label: string, data: (number | null)[], more: object): Line =>
-    line(label, data, 'transparent', { borderWidth: 0, pointHoverRadius: 0, tension: 0.3, ...more });
-  const datasets: Line[] = [
-    band(msg('tip-p90'), s.p90, { backgroundColor: wide, fill: '+1', order: 4 }),
-    band(msg('tip-p10'), s.p10, { fill: false, order: 4 }),
-    band(msg('tip-p75'), s.p75, { backgroundColor: mid, fill: '+1', order: 3 }),
-    band(msg('tip-p25'), s.p25, { fill: false, order: 3 }),
-    line(msg('legend-median'), s.p50, t.series[0], { borderWidth: 2.5, tension: 0.3, fill: false, order: 1 }),
-  ];
-  const keys: Key[] = [{ label: msg('legend-median'), color: t.series[0] },
-    { label: msg('legend-mid'), color: mid, band: true }, { label: msg('legend-wide'), color: wide, band: true }];
-  if (p) {
-    keys.unshift({ label: msg('legend-you-median'), color: youColor(t) });
-    datasets.push(youLine(t, all.quarters.map((x) => p.turns.get(x)?.[0] ?? null), { label: msg('legend-you-median') }));
-  }
+  const { datasets, keys } = fanWithYou(s, t, p ? all.quarters.map((x) => p.turns.get(x)?.[0] ?? null) : null,
+    'legend-you-median');
   legend($('#rl-turns-legend'), keys);
   draw('turns', datasets, t, { y: { ...axis(t, msg('axis-hours')), beginAtZero: true } },
     (v) => fmtHours(v), undefined, attFrom(all));

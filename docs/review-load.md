@@ -19,12 +19,15 @@ main's history cover.
 1. **Commits landed per quarter**: every first-parent commit on `main`, and
    those excluding bots (no `Bot-Commit` footer, author not in
    `config/bots.txt`).
-2. **Lines reviewed per reviewer**: the quarter's reviewed lines over the
-   people who reviewed anything in it. The tooltip gives each quarter's
-   change on the quarter before and on a year before.
-3. **Reviewer's turn to first answer** (median, 90th percentile and mean,
-   from 2021Q1, weekends left out): a reviewer entering the attention set
-   to their own first vote or comment. The chart starts in 2021Q1. (Upload
+2. **Lines reviewed per reviewer**: the spread of each reviewer's lines
+   reviewed in the quarter, over the people who reviewed anything in it,
+   drawn as the Feedback Index draws one (median line, middle half and
+   10th–90th percentile shaded; all three charts of spreads are drawn this
+   way since 2026-11-15). The tooltip gives the median's change on the
+   quarter before and on a year before; the note also gives the mean.
+3. **Reviewer's turn to first answer** (the same spread, from 2021Q1,
+   weekends left out): a reviewer entering the attention set to their own
+   first vote or comment. The chart starts in 2021Q1. (Upload
    to first review was dropped on 2026-11-14: its clock includes the
    owner's own time before asking for review.)
 4. **Reviewer response time** (from 2021Q1, weekends left out): the
@@ -184,7 +187,7 @@ R2 bucket (`docs/r2.md`; until 2026-11-14 they were committed next to
 
 | File | Holds |
 |---|---|
-| `all.json` | per quarter: commits, reviewed commits and lines, reviewers, the reviewer's turn to first answer (mean, median, 90th percentile, count), `turns`: reviewer response time (10th, 25th, 50th, 75th, 90th percentile, mean, count); the table's directories at every level with five quarters of lines, four of the 50th/75th/90th percentile and turns, and the percentiles over the four; `others`: the same for each directory's "Other"; with OWNERS, each directory's seven figures (reviewers, how many did half, owners listed, owners who reviewed, lines reviewed by an owner, non-committers' lines, those two owners approved) and `owners`: the same for everything and the day of the OWNERS files |
+| `all.json` | per quarter: commits, reviewed commits and lines, reviewers, `reviewer_lines` (lines reviewed per reviewer), `reply` (the reviewer's turn to first answer) and `turns` (reviewer response time), each a spread: 10th, 25th, 50th, 75th, 90th percentile, mean and count; the table's directories at every level with five quarters of lines, four of the 50th/75th/90th percentile and turns, and the percentiles over the four; `others`: the same for each directory's "Other"; with OWNERS, each directory's seven figures (reviewers, how many did half, owners listed, owners who reviewed, lines reviewed by an owner, non-committers' lines, those two owners approved) and `owners`: the same for everything and the day of the OWNERS files |
 | `<name>.json` | one reviewer, in one file (version 2), fetched in one request: `years`, by year, `{"q": {quarter number: [commits reviewed, lines reviewed, attention weekday hours, CLs counted in them, asked-to-answer hours (summed), answers]}}`; `dirs`, by quarter (the table's four), their 3-level directories `[directory, lines]` (until 2026-11-15 also attention hours and CLs); `turns`, by quarter, `[median hours, turns]`; and `rows`, by table row (`d:<dir>`, `o:<dir>` for its "Other", `o:` for what no listed directory covers), their turns over the four quarters `[50th, 75th, 90th percentile, turns]` |
 
 `<name>` is the address as typed, lower case, as the Feedback Index names its files
