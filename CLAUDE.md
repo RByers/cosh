@@ -175,6 +175,17 @@ purpose near the top of its own doc.
   decision.
 - Run logs and PID files of long runs go in `data/private/logs/`;
   analysis scratch in `data/private/scratch/<topic>/`.
+- **Run memory-heavy analysis under the shared cap.** A script that loads
+  every CL or commit into memory (anything over about 1 GB: a
+  `review_feedback.load`, a big pickle, `fetchall` on a whole table) starts
+  with `from cosh import memcap; memcap.join()`, or is run as `python3 -m
+  cosh.memcap python3 script.py`. All such runs, from every session, then
+  share 5 GB (`cosh/memcap.py`). A run that prints only "Killed" (exit 137)
+  went over it, usually because another session's run was in memory too:
+  wait and rerun, or make it use less (stream rows, load fewer columns,
+  one process at a time). Don't work around the cap. Uncapped, two such
+  runs at once took argus out of memory on 2026-11-14 and the kernel
+  killed the site server and other sessions' processes instead.
 - Tests: `python3 -m unittest tests.test_derive tests.test_extract tests.test_radar tests.test_classify tests.test_sentiment tests.test_patchsets tests.test_balance tests.test_bugs tests.test_review_feedback tests.test_balance_signals tests.test_balance_publish tests.test_notedb_repack tests.test_dataflow tests.test_approved tests.test_review_timeline tests.test_review_load tests.test_review_threads`.
   These run in a single process, which complies with the global limit of 4
   test workers. `tests.test_extract` uses a fake Gerrit and never touches the

@@ -58,7 +58,7 @@ import sys
 from collections import Counter, defaultdict, namedtuple
 from datetime import datetime, timezone
 
-from . import classify, r2, review_timeline, store
+from . import classify, memcap, r2, review_timeline, store
 from . import commits as C
 from . import cl_facts as F
 from .cl_facts import CL_FACTS, SINCE, cl_facts
@@ -271,7 +271,9 @@ def load(args):
     """The CLs, with the columns reviews.sqlite and commits.sqlite give
     (cosh.cl_facts), owners' addresses normalised; human commits;
     identities; first commits. Also the CLs' raw owner addresses and
-    {commit_id: change_number} of their landed commits."""
+    {commit_id: change_number} of their landed commits. Several GB, so the
+    process first joins the shared memory budget (cosh.memcap)."""
+    memcap.join()
     facts, by_cid = cl_facts(ro(os.path.join(store.DATA_DIR, store.DERIVED_FILE)), git_db())
     raw_email = {f[0]: f[2] for f in facts}
     cls = [dict(zip(CL_FACTS, f)) for f in facts]
