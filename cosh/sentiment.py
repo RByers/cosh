@@ -446,13 +446,44 @@ def is_self_note(r):
     return r.get("author_role") == "AUTHOR" and _target_kind(r) is None
 
 
-def comment_rows(path):
-    """A comments-*.jsonl file's rows, without the owner's notes to self."""
-    return [r for r in read_jsonl(path) if not is_self_note(r)]
+def comment_rows(path, slim=False):
+    """A comments-*.jsonl file's rows, without the owner's notes to self.
+    `slim` drops the fields only scoring uses (`UNPUBLISHED`), which saves
+    memory when every week is held at once."""
+    rows = [r for r in read_jsonl(path) if not is_self_note(r)]
+    if slim:
+        for r in rows:
+            for k in UNPUBLISHED:
+                r.pop(k, None)
+    return rows
 
 
 def out_dir(data_dir=store.DATA_DIR):
     return os.path.join(data_dir, OUT_DIR)
+
+
+# Row fields that no published file uses: the model's context, and details
+# of the CL that only the scoring prompt shows.
+UNPUBLISHED = ("context", "subject", "path", "cl_status", "author_org", "target_org", "n_ai_in_thread")
+
+
+def week_rows(weeks, data_dir=store.DATA_DIR, cache=None):
+    """Every row of the weeks' comment files (comments-<week>.jsonl), oldest
+    week first, each with its `week`, slimmed (`comment_rows`). `cache`, a
+    dict, keeps each week's rows so that steps sharing it read each file
+    once (`publish`)."""
+    out = []
+    for w in weeks:
+        if cache is not None and w in cache:
+            rows = cache[w]
+        else:
+            rows = comment_rows(os.path.join(out_dir(data_dir), f"comments-{w}.jsonl"), slim=True)
+            for r in rows:
+                r["week"] = w
+            if cache is not None:
+                cache[w] = rows
+        out.extend(rows)
+    return out
 
 
 # ---------------------------------------------------------------- whose comments
@@ -613,25 +644,26 @@ def trend(rows, scores, window=ROLL, rate=1.0, full_rows=(), full=frozenset()):
                 missing=missing)
 
 
-def trend_rows(name, weeks=(), data_dir=store.DATA_DIR):
+def trend_rows(name, weeks=(), data_dir=store.DATA_DIR, cache=None):
     """The rows behind the trend: the sample set `name`, and every comment
-    of `weeks` (fully scored weeks) for the months they wholly cover."""
-    sample = comment_rows(os.path.join(out_dir(data_dir), f"comments-{name}.jsonl"))
+    of `weeks` (fully scored weeks) for the months they wholly cover.
+    `cache`: as for `week_rows`."""
+    sample = comment_rows(os.path.join(out_dir(data_dir), f"comments-{name}.jsonl"), slim=True)
     months = full_months(list(weeks))
-    rows = [r for w in weeks for r in comment_rows(os.path.join(out_dir(data_dir), f"comments-{w}.jsonl"))
-            if r["written_at"][:7] in months]
+    rows = [r for r in week_rows(weeks, data_dir, cache) if r["written_at"][:7] in months]
     return sample, rows, months
 
 
 def write_summary(name, data_dir=store.DATA_DIR, version=None, out=None, authors=DEFAULT_AUTHORS,
-                  weeks=(), loaded=None, scores=None):
+                  weeks=(), loaded=None, scores=None, committers=None):
     """summaries/sentiment_monthly.json (or its .<authors> version) from a
     scored sample set, with every comment for the months that `weeks` (fully
     scored) wholly cover, counting only comments written by `authors`."""
     sample, rows, months = loaded or trend_rows(name, weeks, data_dir)
     m = re.search(r"(\d+(?:\.\d+)?)pct", name)
     rate = float(m.group(1)) / 100 if m else None
-    committers = None if authors == "everyone" else committer_accounts(data_dir)
+    if committers is None and authors != "everyone":
+        committers = committer_accounts(data_dir)
     t = trend(by_authors(sample, authors, data_dir, committers), scores or load_scores(None, data_dir, version),
               rate=rate or 1.0, full_rows=by_authors(rows, authors, data_dir, committers), full=months)
     doc = dict(generated_at=store.now_iso(), prompt=version or PROMPT_VERSION, model="haiku", sample=name,
@@ -725,45 +757,51 @@ def screen_first(pool, n, text, sandbox, cache, batch=30):
     return kept, flagged
 
 
-def net_praise(weeks, scores, data_dir=store.DATA_DIR, authors=DEFAULT_AUTHORS):
+def _need_identities(rows):
+    if rows and "author" not in rows[0]:
+        raise SystemExit("these comment files have no identities: collect them with "
+                         "`python3 -m cosh.sentiment collect`")
+
+
+def net_praise(weeks, scores, data_dir=store.DATA_DIR, authors=DEFAULT_AUTHORS, rows=None, committers=None):
     """Net praise per person, over all `weeks`, each calendar year and each
     calendar month (`periods`): the
     scores of the praise comments they gave (or received), plus the scores of
     the grumpy ones (score <= ANGRY, so these subtract); neutral comments
-    count for nothing. Human to human, written by `authors`.
+    count for nothing. Human to human, written by `authors`. `rows`: the
+    weeks' rows (`week_rows`), already read.
 
     Ground rule 5 (2026-11-07): grumpiness may lower a net total, but only
     positive totals are published, summed per period, so no figure shows
     anyone's negative tone on its own. Each entry: email, name, score (the
     net total) and praise (how many praise comments)."""
-    rows = []
-    for w in weeks:
-        for r in comment_rows(os.path.join(out_dir(data_dir), f"comments-{w}.jsonl")):
-            if r["id"] in scores:
-                r["week"] = w
-                rows.append(r)
-    if rows and "author" not in rows[0]:
-        raise SystemExit("these comment files have no identities: collect them with "
-                         "`python3 -m cosh.sentiment collect`")
-    rows = by_authors(rows, authors, data_dir)
+    rows = week_rows(weeks, data_dir) if rows is None else rows
+    _need_identities(rows)
+    # Only the comments that count for someone: praise or grumpy, human to human.
+    used = []
+    for r in by_authors(rows, authors, data_dir, committers):
+        s = scores.get(r["id"])
+        if s is None or _target_kind(r) != "person":
+            continue
+        writer, recipient = r.get("author_email"), r.get("target_email")
+        if not writer or not recipient:
+            continue
+        praised = s[0] >= GLOWING                # is_praise
+        if not praised and s[0] > ANGRY:
+            continue                             # neutral: counts for nothing
+        used.append((r["week"], writer, r.get("author_name") or writer, recipient,
+                     r.get("target_name") or recipient, s[0], praised))
     out = {}
     for period, ws in periods(weeks).items():
         ws = set(ws)
         total = {k: defaultdict(float) for k in ("given", "received")}
         count = {k: defaultdict(int) for k in ("given", "received")}
         names = {}
-        for r in rows:
-            if r["week"] not in ws or _target_kind(r) != "person":
+        for week, writer, wname, recipient, rname, sc, praised in used:
+            if week not in ws:
                 continue
-            writer, recipient = r.get("author_email"), r.get("target_email")
-            if not writer or not recipient:
-                continue
-            sc = scores[r["id"]][0]
-            praised = is_praise(r, scores)
-            if not praised and sc > ANGRY:
-                continue                      # neutral: counts for nothing
-            names[writer] = r.get("author_name") or writer
-            names[recipient] = r.get("target_name") or recipient
+            names[writer] = wname
+            names[recipient] = rname
             for k, e in (("given", writer), ("received", recipient)):
                 total[k][e] += sc
                 count[k][e] += praised
@@ -773,45 +811,47 @@ def net_praise(weeks, scores, data_dir=store.DATA_DIR, authors=DEFAULT_AUTHORS):
     return out
 
 
-def praise(weeks, data_dir=store.DATA_DIR, version=None, authors=DEFAULT_AUTHORS):
+def praise(weeks, data_dir=store.DATA_DIR, version=None, authors=DEFAULT_AUTHORS, rows=None, scores=None,
+           committers=None):
     """Praise given and received per person and week, from human to human,
     counting only praise written by `authors`, plus the net praise boards
-    (`net_praise`).
+    (`net_praise`). `rows` (`week_rows`), `scores` (`load_scores`) and
+    `committers` (`committer_accounts`) may be passed in when already loaded.
 
-    Ground rule 5 allows naming people for praise, never for negative tone,
-    so identities are attached here only to comments already scored glowing:
-    collect's `keep` drops every other comment before its row is built."""
-    scores = load_scores(None, data_dir, version)
-    db = sqlite3.connect(f"file:{os.path.join(data_dir, store.DERIVED_FILE)}?mode=ro", uri=True)
-    names = {(h, a): (e, n) for h, a, e, n in db.execute("SELECT host, account_id, email, name FROM accounts")}
-    glowing = {i for i, s in scores.items() if s[0] >= GLOWING}
-    committers = None if authors == "everyone" else committer_accounts(data_dir)
-    rows, people, coverage = defaultdict(lambda: [0, 0]), {}, []
-    for w in weeks:
-        p = os.path.join(out_dir(data_dir), f"comments-{w}.jsonl")
-        if not os.path.exists(p):
-            raise SystemExit(f"{w}: collect and score the week first ({p} is missing)")
-        unscored = sum(1 for r in comment_rows(p) if r["id"] not in scores and not TRIVIAL.match(r["text"]))
-        coverage.append(dict(week=w, unscored=unscored))
-        got = []
-        collect(w, data_dir, keep=glowing.__contains__,
-                annotate=lambda row, ids: got.append((row, ids)) if is_praise(row, scores) else None)
-        for row, ids in got:
-            if row["target_kind"] != "person":
-                continue                     # praise for an AI, or an owner's own note
-            if committers is not None and ((ids["host"], ids["author"]) in committers) != (authors == "committers"):
+    Ground rule 5 allows naming people for praise, never for negative tone:
+    the names come from the comment files' identities (`cosh.sentiment
+    collect`), and only praise comments are counted here. Until 2026-11-15
+    this collected every week from NoteDb again to attach names to praise
+    only; the files have carried identities since 2026-11-12."""
+    scores = load_scores(None, data_dir, version) if scores is None else scores
+    if rows is None:
+        for w in weeks:
+            p = os.path.join(out_dir(data_dir), f"comments-{w}.jsonl")
+            if not os.path.exists(p):
+                raise SystemExit(f"{w}: collect and score the week first ({p} is missing)")
+        rows = week_rows(weeks, data_dir)
+    _need_identities(rows)
+    if committers is None and authors != "everyone":
+        committers = committer_accounts(data_dir)
+    unscored = defaultdict(int)
+    for r in rows:
+        if r["id"] not in scores and not TRIVIAL.match(r["text"]):
+            unscored[r["week"]] += 1
+    counts, people = defaultdict(lambda: [0, 0]), {}
+    for r in by_authors(rows, authors, data_dir, committers):
+        if _target_kind(r) != "person" or not is_praise(r, scores):
+            continue                     # praise for an AI, an owner's own note, or not praise
+        for email, name, k in ((r.get("author_email"), r.get("author_name"), 0),
+                               (r.get("target_email"), r.get("target_name"), 1)):
+            if not email:
                 continue
-            for aid, k in ((ids["author"], 0), (ids["target"], 1)):
-                email, name = names.get((ids["host"], aid), (None, None))
-                if not email:
-                    continue
-                people[email] = name or email
-                rows[(w, email)][k] += 1
+            people[email] = name or email
+            counts[(r["week"], email)][k] += 1
     return dict(generated_at=store.now_iso(), prompt=version or PROMPT_VERSION, model="haiku",
                 weeks=[weeks[0], weeks[-1]], authors=authors, threshold=GLOWING, angry=ANGRY, net_scale=NET_SCALE,
-                coverage=coverage, people=people,
-                weekly=[dict(week=w, email=e, given=g, received=r) for (w, e), (g, r) in sorted(rows.items())],
-                net=net_praise(weeks, scores, data_dir, authors))
+                coverage=[dict(week=w, unscored=unscored[w]) for w in weeks], people=dict(sorted(people.items())),
+                weekly=[dict(week=w, email=e, given=g, received=r) for (w, e), (g, r) in sorted(counts.items())],
+                net=net_praise(weeks, scores, data_dir, authors, rows, committers))
 
 
 # ---------------------------------------------------------------- sample comments
@@ -871,24 +911,21 @@ def _draw(ids, seed):
 
 
 def samples(weeks, data_dir=store.DATA_DIR, version=None, n=10, seed="2026-11", sandbox="auto",
-            authors=DEFAULT_AUTHORS, screened=None):
+            authors=DEFAULT_AUTHORS, screened=None, rows=None, scores=None, committers=None):
     """The most extreme praise (highest scores) and grumpy comments (lowest
     scores, not flagged as AI friction) written by `authors` in fully scored
     weeks, for each of the page's periods (`periods`). Ties are broken by a
     deterministic shuffle (`seed`), so reruns pick the same comments.
-    `screened` is a `screen_first` cache to share between calls.
+    `screened` is a `screen_first` cache to share between calls; `rows`,
+    `scores` and `committers` may be passed in when already loaded (`praise`).
 
     Ground rule 5: praise comes with names and a Gerrit link; grumpy comments
     come with their text, score and month only, and only when a sandboxed
     screen finds nothing in them that identifies anyone."""
-    scores = load_scores(None, data_dir, version)
-    rows = {}
-    for w in weeks:
-        for r in comment_rows(os.path.join(out_dir(data_dir), f"comments-{w}.jsonl")):
-            if r["id"] in scores and len(r["text"]) <= SAMPLE_CHARS:
-                r["week"] = w
-                rows[r["id"]] = r
-    rows = {r["id"]: r for r in by_authors(rows.values(), authors, data_dir)}
+    scores = load_scores(None, data_dir, version) if scores is None else scores
+    rows = week_rows(weeks, data_dir) if rows is None else rows
+    rows = {r["id"]: r for r in rows if r["id"] in scores and len(r["text"]) <= SAMPLE_CHARS}
+    rows = {r["id"]: r for r in by_authors(rows.values(), authors, data_dir, committers)}
     praise_all = sorted(_draw([i for i, r in rows.items() if scores[i][0] >= PRAISE_SAMPLE and is_praise(r, scores)
                                and _target_kind(r) == "person"], seed), key=lambda i: -scores[i][0])
     # AI-friction comments have their own section (cosh.sentiment_recent), so
@@ -955,23 +992,30 @@ def missing_weeks(data_dir=store.DATA_DIR):
     return sorted(w for w in fetched if have and w > have[0] and w not in have)
 
 
-def scored_weeks(n=PUBLISHED_YEAR, data_dir=store.DATA_DIR, version=None, model="haiku"):
+def scored_weeks(n=PUBLISHED_YEAR, data_dir=store.DATA_DIR, version=None, model="haiku", cache=None, scores=None):
     """'<first>:<last>': the newest run of up to `n` consecutive weeks whose
     comment files (comments-<week>.jsonl) are fully scored with the current
-    prompt. Raises if no week is."""
+    prompt. Raises if no week is. `cache` keeps the rows read of the weeks
+    in the run (`week_rows`); `scores` (`load_scores`) saves reading them."""
     names = sorted(f[len("comments-"):-len(".jsonl")] for f in os.listdir(out_dir(data_dir))
                    if re.fullmatch(r"comments-\d{4}-W\d{2}\.jsonl", f))
     if not names:
         raise SystemExit("no scored weeks: run `cosh.sentiment collect` and `score` first")
-    db = open_scores(data_dir)
-    row = db.execute("SELECT prompt_id FROM prompts WHERE sha256=? AND model=?",
-                     (prompt_sha(load_prompt(version)), model)).fetchone()
-    have = {i for (i,) in db.execute("SELECT id FROM scores WHERE prompt_id IN (0, ?)", (row[0] if row else -1,))}
+    if scores is not None:
+        have = scores
+    else:
+        db = open_scores(data_dir)
+        row = db.execute("SELECT prompt_id FROM prompts WHERE sha256=? AND model=?",
+                         (prompt_sha(load_prompt(version)), model)).fetchone()
+        have = {i for (i,) in db.execute("SELECT id FROM scores WHERE prompt_id IN (0, ?)",
+                                         (row[0] if row else -1,))}
     run = []
     for w in reversed(names):
         if run and weeks_in(f"{w}:{run[-1]}") != [w, run[-1]]:
             break                       # a gap: the run ends
-        if not all(r["id"] in have for r in comment_rows(os.path.join(out_dir(data_dir), f"comments-{w}.jsonl"))):
+        if not all(r["id"] in have for r in week_rows([w], data_dir, cache)):
+            if cache is not None:
+                cache.pop(w, None)      # not published: don't hold it
             if run:
                 break
             continue                    # the newest weeks may not be scored yet
@@ -983,20 +1027,116 @@ def scored_weeks(n=PUBLISHED_YEAR, data_dir=store.DATA_DIR, version=None, model=
     return f"{run[-1]}:{run[0]}"
 
 
+def _dump(path, doc, compact=False):
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path, "w") as f:
+        if compact:
+            json.dump(doc, f, ensure_ascii=False, separators=(",", ":"))
+        else:
+            json.dump(doc, f, indent=1, ensure_ascii=False)
+        f.write("\n")
+
+
+class Loaded:
+    """What the publishing steps read, loaded once and shared by every step
+    and writer group: the scores, the committers and each week's rows."""
+
+    def __init__(self, data_dir=store.DATA_DIR, version=None):
+        self.data_dir, self.version = data_dir, version
+        self.scores = load_scores(None, data_dir, version)
+        self.weeks = {}               # week -> rows (`week_rows`)
+        self._committers = None
+
+    def rows(self, weeks):
+        return week_rows(weeks, self.data_dir, self.weeks)
+
+    @property
+    def committers(self):
+        if self._committers is None:
+            self._committers = committer_accounts(self.data_dir)
+        return self._committers
+
+
+def step_summary(name, weeks, groups=AUTHORS, out=None, ld=None, version=None):
+    ld = ld or Loaded(version=version)
+    loaded = trend_rows(name, weeks, ld.data_dir, ld.weeks)
+    for g in groups:
+        p, doc = write_summary(name, ld.data_dir, version=version, out=out, authors=g, weeks=weeks,
+                               loaded=loaded, scores=ld.scores,
+                               committers=None if g == "everyone" else ld.committers)
+        print(f"{g}: {len(doc['months'])} months, {doc['n']} substantive comments, {doc['missing']} unscored "
+              f"-> {p}", file=sys.stderr)
+
+
+def step_praise(weeks, groups=AUTHORS, out=None, ld=None, version=None):
+    ld = ld or Loaded(version=version)
+    for w in weeks:
+        p = os.path.join(out_dir(ld.data_dir), f"comments-{w}.jsonl")
+        if w not in ld.weeks and not os.path.exists(p):
+            raise SystemExit(f"{w}: collect and score the week first ({p} is missing)")
+    rows = ld.rows(weeks)
+    for g in groups:
+        doc = praise(weeks, ld.data_dir, version, authors=g, rows=rows, scores=ld.scores,
+                     committers=None if g == "everyone" else ld.committers)
+        path = out or authors_path(PRAISE_SUMMARY, g)
+        _dump(path, doc)
+        gaps = [c for c in doc["coverage"] if c["unscored"]]
+        print(f"{g}: {len(doc['people'])} people, {sum(r['given'] for r in doc['weekly'])} praise comments "
+              f"-> {path}" + (f"; NOT fully scored: {gaps}" if gaps else ""), file=sys.stderr)
+
+
+def step_samples(weeks, groups=AUTHORS, out=None, ld=None, version=None, sandbox="auto", screened=None):
+    ld = ld or Loaded(version=version)
+    screened = ScreenCache(ld.data_dir) if screened is None else screened
+    rows = ld.rows(weeks)
+    box = make_sandbox(sandbox, ld.data_dir) if isinstance(sandbox, str) else sandbox
+    try:
+        for g in groups:
+            doc = samples(weeks, ld.data_dir, version, sandbox=box, authors=g, screened=screened, rows=rows,
+                          scores=ld.scores, committers=None if g == "everyone" else ld.committers)
+            path = out or authors_path(SAMPLES_SUMMARY, g)
+            _dump(path, doc)
+            print(f"{g}: {len(doc['periods'])} periods, {len(screened)} comments screened so far -> {path}",
+                  file=sys.stderr)
+    finally:
+        if box is not sandbox:
+            box.close()
+
+
 def publish(weeks, sample, prompt=None, sandbox="auto"):
     """Every published Review Tone file, from one range of fully scored
     weeks: the trend (sample plus those weeks), praise boards, samples, the
     per-period detail and the lookup list. Screening verdicts are cached in
     sentiment.sqlite, so a rerun costs no model calls for comments already
-    screened."""
-    from . import sentiment_people, sentiment_recent
-    opt = (["--prompt", prompt] if prompt else [])
-    box = ["--sandbox", sandbox]
-    main(["summary", "--name", sample, "--full-weeks", weeks, *opt])
-    main(["praise", "--week", weeks, *opt])
-    main(["samples", "--week", weeks, *opt, *box])
-    sentiment_recent.main(["--week", weeks, *opt, *box])
-    sentiment_people.main(["lookup", "--week", weeks])
+    screened. `weeks` is a range ('<first>:<last>') or None for the newest
+    year of fully scored weeks (`scored_weeks`).
+
+    Every step and writer group shares one load of the scores and of each
+    week's rows (`Loaded`), so each comment file is read once."""
+    from . import memcap, sentiment_people, sentiment_recent
+    memcap.join()                     # about 3 GB: share the cap (CLAUDE.md)
+    t0 = time.time()
+    ld = Loaded(version=prompt)
+    if weeks is None:
+        weeks = scored_weeks(version=prompt, data_dir=ld.data_dir, cache=ld.weeks, scores=ld.scores)
+    print(f"publish: weeks {weeks}", file=sys.stderr)
+    ws = weeks_in(weeks)
+    lap = lambda what: print(f"  {what}: {time.time() - t0:.0f}s", file=sys.stderr)
+    step_summary(sample, ws, ld=ld, version=prompt)
+    lap("summary")
+    step_praise(ws, ld=ld, version=prompt)
+    lap("praise")
+    screened = ScreenCache(ld.data_dir)
+    box = make_sandbox(sandbox, ld.data_dir)
+    try:
+        step_samples(ws, ld=ld, version=prompt, sandbox=box, screened=screened)
+        lap("samples")
+        sentiment_recent.write_all(ws, ld=ld, version=prompt, sandbox=box, screened=screened)
+        lap("recent")
+    finally:
+        box.close()
+    sentiment_people.write_lookup(ws, ld.rows(ws))
+    lap("lookup")
 
 
 def main(argv):
@@ -1031,9 +1171,7 @@ def main(argv):
     groups = AUTHORS if a.authors == "all" else (a.authors,)
     t0 = time.time()
     if a.step == "publish":
-        weeks = a.week or scored_weeks(version=a.prompt)
-        print(f"publish: weeks {weeks}", file=sys.stderr)
-        return publish(weeks, a.name or PUBLISHED_SAMPLE, a.prompt, a.sandbox)
+        return publish(a.week, a.name or PUBLISHED_SAMPLE, a.prompt, a.sandbox)
     weeks = weeks_in(a.week or "2026-W44")
     if a.step == "collect" and a.missing:
         weeks = missing_weeks()
@@ -1059,35 +1197,13 @@ def main(argv):
             print(f"{name}: scored {st['n']} in {st['calls']} calls, {st['tokens']} tokens, ${st['usd']:.2f} "
                   f"API-equivalent, {time.time() - t0:.0f}s", file=sys.stderr)
     elif a.step == "samples":
-        screened = ScreenCache()
-        for g in groups:
-            doc = samples(weeks, version=a.prompt, sandbox=a.sandbox, authors=g, screened=screened)
-            out = a.out or authors_path(SAMPLES_SUMMARY, g)
-            with open(out, "w") as f:
-                json.dump(doc, f, indent=1, ensure_ascii=False)
-                f.write("\n")
-            print(f"{g}: {len(doc['periods'])} periods, {len(screened)} comments screened so far -> {out}",
-                  file=sys.stderr)
+        step_samples(weeks, groups, a.out, version=a.prompt, sandbox=a.sandbox)
     elif a.step == "praise":
-        for g in groups:
-            doc = praise(weeks, version=a.prompt, authors=g)
-            out = a.out or authors_path(PRAISE_SUMMARY, g)
-            with open(out, "w") as f:
-                json.dump(doc, f, indent=1, ensure_ascii=False)
-                f.write("\n")
-            gaps = [c for c in doc["coverage"] if c["unscored"]]
-            print(f"{g}: {len(doc['people'])} people, {sum(r['given'] for r in doc['weekly'])} praise comments "
-                  f"-> {out}" + (f"; NOT fully scored: {gaps}" if gaps else ""), file=sys.stderr)
+        step_praise(weeks, groups, a.out, version=a.prompt)
     else:
         if not a.name:
             ap.error("summary needs --name (a scored sample set)")
-        full = weeks_in(a.full_weeks) if a.full_weeks else []
-        loaded, scores = trend_rows(a.name, full), load_scores(None, version=a.prompt)
-        for g in groups:
-            p, doc = write_summary(a.name, version=a.prompt, out=a.out, authors=g, weeks=full, loaded=loaded,
-                                   scores=scores)
-            print(f"{g}: {len(doc['months'])} months, {doc['n']} substantive comments, {doc['missing']} unscored "
-                  f"-> {p}", file=sys.stderr)
+        step_summary(a.name, weeks_in(a.full_weeks) if a.full_weeks else [], groups, a.out, version=a.prompt)
 
 
 if __name__ == "__main__":

@@ -177,16 +177,6 @@ class PraiseTest(unittest.TestCase):
                     c("f", 1, "[Claude] Done.")]
         scores = {"100/a": (-0.6, False, None), "100/b": (0.5, False, None), "100/p": (0.6, False, None),
                   "100/q": (0.5, False, None)}
-        seen = []
-
-        def fake_collect(week, data_dir, keep=None, annotate=None):
-            def spy(row, ids):
-                seen.append(row["uuid"])
-                annotate(row, ids)
-            return run(comments, annotate=spy) if keep is None else S._cl_comments(
-                HOST, "chromium/src", 100, 1, "subj", "NEW", {"f.cc": comments}, ACCTS,
-                "2026-10-26 00:00:00", "2026-11-02 00:00:00", keep=keep, annotate=spy)
-
         with tempfile.TemporaryDirectory() as d:
             S.write_jsonl(os.path.join(d, "comments", "comments-2026-W44.jsonl"), run(comments, annotate=ident()))
             import sqlite3
@@ -203,13 +193,11 @@ class PraiseTest(unittest.TestCase):
                 sdb.executemany("INSERT INTO scores VALUES (?,1,0,?,?,?)",
                                 [(i, s, int(ai), why) for i, (s, ai, why) in scores.items()])
             real = S.collect
-            S.collect = fake_collect
+            S.collect = None                 # names come from the week file, not NoteDb
             try:
                 doc = S.praise(["2026-W44"], d, authors="everyone")
             finally:
                 S.collect = real
-        self.assertNotIn("a", seen)                                  # never built, never annotated
-        self.assertEqual(sorted(seen), ["b", "p", "q"])
         self.assertEqual({(r["email"], r["given"], r["received"]) for r in doc["weekly"]},
                          {("owner@chromium.org", 1, 1), ("rev@microsoft.com", 1, 1)})
         self.assertEqual(doc["coverage"], [{"week": "2026-W44", "unscored": 0}])
@@ -605,15 +593,8 @@ class AuthorsTest(unittest.TestCase):
                             ("v", S.prompt_sha(definition), "haiku", definition, "now"))
                 sdb.executemany("INSERT INTO scores VALUES (?,1,0,?,?,?)",
                                 [(i, s, int(ai), why) for i, (s, ai, why) in scores.items()])
-            real = S.collect
-            S.collect = lambda week, data_dir, keep=None, annotate=None: S._cl_comments(
-                HOST, "chromium/src", 100, 1, "subj", "NEW", {"f.cc": comments}, ACCTS,
-                "2026-10-26 00:00:00", "2026-11-02 00:00:00", keep=keep, annotate=annotate)
-            try:
-                got = {g: {(r["email"], r["given"], r["received"]) for r in S.praise(["2026-W44"], d, authors=g)["weekly"]}
-                       for g in S.AUTHORS}
-            finally:
-                S.collect = real
+            got = {g: {(r["email"], r["given"], r["received"]) for r in S.praise(["2026-W44"], d, authors=g)["weekly"]}
+                   for g in S.AUTHORS}
         self.assertEqual(got["committers"], {("owner@chromium.org", 1, 0), ("rev@microsoft.com", 0, 1)})
         self.assertEqual(got["noncommitters"], {("rev@microsoft.com", 1, 0), ("owner@chromium.org", 0, 1)})
         self.assertEqual(got["everyone"], {("owner@chromium.org", 1, 1), ("rev@microsoft.com", 1, 1)})

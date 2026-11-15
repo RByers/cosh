@@ -43,20 +43,19 @@ AI_SHOWN = 20               # the most negative AI-friction comments shown
 SCREEN_BATCH = 30
 
 
-def load(weeks, data_dir=store.DATA_DIR, version=None):
+def load(weeks, data_dir=store.DATA_DIR, version=None, ld=None):
     """(rows, scores, missing, n_trivial): substantive scored rows of the
-    weeks, each with its week, and the bare acknowledgements per week."""
-    scores = S.load_scores(None, data_dir, version)
+    weeks, each with its week, and the bare acknowledgements per week.
+    `ld` (`S.Loaded`) shares what is already loaded."""
+    scores = ld.scores if ld else S.load_scores(None, data_dir, version)
     rows, missing, n_trivial = [], 0, defaultdict(int)
-    for w in weeks:
-        for r in S.comment_rows(os.path.join(S.out_dir(data_dir), f"comments-{w}.jsonl")):
-            if r["id"] not in scores:
-                missing += 1
-            elif S.TRIVIAL.match(r["text"]):
-                n_trivial[w] += 1
-            else:
-                r["week"] = w
-                rows.append(r)
+    for r in (ld.rows(weeks) if ld else S.week_rows(weeks, data_dir)):
+        if r["id"] not in scores:
+            missing += 1
+        elif S.TRIVIAL.match(r["text"]):
+            n_trivial[r["week"]] += 1
+        else:
+            rows.append(r)
     return rows, scores, missing, n_trivial
 
 
@@ -106,24 +105,34 @@ def happy(rows, scores, top=TOP, ids=None):
     MIN_COUNTERPARTS counterparts are listed, the first `top` (None: all). If
     `ids` is a dict, ids[table][email] gets the ids of each listed person's
     glowing comments."""
+    # One pass: the names, and each table's comments (the two picks exclude
+    # each other: a reviewer's comment to the owner, or the owner's to a reviewer).
     names = {}
+    to = {"authors": defaultdict(lambda: defaultdict(float)), "reviewers": defaultdict(lambda: defaultdict(float))}
+    glowing = {"authors": defaultdict(list), "reviewers": defaultdict(list)}
     for r in rows:
         names[r["author"]] = (r.get("author_name"), r.get("author_email"))
-        if _kind(r) == "person" and r.get("target") not in (None, -1):
-            names[r["target"]] = (r.get("target_name"), r.get("target_email"))
+        target = r.get("target")
+        if _kind(r) != "person" or target in (None, -1):
+            continue
+        names[target] = (r.get("target_name"), r.get("target_email"))
+        role, owner = r["author_role"], r.get("owner")
+        if role == "REVIEWER" and target == owner:
+            key = "authors"
+        elif role == "AUTHOR" and target != owner:
+            key = "reviewers"
+        else:
+            continue
+        s = scores[r["id"]][0]
+        by = to[key][target]
+        prev = by.get(r["author"])
+        by[r["author"]] = s if prev is None else max(prev, s)
+        if s >= S.GLOWING:
+            glowing[key][target].append(r["id"])
 
-    def table(pick, key):
-        to = defaultdict(lambda: defaultdict(float))
-        glowing = defaultdict(list)
-        for r in rows:
-            if pick(r):
-                s = scores[r["id"]][0]
-                prev = to[r["target"]].get(r["author"])
-                to[r["target"]][r["author"]] = s if prev is None else max(prev, s)
-                if s >= S.GLOWING:
-                    glowing[r["target"]].append(r["id"])
+    def table(key):
         out = []
-        for p, by in to.items():
+        for p, by in to[key].items():
             if len(by) < MIN_COUNTERPARTS:
                 continue
             hits = sum(1 for s in by.values() if s >= S.GLOWING)
@@ -132,20 +141,16 @@ def happy(rows, scores, top=TOP, ids=None):
             name, email = names.get(p, (None, None))
             if not email:
                 continue
-            out.append(dict(name=name or email, email=email, glowing=len(glowing[p]), happy=hits, counterparts=len(by)))
+            out.append(dict(name=name or email, email=email, glowing=len(glowing[key][p]), happy=hits,
+                            counterparts=len(by)))
         out.sort(key=lambda x: (-x["glowing"], -x["happy"], x["name"]))
         out = out[:top] if top is not None else out
         if ids is not None:
-            by_email = {names[p][1]: p for p in to if names.get(p, (None, None))[1]}
-            ids[key] = {x["email"]: glowing[by_email[x["email"]]] for x in out}
+            by_email = {names[p][1]: p for p in to[key] if names.get(p, (None, None))[1]}
+            ids[key] = {x["email"]: glowing[key][by_email[x["email"]]] for x in out}
         return out
 
-    person = lambda r: _kind(r) == "person" and r.get("target") not in (None, -1)
-    return dict(
-        authors=table(lambda r: person(r) and r["author_role"] == "REVIEWER" and r["target"] == r.get("owner"),
-                      "authors"),
-        reviewers=table(lambda r: person(r) and r["author_role"] == "AUTHOR" and r["target"] != r.get("owner"),
-                        "reviewers"))
+    return dict(authors=table("authors"), reviewers=table("reviewers"))
 
 
 def ai_comments(rows, scores, sandbox, n=AI_SHOWN, seed="2026-11", screened=None):
@@ -206,21 +211,23 @@ def person_comments(rows, scores, weeks, listed=None, praise_rows=None):
 
 
 def build(weeks, data_dir=store.DATA_DIR, version=None, sandbox="auto", authors=S.DEFAULT_AUTHORS,
-          praise_weeks=None, screened=None):
+          praise_weeks=None, screened=None, ld=None, loaded=None):
     """The page's detail for comments written by `authors` (S.AUTHORS), and
     the comments behind its name popups: (detail, comments). `praise_weeks`
     (default `weeks`) are the praise boards' weeks, which may be more than
     `weeks` (the week-by-week detail here). `screened` is a
-    `S.screen_first` cache to share between calls."""
-    rows, scores, missing, n_trivial = load(weeks, data_dir, version)
+    `S.screen_first` cache to share between calls. `ld` (`S.Loaded`) and
+    `loaded` (`load`'s result for `weeks`) share what is already loaded."""
+    rows, scores, missing, n_trivial = loaded or load(weeks, data_dir, version, ld)
     praise_weeks = praise_weeks or weeks
     extra = [w for w in praise_weeks if w not in weeks]
-    praise_rows = rows + (load(extra, data_dir, version)[0] if extra else [])
+    praise_rows = rows + (load(extra, data_dir, version, ld)[0] if extra else [])
     if any("author" not in r for r in praise_rows[:1] + praise_rows[-1:]):
         raise SystemExit("these comment files have no identities: collect them with "
                          "`python3 -m cosh.sentiment collect`")
-    rows = S.by_authors(rows, authors, data_dir)
-    praise_rows = S.by_authors(praise_rows, authors, data_dir)
+    committers = ld.committers if ld and authors != "everyone" else None
+    rows = S.by_authors(rows, authors, data_dir, committers)
+    praise_rows = S.by_authors(praise_rows, authors, data_dir, committers)
     box = S.make_sandbox(sandbox, data_dir) if isinstance(sandbox, str) else sandbox
     cache = {} if screened is None else screened
     out, listed = {}, {"authors": set(), "reviewers": set()}
@@ -247,9 +254,35 @@ def build(weeks, data_dir=store.DATA_DIR, version=None, sandbox="auto", authors=
              **person_comments(rows, scores, [praise_weeks[0], praise_weeks[-1]], listed, praise_rows))
 
 
+def write_all(weeks, groups=S.AUTHORS, out=None, ld=None, version=None, sandbox="auto", praise_weeks=None,
+              screened=None):
+    """sentiment_recent.json and sentiment_comments.json for each group in
+    `groups`, reading the weeks once for all of them."""
+    import json
+    ld = ld or S.Loaded(version=version)
+    screened = S.ScreenCache(ld.data_dir) if screened is None else screened
+    loaded = load(weeks, ld.data_dir, version, ld)
+    box = S.make_sandbox(sandbox, ld.data_dir) if isinstance(sandbox, str) else sandbox
+    try:
+        for g in groups:
+            t0 = time.time()
+            doc, comments = build(weeks, ld.data_dir, version, box, authors=g, praise_weeks=praise_weeks,
+                                  screened=screened, ld=ld, loaded=loaded)
+            path = out or S.authors_path(OUT, g)
+            S._dump(path, doc)
+            cout = S.authors_path(COMMENTS_OUT, g) if not out else os.path.splitext(out)[0] + ".comments.json"
+            S._dump(cout, comments, compact=True)
+            top = doc["periods"]["all"]
+            print(f"{g}: {top['total']['n']} comments, {len(top['ai'])} AI-friction comments shown over all weeks "
+                  f"({top['ai_left_out']}), {len(doc['periods'])} periods, {doc['missing']} unscored -> {path} "
+                  f"({time.time() - t0:.0f}s)", file=sys.stderr)
+    finally:
+        if box is not sandbox:
+            box.close()
+
+
 def main(argv):
     import argparse
-    import json
     ap = argparse.ArgumentParser(prog="python3 -m cosh.sentiment_recent")
     ap.add_argument("--week", required=True, help="fully scored weeks, e.g. 2026-W37:2026-W44")
     ap.add_argument("--praise-week", default=None,
@@ -262,23 +295,8 @@ def main(argv):
     a = ap.parse_args(argv)
     if a.out and a.authors == "all":
         ap.error("--out needs one --authors group")
-    screened = S.ScreenCache()
-    for g in (S.AUTHORS if a.authors == "all" else (a.authors,)):
-        t0 = time.time()
-        doc, comments = build(S.weeks_in(a.week), version=a.prompt, sandbox=a.sandbox, authors=g,
-                              praise_weeks=S.weeks_in(a.praise_week) if a.praise_week else None, screened=screened)
-        out = a.out or S.authors_path(OUT, g)
-        with open(out, "w") as f:
-            json.dump(doc, f, indent=1, ensure_ascii=False)
-            f.write("\n")
-        cout = S.authors_path(COMMENTS_OUT, g) if not a.out else os.path.splitext(a.out)[0] + ".comments.json"
-        with open(cout, "w") as f:
-            json.dump(comments, f, ensure_ascii=False, separators=(",", ":"))
-            f.write("\n")
-        top = doc["periods"]["all"]
-        print(f"{g}: {top['total']['n']} comments, {len(top['ai'])} AI-friction comments shown over all weeks "
-              f"({top['ai_left_out']}), {len(doc['periods'])} periods, {doc['missing']} unscored -> {out} "
-              f"({time.time() - t0:.0f}s)", file=sys.stderr)
+    write_all(S.weeks_in(a.week), S.AUTHORS if a.authors == "all" else (a.authors,), a.out, version=a.prompt,
+              sandbox=a.sandbox, praise_weeks=S.weeks_in(a.praise_week) if a.praise_week else None)
 
 
 if __name__ == "__main__":

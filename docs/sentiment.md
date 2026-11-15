@@ -103,7 +103,7 @@ python3 -m cosh.sentiment score --week 2026-W44                # every comment
 # defaults --week 2025-W45:2026-W44 --name sample-5pct). Read the samples before committing.
 python3 -m cosh.sentiment publish
 # The praise leaderboard over fully scored weeks -> summaries/sentiment_praise.json
-# (the past year, 2025-W45..2026-W44, since 2026-11-08; reads every week once per group)
+# (the past year, 2025-W45..2026-W44, since 2026-11-08)
 python3 -m cosh.sentiment praise --week 2025-W45:2026-W44
 # Sample comments from fully scored weeks, per period -> summaries/sentiment_samples.json
 # (sandboxed screening calls, 30 grumpy candidates each, shared across periods and groups;
@@ -114,6 +114,13 @@ python3 -m cosh.sentiment_recent --week 2025-W45:2026-W44   # screening calls, 3
 # Everyone who commented, for the lookup box -> summaries/sentiment_people.json
 python3 -m cosh.sentiment_people lookup --week 2025-W45:2026-W44
 ```
+
+`publish` takes about 1 minute when nothing new needs screening
+(2026-11-15; it took 16 before): it loads the scores, the committers and
+each week's file once (`Loaded`, rows without the scoring-only fields) and
+shares them across every step and writer group, so each file is read
+once. New comments add only their screening calls. Peak memory is about
+3 GB, so it joins the shared memory cap (`cosh.memcap`) by itself.
 
 `samples` and `sentiment_recent` keep each screening verdict in
 `sentiment.sqlite` (`screens`, keyed by comment and the screening prompt's
@@ -285,11 +292,13 @@ needs the week files with identities (`cosh.sentiment collect`).
   30 of them was nearly all real praise ("I really like these annotations",
   "Good instinct!", "Nifty!", 🔥🔥🔥). +0.3 is too low a bar: it adds about
   4,400 comments over those weeks, mostly routine thanks.
-- **Names are attached only to praise.** `praise` reruns `collect` for each
-  week with `keep` set to the glowing comment ids, so no other comment's
-  row is even built, and an `annotate` hook adds the writer and recipient.
-  `tests/test_sentiment.py` (`PraiseTest`) checks that a negative comment
-  never reaches the hook.
+- **Names go only with praise.** `praise` names the writer and recipient
+  of praise comments only, from the week files' identities (`cosh.sentiment
+  collect` has written them since 2026-11-12). Until 2026-11-15 it reran
+  `collect` from NoteDb for every week and writer group, building only the
+  glowing comments' rows, which took about 15 of `publish`'s 16 minutes.
+  `tests/test_sentiment.py` (`PraiseTest`) checks that negative comments
+  name nobody.
 - **Coverage.** Every week needs its `comments-<week>.jsonl` (with
   identities, `cosh.sentiment collect`) and every comment scored.
   `praise` reports any unscored ones per week in `coverage`.
@@ -308,8 +317,9 @@ characters are considered.
 
 - **Praise:** a score of +0.5 or more (+0.8 was tried first; it is rare,
   3 in 8 weeks) and a human recipient. Each comes with
-  writer, recipient, date and a Gerrit link (`comment_url`). Names are
-  attached as in `praise`: `collect` builds only the sampled comments.
+  writer, recipient, date and a Gerrit link (`comment_url`). Names come
+  from the week files' identities (for older files without them, `collect`
+  builds only the sampled comments).
 - **Grumpiness:** a score of −0.6 or less, not flagged as AI friction
   (those have their own section), with no URLs, emails or @-handles. Each candidate batch goes through `screen_identifying`, a
   sandboxed, tool-less Haiku call whose reply is only a list of the ids it

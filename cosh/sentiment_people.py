@@ -13,7 +13,6 @@ has one writer; `cosh.sentiment_people collect` is the same command. Ground
 rule 5 (docs/plan.md): our pages never name anyone for negative tone, whatever this data makes possible.
 """
 
-import json
 import os
 import sqlite3
 import sys
@@ -62,20 +61,25 @@ class Identities:
 LOOKUP_OUT = os.path.join(os.path.dirname(S.SUMMARY), "sentiment_people.json")
 
 
-def lookup(weeks, data_dir=store.DATA_DIR):
+def lookup(weeks, data_dir=store.DATA_DIR, rows=None):
     """Everyone who wrote, or was the person a comment answered, in the
-    weeks' collected rows: {email: name}, for the Review Tone page's lookup
-    box, so anyone can be looked up, praised or not. Names and emails only:
-    nothing about tone (ground rule 5)."""
+    weeks' collected rows (`rows`, else read): {email: name}, for the Review
+    Tone page's lookup box, so anyone can be looked up, praised or not. Names
+    and emails only: nothing about tone (ground rule 5)."""
     people = {}
-    for w in weeks:
-        for r in S.comment_rows(os.path.join(S.out_dir(data_dir), f"comments-{w}.jsonl")):
-            if "author_email" not in r:
-                raise SystemExit(f"{w}: no identities; collect it with `python3 -m cosh.sentiment collect`")
-            for e, n in ((r.get("author_email"), r.get("author_name")), (r.get("target_email"), r.get("target_name"))):
-                if e:
-                    people[e] = n or people.get(e) or e
+    for r in (S.week_rows(weeks, data_dir) if rows is None else rows):
+        if "author_email" not in r:
+            raise SystemExit(f"{r['week']}: no identities; collect it with `python3 -m cosh.sentiment collect`")
+        for e, n in ((r.get("author_email"), r.get("author_name")), (r.get("target_email"), r.get("target_name"))):
+            if e:
+                people[e] = n or people.get(e) or e
     return dict(generated_at=store.now_iso(), weeks=[weeks[0], weeks[-1]], people=dict(sorted(people.items())))
+
+
+def write_lookup(weeks, rows=None):
+    doc = lookup(weeks, rows=rows)
+    S._dump(LOOKUP_OUT, doc, compact=True)
+    print(f"{len(doc['people'])} people -> {LOOKUP_OUT}", file=sys.stderr)
 
 
 def main(argv):
@@ -90,12 +94,7 @@ def main(argv):
     t0 = time.time()
     weeks = S.weeks_in(a.week)
     if a.step == "lookup":
-        doc = lookup(weeks)
-        with open(LOOKUP_OUT, "w") as f:
-            json.dump(doc, f, ensure_ascii=False, separators=(",", ":"))
-            f.write("\n")
-        print(f"{len(doc['people'])} people -> {LOOKUP_OUT}", file=sys.stderr)
-        return
+        return write_lookup(weeks)
     S.main(argv)          # collect: the same step (`python3 -m cosh.sentiment collect`)
 
 
