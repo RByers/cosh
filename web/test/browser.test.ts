@@ -2284,20 +2284,21 @@ test('the landing page links to the Value Exchange dashboard', async () => {
   const cards = await page.$$eval('.cards a', (as) =>
     as.map((a) => ({ href: a.getAttribute('href'), title: a.querySelector('h3')!.textContent })));
   assert.deepEqual(cards, [
+    { href: 'feedback-index.html', title: 'Feedback Index' },
     { href: 'value.html', title: 'Value Exchange' },
     { href: 'sentiment.html', title: 'Review Tone' },
     { href: 'balance.html', title: 'Review Balance' },
-    { href: 'feedback-index.html', title: 'Feedback Index' },
     { href: 'review-load.html', title: 'Review Load' },
   ]);
-  // Only the draft dashboard's card has the yellow "In development" box.
+  // Only the draft dashboards' cards have the yellow "In development" box.
   const warnings = await page.$$eval('.card-warning', (ws) => ws.map((w) => ({
     card: w.closest('a')!.getAttribute('href'), head: w.querySelector('p')!.textContent, bg: getComputedStyle(w).backgroundColor })));
-  assert.deepEqual(warnings.map((w) => [w.card, w.head]), [['balance.html', 'In development']]);
+  assert.deepEqual(warnings.map((w) => [w.card, w.head]), [
+    ['balance.html', 'In development'], ['review-load.html', 'In development']]);
   assert.notEqual(warnings[0].bg, 'rgba(0, 0, 0, 0)');
   // Styled by its own sheet.
   assert.match(await page.$eval('body', (b) => getComputedStyle(b).fontFamily), /system-ui/);
-  await Promise.all([page.waitForNavigation(), page.click('.cards a')]);
+  await Promise.all([page.waitForNavigation(), page.click('.cards a[href="value.html"]')]);
   assert.equal(await page.title(), 'Value Exchange - Chromium Open Source Health');
   await page.waitForSelector('body[data-ready]');
   // …and the dashboard links back.
