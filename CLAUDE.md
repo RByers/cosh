@@ -273,7 +273,10 @@ purpose near the top of its own doc.
   rebuilt by `vite build --watch`), never the dev server. `npm run dev`
   always takes a random port and is for your own checks. To show the user a
   worktree, run `DEV_PORT=user npm run serve` there (web/README.md, "Dev
-  server ports").
+  server ports"). The main checkout's server is the user service
+  `cosh-serve`: restart it with `systemctl --user restart
+  cosh-serve.service` rather than starting another (web/README.md,
+  "Commands").
 - In a worktree, give `web/` its dependencies by symlinking the main
   checkout's: `ln -s /home/rbagent/projects/cosh/web/node_modules
   web/node_modules`. Don't run `npm ci` or `npm install` there. Git ignores

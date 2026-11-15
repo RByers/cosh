@@ -406,6 +406,22 @@ for instance on a config that doesn't parse, preview keeps serving the last
 build and the build is tried again at the next such change. A new npm
 dependency still needs `npm install` and a restart.
 
+The user's server on 5182 runs from the main checkout as the user service
+`cosh-serve`, so it outlives the session or shell that started it.
+Restart it (after `npm install`, or when the page looks stale) with:
+
+```
+systemctl --user restart cosh-serve.service
+systemctl --user status cosh-serve.service   # state and the last build's output
+```
+
+It takes a few seconds to build before 5182 answers. It is a transient unit,
+so a reboot removes it; start it again with:
+
+```
+systemd-run --user --unit=cosh-serve --working-directory=/home/rbagent/projects/cosh/web npm run serve
+```
+
 ### Dev server ports
 
 Ports follow `~/projects/argus-config/ports.md`. 5182 is cosh's user port,
