@@ -1186,7 +1186,7 @@
     },
     {
       "id": "web/public/review-feedback/peers.json",
-      "name": "Feedback Index global data",
+      "name": "FI global data",
       "path": "web/public/review-feedback/peers.json",
       "kind": "json",
       "tier": "published",
@@ -1199,7 +1199,7 @@
     },
     {
       "id": "web/public/review-feedback/reviewers.json",
-      "name": "Feedback Index reviewer factors",
+      "name": "FI reviewer factors",
       "path": "web/public/review-feedback/reviewers.json",
       "kind": "json",
       "tier": "published",
@@ -1212,7 +1212,7 @@
     },
     {
       "id": "feedback-people",
-      "name": "Feedback Index per-person files",
+      "name": "FI per-person files",
       "path": "data/private/feedback-people/",
       "kind": "directory",
       "tier": "derived",
@@ -1227,7 +1227,7 @@
     },
     {
       "id": "r2:review-feedback/people/v2/",
-      "name": "Feedback Index per-person files in R2",
+      "name": "FI per-person files in R2",
       "path": "r2:review-feedback/people/v2/",
       "kind": "directory",
       "tier": "published",
@@ -1242,7 +1242,7 @@
     },
     {
       "id": "data/private/feedback-cls.json.gz",
-      "name": "Feedback Index CL index",
+      "name": "FI CL index",
       "path": "data/private/feedback-cls.json.gz",
       "kind": "json",
       "tier": "derived",
@@ -1256,7 +1256,7 @@
     },
     {
       "id": "data/private/review-threads/",
-      "name": "Feedback Index full threads",
+      "name": "FI full threads",
       "path": "data/private/review-threads/",
       "kind": "directory",
       "tier": "derived",
@@ -1271,7 +1271,7 @@
     },
     {
       "id": "r2:review-feedback/threads/v3/",
-      "name": "Feedback Index threads in R2",
+      "name": "FI threads in R2",
       "path": "r2:review-feedback/threads/v3/",
       "kind": "directory",
       "tier": "published",

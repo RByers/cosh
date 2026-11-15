@@ -49,7 +49,7 @@ Claude (Haiku): classify, comments-score, tone-publish's screening              
   summarize      ─▶ Value Exchange summaries ─┐
   (+ Radar shares, org_browsers.csv)          ├─▶ Value Exchange
   tone-publish   ─▶ Review Tone summaries ────┼─▶ Review Tone
-  review-feedback   ─▶ Feedback Index global data ─────────────────────┬─▶ Feedback Index
+  review-feedback   ─▶ FI global data ─────────────────────────────────┬─▶ Feedback Index
   (cosh.review_feedback) ─▶ per-person files ─ r2-feedback ─▶ in R2 ──┤
   review-threads ─▶ full threads ─ r2-feedback ─▶ threads in R2 ──────┘
   (its CL index + NoteDb + reviews.sqlite + addressed.sqlite)
