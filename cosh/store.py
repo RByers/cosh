@@ -232,7 +232,7 @@ def open_derived(data_dir=DATA_DIR, path=None):
 
 @contextmanager
 def extract_lock(data_dir=DATA_DIR):
-    """Only one extractor at a time (CLAUDE.md). Held for the whole run."""
+    """Only one extractor at a time (AGENTS.md). Held for the whole run."""
     os.makedirs(data_dir, exist_ok=True)
     fh = open(os.path.join(data_dir, "extract.lock"), "w")
     try:

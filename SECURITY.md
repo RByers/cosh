@@ -184,9 +184,9 @@ failed:
    - **Fresh, private `HOME` and working directory for each call.** Each is
      created with `mkdtemp` under a 0700 directory and deleted afterwards. No
      user or project `settings.json`, hooks, `statusLine` command, plugins,
-     `CLAUDE.md` or memory are loaded. Nothing carries over between calls,
-     and nobody else on the machine can plant files there (the old code ran
-     in the shared `/tmp`).
+     `CLAUDE.md`, `AGENTS.md` or memory are loaded. Nothing carries over
+     between calls, and nobody else on the machine can plant files there
+     (the old code ran in the shared `/tmp`).
    - **bubblewrap jail**, when `bwrap` works on the machine, which it does on
      `argus`: Ubuntu's AppArmor profile allows its user namespaces.
      - New mount, PID, IPC, UTS and cgroup namespaces, `--cap-drop ALL`,
@@ -292,7 +292,7 @@ the machine starts holding more valuable credentials.
 
 - The Radar token lives in `~/.secrets/cosh/secrets.sh` (directory 700, file
   600), outside the repo, and is loaded with `source ~/.secrets/cosh/secrets.sh`.
-  Never print or commit it. This rule is also in `CLAUDE.md`. It moved out of
+  Never print or commit it. This rule is also in `AGENTS.md`. It moved out of
   the repo on 2026-11-08, after the dev server was found serving it (below):
   argus keeps no secrets anywhere under `~/projects`
   (`~/projects/argus-config/SECURITY.md`). `.gitignore` still ignores

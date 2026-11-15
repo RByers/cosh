@@ -1,5 +1,5 @@
 {
-  "about": "What the user has approved fetching. Fetchers read this file (cosh/approved.py) and refuse anything outside it, so a plain rerun can't exceed an approval. Widen a range only after the user approves, in the same commit as a line in docs/plan.md's decisions log. CLAUDE.md keeps the reasons and the load rules.",
+  "about": "What the user has approved fetching. Fetchers read this file (cosh/approved.py) and refuse anything outside it, so a plain rerun can't exceed an approval. Widen a range only after the user approves, in the same commit as a line in docs/plan.md's decisions log. AGENTS.md keeps the reasons and the load rules.",
   "gerrit_weeks": {
     "from": "2017-W27",
     "to": "2026-W45",

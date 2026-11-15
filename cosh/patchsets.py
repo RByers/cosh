@@ -7,7 +7,7 @@ clone (~/projects/shared/chromium) through git alternates, so `main`'s tip goes
 out as the "have" and the server sends commits, trees and the blobs that never
 landed. Measured 2026-11-07 (docs/plan.md): 72 s per 1,000 CLs.
 
-Load rules (CLAUDE.md): one fetch at a time (or the user-approved --jobs)
+Load rules (AGENTS.md): one fetch at a time (or the user-approved --jobs)
 under the extract lock, backing off together on HTTP 429, at least
 1 s between fetches, glob refspecs per CL (never ls-remote), no blob fetches
 by id, GIT_NO_LAZY_FETCH=1.

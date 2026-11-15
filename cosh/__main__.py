@@ -107,7 +107,7 @@ def main(argv=None):
     b.add_argument("--batch-size", type=int, default=200)
     b.add_argument("--jobs", type=int, default=1,
                    help="NoteDb fetches in flight at once (default 1; more only with the user's "
-                        "approval: 6 approved until Monday 2026-11-09, CLAUDE.md)")
+                        "approval: 6 approved until Monday 2026-11-09, AGENTS.md)")
     b.add_argument("--jobs-until",
                    help="ISO time after which --jobs drops to 1 (e.g. 2026-11-09T00:00-05:00)")
     b.add_argument("--go", action="store_true", help="actually fetch (otherwise print the plan)")
@@ -131,7 +131,7 @@ def main(argv=None):
     ps.add_argument("--jobs", type=int, default=1,
                     help="fetches in flight at most (default 1, at most 8; fewer while "
                          "googlesource rate-limits us; above 1 needs "
-                         "the user's approval, CLAUDE.md)")
+                         "the user's approval, AGENTS.md)")
     ps.add_argument("--repack-gb", type=float, default=8.0,
                     help="repack after this many GB of new packs (default 8; it also repacks "
                          "when under 25 GB is free, and always at the end)")

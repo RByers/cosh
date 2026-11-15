@@ -123,7 +123,7 @@ system is kept, and the inventory says where a step departs from them.
 10. **Approvals are data.** `config/approved.json` gives each fetcher its
     approved range; `extract`, `backfill`, `patchsets` and `cosh.bugs`
     refuse anything outside it. Widening a range needs the user's approval
-    and an edit to that file, logged in `docs/plan.md`. CLAUDE.md keeps the
+    and an edit to that file, logged in `docs/plan.md`. AGENTS.md keeps the
     reasons and the load rules.
 11. **A step is offline unless the inventory says it fetches.** The
     affiliations files too: only `update-affiliations` fetches them, and the
@@ -235,7 +235,7 @@ it lacks).
 loop, a step's code file or a page doesn't exist, a committed file under
 `summaries/`, `data/public/` or `config/` belongs to no store, or a page
 script imports a data file that no page's `reads` covers. It can't check
-purposes, sizes or costs: keep those current by hand (CLAUDE.md).
+purposes, sizes or costs: keep those current by hand (AGENTS.md).
 
 ## 4. Running it
 

@@ -1,7 +1,7 @@
 {
   "schema_version": 2,
   "updated": "2026-11-15",
-  "about": "Every external source, data store, processing step and page of cosh, and the flows between them. Read by web/dataflow.html, scripts/dataflow.py (check, plan) and `python3 -m cosh update`. Field meanings and the flow rules: docs/data-architecture.md. Keep it current: CLAUDE.md, Conventions. Building and deploying the site (npm run build; the Pages workflow on push) is not a data step and isn't listed.",
+  "about": "Every external source, data store, processing step and page of cosh, and the flows between them. Read by web/dataflow.html, scripts/dataflow.py (check, plan) and `python3 -m cosh update`. Field meanings and the flow rules: docs/data-architecture.md. Keep it current: AGENTS.md, Conventions. Building and deploying the site (npm run build; the Pages workflow on push) is not a data step and isn't listed.",
   "sources": [
     {
       "id": "gerrit",
@@ -1592,7 +1592,7 @@
       "cost_source": "docs/extraction-v1.md; docs/plan.md",
       "refresh": "routine",
       "approval": "Only weeks in config/approved.json (2017-W27 .. 2026-W44); the command refuses others. A newer week needs the user's approval, then an edit to that file.",
-      "notes": "backfill --weeks N runs many weeks, newest first; long runs go in a systemd user service (CLAUDE.md). backfill also derives each week it finishes (cosh.derive for that week), so reviews.sqlite stays current between full derives. Never run alongside another extractor."
+      "notes": "backfill --weeks N runs many weeks, newest first; long runs go in a systemd user service (AGENTS.md). backfill also derives each week it finishes (cosh.derive for that week), so reviews.sqlite stays current between full derives. Never run alongside another extractor."
     },
     {
       "id": "update-affiliations",

@@ -1130,7 +1130,7 @@ def publish(weeks, sample, prompt=None, sandbox="auto"):
     Every step and writer group shares one load of the scores and of each
     week's rows (`Loaded`), so each comment file is read once."""
     from . import memcap, sentiment_people, sentiment_recent
-    memcap.join()                     # about 3 GB: share the cap (CLAUDE.md)
+    memcap.join()                     # about 3 GB: share the cap (AGENTS.md)
     t0 = time.time()
     ld = Loaded(version=prompt)
     if weeks is None:

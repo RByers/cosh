@@ -3,7 +3,7 @@
   python3 -m cosh backfill --weeks 52            # print the plan only
   python3 -m cosh backfill --weeks 52 --go       # actually fetch
 
-POLICY (see CLAUDE.md): the backfill back to 2023-W26 (2023-07-01, Radar's
+POLICY (see AGENTS.md): the backfill back to 2023-W26 (2023-07-01, Radar's
 first data) is approved; going further back still needs explicit approval.
 
 Per week: REST listing (~56 requests) + NoteDb git fetches (~10-18 x 200 refs),

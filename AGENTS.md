@@ -1,4 +1,4 @@
-# cosh: notes for Claude sessions
+# cosh: notes for agent sessions
 
 cosh builds several dashboards about the Chromium open source project from
 public data sources: Gerrit code review and Cloudflare Radar today, with git

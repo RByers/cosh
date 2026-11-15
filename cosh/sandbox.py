@@ -9,8 +9,9 @@ model or CLI misbehaving on injected text still finds nothing worth taking:
     credential claude needs. The caller's tokens (Radar, GitHub, the parent
     Claude session's socket) don't reach it;
   - a fresh, private (0700) HOME and working directory per call, deleted
-    afterwards, so no user or project settings, hooks, plugins, CLAUDE.md
-    or session transcripts are loaded, and nothing persists between calls;
+    afterwards, so no user or project settings, hooks, plugins,
+    CLAUDE.md, AGENTS.md or session transcripts are loaded, and nothing
+    persists between calls;
   - with bubblewrap (`bwrap`), its own mount, PID, IPC and UTS namespaces:
     a read-only root with /home, /root, /run/user (ssh-agent, gpg-agent,
     D-Bus and Claude daemon sockets), /tmp, /var/tmp and the cosh data and

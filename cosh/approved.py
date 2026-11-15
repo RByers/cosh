@@ -1,7 +1,7 @@
 """What the user has approved fetching (config/approved.json).
 
 Fetchers call these before any request, so the bound is enforced by the
-command, not only stated in CLAUDE.md. A request outside it stops with an
+command, not only stated in AGENTS.md. A request outside it stops with an
 error naming the file; the fix is the user's approval and an edit to it.
 """
 

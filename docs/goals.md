@@ -110,7 +110,7 @@ changes as they improve.
 - **Constructive for the person.** The page names people for what went
   well. What is less flattering about someone is shown only to a reader
   who typed that person's address, never in a list or ranking that can be
-  reached by clicking (`CLAUDE.md`, "Sentiment").
+  reached by clicking (`AGENTS.md`, "Sentiment").
 - **Never deadname anyone.** People change their name and their address.
   A person with several addresses is one person, named everywhere we
   publish (file names, labels, lookups' results) by the address they used
@@ -241,7 +241,7 @@ draws it, and `docs/data-architecture.md` has the rules in full
   stores in `data/private/` (caches, derived databases, scratch, run logs)
   cost nothing against the goals above, as long as the disk holds them.
   Keeping a large intermediate store is better than re-fetching, re-paying
-  model calls or rebuilding slowly (and `CLAUDE.md` asks us to keep
+  model calls or rebuilding slowly (and `AGENTS.md` asks us to keep
   whatever we download).
 - **The flow stays small.** Remove stores and steps that nothing reads any
   more. An extra intermediate store is a good trade when it makes the
