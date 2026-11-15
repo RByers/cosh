@@ -104,8 +104,12 @@
           <slot name="yoy"></slot> on a year before), the middle half <slot name="p25"></slot> to
           <slot name="p75"></slot> and four in five <slot name="p10"></slot> to <slot name="p90"></slot>. The
           mean was <slot name="mean"></slot> (<slot name="meanYoy"></slot> on a year before), pulled up by the
-          few who review the most. Hover over a quarter for the median's change.<span data-if="you"> Your line
-          is the lines you reviewed.</span>
+          few who review the most. Hover over a quarter for the median's change. Each reviewer is credited with
+          all of a commit's lines: nothing records how reviewers split a change's files between them. Where they
+          do, the lines here are too high, at most by the number of reviewers on the commit: across all reviewed
+          lines, at most <slot name="factor"></slot> times in <slot name="last"></slot> and
+          <slot name="factorFirst"></slot> in <slot name="first"></slot> (see “How this is measured”).<span
+          data-if="you"> Your line is the lines you reviewed.</span>
         </template>
         <template data-msg="axis-lines">lines reviewed per reviewer</template>
       </section>
@@ -270,6 +274,28 @@
           work, not code. Reviewed-by names those who approved; reviewers who only commented are not counted
           here.
         </p>
+        <p id="rl-split-note" class="note"></p>
+        <template data-msg="split-note">
+          <strong>Reviewers who split a change.</strong> When a change has several reviewers, each often reads
+          only the files they own, but nothing in git or Gerrit records who read which file, so each is credited
+          with every line. The chart below bounds the error. Weighted by lines, it is how many times over the
+          lines reviewed count each changed line, and so the most they can be overstated: if every line had been
+          read by one reviewer only, lines reviewed per reviewer would be that many times too high. It was
+          <slot name="lineFirst"></slot> in <slot name="first"></slot> and <slot name="lineLast"></slot> in
+          <slot name="last"></slot>, between <slot name="lo"></slot> and <slot name="hi"></slot> in every
+          quarter; per commit, <slot name="commitFirst"></slot> and <slot name="commitLast"></slot>
+          reviewers, and <slot name="multiFirst"></slot> and <slot name="multiLast"></slot> of commits had two or
+          more. If reviewers split changes in the same way throughout, the trend in lines reviewed per reviewer
+          since <slot name="first"></slot> is off by no more than the change in this line,
+          <slot name="drift"></slot>.
+        </template>
+        <ul id="rl-split-legend" class="legend rf-line-legend" aria-label="Lines"></ul>
+        <div class="chart rf-half-chart">
+          <canvas id="rl-split" role="img" aria-label="Reviewers per reviewed commit per quarter, weighted by lines and per commit."></canvas>
+        </div>
+        <template data-msg="legend-split-line">Reviewers per line reviewed (weighted by lines)</template>
+        <template data-msg="legend-split-commit">Reviewers per commit</template>
+        <template data-msg="axis-split">reviewers</template>
         <p class="note">
           <strong>Review times</strong> come from Gerrit, for the same commits' changes. A reviewer is anyone
           but the change's owner, bots left out; an answer is a Code-Review vote or a comment before the change

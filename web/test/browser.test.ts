@@ -3945,6 +3945,7 @@ const loadAll = {
   quarters: ['2025Q3', '2025Q4', '2026Q1', '2026Q2', '2026Q3'], attention_from: '2025Q4', min_dir_lines: 100,
   commits: [100, 110, 120, 130, 150], human: [80, 85, 90, 95, 120], reviewed: [70, 75, 80, 85, 100],
   reviewed_lines: [7000, 8000, 9000, 9000, 12000], reviewers: [10, 10, 10, 9, 10],
+  reviewers_per_commit: { lines: [4000, 4400, 5000, 5000, 7000], reviews: [105, 112, 120, 128, 150], multi: [35, 37, 40, 42, 50] },
   reviewer_lines: { p10: [10, 10, 10, 10, 20], p25: [50, 60, 70, 80, 100], p50: [200, 250, 300, 300, 360],
     p75: [600, 700, 800, 800, 900], p90: [2000, 2200, 2400, 2500, 3000], mean: [700, 800, 900, 1000, 1200], n: [10, 10, 10, 9, 10] },
   reply: { p10: [null, 0.1, 0.1, 0.2, 0.2], p25: [null, 1, 1, 1, 1.5], p50: [null, 3, 3, 4, 4], p75: [null, 15, 14, 16, 17],
@@ -3998,7 +3999,7 @@ test('review load: four charts over the quarters and a directory table that open
   assert.equal(await page.title(), 'Review Load - Chromium Open Source Health');
   const charts = await page.evaluate(() => Object.fromEntries(Object.entries(window.__rl!.charts).map(([k, c]) =>
     [k, { labels: c.data.labels, sets: c.data.datasets.map((d) => d.label) }])));
-  assert.deepEqual(Object.keys(charts).sort(), ['commits', 'lines', 'reply', 'turns']);
+  assert.deepEqual(Object.keys(charts).sort(), ['commits', 'lines', 'reply', 'split', 'turns']);
   // The wait charts start with the attention set.
   assert.deepEqual(charts.reply.labels, ['Q4 2025', 'Q1 2026', 'Q2 2026', 'Q3 2026']);
   // All three spreads are drawn as the Feedback Index draws one: two shaded bands and the median.
@@ -4017,6 +4018,11 @@ test('review load: four charts over the quarters and a directory table that open
   assert.deepEqual(await page.evaluate(() => window.__rl!.charts.lines.data.datasets[4].data), [200, 250, 300, 300, 360]);
   const norm = (sel: string) => page.$eval(sel, (e) => e.textContent!.replace(/\s+/g, ' '));
   assert.match(await norm('#rl-lines-note'), /across 10 reviewers, the median reviewer reviewed 360 lines \(\+20% on the quarter before and \+80% on a year before\), the middle half 100 to 900 and four in five 20 to 3,000\. The mean was 1,200 \(\+71% on a year before\)/);
+  // Splitting a commit's files among its reviewers: at most the lines-weighted reviewers per commit.
+  assert.match(await norm('#rl-lines-note'), /at most 1\.71 times in Q3 2026 and 1\.75 in Q3 2025/);
+  assert.match(await norm('#rl-split-note'), /It was 1\.75 in Q3 2025 and 1\.71 in Q3 2026, between 1\.71 and 1\.82 in every quarter; per commit, 1\.5 and 1\.5 reviewers, and 50% and 50% of commits had two or more\..* off by no more than the change in this line, 2%\./);
+  assert.deepEqual(await page.evaluate(() => window.__rl!.charts.split.data.datasets.map((d) => d.label)),
+    ['Reviewers per line reviewed (weighted by lines)', 'Reviewers per commit']);
   assert.match(await norm('#rl-reply-note'), /over 90 first answers, the median was 4 h, the middle half 1\.5 h to 17 h and four in five 0\.2 h to 45 h; the mean was 18 h/);
   assert.match(await page.$eval('#rl-turns-note', (e) => e.textContent!.replace(/\s+/g, ' ')),
     /over 100 turns on changes landed in the quarter, the median turn lasted 6 h, the middle half 3 h to 14 h and four in five 1 h to 40 h; the mean was 16 h/);
@@ -4089,8 +4095,9 @@ test('review load: an address adds that reviewer to the charts and the table, wi
     /Showing your reviews in 2 quarters, from Q2 2026 to Q3 2026: 14 commits and 3,900 lines reviewed\./);
   assert.equal(new URL(page.url()).hash, '');
   assert.deepEqual(requests.filter((r) => r.startsWith('people/')), ['people/v2/nobody@example.com.json', 'people/v2/rev@google.com.json', 'people/v2/rev@chromium.org.json']);
-  const you = await page.evaluate(() => Object.fromEntries(Object.entries(window.__rl!.charts).map(([k, c]) =>
-    [k, c.data.datasets.at(-1)!.data])));
+  // Every chart but the methodology's gets the reviewer's line.
+  const you = await page.evaluate(() => Object.fromEntries(Object.entries(window.__rl!.charts).filter(([k]) => k !== 'split')
+    .map(([k, c]) => [k, c.data.datasets.at(-1)!.data])));
   assert.deepEqual(you, { commits: [null, null, null, 5, 9], lines: [null, null, null, 900, 3000],
     reply: [null, null, 8, 10], turns: [null, null, 7, 9] });
   // Their directories first; one that isn't listed counts in "Other"; their 90th percentile there,

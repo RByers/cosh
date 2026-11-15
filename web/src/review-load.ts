@@ -15,6 +15,7 @@ import {
   logShade,
   meanLines,
   overallPct,
+  reviewersPerCommit,
   ownRow,
   PCT_KEYS,
   pctHours,
@@ -226,10 +227,33 @@ function renderLines() {
   };
   draw('lines', datasets, t, { y: { ...axis(t, msg('axis-lines')), beginAtZero: true } }, (v) => fmtInt(Math.round(v)), growth);
   const lines = (v: number | null | undefined) => fmtInt(Math.round(v ?? 0));
+  const split = reviewersPerCommit(all).perLine;
   put($('#rl-lines-note'), 'lines-note', { last: q, reviewers: fmtInt(all.reviewers[i]), median: lines(s.p50[i]),
+    factor: fmtNum(split[i] ?? 0, { maximumFractionDigits: 2 }), factorFirst: fmtNum(split[0] ?? 0, { maximumFractionDigits: 2 }),
+    first: quarterLabel(all.quarters[0]),
     p25: lines(s.p25[i]), p75: lines(s.p75[i]), p10: lines(s.p10[i]), p90: lines(s.p90[i]),
     qoq: fmtChange(change(s.p50[i], s.p50[i - 1])), yoy: fmtChange(change(s.p50[i], s.p50[i - 4])),
     mean: lines(mean[i]), meanYoy: fmtChange(change(mean[i], mean[i - 4])), you: !!p });
+}
+
+/** Methodology: reviewers per reviewed commit, the bound on how much splitting files overstates lines. */
+function renderSplit() {
+  const all = state.all!;
+  const t = theme();
+  const { i, q } = lastOf(all);
+  const r = reviewersPerCommit(all);
+  const keys: Key[] = [{ label: msg('legend-split-line'), color: t.series[0] }, { label: msg('legend-split-commit'), color: t.series[2] }];
+  legend($('#rl-split-legend'), keys);
+  draw('split', [line(keys[0].label, r.perLine, keys[0].color), line(keys[1].label, r.perCommit, keys[1].color)], t,
+    { y: { ...axis(t, msg('axis-split')), min: 1 } }, (v) => fmtNum(v, { maximumFractionDigits: 2 }));
+  const f = (v: number | null | undefined) => fmtNum(v ?? 0, { maximumFractionDigits: 2 });
+  const pct = (v: number | null | undefined) => fmtNum(v ?? 0, { style: 'percent', maximumFractionDigits: 0 });
+  const line0 = r.perLine[0];
+  const lines = r.perLine.filter(ok);
+  put($('#rl-split-note'), 'split-note', { first: quarterLabel(all.quarters[0]), last: q,
+    lineFirst: f(line0), lineLast: f(r.perLine[i]), lo: f(Math.min(...lines)), hi: f(Math.max(...lines)),
+    commitFirst: f(r.perCommit[0]), commitLast: f(r.perCommit[i]), multiFirst: pct(r.multi[0]), multiLast: pct(r.multi[i]),
+    drift: pct(Math.abs(change(r.perLine[i], line0) ?? 0)) });
 }
 
 function renderReply() {
@@ -413,6 +437,7 @@ function render() {
   if (!state.all) return;
   renderCommits();
   renderLines();
+  renderSplit();
   renderReply();
   renderTurns();
   renderDirs();

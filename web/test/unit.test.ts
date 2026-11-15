@@ -1800,6 +1800,9 @@ test('review load: quarter figures, a reviewer\'s files and the directory tree',
   assert.equal(L.quarterLabel('2026Q3'), 'Q3 2026');
   assert.deepEqual(L.yearsOf(['2025Q4', '2026Q1', '2026Q2']), ['2025', '2026']);
   assert.deepEqual(L.meanLines({ reviewed_lines: [100, 0], reviewers: [4, 0] }), [25, null]);
+  assert.deepEqual(L.reviewersPerCommit({ reviewed: [4, 0], reviewed_lines: [300, 0],
+    reviewers_per_commit: { lines: [200, 0], reviews: [6, 0], multi: [2, 0] } }),
+  { perCommit: [1.5, null], perLine: [1.5, null], multi: [0.5, null] });
   assert.equal(L.change(120, 100)! > 0.199 && L.change(120, 100)! < 0.201, true);
   assert.equal(L.change(5, 0), null);
   assert.equal(L.change(null, 3), null);

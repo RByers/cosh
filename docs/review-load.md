@@ -63,7 +63,16 @@ quarters, shaded against everyone's there).
   renamed file by the lines changed in it, a binary file 0), once for each
   such reviewer. A commit with two reviewers counts twice: the measure is
   review work. Reviewers who commented without approving are not in
-  `Reviewed-by` and don't count here.
+  `Reviewed-by` and don't count here. Each reviewer is credited with all
+  of the commit's lines: nothing records how reviewers split a change's
+  files. The page bounds the error with a chart in "How this is measured":
+  reviewers per reviewed commit, weighted by lines (`reviewed_lines` over
+  the commits' own lines), which is the most the lines can be overstated
+  (if every line were read by one reviewer only). On 2026-11-15 it was
+  1.74 in 2017Q3 and 1.59 in 2026Q3, between 1.44 and 1.90 in every
+  quarter (1.48 and 1.38 reviewers per commit; 33% and 30% of commits had
+  two or more), so with the same splitting habits throughout, the trend
+  since 2017 is off by at most 9%.
 - **Reviewer** (Gerrit figures): a human account other than the CL's owner.
   The CLs are those of the reviewed commits, in the quarter they landed.
 - **Answer**: a Code-Review vote (not a removal) or a comment before the
@@ -187,7 +196,7 @@ R2 bucket (`docs/r2.md`; until 2026-11-14 they were committed next to
 
 | File | Holds |
 |---|---|
-| `all.json` | per quarter: commits, reviewed commits and lines, reviewers, `reviewer_lines` (lines reviewed per reviewer), `reply` (the reviewer's turn to first answer) and `turns` (reviewer response time), each a spread: 10th, 25th, 50th, 75th, 90th percentile, mean and count; the table's directories at every level with five quarters of lines, four of the 50th/75th/90th percentile and turns, and the percentiles over the four; `others`: the same for each directory's "Other"; with OWNERS, each directory's seven figures (reviewers, how many did half, owners listed, owners who reviewed, lines reviewed by an owner, non-committers' lines, those two owners approved) and `owners`: the same for everything and the day of the OWNERS files |
+| `all.json` | per quarter: commits, reviewed commits and lines, reviewers, `reviewers_per_commit` (the reviewed commits' own lines, their reviewers summed, and those with two or more), `reviewer_lines` (lines reviewed per reviewer), `reply` (the reviewer's turn to first answer) and `turns` (reviewer response time), each a spread: 10th, 25th, 50th, 75th, 90th percentile, mean and count; the table's directories at every level with five quarters of lines, four of the 50th/75th/90th percentile and turns, and the percentiles over the four; `others`: the same for each directory's "Other"; with OWNERS, each directory's seven figures (reviewers, how many did half, owners listed, owners who reviewed, lines reviewed by an owner, non-committers' lines, those two owners approved) and `owners`: the same for everything and the day of the OWNERS files |
 | `<name>.json` | one reviewer, in one file (version 2), fetched in one request: `years`, by year, `{"q": {quarter number: [commits reviewed, lines reviewed, attention weekday hours, CLs counted in them, asked-to-answer hours (summed), answers]}}`; `dirs`, by quarter (the table's four), their 3-level directories `[directory, lines]` (until 2026-11-15 also attention hours and CLs); `turns`, by quarter, `[median hours, turns]`; and `rows`, by table row (`d:<dir>`, `o:<dir>` for its "Other", `o:` for what no listed directory covers), their turns over the four quarters `[50th, 75th, 90th percentile, turns]` |
 
 `<name>` is the address as typed, lower case, as the Feedback Index names its files

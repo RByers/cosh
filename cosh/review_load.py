@@ -296,6 +296,7 @@ def compute(gdb, ddb, tdb, owners_at=None):
         n_human[i] += human
     # Git: lines reviewed, per quarter, person and directory.
     rev_lines, rev_commits = [0] * nq, [0] * nq
+    commit_lines, reviews, multi = [0] * nq, [0] * nq, [0] * nq   # reviewed commits' own lines, reviewers, 2+ reviewers
     per = defaultdict(lambda: defaultdict(lambda: [0, 0, 0.0, 0, 0.0, 0]))   # person -> quarter -> figures
     people_q = [set() for _ in qs]
     dirs = defaultdict(lambda: [0] * len(table_qs))           # 3-level directory -> lines per table quarter
@@ -310,6 +311,9 @@ def compute(gdb, ddb, tdb, owners_at=None):
         if c["n"] is not None:
             by_cl[c["n"]] = c
         rev_commits[i] += 1
+        commit_lines[i] += lines
+        reviews[i] += len(c["reviewers"])
+        multi[i] += len(c["reviewers"]) > 1
         for p in c["reviewers"]:
             rev_lines[i] += lines
             people_q[i].add(p)
@@ -392,6 +396,8 @@ def compute(gdb, ddb, tdb, owners_at=None):
         quarters=qs, attention_from=ATTENTION_FROM, min_dir_lines=MIN_DIR_LINES,
         commits=n_commits, human=n_human,
         reviewed=rev_commits, reviewed_lines=rev_lines, reviewers=[len(s) for s in people_q],
+        # Reviewers per reviewed commit: its lines once, its reviewers, and the commits with two or more.
+        reviewers_per_commit=dict(lines=commit_lines, reviews=reviews, multi=multi),
         # Lines reviewed per reviewer: the spread over the people who reviewed anything in the quarter.
         reviewer_lines=spread([[byq[q][1] for byq in per.values() if q in byq and byq[q][0]] for q in qs]),
         # A reviewer's turn to first answer and every turn's hours: their spread per quarter.

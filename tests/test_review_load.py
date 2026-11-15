@@ -108,6 +108,8 @@ class ComputeTest(unittest.TestCase):
         # The author's own footer and the bot's don't count; two reviewers count the lines twice.
         self.assertEqual(data["reviewed_lines"], [40, 160])
         self.assertEqual(data["reviewers"], [1, 2])
+        # Q3's commit has two reviewers: its 80 lines count twice in reviewed_lines.
+        self.assertEqual(data["reviewers_per_commit"], dict(lines=[40, 80], reviews=[1, 2], multi=[0, 1]))
         self.assertNotIn("first", data)
         # Asked Friday 13:00, answered Monday 12:00: 23 weekday hours. Nothing before the attention set.
         self.assertEqual(data["reply"], dict(p10=[None, 23.0], p25=[None, 23.0], p50=[None, 23.0], p75=[None, 23.0],
