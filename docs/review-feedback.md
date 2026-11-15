@@ -27,14 +27,17 @@ Both are fixed: the page has no switches for them (the user's call,
 
 - **Addressed feedback rate (AFR):** addressed reviewer threads per 100 new or changed
   lines, pooled over a set of CLs (all their addressed threads × 100 / all
-  their lines). Lines are Gerrit's insertions: a changed line counts once,
-  and deleted lines don't count (since 2026-11-14; see "Why deletions don't
-  count"). Moved files count by the lines changed, not as new: Gerrit's
-  counts mostly leave moves out already, and where Gerrit missed one (381k
-  lines in 1,141 CLs, 0.24% of all lines), the landed commit's insertions
-  with renamed files counted by their edits cap the CL's lines
-  (`move_free_ins`). CLs that only delete lines, or only move files, are
-  left out. The CLs are merged,
+  their lines). Lines are the landed commit's insertions: a changed line
+  counts once, and deleted lines don't count (since 2026-11-14; see "Why
+  deletions don't count"). Moved files count by the lines changed between
+  their names, not as new (`commits.moved_lines`). CLs that only delete
+  lines, or only move files, are left out. Until 2026-11-14 a CL's lines
+  were Gerrit's insertions, capped by the landed commit's where Gerrit
+  missed a move (`move_free_ins`), and split over directories by the
+  commit's; the commit's own count is 1.1% larger in all (96.1M lines
+  against 95.1M; 3,794 CLs differ by more than 10%), and switching moved 33
+  of 2,808 people with 25+ CLs by more than 10% (rank correlation 0.999).
+  The CLs are merged,
   human-owned CLs on `main` that are neither mechanical nor part of a
   large-scale change (the same CLs as the Review Balance page's feedback
   index, `docs/balance.md` section 4; mechanical and LSC CLs from
@@ -206,24 +209,28 @@ subdirectories has a "rest of" row for its own files. Each level shows its
 2026-11-14 the table has 2,938 entries. Once a person is shown, five
 **Yours** columns appear (lines, feedback, addressed, AFR, FI) and each
 level sorts by their lines: each of
-their units goes to its directory and parents, and to "rest of" or that
+their cells goes to its directory and parents, and to "rest of" or that
 level's "Other" where the table has no row for it. A row's FI is its
 addressed threads over its expected ones, so a parent adds up its children
 however they are shown; its tooltip gives the AFR expected on those lines
 for the person's experience and reviewers.
-Rows with fewer than `MIN_CLS` of the person's CLs show no AFR or FI of
-theirs. A row's Yours Feedback count links to Your feedback, filtered to
-that row: only the person's CLs with units counted there
-(`DirStats.units`), and only those units' lines, addressed threads and
-expected threads (`clShare`); a reviewer's listed threads are those whose
-file counts in one of those units (`unitOfPath`).
+A row's CLs are the person's CLs' shares there by lines (a CL with 3 of
+its 4 lines in a directory counts as 0.75 there), so a parent's CLs add up
+its children's. Rows with fewer than `MIN_CLS` of the person's CLs show no
+AFR or FI of theirs. A row's Yours Feedback count links to Your feedback,
+filtered to that row: the lines, addressed threads and expected threads of
+the 3-level directories counted there (`DirStats.dirs`), with each
+reviewer's CLs as shares too (shown rounded); a reviewer's listed threads are those
+counted in one of those directories (each thread's `dir` in the thread
+files).
 
 **Your feedback** (after an address is found), one section each:
 
 - *Your AFR:* a link to the opening chart (where the person's line is
   drawn) and a table per bin with CLs: when the person reached the bin ("As of": the first bin on their
   first commit, the others on the day their first CL in it landed, "by"
-  that day when that CL wasn't the bin's first commit; `binReached`), CLs,
+  that day when that CL wasn't the bin's first commit; `reached` in the
+  person's file, `bins_reached` in the script), CLs,
   lines, addressed threads, the person's AFR and the median AFR of all
   contributors there (`ref_bin`). The last row is all CLs.
 - *Your feedback index:* tiles for changes landed (and their lines),
@@ -257,7 +264,7 @@ file counts in one of those units (`unitOfPath`).
 - *Latest doubling* (the tile, `latestDoubling`): the % change in AFR from
   the person's second-newest to their newest bin with `MIN_BIN_CLS` CLs,
   per doubling when bins in between have too few, with the date they
-  reached the newer bin (`binReached`) and the typical change over the same
+  reached the newer bin (`reached`) and the typical change over the same
   bins (from `ref_bin`).
 - *Growth rate* (the opening growth chart): the % change in AFR per doubling of changes landed, from a
   least-squares line through log2 AFR by bin, each bin weighted by its CLs,
@@ -434,13 +441,12 @@ COSH_DATA_DIR=<main>/data/private nice -n 5 python3 -m cosh.review_feedback [--o
 
 It (`review-feedback`) reads `reviews.sqlite`, `commits.sqlite`,
 `addressed.sqlite` and config, and writes `peers.json`, `reviewers.json`,
-`u/` and the half-year folders. It reads no review tone or comment text,
+the per-person files and the CL index. It reads no review tone or comment text,
 and no `balance*.sqlite`, so refreshing the page
 needs none of the balance stages (timeline, interdiff, cl). The per-CL facts
 it needs (owner, status, Gerrit insertions, closing time, the landed
-commit's sha, and its lines per 3-level directory and in the files that
-drew threads, under today's names) come from `cosh.cl_facts` (`cl_facts`,
-and `cl_dirs` with `files`). First commits and mechanical CLs come from
+commit's sha, and its lines per 3-level directory under today's names)
+come from `cosh.cl_facts` (`cl_facts` and `cl_dirs`). First commits and mechanical CLs come from
 `commits.sqlite` (`docs/commits.md`).
 
 To take in an older backfill (back to 2017-07), let it finish, then run a
@@ -458,7 +464,10 @@ file that the page loads at different times: `peers.json` and
 Vite copies into the site), and the per-person files, gzipped, in
 `data/private/feedback-people/` (`--people-out`), which `python3 -m cosh.r2
 publish` uploads to the R2 bucket under `review-feedback/people/v2/`
-(`docs/r2.md`):
+(`docs/r2.md`). It also writes `data/private/feedback-cls.json.gz`
+(`--cls-out`, private, not published): each person's CLs per half-year with
+their approvers and the directory each of their threads counts in
+(`cl_index`), from which `cosh.review_threads` writes the comment files.
 
 - `peers.json` (global, loaded on opening; version 12, about 134 KB, 42 KB
   gzipped): the experience bins (`bins`, `bin_edges`), the index's rates
@@ -481,49 +490,50 @@ publish` uploads to the R2 bucket under `review-feedback/people/v2/`
   up (`attachReviewers`) and takes the person's CLs out of the sums
   (`leaveOut`); every figure about the person needs them.
   Rewritten on every run.
-- `<name>.json` (version 7), one file per person, loaded once an address
+- `<name>.json` (version 8), one file per person, loaded once an address
   is typed (one request): first commit (`first`, `first_day`), the org
-  most of their CLs were landed as, and `halves`, by half-year (`2017H2` …
-  `2026H2`) that half-year's CLs (`shard` in the script, whose docstring
-  has the layout). Each other address of the person is a stub
-  `{"see": <name>}`. Until 2026-11-14 this was a top file `u/<key>.json`
-  and one file per half-year (`review-feedback/people/v1/`), up to 20
-  requests of a few hundred bytes each for one lookup. A half-year's
-  CLs are each [change number and day landed, each less the previous
-  CL's; Gerrit's inserted lines; earlier commits on main; the landed
-  commit's inserted lines per 3-level directory; its approvers; and the
-  files that drew reviewer threads, each with its inserted lines, threads
-  and addressed threads], with directory and file names (today's) and
-  approvers' addresses listed once per half-year (`dirs`, `files`,
-  `revs`). Nothing else per CL: no org, no expected values, no per-thread
-  data. A file's threads count in its 3-level directory when that is one
-  of the CL's, else in the CL's main directory (the commit message, files
-  the landed commit didn't change).
+  most of their CLs were landed as, when they reached each experience bin
+  (`reached`: [day, exact] or null per bin), the days of their first and
+  last labelled CL (`days`), and `halves`: by half-year (`2017H2` …
+  `2026H2`), their labelled CLs as cells (`person_doc` and `half_cells` in
+  the script). A cell is every CL's share in one experience bin, 3-level
+  directory and set of approvers: [bin, directory, approvers, CLs in
+  thousandths, the landed commits' inserted lines, reviewer threads,
+  addressed threads], with directory names (today's) and approvers'
+  addresses listed once per half-year (`dirs`, `revs`). A CL is split over
+  its directories by lines, in thousandths that add up to 1,000
+  (`milli_fracs`), so whole half-years and bins add up to whole CLs. A
+  thread counts in its file's 3-level directory when the CL inserted lines
+  there, else in the CL's main directory (the commit message, files the
+  landed commit didn't change). No change numbers, days, files or
+  per-thread data. Each other address of the person is a stub
+  `{"see": <name>}`. Until 2026-11-14 the halves held each CL (version 7,
+  `shard`): its change number and day, Gerrit's lines, earlier commits,
+  lines per directory, approvers and the files that drew threads.
 
 The page computes a person's figures from these, the same way the script
 does for the spread of everyone's index: totals, AFR and FI for any period,
 and the growth rate, from the rounded rates and factors in `peers.json` and
 `reviewers.json`. `--check FILE` writes the script's values for 300
-people; on 2026-11-14, with the person's own CLs left out, the page's
-`buildPerson`, `attachReviewers`, `sums` and `fiOf` matched all 3,475 of them exactly
+people; on 2026-11-14, from the cells (files v8), with the person's own CLs left out, the page's
+`buildPerson`, `attachReviewers`, `sums` and `fiOf` matched all 3,448 of them exactly
 (FI, CLs, addressed threads and lines per period), every approver found
-by `reviewerKey`.
+by `reviewerKey`, and every growth rate.
 
 So a person's file changes only when they land a CL (or an input changes:
 labels, mechanical list, identity merge, today's names of moved paths,
 approvers). Reviewer factors live in `reviewers.json`, not in these files,
 so they can change every week without rewriting anyone's file. Each run
 rewrites `peers.json` and `reviewers.json` and the files of people with
-CLs in the current half-year (about 1,900 files, 18 MB gzipped in
-2026H2), which the next publish uploads.
+CLs in the current half-year (1,871 files, 8.8 MB gzipped in 2026H2;
+18 MB before cells), which the next publish uploads.
 
-Sizes on 2026-11-14 (6,862 people, 122 stubs), gzipped file by file as git
-stores them: 37.6 MB for the 19 half-year folders (32,676 files; 31.8 MB
-before approvers were added, the same day), 1.0 MB for `u/`, 42 KB for
-`peers.json` and 34 KB for `reviewers.json` (51 KB once it gained each
-reviewer's sums): 39 MB in all, 110 MB
-unpacked. Each run writes only the per-person files that changed and
-removes those no longer written.
+Sizes on 2026-11-14 (7,142 people, 803 stubs), gzipped file by file:
+14.8 MB for the per-person files (7,945 files; 29 MB with each CL, and
+before they were joined into one per person 37.6 MB for the half-year
+files and 1.0 MB for `u/`), 42 KB for `peers.json` and 51 KB for
+`reviewers.json`; the private CL index is 35 MB. Each run writes only the
+per-person files that changed and removes those no longer written.
 
 **Published** (the user's call, 2026-11-12): from 2026-11-12 to 2026-11-14
 the whole folder was committed and served by GitHub Pages; since then
@@ -548,6 +558,22 @@ as differences 1.5 MB. Naming every file of every CL would have cost
 58 MB (6.1 files per CL, 1.1 with threads), so only the files that drew
 threads are named. Comment ids are random and cost about 1.3 MB per
 half-year, so they start in 2023 (23 MB for all years; the user's call).
+
+**Cells, not changes** (2026-11-14, files v8; the user's call). Every
+figure about a person sums over lines, threads and addressed threads per
+experience bin, directory and approvers: the page never needs a CL as
+such. Fitting the index on such cells instead of CLs gave every person
+the same index (rank correlation 1.0000, nobody moved). Two other ways of
+counting were tried and not taken: crediting each addressed thread to the
+approver who wrote it (about 90% of them; the rest come from someone who
+commented but didn't approve) moved 1,141 of 2,808 people by more than 10%,
+spread reviewer factors (0.43–1.88 against 0.59–1.51 at the 10th–90th
+percentile) and made the index less consistent between a person's odd and
+even CLs (0.742 against 0.753); counting only approvers' threads dropped 14%
+of newcomers' addressed feedback but 6% of experts', and would let an
+author lower their index by choosing who approves. So a CL's threads still
+count equally for each of its approvers. Scripts and results:
+`data/private/scratch/feedback-edges/`.
 
 ## Downloading your comments
 
@@ -582,8 +608,8 @@ python3 -m cosh.r2 publish review-feedback/threads/v2   # from the main checkout
 ```
 
 `cosh.review_threads` (step `review-threads`, after `review-feedback`) reads
-the per-person files (`data/private/feedback-people/`) for each
-person's changes, `reviews.sqlite`
+the CL index (`data/private/feedback-cls.json.gz`) for each person's
+changes and the directory each thread counts in, `reviews.sqlite`
 (subjects, owners, accounts, which threads were addressed), `addressed.sqlite`
 and the NoteDb repos (comment text, file, line, patch set, resolved), and
 writes `data/private/review-threads/<half>/<name>.json.gz`, byte for byte

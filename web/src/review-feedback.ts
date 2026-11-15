@@ -8,11 +8,9 @@ import { readTheme, withAlpha, type Theme } from './charts.ts';
 import {
   afrShade,
   attachReviewers,
-  binReached,
   binSums,
   buildPerson,
-  clsIn,
-  clsInDir,
+  cellsIn,
   dirTable,
   fiOf,
   fr,
@@ -23,20 +21,19 @@ import {
   isoDay,
   latestDoubling,
   looksLikeEmail,
+  noApproverCls,
   noneFactor,
   percentileOf,
   periodSpan,
   personFile,
   isPersonFile,
   halvesOf,
-  shardsOf,
   type PersonFile,
   quantile,
   ratioShade,
   reviewerRows,
   sums,
   tableRows,
-  unitOfPath,
   reviewerComments,
   threadsMarkdown,
   threadsUrl,
@@ -82,8 +79,8 @@ const state = {
   /** The half-year picked in the over-time chart, filtering "Your feedback". */
   half: null as string | null,
   /** The directory-table row picked by its Yours Feedback count, filtering "Your feedback": its key, its
-   * name for the filter's text, and its changes' units there. */
-  dir: null as { key: string; name: string; units: DirFilter } | null,
+   * name for the filter's text, and the 3-level directories counted there. */
+  dir: null as { key: string; name: string; dirs: DirFilter } | null,
   /** The person's thread files (R2) by half-year, fetched when a reviewer is first opened or for the
    * download; null for a half-year with none. */
   threads: new Map<string, Promise<ThreadFile | null>>(),
@@ -234,13 +231,13 @@ async function lookup(raw: string) {
     ]);
     // One file per person, with every half-year they landed changes in.
     const halvesOk = top ? halvesOf(top.file).every((h) => /^\d{4}H[12]$/.test(h)) : false;
-    const found = top && peers && reviewers && halvesOk ? buildPerson(top.file, shardsOf(top.file), peers) : null;
+    const found = top && peers && reviewers && halvesOk ? buildPerson(top.file) : null;
     // Every figure about the person needs their reviewers' factors.
     if (found) await attachReviewers(found, reviewers!, peers!);
     state.peers = peers;
     state.reviewers = reviewers;
     window.__rf!.peers = peers;
-    if (!found || !peers || !clsIn(found, ALL).length) {
+    if (!found || !peers || !found.days || !found.cells.length) {
       put(note, 'find-none', rangeVars(peers));
       return;
     }
@@ -254,8 +251,8 @@ async function lookup(raw: string) {
     window.__rf!.half = null;
     state.dir = null;
     state.allExpanded = new Set();
-    const cs = clsIn(found, ALL);
-    put(note, 'find-done', { n: fmtInt(cs.length), from: dayLabel(cs[0][1]), to: dayLabel(cs.at(-1)![1]) });
+    const n = sums(found, peers, found.cells).cls;
+    put(note, 'find-done', { n: fmtInt(n), from: dayLabel(found.days[0]), to: dayLabel(found.days[1]) });
     $('#rf-person').hidden = false;
     setupDownload();
     render();
@@ -393,7 +390,7 @@ function renderFiDist() {
       borderDash: dash, pointRadius: 0, pointHoverRadius: 0, fill: false });
   // The person's index over all their changes.
   const p = state.person;
-  const you = p ? fiOf(sums(p, peers, clsIn(p, ALL))) : null;
+  const you = p ? fiOf(sums(p, peers, p.cells)) : null;
   lineLegend($('#rf-fi-legend'), [{ label: msg('legend-fi'), color: t.series[0] },
     { label: msg('legend-fi-marks'), color: t.muted, dash: true },
     ...(you !== null ? [{ label: msg('legend-you-value', { v: fmtFi(you) }), color: youColor(t) }] : [])]);
@@ -511,7 +508,7 @@ function dirFilterLink(n: TableNode, text: string): HTMLAnchorElement {
   const a = el('a', text, 'rf-dir-filter-link');
   a.href = '#feedback';
   a.title = msg('dirs-filter-title');
-  a.addEventListener('click', () => setDir({ key: n.key, name: dirFilterName(n), units: n.you.units }));
+  a.addEventListener('click', () => setDir({ key: n.key, name: dirFilterName(n), dirs: n.you.dirs }));
   return a;
 }
 
@@ -782,7 +779,7 @@ function renderSizes() {
 
 function render() {
   if (!state.person || !state.peers) return;
-  if (state.half && !clsIn(state.person, state.half).length) state.half = null;
+  if (state.half && !cellsIn(state.person, state.half).length) state.half = null;
   window.__rf!.half = state.half;
   renderSummary();
   renderTrend();
@@ -793,8 +790,7 @@ function render() {
 function renderSummary() {
   const p = state.person!;
   const peers = state.peers!;
-  const cs = clsIn(p, ALL);
-  const s = sums(p, peers, cs);
+  const s = sums(p, peers, p.cells);
   const fi = fiOf(s);
   const eligible = s.cls >= peers.min_cls;
   put($('#summary-sub'), 'summary-sub', { ...rangeVars(peers), eligible, minCls: fmtInt(peers.min_cls) });
@@ -829,9 +825,9 @@ function renderTrend() {
   const range = rangeOf(peers);
   const all = halves(peers.periods).filter((h) => { const [a, b] = periodSpan(h, range); return a < b; });
   // From the half-year of their first change in the data.
-  const firstDay = clsIn(p, ALL)[0][1];
+  const firstDay = p.days![0];
   const hs = all.filter((h) => periodSpan(h, range)[1] > firstDay);
-  const per = hs.map((h) => sums(p, peers, clsIn(p, h)));
+  const per = hs.map((h) => sums(p, peers, cellsIn(p, h)));
   const you = per.map((s) => (s.cls ? fiOf(s) : null));
   const full = per.map((s) => s.cls >= peers.min_cls);
   const q = (h: string, f: number) => { const d = peers.fi[h]; return d?.q ? quantile(d.q, f) : null; };
@@ -922,7 +918,7 @@ function renderXpTable() {
   // The table: the bins with changes, when the person reached each, and everyone's median there.
   const body = $('#rf-xp-table tbody');
   body.replaceChildren();
-  const reached = binReached(p, peers.bin_edges);
+  const reached = p.reached;
   bins.forEach((s, b) => {
     if (!s.cls) return;
     const r = reached[b];
@@ -934,7 +930,7 @@ function renderXpTable() {
       el('td', fmtInt(s.addressed), 'num'), el('td', fmtFr(frOf(s)), 'num'), el('td', fmtFr(peers.ref_bin[b]), 'num'));
     body.append(tr);
   });
-  const tot = sums(p, peers, clsIn(p, ALL));
+  const tot = sums(p, peers, p.cells);
   const cells = ['', fmtInt(tot.cls), fmtInt(tot.lines), fmtInt(tot.addressed), fmtFr(frOf(tot)), '–'];
   $('#rf-xp-table tfoot tr').querySelectorAll('td').forEach((td, i) => (td.textContent = cells[i]));
   put($('#rf-xp-note'), 'experience-note');
@@ -954,7 +950,7 @@ function renderReviewers() {
   dirFilter.hidden = !dir;
   if (dir) put(dirFilter.querySelector('.rf-filter-name')!, 'dir-filter', { dir: dir.name });
   // Only reviewers whose approvals drew addressed comments: the comments are what this lists.
-  const rows = reviewerRows(p, peers, period, dir?.units).filter((r) => r.addressed > 0);
+  const rows = reviewerRows(p, peers, period, dir?.dirs).filter((r) => r.addressed > 0);
   const body = $('#rf-revs tbody');
   body.replaceChildren();
   for (const r of rows) {
@@ -972,15 +968,16 @@ function renderReviewers() {
     label.append(b, el('span', r.email));
     th.append(label);
     const few = r.cls < peers.min_bin_cls;
-    tr.append(th, el('td', fmtInt(r.cls), 'num'), el('td', fmtInt(r.addressed), 'num'),
+    // Under a directory filter a reviewer's changes are shares there; shown whole.
+    tr.append(th, el('td', fmtInt(Math.round(r.cls)), 'num'), el('td', fmtInt(r.addressed), 'num'),
       el('td', few ? '–' : fmtFr(fr(r.addressed, r.lines)), 'num'),
       el('td', fmtFi(r.factor), 'num'), el('td', fmtInt(r.approved), 'num'),
       few ? el('td', '–', 'num') : fiCell(r.expected > 0 ? r.addressed / r.expected : null));
     body.append(tr);
     if (open) body.append(reviewerCommentsRow(r.email));
   }
-  const none = clsInDir(p, period, dir?.units).filter((c) => !c[6].length).length;
-  put($('#rf-revs-note'), 'revs-note', { n: fmtInt(rows.length), dir: !!dir, none: fmtInt(none), hasNone: none > 0,
+  const none = noApproverCls(p, period, dir?.dirs);
+  put($('#rf-revs-note'), 'revs-note', { n: fmtInt(rows.length), dir: !!dir, none: fmtInt(Math.round(none)), hasNone: none >= 0.5,
     noneF: fmtFi(noneFactor(p, peers)), min: fmtInt(peers.min_bin_cls) });
 }
 
@@ -1001,7 +998,7 @@ function loadThreads(h: string): Promise<ThreadFile | null> {
       if (r.status === 404) return null;
       if (!r.ok) throw new Error(`${h}: ${r.status}`);
       const f = (await r.json()) as ThreadFile;
-      if ((f?.v !== 1 && f?.v !== 2) || f.half !== h || !Array.isArray(f.cls)) throw new Error(`${h}: unexpected file`);
+      if (f?.v !== 3 || f.half !== h || !Array.isArray(f.cls)) throw new Error(`${h}: unexpected file`);
       return f;
     })();
     // A failed fetch is tried again next time.
@@ -1027,18 +1024,7 @@ function reviewerCommentsRow(email: string): HTMLTableRowElement {
   void Promise.all(hs.map(loadThreads)).then((files) => {
     if (state.key !== key || state.half !== half || state.dir !== dir || !td.isConnected) return;
     const fs = files.filter((f): f is ThreadFile => f !== null);
-    if (fs.length && fs.every((f) => !f.reviewers)) {
-      put(td, 'rev-no-emails');
-      return;
-    }
-    const p = state.person!;
-    const byCl = new Map(p.cls.map((c) => [c[0], c]));
-    const keep = dir ? (cl: number, path: string) => {
-      const units = dir.units.get(cl);
-      const c = byCl.get(cl);
-      return !!units && !!c && units.includes(unitOfPath(p, c, path));
-    } : undefined;
-    const list = reviewerComments(fs, email, keep);
+    const list = reviewerComments(fs, email, dir?.dirs);
     if (!list.length) {
       put(td, 'rev-none', { half: half ? halfName(half) : '', dir: dir?.name ?? '' });
       return;

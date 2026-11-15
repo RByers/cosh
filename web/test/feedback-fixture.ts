@@ -1,7 +1,7 @@
 // A made-up person and peer file for the Review Feedback tests, shaped like
-// cosh/review_feedback.py's output: one file per person, by half-year. The
+// cosh/review_feedback.py's output: one file per person, by half-year, as cells. The
 // browser tests serve these instead of the committed data.
-import type { PersonFile, Peers, ReviewerTable, Shard } from '../src/feedback.ts';
+import type { Half, PersonFile, Peers, ReviewerTable } from '../src/feedback.ts';
 
 /** personFile('Test.Person@chromium.org'), as the Python script computes it. */
 export const FIXTURE_EMAIL = 'Test.Person@chromium.org';
@@ -14,32 +14,31 @@ const q = (lo: number, hi: number) => Array.from({ length: 21 }, (_, i) => Math.
 export const day = (s: string) => Math.floor(Date.parse(`${s}T00:00:00Z`) / 86_400_000);
 
 
-/** Three changes, one per half-year. Each file lists its own names, in its own order. A change is
- * [number less the previous one's (the first: itself), day likewise, lines, earlier commits on main,
- * units, approvers, files that drew comments]; units are [[directory, the landed commit's lines there],
- * ...] or the directory alone; approvers are indexes in `revs`; files are [file, lines there, threads,
- * addressed], by name. The first change was approved by Alice, the second by Alice and Bob, the third by
- * no one. */
-export const shards: Record<string, Shard> = {
-  '2025H2': { dirs: ['chrome/browser/ui/'], files: ['/COMMIT_MSG', 'chrome/browser/ui/view.cc'],
-    revs: ['alice@google.com'],
-    cls: [[1000001, day('2025-10-01'), 40, 30, 0, [0], [[0, 0, 1, 0], [1, 30, 1, 1]]]] },
-  '2026H1': { dirs: ['content/browser/', 'chrome/browser/ui/'], files: ['content/browser/frame.cc'],
-    revs: ['alice@google.com', 'bob@igalia.com'],
-    cls: [[1000002, day('2026-03-11'), 120, 80, [[0, 90], [1, 28]], [0, 1], [[0, 50, 1, 1]]]] },
-  // A file in a subdirectory of its 3-level directory, and an unlabelled thread on the commit message.
-  '2026H2': { dirs: ['third_party/blink/renderer/'], files: ['/COMMIT_MSG', 'third_party/blink/renderer/core/a.cc'],
-    revs: [],
-    cls: [[1000003, day('2026-09-03'), 10, 260, 0, [], [[0, 0, 1, 0], [1, 8, 1, 1]]]] },
+/** Three changes, one per half-year, as cells (cosh/review_feedback.py `half_cells`). Each half-year
+ * lists its own names, sorted. A cell is [experience bin, directory, approvers (indexes in `revs`), changes
+ * in thousandths, lines, reviewer threads, addressed threads]. The first change (30 earlier commits: bin
+ * "32") was approved by Alice: 40 lines in chrome/browser/ui/, a thread on the commit message and an
+ * addressed one on a file. The second (80: "128") by Alice and Bob: 90 lines in content/browser/ with an
+ * addressed thread and 28 in chrome/browser/ui/, so 763 and 237 thousandths of it. The third (260: "512")
+ * by no one: 10 lines in third_party/blink/renderer/, with an addressed thread on a file and an
+ * unlabelled one on the commit message. */
+export const halves: Record<string, Half> = {
+  '2025H2': { dirs: ['chrome/browser/ui/'], revs: ['alice@google.com'], cells: [[2, 0, [0], 1000, 40, 2, 1]] },
+  '2026H1': { dirs: ['chrome/browser/ui/', 'content/browser/'], revs: ['alice@google.com', 'bob@igalia.com'],
+    cells: [[4, 0, [0, 1], 237, 28, 0, 0], [4, 1, [0, 1], 763, 90, 1, 1]] },
+  '2026H2': { dirs: ['third_party/blink/renderer/'], revs: [], cells: [[6, 0, [], 1000, 10, 2, 1]] },
 };
 
-/** The person's file: who they are and the three half-years above. */
+/** The person's file: who they are, when they reached each bin, and the three half-years above. */
 export const top: PersonFile = {
-  v: 7,
+  v: 8,
   first: '2022-03',
   first_day: day('2022-03-01'),
   org: 'google.com',
-  halves: shards,
+  reached: [null, null, [day('2025-10-01'), false], null, [day('2026-03-11'), false], null, [day('2026-09-03'), false],
+    null, null, null],
+  days: [day('2025-10-01'), day('2026-09-03')],
+  halves,
 };
 
 /** reviewers.json: Alice's approvals draw 1.2× what experience predicts, Bob's 0.6×, and changes

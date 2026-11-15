@@ -52,7 +52,7 @@ Claude (Haiku): classify, comments-score, tone-publish's screening              
   review-feedback   ─▶ Feedback Index global data ─────────────────────┬─▶ Feedback Index
   (cosh.review_feedback) ─▶ per-person files ─ r2-feedback ─▶ in R2 ──┤
   review-threads ─▶ full threads ─ r2-feedback ─▶ threads in R2 ──────┘
-  (per-person files + NoteDb + reviews.sqlite + addressed.sqlite)
+  (its CL index + NoteDb + reviews.sqlite + addressed.sqlite)
   review-timeline   ─▶ review-timeline.sqlite ─ review-load ─▶ all.json ─────────────────▶ Review Load
   (NoteDb + listings + reviews.sqlite)          (+ commits.sqlite) └▶ per-reviewer files ─ r2-review-load ─▶ in R2 ─┘
 ```

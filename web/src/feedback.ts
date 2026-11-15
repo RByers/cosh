@@ -10,68 +10,62 @@
 // experience (CLs landed on main, in power-of-two bins), times the change's
 // reviewer factor (how much feedback its approvers' approvals usually draw), both
 // from everyone else's changes: `leaveOut` takes the person's own changes out of
-// the sums in peers.json and reviewers.json (loaded with the person).
+// the sums in peers.json and reviewers.json (loaded with the person). A person's
+// file holds no changes, only cells: their lines, reviewer threads and addressed
+// threads per half-year, experience bin, directory and set of approvers, which is
+// all every figure needs.
 
 import { r2Url, THREADS } from './r2.ts';
 
-/** A change's lines in one 3-level directory: [directory index, the landed commit's inserted lines there]. */
-export type Unit = [number, number];
-/** A file of a change that drew reviewer threads: [file index, the landed commit's inserted lines in it
- * (0: the commit message, or a file it didn't change), threads, addressed, the unit its threads count in
- * (index in the change's units)]. */
-export type FileFb = [number, number, number, number, number];
-/** A change, as the page holds it: [change number, day landed (days since 1970), lines (Gerrit's
- * insertions), units, files that drew threads, the owner's earlier commits on main, its approvers
- * (indexes in `Person.revs`)]. */
-export type ClRow = [number, number, number, Unit[], FileFb[], number, number[]];
+/** A cell of a half-year (cosh/review_feedback.py `half_cells`): every change's share in one experience
+ * bin, 3-level directory and set of approvers, as [bin, directory (index in `dirs`), approvers (indexes in
+ * `revs`), changes in thousandths (each change split over its directories by lines), the landed commits'
+ * inserted lines, reviewer threads, addressed threads]. */
+export type FileCell = [number, number, number[], number, number, number, number];
 
-/** A change in a half-year file (cosh/review_feedback.py `shard`): [change number less the previous
- * change's (the first: itself), day landed less the previous change's (the first: days since 1970),
- * lines, earlier commits on main, units, approvers(, files)]. Units are [[directory, lines], ...], or the
- * directory alone for a change wholly in one. Approvers are indexes in the file's `revs`. Files are
- * [file, lines, threads, addressed]: only those that drew reviewer threads; a file's threads count in its
- * 3-level directory when that is one of the units, else in the first. */
-export type FileRow = [number, number, number, number, number | [number, number][], number[],
-  [number, number, number, number][]?];
+/** One half-year of a person's file, with names listed once. */
+export interface Half {
+  dirs: string[];
+  /** The approvers' addresses. */
+  revs: string[];
+  cells: FileCell[];
+}
 
-/** <name>.json: who the person is and their changes, per half-year. */
+/** <name>.json: who the person is, and their changes as cells, per half-year. */
 export interface PersonFile {
-  v: 7;
+  v: 8;
   first: string | null;
   /** First commit on main, as a day number. */
   first_day: number | null;
   /** The org most of their changes were landed as. */
   org: string | null;
-  /** Each half-year ("2026H1") they landed changes in: those changes. */
-  halves: Record<string, Shard>;
+  /** When they reached each experience bin, as [day, exact]: the first bin on their first commit on
+   * main, the others when their first change in the bin landed. Exact when that change was the bin's
+   * first commit; otherwise they got there earlier (commits outside the data), by that day. null: no
+   * change of theirs in the bin. */
+  reached: ([number, boolean] | null)[];
+  /** The days their first and last labelled change landed (null: none). */
+  days: [number, number] | null;
+  /** Each half-year ("2026H1") they landed labelled changes in. */
+  halves: Record<string, Half>;
 }
-
-/** Who the person is, without their changes. */
-export type Top = Pick<PersonFile, 'first' | 'first_day' | 'org'>;
 
 /** The half-years a person's file has, oldest first. */
 export const halvesOf = (f: PersonFile) => Object.keys(f.halves).sort();
-/** A person's half-year shards, oldest first. */
-export const shardsOf = (f: PersonFile) => halvesOf(f).map((h) => f.halves[h]);
 
-/** One half-year's changes, with names listed once. */
-export interface Shard {
-  dirs: string[];
-  files: string[];
-  /** The approvers' addresses. */
-  revs: string[];
-  cls: FileRow[];
-}
+/** A cell as the page holds it: [half-year (index in `Person.halves`), experience bin, directory (index in
+ * `Person.dirs`), approvers (indexes in `Person.revs`), changes in thousandths, lines, reviewer threads,
+ * addressed threads]. */
+export type Cell = [number, number, number, number[], number, number, number, number];
 
-/** A person's files merged. */
 export interface Person {
-  /** The first day (days since 1970) of the changes with addressed labels. */
-  addrStart: number;
   first: string | null;
   firstDay: number | null;
   org: string | null;
+  reached: ([number, boolean] | null)[];
+  days: [number, number] | null;
+  halves: string[];
   dirs: string[];
-  files: string[];
   /** Everyone who approved one of the person's changes (Reviewed-by), and each one's reviewer factor
    * (from everyone else's changes) and changes approved over all the data (`attachReviewers`; 1 and 0 until
    * then). */
@@ -82,7 +76,7 @@ export interface Person {
    * approver, the person's own changes left out (`leaveOut`; null until then: everyone's). */
   rateBin: number[] | null;
   revNone: number | null;
-  cls: ClRow[];
+  cells: Cell[];
 }
 
 /** reviewers.json: per reviewer, by `reviewerKey` of their address, [their
@@ -221,15 +215,6 @@ export async function reviewerKey(raw: string): Promise<string> {
 /** A day number (days since 1970-01-01) as 'YYYY-MM-DD'. */
 export const isoDay = (day: number) => new Date(day * DAY_MS).toISOString().slice(0, 10);
 
-/** Whether a change landed on `day` falls in `period` ("all", "2025", "2025H2"). */
-export function inPeriod(day: number, period: string): boolean {
-  if (period === 'all') return true;
-  const d = new Date(day * DAY_MS);
-  const y = String(d.getUTCFullYear());
-  if (period.length === 4) return period === y;
-  return period === `${y}H${d.getUTCMonth() < 6 ? 1 : 2}`;
-}
-
 /** A period's days [from, to): all of `range` for "all", else the year or half-year cut to it. */
 export function periodSpan(period: string, range: [number, number]): [number, number] {
   if (period === 'all') return range;
@@ -291,26 +276,9 @@ export function dir1(d: string): string {
   return p.length ? `${p[0]}/` : d;
 }
 
-/** Each unit's fraction of its change's lines: by the lines there, or equally where the landed commit
- * inserted none (cosh/review_feedback.py `unit_fracs`). */
-export function unitFracs(units: Unit[]): number[] {
-  const s = units.reduce((a, u) => a + u[1], 0);
-  return units.map((u) => (s > 0 ? u[1] / s : 1 / units.length));
-}
-
-/** The addressed threads on a change, and all its reviewer threads. */
-export const addressedOn = (c: ClRow) => c[4].reduce((s, f) => s + f[3], 0);
-export const threadsOn = (c: ClRow) => c[4].reduce((s, f) => s + f[2], 0);
-/** A unit's threads and addressed threads: those of the files whose threads count in it. */
-function unitCounts(c: ClRow, i: number): [number, number] {
-  let t = 0;
-  let a = 0;
-  for (const f of c[4]) if (f[4] === i) (t += f[2], a += f[3]);
-  return [t, a];
-}
-
-/** The changes landed in `period` that have addressed labels: the ones every measure counts. */
-export const clsIn = (p: Person, period: string) => p.cls.filter((c) => c[1] >= p.addrStart && inPeriod(c[1], period));
+/** The person's cells in `period` ("all" or a half-year; a year takes its two halves). */
+export const cellsIn = (p: Person, period: string) => (period === 'all' ? p.cells
+  : p.cells.filter((c) => p.halves[c[0]] === period || (period.length === 4 && p.halves[c[0]].startsWith(period))));
 
 /** A 3-level directory and its parents, deepest first, then "" (all of them)
  * (cosh/review_feedback.py `dir_levels`). */
@@ -322,30 +290,20 @@ export function dirLevels(d: string): string[] {
   return out;
 }
 
-/** The half-year ("2026H2") of a day number. */
-export function halfOf(day: number): string {
-  const d = new Date(day * DAY_MS);
-  return `${d.getUTCFullYear()}H${d.getUTCMonth() < 6 ? 1 : 2}`;
-}
-
-/** A change's reviewer factor: its approvers' mean factor, or `rev_none` without one
+/** A cell's reviewer factor: its approvers' mean factor, or `rev_none` without one
  * (cosh/review_feedback.py `rev_factor`), the person's own changes left out where their file says. */
-export function revFactor(p: Person, peers: Pick<Peers, 'rev_none'>, c: ClRow): number {
-  const r = c[6];
+export function revFactor(p: Person, peers: Pick<Peers, 'rev_none'>, c: Cell): number {
+  const r = c[3];
   return r.length ? r.reduce((a, i) => a + p.revF[i], 0) / r.length : noneFactor(p, peers);
 }
 
 /** The factor of the person's changes without an approver. */
 export const noneFactor = (p: Person, peers: Pick<Peers, 'rev_none'>) => p.revNone ?? peers.rev_none;
 
-/** The addressed threads each unit of a change would draw (cosh/review_feedback.py `unit_expected`):
- * its lines / 100 × everyone else's AFR at the change's experience × its reviewer factor × the scale. */
-export function unitExpected(p: Person, peers: Peers, c: ClRow): number[] {
-  const rate = (p.rateBin ?? peers.rate_bin)[xbin(peers.bin_edges, c[5])];
-  const g = revFactor(p, peers, c);
-  const fr_ = unitFracs(c[3]);
-  return c[3].map((_, i) => (c[2] * fr_[i] / 100) * rate * g * peers.scale);
-}
+/** The addressed threads a cell would draw (cosh/review_feedback.py `unit_expected`): its lines / 100 ×
+ * everyone else's AFR at its experience × its reviewer factor × the scale. */
+export const cellExpected = (p: Person, peers: Peers, c: Cell) =>
+  (c[5] / 100) * (p.rateBin ?? peers.rate_bin)[c[1]] * revFactor(p, peers, c) * peers.scale;
 
 /** Looks up the person's approvers in reviewers.json (by `reviewerKey`), then
  * leaves the person's own changes out of what theirs are compared with (`leaveOut`). */
@@ -364,29 +322,27 @@ export async function attachReviewers(p: Person, table: ReviewerTable, peers: Pe
  * entries in reviewers.json, in `p.revs` order (`p.revF` still everyone's). */
 export function leaveOut(p: Person, peers: Peers, table: ReviewerTable,
   rows: ([number, number, number, number] | undefined)[]): void {
-  const cs = clsIn(p, 'all');
-  const bins = cs.map((c) => xbin(peers.bin_edges, c[5]));
   const mine = peers.rate_sums.map(() => [0, 0]);
   let addressed = 0;
   let expected = 0;
-  cs.forEach((c, i) => {
-    const a = addressedOn(c);
-    mine[bins[i]][0] += c[2];
-    mine[bins[i]][1] += a;
-    addressed += a;
-    expected += c[2] / 100 * peers.rate_bin[bins[i]] * revFactor(p, peers, c) * table.norm;
-  });
+  for (const c of p.cells) {
+    mine[c[1]][0] += c[5];
+    mine[c[1]][1] += c[7];
+    addressed += c[7];
+    expected += c[5] / 100 * peers.rate_bin[c[1]] * revFactor(p, peers, c) * table.norm;
+  }
   const k = table.shrink;
   const fa = (addressed + k) / (expected + k);
+  // A change with several approvers counts a share for each, as in the fit.
   const obs = new Map<number, number>();
   const exp = new Map<number, number>();
-  cs.forEach((c, i) => {
-    const vs = c[6].length ? c[6] : [-1];
+  for (const c of p.cells) {
+    const vs = c[3].length ? c[3] : [-1];
     for (const v of vs) {
-      obs.set(v, (obs.get(v) ?? 0) + addressedOn(c) / vs.length);
-      exp.set(v, (exp.get(v) ?? 0) + c[2] / 100 * peers.rate_bin[bins[i]] * fa / vs.length);
+      obs.set(v, (obs.get(v) ?? 0) + c[7] / vs.length);
+      exp.set(v, (exp.get(v) ?? 0) + c[5] / 100 * peers.rate_bin[c[1]] * fa / vs.length);
     }
-  });
+  }
   const factor = ([o, e]: [number, number], v: number) =>
     (Math.max(o - (obs.get(v) ?? 0), 0) + k) / (Math.max(e - (exp.get(v) ?? 0), 0) + k) / table.norm;
   p.revF = p.revF.map((f, i) => (obs.has(i) ? factor([rows[i]?.[2] ?? 0, rows[i]?.[3] ?? 0], i) : f));
@@ -395,73 +351,49 @@ export function leaveOut(p: Person, peers: Peers, table: ReviewerTable,
     lines - mine[b][0] > 0 ? fr(a - mine[b][1], lines - mine[b][0])! : peers.rate_bin[b]);
 }
 
-/** One of the person's approvers, over the person's labelled changes in a period. */
+/** One of the person's approvers, over the person's changes in a period. */
 export interface ReviewerRow {
   email: string;
   factor: number;
   /** Changes they approved, of everyone's. */
   approved: number;
+  /** The person's changes they approved (with a directory filter, the share of them in it). */
   cls: number;
   lines: number;
   addressed: number;
   expected: number;
 }
 
-/** A filter to one row of the directory table (`DirStats.units`): per change number, the indexes of
- * its units counted there. */
-export type DirFilter = ReadonlyMap<number, readonly number[]>;
+/** A filter to one row of the directory table: the 3-level directories counted there (`DirStats.dirs`). */
+export type DirFilter = ReadonlySet<string>;
 
-/** A change's lines, addressed threads and expected ones: all of them, or only those of `units`. */
-export function clShare(p: Person, peers: Peers, c: ClRow, units?: readonly number[]): { lines: number; addressed: number; expected: number } {
-  if (!units) return { lines: c[2], addressed: addressedOn(c), expected: expectedOn(p, peers, c) };
-  const fracs = unitFracs(c[3]);
-  const exps = unitExpected(p, peers, c);
-  let lines = 0;
-  let addressed = 0;
-  let expected = 0;
-  for (const i of units) {
-    lines += c[2] * fracs[i];
-    addressed += unitCounts(c, i)[1];
-    expected += exps[i];
-  }
-  return { lines, addressed, expected };
-}
-
-/** The changes landed in `period` with addressed labels, only those in `dir`'s row when one is given. */
-export const clsInDir = (p: Person, period: string, dir?: DirFilter | null) =>
-  clsIn(p, period).filter((c) => !dir || dir.has(c[0]));
-
-/** The unit a thread on `path` counts in, as `buildPerson` assigns files: the file's own unit when the
- * change lists it, else the unit of the file's 3-level directory, else the first (the commit message). */
-export function unitOfPath(p: Person, c: ClRow, path: string): number {
-  const f = c[4].find((x) => p.files[x[0]] === path);
-  if (f) return f[4];
-  if (path.startsWith('/')) return 0;
-  const d = dirOf(path);
-  const i = c[3].findIndex((u) => p.dirs[u[0]] === d);
-  return i < 0 ? 0 : i;
-}
+/** The cells of `period`, only those in `dir`'s row when one is given. */
+export const cellsInDir = (p: Person, period: string, dir?: DirFilter | null) =>
+  cellsIn(p, period).filter((c) => !dir || dir.has(p.dirs[c[2]]));
 
 /** The person's approvers in `period`, most of the person's changes first (a change with several
- * approvers counts for each); with `dir`, only the changes' lines and threads in that directory row. */
+ * approvers counts for each); with `dir`, only the lines and threads in that directory row. */
 export function reviewerRows(p: Person, peers: Peers, period: string, dir?: DirFilter | null): ReviewerRow[] {
-  const rows = new Map<number, ReviewerRow>();
-  for (const c of clsInDir(p, period, dir)) {
-    const { lines, addressed: a, expected: e } = clShare(p, peers, c, dir?.get(c[0]));
-    for (const i of c[6]) {
+  const rows = new Map<number, ReviewerRow & { milli: number }>();
+  for (const c of cellsInDir(p, period, dir)) {
+    const e = cellExpected(p, peers, c);
+    for (const i of c[3]) {
       let r = rows.get(i);
-      if (!r) rows.set(i, (r = { email: p.revs[i], factor: p.revF[i], approved: p.revCls[i], cls: 0, lines: 0,
-        addressed: 0, expected: 0 }));
-      r.cls += 1;
-      r.lines += lines;
-      r.addressed += a;
+      if (!r) rows.set(i, (r = { email: p.revs[i], factor: p.revF[i], approved: p.revCls[i], cls: 0, milli: 0,
+        lines: 0, addressed: 0, expected: 0 }));
+      r.milli += c[4];
+      r.lines += c[5];
+      r.addressed += c[7];
       r.expected += e;
     }
   }
-  return [...rows.values()].sort((x, y) => y.cls - x.cls || y.lines - x.lines || x.email.localeCompare(y.email));
+  return [...rows.values()].map(({ milli, ...r }) => ({ ...r, cls: milli / 1000 }))
+    .sort((x, y) => y.cls - x.cls || y.lines - x.lines || x.email.localeCompare(y.email));
 }
 
-export const expectedOn = (p: Person, peers: Peers, c: ClRow) => unitExpected(p, peers, c).reduce((a, b) => a + b, 0);
+/** The person's changes without an approver in `period` (in `dir`'s row, their share there). */
+export const noApproverCls = (p: Person, period: string, dir?: DirFilter | null) =>
+  cellsInDir(p, period, dir).reduce((a, c) => a + (c[3].length ? 0 : c[4]), 0) / 1000;
 
 export interface Sums {
   cls: number;
@@ -470,15 +402,18 @@ export interface Sums {
   expected: number;
 }
 
-/** Totals over `cs`, with the expected addressed threads. */
-export function sums(p: Person, peers: Peers, cs: ClRow[]): Sums {
+/** Totals over `cs`, with the expected addressed threads. Changes add up in thousandths, so whole
+ * half-years and bins give whole numbers. */
+export function sums(p: Person, peers: Peers, cs: Cell[]): Sums {
+  let milli = 0;
   const s = { cls: 0, addressed: 0, lines: 0, expected: 0 };
   for (const c of cs) {
-    s.cls += 1;
-    s.addressed += addressedOn(c);
-    s.lines += c[2];
-    s.expected += expectedOn(p, peers, c);
+    milli += c[4];
+    s.addressed += c[7];
+    s.lines += c[5];
+    s.expected += cellExpected(p, peers, c);
   }
+  s.cls = milli / 1000;
   return s;
 }
 
@@ -486,32 +421,9 @@ export function sums(p: Person, peers: Peers, cs: ClRow[]): Sums {
 export const fiOf = (s: Sums) => (s.expected > 0 ? s.addressed / s.expected : null);
 export const frOf = (s: Sums) => fr(s.addressed, s.lines);
 
-/** Totals per experience bin of the person's labelled changes in `period`. */
-export function binSums(p: Person, peers: Peers, period: string): Sums[] {
-  const out = peers.bins.map(() => ({ cls: 0, addressed: 0, lines: 0, expected: 0 }));
-  for (const c of clsIn(p, period)) {
-    const s = out[xbin(peers.bin_edges, c[5])];
-    s.cls += 1;
-    s.addressed += addressedOn(c);
-    s.lines += c[2];
-    s.expected += expectedOn(p, peers, c);
-  }
-  return out;
-}
-
-/** When the person reached each experience bin, as [day, exact]: the first bin on their first
- * commit on main, the others when their first change in the bin landed. Exact when that change
- * was the bin's first commit; otherwise they got there earlier (commits outside the data), by
- * that day. null: no change of theirs in the bin. */
-export function binReached(p: Person, edges: number[]): ([number, boolean] | null)[] {
-  const out: ([number, boolean] | null)[] = Array.from({ length: edges.length + 1 }, () => null);
-  for (const c of p.cls) {
-    const b = xbin(edges, c[5]);
-    if (out[b]) continue;
-    out[b] = b === 0 && p.firstDay !== null ? [p.firstDay, true] : [c[1], c[5] === (b ? edges[b - 1] : 0)];
-  }
-  return out;
-}
+/** Totals per experience bin of the person's changes in `period`. */
+export const binSums = (p: Person, peers: Peers, period: string): Sums[] =>
+  peers.bins.map((_, b) => sums(p, peers, cellsIn(p, period).filter((c) => c[1] === b)));
 
 /** A growth rate: the % change in AFR per doubling of changes landed, from a
  * least-squares line through log2 AFR (floored) by bin, weighted by changes, over
@@ -532,7 +444,7 @@ export function growth(bins: Sums[], peers: Pick<Peers, 'min_bin_cls' | 'min_gro
 /** The person's latest doubling: the change in AFR (%) from their second-newest to their newest
  * experience bin with `min_bin_cls` changes, per doubling where bins in between have too few
  * (`steps` > 1), with the typical change over the same bins (the median AFRs, `ref_bin`) and when
- * they reached the newer bin (`binReached`). AFRs under `fr_floor` count as it. null: fewer than
+ * they reached the newer bin (`PersonFile.reached`). AFRs under `fr_floor` count as it. null: fewer than
  * two such bins. */
 export interface Doubling {
   from: number;
@@ -553,35 +465,35 @@ export function latestDoubling(p: Person, bins: Sums[], peers: Pick<Peers, 'min_
   const r0 = peers.ref_bin[from];
   const r1 = peers.ref_bin[to];
   return { from, to, steps, change: pct(rate(to) / rate(from)),
-    typical: r0 && r1 ? pct(r1 / r0) : null, reached: binReached(p, peers.bin_edges)[to] };
+    typical: r0 && r1 ? pct(r1 / r0) : null, reached: p.reached[to] ?? null };
 }
 
 // ---- Directory figures
 
 /** The person's figures for one row of the directory table. */
 export interface DirStats {
-  /** Changes in it, each change once however many of its directories are below it. */
+  /** Changes in it: each change's share there by lines. */
   cls: number;
-  /** The changes' lines there: each change's lines times its fraction there. */
+  milli: number;
+  /** The landed commits' inserted lines there. */
   lines: number;
   /** Reviewer threads there, addressed or not. */
   threads: number;
   addressed: number;
   /** Addressed threads expected there at the peers' AFR. */
   expected: number;
-  /** The changes counted in `cls`, each with the indexes of its units counted here: so that a group of
-   * entries counts each change once, and to filter "Your feedback" to this row (`DirFilter`). */
-  units: Map<number, number[]>;
+  /** The 3-level directories counted here: to filter "Your feedback" to this row (`DirFilter`). */
+  dirs: Set<string>;
 }
 
-function addTo(s: DirStats, cl: number, unit: number, lines: number, threads: number, a: number, exp: number) {
-  s.lines += lines;
-  s.threads += threads;
-  s.addressed += a;
+function addTo(s: DirStats, dir: string, c: Cell, exp: number) {
+  s.milli += c[4];
+  s.cls = s.milli / 1000;
+  s.lines += c[5];
+  s.threads += c[6];
+  s.addressed += c[7];
   s.expected += exp;
-  const us = s.units.get(cl);
-  if (us) us.push(unit);
-  else (s.units.set(cl, [unit]), s.cls += 1);
+  s.dirs.add(dir);
 }
 
 /** The index cell's shade: -1 (a quarter of typical or less) .. 0 (typical) .. 1 (4× or more), on a log scale. */
@@ -622,12 +534,12 @@ export interface TableNode {
   children: TableNode[];
 }
 
-const emptyStats = (): DirStats => ({ cls: 0, lines: 0, threads: 0, addressed: 0, expected: 0, units: new Map() });
+const emptyStats = (): DirStats => ({ cls: 0, milli: 0, lines: 0, threads: 0, addressed: 0, expected: 0, dirs: new Set() });
 
-/** Everyone's directory table as a tree, with the person's changes in `period` (if any) added: each
- * unit to its directory, its parents, and to "rest of" or a level's "Other" where the table has no row
- * of its own for it. Parents add up their children, counting each change once, so the index of a row
- * is its addressed threads over its expected ones whether it is open or not. */
+/** Everyone's directory table as a tree, with the person's cells in `period` (if any) added: each to
+ * its directory, its parents, and to "rest of" or a level's "Other" where the table has no row of its
+ * own for it. Parents add up their children, so the index of a row is its addressed threads over its
+ * expected ones whether it is open or not. */
 export function dirTable(peers: Peers, p: Person | null, period: string): TableNode[] {
   const roots: TableNode[] = [];
   const byKey = new Map<string, TableNode>();
@@ -646,33 +558,28 @@ export function dirTable(peers: Peers, p: Person | null, period: string): TableN
     (into ? into.children : roots).push(n);
   }
   if (!p) return roots;
-  for (const c of clsIn(p, period)) {
-    const fracs = unitFracs(c[3]);
-    const exps = unitExpected(p, peers, c);
-    c[3].forEach(([d], i) => {
-      const path = p.dirs[d];
-      const [threads, a] = unitCounts(c, i);
-      const lines = c[2] * fracs[i];
-      const put = (n: TableNode) => addTo(n.you, c[0], i, lines, threads, a, exps[i]);
-      // Top level first: each level's own row, or that level's "Other", where the walk stops.
-      let parent = '';
-      let last: TableNode | null = null;
-      for (const k of dirLevels(path).slice(0, -1).reverse()) {
-        const n = byKey.get(`d:${k}`);
-        if (!n) {
-          const o = byKey.get(`o:${parent}`);
-          if (o) put(o);
-          last = null;
-          break;
-        }
-        put(n);
-        last = n;
-        parent = k;
+  for (const c of cellsIn(p, period)) {
+    const path = p.dirs[c[2]];
+    const exp = cellExpected(p, peers, c);
+    const put = (n: TableNode) => addTo(n.you, path, c, exp);
+    // Top level first: each level's own row, or that level's "Other", where the walk stops.
+    let parent = '';
+    let last: TableNode | null = null;
+    for (const k of dirLevels(path).slice(0, -1).reverse()) {
+      const n = byKey.get(`d:${k}`);
+      if (!n) {
+        const o = byKey.get(`o:${parent}`);
+        if (o) put(o);
+        last = null;
+        break;
       }
-      // Files directly in a directory that has subdirectories.
-      const rest = last && last.path === path ? byKey.get(`r:${path}`) : undefined;
-      if (rest) put(rest);
-    });
+      put(n);
+      last = n;
+      parent = k;
+    }
+    // Files directly in a directory that has subdirectories.
+    const rest = last && last.path === path ? byKey.get(`r:${path}`) : undefined;
+    if (rest) put(rest);
   }
   return roots;
 }
@@ -728,64 +635,40 @@ export function tableRows(roots: TableNode[], expanded: ReadonlySet<string>, byY
 
 // ---- Merging a person's files
 
-/** balance_growth.size10: ten log-spaced size buckets of changed lines, <4, <8, …, <1024, 1024+. */
-export const size10 = (lines: number) => Math.min(9, Math.max(0, 30 - Math.clz32(Math.max(lines, 1))));
-
-/** balance_analysis.dir_of(path, 3): a file's directory, three levels deep. */
-export function dirOf(path: string): string {
-  const parts = path.split('/').slice(0, -1);
-  return parts.length ? `${parts.slice(0, 3).join('/')}/` : '(root)/';
-}
-
-/** A person's half-year shards (`shardsOf`) merged, names re-indexed and deltas undone. */
-export function buildPerson(top: Top, shards: Shard[], peers: Pick<Peers, 'addr_start'>): Person {
-  const tables = { dirs: new Map<string, number>(), files: new Map<string, number>(), revs: new Map<string, number>() };
+/** A person's file with its half-years merged, names re-indexed. */
+export function buildPerson(file: PersonFile): Person {
+  const dirs = new Map<string, number>();
+  const revs = new Map<string, number>();
   const at = (t: Map<string, number>, name: string) => {
     let i = t.get(name);
     if (i === undefined) t.set(name, (i = t.size));
     return i;
   };
-  const cls: ClRow[] = [];
-  for (const s of shards) {
-    const d = s.dirs.map((x) => at(tables.dirs, x));
-    const f = s.files.map((x) => at(tables.files, x));
-    const r = (s.revs ?? []).map((x) => at(tables.revs, x));
-    let n = 0;
-    let day = 0;
-    for (const [dn, dd, lines, prior, fileUnits, fileRevs, fileFb] of s.cls) {
-      n += dn;
-      day += dd;
-      const local: [number, number][] = typeof fileUnits === 'number' ? [[fileUnits, lines]] : fileUnits;
-      const units = local.map((u): Unit => [d[u[0]], u[1]]);
-      // A file's threads count in its 3-level directory when that is one of the units, else in the first.
-      const pos = new Map(local.map((u, i) => [s.dirs[u[0]], i]));
-      const files = (fileFb ?? []).map(([fi, fl, t, a]): FileFb => {
-        const path = s.files[fi];
-        const own = path && !path.startsWith('/') ? pos.get(dirOf(path)) : undefined;
-        return [f[fi], fl, t, a, own ?? 0];
-      });
-      cls.push([n, day, lines, units, files, prior, fileRevs.map((i) => r[i])]);
-    }
-  }
-  cls.sort((a, b) => a[1] - b[1] || a[0] - b[0]);
-  return { addrStart: peers.addr_start, first: top.first, firstDay: top.first_day, org: top.org,
-    dirs: [...tables.dirs.keys()], files: [...tables.files.keys()], revs: [...tables.revs.keys()],
-    revF: [...tables.revs.keys()].map(() => 1), revCls: [...tables.revs.keys()].map(() => 0),
-    rateBin: null, revNone: null, cls };
+  const hs = halvesOf(file);
+  const cells: Cell[] = [];
+  hs.forEach((h, hi) => {
+    const f = file.halves[h];
+    const d = f.dirs.map((x) => at(dirs, x));
+    const r = f.revs.map((x) => at(revs, x));
+    for (const [b, di, vs, milli, lines, threads, a] of f.cells) cells.push([hi, b, d[di], vs.map((i) => r[i]), milli, lines, threads, a]);
+  });
+  return { first: file.first, firstDay: file.first_day, org: file.org, reached: file.reached, days: file.days,
+    halves: hs, dirs: [...dirs.keys()], revs: [...revs.keys()], revF: [...revs.keys()].map(() => 1),
+    revCls: [...revs.keys()].map(() => 0), rateBin: null, revNone: null, cells };
 }
 
 // ---- downloading your comments (cosh/review_threads.py, served from the R2 bucket)
 
-/** review-feedback/threads/<half>/<key>.json (cosh/review_threads.py, version 2). Comment text is
+/** review-feedback/threads/<half>/<key>.json (cosh/review_threads.py, version 3). Comment text is
  * untrusted: it goes only into the downloaded file, never into the page. */
 export interface ThreadFile {
-  v: 1 | 2;
+  v: 3;
   half: string;
   /** Names (else addresses), indexed by `owner` and each comment's first element. */
   people: string[];
-  /** Version 2: which approver each of them is, as the half-year files name approvers (`Person.revs`,
+  /** Which approver each of them is, as the person's file names approvers (`Person.revs`,
    * `ReviewerRow.email`), tied to their Gerrit account by the Reviewed-by addresses; null for others. */
-  reviewers?: (string | null)[];
+  reviewers: (string | null)[];
   cls: ThreadCl[];
 }
 
@@ -811,6 +694,8 @@ export interface Thread {
    * not yet labelled. */
   addressed: boolean | null;
   resolved: boolean;
+  /** The 3-level directory the Feedback Index counts it in (null: a comment on the whole change). */
+  dir: string | null;
   /** [people index, "YYYY-MM-DDTHH:MMZ", text]. */
   comments: [number, string, string][];
 }
@@ -899,19 +784,17 @@ export interface ReviewerComment {
 }
 
 /** The addressed threads approver `rev` (a `ReviewerRow.email`) started on the person's changes in
- * `files`, newest first, those `keep` (change number, path) accepts if given. A thread counts when its
- * first comment's author is that approver (`ThreadFile.reviewers`); a version-1 file, without them, gives
- * none. */
-export function reviewerComments(files: ThreadFile[], rev: string,
-  keep?: (cl: number, path: string) => boolean): ReviewerComment[] {
+ * `files`, newest first, only those counted in `dir`'s row if given. A thread counts when its first
+ * comment's author is that approver (`ThreadFile.reviewers`). */
+export function reviewerComments(files: ThreadFile[], rev: string, dir?: DirFilter | null): ReviewerComment[] {
   const out: ReviewerComment[] = [];
   for (const f of files) {
-    const mine = new Set((f.reviewers ?? []).flatMap((r, i) => (r === rev ? [i] : [])));
+    const mine = new Set(f.reviewers.flatMap((r, i) => (r === rev ? [i] : [])));
     if (!mine.size) continue;
     for (const c of f.cls) {
       for (const t of c.threads) {
         const first = t.comments[0];
-        if (t.addressed === true && first && mine.has(first[0]) && (!keep || keep(c.n, t.path)))
+        if (t.addressed === true && first && mine.has(first[0]) && (!dir || (t.dir !== null && dir.has(t.dir))))
           out.push({ cl: c.n, project: c.project, id: t.id, day: first[1].slice(0, 10), path: t.path });
       }
     }

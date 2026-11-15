@@ -21,11 +21,18 @@ web/public/review-feedback/, committed):
 and, gzipped, under --people-out (default data/private/feedback-people/,
 which `python3 -m cosh.r2 publish` uploads to the R2 bucket, docs/r2.md):
 
-  <name>.json.gz     per person, one file: first commit, usual org, and per
-                     half-year their CLs, with lines per directory and the
-                     files that drew reviewer threads (`shard`; no comment
-                     ids or text); for each other address of the same
-                     person, {"see": name}
+  <name>.json.gz     per person, one file: first commit, usual org, when
+                     they reached each experience bin, and per half-year
+                     their lines, threads and addressed threads by
+                     experience bin, directory and approvers
+                     (`person_doc`, `half_cells`; no CLs, no comment ids or
+                     text); for each other address of the same person,
+                     {"see": name}
+
+and, gzipped and private, <data>/feedback-cls.json.gz (--cls-out): each
+person's CLs per half-year, with their approvers and the directory each
+thread counts in (`cl_index`), from which cosh.review_threads writes the
+comment files.
 
 <name> is the address as typed, lower case (`file_name` below; the page
 computes the same). No domains are merged: a person is an exact identity
@@ -258,16 +265,6 @@ def early_commits(before=SINCE, current=None):
     if cur:
         out.append((cur[1], cur[2], frozenset(cur[3])))
     return out
-
-
-def move_free_ins(gdb):
-    """{change_number: insertions of its landed commit with each renamed file
-    counted by the lines changed between its names (commits.moved_lines)},
-    for the CLs since 2017 whose landed commit renamed files."""
-    return dict(gdb.execute(
-        "SELECT c.change_number, max(c.ins - sum(max(f.ins, 0) - max(r.ins, 0)), 0) FROM renames r "
-        "JOIN commits c USING (commit_id) JOIN commit_files f ON f.commit_id = r.commit_id AND f.path_id = r.new_path_id "
-        "WHERE r.commit_id > 0 AND r.ins IS NOT NULL AND c.change_number IS NOT NULL GROUP BY r.commit_id"))
 
 
 def load(args):
@@ -971,6 +968,8 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--out", default=OUT, help="peers.json and reviewers.json (committed)")
     ap.add_argument("--people-out", help="the per-person files, published to R2 (default <data>/feedback-people)")
+    ap.add_argument("--cls-out", help="each person's CLs and their threads' directories, for cosh.review_threads "
+                                      f"(private; default <data>/{CLS_INDEX})")
     ap.add_argument("--check", help="also write some people's per-period values here, to compare with the page's")
     ap.add_argument("--fi-dump", help="also write each person's index over all CLs and over their odd and even CLs "
                                       "(MIN_CLS CLs or more) here, to compare methods: their spread and split-half "
@@ -1020,20 +1019,13 @@ def main():
     for c in cls:
         if c["change_number"] in mech:
             c["status"] = "MECH"
-    # Lines are insertions alone: deletions draw almost no addressed feedback
-    # (docs/review-feedback.md, "Why deletions don't count"), so CLs that only
-    # delete are left out.
-    # Moved files count by the lines changed, not as new: Gerrit's counts
-    # mostly do that already, and where they don't (Gerrit missed the move),
-    # the landed commit's count with renamed files by their edits is the cap.
-    # CLs that only move files are left out with those that only delete.
-    cap = move_free_ins(git_db())
-    for c in cls:
-        n = c["change_number"]
-        c["lines"] = min(c["ins"], cap[n]) if c["ins"] is not None and n in cap else c["ins"]
+    # Lines are the landed commit's insertions (set below, with its lines per
+    # directory): deletions draw almost no addressed feedback
+    # (docs/review-feedback.md, "Why deletions don't count"), and renamed
+    # files count by the lines changed between their names. CLs that only
+    # delete or only move files are left out.
     use = [c for c in cls if c["status"] == "MERGED" and c["closed_at"] and c["pid"]
-           and not is_bot_email(c["owner_email"]) and (c["lines"] or 0) > 0]
-    del cap
+           and not is_bot_email(c["owner_email"]) and (c["ins"] or 0) > 0]
 
     # Reviewer threads: threads not started by a bot, on a file or the commit
     # message. Patch-set-level threads are left out: Gerrit has recorded
@@ -1068,18 +1060,14 @@ def main():
     print(f"{len(use):,} CLs in range {day_str(START)} .. {day_str(END - DAY)}", file=sys.stderr, flush=True)
 
     # Each thread's file under today's name ("/COMMIT_MSG" for the commit
-    # message); the landed commit's lines per 3-level directory, and per file
-    # for the files that drew threads.
-    want = defaultdict(dict)
+    # message); the landed commit's lines per 3-level directory.
     for n, ts in thr.items():
         if n in by_n:
             for t in ts:
                 t[1] = current.get(t[1], t[1]) if t[1] and not t[1].startswith("/") else t[1] or "/COMMIT_MSG"
-                if not t[1].startswith("/"):
-                    want[n][t[1]] = None
     cl_dirs = defaultdict(dict)       # by CL, then directory
     for (n, d), (_, lines) in sorted(F.cl_dirs(git_db(), by_cid, by_n, dels=False, current=current,
-                                               files=want, moved=moved).items()):
+                                               moved=moved).items()):
         cl_dirs[n][d] = lines
     # Each CL's reviewers: the approvers in its landed commit's Reviewed-by
     # trailers (those who voted Code-Review), as identities, the owner left out.
@@ -1095,11 +1083,14 @@ def main():
         n = c["change_number"]
         day = datetime.fromtimestamp(c["closed_at"], timezone.utc).strftime("%Y-%m-%d")
         c["org"] = orgs(raw_email.get(n), day)
-        c["units"] = cl_dirs.get(n) or {"(root)/": c["lines"]}
+        # The landed commit's inserted lines per 3-level directory (Gerrit's
+        # count where the commit isn't known).
+        c["units"] = cl_dirs.get(n) or {"(root)/": c["ins"]}
+        c["lines"] = sum(c["units"].values())
         c["main"] = unit_order(c["units"])[0][0]
         c["prior"] = bisect.bisect_left(own_times.get(c["pid"], ()), landed_at.get(n, c["closed_at"]))
-        c["flines"] = want.get(n, {})
-    del cl_dirs, want, own_times
+    del cl_dirs, own_times
+    use = [c for c in use if c["lines"] > 0]
 
     # Each thread goes to the directory of its file when the landed commit
     # changed lines there; commit-message threads and the rest to the CL's
@@ -1214,6 +1205,7 @@ def main():
     if args.people_out is None:
         r2.hold()
     pout = args.people_out or r2.local_dir("feedback-people")
+    cls_out = args.cls_out or os.path.join(store.DATA_DIR, CLS_INDEX)
     os.makedirs(out, exist_ok=True)
     for name in os.listdir(out):       # per-person folders from before they moved to R2
         if name in ("u", "comments", "links") or HALF.match(name):
@@ -1239,6 +1231,7 @@ def main():
                        f=revs), f, separators=(",", ":"))
     written, stubs, size = 0, 0, 0
     taken = {}
+    index, idirs = {}, {}
     for pid, cs in people.items():
         k = file_name(pid)
         if k in taken:
@@ -1246,17 +1239,13 @@ def main():
             continue
         taken[k] = pid
         cs.sort(key=lambda c: (c["closed_at"], c["change_number"]))
-        by_half = defaultdict(list)
-        for c in cs:
-            by_half[half(c["closed_at"])].append(c)
         org = Counter(c["org"] for c in cs).most_common(1)
-        doc = dict(v=7, first=datetime.fromtimestamp(first[pid], timezone.utc).strftime("%Y-%m") if pid in first else None,
-                   first_day=epoch_day(first[pid]) if pid in first else None, org=org[0][0] if org else None,
-                   halves={h: shard(hcs) for h, hcs in sorted(by_half.items())})
+        doc = person_doc(cs, first.get(pid), org[0][0] if org else None)
         p = os.path.join(pout, f"{k}.json.gz")
         size += r2.write_gz(p, json.dumps(doc, separators=(",", ":"), ensure_ascii=False))[0]
         keep.add(p)
         written += 1
+        index[k] = cl_index(cs, idirs)
     for pid in people:
         for e in emails_of.get(pid, ()):
             k = file_name(e)
@@ -1268,6 +1257,9 @@ def main():
             keep.add(p)
             stubs += 1
     removed = r2.prune(pout, keep)
+    # The CLs behind each person's file, for cosh.review_threads (private).
+    r2.write_gz(cls_out, json.dumps(dict(v=1, dirs=list(idirs), people=index), separators=(",", ":"),
+                                    ensure_ascii=False))
     if args.check:
         with open(args.check, "w") as f:
             json.dump(check_vals, f)
@@ -1276,6 +1268,20 @@ def main():
 
 
 HALF = re.compile(r"^\d{4}H[12]$")
+CLS_INDEX = "feedback-cls.json.gz"
+
+
+def cl_index(cs, dirs):
+    """One person's CLs for cosh.review_threads, by half-year: [[change
+    number, approvers (as the person's file names them), {thread root:
+    directory it counts in, as an index in `dirs`}], ...], oldest first. The
+    page filters a reviewer's comments to a directory by these
+    directories."""
+    out = defaultdict(list)
+    for c in cs:
+        out[half(c["closed_at"])].append([c["change_number"], list(c.get("revs", ())),
+                                          {t[0]: dirs.setdefault(t[4], len(dirs)) for t in c["thr"]}])
+    return dict(out)
 
 
 def page_dir(path, units, main):
@@ -1286,50 +1292,75 @@ def page_dir(path, units, main):
     return dr if dr in units else main
 
 
-def fb_files(c):
-    """The files of a CL that drew reviewer threads, in name order: {path:
-    [threads, addressed]}."""
-    out = {}
-    for _root, path, _at, addr, _ in c["thr"]:
-        x = out.setdefault(path, [0, 0])
-        x[0] += 1
-        if addr:
-            x[1] += 1
-    return dict(sorted(out.items()))
+def milli_fracs(lines):
+    """`unit_fracs` in thousandths that add up to exactly 1,000 (largest
+    remainders first), so a person's CLs add up to whole numbers however
+    their cells are summed."""
+    fr_ = unit_fracs(lines)
+    base = [int(f * 1000) for f in fr_]
+    left = 1000 - sum(base)
+    for i in sorted(range(len(fr_)), key=lambda i: (base[i] - fr_[i] * 1000, i))[:left]:
+        base[i] += 1
+    return base
 
 
-def shard(cs):
-    """One person's CLs of one half-year, oldest first, with directory and
-    file names listed once (`dirs`, `files`). Each CL: [change number less
-    the previous CL's (the first: itself), day landed less the previous
-    CL's (the first: days since 1970), lines (Gerrit's insertions), the
-    owner's earlier commits on main, units, reviewers(, files)].
-
-    Units: the landed commit's inserted lines per 3-level directory, as
-    [[directory, lines], ...] in `unit_order`, or the directory alone for a
-    CL wholly in one directory. Reviewers: the approvers, as indexes in
-    `revs` (their addresses), sorted by address; [] for none. Files: only those that drew reviewer threads,
-    in name order, as [file, lines there (the landed commit's insertions; 0
-    for the commit message or a file it didn't change), threads, addressed];
-    left out when there are none. A file's threads count in its 3-level
-    directory when that is one of the units, else in the first unit."""
-    files, dirs, revs = {}, {}, {}
-
-    def idx(table, x):
-        return table.setdefault(x, len(table))
-    rows = []
-    pn = pd = 0
+def half_cells(cs):
+    """One person's labelled CLs of one half-year as cells, with directory
+    and approver names listed once (`dirs`, `revs`, approvers sorted by
+    address). A cell is every CL's share in one experience bin, 3-level
+    directory and set of approvers: [bin, directory, [approvers], CLs in
+    thousandths (each CL split over its directories by lines,
+    `milli_fracs`), the landed commit's inserted lines there, reviewer
+    threads there, addressed threads there]. A thread counts in its file's
+    directory when the CL inserted lines there, else in the CL's main
+    directory (`page_dir`). Cells are sorted, so the file stays the same
+    when the CLs do."""
+    dirs = sorted({d for c in cs for d in c["units"]})
+    revs = sorted({v for c in cs for v in c.get("revs", ())})
+    di, ri = {d: i for i, d in enumerate(dirs)}, {v: i for i, v in enumerate(revs)}
+    agg = defaultdict(lambda: [0, 0, 0, 0])
     for c in cs:
-        n, d0 = c["change_number"], epoch_day(c["closed_at"])
         order = unit_order(c["units"])
-        units = idx(dirs, order[0][0]) if len(order) == 1 else [[idx(dirs, d), x] for d, x in order]
-        row = [n - pn, d0 - pd, c["lines"], c["prior"], units, [idx(revs, v) for v in c.get("revs", ())]]
-        fb = fb_files(c)
-        if fb:
-            row.append([[idx(files, p), c["flines"].get(p) or 0, t, a] for p, (t, a) in fb.items()])
-        rows.append(row)
-        pn, pd = n, d0
-    return dict(dirs=list(dirs), files=list(files), revs=list(revs), cls=rows)
+        thr, addr = Counter(t[4] for t in c["thr"]), Counter(t[4] for t in c["thr"] if t[3])
+        vs = tuple(sorted(ri[v] for v in c.get("revs", ())))
+        for (d, lines), m in zip(order, milli_fracs([x for _, x in order])):
+            x = agg[(xbin(c["prior"]), di[d], vs)]
+            x[0] += m
+            x[1] += lines
+            x[2] += thr[d]
+            x[3] += addr[d]
+    return dict(dirs=dirs, revs=revs, cells=[[b, d, list(vs), *x] for (b, d, vs), x in sorted(agg.items())])
+
+
+def bins_reached(cs, first_day):
+    """When the person reached each experience bin, as [day, exact] (null:
+    no CL of theirs in it): the first bin on their first commit on main, the
+    others when their first CL in the bin landed, exact when that CL was
+    the bin's first commit (otherwise they got there by that day, through
+    commits outside the data). `cs`: their CLs, oldest first."""
+    out = [None] * len(BIN_LABELS)
+    for c in cs:
+        b = xbin(c["prior"])
+        if out[b] is None:
+            out[b] = ([first_day, True] if b == 0 and first_day is not None
+                      else [epoch_day(c["closed_at"]), c["prior"] == (BIN_EDGES[b - 1] if b else 0)])
+    return out
+
+
+def person_doc(cs, first_t, org):
+    """One person's file: who they are, when they reached each experience
+    bin, the days of their first and last labelled CL, and per half-year
+    their labelled CLs as cells (`half_cells`). `cs`: all their CLs,
+    oldest first."""
+    first_day = epoch_day(first_t) if first_t is not None else None
+    lab = [c for c in cs if c["acov"]]
+    by_half = defaultdict(list)
+    for c in lab:
+        by_half[half(c["closed_at"])].append(c)
+    return dict(v=8, first=datetime.fromtimestamp(first_t, timezone.utc).strftime("%Y-%m") if first_t is not None else None,
+                first_day=first_day, org=org, reached=bins_reached(cs, first_day),
+                days=[epoch_day(lab[0]["closed_at"]), epoch_day(lab[-1]["closed_at"])] if lab else None,
+                halves={h: half_cells(hcs) for h, hcs in sorted(by_half.items())})
 
 
 if __name__ == "__main__":

@@ -20,17 +20,14 @@ def c(cid, aid, at, msg, parent=None, **kw):
 
 
 class ThreadsTest(unittest.TestCase):
-    def test_shard_cls(self):
-        self.assertEqual(RT.shard_cls({"cls": [[100, 5], [3, 1], [10, 0]]}), [100, 103, 113])
-
-    def test_read_people_skips_other_addresses(self):
+    def test_read_index(self):
         with tempfile.TemporaryDirectory() as d:
-            for name, doc in (("a@google.com", {"v": 7, "halves": {"2026H1": {"cls": []}}}),
-                              ("a@x.org", {"see": "a@google.com"})):
-                with gzip.open(os.path.join(d, f"{name}.json.gz"), "wt") as f:
-                    json.dump(doc, f)
-            open(os.path.join(d, "a@google.com.json.gz.tmp"), "w").close()
-            self.assertEqual(RT.read_people(d), {"a@google.com": {"2026H1": {"cls": []}}})
+            p = os.path.join(d, "feedback-cls.json.gz")
+            with gzip.open(p, "wt") as f:
+                json.dump({"v": 1, "dirs": ["a/b/c/", "a/"], "people": {"a@google.com": {
+                    "2026H1": [[5, ["a@google.com", "b@x.org"], {"r1": 1, "r2": 0}], [7, [], {}]]}}}, f)
+            self.assertEqual(RT.read_index(p), {"a@google.com": {"2026H1": [
+                (5, ["a@google.com", "b@x.org"], {"r1": "a/", "r2": "a/b/c/"}), (7, [], {})]}})
 
     def test_cl_threads(self):
         owner, rev, bot, other = 1, 2, 9, 3

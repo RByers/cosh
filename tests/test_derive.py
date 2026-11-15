@@ -795,9 +795,6 @@ class CommitsStoreTest(unittest.TestCase):
             moved = commits.moved_lines(db)
             self.assertEqual(moved[(3, pid["new/blink/renderer/core/a.cc"])], (1, 0))
             self.assertEqual(moved[(3, pid["old/web/src/core/a.cc"])], (0, 0))
-            # The Feedback Index's cap on a CL's lines: the moves count by their one edited line.
-            from cosh import review_feedback
-            self.assertEqual(review_feedback.move_free_ins(db), {9: 1})
             # commit_files has the whole file deleted and added; by moved_lines, the move weighs 1 line + 1.
             self.assertEqual(commits.commit_dirs(db, 3)[3][0], "new/blink/renderer/")
             self.assertEqual(commits.commit_dirs(db, 3, None, moved)[3][0], "new/blink/renderer/")

@@ -1,5 +1,5 @@
 """cosh/review_feedback.py helpers: the file names and reviewer keys the page shares,
-periods, bins, the AFR model, quantiles, the half-year files. No data is read."""
+periods, bins, the AFR model, quantiles, the per-person file. No data is read."""
 
 import unittest
 
@@ -171,31 +171,51 @@ class ReviewFeedbackTest(unittest.TestCase):
         self.assertEqual(R.quantiles([5]), [5] * 21)
         self.assertIsNone(R.quantiles([]))
 
-    def test_shard(self):
-        # Two CLs, the second wholly in one directory. Threads [root, path (today's name), day,
-        # addressed, directory], listed out of order; files that drew none aren't listed.
-        c1 = dict(change_number=1007, closed_at=86400 * 20000, lines=12, prior=3,
-                  units={"a/b/c/": 9, "a/": 3}, main="a/b/c/", flines={"a/b/c/x.cc": 6, "a/z.cc": 3},
-                  revs=["a@x.com", "b@x.com"],
+    def test_person_file(self):
+        # Three CLs: the first in two directories with two approvers, the second wholly in one
+        # directory with none, the third in a later half-year. Threads [root, path (today's name),
+        # day, addressed, the directory it counts in].
+        c1 = dict(change_number=1007, closed_at=86400 * 20000, lines=12, prior=0, acov=True,
+                  units={"a/b/c/": 9, "a/": 3}, main="a/b/c/", revs=["b@x.com", "a@x.com"],
                   thr=[["r2", "a/b/c/x.cc", "2024-10-04", 1, "a/b/c/"],
                        ["r1", "/COMMIT_MSG", "2024-10-03", None, "a/b/c/"],
                        ["r3", "a/b/c/x.cc", "2024-10-04", 0, "a/b/c/"],
                        ["r4", "a/z.cc", "2024-10-05", 1, "a/"]])
-        c2 = dict(change_number=1010, closed_at=86400 * 20003, lines=5, prior=4, units={"a/": 5}, main="a/",
-                  flines={}, thr=[])
-        sh = R.shard([c1, c2])
-        self.assertEqual(sh["dirs"], ["a/b/c/", "a/"])
-        self.assertEqual(sh["files"], ["/COMMIT_MSG", "a/b/c/x.cc", "a/z.cc"])
-        self.assertEqual(sh["revs"], ["a@x.com", "b@x.com"])
-        # [change number delta, day delta, lines, earlier commits, units, reviewers(, files)]; a file:
-        # [file, lines there, threads, addressed], by name.
-        self.assertEqual(sh["cls"], [[1007, 20000, 12, 3, [[0, 9], [1, 3]], [0, 1],
-                                      [[0, 0, 1, 0], [1, 6, 2, 1], [2, 3, 1, 1]]],
-                                     [3, 3, 5, 4, 1, []]])
-        # The page puts a file's threads in its directory when that is a unit, else the first.
+        c2 = dict(change_number=1010, closed_at=86400 * 20003, lines=5, prior=8, acov=True, units={"a/": 5},
+                  main="a/", thr=[["r5", "a/y.cc", "2024-10-07", 1, "a/"]])
+        c3 = dict(change_number=1020, closed_at=86400 * 20300, lines=4, prior=9, acov=True, units={"a/": 4},
+                  main="a/", revs=["a@x.com"], thr=[])
+        # An unlabelled CL counts for when a bin was reached, not in the cells or the days.
+        c4 = dict(change_number=1030, closed_at=86400 * 20400, lines=7, prior=300, acov=False, units={"a/": 7},
+                  main="a/", thr=[["r6", "a/w.cc", "2025-11-08", None, "a/"]])
+        doc = R.person_doc([c1, c2, c3, c4], 86400 * 19000, "x.com")
+        self.assertEqual(doc["reached"][6], [20400, False])
+        self.assertEqual((doc["v"], doc["first"], doc["first_day"], doc["org"]), (8, "2022-01", 19000, "x.com"))
+        # The first bin on the first commit; the second (9–16) when 1010 landed, exactly (its 9th commit).
+        self.assertEqual(doc["reached"][:3], [[19000, True], [20003, True], None])
+        self.assertEqual(doc["days"], [20000, 20300])
+        self.assertEqual(sorted(doc["halves"]), ["2024H2", "2025H2"])
+        h = doc["halves"]["2024H2"]
+        self.assertEqual(h["dirs"], ["a/", "a/b/c/"])
+        self.assertEqual(h["revs"], ["a@x.com", "b@x.com"])
+        # [bin, directory, approvers, CLs in thousandths, lines, threads, addressed]: 1007 is 3/4 in
+        # a/b/c/ and 1/4 in a/.
+        self.assertEqual(h["cells"], [[0, 0, [0, 1], 250, 3, 1, 1], [0, 1, [0, 1], 750, 9, 3, 1],
+                                      [1, 0, [], 1000, 5, 1, 1]])
+        self.assertEqual(doc["halves"]["2025H2"]["cells"], [[1, 0, [0], 1000, 4, 0, 0]])
+        # The CLs behind it, for cosh.review_threads.
+        dirs = {}
+        ix = R.cl_index([c1, c2, c3], dirs)
+        self.assertEqual(ix["2024H2"][0], [1007, ["b@x.com", "a@x.com"], {"r2": 0, "r1": 0, "r3": 0, "r4": 1}])
+        self.assertEqual(ix["2025H2"], [[1020, ["a@x.com"], {}]])
+        self.assertEqual(list(dirs), ["a/b/c/", "a/"])
+        # Thousandths always add up to one CL.
+        self.assertEqual(R.milli_fracs([1, 1, 1]), [334, 333, 333])
+        self.assertEqual(sum(R.milli_fracs([7, 0, 13, 2])), 1000)
+        self.assertEqual(R.milli_fracs([0, 0]), [500, 500])
+        # The page puts a file's threads in its directory when that is a unit, else the main one.
         self.assertEqual(R.page_dir("a/b/c/d/y.cc", {"a/b/c/": 1}, "x/"), "a/b/c/")
         self.assertEqual(R.page_dir("/COMMIT_MSG", {"a/": 1}, "x/"), "x/")
-
 
 if __name__ == "__main__":
     unittest.main()

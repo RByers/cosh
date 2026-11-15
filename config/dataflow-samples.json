@@ -3360,6 +3360,10 @@
    "withheld": "File names are people's addresses: reachable only by typing one (ground rule 5), so no samples are listed.",
    "parts": []
   },
+  "data/private/feedback-cls.json.gz": {
+   "withheld": "Keyed by people's addresses: reachable only by typing one (ground rule 5), so no samples are listed.",
+   "parts": []
+  },
   "data/private/review-threads/": {
    "withheld": "Comment text, negative comments included, belongs only behind a typed address (ground rule 5); the samples page is reached by clicks.",
    "parts": []

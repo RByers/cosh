@@ -13,7 +13,7 @@ import { fileURLToPath } from 'node:url';
 import puppeteer, { type Browser, type HTTPRequest, type Page } from 'puppeteer-core';
 import { createServer, preview, type PreviewServer } from 'vite';
 import { CSP, randomPort } from '../vite.config.ts';
-import type { Peers, Shard } from '../src/feedback.ts';
+import type { Peers } from '../src/feedback.ts';
 import { addWeeks, addressedWeeks, isoWeekOf, namedOrgs, orgsWithShare, weeksIn, type Metric, type Summary } from '../src/data.ts';
 
 /** The committed summary the build bundles. */
@@ -3256,11 +3256,10 @@ test('a touch anywhere off a chart closes its hover card, on every page with cha
 // ---- Feedback Index (feedback-index.html). These tests serve the made-up
 // person in feedback-fixture.ts, so they don't depend on the committed data.
 
-async function feedbackPage(peersOverride?: Peers, shardsOverride?: Record<string, Shard>,
+async function feedbackPage(peersOverride?: Peers,
   other?: (r: HTTPRequest) => boolean): Promise<{ page: Page; errors: string[] }> {
-  const { top, shards: fixtureShards, reviewers, peers: fixturePeers, FIXTURE_KEY, ALIAS_KEY } = await import('./feedback-fixture.ts');
+  const { top, reviewers, peers: fixturePeers, FIXTURE_KEY, ALIAS_KEY } = await import('./feedback-fixture.ts');
   const peers = peersOverride ?? fixturePeers;
-  const shards = shardsOverride ?? fixtureShards;
   const page = await browser.newPage();
   await page.setViewport({ width: 1100, height: 900 });
   const errors: string[] = [];
@@ -3275,7 +3274,7 @@ async function feedbackPage(peersOverride?: Peers, shardsOverride?: Record<strin
     else if (path.endsWith('/review-feedback/reviewers.json')) json(reviewers);
     // The per-person files come from the bucket's prefix, served locally under /r2/ (web/src/r2.ts).
     // One file per person, named by the address; another address of theirs points at it.
-    else if (path === `/r2/review-feedback/people/v2/${FIXTURE_KEY}.json`) json({ ...top, halves: shards });
+    else if (path === `/r2/review-feedback/people/v2/${FIXTURE_KEY}.json`) json(top);
     else if (path === `/r2/review-feedback/people/v2/${ALIAS_KEY}.json`) json({ see: FIXTURE_KEY });
     else if (path.startsWith('/r2/review-feedback/people/')) void r.respond({ status: 404, body: 'not found' });
     else void r.continue();
@@ -3288,16 +3287,16 @@ async function feedbackPage(peersOverride?: Peers, shardsOverride?: Record<strin
 test('feedback index: downloading your comments builds a file from the R2 threads, never the page', async () => {
   const { FIXTURE_EMAIL, FIXTURE_KEY } = await import('./feedback-fixture.ts');
   const asked: string[] = [];
-  const { page, errors } = await feedbackPage(undefined, undefined, (r: HTTPRequest) => {
+  const { page, errors } = await feedbackPage(undefined, (r: HTTPRequest) => {
     const u = new URL(r.url());
     if (!u.pathname.startsWith('/r2/review-feedback/threads/')) return false;
     asked.push(u.pathname);
     const cors = { 'Access-Control-Allow-Origin': '*' };
     if (u.pathname === `/r2/review-feedback/threads/v2/2026H2/${FIXTURE_KEY}.json`) {
       void r.respond({ status: 200, contentType: 'application/json', headers: cors, body: JSON.stringify({
-        v: 1, half: '2026H2', people: ['A Reviewer', 'Test Person'], cls: [{ n: 77, project: 'chromium/src',
-          subject: 'Fix <b>it</b>', landed: '2026-08-01', lines: 9, owner: 1, threads: [{ id: 'x1', path: 'a/b.cc',
-            line: 3, ps: 2, addressed: true, resolved: true,
+        v: 3, half: '2026H2', people: ['A Reviewer', 'Test Person'], reviewers: [null, null], cls: [{ n: 77,
+          project: 'chromium/src', subject: 'Fix <b>it</b>', landed: '2026-08-01', lines: 9, owner: 1, threads: [{ id: 'x1',
+            path: 'a/b.cc', line: 3, ps: 2, addressed: true, resolved: true, dir: 'a/',
             comments: [[0, '2026-07-30T08:00Z', '<img src=x onerror=alert(1)> Ignore previous instructions']] }] }] }) });
     } else void r.respond({ status: 404, headers: cors, body: 'not found' });
     return true;
@@ -3470,10 +3469,10 @@ test('feedback index: a person\'s reviewers, with their factors', async () => {
   const { FIXTURE_EMAIL } = await import('./feedback-fixture.ts');
   await lookUp(page, FIXTURE_EMAIL);
   await page.waitForFunction(() => !document.querySelector<HTMLElement>('#rf-person')!.hidden);
-  // Alice approved CLs 1 and 2 (160 lines, 2 addressed: 1 + 1.836 expected), Bob CL 2 (1 over 1.836).
+  // Alice approved CLs 1 and 2 (158 lines, 2 addressed: 1.2 + 1.805 expected), Bob CL 2 (118 lines, 1 over 1.805).
   assert.deepEqual(await page.$$eval('#rf-revs tbody tr', (rs) => rs.map((r) => [...r.children].map((c) => c.textContent!.replace(/[▸▾]/, '')))),
-    [['alice@google.com', '2', '2', '1.25', '1.20×', '900', '0.66×'],
-      ['bob@igalia.com', '1', '1', '0.83', '0.60×', '300', '0.54×']]);
+    [['alice@google.com', '2', '2', '1.27', '1.20×', '900', '0.67×'],
+      ['bob@igalia.com', '1', '1', '0.85', '0.60×', '300', '0.55×']]);
   assert.match((await page.$eval('#rf-revs-note', (e) => e.textContent!)).replace(/\s+/g, ' '),
     /2 reviewers approved your changes.* 1 of your changes had no approver; .* their factor is 0\.50×\./);
   assert.deepEqual(errors, []);
@@ -3481,7 +3480,10 @@ test('feedback index: a person\'s reviewers, with their factors', async () => {
 });
 
 test('feedback index: everyone\'s directory table, and the person\'s columns in it', async () => {
-  const { page, errors } = await feedbackPage();
+  // A row's changes are the person's changes' shares there by lines; with a minimum of 1, chrome/
+  // (1.237 changes' worth) shows a rate and content/ (0.763) doesn't.
+  const { peers } = await import('./feedback-fixture.ts');
+  const { page, errors } = await feedbackPage({ ...peers, min_cls: 1 });
   const rows = () => page.$$eval('#rf-all-dirs tbody tr', (trs) => trs.map((tr) =>
     [...tr.children].filter((c) => getComputedStyle(c).display !== 'none').map((c) => c.textContent!.replace(/\s+/g, ' ').trim())));
   const youShown = () => page.$eval('#rf-all-dirs thead .rf-you-col', (e) => getComputedStyle(e).display !== 'none');
@@ -3508,14 +3510,14 @@ test('feedback index: everyone\'s directory table, and the person\'s columns in 
   assert.equal(await youShown(), true);
   const r = await rows();
   assert.deepEqual(r.map((x) => x[0]), ['▸content/', '▸chrome/', '▸third_party/', 'Other (30)']);
-  // chrome/: 40 + 28.5 lines, 2 comments, 1 addressed: 1.46 per 100 lines, 1 over 1.64 expected
-  // (CL 1: 0.4 × 2.5 × Alice's 1.2; CL 2's 28 of 118 lines: 1.2 × 1.7 × 0.9, Alice's and Bob's mean),
+  // chrome/: 40 + 28 lines, 2 comments, 1 addressed: 1.47 per 100 lines, 1 over 1.63 expected
+  // (CL 1: 0.4 × 2.5 × Alice's 1.2; CL 2's 28 lines: 0.28 × 1.7 × 0.9, Alice's and Bob's mean),
   // which is 2.39 per 100 lines.
-  assert.deepEqual(r[1].slice(5), ['68', '2', '1', '1.46', '0.61×']);
+  assert.deepEqual(r[1].slice(5), ['68', '2', '1', '1.47', '0.61×']);
   assert.match(await page.$eval('#rf-all-dirs tr[data-key="d:chrome/"] td:last-child', (e) => (e as HTMLElement).title),
     /^The AFR expected on your lines there, for your experience and reviewers: 2\.39$/);
   // Rows with fewer of the person's changes than the minimum show no rate; rows without any show nothing.
-  assert.deepEqual(r[2].slice(5), ['10', '2', '1', '–', '–']);
+  assert.deepEqual(r[0].slice(5), ['90', '1', '1', '–', '–']);
   assert.deepEqual(r[3].slice(5), ['', '', '', '', '']);
   assert.deepEqual(errors, []);
   await page.close();
@@ -3535,21 +3537,21 @@ test('feedback index: a person\'s index, and how their rate compares', async () 
   assert.equal(await page.$('#rf-find-note a'), null);
   const tile = (id: string) => page.$eval(`#${id} .tile-value`, (e) => e.textContent);
   const sub = (id: string) => page.$eval(`#${id} .tile-sub`, (e) => e.textContent!.replace(/\s+/g, ' ').trim());
-  // 3 changes, 170 lines, 3 addressed comments: 1.76 per 100 lines.
+  // 3 changes, 168 lines, 3 addressed comments: 1.79 per 100 lines.
   assert.equal(await tile('rf-tile-cls'), '3');
-  assert.equal(await sub('rf-tile-cls'), '170 lines written');
+  assert.equal(await sub('rf-tile-cls'), '168 lines written');
   assert.equal(await tile('rf-tile-threads'), '3');
-  assert.equal(await tile('rf-tile-fr'), '1.76');
-  // Against what experience and reviewers expect (3 over 3.086: 0.4 × 2.5 × 1.2 + 1.2 × 1.7 × 0.9 +
+  assert.equal(await tile('rf-tile-fr'), '1.79');
+  // Against what experience and reviewers expect (3 over 3.055: 0.4 × 2.5 × 1.2 + 1.18 × 1.7 × 0.9 +
   // 0.1 × 1 × 0.5): 31% of 2,800 have a lower index.
-  assert.equal(await tile('rf-tile-fi'), '0.97×');
+  assert.equal(await tile('rf-tile-fi'), '0.98×');
   assert.equal(await sub('rf-tile-fi'), '31% of 2,800 contributors have a lower index');
   assert.match((await page.$eval('#summary-sub', (e) => e.textContent!)).replace(/\s+/g, ' '),
     /Your addressed comments against what your changes would be expected to draw, for your experience and your reviewers, over all your changes from July 2023 to October 2026/);
-  // The latest doubling: 0.83 at 128 to 10 at 512, two doublings apart, √12 − 1 per doubling, reached by
+  // The latest doubling: 0.85 at 128 to 10 at 512, two doublings apart, √11.8 − 1 per doubling, reached by
   // the day of the change at 512; typically 1.7 to 1.0.
   assert.equal(await page.$eval('#rf-tile-growth .tile-label', (e) => e.textContent), 'Your latest doubling');
-  assert.equal(await tile('rf-tile-growth'), '+246%');
+  assert.equal(await tile('rf-tile-growth'), '+244%');
   assert.equal(await sub('rf-tile-growth'),
     'change in your rate from 128 to 512 CLs landed, per doubling, which you reached by 3 Sept 2026; typical −23%');
   assert.match(await page.$eval('#rf-facts', (e) => e.textContent!.replace(/\s+/g, ' ')),
@@ -3563,18 +3565,18 @@ test('feedback index: a person\'s index, and how their rate compares', async () 
   assert.equal(await page.$eval('#compare .sub a', (a) => a.getAttribute('href')), '#intro');
   const you = await page.evaluate(() => window.__rf!.charts.main.data.datasets[5]);
   assert.deepEqual(you.data.map((v) => (v === null ? null : Math.round(Number(v) * 100) / 100)),
-    [null, null, 2.5, null, 0.83, null, 10, null, null, null]);
+    [null, null, 2.5, null, 0.85, null, 10, null, null, null]);
   const red = await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--series-8').trim());
   assert.equal(you.borderColor, red);
   assert.deepEqual(await page.$$eval('#rf-main-legend li', (ls) => ls.map((l) => l.textContent)),
     ['You', 'Median', 'Middle half (25th–75th percentile)', '10th–90th percentile']);
   assert.equal(await page.$eval('#rf-main-you', (e) => (e as HTMLElement).hidden), false);
-  // And on everyone's feedback index: 3 over 3.086.
+  // And on everyone's feedback index: 3 over 3.055.
   const fiYou = await page.evaluate(() => window.__rf!.charts.fiDist.data.datasets.at(-1)!);
   assert.equal(fiYou.label, 'you');
   assert.equal(fiYou.borderColor, red);
-  assert.equal(Math.round(Number((fiYou.data[0] as { x: number }).x) * 100) / 100, 0.97);
-  assert.equal(await page.$eval('#rf-fi-legend li:last-child', (l) => l.textContent), 'You (0.97×)');
+  assert.equal(Math.round(Number((fiYou.data[0] as { x: number }).x) * 100) / 100, 0.98);
+  assert.equal(await page.$eval('#rf-fi-legend li:last-child', (l) => l.textContent), 'You (0.98×)');
   assert.equal(await page.$eval('#rf-growth-legend li:last-child', (l) => l.textContent), 'You (+41%)');
   const xp = () => page.$$eval('#rf-xp-table tbody tr, #rf-xp-table tfoot tr', (rs) => rs.map((r) =>
     [...r.children].map((c) => c.textContent)));
@@ -3583,9 +3585,9 @@ test('feedback index: a person\'s index, and how their rate compares', async () 
   // Each change is past its bin's first commit (30 earlier commits in the bin from 17), so "by" its day.
   assert.deepEqual(await xp(), [
     ['32', 'by 1 Oct 2025', '1', '40', '1', '2.50', '2.50'],
-    ['128', 'by 11 Mar 2026', '1', '120', '1', '0.83', '1.70'],
+    ['128', 'by 11 Mar 2026', '1', '118', '1', '0.85', '1.70'],
     ['512', 'by 3 Sept 2026', '1', '10', '1', '10.00', '1.00'],
-    ['All', '', '3', '170', '3', '1.76', '–'],
+    ['All', '', '3', '168', '3', '1.79', '–'],
   ]);
   assert.equal(await page.$('#directories, #rf-dirs'), null);
   assert.deepEqual(errors, []);
@@ -3608,7 +3610,8 @@ test('feedback index: a Yours Feedback count in the directory table filters Your
   await a.click();
   assert.equal(await filterShown(), true);
   assert.equal(await page.$eval('#rf-dir-filter-name', (e) => e.textContent!.trim()), 'Filter: only feedback in chrome/');
-  assert.deepEqual(await revs(), [['alice@google.com', '2', '1']]);
+  // Alice's changes there are 1 + 0.237 of CL 2, shown whole.
+  assert.deepEqual(await revs(), [['alice@google.com', '1', '1']]);
   assert.match(await page.$eval('#rf-revs-note', (e) => e.textContent!.replace(/\s+/g, ' ')), /^1 reviewers approved your changes that drew addressed comments there/);
   await page.click('#rf-dir-clear');
   assert.equal(await filterShown(), false);
@@ -3683,21 +3686,22 @@ test('feedback index: selecting a dot in the over-time chart filters Your feedba
 test('feedback index: a reviewer opens into the addressed comments they started, from the R2 threads', async () => {
   const { FIXTURE_EMAIL, FIXTURE_KEY } = await import('./feedback-fixture.ts');
   const asked: string[] = [];
-  const thread = (id: string, path: string, addressed: boolean | null, who: number, at: string) =>
-    ({ id, path, line: 3, ps: 1, addressed, resolved: true, comments: [[who, at, '<img src=x onerror=alert(1)> secret text']] });
-  // Each file says which approver each commenter is; Alice's unaddressed thread and Bob's aren't hers.
+  const thread = (id: string, path: string, addressed: boolean | null, who: number, at: string, dir: string) =>
+    ({ id, path, line: 3, ps: 1, addressed, resolved: true, dir, comments: [[who, at, '<img src=x onerror=alert(1)> secret text']] });
+  // Each file says which approver each commenter is, and which directory each thread counts in (a commit
+  // message: the change's main one); Alice's unaddressed thread and Bob's aren't hers.
   const files: Record<string, unknown> = {
-    '2025H2': { v: 2, half: '2025H2', people: ['Test Person', 'Alice'], reviewers: [null, 'alice@google.com'],
+    '2025H2': { v: 3, half: '2025H2', people: ['Test Person', 'Alice'], reviewers: [null, 'alice@google.com'],
       cls: [{ n: 1000001, project: 'chromium/src', subject: 's', landed: '2025-10-01', lines: 40, owner: 0,
-        threads: [thread('a1', 'chrome/browser/ui/view.cc', true, 1, '2025-09-20T10:00Z'),
-          thread('a2', '/COMMIT_MSG', false, 1, '2025-09-21T10:00Z')] }] },
-    '2026H1': { v: 2, half: '2026H1', people: ['Test Person', 'Alice', 'Bob'],
+        threads: [thread('a1', 'chrome/browser/ui/view.cc', true, 1, '2025-09-20T10:00Z', 'chrome/browser/ui/'),
+          thread('a2', '/COMMIT_MSG', false, 1, '2025-09-21T10:00Z', 'chrome/browser/ui/')] }] },
+    '2026H1': { v: 3, half: '2026H1', people: ['Test Person', 'Alice', 'Bob'],
       reviewers: [null, 'alice@google.com', 'bob@igalia.com'],
       cls: [{ n: 1000002, project: 'chromium/src', subject: 's', landed: '2026-03-11', lines: 120, owner: 0,
-        threads: [thread('a3', '/COMMIT_MSG', true, 1, '2026-03-02T10:00Z'),
-          thread('b1', 'content/browser/frame.cc', true, 2, '2026-03-03T10:00Z')] }] },
+        threads: [thread('a3', '/COMMIT_MSG', true, 1, '2026-03-02T10:00Z', 'content/browser/'),
+          thread('b1', 'content/browser/frame.cc', true, 2, '2026-03-03T10:00Z', 'content/browser/')] }] },
   };
-  const { page, errors } = await feedbackPage(undefined, undefined, (r: HTTPRequest) => {
+  const { page, errors } = await feedbackPage(undefined, (r: HTTPRequest) => {
     const u = new URL(r.url());
     if (!u.pathname.startsWith('/r2/review-feedback/threads/')) return false;
     asked.push(u.pathname.split('/').at(-2)!);
@@ -3746,7 +3750,7 @@ test('feedback index: a reviewer opens into the addressed comments they started,
   assert.deepEqual(await page.$$eval('#rf-revs tr.rf-rev-row', (rs) => rs.map((r) => (r as HTMLElement).dataset.email)), ['alice@google.com']);
   assert.deepEqual(await items(), [['20 Sept 2025', '1000001', 'chrome/browser/ui/view.cc']]);
   assert.equal(asked.length, 3);
-  // A directory filter keeps only the comments there: CL 2's commit message counts in its first
+  // A directory filter keeps only the comments counted there: CL 2's commit message counts in its main
   // directory, content/browser/, so under chrome/ Alice keeps only CL 1's.
   await page.click('#rf-half-clear');
   await page.click('#rf-all-dirs tr[data-key="d:chrome/"] a.rf-dir-filter-link');
@@ -3755,20 +3759,6 @@ test('feedback index: a reviewer opens into the addressed comments they started,
   await page.click('#rf-dir-clear');
   // Bob, still open, is back too.
   await page.waitForFunction(() => document.querySelectorAll('#rf-revs tr.rf-rev-comments li').length === 3);
-  assert.deepEqual(errors, []);
-  await page.close();
-});
-
-test('feedback index: only changes with addressed labels count', async () => {
-  const { peers, day, FIXTURE_EMAIL } = await import('./feedback-fixture.ts');
-  const { page, errors } = await feedbackPage({ ...peers, addr_start: day('2026-01-01') });
-  await lookUp(page, FIXTURE_EMAIL);
-  await page.waitForFunction(() => !document.querySelector<HTMLElement>('#rf-person')!.hidden);
-  const tile = (id: string) => page.$eval(`#${id} .tile-value`, (e) => e.textContent);
-  assert.equal(await tile('rf-tile-cls'), '2');
-  assert.equal(await tile('rf-tile-threads'), '2');
-  assert.equal(await page.evaluate(() => window.__rf!.charts.trend.data.labels!.length), 2);
-  assert.match(await page.$eval('#rf-find-note', (e) => e.textContent!), /Showing 2 changes/);
   assert.deepEqual(errors, []);
   await page.close();
 });

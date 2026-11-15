@@ -4,7 +4,6 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { test } from 'vitest';
-import type { Shard } from '../src/feedback.ts';
 import * as G from '../src/dataflow-graph.ts';
 import {
   authorBoard,
@@ -1474,98 +1473,75 @@ test('review feedback: percentiles and quantiles read off 21 quantiles', async (
   assert.equal(percentileOf(flat, 1), (5 + 15) / 2 / 20);
 });
 
-test('review feedback: half-year files, merged into one person', async () => {
+test('review feedback: a person\'s half-years, merged', async () => {
   const F = await import('../src/feedback.ts');
-  const { top, shards, peers, day } = await import('./feedback-fixture.ts');
-  const person = F.buildPerson(top, F.shardsOf(top), peers);
-  // Names re-indexed across files, change numbers and days added up; a change wholly in one directory
-  // has all its lines there.
+  const { top, day } = await import('./feedback-fixture.ts');
+  const person = F.buildPerson(top);
+  // Names re-indexed across half-years; cells [half-year, bin, directory, approvers, changes in thousandths,
+  // lines, threads, addressed].
+  assert.deepEqual(person.halves, ['2025H2', '2026H1', '2026H2']);
   assert.deepEqual(person.dirs, ['chrome/browser/ui/', 'content/browser/', 'third_party/blink/renderer/']);
-  assert.deepEqual(person.files, ['/COMMIT_MSG', 'chrome/browser/ui/view.cc', 'content/browser/frame.cc',
-    'third_party/blink/renderer/core/a.cc']);
-  assert.deepEqual(person.cls.map((c) => [c[0], c[1], c[2], c[5]]),
-    [[1000001, day('2025-10-01'), 40, 30], [1000002, day('2026-03-11'), 120, 80], [1000003, day('2026-09-03'), 10, 260]]);
-  assert.deepEqual(person.cls.map((c) => c[3]), [[[0, 40]], [[1, 90], [0, 28]], [[2, 10]]]);
-  // Files: [file, lines, threads, addressed, unit]; a file's threads count in its 3-level directory's unit,
-  // the commit message's in the first.
-  assert.deepEqual(person.cls.map((c) => c[4]), [[[0, 0, 1, 0, 0], [1, 30, 1, 1, 0]], [[2, 50, 1, 1, 0]],
-    [[0, 0, 1, 0, 0], [3, 8, 1, 1, 0]]]);
-  assert.deepEqual(person.cls.map((c) => [F.threadsOn(c), F.addressedOn(c)]), [[2, 1], [1, 1], [2, 1]]);
+  assert.deepEqual(person.cells, [[0, 2, 0, [0], 1000, 40, 2, 1], [1, 4, 0, [0, 1], 237, 28, 0, 0],
+    [1, 4, 1, [0, 1], 763, 90, 1, 1], [2, 6, 2, [], 1000, 10, 2, 1]]);
   assert.equal(person.org, 'google.com');
-  // Approvers: re-indexed across files like the names; until reviewers.json is attached, factor 1.
+  assert.deepEqual(person.days, [day('2025-10-01'), day('2026-09-03')]);
+  assert.deepEqual(person.reached[4], [day('2026-03-11'), false]);
+  // Approvers: re-indexed across half-years like the names; until reviewers.json is attached, factor 1.
   assert.deepEqual(person.revs, ['alice@google.com', 'bob@igalia.com']);
-  assert.deepEqual(person.cls.map((c) => c[6]), [[0], [0, 1], []]);
   assert.deepEqual(person.revF, [1, 1]);
-  // A file whose 3-level directory isn't one of the change's units counts in the first unit.
-  const moved = F.buildPerson(top, [{ dirs: ['ui/', 'base/'], files: ['gone/b.cc', 'base/x.cc'],
-    revs: [], cls: [[900003, day('2025-08-01'), 40, 12, [[0, 30], [1, 10]], [], [[0, 0, 1, 1], [1, 10, 2, 0]]]] }], peers);
-  assert.deepEqual(moved.cls[0][4].map((f) => f[4]), [0, 1]);
-  // Sizes and directories as balance_growth.size10 and balance_analysis.dir_of(path, 3) give them.
-  assert.deepEqual([0, 1, 3, 4, 7, 8, 1023, 1024, 50000].map(F.size10), [0, 0, 0, 1, 1, 2, 8, 9, 9]);
-  assert.deepEqual(['a.cc', 'ui/a.cc', 'a/b/c/d/e.cc'].map(F.dirOf), ['(root)/', 'ui/', 'a/b/c/']);
+  // A half-year or a year counts only its cells.
+  assert.deepEqual(F.cellsIn(person, '2026H1').map((c) => c[4]), [237, 763]);
+  assert.equal(F.cellsIn(person, '2026').length, 3);
+  assert.equal(F.cellsIn(person, 'all').length, 4);
 });
 
 test('review feedback: the AFR and index, as the script computes them', async () => {
   const F = await import('../src/feedback.ts');
-  const { top, shards, reviewers, peers, day } = await import('./feedback-fixture.ts');
-  const person = F.buildPerson(top, F.shardsOf(top), peers);
+  const { top, reviewers, peers, day } = await import('./feedback-fixture.ts');
+  const person = F.buildPerson(top);
   await F.attachReviewers(person, reviewers, peers);
   // Experience bins double: <8, 8–15, ..., 2k+ (cosh/review_feedback.py xbin).
   assert.deepEqual([0, 7, 8, 15, 16, 1023, 1024, 2047, 2048, 50000].map((n) => F.xbin(peers.bin_edges, n)),
     [0, 0, 1, 1, 2, 7, 8, 8, 9, 9]);
-  // When each bin was reached: the first bin on the first commit, the others by their first change's day,
-  // exact only when that change was the bin's first commit.
-  const reached = F.binReached(person, peers.bin_edges);
-  assert.deepEqual([reached[0], reached[2], reached[4], reached[6]],
-    [null, [day('2025-10-01'), false], [day('2026-03-11'), false], [day('2026-09-03'), false]]);
-  const at = (prior: number, firstDay: number | null) =>
-    F.binReached({ ...person, firstDay, cls: [[...person.cls[0].slice(0, 5), prior, []] as unknown as typeof person.cls[0]] }, peers.bin_edges);
-  assert.deepEqual(at(16, null)[2], [day('2025-10-01'), true]);
-  assert.deepEqual(at(3, day('2022-03-01'))[0], [day('2022-03-01'), true]);
-  assert.deepEqual(at(3, null)[0], [day('2025-10-01'), false]);
   assert.deepEqual([F.dir2('chrome/browser/ui/'), F.dir1('chrome/browser/ui/'), F.dir2('(root)/')],
     ['chrome/browser/', 'chrome/', '(root)/']);
-  // By lines, or equally where the landed commit inserted none.
-  assert.deepEqual(F.unitFracs([[0, 30], [1, 10]]), [0.75, 0.25]);
-  assert.deepEqual(F.unitFracs([[0, 0], [1, 0]]), [0.5, 0.5]);
-  // Three addressed comments over 170 lines.
-  const cs = F.clsIn(person, 'all');
+  // Three addressed comments over 168 lines; the thousandths add up to three changes.
+  const cs = person.cells;
   const near = (a: number | null, b: number) => assert.ok(a !== null && Math.abs(a - b) < 1e-9, `${a} vs ${b}`);
   const s = F.sums(person, peers, cs);
-  assert.deepEqual([s.cls, s.addressed, s.lines], [3, 3, 170]);
-  near(F.frOf(s), 300 / 170);
-  // Reviewers from reviewers.json by hashed address: Alice 1.2×, Bob 0.6×; a change takes its approvers'
+  assert.deepEqual([s.cls, s.addressed, s.lines], [3, 3, 168]);
+  near(F.frOf(s), 300 / 168);
+  // Reviewers from reviewers.json by hashed address: Alice 1.2×, Bob 0.6×; a cell takes its approvers'
   // mean factor, or rev_none without one.
   near(person.revF[0], 1.2);
   near(person.revF[1], 0.6);
   assert.deepEqual(person.revCls, [900, 300]);
-  cs.map((c) => F.revFactor(person, peers, c)).forEach((g, i) => near(g, [1.2, 0.9, 0.5][i]));
-  // Expected: lines / 100 × everyone's AFR at the change's experience × its reviewer factor. CL 1 at bin 2
-  // (2.5), CL 2 at bin 4 (1.7), CL 3 at bin 6 (1).
-  near(s.expected, 0.4 * 2.5 * 1.2 + 1.2 * 1.7 * 0.9 + 0.1 * 1 * 0.5);
+  cs.map((c) => F.revFactor(person, peers, c)).forEach((g, i) => near(g, [1.2, 0.9, 0.9, 0.5][i]));
+  // Expected: lines / 100 × everyone's AFR at the experience × the reviewer factor. CL 1 at bin 2 (2.5),
+  // CL 2 at bin 4 (1.7), CL 3 at bin 6 (1).
+  near(s.expected, 0.4 * 2.5 * 1.2 + 1.18 * 1.7 * 0.9 + 0.1 * 1 * 0.5);
   near(F.fiOf(s), 3 / s.expected);
-  // A change's expected comments split over its directories by lines.
-  const u2 = F.unitExpected(person, peers, cs[1]);
-  near(u2[0], 1.2 * 1.7 * 0.9 * 90 / 118);
-  near(u2[1], 1.2 * 1.7 * 0.9 * 28 / 118);
+  near(F.cellExpected(person, peers, cs[1]), 0.28 * 1.7 * 0.9);
+  near(F.cellExpected(person, peers, cs[2]), 0.9 * 1.7 * 0.9);
   assert.deepEqual(F.dirLevels('chrome/browser/ui/'), ['chrome/browser/ui/', 'chrome/browser/', 'chrome/', '']);
   assert.deepEqual(F.dirLevels('(root)/'), ['(root)/', '']);
   // The person's reviewers: Alice approved CLs 1 and 2, Bob CL 2; most changes first.
   const rv = F.reviewerRows(person, peers, 'all');
   assert.deepEqual(rv.map((r) => [r.email, Math.round(r.factor * 1000) / 1000, r.approved, r.cls, r.lines, r.addressed]),
-    [['alice@google.com', 1.2, 900, 2, 160, 2], ['bob@igalia.com', 0.6, 300, 1, 120, 1]]);
-  near(rv[0].expected, 0.4 * 2.5 * 1.2 + 1.2 * 1.7 * 0.9);
+    [['alice@google.com', 1.2, 900, 2, 158, 2], ['bob@igalia.com', 0.6, 300, 1, 118, 1]]);
+  near(rv[0].expected, 0.4 * 2.5 * 1.2 + 1.18 * 1.7 * 0.9);
   assert.deepEqual(F.reviewerRows(person, peers, '2026H2'), []);
+  assert.equal(F.noApproverCls(person, 'all'), 1);
   // A reviewer missing from reviewers.json counts as typical.
-  const p2 = F.buildPerson(top, F.shardsOf(top), peers);
+  const p2 = F.buildPerson(top);
   await F.attachReviewers(p2, { ...reviewers, f: {} }, peers);
   assert.deepEqual(p2.revF, [1, 1]);
   // The person's own changes are left out of what theirs are compared with. Here Alice approved nothing
   // but theirs, so she counts as typical (1 / norm); Bob's factor comes from his other changes. In bin 2
   // only the person has lines, so its rate stays everyone's; in bin 4 everyone else drew 20 addressed
   // comments on 1,000 lines.
-  const sums4 = peers.rate_sums.map((x, b): [number, number] => (b === 2 ? [40, 1] : b === 4 ? [1120, 21] : x));
-  const own = F.buildPerson(top, F.shardsOf(top), peers);
+  const sums4 = peers.rate_sums.map((x, b): [number, number] => (b === 2 ? [40, 1] : b === 4 ? [1118, 21] : x));
+  const own = F.buildPerson(top);
   await F.attachReviewers(own, { ...reviewers, norm: 0.8, none: [0.4e12, 1e12],
     f: { be7cd94b029a: [1.2, 900, 0, 0], e370b1ea692c: [0.6, 300, 0.48e12, 1e12] } }, { ...peers, rate_sums: sums4 });
   near(own.revF[0], 1.25);
@@ -1573,10 +1549,10 @@ test('review feedback: the AFR and index, as the script computes them', async ()
   near(F.noneFactor(own, peers), 0.5);
   near(own.rateBin![2], 2.5);
   near(own.rateBin![4], 2);
-  near(F.sums(own, peers, F.clsIn(own, 'all')).expected, 0.4 * 2.5 * 1.25 + 1.2 * 2 * (1.25 + 0.6) / 2 + 0.1 * 1 * 0.5);
+  near(F.sums(own, peers, own.cells).expected, 0.4 * 2.5 * 1.25 + 1.18 * 2 * (1.25 + 0.6) / 2 + 0.1 * 1 * 0.5);
   // The scale multiplies what's expected.
   near(F.sums(person, { ...peers, scale: 0.5 }, cs).expected, s.expected / 2);
-  // Per bin, and the growth rate: rates 2.5, 0.83 and 10 at bins 2, 4 and 6 fit a line of +41% per doubling.
+  // Per bin, and the growth rate: rates 2.5, 0.85 and 10 at bins 2, 4 and 6 fit a line of +41% per doubling.
   const bins = F.binSums(person, peers, 'all');
   assert.deepEqual(bins.map((b) => b.cls), [0, 0, 1, 0, 1, 0, 1, 0, 0, 0]);
   assert.equal(F.growth(bins, peers), 41.4);
@@ -1584,56 +1560,47 @@ test('review feedback: the AFR and index, as the script computes them', async ()
   assert.equal(F.growth(bins, { ...peers, min_bin_cls: 2 }), null);
   // Halving per doubling is -50%; no feedback counts as fr_floor.
   const b = (cls: number, addressed: number, lines: number) => ({ cls, addressed, lines, expected: 0 });
-  // The latest doubling: the last two bins with enough changes, 4 (0.83) and 6 (10), per doubling.
+  // The latest doubling: the last two bins with enough changes, 4 (0.85) and 6 (10), per doubling, and
+  // when the person reached the newer one (from their file).
   const ld = F.latestDoubling(person, bins, peers)!;
   assert.deepEqual([ld.from, ld.to, ld.steps, ld.change, ld.typical, ld.reached],
-    [4, 6, 2, Math.round(1000 * (Math.sqrt(12) - 1)) / 10, Math.round(1000 * (Math.sqrt(1 / 1.7) - 1)) / 10,
+    [4, 6, 2, Math.round(1000 * (Math.sqrt(11.8) - 1)) / 10, Math.round(1000 * (Math.sqrt(1 / 1.7) - 1)) / 10,
       [day('2026-09-03'), false]]);
   assert.equal(F.latestDoubling(person, bins, { ...peers, min_bin_cls: 2 }), null);
   const two = [b(5, 20, 1000), b(5, 10, 1000), b(0, 0, 0)];
   assert.deepEqual(F.latestDoubling(person, two, peers)!.change, -50);
   assert.equal(F.growth([b(5, 40, 1000), b(5, 20, 1000), b(5, 10, 1000)], peers), -50);
   assert.equal(F.growth([b(5, 1, 100), b(5, 0, 100), b(5, 0, 100)], peers), Math.round(1000 * (2 ** (-0.5 * Math.log2(10)) - 1)) / 10);
-  // A half-year counts only its changes.
-  assert.deepEqual(F.clsIn(person, '2026H1').map((c) => c[0]), [1000002]);
-  // Before the addressed labels begin, nothing counts.
-  const later = F.buildPerson(top, F.shardsOf(top), { addr_start: day('2026-01-01') });
-  assert.deepEqual(F.clsIn(later, 'all').map((c) => c[0]), [1000002, 1000003]);
 });
 
 test('review feedback: everyone\'s directory table with the person\'s columns', async () => {
   const F = await import('../src/feedback.ts');
-  const { top, shards, reviewers, peers, day } = await import('./feedback-fixture.ts');
-  const person = F.buildPerson(top, F.shardsOf(top), peers);
+  const { top, reviewers, peers, day } = await import('./feedback-fixture.ts');
+  const person = F.buildPerson(top);
   await F.attachReviewers(person, reviewers, peers);
   const near = (a: number, b: number) => assert.ok(Math.abs(a - b) < 1e-9, `${a} vs ${b}`);
-  const ui2 = (120 * 28) / 118;
   // Everyone's directory table, with the person's changes: CL 3 is in third_party/blink/, which is in
-  // third_party/'s "Other"; CL 1 and part of CL 2 in chrome/browser/ui/.
+  // third_party/'s "Other"; CL 1 and 237 thousandths of CL 2 (its 28 lines) in chrome/browser/ui/.
   const table = F.dirTable(peers, person, 'all');
   assert.deepEqual(table.map((n) => n.key), ['d:third_party/', 'd:chrome/', 'd:content/', 'o:']);
   const tp = table[0];
   assert.deepEqual(tp.children.map((n) => [n.key, n.count ?? null, n.you.cls]), [['o:third_party/', 120, 1]]);
   const chrome = table[1];
   assert.deepEqual(chrome.children[0].children.map((n) => n.key), ['d:chrome/browser/ui/', 'r:chrome/browser/', 'o:chrome/browser/']);
-  assert.deepEqual([chrome.you.cls, chrome.you.threads, chrome.you.addressed], [2, 2, 1]);
-  near(chrome.you.lines, 40 + ui2);
+  assert.deepEqual([chrome.you.cls, chrome.you.lines, chrome.you.threads, chrome.you.addressed], [1.237, 68, 2, 1]);
   // A parent's expected comments are its children's, so its index is the same open or closed.
-  near(chrome.you.expected, 0.4 * 2.5 * 1.2 + (1.2 * 1.7 * 0.9) * 28 / 118);
+  near(chrome.you.expected, 0.4 * 2.5 * 1.2 + 0.28 * 1.7 * 0.9);
   near(chrome.children[0].you.expected, chrome.you.expected);
   assert.deepEqual(F.dirTable(peers, null, 'all')[1].you.cls, 0);
-  // A row's changes and their units there filter the reviewers to its lines and comments: in chrome/,
-  // CL 1 whole and CL 2's second unit, where Bob's approval drew nothing addressed.
-  assert.deepEqual([...chrome.you.units], [[1000001, [0]], [1000002, [1]]]);
-  const rv = F.reviewerRows(person, peers, 'all', chrome.you.units);
-  assert.deepEqual(rv.map((r) => [r.email, r.cls, r.addressed]), [['alice@google.com', 2, 1], ['bob@igalia.com', 1, 0]]);
-  near(rv[0].lines, 40 + ui2);
+  // A row's directories filter the reviewers to its lines and comments: in chrome/, CL 1 and CL 2's share,
+  // where Bob's approval drew nothing addressed.
+  assert.deepEqual([...chrome.you.dirs], ['chrome/browser/ui/']);
+  const rv = F.reviewerRows(person, peers, 'all', chrome.you.dirs);
+  assert.deepEqual(rv.map((r) => [r.email, r.cls, r.lines, r.addressed]),
+    [['alice@google.com', 1.237, 68, 1], ['bob@igalia.com', 0.237, 28, 0]]);
   near(rv[0].expected, chrome.you.expected);
-  assert.equal(F.clsInDir(person, 'all', chrome.you.units).length, 2);
-  // A thread counts in its file's unit, else its directory's, else the first (the commit message).
-  const cl2 = person.cls[1];
-  assert.deepEqual(['content/browser/frame.cc', 'chrome/browser/ui/x.cc', 'chrome/browser/ui/sub/y.cc', '/COMMIT_MSG', 'net/z.cc']
-    .map((path) => F.unitOfPath(person, cl2, path)), [0, 1, 1, 0, 0]);
+  assert.equal(F.noApproverCls(person, 'all', chrome.you.dirs), 0);
+  assert.equal(F.noApproverCls(person, 'all', table[0].you.dirs), 1);
   // Rows: by everyone's lines, or by yours when someone is shown; "Other" last; rows under minCls
   // of the person's changes get no AFR or index of theirs.
   const tview = (o: string[], byYou: boolean, shown?: number) =>
@@ -1649,8 +1616,8 @@ test('review feedback: everyone\'s directory table with the person\'s columns', 
   assert.deepEqual(tview([], false, 2), ['d:third_party/', 'd:chrome/', 'd:content/', 'o:']);
   const trows = F.tableRows(table, new Set(), false, 2);
   near(trows[0].fr!, 100 * 40_000 / 6_000_000);
-  near(trows[1].youFi!, 1 / chrome.you.expected);
-  assert.deepEqual([trows[0].youFr, trows[0].youFi], [null, null]);
+  assert.deepEqual([trows[0].youFr, trows[0].youFi, trows[1].youFi], [null, null, null]);
+  near(F.tableRows(table, new Set(), false, 1)[1].youFi!, 1 / chrome.you.expected);
   assert.deepEqual([0, 0.25, 1, 8, 100].map(F.afrShade), [0, 0, 0.4, 1, 1]);
   // The index's shade: log scale, white at typical, full at a quarter or four times.
   assert.deepEqual([0, 0.25, 0.5, 1, 2, 4, 8].map(F.ratioShade), [-1, -1, -0.5, 0, 0.5, 1, 1]);
@@ -1658,10 +1625,6 @@ test('review feedback: everyone\'s directory table with the person\'s columns', 
   assert.deepEqual(F.periodSpan('2026H2', [day('2023-07-01'), day('2026-11-01')]), [day('2026-07-01'), day('2026-11-01')]);
   assert.deepEqual(F.periodSpan('2023', [day('2023-07-01'), day('2026-11-01')]), [day('2023-07-01'), day('2024-01-01')]);
   assert.deepEqual(F.periodSpan('all', [1, 2]), [1, 2]);
-  assert.ok(F.inPeriod(day('2026-03-11'), '2026H1'));
-  assert.ok(!F.inPeriod(day('2026-07-01'), '2026H1'));
-  assert.ok(F.inPeriod(day('2026-07-01'), '2026'));
-  assert.ok(F.inPeriod(day('2020-01-01'), 'all'));
   assert.deepEqual(F.halves(['all', '2026H2', '2025', '2023H2']), ['2023H2', '2026H2']);
 });
 
@@ -1896,13 +1859,13 @@ test('feedback index download: half-year ranges, URLs and the Markdown of thread
   for (const bad of [`../${k}.json`, `u/${k}.json`, '2026H1/x/y@z.json', 'abc.json', `${k}.json.gz`, 'A@b.json'])
     assert.throws(() => R.r2Url(R.FEEDBACK_PEOPLE, bad, 1, 'localhost'), bad);
   const file: import('../src/feedback.ts').ThreadFile = {
-    v: 1, half: '2026H1', people: ['Rev Iewer', 'Own Er'],
+    v: 3, half: '2026H1', people: ['Rev Iewer', 'Own Er'], reviewers: [null, null],
     cls: [
       { n: 2, project: 'chromium/src', subject: 'Later\nchange', landed: '2026-03-01', lines: 5, owner: 1, threads: [
-        { id: 'b', path: '/PATCHSET_LEVEL', line: null, ps: 1, addressed: null, resolved: true,
+        { id: 'b', path: '/PATCHSET_LEVEL', line: null, ps: 1, addressed: null, resolved: true, dir: null,
           comments: [[0, '2026-02-28T10:00Z', 'Please add a test.']] }] },
       { n: 1, project: 'chromium/src', subject: 'First', landed: '2026-01-02', lines: null, owner: 1, threads: [
-        { id: 'a/1', path: 'a`b.cc', line: 12, ps: 3, addressed: true, resolved: false,
+        { id: 'a/1', path: 'a`b.cc', line: 12, ps: 3, addressed: true, resolved: false, dir: '(root)/',
           comments: [[0, '2026-01-01T09:00Z', 'Rename this.\n\n## not a heading'], [1, '2026-01-01T10:00Z', 'Done']] }] },
       { n: 3, project: 'chromium/src', subject: 'No comments', landed: '2026-04-01', lines: 1, owner: 1, threads: [] },
     ],
@@ -1925,24 +1888,24 @@ test('feedback index download: half-year ranges, URLs and the Markdown of thread
 
 test('feedback index: a reviewer\'s addressed comments, by the approver each commenter is', async () => {
   const F = await import('../src/feedback.ts');
-  const t = (id: string, addressed: boolean | null, who: number, at: string, path = 'a.cc') =>
-    ({ id, path, line: 1, ps: 1, addressed, resolved: true, comments: [[who, at, 'x'], [0, at, 'y']] as [number, string, string][] });
-  const f = (half: string, reviewers: (string | null)[] | undefined, n: number, threads: ReturnType<typeof t>[]):
+  // A thread counts in the directory its file is in (the commit message: the change's main one).
+  const t = (id: string, addressed: boolean | null, who: number, at: string, path = 'a.cc', dir: string | null = 'ui/') =>
+    ({ id, path, line: 1, ps: 1, addressed, resolved: true, dir, comments: [[who, at, 'x'], [0, at, 'y']] as [number, string, string][] });
+  const f = (half: string, reviewers: (string | null)[], n: number, threads: ReturnType<typeof t>[]):
     import('../src/feedback.ts').ThreadFile =>
-    ({ v: reviewers ? 2 : 1, half, people: ['Own Er', 'Rev', 'Other'], ...(reviewers ? { reviewers } : {}),
+    ({ v: 3, half, people: ['Own Er', 'Rev', 'Other'], reviewers,
       cls: [{ n, project: 'chromium/src', subject: '', landed: '', lines: 1, owner: 0, threads }] });
   const files = [
     // Started by the reviewer and addressed: listed; not addressed, CL-level or started by someone else: not.
     f('2025H2', [null, 'rev@google.com', null], 10, [t('a', true, 1, '2025-08-01T10:00Z'), t('b', false, 1, '2025-08-02T10:00Z'),
-      t('c', null, 1, '2025-08-03T10:00Z', '/PATCHSET_LEVEL'), t('d', true, 2, '2025-08-04T10:00Z')]),
-    f('2026H1', [null, 'rev@google.com', 'other@google.com'], 11, [t('e', true, 1, '2026-02-01T10:00Z', '/COMMIT_MSG')]),
-    // A version-1 file names no one by address.
-    f('2026H2', undefined, 12, [t('f', true, 1, '2026-08-01T10:00Z')]),
+      t('c', null, 1, '2025-08-03T10:00Z', '/PATCHSET_LEVEL', null), t('d', true, 2, '2025-08-04T10:00Z')]),
+    f('2026H1', [null, 'rev@google.com', 'other@google.com'], 11, [t('e', true, 1, '2026-02-01T10:00Z', '/COMMIT_MSG', 'base/')]),
   ];
   assert.deepEqual(F.reviewerComments(files, 'rev@google.com'), [
     { cl: 11, project: 'chromium/src', id: 'e', day: '2026-02-01', path: '/COMMIT_MSG' },
     { cl: 10, project: 'chromium/src', id: 'a', day: '2025-08-01', path: 'a.cc' }]);
   assert.deepEqual(F.reviewerComments(files, 'rev@chromium.org'), []);
-  // A directory filter keeps only the threads it accepts.
-  assert.deepEqual(F.reviewerComments(files, 'rev@google.com', (cl, path) => cl === 10 && path === 'a.cc').map((c) => c.id), ['a']);
+  // A directory filter keeps only the threads counted in its directories.
+  assert.deepEqual(F.reviewerComments(files, 'rev@google.com', new Set(['ui/'])).map((c) => c.id), ['a']);
+  assert.deepEqual(F.reviewerComments(files, 'rev@google.com', new Set(['base/'])).map((c) => c.id), ['e']);
 });

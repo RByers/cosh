@@ -2,9 +2,10 @@
 download (web/feedback-index.html, docs/review-feedback.md, "Downloading
 your comments").
 
-For every person and half-year in the Feedback Index's per-person files
-(data/private/feedback-people/<name>.json.gz, the person's merged CLs by
-half-year, which cosh.r2 publishes), writes data/private/review-threads/<half>/<name>.json.gz:
+For every person and half-year in the Feedback Index's CL index
+(data/private/feedback-cls.json.gz, the CLs behind each person's
+published file, by half-year; `cosh.review_feedback` writes it), writes
+data/private/review-threads/<half>/<name>.json.gz:
 every thread a human reviewer other than the owner started on those CLs,
 with the full text of every comment in it. The files are too big for git
 (400 MB gzipped for all half-years, 2026-11-14), so `cosh.r2 sync` puts
@@ -14,13 +15,13 @@ Feedback Index's (the normalised address); the bucket can't be listed, so
 they can be found only by typing the person's address (docs/plan.md,
 ground rule 5).
 
-Format (v 2), JSON:
+Format (v 3), JSON:
 
-  {"v": 2, "half": "2026H1",
+  {"v": 3, "half": "2026H1",
    "people": [name, ...],             names (else addresses), indexed below
-   "reviewers": [approver or null, ...]  per person, same order (v 2): the
-                                      approver, as the person's half-year
-                                      files name approvers (`revs`), that
+   "reviewers": [approver or null, ...]  per person, same order: the
+                                      approver, as the person's file
+                                      names approvers (`revs`), that
                                       this Gerrit account is: one whose
                                       address belongs to that approver's
                                       exact identity (people.exact_identities,
@@ -32,11 +33,13 @@ Format (v 2), JSON:
                          "/COMMIT_MSG" or "/PATCHSET_LEVEL", "line": n or null,
                          "ps": patch set, "addressed": true/false/null
                          (null: CL-level, or no label yet), "resolved": bool,
+                         "dir": the 3-level directory the Feedback Index
+                         counts it in (v 3; null for CL-level threads),
                          "comments": [[people index, "YYYY-MM-DDTHH:MMZ",
                                        text], ...]}, ...]}, ...]}
 
 CLs oldest first, threads by their first comment. Offline: reads the
-published half-year files, reviews.sqlite, addressed.sqlite, commits.sqlite
+Feedback Index's CL index, reviews.sqlite, addressed.sqlite, commits.sqlite
 and review-timeline.sqlite (for people.exact_identities) and the NoteDb
 repos. Files are written byte for byte the same when nothing changed, so
 `cosh.r2 sync` uploads only what did.
@@ -61,36 +64,23 @@ from .derive import prefetch_notedb
 
 HOST = "chromium-review.googlesource.com"
 PATCHSET_LEVEL = "/PATCHSET_LEVEL"
-VERSION = 2
+VERSION = 3
 HALF = re.compile(r"^\d{4}H[12]$")
-NAME = re.compile(r"^[a-z0-9._@~-]+\.json\.gz$")
 
 
 def out_dir(data_dir=None):
     return r2.local_dir("review-threads", data_dir)
 
 
-def read_people(shards):
-    """The Feedback Index's per-person files in <shards>: {name: {half:
-    shard}}, leaving out the stubs of other addresses ({"see": name})."""
-    out = {}
-    for name in sorted(os.listdir(shards)):
-        if NAME.match(name):
-            with gzip.open(os.path.join(shards, name), "rt") as f:
-                doc = json.load(f)
-            if "halves" in doc:
-                out[name[:-8]] = doc["halves"]
-    return out
-
-
-def shard_cls(shard):
-    """The change numbers of a published half-year file (each row starts
-    with its change number less the previous row's)."""
-    n, out = 0, []
-    for row in shard["cls"]:
-        n += row[0]
-        out.append(n)
-    return out
+def read_index(path):
+    """The Feedback Index's CL index (cosh.review_feedback `cl_index`):
+    {name: {half: [(change number, approvers, {thread root: directory})]}}."""
+    with gzip.open(path, "rt") as f:
+        doc = json.load(f)
+    dirs = doc["dirs"]
+    return {k: {h: [(n, revs, {r: dirs[i] for r, i in td.items()}) for n, revs, td in cls]
+                for h, cls in by_half.items()}
+            for k, by_half in doc["people"].items()}
 
 
 def ro(path):
@@ -150,13 +140,13 @@ def write(path, doc):
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("--half", action="append", help="only these half-years (default: all)")
-    ap.add_argument("--shards", help="the Feedback Index's per-person files (default <data>/feedback-people)")
+    ap.add_argument("--cls", help="the Feedback Index's CL index (default <data>/feedback-cls.json.gz)")
     ap.add_argument("--out", help="default <data>/review-threads")
     a = ap.parse_args(argv)
     if a.out is None:
         r2.hold()
     out = a.out or out_dir()
-    a.shards = a.shards or r2.local_dir("feedback-people")
+    a.cls = a.cls or os.path.join(store.DATA_DIR, "feedback-cls.json.gz")
 
     ddb = ro(os.path.join(store.DATA_DIR, store.DERIVED_FILE))
     ldb = ro(classify.labels_path(store.DATA_DIR))
@@ -172,8 +162,9 @@ def main(argv=None):
     # and each person's approvers over all their half-years.
     ids = exact_identities(ddb, ro(C.db_path()), ro(review_timeline.db_path()))
     ident = {aid: ids.find(email) for aid, (_, _, email) in accounts.items() if email}
-    shards = read_people(a.shards)
-    person_revs = {k: {r for sh in by_half.values() for r in sh["revs"]} for k, by_half in shards.items()}
+    shards = read_index(a.cls)
+    person_revs = {k: {r for cls in by_half.values() for _, revs, _ in cls for r in revs}
+                   for k, by_half in shards.items()}
 
     have = sorted({h for by_half in shards.values() for h in by_half})
     halves = [h for h in have if not a.half or h in a.half]
@@ -182,9 +173,9 @@ def main(argv=None):
     t0 = time.time()
     files = changed = size = threads = 0
     for h in halves:
-        todo = {k: shard_cls(by_half[h]) for k, by_half in shards.items() if h in by_half}
+        todo = {k: by_half[h] for k, by_half in shards.items() if h in by_half}
         info = {}
-        ns = sorted({n for cls in todo.values() for n in cls})
+        ns = sorted({n for cls in todo.values() for n, _, _ in cls})
         for i in range(0, len(ns), 900):
             part = ns[i:i + 900]
             for row in ddb.execute(
@@ -211,11 +202,11 @@ def main(argv=None):
                     revs.append(r if r in mine else None)
                 return idx[aid]
             doc_cls = []
-            for n in cls:
+            for n, _, tdirs in cls:
                 if n not in info:
                     continue
                 project, subject, owner, closed, ins = info[n]
-                ths = [dict(t, comments=[[who(aid), at, msg] for aid, at, msg in t["comments"]])
+                ths = [dict(t, dir=tdirs.get(t["id"]), comments=[[who(aid), at, msg] for aid, at, msg in t["comments"]])
                        for t in per_cl.get(n, [])]
                 threads += len(ths)
                 doc_cls.append(dict(n=n, project=project, subject=subject or "", landed=(closed or "")[:10],
