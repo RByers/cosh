@@ -148,5 +148,10 @@ methodology shows why (what each comparison predicts, reviewers within
 the busiest directories) and the drift that remains
 (`docs/review-feedback.md`).
 
+Later the same day the person's own CLs were left out of their index's
+rate and reviewer factors, so a reviewer who approves only one author
+counts as typical for that author (`docs/review-feedback.md`, "The
+person's own CLs are left out").
+
 Not tried: reviewers who commented but didn't approve, a reviewer factor
 per period, and per 3-level directory.

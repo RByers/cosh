@@ -78,11 +78,33 @@ Both are fixed: the page has no switches for them (the user's call,
   9 up by more than 10%). Gerrit's counts already left most moves out.
 - **Feedback index (FI):** a person's addressed threads over the number
   their CLs would be expected to draw, given their experience and their
-  reviewers. A CL is expected to draw its lines / 100 × everyone's pooled
-  AFR at its experience bin (`rate_bin`) × its reviewer factor × `scale`,
-  split over its directories by inserted lines (`unit_expected` in the
-  script, `unitExpected` in `web/src/feedback.ts`); FI = addressed threads
-  / that sum. The comparison is fixed: the page has no choice of peers.
+  reviewers. A CL is expected to draw its lines / 100 × everyone else's
+  pooled AFR at its experience bin × its reviewer factor from everyone
+  else's CLs × `scale`, split over its directories by inserted lines
+  (`unit_expected` in the script, `unitExpected` in
+  `web/src/feedback.ts`); FI = addressed threads / that sum. The
+  comparison is fixed: the page has no choice of peers.
+- **The person's own CLs are left out** (2026-11-14, the user's call) of
+  both the rate and their reviewers' factors (`own_factors`, `leaveOut` in
+  the page), so nobody's own feedback sets what it is compared with. The
+  rate per bin is everyone's sums (`rate_sums`) less the person's. A
+  reviewer's factor is the fit's last step less the person's CLs:
+  (observed − theirs + `FACTOR_SHRINK`) / (expected − theirs +
+  `FACTOR_SHRINK`) / `norm`, every author's factor kept, the person's
+  computed from the published factors (`author_factor`). A reviewer who
+  approved only the person's CLs could not tell a strict reviewer from an
+  author who draws much feedback; left out, they get the prior, 1 / norm
+  (the typical reviewer), and those CLs are compared by experience alone.
+  With the person's CLs in, such a pair split the difference and pulled
+  the person's index toward 1. On 2026-11-14, 61 of 2,792 people with 25+
+  CLs moved by more than 10% (57 down: people who draw little feedback had
+  pulled their reviewers' factors down), 22 by more than 20%; the median
+  moved 0.1%. Quartiles 0.67 and 1.43 (were 0.68 and 1.43), 10th–90th
+  percentile 0.41–1.88 (0.42–1.87), split-half rank correlation 0.753
+  (0.750). Almost all of it is the reviewer factors; leaving the person
+  out of the rate alone moved 0.1% of people by over 10%. The page does
+  the subtraction from the global files and the person's CLs, so no
+  per-person file changes.
 - **Reviewers** are a CL's approvers: the addresses in its landed commit's
   `Reviewed-by` trailers (those who voted Code-Review; `commits.sqlite`
   `reviewed_by`), as identities (`Ids.find`), the owner left out. 835,086
@@ -96,7 +118,8 @@ Both are fixed: the page has no switches for them (the user's call,
   several approvers counts a share for each), alternating
   `FACTOR_ITERS` (10) times. So a reviewer isn't counted as strict for
   approving newcomers' or one weaker team's CLs, and a person's own CLs
-  don't set their reviewers' factors (the authors' factors take them).
+  set their reviewers' factors only through their author factor (and not
+  at all for their own index: see below).
   Factors are then scaled so that over all CLs they leave the expected
   total unchanged: 1.0 is the typical reviewer. 2,708 reviewers on
   2026-11-14, their factors in `reviewers.json` by hashed address.
@@ -207,11 +230,12 @@ theirs.
   the comments-per-change chart to that half-year.
 - *Your reviewers* (`reviewerRows`): everyone who approved one of the
   person's CLs, most CLs first: the person's CLs they approved, addressed
-  threads on them, the person's AFR there, the reviewer's factor, everyone's
-  CLs they approved, and the person's FI on those CLs. A CL with several
+  threads on them, the person's AFR there, the reviewer's factor without
+  the person's CLs (so it can differ a little from what others see),
+  everyone's CLs they approved, and the person's FI on those CLs. A CL with several
   approvers counts under each. Rows under `MIN_BIN_CLS` of the person's CLs
   show no AFR or FI. The note says how many of the person's CLs had no
-  approver, and `rev_none`.
+  approver, and their factor (`rev_none` without the person's CLs).
 - *Latest doubling* (the tile, `latestDoubling`): the % change in AFR from
   the person's second-newest to their newest bin with `MIN_BIN_CLS` CLs,
   per doubling when bins in between have too few, with the date they
@@ -387,20 +411,24 @@ Output (default `web/public/review-feedback/`, which Vite copies into the
 site), with `<key>` the hash of the person's address, in three kinds of file
 that the page loads at different times:
 
-- `peers.json` (global, loaded on opening; version 11, about 134 KB, 42 KB
+- `peers.json` (global, loaded on opening; version 12, about 134 KB, 42 KB
   gzipped): the experience bins (`bins`, `bin_edges`), the index's rates
-  per bin (`rate_bin`), `rev_none` and `scale`, the methodology's
+  per bin (`rate_bin`) and their sums ([lines, addressed threads],
+  `rate_sums`), `rev_none` and `scale`, the methodology's
   comparison, reviewers within directories and drift (`method`,
   `dir_revs`, `drift`), the
   median AFR per bin (`ref_bin`, `ref_all`, for comparisons), everyone's
   directory table (`dir_table`), the spread of AFR per bin (`fr_bins`) and
   of everyone's index per period (`fi`), and the methodology's data (`cohorts`, `growth`,
   `by_size`, `by_dir`, `by_org`), with the minimums the page names.
-- `reviewers.json` (loaded with the first person; about 71 KB, 34 KB
-  gzipped): `rev_none` and, per reviewer by the first 12 hex digits of
-  `key` of their address (so it lists no addresses), [factor, CLs
-  approved]. The page hashes each of the person's approvers to look them
-  up (`attachReviewers`); every figure about the person needs them.
+- `reviewers.json` (version 2, loaded with the first person; about 105
+  KB, 51 KB gzipped): `rev_none`, `none` (the observed and expected
+  threads of CLs without an approver), `norm`, `shrink` and, per reviewer
+  by the first 12 hex digits of `key` of their address (so it lists no
+  addresses), [factor, CLs approved, observed and expected addressed
+  threads]. The page hashes each of the person's approvers to look them
+  up (`attachReviewers`) and takes the person's CLs out of the sums
+  (`leaveOut`); every figure about the person needs them.
   Rewritten on every run.
 - Per person, loaded once an address is typed:
   - `u/<key>.json` (version 6): first commit, the org most of their CLs
@@ -424,8 +452,8 @@ The page computes a person's figures from these, the same way the script
 does for the spread of everyone's index: totals, AFR and FI for any period,
 and the growth rate, from the rounded rates and factors in `peers.json` and
 `reviewers.json`. `--check FILE` writes the script's values for 300
-people; on 2026-11-14, with reviewer factors, the page's `buildPerson`,
-`attachReviewers`, `sums` and `fiOf` matched all 3,475 of them exactly
+people; on 2026-11-14, with the person's own CLs left out, the page's
+`buildPerson`, `attachReviewers`, `sums` and `fiOf` matched all 3,475 of them exactly
 (FI, CLs, addressed threads and lines per period), every approver found
 by hashed address.
 
@@ -440,7 +468,8 @@ run rewrites the current half-year, `u/`, `peers.json` and
 Sizes on 2026-11-14 (6,862 people, 122 stubs), gzipped file by file as git
 stores them: 37.6 MB for the 19 half-year folders (32,676 files; 31.8 MB
 before approvers were added, the same day), 1.0 MB for `u/`, 42 KB for
-`peers.json` and 34 KB for `reviewers.json`: 39 MB in all, 110 MB
+`peers.json` and 34 KB for `reviewers.json` (51 KB once it gained each
+reviewer's sums): 39 MB in all, 110 MB
 unpacked. Each run replaces `u/` and every half-year folder.
 
 **Committed and published** (the user's call, 2026-11-12):

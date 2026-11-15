@@ -22,6 +22,7 @@ import {
   isoDay,
   latestDoubling,
   looksLikeEmail,
+  noneFactor,
   percentileOf,
   periodSpan,
   personKey,
@@ -218,7 +219,7 @@ async function lookup(raw: string) {
     const found = top && peers && reviewers && halvesOk && shards.every((s) => s)
       ? buildPerson(top.top, shards as Shard[], peers) : null;
     // Every figure about the person needs their reviewers' factors.
-    if (found) await attachReviewers(found, reviewers!);
+    if (found) await attachReviewers(found, reviewers!, peers!);
     state.peers = peers;
     state.reviewers = reviewers;
     window.__rf!.peers = peers;
@@ -906,7 +907,7 @@ function renderXpTable() {
 }
 
 /** The person's approvers: their changes each approved, the feedback on them, the reviewer's factor
- * (how much feedback their approvals draw, everyone's changes counted) and the person's index on them. */
+ * (how much feedback their approvals draw on everyone else's changes) and the person's index on them. */
 function renderReviewers() {
   const p = state.person!;
   const peers = state.peers!;
@@ -926,7 +927,7 @@ function renderReviewers() {
   }
   const none = clsIn(p, ALL).filter((c) => !c[6].length).length;
   put($('#rf-revs-note'), 'revs-note', { n: fmtInt(rows.length), none: fmtInt(none), hasNone: none > 0,
-    noneF: fmtFi(peers.rev_none), min: fmtInt(peers.min_bin_cls) });
+    noneF: fmtFi(noneFactor(p, peers)), min: fmtInt(peers.min_bin_cls) });
 }
 
 /** A table cell for a feedback index, shaded green below 1 and red above. */

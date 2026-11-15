@@ -81,9 +81,14 @@ class ReviewFeedbackTest(unittest.TestCase):
         weighted = sum(r.lines / 100 * m["rate_bin"][r.bin] * R.rev_factor(r, f, m["rev_none"]) for r in rows)
         self.assertAlmostEqual(weighted / total, 1.0, delta=0.002)
         # Everyone is alike, so every index is 1 after scaling, and each CL's expected threads are its
-        # lines / 100 × the rate × its reviewer's factor × the scale.
+        # lines / 100 × the rate × its reviewer's factor × the scale, both without the owner's CLs,
+        # which here barely differ from everyone's.
         r = rows[0]
-        self.assertAlmostEqual(R.expected(r, m), 100 / 100 * 2.4 * f["strict@x.com"] * m["scale"])
+        own = m["_own"][r.pid]
+        self.assertAlmostEqual(own["rate_bin"][1], 2.4)
+        self.assertAlmostEqual(own["f"]["strict@x.com"], f["strict@x.com"], delta=0.01)
+        self.assertEqual(set(own["f"]), {"strict@x.com", "easy@x.com"})
+        self.assertAlmostEqual(R.expected(r, m), 100 / 100 * 2.4 * own["f"]["strict@x.com"] * m["scale"])
         self.assertEqual(R.unit_expected(r, m), [R.expected(r, m)])
         ex = [R.expected(x, m) for x in rows if x.pid == 3]
         self.assertAlmostEqual(sum(x.addr for x in rows if x.pid == 3) / sum(ex), 1.0, places=3)
@@ -98,6 +103,28 @@ class ReviewFeedbackTest(unittest.TestCase):
         self.assertEqual([d[0] for d in drift], ["1970H1"])
         self.assertAlmostEqual(drift[0][2], 1.0, places=3)
         self.assertEqual(R.size_deviance(rows[:1], [4.0]), 0.0)
+
+    def test_own_changes_left_out(self):
+        # Twenty people alike, as above, with one reviewer for everyone; person 99 draws three times as
+        # much feedback, with a reviewer who approves only their CLs. With person 99's CLs in, that
+        # reviewer would look strict and person 99's index would be pulled toward 1; without them, the
+        # reviewer is the typical one and the index shows all of it.
+        def row(pid, rev, a):
+            return R.Row(pid, 0, 100, 8, 1, "o", a, [("ui/a/", 1.0, a, a)], "ui/a/", (rev,))
+        rows = [row(pid, "all@x.com", 2) for pid in range(20) for _ in range(40)]
+        rows += [row(99, "solo@x.com", 6) for _ in range(40)]
+        m = R.rate_model(rows)
+        self.assertGreater(m["_rev_factors"]["solo@x.com"], 1.3)
+        own = m["_own"][99]
+        self.assertEqual(set(own["f"]), {"solo@x.com"})
+        self.assertAlmostEqual(own["f"]["solo@x.com"], own["rev_none"], places=3)
+        # Everyone else's rate: 2 threads per 100 lines.
+        self.assertAlmostEqual(own["rate_bin"][1], 2.0)
+        mine = [r for r in rows if r.pid == 99]
+        fi = sum(r.addr for r in mine) / sum(R.expected(r, m) for r in mine)
+        others = [r for r in rows if r.pid == 0]
+        fi0 = sum(r.addr for r in others) / sum(R.expected(r, m) for r in others)
+        self.assertAlmostEqual(fi / fi0, 3.0, delta=0.15)
         # Reviewers within directories (2 levels): ui/a/ has only two reviewers, too few to list.
         self.assertEqual(R.dir_reviewers(rows), [])
         old = R.MIN_PEERS

@@ -41,11 +41,15 @@ export const shards: Record<string, Shard> = {
 };
 
 /** reviewers.json: Alice's approvals draw 1.2× what experience predicts, Bob's 0.6×, and changes
- * without an approver 0.5×; keyed by the first 12 hex digits of personKey of their addresses. */
+ * without an approver 0.5×; keyed by the first 12 hex digits of personKey of their addresses. Their sums
+ * are so large that leaving the person's three changes out moves no factor by more than 1e-9. */
 export const reviewers: ReviewerTable = {
-  v: 1,
+  v: 2,
   rev_none: 0.5,
-  f: { be7cd94b029a: [1.2, 900], e370b1ea692c: [0.6, 300] },
+  none: [0.5e12, 1e12],
+  norm: 1,
+  shrink: 50,
+  f: { be7cd94b029a: [1.2, 900, 1.2e12, 1e12], e370b1ea692c: [0.6, 300, 0.6e12, 1e12] },
 };
 
 const periods = ['all', '2023H2', '2024H1', '2024H2', '2025H1', '2025H2', '2026H1', '2026H2'];
@@ -57,7 +61,7 @@ const curve = Array.from({ length: 71 }, (_, i): [number, number] => {
 });
 
 export const peers: Peers = {
-  v: 11,
+  v: 12,
   generated: '2026-11-14',
   start: day('2023-07-01'),
   end: day('2026-11-01'),
@@ -77,6 +81,8 @@ export const peers: Peers = {
   min_dir_cls: 100,
   // Everyone's rate per bin, and the factor of changes without an approver (reviewers.json has it too).
   rate_bin: refBin,
+  // Its sums, large enough that leaving the person out barely moves it.
+  rate_sums: refBin.map((r): [number, number] => [1e12, r * 1e10]),
   rev_none: 0.5,
   scale: 1,
   // The methodology: what each peer group predicts, how widely directories and reviewers differ, and

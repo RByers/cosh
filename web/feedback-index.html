@@ -111,8 +111,9 @@
         <h2 id="index-title">Feedback index</h2>
         <p class="rf-def">
           <strong>Feedback index</strong>: a contributor's addressed comments over the number their changes would
-          be expected to draw: everyone's AFR at the same experience, times how much feedback the changes'
-          reviewers' approvals usually draw (their reviewer factor: 1.00× for the typical reviewer). Comparing by
+          be expected to draw: everyone else's AFR at the same experience, times how much feedback the changes'
+          reviewers' approvals usually draw on everyone else's changes (their reviewer factor: 1.00× for the
+          typical reviewer). Comparing by
           reviewer predicts feedback better than comparing by directory, and it means picking a lenient reviewer
           doesn't lower anyone's index (see the methodology below). 1.00× is typical (the median contributor);
           below 1 means less feedback than expected, above 1 more. Because it compares each change with others at
@@ -277,7 +278,7 @@
         <h2 id="reviewers-title">Your reviewers</h2>
         <p class="sub">
           Who approved your changes, and how much feedback their approvals usually draw. Your index compares
-          each change with what its reviewers' approvals draw on everyone's changes.
+          each change with what its reviewers' approvals draw on everyone else's changes.
         </p>
         <div class="table-wrap">
           <table id="rf-revs" class="rf-table">
@@ -285,7 +286,7 @@
               <th scope="col" class="num" title="Your changes they approved">Your changes</th>
               <th scope="col" class="num" title="Addressed comments on those changes, from anyone">Addressed</th>
               <th scope="col" class="num" title="Your addressed comments per 100 lines on those changes">Your AFR</th>
-              <th scope="col" class="num" title="How much feedback changes they approve draw, against what experience predicts: 1.00× is typical">Reviewer factor</th>
+              <th scope="col" class="num" title="How much feedback other people's changes they approve draw, against what experience predicts: 1.00× is typical">Reviewer factor</th>
               <th scope="col" class="num" title="Everyone's changes they approved">Approved overall</th>
               <th scope="col" class="num" title="Your feedback index on the changes they approved">Your index</th></tr></thead>
             <tbody></tbody>
@@ -296,7 +297,8 @@
           <slot name="n"></slot> reviewers approved your changes, from their Reviewed-by lines (those who voted
           Code-Review). A change with several counts under each, and its reviewer factor is their mean. A
           reviewer factor is fitted together with every author's own factor, so a reviewer who mostly approves
-          newcomers' changes isn't counted as strict for that.<span data-if="hasNone"> <slot name="none"></slot>
+          newcomers' changes isn't counted as strict for that, and it leaves your changes out: a reviewer who
+          approves few changes but yours counts as typical.<span data-if="hasNone"> <slot name="none"></slot>
           of your changes had no approver; such changes draw almost no feedback, and their factor is
           <slot name="noneF"></slot>.</span> Rows with fewer than <slot name="min"></slot> of your changes show no
           AFR or index.
@@ -553,14 +555,18 @@
         </p>
         <p class="note">
           The feedback index divides the addressed comments on your changes by the number they would be expected
-          to draw: each change's lines times everyone's AFR at the change's experience (pooled: all their
+          to draw: each change's lines times everyone else's AFR at the change's experience (pooled: all their
           addressed comments per 100 of all their lines), times its reviewer factor. A change's reviewers are
           its approvers (the Reviewed-by lines of the landed commit, those who voted Code-Review), and its
           factor is their mean. Each reviewer's factor is fitted together with a factor for every author: a
           change is expected to draw experience × author × reviewer, each factor is what it must be given the
           others, and each is pulled toward 1.00× until it has enough changes behind it. So a reviewer isn't
-          counted as strict because they mostly approve newcomers, and your own changes don't set your
-          reviewers' factors. The factors cover every year (see “Drift over time” above). Pooled rates are lower
+          counted as strict because they mostly approve newcomers. Your own changes are left out of what
+          yours are compared with: the AFR at each experience is everyone else's, and each of your reviewers'
+          factors is refitted without your changes (keeping every author's factor as fitted), so a reviewer who
+          approves few changes but yours counts as typical rather than taking on your feedback. The table of
+          your reviewers shows these factors, so they can differ a little from what others see for the same
+          reviewer. The factors cover every year (see “Drift over time” above). Pooled rates are lower
           than the typical contributor's (big changes draw less feedback per line), so the expected comments are
           scaled to make the median contributor's index 1.00×. A directory's index in the tables is its
           addressed comments over the expected ones on the lines there, so it adds up to the overall index. The

@@ -1194,9 +1194,9 @@
       "tier": "published",
       "tracked_in_git": true,
       "rebuildable": true,
-      "size": "about 71 KB (34 KB gzipped): 2,708 reviewers",
+      "size": "about 105 KB (51 KB gzipped): 2,708 reviewers",
       "size_as_of": "2026-11-14",
-      "purpose": "Each reviewer's factor (feedback their approvals draw against what experience predicts), by hashed address, which the index uses; loaded with a person.",
+      "purpose": "Each reviewer's factor (feedback their approvals draw against what experience predicts) and its sums, by hashed address, from which the page leaves out the person's own changes.",
       "notes": "Rewritten on every run of review-feedback."
     },
     {

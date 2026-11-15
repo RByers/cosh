@@ -1504,7 +1504,7 @@ test('review feedback: the AFR and index, as the script computes them', async ()
   const F = await import('../src/feedback.ts');
   const { top, shards, reviewers, peers, day } = await import('./feedback-fixture.ts');
   const person = F.buildPerson(top, top.halves.map((h) => shards[h]), peers);
-  await F.attachReviewers(person, reviewers);
+  await F.attachReviewers(person, reviewers, peers);
   // Experience bins double: <8, 8–15, ..., 2k+ (cosh/review_feedback.py xbin).
   assert.deepEqual([0, 7, 8, 15, 16, 1023, 1024, 2047, 2048, 50000].map((n) => F.xbin(peers.bin_edges, n)),
     [0, 0, 1, 1, 2, 7, 8, 8, 9, 9]);
@@ -1531,7 +1531,9 @@ test('review feedback: the AFR and index, as the script computes them', async ()
   near(F.frOf(s), 300 / 170);
   // Reviewers from reviewers.json by hashed address: Alice 1.2×, Bob 0.6×; a change takes its approvers'
   // mean factor, or rev_none without one.
-  assert.deepEqual([person.revF, person.revCls], [[1.2, 0.6], [900, 300]]);
+  near(person.revF[0], 1.2);
+  near(person.revF[1], 0.6);
+  assert.deepEqual(person.revCls, [900, 300]);
   cs.map((c) => F.revFactor(person, peers, c)).forEach((g, i) => near(g, [1.2, 0.9, 0.5][i]));
   // Expected: lines / 100 × everyone's AFR at the change's experience × its reviewer factor. CL 1 at bin 2
   // (2.5), CL 2 at bin 4 (1.7), CL 3 at bin 6 (1).
@@ -1545,14 +1547,28 @@ test('review feedback: the AFR and index, as the script computes them', async ()
   assert.deepEqual(F.dirLevels('(root)/'), ['(root)/', '']);
   // The person's reviewers: Alice approved CLs 1 and 2, Bob CL 2; most changes first.
   const rv = F.reviewerRows(person, peers, 'all');
-  assert.deepEqual(rv.map((r) => [r.email, r.factor, r.approved, r.cls, r.lines, r.addressed]),
+  assert.deepEqual(rv.map((r) => [r.email, Math.round(r.factor * 1000) / 1000, r.approved, r.cls, r.lines, r.addressed]),
     [['alice@google.com', 1.2, 900, 2, 160, 2], ['bob@igalia.com', 0.6, 300, 1, 120, 1]]);
   near(rv[0].expected, 0.4 * 2.5 * 1.2 + 1.2 * 1.7 * 0.9);
   assert.deepEqual(F.reviewerRows(person, peers, '2026H2'), []);
   // A reviewer missing from reviewers.json counts as typical.
   const p2 = F.buildPerson(top, top.halves.map((h) => shards[h]), peers);
-  await F.attachReviewers(p2, { ...reviewers, f: {} });
+  await F.attachReviewers(p2, { ...reviewers, f: {} }, peers);
   assert.deepEqual(p2.revF, [1, 1]);
+  // The person's own changes are left out of what theirs are compared with. Here Alice approved nothing
+  // but theirs, so she counts as typical (1 / norm); Bob's factor comes from his other changes. In bin 2
+  // only the person has lines, so its rate stays everyone's; in bin 4 everyone else drew 20 addressed
+  // comments on 1,000 lines.
+  const sums4 = peers.rate_sums.map((x, b): [number, number] => (b === 2 ? [40, 1] : b === 4 ? [1120, 21] : x));
+  const own = F.buildPerson(top, top.halves.map((h) => shards[h]), peers);
+  await F.attachReviewers(own, { ...reviewers, norm: 0.8, none: [0.4e12, 1e12],
+    f: { be7cd94b029a: [1.2, 900, 0, 0], e370b1ea692c: [0.6, 300, 0.48e12, 1e12] } }, { ...peers, rate_sums: sums4 });
+  near(own.revF[0], 1.25);
+  near(own.revF[1], 0.6);
+  near(F.noneFactor(own, peers), 0.5);
+  near(own.rateBin![2], 2.5);
+  near(own.rateBin![4], 2);
+  near(F.sums(own, peers, F.clsIn(own, 'all')).expected, 0.4 * 2.5 * 1.25 + 1.2 * 2 * (1.25 + 0.6) / 2 + 0.1 * 1 * 0.5);
   // The scale multiplies what's expected.
   near(F.sums(person, { ...peers, scale: 0.5 }, cs).expected, s.expected / 2);
   // Per bin, and the growth rate: rates 2.5, 0.83 and 10 at bins 2, 4 and 6 fit a line of +41% per doubling.
@@ -1584,7 +1600,7 @@ test('review feedback: everyone\'s directory table with the person\'s columns, a
   const F = await import('../src/feedback.ts');
   const { top, shards, reviewers, peers, day } = await import('./feedback-fixture.ts');
   const person = F.buildPerson(top, top.halves.map((h) => shards[h]), peers);
-  await F.attachReviewers(person, reviewers);
+  await F.attachReviewers(person, reviewers, peers);
   const near = (a: number, b: number) => assert.ok(Math.abs(a - b) < 1e-9, `${a} vs ${b}`);
   const ui2 = (120 * 28) / 118;
   // Everyone's directory table, with the person's changes: CL 3 is in third_party/blink/, which is in

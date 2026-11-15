@@ -8,8 +8,9 @@
 // threads per 100 new or changed lines (insertions). The feedback index (FI) is a person's AFR
 // over what their changes would be expected to draw: everyone's AFR at the same
 // experience (CLs landed on main, in power-of-two bins), times the change's
-// reviewer factor (how much feedback its approvers' approvals usually draw; the
-// factors are in reviewers.json, loaded with the person).
+// reviewer factor (how much feedback its approvers' approvals usually draw), both
+// from everyone else's changes: `leaveOut` takes the person's own changes out of
+// the sums in peers.json and reviewers.json (loaded with the person).
 
 /** A change's lines in one 3-level directory: [directory index, the landed commit's inserted lines there]. */
 export type Unit = [number, number];
@@ -60,20 +61,30 @@ export interface Person {
   org: string | null;
   dirs: string[];
   files: string[];
-  /** Everyone who approved one of the person's changes (Reviewed-by), and each one's reviewer factor and
-   * changes approved over all the data (from reviewers.json, `attachReviewers`; 1 and 0 until then). */
+  /** Everyone who approved one of the person's changes (Reviewed-by), and each one's reviewer factor
+   * (from everyone else's changes) and changes approved over all the data (`attachReviewers`; 1 and 0 until
+   * then). */
   revs: string[];
   revF: number[];
   revCls: number[];
+  /** Everyone else's pooled AFR per experience bin and the factor of the person's changes without an
+   * approver, the person's own changes left out (`leaveOut`; null until then: everyone's). */
+  rateBin: number[] | null;
+  revNone: number | null;
   cls: ClRow[];
 }
 
 /** reviewers.json: per reviewer, by the first 12 hex digits of `personKey` of their address, [their
- * factor, changes they approved]; `rev_none` is the factor of changes without an approver. */
+ * factor, changes they approved, their observed and expected addressed threads]; `rev_none` is the factor
+ * of changes without an approver, `none` their observed and expected threads. A factor is (observed +
+ * `shrink`) / (expected + `shrink`) / `norm` (cosh/review_feedback.py `own_model`). */
 export interface ReviewerTable {
-  v: 1;
+  v: 2;
   rev_none: number;
-  f: Record<string, [number, number]>;
+  none: [number, number];
+  norm: number;
+  shrink: number;
+  f: Record<string, [number, number, number, number]>;
 }
 
 /** Another address of someone: their file's key. */
@@ -94,7 +105,7 @@ export type DirTableEntry = [string, 0 | 1 | 2, number, number, number, number?]
 
 /** peers.json (cosh/review_feedback.py, version 11). */
 export interface Peers {
-  v: 11;
+  v: 12;
   generated: string;
   /** The changes covered, as day numbers: from `start` up to (not including) `end`.
    * Only changes from `addr_start` have addressed labels. */
@@ -123,8 +134,9 @@ export interface Peers {
   /** A directory gets a row of its own in everyone's directory table with this many changes. */
   min_dir_cls: number;
   /** Everyone's pooled AFR per experience bin: what a change is expected to draw, before its reviewer
-   * factor. */
+   * factor; and its sums, [lines, addressed threads] per bin, from which `leaveOut` takes the person's own. */
   rate_bin: number[];
+  rate_sums: [number, number][];
   /** The reviewer factor of changes without an approver. */
   rev_none: number;
   /** The methodology's comparison of peer groups: [model, deviance, % of the experience-only model's
@@ -300,26 +312,70 @@ export function halfOf(day: number): string {
 }
 
 /** A change's reviewer factor: its approvers' mean factor, or `rev_none` without one
- * (cosh/review_feedback.py `rev_factor`). */
+ * (cosh/review_feedback.py `rev_factor`), the person's own changes left out where their file says. */
 export function revFactor(p: Person, peers: Pick<Peers, 'rev_none'>, c: ClRow): number {
   const r = c[6];
-  return r.length ? r.reduce((a, i) => a + p.revF[i], 0) / r.length : peers.rev_none;
+  return r.length ? r.reduce((a, i) => a + p.revF[i], 0) / r.length : noneFactor(p, peers);
 }
 
+/** The factor of the person's changes without an approver. */
+export const noneFactor = (p: Person, peers: Pick<Peers, 'rev_none'>) => p.revNone ?? peers.rev_none;
+
 /** The addressed threads each unit of a change would draw (cosh/review_feedback.py `unit_expected`):
- * its lines / 100 × everyone's AFR at the change's experience × its reviewer factor × the scale. */
+ * its lines / 100 × everyone else's AFR at the change's experience × its reviewer factor × the scale. */
 export function unitExpected(p: Person, peers: Peers, c: ClRow): number[] {
-  const rate = peers.rate_bin[xbin(peers.bin_edges, c[5])];
+  const rate = (p.rateBin ?? peers.rate_bin)[xbin(peers.bin_edges, c[5])];
   const g = revFactor(p, peers, c);
   const fr_ = unitFracs(c[3]);
   return c[3].map((_, i) => (c[2] * fr_[i] / 100) * rate * g * peers.scale);
 }
 
-/** Looks up the person's approvers in reviewers.json (by `personKey`'s first 12 hex digits). */
-export async function attachReviewers(p: Person, table: ReviewerTable): Promise<void> {
+/** Looks up the person's approvers in reviewers.json (by `personKey`'s first 12 hex digits), then
+ * leaves the person's own changes out of what theirs are compared with (`leaveOut`). */
+export async function attachReviewers(p: Person, table: ReviewerTable, peers: Peers): Promise<void> {
   const keys = await Promise.all(p.revs.map((e) => personKey(e)));
-  p.revF = keys.map((k) => table.f[k.slice(0, 12)]?.[0] ?? 1);
-  p.revCls = keys.map((k) => table.f[k.slice(0, 12)]?.[1] ?? 0);
+  const rows = keys.map((k) => table.f[k.slice(0, 12)]);
+  p.revF = rows.map((r) => r?.[0] ?? 1);
+  p.revCls = rows.map((r) => r?.[1] ?? 0);
+  leaveOut(p, peers, table, rows);
+}
+
+/** Takes the person's labelled changes out of everyone's sums (cosh/review_feedback.py `own_factors`):
+ * the AFR per experience bin becomes everyone else's, and each of their reviewers' factors is refitted
+ * without their changes, given their author factor as the published factors imply. A reviewer who approved
+ * only the person's changes ends up at 1 / norm, the typical reviewer. `rows`: the person's approvers'
+ * entries in reviewers.json, in `p.revs` order (`p.revF` still everyone's). */
+export function leaveOut(p: Person, peers: Peers, table: ReviewerTable,
+  rows: ([number, number, number, number] | undefined)[]): void {
+  const cs = clsIn(p, 'all');
+  const bins = cs.map((c) => xbin(peers.bin_edges, c[5]));
+  const mine = peers.rate_sums.map(() => [0, 0]);
+  let addressed = 0;
+  let expected = 0;
+  cs.forEach((c, i) => {
+    const a = addressedOn(c);
+    mine[bins[i]][0] += c[2];
+    mine[bins[i]][1] += a;
+    addressed += a;
+    expected += c[2] / 100 * peers.rate_bin[bins[i]] * revFactor(p, peers, c) * table.norm;
+  });
+  const k = table.shrink;
+  const fa = (addressed + k) / (expected + k);
+  const obs = new Map<number, number>();
+  const exp = new Map<number, number>();
+  cs.forEach((c, i) => {
+    const vs = c[6].length ? c[6] : [-1];
+    for (const v of vs) {
+      obs.set(v, (obs.get(v) ?? 0) + addressedOn(c) / vs.length);
+      exp.set(v, (exp.get(v) ?? 0) + c[2] / 100 * peers.rate_bin[bins[i]] * fa / vs.length);
+    }
+  });
+  const factor = ([o, e]: [number, number], v: number) =>
+    (Math.max(o - (obs.get(v) ?? 0), 0) + k) / (Math.max(e - (exp.get(v) ?? 0), 0) + k) / table.norm;
+  p.revF = p.revF.map((f, i) => (obs.has(i) ? factor([rows[i]?.[2] ?? 0, rows[i]?.[3] ?? 0], i) : f));
+  p.revNone = factor(table.none, -1);
+  p.rateBin = peers.rate_sums.map(([lines, a], b) =>
+    lines - mine[b][0] > 0 ? fr(a - mine[b][1], lines - mine[b][0])! : peers.rate_bin[b]);
 }
 
 /** One of the person's approvers, over the person's labelled changes in a period. */
@@ -690,7 +746,8 @@ export function buildPerson(top: Top, shards: Shard[], peers: Pick<Peers, 'addr_
   cls.sort((a, b) => a[1] - b[1] || a[0] - b[0]);
   return { addrStart: peers.addr_start, first: top.first, firstDay: top.first_day, org: top.org,
     dirs: [...tables.dirs.keys()], files: [...tables.files.keys()], revs: [...tables.revs.keys()],
-    revF: [...tables.revs.keys()].map(() => 1), revCls: [...tables.revs.keys()].map(() => 0), cls };
+    revF: [...tables.revs.keys()].map(() => 1), revCls: [...tables.revs.keys()].map(() => 0),
+    rateBin: null, revNone: null, cls };
 }
 
 // ---- downloading your comments (cosh/review_threads.py, served from the R2 bucket)

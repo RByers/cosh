@@ -2,9 +2,10 @@
 docs/review-feedback.md).
 
 The addressed feedback rate (AFR) of a set of CLs is their addressed reviewer threads
-per 100 new or changed lines; the feedback index (FI) is a person's AFR over their
-peers' (the AFR of everyone else's lines in the same directory and experience
-bin, over all the data: `rate_model`, `peer_rate`, `expected`).
+per 100 new or changed lines; the feedback index (FI) is their addressed threads
+over what their CLs would be expected to draw: everyone else's AFR at the same
+experience, times each CL's reviewer factor from everyone else's CLs, over all
+the data (`rate_model`, `own_factors`, `expected`).
 
 Offline. Reads reviews.sqlite, commits.sqlite and addressed.sqlite (never
 review tone or comment text) and writes, under --out (default
@@ -504,13 +505,18 @@ def rate_model(rows):
     approvers' mean factor from `two_way`, `rev_factors`; CLs without
     approvers take `rev_none`). Factors are scaled so that, over all CLs,
     they leave the expected threads' total unchanged: 1.0 is the typical
-    reviewer. scale: multiplies the expected threads so that the median
-    person's index (people with MIN_CLS CLs) is 1. ref_bin (the median AFR
-    per experience bin, the main chart's line) and ref_all (everyone's
-    median) are for the page's comparisons. All rounded, as the page uses
-    them. Keys starting with "_" aren't published: `_ue` holds each row's
-    expected threads per unit before scaling, `_fa` the author factors,
-    `_rev_cls` each reviewer's CLs."""
+    reviewer. A person's own CLs are compared with everyone else's: their
+    rates and their reviewers' factors with the person's own CLs left out
+    (`_own`, from `own_factors`). scale: multiplies the expected threads so
+    that the median person's index (people with MIN_CLS CLs) is 1. ref_bin
+    (the median AFR per experience bin, the main chart's line) and ref_all
+    (everyone's median) are for the page's comparisons. All rounded, as the
+    page uses them. rate_sums: per experience bin, [lines, addressed
+    threads], from which the page takes away the person's own. Keys
+    starting with "_" aren't published here: `_ue` holds each row's expected
+    threads per unit before scaling, `_fa` the author factors, `_rev_cls`
+    each reviewer's CLs, `_norm`, `_rev_sums` and `_own` are from
+    `own_model` (the first two go in reviewers.json)."""
     by_pid = defaultdict(list)
     for r in rows:
         by_pid[r.pid].append(r)
@@ -532,12 +538,17 @@ def rate_model(rows):
     rev_none = r3(raw[""] / norm)
     rev_factors = {v: r3(x / norm) for v, x in raw.items() if v}
     rev_cls = Counter(v for r in rows for v in r.revs)
+    norm = round(norm, 4)
+    rate_sums = [[lines, a] for lines, a in cells]
+    rev_sums, own = own_model(rows, rate_sums, rate_bin, rev_factors, rev_none, norm)
     ue = {}
     for r in rows:
-        g = rev_factor(r, rev_factors, rev_none)
-        ue[id(r)] = [r.lines * f / 100 * rate_bin[r.bin] * g for _, f, _, _ in r.units]
-    m = dict(ref_bin=ref_bin, ref_all=r3(st.median(alls)), rate_bin=rate_bin, rev_none=rev_none, scale=1.0,
-             _ue=ue, _fa=fa, _rev_factors=rev_factors, _rev_cls=rev_cls)
+        o = own[r.pid]
+        g = rev_factor(r, o["f"], o["rev_none"])
+        ue[id(r)] = [r.lines * f / 100 * o["rate_bin"][r.bin] * g for _, f, _, _ in r.units]
+    m = dict(ref_bin=ref_bin, ref_all=r3(st.median(alls)), rate_bin=rate_bin, rate_sums=rate_sums,
+             rev_none=rev_none, scale=1.0, _ue=ue, _fa=fa, _rev_factors=rev_factors, _rev_cls=rev_cls,
+             _norm=norm, _rev_sums=rev_sums, _own=own)
     # Pooled rates aren't the typical person's (big CLs draw less per line),
     # so the expected threads are scaled to make the median person's index 1.
     xs = []
@@ -550,10 +561,75 @@ def rate_model(rows):
     return m
 
 
+def author_factor(rs, rate_bin, f, none, norm):
+    """A person's author factor as the page can compute it from the
+    published rates and factors: (their addressed threads + FACTOR_SHRINK)
+    / (what experience and their reviewers expect + FACTOR_SHRINK), the
+    factors unscaled (× norm), as in `two_way`."""
+    e = sum(r.lines / 100 * rate_bin[r.bin] * rev_factor(r, f, none) * norm for r in rs)
+    return (sum(r.addr for r in rs) + FACTOR_SHRINK) / (e + FACTOR_SHRINK)
+
+
+def own_factors(rs, rate_sums, rate_bin, rev_sums, f, none, norm):
+    """What one person's CLs (`rs`) are compared with, their own CLs left
+    out: {rate_bin: everyone else's pooled AFR per experience bin
+    (everyone's where only they have lines), f: {reviewer: factor} for the
+    reviewers of their CLs, rev_none}. A reviewer's factor is `two_way`'s
+    last step without the person's CLs: (observed - theirs +
+    FACTOR_SHRINK) / (expected - theirs + FACTOR_SHRINK) / norm, from
+    `rev_sums`, so a reviewer who approved only this person's CLs gets 1 /
+    norm, the typical reviewer, and the person's CLs with them are compared
+    by experience alone. The page computes the same from the published
+    sums (`leaveOut` in web/src/feedback.ts); unrounded, like the page."""
+    mine = [[0, 0] for _ in BIN_LABELS]
+    for r in rs:
+        mine[r.bin][0] += r.lines
+        mine[r.bin][1] += r.addr
+    rb = [fr(a - ma, lines - ml) if lines - ml > 0 else rate_bin[b]
+          for b, ((lines, a), (ml, ma)) in enumerate(zip(rate_sums, mine))]
+    fa = author_factor(rs, rate_bin, f, none, norm)
+    pobs, pexp = defaultdict(float), defaultdict(float)
+    for r in rs:
+        vs = r.revs or ("",)
+        for v in vs:
+            pobs[v] += r.addr / len(vs)
+            pexp[v] += r.lines / 100 * rate_bin[r.bin] * fa / len(vs)
+    own = {}
+    for v in pobs:
+        o, e = rev_sums.get(v, (0, 0))
+        own[v] = (max(o - pobs[v], 0) + FACTOR_SHRINK) / (max(e - pexp[v], 0) + FACTOR_SHRINK) / norm
+    o, e = rev_sums[""]
+    none_own = own.pop("", (o + FACTOR_SHRINK) / (e + FACTOR_SHRINK) / norm)
+    return dict(rate_bin=rb, f=own, rev_none=none_own)
+
+
+def own_model(rows, rate_sums, rate_bin, f, none, norm):
+    """Each reviewer's observed and expected addressed threads (`two_way`'s
+    last step, from the published rates and factors: each author's factor
+    from `author_factor`), rounded as published in reviewers.json:
+    {reviewer ("" for no approver): [observed, expected]}; and each
+    person's comparison without their own CLs ({person: `own_factors`})."""
+    by_pid = defaultdict(list)
+    for r in rows:
+        by_pid[r.pid].append(r)
+    obs, exp = defaultdict(float), defaultdict(float)
+    for rs in by_pid.values():
+        fa = author_factor(rs, rate_bin, f, none, norm)
+        for r in rs:
+            vs = r.revs or ("",)
+            for v in vs:
+                obs[v] += r.addr / len(vs)
+                exp[v] += r.lines / 100 * rate_bin[r.bin] * fa / len(vs)
+    rev_sums = {v: [round(obs[v], 2), round(exp[v], 2)] for v in obs}
+    rev_sums.setdefault("", [0, 0])
+    return rev_sums, {p: own_factors(rs, rate_sums, rate_bin, rev_sums, f, none, norm) for p, rs in by_pid.items()}
+
+
 def unit_expected(r, m):
     """The addressed threads each unit of a CL would draw: its lines / 100 ×
-    everyone's AFR at the CL's experience × the CL's reviewer factor × the
-    scale."""
+    everyone else's AFR at the CL's experience × the CL's reviewer factor
+    from everyone else's CLs × the scale (the owner's CLs left out of both,
+    `own_factors`)."""
     return [x * m["scale"] for x in m["_ue"][id(r)]]
 
 
@@ -1080,7 +1156,7 @@ def main():
     # ------------------------------------------------ peers
     dist = lambda xs: dict(n=len(xs), q=quantiles(xs) if len(xs) >= MIN_PEERS else None)
     first_year = {pid: datetime.fromtimestamp(t, timezone.utc).year for pid, t in first.items()}
-    peers = dict(v=11, generated=datetime.now(timezone.utc).strftime("%Y-%m-%d"), periods=allp,
+    peers = dict(v=12, generated=datetime.now(timezone.utc).strftime("%Y-%m-%d"), periods=allp,
                  start=epoch_day(START), end=epoch_day(END), addr_start=epoch_day(ADDR_START),
                  min_peers=MIN_PEERS, min_cls=MIN_CLS, min_bin_cls=MIN_BIN_CLS, min_cell_cls=MIN_CELL_CLS,
                  min_growth_bins=MIN_GROWTH_BINS, fr_floor=FR_FLOOR, bins=BIN_LABELS, bin_edges=BIN_EDGES,
@@ -1115,18 +1191,22 @@ def main():
     os.makedirs(os.path.join(out, "u"), exist_ok=True)
     with open(os.path.join(out, "peers.json"), "w") as f:
         json.dump(peers, f, separators=(",", ":"))
-    # reviewers.json: each reviewer's factor and CLs approved, by the first 12
-    # hex digits of `key` of their address, so the file lists no addresses;
-    # the page loads it with a person and looks up their reviewers.
+    # reviewers.json: each reviewer's factor, CLs approved, and observed and
+    # expected addressed threads (from which the page takes away the
+    # person's own: `own_factors`), by the first 12 hex digits of `key` of
+    # their address, so the file lists no addresses; the page loads it with
+    # a person and looks up their reviewers.
     revs = {}
+    rs_ = model["_rev_sums"]
     for v, x in sorted(model["_rev_factors"].items()):
         k = key(v)[:12]
         if k in revs:
             print("reviewer key collision, kept the first", file=sys.stderr)
             continue
-        revs[k] = [x, model["_rev_cls"][v]]
+        revs[k] = [x, model["_rev_cls"][v], *rs_[v]]
     with open(os.path.join(out, "reviewers.json"), "w") as f:
-        json.dump(dict(v=1, rev_none=model["rev_none"], f=revs), f, separators=(",", ":"))
+        json.dump(dict(v=2, rev_none=model["rev_none"], none=rs_[""], norm=model["_norm"], shrink=FACTOR_SHRINK,
+                       f=revs), f, separators=(",", ":"))
     written, stubs, size = 0, 0, 0
     taken = {}
     for pid, cs in people.items():
