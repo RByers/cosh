@@ -235,7 +235,7 @@ function renderAttention() {
     (v) => fmtHours(v), undefined, attFrom(all));
   put($('#rl-attention-note'), 'attention-note', { last: q,
     reviewers: fmtInt(all.attention.reviewers[i] ?? 0), mean: fmtInt(Math.round(mean[i] ?? 0)),
-    turn: fmtNum(ratio(all.attention.hours[i], all.attention.turns[i]) ?? 0, { maximumFractionDigits: 1 }), you: !!p });
+    turn: fmtNum(ratio(all.attention.turn_hours[i], all.attention.turns[i]) ?? 0, { maximumFractionDigits: 1 }), you: !!p });
 }
 
 // ---- the directory table

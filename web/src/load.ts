@@ -12,8 +12,9 @@ export interface Series {
   n: number[];
 }
 
-/** A directory of the table: [path, lines reviewed in each of `table_quarters`,
- * reviewers' weekday attention-set hours and turns in each of the last four]. */
+/** A directory of the table: [path, lines reviewed in each of `table_quarters`, the weekday hours of
+ * reviewers' turns (stays in the attention set that ended before the change closed) and the turns, in
+ * each of the last four]. */
 export type DirEntry = [string, number[], number[], number[], OwnFigures?];
 /** Who reviewed, against the OWNERS files, over the table's four quarters: [reviewers, how many of them did
  * half the review, people listed in an OWNERS file there or below, how many of those reviewed there, lines
@@ -32,7 +33,9 @@ export interface All {
   reviewers: number[];
   /** A reviewer's wait: entering the attention set to their first answer, in weekday hours. */
   reply: Series;
-  attention: { hours: (number | null)[]; turns: (number | null)[]; reviewers: (number | null)[] };
+  /** Weekday attention-set hours and reviewers; turns that ended before their change closed, and their hours. */
+  attention: { hours: (number | null)[]; reviewers: (number | null)[]; turn_hours: (number | null)[];
+    turns: (number | null)[] };
   /** The table's quarters, oldest first: the one before its first, then its four. */
   table_quarters: string[];
   dirs: DirEntry[];
@@ -40,14 +43,14 @@ export interface All {
   owners?: { at: string; all: OwnFigures } | null;
 }
 
-/** A reviewer's quarter: [commits reviewed, lines reviewed, weekday hours in the attention set, turns in it,
+/** A reviewer's quarter: [commits reviewed, lines reviewed, weekday hours in the attention set, changes in it,
  * weekday hours from asked to first answer (summed), answers]. */
 export type PersonQuarter = [number, number, number, number, number, number];
 /** A reviewer's year: its quarters by number ("1".."4"). */
 export interface PersonYear {
   q: Record<string, PersonQuarter>;
 }
-/** A reviewer's directories in one quarter: [3-level directory, lines reviewed, attention hours, turns]. */
+/** A reviewer's directories in one quarter: [3-level directory, lines reviewed, their turns' hours, turns]. */
 export type PersonDir = [string, number, number, number];
 /** <name>.json (cosh/review_load.py): one reviewer's years, and their directories in the table's
  * quarters. */
@@ -122,7 +125,7 @@ export function personSeries(p: Person, quarters: string[], f: (q: PersonQuarter
 export interface DirStats {
   /** Lines reviewed in each of the five `table_quarters`. */
   lines: number[];
-  /** Weekday attention-set hours and turns in each of the last four. */
+  /** Reviewers' turns' weekday hours, and the turns, in each of the last four. */
   hours: number[];
   turns: number[];
 }
@@ -265,8 +268,7 @@ export function dirRows(roots: DirNode[], expanded: ReadonlySet<string>, byYou: 
   return out;
 }
 
-/** Mean weekday hours a reviewer had a change there in their attention set, per quarter (null under
- * `minTurns` turns). */
+/** Mean weekday hours of a reviewer's turn there, per quarter (null under `minTurns` turns). */
 export const meanHours = (n: DirStats, minTurns = 5) =>
   n.hours.map((h, i) => (n.turns[i] >= minTurns ? h / n.turns[i] : null));
 

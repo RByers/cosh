@@ -189,17 +189,20 @@ class ReviewersTest(unittest.TestCase):
     def test_rows(self):
         mon = ts("2026-11-02 00:00")                 # a Monday
         cls = [(1, 10, mon, mon + 8 * 86400), (2, 10, mon, None)]
-        attention = {1: [(7, mon + 3600, mon + 7200), (7, mon + 5400, mon + 10800),      # overlap: 2 h in all
+        attention = {1: [(7, mon + 3600, mon + 7200), (7, mon + 5400, mon + 10800),      # overlap: one 2 h turn
+                         (7, mon + 86400, mon + 88200),                                 # a second turn, 0.5 h
                          (8, mon + 4 * 86400, mon + 7 * 86400),                         # Friday to Monday
+                         (11, mon + 7 * 86400, mon + 8 * 86400),                        # still open at the close
                          (10, mon, mon + 3600), (99, mon, mon + 3600)],                 # the owner, a bot
                      2: [(7, mon + 100, mon + 3700)]}
         responses = {1: {7: mon + 9000, 9: mon + 500, 10: mon + 1, 99: mon + 2}}
         rows = rt.reviewer_rows(cls, {99}, attention, responses)
         self.assertEqual(rows, [
-            (1, 7, mon + 3600, mon + 9000, 2.0, 2.0),
-            (1, 8, mon + 4 * 86400, None, 72.0, 24.0),       # the weekend is left out
-            (1, 9, None, mon + 500, None, None),             # answered without being in the attention set
-            (2, 7, mon + 100, None, 1.0, 1.0),               # an open CL: to its last interval's end
+            (1, 7, mon + 3600, mon + 9000, 2.5, 2.5, 2, 2.5),
+            (1, 8, mon + 4 * 86400, None, 72.0, 24.0, 1, 24.0),   # the weekend is left out
+            (1, 9, None, mon + 500, None, None, None, None),      # answered without being in the attention set
+            (1, 11, mon + 7 * 86400, None, 24.0, 24.0, 0, 0.0),   # the CL closed without waiting on this turn
+            (2, 7, mon + 100, None, 1.0, 1.0, 0, 0.0),            # an open CL: to its last interval's end, still open
         ])
 
     def test_stage(self):
@@ -226,11 +229,11 @@ class ReviewersTest(unittest.TestCase):
         with contextlib.redirect_stdout(io.StringIO()):
             rt.stage_reviewers(db, ddb)
         self.assertEqual(db.execute("SELECT * FROM cl_reviewers ORDER BY 1, 2").fetchall(), [
-            (1, 6, None, mon + 200, None, None),
-            (1, 7, mon + 3600, mon + 7200, 1.0, 1.0),      # the vote comes before the comments
+            (1, 6, None, mon + 200, None, None, None, None),
+            (1, 7, mon + 3600, mon + 7200, 1.0, 1.0, 1, 1.0),      # the vote comes before the comments
             # 8 only removed a vote and commented after the close; 99 is a bot;
             # 1 has a meta ref, so its listing votes are not used
-            (2, 5, None, mon + 60, None, None),
+            (2, 5, None, mon + 60, None, None, None, None),
         ])
 
 

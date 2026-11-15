@@ -35,13 +35,13 @@ main's history cover.
    scale, white to dark blue, from the listing threshold to the biggest
    top-level directory), each quarter's
    change in lines reviewed on the quarter before, and each quarter's mean
-   attention-set hours per CL and reviewer, shaded against all of Chromium
-   in that quarter (red: twice as long or more; green: half or less).
+   hours per reviewer turn, shaded against all of Chromium in that quarter
+   (red: twice as long or more; green: half or less).
 
 Typing an address adds that reviewer: a line on each chart (commits they
 reviewed, lines they reviewed, their turn-to-answer time, the hours CLs
 spent in their attention set) and two table columns (their lines reviewed
-and hours per CL in each directory, shaded against everyone's there).
+and hours per turn in each directory, shaded against everyone's there).
 
 ## Definitions
 
@@ -66,9 +66,24 @@ and hours per CL in each directory, shaded against everyone's there).
   Sundays (UTC). Elapsed time a CL waited on someone, not time spent
   reviewing. CLs without comments (about a fifth) have no attention-set
   history locally and are not counted.
+- **Turn**: one stay of a reviewer in a CL's attention set (overlapping
+  intervals merged), from being added to leaving it. **Hours per turn**
+  (the table, and the attention chart's note) is the mean of the weekday
+  hours of turns that ended before the CL closed. A turn still open when
+  the CL landed (within a minute of its close) is left out: the CL didn't
+  wait on that reviewer. Per turn rather than per CL, so a directory whose
+  changes go back and forth more (more careful reviewers, more complex
+  code) isn't marked slow for it. Measured over 2025Q4 .. 2026Q3
+  (2026-11-14): a reviewer had 1.69 turns per CL, 1.3 to 2.5 across
+  2-level directories, which explained little of their spread (log
+  variance 0.026 of 0.372; per turn 0.325), so the switch barely reranks
+  directories. Leaving out the turns open at the close mattered more:
+  5% of turns but 15% of the hours (mean 52 h, against 15 h for turns a
+  reviewer ended by answering). `mojo/public/`, for one, had 63% of its
+  hours in them.
 - **Directory**: of the lines changed, as the directory is named today
   (`commits.current_paths`). A commit counts in each directory by its lines
-  there; a CL's attention-set hours are split the same way. A directory is
+  there; a CL's turns and their hours are split the same way. A directory is
   listed with 5,000 lines reviewed in the four quarters; the rest of its
   parent is "Other".
 - **People**: exact identities, the Feedback Index's
@@ -139,7 +154,8 @@ commits.sqlite, reviews.sqlite, OWNERS in shared/chromium ───────�
   incremental by meta-ref tip), the listings' votes for CLs without
   comments (`listing_votes`; incremental by listing body), then
   `cl_reviewers` (per CL and reviewer: `asked_at`, `responded_at`,
-  attention hours; rebuilt whole). Balance's `cl` stage takes `sent_at` and
+  attention hours, and the turns that ended before the close with their
+  hours; rebuilt whole). Balance's `cl` stage takes `sent_at` and
   `cl_attention` from `cl_reviewers`.
 - `nice -n 5 python3 -m cosh.review_load` (`cosh/review_load.py`) writes
   the page's files. `python3 -m cosh update` runs both.
@@ -152,8 +168,8 @@ R2 bucket (`docs/r2.md`; until 2026-11-14 they were committed next to
 
 | File | Holds |
 |---|---|
-| `all.json` | per quarter: commits, reviewed commits and lines, reviewers, the reviewer's turn to first answer (mean, median, 90th percentile, count), attention hours, turns and reviewers; the table's directories at every level with five quarters of lines and four of attention; with OWNERS, each directory's seven figures (reviewers, how many did half, owners listed, owners who reviewed, lines reviewed by an owner, non-committers' lines, those two owners approved) and `owners`: the same for everything and the day of the OWNERS files |
-| `<name>.json` | one reviewer, in one file (version 2), fetched in one request: `years`, by year, `{"q": {quarter number: [commits reviewed, lines reviewed, attention weekday hours, turns, asked-to-answer hours (summed), answers]}}`; and `dirs`, by quarter (the table's four), their 3-level directories `[directory, lines, attention hours, turns]` |
+| `all.json` | per quarter: commits, reviewed commits and lines, reviewers, the reviewer's turn to first answer (mean, median, 90th percentile, count), `attention`: weekday attention hours and reviewers, and the turns that ended before the close with their hours; the table's directories at every level with five quarters of lines and four of turns' hours and turns; with OWNERS, each directory's seven figures (reviewers, how many did half, owners listed, owners who reviewed, lines reviewed by an owner, non-committers' lines, those two owners approved) and `owners`: the same for everything and the day of the OWNERS files |
+| `<name>.json` | one reviewer, in one file (version 2), fetched in one request: `years`, by year, `{"q": {quarter number: [commits reviewed, lines reviewed, attention weekday hours, CLs counted in them, asked-to-answer hours (summed), answers]}}`; and `dirs`, by quarter (the table's four), their 3-level directories `[directory, lines, turns' hours, turns]` (attention hours and CLs until 2026-11-15) |
 
 `<name>` is the address as typed, lower case, as the Feedback Index names its files
 (`cosh.review_feedback.file_name`). The bucket can't be listed, so a
@@ -171,7 +187,7 @@ or ranks people.
 - **Figures about an individual (goal 2).** A reviewer's figures appear
   only after their address is typed, and the page computes them from the
   published files. The table compares like with like (their hours per
-  change against everyone's in the same directory). The charts don't yet:
+  turn against everyone's in the same directory). The charts don't yet:
   their lines and waits are drawn against all of Chromium's mean, whatever
   directories they review in, and nothing has been measured about how
   reproducible a reviewer's quarterly figures are.

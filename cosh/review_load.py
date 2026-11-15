@@ -292,9 +292,11 @@ def compute(gdb, ddb, tdb, owners_at=None):
     merged = {n for (n,) in ddb.execute(
         "SELECT change_number FROM changes WHERE is_bot_owned = 0 AND status = 'MERGED'") if n in by_cl}
     reply_h = [[] for _ in qs]
-    att_hours, att_turns, att_people = [0.0] * nq, [0] * nq, [set() for _ in qs]
-    for n, acct, asked, responded, wd in tdb.execute(
-            "SELECT change_number, account_id, asked_at, responded_at, attention_weekday_h FROM cl_reviewers"):
+    att_hours, att_people = [0.0] * nq, [set() for _ in qs]
+    turn_hours, turns = [0.0] * nq, [0] * nq
+    for n, acct, asked, responded, wd, nt, th in tdb.execute(
+            "SELECT change_number, account_id, asked_at, responded_at, attention_weekday_h, turns, turn_weekday_h "
+            "FROM cl_reviewers"):
         c = by_cl.get(n)
         if c is None or n not in merged or not emails.get(acct):
             continue
@@ -303,8 +305,9 @@ def compute(gdb, ddb, tdb, owners_at=None):
         x = per[p][q]
         if asked is not None and q >= ATTENTION_FROM:
             att_hours[i] += wd
-            att_turns[i] += 1
             att_people[i].add(p)
+            turn_hours[i] += th
+            turns[i] += nt
             x[2] += wd
             x[3] += 1
             if responded is not None and responded >= asked:
@@ -316,12 +319,12 @@ def compute(gdb, ddb, tdb, owners_at=None):
                 for d, ln in c["dirs"].items():
                     if ln:
                         w = ln / c["lines"]
-                        dirs[d][1][ti[q]] += wd * w
-                        dirs[d][2][ti[q]] += w
+                        dirs[d][1][ti[q]] += th * w
+                        dirs[d][2][ti[q]] += nt * w
                         if q != table_qs[0]:
                             y = pdirs[q][p][d]
-                            y[1] += wd * w
-                            y[2] += w
+                            y[1] += th * w
+                            y[2] += nt * w
 
     def series(lists, since=qs[0]):
         mm = [summary(x) if q >= since else (None, None, None, 0) for q, x in zip(qs, lists)]
@@ -347,11 +350,14 @@ def compute(gdb, ddb, tdb, owners_at=None):
         commits=n_commits, human=n_human,
         reviewed=rev_commits, reviewed_lines=rev_lines, reviewers=[len(s) for s in people_q],
         reply=series(reply_h, ATTENTION_FROM),
+        # Weekday hours in reviewers' attention sets and the reviewers, for the mean per reviewer; and the
+        # turns that ended before their CL closed, with their hours, for the mean per turn.
         attention=dict(hours=[round(h) if a else None for h, a in zip(att_hours, att)],
-                       turns=[t if a else None for t, a in zip(att_turns, att)],
-                       reviewers=[len(s) if a else None for s, a in zip(att_people, att)]),
+                       reviewers=[len(s) if a else None for s, a in zip(att_people, att)],
+                       turn_hours=[round(h) if a else None for h, a in zip(turn_hours, att)],
+                       turns=[t if a else None for t, a in zip(turns, att)]),
         table_quarters=table_qs,
-        # [directory, lines reviewed per table quarter (5), attention weekday hours and turns per quarter (the last 4),
+        # [directory, lines reviewed per table quarter (5), turns' weekday hours and turns per quarter (the last 4),
         #  with OWNERS: owner_figures' seven over the last 4]
         dirs=[[d, v[0], [r1(x) for x in v[1][1:]], [round(x, 2) for x in v[2][1:]], *([own[d]] if d in own else [])]
               for d, v in listed],

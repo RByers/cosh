@@ -22,7 +22,9 @@ One run does three things, in order:
              not a bot): when they were first asked (entered the attention
              set), when they first answered (a Code-Review vote or a comment)
              and their hours in the attention set, also with Saturdays and
-             Sundays (UTC) left out. Rebuilt whole, from the tables above.
+             Sundays (UTC) left out; and their turns (overlapping intervals
+             merged) that ended before the CL closed, with those turns'
+             weekday hours. Rebuilt whole, from the tables above.
 
 $COSH_REVIEW_TIMELINE points the step and its readers at another file.
 """
@@ -99,6 +101,9 @@ CREATE TABLE cl_reviewers (       -- each human other than the owner who was ask
   responded_at        INTEGER,    -- first Code-Review vote or comment before the CL closed; NULL if none
   attention_h         REAL,       -- hours in the attention set, from the CL's creation to its close
   attention_weekday_h REAL,       -- the same, Saturdays and Sundays (UTC) left out
+  turns               INTEGER,    -- turns in the attention set (overlapping intervals merged) that ended before
+                                  -- the CL closed: the ones still open then are left out (the CL didn't wait on them)
+  turn_weekday_h      REAL,       -- those turns' hours, Saturdays and Sundays (UTC) left out
   PRIMARY KEY (change_number, account_id)
 ) STRICT, WITHOUT ROWID;
 """
@@ -344,12 +349,18 @@ def union_spans(spans, lo, hi):
     return out
 
 
+TURN_OPEN_AT_CLOSE = 60   # seconds: a turn ending this close to the CL's close was still open at it
+
+
 def reviewer_rows(cls, bots, attention, responses):
     """cl_reviewers' rows. cls: [(change_number, owner, created, closed or
     None)] in unix seconds; attention: {CL: [(account, start, end)]};
     responses: {CL: {account: first answer}}. Bots and the owner are left
     out. Attention is clipped to the CL's life (to its last interval's end
-    while it is open), and overlapping intervals count once."""
+    while it is open), and overlapping intervals count once, as one turn.
+    A turn still open at the CL's close (ending within TURN_OPEN_AT_CLOSE
+    of it) isn't counted in `turns`: the CL landed or was abandoned without
+    waiting on it."""
     rows = []
     for n, owner, c0, c1 in cls:
         a = attention.get(n, ())
@@ -363,9 +374,11 @@ def reviewer_rows(cls, bots, attention, responses):
             sp = per.get(acct)
             if sp:
                 us = union_spans(sp, c0, hi)
-                hours = (sum(e - s for s, e in us) / 3600, sum(weekday_seconds(s, e) for s, e in us) / 3600)
+                wd = [weekday_seconds(s, e) / 3600 for s, e in us]
+                done = [h for (_, e), h in zip(us, wd) if e < hi - TURN_OPEN_AT_CLOSE]
+                hours = (sum(e - s for s, e in us) / 3600, sum(wd), len(done), sum(done))
             rows.append((n, acct, min(s for s, _ in sp) if sp else None, resp.get(acct),
-                         *(hours if sp else (None, None))))
+                         *(hours if sp else (None,) * 4)))
     return rows
 
 
@@ -399,7 +412,7 @@ def stage_reviewers(db, ddb=None):
         attention[n].append((acct, s, e))
     rows = reviewer_rows(cls, bots, attention, responses)
     db.executescript(REVIEWERS_SCHEMA)
-    db.executemany("INSERT INTO cl_reviewers VALUES (?,?,?,?,?,?)", rows)
+    db.executemany("INSERT INTO cl_reviewers VALUES (?,?,?,?,?,?,?,?)", rows)
     db.commit()
     print(f"reviewers: done, {len(rows):,} reviewers of {len({r[0] for r in rows}):,} CLs", flush=True)
 

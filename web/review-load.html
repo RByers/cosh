@@ -142,8 +142,9 @@
           Gerrit's attention set says whose turn it is on a change. The line adds up the weekday hours that
           changes landed in the quarter spent in a reviewer's attention set (anyone but the owner) and divides
           that by the number of reviewers. In <slot name="last"></slot>, <slot name="reviewers"></slot>
-          reviewers had changes waiting on them for a mean of <slot name="mean"></slot> hours each, and
-          <slot name="turn"></slot> hours per change and reviewer. Changes with no comments at all (about one in
+          reviewers had changes waiting on them for a mean of <slot name="mean"></slot> hours each. A turn (one
+          stay in the attention set) lasted <slot name="turn"></slot> hours on average, counting the turns that
+          ended before the change closed. Changes with no comments at all (about one in
           five) are not counted: their attention-set history wasn't fetched.<span data-if="you"> Your line is
           the hours changes spent in your attention set.</span>
         </template>
@@ -160,7 +161,7 @@
               <tr><th scope="col" rowspan="2">Directory</th>
                 <th scope="col" rowspan="2" class="num" title="Changed lines of the commits there, counted once per reviewer, over the four quarters">Lines reviewed</th>
                 <th scope="colgroup" colspan="4" class="rl-group" title="Lines reviewed in the quarter against the quarter before">Change in lines reviewed</th>
-                <th scope="colgroup" colspan="4" class="rl-group" title="Mean weekday hours a change there spent in one reviewer's attention set">Reviewer's attention-set hours per change</th>
+                <th scope="colgroup" colspan="4" class="rl-group" title="Mean weekday hours of a reviewer's turn there: one stay in a change's attention set">Hours per reviewer turn</th>
                 <th scope="colgroup" colspan="2" class="rf-you-col rf-you-start">Yours</th></tr>
               <tr id="rl-dirs-quarters"></tr>
             </thead>
@@ -173,21 +174,24 @@
         <template data-msg="col-you-lines">Lines</template>
         <template data-msg="col-you-hours">Hours</template>
         <template data-msg="title-you-lines">Lines you reviewed there over the four quarters</template>
-        <template data-msg="title-you-hours">Mean weekday hours a change there spent in your attention set</template>
+        <template data-msg="title-you-hours">Mean weekday hours of your turns there</template>
         <p id="rl-dirs-note" class="note"></p>
         <template data-msg="dirs-note">
           Review of the commits landed from <slot name="from"></slot> to <slot name="to"></slot>, by the
           directory of the lines changed (as the directories are named today; a commit that spans several
           counts in each by its lines). The change columns compare each quarter's lines reviewed with the quarter
           before. Lines reviewed are shaded on a log scale, from white for the fewest to dark blue for the
-          most. The hours are the mean weekday time a change spent in one reviewer's attention set, shaded
-          against all of Chromium in the same quarter: red where changes wait longer on reviewers (twice as long
-          or more is the deepest red), green where they wait less. Long waits where the lines reviewed are
+          most. The hours are the mean weekday length of a reviewer's turn: one stay in a change's attention
+          set, from being added to leaving it (usually by answering). A change that goes back and forth has
+          several turns, so a directory isn't marked slow for needing more rounds. Turns still open when the
+          change closed are left out: the change didn't wait on them. The hours are shaded against all of
+          Chromium in the same quarter: red where reviewers' turns last longer (twice as long or more is the
+          deepest red), green where they are shorter. Long waits where the lines reviewed are
           growing point at directories that need more reviewers. Directories with fewer than
           <slot name="minLines"></slot> lines reviewed are pooled in “Other”, and cells with fewer than
           <slot name="minTurns"></slot> reviewer turns are left empty. ▸ opens a directory.<span data-if="you">
-          The Yours columns are the lines you reviewed and the hours changes spent in your attention set,
-          shaded against everyone's in that directory; your directories come first.</span>
+          The Yours columns are the lines you reviewed and the mean hours of your turns, shaded against
+          everyone's in that directory; your directories come first.</span>
         </template>
       </section>
 

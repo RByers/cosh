@@ -85,12 +85,12 @@ class ComputeTest(unittest.TestCase):
         # Account 7 approved every CL whose Reviewed-by names rev@google.com.
         t.executemany("INSERT INTO votes VALUES (?,?,?,?,?)", [(n, 7, 1, 0, 1) for n in (101, 104, 105, 106, 108, 109, 110)])
         fri = ts("2026-07-31 12:00")
-        t.executemany("INSERT INTO cl_reviewers VALUES (?,?,?,?,?,?)", [
-            (101, 7, None, ts("2026-05-04 10:00"), None, None),            # before the attention set: 2 h to first review
-            (102, 7, fri + 3600, fri + 3 * 86400, 80.0, 30.0),             # asked Friday 13:00, answered Monday 12:00
-            (102, 8, fri + 7200, None, 10.0, 10.0),                        # asked, never answered
-            (102, 9, fri, fri + 60, 1.0, 1.0),                             # no address: not counted
-            (106, 7, fri, fri + 60, 5.0, 5.0),                             # a mechanical commit's CL: not counted
+        t.executemany("INSERT INTO cl_reviewers VALUES (?,?,?,?,?,?,?,?)", [
+            (101, 7, None, ts("2026-05-04 10:00"), None, None, None, None),  # before the attention set: 2 h to first review
+            (102, 7, fri + 3600, fri + 3 * 86400, 80.0, 30.0, 3, 24.0),      # asked Friday 13:00, answered Monday 12:00
+            (102, 8, fri + 7200, None, 10.0, 10.0, 0, 0.0),                  # asked, never answered: open at the close
+            (102, 9, fri, fri + 60, 1.0, 1.0, 1, 1.0),                       # no address: not counted
+            (106, 7, fri, fri + 60, 5.0, 5.0, 1, 5.0),                       # a mechanical commit's CL: not counted
         ])
 
     def tearDown(self):
@@ -108,20 +108,20 @@ class ComputeTest(unittest.TestCase):
         self.assertNotIn("first", data)
         # Asked Friday 13:00, answered Monday 12:00: 23 weekday hours. Nothing before the attention set.
         self.assertEqual(data["reply"], dict(mean=[None, 23.0], median=[None, 23.0], p90=[None, 23.0], n=[0, 1]))
-        self.assertEqual(data["attention"], dict(hours=[None, 40], turns=[None, 2], reviewers=[None, 2]))
+        self.assertEqual(data["attention"], dict(hours=[None, 40], reviewers=[None, 2], turn_hours=[None, 24], turns=[None, 3]))
         self.assertEqual(data["table_quarters"], ["2026Q2", "2026Q3"])
         self.assertIsNone(data["owners"])
-        # Each level's sums; the CL's attention is split by its lines (60 of 80 in a/b/c/, 20 in a/b/).
-        self.assertEqual(data["dirs"], [["a/", [40, 160], [40.0], [2.0]], ["a/b/", [40, 160], [40.0], [2.0]],
-                                        ["a/b/c/", [40, 120], [30.0], [1.5]]])
+        # Each level's sums of turns and their hours; the CL's are split by its lines (60 of 80 in a/b/c/, 20 in a/b/).
+        self.assertEqual(data["dirs"], [["a/", [40, 160], [24.0], [3.0]], ["a/b/", [40, 160], [24.0], [3.0]],
+                                        ["a/b/c/", [40, 120], [18.0], [2.25]]])
         # rev@google.com (the Q2 footer) and account 7 are one identity, by the votes; not by domain.
         rev = "rev@chromium.org"
         self.assertEqual(aliases, {"rev@google.com": rev})
         self.assertEqual(people[rev], {"2026": {"2": [1, 40, 0.0, 0, 0.0, 0], "3": [1, 80, 30.0, 1, 23.0, 1]}})
         self.assertEqual(people["two@x.org"], {"2026": {"3": [1, 80, 10.0, 1, 0.0, 0]}})
         # Directories only for the table's quarters after the first.
-        self.assertEqual(pdirs, {"2026Q3": {rev: [["a/b/", 20, 7.5, 0.25], ["a/b/c/", 60, 22.5, 0.75]],
-                                            "two@x.org": [["a/b/", 20, 2.5, 0.25], ["a/b/c/", 60, 7.5, 0.75]]}})
+        self.assertEqual(pdirs, {"2026Q3": {rev: [["a/b/", 20, 6.0, 0.75], ["a/b/c/", 60, 18.0, 2.25]],
+                                            "two@x.org": [["a/b/", 20, 0.0, 0.0], ["a/b/c/", 60, 0.0, 0.0]]}})
 
     def test_owners(self):
         from cosh.owners import Owners
@@ -169,7 +169,7 @@ class ComputeTest(unittest.TestCase):
             self.assertEqual(gz("rev@google.com.json.gz"), {"see": k})
             self.assertEqual(gz(f"{k}.json.gz"), {
                 "v": 2, "years": {"2026": {"q": {"2": [1, 40, 0.0, 0, 0.0, 0], "3": [1, 80, 30.0, 1, 23.0, 1]}}},
-                "dirs": {"2026Q3": [["a/b/", 20, 7.5, 0.25], ["a/b/c/", 60, 22.5, 0.75]]}})
+                "dirs": {"2026Q3": [["a/b/", 20, 6.0, 0.75], ["a/b/c/", 60, 18.0, 2.25]]}})
             self.assertEqual(read(out, "all.json")["reviewed_lines"], [40, 160])
             # A second run leaves unchanged files' bytes alone.
             before = open(os.path.join(pout, f"{k}.json.gz"), "rb").read()

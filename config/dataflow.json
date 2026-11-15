@@ -952,7 +952,9 @@
             "asked_at": "First time in the attention set, Unix seconds; empty if never.",
             "responded_at": "First Code-Review vote or comment before the CL closed, Unix seconds; empty if none.",
             "attention_h": "Hours in the attention set between the CL's creation and close.",
-            "attention_weekday_h": "The same without Saturdays and Sundays (UTC)."
+            "attention_weekday_h": "The same without Saturdays and Sundays (UTC).",
+            "turns": "Turns in the attention set (overlapping intervals merged) that ended before the CL closed; a turn still open at the close is left out.",
+            "turn_weekday_h": "Those turns' hours without Saturdays and Sundays (UTC)."
           }
         }
       ]
@@ -1294,7 +1296,7 @@
       "rebuildable": true,
       "size": "114 KB (48 KB gzipped)",
       "size_as_of": "2026-11-14",
-      "purpose": "Every whole quarter since 2017Q3 (commits, reviewed lines, reviewers, reviewer's turn to first answer, attention-set hours), the directory table's five quarters and its OWNERS figures.",
+      "purpose": "Every whole quarter since 2017Q3 (commits, reviewed lines, reviewers, turn to first answer, attention-set hours, hours per turn), the directory table's quarters and its OWNERS figures.",
       "notes": "Changes only when a quarter completes or an input is corrected."
     },
     {
@@ -1307,7 +1309,7 @@
       "rebuildable": true,
       "size": "2.8 MB gzipped in 5,116 files: one per reviewer",
       "size_as_of": "2026-11-14",
-      "files": "<name>.json.gz, one per reviewer: years, by year, the reviewer's quarters (commits and lines reviewed, weekday attention-set hours and turns, hours from asked to first answer), and dirs, by the table's four quarters, their lines and attention per 3-level directory; <name> is the Feedback Index's (the normalised e-mail address).",
+      "files": "<name>.json.gz, one per reviewer: years, by year, the reviewer's quarters (commits and lines reviewed, weekday attention-set hours and the CLs counted, hours from asked to first answer), and dirs, by the table's four quarters, their lines, turns and the turns' hours per 3-level directory; <name> is the Feedback Index's (the normalised e-mail address).",
       "purpose": "The local copy of what Review Load fetches from R2 about one reviewer, so the upload sends only files that changed; served under r2/ when the page runs on localhost.",
       "notes": "Was committed under web/public/review-load/ until 2026-11-14, then in R2 as one file per year and per table quarter, named by a hash, until the same day. A reviewer's file changes only when a quarter completes.",
       "withheld": "File names are people's addresses: reachable only by typing one (ground rule 5), so no samples are listed."

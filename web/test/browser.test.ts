@@ -3918,7 +3918,8 @@ const loadAll = {
   commits: [100, 110, 120, 130, 150], human: [80, 85, 90, 95, 120], reviewed: [70, 75, 80, 85, 100],
   reviewed_lines: [7000, 8000, 9000, 9000, 12000], reviewers: [10, 10, 10, 9, 10],
   reply: { mean: [null, 16, 15, 17, 18], median: [null, 3, 3, 4, 4], p90: [null, 40, 38, 42, 45], n: [0, 60, 70, 70, 90] },
-  attention: { hours: [null, 2000, 2200, 2400, 3000], turns: [null, 80, 85, 90, 100], reviewers: [null, 10, 10, 10, 10] },
+  attention: { hours: [null, 2000, 2200, 2400, 3000], reviewers: [null, 10, 10, 10, 10],
+    turn_hours: [null, 1600, 1800, 2000, 2500], turns: [null, 80, 85, 90, 100] },
   table_quarters: ['2025Q3', '2025Q4', '2026Q1', '2026Q2', '2026Q3'],
   dirs: [['a/', [1000, 1100, 1200, 1300, 2600], [400, 420, 440, 1200], [20, 20, 20, 20], [8, 2, 5, 4, 4650, 2000, 1500]],
     ['a/b/', [800, 800, 800, 800, 1600], [300, 300, 300, 1000], [10, 10, 10, 10], [4, 1, 2, 2, 4000, 1200, 1200]],
@@ -3974,7 +3975,7 @@ test('review load: four charts over the quarters and a directory table that open
   assert.deepEqual(await page.evaluate(() => window.__rl!.charts.lines.data.datasets[0].data), [700, 800, 900, 1000, 1200]);
   assert.match(await page.$eval('#rl-lines-note', (e) => e.textContent!), /the mean was\s+1,200 lines across 10 reviewers:\s+\+20% on the quarter before and \+71% on a year before/);
   assert.match(await page.$eval('#rl-reply-note', (e) => e.textContent!), /the median was\s+4 h, one in ten waited 45 h or more, and the mean was\s+18 h/);
-  assert.match(await page.$eval('#rl-attention-note', (e) => e.textContent!), /a mean of 300 hours each, and\s+30 hours per change and reviewer/);
+  assert.match(await page.$eval('#rl-attention-note', (e) => e.textContent!), /a mean of 300 hours each\. A turn \(one\s+stay in the attention set\) lasted 25 hours on average/);
   assert.deepEqual(await page.$$eval('#rl-dirs-quarters th', (ths) => ths.slice(0, 4).map((t) => t.textContent)),
     ['Q4 2025', 'Q1 2026', 'Q2 2026', 'Q3 2026']);
   // Biggest first; the Yours columns are hidden until someone is looked up.
