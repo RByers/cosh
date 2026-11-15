@@ -497,10 +497,10 @@ reviewer's sums): 39 MB in all, 110 MB
 unpacked. Each run writes only the per-person files that changed and
 removes those no longer written.
 
-**Published** (the user's call, 2026-11-12): from 2026-11-12 to 2026-11-15
+**Published** (the user's call, 2026-11-12): from 2026-11-12 to 2026-11-14
 the whole folder was committed and served by GitHub Pages; since then
 `peers.json` and `reviewers.json` are committed and the per-person files
-are in R2 (`docs/plan.md`, 2026-11-15). After regenerating, run `python3
+are in R2 (`docs/plan.md`, 2026-11-14). After regenerating, run `python3
 -m cosh.r2 publish` before pushing the change that needed the new files.
 On localhost (`npm run serve`) the page reads the local copies at once,
 with no upload. The browser tests serve a made-up person

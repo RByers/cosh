@@ -97,7 +97,7 @@ commits.sqlite, reviews.sqlite ────────────────�
 Published files: `all.json` in `web/public/review-load/` (committed), and
 the per-reviewer files, written gzipped to `data/private/review-load-people/`
 and uploaded by `python3 -m cosh.r2 publish review-load/people/v1` to the
-R2 bucket (`docs/r2.md`; until 2026-11-15 they were committed next to
+R2 bucket (`docs/r2.md`; until 2026-11-14 they were committed next to
 `all.json`). On localhost the page reads the local copies:
 
 | File | Holds |

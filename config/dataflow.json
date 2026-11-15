@@ -1,6 +1,6 @@
 {
   "schema_version": 2,
-  "updated": "2026-11-15",
+  "updated": "2026-11-14",
   "about": "Every external source, data store, processing step and page of cosh, and the flows between them. Read by web/dataflow.html, scripts/dataflow.py (check, plan) and `python3 -m cosh update`. Field meanings and the flow rules: docs/data-architecture.md. Keep it current: CLAUDE.md, Conventions. Building and deploying the site (npm run build; the Pages workflow on push) is not a data step and isn't listed.",
   "sources": [
     {
@@ -394,7 +394,7 @@
       "tracked_in_git": true,
       "rebuildable": false,
       "size": "under 1 KB",
-      "size_as_of": "2026-11-15",
+      "size_as_of": "2026-11-14",
       "purpose": "The R2 bucket's public address and each prefix with the data/private folder it is uploaded from; read by cosh.r2, the pages' URLs (web/src/r2.ts) and Vite's local copies on localhost."
     },
     {
@@ -1219,10 +1219,10 @@
       "tracked_in_git": false,
       "rebuildable": true,
       "size": "37 MB gzipped in 39,660 files: 6,862 people, 122 other addresses, 19 half-years",
-      "size_as_of": "2026-11-15",
+      "size_as_of": "2026-11-14",
       "files": "u/<hash>.json.gz (who the person is, their usual org, which half-years they have; a stub per other address) and <half-year>/<hash>.json.gz (their changes: lines per 3-level directory, approvers (Reviewed-by), and the files that drew reviewer threads with each one's lines, threads and addressed threads (which place the threads in their directories); no comment ids or text); <hash> is a salted SHA-256 of the e-mail.",
       "purpose": "The local copy of what the Feedback Index fetches from R2 about one person, so the upload sends only files that changed; served under r2/ when the page runs on localhost.",
-      "notes": "Was committed under web/public/review-feedback/ from 2026-11-12 to 2026-11-15. Written byte for byte the same when nothing changed: finished half-years don't change between runs unless their inputs do, and each run rewrites the current half-year and u/."
+      "notes": "Was committed under web/public/review-feedback/ from 2026-11-12 to 2026-11-14. Written byte for byte the same when nothing changed: finished half-years don't change between runs unless their inputs do, and each run rewrites the current half-year and u/."
     },
     {
       "id": "r2:review-feedback/people/v1/",
@@ -1233,7 +1233,7 @@
       "tracked_in_git": false,
       "rebuildable": true,
       "size": "37 MB, 39,660 objects (stored gzipped)",
-      "size_as_of": "2026-11-15",
+      "size_as_of": "2026-11-14",
       "files": "review-feedback/people/v1/u/<hash>.json and <half-year>/<hash>.json in the R2 bucket `cosh`, served gzipped at https://cosh-data.rbyers.ca/ (docs/r2.md).",
       "purpose": "One person's changes and review comments by directory, which every chart and table about them uses once an address is typed. No tone, no comment text.",
       "notes": "v1 is the format: weekly data and added fields stay under it; a change the published page can't read goes to v2 (config/r2.json, docs/r2.md)."
@@ -1290,10 +1290,10 @@
       "tracked_in_git": false,
       "rebuildable": true,
       "size": "2.5 MB gzipped in 23,773 files: 5,116 reviewers, 10 years, 4 quarters of directories",
-      "size_as_of": "2026-11-15",
+      "size_as_of": "2026-11-14",
       "files": "<year>/<hash>.json.gz (a reviewer's quarters that year: commits and lines reviewed, weekday attention-set hours and turns, hours from asked to first answer) and dirs/<quarter>/<hash>.json.gz (their lines and attention per 3-level directory, for the table's four quarters only); <hash> is the Feedback Index's salted SHA-256 of the e-mail.",
       "purpose": "The local copy of what Review Load fetches from R2 about one reviewer, so the upload sends only files that changed; served under r2/ when the page runs on localhost.",
-      "notes": "Was committed under web/public/review-load/ until 2026-11-15. A finished year's files don't change, and each quarter's directory files are written once; when a quarter completes, the oldest of the four directory folders is removed."
+      "notes": "Was committed under web/public/review-load/ until 2026-11-14. A finished year's files don't change, and each quarter's directory files are written once; when a quarter completes, the oldest of the four directory folders is removed."
     },
     {
       "id": "r2:review-load/people/v1/",
@@ -1304,7 +1304,7 @@
       "tracked_in_git": false,
       "rebuildable": true,
       "size": "2.5 MB, 23,773 objects (stored gzipped)",
-      "size_as_of": "2026-11-15",
+      "size_as_of": "2026-11-14",
       "files": "review-load/people/v1/<year>/<hash>.json and dirs/<quarter>/<hash>.json in the R2 bucket `cosh`, served gzipped at https://cosh-data.rbyers.ca/ (docs/r2.md).",
       "purpose": "One reviewer's figures, drawn over the page's charts and in the directory table's Yours columns once their address is typed.",
       "notes": "v1 is the format: new quarters and added fields stay under it; a change the published page can't read goes to v2 (config/r2.json, docs/r2.md)."

@@ -1,6 +1,7 @@
 """cosh.review_threads (the comment download's files) and cosh.r2 (their upload)."""
 import datetime as dt
 import gzip
+import hashlib
 import json
 import os
 import tempfile
@@ -136,6 +137,33 @@ class R2Test(unittest.TestCase):
                 with self.assertRaises(SystemExit):
                     r2.sync(local, "p", data_dir=data, cred={}, max_total_gb=1e-9)
                 self.assertEqual(calls, [])
+
+    def test_sync_survives_files_changing_under_it(self):
+        # A step rewriting the folder during a sync: a file that vanished is left
+        # for the next sync, and a rewritten one is recorded as what was sent.
+        with tempfile.TemporaryDirectory() as d:
+            local, data = os.path.join(d, "files"), os.path.join(d, "data")
+            os.makedirs(os.path.join(local, "H"))
+            os.makedirs(data)
+            for name in ("a.json.gz", "b.json.gz"):
+                with open(os.path.join(local, "H", name), "wb") as f:
+                    f.write(b"old")
+            real_plan = r2.plan
+
+            def plan_then_change(*args):
+                out = real_plan(*args)
+                os.remove(os.path.join(local, "H", "a.json.gz"))
+                with open(os.path.join(local, "H", "b.json.gz"), "wb") as f:
+                    f.write(b"new")
+                return out
+            sent = []
+            with mock.patch.object(r2, "plan", plan_then_change), \
+                    mock.patch.object(r2, "request", lambda c, m, k, body=b"", headers=None: sent.append((k, body))):
+                r2.sync(local, "p", data_dir=data, cred={}, jobs=1)
+            self.assertEqual(sent, [("p/H/b.json", b"new")])
+            with open(r2.manifest_path(data)) as f:
+                m = json.load(f)
+            self.assertEqual(m, {"p/H/b.json": {"sha256": hashlib.sha256(b"new").hexdigest(), "bytes": 3}})
 
 
 if __name__ == "__main__":

@@ -188,7 +188,7 @@ def sync(local, prefix, dry_run=False, jobs=4, max_objects=50_000, max_total_gb=
         with open(mpath) as f:
             manifest = json.load(f)
     ups, dels = plan(local, prefix, manifest)
-    sizes = {k: os.path.getsize(p) for k, p, _, _ in ups}
+    sizes = {k: os.path.getsize(p) if os.path.exists(p) else 0 for k, p, _, _ in ups}
     total = sum(v["bytes"] for k, v in manifest.items() if k not in sizes and k not in dels) + sum(sizes.values())
     print(f"{prefix}: {len(ups):,} to upload ({sum(sizes.values()) / 1e6:.1f} MB), {len(dels):,} to delete; "
           f"bucket total after {total / 1e9:.2f} GB", file=sys.stderr, flush=True)
@@ -208,10 +208,20 @@ def sync(local, prefix, dry_run=False, jobs=4, max_objects=50_000, max_total_gb=
             json.dump(manifest, f, sort_keys=True, separators=(",", ":"))
         os.replace(tmp, mpath)
 
+    skipped = []
+
     def put(item):
         key, path, sha, gz = item
-        with open(path, "rb") as f:
-            body = f.read()
+        # A step may rewrite or remove files while a sync runs: record what was
+        # sent, and leave a vanished file for the next sync.
+        try:
+            with open(path, "rb") as f:
+                body = f.read()
+        except FileNotFoundError:
+            with lock:
+                skipped.append(key)
+            return
+        sha = hashlib.sha256(body).hexdigest()
         headers = {"content-type": TYPES.get(os.path.splitext(key)[1], "application/octet-stream"),
                    "cache-control": CACHE_CONTROL}
         if gz:
@@ -235,7 +245,8 @@ def sync(local, prefix, dry_run=False, jobs=4, max_objects=50_000, max_total_gb=
             list(ex.map(delete, dels))
     finally:
         save()
-    print(f"{prefix}: uploaded {len(ups):,}, deleted {len(dels):,}", file=sys.stderr)
+    print(f"{prefix}: uploaded {len(ups) - len(skipped):,}, deleted {len(dels):,}"
+          + (f"; {len(skipped):,} files vanished during the sync, run it again" if skipped else ""), file=sys.stderr)
 
 
 def main(argv=None):

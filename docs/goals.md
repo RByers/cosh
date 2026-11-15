@@ -148,7 +148,7 @@ pages from `cosh-data.rbyers.ca`. Data on disk that isn't published
   should add almost nothing to git's history. (On 2026-11-14 the
   repository was 351 MB packed, history included, and its tree held
   224 MB, mostly `web/public/` and `summaries/`. The Feedback Index's and
-  Review Load's per-person files moved to R2 on 2026-11-15 (`config/r2.json`,
+  Review Load's per-person files moved to R2 on 2026-11-14 (`config/r2.json`,
   `docs/r2.md`); `summaries/` is still to do (`docs/plan.md`). Pushed
   history is never rewritten, so what is already in it stays.)
 - **R2 data evolves compatibly.** The site (GitHub Pages) and the bucket
