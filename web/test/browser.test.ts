@@ -2289,12 +2289,14 @@ test('the landing page links to the Value Exchange dashboard', async () => {
     { href: 'sentiment.html', title: 'Review Tone' },
     { href: 'balance.html', title: 'Review Balance' },
     { href: 'review-load.html', title: 'Review Load' },
+    { href: 'review-timezones.html', title: 'Review Timezones' },
   ]);
   // Only the draft dashboards' cards have the yellow "In development" box.
   const warnings = await page.$$eval('.card-warning', (ws) => ws.map((w) => ({
     card: w.closest('a')!.getAttribute('href'), head: w.querySelector('p')!.textContent, bg: getComputedStyle(w).backgroundColor })));
   assert.deepEqual(warnings.map((w) => [w.card, w.head]), [
-    ['balance.html', 'In development'], ['review-load.html', 'In development']]);
+    ['balance.html', 'In development'], ['review-load.html', 'In development'],
+    ['review-timezones.html', 'In development']]);
   assert.notEqual(warnings[0].bg, 'rgba(0, 0, 0, 0)');
   // Styled by its own sheet.
   assert.match(await page.$eval('body', (b) => getComputedStyle(b).fontFamily), /system-ui/);
@@ -3128,6 +3130,7 @@ test('every analysis page says, under its title, what dates its data covers', as
     ['balance.html', read('summaries/balance.json').data_span],
     ['feedback-index.html', read('web/public/review-feedback/peers.json').data_span],
     ['review-load.html', read('web/public/review-load/all.json').data_span],
+    ['review-timezones.html', read('web/public/review-timezones/all.json').data_span],
   ];
   for (const [path, span] of pages) {
     assert.ok(span?.first && span.last, `${path}: its data has no data_span`);
@@ -3149,8 +3152,8 @@ test('every analysis page says, under its title, what dates its data covers', as
 });
 
 test('every page carries the Content Security Policy, breaks none of it, and it blocks injected markup', async () => {
-  for (const path of ['', 'value.html', 'sentiment.html', 'balance.html', 'feedback-index.html', 'review-load.html', 'dataflow.html',
-    '404.html']) {
+  for (const path of ['', 'value.html', 'sentiment.html', 'balance.html', 'feedback-index.html', 'review-load.html',
+    'review-timezones.html', 'dataflow.html', '404.html']) {
     // The landing page and the 404 page have no script to mark them ready.
     const scripted = path !== '' && path !== '404.html';
     const page = await browser.newPage();
@@ -3808,7 +3811,7 @@ test('the Data flow page draws the chosen pages\' flow, lists the inventory, and
   // A checkbox per page that reads fetched data, all ticked.
   const picks = await page.$$eval('#pages-pick input', (is) => is.map((i) => [(i as HTMLInputElement).value, (i as HTMLInputElement).checked]));
   assert.deepEqual(picks, [['page-value', true], ['page-sentiment', true], ['page-balance', true], ['page-feedback', true],
-    ['page-review-load', true]]);
+    ['page-review-load', true], ['page-review-timezones', true]]);
 
   // The graph is drawn down the page, as wide as its box: no scrolling inside it.
   // The items drawn, once each (a config file shows as a chip beside each reader).
@@ -3898,12 +3901,16 @@ test('the Data flow page draws the chosen pages\' flow, lists the inventory, and
   assert.equal(await page.$eval('#steps-rows', (e) => e.textContent!.includes('balance-publish')), true);
   assert.equal(await page.$eval('#steps-rows tr[data-node="balance-publish"]', (e) => (e as HTMLElement).hidden), true);
   // Only Radar's own page left: Radar is still in, Gerrit's steps are not.
-  for (const id of ['page-sentiment', 'page-feedback', 'page-review-load']) await page.click(`#pages-pick input[value="${id}"]`);
+  for (const id of ['page-sentiment', 'page-feedback', 'page-review-load', 'page-review-timezones']) {
+    await page.click(`#pages-pick input[value="${id}"]`);
+  }
   await page.click('#pages-pick input[value="page-value"]');
   assert.deepEqual(await nodes(), []);
   await page.click('#pages-pick input[value="page-value"]');
   assert.ok((await nodes()).includes('cloudflare-radar'));
-  for (const id of ['page-sentiment', 'page-balance', 'page-feedback', 'page-review-load']) await page.click(`#pages-pick input[value="${id}"]`);
+  for (const id of ['page-sentiment', 'page-balance', 'page-feedback', 'page-review-load', 'page-review-timezones']) {
+    await page.click(`#pages-pick input[value="${id}"]`);
+  }
 
   // The search box narrows the tables.
   await page.type('#find', 'haiku friction score');
@@ -4106,6 +4113,48 @@ test('review load: an address adds that reviewer to the charts and the table, wi
   // Their directories first; one that isn't listed counts in "Other"; their 90th percentile there,
   // left out under 5 turns.
   assert.deepEqual((await loadRows(page)).map((r) => [r[0], r[10], r[11]]), [['a/', '2K', '70'], ['z/', '', ''], ['Other', '1K', '']]);
+  assert.deepEqual(errors, []);
+  await page.close();
+});
+
+// ---- Review Timezones (review-timezones.html), on the committed all.json.
+
+test('review timezones: the overlap chart, who reviews whom and the OWNERS table', async () => {
+  const page = await browser.newPage();
+  const errors: string[] = [];
+  page.on('pageerror', (e) => errors.push(String(e)));
+  await page.setViewport({ width: 1200, height: 900 });
+  await page.goto(baseUrl + 'review-timezones.html', { waitUntil: 'load' });
+  await page.waitForSelector('body[data-ready]');
+  const all = JSON.parse(readFileSync(fileURLToPath(new URL('../../web/public/review-timezones/all.json', import.meta.url)), 'utf8'));
+  // The chart has a bar per overlap bin.
+  const labels = await page.evaluate(() => (window as unknown as { __tz: { chart: { data: { labels: string[] } } } })
+    .__tz.chart.data.labels);
+  assert.equal(labels.length, all.overlap.length);
+  assert.equal(labels[0], 'none');
+  // One row per region, and a cell per reviewer region.
+  const regions = await page.$$eval('#tz-regions tbody tr', (trs) => trs.map((tr) => tr.querySelectorAll('td').length));
+  assert.deepEqual(regions, [5, 5, 5]);
+  // The first 25 directories, each linking to its OWNERS file in a new tab; "Show all" adds the rest.
+  const rows = () => page.$$eval('#tz-dirs tbody tr', (trs) => trs.length);
+  assert.equal(await rows(), Math.min(25, all.dirs.length));
+  const link = await page.$eval('#tz-dirs tbody th a', (a) => ({ href: a.href, target: a.target, text: a.textContent }));
+  assert.equal(link.text, all.dirs[0].d);
+  assert.match(link.href, /^https:\/\/source\.chromium\.org\/.*OWNERS$/);
+  assert.equal(link.target, '_blank');
+  if (all.dirs.length > 25) {
+    await page.click('#tz-dirs-more');
+    assert.equal(await rows(), all.dirs.length);
+    assert.equal(await page.$eval('#tz-dirs-more', (b) => (b as HTMLButtonElement).hidden), true);
+  }
+  // The table fits its card at this width: long directory names wrap.
+  const fits = await page.$eval('#tz-dirs', (t) => t.scrollWidth <= t.parentElement!.clientWidth + 1);
+  assert.ok(fits);
+  // Every value comes from the data, never typed: the notes have no empty slots.
+  for (const id of ['#tz-overlap-note', '#tz-regions-note', '#tz-dirs-note']) {
+    const text = await page.$eval(id, (e) => e.textContent!.replace(/\s+/g, ' ').trim());
+    assert.ok(text.length > 100 && !/undefined|NaN|–\s*h/.test(text), `${id}: ${text}`);
+  }
   assert.deepEqual(errors, []);
   await page.close();
 });

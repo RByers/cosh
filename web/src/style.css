@@ -3045,6 +3045,54 @@ details.rf-method[open] > summary {
   color: #fff;
 }
 
+/* ---- Review Timezones (review-timezones.html) ---- */
+
+/* A region with no owner at work is dimmed; the author's own region, in the table of who reviews
+ * whom, is bold. The heat and wait shading are Review Load's (.rl-heat, .rf-ratio-*). */
+.tz-dirs td.tz-none {
+  color: var(--text-muted);
+}
+
+.tz-regions td.tz-own {
+  font-weight: 600;
+}
+
+.tz-dirs {
+  --rl-heat-lo: #fff;
+  --rl-heat-hi: #0b3a82;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) .tz-dirs {
+    --rl-heat-lo: var(--surface-1);
+    --rl-heat-hi: #1d5bb8;
+  }
+}
+
+:root[data-theme='dark'] .tz-dirs {
+  --rl-heat-lo: var(--surface-1);
+  --rl-heat-hi: #1d5bb8;
+}
+
+.tz-dirs td.rl-heat {
+  background: color-mix(in oklab, var(--rl-heat-hi) calc(var(--rl-heat, 0) * 100%), var(--rl-heat-lo));
+}
+
+.tz-dirs td.rl-heat.rl-heat-dark {
+  color: #fff;
+}
+
+.tz-dirs th[scope='row'] a {
+  display: inline-block;
+  max-width: 20rem;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.tz-more {
+  margin-top: 0.5rem;
+}
+
 /* ---- Data flow page (dataflow.html) ---- */
 
 /* A node's colour, by kind (or a store's tier): the graph's boxes, the

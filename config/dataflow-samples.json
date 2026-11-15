@@ -2636,7 +2636,9 @@
       "account_id",
       "start_at",
       "end_at",
-      "weekday_h"
+      "weekday_h",
+      "work_h",
+      "owner_work_h"
      ],
      "rows": [
       [
@@ -2644,23 +2646,60 @@
        1001472,
        1597198817,
        1603356766,
-       1230.54
+       1230.54,
+       409.879,
+       414.541
       ],
       [
-       4688705,
-       1413373,
-       1689653826,
-       1689661136,
-       2.03056
+       3680724,
+       1153409,
+       1654022119,
+       1654072141,
+       13.895,
+       1.484,
+       6.411
       ],
       [
-       7682505,
-       1146978,
-       1774319442,
-       1774386253,
-       18.5586
+       5118886,
+       1113991,
+       1703127144,
+       1703179456,
+       14.5311,
+       1.404,
+       0.0
+      ],
+      [
+       6773289,
+       1529447,
+       1754690600,
+       1755022366,
+       44.1572,
+       12.157,
+       12.157
+      ],
+      [
+       8819885,
+       1123071,
+       1794638624,
+       1794699631,
+       0.0,
+       0.0,
+       0.0
       ]
      ]
+    },
+    {
+     "name": "work_windows",
+     "kind": "rows",
+     "columns": [
+      "account_id",
+      "quarter",
+      "start_h",
+      "basis",
+      "events"
+     ],
+     "rows": [],
+     "withheld": "Each row is one person's working hours, which the site publishes only as aggregates."
     }
    ]
   },
@@ -3457,6 +3496,40 @@
   "r2:review-load/people/v2/": {
    "withheld": "File names are people's addresses: reachable only by typing one (ground rule 5), so no samples are listed.",
    "parts": []
+  },
+  "web/public/review-timezones/all.json": {
+   "parts": [
+    {
+     "name": null,
+     "kind": "entries",
+     "columns": [
+      "at",
+      "value"
+     ],
+     "rows": [
+      [
+       "[\"by_region\"]",
+       "{\"APAC\": {\"by\": [[13324,2.81],[4415,2.79],[9217,1.26]],\"n\": 26956,\"wait\": 2.11},\"Americas\": {\"by\": [[146897,1.04],[17592,1.98],[5861,3.16]],\"n\": 170350,\"wait\": 1.14},\"EMEA\": {\"by\": [[25656,2.59],[42829,0.93],[2955,2.27]],\"n\": 71440,\"wait\": …"
+      ],
+      [
+       "[\"data_span\"]",
+       "{\"first\": \"2025-10-01\",\"last\": \"2026-09-30\",\"sources\": [\"gerrit\",\"git\"]}"
+      ],
+      [
+       "[\"min_dir_turns\"]",
+       "400"
+      ],
+      [
+       "[\"quarters\"]",
+       "[\"2025Q4\",\"2026Q1\",\"2026Q2\",\"2026Q3\"]"
+      ],
+      [
+       "[\"turns\"]",
+       "268746"
+      ]
+     ]
+    }
+   ]
   },
   "data/private/feedback-coach/": {
    "withheld": "Private coaching reports about one person each; never published.",

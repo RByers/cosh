@@ -230,8 +230,9 @@ class ReviewersTest(unittest.TestCase):
             (2, 7, mon + 100, None, 1.0, 1.0),               # an open CL: to its last interval's end
         ])
         # 11's turn was still open when the CL closed, and so was 7's on the open CL: neither is a turn here.
-        self.assertEqual(turns, [(1, 7, mon + 3600, mon + 10800, 2.0), (1, 7, mon + 86400, mon + 88200, 0.5),
-                                 (1, 8, mon + 4 * 86400, mon + 7 * 86400, 24.0)])
+        self.assertEqual(turns, [(1, 7, mon + 3600, mon + 10800, 2.0, None, None),
+                                 (1, 7, mon + 86400, mon + 88200, 0.5, None, None),
+                                 (1, 8, mon + 4 * 86400, mon + 7 * 86400, 24.0, None, None)])
 
     def test_stage(self):
         ddb = sqlite3.connect(":memory:")
@@ -239,11 +240,13 @@ class ReviewersTest(unittest.TestCase):
             CREATE TABLE accounts (account_id INTEGER, is_bot INTEGER);
             CREATE TABLE changes (change_number INTEGER, owner_account INTEGER, created_at TEXT, closed_at TEXT,
               is_bot_owned INTEGER, project TEXT, branch TEXT);
-            CREATE TABLE comments (change_number INTEGER, account_id INTEGER, written_at TEXT, after_close INTEGER);
+            CREATE TABLE comments (change_number INTEGER, account_id INTEGER, written_at TEXT, after_close INTEGER,
+              is_ai INTEGER DEFAULT 0);
             INSERT INTO accounts VALUES (7, 0), (99, 1);
             INSERT INTO changes VALUES (1, 10, '2026-11-02 00:00:00', '2026-11-03 00:00:00', 0, 'chromium/src', 'main'),
                                        (2, 10, '2026-11-02 00:00:00', '2026-11-03 00:00:00', 0, 'chromium/src', 'main');
-            INSERT INTO comments VALUES (1, 7, '2026-11-02 05:00:00', 0), (1, 7, '2026-11-02 03:00:00', 0),
+            INSERT INTO comments (change_number, account_id, written_at, after_close)
+                 VALUES (1, 7, '2026-11-02 05:00:00', 0), (1, 7, '2026-11-02 03:00:00', 0),
                                         (1, 8, '2026-11-04 00:00:00', 1), (1, 99, '2026-11-02 01:00:00', 0);
         """)
         db = rt.connect(":memory:")
@@ -263,7 +266,10 @@ class ReviewersTest(unittest.TestCase):
             # 1 has a meta ref, so its listing votes are not used
             (2, 5, None, mon + 60, None, None),
         ])
-        self.assertEqual(db.execute("SELECT * FROM cl_turns").fetchall(), [(1, 7, mon + 3600, mon + 7200, 1.0)])
+        # 7's window is fitted to their comments and vote (01:00 .. 05:00 UTC); the owner, 10, did nothing, so has none.
+        self.assertEqual(db.execute("SELECT * FROM cl_turns").fetchall(), [(1, 7, mon + 3600, mon + 7200, 1.0, 1.0, None)])
+        self.assertEqual(db.execute("SELECT account_id, quarter, basis, events FROM work_windows WHERE account_id = 7")
+                         .fetchall(), [(7, "2026Q4", "history", 3)])
 
 
 if __name__ == "__main__":

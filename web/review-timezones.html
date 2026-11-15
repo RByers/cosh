@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light dark" />
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M8 1.5 13.6 4.75v6.5L8 14.5 2.4 11.25v-6.5Z' fill='%231a5fd0'/%3E%3Ccircle cx='8' cy='8' r='2.3' fill='%23fff'/%3E%3C/svg%3E" />
+    <title>Review Timezones - Chromium Open Source Health</title>
+    <link rel="stylesheet" href="/src/style.css" />
+    <meta name="description" content="How the working hours of Chromium's authors and reviewers overlap, what that does to the wait for review, and which directories have no owner in their authors' hours." />
+    <meta name="robots" content="noindex" />
+  </head>
+  <body>
+    <!--
+      The page's wording is in this file, like value.html (whose opening
+      comment has the <template data-msg> syntax); src/review-timezones.ts
+      fills in the values and draws the chart and tables. The data is
+      all.json, written by cosh/review_timezones.py
+      (docs/review-timezones.md). It holds aggregates only: nothing here
+      names a person or their hours.
+    -->
+    <header>
+      <nav class="crumb"><a href="./">← Chromium Open Source Health</a></nav>
+      <h1>Chromium Open Source Health - Review Timezones</h1>
+      <!-- The dates the data covers (src/data-span.ts), shown once the data has loaded. -->
+      <p id="data-span" class="data-span" hidden></p>
+      <template data-msg="data-span">Based on Chromium Gerrit and git data from <slot name="first"></slot> to <slot name="last"></slot></template>
+      <p class="rf-summary">
+        How much the working hours of Chromium's authors and reviewers overlap, what that does to the wait for
+        review, and which directories have no owner working in their authors' hours.
+      </p>
+      <p class="rf-disclaimer" role="note">This analysis is imperfect: working hours are guessed from when
+        people are active in Gerrit. It is meant as a guide to where more owners would shorten waits, not as a
+        measure of anyone. Please
+        <a href="https://github.com/RByers/cosh/issues/new?labels=review-timezones" target="_blank" rel="noopener">report</a>
+        any issues.</p>
+    </header>
+
+    <main>
+      <section id="overlap" class="card" aria-labelledby="overlap-title">
+        <a class="card-anchor" href="#overlap" aria-label="Link to this section" title="Link to this section">#</a>
+        <h2 id="overlap-title">Less overlap, longer waits</h2>
+        <p class="rf-def">
+          Each person's <strong>working hours</strong> are the 8 hours of the day in which they are most active
+          in Gerrit, Monday to Friday in their own timezone, fitted once a quarter. A wait counts only the
+          <strong>author's</strong> working hours: a change sent at the end of the author's day and reviewed
+          before they start the next waited no time at all for them.
+        </p>
+        <ul id="tz-overlap-legend" class="legend rf-line-legend" aria-label="Bars"></ul>
+        <div class="chart rf-half-chart">
+          <canvas id="tz-overlap" role="img" aria-label="Author's working hours waited per reviewer turn, by how many working hours the author and reviewer share: median, middle half and 10th to 90th percentile."></canvas>
+        </div>
+        <p id="tz-overlap-note" class="note"></p>
+        <template data-msg="overlap-note">
+          Every reviewer turn (a stay in a change's attention set) on the changes landed from
+          <slot name="from"></slot> to <slot name="to"></slot>, <slot name="n"></slot> in all, by how many hours
+          the author's and the reviewer's working hours share. With no overlap, the median turn cost the author
+          <slot name="none"></slot> of their working hours; with 7 or 8 shared hours,
+          <slot name="full"></slot>. <slot name="share"></slot> of turns had less than half a day in common.
+        </template>
+        <template data-msg="legend-median">Median</template>
+        <template data-msg="legend-mid">Middle half (25th–75th percentile)</template>
+        <template data-msg="legend-wide">10th–90th percentile</template>
+        <template data-msg="axis-overlap">working hours shared by author and reviewer</template>
+        <template data-msg="axis-wait">author's working hours waited</template>
+        <template data-msg="overlap-none">none</template>
+        <template data-msg="overlap-bin"><slot name="lo"></slot>–<slot name="hi"></slot> h</template>
+        <template data-msg="tip-turns">turns</template>
+      </section>
+
+      <section id="regions" class="card" aria-labelledby="regions-title">
+        <a class="card-anchor" href="#regions" aria-label="Link to this section" title="Link to this section">#</a>
+        <h2 id="regions-title">Who reviews whom</h2>
+        <div class="table-wrap">
+          <table id="tz-regions" class="rf-table tz-regions">
+            <thead>
+              <tr><th scope="col" rowspan="2">Author's hours</th>
+                <th scope="col" rowspan="2" class="num">Turns</th>
+                <th scope="col" rowspan="2" class="num" title="Median author's working hours waited per reviewer turn">Median wait</th>
+                <th scope="colgroup" colspan="3" class="rl-group">Reviewer's hours: share of turns, median wait</th></tr>
+              <tr id="tz-regions-cols"></tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <template data-msg="region-Americas">Americas</template>
+        <template data-msg="region-EMEA">Europe, Middle East, Africa</template>
+        <template data-msg="region-APAC">Asia-Pacific</template>
+        <template data-msg="share-wait"><slot name="share"></slot> · <slot name="wait"></slot></template>
+        <p id="tz-regions-note" class="note"></p>
+        <template data-msg="regions-note">
+          The same turns, by where the author's and the reviewer's working hours fall: a day starting between
+          UTC−11 and UTC−3 counts as the Americas, UTC−2 to UTC+4 as Europe, the Middle East and Africa, and
+          UTC+5 to UTC+12 as Asia-Pacific. In <slot name="last"></slot>, <slot name="am"></slot> people active in
+          Gerrit worked Americas hours, <slot name="em"></slot> European, Middle Eastern or African hours and
+          <slot name="ap"></slot> Asia-Pacific hours. Authors in Asia-Pacific waited a median
+          <slot name="apWait"></slot> a turn, against <slot name="amWait"></slot> for authors in the Americas:
+          <slot name="apOwn"></slot> of their turns went to reviewers in their own hours.
+        </template>
+      </section>
+
+      <section id="dirs" class="card" aria-labelledby="dirs-title">
+        <a class="card-anchor" href="#dirs" aria-label="Link to this section" title="Link to this section">#</a>
+        <h2 id="dirs-title">Where an owner in other hours would help</h2>
+        <div class="table-wrap">
+          <table id="tz-dirs" class="rf-table rf-all-dirs tz-dirs">
+            <thead>
+              <tr><th scope="col" rowspan="2">OWNERS directory</th>
+                <th scope="col" rowspan="2" class="num" title="Reviewer turns on the changes whose lines are mostly under this OWNERS file">Turns</th>
+                <th scope="colgroup" colspan="3" class="rl-group" title="People listed in the directory's OWNERS file who were active in Gerrit in the last quarter, by their working hours">Owners at work</th>
+                <th scope="col" rowspan="2" class="num rl-group" title="Share of the turns whose author shares fewer than 4 working hours with every owner listed here">Outside owners' hours</th>
+                <th scope="col" rowspan="2" title="Where most of those authors work">Mostly in</th>
+                <th scope="colgroup" colspan="2" class="rl-group" title="Median author's working hours waited per turn">Median wait (h)</th>
+                <th scope="col" rowspan="2" class="num rl-group" title="Authors' working hours that their turns waited beyond the median of those inside owners' hours, in all">Extra wait (h)</th></tr>
+              <tr id="tz-dirs-cols"></tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <button id="tz-dirs-more" type="button" class="tz-more" hidden></button>
+        <template data-msg="dirs-more">Show all <slot name="n"></slot> directories</template>
+        <template data-msg="region-short-Americas">Americas</template>
+        <template data-msg="region-short-EMEA">EMEA</template>
+        <template data-msg="region-short-APAC">APAC</template>
+        <template data-msg="col-am">Am.</template>
+        <template data-msg="col-em">EMEA</template>
+        <template data-msg="col-ap">APAC</template>
+        <template data-msg="col-outside">Outside</template>
+        <template data-msg="col-inside">Inside</template>
+        <template data-msg="title-owners-of"><slot name="n"></slot> active of <slot name="of"></slot> listed</template>
+        <p id="tz-dirs-note" class="note"></p>
+        <template data-msg="dirs-note">
+          Each change counts in the directory with an OWNERS file that holds most of its changed lines, as the
+          files stood on <slot name="at"></slot>. An author is <strong>outside owners' hours</strong> when their
+          working hours share fewer than <slot name="cover"></slot> hours with those of every person listed in
+          that OWNERS file (owners inherited from directories above aren't counted, nor owners inactive in
+          Gerrit in the last quarter). <strong>Extra wait</strong> is how much longer those authors waited, in
+          all, than they would have at the median wait of authors inside owners' hours: where it is large, an
+          owner working the hours named under “Mostly in” would likely shorten waits the most. Directories with
+          fewer than <slot name="minTurns"></slot> turns are left out, and a median needs 30 turns. A long
+          wait outside owners' hours can also come from the kind of change, or from authors new to the code; the
+          table shows where the hours differ, not why.
+        </template>
+      </section>
+
+      <details id="method" class="card rf-method">
+        <summary><h2>How this is measured</h2></summary>
+        <p class="note">
+          <strong>Working hours</strong> are fitted to each person's activity in Gerrit, from public timestamps
+          alone: the comments they wrote, their Code-Review votes and the patch sets they uploaded. Once a
+          quarter, the 8 consecutive hours of the day (UTC) that hold the most of it are taken as their working
+          day, starting at 09:00 local time; that gives their timezone and so their own Saturday and Sunday.
+          Someone with fewer than 10 actions in a quarter is fitted to everything they did up to then. A trip
+          doesn't move anyone's hours: authors come to expect their reviewers' usual hours, so the extra wait
+          a trip causes counts. People who split their day, or work long and uneven hours, fit less well.
+          Holidays aren't known.
+        </p>
+        <p class="note">
+          <strong>Turns</strong> are stays of a reviewer (anyone but the change's owner, bots left out) in a
+          change's attention set, on the changes of the commits landed in the four quarters shown, as on the
+          Review Load page. A turn still open when the change landed is left out, and changes with no comments
+          at all have no attention-set history here. A turn's <strong>wait</strong> is the part of it inside the
+          author's working hours.
+        </p>
+        <p class="note">
+          <strong>OWNERS</strong> files are read from main at the end of the last quarter shown, with
+          <code>file://</code> includes followed; <code>per-file</code> rules are not read. Addresses are
+          matched as in the Feedback Index. Everything comes from public Gerrit and git data. Code and method:
+          <a target="_blank" rel="noopener" href="https://github.com/RByers/cosh/blob/main/docs/review-timezones.md">docs/review-timezones.md</a>.
+        </p>
+      </details>
+    </main>
+    <script type="module" src="/src/review-timezones.ts"></script>
+  </body>
+</html>

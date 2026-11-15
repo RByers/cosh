@@ -95,7 +95,7 @@ class ComputeTest(unittest.TestCase):
             (102, 9, fri, fri + 60, 1.0, 1.0),                             # no address: not counted
             (106, 7, fri, fri + 60, 5.0, 5.0),                             # a mechanical commit's CL: not counted
         ])
-        t.executemany("INSERT INTO cl_turns VALUES (?,?,?,?,?)", [
+        t.executemany("INSERT INTO cl_turns VALUES (?,?,?,?,?,NULL,NULL)", [
             (102, 7, fri + 3600, fri + 86400, 20.0), (102, 7, fri + 2 * 86400, fri + 3 * 86400, 4.0),
             (102, 9, fri, fri + 60, 1.0), (106, 7, fri, fri + 60, 5.0)])
 

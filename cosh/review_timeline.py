@@ -24,7 +24,10 @@ One run does three things, in order:
              and their hours in the attention set, also with Saturdays and
              Sundays (UTC) left out; and cl_turns, each of their turns
              (overlapping intervals merged) that ended before the CL closed,
-             with its weekday hours. Rebuilt whole, from the tables above.
+             with its weekday hours and its working hours, the reviewer's
+             and the CL owner's (cosh/work_hours.py), from work_windows: each
+             person's 8-hour window per quarter. Rebuilt whole, from the
+             tables above and reviews.sqlite's comments.
 
 $COSH_REVIEW_TIMELINE points the step and its readers at another file.
 """
@@ -40,7 +43,7 @@ import zlib
 from collections import defaultdict
 from datetime import datetime, timezone
 
-from . import codefp, store
+from . import codefp, store, work_hours
 from .bots import is_bot_account
 from .cl_facts import epoch
 
@@ -112,7 +115,18 @@ CREATE TABLE cl_turns (           -- each turn of those reviewers in the attenti
   start_at      INTEGER NOT NULL,
   end_at        INTEGER NOT NULL,
   weekday_h     REAL    NOT NULL, -- its hours, Saturdays and Sundays (UTC) left out
+  work_h        REAL,             -- its hours inside the reviewer's working window (NULL: no window)
+  owner_work_h  REAL,             -- the same in the CL owner's window: the wait as the owner saw it
   PRIMARY KEY (change_number, account_id, start_at)
+) STRICT, WITHOUT ROWID;
+DROP TABLE IF EXISTS work_windows;
+CREATE TABLE work_windows (       -- each person's working window per quarter (cosh/work_hours.py)
+  account_id INTEGER NOT NULL,
+  quarter    TEXT    NOT NULL,    -- '2026Q3'
+  start_h    INTEGER NOT NULL,    -- the window's first hour, UTC (8 hours, wrapping midnight)
+  basis      TEXT    NOT NULL,    -- quarter: fitted to that quarter's activity; history: too little, fitted to earlier
+  events     INTEGER NOT NULL,    -- comments, votes and uploads in the quarter
+  PRIMARY KEY (account_id, quarter)
 ) STRICT, WITHOUT ROWID;
 """
 
@@ -404,10 +418,21 @@ def union_spans(spans, lo, hi):
     return out
 
 
+def work_pair(windows, reviewer, owner, s, e):
+    """(the reviewer's, the owner's) working hours of [s, e); a reviewer without
+    a window gets the owner's; None where neither has one."""
+    if windows is None:
+        return None, None
+    o = windows.at(owner, s)
+    r = windows.at(reviewer, s)
+    r = o if r is None else r
+    return tuple(None if w is None else round(work_hours.work_seconds(s, e, w) / 3600, 3) for w in (r, o))
+
+
 TURN_OPEN_AT_CLOSE = 60   # seconds: a turn ending this close to the CL's close was still open at it
 
 
-def reviewer_rows(cls, bots, attention, responses):
+def reviewer_rows(cls, bots, attention, responses, windows=None):
     """cl_reviewers' rows and cl_turns' rows. cls: [(change_number, owner, created, closed or
     None)] in unix seconds; attention: {CL: [(account, start, end)]};
     responses: {CL: {account: first answer}}. Bots and the owner are left
@@ -415,7 +440,9 @@ def reviewer_rows(cls, bots, attention, responses):
     while it is open), and overlapping intervals count once, as one turn.
     A turn still open at the CL's close (ending within TURN_OPEN_AT_CLOSE
     of it) isn't a row of cl_turns: the CL landed or was abandoned without
-    waiting on it."""
+    waiting on it. `windows` (a cosh.work_hours.Windows) adds each turn's
+    working hours, the reviewer's (in the owner's window when the reviewer
+    has none) and the owner's; without it both are None."""
     rows, turns = [], []
     for n, owner, c0, c1 in cls:
         a = attention.get(n, ())
@@ -431,7 +458,8 @@ def reviewer_rows(cls, bots, attention, responses):
                 us = union_spans(sp, c0, hi)
                 wd = [weekday_seconds(s, e) / 3600 for s, e in us]
                 hours = (sum(e - s for s, e in us) / 3600, sum(wd))
-                turns += [(n, acct, s, e, h) for (s, e), h in zip(us, wd) if e < hi - TURN_OPEN_AT_CLOSE]
+                turns += [(n, acct, s, e, h, *work_pair(windows, acct, owner, s, e))
+                          for (s, e), h in zip(us, wd) if e < hi - TURN_OPEN_AT_CLOSE]
             rows.append((n, acct, min(s for s, _ in sp) if sp else None, resp.get(acct),
                          *(hours if sp else (None, None))))
     return rows, turns
@@ -465,10 +493,12 @@ def stage_reviewers(db, ddb=None):
     attention = defaultdict(list)
     for n, acct, s, e in db.execute("SELECT change_number, account_id, start_at, end_at FROM attention"):
         attention[n].append((acct, s, e))
-    rows, turns = reviewer_rows(cls, bots, attention, responses)
+    windows = work_hours.Windows(work_hours.activity_counts(db, ddb))
+    rows, turns = reviewer_rows(cls, bots, attention, responses, windows)
     db.executescript(REVIEWERS_SCHEMA)
+    db.executemany("INSERT INTO work_windows VALUES (?,?,?,?,?)", windows.rows())
     db.executemany("INSERT INTO cl_reviewers VALUES (?,?,?,?,?,?)", rows)
-    db.executemany("INSERT INTO cl_turns VALUES (?,?,?,?,?)", turns)
+    db.executemany("INSERT INTO cl_turns VALUES (?,?,?,?,?,?,?)", turns)
     db.commit()
     print(f"reviewers: done, {len(rows):,} reviewers of {len({r[0] for r in rows}):,} CLs", flush=True)
 

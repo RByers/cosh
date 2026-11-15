@@ -200,7 +200,9 @@ commits.sqlite, reviews.sqlite, OWNERS in shared/chromium ───────�
   comments (`listing_votes`; incremental by listing body), then
   `cl_reviewers` (per CL and reviewer: `asked_at`, `responded_at`,
   attention hours; and `cl_turns`, each turn that ended before the close
-  with its hours; both rebuilt whole). Balance's `cl` stage takes `sent_at` and
+  with its weekday hours and its working hours, the reviewer's and the
+  owner's, from each person's working window per quarter in `work_windows`:
+  `docs/review-timezones.md`, "Working hours"; all rebuilt whole). Balance's `cl` stage takes `sent_at` and
   `cl_attention` from `cl_reviewers`. The walk and the listing stages each
   keep a fingerprint of their code in `meta` (`walk_fingerprint`,
   `listing_fingerprint`; `cosh/codefp.py`): when it changes, that stage's

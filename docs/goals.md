@@ -10,7 +10,8 @@ That purpose is written down in the analysis's own doc
 (`docs/extraction-v1.md` and `docs/comment-classifier.md` for Value
 Exchange, `docs/sentiment.md` for Review Tone, `docs/balance.md` for
 Review Balance, `docs/review-feedback.md` for the Feedback Index,
-`docs/review-load.md` for Review Load), near
+`docs/review-load.md` for Review Load,
+`docs/review-timezones.md` for Review Timezones), near
 the top, and a new analysis states its purpose there before it gets a
 page. The goals here are what every analysis shares.
 
