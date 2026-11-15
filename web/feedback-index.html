@@ -40,6 +40,28 @@
       <template data-msg="period-half2">July – December <slot name="year"></slot></template>
       <template data-msg="period-part"><slot name="from"></slot> – <slot name="to"></slot> <slot name="year"></slot></template>
 
+      <section id="find" class="card" aria-labelledby="find-title">
+        <h2 id="find-title">Your feedback</h2>
+        <p class="sub">
+          Type your email address to see your AFR and index on the changes you landed since
+          <span data-rf-range="from"></span>, and where your feedback came from.
+        </p>
+        <form id="rf-find" class="person-find rf-find" autocomplete="off">
+          <label for="rf-email">Your email address</label>
+          <input id="rf-email" type="text" inputmode="email" autocomplete="off" autocapitalize="off" autocorrect="off"
+            spellcheck="false" data-1p-ignore="" data-lpignore="true" data-form-type="other" />
+          <button type="submit">Show</button>
+          <p id="rf-find-note" class="sub" aria-live="polite"></p>
+        </form>
+        <template data-msg="find-loading">Looking…</template>
+        <template data-msg="find-none">No changes owned by that address landed<span data-if="from"> between
+          <slot name="from"></slot> and <slot name="to"></slot></span>.
+          Try the address you use in Gerrit.</template>
+        <template data-msg="find-error">Couldn't load the data: <slot name="error"></slot></template>
+        <template data-msg="find-done">Showing <slot name="n"></slot> changes landed between <slot name="from"></slot>
+          and <slot name="to"></slot>.</template>
+      </section>
+
       <section id="intro" class="card" aria-labelledby="intro-title">
         <a class="card-anchor" href="#intro" aria-label="Link to this section" title="Link to this section">#</a>
         <h2 id="intro-title">Addressed feedback rate (AFR)</h2>
@@ -176,28 +198,6 @@
         </template>
         <template data-msg="legend-fi">Contributors</template>
         <template data-msg="legend-fi-marks">Median, and 10th and 90th percentiles</template>
-      </section>
-
-      <section id="find" class="card" aria-labelledby="find-title">
-        <h2 id="find-title">Your feedback</h2>
-        <p class="sub">
-          Type your email address to see your AFR and index on the changes you landed since
-          <span data-rf-range="from"></span>, and where your feedback came from.
-        </p>
-        <form id="rf-find" class="person-find rf-find" autocomplete="off">
-          <label for="rf-email">Your email address</label>
-          <input id="rf-email" type="text" inputmode="email" autocomplete="off" autocapitalize="off" autocorrect="off"
-            spellcheck="false" data-1p-ignore="" data-lpignore="true" data-form-type="other" />
-          <button type="submit">Show</button>
-          <p id="rf-find-note" class="sub" aria-live="polite"></p>
-        </form>
-        <template data-msg="find-loading">Looking…</template>
-        <template data-msg="find-none">No changes owned by that address landed<span data-if="from"> between
-          <slot name="from"></slot> and <slot name="to"></slot></span>.
-          Try the address you use in Gerrit.</template>
-        <template data-msg="find-error">Couldn't load the data: <slot name="error"></slot></template>
-        <template data-msg="find-done">Showing <slot name="n"></slot> changes landed between <slot name="from"></slot>
-          and <slot name="to"></slot>.</template>
       </section>
 
       <!-- Everything below, up to the methodology, is about the person whose address was typed. -->
