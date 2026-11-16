@@ -41,11 +41,12 @@ see "Run memory-heavy analysis" below). On 2026-11-15: NoteDb 14 GB,
   subprocess output (git) as a stream, not one big string. Examples:
   `cosh.review_timeline`'s `reviewers` stage reads CLs 20,000 at a time
   (146 MB, was 2.1 GB); `people.linked_accounts` reads only the accounts it
-  needs (40 MB, against 1.1 GB for `exact_identities`).
+  needs (40 MB); `people.exact_identities` streams commits into counters
+  and reads votes by key for the few CLs that need them (135 MB, was 1.2 GB).
 - **Read only the slice a step needs.** An analysis of the last four
   quarters reads those quarters' rows by key, not all of history (Review
   Timezones: 7 s and 200 MB, was 32 s and 1.1 GB, mostly from calling
-  `exact_identities`, which loads every CL, commit and vote). Before reusing
+  `exact_identities`, which then loaded every CL, commit and vote). Before reusing
   a helper, check what it loads; a whole-history helper in a one-year step
   is usually the cost.
 - **Per-row work in SQL must be cheap.** SQLite's date functions

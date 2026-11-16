@@ -137,8 +137,9 @@ weekday hours against 11 working hours.
   25–75 s). `review-timezones` takes 7 s and 200 MB: it reads only the
   four quarters' commits, file changes, CLs (by key) and turns, streams the
   tree listing when reading OWNERS, and matches OWNERS addresses without
-  the Feedback Index's identities, which load all of history (24 s and
-  1.1 GB; they matched 949 active owners' addresses, this 946). Whole
+  the Feedback Index's identities, which scan all of history (24 s and
+  1.1 GB when this was written; 7 s and 135 MB since they stream it,
+  2026-11-15; they matched 949 active owners' addresses, this 946). Whole
   quarters only, so the file changes when a quarter completes.
 - **Repository volume (goal 4).** `all.json` is 16 KB.
 - **Tokens (goal 5).** None.

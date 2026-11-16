@@ -650,6 +650,13 @@ across `chromium.org` and `google.com`.
   file. Before 2026-11-15 the alphabetically first address named the
   identity, which picked a person's old address for 61 of the 102
   identities whose addresses differ in more than domain.
+- **Cost.** `exact_identities` streams its inputs into small counts: one
+  pass over `changes`, one over `commits`, and votes only for the CLs
+  whose Reviewed-by has an address that is no account's. About 7 s and
+  135 MB with the files in the page cache (2026-11-15; 11–17 s and 1.2 GB
+  when it held every commit and vote in lists). Most of the time is
+  reading `changes` (480 MB of wide rows); it is not incremental, since
+  account addresses change and every CL's evidence is then read anew.
 - Gerrit's public data gives only each account's preferred address, not
   the ones linked to it, so two accounts of one person with no such
   evidence stay two people. Before 2026-11-14 the Feedback Index folded

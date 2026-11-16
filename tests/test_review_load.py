@@ -282,6 +282,52 @@ class IdentityTest(unittest.TestCase):
         self.assertEqual(P.linked_accounts(d, g, t), {1, 2})
         self.assertEqual(P.linked_accounts(d, g, t), P.exact_identities(d, g, t).linked)
 
+    def test_exact_identities(self):
+        from cosh import people as P
+        at = ts("2026-01-05 12:00")
+        g = sqlite3.connect(":memory:")
+        g.executescript(C.SCHEMA)
+
+        def commit(cid, email, n, reviewed=None):
+            g.execute("INSERT INTO commits VALUES (?,?,?,?,?,?,?,0,?,NULL,0,0,0,1,0,0,0)",
+                      (cid, f"sha{cid}", email, "n", at + cid, at + cid, n, json.dumps(reviewed) if reviewed else None))
+        # a2 lands three of account 1's CLs: one person. author lands two, plus 204, which
+        # other@x.org relanded: a CL counts once, by its last commit, so author has too few.
+        for cid, n in ((1, 205), (2, 206), (3, 207)):
+            commit(cid, "a2@chromium.org", n)
+        commit(4, "author@chromium.org", 201, ["rev@google.com"])
+        commit(5, "author@chromium.org", 202, ["rev@google.com"])
+        commit(6, "author@chromium.org", 204)
+        commit(7, "other@x.org", 204)
+        # Account 2 has no address (deleted); gone@x.org landed its CLs.
+        for cid, n in ((8, 301), (9, 302), (10, 303)):
+            commit(cid, "gone@x.org", n)
+        d = sqlite3.connect(":memory:")
+        d.executescript("""
+            CREATE TABLE accounts (host TEXT DEFAULT 'chromium-review.googlesource.com', account_id INTEGER, email TEXT);
+            CREATE TABLE changes (host TEXT DEFAULT 'chromium-review.googlesource.com', change_number INTEGER,
+                                  updated_at TEXT DEFAULT '2026-01-01 00:00:00', is_bot_owned INTEGER DEFAULT 0,
+                                  status TEXT DEFAULT 'MERGED', owner_account INTEGER,
+                                  project TEXT DEFAULT 'chromium/src', branch TEXT DEFAULT 'main');
+            INSERT INTO accounts (account_id, email) VALUES (1, 'owner@google.com'), (2, NULL), (3, 'rev@chromium.org');
+            INSERT INTO changes (change_number, owner_account) VALUES
+                (201, 1), (202, 1), (204, 1), (205, 1), (206, 1), (207, 1), (301, 2), (302, 2), (303, 2);
+        """)
+        t = rt.connect(":memory:")
+        t.executescript(rt.SCHEMA)
+        # Account 3 approved both CLs whose Reviewed-by names rev@google.com, no account's
+        # address, and voted later elsewhere: its address now names the person.
+        t.executemany("INSERT INTO votes VALUES (?,?,?,?,?)", [(201, 3, 1, at, 1), (202, 3, 1, at, 1),
+                                                               (999, 3, 1, at + 10**6, 1)])
+        ids = P.exact_identities(d, g, t)
+        self.assertEqual(ids.find("a2@chromium.org"), ids.find("owner@google.com"))
+        self.assertNotEqual(ids.find("author@chromium.org"), ids.find("owner@google.com"))
+        self.assertEqual(ids.find("rev@google.com"), "rev@chromium.org")
+        self.assertEqual((ids.accounts[2], ids.linked), ("gone@x.org", {2}))
+        self.assertEqual(ids.find(ids.accounts[2]), "gone@x.org")
+        # Without review-timeline.sqlite there are no vote links.
+        self.assertNotEqual(P.exact_identities(d, g).find("rev@google.com"), "rev@chromium.org")
+
 
 if __name__ == "__main__":
     unittest.main()

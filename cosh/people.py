@@ -99,6 +99,11 @@ def alias_pairs(cls, commits, min_cls=3, min_share=0.5, norm=person):
         g = by_n.get(c["change_number"])
         if g and c["owner_email"] and not is_bot_email(c["owner_email"]):
             own[norm(g["email"])][norm(c["owner_email"])] += 1
+    return _alias_out(own, min_cls, min_share)
+
+
+def _alias_out(own, min_cls=3, min_share=0.5):
+    """`alias_pairs` from its counts: {author: {owner address: CLs}}."""
     out = []
     for b, cnt in own.items():
         tot = sum(cnt.values())
@@ -152,6 +157,11 @@ def owner_links(owned, account_email, min_cls=3, min_share=0.5):
     for o, a in owned:
         if not account_email.get(o) and a and not is_bot_email(a):
             by[o][address(a)] += 1
+    return _owner_out(by, min_cls, min_share)
+
+
+def _owner_out(by, min_cls=3, min_share=0.5):
+    """`owner_links` from its counts: {account: {author address: CLs}}."""
     out = {}
     for o, cnt in by.items():
         a, k = cnt.most_common(1)[0]
@@ -166,7 +176,7 @@ def linked_accounts(ddb, gdb, tdb, host="chromium-review.googlesource.com"):
     one. Only those accounts' votes and owned CLs are read in full; commits'
     Reviewed-by trailers are streamed from SQLite twice, keeping only the
     addresses that can link to them. About 60 MB, against 1.1 GB for
-    `exact_identities` (2026-11-15)."""
+    `exact_identities` then, 135 MB once it streamed too (2026-11-15)."""
     account_email = dict(ddb.execute("SELECT account_id, email FROM accounts WHERE host = ?", (host,)))
     bare = {a for a, e in account_email.items() if not e}
     known = {address(e) for e in account_email.values() if e}
@@ -258,10 +268,6 @@ def exact_identities(ddb, gdb, tdb=None, host="chromium-review.googlesource.com"
     callers map accounts through `accounts` and count `linked` ones as
     people, not bots."""
     account_email = dict(ddb.execute("SELECT account_id, email FROM accounts WHERE host = ?", (host,)))
-    owner_of = dict(ddb.execute(
-        "SELECT change_number, owner_account FROM changes WHERE host = ? AND status = 'MERGED' "
-        "AND is_bot_owned = 0 AND project = 'chromium/src' AND branch = 'main'", (host,)))
-    owners = [dict(change_number=n, owner_email=account_email.get(o)) for n, o in owner_of.items()]
     # When each address was last used, to name an identity by its newest
     # (`Ids`): git authorship and Reviewed-by trailers by landing time; an
     # account's address by its owned CLs' last update and its newest
@@ -273,47 +279,88 @@ def exact_identities(ddb, gdb, tdb=None, host="chromium-review.googlesource.com"
         if e and at:
             e = address(e)
             latest[e] = max(latest[e], int(at))
-    authors, reviewed_by = [], []
+
+    # Everything is streamed into small counts, never held per row: one
+    # pass over `changes` (the owner of each merged human CL on main, and
+    # each account's newest update), one over `commits`, and votes only for
+    # the few CLs whose Reviewed-by has an address that is no account's.
+    # A GROUP BY on `changes` sorted all 1.6M rows (18 s); this takes a
+    # fraction of the time and memory of loading every commit (2026-11-15).
+    owner_of, updated = {}, {}
+    for n, o, at, status, bot, project, branch in ddb.execute(
+            "SELECT change_number, owner_account, updated_at, status, is_bot_owned, project, branch "
+            "FROM changes WHERE host = ?", (host,)):
+        if at and at > updated.get(o, ""):
+            updated[o] = at
+        if status == "MERGED" and not bot and project == "chromium/src" and branch == "main":
+            owner_of[n] = o
+    known = {address(e) for e in account_email.values() if e}
+    own = defaultdict(Counter)       # alias_pairs: git author -> owner address -> CLs
+    by_owner = defaultdict(Counter)  # owner_links: account with no address -> git author -> CLs
+    missing = []                     # vote_links: (change number, Reviewed-by) with an unknown address
+
+    def alias(email, o):
+        oe = account_email.get(o)
+        if oe and not is_bot_email(oe):
+            own[address(email)][address(oe)] += 1
+    # alias_pairs counts a CL once, by its last human commit: the few CLs
+    # that landed more than once wait for the end.
+    dups = {n for n, in gdb.execute(
+        "SELECT change_number FROM commits WHERE commit_id > 0 AND change_number IS NOT NULL "
+        "GROUP BY change_number HAVING count(*) > 1")}
+    last = {}
     for n, email, bot, rb, at in gdb.execute(
             "SELECT change_number, author_email, is_bot, reviewed_by, landed_at FROM commits "
             "WHERE commit_id > 0 AND change_number IS NOT NULL"):
         if not bot and not is_bot_email(email):
-            authors.append(dict(n=n, email=email))
             used(email, at)
+            o = owner_of.get(n)
+            if o is not None and not account_email.get(o):
+                by_owner[o][address(email)] += 1
+            if n in dups:
+                last[n] = email
+            elif o is not None and n:
+                alias(email, o)
         if rb:
-            reviewed_by.append((n, json.loads(rb)))
-            for e in reviewed_by[-1][1]:
+            rb = json.loads(rb)
+            for e in rb:
                 used(e, at)
+            if any(address(e) not in known and not is_bot_email(e) for e in rb):
+                missing.append((n, rb))
+    for n, email in last.items():
+        if n in owner_of and n:
+            alias(email, owner_of[n])
+    del owner_of, last
     # Addresses for accounts with none, from votes, then from CLs owned.
     pairs = []
     if tdb is not None:
         voters = defaultdict(set)
+        ns = sorted({n for n, _ in missing})
         for table in ("votes", "listing_votes"):
-            for n, v in tdb.execute(f"SELECT change_number, voter FROM {table} WHERE value > 0"):
-                voters[n].add(v)
-        pairs = vote_links(reviewed_by, account_email, voters)
-        del voters
+            for i in range(0, len(ns), 500):
+                chunk = ns[i:i + 500]
+                for n, v in tdb.execute(f"SELECT change_number, voter FROM {table} WHERE value > 0 "
+                                        f"AND change_number IN ({','.join('?' * len(chunk))})", chunk):
+                    voters[n].add(v)
+        pairs = vote_links(missing, account_email, voters)
     found = {b: a for a, b in pairs if isinstance(b, int)}
-    by_owner = owner_links([(owner_of[a["n"]], a["email"]) for a in authors if a["n"] in owner_of], account_email)
+    by_owner = _owner_out(by_owner)
     accounts = {k: address(e) for k, e in account_email.items() if e}
     for k, e in by_owner.items():
         found.setdefault(k, e)
     accounts.update(found)
-    for o, at in ddb.execute("SELECT owner_account, max(updated_at) FROM changes WHERE host = ? "
-                             "GROUP BY owner_account", (host,)):
-        if at:
-            used(accounts.get(o), calendar.timegm(time.strptime(at[:19], "%Y-%m-%d %H:%M:%S")))
+    for o, at in updated.items():
+        used(accounts.get(o), calendar.timegm(time.strptime(at[:19], "%Y-%m-%d %H:%M:%S")))
     if tdb is not None:
         for table in ("votes", "listing_votes"):
             for v, at in tdb.execute(f"SELECT voter, max(at) FROM {table} GROUP BY voter"):
                 used(accounts.get(v), at)
     ids = Ids(address, latest)
     ids.accounts, ids.linked = accounts, set(found)
-    for a, b in alias_pairs(owners, authors, norm=address):
+    for a, b in _alias_out(own):
         ids.union(a, b)
     for a, b in pairs:
         ids.union(a, accounts[b] if isinstance(b, int) else b)
     for k, e in by_owner.items():        # an account's Reviewed-by and git author addresses are one person
         ids.union(e, accounts[k])
     return ids
-

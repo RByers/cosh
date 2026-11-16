@@ -2381,7 +2381,7 @@
       "token_cost": null,
       "cost_source": "docs/review-timezones.md",
       "refresh": "routine",
-      "notes": "Reads no comment text. Publishes aggregates only; the fitted windows stay in review-timeline.sqlite. OWNERS addresses are matched to Gerrit accounts by the accounts' own addresses and the git author of each CL shown, not the Feedback Index's identities (which load all history: 24 s and 1.1 GB).",
+      "notes": "Reads no comment text. Publishes aggregates only; the fitted windows stay in review-timeline.sqlite. OWNERS addresses are matched to Gerrit accounts by the accounts' own addresses and the git author of each CL shown, not the Feedback Index's identities (which scan all history: 24 s and 1.1 GB then, 7 s and 135 MB streamed since 2026-11-15).",
       "run": "nice -n 5 python3 -m cosh.review_timezones"
     },
     {
