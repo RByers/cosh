@@ -243,9 +243,14 @@ files).
 - *Your feedback* (`reviewerRows`): everyone who approved one of the
   person's CLs (in the picked half-year and directory, if any) whose
   approvals drew addressed threads (rows with none are left out), most
-  CLs first. By default only those with comments to list are shown (who
-  started an addressed thread on the person's CLs in the thread files,
-  `reviewerCommenters`); "Show all" lists every such approver. Columns: the
+  CLs first. A "Covering" selector (like the download's) picks whose rows
+  are shown: those who started an addressed thread, per the thread files
+  (`reviewerCommenters`), on the person's CLs landed in the past 6 months,
+  the past year (the default; days back from the data's end), or since the
+  thread files start ("all with details (to 2022)", the year from
+  `THREAD_HALVES`); "all (including those without details)" lists every
+  such approver. It picks only the rows and the comments under them; the
+  columns still count all the person's CLs (or the picked half-year's). Columns: the
   person's CLs they approved, addressed threads on them, the person's AFR
   there, the reviewer's factor without the person's CLs (so it can differ
   a little from what others see), everyone's CLs they approved, and the
@@ -257,9 +262,10 @@ files).
   CLs (`reviewerComments`), newest first: the day of the first comment, the
   change number linking to the thread in Gerrit, and the file ("commit
   message" for `/COMMIT_MSG`). They come from the person's thread file in R2
-  ("Downloading your comments"), so only for changes landed in the past
-  year, fetched when the list is first drawn (or, with "Show all", the
-  first time a reviewer is opened). A commenter is a reviewer when their Gerrit account's address
+  ("Downloading your comments"), so only for changes landed in the period
+  Covering picks (at most since the thread files start), fetched when the
+  list is first drawn (or, under "all", the first time a reviewer is
+  opened). A commenter is a reviewer when their Gerrit account's address
   belongs to that approver's identity ("Who is who", below);
   `cosh.review_threads` records which approver each commenter is
   (`reviewers`). No comment text and no tone. Threads from someone who

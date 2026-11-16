@@ -127,17 +127,20 @@ const R2_PATH = /^((?:\d{4}H[12]\/)?[a-z0-9._~-]+@[a-z0-9._@~-]+)\.json$/;
  * local file that is missing or stale shows up instead of being masked by the published copy.
  * Both the dev server and preview use it. */
 const r2Local = (): Plugin => {
-  const r2 = JSON.parse(readFileSync(new URL('../config/r2.json', import.meta.url), 'utf8')) as
-    { prefixes: Record<string, string> };
   const data = dataDir();
   const serve = (middlewares: { use: (fn: (req: any, res: any, next: () => void) => void) => void }) =>
     middlewares.use((req, res, next) => {
       let path = (req.url ?? '/').split(/[?#]/)[0];
+      if (!path.startsWith('/r2/')) return next();
       try {
         path = decodeURIComponent(path);     // a browser may send @ as %40
       } catch {
         return next();
       }
+      // Read on each request: the long-running preview server (cosh-serve) must follow a prefix
+      // that moves (threads/v4 ...), or the page it serves finds none of the moved files.
+      const r2 = JSON.parse(readFileSync(new URL('../config/r2.json', import.meta.url), 'utf8')) as
+        { prefixes: Record<string, string> };
       const prefix = Object.keys(r2.prefixes).find((p) => path.startsWith(`/r2/${p}/`));
       const m = prefix ? R2_PATH.exec(path.slice(`/r2/${prefix}/`.length)) : null;
       if (!prefix || !m) return next();

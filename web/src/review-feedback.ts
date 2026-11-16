@@ -90,9 +90,9 @@ const state = {
   threads: new Map<string, Promise<ThreadFile | null>>(),
   /** Addresses of the reviewers opened in "Your feedback". */
   revOpen: new Set<string>(),
-  /** "Show all" in "Your feedback": every approver whose approvals drew addressed comments, not only
-   * those with comments to list. */
-  revAll: false,
+  /** "Covering" in "Your feedback" (`REV_RANGES`): which of the person's changes the listed reviewers
+   * started comments on; "all" lists every approver whose approvals drew addressed comments. */
+  revRange: '1y' as RevRange,
   /** Who has comments to list under the current filters (`key`), from the thread files: null while they
    * load. */
   commenters: null as { key: string; set: Set<string> | null; error?: string } | null,
@@ -268,6 +268,7 @@ async function lookup(raw: string) {
     $('#rf-person').hidden = false;
     $('#rf-find-dl').hidden = false;
     setupDownload();
+    setupRevRange();
     render();
     renderIntro();
     document.body.dataset.person = '1';
@@ -963,11 +964,11 @@ function renderReviewers() {
   dirFilter.hidden = !dir;
   if (dir) put(dirFilter.querySelector('.rf-filter-name')!, 'dir-filter', { dir: dir.name });
   // Only reviewers whose approvals drew addressed comments: the comments are what this lists. Unless
-  // "Show all" is checked, only those with comments of their own to list.
+  // Covering is "all", only those with comments of their own to list in the picked period.
   const drew = reviewerRows(p, peers, period, dir?.dirs).filter((r) => r.addressed > 0);
-  const range = threadRange();
+  const range = revRange();
   const since = dayText(range.from);
-  const who = state.revAll ? null : commenters();
+  const who = state.revRange === 'all' ? null : commenters();
   const rows = who ? drew.filter((r) => who.set?.has(r.email)) : drew;
   const body = $('#rf-revs tbody');
   body.replaceChildren();
@@ -1004,7 +1005,7 @@ function renderReviewers() {
   }
   const none = noApproverCls(p, period, dir?.dirs);
   put($('#rf-revs-note'), 'revs-note', { n: fmtInt(rows.length), all: fmtInt(drew.length), some: !!who, dir: !!dir,
-    since, none: fmtInt(Math.round(none)), hasNone: none >= 0.5,
+    since, start: range.start, none: fmtInt(Math.round(none)), hasNone: none >= 0.5,
     noneF: fmtFi(noneFactor(p, peers)), min: fmtInt(peers.min_bin_cls) });
 }
 
@@ -1013,15 +1014,15 @@ function renderReviewers() {
 function commenters(): NonNullable<typeof state.commenters> {
   const half = state.half;
   const dir = state.dir;
-  const id = `${state.key}|${half ?? ''}|${dir?.key ?? ''}`;
+  const range = revRange();
+  const id = `${state.key}|${half ?? ''}|${dir?.key ?? ''}|${range.from}`;
   if (state.commenters?.key === id) return state.commenters;
-  const range = threadRange();
-  // Comments are kept only for the newest half-years: an older one has none to list.
+  // Comments are kept only for the newest half-years (those in the range): another has none to list.
   if (half && !range.halves.includes(half)) return (state.commenters = { key: id, set: new Set() });
   const got: NonNullable<typeof state.commenters> = { key: id, set: null };
   state.commenters = got;
   void threadFiles(half ? [half] : range.halves).then((files) => {
-    got.set = reviewerCommenters(files, dir?.dirs, half);
+    got.set = reviewerCommenters(files, dir?.dirs, half, range.from);
   }).catch((e) => {
     got.error = String(e instanceof Error ? e.message : e);
     // A failed fetch is tried again the next time the list is drawn.
@@ -1066,6 +1067,28 @@ function threadRange(): { halves: string[]; from: string } {
   return { halves: hs, from: isoDay(periodSpan(hs[0], [-Infinity, Infinity])[0]) };
 }
 
+/** Your feedback's Covering choices: the past 6 months or year (days back from the data's end), every
+ * change with thread files ("details"), or every approver, with or without comments to list. */
+type RevRange = '6m' | '1y' | 'details' | 'all';
+const REV_DAYS: Partial<Record<RevRange, number>> = { '6m': 182, '1y': 365 };
+
+/** The period Covering picks: the first day of the changes whose comments are listed, the half-years
+ * with thread files that reach it, and whether that day is where the thread files start. */
+function revRange(): { halves: string[]; from: string; start: boolean } {
+  const range = threadRange();
+  const days = REV_DAYS[state.revRange];
+  const back = days ? isoDay(state.peers!.end - days) : range.from;
+  const from = back > range.from ? back : range.from;
+  const halves = range.halves.filter((h) => isoDay(periodSpan(h, [-Infinity, Infinity])[1]) > from);
+  return { halves, from, start: from === range.from };
+}
+
+/** Covering's "all with details" names the year the thread files start in. */
+function setupRevRange() {
+  const opt = $<HTMLSelectElement>('#rf-revs-range').querySelector<HTMLOptionElement>('option[value="details"]')!;
+  opt.textContent = msg('revs-range-details', { year: threadRange().from.slice(0, 4) });
+}
+
 /** The person's thread files for the half-years `hs` that they have changes in. */
 async function threadFiles(hs: string[]): Promise<ThreadFile[]> {
   const files = await Promise.all(hs.filter((h) => state.halves.includes(h)).map(loadThreads));
@@ -1090,27 +1113,31 @@ function reviewerCommentsRow(email: string): HTMLTableRowElement {
   const key = state.key;
   const half = state.half;
   const dir = state.dir;
-  const range = threadRange();
+  const all = threadRange();
+  const range = revRange();
   const since = dayText(range.from);
   // Comments are kept only for the newest half-years: an older one has none to list.
-  if (half && !range.halves.includes(half)) {
-    put(td, 'rev-none-before', { half: halfName(half), since });
+  if (half && !all.halves.includes(half)) {
+    put(td, 'rev-none-before', { half: halfName(half), since: dayText(all.from) });
     return tr;
   }
+  // Under a half-year filter, the period matters only when it starts within that half-year.
+  const cut = !half || range.from > isoDay(periodSpan(half, [-Infinity, Infinity])[0]);
   put(td, 'rev-loading');
   void threadFiles(half ? [half] : range.halves).then((files) => {
     if (state.key !== key || state.half !== half || state.dir !== dir || !td.isConnected) return;
-    const list = reviewerComments(files, email, dir?.dirs, half);
+    const list = reviewerComments(files, email, dir?.dirs, half, range.from);
     if (!list.length) {
-      put(td, 'rev-none', { half: half ? halfName(half) : '', dir: dir?.name ?? '', since: half ? '' : since });
+      put(td, 'rev-none', { half: half ? halfName(half) : '', dir: dir?.name ?? '', since: cut ? since : '',
+        start: range.start });
       return;
     }
     const ul = el('ul', undefined, 'rf-rev-list');
     ul.append(...list.map(commentItem));
     td.replaceChildren(ul);
-    if (!half) {
+    if (cut) {
       const note = el('p', undefined, 'rf-rev-since');
-      put(note, 'rev-since', { since });
+      put(note, 'rev-since', { since, start: range.start });
       td.append(note);
     }
   }).catch((e) => {
@@ -1250,8 +1277,8 @@ function init() {
   });
   $('#rf-half-clear').addEventListener('click', () => setHalf(null));
   $('#rf-dir-clear').addEventListener('click', () => setDir(null));
-  $<HTMLInputElement>('#rf-revs-all').addEventListener('change', (e) => {
-    state.revAll = (e.target as HTMLInputElement).checked;
+  $<HTMLSelectElement>('#rf-revs-range').addEventListener('change', (e) => {
+    state.revRange = (e.target as HTMLSelectElement).value as RevRange;
     if (state.person) renderReviewers();
   });
   const method = $<HTMLDetailsElement>('#method');

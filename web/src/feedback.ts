@@ -786,16 +786,15 @@ export interface ReviewerComment {
   path: string;
 }
 
-/** The addressed threads approver `rev` (a `ReviewerRow.email`) started on the person's changes in
- * `files`, newest first, only those counted in `dir`'s row and on changes of half-year `half` if
- * given. A thread counts when its first comment's author is that approver (`ThreadFile.reviewers`). */
-/** The approvers with any comments in `reviewerComments` for these files (in `dir`, of `half`): those
- * who started an addressed thread on the person's changes. */
-export function reviewerCommenters(files: ThreadFile[], dir?: DirFilter | null, half?: string | null): Set<string> {
+/** The approvers with any comments in `reviewerComments` for these files (in `dir`, of `half`, on
+ * changes landed from day `from`): those who started an addressed thread on the person's changes. */
+export function reviewerCommenters(files: ThreadFile[], dir?: DirFilter | null, half?: string | null,
+  from?: string | null): Set<string> {
   const out = new Set<string>();
   for (const f of files) {
     if (half && f.half !== half) continue;
     for (const c of f.cls) {
+      if (from && c.landed < from) continue;
       for (const t of c.threads) {
         const first = t.comments[0];
         const rev = first ? f.reviewers[first[0]] : null;
@@ -806,13 +805,19 @@ export function reviewerCommenters(files: ThreadFile[], dir?: DirFilter | null, 
   return out;
 }
 
-export function reviewerComments(files: ThreadFile[], rev: string, dir?: DirFilter | null, half?: string | null): ReviewerComment[] {
+/** The addressed threads approver `rev` (a `ReviewerRow.email`) started on the person's changes in
+ * `files`, newest first, only those counted in `dir`'s row, on changes of half-year `half` and landed
+ * from day `from` (YYYY-MM-DD) if given. A thread counts when its first comment's author is that
+ * approver (`ThreadFile.reviewers`). */
+export function reviewerComments(files: ThreadFile[], rev: string, dir?: DirFilter | null, half?: string | null,
+  from?: string | null): ReviewerComment[] {
   const out: ReviewerComment[] = [];
   for (const f of files) {
     if (half && f.half !== half) continue;
     const mine = new Set(f.reviewers.flatMap((r, i) => (r === rev ? [i] : [])));
     if (!mine.size) continue;
     for (const c of f.cls) {
+      if (from && c.landed < from) continue;
       for (const t of c.threads) {
         const first = t.comments[0];
         if (t.addressed === true && first && mine.has(first[0]) && (!dir || (t.dir !== null && dir.has(t.dir))))

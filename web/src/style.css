@@ -2857,14 +2857,14 @@ button.term:focus-visible {
   color: var(--text-muted);
 }
 
-/* "Show all" above Your feedback's reviewers. */
-.rf-show-all {
-  display: flex;
-  align-items: center;
-  gap: 6px;
+/* "Covering" above Your feedback's reviewers, like the download's. */
+.rf-revs-range {
   margin: 8px 0;
-  font-size: 0.9rem;
-  cursor: pointer;
+}
+
+.rf-revs-range select {
+  margin-left: 4px;
+  font: inherit;
 }
 
 /* The half-year filter set from the over-time chart: what it is, and a way out. */

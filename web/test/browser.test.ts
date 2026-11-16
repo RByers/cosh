@@ -3410,10 +3410,10 @@ test('feedback index: downloading your comments builds a file from the R2 thread
   await page.close();
 });
 
-/** Checks "Show all" in Your feedback: every reviewer whose approvals drew addressed comments, without
+/** Picks Covering "all" in Your feedback: every reviewer whose approvals drew addressed comments, without
  * waiting for the thread files that say who has comments to list. */
 async function showAllReviewers(page: Page) {
-  await page.click('#rf-revs-all');
+  await page.select('#rf-revs-range', 'all');
 }
 
 async function lookUp(page: Page, email: string) {
@@ -3791,6 +3791,8 @@ test('feedback index: a reviewer opens into the addressed comments they started,
   await page.waitForFunction(() => !document.querySelector<HTMLElement>('#rf-person')!.hidden);
   assert.equal(await page.$eval('#feedback-title', (e) => e.textContent), 'Your feedback');
   assert.equal(await page.$('#per-cl, #rf-per-cl'), null);
+  // Covering every change with thread files, not only the past year.
+  await page.select('#rf-revs-range', 'details');
   // Every reviewer here has comments of their own to list, from the thread files fetched for the list.
   await page.waitForFunction(() => !/Loading/.test(document.querySelector('#rf-revs')!.textContent ?? ''));
   assert.deepEqual(await page.$$eval('#rf-revs tr.rf-rev-row', (rs) => rs.map((r) => (r as HTMLElement).dataset.email)),
@@ -3847,7 +3849,7 @@ test('feedback index: a reviewer opens into the addressed comments they started,
   await page.close();
 });
 
-test('feedback index: Your feedback lists only reviewers with comments to list, unless Show all', async () => {
+test('feedback index: Your feedback lists the reviewers with comments in the period picked under Covering', async () => {
   const { FIXTURE_EMAIL, FIXTURE_KEY } = await import('./feedback-fixture.ts');
   // Only Alice started an addressed thread; Bob's approval drew addressed comments, but none of his.
   const file = { v: 5, half: '2026H1', people: ['Test Person', 'Alice', 'Bob'],
@@ -3870,14 +3872,28 @@ test('feedback index: Your feedback lists only reviewers with comments to list, 
   await page.waitForFunction(() => !document.querySelector<HTMLElement>('#rf-person')!.hidden);
   const revs = () => page.$$eval('#rf-revs tr.rf-rev-row', (rs) => rs.map((r) => (r as HTMLElement).dataset.email));
   const note = () => page.$eval('#rf-revs-note', (e) => e.textContent!.replace(/\s+/g, ' '));
-  assert.equal(await page.$eval('#rf-revs-all', (e) => (e as HTMLInputElement).checked), false);
-  await page.waitForFunction(() => !/Loading/.test(document.querySelector('#rf-revs')!.textContent ?? ''));
+  const loaded = () => page.waitForFunction(() => !/Loading/.test(document.querySelector('#rf-revs')!.textContent ?? ''));
+  // The past year by default (the data ends 1 Nov 2026); the last choices name where the details start.
+  assert.equal(await page.$eval('#rf-revs-range', (e) => (e as HTMLSelectElement).value), '1y');
+  assert.deepEqual(await page.$$eval('#rf-revs-range option', (os) => os.map((o) => o.textContent)),
+    ['the past 6 months', 'the past year', 'all with details (to 2023)', 'all (including those without details)']);
+  await loaded();
   assert.deepEqual(await revs(), ['alice@google.com']);
-  assert.match(await note(), /^Listed are the 1 of the 2 reviewers .* since 1 Jul 2023, where the comment list starts\. Show all lists all 2\./);
-  await page.click('#rf-revs-all');
+  assert.match(await note(), /^Listed are the 1 of the 2 reviewers .* since 1 Nov 2025\. Covering picks who is listed, not what the columns count; “all” lists all 2\./);
+  // Alice's change landed on 11 Mar 2026, before the past 6 months.
+  await page.select('#rf-revs-range', '6m');
+  await loaded();
+  assert.deepEqual(await revs(), []);
+  assert.match(await note(), /^Listed are the 0 of the 2 reviewers .* since 3 May 2026\. /);
+  await page.select('#rf-revs-range', 'details');
+  await loaded();
+  assert.deepEqual(await revs(), ['alice@google.com']);
+  assert.match(await note(), /^Listed are the 1 of the 2 reviewers .* since 1 Jul 2023, where the comment list starts\. /);
+  await page.select('#rf-revs-range', 'all');
   assert.deepEqual(await revs(), ['alice@google.com', 'bob@igalia.com']);
   assert.match(await note(), /^2 reviewers approved your changes that drew addressed comments\. /);
-  await page.click('#rf-revs-all');
+  await page.select('#rf-revs-range', '1y');
+  await loaded();
   assert.deepEqual(await revs(), ['alice@google.com']);
   assert.deepEqual(errors, []);
   await page.close();
