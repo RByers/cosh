@@ -145,4 +145,6 @@ def page_datasets(m):
 
 
 if __name__ == "__main__":
+    from cosh import memcap
+    memcap.join()   # with balance_clusters, the balance-clusters step: take turns in the shared cap (AGENTS.md)
     main()

@@ -656,4 +656,6 @@ def main():
 
 
 if __name__ == "__main__":
+    from cosh import memcap
+    memcap.join()   # about 1 GB (markers); the others load every commit: take turns in the shared cap (AGENTS.md)
     main()

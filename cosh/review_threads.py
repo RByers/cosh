@@ -290,4 +290,6 @@ def main(argv=None):
 
 
 if __name__ == "__main__":
+    from cosh import memcap
+    memcap.join()   # about 1.1 GB: take turns in the shared cap (AGENTS.md)
     main()

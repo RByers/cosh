@@ -241,7 +241,10 @@ it that way:
   every CL or commit into memory (anything over about 1 GB: a
   `cosh.review_feedback` run, a big pickle, `fetchall` on a whole table) starts
   with `from cosh import memcap; memcap.join()`, or is run as `python3 -m
-  cosh.memcap python3 script.py`. All such runs, from every session, then
+  cosh.memcap python3 script.py`. The pipeline's steps over about 1 GB
+  (`derive`, `summarize`, the balance stages and scripts, Review Load,
+  Feedback, Threads and Timezones, tone publishing) join by themselves when
+  run as commands. All such runs, from every session, then
   share 5 GB (`cosh/memcap.py`), and take turns: joining waits until no
   other session's heavy run is in memory (it prints whose), and `cosh
   update` waits for another update and runs each step in the cap the same

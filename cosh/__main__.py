@@ -197,7 +197,9 @@ def main(argv=None):
                          batch_size=min(a.batch_size, 500), duty_cycle=a.duty_cycle,
                          max_comment_fetches=a.max_comment_fetches)
     elif a.cmd == "derive":
+        from . import memcap
         from .derive import derive
+        memcap.join()          # about 1.9 GB
         derive(weeks=a.week, source=a.source, out_path=a.out, full=a.full)
     elif a.cmd == "commits":
         from .commits import update
