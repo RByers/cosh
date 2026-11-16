@@ -247,17 +247,36 @@ def load_comments(raw, repos, host, project, number, source, prefetched=None):
 
 
 def listing_index(raw):
-    """{(host, project, change_number): [window_key, ...]}: every listing of
-    every CL, from the weekly (closed-CL) index and any open-CL snapshots."""
-    idx = defaultdict(list)
-    for h, p, n, k in raw.execute(
-            "SELECT host, project, change_number, window_key FROM week_changes"):
-        idx[(h, p, n)].append(k)
-    if store.has_table(raw, "open_changes"):
-        for h, p, n, k in raw.execute(
-                "SELECT host, project, change_number, window_key FROM open_changes"):
-            idx[(h, p, n)].append(k)
+    """{(host, project, change_number): window_key, or [window_key, ...] for a
+    CL listed more than once}: every listing of every CL, from the weekly
+    (closed-CL) index and any open-CL snapshots. Strings are interned: 1.7M
+    rows each brought their own copies."""
+    idx = {}
+    intern = sys.intern
+    for table in ("week_changes", "open_changes"):
+        if table == "open_changes" and not store.has_table(raw, table):
+            continue
+        for h, p, n, k in raw.execute(f"SELECT host, project, change_number, window_key FROM {table}"):
+            key, k = (intern(h), intern(p), n), intern(k)
+            have = idx.get(key)
+            if have is None:
+                idx[key] = k
+            elif isinstance(have, list):
+                have.append(k)
+            else:
+                idx[key] = [have, k]
     return idx
+
+
+def _listings(v):
+    """listing_index's value as a list of window keys."""
+    return v if isinstance(v, list) else [v]
+
+
+def _fp_digest(fingerprint):
+    """A CL's cl_fingerprint, compared in memory as a 16-byte digest: the
+    strings (~220 characters, 1.6M CLs) took ~0.4 GB."""
+    return hashlib.blake2b(fingerprint.encode(), digest_size=16).digest()
 
 
 def _window(raw, host, key):
@@ -271,7 +290,7 @@ def choose_listings(raw, idx, wanted):
     best = {}
     multi = defaultdict(list)          # (host, window_key) -> [cl]
     for cl in wanted:
-        keys = sorted(set(idx[cl]))
+        keys = sorted(set(_listings(idx[cl])))
         if len(keys) == 1:
             best[cl] = keys[0]
         else:
@@ -333,7 +352,7 @@ def derive(data_dir=store.DATA_DIR, weeks=None, source="auto", out_path=None, fu
     if source in ("auto", "rest"):
         rest = {(h, int(k)): sha for h, k, sha in raw.execute(
             "SELECT host, key, body_sha256 FROM responses WHERE kind='comments' AND http_status=200")}
-    done = {} if full else {(h, n): f for h, n, f in db.execute(
+    done = {} if full else {(sys.intern(h), n): _fp_digest(f) for h, n, f in db.execute(
         "SELECT host, change_number, fingerprint FROM derive_inputs")}
 
     def fingerprint(host, k, project, number):
@@ -342,7 +361,7 @@ def derive(data_dir=store.DATA_DIR, weeks=None, source="auto", out_path=None, fu
 
     for (host, k), cls in sorted(by_window.items()):
         fps = {cl: fingerprint(host, k, cl[1], cl[2]) for cl in cls}
-        cls = [cl for cl in cls if done.get((host, cl[2])) != fps[cl]]
+        cls = [cl for cl in cls if done.get((host, cl[2])) != _fp_digest(fps[cl])]
         n_same += len(fps) - len(cls)
         if not cls:
             continue

@@ -84,26 +84,39 @@ def load(db):
     paths = {}
     for pid, p in db.execute("SELECT path_id, path FROM paths"):
         paths[pid] = sys.intern(dir2(p))
-    dirs = defaultdict(dict)               # commit_id -> {dir2: weight}
-    for cid, pid, w in db.execute("SELECT commit_id, path_id, max(ins, 0) + max(dels, 0) + 1 FROM commit_files"):
-        d = dirs[cid]
-        k = paths[pid]
-        d[k] = d.get(k, 0) + w
-    del paths
-    rows = db.execute("SELECT commit_id, sha, author_email, landed_at, is_bot, reverts_sha, is_revert, files, "
-                      "ins + dels, is_lsc, change_number FROM commits ORDER BY commit_id").fetchall()
-    reverted = {}
-    for r in rows:
-        if r[5]:
-            reverted[r[5]] = min(r[3], reverted.get(r[5], r[3]))
+    reverted = {}                          # sha -> when it was first reverted
+    for rv_sha, at in db.execute("SELECT reverts_sha, landed_at FROM commits WHERE reverts_sha IS NOT NULL "
+                                 "AND reverts_sha != '' ORDER BY commit_id"):
+        reverted[rv_sha] = min(at, reverted.get(rv_sha, at))
+
+    def commit_dirs():
+        """(commit_id, {dir2: weight}) in commit order, streamed: a dict for
+        every commit at once (13.6M files) took most of this step's ~3 GB."""
+        cur, d = None, {}
+        for cid, pid, w in db.execute("SELECT commit_id, path_id, max(ins, 0) + max(dels, 0) + 1 "
+                                      "FROM commit_files ORDER BY commit_id"):
+            if cid != cur:
+                if cur is not None:
+                    yield cur, d
+                cur, d = cid, {}
+            k = paths[pid]
+            d[k] = d.get(k, 0) + w
+        if cur is not None:
+            yield cur, d
+    dir_stream = commit_dirs()
+    next_dirs = next(dir_stream, None)
     done = defaultdict(int)                # person -> commits so far
     done_here = defaultdict(int)           # (person, dir2) -> commits so far
     out = []
-    for cid, sha, email, at, bot, rv_sha, is_rev, files, lines, lsc, cn in rows:
+    for cid, sha, email, at, bot, rv_sha, is_rev, files, lines, lsc, cn in db.execute(
+            "SELECT commit_id, sha, author_email, landed_at, is_bot, reverts_sha, is_revert, files, "
+            "ins + dels, is_lsc, change_number FROM commits ORDER BY commit_id"):
+        while next_dirs is not None and next_dirs[0] < cid:
+            next_dirs = next(dir_stream, None)
+        ds = next_dirs[1] if next_dirs is not None and next_dirs[0] == cid else {}
         if bot or is_bot_email(email):
             continue
         p = person(email)
-        ds = dirs.pop(cid, None) or {}
         if is_rev:
             continue
         if START <= at < END and cn and files and files < MASS_FILES and not lsc and ds:

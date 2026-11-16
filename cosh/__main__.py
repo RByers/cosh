@@ -199,7 +199,7 @@ def main(argv=None):
     elif a.cmd == "derive":
         from . import memcap
         from .derive import derive
-        memcap.join()          # about 1.9 GB
+        memcap.join()          # about 1.2 GB, even re-deriving every CL
         derive(weeks=a.week, source=a.source, out_path=a.out, full=a.full)
     elif a.cmd == "commits":
         from .commits import update

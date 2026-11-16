@@ -141,19 +141,26 @@ def stage_interdiff(db, batch=300, shard=(0, 1)):
     if codefp.check(db, "interdiff", interdiff_fingerprint(), reset_interdiff) == "changed":
         print("interdiff: its code changed: every CL is compared again", flush=True)
     done = {r[0] for r in db.execute("SELECT change_number FROM interdiff")}
-    ups = {}
-    for n, ps, at, sha in tl.execute("SELECT change_number, ps, at, sha FROM uploads ORDER BY change_number, ps"):
-        ups.setdefault(n, []).append((ps, at, sha))
-    tl.close()
-    todo = sorted(n for n in have & first.keys() & ups.keys() if n not in done and n % shard[1] == shard[0])
+    # Uploads are read per batch, for the CLs to compare only: all 4.7M
+    # took ~1 GB, and a weekly run compares a few thousand CLs.
+    uploaded = {n for (n,) in tl.execute("SELECT DISTINCT change_number FROM uploads")}
+    todo = sorted(n for n in have & first.keys() & uploaded if n not in done and n % shard[1] == shard[0])
+    del uploaded
     print(f"interdiff: {len(todo):,} CLs to compare ({len(done):,} done)", flush=True)
     t0 = time.time()
     for i in range(0, len(todo), batch):
+        chunk = todo[i:i + batch]
+        ups = {}
+        for n, ps, at, sha in tl.execute(
+                f"SELECT change_number, ps, at, sha FROM uploads WHERE change_number IN "
+                f"({','.join('?' * len(chunk))}) ORDER BY change_number, ps", chunk):
+            ups.setdefault(n, []).append((ps, at, sha))
         db.executemany("INSERT OR REPLACE INTO interdiff VALUES (?,?,?,?,?,?,?,?,?,?)",
-                       interdiff_rows(todo[i:i + batch], ups, first))
+                       interdiff_rows(chunk, ups, first))
         db.commit()
         k = i + batch
         print(f"interdiff: {min(k, len(todo)):,}/{len(todo):,} ({k / (time.time() - t0):.0f} CLs/s)", flush=True)
+    tl.close()
 
 
 # What interdiff's rows are a function of besides their inputs
@@ -409,5 +416,5 @@ def main(argv=None):
 
 if __name__ == "__main__":
     from cosh import memcap
-    memcap.join()   # about 1.2 GB: take turns in the shared cap (AGENTS.md)
+    memcap.join()   # cl about 1 GB, interdiff 0.2 GB (and git ~1 GB): take turns in the shared cap (AGENTS.md)
     main()
