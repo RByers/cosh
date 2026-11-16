@@ -789,6 +789,23 @@ export interface ReviewerComment {
 /** The addressed threads approver `rev` (a `ReviewerRow.email`) started on the person's changes in
  * `files`, newest first, only those counted in `dir`'s row and on changes of half-year `half` if
  * given. A thread counts when its first comment's author is that approver (`ThreadFile.reviewers`). */
+/** The approvers with any comments in `reviewerComments` for these files (in `dir`, of `half`): those
+ * who started an addressed thread on the person's changes. */
+export function reviewerCommenters(files: ThreadFile[], dir?: DirFilter | null, half?: string | null): Set<string> {
+  const out = new Set<string>();
+  for (const f of files) {
+    if (half && f.half !== half) continue;
+    for (const c of f.cls) {
+      for (const t of c.threads) {
+        const first = t.comments[0];
+        const rev = first ? f.reviewers[first[0]] : null;
+        if (t.addressed === true && rev && (!dir || (t.dir !== null && dir.has(t.dir)))) out.add(rev);
+      }
+    }
+  }
+  return out;
+}
+
 export function reviewerComments(files: ThreadFile[], rev: string, dir?: DirFilter | null, half?: string | null): ReviewerComment[] {
   const out: ReviewerComment[] = [];
   for (const f of files) {

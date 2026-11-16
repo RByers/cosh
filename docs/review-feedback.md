@@ -243,7 +243,9 @@ files).
 - *Your feedback* (`reviewerRows`): everyone who approved one of the
   person's CLs (in the picked half-year and directory, if any) whose
   approvals drew addressed threads (rows with none are left out), most
-  CLs first: the
+  CLs first. By default only those with comments to list are shown (who
+  started an addressed thread on the person's CLs in the thread files,
+  `reviewerCommenters`); "Show all" lists every such approver. Columns: the
   person's CLs they approved, addressed threads on them, the person's AFR
   there, the reviewer's factor without the person's CLs (so it can differ
   a little from what others see), everyone's CLs they approved, and the
@@ -256,8 +258,8 @@ files).
   change number linking to the thread in Gerrit, and the file ("commit
   message" for `/COMMIT_MSG`). They come from the person's thread file in R2
   ("Downloading your comments"), so only for changes landed in the past
-  year, fetched the first time a reviewer is
-  opened. A commenter is a reviewer when their Gerrit account's address
+  year, fetched when the list is first drawn (or, with "Show all", the
+  first time a reviewer is opened). A commenter is a reviewer when their Gerrit account's address
   belongs to that approver's identity ("Who is who", below);
   `cosh.review_threads` records which approver each commenter is
   (`reviewers`). No comment text and no tone. Threads from someone who
@@ -881,7 +883,7 @@ The threads are too big for git (210 MB gzipped: 16,230 files, 1.47M
 threads, 2026-11-15), so they live in the Cloudflare R2 bucket `cosh` and
 are served gzipped from
 `https://cosh-data.rbyers.ca/review-feedback/threads/v4/<half>/<name>.json`,
-fetched only when someone downloads or opens a reviewer in Your feedback
+fetched only when someone downloads or Your feedback lists the person's reviewers
 (`?v=` is the data's end, so a new week isn't hidden by the day-long
 cache), and only for the half-years the person has changes in. Named like
 the per-person files, so like them they are reachable only by typing an

@@ -303,6 +303,8 @@
           <span id="rf-dir-filter-name" class="rf-filter-name"></span>
           <button type="button" id="rf-dir-clear">Clear</button>
         </p>
+        <label class="rf-show-all" title="Also list reviewers whose approvals drew addressed comments but who have none of their own to list"><input
+          type="checkbox" id="rf-revs-all" /> Show all</label>
         <template data-msg="half-filter">Filter: only changes landed <slot name="half"></slot></template>
         <template data-msg="dir-filter">Filter: only feedback in <slot name="dir"></slot></template>
         <template data-msg="dir-filter-rest">the files directly in <slot name="dir"></slot></template>
@@ -321,9 +323,13 @@
         </div>
         <p id="rf-revs-note" class="note"></p>
         <template data-msg="revs-note">
-          <slot name="n"></slot> reviewers approved your changes that drew addressed comments<span data-if="dir">
-          there</span>, from their Reviewed-by lines (those who voted Code-Review); reviewers whose approvals drew
-          none aren't listed. A change with several counts under each, and its reviewer factor is their mean. A
+          <span data-if="some">Listed are the <slot name="n"></slot> of the <slot name="all"></slot> reviewers
+          whose approvals of your changes drew addressed comments<span data-if="dir"> there</span> who have comments
+          to list: who started some themselves on your changes landed since <slot name="since"></slot>, where the
+          comment list starts. Show all lists all <slot name="all"></slot>.</span><span data-if="!some"><slot
+          name="n"></slot> reviewers approved your changes that drew addressed comments<span data-if="dir">
+          there</span>.</span> Reviewers are those in your changes' Reviewed-by lines (who voted Code-Review);
+          reviewers whose approvals drew none aren't listed. A change with several counts under each, and its reviewer factor is their mean. A
           reviewer factor is fitted together with every author's own factor, so a reviewer who mostly approves
           newcomers' changes isn't counted as strict for that, and it leaves your changes out: a reviewer who
           approves few changes but yours counts as typical.<span data-if="hasNone"> <slot name="none"></slot>

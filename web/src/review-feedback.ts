@@ -35,6 +35,7 @@ import {
   sums,
   tableRows,
   reviewerComments,
+  reviewerCommenters,
   threadsMarkdown,
   threadsUrl,
   threadUrl,
@@ -89,6 +90,12 @@ const state = {
   threads: new Map<string, Promise<ThreadFile | null>>(),
   /** Addresses of the reviewers opened in "Your feedback". */
   revOpen: new Set<string>(),
+  /** "Show all" in "Your feedback": every approver whose approvals drew addressed comments, not only
+   * those with comments to list. */
+  revAll: false,
+  /** Who has comments to list under the current filters (`key`), from the thread files: null while they
+   * load. */
+  commenters: null as { key: string; set: Set<string> | null; error?: string } | null,
   /** The experience bin shown in "How it's changing". */
   cohortBin: 0,
   /** Keys of everyone's directory table's rows that are open (see tableRows). */
@@ -251,6 +258,7 @@ async function lookup(raw: string) {
     state.halves = halvesOf(top!.file);
     state.threads = new Map();
     state.revOpen = new Set();
+    state.commenters = null;
     state.half = null;
     window.__rf!.half = null;
     state.dir = null;
@@ -954,10 +962,23 @@ function renderReviewers() {
   const dirFilter = $('#rf-dir-filter');
   dirFilter.hidden = !dir;
   if (dir) put(dirFilter.querySelector('.rf-filter-name')!, 'dir-filter', { dir: dir.name });
-  // Only reviewers whose approvals drew addressed comments: the comments are what this lists.
-  const rows = reviewerRows(p, peers, period, dir?.dirs).filter((r) => r.addressed > 0);
+  // Only reviewers whose approvals drew addressed comments: the comments are what this lists. Unless
+  // "Show all" is checked, only those with comments of their own to list.
+  const drew = reviewerRows(p, peers, period, dir?.dirs).filter((r) => r.addressed > 0);
+  const range = threadRange();
+  const since = dayText(range.from);
+  const who = state.revAll ? null : commenters();
+  const rows = who ? drew.filter((r) => who.set?.has(r.email)) : drew;
   const body = $('#rf-revs tbody');
   body.replaceChildren();
+  if (who && !who.set) {
+    const tr = el('tr', undefined, 'rf-rev-wait');
+    const td = el('td');
+    td.colSpan = 6;
+    put(td, who.error === undefined ? 'rev-loading' : 'rev-error', { error: who.error ?? '' });
+    tr.append(td);
+    body.append(tr);
+  }
   for (const r of rows) {
     const tr = el('tr', undefined, 'rf-rev-row');
     tr.dataset.email = r.email;
@@ -982,8 +1003,34 @@ function renderReviewers() {
     if (open) body.append(reviewerCommentsRow(r.email));
   }
   const none = noApproverCls(p, period, dir?.dirs);
-  put($('#rf-revs-note'), 'revs-note', { n: fmtInt(rows.length), dir: !!dir, none: fmtInt(Math.round(none)), hasNone: none >= 0.5,
+  put($('#rf-revs-note'), 'revs-note', { n: fmtInt(rows.length), all: fmtInt(drew.length), some: !!who, dir: !!dir,
+    since, none: fmtInt(Math.round(none)), hasNone: none >= 0.5,
     noneF: fmtFi(noneFactor(p, peers)), min: fmtInt(peers.min_bin_cls) });
+}
+
+/** The approvers with comments to list under the current filters (see reviewerCommenters): from the
+ * thread files, which are fetched (once) the first time; `set` is null until they are in. */
+function commenters(): NonNullable<typeof state.commenters> {
+  const half = state.half;
+  const dir = state.dir;
+  const id = `${state.key}|${half ?? ''}|${dir?.key ?? ''}`;
+  if (state.commenters?.key === id) return state.commenters;
+  const range = threadRange();
+  // Comments are kept only for the newest half-years: an older one has none to list.
+  if (half && !range.halves.includes(half)) return (state.commenters = { key: id, set: new Set() });
+  const got: NonNullable<typeof state.commenters> = { key: id, set: null };
+  state.commenters = got;
+  void threadFiles(half ? [half] : range.halves).then((files) => {
+    got.set = reviewerCommenters(files, dir?.dirs, half);
+  }).catch((e) => {
+    got.error = String(e instanceof Error ? e.message : e);
+    // A failed fetch is tried again the next time the list is drawn.
+    setTimeout(() => { if (state.commenters === got) state.commenters = null; });
+  }).finally(() => {
+    // Redrawn if the filters still hold.
+    if (state.commenters === got) renderReviewers();
+  });
+  return got;
 }
 
 function toggleReviewer(email: string) {
@@ -1203,6 +1250,10 @@ function init() {
   });
   $('#rf-half-clear').addEventListener('click', () => setHalf(null));
   $('#rf-dir-clear').addEventListener('click', () => setDir(null));
+  $<HTMLInputElement>('#rf-revs-all').addEventListener('change', (e) => {
+    state.revAll = (e.target as HTMLInputElement).checked;
+    if (state.person) renderReviewers();
+  });
   const method = $<HTMLDetailsElement>('#method');
   method.addEventListener('toggle', () => renderMethod());
   $<HTMLSelectElement>('#rf-cohort-bin').addEventListener('change', (e) => {
