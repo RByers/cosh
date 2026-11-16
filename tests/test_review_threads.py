@@ -49,45 +49,54 @@ class ThreadsTest(unittest.TestCase):
         ])
         self.assertEqual(RT.cl_threads(None, owner, set(), {}.get), [])
 
-    def test_window_is_52_weeks(self):
-        self.assertEqual(RT.window("2026-10-30"), "2025-11-01")
-        self.assertEqual((dt.date(2026, 10, 30) - dt.date(2025, 11, 1)).days + 1, 364)
-
     def test_person_doc(self):
-        # [project, subject, owner, closed_at, insertions] per CL; 5 landed before the window, 6 has no
-        # reviewer threads, 9 isn't in reviews.sqlite.
-        info = {5: ("chromium/src", "Old", 1, "2025-10-31 23:00:00", 3),
-                6: ("chromium/src", "Quiet", 1, "2026-02-01 00:00:00", 4),
+        # [project, subject, owner, closed_at, insertions] per CL; 6 has no reviewer threads, 9 isn't
+        # in reviews.sqlite.
+        info = {6: ("chromium/src", "Quiet", 1, "2026-02-01 00:00:00", 4),
                 7: ("chromium/src", None, 1, "2026-07-02 10:00:00", 50),
-                8: ("chromium/src", "Earlier", 1, "2025-11-01 09:00:00", None)}
+                8: ("chromium/src", "Earlier", 1, "2026-07-01 09:00:00", None)}
         th = lambda root, who: dict(id=root, path="a.cc", line=1, ps=1, addressed=True, resolved=True,
-                                    comments=[[who, "2026-01-01T00:00Z", "x"], [1, "2026-01-01T01:00Z", "Done"]])
-        per_cl = {5: [th("r5", 2)], 6: [], 7: [th("r7", 2), th("r7b", 3)], 8: [th("r8", 3)]}
+                                    comments=[[who, "2026-07-01T00:00Z", "x"], [1, "2026-07-01T01:00Z", "Done"]])
+        per_cl = {6: [], 7: [th("r7", 2), th("r7b", 3)], 8: [th("r8", 3)]}
         accounts = {1: ("Own Er", False, "o@x.org"), 2: ("Rev", False, "rev@google.com")}
         ident = {1: "o@x.org", 2: "rev@google.com", 3: "other@x.org"}
-        cls = [("2025H2", 5, {}), ("2026H1", 6, {}), ("2026H2", 7, {"r7": "ui/"}), ("2025H2", 8, {"r8": "base/"}),
-               ("2026H2", 9, {})]
-        doc = RT.person_doc(cls, info, per_cl, accounts, ident, {"rev@google.com"}, "2025-11-01", "2026-10-30")
-        self.assertEqual({k: doc[k] for k in ("v", "from", "to", "people", "reviewers")}, {
-            "v": 4, "from": "2025-11-01", "to": "2026-10-30", "people": ["Own Er", "account 3", "Rev"],
+        cls = [(7, {"r7": "ui/"}), (8, {"r8": "base/"}), (9, {})]
+        doc, aids = RT.person_doc(cls, info, per_cl, accounts, ident, {"rev@google.com"}, "2026H2")
+        self.assertEqual(aids, [1, 3, 2])
+        self.assertEqual({k: doc[k] for k in ("v", "half", "people", "reviewers")}, {
+            "v": 5, "half": "2026H2", "people": ["Own Er", "account 3", "Rev"],
             "reviewers": [None, None, "rev@google.com"]})
-        # Oldest first, each with the half-year the Feedback Index counts it in.
-        self.assertEqual([(c["n"], c["half"], c["landed"], c["subject"], c["lines"], c["owner"]) for c in doc["cls"]],
-                         [(8, "2025H2", "2025-11-01", "Earlier", None, 0), (7, "2026H2", "2026-07-02", "", 50, 0)])
+        # Oldest first.
+        self.assertEqual([(c["n"], c["landed"], c["subject"], c["lines"], c["owner"]) for c in doc["cls"]],
+                         [(8, "2026-07-01", "Earlier", None, 0), (7, "2026-07-02", "", 50, 0)])
         self.assertEqual([(t["id"], t["dir"], t["comments"][0][0]) for t in doc["cls"][1]["threads"]],
                          [("r7", "ui/", 2), ("r7b", None, 1)])
-        # Nothing in the window: no file.
-        self.assertIsNone(RT.person_doc(cls[:2], info, per_cl, accounts, ident, set(), "2025-11-01", "2026-10-30"))
+        # No reviewer threads in the half-year: no file.
+        self.assertEqual(RT.person_doc([(6, {}), (9, {})], info, per_cl, accounts, ident, set(), "2026H1"), (None, []))
 
-    def test_prune_removes_old_files_and_half_year_folders(self):
+    def test_stale(self):
+        accounts = {1: ("Own Er", False, "o@x.org"), 2: ("Rev", False, "rev@google.com")}
+        cls = [(8, {}), (7, {"r7": "ui/"})]
+        entry = {"cls": [7, 8], "classifier": 3, "file": True, "people": [[1, "Own Er"], [2, "Rev"], [5, "account 5"]]}
+        self.assertFalse(RT.stale(entry, cls, accounts, 3))
+        self.assertTrue(RT.stale(None, cls, accounts, 3))
+        # Another classifier, other changes, or a renamed commenter: rebuilt.
+        self.assertTrue(RT.stale(entry, cls, accounts, 4))
+        self.assertTrue(RT.stale(entry, cls[:1], accounts, 3))
+        self.assertTrue(RT.stale(entry, cls, {**accounts, 2: ("Rev Newname", False, "rev@google.com")}, 3))
+
+    def test_prune_removes_old_files_and_folders(self):
         with tempfile.TemporaryDirectory() as d:
-            keep = os.path.join(d, "a@x.org.json.gz")
+            keep = os.path.join(d, "2026H1", "a@x.org.json.gz")
             other = os.path.join(d, "notes.txt")
-            for p in (keep, other, os.path.join(d, "gone@x.org.json.gz"), os.path.join(d, "2026H1", "a@x.org.json.gz")):
+            # The v4 layout's flat files, a person no longer published and a half-year no longer kept go.
+            for p in (keep, other, os.path.join(d, "a@x.org.json.gz"), os.path.join(d, "2026H1", "gone@x.org.json.gz"),
+                      os.path.join(d, "2022H1", "a@x.org.json.gz")):
                 os.makedirs(os.path.dirname(p), exist_ok=True)
                 open(p, "w").close()
-            self.assertEqual(RT.prune(d, {keep}), 2)
-            self.assertEqual(sorted(os.listdir(d)), ["a@x.org.json.gz", "notes.txt"])
+            self.assertEqual(RT.prune(d, {keep}), 3)
+            self.assertEqual(sorted(os.listdir(d)), ["2026H1", "notes.txt"])
+            self.assertEqual(os.listdir(os.path.join(d, "2026H1")), ["a@x.org.json.gz"])
 
     def test_write_is_stable(self):
         with tempfile.TemporaryDirectory() as d:

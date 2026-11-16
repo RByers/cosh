@@ -3457,3 +3457,9 @@ details.rf-method[open] > summary {
   min-width: 0;
   overflow-wrap: anywhere;
 }
+
+.rf-rev-since {
+  margin: 6px 0 0;
+  color: var(--text-secondary);
+  font-size: 0.9em;
+}

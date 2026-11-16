@@ -1,26 +1,29 @@
-"""A person's review threads of the past year, in full, for the Feedback
+"""A person's review threads by half-year, in full, for the Feedback
 Index's download and its reviewer rows (web/feedback-index.html,
 docs/review-feedback.md, "Downloading your comments").
 
 For every person in the Feedback Index's CL index
 (data/private/feedback-cls.json.gz, the CLs behind each person's
 published file, by half-year; `cosh.review_feedback` writes it), writes
-data/private/review-threads/<name>.json.gz: every thread a human reviewer
-other than the owner started on their CLs that landed in the 52 weeks up
-to the data's end, with the full text of every comment in it. One file
-per person, and only the past year (docs/plan.md, 2026-11-14): all years
-back to 2017, a file per half-year, was 33,015 files and 407 MB; this is
-about 2,600 files and 45 MB. CLs without such a thread are left out, and a
-person without any gets no file (the page reads a missing file as "no
-comments"). `cosh.r2 publish` puts the files in the R2 bucket, where the
-page fetches a person's file when they download their comments or open a
-reviewer. Same names as the Feedback Index's (the normalised address); the
-bucket can't be listed, so they can be found only by typing the person's
-address (docs/plan.md, ground rule 5).
+data/private/review-threads/<half>/<name>.json.gz: every thread a human
+reviewer other than the owner started on their CLs that the Feedback Index
+counts in that half-year, with the full text of every comment in it. Only
+the newest 9 half-years (the current one and the 4 years before it,
+docs/plan.md, 2026-11-15): the download's main use, recent feedback for
+the person's own assistant, needs one year, and the rest lets someone see
+why their index moved in a past half-year. A finished half-year's files
+stay the same from week to week, so a weekly publish uploads little more
+than the current half-year's. CLs without such a thread are left out, and
+a person without any in a half-year gets no file for it (the page reads a
+missing file as "no comments"). `cosh.r2 publish` puts the files in the R2
+bucket, where the page fetches them when someone downloads their comments
+or opens a reviewer. Same names as the Feedback Index's (the normalised
+address); the bucket can't be listed, so they can be found only by typing
+the person's address (docs/plan.md, ground rule 5).
 
-Format (v 4), JSON:
+Format (v 5), JSON:
 
-  {"v": 4, "from": "YYYY-MM-DD", "to": "YYYY-MM-DD",   the CLs' landing days, inclusive
+  {"v": 5, "half": "2026H1",
    "people": [name, ...],             names (else addresses), indexed below
    "reviewers": [approver or null, ...]  per person, same order: the
                                       approver, as the person's file
@@ -29,9 +32,8 @@ Format (v 4), JSON:
                                       address belongs to that approver's
                                       exact identity (people.exact_identities,
                                       the Feedback Index's)
-   "cls": [{"n": change number, "half": the half-year the Feedback Index
-            counts it in ("2026H1"), "project": ..., "subject": ...,
-            "landed": "YYYY-MM-DD", "lines": Gerrit's insertions,
+   "cls": [{"n": change number, "landed": "YYYY-MM-DD", "project": ...,
+            "subject": ..., "lines": Gerrit's insertions,
             "owner": people index,
             "threads": [{"id": root comment uuid, "path": file,
                          "/COMMIT_MSG" or "/PATCHSET_LEVEL", "line": n or null,
@@ -45,15 +47,19 @@ Format (v 4), JSON:
 CLs oldest first, threads by their first comment. Offline: reads the
 Feedback Index's CL index, reviews.sqlite, addressed.sqlite, commits.sqlite
 and review-timeline.sqlite (for people.exact_identities) and the NoteDb
-repos. Files are written byte for byte the same when nothing changed, so
-`cosh.r2 sync` uploads only what did: each week, the files of people with
-a CL landing in or leaving the window, or a new comment or label.
+repos. Reading 4 years of comments from NoteDb takes about 20 minutes, so
+a run rebuilds only the newest 2 half-years (where new changes, comments
+and labels land) and an older file only when its changes, a commenter's
+name or the addressed classifier changed, as recorded in
+data/private/review-threads-index.json.gz (`stale`); --all rebuilds every
+one. Files are written byte for byte the same when nothing changed, so
+`cosh.r2 sync` uploads only what did: each week, about the current
+half-year's files.
 
-  COSH_DATA_DIR=<main>/data/private nice -n 5 python3 -m cosh.review_threads
+  COSH_DATA_DIR=<main>/data/private nice -n 5 python3 -m cosh.review_threads [--all]
 """
 
 import argparse
-import datetime as dt
 import gzip
 import json
 import os
@@ -69,12 +75,42 @@ from .derive import DELETED_USER, prefetch_notedb
 
 HOST = "chromium-review.googlesource.com"
 PATCHSET_LEVEL = "/PATCHSET_LEVEL"
-VERSION = 4
-WEEKS = 52
+VERSION = 5
+HALVES = 9
+# The newest half-years rebuilt every run; older ones only when what they hold changed (`stale`).
+FRESH = 2
 
 
 def out_dir(data_dir=None):
     return r2.local_dir("review-threads", data_dir)
+
+
+def index_path(data_dir=None):
+    """What each file was built from (`stale`), kept beside the folder, which is uploaded whole."""
+    return os.path.join(data_dir or store.DATA_DIR, "review-threads-index.json.gz")
+
+
+def read_built(path):
+    try:
+        with gzip.open(path, "rt") as f:
+            return json.load(f)
+    except FileNotFoundError:
+        return {}
+
+
+def stale(entry, cls, accounts, classifier):
+    """Whether a file of a finished half-year needs rebuilding: never built,
+    or its changes, the names of the people in it or the addressed
+    classifier differ from what it was built from (`entry`: {"cls": change
+    numbers, "people": [[account id, name], ...], "classifier": id}). A
+    renamed commenter is shown by their current name, never an old one.
+    New comments or labels on a finished half-year's changes, which are
+    rare, wait for an --all run."""
+    if entry is None or entry.get("classifier") != classifier:
+        return True
+    if entry["cls"] != sorted(n for n, _ in cls):
+        return True
+    return any(accounts.get(aid, (f"account {aid}",))[0] != name for aid, name in entry["people"])
 
 
 def read_index(path):
@@ -144,15 +180,11 @@ def write(path, doc):
     return r2.write_gz(path, json.dumps(doc, separators=(",", ":"), ensure_ascii=False))
 
 
-def window(end, weeks=WEEKS):
-    """The first landing day of the <weeks> weeks that end on day <end>."""
-    return (dt.date.fromisoformat(end) - dt.timedelta(days=weeks * 7 - 1)).isoformat()
-
-
-def person_doc(cls, info, per_cl, accounts, ident, mine, start, end):
-    """One person's file: their CLs `cls` ([(half, change number, {thread
-    root: directory})]) that landed from <start> to <end> and have reviewer
-    threads (`per_cl`, from cl_threads). None when there are none."""
+def person_doc(cls, info, per_cl, accounts, ident, mine, half):
+    """One person's file for half-year <half>: their CLs `cls` ([(change
+    number, {thread root: directory})]) that the Feedback Index counts in it
+    and that have reviewer threads (`per_cl`, from cl_threads), and the
+    account id of each of its people. None when there are none."""
     people, revs, idx = [], [], {}
 
     def who(aid):
@@ -162,25 +194,24 @@ def person_doc(cls, info, per_cl, accounts, ident, mine, start, end):
             r = ident.get(aid)
             revs.append(r if r in mine else None)
         return idx[aid]
-    rows = sorted((info[n][3][:10], n, h, tdirs) for h, n, tdirs in cls
-                  if n in info and start <= (info[n][3] or "")[:10] <= end and per_cl.get(n))
+    rows = sorted(((info[n][3] or "")[:10], n, tdirs) for n, tdirs in cls if n in info and per_cl.get(n))
     doc_cls = []
-    for landed, n, h, tdirs in rows:
+    for landed, n, tdirs in rows:
         project, subject, owner, _, ins = info[n]
         o = who(owner)
         ths = [dict(t, dir=tdirs.get(t["id"]), comments=[[who(aid), at, msg] for aid, at, msg in t["comments"]])
                for t in per_cl[n]]
-        doc_cls.append(dict(n=n, half=h, project=project, subject=subject or "", landed=landed,
+        doc_cls.append(dict(n=n, landed=landed, project=project, subject=subject or "",
                             lines=ins, owner=o, threads=ths))
     if not doc_cls:
-        return None
-    return {"v": VERSION, "from": start, "to": end, "people": people, "reviewers": revs, "cls": doc_cls}
+        return None, list(idx)
+    return {"v": VERSION, "half": half, "people": people, "reviewers": revs, "cls": doc_cls}, list(idx)
 
 
 def prune(root, keep):
     """Removes the .json.gz files under root that aren't in keep (the files
-    of people no longer published, and the half-year folders of the format
-    before v 4), and folders left empty."""
+    of people no longer published, of half-years no longer kept, and the
+    flat files of the format before v 5), and folders left empty."""
     removed = 0
     for d, _, names in os.walk(root, topdown=False):
         for name in names:
@@ -195,10 +226,12 @@ def prune(root, keep):
 
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
-    ap.add_argument("--end", help="the window's last day, YYYY-MM-DD (default: the newest CL's landing day)")
     ap.add_argument("--cls", help="the Feedback Index's CL index (default <data>/feedback-cls.json.gz)")
     ap.add_argument("--out", help="default <data>/review-threads")
-    ap.add_argument("--weeks", type=int, default=WEEKS, help=f"the window's length (default {WEEKS})")
+    ap.add_argument("--halves", type=int, default=HALVES,
+                    help=f"how many of the newest half-years get files (default {HALVES})")
+    ap.add_argument("--all", action="store_true",
+                    help=f"rebuild every half-year's files, not only the newest {FRESH} and those whose inputs changed")
     a = ap.parse_args(argv)
     if a.out is None:
         r2.hold()
@@ -229,26 +262,41 @@ def main(argv=None):
     person_revs = {k: {r for cls in by_half.values() for _, revs, _ in cls for r in revs}
                    for k, by_half in shards.items()}
 
-    # The window spans at most weeks / 26 + 2 half-years: only their CLs can be in it.
-    recent = sorted({h for by_half in shards.values() for h in by_half})[-(a.weeks // 26 + 2):]
-    cand = {k: [(h, n, tdirs) for h in recent for n, _, tdirs in by_half.get(h, ())] for k, by_half in shards.items()}
+    # The newest <halves> half-years, the current one included (web/src/feedback.ts THREAD_HALVES).
+    recent = sorted({h for by_half in shards.values() for h in by_half})[-a.halves:]
+    todo = {(k, h): [(n, tdirs) for n, _, tdirs in by_half[h]]
+            for k, by_half in shards.items() for h in recent if by_half.get(h)}
     info = {}
-    ns = sorted({n for cls in cand.values() for _, n, _ in cls})
+    ns = sorted({n for cls in todo.values() for n, _ in cls})
     for i in range(0, len(ns), 900):
         part = ns[i:i + 900]
         for row in ddb.execute(
                 f"SELECT change_number, project, subject, owner_account, closed_at, insertions FROM changes "
                 f"WHERE host = ? AND change_number IN ({','.join('?' * len(part))})", (HOST, *part)):
             info[row[0]] = row[1:]
-    end = a.end or max((v[3] or "")[:10] for v in info.values())
-    start = window(end, a.weeks)
-    todo = {k: [c for c in cls if c[1] in info and start <= (info[c[1]][3] or "")[:10] <= end] for k, cls in cand.items()}
-    todo = {k: cls for k, cls in todo.items() if cls}
-    print(f"CLs landed {start} .. {end}: {len(todo):,} people, {sum(map(len, todo.values())):,} CLs",
-          file=sys.stderr, flush=True)
+    # Finished half-years are rebuilt only when what their files hold changed.
+    ipath = index_path() if a.out is None else os.path.join(out, os.pardir, os.path.basename(out) + "-index.json.gz")
+    built = read_built(ipath)
+    classifier = act[0] if act else None
+    fresh = set(recent if a.all else recent[-FRESH:])
+    keep = set()
+    index = {}
+    for (k, h) in list(todo):
+        entry = built.get(h, {}).get(k)
+        if h in fresh or stale(entry, todo[(k, h)], accounts, classifier):
+            continue
+        path = os.path.join(out, h, f"{k}.json.gz")
+        if entry["file"] and not os.path.exists(path):
+            continue
+        if entry["file"]:
+            keep.add(path)
+        index.setdefault(h, {})[k] = entry
+        del todo[(k, h)]
+    print(f"half-years {recent[0]} .. {recent[-1]}: rebuilding {len(todo):,} files of "
+          f"{len({k for k, _ in todo}):,} people, {sum(map(len, todo.values())):,} CLs; "
+          f"{len(keep):,} older files unchanged", file=sys.stderr, flush=True)
 
     repos = {}
-    keep = set()
     t0 = time.time()
     files = changed = size = threads = 0
     names = sorted(todo)
@@ -262,7 +310,7 @@ def main(argv=None):
     if batch:
         batches.append(batch)
     for bi, batch in enumerate(batches):
-        ns = sorted({n for k in batch for _, n, _ in todo[k]})
+        ns = sorted({n for k in batch for n, _ in todo[k]})
         per_cl = {}
         # Comments, a few hundred CLs per NoteDb batch.
         for i in range(0, len(ns), 300):
@@ -271,10 +319,14 @@ def main(argv=None):
             for n in part:
                 per_cl[n] = cl_threads(notes.get(n), info[n][2], bots, addressed_lookup(ddb, labels, n))
         for k in batch:
-            doc = person_doc(todo[k], info, per_cl, accounts, ident, person_revs.get(k, set()), start, end)
+            name, h = k
+            doc, aids = person_doc(todo[k], info, per_cl, accounts, ident, person_revs.get(name, set()), h)
+            index.setdefault(h, {})[name] = {
+                "cls": sorted(n for n, _ in todo[k]), "classifier": classifier, "file": doc is not None,
+                "people": [[aid, accounts.get(aid, (f"account {aid}",))[0]] for aid in aids]}
             if doc is None:
                 continue
-            path = os.path.join(out, f"{k}.json.gz")
+            path = os.path.join(out, h, f"{name}.json.gz")
             keep.add(path)
             n_bytes, did = write(path, doc)
             files += 1
@@ -285,6 +337,7 @@ def main(argv=None):
             print(f"{bi + 1}/{len(batches)} batches: {files:,} files so far, {size / 1e6:.0f} MB gzipped, "
                   f"{time.time() - t0:.0f}s", file=sys.stderr, flush=True)
     removed = prune(out, keep) if os.path.isdir(out) else 0
+    write(ipath, {h: dict(sorted(v.items())) for h, v in sorted(index.items())})
     print(f"wrote {files:,} files ({changed:,} changed, {removed:,} removed), {threads:,} threads, "
           f"{size / 1e6:.0f} MB gzipped, to {out}", file=sys.stderr)
 

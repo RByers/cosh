@@ -841,43 +841,58 @@ rather than chunks.
 
 Once an address is typed, the page's last card, "Download your review
 comments", saves one file with every comment thread a reviewer started on
-that person's changes that landed in the past year (the 52 weeks up to
-the data's end), each reply in full. Markdown (one section per change, each
+that person's changes that landed in the period picked (the past 6 months,
+the past year, the default, or all of the list, about 4 years), each reply
+in full. Markdown (one section per change, each
 thread with its file, line, patch set, whether it was addressed, a Gerrit
 link and every comment quoted), optionally headed by instructions for an AI
 coach (the same task as `scripts/feedback_coach.py`'s, in the page's
-`dl-prompt` template), or JSON (the file as fetched). The file is built in
+`dl-prompt` template), or JSON (the files as fetched, cut to the period).
+The file is built in
 the browser; comment text never goes into the page itself. This hands the
 coaching report to the person's own assistant instead of spending our
-model usage on it.
+model usage on it. The same files list, under each reviewer opened in Your
+feedback, the addressed threads they started (of the half-year picked in
+the chart, if any).
 
-The threads are too big for git (52 MB gzipped: 2,384 files, 349k threads, 2026-11-14), so they live in the Cloudflare
-R2 bucket `cosh` and are served gzipped from
-`https://cosh-data.rbyers.ca/review-feedback/threads/v3/<name>.json`,
+Learning from recent feedback, the main use, needs only the past year;
+the older half-years are there to see why someone's index moved in the
+past (the user's call, 2026-11-15). So the files cover the newest 9
+half-years (`HALVES` in `cosh/review_threads.py`, `THREAD_HALVES` in
+`web/src/feedback.ts`): the current one and the 4 years before it, one
+file per person and half-year, holding the changes the Feedback Index
+counts in that half-year. A finished half-year's files stay the same from
+week to week, so a weekly publish uploads little more than the current
+half-year's files, however far back the list goes (one file per person
+over a rolling year, as from 2026-11-14, rewrote most of them every week).
+A reviewer row that lists nothing, or a half-year older than the list,
+says where the list starts ("since 1 Jul 2022").
+
+Reading 4 years of comments from NoteDb takes about 18 minutes on argus, so
+`cosh.review_threads` rebuilds only the newest 2 half-years each run (new
+changes, comments and labels land there), in about 3 minutes, leaving the other 12,650 files as they are (2026-11-15). An older
+half-year's file is rebuilt when its changes, a commenter's name (nobody
+is shown under an old name) or the addressed classifier changed, which
+`data/private/review-threads-index.json.gz` records for each file; a new
+comment or label on an older change, which is rare, waits for a run with
+`--all`.
+
+The threads are too big for git (210 MB gzipped: 16,230 files, 1.47M
+threads, 2026-11-15), so they live in the Cloudflare R2 bucket `cosh` and
+are served gzipped from
+`https://cosh-data.rbyers.ca/review-feedback/threads/v4/<half>/<name>.json`,
 fetched only when someone downloads or opens a reviewer in Your feedback
-(`?v=` is the data's end, so a new week
-isn't hidden by the day-long cache). Named like the per-person files, so
-like them they are reachable only by typing an address (ground rule 5
-allows comment text there, negative comments included). One file per
-person (median 8 KB, up to 412 KB gzipped), and only the past year: every
-year back to 2017, one file per half-year, was 33,015 files and 407 MB,
-far more than the download's purpose (recent feedback for the person's
-own assistant) needs (the user's call, 2026-11-14). A person with no such
-thread in the year has no file, which the page reads as "no comments".
-A reviewer row that lists nothing says where the year starts when the
-picked half-year begins before it ("since 10 Nov 2025, where the comment
-list starts"), and that the list has none at all for a half-year wholly
-before it. `--weeks` sets the window's length: two years (`--weeks 104`)
-measured 3,125 files, 644k threads and 92 MB gzipped, built in 109 s
-(2026-11-15), against 2,388 files and 52 MB in 60 s for one; the page
-would need `THREAD_DAYS` (`web/src/feedback.ts`) and its wording changed
-with it.
-Each weekly publish uploads the files of people with changes that week
-(about 1,900 of them, most of the 52 MB).
+(`?v=` is the data's end, so a new week isn't hidden by the day-long
+cache), and only for the half-years the person has changes in. Named like
+the per-person files, so like them they are reachable only by typing an
+address (ground rule 5 allows comment text there, negative comments
+included). A person with no such thread in a half-year has no file for it,
+which the page reads as "no comments". Every year back to 2017 would be
+about 33,000 files and 407 MB.
 
 ```
 COSH_DATA_DIR=<main>/data/private nice -n 5 python3 -m cosh.review_threads
-python3 -m cosh.r2 publish review-feedback/threads/v3   # from the main checkout, when deploying
+python3 -m cosh.r2 publish review-feedback/threads/v4   # from the main checkout, when deploying
 ```
 
 `cosh.review_threads` (step `review-threads`, after `review-feedback`) reads
@@ -885,7 +900,7 @@ the CL index (`data/private/feedback-cls.json.gz`) for each person's
 changes and the directory each thread counts in, `reviews.sqlite`
 (subjects, owners, accounts, which threads were addressed), `addressed.sqlite`
 and the NoteDb repos (comment text, file, line, patch set, resolved), and
-writes `data/private/review-threads/<name>.json.gz`, byte for byte
+writes `data/private/review-threads/<half>/<name>.json.gz`, byte for byte
 the same when nothing changed (the module's docstring has the format).
 Threads by bots and AI reviewers, and threads the owner started, are left
 out; "addressed" is the Feedback Index's own measure, null for

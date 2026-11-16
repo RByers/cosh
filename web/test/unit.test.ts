@@ -1885,29 +1885,33 @@ test('review load: quarter figures, a reviewer\'s files and the directory tree',
 
 test('feedback index download: URLs and the Markdown of threads', async () => {
   const F = await import('../src/feedback.ts');
-  assert.equal(F.threadsUrl('a.b@google.com', 20400.5, 'cosh.rbyers.ca'),
-    'https://cosh-data.rbyers.ca/review-feedback/threads/v3/a.b@google.com.json?v=20400');
-  assert.throws(() => F.threadsUrl('../x', 1, 'cosh.rbyers.ca'));
+  assert.equal(F.threadsUrl('a.b@google.com', '2026H1', 20400.5, 'cosh.rbyers.ca'),
+    'https://cosh-data.rbyers.ca/review-feedback/threads/v4/2026H1/a.b@google.com.json?v=20400');
+  assert.throws(() => F.threadsUrl('../x', '2026H1', 1, 'cosh.rbyers.ca'));
+  assert.throws(() => F.threadsUrl('a.b@google.com', '../2026H1', 1, 'cosh.rbyers.ca'));
   // From this machine, the local copies (web/vite.config.ts serves them).
-  assert.equal(F.threadsUrl('a.b@google.com', 1, 'localhost'),
-    'r2/review-feedback/threads/v3/a.b@google.com.json?v=1');
+  assert.equal(F.threadsUrl('a.b@google.com', '2025H2', 1, 'localhost'),
+    'r2/review-feedback/threads/v4/2025H2/a.b@google.com.json?v=1');
+  // The newest nine half-years have thread files.
+  assert.deepEqual(F.threadHalves(['all', ...Array.from({ length: 12 }, (_, i) => `${2021 + (i >> 1)}H${(i & 1) + 1}`)]),
+    ['2022H2', '2023H1', '2023H2', '2024H1', '2024H2', '2025H1', '2025H2', '2026H1', '2026H2']);
   const R = await import('../src/r2.ts');
   const k = 'a~2bb@x.org';
   assert.equal(R.r2Url(R.LOAD_PEOPLE, `${k}.json`, '2026Q3', 'cosh.rbyers.ca'),
     `https://cosh-data.rbyers.ca/review-load/people/v2/${k}.json?v=2026Q3`);
   assert.equal(R.r2Url(R.FEEDBACK_PEOPLE, `${k}.json`, 20400, '127.0.0.1'), `r2/review-feedback/people/v2/${k}.json?v=20400`);
-  for (const bad of [`../${k}.json`, `u/${k}.json`, `2026H1/${k}.json`, '2026H1/x/y@z.json', 'abc.json', `${k}.json.gz`, 'A@b.json'])
+  for (const bad of [`../${k}.json`, `u/${k}.json`, `2026H3/${k}.json`, '2026H1/x/y@z.json', 'abc.json', `${k}.json.gz`, 'A@b.json'])
     assert.throws(() => R.r2Url(R.FEEDBACK_PEOPLE, bad, 1, 'localhost'), bad);
   const file: import('../src/feedback.ts').ThreadFile = {
-    v: 4, from: '2025-11-01', to: '2026-10-30', people: ['Rev Iewer', 'Own Er'], reviewers: [null, null],
+    v: 5, half: '2026H1', people: ['Rev Iewer', 'Own Er'], reviewers: [null, null],
     cls: [
-      { n: 2, half: '2026H1', project: 'chromium/src', subject: 'Later\nchange', landed: '2026-03-01', lines: 5, owner: 1, threads: [
+      { n: 2, project: 'chromium/src', subject: 'Later\nchange', landed: '2026-03-01', lines: 5, owner: 1, threads: [
         { id: 'b', path: '/PATCHSET_LEVEL', line: null, ps: 1, addressed: null, resolved: true, dir: null,
           comments: [[0, '2026-02-28T10:00Z', 'Please add a test.']] }] },
-      { n: 1, half: '2026H1', project: 'chromium/src', subject: 'First', landed: '2026-01-02', lines: null, owner: 1, threads: [
+      { n: 1, project: 'chromium/src', subject: 'First', landed: '2026-01-02', lines: null, owner: 1, threads: [
         { id: 'a/1', path: 'a`b.cc', line: 12, ps: 3, addressed: true, resolved: false, dir: '(root)/',
           comments: [[0, '2026-01-01T09:00Z', 'Rename this.\n\n## not a heading'], [1, '2026-01-01T10:00Z', 'Done']] }] },
-      { n: 3, half: '2026H1', project: 'chromium/src', subject: 'No comments', landed: '2026-04-01', lines: 1, owner: 1, threads: [] },
+      { n: 3, project: 'chromium/src', subject: 'No comments', landed: '2026-04-01', lines: 1, owner: 1, threads: [] },
     ],
   };
   const l = { owner: 'me', addressed: 'addressed', notAddressed: 'not addressed', unresolved: 'unresolved', change: 'Change',
@@ -1915,6 +1919,8 @@ test('feedback index download: URLs and the Markdown of threads', async () => {
     landed: (d: string, n: string) => `landed ${d}, ${n} lines` };
   const { md, cls, threads } = F.threadsMarkdown([file], l);
   assert.deepEqual([cls, threads], [2, 2]);
+  // A range keeps only the changes landed from its first day.
+  assert.deepEqual((({ cls, threads }) => [cls, threads])(F.threadsMarkdown([file], l, '2026-01-03')), [1, 1]);
   assert.equal(md, [
     '## First', '', '[Change 1](https://chromium-review.googlesource.com/c/chromium/src/+/1) · landed 2026-01-02, ? lines', '',
     '### `` a`b.cc `` · line 12 · patch set 3 · addressed · unresolved · [Gerrit](https://chromium-review.googlesource.com/c/chromium/src/+/1/comment/a%2F1/)', '',
@@ -1933,8 +1939,8 @@ test('feedback index: a reviewer\'s addressed comments, by the approver each com
     ({ id, path, line: 1, ps: 1, addressed, resolved: true, dir, comments: [[who, at, 'x'], [0, at, 'y']] as [number, string, string][] });
   const f = (half: string, reviewers: (string | null)[], n: number, threads: ReturnType<typeof t>[]):
     import('../src/feedback.ts').ThreadFile =>
-    ({ v: 4, from: '2025-07-01', to: '2026-06-30', people: ['Own Er', 'Rev', 'Other'], reviewers,
-      cls: [{ n, half, project: 'chromium/src', subject: '', landed: '', lines: 1, owner: 0, threads }] });
+    ({ v: 5, half, people: ['Own Er', 'Rev', 'Other'], reviewers,
+      cls: [{ n, project: 'chromium/src', subject: '', landed: '', lines: 1, owner: 0, threads }] });
   const files = [
     // Started by the reviewer and addressed: listed; not addressed, CL-level or started by someone else: not.
     f('2025H2', [null, 'rev@google.com', null], 10, [t('a', true, 1, '2025-08-01T10:00Z'), t('b', false, 1, '2025-08-02T10:00Z'),

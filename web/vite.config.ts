@@ -117,7 +117,7 @@ function dataDir(): string {
 }
 
 /** A file's path under its prefix, as web/src/r2.ts builds it (`R2_PATH`). */
-const R2_PATH = /^([a-z0-9._~-]+@[a-z0-9._@~-]+)\.json$/;
+const R2_PATH = /^((?:\d{4}H[12]\/)?[a-z0-9._~-]+@[a-z0-9._@~-]+)\.json$/;
 
 /** Pages on localhost read the bucket's files from r2/ (web/src/r2.ts): this serves them
  * from their local folders (config/r2.json), gzipped as the bucket serves them, so new files

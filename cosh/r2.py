@@ -424,7 +424,7 @@ def main(argv=None):
         # once the live site no longer reads it.
         old = {x for pub in pubs for x in pub["prefixes"]} - set(known)
         todo += [(prefix, None) for prefix in sorted(old)]
-    # A prefix may sit inside another (review-feedback/threads/v3 inside the
+    # A prefix may sit inside another (review-feedback/threads/v4 inside the
     # retired review-feedback/threads): each object belongs to the innermost.
     all_prefixes = set(known) | {x for pub in pubs for x in pub["prefixes"]} | {prefix for prefix, _ in todo}
     if pushed is None:

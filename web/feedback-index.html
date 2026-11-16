@@ -331,8 +331,10 @@
         <template data-msg="rev-none">No addressed comments from them on your changes<span data-if="half"> landed
           <slot name="half"></slot></span><span data-if="dir"> in <slot name="dir"></slot></span><span
           data-if="since"> since <slot name="since"></slot>, where the comment list starts</span>.</template>
-        <template data-msg="rev-none-before">The comment list covers only the past year, changes landed since
+        <template data-msg="rev-none-before">The comment list goes back only to changes landed since
           <slot name="since"></slot>, so it has none from <slot name="half"></slot>.</template>
+        <template data-msg="rev-since">On your changes landed since <slot name="since"></slot>, where the comment
+          list starts.</template>
         <template data-msg="rev-error">Couldn't load the comments: <slot name="error"></slot></template>
         <template data-msg="rev-comment-title">Open this comment in Gerrit</template>
         <template data-msg="rev-commit-msg">commit message</template>
@@ -342,11 +344,16 @@
         <a class="card-anchor" href="#download" aria-label="Link to this section" title="Link to this section">#</a>
         <h2 id="download-title">Download your review comments</h2>
         <p class="sub">
-          Every comment thread someone else started on your changes that landed in the past year, with each reply in full, as one file:
+          Every comment thread someone else started on your changes that landed in the period you pick, with each reply in full, as one file:
           to keep, to search, or to give an AI assistant to find the patterns in your feedback. Made in your
           browser from the same public Gerrit data; nothing is sent anywhere.
         </p>
         <form id="rf-dl" class="rf-dl">
+          <label>Covering <select id="rf-dl-range">
+            <option value="6m">the past 6 months</option>
+            <option value="1y" selected>the past year</option>
+            <option value="all">all (about 4 years)</option>
+          </select></label>
           <label>As <select id="rf-dl-format">
             <option value="md">Markdown</option>
             <option value="json">JSON</option>
@@ -359,7 +366,7 @@
         <template data-msg="dl-loading">Fetching…</template>
         <template data-msg="dl-done">Downloaded <slot name="threads"></slot> comment threads on <slot
           name="cls"></slot> changes.</template>
-        <template data-msg="dl-none">No review comments on your changes in the past year.</template>
+        <template data-msg="dl-none">No review comments on your changes landed in that period.</template>
         <template data-msg="dl-error">Couldn't fetch the comments: <slot name="error"></slot></template>
         <template data-msg="dl-title"># Review comments on my Chromium changes, <slot name="from"></slot> to <slot
           name="to"></slot></template>

@@ -657,14 +657,12 @@ export function buildPerson(file: PersonFile): Person {
 
 // ---- downloading your comments (cosh/review_threads.py, served from the R2 bucket)
 
-/** review-feedback/threads/v3/<key>.json (cosh/review_threads.py, version 4): the threads on the
- * person's changes that landed in the past year. Comment text is untrusted: it goes only into the
- * downloaded file, never into the page. */
+/** review-feedback/threads/v4/<half>/<key>.json (cosh/review_threads.py, version 5): the threads on
+ * the person's changes the Feedback Index counts in one half-year, for the newest `THREAD_HALVES`.
+ * Comment text is untrusted: it goes only into the downloaded file, never into the page. */
 export interface ThreadFile {
-  v: 4;
-  /** The changes' landing days, YYYY-MM-DD, inclusive: the 52 weeks up to the data's end. */
-  from: string;
-  to: string;
+  v: 5;
+  half: string;
   /** Names (else addresses), indexed by `owner` and each comment's first element. */
   people: string[];
   /** Which approver each of them is, as the person's file names approvers (`Person.revs`,
@@ -675,8 +673,6 @@ export interface ThreadFile {
 
 export interface ThreadCl {
   n: number;
-  /** The half-year the Feedback Index counts it in ("2026H1"). */
-  half: string;
   project: string;
   subject: string;
   /** YYYY-MM-DD. */
@@ -703,15 +699,20 @@ export interface Thread {
   comments: [number, string, string][];
 }
 
-/** The days a thread file covers, up to the data's end (cosh/review_threads.py WEEKS). */
-export const THREAD_DAYS = 52 * 7;
+/** How many of the newest half-years have thread files: the current one and the 4 years before
+ * it (cosh/review_threads.py HALVES). */
+export const THREAD_HALVES = 9;
 
-/** The URL of one person's threads of the past year: one gzipped JSON file per person in the R2
- * bucket (too big for git), fetched only when someone downloads their comments or opens a
- * reviewer. `name` is their `personFile`; `v` (the data's end) skips cached older copies. */
-export function threadsUrl(name: string, v: number, host?: string): string {
+/** The half-years with thread files, oldest first, from `Peers.periods`. */
+export const threadHalves = (periods: string[]) => halves(periods).slice(-THREAD_HALVES);
+
+/** The URL of one person's threads of half-year `half`: one gzipped JSON file per person and
+ * half-year in the R2 bucket (too big for git), fetched only when someone downloads their comments
+ * or opens a reviewer. `name` is their `personFile`; `v` (the data's end) skips cached older copies. */
+export function threadsUrl(name: string, half: string, v: number, host?: string): string {
   if (!isPersonFile(name)) throw new Error('bad name');
-  return r2Url(THREADS, `${name}.json`, v, host);
+  if (!/^\d{4}H[12]$/.test(half)) throw new Error('bad half-year');
+  return r2Url(THREADS, `${half}/${name}.json`, v, host);
 }
 
 /** A Gerrit link to a thread, by its change's project. */
@@ -743,12 +744,14 @@ export interface MdLabels {
 }
 
 /** The threads as Markdown: one section per change, oldest first, each thread with where it was
- * left, whether it was addressed, a link to it in Gerrit, and every comment quoted. */
-export function threadsMarkdown(files: ThreadFile[], l: MdLabels): { md: string; cls: number; threads: number } {
+ * left, whether it was addressed, a link to it in Gerrit, and every comment quoted. With `since`
+ * (YYYY-MM-DD), only changes landed that day or later. */
+export function threadsMarkdown(files: ThreadFile[], l: MdLabels, since?: string | null):
+  { md: string; cls: number; threads: number } {
   const out: string[] = [];
   let cls = 0;
   let threads = 0;
-  const all = files.flatMap((f) => f.cls.map((c) => ({ f, c }))).sort((x, y) => x.c.landed.localeCompare(y.c.landed) || x.c.n - y.c.n);
+  const all = files.flatMap((f) => f.cls.filter((c) => !since || c.landed >= since).map((c) => ({ f, c }))).sort((x, y) => x.c.landed.localeCompare(y.c.landed) || x.c.n - y.c.n);
   for (const { f, c } of all) {
     if (!c.threads.length) continue;
     cls++;
@@ -789,10 +792,10 @@ export interface ReviewerComment {
 export function reviewerComments(files: ThreadFile[], rev: string, dir?: DirFilter | null, half?: string | null): ReviewerComment[] {
   const out: ReviewerComment[] = [];
   for (const f of files) {
+    if (half && f.half !== half) continue;
     const mine = new Set(f.reviewers.flatMap((r, i) => (r === rev ? [i] : [])));
     if (!mine.size) continue;
     for (const c of f.cls) {
-      if (half && c.half !== half) continue;
       for (const t of c.threads) {
         const first = t.comments[0];
         if (t.addressed === true && first && mine.has(first[0]) && (!dir || (t.dir !== null && dir.has(t.dir))))

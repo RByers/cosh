@@ -1038,7 +1038,7 @@
       ],
       [
        "[\"prefixes\"]",
-       "{\"review-feedback/threads/v3\": \"review-threads\",\"review-feedback/people/v2\": \"feedback-people\",\"review-load/people/v2\": \"review-load-people\"}"
+       "{\"review-feedback/threads/v4\": \"review-threads\",\"review-feedback/people/v2\": \"feedback-people\",\"review-load/people/v2\": \"review-load-people\"}"
       ]
      ]
     }
@@ -3451,7 +3451,7 @@
    "withheld": "Comment text, negative comments included, belongs only behind a typed address (ground rule 5); the samples page is reached by clicks.",
    "parts": []
   },
-  "r2:review-feedback/threads/v3/": {
+  "r2:review-feedback/threads/v4/": {
    "withheld": "Comment text, negative comments included, is reachable only by typing the person's address (the bucket can't be listed, no completions), as ground rule 5 allows since 2026-11-14.",
    "parts": []
   },

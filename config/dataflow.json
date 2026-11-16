@@ -1289,27 +1289,27 @@
       "tier": "derived",
       "tracked_in_git": false,
       "rebuildable": true,
-      "size": "52 MB gzipped: 2,384 files (one per person with reviewer threads on changes landed in the past 52 weeks), 349k threads",
-      "size_as_of": "2026-11-14",
-      "files": "<name>.json.gz: per person, every thread a human reviewer other than the owner started on their changes that landed in the 52 weeks up to the data's end, with each comment's full text, author (name, and which of the person's approvers they are), time, file, line and patch set, whether it was addressed, and the directory the Feedback Index counts it in (cosh/review_threads.py has the format, version 4). <name> is the normalised e-mail address, as feedback-people's.",
+      "size": "210 MB gzipped: 16,230 files (one per person and half-year with reviewer threads, newest 9 half-years), 1.47M threads",
+      "size_as_of": "2026-11-15",
+      "files": "<half>/<name>.json.gz: per person and half-year (the newest 9), every thread a human reviewer other than the owner started on their changes the Feedback Index counts in that half-year, with each comment's full text, author (name, and which of the person's approvers they are), time, file, line and patch set, whether it was addressed, and the directory the Feedback Index counts it in (cosh/review_threads.py has the format, version 5). <name> is the normalised e-mail address, as feedback-people's.",
       "purpose": "The comment download's files, kept locally so that the upload sends only those that changed.",
       "notes": "Too big for git; cosh.r2 publishes them. Written byte for byte the same when nothing changed.",
       "withheld": "Comment text, negative comments included, belongs only behind a typed address (ground rule 5); the samples page is reached by clicks."
     },
     {
-      "id": "r2:review-feedback/threads/v3/",
+      "id": "r2:review-feedback/threads/v4/",
       "name": "FI threads in R2",
-      "path": "r2:review-feedback/threads/v3/",
+      "path": "r2:review-feedback/threads/v4/",
       "kind": "directory",
       "tier": "published",
       "tracked_in_git": false,
       "rebuildable": true,
-      "size": "52 MB, 2,384 objects (stored gzipped)",
-      "size_as_of": "2026-11-14",
-      "files": "review-feedback/threads/v3/<name>.json in the R2 bucket `cosh`, served gzipped at https://cosh-data.rbyers.ca/ (docs/r2.md); <name> is the e-mail address as typed, lower case (no domains merged).",
+      "size": "210 MB, 16,230 objects (stored gzipped)",
+      "size_as_of": "2026-11-15",
+      "files": "review-feedback/threads/v4/<half>/<name>.json in the R2 bucket `cosh`, served gzipped at https://cosh-data.rbyers.ca/ (docs/r2.md); <name> is the e-mail address as typed, lower case (no domains merged).",
       "purpose": "What the Feedback Index fetches when someone downloads their review comments, or opens a reviewer in Your feedback (which lists that reviewer's addressed threads, without their text).",
       "withheld": "Comment text, negative comments included, is reachable only by typing the person's address (the bucket can't be listed, no completions), as ground rule 5 allows since 2026-11-14.",
-      "notes": "Uploads are recorded in data/private/r2-manifest.json (key -> sha256), so a sync never lists the bucket. The bucket's CORS policy allows the site's origin. v3 (2026-11-14) is one file per person, by address, for the past year only; the retired review-feedback/threads/ had every half-year since 2017, named by a hash (its objects need deleting by hand, docs/r2.md)."
+      "notes": "Uploads are recorded in data/private/r2-manifest.json (key -> sha256), so a sync never lists the bucket. The bucket's CORS policy allows the site's origin. v4 (2026-11-15) is one file per person and half-year, by address, for the newest 9 half-years, so a finished half-year's files never change; the retired v3 (2026-11-14) was one file per person for a rolling year, rewritten most weeks; the retired review-feedback/threads/ had every half-year since 2017, named by a hash (its objects need deleting by hand, docs/r2.md)."
     },
     {
       "id": "web/public/review-load/all.json",
@@ -2248,7 +2248,7 @@
         "cosh/notedb.py",
         "cosh/people.py"
       ],
-      "purpose": "Writes every reviewer thread on each person's changes of the past year, full text included, one file per person, for the comment download and the reviewers' comment lists.",
+      "purpose": "Writes every reviewer thread on each person's changes of the newest 9 half-years, full text included, one file per person and half-year, for the comment download and the reviewers' comment lists.",
       "inputs": [
         "data/private/feedback-cls.json.gz",
         "data/private/reviews.sqlite",
@@ -2262,17 +2262,17 @@
       ],
       "network": false,
       "lock": "data/private/r2.lock",
-      "incremental": "Rewrites only files whose content changed, and removes those of people no longer published.",
-      "duration": "about 60 s, 1.1 GB of memory (RssAnon, 2026-11-15)",
+      "incremental": "Rebuilds the newest 2 half-years' files, and older ones only when their changes, a commenter's name or the addressed classifier changed (data/private/review-threads-index.json.gz; --all rebuilds every one); rewrites only files whose content changed, and removes those of people and half-years no longer published.",
+      "duration": "about 3 min for a weekly run (the newest 2 half-years: 3,844 files), 18 min with --all or without the index (2026-11-15); 1.1 GB of memory",
       "token_cost": null,
       "cost_source": "docs/review-feedback.md",
       "refresh": "routine",
-      "notes": "Takes its people, changes and each thread's directory from the Feedback Index's CL index (data/private/feedback-cls.json.gz), so run it after review-feedback.",
+      "notes": "Takes its people, changes and each thread's directory from the Feedback Index's CL index (data/private/feedback-cls.json.gz), so run it after review-feedback. What each file was built from is recorded in data/private/review-threads-index.json.gz (3.3 MB; its own bookkeeping, like cosh.r2's manifest); deleting it makes the next run rebuild every half-year.",
       "run": "nice -n 5 python3 -m cosh.review_threads"
     },
     {
       "id": "r2-feedback",
-      "command": "python3 -m cosh.r2 publish review-feedback/threads/v3 review-feedback/people/v2",
+      "command": "python3 -m cosh.r2 publish review-feedback/threads/v4 review-feedback/people/v2",
       "code": [
         "cosh/r2.py"
       ],
@@ -2283,13 +2283,13 @@
         "feedback-people"
       ],
       "outputs": [
-        "r2:review-feedback/threads/v3/",
+        "r2:review-feedback/threads/v4/",
         "r2:review-feedback/people/v2/"
       ],
       "network": true,
       "lock": "data/private/r2.lock",
       "incremental": "Uploads only files whose sha256 differs from the manifest's (data/private/r2-manifest.json).",
-      "duration": "a few minutes for a full upload (2,384 thread files, 52 MB, and 7,945 per-person files, at about 65 objects a second; estimated, not yet run); a weekly run sends the thread files and per-person files of people with changes that week (about 1,900 each: most of the threads' 52 MB, 8.8 MB of per-person files)",
+      "duration": "a few minutes for a full upload (16,230 thread files, 210 MB, and 7,945 per-person files, at about 65 objects a second; estimated); a weekly run sends the current half-year's thread files and the per-person files of people with changes that week (about 1,900 each: up to 23 MB, the current half-year's files of threads, 8.8 MB of per-person files)",
       "token_cost": null,
       "cost_source": "docs/r2.md",
       "refresh": "deploy",
@@ -2622,7 +2622,7 @@
         "web/public/review-feedback/peers.json",
         "web/public/review-feedback/reviewers.json",
         "r2:review-feedback/people/v2/",
-        "r2:review-feedback/threads/v3/"
+        "r2:review-feedback/threads/v4/"
       ],
       "sources_line": "Gerrit code review · Chromium git history",
       "notes": "Linked from the landing page since 2026-11-12; carries noindex."
