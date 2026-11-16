@@ -11,7 +11,9 @@ import {
   binSums,
   buildPerson,
   cellsIn,
+  cellsInDir,
   dirTable,
+  factorOf,
   fiOf,
   fr,
   frOf,
@@ -40,6 +42,7 @@ import {
   threadsUrl,
   threadUrl,
   type Alias,
+  type Cell,
   type DirFilter,
   type Peers,
   type Person,
@@ -1047,6 +1050,35 @@ function renderReviewers() {
     body.append(tr);
     if (open) body.append(reviewerCommentsRow(r.email));
   }
+  // The foot: the changes no listed reviewer approved, then all the changes in the period and filter, which
+  // the rows above can't add up to (a change with several approvers counts under each) and which are what
+  // the over-time chart's dot counts.
+  const cells = cellsInDir(p, period, dir?.dirs);
+  const listed = new Set(rows.map((r) => r.email));
+  const foot = $('#rf-revs tfoot');
+  foot.replaceChildren();
+  const footRow = (name: string, title: string, cs: Cell[], cls: string, few: boolean) => {
+    const s = sums(p, peers, cs);
+    const tr = el('tr', undefined, cls);
+    const th = el('th');
+    th.setAttribute('scope', 'row');
+    th.title = title;
+    const label = el('span', undefined, 'rf-dir-label');
+    label.append(el('span', undefined, 'ar-toggle-space'), el('span', name));
+    th.append(label);
+    tr.append(th, el('td', fmtInt(Math.round(s.cls)), 'num'), el('td', fmtInt(s.addressed), 'num'),
+      el('td', few ? '–' : fmtFr(frOf(s)), 'num'), el('td', fmtFi(factorOf(p, peers, cs)), 'num'),
+      few ? el('td', '–', 'num') : fiCell(fiOf(s)));
+    foot.append(tr);
+  };
+  if (!who || who.set) {
+    const rest = cells.filter((c) => !c[3].some((i) => listed.has(p.revs[i])));
+    const n = sums(p, peers, rest).cls;
+    if (n > 0 && rest.length < cells.length) {
+      footRow(msg('revs-rest'), msg('revs-rest-title'), rest, 'rf-rev-rest', n < peers.min_bin_cls);
+    }
+  }
+  if (cells.length) footRow(msg('revs-total'), msg('revs-total-title'), cells, 'rf-rev-total', false);
   const none = noApproverCls(p, period, dir?.dirs);
   put($('#rf-revs-note'), 'revs-note', { n: fmtInt(rows.length), all: fmtInt(drew.length), some: !!who, dir: !!dir,
     cut: !!who && details.cut, before: !details.halves.length, since: dayText(details.since),

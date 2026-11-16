@@ -257,7 +257,15 @@ files).
   there, the reviewer's factor without the person's CLs (so it can differ
   a little from what others see), everyone's CLs they approved, and the
   person's FI on those CLs. A CL with several approvers counts under each.
-  Rows under `MIN_BIN_CLS` of the person's CLs show no AFR or FI. The note
+  Rows under `MIN_BIN_CLS` of the person's CLs show no AFR or FI. Since the
+  rows leave CLs out (those whose approvers drew nothing, or weren't listed,
+  and those with no approver) and count some twice, the table ends with two
+  rows that add up the rest: "Other changes", the CLs no listed reviewer
+  approved, which are often why an index is lower than the rows suggest; and
+  "All your changes", every CL in the period (and directory), with the same
+  count, AFR and FI as the over-time chart's dot for that half-year (`sums`)
+  and their reviewer factor (`factorOf`: the approvers' factors weighted by
+  what experience alone expects). The note
   says how many of the person's CLs had no approver, and their factor
   (`rev_none` without the person's CLs). ▸
   opens a reviewer into the addressed threads they started on the person's

@@ -3740,6 +3740,19 @@ test('feedback index: selecting a dot in the over-time chart sets Your feedback\
   assert.equal(await page.$eval('#rf-revs-range', (e) => (e as HTMLSelectElement).selectedOptions[0].textContent),
     'January – June 2026');
   assert.deepEqual(await revs(), [['alice@google.com', '1'], ['bob@igalia.com', '1']]);
+  // The foot: all the half-year's changes, as many as the dot counts, with the dot's index.
+  const foot = () => page.$$eval('#rf-revs tfoot tr', (rs) => rs.map((r) =>
+    [...r.children].map((c) => c.textContent!.trim())));
+  const dotSays = (i: number) => page.evaluate((i) => {
+    const chart = window.__rf!.charts.trend;
+    return [chart.data.datasets[5].data[i]];
+  }, i);
+  const [fi1] = await dotSays(1) as [number];
+  const total1 = (await foot()).at(-1)!;
+  assert.equal(total1[0], 'All your changes');
+  // One change, which both approved: it counts under each, once in the total.
+  assert.equal(total1[1], '1');
+  assert.equal(total1[5], `${fi1.toFixed(2)}×`);
   // Covering "all" clears it; selecting the same dot twice does too.
   await page.select('#rf-revs-range', 'all');
   assert.equal(await page.evaluate(() => window.__rf!.period), 'all');
@@ -3750,9 +3763,13 @@ test('feedback index: selecting a dot in the over-time chart sets Your feedback\
   // No one approved that half-year's change.
   assert.deepEqual(await revs(), []);
   assert.match(await page.$eval('#rf-revs-note', (e) => e.textContent!.replace(/\s+/g, ' ')), /0 reviewers .* 1 of your changes had no approver/);
+  // With no reviewer listed, the foot is just the total: that change.
+  assert.deepEqual((await foot()).map((r) => r.slice(0, 3)), [['All your changes', '1', '1']]);
   await clickAt(last.x, last.y);
   assert.equal(await covering(), 'all');
   assert.deepEqual(await revs(), [['alice@google.com', '2'], ['bob@igalia.com', '1']]);
+  // All of them: the no-approver change is the other one.
+  assert.deepEqual((await foot()).map((r) => r.slice(0, 3)), [['Other changes', '1', '1'], ['All your changes', '3', '3']]);
   // A click away from the person's dots changes nothing.
   const box = (await page.$eval('#rf-trend', (c) => { const r = c.getBoundingClientRect(); return { x: r.left, y: r.top }; }));
   await clickAt(box.x + 5, box.y + 5);

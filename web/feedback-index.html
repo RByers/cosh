@@ -321,6 +321,7 @@
               <th scope="col" class="num" title="How much feedback other people's changes they approve draw, against what experience predicts: 1.00× is typical">Reviewer factor</th>
               <th scope="col" class="num" title="Your feedback index on the changes they approved">Your index</th></tr></thead>
             <tbody></tbody>
+            <tfoot></tfoot>
           </table>
         </div>
         <p id="rf-revs-note" class="note"></p>
@@ -333,7 +334,10 @@
           name="n"></slot> reviewers approved your changes that drew addressed comments<span data-if="dir">
           there</span>.<span data-if="before"> The comment list goes back only to changes landed since
           <slot name="since"></slot>, so it can't say who started them.</span></span> Reviewers are those in your changes' Reviewed-by lines (who voted Code-Review);
-          reviewers whose approvals drew none aren't listed. A change with several counts under each, and its reviewer factor is their mean. A
+          reviewers whose approvals drew none aren't listed. A change with several counts under each, and its reviewer factor is their mean,
+          so the rows don't add up: “Other changes” are those no listed reviewer approved, often the ones that
+          drew no feedback, and “All your changes” are every one of them, the same as the over-time chart's
+          dot for that half-year. A
           reviewer factor is fitted together with every author's own factor, so a reviewer who mostly approves
           newcomers' changes isn't counted as strict for that, and it leaves your changes out: a reviewer who
           approves few changes but yours counts as typical.<span data-if="hasNone"> <slot name="none"></slot>
@@ -341,6 +345,10 @@
           <slot name="noneF"></slot>.</span> Rows with fewer than <slot name="min"></slot> of your changes show no
           AFR or index.
         </template>
+        <template data-msg="revs-rest">Other changes</template>
+        <template data-msg="revs-rest-title">Your changes that no reviewer listed above approved, including those with no approver</template>
+        <template data-msg="revs-total">All your changes</template>
+        <template data-msg="revs-total-title">All your changes in this period (and directory), as the over-time chart counts them: the rows above can't add up to this, since a change with several approvers counts under each</template>
         <template data-msg="rev-loading">Loading…</template>
         <template data-msg="rev-none">No addressed comments from them on your changes landed then<span
           data-if="dir"> in <slot name="dir"></slot></span><span data-if="since"> since <slot name="since"></slot>,

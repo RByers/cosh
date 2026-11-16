@@ -415,6 +415,20 @@ export function sums(p: Person, peers: Peers, cs: Cell[]): Sums {
   return s;
 }
 
+/** The reviewer factor of cells `cs` together: their approvers' factors averaged by what experience alone
+ * expects the cells to draw, so that their index is their AFR over everyone else's, times this (null:
+ * nothing expected). */
+export function factorOf(p: Person, peers: Peers, cs: Cell[]): number | null {
+  let base = 0;
+  let expected = 0;
+  for (const c of cs) {
+    const b = (c[5] / 100) * (p.rateBin ?? peers.rate_bin)[c[1]] * peers.scale;
+    base += b;
+    expected += b * revFactor(p, peers, c);
+  }
+  return base > 0 ? expected / base : null;
+}
+
 /** The feedback index of some totals (null: nothing expected). */
 export const fiOf = (s: Sums) => (s.expected > 0 ? s.addressed / s.expected : null);
 export const frOf = (s: Sums) => fr(s.addressed, s.lines);

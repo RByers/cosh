@@ -1536,6 +1536,10 @@ test('review feedback: the AFR and index, as the script computes them', async ()
   // CL 2 at bin 4 (1.7), CL 3 at bin 6 (1).
   near(s.expected, 0.4 * 2.5 * 1.2 + 1.18 * 1.7 * 0.9 + 0.1 * 1 * 0.5);
   near(F.fiOf(s), 3 / s.expected);
+  // The cells' reviewer factor together: weighted by what experience alone expects of each.
+  near(F.factorOf(person, peers, cs), s.expected / (0.4 * 2.5 + 1.18 * 1.7 + 0.1 * 1));
+  near(F.factorOf(person, peers, [cs[0]]), 1.2);
+  assert.equal(F.factorOf(person, peers, []), null);
   near(F.cellExpected(person, peers, cs[1]), 0.28 * 1.7 * 0.9);
   near(F.cellExpected(person, peers, cs[2]), 0.9 * 1.7 * 0.9);
   assert.deepEqual(F.dirLevels('chrome/browser/ui/'), ['chrome/browser/ui/', 'chrome/browser/', 'chrome/', '']);

@@ -2817,6 +2817,16 @@ button.term:focus-visible {
   background: color-mix(in srgb, var(--accent) 12%, transparent);
 }
 
+/* Your feedback's foot: the changes no listed reviewer approved, and all the changes, which the over-time
+ * chart's dots count. */
+#rf-revs tfoot tr:first-child > * {
+  border-top: 2px solid var(--border);
+}
+
+#rf-revs tr.rf-rev-total > * {
+  font-weight: 600;
+}
+
 /* An opened reviewer in Your feedback: the addressed comments they started, one per line (day, change,
  * file), in a box that scrolls when there are many. */
 .rf-table tr.rf-rev-comments > td {
