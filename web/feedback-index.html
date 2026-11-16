@@ -304,8 +304,7 @@
           also set by selecting a dot in the over-time chart. -->
         <p class="rf-revs-range"><label title="Count and list only your changes landed in this period">Covering
           <select id="rf-revs-range"><option value="all">all your changes</option></select></label>
-          <label class="rf-revs-own" title="Leave out reviewers whose approvals drew addressed comments only from others"><input
-            type="checkbox" id="rf-revs-own" checked /> only reviewers who started addressed comments themselves</label></p>
+</p>
         <template data-msg="period-all">all your changes</template>
         <template data-msg="period-year">all of <slot name="year"></slot></template>
         <template data-msg="dir-filter">Filter: only feedback in <slot name="dir"></slot></template>
@@ -326,14 +325,10 @@
         </div>
         <p id="rf-revs-note" class="note"></p>
         <template data-msg="revs-note">
-          <span data-if="some">Listed are the <slot name="n"></slot> of the <slot name="all"></slot> reviewers
-          whose approvals of your changes drew addressed comments<span data-if="dir"> there</span> who started some
-          themselves<span data-if="cut"> on your changes landed since <slot name="since"></slot>, where the comment
-          list starts</span>; untick “only reviewers who started addressed comments themselves” to list all
-          <slot name="all"></slot>.</span><span data-if="!some"><slot
-          name="n"></slot> reviewers approved your changes that drew addressed comments<span data-if="dir">
-          there</span>.<span data-if="before"> The comment list goes back only to changes landed since
-          <slot name="since"></slot>, so it can't say who started them.</span></span> Reviewers are those in your changes' Reviewed-by lines (who voted Code-Review);
+          <slot name="n"></slot> reviewers approved your changes that drew addressed comments<span data-if="dir">
+          there</span>, from anyone: ▸ lists those comments, and who started each when it wasn't that
+          reviewer.<span data-if="before"> The comment list goes back only to changes landed since
+          <slot name="since"></slot>.</span> Reviewers are those in your changes' Reviewed-by lines (who voted Code-Review);
           reviewers whose approvals drew none aren't listed. A change with several counts under each, and its reviewer factor is their mean,
           so the rows don't add up: “Other changes” are those no listed reviewer approved, often the ones that
           drew no feedback, and “All your changes” are every one of them, the same as the over-time chart's
@@ -350,7 +345,8 @@
         <template data-msg="revs-total">All your changes</template>
         <template data-msg="revs-total-title">All your changes in this period (and directory), as the over-time chart counts them: the rows above can't add up to this, since a change with several approvers counts under each</template>
         <template data-msg="rev-loading">Loading…</template>
-        <template data-msg="rev-none">No addressed comments from them on your changes landed then<span
+        <template data-msg="rev-by">from <slot name="name"></slot></template>
+        <template data-msg="rev-none">No addressed comments on the changes they approved landed then<span
           data-if="dir"> in <slot name="dir"></slot></span><span data-if="since"> since <slot name="since"></slot>,
           where the comment list starts</span>.</template>
         <template data-msg="rev-none-before">The comment list goes back only to changes landed since

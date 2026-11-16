@@ -37,7 +37,6 @@ import {
   sums,
   tableRows,
   reviewerComments,
-  reviewerCommenters,
   threadsMarkdown,
   threadsUrl,
   threadUrl,
@@ -95,12 +94,6 @@ const state = {
   threads: new Map<string, Promise<ThreadFile | null>>(),
   /** Addresses of the reviewers opened in "Your feedback". */
   revOpen: new Set<string>(),
-  /** Whether "Your feedback" lists only the approvers who started addressed comments of their own in the
-   * period (where the thread files have them), rather than every approver whose approvals drew some. */
-  ownOnly: true,
-  /** Who has comments to list under the current filters (`key`), from the thread files: null while they
-   * load. */
-  commenters: null as { key: string; set: Set<string> | null; error?: string } | null,
   /** The experience bin shown in "How it's changing". */
   cohortBin: 0,
   /** Keys of everyone's directory table's rows that are open (see tableRows). */
@@ -263,7 +256,6 @@ async function lookup(raw: string) {
     state.halves = halvesOf(top!.file);
     state.threads = new Map();
     state.revOpen = new Set();
-    state.commenters = null;
     state.period = ALL;
     state.dir = null;
     state.allExpanded = new Set();
@@ -1011,22 +1003,12 @@ function renderReviewers() {
   const dirFilter = $('#rf-dir-filter');
   dirFilter.hidden = !dir;
   if (dir) put(dirFilter.querySelector('.rf-filter-name')!, 'dir-filter', { dir: dir.name });
-  // Only reviewers whose approvals drew addressed comments: the comments are what this lists. Where the
-  // thread files cover the period, unless unticked, only those who started some of them themselves.
-  const drew = reviewerRows(p, peers, period, dir?.dirs).filter((r) => r.addressed > 0);
+  // Every reviewer whose approvals drew addressed comments, whoever started them: the comments are what
+  // ▸ lists.
+  const rows = reviewerRows(p, peers, period, dir?.dirs).filter((r) => r.addressed > 0);
   const details = periodDetails();
-  const who = state.ownOnly && details.halves.length ? commenters(details.halves) : null;
-  const rows = who ? drew.filter((r) => who.set?.has(r.email)) : drew;
   const body = $('#rf-revs tbody');
   body.replaceChildren();
-  if (who && !who.set) {
-    const tr = el('tr', undefined, 'rf-rev-wait');
-    const td = el('td');
-    td.colSpan = 6;
-    put(td, who.error === undefined ? 'rev-loading' : 'rev-error', { error: who.error ?? '' });
-    tr.append(td);
-    body.append(tr);
-  }
   for (const r of rows) {
     const tr = el('tr', undefined, 'rf-rev-row');
     tr.dataset.email = r.email;
@@ -1037,7 +1019,7 @@ function renderReviewers() {
     const b = el('button', open ? '▾' : '▸', 'ar-toggle');
     b.type = 'button';
     b.setAttribute('aria-expanded', String(open));
-    b.setAttribute('aria-label', `${open ? 'Hide' : 'Show'} the addressed comments ${r.email} left on your changes`);
+    b.setAttribute('aria-label', `${open ? 'Hide' : 'Show'} the addressed comments on your changes ${r.email} approved`);
     b.addEventListener('click', () => toggleReviewer(r.email));
     label.append(b, el('span', r.email));
     th.append(label);
@@ -1071,41 +1053,17 @@ function renderReviewers() {
       few ? el('td', '–', 'num') : fiCell(fiOf(s)));
     foot.append(tr);
   };
-  if (!who || who.set) {
-    const rest = cells.filter((c) => !c[3].some((i) => listed.has(p.revs[i])));
-    const n = sums(p, peers, rest).cls;
-    if (n > 0 && rest.length < cells.length) {
-      footRow(msg('revs-rest'), msg('revs-rest-title'), rest, 'rf-rev-rest', n < peers.min_bin_cls);
-    }
+  const rest = cells.filter((c) => !c[3].some((i) => listed.has(p.revs[i])));
+  const restCls = sums(p, peers, rest).cls;
+  if (restCls > 0 && rest.length < cells.length) {
+    footRow(msg('revs-rest'), msg('revs-rest-title'), rest, 'rf-rev-rest', restCls < peers.min_bin_cls);
   }
   if (cells.length) footRow(msg('revs-total'), msg('revs-total-title'), cells, 'rf-rev-total', false);
   const none = noApproverCls(p, period, dir?.dirs);
-  put($('#rf-revs-note'), 'revs-note', { n: fmtInt(rows.length), all: fmtInt(drew.length), some: !!who, dir: !!dir,
-    cut: !!who && details.cut, before: !details.halves.length, since: dayText(details.since),
+  put($('#rf-revs-note'), 'revs-note', { n: fmtInt(rows.length), dir: !!dir,
+    before: !details.halves.length, since: dayText(details.since),
     none: fmtInt(Math.round(none)), hasNone: none >= 0.5, noneF: fmtFi(noneFactor(p, peers)),
     min: fmtInt(peers.min_bin_cls) });
-}
-
-/** The approvers with comments to list under the current filters (see reviewerCommenters), from the
- * thread files of half-years `hs`, which are fetched (once) the first time; `set` is null until they
- * are in. */
-function commenters(hs: string[]): NonNullable<typeof state.commenters> {
-  const dir = state.dir;
-  const id = `${state.key}|${state.period}|${dir?.key ?? ''}`;
-  if (state.commenters?.key === id) return state.commenters;
-  const got: NonNullable<typeof state.commenters> = { key: id, set: null };
-  state.commenters = got;
-  void threadFiles(hs).then((files) => {
-    got.set = reviewerCommenters(files, dir?.dirs);
-  }).catch((e) => {
-    got.error = String(e instanceof Error ? e.message : e);
-    // A failed fetch is tried again the next time the list is drawn.
-    setTimeout(() => { if (state.commenters === got) state.commenters = null; });
-  }).finally(() => {
-    // Redrawn if the filters still hold.
-    if (state.commenters === got) renderReviewers();
-  });
-  return got;
 }
 
 function toggleReviewer(email: string) {
@@ -1150,10 +1108,10 @@ async function threadFiles(hs: string[]): Promise<ThreadFile[]> {
 /** "1 Jul 2022" for a YYYY-MM-DD day. */
 const dayText = (d: string) => fmtDay(new Date(`${d}T00:00:00Z`));
 
-/** The row under an opened reviewer: the addressed comments they started on the person's changes
+/** The row under an opened reviewer: the addressed comments on the person's changes they approved,
  * landed in the period picked under Covering (as far back as the thread files go), newest first, each
- * with its day, its change linking to the comment in Gerrit, and its file. Loaded from the thread
- * files the first time; no comment text. */
+ * with its day, its change linking to the comment in Gerrit, its file, and who started it when someone
+ * else did. Loaded from the thread files the first time; no comment text. */
 function reviewerCommentsRow(email: string): HTMLTableRowElement {
   const tr = el('tr', undefined, 'rf-rev-comments');
   const cell = el('td');
@@ -1200,6 +1158,8 @@ function commentItem(c: ReviewerComment): HTMLLIElement {
   a.title = msg('rev-comment-title');
   const where = c.path === '/COMMIT_MSG' ? el('span', msg('rev-commit-msg'), 'rf-rev-msg') : el('span', c.path, 'rf-dir-name');
   li.append(el('span', fmtDay(new Date(`${c.day}T00:00:00Z`)), 'rf-rev-day'), a, where);
+  // A Gerrit name: untrusted text, so textContent only.
+  if (c.by !== null) li.append(el('span', msg('rev-by', { name: c.by }), 'rf-rev-by'));
   return li;
 }
 
@@ -1327,10 +1287,6 @@ function init() {
   $('#rf-dir-clear').addEventListener('click', () => setDir(null));
   $<HTMLSelectElement>('#rf-revs-range').addEventListener('change', (e) => {
     if (state.person) setPeriod((e.target as HTMLSelectElement).value);
-  });
-  $<HTMLInputElement>('#rf-revs-own').addEventListener('change', (e) => {
-    state.ownOnly = (e.target as HTMLInputElement).checked;
-    if (state.person) renderReviewers();
   });
   const method = $<HTMLDetailsElement>('#method');
   method.addEventListener('toggle', () => renderMethod());

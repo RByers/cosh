@@ -1309,7 +1309,7 @@
       "rebuildable": true,
       "size": "210 MB gzipped: 16,230 files (one per person and half-year with reviewer threads, newest 9 half-years), 1.47M threads",
       "size_as_of": "2026-11-15",
-      "files": "<half>/<name>.json.gz: per person and half-year (the newest 9), every thread a human reviewer other than the owner started on their changes the Feedback Index counts in that half-year, with each comment's full text, author (name, and which of the person's approvers they are), time, file, line and patch set, whether it was addressed, and the directory the Feedback Index counts it in (cosh/review_threads.py has the format, version 5). <name> is the normalised e-mail address, as feedback-people's.",
+      "files": "<half>/<name>.json.gz: per person and half-year (the newest 9), every thread a human reviewer other than the owner started on their changes the Feedback Index counts in that half-year, with each comment's full text, author (name, and which of the person's approvers they are), time, file, line and patch set, whether it was addressed, and the directory the Feedback Index counts it in, and each change's approvers (cosh/review_threads.py has the format, version 5). <name> is the normalised e-mail address, as feedback-people's.",
       "purpose": "The comment download's files, kept locally so that the upload sends only those that changed.",
       "notes": "Too big for git; cosh.r2 publishes them. Written byte for byte the same when nothing changed.",
       "withheld": "Comment text, negative comments included, belongs only behind a typed address (ground rule 5); the samples page is reached by clicks."

@@ -1936,7 +1936,7 @@ test('feedback index download: URLs and the Markdown of threads', async () => {
   ].join('\n'));
 });
 
-test('feedback index: a reviewer\'s addressed comments, by the approver each commenter is', async () => {
+test('feedback index: a reviewer\'s addressed comments, on the changes they approved', async () => {
   const F = await import('../src/feedback.ts');
   // A thread counts in the directory its file is in (the commit message: the change's main one).
   const t = (id: string, addressed: boolean | null, who: number, at: string, path = 'a.cc', dir: string | null = 'ui/') =>
@@ -1951,9 +1951,10 @@ test('feedback index: a reviewer\'s addressed comments, by the approver each com
       t('c', null, 1, '2025-08-03T10:00Z', '/PATCHSET_LEVEL', null), t('d', true, 2, '2025-08-04T10:00Z')]),
     f('2026H1', [null, 'rev@google.com', 'other@google.com'], 11, [t('e', true, 1, '2026-02-01T10:00Z', '/COMMIT_MSG', 'base/')]),
   ];
+  // These files predate each change's approvers: only the threads the reviewer started.
   assert.deepEqual(F.reviewerComments(files, 'rev@google.com'), [
-    { cl: 11, project: 'chromium/src', id: 'e', day: '2026-02-01', path: '/COMMIT_MSG' },
-    { cl: 10, project: 'chromium/src', id: 'a', day: '2025-08-01', path: 'a.cc' }]);
+    { cl: 11, project: 'chromium/src', id: 'e', day: '2026-02-01', path: '/COMMIT_MSG', by: null },
+    { cl: 10, project: 'chromium/src', id: 'a', day: '2025-08-01', path: 'a.cc', by: null }]);
   assert.deepEqual(F.reviewerComments(files, 'rev@chromium.org'), []);
   // A directory filter keeps only the threads counted in its directories.
   assert.deepEqual(F.reviewerComments(files, 'rev@google.com', new Set(['ui/'])).map((c) => c.id), ['a']);
@@ -1961,6 +1962,15 @@ test('feedback index: a reviewer\'s addressed comments, by the approver each com
   // A half-year keeps only the threads on changes counted in it.
   assert.deepEqual(F.reviewerComments(files, 'rev@google.com', null, '2025H2').map((c) => c.id), ['a']);
   assert.deepEqual(F.reviewerComments(files, 'rev@google.com', new Set(['ui/']), '2026H1'), []);
+  // With each change's approvers: every addressed thread on the changes the reviewer approved, whoever
+  // started it (named when not them), and none on changes they didn't approve.
+  const listed = (approvers: string[]) => files.map((x) => ({ ...x, cls: x.cls.map((c) => ({ ...c, approvers })) }));
+  assert.deepEqual(F.reviewerComments(listed(['rev@google.com', 'b@x.org']), 'rev@google.com').map((c) => [c.id, c.by]),
+    [['e', null], ['d', 'Other'], ['a', null]]);
+  assert.deepEqual(F.reviewerComments(listed(['b@x.org']), 'rev@google.com'), []);
+  // Someone who approved but never commented gets the threads others started.
+  assert.deepEqual(F.reviewerComments(listed(['b@x.org']), 'b@x.org').map((c) => [c.id, c.by]),
+    [['e', 'Rev'], ['d', 'Other'], ['a', 'Rev']]);
 });
 
 test('a page built from several sources covers only the window they share', () => {

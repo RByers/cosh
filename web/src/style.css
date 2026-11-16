@@ -2862,13 +2862,17 @@ button.term:focus-visible {
   color: var(--text-secondary);
 }
 
+/* Who started a comment under an opened reviewer, when someone else did. */
+.rf-rev-by {
+  color: var(--text-secondary);
+}
+
 .rf-rev-msg {
   font-style: italic;
   color: var(--text-muted);
 }
 
-/* "Covering" above Your feedback's reviewers (its date filter, which the over-time chart's dots set too),
- * and whether to list only reviewers with comments of their own. */
+/* "Covering" above Your feedback's reviewers: its date filter, which the over-time chart's dots set too. */
 .rf-revs-range {
   display: flex;
   flex-wrap: wrap;
@@ -2880,12 +2884,6 @@ button.term:focus-visible {
 .rf-revs-range select {
   margin-left: 4px;
   font: inherit;
-}
-
-.rf-revs-own {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
 }
 
 /* The directory filter set from the directory table: what it is, and a way out. */

@@ -693,6 +693,9 @@ export interface ThreadCl {
   landed: string;
   lines: number | null;
   owner: number;
+  /** Who approved it (Reviewed-by), as the person's file names approvers (`Person.revs`); missing in
+   * files built before 2026-11-16. */
+  approvers?: string[];
   threads: Thread[];
 }
 
@@ -789,7 +792,7 @@ export function threadsMarkdown(files: ThreadFile[], l: MdLabels, since?: string
   return { md: out.join('\n'), cls, threads };
 }
 
-/** One addressed comment under a reviewer in "Your feedback": a thread they started. */
+/** One addressed comment under a reviewer in "Your feedback": a thread on a change they approved. */
 export interface ReviewerComment {
   cl: number;
   project: string;
@@ -798,44 +801,33 @@ export interface ReviewerComment {
   /** YYYY-MM-DD of that comment. */
   day: string;
   path: string;
+  /** Who started the thread when not the reviewer themselves (their name, else address; Gerrit text,
+   * so only ever shown with textContent); null when the reviewer did. */
+  by: string | null;
 }
 
-/** The approvers with any comments in `reviewerComments` for these files (in `dir`, of `half`, on
- * changes landed from day `from`): those who started an addressed thread on the person's changes. */
-export function reviewerCommenters(files: ThreadFile[], dir?: DirFilter | null, half?: string | null,
-  from?: string | null): Set<string> {
-  const out = new Set<string>();
-  for (const f of files) {
-    if (half && f.half !== half) continue;
-    for (const c of f.cls) {
-      if (from && c.landed < from) continue;
-      for (const t of c.threads) {
-        const first = t.comments[0];
-        const rev = first ? f.reviewers[first[0]] : null;
-        if (t.addressed === true && rev && (!dir || (t.dir !== null && dir.has(t.dir)))) out.add(rev);
-      }
-    }
-  }
-  return out;
-}
-
-/** The addressed threads approver `rev` (a `ReviewerRow.email`) started on the person's changes in
- * `files`, newest first, only those counted in `dir`'s row, on changes of half-year `half` and landed
- * from day `from` (YYYY-MM-DD) if given. A thread counts when its first comment's author is that
- * approver (`ThreadFile.reviewers`). */
+/** The addressed threads on the person's changes in `files` that approver `rev` (a
+ * `ReviewerRow.email`) approved, whoever started them, newest first: the ones their row's Addressed
+ * column counts. Only those counted in `dir`'s row, on changes of half-year `half` and landed from day
+ * `from` (YYYY-MM-DD) if given. A file from before changes listed their approvers
+ * (`ThreadCl.approvers`) gives only the threads the approver started themselves (their first comment's
+ * author is that approver, `ThreadFile.reviewers`). */
 export function reviewerComments(files: ThreadFile[], rev: string, dir?: DirFilter | null, half?: string | null,
   from?: string | null): ReviewerComment[] {
   const out: ReviewerComment[] = [];
   for (const f of files) {
     if (half && f.half !== half) continue;
     const mine = new Set(f.reviewers.flatMap((r, i) => (r === rev ? [i] : [])));
-    if (!mine.size) continue;
     for (const c of f.cls) {
       if (from && c.landed < from) continue;
+      if (c.approvers && !c.approvers.includes(rev)) continue;
       for (const t of c.threads) {
         const first = t.comments[0];
-        if (t.addressed === true && first && mine.has(first[0]) && (!dir || (t.dir !== null && dir.has(t.dir))))
-          out.push({ cl: c.n, project: c.project, id: t.id, day: first[1].slice(0, 10), path: t.path });
+        if (t.addressed !== true || !first || (dir && (t.dir === null || !dir.has(t.dir)))) continue;
+        const own = mine.has(first[0]);
+        if (!c.approvers && !own) continue;
+        out.push({ cl: c.n, project: c.project, id: t.id, day: first[1].slice(0, 10), path: t.path,
+          by: own ? null : (f.people[first[0]] ?? '?') });
       }
     }
   }

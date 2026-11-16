@@ -35,6 +35,10 @@ Format (v 5), JSON:
    "cls": [{"n": change number, "landed": "YYYY-MM-DD", "project": ...,
             "subject": ..., "lines": Gerrit's insertions,
             "owner": people index,
+            "approvers": [approver, ...]  who approved it (Reviewed-by), as
+                                      the person's file names approvers
+                                      (`revs`); added in 2026-11, so the
+                                      page reads a file without it too,
             "threads": [{"id": root comment uuid, "path": file,
                          "/COMMIT_MSG" or "/PATCHSET_LEVEL", "line": n or null,
                          "ps": patch set, "addressed": true/false/null
@@ -77,6 +81,9 @@ HOST = "chromium-review.googlesource.com"
 PATCHSET_LEVEL = "/PATCHSET_LEVEL"
 VERSION = 5
 HALVES = 9
+# What the files hold beyond v 5's first form: 1 adds each CL's "approvers". A file built with less is
+# rebuilt (`stale`); the field is optional for the page, so the version and R2 prefix stay.
+FIELDS = 1
 # The newest half-years rebuilt every run; older ones only when what they hold changed (`stale`).
 FRESH = 2
 
@@ -102,13 +109,14 @@ def stale(entry, cls, accounts, classifier):
     """Whether a file of a finished half-year needs rebuilding: never built,
     or its changes, the names of the people in it or the addressed
     classifier differ from what it was built from (`entry`: {"cls": change
-    numbers, "people": [[account id, name], ...], "classifier": id}). A
+    numbers, "people": [[account id, name], ...], "classifier": id,
+    "fields": FIELDS}), or it lacks fields added since (`FIELDS`). A
     renamed commenter is shown by their current name, never an old one.
     New comments or labels on a finished half-year's changes, which are
     rare, wait for an --all run."""
-    if entry is None or entry.get("classifier") != classifier:
+    if entry is None or entry.get("classifier") != classifier or entry.get("fields", 0) != FIELDS:
         return True
-    if entry["cls"] != sorted(n for n, _ in cls):
+    if entry["cls"] != sorted(n for n, _, _ in cls):
         return True
     return any(accounts.get(aid, (f"account {aid}",))[0] != name for aid, name in entry["people"])
 
@@ -182,7 +190,7 @@ def write(path, doc):
 
 def person_doc(cls, info, per_cl, accounts, ident, mine, half):
     """One person's file for half-year <half>: their CLs `cls` ([(change
-    number, {thread root: directory})]) that the Feedback Index counts in it
+    number, approvers, {thread root: directory})]) that the Feedback Index counts in it
     and that have reviewer threads (`per_cl`, from cl_threads), and the
     account id of each of its people. None when there are none."""
     people, revs, idx = [], [], {}
@@ -194,15 +202,16 @@ def person_doc(cls, info, per_cl, accounts, ident, mine, half):
             r = ident.get(aid)
             revs.append(r if r in mine else None)
         return idx[aid]
-    rows = sorted(((info[n][3] or "")[:10], n, tdirs) for n, tdirs in cls if n in info and per_cl.get(n))
+    rows = sorted(((info[n][3] or "")[:10], n, revs, tdirs) for n, revs, tdirs in cls
+                  if n in info and per_cl.get(n))
     doc_cls = []
-    for landed, n, tdirs in rows:
+    for landed, n, approvers, tdirs in rows:
         project, subject, owner, _, ins = info[n]
         o = who(owner)
         ths = [dict(t, dir=tdirs.get(t["id"]), comments=[[who(aid), at, msg] for aid, at, msg in t["comments"]])
                for t in per_cl[n]]
         doc_cls.append(dict(n=n, landed=landed, project=project, subject=subject or "",
-                            lines=ins, owner=o, threads=ths))
+                            lines=ins, owner=o, approvers=sorted(approvers), threads=ths))
     if not doc_cls:
         return None, list(idx)
     return {"v": VERSION, "half": half, "people": people, "reviewers": revs, "cls": doc_cls}, list(idx)
@@ -264,10 +273,10 @@ def main(argv=None):
 
     # The newest <halves> half-years, the current one included (web/src/feedback.ts THREAD_HALVES).
     recent = sorted({h for by_half in shards.values() for h in by_half})[-a.halves:]
-    todo = {(k, h): [(n, tdirs) for n, _, tdirs in by_half[h]]
+    todo = {(k, h): list(by_half[h])
             for k, by_half in shards.items() for h in recent if by_half.get(h)}
     info = {}
-    ns = sorted({n for cls in todo.values() for n, _ in cls})
+    ns = sorted({n for cls in todo.values() for n, _, _ in cls})
     for i in range(0, len(ns), 900):
         part = ns[i:i + 900]
         for row in ddb.execute(
@@ -310,7 +319,7 @@ def main(argv=None):
     if batch:
         batches.append(batch)
     for bi, batch in enumerate(batches):
-        ns = sorted({n for k in batch for n, _ in todo[k]})
+        ns = sorted({n for k in batch for n, _, _ in todo[k]})
         per_cl = {}
         # Comments, a few hundred CLs per NoteDb batch.
         for i in range(0, len(ns), 300):
@@ -322,7 +331,8 @@ def main(argv=None):
             name, h = k
             doc, aids = person_doc(todo[k], info, per_cl, accounts, ident, person_revs.get(name, set()), h)
             index.setdefault(h, {})[name] = {
-                "cls": sorted(n for n, _ in todo[k]), "classifier": classifier, "file": doc is not None,
+                "cls": sorted(n for n, _, _ in todo[k]), "classifier": classifier, "fields": FIELDS,
+                "file": doc is not None,
                 "people": [[aid, accounts.get(aid, (f"account {aid}",))[0]] for aid in aids]}
             if doc is None:
                 continue

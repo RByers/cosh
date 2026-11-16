@@ -60,26 +60,31 @@ class ThreadsTest(unittest.TestCase):
         per_cl = {6: [], 7: [th("r7", 2), th("r7b", 3)], 8: [th("r8", 3)]}
         accounts = {1: ("Own Er", False, "o@x.org"), 2: ("Rev", False, "rev@google.com")}
         ident = {1: "o@x.org", 2: "rev@google.com", 3: "other@x.org"}
-        cls = [(7, {"r7": "ui/"}), (8, {"r8": "base/"}), (9, {})]
+        cls = [(7, ["rev@google.com", "b@x.org"], {"r7": "ui/"}), (8, [], {"r8": "base/"}), (9, [], {})]
         doc, aids = RT.person_doc(cls, info, per_cl, accounts, ident, {"rev@google.com"}, "2026H2")
         self.assertEqual(aids, [1, 3, 2])
         self.assertEqual({k: doc[k] for k in ("v", "half", "people", "reviewers")}, {
             "v": 5, "half": "2026H2", "people": ["Own Er", "account 3", "Rev"],
             "reviewers": [None, None, "rev@google.com"]})
         # Oldest first.
-        self.assertEqual([(c["n"], c["landed"], c["subject"], c["lines"], c["owner"]) for c in doc["cls"]],
-                         [(8, "2026-07-01", "Earlier", None, 0), (7, "2026-07-02", "", 50, 0)])
+        self.assertEqual([(c["n"], c["landed"], c["subject"], c["lines"], c["owner"], c["approvers"])
+                          for c in doc["cls"]],
+                         [(8, "2026-07-01", "Earlier", None, 0, []),
+                          (7, "2026-07-02", "", 50, 0, ["b@x.org", "rev@google.com"])])
         self.assertEqual([(t["id"], t["dir"], t["comments"][0][0]) for t in doc["cls"][1]["threads"]],
                          [("r7", "ui/", 2), ("r7b", None, 1)])
         # No reviewer threads in the half-year: no file.
-        self.assertEqual(RT.person_doc([(6, {}), (9, {})], info, per_cl, accounts, ident, set(), "2026H1"), (None, []))
+        self.assertEqual(RT.person_doc([(6, [], {}), (9, [], {})], info, per_cl, accounts, ident, set(), "2026H1"), (None, []))
 
     def test_stale(self):
         accounts = {1: ("Own Er", False, "o@x.org"), 2: ("Rev", False, "rev@google.com")}
-        cls = [(8, {}), (7, {"r7": "ui/"})]
-        entry = {"cls": [7, 8], "classifier": 3, "file": True, "people": [[1, "Own Er"], [2, "Rev"], [5, "account 5"]]}
+        cls = [(8, [], {}), (7, ["rev@google.com"], {"r7": "ui/"})]
+        entry = {"cls": [7, 8], "classifier": 3, "fields": RT.FIELDS, "file": True,
+                 "people": [[1, "Own Er"], [2, "Rev"], [5, "account 5"]]}
         self.assertFalse(RT.stale(entry, cls, accounts, 3))
         self.assertTrue(RT.stale(None, cls, accounts, 3))
+        # Built before each CL listed its approvers: rebuilt.
+        self.assertTrue(RT.stale({k: v for k, v in entry.items() if k != "fields"}, cls, accounts, 3))
         # Another classifier, other changes, or a renamed commenter: rebuilt.
         self.assertTrue(RT.stale(entry, cls, accounts, 4))
         self.assertTrue(RT.stale(entry, cls[:1], accounts, 3))

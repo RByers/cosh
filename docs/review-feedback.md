@@ -248,11 +248,12 @@ files).
   date filter, which the over-time chart's dots set too: all the person's
   CLs (the default), a year or a half-year they landed CLs in (whole
   half-years, as the person's cells are kept; `fillPeriods`). The columns
-  and the note count only that period's CLs. A checkbox, ticked by default,
-  lists only those who started an addressed thread themselves, per the
-  thread files (`reviewerCommenters`), where the thread files cover the
-  period (since they start, for a period reaching further back); for a
-  period entirely before them it lists every such approver. Columns: the
+  and the note count only that period's CLs. Every approver whose approvals
+  drew addressed threads is listed, whoever started them: a reviewer whose
+  approvals drew comments from others still explains part of the index.
+  (A checkbox that listed only those who started some themselves was
+  dropped on 2026-11-16: it hid that feedback and depended on how far back
+  the thread files go.) Columns: the
   person's CLs they approved, addressed threads on them, the person's AFR
   there, the reviewer's factor without the person's CLs (so it can differ
   a little from what others see), everyone's CLs they approved, and the
@@ -268,18 +269,20 @@ files).
   what experience alone expects). The note
   says how many of the person's CLs had no approver, and their factor
   (`rev_none` without the person's CLs). ▸
-  opens a reviewer into the addressed threads they started on the person's
-  CLs (`reviewerComments`), newest first: the day of the first comment, the
-  change number linking to the thread in Gerrit, and the file ("commit
-  message" for `/COMMIT_MSG`). They come from the person's thread file in R2
-  ("Downloading your comments"), so only for changes landed in the period
-  Covering picks (at most since the thread files start), fetched when the
-  list is first drawn (or, with the checkbox unticked, the first time a
-  reviewer is opened). A commenter is a reviewer when their Gerrit account's address
-  belongs to that approver's identity ("Who is who", below);
-  `cosh.review_threads` records which approver each commenter is
-  (`reviewers`). No comment text and no tone. Threads from someone who
-  never approved one of the person's CLs aren't listed, having no row.
+  opens a reviewer into the addressed threads on the person's CLs they
+  approved (`reviewerComments`, by each CL's `approvers` in the thread
+  file), whoever started them: the ones the row's Addressed column counts,
+  newest first, with the day of the first comment, the change number
+  linking to the thread in Gerrit, the file ("commit message" for
+  `/COMMIT_MSG`), and "from" the commenter's name when it wasn't that
+  reviewer. They come from the person's thread file in R2 ("Downloading your
+  comments"), so only for changes landed in the period Covering picks (at
+  most since the thread files start), fetched the first time a reviewer is
+  opened. A thread file built before CLs listed their approvers gives only
+  the threads the reviewer started: a commenter is a reviewer when their
+  Gerrit account's address belongs to that approver's identity ("Who is
+  who", below); `cosh.review_threads` records which approver each commenter
+  is (`reviewers`). No comment text and no tone.
 - *Latest doubling* (the tile, `latestDoubling`): the % change in AFR from
   the person's second-newest to their newest bin with `MIN_BIN_CLS` CLs,
   per doubling when bins in between have too few, with the date they
@@ -871,8 +874,8 @@ The file is built in
 the browser; comment text never goes into the page itself. This hands the
 coaching report to the person's own assistant instead of spending our
 model usage on it. The same files list, under each reviewer opened in Your
-feedback, the addressed threads they started (of the half-year picked in
-the chart, if any).
+feedback, the addressed threads on the changes they approved (each
+change's `approvers`), in the period Covering picks.
 
 Learning from recent feedback, the main use, needs only the past year;
 the older half-years are there to see why someone's index moved in the
