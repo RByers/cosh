@@ -61,7 +61,9 @@ all rows):
 On silhouette, 4 clusters is best. The default is 6 (`--k`) because the
 extra 2 keep distinct roles apart (mentors, a second early-career group),
 at a modest cost. All silhouettes are low, 0.17 to 0.25: the clusters are
-regions of a continuum, not separate types.
+regions of a continuum, not separate types. `--k 0` sweeps k from 4 to 8, prints
+each silhouette and keeps the best; a fixed k skips the sweep, which took
+most of the run.
 
 **Names** come from each centroid's profile (`name_cluster`), using neutral
 words for what the group does. For paths, clusters fold into three families:

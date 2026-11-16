@@ -229,7 +229,7 @@ def build_panel(cls, commits, ids, first, owner_at, use, dirs3, reviewer_rows):
             g["rr"].append(c["r_rounds"])
     panel = {}
     keys = set(ph) | set(gerrit) | set(reviewer_rows)
-    for key in keys:
+    for key in sorted(keys):       # sorted: `breadth` draws from rnd in this order (pids are emails)
         pid, h = key
         if pid not in first:
             continue
@@ -269,6 +269,20 @@ def build_panel(cls, commits, ids, first, owner_at, use, dirs3, reviewer_rows):
     return panel
 
 
+class _Ordered:
+    """Lookups into a query's (change_number, account_id, value) rows, which
+    come in that key order, for keys asked in increasing order."""
+
+    def __init__(self, rows):
+        self.rows = iter(rows)
+        self.cur = next(self.rows, None)
+
+    def get(self, n, acct, default=None):
+        while self.cur is not None and (self.cur[0], self.cur[1]) < (n, acct):
+            self.cur = next(self.rows, None)
+        return self.cur[2] if self.cur is not None and self.cur[0] == n and self.cur[1] == acct else default
+
+
 def reviewer_side(cls, ids, first):
     """{(pid, half): {threads: [...], resp: [...], newcomer: [...]}} per
     (CL, reviewer), as in balance_report.py: threads the reviewer started,
@@ -281,23 +295,19 @@ def reviewer_side(cls, ids, first):
     emails = dict(d.execute("SELECT account_id, email FROM accounts"))
     bots = {a for a, in d.execute("SELECT account_id FROM accounts WHERE is_bot = 1")}
     by_n = {c["change_number"]: c for c in cls if c["status"] == "MERGED" and c["closed_at"]}
-    first_c = {}
-    for n, acct, at in d.execute("SELECT change_number, account_id, min(written_at) FROM comments "
-                                 "WHERE after_close = 0 GROUP BY 1, 2"):
-        if n in by_n and acct not in bots:
-            first_c[(n, acct)] = balance.epoch(at)
-    thr = Counter()
-    for n, acct in d.execute("SELECT change_number, root_account FROM threads"):
-        if n in by_n and acct not in bots:
-            thr[(n, acct)] += 1
+    # Three streams in (CL, account) order, merged: dicts of every pair took
+    # ~0.7 GB.
+    first_c = ((n, acct, balance.epoch(at)) for n, acct, at in d.execute(
+        "SELECT change_number, account_id, min(written_at) FROM comments WHERE after_close = 0 "
+        "GROUP BY 1, 2 ORDER BY 1, 2") if n in by_n and acct not in bots)
+    thr = _Ordered(d.execute("SELECT change_number, root_account, count(*) FROM threads "
+                             "WHERE root_account IS NOT NULL GROUP BY 1, 2 ORDER BY 1, 2"))
     tl = A.ro(balance.db_path("timeline"))
-    added = {}
-    for n, acct, s in tl.execute("SELECT change_number, account_id, min(start_at) FROM attention GROUP BY 1, 2"):
-        if n in by_n:
-            added[(n, acct)] = s
+    added = _Ordered(tl.execute("SELECT change_number, account_id, min(start_at) FROM attention "
+                                "GROUP BY 1, 2 ORDER BY 1, 2"))
     out = defaultdict(lambda: dict(threads=[], resp=[], newcomer=[]))
     pid_of = {}
-    for (n, acct), t0 in first_c.items():
+    for n, acct, t0 in first_c:
         c = by_n[n]
         if acct == c["owner"]:
             continue
@@ -306,8 +316,8 @@ def reviewer_side(cls, ids, first):
             continue
         p = pid_of.get(acct) or pid_of.setdefault(acct, ids.find(e))
         x = out[(p, G.half(c["closed_at"]))]
-        x["threads"].append(thr.get((n, acct), 0))
-        a = added.get((n, acct))
+        x["threads"].append(thr.get(n, acct, 0))
+        a = added.get(n, acct)
         if a and t0 >= a:
             x["resp"].append(balance.weekday_seconds(a, t0) / 3600)
         x["newcomer"].append(c["pid"] in first and c["closed_at"] - first[c["pid"]] < YEAR)
@@ -397,13 +407,16 @@ def fit_model(z, features, label, ks=range(4, 9), k_fixed=None, sample=6000, see
         top = sorted(zip(features, c), key=lambda x: -abs(x[1]))[:5]
         print(f"  PC{i + 1}: " + ", ".join(f"{k} {w:+.2f}" for k, w in top))
     best = None
-    for k in ks:
+    # A fixed k skips the sweep: it only printed each k's silhouette, and
+    # took ~5/6 of the step's time (k-means is deterministic per seed, so k
+    # gets the same centroids either way).
+    for k in ([] if k_fixed else ks):
         cents, labels, _ = kmeans(srows, k, seed=seed)
         s = silhouette(srows, labels)
         print(f"  k={k}: silhouette {s:.3f}")
         if best is None or s > best[0] + 0.01:
             best = (s, k, cents)
-    s, k, cents = best
+    s, k, cents = best or (None, None, None)
     if k_fixed and k_fixed != k:
         # Silhouette favours few, broad groups; a fixed k keeps roles apart
         # (interpretability), and the silhouette is reported alongside.

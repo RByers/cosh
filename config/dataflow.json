@@ -2109,7 +2109,7 @@
       "network": false,
       "lock": null,
       "incremental": "Recomputes everything.",
-      "duration": "about 10 min",
+      "duration": "about 1.7 min, peak 2.1 GB (2026-11-15; was 4 min and 2.6 GB with the k sweep)",
       "token_cost": null,
       "cost_source": "docs/balance-clusters.md",
       "refresh": "routine",
