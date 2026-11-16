@@ -1,6 +1,6 @@
 {
  "meta": {
-  "generated_at": "2026-11-15T15:32:27Z",
+  "generated_at": "2026-11-16T01:53:50Z",
   "weeks": [
    "2017-W27",
    "2017-W28",
@@ -836,12 +836,12 @@
     "2021-W47": 1.0,
     "2021-W48": 0.9969,
     "2021-W49": 0.9969,
-    "2021-W50": 0.9919,
-    "2021-W51": 0.9876,
-    "2021-W52": 0.9935,
-    "2022-W01": 0.9969,
-    "2022-W02": 0.9897,
-    "2022-W03": 0.9963,
+    "2021-W50": 0.9949,
+    "2021-W51": 1.0,
+    "2021-W52": 0.9957,
+    "2022-W01": 0.9978,
+    "2022-W02": 1.0,
+    "2022-W03": 0.9973,
     "2022-W04": 0.9994,
     "2022-W05": 0.9956,
     "2022-W06": 0.9967,
@@ -905,10 +905,10 @@
     "2023-W12": 0.997,
     "2023-W13": 0.9975,
     "2023-W14": 0.9959,
-    "2023-W15": 0.9966,
-    "2023-W16": 0.9936,
-    "2023-W17": 0.9888,
-    "2023-W18": 0.9985,
+    "2023-W15": 0.9985,
+    "2023-W16": 0.9942,
+    "2023-W17": 1.0,
+    "2023-W18": 0.9988,
     "2023-W19": 0.9997,
     "2023-W20": 0.999,
     "2023-W21": 0.9994,
@@ -1087,10 +1087,10 @@
     "2026-W38": 0.9973,
     "2026-W39": 0.9993,
     "2026-W40": 0.9994,
-    "2026-W41": 0.9981,
-    "2026-W42": 0.9975,
+    "2026-W41": 0.9984,
+    "2026-W42": 0.9978,
     "2026-W43": 0.9928,
-    "2026-W44": 0.9823,
+    "2026-W44": 1.0,
     "2026-W45": 1.0
    },
    "complete_at": 0.99,
@@ -2728,17 +2728,17 @@
     ],
     "2021-W50": [
      968,
-     348,
+     349,
      319,
      489,
-     10
+     9
     ],
     "2021-W51": [
      486,
-     193,
-     153,
+     195,
+     167,
      215,
-     16
+     0
     ],
     "2021-W52": [
      173,
@@ -2749,17 +2749,17 @@
     ],
     "2022-W01": [
      803,
-     312,
-     305,
+     313,
+     306,
      385,
-     7
+     5
     ],
     "2022-W02": [
      1162,
-     452,
-     366,
+     465,
+     384,
      617,
-     31
+     0
     ],
     "2022-W03": [
      1116,
@@ -3211,24 +3211,24 @@
     ],
     "2023-W15": [
      899,
-     379,
-     313,
+     380,
+     317,
      485,
-     8
+     3
     ],
     "2023-W16": [
      1165,
-     423,
-     437,
+     424,
+     438,
      521,
-     14
+     12
     ],
     "2023-W17": [
      1053,
-     411,
-     365,
+     416,
+     387,
      508,
-     27
+     0
     ],
     "2023-W18": [
      951,
@@ -4485,17 +4485,17 @@
     ],
     "2026-W41": [
      1232,
-     453,
+     454,
      357,
      642,
-     5
+     4
     ],
     "2026-W42": [
      1299,
      463,
-     349,
+     350,
      618,
-     7
+     6
     ],
     "2026-W43": [
      1493,
@@ -4506,10 +4506,10 @@
     ],
     "2026-W44": [
      1452,
-     441,
-     275,
+     475,
+     290,
      751,
-     49
+     0
     ],
     "2026-W45": [
      1762,
@@ -71959,14 +71959,14 @@
    "review_chars": 410901,
    "ai_comments": 0,
    "post_merge_comments": 27,
-   "addressed_comments": 1462,
-   "pending_comments": 22,
+   "addressed_comments": 1470,
+   "pending_comments": 14,
    "commits": 712,
    "authors": 351,
    "share_cls": 0.9547,
    "share_comments": 0.9674,
    "share_chars": 0.9632,
-   "share_addressed": 0.9708,
+   "share_addressed": 0.9709,
    "share_commits": 0.8878
   },
   {
@@ -72006,7 +72006,7 @@
    "share_cls": 0.0121,
    "share_comments": 0.0124,
    "share_chars": 0.0186,
-   "share_addressed": 0.0126,
+   "share_addressed": 0.0125,
    "share_commits": 0.0237
   },
   {
@@ -72339,8 +72339,8 @@
    "review_chars": 181558,
    "ai_comments": 0,
    "post_merge_comments": 19,
-   "addressed_comments": 733,
-   "pending_comments": 16,
+   "addressed_comments": 735,
+   "pending_comments": 0,
    "commits": 394,
    "authors": 221,
    "share_cls": 0.9661,
@@ -72580,7 +72580,7 @@
    "ai_comments": 0,
    "post_merge_comments": 4,
    "addressed_comments": 263,
-   "pending_comments": 3,
+   "pending_comments": 2,
    "commits": 121,
    "authors": 69,
    "share_cls": 0.9821,
@@ -72719,14 +72719,14 @@
    "review_chars": 324249,
    "ai_comments": 0,
    "post_merge_comments": 18,
-   "addressed_comments": 1203,
-   "pending_comments": 7,
+   "addressed_comments": 1204,
+   "pending_comments": 5,
    "commits": 677,
    "authors": 338,
    "share_cls": 0.9352,
    "share_comments": 0.9533,
    "share_chars": 0.9563,
-   "share_addressed": 0.9555,
+   "share_addressed": 0.9556,
    "share_commits": 0.9416
   },
   {
@@ -72806,7 +72806,7 @@
    "share_cls": 0.0068,
    "share_comments": 0.0053,
    "share_chars": 0.0011,
-   "share_addressed": 0.0064,
+   "share_addressed": 0.0063,
    "share_commits": 0.0139
   },
   {
@@ -73139,14 +73139,14 @@
    "review_chars": 497570,
    "ai_comments": 0,
    "post_merge_comments": 32,
-   "addressed_comments": 1740,
-   "pending_comments": 30,
+   "addressed_comments": 1756,
+   "pending_comments": 0,
    "commits": 1072,
    "authors": 431,
    "share_cls": 0.9725,
    "share_comments": 0.9586,
    "share_chars": 0.9584,
-   "share_addressed": 0.9608,
+   "share_addressed": 0.9611,
    "share_commits": 0.9186
   },
   {
@@ -73166,7 +73166,7 @@
    "share_cls": 0.0069,
    "share_comments": 0.0193,
    "share_chars": 0.0178,
-   "share_addressed": 0.0221,
+   "share_addressed": 0.0219,
    "share_commits": 0.0189
   },
   {
@@ -73186,7 +73186,7 @@
    "share_cls": 0.0092,
    "share_comments": 0.0121,
    "share_chars": 0.0147,
-   "share_addressed": 0.011,
+   "share_addressed": 0.0109,
    "share_commits": 0.0308
   },
   {
@@ -73206,7 +73206,7 @@
    "share_cls": 0.0023,
    "share_comments": 0.0039,
    "share_chars": 0.0039,
-   "share_addressed": 0.005,
+   "share_addressed": 0.0049,
    "share_commits": 0.0
   },
   {
@@ -73240,7 +73240,7 @@
    "ai_comments": 0,
    "post_merge_comments": 0,
    "addressed_comments": 0,
-   "pending_comments": 4,
+   "pending_comments": 0,
    "commits": 3,
    "authors": 3,
    "share_cls": 0.0,
@@ -73579,14 +73579,14 @@
    "review_chars": 420236,
    "ai_comments": 0,
    "post_merge_comments": 33,
-   "addressed_comments": 1657,
-   "pending_comments": 11,
+   "addressed_comments": 1660,
+   "pending_comments": 8,
    "commits": 941,
    "authors": 411,
    "share_cls": 0.9652,
    "share_comments": 0.9781,
    "share_chars": 0.9774,
-   "share_addressed": 0.9793,
+   "share_addressed": 0.9794,
    "share_commits": 0.9216
   },
   {
@@ -94959,14 +94959,14 @@
    "review_chars": 354592,
    "ai_comments": 0,
    "post_merge_comments": 32,
-   "addressed_comments": 1392,
-   "pending_comments": 9,
+   "addressed_comments": 1393,
+   "pending_comments": 4,
    "commits": 983,
    "authors": 420,
    "share_cls": 0.9425,
    "share_comments": 0.9464,
    "share_chars": 0.928,
-   "share_addressed": 0.9495,
+   "share_addressed": 0.9496,
    "share_commits": 0.8896
   },
   {
@@ -95279,8 +95279,8 @@
    "review_chars": 465411,
    "ai_comments": 0,
    "post_merge_comments": 41,
-   "addressed_comments": 1744,
-   "pending_comments": 21,
+   "addressed_comments": 1745,
+   "pending_comments": 19,
    "commits": 1165,
    "authors": 483,
    "share_cls": 0.964,
@@ -95639,14 +95639,14 @@
    "review_chars": 437093,
    "ai_comments": 0,
    "post_merge_comments": 35,
-   "addressed_comments": 1561,
-   "pending_comments": 34,
+   "addressed_comments": 1568,
+   "pending_comments": 0,
    "commits": 1093,
    "authors": 470,
    "share_cls": 0.9614,
    "share_comments": 0.9356,
    "share_chars": 0.9245,
-   "share_addressed": 0.9242,
+   "share_addressed": 0.9245,
    "share_commits": 0.9247
   },
   {
@@ -95666,7 +95666,7 @@
    "share_cls": 0.0107,
    "share_comments": 0.0286,
    "share_chars": 0.0259,
-   "share_addressed": 0.0337,
+   "share_addressed": 0.0336,
    "share_commits": 0.011
   },
   {
@@ -95686,7 +95686,7 @@
    "share_cls": 0.0172,
    "share_comments": 0.0204,
    "share_chars": 0.0329,
-   "share_addressed": 0.0231,
+   "share_addressed": 0.023,
    "share_commits": 0.0152
   },
   {
@@ -95706,7 +95706,7 @@
    "share_cls": 0.0064,
    "share_comments": 0.0118,
    "share_chars": 0.0109,
-   "share_addressed": 0.0154,
+   "share_addressed": 0.0153,
    "share_commits": 0.0025
   },
   {
@@ -95879,14 +95879,14 @@
    "review_chars": 378124,
    "ai_comments": 0,
    "post_merge_comments": 34,
-   "addressed_comments": 1425,
-   "pending_comments": 4,
+   "addressed_comments": 1426,
+   "pending_comments": 3,
    "commits": 933,
    "authors": 416,
    "share_cls": 0.9499,
    "share_comments": 0.9488,
    "share_chars": 0.9324,
-   "share_addressed": 0.9506,
+   "share_addressed": 0.9507,
    "share_commits": 0.9415
   },
   {
@@ -155139,8 +155139,8 @@
    "review_chars": 688547,
    "ai_comments": 114,
    "post_merge_comments": 18,
-   "addressed_comments": 1701,
-   "pending_comments": 6,
+   "addressed_comments": 1702,
+   "pending_comments": 5,
    "commits": 1550,
    "authors": 523,
    "share_cls": 0.9193,
@@ -155620,7 +155620,7 @@
    "ai_comments": 211,
    "post_merge_comments": 9,
    "addressed_comments": 1770,
-   "pending_comments": 8,
+   "pending_comments": 7,
    "commits": 1483,
    "authors": 513,
    "share_cls": 0.9254,
@@ -156619,14 +156619,14 @@
    "review_chars": 842581,
    "ai_comments": 310,
    "post_merge_comments": 17,
-   "addressed_comments": 1851,
-   "pending_comments": 56,
+   "addressed_comments": 1891,
+   "pending_comments": 0,
    "commits": 1726,
    "authors": 513,
    "share_cls": 0.9415,
    "share_comments": 0.9157,
    "share_chars": 0.931,
-   "share_addressed": 0.9034,
+   "share_addressed": 0.9039,
    "share_commits": 0.8739
   },
   {
@@ -156639,14 +156639,14 @@
    "review_chars": 41075,
    "ai_comments": 0,
    "post_merge_comments": 0,
-   "addressed_comments": 113,
-   "pending_comments": 4,
+   "addressed_comments": 115,
+   "pending_comments": 0,
    "commits": 70,
    "authors": 34,
    "share_cls": 0.0308,
    "share_comments": 0.0497,
    "share_chars": 0.0454,
-   "share_addressed": 0.0551,
+   "share_addressed": 0.055,
    "share_commits": 0.0354
   },
   {
@@ -156666,7 +156666,7 @@
    "share_cls": 0.0077,
    "share_comments": 0.0148,
    "share_chars": 0.009,
-   "share_addressed": 0.0224,
+   "share_addressed": 0.022,
    "share_commits": 0.0015
   },
   {
@@ -156679,14 +156679,14 @@
    "review_chars": 3865,
    "ai_comments": 0,
    "post_merge_comments": 0,
-   "addressed_comments": 20,
-   "pending_comments": 1,
+   "addressed_comments": 21,
+   "pending_comments": 0,
    "commits": 76,
    "authors": 15,
    "share_cls": 0.0123,
    "share_comments": 0.0096,
    "share_chars": 0.0043,
-   "share_addressed": 0.0098,
+   "share_addressed": 0.01,
    "share_commits": 0.0385
   },
   {
@@ -156706,7 +156706,7 @@
    "share_cls": 0.0046,
    "share_comments": 0.0047,
    "share_chars": 0.0034,
-   "share_addressed": 0.0059,
+   "share_addressed": 0.0057,
    "share_commits": 0.0116
   },
   {
