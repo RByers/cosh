@@ -11,7 +11,7 @@ store holds and which steps write it is in `config/dataflow.json` and
 |---|---|---|
 | permanent-small | code, docs, `config/`, `summaries/`, `web/public/` data | git, pushed to GitHub |
 | permanent-large | the stores below: fetched with server load, or labelled at a cost in Claude usage | `/protected/permanent/` snapshots: monthly ones kept forever |
-| transient | everything else in `data/private/`: derived DBs (`reviews.sqlite`, `commits.sqlite`, `review-timeline.sqlite`, `balance*.sqlite`), published files, `comments/comments-*.jsonl`, `scratch/`, `logs/`, `backup-*/`; and the shared clone `~/projects/shared/chromium` | nothing: rebuild it, or fetch it again |
+| transient | everything else in `data/private/`: derived DBs (`reviews.sqlite`, `commits.sqlite`, `review-timeline.sqlite`, `balance*.sqlite`), published files, `comments/comments-*.jsonl`, `scratch/`, `logs/`, `backup-*/`; and the Chromium clone `~/cache/chromium` | nothing: rebuild it, or fetch it again |
 
 ## Paths on /protected (permanent-large)
 
