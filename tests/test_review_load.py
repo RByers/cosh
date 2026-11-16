@@ -247,6 +247,41 @@ class IdentityTest(unittest.TestCase):
         # 1's CLs are mostly a@x.org's; 2 has too few; 3 has an address of its own.
         self.assertEqual(P.owner_links(owned, accounts), {1: "a@x.org"})
 
+    def test_linked_accounts(self):
+        """people.linked_accounts reads only the address-less accounts' CLs, and finds what
+        exact_identities finds."""
+        from cosh import people as P
+        d = sqlite3.connect(":memory:")
+        d.executescript("""
+            CREATE TABLE accounts (host TEXT DEFAULT 'chromium-review.googlesource.com', account_id INTEGER, email TEXT);
+            CREATE TABLE changes (host TEXT DEFAULT 'chromium-review.googlesource.com', change_number INTEGER,
+                                  owner_account INTEGER, status TEXT DEFAULT 'MERGED', is_bot_owned INTEGER DEFAULT 0,
+                                  project TEXT DEFAULT 'chromium/src', branch TEXT DEFAULT 'main',
+                                  updated_at TEXT DEFAULT '2026-01-01 00:00:00');
+            INSERT INTO accounts (account_id, email) VALUES (1, NULL), (2, NULL), (3, 'has@x.org'), (4, NULL);
+        """)
+        g = sqlite3.connect(":memory:")
+        g.executescript(C.SCHEMA)
+        t = rt.connect(":memory:")
+        t.executescript(rt.SCHEMA)
+        cid = 0
+
+        def cl(n, owner, author, rb=(), voters=()):
+            nonlocal cid
+            cid += 1
+            d.execute("INSERT INTO changes (change_number, owner_account) VALUES (?, ?)", (n, owner))
+            g.execute("INSERT INTO commits VALUES (?,?,?,?,?,?,?,?,?,NULL,0,0,0,1,0,0,0)",
+                      (cid, f"s{cid}", author, "n", 1, 1, n, 0, json.dumps(list(rb)) if rb else None))
+            for v in voters:
+                t.execute("INSERT INTO votes VALUES (?,?,1,?,1)", (n, v, cid))
+        for n in (1, 2, 3):              # 1 owns three CLs authored as a@x.org: linked by its CLs
+            cl(n, 1, "a@x.org")
+        for n in (4, 5):                 # 2 approves twice as gone@x.org, no other voter: linked by its votes
+            cl(n, 3, "has@x.org", ["gone@x.org"], [2])
+        cl(6, 3, "has@x.org", ["gone2@x.org"], [4])     # 4: once only, not linked
+        self.assertEqual(P.linked_accounts(d, g, t), {1, 2})
+        self.assertEqual(P.linked_accounts(d, g, t), P.exact_identities(d, g, t).linked)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -18,7 +18,8 @@ One run does three things, in order:
              local meta ref (extract fetches NoteDb only for CLs with
              comments), from the listing each was fetched with. Incremental:
              reads a listing only when its body is new.
-  reviewers  cl_reviewers, one row per CL and human reviewer (not the owner,
+  reviewers  (read 20,000 CLs at a time by key, so memory stays flat)
+             cl_reviewers, one row per CL and human reviewer (not the owner,
              not a bot): when they were first asked (entered the attention
              set), when they first answered (a Code-Review vote or a comment)
              and their hours in the attention set, also with Saturdays and
@@ -43,9 +44,9 @@ import zlib
 from collections import defaultdict
 from datetime import datetime, timezone
 
-from . import codefp, memcap, store, work_hours
+from . import codefp, store, work_hours
 from . import commits as C
-from .people import exact_identities
+from .people import linked_accounts as people_linked
 from .bots import is_bot_account
 from .cl_facts import epoch
 
@@ -53,6 +54,7 @@ FILE = "review-timeline.sqlite"
 NOTEDB = os.path.join(store.DATA_DIR, "notedb", "chromium_src.git")
 ENV = {**os.environ, "GIT_NO_LAZY_FETCH": "1"}
 PROJECT = "chromium/src"
+HOST = "chromium-review.googlesource.com"
 
 SCHEMA = """
 -- Per CL, from its NoteDb meta ref.
@@ -470,12 +472,12 @@ def reviewer_rows(cls, bots, attention, responses, windows=None):
 def linked_accounts(ddb, db):
     """Accounts Gerrit shows with no address (derive's bots) that evidence
     ties to a person's address (people.exact_identities): people, not bots.
-    Reads commits.sqlite; none without it."""
+    Reads commits.sqlite; none without it. people.linked_accounts finds the
+    same set reading only those accounts' CLs (about 40 MB, not 1.2 GB)."""
     path = C.db_path()
     if not os.path.exists(path):
         return set()
-    memcap.join()
-    return exact_identities(ddb, sqlite3.connect(f"file:{path}?mode=ro", uri=True), db).linked
+    return people_linked(ddb, sqlite3.connect(f"file:{path}?mode=ro", uri=True), db)
 
 
 def stage_reviewers(db, ddb=None, linked=None):
@@ -487,39 +489,78 @@ def stage_reviewers(db, ddb=None, linked=None):
         if linked is None:
             linked = linked_accounts(ddb, db)
     bots = {r[0] for r in ddb.execute("SELECT account_id FROM accounts WHERE is_bot = 1")} - (linked or set())
-    cls = [(n, owner, epoch(c0), epoch(c1) if c1 else None) for n, owner, c0, c1 in ddb.execute(
-        "SELECT change_number, owner_account, created_at, closed_at FROM changes "
-        "WHERE is_bot_owned = 0 AND project = ? AND branch = 'main'", (PROJECT,))]
-    print(f"reviewers: {len(cls):,} CLs", flush=True)
+    windows = work_hours.Windows(work_hours.activity_counts(db, ddb))
+    db.executescript(REVIEWERS_SCHEMA)
+    n_rows, n_cls, n_seen = 0, 0, 0
+    for cls in cl_batches(ddb):
+        n_seen += len(cls)
+        rows, turns = reviewer_rows(cls, bots, attention_of(db, cls), responses_of(db, ddb, cls), windows)
+        db.executemany("INSERT INTO cl_reviewers VALUES (?,?,?,?,?,?)", rows)
+        db.executemany("INSERT INTO cl_turns VALUES (?,?,?,?,?,?,?)", turns)
+        n_rows += len(rows)
+        n_cls += len({r[0] for r in rows})
+    # After the turns: a reviewer with no activity of their own was looked up, and gets a row.
+    db.executemany("INSERT INTO work_windows VALUES (?,?,?,?,?)", windows.rows())
+    db.commit()
+    print(f"reviewers: done, {n_rows:,} reviewers of {n_cls:,} CLs (of {n_seen:,})", flush=True)
+
+
+REVIEWERS_BATCH = 20_000     # CLs per batch: memory stays flat as history grows
+
+
+def cl_batches(ddb, size=None):
+    """The human-owned chromium/src main CLs, [(change_number, owner, created, closed or None)] in
+    unix seconds, in batches of consecutive change numbers, read by key (keyset paging), so that
+    only one batch and its rows are in memory at once."""
+    size = size or REVIEWERS_BATCH
+    after = -1
+    while True:
+        rows = ddb.execute("SELECT change_number, owner_account, created_at, closed_at FROM changes "
+                           "WHERE host = ? AND change_number > ? AND is_bot_owned = 0 AND project = ? "
+                           "AND branch = 'main' ORDER BY change_number LIMIT ?", (HOST, after, PROJECT, size)).fetchall()
+        if not rows:
+            return
+        after = rows[-1][0]
+        yield [(n, owner, epoch(c0), epoch(c1) if c1 else None) for n, owner, c0, c1 in rows]
+
+
+def attention_of(db, cls):
+    """{CL: [(account, start, end)]} of the CLs in the batch `cls`."""
+    want = {c[0] for c in cls}
+    out = defaultdict(list)
+    for n, acct, s, e in db.execute("SELECT change_number, account_id, start_at, end_at FROM attention "
+                                    "WHERE change_number BETWEEN ? AND ?", (cls[0][0], cls[-1][0])):
+        if n in want:
+            out[n].append((acct, s, e))
+    return out
+
+
+def responses_of(db, ddb, cls):
+    """{CL: {account: their first answer}} of the CLs in the batch `cls`: a Code-Review vote (not a
+    removal) or a comment, before the CL closed. CLs without a meta ref (not walked) take the
+    votes standing in their listing."""
+    lo, hi = cls[0][0], cls[-1][0]
     closed = {n: c1 for n, _, _, c1 in cls}
     responses = defaultdict(dict)
 
     def answer(n, acct, at):
-        end = closed.get(n, 0)
-        if n in closed and (end is None or at <= end):
+        if n in closed and (closed[n] is None or at <= closed[n]):
             r = responses[n]
             r[acct] = min(at, r.get(acct, at))
 
-    for n, acct, at in ddb.execute("SELECT change_number, account_id, min(written_at) FROM comments "
-                                   "WHERE after_close = 0 GROUP BY 1, 2"):
+    for n, acct, at in ddb.execute("SELECT change_number, account_id, min(written_at) FROM comments WHERE host = ? "
+                                   "AND change_number BETWEEN ? AND ? AND after_close = 0 GROUP BY 1, 2", (HOST, lo, hi)):
         answer(n, acct, epoch(at))
-    walked = {r[0] for r in db.execute("SELECT change_number FROM timeline_done")}
-    for n, acct, at in db.execute("SELECT change_number, voter, min(at) FROM votes WHERE value != 0 GROUP BY 1, 2"):
+    for n, acct, at in db.execute("SELECT change_number, voter, min(at) FROM votes WHERE change_number BETWEEN ? AND ? "
+                                  "AND value != 0 GROUP BY 1, 2", (lo, hi)):
         answer(n, acct, at)
-    for n, acct, at in db.execute("SELECT change_number, voter, at FROM listing_votes"):
+    walked = {r[0] for r in db.execute("SELECT change_number FROM timeline_done WHERE change_number BETWEEN ? AND ?",
+                                       (lo, hi))}
+    for n, acct, at in db.execute("SELECT change_number, voter, at FROM listing_votes WHERE change_number BETWEEN ? AND ?",
+                                  (lo, hi)):
         if n not in walked:
             answer(n, acct, at)
-    attention = defaultdict(list)
-    for n, acct, s, e in db.execute("SELECT change_number, account_id, start_at, end_at FROM attention"):
-        attention[n].append((acct, s, e))
-    windows = work_hours.Windows(work_hours.activity_counts(db, ddb))
-    rows, turns = reviewer_rows(cls, bots, attention, responses, windows)
-    db.executescript(REVIEWERS_SCHEMA)
-    db.executemany("INSERT INTO work_windows VALUES (?,?,?,?,?)", windows.rows())
-    db.executemany("INSERT INTO cl_reviewers VALUES (?,?,?,?,?,?)", rows)
-    db.executemany("INSERT INTO cl_turns VALUES (?,?,?,?,?,?,?)", turns)
-    db.commit()
-    print(f"reviewers: done, {len(rows):,} reviewers of {len({r[0] for r in rows}):,} CLs", flush=True)
+    return responses
 
 
 def main(argv=None):

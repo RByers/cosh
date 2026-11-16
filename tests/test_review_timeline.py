@@ -248,6 +248,8 @@ class ReviewersTest(unittest.TestCase):
             INSERT INTO comments (change_number, account_id, written_at, after_close)
                  VALUES (1, 7, '2026-11-02 05:00:00', 0), (1, 7, '2026-11-02 03:00:00', 0),
                                         (1, 8, '2026-11-04 00:00:00', 1), (1, 99, '2026-11-02 01:00:00', 0);
+            ALTER TABLE changes ADD COLUMN host TEXT DEFAULT 'chromium-review.googlesource.com';
+            ALTER TABLE comments ADD COLUMN host TEXT DEFAULT 'chromium-review.googlesource.com';
         """)
         db = rt.connect(":memory:")
         mon = ts("2026-11-02 00:00")
@@ -259,6 +261,16 @@ class ReviewersTest(unittest.TestCase):
         """)
         with contextlib.redirect_stdout(io.StringIO()):
             rt.stage_reviewers(db, ddb)
+        # In batches of one CL, the same rows: CLs are read a batch at a time, by key.
+        tables = ("cl_reviewers", "cl_turns", "work_windows")
+        whole = [db.execute(f"SELECT * FROM {t} ORDER BY 1, 2, 3").fetchall() for t in tables]
+        old, rt.REVIEWERS_BATCH = rt.REVIEWERS_BATCH, 1
+        try:
+            with contextlib.redirect_stdout(io.StringIO()):
+                rt.stage_reviewers(db, ddb)
+        finally:
+            rt.REVIEWERS_BATCH = old
+        self.assertEqual([db.execute(f"SELECT * FROM {t} ORDER BY 1, 2, 3").fetchall() for t in tables], whole)
         self.assertEqual(db.execute("SELECT * FROM cl_reviewers ORDER BY 1, 2").fetchall(), [
             (1, 6, None, mon + 200, None, None),
             (1, 7, mon + 3600, mon + 7200, 1.0, 1.0),      # the vote comes before the comments

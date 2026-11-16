@@ -21,6 +21,62 @@ GitHub repository with large data in R2 that changes compatibly, token
 cost, and a clean data flow. Write the new analysis's
 purpose near the top of its own doc.
 
+## The data is big: stream it, and update incrementally
+
+**Always size the data before writing code that reads it.** The stores are
+large, and the box is shared with other sessions (5 GB for all capped runs;
+see "Run memory-heavy analysis" below). On 2026-11-15: NoteDb 14 GB,
+`gerrit.sqlite` 2.5 GB, `reviews.sqlite` 2.3 GB (1.6M CLs, 3.8M comments),
+`commits.sqlite` 1.1 GB (1.7M commits, 13.6M file changes, 1.6M paths),
+`review-timeline.sqlite` 0.7 GB (4.7M uploads, 3.7M attention intervals,
+2.3M votes), the chromium/src tree 500k files. All of them grow every week.
+
+- **Never hold a whole store in RAM.** Stream rows from SQLite (iterate the
+  cursor, don't `fetchall` a big table), let SQL do the filtering, joining
+  and `GROUP BY` and read back only the aggregate, and read big stores in
+  batches by primary key (keyset paging: `WHERE change_number > ? ORDER BY
+  change_number LIMIT ?`, or `BETWEEN` over a key range), so memory stays
+  flat however much history there is. Check with `EXPLAIN QUERY PLAN` that a
+  query uses an index rather than scanning the whole table, and read
+  subprocess output (git) as a stream, not one big string. Examples:
+  `cosh.review_timeline`'s `reviewers` stage reads CLs 20,000 at a time
+  (146 MB, was 2.1 GB); `people.linked_accounts` reads only the accounts it
+  needs (40 MB, against 1.1 GB for `exact_identities`).
+- **Read only the slice a step needs.** An analysis of the last four
+  quarters reads those quarters' rows by key, not all of history (Review
+  Timezones: 7 s and 200 MB, was 32 s and 1.1 GB, mostly from calling
+  `exact_identities`, which loads every CL, commit and vote). Before reusing
+  a helper, check what it loads; a whole-history helper in a one-year step
+  is usually the cost.
+- **Per-row work in SQL must be cheap.** SQLite's date functions
+  (`strftime`, `unixepoch`) on millions of rows take tens of seconds; join a
+  small lookup table or use integer arithmetic instead
+  (`work_hours.activity_counts`).
+- **Measure before and after**: time and peak memory
+  (`resource.getrusage(...).ru_maxrss`) on the real data, and record them in
+  `config/dataflow.json` (`duration`) and the step's doc.
+
+**The pipeline is incremental by design: do the least work that brings
+the outputs up to date.** Fetching costs server load and model calls cost
+Max usage, and both are kept forever (see "Keep whatever we download"
+below), and every local step works out what changed and redoes only that
+(`docs/goals.md`, goal 3; `docs/data-architecture.md`). New code must keep
+it that way:
+
+- A fetch takes only what is new (new weeks, CLs whose meta ref moved).
+- A derived store remembers what it was built from (fingerprints of inputs
+  and of its code, as `derive`'s per-CL fingerprint and
+  `review_timeline`'s `walk_fingerprint` do) and recomputes only the rows
+  whose inputs or code changed. A code change re-derives just what it
+  affects.
+- Published files are laid out so that a new week changes few of them, and
+  finished periods are never rewritten.
+- `python3 -m cosh update` skips a step when nothing it reads changed, and
+  `scripts/dataflow.py plan` says what a change needs rerun. Use them,
+  rather than rebuilding stores by hand, and don't add a step that must
+  rebuild a whole store each week unless it is fast and small (as the
+  `reviewers` stage is, at about a minute).
+
 ## Hard rules
 
 - **The 52-week backfill (2025-W45 .. 2026-W44) is approved** and was started

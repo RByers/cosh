@@ -160,6 +160,89 @@ def owner_links(owned, account_email, min_cls=3, min_share=0.5):
     return out
 
 
+def linked_accounts(ddb, gdb, tdb, host="chromium-review.googlesource.com"):
+    """`exact_identities(ddb, gdb, tdb).linked` without loading all of history:
+    the accounts with no address that `vote_links` or `owner_links` tie to
+    one. Only those accounts' votes and owned CLs are read in full; commits'
+    Reviewed-by trailers are streamed from SQLite twice, keeping only the
+    addresses that can link to them. About 60 MB, against 1.1 GB for
+    `exact_identities` (2026-11-15)."""
+    account_email = dict(ddb.execute("SELECT account_id, email FROM accounts WHERE host = ?", (host,)))
+    bare = {a for a, e in account_email.items() if not e}
+    known = {address(e) for e in account_email.values() if e}
+
+    def misses(rb):
+        rb = [address(e) for e in rb]
+        return rb, [e for e in rb if e not in known and not is_bot_email(e)]
+
+    def voters_of(numbers):
+        out = defaultdict(set)
+        nums = sorted(numbers)
+        for i in range(0, len(nums), 500):
+            part = nums[i:i + 500]
+            for table in ("votes", "listing_votes"):
+                for n, v in tdb.execute(f"SELECT change_number, voter FROM {table} WHERE value > 0 AND change_number "
+                                        f"IN ({','.join('?' * len(part))})", part):
+                    out[n].add(v)
+        return out
+
+    def free_voters(n, rb, voters):
+        return [address(account_email[v]) if account_email.get(v) else v for v in voters.get(n, ())
+                if not account_email.get(v) or address(account_email[v]) not in rb]
+
+    def trailers():
+        for n, rb in gdb.execute("SELECT change_number, reviewed_by FROM commits WHERE commit_id > 0 "
+                                 "AND change_number IS NOT NULL AND reviewed_by IS NOT NULL"):
+            yield n, json.loads(rb)
+
+    found = set()
+    # Votes: only an address missing from every account, on a CL where an account with no address
+    # approved, can link to one; then that address's every CL decides (vote_links' rule).
+    their_cls = set()
+    for table in ("votes", "listing_votes"):
+        for n, v in tdb.execute(f"SELECT change_number, voter FROM {table} WHERE value > 0"):
+            if v in bare:
+                their_cls.add(n)
+    voters = voters_of(their_cls)
+    candidates = set()
+    for n, rb in trailers():
+        if n in their_cls:
+            rb, miss = misses(rb)
+            if len(miss) == 1 and any(isinstance(f, int) for f in free_voters(n, rb, voters)):
+                candidates.add(miss[0])
+    seen, single = Counter(), []
+    for n, rb in trailers():
+        rb, miss = misses(rb)
+        if not candidates.intersection(miss):
+            continue
+        for e in miss:
+            seen[e] += 1
+        if len(miss) == 1:
+            single.append((n, rb, miss[0]))
+    voters = voters_of({n for n, _, _ in single})
+    got = defaultdict(Counter)
+    for n, rb, e in single:
+        free = free_voters(n, rb, voters)
+        if len(free) == 1 and not (isinstance(free[0], str) and is_bot_email(free[0])):
+            got[e][free[0]] += 1
+    for e, cnt in got.items():
+        a, k = cnt.most_common(1)[0]
+        if isinstance(a, int) and k >= 2 and k / seen[e] >= 0.5:
+            found.add(a)
+    # CLs owned: the git authors of the merged CLs each such account owns.
+    owned = [(n, o) for n, o in ddb.execute(
+        "SELECT change_number, owner_account FROM changes WHERE host = ? AND status = 'MERGED' AND is_bot_owned = 0 "
+        "AND project = 'chromium/src' AND branch = 'main'", (host,)) if o in bare]
+    pairs = []
+    for n, o in owned:
+        for email, bot in gdb.execute("SELECT author_email, is_bot FROM commits WHERE change_number = ? AND commit_id > 0",
+                                      (n,)):
+            if not bot and not is_bot_email(email):
+                pairs.append((o, email))
+    found |= set(owner_links(pairs, account_email))
+    return found
+
+
 def exact_identities(ddb, gdb, tdb=None, host="chromium-review.googlesource.com"):
     """An `Ids` over exact addresses (`address`), with the merges there is
     evidence for: `alias_pairs` (a git author and the Gerrit owner of most
