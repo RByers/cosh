@@ -206,6 +206,7 @@ async function lookup(raw: string) {
     return;
   }
   put(note, 'find-loading');
+  $('#rf-find-dl').hidden = true;
   try {
     // The per-person files live in the R2 bucket; peers.end (the data's end) names
     // this week's copies, so peers.json comes first.
@@ -256,6 +257,7 @@ async function lookup(raw: string) {
     const n = sums(found, peers, found.cells).cls;
     put(note, 'find-done', { n: fmtInt(n), from: dayLabel(found.days[0]), to: dayLabel(found.days[1]) });
     $('#rf-person').hidden = false;
+    $('#rf-find-dl').hidden = false;
     setupDownload();
     render();
     renderIntro();

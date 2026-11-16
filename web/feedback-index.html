@@ -58,6 +58,8 @@
           <button type="submit">Show</button>
           <p id="rf-find-note" class="sub" aria-live="polite"></p>
         </form>
+        <p id="rf-find-dl" class="sub" hidden><a href="#download">Download</a> and give to your agent to generate
+          improvement suggestions.</p>
         <template data-msg="find-loading">Looking…</template>
         <template data-msg="find-none">No changes owned by that address landed<span data-if="from"> between
           <slot name="from"></slot> and <slot name="to"></slot></span>.
@@ -346,8 +348,7 @@
         <a class="card-anchor" href="#download" aria-label="Link to this section" title="Link to this section">#</a>
         <h2 id="download-title">Download your review comments</h2>
         <p class="sub">
-          Every comment thread someone else started on your changes that landed in the period you pick, with each reply in full, as one file:
-          to keep, to search, or to give an AI assistant to find the patterns in your feedback. Made in your
+          Every comment thread someone else started on your changes that landed in the period you pick, with each reply in full, as one file, to give to an AI assistant to find the patterns in your feedback. Made in your
           browser from the same public Gerrit data; nothing is sent anywhere.
         </p>
         <form id="rf-dl" class="rf-dl">
