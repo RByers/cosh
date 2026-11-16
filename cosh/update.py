@@ -20,6 +20,12 @@ data/private/update-state.json. A step that reads an external data source
 running them (after running the steps by hand). Each run's time and peak
 memory (the largest process's resident set) go in the record too.
 
+One update runs at a time: a second one waits for data/private/update.lock
+and then plans again from the first one's record. Each step runs in the
+shared memory cap (cosh.memcap) and holds its heavy-run lock, so it waits
+while another session's heavy run (a step, or a script that joined the
+cap) is in memory, and they don't push each other over the 5 GB together.
+
   python3 -m cosh update                       # downstream of every source
   python3 -m cosh update --from gerrit         # after a new week was fetched
   python3 -m cosh update --from data/private/addressed.sqlite --dry-run
@@ -36,7 +42,7 @@ import subprocess
 import sys
 import time
 
-from . import store
+from . import memcap, store
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -194,8 +200,12 @@ def step_inputs_sig(d, step, code_files=None, hashes=None, stores_sig=None):
                     "inputs": stores_sig})
 
 
+MEMCAP = os.path.abspath(memcap.__file__)
+
+
 def run_traced(cmd, trace):
-    """Runs a step's shell command with cosh/steptrace on PYTHONPATH.
+    """Runs a step's shell command with cosh/steptrace on PYTHONPATH, in
+    the shared memory cap (cosh.memcap: the caller holds its lock).
     (exit code, peak resident set of its largest process in KB, code files
     its processes read)."""
     try:
@@ -204,7 +214,8 @@ def run_traced(cmd, trace):
         pass
     env = dict(os.environ, COSH_STEP_TRACE=trace, COSH_STEP_TRACE_ROOT=ROOT,
                PYTHONPATH=os.pathsep.join([TRACER] + ([os.environ["PYTHONPATH"]] if os.environ.get("PYTHONPATH") else [])))
-    p = subprocess.Popen(cmd, shell=True, cwd=ROOT, env=env)
+    # memcap.py by path: only the standard library, so it runs from any cwd.
+    p = subprocess.Popen([sys.executable, MEMCAP, "/bin/sh", "-c", cmd], cwd=ROOT, env=env)
     _, status, ru = os.wait4(p.pid, 0)
     p.returncode = os.waitstatus_to_exitcode(status)
     files = traced_files(trace)
@@ -262,7 +273,7 @@ def main(argv=None):
         print(f"  by hand [{s['refresh']}] {s['id']}: {s['command']}" + (f" ({cost})" if cost else ""))
     steps = {s["id"]: s for s in d["steps"]}
     fetched = {s["id"] for s in d["sources"] if s.get("kind") != "model"}
-    state = _load_state()
+    state = _load_state()   # read again once this run holds the update lock
 
     def unchanged(s):
         """Whether the step can be skipped: its inputs signature, over the
@@ -282,7 +293,11 @@ def main(argv=None):
         try:
             fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
         except BlockingIOError:
-            raise SystemExit("another `cosh update` is running")
+            print("waiting for another `cosh update` to finish", flush=True)
+            t0 = time.time()
+            fcntl.flock(lock, fcntl.LOCK_EX)
+            print(f"waited {(time.time() - t0) / 60:.1f} min", flush=True)
+        state = _load_state()        # what the other update did
         if a.record:
             for s in todo:
                 full = steps[s["id"]]
@@ -298,11 +313,12 @@ def main(argv=None):
                 continue
             print(f"[{n}/{len(todo)}] {s['id']}: {s['run']}", flush=True)
             full = steps[s["id"]]
-            snap = code_snapshot()
             stores = {x["id"]: x for x in d["stores"]}
-            inputs = _stores_sig(stores, full.get("inputs", []))   # as the step found them
-            t0 = time.time()
-            code, rss, files = run_traced(s["run"], os.path.join(store.DATA_DIR, f"update-trace-{s['id']}.txt"))
+            with memcap.hold():       # may wait for another session's heavy run
+                snap = code_snapshot()
+                inputs = _stores_sig(stores, full.get("inputs", []))   # as the step found them
+                t0 = time.time()
+                code, rss, files = run_traced(s["run"], os.path.join(store.DATA_DIR, f"update-trace-{s['id']}.txt"))
             if code:
                 left = ", ".join(x["id"] for x in todo[n:]) or "nothing"
                 print(f"{s['id']} failed (exit {code}); not run: {left}", file=sys.stderr)

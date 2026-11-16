@@ -242,13 +242,16 @@ it that way:
   `cosh.review_feedback` run, a big pickle, `fetchall` on a whole table) starts
   with `from cosh import memcap; memcap.join()`, or is run as `python3 -m
   cosh.memcap python3 script.py`. All such runs, from every session, then
-  share 5 GB (`cosh/memcap.py`). A run that prints only "Killed" (exit 137)
-  went over it, usually because another session's run was in memory too:
-  wait and rerun, or make it use less (stream rows, load fewer columns,
-  one process at a time). Don't work around the cap. Uncapped, two such
+  share 5 GB (`cosh/memcap.py`), and take turns: joining waits until no
+  other session's heavy run is in memory (it prints whose), and `cosh
+  update` waits for another update and runs each step in the cap the same
+  way. So start heavy runs this way and let them wait; never run one
+  uncapped to skip the queue. A run that prints only "Killed" (exit 137)
+  went over the cap on its own: make it use less (stream rows, load
+  fewer columns). Don't work around the cap. Uncapped, two such
   runs at once took argus out of memory on 2026-11-14 and the kernel
   killed the site server and other sessions' processes instead.
-- Tests: `python3 -m unittest tests.test_derive tests.test_extract tests.test_radar tests.test_classify tests.test_sentiment tests.test_patchsets tests.test_balance tests.test_bugs tests.test_review_feedback tests.test_balance_signals tests.test_balance_publish tests.test_notedb_repack tests.test_dataflow tests.test_approved tests.test_review_timeline tests.test_review_load tests.test_review_threads tests.test_update tests.test_data_span tests.test_codefp tests.test_commits tests.test_work_hours tests.test_review_timezones`.
+- Tests: `python3 -m unittest tests.test_derive tests.test_extract tests.test_radar tests.test_classify tests.test_sentiment tests.test_patchsets tests.test_balance tests.test_bugs tests.test_review_feedback tests.test_balance_signals tests.test_balance_publish tests.test_notedb_repack tests.test_dataflow tests.test_approved tests.test_review_timeline tests.test_review_load tests.test_review_threads tests.test_update tests.test_memcap tests.test_data_span tests.test_codefp tests.test_commits tests.test_work_hours tests.test_review_timezones`.
   These run in a single process, which complies with the global limit of 4
   test workers. `tests.test_extract` uses a fake Gerrit and never touches the
   network.

@@ -23,6 +23,12 @@ def fake_dataflow(data_dir, source_kind="model"):
 
 
 class UpdateSkipTest(unittest.TestCase):
+    def setUp(self):
+        # Not the shared heavy-run lock: a real run elsewhere would hold up the tests.
+        patch = mock.patch.dict(os.environ, {"COSH_MEMCAP": "off"})
+        patch.start()
+        self.addCleanup(patch.stop)
+
     def run_update(self, d, *args, source_kind="model"):
         buf = io.StringIO()
         with mock.patch.object(store, "DATA_DIR", d), \
@@ -69,10 +75,27 @@ class UpdateSkipTest(unittest.TestCase):
             self.assertIn("recorded 1 steps", log)
             self.assertEqual(self.run_update(d)[1], 1)
 
+    def test_waits_for_another_update(self):
+        import fcntl
+        import threading
+        with tempfile.TemporaryDirectory() as d:
+            for f in ("in.txt", "out.txt"):
+                open(os.path.join(d, f), "w").close()
+            other = open(os.path.join(d, "update.lock"), "w")
+            fcntl.flock(other, fcntl.LOCK_EX)
+            threading.Timer(0.5, other.close).start()
+            t0 = time.time()
+            out, n = self.run_update(d)
+            self.assertGreater(time.time() - t0, 0.4)
+            self.assertIn("waiting for another `cosh update` to finish", out)
+            self.assertEqual(n, 1)
+
 
 class UpdateTraceTest(unittest.TestCase):
     """A step reruns when a module or config file it read changes, though
     its `code` list doesn't name it."""
+
+    setUp = UpdateSkipTest.setUp
 
     def test_reruns_when_a_traced_file_changes(self):
         with tempfile.TemporaryDirectory() as root, tempfile.TemporaryDirectory() as d:

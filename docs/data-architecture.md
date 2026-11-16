@@ -268,6 +268,16 @@ hand; a recorded step has no trace until it next runs). This relies on each
 step's `inputs` and `outputs` being complete: a step that reads a data file
 it doesn't list may be skipped wrongly.
 
+Runs take turns, so they don't push each other over the shared memory cap
+(5 GB, `cosh.memcap`). One `cosh update` runs at a time: a second one,
+from any session, waits for `data/private/update.lock` and then plans again
+from the first one's record, so it skips what that one just did. Each step
+runs in the cap and holds its heavy-run lock (a file in `/run/user/<uid>/`
+that every session shares), which every script that calls
+`memcap.join()` or runs under `python3 -m cosh.memcap` takes too. So a
+step waits while another session's heavy run is in memory, and the other
+way round; whoever waits prints whose run it is waiting for.
+
 Rerunning a step is not enough when the step is incremental within itself
 and its code changed: it must notice that its earlier rows came from older
 code, and recompute them without mixing old and new (docs/goals.md, goal
