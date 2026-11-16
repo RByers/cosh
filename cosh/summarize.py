@@ -316,8 +316,8 @@ def commit_facts(db, resolve, scope, facts, weeks=None, commits_path=None):
     file it touches is in scope; the returned CommitDirs gets every commit,
     with each directory it touches (as areas has reviewed CLs). The author's
     Gerrit account is the one with the git author's email, else the CL
-    owner's; a commit with neither
-    still counts for its org but for no person. Facts are updated in place.
+    owner's; a commit with neither still counts for its org but for no
+    person. Facts are updated in place.
     Returns (per-(week, folded org) {"commits": n, "authors": set} over
     in-scope commits, authors being emails; {commit id: author account} for
     the commits that have one; a CommitDirs of every commit, for the

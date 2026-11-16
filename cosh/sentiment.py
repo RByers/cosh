@@ -38,6 +38,7 @@ from datetime import date
 
 from . import data_span, store
 from .bots import is_bot_account
+from .records import record_type
 from .derive import human_text, is_ai_comment, load_comments, prefetch_notedb
 
 SENTIMENT_FILE = "sentiment.sqlite"
@@ -415,15 +416,22 @@ def score_week(week, data_dir=store.DATA_DIR, version=None, model="haiku", batch
     return st
 
 
-def load_scores(week, data_dir=store.DATA_DIR, version=None, model="haiku"):
-    """{id: (score, ai, why)} for a week's comments under the given prompt."""
+def load_scores(week, data_dir=store.DATA_DIR, version=None, model="haiku", why=True):
+    """{id: (score, ai, why)} for a week's comments under the given prompt.
+    Without `why`, every tuple has '' for it and equal tuples are shared:
+    scores have one decimal, so a million comments need a few dozen tuples
+    (the published files never show the reason)."""
     definition = load_prompt(version)
     db = open_scores(data_dir)
     row = db.execute("SELECT prompt_id FROM prompts WHERE sha256=? AND model=?",
                      (prompt_sha(definition), model)).fetchone()
     pid = row[0] if row else -1
-    return {i: (s, bool(ai), why) for i, s, ai, why in
-            db.execute("SELECT id, score, ai, why FROM scores WHERE prompt_id IN (0, ?)", (pid,))}
+    if why:
+        return {i: (s, bool(ai), w) for i, s, ai, w in
+                db.execute("SELECT id, score, ai, why FROM scores WHERE prompt_id IN (0, ?)", (pid,))}
+    shared = {}
+    return {i: shared.setdefault((s, ai), (s, bool(ai), "")) for i, s, ai in
+            db.execute("SELECT id, score, ai FROM scores WHERE prompt_id IN (0, ?)", (pid,))}
 
 
 def write_jsonl(path, rows):
@@ -448,13 +456,27 @@ def is_self_note(r):
 
 def comment_rows(path, slim=False):
     """A comments-*.jsonl file's rows, without the owner's notes to self.
-    `slim` drops the fields only scoring uses (`UNPUBLISHED`), which saves
-    memory when every week is held at once."""
-    rows = [r for r in read_jsonl(path) if not is_self_note(r)]
-    if slim:
-        for r in rows:
-            for k in UNPUBLISHED:
-                r.pop(k, None)
+    `slim` drops the fields only scoring uses (`UNPUBLISHED`) and returns
+    each row as a `Row`, read like the dict, with names and other repeated
+    strings shared: a year of rows (800k) took 2.2 GB as dicts."""
+    if not slim:
+        return [r for r in read_jsonl(path) if not is_self_note(r)]
+    rows = []
+    with open(path) as f:
+        for line in f:
+            if not line.strip():
+                continue
+            d = json.loads(line)
+            if is_self_note(d):
+                continue
+            r = Row()
+            for k, v in d.items():
+                if k in UNPUBLISHED:
+                    continue
+                if k in _SHARED_FIELDS and isinstance(v, str):
+                    v = sys.intern(v)
+                r[k] = v
+            rows.append(r)
     return rows
 
 
@@ -465,6 +487,14 @@ def out_dir(data_dir=store.DATA_DIR):
 # Row fields that no published file uses: the model's context, and details
 # of the CL that only the scoring prompt shows.
 UNPUBLISHED = ("context", "subject", "path", "cl_status", "author_org", "target_org", "n_ai_in_thread")
+# A slimmed row (comment_rows): a slot per field collect writes and `week`;
+# any other key still works (records.Record keeps it in a dict). Only set
+# fields exist: "k" in row and row.get("k") behave as for the dict.
+Row = record_type("Row", (), ("id", "host", "project", "cl", "uuid", "written_at", "author_role", "target_kind",
+                              "text", "owner", "author", "author_name", "author_email", "target", "target_name",
+                              "target_email", "target_is_ai", "week"))
+_SHARED_FIELDS = frozenset(("host", "project", "author_role", "target_kind", "author_name", "author_email",
+                            "target_name", "target_email"))
 
 
 def week_rows(weeks, data_dir=store.DATA_DIR, cache=None):
@@ -1059,7 +1089,7 @@ class Loaded:
 
     def __init__(self, data_dir=store.DATA_DIR, version=None):
         self.data_dir, self.version = data_dir, version
-        self.scores = load_scores(None, data_dir, version)
+        self.scores = load_scores(None, data_dir, version, why=False)
         self.weeks = {}               # week -> rows (`week_rows`)
         self._committers = None
 
@@ -1130,7 +1160,7 @@ def publish(weeks, sample, prompt=None, sandbox="auto"):
     Every step and writer group shares one load of the scores and of each
     week's rows (`Loaded`), so each comment file is read once."""
     from . import memcap, sentiment_people, sentiment_recent
-    memcap.join()                     # about 3 GB: share the cap (AGENTS.md)
+    memcap.join()                     # about 1 GB: share the cap (AGENTS.md)
     t0 = time.time()
     ld = Loaded(version=prompt)
     if weeks is None:

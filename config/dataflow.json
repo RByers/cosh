@@ -1931,7 +1931,7 @@
       "network": true,
       "lock": null,
       "incremental": "Rewrites every file, reading each week's comment file once for every step and writer group. Screening verdicts are cached in sentiment.sqlite, so only new comments cost model calls.",
-      "duration": "about 1 min, peak 3 GB (2026-11-15, nothing new to screen; 16 min before it stopped re-reading NoteDb)",
+      "duration": "about 45 s, peak 0.95 GB (2026-11-15, nothing new to screen; 16 min and 3.7 GB before it read each week once and kept rows compact)",
       "token_cost": "small, not measured; nothing once the cache has the comments",
       "cost_source": "measured run, 2026-11-15",
       "refresh": "routine",
