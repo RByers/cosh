@@ -63,6 +63,7 @@ class Ids:
         self.p = {}
         self.norm = norm
         self.latest = latest or {}
+        self.accounts, self.linked = {}, set()     # set by exact_identities
 
     def find(self, e):
         e = self.norm(e)
@@ -108,13 +109,16 @@ def alias_pairs(cls, commits, min_cls=3, min_share=0.5, norm=person):
 
 
 def vote_links(reviewed_by, account_email, voters, min_cls=2, min_share=0.5):
-    """(Reviewed-by address, Gerrit account address) pairs to treat as one
-    person, for Reviewed-by addresses that are no account's address (the
-    reviewer changed their preferred address since; Gerrit writes the
-    voter's then preferred address in the trailer). On a CL with exactly one
-    such address and exactly one approving voter whose address isn't in its
-    Reviewed-by, the two are linked; an address is linked to the account it
-    is linked to on at least `min_cls` CLs and `min_share` of its CLs.
+    """(Reviewed-by address, Gerrit account) pairs to treat as one person,
+    for Reviewed-by addresses that are no account's address. Gerrit writes
+    the voter's then preferred address in the trailer, so either the
+    reviewer changed their preferred address since, or their account has
+    none now (Gerrit shows no address for a deleted account). On a CL with
+    exactly one such address and exactly one approving voter whose address
+    isn't in its Reviewed-by, the two are linked; an address is linked to
+    the account it is linked to on at least `min_cls` CLs and `min_share`
+    of its CLs. The account is given by its address, or by its id (an int)
+    when it has none.
 
     `reviewed_by`: [(change number, [addresses])]; `account_email`: account
     id -> address; `voters`: change number -> account ids that voted
@@ -128,9 +132,9 @@ def vote_links(reviewed_by, account_email, voters, min_cls=2, min_share=0.5):
             seen[e] += 1
         if len(miss) != 1:
             continue
-        free = [address(account_email[v]) for v in voters.get(n, ())
-                if account_email.get(v) and address(account_email[v]) not in rb]
-        if len(free) == 1 and not is_bot_email(free[0]):
+        free = [address(account_email[v]) if account_email.get(v) else v for v in voters.get(n, ())
+                if not account_email.get(v) or address(account_email[v]) not in rb]
+        if len(free) == 1 and not (isinstance(free[0], str) and is_bot_email(free[0])):
             got[miss[0]][free[0]] += 1
     out = []
     for e, cnt in got.items():
@@ -140,16 +144,41 @@ def vote_links(reviewed_by, account_email, voters, min_cls=2, min_share=0.5):
     return out
 
 
+def owner_links(owned, account_email, min_cls=3, min_share=0.5):
+    """{account id: git author address} for accounts with no address: the
+    one author of at least `min_cls` and `min_share` of the merged CLs the
+    account owns. `owned`: [(owner account, git author address)]."""
+    by = defaultdict(Counter)
+    for o, a in owned:
+        if not account_email.get(o) and a and not is_bot_email(a):
+            by[o][address(a)] += 1
+    out = {}
+    for o, cnt in by.items():
+        a, k = cnt.most_common(1)[0]
+        if k >= min_cls and k / sum(cnt.values()) >= min_share:
+            out[o] = a
+    return out
+
+
 def exact_identities(ddb, gdb, tdb=None, host="chromium-review.googlesource.com"):
     """An `Ids` over exact addresses (`address`), with the merges there is
     evidence for: `alias_pairs` (a git author and the Gerrit owner of most
     of their CLs) and, given review-timeline.sqlite (`tdb`), `vote_links`.
     `ddb`: reviews.sqlite; `gdb`: commits.sqlite. The Feedback Index, Review
-    Load and the comment threads all call this, so they agree on who is who."""
+    Load and the comment threads all call this, so they agree on who is who.
+
+    Accounts that Gerrit shows with no address (mostly deleted ones, which
+    derive marks as bots) get one from evidence: the Reviewed-by address
+    their votes stand for (`vote_links`) or the git author of most of their
+    CLs (`owner_links`). The result's `accounts` maps every account id with
+    an address, given or found, to it, and `linked` holds those found:
+    callers map accounts through `accounts` and count `linked` ones as
+    people, not bots."""
     account_email = dict(ddb.execute("SELECT account_id, email FROM accounts WHERE host = ?", (host,)))
-    owners = [dict(change_number=n, owner_email=account_email.get(o)) for n, o in ddb.execute(
+    owner_of = dict(ddb.execute(
         "SELECT change_number, owner_account FROM changes WHERE host = ? AND status = 'MERGED' "
-        "AND is_bot_owned = 0 AND project = 'chromium/src' AND branch = 'main'", (host,))]
+        "AND is_bot_owned = 0 AND project = 'chromium/src' AND branch = 'main'", (host,)))
+    owners = [dict(change_number=n, owner_email=account_email.get(o)) for n, o in owner_of.items()]
     # When each address was last used, to name an identity by its newest
     # (`Ids`): git authorship and Reviewed-by trailers by landing time; an
     # account's address by its owned CLs' last update and its newest
@@ -172,23 +201,36 @@ def exact_identities(ddb, gdb, tdb=None, host="chromium-review.googlesource.com"
             reviewed_by.append((n, json.loads(rb)))
             for e in reviewed_by[-1][1]:
                 used(e, at)
-    for o, at in ddb.execute("SELECT owner_account, max(updated_at) FROM changes WHERE host = ? "
-                             "GROUP BY owner_account", (host,)):
-        if at:
-            used(account_email.get(o), calendar.timegm(time.strptime(at[:19], "%Y-%m-%d %H:%M:%S")))
-    if tdb is not None:
-        for table in ("votes", "listing_votes"):
-            for v, at in tdb.execute(f"SELECT voter, max(at) FROM {table} GROUP BY voter"):
-                used(account_email.get(v), at)
-    ids = Ids(address, latest)
-    for a, b in alias_pairs(owners, authors, norm=address):
-        ids.union(a, b)
+    # Addresses for accounts with none, from votes, then from CLs owned.
+    pairs = []
     if tdb is not None:
         voters = defaultdict(set)
         for table in ("votes", "listing_votes"):
             for n, v in tdb.execute(f"SELECT change_number, voter FROM {table} WHERE value > 0"):
                 voters[n].add(v)
-        for a, b in vote_links(reviewed_by, account_email, voters):
-            ids.union(a, b)
+        pairs = vote_links(reviewed_by, account_email, voters)
+        del voters
+    found = {b: a for a, b in pairs if isinstance(b, int)}
+    by_owner = owner_links([(owner_of[a["n"]], a["email"]) for a in authors if a["n"] in owner_of], account_email)
+    accounts = {k: address(e) for k, e in account_email.items() if e}
+    for k, e in by_owner.items():
+        found.setdefault(k, e)
+    accounts.update(found)
+    for o, at in ddb.execute("SELECT owner_account, max(updated_at) FROM changes WHERE host = ? "
+                             "GROUP BY owner_account", (host,)):
+        if at:
+            used(accounts.get(o), calendar.timegm(time.strptime(at[:19], "%Y-%m-%d %H:%M:%S")))
+    if tdb is not None:
+        for table in ("votes", "listing_votes"):
+            for v, at in tdb.execute(f"SELECT voter, max(at) FROM {table} GROUP BY voter"):
+                used(accounts.get(v), at)
+    ids = Ids(address, latest)
+    ids.accounts, ids.linked = accounts, set(found)
+    for a, b in alias_pairs(owners, authors, norm=address):
+        ids.union(a, b)
+    for a, b in pairs:
+        ids.union(a, accounts[b] if isinstance(b, int) else b)
+    for k, e in by_owner.items():        # an account's Reviewed-by and git author addresses are one person
+        ids.union(e, accounts[k])
     return ids
 

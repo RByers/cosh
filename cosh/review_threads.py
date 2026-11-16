@@ -65,7 +65,7 @@ from . import classify, r2, store
 from . import commits as C
 from . import review_timeline
 from .people import exact_identities
-from .derive import prefetch_notedb
+from .derive import DELETED_USER, prefetch_notedb
 
 HOST = "chromium-review.googlesource.com"
 PATCHSET_LEVEL = "/PATCHSET_LEVEL"
@@ -214,10 +214,16 @@ def main(argv=None):
             (n, act[0]))} if act else {}
     accounts = {aid: (name or email or f"account {aid}", bool(bot), email or None) for aid, name, email, bot in ddb.execute(
         "SELECT account_id, name, email, is_bot FROM accounts WHERE host = ?", (HOST,))}
-    bots = {aid for aid, (_, bot, _) in accounts.items() if bot}
     # Each account's exact identity, the Feedback Index's (people.exact_identities),
-    # and each person's approvers over all their half-years.
+    # and each person's approvers over all their half-years. An account Gerrit shows
+    # with no address (a deleted one) but tied to a person's address is that person,
+    # not a bot, and is called by their name there when Gerrit gives none.
     ids = exact_identities(ddb, ro(C.db_path()), ro(review_timeline.db_path()))
+    for aid in ids.linked:
+        name = accounts.get(aid, (None,))[0]
+        e = ids.accounts[aid]
+        accounts[aid] = (ids.find(e) if name in (None, DELETED_USER, f"account {aid}") else name, False, e)
+    bots = {aid for aid, (_, bot, _) in accounts.items() if bot}
     ident = {aid: ids.find(email) for aid, (_, _, email) in accounts.items() if email}
     shards = read_index(a.cls)
     person_revs = {k: {r for cls in by_half.values() for _, revs, _ in cls for r in revs}

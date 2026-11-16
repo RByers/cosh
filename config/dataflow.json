@@ -1969,11 +1969,13 @@
         "cosh/cl_facts.py",
         "cosh/bots.py",
         "cosh/codefp.py",
-        "cosh/work_hours.py"
+        "cosh/work_hours.py",
+        "cosh/people.py"
       ],
-      "purpose": "Reads each CL's uploads, attention set and votes from NoteDb and the listings, then reviewers' asks, answers and attention hours, and each turn's working hours.",
+      "purpose": "Reads each CL's uploads, attention set and votes from NoteDb and the listings, then reviewers' asks, answers and attention hours, and each turn's working hours. Accounts Gerrit shows with no address count as reviewers when their votes or CLs tie them to a person's address (people.exact_identities, which reads commits.sqlite).",
       "inputs": [
         "data/private/reviews.sqlite",
+        "data/private/commits.sqlite",
         "gerrit-raw"
       ],
       "outputs": [
@@ -1982,7 +1984,7 @@
       "network": false,
       "lock": null,
       "incremental": "Reads CLs not yet read and CLs whose meta ref's tip moved since (replacing their rows), and listings whose body is new; CLs without a ref are looked for again next time. The walk and the listing stages each keep a code fingerprint in meta (cosh/codefp.py): when one changes, that stage's rows are deleted and it reads everything again (walk about 35 min, listings about 4 min). The per-reviewer table is rebuilt whole (about 1 min).",
-      "duration": "35.5 min (330 CLs/s, sharing the box with another git walk) for 716k CLs from empty, plus 4 min for 26,769 listings from empty; about 1.5 min when nothing is new (the per-reviewer table and working windows: 35 s, 2.1 GB, 2026-11-15; the windows' activity counts about 9 s of it)",
+      "duration": "35.5 min (330 CLs/s, sharing the box with another git walk) for 716k CLs from empty, plus 4 min for 26,769 listings from empty; about 1.5 min when nothing is new (the per-reviewer table and working windows: 35 s, 2.1 GB, 2026-11-15; the windows' activity counts about 9 s of it; finding addresses for accounts with none adds about 25 s and 1.2 GB before it, measured alone on 2026-11-15)",
       "token_cost": null,
       "cost_source": "data/private/scratch/timeline/walk.log; the listings and reviewers on 2026-11-14",
       "refresh": "routine",

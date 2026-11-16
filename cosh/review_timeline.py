@@ -43,7 +43,9 @@ import zlib
 from collections import defaultdict
 from datetime import datetime, timezone
 
-from . import codefp, store, work_hours
+from . import codefp, memcap, store, work_hours
+from . import commits as C
+from .people import exact_identities
 from .bots import is_bot_account
 from .cl_facts import epoch
 
@@ -465,9 +467,26 @@ def reviewer_rows(cls, bots, attention, responses, windows=None):
     return rows, turns
 
 
-def stage_reviewers(db, ddb=None):
-    ddb = ddb or reviews_ro()
-    bots = {r[0] for r in ddb.execute("SELECT account_id FROM accounts WHERE is_bot = 1")}
+def linked_accounts(ddb, db):
+    """Accounts Gerrit shows with no address (derive's bots) that evidence
+    ties to a person's address (people.exact_identities): people, not bots.
+    Reads commits.sqlite; none without it."""
+    path = C.db_path()
+    if not os.path.exists(path):
+        return set()
+    memcap.join()
+    return exact_identities(ddb, sqlite3.connect(f"file:{path}?mode=ro", uri=True), db).linked
+
+
+def stage_reviewers(db, ddb=None, linked=None):
+    """Rebuilds cl_reviewers, cl_turns and work_windows. Bots are left out,
+    except accounts in `linked` (default: `linked_accounts`, when `ddb` is
+    the real reviews.sqlite)."""
+    if ddb is None:
+        ddb = reviews_ro()
+        if linked is None:
+            linked = linked_accounts(ddb, db)
+    bots = {r[0] for r in ddb.execute("SELECT account_id FROM accounts WHERE is_bot = 1")} - (linked or set())
     cls = [(n, owner, epoch(c0), epoch(c1) if c1 else None) for n, owner, c0, c1 in ddb.execute(
         "SELECT change_number, owner_account, created_at, closed_at FROM changes "
         "WHERE is_bot_owned = 0 AND project = ? AND branch = 'main'", (PROJECT,))]

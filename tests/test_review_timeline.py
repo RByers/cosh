@@ -270,6 +270,10 @@ class ReviewersTest(unittest.TestCase):
         self.assertEqual(db.execute("SELECT * FROM cl_turns").fetchall(), [(1, 7, mon + 3600, mon + 7200, 1.0, 1.0, None)])
         self.assertEqual(db.execute("SELECT account_id, quarter, basis, events FROM work_windows WHERE account_id = 7")
                          .fetchall(), [(7, "2026Q4", "history", 3)])
+        # An account derive marked a bot (no address) but tied to a person's address counts.
+        with contextlib.redirect_stdout(io.StringIO()):
+            rt.stage_reviewers(db, ddb, linked={99})
+        self.assertIn((1, 99, None, mon + 3600, None, None), db.execute("SELECT * FROM cl_reviewers").fetchall())
 
 
 if __name__ == "__main__":

@@ -236,6 +236,16 @@ class IdentityTest(unittest.TestCase):
         self.assertEqual(P.vote_links(rb, accounts, voters), [("old@chromium.org", "new@google.com")])
         # One CL isn't enough.
         self.assertEqual(P.vote_links(rb[:1], accounts, voters), [])
+        # An account with no address (a deleted one) is linked by its id.
+        accounts[1] = None
+        self.assertEqual(P.vote_links(rb, accounts, voters), [("old@chromium.org", 1)])
+
+    def test_owner_links(self):
+        from cosh import people as P
+        accounts = {1: None, 2: None, 3: "has@x.org"}
+        owned = [(1, "a@x.org")] * 3 + [(1, "b@x.org"), (2, "c@x.org")] * 2 + [(3, "d@x.org")] * 5
+        # 1's CLs are mostly a@x.org's; 2 has too few; 3 has an address of its own.
+        self.assertEqual(P.owner_links(owned, accounts), {1: "a@x.org"})
 
 
 if __name__ == "__main__":

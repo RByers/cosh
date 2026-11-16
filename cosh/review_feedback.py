@@ -1058,7 +1058,9 @@ def main():
     print(f"{early:,} human commits before {SINCE} counted as earlier commits", file=sys.stderr, flush=True)
     for v in own_times.values():
         v.sort()
-    bots = {a for a, in ddb.execute("SELECT account_id FROM accounts WHERE is_bot = 1")}
+    # Accounts with no address are bots to derive; those tied to a person's
+    # address (people.exact_identities) are people.
+    bots = {a for a, in ddb.execute("SELECT account_id FROM accounts WHERE is_bot = 1")} - ids.linked
 
     START, END = data_range(cands.values())
     by_n = {n: c for n, c in cands.items() if START <= c.at < END}      # in change-number order

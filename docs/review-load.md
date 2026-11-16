@@ -133,7 +133,10 @@ quarters, shaded against everyone's there).
   (`cosh.people.exact_identities`; docs/review-feedback.md, "Who is who"):
   addresses merge only on evidence, never by domain. Gerrit accounts map
   through their address. A person is named by the address they used most
-  recently, never one they left behind (docs/goals.md, goal 2). Each other
+  recently, never one they left behind (docs/goals.md, goal 2). Accounts
+  that Gerrit shows with no address (mostly deleted ones) are mapped
+  through the address their votes or CLs tie them to (`Ids.accounts`), so
+  their attention, turns and answers count. Each other
   address of a reviewer gets a `{"see": <name>}` file, so typing any of
   them finds them.
 

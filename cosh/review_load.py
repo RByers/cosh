@@ -336,7 +336,7 @@ def compute(gdb, ddb, tdb, owners_at=None):
     parents = {dir_levels(d)[-2] for d in listed if len(dir_levels(d)) > 1} & listed
     rows_of = functools.lru_cache(maxsize=None)(lambda d: table_rows(d, listed, parents))
     # Gerrit: the same commits' CLs.
-    emails = dict(ddb.execute("SELECT account_id, email FROM accounts"))
+    emails = ids.accounts          # with the addresses found for accounts Gerrit shows without one
     merged = {n for (n,) in ddb.execute(
         "SELECT change_number FROM changes WHERE is_bot_owned = 0 AND status = 'MERGED'") if n in by_cl}
     reply_h = [[] for _ in qs]

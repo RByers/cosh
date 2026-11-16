@@ -627,6 +627,20 @@ across `chromium.org` and `google.com`.
   CLs and half of its CLs (`vote_links`, from `review-timeline.sqlite`):
   136 of 169 such addresses, 88% of their uses, 49 of them under another
   username.
+- **Accounts with no address.** Gerrit shows 864 accounts with no
+  address: 725 deleted ones (shown as "Deleted User") and accounts that
+  never set one, such as some service and AI-agent accounts. Derive marks
+  them all as bots. Gerrit wrote the deleted ones' address into
+  Reviewed-by while they were active, so `exact_identities` gives an
+  account one when its approving votes stand for a Reviewed-by address no
+  account has (`vote_links`, as above), or when one git author wrote 3 or
+  more and half of the merged CLs it owns (`owner_links`); both addresses
+  are then one person. On 2026-11-15 that found 116 accounts (111 of them
+  deleted), with 9,340 of the 11,543 comments and nearly all the votes by
+  accounts with no address. These accounts count as people
+  (`Ids.linked`), not bots, in the Feedback Index, Review Load, the
+  thread files and `review-timeline.sqlite`'s `cl_reviewers`. Afterwards
+  9 Reviewed-by addresses (26 uses of 1.4M) belong to no account.
 - **Name.** A person is named by the address they used most recently
   (`Ids` with `latest`, set by `exact_identities`): git authorship and
   Reviewed-by footers count at their landing time, and an account's
