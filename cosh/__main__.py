@@ -73,7 +73,7 @@ def main(argv=None):
     g.add_argument("--db", help="store path (default: $COSH_COMMITS_DB or data/private/commits.sqlite)")
     g.add_argument("--jobs", type=int, default=4, help="git diff processes for repetition ratios (at most 4)")
     sub.add_parser("fetch-git", help="fetch chromium/src main (only) into the shared clone "
-                                     "~/projects/shared/chromium, under the extract lock")
+                                     "~/cache/chromium, under the extract lock")
     c = sub.add_parser("classify",
                        help="label review threads as addressed with Claude Haiku via `claude -p` "
                             "(uses Max usage; writes data/private/addressed.sqlite; optional step)")

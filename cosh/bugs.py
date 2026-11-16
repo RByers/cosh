@@ -48,7 +48,7 @@ DEFAULT_INTERVAL = 0.0
 # The Monorail stubs are tiny static redirects; the user approved up to 4 at
 # once with no wait between them (2026-11-08).
 MONORAIL_MAX_JOBS = 4
-SHARED = os.path.expanduser("~/projects/shared/chromium")
+SHARED = os.path.expanduser("~/cache/chromium")
 from .approved import bug_footers_since  # noqa: E402
 SINCE = bug_footers_since()  # config/approved.json; 2023-07-01, the start of the Gerrit analysis window
 MONORAIL_MAX = 1_600_000    # IDs below this are Monorail-era (crbug.com/1234567; it ended near 1.53M)

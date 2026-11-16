@@ -43,7 +43,7 @@ Code: `cosh/bugs.py`; tests: `tests/test_bugs.py` (no network).
 
 1. `Bug:` and `Fixed:` footers of first-parent commits on chromium/src
    `main` since 2023-07-01 (the Gerrit analysis window), from the shared
-   clone `~/projects/shared/chromium` (`git log` with
+   clone `~/cache/chromium` (`git log` with
    `GIT_NO_LAZY_FETCH=1`; it never fetches);
 2. every bug ID in `data/private/chrome_releases/security_fixes.json`
    (2020 on, `docs/bugs-and-security.md`).

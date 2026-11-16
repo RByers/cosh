@@ -24,7 +24,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from cosh import commits  # noqa: E402
 
 DATA = os.environ.get("COSH_DATA_DIR", "/home/rbagent/projects/cosh/data/private")
-SHARED = os.path.expanduser("~/projects/shared/chromium")
+SHARED = os.path.expanduser("~/cache/chromium")
 SINCE_TS = 1688169600          # 2023-07-01 UTC
 SEP = "\x1e"
 

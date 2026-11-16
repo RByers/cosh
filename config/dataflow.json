@@ -757,7 +757,7 @@
     {
       "id": "shared/chromium",
       "name": "Chromium git clone",
-      "path": "~/projects/shared/chromium",
+      "path": "~/cache/chromium",
       "kind": "git-repo",
       "tier": "raw",
       "tracked_in_git": false,
@@ -766,7 +766,7 @@
       "size": "69 GB",
       "size_as_of": "2026-11-12",
       "purpose": "Bare mirror of chromium/src main with full blobs, shared across argus's projects; cosh only reads it and fetches main into it.",
-      "notes": "Outside cosh (~/projects/shared/README.md): keep it a clean mirror, no cosh refs or local edits, never prune or gc. cosh's patch-set repo borrows its objects through git alternates. Read it with GIT_NO_LAZY_FETCH=1."
+      "notes": "Outside cosh (~/cache/README.md): keep it a clean mirror, no cosh refs or local edits, never prune or gc. cosh's patch-set repo borrows its objects through git alternates. Read it with GIT_NO_LAZY_FETCH=1."
     },
     {
       "id": "data/private/commits.sqlite",

@@ -13,7 +13,7 @@ from cosh import contact, store  # noqa: E402
 
 DATA = "/home/rbagent/projects/cosh/data/private"
 R = f"{DATA}/git/chromium-patchsets.git"
-SHARED = "/home/rbagent/projects/shared/chromium/objects"
+SHARED = "/home/rbagent/cache/chromium/objects"
 URL = "https://chromium.googlesource.com/chromium/src.git"
 OUT = sys.argv[1]
 SIZES = [int(x) for x in sys.argv[2].split(",")]

@@ -3,7 +3,7 @@
 Every patch set of a Gerrit change is a commit at refs/changes/NN/N/<ps>. We
 fetch them into data/private/git/chromium-patchsets.git as
 refs/patchsets/<N>/<ps>. That repo borrows chromium/src `main` from the shared
-clone (~/projects/shared/chromium) through git alternates, so `main`'s tip goes
+clone (~/cache/chromium) through git alternates, so `main`'s tip goes
 out as the "have" and the server sends commits, trees and the blobs that never
 landed. Measured 2026-11-07 (docs/plan.md): 72 s per 1,000 CLs.
 
@@ -34,7 +34,7 @@ from . import store
 from .contact import git_config, git_env
 
 GIT_URL = "https://chromium.googlesource.com/chromium/src.git"
-SHARED_OBJECTS = os.path.expanduser("~/projects/shared/chromium/objects")
+SHARED_OBJECTS = os.path.expanduser("~/cache/chromium/objects")
 DONE_FILE = "cosh-fetched.txt"  # CLs fetched, including any that had no refs
 
 REPO_CONFIG = {

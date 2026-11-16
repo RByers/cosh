@@ -215,7 +215,7 @@ purpose near the top of its own doc.
 - **Chromium git history is approved** (2026-11-06), **including file
   contents** (2026-11-07): one bare clone of `chromium/src` `main` only, with
   no dependencies and no working tree. It lives in
-  `~/projects/shared/chromium`, argus's cross-project area (rules in its
+  `~/cache/chromium`, argus's local cache of recreatable data (rules in its
   README.md), so it must stay a clean mirror of `main`: no cosh refs, no
   local edits. Its full blobs were fetched on 2026-11-07 (`fetch --refetch`
   without a filter), so `-p`, `--numstat` and `blame` work there.

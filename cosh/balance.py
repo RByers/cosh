@@ -36,7 +36,7 @@ from .cl_facts import CL_FACTS, cl_dirs, cl_facts, epoch, iter_cl_dirs, iter_cl_
 from .commits import HISTORY_SINCE, MAX_LINES, diff_lines  # noqa: F401 (moved there)
 from .review_timeline import union_spans, weekday_seconds  # noqa: F401 (moved there)
 
-SHARED = os.path.expanduser("~/projects/shared/chromium")
+SHARED = os.path.expanduser("~/cache/chromium")
 PATCHSETS = os.path.join(store.DATA_DIR, "git", "chromium-patchsets.git")
 ENV = {**os.environ, "GIT_NO_LAZY_FETCH": "1"}
 SINCE = "2017-01-01"     # commit_id > 0 in commits.sqlite starts here

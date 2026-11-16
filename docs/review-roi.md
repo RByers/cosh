@@ -57,7 +57,7 @@ too, it is picking up confounding, not prevention.
 | `review-timeline.sqlite` `votes` | every Code-Review vote with voter, value, time, patch set: who approved (+2) and when |
 | `commits.sqlite` `commits`, `commit_files` (since 2017) | 1.30M first-parent commits on `main` since 2017: author, `Reviewed-by`, `reverts_sha`, `is_reland`, `Bot-Commit`, per-file lines. Reviewer and author history per directory comes from here |
 | `reviews.sqlite` `threads`, `comments`, `accounts` | thread roots and their authors (who started each thread), `regex_addressed`; `addressed.sqlite` for the Haiku labels |
-| `~/projects/shared/chromium` | full `main` history with blobs: revert messages (reasons), blame, later fixes to a CL's lines |
+| `~/cache/chromium` | full `main` history with blobs: revert messages (reasons), blame, later fixes to a CL's lines |
 | `bugs/bugs.sqlite` | 67k fetched bugs; `fixed_by` CLs, type, priority. "Introduced In" is a milestone, so it can't name a CL |
 
 Shared inputs, regenerated from local git into the job's scratch directory

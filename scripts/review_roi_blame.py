@@ -58,7 +58,7 @@ import review_roi_later_changes as P2  # noqa: E402
 import balance_growth as G  # noqa: E402
 from cosh import balance, bugs as B, store  # noqa: E402
 
-GIT = os.path.expanduser("~/projects/shared/chromium")
+GIT = os.path.expanduser("~/cache/chromium")
 ENV = {**os.environ, "GIT_NO_LAZY_FETCH": "1"}
 DAY = 86400
 SEED = 20261109

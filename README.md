@@ -30,7 +30,7 @@ committed summaries it needs.
 |---|---|---|
 | Chromium Gerrit (`chromium-review.googlesource.com`) | Code review: comments, threads, reviewers, CLs | In use (Value Exchange) |
 | [Cloudflare Radar](https://radar.cloudflare.com/) | Browser usage share | In use (Value Exchange) |
-| Chromium git history (`chromium.googlesource.com/chromium/src`) | Commits, authors, dates, messages and file contents (`main` only), plus every patch set of reviewed CLs since 2023-W26 | `main` in the shared clone `~/projects/shared/chromium` (`python3 -m cosh fetch-git`); patch sets in `data/private/git/chromium-patchsets.git` |
+| Chromium git history (`chromium.googlesource.com/chromium/src`) | Commits, authors, dates, messages and file contents (`main` only), plus every patch set of reviewed CLs since 2023-W26 | `main` in the shared clone `~/cache/chromium` (`python3 -m cosh fetch-git`); patch sets in `data/private/git/chromium-patchsets.git` |
 | Chromium bug tracker (`issues.chromium.org`) | Bugs filed, triaged and fixed, and by whom | Planned |
 | Others (mailing lists, standards work, …) | To be decided | Ideas |
 

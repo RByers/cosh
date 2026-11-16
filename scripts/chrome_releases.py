@@ -33,7 +33,7 @@ RAW = os.path.join(OUT, "raw")
 FEED = ("https://chromereleases.googleblog.com/feeds/posts/default?alt=json"
         "&published-min=2020-01-01T00:00:00&orderby=published&max-results=150&start-index={start}")
 UA = "Mozilla/5.0 (X11; Linux x86_64) cosh-research"
-SHARED = os.path.expanduser("~/projects/shared/chromium")
+SHARED = os.path.expanduser("~/cache/chromium")
 GAP = 2.0
 
 

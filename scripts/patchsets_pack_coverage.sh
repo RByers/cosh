@@ -17,7 +17,7 @@ echo "objects in old packs: $(wc -l < "$w/old.ids")"
 comm -23 "$w/old.ids" "$w/new.ids" > "$w/notnew.ids"
 echo "old objects not in new packs: $(wc -l < "$w/notnew.ids")"
 # Of those, which are missing from the shared clone too?
-git -C ~/projects/shared/chromium cat-file --batch-check='%(objectname) %(objecttype)' \
+git -C ~/cache/chromium cat-file --batch-check='%(objectname) %(objecttype)' \
   < "$w/notnew.ids" | awk '$2=="missing"{print $1}' > "$w/missing.ids"
 echo "in neither new packs nor shared clone: $(wc -l < "$w/missing.ids")"
 for p in $(cat "$before"); do

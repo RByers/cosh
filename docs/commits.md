@@ -6,7 +6,7 @@ below was the plan; "As built" says what shipped.
 
 Every Value Exchange metric today credits the **reviewer**. This note tries
 the classic other side: commits landed on `main`, credited to their
-**author**, computed locally from `~/projects/shared/chromium` (no fetch).
+**author**, computed locally from `~/cache/chromium` (no fetch).
 Prototype: `scripts/commits_explore.py`.
 
 ## Method

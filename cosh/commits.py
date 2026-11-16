@@ -4,7 +4,7 @@ The one store of git history that every step and script reads: the Value
 Exchange commits metric (summarize), the Feedback Index (cosh/review_feedback.py),
 the feedback coach, and the analyses. Its one writer,
 `python3 -m cosh commits` (also run at the end of a full `derive`), reads
-the local bare clone (~/projects/shared/chromium, or $COSH_CHROMIUM_GIT) and
+the local bare clone (~/cache/chromium, or $COSH_CHROMIUM_GIT) and
 never fetches: GIT_NO_LAZY_FETCH=1 and no remote command. It is incremental
 (it appends the commits that landed since its last run) and rebuildable
 (delete the file and rerun, about 1 h 50 min: config/dataflow.json).
@@ -39,7 +39,7 @@ from datetime import date, datetime, timezone
 from . import codefp, store
 from .bots import _PATTERNS
 
-DEFAULT_REPO = os.path.expanduser("~/projects/shared/chromium")
+DEFAULT_REPO = os.path.expanduser("~/cache/chromium")
 COMMITS_FILE = "commits.sqlite"
 ENV = {**os.environ, "GIT_NO_LAZY_FETCH": "1"}
 # The per-CL window (commit_id > 0) starts at the first commit landed on or

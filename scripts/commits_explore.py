@@ -9,7 +9,7 @@ from cosh.paths import load_scope
 from cosh.bots import _PATTERNS
 from cosh.extract import iso_week_of
 
-REPO = os.path.expanduser("~/projects/shared/chromium")
+REPO = os.path.expanduser("~/cache/chromium")
 DB = "/home/rbagent/projects/cosh/data/private/reviews.sqlite"
 SINCE, UNTIL = "2023-06-26T00:00:00Z", "2026-11-02T00:00:00Z"   # 2023-W26 .. 2026-W44
 REV = re.compile(r"^Reviewed-on: https://chromium-review\.googlesource\.com/c/chromium/src/\+/(\d+)", re.M)

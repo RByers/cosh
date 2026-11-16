@@ -1668,7 +1668,7 @@ ground rule 3).
   2,323,392,059 of `pack-f60330f3…` fails zlib's check. Git falls back to
   the older duplicate pack, which still holds every commit and tree, so
   nothing here was affected. A blob damaged the same way would have no
-  fallback. Run `git fsck` on `~/projects/shared/chromium` before trusting
+  fallback. Run `git fsck` on `~/cache/chromium` before trusting
   the older pack's removal.
 - Gerrit's `main` was `master` until 2021-04-07 00:00 UTC (the listing
   queries both before 2021-05-01; `derive` records `master` as `main`).
