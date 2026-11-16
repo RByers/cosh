@@ -399,6 +399,14 @@ so the URL can be shared; opening it scrolls to that card once the page has
 rendered. A bare `#<id>` (e.g. `#leaderboard`) works too, with the default state.
 A new card needs an `id` and its own `<a class="card-anchor">` before its `<h2>`.
 
+The collapsed methodology (`<details id="method">` on the Feedback Index,
+Review Load and Review Timezones) can be linked into too: each of its headings
+or paragraphs has an `id` and starts with an `<a class="section-anchor">` to
+itself. `src/anchors.ts` opens every `<details>` around the element a `#<id>`
+names, on load or when the hash changes, and keeps scrolling to it as the
+page's data and charts render, until the reader scrolls, types or clicks. A new
+part of a methodology gets an `id` and its own `section-anchor` the same way.
+
 ## Commands
 
 ```

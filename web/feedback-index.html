@@ -420,7 +420,7 @@
       <details id="method" class="card rf-method">
         <summary><h2>Methodology and details</h2></summary>
 
-        <h3>Why compare by reviewer, not directory</h3>
+        <h3 id="why-reviewer"><a class="section-anchor" href="#why-reviewer" aria-label="Link to this section" title="Link to this section">#</a>Why compare by reviewer, not directory</h3>
         <div class="rf-pair">
           <div>
             <h3>What each comparison predicts</h3>
@@ -462,7 +462,7 @@
           comments there, the dark ones the middle half.
         </template>
         <template data-msg="axis-factor">factor (against experience alone)</template>
-        <h3>Why approvers, not commenters</h3>
+        <h3 id="why-approvers"><a class="section-anchor" href="#why-approvers" aria-label="Link to this section" title="Link to this section">#</a>Why approvers, not commenters</h3>
         <p class="note">
           The reviewers are the people who approved the change (its <code>Reviewed-by</code> lines), not the people
           who commented on it. Who commented is part of the outcome being measured: only about half of changes draw a
@@ -475,7 +475,7 @@
           doesn't count toward the comparison.
         </p>
 
-        <h3>Drift over time</h3>
+        <h3 id="drift"><a class="section-anchor" href="#drift" aria-label="Link to this section" title="Link to this section">#</a>Drift over time</h3>
         <ul id="rf-drift-legend" class="legend rf-line-legend" aria-label="Lines"></ul>
         <div class="chart rf-half-chart">
           <canvas id="rf-drift-chart" role="img" aria-label="Line chart per half-year of everyone's addressed comments against what is expected: by experience and size alone, and by experience, size, reviewers and authors."></canvas>
@@ -496,7 +496,7 @@
         <template data-msg="drift-full">And reviewers and authors</template>
         <template data-msg="axis-drift">addressed against expected</template>
 
-        <h3>How it's changing</h3>
+        <h3 id="changing"><a class="section-anchor" href="#changing" aria-label="Link to this section" title="Link to this section">#</a>How it's changing</h3>
         <div class="toggles">
           <div class="select-toggle">
             <label for="rf-cohort-bin">Experience</label>
@@ -518,7 +518,7 @@
 
         <div class="rf-pair">
           <div>
-            <h3>Addressed comments per change, by change size</h3>
+            <h3 id="by-size"><a class="section-anchor" href="#by-size" aria-label="Link to this section" title="Link to this section">#</a>Addressed comments per change, by change size</h3>
             <div class="chart rf-half-chart">
               <canvas id="rf-size-cl" role="img" aria-label="Bar chart of the median contributor's addressed comments per change by the number of lines a change wrote."></canvas>
             </div>
@@ -544,13 +544,13 @@
 
         <div class="rf-pair">
           <div>
-            <h3>By directory</h3>
+            <h3 id="by-directory"><a class="section-anchor" href="#by-directory" aria-label="Link to this section" title="Link to this section">#</a>By directory</h3>
             <div class="chart rf-half-chart">
               <canvas id="rf-dir-chart" role="img" aria-label="Bar chart of the median contributor's AFR in the two-level directories with the most contributors, highest first."></canvas>
             </div>
           </div>
           <div>
-            <h3>By organization</h3>
+            <h3 id="by-organization"><a class="section-anchor" href="#by-organization" aria-label="Link to this section" title="Link to this section">#</a>By organization</h3>
             <div class="chart rf-half-chart">
               <canvas id="rf-org-chart" role="img" aria-label="Bar chart of the median contributor's AFR in the organizations with the most contributors, highest first."></canvas>
             </div>
@@ -584,7 +584,7 @@
         <template data-msg="axis-dir">directory</template>
         <template data-msg="axis-org">organization</template>
 
-        <h3>How it's measured</h3>
+        <h3 id="measured"><a class="section-anchor" href="#measured" aria-label="Link to this section" title="Link to this section">#</a>How it's measured</h3>
         <p class="note">
           Changes are the merged, human-owned Chromium changes on main that landed from
           <span data-rf-range="from"></span> to <span data-rf-range="to"></span>,
@@ -640,12 +640,12 @@
         <p><strong>Reviewer:</strong> someone who approved the change: named in the landed commit's
           <code>Reviewed-by</code> lines (they voted Code-Review), whether or not they commented. The index compares
           by reviewer.</p>
-        <p><a href="#method">Why approvers</a></p>
+        <p><a href="#why-approvers">Why approvers</a></p>
       </div>
       <div id="def-commenter" class="term-pop" popover role="note" aria-label="Commenter">
         <p><strong>Commenter:</strong> anyone but the change's owner (bots left out) who started a comment thread
           on it, whether or not they approved it. Feedback is counted from commenters.</p>
-        <p><a href="#method">Why not compare by commenter</a></p>
+        <p><a href="#why-approvers">Why not compare by commenter</a></p>
       </div>
     </main>
     <script type="module" src="/src/review-feedback.ts"></script>

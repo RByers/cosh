@@ -37,6 +37,7 @@ import {
 import { LOAD_PEOPLE, r2Url } from './r2.ts';
 import { fragment, msg, type Vars } from './text.ts';
 import { showDataSpan } from './data-span.ts';
+import { initAnchors } from './anchors.ts';
 
 declare global {
   interface Window {
@@ -513,6 +514,7 @@ function init() {
   }).catch(() => {}).finally(() => {
     document.body.dataset.ready = '1';
   });
+  initAnchors();
 }
 
 init();

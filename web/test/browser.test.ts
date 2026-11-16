@@ -4203,3 +4203,48 @@ test('review timezones: the overlap chart, who reviews whom and the OWNERS table
   assert.deepEqual(errors, []);
   await page.close();
 });
+
+test('methodology anchors: a link into the collapsed methodology opens it and scrolls there', async () => {
+  // The element is at the top of the window (below the page's scroll padding), or as near as the
+  // page's end lets it be.
+  const top = async (page: Page, sel: string) => {
+    const at = () => page.evaluate((s) => {
+      const t = document.querySelector(s)!.getBoundingClientRect().top -
+        parseFloat(getComputedStyle(document.documentElement).scrollPaddingTop);
+      const atEnd = window.scrollY >= document.documentElement.scrollHeight - window.innerHeight - 1;
+      return { t: Math.round(t), atEnd, h: window.innerHeight };
+    }, sel);
+    await page.waitForFunction((s) => {
+      const t = document.querySelector(s)!.getBoundingClientRect().top -
+        parseFloat(getComputedStyle(document.documentElement).scrollPaddingTop);
+      return Math.abs(t) < 2 || (t > 0 && window.scrollY >= document.documentElement.scrollHeight - window.innerHeight - 1);
+    }, { timeout: 5000 }, sel).catch(async () => assert.fail(`${sel} not scrolled to: ${JSON.stringify(await at())}`));
+  };
+  // Loaded with the hash: Review Timezones, on the committed data.
+  const tz = await browser.newPage();
+  const errors: string[] = [];
+  tz.on('pageerror', (e) => errors.push(String(e)));
+  await tz.setViewport({ width: 1200, height: 900 });
+  await tz.goto(baseUrl + 'review-timezones.html#turns', { waitUntil: 'load' });
+  await tz.waitForSelector('body[data-ready]');
+  assert.equal(await tz.$eval('#method', (d) => (d as HTMLDetailsElement).open), true);
+  await top(tz, '#turns');
+  assert.equal(await tz.$eval('#turns .section-anchor', (a) => (a as HTMLAnchorElement).hash), '#turns');
+  await tz.close();
+  // Followed later (a "#" link or a term bubble's link): the Feedback Index draws the methodology's
+  // charts when it opens, and the heading still ends at the top.
+  const { page, errors: rfErrors } = await feedbackPage();
+  assert.equal(await page.$eval('#method', (d) => (d as HTMLDetailsElement).open), false);
+  assert.deepEqual(await page.$$eval('#def-reviewer a, #def-commenter a', (as) => as.map((a) => (a as HTMLAnchorElement).hash)),
+    ['#why-approvers', '#why-approvers']);
+  await page.evaluate(() => { location.hash = '#drift'; });
+  await page.waitForFunction(() => 'drift' in window.__rf!.charts);
+  assert.equal(await page.$eval('#method', (d) => (d as HTMLDetailsElement).open), true);
+  await top(page, '#drift');
+  // Every methodology heading with an id links to itself.
+  const heads = await page.$$eval('#method h3[id]', (hs) => hs.map((h) => [h.id, h.querySelector('a')?.hash]));
+  assert.ok(heads.length >= 8, String(heads));
+  for (const [id, hash] of heads) assert.equal(hash, `#${id}`);
+  assert.deepEqual([...errors, ...rfErrors], []);
+  await page.close();
+});

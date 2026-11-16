@@ -266,21 +266,21 @@
 
       <details id="method" class="card rf-method">
         <summary><h2>How this is measured</h2></summary>
-        <p class="note">
-          <strong>Commits</strong> are the first-parent history of Chromium's main branch from July 2017, when
+        <p id="commits" class="note">
+          <a class="section-anchor" href="#commits" aria-label="Link to this paragraph" title="Link to this paragraph">#</a><strong>Commits</strong> are the first-parent history of Chromium's main branch from July 2017, when
           Chromium's code review moved to Gerrit and commits began to carry Reviewed-by footers. Only whole
           quarters are shown, so the page changes when a quarter completes.
         </p>
-        <p class="note">
-          <strong>Lines reviewed</strong> come from git alone: a commit's added plus removed lines (a renamed
+        <p id="lines-reviewed" class="note">
+          <a class="section-anchor" href="#lines-reviewed" aria-label="Link to this paragraph" title="Link to this paragraph">#</a><strong>Lines reviewed</strong> come from git alone: a commit's added plus removed lines (a renamed
           file counts by the lines changed in it, a binary file as none), once for each person in its
           Reviewed-by footers other than its author. Commits by bots, reverts, large-scale changes and
           mechanical commits (100 or more files, or 10 or more that repeat the same edit) are left out, since
           nobody reads those line by line. A commit with two reviewers counts twice: the measure is review
           work, not code.
         </p>
-        <p class="note">
-          <strong>Reviewers here are approvers.</strong> Gerrit writes a Reviewed-by footer for each positive
+        <p id="approvers" class="note">
+          <a class="section-anchor" href="#approvers" aria-label="Link to this paragraph" title="Link to this paragraph">#</a><strong>Reviewers here are approvers.</strong> Gerrit writes a Reviewed-by footer for each positive
           Code-Review vote standing on the patch set that lands, so a reviewer who was added to a change but
           never voted, or whose vote a later patch set cleared, isn't in it. In 2025, 99.8% of Reviewed-by names
           had such a vote (the rest voted under another address), while 16% of the reviewers added to changes
@@ -289,7 +289,7 @@
         </p>
         <p id="rl-split-note" class="note"></p>
         <template data-msg="split-note">
-          <strong>Who read what.</strong> When a change has several reviewers, each often reads only part of it,
+          <a class="section-anchor" href="#rl-split-note" aria-label="Link to this paragraph" title="Link to this paragraph">#</a><strong>Who read what.</strong> When a change has several reviewers, each often reads only part of it,
           but nothing in git or Gerrit records who read which file. Every file needs an owner's approval, so lines
           reviewed credits a file to the first of its owners among the reviewers to approve (by the OWNERS files
           at the end of the quarter), to anyone who commented in its directory, and to every reviewer who owns
@@ -316,15 +316,15 @@
         <template data-msg="legend-split-line">Reviewers who read each line (estimate)</template>
         <template data-msg="legend-split-commit">Reviewers per commit</template>
         <template data-msg="axis-split">reviewers</template>
-        <p class="note">
-          <strong>Review times</strong> come from Gerrit, for the same commits' changes. A reviewer is anyone
+        <p id="review-times" class="note">
+          <a class="section-anchor" href="#review-times" aria-label="Link to this paragraph" title="Link to this paragraph">#</a><strong>Review times</strong> come from Gerrit, for the same commits' changes. A reviewer is anyone
           but the change's owner, bots left out, whether or not they approved: being asked is load even when
           someone else answers first. An answer is a Code-Review vote or a comment before the change closed. For changes with no comments, only the votes standing when the change closed are known. The
           attention set exists from late 2020; its hours are counted from <span id="rl-att-from"></span>, from
           the change's creation to its close, overlapping turns once.
         </p>
-        <p class="note">
-          <strong>Owners</strong> are read from the OWNERS files on main at the end of the last quarter shown:
+        <p id="owners-committers" class="note">
+          <a class="section-anchor" href="#owners-committers" aria-label="Link to this paragraph" title="Link to this paragraph">#</a><strong>Owners</strong> are read from the OWNERS files on main at the end of the last quarter shown:
           a file's owners are the people listed in its directory's OWNERS file and in those of the directories
           above (up to one that says <code>set noparent</code>), with <code>file://</code> includes followed.
           Rules for single files (<code>per-file</code>) are not read, and a directory where anyone may approve
@@ -332,8 +332,8 @@
           from their first Code-Review vote in Gerrit, or from their first commit that landed with one
           reviewer; a commit by anyone else that has two or more reviewers is one that needed two approvals.
         </p>
-        <p class="note">
-          Addresses are matched as in the Feedback Index, only on evidence: a Gerrit owner and the git author
+        <p id="addresses" class="note">
+          <a class="section-anchor" href="#addresses" aria-label="Link to this paragraph" title="Link to this paragraph">#</a>Addresses are matched as in the Feedback Index, only on evidence: a Gerrit owner and the git author
           of the same changes, or a reviewer's address and the account that cast the vote. An account Gerrit now
           shows without an address, usually a deleted one, gets the address its votes or changes carried. Sharing a
           name across chromium.org and google.com isn't enough. Someone with several addresses is named by the one they used

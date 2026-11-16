@@ -147,8 +147,8 @@
 
       <details id="method" class="card rf-method">
         <summary><h2>How this is measured</h2></summary>
-        <p class="note">
-          <strong>Working hours</strong> are fitted to each person's activity in Gerrit, from public timestamps
+        <p id="working-hours" class="note">
+          <a class="section-anchor" href="#working-hours" aria-label="Link to this paragraph" title="Link to this paragraph">#</a><strong>Working hours</strong> are fitted to each person's activity in Gerrit, from public timestamps
           alone: the comments they wrote, their Code-Review votes and the patch sets they uploaded. Once a
           quarter, the 8 consecutive hours of the day (UTC) that hold the most of it are taken as their working
           day, starting at 09:00 local time; that gives their timezone and so their own Saturday and Sunday.
@@ -157,15 +157,15 @@
           a trip causes counts. People who split their day, or work long and uneven hours, fit less well.
           Holidays aren't known.
         </p>
-        <p class="note">
-          <strong>Turns</strong> are stays of a reviewer (anyone but the change's owner, bots left out) in a
+        <p id="turns" class="note">
+          <a class="section-anchor" href="#turns" aria-label="Link to this paragraph" title="Link to this paragraph">#</a><strong>Turns</strong> are stays of a reviewer (anyone but the change's owner, bots left out) in a
           change's attention set, on the changes of the commits landed in the four quarters shown, as on the
           Review Load page. A turn still open when the change landed is left out, and changes with no comments
           at all have no attention-set history here. A turn's <strong>wait</strong> is the part of it inside the
           author's working hours.
         </p>
-        <p class="note">
-          <strong>OWNERS</strong> files are read from main at the end of the last quarter shown, with
+        <p id="owners-files" class="note">
+          <a class="section-anchor" href="#owners-files" aria-label="Link to this paragraph" title="Link to this paragraph">#</a><strong>OWNERS</strong> files are read from main at the end of the last quarter shown, with
           <code>file://</code> includes followed; <code>per-file</code> rules are not read. Addresses are
           matched as in the Feedback Index. Everything comes from public Gerrit and git data. Code and method:
           <a target="_blank" rel="noopener" href="https://github.com/RByers/cosh/blob/main/docs/review-timezones.md">docs/review-timezones.md</a>.

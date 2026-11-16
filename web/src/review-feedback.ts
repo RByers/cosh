@@ -51,6 +51,7 @@ import {
 import { fmtDay, fmtInt, fmtNum } from './format.ts';
 import { FEEDBACK_PEOPLE, r2Url } from './r2.ts';
 import { initTerms } from './terms.ts';
+import { initAnchors } from './anchors.ts';
 import { fragment, msg, type Vars } from './text.ts';
 import { showDataSpan } from './data-span.ts';
 
@@ -1208,9 +1209,8 @@ function init() {
     state.cohortBin = Number((e.target as HTMLSelectElement).value);
     renderNewcomers();
   });
-  if (location.hash === '#method') method.open = true;
-  // A term bubble's link to the methodology opens it.
-  addEventListener('hashchange', () => { if (location.hash === '#method') method.open = true; });
+  // A link to the methodology, or into it (a "#" link, a term bubble's link), opens it.
+  initAnchors();
   initTerms();
   matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
     renderIntro();

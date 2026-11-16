@@ -191,8 +191,19 @@ h2 {
   line-height: 1.2;
 }
 
+/* A methodology part's "#" link, leading its heading or paragraph: a
+   shareable link that opens the methodology and scrolls there (anchors.ts). */
+.section-anchor {
+  margin-right: 0.35em;
+  font-weight: bold;
+  color: var(--accent);
+  text-decoration: none;
+}
+
 .card-anchor:hover,
-.card-anchor:focus-visible {
+.card-anchor:focus-visible,
+.section-anchor:hover,
+.section-anchor:focus-visible {
   text-decoration: underline;
 }
 

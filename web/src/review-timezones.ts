@@ -6,6 +6,7 @@ import { fmtDay, fmtInt, fmtNum } from './format.ts';
 import { quarterLabel, waitShade } from './load.ts';
 import { fragment, msg, type Vars } from './text.ts';
 import { showDataSpan, type DataSpan } from './data-span.ts';
+import { initAnchors } from './anchors.ts';
 
 /** [10th, 25th, 50th, 75th, 90th percentile] */
 type P5 = [number, number, number, number, number];
@@ -242,6 +243,7 @@ function init() {
   }).catch(() => {}).finally(() => {
     document.body.dataset.ready = '1';
   });
+  initAnchors();
 }
 
 init();
