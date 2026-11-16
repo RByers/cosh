@@ -280,7 +280,8 @@
           your feedback index; the shaded bands are the middle half and the 10th–90th percentile of everyone's index
           that half-year (contributors with <span class="rf-min-cls"></span> or more changes in it), and the dashed
           line their median. Points with fewer of your changes are drawn hollow. Select one of your dots to
-          see only that half-year's changes in Your feedback, below.
+          see only that half-year's changes in Your feedback, below (its Covering); select it again for all of
+          them. The dots in the period Your feedback covers are ringed.
         </p>
       </section>
 
@@ -290,28 +291,23 @@
         <p class="sub">
           Who approved your changes, and how much feedback their approvals usually draw. Your index compares
           each change with what its reviewers' approvals draw on everyone else's changes. ▸ lists the addressed
-          comments that reviewer started themselves on your changes landed in the period picked under Covering (as a commenter), newest first: the day, the change (linking to the
-          comment in Gerrit) and the file.
-        </p>
-        <!-- Set by selecting a dot in the over-time chart; filters this table. -->
-        <p id="rf-half-filter" class="rf-filter" hidden>
-          <span id="rf-half-filter-name" class="rf-filter-name"></span>
-          <button type="button" id="rf-half-clear">Clear</button>
+          comments that reviewer started themselves, newest first: the day, the change (linking to the
+          comment in Gerrit) and the file. Everything here covers your changes landed in the period picked
+          under Covering; selecting a dot in the over-time chart picks its half-year.
         </p>
         <!-- Set by selecting a Feedback count in the directory table's Yours columns. -->
         <p id="rf-dir-filter" class="rf-filter" hidden>
           <span id="rf-dir-filter-name" class="rf-filter-name"></span>
           <button type="button" id="rf-dir-clear">Clear</button>
         </p>
-        <p class="rf-revs-range"><label title="List the reviewers who started addressed comments on your changes landed in this period">Covering
-          <select id="rf-revs-range">
-            <option value="6m">the past 6 months</option>
-            <option value="1y" selected>the past year</option>
-            <option value="details">all with details</option>
-            <option value="all">all (including those without details)</option>
-          </select></label></p>
-        <template data-msg="revs-range-details">all with details (to <slot name="year"></slot>)</template>
-        <template data-msg="half-filter">Filter: only changes landed <slot name="half"></slot></template>
+        <!-- Your feedback's one date filter: all, a year or a half-year (src/review-feedback.ts fillPeriods),
+          also set by selecting a dot in the over-time chart. -->
+        <p class="rf-revs-range"><label title="Count and list only your changes landed in this period">Covering
+          <select id="rf-revs-range"><option value="all">all your changes</option></select></label>
+          <label class="rf-revs-own" title="Leave out reviewers whose approvals drew addressed comments only from others"><input
+            type="checkbox" id="rf-revs-own" checked /> only reviewers who started addressed comments themselves</label></p>
+        <template data-msg="period-all">all your changes</template>
+        <template data-msg="period-year">all of <slot name="year"></slot></template>
         <template data-msg="dir-filter">Filter: only feedback in <slot name="dir"></slot></template>
         <template data-msg="dir-filter-rest">the files directly in <slot name="dir"></slot></template>
         <template data-msg="dir-filter-other">the smaller directories in <slot name="dir"></slot></template>
@@ -331,11 +327,12 @@
         <template data-msg="revs-note">
           <span data-if="some">Listed are the <slot name="n"></slot> of the <slot name="all"></slot> reviewers
           whose approvals of your changes drew addressed comments<span data-if="dir"> there</span> who started some
-          themselves on your changes landed since <slot name="since"></slot><span data-if="start">, where the
-          comment list starts</span>. Covering picks who is listed, not what the columns count; “all” lists all
+          themselves<span data-if="cut"> on your changes landed since <slot name="since"></slot>, where the comment
+          list starts</span>; untick “only reviewers who started addressed comments themselves” to list all
           <slot name="all"></slot>.</span><span data-if="!some"><slot
           name="n"></slot> reviewers approved your changes that drew addressed comments<span data-if="dir">
-          there</span>.</span> Reviewers are those in your changes' Reviewed-by lines (who voted Code-Review);
+          there</span>.<span data-if="before"> The comment list goes back only to changes landed since
+          <slot name="since"></slot>, so it can't say who started them.</span></span> Reviewers are those in your changes' Reviewed-by lines (who voted Code-Review);
           reviewers whose approvals drew none aren't listed. A change with several counts under each, and its reviewer factor is their mean. A
           reviewer factor is fitted together with every author's own factor, so a reviewer who mostly approves
           newcomers' changes isn't counted as strict for that, and it leaves your changes out: a reviewer who
@@ -345,14 +342,13 @@
           AFR or index.
         </template>
         <template data-msg="rev-loading">Loading…</template>
-        <template data-msg="rev-none">No addressed comments from them on your changes<span data-if="half"> landed
-          <slot name="half"></slot></span><span data-if="dir"> in <slot name="dir"></slot></span><span
-          data-if="since"> since <slot name="since"></slot><span data-if="start">, where the comment list
-          starts</span></span>.</template>
+        <template data-msg="rev-none">No addressed comments from them on your changes landed then<span
+          data-if="dir"> in <slot name="dir"></slot></span><span data-if="since"> since <slot name="since"></slot>,
+          where the comment list starts</span>.</template>
         <template data-msg="rev-none-before">The comment list goes back only to changes landed since
-          <slot name="since"></slot>, so it has none from <slot name="half"></slot>.</template>
-        <template data-msg="rev-since">On your changes landed since <slot name="since"></slot><span
-          data-if="start">, where the comment list starts</span>.</template>
+          <slot name="since"></slot>, so it has none from <slot name="period"></slot>.</template>
+        <template data-msg="rev-since">On your changes landed since <slot name="since"></slot>, where the comment
+          list starts.</template>
         <template data-msg="rev-error">Couldn't load the comments: <slot name="error"></slot></template>
         <template data-msg="rev-comment-title">Open this comment in Gerrit</template>
         <template data-msg="rev-commit-msg">commit message</template>

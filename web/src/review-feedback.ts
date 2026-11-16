@@ -63,13 +63,14 @@ const put = (target: Element, key: string, vars: Vars = {}) => target.replaceChi
 
 declare global {
   interface Window {
-    __rf?: { person: Person | null; peers: Peers | null; charts: Record<string, Chart>; half: string | null };
+    __rf?: { person: Person | null; peers: Peers | null; charts: Record<string, Chart>; period: string };
   }
 }
 
 const $ = <T extends Element = HTMLElement>(sel: string) => document.querySelector<T>(sel)!;
 const DATA = 'review-feedback/';
-/** The page's figures cover all the data; only the over-time chart splits it, by half-year. */
+/** The page's figures cover all the data; the over-time chart splits it by half-year, and Your feedback
+ * covers a period picked under Covering. */
 const ALL = 'all';
 
 const state = {
@@ -80,8 +81,9 @@ const state = {
   /** The person's file key and half-years, for their thread files. */
   key: null as string | null,
   halves: [] as string[],
-  /** The half-year picked in the over-time chart, filtering "Your feedback". */
-  half: null as string | null,
+  /** The period "Your feedback" covers: "all", a year ("2026") or a half-year ("2026H1"), picked under
+   * Covering or by selecting a dot in the over-time chart. */
+  period: 'all',
   /** The directory-table row picked by its Yours Feedback count, filtering "Your feedback": its key, its
    * name for the filter's text, and the 3-level directories counted there. */
   dir: null as { key: string; name: string; dirs: DirFilter } | null,
@@ -90,9 +92,9 @@ const state = {
   threads: new Map<string, Promise<ThreadFile | null>>(),
   /** Addresses of the reviewers opened in "Your feedback". */
   revOpen: new Set<string>(),
-  /** "Covering" in "Your feedback" (`REV_RANGES`): which of the person's changes the listed reviewers
-   * started comments on; "all" lists every approver whose approvals drew addressed comments. */
-  revRange: '1y' as RevRange,
+  /** Whether "Your feedback" lists only the approvers who started addressed comments of their own in the
+   * period (where the thread files have them), rather than every approver whose approvals drew some. */
+  ownOnly: true,
   /** Who has comments to list under the current filters (`key`), from the thread files: null while they
    * load. */
   commenters: null as { key: string; set: Set<string> | null; error?: string } | null,
@@ -102,7 +104,7 @@ const state = {
   allExpanded: new Set<string>(),
 };
 const charts: Record<string, Chart> = {};
-window.__rf = { person: null, peers: null, charts, half: null };
+window.__rf = { person: null, peers: null, charts, period: 'all' };
 
 async function getJson<T>(url: string): Promise<T | null> {
   const r = await fetch(url);
@@ -259,8 +261,7 @@ async function lookup(raw: string) {
     state.threads = new Map();
     state.revOpen = new Set();
     state.commenters = null;
-    state.half = null;
-    window.__rf!.half = null;
+    state.period = ALL;
     state.dir = null;
     state.allExpanded = new Set();
     const n = sums(found, peers, found.cells).cls;
@@ -268,7 +269,6 @@ async function lookup(raw: string) {
     $('#rf-person').hidden = false;
     $('#rf-find-dl').hidden = false;
     setupDownload();
-    setupRevRange();
     render();
     renderIntro();
     document.body.dataset.person = '1';
@@ -793,8 +793,9 @@ function renderSizes() {
 
 function render() {
   if (!state.person || !state.peers) return;
-  if (state.half && !cellsIn(state.person, state.half).length) state.half = null;
-  window.__rf!.half = state.half;
+  if (state.period !== ALL && !cellsIn(state.person, state.period).length) state.period = ALL;
+  window.__rf!.period = state.period;
+  fillPeriods();
   renderSummary();
   renderTrend();
   renderXpTable();
@@ -864,20 +865,22 @@ function renderTrend() {
       .find((x) => x.datasetIndex === 5);
     return hit && you[hit.index] !== null ? hit.index : null;
   };
-  // A ring around the selected dot, as long as its filter is on.
+  // A ring around each dot in the period Your feedback covers, unless that is all of it.
   const ring: Plugin<'line'> = {
     id: 'rf-ring',
     afterDatasetsDraw(chart) {
-      const i = state.half ? hs.indexOf(state.half) : -1;
-      const pt = i >= 0 && you[i] !== null ? chart.getDatasetMeta(5).data[i] : undefined;
-      if (!pt) return;
+      if (state.period === ALL) return;
       const { ctx } = chart;
       ctx.save();
-      ctx.beginPath();
-      ctx.arc(pt.x, pt.y, 9, 0, 2 * Math.PI);
       ctx.lineWidth = 2;
       ctx.strokeStyle = youColor(t);
-      ctx.stroke();
+      hs.forEach((h, i) => {
+        const pt = inPeriod(h, state.period) && you[i] !== null ? chart.getDatasetMeta(5).data[i] : undefined;
+        if (!pt) return;
+        ctx.beginPath();
+        ctx.arc(pt.x, pt.y, 9, 0, 2 * Math.PI);
+        ctx.stroke();
+      });
       ctx.restore();
     },
   };
@@ -894,7 +897,7 @@ function renderTrend() {
       },
       onClick: (e, _els, chart) => {
         const i = dotAt(chart, e);
-        if (i !== null) setHalf(state.half === hs[i] ? null : hs[i]);
+        if (i !== null) setPeriod(state.period === hs[i] ? ALL : hs[i]);
       },
       font: { family: t.font },
       scales: {
@@ -950,25 +953,66 @@ function renderXpTable() {
   put($('#rf-xp-note'), 'experience-note');
 }
 
+/** Whether half-year `h` is in `period`: "all", a year ("2026") or a half-year ("2026H1"). */
+const inPeriod = (h: string, period: string) =>
+  period === ALL || h === period || (period.length === 4 && h.startsWith(period));
+
+/** A period's name: all of it, a year or a half-year (cut to the dates the data covers). */
+function periodName(period: string): string {
+  if (period === ALL) return msg('period-all');
+  return period.length === 4 ? msg('period-year', { year: period }) : halfName(period);
+}
+
+/** Covering's choices, the one date filter of Your feedback (selecting a dot in the over-time chart picks
+ * its half-year here too): all the person's changes, then each year they landed some in, newest first,
+ * with its half-years (a year with only one is just that half-year). */
+function fillPeriods() {
+  const sel = $<HTMLSelectElement>('#rf-revs-range');
+  const hs = [...state.person!.halves].sort().reverse();
+  const opt = (value: string) => {
+    const o = el('option', periodName(value));
+    o.value = value;
+    return o;
+  };
+  const out: HTMLElement[] = [opt(ALL)];
+  for (const y of new Set(hs.map((h) => h.slice(0, 4)))) {
+    const g = el('optgroup');
+    g.label = y;
+    const mine = hs.filter((h) => h.startsWith(y));
+    if (mine.length > 1) g.append(opt(y));
+    g.append(...mine.map(opt));
+    out.push(g);
+  }
+  sel.replaceChildren(...out);
+  sel.value = state.period;
+}
+
+/** The thread files of the period Your feedback covers: its half-years that have them, whether some of
+ * the person's changes in it landed before they start (`cut`), and the day they start. */
+function periodDetails(): { halves: string[]; cut: boolean; since: string } {
+  const all = threadRange();
+  const mine = state.halves.filter((h) => inPeriod(h, state.period));
+  return { halves: all.halves.filter((h) => inPeriod(h, state.period)), cut: mine.some((h) => !all.halves.includes(h)),
+    since: all.from };
+}
+
 /** The person's approvers: their changes each approved, the feedback on them, the reviewer's factor
- * (how much feedback their approvals draw on everyone else's changes) and the person's index on them. */
+ * (how much feedback their approvals draw on everyone else's changes) and the person's index on them,
+ * all in the period picked under Covering. */
 function renderReviewers() {
   const p = state.person!;
   const peers = state.peers!;
-  const period = state.half ?? ALL;
-  const filter = $('#rf-half-filter');
-  filter.hidden = !state.half;
-  if (state.half) put(filter.querySelector('.rf-filter-name')!, 'half-filter', { half: halfName(state.half) });
+  const period = state.period;
+  $<HTMLSelectElement>('#rf-revs-range').value = period;
   const dir = state.dir;
   const dirFilter = $('#rf-dir-filter');
   dirFilter.hidden = !dir;
   if (dir) put(dirFilter.querySelector('.rf-filter-name')!, 'dir-filter', { dir: dir.name });
-  // Only reviewers whose approvals drew addressed comments: the comments are what this lists. Unless
-  // Covering is "all", only those with comments of their own to list in the picked period.
+  // Only reviewers whose approvals drew addressed comments: the comments are what this lists. Where the
+  // thread files cover the period, unless unticked, only those who started some of them themselves.
   const drew = reviewerRows(p, peers, period, dir?.dirs).filter((r) => r.addressed > 0);
-  const range = revRange();
-  const since = dayText(range.from);
-  const who = state.revRange === 'all' ? null : commenters();
+  const details = periodDetails();
+  const who = state.ownOnly && details.halves.length ? commenters(details.halves) : null;
   const rows = who ? drew.filter((r) => who.set?.has(r.email)) : drew;
   const body = $('#rf-revs tbody');
   body.replaceChildren();
@@ -1005,24 +1049,22 @@ function renderReviewers() {
   }
   const none = noApproverCls(p, period, dir?.dirs);
   put($('#rf-revs-note'), 'revs-note', { n: fmtInt(rows.length), all: fmtInt(drew.length), some: !!who, dir: !!dir,
-    since, start: range.start, none: fmtInt(Math.round(none)), hasNone: none >= 0.5,
-    noneF: fmtFi(noneFactor(p, peers)), min: fmtInt(peers.min_bin_cls) });
+    cut: !!who && details.cut, before: !details.halves.length, since: dayText(details.since),
+    none: fmtInt(Math.round(none)), hasNone: none >= 0.5, noneF: fmtFi(noneFactor(p, peers)),
+    min: fmtInt(peers.min_bin_cls) });
 }
 
-/** The approvers with comments to list under the current filters (see reviewerCommenters): from the
- * thread files, which are fetched (once) the first time; `set` is null until they are in. */
-function commenters(): NonNullable<typeof state.commenters> {
-  const half = state.half;
+/** The approvers with comments to list under the current filters (see reviewerCommenters), from the
+ * thread files of half-years `hs`, which are fetched (once) the first time; `set` is null until they
+ * are in. */
+function commenters(hs: string[]): NonNullable<typeof state.commenters> {
   const dir = state.dir;
-  const range = revRange();
-  const id = `${state.key}|${half ?? ''}|${dir?.key ?? ''}|${range.from}`;
+  const id = `${state.key}|${state.period}|${dir?.key ?? ''}`;
   if (state.commenters?.key === id) return state.commenters;
-  // Comments are kept only for the newest half-years (those in the range): another has none to list.
-  if (half && !range.halves.includes(half)) return (state.commenters = { key: id, set: new Set() });
   const got: NonNullable<typeof state.commenters> = { key: id, set: null };
   state.commenters = got;
-  void threadFiles(half ? [half] : range.halves).then((files) => {
-    got.set = reviewerCommenters(files, dir?.dirs, half, range.from);
+  void threadFiles(hs).then((files) => {
+    got.set = reviewerCommenters(files, dir?.dirs);
   }).catch((e) => {
     got.error = String(e instanceof Error ? e.message : e);
     // A failed fetch is tried again the next time the list is drawn.
@@ -1067,28 +1109,6 @@ function threadRange(): { halves: string[]; from: string } {
   return { halves: hs, from: isoDay(periodSpan(hs[0], [-Infinity, Infinity])[0]) };
 }
 
-/** Your feedback's Covering choices: the past 6 months or year (days back from the data's end), every
- * change with thread files ("details"), or every approver, with or without comments to list. */
-type RevRange = '6m' | '1y' | 'details' | 'all';
-const REV_DAYS: Partial<Record<RevRange, number>> = { '6m': 182, '1y': 365 };
-
-/** The period Covering picks: the first day of the changes whose comments are listed, the half-years
- * with thread files that reach it, and whether that day is where the thread files start. */
-function revRange(): { halves: string[]; from: string; start: boolean } {
-  const range = threadRange();
-  const days = REV_DAYS[state.revRange];
-  const back = days ? isoDay(state.peers!.end - days) : range.from;
-  const from = back > range.from ? back : range.from;
-  const halves = range.halves.filter((h) => isoDay(periodSpan(h, [-Infinity, Infinity])[1]) > from);
-  return { halves, from, start: from === range.from };
-}
-
-/** Covering's "all with details" names the year the thread files start in. */
-function setupRevRange() {
-  const opt = $<HTMLSelectElement>('#rf-revs-range').querySelector<HTMLOptionElement>('option[value="details"]')!;
-  opt.textContent = msg('revs-range-details', { year: threadRange().from.slice(0, 4) });
-}
-
 /** The person's thread files for the half-years `hs` that they have changes in. */
 async function threadFiles(hs: string[]): Promise<ThreadFile[]> {
   const files = await Promise.all(hs.filter((h) => state.halves.includes(h)).map(loadThreads));
@@ -1099,7 +1119,7 @@ async function threadFiles(hs: string[]): Promise<ThreadFile[]> {
 const dayText = (d: string) => fmtDay(new Date(`${d}T00:00:00Z`));
 
 /** The row under an opened reviewer: the addressed comments they started on the person's changes
- * (of the picked half-year, if any; else of every half-year with thread files), newest first, each
+ * landed in the period picked under Covering (as far back as the thread files go), newest first, each
  * with its day, its change linking to the comment in Gerrit, and its file. Loaded from the thread
  * files the first time; no comment text. */
 function reviewerCommentsRow(email: string): HTMLTableRowElement {
@@ -1111,33 +1131,29 @@ function reviewerCommentsRow(email: string): HTMLTableRowElement {
   cell.append(td);
   tr.append(cell);
   const key = state.key;
-  const half = state.half;
+  const period = state.period;
   const dir = state.dir;
-  const all = threadRange();
-  const range = revRange();
-  const since = dayText(range.from);
-  // Comments are kept only for the newest half-years: an older one has none to list.
-  if (half && !all.halves.includes(half)) {
-    put(td, 'rev-none-before', { half: halfName(half), since: dayText(all.from) });
+  const details = periodDetails();
+  const since = dayText(details.since);
+  // Comments are kept only for the newest half-years: an older period has none to list.
+  if (!details.halves.length) {
+    put(td, 'rev-none-before', { period: periodName(period), since });
     return tr;
   }
-  // Under a half-year filter, the period matters only when it starts within that half-year.
-  const cut = !half || range.from > isoDay(periodSpan(half, [-Infinity, Infinity])[0]);
   put(td, 'rev-loading');
-  void threadFiles(half ? [half] : range.halves).then((files) => {
-    if (state.key !== key || state.half !== half || state.dir !== dir || !td.isConnected) return;
-    const list = reviewerComments(files, email, dir?.dirs, half, range.from);
+  void threadFiles(details.halves).then((files) => {
+    if (state.key !== key || state.period !== period || state.dir !== dir || !td.isConnected) return;
+    const list = reviewerComments(files, email, dir?.dirs);
     if (!list.length) {
-      put(td, 'rev-none', { half: half ? halfName(half) : '', dir: dir?.name ?? '', since: cut ? since : '',
-        start: range.start });
+      put(td, 'rev-none', { dir: dir?.name ?? '', since: details.cut ? since : '' });
       return;
     }
     const ul = el('ul', undefined, 'rf-rev-list');
     ul.append(...list.map(commentItem));
     td.replaceChildren(ul);
-    if (cut) {
+    if (details.cut) {
       const note = el('p', undefined, 'rf-rev-since');
-      put(note, 'rev-since', { since, start: range.start });
+      put(note, 'rev-since', { since });
       td.append(note);
     }
   }).catch((e) => {
@@ -1167,10 +1183,11 @@ function fiCell(v: number | null, title?: string): HTMLTableCellElement {
   return td;
 }
 
-/** Filters "Your feedback" to the changes landed in half-year `h` (null: all). */
-function setHalf(h: string | null) {
-  state.half = h;
-  window.__rf!.half = h;
+/** Sets the period Your feedback covers ("all", a year or a half-year), from Covering or a dot in the
+ * over-time chart, whose dots in it are ringed. */
+function setPeriod(period: string) {
+  state.period = period;
+  window.__rf!.period = period;
   charts.trend?.update('none');
   renderReviewers();
 }
@@ -1275,10 +1292,12 @@ function init() {
     e.preventDefault();
     void download();
   });
-  $('#rf-half-clear').addEventListener('click', () => setHalf(null));
   $('#rf-dir-clear').addEventListener('click', () => setDir(null));
   $<HTMLSelectElement>('#rf-revs-range').addEventListener('change', (e) => {
-    state.revRange = (e.target as HTMLSelectElement).value as RevRange;
+    if (state.person) setPeriod((e.target as HTMLSelectElement).value);
+  });
+  $<HTMLInputElement>('#rf-revs-own').addEventListener('change', (e) => {
+    state.ownOnly = (e.target as HTMLInputElement).checked;
     if (state.person) renderReviewers();
   });
   const method = $<HTMLDetailsElement>('#method');

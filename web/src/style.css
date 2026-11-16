@@ -2857,8 +2857,13 @@ button.term:focus-visible {
   color: var(--text-muted);
 }
 
-/* "Covering" above Your feedback's reviewers, like the download's. */
+/* "Covering" above Your feedback's reviewers (its date filter, which the over-time chart's dots set too),
+ * and whether to list only reviewers with comments of their own. */
 .rf-revs-range {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 20px;
   margin: 8px 0;
 }
 
@@ -2867,7 +2872,13 @@ button.term:focus-visible {
   font: inherit;
 }
 
-/* The half-year filter set from the over-time chart: what it is, and a way out. */
+.rf-revs-own {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* The directory filter set from the directory table: what it is, and a way out. */
 .rf-filter {
   display: flex;
   flex-wrap: wrap;

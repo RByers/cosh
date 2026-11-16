@@ -238,19 +238,21 @@ files).
   CLs whose index is lower, from `fi.all`) and the latest doubling
   (below), then the FI per half-year against the 10th–90th percentile,
   middle half and median of everyone's index that half-year (`fi[half]`).
-  Dots with fewer than `MIN_CLS` CLs are hollow. Selecting a dot filters
-  Your feedback to the CLs landed that half-year.
+  Dots with fewer than `MIN_CLS` CLs are hollow. Selecting a dot sets Your
+  feedback's Covering to that half-year (selecting it again, back to all);
+  the dots in the period Covering picks are ringed.
 - *Your feedback* (`reviewerRows`): everyone who approved one of the
-  person's CLs (in the picked half-year and directory, if any) whose
-  approvals drew addressed threads (rows with none are left out), most
-  CLs first. A "Covering" selector (like the download's) picks whose rows
-  are shown: those who started an addressed thread, per the thread files
-  (`reviewerCommenters`), on the person's CLs landed in the past 6 months,
-  the past year (the default; days back from the data's end), or since the
-  thread files start ("all with details (to 2022)", the year from
-  `THREAD_HALVES`); "all (including those without details)" lists every
-  such approver. It picks only the rows and the comments under them; the
-  columns still count all the person's CLs (or the picked half-year's). Columns: the
+  person's CLs landed in the period picked under "Covering" (and in the
+  picked directory, if any) whose approvals drew addressed threads (rows
+  with none are left out), most CLs first. Covering is the section's one
+  date filter, which the over-time chart's dots set too: all the person's
+  CLs (the default), a year or a half-year they landed CLs in (whole
+  half-years, as the person's cells are kept; `fillPeriods`). The columns
+  and the note count only that period's CLs. A checkbox, ticked by default,
+  lists only those who started an addressed thread themselves, per the
+  thread files (`reviewerCommenters`), where the thread files cover the
+  period (since they start, for a period reaching further back); for a
+  period entirely before them it lists every such approver. Columns: the
   person's CLs they approved, addressed threads on them, the person's AFR
   there, the reviewer's factor without the person's CLs (so it can differ
   a little from what others see), everyone's CLs they approved, and the
@@ -264,8 +266,8 @@ files).
   message" for `/COMMIT_MSG`). They come from the person's thread file in R2
   ("Downloading your comments"), so only for changes landed in the period
   Covering picks (at most since the thread files start), fetched when the
-  list is first drawn (or, under "all", the first time a reviewer is
-  opened). A commenter is a reviewer when their Gerrit account's address
+  list is first drawn (or, with the checkbox unticked, the first time a
+  reviewer is opened). A commenter is a reviewer when their Gerrit account's address
   belongs to that approver's identity ("Who is who", below);
   `cosh.review_threads` records which approver each commenter is
   (`reviewers`). No comment text and no tone. Threads from someone who
@@ -349,9 +351,10 @@ charts are drawn when it opens:
 oldest week in `reviews.sqlite`'s `fetched_weeks` (but no earlier than the
 oldest usable CL) to the end of the newest, trimmed to whole months
 (`trim_start`, `trim_end`). `peers.json` gives the page `start`, `end`
-(exclusive) and `addr_start` as day numbers. There is no date selector:
-every figure covers all of it, and only the over-time chart splits it, by
-half-year.
+(exclusive) and `addr_start` as day numbers. Every figure covers all of
+it, except that the over-time chart splits it by half-year and Your
+feedback covers the period picked under its Covering (all, a year or a
+half-year).
 
 **Praise** and **tone** don't appear on the page (the "See also your
 praise" link to the Review Tone page was removed on 2026-11-14).
